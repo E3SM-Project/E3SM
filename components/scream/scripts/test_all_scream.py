@@ -27,7 +27,7 @@ class TestAllScream(object):
     ###########################################################################
     def __init__(self, cxx_compiler=None, f90_compiler=None, c_compiler=None,
                  submit=False, parallel=False, fast_fail=False,
-                 baseline_ref=None, baseline_dir=None, machine=None, no_tests=False, keep_tree=False,
+                 baseline_ref=None, baseline_dir=None, machine=None, no_tests=False, config_only=False, keep_tree=False,
                  custom_cmake_opts=(), custom_env_vars=(), preserve_env=False, tests=(),
                  integration_test=False, local=False, root_dir=None, work_dir=None,
                  quick_rerun=False,quick_rerun_failed=False,dry_run=False,
@@ -52,6 +52,7 @@ class TestAllScream(object):
         self._machine                 = machine
         self._local                   = local
         self._perform_tests           = not no_tests
+        self._config_only             = config_only
         self._keep_tree               = keep_tree
         self._baseline_dir            = baseline_dir
         self._custom_cmake_opts       = custom_cmake_opts
@@ -106,6 +107,10 @@ class TestAllScream(object):
         ############################################
         #  Sanity checks and helper structs setup  #
         ############################################
+
+        # Quick rerun skips config phase, and config-only runs only config. You can't ask for both...
+        expect (not (self._quick_rerun and self._config_only),
+                "Makes no sense to ask for --quick-rerun and --config-only at the same time")
 
         # Probe machine if none was specified
         if self._machine is None:
@@ -681,6 +686,9 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         test_dir = self.get_test_dir(self._work_dir,test)
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test], for_ctest=True)
         ctest_config = self.generate_ctest_config(cmake_config, [], test)
+
+        if self._config_only):
+            ctest_config += "-DCONFIG_ONLY=TRUE"
 
         if self._quick_rerun and (test_dir/"CMakeCache.txt").is_file():
             # Do not purge bld dir, and do not rerun config step.
