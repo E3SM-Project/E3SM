@@ -366,9 +366,7 @@ contains
     use perf_mod,       only : t_startf, t_stopf
     use prim_state_mod, only : prim_printstate
     use theta_f2c_mod,  only : prim_run_subcycle_c, cxx_push_results_to_f90
-#ifndef SCREAM
     use theta_f2c_mod,  only : push_forcing_to_c
-#endif
     !
     ! Inputs
     !
