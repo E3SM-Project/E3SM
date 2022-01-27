@@ -11,10 +11,14 @@ include(ScreamUtils)
 # the test executable).
 
 # Test to ensure that a build failure is detected by our testing scripts
-EkatCreateUnitTest(build_fail build_fail.cpp LABELS "fail")
+EkatCreateUnitTest(build_fail build_fail.cpp
+  PROPERTIES WILL_FAIL TRUE
+  LABELS "fail")
 
 # Test to ensure that a test failure is detected by our testing scripts
-EkatCreateUnitTest(test_fail test_fail.cpp LABELS "fail")
+EkatCreateUnitTest(test_fail test_fail.cpp
+  PROPERTIES WILL_FAIL TRUE
+  LABELS "fail")
 
 # Tests to ensure the testing infrastructure is correctly spreading
 # concurrent tests across the available resources
