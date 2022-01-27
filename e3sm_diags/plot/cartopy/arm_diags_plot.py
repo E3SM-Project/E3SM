@@ -58,7 +58,7 @@ def plot_convection_onset_statistics(
         if index == 0:
             precip = test_pr
             cwv = test_prw
-            data_name = "Test: " + parameter.test_name
+            data_name = "Test: " + parameter.test_name_yrs
             time_interval = 3
             line_color = ["black", "grey"]
         else:
@@ -334,7 +334,7 @@ def plot_annual_cycle(var, vars_to_data, parameter):
     refs = vars_to_data.refs
     test = vars_to_data.test
     ax1.plot(
-        xax, test.asma(), "k", linewidth=2, label="Test: " + parameter.test_name
+        xax, test.asma(), "k", linewidth=2, label="Test: " + parameter.test_name_yrs
     )  # +' ({0:.1f})'.format(np.mean(test.asma())))
     test_season = get_seasonal_mean(test)
     for i_ref, ref in enumerate(refs):
@@ -408,7 +408,7 @@ def plot_diurnal_cycle(var, vars_to_data, parameter):
         if index == 0:
             data = test
             line_c = "k"
-            data_name = parameter.test_name
+            data_name = parameter.test_name_yrs
         else:
             data = ref
             line_c = "r"
@@ -493,7 +493,7 @@ def plot_diurnal_cycle_zt(var, vars_to_data, parameter):
                     data = data[:, :, ::-1]
 
             else:
-                title = parameter.test_name
+                title = parameter.test_name_yrs
                 data = test
                 data_name = "test"
 

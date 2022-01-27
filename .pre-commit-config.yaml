@@ -1,4 +1,4 @@
-exclude: "docs|node_modules|migrations|.git|.tox"
+exclude: "docs|node_modules|migrations|.git|.tox|examples|analysis_data_preprocess|conda/meta.yaml"
 default_stages: [commit]
 fail_fast: true
 
@@ -9,13 +9,11 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
-        exclude: conda/meta.yaml
 
   - repo: https://github.com/psf/black
     rev: 21.5b2
     hooks:
       - id: black
-        exclude: analysis_data_preprocess
 
   - repo: https://github.com/timothycrosley/isort
     rev: 5.7.0
@@ -30,11 +28,9 @@ repos:
       - id: flake8
         args: ["--config=setup.cfg"]
         additional_dependencies: [flake8-isort]
-        exclude: analysis_data_preprocess
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v0.812
     hooks:
       - id: mypy
         args: ["--config=setup.cfg"]
-        exclude: (analysis_data_preprocess|examples)

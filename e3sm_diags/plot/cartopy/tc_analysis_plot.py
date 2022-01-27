@@ -157,7 +157,10 @@ def plot(test, ref, parameter, basin_dict):
     test_num_year = test_metrics["num_years"]
     ref_num_year = ref_metrics["num_years"]
 
-    test_name = parameter.test_name
+    if parameter.short_test_name:
+        test_name = parameter.short_test_name
+    else:
+        test_name = parameter.test_name
     ref_name = parameter.ref_name
 
     # TC intensity of each basins
@@ -225,11 +228,7 @@ def plot(test, ref, parameter, basin_dict):
     rects2 = ax.bar(ind - width / 2, ref_vals, width, color="black")
     test_vals = num_test / np.sum(num_test)
     rects1 = ax.bar(ind + width / 2, test_vals, width, color="darkgrey")
-    logger.info(
-        "total number based on 6 basins",
-        np.sum(num_test),
-        num_test,
-    )
+    logger.info("total number based on 6 basins")
 
     ax.set_xticks(ind)
     ax.set_xticklabels(
