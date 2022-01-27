@@ -139,13 +139,17 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   //       into the n0 time-slice of Homme's vtheta_dp, and then do the conversion
   //       T_mid->VTheta_dp in place.
 
+  const auto m2 = m*m;
+  const auto s2 = s*s;
+
   // Note: qv is needed to transform T<->Theta
   add_field<Updated> ("horiz_winds",   FL({COL,CMP, LEV},{ncols,2,nlev_mid}),m/s,   rgn,N);
   add_field<Updated> ("T_mid",         FL({COL,     LEV},{ncols,  nlev_mid}),K,     rgn,N);
-  add_field<Updated> ("phi_int",       FL({COL,    ILEV},{ncols,  nlev_int}),Pa/rho,rgn,N);
   add_field<Updated> ("pseudo_density",FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    rgn,N);
   add_field<Updated> ("ps",            FL({COL         },{ncols           }),Pa,    rgn);
   add_field<Required>("qv",            FL({COL,     LEV},{ncols,  nlev_mid}),Q,     rgn,"tracers",N);
+  add_field<Required>("phis",          FL({COL         },{ncols           }),m2/s2, rgn);
+  add_field<Computed>("phi_int",       FL({COL,    ILEV},{ncols,  nlev_int}),m2/s2, rgn,N);
   add_field<Computed>("p_int",         FL({COL,    ILEV},{ncols,  nlev_int}),Pa,    rgn,N);
   add_field<Computed>("p_mid",         FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    rgn,N);
   add_group<Updated>("tracers",rgn,N, Bundling::Required);
@@ -160,6 +164,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   create_helper_field("w_int_dyn",    {EL,TL,    GP,GP,ILEV},{nelem,NTL,  NP,NP,nlev_int}, dgn);
   create_helper_field("phi_int_dyn",  {EL,TL,    GP,GP,ILEV},{nelem,NTL,  NP,NP,nlev_int}, dgn);
   create_helper_field("ps_dyn",       {EL,TL,    GP,GP},     {nelem,NTL,  NP,NP         }, dgn);
+  create_helper_field("phis_dyn",     {EL,       GP,GP},     {nelem,      NP,NP         }, dgn);
   create_helper_field("Qdp_dyn",      {EL,TL,CMP,GP,GP,LEV}, {nelem,QTL,HOMMEXX_QSIZE_D,NP,NP,nlev_mid},dgn);
 
   // For BFB restart, we need to read in the state on the dyn grid. The state above has NTL time slices,
@@ -980,10 +985,10 @@ void HommeDynamics::initialize_homme_state () {
   //       you can use get_internal_field (which have a single time slice) rather than
   //       the helper fields (which have NTL time slices).
   m_ic_remapper->registration_begins();
-  m_ic_remapper->register_field(get_field_out("phi_int",rgn),m_helper_fields.at("phi_int_dyn"));
   m_ic_remapper->register_field(get_field_out("horiz_winds",rgn),m_helper_fields.at("v_dyn"));
   m_ic_remapper->register_field(get_field_out("pseudo_density",rgn),m_helper_fields.at("dp3d_dyn"));
   m_ic_remapper->register_field(get_field_out("ps",rgn),m_helper_fields.at("ps_dyn"));
+  m_ic_remapper->register_field(get_field_in("phis",rgn),m_helper_fields.at("phis_dyn"));
   m_ic_remapper->register_field(get_field_out("T_mid",rgn),m_helper_fields.at("vtheta_dp_dyn"));
   m_ic_remapper->register_field(*get_group_out("Q",rgn).m_bundle,m_helper_fields.at("Q_dyn"));
   if (m_computes_w_int) {
@@ -1002,6 +1007,7 @@ void HommeDynamics::initialize_homme_state () {
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  using EOS = Homme::EquationOfState;
 
   // Extents
   constexpr int NGP  = HOMMEXX_NP;
@@ -1025,6 +1031,8 @@ void HommeDynamics::initialize_homme_state () {
   const auto ps0 = hvcoord.ps0 * hvcoord.hybrid_ai0;
 
   const auto policy = ESU::get_thread_range_parallel_scan_team_policy(nelem*NGP*NGP,npacks_mid);
+  const auto phis_dyn_view = m_helper_fields.at("phis_dyn").get_view<const Real***>();
+  const auto phi_int_dyn_view = m_helper_fields.at("phi_int_dyn").get_view<Pack*****>();
 
   // Need two temporaries, for pi_mid and pi_int
   ekat::WorkspaceManager<Pack,DefaultDevice> wsm(npacks_int,2,policy);
@@ -1054,6 +1062,14 @@ void HommeDynamics::initialize_homme_state () {
       const auto th = PF::calculate_theta_from_T(T(ilev),p_mid(ilev));
       vTh_dp(ilev) = PF::calculate_virtual_temperature(th,qv(ilev))*dp(ilev);
     });
+    team.team_barrier();
+
+    // Init geopotential
+    auto dphi   = [&](const int ilev)->Pack {
+      return EOS::compute_dphi(vTh_dp(ilev), p_mid(ilev));
+    };
+    auto phi_int = ekat::subview(phi_int_dyn_view,ie,n0,igp,jgp);
+    ColOps::column_scan<false>(team,nlevs,dphi,phi_int,phis_dyn_view(ie,igp,jgp));
 
     // Release the scratch mem
     ws.release(p_int);

@@ -112,10 +112,8 @@ public:
 #endif
   void create_p2d_map ();
   struct Pointer {
-    KOKKOS_FORCEINLINE_FUNCTION
-    Real* get() { return ptr; }
-
-    Real* ptr;
+          Real* ptr = nullptr;
+    const Real* cptr = nullptr;
   };
 
   enum AllocPropType : int {
@@ -181,39 +179,49 @@ protected:
   KOKKOS_FUNCTION
   void local_remap_bwd_3d (const MT& team) const;
 
-  template<typename ScalarT, int N>
+  template<typename ScalarT, int N, typename PtrType>
   KOKKOS_FUNCTION
   Unmanaged<typename KokkosTypes<device_type>::template view_ND<ScalarT,N>>
-  reshape (Pointer& p, const Dims& dims) const {
+  reshape (PtrType ptr, const Dims& dims) const {
     using uview_nd = Unmanaged<typename KokkosTypes<device_type>::template view_ND<ScalarT,N>>;
+
+    // Note: if ScalarT is const T, then we would be ok even if pointee_t is non const.
+    //       However, likely, this is an error that will arise at run time, due to
+    //       getting ptr instead of cptr out of the Pointer struct, and if the Pointer
+    //       struct was set up from a read-only field, cptr will be nullptr.
+    //       A static assert exposes this issue at compile time. To fix compilation errors,
+    //       extract ptr from Pointer with non-const ScalarT, and cptr for const ScalarT.
+    using pointee_t = typename std::remove_pointer<PtrType>::type;
+    static_assert (std::is_const<ScalarT>::value == std::is_const<pointee_t>::value,
+        "Error! Mismatching const qualifiers for input pointer type and ScalarT.\n");
 
     uview_nd ret_view;
 
     switch (dims.size) {
       case 1:
-        ret_view = uview_nd(reinterpret_cast<ScalarT*>(p.get()),
+        ret_view = uview_nd(reinterpret_cast<ScalarT*>(ptr),
                             dims.dims[0]);
         break;
       case 2:
-        ret_view = uview_nd(reinterpret_cast<ScalarT*>(p.get()),
+        ret_view = uview_nd(reinterpret_cast<ScalarT*>(ptr),
                             dims.dims[0],
                             dims.dims[1]);
         break;
       case 3:
-        ret_view = uview_nd(reinterpret_cast<ScalarT*>(p.get()),
+        ret_view = uview_nd(reinterpret_cast<ScalarT*>(ptr),
                             dims.dims[0],
                             dims.dims[1],
                             dims.dims[2]);
         break;
       case 4:
-        ret_view = uview_nd(reinterpret_cast<ScalarT*>(p.get()),
+        ret_view = uview_nd(reinterpret_cast<ScalarT*>(ptr),
                             dims.dims[0],
                             dims.dims[1],
                             dims.dims[2],
                             dims.dims[3]);
         break;
       case 5:
-        ret_view = uview_nd(reinterpret_cast<ScalarT*>(p.get()),
+        ret_view = uview_nd(reinterpret_cast<ScalarT*>(ptr),
                             dims.dims[0],
                             dims.dims[1],
                             dims.dims[2],
@@ -221,7 +229,7 @@ protected:
                             dims.dims[4]);
         break;
       case 6:
-        ret_view = uview_nd(reinterpret_cast<ScalarT*>(p.get()),
+        ret_view = uview_nd(reinterpret_cast<ScalarT*>(ptr),
                             dims.dims[0],
                             dims.dims[1],
                             dims.dims[2],
