@@ -289,12 +289,13 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             TestTestAllScream.CMDS_TO_TEST,
             *internal_args)
 
+    # Test that each build type generates the correct CMakeCache
     def test_dbg_details(self):
         """
-        Test the 'dbg' test in test-all-scream. It should pass and set certain CMake values
+        Test the 'dbg' test in test-all-scream. It should set certain CMake values
         """
         if self._full:
-            cmd = self.get_cmd("./test-all-scream -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
+            cmd = self.get_cmd("./test-all-scream -m $machine -b HEAD -k -t dbg --config-only", self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_cmake_cache_contents(self, "full_debug", "CMAKE_BUILD_TYPE", "Debug")
             test_cmake_cache_contents(self, "full_debug", "SCREAM_DOUBLE_PRECISION", "TRUE")
@@ -308,10 +309,10 @@ class TestTestAllScream(TestBaseOuter.TestBase):
 
     def test_sp_details(self):
         """
-        Test the 'sp' test in test-all-scream. It should pass and set certain CMake values
+        Test the 'sp' test in test-all-scream. It should set certain CMake values
         """
         if self._full:
-            cmd = self.get_cmd("./test-all-scream -m $machine -b HEAD -k -t sp", self._machine, dry_run=False)
+            cmd = self.get_cmd("./test-all-scream -m $machine -b HEAD -k -t sp --config-only", self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_cmake_cache_contents(self, "full_sp_debug", "CMAKE_BUILD_TYPE", "Debug")
             test_cmake_cache_contents(self, "full_sp_debug", "SCREAM_DOUBLE_PRECISION", "FALSE")
@@ -326,13 +327,13 @@ class TestTestAllScream(TestBaseOuter.TestBase):
 
     def test_fpe_details(self):
         """
-        Test the 'fpe' test in test-all-scream. It should pass and set certain CMake values
+        Test the 'fpe' test in test-all-scream. It should set certain CMake values
         """
         if self._full:
             if is_cuda_machine(self._machine):
                 self.skipTest("Skipping FPE check on cuda")
             else:
-                cmd = self.get_cmd("./test-all-scream -m $machine -b HEAD -k -t fpe", self._machine, dry_run=False)
+                cmd = self.get_cmd("./test-all-scream -m $machine -b HEAD -k -t fpe --config-only", self._machine, dry_run=False)
                 run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
                 test_cmake_cache_contents(self, "debug_nopack_fpe", "CMAKE_BUILD_TYPE", "Debug")
                 test_cmake_cache_contents(self, "debug_nopack_fpe", "SCREAM_DOUBLE_PRECISION", "TRUE")
@@ -341,6 +342,39 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         else:
             self.skipTest("Skipping full run")
 
+    def test_valg_details(self):
+        """
+        Test the 'valg' test in test-all-scream. It should set certain CMake values
+        """
+        if self._full:
+            if is_cuda_machine(self._machine):
+                self.skipTest("Skipping Valg check on cuda")
+            else:
+                cmd = self.get_cmd("./test-all-scream -m $machine -b HEAD -k -t valg --config-only", self._machine, dry_run=False)
+                run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+                test_cmake_cache_contents(self, "valgrind", "CMAKE_BUILD_TYPE", "Debug")
+                test_cmake_cache_contents(self, "valgrind", "EKAT_ENABLE_VALGRIND", "TRUE")
+                test_cmake_cache_contents(self, "valgrind", "SCREAM_TEST_PROFILE", "SHORT")
+        else:
+            self.skipTest("Skipping full run")
+
+    def test_cmc_details(self):
+        """
+        Test the 'cmc' test in test-all-scream. It should set certain CMake values
+        """
+        if self._full:
+            if not is_cuda_machine(self._machine):
+                self.skipTest("Skipping Cuda MemCheck check on CPU machines")
+            else:
+                cmd = self.get_cmd("./test-all-scream -m $machine -b HEAD -k -t cmc --config-only", self._machine, dry_run=False)
+                run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+                test_cmake_cache_contents(self, "valgrind", "CMAKE_BUILD_TYPE", "Debug")
+                test_cmake_cache_contents(self, "valgrind", "EKAT_ENABLE_CUDA_MEMCHECK", "TRUE")
+                test_cmake_cache_contents(self, "valgrind", "SCREAM_TEST_PROFILE", "SHORT")
+        else:
+            self.skipTest("Skipping full run")
+
+    # Test that a fail in config, build, or run phase of ctest is correctly captured by test-all-scream
     def test_config_fail_captured(self):
         """
         Test that the 'dbg' test in test-all-scream detects and returns non-zero if there's a cmake configure error
