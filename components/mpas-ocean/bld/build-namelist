@@ -1002,6 +1002,11 @@ if ($ocn_co2_type eq 'constant' ) {
         add_default($nl, 'config_ecosys_atm_alt_co2_option', 'val'=>"diagnostic");
         add_default($nl, 'config_ecosys_atm_alt_co2_use_eco', 'val'=>".false.");
         add_default($nl, 'config_ecosys_atm_co2_constant_value', 'val'=>$atm_co2_const_val);
+} elsif ($ocn_co2_type eq 'prognostic' ) {
+        add_default($nl, 'config_ecosys_atm_co2_option', 'val'=>"prognostic");
+        add_default($nl, 'config_ecosys_atm_alt_co2_option', 'val'=>"prognostic");
+        add_default($nl, 'config_ecosys_atm_alt_co2_use_eco', 'val'=>".false.");
+        add_default($nl, 'config_ecosys_atm_co2_constant_value', 'val'=>$atm_co2_const_val);
 } else {
         add_default($nl, 'config_ecosys_atm_co2_option', 'val'=>"diagnostic");
         add_default($nl, 'config_ecosys_atm_alt_co2_option', 'val'=>"diagnostic");

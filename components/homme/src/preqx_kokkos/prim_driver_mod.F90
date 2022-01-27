@@ -8,6 +8,7 @@ module prim_driver_mod
   use element_mod,          only : element_t
   use prim_driver_base,     only : deriv1, smooth_topo_datasets
   use prim_cxx_driver_base, only : prim_init1, prim_finalize
+  use physical_constants, only : rearth
 
   implicit none
 
@@ -124,7 +125,7 @@ contains
                                    LOGICAL(disable_diagnostics,c_bool),                           &
                                    LOGICAL(use_cpstar==1,c_bool),                                 &
                                    transport_alg,                                                 &
-                                   dt_remap_factor, dt_tracer_factor)
+                                   dt_remap_factor, dt_tracer_factor, rearth)
 
     ! Initialize time level structure in C++
     call init_time_level_c(tl%nm1, tl%n0, tl%np1, tl%nstep, tl%nstep0)
@@ -270,7 +271,7 @@ contains
 
   end subroutine prim_init_kokkos_functors
 
-  subroutine prim_run_subcycle(elem, hybrid, nets, nete, dt, single_column, tl, hvcoord,nsubstep)
+  subroutine prim_run_subcycle(elem, hybrid, nets, nete, dt, single_column, tl, hvcoord, nsplit_iteration)
     use iso_c_binding,  only : c_int, c_ptr, c_loc
     use control_mod,    only : qsplit, rsplit, statefreq
     use dimensions_mod, only : nelemd
@@ -286,12 +287,12 @@ contains
     use perf_mod,       only: t_startf, t_stopf
     use prim_state_mod, only: prim_printstate
     interface
-      subroutine prim_run_subcycle_c(tstep,nstep,nm1,n0,np1,next_output_step) bind(c)
+      subroutine prim_run_subcycle_c(tstep,nstep,nm1,n0,np1,next_output_step,nsplit_iteration) bind(c)
         use iso_c_binding, only: c_int, c_double
         !
         ! Inputs
         !
-        integer(kind=c_int),  intent(in) :: nstep, nm1, n0, np1, next_output_step
+        integer(kind=c_int),  intent(in) :: nstep, nm1, n0, np1, next_output_step, nsplit_iteration
         real (kind=c_double), intent(in) :: tstep
       end subroutine prim_run_subcycle_c
 
@@ -319,7 +320,7 @@ contains
     real(kind=real_kind), intent(in)    :: dt                           ! "timestep dependent" timestep
     logical,              intent(in)    :: single_column
     type (TimeLevel_t),   intent(inout) :: tl
-    integer,              intent(in)    :: nsubstep                     ! nsubstep = 1 .. nsplit
+    integer,              intent(in)    :: nsplit_iteration             ! nsplit_iteration = 1 .. nsplit
     !
     ! Locals
     !
@@ -342,7 +343,7 @@ contains
       compute_diagnostics = .true.
     endif
 
-    call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nextOutputStep)
+    call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nextOutputStep,nsplit_iteration)
 
     ! Set final timelevels from C into Fortran structure
     tl%nstep = nstep_c

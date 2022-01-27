@@ -36,7 +36,7 @@ hypervis_subcycle_q = 6
 hypervis_subcycle_tom  = 6
 theta_hydrostatic_mode = false
 theta_advect_form = 1
-tstep_type        = 10
+tstep_type        = 9
 moisture          = 'notdry'
 /
 &solver_nl

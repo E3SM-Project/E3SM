@@ -40,7 +40,7 @@ def buildnml(case, caseroot, compname):
     #ninst_ice       = case.get_value("NINST_ICE")
     ninst_ice        = 1 # Change if you want multiple instances... though this isn't coded yet.
     ninst_ice_real   = case.get_value("NINST_ICE")
-    ntasks_ice       = case.get_value("NTASKS_ICE")
+    ntasks_ice       = case.get_value("NTASKS_PER_INST_ICE")
     rundir           = case.get_value("RUNDIR")
     run_type         = case.get_value("RUN_TYPE")
     run_refcase      = case.get_value("RUN_REFCASE")

@@ -72,13 +72,13 @@ module control_mod
                                           ! interspace a lf-trapazoidal step every LFTfreq leapfrogs    
                                           ! 0 = disabled
 
-! vert_remap_q_alg:   -1  remap without monotone filter, used for some test cases
-!                      0  default value, Zerroukat monotonic splines
-!                      1  PPM vertical remap with mirroring at the boundaries
-!                         (solid wall bc's, high-order throughout)
-!                      2  PPM vertical remap without mirroring at the boundaries
-!                         (no bc's enforced, first-order at two cells bordering top and bottom boundaries)
- integer, public :: vert_remap_q_alg = 0
+! vert_remap_q_alg:   -1  PPM remap without monotone filter, used for some test cases
+!                      0  Zerroukat monotonic splines
+!                      1  PPM vertical remap with constant extension at the boundaries
+!                     10  PPM with linear extrapolation at boundaries, with column limiter
+!                     11  PPM with unlimited linear extrapolation at boundaries
+ integer, public :: vert_remap_q_alg = 0    ! tracers
+ integer, public :: vert_remap_u_alg = -2   ! remap for dynamics. default -2 means inherit vert_remap_q_alg
 
 ! advect theta 0: conservation form 
 !              1: expanded divergence form (less noisy, non-conservative)
@@ -161,6 +161,7 @@ module control_mod
   real (kind=real_kind), public :: nu_q    = -1               ! default = nu   tracer viscosity
   real (kind=real_kind), public :: nu_p    = -1               ! default = nu   ps equ. viscosity
   real (kind=real_kind), public :: nu_top  = 0.0D5            ! top-of-the-model viscosity
+  real (kind=real_kind), public :: tom_sponge_start=0         ! start of sponge layer, in hPa
 
   integer, public :: hypervis_subcycle=1                      ! number of subcycles for hyper viscsosity timestep
   integer, public :: hypervis_subcycle_tom=0                  ! number of subcycles for TOM diffusion
@@ -171,23 +172,16 @@ module control_mod
   integer, public :: psurf_vis = 0                            ! 0 = use laplace on eta surfaces
                                                               ! 1 = use (approx.) laplace on p surfaces
 
-  real (kind=real_kind), public :: hypervis_power=0           ! if not 0, use variable hyperviscosity based on element area
   real (kind=real_kind), public :: hypervis_scaling=0         ! use tensor hyperviscosity
 
   !three types of hyper viscosity are supported right now:
   ! (1) const hv:    nu * del^2 del^2
-  ! (2) scalar hv:   nu(lat,lon) * del^2 del^2
-  ! (3) tensor hv,   nu * ( \div * tensor * \grad ) * del^2
+  ! (2) tensor hv,   nu * ( \div * tensor * \grad ) * del^2
   !
-  ! (1) default:  hypervis_power=0, hypervis_scaling=0
-  ! (2) Original version for var-res grids. (M. Levy)
-  !            scalar coefficient within each element
-  !            hypervisc_scaling=0
-  !            set hypervis_power>0 and set fine_ne, max_hypervis_courant
-  ! (3) tensor HV var-res grids 
+  ! (1) hypervis_scaling=0
+  ! (2) tensor HV var-res grids  
   !            tensor within each element:
-  !            set hypervis_scaling > 0 (typical values would be 3.2 or 4.0)
-  !            hypervis_power=0
+  !            set hypervis_scaling > 0 (typical values would be 3.0)
   !            (\div * tensor * \grad) operator uses cartesian laplace
   !
 
@@ -271,9 +265,10 @@ module control_mod
   real (kind=real_kind), public :: bubble_xyradius = 2000.0!bubble radius along x or y axis
   real (kind=real_kind), public :: bubble_zradius = 1500.0 !bubble radius along z axis
   logical,               public :: bubble_cosine  = .TRUE. !bubble uniform or cosine
-  logical,               public :: bubble_moist  = .FALSE. ! 
-  real (kind=real_kind), public :: bubble_moist_dq = 0.0   !bubble dQ parameter
-  integer,               public :: bubble_prec_type = 0    !0 kessler, 1 rj
+  logical,               public :: bubble_moist  = .FALSE.    ! 
+  real (kind=real_kind), public :: bubble_moist_drh = 0.0     !bubble dRH parameter
+  real (kind=real_kind), public :: bubble_rh_background = 0.0 !bubble RH parameter
+  integer,               public :: bubble_prec_type = 0       !0 kessler, 1 rj
   logical,               protected :: case_planar_bubble = .FALSE.
 
   public :: set_planar_defaults

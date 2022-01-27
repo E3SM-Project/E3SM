@@ -10,6 +10,7 @@
 #include "mpi/Connectivity.hpp"
 #include "SimulationParams.hpp"
 #include "Elements.hpp"
+#include "PhysicalConstants.hpp"
 
 #include "utilities/TestUtils.hpp"
 #include "utilities/SyncUtils.hpp"
@@ -628,7 +629,7 @@ static void init_elems (int, int nelemd, Random& r, const HybridVCoord& hvcoord,
   const int nlev = NUM_PHYSICAL_LEV, np = NP;
   const auto all = Kokkos::ALL();
 
-  e.init(nelemd, false, true);
+  e.init(nelemd, false, true, PhysicalConstants::rearth0);
   const auto max_pressure = 1000 + hvcoord.ps0;
   auto& geo = e.m_geometry;
   e.m_geometry.randomize(r.gen_seed());
@@ -849,7 +850,7 @@ TEST_CASE ("dirk_toplevel_testing") {
       c2f(e);
       compute_stage_value_dirk_f90(nm1+1, alphadtwt_nm1*dt2, n0+1, alphadtwt_n0*dt2, np1+1, dt2);
       Elements ef90;
-      ef90.init(nelemd, false, true);
+      ef90.init(nelemd, false, true, PhysicalConstants::rearth0);
       f2c(ef90);
 
       const auto phif = cmvdc(ef90.m_state.m_phinh_i);
