@@ -149,7 +149,6 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   add_field<Updated> ("ps",            FL({COL         },{ncols           }),Pa,    rgn);
   add_field<Required>("qv",            FL({COL,     LEV},{ncols,  nlev_mid}),Q,     rgn,"tracers",N);
   add_field<Required>("phis",          FL({COL         },{ncols           }),m2/s2, rgn);
-  add_field<Computed>("phi_int",       FL({COL,    ILEV},{ncols,  nlev_int}),m2/s2, rgn,N);
   add_field<Computed>("p_int",         FL({COL,    ILEV},{ncols,  nlev_int}),Pa,    rgn,N);
   add_field<Computed>("p_mid",         FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    rgn,N);
   add_group<Updated>("tracers",rgn,N, Bundling::Required);
@@ -342,7 +341,6 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   m_d2p_remapper->register_field(m_helper_fields.at("vtheta_dp_dyn"),get_field_out("T_mid"));
   m_d2p_remapper->register_field(m_helper_fields.at("v_dyn"),get_field_out("horiz_winds"));
   m_d2p_remapper->register_field(m_helper_fields.at("dp3d_dyn"), get_field_out("pseudo_density"));
-  m_d2p_remapper->register_field(m_helper_fields.at("phi_int_dyn"), get_field_out("phi_int"));
   m_d2p_remapper->register_field(m_helper_fields.at("ps_dyn"), get_field_out("ps"));
   m_d2p_remapper->register_field(m_helper_fields.at("Q_dyn"),*get_group_out("Q",rgn).m_bundle);
   if (m_computes_w_int) {
@@ -1032,7 +1030,7 @@ void HommeDynamics::initialize_homme_state () {
 
   const auto policy = ESU::get_thread_range_parallel_scan_team_policy(nelem*NGP*NGP,npacks_mid);
   const auto phis_dyn_view = m_helper_fields.at("phis_dyn").get_view<const Real***>();
-  const auto phi_int_dyn_view = m_helper_fields.at("phi_int_dyn").get_view<Pack*****>();
+  const auto phi_int_view = m_helper_fields.at("phi_int_dyn").get_view<Pack*****>();
 
   // Need two temporaries, for pi_mid and pi_int
   ekat::WorkspaceManager<Pack,DefaultDevice> wsm(npacks_int,2,policy);
@@ -1068,7 +1066,7 @@ void HommeDynamics::initialize_homme_state () {
     auto dphi   = [&](const int ilev)->Pack {
       return EOS::compute_dphi(vTh_dp(ilev), p_mid(ilev));
     };
-    auto phi_int = ekat::subview(phi_int_dyn_view,ie,n0,igp,jgp);
+    auto phi_int = ekat::subview(phi_int_view,ie,n0,igp,jgp);
     ColOps::column_scan<false>(team,nlevs,dphi,phi_int,phis_dyn_view(ie,igp,jgp));
 
     // Release the scratch mem
