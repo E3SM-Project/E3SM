@@ -361,52 +361,6 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         else:
             self.skipTest("Skipping full run")
 
-    def test_run_fail_captured(self):
-        """
-        Test that the 'dbg' test in test-all-scream detects and returns non-zero if there's a test failure
-        """
-        if self._full:
-            cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_FAIL=True -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
-            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
-        else:
-            self.skipTest("Skipping full run")
-
-    def test_run_fpe_fail_captured(self):
-        """
-        Test that the 'fpe' test in test-all-scream detects and returns non-zero if there's a floating point exception
-        """
-        if self._full:
-            if is_cuda_machine(self._machine):
-                self.skipTest("Skipping FPE check on cuda")
-            else:
-                cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_FPE_FAIL=True -m $machine -b HEAD -k -t fpe", self._machine, dry_run=False)
-                run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
-        else:
-            self.skipTest("Skipping full run")
-
-    def test_run_kokkos_oob_captured(self):
-        """
-        Test that the 'dbg' test in test-all-scream detects and returns non-zero if there's a kokkos out-of-bounds index
-        """
-        if self._full:
-            cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_KOKKOS_OOB=True -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
-            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
-        else:
-            self.skipTest("Skipping full run")
-
-    def test_run_valg_err_captured(self):
-        """
-        Test that the 'valg' test in test-all-scream detects and returns non-zero if there's a valgrind error
-        """
-        if self._full:
-            if is_cuda_machine(self._machine):
-                self.skipTest("Skipping valgrind test on cuda")
-            else:
-                cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_VALG_ERR=True -m $machine -b HEAD -k -t valg", self._machine, dry_run=False)
-                run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
-        else:
-            self.skipTest("Skipping full run")
-
     def test_run_diff_captured(self):
         """
         Test that the 'dbg' test in test-all-scream detects and returns non-zero if there's a baseline diff in p3_run_and_cmp
