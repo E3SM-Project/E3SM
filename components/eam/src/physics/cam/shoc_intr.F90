@@ -83,13 +83,15 @@ module shoc_intr
 
   logical      :: lq(pcnst)
 
-  !To decide the scalars which are participating in dry/wet conversion
+  !lq_dry_wet_cnvr is true for all the water constituents used  by SHOC.
+  !These water constituents will participate in dry/wet mmr conversion
   logical      :: lq_dry_wet_cnvr(pcnst)
 
   logical            :: history_budget
   integer            :: history_budget_histfile_num
   logical            :: micro_do_icesupersat
 
+  !Store names of the water constituents used by SHOC
   character(len=6), parameter :: dry_wet_scalars(9) = ['Q     ','CLDLIQ', &
        'CLDICE','NUMLIQ','NUMICE','RAINQM','CLDRIM','NUMRAI','BVRIM ']
 
@@ -321,7 +323,7 @@ end function shoc_implements_cnst
     logical :: history_amwg
 
     lq(1:pcnst) = .true.
-    lq_dry_wet_cnvr(1:pcnst) = .false. !True for constituents which are participating in dry/wet conversion
+    lq_dry_wet_cnvr(1:pcnst) = .false. !flag to identify constituents which are participating in dry/wet conversion
     edsclr_dim = pcnst
 
     !----- Begin Code -----
@@ -399,10 +401,10 @@ end function shoc_implements_cnst
     !but the state vector has all its scalars in terms of "wet" mmr
     !identify scalar which need conversion between wet and dry mmrs
     do icnst = 1, pcnst
-       lq_dry_wet_cnvr(icnst) = .false.
+       lq_dry_wet_cnvr(icnst) = .false. ! lets assume .false. by default
        do idw = 1, size(dry_wet_scalars)
           if(trim(adjustl(stateq_names(icnst))) == trim(adjustl(dry_wet_scalars(idw))) )then
-             !This scalar will participate in dry<->wet conversion
+             !This "icnst" scalar will participate in dry<->wet conversion
              lq_dry_wet_cnvr(icnst) = .true.
           endif
        enddo
@@ -538,7 +540,7 @@ end function shoc_implements_cnst
     use shoc,           only: shoc_main
     use cam_history,    only: outfld
     use scamMod,        only: single_column, dp_crm
-    use physics_utils, only: calculate_drymmr_from_wetmmr, calculate_wetmmr_from_drymmr
+    use physics_utils,  only: calculate_drymmr_from_wetmmr_1gridcell, calculate_wetmmr_from_drymmr_1gridcell
 
     implicit none
 
@@ -576,7 +578,7 @@ end function shoc_implements_cnst
    ! Local Variables !
    ! --------------- !
 
-   logical::  convert_back_to_wet(edsclr_dim)
+   logical::  convert_back_to_wet(edsclr_dim)! To track constituents which needs a conversion back to wet mmr
    integer :: shoctop(pcols)
 
 #ifdef SHOC_SGS
@@ -596,7 +598,7 @@ end function shoc_implements_cnst
    real(r8) :: edsclr_in(pcols,pver,edsclr_dim)      ! Scalars to be diffused through SHOC         [units vary]
    real(r8) :: edsclr_out(pcols,pver,edsclr_dim)
    real(r8) :: rcm_in(pcols,pver)
-   real(r8) :: qv_wet(pcols,pver), qv_dry(pcols,pver) ! wet and dry water vapor mmr [kg/kg-of-wet-air]
+   real(r8) :: qv_wet(pcols,pver), qv_dry(pcols,pver) ! wet [kg/kg-of-wet-air] and dry [kg/kg-of-dry-air] water vapor mmr
    real(r8) :: cloudfrac_shoc(pcols,pver)
    real(r8) :: newfice(pcols,pver)              ! fraction of ice in cloud at CLUBB start       [-]
    real(r8) :: inv_exner(pcols,pver)
@@ -873,12 +875,12 @@ end function shoc_implements_cnst
    qv_wet = state%q(:,:,1)
 
    !  Do the same for tracers
+   !Track which scalars need a conversion to wetmmr after SHOC main call
    convert_back_to_wet(:) = .false.
    icnt=0
    do ixind=1,pcnst
      if (lq(ixind))  then
        icnt=icnt+1
-       convert_back_to_wet(icnt) = .true.
        do k=1,pver
          do i=1,ncol
            !---------------------------------------------------------------------------------------
@@ -887,12 +889,14 @@ end function shoc_implements_cnst
            !Since state constituents from the host model are  wet mixing ratios and SHOC needs these
            !constituents in dry mixing ratios, we convert the wet mixing ratios to dry mixing ratio
            !if lq_dry_wet_cnvr is .true. for that constituent
-           !NOTE:Function calculate_drymmr_from_wetmmr takes 3 arguments: (number of columns, wet mmr and
-           ! "wet" water vapor mixing ratio)
-           !---------------------------------------------------------------------------------------!Convert wet mmr to dry mmr
+           !NOTE:Function calculate_drymmr_from_wetmmr takes 2 arguments: (wet mmr and "wet" water
+           !vapor mixing ratio)
+           !---------------------------------------------------------------------------------------
            if(lq_dry_wet_cnvr(ixind)) then !convert from wet to dry mmr if true
-              edsclr_in(i,k,icnt) = calculate_drymmr_from_wetmmr(ncol, state1%q(i,k,ixind), qv_wet(i,k))
+              convert_back_to_wet(icnt) = .true.
+              edsclr_in(i,k,icnt) = calculate_drymmr_from_wetmmr_1gridcell(state1%q(i,k,ixind), qv_wet(i,k))
            else
+              convert_back_to_wet(icnt) = .false.
               edsclr_in(i,k,icnt) = state1%q(i,k,ixind)
            endif
          enddo
@@ -923,8 +927,8 @@ end function shoc_implements_cnst
 
    ! Transfer back to pbuf variables
 
-   !obtain drymmr from SHOC output
-   qv_dry = edsclr_out(i,k,1)
+   !obtain water vapor mmr which is a "dry" mmr at this point from the SHOC output
+   qv_dry = edsclr_out(:,:,1)
 
    do k=1,pver
      do i=1,ncol
@@ -932,14 +936,15 @@ end function shoc_implements_cnst
        cloud_frac(i,k) = min(cloud_frac(i,k),1._r8)
 
        do ixind=1,edsclr_dim
-          !=============
+          !----------------
           !DRY-TO-WET MMRs:
-          !================
+          !----------------
           !Since the host model needs wet mixing ratio tendencies(state vector has wet mixing ratios),
           !we need to convert dry mixing ratios from SHOC to wet mixing ratios before extracting tendencies
-          !NOTE: water vapor mixing ratio argument in calculate_wetmmr_from_drymmr function has to be dry water vapor mixing ratio
+          !NOTE:Function calculate_wetmmr_from_drymmr takes 2 arguments: (wet mmr and "dry" water vapor
+          !mixing ratio)
           if(convert_back_to_wet(ixind)) then
-             edsclr_out(i,k,ixind) = calculate_wetmmr_from_drymmr(ncol,edsclr_in(i,k,ixind),qv_dry(i,k))
+             edsclr_out(i,k,ixind) = calculate_wetmmr_from_drymmr_1gridcell(edsclr_in(i,k,ixind),qv_dry(i,k))
           else
              edsclr_out(i,k,ixind) = edsclr_in(i,k,ixind)
           endif
