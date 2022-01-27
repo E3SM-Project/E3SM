@@ -324,14 +324,6 @@ endif()
 if ($ENV{SCREAM_FORCE_RUN_FAIL})
   add_definitions(-DSCREAM_FORCE_RUN_FAIL)
 endif()
-if ($ENV{SCREAM_FORCE_RUN_DIFF})
-  add_definitions(-DSCREAM_FORCE_RUN_DIFF)
-  set(SCREAM_FAKE_NEED_P3 ON)
-endif()
-if ($ENV{SCREAM_FORCE_RUN_DIFF_BFB_UNIT})
-  add_definitions(-DSCREAM_FORCE_RUN_DIFF_BFB_UNIT)
-  set(SCREAM_FAKE_NEED_P3 ON)
-endif()
 
 set(DEFAULT_SCREAM_DYNAMICS_DYCORE "NONE")
 if (SCREAM_CIME_BUILD AND SCREAM_DYN_TARGET STREQUAL "theta-l_kokkos")
@@ -360,29 +352,36 @@ set (SCREAM_F90_MODULES ${CMAKE_CURRENT_BINARY_DIR}/modules)
 
 file(MAKE_DIRECTORY ${SCREAM_TEST_DATA_DIR})
 
-add_custom_target(baseline)
-add_custom_target(baseline_cxx)
-
-add_subdirectory(src)
-if (NOT SCREAM_LIB_ONLY)
-  add_subdirectory(tests)
-  include(BuildCprnc)
-  BuildCprnc()
-endif()
-
-# Generate scream_config.h and scream_config.f
-include (EkatUtils)
-EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
-               ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
-               F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
-
+# SCREAM_FAKE_ONLY is used to run some tests to ensure the enclosing testing
+# scripts work correctly. We are not really interested in building/testing SCREAM.
 if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
+  add_custom_target(baseline)
+  add_custom_target(baseline_cxx)
+
+  add_subdirectory(src)
+
+  if (NOT SCREAM_LIB_ONLY)
+    add_subdirectory(tests)
+    include(BuildCprnc)
+    BuildCprnc()
+  endif()
+
+  # Generate scream_config.h and scream_config.f
+  include (EkatUtils)
+  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
+                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
+
   # Build any tools in the scripts/ dir.
   add_subdirectory(scripts)
-endif()
 
-# Generate scream_config.h and scream_config.f
-include (EkatUtils)
-EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
-               ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
-               F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
+  # Generate scream_config.h and scream_config.f
+  include (EkatUtils)
+  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
+                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
+else()
+  # This is a "fake" build of scream, to stress test the testing scripts.
+  # We only need to build something in our tests folder
+  add_subdirectory(tests/meta-tests)
+endif()

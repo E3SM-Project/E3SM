@@ -158,9 +158,15 @@ static void run_bfb_rain_sed()
 
   // Get data from cxx
   for (auto& d : rsds_cxx) {
+    // The code below is to force a result difference. This is used by the
+    // scream/scripts internal testing to verify that various DIFFs are detected.
+    auto inv_dt = d.inv_dt;
+#if defined(SCREAM_FORCE_RUN_DIFF)
+    inv_dt *= 2;
+#endif
     rain_sedimentation_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
                          d.qr_incld, d.rho, d.inv_rho, d.rhofacr, d.cld_frac_r, d.inv_dz,
-                         d.dt, d.inv_dt,
+                         d.dt, inv_dt,
                          d.qr, d.nr, d.nr_incld, d.mu_r, d.lamr, &d.precip_liq_surf, d.precip_liq_flux,
                          d.qr_tend, d.nr_tend);
   }

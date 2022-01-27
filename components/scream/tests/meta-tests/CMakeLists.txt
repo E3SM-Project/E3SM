@@ -1,11 +1,20 @@
 include(ScreamUtils)
 
+# These tests are "fake" tests, in the sense that they are placeholder
+# that guarantee a certain behavior from the ctest executable.
+# We use them to verify that the enclosing testing scripts can correctly
+# capture a failure from our tests, as well as make ctest spread the
+# tests correctly across available resources.
+
 # NOTE: we don't need any scream libs for these test, but scream's CreateUnitTest
 # has libs as a required arg. So use the raw Ekat version (at least to create
 # the test executable).
 
 # Test to ensure that a build failure is detected by our testing scripts
-EkatCreateUnitTest(fake_test fake_test.cpp)
+EkatCreateUnitTest(build_fail build_fail.cpp)
+
+# Test to ensure that a test failure is detected by our testing scripts
+EkatCreateUnitTest(test_fail test_fail.cpp)
 
 # Tests to ensure the testing infrastructure is correctly spreading
 # concurrent tests across the available resources
