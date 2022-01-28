@@ -1224,6 +1224,7 @@ CONTAINS
   end subroutine populate_cosp_gridbox
 #endif /* USE_COSP */
 
+
 #ifdef USE_COSP
   subroutine populate_cosp_subcol(state, pbuf, emis, cld_swtau, cospstateIN, cospIN, snow_tau, snow_emis)    
     use physics_types,        only: physics_state
@@ -1339,7 +1340,7 @@ CONTAINS
 
     cospIN%emsfc_lw      = emsfc_lw
 
-    ! 4) get variables from physics buffer
+    ! get variables from physics buffer
     itim_old = pbuf_old_tim_idx()
     call pbuf_get_field(pbuf, cld_idx,    cld,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
     call pbuf_get_field(pbuf, concld_idx, concld, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
@@ -1834,7 +1835,6 @@ CONTAINS
     use mod_scops,            only: scops
     use mod_prec_scops,       only: prec_scops
     use mod_cosp_utils,       only: cosp_precip_mxratio
-    use mod_quickbeam_optics, only: quickbeam_optics, gases
     use cosp_optics,          only: cosp_simulator_optics,lidar_optics,modis_optics,    &
                                     modis_optics_partition
     use mod_cosp_config,      only: Nlvgrid, vgrid_zl, vgrid_zu
@@ -1895,8 +1895,7 @@ CONTAINS
                                                  MODIS_snowSize,MODIS_cloudSnow,         &
                                                  MODIS_opticalThicknessLiq,              &
                                                  MODIS_opticalThicknessSnow,             &
-                                                 MODIS_opticalThicknessIce,              &
-                                                 fracPrecipIce, fracPrecipIce_statGrid
+                                                 MODIS_opticalThicknessIce
     real(wp),dimension(:,:,:,:),allocatable   :: mr_hydro,Reff,Np
              
     call t_startf("scops")
@@ -2114,61 +2113,12 @@ CONTAINS
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     call t_startf("cloudsat_optics")
     if (lradar_sim) then
-       ! Compute gaseous absorption (assume identical for each subcolun)
-       allocate(g_vol(nPoints,nLevels))
-       g_vol(:,:)=0._wp
-       do i = 1, nPoints
-          do j = 1, nLevels
-             if (cospIN%rcfg_cloudsat%use_gas_abs == 1 .or. &
-                (cospIN%rcfg_cloudsat%use_gas_abs == 2 .and. j == 1)) then
-                g_vol(i,j) = gases(cospstateIN%pfull(i,j), cospstateIN%at(i,j),    &
-                                   cospstateIN%qv(i,j), cospIN%rcfg_cloudsat%freq)
-             endif
-             cospIN%g_vol_cloudsat(i,:,j) = g_vol(i,j)
-          end do
-       end do
-
-       ! Loop over all subcolumns
-       allocate(fracPrecipIce(nPoints,nColumns,nLevels))
-       fracPrecipIce(:,:,:) = 0._wp
-       do k=1,nColumns
-          call quickbeam_optics(sd, cospIN%rcfg_cloudsat, nPoints, nLevels, R_UNDEF, &
-               mr_hydro(:,k,:,1:nHydro)*1000._wp, Reff(:,k,:,1:nHydro)*1.e6_wp,      &
-               Np(:,k,:,1:nHydro), cospstateIN%pfull, cospstateIN%at,                &
-               cospstateIN%qv, cospIN%z_vol_cloudsat(1:nPoints,k,:),                 &
-               cospIN%kr_vol_cloudsat(1:nPoints,k,:))
-
-        ! At each model level, what fraction of the precipitation is frozen?
-          where(mr_hydro(:,k,:,I_LSRAIN) .gt. 0 .or. mr_hydro(:,k,:,I_LSSNOW) .gt. 0 .or. &
-                mr_hydro(:,k,:,I_CVRAIN) .gt. 0 .or. mr_hydro(:,k,:,I_CVSNOW) .gt. 0 .or. &
-                mr_hydro(:,k,:,I_LSGRPL) .gt. 0)
-             fracPrecipIce(:,k,:) = (mr_hydro(:,k,:,I_LSSNOW) + mr_hydro(:,k,:,I_CVSNOW) + &
-                  mr_hydro(:,k,:,I_LSGRPL)) / &
-                  (mr_hydro(:,k,:,I_LSSNOW) + mr_hydro(:,k,:,I_CVSNOW) + mr_hydro(:,k,:,I_LSGRPL) + &
-                  mr_hydro(:,k,:,I_LSRAIN)  + mr_hydro(:,k,:,I_CVRAIN))
-          elsewhere
-             fracPrecipIce(:,k,:) = 0._wp
-          endwhere
-       enddo
-
-       ! Regrid frozen fraction to Cloudsat/Calipso statistical grid
-       allocate(fracPrecipIce_statGrid(nPoints,nColumns,Nlvgrid))
-       fracPrecipIce_statGrid(:,:,:) = 0._wp
-       call cosp_change_vertical_grid(Npoints, Ncolumns, Nlevels, cospstateIN%hgt_matrix(:,Nlevels:1:-1), &
-            cospstateIN%hgt_matrix_half(:,Nlevels:1:-1), fracPrecipIce(:,:,Nlevels:1:-1), Nlvgrid,  &
-            vgrid_zl(Nlvgrid:1:-1),  vgrid_zu(Nlvgrid:1:-1), fracPrecipIce_statGrid(:,:,Nlvgrid:1:-1))
-
-       ! For near-surface diagnostics, we only need the frozen fraction at one layer.
-       cospIN%fracPrecipIce(:,:) = fracPrecipIce_statGrid(:,:,cloudsat_preclvl)
-       
-       ! Regrid preipitation mixing-ratios to statistical grid.
-       !allocate(tempStatGrid(nPoints,ncol,Nlvgrid))
-       !tempStatGrid(:,:,:,:) = 0._wp
-       !call cosp_change_vertical_grid(Npoints, ncol, pver, cospstateIN%hgt_matrix(:,pver:1:-1), &
-       !     cospstateIN%hgt_matrix_half(:,pver:1:-1), mr_hydro(:,:,:,LSGRPL), &
-       !     Nlvgrid,vgrid_zl(Nlvgrid:1:-1),  vgrid_zu(Nlvgrid:1:-1), tempStatGrid)
-       ! 
-    endif
+      call cloudsat_optics( &
+        Npoints, Ncolumns, Nlevels, Nlvgrid, Nhydro, &
+        mr_hydro, Reff, Np, &
+        sd, cospstateIN, cospIN &
+      )
+    end if
     call t_stopf("cloudsat_optics")
     
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2300,6 +2250,72 @@ CONTAINS
     call t_stopf("modis_optics")
 
   end subroutine subsample_and_optics
+
+
+  subroutine cloudsat_optics(npoints, ncolumns, nlevels, nlvgrid, nhydro, mr_hydro, Reff, Np, sd, cospstateIN, cospIN)
+    use cosp_kinds, only: wp
+    use mod_cosp_config, only: R_UNDEF, vgrid_zl, vgrid_zu
+    use mod_cosp, only: cosp_column_inputs, cosp_optical_inputs
+    use mod_quickbeam_optics, only: size_distribution, gases, quickbeam_optics
+    integer, intent(in) :: npoints, ncolumns, nlevels, nlvgrid, nhydro
+    real(wp), dimension(npoints,ncolumns,nlevels,nhydro), intent(in) :: &
+      mr_hydro, &  ! Mixing ratios
+      Reff         ! Effective radii
+    real(wp), dimension(npoints,ncolumns,nlevels,nhydro), intent(inout) :: &
+      Np           ! Number concentrations
+    type(size_distribution)  , intent(inout) :: sd
+    type(cosp_optical_inputs), intent(inout) :: cospIN
+    type(cosp_column_inputs) , intent(inout) :: cospstateIN
+    real(wp), dimension(npoints,ncolumns,nlevels) :: fracPrecipIce
+    real(wp), dimension(npoints,ncolumns,nlvgrid) :: fracPrecipIce_statGrid
+    real(wp), dimension(npoints,nlevels)          :: g_vol
+    integer :: i, j, k
+                                               
+       ! Compute gaseous absorption (assume identical for each subcolun)
+       g_vol(:,:)=0._wp
+       do i = 1, nPoints
+          do j = 1, nLevels
+             if (cospIN%rcfg_cloudsat%use_gas_abs == 1 .or. &
+                (cospIN%rcfg_cloudsat%use_gas_abs == 2 .and. j == 1)) then
+                g_vol(i,j) = gases(cospstateIN%pfull(i,j), cospstateIN%at(i,j),    &
+                                   cospstateIN%qv(i,j), cospIN%rcfg_cloudsat%freq)
+             endif
+             cospIN%g_vol_cloudsat(i,:,j) = g_vol(i,j)
+          end do
+       end do
+
+       ! Loop over all subcolumns
+       fracPrecipIce(:,:,:) = 0._wp
+       do k=1,nColumns
+          call quickbeam_optics(sd, cospIN%rcfg_cloudsat, nPoints, nLevels, R_UNDEF, &
+               mr_hydro(:,k,:,1:nHydro)*1000._wp, Reff(:,k,:,1:nHydro)*1.e6_wp,      &
+               Np(:,k,:,1:nHydro), cospstateIN%pfull, cospstateIN%at,                &
+               cospstateIN%qv, cospIN%z_vol_cloudsat(1:nPoints,k,:),                 &
+               cospIN%kr_vol_cloudsat(1:nPoints,k,:))
+
+          ! At each model level, what fraction of the precipitation is frozen?
+          where(mr_hydro(:,k,:,I_LSRAIN) .gt. 0 .or. mr_hydro(:,k,:,I_LSSNOW) .gt. 0 .or. &
+                mr_hydro(:,k,:,I_CVRAIN) .gt. 0 .or. mr_hydro(:,k,:,I_CVSNOW) .gt. 0 .or. &
+                mr_hydro(:,k,:,I_LSGRPL) .gt. 0)
+             fracPrecipIce(:,k,:) = &
+               (mr_hydro(:,k,:,I_LSSNOW) + mr_hydro(:,k,:,I_CVSNOW) + mr_hydro(:,k,:,I_LSGRPL)) / &
+               (mr_hydro(:,k,:,I_LSSNOW) + mr_hydro(:,k,:,I_CVSNOW) + mr_hydro(:,k,:,I_LSGRPL) + &
+                mr_hydro(:,k,:,I_LSRAIN) + mr_hydro(:,k,:,I_CVRAIN))
+          elsewhere
+             fracPrecipIce(:,k,:) = 0._wp
+          endwhere
+       enddo
+
+       ! Regrid frozen fraction to Cloudsat/Calipso statistical grid
+       fracPrecipIce_statGrid(:,:,:) = 0._wp
+       call cosp_change_vertical_grid(npoints, ncolumns, nlevels, cospstateIN%hgt_matrix(:,nlevels:1:-1), &
+            cospstateIN%hgt_matrix_half(:,nlevels:1:-1), fracPrecipIce(:,:,nlevels:1:-1), nlvgrid,  &
+            vgrid_zl(nlvgrid:1:-1),  vgrid_zu(nlvgrid:1:-1), fracPrecipIce_statGrid(:,:,nlvgrid:1:-1))
+
+       ! For near-surface diagnostics, we only need the frozen fraction at one layer.
+       cospIN%fracPrecipIce(:,:) = fracPrecipIce_statGrid(:,:,cloudsat_preclvl)
+       
+  end subroutine cloudsat_optics
   
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   ! SUBROUTINE construct_cospIN
