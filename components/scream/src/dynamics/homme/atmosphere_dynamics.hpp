@@ -97,10 +97,6 @@ protected:
   // The dynamics and reference grids
   std::shared_ptr<const AbstractGrid>  m_dyn_grid;
   std::shared_ptr<const AbstractGrid>  m_ref_grid;
-
-  // Store these flag, so we can keep more readable code later
-  bool  m_computes_w_int;
-  bool  m_has_w_forcing;
 };
 
 } // namespace scream

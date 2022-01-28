@@ -13,7 +13,6 @@ Fields:
       - p_mid
       - pseudo_density
       - horiz_winds
-      - phi_int
  
 Output Control:
   Frequency: ${NUM_STEPS}
