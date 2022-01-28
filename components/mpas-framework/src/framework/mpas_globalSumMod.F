@@ -3527,12 +3527,12 @@ contains
    function globalSumNfldR4d0(scalars, mpiComm) result(globalSum)
 
       !*** Input variables
-      real, dimension(:), intent(in) :: &
+      real (R4), dimension(:), intent(in) :: &
          scalars ! values to be summed
       integer, intent(in) :: mpiComm ! communicator for MPI
 
       !*** Output (return) variable
-      real, dimension(size(scalars)) :: &
+      real (R4), dimension(size(scalars)) :: &
          globalSum ! final sum as result
 
       !*** Local variables
