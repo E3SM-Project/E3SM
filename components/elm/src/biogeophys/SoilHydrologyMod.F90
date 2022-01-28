@@ -443,7 +443,7 @@ contains
        end do
 
 #if (defined HUM_HOL || defined MARSH) 
-       do j = 1,nlevsoi
+       do j = 1,nlevbed
           do fc = 1, num_hydrologyc
              c = filter_hydrologyc(fc)
              dzmm(c,j) = dz(c,j)*1.e3_r8
@@ -459,9 +459,9 @@ contains
 
        do fc = 1, num_hydrologyc
           c = filter_hydrologyc(fc)
-          jwt(c) = nlevsoi
+          jwt(c) = nlevbed
           ! allow jwt to equal zero when zwt is in top layer
-          do j = 1,nlevsoi
+          do j = 1,nlevbed
              if(zwt(c) <= zi(c,j)) then
                 jwt(c) = j-1
                 exit
@@ -624,16 +624,16 @@ contains
 #if (defined HUM_HOL || defined MARSH)
              if(num_hydrologyc .ne. 2) call endrun(msg="Error: Must have 2 columns if HUM_HOL or MARSH is defined")
              !compute lateral flux in aquifer
-             if (jwt(c) .lt. nlevsoi) then
-                do j=nlevsoi,jwt(c)+1,-1
+             if (jwt(c) .lt. nlevbed) then
+                do j=nlevbed,jwt(c)+1,-1
                   s_node = max(h2osoi_vol(c,j)/watsat(c,j), 0.01_r8)
                   s_node = min(1.0_r8, s_node)
                   s1 = 0.5_r8*(1.0+s_node)
                   s1 = min(1._r8, s1)
                   if (c .eq. 1) ka_hu = ka_hu+(hksat(c,j)*s1**(2._r8*bsw(c,j)+3._r8))* &
-                                dzmm(c,j)/sum(dzmm(c,jwt(c)+1:nlevsoi))
+                                dzmm(c,j)/sum(dzmm(c,jwt(c)+1:nlevbed))
                   if (c .eq. 2) ka_ho = ka_ho+(hksat(c,j)*s1**(2._r8*bsw(c,j)+3._r8))* &
-                                dzmm(c,j)/sum(dzmm(c,jwt(c)+1:nlevsoi))
+                                dzmm(c,j)/sum(dzmm(c,jwt(c)+1:nlevbed))
                 end do
              else
                   s_node = max(h2osoi_vol(c,jwt(c))/watsat(c,jwt(c)), 0.01_r8)
@@ -659,8 +659,8 @@ contains
                  zwt_ho = zwt_ho - h2osfc(2)/1000._r8   !DMR 4/29/13
                end if
                !DMR 12/4/2015
-               if (icefrac(1,min(jwt(1)+1,nlevsoi)) .ge. 0.90_r8 .or. &
-                       icefrac(2,min(jwt(2)+1,nlevsoi)) .ge. 0.90_r8) then
+               if (icefrac(1,min(jwt(1)+1,nlevbed)) .ge. 0.90_r8 .or. &
+                       icefrac(2,min(jwt(2)+1,nlevbed)) .ge. 0.90_r8) then
                  !turn off lateral transport if any ice is present at or below,
                  !changed from 0.01 to 0.90 TAO 6/4/2021
                  !water table
@@ -978,24 +978,24 @@ contains
            c = filter_hydrologyc(fc)
     
     ! use analytical expression for aquifer specific yield
-             rous = watsat(c,nlevsoi) &
-                  * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,nlevsoi))**(-1./bsw(c,nlevsoi)))
+             rous = watsat(c,nlevbed) &
+                  * ( 1. - (1.+1.e3*zwt(c)/sucsat(c,nlevbed))**(-1./bsw(c,nlevbed)))
              rous=max(rous,0.02_r8)
     
              qflx_rsub_sat(c) = 0._r8
        !-  water table is below the soil column -----------------------------------
-             if(jwt(c) == nlevsoi) then
+             if(jwt(c) == nlevbed) then
               if (qflx_lat_aqu(c).gt.0._r8) then
                 wa(c)  = wa(c) + qflx_lat_aqu(c) * dtime
                !wt(c)  = wa(c)
                 zwt(c) = zwt(c) - (qflx_lat_aqu(c) * dtime)/1000._r8/rous
-                h2osoi_liq(c,nlevsoi) =  h2osoi_liq(c,nlevsoi)+max(0._r8,(wa(c)-5000._r8))
+                h2osoi_liq(c,nlevbed) =  h2osoi_liq(c,nlevbed)+max(0._r8,(wa(c)-5000._r8))
               wa(c)  = min(wa(c), 5000._r8)
             else
               wa(c)  = wa(c) + qflx_lat_aqu(c) * dtime
              !wt(c)  = wa(c)
               zwt(c) = zwt(c) - qflx_lat_aqu(c) *dtime/1000._r8/rous
-              h2osoi_liq(c,nlevsoi) =h2osoi_liq(c,nlevsoi)+max(0._r8,(wa(c)-5000._r8))
+              h2osoi_liq(c,nlevbed) =h2osoi_liq(c,nlevbed)+max(0._r8,(wa(c)-5000._r8))
              wa(c)  = min(wa(c), 5000._r8)
            endif
           else
@@ -1036,7 +1036,7 @@ contains
                     h2osfc(c) = 0._r8 
                   end if
                 end if
-                do j = jwt(c)+1, nlevsoi
+                do j = jwt(c)+1, nlevbed
    
    ! use analytical expression for specific yield
                    s_y = watsat(c,j) &
@@ -1059,8 +1059,8 @@ contains
              endif
    !-- recompute jwt for following calculations  ---------------------------------
    ! allow jwt to equal zero when zwt is in top layer
-             jwt(c) = nlevsoi
-             do j = 1,nlevsoi
+             jwt(c) = nlevbed
+             do j = 1,nlevbed
                 if(zwt(c) <= zi(c,j)) then
                    jwt(c) = j-1
                    exit
