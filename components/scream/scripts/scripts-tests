@@ -93,7 +93,7 @@ def test_cmake_cache_contents(test_obj, build_name, cache_var, expected_value):
     cache_file = TEST_DIR.parent.joinpath("ctest-build", build_name, "CMakeCache.txt")
     test_obj.assertTrue(cache_file.is_file(), "Missing cache file {}".format(cache_file)) # pylint: disable=no-member
 
-    grep_output = run_cmd_assert_result(test_obj, "grep {} CMakeCache.txt".format(cache_var), from_dir=cache_file.parent)
+    grep_output = run_cmd_assert_result(test_obj, "grep ^{} CMakeCache.txt".format(cache_var), from_dir=cache_file.parent)
     value = grep_output.split("=")[-1]
     test_obj.assertEqual(expected_value.upper(), value.upper(),
                          msg="For CMake cache variable {}, expected value '{}', got '{}'".format(cache_var, expected_value, value))
