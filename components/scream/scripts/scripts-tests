@@ -289,25 +289,12 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             TestTestAllScream.CMDS_TO_TEST,
             *internal_args)
 
-    def gen_fake_baselines (self, build_name):
-        build_dir = TEST_DIR.parent.joinpath("ctest-build", "baselines", build_name)
-        run_cmd_no_fail("mkdir -p {}/data".format(build_dir),
-                from_dir=TEST_DIR)
-        sha = get_current_commit()
-        run_cmd_no_fail("echo {} > baseline_git_sha".format(sha),
-                from_dir=build_dir,combine_output=True)
-    def clean_fake_baselines (self, build_name):
-        build_dir = TEST_DIR.parent.joinpath("ctest-build", "baselines", build_name)
-        run_cmd_no_fail ("rm -rf {}".format(build_dir),
-                from_dir=TEST_DIR)
-
     # Test that each build type generates the correct CMakeCache
     def test_dbg_details(self):
         """
         Test the 'dbg' test in test-all-scream. It should set certain CMake values
         """
-        self.gen_fake_baselines("full_debug")
-        options = "--baseline-dir ./ctest-build/baselines -k -t dbg --config-only"
+        options = "-b HEAD -k -t dbg --config-only"
         cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
                             self._machine, dry_run=False)
         run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
@@ -318,14 +305,12 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             test_cmake_cache_contents(self, "full_debug", "SCREAM_PACK_SIZE", "1")
         else:
             test_cmake_cache_contents(self, "full_debug", "SCREAM_PACK_SIZE", "16")
-        self.clean_fake_baselines("full_debug")
 
     def test_sp_details(self):
         """
         Test the 'sp' test in test-all-scream. It should set certain CMake values
         """
-        self.gen_fake_baselines("full_sp_debug")
-        options = "--baseline-dir ./ctest-build/baselines -k -t sp --config-only"
+        options = "-b HEAD -k -t sp --config-only"
         cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
                             self._machine, dry_run=False)
         run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
@@ -336,18 +321,15 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             test_cmake_cache_contents(self, "full_sp_debug", "SCREAM_PACK_SIZE", "1")
         else:
             test_cmake_cache_contents(self, "full_sp_debug", "SCREAM_PACK_SIZE", "16")
-        self.clean_fake_baselines("full_sp_debug")
-
 
     def test_fpe_details(self):
         """
         Test the 'fpe' test in test-all-scream. It should set certain CMake values
         """
-        self.gen_fake_baselines("debug_nopack_fpe")
         if is_cuda_machine(self._machine):
             self.skipTest("Skipping FPE check on cuda")
         else:
-            options = "--baseline-dir ./ctest-build/baselines -k -t fpe --config-only"
+            options = "-b HEAD -k -t fpe --config-only"
             cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
                                 self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
@@ -355,53 +337,46 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             test_cmake_cache_contents(self, "debug_nopack_fpe", "SCREAM_DOUBLE_PRECISION", "TRUE")
             test_cmake_cache_contents(self, "debug_nopack_fpe", "SCREAM_FPE", "TRUE")
             test_cmake_cache_contents(self, "debug_nopack_fpe", "SCREAM_PACK_SIZE", "1")
-        self.clean_fake_baselines("debug_nopack_fpe")
 
     def test_valg_details(self):
         """
         Test the 'valg' test in test-all-scream. It should set certain CMake values
         """
-        self.gen_fake_baselines("valgrind")
         if is_cuda_machine(self._machine):
             self.skipTest("Skipping Valg check on cuda")
         else:
-            options = "--baseline-dir ./ctest-build/baselines -k -t valg --config-only"
+            options = "-b HEAD -k -t valg --config-only"
             cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
                                 self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_cmake_cache_contents(self, "valgrind", "CMAKE_BUILD_TYPE", "Debug")
             test_cmake_cache_contents(self, "valgrind", "EKAT_ENABLE_VALGRIND", "TRUE")
             test_cmake_cache_contents(self, "valgrind", "SCREAM_TEST_PROFILE", "SHORT")
-        self.clean_fake_baselines("valgrind")
 
     def test_cmc_details(self):
         """
         Test the 'cmc' test in test-all-scream. It should set certain CMake values
         """
-        self.gen_fake_baselines("cuda_mem_check")
         if not is_cuda_machine(self._machine):
             self.skipTest("Skipping Cuda MemCheck check on CPU machines")
         else:
-            options = "--baseline-dir ./ctest-build/baselines -k -t cmc --config-only"
+            options = "-b HEAD -k -t cmc --config-only"
             cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
                                 self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_cmake_cache_contents(self, "cuda_mem_check", "CMAKE_BUILD_TYPE", "Debug")
             test_cmake_cache_contents(self, "cuda_mem_check", "EKAT_ENABLE_CUDA_MEMCHECK", "TRUE")
             test_cmake_cache_contents(self, "cuda_mem_check", "SCREAM_TEST_PROFILE", "SHORT")
-        self.clean_fake_baselines("cuda_mem_check")
 
     def test_opt_details(self):
         """
         Test the 'opt' test in test-all-scream. It should set certain CMake values
         """
-        self.gen_fake_baselines("release")
-        options = "--baseline-dir ./ctest-build/baselines -k -t opt --config-only"
+        options = "-b HEAD -k -t opt --config-only"
         cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
                             self._machine, dry_run=False)
         run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
         test_cmake_cache_contents(self, "release", "CMAKE_BUILD_TYPE", "Release")
-        self.clean_fake_baselines("release")
 
     # Test that a fail in config, build, or run phase of ctest is correctly captured by test-all-scream
     def test_config_fail_captured(self):
