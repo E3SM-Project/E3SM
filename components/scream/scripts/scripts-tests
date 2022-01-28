@@ -391,6 +391,18 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             test_cmake_cache_contents(self, "cuda_mem_check", "SCREAM_TEST_PROFILE", "SHORT")
         self.clean_fake_baselines("cuda_mem_check")
 
+    def test_opt_details(self):
+        """
+        Test the 'opt' test in test-all-scream. It should set certain CMake values
+        """
+        self.gen_fake_baselines("release")
+        options = "--baseline-dir ./ctest-build/baselines -k -t opt --config-only"
+        cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
+                            self._machine, dry_run=False)
+        run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+        test_cmake_cache_contents(self, "release", "CMAKE_BUILD_TYPE", "Release")
+        self.clean_fake_baselines("release")
+
     # Test that a fail in config, build, or run phase of ctest is correctly captured by test-all-scream
     def test_config_fail_captured(self):
         """
