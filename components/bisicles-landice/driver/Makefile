@@ -38,7 +38,8 @@ glad_main.o: \
         glimmer_paramets.o \
         parallel_mpi.o
 
-glad_type.o:
+glad_type.o: \
+        glimmer_global.o
 
 glc_broadcast.o: \
         glc_communicate.o \
@@ -105,7 +106,8 @@ glc_import_export.o: \
 glc_indexing_info.o: \
         glad_main.o
 
-glc_InitMod.o:
+glc_InitMod.o: \
+        glimmer_log.o
 
 glc_kinds_mod.o:
 
