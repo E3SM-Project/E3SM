@@ -1,6 +1,6 @@
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-! mpas_globalSum
+! mpas_global_sum_mod
 !
 !! \file
 !! \brief This file contains reproducible sum functions for common data
@@ -20,11 +20,11 @@
 !!        being the MPI communicator defined for the model or sub-model:
 !!
 !!        For sums of scalars across MPI tasks, use:
-!!           sum = globalSum(scalar, mpiComm)
+!!           sum = global_sum(scalar, mpiComm)
 !!        For sums of arrays over the full range of array indices, use:
-!!           sum = globalSum(array, mpiComm)
+!!           sum = global_sum(array, mpiComm)
 !!        For sums of arrays over a subset of array indices, use:
-!!           sum = globalSum(array, mpiComm, indexRange)
+!!           sum = global_sum(array, mpiComm, indexRange)
 !!            where indexRange is an integer array
 !!            of size (2*numDimensions) that contain the start, end
 !!            index of each dimension. For example, an MPAS
@@ -35,18 +35,18 @@
 !!        To compute a sum over products (eg for a dot product or for
 !!        using a multiplicative mask), the interface is the same with 
 !!        an extra argument for the second array/scalar, eg:
-!!           sum = globalSum(scalar1, scalar2, mpiComm)
-!!           sum = globalSum(array1, array2, mpiComm)
-!!           sum = globalSum(array1, array2, mpiComm, indexRange)
+!!           sum = global_sum(scalar1, scalar2, mpiComm)
+!!           sum = global_sum(array1, array2, mpiComm)
+!!           sum = global_sum(array1, array2, mpiComm, indexRange)
 !!
 !!        To compute sums of multiple fields, the interfaces are the
 !!        same as above with an added nFld in the name, so:
-!!           sum(1:nFlds) = globalSumNfld(scalar(:), mpiComm)
-!!           sum(1:nFlds) = globalSumNfld(array, mpiComm)
-!!           sum(1:nFlds) = globalSumNfld(array, mpiComm, indexRange)
-!!           sum(1:nFlds) = globalSumNfld(scalar1(:), scalar2(:), mpiComm)
-!!           sum(1:nFlds) = globalSumNfld(array1, array2, mpiComm)
-!!           sum(1:nFlds) = globalSumNfld(array1, array2, mpiComm, indexRange)
+!!           sum(1:nFlds) = global_sum_nfld(scalar(:), mpiComm)
+!!           sum(1:nFlds) = global_sum_nfld(array, mpiComm)
+!!           sum(1:nFlds) = global_sum_nfld(array, mpiComm, indexRange)
+!!           sum(1:nFlds) = global_sum_nfld(scalar1(:), scalar2(:), mpiComm)
+!!           sum(1:nFlds) = global_sum_nfld(array1, array2, mpiComm)
+!!           sum(1:nFlds) = global_sum_nfld(array1, array2, mpiComm, indexRange)
 !!        The multiple fields must be in an array with the field index
 !!        as the last (right-most) index in the array. If an indexRange
 !!        is provided, the same range is used for all fields. For the
@@ -63,7 +63,7 @@
 !
 !***********************************************************************
 
-module mpas_globalSumMod
+module mpas_global_sum_mod
 
    implicit none
    private
@@ -74,9 +74,9 @@ module mpas_globalSumMod
    ! Public functions
    !--------------------------------------------------------------------
 
-   public :: mpas_globalSum, mpas_globalSumNfld
+   public :: mpas_global_sum, mpas_global_sum_nfld
 
-   interface mpas_globalSum
+   interface mpas_global_sum
       module procedure globalSumR8d0
       module procedure globalSumR4d0
       module procedure globalSumI8d0
@@ -129,9 +129,9 @@ module mpas_globalSumMod
       module procedure globalSumProdR4d6
       module procedure globalSumProdI8d6
       module procedure globalSumProdI4d6
-   end interface mpas_globalSum
+   end interface mpas_global_sum
 
-   interface mpas_globalSumNfld
+   interface mpas_global_sum_nfld
       module procedure globalSumNfldR8d0
       module procedure globalSumNfldR4d0
       module procedure globalSumNfldI8d0
@@ -176,7 +176,7 @@ module mpas_globalSumMod
       module procedure globalSumProdNfldR4d5
       module procedure globalSumProdNfldI8d5
       module procedure globalSumProdNfldI4d5
-   end interface mpas_globalSumNfld
+   end interface mpas_global_sum_nfld
 
    !--------------------------------------------------------------------
    ! Private parameters
@@ -6486,6 +6486,6 @@ contains
 
 !***********************************************************************
 
-end module mpas_globalSumMod
+end module mpas_global_sum_mod
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
