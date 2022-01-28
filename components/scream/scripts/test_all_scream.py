@@ -687,7 +687,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test], for_ctest=True)
         ctest_config = self.generate_ctest_config(cmake_config, [], test)
 
-        if self._config_only):
+        if self._config_only:
             ctest_config += "-DCONFIG_ONLY=TRUE"
 
         if self._quick_rerun and (test_dir/"CMakeCache.txt").is_file():
