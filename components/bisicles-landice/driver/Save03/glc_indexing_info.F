@@ -41,16 +41,10 @@ contains
     ! that is used to generate GLC mapping files for the coupler.
     !
     ! !USES:
-
-    ! TJL TODO - This needs to be fixed
-    ! use glad_main, only : glad_params, glad_get_grid_size, glad_get_grid_indices
-    use glad_main, only : glad_params
-
+    use glad_main, only : glad_params, glad_get_grid_size, glad_get_grid_indices
     !
     ! !ARGUMENTS:
-
     type(glad_params), intent(in) :: params
-
     integer, intent(in) :: instance_index  ! index of current ice sheet index
     !
     ! !LOCAL VARIABLES:
@@ -58,15 +52,14 @@ contains
     character(len=*), parameter :: subname = 'glc_indexing_init'
     !-----------------------------------------------------------------------
 
-    ! TJL TODO - This needs to be fixed
-    ! call glad_get_grid_size(params, instance_index, &
-    !      ewn = nx, nsn = ny, npts = npts, &
-    !      ewn_tot = nx_tot, nsn_tot = ny_tot, npts_tot = npts_tot)
-    !
-    ! allocate(local_indices(nx, ny))
-    ! allocate(global_indices(nx, ny))
-    !
-    ! call glad_get_grid_indices(params, instance_index, global_indices, local_indices)
+    call glad_get_grid_size(params, instance_index, &
+         ewn = nx, nsn = ny, npts = npts, &
+         ewn_tot = nx_tot, nsn_tot = ny_tot, npts_tot = npts_tot)
+    
+    allocate(local_indices(nx, ny))
+    allocate(global_indices(nx, ny))
+    
+    call glad_get_grid_indices(params, instance_index, global_indices, local_indices)
     
   end subroutine glc_indexing_init
 

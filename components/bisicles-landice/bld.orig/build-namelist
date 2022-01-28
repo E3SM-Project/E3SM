@@ -131,7 +131,7 @@ if (@ARGV) {
 # 0 - only issue fatal error messages
 # 1 - only informs what files are created (currently not used)
 # 2 - verbose
-my $print = 0;
+my $print = 2;
 my $preview = 0;
 if ($opts{'verbose'}) { $print = 2; }
 if ($opts{'preview'}) { $preview = 1; }

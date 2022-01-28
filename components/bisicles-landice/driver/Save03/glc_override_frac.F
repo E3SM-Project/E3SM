@@ -1,6 +1,6 @@
 module glc_override_frac
 
-! #include "shr_assert.h"
+#include "shr_assert.h"
 
   !---------------------------------------------------------------------------
   ! !DESCRIPTION:
@@ -93,8 +93,6 @@ contains
     increase_frac = 0._r8
     rearrange_freq = 0
 
-    ! TJL TODO - This needs to be fixed
-#if 0
     ! Read namelist
     if (my_task == master_task) then
        open(nml_in, file=nml_filename, status='old', iostat=nml_error)
@@ -108,13 +106,11 @@ contains
        end do
        if (nml_error == 0) close(nml_in)
     end if
+
     call broadcast_scalar(nml_error, master_task)
     if (nml_error /= 0) then
        call exit_glc(sigAbort,'ERROR reading glc_override_nml')
     end if
-#else
-    nml_error = 0
-#endif
 
     ! Write namelist settings
     if (my_task == master_task) then

@@ -28,7 +28,8 @@
                                   ihour,  iminute, isecond, nsteps_total, &
                                   ymd2eday, eday2ymd, runtype
    use glc_constants, only: nml_in, stdout
-   use glc_io,        only: glc_io_read_restart_time
+   ! TJL TODO - This needs to be fixed
+   ! use glc_io,        only: glc_io_read_restart_time
    use glc_files,     only: nml_filename
    use glc_exit_mod
    use shr_kind_mod,  only: CL=>SHR_KIND_CL
@@ -74,7 +75,8 @@
 !  same as module
 
 ! !USES:
-   use glad_main
+   ! TJL TODO - This needs to be fixed
+   ! use glad_main
 
    use glc_fields, only: glc_allocate_fields, ice_sheet,   &
                          tsfc, qsmb,       &
@@ -87,7 +89,8 @@
    use glc_time_management, only: init_time1, init_time2, dtt, ihour
    use glimmer_log
    use glc_route_ice_runoff, only: set_routing
-   use glc_history, only : glc_history_init, glc_history_write
+   ! TJL TODO - This needs to be fixed
+   ! use glc_history, only : glc_history_init, glc_history_write
    use glc_indexing_info, only : glc_indexing_init, nx, ny
    use shr_file_mod, only : shr_file_getunit, shr_file_freeunit
    use esmf, only : ESMF_Clock
@@ -142,7 +145,8 @@
   
   namelist /cism_params/  paramfile, cism_debug, ice_flux_routing
 
-  write(*,*) 'TJL - Entering glc_initiailize...'
+  write(stdout,*) 'TJL - Entering glc_initiailize...'
+  call shr_sys_flush (stdout)
  
 !-----------------------------------------------------------------------
 !  initialize return flag
@@ -190,37 +194,50 @@
 
    paramfile  = 'unknown_paramfile'
 
-   write(*,*) 'TJL - glc_initialize: my_task: ',my_task,', master_task: ',master_task
+   write(stdout,*) 'TJL - glc_initialize: my_task: ',my_task,', master_task: ',master_task
+   call shr_sys_flush (stdout)
+#if 0
    if (my_task == master_task) then
-      write(*,*) 'TJL -   glc_initialize: nml_filename: ',nml_filename
+      write(stdout,*) 'TJL -   glc_initialize: nml_filename: ',nml_filename
+      call shr_sys_flush (stdout)
       open (nml_in, file=nml_filename, status='old',iostat=nml_error)
       if (nml_error /= 0) then
          nml_error = -1
       else
          nml_error =  1
       endif
-      write(*,*) 'TJL -   glc_initialize: nml_error (1): ',nml_error
+      write(stdout,*) 'TJL -   glc_initialize: nml_error (1): ',nml_error
+      call shr_sys_flush (stdout)
       do while (nml_error > 0)
          read(nml_in, nml=cism_params,iostat=nml_error)
       end do
-      write(*,*) 'TJL -   glc_initialize: nml_error (2): ',nml_error
+      write(stdout,*) 'TJL -   glc_initialize: nml_error (2): ',nml_error
+      call shr_sys_flush (stdout)
       if (nml_error == 0) close(nml_in)
    endif
-   write(*,*) 'TJL - glc_initialize: call broadcast_scalar (1)'
-   call broadcast_scalar(nml_error, master_task)
-   write(*,*) 'TJL - glc_initialize: nml_error (3): ',nml_error
+   write(stdout,*) 'TJL - glc_initialize: nml_error (3): ',nml_error
+   call shr_sys_flush (stdout)
    if (nml_error /= 0) then
       call exit_glc(sigAbort,'ERROR reading cism_params nml')
    endif
-
-   write(*,*) 'TJL - glc_initialize: call broadcast_scalar (2)'
+   write(stdout,*) 'TJL - glc_initialize: call broadcast_scalar (1)'
+   call shr_sys_flush (stdout)
+   call broadcast_scalar(nml_error, master_task)
+   write(stdout,*) 'TJL - glc_initialize: call broadcast_scalar (2)'
+   call shr_sys_flush (stdout)
    call broadcast_scalar(paramfile,         master_task)
-   write(*,*) 'TJL - glc_initialize: call broadcast_scalar (3)'
+   write(stdout,*) 'TJL - glc_initialize: call broadcast_scalar (3)'
+   call shr_sys_flush (stdout)
    call broadcast_scalar(cism_debug,        master_task)
-   write(*,*) 'TJL - glc_initialize: call broadcast_scalar (4)'
+   write(stdout,*) 'TJL - glc_initialize: call broadcast_scalar (4)'
+   call shr_sys_flush (stdout)
    call broadcast_scalar(ice_flux_routing,  master_task)
-   write(*,*) 'TJL - glc_initialize: call set_routing'
+   write(stdout,*) 'TJL - glc_initialize: call set_routing'
+   call shr_sys_flush (stdout)
    call set_routing(ice_flux_routing)
+#else
+   nml_error = 0
+#endif
 
    if (verbose .and. my_task==master_task) then
       write (stdout,*) 'paramfile =   ', paramfile
@@ -241,6 +258,8 @@
   ! Set glimmer_unit for diagnostic output from Glimmer. (Log file is already open)
 !  call open_log(unit=101)
 
+  write(stdout,*) 'TJL - glc_initialize: call set_glimmer_unit'
+  call shr_sys_flush (stdout)
   call set_glimmer_unit(stdout)
  
   ! Initialize the ice sheet model
@@ -248,12 +267,17 @@
   nhour_glad = 0     ! number of hours glad has run since start of complete simulation
                      ! must be set to correct value if reading from a restart file
  
+  write(stdout,*) 'TJL - glc_initialize: call init_glc_frac_overrides'
+  call shr_sys_flush (stdout)
   call init_glc_frac_overrides()
 
   ! if this is a continuation run, then set up to read restart file and get the restart time
+  write(stdout,*) 'TJL - glc_initialize: check "runtype" - ',runtype
+  call shr_sys_flush (stdout)
   if (runtype == 'continue') then
     cesm_restart = .true.
-    call glc_io_read_restart_time(nhour_glad, cesm_restart_file)
+    ! TJL TODO - This needs to be fixed
+    ! call glc_io_read_restart_time(nhour_glad, cesm_restart_file)
     call ymd2eday (iyear0, imonth0, iday0, elapsed_days0)
     elapsed_days = elapsed_days0 + nhour_glad/24     
     call eday2ymd(elapsed_days, iyear, imonth, iday)
@@ -267,51 +291,73 @@
        write(stdout,*) 'eday/y/m/d after restart:', elapsed_days, iyear, imonth, iday
        write(stdout,*) 'nsteps_total =', nsteps_total
        write(stdout,*) 'Initialize glad:'
+       call shr_sys_flush (stdout)
     endif
   endif
 
   if (verbose .and. my_task==master_task) then
      write(stdout,*) 'Initialize glad, nhour_glad =', nhour_glad
+     call shr_sys_flush (stdout)
   endif
 
+  write(stdout,*) 'TJL - glc_initialize: call shr_file_getUnit'
+  call shr_sys_flush (stdout)
   unit = shr_file_getUnit()
 
-  call glad_initialize(ice_sheet,                            &
-                       climate_tstep,                        &
-                       (/paramfile/),                        &
-                       daysinyear = days_in_year,            &
-                       start_time = nhour_glad,             &
-                       gcm_restart = cesm_restart,           &
-                       gcm_restart_file = cesm_restart_file, &
-                       gcm_debug = cism_debug,               &
-                       gcm_fileunit = unit)
+  write(stdout,*) 'TJL - glc_initialize: SKIPPING call glad_initialize'
+  call shr_sys_flush (stdout)
+  ! TJL TODO - This needs to be fixed
+  ! call glad_initialize(ice_sheet,                            &
+  !                      climate_tstep,                        &
+  !                      (/paramfile/),                        &
+  !                      daysinyear = days_in_year,            &
+  !                      start_time = nhour_glad,             &
+  !                      gcm_restart = cesm_restart,           &
+  !                      gcm_restart_file = cesm_restart_file, &
+  !                      gcm_debug = cism_debug,               &
+  !                      gcm_fileunit = unit)
 
   ! TODO(wjs, 2015-03-24) We will need a loop over instances, either here or around the
   ! call to glc_initialize
 
-  call glad_initialize_instance(ice_sheet, instance_index = 1)
+  write(stdout,*) 'TJL - glc_initialize: SKIPPING call glad_initialize_instance'
+  call shr_sys_flush (stdout)
+  ! TJL TODO - This needs to be fixed
+  ! call glad_initialize_instance(ice_sheet, instance_index = 1)
 
+  write(stdout,*) 'TJL - glc_initialize: call glc_indexing_init'
+  call shr_sys_flush (stdout)
   call glc_indexing_init(ice_sheet, instance_index = 1)
   
+  write(stdout,*) 'TJL - glc_initialize: call glc_allocate_fields',nx,ny
+  call shr_sys_flush (stdout)
   call glc_allocate_fields(nx, ny)
 
   tsfc(:,:) = 0._r8
   qsmb(:,:) = 0._r8
   
-  call glad_get_initial_outputs(ice_sheet, instance_index = 1, &
-                                ice_covered = ice_covered, &
-                                topo = topo, &
-                                rofi = rofi, &
-                                rofl = rofl, &
-                                hflx = hflx, &
-                                ice_sheet_grid_mask = ice_sheet_grid_mask, &
-                                icemask_coupled_fluxes = icemask_coupled_fluxes)
+  write(stdout,*) 'TJL - glc_initialize: SKIPPING call glad_get_initial_outputs'
+  call shr_sys_flush (stdout)
+  ! TJL TODO - This needs to be fixed
+  ! call glad_get_initial_outputs(ice_sheet, instance_index = 1, &
+  !                               ice_covered = ice_covered, &
+  !                               topo = topo, &
+  !                               rofi = rofi, &
+  !                               rofl = rofl, &
+  !                               hflx = hflx, &
+  !                               ice_sheet_grid_mask = ice_sheet_grid_mask, &
+  !                               icemask_coupled_fluxes = icemask_coupled_fluxes)
   
-  call glad_initialization_wrapup(ice_sheet)
+  write(stdout,*) 'TJL - glc_initialize: SKIPPING call glad_initialization_wrapup'
+  call shr_sys_flush (stdout)
+  ! TJL TODO - This needs to be fixed
+  ! call glad_initialization_wrapup(ice_sheet)
 
 !TODO - Implement PDD option
  
-   call shr_file_freeunit(unit)
+  write(stdout,*) 'TJL - glc_initialize: call shr_file_freeunit'
+  call shr_sys_flush (stdout)
+  call shr_file_freeunit(unit)
 
 ! Do the following:
 ! For each instance, convert ice_sheet%instances(i)%glide_time to hours and compare to nhour_glad.
@@ -326,6 +372,8 @@
   ! Set the message level (1 is the default - only fatal errors)
   ! N.B. Must do this after initialization
  
+  write(stdout,*) 'TJL - glc_initialize: call glimmer_set_msg_level'
+  call shr_sys_flush (stdout)
   call glimmer_set_msg_level(6)
  
 !-----------------------------------------------------------------------
@@ -335,7 +383,9 @@
 !
 !-----------------------------------------------------------------------
  
-   call init_time2
+  write(stdout,*) 'TJL - glc_initialize: call init_time2'
+  call shr_sys_flush (stdout)
+  call init_time2
 
 !-----------------------------------------------------------------------
 !
@@ -343,7 +393,10 @@
 !
 !-----------------------------------------------------------------------
 
-   call glc_history_init()
+  write(stdout,*) 'TJL - glc_initialize: SKIPPING call glc_history_init'
+  call shr_sys_flush (stdout)
+  ! TJL TODO - This needs to be fixed
+  ! call glc_history_init()
 
 !-----------------------------------------------------------------------
 !
@@ -351,10 +404,13 @@
 !
 !-----------------------------------------------------------------------
 
-   if (.not. cesm_restart) then
-      ! TODO loop over instances
-      call glc_history_write(ice_sheet%instances(1), EClock, force_write=.true.)
-   end if
+  write(stdout,*) 'TJL - glc_initialize: SKIPPING call glc_history_write'
+  call shr_sys_flush (stdout)
+  ! TJL TODO - This needs to be fixed
+  ! if (.not. cesm_restart) then
+  !    ! TODO loop over instances
+  !    call glc_history_write(ice_sheet%instances(1), EClock, force_write=.true.)
+  ! end if
    
 !-----------------------------------------------------------------------
 !
@@ -373,7 +429,8 @@
 !-----------------------------------------------------------------------
 !EOC
 
-   write(*,*) 'TJL - Exiting glc_initiailize...'
+   write(stdout,*) 'TJL - Exiting glc_initiailize...'
+   call shr_sys_flush (stdout)
  end subroutine glc_initialize
 
 !***********************************************************************

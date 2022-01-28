@@ -22,8 +22,9 @@
    use glc_kinds_mod
    use glc_ErrorMod
    use glc_communicate, only: exit_message_environment
-   use glc_fields, only: ice_sheet
-   use glad_main, only: end_glad
+   ! TJL TODO - This needs to be fixed
+   ! use glc_fields, only: ice_sheet
+   ! use glad_main, only: end_glad
    use glc_constants, only: stdout
 
    implicit none
@@ -84,7 +85,8 @@
 !
 !-----------------------------------------------------------------------
 
-   call end_glad(ice_sheet, close_logfile=.false.)
+   ! TJL TODO - This needs to be fixed
+   ! call end_glad(ice_sheet, close_logfile=.false.)
 
 !-----------------------------------------------------------------------
 !

@@ -65,7 +65,8 @@
    use glad_main
    use glimmer_log
    use glc_fields 
-   use glc_history, only : glc_history_write
+   ! TJL TODO - This needs to be fixed
+   ! use glc_history, only : glc_history_write
    use esmf, only : ESMF_Clock
 
 ! !ARGUMENTS:
@@ -135,14 +136,15 @@
          ! TODO(wjs, 2015-03-23) We will need a loop over instances, either here or
          ! around the call to glc_run
          
-         call glad_gcm (params = ice_sheet, instance_index = 1,        &
-                        time = nint(thour),                            &
-                        qsmb = qsmb, tsfc = tsfc,                      &
-                        ice_covered = ice_covered, topo = topo,        &
-                        rofi = rofi, rofl = rofl, hflx = hflx,         &
-                        ice_sheet_grid_mask=ice_sheet_grid_mask,       &
-                        icemask_coupled_fluxes=icemask_coupled_fluxes, &
-                        ice_tstep = ice_tstep)
+         ! TJL TODO - This needs to be fixed
+         ! call glad_gcm (params = ice_sheet, instance_index = 1,        &
+         !                time = nint(thour),                            &
+         !                qsmb = qsmb, tsfc = tsfc,                      &
+         !                ice_covered = ice_covered, topo = topo,        &
+         !                rofi = rofi, rofl = rofl, hflx = hflx,         &
+         !                ice_sheet_grid_mask=ice_sheet_grid_mask,       &
+         !                icemask_coupled_fluxes=icemask_coupled_fluxes, &
+         !                ice_tstep = ice_tstep)
 
      else    ! use PDD scheme
 
@@ -168,8 +170,9 @@
    ! Write a history file if it's time to do so
    !-----------------------------------------------------------------------
 
+   ! TJL TODO - This needs to be fixed
    ! TODO loop over instances
-   call glc_history_write(ice_sheet%instances(1), EClock)
+   ! call glc_history_write(ice_sheet%instances(1), EClock)
    
 !-----------------------------------------------------------------------
 !EOC

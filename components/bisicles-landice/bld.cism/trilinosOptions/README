@@ -1,0 +1,6 @@
+This directory contains resolution-dependent trilinosOptions xml
+files; one of these is copied to the CESM run directory by
+cism.buildnml, depending on the value of GLC_GRID. However, if
+there is a trilinosOptions.xml file in SourceMods/src.cism, that file
+is used instead.
+

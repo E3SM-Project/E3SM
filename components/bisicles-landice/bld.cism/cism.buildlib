@@ -1,0 +1,128 @@
+#! /usr/bin/env perl
+use strict;
+
+if ($#ARGV == -1) {
+    die " ERROR cism.buildexe: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
+
+my $CASEBUILD = `./xmlquery CASEBUILD -value`;
+my $CCSMROOT  = `./xmlquery CCSMROOT  -value`;
+my $CASETOOLS = `./xmlquery CASETOOLS -value`;
+my $OBJROOT   = `./xmlquery OBJROOT   -value`;
+my $EXEROOT   = `./xmlquery EXEROOT   -value`;
+my $LIBROOT   = `./xmlquery LIBROOT   -value`;
+my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
+my $GMAKE     = `./xmlquery GMAKE     -value`;
+my $CISM_USE_TRILINOS = `./xmlquery  CISM_USE_TRILINOS	-value`;
+
+# directory in which glc is built
+my $glc_dir = "$EXEROOT/glc";
+
+# directory in which glc obj files are built
+my $glc_obj_dir = "$OBJROOT/glc/obj";
+
+# directory in which glimmer-cism library is created
+my $cism_libdir = "$glc_dir/lib"; 
+
+# directory in which we can find source mods
+my $sourcemod_dir = "$CASEROOT/SourceMods/src.cism";
+
+chdir "$glc_obj_dir";
+
+# ----------------------------------------------------------------------
+# Create Filepath
+# ----------------------------------------------------------------------
+# The following just gives the filepath for the cesm-specific code:
+# the glimmer-cism stuff is picked up by the cmake-based build
+
+open(file,">Filepath") or die "Could not open file Filepath to write";
+print file "$sourcemod_dir \n";
+print file "$CCSMROOT/components/cism/drivers/cpl \n";
+print file "$CCSMROOT/components/cism/source_glc \n";
+print file "$CCSMROOT/components/cism/mpi \n";
+close(file);
+
+# ----------------------------------------------------------------------
+# Set options to cmake
+#
+# Note: Makefile variables should be given as: \\\$(VAR)
+# Perl will expand this to \$(VAR)
+# The extra preceding backslash is needed so that when cmake_opts is put on the command line,
+# the shell doesn't try to interpret the '$'.
+# ----------------------------------------------------------------------
+# Note that some other generic CMAKE options are set in the Makefile
+my $cmake_opts;
+$cmake_opts = "";
+$cmake_opts = "$cmake_opts -D CISM_COUPLED=ON";
+$cmake_opts = "$cmake_opts -D CISM_USE_MPI_WITH_SLAP=ON";
+
+# CISM_USE_GPTL_INSTRUMENTATION is unnecessary (and possibly harmful)
+# when built inside CESM; for CESM we instead use -DCCSMCOUPLED, which
+# also gives us timing instrumentation
+$cmake_opts = "$cmake_opts -D CISM_USE_GPTL_INSTRUMENTATION=OFF";
+$cmake_opts = "$cmake_opts -D CISM_BINARY_DIR=$glc_dir";
+$cmake_opts = "$cmake_opts -D CMAKE_Fortran_MODULE_DIRECTORY=$glc_obj_dir";
+$cmake_opts = "$cmake_opts -D CISM_NETCDF_DIR=\\\$(NETCDF_PATH)";
+$cmake_opts = "$cmake_opts -D CISM_MPI_INC_DIR=\\\$(INC_MPI)";
+$cmake_opts = "$cmake_opts -D CISM_SOURCEMOD_DIR=$sourcemod_dir/glimmer-cism";
+
+# Turn on MPI_MODE always. This works within CESM because we always
+# have an mpi library (possibly mpi-serial). And always turning on
+# MPI_MODE means that we can defer more decisions to
+# runtime. (Although this comes with a small performance cost when we
+# don't actually need mpi.)
+$cmake_opts = "$cmake_opts -D CISM_MPI_MODE=ON";
+$cmake_opts = "$cmake_opts -D CISM_SERIAL_MODE=OFF";
+if ("$CISM_USE_TRILINOS" eq 'TRUE') {
+    $cmake_opts = "$cmake_opts -D CISM_USE_TRILINOS=ON";
+    $cmake_opts = "$cmake_opts -D CISM_TRILINOS_DIR=\\\$(TRILINOS_PATH)";
+} else {
+    $cmake_opts = "$cmake_opts -D CISM_USE_TRILINOS=OFF";
+}
+
+# ----------------------------------------------------------------------
+# Set mkDepends to append libglimmercismfortran.a to the end of each
+# .o dependency line.
+#
+# Rationale: Some of the source files in the cesm-specific code depend
+# on files included in this library. Ideally, we would be able to
+# determine the actual dependencies, but that's not easy with the
+# current tools and the fact that we build the glimmer-cism code using
+# a different build system than the cesm-specific code. So for now, we
+# just rebuild all the cesm-specific code whenever anything in the
+# libglimmercismfortran.a library changes.
+#
+# WJS (3-6-13): I thought we would just need to include these options
+# in the call to make the complib target. But for some reason that I
+# can't determine, mkDepends is called when we make $glc_dir/Makefile,
+# so we also need to include these options there.
+# ----------------------------------------------------------------------
+my $mkdepends_opts = "-d $cism_libdir/libglimmercismfortran.a";
+
+# ----------------------------------------------------------------------
+# create the glimmer-cism makefile by running cmake (done via a rule
+# in the system-level makefile)
+# ----------------------------------------------------------------------
+my $sysmod = "$GMAKE $glc_dir/Makefile MODEL=cism USER_CMAKE_OPTS=\"$cmake_opts\" USER_MKDEPENDS_OPTS=\"$mkdepends_opts\" GLC_DIR=$glc_dir -f $CASETOOLS/Makefile";
+system($sysmod) == 0 or die "ERROR cism.buildexe: $sysmod failed: $?\n";
+
+# ----------------------------------------------------------------------
+# create the glimmer-cism library (or libraries), using the makefile
+# created by cmake
+# ----------------------------------------------------------------------
+chdir "$glc_dir";
+
+my $sysmod = "$GMAKE -j $GMAKE_J";
+system($sysmod) == 0 or die "ERROR cism.buildexe: $sysmod failed: $?\n";
+
+chdir "$glc_obj_dir";
+
+# ----------------------------------------------------------------------
+# create the cesm-specific portion of the glc library using cesm's makefile
+# ----------------------------------------------------------------------
+my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=cism COMPLIB=$LIBROOT/libglc.a USER_MKDEPENDS_OPTS=\"$mkdepends_opts\" GLC_DIR=$glc_dir -f $CASETOOLS/Makefile";
+system($sysmod) == 0 or die "ERROR cism.buildexe: $sysmod failed: $?\n";
+
+exit 0

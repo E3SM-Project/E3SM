@@ -418,7 +418,7 @@
 
    runid            = 'unknown_runid'
    allow_leapyear   = .false.
-   stop_option      = 'unknown_stop_option'
+   stop_option      = 'never'
    stop_count       = -1
    dt_option        = 'steps_per_day'
    dt_count         =  1
@@ -441,6 +441,9 @@
 !
 !-----------------------------------------------------------------------
 
+
+   ! TJL TODO - This needs to be fixed
+#if 0
    if (my_task == master_task) then
       open (nml_in, file=nml_filename, status='old',iostat=nml_error)
       if (nml_error /= 0) then
@@ -459,6 +462,9 @@
    if (nml_error /= 0) then
       call exit_glc(sigAbort,'ERROR reading time_manager_nml')
    endif
+#else
+   nml_error = 0
+#endif
 
    if (my_task == master_task) then
       write(stdout,blank_fmt)

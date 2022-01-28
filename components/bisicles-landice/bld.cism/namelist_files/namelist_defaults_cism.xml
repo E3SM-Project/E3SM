@@ -1,0 +1,280 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_defaults.xsl"?>
+
+<namelist_defaults>
+
+<!--
+Values to use by default for creation of CISM  model namelists.
+The element names are the same as the corresponding namelist
+variables.  Values that depend on the model configuration use
+attributes to express the dependency.
+-->
+
+<!-- =============================================================  -->
+<!-- group: derived                                                 -->
+<!-- (does not appear in namelist file cism_in; handled uniquely)   -->
+<!-- =============================================================  -->
+
+<cisminputfile glc_grid="gland20" cism_phys="cism1">glc/cism/gland20.input_c150415.nc</cisminputfile>
+<cisminputfile glc_grid="gland10" cism_phys="cism1">glc/cism/gland10.input_c150415.nc</cisminputfile>
+<cisminputfile glc_grid="gland5" cism_phys="cism1">glc/cism/gland5.input_c150415.nc</cisminputfile>
+<cisminputfile glc_grid="gland5UM" cism_phys="cism1">glc/cism/IceSheetData_UMontana/PresentDayGreenland/Greenland_5km_v1.1_SacksRev_c150415.nc</cisminputfile>
+
+<!-- the following is just for the sake of software testing, and should not be used for science -->
+<cisminputfile glc_grid="gland20" cism_phys="cism2">glc/cism/gland20.input_c150415.nc</cisminputfile>
+
+<!-- this is the resolution that should be used for science applications with cism2 -->
+<cisminputfile glc_grid="gland4" cism_phys="cism2">glc/cism/Greenland/glissade/init/greenland_4km.glissade.10kyr.beta6.SSacab_c150415a.nc</cisminputfile>
+
+<!-- =============================================================  -->
+<!-- group: cism_params                                             -->
+<!-- =============================================================  -->
+
+<cism_debug>.false.</cism_debug>
+
+<ice_flux_routing>ocn</ice_flux_routing>
+
+<!-- =============================================================  -->
+<!-- group: cism_history                                            -->
+<!-- =============================================================  -->
+
+<cesm_history_vars cism_phys="cism1">'acab artm thk usurf topg uvel vvel uflx vflx temp bmlt bwat'</cesm_history_vars>
+<cesm_history_vars cism_phys="cism2">'acab artm thk usurf topg uvel vvel temp bmlt bwat beta_internal'</cesm_history_vars>
+
+<history_option>nyears</history_option>
+
+<history_frequency>1</history_frequency>
+
+<!-- =============================================================  -->
+<!-- group: time_manager_nml                                        -->
+<!-- =============================================================  -->
+
+<date_separator>-</date_separator>
+
+<stop_option>never</stop_option>
+
+<allow_leapyear>.false.</allow_leapyear>
+
+<!-- =============================================================  -->
+<!-- group: glc_override_nml                                        -->
+<!-- =============================================================  -->
+
+<enable_frac_overrides>.false.</enable_frac_overrides>
+
+<override_delay>0</override_delay>
+
+<decrease_frac>0.0</decrease_frac>
+
+<increase_frac>0.0</increase_frac>
+
+<rearrange_freq>0</rearrange_freq>
+
+<!-- =============================================================  -->
+<!-- group: cism.config: grid                                       -->
+<!-- =============================================================  -->
+
+<ewn glc_grid="gland10" >151</ewn>
+<ewn glc_grid="gland20" >76</ewn>
+<ewn glc_grid="gland5"  >301</ewn>
+<ewn glc_grid="gland5UM">301</ewn>
+<ewn glc_grid="gland4"  >376</ewn>
+
+<nsn glc_grid="gland10" >281</nsn>
+<nsn glc_grid="gland20" >141</nsn>
+<nsn glc_grid="gland5"  >561</nsn>
+<nsn glc_grid="gland5UM">561</nsn>
+<nsn glc_grid="gland4"  >701</nsn>
+
+<upn>11</upn>
+
+<dew glc_grid="gland10" >10000.</dew>
+<dew glc_grid="gland20" >20000.</dew>
+<dew glc_grid="gland5"  >5000.</dew>
+<dew glc_grid="gland5UM">5000.</dew>
+<dew glc_grid="gland4"  >4000.</dew>
+
+<dns glc_grid="gland10" >10000.</dns>
+<dns glc_grid="gland20" >20000.</dns>
+<dns glc_grid="gland5"  >5000.</dns>
+<dns glc_grid="gland5UM">5000.</dns>
+<dns glc_grid="gland4"  >4000.</dns>
+
+<!-- =============================================================  -->
+<!-- group: cism.config: sigma                                      -->
+<!-- =============================================================  -->
+
+<!-- This group is only relevant if sigma=2 -->
+
+<!-- These levels focus resolution at the bottom -->
+<sigma_levels>0.00 0.15 0.30 0.45 0.60 0.75 0.83 0.90 0.95 0.98 1.00</sigma_levels>
+
+<!-- =============================================================  -->
+<!-- group: cism.config: climate                                    -->
+<!-- =============================================================  -->
+
+<evolve_ice>1</evolve_ice>
+
+<test_coupling>.false.</test_coupling>
+
+<zero_gcm_fluxes glc_two_way_coupling="TRUE">0</zero_gcm_fluxes>
+<zero_gcm_fluxes glc_two_way_coupling="FALSE">1</zero_gcm_fluxes>
+
+<!-- =============================================================  -->
+<!-- group: cism.config: projection                                 -->
+<!-- =============================================================  -->
+
+<type>"STERE"</type>
+
+<centre_latitude>90.0</centre_latitude>
+
+<centre_longitude>321.0</centre_longitude>
+
+<false_easting>800000.0</false_easting>
+
+<false_northing>3400000.0</false_northing>
+
+<standard_parallel>71.0</standard_parallel>
+
+<!-- =============================================================  -->
+<!-- group: cism.config: options                                    -->
+<!-- =============================================================  -->
+
+<dycore cism_phys="cism1">0</dycore>
+<dycore cism_phys="cism2">2</dycore>
+
+<temperature>1</temperature>
+
+<temp_init>2</temp_init>
+
+<flow_law>2</flow_law>
+
+<basal_water>0</basal_water>
+
+<basal_mass_balance>1</basal_mass_balance>
+
+<gthf>0</gthf>
+
+<isostasy>0</isostasy>
+
+<marine_margin>1</marine_margin>
+
+<calving_domain>1</calving_domain>
+
+<slip_coeff>0</slip_coeff>
+
+<evolution cism_phys="cism1">0</evolution>
+<evolution cism_phys="cism2">3</evolution>
+
+<vertical_integration>0</vertical_integration>
+
+<sigma>0</sigma>
+
+<!-- =============================================================  -->
+<!-- group: cism.config: time                                       -->
+<!-- =============================================================  -->
+
+<dt glc_grid="gland10"  cism_phys="cism1">0.1</dt>
+<dt glc_grid="gland20"  cism_phys="cism1">0.1</dt>
+<dt glc_grid="gland5"   cism_phys="cism1">0.05</dt>
+<dt glc_grid="gland5UM" cism_phys="cism1">0.05</dt>
+
+<!-- A dt of 1 seems sufficient for cism2 gland20. However, use 0.5 because (a)
+     this is less likely to break due to instabilities, and (b) it exercises the
+     code in a more typical configuration (i.e., with a sub-annual time step) -->
+<dt glc_grid="gland20"  cism_phys="cism2">0.5</dt>
+
+<dt glc_grid="gland4"   cism_phys="cism2">0.05</dt>
+
+<ntem>1</ntem>
+
+<!-- To get diagnostic once per year, set this to 1/dt -->
+<dt_diag>1.</dt_diag>
+
+<!-- 5-km idiag & jdiag chosen by Jeremy Fyke, as a point prone to CFL
+     instability (in trunk of Jakobshavn); 10-km, 20-km and 4-km points
+     chosen to be roughly the same point in space -->
+<idiag glc_grid="gland10" >38</idiag>
+<idiag glc_grid="gland20" >19</idiag>
+<idiag glc_grid="gland5"  >76</idiag>
+<idiag glc_grid="gland5UM">76</idiag>
+<idiag glc_grid="gland4"  >95</idiag>
+
+<jdiag glc_grid="gland10" >114</jdiag>
+<jdiag glc_grid="gland20" >57</jdiag>
+<jdiag glc_grid="gland5"  >228</jdiag>
+<jdiag glc_grid="gland5UM">228</jdiag>
+<jdiag glc_grid="gland4"  >285</jdiag>
+
+<!-- =============================================================  -->
+<!-- group: cism.config: parameters                                 -->
+<!-- =============================================================  -->
+
+<log_level>6</log_level>
+
+<ice_limit cism_phys="cism1">100.</ice_limit>
+<ice_limit cism_phys="cism2">1.</ice_limit>
+
+<max_slope>0.1</max_slope>
+
+<marine_limit>-200.</marine_limit>
+
+<geothermal>-5.e-2</geothermal>
+
+<flow_factor cism_phys="cism1">3.</flow_factor>
+<flow_factor cism_phys="cism2">1.</flow_factor>
+
+<hydro_time>1000.</hydro_time>
+
+<basal_tract_const>1.e-4</basal_tract_const>
+
+<!-- =============================================================  -->
+<!-- group: cism.config: ho_options                                 -->
+<!-- =============================================================  -->
+
+<!-- This group is only relevant if dycore is not 0 -->
+
+<!-- which_ho_babc should be 5 when beta is provided in the cism input file, but
+     in general we'll want the default to be 4, according to Steve Price. In
+     order to ensure that we pick up a beta value if one is available (e.g., if
+     someone adds a new resolution and forgets to modify things in this
+     section), we're setting the overall default to 5, and then overriding that
+     explicitly for input files that do not have a beta value. -->
+<which_ho_babc>5</which_ho_babc>
+<which_ho_babc glc_grid="gland20">4</which_ho_babc>
+<which_ho_babc glc_grid="gland10">4</which_ho_babc>
+<which_ho_babc glc_grid="gland5">4</which_ho_babc>
+<which_ho_babc glc_grid="gland5UM">4</which_ho_babc>
+
+<which_ho_efvs>2</which_ho_efvs>
+
+<which_ho_resid>3</which_ho_resid>
+
+<which_ho_disp>1</which_ho_disp>
+
+<which_ho_sparse dycore="2">3</which_ho_sparse>
+<which_ho_sparse dycore="1" cism_use_trilinos="FALSE">1</which_ho_sparse>
+<which_ho_sparse dycore="1" cism_use_trilinos="TRUE" >4</which_ho_sparse>
+
+<which_ho_nonlinear dycore="1">1</which_ho_nonlinear>
+<which_ho_nonlinear dycore="2">0</which_ho_nonlinear>
+
+<which_ho_gradient>0</which_ho_gradient>
+
+<which_ho_gradient_margin>1</which_ho_gradient_margin>
+
+<which_ho_approx>4</which_ho_approx>
+
+<which_ho_precond>1</which_ho_precond>
+
+<which_ho_assemble_beta>0</which_ho_assemble_beta>
+
+<which_ho_assemble_bfric>1</which_ho_assemble_bfric>
+
+<which_ho_ground>0</which_ho_ground>
+
+<which_ho_flotation_function>1</which_ho_flotation_function>
+
+<glissade_maxiter>50</glissade_maxiter>
+
+</namelist_defaults>

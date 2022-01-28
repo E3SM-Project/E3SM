@@ -22,7 +22,7 @@ module glc_comp_mct
   use glc_InitMod,         only: glc_initialize
   use glc_RunMod,          only: glc_run
   use glc_FinalMod,        only: glc_final
-  ! use glc_io,              only: glc_io_write_restart
+  use glc_io,              only: glc_io_write_restart
   use glc_communicate,     only: init_communicate, my_task, master_task
   use glc_time_management, only: iyear,imonth,iday,ihour,iminute,isecond,runtype
   use glc_fields,          only: ice_sheet
@@ -51,7 +51,6 @@ module glc_comp_mct
   integer(IN)           :: my_task_local        ! my task in mpi communicator mpicom 
   integer(IN),parameter :: master_task_local=0  ! task number of master task
 
-  real(R8) :: cur_time
 !===============================================================================
 CONTAINS
 !===============================================================================
@@ -93,51 +92,38 @@ CONTAINS
     character(*), parameter :: F02   = "('(glc_init_mct) ',a,4es13.6)"
     character(*), parameter :: F91   = "('(glc_init_mct) ',73('-'))"
     character(*), parameter :: subName = "(glc_init_mct) "
-
-    character(len=32) :: c_inputFilename
-
-    write(stdout,*) 'TJL - glc_init_mct: begin...'
-
     !-------------------------------------------------------------------------------
 
     !----------------------------------------------------------------------------
     ! Determine attribute vector indices
     !----------------------------------------------------------------------------
     
-    write(stdout,*) 'TJL -   glc_init_mct: call glc_cpl_indices_set'
     call glc_cpl_indices_set()
 
     !----------------------------------------------------------------------------
     ! Set cdata pointers
     !----------------------------------------------------------------------------
 
-    write(stdout,*) 'TJL -   glc_init_mct: call seq_cdata_getdata'
     call seq_cdata_getdata(cdata, &
          id=compid, mpicom=mpicom, gsMap=gsMap, dom=dom, infodata=infodata)
 
-    write(stdout,*) 'TJL -   glc_init_mct: call mpi_comm_rank'
     call mpi_comm_rank(mpicom, my_task_local, ierr)
 
     !---------------------------------------------------------------------------
     ! set variables that depend on ensemble index
     !---------------------------------------------------------------------------
 
-    write(stdout,*) 'TJL -   glc_init_mct: call set_inst_vars'
     call set_inst_vars(COMPID)
-    write(stdout,*) 'TJL -   glc_init_mct: call get_inst_name'
     call get_inst_name(myModelName)
-    write(stdout,*) 'TJL -   glc_init_mct: call set_filenames'
     call set_filenames()
 
     !---------------------------------------------------------------------------
     ! use infodata to determine type of run
     !---------------------------------------------------------------------------
 
-    write(stdout,*) 'TJL -   glc_init_mct: call seq_infodata_GetData'
     call seq_infodata_GetData( infodata, &
          start_type=starttype)
 
-    write(stdout,*) 'TJL -   glc_init_mct: Check starttype'
     if (     trim(starttype) == trim(seq_infodata_start_type_start)) then
        runtype = "initial"
     else if (trim(starttype) == trim(seq_infodata_start_type_cont) ) then
@@ -153,7 +139,6 @@ CONTAINS
     ! Reset shr logging to my log file
     !----------------------------------------------------------------------------
     !--- open log file ---
-    write(stdout,*) 'TJL -   glc_init_mct: Set up I/O units'
     if (my_task_local == master_task_local) then
        stdout = shr_file_getUnit()
        call shr_file_setIO(ionml_filename,stdout)
@@ -163,11 +148,8 @@ CONTAINS
     stderr = stdout
     nml_in = shr_file_getUnit()
 
-    write(stdout,*) 'TJL -   glc_init_mct: call shr_file_getLogUnit (1)'
     call shr_file_getLogUnit (shrlogunit)
-    write(stdout,*) 'TJL -   glc_init_mct: call shr_file_getLogLevel (1)'
     call shr_file_getLogLevel(shrloglev)
-    write(stdout,*) 'TJL -   glc_init_mct: call shr_file_getLogUnit (1)'
     call shr_file_setLogUnit (stdout)
 
     errorCode = glc_Success
@@ -177,9 +159,7 @@ CONTAINS
        call write_inst_vars
        call shr_sys_flush(stdout)
     endif
-    write(stdout,*) 'TJL -   glc_init_mct: call init_communicate'
     call init_communicate(mpicom)
-    write(stdout,*) 'TJL -   glc_init_mct: call glc_initialize'
     call glc_initialize(EClock, errorCode)
     if (verbose .and. my_task == master_task) then
        write(stdout,F01) ' GLC Initial Date ',iyear,imonth,iday,ihour,iminute,isecond
@@ -187,53 +167,34 @@ CONTAINS
        call shr_sys_flush(stdout)
     endif
 
-    ! TJL - Adding BISICLES init call (start)
-    ! call MPI_comm_rank(mpicom_g,iam,ierr)
-
-    c_inputFilename = "inputs.bisiclesTest"
-
-    cur_time = 0.0
-    write(stdout,*) 'TJL -   glc_init_mct: call bike_driver_init!!!'
-    call bike_driver_init(mpicom, cur_time, c_inputFilename)
-    ! TJL - Adding BISICLES init call (end)
-
     ! Initialize MCT gsmap
 
-    write(stdout,*) 'TJL -   glc_init_mct: call glc_SetgsMap_mct'
     call glc_SetgsMap_mct(mpicom, COMPID, gsMap)
 
     ! Initialize MCT domain
 
-    write(stdout,*) 'TJL -   glc_init_mct: call glc_domain_mct'
     call glc_domain_mct(gsMap,dom)
 
     ! Set flags in infodata
 
-    ! TJL TODO - This needs to be fixed
-    write(stdout,*) 'TJL -   glc_init_mct: SKIPPING call seq_infodata_PutData'
-    ! call seq_infodata_PutData(infodata, glc_present=.true., &
-    !    glclnd_present = .true., &
-    !    glcocn_present=has_ocn_coupling(), &
-    !    glcice_present=has_ice_coupling(), &
-    !    glc_prognostic = .true., glc_nx=nx_tot, glc_ny=ny_tot)
+    call seq_infodata_PutData(infodata, glc_present=.true., &
+       glclnd_present = .true., &
+       glcocn_present=has_ocn_coupling(), &
+       glcice_present=has_ice_coupling(), &
+       glc_prognostic = .true., glc_nx=nx_tot, glc_ny=ny_tot)
 
     ! Initialize MCT attribute vectors
 
-    write(stdout,*) 'TJL -   glc_init_mct: call mct_aVect_init (1)'
     call mct_aVect_init(g2x, rList=seq_flds_g2x_fields, lsize=npts)
-    write(stdout,*) 'TJL -   glc_init_mct: call mct_aVect_zero (1)'
     call mct_aVect_zero(g2x)
 
-    write(stdout,*) 'TJL -   glc_init_mct: call mct_aVect_init (2)'
     call mct_aVect_init(x2g, rList=seq_flds_x2g_fields, lsize=npts)
-    write(stdout,*) 'TJL -   glc_init_mct: call mct_aVect_zero (2)'
     call mct_aVect_zero(x2g)
 
     ! Create initial glc export state
 
-    write(stdout,*) 'TJL -   glc_init_mct: call glc_export'
     call glc_export(g2x%rattr)
-
+	 
    if (my_task == master_task) then
       write(stdout,F91) 
       write(stdout,F00) trim(myModelName),': start of main integration loop'
@@ -243,14 +204,10 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
-    write(stdout,*) 'TJL -   glc_init_mct: call shr_file_getLogUnit (2)'
     call shr_file_setLogUnit (shrlogunit)
-    write(stdout,*) 'TJL -   glc_init_mct: call shr_file_getLogLevel (2)'
     call shr_file_setLogLevel(shrloglev)
-    write(stdout,*) 'TJL -   glc_init_mct: call shr_sys_flush'
     call shr_sys_flush(stdout)
 
-    write(stdout,*) 'TJL - glc_init_mct: end...'
 end subroutine glc_init_mct
 
 !===============================================================================
@@ -300,8 +257,6 @@ subroutine glc_run_mct( EClock, cdata, x2g, g2x)
    character(*), parameter :: F04   = "('(glc_run_mct) ',2a,2i8,'s')"
    character(*), parameter :: subName = "(glc_run_mct) "
 !-------------------------------------------------------------------------------
-
-    write(stdout,*) 'TJL - glc_run_mct: begin...'
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
@@ -371,9 +326,8 @@ subroutine glc_run_mct( EClock, cdata, x2g, g2x)
 
     rest_alarm = seq_timemgr_RestartAlarmIsOn( EClock )
     if (rest_alarm) then
-       ! TJL TODO - This needs to be fixed
        ! TODO loop over instances
-       ! call glc_io_write_restart(ice_sheet%instances(1), EClock)
+       call glc_io_write_restart(ice_sheet%instances(1), EClock)
     endif
 
     ! Reset shr logging to original values
@@ -382,7 +336,6 @@ subroutine glc_run_mct( EClock, cdata, x2g, g2x)
     call shr_file_setLogLevel(shrloglev)
     call shr_sys_flush(stdout)
     
-    write(stdout,*) 'TJL - glc_run_mct: end...'
 end subroutine glc_run_mct
 
 !===============================================================================
@@ -426,8 +379,6 @@ subroutine glc_final_mct( EClock, cdata, x2d, d2x)
 !
 !-------------------------------------------------------------------------------
 
-   write(stdout,*) 'TJL - glc_final_mct: begin...'
-
    ! Reset shr logging to my log file
    call shr_file_getLogUnit (shrlogunit)
    call shr_file_getLogLevel(shrloglev)
@@ -455,8 +406,6 @@ subroutine glc_final_mct( EClock, cdata, x2d, d2x)
    call shr_file_setLogUnit (shrlogunit)
    call shr_file_setLogLevel(shrloglev)
    call shr_sys_flush(stdout)
-
-   write(stdout,*) 'TJL - glc_final_mct: end...'
 
 end subroutine glc_final_mct
 
@@ -503,8 +452,7 @@ end subroutine glc_SetgsMap_mct
   subroutine glc_domain_mct( gsMap_g, dom_g )
 
     use glc_indexing_info, only : npts, nx, ny, local_indices
-    ! TJL TODO - This needs to be fixed
-    ! use glad_main, only : glad_get_lat_lon, glad_get_areas
+    use glad_main, only : glad_get_lat_lon, glad_get_areas
     
     !-------------------------------------------------------------------
     type(mct_gsMap), intent(inout) :: gsMap_g
@@ -547,11 +495,10 @@ end subroutine glc_SetgsMap_mct
     allocate(lons(nx, ny))
     allocate(areas(nx, ny))
     
-    ! TJL TODO - This needs to be fixed
     ! TODO(wjs, 2015-04-02) The following may need a loop over instances
-    ! call glad_get_lat_lon(ice_sheet, instance_index = 1, &
-    !      lats = lats, lons = lons)
-    ! call glad_get_areas(ice_sheet, instance_index = 1, areas = areas)
+    call glad_get_lat_lon(ice_sheet, instance_index = 1, &
+         lats = lats, lons = lons)
+    call glad_get_areas(ice_sheet, instance_index = 1, areas = areas)
     
     do j = 1,ny
        do i = 1,nx

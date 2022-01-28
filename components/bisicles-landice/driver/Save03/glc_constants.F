@@ -44,7 +44,7 @@
    ! elevation class info
    !-----------------------------------------------------------------
 
-  logical, parameter :: verbose = .true.
+  logical, parameter :: verbose = .false.
 
   logical ::   &
      glc_smb              ! if true, get surface mass balance from CLM via coupler
