@@ -412,47 +412,68 @@ class TestTestAllScream(TestBaseOuter.TestBase):
     def test_baseline_handling(self):
         """
         Test the mechanics of test-all-scream's handling of baselines
+        Note: we don't really run scream to generate real baselines.
+              We simply have to test the logic in test-all-scream.
+              So set SCREAM_FAKE_ONLY=ON, to lower the build time
         """
         if self._full:
             baseline_dir = TEST_DIR.parent/"ctest-build"/"baselines"
 
             # Start a couple new tests, baselines will be generated
-            cmd = self.get_cmd("SCREAM_FAKE_GIT_HEAD=FAKE1 ./test-all-scream -m $machine -b HEAD -k -t dbg -t sp", self._machine, dry_run=False)
+            env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_GIT_HEAD=FAKE1"
+            opts = "-b HEAD -k -t dbg -t sp --no-tests"
+            cmd = self.get_cmd("{} ./test-all-scream -m $machine {}".format(env,opts),
+                               self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
             test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE1")
             test_baseline_has_sha(self, TEST_DIR, "full_sp_debug", "FAKE1")
 
             # Re-run reusing baselines from above
-            cmd = self.get_cmd("SCREAM_FAKE_GIT_HEAD=FAKE2 ./test-all-scream -m $machine --baseline-dir={} -b HEAD -k -t dbg -t sp".format(baseline_dir), self._machine, dry_run=False)
+            env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_GIT_HEAD=FAKE2"
+            opts = "--baseline-dir={} -b HEAD -k -t dbg -t sp --no-tests".format(baseline_dir)
+            cmd = self.get_cmd("{} ./test-all-scream -m $machine {}".format(env,opts),
+                               self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
             test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE1")
             test_baseline_has_sha(self, TEST_DIR, "full_sp_debug", "FAKE1")
 
             # Re-run dbg reusing baselines from above with a fake commit that's not ahead
-            cmd = self.get_cmd("SCREAM_FAKE_AHEAD=0 SCREAM_FAKE_GIT_HEAD=FAKE2 ./test-all-scream -m $machine --baseline-dir={} -b HEAD -k -t dbg -u".format(baseline_dir), self._machine, dry_run=False)
+            env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_AHEAD=0 SCREAM_FAKE_GIT_HEAD=FAKE2"
+            opts = "--baseline-dir={} -b HEAD -k -t dbg -u --no-tests".format(baseline_dir)
+            cmd = self.get_cmd("{} ./test-all-scream -m $machine {}".format(env,opts),
+                               self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
             test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE1")
             test_baseline_has_sha(self, TEST_DIR, "full_sp_debug", "FAKE1")
 
             # Re-run dbg reusing baselines from above but expire them
-            cmd = self.get_cmd("SCREAM_FAKE_AHEAD=1 SCREAM_FAKE_GIT_HEAD=FAKE2 ./test-all-scream -m $machine --baseline-dir={} -b HEAD -k -t dbg -u".format(baseline_dir), self._machine, dry_run=False)
+            env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_AHEAD=1 SCREAM_FAKE_GIT_HEAD=FAKE2"
+            opts = "--baseline-dir={} -b HEAD -k -t dbg -u --no-tests".format(baseline_dir)
+            cmd = self.get_cmd("{} ./test-all-scream -m $machine {}".format(env,opts),
+                               self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
             test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE2")
             test_baseline_has_sha(self, TEST_DIR, "full_sp_debug", "FAKE1")
 
             # Re-run reusing some baselines and expiring others
-            cmd = self.get_cmd("SCREAM_FAKE_AHEAD=1 SCREAM_FAKE_GIT_HEAD=FAKE2 ./test-all-scream -m $machine --baseline-dir={} -b HEAD -k -t dbg -t sp -u".format(baseline_dir), self._machine, dry_run=False)
+            env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_AHEAD=1 SCREAM_FAKE_GIT_HEAD=FAKE2"
+            opts = "--baseline-dir={} -b HEAD -k -t dbg -t sp -u --no-tests".format(baseline_dir)
+            cmd = self.get_cmd("{} ./test-all-scream -m $machine {}".format(env,opts),
+                               self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
             test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE2")
             test_baseline_has_sha(self, TEST_DIR, "full_sp_debug", "FAKE2")
 
             # Re-run without reusing baselines, should force regeneration
-            cmd = self.get_cmd("SCREAM_FAKE_GIT_HEAD=FAKE3 ./test-all-scream -m $machine -b HEAD -k -t dbg -t sp", self._machine, dry_run=False)
+            env = "SCREAM_FAKE_ONLY=ON SCREAM_FAKE_GIT_HEAD=FAKE3"
+            opts = "-b HEAD -k -t dbg -t sp --no-tests"
+            cmd = self.get_cmd("{} ./test-all-scream -m $machine {}".format(env,opts),
+                               self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
 
             test_baseline_has_sha(self, TEST_DIR, "full_debug",    "FAKE3")
