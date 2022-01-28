@@ -4,13 +4,13 @@
 
 namespace scream {
 
-#ifdef SCREAM_FORCE_RUN_FAIL
-#error "Forcing failure to test test-all-scream"
-#endif
-
 TEST_CASE("pass", "[fake_infra_test]")
 {
+#ifdef SCREAM_FORCE_RUN_FAIL
+  REQUIRE(false);
+#else
   REQUIRE(true);
+#endif
 }
 
 } // empty namespace
