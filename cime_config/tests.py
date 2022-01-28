@@ -417,11 +417,30 @@ _TESTS = {
     },
 
 
-    "e3sm_gpu" : {
+    "e3sm_gpuacc" : {
         "tests"    : (
-                 "SMS_P16x1_Ld1.T62_oEC60to30v3.CMPASO-NYF",
-                 "SMS_P16x1_Ld1.T62_oEC60to30v3.DTESTM",
+                 "SMS_Ld1.T62_oEC60to30v3.CMPASO-NYF",
+                 "SMS_Ld1.T62_oEC60to30v3.DTESTM",
                  )
+    },
+
+    "e3sm_gpuomp" : {
+        "tests"    : (
+                 "SMS_Ln9.ne4pg2_ne4pg2.F-MMFOMP.eam-single_thread",
+                 "SMS_Ld1.T62_oEC60to30v3.DTESTM",
+                 )
+    },
+
+    "e3sm_gpucxx" : {
+        "tests"    : (
+                 "SMS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_fixed_subcycle",
+                 "SMS_Ln9.ne4pg2_oQU480.F20TR-MMFXX.eam-mmf_use_VT",
+                 "SMS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
+                 )
+    },
+
+    "e3sm_gpuall" : {
+        "inherit" : ("e3sm_gpuacc", "e3sm_gpuomp", "e3sm_gpucxx"),
     },
 
     "eam_nl" : {
