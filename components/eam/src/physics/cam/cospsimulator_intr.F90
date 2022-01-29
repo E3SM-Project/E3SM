@@ -1114,7 +1114,11 @@ CONTAINS
     call t_stopf('cosp_construct_cospIN')
 
     call t_startf('cosp_subsample_and_optics')
+#ifdef MMF
     call populate_cosp_subcol(state, pbuf, emis, cld_swtau, cospstateIN, cospIN, snow_tau, snow_emis)    
+#else
+    call populate_cosp_subcol_mmf(state, pbuf, cospstateIN, cospIN)
+#endif
     call t_stopf('cosp_subsample_and_optics')
 
     ! Call COSP and check status
@@ -1159,6 +1163,7 @@ CONTAINS
     call t_stopf('cosp_finalize')
 #endif /* USE_COSP */
   end subroutine cospsimulator_intr_run
+
 
 #ifdef USE_COSP
   subroutine populate_cosp_gridbox(state, pbuf, cam_in, coszrs, cospstateIN)
@@ -1492,6 +1497,166 @@ CONTAINS
    end subroutine populate_cosp_subcol
 #endif /* USE_COSP */
  
+#if defined(MMF) && defined(USE_COSP)
+  subroutine populate_cosp_subcol_mmf(state, pbuf, cospstateIN, cospIN)
+    use physics_types,        only: physics_state
+    use physics_buffer,       only: physics_buffer_desc, pbuf_get_field, pbuf_old_tim_idx
+    type(physics_state)      , intent(in),target :: state
+    type(physics_buffer_desc), pointer           :: pbuf(:)
+    type(cosp_optical_inputs), intent(inout)     :: cospIN       ! COSP optical (or derived?) fields needed by simulators
+    type(cosp_column_inputs) , intent(inout)     :: cospstateIN  ! COSP model fields needed by simulators
+    integer :: ix, iy, iz, ik
+
+    ! Get hydros for Cloudsat and CALIPSO optics
+    do iz = 1,crm_nz
+      do iy = 1,crm_ny_rad
+        do ix = 1,crm_nx_rad
+          do ic = 1,ncol
+            ik = pver - iz + 1
+            is = (ix * nx) + iy - 1
+            ! Mixing ratios
+            mr_hydro(ic,is,ik,I_LSCLIQ) = crm_qc (ic,ix,iy,iz)
+            mr_hydro(ic,is,ik,I_LSCICE) = crm_qi (ic,ix,iy,iz)
+            mr_hydro(ic,is,ik,I_LSRAIN) = crm_qpc(ic,ix,iy,iz)
+            mr_hydro(ic,is,ik,I_LSSNOW) = crm_qpi(ic,ix,iy,iz)
+            ! Effective radii
+            reff(ic,is,iz,I_LSCLIQ) = crm_rel(ic,ix,iy,iz)
+            reff(ic,is,iz,I_LSCICE) = crm_rei(ic,ix,iy,iz)
+            ! Number concentrations
+            ! (not set for 1mom)
+            !np(ic,is,ik,I_LSCLIQ) = crm_nc (ic,ix,iy,iz)
+            !np(ic,is,ik,I_LSCICE) = crm_ni (ic,ix,iy,iz)
+            !np(ic,is,ik,I_LSRAIN) = crm_npc(ic,ix,iy,iz)
+            !np(ic,is,ik,I_LSSNOW) = crm_npi(ic,ix,iy,iz)
+          end do
+        end do
+      end do
+    end do
+
+    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ! Compute optical fields for passive simulators (i.e. only sunlit points)
+    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    do iz = 1,crm_nz
+      do iy = 1,crm_ny_rad
+        do ix = 1,crm_nx_rad
+          do ic = 1,ncol
+            ik = pver - iz + 1
+            is = (ix * nx) + iy - 1
+#ifdef COMBINE_SNOW
+            cospIN%emiss_11(ic,is,ik) = 1._wp - (1 - crm_emis(ic,ix,iy,iz)) * (1 - crm_emis_snow(ic,ix,iy,iz))
+#else
+            cospIN%emiss_11(ic,is,ik) = crm_emis(ic,ix,iy,iz)
+#endif
+            cospIN%tau_067 (ic,is,ik) = crm_tau (ic,ix,iy,iz)
+          end do
+        end do
+      end do
+    end do
+
+    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ! CLOUDSAT RADAR OPTICS
+    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    call t_startf("cloudsat_optics")
+    if (lradar_sim) then
+      call cloudsat_optics( &
+        Npoints, Ncolumns, Nlevels, Nlvgrid, Nhydro, &
+        mr_hydro, Reff, Np, &
+        sd, cospstateIN, cospIN &
+      )
+    end if
+    call t_stopf("cloudsat_optics")
+    
+    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ! CALIPSO Polarized optics
+    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    call t_startf("calipso_optics")
+    if (Llidar_sim) then
+       ReffTemp = ReffIN
+       call lidar_optics(nPoints,nColumns,nLevels,5,lidar_ice_type,                      &
+                         mr_hydro(1:nPoints,1:nColumns,1:nLevels,I_LSCLIQ),              &
+                         mr_hydro(1:nPoints,1:nColumns,1:nLevels,I_LSCICE),              &
+                         mr_hydro(1:nPoints,1:nColumns,1:nLevels,I_CVCLIQ),              &
+                         mr_hydro(1:nPoints,1:nColumns,1:nLevels,I_CVCICE),              &
+                         mr_hydro(1:nPoints,1:nColumns,1:nLevels,I_LSSNOW),              &
+                         ReffTemp(1:nPoints,1:nLevels,I_LSCLIQ),                         &
+                         ReffTemp(1:nPoints,1:nLevels,I_LSCICE),                         &
+                         ReffTemp(1:nPoints,1:nLevels,I_CVCLIQ),                         &
+                         ReffTemp(1:nPoints,1:nLevels,I_CVCICE),                         & 
+                         ReffTemp(1:nPoints,1:nLevels,I_LSSNOW),                         &
+                         cospstateIN%pfull(1:nPoints,1:nLevels),                         &
+                         cospstateIN%phalf(1:nPoints,1:nLevels+1),                       &
+                         cospstateIN%at(1:nPoints,1:nLevels),                            &
+                         cospIN%beta_mol_calipso(1:nPoints,1:nLevels),                   &
+                         cospIN%betatot_calipso(1:nPoints,1:nColumns,1:nLevels),         &
+                         cospIN%tau_mol_calipso(1:nPoints,1:nLevels),                    &
+                         cospIN%tautot_calipso(1:nPoints,1:nColumns,1:nLevels),          &
+                         cospIN%tautot_S_liq(1:nPoints,1:nColumns),                      &
+                         cospIN%tautot_S_ice(1:nPoints,1:nColumns),                      &
+                         cospIN%betatot_ice_calipso(1:nPoints,1:nColumns,1:nLevels),     &
+                         cospIN%betatot_liq_calipso(1:nPoints,1:nColumns,1:nLevels),     &
+                         cospIN%tautot_ice_calipso(1:nPoints,1:nColumns,1:nLevels),      &
+                         cospIN%tautot_liq_calipso(1:nPoints,1:nColumns,1:nLevels)) 
+    endif
+    call t_stopf("calipso_optics")
+
+    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    ! MODIS optics
+    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    call t_startf("modis_optics")
+    if (lmodis_sim) then
+       allocate(MODIS_cloudWater(nPoints,nColumns,nLevels),                              &
+                MODIS_cloudIce(nPoints,nColumns,nLevels),                                &
+                MODIS_cloudSnow(nPoints,nColumns,nLevels),                               &
+                MODIS_waterSize(nPoints,nColumns,nLevels),                               &
+                MODIS_iceSize(nPoints,nColumns,nLevels),                                 &
+                MODIS_snowSize(nPoints,nColumns,nLevels),                                &
+                MODIS_opticalThicknessLiq(nPoints,nColumns,nLevels),                     &
+                MODIS_opticalThicknessIce(nPoints,nColumns,nLevels),                     &
+                MODIS_opticalThicknessSnow(nPoints,nColumns,nLevels))
+
+       ! Cloud water
+       call cosp_simulator_optics(nPoints,nColumns,nLevels,cospIN%frac_out,              &
+            mr_hydro(:,:,:,I_CVCLIQ),mr_hydro(:,:,:,I_LSCLIQ),MODIS_cloudWater)
+       ! Cloud ice
+       call cosp_simulator_optics(nPoints,nColumns,nLevels,cospIN%frac_out,              &
+            mr_hydro(:,:,:,I_CVCICE),mr_hydro(:,:,:,I_LSCICE),MODIS_cloudIce)  
+       ! Cloud water droplet size
+       call cosp_simulator_optics(nPoints,nColumns,nLevels,cospIN%frac_out,              &
+            Reff(:,:,:,I_CVCLIQ),Reff(:,:,:,I_LSCLIQ),MODIS_waterSize)
+       ! Cloud ice crystal size
+       call cosp_simulator_optics(nPoints,nColumns,nLevels,cospIN%frac_out,              &
+            Reff(:,:,:,I_CVCICE),Reff(:,:,:,I_LSCICE),MODIS_iceSize)
+       
+       ! Cloud snow and size  
+       MODIS_snowSize(:,:,:)  = Reff(:,:,:,I_LSSNOW)
+       do j=1,nColumns
+          where((frac_prec(:,j,:) .eq. 1 .or. frac_prec(:,j,:) .eq. 3) .and. &
+               Reff(:,j,:,I_LSSNOW) .gt. 0._r8 .and. dtau_s_snow .gt. 0._r8)
+             MODIS_cloudSnow(:,j,:) = mr_hydro(:,j,:,I_LSSNOW)
+             MODIS_snowSize(:,j,:)  = Reff(:,j,:,I_LSSNOW)
+          elsewhere
+             MODIS_snowSize(:,j,:)  = 0._wp
+             MODIS_cloudSnow(:,j,:) = 0._wp
+          endwhere
+       enddo
+       
+       ! Partition optical thickness into liquid and ice parts
+       call modis_optics_partition(nPoints, nLevels, nColumns, MODIS_cloudWater,     &
+            MODIS_cloudIce, MODIS_cloudSnow, MODIS_waterSize, MODIS_iceSize,         &
+            MODIS_snowSize, cospIN%tau_067, MODIS_opticalThicknessLiq,               &
+            MODIS_opticalThicknessIce, MODIS_opticalThicknessSnow)                            
+       
+       ! Compute assymetry parameter and single scattering albedo 
+       call modis_optics(nPoints, nLevels, nColumns, MODIS_opticalThicknessLiq,      &
+            MODIS_waterSize*1.0e6_wp, MODIS_opticalThicknessIce,                     &
+            MODIS_iceSize*1.0e6_wp, MODIS_opticalThicknessSnow,                      &
+            MODIS_snowSize*1.0e6_wp, cospIN%fracLiq, cospIN%asym, cospIN%ss_alb)
+
+    endif ! MODIS simulator optics
+    call t_stopf("modis_optics")
+
+  end subroutine populate_cosp_subcol_mmf
+#endif
 
 #ifdef USE_COSP
    ! Remask passive simulator output after call to COSP. This should NOT be necessary, and if it is
@@ -2154,7 +2319,6 @@ CONTAINS
     endif
     call t_stopf("calipso_optics")
 
-    
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ! Compute optical fields for passive simulators (i.e. only sunlit points)
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
