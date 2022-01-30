@@ -3543,13 +3543,13 @@ add_default($nl, 'use_subcol_microp');
 add_default($nl, 'microp_scheme');
 add_default($nl, 'micro_do_icesupersat');
 add_default($nl, 'macrop_scheme');
+add_default($nl, 'nucleate_ice_subgrid');
+add_default($nl, 'so4_sz_thresh_icenuc');
+add_default($nl, 'cld_macmic_num_steps');
 if ($cfg->get('microphys') =~ /^mg/) {
     add_default($nl, 'micro_mg_version');
     add_default($nl, 'micro_mg_sub_version');
     add_default($nl, 'micro_mg_num_steps');
-    add_default($nl, 'nucleate_ice_subgrid');
-    add_default($nl, 'so4_sz_thresh_icenuc');
-    add_default($nl, 'cld_macmic_num_steps');
     add_default($nl, 'micro_mg_precip_frac_method');
     add_default($nl, 'micro_mg_berg_eff_factor');
     add_default($nl, 'micro_mg_dcs');
@@ -3565,6 +3565,19 @@ if ($cfg->get('microphys') =~ /^mg2/) {
     add_default($nl, 'cld_sed');
     add_default($nl, 'mg_prc_coeff_fix');    
 }
+
+if ($cfg->get('microphys') =~ /^p3/) {
+    add_default($nl, 'micro_p3_lookup_dir');
+    add_default($nl, 'micro_p3_tableversion');
+    add_default($nl, 'micro_aerosolactivation');
+    add_default($nl, 'micro_subgrid_cloud');
+    add_default($nl, 'micro_tend_output');
+    add_default($nl, 'p3_qc_autoCon_Expon');
+    add_default($nl, 'p3_qc_accret_Expon');
+    add_default($nl, 'do_prescribed_CCN');
+    add_default($nl, 'do_Cooper_inP3');
+}
+
 
 # Sub-column switches for physics packages
 # Check that a subcol_scheme is specified if use_subcol_microp is turned on (true)
