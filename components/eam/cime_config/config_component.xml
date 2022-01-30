@@ -69,7 +69,6 @@
       <value compset="_EAM%AQP-MMF.*"  >-aquaplanet</value>
       <value compset="_EAM%RCE-MMF.*"  >-aquaplanet -rce</value>
       <value compset="_EAM%SCM-MMF.*"  >-scam</value>
-
     </values>
     <group>build_component_cam</group>
     <file>env_build.xml</file>

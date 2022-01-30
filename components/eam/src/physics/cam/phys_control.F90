@@ -334,7 +334,7 @@ subroutine phys_ctl_readnl(nlfile)
       write(iulog,*)'phys_setopts: illegal value of eddy_scheme:', eddy_scheme
       call endrun('phys_setopts: illegal value of eddy_scheme')
    endif
-   if (.not. (microp_scheme .eq. 'MG' .or. microp_scheme .eq. 'RK' .or. microp_scheme .eq. 'off') ) then
+   if (.not. (microp_scheme .eq. 'MG' .or. microp_scheme .eq. 'RK' .or. microp_scheme .eq. 'P3' .or. microp_scheme .eq. 'off') ) then
       write(iulog,*)'phys_setopts: illegal value of microp_scheme:', microp_scheme
       call endrun('phys_setopts: illegal value of microp_scheme')
    endif
@@ -356,9 +356,9 @@ subroutine phys_ctl_readnl(nlfile)
       call endrun('PBL and Microphysics schemes incompatible')
    endif
    
-   ! Add a check to make sure CLUBB and MG are used together
-   if ( do_clubb_sgs .and. ( microp_scheme .ne. 'MG')) then
-      write(iulog,*)'CLUBB is only compatible with MG microphysics.  Quiting'
+   ! Add a check to make sure CLUBB and MG / P3 are used together
+   if ( do_clubb_sgs .and. ( microp_scheme .ne. 'MG' .and. microp_scheme .ne. 'P3' )) then
+      write(iulog,*)'CLUBB is only compatible with MG or P3 microphysics.  Quiting'
       call endrun('CLUBB and microphysics schemes incompatible')
    endif
 
@@ -372,9 +372,9 @@ subroutine phys_ctl_readnl(nlfile)
 
    ! Macro/micro co-substepping support.
    if (cld_macmic_num_steps > 1) then
-      if (microp_scheme /= "MG" .or. (macrop_scheme /= "park" .and. macrop_scheme /= "CLUBB_SGS")) then
+      if ((microp_scheme /= "MG" .and. microp_scheme /= "P3") .or. (macrop_scheme /= "park" .and. macrop_scheme /= "CLUBB_SGS")) then
          call endrun ("Setting cld_macmic_num_steps > 1 is only &
-              &supported with Park or CLUBB macrophysics and MG microphysics.")
+              &supported with Park or CLUBB macrophysics and MG / P3 microphysics.")
       end if
    end if
 
