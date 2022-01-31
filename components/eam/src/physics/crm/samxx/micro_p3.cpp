@@ -78,12 +78,13 @@ void get_cloud_fraction(int its, int ite, int kts, int kte,
   int ni = ite-its+1;
 
   parallel_for( SimpleBounds<2>(ni,nk) , YAKL_LAMBDA (int i, int k) {
-      cldm(i,k)  = max(ast(i,k), mincld);
-      cld_frac_i(i,k) = max(ast(i,k), mincld);
-      cld_frac_l(i,k) = max(ast(i,k), mincld);
-      cld_frac_r(i,k) = cldm(i,k);
+      cldm(i,k)  = 1.0; //max(ast(i,k), mincld);
+      cld_frac_i(i,k) = 1.0; //max(ast(i,k), mincld);
+      cld_frac_l(i,k) = 1.0; //max(ast(i,k), mincld);
+      cld_frac_r(i,k) = 1.0; //cldm(i,k);
   });
 
+#if 0
   if (method == "in_cloud") {
 
      parallel_for( SimpleBounds<2>(ni,nk) , YAKL_LAMBDA (int i, int k) {
@@ -118,6 +119,7 @@ void get_cloud_fraction(int its, int ite, int kts, int kte,
         }
       });
   }
+#endif
 }
 
 //
@@ -141,7 +143,6 @@ void micro_p3_proc() {
   auto &qci                = :: qci;
   auto &qpl                = :: qpl;
   auto &qpi                = :: qpi;
-  // auto &rho                = :: rho;
   auto &dt                 = :: dt;
   auto &pres               = :: pres;
   auto &p                  = :: p;
@@ -272,6 +273,7 @@ void micro_p3_proc() {
     th_in(icol, ilev) = tabs(k,j,i,icrm)*exner_in(icol, ilev);
   });
 
+auto fp=fopen("q.txt","w");
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
@@ -285,7 +287,12 @@ void micro_p3_proc() {
     qm_in(icol,ilev) = micro_field(idx_qm,k,j+offy_s,i+offx_s,icrm);
     ni_in(icol,ilev) = micro_field(idx_ni,k,j+offy_s,i+offx_s,icrm);
     bm_in(icol,ilev) = micro_field(idx_bm,k,j+offy_s,i+offx_s,icrm);
+
+fprintf(fp,"%d, %d, %d, %d %13.6e, %13.6e, %13.6e, %13.6e, %13.6e, %13.6e, %13.6e, %13.6e, %13.6e\n",k,j,i,icrm,
+qv_in(icol,ilev),qc_in(icol,ilev),nc_in(icol,ilev),qr_in(icol,ilev),nr_in(icol,ilev),qi_in(icol,ilev),qm_in(icol,ilev),ni_in(icol,ilev),bm_in(icol,ilev));
+
   });
+fclose(fp);
 
   view_2d qv_d("qv", ncol, npack),
           qc_d("qc", ncol, npack),
@@ -321,11 +328,11 @@ void micro_p3_proc() {
     nccn_in(icol,ilev)            = nccn(k,icrm);
     nc_nuceat_tend_in(icol,ilev)  = nc_nuceat_tend(k,icrm);
     ni_activated_in(icol,ilev)    = ni_activated(k,icrm);
-    inv_qc_relvar_in(icol,ilev)   = 1.; // relvar(k,icrm); - What value should we use before SHOC provides this?
+    inv_qc_relvar_in(icol,ilev)   = 2.; // relvar(k,icrm); - What value should we use before SHOC provides this?
     dz_in(icol,ilev)              = dz(icrm);
     pmid_in(icol,ilev)            = pmid(k,j,i,icrm);
     pdel_in(icol,ilev)            = pdel(k,j,i,icrm);
-    ast_in(icol,ilev)             = 0.; // ast(k,icrm);
+    ast_in(icol,ilev)             = 1.; // ast(k,icrm);
     q_prev_in(icol,ilev)          = q_prev(k,j,i,icrm);
     t_prev_in(icol,ilev)          = t_prev(k,j,i,icrm);
   });
@@ -415,7 +422,6 @@ void micro_p3_proc() {
   do_prescribed_CCN = false;
 
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<4>>({0, 0, 0, 0}, {nzm, ny, nx, ncrms}), KOKKOS_LAMBDA(int k, int j, int i, int icrm) {
-  // Kokkos::parallel_for("col_location", ncol, KOKKOS_LAMBDA (const int& icol) {
      int icol = i+nx*(j+icrm*ny);
      col_location_d(icol, 0) = z0.myData[icrm];
      col_location_d(icol, 1) = longitude0.myData[icrm];
@@ -451,53 +457,6 @@ void micro_p3_proc() {
   auto elapsed_time = P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
                                    history_only, workspace_mgr, ncol, nlev);
 
-
-// for (int k=0; k<nzm; k++) {
-//   // for (int j=0; j<crm_ny; j++) {
-//     // int k = 20;
-//     int j = 0;
-//     // for (int i=0; i<crm_nx; i++) {
-//       int i = 16;
-//       for (int icrm=0; icrm<ncrms; icrm++) {
-//         int icol = i+nx*(j+ny*icrm);
-//         int ilev = k;
-//         real dth = prog_state.th(icol,ilev)[0] - th_in(icol,ilev);
-//         real dqv = prog_state.qv(icol,ilev)[0] - qv_in(icol,ilev);
-//         real dqc = prog_state.qc(icol,ilev)[0] - qc_in(icol,ilev);
-//         real dqi = prog_state.qi(icol,ilev)[0] - qi_in(icol,ilev);
-//         std::cout<<"WHDEBUG"
-//         <<"  i:"<<i 
-//         <<"  k:"<<k 
-//         <<"  th_in:" <<th_in(icol,ilev)
-//         <<"  th_out:"<<prog_state.th(icol,ilev)[0]
-//         <<"  dth:"<<dth
-//         <<"  "
-//         <<"  qv_in:" <<qv_in(icol,ilev)
-//         <<"  qv_out:"<<prog_state.qv(icol,ilev)[0]
-//         <<"  dqv:"<<dqv
-//         <<"  "
-//         <<"  qc_in:" <<qc_in(icol,ilev)
-//         <<"  qc_out:"<<prog_state.qc(icol,ilev)[0]
-//         <<"  dqc:"<<dqc
-//         <<"  "
-//         <<"  qi_in:" <<qi_in(icol,ilev)
-//         <<"  qi_out:"<<prog_state.qi(icol,ilev)[0]
-//         <<"  dqi:"<<dqi
-//         <<"  precip_liq:"<<diag_outputs.precip_liq_surf(icol)
-//         <<"  precip_ice:"<<diag_outputs.precip_ice_surf(icol)
-//         // <<"  pm:"<<pmid(k,j,i,icrm)
-//         // <<"  dp:"<<pdel(k,j,i,icrm)
-//         // <<"  ps:"<<psfc(icrm)
-//         // <<"  qc:"<<qc(k,j,i,icrm)
-//         // <<"  nc:"<<micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm)
-//         <<std::endl;
-//       }
-//     // }
-//   // }
-// }
-
-
-  //----------------------------------------------------------------------------
   //----------------------------------------------------------------------------
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, Spack::n}), KOKKOS_LAMBDA(int icol, int s) {
     int i    = icol%nx;
