@@ -214,6 +214,20 @@ int constexpr nmicro_fields = 8;
 int  constexpr index_water_vapor = 0;
 // int  constexpr index_cloud_ice = 0;
 
+int constexpr num_tracers = 10;
+enum {
+  idx_qt = 0,  // total water (qv + qc)
+  idx_qi,      // cloud ice amount
+  idx_qr,      // rain amount
+  idx_nc,      // cloud liq number
+  idx_ni,      // cloud ice number
+  idx_nr,      // rain number
+  idx_qm,      // ice rime amount
+  idx_bm,      // ice rime volume
+  idx_qc,
+  idx_tke      // tke
+};
+
 real constexpr rhor = 1000.; // Density of water, kg/m3
 real constexpr rhos = 100.;  // Density of snow, kg/m3
 real constexpr rhog = 400.;  // Density of graupel, kg/m3
