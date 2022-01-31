@@ -95,7 +95,7 @@ module ocn_vel_tidal_potential
    public :: char_array
 
    ! Flag for ssh_sal
-   integer :: ssh_sal_on
+   real(kind=RKIND) :: ssh_sal_on
 
 !***********************************************************************
 
@@ -174,7 +174,7 @@ contains
 
          potentialGrad = - gravity*invdcEdge* &
             (  tidalPotEta(cell2) - tidalPotEta(cell1) &
-             + (1 - ssh_sal_on) * betaSelfAttrLoad *( (ssh(cell2) - ssh(cell1)) & 
+             + (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad *( (ssh(cell2) - ssh(cell1)) & 
                                                       + rho0gInv*(surfacePressure(cell2) - surfacePressure(cell1))) &
              + ssh_sal_on * (ssh_sal(cell2) - ssh_sal(cell1)) )
 
@@ -332,9 +332,9 @@ contains
 
          tidalPotentialOff = .false.
          if (config_use_self_attraction_loading) then
-            ssh_sal_on = 1
+            ssh_sal_on = 1.0_RKIND
          else
-            ssh_sal_on = 0 
+            ssh_sal_on = 0.0_RKIND
          endif
 
          betaSelfAttrLoad = config_self_attraction_and_loading_beta
