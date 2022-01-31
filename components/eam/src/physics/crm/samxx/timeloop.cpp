@@ -9,6 +9,7 @@ void timeloop() {
   auto &ncrms                    = :: ncrms;
   auto &na                       = :: na;
   auto &dt3                      = :: dt3;
+  auto &rank                     = :: rank;
 
   nstep = 0;
 
@@ -20,6 +21,9 @@ void timeloop() {
     //  to handle the cases when the flow being locally linearly unstable
     //------------------------------------------------------------------
     kurant();
+
+printf("crm_00: nstep=%d, nstop=%d, t=%13.6e, u=%13.6e, v=%13.6e, w=%13.6e \n",nstep, nstop, t(nzm-10,ny/2,nx/2,ncrms/2),
+u(nzm-10,ny/2,nx/2,ncrms/2),v(nzm-10,ny/2,nx/2,ncrms/2),w(nzm-10,ny/2,nx/2,ncrms/2));
 
     for(int icyc=1; icyc<=ncycle; icyc++) {
       icycle = icyc;
@@ -67,6 +71,20 @@ void timeloop() {
         t(k,j+offy_s,i+offx_s,icrm) = t(k,j+offy_s,i+offx_s,icrm) + crm_rad_qrad(k,j_rad,i_rad,icrm)*dtn;
       });
 
+{
+if(nstep%1 == 0) {
+auto fp = fopen ("temp.txt", "w");
+for(auto k=0; k<nzm; ++k) {
+for(auto j=0; j<ny; ++j) {
+for(auto i=0; i<nx; ++i) {
+for(auto icrm=0; icrm<ncrms; ++icrm) {
+fprintf(fp,"%d, %d, %d, %d, %13.6e, %13.6e, %13.6e, %13.6e, %13.6e\n",k,j,i,icrm,
+t(k,j+offy_s,i+offx_s,icrm),u(k,j+offy_u,i+offx_u,icrm),v(k,j+offy_v,i+offx_v,icrm),w(k,j+offy_w,i+offx_w,icrm),pres(k,icrm));
+}}}}
+fclose(fp);
+}
+}
+
       //----------------------------------------------------------
       //    suppress turbulence near the upper boundary (spange):
       if (dodamping) { 
@@ -98,9 +116,9 @@ void timeloop() {
       //  SGS physics:
       if (dosgs) {
 // #if defined(shoc)
-//         shoc_proc();
+         shoc_proc();
 //#else
-        sgs_proc();
+//        sgs_proc();
 //#endif
       }
 
@@ -116,7 +134,7 @@ void timeloop() {
       //  SGS effects on momentum:
       if (dosgs) {
 //#if !defined(shoc) 
-        sgs_mom();
+//        sgs_mom();
 //#endif
       }
 
@@ -159,7 +177,7 @@ void timeloop() {
       //      SGS effects on scalars :
       if (dosgs) { 
 //#if !defined(shoc)
-        sgs_scalars();
+//        sgs_scalars();
 //#endif
       }
 
