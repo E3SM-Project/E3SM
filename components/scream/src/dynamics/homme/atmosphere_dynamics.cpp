@@ -394,12 +394,20 @@ void HommeDynamics::initialize_impl (const RunType run_type)
 void HommeDynamics::run_impl (const int dt)
 {
   try {
-    Kokkos::fence();
-    homme_pre_process (dt);
 
     // Note: Homme's step lasts homme_dt*max(dt_remap_factor,dt_tracers_factor), and it must divide dt.
     // We neeed to compute dt/homme_dt, and subcycle homme that many times
+
+    // NOTE: we did not have atm_dt when we inited homme, so we set nsplit=1.
+    //       Now we can compute the actual nsplit, and need to update its value
+    //       in Hommexx's data structures
     const int nsplit = get_homme_nsplit_f90(dt);
+    auto& params = Homme::Context::singleton().get<Homme::SimulationParams>();
+    params.nsplit = nsplit;
+
+    Kokkos::fence();
+    homme_pre_process (dt);
+
     for (int subiter=0; subiter<nsplit; ++subiter) {
       Kokkos::fence();
       prim_run_f90 ();
