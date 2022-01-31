@@ -142,6 +142,36 @@ void view_to_array(const ViewT& view,
   });
 }
 
+// 3D Kokkos view to YAKL array
+template <typename SizeT, typename ViewT, typename ArrayT>
+void view_to_array(const ViewT& view,
+                   const SizeT& dim1_size,
+                   const SizeT& dim2_size,
+                   const SizeT& dim3_size,
+                   ArrayT& array)
+{
+  using PackT      = typename ViewT::value_type;
+  using scalarType = typename ViewT::value_type::scalar;
+  using arrayType  = typename ArrayT::type;
+
+  auto is_same_type = std::is_same<scalarType, arrayType>::value;
+
+  EKAT_ASSERT(is_same_type);
+  EKAT_ASSERT(PackT::n >= 1);
+
+  const int pack_size = static_cast<int>(PackT::n);
+  const int npack     = (dim3_size+pack_size-1)/pack_size;
+
+#if defined(DEBUG)
+  kokkos_impl_cuda_set_serial_execution(true);
+#endif
+  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<4>>({0, 0, 0, 0}, {dim1_size, dim2_size, npack, pack_size}), KOKKOS_LAMBDA(int i, int j, int k, int s) {
+    const int num_scalars = k*pack_size;
+    const int scalar_offset = (i*dim2_size+j)*dim3_size+num_scalars;
+    if (num_scalars+s<dim3_size)  array.myData[scalar_offset+s] = view(i,j,k)[s];
+  });
+}
+
 // validation code 
 template <typename SizeT, typename ViewT>
 void array_to_view_2d(typename ViewT::value_type::scalar* data,
