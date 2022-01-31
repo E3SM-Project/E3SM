@@ -8,7 +8,7 @@ This script is mostly for processing the scream_input.yaml file.
 See SCREAM_YAML_README for documentation on how to use scream_input.yaml.
 """
 
-import os, sys, re
+import os, sys, re, glob
 from collections import OrderedDict
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
@@ -106,21 +106,32 @@ def refine_type(entry):
         return entry
 
 ###############################################################################
-def process_leaves(yaml_entry, case):
+def process_leaf(leaf_str, case):
+###############################################################################
+    orig_str = leaf_str
+    leaf_str = do_cime_vars(leaf_str, case)
+    leaf_str = do_switches(leaf_str)
+    if leaf_str != orig_str:
+        return True, refine_type(leaf_str)
+    else:
+        return False, orig_str
+
+###############################################################################
+def process_node(node, itr, case):
 ###############################################################################
     modified = False
-    for k, v in yaml_entry.items():
+    for k, v in itr:
         if isinstance(v, str):
-            orig_str = v
-            v = do_cime_vars(v, case)
-            v = do_switches(v)
-            if v != orig_str:
-                v = refine_type(v)
+            curr_modified, leaf_val = process_leaf(v, case)
+            if curr_modified:
+                node[k] = leaf_val
                 modified = True
-                yaml_entry[k] = v
 
         elif isinstance(v, dict):
-            modified |= process_leaves(v, case)
+            modified |= process_node(v, v.items(), case)
+
+        elif isinstance(v, list):
+            modified |= process_node(v, enumerate(v), case)
 
     return modified
 
@@ -185,16 +196,19 @@ def buildnml(case, caseroot, compname):
         if not os.path.isdir(target):
             os.mkdir(target)
 
-        for item in os.listdir(src):
+        for gitem in [os.path.basename(yaml_tgt), "*.ascii"]:
             # Do not overwrite existing files because that would remove any
             # local mods made by the user.
-            if not os.path.exists(os.path.join(target, item)):
-                safe_copy(os.path.join(src, item), target)
+            the_glob = os.path.join(src, gitem)
+            for fitem in glob.glob(the_glob):
+                basename = os.path.basename(fitem)
+                if not os.path.exists(os.path.join(target, basename)):
+                    safe_copy(fitem, target)
 
     # Load scream inputs from yaml
     scream_input = ordered_load(yaml_tgt)
 
-    modified = process_leaves(scream_input, case)
+    modified = process_node(scream_input, scream_input.items(), case)
 
     # Check If we have to re-dump the YAML file due to CIME case updates
     if modified:
@@ -214,6 +228,25 @@ def buildnml(case, caseroot, compname):
                     fd.write("{} = {}\n".format(k, v))
 
             fd.write("/\n")
+
+    # Create input data list
+    input_data_list_file = "{}/Buildconf/scream.input_data_list".format(caseroot)
+    if os.path.exists(input_data_list_file):
+        os.remove(input_data_list_file)
+
+    input_file = scream_input["Atmosphere Driver"]["Initial Conditions"]["Physics GLL"]["Filename"]
+    tables     = scream_input["SCREAM"]["Input Files"]
+    with open(input_data_list_file, "w") as fd:
+        fd.write("ic_file = {}\n".format(input_file))
+        for idx, table in enumerate(tables):
+            fd.write("table_{} = {}\n".format(idx, table))
+
+    # SCREAM is currently hardcoded to expect tables to be in data
+    for table in tables:
+        table_name = os.path.basename(table)
+        tgt_table = os.path.join(target, table_name)
+        if not os.path.exists(tgt_table) and not os.path.islink(tgt_table):
+            os.symlink(table, os.path.join(target, table_name))
 
 ###############################################################################
 def _main_func():

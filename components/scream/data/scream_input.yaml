@@ -38,7 +38,7 @@ Atmosphere Driver:
 
   Initial Conditions:
     Physics GLL:
-      Filename: ./data/init_ne4np4.nc
+      Filename: "${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc"
       # Set X_prev = X
       T_mid_prev: T_mid
       horiz_winds_prev: horiz_winds
@@ -51,9 +51,14 @@ SCREAM:
 
   Start Date: "${RUN_STARTDATE}"
 
+  # These files must be symlinked to $rundir/data since there is no
+  # mechanism to configure the path to these.
   Input Files:
-    input_root                  : "${DIN_LOC_ROOT}"
-
+    - "${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-sw-g224-2018-12-04.nc"
+    - "${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-lw-g256-2018-12-04.nc"
+    - "${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc"
+    - "${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc"
+    - "${DIN_LOC_ROOT}/atm/scream/tables/p3_lookup_table_1.dat-v4.1.1"
 
 # Note: HOMME settings will be translated into data/namelist.nl
 HOMME:
