@@ -160,7 +160,7 @@ OPTIONS
                               This turns on the namelist variable: use_hydrstress
      -topounit                Toggle for downscaling of atmosphric forcing from grid to topounit(default is off)
                               This turns on the namelist variable: use_atm_downscaling_to_topunit
-     -tw_irr                  Toggle for irrigation will be two-way coupled with MOSART. (default is off)
+     tw_irr_on               Toggle for irrigation will be two-way coupled with MOSART. (default is off)
                               This turns on the namelist variable: tw_irr
      -csmdata "dir"           Root directory of CESM input data.
                               Can also be set by using the CSMDATA environment variable.
@@ -308,7 +308,7 @@ sub process_commandline {
                crop                  => 0,
                hydrstress            => 0,
                topounit              => 0,
-               tw_irr                => 0,
+               tw_irr_on             => 0,
                dynamic_vegetation    => 0,
                envxml_dir            => ".",
                vichydro              => 0,
@@ -362,7 +362,7 @@ sub process_commandline {
              "crop"                      => \$opts{'crop'},
              "hydrstress"                => \$opts{'hydrstress'},
              "topounit"                  => \$opts{'topounit'},
-             "tw_irr"                    => \$opts{'tw_irr'},
+             "tw_irr_on"                 => \$opts{'tw_irr_on'},
              "dynamic_vegetation"        => \$opts{'dynamic_vegetation'},
              "vichydro"                  => \$opts{'vichydro'},
              "maxpft=i"                  => \$opts{'maxpft'},
@@ -690,7 +690,7 @@ sub process_namelist_commandline_options {
   setup_cmdl_crop($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_hydrstress($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_topounit($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
-  setup_cmdl_tw_irr($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
+  setup_cmdl_tw_irr_on($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_maxpft($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv);
   setup_cmdl_glc_nec($opts, $nl_flags, $definition, $defaults, $nl);
   setup_cmdl_irrigation($opts, $nl_flags, $definition, $defaults, $nl, $physv);
@@ -1483,14 +1483,14 @@ sub setup_cmdl_topounit {
   }
 }
 #------------------------------------------------------------------------------------------
-sub setup_cmdl_tw_irr {
+sub setup_cmdl_tw_irr_on {
   my ($opts, $nl_flags, $definition, $defaults, $nl, $cfg, $physv) = @_;
   $nl_flags->{'tw_irr'} = ".false.";
   my $val;
-  my $var = "tw_irr";
+  my $var = "tw_irr_on";
   $val = $opts->{$var}; 
-  $nl_flags->{'tw_irr'} = $val;
-  if ( $nl_flags->{'tw_irr'} eq 1 ) {
+  $nl_flags->{'tw_irr_on'} = $val;
+  if ( $nl_flags->{'tw_irr_on'} eq 1 ) {
     $nl_flags->{'tw_irr'} = ".true.";
   }
   if ( defined($nl->get_value("tw_irr")) && ($nl_flags->{'tw_irr'} ne $nl->get_value("tw_irr")) ) {
@@ -1499,7 +1499,7 @@ sub setup_cmdl_tw_irr {
 
   $var = "tw_irr";
   $val = ".false.";
-  if ($nl_flags->{'topounit'} eq 1) {
+  if ($nl_flags->{'tw_irr_on'} eq 1) {
     $val = ".true.";
   }
   my $group = $definition->get_group_name($var);
