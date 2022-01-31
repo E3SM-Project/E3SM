@@ -9,5 +9,6 @@
 #include "shoc_functions_f90.hpp"
 #include "shoc_f90.hpp"
 
+void shoc_init();
 void shoc_proc();
-
+void shoc_update_precipitation();
