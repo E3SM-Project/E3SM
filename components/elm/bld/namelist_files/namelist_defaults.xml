@@ -45,9 +45,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <irrig>.false.</irrig>
 
 <!-- twowayirrigation default -->
-<create_crop_landunit  tw_irr=".true." >.true.</create_crop_landunit>
-<irrigate  tw_irr=".true." >.true.</irrigate>
-
+<tw_irr>.false.</tw_irr>
 <!-- extra gw pumping for irrigation default -->
 <extra_gw_irr>.false.</extra_gw_irr>
 
@@ -442,7 +440,7 @@ lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609_with_TOP.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c211019.nc</fsurdat>
 <fsurdat hgrid="r05"          sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c211019.nc</fsurdat>
-<fsurdat hgrid="r05"          sim_year="1850"  use_atm_downscaling_to_topunit =".true.">
+<fsurdat hgrid="r05"          sim_year="1850" use_crop=".false."  use_atm_downscaling_to_topunit =".true.">
 lnd/clm2/surfdata_map/topounit_based_half_degree_merge_surfdata_0.5x0.5_simyr1850_c211019.20211108.nc</fsurdat>
 
 <fsurdat hgrid="r0125"        sim_year="1850" use_crop=".false." >
@@ -927,7 +925,7 @@ this mask will have smb calculated over the entire global land surface
 <create_crop_landunit use_crop=".false."                 >.false.</create_crop_landunit>
 <create_crop_landunit use_crop=".false." hgrid="r05" use_cn=".true." use_top_solar_rad=".true.">.false.</create_crop_landunit>
 <create_crop_landunit use_crop=".false." hgrid="r05" use_cn=".true." >.true.</create_crop_landunit>
-<create_crop_landunit use_crop=".false." tw_irr=".ture." >.true.</create_crop_landunit>
+<create_crop_landunit use_crop=".false." tw_irr=".true." >.true.</create_crop_landunit>
 
 <!-- =========================================  -->
 <!-- Performance issues                         -->
