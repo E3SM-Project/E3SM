@@ -22,8 +22,8 @@ void timeloop() {
     //------------------------------------------------------------------
     kurant();
 
-printf("crm_00: nstep=%d, nstop=%d, t=%13.6e, u=%13.6e, v=%13.6e, w=%13.6e \n",nstep, nstop, t(nzm-10,ny/2,nx/2,ncrms/2),
-u(nzm-10,ny/2,nx/2,ncrms/2),v(nzm-10,ny/2,nx/2,ncrms/2),w(nzm-10,ny/2,nx/2,ncrms/2));
+// printf("crm_00: nstep=%d, nstop=%d, t=%13.6e, u=%13.6e, v=%13.6e, w=%13.6e \n",nstep, nstop, t(nzm-10,ny/2,nx/2,ncrms/2),
+// u(nzm-10,ny/2,nx/2,ncrms/2),v(nzm-10,ny/2,nx/2,ncrms/2),w(nzm-10,ny/2,nx/2,ncrms/2));
 
     for(int icyc=1; icyc<=ncycle; icyc++) {
       icycle = icyc;
@@ -116,9 +116,9 @@ fclose(fp);
       //  SGS physics:
       if (dosgs) {
 // #if defined(shoc)
-         shoc_proc();
+         // shoc_proc();
 //#else
-//        sgs_proc();
+       sgs_proc();
 //#endif
       }
 
@@ -134,7 +134,7 @@ fclose(fp);
       //  SGS effects on momentum:
       if (dosgs) {
 //#if !defined(shoc) 
-//        sgs_mom();
+       sgs_mom();
 //#endif
       }
 
@@ -177,7 +177,7 @@ fclose(fp);
       //      SGS effects on scalars :
       if (dosgs) { 
 //#if !defined(shoc)
-//        sgs_scalars();
+       sgs_scalars();
 //#endif
       }
 

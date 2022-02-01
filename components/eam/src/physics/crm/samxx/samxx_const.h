@@ -259,8 +259,8 @@ real constexpr qci0 = 1.e-4;
 real constexpr alphaelq = 1.e-3;
 real constexpr betaelq = 1.e-3;
 
-real constexpr mincld = 0.0001;
-real constexpr qsmall = 1.e-14;
+real constexpr p3_mincld = 0.0001;
+real constexpr p3_qsmall = 1.e-14;
 
 real constexpr crm_accel_coef = 1.0/( (real) nx * (real) ny );
 

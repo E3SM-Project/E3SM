@@ -68,20 +68,33 @@ void micro_p3_init() {
 }
 
 
-void get_cloud_fraction(int its, int ite, int kts, int kte, 
-                       real2d& ast, real2d& qc, real2d& qr, real2d& qi, 
-                       std::string& method, 
-                       real2d& cld_frac_i, real2d& cld_frac_l, real2d& cld_frac_r, 
-                       real2d& cldm) 
+void get_cloud_fraction(int its, int ite, int kts, int kte, real2d& ast,
+                       real2d& qc, real2d& qr, real2d& qi, std::string& method,
+                       real2d& cld_frac_i, real2d& cld_frac_l, real2d& cld_frac_r)
 {
   int nk = kte-kts+1;
   int ni = ite-its+1;
 
-  parallel_for( SimpleBounds<2>(ni,nk) , YAKL_LAMBDA (int i, int k) {
-      cldm(i,k)  = 1.0; //max(ast(i,k), mincld);
-      cld_frac_i(i,k) = 1.0; //max(ast(i,k), mincld);
-      cld_frac_l(i,k) = 1.0; //max(ast(i,k), mincld);
-      cld_frac_r(i,k) = 1.0; //cldm(i,k);
+  // Temporary setting for initial P3 implementation
+
+  // parallel_for( SimpleBounds<2>(ni,nk) , YAKL_LAMBDA (int i, int k) {
+  //   cld_frac_i(i,k) = 1.0; //max(ast(i,k), p3_mincld);
+  //   cld_frac_l(i,k) = 1.0; //max(ast(i,k), p3_mincld);
+  //   cld_frac_r(i,k) = 1.0; //cldm(i,k);
+  // });
+
+  real cld_water_threshold = 0.001;
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    int icol = i+nx*(j+icrm*ny);
+    cld_frac_l(icol,k) = p3_mincld;
+    cld_frac_i(icol,k) = p3_mincld;
+    cld_frac_r(icol,k) = p3_mincld;
+    real cld_water_tmp = rho(k,icrm)*adz(k,icrm)*dz(icrm)*(qcl(k,j,i,icrm)+qci(k,j,i,icrm));
+    if(cld_water_tmp > cld_water_threshold) {
+      if (qcl(k,j,i,icrm)>0) { cld_frac_l(icol,k) = 1.0; }
+      if (qci(k,j,i,icrm)>0) { cld_frac_i(icol,k) = 1.0; }
+      if (qpl(k,j,i,icrm)>0) { cld_frac_r(icol,k) = 1.0; }
+    }
   });
 
 #if 0
@@ -94,7 +107,7 @@ void get_cloud_fraction(int its, int ite, int kts, int kte,
        // absence of cloud is defined as mass > qsmall, sub-cloud precip
        // frac for the in_cloud method tends to be very small and is
        // very sensitive to tiny changes in condensate near cloud base.
-       if (qc(i,k) < qsmall && qi(i,k) < qsmall && k > 0) {
+       if (qc(i,k) < p3_qsmall && qi(i,k) < p3_qsmall && k > 0) {
          // max(cld_frac_r above and cld_frac_r for this layer) is taken here
          // because code is incapable of handling cld_frac_r<cldm for a
          // given grid cell
@@ -113,7 +126,7 @@ void get_cloud_fraction(int its, int ite, int kts, int kte,
 
       parallel_for( SimpleBounds<2>(ni,nk) , YAKL_LAMBDA (int i, int k) {
         if (k > 0) {
-           if (qr(i,k-1) >= qsmall || qi(i,k-1) >= qsmall) {
+           if (qr(i,k-1) >= p3_qsmall || qi(i,k-1) >= p3_qsmall) {
               cld_frac_r(i,k) = max(cld_frac_r(i,k-1),cld_frac_r(i,k));
            }
         }
@@ -192,7 +205,7 @@ void micro_p3_proc() {
   const int ncol  = ncrms*nx*ny;
   const int npack = ekat::npack<Spack>(nlev);
 
-  real4d pmid("pdel",nzm,ny,nx,ncrms);
+  real4d pmid("pmid",nzm,ny,nx,ncrms);
   real4d pdel("pdel",nzm,ny,nx,ncrms);
 
   real2d qc_in("qc",ncol, nlev);
@@ -253,11 +266,11 @@ void micro_p3_proc() {
 
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (k==0) {
-      pdel(k,j,i,icrm) = psfc(icrm) - pmid(k+1,j,i,icrm);
+      pdel(k,j,i,icrm) = ( psfc(icrm) - pmid(k+1,j,i,icrm) )/2 ;
     } else if (k==(nzm-1)) {
       pdel(k,j,i,icrm) = pdel(k-1,j,i,icrm);
     } else {
-      pdel(k,j,i,icrm) = pmid(k-1,j,i,icrm) - pmid(k+1,j,i,icrm);
+      pdel(k,j,i,icrm) = ( pmid(k-1,j,i,icrm) - pmid(k+1,j,i,icrm) )/2 ;
     }
   });
   //----------------------------------------------------------------------------
@@ -328,7 +341,7 @@ fclose(fp);
     nccn_in(icol,ilev)            = nccn(k,icrm);
     nc_nuceat_tend_in(icol,ilev)  = nc_nuceat_tend(k,icrm);
     ni_activated_in(icol,ilev)    = ni_activated(k,icrm);
-    inv_qc_relvar_in(icol,ilev)   = 2.; // relvar(k,icrm); - What value should we use before SHOC provides this?
+    inv_qc_relvar_in(icol,ilev)   = 1.; // relvar(k,icrm); - What value should we use before SHOC provides this?
     dz_in(icol,ilev)              = dz(icrm);
     pmid_in(icol,ilev)            = pmid(k,j,i,icrm);
     pdel_in(icol,ilev)            = pdel(k,j,i,icrm);
@@ -338,9 +351,8 @@ fclose(fp);
   });
 
   std::string method("in_cloud");
-  get_cloud_fraction(0, ncol-1, 0, nlev-1,
-                     ast_in, qc_in, qr_in, qi_in, method,
-                     cld_frac_i_in, cld_frac_l_in, cld_frac_r_in, cldm_in);
+  get_cloud_fraction(0, ncol-1, 0, nlev-1,ast_in, qc_in, qr_in, qi_in, method,
+                     cld_frac_i_in, cld_frac_l_in, cld_frac_r_in);
 
   view_2d nc_nuceat_tend_d("nc_nuceat_tend", ncol, npack),
           nccn_d("nccn", ncol, npack),
