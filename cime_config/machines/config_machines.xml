@@ -3002,7 +3002,7 @@
     <DESC>ORNL Summit. Node: 2x POWER9 + 6x Volta V100, 22 cores/socket, 4 HW threads/core.</DESC>
     <NODENAME_REGEX>.*summit.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>ibm,ibmgpu,pgi,pgigpu,gnu,gnugpu</COMPILERS>
+    <COMPILERS>ibm,ibmgpu,pgi,pgigpu,gnu,gnugpu,pgielmacc</COMPILERS>
     <MPILIBS>spectrum-mpi,mpi-serial</MPILIBS>
     <PROJECT>cli115</PROJECT>
     <CHARGE_ACCOUNT>cli115</CHARGE_ACCOUNT>
@@ -3065,7 +3065,7 @@
         <command name="list"/>
       </modules>
       <modules compiler="pgi.*">
-        <command name="load">nvhpc/21.3</command>
+        <command name="load">nvhpc/20.9</command>
       </modules>
       <modules compiler="pgigpu">
         <command name="load">cuda/10.1.243</command>
@@ -3135,6 +3135,13 @@
       <env name="GPU_PER_RS">1</env>
       <env name="LTC_PRT">gpu-cpu</env>
       <env name="NUM_RS">$SHELL{echo "6*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
+    </environment_variables>
+    <environment_variables compiler="pgielmacc">
+      <env name="RS_PER_NODE">$SHELL{if [ `./xmlquery --value TOTAL_TASKS` -lt 6 ];then echo `./xmlquery --value TOTAL_TASKS`;else echo 6;fi|bc}</env>
+      <env name="CPU_PER_RS">1</env>
+      <env name="GPU_PER_RS">1</env>
+      <env name="LTC_PRT">gpu-cpu</env>
+      <env name="NUM_RS">$SHELL{echo "(`./xmlquery --value TOTAL_TASKS`)"|bc}</env>
     </environment_variables>
   </machine>
 

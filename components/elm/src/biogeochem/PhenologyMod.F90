@@ -234,7 +234,7 @@ contains
     PhenolParamsInst%lwtop=tempr
 
      !!!!========== Update to device ========= !!!
-     !$acc update device(PhenolParamsInst%crit_dayl, &
+     !$acc enter data copyin(PhenolParamsInst%crit_dayl, &
      !$acc PhenolParamsInst%crit_dayl_stress, &
      !$acc PhenolParamsInst%cumprec_onset   , &
      !$acc PhenolParamsInst%ndays_on        , &
@@ -368,8 +368,6 @@ contains
    !        num_soilc, filter_soilc, crop_vars, cnstate_vars)
    !end if
 
-    call CNOffsetLitterfall(num_soilp, filter_soilp, &
-         cnstate_vars)
    enddo
 
   ! gather all patch-level litterfall fluxes to the column for litter C and N inputs
@@ -440,9 +438,6 @@ contains
     !$acc  , p1d, p1v       &
     !$acc  , hti   &
     !$acc  , tbase &
-    !$acc  , inhemi       &
-    !$acc  , minplantjday &
-    !$acc  , maxplantjday &
     !$acc  , jdayyrstart )
 
   end subroutine PhenologyInit
@@ -2195,6 +2190,10 @@ contains
 
     hti   = 1._r8
     tbase = 0._r8
+    !$acc update device(& 
+    !$acc    inhemi       &
+    !$acc  , minplantjday &
+    !$acc  , maxplantjday )
 
   end subroutine CropPhenologyInit
 
@@ -2323,6 +2322,7 @@ contains
       ! will have to develop some type of relationship that reduces LAI and
       ! biomass pools in response to cold damaged crop
 
+#ifndef _OPENACC 
       if (t_ref2m_min(p) <= tfrz - 6._r8) then
          tkil = (tbase - 6._r8) - 6._r8 * hdidx(p)
          if (tkil >= tcrown) then
@@ -2335,6 +2335,7 @@ contains
             end if
          end if
       end if
+#endif 
 
     end associate
 

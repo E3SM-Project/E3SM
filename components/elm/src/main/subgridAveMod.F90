@@ -908,8 +908,8 @@ end subroutine p2c_1d_filter_parallel
           end if
        end do
     else
-       write(iulog,*)'p2g_2d error: scale type ',c2l_scale_type,' not supported'
-       all endrun(msg=errMsg(__FILE__, __LINE__))
+       !write(iulog,*)'p2g_2d error: scale type ',c2l_scale_type,' not supported'
+       !call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
     if (p2c_scale_type == unity) then
@@ -917,8 +917,8 @@ end subroutine p2c_1d_filter_parallel
           scale_p2c(p) = 1.0_r8
        end do
     else
-       write(iulog,*)'p2g_2d error: scale type ',c2l_scale_type,' not supported'
-       call endrun(msg=errMsg(__FILE__, __LINE__))
+       !write(iulog,*)'p2g_2d error: scale type ',c2l_scale_type,' not supported'
+       !call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
     garr(bounds%begg : bounds%endg, :) = spval
@@ -1165,10 +1165,6 @@ end subroutine p2c_1d_filter_parallel
           garr(g) = garr(g)/sumwt(g)
        end if
     end do
-    if (found) then
-        print *, 'c2g_1d error: sumwt is greater than 1.0 at g= ',index
-       call endrun(decomp_index=index, elmlevel=nameg, msg=errMsg(__FILE__, __LINE__))
-    end if
 
   end subroutine c2g_1d_gpu
 
@@ -2140,8 +2136,8 @@ end subroutine p2c_1d_filter_parallel
      else if (l2g_scale_type == lake) then
         scale_lookup(istdlak) = 1.0_r8
      else
-        write(iulog,*)'scale_l2g_lookup_array error: scale type ',l2g_scale_type,' not supported'
-        call endrun(msg=errMsg(__FILE__, __LINE__))
+        !write(iulog,*)'scale_l2g_lookup_array error: scale type ',l2g_scale_type,' not supported'
+        !call endrun(msg=errMsg(__FILE__, __LINE__))
      end if
 
   end subroutine create_scale_l2g_lookup_gpu

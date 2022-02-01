@@ -29,7 +29,7 @@ module PhosphorusStateUpdate1Mod
   use GridcellDataType       , only : grc_ps, grc_pf
   use ColumnDataType         , only : col_ps, col_pf
   use VegetationDataType     , only : veg_ps, veg_pf
-
+  use timeinfoMod 
   !
   implicit none
   save
@@ -204,8 +204,10 @@ contains
       !------------------------------------------------------------------
 
       ! forest fertilization
-      call get_curr_date(kyr, kmo, kda, mcsec)
+      !call get_curr_date(kyr, kmo, kda, mcsec)
       if (forest_fert_exp) then
+         
+         kyr = year_curr; kda = day_curr; mcsec = secs_curr;
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             ! fertilization assumed to occur at the begnining of each month

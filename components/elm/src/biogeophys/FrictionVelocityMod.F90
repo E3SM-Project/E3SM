@@ -115,8 +115,6 @@ contains
           if (present(landunit_index)) then
              zldis = forc_hgt_u_patch(pfti)-displa
           else
-             print *,displa
-             print *, forc_hgt_u_patch(n)
              zldis = forc_hgt_u_patch(n)-displa
           end if
 

@@ -1,8 +1,8 @@
 module quadraticMod
 
-  !#py use abortutils  ,   only: endrun
+  use abortutils  ,   only: endrun
   use shr_kind_mod,   only: r8 => shr_kind_r8
-  !#py !#py use shr_log_mod ,   only: errMsg => shr_log_errMsg
+  use shr_log_mod ,   only: errMsg => shr_log_errMsg
   use elm_varctl  ,   only: iulog
 
   implicit none

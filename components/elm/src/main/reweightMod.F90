@@ -11,6 +11,8 @@ module reweightMod
 #include "shr_assert.h"
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use shr_kind_mod   , only : r8 => shr_kind_r8
+  use shr_sys_mod    , only : shr_sys_flush
+  use elm_varctl     , only : iulog
   !
   ! PUBLIC TYPES:
   implicit none
@@ -45,8 +47,7 @@ contains
     real(r8)          , intent(in) :: icemask_grc( bounds%begg: ) ! ice sheet grid coverage mask [gridcell]
     !------------------------------------------------------------------------
 
-    SHR_ASSERT(bounds%level == BOUNDS_LEVEL_CLUMP, errMsg(__FILE__, __LINE__))
-
+    ! SHR_ASSERT(bounds%level == BOUNDS_LEVEL_CLUMP, errMsg(__FILE__, __LINE__))
     call set_active(bounds)
     call check_weights(bounds, active_only=.false.)
     call check_weights(bounds, active_only=.true.)

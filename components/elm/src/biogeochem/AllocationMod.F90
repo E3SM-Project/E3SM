@@ -122,8 +122,7 @@ module AllocationMod
   !$acc declare create(e_plant_scalar)
   
   !$acc declare copyin(crop_supln)
-  !$acc declare create(decompmicc(:))
-  !$acc declare create(filter_pcomp(:))
+  !!!!$acc declare create(filter_pcomp(:))
   !$acc declare create(veg_rootc_bigleaf(:,:))
   !$acc declare create(ft_index_bigleaf)
   !-----------------------------------------------------------------------
@@ -210,9 +209,9 @@ contains
     use elm_varctl      , only : carbon_only
     use elm_varctl      , only : carbonnitrogen_only
     use elm_varctl      , only : carbonphosphorus_only
-
-
     use elm_varpar      , only: nlevdecomp
+    use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=),isnan => shr_infnan_isnan
+    
     !
     ! !ARGUMENTS:
     implicit none
@@ -238,24 +237,22 @@ contains
     ! Allocate scratch space for ECA and FATES/ECA
 
     if (nu_com .eq. 'ECA' .or. nu_com .eq. 'MIC') then
-       allocate(decompmicc(1:nlevdecomp)); decompmicc(1:nlevdecomp) = nan
+       !!allocate(decompmicc(1:nlevdecomp)); decompmicc(1:nlevdecomp) = nan
        if (use_fates) then
-          allocate(filter_pcomp(max_comps))
-          do f = 1,max_comps
-             filter_pcomp(f) = f
-          end do
-          allocate(plant_nh4demand_vr_fates(max_comps,nlevdecomp)); plant_nh4demand_vr_fates(:,:) = nan
-          allocate(plant_no3demand_vr_fates(max_comps,nlevdecomp)); plant_no3demand_vr_fates(:,:) = nan
-          allocate(plant_pdemand_vr_fates(max_comps,nlevdecomp));   plant_pdemand_vr_fates(:,:) = nan
+          !allocate(filter_pcomp(max_comps))
+          !do f = 1,max_comps
+          !   filter_pcomp(f) = f
+          !end do
+         ! allocate(plant_nh4demand_vr_fates(max_comps,nlevdecomp)); plant_nh4demand_vr_fates(:,:) = nan
+         ! allocate(plant_no3demand_vr_fates(max_comps,nlevdecomp)); plant_no3demand_vr_fates(:,:) = nan
+         ! allocate(plant_pdemand_vr_fates(max_comps,nlevdecomp));   plant_pdemand_vr_fates(:,:) = nan
        else
           max_comps = bounds%endp-bounds%begp+1
-          allocate(filter_pcomp(max_comps)); filter_pcomp(:) = -1
+          !allocate(filter_pcomp(max_comps)); filter_pcomp(:) = -1
           allocate(ft_index_bigleaf(bounds%begp:bounds%endp)); ft_index_bigleaf(bounds%begp:bounds%endp) = -1
           allocate(veg_rootc_bigleaf(bounds%begp:bounds%endp,1:nlevdecomp)); veg_rootc_bigleaf(bounds%begp:bounds%endp,1:nlevdecomp) = nan
        end if
     end if
-
->>>>>>> 8b5e440e9b... BeTR bshr_infnan_mod seems to interfere with the shr_infnan_mod used with rest of the ELM code
 
     ! Allocate scratch space for ECA and FATES/ECA
 

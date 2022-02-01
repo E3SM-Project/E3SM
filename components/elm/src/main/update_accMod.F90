@@ -287,9 +287,7 @@ subroutine update_acc_variables()
   !$acc    , nu_com_nfix            &
   !$acc    , bdnr                   &
   !$acc    , dayscrecover           &
-  !$acc    , arepr(:)               &
-  !$acc    , aroot(:)               &
-  !$acc    , decompmicc(:)          &
+  !!!!! NOTE: this is needed based on nu_com !$acc    , decompmicc(:)          &
   !$acc    , crop_supln             &
   !$acc     )
 

@@ -74,19 +74,19 @@ module CNEcosystemDynBetrMod
     ! setup fluxes and parameters for plant-microbe coupling in soibgc
     !
     ! !USES:
-    use NitrogenDynamicsMod            , only : NitrogenDeposition,NitrogenFixation, NitrogenFert, CNSoyfix
-    use MaintenanceRespMod                , only : MaintenanceResp
-    use SoilLittDecompMod               , only : SoilLittDecompAlloc
-    use CNPhenologyBeTRMod            , only : CNPhenology
+    use NitrogenDynamicsMod          , only : NitrogenDeposition,NitrogenFixation, NitrogenFert, CNSoyfix
+    use MaintenanceRespMod           , only : MaintenanceResp
+    use SoilLittDecompMod            , only : SoilLittDecompAlloc
+    use CNPhenologyBeTRMod           , only : CNPhenology
     use GrowthRespMod                , only : GrowthResp
     use CarbonStateUpdate1Mod        , only : CarbonStateUpdate1,CarbonStateUpdate0
-    use CNNStateUpdate1BeTRMod        , only : NStateUpdate1
-    use CNGapMortalityBeTRMod         , only : CNGapMortality
+    use CNNStateUpdate1BeTRMod       , only : NStateUpdate1
+    use CNGapMortalityBeTRMod        , only : CNGapMortality
     use CarbonStateUpdate2Mod        , only : CarbonStateUpdate2, CarbonStateUpdate2h
-    use CNNStateUpdate2BeTRMod        , only : NStateUpdate2, NStateUpdate2h
+    use CNNStateUpdate2BeTRMod       , only : NStateUpdate2, NStateUpdate2h
     use FireMod                 , only : FireArea, FireFluxes
-    use CarbonStateUpdate3Mod        , only : CarbonStateUpdate3
-    use CarbonIsoFluxMod             , only : CarbonIsoFlux1, CarbonIsoFlux2, CarbonIsoFlux2h, CarbonIsoFlux3
+    use CarbonStateUpdate3Mod   , only : CarbonStateUpdate3
+    use CarbonIsoFluxMod        , only : CarbonIsoFlux1, CarbonIsoFlux2, CarbonIsoFlux2h, CarbonIsoFlux3
     use C14DecayMod             , only : C14Decay, C14BombSpike
     use WoodProductsMod         , only : WoodProducts
     use DecompCascadeBGCMod     , only : decomp_rate_constants_bgc
@@ -97,14 +97,14 @@ module CNEcosystemDynBetrMod
     use CropHarvestPoolsMod       , only : CropHarvestPools
     use PlantMicKineticsMod       , only : PlantMicKinetics_type
     use CNAllocationBetrMod       , only : SetPlantMicNPDemand, Allocation3_PlantCNPAlloc
-    use CNNStateUpdate3BeTRMod        , only : NStateUpdate3
-    use NitrogenDynamicsMod            , only : NitrogenFixation_balance
-    use PhosphorusStateUpdate1Mod          , only : PhosphorusStateUpdate1
-    use PhosphorusStateUpdate2Mod          , only : PhosphorusStateUpdate2, PhosphorusStateUpdate2h
-    use PhosphorusDynamicsMod              , only : PhosphorusBiochemMin_balance,PhosphorusDeposition,PhosphorusWeathering
-    use VerticalProfileMod      , only : decomp_vertprofiles
-    use RootDynamicsMod              , only : RootDynamics
-    use clm_time_manager , only : get_step_size 
+    use CNNStateUpdate3BeTRMod    , only : NStateUpdate3
+    use NitrogenDynamicsMod       , only : NitrogenFixation_balance
+    use PhosphorusStateUpdate1Mod , only : PhosphorusStateUpdate1
+    use PhosphorusStateUpdate2Mod , only : PhosphorusStateUpdate2, PhosphorusStateUpdate2h
+    use PhosphorusDynamicsMod     , only : PhosphorusBiochemMin_balance,PhosphorusDeposition,PhosphorusWeathering
+    use VerticalProfileMod        , only : decomp_vertprofiles
+    use RootDynamicsMod           , only : RootDynamics
+    use clm_time_manager , only : get_step_size
     implicit none
 
 
@@ -140,9 +140,9 @@ module CNEcosystemDynBetrMod
     type(PlantMicKinetics_type)      , intent(inout) :: PlantMicKinetics_vars
     type(phosphorusflux_type)        , intent(inout) :: phosphorusflux_vars
     type(phosphorusstate_type)       , intent(inout) :: phosphorusstate_vars
-    
-    real(r8) :: dt 
-    integer :: c13= 0, c14=1
+
+    real(r8) :: dt
+    integer :: c13= 0, c14=1, fp, p
     dt = real(get_step_size(),r8)
     if(.not. use_fates)then
        ! --------------------------------------------------
@@ -159,16 +159,14 @@ module CNEcosystemDynBetrMod
        ! --------------------------------------------------
 
        call t_startf('CNDeposition')
-       call NitrogenDeposition(bounds, &
-            atm2lnd_vars, dt )
+       call NitrogenDeposition(num_soilc, filter_soilc, atm2lnd_vars, dt )
        call t_stopf('CNDeposition')
 
        call t_startf('MaintenanceResp')
        if (crop_prog) then
-          call NitrogenFert(bounds, num_soilc,filter_soilc )
-
+          call NitrogenFert(num_soilc,filter_soilc )
        end if
-       call MaintenanceResp(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call MaintenanceResp( num_soilc, filter_soilc, num_soilp, filter_soilp, &
             canopystate_vars, soilstate_vars, photosyns_vars )
        call t_stopf('MaintenanceResp')
 
@@ -185,8 +183,7 @@ module CNEcosystemDynBetrMod
        ! --------------------------------------------------
 
        call t_startf('PhosphorusDeposition')
-       call PhosphorusDeposition(bounds, &
-            atm2lnd_vars)
+       call PhosphorusDeposition(num_soilc, filter_soilc, atm2lnd_vars)
        call t_stopf('PhosphorusDeposition')
 
        !This specifies the vertical distribution of deposition fluxes and
@@ -258,9 +255,12 @@ module CNEcosystemDynBetrMod
        !--------------------------------------------
 
        call t_startf('GrowthResp')
-       call GrowthResp(num_soilp, filter_soilp )
+       do fp = 1, num_soilp
+          p = filter_soilp(fp)
+          call GrowthResp(p)
+       end do
        call t_stopf('CNGResp')
-       
+
        !--------------------------------------------
        ! Dynamic Roots
        !--------------------------------------------
@@ -277,16 +277,19 @@ module CNEcosystemDynBetrMod
        !--------------------------------------------
        ! C State Update 0
        !--------------------------------------------
-       
-       dt = real(get_step_size(), r8) 
+
+       dt = real(get_step_size(), r8)
        call t_startf('CarbonStateUpdate0')
-       call CarbonStateUpdate0(num_soilp, filter_soilp, veg_cs, veg_cf,dt)
-       if ( use_c13 ) then
-          call CarbonStateUpdate0(num_soilp, filter_soilp, c13_veg_cs, c13_veg_cf,dt)
-       end if
-       if ( use_c14 ) then
-          call CarbonStateUpdate0(num_soilp, filter_soilp, c14_veg_cs, c14_veg_cf,dt)
-       end if
+       do fp = 1,  num_soilp
+          p = filter_soilp(fp)
+          call CarbonStateUpdate0(p,veg_cs,veg_cf, dt)
+         if ( use_c13 ) then
+            call CarbonStateUpdate0(p,c13_veg_cs,c13_veg_cf, dt)
+         end if
+         if ( use_c14 ) then
+            call CarbonStateUpdate0(p,c14_veg_cs,c14_veg_cf, dt)
+         end if
+       end do
        call t_stopf('CarbonStateUpdate0')
 
        !--------------------------------------------
@@ -307,15 +310,15 @@ module CNEcosystemDynBetrMod
                isotope=c14, isocol_cs=c14_col_cs, isoveg_cs=c14_veg_cs, isocol_cf=c14_col_cf, isoveg_cf=c14_veg_cf)
        end if
 
-       call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call CarbonStateUpdate1( num_soilc, filter_soilc, num_soilp, filter_soilp, &
             crop_vars, col_cs, veg_cs, col_cf, veg_cf, dt)
 
        if ( use_c13 ) then
-          call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+          call CarbonStateUpdate1( num_soilc, filter_soilc, num_soilp, filter_soilp, &
                crop_vars, c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf,dt)
        end if
        if ( use_c14 ) then
-          call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+          call CarbonStateUpdate1( num_soilc, filter_soilc, num_soilp, filter_soilp, &
                crop_vars, c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf,dt)
        end if
 
@@ -406,7 +409,7 @@ module CNEcosystemDynBetrMod
 
        call CropHarvestPools(num_soilc, filter_soilc, dt)
 
-       call FireArea(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
+       call FireArea( num_soilc, filter_soilc, num_soilp, filter_soilp, &
             atm2lnd_vars, energyflux_vars, soilhydrology_vars, &
             cnstate_vars )
 
@@ -492,7 +495,7 @@ module CNEcosystemDynBetrMod
 
     call t_startf('CNsumBetr')
 
-            
+
 
     call t_stopf('CNsumBetr')
 

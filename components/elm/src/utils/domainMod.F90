@@ -78,7 +78,8 @@ module domainMod
   public domain_init          ! allocates/nans domain types
   public domain_clean         ! deallocates domain types
   public domain_check         ! write out domain info
-!
+  public :: domain_transfer 
+  !
 ! !REVISION HISTORY:
 ! Originally elm_varsur by Mariana Vertenstein
 ! Migrated from elm_varsur to domainMod by T Craig

@@ -54,7 +54,7 @@ contains
     ! Turbulent and momentum fluxes from urban canyon (consisting of roof, sunwall,
     ! shadewall, pervious and impervious road).
     ! !USES:
-    !$acc routine seq
+    !!! !$acc routine seq
     use elm_varcon          , only : cpair, vkc, spval, grav, pondmx_urban, rpi, rgas
     use elm_varcon          , only : ht_wasteheat_factor, ac_wasteheat_factor, wasteheat_limit
     use column_varcon       , only : icol_shadewall, icol_road_perv, icol_road_imperv
@@ -86,9 +86,9 @@ contains
     integer  :: fp,fc,fl,f,p,c,l,t,g,j,pi,i     ! indices
 
     real(r8) :: canyontop_wind              ! wind at canyon top (m/s)
-    real(r8) :: canyon_u_wind (num_urbanl)  ! u-component of wind speed inside canyon (m/s)
+    real(r8) :: canyon_u_wind (bounds%begl:bounds%endl)  ! u-component of wind speed inside canyon (m/s)
     real(r8) :: canyon_wind                 ! net wind speed inside canyon (m/s)
-    real(r8) :: canyon_resistance(num_urbanl)           ! resistance to heat and moisture transfer from canyon road/walls to canyon air (s/m)
+    real(r8) :: canyon_resistance(bounds%begl:bounds%endl)           ! resistance to heat and moisture transfer from canyon road/walls to canyon air (s/m)
 
     real(r8) :: ur(bounds%begl:bounds%endl)                          ! wind speed at reference height (m/s)
     real(r8) :: ustar(bounds%begl:bounds%endl)                       ! friction velocity (m/s)

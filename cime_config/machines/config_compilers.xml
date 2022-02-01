@@ -599,6 +599,57 @@ flags should be captured within MPAS CMake files.
   <SFC> pgf95 </SFC>
 </compiler>
 
+<compiler COMPILER="pgielmacc">
+  <CFLAGS>
+    <base> -time </base>
+    <append compile_threaded="TRUE"> -mp </append>
+  </CFLAGS>
+  <CPPDEFS>
+    <append> -DFORTRANUNDERSCORE -DNO_SHR_VMATH -DNO_R16 -DCPRPGI -DCPL_BYPASS </append>
+  </CPPDEFS>
+  <CXX_LINKER>CXX</CXX_LINKER>
+  <FC_AUTO_R8>
+    <base> -r8 </base>
+  </FC_AUTO_R8>
+  <FFLAGS>
+    <base>  -i4 -time -Mnostack_arrays  -Mextend -byteswapio -Mflushz -Kieee -Mallocatable=03 </base>
+    <append compile_threaded="TRUE"> -mp </append>
+    <append DEBUG="TRUE"> -O0 -g -Mnovect -Kieee -Mchkptr -Mchkstk </append>
+    <append COMP_NAME="datm"> -Mnovect </append>
+    <append COMP_NAME="dlnd"> -Mnovect </append>
+    <append COMP_NAME="elm"> -ta=tesla:deepcopy,ptxinfo -Minfo=accel -acc -Mcuda </append>
+    <append COMP_NAME="drof"> -Mnovect </append>
+    <append COMP_NAME="dwav"> -Mnovect </append>
+    <append COMP_NAME="dice"> -Mnovect </append>
+    <append COMP_NAME="docn"> -Mnovect </append>
+  </FFLAGS>
+  <FFLAGS_NOOPT>
+    <base> -O0 </base>
+  </FFLAGS_NOOPT>
+  <FIXEDFLAGS>
+    <base> -Mfixed </base>
+  </FIXEDFLAGS>
+  <FREEFLAGS>
+    <base> -Mfree </base>
+  </FREEFLAGS>
+  <!-- Note that SUPPORTS_CXX is false for pgi in general, because we
+       need some machine-specific libraries -->
+  <!-- Technically, PGI does recognize this keyword during parsing,
+       but support is either buggy or incomplete, notably in that
+       the "contiguous" attribute is incompatible with "intent".-->
+  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <LDFLAGS>
+    <base> -time -Wl,--allow-multiple-definition -acc -Mcuda </base>
+    <append compile_threaded="TRUE"> -mp </append>
+  </LDFLAGS>
+  <MPICC> mpicc </MPICC>
+  <MPICXX> mpicxx </MPICXX>
+  <MPIFC> mpifort </MPIFC>
+  <SCC> pgcc </SCC>
+  <SCXX> pgc++ </SCXX>
+  <SFC> pgfortran </SFC>
+</compiler>
+
 <compiler COMPILER="pgigpu">
   <CFLAGS>
     <base> -time </base>
@@ -1950,6 +2001,35 @@ flags should be captured within MPAS CMake files.
     <base>-lstdc++</base>
   </CXX_LIBS>
   <KOKKOS_OPTIONS> --arch=Power9,Volta70 --with-cuda=$ENV{CUDA_DIR} --with-cuda-options=enable_lambda</KOKKOS_OPTIONS>
+  <MPICC> mpicc </MPICC>
+  <MPICXX> mpiCC </MPICXX>
+  <MPIFC> mpif90 </MPIFC>
+  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
+  <SCC> pgcc </SCC>
+  <SFC> pgfortran </SFC>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
+<compiler MACH="summit" COMPILER="pgielmacc">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
+  </CFLAGS>
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 -Mvect=nosimd -DSUMMITDEV_PGI </append>
+  </FFLAGS>
+  <SLIBS>
+    <append> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 -L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{OLCF_NETLIB_LAPACK_ROOT}/lib -llapack</append>
+  </SLIBS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
   <MPIFC> mpif90 </MPIFC>

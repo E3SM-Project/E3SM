@@ -19,10 +19,11 @@ module decompInitMod
   use ColumnType      , only : col_pp                
   use FatesInterfaceTypesMod, only : fates_maxElementsPerSite
   use VegetationType  , only : veg_pp                
-  use decompMod
+  use decompMod  
   use mct_mod  
   use topounit_varcon   , only : max_topounits, has_topounit
-  use domainMod         , only: ldomain
+  use domainMod         , only : ldomain
+  use decompMod         , only : procinfo
   !
   ! !PUBLIC TYPES:
   implicit none

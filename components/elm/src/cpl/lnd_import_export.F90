@@ -11,6 +11,7 @@ module lnd_import_export
   use TopounitDataType , only: top_as, top_af  ! atmospheric state and flux variables  
   use elm_cpl_indices
   use mct_mod
+  use shr_sys_mod , only : shr_sys_flush 
   !
   implicit none
   !===============================================================================
@@ -742,7 +743,7 @@ contains
                   atm2lnd_vars%hdm2 = atm2lnd_vars%hdm1 
               end if
               ierr = nf90_close(ncid)
-            end if
+            end if !if master proc
 
             if (i .eq. 1) then 
               call mpi_bcast (atm2lnd_vars%hdm1, 360*720, MPI_REAL8, 0, mpicom, ier)
@@ -750,8 +751,8 @@ contains
               call mpi_bcast (smap05_lon, 720, MPI_REAL8, 0, mpicom, ier)
               call mpi_bcast (smap05_lat, 360, MPI_REAL8, 0, mpicom, ier)
             end if
-          end if
-        end if
+            
+          end if ! if loaded_bypass data 
 
           !figure out which point to get
           if (atm2lnd_vars%loaded_bypassdata == 0) then 
@@ -925,7 +926,7 @@ contains
   
           atm2lnd_vars%forc_ndep_grc(g)    = (atm2lnd_vars%ndep1(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt1(1) + &
                                               atm2lnd_vars%ndep2(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt2(1)) / (365._r8 * 86400._r8)
-       end if model_filter
+       endif model_filter
 
    !------------------------------------Aerosol forcing--------------------------------------------------
         if (atm2lnd_vars%loaded_bypassdata .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
@@ -1122,6 +1123,7 @@ contains
 
          call downscale_atm_forcing_to_topounit(g, i, x2l, lnd2atm_vars)
        else
+
          do topo = grc_pp%topi(g), grc_pp%topf(g)
            ! first, all the state forcings
            top_as%tbot(topo)    = x2l(index_x2l_Sa_tbot,i)      ! forc_txy  Atm state K
@@ -1177,6 +1179,7 @@ contains
 
        ! Determine optional receive fields
        ! CO2 (and C13O2) concentration: constant, prognostic, or diagnostic
+       co2_type_idx = 0
        if (co2_type_idx == 0) then                    ! CO2 constant, value from namelist
          co2_ppmv_val = co2_ppmv
        else if (co2_type_idx == 1) then               ! CO2 prognostic, value from coupler field

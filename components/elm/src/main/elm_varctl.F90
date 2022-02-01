@@ -490,7 +490,7 @@ module elm_varctl
   !$acc declare copyin(vsfm_lateral_model_type    )
   !$acc declare copyin(use_extrasnowlayers)
   !$acc declare copyin(extra_gw_irr)
-
+  !$acc declare copyin(use_lake_wat_storage) 
   !----------------------------------------------------------
   ! Budgets
   !----------------------------------------------------------

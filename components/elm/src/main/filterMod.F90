@@ -26,6 +26,8 @@ module filterMod
 
      integer, pointer :: pcropp(:)    => null()  ! prognostic crop filter (pfts)
      integer, pointer :: num_pcropp   => null()  ! number of pfts in prognostic crop filter
+     integer, pointer :: ppercropp(:)  => null()  ! prognostic perennial crop filter (pfts)
+     integer, pointer :: num_ppercropp => null()  ! number of pfts in prognostic perennial crop filter
      integer, pointer :: soilnopcropp(:)  =>null()! soil w/o prog. crops (pfts)
      integer, pointer :: num_soilnopcropp =>null()        ! number of pfts in soil w/o prog crops
 
@@ -250,6 +252,7 @@ contains
        allocate(this_filter(nc)%num_urbanl)
        allocate(this_filter(nc)%num_nourbanl)
        allocate(this_filter(nc)%num_pcropp)
+       allocate(this_filter(nc)%num_ppercropp)
        allocate(this_filter(nc)%num_soilnopcropp)
        allocate(this_filter(nc)%num_icemecc)
        allocate(this_filter(nc)%num_do_smb_c)

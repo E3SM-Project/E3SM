@@ -30,6 +30,7 @@ module CanopyHydrologyMod
   use pftvarcon         , only : irrigated
   use GridcellType      , only : grc_pp
   use timeinfoMod, only : dtime_mod
+  use domainMod ,only : ldomain_gpu
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -359,8 +360,8 @@ contains
              end if
              ! Urban sunwall and shadewall have no intercepted precipitation
           else
-             qflx_prec_grnd_snow = 0.
-             qflx_prec_grnd_rain = 0.
+             qflx_prec_grnd_snow = 0._r8
+             qflx_prec_grnd_rain = 0._r8
              qflx_dirct_rain(p) = 0._r8
              qflx_leafdrip(p) = 0._r8
           end if
@@ -392,29 +393,29 @@ contains
                if (qflx_irrig(p) > 0._r8 .or. qflx_supply(p) > 0._r8) then	!this pft needs water or have supply             
                   if  (irrigated(veg_pp%itype(p)) == 1._r8) then ! this pft is irrigated
                      qflx_surf_irrig(p) = qflx_supply(p)/irrigated_ppg(g)  ! surface water irrgation from MOSART, with time step shift                   
-                     qflx_grnd_irrig(p) = ldomain%f_grd(g)*qflx_irrig(p) ! groundwater irrigation based on demand in ELM, same time step
+                     qflx_grnd_irrig(p) = ldomain_gpu%f_grd(g)*qflx_irrig(p) ! groundwater irrigation based on demand in ELM, same time step
                      
                      if (extra_gw_irr) then ! if always met by additional extra gw pumping
                         if (qflx_supply(p) > 0._r8) then				
                            if (pgwgt(p) > 0._r8) then	 
-                              qflx_grnd_irrig(p) = atm2lnd_vars%deficit_grc(g)/pgwgt(p)/irrigated_ppg(g) + ldomain%f_grd(g)*qflx_irrig(p)
+                              qflx_grnd_irrig(p) = atm2lnd_vars%deficit_grc(g)/pgwgt(p)/irrigated_ppg(g) + ldomain_gpu%f_grd(g)*qflx_irrig(p)
                               !groundwater irrigation based on deficit from MOSART (with time step shift), not demand from ELM
                            end if
                         else if (qflx_irrig(p) > 0._r8) then
-                           qflx_grnd_irrig(p) = ldomain%f_grd(g)*qflx_irrig(p)
+                           qflx_grnd_irrig(p) = ldomain_gpu%f_grd(g)*qflx_irrig(p)
                         else
                            qflx_grnd_irrig(p) = 0._r8
                         endif	
                      endif			   
                      qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p) ! actual irrigation, including groundwater irrigation
-                     qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p)   
+                     qflx_prec_grnd_rain = qflx_prec_grnd_rain + qflx_real_irrig(p)   
                   end if		
                end if       
             else  ! one way coupling
-               qflx_surf_irrig(p) = ldomain%f_surf(g)*qflx_irrig(p)
-               qflx_grnd_irrig(p) = ldomain%f_grd(g)*qflx_irrig(p)
+               qflx_surf_irrig(p) = ldomain_gpu%f_surf(g)*qflx_irrig(p)
+               qflx_grnd_irrig(p) = ldomain_gpu%f_grd(g)*qflx_irrig(p)
                qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p)
-               qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p) 
+               qflx_prec_grnd_rain = qflx_prec_grnd_rain + qflx_real_irrig(p) 
                qflx_over_supply(p) = 0._r8
                qflx_supply(p) = 0._r8 !no water supplied by MOSART 
             end if

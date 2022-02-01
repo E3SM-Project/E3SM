@@ -41,7 +41,7 @@ module SoilLittDecompMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
 
-   public :: readSoilLittDecompParams
+  public :: readSoilLittDecompParams
   public :: SoilLittDecompAlloc
   ! pflotran
   public :: SoilLittDecompAlloc2
@@ -55,6 +55,35 @@ module SoilLittDecompMod
   !-----------------------------------------------------------------------
 
 contains
+   !-----------------------------------------------------------------------
+    subroutine readSoilLittDecompParams ( ncid )
+      !
+      ! !DESCRIPTION:
+      ! Read parameters
+      !
+      ! !USES:
+      use ncdio_pio    , only: file_desc_t,ncd_io
+      use abortutils   , only: endrun
+      use shr_log_mod  , only: errMsg => shr_log_errMsg
+
+      ! !ARGUMENTS:
+      implicit none
+      type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
+      !
+      ! !LOCAL VARIABLES:
+      character(len=32)  :: subname = 'CNDecompParamsType'
+      character(len=100) :: errCode = '-Error reading in parameters file:'
+      logical            :: readv ! has variable been read in or not
+      real(r8)           :: tempr ! temporary to read in constant
+      character(len=100) :: tString ! temp. var for reading
+      !-----------------------------------------------------------------------
+      allocate(CNDecompParamsInst%dnp)
+      tString='dnp'
+      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+      CNDecompParamsInst%dnp=tempr
+
+    end subroutine readSoilLittDecompParams
 
 !-----------------------------------------------
   subroutine SoilLittDecompAlloc (num_soilc, filter_soilc,    &

@@ -28,7 +28,8 @@ module NitrogenStateUpdate1Mod
   use decompMod              , only : bounds_type
   use elm_varcon             , only : dzsoi_decomp
   use elm_varctl             , only : use_fates
-  #define is_active_betr_bgc .false.
+  use timeinfoMod 
+  use tracer_varcon , only : is_active_betr_bgc
   !
   implicit none
   save
@@ -112,7 +113,7 @@ contains
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! filter for soil patches
     type(cnstate_type)       , intent(in)    :: cnstate_vars
-    real(r8)                  , intent(in)    :: dt        ! radiation time step (seconds)
+    real(r8)                 , intent(in)    :: dt        ! radiation time step (seconds)
 
     !
     ! !LOCAL VARIABLES:
@@ -257,8 +258,9 @@ contains
       endif  !end if is_active_betr_bgc 
 
       ! forest fertilization
-      call get_curr_date(kyr, kmo, kda, mcsec)
+      !call get_curr_date(kyr, kmo, kda, mcsec)
       if (forest_fert_exp) then
+          kyr = year_curr; kda = day_curr; mcsec = secs_curr;
          do fc = 1,num_soilc
             c = filter_soilc(fc)
             if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &

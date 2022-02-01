@@ -91,6 +91,7 @@ module subgridWeightsMod
   ! !USES:
   use shr_kind_mod , only : r8 => shr_kind_r8
   use shr_log_mod  , only : errMsg => shr_log_errMsg
+  use shr_sys_mod  , only : shr_sys_flush 
   use abortutils   , only : endrun
   use elm_varctl   , only : iulog, all_active
   use elm_varcon   , only : nameg, namel, namec, namep
@@ -284,9 +285,9 @@ contains
        t = lun_pp%topounit(l)
        lun_pp%active(l) = is_active_l(l)
        if (lun_pp%active(l) .and. .not. lun_pp%itype(l) == istice_mec .and. .not. lun_pp%itype(l) == istsoil .and. .not. top_pp%active(t)) then
-          write(iulog,*) trim(subname),' ERROR: active landunit found on inactive topounit', &
+          print *, ' ERROR: active landunit found on inactive topounit', &
                          'at l = ', l, ', t = ', t
-          call endrun(decomp_index=l, elmlevel=namel, msg=errMsg(__FILE__, __LINE__))
+          stop !call endrun(decomp_index=l, elmlevel=namel, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 
@@ -294,9 +295,9 @@ contains
        l = col_pp%landunit(c)
        col_pp%active(c) = is_active_c(c)
        if (col_pp%active(c) .and. .not. lun_pp%active(l)) then
-          write(iulog,*) trim(subname),' ERROR: active column found on inactive landunit', &
+          print *, trim(subname),' ERROR: active column found on inactive landunit', &
                          'at c = ', c, ', l = ', l
-          call endrun(decomp_index=c, elmlevel=namec, msg=errMsg(__FILE__, __LINE__))
+          stop !call endrun(decomp_index=c, elmlevel=namec, msg=errMsg(__FILE__, __LINE__))
        end if
     end do
 
@@ -366,7 +367,7 @@ contains
        ! PET: 4/25/2018: By keeping the glcmask reference at the gridcell level, this forces
        ! is_active_l = .true. for istice_mec landunits on all topounits for the gridcell.
        !if (lun_pp%itype(l) == istice_mec .and. ldomain%glcmask(g) == 1) is_active_l = .true. ! make sure no active l for inactive topounit TKT
-       if (top_pp%active(t) .and. lun_pp%itype(l) == istice_mec .and. ldomain%glcmask(g) == 1) is_active_l = .true.
+       if (top_pp%active(t) .and. lun_pp%itype(l) == istice_mec .and. ldomain_gpu%glcmask(g) == 1) is_active_l = .true.
 
        ! In general, include a virtual natural vegetation landunit. This aids
        ! initialization of a new landunit; and for runs that are coupled to CISM, this
@@ -476,7 +477,7 @@ contains
        !
        ! Note that we use glcmask rather than icemask here; see comment in is_active_l
        ! for the rationale.
-       if (top_pp%active(t) .and. lun_pp%itype(l) == istice_mec .and. ldomain%glcmask(g) == 1) is_active_c = .true.
+       if (top_pp%active(t) .and. lun_pp%itype(l) == istice_mec .and. ldomain_gpu%glcmask(g) == 1) is_active_c = .true.
 
        ! We don't really need to run over 0-weight urban columns. But because of some
        ! messiness in the urban code (many loops are over the landunit filter, then drill
@@ -680,7 +681,7 @@ contains
     ! active_only=true.
     !
     ! !USES
-    !! !$acc routine seq
+    !$acc routine seq
     !
     ! !ARGUMENTS
     implicit none
@@ -836,6 +837,8 @@ contains
        end if       
     end do
 
+    
+#ifndef _OPENACC
     do t = bounds%begt,bounds%endt
        if (top_pp%active(t)) then
           if (.not. weights_okay(sumwttunit(t), active_only, top_pp%active(t))) then
@@ -845,8 +848,6 @@ contains
           end if
        end if
     end do
-    
-#ifndef _OPENACC
     do g = bounds%begg,bounds%endg
        if (.not. weights_okay(sumwtgcell(g), active_only, i_am_active=.true.)) then
           write(iulog,*) trim(subname),' ERROR: at g = ',g,'total lunit weight is ',sumwtgcell(g), &
@@ -864,21 +865,16 @@ contains
        end if       
     end do
 
-    do g = bounds%begg,bounds%endg
-       if (.not. weights_okay(sumwtgcell(g), active_only, i_am_active=.true.)) then
-          write(iulog,*) trim(subname),' ERROR: at g = ',g,'total topounit weight is ',sumwtgcell(g), &
-                         'active_only = ', active_only
-          write(iulog,*) trim(subname),' ERROR: at g = ',g,' ntopounits = ',grc_pp%ntopounits(g)
-          error_found = .true.
-       end if
-    end do
+    !do g = bounds%begg,bounds%endg
+    !   if (.not. weights_okay(sumwtgcell(g), active_only, i_am_active=.true.)) then
+    !      write(iulog,*) trim(subname),' ERROR: at g = ',g,'total topounit weight is ',sumwtgcell(g), &
+    !                     'active_only = ', active_only
+    !      write(iulog,*) trim(subname),' ERROR: at g = ',g,' ntopounits = ',grc_pp%ntopounits(g)
+    !      error_found = .true.
+    !   end if
+    !end do
     
     deallocate(sumwtcol, sumwtlunit, sumwttunit, sumwtgcell)
-
-    if (error_found) then
-       call endrun(msg=errMsg(__FILE__, __LINE__))
-    end if
-    deallocate(sumwtcol, sumwtlunit, sumwtgcell)
     ! Success
 
   end subroutine check_weights

@@ -97,6 +97,7 @@ module pftvarcon
   !$acc declare create(nc3_nonarctic_grass )
   !$acc declare create(nc4_grass           )
   !$acc declare create(npcropmin           )
+  !$acc declare create(nppercropmin        )
   !$acc declare create(ncorn               )
   !$acc declare create(ncornirrig          )
   !$acc declare create(nscereal            )
@@ -188,7 +189,7 @@ module pftvarcon
   !$acc declare create(frootcp(:) )
   !$acc declare create(livewdcp(:))
   !$acc declare create(deadwdcp(:))
-
+  !$acc declare create(percrop(:) )
   ! for crop
 
   ! These arrays give information about the merge of unused crop types to the types CLM

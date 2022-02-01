@@ -67,7 +67,7 @@ contains
     !                Ha = Hf + Hg and Ea = Ef + Eg
     !
     ! !USES:
-      !$acc routine seq
+    !  !$acc routine seq
     use QSatMod            , only : QSat
     use elm_varcon         , only : denh2o, denice, roverg, hvap, hsub, zlnd, zsno, tfrz, spval
     use column_varcon      , only : icol_roof, icol_sunwall, icol_shadewall

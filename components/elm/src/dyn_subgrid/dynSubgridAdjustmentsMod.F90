@@ -69,7 +69,7 @@ contains
     ! dynamic landuse
     !
     ! !USES:
-      !$acc routine seq
+    !  !$acc routine seq
     use pftvarcon          , only : pconv, pprod10, pprod100
     use dynPriorWeightsMod , only : prior_weights_type
     use landunit_varcon    , only : istsoil, istcrop
@@ -397,7 +397,7 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-      !$acc routine seq
+    !  !$acc routine seq
     type(bounds_type)               , intent(in)    :: bounds
     integer                         , intent(in)    :: clump_index
     type(column_state_updater_type) , intent(in)    :: column_state_updater
@@ -504,7 +504,7 @@ contains
     ! dynamic landuse
     !
     ! !USES:
-      !$acc routine seq
+    !  !$acc routine seq
     use pftvarcon          , only : pconv, pprod10, pprod100
     use dynPriorWeightsMod , only : prior_weights_type
     use landunit_varcon    , only : istsoil, istcrop
@@ -813,7 +813,7 @@ contains
     ! dynamic landuse
     !
     ! !USES:
-      !$acc routine seq
+    !  !$acc routine seq
     use dynPriorWeightsMod       , only : prior_weights_type
     use landunit_varcon          , only : istsoil, istcrop
     use dynColumnStateUpdaterMod , only : column_state_updater_type
@@ -949,7 +949,7 @@ contains
     ! dynamic landuse
     !
     ! !USES:
-      !$acc routine seq
+    !  !$acc routine seq
     use pftvarcon          , only : pconv, pprod10, pprod100
     use dynPriorWeightsMod , only : prior_weights_type
     use ComputeSeedMod   , only : ComputeSeedAmounts
@@ -1257,7 +1257,7 @@ contains
     ! dynamic landuse
     !
     ! !USES:
-    !$acc routine seq
+    ! !$acc routine seq
     use dynPriorWeightsMod       , only : prior_weights_type
     use landunit_varcon          , only : istsoil, istcrop
     use dynColumnStateUpdaterMod , only : column_state_updater_type

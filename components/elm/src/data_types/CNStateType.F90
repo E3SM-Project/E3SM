@@ -32,7 +32,7 @@ module CNStateType
   real(r8)   , pointer, public :: fert_dose         (:,:)
   integer    , pointer, public :: fert_start        (:)
   integer    , pointer, public :: fert_end          (:)
-  !$acc declare create(fert_type(:),fert_dose(:),fert_continue(:), fert_start(:), fert_end(:) )
+  !$acc declare create(fert_type(:),fert_dose(:,:),fert_continue(:), fert_start(:), fert_end(:) )
   !
   ! !PUBLIC TYPES:
   type, public :: cnstate_type

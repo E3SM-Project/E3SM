@@ -1397,10 +1397,10 @@ contains
                 phosphorusstate_vars,phosphorusflux_vars)
 
     ! STEP-2: (ii) run SoilLittDecompAlloc
-    call SoilLittDecompAlloc (bounds, num_soilc, filter_soilc,    &
-               num_soilp, filter_soilp,                     &
-               canopystate_vars, soilstate_vars,            &
-               cnstate_vars, ch4_vars, dt )
+    !call SoilLittDecompAlloc (bounds, num_soilc, filter_soilc,    &
+    !           num_soilp, filter_soilp,                     &
+    !           canopystate_vars, soilstate_vars,            &
+    !           cnstate_vars, ch4_vars, dt )
 
     ! STEP-2: (iii) update elm_bgc_data from SoilLittDecompAlloc
     call elm_bgc_update_data(elm_interface_data%bgc, bounds, &
