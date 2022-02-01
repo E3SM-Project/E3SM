@@ -88,7 +88,7 @@ _TESTS = {
             "ERS_Ld31.ne4_oQU240.F2010",
             "ERP_Lm3.ne4_oQU240.F2010",
             "SMS_D_Ln5.ne30_oECv3.F2010",
-            "ERP_Ld3.ne30_oECv3.F2010",
+            "ERP_Ld3.ne30_oECv3.F2010.allactive-pioroot1",
             "SMS_Ly1.ne4_oQU240.F2010",
 	    "SMS_D_Ln5.ne45pg2_ne45pg2.F-EAM-AQP1",
             "SMS_D_Ln5.ne4_oQU240.F2010.eam-implicit_stress",
