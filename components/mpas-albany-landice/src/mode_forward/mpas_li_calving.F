@@ -1869,6 +1869,9 @@ module li_calving
                                          * TFoceanPrevious(iCell) ) ) / deltatForcing + &
                                          sqrt(xvelmean(iCell)**2.0_RKIND + yvelmean(iCell)**2.0_RKIND), 0.0_RKIND)
          enddo
+      else ! throw an error if the forcing times are the same
+          call mpas_log_write("Forcings used in ismip6_retreat have the same timestamp. Check xtime in the input file(s).")
+          err = 1
       endif
 
       call mpas_log_write("calling li_apply_front_ablation_velocity from ismip6 retreat routine")
