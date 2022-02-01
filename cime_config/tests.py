@@ -424,6 +424,7 @@ _TESTS = {
         "time"  : "03:00:00",
         "tests" : (
             "SMS_D_Ln2_P24x1.ne4_ne4.F2000SCREAMv1.scream-30min_ts",
+            "SMS_D_Ln2_P24x1.ne4_ne4.F2000-SCREAMv1-AQP1.scream-30min_ts",
             )
     },
 

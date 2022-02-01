@@ -54,7 +54,7 @@ Atmosphere Driver:
 
   Initial Conditions:
     Physics GLL:
-      Filename: ./data/init_ne4np4.nc
+      Filename: "<${COMPSET} : .*SCREAM%AQUA.* => ${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc : ./data/init_ne4np4.nc>"
       # Set X_prev = X
       T_mid_prev: T_mid
       horiz_winds_prev: horiz_winds
