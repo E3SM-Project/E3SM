@@ -40,12 +40,10 @@ namespace simple_netcdf {
             };
 
             void open(std::string filename, int mode=NC_NOWRITE) {
-              std::cout << "JGF opening " << filename << std::endl;
                 handle_error(nc_open(filename.c_str(), mode, &ncid));
             };
 
             void open(char *filename) {
-              std::cout << "JGF opening " << filename << std::endl;
                 handle_error(nc_open(filename, NC_NOWRITE, &ncid));
             }
 
