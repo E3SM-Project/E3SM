@@ -1,5 +1,5 @@
 # Set cmake config options for Homme
-set (HOMME_SOURCE_DIR ${SCREAM_SOURCE_DIR}/../homme CACHE INTERNAL "Homme source directory")
+set (HOMME_SOURCE_DIR ${SCREAM_BASE_DIR}/../homme CACHE INTERNAL "Homme source directory")
 set (HOMME_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/homme CACHE INTERNAL "Homme binary directory")
 
 # If using Intel, we need to tell Homme to link against mkl rather than lapack

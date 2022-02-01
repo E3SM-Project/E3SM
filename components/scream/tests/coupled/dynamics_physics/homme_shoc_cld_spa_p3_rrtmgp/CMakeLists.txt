@@ -52,7 +52,7 @@ set (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)
 set (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
 
 # Configure the namelist into the test directory
-configure_file(${SCREAM_SOURCE_DIR}/src/dynamics/homme/tests/theta.nl
+configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
 # Copy initial conditions files

@@ -34,7 +34,7 @@ else()
 endif()
 
 add_library(scream_share ${SHARE_SRC})
-target_include_directories(scream_share PUBLIC ${SCREAM_SRC_DIR} ${SCREAM_BINARY_DIR}/src)
+target_include_directories(scream_share PUBLIC ${SCREAM_SRC_DIR} ${SCREAM_BIN_DIR}/src)
 target_link_libraries(scream_share PUBLIC ekat)
 set_target_properties(scream_share PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
 target_compile_options(scream_share PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)

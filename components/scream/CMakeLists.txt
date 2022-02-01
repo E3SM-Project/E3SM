@@ -6,9 +6,6 @@ else()
   set(SCREAM_CIME_BUILD TRUE)
 endif()
 
-set (SCREAM_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-set (SCREAM_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
-
 if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
   # The new behavior for cmp0074 makes cmake use (rather than ignore)
   # any <PackageName>_ROOT env/cmake variable previously set.
@@ -97,6 +94,7 @@ option (SCREAM_ENABLE_EXPERIMENTAL "Whether to enable experimental code in screa
 set(SCREAM_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SCREAM_SRC_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(SCREAM_DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
+set(SCREAM_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR}
 
 # Shortcut function, to print a variable
 function (print_var var)
