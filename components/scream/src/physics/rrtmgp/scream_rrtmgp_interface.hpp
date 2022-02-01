@@ -3,10 +3,9 @@
 
 #include "cpp/rrtmgp/mo_gas_optics_rrtmgp.h"
 #include "cpp/extensions/cloud_optics/mo_cloud_optics.h"
-#include "cpp/rte/mo_fluxes.h"
+#include "cpp/extensions/fluxes_byband/mo_fluxes_byband.h"
 #include "cpp/rrtmgp_const.h"
 #include "physics/share/physics_constants.hpp"
-
 #include "ekat/mpi/ekat_comm.hpp"
 
 namespace scream {
@@ -68,7 +67,7 @@ namespace scream {
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, OpticalProps2str &clouds,
-                FluxesBroadband &fluxes, const bool i_am_root);
+                FluxesByband &fluxes, const bool i_am_root);
         /*
          * Longwave driver (called by rrtmgp_main)
          */
@@ -78,7 +77,7 @@ namespace scream {
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
                 OpticalProps1scl &clouds,
-                FluxesBroadband &fluxes);
+                FluxesByband &fluxes);
         /* 
          * Provide a function to convert cloud (water and ice) mixing ratios to layer mass per unit area
          * (what E3SM refers to as "in-cloud water paths", a terminology we shun here to avoid confusion

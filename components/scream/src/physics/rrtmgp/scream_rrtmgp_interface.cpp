@@ -144,13 +144,13 @@ namespace scream {
                 const bool i_am_root) {
 
             // Setup pointers to RRTMGP SW fluxes
-            FluxesBroadband fluxes_sw;
+            FluxesByband fluxes_sw;
             fluxes_sw.flux_up = sw_flux_up;
             fluxes_sw.flux_dn = sw_flux_dn;
             fluxes_sw.flux_dn_dir = sw_flux_dn_dir;
 
             // Setup pointers to RRTMGP LW fluxes
-            FluxesBroadband fluxes_lw;
+            FluxesByband fluxes_lw;
             fluxes_lw.flux_up = lw_flux_up;
             fluxes_lw.flux_dn = lw_flux_dn;
 
@@ -236,7 +236,7 @@ namespace scream {
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, OpticalProps2str &clouds,
-                FluxesBroadband &fluxes,
+                FluxesByband &fluxes,
                 const bool i_am_root) {
 
             // Get problem sizes
@@ -348,7 +348,7 @@ namespace scream {
             auto flux_up_day = real2d("flux_up_day", nday, nlay+1);
             auto flux_dn_day = real2d("flux_dn_day", nday, nlay+1);
             auto flux_dn_dir_day = real2d("flux_dn_dir_day", nday, nlay+1);
-            FluxesBroadband fluxes_day;
+            FluxesByband fluxes_day;
             fluxes_day.flux_up     = flux_up_day; //real2d("flux_up"    , nday,nlay+1);
             fluxes_day.flux_dn     = flux_dn_day; //real2d("flux_dn"    , nday,nlay+1);
             fluxes_day.flux_dn_dir = flux_dn_dir_day; //real2d("flux_dn_dir", nday,nlay+1);
@@ -370,7 +370,7 @@ namespace scream {
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
                 OpticalProps1scl &clouds,
-                FluxesBroadband &fluxes) {
+                FluxesByband &fluxes) {
 
             // Problem size
             int nbnd = k_dist.get_nband();
