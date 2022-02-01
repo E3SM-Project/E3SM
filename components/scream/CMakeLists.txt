@@ -94,7 +94,7 @@ option (SCREAM_ENABLE_EXPERIMENTAL "Whether to enable experimental code in screa
 set(SCREAM_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SCREAM_SRC_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(SCREAM_DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
-set(SCREAM_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR}
+set(SCREAM_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR})
 
 # Shortcut function, to print a variable
 function (print_var var)
