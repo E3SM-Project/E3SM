@@ -1844,7 +1844,14 @@ end subroutine clubb_init_cnst
        rvm(i,k)     = state1%q(i,k,ixq)
        um(i,k)      = state1%u(i,k)
        vm(i,k)      = state1%v(i,k)
+
+#if 0
        thlm(i,k)    = state1%t(i,k)*exner_clubb(i,k)-(latvap/cpair)*state1%q(i,k,ixcldliq)
+#else
+       thlm(i,k) = ( state1%t(i,k) &
+                     - (latvap/cpairv(i,k,lchnk))*state1%q(i,k,ixcldliq) ) &
+                   * inv_exner_clubb(i,k)
+#endif
 
        if (clubb_do_adv) then
           if (macmic_it .eq. 1) then
@@ -2032,10 +2039,15 @@ end subroutine clubb_init_cnst
 
       !  Surface fluxes provided by host model
       wpthlp_sfc = real(cam_in%shf(i), kind = core_rknd)/(real(cpair, kind = core_rknd)*rho_ds_zm(1)) ! Sensible heat flux
-#if 1
+#if 0
       inv_exner_clubb_surf = 1._r8/((state1%pmid(i,pver)/p0_clubb)**(rair/cpair)) !phl Option 2
       wpthlp_sfc = wpthlp_sfc*inv_exner_clubb_surf
 #endif
+#if 1
+      inv_exner_clubb_surf = 1._r8/((state1%pint(i,pverp)/p0_clubb)**(rair/cpair)) !PB option
+      wpthlp_sfc = wpthlp_sfc*inv_exner_clubb_surf
+#endif
+
       wprtp_sfc  = real(cam_in%cflx(i,1), kind = core_rknd)/rho_ds_zm(1)                              ! Latent heat flux
       upwp_sfc   = real(cam_in%wsx(i), kind = core_rknd)/rho_ds_zm(1)                                 ! Surface meridional momentum flux
       vpwp_sfc   = real(cam_in%wsy(i), kind = core_rknd)/rho_ds_zm(1)                                 ! Surface zonal momentum flux
