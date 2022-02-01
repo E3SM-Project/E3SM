@@ -116,7 +116,7 @@ class TestAllScream(object):
             else:
                 expect(self._local,
                        "test-all-scream requires either the machine arg (-m $machine) or the -l flag,"
-                       "which makes it lookf for machine specs in '~/.cime/scream_mach_specs.py'.")
+                       "which makes it look for machine specs in '~/.cime/scream_mach_specs.py'.")
                 self._machine = "local"
         else:
             expect (not self._local, "Specifying a machine while passing '-l,--local' is ambiguous.")

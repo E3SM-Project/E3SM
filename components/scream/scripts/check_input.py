@@ -7,7 +7,7 @@ _LIB_DIR = os.path.join(_CIMEROOT, "scripts", "lib")
 sys.path.append(_LIB_DIR)
 
 from CIME.case.check_input_data import _download_if_in_repo
-from CIME.utils import safe_copy, expect
+from CIME.utils import expect
 from CIME.Servers import WGET, SVN, FTP
 from CIME.XML.inputdata import Inputdata
 
@@ -39,30 +39,21 @@ def download_file(input_root, the_file):
     return success
 
 ###############################################################################
-def check_input(input_root, tgt_dir, files):
+def check_input(input_root, files):
 ###############################################################################
     any_fails = False
 
     for the_file in files:
-        print("Checking for file {} within {} needed in {}.".format(the_file, input_root, tgt_dir))
+        print("Checking for file {} within {}".format(the_file, input_root))
         basename = os.path.basename(the_file)
-        full_tgt = os.path.join(tgt_dir, basename)
-        if not os.path.exists(full_tgt):
-            full_path = os.path.join(input_root, the_file)
-            if not os.path.exists(full_path):
-                print("  Input file {} needs to be downloaded.".format(full_path))
-                success = download_file(input_root, the_file)
-                if success:
-                    print("  Copying {} to {}.".format(full_path, tgt_dir))
-                    safe_copy(full_path, tgt_dir)
-                else:
-                    print("  Could not download file {}".format(the_file))
-                    any_fails = True
-            else:
-                print("  Input file {} already downloaded, copying to {}.".format(full_path, tgt_dir))
-                safe_copy(full_path, tgt_dir)
-
+        full_path = os.path.join(input_root, the_file)
+        if not os.path.exists(full_path):
+            print("  Input file {} needs to be downloaded.".format(full_path))
+            success = download_file(input_root, the_file)
+            if not success:
+                print("  Could not download file {}".format(the_file))
+                any_fails = True
         else:
-            print("  Input file {} already exists.".format(full_tgt))
+            print("  Input file {} already downloaded.".format(full_path))
 
     return not any_fails

@@ -4,9 +4,10 @@ if (NOT DEFINED PROJECT_NAME)
   set(SCREAM_CIME_BUILD FALSE)
 else()
   set(SCREAM_CIME_BUILD TRUE)
-  set (SCREAM_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-  set (SCREAM_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 endif()
+
+set (SCREAM_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set (SCREAM_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 
 if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
   # The new behavior for cmp0074 makes cmake use (rather than ignore)
@@ -183,6 +184,10 @@ if (NC_CONFIG_SEARCH)
   endif()
 endif()
 
+if (DEFINED ENV{SCREAM_MACHINE})
+  set(DEFAULT_SCREAM_MACHINE $ENV{SCREAM_MACHINE})
+endif()
+
 ### Set CACHE vars
 set(SCREAM_MIMIC_GPU ${DEFAULT_MIMIC_GPU} CACHE BOOL "Mimic GPU to correctness-test inter-column parallelism on non-GPU platform")
 set(SCREAM_PACK_CHECK_BOUNDS FALSE CACHE BOOL "If defined, scream::pack objects check indices against bounds")
@@ -195,6 +200,21 @@ set(SCREAM_LIB_ONLY ${DEFAULT_LIB_ONLY} CACHE BOOL "Only build libraries, no exe
 set(SCREAM_AUTOTESTER ${DEFAULT_AUTOTESTER} CACHE BOOL "This is an autotester run; may disable some tests")
 set(NetCDF_Fortran_PATHS ${DEFAULT_NetCDF_Fortran_PATHS} CACHE FILEPATH "Path to netcdf fortran installation")
 set(NetCDF_C_PATHS ${DEFAULT_NetCDF_C_PATHS} CACHE FILEPATH "Path to netcdf C installation")
+set(SCREAM_MACHINE $DEFAULT_SCREAM_MACHINE CACHE STRING "The CIME/SCREAM name for the current machine")
+
+# Handle input root
+if (SCREAM_MACHINE)
+    execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/query-cime ${SCREAM_MACHINE} DIN_LOC_ROOT
+    RESULT_VARIABLE QC_STATUS
+    OUTPUT_VARIABLE QC_OUTPUT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  if (QC_STATUS EQUAL 0)
+    set(DEFAULT_SCREAM_INPUT_ROOT ${QC_OUTPUT}/atm/scream)
+  endif()
+endif()
+
+set(SCREAM_INPUT_ROOT ${DEFAULT_SCREAM_INPUT_ROOT} CACHE FILEPATH "Root of downloaded input files. Should match DIN_LOC_ROOT/atm/scream on CIME machines")
 
 # Assuming SCREAM_LIB_ONLY is FALSE (else, no exec is built at all), we provide the option
 # of building only baseline-related execs. By default, this option is off (menaing "build everything).

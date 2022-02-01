@@ -20,16 +20,14 @@ OR
 {0} --help
 
 \033[1mEXAMPLES:\033[0m
-    \033[1;32m# Check input file /my/input/root/my/file \033[0m
-    > {0} /my/input/root data my/file
+    \033[1;32m# Check input file /my/input/root/my/file, download it if needed\033[0m
+    > {0} /my/input/root my/file
 """.format(pathlib.Path(args[0]).name),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
 
     parser.add_argument("input_root", help="The root input area (called DIN_LOC_ROOT in CIME)")
-
-    parser.add_argument("tgt_dir", help="Relative or absolte path for copying input files")
 
     parser.add_argument("files", nargs="+", help="Files to download, use relative paths from input_root")
 
