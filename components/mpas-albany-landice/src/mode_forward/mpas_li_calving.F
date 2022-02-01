@@ -1796,46 +1796,38 @@ module li_calving
                cycle
             endif
 
-            ! Only force a read of streams that are recurring.  To find out if a stream is recurring, we need to
-            ! get its input alarm.  To find the alarm, loop over the alarms in the stream manager's clock until we find it.
-            alarm_cursor => domain % streamManager % streamClock % alarmListHead
-            do while (associated(alarm_cursor))
-               if (trim(stream_cursor % name) == 'ismip-gis') then
-                  ! We found the stream we are looking for
-                  if (alarm_cursor % isRecurring) then
-                     ! Force a read of this stream, and use the most recent time available in the file.
-                     ! TODO: Determine whether there is a smarter way to do this that doesn't require 
-                     ! reading this stream every timestep.
-                     call mpas_stream_mgr_read(domain % streamManager, streamID = stream_cursor % name, rightNow = .true., &
-                          whence = MPAS_STREAM_LATEST_BEFORE, saveActualWhen= .true., ierr=err_tmp)
+            if (trim(stream_cursor % name) == 'ismip-gis') then
+               ! We found the stream we are looking for
+               ! Force a read of this stream, and use the most recent time available in the file.
+               ! TODO: Determine whether there is a smarter way to do this that doesn't require
+               ! reading this stream every timestep.
+               call mpas_stream_mgr_read(domain % streamManager, streamID = stream_cursor % name, rightNow = .true., &
+                                         whence = MPAS_STREAM_LATEST_BEFORE, saveActualWhen= .true., ierr=err_tmp)
 
-                     call mpas_get_time(stream_cursor%mostRecentAccessTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
+               call mpas_get_time(stream_cursor%mostRecentAccessTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
 
-                     TFoceanCurrent = TFocean
-                     ismip6RunoffCurrent = ismip6Runoff
+               TFoceanCurrent = TFocean
+               ismip6RunoffCurrent = ismip6Runoff
 
-                     call mpas_log_write("  * Forced a read of input stream '" // trim(stream_cursor%name) // &
-                           "' from time: " // trim(forcingTimeStamp))
-                     ! Force a read of this stream, and use the second most recent time in the file
-                     call mpas_stream_mgr_read(domain % streamManager, streamID = stream_cursor % name, rightNow = .true., &
+               call mpas_log_write("  * Forced a read of input stream '" // trim(stream_cursor%name) // &
+                                   "' from time: " // trim(forcingTimeStamp))
+               ! Force a read of this stream, and use the second most recent time in the file
+               call mpas_stream_mgr_read(domain % streamManager, streamID = stream_cursor % name, rightNow = .true., &
                             when = forcingTimeStamp, whence = MPAS_STREAM_LATEST_STRICTLY_BEFORE, saveActualWhen= .true., ierr=err_tmp)
 
-                     call mpas_get_time(stream_cursor%mostRecentAccessTime, dateTimeString=forcingTimeOldStamp, ierr=err_tmp)
+               call mpas_get_time(stream_cursor%mostRecentAccessTime, dateTimeString=forcingTimeOldStamp, ierr=err_tmp)
 
-                     TFoceanPrevious = TFocean
-                     ismip6RunoffPrevious = ismip6Runoff
+               TFoceanPrevious = TFocean
+               ismip6RunoffPrevious = ismip6Runoff
 
-                     call mpas_log_write("  * Forced a read of input stream '" // trim(stream_cursor%name) // &
-                           "' from time: " // trim(forcingTimeOldStamp))
+               call mpas_log_write("  * Forced a read of input stream '" // trim(stream_cursor%name) // &
+                                   "' from time: " // trim(forcingTimeOldStamp))
 
-                     call mpas_set_time(forcingTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
-                     call mpas_set_time(forcingTimeOld, dateTimeString=forcingTimeOldStamp, ierr=err_tmp)
-                     err = ior(err, err_tmp)
-                  endif
-                  exit ! skip the rest of this loop - we processed the alarm we were looking for
-               endif
-               alarm_cursor => alarm_cursor % next
-            end do
+               call mpas_set_time(forcingTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
+               call mpas_set_time(forcingTimeOld, dateTimeString=forcingTimeOldStamp, ierr=err_tmp)
+               err = ior(err, err_tmp)
+               exit ! skip the rest of this loop - we processed the stream we were looking for
+            endif
          end if ! if stream direction is INPUT
 
          stream_cursor => stream_cursor % next
