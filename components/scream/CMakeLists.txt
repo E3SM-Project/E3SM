@@ -210,11 +210,11 @@ if (SCREAM_MACHINE)
     OUTPUT_STRIP_TRAILING_WHITESPACE
     )
   if (QC_STATUS EQUAL 0)
-    set(DEFAULT_SCREAM_INPUT_ROOT ${QC_OUTPUT}/atm/scream)
+    set(DEFAULT_SCREAM_INPUT_ROOT ${QC_OUTPUT})
   endif()
 endif()
 
-set(SCREAM_INPUT_ROOT ${DEFAULT_SCREAM_INPUT_ROOT} CACHE FILEPATH "Root of downloaded input files. Should match DIN_LOC_ROOT/atm/scream on CIME machines")
+set(SCREAM_INPUT_ROOT ${DEFAULT_SCREAM_INPUT_ROOT} CACHE FILEPATH "Root of downloaded input files. Should match DIN_LOC_ROOT on CIME machines")
 
 # Assuming SCREAM_LIB_ONLY is FALSE (else, no exec is built at all), we provide the option
 # of building only baseline-related execs. By default, this option is off (menaing "build everything).

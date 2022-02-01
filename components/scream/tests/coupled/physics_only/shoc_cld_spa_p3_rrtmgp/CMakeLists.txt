@@ -13,10 +13,10 @@ if (NOT EXISTS ${SCREAM_SPA_DATA_DIR})
 endif()
 if (NOT IS_DIRECTORY ${SCREAM_SPA_DATA_DIR})
   message(FATAL_ERROR "Failed, SCREAM_SPA_DATA_DIR = ${SCREAM_SPA_DATA_DIR} is not a directory")
-endif() 
+endif()
 if (NOT IS_ABSOLUTE ${SCREAM_SPA_DATA_DIR})
   message(FATAL_ERROR "Failed, SCREAM_SPA_DATA_DIR = ${SCREAM_SPA_DATA_DIR} is not an absolute directory")
-endif() 
+endif()
 
 # Set AD configurable options
 set (ATM_TIME_STEP 1800)
@@ -26,24 +26,25 @@ SetVarDependingOnTestProfile(NUM_STEPS 2 5 48)  # 1h 4h 24h
 file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
 set (RRTMGP_EXT_DIR ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external)
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc COPYONLY)
+GetInputFile(init/shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc)
 
-configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4.1.1
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_2.dat-v4.1.1
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
+GetInputFile(tables/p3_lookup_table_2.dat-v4.1.1
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
 
-configure_file(${RRTMGP_EXT_DIR}/rrtmgp/data/rrtmgp-data-sw-g224-2018-12-04.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-configure_file(${RRTMGP_EXT_DIR}/rrtmgp/data/rrtmgp-data-lw-g256-2018-12-04.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-configure_file(${RRTMGP_EXT_DIR}/examples/all-sky/rrtmgp-allsky.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-configure_file(${RRTMGP_EXT_DIR}/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-sw.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-configure_file(${RRTMGP_EXT_DIR}/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+GetInputFile(init/rrtmgp-data-sw-g224-2018-12-04.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
+GetInputFile(init/rrtmgp-data-lw-g256-2018-12-04.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
+GetInputFile(init/rrtmgp-allsky.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
+GetInputFile(init/rrtmgp-cloud-optics-coeffs-sw.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
+GetInputFile(init/rrtmgp-cloud-optics-coeffs-lw.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
+
 ## Copy (and configure) yaml files needed by tests
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)

@@ -168,14 +168,15 @@ function(GetInputFile src_path tgt_path)
     if (NOT SCREAM_INPUT_ROOT)
       message(FATAL_ERROR "No SCREAM_INPUT_ROOT set, cannot try to locate input file ${src_path}")
     endif()
-    set(full_src_path ${SCREAM_INPUT_ROOT}/${src_path})
+    set(full_src_path ${SCREAM_INPUT_ROOT}/atm/scream/${src_path})
     if (NOT EXISTS ${full_src_path})
-      execute_process(COMMAND ${SCREAM_SRC_DIR}/scripts/check-input ${SCREAM_INPUT_ROOT} ${src_path} 2>&1
+      execute_process(COMMAND ${SCREAM_SRC_DIR}/../scripts/check-input ${SCREAM_INPUT_ROOT} atm/scream/${src_path}
         RESULT_VARIABLE check_input_status
         OUTPUT_VARIABLE check_input_output
+        ERROR_VARIABLE  check_input_errput
         )
       if (NOT check_input_status EQUAL 0)
-        message(FATAL_ERROR "Could not download ${src_path}, error was: ${check_input_output}")
+        message(FATAL_ERROR "Could not download ${src_path}, error was: ${check_input_output}\n${check_input_errput}")
       endif()
     endif()
     configure_file(${full_src_path} ${tgt_path} COPYONLY)

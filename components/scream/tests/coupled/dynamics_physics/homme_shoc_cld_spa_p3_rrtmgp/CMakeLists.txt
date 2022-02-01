@@ -66,8 +66,8 @@ configure_file(${SCREAM_SOURCE_DIR}/src/dynamics/homme/tests/theta.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
 # Copy initial conditions files
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/homme_shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc COPYONLY)
+GetInputFile(init/homme_shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/homme_shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc)
 
 # Create vcoord directory
 file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vcoord)
@@ -79,19 +79,19 @@ configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72m.ascii
                ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
 
 # P3 data files
-configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4.1.1
-               ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_1.dat-v4.1.1 COPYONLY)
-configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_2.dat-v4.1.1
-               ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_2.dat-v4.1.1 COPYONLY)
+GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1
+  ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_1.dat-v4.1.1)
+GetInputFile(tables/p3_lookup_table_2.dat-v4.1.1
+  ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_2.dat-v4.1.1)
 # RRTMGP data files
-configure_file(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/rrtmgp/data/rrtmgp-data-sw-g224-2018-12-04.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-configure_file(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/rrtmgp/data/rrtmgp-data-lw-g256-2018-12-04.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-configure_file(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-sw.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-configure_file(${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+GetInputFile(init/rrtmgp-data-sw-g224-2018-12-04.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
+GetInputFile(init/rrtmgp-data-lw-g256-2018-12-04.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
+GetInputFile(init/rrtmgp-cloud-optics-coeffs-sw.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
+GetInputFile(init/rrtmgp-cloud-optics-coeffs-lw.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if max mpi ranks is >1
