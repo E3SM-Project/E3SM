@@ -1741,13 +1741,13 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: dvEdge
       logical :: applyToGrounded, applyToFloating, applyToGroundingLine
       real (kind=RKIND), dimension(:), pointer :: TFocean, ismip6Runoff
-      real (kind=RKIND), dimension(:), allocatable :: TFoceanPrevious, ismip6RunoffPrevious
-      real (kind=RKIND), dimension(:), allocatable :: TFoceanCurrent, ismip6RunoffCurrent
+      real (kind=RKIND), dimension(:), pointer :: TFoceanPrevious, ismip6RunoffPrevious
+      real (kind=RKIND), dimension(:), pointer :: TFoceanCurrent, ismip6RunoffCurrent
       real (kind=RKIND), dimension(:), allocatable :: submergedArea
       real (kind=RKIND) :: deltatForcing ! time between forcing updates
-      type (MPAS_Time_Type) :: forcingTime, forcingTimeOld ! times from forcing file as time types
-      character(len=StrKIND) :: forcingTimeStamp, forcingTimeOldStamp ! times from forcing file as strings
-      type (MPAS_Alarm_type), pointer :: alarm_cursor
+      type (MPAS_Time_Type), save :: forcingTime, forcingTimeOld
+      character (len=StrKIND), pointer :: xtime, simulationStartTime
+      character(len=StrKIND) :: forcingTimeStamp, forcingTimeOldStamp
       type (MPAS_stream_list_type), pointer :: stream_cursor
 
       applyToGrounded = .true.
@@ -1765,6 +1765,8 @@ module li_calving
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'xtime', xtime)
+      call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
@@ -1776,31 +1778,20 @@ module li_calving
       call mpas_pool_get_array(velocityPool, 'yvelmean', yvelmean)
       call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcing', TFocean)
       call mpas_pool_get_array(geometryPool, 'ismip6Runoff', ismip6Runoff)
+      call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcingPrevious', TFoceanPrevious)
+      call mpas_pool_get_array(geometryPool, 'ismip6RunoffPrevious', ismip6RunoffPrevious)
+      call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcingCurrent', TFoceanCurrent)
+      call mpas_pool_get_array(geometryPool, 'ismip6RunoffCurrent', ismip6RunoffCurrent)
       
-      ! Variables to separate previous and current thermal forcing and runoff fields
-      allocate(TFoceanPrevious(nCells+1))
-      allocate(ismip6RunoffPrevious(nCells+1))
-      allocate(TFoceanCurrent(nCells+1))
-      allocate(ismip6RunoffCurrent(nCells+1))
+      ! submergedArea used in runoff unit conversion 
       allocate(submergedArea(nCells+1))
 
       stream_cursor => domain % streamManager % streams % head
       do while (associated(stream_cursor))
-         if (stream_cursor % direction == MPAS_STREAM_INPUT) then
-            ! Only consider streams of direction input (don't consider input/output streams)
-            if ((trim(stream_cursor % name) == 'input') .or. &
-                (trim(stream_cursor % name) == 'restart')) then
-               ! Don't attempt to interact with these two special streams
-               ! (even though restart is not type input, including to be safe)
-               stream_cursor => stream_cursor % next
-               cycle
-            endif
-
-            if (trim(stream_cursor % name) == 'ismip-gis') then
-               ! We found the stream we are looking for
-               ! Force a read of this stream, and use the most recent time available in the file.
-               ! TODO: Determine whether there is a smarter way to do this that doesn't require
-               ! reading this stream every timestep.
+         if (trim(stream_cursor % name) == 'ismip-gis') then
+            if (xtime == simulationStartTime) then
+               ! At the beginning of the simulations, force a read of this stream,
+               ! and use the most recent time available in the file.
                call mpas_stream_mgr_read(domain % streamManager, streamID = stream_cursor % name, rightNow = .true., &
                                          whence = MPAS_STREAM_LATEST_BEFORE, saveActualWhen= .true., ierr=err_tmp)
 
@@ -1809,32 +1800,50 @@ module li_calving
                TFoceanCurrent = TFocean
                ismip6RunoffCurrent = ismip6Runoff
 
-               call mpas_log_write("  * Forced a read of input stream '" // trim(stream_cursor%name) // &
-                                   "' from time: " // trim(forcingTimeStamp))
+               call mpas_log_write("  * Forced a read of input stream 'ismip6-gis'" // &
+                                   " from time: " // trim(forcingTimeStamp))
                ! Force a read of this stream, and use the second most recent time in the file
                call mpas_stream_mgr_read(domain % streamManager, streamID = stream_cursor % name, rightNow = .true., &
-                            when = forcingTimeStamp, whence = MPAS_STREAM_LATEST_STRICTLY_BEFORE, saveActualWhen= .true., ierr=err_tmp)
+                                when = forcingTimeStamp, whence = MPAS_STREAM_LATEST_STRICTLY_BEFORE, saveActualWhen= .true., ierr=err_tmp)
 
                call mpas_get_time(stream_cursor%mostRecentAccessTime, dateTimeString=forcingTimeOldStamp, ierr=err_tmp)
 
                TFoceanPrevious = TFocean
                ismip6RunoffPrevious = ismip6Runoff
 
-               call mpas_log_write("  * Forced a read of input stream '" // trim(stream_cursor%name) // &
-                                   "' from time: " // trim(forcingTimeOldStamp))
+               call mpas_log_write("  * Forced a read of input stream 'ismip6-gis'" // &
+                                         " from time: " // trim(forcingTimeOldStamp))
 
                call mpas_set_time(forcingTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
                call mpas_set_time(forcingTimeOld, dateTimeString=forcingTimeOldStamp, ierr=err_tmp)
+               ! reset mostRecentAccessTime to enable elseif block below
+               call mpas_set_time(stream_cursor%mostRecentAccessTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
                err = ior(err, err_tmp)
-               exit ! skip the rest of this loop - we processed the stream we were looking for
-            endif
-         end if ! if stream direction is INPUT
 
+               ! Do not overwrite forcing fields with values from previous time
+               ismip6Runoff = ismip6RunoffCurrent
+               TFocean = TFoceanCurrent
+            elseif (forcingTime < stream_cursor % mostRecentAccessTime) then
+               TFoceanPrevious = TFoceanCurrent
+               ismip6RunoffPrevious = ismip6RunoffCurrent
+               TFoceanCurrent = TFocean
+               ismip6RunoffCurrent = ismip6Runoff
+
+               forcingTimeOld = forcingTime
+               forcingTime = stream_cursor % mostRecentAccessTime
+               call mpas_get_time(forcingTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
+               call mpas_get_time(forcingTimeOld, dateTimeString=forcingTimeOldStamp, ierr=err_tmp)
+               err = ior(err, err_tmp)
+               call mpas_log_write("  * ismip6 retreat forcings have been updated:" // &
+                                " forcingTime: " // trim(forcingTimeStamp) //  &
+                                "; forcingTimeOld: " // trim(forcingTimeOldStamp))
+            else
+               call mpas_log_write(" * No new forcing times for ismip6 retreat this timestep.")
+            endif
+            exit ! We have processed the stream we wanted.
+         endif
          stream_cursor => stream_cursor % next
-      end do
-      ! Do not overwrite forcing fields with values from previous time
-      ismip6Runoff = ismip6RunoffCurrent
-      TFocean = TFoceanCurrent
+      enddo ! end loop over stream_cursors
 
       ! Get submerged area of each cell to convert from kg m^{-2} s^{-1} to m^3 s^{-1}
       submergedArea(:) = 0.0_RKIND
@@ -1894,10 +1903,6 @@ module li_calving
       err = ior(err, err_tmp)
       call remove_small_islands(meshPool, geometryPool)
 
-      deallocate(TFoceanPrevious)
-      deallocate(ismip6RunoffPrevious)
-      deallocate(TFoceanCurrent)
-      deallocate(ismip6RunoffCurrent)
       deallocate(submergedArea)
 
    end subroutine ismip6_retreat
