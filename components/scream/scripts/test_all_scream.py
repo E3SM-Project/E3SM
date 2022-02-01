@@ -111,8 +111,8 @@ class TestAllScream(object):
         if self._machine is None:
             # We could potentially integrate more with CIME here to do actual
             # nodename probing.
-            if "CIME_MACHINE" in os.environ and is_machine_supported(os.environ["CIME_MACHINE"]):
-                self._machine = os.environ["CIME_MACHINE"]
+            if "SCREAM_MACHINE" in os.environ and is_machine_supported(os.environ["SCREAM_MACHINE"]):
+                self._machine = os.environ["SCREAM_MACHINE"]
             else:
                 expect(self._local,
                        "test-all-scream requires either the machine arg (-m $machine) or the -l flag,"
@@ -548,7 +548,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         name = self._test_full_names[test]
         result = ""
         if self._submit:
-            result += "CIME_MACHINE={} ".format(self._machine)
+            result += "SCREAM_MACHINE={} ".format(self._machine)
 
         test_dir = self.get_test_dir(self._work_dir,test)
         num_test_res = self.create_ctest_resource_file(test,test_dir)
