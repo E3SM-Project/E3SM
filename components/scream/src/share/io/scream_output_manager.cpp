@@ -213,7 +213,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       register_dimension(filename,"time","time",0);
 
       // Register time as a variable.
-      register_variable(filename,"time","time",1,{"time"},  PIO_REAL,"time");
+      register_variable(filename,"time","time","s",1,{"time"},  PIO_REAL,"time");
 
       // Make all output streams register their dims/vars
       for (auto& it : m_output_streams) {

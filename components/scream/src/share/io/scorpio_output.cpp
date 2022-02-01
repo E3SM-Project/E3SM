@@ -1,6 +1,7 @@
 #include "share/io/scorpio_output.hpp"
 #include "ekat/std_meta/ekat_std_utils.hpp"
 #include "share/io/scorpio_input.hpp"
+#include "ekat/util/ekat_units.hpp"
 
 #include "ekat/util/ekat_string_utils.hpp"
 
@@ -353,6 +354,7 @@ void AtmosphereOutput::register_variables(const std::string& filename)
     std::string io_decomp_tag = "Real";  // Note, for now we only assume REAL variables.  This may change in the future.
     std::vector<std::string> vec_of_dims;
     const auto& layout = fid.get_layout();
+    std::string units = to_string(fid.get_units());
     for (int i=0; i<fid.get_layout().rank(); ++i) {
       const auto tag_name = get_nc_tag_name(layout.tag(i), layout.dim(i));
       // Concatenate the dimension string to the io-decomp string
@@ -375,7 +377,7 @@ void AtmosphereOutput::register_variables(const std::string& filename)
      // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
     // but in the future if non-Real variables are added we will want to accomodate that.
-    register_variable(filename, name, name, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);
+    register_variable(filename, name, name, units, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);
   }
 } // register_variables
 /* ---------------------------------------------------------- */
