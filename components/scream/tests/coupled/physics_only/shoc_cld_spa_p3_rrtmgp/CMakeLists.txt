@@ -7,16 +7,6 @@ CreateUnitTest(shoc_cld_spa_p3_rrtmgp shoc_cld_spa_p3_rrtmgp.cpp "${NEED_LIBS}" 
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   PROPERTIES FIXTURES_SETUP shoc_cld_spa_p3_rrtmgp_generate_output_nc_files
 )
-# Make sure the SPA data directory is correctly defined
-if (NOT EXISTS ${SCREAM_SPA_DATA_DIR})
-  message(FATAL_ERROR "Failed, SCREAM_SPA_DATA_DIR = ${SCREAM_SPA_DATA_DIR} does not exist")
-endif()
-if (NOT IS_DIRECTORY ${SCREAM_SPA_DATA_DIR})
-  message(FATAL_ERROR "Failed, SCREAM_SPA_DATA_DIR = ${SCREAM_SPA_DATA_DIR} is not a directory")
-endif()
-if (NOT IS_ABSOLUTE ${SCREAM_SPA_DATA_DIR})
-  message(FATAL_ERROR "Failed, SCREAM_SPA_DATA_DIR = ${SCREAM_SPA_DATA_DIR} is not an absolute directory")
-endif()
 
 # Set AD configurable options
 set (ATM_TIME_STEP 1800)
