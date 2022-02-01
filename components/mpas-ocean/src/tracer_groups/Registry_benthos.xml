@@ -117,7 +117,7 @@
 				input_interval="none"
 				runtime_format="single_file"
 				packages="benthosTracersPKG"
-                                mode="forward">
+				mode="forward">
 
 			<var name="xtime"/>
 			<var name="oceanBenthosPOCFluxData"/>
@@ -151,8 +151,8 @@
                                 mode="forward">
 
 			<var name="xtime"/>
-                        <var name="oceanTerraBenthosPOCFluxData"/>
-                        <var name="oceanTerraLithogenicFluxData"/>
+			<var name="oceanTerraBenthosPOCFluxData"/>
+			<var name="oceanTerraLithogenicFluxData"/>
 		</stream>
 
 	</streams>
