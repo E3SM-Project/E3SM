@@ -1816,9 +1816,6 @@ module li_calving
 
                call mpas_set_time(forcingTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
                call mpas_set_time(forcingTimeOld, dateTimeString=forcingTimeOldStamp, ierr=err_tmp)
-               ! reset mostRecentAccessTime to enable elseif block below
-               call mpas_set_time(stream_cursor%mostRecentAccessTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
-               err = ior(err, err_tmp)
 
                ! Do not overwrite forcing fields with values from previous time
                ismip6Runoff = ismip6RunoffCurrent
