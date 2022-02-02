@@ -1,6 +1,6 @@
 #include "physics/p3/atmosphere_microphysics.hpp"
-#include "share/field/field_property_checks/field_positivity_check.hpp"
-#include "share/field/field_property_checks/field_within_interval_check.hpp"
+// #include "share/property_checks/field_positivity_check.hpp"
+#include "share/property_checks/field_within_interval_check.hpp"
 // Needed for p3_init, the only F90 code still used.
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_f90.hpp"
@@ -188,8 +188,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   // get_field_out("nr").add_property_check(positivity_check);
   // get_field_out("ni").add_property_check(positivity_check);
   // get_field_out("bm").add_property_check(positivity_check);
-  auto T_interval_check = std::make_shared<FieldWithinIntervalCheck>(140, 500);
-  add_property_check<Updated>(get_field_out("T_mid").get_header().get_identifier(),T_interval_check);
+  add_property_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140, 500);
 
   // Initialize p3
   p3_init();

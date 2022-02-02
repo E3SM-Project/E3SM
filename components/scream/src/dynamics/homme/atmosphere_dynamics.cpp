@@ -30,9 +30,9 @@
 #include "physics/share/physics_constants.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/util//scream_column_ops.hpp"
-#include "share/field/field_property_checks/field_lower_bound_check.hpp"
-#include "share/field/field_property_checks/field_positivity_check.hpp"
-#include "share/field/field_property_checks/check_and_repair_wrapper.hpp"
+#include "share/property_checks/field_lower_bound_check.hpp"
+#include "share/property_checks/field_positivity_check.hpp"
+#include "share/property_checks/check_and_repair_wrapper.hpp"
 
 // Ekat includes
 #include "ekat/ekat_assert.hpp"
@@ -282,8 +282,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
       "Error! Someone other than Dynamics is trying to update the pseudo_density.\n");
 
   // The groups 'tracers' and 'tracers_mass_dyn' should contain the same fields
-  auto Q = get_group_out("Q",rgn);
-  EKAT_REQUIRE_MSG(not Q.m_info->empty(),
+  EKAT_REQUIRE_MSG(not get_group_out("Q",rgn).m_info->empty(),
     "Error! There should be at least one tracer (qv) in the tracers group.\n");
 
   // Create remaining internal fields
@@ -372,10 +371,10 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   //       are added here. To avoid this assumption, we need a more flexible lower bound
   //       check, which has one LB for check and one LB for repair.
   const Real tol = -1e-17;
-  auto lb_check = std::make_shared<FieldLowerBoundCheck>(tol,false);
-  auto lb_repair = std::make_shared<FieldPositivityCheck>(true);
-  auto check_and_repair = std::make_shared<CheckAndRepairWrapper>(lb_check,lb_repair);
-  add_property_check<Computed>(Q.m_bundle->get_header().get_identifier(),check_and_repair);
+  const auto& Q = *get_group_out("Q",rgn).m_bundle;
+  auto lb_check = std::make_shared<FieldLowerBoundCheck>(Q,tol,false);
+  auto lb_repair = std::make_shared<FieldPositivityCheck>(Q,true);
+  add_post_run_property_check<CheckAndRepairWrapper>(lb_check,lb_repair);
 }
 
 void HommeDynamics::run_impl (const int dt)

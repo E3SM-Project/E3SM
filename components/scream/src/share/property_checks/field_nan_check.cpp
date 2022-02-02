@@ -1,4 +1,4 @@
-#include "share/field/field_property_checks/field_nan_check.hpp"
+#include "share/property_checks/field_nan_check.hpp"
 #include "share/util//scream_view_utils.hpp"
 
 #include "ekat/util/ekat_math_utils.hpp"
@@ -6,11 +6,20 @@
 namespace scream
 {
 
+FieldNaNCheck::
+FieldNaNCheck (const Field& f)
+{
+  // We can't repair NaN's.
+  set_fields ({f},{false});
+}
+
 template<typename ST>
-bool FieldNaNCheck::check_impl(const Field& field) const {
+bool FieldNaNCheck::check_impl() const {
   using const_ST    = typename std::add_const<ST>::type;
 
-  const auto& layout = field.get_header().get_identifier().get_layout();
+  const auto& f = fields().front();
+
+  const auto& layout = f.get_header().get_identifier().get_layout();
   const auto extents = layout.extents();
   const auto size = layout.size();
 
@@ -18,7 +27,7 @@ bool FieldNaNCheck::check_impl(const Field& field) const {
   switch (layout.rank()) {
     case 1:
       {
-        auto v = field.template get_view<const_ST*>();
+        auto v = f.template get_view<const_ST*>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int i, int& result) {
           if (ekat::is_invalid(v(i))) {
             ++result;
@@ -28,7 +37,7 @@ bool FieldNaNCheck::check_impl(const Field& field) const {
       break;
     case 2:
       {
-        auto v = field.template get_view<const_ST**>();
+        auto v = f.template get_view<const_ST**>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j;
           unflatten_idx(idx,extents,i,j);
@@ -40,7 +49,7 @@ bool FieldNaNCheck::check_impl(const Field& field) const {
       break;
     case 3:
       {
-        auto v = field.template get_view<const_ST***>();
+        auto v = f.template get_view<const_ST***>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k;
           unflatten_idx(idx,extents,i,j,k);
@@ -52,7 +61,7 @@ bool FieldNaNCheck::check_impl(const Field& field) const {
       break;
     case 4:
       {
-        auto v = field.template get_view<const_ST****>();
+        auto v = f.template get_view<const_ST****>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k,l;
           unflatten_idx(idx,extents,i,j,k,l);
@@ -64,7 +73,7 @@ bool FieldNaNCheck::check_impl(const Field& field) const {
       break;
     case 5:
       {
-        auto v = field.template get_view<const_ST*****>();
+        auto v = f.template get_view<const_ST*****>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k,l,m;
           unflatten_idx(idx,extents,i,j,k,l,m);
@@ -76,7 +85,7 @@ bool FieldNaNCheck::check_impl(const Field& field) const {
       break;
     case 6:
       {
-        auto v = field.template get_view<const_ST******>();
+        auto v = f.template get_view<const_ST******>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, int& result) {
           int i,j,k,l,m,n;
           unflatten_idx(idx,extents,i,j,k,l,m,n);
@@ -87,20 +96,22 @@ bool FieldNaNCheck::check_impl(const Field& field) const {
       }
       break;
     default:
-      EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
+      EKAT_ERROR_MSG ("Error! Unsupported f rank.\n");
   }
 
   return num_invalid==0;
 }
 
-bool FieldNaNCheck::check(const Field& field) const {
-  switch (field.data_type()) {
+bool FieldNaNCheck::check() const {
+  const auto& f = fields().front();
+
+  switch (f.data_type()) {
     case DataType::IntType:
-      return check_impl<int>(field);
+      return check_impl<int>();
     case DataType::FloatType:
-      return check_impl<float>(field);
+      return check_impl<float>();
     case DataType::DoubleType:
-      return check_impl<double>(field);
+      return check_impl<double>();
     default:
       EKAT_ERROR_MSG ("Error! Field data type not supported.\n");
   }

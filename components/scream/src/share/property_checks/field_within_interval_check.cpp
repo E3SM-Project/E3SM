@@ -1,17 +1,34 @@
-#include "share/field/field_property_checks/field_within_interval_check.hpp"
+#include "share/property_checks/field_within_interval_check.hpp"
+#include "share/util/scream_view_utils.hpp"
 
 #include <ekat/util/ekat_math_utils.hpp>
 
 namespace scream
 {
 
+FieldWithinIntervalCheck::
+FieldWithinIntervalCheck (const Field& field,
+                          const double lower_bound,
+                          const double upper_bound,
+                          bool can_repair)
+ : m_lower_bound(lower_bound)
+ , m_upper_bound(upper_bound)
+{
+  EKAT_ASSERT_MSG(lower_bound <= upper_bound,
+                  "lower_bound must be less than or equal to upper_bound.");
+
+  set_fields ({field},{can_repair});
+}
+
 template<typename ST>
-bool FieldWithinIntervalCheck::check_impl (const Field& field) const
+bool FieldWithinIntervalCheck::check_impl () const
 {
   using const_ST    = typename std::add_const<ST>::type;
   using nonconst_ST = typename std::remove_const<ST>::type;
 
-  const auto& layout = field.get_header().get_identifier().get_layout();
+  const auto& f = fields().front();
+
+  const auto& layout = f.get_header().get_identifier().get_layout();
   const auto extents = layout.extents();
   const auto size = layout.size();
 
@@ -20,7 +37,7 @@ bool FieldWithinIntervalCheck::check_impl (const Field& field) const
   switch (layout.rank()) {
     case 1:
       {
-        auto v = field.template get_view<const_ST*>();
+        auto v = f.template get_view<const_ST*>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int i, minmax_t& result) {
           result.min_val = ekat::impl::min(result.min_val, v(i));
           result.max_val = ekat::impl::max(result.max_val, v(i));
@@ -29,7 +46,7 @@ bool FieldWithinIntervalCheck::check_impl (const Field& field) const
       break;
     case 2:
       {
-        auto v = field.template get_view<const_ST**>();
+        auto v = f.template get_view<const_ST**>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmax_t& result) {
           int i,j;
           unflatten_idx(idx,extents,i,j);
@@ -40,7 +57,7 @@ bool FieldWithinIntervalCheck::check_impl (const Field& field) const
       break;
     case 3:
       {
-        auto v = field.template get_view<const_ST***>();
+        auto v = f.template get_view<const_ST***>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmax_t& result) {
           int i,j,k;
           unflatten_idx(idx,extents,i,j,k);
@@ -51,7 +68,7 @@ bool FieldWithinIntervalCheck::check_impl (const Field& field) const
       break;
     case 4:
       {
-        auto v = field.template get_view<const_ST****>();
+        auto v = f.template get_view<const_ST****>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmax_t& result) {
           int i,j,k,l;
           unflatten_idx(idx,extents,i,j,k,l);
@@ -62,7 +79,7 @@ bool FieldWithinIntervalCheck::check_impl (const Field& field) const
       break;
     case 5:
       {
-        auto v = field.template get_view<const_ST*****>();
+        auto v = f.template get_view<const_ST*****>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmax_t& result) {
           int i,j,k,l,m;
           unflatten_idx(idx,extents,i,j,k,l,m);
@@ -73,7 +90,7 @@ bool FieldWithinIntervalCheck::check_impl (const Field& field) const
       break;
     case 6:
       {
-        auto v = field.template get_view<const_ST******>();
+        auto v = f.template get_view<const_ST******>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmax_t& result) {
           int i,j,k,l,m,n;
           unflatten_idx(idx,extents,i,j,k,l,m,n);
@@ -83,30 +100,33 @@ bool FieldWithinIntervalCheck::check_impl (const Field& field) const
       }
       break;
     default:
-      EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
+      EKAT_ERROR_MSG ("Error! Unsupported f rank.\n");
   }
   return minmax.min_val>=m_lower_bound && minmax.max_val<=m_upper_bound;
 }
 
-bool FieldWithinIntervalCheck::check(const Field& field) const {
-  switch (field.data_type()) {
+bool FieldWithinIntervalCheck::check() const {
+  const auto& f = fields().front();
+  switch (f.data_type()) {
     case DataType::IntType:
-      return check_impl<int>(field);
+      return check_impl<int>();
     case DataType::FloatType:
-      return check_impl<float>(field);
+      return check_impl<float>();
     case DataType::DoubleType:
-      return check_impl<double>(field);
+      return check_impl<double>();
     default:
-      EKAT_ERROR_MSG ("Error! Field data type not supported.\n");
+      EKAT_ERROR_MSG ("Error! f data type not supported.\n");
   }
 }
 
 template<typename ST>
-void FieldWithinIntervalCheck::repair_impl(Field& field) const
+void FieldWithinIntervalCheck::repair_impl() const
 {
   using nonconst_ST = typename std::remove_const<ST>::type;
 
-  const auto& layout = field.get_header().get_identifier().get_layout();
+  const auto& f = fields().front();
+
+  const auto& layout = f.get_header().get_identifier().get_layout();
   const auto extents = layout.extents();
   const auto size = layout.size();
 
@@ -115,7 +135,7 @@ void FieldWithinIntervalCheck::repair_impl(Field& field) const
   switch (layout.rank()) {
     case 1:
       {
-        auto v = field.template get_view<nonconst_ST*>();
+        auto v = f.template get_view<nonconst_ST*>();
         Kokkos::parallel_for(size, KOKKOS_LAMBDA(int i) {
           auto& ref = v(i);
           ref = ekat::impl::min(ub, ref);
@@ -125,7 +145,7 @@ void FieldWithinIntervalCheck::repair_impl(Field& field) const
       break;
     case 2:
       {
-        auto v = field.template get_view<nonconst_ST**>();
+        auto v = f.template get_view<nonconst_ST**>();
         Kokkos::parallel_for(size, KOKKOS_LAMBDA(int idx) {
           int i,j;
           unflatten_idx(idx,extents,i,j);
@@ -138,7 +158,7 @@ void FieldWithinIntervalCheck::repair_impl(Field& field) const
       break;
     case 3:
       {
-        auto v = field.template get_view<nonconst_ST***>();
+        auto v = f.template get_view<nonconst_ST***>();
         Kokkos::parallel_for(size, KOKKOS_LAMBDA(int idx) {
           int i,j,k;
           unflatten_idx(idx,extents,i,j,k);
@@ -151,7 +171,7 @@ void FieldWithinIntervalCheck::repair_impl(Field& field) const
       break;
     case 4:
       {
-        auto v = field.template get_view<nonconst_ST****>();
+        auto v = f.template get_view<nonconst_ST****>();
         Kokkos::parallel_for(size, KOKKOS_LAMBDA(int idx) {
           int i,j,k,l;
           unflatten_idx(idx,extents,i,j,k,l);
@@ -164,7 +184,7 @@ void FieldWithinIntervalCheck::repair_impl(Field& field) const
       break;
     case 5:
       {
-        auto v = field.template get_view<nonconst_ST*****>();
+        auto v = f.template get_view<nonconst_ST*****>();
         Kokkos::parallel_for(size, KOKKOS_LAMBDA(int idx) {
           int i,j,k,l,m;
           unflatten_idx(idx,extents,i,j,k,l,m);
@@ -177,7 +197,7 @@ void FieldWithinIntervalCheck::repair_impl(Field& field) const
       break;
     case 6:
       {
-        auto v = field.template get_view<nonconst_ST******>();
+        auto v = f.template get_view<nonconst_ST******>();
         Kokkos::parallel_for(size, KOKKOS_LAMBDA(int idx) {
           int i,j,k,l,m,n;
           unflatten_idx(idx,extents,i,j,k,l,m,n);
@@ -189,29 +209,31 @@ void FieldWithinIntervalCheck::repair_impl(Field& field) const
       }
       break;
     default:
-      EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
+      EKAT_ERROR_MSG ("Error! Unsupported f rank.\n");
   }
 }
 
-void FieldWithinIntervalCheck::repair(Field& field) const {
+void FieldWithinIntervalCheck::repair_impl() const {
+
+  const auto& f = fields().front();
 
   EKAT_REQUIRE_MSG (can_repair(),
-      "Error! Field property check misses repair capability.\b"
+      "Error! Property check misses repair capability.\b"
       "  - Property check: " + name() + "\n"
-      "  - field name    : " + field.name() + "\n");
+      "  - Field name    : " + f.name() + "\n");
 
-  switch (field.data_type()) {
+  switch (f.data_type()) {
     case DataType::IntType:
-      repair_impl<int>(field);
+      repair_impl<int>();
       break;
     case DataType::FloatType:
-      repair_impl<float>(field);
+      repair_impl<float>();
       break;
     case DataType::DoubleType:
-      repair_impl<double>(field);
+      repair_impl<double>();
       break;
     default:
-      EKAT_ERROR_MSG ("Error! Field data type not supported.\n");
+      EKAT_ERROR_MSG ("Error! f data type not supported.\n");
   }
 }
 

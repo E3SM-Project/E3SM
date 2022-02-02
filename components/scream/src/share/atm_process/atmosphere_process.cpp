@@ -29,9 +29,9 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
 }
 
 void AtmosphereProcess::run (const int dt) {
-  if (m_params.get("Enable Input Field Checks", true)) {
-    // Run any check on required fields that has been stored in this AP
-    check_required_fields();
+  if (m_params.get("Enable Pre Run Property Checks", true)) {
+    // Run 'pre-condition' property checks stored in this AP
+    run_property_checks_pre();
   }
 
   EKAT_REQUIRE_MSG ( (dt % m_num_subcycles)==0,
@@ -46,9 +46,9 @@ void AtmosphereProcess::run (const int dt) {
     run_impl(dt_sub);
   }
 
-  if (m_params.get("Enable Output Field Checks", true)) {
-    // Run any check on required fields that has been stored in this AP
-    check_computed_fields();
+  if (m_params.get("Enable Post Run Property Checks", true)) {
+    // Run 'post-condition' property checks stored in this AP
+    run_property_checks_post();
   }
 
   // Update all output fields time stamps
@@ -158,90 +158,30 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
   set_computed_group_impl(group);
 }
 
-void AtmosphereProcess::check_required_fields () const { 
-  // Loop over all the field checks on input fields, and execute them
-  for (const auto& fp_it : m_property_checks_in) {
-    const auto& fid   = fp_it.first;
-    const auto& fname = fid.name();
-    const auto& gname = fid.get_grid_name();
-    const auto& prop_check = *fp_it.second;
-    if (has_required_field(fid)) {
-      auto& f = get_field_in(fname,gname);
-      EKAT_REQUIRE_MSG(prop_check.check(f),
-          "Error! Input field property check failed.\n"
-          "       Atm proc: " + this->name() + "\n"
-          "       Field:    " + fname + "\n"
-          "       Check:    " + prop_check.name() + "\n"
-          " NOTE: we don't allow repairing input fields.\n");
-    } else {
-      auto& group = get_group_in(fname,gname);
-      if (group.m_bundle) {
-        EKAT_REQUIRE_MSG(prop_check.check(*group.m_bundle),
-            "Error! Input field property check failed.\n"
-            "       Atm proc: " + this->name() + "\n"
-            "       Field:    " + group.m_info->m_group_name + "\n"
-            "       Check:    " + prop_check.name() + "\n"
-            " NOTE: we don't allow repairing input fields.\n");
-      } else {
-        for (const auto& it : group.m_fields) {
-          const auto& f = *it.second;
-          EKAT_REQUIRE_MSG(prop_check.check(f),
-              "Error! Input field property check failed.\n"
-              "       Atm proc: " + this->name() + "\n"
-              "       Field:    " + fname + "\n"
-              "       Check:    " + prop_check.name() + "\n"
-              " NOTE: we don't allow repairing input fields.\n");
-        }
-      }
+void AtmosphereProcess::run_property_checks_pre () const { 
+  // Run all pre-condition property checks
+  for (const auto& pc : m_property_checks_pre) {
+    auto check = pc->check();
+    EKAT_REQUIRE_MSG(check || pc->can_repair(),
+        "Error! Failed pre-condition check (cannot be repaired).\n"
+        "  - Atm process name: " + name() + "\n"
+        "  - Property check name: " + pc->name() + "\n");
+    if (not check) {
+      pc->repair();
     }
   }
 }
 
-void AtmosphereProcess::check_computed_fields () {
-  // Loop over all the field checks on input fields, and execute them
-  for (const auto& fp_it : m_property_checks_out) {
-    const auto& fid   = fp_it.first;
-    const auto& fname = fid.name();
-    const auto& gname = fid.get_grid_name();
-    const auto& prop_check = *fp_it.second;
-    if (has_computed_field(fid)) {
-      auto& f = get_field_out(fname,gname);
-      const auto check = prop_check.check(f);
-      EKAT_REQUIRE_MSG(check || prop_check.can_repair(),
-          "Error! Output field property check failed (and cannot be repaired).\n"
-          "       Atm proc: " + this->name() + "\n"
-          "       Field:    " + fname + "\n"
-          "       Check:    " + prop_check.name() + "\n");
-      if (not check) {
-        prop_check.repair(f);
-      }
-    } else {
-      auto& group = get_group_out(fname,gname);
-      if (group.m_bundle) {
-        auto& f = *group.m_bundle;
-        const auto check = prop_check.check(f);
-        EKAT_REQUIRE_MSG(check || prop_check.can_repair(),
-            "Error! Output field property check failed (and cannot be repaired).\n"
-            "       Atm proc: " + this->name() + "\n"
-            "       Field:    " + group.m_info->m_group_name + "\n"
-            "       Check:    " + prop_check.name() + "\n");
-        if (not check) {
-          prop_check.repair(f);
-        }
-      } else {
-        for (const auto& it : group.m_fields) {
-          auto& f = *it.second;
-          const auto check = prop_check.check(f);
-          EKAT_REQUIRE_MSG(check || prop_check.can_repair(),
-              "Error! Output field property check failed (and cannot be repaired).\n"
-              "       Atm proc: " + this->name() + "\n"
-              "       Field:    " + it.first + "\n"
-              "       Check:    " + prop_check.name() + "\n");
-          if (not check) {
-            prop_check.repair(f);
-          }
-        }
-      }
+void AtmosphereProcess::run_property_checks_post () const {
+  // Run all post-condition property checks
+  for (const auto& pc : m_property_checks_pre) {
+    auto check = pc->check();
+    EKAT_REQUIRE_MSG(check || pc->can_repair(),
+        "Error! Failed post-condition check (cannot be repaired).\n"
+        "  - Atm process name: " + name() + "\n"
+        "  - Property check name: " + pc->name() + "\n");
+    if (not check) {
+      pc->repair();
     }
   }
 }
@@ -254,6 +194,7 @@ bool AtmosphereProcess::has_required_field (const FieldIdentifier& id) const {
   }
   return false;
 }
+
 bool AtmosphereProcess::has_computed_field (const FieldIdentifier& id) const {
   for (const auto& it : m_computed_field_requests) {
     if (it.fid==id) {
@@ -271,6 +212,7 @@ bool AtmosphereProcess::has_required_group (const std::string& name, const std::
   }
   return false;
 }
+
 bool AtmosphereProcess::has_computed_group (const std::string& name, const std::string& grid) const {
   for (const auto& it : m_computed_group_requests) {
     if (it.name==name && it.grid==grid) {
@@ -410,6 +352,49 @@ get_internal_field(const std::string& field_name) {
 const Field& AtmosphereProcess::
 get_internal_field(const std::string& field_name) const {
   return get_internal_field_impl(field_name);
+}
+
+void AtmosphereProcess::
+add_property_check (const prop_check_ptr& pc)
+{
+  add_pre_run_property_check (pc);
+  add_post_run_property_check (pc);
+}
+
+void AtmosphereProcess::
+add_pre_run_property_check (const prop_check_ptr& pc)
+{
+  // If a pc can repair, we need to make sure the repairable
+  // fields are among the computed fields of this atm proc.
+  // Otherwise, it would be possible for this AP to implicitly
+  // update a field, without that appearing in the dag.
+  for (const auto& ptr : pc->repairable_fields()) {
+    const auto& fid = ptr->get_header().get_identifier();
+    EKAT_REQUIRE_MSG (
+        has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
+        "Error! Input property check can repair a non-computed field.\n"
+        "  - Atmosphere process name: " + name() + "\n"
+        "  - Property check name: " + name() + "\n");
+  }
+  m_property_checks_pre.push_back(pc);
+}
+
+void AtmosphereProcess::
+add_post_run_property_check (const prop_check_ptr& pc)
+{
+  // If a pc can repair, we need to make sure the repairable
+  // fields are among the computed fields of this atm proc.
+  // Otherwise, it would be possible for this AP to implicitly
+  // update a field, without that appearing in the dag.
+  for (const auto& ptr : pc->repairable_fields()) {
+    const auto& fid = ptr->get_header().get_identifier();
+    EKAT_REQUIRE_MSG (
+        has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
+        "Error! Input property check can repair a non-computed field.\n"
+        "  - Atmosphere process name: " + name() + "\n"
+        "  - Property check name: " + name() + "\n");
+  }
+  m_property_checks_post.push_back(pc);
 }
 
 void AtmosphereProcess::set_fields_and_groups_pointers () {
