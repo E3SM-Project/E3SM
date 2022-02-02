@@ -31,7 +31,8 @@ module ocn_init_spherical_utils
    implicit none
    private
 
-   public :: ocn_init_expand_sphere, ocn_transform_from_lonlat_to_xyz
+   public :: ocn_init_expand_sphere, ocn_init_realistic_coriolis_parameter
+   public :: ocn_transform_from_lonlat_to_xyz
    public :: transform_from_xyz_to_lonlat, ocn_unit_vector_in_3space
    public :: ocn_vector_on_tangent_plane, ocn_cross_product_in_3space
    public :: ocn_init_set_pools_sphere_radius
@@ -95,7 +96,6 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: areaCell, areaTriangle
       real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge
-      real (kind=RKIND), dimension(:), pointer :: fCell, fEdge, fVertex
       real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, latCell, lonCell
       real (kind=RKIND), dimension(:), pointer :: xEdge, yEdge, zEdge, latEdge, lonEdge
       real (kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex, latVertex, lonVertex
@@ -158,7 +158,6 @@ contains
         call mpas_pool_get_array(meshPool, 'latCell', latCell)
         call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-        call mpas_pool_get_array(meshPool, 'fCell', fCell)
 
         call mpas_pool_get_array(meshPool, 'xEdge', xEdge)
         call mpas_pool_get_array(meshPool, 'yEdge', yEdge)
@@ -167,7 +166,6 @@ contains
         call mpas_pool_get_array(meshPool, 'lonEdge', lonEdge)
         call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
         call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-        call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
 
         call mpas_pool_get_array(meshPool, 'xVertex', xVertex)
         call mpas_pool_get_array(meshPool, 'yVertex', yVertex)
@@ -177,7 +175,6 @@ contains
         call mpas_pool_get_array(meshPool, 'areaTriangle', areaTriangle)
         call mpas_pool_get_array(meshPool, 'kiteAreasOnVertex', kiteAreasOnVertex)
         call mpas_pool_get_array(meshPool, 'cellsOnVertex', cellsOnVertex)
-        call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
 
         do iCell = 1, nCellsSolve
            oldX = xCell(iCell)
@@ -190,10 +187,6 @@ contains
            yCell(iCell) = (oldY / norm) * newRadius
            zCell(iCell) = (oldZ / norm) * newRadius
            areaCell(iCell) = (areaCell(iCell) / (oldRadius**2) )* newRadius**2
-
-           if(config_realistic_coriolis_parameter) then
-              fCell(iCell) = 2.0_RKIND * omega * sin(latCell(iCell))
-           end if
         end do
 
         ! Expand vertex quantities
@@ -217,10 +210,6 @@ contains
               end if
               areaTriangle(iVertex) = areaTriangle(iVertex) + kiteAreasOnVertex(i, iVertex)
            end do
-
-           if(config_realistic_coriolis_parameter) then
-              fVertex(iVertex) = 2.0_RKIND * omega * sin( latVertex(iVertex) )
-           end if
         end do
 
         ! Expand edge quantities
@@ -236,10 +225,6 @@ contains
            zEdge(iEdge) = (oldZ / norm) * newRadius
            dvEdge(iEdge) = (dvEdge(iEdge) / oldRadius) * newRadius
            dcEdge(iEdge) = (dcEdge(iEdge) / oldRadius) * newRadius
-
-           if(config_realistic_coriolis_parameter) then
-              fEdge(iEdge) = 2.0_RKIND * omega * sin( latEdge(iEdge) )
-           end if
         end do
 
         block_ptr % domain % sphere_radius = newRadius
@@ -251,6 +236,81 @@ contains
    !--------------------------------------------------------------------
 
    end subroutine ocn_init_expand_sphere!}}}
+
+
+!***********************************************************************
+!
+!  routine ocn_init_realistic_coriolis_parameter
+!
+!> \brief   MPAS-Ocean Coriolis Initialization Routine
+!> \author  Xylar Asay-Davis
+!> \date    01/23/2022
+!> \details
+!>  This routine computes the Coriolis parameter at cells, edges and
+!>  vertices if the configuration requests a realistic Coriolis
+!>  parameter.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_init_realistic_coriolis_parameter(domain, err)!{{{
+
+   !--------------------------------------------------------------------
+
+      type (domain_type), intent(inout) :: domain
+      integer, intent(out) :: err
+
+      type (block_type), pointer :: block_ptr
+
+      type (mpas_pool_type), pointer :: meshPool
+
+      integer, pointer :: nCellsSolve, nEdgesSolve, nVerticesSolve
+
+      real (kind=RKIND), dimension(:), pointer :: fCell, fEdge, fVertex
+      real (kind=RKIND), dimension(:), pointer :: latCell, latEdge, latVertex
+      integer :: iCell, iEdge, iVertex
+
+      err = 0
+
+      if ( .not. config_realistic_coriolis_parameter ) return
+
+      block_ptr => domain % blocklist
+      do while(associated(block_ptr))
+
+        ! Expand cell quantities
+        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+
+        call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+        call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
+        call mpas_pool_get_dimension(meshPool, 'nVerticesSolve', nVerticesSolve)
+
+        call mpas_pool_get_array(meshPool, 'latCell', latCell)
+        call mpas_pool_get_array(meshPool, 'fCell', fCell)
+
+        call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
+        call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
+
+        call mpas_pool_get_array(meshPool, 'latVertex', latVertex)
+        call mpas_pool_get_array(meshPool, 'fVertex', fVertex)
+
+        do iCell = 1, nCellsSolve
+           fCell(iCell) = 2.0_RKIND * omega * sin(latCell(iCell))
+        end do
+
+        do iVertex = 1, nVerticesSolve
+           fVertex(iVertex) = 2.0_RKIND * omega * sin( latVertex(iVertex) )
+        end do
+
+        do iEdge = 1, nEdgesSolve
+           fEdge(iEdge) = 2.0_RKIND * omega * sin( latEdge(iEdge) )
+        end do
+
+        block_ptr => block_ptr % next
+
+      end do
+
+   !--------------------------------------------------------------------
+
+   end subroutine ocn_init_realistic_coriolis_parameter!}}}
 
 !***********************************************************************
 !

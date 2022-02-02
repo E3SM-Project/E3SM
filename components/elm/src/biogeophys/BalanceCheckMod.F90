@@ -344,7 +344,7 @@ contains
        do fc = 1,num_do_smb_c
           c = filter_do_smb_c(fc)
           g = col_pp%gridcell(c)
-          write(iulog,*)'WARNING:  glc_dyn_runoff_routing = ', glc_dyn_runoff_routing(g)  ! TKT
+!          write(iulog,*)'WARNING:  glc_dyn_runoff_routing = ', glc_dyn_runoff_routing(g)  ! TKT
           if (glc_dyn_runoff_routing(g)) then
              errh2o(c) = errh2o(c) + qflx_glcice_frz(c)*dtime
              errh2o(c) = errh2o(c) - qflx_glcice_melt(c)*dtime

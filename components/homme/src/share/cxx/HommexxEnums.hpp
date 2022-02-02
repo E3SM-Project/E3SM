@@ -40,8 +40,7 @@ enum class ComparisonOp {
 
 enum class ForcingAlg {
   FORCING_OFF,
-  FORCING_DEBUG,
-  FORCING_0, // Unsupported
+  FORCING_0, 
   FORCING_1, // Unsupported
   FORCING_2, // TODO: Rename FORCING_1 and FORCING_2 to something more descriptive
 };
@@ -58,8 +57,6 @@ enum class AdvectionForm {
 
 enum class RemapAlg {
   PPM_MIRRORED = 1,
-  PPM_FIXED_PARABOLA = 2,
-  PPM_FIXED_MEANS = 3,
   PPM_LIMITED_EXTRAP = 10
 };
 
@@ -67,10 +64,6 @@ inline std::string remapAlg2str (const RemapAlg alg) {
   switch (alg) {
     case RemapAlg::PPM_MIRRORED:
       return "PPM Mirrored";
-    case RemapAlg::PPM_FIXED_MEANS:
-      return "PPM Fixed Means";
-    case RemapAlg::PPM_FIXED_PARABOLA:
-      return "PPM Fixed Parabola";
     case RemapAlg::PPM_LIMITED_EXTRAP:
       return "PPM Limited Extrapolation";
   }

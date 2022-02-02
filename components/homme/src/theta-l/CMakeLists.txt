@@ -128,4 +128,3 @@ thetal_setup()
 ############################################################################
 createTestExec(theta-l theta-l ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
 
-TARGET_LINK_LIBRARIES(theta-l dl)

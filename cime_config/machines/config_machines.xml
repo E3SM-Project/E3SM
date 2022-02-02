@@ -130,13 +130,11 @@
       </modules>
 
       <modules compiler="gnugpu">
-	<command name="load">cpe-cuda</command>
 	<command name="load">cudatoolkit</command>
 	<command name="load">craype-accel-nvidia80</command>
       </modules>
 
       <modules compiler="nvidiagpu">
-	<command name="load">cpe-cuda</command>
 	<command name="load">cudatoolkit</command>
 	<command name="load">craype-accel-nvidia80</command>
       </modules>
@@ -1503,7 +1501,8 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <TEST_TPUT_TOLERANCE>0.05</TEST_TPUT_TOLERANCE>
+    <TEST_MEMLEAK_TOLERANCE>0.05</TEST_MEMLEAK_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
       <env name="PERL5LIB">/lcrc/group/e3sm/soft/perl/chrys/lib/perl5</env>
@@ -1622,7 +1621,9 @@
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>E3SM</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="pgigpu">16</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="pgigpu">16</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>srun</executable>

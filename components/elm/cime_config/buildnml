@@ -138,8 +138,9 @@ def buildnml(case, caseroot, compname):
         # create elmconf/namelist
         # -----------------------------------------------------
 
-        if os.path.exists("{}/Buildconf/elm.input_data_list".format(caseroot)):
-            os.remove("{}/Buildconf/elm.input_data_list".format(caseroot))
+        if inst_counter ==1:
+            if os.path.exists("{}/Buildconf/elm.input_data_list".format(caseroot)):
+                os.remove("{}/Buildconf/elm.input_data_list".format(caseroot))
 
         elmicfile = ""
         elm_startfile = ""

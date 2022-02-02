@@ -64,6 +64,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     nu_div,        &
     nu_p,          &
     nu_top,        &
+    tom_sponge_start, &
     dcmip16_mu,     &
     dcmip16_mu_s,   &
     dcmip16_mu_q,   &
@@ -74,7 +75,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     disable_diagnostics, & ! use to disable diagnostics for timing reasons
     psurf_vis,    &
     hypervis_order,       &
-    hypervis_power,       &
     hypervis_subcycle,    &
     hypervis_subcycle_tom,&
     hypervis_subcycle_q,  &
@@ -101,6 +101,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     hv_theta_correction, &
     hv_theta_thresh, &
     vert_remap_q_alg, &
+    vert_remap_u_alg, &
     se_fv_phys_remap_alg, &
     timestep_make_subcycle_parameters_consistent
 
@@ -118,7 +119,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     bubble_zradius, &
     bubble_cosine, &
     bubble_moist, &
-    bubble_moist_dq, &
+    bubble_moist_drh, &
+    bubble_rh_background, &
     bubble_prec_type, &
     case_planar_bubble
 #endif
@@ -284,6 +286,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       nu_div,        &
       nu_p,          &
       nu_top,        &
+      tom_sponge_start, &
       dcmip16_mu,     &
       dcmip16_mu_s,   &
       dcmip16_mu_q,   &
@@ -291,7 +294,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       dcmip16_pbl_type,&
       psurf_vis,     &
       hypervis_order,    &
-      hypervis_power,    &
       hypervis_subcycle, &
       hypervis_subcycle_tom, &
       hypervis_subcycle_q, &
@@ -310,6 +312,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       hv_theta_correction,   &
       hv_theta_thresh,   &
       vert_remap_q_alg, &
+      vert_remap_u_alg, &
       se_fv_phys_remap_alg
 
 
@@ -352,7 +355,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       bubble_zradius, &
       bubble_cosine, &
       bubble_moist, &
-      bubble_moist_dq, &
+      bubble_moist_drh, &
+      bubble_rh_background, &
       bubble_prec_type
     namelist /vert_nl/        &
       vform,              &
@@ -781,6 +785,7 @@ endif
     call MPI_bcast(hv_theta_correction,1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(hv_theta_thresh,1, MPIreal_t, par%root,par%comm,ierr)
     call MPI_bcast(vert_remap_q_alg,1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(vert_remap_u_alg,1, MPIinteger_t, par%root,par%comm,ierr)
 
     call MPI_bcast(fine_ne,         1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(max_hypervis_courant,1,MPIreal_t, par%root,par%comm,ierr)
@@ -790,6 +795,7 @@ endif
     call MPI_bcast(nu_div,          1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(nu_p,            1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(nu_top,          1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(tom_sponge_start,1, MPIreal_t   , par%root,par%comm,ierr)
 
     call MPI_bcast(dcmip16_mu,      1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(dcmip16_mu_s,    1, MPIreal_t   , par%root,par%comm,ierr)
@@ -801,7 +807,6 @@ endif
     call MPI_bcast(disable_diagnostics,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(psurf_vis,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_order,1,MPIinteger_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(hypervis_power,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_scaling,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle_tom,1,MPIinteger_t   ,par%root,par%comm,ierr)
@@ -835,7 +840,8 @@ endif
     call MPI_bcast(bubble_zradius ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(bubble_cosine ,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(bubble_moist ,1,MPIlogical_t,par%root,par%comm,ierr)
-    call MPI_bcast(bubble_moist_dq ,1,MPIreal_t,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_moist_drh ,1,MPIreal_t,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_rh_background ,1,MPIreal_t,par%root,par%comm,ierr)
     call MPI_bcast(bubble_prec_type, 1, MPIinteger_t, par%root,par%comm,ierr)
 
     call MPI_bcast(case_planar_bubble,1,MPIlogical_t,par%root,par%comm,ierr)
@@ -912,8 +918,14 @@ endif
 
 
     ! use maximum available:
-    if (NThreads == -1) NThreads = omp_get_max_threads()
-
+    if (NThreads == -1) then
+#if defined(HORIZ_OPENMP) || defined (COLUMN_OPENMP)
+       NThreads = omp_get_max_threads()
+#else
+       NThreads = 1  
+#endif       
+    endif
+    
     ! sanity check on thread count
     ! HOMME will run if if nthreads > max, but gptl will print out GB of warnings.
     if (NThreads > omp_get_max_threads()) then
@@ -940,7 +952,9 @@ endif
        endif
     endif
 #endif
-
+    ! set defautl for dynamics remap
+    if (vert_remap_u_alg == -2) vert_remap_u_alg = vert_remap_q_alg
+    
     ! more thread error checks:  
 #ifdef HORIZ_OPENMP
     if(par%masterproc) write(iulog,*)'-DHORIZ_OPENMP enabled'
@@ -1015,18 +1029,7 @@ end if
       laplacian_rigid_factor = rrearth
     end if ! if plane
 
-!logic around different hyperviscosity options
-    if (hypervis_power /= 0) then
-      if (hypervis_scaling /= 0) then
-        print *,'Both hypervis_power and hypervis_scaling are nonzero.'
-        print *,'(1) Set hypervis_power=1, hypervis_scaling=0 for HV based on an element area.'
-        print *,'(2) Set hypervis_power=0 and hypervis_scaling=1 for HV based on a tensor.'
-        print *,'(3) Set hypervis_power=0 and hypervis_scaling=0 for constant HV.'
-          call abortmp("Error: hypervis_power>0 and hypervis_scaling>0")
-      endif
-    endif
-
-    if (topology == "plane" .and. .not. (hypervis_power == 0 .and. hypervis_scaling > 0)) then
+    if (topology == "plane" .and. hypervis_scaling==0) then
       call abortmp("Error: planar grids require the use of tensor HV")
     end if
 
@@ -1173,8 +1176,9 @@ end if
        if (hv_ref_profiles==0 .and. hv_theta_correction==1) then
           call abortmp("hv_theta_correction=1 requires hv_ref_profiles=1 or 2")
        endif
-
+       
        write(iulog,*)"readnl: vert_remap_q_alg  = ",vert_remap_q_alg
+       write(iulog,*)"readnl: vert_remap_u_alg  = ",vert_remap_u_alg
 #ifdef CAM
        write(iulog,*)"readnl: se_nsplit         = ", NSPLIT
        write(iulog,*)"readnl: se_tstep         = ", tstep
@@ -1193,11 +1197,7 @@ end if
        write(iulog,*)"readnl: runtype       = ",runtype
        write(iulog,*)"readnl: se_fv_phys_remap_alg = ",se_fv_phys_remap_alg
 
-       if (hypervis_power /= 0)then
-          write(iulog,*)"Variable scalar hyperviscosity: hypervis_power=",hypervis_power
-          write(iulog,*)"max_hypervis_courant = ", max_hypervis_courant
-          write(iulog,*)"Equivalent ne in fine region = ", fine_ne
-       elseif(hypervis_scaling /=0)then
+       if(hypervis_scaling /=0)then
           write(iulog,*)"Tensor hyperviscosity:  hypervis_scaling=",hypervis_scaling
        else
           write(iulog,*)"Constant (hyper)viscosity used."
@@ -1211,6 +1211,7 @@ end if
        write(iulog,'(a,2e9.2)')"viscosity:  nu_q      = ",nu_q
        write(iulog,'(a,2e9.2)')"viscosity:  nu_p      = ",nu_p
        write(iulog,'(a,2e9.2)')"viscosity:  nu_top      = ",nu_top
+       write(iulog,'(a,2e9.2)')"viscosity:  tom_sponge_start  = ",tom_sponge_start
 
        if(dcmip16_mu/=0)  write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu   = ",dcmip16_mu
        if(dcmip16_mu_s/=0)write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu_s = ",dcmip16_mu_s

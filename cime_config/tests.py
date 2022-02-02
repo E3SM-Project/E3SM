@@ -56,7 +56,8 @@ _TESTS = {
             "SMS.ne4_oQU240.F2010.eam-cosplite",
             "SMS_R_Ld5.ne4_ne4.FSCM5A97.eam-scm",
             "SMS_D_Ln5.ne4_oQU240.F2010",
-            "SMS_Ln5.ne4pg2_oQU480.F2010"
+            "SMS_Ln5.ne4pg2_oQU480.F2010",
+            "ERS.ne4_oQU240.F2010.eam-hommexx"
             )
         },
 
@@ -70,6 +71,8 @@ _TESTS = {
             "PEM_Ln5.ne4_oQU240.F2010",
             "SMS_D_Ln5.ne4_oQU240.F2010.eam-cosplite_nhtfrq5",
             "SMS_Ln1.ne4_oQU240.F2010.eam-chem_pp",
+            "SMS_Ln5.ne30pg2_EC30to60E2r2.BGCEXP_LNDATM_CNORDCTC_20TR",
+            "SMS_Ln5.ne30pg2_EC30to60E2r2.BGCEXP_LNDATM_CNORDCTC_1850",
             "SMS_D_Ln5.ne4_oQU240.F2010.eam-clubb_sp",
             "ERS_Ld5.ne4_oQU240.F2010.eam-rrtmgp",
             "ERS_Ld5.ne4_oQU240.F2010.eam-rrtmgpxx",
@@ -140,7 +143,6 @@ _TESTS = {
             "SMS.f09_g16_a.IGELM_MLI",
             "SMS_P12x2.ne4_oQU240.WCYCL1850NS.allactive-mach_mods",
             "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1.eam-mmf_crmout",
-            "SMS_B.ne4_ne4.F-EAM-AQP1.eam-hommexx",
             )
         },
 
@@ -167,13 +169,14 @@ _TESTS = {
             "PEM_Ln9.ne30pg2_EC30to60E2r2.WCYCL1850",
             "ERP_Ld3.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-pioroot1",
             "SMS_D_Ln5.conusx4v1_r05_oECv3.F2010",
-            "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPECACNT_1850.elm-bgcexp",
-            "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPRDCTC_1850.elm-bgcexp",
+            "SMS_Ld2.ne30pg2_r05_EC30to60E2r2.BGCEXP_CNTL_CNPECACNT_1850.elm-bgcexp",
+            "SMS_Ld2.ne30pg2_r05_EC30to60E2r2.BGCEXP_CNTL_CNPRDCTC_1850.elm-bgcexp",
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
+            "SMS_D_Ld3.T62_oQU120.CMPASO-IAF",
             "SMS_D_Ld1.ne30pg2_r05_EC30to60E2r2.WCYCL1850",
             "ERP_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_fixed_subcycle",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_VT",
-            "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
+            "ERS_Ln9.ne4pg2_oQU480.F20TR-MMFXX.eam-mmf_use_VT",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
             "ERS_Ln9.ne4pg2_ne4pg2.F-MMFOMP.eam-single_thread",
             "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
             "SMS_Ln5.ne4_ne4.F-MMFXX-SCM-ARM97",
@@ -244,6 +247,17 @@ _TESTS = {
                "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPECACNT_1850S.allactive-v1bgceca_1850",
                "SMS_Ld2.ne30_oECv3.BGCEXP_BDRD_CNPECACNT_20TRS.allactive-v1bgceca",
                )
+        },
+
+    #e3sm performance-benching of production-like runs
+    "e3sm_prod_bench" : {
+        "tests"   : (
+            "PFS.ne30pg2_r05_oECv3.F2010.bench-noio",
+            "PFS.ne30pg2_r05_oECv3.F20TR.bench-noio",
+            "PFS.ne30pg2_r05_EC30to60E2r2.WCYCL1850.bench-noio",
+            "PFS.ne30pg2_EC30to60E2r2.WCYCL1850.bench-noio",
+            "PFS_PS.northamericax4v1pg2_WC14to60E2r3.WCYCL1850.bench-noio",
+            )
         },
 
     "fates" : {
@@ -403,11 +417,30 @@ _TESTS = {
     },
 
 
-    "e3sm_gpu" : {
+    "e3sm_gpuacc" : {
         "tests"    : (
-                 "SMS_P16x1_Ld1.T62_oEC60to30v3.CMPASO-NYF",
-                 "SMS_P16x1_Ld1.T62_oEC60to30v3.DTESTM",
+                 "SMS_Ld1.T62_oEC60to30v3.CMPASO-NYF",
+                 "SMS_Ld1.T62_oEC60to30v3.DTESTM",
                  )
+    },
+
+    "e3sm_gpuomp" : {
+        "tests"    : (
+                 "SMS_Ln9.ne4pg2_ne4pg2.F-MMFOMP.eam-single_thread",
+                 "SMS_Ld1.T62_oEC60to30v3.DTESTM",
+                 )
+    },
+
+    "e3sm_gpucxx" : {
+        "tests"    : (
+                 "SMS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_fixed_subcycle",
+                 "SMS_Ln9.ne4pg2_oQU480.F20TR-MMFXX.eam-mmf_use_VT",
+                 "SMS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
+                 )
+    },
+
+    "e3sm_gpuall" : {
+        "inherit" : ("e3sm_gpuacc", "e3sm_gpuomp", "e3sm_gpucxx"),
     },
 
     "eam_nl" : {

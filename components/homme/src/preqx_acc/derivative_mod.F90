@@ -7,7 +7,7 @@ module derivative_mod
   use derivative_mod_base, only: derivative_t, subcell_integration, subcell_dss_fluxes, subcell_div_fluxes, subcell_Laplace_fluxes, allocate_subcell_integration_matrix,   &
                                  derivinit, &
                                  gradient_sphere_wk_testcov, gradient_sphere_wk_testcontra, ugradv_sphere, vorticity_sphere, vorticity_sphere_diag, curl_sphere,     &
-                                 curl_sphere_wk_testcov, vlaplace_sphere_wk, element_boundary_integral, edge_flux_u_cg, limiter_optim_iter_full, &
+                                 curl_sphere_wk_testcov, vlaplace_sphere_wk, element_boundary_integral, limiter_optim_iter_full, &
                                  limiter_clip_and_sum, &
                                  laplace_sphere_wk, divergence_sphere_wk, gradient_sphere, divergence_sphere, laplace_z
   use kinds, only : real_kind, longdouble_kind
@@ -17,14 +17,14 @@ module derivative_mod
   ! needed for spherical differential operators:
   use physical_constants, only : rrearth 
   use element_mod, only : element_t
-  use control_mod, only : hypervis_scaling, hypervis_power
+  use control_mod, only : hypervis_scaling
   implicit none
   private
 
   public ::  derivative_t, subcell_integration, subcell_dss_fluxes, subcell_div_fluxes, subcell_Laplace_fluxes, allocate_subcell_integration_matrix,   &
              derivinit, &
              gradient_sphere_wk_testcov, gradient_sphere_wk_testcontra, ugradv_sphere, vorticity_sphere, vorticity_sphere_diag, curl_sphere,     &
-             curl_sphere_wk_testcov, vlaplace_sphere_wk, element_boundary_integral, edge_flux_u_cg, limiter_optim_iter_full, &
+             curl_sphere_wk_testcov, vlaplace_sphere_wk, element_boundary_integral, limiter_optim_iter_full, &
              limiter_clip_and_sum, &
              laplace_sphere_wk, divergence_sphere_wk, gradient_sphere, divergence_sphere, laplace_z
   public :: laplace_sphere_wk_openacc
@@ -36,7 +36,7 @@ contains
 
   subroutine laplace_sphere_wk_openacc(s,grads,deriv,elem,var_coef,laplace,len,nets,nete,ntl,tl)
     use element_mod, only: element_t
-    use control_mod, only: hypervis_scaling, hypervis_power
+    use control_mod, only: hypervis_scaling
     implicit none
     !input:  s = scalar
     !ouput:  -< grad(PHI), grad(s) >   = weak divergence of grad(s)
@@ -58,11 +58,7 @@ contains
         do j = 1 , np
           do i = 1 , np
             if (var_coef) then
-              if (hypervis_power/=0 ) then
-                ! scalar viscosity with variable coefficient
-                grads(i,j,1,k,ie) = grads(i,j,1,k,ie)*elem(ie)%variable_hyperviscosity(i,j)
-                grads(i,j,2,k,ie) = grads(i,j,2,k,ie)*elem(ie)%variable_hyperviscosity(i,j)
-              else if (hypervis_scaling /=0 ) then
+               if (hypervis_scaling /=0 ) then
                 oldgrads = grads(i,j,:,k,ie)
                 grads(i,j,1,k,ie) = sum(oldgrads(:)*elem(ie)%tensorVisc(i,j,1,:))
                 grads(i,j,2,k,ie) = sum(oldgrads(:)*elem(ie)%tensorVisc(i,j,2,:))
