@@ -213,7 +213,8 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       register_dimension(filename,"time","time",0);
 
       // Register time as a variable.
-      register_variable(filename,"time","time",1,{"time"},  PIO_REAL,"time");
+      auto time_units='s since '+m_case_t0.get_date_string()+' '+m_case_t0.get_time_string();
+      register_variable(filename,"time","time",time_units,1,{"time"},  PIO_REAL,"time");
 
       // Make all output streams register their dims/vars
       for (auto& it : m_output_streams) {
@@ -229,10 +230,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       if (is_checkpoint_step) { 
         set_int_attribute_c2f (filename.c_str(),"avg_count",m_output_control.nsteps_since_last_write);
       }
-      auto t0_date = m_case_t0.get_date()[0]*10000 + m_case_t0.get_date()[1]*100 + m_case_t0.get_date()[2];
-      auto t0_time = m_case_t0.get_time()[0]*10000 + m_case_t0.get_time()[1]*100 + m_case_t0.get_time()[2];
-      set_int_attribute_c2f(filename.c_str(),"start_date",t0_date);
-      set_int_attribute_c2f(filename.c_str(),"start_time",t0_time);
+
       filespecs.is_open = true;
     }
 
