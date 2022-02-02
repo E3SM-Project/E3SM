@@ -59,7 +59,6 @@ module homme_params_mod
     nu_top,                 &
     hypervis_order,         &
     hypervis_scaling,       &
-    hypervis_power,         &
     hypervis_subcycle,      &
     hypervis_subcycle_tom,  &
     hypervis_subcycle_q,    &
@@ -83,6 +82,8 @@ module homme_params_mod
   public :: set_homme_int_param_f90
   public :: set_homme_real_param_f90
   public :: set_homme_bool_param_f90
+
+  logical :: nsplit_inited = .false.
 
 contains
 
@@ -151,7 +152,6 @@ contains
     !        Set defaults         !
     !-----------------------------!
 
-    nsplit = -1
     tstep = 0
     moisture = 'dry'
     cubed_sphere_map = 2
@@ -162,6 +162,10 @@ contains
     statefreq = 99999
     geometry = "sphere"
     se_ftype = ftype
+    ! Hack: hommexx wants a valid nsplit at init time, but HommeDynamics
+    !       won't know dt until run time. Fortunately, Homme doesn't
+    !       really need nsplit until runtime, so we can update it later
+    nsplit = 1
 
     !-----------------------------!
     !     Parse namelist file     !
@@ -230,7 +234,6 @@ contains
     call MPI_bcast(nu_top, 1, MPIreal_t, par%root, par%comm, ierr)
 
     call MPI_bcast(hypervis_order,        1, MPIinteger_t, par%root, par%comm, ierr)
-    call MPI_bcast(hypervis_power,        1, MPIreal_t,    par%root, par%comm, ierr)
     call MPI_bcast(hypervis_scaling,      1, MPIreal_t,    par%root, par%comm, ierr)
     call MPI_bcast(hypervis_subcycle,     1, MPIinteger_t, par%root, par%comm, ierr)
     call MPI_bcast(hypervis_subcycle_tom, 1, MPIinteger_t, par%root, par%comm, ierr)
@@ -270,17 +273,6 @@ contains
       laplacian_rigid_factor = rrearth
     else
       call abortmp("Error: scream only supports 'sphere' geometry, for now.")
-    endif
-
-    !logic around different hyperviscosity options
-    if (hypervis_power /= 0) then
-      if (hypervis_scaling /= 0) then
-        print *,'Both hypervis_power and hypervis_scaling are nonzero.'
-        print *,'(1) Set hypervis_power=1, hypervis_scaling=0 for HV based on an element area.'
-        print *,'(2) Set hypervis_power=0 and hypervis_scaling=1 for HV based on a tensor.'
-        print *,'(3) Set hypervis_power=0 and hypervis_scaling=0 for constant HV.'
-          call abortmp("Error: hypervis_power>0 and hypervis_scaling>0")
-      endif
     endif
 
     ! if user sets hypervis_subcycle=-1, then use automatic formula
@@ -499,9 +491,7 @@ contains
     if (ierr .ne. 0) then
       call abortmp ("[get_homme_nsplit_f90] Error! Something went wrong in timestep_make_eam_parameters_consistent.")
     endif
-    if (nsplit .eq. -1) then
-      nsplit = nsplit_out
-    else
+    if (nsplit_inited) then
       ! For now, do not allow atm_dt to change throughout the simulation.
       ! This might actually be safe, and a potentially useful feature,
       ! so feel free to add it
@@ -510,6 +500,9 @@ contains
                       "  Error! nsplit was already computed, but had a different value.\n" // &
                       "  We currently do not allow dt to change during the simulation.\n")
       endif
+    else
+      nsplit = nsplit_out
+      nsplit_inited = .true.
     endif
 
   end function get_homme_nsplit_f90

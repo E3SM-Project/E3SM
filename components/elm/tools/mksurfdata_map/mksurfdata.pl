@@ -25,7 +25,7 @@ else { $scrdir = $cwd; }
 
 #-----------------------------------------------------------------------------------------------
 # Add $scrdir to the list of paths that Perl searches for modules
-my @dirs = ( $scrdir, "$scrdir/../../../../../cime/utils/perl5lib",
+my @dirs = ( $scrdir, "$scrdir/../../../../cime/utils/perl5lib",
            );
 unshift @INC, @dirs;
 my $result = eval "require XML::Lite";
@@ -40,7 +40,7 @@ if ( ! defined($result) ) {
 ** Cannot find perl module \"Build/NamelistDefinition.pm\" from directories: @dirs **
 EOF
 }
-my $nldef_file     = "$scrdir/../../../bld/namelist_files/namelist_definition.xml";
+my $nldef_file     = "$scrdir/../../bld/namelist_files/namelist_definition.xml";
 
 my $definition = Build::NamelistDefinition->new( $nldef_file );
 
@@ -394,7 +394,7 @@ EOF
       } else {
 	  $queryopts = "-res $res -csmdata $CSMDATA -silent -justvalue";
       }
-      $queryfilopts = "$queryopts -onlyfiles -phys clm4_5 ";
+      $queryfilopts = "$queryopts -onlyfiles ";
       my $mkcrop = ",crop='off'";
       my $setnumpft = "";
       if ( defined($opts{'crop'}) ) {
@@ -418,24 +418,24 @@ EOF
          $merge_gis = "on";
       }
       my $mopts  = "$queryopts -namelist default_settings $usrnam";
-      my $mkopts = "-csmdata $CSMDATA -silent -justvalue -namelist clmexp $usrnam";
+      my $mkopts = "-csmdata $CSMDATA -silent -justvalue -namelist elmexp $usrnam";
       foreach my $typ ( "lak", "veg", "voc", "top", "tex", "col","ord", 
                         "fmx", "lai", "urb", "org", "glc", "utp", "wet",
 		        "gdp", "peat","abm", "topostats" , "vic", "ch4", 
                         "pho", "grvl", "slp10", "ero") {
-         my $lmask = `$scrdir/../../../bld/queryDefaultNamelist.pl $mopts -options type=$typ,mergeGIS=$merge_gis,hirespft=$hirespft -var lmask`;
+         my $lmask = `$scrdir/../../bld/queryDefaultNamelist.pl $mopts -silent -options type=$typ,mergeGIS=$merge_gis,hirespft=$hirespft -var lmask`;
          $lmask = trim($lmask);
-         my $hgrid = `$scrdir/../../../bld/queryDefaultNamelist.pl $mopts -options type=$typ,hirespft=$hirespft -var hgrid`;
+         my $hgrid = `$scrdir/../../bld/queryDefaultNamelist.pl $mopts -options type=$typ,hirespft=$hirespft -var hgrid`;
          $hgrid = trim($hgrid);
-         my $filnm = `$scrdir/../../../bld/queryDefaultNamelist.pl $mopts -options type=$typ -var mksrf_filename`;
+         my $filnm = `$scrdir/../../bld/queryDefaultNamelist.pl $mopts -options type=$typ -var mksrf_filename`;
          $filnm = trim($filnm);
          $hgrd{$typ} = $hgrid;
          $lmsk{$typ} = $lmask;
 	 if ( $opts{'hgrid'} eq "usrspec" ) {
 	     $map{$typ} = $opts{'usr_mapdir'}."/map_${hgrid}_${lmask}_to_${res}_nomask_aave_da_c${mapdate}\.nc";
 	 } else {
-	     $map{$typ} = `$scrdir/../../../bld/queryDefaultNamelist.pl $queryfilopts -namelist clmexp -options frm_hgrid=$hgrid,frm_lmask=$lmask,to_hgrid=$res,to_lmask=nomask -var map`;
-	 }	     
+	     $map{$typ} = `$scrdir/../../bld/queryDefaultNamelist.pl $queryfilopts -namelist elmexp -options frm_hgrid=$hgrid,frm_lmask=$lmask,to_hgrid=$res,to_lmask=nomask -var map`;
+	 }
          $map{$typ} = trim($map{$typ});
          if ( $map{$typ} !~ /[^ ]+/ ) {
             die "ERROR: could NOT find a mapping file for this resolution: $res and type: $typ at $hgrid and $lmask.\n";
@@ -443,7 +443,7 @@ EOF
          if ( ! defined($opts{'allownofile'}) && ! -f $map{$typ} ) {
             die "ERROR: mapping file for this resolution does NOT exist ($map{$typ}).\n";
          }
-         $datfil{$typ} = `$scrdir/../../../bld/queryDefaultNamelist.pl $mkopts -options hgrid=$hgrid,lmask=$lmask,mergeGIS=$merge_gis$mkcrop -var $filnm`;
+         $datfil{$typ} = `$scrdir/../../bld/queryDefaultNamelist.pl $mkopts -options hgrid=$hgrid,lmask=$lmask,mergeGIS=$merge_gis$mkcrop -var $filnm`;
          $datfil{$typ} = trim($datfil{$typ});
          if ( $datfil{$typ} !~ /[^ ]+/ ) {
             die "ERROR: could NOT find a $filnm data file for this resolution: $hgrid and type: $typ and $lmask.\n";
@@ -457,7 +457,7 @@ EOF
       #
       my $griddata    = trim($map{'veg'});
       if ( $griddata eq "" ) {
-         $griddata = `$scrdir/../../../bld/queryDefaultNamelist.pl $queryfilopts $usrnam -var fatmgrid`;
+         $griddata = `$scrdir/../../bld/queryDefaultNamelist.pl $queryfilopts $usrnam -var fatmgrid`;
          if ( $griddata eq "" ) {
             die "ERROR: could NOT find a grid data file for this resolution: $res.\n";
          }
@@ -510,7 +510,7 @@ EOF
             $fh->open( ">$nl" ) or die "** can't open file: $nl\n";
 	    print "CSMDATA is $CSMDATA \n";
             print $fh <<"EOF";
-&clmexp
+&elmexp
  nglcec            = $glc_nec
  mksrf_fgrid       = '$griddata'
  map_fpft          = '$map{'veg'}'
@@ -577,7 +577,7 @@ EOF
             } else {
                $rcp_option = ",rcp=$rcp";
             }
-            my $cmd    = "$scrdir/../../../bld/queryDefaultNamelist.pl $queryfilopts $resol -options sim_year=${sim_yr0}$mkcrop$rcp_option -var mksrf_fvegtyp -namelist clmexp";
+            my $cmd    = "$scrdir/../../bld/queryDefaultNamelist.pl $queryfilopts $resol -options sim_year=${sim_yr0}$mkcrop$rcp_option -var mksrf_fvegtyp -namelist elmexp";
             my $vegtyp = `$cmd`;
             chomp( $vegtyp );
             if ( $vegtyp eq "" ) {
@@ -606,7 +606,7 @@ EOF
 		    $fh_landuse_timeseries->open( ">$landuse_timeseries_text_file" ) or die "** can't open file: $landuse_timeseries_text_file\n";
 		    print "Writing out landuse_timeseries text file: $landuse_timeseries_text_file\n";
 		    for( my $yr = $sim_yr0; $yr <= $sim_yrn; $yr++ ) {
-                        my $vegtypyr = `$scrdir/../../../bld/queryDefaultNamelist.pl $queryfilopts $resol -options sim_year=$yr,rcp=${rcp}${mkcrop} -var mksrf_fvegtyp -namelist clmexp`;
+                        my $vegtypyr = `$scrdir/../../bld/queryDefaultNamelist.pl $queryfilopts $resol -options sim_year=$yr,rcp=${rcp}${mkcrop} -var mksrf_fvegtyp -namelist elmexp`;
 			chomp( $vegtypyr );
 			printf $fh_landuse_timeseries $dynpft_format, $vegtypyr, $yr;
 			if ( $yr % 100 == 0 ) {
@@ -729,7 +729,7 @@ EOF
             # If urban point, overwrite urban variables from previous surface dataset to this one
             #
             if ( $urb_pt ) {
-               my $prvsurfdata = `$scrdir/../../../bld/queryDefaultNamelist.pl $queryopts -var fsurdat`;
+               my $prvsurfdata = `$scrdir/../../bld/queryDefaultNamelist.pl $queryopts -var fsurdat`;
                if ( $? != 0 ) {
                   die "ERROR:: previous surface dataset file NOT found\n";
                }

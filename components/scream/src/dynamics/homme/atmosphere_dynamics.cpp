@@ -115,7 +115,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
        - FT (temperature forcing): FT_dyn=PD( (T_phys_new - T_phys_old)/dt )
        - FM (momentum forcing): FM_dyn=PD( (v_phys_new-v_phys_old)/dt) )
        - FQ (tracers forcing):
-          - ftype==FORCING_DEBUG(0): FQ_dyn =  PD(Q_phys_new) (used as a hard adjustment
+          - ftype==FORCING_0(0): FQ_dyn =  PD(Q_phys_new) (used as a hard adjustment
           - ftype==FORCING_2(2): FQ_dyn = PD(Q_phys_new - DP(Q_dyn_old)) (an increment for Q)
      Here, PD(x) is quantity x remapped from physics to dynamics grid (viceversa for DP(x)).
      So for BFB restart, we need so store T_phys_old, [u,v,w]_phys_old, and, if
@@ -213,10 +213,11 @@ int HommeDynamics::requested_buffer_size_in_bytes() const
   auto& diag = c.create_if_not_there<Diagnostics> (num_elems,params.theta_hydrostatic_mode);
   auto& vrm  = c.create_if_not_there<VerticalRemapManager>(num_elems);
 
-  const bool need_dirk = (params.time_step_type==TimeStepType::IMEX_KG243 ||
-                          params.time_step_type==TimeStepType::IMEX_KG254 ||
-                          params.time_step_type==TimeStepType::IMEX_KG255 ||
-                          params.time_step_type==TimeStepType::IMEX_KG355);
+
+  const bool need_dirk = (params.time_step_type==TimeStepType::ttype7_imex ||
+                          params.time_step_type==TimeStepType::ttype9_imex ||
+                          params.time_step_type==TimeStepType::ttype10_imex  );
+
   if (need_dirk) {
     // Create dirk functor only if needed
     c.create_if_not_there<DirkFunctor>(num_elems);
@@ -311,10 +312,10 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   m_p2d_remapper->registration_begins();
   m_d2p_remapper->registration_begins();
 
-  // ftype==FORCING_DEBUG:
+  // ftype==FORCING_0:
   //  1) remap Q_rgn->Q_dyn
   //  2) compute FQ_dyn=(Q_dyn-Q_dyn_old)/dt
-  // ftype!=FORCING_DEBUG:
+  // ftype!=FORCING_0:
   //  1) compute FQ_rgn=Q_rgn-Q_rgn_old
   //  2) remap FQ_rgn->FQ_dyn
   //  3) Q_dyn=Q_dyn_old+FQ_dyn
@@ -381,12 +382,20 @@ void HommeDynamics::initialize_impl (const RunType run_type)
 void HommeDynamics::run_impl (const int dt)
 {
   try {
-    Kokkos::fence();
-    homme_pre_process (dt);
 
     // Note: Homme's step lasts homme_dt*max(dt_remap_factor,dt_tracers_factor), and it must divide dt.
     // We neeed to compute dt/homme_dt, and subcycle homme that many times
+
+    // NOTE: we did not have atm_dt when we inited homme, so we set nsplit=1.
+    //       Now we can compute the actual nsplit, and need to update its value
+    //       in Hommexx's data structures
     const int nsplit = get_homme_nsplit_f90(dt);
+    auto& params = Homme::Context::singleton().get<Homme::SimulationParams>();
+    params.nsplit = nsplit;
+
+    Kokkos::fence();
+    homme_pre_process (dt);
+
     for (int subiter=0; subiter<nsplit; ++subiter) {
       Kokkos::fence();
       prim_run_f90 ();
@@ -521,7 +530,6 @@ void HommeDynamics::homme_pre_process (const int dt) {
   //  ftype=0: FQ = dp*(Qnew-Qold) / dt
   //  ftype=2: qdp = dp*Qnew, with Qnew stored in FQ
   switch(ftype) {
-    case ForcingAlg::FORCING_DEBUG:
     case ForcingAlg::FORCING_0:
       // Back out tracers tendency for Qdp
       Kokkos::parallel_for(Kokkos::RangePolicy<>(0,Q.size()),KOKKOS_LAMBDA(const int idx) {
@@ -784,7 +792,7 @@ void HommeDynamics::restart_homme_state () {
   // All internal fields should have been read from restart file.
   // We need to remap Q_dyn, v_dyn, w_dyn, T_dyn back to ref grid,
   // to handle the backing out of the tendencies
-  // Note: Q_ref only in case of ftype!=FORCING_DEBUG.
+  // Note: Q_ref only in case of ftype!=FORCING_0.
   // TODO: p2d remapper does not support subfields, so we need to create temps
   //       to remap v_dyn and w_dyn separately, then copy into v3d_prev.
   const auto& c = Homme::Context::singleton();

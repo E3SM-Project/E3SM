@@ -1,1 +1,6 @@
-./xmlchange CAM_TARGET=preqx_kokkos
+./xmlchange CAM_TARGET=theta-l_kokkos
+
+./xmlchange NTHRDS=1
+
+
+

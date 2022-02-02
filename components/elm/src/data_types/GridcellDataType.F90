@@ -558,7 +558,6 @@ contains
     allocate(this%tcs_month_beg         (begg:endg));     this%tcs_month_beg         (:) = nan
     allocate(this%tcs_month_end         (begg:endg));     this%tcs_month_end         (:) = nan
     allocate(this%begcb                 (begg:endg));     this%begcb                 (:) = nan
-    allocate(this%begcb                 (begg:endg));     this%begcb                 (:) = nan
     allocate(this%endcb                 (begg:endg));     this%endcb                 (:) = nan
     allocate(this%errcb                 (begg:endg));     this%errcb                 (:) = nan
 

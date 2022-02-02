@@ -121,7 +121,7 @@ contains
     
     ! Should be called once per time step, AFTER calling set_current_year on the
     ! underlying dyn_file variable
-    
+   
     ! !ARGUMENTS:
     class(dyn_var_time_uninterp_type) , intent(inout) :: this             ! this object
     real(r8)                          , intent(out)   :: cur_data{DIMSTR} ! current value of data
@@ -134,6 +134,7 @@ contains
     
     ! Do some error checking
     ndims = size(this%get_data_shape())
+
     SHR_ASSERT({DIMS} == ndims, subname//' ERROR: # dims of output argument must match ndims')
     SHR_ASSERT_ALL((shape(cur_data) == this%get_data_shape()), subname//' ERROR: shape of cur_data must match shape of data')
 
