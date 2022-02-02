@@ -3956,12 +3956,10 @@ module mpas_stream_manager
 
            if (present(actualWhen)) then
                call MPAS_streamTime(stream % stream, stream % nRecords, actualWhen, ierr=local_ierr)
-               if (local_ierr == MPAS_STREAM_FIELD_NOT_FOUND) then
-                  ! xtime does not exist in this file.  use dummy value for actualWhen
-                  actualWhen = '9999-12-31_23:59:59'
-               elseif (local_ierr /= MPAS_STREAM_NOERR) then
-                   ! Any other error is considered a real error.
-                   ! TODO: Add debug prints for all error conditions
+               if (local_ierr /= MPAS_STREAM_NOERR) then
+!
+! TODO: Add debug prints for all error conditions
+!
                    ierr = MPAS_STREAM_MGR_ERROR
                    return
                end if
