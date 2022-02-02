@@ -1005,16 +1005,16 @@ end subroutine micro_p3_readnl
     !---------------------------------------------------------------------------------------
     qv_wet_in   = state%q(:,:,1) ! Get "wet" water vapor mixing ratio from state
     !Compute dry mixing ratios for all the constituents
-    qv_dry      = calculate_drymmr_from_wetmmr(ncol, pver, qv_wet_in,              qv_wet_in)
-    qv_prev_dry = calculate_drymmr_from_wetmmr(ncol, pver, qv_prev_wet,            qv_wet_in)
-    cldliq      = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixcldliq),  qv_wet_in)
-    numliq      = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixnumliq),  qv_wet_in)
-    rain        = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixrain),    qv_wet_in)
-    numrain     = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixnumrain), qv_wet_in)
-    ice         = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixcldice),  qv_wet_in)
-    qm          = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixcldrim),  qv_wet_in) !Aaron, changed ixqm to ixcldrim to match Kai's code
-    numice      = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixnumice),  qv_wet_in)
-    rimvol      = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixrimvol),  qv_wet_in)
+    qv_dry(:ncols,:pver)      = calculate_drymmr_from_wetmmr(ncol, pver, qv_wet_in,              qv_wet_in)
+    qv_prev_dry(:ncols,:pver) = calculate_drymmr_from_wetmmr(ncol, pver, qv_prev_wet,            qv_wet_in)
+    cldliq(:ncols,:pver)      = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixcldliq),  qv_wet_in)
+    numliq(:ncols,:pver)      = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixnumliq),  qv_wet_in)
+    rain(:ncols,:pver)        = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixrain),    qv_wet_in)
+    numrain(:ncols,:pver)     = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixnumrain), qv_wet_in)
+    ice(:ncols,:pver)         = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixcldice),  qv_wet_in)
+    qm(:ncols,:pver)          = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixcldrim),  qv_wet_in) !Aaron, changed ixqm to ixcldrim to match Kai's code
+    numice(:ncols,:pver)      = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixnumice),  qv_wet_in)
+    rimvol(:ncols,:pver)      = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixrimvol),  qv_wet_in)
 
     its     = 1
     ite     = state%ncol
@@ -1182,15 +1182,15 @@ end subroutine micro_p3_readnl
     !we need to convert dry mixing ratios from P3 to wet mixing ratios before extracting tendencies
     !NOTE: water vapor mixing ratio argument in calculate_wetmmr_from_drymmr function has to be dry water vapor mixing ratio
 
-    qv_wet_out  = calculate_wetmmr_from_drymmr(ncol, pver, qv_dry,  qv_dry)
-    cldliq  = calculate_wetmmr_from_drymmr(ncol, pver, cldliq,  qv_dry)
-    numliq  = calculate_wetmmr_from_drymmr(ncol, pver, numliq,  qv_dry)
-    rain    = calculate_wetmmr_from_drymmr(ncol, pver, rain,    qv_dry)
-    numrain = calculate_wetmmr_from_drymmr(ncol, pver, numrain, qv_dry)
-    ice     = calculate_wetmmr_from_drymmr(ncol, pver, ice,     qv_dry)
-    numice  = calculate_wetmmr_from_drymmr(ncol, pver, numice,  qv_dry)
-    qm      = calculate_wetmmr_from_drymmr(ncol, pver, qm,      qv_dry)
-    rimvol  = calculate_wetmmr_from_drymmr(ncol, pver, rimvol,  qv_dry)
+    qv_wet_out(:ncols,:pver) = calculate_wetmmr_from_drymmr(ncol, pver, qv_dry,  qv_dry)
+    cldliq(:ncols,:pver)     = calculate_wetmmr_from_drymmr(ncol, pver, cldliq,  qv_dry)
+    numliq(:ncols,:pver)     = calculate_wetmmr_from_drymmr(ncol, pver, numliq,  qv_dry)
+    rain(:ncols,:pver)       = calculate_wetmmr_from_drymmr(ncol, pver, rain,    qv_dry)
+    numrain(:ncols,:pver)    = calculate_wetmmr_from_drymmr(ncol, pver, numrain, qv_dry)
+    ice(:ncols,:pver)        = calculate_wetmmr_from_drymmr(ncol, pver, ice,     qv_dry)
+    numice(:ncols,:pver)     = calculate_wetmmr_from_drymmr(ncol, pver, numice,  qv_dry)
+    qm(:ncols,:pver)         = calculate_wetmmr_from_drymmr(ncol, pver, qm,      qv_dry)
+    rimvol(:ncols,:pver)     = calculate_wetmmr_from_drymmr(ncol, pver, rimvol,  qv_dry)
 
     temp(:ncol,:pver) = th(:ncol,:pver)/inv_exner(:ncol,:pver)
     ptend%s(:ncol,:pver)           = cpair*( temp(:ncol,:pver) - state%t(:ncol,:pver) )/dtime
