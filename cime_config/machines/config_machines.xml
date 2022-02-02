@@ -3503,12 +3503,12 @@
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf-config))}</env>
       <env name="OPENBLAS_PATH">/apps/spack/opt/spack/linux-centos7-skylake_avx512/gcc-8.5.0/openblas-0.3.17-avqlf5r7hpzvwesfqg25awhqrpypwgfe</env>
       <env name="LAPACK_PATH">/apps/spack/opt/spack/linux-centos7-skylake_avx512/gcc-8.5.0/netlib-lapack-3.9.1-gton74muo2csn5l3bzf636276ig6h3yx</env>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
     </environment_variables>
 
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PLACES">threads</env>
-      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
     </environment_variables>
   </machine>
 

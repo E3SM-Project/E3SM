@@ -574,9 +574,9 @@
 
    <batch_system MACH="gcp" type="slurm" >
      <queues>
-       <queue walltimemax="01:00:00" default="true">compute-30</queue>
-       <queue walltimemax="01:00:00" default="true">computep</queue>	 <!--enable_placement-->
-       <queue walltimemax="02:00:00" default="true">compute</queue>
+       <queue walltimemax="01:30:00" default="true">compute-30</queue>
+       <queue walltimemax="01:30:00" default="true">computep</queue>	 <!--enable_placement-->
+       <queue walltimemax="01:30:00" default="true">compute</queue>
      </queues>
    </batch_system>
    
