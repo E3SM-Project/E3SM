@@ -41,6 +41,14 @@ namespace scream {
                 real1d &sfc_alb_dif_vis, real1d &sfc_alb_dif_nir,
                 real2d &sfc_alb_dir,     real2d &sfc_alb_dif);
         /*
+         * Compute broadband visible/UV and near-infrared surface fluxes.
+         */
+        extern void compute_broadband_surface_fluxes(
+                const int ncol, const int ktop, const int nswbands,
+                real3d &sw_bnd_flux_dir , real3d &sw_bnd_flux_dif ,
+                real1d &sfc_flux_dir_vis, real1d &sfc_flux_dir_nir,
+                real1d &sfc_flux_dif_vis, real1d &sfc_flux_dif_nir);
+        /*
          * Main driver code to run RRTMGP. Optional input
          * i_am_root is defaulted to true, and is used to
          * determine whether or not info should be printed
@@ -54,6 +62,8 @@ namespace scream {
                 real2d &lwp, real2d &iwp, real2d &rel, real2d &rei,
                 real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
                 real2d &lw_flux_up, real2d &lw_flux_dn,
+                real3d &sw_bnd_flux_up, real3d &sw_bnd_flux_dn, real3d &sw_bnd_flux_dn_dir,
+                real3d &lw_bnd_flux_up, real3d &lw_bnd_flux_dn,
                 const bool i_am_root = true);
         /*
          * Perform any clean-up tasks

@@ -90,6 +90,21 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid->name(), ps);
   add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid->name(), ps);
 
+  // Translation of variables from EAM
+  // --------------------------------------------------------------
+  // EAM name | EAMXX name       | Description
+  // --------------------------------------------------------------
+  // soll       sfc_flux_dir_nir   solar near-IR direct flux
+  // sols       sfc_flux_dir_vis   solar UV/visible direct flux
+  // solld      sfc_flux_dif_nir   solar near-ID diffuse flux
+  // solsd      sfc_flux_dif_vis   solar UV/visible diffuse flux
+  // --------------------------------------------------------------
+  add_field<Computed>("sfc_flux_dir_nir", scalar2d_layout, Wm2, grid->name());
+  add_field<Computed>("sfc_flux_dir_vis", scalar2d_layout, Wm2, grid->name());
+  add_field<Computed>("sfc_flux_dif_nir", scalar2d_layout, Wm2, grid->name());
+  add_field<Computed>("sfc_flux_dif_vis", scalar2d_layout, Wm2, grid->name());
+  add_field<Computed>("sfc_flux_sw_net" , scalar2d_layout, Wm2, grid->name());
+  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d_layout, Wm2, grid->name());
 }  // RRTMGPRadiation::set_grids
 
 int RRTMGPRadiation::requested_buffer_size_in_bytes() const
@@ -97,7 +112,9 @@ int RRTMGPRadiation::requested_buffer_size_in_bytes() const
   const int interface_request = Buffer::num_1d_ncol*m_ncol*sizeof(Real) +
                                 Buffer::num_2d_nlay*m_ncol*m_nlay*sizeof(Real) +
                                 Buffer::num_2d_nlay_p1*m_ncol*(m_nlay+1)*sizeof(Real) +
-                                Buffer::num_2d_nswbands*m_ncol*m_nswbands*sizeof(Real);
+                                Buffer::num_2d_nswbands*m_ncol*m_nswbands*sizeof(Real) +
+                                Buffer::num_3d_nswbands*m_ncol*(m_nlay+1)*m_nswbands*sizeof(Real) +
+                                Buffer::num_3d_nlwbands*m_ncol*(m_nlay+1)*m_nlwbands*sizeof(Real);
 
   return interface_request;
 } // RRTMGPRadiation::requested_buffer_size
@@ -122,6 +139,14 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.sfc_alb_dif_nir.totElems();
   m_buffer.cosine_zenith = decltype(m_buffer.cosine_zenith)(mem, m_ncol);
   mem += m_buffer.cosine_zenith.size();
+  m_buffer.sfc_flux_dir_vis = decltype(m_buffer.sfc_flux_dir_vis)("sfc_flux_dir_vis", mem, m_ncol);
+  mem += m_buffer.sfc_flux_dir_vis.totElems();
+  m_buffer.sfc_flux_dir_nir = decltype(m_buffer.sfc_flux_dir_nir)("sfc_flux_dir_nir", mem, m_ncol);
+  mem += m_buffer.sfc_flux_dir_nir.totElems();
+  m_buffer.sfc_flux_dif_vis = decltype(m_buffer.sfc_flux_dif_vis)("sfc_flux_dif_vis", mem, m_ncol);
+  mem += m_buffer.sfc_flux_dif_vis.totElems();
+  m_buffer.sfc_flux_dif_nir = decltype(m_buffer.sfc_flux_dif_nir)("sfc_flux_dif_nir", mem, m_ncol);
+  mem += m_buffer.sfc_flux_dif_nir.totElems();
 
   // 2d arrays
   m_buffer.p_lay = decltype(m_buffer.p_lay)("p_lay", mem, m_ncol, m_nlay);
@@ -152,7 +177,7 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.lw_heating.totElems();
   m_buffer.rad_heating = decltype(m_buffer.rad_heating)("rad_heating", mem, m_ncol, m_nlay);
   mem += m_buffer.rad_heating.totElems();
-
+  // 3d arrays
   m_buffer.p_lev = decltype(m_buffer.p_lev)("p_lev", mem, m_ncol, m_nlay+1);
   mem += m_buffer.p_lev.totElems();
   m_buffer.t_lev = decltype(m_buffer.t_lev)("t_lev", mem, m_ncol, m_nlay+1);
@@ -167,7 +192,21 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.lw_flux_up.totElems();
   m_buffer.lw_flux_dn = decltype(m_buffer.lw_flux_dn)("lw_flux_dn", mem, m_ncol, m_nlay+1);
   mem += m_buffer.lw_flux_dn.totElems();
-
+  // 3d nswbands
+  m_buffer.sw_bnd_flux_up = decltype(m_buffer.sw_bnd_flux_up)("sw_bnd_flux_up", mem, m_ncol, m_nlay+1, m_nswbands);
+  mem += m_buffer.sw_bnd_flux_up.totElems();
+  m_buffer.sw_bnd_flux_dn = decltype(m_buffer.sw_bnd_flux_dn)("sw_bnd_flux_dn", mem, m_ncol, m_nlay+1, m_nswbands);
+  mem += m_buffer.sw_bnd_flux_dn.totElems();
+  m_buffer.sw_bnd_flux_dir = decltype(m_buffer.sw_bnd_flux_dir)("sw_bnd_flux_dir", mem, m_ncol, m_nlay+1, m_nswbands);
+  mem += m_buffer.sw_bnd_flux_dir.totElems();
+  m_buffer.sw_bnd_flux_dif = decltype(m_buffer.sw_bnd_flux_dif)("sw_bnd_flux_dif", mem, m_ncol, m_nlay+1, m_nswbands);
+  mem += m_buffer.sw_bnd_flux_dif.totElems();
+  // 3d nlwbands
+  m_buffer.lw_bnd_flux_up = decltype(m_buffer.lw_bnd_flux_up)("lw_bnd_flux_up", mem, m_ncol, m_nlay+1, m_nlwbands);
+  mem += m_buffer.lw_bnd_flux_up.totElems();
+  m_buffer.lw_bnd_flux_dn = decltype(m_buffer.lw_bnd_flux_dn)("lw_bnd_flux_dn", mem, m_ncol, m_nlay+1, m_nlwbands);
+  mem += m_buffer.lw_bnd_flux_dn.totElems();
+  // Surface albedos
   m_buffer.sfc_alb_dir = decltype(m_buffer.sfc_alb_dir)("sfc_alb_dir", mem, m_ncol, m_nswbands);
   mem += m_buffer.sfc_alb_dir.totElems();
   m_buffer.sfc_alb_dif = decltype(m_buffer.sfc_alb_dif)("sfc_alb_dif", mem, m_ncol, m_nswbands);
@@ -235,12 +274,19 @@ void RRTMGPRadiation::run_impl (const int dt) {
   auto d_rel = get_field_in("eff_radius_qc").get_view<const Real**>();
   auto d_rei = get_field_in("eff_radius_qi").get_view<const Real**>();
   auto d_surf_lw_flux_up = get_field_in("surf_lw_flux_up").get_view<const Real*>();
+  // Output fields
   auto d_tmid = get_field_out("T_mid").get_view<Real**>();
   auto d_sw_flux_up = get_field_out("SW_flux_up").get_view<Real**>();
   auto d_sw_flux_dn = get_field_out("SW_flux_dn").get_view<Real**>();
   auto d_sw_flux_dn_dir = get_field_out("SW_flux_dn_dir").get_view<Real**>();
   auto d_lw_flux_up = get_field_out("LW_flux_up").get_view<Real**>();
   auto d_lw_flux_dn = get_field_out("LW_flux_dn").get_view<Real**>();
+  auto d_sfc_flux_dir_vis = get_field_out("sfc_flux_dir_vis").get_view<Real*>();
+  auto d_sfc_flux_dir_nir = get_field_out("sfc_flux_dir_nir").get_view<Real*>();
+  auto d_sfc_flux_dif_vis = get_field_out("sfc_flux_dif_vis").get_view<Real*>();
+  auto d_sfc_flux_dif_nir = get_field_out("sfc_flux_dif_nir").get_view<Real*>();
+  auto d_sfc_flux_sw_net = get_field_out("sfc_flux_sw_net").get_view<Real*>();
+  auto d_sfc_flux_lw_dn  = get_field_out("sfc_flux_lw_dn").get_view<Real*>();
 
   // Create YAKL arrays. RRTMGP expects YAKL arrays with styleFortran, i.e., data has ncol
   // as the fastest index. For this reason we must copy the data.
@@ -266,6 +312,16 @@ void RRTMGPRadiation::run_impl (const int dt) {
   auto sw_flux_dn_dir  = m_buffer.sw_flux_dn_dir;
   auto lw_flux_up      = m_buffer.lw_flux_up;
   auto lw_flux_dn      = m_buffer.lw_flux_dn;
+  auto sw_bnd_flux_up  = m_buffer.sw_bnd_flux_up;
+  auto sw_bnd_flux_dn  = m_buffer.sw_bnd_flux_dn;
+  auto sw_bnd_flux_dir = m_buffer.sw_bnd_flux_dir;
+  auto sw_bnd_flux_dif = m_buffer.sw_bnd_flux_dif;
+  auto lw_bnd_flux_up  = m_buffer.lw_bnd_flux_up;
+  auto lw_bnd_flux_dn  = m_buffer.lw_bnd_flux_dn;
+  auto sfc_flux_dir_vis = m_buffer.sfc_flux_dir_vis;
+  auto sfc_flux_dir_nir = m_buffer.sfc_flux_dir_nir;
+  auto sfc_flux_dif_vis = m_buffer.sfc_flux_dif_vis;
+  auto sfc_flux_dif_nir = m_buffer.sfc_flux_dif_nir;
 
   constexpr auto stebol = PC::stebol;
   const auto ncol = m_ncol;
@@ -423,7 +479,10 @@ void RRTMGPRadiation::run_impl (const int dt) {
     sfc_alb_dir, sfc_alb_dif, mu0,
     lwp, iwp, rel, rei,
     sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
-    lw_flux_up, lw_flux_dn, get_comm().am_i_root()
+    lw_flux_up, lw_flux_dn, 
+    sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
+    lw_bnd_flux_up, lw_bnd_flux_dn, 
+    get_comm().am_i_root()
   );
 
   // Compute and apply heating rates
@@ -449,12 +508,33 @@ void RRTMGPRadiation::run_impl (const int dt) {
   }
   Kokkos::fence();
 
-  // Copy ouput data back to FieldManager
+  // Index to surface (bottom of model); used to get surface fluxes below
+  const int kbot = nlay+1;
+
+  // Compute diffuse flux as difference between total and direct
+  parallel_for(Bounds<3>(m_nswbands,m_nlay+1,m_ncol), YAKL_LAMBDA(int ibnd, int ilev, int icol) {
+    sw_bnd_flux_dif(icol,ilev,ibnd) = sw_bnd_flux_dn(icol,ilev,ibnd) - sw_bnd_flux_dir(icol,ilev,ibnd);
+  });
+
+  // Compute surface fluxes
+  rrtmgp::compute_broadband_surface_fluxes(
+      m_ncol, kbot, m_nswbands,
+      sw_bnd_flux_dir, sw_bnd_flux_dif, 
+      sfc_flux_dir_nir, sfc_flux_dir_vis, 
+      sfc_flux_dif_nir, sfc_flux_dif_vis
+  );
+
+  // Copy output data back to FieldManager
   {
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int i = team.league_rank();
-
+      d_sfc_flux_dir_nir(i) = sfc_flux_dir_nir(i+1);
+      d_sfc_flux_dir_vis(i) = sfc_flux_dir_vis(i+1);
+      d_sfc_flux_dif_nir(i) = sfc_flux_dif_nir(i+1);
+      d_sfc_flux_dif_vis(i) = sfc_flux_dif_vis(i+1);
+      d_sfc_flux_sw_net(i)  = sw_flux_dn(i+1,kbot) - sw_flux_up(i+1,kbot);
+      d_sfc_flux_lw_dn(i)   = lw_flux_dn(i+1,kbot);
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay+1), [&] (const int& k) {
         if (k < nlay) d_tmid(i,k) = t_lay(i+1,k+1);
 
