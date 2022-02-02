@@ -479,9 +479,10 @@ contains
   !                 decomposition for reading this variable.  It is ok to reuse
   !                 the pio_decomp_tag for variables that have the same
   !                 dimensionality.  See get_decomp for more details.
-  subroutine register_variable(filename,shortname,longname,numdims,var_dimensions,dtype,pio_decomp_tag)
+  subroutine register_variable(filename,shortname,longname,units,numdims,var_dimensions,dtype,pio_decomp_tag)
     character(len=*), intent(in) :: filename         ! Name of the file to register this variable with
     character(len=*), intent(in) :: shortname,longname       ! short and long names for the variable.  Short: variable name in file, Long: more descriptive name
+    character(len=*), intent(in) :: units                    ! units for variable
     integer, intent(in)          :: numdims                  ! Number of dimensions for this variable, including time dimension
     character(len=*), intent(in) :: var_dimensions(numdims)  ! String array with shortname descriptors for each dimension of variable.
     integer, intent(in)          :: dtype                    ! datatype for this variable, REAL, DOUBLE, INTEGER, etc.
@@ -496,7 +497,7 @@ contains
     character(len=256)           :: dimlen_str
 
     type(hist_var_list_t), pointer :: curr, prev
-
+    
     var_found = .false.
 
     ! Find the pointer for this file
@@ -529,6 +530,7 @@ contains
       ! Populate meta-data associated with this variable
       hist_var%name      = trim(shortname)
       hist_var%long_name = trim(longname)
+      hist_var%units = trim(units)
       hist_var%numdims   = numdims
       hist_var%dtype     = dtype
       hist_var%pio_decomp_tag = trim(pio_decomp_tag)
@@ -549,7 +551,11 @@ contains
       ierr = PIO_def_var(pio_atm_file%pioFileDesc, trim(shortname), hist_var%dtype, hist_var%dimid(:numdims), hist_var%piovar)
       call errorHandle("PIO ERROR: could not define variable "//trim(shortname),ierr)
 
-      ! Update the number of variables on file
+      !PMC
+      ierr=PIO_put_att(pio_atm_file%pioFileDesc, hist_var%piovar, 'units', hist_var%units )
+      ierr=PIO_put_att(pio_atm_file%pioFileDesc, hist_var%piovar, 'long_name', hist_var%long_name )
+
+            ! Update the number of variables on file
       pio_atm_file%varcounter = pio_atm_file%varcounter + 1
     else
       ! The var was already registered by another input/output instance. Check that everything matches
@@ -557,6 +563,9 @@ contains
       if ( trim(hist_var%long_name) .ne. trim(longname) ) then
         ! Different long name
         call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different longname, in file: "//trim(filename),-999)
+     elseif ( trim(hist_var%units) .ne. trim(units) ) then
+        ! Different units
+        call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different units, in file: "//trim(filename),-999)
       elseif (hist_var%dtype .ne. dtype) then
         ! Different data type
         call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different dtype, in file: "//trim(filename),-999)
