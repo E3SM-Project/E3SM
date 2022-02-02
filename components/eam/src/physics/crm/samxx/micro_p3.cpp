@@ -72,11 +72,10 @@ void get_cloud_fraction(int its, int ite, int kts, int kte, real2d& ast,
                        real2d& qc, real2d& qr, real2d& qi, std::string& method,
                        real2d& cld_frac_i, real2d& cld_frac_l, real2d& cld_frac_r)
 {
-  int nk = kte-kts+1;
-  int ni = ite-its+1;
+  // Temporary method for initial P3 implementation
 
-  // Temporary setting for initial P3 implementation
-
+  // int nk = kte-kts+1;
+  // int ni = ite-its+1;
   // parallel_for( SimpleBounds<2>(ni,nk) , YAKL_LAMBDA (int i, int k) {
   //   cld_frac_i(i,k) = 1.0; //max(ast(i,k), p3_mincld);
   //   cld_frac_l(i,k) = 1.0; //max(ast(i,k), p3_mincld);
@@ -135,6 +134,93 @@ void get_cloud_fraction(int its, int ite, int kts, int kte, real2d& ast,
 #endif
 }
 
+YAKL_INLINE static real saturation_vapor_pressure(real tabs) {
+  real tc = tabs - 273.15;
+  return 610.94 * exp( 17.625*tc / (243.04+tc) );
+}
+YAKL_INLINE static real saturation_specific_humidity(real tabs, real pressure) {
+  real esat = saturation_vapor_pressure( tabs );
+  real wsat = 0.622*esat / (pressure - esat);
+  real qsat = wsat/(1+wsat);
+  return qsat;
+}
+
+// Compute an instantaneous adjustment of sub or super saturation
+YAKL_INLINE static void compute_adjusted_state( real &qt, real &qv, real &qc, real &tabs, real &pmid ) {
+  // Define a tolerance and max iterations for convergence
+  real tol = 1.e-6;
+  int max_iteration = 20;
+  int iteration_cnt = 0;
+
+  // Saturation specific humidity
+  real qsat = saturation_specific_humidity(tabs,pmid);
+
+  // assume all of qt is vapor to start
+  qv = qt; qc = 0;
+
+  // Common variables if we need to iterate
+  real tabs_loc = tabs;
+  real qv_loc = qv; real qc_loc = qc;
+  bool keep_iterating = true;
+
+  // If we're super-saturated, we need to condense
+  if (qt > qsat) {
+    // Set bounds on how much mass to condense
+    real cond1 = 0;   // Minimum amount we can condense
+    real cond2 = qv;  // Maximum amount we can condense
+    while (keep_iterating) {
+      // How much water vapor to condense for this iteration
+      real cond = (cond1 + cond2) / 2;
+      // update vapor and cloud condensate
+      qv_loc = max( 0. , qv - cond );
+      qc_loc = max( 0. , qc + cond );
+      // update temperature
+      real dtabs = ( tabs - tabs_loc + fac_cond*cond ) / ( 1. + lcond*lcond*qsat/(cp*rv*tabs_loc*tabs_loc) );
+      tabs_loc = tabs_loc + dtabs;
+      // update saturation value
+      real qsat = saturation_specific_humidity(tabs,pmid);
+      // If still supersaturated condense more, otherwise condense less
+      if (qv_loc> qsat) { cond1 = qc; }
+      if (qv_loc<=qsat) { cond2 = qc; }
+      // If we've converged or reached max iteration, then stop iterating
+      iteration_cnt++;
+      if ( abs(cond2-cond1)<=tol || iteration_cnt>=max_iteration) {
+        qv = qv_loc; qc = qc_loc; tabs = tabs_loc;
+        keep_iterating = false;
+      }
+    }
+  // If we are unsaturated and have cloud condensate, we need to evaporate
+  } else if (qt < qsat && qc > 0) {
+    // Set bounds on how much mass to evaporate
+    real evap1 = 0;  // minimum amount we can evaporate
+    real evap2 = qc; // maximum amount we can evaporate
+    while (keep_iterating) {
+      // How much water vapor to evaporate for this iteration
+      real evap = (evap1 + evap2) / 2;
+      // update vapor and cloud condensate
+      qv_loc = max( 0. , qv + evap );
+      qc_loc = max( 0. , qc - evap );
+      // update temperature
+      real dtabs = ( tabs - tabs_loc + fac_cond*evap ) / ( 1. + lcond*lcond*qsat/(cp*rv*tabs_loc*tabs_loc) );
+      tabs_loc = tabs_loc + dtabs;
+      // update saturation value
+      real qsat = saturation_specific_humidity(tabs,pmid);
+      // If still unsaturated evaporate more, otherwise evaporate less
+      if (qv_loc< qsat) { evap1 = qc; }
+      if (qv_loc>=qsat) { evap2 = qc; }
+      // If we've converged or reached max iteration, then stop iterating
+      iteration_cnt++;
+      if ( abs(evap2-evap1)<=tol || iteration_cnt>=max_iteration) {
+        qv = qv_loc; qc = qc_loc; tabs = tabs_loc;
+        keep_iterating = false;
+      }
+    }
+  }
+  // Update total water
+  qt = qv + qc;
+}
+
+
 //
 // main micro_p3 microproc
 //
@@ -181,7 +267,6 @@ void micro_p3_proc() {
   auto &lambdac            = :: lambdac;
   auto &t_prev             = :: t_prev;
   auto &q_prev             = :: q_prev;
-  auto &docloud            = :: docloud;
   // auto &ast                = :: ast;
 
   // output 
@@ -199,7 +284,6 @@ void micro_p3_proc() {
   // output
   auto &precsfc           = :: precsfc;
   auto &precssfc          = :: precssfc;
-  // auto &prec_xy           = :: prec_xy;
 
   const int nlev  = nzm;
   const int ncol  = ncrms*nx*ny;
@@ -234,7 +318,6 @@ void micro_p3_proc() {
   real2d t_prev_in("t_prev",ncol, nlev);
 
   real2d ast_in("ast_in",ncol, nlev);
-  real2d cldm_in("cldm_in", ncol, nlev);
 
   // p3 output variables 
   // real2d qv2qi_depos_tend_in("qv2qi",ncol, nlev);
@@ -266,13 +349,15 @@ void micro_p3_proc() {
 
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (k==0) {
-      pdel(k,j,i,icrm) = ( psfc(icrm) - pmid(k+1,j,i,icrm) )/2 ;
+      pdel(k,j,i,icrm) = psfc(icrm) - (pmid(k,j,i,icrm) + pmid(k+1,j,i,icrm))/2 ;
     } else if (k==(nzm-1)) {
       pdel(k,j,i,icrm) = pdel(k-1,j,i,icrm);
     } else {
       pdel(k,j,i,icrm) = ( pmid(k-1,j,i,icrm) - pmid(k+1,j,i,icrm) )/2 ;
     }
   });
+
+
   //----------------------------------------------------------------------------
   // Populate P3 thermodynamic state
   //----------------------------------------------------------------------------
@@ -286,7 +371,25 @@ void micro_p3_proc() {
     th_in(icol, ilev) = tabs(k,j,i,icrm)*inv_exner_in(icol, ilev);
   });
 
-auto fp=fopen("q.txt","w");
+  // Saturation adjustment - without SHOC we need to do a saturation adjustment and set qc
+  if (true) {
+    parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      compute_adjusted_state( micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm), 
+                              qv(k,j,i,icrm), qc(k,j,i,icrm),
+                              tabs(k,j,i,icrm), pmid(k,j,i,icrm) );
+    });
+    micro_p3_diagnose();
+    // update liq static energy
+    parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      t(k,j+offy_s,i+offx_s,icrm) = tabs(k,j,i,icrm)+ gamaz(k,icrm)
+                    - fac_cond *( qcl(k,j,i,icrm) - qpl(k,j,i,icrm) )
+                    - fac_sub  *( qci(k,j,i,icrm) - qpi(k,j,i,icrm) );
+      t_prev(k,j,i,icrm) = tabs(k,j,i,icrm);
+      q_prev(k,j,i,icrm) = qv(k,j,i,icrm);
+    });
+  }
+
+// auto fp=fopen("q.txt","w");
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
@@ -301,11 +404,11 @@ auto fp=fopen("q.txt","w");
     ni_in(icol,ilev) = micro_field(idx_ni,k,j+offy_s,i+offx_s,icrm);
     bm_in(icol,ilev) = micro_field(idx_bm,k,j+offy_s,i+offx_s,icrm);
 
-fprintf(fp,"%d, %d, %d, %d %13.6e, %13.6e, %13.6e, %13.6e, %13.6e, %13.6e, %13.6e, %13.6e, %13.6e\n",k,j,i,icrm,
-qv_in(icol,ilev),qc_in(icol,ilev),nc_in(icol,ilev),qr_in(icol,ilev),nr_in(icol,ilev),qi_in(icol,ilev),qm_in(icol,ilev),ni_in(icol,ilev),bm_in(icol,ilev));
+// fprintf(fp,"%d, %d, %d, %d %13.6e, %13.6e, %13.6e, %13.6e, %13.6e, %13.6e, %13.6e, %13.6e, %13.6e\n",k,j,i,icrm,
+// qv_in(icol,ilev),qc_in(icol,ilev),nc_in(icol,ilev),qr_in(icol,ilev),nr_in(icol,ilev),qi_in(icol,ilev),qm_in(icol,ilev),ni_in(icol,ilev),bm_in(icol,ilev));
 
   });
-fclose(fp);
+// fclose(fp);
 
   view_2d qv_d("qv", ncol, npack),
           qc_d("qc", ncol, npack),
@@ -401,18 +504,18 @@ fclose(fp);
   sview_1d precip_liq_surf_d("precip_liq_surf_d", ncol), 
            precip_ice_surf_d("precip_ice_surf_d", ncol);
 
-  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, npack}), KOKKOS_LAMBDA(int k, int j) {
-     qv2qi_depos_tend_d(k,j)[0] = 0.;
-     diag_eff_radius_qc_d(k,j)[0] = 0.;
-     diag_eff_radius_qi_d(k,j)[0] = 0.;
-     rho_qi_d(k,j)[0] = 0.;
-     precip_liq_flux_d(k,j)[0] = 0.;
-     precip_ice_flux_d(k,j)[0] = 0.;
+  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, {ncol, npack, Spack::n}), KOKKOS_LAMBDA(int icol, int ilev, int s) {
+     qv2qi_depos_tend_d(icol,ilev)[s] = 0.;
+     diag_eff_radius_qc_d(icol,ilev)[s] = 0.;
+     diag_eff_radius_qi_d(icol,ilev)[s] = 0.;
+     rho_qi_d(icol,ilev)[s] = 0.;
+     precip_liq_flux_d(icol,ilev)[s] = 0.;
+     precip_ice_flux_d(icol,ilev)[s] = 0.;
   });
 
-  Kokkos::parallel_for("precip", ncol, KOKKOS_LAMBDA (const int& i) {
-    precip_liq_surf_d(i) = 0.;
-    precip_ice_surf_d(i) = 0.;
+  Kokkos::parallel_for("precip", ncol, KOKKOS_LAMBDA (const int& icol) {
+    precip_liq_surf_d(icol) = 0.;
+    precip_ice_surf_d(icol) = 0.;
   });
 
   P3F::P3DiagnosticOutputs diag_outputs {qv2qi_depos_tend_d, precip_liq_surf_d,
@@ -450,10 +553,10 @@ fclose(fp);
           vap_liq_exchange_d("vap_liq_exchange_d", ncol, npack),
           vap_ice_exchange_d("vap_ice_exchange_d", ncol, npack);
 
-  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, npack}), KOKKOS_LAMBDA(int k, int j) {
-     liq_ice_exchange_d(k,j) = 0.;
-     vap_liq_exchange_d(k,j) = 0.;
-     vap_ice_exchange_d(k,j) = 0.;
+  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, npack}), KOKKOS_LAMBDA(int icol, int ilev) {
+     liq_ice_exchange_d(icol,ilev) = 0.;
+     vap_liq_exchange_d(icol,ilev) = 0.;
+     vap_ice_exchange_d(icol,ilev) = 0.;
   });
 
   P3F::P3HistoryOnly history_only {liq_ice_exchange_d, vap_liq_exchange_d,
@@ -470,12 +573,12 @@ fclose(fp);
                                    history_only, workspace_mgr, ncol, nlev);
 
   //----------------------------------------------------------------------------
-  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, Spack::n}), KOKKOS_LAMBDA(int icol, int s) {
+  Kokkos::parallel_for("precip", ncol, KOKKOS_LAMBDA (const int& icol) {
     int i    = icol%nx;
     int j    = (icol/nx)%ny;
     int icrm = (icol/nx)/ny;
-    auto tmp_precip_liq = diag_outputs.precip_liq_surf(icol);//[s];
-    auto tmp_precip_ice = diag_outputs.precip_ice_surf(icol);//[s];
+    auto tmp_precip_liq = diag_outputs.precip_liq_surf(icol);
+    auto tmp_precip_ice = diag_outputs.precip_ice_surf(icol);
     auto precsfc_tmp  = precsfc(j,i,icrm);
     auto precssfc_tmp = precssfc(j,i,icrm);
     precsfc(j,i,icrm) = precsfc_tmp +(tmp_precip_liq+tmp_precip_ice) * 1000.0 * dt / dz(icrm);
@@ -487,8 +590,9 @@ fclose(fp);
      int i    = icol%nx;
      int j    = (icol/nx)%ny;
      int icrm = (icol/nx)/ny;
-     int k    = ilev*Spack::n + s;
-     if (k < nlev) {
+     // int k    = ilev*Spack::n + s;
+     int k    = ilev;
+     // if (k < nlev) {
         qc(k,j,i,icrm)                               = prog_state.qc(icol,ilev)[s];
         micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = prog_state.qv(icol,ilev)[s] + prog_state.qc(icol,ilev)[s];
         micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm) = prog_state.nc(icol,ilev)[s];
@@ -498,10 +602,10 @@ fclose(fp);
         micro_field(idx_qm,k,j+offy_s,i+offx_s,icrm) = prog_state.qm(icol,ilev)[s];
         micro_field(idx_ni,k,j+offy_s,i+offx_s,icrm) = prog_state.ni(icol,ilev)[s];
         micro_field(idx_bm,k,j+offy_s,i+offx_s,icrm) = prog_state.bm(icol,ilev)[s];
-     } 
+     // } 
   });
 
-  micro_p3_diagnose();   // leave this line here
+  micro_p3_diagnose();
 
   // update LSE, temperature, and previous t/q
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, {ncol, npack, Spack::n}), KOKKOS_LAMBDA(int icol, int ilev, int s) {
@@ -524,8 +628,6 @@ fclose(fp);
                     + fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
       t_prev(k,j,i,icrm) = tabs(k,j,i,icrm);
       q_prev(k,j,i,icrm) = qv(k,j,i,icrm);
-      // t_prev(k,j,i,icrm) = prog_state.th(icol,ilev)[s]/inv_exner_in(icol, ilev);
-      // q_prev(k,j,i,icrm) = prog_state.qv(icol,ilev)[s];
     }
   });
 
@@ -533,7 +635,7 @@ fclose(fp);
      int i    = icol%nx;
      int j    = (icol/nx)%ny;
      int icrm = (icol/nx)/ny;
-     int k    = j*Spack::n + s;
+     int k    = ilev*Spack::n + s;
      if (k < nlev) {
         qv2qi_depos_tend(k,icrm)   = diag_outputs.qv2qi_depos_tend(icol,ilev)[s];
         diag_eff_radius_qc(k,icrm) = diag_outputs.diag_eff_radius_qc(icol,ilev)[s];
