@@ -186,7 +186,7 @@ module li_core
                   if (alarm_cursor % isRecurring) then
                      ! Force a read of this stream, and use the latest before time available in the file
                      call mpas_stream_mgr_read(domain % streamManager, streamID = stream_cursor % name, rightNow = .true., &
-                             whence = MPAS_STREAM_LATEST_BEFORE, saveActualWhen=.true., ierr=err_tmp)
+                             whence = MPAS_STREAM_LATEST_BEFORE, ierr=err_tmp)
                      err = ior(err, err_tmp)
                      call mpas_get_time(stream_cursor%mostRecentAccessTime,  dateTimeString=actualWhen, ierr=err_tmp)
                      err = ior(err, err_tmp)
