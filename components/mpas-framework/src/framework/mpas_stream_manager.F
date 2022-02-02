@@ -3428,9 +3428,16 @@ module mpas_stream_manager
     !>  MPAS_STREAM_LATEST_STRICTLY_BEFORE, MPAS_STREAM_EARLIEST_AFTER, or 
     !>  MPAS_STREAM_EARLIEST_STRICTLY_AFTER.
     !>  The optional output argument "saveActualWhen" will save the actual time read
-    !>  from a stream in case an exact match for the "when" time is not found, 
+    !>  from a stream in case an exact match for the "when" time is not found,
     !>  and a nearby time is selected using the "whence" argument.  This value
     !>  is stored in the streams "mostRecentAccessTime" attribute.
+    !>  An error will occur if saveActualWhen==.true. for a stream that does not
+    !>  include the xtime variable.  That is why saveActualWhen is an optional
+    !>  argument that defaults to .false.  Thus, it is the responsibility of the
+    !>  calling code to include saveActualWhen for calls to MPAS_stream_mgr_read
+    !>  that require saving of the actualWhen time.  Attempts to use i/o error
+    !>  codes to ignore streams without xtime were found to be unreliable due to
+    !>  pervasive occurrence of the generic MPAS_IO_ERR_PIO error.
     !
     !-----------------------------------------------------------------------
     subroutine MPAS_stream_mgr_read(manager, streamID, timeLevel, mgLevel, rightNow, when, whence, saveActualWhen, ierr) !{{{
