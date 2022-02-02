@@ -349,7 +349,6 @@ void pre_timeloop() {
     }
     if (strcmp(microphysics_scheme, "p3")      == 0) {
       micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = crm_state_qt(k,j,i,icrm);
-      // micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm) = crm_state_qc(k,j,i,icrm);
       micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm) = crm_state_qi(k,j,i,icrm);
       micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm) = crm_state_nc(k,j,i,icrm);
       micro_field(idx_ni,k,j+offy_s,i+offx_s,icrm) = crm_state_ni(k,j,i,icrm);
@@ -358,8 +357,6 @@ void pre_timeloop() {
       micro_field(idx_qm,k,j+offy_s,i+offx_s,icrm) = crm_state_qm(k,j,i,icrm);
       micro_field(idx_bm,k,j+offy_s,i+offx_s,icrm) = crm_state_bm(k,j,i,icrm);
       qc(k,j,i,icrm)                               = crm_state_qc(k,j,i,icrm);
-      // t_prev(k,j+offy_s,i+offx_s,icrm)             = crm_state_t_prev(k,j,i,icrm);
-      // q_prev(k,j+offy_s,i+offx_s,icrm)             = crm_state_q_prev(k,j,i,icrm);
       t_prev(k,j,i,icrm)                              = crm_state_t_prev(k,j,i,icrm);
       q_prev(k,j,i,icrm)                              = crm_state_q_prev(k,j,i,icrm);
     }
