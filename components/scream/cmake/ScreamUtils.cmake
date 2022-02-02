@@ -173,10 +173,10 @@ function(GetInputFile src_path tgt_path)
       execute_process(COMMAND ${SCREAM_SRC_DIR}/../scripts/check-input ${SCREAM_INPUT_ROOT} atm/scream/${src_path}
         RESULT_VARIABLE check_input_status
         OUTPUT_VARIABLE check_input_output
-        ERROR_VARIABLE  check_input_errput
+        ERROR_VARIABLE  check_input_output
         )
       if (NOT check_input_status EQUAL 0)
-        message(FATAL_ERROR "Could not download ${src_path}, error was: ${check_input_output}\n${check_input_errput}")
+        message(FATAL_ERROR "Could not download ${src_path}, output was: ${check_input_output}")
       endif()
     endif()
     configure_file(${full_src_path} ${tgt_path} COPYONLY)

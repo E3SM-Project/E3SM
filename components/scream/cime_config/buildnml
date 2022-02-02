@@ -8,7 +8,7 @@ This script is mostly for processing the scream_input.yaml file.
 See SCREAM_YAML_README for documentation on how to use scream_input.yaml.
 """
 
-import os, sys, re, glob
+import os, sys, re
 from collections import OrderedDict
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
@@ -119,6 +119,13 @@ def process_leaf(leaf_str, case):
 ###############################################################################
 def process_node(node, itr, case):
 ###############################################################################
+    """
+    Processes a node in the YAML data. A node is a piece of data in the python
+    dict representing the "raw" YAML. Because we support an extra level of
+    special syntax, described in SCREAM_YAML_README, we must do an extra
+    phase of processing this data. A node can be a dict, list, or string.
+    String data is considered a terminating 'leaf'.
+    """
     modified = False
     for k, v in itr:
         if isinstance(v, str):
@@ -196,14 +203,11 @@ def buildnml(case, caseroot, compname):
         if not os.path.isdir(target):
             os.mkdir(target)
 
-        for gitem in [os.path.basename(yaml_tgt), "*.ascii"]:
+        for item in os.listdir(src):
             # Do not overwrite existing files because that would remove any
             # local mods made by the user.
-            the_glob = os.path.join(src, gitem)
-            for fitem in glob.glob(the_glob):
-                basename = os.path.basename(fitem)
-                if not os.path.exists(os.path.join(target, basename)):
-                    safe_copy(fitem, target)
+            if not os.path.exists(os.path.join(target, item)):
+                 safe_copy(os.path.join(src, item), target)
 
     # Load scream inputs from yaml
     scream_input = ordered_load(yaml_tgt)
