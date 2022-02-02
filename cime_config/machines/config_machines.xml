@@ -57,7 +57,7 @@
   -->
   <machine MACH="perlmutter">
     <DESC>Perlmutter at NERSC.  Phase1 only: Each GPU node has single AMD EPYC 7713 64-Core (Milan) and 4 nvidia A100's.</DESC>
-    <NODENAME_REGEX>login</NODENAME_REGEX>
+    <NODENAME_REGEX>perlmutter</NODENAME_REGEX>
     <OS>Linux</OS>
     <COMPILERS>gnu,gnugpu,nvidia,nvidiagpu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
