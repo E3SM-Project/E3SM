@@ -364,7 +364,13 @@ module mpas_io_streams
 
       call MPAS_io_inq_var(stream % fileHandle, 'xtime', ierr=io_err)
       if (io_err /= MPAS_IO_NOERR) then
-         if (present(ierr)) ierr = MPAS_IO_ERR
+         if (present(ierr)) then
+            if (io_err == MPAS_IO_ERR_UNDEFINED_VAR) then
+               ierr = MPAS_STREAM_FIELD_NOT_FOUND ! xtime not present
+            else
+               ierr = MPAS_IO_ERR ! unspecified i/o error
+            endif
+         endif
          return
       end if
 
