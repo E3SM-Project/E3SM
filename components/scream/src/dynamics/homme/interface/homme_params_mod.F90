@@ -234,7 +234,6 @@ contains
     call MPI_bcast(nu_top, 1, MPIreal_t, par%root, par%comm, ierr)
 
     call MPI_bcast(hypervis_order,        1, MPIinteger_t, par%root, par%comm, ierr)
-    call MPI_bcast(hypervis_power,        1, MPIreal_t,    par%root, par%comm, ierr)
     call MPI_bcast(hypervis_scaling,      1, MPIreal_t,    par%root, par%comm, ierr)
     call MPI_bcast(hypervis_subcycle,     1, MPIinteger_t, par%root, par%comm, ierr)
     call MPI_bcast(hypervis_subcycle_tom, 1, MPIinteger_t, par%root, par%comm, ierr)
@@ -274,17 +273,6 @@ contains
       laplacian_rigid_factor = rrearth
     else
       call abortmp("Error: scream only supports 'sphere' geometry, for now.")
-    endif
-
-    !logic around different hyperviscosity options
-    if (hypervis_power /= 0) then
-      if (hypervis_scaling /= 0) then
-        print *,'Both hypervis_power and hypervis_scaling are nonzero.'
-        print *,'(1) Set hypervis_power=1, hypervis_scaling=0 for HV based on an element area.'
-        print *,'(2) Set hypervis_power=0 and hypervis_scaling=1 for HV based on a tensor.'
-        print *,'(3) Set hypervis_power=0 and hypervis_scaling=0 for constant HV.'
-          call abortmp("Error: hypervis_power>0 and hypervis_scaling>0")
-      endif
     endif
 
     ! if user sets hypervis_subcycle=-1, then use automatic formula
