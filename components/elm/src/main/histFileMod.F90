@@ -2350,6 +2350,7 @@ contains
     use FatesInterfaceTypesMod, only : fates_hdim_levfuel
     use FatesInterfaceTypesMod, only : fates_hdim_levcwdsc
     use FatesInterfaceTypesMod, only : fates_hdim_levcan
+    use FatesInterfaceTypesMod, only : fates_hdim_levleaf
     use FatesInterfaceTypesMod, only : fates_hdim_canmap_levcnlf
     use FatesInterfaceTypesMod, only : fates_hdim_lfmap_levcnlf
     use FatesInterfaceTypesMod, only : fates_hdim_canmap_levcnlfpf
@@ -2451,6 +2452,8 @@ contains
                    long_name='FATES cwd size class', ncid=nfid(t))
              call ncd_defvar(varname='fates_levcan',xtype=ncd_int, dim1name='fates_levcan', &
                    long_name='FATES canopy level', ncid=nfid(t))
+             call ncd_defvar(varname='fates_levleaf',xtype=ncd_int, dim1name='fates_levleaf', &
+                   long_name='FATES leaf+stem level', units='VAI', ncid=nfid(t))
              call ncd_defvar(varname='fates_canmap_levcnlf',xtype=ncd_int, dim1name='fates_levcnlf', &
                    long_name='FATES canopy level of combined canopy-leaf dimension', ncid=nfid(t))
              call ncd_defvar(varname='fates_lfmap_levcnlf',xtype=ncd_int, dim1name='fates_levcnlf', &
@@ -2518,6 +2521,7 @@ contains
              call ncd_io(varname='fates_levfuel',data=fates_hdim_levfuel, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_levcwdsc',data=fates_hdim_levcwdsc, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_levcan',data=fates_hdim_levcan, ncid=nfid(t), flag='write')
+             call ncd_io(varname='fates_levleaf',data=fates_hdim_levleaf, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_canmap_levcnlf',data=fates_hdim_canmap_levcnlf, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_lfmap_levcnlf',data=fates_hdim_lfmap_levcnlf, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_canmap_levcnlfpf',data=fates_hdim_canmap_levcnlfpf, ncid=nfid(t), flag='write')
