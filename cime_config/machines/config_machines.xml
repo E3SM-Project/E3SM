@@ -1720,6 +1720,7 @@
       <modules>
         <command name="purge"/>
         <command name="load">cmake/3.20.3-vedypwm</command>
+        <command name="load">anaconda3/5.2.0</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/18.0.4-443hhug</command>
