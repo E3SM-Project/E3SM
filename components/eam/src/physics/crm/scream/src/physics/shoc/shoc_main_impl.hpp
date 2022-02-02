@@ -100,6 +100,7 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<Spack>&       wthv_sec,
   const uview_2d<Spack>&       qtracers,
   const uview_1d<Spack>&       tk,
+  const uview_1d<Spack>&       tkh,
   const uview_1d<Spack>&       shoc_cldfrac,
   const uview_1d<Spack>&       shoc_ql,
   // Output Variables
@@ -122,10 +123,10 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<Spack>&       isotropy)
 {
   // Define temporary variables
-  uview_1d<Spack> rho_zt, shoc_qv, dz_zt, dz_zi, tkh;
-  workspace.template take_many_and_reset<5>(
-    {"rho_zt", "shoc_qv", "dz_zt", "dz_zi", "tkh"},
-    {&rho_zt, &shoc_qv, &dz_zt, &dz_zi, &tkh});
+  uview_1d<Spack> rho_zt, shoc_qv, dz_zt, dz_zi;
+  workspace.template take_many_and_reset<4>(
+    {"rho_zt", "shoc_qv", "dz_zt", "dz_zi"},
+    {&rho_zt, &shoc_qv, &dz_zt, &dz_zi});
 
   // Local scalars
   Scalar se_b{0},   ke_b{0}, wv_b{0},   wl_b{0},
@@ -282,8 +283,8 @@ void Functions<S,D>::shoc_main_internal(
           pblh);                          // Output
 
   // Release temporary variables from the workspace
-  workspace.template release_many_contiguous<5>(
-    {&rho_zt, &shoc_qv, &dz_zt, &dz_zi, &tkh});
+  workspace.template release_many_contiguous<4>(
+    {&rho_zt, &shoc_qv, &dz_zt, &dz_zi});
 }
 
 
@@ -339,6 +340,7 @@ Int Functions<S,D>::shoc_main(
     const auto qw_s           = ekat::subview(shoc_input_output.qw, i);
     const auto wthv_sec_s     = ekat::subview(shoc_input_output.wthv_sec, i);
     const auto tk_s           = ekat::subview(shoc_input_output.tk, i);
+    const auto tkh_s          = ekat::subview(shoc_input_output.tkh, i);
     const auto shoc_cldfrac_s = ekat::subview(shoc_input_output.shoc_cldfrac, i);
     const auto shoc_ql_s      = ekat::subview(shoc_input_output.shoc_ql, i);
     const auto shoc_ql2_s     = ekat::subview(shoc_output.shoc_ql2, i);
@@ -368,7 +370,7 @@ Int Functions<S,D>::shoc_main(
                        wtracer_sfc_s, inv_exner_s, phis_s,                    // Input
                        workspace,                                             // Workspace
                        host_dse_s, tke_s, thetal_s, qw_s, u_wind_s, v_wind_s, // Input/Output
-                       wthv_sec_s, qtracers_s, tk_s, shoc_cldfrac_s,          // Input/Output
+                       wthv_sec_s, qtracers_s, tk_s, tkh_s, shoc_cldfrac_s,          // Input/Output
                        shoc_ql_s,                                             // Input/Output
                        pblh_s, shoc_ql2_s,                                    // Output
                        shoc_mix_s, w_sec_s, thl_sec_s, qw_sec_s, qwthl_sec_s, // Diagnostic Output Variables

@@ -220,24 +220,7 @@ void allocate() {
   t_vt_pert        = real4d( "t_vt_pert      "     , nzm , ny         , nx     , ncrms ); 
   q_vt_pert        = real4d( "q_vt_pert      "     , nzm , ny         , nx     , ncrms ); 
 
-  shoc_tke         = real2d( "shoc_tke       "     , plev , ncrms);
-  shoc_wthv        = real2d( "shoc_wthv      "     , plev , ncrms);
-  shoc_tkh         = real2d( "shoc_tkh       "     , plev , ncrms);
-  shoc_tk          = real2d( "shoc_tk        "     , plev , ncrms);
-  shoc_alst        = real2d( "shoc_alst      "     , plev , ncrms);
-  shoc_tracers     = real3d( "shoc_tracers   "     , plev , ncrms , num_tracers);
-  shoc_tl          = real2d( "shoc_tl        "     , plev , ncrms);
-  shoc_zint        = real2d( "shoc_zint      "     , plev+1 , ncrms);
-  shoc_zmid        = real2d( "shoc_zmid      "     , plev , ncrms);
-  shoc_pmid        = real2d( "shoc_pmid      "     , plev , ncrms);
-  shoc_pint        = real2d( "shoc_pint      "     , plev+1 , ncrms);
-  shoc_pdel        = real2d( "shoc_pdel      "     , plev , ncrms);
-  shoc_sl          = real2d( "shoc_sl        "     , plev , ncrms);
-  shoc_omega       = real2d( "shoc_omega     "     , plev , ncrms);
-  shoc_qccl        = real2d( "shoc_qccl      "     , plev , ncrms);
-  shoc_ql          = real2d( "shoc_ql        "     , plev , ncrms);
-  shoc_ul          = real2d( "shoc_ul        "     , plev , ncrms);
-  shoc_vl          = real2d( "shoc_vl        "     , plev , ncrms);
+  shoc_tracers     = real5d( "shoc_tracers   "     , nzm , ny         , nx     ,ncrms , num_tracers);
 
   yakl::memset(t00               ,0.);
   yakl::memset(tln               ,0.);
@@ -454,24 +437,7 @@ void allocate() {
   yakl::memset(t_vt              ,0.);
   yakl::memset(q_vt              ,0.);
 
-  yakl::memset(shoc_tke          ,0.);
-  yakl::memset(shoc_wthv         ,0.);
-  yakl::memset(shoc_tkh          ,0.);
-  yakl::memset(shoc_tk           ,0.);
-  yakl::memset(shoc_alst         ,0.);
   yakl::memset(shoc_tracers      ,0.);
-  yakl::memset(shoc_tl           ,0.);
-  yakl::memset(shoc_zint         ,0.);
-  yakl::memset(shoc_zmid         ,0.);
-  yakl::memset(shoc_pmid         ,0.);
-  yakl::memset(shoc_pint         ,0.);
-  yakl::memset(shoc_pdel         ,0.);
-  yakl::memset(shoc_sl           ,0.);
-  yakl::memset(shoc_omega        ,0.);
-  yakl::memset(shoc_qccl         ,0.);
-  yakl::memset(shoc_ql           ,0.);
-  yakl::memset(shoc_ul           ,0.);
-  yakl::memset(shoc_vl           ,0.);
 }
 
 
@@ -741,24 +707,7 @@ void finalize() {
   t_vt_pert        = real4d();
   q_vt_pert        = real4d();
 
-  shoc_tke         = real2d();
-  shoc_wthv        = real2d();
-  shoc_tkh         = real2d();
-  shoc_tk          = real2d();
-  shoc_alst        = real2d();
-  shoc_tracers     = real3d();
-  shoc_tl          = real2d();
-  shoc_zint        = real2d();
-  shoc_zmid        = real2d();
-  shoc_pmid        = real2d();
-  shoc_pint        = real2d();
-  shoc_pdel        = real2d();
-  shoc_sl          = real2d();
-  shoc_omega       = real2d();
-  shoc_qccl        = real2d();
-  shoc_ql          = real2d();
-  shoc_ul          = real2d();
-  shoc_vl          = real2d();
+  shoc_tracers     = real5d();
 }
 
 
@@ -1743,24 +1692,7 @@ void perturb_arrays() {
     perturb( t_vt             , mag );
     perturb( q_vt             , mag );
 
-    perturb( shoc_tke         , mag );
-    perturb( shoc_wthv        , mag );
-    perturb( shoc_tkh         , mag );
-    perturb( shoc_tk          , mag );
-    perturb( shoc_alst        , mag );
     perturb( shoc_tracers     , mag );
-    perturb( shoc_tl          , mag );
-    perturb( shoc_zint        , mag );
-    perturb( shoc_zmid        , mag );
-    perturb( shoc_pmid        , mag );
-    perturb( shoc_pint        , mag );
-    perturb( shoc_pdel        , mag );
-    perturb( shoc_sl          , mag );
-    perturb( shoc_omega       , mag );
-    perturb( shoc_qccl        , mag );
-    perturb( shoc_ql          , mag );
-    perturb( shoc_ul          , mag );
-    perturb( shoc_vl          , mag );
   #endif
 }
 
@@ -1868,24 +1800,7 @@ real2d q_vt_tend      ;
 real4d t_vt_pert      ;
 real4d q_vt_pert      ;
 
-real2d shoc_tke       ;
-real2d shoc_wthv      ;
-real2d shoc_tkh       ;
-real2d shoc_tk        ;
-real2d shoc_alst      ;
-real3d shoc_tracers   ;
-real2d shoc_tl        ;
-real2d shoc_zint      ;
-real2d shoc_zmid      ;
-real2d shoc_pmid      ;
-real2d shoc_pint      ;
-real2d shoc_pdel      ;
-real2d shoc_sl        ;
-real2d shoc_omega     ;
-real2d shoc_qccl      ;
-real2d shoc_ql        ;
-real2d shoc_ul        ;
-real2d shoc_vl        ;
+real5d shoc_tracers   ;
 
 real1d fcorz           ;
 real1d fcor            ;

@@ -415,24 +415,7 @@ extern real1d bflx            ;
 
 // variables for shoc, NOTE: shoc use flipped coordinate system, so we use
 // separate variables here.
-extern real2d shoc_tke     ;
-extern real2d shoc_wthv    ;
-extern real2d shoc_tkh     ;
-extern real2d shoc_tk      ;
-extern real2d shoc_alst    ;
-extern real3d shoc_tracers;
-extern real2d shoc_tl      ;
-extern real2d shoc_zint    ;
-extern real2d shoc_zmid    ;
-extern real2d shoc_pmid    ;
-extern real2d shoc_pint    ;
-extern real2d shoc_pdel    ;
-extern real2d shoc_sl      ;
-extern real2d shoc_omega   ;
-extern real2d shoc_qccl    ;
-extern real2d shoc_ql      ;
-extern real2d shoc_ul      ;
-extern real2d shoc_vl      ;
+extern real5d shoc_tracers;
 
 extern real1d crm_input_bflxls; 
 extern real1d crm_input_wndls ;

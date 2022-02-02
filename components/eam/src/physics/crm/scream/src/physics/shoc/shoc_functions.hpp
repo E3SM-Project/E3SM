@@ -129,6 +129,8 @@ struct Functions
     view_3d<Spack>  qtracers;
     // eddy coefficient for momentum [m2/s]
     view_2d<Spack>  tk;
+    // eddy heat conductivity 
+    view_2d<Spack> tkh;
     // Cloud fraction [-]
     view_2d<Spack>  shoc_cldfrac;
     // cloud liquid mixing ratio [kg/kg]
@@ -591,6 +593,7 @@ struct Functions
     const uview_1d<Spack>&       wthv_sec,
     const uview_2d<Spack>&       qtracers,
     const uview_1d<Spack>&       tk,
+    const uview_1d<Spack>&       tkh,
     const uview_1d<Spack>&       shoc_cldfrac,
     const uview_1d<Spack>&       shoc_ql,
     // Output Variables
