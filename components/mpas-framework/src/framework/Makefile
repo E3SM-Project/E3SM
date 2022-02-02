@@ -73,7 +73,10 @@ mpas_pool_routines.o: mpas_derived_types.o mpas_field_routines.o mpas_threading.
 
 mpas_decomp.o: mpas_derived_types.o mpas_stream_manager.o mpas_log.o
 
-mpas_global_sum_mod.o:
+# Create special rule here to suppress optimizations that will
+# interfere with reproducible sums
+mpas_global_sum_mod.o: mpas_global_sum_mod.F
+	$(FC) $(CPPFLAGS) $(FFLAGS) $(FFLAGS_FPIEEE) -c mpas_global_sum_mod.F $(CPPINCLUDES) $(FCINCLUDES) 
 
 mpas_hash.o : mpas_derived_types.o
 
