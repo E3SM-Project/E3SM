@@ -111,7 +111,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
   integer         :: i,j,k,l,ptop,nn,icyc,icrm
   integer         :: kx
   real(crm_rknd)  :: qsat, omg, rh_tmp
-  real(crm_rknd), allocatable  :: colprec(:), colprecs(:)
   real(crm_rknd), allocatable  :: ustar(:), bflx(:), wnd(:)
   real(r8)      , allocatable  :: qtot (:,:)    ! Total water for water conservation check
 
@@ -291,8 +290,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
   real(crm_rknd), pointer :: crm_output_qp_src(:,:)
   real(crm_rknd), pointer :: crm_output_qp_evp(:,:)
   real(crm_rknd), pointer :: crm_output_t_ls(:,:)
-  real(crm_rknd), pointer :: crm_output_prectend (:)
-  real(crm_rknd), pointer :: crm_output_precstend(:)
   real(crm_rknd), pointer :: crm_output_subcycle_factor(:) 
 
 #ifdef MAML
@@ -554,11 +551,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
   ! initialize sgs fields
   call sgs_init(ncrms)
 
-  !$omp target teams distribute parallel do
-  do icrm = 1 , ncrms
-    colprec (icrm)=0
-    colprecs(icrm)=0
-  enddo
   !$omp target teams distribute parallel do collapse(2)
   do k = 1 , nzm
     do icrm = 1 , ncrms
@@ -583,14 +575,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
           t(icrm,i,j,k) = tabs(icrm,i,j,k)+gamaz(icrm,k)-fac_cond*qcl(icrm,i,j,k)-fac_sub*qci(icrm,i,j,k) &
                                                         -fac_cond*qpl(icrm,i,j,k)-fac_sub*qpi(icrm,i,j,k)
 
-          tmp = (qpl(icrm,i,j,k)+qpi(icrm,i,j,k))*crm_input_pdel(icrm,plev-k+1)
-          !$omp atomic update
-          colprec (icrm)=colprec (icrm)+tmp
-
-          tmp = qpi(icrm,i,j,k)*crm_input_pdel(icrm,plev-k+1)
-
-          !$omp atomic update
-          colprecs(icrm)=colprecs(icrm)+tmp
           !$omp atomic update
           u0   (icrm,k)=u0   (icrm,k)+u(icrm,i,j,k)
           !$omp atomic update
@@ -665,8 +649,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
     z0(icrm) = z0_est(z(icrm,1),bflx(icrm),wnd(icrm),ustar(icrm))
     z0(icrm) = max(real(0.00001D0,crm_rknd),min(real(1.,crm_rknd),z0(icrm)))
     crm_output_subcycle_factor(icrm) = 0.
-    crm_output_prectend (icrm)=colprec (icrm)
-    crm_output_precstend(icrm)=colprecs(icrm)
   enddo
 
 !---------------------------------------------------
@@ -1221,11 +1203,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
       vln  (icrm,k) = 0.
     enddo
   enddo
-  !$omp target teams distribute parallel do
-  do icrm = 1 , ncrms
-    colprec (icrm)=0
-    colprecs(icrm)=0
-  enddo
 
 #if defined( MMF_ESMT )
   ! Initialize updated domain mean momentum scalars to input values above CRM 
@@ -1253,13 +1230,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
         do icrm=1,ncrms
           l = plev-k+1
 
-          tmp = (qpl(icrm,i,j,k)+qpi(icrm,i,j,k))*crm_input_pdel(icrm,plev-k+1)
-          !$omp atomic update
-          colprec (icrm)= colprec (icrm)+tmp
-
-          tmp = qpi(icrm,i,j,k)*crm_input_pdel(icrm,plev-k+1)
-          !$omp atomic update
-          colprecs(icrm)= colprecs(icrm)+tmp
           !$omp atomic update
           tln(icrm,l)  = tln(icrm,l)  +tabs(icrm,i,j,k)
           !$omp atomic update
@@ -1323,11 +1293,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
       crm_output_vltend(icrm,k) =       (vln  (icrm,k) - crm_input_vl  (icrm,k)) * icrm_run_time
 #endif /* MMF_MOMENTUM_FEEDBACK */
     enddo
-  enddo
-  !$omp target teams distribute parallel do
-  do icrm = 1 , ncrms
-    crm_output_prectend (icrm) = (colprec (icrm)-crm_output_prectend (icrm))/ggr*factor_xy * icrm_run_time
-    crm_output_precstend(icrm) = (colprecs(icrm)-crm_output_precstend(icrm))/ggr*factor_xy * icrm_run_time
   enddo
 
   ! don't use CRM tendencies from two crm top levels
@@ -1799,8 +1764,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
     allocate( bflx(ncrms) )
     allocate( wnd(ncrms) )
     allocate( qtot (ncrms,20) )
-    allocate( colprec (ncrms) )
-    allocate( colprecs(ncrms) )
     allocate( crm_clear_rh_cnt(ncrms,nzm) )
 
     crm_input_zmid    => crm_input%zmid(:,:)
@@ -1940,8 +1903,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
     crm_output_qp_src     => crm_output%qp_src(:,:)
     crm_output_qp_evp     => crm_output%qp_evp(:,:)
     crm_output_t_ls       => crm_output%t_ls(:,:)
-    crm_output_prectend   => crm_output%prectend(:)
-    crm_output_precstend  => crm_output%precstend(:)
 #ifdef MAML
     ! MAML variables
     crm_output_crm_pcp   => crm_output%crm_pcp(:,:,:)
@@ -1994,8 +1955,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
     !$omp target enter data map(alloc: bflx     )
     !$omp target enter data map(alloc: wnd      )
     !$omp target enter data map(alloc: qtot     )
-    !$omp target enter data map(alloc: colprec  )
-    !$omp target enter data map(alloc: colprecs )
     !$omp target enter data map(alloc: crm_clear_rh_cnt )
     !$omp target enter data map(alloc: crm_clear_rh )
 
@@ -2112,8 +2071,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
     !$omp target enter data map(alloc: crm_output_qp_src)
     !$omp target enter data map(alloc: crm_output_qp_evp)
     !$omp target enter data map(alloc: crm_output_t_ls)
-    !$omp target enter data map(alloc: crm_output_prectend)
-    !$omp target enter data map(alloc: crm_output_precstend)
     !$omp target enter data map(alloc: crm_output_subcycle_factor)
 
   end subroutine allocate_crm
@@ -2143,8 +2100,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
     !$omp target exit data map(delete: bflx     )
     !$omp target exit data map(delete: wnd      )
     !$omp target exit data map(delete: qtot     )
-    !$omp target exit data map(delete: colprec  )
-    !$omp target exit data map(delete: colprecs )
     !$omp target exit data map(delete: crm_clear_rh_cnt )
     !$omp target exit data map(delete: crm_clear_rh )
 
@@ -2261,8 +2216,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
     !$omp target exit data map(delete: crm_output_qp_src        )
     !$omp target exit data map(delete: crm_output_qp_evp        )
     !$omp target exit data map(delete: crm_output_t_ls          )
-    !$omp target exit data map(delete: crm_output_prectend      )
-    !$omp target exit data map(delete: crm_output_precstend     )
     !$omp target exit data map(delete: crm_output_subcycle_factor )
 
     deallocate( t00)
@@ -2292,8 +2245,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
     deallocate( bflx )
     deallocate( wnd )
     deallocate( qtot )
-    deallocate( colprec  )
-    deallocate( colprecs )
     deallocate( crm_clear_rh_cnt )
   end subroutine deallocate_crm
 
@@ -2322,8 +2273,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
     !$omp target update to( bflx     )
     !$omp target update to( wnd      )
     !$omp target update to( qtot     )
-    !$omp target update to( colprec  )
-    !$omp target update to( colprecs )
     !$omp target update to( crm_clear_rh )
     !$omp target update to( crm_clear_rh_cnt )
 
@@ -2402,8 +2351,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
     !$omp target update from( bflx     )
     !$omp target update from( wnd      )
     !$omp target update from( qtot     )
-    !$omp target update from( colprec  )
-    !$omp target update from( colprecs )
     !$omp target update from( crm_clear_rh )
     !$omp target update from( crm_clear_rh_cnt )
 
@@ -2476,8 +2423,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
     !$omp target update from (crm_output_qp_src)
     !$omp target update from (crm_output_qp_evp)
     !$omp target update from (crm_output_t_ls)
-    !$omp target update from (crm_output_prectend)
-    !$omp target update from (crm_output_precstend)
     !$omp target update from (crm_output_subcycle_factor)
 
     !$omp target update from( crm_rad_temperature )

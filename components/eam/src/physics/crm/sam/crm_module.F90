@@ -113,7 +113,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
     integer         :: i,j,k,l,ptop,nn,icyc,icrm
     integer         :: kx
     real(crm_rknd)  :: qsat, omg, rh_tmp
-    real(crm_rknd), allocatable  :: colprec(:), colprecs(:)
     real(crm_rknd), allocatable  :: ustar(:), bflx(:), wnd(:)
     real(r8)      , allocatable  :: qtot (:,:)    ! Total water for water conservation check
 
@@ -207,8 +206,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
   allocate( bflx(ncrms) )
   allocate( wnd(ncrms) )
   allocate( qtot (ncrms,20) )
-  allocate( colprec (ncrms) )
-  allocate( colprecs(ncrms) )
   allocate( crm_clear_rh_cnt(ncrms,nzm) )
 
   call prefetch( t00      )
@@ -234,8 +231,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
   call prefetch( bflx     ) 
   call prefetch( wnd      ) 
   call prefetch( qtot     ) 
-  call prefetch( colprec  ) 
-  call prefetch( colprecs ) 
   call prefetch( crm_clear_rh_cnt )
 
   call allocate_params(ncrms)
@@ -462,11 +457,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
   ! initialize sgs fields
   call sgs_init(ncrms)
 
-  !$acc parallel loop async(asyncid)
-  do icrm = 1 , ncrms
-    colprec (icrm)=0
-    colprecs(icrm)=0
-  enddo
   !$acc parallel loop collapse(2) async(asyncid)
   do k = 1 , nzm
     do icrm = 1 , ncrms
@@ -491,13 +481,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
           t(icrm,i,j,k) = tabs(icrm,i,j,k)+gamaz(icrm,k)-fac_cond*qcl(icrm,i,j,k)-fac_sub*qci(icrm,i,j,k) &
                                                         -fac_cond*qpl(icrm,i,j,k)-fac_sub*qpi(icrm,i,j,k)
 
-          tmp = (qpl(icrm,i,j,k)+qpi(icrm,i,j,k))*crm_input%pdel(icrm,plev-k+1)
-          !$acc atomic update
-          colprec (icrm)=colprec (icrm)+tmp
-
-          tmp = qpi(icrm,i,j,k)*crm_input%pdel(icrm,plev-k+1)
-          !$acc atomic update
-          colprecs(icrm)=colprecs(icrm)+tmp
           !$acc atomic update
           u0   (icrm,k)=u0   (icrm,k)+u(icrm,i,j,k)
           !$acc atomic update
@@ -574,8 +557,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
     z0(icrm) = z0_est(z(icrm,1),bflx(icrm),wnd(icrm),ustar(icrm))
     z0(icrm) = max(real(0.00001D0,crm_rknd),min(real(1.,crm_rknd),z0(icrm)))
     crm_output%subcycle_factor(icrm) = 0.
-    crm_output%prectend (icrm)=colprec (icrm)
-    crm_output%precstend(icrm)=colprecs(icrm)
   enddo
 
 !---------------------------------------------------
@@ -1126,11 +1107,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
       vln  (icrm,k) = 0.
     enddo
   enddo
-  !$acc parallel loop async(asyncid)
-  do icrm = 1 , ncrms
-    colprec (icrm)=0
-    colprecs(icrm)=0
-  enddo
 
 #if defined( MMF_ESMT )
   ! Initialize updated domain mean momentum scalars to input values above CRM 
@@ -1158,13 +1134,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
         do icrm=1,ncrms
           l = plev-k+1
 
-          tmp = (qpl(icrm,i,j,k)+qpi(icrm,i,j,k))*crm_input%pdel(icrm,plev-k+1)
-          !$acc atomic update
-          colprec (icrm)= colprec (icrm)+tmp
-
-          tmp = qpi(icrm,i,j,k)*crm_input%pdel(icrm,plev-k+1)
-          !$acc atomic update
-          colprecs(icrm)= colprecs(icrm)+tmp
           !$acc atomic update
           tln(icrm,l)  = tln(icrm,l)  +tabs(icrm,i,j,k)
           !$acc atomic update
@@ -1231,11 +1200,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
       crm_output%vltend(icrm,k) =       (vln  (icrm,k) - crm_input%vl  (icrm,k)) * icrm_run_time
 #endif /* MMF_MOMENTUM_FEEDBACK */
     enddo
-  enddo
-  !$acc parallel loop async(asyncid)
-  do icrm = 1 , ncrms
-    crm_output%prectend (icrm) = (colprec (icrm)-crm_output%prectend (icrm))/ggr*factor_xy * icrm_run_time
-    crm_output%precstend(icrm) = (colprecs(icrm)-crm_output%precstend(icrm))/ggr*factor_xy * icrm_run_time
   enddo
 
   ! don't use CRM tendencies from two crm top levels
@@ -1704,8 +1668,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
   deallocate( bflx )
   deallocate( wnd )
   deallocate( qtot )
-  deallocate( colprec  )
-  deallocate( colprecs )
   deallocate( crm_clear_rh_cnt )
 
   call deallocate_params()
