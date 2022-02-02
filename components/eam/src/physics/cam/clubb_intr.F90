@@ -1846,7 +1846,7 @@ end subroutine clubb_init_cnst
        vm(i,k)      = state1%v(i,k)
 
 #define NEWTHETAL
-#ifdef NEWTHETAL
+#ifndef NEWTHETAL
        thlm(i,k)    = state1%t(i,k)*exner_clubb(i,k)-(latvap/cpair)*state1%q(i,k,ixcldliq)
 #else
 !NCAR
