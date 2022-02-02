@@ -132,7 +132,20 @@ subroutine crm_history_init(species_class)
    call addfld('AOD700', horiz_only,'A', 'unitless', 'Aerosol optical depth at 700nm', flag_xyfill=.true.)
 
    !----------------------------------------------------------------------------
-   ! 2-moment microphysics variables
+   ! P3 microphysics variables
+   if (MMF_microphysics_scheme .eq. 'p3') then
+      call addfld('MMF_NC    ',(/'lev'/), 'A', '/kg',    'Cloud water dropet number from CRM')
+      call addfld('MMF_NI    ',(/'lev'/), 'A', '/kg',    'Cloud ice crystal number from CRM')
+      call addfld('MMF_NR    ',(/'lev'/), 'A', '/kg',    'Rain particle number from CRM')
+
+      call addfld('CRM_QR  ',dims_crm_3D, 'A', 'kg/kg','Rain mixing ratio from CRM' )
+
+      call addfld('CRM_NC  ',dims_crm_3D, 'A', '/kg',  'Cloud water dropet number from CRM' )
+      call addfld('CRM_NI  ',dims_crm_3D, 'A', '/kg',  'Cloud ice crystal number from CRM' )
+      call addfld('CRM_NR  ',dims_crm_3D, 'A', '/kg',  'Rain particle number from CRM' )
+   endif
+   !----------------------------------------------------------------------------
+   ! M2005 2-moment microphysics variables
    if (MMF_microphysics_scheme .eq. 'm2005') then
       call addfld('MMF_NC    ',(/'lev'/), 'A', '/kg',    'Cloud water dropet number from CRM')
       call addfld('MMF_NI    ',(/'lev'/), 'A', '/kg',    'Cloud ice crystal number from CRM')
@@ -540,6 +553,13 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    call outfld('DU_CRM    ', crm_output%du_crm(icol_beg:icol_end,:), ncol, lchnk )
    call outfld('ED_CRM    ', crm_output%ed_crm(icol_beg:icol_end,:), ncol, lchnk )
 
+   if (MMF_microphysics_scheme .eq. 'p3') then
+      call outfld('CRM_NC ',crm_state%nc(icol_beg:icol_end,:,:,:), ncol, lchnk )
+      call outfld('CRM_NI ',crm_state%ni(icol_beg:icol_end,:,:,:), ncol, lchnk )
+      call outfld('CRM_NR ',crm_state%nr(icol_beg:icol_end,:,:,:), ncol, lchnk )
+      call outfld('CRM_QR ',crm_state%qr(icol_beg:icol_end,:,:,:), ncol, lchnk )
+   endif
+
 #ifdef m2005
    if (MMF_microphysics_scheme .eq. 'm2005') then
       ! index is defined in MICRO_M2005/microphysics.F90
@@ -665,3 +685,4 @@ end subroutine crm_history_out
 !---------------------------------------------------------------------------------------------------
 !---------------------------------------------------------------------------------------------------
 end module crm_history
+  
