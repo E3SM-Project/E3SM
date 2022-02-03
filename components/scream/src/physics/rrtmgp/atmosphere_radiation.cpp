@@ -98,6 +98,8 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // sols       sfc_flux_dir_vis   solar UV/visible direct flux
   // solld      sfc_flux_dif_nir   solar near-ID diffuse flux
   // solsd      sfc_flux_dif_vis   solar UV/visible diffuse flux
+  // netsw      sfc_flux_sw_net    net (down - up) SW flux at surface
+  // flwds      sfc_flux_lw_dn     downwelling LW flux at surface
   // --------------------------------------------------------------
   add_field<Computed>("sfc_flux_dir_nir", scalar2d_layout, Wm2, grid->name());
   add_field<Computed>("sfc_flux_dir_vis", scalar2d_layout, Wm2, grid->name());
