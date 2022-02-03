@@ -33,7 +33,7 @@ public:
   {
     // repair can be null, but check cannot
     EKAT_REQUIRE_MSG (m_check,
-      "Error in CheckAndRepair constructor!\n"
+      "Error in CheckAndRepairWrapper constructor!\n"
       " Input PropertyCheck for check phase is null.\n");
 
     // Build list of fields as the union of the check and repair PC lists

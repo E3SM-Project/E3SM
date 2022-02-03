@@ -9,6 +9,16 @@ namespace scream
 FieldNaNCheck::
 FieldNaNCheck (const Field& f)
 {
+  // Sanity checks
+  EKAT_REQUIRE_MSG (f.rank()<=6,
+      "Error in FieldNaNCheck constructor: unsupported field rank.\n"
+      "  - Field name: " + f.name() << "\n"
+      "  - Field rank: " + std::to_string(f.rank()) + "\n");
+  EKAT_REQUIRE_MSG (field_valid_data_types().has_v(f.data_type()),
+      "Error in FieldNaNCheck constructor: field data type not supported.\n"
+      "  - Field name: " + f.name() << "\n"
+      "  - Field rank: " + std::to_string(f.rank()) + "\n");
+
   // We can't repair NaN's.
   set_fields ({f},{false});
 }
@@ -96,7 +106,9 @@ PropertyCheck::CheckResult FieldNaNCheck::check_impl() const {
       }
       break;
     default:
-      EKAT_ERROR_MSG ("Error! Unsupported f rank.\n");
+      EKAT_ERROR_MSG (
+          "Internal error in FieldNaNCheck: unsupported field rank.\n"
+          "You should not have reached this line. Please, contact developers.\n");
   }
 
   return num_invalid==0 ? CheckResult::Pass : CheckResult::Fail;
@@ -113,7 +125,9 @@ PropertyCheck::CheckResult FieldNaNCheck::check() const {
     case DataType::DoubleType:
       return check_impl<double>();
     default:
-      EKAT_ERROR_MSG ("Error! Field data type not supported.\n");
+      EKAT_ERROR_MSG (
+          "Internal error in FieldNaNCheck: unsupported field data type.\n"
+          "You should not have reached this line. Please, contact developers.\n");
   }
 }
 

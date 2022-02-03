@@ -102,7 +102,9 @@ PropertyCheck::CheckResult FieldWithinIntervalCheck::check_impl () const
       }
       break;
     default:
-      EKAT_ERROR_MSG ("Error! Unsupported f rank.\n");
+      EKAT_ERROR_MSG (
+          "Internal error in FieldWithinIntervalCheck: unsupported field rank.\n"
+          "You should not have reached this line. Please, contact developers.\n");
   }
   return minmax.min_val>=m_lower_bound && minmax.max_val<=m_upper_bound ?
       CheckResult::Pass : (m_allow_failures ? CheckResult::Warn : CheckResult::Fail);
@@ -118,7 +120,9 @@ PropertyCheck::CheckResult FieldWithinIntervalCheck::check() const {
     case DataType::DoubleType:
       return check_impl<double>();
     default:
-      EKAT_ERROR_MSG ("Error! f data type not supported.\n");
+      EKAT_ERROR_MSG (
+          "Internal error in FieldWithinIntervalCheck: unsupported field data type.\n"
+          "You should not have reached this line. Please, contact developers.\n");
   }
 }
 
