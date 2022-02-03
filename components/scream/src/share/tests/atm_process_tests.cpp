@@ -338,8 +338,8 @@ TEST_CASE("field_checks", "") {
     for (bool check_pre : {true, false}) {
       for (bool check_post : {true, false}) {
 
-        params.set("Enable Pre Run Property Checks",check_pre);
-        params.set("Enable Post Run Property Checks",check_post);
+        params.set("Enable Precondition Checks",check_pre);
+        params.set("Enable Postcondition Checks",check_post);
 
         // Create the process
         auto foo = create_atmosphere_process<Foo>(comm,params);
@@ -350,11 +350,11 @@ TEST_CASE("field_checks", "") {
         foo->initialize(t0,RunType::Initial);
 
         if (allow_failure) {
-          foo->add_pre_run_property_check<Warning>(pos_check_pre);
-          foo->add_post_run_property_check<Warning>(pos_check_post);
+          foo->add_precondition_check<Warning>(pos_check_pre);
+          foo->add_postcondition_check<Warning>(pos_check_post);
         } else {
-          foo->add_pre_run_property_check<Fatal>(pos_check_pre);
-          foo->add_post_run_property_check<Fatal>(pos_check_post);
+          foo->add_precondition_check<Fatal>(pos_check_pre);
+          foo->add_postcondition_check<Fatal>(pos_check_post);
         }
 
         if (not allow_failure && (check_pre || check_post)) {

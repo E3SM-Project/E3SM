@@ -178,17 +178,7 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
 void P3Microphysics::initialize_impl (const RunType /* run_type */)
 {
   // Set property checks for fields in this process
-  // auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();
-  // get_field_out("qv").add_property_check(positivity_check);
-  // get_field_out("qc").add_property_check(positivity_check);
-  // get_field_out("qr").add_property_check(positivity_check);
-  // get_field_out("qi").add_property_check(positivity_check);
-  // get_field_out("qm").add_property_check(positivity_check);
-  // get_field_out("nc").add_property_check(positivity_check);
-  // get_field_out("nr").add_property_check(positivity_check);
-  // get_field_out("ni").add_property_check(positivity_check);
-  // get_field_out("bm").add_property_check(positivity_check);
-  add_property_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140, 500);
+  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140, 500);
 
   // Initialize p3
   p3_init();

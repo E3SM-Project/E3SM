@@ -138,8 +138,8 @@ public:
   // an attempt can be made to repair the fields involved. If any of
   // the repairable fields is read only, or not in the list of fields computed
   // by this atm process, an error will be thrown.
-  void run_property_checks_pre () const;
-  void run_property_checks_post () const;
+  void run_precondition_checks () const;
+  void run_postcondition_checks () const;
 
   // These methods allow the AD to figure out what each process needs, with very fine
   // grain detail. See field_request.hpp for more info on what FieldRequest and GroupRequest
@@ -202,21 +202,21 @@ public:
   const Field& get_internal_field(const std::string& field_name) const;
         Field& get_internal_field(const std::string& field_name);
 
-  // Add a pre-built property check (PC) for pre, post, or pre-post check.
+  // Add a pre-built property check (PC) for precondition, postcondition, or invariant (i.e., pre+post) check.
   template<CheckFailHandling CFH = CheckFailHandling::Fatal>
-  void add_pre_run_property_check (const prop_check_ptr& prop_check);
+  void add_precondition_check (const prop_check_ptr& prop_check);
   template<CheckFailHandling CFH = CheckFailHandling::Fatal>
-  void add_post_run_property_check (const prop_check_ptr& prop_check);
+  void add_postcondition_check (const prop_check_ptr& prop_check);
   template<CheckFailHandling CFH = CheckFailHandling::Fatal>
-  void add_property_check (const prop_check_ptr& prop_check);
+  void add_invariant_check (const prop_check_ptr& prop_check);
 
   // Build a property check on the fly, then call the methods above
   template<typename FPC, CheckFailHandling CFH = CheckFailHandling::Fatal, typename... Args>
-  void add_pre_run_property_check (const Args... args);
+  void add_precondition_check (const Args... args);
   template<typename FPC, CheckFailHandling CFH = CheckFailHandling::Fatal, typename... Args>
-  void add_post_run_property_check (const Args... args);
+  void add_postcondition_check (const Args... args);
   template<typename FPC, CheckFailHandling CFH = CheckFailHandling::Fatal, typename... Args>
-  void add_property_check (const Args... args);
+  void add_invariant_check (const Args... args);
 
 protected:
 
@@ -422,8 +422,8 @@ private:
   std::set<GroupRequest>   m_computed_group_requests;
 
   // List of property checks for fields
-  std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_property_checks_pre;
-  std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_property_checks_post;
+  std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_precondition_checks;
+  std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_postcondition_checks;
 
   // This process's copy of the timestamp, which is set on initialization and
   // updated during stepping.
@@ -437,33 +437,33 @@ private:
 
 template<typename FPC, CheckFailHandling CFH, typename... Args>
 void AtmosphereProcess::
-add_pre_run_property_check (const Args... args) {
+add_precondition_check (const Args... args) {
   auto fpc = std::make_shared<FPC>(args...);
-  add_pre_run_property_check<CFH>(fpc);
+  add_precondition_check<CFH>(fpc);
 }
 template<typename FPC, CheckFailHandling CFH, typename... Args>
 void AtmosphereProcess::
-add_post_run_property_check (const Args... args) {
+add_postcondition_check (const Args... args) {
   auto fpc = std::make_shared<FPC>(args...);
-  add_post_run_property_check<CFH>(fpc);
+  add_postcondition_check<CFH>(fpc);
 }
 template<typename FPC, CheckFailHandling CFH, typename... Args>
 void AtmosphereProcess::
-add_property_check (const Args... args) {
+add_invariant_check (const Args... args) {
   auto fpc = std::make_shared<FPC>(args...);
-  add_property_check<CFH>(fpc);
+  add_invariant_check<CFH>(fpc);
 }
 
 template<CheckFailHandling CFH>
 void AtmosphereProcess::
-add_property_check (const prop_check_ptr& pc)
+add_invariant_check (const prop_check_ptr& pc)
 {
-  add_pre_run_property_check<CFH> (pc);
-  add_post_run_property_check<CFH> (pc);
+  add_precondition_check<CFH> (pc);
+  add_postcondition_check<CFH> (pc);
 }
 template<CheckFailHandling CFH>
 void AtmosphereProcess::
-add_pre_run_property_check (const prop_check_ptr& pc)
+add_precondition_check (const prop_check_ptr& pc)
 {
   // If a pc can repair, we need to make sure the repairable
   // fields are among the computed fields of this atm proc.
@@ -477,11 +477,11 @@ add_pre_run_property_check (const prop_check_ptr& pc)
         "  - Atmosphere process name: " + name() + "\n"
         "  - Property check name: " + name() + "\n");
   }
-  m_property_checks_pre.push_back(std::make_pair(CFH,pc));
+  m_precondition_checks.push_back(std::make_pair(CFH,pc));
 }
 template<CheckFailHandling CFH>
 void AtmosphereProcess::
-add_post_run_property_check (const prop_check_ptr& pc)
+add_postcondition_check (const prop_check_ptr& pc)
 {
   // If a pc can repair, we need to make sure the repairable
   // fields are among the computed fields of this atm proc.
@@ -495,7 +495,7 @@ add_post_run_property_check (const prop_check_ptr& pc)
         "  - Atmosphere process name: " + name() + "\n"
         "  - Property check name: " + name() + "\n");
   }
-  m_property_checks_post.push_back(std::make_pair(CFH,pc));
+  m_postcondition_checks.push_back(std::make_pair(CFH,pc));
 }
 
 

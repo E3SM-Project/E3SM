@@ -350,8 +350,8 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
                                  T_mid, dse, z_mid, phis);
 
   // Set field property checks for the fields in this process
-  add_post_run_property_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140,500);
-  add_post_run_property_check<FieldPositivityCheck>(get_field_out("tke"));
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140,500);
+  add_postcondition_check<FieldPositivityCheck>(get_field_out("tke"));
 
   // Setup WSM for internal local variables
   const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);

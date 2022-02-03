@@ -374,7 +374,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   const auto& Q = *get_group_out("Q",rgn).m_bundle;
   auto lb_check = std::make_shared<FieldLowerBoundCheck>(Q,tol,false);
   auto lb_repair = std::make_shared<FieldPositivityCheck>(Q,true);
-  add_post_run_property_check<CheckAndRepairWrapper>(lb_check,lb_repair);
+  add_postcondition_check<CheckAndRepairWrapper>(lb_check,lb_repair);
 }
 
 void HommeDynamics::run_impl (const int dt)

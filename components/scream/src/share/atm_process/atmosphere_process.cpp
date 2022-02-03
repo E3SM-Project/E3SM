@@ -29,9 +29,9 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
 }
 
 void AtmosphereProcess::run (const int dt) {
-  if (m_params.get("Enable Pre Run Property Checks", true)) {
+  if (m_params.get("Enable Precondition Checks", true)) {
     // Run 'pre-condition' property checks stored in this AP
-    run_property_checks_pre();
+    run_precondition_checks();
   }
 
   EKAT_REQUIRE_MSG ( (dt % m_num_subcycles)==0,
@@ -46,9 +46,9 @@ void AtmosphereProcess::run (const int dt) {
     run_impl(dt_sub);
   }
 
-  if (m_params.get("Enable Post Run Property Checks", true)) {
+  if (m_params.get("Enable Postcondition Checks", true)) {
     // Run 'post-condition' property checks stored in this AP
-    run_property_checks_post();
+    run_postcondition_checks();
   }
 
   // Update all output fields time stamps
@@ -158,9 +158,9 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
   set_computed_group_impl(group);
 }
 
-void AtmosphereProcess::run_property_checks_pre () const { 
+void AtmosphereProcess::run_precondition_checks () const { 
   // Run all pre-condition property checks
-  for (const auto& it : m_property_checks_pre) {
+  for (const auto& it : m_precondition_checks) {
     const auto& pc = it.second;
 
     auto check = pc->check();
@@ -189,9 +189,9 @@ void AtmosphereProcess::run_property_checks_pre () const {
   }
 }
 
-void AtmosphereProcess::run_property_checks_post () const {
+void AtmosphereProcess::run_postcondition_checks () const {
   // Run all post-condition property checks
-  for (const auto& it : m_property_checks_post) {
+  for (const auto& it : m_postcondition_checks) {
     const auto& pc = it.second;
 
     auto check = pc->check();
