@@ -94,6 +94,10 @@ int TimeStamp::seconds_from (const TimeStamp& ts) const {
   return *this-ts;
 }
 
+double TimeStamp::days_from (const TimeStamp& ts) const {
+  return ((double)*this.seconds_from(ts)/86400.0);
+}
+
 std::string TimeStamp::to_string () const {
 
   auto time = get_time_string ();

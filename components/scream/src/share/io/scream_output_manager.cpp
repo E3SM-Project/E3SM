@@ -249,7 +249,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     }
 
     // Update time and nsteps in the output file
-    pio_update_time(filename,timestamp.seconds_from(m_case_t0)/86400.0);
+    pio_update_time(filename,timestamp.days_from(m_case_t0));
     if (m_is_model_restart_output) {
       // Only write nsteps on model restart
       set_int_attribute_c2f(filename.c_str(),"nsteps",timestamp.get_num_steps());
