@@ -543,10 +543,7 @@ extern real2d ni_activated;
 extern real2d diag_eff_radius_qc;
 extern real2d diag_eff_radius_qi;
 extern real2d precip_total_tend;
-extern real2d nevapr;
 extern real2d qr_evap_tend;
-extern real2d mu;
-extern real2d lambdac;
 extern real4d t_prev;
 extern real4d q_prev;
 

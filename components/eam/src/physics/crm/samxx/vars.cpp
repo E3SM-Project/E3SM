@@ -61,10 +61,7 @@ void allocate() {
   diag_eff_radius_qc = real2d( "diag_eff_radius_qc", nzm, ncrms);
   diag_eff_radius_qi = real2d( "diag_eff_radius_qi", nzm, ncrms);
   precip_total_tend  = real2d( "precip_total_tend" , nzm, ncrms);
-  nevapr             = real2d( "nevapr           " , nzm, ncrms);
   qr_evap_tend       = real2d( "qr_evap_tend     " , nzm, ncrms);
-  mu                 = real2d( "mu               " , nzm, ncrms);
-  lambdac            = real2d( "lambdac          " , nzm, ncrms);
   t_prev             = real4d( "t_prev           " , nzm, ny, nx, ncrms);
   q_prev             = real4d( "q_prev           " , nzm, ny, nx, ncrms);
 
@@ -279,10 +276,7 @@ void allocate() {
   yakl::memset(diag_eff_radius_qc,0 );
   yakl::memset(diag_eff_radius_qi,0 );
   yakl::memset(precip_total_tend, 0 );
-  yakl::memset(nevapr           , 0 );
   yakl::memset(qr_evap_tend     , 0 );
-  yakl::memset(mu               , 0 );
-  yakl::memset(lambdac          , 0 );
   yakl::memset(t_prev           , 0 );
   yakl::memset(q_prev           , 0 );
 
@@ -549,10 +543,7 @@ void finalize() {
   diag_eff_radius_qc = real2d();
   diag_eff_radius_qi = real2d();
   precip_total_tend  = real2d();
-  nevapr             = real2d();
   qr_evap_tend       = real2d();
-  mu                 = real2d();
-  lambdac            = real2d();
   t_prev             = real4d();
   q_prev             = real4d();
 
@@ -1851,10 +1842,7 @@ real2d  ni_activated      ;
 real2d  diag_eff_radius_qc;
 real2d  diag_eff_radius_qi;
 real2d  precip_total_tend ;
-real2d  nevapr            ;
 real2d  qr_evap_tend      ;
-real2d  mu                ;
-real2d  lambdac           ;
 real4d  t_prev            ;
 real4d  q_prev            ;
 

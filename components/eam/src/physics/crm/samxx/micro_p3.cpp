@@ -132,11 +132,11 @@ void get_cloud_fraction(int its, int ite, int kts, int kte, real2d& ast,
 #endif
 }
 
-YAKL_INLINE static real saturation_vapor_pressure(real tabs) {
+YAKL_INLINE real saturation_vapor_pressure(real tabs) {
   real tc = tabs - 273.15;
   return 610.94 * exp( 17.625*tc / (243.04+tc) );
 }
-YAKL_INLINE static real saturation_specific_humidity(real tabs, real pressure) {
+YAKL_INLINE real saturation_specific_humidity(real tabs, real pressure) {
   real esat = saturation_vapor_pressure( tabs );
   real wsat = 0.622*esat / (pressure - esat);
   real qsat = wsat/(1+wsat);
@@ -215,6 +215,7 @@ YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qv_in, real &qc_in, 
   //     }
   //   }
   // }
+
   // Update total water
   qt_in = qv_in + qc_in;
 }
@@ -260,10 +261,7 @@ void micro_p3_proc() {
   auto &diag_eff_radius_qc = :: diag_eff_radius_qc;
   auto &diag_eff_radius_qi = :: diag_eff_radius_qi;
   // auto &precip_total_tend  = :: precip_total_tend;
-  auto &nevapr             = :: nevapr;
-  auto &qr_evap_tend       = :: qr_evap_tend;
-  auto &mu                 = :: mu;
-  auto &lambdac            = :: lambdac;
+  // auto &qr_evap_tend       = :: qr_evap_tend;
   auto &t_prev             = :: t_prev;
   auto &q_prev             = :: q_prev;
   // auto &ast                = :: ast;
