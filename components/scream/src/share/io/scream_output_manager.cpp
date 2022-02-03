@@ -64,6 +64,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_output_control.frequency  = out_control_pl.get<int>("Frequency");
   m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");
   m_output_control.nsteps_since_last_write = 0;
+  m_output_control.timestamp_since_last_write = case_t0;
 
   // File specs
   m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File");
@@ -100,6 +101,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       m_checkpoint_control.frequency  = pl.get<int>("Frequency");
       m_checkpoint_control.frequency_units = pl.get<std::string>("frequency_units");
       m_checkpoint_control.nsteps_since_last_write = 0;
+      m_checkpoint_control.timestamp_since_last_write = case_t0;
 
       // File specs
       m_checkpoint_file_specs.max_snapshots_in_file = 1;
@@ -172,8 +174,8 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   ++m_checkpoint_control.nsteps_since_last_write;
 
   // Check if this is a write step (and what kind)
-  const bool is_output_step     = m_output_control.is_write_step();
-  const bool is_checkpoint_step = m_checkpoint_control.is_write_step() && not is_output_step;
+  const bool is_output_step     = m_output_control.is_write_step(timestamp);
+  const bool is_checkpoint_step = m_checkpoint_control.is_write_step(timestamp) && not is_output_step;
   const bool is_write_step      = is_output_step || is_checkpoint_step;
 
   // If neither output or checkpoint, these won't be used anyways,
@@ -282,6 +284,10 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     // Now that we've written output to this file we need reset the nsteps.
     control.nsteps_since_last_write = 0;
 
+    // Since we wrote to file we need to reset the nsteps_since_last_write and the timestamp
+    control.nsteps_since_last_write = 0;
+    control.timestamp_since_last_write = timestamp;
+
     // Check if we need to close the output file
     if (filespecs.file_is_full()) {
       eam_pio_closefile(filename);
@@ -291,6 +297,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
     // Whether we wrote an output or a checkpoint, the checkpoint counter needs to be reset
     m_checkpoint_control.nsteps_since_last_write = 0;
+    m_checkpoint_control.timestamp_since_last_write = timestamp;
   }
 }
 /*===============================================================================================*/
