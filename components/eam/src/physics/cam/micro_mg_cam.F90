@@ -2087,6 +2087,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
          packed_ns = packer%pack(state_loc%q(:,:,ixnumsnow))
       end if
 
+      call check_values(q,t,mgncol,nlev,100)
       select case (micro_mg_version)
       case (1)
          select case (micro_mg_sub_version)
@@ -3078,6 +3079,64 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call t_stopf('micro_mg_cam_tend_fini')
 
 end subroutine micro_mg_cam_tend
+
+subroutine check_values(Qv,T,pver,ncol,source_ind)
+
+  !------------------------------------------------------------------------------------                                       
+  ! Checks current values of prognotic variables for reasonable values and                                                    
+  ! stops and prints values if they are out of specified allowable ranges.                                                    
+  !                                                                                                                           
+  ! 'check_consistency' means include trap for inconsistency in moments;                                                      
+  ! otherwise, only trap for Q, T, and negative Qx, etc.  This option is here                                                 
+  ! to allow for Q<qsmall.and.N>nsmall or Q>qsmall.and.N<small which can be produced                                          
+  ! at the leading edges due to sedimentation and whose values are accpetable                                                 
+  ! since lambda limiters are later imposed after SEDI (so one does not necessarily                                           
+  ! want to trap for inconsistency after sedimentation has been called).                                                      
+  !                                                                                                                           
+  ! The value 'source_ind' indicates the approximate location in 'micro_mg_cam'                                                    
+  ! from where 'check_values' was called before it resulted in a trap.                                                        
+  !                                                                                                                           
+  !------------------------------------------------------------------------------------                                       
+
+
+  implicit none
+
+  !Calling parameters:                                                                                                        
+  real(rtype), intent(in) :: Qv(:,:), T(:,:)
+  integer,                intent(in) :: pver,ncol,source_ind
+
+  !Local variables:                                                                                                           
+  real(rtype), parameter :: T_low  = 160._rtype !173._rtype                                                                   
+  real(rtype), parameter :: T_high = 355._rtype !323._rtype                                                                   
+  real(rtype), parameter :: Q_high = 40.e-3_rtype
+  integer         :: i,k
+
+  trap = .false.
+  trap = .false.
+
+  i_loop: do i = 1, ncol
+    k_loop: do k = 1, pver
+
+       ! check unrealistic values or NANs for T and Qv                                                                          
+       if (.not.(T(i,k)>T_low .and. T(i,k)<T_high)) then
+          write(iulog,'(a60,i5,a2,i4,a2,e16.8)') &
+               '** WARNING IN micro_mg_cam -- src, lvl, T:',source_ind,', ', &
+                k,', ',T(i,k)
+       endif
+       if (.not.(Qv(i,k)>=0. .and. Qv(i,k)<Q_high)) then
+          write(iulog,'(a60,i5,a2,i4,a2,e16.8)') &
+               '** WARNING IN micro_mg_cam -- src, lvl, Qv:',source_ind,', ', &
+                k,', ',Qv(i,k)
+          !trap = .true.  !note, tentatively no trap, since Qv could be negative passed in to mp                                
+       endif
+
+    enddo k_loop
+  enddo i_loop
+
+  return
+
+end subroutine check_values
+
 
 function p1(tin) result(pout)
   real(r8), target, intent(in) :: tin(:)

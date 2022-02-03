@@ -643,7 +643,7 @@ contains
          varname="state%tw_cur",    msg=msg)
 
     ! 2-D variables (at midpoints)
-    call shr_assert_in_domain(state%t(:ncol,:),         lt=posinf_r8, gt=0._r8, &
+    call shr_assert_in_domain(state%t(:ncol,:),         lt=350._r8, gt=150._r8, &
          varname="state%t",         msg=msg)
     call shr_assert_in_domain(state%u(:ncol,:),         lt=posinf_r8, gt=neginf_r8, &
          varname="state%u",         msg=msg)
