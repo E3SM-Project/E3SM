@@ -195,7 +195,7 @@ void AtmosphereProcess::run_property_checks_post () const {
   constexpr auto Fail = PropertyCheck::CheckResult::Fail;
 
   // Run all pre-condition property checks
-  for (const auto& pc : m_property_checks_pre) {
+  for (const auto& pc : m_property_checks_post) {
     auto check = pc->check();
     // A Fail without chance of repair means we need to crash
     EKAT_REQUIRE_MSG(check!=Fail || pc->can_repair(),
