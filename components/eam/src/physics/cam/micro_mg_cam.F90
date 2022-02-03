@@ -2087,7 +2087,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
          packed_ns = packer%pack(state_loc%q(:,:,ixnumsnow))
       end if
 
-      call check_values(q,t,mgncol,nlev,100)
+      call check_values(packed_q,packed_t,mgncol,nlev,100)
       select case (micro_mg_version)
       case (1)
          select case (micro_mg_sub_version)
@@ -3110,9 +3110,6 @@ subroutine check_values(Qv,T,pver,ncol,source_ind)
   real(r8), parameter :: T_high = 355._r8 !323._r8                                                                   
   real(r8), parameter :: Q_high = 40.e-3_r8
   integer         :: i,k
-
-  trap = .false.
-  trap = .false.
 
   i_loop: do i = 1, ncol
     k_loop: do k = 1, pver
