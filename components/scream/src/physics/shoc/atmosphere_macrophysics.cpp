@@ -1,8 +1,8 @@
 #include "ekat/ekat_assert.hpp"
 #include "physics/shoc/atmosphere_macrophysics.hpp"
 
-#include "share/field/field_property_checks/field_positivity_check.hpp"
-#include "share/field/field_property_checks/field_within_interval_check.hpp"
+#include "share/property_checks/field_positivity_check.hpp"
+#include "share/property_checks/field_within_interval_check.hpp"
 namespace scream
 {
 
@@ -350,11 +350,8 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
                                  T_mid, dse, z_mid, phis);
 
   // Set field property checks for the fields in this process
-  auto T_interval_check = std::make_shared<FieldWithinIntervalCheck>(140, 500);
-  auto positivity_check = std::make_shared<FieldPositivityCheck>();
-
-  add_property_check<Computed>(get_field_out("T_mid").get_header().get_identifier(),T_interval_check);
-  add_property_check<Computed>(get_field_out("tke").get_header().get_identifier(),positivity_check);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140,500);
+  add_postcondition_check<FieldPositivityCheck>(get_field_out("tke"));
 
   // Setup WSM for internal local variables
   const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);

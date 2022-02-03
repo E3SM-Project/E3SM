@@ -20,14 +20,15 @@ else()
     field/field.cpp
     field/field_group.cpp
     field/field_manager.cpp
-    field/field_property_checks/field_nan_check.cpp
-    field/field_property_checks/field_within_interval_check.cpp
     grid/abstract_grid.cpp
     grid/mesh_free_grids_manager.cpp
     grid/se_grid.cpp
     grid/point_grid.cpp
     grid/user_provided_grids_manager.cpp
     grid/remap/abstract_remapper.cpp
+    property_checks/property_check.cpp
+    property_checks/field_nan_check.cpp
+    property_checks/field_within_interval_check.cpp
     util/scream_test_session.cpp
     util/scream_time_stamp.cpp
     )

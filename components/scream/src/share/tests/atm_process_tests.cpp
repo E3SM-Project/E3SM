@@ -4,7 +4,7 @@
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
 
-#include "share/field//field_property_checks/field_nan_check.hpp"
+#include "share/property_checks/field_positivity_check.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
@@ -326,29 +326,43 @@ TEST_CASE("field_checks", "") {
   Field T(fid_T), T_tend(fid_T_tend);
   T.allocate_view();
   T_tend.allocate_view();
-  T_tend.deep_copy(ekat::ScalarTraits<Real>::invalid());
-
-  auto nan_check = std::make_shared<FieldNaNCheck>();
+  T_tend.deep_copy(-1.0);
+  T.deep_copy(-1.0);
   util::TimeStamp t0(1,1,1,1,1,1);
-  for (bool check : {true, false}) {
-    params.set("Enable Input Field Checks",check);
 
-    // Create the process
-    auto foo = create_atmosphere_process<Foo>(comm,params);
-    foo->set_grids(gm);
+  constexpr auto Warning = CheckFailHandling::Warning;
+  constexpr auto Fatal   = CheckFailHandling::Fatal;
+  auto pos_check_pre = std::make_shared<FieldPositivityCheck>(T_tend,false);
+  auto pos_check_post = std::make_shared<FieldPositivityCheck>(T,false);
+  for (bool allow_failure : {true,false}) {
+    for (bool check_pre : {true, false}) {
+      for (bool check_post : {true, false}) {
 
-    foo->set_required_field(T_tend);
-    foo->set_computed_field(T);
-    foo->initialize(t0,RunType::Initial);
+        params.set("Enable Precondition Checks",check_pre);
+        params.set("Enable Postcondition Checks",check_post);
 
-    foo->add_property_check<Required>(fid_T_tend,nan_check);
-    // Cannot check an output field that is not computed
-    REQUIRE_THROWS(foo->add_property_check<Computed>(fid_T_tend,nan_check));
+        // Create the process
+        auto foo = create_atmosphere_process<Foo>(comm,params);
+        foo->set_grids(gm);
 
-    if (check) {
-      REQUIRE_THROWS (foo->run(1));
-    } else {
-      REQUIRE_NOTHROW (foo->run(1));
+        foo->set_required_field(T_tend);
+        foo->set_computed_field(T);
+        foo->initialize(t0,RunType::Initial);
+
+        if (allow_failure) {
+          foo->add_precondition_check<Warning>(pos_check_pre);
+          foo->add_postcondition_check<Warning>(pos_check_post);
+        } else {
+          foo->add_precondition_check<Fatal>(pos_check_pre);
+          foo->add_postcondition_check<Fatal>(pos_check_post);
+        }
+
+        if (not allow_failure && (check_pre || check_post)) {
+          REQUIRE_THROWS (foo->run(1));
+        } else {
+          REQUIRE_NOTHROW (foo->run(1));
+        }
+      }
     }
   }
 }
