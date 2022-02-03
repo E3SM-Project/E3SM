@@ -10,11 +10,9 @@ FieldWithinIntervalCheck::
 FieldWithinIntervalCheck (const Field& field,
                           const double lower_bound,
                           const double upper_bound,
-                          const bool can_repair,
-                          const bool allow_failures)
+                          const bool can_repair)
  : m_lower_bound(lower_bound)
  , m_upper_bound(upper_bound)
- , m_allow_failures(allow_failures)
 {
   EKAT_ASSERT_MSG(lower_bound <= upper_bound,
                   "lower_bound must be less than or equal to upper_bound.");
@@ -23,7 +21,7 @@ FieldWithinIntervalCheck (const Field& field,
 }
 
 template<typename ST>
-PropertyCheck::CheckResult FieldWithinIntervalCheck::check_impl () const
+bool FieldWithinIntervalCheck::check_impl () const
 {
   using const_ST    = typename std::add_const<ST>::type;
   using nonconst_ST = typename std::remove_const<ST>::type;
@@ -106,11 +104,10 @@ PropertyCheck::CheckResult FieldWithinIntervalCheck::check_impl () const
           "Internal error in FieldWithinIntervalCheck: unsupported field rank.\n"
           "You should not have reached this line. Please, contact developers.\n");
   }
-  return minmax.min_val>=m_lower_bound && minmax.max_val<=m_upper_bound ?
-      CheckResult::Pass : (m_allow_failures ? CheckResult::Warn : CheckResult::Fail);
+  return minmax.min_val>=m_lower_bound && minmax.max_val<=m_upper_bound;
 }
 
-PropertyCheck::CheckResult FieldWithinIntervalCheck::check() const {
+bool FieldWithinIntervalCheck::check() const {
   const auto& f = fields().front();
   switch (f.data_type()) {
     case DataType::IntType:

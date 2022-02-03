@@ -24,7 +24,7 @@ FieldNaNCheck (const Field& f)
 }
 
 template<typename ST>
-PropertyCheck::CheckResult FieldNaNCheck::check_impl() const {
+bool FieldNaNCheck::check_impl() const {
   using const_ST    = typename std::add_const<ST>::type;
 
   const auto& f = fields().front();
@@ -111,10 +111,10 @@ PropertyCheck::CheckResult FieldNaNCheck::check_impl() const {
           "You should not have reached this line. Please, contact developers.\n");
   }
 
-  return num_invalid==0 ? CheckResult::Pass : CheckResult::Fail;
+  return num_invalid==0;
 }
 
-PropertyCheck::CheckResult FieldNaNCheck::check() const {
+bool FieldNaNCheck::check() const {
   const auto& f = fields().front();
 
   switch (f.data_type()) {

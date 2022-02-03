@@ -159,63 +159,63 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
 }
 
 void AtmosphereProcess::run_property_checks_pre () const { 
-  constexpr auto Pass = PropertyCheck::CheckResult::Pass;
-  constexpr auto Warn = PropertyCheck::CheckResult::Warn;
-  constexpr auto Fail = PropertyCheck::CheckResult::Fail;
-
   // Run all pre-condition property checks
-  for (const auto& pc : m_property_checks_pre) {
-    auto check = pc->check();
-    // A Fail without chance of repair means we need to crash
-    EKAT_REQUIRE_MSG(check!=Fail || pc->can_repair(),
-        "Error! Failed pre-condition check (cannot be repaired).\n"
-        "  - Atm process name: " + name() + "\n"
-        "  - Property check name: " + pc->name() + "\n"
-        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
+  for (const auto& it : m_property_checks_pre) {
+    const auto& pc = it.second;
 
-    // A Warn means we can continue, even if we can't repair,
-    // but we need to warn the user
-    if (check==Warn) {
-      std::cout << "WARNING: Pre run property check failed.\n"
+    auto check = pc->check();
+    if (check) {
+      continue;
+    }
+
+    // Failed check.
+    if (pc->can_repair()) {
+      // Ok, just fix it
+      pc->repair();
+    } else if (it.first==CheckFailHandling::Warning) {
+      // Still ok, but warn the user
+      std::cout << "WARNING: Pre-condition property check failed.\n"
         "  - Property check name: " + pc->name() + "\n"
         "  - Atmosphere process name: " + name() + "\n"
         "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n";
-    }
-
-    // If check did't pass, and we can repair, then do it.
-    if (check!=Pass && pc->can_repair()) {
-      pc->repair();
+    } else {
+      // No hope. Crash.
+      EKAT_ERROR_MSG(
+          "Error! Failed pre-condition check (cannot be repaired).\n"
+          "  - Atm process name: " + name() + "\n"
+          "  - Property check name: " + pc->name() + "\n"
+          "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
     }
   }
 }
 
 void AtmosphereProcess::run_property_checks_post () const {
-  constexpr auto Pass = PropertyCheck::CheckResult::Pass;
-  constexpr auto Warn = PropertyCheck::CheckResult::Warn;
-  constexpr auto Fail = PropertyCheck::CheckResult::Fail;
+  // Run all post-condition property checks
+  for (const auto& it : m_property_checks_post) {
+    const auto& pc = it.second;
 
-  // Run all pre-condition property checks
-  for (const auto& pc : m_property_checks_post) {
     auto check = pc->check();
-    // A Fail without chance of repair means we need to crash
-    EKAT_REQUIRE_MSG(check!=Fail || pc->can_repair(),
-        "Error! Failed post-condition check (cannot be repaired).\n"
-        "  - Atm process name: " + name() + "\n"
-        "  - Property check name: " + pc->name() + "\n"
-        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
+    if (check) {
+      continue;
+    }
 
-    // A Warn means we can continue, even if we can't repair,
-    // but we need to warn the user
-    if (check==Warn) {
-      std::cout << "WARNING: Pre run property check failed.\n"
+    // Failed check.
+    if (pc->can_repair()) {
+      // Ok, just fix it
+      pc->repair();
+    } else if (it.first==CheckFailHandling::Warning) {
+      // Still ok, but warn the user
+      std::cout << "WARNING: Post-condition property check failed.\n"
         "  - Property check name: " + pc->name() + "\n"
         "  - Atmosphere process name: " + name() + "\n"
         "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n";
-    }
-
-    // If check did't pass, and we can repair, then do it.
-    if (check!=Pass && pc->can_repair()) {
-      pc->repair();
+    } else {
+      // No hope. Crash.
+      EKAT_ERROR_MSG(
+          "Error! Failed post-condition check (cannot be repaired).\n"
+          "  - Atm process name: " + name() + "\n"
+          "  - Property check name: " + pc->name() + "\n"
+          "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
     }
   }
 }
@@ -386,49 +386,6 @@ get_internal_field(const std::string& field_name) {
 const Field& AtmosphereProcess::
 get_internal_field(const std::string& field_name) const {
   return get_internal_field_impl(field_name);
-}
-
-void AtmosphereProcess::
-add_property_check (const prop_check_ptr& pc)
-{
-  add_pre_run_property_check (pc);
-  add_post_run_property_check (pc);
-}
-
-void AtmosphereProcess::
-add_pre_run_property_check (const prop_check_ptr& pc)
-{
-  // If a pc can repair, we need to make sure the repairable
-  // fields are among the computed fields of this atm proc.
-  // Otherwise, it would be possible for this AP to implicitly
-  // update a field, without that appearing in the dag.
-  for (const auto& ptr : pc->repairable_fields()) {
-    const auto& fid = ptr->get_header().get_identifier();
-    EKAT_REQUIRE_MSG (
-        has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
-        "Error! Input property check can repair a non-computed field.\n"
-        "  - Atmosphere process name: " + name() + "\n"
-        "  - Property check name: " + name() + "\n");
-  }
-  m_property_checks_pre.push_back(pc);
-}
-
-void AtmosphereProcess::
-add_post_run_property_check (const prop_check_ptr& pc)
-{
-  // If a pc can repair, we need to make sure the repairable
-  // fields are among the computed fields of this atm proc.
-  // Otherwise, it would be possible for this AP to implicitly
-  // update a field, without that appearing in the dag.
-  for (const auto& ptr : pc->repairable_fields()) {
-    const auto& fid = ptr->get_header().get_identifier();
-    EKAT_REQUIRE_MSG (
-        has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
-        "Error! Input property check can repair a non-computed field.\n"
-        "  - Atmosphere process name: " + name() + "\n"
-        "  - Property check name: " + name() + "\n");
-  }
-  m_property_checks_post.push_back(pc);
 }
 
 void AtmosphereProcess::set_fields_and_groups_pointers () {

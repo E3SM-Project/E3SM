@@ -330,9 +330,11 @@ TEST_CASE("field_checks", "") {
   T.deep_copy(-1.0);
   util::TimeStamp t0(1,1,1,1,1,1);
 
+  constexpr auto Warning = CheckFailHandling::Warning;
+  constexpr auto Fatal   = CheckFailHandling::Fatal;
+  auto pos_check_pre = std::make_shared<FieldPositivityCheck>(T_tend,false);
+  auto pos_check_post = std::make_shared<FieldPositivityCheck>(T,false);
   for (bool allow_failure : {true,false}) {
-    auto pos_check_pre = std::make_shared<FieldPositivityCheck>(T_tend,false,allow_failure);
-    auto pos_check_post = std::make_shared<FieldPositivityCheck>(T,false,allow_failure);
     for (bool check_pre : {true, false}) {
       for (bool check_post : {true, false}) {
 
@@ -347,8 +349,13 @@ TEST_CASE("field_checks", "") {
         foo->set_computed_field(T);
         foo->initialize(t0,RunType::Initial);
 
-        foo->add_pre_run_property_check(pos_check_pre);
-        foo->add_post_run_property_check(pos_check_post);
+        if (allow_failure) {
+          foo->add_pre_run_property_check<Warning>(pos_check_pre);
+          foo->add_post_run_property_check<Warning>(pos_check_post);
+        } else {
+          foo->add_pre_run_property_check<Fatal>(pos_check_pre);
+          foo->add_post_run_property_check<Fatal>(pos_check_post);
+        }
 
         if (not allow_failure && (check_pre || check_post)) {
           REQUIRE_THROWS (foo->run(1));

@@ -7,6 +7,11 @@
 
 namespace scream {
 
+enum class CheckFailHandling {
+  Fatal,
+  Warning
+};
+
 enum class AtmosphereProcessType {
   Dynamics,   // Process responsible of handling the dynamics
   Physics,    // Process handling a physics parametrization
