@@ -16,8 +16,6 @@ void micro_p3_diagnose() {
   auto &micro_field = :: micro_field;
 
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-    // qv(k,j,i,icrm)  = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
-    // qcl(k,j,i,icrm) = micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
     qv(k,j,i,icrm)  = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - qc(k,j,i,icrm);
     qcl(k,j,i,icrm) = qc(k,j,i,icrm);
     qpl(k,j,i,icrm) = micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm);
@@ -146,78 +144,79 @@ YAKL_INLINE static real saturation_specific_humidity(real tabs, real pressure) {
 }
 
 // Compute an instantaneous adjustment of sub or super saturation
-YAKL_INLINE static void compute_adjusted_state( real &qt, real &qv, real &qc, real &tabs, real &pmid ) {
+// YAKL_INLINE static void compute_adjusted_state( real &qt, real &qv, real &qc, real &tabs, real &pmid ) {
+YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qv_in, real &qc_in, real &tabs_in, real &pmid_in ) {
   // Define a tolerance and max iterations for convergence
   real tol = 1.e-6;
   int max_iteration = 20;
   int iteration_cnt = 0;
 
   // Saturation specific humidity
-  real qsat = saturation_specific_humidity(tabs,pmid);
+  real qsat = saturation_specific_humidity(tabs_in,pmid_in);
 
   // assume all of qt is vapor to start
-  qv = qt; qc = 0;
+  qv_in = qt_in; qc_in = 0;
 
   // Common variables if we need to iterate
-  real tabs_loc = tabs;
-  real qv_loc = qv; real qc_loc = qc;
+  real tabs_loc = tabs_in;
+  real qv_loc = qv_in; real qc_loc = qc_in;
   bool keep_iterating = true;
 
   // If we're super-saturated, we need to condense
-  if (qt > qsat) {
+  if (qt_in > qsat) {
     // Set bounds on how much mass to condense
     real cond1 = 0;   // Minimum amount we can condense
-    real cond2 = qv;  // Maximum amount we can condense
+    real cond2 = qv_in;  // Maximum amount we can condense
     while (keep_iterating) {
       // How much water vapor to condense for this iteration
       real cond = (cond1 + cond2) / 2;
       // update vapor and cloud condensate
-      qv_loc = max( 0. , qv - cond );
-      qc_loc = max( 0. , qc + cond );
+      qv_loc = max( 0. , qv_in - cond );
+      qc_loc = max( 0. , qc_in + cond );
       // update temperature
-      real dtabs = ( tabs - tabs_loc + fac_cond*cond ) / ( 1. + lcond*lcond*qsat/(cp*rv*tabs_loc*tabs_loc) );
-      tabs_loc = tabs_loc + dtabs;
+      tabs_loc = tabs_in + fac_cond*cond;
       // update saturation value
-      real qsat = saturation_specific_humidity(tabs,pmid);
+      real qsat = saturation_specific_humidity(tabs_in,pmid_in);
       // If still supersaturated condense more, otherwise condense less
-      if (qv_loc> qsat) { cond1 = qc; }
-      if (qv_loc<=qsat) { cond2 = qc; }
+      if (qv_loc> qsat) { cond1 = qc_in; }
+      if (qv_loc<=qsat) { cond2 = qc_in; }
       // If we've converged or reached max iteration, then stop iterating
       iteration_cnt++;
       if ( abs(cond2-cond1)<=tol || iteration_cnt>=max_iteration) {
-        qv = qv_loc; qc = qc_loc; tabs = tabs_loc;
-        keep_iterating = false;
-      }
-    }
-  // If we are unsaturated and have cloud condensate, we need to evaporate
-  } else if (qt < qsat && qc > 0) {
-    // Set bounds on how much mass to evaporate
-    real evap1 = 0;  // minimum amount we can evaporate
-    real evap2 = qc; // maximum amount we can evaporate
-    while (keep_iterating) {
-      // How much water vapor to evaporate for this iteration
-      real evap = (evap1 + evap2) / 2;
-      // update vapor and cloud condensate
-      qv_loc = max( 0. , qv + evap );
-      qc_loc = max( 0. , qc - evap );
-      // update temperature
-      real dtabs = ( tabs - tabs_loc + fac_cond*evap ) / ( 1. + lcond*lcond*qsat/(cp*rv*tabs_loc*tabs_loc) );
-      tabs_loc = tabs_loc + dtabs;
-      // update saturation value
-      real qsat = saturation_specific_humidity(tabs,pmid);
-      // If still unsaturated evaporate more, otherwise evaporate less
-      if (qv_loc< qsat) { evap1 = qc; }
-      if (qv_loc>=qsat) { evap2 = qc; }
-      // If we've converged or reached max iteration, then stop iterating
-      iteration_cnt++;
-      if ( abs(evap2-evap1)<=tol || iteration_cnt>=max_iteration) {
-        qv = qv_loc; qc = qc_loc; tabs = tabs_loc;
+        qv_in = qv_loc; qc_in = qc_loc; tabs_in = tabs_loc;
         keep_iterating = false;
       }
     }
   }
+  
+  // // If we are unsaturated and have cloud condensate, we need to evaporate
+  // if (qt_in < qsat && qc_in > 0) {
+  //   // Set bounds on how much mass to evaporate
+  //   real evap1 = 0;  // minimum amount we can evaporate
+  //   real evap2 = qc_in; // maximum amount we can evaporate
+  //   while (keep_iterating) {
+  //     // How much water vapor to evaporate for this iteration
+  //     real evap = (evap1 + evap2) / 2;
+  //     // update vapor and cloud condensate
+  //     qv_loc = max( 0. , qv_in + evap );
+  //     qc_loc = max( 0. , qc_in - evap );
+  //     // update temperature
+  //     tabs_loc = tabs_in + fac_cond*cond;
+  //     // update saturation value
+  //     real qsat = saturation_specific_humidity(tabs_in,pmid_in);
+  //     // If still unsaturated evaporate more, otherwise evaporate less
+  //     if (qv_loc< qsat) { evap1 = qc_in; }
+  //     if (qv_loc>=qsat) { evap2 = qc_in; }
+  //     // If we've converged or reached max iteration, then stop iterating
+  //     iteration_cnt++;
+  //     if ( abs(evap2-evap1)<=tol || iteration_cnt>=max_iteration) {
+  //       qv_in = qv_loc; qc_in = qc_loc; tabs_in = tabs_loc;
+  //       keep_iterating = false;
+  //     }
+  //   }
+  // }
   // Update total water
-  qt = qv + qc;
+  qt_in = qv_in + qc_in;
 }
 
 
