@@ -43,11 +43,11 @@ module ocn_vertical_remap
    !
    ! Public parameters
    !
-   
+
    type(rmap_opts) :: opts
    integer :: bc_upper, bc_lower
    integer :: itimestepLastRemap
-   
+
    !--------------------------------------------------------------------
 
    !--------------------------------------------------------------------
@@ -69,7 +69,7 @@ module ocn_vertical_remap
 !> \author Mark Petersen, Doug Jacobsen, Todd Ringler
 !> \date   September 2011
 !> \details
-!>  This routine remaps state variables from current layerThickness to 
+!>  This routine remaps state variables from current layerThickness to
 !>  a new layerThickness
 !
 !-----------------------------------------------------------------------
@@ -97,8 +97,8 @@ module ocn_vertical_remap
          layerThickEdge,               & ! layerThickness at edges (lagrangian grid)
          layerThickEdgeNew,            & ! layerThickness at edges (new target grid)
          heightCellNow, heightEdgeNow, & ! depth at layer interfaces (lagrangian grid)
-         heightCellNew, heightEdgeNew    ! depth at layer interfaces (new target grid)      
-      
+         heightCellNew, heightEdgeNew    ! depth at layer interfaces (new target grid)
+
       real (kind=RKIND), dimension(:, :), pointer :: layerThickness, restingThickness
       real (kind=RKIND), dimension(:, :), pointer :: normalVelocity
       real (kind=RKIND), dimension(:, :), pointer :: highFreqThickness,lowFreqDivergence
@@ -118,14 +118,14 @@ module ocn_vertical_remap
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
       call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
-      
+
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 2)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 2)
       if (config_use_freq_filtered_thickness) then
          call mpas_pool_get_array(statePool, 'highFreqThickness', highFreqThickness, 2)
          call mpas_pool_get_array(statePool, 'lowFreqDivergence', lowFreqDivergence, 2)
       end if
-      
+
       nCells = nCellsAll
       nEdges = nEdgesAll
 
@@ -137,11 +137,11 @@ module ocn_vertical_remap
       allocate(heightEdgeNew(nVertLevels + 1, nEdges))
       allocate(layerThickEdge(nVertLevels, nEdges))
       allocate(layerThickEdgeNew(nVertLevels, nEdges))
-      
+
 
       ! There's currently a silly issue in PPR: it assumes the "coordinates" for
-      ! the data being remapped increases with index. Here, we have the opposite 
-      ! (z becomes more -ve with k)... 
+      ! the data being remapped increases with index. Here, we have the opposite
+      ! (z becomes more -ve with k)...
       ! I'll make some updates to PPR to handle this, but for now, just flip the
       ! signs to make PPR happy. This shouldn't have any actual impact.
 
@@ -212,17 +212,17 @@ module ocn_vertical_remap
       nDoFs = 1 ! always 1 for MPAS, it'd be >1 for DG methods (with more DoF per layer)
 
       ! how many variables to be remapped concurrently per column
-      if (associated(highFreqThickness) .and. associated(lowFreqDivergence)) then
+      if (config_use_freq_filtered_thickness) then
          nVars = 3
       else
          nVars = 1
       endif
-      
+
       allocate(dataNow(nDoFs, nVars, nVertLevels+1))
       allocate(dataNew(nDoFs, nVars, nVertLevels+1))
       allocate(bcUpper(nVars))
       allocate(bcLower(nVars))
-      
+
       ! set boundary conditions
       bcUpper%bcopt = bc_upper
       bcLower%bcopt = bc_lower
@@ -233,7 +233,7 @@ module ocn_vertical_remap
       call work%init(nVertLevels + 1, nVars, opts) ! this is internal workspace for PPR
 
       ! Remap all edge-centred variables from heightEdgeNow to heightEdgeNew
-      if (associated(highFreqThickness) .and. associated(lowFreqDivergence)) then
+      if (config_use_freq_filtered_thickness) then
          !$omp parallel
          !$omp do schedule(runtime) private(iEdge, kTop, kBot, nLayers, nLevels, dataNow, dataNew)
          do iEdge = 1, nEdges
@@ -288,7 +288,7 @@ module ocn_vertical_remap
             call mpas_timer_stop("ppr")
 
             normalVelocity   (kTop:kBot, iEdge) = dataNew(1, 1, 1:nLayers)
-         
+
          end do
          !$omp end do
          !$omp end parallel
@@ -296,7 +296,7 @@ module ocn_vertical_remap
       deallocate(dataNow,dataNew)
       deallocate(bcUpper,bcLower)
       call work%free()
-   
+
       ! Remap all cell-centred variables from heightCellNow to heightCellNew
 
       call mpas_pool_begin_iteration(tracersPool)
@@ -304,19 +304,19 @@ module ocn_vertical_remap
          if ( groupItr % memberType == MPAS_POOL_FIELD ) then
             call mpas_pool_get_array(tracersPool, groupItr % memberName, tracersGroup, 2)
             if ( associated(tracersGroup) ) then
-               
+
                nTracers = size(tracersGroup, dim=1)
-               
+
                allocate(dataNow(nDoFs, nTracers, nVertLevels))
                allocate(dataNew(nDoFs, nTracers, nVertLevels))
-               
+
                call work%init(nVertLevels + 1, nTracers, opts) ! this is internal workspace for PPR
 
                allocate(bcUpper(nTracers))
                allocate(bcLower(nTracers))
                bcUpper%bcopt = bc_upper
                bcLower%bcopt = bc_lower
-               
+
                !$omp parallel
                !$omp do schedule(runtime) private(iCell, iTrac, kTop, kBot, nLayers, nLevels, dataNow, dataNew)
                do iCell = 1, nCells
@@ -345,7 +345,7 @@ module ocn_vertical_remap
                   do iTrac = 1, nTracers
                      tracersGroup(iTrac, kTop:kBot, iCell) = dataNew(1, iTrac, 1:nLayers)
                   end do
-                     
+
                end do
                !$omp end do
                !$omp end parallel
@@ -353,12 +353,10 @@ module ocn_vertical_remap
                deallocate(dataNow,dataNew)
                deallocate(bcUpper,bcLower)
                call work%free()
-               
+
             end if
          end if
       end do
-
-   !- dealloc any local data, etc      
 
       deallocate(heightCellNow)
       deallocate(heightEdgeNow)
@@ -381,9 +379,9 @@ module ocn_vertical_remap
 !-----------------------------------------------------------------------
 
    subroutine ocn_vertical_remap_init(err)
-      
+
       integer, intent(out) :: err !< Output: Error flag
-      
+
       err = 0
 
       if ( config_time_integrator == 'RK4' ) then
