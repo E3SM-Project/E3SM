@@ -284,10 +284,11 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
     );
     // Check computed surface fluxes
     std::cout << "Check computed fluxes...\n";
-    REQUIRE(sfc_flux_dir_nir(1) == 0.5);
-    REQUIRE(sfc_flux_dir_vis(1) == 0.5);
-    REQUIRE(sfc_flux_dif_nir(1) == 0.5);
-    REQUIRE(sfc_flux_dif_vis(1) == 0.5);
+    const double tol = 1e-10;  // tolerance on floating point inequality for assertions
+    REQUIRE(std::abs(sfc_flux_dir_nir.createHostCopy()(1) - 0.5) < tol);
+    REQUIRE(std::abs(sfc_flux_dir_vis.createHostCopy()(1) - 0.5) < tol);
+    REQUIRE(std::abs(sfc_flux_dif_nir.createHostCopy()(1) - 0.5) < tol);
+    REQUIRE(std::abs(sfc_flux_dif_vis.createHostCopy()(1) - 0.5) < tol);
     // ---------------------------------
 
     // ---------------------------------
@@ -315,10 +316,10 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
     );
     // Check computed surface fluxes
     std::cout << "Check computed fluxes...\n";
-    REQUIRE(sfc_flux_dir_nir(1) == 9);
-    REQUIRE(sfc_flux_dir_vis(1) == 0);
-    REQUIRE(sfc_flux_dif_nir(1) == 9);
-    REQUIRE(sfc_flux_dif_vis(1) == 0);
+    REQUIRE(std::abs(sfc_flux_dir_nir.createHostCopy()(1) - 9.0) < tol);
+    REQUIRE(std::abs(sfc_flux_dir_vis.createHostCopy()(1) - 0.0) < tol);
+    REQUIRE(std::abs(sfc_flux_dif_nir.createHostCopy()(1) - 9.0) < tol);
+    REQUIRE(std::abs(sfc_flux_dif_vis.createHostCopy()(1) - 0.0) < tol);
     // ---------------------------------
  
     // ---------------------------------
@@ -346,10 +347,10 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
     );
     // Check computed surface fluxes
     std::cout << "Check computed fluxes...\n";
-    REQUIRE(sfc_flux_dir_nir(1) == 0);
-    REQUIRE(sfc_flux_dir_vis(1) == 4);
-    REQUIRE(sfc_flux_dif_nir(1) == 0);
-    REQUIRE(sfc_flux_dif_vis(1) == 4);
+    REQUIRE(std::abs(sfc_flux_dir_nir.createHostCopy()(1) - 0.0) < tol);
+    REQUIRE(std::abs(sfc_flux_dir_vis.createHostCopy()(1) - 4.0) < tol);
+    REQUIRE(std::abs(sfc_flux_dif_nir.createHostCopy()(1) - 0.0) < tol);
+    REQUIRE(std::abs(sfc_flux_dif_vis.createHostCopy()(1) - 4.0) < tol);
     // ---------------------------------
 
     // ---------------------------------
@@ -377,10 +378,10 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
     );
     // Check computed surface fluxes
     std::cout << "Check computed fluxes...\n";
-    REQUIRE(sfc_flux_dir_nir(1) == 10.5);
-    REQUIRE(sfc_flux_dir_vis(1) == 21.5);
-    REQUIRE(sfc_flux_dif_nir(1) == 20.0);
-    REQUIRE(sfc_flux_dif_vis(1) == 26.0);
+    REQUIRE(std::abs(sfc_flux_dir_nir.createHostCopy()(1) - 10.5) < tol);
+    REQUIRE(std::abs(sfc_flux_dir_vis.createHostCopy()(1) - 21.5) < tol);
+    REQUIRE(std::abs(sfc_flux_dif_nir.createHostCopy()(1) - 20.0) < tol);
+    REQUIRE(std::abs(sfc_flux_dif_vis.createHostCopy()(1) - 26.0) < tol);
     // ---------------------------------
 
     // Finalize YAKL
