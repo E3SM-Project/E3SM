@@ -2055,7 +2055,6 @@ verbose_output = .false.
     use elm_varctl        , only : iulog
     use perf_mod          , only : t_startf, t_stopf
     use quadraticMod      , only : quadratic
-    use EDTypesMod        , only : dinc_ed
     use EDtypesMod        , only : ed_patch_type, ed_cohort_type, ed_site_type
 
     !
