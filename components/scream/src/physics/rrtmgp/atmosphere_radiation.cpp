@@ -511,7 +511,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
   // Index to surface (bottom of model); used to get surface fluxes below
   const int kbot = nlay+1;
 
-  // Compute diffuse flux as difference between total and direct
+  // Compute diffuse flux as difference between total and direct; use YAKL parallel_for here because these are YAKL objects
   parallel_for(Bounds<3>(m_nswbands,m_nlay+1,m_ncol), YAKL_LAMBDA(int ibnd, int ilev, int icol) {
     sw_bnd_flux_dif(icol,ilev,ibnd) = sw_bnd_flux_dn(icol,ilev,ibnd) - sw_bnd_flux_dir(icol,ilev,ibnd);
   });
