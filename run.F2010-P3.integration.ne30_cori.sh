@@ -174,7 +174,6 @@ EOF
 
 cat << EOF >> user_nl_elm
 
- finidat = '/global/cfs/cdirs/e3sm/inputdata/lnd/clm2/initdata/20201103.IELM.r05_oECv3.elm.r.0030-01-01-00000.nc'
 
 EOF
 
