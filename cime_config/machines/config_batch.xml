@@ -382,10 +382,10 @@
     <batch_system MACH="jlse" type="cobalt_theta">
       <batch_submit>qsub</batch_submit>
       <queues>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="12" default="true">skylake_8180</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="12">skylake_8180</queue>
         <queue walltimemax="01:00:00" jobmin="1" jobmax="16">iris</queue>
         <queue walltimemax="01:00:00" jobmin="1" jobmax="18">yarrow</queue>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="12">arcticus</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="12" default="true">arcticus</queue>
       </queues>
     </batch_system>
 

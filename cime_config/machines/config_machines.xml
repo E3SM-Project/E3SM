@@ -1995,7 +1995,9 @@
     <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>112</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="oneapi-ifx">96</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>112</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifx">24</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
@@ -2019,15 +2021,11 @@
       <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
       <modules>
 	<command name="purge"/>
-        <command name="use">/soft/modulefiles</command>
-        <command name="use">/soft/packaging/spack-builds/modules/linux-rhel7-x86_64</command>
-        <command name="use">/soft/restricted/CNDA/modulefiles</command>
-        <command name="use">/home/azamat/soft/modulefiles</command>
-        <command name="load">cmake/3.17.0-gcc-9.3.0-5dgh2gv</command>
+        <command name="use">/soft/restricted/CNDA/modules</command>
       </modules>
       <modules compiler="!gnu">
-	<command name="load">e3sm-env-vars/2021.06.10</command>
-	<command name="load">oneapi/2021.04.30.003</command>
+	<command name="load">oneapi/release/2021.10.30.001</command>
+        <command name="load">cmake/3.22.1</command>
       </modules>
       <modules compiler="gnu">
         <command name="unload">cmake</command>
