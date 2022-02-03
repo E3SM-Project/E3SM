@@ -65,7 +65,7 @@ Atmosphere Driver:
 
   # The parameters for I/O control
   Scorpio:
-    Output YAML Files: ["data/screamv1_output.yaml"]
+    Output YAML Files: ["data/scream_output.yaml"]
 
 SCREAM:
 
