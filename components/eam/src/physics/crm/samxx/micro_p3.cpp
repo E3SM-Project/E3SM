@@ -148,7 +148,7 @@ YAKL_INLINE real saturation_specific_humidity(real tabs, real pressure) {
 YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qv_in, real &qc_in, real &tabs_in, real &pmid_in ) {
   // Define a tolerance and max iterations for convergence
   real tol = 1.e-6;
-  int max_iteration = 20;
+  int max_iteration = 10;
   int iteration_cnt = 0;
 
   // Saturation specific humidity
@@ -178,16 +178,27 @@ YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qv_in, real &qc_in, 
       // update saturation value
       real qsat = saturation_specific_humidity(tabs_in,pmid_in);
       // If still supersaturated condense more, otherwise condense less
-      if (qv_loc> qsat) { cond1 = qc_in; }
-      if (qv_loc<=qsat) { cond2 = qc_in; }
+      if (qv_loc> qsat) { cond1 = cond; }
+      if (qv_loc<=qsat) { cond2 = cond; }
       // If we've converged or reached max iteration, then stop iterating
       iteration_cnt++;
       if ( abs(cond2-cond1)<=tol || iteration_cnt>=max_iteration) {
-        qv_in = qv_loc; qc_in = qc_loc; tabs_in = tabs_loc;
+        qv_in = qv_loc;
+        qc_in = qc_loc;
+        tabs_in = tabs_loc;
         keep_iterating = false;
       }
     }
   }
+
+  // if (iteration_cnt>1) {
+  //   std::cout<<"WHDEBUG - compute_adjusted_state - "
+  //   <<"  iteration_cnt:"<<iteration_cnt
+  //   <<"  qsat:"<<qsat
+  //   <<"  qv:"<<qv_in
+  //   <<"  qc:"<<qc_in
+  //   <<std::endl;
+  // }
   
   // // If we are unsaturated and have cloud condensate, we need to evaporate
   // if (qt_in < qsat && qc_in > 0) {
@@ -251,6 +262,7 @@ void micro_p3_proc() {
   auto &tabs               = :: tabs;
   auto &ncrms              = :: ncrms;
   auto &dz                 = :: dz;
+  auto $adz                = :: adz;
   auto &longitude0         = :: longitude0;
   auto &latitude0          = :: latitude0;
   auto &z0                 = :: z0;
@@ -346,14 +358,14 @@ void micro_p3_proc() {
 
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (k==0) {
-      pdel(k,j,i,icrm) = psfc(icrm) - (pmid(k,j,i,icrm) + pmid(k+1,j,i,icrm))/2 ;
+      // pdel(k,j,i,icrm) = psfc(icrm) - (pmid(k,j,i,icrm) + pmid(k+1,j,i,icrm))/2 ; < causes negative pdel!
+      pdel(k,j,i,icrm) = pmid(k,j,i,icrm) - pmid(k+1,j,i,icrm) ;
     } else if (k==(nzm-1)) {
       pdel(k,j,i,icrm) = pdel(k-1,j,i,icrm);
     } else {
       pdel(k,j,i,icrm) = ( pmid(k-1,j,i,icrm) - pmid(k+1,j,i,icrm) )/2 ;
     }
   });
-
 
   //----------------------------------------------------------------------------
   // Populate P3 thermodynamic state
@@ -442,7 +454,7 @@ void micro_p3_proc() {
     nc_nuceat_tend_in(icol,ilev)  = nc_nuceat_tend(k,icrm);
     ni_activated_in(icol,ilev)    = ni_activated(k,icrm);
     inv_qc_relvar_in(icol,ilev)   = 1.; // relvar(k,icrm); - What value should we use before SHOC provides this?
-    dz_in(icol,ilev)              = dz(icrm);
+    dz_in(icol,ilev)              = adz(k,icrm)*dz(icrm);
     pmid_in(icol,ilev)            = pmid(k,j,i,icrm);
     pdel_in(icol,ilev)            = pdel(k,j,i,icrm);
     ast_in(icol,ilev)             = 1.; // ast(k,icrm);
