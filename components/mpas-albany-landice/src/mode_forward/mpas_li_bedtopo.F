@@ -70,7 +70,7 @@ module li_bedtopo
    integer :: iCell, ilm, curProc
 
    !< globalArray: all global cells in the proper ordering specified by indexToCellID
-	!< gatheredArray: all global cells but in an arbitrary ordering returned by the MPI gather operation
+   !< gatheredArray: all global cells but in an arbitrary ordering returned by the MPI gather operation
    real (kind=RKIND), dimension(:), allocatable :: globalArrayThickness, gatheredArrayThickness
    real (kind=RKIND), dimension(:), allocatable :: globalArrayBedTopography, gatheredArrayBedTopography
    real (kind=RKIND), dimension(:), allocatable :: globalArrayUpliftDiff, gatheredArrayUpliftDiff
@@ -251,17 +251,17 @@ contains
       elseif (trim(config_uplift_method)=='sealevelmodel') then
 #ifdef USE_SEALEVELMODEL
          if (mpas_is_alarm_ringing(domain % clock, 'slmCouplingInterval', ierr=err_tmp)) then
-			   err = ior(err, err_tmp)
+            err = ior(err, err_tmp)
 
-			   slmTimeStep = slmTimeStep + 1
+            slmTimeStep = slmTimeStep + 1
 
-			   call mpas_log_write("Calling the SLM. SLM timestep $i", intArgs=(/slmTimeStep/))
-			   call slmodel_solve(slmTimeStep, domain)
+            call mpas_log_write("Calling the SLM. SLM timestep $i", intArgs=(/slmTimeStep/))
+            call slmodel_solve(slmTimeStep, domain)
 
-			   call mpas_reset_clock_alarm(domain % clock, 'slmCouplingInterval', ierr=err_tmp)
-			   err = ior(err, err_tmp)
+            call mpas_reset_clock_alarm(domain % clock, 'slmCouplingInterval', ierr=err_tmp)
+            err = ior(err, err_tmp)
 
-			else
+         else
             ! do nothing for now, but could calculate uplift rate here later instead.
          endif
 #else
@@ -344,7 +344,8 @@ contains
 #ifdef USE_SEALEVELMODEL
 
       use sl_model_mod                    !< this is part of the SLM code
-      use user_specs_mod, only: nglv, dt1 !< this is part of the SLM code
+      use sl_io_mod                       !< this is part of the SLM code
+      use user_specs_mod, only: nglv      !< this is part of the SLM code
 
       !-----------------------------------------------------------------
       ! input variables
@@ -373,8 +374,8 @@ contains
 
       integer :: err_tmp
       integer :: unit_num
-      integer :: slmTimeStep, itersl_sh, dtime_sh !get these values from namelist
-      real    :: starttime_sh
+      integer :: slmTimeStep, itersl, dtime !get these values from namelist
+      real    :: starttime
 
       ! MPI variables
       integer, dimension(:), pointer :: indexToCellID
@@ -382,13 +383,6 @@ contains
 
       err = 0
       err_tmp = 0
-
-      ! initialize coupling time step number. initial time is 0
-      slmTimeStep = 0
-      itersl_sh = 1      ! <<<HH* note: hardcode itersl_sh == 1.
-      starttime_sh = 0 ! <<<HH get itersl_sh,, starttime_sh (from MALI simulation, needs manipulation)
-      dtime_sh = dt1
-      ! * note: when reading in namelist values, SLM should return dtime from its own namelist file and MALI stores the values
 
       ! initialize interpolation 
       call interpolate_init(domain, err)
@@ -466,13 +460,18 @@ contains
          call interpolate(toColValues, toRowValues, toSvalues, meshMask, ismMask)
          err = ior(err, err_tmp)
 
+         ! initialize coupling time step number. initial time is 0
+         slmTimeStep = 0
+
          ! set SLM unit number to the MALI output log file unit
          unit_num = domain % logInfo % outputLog % unitNum
 
          call sl_set_unit_num(unit_num)
-         call sl_solver_checkpoint(itersl_sh, dtime_sh)
+         call sl_drive_readnl(itersl, dtime, starttime)
+         call sl_call_readnl
+         call sl_solver_checkpoint(itersl, dtime)
          call sl_timewindow(slmTimeStep)
-         call sl_solver_init(itersl_sh, starttime_sh, ismIceload, ismBedtopo, ismMask)
+         call sl_solver_init(itersl, starttime, ismIceload, ismBedtopo, ismMask)
          call sl_deallocate_array
 
          deallocate(globalArrayThickness, gatheredArrayThickness)
@@ -511,7 +510,8 @@ contains
    subroutine slmodel_solve(slmTimeStep, domain)
 
       use li_advection
-      use sl_model_mod               !< this is part of the SLM code
+      use sl_model_mod                    !< this is part of the SLM code
+      use sl_io_mod                       !< this is part of the SLM code
       use user_specs_mod, only: nglv, dt1 !< this is part of the SLM code
 
       !-----------------------------------------------------------------
@@ -548,15 +548,11 @@ contains
 
       integer :: err, err_tmp
 
-      integer :: itersl_sh, dtime_sh
-      real    :: starttime_sh
+      integer :: itersl, dtime
+      real    :: starttime
 
-		err = 0
+      err = 0
       err_tmp = 0
-
-      itersl_sh = 1      ! * note: hardcode itersl_sh == 1.
-      starttime_sh = 0 ! get itersl_sh, starttime_sh (from MALI's or SLM namelist)
-      dtime_sh = dt1
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
@@ -594,9 +590,11 @@ contains
          call interpolate(toColValues, toRowValues, toSvalues, meshMask, ismMask)
 
          ! call the sea-level model
-         call sl_solver_checkpoint(itersl_sh, dtime_sh)
+         call sl_drive_readnl(itersl, dtime, starttime)
+         call sl_call_readnl
+         call sl_solver_checkpoint(itersl, dtime)
          call sl_timewindow(slmTimeStep)
-         call sl_solver(itersl_sh, slmTimeStep, dtime_sh, starttime_sh, ismIceload, ismMask, slmSLchange)
+         call sl_solver(itersl, slmTimeStep, dtime, starttime, ismIceload, ismMask, slmSLchange)
          call sl_deallocate_array
 
          ! reshape 2D array SLM output into 1D array
