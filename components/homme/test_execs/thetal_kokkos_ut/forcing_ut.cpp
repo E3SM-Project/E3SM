@@ -9,6 +9,7 @@
 #include "ElementsForcing.hpp"
 #include "HybridVCoord.hpp"
 #include "ForcingFunctor.hpp"
+#include "PhysicalConstants.hpp"
 #include "SimulationParams.hpp"
 #include "Tracers.hpp"
 #include "Types.hpp"
@@ -64,7 +65,7 @@ TEST_CASE("forcing", "forcing") {
   hv.random_init(seed);
 
   auto& geo     = c.create<ElementsGeometry>();
-  geo.init(num_elems,true, /* alloc_gradphis = */ true);
+  geo.init(num_elems,true, /* alloc_gradphis = */ true, PhysicalConstants::rearth0);
   geo.randomize(seed);
 
   auto& state   = c.create<ElementsState>();

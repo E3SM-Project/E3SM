@@ -31,7 +31,7 @@ import yaml
 logger = logging.getLogger(__name__)
 
 CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
-SWITCH_RE   = re.compile(r'<\s*(\w+)\s*:')
+SWITCH_RE   = re.compile(r'<\s*([^:]+)\s*:')
 
 ###############################################################################
 def do_cime_vars(entry, case):

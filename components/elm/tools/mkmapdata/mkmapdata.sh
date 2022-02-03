@@ -13,7 +13,6 @@
 # -f <scripfilename> Input grid filename 
 # -t <type>          Output type, supported values are [regional, global]
 # -r <res>           Output resolution
-# -p <CLM-version>   CLM version to use (clm4_0 or clm4_5) (defaults to clm4_5)
 # -b                 use batch mode (not default)
 # -l                 list mapping files required (so can use check_input_data to get them)
 # -d                 debug usage -- display mkmapdata that will be run but don't execute them
@@ -72,9 +71,6 @@ usage() {
   echo "[-t|--gridtype <type>]"
   echo "    Model output grid type"
   echo "    supported values are [regional,global], (default is global)"
-  echo "[-p|--phys <CLM-version>]"
-  echo "    Model version to generate mapping files for. Currently the only"
-  echo "    supported value is clm4_5."
   echo "[-i|--inputdata-path <inputdata_path>]"
   echo "    Full path to root of inputdata directory"
   echo "[-n|--ntasks <ntasks>]"
@@ -153,7 +149,6 @@ interactive="YES"
 debug="no"
 res="default"
 gridtype="global"
-phys="clm4_5"
 verbose="no"
 list="no"
 outgrid=""
@@ -185,10 +180,6 @@ while [ $# -gt 0 ]; do
             ;;
         -t|--gridtype)
             gridtype=$2
-            shift
-            ;;
-        -p|--phys)
-            phys=$2
             shift
             ;;
         -i|--inputdata-path)
@@ -231,7 +222,7 @@ echo "Script to create mapping files required by mksurfdata_map"
 #----------------------------------------------------------------------
 
 # Set general query command used below
-QUERY="$dir/../../../bld/queryDefaultNamelist.pl -silent -namelist clmexp -phys $phys "
+QUERY="$dir/../../bld/queryDefaultNamelist.pl -silent -namelist elmexp "
 QUERY="$QUERY -justvalue -options sim_year=2000 -csmdata $INPUTDATA_PATH"
 echo "query command is $QUERY"
 
@@ -306,29 +297,24 @@ fi
 # Determine all input grid files and output file names 
 #----------------------------------------------------------------------
 
-if [ "$phys" = "clm4_5" ]; then
-    grids=(                                     \
-        "0.5x0.5_AVHRR"                         \
-        "0.5x0.5_MODIS"                         \
-        "3x3min_LandScan2004"                   \
-        "3x3min_MODIS"                          \
-        "3x3min_USGS"                           \
-        "5x5min_nomask"                         \
-        "5x5min_IGBP-GSDP"                      \
-        "5x5min_ISRIC-WISE"                     \
-        "10x10min_nomask"                       \
-        "10x10min_IGBPmergeICESatGIS"           \
-        "3x3min_GLOBE-Gardner"                  \
-        "3x3min_GLOBE-Gardner-mergeGIS"         \
-        "0.9x1.25_GRDC"                         \
-        "360x720cru_cruncep"                    \
-        "1km-merge-10min_HYDRO1K-merge-nomask"  \
-        "0.5x0.5_GSDTG2000"                     \
+  grids=(                                     \
+      "0.5x0.5_AVHRR"                         \
+      "0.5x0.5_MODIS"                         \
+      "3x3min_LandScan2004"                   \
+      "3x3min_MODIS"                          \
+      "3x3min_USGS"                           \
+      "5x5min_nomask"                         \
+      "5x5min_IGBP-GSDP"                      \
+      "5x5min_ISRIC-WISE"                     \
+      "10x10min_nomask"                       \
+      "10x10min_IGBPmergeICESatGIS"           \
+      "3x3min_GLOBE-Gardner"                  \
+      "3x3min_GLOBE-Gardner-mergeGIS"         \
+      "0.9x1.25_GRDC"                         \
+      "360x720cru_cruncep"                    \
+      "1km-merge-10min_HYDRO1K-merge-nomask"  \
+      "0.5x0.5_GSDTG2000"                     \
     )
-else
-    echo "ERROR: Unknown value for phys: $phys"
-    exit 1
-fi
 
 # Set timestamp for names below 
 CDATE="c"`date +%y%m%d`

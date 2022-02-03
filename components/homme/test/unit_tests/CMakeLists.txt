@@ -9,7 +9,9 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
   #IF (${NUM_CPUS} EQUAL 1)
   #  ADD_TEST(${target_name}_test ${target_name})
   #ELSE()
-    ADD_TEST(${target_name}_test ${USE_MPIEXEC} -n ${NUM_CPUS} ${MPI_OPTIONS} "./${target_name}")
+    set(TMP ${USE_MPI_OPTIONS})
+    separate_arguments(TMP)
+    ADD_TEST(${target_name}_test ${USE_MPIEXEC} -n ${NUM_CPUS} ${TMP} ./${target_name})
   #ENDIF()
   SET_TESTS_PROPERTIES(${target_name}_test PROPERTIES LABELS "unit")
   IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
@@ -17,6 +19,10 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
   ENDIF()
 
   TARGET_LINK_LIBRARIES(${target_name} timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} kokkos)
+  IF (HOMME_USE_MKL)
+    TARGET_COMPILE_OPTIONS (${target_name} PUBLIC -mkl)
+    TARGET_LINK_LIBRARIES (${target_name} -mkl)
+  ENDIF()
 
   STRING(TOUPPER "${PERFORMANCE_PROFILE}" PERF_PROF_UPPER)
   IF ("${PERF_PROF_UPPER}" STREQUAL "VTUNE")

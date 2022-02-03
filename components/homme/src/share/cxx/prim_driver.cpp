@@ -22,7 +22,6 @@ namespace Homme
 void prim_step (const Real, const bool);
 void prim_step_flexible (const Real, const bool);
 void vertical_remap (const Real);
-void apply_test_forcing ();
 void update_q (const int np1_qdp, const int np1);
 
 extern "C" {
@@ -58,7 +57,8 @@ void initialize_dp3d_from_ps_c () {
   GPTLstop("tl-sc dp3d-from-ps");
 }
 
-void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np1, const int& next_output_step)
+void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np1, 
+                          const int& next_output_step, const int& nsplit_iteration)
 {
   GPTLstart("tl-sc prim_run_subcycle_c");
 
@@ -66,6 +66,7 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
 
   // Get simulation params
   SimulationParams& params = context.get<SimulationParams>();
+  params.nsplit_iteration = nsplit_iteration;
   assert(params.params_set);
 
   const bool independent_time_steps = (params.transport_alg > 0 &&
@@ -104,21 +105,27 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   if ( ! independent_time_steps) {
     tl.update_tracers_levels(params.dt_tracer_factor);
 
-/// remove
-//#ifndef CAM
-//    apply_test_forcing ();
-//#endif
-
     // Apply forcing.
-    // In standalone mode, params.ftype == ForcingAlg::FORCING_DEBUG
-    // Corresponds to ftype == 0 in Fortran
-    if(params.ftype == ForcingAlg::FORCING_DEBUG) {
+#if defined(CAM) || defined(SCREAM)
+    //CAM and SCREAM, support only ftype0 and 2
+    if (params.ftype == ForcingAlg::FORCING_0){
+         apply_cam_forcing_tracers(dt_remap);
+    }
+    if (params.ftype == ForcingAlg::FORCING_2 && params.nsplit_iteration == 1 ){
+         apply_cam_forcing_tracers(dt_remap*params.nsplit);
+    }
+
+    apply_cam_forcing_dynamics(dt_remap);
+    
+#else
+    //standalone homme, support ftype0 and ftype2
+    //ftype0  = ftype2 if dt_remap>=dt_tracer, but
+    //ftype0 != ftype2 for dt_remap<dt_tracer
+    if(params.ftype == ForcingAlg::FORCING_0 || 
+       params.ftype == ForcingAlg::FORCING_2    ) {
       apply_cam_forcing(dt_remap);
     }
-    // Corresponds to ftype == 2 in Fortran
-    else if(params.ftype == ForcingAlg::FORCING_2) {
-      apply_cam_forcing_dynamics(dt_remap);
-    }
+#endif
 
     if (compute_diagnostics) {
       Diagnostics& diags = context.get<Diagnostics>();
@@ -177,20 +184,6 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
 }
 
 } // extern "C"
-
-void apply_test_forcing () {
-  // Get simulation params
-  SimulationParams& params = Context::singleton().get<SimulationParams>();
-
-  switch (params.test_case) {
-    case TestCase::JW_BAROCLINIC:
-      break;  // Do nothing
-    case TestCase::DCMIP2016_TEST2:
-    default:
-      Errors::runtime_abort("Test case not yet available in C++ build.\n",
-                            Errors::err_not_implemented);
-  }
-}
 
 void update_q (const int np1_qdp, const int np1)
 {

@@ -220,6 +220,7 @@ public:
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
+
         vtheta(ilev) += m_dt*fvtheta(ilev);
         phi(ilev) += m_dt*fphi(ilev);
 
@@ -243,6 +244,7 @@ public:
     m_np1 = np1;
     m_np1_qdp = np1_qdp;
     m_adjustment = adjustment;
+
     m_moist = (moisture==MoistDry::MOIST);
 
     Kokkos::parallel_for("temperature, NH perturb press, FQps",m_policy_tracers_pre,*this);

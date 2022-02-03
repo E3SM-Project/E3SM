@@ -56,7 +56,7 @@
 
   -->
   <machine MACH="perlmutter">
-    <DESC>Perlmutter at NERSC.  Each GPU node has single AMD EPYC 7713 64-Core (Milan) and 4 nvidia A100's.</DESC>
+    <DESC>Perlmutter at NERSC.  Phase1 only: Each GPU node has single AMD EPYC 7713 64-Core (Milan) and 4 nvidia A100's.</DESC>
     <NODENAME_REGEX>login</NODENAME_REGEX>
     <OS>Linux</OS>
     <COMPILERS>gnu,gnugpu,nvidia,nvidiagpu</COMPILERS>
@@ -89,12 +89,12 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
-        <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
-        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+	<arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
+	<arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
 	<arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
     </mpirun>
-    <module_system type="module">
+    <module_system type="module" allow_error="true">
       <init_path lang="perl">/usr/share/lmod/8.3.1/init/perl</init_path>
       <init_path lang="python">/usr/share/lmod/8.3.1/init/python</init_path>
       <init_path lang="sh">/usr/share/lmod/8.3.1/init/sh</init_path>
@@ -106,17 +106,16 @@
 
       <modules>
 	<command name="unload">cray-hdf5-parallel</command>
-        <command name="unload">cray-netcdf-hdf5parallel</command>
+	<command name="unload">cray-netcdf-hdf5parallel</command>
 	<command name="unload">cray-parallel-netcdf</command>
-        <command name="unload">PrgEnv-gnu</command>
-        <command name="unload">PrgEnv-nvidia</command>
-        <command name="unload">cuda</command>
-        <command name="unload">cudatoolkit</command>
-        <command name="unload">craype-accel-nvidia80</command>
-        <command name="unload">craype-accel-host</command>
-        <command name="unload">perftools-base</command>
-        <command name="unload">perftools</command>
-        <command name="unload">darshan</command>
+	<command name="unload">PrgEnv-gnu</command>
+	<command name="unload">PrgEnv-nvidia</command>
+	<command name="unload">cudatoolkit</command>
+	<command name="unload">craype-accel-nvidia80</command>
+	<command name="unload">craype-accel-host</command>
+	<command name="unload">perftools-base</command>
+	<command name="unload">perftools</command>
+	<command name="unload">darshan</command>
       </modules>
 
       <modules compiler="gnu.*">
@@ -127,40 +126,42 @@
 
       <modules compiler="nvidia.*">
 	<command name="load">PrgEnv-nvidia</command>
-	<command name="load">nvidia/21.7</command>
+	<command name="load">nvidia/21.9</command>
       </modules>
-      
+
       <modules compiler="gnugpu">
-	<command name="load">cuda</command>
-      </modules>      
+	<command name="load">cudatoolkit</command>
+	<command name="load">craype-accel-nvidia80</command>
+      </modules>
 
       <modules compiler="nvidiagpu">
-	<command name="load">cuda</command>
+	<command name="load">cudatoolkit</command>
+	<command name="load">craype-accel-nvidia80</command>
       </modules>
-      
+
       <modules compiler="gnu">
-        <command name="load">craype-accel-host</command>
-      </modules>      
+	<command name="load">craype-accel-host</command>
+      </modules>
 
       <modules compiler="nvidia">
-        <command name="load">craype-accel-host</command>
-      </modules>      
+	<command name="load">craype-accel-host</command>
+      </modules>
 
       <modules>
-	<command name="load">cray-libsci/21.08.1.2</command>
+	<command name="load">cray-libsci</command>
 	<command name="load">craype</command>
-	<command name="load">cray-mpich/8.1.10</command>
+	<command name="load">cray-mpich/8.1.11</command>
 	<command name="load">cray-hdf5-parallel/1.12.0.7</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.7.4.7</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.7.4.7</command>
 	<command name="load">cray-parallel-netcdf/1.12.1.7</command>
-	<command name="load">cmake/3.20.5</command>
+	<command name="load">cmake/3.22.0</command>
       </modules>
     </module_system>
 
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
-    
+
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
@@ -1122,13 +1123,17 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <environment_variables mpilib="mpi-serial">
+      <!-- We currently don't have modules for serial NetCDF -->
+      <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-11.1.0</env>
+    </environment_variables>
     <environment_variables mpilib="mpich">
       <!-- We currently don't have modules for HDF5, NetCDF & PnetCDF -->
       <env name="LD_LIBRARY_PATH">/nfs/gce/projects/climate/software/mpich/3.4.2/gcc-11.1.0/lib:$ENV{LD_LIBRARY_PATH}</env>
       <env name="PATH">/nfs/gce/projects/climate/software/mpich/3.4.2/gcc-11.1.0/bin:$ENV{PATH}</env>
       <env name="ZLIB_PATH">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.5.0/zlib-1.2.11-smoyzzo</env>
       <env name="HDF5_PATH">/nfs/gce/projects/climate/software/hdf5/1.12.1/mpich-3.4.2/gcc-11.1.0</env>
-      <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/netcdf/4.8.1c-4.3.1cxx-4.5.3f-parallel/mpich-3.4.2/gcc-11.1.0</env>
+      <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/netcdf/4.8.0c-4.3.1cxx-4.5.3f-parallel/mpich-3.4.2/gcc-11.1.0</env>
       <env name="PNETCDF_PATH">/nfs/gce/projects/climate/software/pnetcdf/1.12.2/mpich-3.4.2/gcc-11.1.0</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
@@ -1149,7 +1154,7 @@
     <PROJECT>fy210162</PROJECT>
     <SAVE_TIMING_DIR>/projects/ccsm/timings</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/gpfs1/$USER/acme_scratch/sandiatoss3</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/gpfs/$USER/acme_scratch/sandiatoss3</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
@@ -1506,7 +1511,8 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <TEST_TPUT_TOLERANCE>0.05</TEST_TPUT_TOLERANCE>
+    <TEST_MEMLEAK_TOLERANCE>0.05</TEST_MEMLEAK_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
       <env name="PERL5LIB">/lcrc/group/e3sm/soft/perl/chrys/lib/perl5</env>
@@ -2091,8 +2097,12 @@
     <COMPILERS>intel,pgi</COMPILERS>
     <MPILIBS>mvapich2</MPILIBS>
     <CIME_OUTPUT_ROOT>/lustre/$USER/cime_output_root</CIME_OUTPUT_ROOT>
+    <!--
     <DIN_LOC_ROOT>/lustre/climate/csmdata/</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lustre/climate/csmdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    -->
+    <DIN_LOC_ROOT>/pic/projects/sooty2/$ENV{USER}/e3sm_inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/pic/projects/sooty2/$ENV{USER}/e3sm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lustre/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/lustre/climate/acme_baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/lustre/climate/acme_baselines/cprnc/cprnc</CCSM_CPRNC>
@@ -2129,21 +2139,20 @@
       <modules>
         <command name="load">perl/5.20.0</command>
         <command name="load">cmake/3.17.1</command>
-        <command name="load">python/2.7.8</command>
         <command name="load">svn/1.8.13</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/15.0.1</command>
-        <command name="load">mkl/15.0.1</command>
+        <command name="load">intel/19.0.5</command>
+        <command name="load">mkl/2019u5</command>
       </modules>
       <modules compiler="pgi">
         <command name="load">pgi/14.10</command>
       </modules>
       <modules mpilib="mvapich2">
-        <command name="load">mvapich2/2.1</command>
+        <command name="load">mvapich2/2.3.1</command>
       </modules>
       <modules>
-        <command name="load">netcdf/4.3.2</command>
+        <command name="load">netcdf/4.6.3</command>
       </modules>
     </module_system>
     <RUNDIR>/lustre/$USER/csmruns/$CASE/run</RUNDIR>
@@ -2152,6 +2161,10 @@
       <env name="MKL_PATH">$ENV{MKLROOT} </env>
       <env name="NETCDF_PATH">$ENV{NETCDF_LIB}/../</env>
       <env name="OMP_STACKSIZE">64M</env>
+      <!-- PJR next lines force a modern python from python/3.7.2
+      module first and supply some gcc libraries last -->
+      <env name="LD_LIBRARY_PATH">/share/apps/python/3.7.2/lib/:/share/apps/openssl/1.0.2r/lib:$ENV{LD_LIBRARY_PATH}:/share/apps/gcc/8.1.0/lib:/share/apps/gcc/8.1.0/lib64:</env>
+      <env name="PATH">/share/apps/python/3.7.2/bin:$ENV{PATH}</env>
     </environment_variables>
   </machine>
 
@@ -2569,10 +2582,10 @@
     <MPILIBS>openmpi,impi,mvapich</MPILIBS>
     <PROJECT>climateacme</PROJECT>
     <CIME_OUTPUT_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+    <DIN_LOC_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
@@ -2649,10 +2662,10 @@
     <MPILIBS>openmpi,impi,mvapich</MPILIBS>
     <PROJECT>climateacme</PROJECT>
     <CIME_OUTPUT_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+    <DIN_LOC_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>

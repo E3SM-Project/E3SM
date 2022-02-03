@@ -85,16 +85,8 @@ endif
    nu_ratio1=1
    nu_ratio2=1
    if (nu_div/=nu) then
-      if(hypervis_scaling /= 0) then
-         ! with the tensor, we cant seperate div and curl components.  instead:
-         ! nu * (del V del ) * ( nu_ratio * grad(div) - curl(curl))
-         nu_ratio1=(nu_div/nu)    
-         nu_ratio2=1
-      else
-         ! since operator is applied twice, take the sqrt
-         nu_ratio1=(nu_div/nu)
-         nu_ratio2=1
-      endif
+      nu_ratio1=(nu_div/nu)    
+      nu_ratio2=1
    endif
 
 

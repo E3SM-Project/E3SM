@@ -24,6 +24,7 @@ _TESTS = {
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
             "SMS_Ld20.f45_f45.IELMFATES.elm-fates_rd",
             "SMS_Ld20.f45_f45.IELMFATES.elm-fates_eca",
+            "SMS_Ld30.f45_f45.IELMFATES.elm-fates_satphen",
             "ERS.f19_g16.I1850ELM.elm-betr",
             "ERS.f19_g16.I1850ELM.elm-vst",
             "ERS.f09_g16.I1850GSWCNPRDCTCBC.elm-vstrd",
@@ -55,7 +56,8 @@ _TESTS = {
             "SMS.ne4_oQU240.F2010.eam-cosplite",
             "SMS_R_Ld5.ne4_ne4.FSCM5A97.eam-scm",
             "SMS_D_Ln5.ne4_oQU240.F2010",
-            "SMS_Ln5.ne4pg2_oQU480.F2010"
+            "SMS_Ln5.ne4pg2_oQU480.F2010",
+            "ERS.ne4_oQU240.F2010.eam-hommexx"
             )
         },
 
@@ -69,6 +71,8 @@ _TESTS = {
             "PEM_Ln5.ne4_oQU240.F2010",
             "SMS_D_Ln5.ne4_oQU240.F2010.eam-cosplite_nhtfrq5",
             "SMS_Ln1.ne4_oQU240.F2010.eam-chem_pp",
+            "SMS_Ln5.ne30pg2_EC30to60E2r2.BGCEXP_LNDATM_CNORDCTC_20TR",
+            "SMS_Ln5.ne30pg2_EC30to60E2r2.BGCEXP_LNDATM_CNORDCTC_1850",
             "SMS_D_Ln5.ne4_oQU240.F2010.eam-clubb_sp",
             "ERS_Ld5.ne4_oQU240.F2010.eam-rrtmgp",
             "ERS_Ld5.ne4_oQU240.F2010.eam-rrtmgpxx",
@@ -139,7 +143,6 @@ _TESTS = {
             "SMS.f09_g16_a.IGELM_MLI",
             "SMS_P12x2.ne4_oQU240.WCYCL1850NS.allactive-mach_mods",
             "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1.eam-mmf_crmout",
-            "SMS_B.ne4_ne4.F-EAM-AQP1.eam-hommexx",
             )
         },
 
@@ -166,12 +169,13 @@ _TESTS = {
             "PEM_Ln9.ne30pg2_EC30to60E2r2.WCYCL1850",
             "ERP_Ld3.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-pioroot1",
             "SMS_D_Ln5.conusx4v1_r05_oECv3.F2010",
-            "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPECACNT_1850.elm-bgcexp",
-            "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPRDCTC_1850.elm-bgcexp",
+            "SMS_Ld2.ne30pg2_r05_EC30to60E2r2.BGCEXP_CNTL_CNPECACNT_1850.elm-bgcexp",
+            "SMS_Ld2.ne30pg2_r05_EC30to60E2r2.BGCEXP_CNTL_CNPRDCTC_1850.elm-bgcexp",
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
+            "SMS_D_Ld3.T62_oQU120.CMPASO-IAF",
             "SMS_D_Ld1.ne30pg2_r05_EC30to60E2r2.WCYCL1850",
             "ERP_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_fixed_subcycle",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_VT",
+            "ERS_Ln9.ne4pg2_oQU480.F20TR-MMFXX.eam-mmf_use_VT",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
             "ERS_Ln9.ne4pg2_ne4pg2.F-MMFOMP.eam-single_thread",
             "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
@@ -183,8 +187,8 @@ _TESTS = {
     "e3sm_extra_coverage" : {
         "inherit" : ("e3sm_atm_extra_coverage", "e3sm_ocnice_extra_coverage"),
         "tests"   : (
-            "SMS_D_Ln5.enax4v1_enax4v1.F2010",
-            "SMS_D_Ln5.twpx4v1_twpx4v1.F2010",
+            "SMS_D_Ln5.enax4v1_enax4v1.F2010-CICE",
+            "SMS_D_Ln5.twpx4v1_twpx4v1.F2010-CICE",
             )
         },
 
@@ -243,6 +247,17 @@ _TESTS = {
                "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPECACNT_1850S.allactive-v1bgceca_1850",
                "SMS_Ld2.ne30_oECv3.BGCEXP_BDRD_CNPECACNT_20TRS.allactive-v1bgceca",
                )
+        },
+
+    #e3sm performance-benching of production-like runs
+    "e3sm_prod_bench" : {
+        "tests"   : (
+            "PFS.ne30pg2_r05_oECv3.F2010.bench-noio",
+            "PFS.ne30pg2_r05_oECv3.F20TR.bench-noio",
+            "PFS.ne30pg2_r05_EC30to60E2r2.WCYCL1850.bench-noio",
+            "PFS.ne30pg2_EC30to60E2r2.WCYCL1850.bench-noio",
+            "PFS_PS.northamericax4v1pg2_WC14to60E2r3.WCYCL1850.bench-noio",
+            )
         },
 
     "fates" : {
@@ -424,6 +439,7 @@ _TESTS = {
         "time"  : "03:00:00",
         "tests" : (
             "SMS_D_Ln2_P24x1.ne4_ne4.F2000SCREAMv1.scream-30min_ts",
+            "SMS_D_Ln2_P24x1.ne4_ne4.F2000-SCREAMv1-AQP1.scream-30min_ts",
             )
     },
 

@@ -92,11 +92,22 @@ IF (BUILD_HOMME_THETA_KOKKOS)
   
   #manually added, create namelists and cmake files for F and cxx by hand
   #all have to be named theta-f* to make setup work (this could be fixed)
+#     theta-fhs1 Held-Suarez, no topo, moist, ftype0, EUL, tensor HV, NH, ttype10, v_alg1
+#     theta-fhs2              no topo, moist, ftype0, SL,  tensor HV, NH, ttype10, v_agl10
+#     theta-fhs3              no topo, moist, ftype2, SL,  tensor HV, NH,  ttype9
+#     theta-fdc12-test21      ttype10
+#     theta-fdc12-test22      ttype9
+#     theta-fdc12-test3       ttype9
+
+
   SET(TESTS_WITHOUT_AUTO
      theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB-sl
      theta-fhs1
      theta-fhs2
      theta-fhs3
+     theta-fdc12-test21
+     theta-fdc12-test22
+     theta-fdc12-test3
   )
 
   #all tests that will be used for cxx-vs-F bfb testing

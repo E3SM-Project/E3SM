@@ -19,12 +19,14 @@ namespace PhysicalConstants
   constexpr Real Rgas          = 287.04;
   constexpr Real cp            = 1005.0;
   constexpr Real kappa         = Rgas / cp;
-  constexpr Real  rearth       = 6.376e6;
-  constexpr Real rrearth       = 1.0 / rearth;
+// real Earth
+  constexpr Real rearth0       = 6.376e6;
+  constexpr Real rrearth0      = 1.0 / rearth0;
   constexpr Real g             = 9.80616;
   constexpr Real p0            = 100000;         // [mbar]
 
   constexpr Real Tref          = 288;
+
 };
 
 } // namespace Homme

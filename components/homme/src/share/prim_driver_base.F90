@@ -1593,6 +1593,8 @@ contains
   sum_fq = 0
 #endif
 
+  call t_startf("ApplyCAMForcing_tracers")
+
 #ifdef MODEL_THETA_L
   if (dt_remap_factor==0) then
      adjust_ps=.true.   ! stay on reference levels for Eulerian case
@@ -1759,6 +1761,8 @@ contains
         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
    
 #endif
+
+  call t_stopf("ApplyCAMForcing_tracers")
 
   end subroutine applyCAMforcing_tracers
   

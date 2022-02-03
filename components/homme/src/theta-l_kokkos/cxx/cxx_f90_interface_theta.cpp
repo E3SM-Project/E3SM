@@ -43,7 +43,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
                                const double& hypervis_scaling, const double& dcmip16_mu,
                                const int& ftype, const int& theta_adv_form, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
                                const bool& use_cpstar, const int& transport_alg, const bool& theta_hydrostatic_mode, const char** test_case,
-                               const int& dt_remap_factor, const int& dt_tracer_factor)
+                               const int& dt_remap_factor, const int& dt_tracer_factor,
+                               const double& rearth, const int& nsplit)
 {
   // Check that the simulation options are supported. This helps us in the future, since we
   // are currently 'assuming' some option have/not have certain values. As we support for more
@@ -61,16 +62,13 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   Errors::check_option("init_simulation_params_c","nu",nu,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","nu_div",nu_div,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","theta_advection_form",theta_adv_form,{0,1});
+  Errors::check_option("init_simulation_params_c","nsplit",nsplit,1,Errors::ComparisonOp::GE);
 
   // Get the simulation params struct
   SimulationParams& params = Context::singleton().create<SimulationParams>();
 
   if (remap_alg==1) {
     params.remap_alg = RemapAlg::PPM_MIRRORED;
-  } else if (remap_alg == 2) {
-    params.remap_alg = RemapAlg::PPM_FIXED_PARABOLA;
-  } else if (remap_alg == 3) {
-    params.remap_alg = RemapAlg::PPM_FIXED_MEANS;
   } else if (remap_alg == 10) {
     params.remap_alg = RemapAlg::PPM_LIMITED_EXTRAP;
   }
@@ -105,22 +103,27 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.transport_alg                 = transport_alg;
   params.theta_hydrostatic_mode        = theta_hydrostatic_mode;
   params.dcmip16_mu                    = dcmip16_mu;
-  if (time_step_type==0) {
-    params.time_step_type = TimeStepType::LF;
-  } else if (time_step_type==1) {
-    params.time_step_type = TimeStepType::RK2;
-  } else if (time_step_type==4) {
-    params.time_step_type = TimeStepType::IMEX_KG254_EX;
-  } else if (time_step_type==5) {
-    params.time_step_type = TimeStepType::ULLRICH_RK35;
-  } else if (time_step_type==6) {
-    params.time_step_type = TimeStepType::IMEX_KG243;
+  params.nsplit                        = nsplit;
+  params.rearth                        = rearth;
+
+  if (time_step_type==5) {
+    //5 stage, 3rd order, explicit
+    params.time_step_type = TimeStepType::ttype5;
   } else if (time_step_type==7) {
-    params.time_step_type = TimeStepType::IMEX_KG254;
+    //5 stage, based on 2nd order explicit KGU table
+    //1st order (BE) implicit part
+    params.time_step_type = TimeStepType::ttype7_imex;
   } else if (time_step_type==9) {
-    params.time_step_type = TimeStepType::IMEX_KG355;
+    //5 stage, based on 3rd order explicit KGU table
+    //2nd order implicit table
+    params.time_step_type = TimeStepType::ttype9_imex;
   } else if (time_step_type==10) {
-    params.time_step_type = TimeStepType::IMEX_KG255;
+    //5 stage, based on the 2nd order explicit KGU table
+    //2nd order implicit table
+    params.time_step_type = TimeStepType::ttype10_imex;
+  } else {
+    Errors::runtime_abort("Invalid time_step_time" 
+                          + std::to_string(time_step_type), Errors::err_not_implemented);
   }
 
   //set nu_ratios values
@@ -141,7 +144,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   if (ftype == -1) {
     params.ftype = ForcingAlg::FORCING_OFF;
   } else if (ftype == 0) {
-    params.ftype = ForcingAlg::FORCING_DEBUG;
+    params.ftype = ForcingAlg::FORCING_0;
   } else if (ftype == 2) {
     params.ftype = ForcingAlg::FORCING_2;
   }
@@ -149,11 +152,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   // TODO Parse a fortran string and set this properly. For now, our code does
   // not depend on this except to throw an error in apply_test_forcing.
   std::string test_name(*test_case);
-  //if (test_name=="jw_baroclinic") {
-    params.test_case = TestCase::JW_BAROCLINIC;
-  //} else {
-  //  Errors::runtime_abort("Error! Unknown test case '" + test_name + "'.\n");
-  //}
+  //TEMP
+  params.test_case = TestCase::JW_BAROCLINIC;
 
   // Now this structure can be used safely
   params.params_set = true;
@@ -201,6 +201,8 @@ void cxx_push_results_to_f90(F90Ptr &elem_state_v_ptr,         F90Ptr &elem_stat
                    elem_Q_ptr, num_elems));
 }
 
+//currently, we do not need FVTheta and FPHI, because they are computed from FT and FQ
+//in applycamforcing_tracers inside xx
 void push_forcing_to_c (F90Ptr elem_derived_FM,
                         F90Ptr elem_derived_FVTheta,
                         F90Ptr elem_derived_FT,
@@ -261,6 +263,7 @@ void init_elements_c (const int& num_elems)
 
   const bool consthv = (params.hypervis_scaling==0.0);
   e.init (num_elems, consthv, /* alloc_gradphis = */ true,
+          params.rearth,
           /* alloc_sphere_coords = */ params.transport_alg > 0);
 
   // Init also the tracers structure
@@ -363,10 +366,9 @@ void init_functors_c (const bool& allocate_buffer)
     vrm.setup();
   }
 
-  const bool need_dirk = (params.time_step_type==TimeStepType::IMEX_KG243 ||   
-                          params.time_step_type==TimeStepType::IMEX_KG254 ||
-                          params.time_step_type==TimeStepType::IMEX_KG255 ||
-                          params.time_step_type==TimeStepType::IMEX_KG355);
+  const bool need_dirk = (params.time_step_type==TimeStepType::ttype7_imex ||   
+                          params.time_step_type==TimeStepType::ttype9_imex ||
+                          params.time_step_type==TimeStepType::ttype10_imex  );
 
   if (need_dirk) {
     // Create dirk functor only if needed
