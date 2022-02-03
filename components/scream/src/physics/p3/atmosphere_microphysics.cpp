@@ -270,6 +270,12 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
       prog_state.qi, prog_state.qm, prog_state.ni,prog_state.bm,qv_prev,
       diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi);
 
+  // Load tables
+  P3F::init_kokkos_ice_lookup_tables(lookup_tables.ice_table_vals, lookup_tables.collect_table_vals);
+  P3F::init_kokkos_tables(lookup_tables.vn_table_vals, lookup_tables.vm_table_vals,
+                          lookup_tables.revap_table_vals, lookup_tables.mu_r_table_vals,
+                          lookup_tables.dnu_table_vals);
+
   // Setup WSM for internal local variables
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
   workspace_mgr.setup(m_buffer.wsm_data, nk_pack, 52, policy);

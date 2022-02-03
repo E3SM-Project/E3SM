@@ -3127,6 +3127,12 @@ Int p3_main_f(
   using sview_1d   = typename P3F::view_1d<Real>;
   using sview_2d   = typename P3F::view_2d<Real>;
 
+  using view_1d_table      = typename P3F::view_1d_table;
+  using view_2d_table      = typename P3F::view_2d_table;
+  using view_ice_table     = typename P3F::view_ice_table;
+  using view_collect_table = typename P3F::view_collect_table;
+  using view_dnu_table     = typename P3F::view_dnu_table;
+
   EKAT_REQUIRE_MSG(its == 1, "its must be 1, got " << its);
   EKAT_REQUIRE_MSG(kts == 1, "kts must be 1, got " << kts);
 
@@ -3235,13 +3241,25 @@ Int p3_main_f(
   P3F::P3HistoryOnly history_only{liq_ice_exchange_d, vap_liq_exchange_d,
                                   vap_ice_exchange_d};
 
+  // load tables
+  view_1d_table mu_r_table_vals;
+  view_2d_table vn_table_vals, vm_table_vals, revap_table_vals;
+  view_ice_table ice_table_vals;
+  view_collect_table collect_table_vals;
+  view_dnu_table dnu_table_vals;
+  P3F::init_kokkos_ice_lookup_tables(ice_table_vals, collect_table_vals);
+  P3F::init_kokkos_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals, dnu_table_vals);
+
+  P3F::P3LookupTables lookup_tables{mu_r_table_vals, vn_table_vals, vm_table_vals, revap_table_vals,
+                                    ice_table_vals, collect_table_vals, dnu_table_vals};
+
   // Create local workspace
   const Int nk_pack = ekat::npack<Spack>(nk);
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(nj, nk_pack);
   ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nk_pack, 52, policy);
 
   auto elapsed_microsec = P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
-                                       history_only, workspace_mgr, nj, nk);
+                                       history_only, lookup_tables, workspace_mgr, nj, nk);
 
   Kokkos::parallel_for(nj, KOKKOS_LAMBDA(const Int& i) {
     precip_liq_surf_temp_d(0, i / Spack::n)[i % Spack::n] = precip_liq_surf_d(i);

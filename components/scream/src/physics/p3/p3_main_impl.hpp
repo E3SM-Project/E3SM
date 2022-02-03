@@ -77,6 +77,7 @@ Int Functions<S,D>
   const P3DiagnosticOutputs& diagnostic_outputs,
   const P3Infrastructure& infrastructure,
   const P3HistoryOnly& history_only,
+  const P3LookupTables& lookup_tables,
   const WorkspaceManager& workspace_mgr,
   Int nj,
   Int nk)
@@ -96,15 +97,6 @@ Int Functions<S,D>
   const     Int    ktop         = kdir == -1 ? 0    : nk-1;
   const     Int    kbot         = kdir == -1 ? nk-1 : 0;
   constexpr bool   debug_ABORT  = false;
-
-  // load tables
-  view_1d_table mu_r_table_vals;
-  view_2d_table vn_table_vals, vm_table_vals, revap_table_vals;
-  view_ice_table ice_table_vals;
-  view_collect_table collect_table_vals;
-  view_dnu_table dnu;
-  init_kokkos_ice_lookup_tables(ice_table_vals, collect_table_vals);
-  init_kokkos_tables(vn_table_vals, vm_table_vals, revap_table_vals, mu_r_table_vals, dnu);
 
   // per-column bools
   view_2d<bool> bools("bools", nj, 2);
@@ -249,7 +241,7 @@ Int Functions<S,D>
 
     p3_main_part2(
       team, nk_pack, infrastructure.predictNc, infrastructure.prescribedCCN, infrastructure.dt, inv_dt,
-      dnu, ice_table_vals, collect_table_vals, revap_table_vals, opres, odpres, odz, onc_nuceat_tend, oinv_exner,
+      lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, lookup_tables.collect_table_vals, lookup_tables.revap_table_vals, opres, odpres, odz, onc_nuceat_tend, oinv_exner,
       exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, oni_activated, oinv_qc_relvar, ocld_frac_i,
       ocld_frac_l, ocld_frac_r, oqv_prev, ot_prev, T_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn,
       oqv, oth, oqc, onc, oqr, onr, oqi, oni, oqm, obm, olatent_heat_vapor,
@@ -275,7 +267,7 @@ Int Functions<S,D>
     // Cloud sedimentation:  (adaptive substepping)
 
     cloud_sedimentation(
-      qc_incld, rho, inv_rho, ocld_frac_l, acn, inv_dz, dnu, team, workspace,
+      qc_incld, rho, inv_rho, ocld_frac_l, acn, inv_dz, lookup_tables.dnu_table_vals, team, workspace,
       nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, infrastructure.predictNc,
       oqc, onc, nc_incld, mu_c, lamc, qtend_ignore, ntend_ignore,
       diagnostic_outputs.precip_liq_surf(i));
@@ -283,7 +275,7 @@ Int Functions<S,D>
     // Rain sedimentation:  (adaptive substepping)
     rain_sedimentation(
       rho, inv_rho, rhofacr, ocld_frac_r, inv_dz, qr_incld, team, workspace,
-      vn_table_vals, vm_table_vals, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, oqr,
+      lookup_tables.vn_table_vals, lookup_tables.vm_table_vals, nk, ktop, kbot, kdir, infrastructure.dt, inv_dt, oqr,
       onr, nr_incld, mu_r, lamr, oprecip_liq_flux, qtend_ignore, ntend_ignore,
       diagnostic_outputs.precip_liq_surf(i));
 
@@ -292,7 +284,7 @@ Int Functions<S,D>
       rho, inv_rho, rhofaci, ocld_frac_i, inv_dz, team, workspace, nk, ktop, kbot,
       kdir, infrastructure.dt, inv_dt, oqi, qi_incld, oni, ni_incld,
       oqm, qm_incld, obm, bm_incld, qtend_ignore, ntend_ignore,
-      ice_table_vals, diagnostic_outputs.precip_ice_surf(i));
+      lookup_tables.ice_table_vals, diagnostic_outputs.precip_ice_surf(i));
 
     // homogeneous freezing of cloud and rain
     homogeneous_freezing(
@@ -304,7 +296,7 @@ Int Functions<S,D>
     // and compute diagnostic fields for output
     //
     p3_main_part3(
-      team, nk_pack, dnu, ice_table_vals, oinv_exner, ocld_frac_l, ocld_frac_r, ocld_frac_i,
+      team, nk_pack, lookup_tables.dnu_table_vals, lookup_tables.ice_table_vals, oinv_exner, ocld_frac_l, ocld_frac_r, ocld_frac_i,
       rho, inv_rho, rhofaci, oqv, oth, oqc, onc, oqr, onr, oqi, oni,
       oqm, obm, olatent_heat_vapor, olatent_heat_sublim, mu_c, nu, lamc, mu_r, lamr,
       ovap_liq_exchange, ze_rain, ze_ice, diag_vm_qi, odiag_eff_radius_qi, diag_diam_qi,

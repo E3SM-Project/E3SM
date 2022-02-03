@@ -22,7 +22,7 @@ void P3Microphysics::run_impl (const int dt)
 
   // Run p3 main
   P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
-               history_only, workspace_mgr, m_num_cols, m_num_levs);
+               history_only, lookup_tables, workspace_mgr, m_num_cols, m_num_levs);
 
   // Conduct the post-processing of the p3_main output.
   Kokkos::parallel_for(

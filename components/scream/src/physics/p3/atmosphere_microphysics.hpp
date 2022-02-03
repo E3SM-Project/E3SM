@@ -356,6 +356,7 @@ protected:
   P3F::P3DiagnosticInputs  diag_inputs;
   P3F::P3DiagnosticOutputs diag_outputs;
   P3F::P3HistoryOnly       history_only;
+  P3F::P3LookupTables      lookup_tables;
   P3F::P3Infrastructure    infrastructure;
   p3_preamble              p3_preproc;
   p3_postamble             p3_postproc;

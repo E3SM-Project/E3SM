@@ -77,6 +77,22 @@ struct Functions
   template <typename S>
   using view_2d = typename KT::template view_2d<S>;
 
+  // lookup table values for rain shape parameter mu_r
+  using view_1d_table = typename KT::template view_1d_table<Scalar, C::MU_R_TABLE_DIM>;
+
+  // lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
+  using view_2d_table = typename KT::template view_2d_table<Scalar, C::VTABLE_DIM0, C::VTABLE_DIM1>;
+
+  // ice lookup table values
+  using view_ice_table    = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::ice_table_size]>;
+
+  // ice lookup table values for ice-rain collision/collection
+  using view_collect_table = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::rcollsize][P3C::collect_table_size]>;
+
+  // droplet spectral shape parameter for mass spectra, used for Seifert and Beheng (2001)
+  // warm rain autoconversion/accretion option only (iparam = 1)
+  using view_dnu_table = typename KT::template view_1d_table<Scalar, P3C::dnusize>;
+
   template <typename S, int N>
   using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
 
@@ -202,6 +218,20 @@ struct Functions
     view_2d<Spack> vap_ice_exchange;
   };
 
+  // This struct stores kokkos views for the lookup tables needed in p3_main()
+  struct P3LookupTables {
+    // lookup table values for rain shape parameter mu_r
+    view_1d_table mu_r_table_vals;
+    // lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
+    view_2d_table vn_table_vals, vm_table_vals, revap_table_vals;
+    // ice lookup table values
+    view_ice_table ice_table_vals;
+    // ice lookup table values for ice-rain collision/collection
+    view_collect_table collect_table_vals;
+    // droplet spectral shape parameter for mass spectra
+    view_dnu_table dnu_table_vals;
+  };
+
   // -- Table3 --
 
   struct Table3 {
@@ -218,22 +248,6 @@ struct Functions
     IntSmallPack dumj;
     Spack dum3;
   };
-
-  // lookup table values for rain shape parameter mu_r
-  using view_1d_table = typename KT::template view_1d_table<Scalar, C::MU_R_TABLE_DIM>;
-
-  // lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
-  using view_2d_table = typename KT::template view_2d_table<Scalar, C::VTABLE_DIM0, C::VTABLE_DIM1>;
-
-  // ice lookup table values
-  using view_ice_table    = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::ice_table_size]>;
-
-  // ice lookup table values for ice-rain collision/collection
-  using view_collect_table = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::rcollsize][P3C::collect_table_size]>;
-
-  // droplet spectral shape parameter for mass spectra, used for Seifert and Beheng (2001)
-  // warm rain autoconversion/accretion option only (iparam = 1)
-  using view_dnu_table = typename KT::template view_1d_table<Scalar, P3C::dnusize>;
 
   //
   // --------- Functions ---------
@@ -941,6 +955,7 @@ struct Functions
     const P3DiagnosticOutputs& diagnostic_outputs,
     const P3Infrastructure& infrastructure,
     const P3HistoryOnly& history_only,
+    const P3LookupTables& lookup_tables,
     const WorkspaceManager& workspace_mgr,
     Int nj, // number of columns
     Int nk); // number of vertical cells per column
