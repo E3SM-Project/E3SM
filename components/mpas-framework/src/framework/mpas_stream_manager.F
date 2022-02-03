@@ -3474,7 +3474,7 @@ module mpas_stream_manager
         STREAM_DEBUG_WRITE('-- Called MPAS_stream_mgr_read()')
 
         if (present(ierr)) ierr = MPAS_STREAM_MGR_NOERR
-        write(actualWhen_local,'(a)') '0000-01-01_00:00:00'
+        write(actualWhen_local,'(a)') 'UNKNOWN'
 
         !
         ! Use optional arguments or set defaults
@@ -3533,8 +3533,11 @@ module mpas_stream_manager
                       if (local_saveActualWhen) then
                          call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, local_when, &
                                        local_whence, actualWhen_local, local_ierr)
-                         call mpas_set_time(actualWhen_time, dateTimeString = actualWhen_local)
-                         stream_cursor % mostRecentAccessTime = actualWhen_time
+                         if (trim(actualWhen_local) /= 'UNKNOWN') then
+                            ! Only set mostRecentAccessTime if the stream was successfully read
+                            call mpas_set_time(actualWhen_time, dateTimeString = actualWhen_local)
+                            stream_cursor % mostRecentAccessTime = actualWhen_time
+                         endif
                       else
                          call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, local_when, &
                                        local_whence, ierr=local_ierr)
@@ -3563,8 +3566,11 @@ module mpas_stream_manager
                        if (local_saveActualWhen) then
                           call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, &
                                         local_when, local_whence, actualWhen_local, temp_ierr)
-                          call mpas_set_time(actualWhen_time, dateTimeString = actualWhen_local)
-                          stream_cursor % mostRecentAccessTime = actualWhen_time
+                          if (trim(actualWhen_local) /= 'UNKNOWN') then
+                             ! Only set mostRecentAccessTime if the stream was successfully read
+                             call mpas_set_time(actualWhen_time, dateTimeString = actualWhen_local)
+                             stream_cursor % mostRecentAccessTime = actualWhen_time
+                          endif
                        else
                           call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, &
                                         local_when, local_whence, ierr=temp_ierr)
