@@ -29,6 +29,7 @@ xlf:
 	"FC_SERIAL = xlf2003_r" \
 	"CC_SERIAL = xlc_r" \
 	"CXX_SERIAL = xlc++_r" \
+	"FFLAGS_FPIEEE = -qstrict" \
 	"FFLAGS_PROMOTION = -qrealsize=8" \
 	"FFLAGS_OPT = -O3 -qufmt=be -WF,-qnotrigraph" \
 	"CFLAGS_OPT = -O3" \
@@ -56,6 +57,7 @@ xlf-summit-omp-offload:
 	"FC_SERIAL = xlf90_r" \
 	"CC_SERIAL = xlc_r" \
 	"CXX_SERIAL = xlc++_r" \
+	"FFLAGS_FPIEEE = -qstrict" \
 	"FFLAGS_PROMOTION = -qrealsize=8" \
 	"FFLAGS_OPT = -g -qfullpath -qmaxmem=-1 -qphsinfo -qzerosize -qfree=f90 -qxlf2003=polymorphic -qspillsize=2500 -qextname=flush -O2 -qstrict -Q" \
 	"CFLAGS_OPT = -g -qfullpath -qmaxmem=-1 -qphsinfo -O3" \
@@ -86,6 +88,7 @@ ftn:
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
 	"CXX_SERIAL = CC" \
+	"FFLAGS_FPIEEE = " \
 	"FFLAGS_PROMOTION = -r8" \
 	"FFLAGS_OPT = -i4 -gopt -O2 -Mvect=nosse -Kieee -convert big_endian" \
 	"CFLAGS_OPT = -fast" \
@@ -93,25 +96,6 @@ ftn:
 	"LDFLAGS_OPT = " \
 	"FFLAGS_OMP = -mp" \
 	"CFLAGS_OMP = -mp" \
-	"BUILD_TARGET = $(@)" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
-
-titan-cray:
-	( $(MAKE) all \
-	"FC_PARALLEL = ftn" \
-	"CC_PARALLEL = cc" \
-	"FC_SERIAL = ftn" \
-	"CC_SERIAL = gcc" \
-	"FFLAGS_PROMOTION = -default64" \
-	"FFLAGS_OPT = -s integer32 -O3 -f free -N 255 -em -ef" \
-	"CFLAGS_OPT = -O3" \
-	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_OMP = " \
-	"CFLAGS_OMP = " \
 	"BUILD_TARGET = $(@)" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
@@ -127,6 +111,7 @@ pgi:
 	"FC_SERIAL = pgf90" \
 	"CC_SERIAL = pgcc" \
 	"CXX_SERIAL = pgc++" \
+	"FFLAGS_FPIEEE = -Kieee" \
 	"FFLAGS_PROMOTION = -r8" \
 	"FFLAGS_OPT = -O3 -byteswapio -Mfree" \
 	"CFLAGS_OPT = -O3" \
@@ -154,6 +139,7 @@ pgi-summit:
 	"FC_SERIAL = pgf90" \
 	"CC_SERIAL = pgcc" \
 	"CXX_SERIAL = pgc++" \
+	"FFLAGS_FPIEEE = -Kieee" \
 	"FFLAGS_PROMOTION = -r8" \
 	"FFLAGS_OPT = -g -O3 -byteswapio -Mfree" \
 	"CFLAGS_OPT = -O3 " \
@@ -184,33 +170,12 @@ pgi-nersc:
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
 	"CXX_SERIAL = CC" \
+	"FFLAGS_FPIEEE = -Kieee" \
 	"FFLAGS_PROMOTION = -r8" \
 	"FFLAGS_OPT = -O3 -byteswapio -Mfree" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_OMP = -mp" \
-	"CFLAGS_OMP = -mp" \
-	"BUILD_TARGET = $(@)" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DCPRPGI" )
-
-pgi-llnl:
-	( $(MAKE) all \
-	"FC_PARALLEL = mpipgf90" \
-	"CC_PARALLEL = pgcc" \
-	"CXX_PARALLEL = mpipgcxx" \
-	"FC_SERIAL = pgf90" \
-	"CC_SERIAL = pgcc" \
-	"CXX_SERIAL = pgc++" \
-	"FFLAGS_PROMOTION = -r8" \
-	"FFLAGS_OPT = -i4 -g -O2 -byteswapio" \
-	"CFLAGS_OPT = -fast" \
-	"CXXFLAGS_OPT = -fast" \
-	"LDFLAGS_OPT = " \
 	"FFLAGS_OMP = -mp" \
 	"CFLAGS_OMP = -mp" \
 	"BUILD_TARGET = $(@)" \
@@ -228,6 +193,7 @@ ifort:
 	"FC_SERIAL = ifort" \
 	"CC_SERIAL = icc" \
 	"CXX_SERIAL = icpc" \
+	"FFLAGS_FPIEEE = -fp-model=precise" \
 	"FFLAGS_PROMOTION = -real-size 64" \
 	"FFLAGS_OPT = -O3 -convert big_endian -free -align array64byte" \
 	"CFLAGS_OPT = -O3" \
@@ -255,6 +221,7 @@ ifort-scorep:
 	"FC_SERIAL = ifort" \
 	"CC_SERIAL = icc" \
 	"CXX_SERIAL = icpc" \
+	"FFLAGS_FPIEEE = -fp-model=precise" \
 	"FFLAGS_PROMOTION = -real-size 64" \
 	"FFLAGS_OPT = -O3 -g -convert big_endian -free -align array64byte" \
 	"CFLAGS_OPT = -O3 -g" \
@@ -281,6 +248,7 @@ ifort-gcc:
 	"FC_SERIAL = ifort" \
 	"CC_SERIAL = gcc" \
 	"CXX_SERIAL = g++" \
+	"FFLAGS_FPIEEE = -fp-model=precise" \
 	"FFLAGS_PROMOTION = -real-size 64" \
 	"FFLAGS_OPT = -O3 -convert big_endian -free -align array64byte" \
 	"CFLAGS_OPT = -O3" \
@@ -307,6 +275,7 @@ intel-mpi:
 	"FC_SERIAL = ifort" \
 	"CC_SERIAL = icc" \
 	"CXX_SERIAL = icpc" \
+	"FFLAGS_FPIEEE = -fp-model=precise" \
 	"FFLAGS_PROMOTION = -real-size 64" \
 	"FFLAGS_OPT = -O3 -convert big_endian -free -align array64byte" \
 	"CFLAGS_OPT = -O3" \
@@ -334,6 +303,7 @@ gfortran:
 	"FC_SERIAL = gfortran" \
 	"CC_SERIAL = gcc" \
 	"CXX_SERIAL = g++" \
+	"FFLAGS_FPIEEE = " \
 	"FFLAGS_PROMOTION = -fdefault-real-8 -fdefault-double-8" \
 	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -ffpe-summary=none" \
 	"CFLAGS_OPT = -O3 -m64" \
@@ -361,6 +331,7 @@ gfortran-clang:
 	"FC_SERIAL = gfortran" \
 	"CC_SERIAL = clang" \
 	"CXX_SERIAL = clang++" \
+	"FFLAGS_FPIEEE = " \
 	"FFLAGS_PROMOTION = -fdefault-real-8 -fdefault-double-8" \
 	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -ffpe-summary=none" \
 	"CFLAGS_OPT = -O3 -m64" \
@@ -387,6 +358,7 @@ g95:
 	"FC_SERIAL = g95" \
 	"CC_SERIAL = gcc" \
 	"CXX_SERIAL = g++" \
+	"FFLAGS_FPIEEE = " \
 	"FFLAGS_PROMOTION = -r8" \
 	"FFLAGS_OPT = -O3 -ffree-line-length-huge -fendian=big" \
 	"CFLAGS_OPT = -O3" \
@@ -394,28 +366,6 @@ g95:
 	"LDFLAGS_OPT = -O3" \
 	"FFLAGS_OMP = -fopenmp" \
 	"CFLAGS_OMP = -fopenmp" \
-	"BUILD_TARGET = $(@)" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
-
-pathscale-nersc:
-	( $(MAKE) all \
-	"FC_PARALLEL = ftn" \
-	"CC_PARALLEL = cc" \
-	"CXX_PARALLEL = CC" \
-	"FC_SERIAL = ftn" \
-	"CC_SERIAL = cc" \
-	"CXX_SERIAL = CC" \
-	"FFLAGS_PROMOTION = -r8" \
-	"FFLAGS_OPT = -O3 -freeform -extend-source" \
-	"CFLAGS_OPT = -O3" \
-	"CXXFLAGS_OPT = -O3" \
-	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_OMP = -mp" \
-	"CFLAGS_OMP = -mp" \
 	"BUILD_TARGET = $(@)" \
 	"CORE = $(CORE)" \
 	"DEBUG = $(DEBUG)" \
@@ -431,6 +381,7 @@ cray-nersc:
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
 	"CXX_SERIAL = CC" \
+	"FFLAGS_FPIEEE = " \
 	"FFLAGS_PROMOTION = -default64" \
 	"FFLAGS_OPT = -O3 -f free" \
 	"CFLAGS_OPT = -O3" \
@@ -453,6 +404,7 @@ gnu-nersc:
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
 	"CXX_SERIAL = CC" \
+	"FFLAGS_FPIEEE = " \
 	"FFLAGS_PROMOTION = -fdefault-real-8 -fdefault-double-8" \
 	"FFLAGS_OPT = -O3 -m64 -ffree-line-length-none -fconvert=big-endian -ffree-form -ffpe-summary=none" \
 	"CFLAGS_OPT = -O3 -m64" \
@@ -477,6 +429,7 @@ intel-nersc:
 	"FC_SERIAL = ftn" \
 	"CC_SERIAL = cc" \
 	"CXX_SERIAL = CC" \
+	"FFLAGS_FPIEEE = -fp-model=precise" \
 	"FFLAGS_PROMOTION = -real-size 64" \
 	"FFLAGS_OPT = -O3 -convert big_endian -free -align array64byte" \
 	"CFLAGS_OPT = -O3" \
@@ -495,32 +448,6 @@ intel-nersc:
 	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
-bluegene:
-	( $(MAKE) all \
-	"FC_PARALLEL = mpixlf95_r" \
-	"CC_PARALLEL = mpixlc_r" \
-	"CXX_PARALLEL = mpixlcxx_r" \
-	"FC_SERIAL = bgxlf95_r" \
-	"CC_SERIAL = bgxlc_r" \
-	"CXX_SERIAL = bgxlc++_r" \
-	"FFLAGS_PROMOTION = -qrealsize=8" \
-	"FFLAGS_OPT = -O2 -g" \
-	"CFLAGS_OPT = -O2 -g" \
-	"CXXFLAGS_OPT = -O2 -g" \
-	"LDFLAGS_OPT = -O2 -g" \
-	"FFLAGS_DEBUG = -O0 -g -C -qinitalloc -qinitauto" \
-	"CFLAGS_DEBUG = -O0 -g" \
-	"CXXFLAGS_DEBUG = -O0 -g" \
-	"LDFLAGS_DEBUG = -O0 -g" \
-	"FFLAGS_OMP = -qsmp=omp" \
-	"CFLAGS_OMP = -qsmp=omp" \
-	"BUILD_TARGET = $(@)" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
-
 llvm:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpifort" \
@@ -529,6 +456,7 @@ llvm:
 	"FC_SERIAL = flang" \
 	"CC_SERIAL = clang" \
 	"CXX_SERIAL = clang++" \
+	"FFLAGS_FPIEEE = " \
 	"FFLAGS_PROMOTION = -r8" \
 	"FFLAGS_OPT = -O3 -g -Mbyteswapio -Mfreeform" \
 	"CFLAGS_OPT = -O3 -g" \
@@ -547,31 +475,6 @@ llvm:
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
-
-nag:
-	( $(MAKE) all \
-	"FC_PARALLEL = mpifort" \
-	"CC_PARALLEL = mpicc" \
-	"CXX_PARALLEL = mpic++" \
-	"FC_SERIAL = nagfor" \
-	"CC_SERIAL = gcc" \
-	"CXX_SERIAL = g++" \
-	"FFLAGS_PROMOTION = -r8" \
-	"FFLAGS_OPT = -free -mismatch -O3 -convert=big_ieee" \
-	"CFLAGS_OPT = -O3" \
-	"CXXFLAGS_OPT = -O3" \
-	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_DEBUG = -free -mismatch -O0 -g -C -convert=big_ieee" \
-	"CFLAGS_DEBUG = -O0 -g -Wall -pedantic" \
-	"CXXFLAGS_DEBUG = -O0 -g -Wall -pedantic" \
-	"LDFLAGS_DEBUG = -O0 -g -C" \
-	"FFLAGS_OMP = -qsmp=omp" \
-	"CFLAGS_OMP = -qsmp=omp" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE -DNAG_COMPILER" )
 
 CPPINCLUDES =
 FCINCLUDES =

@@ -32,4 +32,5 @@ list(APPEND COMMON_RAW_SOURCES
   framework/regex_matching.c
   framework/mpas_field_accessor.F
   framework/mpas_log.F
+  framework/mpas_global_sum_mod.F
 )
