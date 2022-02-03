@@ -520,8 +520,8 @@ void RRTMGPRadiation::run_impl (const int dt) {
   rrtmgp::compute_broadband_surface_fluxes(
       m_ncol, kbot, m_nswbands,
       sw_bnd_flux_dir, sw_bnd_flux_dif, 
-      sfc_flux_dir_nir, sfc_flux_dir_vis, 
-      sfc_flux_dif_nir, sfc_flux_dif_vis
+      sfc_flux_dir_vis, sfc_flux_dir_nir, 
+      sfc_flux_dif_vis, sfc_flux_dif_nir
   );
 
   // Copy output data back to FieldManager
