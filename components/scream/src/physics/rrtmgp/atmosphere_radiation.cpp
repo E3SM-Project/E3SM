@@ -40,7 +40,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   kgkg.set_string("kg/kg");
   auto m3 = m * m * m;
   auto Wm2 = W / m / m;
-  Wm2.set_string("Wm2");
+  Wm2.set_string("W/m2)");
   auto nondim = m/m;  // dummy unit for non-dimensional fields
   auto micron = m / 1000000;
 
