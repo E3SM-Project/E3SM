@@ -26,7 +26,8 @@ public:
   FieldWithinIntervalCheck (const Field& field,
                             const double lower_bound,
                             const double upper_bound,
-                            bool can_repair = true);
+                            const bool can_repair = true,
+                            const bool allow_failures = false);
 
   // The name of the property check
   std::string name () const override {
@@ -37,7 +38,7 @@ public:
     return ss.str();
   }
 
-  bool check() const override;
+  CheckResult check() const override;
 
 // CUDA requires the parent fcn of a KOKKOS_LAMBDA to have public access
 #ifndef KOKKOS_ENABLE_CUDA
@@ -45,7 +46,7 @@ protected:
 #endif
 
   template<typename ST>
-  bool check_impl () const;
+  CheckResult check_impl () const;
 
   template<typename ST>
   void repair_impl() const;
@@ -56,6 +57,10 @@ protected:
 
   // Lower and upper bounds.
   double m_lower_bound, m_upper_bound;
+
+  // If true, checks failures are reported as Warning instead of Fail
+  bool m_allow_failures;
+
 };
 
 } // namespace scream

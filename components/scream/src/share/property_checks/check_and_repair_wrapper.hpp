@@ -69,7 +69,7 @@ public:
     return n;
   }
 
-  bool check() const override {
+  CheckResult check() const override {
     return m_check->check();
   }
 

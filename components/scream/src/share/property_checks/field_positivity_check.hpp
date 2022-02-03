@@ -14,8 +14,12 @@ public:
 
   // Default constructor -- cannot repair fields that fail the check.
   explicit FieldPositivityCheck (const Field& f,
-                                 const bool can_repair = true) :
-    FieldLowerBoundCheck (f,std::numeric_limits<double>::epsilon(),can_repair)
+                                 const bool can_repair = true,
+                                 const bool allow_failures = false) :
+    FieldLowerBoundCheck (f,
+                          std::numeric_limits<double>::epsilon(),
+                          can_repair,
+                          allow_failures)
   {
     // Nothing to do here
   }

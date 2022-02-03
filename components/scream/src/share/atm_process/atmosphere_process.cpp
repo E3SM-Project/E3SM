@@ -159,28 +159,62 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
 }
 
 void AtmosphereProcess::run_property_checks_pre () const { 
+  constexpr auto Pass = PropertyCheck::CheckResult::Pass;
+  constexpr auto Warn = PropertyCheck::CheckResult::Warn;
+  constexpr auto Fail = PropertyCheck::CheckResult::Fail;
+
   // Run all pre-condition property checks
   for (const auto& pc : m_property_checks_pre) {
     auto check = pc->check();
-    EKAT_REQUIRE_MSG(check || pc->can_repair(),
+    // A Fail without chance of repair means we need to crash
+    EKAT_REQUIRE_MSG(check!=Fail || pc->can_repair(),
         "Error! Failed pre-condition check (cannot be repaired).\n"
         "  - Atm process name: " + name() + "\n"
-        "  - Property check name: " + pc->name() + "\n");
-    if (not check) {
+        "  - Property check name: " + pc->name() + "\n"
+        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
+
+    // A Warn means we can continue, even if we can't repair,
+    // but we need to warn the user
+    if (check==Warn) {
+      std::cout << "WARNING: Pre run property check failed.\n"
+        "  - Property check name: " + pc->name() + "\n"
+        "  - Atmosphere process name: " + name() + "\n"
+        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n";
+    }
+
+    // If check did't pass, and we can repair, then do it.
+    if (check!=Pass && pc->can_repair()) {
       pc->repair();
     }
   }
 }
 
 void AtmosphereProcess::run_property_checks_post () const {
-  // Run all post-condition property checks
+  constexpr auto Pass = PropertyCheck::CheckResult::Pass;
+  constexpr auto Warn = PropertyCheck::CheckResult::Warn;
+  constexpr auto Fail = PropertyCheck::CheckResult::Fail;
+
+  // Run all pre-condition property checks
   for (const auto& pc : m_property_checks_pre) {
     auto check = pc->check();
-    EKAT_REQUIRE_MSG(check || pc->can_repair(),
+    // A Fail without chance of repair means we need to crash
+    EKAT_REQUIRE_MSG(check!=Fail || pc->can_repair(),
         "Error! Failed post-condition check (cannot be repaired).\n"
         "  - Atm process name: " + name() + "\n"
-        "  - Property check name: " + pc->name() + "\n");
-    if (not check) {
+        "  - Property check name: " + pc->name() + "\n"
+        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
+
+    // A Warn means we can continue, even if we can't repair,
+    // but we need to warn the user
+    if (check==Warn) {
+      std::cout << "WARNING: Pre run property check failed.\n"
+        "  - Property check name: " + pc->name() + "\n"
+        "  - Atmosphere process name: " + name() + "\n"
+        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n";
+    }
+
+    // If check did't pass, and we can repair, then do it.
+    if (check!=Pass && pc->can_repair()) {
       pc->repair();
     }
   }

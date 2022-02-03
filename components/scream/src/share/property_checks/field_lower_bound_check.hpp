@@ -18,11 +18,13 @@ public:
   // apply repairs to the field.
   FieldLowerBoundCheck (const Field& field,
                         const double lower_bound,
-                        bool can_repair = true) : 
+                        const bool can_repair = true,
+                        const bool allow_failures = false) :
     FieldWithinIntervalCheck(field,
                              lower_bound,
                              std::numeric_limits<double>::max(),
-                             can_repair)
+                             can_repair,
+                             allow_failures)
   {
     // Do Nothing
   }

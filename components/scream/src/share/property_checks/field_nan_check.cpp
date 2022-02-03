@@ -14,7 +14,7 @@ FieldNaNCheck (const Field& f)
 }
 
 template<typename ST>
-bool FieldNaNCheck::check_impl() const {
+PropertyCheck::CheckResult FieldNaNCheck::check_impl() const {
   using const_ST    = typename std::add_const<ST>::type;
 
   const auto& f = fields().front();
@@ -99,10 +99,10 @@ bool FieldNaNCheck::check_impl() const {
       EKAT_ERROR_MSG ("Error! Unsupported f rank.\n");
   }
 
-  return num_invalid==0;
+  return num_invalid==0 ? CheckResult::Pass : CheckResult::Fail;
 }
 
-bool FieldNaNCheck::check() const {
+PropertyCheck::CheckResult FieldNaNCheck::check() const {
   const auto& f = fields().front();
 
   switch (f.data_type()) {

@@ -36,13 +36,19 @@ namespace scream
 
 class PropertyCheck {
 public:
+  enum class CheckResult {
+    Pass,
+    Fail,
+    Warn
+  };
+
   virtual ~PropertyCheck()  = default;
 
   // Name of the property being checked
   virtual std::string name () const = 0;
 
   // Check if the property is satisfied, and return true if it is
-  virtual bool check () const = 0;
+  virtual CheckResult check () const = 0;
 
   // Set fields, and whether they can be repaired.
   void set_fields (const std::list<Field>& fields,
