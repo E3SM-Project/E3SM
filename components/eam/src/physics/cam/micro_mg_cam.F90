@@ -3102,13 +3102,13 @@ subroutine check_values(Qv,T,pver,ncol,source_ind)
   implicit none
 
   !Calling parameters:                                                                                                        
-  real(rtype), intent(in) :: Qv(:,:), T(:,:)
+  real(r8), intent(in) :: Qv(:,:), T(:,:)
   integer,                intent(in) :: pver,ncol,source_ind
 
   !Local variables:                                                                                                           
-  real(rtype), parameter :: T_low  = 160._rtype !173._rtype                                                                   
-  real(rtype), parameter :: T_high = 355._rtype !323._rtype                                                                   
-  real(rtype), parameter :: Q_high = 40.e-3_rtype
+  real(r8), parameter :: T_low  = 160._r8 !173._r8                                                                   
+  real(r8), parameter :: T_high = 355._r8 !323._r8                                                                   
+  real(r8), parameter :: Q_high = 40.e-3_r8
   integer         :: i,k
 
   trap = .false.
