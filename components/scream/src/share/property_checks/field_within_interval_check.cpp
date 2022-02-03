@@ -7,17 +7,26 @@ namespace scream
 {
 
 FieldWithinIntervalCheck::
-FieldWithinIntervalCheck (const Field& field,
+FieldWithinIntervalCheck (const Field& f,
                           const double lower_bound,
                           const double upper_bound,
                           const bool can_repair)
  : m_lower_bound(lower_bound)
  , m_upper_bound(upper_bound)
 {
+  // Sanity checks
+  EKAT_REQUIRE_MSG (f.rank()<=6,
+      "Error in FieldWithinIntervalCheck constructor: unsupported field rank.\n"
+      "  - Field name: " + f.name() << "\n"
+      "  - Field rank: " + std::to_string(f.rank()) + "\n");
+  EKAT_REQUIRE_MSG (field_valid_data_types().has_v(f.data_type()),
+      "Error in FieldWithinIntervalCheck constructor: field data type not supported.\n"
+      "  - Field name: " + f.name() << "\n"
+      "  - Field rank: " + std::to_string(f.rank()) + "\n");
   EKAT_ASSERT_MSG(lower_bound <= upper_bound,
                   "lower_bound must be less than or equal to upper_bound.");
 
-  set_fields ({field},{can_repair});
+  set_fields ({f},{can_repair});
 }
 
 template<typename ST>
@@ -213,18 +222,15 @@ void FieldWithinIntervalCheck::repair_impl() const
       }
       break;
     default:
-      EKAT_ERROR_MSG ("Error! Unsupported f rank.\n");
+      EKAT_ERROR_MSG (
+          "Internal error in FieldWithinIntervalCheck: unsupported field rank.\n"
+          "You should not have reached this line. Please, contact developers.\n");
   }
 }
 
 void FieldWithinIntervalCheck::repair_impl() const {
 
   const auto& f = fields().front();
-
-  EKAT_REQUIRE_MSG (can_repair(),
-      "Error! Property check misses repair capability.\b"
-      "  - Property check: " + name() + "\n"
-      "  - Field name    : " + f.name() + "\n");
 
   switch (f.data_type()) {
     case DataType::IntType:
@@ -237,7 +243,9 @@ void FieldWithinIntervalCheck::repair_impl() const {
       repair_impl<double>();
       break;
     default:
-      EKAT_ERROR_MSG ("Error! f data type not supported.\n");
+      EKAT_ERROR_MSG (
+          "Internal error in FieldWithinIntervalCheck: unsupported field data type.\n"
+          "You should not have reached this line. Please, contact developers.\n");
   }
 }
 

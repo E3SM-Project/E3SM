@@ -33,7 +33,7 @@ public:
     // NOTE: std::to_string does not do a good job with small numbers (like 1e-9).
     std::stringstream ss;
     ss << fields().front().name()
-       << " within wnterval [" << m_lower_bound << ", " << m_upper_bound << "]";
+       << " within interval [" << m_lower_bound << ", " << m_upper_bound << "]";
     return ss.str();
   }
 
