@@ -96,8 +96,10 @@
       <value compset="20TR(?:SOI)?_EAM%AR5sf_ELM">20thC_CMIP6_transient</value>
       <!-- BGCv2 compsets (use V2 land new features configuration)-->
       <value compset="1850.*_*CNPRDCTCBCWFM" >1850_WFM_control</value>
+      <value compset="1850.*_*CNPRDCTCBCTGU" >1850_TGU_control</value>
       <value compset="1850.*_*CNPRDCTCBCPHSTGUWFM" >1850_PHSTGUWFM_control</value>
       <value compset="20TR.*_*CNPRDCTCBCWFM" >20thC_WFM_transient</value>
+      <value compset="20TR.*_*CNPRDCTCBCTGU" >20thC_TGU_transient</value>
       <value compset="20TR.*_*CNPRDCTCBCPHSTGUWFM" >20thC_PHSTGUWFM_transient</value>
     </values>
     <group>run_component_elm</group>
