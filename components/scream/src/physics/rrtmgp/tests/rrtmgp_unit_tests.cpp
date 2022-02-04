@@ -217,3 +217,183 @@ TEST_CASE("rrtmgp_test_zenith") {
     REQUIRE(std::abs(coszrs-coszrs_ref)<1e-14);
 
 }
+
+TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
+
+    // Initialize YAKL
+    if (!yakl::isInitialized()) { yakl::init(); }
+
+    // Create arrays
+    const int ncol = 1;
+    const int nlay = 1;
+    const int nbnd = 14;
+    const int kbot = nlay + 1;
+    auto sfc_flux_dir_nir = real1d("sfc_flux_dir_nir", ncol);
+    auto sfc_flux_dir_vis = real1d("sfc_flux_dir_vis", ncol);
+    auto sfc_flux_dif_nir = real1d("sfc_flux_dif_nir", ncol);
+    auto sfc_flux_dif_vis = real1d("sfc_flux_dif_vis", ncol);
+
+    // Need to initialize RRTMGP with dummy gases
+    std::cout << "Init gases...\n";
+    GasConcs gas_concs;
+    int ngas = 8;
+    string1d gas_names("gas_names",ngas);
+    gas_names(1) = std::string("h2o");
+    gas_names(2) = std::string("co2");
+    gas_names(3) = std::string("o3" );
+    gas_names(4) = std::string("n2o");
+    gas_names(5) = std::string("co" );
+    gas_names(6) = std::string("ch4");
+    gas_names(7) = std::string("o2" );
+    gas_names(8) = std::string("n2" );
+    gas_concs.init(gas_names,ncol,nlay);
+    std::cout << "Init RRTMGP...\n";
+    scream::rrtmgp::rrtmgp_initialize(gas_concs);
+
+    // Create simple test cases; We expect, given the input data, that band 10
+    // will straddle the NIR and VIS, bands 1-9 will be purely NIR, and bands 11-14
+    // will be purely VIS. The implementation in EAMF90 was hard-coded with this
+    // band information, but our implementation of compute_broadband_surface_fluxes
+    // actually checks the wavenumber limits. These tests will mostly check to make
+    // sure our implementation of that is doing what we think it is.
+
+    // ---------------------------------
+    // Test case: flux only in straddled band
+    auto sw_bnd_flux_dir = real3d("sw_bnd_flux_dir", ncol, nlay+1, nbnd);
+    auto sw_bnd_flux_dif = real3d("sw_bnd_flux_dif", ncol, nlay+1, nbnd);
+    std::cout << "Populate band-resolved 3d fluxes for test case with only transition band flux...\n";
+    parallel_for(Bounds<3>(nbnd,nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
+        if (ibnd < 10) {
+            sw_bnd_flux_dir(icol,ilay,ibnd) = 0;
+            sw_bnd_flux_dif(icol,ilay,ibnd) = 0;
+        } else if (ibnd == 10) {
+            sw_bnd_flux_dir(icol,ilay,ibnd) = 1;
+            sw_bnd_flux_dif(icol,ilay,ibnd) = 1;
+        } else {
+            sw_bnd_flux_dir(icol,ilay,ibnd) = 0;
+            sw_bnd_flux_dif(icol,ilay,ibnd) = 0;
+        }
+    });
+    // Compute surface fluxes
+    std::cout << "Compute broadband surface fluxes...\n";
+    scream::rrtmgp::compute_broadband_surface_fluxes(
+        ncol, kbot, nbnd,
+        sw_bnd_flux_dir, sw_bnd_flux_dif,
+        sfc_flux_dir_vis, sfc_flux_dir_nir,
+        sfc_flux_dif_vis, sfc_flux_dif_nir
+    );
+    // Check computed surface fluxes
+    std::cout << "Check computed fluxes...\n";
+    const double tol = 1e-10;  // tolerance on floating point inequality for assertions
+    REQUIRE(std::abs(sfc_flux_dir_nir.createHostCopy()(1) - 0.5) < tol);
+    REQUIRE(std::abs(sfc_flux_dir_vis.createHostCopy()(1) - 0.5) < tol);
+    REQUIRE(std::abs(sfc_flux_dif_nir.createHostCopy()(1) - 0.5) < tol);
+    REQUIRE(std::abs(sfc_flux_dif_vis.createHostCopy()(1) - 0.5) < tol);
+    // ---------------------------------
+
+    // ---------------------------------
+    // Test case, only flux in NIR bands
+    std::cout << "Populate band-resolved 3d fluxes for test case with only NIR flux...\n";
+    parallel_for(Bounds<3>(nbnd,nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
+        if (ibnd < 10) {
+            sw_bnd_flux_dir(icol,ilay,ibnd) = 1;
+            sw_bnd_flux_dif(icol,ilay,ibnd) = 1;
+        } else if (ibnd == 10) {
+            sw_bnd_flux_dir(icol,ilay,ibnd) = 0;
+            sw_bnd_flux_dif(icol,ilay,ibnd) = 0;
+        } else {
+            sw_bnd_flux_dir(icol,ilay,ibnd) = 0;
+            sw_bnd_flux_dif(icol,ilay,ibnd) = 0;
+        }
+    });
+    // Compute surface fluxes
+    std::cout << "Compute broadband surface fluxes...\n";
+    scream::rrtmgp::compute_broadband_surface_fluxes(
+        ncol, kbot, nbnd,
+        sw_bnd_flux_dir, sw_bnd_flux_dif,
+        sfc_flux_dir_vis, sfc_flux_dir_nir,
+        sfc_flux_dif_vis, sfc_flux_dif_nir
+    );
+    // Check computed surface fluxes
+    std::cout << "Check computed fluxes...\n";
+    REQUIRE(std::abs(sfc_flux_dir_nir.createHostCopy()(1) - 9.0) < tol);
+    REQUIRE(std::abs(sfc_flux_dir_vis.createHostCopy()(1) - 0.0) < tol);
+    REQUIRE(std::abs(sfc_flux_dif_nir.createHostCopy()(1) - 9.0) < tol);
+    REQUIRE(std::abs(sfc_flux_dif_vis.createHostCopy()(1) - 0.0) < tol);
+    // ---------------------------------
+ 
+    // ---------------------------------
+    // Test case, only flux in VIS bands
+    std::cout << "Populate band-resolved 3d fluxes for test case with only VIS/UV flux...\n";
+    parallel_for(Bounds<3>(nbnd,nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
+        if (ibnd < 10) {
+            sw_bnd_flux_dir(icol,ilay,ibnd) = 0;
+            sw_bnd_flux_dif(icol,ilay,ibnd) = 0;
+        } else if (ibnd == 10) {
+            sw_bnd_flux_dir(icol,ilay,ibnd) = 0;
+            sw_bnd_flux_dif(icol,ilay,ibnd) = 0;
+        } else {
+            sw_bnd_flux_dir(icol,ilay,ibnd) = 1;
+            sw_bnd_flux_dif(icol,ilay,ibnd) = 1;
+        }
+    });
+    // Compute surface fluxes
+    std::cout << "Compute broadband surface fluxes...\n";
+    scream::rrtmgp::compute_broadband_surface_fluxes(
+        ncol, kbot, nbnd,
+        sw_bnd_flux_dir, sw_bnd_flux_dif,
+        sfc_flux_dir_vis, sfc_flux_dir_nir,
+        sfc_flux_dif_vis, sfc_flux_dif_nir
+    );
+    // Check computed surface fluxes
+    std::cout << "Check computed fluxes...\n";
+    REQUIRE(std::abs(sfc_flux_dir_nir.createHostCopy()(1) - 0.0) < tol);
+    REQUIRE(std::abs(sfc_flux_dir_vis.createHostCopy()(1) - 4.0) < tol);
+    REQUIRE(std::abs(sfc_flux_dif_nir.createHostCopy()(1) - 0.0) < tol);
+    REQUIRE(std::abs(sfc_flux_dif_vis.createHostCopy()(1) - 4.0) < tol);
+    // ---------------------------------
+
+    // ---------------------------------
+    // Test case, only flux in all bands
+    std::cout << "Populate band-resolved 3d fluxes for test with non-zero flux in all bands...\n";
+    parallel_for(Bounds<3>(nbnd,nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
+        if (ibnd < 10) {
+            sw_bnd_flux_dir(icol,ilay,ibnd) = 1.0;
+            sw_bnd_flux_dif(icol,ilay,ibnd) = 2.0;
+        } else if (ibnd == 10) {
+            sw_bnd_flux_dir(icol,ilay,ibnd) = 3.0;
+            sw_bnd_flux_dif(icol,ilay,ibnd) = 4.0;
+        } else {
+            sw_bnd_flux_dir(icol,ilay,ibnd) = 5.0;
+            sw_bnd_flux_dif(icol,ilay,ibnd) = 6.0;
+        }
+    });
+    // Compute surface fluxes
+    std::cout << "Compute broadband surface fluxes...\n";
+    scream::rrtmgp::compute_broadband_surface_fluxes(
+        ncol, kbot, nbnd,
+        sw_bnd_flux_dir, sw_bnd_flux_dif,
+        sfc_flux_dir_vis, sfc_flux_dir_nir,
+        sfc_flux_dif_vis, sfc_flux_dif_nir
+    );
+    // Check computed surface fluxes
+    std::cout << "Check computed fluxes...\n";
+    REQUIRE(std::abs(sfc_flux_dir_nir.createHostCopy()(1) - 10.5) < tol);
+    REQUIRE(std::abs(sfc_flux_dir_vis.createHostCopy()(1) - 21.5) < tol);
+    REQUIRE(std::abs(sfc_flux_dif_nir.createHostCopy()(1) - 20.0) < tol);
+    REQUIRE(std::abs(sfc_flux_dif_vis.createHostCopy()(1) - 26.0) < tol);
+    // ---------------------------------
+
+    // Finalize YAKL
+    std::cout << "Free memory...\n";
+    scream::rrtmgp::rrtmgp_finalize();
+    gas_concs.reset();
+    gas_names.deallocate();
+    sw_bnd_flux_dir.deallocate();
+    sw_bnd_flux_dif.deallocate();
+    sfc_flux_dir_nir.deallocate();
+    sfc_flux_dir_vis.deallocate();
+    sfc_flux_dif_nir.deallocate();
+    sfc_flux_dif_vis.deallocate();
+    if (yakl::isInitialized()) { yakl::finalize(); }
+}

@@ -119,14 +119,20 @@ int main(int argc, char** argv) {
     // we would just have to setup the pointers to them in the
     // FluxesBroadband object
     std::cout << "Setup fluxes...\n";
-    real2d sw_flux_up ("sw_flux_up" ,ncol,nlay+1);
-    real2d sw_flux_dn ("sw_flux_dn" ,ncol,nlay+1);
-    real2d sw_flux_dir("sw_flux_dir",ncol,nlay+1);
-    real2d lw_flux_up ("lw_flux_up" ,ncol,nlay+1);
-    real2d lw_flux_dn ("lw_flux_dn" ,ncol,nlay+1);
+    const auto nswbands = scream::rrtmgp::k_dist_sw.get_nband();
+    const auto nlwbands = scream::rrtmgp::k_dist_lw.get_nband();
+    real2d sw_flux_up ("sw_flux_up" , ncol, nlay+1);
+    real2d sw_flux_dn ("sw_flux_dn" , ncol, nlay+1);
+    real2d sw_flux_dir("sw_flux_dir", ncol, nlay+1);
+    real2d lw_flux_up ("lw_flux_up" , ncol, nlay+1);
+    real2d lw_flux_dn ("lw_flux_dn" , ncol, nlay+1);
+    real3d sw_bnd_flux_up ("sw_bnd_flux_up" , ncol, nlay+1, nswbands);
+    real3d sw_bnd_flux_dn ("sw_bnd_flux_dn" , ncol, nlay+1, nswbands);
+    real3d sw_bnd_flux_dir("sw_bnd_flux_dir", ncol, nlay+1, nswbands);
+    real3d lw_bnd_flux_up ("lw_bnd_flux_up" , ncol, nlay+1, nlwbands);
+    real3d lw_bnd_flux_dn ("lw_bnd_flux_dn" , ncol, nlay+1, nlwbands);
 
     // Compute band-by-band surface_albedos.
-    const auto nswbands = scream::rrtmgp::k_dist_sw.get_nband();
     real2d sfc_alb_dir("sfc_alb_dir", ncol, nswbands);
     real2d sfc_alb_dif("sfc_alb_dif", ncol, nswbands);
     rrtmgp::compute_band_by_band_surface_albedos(
@@ -143,7 +149,9 @@ int main(int argc, char** argv) {
             sfc_alb_dir, sfc_alb_dif, mu0,
             lwp, iwp, rel, rei,
             sw_flux_up, sw_flux_dn, sw_flux_dir,
-            lw_flux_up, lw_flux_dn);
+            lw_flux_up, lw_flux_dn,
+            sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
+            lw_bnd_flux_up, lw_bnd_flux_dn);
 
     // Check values against baseline
     std::cout << "Check values...\n";
@@ -171,6 +179,11 @@ int main(int argc, char** argv) {
     sw_flux_dir.deallocate();
     lw_flux_up.deallocate();
     lw_flux_dn.deallocate();
+    sw_bnd_flux_up.deallocate();
+    sw_bnd_flux_dn.deallocate();
+    sw_bnd_flux_dir.deallocate();
+    lw_bnd_flux_up.deallocate();
+    lw_bnd_flux_dn.deallocate();
     p_lay.deallocate();
     t_lay.deallocate();
     p_lev.deallocate();
