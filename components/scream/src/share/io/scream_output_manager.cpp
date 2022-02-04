@@ -270,12 +270,14 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     // Finish up any updates to output file
     sync_outfile(filename);
 
+    // Now that we've written output to this file we need reset the nsteps.
+    control.nsteps_since_last_write = 0;
+
     // Check if we need to close the output file
     if (filespecs.file_is_full()) {
       eam_pio_closefile(filename);
       filespecs.num_snapshots_in_file = 0;
       filespecs.is_open = false;
-      control.nsteps_since_last_write = 0;
     }
 
     // Whether we wrote an output or a checkpoint, the checkpoint counter needs to be reset
