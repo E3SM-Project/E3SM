@@ -444,7 +444,7 @@ contains
                        nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
       err = ior(err, err_tmp)
       call MPI_GATHERV(bedTopography, nCellsOwned, MPI_DOUBLE, gatheredArrayBedTopography, nCellsPerProc, &
-                       nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err) !< HH: err_tmp gives an error
+                       nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
       err = ior(err, err_tmp)
 
       if (curProc.eq.0) then
@@ -624,7 +624,7 @@ contains
 
       ! scatter output sea-level changes to processors
       call MPI_SCATTERV(gatheredArrayUpliftDiff, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
-                  upliftDiff, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err)!< HH: err_tmp
+                  upliftDiff, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
       err = ior(err, err_tmp)
 
       ! update bedTopography
