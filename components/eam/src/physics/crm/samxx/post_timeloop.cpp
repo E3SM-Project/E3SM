@@ -191,8 +191,6 @@ void post_timeloop() {
     if (strcmp(microphysics_scheme, "p3")      == 0) {
       crm_rad_nc       (k,j,i,icrm) = crm_rad_nc         (k,j,i,icrm) * tmp1;
       crm_rad_ni       (k,j,i,icrm) = crm_rad_ni         (k,j,i,icrm) * tmp1;
-      crm_rad_qs       (k,j,i,icrm) = crm_rad_qs         (k,j,i,icrm) * tmp1;
-      crm_rad_ns       (k,j,i,icrm) = crm_rad_ns         (k,j,i,icrm) * tmp1;
     }
   });
 
