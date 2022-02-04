@@ -188,6 +188,12 @@ void post_timeloop() {
     crm_rad_qc         (k,j,i,icrm) = crm_rad_qc         (k,j,i,icrm) * tmp1;
     crm_rad_qi         (k,j,i,icrm) = crm_rad_qi         (k,j,i,icrm) * tmp1;
     crm_rad_cld        (k,j,i,icrm) = crm_rad_cld        (k,j,i,icrm) * tmp1;
+    if (strcmp(microphysics_scheme, "p3")      == 0) {
+      crm_rad_nc       (k,j,i,icrm) = crm_rad_nc         (k,j,i,icrm) * tmp1;
+      crm_rad_ni       (k,j,i,icrm) = crm_rad_ni         (k,j,i,icrm) * tmp1;
+      crm_rad_qs       (k,j,i,icrm) = crm_rad_qs         (k,j,i,icrm) * tmp1;
+      crm_rad_ns       (k,j,i,icrm) = crm_rad_ns         (k,j,i,icrm) * tmp1;
+    }
   });
 
   // Convert clear RH sum to average
