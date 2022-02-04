@@ -59,7 +59,7 @@ module li_bedtopo
    integer, dimension(:), allocatable :: fromRowValues, fromColValues
    real, dimension(:), allocatable :: toSValues, fromSValues
    integer:: nMpas, nGrid
-   
+
    ! MPI variables
    integer :: nCellsGlobal
    integer, dimension(:), allocatable :: nCellsDisplacement
@@ -68,12 +68,12 @@ module li_bedtopo
    integer, pointer :: nCellsAll
    integer, pointer ::  nCellsOwned
    integer :: iCell, ilm, curProc
-
-   !< globalArray: all global cells in the proper ordering specified by indexToCellID
-   !< gatheredArray: all global cells but in an arbitrary ordering returned by the MPI gather operation
-   real (kind=RKIND), dimension(:), allocatable :: globalArrayThickness, gatheredArrayThickness
-   real (kind=RKIND), dimension(:), allocatable :: globalArrayBedTopography, gatheredArrayBedTopography
-   real (kind=RKIND), dimension(:), allocatable :: globalArrayUpliftDiff, gatheredArrayUpliftDiff
+   real (kind=RKIND), dimension(:), allocatable :: globalArrayThickness
+   real (kind=RKIND), dimension(:), allocatable :: gatheredArrayThickness
+   real (kind=RKIND), dimension(:), allocatable :: globalArrayBedTopography
+   real (kind=RKIND), dimension(:), allocatable :: gatheredArrayBedTopography
+   real (kind=RKIND), dimension(:), allocatable :: globalArrayUpliftDiff
+   real (kind=RKIND), dimension(:), allocatable :: gatheredArrayUpliftDiff
 
 !***********************************************************************
 
@@ -186,9 +186,9 @@ contains
 
    subroutine li_bedtopo_solve(domain, err)
 
-      use mpas_timekeeping 
+      use mpas_timekeeping
       use li_mask
-      use li_advection
+      use li_advection, only: li_update_geometry
 
       !-----------------------------------------------------------------
       ! input variables
@@ -260,7 +260,6 @@ contains
 
             call mpas_reset_clock_alarm(domain % clock, 'slmCouplingInterval', ierr=err_tmp)
             err = ior(err, err_tmp)
-
          else
             ! do nothing for now, but could calculate uplift rate here later instead.
          endif
@@ -371,11 +370,14 @@ contains
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography
       real (kind=RKIND), dimension(:), allocatable :: meshMask
       real (kind=RKIND), dimension(nglv,2*nglv) :: ismIceload, ismBedtopo, ismMask
+      real (kind=RKIND), dimension(nglv*2*nglv) :: thicknessSLgrid1D
+      real (kind=RKIND), dimension(nglv*2*nglv) :: bedtopoSLgrid1D
+      real (kind=RKIND), dimension(nglv*2*nglv) :: maskSLgrid1D
 
       integer :: err_tmp
-      integer :: unit_num
-      integer :: slmTimeStep, itersl, dtime !get these values from namelist
-      real    :: starttime
+      integer :: unit_num      ! SLM variable
+      integer :: itersl, dtime ! SLM variable
+      real    :: starttime     ! SLM variable
 
       ! MPI variables
       integer, dimension(:), pointer :: indexToCellID
@@ -384,7 +386,7 @@ contains
       err = 0
       err_tmp = 0
 
-      ! initialize interpolation 
+      ! initialize interpolation
       call interpolate_init(domain, err)
 
       ! Set needed variables for using MPI
@@ -394,9 +396,9 @@ contains
       call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
 
       ! Allocate globalArray and gatheredArray only on process 0
-      call MPI_COMM_RANK( domain % dminfo % comm, curProc, err)
+      call MPI_COMM_RANK( domain % dminfo % comm, curProc, err_tmp)
       err = ior(err, err_tmp)
-      call MPI_COMM_SIZE( domain % dminfo % comm, nProcs, err)
+      call MPI_COMM_SIZE( domain % dminfo % comm, nProcs, err_tmp)
       err = ior(err, err_tmp)
 
       ! perform the initialization on the head processor
@@ -407,7 +409,7 @@ contains
 
       ! Gather nCellsOwned
       call MPI_GATHER( nCellsOwned, 1, MPI_INTEGER, nCellsPerProc, 1, MPI_INTEGER, &
-                       0, domain % dminfo % comm, err)
+                       0, domain % dminfo % comm, err_tmp)
       err = ior(err, err_tmp)
 
       ! Set Displacement variable for GATHERV command
@@ -424,7 +426,7 @@ contains
 
       ! Gather indexToCellID
       call MPI_GATHERV( indexToCellID, nCellsOwned, MPI_INTEGER, indexToCellIDGathered, &
-              nCellsPerProc, nCellsDisplacement, MPI_INTEGER, 0, domain % dminfo % comm, err)
+              nCellsPerProc, nCellsDisplacement, MPI_INTEGER, 0, domain % dminfo % comm, err_tmp)
       err = ior(err, err_tmp)
 
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
@@ -439,10 +441,10 @@ contains
 
       ! Gather only the nCellsOwned from thickness and bedtopo (does not include Halos)
       call MPI_GATHERV(thickness, nCellsOwned, MPI_DOUBLE, gatheredArrayThickness, nCellsPerProc, &
-                       nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err)
+                       nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
       err = ior(err, err_tmp)
       call MPI_GATHERV(bedTopography, nCellsOwned, MPI_DOUBLE, gatheredArrayBedTopography, nCellsPerProc, &
-                       nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err)
+                       nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err) !< HH: err_tmp gives an error
       err = ior(err, err_tmp)
 
       if (curProc.eq.0) then
@@ -455,10 +457,14 @@ contains
          enddo
 
          ! interpolate thickness, bedTopograpy, mesh mask to the Gaussian grid
-         call interpolate(toColValues, toRowValues, toSvalues, globalArrayThickness, ismIceload)
-         call interpolate(toColValues, toRowValues, toSvalues, globalArrayBedTopography, ismBedtopo)
-         call interpolate(toColValues, toRowValues, toSvalues, meshMask, ismMask)
-         err = ior(err, err_tmp)
+         call interpolate(toColValues, toRowValues, toSvalues, globalArrayThickness, thicknessSLgrid1D)
+         call interpolate(toColValues, toRowValues, toSvalues, globalArrayBedTopography, bedtopoSLgrid1D)
+         call interpolate(toColValues, toRowValues, toSvalues, meshMask, maskSLgrid1D)
+
+         ! reformat the interpolated data
+         ismIceload = reshape(thicknessSLgrid1D, [nglv,2*nglv])
+         ismBedtopo = reshape(bedtopoSLgrid1D, [nglv,2*nglv])
+         ismMask = reshape(maskSLgrid1D, [nglv,2*nglv])
 
          ! initialize coupling time step number. initial time is 0
          slmTimeStep = 0
@@ -466,6 +472,7 @@ contains
          ! set SLM unit number to the MALI output log file unit
          unit_num = domain % logInfo % outputLog % unitNum
 
+         ! series of calling SLM routines
          call sl_set_unit_num(unit_num)
          call sl_drive_readnl(itersl, dtime, starttime)
          call sl_call_readnl
@@ -509,7 +516,7 @@ contains
 
    subroutine slmodel_solve(slmTimeStep, domain)
 
-      use li_advection
+      use li_advection, only: li_update_geometry
       use sl_model_mod                    !< this is part of the SLM code
       use sl_io_mod                       !< this is part of the SLM code
       use user_specs_mod, only: nglv, dt1 !< this is part of the SLM code
@@ -545,11 +552,13 @@ contains
       real (kind=RKIND), dimension(nglv,2*nglv) :: ismIceload, ismMask
       real (kind=RKIND), dimension(nglv,2*nglv) :: slmSLchange
       real (kind=RKIND), dimension(nglv*2*nglv) :: slChange_slGrid1D
+      real (kind=RKIND), dimension(nglv*2*nglv) :: thicknessSLgrid1D
+      real (kind=RKIND), dimension(nglv*2*nglv) :: maskSLgrid1D
 
       integer :: err, err_tmp
 
-      integer :: itersl, dtime
-      real    :: starttime
+      integer :: itersl, dtime    ! SLM variable
+      real    :: starttime         ! SLM variable
 
       err = 0
       err_tmp = 0
@@ -562,19 +571,18 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
 
       ! Allocate globalArray and gatheredArray only on process 0
-      call MPI_COMM_RANK(domain % dminfo % comm, curProc, err)
+      call MPI_COMM_RANK(domain % dminfo % comm, curProc, err_tmp)
       err = ior(err, err_tmp)
 
       if (curProc.eq.0) then
          allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
-         allocate(globalArrayBedTopography(nCellsGlobal), gatheredArrayBedTopography(nCellsGlobal))
          allocate(globalArrayUpliftDiff(nCellsGlobal), gatheredArrayUpliftDiff(nCellsGlobal))
          allocate(meshMask(nCellsGlobal))
       endif
 
       ! Gather only the nCellsOwned from ice thickness (does not include Halos)
       call MPI_GATHERV(thickness, nCellsOwned, MPI_DOUBLE, gatheredArrayThickness, nCellsPerProc, &
-                       nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err)
+                       nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
       err = ior(err, err_tmp)
 
       if (curProc.eq.0) then
@@ -586,10 +594,14 @@ contains
          enddo
 
          ! interpolate thickness to Gaussian grid
-         call interpolate(toColValues, toRowValues, toSvalues, globalArrayThickness, ismIceload)
-         call interpolate(toColValues, toRowValues, toSvalues, meshMask, ismMask)
+         call interpolate(toColValues, toRowValues, toSvalues, globalArrayThickness, thicknessSLgrid1D)
+         call interpolate(toColValues, toRowValues, toSvalues, meshMask, maskSLgrid1D)
 
-         ! call the sea-level model
+         ! reformat the interpolated data
+         ismIceload = reshape(thicknessSLgrid1D, [nglv,2*nglv])
+         ismMask = reshape(maskSLgrid1D, [nglv,2*nglv])
+
+         ! series of calling SLM routines
          call sl_drive_readnl(itersl, dtime, starttime)
          call sl_call_readnl
          call sl_solver_checkpoint(itersl, dtime)
@@ -602,17 +614,17 @@ contains
 
          ! interpolate sea-level change from GL grid to MALI mesh.
          call interpolate(fromColValues, fromRowValues, fromSValues, slChange_slGrid1D, globalArrayUpliftDiff)
-          
+
          ! Rearrange back to index order
          do iCell = 1,nCellsGlobal
              gatheredArrayUpliftDiff(iCell) = globalArrayUpliftDiff(indexToCellIDGathered(iCell))
          enddo
-            
+
       endif
 
       ! scatter output sea-level changes to processors
       call MPI_SCATTERV(gatheredArrayUpliftDiff, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
-                  upliftDiff, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err) 
+                  upliftDiff, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err)!< HH: err_tmp
       err = ior(err, err_tmp)
 
       ! update bedTopography
@@ -625,14 +637,12 @@ contains
       ! deallocate memory
       if (curProc.eq.0) then
          deallocate(globalArrayThickness, gatheredArrayThickness)
-         deallocate(globalArrayBedTopography, gatheredArrayBedTopography)
          deallocate(globalArrayUpliftDiff, gatheredArrayUpliftDiff)
          deallocate(meshMask)
       endif
 
       ! Perform Halo exchange update
       call mpas_dmpar_field_halo_exch(domain,'bedTopography')
-      call mpas_dmpar_field_halo_exch(domain,'upliftDiff')
 
    !--------------------------------------------------------------------
    end subroutine slmodel_solve
@@ -656,9 +666,7 @@ contains
 !>
 !-----------------------------------------------------------------------
 
-   subroutine interpolate(colValues, rowValues, sValues, dataIn, dataOutSLgrid)
-
-      use user_specs_mod, only: nglv !< this is part of the SLM code
+   subroutine interpolate(colValues, rowValues, sValues, dataIn, dataOut)
 
       !-----------------------------------------------------------------
       ! input variables
@@ -675,13 +683,12 @@ contains
       ! output variables
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(nglv,2*nglv), intent(out) :: dataOutSLgrid
+      real (kind=RKIND), dimension(:), intent(out) :: dataOut
 
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(nglv*2*nglv) :: dataOut
       real (kind=RKIND) :: rhs = 0
       integer :: n_S, n, nRow, nCol
 
@@ -697,9 +704,6 @@ contains
           dataOut(nRow) = rhs
           rhs = 0
       end do
-
-      ! reformat the interpolated data
-      dataOutSLgrid = reshape(dataOut, [nglv,2*nglv])
 
    !--------------------------------------------------------------------
    end subroutine interpolate
@@ -763,12 +767,13 @@ contains
       integer :: curProc
 
       err = 0
+      err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_MALI_to_SLM_weights_file', config_MALI_to_SLM_weights_file)
       call mpas_pool_get_config(liConfigs, 'config_SLM_to_MALI_weights_file', config_SLM_to_MALI_weights_file)
 
       ! Begin MPI portion
-      call MPI_COMM_RANK( domain % dminfo % comm, curProc, err)
+      call MPI_COMM_RANK( domain % dminfo % comm, curProc, err_tmp)
       err = ior(err, err_tmp)
 
       !initialize interpolation
@@ -778,30 +783,28 @@ contains
          gridToMpasFile = trim(config_MALI_to_SLM_weights_file)
 
          ! Open netcdf weights files
-         call check( nf90_open(path = mpasToGridFile, mode = nf90_nowrite, ncid = toNcId), err)
-         err = ior(err, err_tmp)
-         call check( nf90_open(path = gridToMpasFile, mode = nf90_nowrite, ncid = fromNcId), err)
-         err = ior(err, err_tmp)
+         call check( nf90_open(path = mpasToGridFile, mode = nf90_nowrite, ncid = toNcId), err_tmp)
+         call check( nf90_open(path = gridToMpasFile, mode = nf90_nowrite, ncid = fromNcId), err_tmp)
 
          ! Get dimension ID
-         call check( nf90_inq_dimid(fromNcId, "n_s", fromNsDimId), err)
-         call check( nf90_inq_dimid(toNcId, "n_a", nMpasDimId), err)
-         call check( nf90_inq_dimid(toNcId, "n_s", toNsDimId), err)
-         call check( nf90_inq_dimid(fromNcId, "n_a", nGridDimId), err)
+         call check( nf90_inq_dimid(fromNcId, "n_s", fromNsDimId), err_tmp)
+         call check( nf90_inq_dimid(toNcId, "n_a", nMpasDimId), err_tmp)
+         call check( nf90_inq_dimid(toNcId, "n_s", toNsDimId), err_tmp)
+         call check( nf90_inq_dimid(fromNcId, "n_a", nGridDimId), err_tmp)
 
          ! Get Variable IDs
-         call check( nf90_inq_varid(toNcId, "row", toRowId), err)
-         call check( nf90_inq_varid(toNcId, "col", toColId), err)
-         call check( nf90_inq_varid(toNcId, "S", toSId), err)
-         call check( nf90_inq_varid(fromNcId, "row", fromRowId), err)
-         call check( nf90_inq_varid(fromNcId, "col", fromColId), err)
-         call check( nf90_inq_varid(fromNcId, "S", fromSId), err)
+         call check( nf90_inq_varid(toNcId, "row", toRowId), err_tmp)
+         call check( nf90_inq_varid(toNcId, "col", toColId), err_tmp)
+         call check( nf90_inq_varid(toNcId, "S", toSId), err_tmp)
+         call check( nf90_inq_varid(fromNcId, "row", fromRowId), err_tmp)
+         call check( nf90_inq_varid(fromNcId, "col", fromColId), err_tmp)
+         call check( nf90_inq_varid(fromNcId, "S", fromSId), err_tmp)
 
          ! Get Dimension Length
-         call check( nf90_inquire_dimension(toNcId, toNsDimId, toNsName, toNsLen), err)
-         call check( nf90_inquire_dimension(fromNcId, fromNsDimId, fromNsName, fromNsLen), err)
-         call check( nf90_inquire_dimension(toNcId, nMpasDimId, nMpasName, nMpas), err)
-         call check( nf90_inquire_dimension(fromNcId, nGridDimId, nGridName, nGrid), err)
+         call check( nf90_inquire_dimension(toNcId, toNsDimId, toNsName, toNsLen), err_tmp)
+         call check( nf90_inquire_dimension(fromNcId, fromNsDimId, fromNsName, fromNsLen), err_tmp)
+         call check( nf90_inquire_dimension(toNcId, nMpasDimId, nMpasName, nMpas), err_tmp)
+         call check( nf90_inquire_dimension(fromNcId, nGridDimId, nGridName, nGrid), err_tmp)
 
          ! Allocate matrices to read data into
          allocate ( toRowValues (toNsLen) )
@@ -812,12 +815,12 @@ contains
          allocate ( fromSValues (fromNsLen) )
 
          ! Retrieve data
-         call check( nf90_get_var(toNcId, toColId, toColValues(:) ), err)
-         call check( nf90_get_var(toNcId, toRowId, toRowValues(:) ), err)
-         call check( nf90_get_var(toNcId, toSId, toSValues(:) ) ,err)
-         call check( nf90_get_var(fromNcId, fromColId, fromColValues(:) ), err)
-         call check( nf90_get_var(fromNcId, fromRowId, fromRowValues(:) ), err)
-         call check( nf90_get_var(fromNcId, fromSId, fromSValues(:) ), err)
+         call check( nf90_get_var(toNcId, toColId, toColValues(:) ), err_tmp)
+         call check( nf90_get_var(toNcId, toRowId, toRowValues(:) ), err_tmp)
+         call check( nf90_get_var(toNcId, toSId, toSValues(:) ), err_tmp)
+         call check( nf90_get_var(fromNcId, fromColId, fromColValues(:) ), err_tmp)
+         call check( nf90_get_var(fromNcId, fromRowId, fromRowValues(:) ), err_tmp)
+         call check( nf90_get_var(fromNcId, fromSId, fromSValues(:) ), err_tmp)
 
       endif
 
@@ -845,7 +848,7 @@ contains
       if(status /= nf90_noerr) then
          err = 1
       end if
-   !--------------------------------------------------------------------   
+   !--------------------------------------------------------------------
    end subroutine check
 
 

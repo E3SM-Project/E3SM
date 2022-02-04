@@ -134,7 +134,7 @@
 		            possible_values="'none', 'data', 'sealevelmodel'"
         />
                 <nml_option name="config_slm_coupling_interval" type="character" default_value="0002-00-00_00:00:00" units="time"
-                            description="Time interval at which the sea-level model is called by MALI"
+                            description="Time interval at which the sea-level model is called by MALI. The interval has to be an even multiple of the option 'config_adaptive_timestep_force_interval"
                             possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'"
 		/>
                 <nml_option name="config_MALI_to_SLM_weights_file" type="character" default_value="mpas_to_grid.nc" units="unitless"

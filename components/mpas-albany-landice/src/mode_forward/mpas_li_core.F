@@ -349,7 +349,6 @@ module li_core
       use li_setup
       use li_statistics
       use li_time_integration
-      use li_bedtopo
 
       implicit none
 
@@ -383,7 +382,6 @@ module li_core
       integer, pointer :: config_stats_interval   !< interval (number of timesteps) for writing stats
       character(len=StrKIND), pointer :: config_restart_timestamp_name
       character(len=StrKIND), pointer :: config_velocity_solver
-      character (len=StrKIND), pointer :: config_uplift_method
       ! Variables needed for printing timestamps
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
@@ -400,7 +398,6 @@ module li_core
       call mpas_pool_get_config(liConfigs, 'config_restart_timestamp_name', config_restart_timestamp_name)
       call mpas_pool_get_config(liConfigs, 'config_stats_interval', config_stats_interval)
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
-      call mpas_pool_get_config(liConfigs, 'config_uplift_method', config_uplift_method)
       
       call mpas_timer_start("land ice core run")
 
