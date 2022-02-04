@@ -16,8 +16,8 @@ void micro_p3_diagnose() {
   auto &micro_field = :: micro_field;
 
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-    qv(k,j,i,icrm)  = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - qc(k,j,i,icrm);
-    qcl(k,j,i,icrm) = qc(k,j,i,icrm);
+    qv(k,j,i,icrm)  = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
+    qcl(k,j,i,icrm) = micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
     qpl(k,j,i,icrm) = micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm);
     qci(k,j,i,icrm) = micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm);
     qpi(k,j,i,icrm) = 0.; // P3 doesn't have a "precipitating" ice category, so put it all as "cloud ice"
@@ -145,7 +145,7 @@ YAKL_INLINE real saturation_specific_humidity(real tabs, real pressure) {
 
 // Compute an instantaneous adjustment of sub or super saturation
 // YAKL_INLINE static void compute_adjusted_state( real &qt, real &qv, real &qc, real &tabs, real &pmid ) {
-YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qv_in, real &qc_in, real &tabs_in, real &pmid_in ) {
+YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qc_in, real &qv_in, real &tabs_in, real &pmid_in ) {
   // Define a tolerance and max iterations for convergence
   real tol = 1.e-6;
   int max_iteration = 10;
@@ -154,12 +154,13 @@ YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qv_in, real &qc_in, 
   // Saturation specific humidity
   real qsat = saturation_specific_humidity(tabs_in,pmid_in);
 
-  // assume all of qt is vapor to start
-  qv_in = qt_in; qc_in = 0;
+  // set initial vapor from input total water and cloud water
+  qv_in = qt_in - qc_in; 
 
-  // Common variables if we need to iterate
+  // local variables for iteration
   real tabs_loc = tabs_in;
-  real qv_loc = qv_in; real qc_loc = qc_in;
+  real qv_loc = qv_in; 
+  real qc_loc = qc_in;
   bool keep_iterating = true;
 
   // If we're super-saturated, we need to condense
@@ -189,43 +190,34 @@ YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qv_in, real &qc_in, 
         keep_iterating = false;
       }
     }
+  } else if (qt_in < qsat && qc_in > 0) {
+    // If we are unsaturated and have cloud condensate, we need to evaporate
+    // Set bounds on how much mass to evaporate
+    real evap1 = 0;  // minimum amount we can evaporate
+    real evap2 = qc_in; // maximum amount we can evaporate
+    while (keep_iterating) {
+      // How much water vapor to evaporate for this iteration
+      real evap = (evap1 + evap2) / 2;
+      // update vapor and cloud condensate
+      qv_loc = max( 0. , qv_in + evap );
+      qc_loc = max( 0. , qc_in - evap );
+      // update temperature
+      tabs_loc = tabs_in - fac_cond*evap;
+      // update saturation value
+      real qsat = saturation_specific_humidity(tabs_in,pmid_in);
+      // If still unsaturated evaporate more, otherwise evaporate less
+      if (qv_loc< qsat) { evap1 = qc_in; }
+      if (qv_loc>=qsat) { evap2 = qc_in; }
+      // If we've converged or reached max iteration, then stop iterating
+      iteration_cnt++;
+      if ( abs(evap2-evap1)<=tol || iteration_cnt>=max_iteration) {
+        qv_in = qv_loc;
+        qc_in = qc_loc;
+        tabs_in = tabs_loc;
+        keep_iterating = false;
+      }
+    }
   }
-
-  // if (iteration_cnt>1) {
-  //   std::cout<<"WHDEBUG - compute_adjusted_state - "
-  //   <<"  iteration_cnt:"<<iteration_cnt
-  //   <<"  qsat:"<<qsat
-  //   <<"  qv:"<<qv_in
-  //   <<"  qc:"<<qc_in
-  //   <<std::endl;
-  // }
-  
-  // // If we are unsaturated and have cloud condensate, we need to evaporate
-  // if (qt_in < qsat && qc_in > 0) {
-  //   // Set bounds on how much mass to evaporate
-  //   real evap1 = 0;  // minimum amount we can evaporate
-  //   real evap2 = qc_in; // maximum amount we can evaporate
-  //   while (keep_iterating) {
-  //     // How much water vapor to evaporate for this iteration
-  //     real evap = (evap1 + evap2) / 2;
-  //     // update vapor and cloud condensate
-  //     qv_loc = max( 0. , qv_in + evap );
-  //     qc_loc = max( 0. , qc_in - evap );
-  //     // update temperature
-  //     tabs_loc = tabs_in + fac_cond*cond;
-  //     // update saturation value
-  //     real qsat = saturation_specific_humidity(tabs_in,pmid_in);
-  //     // If still unsaturated evaporate more, otherwise evaporate less
-  //     if (qv_loc< qsat) { evap1 = qc_in; }
-  //     if (qv_loc>=qsat) { evap2 = qc_in; }
-  //     // If we've converged or reached max iteration, then stop iterating
-  //     iteration_cnt++;
-  //     if ( abs(evap2-evap1)<=tol || iteration_cnt>=max_iteration) {
-  //       qv_in = qv_loc; qc_in = qc_loc; tabs_in = tabs_loc;
-  //       keep_iterating = false;
-  //     }
-  //   }
-  // }
 
   // Update total water
   qt_in = qv_in + qc_in;
@@ -384,8 +376,8 @@ void micro_p3_proc() {
   if (true) {
     parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       compute_adjusted_state( micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm), 
-                              qv(k,j,i,icrm), qc(k,j,i,icrm),
-                              tabs(k,j,i,icrm), pmid(k,j,i,icrm) );
+                              micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm), 
+                              qv(k,j,i,icrm), tabs(k,j,i,icrm), pmid(k,j,i,icrm) );
     });
     micro_p3_diagnose();
     // update liq static energy
@@ -402,9 +394,8 @@ void micro_p3_proc() {
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
-    qv_in(icol,ilev) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - qc(k,j,i,icrm);
-    // qc_in(icol,ilev) = micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm); 
-    qc_in(icol,ilev) = qc(k,j,i,icrm);
+    qv_in(icol,ilev) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
+    qc_in(icol,ilev) = micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm); 
     nc_in(icol,ilev) = micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm);
     qr_in(icol,ilev) = micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm);
     nr_in(icol,ilev) = micro_field(idx_nr,k,j+offy_s,i+offx_s,icrm);
@@ -602,7 +593,7 @@ void micro_p3_proc() {
      // int k    = ilev*Spack::n + s;
      int k    = ilev;
      // if (k < nlev) {
-        qc(k,j,i,icrm)                               = prog_state.qc(icol,ilev)[s];
+        micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm) = prog_state.qc(icol,ilev)[s];
         micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = prog_state.qv(icol,ilev)[s] + prog_state.qc(icol,ilev)[s];
         micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm) = prog_state.nc(icol,ilev)[s];
         micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm) = prog_state.qr(icol,ilev)[s];

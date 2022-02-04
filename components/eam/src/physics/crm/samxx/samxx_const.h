@@ -209,7 +209,7 @@ bool constexpr do_sgsdiag_bound = true; // exchange boundaries for diagnostics f
 //#if defined(sam1mom)
 //int  constexpr nmicro_fields = 2;
 //#elif defined(p3)
-int constexpr nmicro_fields = 8;
+int constexpr nmicro_fields = 9;
 //#endif
 int  constexpr index_water_vapor = 0;
 // int  constexpr index_cloud_ice = 0;
@@ -224,8 +224,7 @@ enum {
   idx_nr,      // rain number
   idx_qm,      // ice rime amount
   idx_bm,      // ice rime volume
-  idx_qc,
-  idx_tke      // tke
+  idx_qc       // cloud liq amount (this is also part of total water)
 };
 
 real constexpr rhor = 1000.; // Density of water, kg/m3
