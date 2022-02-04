@@ -144,15 +144,14 @@ YAKL_INLINE real saturation_specific_humidity(real tabs, real pressure) {
 }
 
 // Compute an instantaneous adjustment of sub or super saturation
-// YAKL_INLINE static void compute_adjusted_state( real &qt, real &qv, real &qc, real &tabs, real &pmid ) {
-YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qc_in, real &qv_in, real &tabs_in, real &pmid_in ) {
+YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qc_in, real &qv_in, real &tabs_in, real &pres_in ) {
   // Define a tolerance and max iterations for convergence
   real tol = 1.e-6;
   int max_iteration = 10;
   int iteration_cnt = 0;
 
   // Saturation specific humidity
-  real qsat = saturation_specific_humidity(tabs_in,pmid_in);
+  real qsat = saturation_specific_humidity(tabs_in,pres_in);
 
   // set initial vapor from input total water and cloud water
   qv_in = qt_in - qc_in; 
@@ -177,7 +176,7 @@ YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qc_in, real &qv_in, 
       // update temperature
       tabs_loc = tabs_in + fac_cond*cond;
       // update saturation value
-      real qsat = saturation_specific_humidity(tabs_in,pmid_in);
+      real qsat = saturation_specific_humidity(tabs_in,pres_in);
       // If still supersaturated condense more, otherwise condense less
       if (qv_loc> qsat) { cond1 = cond; }
       if (qv_loc<=qsat) { cond2 = cond; }
@@ -204,7 +203,7 @@ YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qc_in, real &qv_in, 
       // update temperature
       tabs_loc = tabs_in - fac_cond*evap;
       // update saturation value
-      real qsat = saturation_specific_humidity(tabs_in,pmid_in);
+      real qsat = saturation_specific_humidity(tabs_in,pres_in);
       // If still unsaturated evaporate more, otherwise evaporate less
       if (qv_loc< qsat) { evap1 = qc_in; }
       if (qv_loc>=qsat) { evap2 = qc_in; }
@@ -346,7 +345,7 @@ void micro_p3_proc() {
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
-    inv_exner_in(icol, ilev) = 1./std::pow((pmid(k,j,i,icrm)*1.0e-5), (rgas/cp));
+    inv_exner_in(icol, ilev) = 1./std::pow((pres(k,icrm)*1.0e-3), (rgas/cp));
     tabs(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm) - gamaz(k,icrm)
                       + fac_cond *( qcl(k,j,i,icrm) + qpl(k,j,i,icrm) ) 
                       + fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
@@ -356,9 +355,10 @@ void micro_p3_proc() {
   // Saturation adjustment - without SHOC we need to do a saturation adjustment and set qc
   if (true) {
     parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      real tmp_pres = pres(k,icrm)*100.;
       compute_adjusted_state( micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm), 
                               micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm), 
-                              qv(k,j,i,icrm), tabs(k,j,i,icrm), pmid(k,j,i,icrm) );
+                              qv(k,j,i,icrm), tabs(k,j,i,icrm), tmp_pres );
     });
     micro_p3_diagnose();
     // update liq static energy
@@ -427,7 +427,7 @@ void micro_p3_proc() {
     ni_activated_in(icol,ilev)    = ni_activated(k,icrm);
     inv_qc_relvar_in(icol,ilev)   = 1.; // relvar(k,icrm); - What value should we use before SHOC provides this?
     dz_in(icol,ilev)              = adz(k,icrm)*dz(icrm);
-    pmid_in(icol,ilev)            = pmid(k,icrm)*100.;
+    pmid_in(icol,ilev)            = pres(k,icrm)*100.;
     pdel_in(icol,ilev)            = pdel(k,icrm)*100.;
     ast_in(icol,ilev)             = 1.; // ast(k,icrm);
     q_prev_in(icol,ilev)          = q_prev(k,j,i,icrm);
