@@ -1115,7 +1115,8 @@ end subroutine linoz_readnl
     real(r8):: efactor, dx
 
     !real(r8), parameter :: tau_30d = 1._r8/(30._r8*86400._r8)      ! inverse of (30 days*86400 sec/day)
-    real(r8), parameter :: tau_30d = 30._r8*86400._r8      ! inverse of (30 days*86400 sec/day)
+    ! HHLEE 20220112 changing decay time from 30 days to 90 days
+    real(r8), parameter :: tau_30d = 90._r8*86400._r8      ! inverse of (30 days*86400 sec/day)
     integer , parameter :: ms = 18      ! 
     
      efactor  = 1._r8 - exp(-delta_t/tau_30d)
