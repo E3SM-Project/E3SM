@@ -1092,18 +1092,43 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 30000._r8, z3, p_surf)
        call outfld('Z300    ', p_surf, pcols, lchnk)
     end if
+    if (hist_fld_active('Z250')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 25000._r8, z3, p_surf)
+       call outfld('Z250    ', p_surf, pcols, lchnk)
+    end if
     if (hist_fld_active('Z200')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, z3, p_surf)
        call outfld('Z200    ', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('Z150')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 15000._r8, z3, p_surf)
+       call outfld('Z150    ', p_surf, pcols, lchnk)
     end if
     if (hist_fld_active('Z100')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, z3, p_surf)
        call outfld('Z100    ', p_surf, pcols, lchnk)
     end if
+    if (hist_fld_active('Z070')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  7000._r8, z3, p_surf)
+       call outfld('Z070    ', p_surf, pcols, lchnk)
+    end if
     if (hist_fld_active('Z050')) then
        call vertinterp(ncol, pcols, pver, state%pmid,  5000._r8, z3, p_surf)
        call outfld('Z050    ', p_surf, pcols, lchnk)
     end if
+    if (hist_fld_active('Z030')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  3000._r8, z3, p_surf)
+       call outfld('Z030    ', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('Z020')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  2000._r8, z3, p_surf)
+       call outfld('Z020    ', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('Z010')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  1000._r8, z3, p_surf)
+       call outfld('Z010    ', p_surf, pcols, lchnk)
+    end if
+
 !
 ! Quadratic height fiels Z3*Z3
 !
@@ -1285,13 +1310,41 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 30000._r8, state%omega, p_surf)
        call outfld('OMEGA300', p_surf, pcols, lchnk)
     end if
+    if (hist_fld_active('OMEGA250')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 25000._r8, state%omega, p_surf)
+       call outfld('OMEGA250', p_surf, pcols, lchnk)
+    end if
     if (hist_fld_active('OMEGA200')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, state%omega, p_surf)
        call outfld('OMEGA200', p_surf, pcols, lchnk)
     end if
+    if (hist_fld_active('OMEGA150')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 15000._r8, state%omega, p_surf)
+       call outfld('OMEGA150', p_surf, pcols, lchnk)
+    end if
     if (hist_fld_active('OMEGA100')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%omega, p_surf)
        call outfld('OMEGA100', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('OMEGA070')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 7000._r8, state%omega, p_surf)
+       call outfld('OMEGA070', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('OMEGA050')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 5000._r8, state%omega, p_surf)
+       call outfld('OMEGA050', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('OMEGA030')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 3000._r8, state%omega, p_surf)
+       call outfld('OMEGA030', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('OMEGA020')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 2000._r8, state%omega, p_surf)
+       call outfld('OMEGA020', p_surf, pcols, lchnk)
+    end if
+    if (hist_fld_active('OMEGA010')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 1000._r8, state%omega, p_surf)
+       call outfld('OMEGA010', p_surf, pcols, lchnk)
     end if
     if (hist_fld_active('OMEGABOT')) then
        call outfld('OMEGABOT', state%omega(:,pver), pcols, lchnk)
@@ -1395,13 +1448,41 @@ end subroutine diag_conv_tend_ini
           call vertinterp(ncol, pcols, pver, state%pmid, 30000._r8, ftem, p_surf)
           call outfld('RH300', p_surf, pcols, lchnk)
        end if
+       if (hist_fld_active('RH250')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 25000._r8, ftem, p_surf)
+          call outfld('RH250', p_surf, pcols, lchnk)
+       end if
        if (hist_fld_active('RH200')) then
           call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, ftem, p_surf)
           call outfld('RH200', p_surf, pcols, lchnk)
        end if
+       if (hist_fld_active('RH150')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 15000._r8, ftem, p_surf)
+          call outfld('RH150', p_surf, pcols, lchnk)
+       end if
        if (hist_fld_active('RH100')) then
           call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, ftem, p_surf)
           call outfld('RH100', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RH070')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 7000._r8, ftem, p_surf)
+          call outfld('RH070', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RH050')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 5000._r8, ftem, p_surf)
+          call outfld('RH050', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RH030')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 3000._r8, ftem, p_surf)
+          call outfld('RH030', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RH020')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 2000._r8, ftem, p_surf)
+          call outfld('RH020', p_surf, pcols, lchnk)
+       end if
+       if (hist_fld_active('RH010')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 1000._r8, ftem, p_surf)
+          call outfld('RH010', p_surf, pcols, lchnk)
        end if
        if (hist_fld_active('RHBOT')) then
           call outfld('RHBOT', ftem(:,pver), pcols, lchnk)
@@ -1456,6 +1537,10 @@ end subroutine diag_conv_tend_ini
 !
 ! Output T,q,u,v fields on pressure surfaces
 !
+    if (hist_fld_active('T1000')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 100000._r8, state%t, p_surf)
+       call outfld('T1000   ', p_surf, pcols, lchnk )
+    end if
     if (hist_fld_active('T975')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 97500._r8, state%t, p_surf)
        call outfld('T975    ', p_surf, pcols, lchnk )
@@ -1463,6 +1548,10 @@ end subroutine diag_conv_tend_ini
     if (hist_fld_active('T950')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 95000._r8, state%t, p_surf)
        call outfld('T950    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('T925')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 92500._r8, state%t, p_surf)
+       call outfld('T925    ', p_surf, pcols, lchnk )
     end if
     if (hist_fld_active('T900')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 90000._r8, state%t, p_surf)
@@ -1492,13 +1581,45 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 30000._r8, state%t, p_surf)
        call outfld('T300    ', p_surf, pcols, lchnk )
     end if
+    if (hist_fld_active('T250')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 25000._r8, state%t, p_surf)
+       call outfld('T250    ', p_surf, pcols, lchnk )
+    end if
     if (hist_fld_active('T200')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, state%t, p_surf)
        call outfld('T200    ', p_surf, pcols, lchnk )
     end if
+    if (hist_fld_active('T150')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 15000._r8, state%t, p_surf)
+       call outfld('T150    ', p_surf, pcols, lchnk )
+    end if
     if (hist_fld_active('T100')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%t, p_surf)
        call outfld('T100    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('T070')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 7000._r8, state%t, p_surf)
+       call outfld('T070    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('T050')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 5000._r8, state%t, p_surf)
+       call outfld('T050    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('T030')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 3000._r8, state%t, p_surf)
+       call outfld('T030    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('T020')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 2000._r8, state%t, p_surf)
+       call outfld('T020    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('T010')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 1000._r8, state%t, p_surf)
+       call outfld('T010    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('Q1000')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q1000   ', p_surf, pcols, lchnk )
     end if
     if (hist_fld_active('Q975')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 97500._r8, state%q(1,1,1), p_surf)
@@ -1507,6 +1628,10 @@ end subroutine diag_conv_tend_ini
     if (hist_fld_active('Q950')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 95000._r8, state%q(1,1,1), p_surf)
        call outfld('Q950    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('Q925')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 92500._r8, state%q(1,1,1), p_surf)
+       call outfld('Q925    ', p_surf, pcols, lchnk )
     end if
     if (hist_fld_active('Q900')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 90000._r8, state%q(1,1,1), p_surf)
@@ -1540,13 +1665,41 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 30000._r8, state%q(1,1,1), p_surf)
        call outfld('Q300    ', p_surf, pcols, lchnk )
     end if
+    if (hist_fld_active('Q250')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 25000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q250    ', p_surf, pcols, lchnk )
+    end if
     if (hist_fld_active('Q200')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, state%q(1,1,1), p_surf)
        call outfld('Q200    ', p_surf, pcols, lchnk )
     end if
+    if (hist_fld_active('Q150')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 15000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q150    ', p_surf, pcols, lchnk )
+    end if
     if (hist_fld_active('Q100')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%q(1,1,1), p_surf)
        call outfld('Q100    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('Q070')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 7000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q070    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('Q050')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 5000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q050    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('Q030')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 3000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q030    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('Q020')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 2000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q020    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('Q010')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 1000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q010    ', p_surf, pcols, lchnk )
     end if
     if (hist_fld_active('U1000')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 100000._r8, state%u, p_surf)
@@ -1604,9 +1757,29 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, state%u, p_surf)
        call outfld('U200    ', p_surf, pcols, lchnk )
     end if
+    if (hist_fld_active('U150')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 15000._r8, state%u, p_surf)
+       call outfld('U150    ', p_surf, pcols, lchnk )
+    end if
     if (hist_fld_active('U100')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%u, p_surf)
        call outfld('U100    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U070')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  7000._r8, state%u, p_surf)
+       call outfld('U070    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U050')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  5000._r8, state%u, p_surf)
+       call outfld('U050    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U030')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  3000._r8, state%u, p_surf)
+       call outfld('U030    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U020')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  2000._r8, state%u, p_surf)
+       call outfld('U020    ', p_surf, pcols, lchnk )
     end if
     if (hist_fld_active('U010')) then
        call vertinterp(ncol, pcols, pver, state%pmid,  1000._r8, state%u, p_surf)
@@ -1668,6 +1841,34 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, state%v, p_surf)
        call outfld('V200    ', p_surf, pcols, lchnk )
     end if
+    if (hist_fld_active('V150')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 15000._r8, state%v, p_surf)
+       call outfld('V150    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V100')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%v, p_surf)
+       call outfld('V100    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V070')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 7000._r8, state%v, p_surf)
+       call outfld('V070    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V050')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 5000._r8, state%v, p_surf)
+       call outfld('V050    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V030')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 3000._r8, state%v, p_surf)
+       call outfld('V030    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V020')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 2000._r8, state%v, p_surf)
+       call outfld('V020    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V010')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 1000._r8, state%v, p_surf)
+       call outfld('V010    ', p_surf, pcols, lchnk )
+    end if
     if (hist_fld_active('U90M')) then
        call vertinterpz(ncol, pcols, pver, state%zm, 90._r8, state%u, p_surf)
        call outfld('U90M    ', p_surf, pcols, lchnk )
@@ -1676,10 +1877,6 @@ end subroutine diag_conv_tend_ini
        call vertinterpz(ncol, pcols, pver, state%zm, 90._r8, state%v, p_surf)
        call outfld('V90M    ', p_surf, pcols, lchnk )
     endif
-    if (hist_fld_active('V100')) then
-       call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%v, p_surf)
-       call outfld('V100    ', p_surf, pcols, lchnk )
-    end if
 
     ftem(:ncol,:) = state%t(:ncol,:)*state%t(:ncol,:)
     call outfld('TT      ',ftem    ,pcols   ,lchnk   )
@@ -1829,23 +2026,6 @@ end subroutine diag_conv_tend_ini
        call outfld('THE7001000    ', p_surf, pcols, lchnk )
     end if
 
-    if (hist_fld_active('T010')) then
-       call vertinterp(ncol, pcols, pver, state%pmid, 1000._r8, state%t, p_surf)
-       call outfld('T010           ', p_surf, pcols, lchnk )
-    end if
-
-    if (hist_fld_active('T250')) then
-       call vertinterp(ncol, pcols, pver, state%pmid, 25000._r8, state%t, p_surf)
-       call outfld('T250           ', p_surf, pcols, lchnk )
-    end if
-    if (hist_fld_active('T150')) then
-       call vertinterp(ncol, pcols, pver, state%pmid, 15000._r8, state%t, p_surf)
-       call outfld('T150           ', p_surf, pcols, lchnk )
-    end if
-    if (hist_fld_active('T050')) then
-       call vertinterp(ncol, pcols, pver, state%pmid, 5000._r8, state%t, p_surf)
-       call outfld('T050           ', p_surf, pcols, lchnk )
-    end if
     if (hist_fld_active('T025')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 2500._r8, state%t, p_surf)
        call outfld('T025           ', p_surf, pcols, lchnk )
@@ -1863,14 +2043,6 @@ end subroutine diag_conv_tend_ini
        call outfld('T001           ', p_surf, pcols, lchnk )
     end if
     call outfld ('TTOP    ', state%t(:,1)  ,  pcols, lchnk)
-    if (hist_fld_active('U150')) then
-       call vertinterp(ncol, pcols, pver, state%pmid,  15000._r8, state%u, p_surf)
-       call outfld('U150    ', p_surf, pcols, lchnk )
-    end if
-    if (hist_fld_active('U050')) then
-       call vertinterp(ncol, pcols, pver, state%pmid,  5000._r8, state%u, p_surf)
-       call outfld('U050    ', p_surf, pcols, lchnk )
-    end if
     if (hist_fld_active('U025')) then
        call vertinterp(ncol, pcols, pver, state%pmid,  2500._r8, state%u, p_surf)
        call outfld('U025    ', p_surf, pcols, lchnk )
