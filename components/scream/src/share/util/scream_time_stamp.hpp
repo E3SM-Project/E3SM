@@ -36,6 +36,7 @@ public:
 
   int sec_of_day () const { return m_time[0]*3600 + m_time[1]*60 + m_time[2]; }
   int seconds_from (const TimeStamp& ts) const;
+  double days_from (const TimeStamp& ts) const;
 
   std::string to_string () const;
   std::string get_date_string () const;
