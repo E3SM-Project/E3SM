@@ -255,6 +255,8 @@ void micro_p3_proc() {
   auto &ncrms              = :: ncrms;
   auto &dz                 = :: dz;
   auto $adz                = :: adz;
+  auto $pdel               = :: pdel;
+  auto $pres               = :: pres;
   auto &longitude0         = :: longitude0;
   auto &latitude0          = :: latitude0;
   auto &z0                 = :: z0;
@@ -289,9 +291,6 @@ void micro_p3_proc() {
   const int nlev  = nzm;
   const int ncol  = ncrms*nx*ny;
   const int npack = ekat::npack<Spack>(nlev);
-
-  real4d pmid("pmid",nzm,ny,nx,ncrms);
-  real4d pdel("pdel",nzm,ny,nx,ncrms);
 
   real2d qc_in("qc",ncol, nlev);
   real2d nc_in("nc",ncol, nlev);
@@ -340,24 +339,6 @@ void micro_p3_proc() {
 
   // real1d precip_liq_surf_out("precip_liq_surf_d", ncol);
   // real1d precip_ice_surf_out("precip_ice_surf_d", ncol);
-
-  //----------------------------------------------------------------------------
-  // Calculate total pressure and pressure thickness
-  //----------------------------------------------------------------------------
-  parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-    pmid(k,j,i,icrm) = p(k,j+offy_p,i+offx_p,icrm) + 100.0*pres(k,icrm);
-  });
-
-  parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-    if (k==0) {
-      // pdel(k,j,i,icrm) = psfc(icrm) - (pmid(k,j,i,icrm) + pmid(k+1,j,i,icrm))/2 ; < causes negative pdel!
-      pdel(k,j,i,icrm) = pmid(k,j,i,icrm) - pmid(k+1,j,i,icrm) ;
-    } else if (k==(nzm-1)) {
-      pdel(k,j,i,icrm) = pdel(k-1,j,i,icrm);
-    } else {
-      pdel(k,j,i,icrm) = ( pmid(k-1,j,i,icrm) - pmid(k+1,j,i,icrm) )/2 ;
-    }
-  });
 
   //----------------------------------------------------------------------------
   // Populate P3 thermodynamic state
@@ -446,8 +427,8 @@ void micro_p3_proc() {
     ni_activated_in(icol,ilev)    = ni_activated(k,icrm);
     inv_qc_relvar_in(icol,ilev)   = 1.; // relvar(k,icrm); - What value should we use before SHOC provides this?
     dz_in(icol,ilev)              = adz(k,icrm)*dz(icrm);
-    pmid_in(icol,ilev)            = pmid(k,j,i,icrm);
-    pdel_in(icol,ilev)            = pdel(k,j,i,icrm);
+    pmid_in(icol,ilev)            = pmid(k,icrm)*100.;
+    pdel_in(icol,ilev)            = pdel(k,icrm)*100.;
     ast_in(icol,ilev)             = 1.; // ast(k,icrm);
     q_prev_in(icol,ilev)          = q_prev(k,j,i,icrm);
     t_prev_in(icol,ilev)          = t_prev(k,j,i,icrm);
