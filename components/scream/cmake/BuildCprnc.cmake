@@ -26,7 +26,7 @@ macro(BuildCprnc)
       set(NETCDF_PATH ${NetCDF_Fortran_PATHS})
       "
     )
-    set(SRC_ROOT ${SCREAM_SOURCE_DIR}/../..)
+    set(SRC_ROOT ${SCREAM_BASE_DIR}/../..)
     add_subdirectory(${SRC_ROOT}/cime/tools/cprnc ${BLDROOT})
 
     set(CPRNC_BINARY ${BLDROOT}/cprnc CACHE INTERNAL "")

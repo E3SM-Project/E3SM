@@ -94,12 +94,12 @@ set (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)
 set (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
 
 # Configure the namelist into the test directory
-configure_file(${SCREAM_SOURCE_DIR}/src/dynamics/homme/tests/theta.nl
+configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
 # Copy initial conditions files
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_physics_ne2np4.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/homme_physics_ne2np4.nc COPYONLY)
+GetInputFile(init/homme_physics_ne2np4.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/homme_physics_ne2np4.nc)
 
 # Create vcoord directory
 file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vcoord)
@@ -111,18 +111,18 @@ configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72m.ascii
                ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
 
 # P3 data files
-configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4.1.1
-               ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_1.dat-v4.1.1 COPYONLY)
-configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_2.dat-v4.1.1
-               ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_2.dat-v4.1.1 COPYONLY)
+GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1
+  ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_1.dat-v4.1.1)
+GetInputFile(tables/p3_lookup_table_2.dat-v4.1.1
+  ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_2.dat-v4.1.1)
 
 # RRTMGP data files
 set(RRTMGP_EXTERNAL_DIR ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external)
-configure_file(${RRTMGP_EXTERNAL_DIR}/rrtmgp/data/rrtmgp-data-sw-g224-2018-12-04.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-configure_file(${RRTMGP_EXTERNAL_DIR}/rrtmgp/data/rrtmgp-data-lw-g256-2018-12-04.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-configure_file(${RRTMGP_EXTERNAL_DIR}/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-sw.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-configure_file(${RRTMGP_EXTERNAL_DIR}/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+GetInputFile(init/rrtmgp-data-sw-g224-2018-12-04.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
+GetInputFile(init/rrtmgp-data-lw-g256-2018-12-04.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
+GetInputFile(init/rrtmgp-cloud-optics-coeffs-sw.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
+GetInputFile(init/rrtmgp-cloud-optics-coeffs-lw.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/data)

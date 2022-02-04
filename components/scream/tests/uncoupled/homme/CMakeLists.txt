@@ -53,12 +53,12 @@ set (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)
 set (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
 
 # Configure the namelist into the test directory
-configure_file(${SCREAM_SOURCE_DIR}/src/dynamics/homme/tests/theta.nl
+configure_file(${SCREAM_BASE_DIR}/src/dynamics/homme/tests/theta.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
 # Copy initial conditions files
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_standalone_ne4np4.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/homme_standalone_ne4np4.nc COPYONLY)
+GetInputFile(init/homme_standalone_ne4np4.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/homme_standalone_ne4np4.nc)
 
 # Create vcoord directory
 file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vcoord)

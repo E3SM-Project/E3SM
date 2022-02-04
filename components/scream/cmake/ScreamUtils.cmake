@@ -159,3 +159,27 @@ function(CreateUnitTest test_name test_srcs scream_libs)
   CreateUnitTestFromExec("${test_name}" "${test_name}" ${options_TestPhase})
 
 endfunction(CreateUnitTest)
+
+###############################################################################
+function(GetInputFile src_path tgt_path)
+###############################################################################
+  # We rely on CIME to download for us if this is a CIME case
+  if (NOT SCREAM_CIME_BUILD)
+    if (NOT SCREAM_INPUT_ROOT)
+      message(FATAL_ERROR "No SCREAM_INPUT_ROOT set, cannot try to locate input file ${src_path}")
+    endif()
+    set(full_src_path ${SCREAM_INPUT_ROOT}/atm/scream/${src_path})
+    if (NOT EXISTS ${full_src_path})
+      execute_process(COMMAND ${SCREAM_SRC_DIR}/../scripts/check-input ${SCREAM_INPUT_ROOT} atm/scream/${src_path}
+        RESULT_VARIABLE check_input_status
+        OUTPUT_VARIABLE check_input_output
+        ERROR_VARIABLE  check_input_output
+        )
+      if (NOT check_input_status EQUAL 0)
+        message(FATAL_ERROR "Could not download ${src_path}, output was: ${check_input_output}")
+      endif()
+    endif()
+    configure_file(${full_src_path} ${tgt_path} COPYONLY)
+  endif()
+
+endfunction(GetInputFile)

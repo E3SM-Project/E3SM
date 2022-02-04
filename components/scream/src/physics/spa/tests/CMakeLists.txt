@@ -15,5 +15,4 @@ CreateUnitTest(spa_one_to_one_remap_test "spa_one_to_one_remap_test.cpp" "${NEED
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 
-CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/spa_data_for_testing.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/spa_data_for_testing.nc COPYONLY)
+GetInputFile(init/spa_data_for_testing.nc ${CMAKE_CURRENT_BINARY_DIR}/spa_data_for_testing.nc)

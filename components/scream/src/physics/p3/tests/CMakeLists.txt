@@ -82,4 +82,4 @@ add_custom_target(p3_baseline_cxx
 add_dependencies(baseline     p3_baseline_f90)
 add_dependencies(baseline_cxx p3_baseline_cxx)
 
-configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4.1.1 data/p3_lookup_table_1.dat-v4.1.1 COPYONLY)
+GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1 data/p3_lookup_table_1.dat-v4.1.1)

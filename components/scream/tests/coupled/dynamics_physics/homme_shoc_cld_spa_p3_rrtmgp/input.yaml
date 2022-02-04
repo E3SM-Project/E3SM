@@ -30,8 +30,8 @@ Atmosphere Processes:
   Process 3:
     Process Name: SPA
     Grid: Physics GLL
-    SPA Remap File: @SCREAM_SPA_DATA_DIR@/map_ne4np4_to_ne2np4_mono.nc
-    SPA Data File: @SCREAM_SPA_DATA_DIR@/spa_file_unified_and_complete_ne4_scream.nc
+    SPA Remap File: @SCREAM_INPUT_ROOT@/scream/map_ne4np4_to_ne2np4_mono.nc
+    SPA Data File: @SCREAM_INPUT_ROOT@/scream/spa_file_unified_and_complete_ne4_scream.nc
   Process 4:
     Process Name: P3
     Grid: Physics GLL
