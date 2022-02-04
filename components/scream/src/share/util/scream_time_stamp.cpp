@@ -95,7 +95,7 @@ int TimeStamp::seconds_from (const TimeStamp& ts) const {
 }
 
 double TimeStamp::days_from (const TimeStamp& ts) const {
-  return ((double)*this.seconds_from(ts)/86400.0);
+  return seconds_from(ts)/86400.0;
 }
 
 std::string TimeStamp::to_string () const {
