@@ -73,6 +73,8 @@ module homme_params_mod
     vfile_int,              &
     timestep_make_subcycle_parameters_consistent
 
+  implicit none
+
   public :: init_params_f90
   public :: get_homme_int_param_f90
   public :: get_homme_real_param_f90
