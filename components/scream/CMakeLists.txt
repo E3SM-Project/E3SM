@@ -112,6 +112,11 @@ endfunction ()
 # Compute reasonable defaults. This needs to happen before the CACHE variables
 # are set.
 string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
+if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+  set (SCREAM_DEBUG TRUE)
+else ()
+  set (SCREAM_DEBUG FALSE)
+endif()
 
 enable_testing()
 include(CTest)
@@ -144,7 +149,7 @@ if (CUDA_BUILD)
   # Limit to 1 rank, cause parallel builds testing might limit the number of available gpus
   set(DEFAULT_MAX_RANKS 1)
 else()
-  if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+  if (SCREAM_DEBUG)
     set(DEFAULT_MIMIC_GPU TRUE)
   endif()
 endif ()
@@ -235,7 +240,7 @@ check_pack_size(${SCREAM_PACK_SIZE} ${SCREAM_POSSIBLY_NO_PACK_SIZE} "possibly no
 ## Now we have pack sizes. Proceed with other config options that depend on
 ## these.
 
-if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+if (SCREAM_DEBUG)
   set(DEFAULT_FPMODEL "strict")
   if (${SCREAM_PACK_SIZE} EQUAL 1 AND NOT ${CUDA_BUILD})
     set(DEFAULT_FPE TRUE)

@@ -55,11 +55,11 @@ if (NOT ${SCREAM_BASELINES_ONLY})
                  PROPERTIES FIXTURES_REQUIRED p3_tables
                  LABELS "p3;physics")
 
-  # Make sure that a diff in the two implementation triggers a failed test
+  # Make sure that a diff in the two implementation triggers a failed test (in debug only)
   CreateUnitTest (p3_tests_fail p3_rain_sed_unit_tests.cpp "${NEED_LIBS}"
                  COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
                  THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
-                 PROPERTIES FIXTURES_REQUIRED p3_tables WILL_FAIL TRUE
+                 PROPERTIES FIXTURES_REQUIRED p3_tables WILL_FAIL ${SCREAM_DEBUG}
                  LABELS "p3;physics;fail")
 endif()
 
@@ -77,12 +77,12 @@ CreateUnitTest(p3_run_and_cmp_f90 "p3_run_and_cmp.cpp" "${NEED_LIBS}"
                EXCLUDE_MAIN_CPP
                LABELS "p3;physics")
 
-# Make sure a diff from baselines triggers a failed test
+# Make sure that a diff from baselines triggers a failed test (in debug only)
 CreateUnitTest(p3_run_and_cmp_cxx_fail "p3_run_and_cmp.cpp" "${NEED_LIBS}"
                COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
                THREADS ${SCREAM_TEST_MAX_THREADS}
                EXE_ARGS "-b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
-               PROPERTIES FIXTURES_REQUIRED p3_tables WILL_FAIL TRUE
+               PROPERTIES FIXTURES_REQUIRED p3_tables WILL_FAIL ${SCREAM_DEBUG}
                EXCLUDE_MAIN_CPP
                LABELS "p3;physics;fail")
 
