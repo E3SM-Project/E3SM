@@ -42,9 +42,9 @@ SET(CMAKE_CXX_COMPILER "hipcc" CACHE STRING "")
 SET(E3SM_KOKKOS_PATH "/ccs/home/onguba/kokkos-example-spock-hipcc/bld-hipcc" CACHE STRING "")
 
 #not the proper way!!!
-SET(MPICH_DIR "/opt/cray/pe/mpich/8.1.7/ofi/crayclang/10.0" CACHE STRING "")
+SET(MPICH_DIR "/opt/cray/pe/mpich/8.1.12/ofi/crayclang/10.0" CACHE STRING "")
 
-SET(Extrae_LIBRARY "-I${MPICH_DIR}/include -L${MPICH_DIR}/lib -lmpi -L/opt/cray/pe/mpich/8.1.7/gtl/lib -lmpi_gtl_hsa" CACHE STRING "")
+SET(Extrae_LIBRARY "-I${MPICH_DIR}/include -L${MPICH_DIR}/lib -lmpi -L/opt/cray/pe/mpich/8.1.12/gtl/lib -lmpi_gtl_hsa" CACHE STRING "")
 
 SET(ADD_Fortran_FLAGS "-O3 -DNDEBUG ${Extrae_LIBRARY} -I${E3SM_KOKKOS_PATH}/include -L${E3SM_KOKKOS_PATH}/lib64" CACHE STRING "")
 SET(ADD_C_FLAGS "-O3 -DNDEBUG ${Extrae_LIBRARY} -I${E3SM_KOKKOS_PATH}/include -L${E3SM_KOKKOS_PATH}/lib64" CACHE STRING "")
