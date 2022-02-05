@@ -59,6 +59,5 @@ Fields:
 Output Control:
   Frequency: 12
   Frequency Units: Steps
-  Timestamp in Filename: false
   MPI Ranks in Filename: true
 ...
