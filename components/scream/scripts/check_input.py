@@ -8,7 +8,6 @@ sys.path.append(_LIB_DIR)
 
 from CIME.case.check_input_data import _download_if_in_repo
 from CIME.utils import expect
-from CIME.Servers import WGET, SVN, FTP
 from CIME.XML.inputdata import Inputdata
 
 ###############################################################################
@@ -21,12 +20,16 @@ def download_file(input_root, the_file):
         protocol, address, user, passwd, _, ic_filepath, _ = inputdata.get_next_server()
         if protocol is not None:
             if protocol == "svn":
+                from CIME.Servers import SVN
                 server = SVN(address, user, passwd)
             elif protocol == "gftp":
+                from CIME.Servers import GridFTP
                 server = GridFTP(address, user, passwd)
             elif protocol == "ftp":
+                from CIME.Servers import FTP
                 server = FTP.ftp_login(address, user, passwd)
             elif protocol == "wget":
+                from CIME.Servers import WGET
                 server = WGET.wget_login(address, user, passwd)
             else:
                 expect(False, "Unsupported inputdata protocol: {}".format(protocol))
