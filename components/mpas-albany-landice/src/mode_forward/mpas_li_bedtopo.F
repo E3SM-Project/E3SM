@@ -72,8 +72,8 @@ module li_bedtopo
    real (kind=RKIND), dimension(:), allocatable :: gatheredArrayThickness
    real (kind=RKIND), dimension(:), allocatable :: globalArrayBedTopography
    real (kind=RKIND), dimension(:), allocatable :: gatheredArrayBedTopography
-   real (kind=RKIND), dimension(:), allocatable :: globalArrayUpliftDiff
-   real (kind=RKIND), dimension(:), allocatable :: gatheredArrayUpliftDiff
+   real (kind=RKIND), dimension(:), allocatable :: globalArrayTopoChange
+   real (kind=RKIND), dimension(:), allocatable :: gatheredArrayTopoChange
 
 !***********************************************************************
 
@@ -341,11 +341,10 @@ contains
    subroutine slmodel_init(domain, err)
 
 #ifdef USE_SEALEVELMODEL
-
       use sl_model_mod                    !< this is part of the SLM code
       use sl_io_mod                       !< this is part of the SLM code
       use user_specs_mod, only: nglv      !< this is part of the SLM code
-
+#endif
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -365,6 +364,7 @@ contains
       ! local variables
       !-----------------------------------------------------------------
 
+#ifdef USE_SEALEVELMODEL
       type (mpas_pool_type), pointer :: meshPool     !< mesh information
       type (mpas_pool_type), pointer :: geometryPool
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography
@@ -517,10 +517,11 @@ contains
    subroutine slmodel_solve(slmTimeStep, domain)
 
       use li_advection, only: li_update_geometry
+#ifdef USE_SEALEVELMODEL
       use sl_model_mod                    !< this is part of the SLM code
       use sl_io_mod                       !< this is part of the SLM code
       use user_specs_mod, only: nglv, dt1 !< this is part of the SLM code
-
+#endif
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -541,12 +542,13 @@ contains
       ! local variables
       !-----------------------------------------------------------------
 
+#ifdef USE_SEALEVELMODEL
       type (mpas_pool_type), pointer :: meshPool          !< mesh information
       type (mpas_pool_type), pointer :: geometryPool      !< geometry information
       type (mpas_pool_type), pointer :: velocityPool      !< velocity information
 
       real (kind=RKIND), dimension(:), pointer :: bedTopography, thickness
-      real (kind=RKIND), dimension(:), pointer :: upliftDiff
+      real (kind=RKIND), dimension(:), pointer :: TopoChange
 
       real (kind=RKIND), dimension(:), allocatable :: slChange_maliMesh, meshMask
       real (kind=RKIND), dimension(nglv,2*nglv) :: ismIceload, ismMask
@@ -566,7 +568,7 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-      call mpas_pool_get_array(geometryPool, 'upliftDiff', upliftDiff)
+      call mpas_pool_get_array(geometryPool, 'TopoChange', TopoChange)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
 
@@ -576,7 +578,7 @@ contains
 
       if (curProc.eq.0) then
          allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
-         allocate(globalArrayUpliftDiff(nCellsGlobal), gatheredArrayUpliftDiff(nCellsGlobal))
+         allocate(globalArrayTopoChange(nCellsGlobal), gatheredArrayTopoChange(nCellsGlobal))
          allocate(meshMask(nCellsGlobal))
       endif
 
@@ -613,22 +615,24 @@ contains
          slChange_slGrid1D = reshape(slmSLchange, [nglv*2*nglv])
 
          ! interpolate sea-level change from GL grid to MALI mesh.
-         call interpolate(fromColValues, fromRowValues, fromSValues, slChange_slGrid1D, globalArrayUpliftDiff)
+			! note: in the static sea-level theory, sea level and topography are globally defined !>
+			! and negative of each other. That is, topography change is negative of sea-level change
+         call interpolate(fromColValues, fromRowValues, fromSValues, -1*(slChange_slGrid1D), globalArrayTopoChange)
 
          ! Rearrange back to index order
          do iCell = 1,nCellsGlobal
-             gatheredArrayUpliftDiff(iCell) = globalArrayUpliftDiff(indexToCellIDGathered(iCell))
+             gatheredArrayTopoChange(iCell) = globalArrayTopoChange(indexToCellIDGathered(iCell))
          enddo
 
       endif
 
       ! scatter output sea-level changes to processors
-      call MPI_SCATTERV(gatheredArrayUpliftDiff, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
-                  upliftDiff, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
+      call MPI_SCATTERV(gatheredArrayTopoChange, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
+                  TopoChange, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
       err = ior(err, err_tmp)
 
       ! update bedTopography
-      bedTopography(:) = bedTopography(:) - upliftDiff(:)
+      bedTopography(:) = bedTopography(:) + TopoChange(:)
 
       call li_update_geometry(geometryPool)
       call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
@@ -637,12 +641,13 @@ contains
       ! deallocate memory
       if (curProc.eq.0) then
          deallocate(globalArrayThickness, gatheredArrayThickness)
-         deallocate(globalArrayUpliftDiff, gatheredArrayUpliftDiff)
+         deallocate(globalArrayTopoChange, gatheredArrayTopoChange)
          deallocate(meshMask)
       endif
 
       ! Perform Halo exchange update
       call mpas_dmpar_field_halo_exch(domain,'bedTopography')
+#endif
 
    !--------------------------------------------------------------------
    end subroutine slmodel_solve
