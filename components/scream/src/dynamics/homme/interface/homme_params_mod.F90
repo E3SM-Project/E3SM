@@ -73,6 +73,8 @@ module homme_params_mod
     vfile_int,              &
     timestep_make_subcycle_parameters_consistent
 
+  implicit none
+
   public :: init_params_f90
   public :: get_homme_int_param_f90
   public :: get_homme_real_param_f90
@@ -344,10 +346,7 @@ contains
 
        write(iulog,*)"homme namelist: se_fv_phys_remap_alg = ",se_fv_phys_remap_alg
 
-       if (hypervis_power /= 0)then
-          write(iulog,*)"Variable scalar hyperviscosity: hypervis_power=",hypervis_power
-          write(iulog,*)"max_hypervis_courant = ", max_hypervis_courant
-       elseif(hypervis_scaling /=0)then
+       if(hypervis_scaling /=0)then
           write(iulog,*)"Tensor hyperviscosity:  hypervis_scaling=",hypervis_scaling
        else
           write(iulog,*)"Constant (hyper)viscosity used."
