@@ -4460,35 +4460,50 @@ subroutine ice_complete_melting(kts,kte,ktop,kbot,kdir,qi,ni,qm,latent_heat_fusi
    real(rtype), intent(in), dimension(kts:kte) :: exner,latent_heat_fusion
    real(rtype), intent(inout), dimension(kts:kte) :: qi, ni, qc, nc, qr, nr, qm, th_atm
    
-   real(rtype) :: t_snow_melt,del_mass,del_num,rv_tmp,rv 
+   real(rtype) :: t_snow_melt,del_mass,del_num,rv_tmp,rv,frac_mlt,equiv_mass 
    integer :: k
 
+   ! ... For now we take the uper limit for complete melting to be like in MG2 2c
    t_snow_melt = 273.15 + 2.0_rtype         
    k_loop_mlt:  do k = kbot,ktop,kdir
       if (qi(k).ge.qsmall .and. (th_atm(k)/exner(k)) > t_snow_melt) then
          del_mass = qi(k)
-         del_num = ni(k)
+         del_num = max(ni(k),nsmall)
+         if(th_atm(k)/exner(k) - del_mass*latent_heat_fusion(k)/cp <  t_snow_melt)then
+            equiv_mass = (th_atm(k)/exner(k) - t_snow_melt)*cp/latent_heat_fusion(k)
+            frac_mlt = equiv_mass/del_mass
+            frac_mlt = max(0.0_rtype,frac_mlt)
+            frac_mlt = min(1.0_rtype,frac_mlt)
+         else
+            frac_mlt = 1.0_rtype
+         endif
          rv_tmp = 3.0_rtype*qi(k)/ni(k)/4.0_rtype/pi/900.0_rtype  ! density of pure ice [kg/m3]
          rv = 1.0e6_rtype*bfb_cbrt(rv_tmp)                        ! in [um]
          if((qm(k)/qi(k)) < 0.1_rtype)then
             if(rv < 100.0_rtype)then
-               ! ... Ice crystas
-               qc(k) = qc(k) + del_mass
-               nc(k) = nc(k) + del_num
+               ! ... Ice crystas melt into cld droplets
+               qi(k) = max((1.0_rtype - frac_mlt)*del_mass,0.0_rtype)
+               ni(k) = max((1.0_rtype - frac_mlt)*del_num,0.0_rtype)
+               qc(k) = qc(k) + frac_mlt*del_mass
+               nc(k) = nc(k) + frac_mlt*del_num
             else
-               ! ... Unrimed snow
-               qr(k) = qr(k) + del_mass
-               nr(k) = nr(k) + del_num
+               ! ... Unrimed snow melt to rain
+               qi(k) = max((1.0_rtype - frac_mlt)*del_mass,0.0_rtype)
+               ni(k) = max((1.0_rtype - frac_mlt)*del_num,0.0_rtype)
+               qr(k) = qr(k) + frac_mlt*del_mass
+               nr(k) = nr(k) + frac_mlt*del_num
             endif
          else
-            ! ... Medium rimed snow
-            qr(k) = qr(k) + del_mass
-            nr(k) = nr(k) + del_num
+            ! ... Medium rimed snow melt to rain
+            qi(k) = max((1.0_rtype - frac_mlt)*del_mass,0.0_rtype)
+            ni(k) = max((1.0_rtype - frac_mlt)*del_num,0.0_rtype)
+            qr(k) = qr(k) + frac_mlt*del_mass
+            nr(k) = nr(k) + frac_mlt*del_num
          endif
          qi(k) = 0.0_rtype
          ni(k) = 0.0_rtype
          qm(k) = 0.0_rtype
-         th_atm(k) = th_atm(k) - del_mass*latent_heat_fusion(k)/cp
+         th_atm(k) = th_atm(k) - frac_mlt*del_mass*latent_heat_fusion(k)/cp
       endif
    enddo k_loop_mlt
    
