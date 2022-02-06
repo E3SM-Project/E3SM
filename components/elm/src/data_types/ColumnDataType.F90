@@ -1069,6 +1069,11 @@ contains
           avgflag='A', long_name='soil temperature (ice landunits only)', &
            ptr_col=data2dptr, l2g_scale_type='ice')
 
+    this%t_soisno(begc:endc,:) = spval
+    call hist_addfld2d (fname='TSOI_LAKE',  units='K', type2d='levgrnd', &
+         avgflag='A', long_name='soil temperature (lake landunits only)', &
+         ptr_col=this%t_soisno, l2g_scale_type='lake')
+
     this%t_h2osfc(begc:endc) = spval
      call hist_addfld1d (fname='TH2OSFC',  units='K',  &
           avgflag='A', long_name='surface water temperature', &

@@ -956,7 +956,6 @@ contains
     allocate(CH4ParamsInst%rootlitfrac      )
     allocate(CH4ParamsInst%cnscalefactor    )
     allocate(CH4ParamsInst%redoxlag         )
-    allocate(CH4ParamsInst%lake_decomp_fact )
     allocate(CH4ParamsInst%redoxlag_vertical)
     allocate(CH4ParamsInst%pHmax            )
     allocate(CH4ParamsInst%pHmin            )
@@ -981,7 +980,6 @@ contains
     allocate(CH4ParamsInst%f_sat               )
     allocate(CH4ParamsInst%qflxlagd            )
     allocate(CH4ParamsInst%highlatfact         )
-    allocate(CH4ParamsInst%q10lakebase         )
     allocate(CH4ParamsInst%atmch4              )
     allocate(CH4ParamsInst%rob                 )
 
@@ -1169,8 +1167,8 @@ contains
   subroutine CH4 (bounds, &
        num_soilc, filter_soilc, &
        num_soilp, filter_soilp, &
-       atm2lnd_vars, lakestate_vars, canopystate_vars, soilstate_vars, soilhydrology_vars, &
-       energyflux_vars, lnd2atm_vars, elm_fates )
+       atm2lnd_vars, canopystate_vars, soilstate_vars, soilhydrology_vars, &
+       energyflux_vars, ch4_vars, lnd2atm_vars, elm_fates )
     !
     ! !DESCRIPTION:
     ! Driver for the methane emissions model
@@ -1544,7 +1542,7 @@ contains
          call ch4_ebul (bounds, &
               num_soilc, filter_soilc, &
               jwt(begc:endc), sat, &
-              atm2lnd_vars, lakestate_vars, soilstate_vars, ch4_vars, dtime)
+              atm2lnd_vars, soilstate_vars, ch4_vars, dtime)
 
          ! Solve CH4 reaction/diffusion equation
          ! Competition for oxygen will occur here.
@@ -2483,7 +2481,7 @@ contains
   subroutine ch4_ebul (bounds, &
        num_methc, filter_methc, &
        jwt, sat, &
-       atm2lnd_vars, lakestate_vars, soilstate_vars, ch4_vars, dtime)
+       atm2lnd_vars, soilstate_vars, ch4_vars, dtime)
     !
     ! !DESCRIPTION:
     ! Bubbling is based on temperature & pressure dependent solubility (k_h_cc),
@@ -2493,7 +2491,6 @@ contains
 
     ! !USES:
       !$acc routine seq
-    use LakeCon
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
