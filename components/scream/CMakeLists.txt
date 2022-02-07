@@ -111,6 +111,11 @@ endfunction ()
 # Compute reasonable defaults. This needs to happen before the CACHE variables
 # are set.
 string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
+if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+  set (SCREAM_DEBUG TRUE)
+else ()
+  set (SCREAM_DEBUG FALSE)
+endif()
 
 enable_testing()
 include(CTest)
@@ -143,7 +148,7 @@ if (CUDA_BUILD)
   # Limit to 1 rank, cause parallel builds testing might limit the number of available gpus
   set(DEFAULT_MAX_RANKS 1)
 else()
-  if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+  if (SCREAM_DEBUG)
     set(DEFAULT_MIMIC_GPU TRUE)
   endif()
 endif ()
@@ -253,7 +258,7 @@ check_pack_size(${SCREAM_PACK_SIZE} ${SCREAM_POSSIBLY_NO_PACK_SIZE} "possibly no
 ## Now we have pack sizes. Proceed with other config options that depend on
 ## these.
 
-if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+if (SCREAM_DEBUG)
   set(DEFAULT_FPMODEL "strict")
   if (${SCREAM_PACK_SIZE} EQUAL 1 AND NOT ${CUDA_BUILD})
     set(DEFAULT_FPE TRUE)
@@ -342,26 +347,6 @@ endif()
 if ($ENV{SCREAM_FORCE_RUN_FAIL})
   add_definitions(-DSCREAM_FORCE_RUN_FAIL)
 endif()
-if ($ENV{SCREAM_FORCE_RUN_FPE_FAIL})
-  add_definitions(-DSCREAM_FORCE_RUN_FPE_FAIL)
-endif()
-if ($ENV{SCREAM_FORCE_RUN_DIFF})
-  add_definitions(-DSCREAM_FORCE_RUN_DIFF)
-  set(SCREAM_FAKE_NEED_P3 ON)
-endif()
-if ($ENV{SCREAM_FORCE_RUN_DIFF_BFB_UNIT})
-  add_definitions(-DSCREAM_FORCE_RUN_DIFF_BFB_UNIT)
-  set(SCREAM_FAKE_NEED_P3 ON)
-endif()
-if ($ENV{SCREAM_FORCE_RUN_KOKKOS_OOB})
-  add_definitions(-DSCREAM_FORCE_RUN_KOKKOS_OOB)
-endif()
-if ($ENV{SCREAM_FORCE_RUN_VALG_ERR})
-  add_definitions(-DSCREAM_FORCE_RUN_VALG_ERR)
-  if (NOT EKAT_ENABLE_VALGRIND)
-    message(FATAL_ERROR "Makes no sense to turn on valgrind error test without valgrind enabled")
-  endif()
-endif()
 
 set(DEFAULT_SCREAM_DYNAMICS_DYCORE "NONE")
 if (SCREAM_CIME_BUILD AND SCREAM_DYN_TARGET STREQUAL "theta-l_kokkos")
@@ -392,27 +377,34 @@ file(MAKE_DIRECTORY ${SCREAM_TEST_DATA_DIR})
 
 add_custom_target(baseline)
 add_custom_target(baseline_cxx)
-
-add_subdirectory(src)
-if (NOT SCREAM_LIB_ONLY)
-  add_subdirectory(tests)
-  include(BuildCprnc)
-  BuildCprnc()
-endif()
-
-# Generate scream_config.h and scream_config.f
-include (EkatUtils)
-EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
-               ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
-               F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
-
+# SCREAM_FAKE_ONLY is used to run some tests to ensure the enclosing testing
+# scripts work correctly. We are not really interested in building/testing SCREAM.
 if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
+
+  add_subdirectory(src)
+
+  if (NOT SCREAM_LIB_ONLY)
+    add_subdirectory(tests)
+    include(BuildCprnc)
+    BuildCprnc()
+  endif()
+
+  # Generate scream_config.h and scream_config.f
+  include (EkatUtils)
+  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
+                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
+
   # Build any tools in the scripts/ dir.
   add_subdirectory(scripts)
-endif()
 
-# Generate scream_config.h and scream_config.f
-include (EkatUtils)
-EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
-               ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
-               F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
+  # Generate scream_config.h and scream_config.f
+  include (EkatUtils)
+  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
+                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
+else()
+  # This is a "fake" build of scream, to stress test the testing scripts.
+  # We only need to build something in our tests folder
+  add_subdirectory(tests/meta-tests)
+endif()
