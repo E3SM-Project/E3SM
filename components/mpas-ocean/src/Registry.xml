@@ -340,6 +340,14 @@
 					description="If true, the N2 lim iting is applied to the horizontal diffusion term"
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_Redi_use_term2" type="logical" default_value=".true." units="unitless"
+					description="If true, Redi term 2 is on"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Redi_use_term3" type="logical" default_value=".true." units="unitless"
+					description="If true, Redi term 3 is on"
+					possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
 		<nml_option name="config_use_GM" type="logical" default_value=".false." units="NA"

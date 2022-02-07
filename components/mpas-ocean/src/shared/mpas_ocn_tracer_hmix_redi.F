@@ -240,6 +240,7 @@ contains
                redi_term1(iTr, k, iCell) = redi_term1(iTr, k, iCell) - (1.0_RKIND + term1TaperFactor* &
                                            (kappaRediEdgeVal - 1.0_RKIND))*edgeSignOnCell(i, iCell)*flux*invAreaCell
 
+               ! Term 2: div( h S dphi/dz)
                flux_term2 = coef*kappaRediEdgeVal*RediKappa(iEdge)*layerThicknessEdge(k, iEdge)* &
                             0.25_RKIND* &
                             (slopeTriadDown(k, 1, iEdge)*(tracers(iTr, k, cell1) - tracers(iTr, k + 1, cell1)) &
@@ -257,8 +258,10 @@ contains
                                (tracers(iTr, minLevelEdgeBot(iEdge) - 1, cell2) - tracers(iTr, minLevelEdgeBot(iEdge), cell2))/(zMid(minLevelEdgeBot(iEdge) - 1, cell2) - zMid(minLevelEdgeBot(iEdge), cell2))
                endif
 
+if (config_Redi_use_term2) then ! mrp testing
                redi_term2(iTr, k, iCell) = redi_term2(iTr, k, iCell) - edgeSignOnCell(i, iCell)*flux_term2*invAreaCell
                redi_term2_edge(iTr, k, iEdge) = -flux_term2
+endif
             end do
 
             do k = minLevelEdgeBot(iEdge) + 1, maxLevelEdgeTop(iEdge) - 1
@@ -288,10 +291,11 @@ contains
                                 /(zMid(k, cell1) - zMid(k + 1, cell1)) &
                                 + slopeTriadDown(k, 2, iEdge)*(tracers(iTr, k, cell2) - tracers(iTr, k + 1, cell2)) &
                                 /(zMid(k, cell2) - zMid(k + 1, cell2)))
+if (config_Redi_use_term2) then ! mrp testing
                   redi_term2(iTr, k, iCell) = redi_term2(iTr, k, iCell) - edgeSignOnCell(i, iCell)*flux_term2* &
                                 invAreaCell
                   redi_term2_edge(iTr, k, iEdge) = -flux_term2
-
+endif
                   dTracerDx = (tracers(iTr, k, cell2) - tracers(iTr, k, cell1))*dvEdge(iEdge)*0.25_RKIND
                   fluxRediZTop(iTr, k) = fluxRediZTop(iTr, k) + &
                                          0.5_RKIND*(slopeTriadUp(k, iCellSelf, iEdge) + slopeTriadDown(k - 1, iCellSelf, iEdge)) &
@@ -329,10 +333,11 @@ contains
                                layerThicknessEdge(k, iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadDown(k, 2, iEdge)* &
                                (tracers(iTr, k, cell2) - tracers(iTr, k + 1, cell2))/(zMid(k, cell2) - zMid(k + 1, cell2))
                endif
+if (config_Redi_use_term2) then ! mrp testing
                redi_term2(iTr, k, iCell) = redi_term2(iTr, k, iCell) - edgeSignOnCell(i, iCell)*flux_term2 &
                                 *invAreaCell
                redi_term2_edge(iTr, k, iEdge) = -flux_term2
-
+endif
                dTracerDx = (tracers(iTr, k, cell2) - tracers(iTr, k, cell1))*dvEdge(iEdge)*0.25_RKIND
                fluxRediZTop(iTr, k) = fluxRediZTop(iTr, k) + &
                                       0.5_RKIND*(slopeTriadUp(k, iCellSelf, iEdge) + slopeTriadDown(k - 1, iCellSelf, iEdge)) &
@@ -359,7 +364,9 @@ contains
                             * invAreaCell - RediKappaSfcTaper(k + 1, iCell)*RediKappaScaling(k + 1, iCell) &
                             *fluxRediZTop(iTr, k + 1) * invAreaCell)
 
+if (config_Redi_use_term3) then ! mrp testing
                redi_term3(iTr, k, iCell) = redi_term3(iTr, k, iCell) + flux_term3
+endif
             end do
          end do
       end do ! iCell
@@ -416,13 +423,16 @@ contains
          do k = minLevelCell(iCell), maxLevelCell(iCell)
             do iTr = 1, ntracers
                tend(iTr, k, iCell) = tend(iTr, k, iCell) + redi_term1(iTr, k, iCell)
+if (config_Redi_use_term3) then ! mrp testing
                tend(iTr, k, iCell) = tend(iTr, k, iCell) + rediKappaCell(iCell)*2.0_RKIND* &
                                      (RediKappaSfcTaper(k, iCell)*RediKappaScaling(k, iCell)* &
                                       redi_term3_topOfCell(iTr, k, iCell) - RediKappaSfcTaper(k + 1, iCell) &
                                       *RediKappaScaling(k + 1, iCell)*redi_term3_topOfCell(iTr, k + 1, iCell))
+endif
             end do
          end do
 
+if (config_Redi_use_term2) then ! mrp testing
          do i = 1, nEdgesOnCell(iCell)
             if (cellsOnCell(i, iCell) .eq. nCellsP1) cycle
             iEdge = edgesOnCell(i, iCell)
@@ -433,6 +443,7 @@ contains
             end do
          end do
       end do ! iCell
+endif
       !$omp end do
       !$omp end parallel
 
