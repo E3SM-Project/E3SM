@@ -1790,18 +1790,12 @@ module li_calving
       do while (associated(stream_cursor))
          if (trim(stream_cursor % name) == 'ismip-gis') then
             if (xtime == simulationStartTime) then
-               ! At the beginning of the simulations, force a read of this stream,
-               ! and use the most recent time available in the file.
-               call mpas_stream_mgr_read(domain % streamManager, streamID = stream_cursor % name, rightNow = .true., &
-                                         whence = MPAS_STREAM_LATEST_BEFORE, saveActualWhen= .true., ierr=err_tmp)
-
+               ! Use forcing fields and time from most recent time in file, which was read on init.
                call mpas_get_time(stream_cursor%mostRecentAccessTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
 
                TFoceanCurrent = TFocean
                ismip6RunoffCurrent = ismip6Runoff
 
-               call mpas_log_write("  * Forced a read of input stream 'ismip6-gis'" // &
-                                   " from time: " // trim(forcingTimeStamp))
                ! Force a read of this stream, and use the second most recent time in the file
                call mpas_stream_mgr_read(domain % streamManager, streamID = stream_cursor % name, rightNow = .true., &
                                 when = forcingTimeStamp, whence = MPAS_STREAM_LATEST_STRICTLY_BEFORE, saveActualWhen= .true., ierr=err_tmp)
