@@ -55,9 +55,9 @@ static Int compare (const std::string& label, const Scalar* a,
     // The code below is to force a result difference. This is used by the
     // scream/scripts internal testing to verify that various DIFFs are detected.
 #if defined(SCREAM_FORCE_RUN_DIFF)
-    const auto num = std::abs(a[i]*1.2 - b[i]);
+    const Real num = std::abs(a[i]*Real(1.2) - b[i]);
 #else
-    const auto num = std::abs(a[i] - b[i]);
+    const Real num = std::abs(a[i] - b[i]);
 #endif
     if (num > tol*den) {
       ++nerr2;
