@@ -217,8 +217,6 @@ void allocate() {
   t_vt_pert        = real4d( "t_vt_pert      "     , nzm , ny         , nx     , ncrms ); 
   q_vt_pert        = real4d( "q_vt_pert      "     , nzm , ny         , nx     , ncrms ); 
 
-  shoc_tracers     = real5d( "shoc_tracers   "     , nzm , ny         , nx     ,ncrms , num_tracers);
-
   yakl::memset(t00               ,0.);
   yakl::memset(tln               ,0.);
   yakl::memset(qln               ,0.);
@@ -430,8 +428,6 @@ void allocate() {
   yakl::memset(q_vt_pert         ,0.);
   yakl::memset(t_vt              ,0.);
   yakl::memset(q_vt              ,0.);
-
-  yakl::memset(shoc_tracers      ,0.);
 }
 
 
@@ -698,8 +694,6 @@ void finalize() {
   q_vt_tend        = real2d();
   t_vt_pert        = real4d();
   q_vt_pert        = real4d();
-
-  shoc_tracers     = real5d();
 }
 
 
@@ -1683,8 +1677,6 @@ void perturb_arrays() {
     perturb( q_vt_pert        , mag );
     perturb( t_vt             , mag );
     perturb( q_vt             , mag );
-
-    perturb( shoc_tracers     , mag );
   #endif
 }
 
@@ -1791,8 +1783,6 @@ real2d t_vt_tend      ;
 real2d q_vt_tend      ;
 real4d t_vt_pert      ;
 real4d q_vt_pert      ;
-
-real5d shoc_tracers   ;
 
 real1d fcorz           ;
 real1d fcor            ;

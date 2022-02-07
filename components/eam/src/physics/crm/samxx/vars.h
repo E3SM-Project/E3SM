@@ -413,10 +413,6 @@ extern real1d wnd             ;
 extern real2d qtot            ;
 extern real1d bflx            ;
 
-// variables for shoc, NOTE: shoc use flipped coordinate system, so we use
-// separate variables here.
-extern real5d shoc_tracers;
-
 extern real1d crm_input_bflxls; 
 extern real1d crm_input_wndls ;
 extern real2d crm_input_zmid  ;

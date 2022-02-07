@@ -224,7 +224,8 @@ enum {
   idx_nr,      // rain number
   idx_qm,      // ice rime amount
   idx_bm,      // ice rime volume
-  idx_qc       // cloud liq amount (this is also part of total water)
+  idx_qc,      // cloud liq amount (this is also part of total water)
+  idx_tke      // tke
 };
 
 real constexpr rhor = 1000.; // Density of water, kg/m3
