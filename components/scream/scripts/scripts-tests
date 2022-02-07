@@ -195,6 +195,9 @@ class TestBaseOuter: # Hides the TestBase class from test scanner
         def test_cmp_baseline(self):
             if self._compare:
                 for cmd in self._cmds:
+                    if "-p" in cmd:
+                        # Parallel builds can generate scrambled output. Skip them.
+                        continue
                     run_cmd_check_baseline(self, self.get_cmd(cmd, self._machine), self.get_baseline(cmd, self._machine))
             else:
                 self.skipTest("Skipping dry run baseline comparison")
