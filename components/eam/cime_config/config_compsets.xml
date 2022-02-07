@@ -178,6 +178,10 @@
     <alias>F-MMFXX-AQP1</alias>
     <lname>2000_EAM%MMFXX-AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
   </compset>
+  <compset>
+    <alias>F-MMFXX-P3-AQP1</alias>
+    <lname>2000_EAM%MMFXX-P3-AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+  </compset>
 
   <!-- *********************************** -->
   <!-- Radiative-Convective Equilibrium (RCE) -->
@@ -236,12 +240,10 @@
     <alias>F-MMFXX</alias>
     <lname>2010_EAM%MMFXX_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
-  <!-- Temporary compset for P3 development -->
   <compset>
     <alias>F-MMFXX-P3</alias>
     <lname>2010_EAM%MMFXX-P3_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
-  <!-- Temporary compset for P3 development -->
   <compset>
     <alias>F-MMFOMP</alias>
     <lname>2010_EAM%MMFOMP_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
