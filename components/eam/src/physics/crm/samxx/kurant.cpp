@@ -12,6 +12,7 @@ void kurant () {
   auto &dz    = ::dz;
   auto &adzw  = ::adzw;
   auto &ncrms = ::ncrms;
+  auto &tabs  = ::tabs;
 
   int constexpr max_ncycle = 4;
   real cfl;
@@ -74,6 +75,17 @@ void kurant () {
 
   if(ncycle > max_ncycle) {
     std::cout << "\nkurant() - the number of cycles exceeded max_ncycle = "<< max_ncycle << std::endl;
+    for (int icrm=0; icrm<ncrms; icrm++) {
+      for (int k=0; k<nzm; k++) {
+        std::cout<<"  "
+        <<"  icrm: "<<icrm
+        <<"  k: "<<k
+        <<"  wm: "<<wm(k,icrm)
+        <<"  uhm: "<<uhm(k,icrm)
+        <<"  tabs: "<<tabs(k,0,0,icrm)
+        << std::endl;
+      }
+    }
     exit(-1);
   }
 }
