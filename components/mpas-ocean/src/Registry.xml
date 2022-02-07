@@ -348,6 +348,14 @@
 					description="If true, Redi term 3 is on"
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_Redi_min_layers_term2" type="integer" default_value="0" units="NA"
+					description="min layers for Redi to work in that column"
+					possible_values="any integer>0"
+		/>
+		<nml_option name="config_Redi_min_layers_term3" type="integer" default_value="0" units="NA"
+					description="min layers for Redi to work in that column"
+					possible_values="any integer>0"
+		/>
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
 		<nml_option name="config_use_GM" type="logical" default_value=".false." units="NA"
