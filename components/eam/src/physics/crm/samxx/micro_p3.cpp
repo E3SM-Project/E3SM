@@ -571,11 +571,10 @@ void micro_p3_proc() {
      int i    = icol%nx;
      int j    = (icol/nx)%ny;
      int icrm = (icol/nx)/ny;
-     // int k    = ilev*Spack::n + s;
-     int k    = ilev;
-     // if (k < nlev) {
-        micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm) = prog_state.qc(icol,ilev)[s];
+     int k    = ilev*Spack::n + s;
+     if (k < nlev) {
         micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = prog_state.qv(icol,ilev)[s] + prog_state.qc(icol,ilev)[s];
+        micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm) = prog_state.qc(icol,ilev)[s];
         micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm) = prog_state.nc(icol,ilev)[s];
         micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm) = prog_state.qr(icol,ilev)[s];
         micro_field(idx_nr,k,j+offy_s,i+offx_s,icrm) = prog_state.nr(icol,ilev)[s];
@@ -583,7 +582,7 @@ void micro_p3_proc() {
         micro_field(idx_qm,k,j+offy_s,i+offx_s,icrm) = prog_state.qm(icol,ilev)[s];
         micro_field(idx_ni,k,j+offy_s,i+offx_s,icrm) = prog_state.ni(icol,ilev)[s];
         micro_field(idx_bm,k,j+offy_s,i+offx_s,icrm) = prog_state.bm(icol,ilev)[s];
-     // } 
+     }
   });
 
   micro_p3_diagnose();
