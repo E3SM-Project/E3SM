@@ -28,7 +28,9 @@ void advect_all_scalars() {
     }
   }
 
-  micro_precip_fall();
+  if (strcmp(microphysics_scheme, "sam1mom") == 0) {
+    micro_precip_fall();
+  }
 
 #ifdef MMF_ESMT
     // the esmt_offset simply ensures that the scalar momentum
