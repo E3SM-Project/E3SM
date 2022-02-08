@@ -337,6 +337,9 @@ Switch to enable or disable fractional cloudiness in m2005 microphysics in CRM: 
 <entry id="MMF_microphysics_scheme" valid_values="sam1mom,m2005,p3" value="sam1mom">
 MMF CRM cloud microphysics scheme
 </entry>
+<entry id="MMF_turbulence_scheme" valid_values="smag,shoc" value="smag">
+MMF CRM sub-grid turbulence scheme
+</entry>
 <entry id="crm" valid_values="sam,samomp,samxx" value="sam">
 MMF CRM model
 </entry>

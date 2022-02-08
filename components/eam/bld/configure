@@ -275,7 +275,8 @@ OPTIONS
      -crm_dt <n>        CRM's timestep.
      -crm_nx_rad <n>    number of averaged columns for CRM radiation calculation in x direction
      -crm_ny_rad <n>    number of averaged columns for CRM radiation calculation in y direction
-     -MMF_microphysics_scheme <string>   CRM microphysics package name [sam1mom | m2005 | p3].
+     -MMF_microphysics_scheme <string>   CRM microphysics package name [ sam1mom | m2005 | p3 ].
+     -MMF_turbulence_scheme   <string>   CRM turbulence package name [ smag | shoc ].
      -use_ECPP          use CRM clouds for vertical transport, aqueous chemistry and wet removable of aerosols
      -crm_adv           CRM advection scheme [MPDATA | UM5]
      -crm <model>       CRM model [sam | samomp | samxx]
@@ -349,7 +350,8 @@ GetOptions(
     "crm_dt=s"                  => \$opts{'crm_dt'},
     "crm_nx_rad=s"              => \$opts{'crm_nx_rad'},
     "crm_ny_rad=s"              => \$opts{'crm_ny_rad'},
-    "MMF_microphysics_scheme=s"     => \$opts{'MMF_microphysics_scheme'},
+    "MMF_microphysics_scheme=s" => \$opts{'MMF_microphysics_scheme'},
+    "MMF_turbulence_scheme=s"   => \$opts{'MMF_turbulence_scheme'},
     "crm_adv=s"                 => \$opts{'crm_adv'},
     "crm=s"                     => \$opts{'crm'},
     "rrtmgpxx"                  => \$opts{'rrtmgpxx'},
@@ -1236,16 +1238,9 @@ if (defined $opts{'use_MMF'}) {
     if (defined $opts{'crm_nx_rad'}) { $cfg_ref->set('crm_nx_rad', $opts{'crm_nx_rad'}); }
     if (defined $opts{'crm_ny_rad'}) { $cfg_ref->set('crm_ny_rad', $opts{'crm_ny_rad'}); }
     $cfg_ref->set('MMF_microphysics_scheme', $opts{'MMF_microphysics_scheme'});
+    $cfg_ref->set('MMF_turbulence_scheme', $opts{'MMF_turbulence_scheme'});
     $cfg_ref->set('crm_adv', $opts{'crm_adv'});
     $cfg_ref->set('crm', $opts{'crm'});
-    # Check that model is not using threading for the MMF
-    if ($nthreads > 1) {
-     die <<"EOF";
-**  ERROR: MMF mode may only use single thread
-**         nthreads set to $nthreads
-**
-EOF
-    }
 }
 
 #-----------------------------------------------------------------------------------------------

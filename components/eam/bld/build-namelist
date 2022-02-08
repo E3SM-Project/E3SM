@@ -1593,9 +1593,16 @@ if ($rad_pkg eq 'rrtmg' or $rad_pkg eq 'rrtmgp') {
         if ($cfg->get('MMF_microphysics_scheme') eq 'sam1mom') {
             add_default($nl, 'liqcldoptics', 'val' => 'slingo');
             add_default($nl, 'icecldoptics', 'val' => 'ebertcurry');
-        } else {
+        }
+        if ($cfg->get('MMF_microphysics_scheme') eq 'm2005') {
             add_default($nl, 'liqcldoptics', 'val' => 'gammadist');
             add_default($nl, 'icecldoptics', 'val' => 'mitchell');
+        }
+        if ($cfg->get('MMF_microphysics_scheme') eq 'p3') {
+            add_default($nl, 'liqcldoptics', 'val' => 'slingo');
+            add_default($nl, 'icecldoptics', 'val' => 'ebertcurry');
+            # add_default($nl, 'liqcldoptics', 'val' => 'gammadist');
+            # add_default($nl, 'icecldoptics', 'val' => 'mitchell');
         }
     } else {
         add_default($nl, 'liqcldoptics');
@@ -3670,8 +3677,9 @@ if ($clubb_sgs  =~ /$TRUE/io) {
 
 }
 
-# MMF Microphysics scheme
+# MMF configuration
 add_default($nl, 'MMF_microphysics_scheme');
+add_default($nl, 'MMF_turbulence_scheme');
 add_default($nl, 'use_MMF');
 add_default($nl, 'use_ECPP');
 

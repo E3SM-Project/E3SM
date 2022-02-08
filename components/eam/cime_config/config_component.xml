@@ -64,6 +64,7 @@
       <value compset="_EAM%MMF[12]"    >-crm sam</value>
       <value compset="_EAM%MMFXX"      >-crm samxx</value>
       <value compset="_EAM%MMFOMP"     >-crm samomp</value>
+      <value compset="_EAM%MMF"        >-MMF_turbulence_scheme smag</value>
       <value compset="_EAM%MMF[1XO]"   >-MMF_microphysics_scheme sam1mom -chem none</value>
       <value compset="_EAM%MMFXX-P3"   >-MMF_microphysics_scheme p3 -chem none </value>
       <value compset="_EAM%MMF2"       >-MMF_microphysics_scheme m2005 </value>
