@@ -130,7 +130,7 @@ contains
 
       integer :: iCell, iEdge, cell1, cell2, iCellSelf
       integer :: i, k, iTr, nTracers, nCells, nEdges, nCellsP1
-      logical :: local_Redi_use_term2, local_Redi_use_term3
+      logical :: use_Redi_diag_terms
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
@@ -203,15 +203,10 @@ contains
       !$omp         kappaRediEdgeVal, iTr, tracer_turb_flux, flux, flux_term2, flux_term3, &
       !$omp         dTracerDx)
       do iCell = 1, nCells
-         if (maxLevelCell(iCell)>config_Redi_min_layers_term2) then
-            local_Redi_use_term2 = .true.
+         if (maxLevelCell(iCell)>config_Redi_min_layers_diag_terms) then
+            use_Redi_diag_terms = .true.
          else
-            local_Redi_use_term2 = .false.
-         endif
-         if (maxLevelCell(iCell)>config_Redi_min_layers_term3) then
-            local_Redi_use_term3 = .true.
-         else
-            local_Redi_use_term3 = .false.
+            use_Redi_diag_terms = .false.
          endif
 
          redi_term1(:, :, iCell) = 0.0_RKIND
@@ -270,7 +265,7 @@ contains
                                (tracers(iTr, minLevelEdgeBot(iEdge) - 1, cell2) - tracers(iTr, minLevelEdgeBot(iEdge), cell2))/(zMid(minLevelEdgeBot(iEdge) - 1, cell2) - zMid(minLevelEdgeBot(iEdge), cell2))
                endif
 
-if (config_Redi_use_term2 .and. local_Redi_use_term2) then ! mrp testing
+if (use_Redi_diag_terms) then ! mrp testing
                redi_term2(iTr, k, iCell) = redi_term2(iTr, k, iCell) - edgeSignOnCell(i, iCell)*flux_term2*invAreaCell
                redi_term2_edge(iTr, k, iEdge) = -flux_term2
 endif
@@ -303,7 +298,7 @@ endif
                                 /(zMid(k, cell1) - zMid(k + 1, cell1)) &
                                 + slopeTriadDown(k, 2, iEdge)*(tracers(iTr, k, cell2) - tracers(iTr, k + 1, cell2)) &
                                 /(zMid(k, cell2) - zMid(k + 1, cell2)))
-if (config_Redi_use_term2 .and. local_Redi_use_term2) then ! mrp testing
+if (use_Redi_diag_terms) then ! mrp testing
                   redi_term2(iTr, k, iCell) = redi_term2(iTr, k, iCell) - edgeSignOnCell(i, iCell)*flux_term2* &
                                 invAreaCell
                   redi_term2_edge(iTr, k, iEdge) = -flux_term2
@@ -345,7 +340,7 @@ endif
                                layerThicknessEdge(k, iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadDown(k, 2, iEdge)* &
                                (tracers(iTr, k, cell2) - tracers(iTr, k + 1, cell2))/(zMid(k, cell2) - zMid(k + 1, cell2))
                endif
-if (config_Redi_use_term2 .and. local_Redi_use_term2) then ! mrp testing
+if (use_Redi_diag_terms) then ! mrp testing
                redi_term2(iTr, k, iCell) = redi_term2(iTr, k, iCell) - edgeSignOnCell(i, iCell)*flux_term2 &
                                 *invAreaCell
                redi_term2_edge(iTr, k, iEdge) = -flux_term2
@@ -366,7 +361,7 @@ endif
          end do
          redi_term3_topOfCell(:, maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
 
-if (config_Redi_use_term3 .and. local_Redi_use_term3) then ! mrp testing
+if ( use_Redi_diag_terms) then ! mrp testing
          do k = minLevelCell(iCell), maxLevelCell(iCell)
             do iTr = 1, nTracers
                ! Add tendency for Term 3: d/dz ( h S grad phi) = ( S grad phi) fluxes
@@ -431,22 +426,17 @@ endif
       !$omp parallel
       !$omp do schedule(runtime) private(invAreaCell, k, iTr, i, iEdge)
       do iCell = 1, nCells
-         if (maxLevelCell(iCell)>config_Redi_min_layers_term2) then
-            local_Redi_use_term2 = .true.
+         if (maxLevelCell(iCell)>config_Redi_min_layers_diag_terms) then
+            use_Redi_diag_terms = .true.
          else
-            local_Redi_use_term2 = .false.
-         endif
-         if (maxLevelCell(iCell)>config_Redi_min_layers_term3) then
-            local_Redi_use_term3 = .true.
-         else
-            local_Redi_use_term3 = .false.
+            use_Redi_diag_terms = .false.
          endif
 
          invAreaCell = 1.0_RKIND/areaCell(iCell)
          do k = minLevelCell(iCell), maxLevelCell(iCell)
             do iTr = 1, ntracers
                tend(iTr, k, iCell) = tend(iTr, k, iCell) + redi_term1(iTr, k, iCell)
-if (config_Redi_use_term3 .and. local_Redi_use_term3) then ! mrp testing
+if ( use_Redi_diag_terms) then ! mrp testing
                tend(iTr, k, iCell) = tend(iTr, k, iCell) + rediKappaCell(iCell)*2.0_RKIND* &
                                      (RediKappaSfcTaper(k, iCell)*RediKappaScaling(k, iCell)* &
                                       redi_term3_topOfCell(iTr, k, iCell) - RediKappaSfcTaper(k + 1, iCell) &
@@ -455,7 +445,7 @@ endif
             end do
          end do
 
-if (config_Redi_use_term2 .and. local_Redi_use_term2) then ! mrp testing
+if (use_Redi_diag_terms) then ! mrp testing
          do i = 1, nEdgesOnCell(iCell)
             if (cellsOnCell(i, iCell) .eq. nCellsP1) cycle
             iEdge = edgesOnCell(i, iCell)

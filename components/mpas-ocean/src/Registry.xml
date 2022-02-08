@@ -340,20 +340,8 @@
 					description="If true, the N2 lim iting is applied to the horizontal diffusion term"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_Redi_use_term2" type="logical" default_value=".true." units="unitless"
-					description="If true, Redi term 2 is on"
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_Redi_use_term3" type="logical" default_value=".true." units="unitless"
-					description="If true, Redi term 3 is on"
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_Redi_min_layers_term2" type="integer" default_value="0" units="NA"
-					description="min layers for Redi to work in that column"
-					possible_values="any integer>0"
-		/>
-		<nml_option name="config_Redi_min_layers_term3" type="integer" default_value="0" units="NA"
-					description="min layers for Redi to work in that column"
+		<nml_option name="config_Redi_min_layers_diag_terms" type="integer" default_value="5" units="NA"
+					description="min layers for Redi to work in that column for diagonal terms, term 2 and term 3"
 					possible_values="any integer>0"
 		/>
 	</nml_record>
