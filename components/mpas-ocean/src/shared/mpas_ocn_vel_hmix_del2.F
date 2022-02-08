@@ -77,7 +77,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_del2_tend(div, relVort, tend, err)!{{{
+   subroutine ocn_vel_hmix_del2_tend(div, relVort, viscosity, tend, err)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -92,7 +92,8 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         tend            !< [inout] accumulated velocity tendency
+         tend,          &!< [inout] accumulated velocity tendency
+         viscosity
 
       !-----------------------------------------------------------------
       ! output variables
@@ -135,6 +136,31 @@ contains
       !$acc    private(k, cell1, cell2, uDiff, vertex1, vertex2, &
       !$acc            dcEdgeInv, dvEdgeInv, visc2)
 #else
+
+!      if(config_use_two_equation_turbulence_model) then
+!         !$omp parallel
+!         !$omp do schedule(runtime) private(cell1, cell2, k)
+!         do iEdge = 1, nEdgesOwned
+!            cell1 = cellsOnEdge(1,iEdge)
+!            cell2 = cellsOnEdge(2,iEdge)
+!            do k = 1, maxLevelEdgeTop(iEdge)
+!               viscosity(k,iEdge) = 0.5_RKIND*(vertDiffTopOfCell(k,cell1) + vertDiffTopOfCell(k,cell2))
+!            end do
+!         end do
+!         !$omp end do
+!         !$omp end parallel
+!      else
+!         !$omp parallel
+!         !$omp do schedule(runtime) private(k)
+!         do iEdge = 1, nEdgesOwned
+!            do k = 1, maxLevelEdgeTop(iEdge)
+!               viscosity(k,iEdge) = viscDel2 * meshScalingDel2(iEdge)
+!            end do
+!         end do
+!         !$omp end do
+!         !$omp end parallel
+!      end if
+
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp    private(k, cell1, cell2, uDiff, vertex1, vertex2, &

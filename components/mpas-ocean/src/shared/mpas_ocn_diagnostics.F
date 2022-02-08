@@ -121,7 +121,8 @@ contains
       real (kind=RKIND), dimension(:), pointer :: &
         ssh,  seaIcePressure, atmosphericPressure
       real (kind=RKIND), dimension(:,:), pointer :: &
-        layerThickness, layerThicknessLag, normalVelocity
+        layerThickness, layerThicknessLag, normalVelocity, & 
+        verticalVelocity, nonhydrostaticPressure
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
@@ -153,8 +154,10 @@ contains
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
 
+      call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressure, timeLevel)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
+      call mpas_pool_get_array(statePool, 'verticalVelocity', verticalVelocity, timeLevel)
       call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
 
       call mpas_pool_get_array(forcingPool, 'seaIcePressure', seaIcePressure)
@@ -1179,10 +1182,10 @@ contains
          !$omp    private(k, cell1, cell2, vertex1, vertex2, invLength)
 #endif
          do iEdge = 1,nEdges
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-            vertex1 = verticesOnedge(1,iEdge)
-            vertex2 = verticesOnedge(2,iEdge)
+            cell1 = cellsOnEdge(1, iEdge)
+            cell2 = cellsOnEdge(2, iEdge)
+            vertex1 = verticesOnEdge(1, iEdge)
+            vertex2 = verticesOnEdge(2, iEdge)
 
             ! Compute gradient of PV in normal direction
 
@@ -2632,6 +2635,9 @@ contains
       !  alters ALE thickness when freq-filtering
       real (kind=RKIND), dimension(:,:), intent(in), optional :: &
          newHighFreqThickness     !< [in] high frequency thickness
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         nhPressureCorrection
 
       real (kind=RKIND), intent(in) :: &
          dt     !< Input: time step

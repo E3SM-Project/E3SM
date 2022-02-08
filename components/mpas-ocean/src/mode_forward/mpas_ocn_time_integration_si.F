@@ -45,6 +45,7 @@ module ocn_time_integration_si
    use ocn_gm
    use ocn_submesoscale_eddies
 
+   use ocn_compute_nonhydrostatic_pressure
    use ocn_equation_of_state
    use ocn_vmix
    use ocn_time_average_coupled
@@ -271,7 +272,11 @@ module ocn_time_integration_si
          highFreqThicknessNew,        &! high frq thick at new     time
          lowFreqDivergenceCur,        &! low frq div    at current time
          lowFreqDivergenceNew,        &! low frq div    at new     time
-         tracerGroupIdealAgeMask       ! mask for resetting surface ideal age
+         tracerGroupIdealAgeMask,     &! mask for resetting surface ideal age
+         verticalVelocityNew,         &! Vertical Velocity at new time
+         verticalVelocityCur,         &! Vertical Velocity at current time
+         nonhydrostaticPressure,      &! nhpressure at new time
+         nonhydrostaticPressureOld     ! nh pressure at current time
 
       type (field1DReal), pointer :: &
          effectiveDensityField         ! field pointer for halo update
@@ -292,6 +297,9 @@ module ocn_time_integration_si
       type (mpas_pool_iterator_type) :: &
          groupItr               ! iterator for tracer groups
 
+      type (dm_info) :: dminfo
+
+
       character (len=StrKIND) :: &
          modifiedGroupName,    &! constructed tracer group names
          configName             ! constructed config names for tracers
@@ -305,7 +313,9 @@ module ocn_time_integration_si
          normalVelocityTend,    &! normal velocity tendency
          highFreqThicknessTend, &! thickness tendency for high-freq iter
          lowFreqDivergenceTend, &! thickness tendency for low freq
-         layerThicknessTend      ! main thickness tendency
+         layerThicknessTend,    &! main thickness tendency
+
+         verticalVelocityTend    ! tendency of vertical velocity
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
          tracersGroupTend,      &! tendencies for tracer groups
@@ -451,7 +461,12 @@ module ocn_time_integration_si
                                           highFreqThicknessTend)
       call mpas_pool_get_array(tendPool, 'lowFreqDivergence', &
                                           lowFreqDivergenceTend)
-
+      call mpas_pool_get_array(tendPool, 'verticalVelocityTend', &
+                                          verticalVelocityTend)
+      call mpas_pool_get_array(statePool, 'verticalVelocity', &
+                                          verticalVelocityNew, 2)
+      call mpas_pool_get_array(statePool, 'verticalVelocity', &
+                                          verticalVelocityCur, 1)
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersNew, 2)
 
       if (config_transport_tests_flow_id > 0) then
@@ -584,6 +599,18 @@ module ocn_time_integration_si
             end if
          end if
       end do
+
+!         if(config_enable_nonhydrostatic_mode) then
+            !$omp parallel
+            !$omp do schedule(runtime) private(k)
+            do iCell=1,nCellsAll
+               do k = 2, maxLevelCell(iCell)
+                  verticalVelocityNew(k,iCell) = verticalVelocityCur(k,iCell)
+               end do
+            end do
+            !$omp end do
+            !$omp end parallel
+!         end if
 
       if (associated(highFreqThicknessNew)) then
 #ifdef MPAS_OPENACC
@@ -775,13 +802,23 @@ module ocn_time_integration_si
          if (associated(highFreqThicknessNew)) then
             call ocn_vert_transport_velocity_top( &
                  verticalMeshPool, layerThicknessCur, &
+<<<<<<< HEAD
                  layerThickEdgeFlux, normalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, err, highFreqThicknessNew)
+=======
+                 layerThickEdgeFlux, normalVelocityCur, verticalVelocityCur, &
+                 sshCur, dt, vertAleTransportTop, nhPressureCorrection, &
+                 err, highFreqThicknessNew)
+
+#ifdef MPAS_OPENACC
+            !$acc exit data delete(highFreqThicknessNew)
+#endif
+>>>>>>> b5f80740... added nonhydro to v2
          else
             call ocn_vert_transport_velocity_top( &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdgeFlux, normalVelocityCur, sshCur, dt, &
-                 vertAleTransportTop, err)
+                 layerThickEdgeFlux, normalVelocityCur, verticalVelocityCur, &
+                 sshCur, dt, vertAleTransportTop, nhPressureCorrection, err)
          endif
 
 #ifdef MPAS_OPENACC
@@ -1166,7 +1203,146 @@ module ocn_time_integration_si
       
                ! SpMV -------------------------------------------------------!
       
+<<<<<<< HEAD
                call si_matvec_mul(SIvec_wh0,SIvec_t0,sshSubcycleCur)
+=======
+               ! Global sum across CPUs
+               call mpas_timer_start("si reduction r0")
+               call mpas_dmpar_sum_real_array(domain % dminfo, 2,      &
+                                              SIcst_allreduce_local2,  &
+                                              SIcst_allreduce_global2)
+               call mpas_timer_stop ("si reduction r0")
+            endif 
+
+            SIcst_r00r0 = 0.0_RKIND
+            SIcst_r00w0 = 0.0_RKIND
+   
+            do iCell = 1, nCellsOwned
+               SIcst_r00r0 = SIcst_r00r0 + SIvec_r00(iCell) &
+                                         * SIvec_r0(iCell)
+               SIcst_r00w0 = SIcst_r00w0 + SIvec_r00(iCell) &
+                                         * SIvec_w0(iCell)
+            end do ! iCell
+
+            SIcst_allreduce_local2(1) = SIcst_r00r0
+            SIcst_allreduce_local2(2) = SIcst_r00w0
+   
+            ! Global sum across CPUs
+            call mpas_timer_start("si reduction r0")
+            call mpas_dmpar_sum_real_array(domain % dminfo, 2,      &
+                                           SIcst_allreduce_local2,  &
+                                           SIcst_allreduce_global2)
+            call mpas_timer_stop ("si reduction r0")
+   
+            if ( config_btr_si_partition_match_mode .and. ncpus > 1) then
+               SIcst_allreduce_temp9(:)    = 0.0_RKIND
+               SIcst_allreduce_itemp9(:)   = 0.0_RKIND
+   
+               SIcst_allreduce_itemp9(1:2) = &
+                                    exponent(SIcst_allreduce_global2(:))
+               SIcst_allreduce_temp9(1:2)  = &
+                                    fraction(SIcst_allreduce_global2(:))
+               SIcst_allreduce_temp9(1:2)  = &
+                                    anint(SIcst_allreduce_temp9(1:2) &
+                                           * 1.0e+4_RKIND  ) &
+                                           / 1.0e+4_RKIND
+   
+               SIcst_allreduce_global2(:) =          &
+                          SIcst_allreduce_temp9(1:2) &
+                        * 2.0_RKIND ** (SIcst_allreduce_itemp9(1:2))
+            endif
+   
+            SIcst_r00r0_global = SIcst_allreduce_global2(1)
+            SIcst_r00w0_global = SIcst_allreduce_global2(2)
+
+            SIcst_rho0   = SIcst_r00r0_global
+            SIcst_alpha0 = SIcst_rho0 / SIcst_r00w0_global
+            SIcst_beta0  = 0.0_RKIND
+            SIcst_omega0 = 0.0_RKIND
+   
+            call mpas_timer_stop("si btr residual")
+   
+   
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            ! Stage 2.3 : Outer iterations 
+            !             - lagged values are sufficiently up to date
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   
+            call mpas_timer_start("si btr iteration")
+   
+            iter = 0
+            resid = (tolerance_outer+100.0)**2.0
+   
+            !-------------------------------------------------------------!
+            do while ( dsqrt(resid) > tolerance_outer )
+            !-------------------------------------------------------------!
+   
+               iter = iter + 1
+   
+               !$omp parallel
+               !$omp do schedule(runtime)
+               do iCell = 1, nPrecVec
+                  SIvec_ph1(iCell) =  SIvec_rh0(iCell) + SIcst_beta0      &
+                                   * (SIvec_ph0(iCell) - SIcst_omega0     &
+                                                       * SIvec_sh0(iCell))
+   
+                  SIvec_s1(iCell)  =  SIvec_w0(iCell)  + SIcst_beta0      &
+                                   * (SIvec_s0(iCell)  - SIcst_omega0     &
+                                                       * SIvec_z0(iCell))
+   
+                  SIvec_sh1(iCell) =  SIvec_wh0(iCell) + SIcst_beta0      &
+                                   * (SIvec_sh0(iCell) - SIcst_omega0     &
+                                                       * SIvec_zh0(iCell))
+   
+                  SIvec_z1(iCell)  =  SIvec_t0(iCell)  + SIcst_beta0      &
+                                   * (SIvec_z0(iCell)  - SIcst_omega0     &
+                                                       * SIvec_v0(iCell))
+   
+                  SIvec_q0(iCell)  =  SIvec_r0(iCell)  - SIcst_alpha0     &
+                                                       * SIvec_s1(iCell)
+   
+                  SIvec_qh0(iCell) =  SIvec_rh0(iCell) - SIcst_alpha0     &
+                                                       * SIvec_sh1(iCell)
+   
+                  SIvec_y0(iCell)  =  SIvec_w0(iCell)  - SIcst_alpha0     &
+                                                       * SIvec_z1(iCell)
+               end do ! iCell
+               !$omp end do
+               !$omp end parallel
+   
+               ! Preconditioning -----------------------------------------!
+   
+               if ( trim(config_btr_si_preconditioner) == 'ras' ) then
+                  ! RAS preconditioning: Use BLAS 
+                  ! for the symmetric matrix-vector multiplication
+#ifdef USE_LAPACK
+                  call DSPMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, &
+                             SIvec_z1(1:nPrecVec), 1, 0.0_RKIND,   &
+                             SIvec_zh1(1:nPrecVec),1)
+#endif
+   
+               elseif ( trim(config_btr_si_preconditioner) == &
+                                                 'block_jacobi' ) then
+                  ! Block-Jacobi preconditioning: Use BLAS 
+                  ! for the symmetric matrix-vector multiplication
+#ifdef USE_LAPACK
+                  call DSPMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, &
+                             SIvec_z1(1:nPrecVec), 1, 0.0_RKIND,   &
+                             SIvec_zh1(1:nPrecVec),1)
+#endif
+   
+               elseif ( trim(config_btr_si_preconditioner) == &
+                                                       'jacobi' ) then
+                  ! Jacobi preconditioning
+                  SIvec_zh1(1:nPrecVec) = SIvec_z1(1:nPrecVec) &
+                                        * prec_ivmat(1:nPrecVec)
+   
+               elseif ( trim(config_btr_si_preconditioner) == &
+                                                         'none' ) then
+                  ! No preconditioning
+                  SIvec_zh1(1:nPrecVec) = SIvec_z1(1:nPrecVec)
+               end if
+>>>>>>> b5f80740... added nonhydro to v2
    
                ! Reduction --------------------------------------------------!
    
@@ -1792,16 +1968,16 @@ module ocn_time_integration_si
 #endif
             call ocn_vert_transport_velocity_top( &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdgeFlux, normalTransportVelocity, sshCur, &
-                 dt, vertAleTransportTop, err, highFreqThicknessNew)
+                 layerThickEdgeFlux, normalTransportVelocity, verticalVelocityNew, sshCur, &
+                 dt, vertAleTransportTop, nhPressureCorrection, err, highFreqThicknessNew)
 #ifdef MPAS_OPENACC
             !$acc exit data delete(highFreqThicknessNew)
 #endif
          else
             call ocn_vert_transport_velocity_top( &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdgeFlux, normalTransportVelocity, sshCur, &
-                 dt, vertAleTransportTop, err)
+                 layerThickEdgeFlux, normalTransportVelocity, verticalVelocityNew, sshCur, &
+                 dt, vertAleTransportTop, nhPressureCorrection, err)
          endif
 #ifdef MPAS_OPENACC
          !$acc exit data delete(layerThicknessCur, sshCur)
@@ -1826,6 +2002,10 @@ module ocn_time_integration_si
                               meshPool, swForcingPool, &
                               dt, activeTracersOnly, 2)
 
+         if(config_enable_nonhydrostatic_mode) then
+            call ocn_tend_vvel(tendPool, statePool, & 
+                          forcingPool, meshPool, 2, dt)
+         end if
          call mpas_timer_stop('si tracer tend')
 
          ! update halo for tracer tendencies
@@ -1856,6 +2036,11 @@ module ocn_time_integration_si
                                                 normalVelocityCur, 1)
          call mpas_pool_get_array(tracersTendPool,'activeTracersTend', &
                                                    activeTracersTend)
+         if(config_enable_nonhydrostatic_mode) then
+               call mpas_pool_get_array(statePool, 'verticalVelocity', verticalVelocityCur, 1)
+               call mpas_pool_get_array(statePool, 'verticalVelocity', verticalVelocityNew, 2)
+               call mpas_pool_get_array(tendPool, 'verticalVelocityTend', verticalVelocityTend)
+            end if
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !  If iterating, reset variables for next iteration
@@ -1871,6 +2056,20 @@ module ocn_time_integration_si
 
             ! Only need T & S for earlier iterations,
             ! then all the tracers needed the last time through.
+
+            if(config_enable_nonhydrostatic_mode) then
+                  !$omp parallel
+                  !$omp do schedule(runtime) private(k, temp_h)
+                  do iCell=1,nCells
+                     do k=2,maxLevelCell(iCell)
+                        temp_h = verticalVelocityCur(k,iCell) + dt * verticalVelocityTend(k,iCell)
+                        verticalVelocityNew(k,iCell) = 0.5_RKIND*(verticalVelocityCur(k,iCell) + temp_h)
+                     end do
+                  end do
+                  !$omp end do
+                  !$omp end parallel
+               end if
+
 
             !$omp parallel
             !$omp do schedule(runtime) private(i, k, temp_h, temp)
@@ -2397,6 +2596,28 @@ module ocn_time_integration_si
       call mpas_dmpar_field_halo_exch(domain, 'normalVelocity', &
                                       timeLevel=2)
       call mpas_timer_stop('si vmix halos normalVelFld')
+
+      if(config_enable_nonhydrostatic_mode) then
+            call mpas_pool_get_array(statePool, 'verticalVelocity', verticalVelocityNew, 2)
+            call mpas_pool_get_array(statePool, 'verticalVelocity', verticalVelocityCur, 1)
+            call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressure,2)
+            call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressureOld,1)
+
+            dminfo = domain % dminfo
+            call ocn_nonhydrostatic_pressure_tend(normalVelocityNew, verticalVelocityNew, &
+              layerThicknessNew, layerThickEdgeMean, nhPressureCorrection, dminfo % comm, dt)
+
+            call mpas_timer_start('se NHpressure tend halo pressure')
+            call mpas_dmpar_field_halo_exch(domain, 'nonhydrostaticPressure', timeLevel=2)
+            call mpas_dmpar_field_halo_exch(domain, 'nonhydrostaticPressure', timelevel=1)
+            call mpas_dmpar_field_halo_exch(domain, 'nhPressureCorrection')
+            call mpas_timer_stop('se NHpressure tend halo pressure')
+
+            call ocn_nonhydrostatic_pressure_update_velocity(normalVelocityNew, verticalVelocityNew, &
+              layerThicknessNew, layerThickEdgeMean, nonhydrostaticPressure, nonhydrostaticPressureOld, &
+              nhPressureCorrection, dt)
+
+      end if
 
       call mpas_pool_begin_iteration(tracersPool)
       do while ( mpas_pool_get_next_member(tracersPool, groupItr) )

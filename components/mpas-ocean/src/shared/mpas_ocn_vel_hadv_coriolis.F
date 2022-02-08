@@ -79,7 +79,7 @@ contains
    subroutine ocn_vel_hadv_coriolis_tend(normRelVortEdge, &
                                       normPlanetVortEdge, &
                                       layerThickEdgeFlux, normalVelocity, &
-                                      kineticEnergyCell, tend, err)!{{{
+                                      kineticEnergyCell, verticalVelocity, tend, err)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -90,7 +90,10 @@ contains
          normPlanetVortEdge, &!< [in] planetary vorticity/thickness at edge
          layerThickEdgeFlux,     &!< [in] layer thickness on edge
          normalVelocity,     &!< [in] Horizontal velocity
-         kineticEnergyCell    !< [in] Kinetic Energy
+         kineticEnergyCell    !< [in] Kinetic Energyi
+
+      real (kind=RKIND), dimension(:,:), intent(in), optional :: &
+         verticalVelocity    !< vertical velocity for non-hydrostatic mode only
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -251,6 +254,29 @@ contains
       !$omp end do
       !$omp end parallel
 #endif
+
+      if(config_enable_nonHydrostatic_mode) then
+        !Add in the tendency for coriolis from vertical velocity
+        !$omp parallel
+        !$omp do schedule(runtime) &
+        !$omp private(cell1, cell2, wav)
+        do iEdge = 1, nEdgesAll
+           cell1 = cellsOnEdge(1,iEdge)
+           cell2 = cellsOnEdge(2,iEdge)
+
+           !k-indexing can't be right here?
+           !do k=1,maxLevelEdgeTop(iEdge)
+           !   wav = 0.25_RKIND * (verticalVelocity(k,cell1) +
+           !   verticalVelocity(k,cell2) + &
+           !           verticalVelocity(k+1,cell1) +
+           !           verticalVelocity(k+1,cell2))
+           !   tend(k, iEdge) = tend(k,iEdge) -
+           !   2.0_RKIND*omega*cos(latEdge(iEdge))*wav
+           !end do
+        end do
+        !$omp end do
+        !$omp end parallel
+      endif
 
       !$acc exit data delete(tmpVorticity, qArr)
       deallocate(qArr,tmpVorticity)

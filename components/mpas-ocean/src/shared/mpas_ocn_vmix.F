@@ -51,8 +51,11 @@ module ocn_vmix
    !
    !--------------------------------------------------------------------
 
+   private :: tridiagonal_solve
+
    public :: ocn_vmix_coefs, &
              ocn_vel_vmix_tend_implicit, &
+             ocn_vertVel_vmix_tend_implicit, &
              ocn_tracer_vmix_tend_implicit, &
              ocn_vmix_init, &
              ocn_vmix_implicit
@@ -523,6 +526,141 @@ contains
    !--------------------------------------------------------------------
 
    end subroutine ocn_vel_vmix_tend_implicit!}}}
+
+!***********************************************************************
+!
+   !  routine ocn_verVel_vmix_tend_implicit
+   !
+   !> \brief   Computes tendencies for implicit vertical momentum vertical
+   !mixing
+   !> \author  Luke Van Roekel
+   !> \date    December 2020
+   !> \details
+   !>  This routine computes the tendencies for implicit vertical mixing for
+   !>  vertical momentum using computed coefficients.
+   !
+   !-----------------------------------------------------------------------
+
+   subroutine ocn_vertVel_vmix_tend_implicit(meshPool, dt, vertViscTopOfCell, layerThickness, & !{{{
+                                         verticalVelocity, err)
+
+      implicit none
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), intent(in) :: &
+         meshPool          !< Input: mesh information
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         vertViscTopOfCell !< Input: vertical mixing coefficients
+
+      real (kind=RKIND), intent(in) :: &
+         dt            !< Input: time step
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         layerThickness !< Input: thickness at cell center
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(inout) :: &
+         verticalVelocity             !< Input: velocity
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iCell, k, N, nCells
+      integer, pointer :: nVertLevels
+      integer, dimension(:), pointer :: nCellsArray
+
+      integer, dimension(:), pointer :: maxLevelCell
+      real(kind=RKIND) :: viscAv
+      integer, dimension(:,:), pointer :: cellsOnEdge
+
+      real (kind=RKIND), dimension(:), allocatable :: A, B, C, velTemp
+
+      err = 0
+
+      if(.not.velVmixOn) return
+
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
+
+      nCells = nCellsArray( 1 )
+
+      allocate(A(nVertLevels+1),B(nVertLevels+1),C(nVertLevels+1),velTemp(nVertLevels+1))
+      A(1) = 0.0_RKIND
+      B(1) = 0.0_RKIND
+      C(1) = 0.0_RKIND
+
+      !$omp parallel
+      !$omp do schedule(runtime) private(viscAv, N, A, B, C, velTemp, k) 
+      do iCell = 1, nCells
+        N = maxLevelCell(iCell)+1
+        if (N .gt. 0) then
+        A(N) = 0.0_RKIND
+        C(N) = 0.0_RKIND
+
+        ! A is lower diagonal term
+        do k = 2, N-1
+            viscAv = 0.5_RKIND*(vertViscTopOfCell(k-1,iCell) + vertViscTopOfCell(k,iCell))
+            A(k) = dt*viscAv / layerThickness(k-1,iCell) / (0.5_RKIND* &
+                    (layerThickness(k-1,iCell) + layerThickness(k,iCell)))
+!            A(k) = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
+!               / (layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge)) &
+!               / layerThicknessEdge(k,iEdge)
+         enddo
+         ! C is upper diagonal term
+         do k = 2, N-1
+           viscAv = 0.5_RKIND*(vertViscTopOfCell(k,iCell) + vertViscTopOfCell(k+1,iCell))
+           C(k) = dt*viscAv / layerThickness(k,iCell) / (0.5_RKIND* &
+                   (layerThickness(k,iCell) + layerThickness(k-1,iCell)))
+!            A(k) = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
+!            C(k) = -2.0_RKIND*dt*vertViscTopOfEdge(k+1,iEdge) &
+!               / (layerThicknessEdge(k,iEdge) + layerThicknessEdge(k+1,iEdge)) &
+!               / layerThicknessEdge(k,iEdge)
+         enddo
+
+         ! B is diagonal term
+         do k = 1, N
+            B(k) = 1.0_RKIND - A(k) - C(k)
+         enddo
+
+         call tridiagonal_solve(A(2:N),B,C(1:N-1),verticalVelocity(:,iCell),velTemp,N)
+
+         verticalVelocity(1:N,iCell) = velTemp(1:N)
+        end if
+      end do
+      !$omp end do
+      !$omp end parallel
+
+      deallocate(A,B,C,velTemp)
+
+   !--------------------------------------------------------------------
+
+ end subroutine ocn_vertVel_vmix_tend_implicit!}}}
+
 
 !***********************************************************************
 !
@@ -1123,7 +1261,7 @@ contains
 
       integer :: iCell, timeLevel, k, cell1, cell2, iEdge, iTracer, num_tracers, nCells, nEdges, N, Nsurf
       real (kind=RKIND), dimension(:), pointer :: bottomDrag, ssh
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThickness
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThickness, verticalVelocity
       real (kind=RKIND), dimension(:,:), pointer :: tracerGroupSurfaceFlux
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
       real (kind=RKIND), dimension(:,:,:), allocatable :: nonLocalFluxTend
@@ -1145,6 +1283,7 @@ contains
 
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
+      call mpas_pool_get_array(statePool, 'verticalVelocity', verticalVelocity, timeLevel)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
       call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
 
@@ -1251,6 +1390,20 @@ contains
       !$acc exit data copyout(normalVelocity)
 #endif
       call mpas_timer_stop('vmix solve momentum')
+      !
+      !  If nonhydrostatic is enabled compute vertical velocity diffusion
+      !
+      if (config_enable_nonhydrostatic_mode) then
+         call ocn_vertVel_vmix_tend_implicit(meshPool, dt, vertViscTopOfCell, layerThickness, &
+                                               verticalVelocity, err)
+      endif 
+
+      nEdges = nEdgesOwned 
+      do iEdge=1,nEdges
+         do k=1,nVertLevels
+            velocityVmixTend(k,iEdge) = (normalVelocity(k,iEdge) - velocityvmixtend(k,iEdge)) / dt
+         end do
+      end do
 
       !
       !  Implicit vertical solve for all tracers
@@ -1420,6 +1573,70 @@ contains
    !--------------------------------------------------------------------
 
    end subroutine ocn_vmix_init!}}}
+
+!***********************************************************************
+!
+!  routine tridiagonal_solve
+!
+!> \brief   Solve the matrix equation Ax=r for x, where A is tridiagonal.
+!> \author  Mark Petersen
+!> \date    September 2011
+!> \details
+!>  Solve the matrix equation Ax=r for x, where A is tridiagonal.
+!>  A is an nxn matrix, with:
+!>  a sub-diagonal, filled from 1:n-1 (a(1) appears on row 2)
+!>  b diagonal, filled from 1:n
+!>  c sup-diagonal, filled from 1:n-1  (c(1) apears on row 1)
+!
+!-----------------------------------------------------------------------
+   subroutine tridiagonal_solve(a,b,c,r,x,n) !{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      integer,intent(in) :: n
+      real (KIND=RKIND), dimension(n), intent(in) :: a,b,c,r
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (KIND=RKIND), dimension(n), intent(out) :: x
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      real (KIND=RKIND), dimension(n) :: bTemp,rTemp
+      real (KIND=RKIND) :: m
+      integer i
+
+      ! Use work variables for b and r
+      bTemp(1) = b(1)
+      rTemp(1) = r(1)
+
+      ! First pass: set the coefficients
+      do i = 2,n
+         m = a(i-1)/bTemp(i-1)
+         bTemp(i) = b(i) - m*c(i-1)
+         rTemp(i) = r(i) - m*rTemp(i-1)
+      end do
+
+      x(n) = rTemp(n)/bTemp(n)
+       ! Second pass: back-substition
+      do i = n-1, 1, -1
+         x(i) = (rTemp(i) - c(i)*x(i+1))/bTemp(i)
+      end do
+
+   end subroutine tridiagonal_solve !}}}
+
 !***********************************************************************
 
 end module ocn_vmix

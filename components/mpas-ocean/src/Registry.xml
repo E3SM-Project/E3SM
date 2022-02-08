@@ -237,6 +237,14 @@
 					description="If true, Laplacian horizontal mixing is used on the tracer equation."
 					possible_values=".true. or .false."
 		/>
+                <nml_option name="config_use_vertMom_del2" type="logical" default_value=".false." units="unitless"
+                                        description="If true, Laplacian horizontal mixing is used on the vertical momentum equation."
+                                        possible_values=".true. or .false."
+                />
+                <nml_option name="config_vertMom_del2" type="real" default_value="0.0" units="m^2 s^{-1}"
+                                        description="Horizontal viscosity, $\nu_{2h}$. If config_hmix_use_ref_cell_width = .true. then $\nu_h$ = config_mom_del2*(cellWidth / config_hmix_use_ref_cell_width). If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell."
+                                        possible_values="any positive real"
+                />
 		<nml_option name="config_tracer_del2" type="real" default_value="10.0" units="m^2 s^-1"
 					description="Horizontal diffusion, $\kappa_{2h}$. If config_hmix_use_ref_cell_width = .true. then $\kappa_h$ = config_tracer_del2*(cellWidth / config_hmix_use_ref_cell_width). If config_hmix_use_ref_cell_width = .false. then it is referenced to the smallest cell."
 					possible_values="any positive real"
@@ -1155,6 +1163,48 @@
 					possible_values="any positive real, but typically 1000-1035"
 		/>
 	</nml_record>
+        <nml_record name="nonhydrostatic_pressure">
+            <nml_option name="config_enable_nonhydrostatic_mode" type="logical" default_value=".false." units="unitless"
+                                        description="Flag to enable the nonhydrostatic pressure calculation"
+                                        possible_values=".true. or .false."
+                />
+            <nml_option name="config_nonhydrostatic_solve_surface_boundary_condition" type="character" default_value="noGradient" units="unitless"
+                                    description="setting for surface boundary condition for the pressure correction solve"
+                                        possible_values="noGradient or no pressure"
+                />
+                <nml_option name="config_enable_vertMomentum_disable_nonHydro" type="logical" default_value=".false." units="unitless"
+                                        description="flag to enable hydrostatic pressure with vertical momentum tendencies"
+                                        possible_values=".true. or .false."
+                />
+                <nml_option name="config_nonhydrostatic_remove_rhs_mean" type="logical" default_value=".true." units="unitless"
+                                        description="flag to enabling mean from the right hand side of the nonhydro solve"
+                                        possible_values=".true. or .false."
+                />
+                <nml_option name="config_nonhydrostatic_preconditioner" type="character" default_value="jacobi" units="unitless"
+                                        description="String describing preconditioner to use, recommended options -- jacobi, bjacobi, ilu" 
+                                        possible_values="jacobi, bjacobi, ilu"
+                />
+                <nml_option name="config_nonhydrostatic_solver_type" type="character" default_value="pipecgrr" units="unitless"
+                                        description="String describing the solver context, recommended types -- pipecgrr, pipecg, cg, bcgs, gmres" 
+                                        possible_values="pipecgrr, pipecg, cg, bcgs, gmres"
+                />
+                <nml_option name="config_petsc_rtol" type="real" default_value="1.0e-10" units="unitless"
+                                        description="relative tolerance for the norm in petsc convergence"
+                                        possible_values="very small positive reals"
+                />
+                <nml_option name="config_petsc_atol" type="real" default_value="1.0E-20" units="unitless"
+                                        description="absolute tolerance for the norm in petsc convergence"
+                                        possible_values="very small positive reals"
+                />
+                <nml_option name="config_petsc_maxit" type="integer" default_value="10000" units="unitless"
+                                        description="maximum number of iterations in petsc solve"
+                                        possible_values="positive integers"
+                />
+                <nml_option name="config_use_constant_forced_pgf" type="logical" default_value=".false." units="unitless"
+                                        description="logical to enable a constant pressure gradient that is added to rest of PGF NOTE: need to remove after rebasing on to master..."
+                                        possible_values=".true. or .false."
+                />
+        </nml_record>
 	<nml_record name="pressure_gradient" mode="forward">
 		<nml_option name="config_pressure_gradient_type" type="character" default_value="pressure_and_zmid"
 					description="Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential.  The sea surface height gradient (ssh_gradient) option is for barotropic, depth-averaged pressure."
@@ -1352,6 +1402,10 @@
 					description="If true, $h^{hf}$ is included in the desired ALE thickness, and the prognostic equations for $D^{lf}$ and $h^{hf}$ are integrated in the code."
 					possible_values=".true. or .false."
 		/>
+                <nml_option name="config_disable_ALE" type="logical" default_value=".false." units="unitless"
+                                        description="flag to disable the ALE coordinate and revert to eulerian mode NOTE: only works for RK4 at present"
+                                        possible_values=".true. or .false."
+                />
 		<nml_option name="config_thickness_filter_timescale" type="real" default_value="5.0" units="days"
 					description="Filter time scale for the low-frequency baroclinic divergence, $\tau_{Dlf}$."
 					possible_values="any positive real value, but typically 5 days."
@@ -1430,6 +1484,18 @@
 					description="Disables tendencies on the velocity field from the Coriolis force and momentum advection."
 					possible_values=".true. or .false."
 		/>
+                <nml_option name="config_disable_vvel_all_tend" type="logical" default_value=".false." units="unitless"
+                                        description="Disables all tendencies on the vertical velocity field."
+                                        possible_values=".true. or .false."
+                />
+                <nml_option name="config_disable_vvel_coriolis" type="logical" default_value=".false." units="unitless"
+                                        description="Disables tendencies on the vertical velocity field from the Coriolis force."
+                                        possible_values=".true. or .false."
+                />
+                <nml_option name="config_disable_vvel_adv" type="logical" default_value=".false." units="unitless"
+                                        description="Disables advection of vertical velocity"
+                                        possible_values=".true. or .false."
+                />
 		<nml_option name="config_disable_vel_pgrad" type="logical" default_value=".false."
 					description="Disables tendencies on the velocity field from the horizontal pressure gradient."
 					possible_values=".true. or .false."
@@ -2188,6 +2254,12 @@
 		<var name="ssh" type="real" dimensions="nCells Time" units="m"
 			 description="sea surface height"
 		/>
+                <var name="verticalVelocity" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+       		description="prognostic vertical velocity, only used when config_enable_nonhydrostatic_mode = .true."
+    		/>
+               <var name="nonhydrostaticPressure" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
+       	       description="nonHydrostatic pressure , set to zero if config_enable_nonhydrostatic_mode = .false."
+               />
 
 		<!-- FIELDS FOR FREQUENCY FILTERED THICKNESS -->
 		<var name="highFreqThickness" type="real" dimensions="nVertLevels nCells Time" units="m"
@@ -2539,6 +2611,9 @@
 			 missing_value="FILLVAL" missing_value_mask="edgeMask"
 			 packages="forwardMode"
 		/>
+                <var name="tendVerticalVelocity" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-2}" name_in_code="verticalVelocityTend"
+                         description="time tendency of the vertical velocity (Only active for non hydrostatic mode)"
+                />
 		<var name="tendLayerThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^-1" name_in_code="layerThickness"
 			 description="time tendency of layer thickness"
 			 missing_value="FILLVAL" missing_value_mask="cellMask"
@@ -2575,6 +2650,9 @@
 		<var name="daysSinceStartOfSim" type="real" dimensions="Time" units="days"
 			 description="Time since simulationStartTime, for plotting"
 	 	/>
+                <var name="nhPressureCorrection" type="real" dimensions="nVertLevels nCells Time" units="unitless"
+                         description="the pressure correction coming from the poisson pressure equation"
+                />
 		<var name="salinitySurfaceRestoringTendency" type="real" dimensions="nCells Time" units="m 1.e-3 s^-1" packages="activeTracersSurfaceRestoringPKG"
 			 description="salinity tendency due to surface restoring"
 		/>
@@ -2591,6 +2669,24 @@
 				 description="potential temperature tendency due to penetrating shortwave"
 				 missing_value="FILLVAL" missing_value_mask="cellMask"
 		/>
+                <var name="velocityHmixTend" dimensions="nVertLevels nEdges Time" units="m/s^2" type="real"
+                  description="tendency of normal velocitydue to horizontal mixing"
+                />
+                <var name="velocityVmixTend" dimensions="nVertLevels nEdges Time" units="m/s^2" type="real"
+                  description="tendency of normal velocity due to vertical mixing"
+                />
+                <var name="velocityCoriolisTend" dimensions="nVertLevels nEdges Time" units="m/s^2" type="real"
+                  description="tendency of normal velocity due to Coriolis"
+                />
+                <var name="velocityPGFtend" dimensions="nVertLevels nEdges Time" units="m/s^2" type="real"
+                  description="tendency of normal velocity due to PGF"
+                />
+                <var name="velocityVadvTend" dimensions="nVertLevels nEdges Time" units="m/s^2" type="real"
+                  description="tendency of normal velocity due to vertical advection"
+                />
+                <var name="velocityForcingTend" dimensions="nVertLevels nEdges Time" units="m/s^2" type="real"
+                  description="tendency of normal velocity due to top and bottom forcing"
+                />
 		<var_array name="activeTracerHorMixTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
 			<var name="temperatureHorMixTendency" array_group="activeTracerHmixTendGroup" units="C s^-1" name_in_code="temperatureHorMixTendency"
 				description="potential temperature tendency due to horizontal mixing (including Redi)"
