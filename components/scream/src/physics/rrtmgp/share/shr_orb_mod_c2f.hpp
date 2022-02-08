@@ -1,5 +1,6 @@
 #ifndef SHR_ORB_MOD_C2F_HPP
 #define SHR_ORB_MOD_C2F_HPP
+extern "C" int shr_orb_undef_int_c2f;
 extern "C" void shr_orb_params_c2f(
         int *orb_year , double *eccen, double *mvelpp, double *lambm0,
         double *obliqr, double *delta, double *eccf

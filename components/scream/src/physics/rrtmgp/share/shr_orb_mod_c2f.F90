@@ -1,9 +1,10 @@
 module shr_orb_mod_c2f
 
    use iso_c_binding
-   use shr_orb_mod, only: shr_orb_params, shr_orb_decl, shr_orb_cosz
+   use shr_orb_mod, only: shr_orb_params, shr_orb_decl, shr_orb_cosz, SHR_ORB_UNDEF_INT
    implicit none
    public :: shr_orb_params_c2f, shr_orb_decl_c2f, shr_orb_cosz_c2f
+   integer(c_int), bind(C) :: shr_orb_undef_int_c2f = SHR_ORB_UNDEF_INT
 
 contains
 
