@@ -14,7 +14,6 @@ void shoc_update_precipitation(const ArrayT& qtracers) {
     auto &qci  = :: qci;
     auto &qpi  = :: qpi;
 
-{auto fp=fopen("shoc_q.txt","w");
     parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int icol = i+nx*(j+ny*icrm);
       int ilev = k;
@@ -37,11 +36,7 @@ void shoc_update_precipitation(const ArrayT& qtracers) {
       qpl(m,j,i,icrm) = qtracers(icol,idx_qr,ilev);
       qci(m,j,i,icrm) = qtracers(icol,idx_qi,ilev);
       qpi(m,j,i,icrm) = 0.;
-
-    fprintf(fp,"%d, %d, %d, %d %13.6e, %13.6e, %13.6e, %13.6e, %13.6e, %13.6e\n",k,j,i+nx*icrm,icrm,
-    qc(m,j,i,icrm),qv(m,j,i,icrm),qcl(m,j,i,icrm),qpl(m,j,i,icrm),qci(m,j,i,icrm),qpi(m,j,i,icrm));
   });
-fclose(fp);}
 }
 
 void shoc_proc() {
@@ -139,8 +134,8 @@ void shoc_proc() {
     um(icol,ilev)  = u(nzm-(k+1),j+offy_u,i+offx_u,icrm);
     vm(icol,ilev)  = v(nzm-(k+1),j+offy_v,i+offx_v,icrm);
 
-    thlm(icol,ilev)  = t(nzm-(k+1),j+offy_s,i+offx_s,icrm)*inv_exner(icol,ilev)-(latvap/cp)*qc(nzm-(k+1),j,i,icrm);
-    thv(icol,ilev)   = t(nzm-(k+1),j+offy_s,i+offx_s,icrm)*inv_exner(icol,ilev)
+    thlm(icol,ilev)  = tabs(nzm-(k+1),j,i,icrm)*inv_exner(icol,ilev)-(latvap/cp)*qc(nzm-(k+1),j,i,icrm);
+    thv(icol,ilev)   = tabs(nzm-(k+1),j,i,icrm)*inv_exner(icol,ilev)
                        *(1.0+zvir*rtm(icol,ilev)-rcm(icol,ilev));
 
     tke(icol,ilev)   = sgs_field(0,nzm-(k+1),j+offy_s,i+offx_s,icrm);
@@ -196,7 +191,6 @@ void shoc_proc() {
     rrho(icol,ilev)   = (1./ggr)*(pdels(icol,ilev)/dz_g(icol,ilev));
     wm_zt(icol,ilev)  = w(nzm-(k+1),j+offy_w,i+offx_w,icrm);
     shoc_s(icol,ilev) = cp*thlm(icol,ilev)+ggr*zt_g(icol,ilev)+phis(icrm);
-//printf("shoc_10: %d, %d, %d, %d, %13.6e, %13.6e\n",k,j,i,icrm,shoc_s(icol,ilev),zt_g(icol,ilev));
   });
 
 //   do k=1,pverp
@@ -361,14 +355,14 @@ fclose(fp);}
         CF3D(k,j,i,icrm) = shoc_input_output.shoc_cldfrac(icol,nlev-(ilev+1))[s];
         u(k,j+offy_u,i+offx_u,icrm) = shoc_input_output.horiz_wind(icol,0,nlev-(ilev+1))[s];
         v(k,j+offy_v,i+offx_v,icrm) = shoc_input_output.horiz_wind(icol,1,nlev-(ilev+1))[s];
-        t(k,j+offy_s,i+offx_s,icrm) = (shoc_input_output.thetal(icol,nlev-(ilev+1))[s] + (latvap/cp)*qc(k,j,i,icrm))
+        tabs(k,j,i,icrm)            = (shoc_input_output.thetal(icol,nlev-(ilev+1))[s] + (latvap/cp)*qc(k,j,i,icrm))
                                       /inv_exner(icol,nlev-(ilev+1));
-        tabs(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm) - gamaz(k,icrm)
-                         + fac_cond *( qcl(k,j,i,icrm) + qpl(k,j,i,icrm) )
-                         + fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
+        t(k,j+offy_s,i+offx_s,icrm) = tabs(k,j,i,icrm) + gamaz(k,icrm)
+                                    - fac_cond *( qcl(k,j,i,icrm) - qpl(k,j,i,icrm) )
+                                    - fac_sub  *( qci(k,j,i,icrm) - qpi(k,j,i,icrm) );
 
-      fprintf(fp,"%d, %d, %d, %d %13.6e, %13.6e, %13.6e\n",k,j,i+nx*icrm,icrm,
-      t(k,j+offy_s,i+offx_s,icrm),inv_exner(icol,ilev),shoc_input_output.horiz_wind(icol,0,ilev)[s]);
+      fprintf(fp,"%d, %d, %d, %d %13.6e, %13.6e, %13.6e, %13.6e\n",k,j,i+nx*icrm,icrm,
+      t(k,j+offy_s,i+offx_s,icrm),tabs(k,j,i,icrm),inv_exner(icol,ilev),shoc_input_output.horiz_wind(icol,0,ilev)[s]);
 
     }
   });
