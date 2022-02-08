@@ -48,6 +48,11 @@ module ocn_forward_mode
    use ocn_thick_ale
    use ocn_thick_surface_flux
 
+   use ocn_vvel_pgrad
+   use ocn_vvel_coriolis
+   use ocn_vvel_advection
+   use ocn_vvel_hmix_del2
+
    use ocn_vel_pressure_grad
    use ocn_vel_vadv
    use ocn_vel_hmix
@@ -75,6 +80,7 @@ module ocn_forward_mode
    use ocn_tracer_CFC
    use ocn_tracer_surface_restoring
    use ocn_gm
+   use ocn_compute_nonhydrostatic_pressure
 
    use ocn_high_freq_thickness_hmix_del2
 
@@ -301,6 +307,19 @@ module ocn_forward_mode
 
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=err_tmp)
       call mpas_get_timeInterval(timeStep, dt=dt)
+
+      if(config_enable_nonhydrostatic_mode) then
+        call ocn_vvel_advection_init(err_tmp)
+        ierr = ior(ierr, err_tmp)
+        call ocn_vvel_coriolis_init(err_tmp)
+        ierr = ior(ierr, err_tmp)
+        call ocn_vvel_pgf_init(err_tmp)
+        ierr = ior(ierr, err_tmp)
+        call ocn_vvel_hmix_del2_init(err_tmp)
+        ierr = ior(ierr, err_tmp)
+        call ocn_nonhydrostatic_solver_init(domain % dminfo % comm, err_tmp)
+        ierr = ior(ierr, err_tmp)
+      endif
 
       call ocn_init_routines_block(block, dt, ierr)
 
@@ -824,6 +843,10 @@ module ocn_forward_mode
       call mpas_destroy_clock(domain % clock, ierr)
 
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
+
+      if(config_enable_nonhydrostatic_mode .and. .not. config_enable_vertMomentum_disable_nonHydro) then
+         call ocn_nonhydrostatic_solver_finalize()
+      end if
 
    end function ocn_forward_mode_finalize!}}}
 
