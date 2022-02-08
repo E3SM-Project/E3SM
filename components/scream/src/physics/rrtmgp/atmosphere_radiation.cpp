@@ -225,6 +225,10 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   // from timestamp for orbital year; if positive, use provided orbital year
   // for duration of simulation.
   m_orbital_year = m_params.get<Int>("Orbital Year",-9999);
+  // Get orbital parameters from yaml file
+  m_orbital_eccen = m_params.get<Int>("Orbital Eccentricity",-9999);
+  m_orbital_obliq = m_params.get<Int>("Orbital Obliquity"   ,-9999);
+  m_orbital_mvelp = m_params.get<Int>("Orbital MVELP"       ,-9999);
 
   // Determine whether or not we are using a fixed solar zenith angle (positive value)
   m_fixed_solar_zenith_angle = m_params.get<Real>("Fixed Solar Zenith Angle", -9999);
@@ -328,6 +332,33 @@ void RRTMGPRadiation::run_impl (const int dt) {
   constexpr auto stebol = PC::stebol;
   const auto ncol = m_ncol;
   const auto nlay = m_nlay;
+
+  // Compute orbital parameters; these are used both for computing
+  // the solar zenith angle and also for computing total solar
+  // irradiance scaling (tsi_scaling).
+  double obliqr, lambm0, mvelpp;
+  auto ts = timestamp();
+  auto orbital_year = m_orbital_year;
+  auto eccen = m_orbital_eccen;
+  auto obliq = m_orbital_obliq;
+  auto mvelp = m_orbital_mvelp;
+  if (eccen >= 0 && obliq >= 0 && mvelp >= 0) {
+    // use fixed oribal parameters; to force this, we need to set
+    // orbital_year to SHR_ORB_UNDEF_INT, which is exposed through
+    // our c2f bridge as shr_orb_undef_int_c2f
+    orbital_year = shr_orb_undef_int_c2f;
+  } else if (orbital_year < 0) {
+    // compute orbital parameters based on current year
+    orbital_year = ts.get_year();
+  }
+  shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp, 
+                     &obliqr, &lambm0, &mvelpp);
+  // Use the orbital parameters to calculate the solar declination and eccentricity factor
+  double delta, eccf;
+  auto calday = ts.frac_of_year_in_days();
+  shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
+                   obliqr, &delta, &eccf);
+
   // Copy data from the FieldManager to the YAKL arrays
   {
     // Determine the cosine zenith angle
@@ -340,20 +371,6 @@ void RRTMGPRadiation::run_impl (const int dt) {
         h_mu0(i) = m_fixed_solar_zenith_angle;
       }
     } else {
-      // First gather the orbital parameters:
-      double eccen, obliq, mvelp, obliqr, lambm0, mvelpp;
-      auto ts = timestamp();
-      auto orbital_year = m_orbital_year;
-      if (orbital_year < 0) {
-          orbital_year = ts.get_year();
-      }
-      shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp, 
-                         &obliqr, &lambm0, &mvelpp);
-      // Use the orbital parameters to calculate the solar declination
-      double delta, eccf;
-      auto calday = ts.frac_of_year_in_days();
-      shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
-                       obliqr, &delta, &eccf);
       // Now use solar declination to calculate zenith angle for all points
       for (int i=0;i<m_ncol;i++) {
         double lat = h_lat(i)*PC::Pi/180.0;  // Convert lat/lon to radians
