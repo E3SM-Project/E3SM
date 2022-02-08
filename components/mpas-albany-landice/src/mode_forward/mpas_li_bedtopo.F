@@ -227,8 +227,17 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_uplift_method', config_uplift_method)
       if (trim(config_uplift_method)=='none') then
          ! do nothing
+#ifdef USE_SEALEVELMODEL
+      call mpas_log_write("MALI is built with 'SLM=true. Set 'config_uplift_method=sealevelmodel'", &
+           MPAS_LOG_ERR)
+      err = ior(err,1)
+#endif
       elseif (trim(config_uplift_method)=='data') then
-
+#ifdef USE_SEALEVELMODEL
+         call mpas_log_write("MALI is built with 'SLM=true. Set 'config_uplift_method=sealevelmodel'", &
+	           MPAS_LOG_ERR)
+	      err = ior(err,1)
+#endif
          block => domain % blocklist
          do while (associated(block))
 
