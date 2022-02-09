@@ -1837,6 +1837,9 @@ module li_calving
       enddo ! end loop over stream_cursors
 
       ! Get submerged area of each cell to convert from kg m^{-2} s^{-1} to m^3 s^{-1}
+      ! TODO: ensure that this unit conversion is still appropriate when we
+      ! eventually use this subroutine with fields passed from the E3SM coupler
+      ! rather than external ISMIP6 forcings.
       submergedArea(:) = 0.0_RKIND
       do iCell = 1, nCells
          if ( li_mask_is_dynamic_margin(cellMask(iCell)) .and. bedTopography(iCell) < seaLevel ) then
@@ -1863,6 +1866,9 @@ module li_calving
          do iCell=1, nCells
             ! For now, hard-coding factor of 4.0 to roughly convert mean annual to mean summer runoff.
             ! Factor of 1000.0 is freshwater density.
+            ! TODO: ensure that this scaling factor is still appropriate when we
+            ! eventually use this subroutine with fields passed from the E3SM coupler
+            ! rather than external ISMIP6 forcings.
             calvingVelocity(iCell) = max(-1.0_RKIND * config_ismip6_retreat_k * ( ( (4.0_RKIND * submergedArea(iCell) &
                                          * ismip6Runoff(iCell) / 1000.0_RKIND)**0.4_RKIND * TFocean(iCell) ) -  &
                                          ( (4.0_RKIND * submergedArea(iCell) * ismip6RunoffPrevious(iCell) / 1000.0_RKIND)**0.4_RKIND &
