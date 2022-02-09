@@ -7,6 +7,7 @@
 #include "setparm.h"
 #include "microphysics.h"
 #include "micro_p3.h"
+#include "shoc.h"
 #include "sgs.h"
 #include "z0_est.h"
 #include "accelerate_crm.h"

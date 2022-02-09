@@ -4,6 +4,44 @@
 using namespace scream;
 using namespace scream::shoc;
 
+// initialize shoc
+void shoc_initialize() {
+  auto &micro_field     = :: micro_field;
+  auto &crm_state_qt     = :: crm_state_qt;
+  auto &crm_state_qi     = :: crm_state_qi;
+  auto &crm_state_nc     = :: crm_state_nc;
+  auto &crm_state_ni     = :: crm_state_ni;
+  auto &crm_state_qr     = :: crm_state_qr;
+  auto &crm_state_nr     = :: crm_state_nr;
+  auto &crm_state_qm     = :: crm_state_qm;
+  auto &crm_state_bm     = :: crm_state_bm;
+  auto &crm_state_qc     = :: crm_state_qc;
+  auto &crm_state_t_prev = :: crm_state_t_prev;
+  auto &crm_state_q_prev = :: crm_state_q_prev;
+  auto &t_prev           = :: t_prev;
+  auto &q_prev           = :: q_prev;
+  auto &CF3D             = :: CF3D;
+  auto &qc               = :: qc;
+  auto &qv               = :: qv;
+
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+     micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = crm_state_qt(k,j,i,icrm);
+     micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm) = crm_state_qi(k,j,i,icrm);
+     micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm) = crm_state_nc(k,j,i,icrm);
+     micro_field(idx_ni,k,j+offy_s,i+offx_s,icrm) = crm_state_ni(k,j,i,icrm);
+     micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm) = crm_state_qr(k,j,i,icrm);
+     micro_field(idx_nr,k,j+offy_s,i+offx_s,icrm) = crm_state_nr(k,j,i,icrm);
+     micro_field(idx_qm,k,j+offy_s,i+offx_s,icrm) = crm_state_qm(k,j,i,icrm);
+     micro_field(idx_bm,k,j+offy_s,i+offx_s,icrm) = crm_state_bm(k,j,i,icrm);
+     micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm) = crm_state_qc(k,j,i,icrm);
+     qc(k,j,i,icrm)                               = crm_state_qc(k,j,i,icrm);
+     qv(k,j,i,icrm)                               = crm_state_qt(k,j,i,icrm) - crm_state_qc(k,j,i,icrm);
+     t_prev(k,j,i,icrm)                           = crm_state_t_prev(k,j,i,icrm);
+     q_prev(k,j,i,icrm)                           = crm_state_q_prev(k,j,i,icrm);
+     CF3D(k,j,i,icrm)                             = 1.0;
+  });
+}
+
 // update precipitation
 template <typename ArrayT>
 void shoc_update_precipitation(const ArrayT& qtracers) {
@@ -19,7 +57,7 @@ void shoc_update_precipitation(const ArrayT& qtracers) {
       int ilev = k;
       int m = nzm-(k+1);
 
-      micro_field(idx_qt,m,j+offy_s,i+offx_s,icrm) = qtracers(icol,idx_qt,ilev) + qtracers(icol,idx_nc,ilev);
+      micro_field(idx_qt,m,j+offy_s,i+offx_s,icrm) = qtracers(icol,idx_qt,ilev) + qtracers(icol,idx_qc,ilev);
       micro_field(idx_nc,m,j+offy_s,i+offx_s,icrm) = qtracers(icol,idx_nc,ilev);
       micro_field(idx_qr,m,j+offy_s,i+offx_s,icrm) = qtracers(icol,idx_qr,ilev);
       micro_field(idx_nr,m,j+offy_s,i+offx_s,icrm) = qtracers(icol,idx_nr,ilev);
@@ -31,7 +69,7 @@ void shoc_update_precipitation(const ArrayT& qtracers) {
       sgs_field(0,m,offy_s+j,offx_s+i,icrm)        = qtracers(icol,idx_tke,ilev);
 
       qc(m,j,i,icrm)  = qtracers(icol,idx_qc,ilev);
-      qv(m,j,i,icrm)  = qtracers(icol,idx_qt,ilev) - qc(m,j,i,icrm);
+      qv(m,j,i,icrm)  = qtracers(icol,idx_qt,ilev);
       qcl(m,j,i,icrm) = qc(m,j,i,icrm);
       qpl(m,j,i,icrm) = qtracers(icol,idx_qr,ilev);
       qci(m,j,i,icrm) = qtracers(icol,idx_qi,ilev);
@@ -316,7 +354,7 @@ void shoc_proc() {
   const int nwind = ekat::npack<Spack>(2)*Spack::n;
   const int ntrac = ekat::npack<Spack>(num_tracers+3)*Spack::n;
   const auto policy = ekat::ExeSpaceUtils<SHOC::KT::ExeSpace>::get_default_team_policy(ncol, npack);
-  ekat::WorkspaceManager<Spack, SHOC::KT::Device> workspace_mgr(nipack, 103+(nwind+ntrac), policy);
+  ekat::WorkspaceManager<Spack, SHOC::KT::Device> workspace_mgr(nipack, 128+(nwind+ntrac), policy);
 
   const auto elapsed_microsec = SHOC::shoc_main(ncol, nlev, nlevi, nlev, 1, num_tracers, dtime, workspace_mgr,
                                                 shoc_input, shoc_input_output, shoc_output, shoc_history_output);
