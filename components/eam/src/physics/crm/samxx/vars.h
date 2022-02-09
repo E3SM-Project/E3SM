@@ -228,6 +228,7 @@ extern bool use_crm_accel;
 extern real crm_accel_factor;
 
 extern char* microphysics_scheme;
+extern char* turbulence_scheme;
 
 extern real4d tabs            ;
 extern real4d qv              ;

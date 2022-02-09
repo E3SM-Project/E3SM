@@ -51,6 +51,7 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev,
                     real *lat0_p, real *long0_p, int *gcolp_p, int igstep_in,
                     bool use_VT_in, int VT_wn_max_in,
                     char* microphysics_scheme_in,
+                    char* turbulence_scheme_in,
                     bool use_crm_accel_in, real crm_accel_factor_in, bool crm_accel_uv_in) {
 
   dt_glob = dt_gl;
@@ -63,6 +64,7 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev,
   crm_accel_factor = crm_accel_factor_in;
   crm_accel_uv = crm_accel_uv_in;
   microphysics_scheme = microphysics_scheme_in;
+  turbulence_scheme = turbulence_scheme_in;
 
   create_and_copy_inputs(crm_input_bflxls_p, crm_input_wndls_p,
                          crm_input_zmid_p, crm_input_zint_p,

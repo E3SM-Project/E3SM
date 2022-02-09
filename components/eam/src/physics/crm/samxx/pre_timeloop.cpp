@@ -360,16 +360,22 @@ void pre_timeloop() {
       micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm) = crm_state_qc(k,j,i,icrm);
       t_prev(k,j,i,icrm)                           = crm_state_t_prev(k,j,i,icrm);
       q_prev(k,j,i,icrm)                           = crm_state_q_prev(k,j,i,icrm);
+    }
+    if (strcmp(turbulence_scheme, "smag")      == 0) {
+      CF3D(k,j,i,icrm)                             = 1.0;
+    }
+    if (strcmp(turbulence_scheme, "shoc")      == 0) {
       CF3D(k,j,i,icrm)                             = 1.0;
     }
   });
 
+  // microphysics scheme initialization
   if (strcmp(microphysics_scheme, "sam1mom") == 0) { micro_init(); }
   if (strcmp(microphysics_scheme, "p3")      == 0) { micro_p3_init(); }
   
-  sgs_init();
-
-  shoc_initialize();
+  // subgrid scale turbulence scheme initialization
+  if (strcmp(turbulence_scheme, "smag") == 0) { sgs_init(); }
+  if (strcmp(turbulence_scheme, "shoc") == 0) { shoc_initialize(); }
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {

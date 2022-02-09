@@ -71,19 +71,19 @@ void timeloop() {
         t(k,j+offy_s,i+offx_s,icrm) = t(k,j+offy_s,i+offx_s,icrm) + crm_rad_qrad(k,j_rad,i_rad,icrm)*dtn;
       });
 
-{
-if(nstep%1 == 0) {
-auto fp = fopen ("temp.txt", "w");
-for(auto k=0; k<nzm; ++k) {
-for(auto j=0; j<ny; ++j) {
-for(auto i=0; i<nx; ++i) {
-for(auto icrm=0; icrm<ncrms; ++icrm) {
-fprintf(fp,"%d, %d, %d, %d, %13.6e, %13.6e, %13.6e, %13.6e, %13.6e\n",k,j,i,icrm,
-t(k,j+offy_s,i+offx_s,icrm),u(k,j+offy_u,i+offx_u,icrm),v(k,j+offy_v,i+offx_v,icrm),w(k,j+offy_w,i+offx_w,icrm),pres(k,icrm));
-}}}}
-fclose(fp);
-}
-}
+// {
+// if(nstep%1 == 0) {
+// auto fp = fopen ("temp.txt", "w");
+// for(auto k=0; k<nzm; ++k) {
+// for(auto j=0; j<ny; ++j) {
+// for(auto i=0; i<nx; ++i) {
+// for(auto icrm=0; icrm<ncrms; ++icrm) {
+// fprintf(fp,"%d, %d, %d, %d, %13.6e, %13.6e, %13.6e, %13.6e, %13.6e\n",k,j,i,icrm,
+// t(k,j+offy_s,i+offx_s,icrm),u(k,j+offy_u,i+offx_u,icrm),v(k,j+offy_v,i+offx_v,icrm),w(k,j+offy_w,i+offx_w,icrm),pres(k,icrm));
+// }}}}
+// fclose(fp);
+// }
+// }
 
       //----------------------------------------------------------
       //    suppress turbulence near the upper boundary (spange):
@@ -94,7 +94,6 @@ fclose(fp);
       //---------------------------------------------------------
       //   Ice fall-out
       if (strcmp(microphysics_scheme, "sam1mom") == 0) {
-      // if (docloud) { 
         ice_fall();
       }
 
@@ -115,11 +114,8 @@ fclose(fp);
       //-----------------------------------------------------------
       //  SGS physics:
       if (dosgs) {
-// #if defined(shoc)
-         // shoc_proc();
-//#else
-       sgs_proc();
-//#endif
+        if (strcmp(turbulence_scheme, "smag") == 0) { sgs_proc(); }
+        if (strcmp(turbulence_scheme, "shoc") == 0) { shoc_proc(); }
       }
 
       //----------------------------------------------------------
@@ -133,9 +129,7 @@ fclose(fp);
       //----------------------------------------------------------
       //  SGS effects on momentum:
       if (dosgs) {
-//#if !defined(shoc) 
-       sgs_mom();
-//#endif
+        if (strcmp(turbulence_scheme, "smag") == 0) { sgs_mom(); }
       }
 
 #if defined(MMF_ESMT)
@@ -175,10 +169,8 @@ fclose(fp);
 
       //---------------------------------------------------------
       //      SGS effects on scalars :
-      if (dosgs) { 
-//#if !defined(shoc)
-       sgs_scalars();
-//#endif
+      if (dosgs) {
+        if (strcmp(turbulence_scheme, "smag") == 0) { sgs_scalars(); }
       }
 
       //-----------------------------------------------------------

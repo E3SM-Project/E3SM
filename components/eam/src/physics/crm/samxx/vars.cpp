@@ -2109,6 +2109,7 @@ bool use_crm_accel;
 real crm_accel_factor;
 
 char* microphysics_scheme;
+char* turbulence_scheme;
 
 real factor_xy;
 real factor_xyt;

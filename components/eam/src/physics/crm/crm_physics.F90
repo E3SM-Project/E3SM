@@ -69,6 +69,7 @@ module crm_physics
 
    logical :: do_prescribed_CCN        = .false.   ! Use prescribed CCN for P3 (?)
    character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
+   character(len=16) :: MMF_turbulence_scheme      ! CRM turbulence scheme
 contains
 !===================================================================================================
 !===================================================================================================
@@ -121,21 +122,23 @@ subroutine crm_physics_register()
    call phys_getopts( use_ECPP_out = use_ECPP )
    call phys_getopts( use_MMF_VT_out = use_MMF_VT )
    call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme )
+   call phys_getopts( MMF_turbulence_scheme_out = MMF_turbulence_scheme )
    call phys_getopts( prog_modal_aero_out = prog_modal_aero )
 
    if(masterproc) then
       print*,'_____________________________________________________________'
       print*,'____ Multi-Scale Modelling Framework (MMF) Configuration ____'
-      print*,'crm_nx     = ',crm_nx
-      print*,'crm_ny     = ',crm_ny
-      print*,'crm_nz     = ',crm_nz
-      print*,'crm_dx     = ',crm_dx
-      print*,'crm_dy     = ',crm_dy
-      print*,'crm_dt     = ',crm_dt
-      print*,'crm_nx_rad = ',crm_nx_rad
-      print*,'crm_ny_rad = ',crm_ny_rad
-      print*,'use_ECPP   = ',use_ECPP
+      print*,'crm_nx           = ',crm_nx
+      print*,'crm_ny           = ',crm_ny
+      print*,'crm_nz           = ',crm_nz
+      print*,'crm_dx           = ',crm_dx
+      print*,'crm_dy           = ',crm_dy
+      print*,'crm_dt           = ',crm_dt
+      print*,'crm_nx_rad       = ',crm_nx_rad
+      print*,'crm_ny_rad       = ',crm_ny_rad
+      print*,'use_ECPP         = ',use_ECPP
       print*,'CRM Microphysics = ',MMF_microphysics_scheme
+      print*,'CRM Turbulence   = ',MMF_turbulence_scheme
       print*,'_____________________________________________________________'
    end if
 
@@ -1439,6 +1442,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                latitude0, longitude0, gcolp, nstep, &
                use_MMF_VT, MMF_VT_wn_max, &
                trim(MMF_microphysics_scheme)//C_NULL_CHAR, &
+               trim(MMF_turbulence_scheme)//C_NULL_CHAR, &
                use_crm_accel, crm_accel_factor, crm_accel_uv)
 
       call t_stopf('crm_call')

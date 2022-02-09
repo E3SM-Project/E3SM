@@ -363,7 +363,7 @@ void micro_p3_proc() {
   });
 
   // Saturation adjustment - without SHOC we need to do a saturation adjustment and set qc
-  if (true) {
+  if (strcmp(turbulence_scheme, "smag") == 0) {
     parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       real tmp_pres = pres(k,icrm)*100.;
       compute_adjusted_state( micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm), 
