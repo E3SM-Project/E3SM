@@ -9,5 +9,8 @@
 #include "shoc_functions_f90.hpp"
 #include "shoc_f90.hpp"
 
+void shoc_initialize();
 void shoc_proc();
-void shoc_update_precipitation();
+template <typename ArrayT>
+void shoc_update_precipitation(const ArrayT& qtracers);
+

@@ -116,6 +116,7 @@ void pre_timeloop() {
   auto &crm_output_subcycle_factor = :: crm_output_subcycle_factor;
   auto &rhow                       = :: rhow;
   auto &qv                         = :: qv;
+  auto &CF3D                       = :: CF3D;
   auto &crm_input_ul               = :: crm_input_ul;
   auto &crm_input_vl               = :: crm_input_vl;
 #ifdef MMF_ESMT
@@ -359,6 +360,7 @@ void pre_timeloop() {
       micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm) = crm_state_qc(k,j,i,icrm);
       t_prev(k,j,i,icrm)                           = crm_state_t_prev(k,j,i,icrm);
       q_prev(k,j,i,icrm)                           = crm_state_q_prev(k,j,i,icrm);
+      CF3D(k,j,i,icrm)                             = 1.0;
     }
   });
 
@@ -366,6 +368,8 @@ void pre_timeloop() {
   if (strcmp(microphysics_scheme, "p3")      == 0) { micro_p3_init(); }
   
   sgs_init();
+
+  shoc_initialize();
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
