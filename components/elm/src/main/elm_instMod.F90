@@ -245,7 +245,7 @@ contains
 
     ! Initialize the Functionaly Assembled Terrestrial Ecosystem Simulator (FATES)
     if (use_fates) then
-       call alm_fates%Init(bounds_proc)
+       call alm_fates%init(bounds_proc)
     end if
 
     call hist_printflds()

@@ -1782,8 +1782,10 @@ contains
          ssh(iCell) = zTop(minLevelCell(iCell),iCell)
 
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
 
    end subroutine ocn_diagnostic_solve_z_coordinates!}}}
 

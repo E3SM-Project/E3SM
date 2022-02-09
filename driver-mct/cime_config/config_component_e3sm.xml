@@ -13,6 +13,7 @@
   <entry id="DRV_THREADING">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
+	  
     <default_value>TRUE</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
@@ -549,6 +550,7 @@
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne4np4">6</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne11np4">4</value>
       <value compset="_EAM.*_ELM.*MPASO" grid="a%ne120np4">8</value>
+      <value compset="20TR_" grid="a%ne4np4">$ATM_NCPL</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>

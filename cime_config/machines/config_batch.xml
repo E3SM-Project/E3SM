@@ -382,10 +382,10 @@
     <batch_system MACH="jlse" type="cobalt_theta">
       <batch_submit>qsub</batch_submit>
       <queues>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="12" default="true">skylake_8180</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="12">skylake_8180</queue>
         <queue walltimemax="01:00:00" jobmin="1" jobmax="16">iris</queue>
         <queue walltimemax="01:00:00" jobmin="1" jobmax="18">yarrow</queue>
-        <queue walltimemax="01:00:00" jobmin="1" jobmax="12">arcticus</queue>
+        <queue walltimemax="01:00:00" jobmin="1" jobmax="12" default="true">arcticus</queue>
       </queues>
     </batch_system>
 
@@ -574,9 +574,9 @@
 
    <batch_system MACH="gcp" type="slurm" >
      <queues>
-       <queue walltimemax="01:00:00" default="true">compute-30</queue>
-       <queue walltimemax="01:00:00" default="true">computep</queue>	 <!--enable_placement-->
-       <queue walltimemax="02:00:00" default="true">compute</queue>
+       <queue walltimemax="01:30:00" default="true">compute-30</queue>
+       <queue walltimemax="01:30:00" default="true">computep</queue>	 <!--enable_placement-->
+       <queue walltimemax="01:30:00" default="true">compute</queue>
      </queues>
    </batch_system>
    
