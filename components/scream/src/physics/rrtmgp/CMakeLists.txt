@@ -38,6 +38,12 @@ target_include_directories(rrtmgp PUBLIC
     ${EAM_RRTMGP_DIR}/external/cpp/rrtmgp/kernels
 )
 
+# The lines below are needed to ensure that kokkos_launch_compiler injects
+# nvcc into compilations. rrtmgp uses YAKL, not kokkos, so the wrapper
+# didn't know to add nvcc without these lines.
+target_compile_definitions(rrtmgp PRIVATE KOKKOS_DEPENDENCE)
+target_link_options(rrtmgp PRIVATE -DKOKKOS_DEPENDENCE)
+
 # Build RRTMGP interface; note that we separate the SCREAM-specific RRTMGP interface
 # from the external core RRTMGP library because, ideally, the RRTMGP library has its
 # own build, and we would just use add_subdirectory() above to build it. Also, this
