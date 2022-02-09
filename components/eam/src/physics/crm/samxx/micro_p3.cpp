@@ -86,7 +86,7 @@ void get_cloud_fraction(int its, int ite, int kts, int kte, real2d& ast,
     cld_frac_l(icol,k) = p3_mincld;
     cld_frac_i(icol,k) = p3_mincld;
     cld_frac_r(icol,k) = p3_mincld;
-    real cld_water_tmp = rho(k,icrm)*adz(k,icrm)*dz(icrm)*(qcl(k,j,i,icrm)+qci(k,j,i,icrm));
+    real cld_water_tmp = rho(k,icrm)*adz(k,icrm)*dz(icrm)*(qcl(k,j,i,icrm)+qci(k,j,i,icrm)+qpl(k,j,i,icrm));
     if(cld_water_tmp > cld_water_threshold) {
       if (qcl(k,j,i,icrm)>0) { cld_frac_l(icol,k) = 1.0; }
       if (qci(k,j,i,icrm)>0) { cld_frac_i(icol,k) = 1.0; }
@@ -147,7 +147,9 @@ YAKL_INLINE real saturation_specific_humidity(real tabs, real pressure) {
 YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qc_in, real &qv_in, real &tabs_in, real &pres_in ) {
   // Define a tolerance and max iterations for convergence
   real tol = 1.e-6;
-  int max_iteration = 10;
+  real min_qv = 1e-6;
+  real min_qc = 0;
+  int max_iteration = 20;
   int iteration_cnt = 0;
 
   // Saturation specific humidity
@@ -171,8 +173,11 @@ YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qc_in, real &qv_in, 
       // How much water vapor to condense for this iteration
       real cond = (cond1 + cond2) / 2;
       // update vapor and cloud condensate
-      qv_loc = max( 0. , qv_in - cond );
-      qc_loc = max( 0. , qc_in + cond );
+      qv_loc = qv_in - cond;
+      qc_loc = qc_in + cond;
+      // check if values are under threshold
+      if (qv_loc<min_qv) { qc_loc = qc_loc + (qv_loc-min_qv); qv_loc = min_qv; }
+      if (qc_loc<min_qc) { qv_loc = qv_loc + (qc_loc-min_qc); qc_loc = min_qc; }
       // update temperature
       tabs_loc = tabs_in + fac_cond*cond;
       // update saturation value
@@ -198,8 +203,11 @@ YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qc_in, real &qv_in, 
       // How much water vapor to evaporate for this iteration
       real evap = (evap1 + evap2) / 2;
       // update vapor and cloud condensate
-      qv_loc = max( 0. , qv_in + evap );
-      qc_loc = max( 0. , qc_in - evap );
+      qv_loc = qv_in + evap;
+      qc_loc = qc_in - evap;
+      // check if values are under threshold
+      if (qv_loc<min_qv) { qc_loc = qc_loc + (qv_loc-min_qv); qv_loc = min_qv; }
+      if (qc_loc<min_qc) { qv_loc = qv_loc + (qc_loc-min_qc); qc_loc = min_qc; }
       // update temperature
       tabs_loc = tabs_in - fac_cond*evap;
       // update saturation value
@@ -342,6 +350,8 @@ void micro_p3_proc() {
   //----------------------------------------------------------------------------
   // Populate P3 thermodynamic state
   //----------------------------------------------------------------------------
+  micro_p3_diagnose();
+
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
@@ -363,7 +373,7 @@ void micro_p3_proc() {
     micro_p3_diagnose();
     // update liq static energy
     parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-      t(k,j+offy_s,i+offx_s,icrm) = tabs(k,j,i,icrm)+ gamaz(k,icrm)
+      t(k,j+offy_s,i+offx_s,icrm) = tabs(k,j,i,icrm) + gamaz(k,icrm)
                     - fac_cond *( qcl(k,j,i,icrm) - qpl(k,j,i,icrm) )
                     - fac_sub  *( qci(k,j,i,icrm) - qpi(k,j,i,icrm) );
       t_prev(k,j,i,icrm) = tabs(k,j,i,icrm);
@@ -594,18 +604,11 @@ void micro_p3_proc() {
     int icrm = (icol/nx)/ny;
     int k    = ilev*Spack::n + s;
     if (k < nlev) {
-      // update liquid-ice static energy due to precip sedimentation tendencies (see SAM v6)
-      // t(k,j+offy_s,i+offx_s,icrm) = t(k,j+offy_s,i+offx_s,icrm)
-      //                             - dtn*fac_cond*( prog_state.qv(icol,ilev)[0] - qv_in(icol,ilev) )
-      //                             - dtn*fac_cond*( prog_state.qr(icol,ilev)[0] - qr_in(icol,ilev) )
-      //                             - dtn*fac_sub *( prog_state.qi(icol,ilev)[0] - qi_in(icol,ilev) ) ;
-      t(k,j+offy_s,i+offx_s,icrm) = prog_state.th(icol,ilev)[s]/inv_exner_in(icol, ilev)
+      t(k,j+offy_s,i+offx_s,icrm) = prog_state.th(icol,ilev)[s]/inv_exner_in(icol,ilev)
                     + gamaz(k,icrm)
                     - fac_cond *( qcl(k,j,i,icrm) - qpl(k,j,i,icrm) )
                     - fac_sub  *( qci(k,j,i,icrm) - qpi(k,j,i,icrm) );
-      tabs(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm) - gamaz(k,icrm)
-                    + fac_cond *( qcl(k,j,i,icrm) + qpl(k,j,i,icrm) )
-                    + fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
+      tabs(k,j,i,icrm) = prog_state.th(icol,ilev)[s]/inv_exner_in(icol,ilev);
       t_prev(k,j,i,icrm) = tabs(k,j,i,icrm);
       q_prev(k,j,i,icrm) = qv(k,j,i,icrm);
     }
