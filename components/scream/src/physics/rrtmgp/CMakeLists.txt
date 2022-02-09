@@ -38,6 +38,9 @@ target_include_directories(rrtmgp PUBLIC
     ${EAM_RRTMGP_DIR}/external/cpp/rrtmgp/kernels
 )
 
+# The lines below are needed to ensure that kokkos_launch_compiler injects
+# nvcc into compilations. rrtmgp uses YAKL, not kokkos, so the wrapper
+# didn't know to add nvcc without these lines.
 target_compile_definitions(rrtmgp PRIVATE KOKKOS_DEPENDENCE)
 target_link_options(rrtmgp PRIVATE -DKOKKOS_DEPENDENCE)
 
