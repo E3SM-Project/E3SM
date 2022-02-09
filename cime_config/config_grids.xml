@@ -964,7 +964,7 @@
       <mask>WC14to60E2r3</mask>
     </model_grid>
 
-    <model_grid alias="northamericax4v1pg2_WC14to60E2r3" compset="(EAM.+ELM.+MPASO)">
+    <model_grid alias="northamericax4v1pg2_WC14to60E2r3" compset="(DOCN|EAM.+ELM.+MPASO)">
       <grid name="atm">ne0np4_northamericax4v1.pg2</grid>
       <grid name="lnd">ne0np4_northamericax4v1.pg2</grid>
       <grid name="ocnice">WC14to60E2r3</grid>
