@@ -60,6 +60,12 @@ public:
   // If > 0, use constant orbital year for duration of simulation
   // If < 0, use year from timestamp for orbital parameters
   Int m_orbital_year;
+  // Orbital parameters, used for zenith angle calculations.
+  // If >= 0, bypass computation based on orbital year and use fixed parameters
+  // If <  0, compute based on orbital year, specified above
+  Real m_orbital_eccen;  // Eccentricity
+  Real m_orbital_obliq;  // Obliquity
+  Real m_orbital_mvelp;  // Vernal Equinox Mean Longitude of Perihelion
 
   // Fixed solar zenith angle to use for shortwave calculations
   // This is only used if a positive value is supplied

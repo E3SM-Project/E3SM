@@ -637,17 +637,21 @@ contains
     integer                       :: retval
 
     ! TODO change options below to match specific simulation case
-    retval=pio_put_att (File, PIO_GLOBAL, 'source', 'SCREAM')
-    retval=pio_put_att (File, PIO_GLOBAL, 'case', 'TEST 1')
-    retval=pio_put_att (File, PIO_GLOBAL, 'title', 'SCORPIO TEST')
-    retval=pio_put_att (File, PIO_GLOBAL, 'logname','THE GIT LOG HASH')
-    retval=pio_put_att (File, PIO_GLOBAL, 'host', 'THE HOST')
-    retval=pio_put_att (File, PIO_GLOBAL, 'Version', &
-           '0')
-    retval=pio_put_att (File, PIO_GLOBAL, 'revision_Id', &
-           'None')
-    retval=pio_put_att (File, PIO_GLOBAL, 'initial_file', 'NONE FOR NOW')
-    retval=pio_put_att (File, PIO_GLOBAL, 'topography_file', 'NONE FOR NOW')
+    retval=pio_put_att (File, PIO_GLOBAL, 'source', 'E3SM Atmosphere Model Version 4')
+    retval=pio_put_att (File, PIO_GLOBAL, 'case', 'TEST 1') ! NEED TO FIX THIS!!!
+    retval=pio_put_att (File, PIO_GLOBAL, 'title', 'EAMv4 History File')
+    retval=pio_put_att (File, PIO_GLOBAL, 'git_hash','THE GIT LOG HASH')  ! NEED TO FIX THIS!!!
+    retval=pio_put_att (File, PIO_GLOBAL, 'host', 'THE HOST')  ! NEED TO FIX THIS!!!
+    retval=pio_put_att (File, PIO_GLOBAL, 'Version', '1.0')
+    retval=pio_put_att (File, PIO_GLOBAL, 'revision_Id', 'None')  !WHAT IS THIS? NOT IN EAM.
+    retval=pio_put_att (File, PIO_GLOBAL, 'initial_file', 'NONE FOR NOW')  !NEED TO FIX THIS
+    retval=pio_put_att (File, PIO_GLOBAL, 'topography_file', 'NONE FOR NOW')  !NEED TO FIX THIS
+    retval=pio_put_att (File, PIO_GLOBAL, 'contact', 'e3sm-data-support@llnl.gov')
+    retval=pio_put_att (File, PIO_GLOBAL, 'institution_id', 'E3SM-Project')
+    retval=pio_put_att (File, PIO_GLOBAL, 'product', 'model-output')
+    retval=pio_put_att (File, PIO_GLOBAL, 'realm','atmos')
+    retval=pio_put_att (File, PIO_GLOBAL, 'Conventions','None yet')
+    retval=pio_put_att (File, PIO_GLOBAL, 'institution', 'LLNL (Lawrence Livermore National Laboratory, Livermore, CA 94550, USA); ANL (Argonne National Laboratory, Argonne, IL 60439, USA); BNL (Brookhaven National Laboratory, Upton, NY 11973, USA); LANL (Los Alamos National Laboratory, Los Alamos, NM 87545, USA); LBNL (Lawrence Berkeley National Laboratory, Berkeley, CA 94720, USA); ORNL (Oak Ridge National Laboratory, Oak Ridge, TN 37831, USA); PNNL (Pacific Northwest National Laboratory, Richland, WA 99352, USA); SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA). Mailing address: LLNL Climate Program, c/o David C. Bader, Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
 
   end subroutine eam_pio_createHeader
 !=====================================================================!

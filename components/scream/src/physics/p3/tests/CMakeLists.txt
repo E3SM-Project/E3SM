@@ -48,12 +48,25 @@ set(P3_TESTS_SRCS
 CreateUnitTest(p3_test_setup p3_test_setup.cpp "${NEED_LIBS}"
                EXCLUDE_MAIN_CPP PROPERTIES FIXTURES_SETUP p3_tables)
 
+if (SCREAM_DEBUG AND NOT EKAT_ENABLE_CUDA_MEMCHECK)
+  set (FORCE_RUN_DIFF_FAILS TRUE)
+else ()
+  set (FORCE_RUN_DIFF_FAILS FALSE)
+endif()
+
 # NOTE: tests inside this if statement won't be built in a baselines-only build
 if (NOT ${SCREAM_BASELINES_ONLY})
   CreateUnitTest(p3_tests "${P3_TESTS_SRCS}" "${NEED_LIBS}"
                  THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
                  PROPERTIES FIXTURES_REQUIRED p3_tables
                  LABELS "p3;physics")
+
+  # Make sure that a diff in the two implementation triggers a failed test (in debug only)
+  CreateUnitTest (p3_tests_fail p3_rain_sed_unit_tests.cpp "${NEED_LIBS}"
+                 COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
+                 THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
+                 PROPERTIES FIXTURES_REQUIRED p3_tables WILL_FAIL ${FORCE_RUN_DIFF_FAILS}
+                 LABELS "p3;physics;fail")
 endif()
 
 CreateUnitTest(p3_run_and_cmp_cxx "p3_run_and_cmp.cpp" "${NEED_LIBS}"
@@ -69,6 +82,15 @@ CreateUnitTest(p3_run_and_cmp_f90 "p3_run_and_cmp.cpp" "${NEED_LIBS}"
                PROPERTIES FIXTURES_REQUIRED p3_tables
                EXCLUDE_MAIN_CPP
                LABELS "p3;physics")
+
+# Make sure that a diff from baselines triggers a failed test (in debug only)
+CreateUnitTest(p3_run_and_cmp_cxx_fail "p3_run_and_cmp.cpp" "${NEED_LIBS}"
+               COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
+               THREADS ${SCREAM_TEST_MAX_THREADS}
+               EXE_ARGS "-b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
+               PROPERTIES FIXTURES_REQUIRED p3_tables WILL_FAIL ${FORCE_RUN_DIFF_FAILS}
+               EXCLUDE_MAIN_CPP
+               LABELS "p3;physics;fail")
 
 # By default, baselines should be created using all fortran (make baseline). If the user wants
 # to use CXX to generate their baselines, they should use "make baseline_cxx".

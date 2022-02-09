@@ -79,6 +79,8 @@ OR
         help="Provide machine name. This is *always* required")
 
     parser.add_argument("--no-tests", action="store_true", help="Only build baselines, skip testing phase")
+    parser.add_argument("--config-only", action="store_true",
+            help="In the testing phase, only run config step, skip build and tests")
 
     parser.add_argument("-k", "--keep-tree", action="store_true",
         help="Allow to keep the current work tree when testing against HEAD (only valid with `-b HEAD`)")
