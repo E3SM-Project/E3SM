@@ -59,7 +59,7 @@
     <DESC>Perlmutter at NERSC.  Phase1 only: Each GPU node has single AMD EPYC 7713 64-Core (Milan) and 4 nvidia A100's.</DESC>
     <NODENAME_REGEX>$ENV{NERSC_HOST}:perlmutter</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>gnu,gnugpu,nvidia,nvidiagpu</COMPILERS>
+    <COMPILERS>gnu,gnugpu,nvidia,nvidiagpu,aocc</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>e3sm_g</PROJECT>
     <SAVE_TIMING_DIR>/global/cfs/cdirs/e3sm</SAVE_TIMING_DIR>
@@ -108,8 +108,7 @@
 	<command name="unload">cray-hdf5-parallel</command>
 	<command name="unload">cray-netcdf-hdf5parallel</command>
 	<command name="unload">cray-parallel-netcdf</command>
-	<command name="unload">PrgEnv-gnu</command>
-	<command name="unload">PrgEnv-nvidia</command>
+	<command name="unload">cuda</command>
 	<command name="unload">cudatoolkit</command>
 	<command name="unload">craype-accel-nvidia80</command>
 	<command name="unload">craype-accel-host</command>
@@ -129,6 +128,11 @@
 	<command name="load">nvidia/21.9</command>
       </modules>
 
+      <modules compiler="aocc.*">
+	<command name="load">PrgEnv-aocc</command>
+	<command name="load">aocc</command>
+      </modules>
+
       <modules compiler="gnugpu">
 	<command name="load">cudatoolkit</command>
 	<command name="load">craype-accel-nvidia80</command>
@@ -144,6 +148,10 @@
       </modules>
 
       <modules compiler="nvidia">
+	<command name="load">craype-accel-host</command>
+      </modules>
+
+      <modules compiler="aocc">
 	<command name="load">craype-accel-host</command>
       </modules>
 
