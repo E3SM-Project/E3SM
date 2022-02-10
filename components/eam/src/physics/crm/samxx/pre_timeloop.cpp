@@ -365,7 +365,7 @@ void pre_timeloop() {
       CF3D(k,j,i,icrm)                             = 1.0;
     }
     if (strcmp(turbulence_scheme, "shoc")      == 0) {
-      CF3D(k,j,i,icrm)                             = 1.0;
+      CF3D(k,j,i,icrm)                             = 0.0;
     }
   });
 
