@@ -846,6 +846,19 @@
                         <var name="regionGroupNames"/-->
 		</stream>
 
+		<!-- Input stream for use with config_calving = ismip6_retreat, which requires multiple
+		     time levels from forcing file, which could inadvertently clobber some fields if
+                     not set up carefully. So we use an immutable stream to avoid mishap. -->
+                <stream name="ismip6-gis"
+                                type="input"
+				immutable="true"
+				filename_template="ismip6-gis.nc"
+                                input_interval="0001-00-00_00:00:00">
+
+                        <var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
+			<var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
+		</stream>
+
 	</streams>
 
 

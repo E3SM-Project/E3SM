@@ -1806,7 +1806,7 @@ module li_calving
       stream_cursor => domain % streamManager % streams % head
       do while (associated(stream_cursor))
          ! Input stream with forcings must be called 'ismip6-gis', or this will throw an error.
-         if (trim(stream_cursor % name) == 'ismip-gis') then
+         if (trim(stream_cursor % name) == 'ismip6-gis') then
             streamFound = .true.
             if (xtime == simulationStartTime) then
                ! Use forcing fields and time from most recent time in file, which was read on init.
