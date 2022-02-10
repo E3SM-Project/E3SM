@@ -32,7 +32,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     uselapi,       &
     numnodes,      &
     sub_case,      &
-    tasknum,       &       ! used dg model in AIX machine
     statefreq,     &       ! number of steps per printstate call
     restartfreq,   &
     restartfile,   &       ! name of the restart file for INPUT
@@ -258,7 +257,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       ne,            &             ! element resolution factor
       ne_x,            &             ! element resolution factor in x-dir for planar
       ne_y,            &             ! element resolution factor in y-dir for planar
-      tasknum,       &
       statefreq,     &             ! number of steps per printstate call
       integration,   &             ! integration method
       theta_hydrostatic_mode,       &   
@@ -430,7 +428,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     restartdir    = "./restart/"
     runtype       = 0
     statefreq     = 1
-    tasknum       =-1
     integration   = "explicit"
     moisture      = "dry"
     nu_top=0
@@ -733,7 +730,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(TOPOLOGY,        MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
     call MPI_bcast(geometry,        MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
     call MPI_bcast(test_case,       MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
-    call MPI_bcast(tasknum,         1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(ne,              1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(ne_x,              1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(ne_y,              1,MPIinteger_t,par%root,par%comm,ierr)

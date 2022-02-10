@@ -120,7 +120,6 @@ module control_mod
   character(len=MAX_STRING_LEN)    , public :: test_case
   !most tests don't have forcing
   logical                          , public :: test_with_forcing = .false. 
-  integer              , public :: tasknum
   integer              , public :: statefreq      ! output frequency of synopsis of system state (steps)
   integer              , public :: restartfreq
   integer              , public :: runtype 
