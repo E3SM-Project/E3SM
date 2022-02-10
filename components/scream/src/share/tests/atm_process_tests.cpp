@@ -91,11 +91,6 @@ public:
   // Return some sort of name, linked to PType
   std::string name () const { return m_name; }
 
-  // Routine to get diagnostic
-  Field& get_diagnostic (const int dt) {
-    run_impl( dt );
-    return m_diagnostic_output;
-  }
 protected:
 
   // The initialization method should prepare all stuff needed to import/export from/to

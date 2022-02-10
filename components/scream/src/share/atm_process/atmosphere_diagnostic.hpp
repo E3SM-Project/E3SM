@@ -37,6 +37,9 @@ public:
   // The type of subcomponent
   AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
 
+  // Getting the diagnostic output
+  Field& get_diagnostic (const Real dt);
+
 protected:
 
   void set_computed_field_impl (const Field& f);

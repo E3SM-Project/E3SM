@@ -10,6 +10,11 @@ AtmosphereDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
   // Nothing to do here
 }
 
+// Function to retrieve the diagnostic output which is stored in m_diagnostic_output
+Field& AtmosphereDiagnostic::get_diagnostic (const Real dt) {
+  run(dt);
+  return m_diagnostic_output;
+}
 
 void AtmosphereDiagnostic::set_computed_field_impl (const Field& f) {
   EKAT_ERROR_MSG("Error! Diagnostics are not allowed to compute fields. See " + name() + ".\n");
