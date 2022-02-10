@@ -200,7 +200,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 
 #if defined(CAM) || defined(SCREAM)
   subroutine readnl(par, NLFileName)
-    use units, only : getunit, freeunit
+    use shr_file_mod,      only: getunit=>shr_file_getUnit, freeunit=>shr_file_freeUnit
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     use mesh_mod, only : MeshOpen
 #endif
@@ -531,24 +531,24 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 
 #if !defined(CAM) && !defined(SCREAM)
 
-!checks before the next NL
-!check on ne
-if (topology == "plane" .and. ne /= 0) then
-call abortmp('cannot set ne for planar topology, use ne_x and ne_y instead')
-end if
+       !checks before the next NL
+       !check on ne
+       if (topology == "plane" .and. ne /= 0) then
+          call abortmp('cannot set ne for planar topology, use ne_x and ne_y instead')
+       end if
 
-!setting default PLANAR values if they are not set in ctl_nl
-call set_planar_defaults()
+       !setting default PLANAR values if they are not set in ctl_nl
+       call set_planar_defaults()
 
-!checks on planar tests
-if (test_case(1:7)=="planar_") then
+       !checks on planar tests
+       if (test_case(1:7)=="planar_") then
 
-!check on Lx, Ly
-if(lx .le. 0.d0 .or. ly .le. 0.d0) then
-call abortmp('for planar tests, planar_lx and planar_ly should be >0')
-endif
+       !check on Lx, Ly
+       if(lx .le. 0.d0 .or. ly .le. 0.d0) then
+          call abortmp('for planar tests, planar_lx and planar_ly should be >0')
+       endif
 
-endif
+       endif
 
 
 #ifdef _PRIM
