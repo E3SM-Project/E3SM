@@ -253,8 +253,6 @@ void micro_p3_proc() {
   auto &qpl                = :: qpl;
   auto &qpi                = :: qpi;
   auto &dt                 = :: dt;
-  auto &pres               = :: pres;
-  auto &p                  = :: p;
   auto &psfc               = :: psfc;
   auto &t                  = :: t;
   auto &gamaz              = :: gamaz;

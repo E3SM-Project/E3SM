@@ -10,5 +10,5 @@
 
 void micro_p3_init();
 void micro_p3_proc();
-
+void micro_p3_diagnose();
 
