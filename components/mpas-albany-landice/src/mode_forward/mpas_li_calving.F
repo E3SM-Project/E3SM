@@ -105,7 +105,8 @@ module li_calving
       type (mpas_pool_type), pointer :: scratchPool
 
       ! calving-relevant config options
-      character (len=StrKIND), pointer :: config_calving
+      character (len=StrKIND), pointer :: config_calving, &
+                                          config_front_mass_bal_grounded
       logical, pointer :: config_print_calving_info, config_data_calving
       real(kind=RKIND), pointer :: config_calving_timescale
 
@@ -141,6 +142,7 @@ module li_calving
       err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_calving', config_calving)
+      call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
       call mpas_pool_get_config(liConfigs, 'config_calving_timescale', config_calving_timescale)
       call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
       call mpas_pool_get_config(liConfigs, 'config_data_calving', config_data_calving)
@@ -256,8 +258,14 @@ module li_calving
 
       elseif (trim(config_calving) == 'ismip6_retreat') then
 
-         call ismip6_retreat(domain, err_tmp)
-         err = ior(err, err_tmp)
+         if (trim(config_front_mass_bal_grounded) .ne. 'none') then
+            call mpas_log_write('config_front_mass_bal_grounded must be set to `none` '// &
+                                'when config_calving = `ismip6_retreat`.')
+            err = 1
+         else
+            call ismip6_retreat(domain, err_tmp)
+            err = ior(err, err_tmp)
+         end if
 
       else
 
@@ -1690,7 +1698,14 @@ module li_calving
 !> /author Trevor Hillebrand
 !> /date November 2021
 !> /details This routine applies the ISMIP6 glacier retreat parateterization
-!> based on ocean thermal forcing and subglacial discharge.
+!> based on ocean thermal forcing and subglacial discharge. This routine uses multiple
+!> time-levels fields provided by ISMIP6. Once we use E3SM fields, this will need to be restructured.
+!> The routine searches for an input stream named 'ismip6-gis', from which it reads ismip6Runoff and 
+!> ismip6_2dThermalForcing fields from the previous forcing time whenever the mostRecentAccessTime
+!> attribute of the ismip6-gis stream is updated. It then calculates calvingVelocity based on
+!> the change in ismip6Runoff and ismip6_2dThermalForcing between the two most recent time-levels, and
+!> calls apply_front_ablation_velocity to calculate a calvingThickness. config_front_mass_bal_grounded
+!> must be set to 'none' when using this routine.
 !> Slater, D. A., Straneo, F., Felikson, D., Little, C. M., Goelzer, H.,
 !> Fettweis, X., & Holte, J. (2019).
 !> Estimating Greenland tidewater glacier retreat driven by submarine melting.
@@ -1739,7 +1754,6 @@ module li_calving
       integer, dimension(:), pointer :: cellMask, nEdgesOnCell
       real (kind=RKIND) :: waterDepth
       real (kind=RKIND), dimension(:), pointer :: dvEdge
-      logical :: applyToGrounded, applyToFloating, applyToGroundingLine
       real (kind=RKIND), dimension(:), pointer :: TFocean, ismip6Runoff
       real (kind=RKIND), dimension(:), pointer :: TFoceanPrevious, ismip6RunoffPrevious
       real (kind=RKIND), dimension(:), pointer :: TFoceanCurrent, ismip6RunoffCurrent
@@ -1749,13 +1763,15 @@ module li_calving
       character (len=StrKIND), pointer :: xtime, simulationStartTime
       character(len=StrKIND) :: forcingTimeStamp, forcingTimeOldStamp
       type (MPAS_stream_list_type), pointer :: stream_cursor
-
-      applyToGrounded = .true.
-      applyToFloating = .true.
-      applyToGroundingLine = .false.
+      logical :: streamFound ! used to throw an error if required stream is not found
 
       call mpas_pool_get_config(liConfigs, 'config_ismip6_retreat_k', config_ismip6_retreat_k)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', seaLevel)
+
+      if (config_ismip6_retreat_k .ge. 0.0) then
+         call mpas_log_write('Error: config_ismip6_retreat_k should be negative, but is >= 0.0.')
+         err = 1
+      endif
 
       block => domain % blocklist
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
@@ -1786,12 +1802,16 @@ module li_calving
       ! submergedArea used in runoff unit conversion 
       allocate(submergedArea(nCells+1))
 
+      streamFound = .false. ! Changed to true if ismip6-gis stream is found, otherwise throws error
       stream_cursor => domain % streamManager % streams % head
       do while (associated(stream_cursor))
+         ! Input stream with forcings must be called 'ismip6-gis', or this will throw an error.
          if (trim(stream_cursor % name) == 'ismip-gis') then
+            streamFound = .true.
             if (xtime == simulationStartTime) then
                ! Use forcing fields and time from most recent time in file, which was read on init.
                call mpas_get_time(stream_cursor%mostRecentAccessTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
+               err = ior(err, err_tmp)
 
                TFoceanCurrent = TFocean
                ismip6RunoffCurrent = ismip6Runoff
@@ -1799,8 +1819,10 @@ module li_calving
                ! Force a read of this stream, and use the second most recent time in the file
                call mpas_stream_mgr_read(domain % streamManager, streamID = stream_cursor % name, rightNow = .true., &
                                 when = forcingTimeStamp, whence = MPAS_STREAM_LATEST_STRICTLY_BEFORE, saveActualWhen= .true., ierr=err_tmp)
+               err = ior(err, err_tmp)
 
                call mpas_get_time(stream_cursor%mostRecentAccessTime, dateTimeString=forcingTimeOldStamp, ierr=err_tmp)
+               err = ior(err, err_tmp)
 
                TFoceanPrevious = TFocean
                ismip6RunoffPrevious = ismip6Runoff
@@ -1809,7 +1831,9 @@ module li_calving
                                          " from time: " // trim(forcingTimeOldStamp))
 
                call mpas_set_time(forcingTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
+               err = ior(err, err_tmp)
                call mpas_set_time(forcingTimeOld, dateTimeString=forcingTimeOldStamp, ierr=err_tmp)
+               err = ior(err, err_tmp)
 
                ! Do not overwrite forcing fields with values from previous time
                ismip6Runoff = ismip6RunoffCurrent
@@ -1823,6 +1847,7 @@ module li_calving
                forcingTimeOld = forcingTime
                forcingTime = stream_cursor % mostRecentAccessTime
                call mpas_get_time(forcingTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
+               err = ior(err, err_tmp)
                call mpas_get_time(forcingTimeOld, dateTimeString=forcingTimeOldStamp, ierr=err_tmp)
                err = ior(err, err_tmp)
                call mpas_log_write("  * ismip6 retreat forcings have been updated:" // &
@@ -1836,6 +1861,12 @@ module li_calving
          stream_cursor => stream_cursor % next
       enddo ! end loop over stream_cursors
 
+      ! check that the ismip6-gis stream was found
+      if (.not. streamFound) then
+         call mpas_log_write('Error: Input stream ismip6-gis is required for config_calving = ismip6_retreat, ' // &
+                             'but was not found.')
+         err = 1
+      endif
       ! Get submerged area of each cell to convert from kg m^{-2} s^{-1} to m^3 s^{-1}
       ! TODO: ensure that this unit conversion is still appropriate when we
       ! eventually use this subroutine with fields passed from the E3SM coupler
@@ -1883,8 +1914,9 @@ module li_calving
       call mpas_log_write("calling li_apply_front_ablation_velocity from ismip6 retreat routine")
       ! Convert calvingVelocity to calvingThickness
       call li_apply_front_ablation_velocity(meshPool, geometryPool,velocityPool, &
-                                              calvingThickness, calvingVelocity, applyToGrounded, &
-                                              applyToFloating, applyToGroundingLine, domain, err)
+                                              calvingThickness, calvingVelocity, applyToGrounded=.true., &
+                                              applyToFloating=.true., applyToGroundingLine=.false., &
+                                              domain=domain, err=err)
 
       ! Update halos on calvingThickness before applying it.
       ! NOTE: THIS WILL NOT WORK ON MULTIPLE BLOCKS PER PROCESSOR
