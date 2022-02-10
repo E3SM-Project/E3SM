@@ -107,7 +107,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 
 
 !PLANAR setup
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
   use control_mod, only:              &
     set_planar_defaults,&
     bubble_T0, &
@@ -126,7 +126,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 #endif
 
 
-#ifndef CAM
+! control parameters for dcmip stand-alone tests
+#if !defined(CAM) && !defined(SCREAM)
   use control_mod, only:              &
     pertlim,                          &
     dcmip2_0_h0,                      &
@@ -142,7 +143,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 
   use thread_mod,     only: nthreads, omp_set_num_threads, omp_get_max_threads, vthreads
   use dimensions_mod, only: ne, ne_x, ne_y, np, nnodes, nmpi_per_node, npart, qsize, qsize_d, set_mesh_dimensions
-#ifdef CAM
+#if defined(CAM) || defined(SCREAM)
   use time_mod,       only: tstep, nsplit, smooth
 #else
   use time_mod,       only: tstep, ndays,nmax, nendstep,secpday, smooth, secphr, nsplit
@@ -151,7 +152,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
        partitionfornodes, mpireal_t, mpilogical_t, mpiinteger_t, mpichar_t
   use cg_mod,         only: cg_no_debug
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
   use interpolate_mod, only : vector_uvars, vector_vvars, max_vecvars, interpolate_analysis, replace_vec_by_vordiv
   use common_io_mod, only : &
        output_prefix,       &
@@ -197,7 +198,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
   ! read in the namelists...
   ! ============================================
 
-#ifdef CAM
+#if defined(CAM) || defined(SCREAM)
   subroutine readnl(par, NLFileName)
     use units, only : getunit, freeunit
 #ifndef HOMME_WITHOUT_PIOLIBRARY
@@ -219,7 +220,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     integer  :: ierr
     character(len=80) :: errstr, arg
     real(kind=real_kind) :: dt_max, se_tstep
-#ifdef CAM
+#if defined(CAM) || defined(SCREAM
     character(len=MAX_STRING_LEN) :: se_topology
     integer :: se_partmethod
     integer :: se_ne
@@ -235,7 +236,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
                       Z2_MAP_METHOD,             &         ! Zoltan2 processor mapping (network-topology aware) method.
                       TOPOLOGY,                  &         ! mesh topology
                       GEOMETRY,                  &         ! mesh geometry
-#ifdef CAM
+#if defined(CAM) || defined(SCREAM)
       se_partmethod,     &
       se_topology,       &
       se_ne,             &
@@ -316,7 +317,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       se_fv_phys_remap_alg
 
 
-#ifdef CAM
+#if defined(CAM) || defined(SCREAM)
     namelist  /ctl_nl/ SE_NSPLIT,  &                ! number of dynamics steps per physics timestep
       se_tstep
 #else
@@ -417,7 +418,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     npart         = 1
     uselapi       = .TRUE.
     se_tstep=-1
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     ndays         = 0
     nmax          = 12
     nthreads = 1
@@ -463,7 +464,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 
     if (par%masterproc) then
        write(iulog,*)"reading ctl namelist..."
-#if defined(CAM)
+#if defined(CAM) || defined(SCREAM)
        unitn=getunit()
        open( unitn, file=trim(nlfilename), status='old' )
        ierr = 1
@@ -504,7 +505,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
        ! moviefreq and restartfreq are interpreted to be in units of days.
        ! Both must be converted to numbers of steps.
        ! ================================================
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
        if (tstep <= 0) then
           call abortmp('tstep must be > 0')
        end if
@@ -528,7 +529,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
           endif
        endif
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
 
 !checks before the next NL
 !check on ne
@@ -700,11 +701,11 @@ endif
        close(unit=7)
 #endif
 #endif
-! ^ ifndef CAM
+! ^ if !defined(CAM) && !defined(SCREAM)
        ierr = timestep_make_subcycle_parameters_consistent(par, rsplit, qsplit, &
             dt_remap_factor, dt_tracer_factor)
 
-#ifdef CAM
+#if defined(CAM) || defined(SCREAM)
        limiter_option=se_limiter_option
        partmethod = se_partmethod
        ne         = se_ne
@@ -746,7 +747,7 @@ endif
     call MPI_bcast(restartfreq,     1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(runtype,         1,MPIinteger_t,par%root,par%comm,ierr)
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     if(test_case == "dcmip2012_test4") then
        rearth = rearth/dcmip4_X
        omega = omega*dcmip4_X
@@ -830,7 +831,7 @@ endif
     call MPI_bcast(planar_slice ,1,MPIlogical_t,par%root,par%comm,ierr)
 
 !PLANAR
-#ifndef CAM
+#if !defined(CAM) && !defined (SCREAM)
     call MPI_bcast(bubble_T0 ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(bubble_dT ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(bubble_xycenter,1,MPIreal_t   ,par%root,par%comm,ierr)
@@ -882,7 +883,7 @@ endif
     call MPI_bcast(vanalytic, 1,              MPIinteger_t, par%root, par%comm,ierr)
     call MPI_bcast(vtop     , 1,              MPIreal_t   , par%root, par%comm,ierr)
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     call MPI_bcast(output_prefix,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
     call MPI_bcast(output_timeunits ,max_output_streams,MPIinteger_t,par%root,par%comm,ierr)
@@ -1046,7 +1047,7 @@ end if
     end if
 #endif
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
 !standalone homme does not support ftype=1 (cause it is identical to ftype=0).
 !also, standalone ftype=0 is the same as standalone ftype=2.
     if ((ftype == 0).or.(ftype == 2).or.(ftype == 3).or.(ftype == 4).or.(ftype == -1)) then
@@ -1060,10 +1061,10 @@ end if
     endif
 
 !=======================================================================================================!
-#ifdef CAM
+#if defined(CAM) || defined(SCREAM)
     nmpi_per_node=1
 #endif
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     call MPI_bcast(interpolate_analysis, 7,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(interp_nlat , 1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(interp_nlon , 1,MPIinteger_t,par%root,par%comm,ierr)
@@ -1123,7 +1124,7 @@ end if
 
        write(iulog,*)"readnl: topology      = ",TRIM( TOPOLOGY )
        write(iulog,*)"readnl: geometry      = ",TRIM( geometry )
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
        write(iulog,*)"readnl: test_case     = ",TRIM(test_case)
        write(iulog,*)"readnl: omega         = ",omega
        write(iulog,*)"readnl: sub_case      = ",sub_case
@@ -1179,7 +1180,7 @@ end if
        
        write(iulog,*)"readnl: vert_remap_q_alg  = ",vert_remap_q_alg
        write(iulog,*)"readnl: vert_remap_u_alg  = ",vert_remap_u_alg
-#ifdef CAM
+#if defined(CAM) || defined(SCREAM)
        write(iulog,*)"readnl: se_nsplit         = ", NSPLIT
        write(iulog,*)"readnl: se_tstep         = ", tstep
        write(iulog,*)"readnl: se_ftype          = ",ftype
@@ -1221,7 +1222,7 @@ end if
           write(iulog,*) "initial_total_mass = ",initial_total_mass
        end if
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
 #ifndef HOMME_WITHOUT_PIOLIBRARY
        write(iulog,*)"  analysis: output_prefix = ",TRIM(output_prefix)
        write(iulog,*)"  analysis: io_stride = ",io_stride
@@ -1265,7 +1266,7 @@ end if
        write(iulog,*)""
 #endif
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
        write(iulog,*)" analysis interpolation = ", interpolate_analysis
 
        if(any(interpolate_analysis)) then
@@ -1278,7 +1279,7 @@ end if
 #endif
 ! ^ ifndef CAM
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
 #ifdef HOMME_SHA1
       write(iulog,*)"HOMME SHA = ", HOMME_SHA1
 #endif
