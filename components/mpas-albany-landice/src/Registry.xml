@@ -705,10 +705,6 @@
 			<!-- these variables just for ISMIP6 grounded glacier forcing -->
 			<var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
 			<var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
-                        <var name="ismip6RunoffPrevious" packages="ismip6GroundedFaceMelt" />
-			<var name="ismip6_2dThermalForcingPrevious" packages="ismip6GroundedFaceMelt" />
-                        <var name="ismip6RunoffCurrent" packages="ismip6GroundedFaceMelt" />
-                        <var name="ismip6_2dThermalForcingCurrent" packages="ismip6GroundedFaceMelt" />
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
