@@ -165,7 +165,7 @@ YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qc_in, real &qv_in, 
   bool keep_iterating = true;
 
   // If we're super-saturated, we need to condense
-  if (qt_in > qsat) {
+  if (qv_in > qsat) {
     // Set bounds on how much mass to condense
     real cond1 = 0;   // Minimum amount we can condense
     real cond2 = qv_in;  // Maximum amount we can condense
@@ -194,7 +194,7 @@ YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qc_in, real &qv_in, 
         keep_iterating = false;
       }
     }
-  } else if (qt_in < qsat && qc_in > 0) {
+  } else if (qv_in < qsat && qc_in > 0) {
     // If we are unsaturated and have cloud condensate, we need to evaporate
     // Set bounds on how much mass to evaporate
     real evap1 = 0;  // minimum amount we can evaporate
