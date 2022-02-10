@@ -1858,7 +1858,7 @@ module li_calving
 
       ! Get the time between forcings to calculate retreat rate.
       call mpas_get_timeInterval(forcingTime - forcingTimeOld, dt=deltatForcing)
-      call mpas_log_write("deltatForcing = $r", realArgs = (/deltatForcing/))
+      call mpas_log_write("ismip6 retreat deltatForcing = $r", realArgs = (/deltatForcing/))
 
       ! This if-statement is probably unnecessary, but this ensures there is no divide-by-zero error
       ! if somehow deltatForcing = 0.0.
