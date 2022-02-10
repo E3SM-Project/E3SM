@@ -739,7 +739,7 @@ contains
   subroutine prim_init2(elem, hybrid, nets, nete, tl, hvcoord)
 
     use control_mod,          only: runtype, test_case, &
-                                    debug_level, vfile_int, vform, vfile_mid, &
+                                    debug_level, vfile_int, vfile_mid, &
                                     topology, dt_remap_factor, dt_tracer_factor,&
                                     sub_case, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
                                     hypervis_subcycle_q, hypervis_subcycle_tom

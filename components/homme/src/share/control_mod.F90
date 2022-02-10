@@ -148,7 +148,6 @@ module control_mod
 
   character(len=MAX_STRING_LEN)    ,public  :: vfile_int=""   ! vertical formulation (ecmwf,ccm1)
   character(len=MAX_STRING_LEN)    ,public  :: vfile_mid=""   ! vertical grid spacing (equal,unequal)
-  character(len=MAX_STRING_LEN)    ,public  :: vform = ""     ! vertical coordinate system (sigma,hybrid)
   integer,                          public  :: vanalytic = 0  ! if 1, test initializes vertical coords
   real (kind=real_kind),            public  :: vtop = 0.1     ! top coordinate level for analytic vcoords
 

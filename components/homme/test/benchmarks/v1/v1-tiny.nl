@@ -33,7 +33,6 @@ hypervis_order = 2
 hypervis_subcycle=3    ! ne30: 3  ne120: 4
 /
 &vert_nl
-vform         = "ccm"
 vfile_mid = './acme-72m.ascii'
 vfile_int = './acme-72i.ascii'
 /

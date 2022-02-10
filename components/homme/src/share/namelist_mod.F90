@@ -85,7 +85,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     u_perturb,     &        ! J&W baroclinic test perturbation size
     moisture,      &
     use_moisture,      &
-    vform,         &
     vfile_mid,     &
     vfile_int,     &
     vanalytic,     &
@@ -360,7 +359,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       bubble_rh_background, &
       bubble_prec_type
     namelist /vert_nl/        &
-      vform,              &
       vfile_mid,          &
       vfile_int,          &
       vanalytic,          & ! use analytically generated vertical levels
@@ -579,11 +577,9 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 #else
          read(*,nml=vert_nl)
 #endif
-         vform      = trim(adjustl(vform))
          vfile_mid  = trim(adjustl(vfile_mid))
          vfile_int  = trim(adjustl(vfile_int))
 
-         write(iulog,*) '  vform =',trim(vform)
          write(iulog,*) '  vfile_mid=',trim(vfile_mid)
          write(iulog,*) '  vfile_int=',trim(vfile_int)
          write(iulog,*) '  vanalytic=',vanalytic
@@ -877,7 +873,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
        call MPI_bcast(tol        ,1,MPIreal_t   ,par%root,par%comm,ierr)
     end if
 
-    call MPI_bcast(vform    , MAX_STRING_LEN, MPIChar_t   , par%root, par%comm,ierr)
     call MPI_bcast(vfile_mid, MAX_STRING_LEN, MPIChar_t   , par%root, par%comm,ierr)
     call MPI_bcast(vfile_int, MAX_STRING_LEN, MPIChar_t   , par%root, par%comm,ierr)
     call MPI_bcast(vanalytic, 1,              MPIinteger_t, par%root, par%comm,ierr)
