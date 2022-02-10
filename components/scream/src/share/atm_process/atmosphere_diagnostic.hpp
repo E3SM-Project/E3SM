@@ -39,6 +39,9 @@ public:
 
 protected:
 
+  void set_computed_field_impl (const Field& f);
+  void set_computed_group_impl (const FieldGroup& group);
+
   // Diagnostics are meant to return a field
   Field m_diagnostic_output;
 

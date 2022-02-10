@@ -114,6 +114,37 @@ protected:
 
 };
 
+class DiagFail : public DummyDiag
+{
+public:
+  DiagFail (const ekat::Comm& comm, const ekat::ParameterList& params)
+    : DummyDiag(comm,params)
+  {
+    // Nothing to do here
+  }
+
+  std::string name() const { return "Failure Dianostic"; }
+
+  void set_grids (const std::shared_ptr<const GridsManager> gm) {
+    using namespace ekat::units;
+
+    const auto grid = gm->get_grid(m_grid_name);
+    const auto lt = grid->get_2d_scalar_layout ();
+
+    add_field<Required>("Field A",lt,K,m_grid_name);
+    add_field<Computed>("Field B",lt,K,m_grid_name);
+
+    // We have to initialize the m_diagnostic_output:
+    FieldIdentifier fid (name(), lt, K, m_grid_name);
+    m_diagnostic_output = Field(fid);
+    m_diagnostic_output.allocate_view();
+  }
+protected:
+    void run_impl (const int /* dt */) {
+      // Do nothing, this diagnostic should fail.
+    }
+};
+
 class DiagIdentity : public DummyDiag
 {
 public:
@@ -622,9 +653,15 @@ TEST_CASE ("diagnostics") {
   auto diag_sum = std::make_shared<DiagSum>(comm,params_sum);
   diag_sum->set_grids(gm);
 
+  // Create the fail diagnostic
+  ekat::ParameterList params_fail;
+  params_fail.set<std::string>("Diagnostic Name", "DiagFail");
+  params_fail.set<std::string>("Grid Name", "Point Grid");
+  auto diag_fail = std::make_shared<DiagFail>(comm,params_fail);
+  diag_fail->set_grids(gm);
+
   // Create fields for ap1
   for(const auto& req : ap1->get_required_field_requests()) {
-    printf("ASD hello\n");
     Field f(req.fid);
     f.allocate_view();
     f.deep_copy(0);
@@ -638,7 +675,6 @@ TEST_CASE ("diagnostics") {
 
   // Create fields for ap2
   for(const auto& req : ap2->get_required_field_requests()) {
-    printf("ASD goodbye\n");
     Field f(req.fid);
     f.allocate_view();
     f.deep_copy(0);
@@ -648,6 +684,14 @@ TEST_CASE ("diagnostics") {
     ap2->set_computed_field(f);
     diag_sum->set_required_field(f.get_const());
   }
+
+  // Check that computed fields fail for the fail diagnostic
+  for(const auto& req : ap2->get_required_field_requests()) {
+    Field f(req.fid);
+    f.allocate_view();
+    REQUIRE_THROWS(diag_fail->set_computed_field(f));
+  }
+
 
   ap1->initialize(t0,RunType::Initial);
   ap2->initialize(t0,RunType::Initial);
