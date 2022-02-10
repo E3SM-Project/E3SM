@@ -150,8 +150,6 @@ module control_mod
   integer,                          public  :: vanalytic = 0  ! if 1, test initializes vertical coords
   real (kind=real_kind),            public  :: vtop = 0.1     ! top coordinate level for analytic vcoords
 
-  real (kind=real_kind), public :: max_hypervis_courant = 1d99! upper bound for Courant number
-                                                              ! (only used for variable viscosity, recommend 1.9 in namelist)
   real (kind=real_kind), public :: nu      = 7.0D5            ! viscosity (momentum equ)
   real (kind=real_kind), public :: nu_div  = -1               ! viscsoity (momentum equ, div component)
   real (kind=real_kind), public :: nu_s    = -1               ! default = nu   T equ. viscosity

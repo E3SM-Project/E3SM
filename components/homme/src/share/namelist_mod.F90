@@ -55,7 +55,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     prescribed_wind, &
     ftype,         &
     limiter_option,&
-    max_hypervis_courant, &
     nu,            &
     nu_s,          &
     nu_q,          &
@@ -275,7 +274,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       disable_diagnostics, &
       prescribed_wind, &
       se_ftype,        &           ! forcing type
-      max_hypervis_courant, &
       nu,            &
       nu_s,          &
       nu_q,          &
@@ -778,7 +776,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(vert_remap_q_alg,1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(vert_remap_u_alg,1, MPIinteger_t, par%root,par%comm,ierr)
 
-    call MPI_bcast(max_hypervis_courant,1,MPIreal_t, par%root,par%comm,ierr)
     call MPI_bcast(nu,              1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(nu_s,            1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(nu_q,            1, MPIreal_t   , par%root,par%comm,ierr)
