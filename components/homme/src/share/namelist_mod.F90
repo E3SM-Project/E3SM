@@ -29,7 +29,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     geometry,      &       ! Mesh geometry
     test_case,     &       ! test case
     planar_slice,     &
-    uselapi,       &
     numnodes,      &
     sub_case,      &
     statefreq,     &       ! number of steps per printstate call
@@ -249,7 +248,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       Z2_MAP_METHOD,  &
       vthreads,      &             ! number of vertical/column threads per horizontal thread
       npart,         &
-      uselapi,       &
       numnodes,      &
       ne,            &             ! element resolution factor
       ne_x,            &             ! element resolution factor in x-dir for planar
@@ -406,7 +404,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     COORD_TRANSFORM_METHOD = SPHERE_COORDS
     Z2_MAP_METHOD = Z2_NO_TASK_MAPPING
     npart         = 1
-    uselapi       = .TRUE.
     se_tstep=-1
 #if !defined(CAM) && !defined(SCREAM)
     ndays         = 0
@@ -851,8 +848,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 
     call MPI_bcast(restartfile,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(restartdir,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
-
-    call MPI_bcast(uselapi,1,MPIlogical_t,par%root,par%comm,ierr)
 
     if (integration == "full_imp") then
        call MPI_bcast(precon_method,MAX_STRING_LEN,MPIChar_t,par%root,par%comm,ierr)
