@@ -1,3 +1,4 @@
+#define _IDX321(i, j, k, nx, ny, nz) (nx * (ny * (k - 1) + (j - 1)) + i)
 module cospsimulator_intr
   ! ######################################################################################
   ! Purpose: CAM interface to
@@ -40,6 +41,9 @@ module cospsimulator_intr
        nhydro            => N_HYDRO, &
        cloudsat_preclvl
     use mod_cosp_stats,       only: cosp_change_vertical_grid
+#endif
+#ifdef MMF_PACK
+    use crmdims, only: crm_nx_rad, crm_ny_rad, crm_nz
 #endif
   implicit none
   private
@@ -242,6 +246,10 @@ module cospsimulator_intr
        gamma_2 = (/-1._r8, -1._r8,      6.0_r8,      6.0_r8, -1._r8, -1._r8,      6.0_r8,      6.0_r8,      6.0_r8/),&
        gamma_3 = (/-1._r8, -1._r8,      2.0_r8,      2.0_r8, -1._r8, -1._r8,      2.0_r8,      2.0_r8,      2.0_r8/),&
        gamma_4 = (/-1._r8, -1._r8,      6.0_r8,      6.0_r8, -1._r8, -1._r8,      6.0_r8,      6.0_r8,      6.0_r8/)       
+#endif
+#ifndef MMF_PACK
+  integer, parameter :: crm_nx_rad = 1
+  integer, parameter :: crm_ny_rad = 1
 #endif
 
 CONTAINS
@@ -1092,8 +1100,12 @@ CONTAINS
 
 
     ! Number of collumns in this physics chunk
+#ifdef MMF_PACK
+    ncol = state%ncol * crm_nx_rad * crm_ny_rad
+#else
     ncol = state%ncol
-   
+#endif
+  
     ! Construct COSP output derived type.
     call t_startf('cosp_construct_cosp_outputs')
     call construct_cosp_outputs(ncol,nscol_cosp,pver,Nlvgrid,0,cospOUT)
@@ -1115,9 +1127,9 @@ CONTAINS
 
     call t_startf('cosp_subsample_and_optics')
 #ifdef MMF
-    call populate_cosp_subcol(state, pbuf, emis, cld_swtau, cospstateIN, cospIN, snow_tau, snow_emis)    
-#else
     call populate_cosp_subcol_mmf(state, pbuf, cospstateIN, cospIN)
+#else
+    call populate_cosp_subcol(ncol, state, pbuf, emis, cld_swtau, cospstateIN, cospIN, snow_tau, snow_emis)    
 #endif
     call t_stopf('cosp_subsample_and_optics')
 
@@ -1181,57 +1193,79 @@ CONTAINS
     real(r8), pointer, dimension(:,:) :: q               ! specific humidity (kg/kg)
     real(r8), pointer, dimension(:,:) :: o3              ! Mass mixing ratio 03
     ! Other local variables
-    integer :: ncol, i, k
+    integer :: npoints, ncol, i, j, k, ix, iy
 
+    ! ncol is number of points in model, npoints is number of points used in
+    ! COSP. For MMF, npoints will be equal to ncol * crm_nx_rad * crm_ny_rad
     ncol = state%ncol
+    npoints = cospstateIN%npoints
 
     ! radiative constituent interface variables:
     ! specific humidity (q), 03, CH4,C02, N20 mass mixing ratio
     ! Note: these all have dims (pcol,pver) but the values don't change much for the well-mixed gases.
     call rad_cnst_get_gas(0,'H2O', state, pbuf,  q)                     
     call rad_cnst_get_gas(0,'O3',  state, pbuf,  o3)
- 
-    do i = 1,ncol
-       cospstateIN%lat(i)                      = state%lat(i)*180._r8/ pi
-       cospstateIN%lon(i)                      = state%lon(i)*180._r8 / pi
+
+    ! Populate 2D fields
+    do iy = 1,crm_ny_rad
+      do ix = 1,crm_nx_rad
+        do i = 1,ncol
+#ifdef MMF_PACK
+          j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
+#else
+          j = i
+#endif
+          ! Coordinate variables
+          cospstateIN%lat(j)                      = state%lat(i)*180._r8/ pi
+          cospstateIN%lon(j)                      = state%lon(i)*180._r8 / pi
+          ! Compute sunlit flag
+          if (coszrs(i) > 0.0_r8) then
+            cospstateIN%sunlit(j) = 1
+          else
+            cospstateIN%sunlit(j) = 0
+          end if
+          ! Compute land mask
+          if (cam_in%landfrac(i) > 0.01_r8) then
+            cospstateIN%land(j) = 1
+          else
+            cospstateIN%land(j) = 0
+          end if
+          cospstateIN%surfelev(j) = state%zi(i,pver+1) + state%phis(i) / gravit
+          cospstateIN%skt(j) = cam_in%ts(i)
+        end do
+      end do
     end do
-    cospstateIN%at                             = state%t(1:ncol,1:pver) 
-    cospstateIN%qv                             = q(1:ncol,1:pver)
-    cospstateIN%o3                             = o3(1:ncol,1:pver)  
-    ! Compute sunlit flag
-    do i = 1,ncol
-       if (coszrs(i) > 0.0_r8) then
-          cospstateIN%sunlit(i) = 1
-       else
-          cospstateIN%sunlit(i) = 0
-       end if
-    end do
-    cospstateIN%skt                            = cam_in%ts(1:ncol)
-    ! Compute land mask
-    do i = 1,ncol
-       if (cam_in%landfrac(i) > 0.01_r8) then
-          cospstateIN%land(i) = 1
-       else
-          cospstateIN%land(i) = 0
-       end if
-    end do
-    cospstateIN%pfull                          = state%pmid(1:ncol,1:pver)
-    cospstateIN%phalf(1:ncol,1:pver+1)         = state%pint(1:ncol,1:pver+1) !0._r8
-    ! add surface height (surface geopotential/gravity) to convert CAM heights
-    ! based on geopotential above surface into height above sea level
+
+    ! Populate 3D fields
     do k = 1,pver
-       do i = 1,ncol
-          cospstateIN%hgt_matrix(i,k)          = state%zm(i,k) + state%phis(i) / gravit
-          cospstateIN%hgt_matrix_half(i,k)     = state%zi(i,k+1) + state%phis(i) / gravit
-       end do
+      do iy = 1,crm_ny_rad
+        do ix = 1,crm_nx_rad
+          do i = 1,ncol
+#ifdef MMF_PACK
+            j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
+#else
+            j = i
+#endif
+            cospstateIN%at(j,k)                        = state%t(i,k) 
+            cospstateIN%qv(j,k)                        = q(i,k)
+            cospstateIN%o3(j,k)                        = o3(i,k)  
+            cospstateIN%pfull(j,k)                     = state%pmid(i,k)
+            cospstateIN%phalf(j,k) = state%pint(i,k) !0._r8
+            cospstateIN%phalf(j,k+1) = state%pint(i,k+1) !0._r8
+            ! add surface height (surface geopotential/gravity) to convert CAM heights
+            ! based on geopotential above surface into height above sea level
+            cospstateIN%hgt_matrix(j,k)          = state%zm(i,k) + state%phis(i) / gravit
+            cospstateIN%hgt_matrix_half(j,k)     = state%zi(i,k+1) + state%phis(i) / gravit
+          end do
+        end do
+      end do
     end do
-    cospstateIN%surfelev(1:ncol)               = state%zi(1:ncol,pver+1) + state%phis(1:ncol) / gravit
   end subroutine populate_cosp_gridbox
 #endif /* USE_COSP */
 
 
 #ifdef USE_COSP
-  subroutine populate_cosp_subcol(state, pbuf, emis, cld_swtau, cospstateIN, cospIN, snow_tau, snow_emis)    
+  subroutine populate_cosp_subcol(npoints, state, pbuf, emis, cld_swtau, cospstateIN, cospIN, snow_tau, snow_emis)    
     use physics_types,        only: physics_state
     use physics_buffer,       only: physics_buffer_desc, pbuf_get_field, pbuf_old_tim_idx
     use constituents,         only: cnst_get_ind
@@ -1248,6 +1282,7 @@ CONTAINS
     ! ######################################################################################
     ! Inputs
     ! ######################################################################################
+    integer, intent(in) :: npoints
     type(physics_state), intent(in),target  :: state
     type(physics_buffer_desc),      pointer :: pbuf(:)
     real(r8), intent(in) :: emis(pcols,pver)                  ! cloud longwave emissivity
@@ -1260,7 +1295,7 @@ CONTAINS
     ! ######################################################################################
     integer :: lchnk                             ! chunk identifier
     integer :: ncol                              ! number of active atmospheric columns
-    integer :: i, k, itim_old
+    integer :: i, j, k, ix, iy, iz, itim_old
     
     ! Microphysics variables
     integer :: ixcldliq                                   ! cloud liquid amount index for state%q
@@ -1339,36 +1374,58 @@ CONTAINS
                                            ! This is to avoid directly passing  sd_cs(lchnk) to
                                            ! subsample_and_optics which would
                                            ! fail runtime if compiled more strictly, like in debug mode 
+    real(r8), dimension(npoints,pver) :: cld_s, cld_c
+    real(r8), pointer, dimension(:,:,:,:) :: &
+       crm_cld, crm_dtau, crm_dems, crm_qc, crm_qi, crm_rel, crm_rei
 
     ncol = state%ncol
     lchnk = state%lchnk
 
     cospIN%emsfc_lw      = emsfc_lw
 
-    ! get variables from physics buffer
+    ! Cloud fractions
+#ifdef MMF_PACK
+    call pbuf_get_field(pbuf, pbuf_get_index('CRM_CLD_RAD'), crm_cld)
+    do iz = 1,crm_nz
+      do iy = 1,crm_ny_rad
+        do ix = 1,crm_nx_rad
+          do i = 1,ncol
+            j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
+            k = pver - iz + 1
+            cld_s(j,k) = crm_cld(i,ix,iy,iz)
+          end do
+        end do
+      end do
+    end do
+#else
     itim_old = pbuf_old_tim_idx()
     call pbuf_get_field(pbuf, cld_idx,    cld,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
     call pbuf_get_field(pbuf, concld_idx, concld, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
-    call pbuf_get_field(pbuf, rel_idx, rel  )
-    call pbuf_get_field(pbuf, rei_idx, rei)
-    
-    ! added some more sizes to physics buffer in stratiform.F90 for COSP inputs
-    call pbuf_get_field(pbuf, lsreffrain_idx, ls_reffrain  )
-    call pbuf_get_field(pbuf, lsreffsnow_idx, ls_reffsnow  )
-    call pbuf_get_field(pbuf, cvreffliq_idx,  cv_reffliq   )
-    call pbuf_get_field(pbuf, cvreffice_idx,  cv_reffice   )
-    
-    ! Variables I added to physics buffer in other interfaces (not radiation.F90)
-    ! all "1" at the end ok as is because radiation/intr after when these were added to physics buffer
-    
-    !! convective cloud mixing ratios (use for cam4 and cam5)
-    call pbuf_get_field(pbuf, dpcldliq_idx, dp_cldliq  )
-    call pbuf_get_field(pbuf, dpcldice_idx, dp_cldice  )
-    !! get from pbuf in stratiform.F90
-    call pbuf_get_field(pbuf, shcldliq1_idx, sh_cldliq  )
-    call pbuf_get_field(pbuf, shcldice1_idx, sh_cldice  )
-    
-    !! precipitation fluxes (use for both cam4 and cam5 for now....)
+    do k = 1,pver
+      do i = 1,ncol
+        cld_s(i,k) = cld(i,k)
+        cld_c(i,k) = concld(i,k)
+      end do
+    end do
+#endif    
+
+    ! precipitation fluxes (use for both cam4 and cam5 for now....)
+#ifdef MMF_PACK
+    use_precipitation_fluxes = .false.
+    do iz = 1,crm_nz
+      do iy = 1,crm_ny_rad
+        do ix = 1,crm_nx_rad
+          do i = 1,ncol
+            j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
+            k = pver - iz + 1
+            rain_ls_interp(j,k) = 0._r8  ! TODO: fix this
+            snow_ls_interp(j,k) = 0._r8  ! TODO: fix this
+            grpl_ls_interp(j,k) = 0._r8  ! TODO: fix this
+          end do
+        end do
+      end do
+    end do
+#else
     call pbuf_get_field(pbuf, dpflxprc_idx, dp_flxprc  )
     call pbuf_get_field(pbuf, dpflxsnw_idx, dp_flxsnw  )
     call pbuf_get_field(pbuf, shflxprc_idx, sh_flxprc  )
@@ -1418,13 +1475,42 @@ CONTAINS
           end if
        end do
     end do
-    
+#endif    
+
+    ! Hydrometeor mixing ratios
+#ifdef MMF_PACK
+    ! TODO: convert mr_lsliq+mr_lsice to array like mrhydro with enum-like
+    ! indices; handle preciptation mixing ratios here
+    call pbuf_get_field(pbuf, pbuf_get_index('CRM_QC_RAD'), crm_qc)
+    call pbuf_get_field(pbuf, pbuf_get_index('CRM_QI_RAD'), crm_qi)
+    do iz = 1,crm_nz
+      do iy = 1,crm_ny_rad
+        do ix = 1,crm_nx_rad
+          do i = 1,ncol
+            j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
+            k = pver - iz + 1
+            ! Mixing ratios
+            mr_lsliq(j,k) = crm_qc(ic,ix,iy,iz)
+            mr_lsice(j,k) = crm_qi(ic,ix,iy,iz)
+            mr_ccliq(j,k) = 0._r8
+            mr_ccice(j,k) = 0._r8
+          end do
+        end do
+      end do
+    end do
+#else
     ! CAM5 cloud mixing ratio calculations
     ! Note: Although CAM5 has non-zero convective cloud mixing ratios that affect the model state, 
     ! Convective cloud water is NOT part of radiation calculations.
     ! Get indices to radiative constituents
     call cnst_get_ind('CLDLIQ',ixcldliq)
     call cnst_get_ind('CLDICE',ixcldice)
+    ! convective cloud mixing ratios (use for cam4 and cam5)
+    call pbuf_get_field(pbuf, dpcldliq_idx, dp_cldliq  )
+    call pbuf_get_field(pbuf, dpcldice_idx, dp_cldice  )
+    ! get from pbuf in stratiform.F90
+    call pbuf_get_field(pbuf, shcldliq1_idx, sh_cldliq  )
+    call pbuf_get_field(pbuf, shcldice1_idx, sh_cldice  )
     mr_ccliq(1:ncol,1:pver)           = 0._r8
     mr_ccice(1:ncol,1:pver)           = 0._r8
     mr_lsliq(1:ncol,1:pver)           = 0._r8
@@ -1445,11 +1531,43 @@ CONTAINS
           end if
        end do
     end do
-    
+#endif
+
+    ! Effective radii
+#ifdef MMF_PACK
+    call pbuf_get_field(pbuf, pbuf_get_index('CRM_REL'), crm_rel)
+    call pbuf_get_field(pbuf, pbuf_get_index('CRM_REI'), crm_rei)
+    do iz = 1,crm_nz
+      do iy = 1,crm_ny_rad
+        do ix = 1,crm_nx_rad
+          do i = 1,ncol
+            j = _IDX321(i, ix, iy, ncol, crm_nx_ray, crm_ny_rad)
+            k = pver - iz + 1
+            reff_cosp(j,k,I_LSCLIQ) = crm_rel(i,ix,iy,iz) * 1e-6_r8  ! microns to meters
+            reff_cosp(j,k,I_LSCICE) = crm_rei(i,ix,iy,iz) * 1e-6_r8  ! microns to meters
+            reff_cosp(j,k,I_LSRAIN) = 0._r8
+            reff_cosp(j,k,I_LSSNOW) = 0._r8
+            reff_cosp(j,k,I_CVCLIQ) = 0._r8
+            reff_cosp(j,k,I_CVCICE) = 0._r8
+            reff_cosp(j,k,I_CVRAIN) = 0._r8
+            reff_cosp(j,k,I_CVSNOW) = 0._r8
+            reff_cosp(j,k,I_CVGRPL) = 0._r8
+          end do
+        end do
+      end do
+    end do
+#else
     ! Previously, I had set use_reff=.false.
     ! use_reff = .false.  !! if you use this,all sizes use DEFAULT_LIDAR_REFF = 30.0e-6 meters
     ! The specification of reff_cosp now follows e-mail discussion with Yuying in January 2011. (see above)
     ! All of the values that I have assembled in the code are in microns...convert to meters since that is what COSP wants.
+    call pbuf_get_field(pbuf, rel_idx, rel  )
+    call pbuf_get_field(pbuf, rei_idx, rei)
+    ! added some more sizes to physics buffer in stratiform.F90 for COSP inputs
+    call pbuf_get_field(pbuf, lsreffrain_idx, ls_reffrain  )
+    call pbuf_get_field(pbuf, lsreffsnow_idx, ls_reffsnow  )
+    call pbuf_get_field(pbuf, cvreffliq_idx,  cv_reffliq   )
+    call pbuf_get_field(pbuf, cvreffice_idx,  cv_reffice   )
     reff_cosp(1:ncol,1:pver,1:nhydro) = 0._r8
     reff_cosp(1:ncol,1:pver,I_LSCLIQ) = rel(1:ncol,1:pver)*1.e-6_r8          ! (same as effc and effliq in stratiform.F90)
     reff_cosp(1:ncol,1:pver,I_LSCICE) = rei(1:ncol,1:pver)*1.e-6_r8          ! (same as effi and effice in stratiform.F90)
@@ -1460,7 +1578,26 @@ CONTAINS
     reff_cosp(1:ncol,1:pver,I_CVRAIN) = ls_reffrain(1:ncol,1:pver)*1.e-6_r8  ! (same as stratiform per Andrew)
     reff_cosp(1:ncol,1:pver,I_CVSNOW) = ls_reffsnow(1:ncol,1:pver)*1.e-6_r8  ! (same as stratiform per Andrew)
     reff_cosp(1:ncol,1:pver,I_LSGRPL) = 0._r8                                ! (using radar default reff)
+#endif
 
+#ifdef MMF_PACK
+    call pbuf_get_field(pbuf, pbuf_get_index('CRM_EMIS'), crm_emis)
+    call pbuf_get_field(pbuf, pbuf_get_index('CRM_DTAU'), crm_dtau)
+    do iz = 1,crm_nz
+      do iy = 1,crm_ny_rad
+        do ix = 1,crm_nx_rad
+          do i = 1,ncol
+            j = _IDX321(i, ix, iy, ncol, crm_nx_ray, crm_ny_rad)
+            k = pver - iz + 1
+            dtau_s(j,k) = crm_dtau(i,ix,iy,iz)
+            dtau_c(j,k) = crm_dtau(i,ix,iy,iz)
+            dem_s (j,k) = crm_emis(i,ix,iy,iz)
+            dem_c (j,k) = crm_emis(i,ix,iy,iz)
+          end do
+        end do
+      end do
+    end do
+#else
     ! NOTES:
     ! 1) EAM assumes same radiative properties for stratiform and convective clouds, 
     ! 2) COSP wants in-cloud values. EAM values of cld_swtau are in-cloud means.
@@ -1476,14 +1613,15 @@ CONTAINS
        dem_s_snow(1:ncol,1:pver) = 0._r8
        dtau_s_snow(1:ncol,1:pver) = 0._r8
     end if
+#endif
 
     if (lradar_sim) then 
        cospIN%rcfg_cloudsat = rcfg_cs(lchnk)
        sd_wk = sd_cs(lchnk)
     end if
     call subsample_and_optics(ncol,pver,nscol_cosp,nhydro,overlap,             &
-         use_precipitation_fluxes,lidar_ice_type,sd_wk,cld(1:ncol,1:pver),     &
-         concld(1:ncol,1:pver),rain_ls_interp(1:ncol,1:pver),                  &
+         use_precipitation_fluxes,lidar_ice_type,sd_wk,cld_s(1:ncol,1:pver),     &
+         cld_c(1:ncol,1:pver),rain_ls_interp(1:ncol,1:pver),                  &
          snow_ls_interp(1:ncol,1:pver),grpl_ls_interp(1:ncol,1:pver),          &
          rain_cv_interp(1:ncol,1:pver),snow_cv_interp(1:ncol,1:pver),          &
          mr_lsliq(1:ncol,1:pver),mr_lsice(1:ncol,1:pver),                      &
