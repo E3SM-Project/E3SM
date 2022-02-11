@@ -25,5 +25,7 @@ enum {
   shoc_idx_qm,      // ice rime amount
   shoc_idx_bm,      // ice rime volume
   shoc_idx_qc,      // cloud liq amount (this is also part of total water)
-  shoc_idx_tke      // tke
+  shoc_idx_tke,     // turbulent kinetic energy (tke)
+  shoc_idx_esmt_u,  // explicit scalar momentum transport scheme u wind
+  shoc_idx_esmt_v   // explicit scalar momentum transport scheme v wind
 };

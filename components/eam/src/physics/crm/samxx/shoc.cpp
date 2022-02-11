@@ -15,8 +15,33 @@ void shoc_initialize() {
 
   parallel_for( SimpleBounds<5>(nsgs_fields_diag,nzm,dimy_d,dimx_d,ncrms) , YAKL_LAMBDA (int l, int k, int j, int i, int icrm) {
     sgs_field_diag(l,k,j,i,icrm) = 0.0;
-    // if (l==2) { sgs_field_diag(l,k,j,i,icrm) = 0.001; }
+    if (l==2) { sgs_field_diag(l,k,j,i,icrm) = 0.001; }
   });
+}
+
+void print_debug(std::string called_from, real2d shoc_dse) {
+  auto &z       = :: z;
+  auto &pmid_in = :: pres;
+  auto &tabs    = :: tabs;
+  auto &qv      = :: qv;
+
+  for (int k=0; k<nzm; k++) {
+    int j = 0; int i = 16;
+    for (int icrm=0; icrm<ncrms; icrm++) {
+      int icol = i+nx*(j+ny*icrm);
+      int ilev = nzm-(k+1);
+      std::cout<<"WHDEBUG "<< called_from <<" - "
+      // <<"  icrm:"<<icrm
+      <<"  k:"<<k 
+      <<"  z:"<<z(k,icrm)
+      <<"  pmid_in:"<<pmid_in(k,icrm)
+      <<"  shoc_dse:"<<shoc_dse(icol,ilev)
+      <<"  tabs:"<<tabs(k,j,i,icrm)
+      <<"  qv:"<<qv(k,j,i,icrm)
+      <<std::endl;
+    }
+  }
+
 }
 
 void shoc_proc() {
@@ -69,11 +94,8 @@ void shoc_proc() {
   // const Real shoc_ice_sh   = 50.e-6;
 
   real2d inv_exner("inv_exner", ncol, nlev);
-  real2d rvm("rvm", ncol, nlev);
-  real2d rcm("rcm", ncol, nlev);
-  real2d rtm("rtm", ncol, nlev);
-  // real2d um("um", ncol, nlev);
-  // real2d vm("vm", ncol, nlev);
+  real2d shoc_qw("shoc_qw", ncol, nlev); // total water (vapor + cloud liquid)
+  real2d shoc_ql("shoc_ql", ncol, nlev); // cloud liquid water
   real2d thlm("thlm", ncol, nlev);
   real2d thv("thv", ncol, nlev);
   real2d dz_g("dz_g", ncol, nlev);
@@ -93,6 +115,7 @@ void shoc_proc() {
   real3d shoc_hwind("shoc_hwind", ncol, 2, nlev);
   real3d qtracers("qtracers", ncol, num_shoc_tracers, nlev);
 
+  bool print_debug_stuff = false ;
 
   // ------------------------------------------------- 
   // Set input state for SHOC
@@ -112,12 +135,8 @@ void shoc_proc() {
     rrho(icol,ilev)   = (1./ggr)*(pdel(icol,ilev)/dz_g(icol,ilev));
     wm_zt(icol,ilev)  = w(k,j+offy_w,i+offx_w,icrm);
 
-    rvm(icol,ilev) = qv(k,j,i,icrm);
-    rcm(icol,ilev) = qc(k,j,i,icrm);
-    rtm(icol,ilev) = rvm(icol,ilev) + rcm(icol,ilev);
-
-    // um(icol,ilev)  = u(k,j+offy_u,i+offx_u,icrm);
-    // vm(icol,ilev)  = v(k,j+offy_v,i+offx_v,icrm);
+    shoc_qw(icol,ilev) = qv(k,j,i,icrm) + qcl(k,j,i,icrm);
+    shoc_ql(icol,ilev) = qcl(k,j,i,icrm);
 
     shoc_hwind(icol,0,ilev) = u(k,j+offy_u,i+offx_u,icrm);
     shoc_hwind(icol,1,ilev) = v(k,j+offy_v,i+offx_v,icrm);
@@ -127,12 +146,12 @@ void shoc_proc() {
                       + fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
 
     // thv(icol,ilev)   = tabs(k,j,i,icrm)*inv_exner(icol,ilev)
-    //                    *(1.0+zvir*rtm(icol,ilev)-rcm(icol,ilev));
-    // thlm(icol,ilev)  = tabs(k,j,i,icrm)*inv_exner(icol,ilev)-(latvap/cp)*qc(k,j,i,icrm);
+    //                    *(1.0+zvir*shoc_qw(icol,ilev)-shoc_ql(icol,ilev));
+    // thlm(icol,ilev)  = tabs(k,j,i,icrm)*inv_exner(icol,ilev)-(latvap/cp)*qcl(k,j,i,icrm);
 
     real theta_zt = tabs(k,j,i,icrm) * inv_exner(icol, ilev);
-    thlm(icol,ilev)  = theta_zt-(theta_zt/tabs(k,j,i,icrm))*(latvap/cp)*qcl(k,j,i,icrm);
-    thv(icol,ilev)   = theta_zt*(1 + zvir*qv(k,j,i,icrm) - qc(k,j,i,icrm));
+    thlm(icol,ilev) = theta_zt- (theta_zt/tabs(k,j,i,icrm)) * (latvap/cp)*qcl(k,j,i,icrm);
+    thv(icol,ilev)  = theta_zt*(1 + zvir*qv(k,j,i,icrm) - qcl(k,j,i,icrm));
     shoc_dse(icol,ilev) = cp*tabs(k,j,i,icrm) + ggr*z(k,icrm) + phis(icrm);
 
     tke (icol,ilev) = sgs_field(0,k,j+offy_s,i+offx_s,icrm);
@@ -141,8 +160,7 @@ void shoc_proc() {
     wthv(icol,ilev) = sgs_field_diag(2,k,j+offy_d,i+offx_d,icrm);
     // wthv(icol,ilev)  = 1.; //crm_input_wthv(plev-nzm+k,icrm);
 
-    // Cloud fraction needs to be initialized for first 
-    // PBL height calculation call
+    // Cloud fraction needs to be initialized for first PBL height calculation
     shoc_cldfrac(icol,ilev) = CF3D(k,j,i,icrm);
 
     qtracers(icol,shoc_idx_qv,ilev) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm)
@@ -156,7 +174,14 @@ void shoc_proc() {
     qtracers(icol,shoc_idx_bm,ilev) = micro_field(idx_bm,k,j+offy_s,i+offx_s,icrm);
     qtracers(icol,shoc_idx_qc,ilev) = micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
     qtracers(icol,shoc_idx_tke,ilev)= sgs_field(0,k,offy_s+j,offx_s+i,icrm);
+
+    // if (use_ESMT) {
+    //   qtracers(icol,shoc_idx_esmt_u,ilev) = u_esmt(k,j,i,icrm)
+    //   qtracers(icol,shoc_idx_esmt_v,ilev) = v_esmt(k,j,i,icrm)
+    // }
   });
+
+  if (print_debug_stuff) { print_debug("before shoc",shoc_dse); }
 
   parallel_for( SimpleBounds<4>(nz, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
@@ -217,10 +242,21 @@ void shoc_proc() {
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, {ny, nx, ncrms}), KOKKOS_LAMBDA(int j, int i, int icrm) {
     // Surface fluxes provided by host model
     int icol = i+nx*(j+ny*icrm);
-    wthl_sfc_1d(icol) = 0.; //shf.myData[icrm]/(cp*rrho.myData[icol*rrho.dimension[1]+nlev-1]);
-    wqw_sfc_1d(icol)  = 0.; //cflx.myData[icrm]/rrho.myData[icol*rrho.dimension[1]+nlev-1];
-    uw_sfc_1d(icol)   = 0.; //fluxbu(j,i,icrm); //crm_input_ul.myData[icrm]; //wsx.myData[icrm]/rrho.myData[icol*rrho.dimension[1]+nlev-1];
-    vw_sfc_1d(icol)   = 0.; //fluxbu(j,i,icrm); //crm_input_vl.myData[icrm]; //wsy.myData[icrm]/rrho.myData[icol*rrho.dimension[1]+nlev-1];
+    // wthl_sfc_1d(icol) = shf.myData[icrm]/(cp*rrho.myData[icol*rrho.dimension[1]+nlev-1]);
+    // wqw_sfc_1d(icol)  = cflx.myData[icrm]/rrho.myData[icol*rrho.dimension[1]+nlev-1];
+    // uw_sfc_1d(icol)   = wsx.myData[icrm]/rrho.myData[icol*rrho.dimension[1]+nlev-1];
+    // vw_sfc_1d(icol)   = wsy.myData[icrm]/rrho.myData[icol*rrho.dimension[1]+nlev-1];
+
+    // wthl_sfc_1d(icol) = fluxbt(j,i,icrm);
+    // wqw_sfc_1d(icol)  = fluxbq(j,i,icrm);
+    // uw_sfc_1d(icol)   = fluxbu(j,i,icrm);
+    // vw_sfc_1d(icol)   = fluxbv(j,i,icrm);
+
+    wthl_sfc_1d(icol) = 0.;
+    wqw_sfc_1d(icol)  = 0.;
+    uw_sfc_1d(icol)   = 0.;
+    vw_sfc_1d(icol)   = 0.;
+
     phis_1d(icol)     = phis.myData[icrm];//*100.0;
   });
 
@@ -255,31 +291,28 @@ void shoc_proc() {
   view_2d host_dse_2d("host_dse", ncol, npack); // shoc_dse
   view_2d tke_2d("tke", ncol, npack);
   view_2d thetal_2d("thetal", ncol, npack);  // thlm
-  view_2d qw_2d("qw", ncol, npack);  // rtm
+  view_2d shoc_qw_2d("shoc_qw", ncol, npack);
+  view_2d shoc_ql_2d("shoc_ql", ncol, npack);
   view_2d wthv_sec_2d("wthv_sec", ncol, npack);
   view_2d tk_2d("tk", ncol, npack);
   view_2d tkh_2d("tkh", ncol, npack); 
   view_2d shoc_cldfrac_2d("shoc_cldfrac", ncol, npack);
-  view_2d shoc_ql_2d("shoc_ql", ncol, npack); //rcm
-  // view_2d u_wind_2d("u_wind", ncol, npack);
-  // view_2d v_wind_2d("v_wind", ncol, npack);
-
   view_3d shoc_hwind_3d("shoc_hwind",ncol,2,npack);
   view_3d qtracers_3d("qtracers",ncol,num_shoc_tracers,npack);
 
   array_to_view(shoc_dse.myData,     ncol, nlev, host_dse_2d);
   array_to_view(tke.myData,          ncol, nlev, tke_2d);
   array_to_view(thlm.myData,         ncol, nlev, thetal_2d);
-  array_to_view(rtm.myData,          ncol, nlev, qw_2d);
+  array_to_view(shoc_qw.myData,      ncol, nlev, shoc_qw_2d);
+  array_to_view(shoc_ql.myData,      ncol, nlev, shoc_ql_2d);
   array_to_view(tk.myData,           ncol, nlev, tk_2d);
   array_to_view(tkh.myData,          ncol, nlev, tkh_2d);
   array_to_view(wthv.myData,         ncol, nlev, wthv_sec_2d);
-  array_to_view(rcm.myData,          ncol, nlev, shoc_ql_2d);
   array_to_view(shoc_cldfrac.myData, ncol, nlev, shoc_cldfrac_2d);
   array_to_view(shoc_hwind.myData, ncol, 2, nlev, shoc_hwind_3d);
   array_to_view(qtracers.myData, ncol, num_shoc_tracers, npack, qtracers_3d);
 
-  SHOC::SHOCInputOutput shoc_input_output{host_dse_2d, tke_2d, thetal_2d, qw_2d,
+  SHOC::SHOCInputOutput shoc_input_output{host_dse_2d, tke_2d, thetal_2d, shoc_qw_2d,
                                          shoc_hwind_3d, wthv_sec_2d, qtracers_3d,
                                          tk_2d, tkh_2d, shoc_cldfrac_2d, shoc_ql_2d};
 
@@ -361,6 +394,14 @@ void shoc_proc() {
     sgs_field_diag(1,k,offy_d+j,offx_d+i,icrm) = tkh(icol,ilev);
     sgs_field_diag(2,k,offy_d+j,offx_d+i,icrm) = wthv(icol,ilev);
     CF3D(k,j,i,icrm) = shoc_cldfrac(icol,ilev);
+
+    // if (use_ESMT) {
+    //   u_esmt(k,j,i,icrm) = qtracers(icol,shoc_idx_esmt_u,ilev)
+    //   v_esmt(k,j,i,icrm) = qtracers(icol,shoc_idx_esmt_v,ilev)
+    // }
+
   });
+
+  if (print_debug_stuff) { print_debug("after shoc ",shoc_dse); }
 
 }
