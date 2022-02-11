@@ -854,6 +854,7 @@
                                 type="input"
 				immutable="true"
 				filename_template="ismip6-gis.nc"
+				reference_time="1950-07-01_00:00:00"
                                 input_interval="0001-00-00_00:00:00">
 
                         <var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />

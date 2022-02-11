@@ -259,8 +259,8 @@ module li_calving
       elseif (trim(config_calving) == 'ismip6_retreat') then
 
          if (trim(config_front_mass_bal_grounded) .ne. 'none') then
-            call mpas_log_write('config_front_mass_bal_grounded must be set to `none` '// &
-                                'when config_calving = `ismip6_retreat`.')
+            call mpas_log_write("config_front_mass_bal_grounded must be set to 'none' '// &
+                                'when config_calving = 'ismip6_retreat'.", MPAS_LOG_ERR)
             err = 1
          else
             call ismip6_retreat(domain, err_tmp)
@@ -1872,8 +1872,8 @@ module li_calving
 
       ! check that the ismip6-gis stream was found
       if (.not. streamFound) then
-         call mpas_log_write('Error: Input stream ismip6-gis is required for config_calving = ismip6_retreat, ' // &
-                             'but was not found.')
+         call mpas_log_write('Input stream ismip6-gis is required for config_calving = ismip6_retreat, ' // &
+                             'but was not found.', MPAS_LOG_ERR)
          err = 1
       endif
       ! Get submerged area of each cell to convert from kg m^{-2} s^{-1} to m^3 s^{-1}
