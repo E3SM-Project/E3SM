@@ -361,12 +361,8 @@ void pre_timeloop() {
       t_prev(k,j,i,icrm)                           = crm_state_t_prev(k,j,i,icrm);
       q_prev(k,j,i,icrm)                           = crm_state_q_prev(k,j,i,icrm);
     }
-    if (strcmp(turbulence_scheme, "smag")      == 0) {
-      CF3D(k,j,i,icrm)                             = 1.0;
-    }
-    if (strcmp(turbulence_scheme, "shoc")      == 0) {
-      CF3D(k,j,i,icrm)                             = 0.0;
-    }
+    if (strcmp(turbulence_scheme, "smag") == 0) { CF3D(k,j,i,icrm) = 1.0; }
+    if (strcmp(turbulence_scheme, "shoc") == 0) { CF3D(k,j,i,icrm) = 1.0; }
   });
 
   // microphysics scheme initialization

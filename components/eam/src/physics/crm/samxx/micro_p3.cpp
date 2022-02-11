@@ -443,7 +443,7 @@ void micro_p3_proc() {
     dz_in(icol,ilev)              = adz(k,icrm)*dz(icrm);
     pmid_in(icol,ilev)            = pres(k,icrm)*100.;
     pdel_in(icol,ilev)            = pdel(k,icrm)*100.;
-    cloud_frac_in(icol,ilev)      = CF3D(k,j,i,icrm); //1.;
+    cloud_frac_in(icol,ilev)      = CF3D(k,j,i,icrm);
     q_prev_in(icol,ilev)          = q_prev(k,j,i,icrm);
     t_prev_in(icol,ilev)          = t_prev(k,j,i,icrm);
   });
