@@ -71,6 +71,10 @@ module cospsimulator_intr
   ! ######################################################################################  
   ! Local declarations
   ! ######################################################################################
+  interface packed_average
+     module procedure packed_average1d, packed_average2d, packed_average3d
+  end interface
+
   integer, parameter :: &
        nhtml_cosp = pver  ! Mumber of model levels is pver
   integer ::  &
@@ -1087,33 +1091,38 @@ CONTAINS
 
 #ifdef USE_COSP
     ! Local variables
-    integer :: ncol  ! number of active atmospheric columns
+    integer :: npoints ! Number of points to use in COSP call
+    integer :: ncol    ! number of active atmospheric columns
     
     ! COSP-related local vars
-    type(cosp_outputs)        :: cospOUT      ! COSP simulator outputs
-    type(cosp_optical_inputs) :: cospIN       ! COSP optical (or derived?) fields needed by simulators
-    type(cosp_column_inputs)  :: cospstateIN  ! COSP model fields needed by simulators
+    type(cosp_outputs)        :: cospOUT, cospOUTave  ! COSP simulator outputs
+    type(cosp_optical_inputs) :: cospIN, cospINave    ! COSP optical (or derived?) fields needed by simulators
+    type(cosp_column_inputs)  :: cospstateIN          ! COSP model fields needed by simulators
     
     ! COSP error handling
     character(len=256),dimension(100) :: cosp_status
     integer :: nerror, i
 
 
-    ! Number of collumns in this physics chunk
-#ifdef MMF_PACK
-    ncol = state%ncol * crm_nx_rad * crm_ny_rad
-#else
+    ! Number of columns in this physics chunk
     ncol = state%ncol
+
+    ! Number of points to use in COSP call; could be packed GCM/CRM if using
+    ! MMF_PACK option
+#ifdef MMF_PACK
+    npoints = ncol * crm_nx_rad * crm_ny_rad
+#else
+    npoints = ncol
 #endif
   
     ! Construct COSP output derived type.
     call t_startf('cosp_construct_cosp_outputs')
-    call construct_cosp_outputs(ncol,nscol_cosp,pver,Nlvgrid,0,cospOUT)
+    call construct_cosp_outputs(npoints,nscol_cosp,pver,Nlvgrid,0,cospOUT)
     call t_stopf('cosp_construct_cosp_outputs')
-    
+
     ! Model state inputs
     call t_startf('cosp_construct_cospstateIN')
-    call construct_cospstateIN(ncol,pver,0,cospstateIN)      
+    call construct_cospstateIN(npoints,pver,0,cospstateIN)      
     call t_stopf('cosp_construct_cospstateIN')
     
     call t_startf('cosp_populate_cosp_gridbox')
@@ -1122,15 +1131,11 @@ CONTAINS
 
     ! Optical inputs
     call t_startf('cosp_construct_cospIN')
-    call construct_cospIN(ncol,nscol_cosp,pver,cospIN)
+    call construct_cospIN(npoints,nscol_cosp,pver,cospIN)
     call t_stopf('cosp_construct_cospIN')
 
     call t_startf('cosp_subsample_and_optics')
-#ifdef MMF
-    call populate_cosp_subcol_mmf(state, pbuf, cospstateIN, cospIN)
-#else
-    call populate_cosp_subcol(ncol, state, pbuf, emis, cld_swtau, cospstateIN, cospIN, snow_tau, snow_emis)    
-#endif
+    call populate_cosp_subcol(npoints, state, pbuf, emis, cld_swtau, cospstateIN, cospIN, snow_tau, snow_emis)    
     call t_stopf('cosp_subsample_and_optics')
 
     ! Call COSP and check status
@@ -1162,10 +1167,23 @@ CONTAINS
     call cosp_remask_passive(cospstateIN, cospOUT)
     call t_stopf('cosp_remask_passive')
 
+#ifdef MMF_PACK
+    ! Allocate space for unpacked outputs
+    call construct_cospIN(ncol,nscol_cosp,pver,cospINave)
+    call construct_cosp_outputs(ncol,nscol_cosp,pver,Nlvgrid,0,cospOUTave)
+    ! Average packed COSP outputs
+    call cosp_unpack_outputs(ncol, crm_nx_rad, crm_ny_rad, cospIN, cospOUT, cospINave, cospOUTave)
+    ! Write COSP outputs to history files
+    call cosp_write_outputs(state, cospINave, cospOUTave)
+    ! Free space for unpacked outputs
+    call destroy_cospIN(cospINave)
+    call destroy_cosp_outputs(cospOUTave)
+#else
     ! Write COSP outputs to history files
     call t_startf('cosp_write_outputs')
     call cosp_write_outputs(state, cospIN, cospOUT)
     call t_stopf('cosp_write_outputs')
+#endif
 
     ! Clean up
     call t_startf('cosp_finalize')
@@ -1267,7 +1285,7 @@ CONTAINS
 #ifdef USE_COSP
   subroutine populate_cosp_subcol(npoints, state, pbuf, emis, cld_swtau, cospstateIN, cospIN, snow_tau, snow_emis)    
     use physics_types,        only: physics_state
-    use physics_buffer,       only: physics_buffer_desc, pbuf_get_field, pbuf_old_tim_idx
+    use physics_buffer,       only: physics_buffer_desc, pbuf_get_field, pbuf_old_tim_idx, pbuf_get_index
     use constituents,         only: cnst_get_ind
     use rad_constituents,     only: rad_cnst_get_gas
     use interpolate_data,     only: lininterp_init,lininterp,lininterp_finish,interp_type
@@ -1376,7 +1394,7 @@ CONTAINS
                                            ! fail runtime if compiled more strictly, like in debug mode 
     real(r8), dimension(npoints,pver) :: cld_s, cld_c
     real(r8), pointer, dimension(:,:,:,:) :: &
-       crm_cld, crm_dtau, crm_dems, crm_qc, crm_qi, crm_rel, crm_rei
+       crm_cld, crm_dtau, crm_emis, crm_qc, crm_qi, crm_rel, crm_rei
 
     ncol = state%ncol
     lchnk = state%lchnk
@@ -1490,8 +1508,8 @@ CONTAINS
             j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
             k = pver - iz + 1
             ! Mixing ratios
-            mr_lsliq(j,k) = crm_qc(ic,ix,iy,iz)
-            mr_lsice(j,k) = crm_qi(ic,ix,iy,iz)
+            mr_lsliq(j,k) = crm_qc(i,ix,iy,iz)
+            mr_lsice(j,k) = crm_qi(i,ix,iy,iz)
             mr_ccliq(j,k) = 0._r8
             mr_ccice(j,k) = 0._r8
           end do
@@ -1541,7 +1559,7 @@ CONTAINS
       do iy = 1,crm_ny_rad
         do ix = 1,crm_nx_rad
           do i = 1,ncol
-            j = _IDX321(i, ix, iy, ncol, crm_nx_ray, crm_ny_rad)
+            j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
             k = pver - iz + 1
             reff_cosp(j,k,I_LSCLIQ) = crm_rel(i,ix,iy,iz) * 1e-6_r8  ! microns to meters
             reff_cosp(j,k,I_LSCICE) = crm_rei(i,ix,iy,iz) * 1e-6_r8  ! microns to meters
@@ -1551,7 +1569,7 @@ CONTAINS
             reff_cosp(j,k,I_CVCICE) = 0._r8
             reff_cosp(j,k,I_CVRAIN) = 0._r8
             reff_cosp(j,k,I_CVSNOW) = 0._r8
-            reff_cosp(j,k,I_CVGRPL) = 0._r8
+            reff_cosp(j,k,I_LSGRPL) = 0._r8
           end do
         end do
       end do
@@ -1587,7 +1605,7 @@ CONTAINS
       do iy = 1,crm_ny_rad
         do ix = 1,crm_nx_rad
           do i = 1,ncol
-            j = _IDX321(i, ix, iy, ncol, crm_nx_ray, crm_ny_rad)
+            j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
             k = pver - iz + 1
             dtau_s(j,k) = crm_dtau(i,ix,iy,iz)
             dtau_c(j,k) = crm_dtau(i,ix,iy,iz)
@@ -2053,6 +2071,161 @@ CONTAINS
       end if
    end subroutine cosp_write_outputs
 #endif
+
+    subroutine packed_average1d(nc, nx, ny, d_in, d_out)
+      integer, intent(in) :: nc, nx, ny
+      real(r8), intent(in) :: d_in(:)
+      real(r8), intent(out) :: d_out(:)
+      real(r8) :: xyfact
+      integer :: ip, ic, ix, iy
+      call assert(size(d_in , 1) == nc * nx * ny, 'np /= nc * nx * ny')
+      xyfact  = 1._r8 / nx * ny
+      d_out = 0._r8
+      do iy = 1,ny
+        do ix = 1,nx
+          do ic = 1,nc
+            ip = _IDX321(ic,ix,iy,nc,nx,ny)
+            if (d_in(ip) /= R_UNDEF) then
+              d_out(ic) = d_out(ic) + xyfact * d_in(ip)
+            end if
+          end do
+        end do
+      end do
+    end subroutine
+    subroutine packed_average2d(nc, nx, ny, d_in, d_out)
+      integer, intent(in) :: nc, nx, ny
+      real(r8), intent(in) :: d_in(:,:)
+      real(r8), intent(out) :: d_out(:,:)
+      real(r8) :: xyfact
+      integer :: ip, ic, ix, iy, i2, i3
+      call assert(size(d_in , 1) == nc * nx * ny, 'np /= nc * nx * ny')
+      xyfact  = 1._r8 / nx * ny
+      d_out = 0._r8
+      do i2 = 1,size(d_in,2)
+        do iy = 1,ny
+          do ix = 1,nx
+            do ic = 1,nc
+              ip = _IDX321(ic,ix,iy,nc,nx,ny)
+              if (d_in(ip,i2) /= R_UNDEF) then
+                d_out(ic,i2) = d_out(ic,i2) + xyfact * d_in(ip,i2)
+              end if
+            end do
+          end do
+        end do
+      end do
+    end subroutine
+    subroutine packed_average3d(nc, nx, ny, d_in, d_out)
+      integer, intent(in) :: nc, nx, ny
+      real(r8), intent(in) :: d_in(:,:,:)
+      real(r8), intent(out) :: d_out(:,:,:)
+      real(r8) :: xyfact
+      integer :: ip, ic, ix, iy, i2, i3
+      call assert(size(d_in , 1) == nc * nx * ny, 'np /= nc * nx * ny')
+      xyfact  = 1._r8 / nx * ny
+      d_out = 0._r8
+      do i3 = 1,size(d_in,3)
+        do i2 = 1,size(d_in,2)
+          do iy = 1,ny
+            do ix = 1,nx
+              do ic = 1,nc
+                ip = _IDX321(ic,ix,iy,nc,nx,ny)
+                if (d_in(ip,i2,i3) /= R_UNDEF) then
+                  d_out(ic,i2,i3) = d_out(ic,i2,i3) + xyfact * d_in(ip,i2,i3)
+                end if
+              end do
+            end do
+          end do
+        end do
+      end do
+    end subroutine
+#ifdef USE_COSP
+   subroutine cosp_unpack_outputs(nc, nx, ny, cospINpacked, cospOUTpacked, cospIN, cospOUT)
+      use mod_cosp, only: cosp_optical_inputs, cosp_outputs
+      integer, intent(in) :: nc, nx, ny  ! Packed dimensions
+      type(cosp_optical_inputs), intent(in) :: cospINpacked
+      type(cosp_outputs)       , intent(in) :: cospOUTpacked  ! inout so we can fix/weight before writing
+      type(cosp_optical_inputs), intent(inout) :: cospIN
+      type(cosp_outputs)       , intent(inout) :: cospOUT  ! inout so we can fix/weight before writing
+
+      ! ISCCP OUTPUTS
+      if (lisccp_sim) then
+        call packed_average(nc, nx, ny, cospOUTpacked%isccp_fq           , cospOUT%isccp_fq           )
+        call packed_average(nc, nx, ny, cospOUTpacked%isccp_totalcldarea , cospOUT%isccp_totalcldarea )
+        call packed_average(nc, nx, ny, cospOUTpacked%isccp_meanalbedocld, cospOUT%isccp_meanalbedocld)
+        call packed_average(nc, nx, ny, cospOUTpacked%isccp_meanptop     , cospOUT%isccp_meanptop     )
+        call packed_average(nc, nx, ny, cospOUTpacked%isccp_meantaucld   , cospOUT%isccp_meantaucld   )
+      end if
+      
+      ! CALIPSO SIMULATOR OUTPUTS
+      if (llidar_sim) then
+        call packed_average(nc, nx, ny, cospOUTpacked%calipso_cldlayer     , cospOUT%calipso_cldlayer     )
+        call packed_average(nc, nx, ny, cospOUTpacked%calipso_cldlayerphase, cospOUT%calipso_cldlayerphase)
+        call packed_average(nc, nx, ny, cospOUTpacked%calipso_lidarcld     , cospOUT%calipso_lidarcld     )
+        call packed_average(nc, nx, ny, cospOUTpacked%calipso_beta_mol     , cospOUT%calipso_beta_mol     )
+        call packed_average(nc, nx, ny, cospOUTpacked%calipso_cfad_sr      , cospOUT%calipso_cfad_sr      )
+        call packed_average(nc, nx, ny, cospOUTpacked%parasolgrid_refl     , cospOUT%parasolgrid_refl     )
+        call packed_average(nc, nx, ny, cospOUTpacked%calipso_lidarcldphase, cospOUT%calipso_lidarcldphase)
+        call packed_average(nc, nx, ny, cospOUTpacked%calipso_lidarcldtmp  , cospOUT%calipso_lidarcldtmp  )
+      end if
+      
+      ! RADAR SIMULATOR OUTPUTS
+      if (lradar_sim) then
+        call packed_average(nc, nx, ny, cospOUTpacked%cloudsat_cfad_ze     , cospOUT%cloudsat_cfad_ze     )
+        call packed_average(nc, nx, ny, cospOUTpacked%radar_lidar_tcc      , cospOUT%radar_lidar_tcc      )
+        call packed_average(nc, nx, ny, cospOUTpacked%lidar_only_freq_cloud, cospOUT%lidar_only_freq_cloud)
+        call packed_average(nc, nx, ny, cospOUTpacked%cloudsat_precip_cover, cospOUT%cloudsat_precip_cover)
+        call packed_average(nc, nx, ny, cospOUTpacked%cloudsat_pia         , cospOUT%cloudsat_pia         )
+      end if
+      
+      ! MISR SIMULATOR OUTPUTS
+      if (lmisr_sim) then
+        call packed_average(nc, nx, ny, cospOUTpacked%misr_fq, cospOUT%misr_fq)
+      end if
+      
+      ! MODIS SIMULATOR OUTPUTS
+      if (lmodis_sim) then
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_cloud_fraction_total_mean  , cospOUT%modis_cloud_fraction_total_mean  )
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_cloud_fraction_water_mean  , cospOUT%modis_cloud_fraction_water_mean  )
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_cloud_fraction_ice_mean  , cospOUT%modis_cloud_fraction_ice_mean  )
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_cloud_fraction_high_mean  , cospOUT%modis_cloud_fraction_high_mean  )
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_cloud_fraction_mid_mean  , cospOUT%modis_cloud_fraction_mid_mean  )
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_cloud_fraction_low_mean  , cospOUT%modis_cloud_fraction_low_mean  )
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_optical_thickness_total_mean  , cospOUT%modis_optical_thickness_total_mean  )
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_optical_thickness_water_mean  , cospOUT%modis_optical_thickness_water_mean  )
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_optical_thickness_ice_mean  , cospOUT%modis_optical_thickness_ice_mean  )
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_optical_thickness_total_logmean  , cospOUT%modis_optical_thickness_total_logmean  )
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_optical_thickness_water_logmean  , cospOUT%modis_optical_thickness_water_logmean  )
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_optical_thickness_ice_logmean  , cospOUT%modis_optical_thickness_ice_logmean  )
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_cloud_particle_size_water_mean  , cospOUT%modis_cloud_particle_size_water_mean  )
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_cloud_particle_size_ice_mean  , cospOUT%modis_cloud_particle_size_ice_mean  )
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_cloud_top_pressure_total_mean  , cospOUT%modis_cloud_top_pressure_total_mean  )
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_liquid_water_path_mean  , cospOUT%modis_liquid_water_path_mean  )
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_ice_water_path_mean  , cospOUT%modis_ice_water_path_mean  )
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_optical_thickness_vs_cloud_top_pressure, cospOUT%modis_optical_thickness_vs_cloud_top_pressure)
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_optical_thickness_vs_reffice  , cospOUT%modis_optical_thickness_vs_reffice  )
+        call packed_average(nc, nx, ny, cospOUTpacked%modis_optical_thickness_vs_reffliq  , cospOUT%modis_optical_thickness_vs_reffliq  )
+      end if
+      
+      ! SUB-COLUMN OUTPUT
+      ! NOTE: these are really not going to make much sense, but we'll go ahead
+      ! and average them anyways for consistency. A better thing to do might be
+      ! to repack to the subcol dimension, so ncol*nx*ny, nscol -> ncol, nx*ny*nscol
+      if (lfrac_out) then
+        call packed_average(nc, nx, ny, cospINpacked%frac_out, cospIN%frac_out)
+        if (lisccp_sim) then
+          call packed_average(nc, nx, ny, cospOUTpacked%isccp_boxtau, cospOUT%isccp_boxtau)
+          call packed_average(nc, nx, ny, cospOUTpacked%isccp_boxptop, cospOUT%isccp_boxptop)
+        end if
+        if (llidar_sim) then
+          call packed_average(nc, nx, ny, cospOUTpacked%calipso_beta_tot, cospOUT%calipso_beta_tot)
+        end if
+        if (lradar_sim) then
+          call packed_average(nc, nx, ny, cospOUTpacked%cloudsat_ze_tot, cospOUT%cloudsat_ze_tot)
+        end if
+      end if
+   end subroutine cosp_unpack_outputs
+#endif
+
 
    ! Utility function to weight MODIS outputs by cloud fraction
    subroutine weight_output(arr, wgt, fillvalue)
@@ -3102,6 +3275,18 @@ CONTAINS
         
    end subroutine destroy_cosp_outputs
 #endif
+
+   ! Assert just checks that condition is true, and aborts execution of the
+   ! program if it is not.
+   subroutine assert(condition, message)
+      use cam_abortutils,       only: endrun
+      logical, intent(in) :: condition
+      character(len=*), intent(in) :: message
+      if (.not. condition) then
+         call endrun('Assertion failed: ' // message)
+      end if
+   end subroutine
+   !-------------------------------------------------------------------------------
 
 !#######################################################################
 end module cospsimulator_intr
