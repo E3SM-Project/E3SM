@@ -85,15 +85,18 @@ void get_cloud_fraction(int its, int ite, int kts, int kte, real2d& cloud_frac,
   real cld_water_threshold = 0.001;
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+icrm*ny);
-    cld_frac_l(icol,k) = 0.0 ;
-    cld_frac_i(icol,k) = 0.0 ;
-    cld_frac_r(icol,k) = 0.0 ;
-    real cld_water_tmp = rho(k,icrm)*adz(k,icrm)*dz(icrm)*(qcl(k,j,i,icrm)+qci(k,j,i,icrm)+qpl(k,j,i,icrm));
-    if(cld_water_tmp > cld_water_threshold) {
-      if (qcl(k,j,i,icrm)>0) { cld_frac_l(icol,k) = 1.0; }
-      if (qci(k,j,i,icrm)>0) { cld_frac_i(icol,k) = 1.0; }
-      if (qpl(k,j,i,icrm)>0) { cld_frac_r(icol,k) = 1.0; }
-    }
+    cld_frac_l(icol,k) = 1.0;
+    cld_frac_i(icol,k) = 1.0;
+    cld_frac_r(icol,k) = 1.0;
+    // cld_frac_l(icol,k) = p3_mincld;
+    // cld_frac_i(icol,k) = p3_mincld;
+    // cld_frac_r(icol,k) = p3_mincld;
+    // real cld_water_tmp = rho(k,icrm)*adz(k,icrm)*dz(icrm)*(qcl(k,j,i,icrm)+qci(k,j,i,icrm)+qpl(k,j,i,icrm));
+    // if(cld_water_tmp > cld_water_threshold) {
+    //   if (qcl(k,j,i,icrm)>0) { cld_frac_l(icol,k) = 1.0; }
+    //   if (qci(k,j,i,icrm)>0) { cld_frac_i(icol,k) = 1.0; }
+    //   if (qpl(k,j,i,icrm)>0) { cld_frac_r(icol,k) = 1.0; }
+    // }
   });
 
 #if 0
@@ -282,8 +285,8 @@ void micro_p3_proc() {
 
   // output 
   auto &qv2qi_depos_tend   = :: qv2qi_depos_tend;
-  auto &precip_liq_surf    = :: precip_liq_surf;
-  auto &precip_ice_surf    = :: precip_ice_surf;
+  // auto &precip_liq_surf    = :: precip_liq_surf;
+  // auto &precip_ice_surf    = :: precip_ice_surf;
   auto &rho_qi             = :: rho_qi;
   auto &precip_liq_flux    = :: precip_liq_flux;
   auto &precip_ice_flux    = :: precip_ice_flux;
