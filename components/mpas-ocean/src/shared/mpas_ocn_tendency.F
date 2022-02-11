@@ -159,9 +159,16 @@ contains
       ! layer thickness tendency: 
       !    initialize to zero and start accumulating tendency terms
       !
+#ifdef MPAS_OPENACC
+      !$acc enter data create(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff)
 
+      !$acc parallel loop &
+      !$acc     present(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff) &
+      !$acc     private(k)
+#else
       !$omp parallel
       !$omp do schedule(runtime) private(k)
+#endif
       do iCell = 1, nCellsAll
          surfaceThicknessFlux(iCell) = 0.0_RKIND
          surfaceThicknessFluxRunoff(iCell) = 0.0_RKIND
@@ -169,8 +176,10 @@ contains
             tendThick(k, iCell) = 0.0_RKIND
          end do
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
 
       ! If turned off, return with zero fluxes, tendencies
       ! Otherwise, start time and call routines to accumulate
@@ -212,6 +221,10 @@ contains
       ! Compute thickness change due to tidal forcing
       call ocn_tidal_forcing_layer_thickness(forcingPool, &
                                              tendThick, err)
+
+#ifdef MPAS_OPENACC
+      !$acc exit data copyout(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff)
+#endif
 
       call mpas_timer_stop("ocn_tend_thick")
 

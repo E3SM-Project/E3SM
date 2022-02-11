@@ -282,14 +282,25 @@ contains
       call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
 
       ! Build surface fluxes at cell centers
+#ifdef MPAS_OPENACC
+      !$acc enter data copyin(landIceFreshwaterFlux)
+
+      !$acc parallel loop present(surfaceThicknessFlux, landIceFreshwaterFlux)
+#else
       !$omp parallel
       !$omp do schedule(runtime)
+#endif
       do iCell = 1, nCellsAll
         surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + landIceFreshwaterFlux(iCell) / rho_sw
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
 
+#ifdef MPAS_OPENACC
+      !$acc exit data delete(landIceFreshwaterFlux)
+#endif
       call mpas_timer_stop("land_ice_thick")
 
    end subroutine ocn_surface_land_ice_fluxes_thick!}}}

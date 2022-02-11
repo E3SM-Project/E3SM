@@ -123,8 +123,17 @@ contains
 
       call mpas_timer_start("thick surface flux")
 
+#ifdef MPAS_OPENACC
+      !$acc enter data copyin(transmissionCoefficients, transmissionCoefficientsRunoff)
+
+      !$acc parallel loop &
+      !$acc     present(tend, surfaceThicknessFlux, surfaceThicknessFluxRunoff, &
+      !$acc     transmissionCoefficients, transmissionCoefficientsRunoff, minLevelCell, maxLevelCell) &
+      !$acc     private(k, remainingFlux, remainingFluxRunoff)
+#else
       !$omp parallel
       !$omp do schedule(runtime) private(remainingFlux, remainingFluxRunoff, k)
+#endif
       do iCell = 1, nCellsOwned
         remainingFlux = 1.0_RKIND
         remainingFluxRunoff = 1.0_RKIND
@@ -145,8 +154,14 @@ contains
              + remainingFluxRunoff * surfaceThicknessFluxRunoff(iCell)
         end if
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
+
+#ifdef MPAS_OPENACC
+      !$acc exit data delete(transmissionCoefficients, transmissionCoefficientsRunoff)
+#endif
 
       call mpas_timer_stop("thick surface flux")
 
