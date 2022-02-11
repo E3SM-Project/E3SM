@@ -15,33 +15,7 @@ void shoc_initialize() {
 
   parallel_for( SimpleBounds<5>(nsgs_fields_diag,nzm,dimy_d,dimx_d,ncrms) , YAKL_LAMBDA (int l, int k, int j, int i, int icrm) {
     sgs_field_diag(l,k,j,i,icrm) = 0.0;
-    if (l==2) { sgs_field_diag(l,k,j,i,icrm) = 0.001; }
   });
-}
-
-void print_debug(std::string called_from, real2d shoc_dse) {
-  auto &z       = :: z;
-  auto &pmid_in = :: pres;
-  auto &tabs    = :: tabs;
-  auto &qv      = :: qv;
-
-  for (int k=0; k<nzm; k++) {
-    int j = 0; int i = 16;
-    for (int icrm=0; icrm<ncrms; icrm++) {
-      int icol = i+nx*(j+ny*icrm);
-      int ilev = nzm-(k+1);
-      std::cout<<"WHDEBUG "<< called_from <<" - "
-      // <<"  icrm:"<<icrm
-      <<"  k:"<<k 
-      <<"  z:"<<z(k,icrm)
-      <<"  pmid_in:"<<pmid_in(k,icrm)
-      <<"  shoc_dse:"<<shoc_dse(icol,ilev)
-      <<"  tabs:"<<tabs(k,j,i,icrm)
-      <<"  qv:"<<qv(k,j,i,icrm)
-      <<std::endl;
-    }
-  }
-
 }
 
 void shoc_proc() {
@@ -115,8 +89,6 @@ void shoc_proc() {
   real3d shoc_hwind("shoc_hwind", ncol, 2, nlev);
   real3d qtracers("qtracers", ncol, num_shoc_tracers, nlev);
 
-  bool print_debug_stuff = false ;
-
   // ------------------------------------------------- 
   // Set input state for SHOC
   // -------------------------------------------------
@@ -145,20 +117,15 @@ void shoc_proc() {
                       + fac_cond *( qcl(k,j,i,icrm) + qpl(k,j,i,icrm) ) 
                       + fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
 
-    // thv(icol,ilev)   = tabs(k,j,i,icrm)*inv_exner(icol,ilev)
-    //                    *(1.0+zvir*shoc_qw(icol,ilev)-shoc_ql(icol,ilev));
-    // thlm(icol,ilev)  = tabs(k,j,i,icrm)*inv_exner(icol,ilev)-(latvap/cp)*qcl(k,j,i,icrm);
-
     real theta_zt = tabs(k,j,i,icrm) * inv_exner(icol, ilev);
     thlm(icol,ilev) = theta_zt- (theta_zt/tabs(k,j,i,icrm)) * (latvap/cp)*qcl(k,j,i,icrm);
     thv(icol,ilev)  = theta_zt*(1 + zvir*qv(k,j,i,icrm) - qcl(k,j,i,icrm));
     shoc_dse(icol,ilev) = cp*tabs(k,j,i,icrm) + ggr*z(k,icrm) + phis(icrm);
 
-    tke (icol,ilev) = sgs_field(0,k,j+offy_s,i+offx_s,icrm);
+    tke (icol,ilev) = max(0.004, sgs_field(0,k,j+offy_s,i+offx_s,icrm) ); // enforce min TKE value - same as SCREAM
     tk  (icol,ilev) = sgs_field_diag(0,k,j+offy_d,i+offx_d,icrm);
     tkh (icol,ilev) = sgs_field_diag(1,k,j+offy_d,i+offx_d,icrm); 
     wthv(icol,ilev) = sgs_field_diag(2,k,j+offy_d,i+offx_d,icrm);
-    // wthv(icol,ilev)  = 1.; //crm_input_wthv(plev-nzm+k,icrm);
 
     // Cloud fraction needs to be initialized for first PBL height calculation
     shoc_cldfrac(icol,ilev) = CF3D(k,j,i,icrm);
@@ -181,8 +148,6 @@ void shoc_proc() {
     // }
   });
 
-  if (print_debug_stuff) { print_debug("before shoc",shoc_dse); }
-
   parallel_for( SimpleBounds<4>(nz, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = nz-(k+1);
@@ -190,41 +155,8 @@ void shoc_proc() {
     pint(icol,ilev) = 100.*pint_in(k,icrm);
   });
 
-  // ------------------------------------------------- 
-  // Prepare inputs for SHOC call                      
-  // ------------------------------------------------- 
-  //do k=1,pver
-  //  do i=1,ncol
-  // parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-  //   int icol = i+nx*(j+ny*icrm);
-  //   int ilev = nzm-(k+1);
-  //  //   dz_g(icol,ilev) = zi(k+1,icrm)-zi(k,icrm);   //compute thickness
-  //     dz_g(icol,ilev) = dz(icrm);
-  // });
-
-
-  //  Define the SHOC thermodynamic grid (in units of m)
-//   wm_zt(:,pver) = 0._r8
-//   do k=1,pver
-//     do i=1,ncol
-  // parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-  //   int icol = i+nx*(j+ny*icrm);
-  //   int ilev = nzm-(k+1);
-  //   zt_g(icol,ilev)   = z(k,icrm);
-  //   rrho(icol,ilev)   = (1./ggr)*(pdel(icol,ilev)/dz_g(icol,ilev));
-  //   wm_zt(icol,ilev)  = w(k,j+offy_w,i+offx_w,icrm);
-  //   shoc_dse(icol,ilev) = cp*thlm(icol,ilev)+ggr*zt_g(icol,ilev)+phis(icrm);
-  // });
-
-//   do k=1,pverp
-//     do i=1,ncol
-  // parallel_for( SimpleBounds<4>(nz, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-  //   int icol = i+nx*(j+ny*icrm);
-  //   int ilev = nz-(k+1);
-  //   zi_g(icol,ilev) = zi(k,icrm);
-  // });
-
   // -------------------------------------------------
+  // Set surface geopotential and fluxes
   // -------------------------------------------------
   view_1d host_dx_1d("host_dx", ncol),
           host_dy_1d("host_dy", ncol),
@@ -401,7 +333,5 @@ void shoc_proc() {
     // }
 
   });
-
-  if (print_debug_stuff) { print_debug("after shoc ",shoc_dse); }
 
 }
