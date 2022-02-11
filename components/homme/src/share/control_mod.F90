@@ -164,8 +164,6 @@ module control_mod
                                                               !   >1  apply timesplit from hyperviscosity
   integer, public :: hypervis_subcycle_q=1                    ! number of subcycles for hyper viscsosity timestep on TRACERS
   integer, public :: hypervis_order=0                         ! laplace**hypervis_order.  0=not used  1=regular viscosity, 2=grad**4
-  integer, public :: psurf_vis = 0                            ! 0 = use laplace on eta surfaces
-                                                              ! 1 = use (approx.) laplace on p surfaces
 
   real (kind=real_kind), public :: hypervis_scaling=0         ! use tensor hyperviscosity
 

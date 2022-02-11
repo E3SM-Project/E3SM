@@ -15,7 +15,6 @@ runtype                      = 0
 tstep                        = 150
 qsplit                       = 4
 rk_stage_user                = 3
-psurf_vis                    = 0  
 integration                  = "explicit"
 smooth                       = 0
 nu                           = 1e16
