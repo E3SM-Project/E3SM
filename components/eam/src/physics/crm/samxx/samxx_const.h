@@ -203,7 +203,7 @@ real constexpr epsv = 0.61e0;     // = (1-eps)/eps, where eps= Rv/Ra
 real constexpr pi = 3.141592653589793 ;  // sine, cosine, cosine, sine, 3.14159 !
 
 int  constexpr nsgs_fields = 1;         // total number of prognostic sgs vars
-int  constexpr nsgs_fields_diag = 2;    // total number of diagnostic sgs vars
+int  constexpr nsgs_fields_diag = 3;    // total number of diagnostic sgs vars
 bool constexpr do_sgsdiag_bound = true; // exchange boundaries for diagnostics fields
 
 int  constexpr index_water_vapor = 0;
@@ -257,7 +257,7 @@ real constexpr qci0 = 1.e-4;
 real constexpr alphaelq = 1.e-3;
 real constexpr betaelq = 1.e-3;
 
-real constexpr p3_mincld = 0.0001;
+real constexpr p3_mincld = 1.e-6;
 real constexpr p3_qsmall = 1.e-14;
 
 real constexpr crm_accel_coef = 1.0/( (real) nx * (real) ny );

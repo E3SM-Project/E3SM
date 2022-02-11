@@ -66,26 +66,28 @@ void micro_p3_init() {
 }
 
 
-void get_cloud_fraction(int its, int ite, int kts, int kte, real2d& ast,
+void get_cloud_fraction(int its, int ite, int kts, int kte, real2d& cloud_frac,
                        real2d& qc, real2d& qr, real2d& qi, std::string& method,
                        real2d& cld_frac_i, real2d& cld_frac_l, real2d& cld_frac_r)
 {
   // Temporary method for initial P3 implementation
 
+  // old comment for "cldm" from EAM = "mean cloud fraction over the time step"
+
   // int nk = kte-kts+1;
   // int ni = ite-its+1;
   // parallel_for( SimpleBounds<2>(ni,nk) , YAKL_LAMBDA (int i, int k) {
-  //   cld_frac_i(i,k) = 1.0; //max(ast(i,k), p3_mincld);
-  //   cld_frac_l(i,k) = 1.0; //max(ast(i,k), p3_mincld);
+  //   cld_frac_i(i,k) = 1.0; //max(cloud_frac(i,k), 0);
+  //   cld_frac_l(i,k) = 1.0; //max(cloud_frac(i,k), 0);
   //   cld_frac_r(i,k) = 1.0; //cldm(i,k);
   // });
 
   real cld_water_threshold = 0.001;
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+icrm*ny);
-    cld_frac_l(icol,k) = p3_mincld;
-    cld_frac_i(icol,k) = p3_mincld;
-    cld_frac_r(icol,k) = p3_mincld;
+    cld_frac_l(icol,k) = 0.0 ;
+    cld_frac_i(icol,k) = 0.0 ;
+    cld_frac_r(icol,k) = 0.0 ;
     real cld_water_tmp = rho(k,icrm)*adz(k,icrm)*dz(icrm)*(qcl(k,j,i,icrm)+qci(k,j,i,icrm)+qpl(k,j,i,icrm));
     if(cld_water_tmp > cld_water_threshold) {
       if (qcl(k,j,i,icrm)>0) { cld_frac_l(icol,k) = 1.0; }
@@ -130,6 +132,7 @@ void get_cloud_fraction(int its, int ite, int kts, int kte, real2d& ast,
       });
   }
 #endif
+
 }
 
 YAKL_INLINE real saturation_vapor_pressure(real tabs) {
@@ -322,7 +325,7 @@ void micro_p3_proc() {
   real2d q_prev_in("q_prev",ncol, nlev);
   real2d t_prev_in("t_prev",ncol, nlev);
 
-  real2d ast_in("ast_in",ncol, nlev);
+  real2d cloud_frac_in("cloud_frac_in",ncol, nlev);
 
   // p3 output variables 
   // real2d qv2qi_depos_tend_in("qv2qi",ncol, nlev);
@@ -437,13 +440,13 @@ void micro_p3_proc() {
     dz_in(icol,ilev)              = adz(k,icrm)*dz(icrm);
     pmid_in(icol,ilev)            = pres(k,icrm)*100.;
     pdel_in(icol,ilev)            = pdel(k,icrm)*100.;
-    ast_in(icol,ilev)             = 1.; // ast(k,icrm);
+    cloud_frac_in(icol,ilev)      = CF3D(k,j,i,icrm); //1.;
     q_prev_in(icol,ilev)          = q_prev(k,j,i,icrm);
     t_prev_in(icol,ilev)          = t_prev(k,j,i,icrm);
   });
 
   std::string method("in_cloud");
-  get_cloud_fraction(0, ncol-1, 0, nlev-1,ast_in, qc_in, qr_in, qi_in, method,
+  get_cloud_fraction(0, ncol-1, 0, nlev-1, cloud_frac_in, qc_in, qr_in, qi_in, method,
                      cld_frac_i_in, cld_frac_l_in, cld_frac_r_in);
 
   view_2d nc_nuceat_tend_d("nc_nuceat_tend", ncol, npack),

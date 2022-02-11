@@ -15,6 +15,7 @@ void shoc_initialize() {
 
   parallel_for( SimpleBounds<5>(nsgs_fields_diag,nzm,dimy_d,dimx_d,ncrms) , YAKL_LAMBDA (int l, int k, int j, int i, int icrm) {
     sgs_field_diag(l,k,j,i,icrm) = 0.0;
+    // if (l==2) { sgs_field_diag(l,k,j,i,icrm) = 0.001; }
   });
 }
 
@@ -100,10 +101,14 @@ void shoc_proc() {
     int icol = i+nx*(j+ny*icrm);
     int ilev = nzm-(k+1);
 
-    inv_exner(icol, ilev) = 1./std::pow((pmid_in(k,icrm)*1.0e-3), (rgas/cp));
+    pmid(icol,ilev)  = 100.*pmid_in(k,icrm);
+    pdel(icol,ilev)  = 100.*pdel_in(k,icrm);
+
+    inv_exner(icol,ilev) = 1./std::pow((pmid_in(k,icrm)*1.0e-3), (rgas/cp));
 
     dz_g(icol,ilev)   = dz(icrm);
     zt_g(icol,ilev)   = z(k,icrm);
+
     rrho(icol,ilev)   = (1./ggr)*(pdel(icol,ilev)/dz_g(icol,ilev));
     wm_zt(icol,ilev)  = w(k,j+offy_w,i+offx_w,icrm);
 
@@ -127,15 +132,14 @@ void shoc_proc() {
 
     real theta_zt = tabs(k,j,i,icrm) * inv_exner(icol, ilev);
     thlm(icol,ilev)  = theta_zt-(theta_zt/tabs(k,j,i,icrm))*(latvap/cp)*qcl(k,j,i,icrm);
-    thv(icol,ilev)   = theta_zt*(1 + zvir*qv(i,k) - qc(i,k));
+    thv(icol,ilev)   = theta_zt*(1 + zvir*qv(k,j,i,icrm) - qc(k,j,i,icrm));
     shoc_dse(icol,ilev) = cp*tabs(k,j,i,icrm) + ggr*z(k,icrm) + phis(icrm);
 
-    tke(icol,ilev)   = sgs_field(0,k,j+offy_s,i+offx_s,icrm);
-    tkh(icol,ilev)   = sgs_field_diag(1,k,j+offy_s,i+offx_s,icrm); 
-    tk (icol,ilev)   = sgs_field_diag(0,k,j+offy_s,i+offx_s,icrm);
-    wthv(icol,ilev)  = 0.; //crm_input_wthv(plev-nzm+k,icrm);
-    pmid(icol,ilev)  = 100.*pmid_in(k,icrm); 
-    pdel(icol,ilev)  = 100.*pdel_in(k,icrm);
+    tke (icol,ilev) = sgs_field(0,k,j+offy_s,i+offx_s,icrm);
+    tk  (icol,ilev) = sgs_field_diag(0,k,j+offy_d,i+offx_d,icrm);
+    tkh (icol,ilev) = sgs_field_diag(1,k,j+offy_d,i+offx_d,icrm); 
+    wthv(icol,ilev) = sgs_field_diag(2,k,j+offy_d,i+offx_d,icrm);
+    // wthv(icol,ilev)  = 1.; //crm_input_wthv(plev-nzm+k,icrm);
 
     // Cloud fraction needs to be initialized for first 
     // PBL height calculation call
@@ -217,7 +221,7 @@ void shoc_proc() {
     wqw_sfc_1d(icol)  = 0.; //cflx.myData[icrm]/rrho.myData[icol*rrho.dimension[1]+nlev-1];
     uw_sfc_1d(icol)   = 0.; //fluxbu(j,i,icrm); //crm_input_ul.myData[icrm]; //wsx.myData[icrm]/rrho.myData[icol*rrho.dimension[1]+nlev-1];
     vw_sfc_1d(icol)   = 0.; //fluxbu(j,i,icrm); //crm_input_vl.myData[icrm]; //wsy.myData[icrm]/rrho.myData[icol*rrho.dimension[1]+nlev-1];
-    phis_1d(icol)     = 100.*phis.myData[icrm];
+    phis_1d(icol)     = phis.myData[icrm];//*100.0;
   });
 
   view_2d zt_grid_2d("zt_grid", ncol, npack),
@@ -319,8 +323,9 @@ void shoc_proc() {
                                                 shoc_input, shoc_input_output, shoc_output, shoc_history_output);
 
   // get SHOC output back to CRM 
-  view_to_array(shoc_input_output.tk,  ncol, nlev, tk);
-  view_to_array(shoc_input_output.tkh, ncol, nlev, tkh);
+  view_to_array(shoc_input_output.tk,   ncol, nlev, tk);
+  view_to_array(shoc_input_output.tkh,  ncol, nlev, tkh);
+  view_to_array(shoc_input_output.wthv_sec, ncol, nlev, wthv);
   // view_to_array(shoc_input_output.tke, ncol, nlev, tke);
   view_to_array(shoc_input_output.shoc_cldfrac, ncol, nlev, shoc_cldfrac);
   view_to_array(shoc_input_output.horiz_wind, ncol, 2, nlev, shoc_hwind);
@@ -332,7 +337,6 @@ void shoc_proc() {
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = nzm-(k+1);
-
     micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = qtracers(icol,shoc_idx_qv,ilev)+qtracers(icol,shoc_idx_qc,ilev);
     micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm) = qtracers(icol,shoc_idx_nc,ilev);
     micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm) = qtracers(icol,shoc_idx_qr,ilev);
@@ -343,7 +347,6 @@ void shoc_proc() {
     micro_field(idx_bm,k,j+offy_s,i+offx_s,icrm) = qtracers(icol,shoc_idx_bm,ilev);
     micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm) = qtracers(icol,shoc_idx_qc,ilev);
     sgs_field(0,k,offy_s+j,offx_s+i,icrm)        = qtracers(icol,shoc_idx_tke,ilev);
-
   });
 
   // update diagnostic micro fields based on micro scheme
@@ -361,8 +364,9 @@ void shoc_proc() {
     u(k,j+offy_u,i+offx_u,icrm) = shoc_hwind(icol,0,ilev);
     v(k,j+offy_v,i+offx_v,icrm) = shoc_hwind(icol,1,ilev);
     // sgs_field(0,k,offy_s+j,offx_s+i,icrm)      = tke(icol,nlev-(ilev+1));
-    sgs_field_diag(0,k,offy_d+j,offx_d+i,icrm) = tk(icol,nlev-(ilev+1));
-    sgs_field_diag(1,k,offy_d+j,offx_d+i,icrm) = tkh(icol,nlev-(ilev+1));
+    sgs_field_diag(0,k,offy_d+j,offx_d+i,icrm) = tk(icol,ilev);
+    sgs_field_diag(1,k,offy_d+j,offx_d+i,icrm) = tkh(icol,ilev);
+    sgs_field_diag(2,k,offy_d+j,offx_d+i,icrm) = wthv(icol,ilev);
     CF3D(k,j,i,icrm) = shoc_cldfrac(icol,ilev);
   });
 

@@ -365,8 +365,9 @@ void post_timeloop() {
       crm_state_t_prev(k,j,i,icrm) = t_prev(k,j,i,icrm);
       crm_state_q_prev(k,j,i,icrm) = q_prev(k,j,i,icrm);
     }
-    crm_output_tk(k,j,i,icrm)  = sgs_field_diag(0,k,j+offy_d,i+offx_d,icrm);
-    crm_output_tkh(k,j,i,icrm) = sgs_field_diag(1,k,j+offy_d,i+offx_d,icrm);
+    crm_output_tk(k,j,i,icrm)   = sgs_field_diag(0,k,j+offy_d,i+offx_d,icrm);
+    crm_output_tkh(k,j,i,icrm)  = sgs_field_diag(1,k,j+offy_d,i+offx_d,icrm);
+    // crm_output_wthv(k,j,i,icrm) = sgs_field_diag(2,k,j+offy_d,i+offx_d,icrm);
     crm_output_qcl(k,j,i,icrm) = qcl(k,j,i,icrm);
     crm_output_qci(k,j,i,icrm) = qci(k,j,i,icrm);
     crm_output_qpl(k,j,i,icrm) = qpl(k,j,i,icrm);
