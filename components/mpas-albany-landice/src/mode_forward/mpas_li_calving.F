@@ -1745,6 +1745,7 @@ module li_calving
       type (mpas_pool_type), pointer :: geometryPool, meshPool, &
                                         velocityPool
       real (kind=RKIND), pointer :: config_ismip6_retreat_k, seaLevel
+      logical, pointer :: config_do_restart
       real (kind=RKIND), dimension(:), pointer ::  &
                                         calvingVelocity, thickness, &
                                         xvelmean, yvelmean, calvingThickness, &
@@ -1760,13 +1761,14 @@ module li_calving
       real (kind=RKIND), dimension(:), allocatable :: submergedArea
       real (kind=RKIND) :: deltatForcing ! time between forcing updates
       type (MPAS_Time_Type), save :: forcingTime, forcingTimeOld
-      character (len=StrKIND), pointer :: xtime, simulationStartTime
-      character(len=StrKIND) :: forcingTimeStamp, forcingTimeOldStamp
+      character (len=StrKIND), pointer :: xtime, simulationStartTime, forcingTimeStamp
+      character(len=StrKIND) :: forcingTimeOldStamp
       type (MPAS_stream_list_type), pointer :: stream_cursor
       logical :: streamFound ! used to throw an error if required stream is not found
 
       call mpas_pool_get_config(liConfigs, 'config_ismip6_retreat_k', config_ismip6_retreat_k)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', seaLevel)
+      call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
 
       if (config_ismip6_retreat_k .ge. 0.0) then
          call mpas_log_write('Error: config_ismip6_retreat_k should be negative, but is >= 0.0.')
@@ -1783,6 +1785,7 @@ module li_calving
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'xtime', xtime)
       call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
+      call mpas_pool_get_array(meshPool, 'forcingTimeStamp', forcingTimeStamp)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
@@ -1801,6 +1804,12 @@ module li_calving
       
       ! submergedArea used in runoff unit conversion 
       allocate(submergedArea(nCells+1))
+
+      ! On a restart, set forcingTime to enable elseif statement below
+      if (config_do_restart) then
+         call mpas_set_time(forcingTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
+         err = ior(err, err_tmp)
+      endif
 
       streamFound = .false. ! Changed to true if ismip6-gis stream is found, otherwise throws error
       stream_cursor => domain % streamManager % streams % head
