@@ -1920,6 +1920,11 @@ module li_calving
           err = 1
       endif
 
+      ! Testing indicates this halo update is necessary before calling li_apply_front_ablation_velocity.
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'calvingVelocity')
+      call mpas_timer_stop("halo updates")
+
       call mpas_log_write("calling li_apply_front_ablation_velocity from ismip6 retreat routine")
       ! Convert calvingVelocity to calvingThickness
       call li_apply_front_ablation_velocity(meshPool, geometryPool,velocityPool, &
