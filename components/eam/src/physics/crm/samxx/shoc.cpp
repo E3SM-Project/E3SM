@@ -243,8 +243,8 @@ void shoc_proc() {
   array_to_view(thv.myData,       ncol, nlev,  thv_2d);
   array_to_view(wm_zt.myData,     ncol, nlev,  w_field_2d);
 
-  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, num_shoc_tracers}), KOKKOS_LAMBDA(int k, int j) {
-    wtracer_sfc_2d(k,j) = 0.;
+  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, num_shoc_tracers}), KOKKOS_LAMBDA(int icol, int itrc) {
+    wtracer_sfc_2d(icol,itrc) = 0.;
   });
 
   SHOC::SHOCInput shoc_input{host_dx_1d, host_dy_1d, zt_grid_2d, zi_grid_2d,
@@ -276,14 +276,6 @@ void shoc_proc() {
   array_to_view(wthv.myData,         ncol, nlev, wthv_sec_2d);
   array_to_view(rcm.myData,          ncol, nlev, shoc_ql_2d);
   array_to_view(shoc_cldfrac.myData, ncol, nlev, shoc_cldfrac_2d);
-  // array_to_view(um.myData,         ncol, nlev, u_wind_2d);
-  // array_to_view(vm.myData,         ncol, nlev, v_wind_2d);
-  
-  // Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, npack}), KOKKOS_LAMBDA(int icol, int ilev) {
-  //    shoc_hwind_3d(icol,0,ilev) = u_wind_2d(icol,ilev);
-  //    shoc_hwind_3d(icol,1,ilev) = v_wind_2d(icol,ilev);
-  // });
-
   array_to_view(shoc_hwind.myData, ncol, 2, nlev, shoc_hwind_3d);
   array_to_view(qtracers.myData, ncol, num_shoc_tracers, npack, qtracers_3d);
 
@@ -337,7 +329,8 @@ void shoc_proc() {
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = nzm-(k+1);
-    micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = qtracers(icol,shoc_idx_qv,ilev)+qtracers(icol,shoc_idx_qc,ilev);
+    micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = qtracers(icol,shoc_idx_qv,ilev)
+                                                 + qtracers(icol,shoc_idx_qc,ilev);
     micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm) = qtracers(icol,shoc_idx_nc,ilev);
     micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm) = qtracers(icol,shoc_idx_qr,ilev);
     micro_field(idx_nr,k,j+offy_s,i+offx_s,icrm) = qtracers(icol,shoc_idx_nr,ilev);
