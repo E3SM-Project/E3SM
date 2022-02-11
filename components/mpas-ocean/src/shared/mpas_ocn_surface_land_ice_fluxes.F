@@ -245,14 +245,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_surface_land_ice_fluxes_thick(meshPool, forcingPool, surfaceThicknessFlux, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+   subroutine ocn_surface_land_ice_fluxes_thick(forcingPool, surfaceThicknessFlux, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -277,7 +270,6 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell
-      integer, pointer :: nCells
 
       real (kind=RKIND), dimension(:), pointer :: landIceFreshwaterFlux
 
@@ -287,14 +279,12 @@ contains
 
       call mpas_timer_start("land_ice_thick")
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-
       call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
 
       ! Build surface fluxes at cell centers
       !$omp parallel
       !$omp do schedule(runtime)
-      do iCell = 1, nCells
+      do iCell = 1, nCellsAll
         surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + landIceFreshwaterFlux(iCell) / rho_sw
       end do
       !$omp end do

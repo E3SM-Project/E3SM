@@ -279,14 +279,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_surface_bulk_forcing_thick(meshPool, forcingPool, surfaceThicknessFlux, surfaceThicknessFluxRunoff, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+   subroutine ocn_surface_bulk_forcing_thick(forcingPool, surfaceThicknessFlux, surfaceThicknessFluxRunoff, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -313,7 +306,6 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell, nCells
-      integer, dimension(:), pointer :: nCellsArray
 
       real (kind=RKIND), dimension(:), pointer :: evaporationFlux, snowFlux
       real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, iceRunoffFlux
@@ -325,8 +317,6 @@ contains
 
       call mpas_timer_start("bulk_thick", .false.)
 
-      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
-
       call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
       call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
       call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
@@ -335,7 +325,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
 
-      nCells = nCellsArray( 3 )
+      nCells = nCellsHalo( 2 )
 
       ! Build surface fluxes at cell centers
       !$omp parallel
