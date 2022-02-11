@@ -7,7 +7,6 @@ module scream_cpl_indices
 
   ! Focus only on the ones that scream imports/exports (subsets of x2a and a2x)
   integer, parameter, public :: num_scream_imports       = 9
-  integer, parameter, public :: num_scream_exports       = 16
   integer, public :: num_cpl_imports, num_cpl_exports
 
   ! cpl indices for import/export fields
@@ -23,7 +22,8 @@ module scream_cpl_indices
   integer(kind=c_int), public, allocatable, target :: vec_comp_x2a(:)
 
   ! Stores whether or not field can be exported during initialization
-  logical(kind=c_bool), public, allocatable, target :: can_be_exported_during_init(:)
+  logical(kind=c_bool), public, allocatable, target :: do_import_during_init(:)
+  logical(kind=c_bool), public, allocatable, target :: do_export_during_init(:)
 
   public :: scream_set_cpl_indices
 

@@ -512,4 +512,28 @@ init_buffers(const ATMBufferManager& buffer_manager) {
   }
 }
 
+void AtmosphereProcessGroup::
+setup_surface_coupling_processes(const SurfaceCouplingTransferType transfer_type,
+                                 const SCDataManager &sc_data_manager) {
+
+  bool surface_coupling_process_found = false;
+
+  for (auto& atm_proc : m_atm_processes) {
+    if ((transfer_type==SurfaceCouplingTransferType::Import && 
+         atm_proc->type() == AtmosphereProcessType::SurfaceCouplingImporter)
+        ||
+        (transfer_type==SurfaceCouplingTransferType::Export &&
+         atm_proc->type() == AtmosphereProcessType::SurfaceCouplingExporter)) {
+        
+       atm_proc->setup_surface_coupling_data(sc_data_manager);
+       surface_coupling_process_found = true;
+    }
+  }
+
+  EKAT_ASSERT_MSG(surface_coupling_process_found, 
+                  "Error! Surface coupling import/export process was setup through the AD, but "
+                  "either no process is of type AtmosphereProcessType::SurfaceCouplingImporter/Exporter "
+                  "exists, or exists but does not match the transfer_type given.\n");
+}
+
 } // namespace scream

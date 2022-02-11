@@ -3,6 +3,7 @@
 
 #include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
+#include "share/atm_process/SCDataManager.hpp"
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/property_checks/property_check.hpp"
@@ -175,7 +176,9 @@ public:
 
   // Whether this atm proc requested the field/group as in/out, via a FieldRequest/GroupRequest.
   bool has_required_field (const FieldIdentifier& id) const;
+  bool has_required_field (const std::string& name, const std::string& grid_name) const;
   bool has_computed_field (const FieldIdentifier& id) const;
+  bool has_computed_field (const std::string& name, const std::string& grid_name) const;
   bool has_required_group (const std::string& name, const std::string& grid) const;
   bool has_computed_group (const std::string& name, const std::string& grid) const;
 
@@ -189,6 +192,16 @@ public:
         "Error! This Atm Process requested a non-zero buffer size,\n"
         "       but does not override 'init_buffers'. Please, fix this.\n"
         "   - Atm proc name: " + this->name() + "\n");
+  }
+
+  virtual void setup_surface_coupling_data(const SCDataManager &/*sc_data_manager*/) {
+    EKAT_REQUIRE_MSG(this->type() != AtmosphereProcessType::SurfaceCouplingImporter
+                     &&
+                     this->type() != AtmosphereProcessType::SurfaceCouplingExporter,
+                     "Error! This Atm Process is either of type "
+                     "AtmosphereProcessType::SurfaceCouplingImporter or  SurfaceCouplingExporter "
+                     "but does not override 'setup_surface_coupling' function. Please, fix this.\n"
+                     "   - Atm proc name: " + this->name() + "\n");
   }
 
   // Convenience function to retrieve input/output fields from the field/group (and grid) name.

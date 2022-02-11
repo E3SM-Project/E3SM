@@ -241,6 +241,31 @@ void AtmosphereDriver::create_grids()
   m_atm_logger->info("[EAMxx] create_grids ... done!");
 }
 
+  void AtmosphereDriver::setup_surface_coupling_data_manager(SurfaceCouplingTransferType transfer_type,
+                                                             const int num_cpl_fields, const int num_scream_fields,
+                                                             const int field_size, Real* data_ptr,
+                                                             char* names_ptr, int* cpl_indices_ptr, int* vec_comps_ptr,
+                                                             Real* constant_multiple_ptr, bool* do_transfer_during_init_ptr)
+{
+  std::shared_ptr<SCDataManager> sc_data_mgr;
+
+  if (transfer_type==SurfaceCouplingTransferType::Import) {
+
+    m_surface_coupling_import_data_manager = std::make_shared<SCDataManager>();
+    sc_data_mgr = m_surface_coupling_import_data_manager;
+
+  } else if (transfer_type==SurfaceCouplingTransferType::Export) {
+
+    m_surface_coupling_export_data_manager = std::make_shared<SCDataManager>();
+    sc_data_mgr= m_surface_coupling_export_data_manager;
+
+  } else EKAT_ERROR_MSG("Error! Unexpected SurfaceCouplingTransferType.");
+
+  sc_data_mgr->setup_internals(num_cpl_fields, num_scream_fields, field_size, data_ptr,
+                               names_ptr, cpl_indices_ptr, vec_comps_ptr,
+                               constant_multiple_ptr, do_transfer_during_init_ptr);
+}
+
 void AtmosphereDriver::create_fields()
 {
   m_atm_logger->info("[EAMxx] create_fields ...");
@@ -968,6 +993,15 @@ void AtmosphereDriver::initialize_atm_procs ()
 
   const bool restarted_run = m_case_t0 < m_run_t0;
 
+  if (m_surface_coupling_import_data_manager) {
+    m_atm_process_group->setup_surface_coupling_processes(SurfaceCouplingTransferType::Import,
+                                                          *m_surface_coupling_import_data_manager);
+  }
+  if (m_surface_coupling_export_data_manager) {
+    m_atm_process_group->setup_surface_coupling_processes(SurfaceCouplingTransferType::Export,
+                                                          *m_surface_coupling_export_data_manager);
+  }
+
   // Initialize the processes
   m_atm_process_group->initialize(m_current_ts, restarted_run ? RunType::Restarted : RunType::Initial);
 
@@ -1077,6 +1111,10 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
 
   // Destroy the buffer manager
   m_memory_buffer = nullptr;
+
+  // Destroy the surface coupling data managers
+  m_surface_coupling_import_data_manager = nullptr;
+  m_surface_coupling_export_data_manager = nullptr;
 
   // Destroy the surface coupling (if any)
   m_surface_coupling = nullptr;

@@ -3,11 +3,15 @@ set(SCREAM_CONTROL_SOURCES
   surface_coupling.cpp
   surface_coupling_export.cpp
   fvphyshack.cpp
+  atmosphere_surface_coupling_importer.cpp
+  atmosphere_surface_coupling_exporter.cpp
 )
 
 set(SCREAM_CONTROL_HEADERS
   atmosphere_driver.hpp
   surface_coupling.hpp
+  atmosphere_surface_coupling.hpp
+  surface_coupling_utils.hpp
 )
 
 add_library(scream_control ${SCREAM_CONTROL_SOURCES})

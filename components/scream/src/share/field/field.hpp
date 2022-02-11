@@ -151,6 +151,18 @@ public:
     return reinterpret_cast<ST*>(get_view_impl<HD>().data());
   }
 
+  template<typename ST, HostOrDevice HD = Device>
+  ST* get_internal_view_data_unsafe () const {
+    // Check that the scalar type is correct                                                                                                   
+    using nonconst_ST = typename std::remove_const<ST>::type;
+    EKAT_REQUIRE_MSG ((field_valid_data_types().at<nonconst_ST>()==m_header->get_identifier().data_type()
+                       or std::is_same<nonconst_ST,char>::value),
+		      "Error! Attempt to access raw field pointere with the wrong scalar type.\n");
+    
+    return reinterpret_cast<ST*>(get_view_impl<HD>().data());
+  }
+
+
   // If someone needs the host view, some sync routines might be needed.
   // Note: this class takes no responsibility in keeping track of whether
   //       a sync is required in either direction. Mainly because we expect

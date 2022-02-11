@@ -1,0 +1,43 @@
+%YAML 1.1
+---
+Debug:
+  Atmosphere DAG Verbosity Level: 5
+
+Time Stepping:
+  Time Step: ${ATM_TIME_STEP}
+  Start Time: [12, 30, 00]      # Hours, Minutes, Seconds
+  Start Date: [2021, 10, 12]    # Year, Month, Day
+
+atmosphere_processes:
+  atm_procs_list: (SurfaceCouplingImporter,SurfaceCouplingExporter)
+  Schedule Type: Sequential
+  SurfaceCouplingImporter:
+    Grid: Point Grid
+  SurfaceCouplingExporter:
+    Grid: Point Grid
+
+Grids Manager:
+  Type: Mesh Free
+  Number of Global Columns:   218
+  Number of Vertical Levels:  72  # Will want to change to 128 when a valid unit test is available.
+
+Initial Conditions:
+  Point Grid:
+    # These fields are used during the export. We set them to constant values
+    p_int:            1.0
+    pseudo_density:   2.0
+    phis:             3.0
+    p_mid:            4.0
+    qv:               5.0
+    T_mid:            6.0
+    horiz_winds:     [7.0, 8.0]
+    precip_liq_surf:  9.0
+    precip_ice_surf:  10.0
+    sfc_flux_dir_nir: 11.0
+    sfc_flux_dir_vis: 12.0
+    sfc_flux_dif_nir: 13.0
+    sfc_flux_dif_vis: 14.0
+    sfc_flux_sw_net:  15.0
+    sfc_flux_lw_dn:   16.0
+
+...
