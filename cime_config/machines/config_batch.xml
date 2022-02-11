@@ -367,7 +367,7 @@
 
   <batch_system MACH="miller" type="miller_slurm">
     <queues>
-      <queue walltimemax="24:00:00" nodemax="1500" default="true">batch</queue>
+      <queue walltimemax="06:00:00" nodemax="800" default="true">collaboration</queue>
     </queues>
   </batch_system>
 
