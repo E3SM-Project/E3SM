@@ -1110,6 +1110,8 @@ contains
       use modal_aero_data, only: ntot_amode
 #endif
 
+      ! For running CFMIP Observation Simulator Package (COSP)
+      use cospsimulator_intr, only: docosp, cospsimulator_intr_run, cosp_nradsteps
 
       ! ---------------------------------------------------------------------------
       ! Arguments
@@ -1220,6 +1222,8 @@ contains
          mu, lambdac, dei, des, rei, rel
       real(r8), dimension(pcols,pver), target :: zeros
       real(r8), pointer, dimension(:,:,:,:) :: crm_t, crm_qv, crm_qc, crm_qi, crm_cld, crm_qrad
+      real(r8), pointer, dimension(:,:,:,:) :: &
+         crm_rel, crm_rei, crm_dtau, crm_emis
       real(r8), dimension(pcols,pver) :: iclwp_save, iciwp_save, cld_save
       integer :: ixwatvap, ixcldliq, ixcldice
 
@@ -1285,6 +1289,9 @@ contains
       integer, dimension(nswgpts) :: gpoint_bands_sw
       integer, dimension(nlwgpts) :: gpoint_bands_lw
 
+      integer :: cosp_lwband  ! index to LW band used by COSP passive simulators
+      integer :: cosp_swband  ! index to SW band used by COSP passive simulators
+
       ! Loop variables
       integer :: icol, ilay
 
@@ -1338,11 +1345,15 @@ contains
 #endif
       ! CRM fields
       if (use_MMF) then
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_T_RAD'  ), crm_t  )
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QV_RAD' ), crm_qv )
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QC_RAD' ), crm_qc )
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QI_RAD' ), crm_qi )
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_CLD_RAD'), crm_cld)
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_T_RAD'  ), crm_t   )
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QV_RAD' ), crm_qv  )
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QC_RAD' ), crm_qc  )
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QI_RAD' ), crm_qi  )
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_CLD_RAD'), crm_cld )
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_REL')    , crm_rel )
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_REI')    , crm_rei )
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_DTAU')   , crm_dtau)
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_EMIS')   , crm_emis)
          ! Output CRM cloud fraction
          call outfld('CRM_CLD_RAD', crm_cld(1:ncol,:,:,:), state%ncol, state%lchnk)
       end if
@@ -1371,6 +1382,10 @@ contains
       ixwatvap = 1
       call cnst_get_ind('CLDLIQ', ixcldliq)
       call cnst_get_ind('CLDICE', ixcldice)
+
+      ! Find bands used for cloud simulator calculations
+      cosp_lwband = get_band_index_lw(10.5_r8, 'micron')
+      cosp_swband = get_band_index_sw(0.67_r8, 'micron')
 
       ! Loop over "diagnostic calls"; these are additional configurations of
       ! gases used to calculate radiative effects for diagnostic purposes only,
@@ -1580,6 +1595,15 @@ contains
                         call handle_error(clip_values(aer_tau_bnd_sw,  0._r8, huge(aer_tau_bnd_sw), trim(subname) // ' aer_tau_bnd_sw', tolerance=1e-10_r8))
                         call handle_error(clip_values(aer_ssa_bnd_sw,  0._r8,                1._r8, trim(subname) // ' aer_ssa_bnd_sw', tolerance=1e-10_r8))
                         call handle_error(clip_values(aer_asm_bnd_sw, -1._r8,                1._r8, trim(subname) // ' aer_asm_bnd_sw', tolerance=1e-10_r8))
+                        ! Save CRM cloud optics for cosp
+                        if (docosp) then
+                           do iz = 1,crm_nz
+                              do ic = 1,ncol
+                                 ilay = pver - iz + 1
+                                 crm_dtau(ic,ix,iy,iz) = cld_tau_bnd_sw(ic,ilay,cosp_swband)
+                              end do
+                           end do
+                        end if 
                      end if
 
                      ! Longwave cloud optics
@@ -1599,6 +1623,16 @@ contains
                         )
                         call output_cloud_optics_lw(state, cld_tau_bnd_lw)
                         call t_stopf('rad_cloud_optics_lw')
+
+                        ! Save CRM cloud optics for cosp
+                        if (docosp) then
+                           do iz = 1,crm_nz
+                              do ic = 1,ncol
+                                 ilay = pver - iz + 1
+                                 crm_emis(ic,ix,iy,iz) = cld_tau_bnd_lw(ic,ilay,cosp_lwband)
+                              end do
+                           end do
+                        end if 
                      end if
 
                      ! Pack data
@@ -1623,7 +1657,6 @@ contains
                         j = j + 1
                      end do  ! ic = 1,ncol
                      call t_stopf('rad_pack_columns')
-
                   end do  ! ix = 1,crm_nx_rad
                end do  ! iy = 1,crm_ny_rad
             end if  !(radiation_do('sw') .or. radiation_do('lw')) then
