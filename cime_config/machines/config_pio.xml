@@ -48,7 +48,6 @@
     <values>
       <value>pnetcdf</value>
       <value mpilib="mpi-serial">netcdf</value>
-      <value mach="spock">netcdf</value>
       <value mach="userdefined">netcdf</value>
       <value mach="melvin">netcdf</value>
       <value mach="mappy">netcdf</value>
