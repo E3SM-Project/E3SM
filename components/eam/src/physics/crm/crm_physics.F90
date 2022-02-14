@@ -145,7 +145,7 @@ subroutine crm_physics_register()
    !----------------------------------------------------------------------------
    ! Setup CRM internal parameters
    !----------------------------------------------------------------------------
-   call setparm()
+   ! call setparm()
 
    if (use_MMF_VT) then
       ! add variance tracers
