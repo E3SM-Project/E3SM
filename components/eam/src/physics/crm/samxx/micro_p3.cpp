@@ -378,8 +378,8 @@ void micro_p3_proc() {
     // update liq static energy - do we need this? LSE should be conserved for saturation adjustment
     parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       t(k,j+offy_s,i+offx_s,icrm) = tabs(k,j,i,icrm) + gamaz(k,icrm)
-                    - fac_cond *( qcl(k,j,i,icrm) - qpl(k,j,i,icrm) )
-                    - fac_sub  *( qci(k,j,i,icrm) - qpi(k,j,i,icrm) );
+                    - fac_cond *( qcl(k,j,i,icrm) + qpl(k,j,i,icrm) )
+                    - fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
     });
   }
 
@@ -608,8 +608,8 @@ void micro_p3_proc() {
     if (k < nlev) {
       tabs(k,j,i,icrm) = prog_state.th(icol,ilev)[s]/inv_exner_in(icol,ilev);
       t(k,j+offy_s,i+offx_s,icrm) = tabs(k,j,i,icrm) + gamaz(k,icrm)
-                    - fac_cond *( qcl(k,j,i,icrm) - qpl(k,j,i,icrm) )
-                    - fac_sub  *( qci(k,j,i,icrm) - qpi(k,j,i,icrm) );
+                    - fac_cond *( qcl(k,j,i,icrm) + qpl(k,j,i,icrm) )
+                    - fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
       t_prev(k,j,i,icrm) = tabs(k,j,i,icrm);
       q_prev(k,j,i,icrm) = qv(k,j,i,icrm);
     }
