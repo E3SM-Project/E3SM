@@ -79,7 +79,16 @@ OBJS = mpas_ocn_init_routines.o \
 	   mpas_ocn_vel_forcing_topographic_wave_drag.o \
 	   mpas_ocn_transport_tests.o \
 	   mpas_ocn_vel_self_attraction_loading.o \
-	   mpas_ocn_vertical_advection.o
+	   mpas_ocn_vertical_advection.o \
+	   mpas_ocn_vel_self_attraction_loading.o 
+           mpas_ocn_two_equation_model_driver.o \
+           mpas_ocn_two_equation_structure_functions.o \
+           mpas_ocn_two_equation_model_driver.o \
+           mpas_ocn_tke_glsPsi_transport.o \
+           mpas_ocn_tke_advection_mono.o \
+           mpas_ocn_glsPsi_advection_mono.o \
+           mpas_ocn_shear_production.o \
+           mpas_ocn_buoyancy_production.o
 
 all: $(OBJS)
 
@@ -102,6 +111,20 @@ mpas_ocn_thick_vadv.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 mpas_ocn_thick_surface_flux.o: mpas_ocn_forcing.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
 mpas_ocn_gm.o:  mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o
+
+mpas_ocn_two_equation_model_driver.o: mpas_ocn_tracer_advection_shared.o mpas_ocn_mesh.o mpas_ocn_tke_advection_mono.o mpas_ocn_glsPsi_advection_mono.o mpas_ocn_tke_glsPsi_transport.o mpas_ocn_shear_production.o mpas_ocn_buoyancy_production.o mpas_ocn_diagnostics_variables.o mpas_ocn_two_equation_structure_functions.o mpas_ocn_config.o
+
+mpas_ocn_two_equation_structure_functions.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_diagnostics_variables.o
+
+mpas_ocn_tke_advection_mono.o: mpas_ocn_constants.o mpas_ocn_mesh.o
+
+mpas_ocn_glsPsi_advection.o: mpas_ocn_constants.o mpas_ocn_mesh.o
+
+mpas_ocn_tke_glsPsi_transport.o: mpas_ocn_diagnostics_variables.o mpas_ocn_mesh.o mpas_ocn_constants.o mpas_ocn_config.o
+
+mpas_ocn_shear_production.o: mpas_ocn_constants.o mpas_ocn_diagnostics_variables.o mpas_ocn_config.o mpas_ocn_mesh.o
+
+mpas_ocn_buoyancy_production.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_diagnostics_variables.o
 
 mpas_ocn_vel_pressure_grad.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
