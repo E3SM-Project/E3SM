@@ -2219,7 +2219,6 @@ contains
        end if
 
     end do 
-
     ! iac->atm flux.  Probably need to switch for correct
     ! flds_CO2(a,b,c) option
 
@@ -2230,7 +2229,6 @@ contains
     units    = 'moles m-2 s-1'
     attname  = 'Fazz_fco2_iac'
     call metadata_set(attname, longname, stdname, units)
-
 
     !-----------------------------
     ! New xao_states diagnostic

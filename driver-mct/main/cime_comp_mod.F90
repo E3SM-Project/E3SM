@@ -1324,6 +1324,14 @@ contains
 
     call t_stopf('CPL:comp_init_pre_all')
 
+    ! TRS - we need to initialize iac first so atm and lnd know it's
+    ! there, via gcam_active -> iac_active
+    call t_startf('comp_init_cc_iac')
+    call t_adj_detailf(+2)
+    call component_init_cc(Eclock_z, iac, iac_init, infodata, NLFilename)
+    call t_adj_detailf(-2)
+    call t_stopf('comp_init_cc_iac')
+
     call t_startf('CPL:comp_init_cc_atm')
     call t_adj_detailf(+2)
 
@@ -1372,12 +1380,6 @@ contains
     call component_init_cc(Eclock_e, esp, esp_init, infodata, NLFilename)
     call t_adj_detailf(-2)
     call t_stopf('CPL:comp_init_cc_esp')
-
-    call t_startf('comp_init_cc_iac')
-    call t_adj_detailf(+2)
-    call component_init_cc(Eclock_z, iac, iac_init, infodata, NLFilename)
-    call t_adj_detailf(-2)
-    call t_stopf('comp_init_cc_iac')
 
     call t_startf('CPL:comp_init_cx_all')
     call t_adj_detailf(+2)
@@ -1546,6 +1548,7 @@ contains
        if (trim(lnd_gnam) /= trim(glc_gnam)) samegrid_lg = .false.
        if (trim(ocn_gnam) /= trim(glc_gnam)) samegrid_og = .false.
        if (trim(ice_gnam) /= trim(glc_gnam)) samegrid_ig = .false.
+       if (trim(iac_gnam) /= trim(lnd_gnam)) samegrid_zl = .false.
        samegrid_alo = (samegrid_al .and. samegrid_ao)
     endif
 
@@ -1858,7 +1861,7 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        call component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, &
-            samegrid_ro, samegrid_lg)
+            samegrid_ro, samegrid_lg, samegrid_zl)
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
 

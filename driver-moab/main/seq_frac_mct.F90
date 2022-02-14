@@ -354,6 +354,7 @@ iamroot = seq_comm_iamroot(CPLID)
 
        kk = mct_aVect_indexRA(fractions_l,"lfrin",perrWith=subName)
        kf = mct_aVect_indexRA(dom_l%data ,"frac" ,perrWith=subName)
+
        fractions_l%rAttr(kk,:) = dom_l%data%rAttr(kf,:)
 
        if (atm_present) then
@@ -395,7 +396,12 @@ iamroot = seq_comm_iamroot(CPLID)
 
        kz = mct_aVect_indexRA(fractions_z,"zfrac",perrWith=subName)
        kf = mct_aVect_indexRA(dom_z%data ,"frac" ,perrWith=subName)
-       fractions_z%rAttr(ky,:) = dom_z%data%rAttr(kf,:)
+
+       ! TRS - I think this 'ky' is a typo, or references something removed
+       ! earlier, but we'll keep it here and commented out as reference
+       ! just in case.
+       ! fractions_z%rAttr(ky,:) = dom_z%data%rAttr(kf,:)
+
        fractions_z%rAttr(kz,:) = dom_z%data%rAttr(kf,:)
 
        if (atm_present) then

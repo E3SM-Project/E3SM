@@ -13,6 +13,7 @@ module seq_map_mod
 
   use shr_kind_mod      ,only: R8 => SHR_KIND_R8, IN=>SHR_KIND_IN
   use shr_kind_mod      ,only: CL => SHR_KIND_CL, CX => SHR_KIND_CX
+  use shr_kind_mod      ,only: CXX => SHR_KIND_CXX
   use shr_sys_mod
   use shr_const_mod
   use shr_mct_mod, only: shr_mct_sMatPInitnc, shr_mct_queryConfigFile
@@ -816,7 +817,7 @@ contains
     integer(IN)            :: j,kf
     integer(IN)            :: lsize_i,lsize_o
     real(r8)               :: normval
-    character(CX)          :: lrList,appnd
+    character(CXX)         :: lrList,appnd
     logical                :: lnorm
     character(*),parameter :: subName = '(seq_map_avNormArr) '
     character(len=*),parameter :: ffld = 'norm8wt'  ! want something unique

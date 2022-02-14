@@ -1165,20 +1165,13 @@ contains
        ! iac coupling
 
        if (iac_active) then
+
           do num = 0,numpft
              iac2lnd_vars%pct_pft(g,num) = x2l(index_x2l_Sz_pct_pft(num),i)
              iac2lnd_vars%pct_pft_prev(g,num) = x2l(index_x2l_Sz_pct_pft_prev(num),i)
              if (num < numharvest) then
                 iac2lnd_vars%harvest_frac(g,num) = x2l(index_x2l_Sz_harvest_frac(num),i)
              end if
-
-!avd
-!if (iac2lnd_vars%pct_pft_prev(g,num) /= 0.) then 
-!   write(iulog,*) 'lnd_import g=',g,' pft=', num, ' val=', iac2lnd_vars%pct_pft(g,num), &
-!       ' prev_val=', iac2lnd_vars%pct_pft_prev(g,num)
-!end if
-
-
           end do
        end if
 

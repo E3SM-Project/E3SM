@@ -133,12 +133,13 @@ contains
     integer :: begp, endp
     real(r8) :: wt1    ! weight of time1 (prev time point)
 
-! avd - diagnostic file
-character(len=128) :: hfile
-integer :: ierr, nmode, ncid, ngcells, pft_varid, pft_prev_varid
-integer :: harv_varid, cid_varid
-integer :: pdimid(2), hdimid(2)
-integer, allocatable :: cell_ids(:)
+    ! avd - diagnostic file
+    character(len=128) :: hfile
+    integer :: ierr, nmode, ncid, ngcells, pft_varid, pft_prev_varid
+    integer :: harv_varid, cid_varid
+    integer :: pdimid(2), hdimid(2)
+    integer, allocatable :: cell_ids(:)
+    real(r8) :: sumwtprev, sumwtcurrent
 
     character(len=*), parameter :: subname = 'update_iac2lnd'
 
@@ -178,20 +179,15 @@ integer, allocatable :: cell_ids(:)
 
              ! avd - do not actually set the land values because the mapping is
              !       incorrect such that the land model fails
-             !veg_pp%wtcol(p) = this%pct_pft(g,pft) + &
-             !                wt1*(this%pct_pft_prev(g,pft) - this%pct_pft(g,pft))
+
+             ! TRS - updated mapping code, so let's give it a whirl
+             if (this%pct_pft_prev(g,pft) == 0.0 .AND. &
+                  this%pct_pft(g,pft) > 0.0) then 
+                veg_pp%wtcol(p) = this%pct_pft(g,pft) + &
+                     wt1*(this%pct_pft_prev(g,pft) - this%pct_pft(g&
+                     ,pft))
+             end if
           end if
-
-! avd write these to log
-!if (this%pct_pft_prev(g,pft) /= 0.) then
-!if (g == 1628) then 
-!write(iulog,*) 'g=',g,' p=',p,' pft=',pft
-!write(iulog,*) 'prev_val=',this%pct_pft_prev(g,pft)
-!write(iulog,*) 'val=',this%pct_pft(g,pft)
-!write(iulog,*) 'interp=', this%pct_pft(g,pft) + &
-!                          wt1*(this%pct_pft_prev(g,pft) - this%pct_pft(g,pft))
-!end if
-
        end do
 
        ! sum the harvest data into one field
