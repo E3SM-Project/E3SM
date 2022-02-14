@@ -105,7 +105,8 @@ module li_calving
       type (mpas_pool_type), pointer :: scratchPool
 
       ! calving-relevant config options
-      character (len=StrKIND), pointer :: config_calving
+      character (len=StrKIND), pointer :: config_calving, &
+                                          config_front_mass_bal_grounded
       logical, pointer :: config_print_calving_info, config_data_calving
       real(kind=RKIND), pointer :: config_calving_timescale
 
@@ -141,6 +142,7 @@ module li_calving
       err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_calving', config_calving)
+      call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
       call mpas_pool_get_config(liConfigs, 'config_calving_timescale', config_calving_timescale)
       call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
       call mpas_pool_get_config(liConfigs, 'config_data_calving', config_data_calving)
@@ -253,6 +255,17 @@ module li_calving
 
          call specified_calving_velocity(domain, err_tmp)
          err = ior(err, err_tmp)
+
+      elseif (trim(config_calving) == 'ismip6_retreat') then
+
+         if (trim(config_front_mass_bal_grounded) .ne. 'none') then
+            call mpas_log_write("config_front_mass_bal_grounded must be set to 'none' '// &
+                                'when config_calving = 'ismip6_retreat'.", MPAS_LOG_ERR)
+            err = 1
+         else
+            call ismip6_retreat(domain, err_tmp)
+            err = ior(err, err_tmp)
+         end if
 
       else
 
@@ -1677,6 +1690,266 @@ module li_calving
 
    end subroutine von_Mises_calving
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!    routine ismip6_retreat
+!
+!> /brief Use ISMIP6 retreat parameterization for Greenland (Slater et al., 2019, 2020).
+!> /author Trevor Hillebrand
+!> /date November 2021
+!> /details This routine applies the ISMIP6 glacier retreat parateterization
+!> based on ocean thermal forcing and subglacial discharge. This routine uses multiple
+!> time-levels fields provided by ISMIP6. Once we use E3SM fields, this will need to be restructured.
+!> The routine searches for an input stream named 'ismip6-gis', from which it reads ismip6Runoff and 
+!> ismip6_2dThermalForcing fields from the previous forcing time whenever the mostRecentAccessTime
+!> attribute of the ismip6-gis stream is updated. It then calculates calvingVelocity based on
+!> the change in ismip6Runoff and ismip6_2dThermalForcing between the two most recent time-levels, and
+!> calls apply_front_ablation_velocity to calculate a calvingThickness. config_front_mass_bal_grounded
+!> must be set to 'none' when using this routine.
+!> Slater, D. A., Straneo, F., Felikson, D., Little, C. M., Goelzer, H.,
+!> Fettweis, X., & Holte, J. (2019).
+!> Estimating Greenland tidewater glacier retreat driven by submarine melting.
+!> The Cryosphere, 13(9), 2489-2509.
+!> https://doi.org/10.5194/tc-13-2489-2019
+!> Slater, D. A., Felikson, D., Straneo, F., Goelzer, H., Little, C. M.,
+!> Morlighem, M., et al. (2020).
+!> Twenty-first century ocean forcing of the Greenland ice sheet for modelling
+!> of sea level contribution.
+!> The Cryosphere, 14(3), 985-1008. https://doi.org/10.5194/tc-14-985-2020
+   subroutine ismip6_retreat(domain, err) 
+
+      use li_diagnostic_vars
+      use mpas_timekeeping
+      use mpas_stream_manager
+      !-----------------------------------------------------------------
+      ! input variables
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: & 
+         domain          !< Input/Output: domain object
+
+      !-----------------------------------------------------------------
+      ! output variables
+      !-----------------------------------------------------------------
+      integer, intent(out) :: err !< Output: error flag
+
+      !-----------------------------------------------------------------
+      ! local variables
+      !-----------------------------------------------------------------
+      integer :: iCell, jCell, iEdge, iNeighbor, err_tmp
+      type (block_type), pointer :: block
+      integer, dimension(:,:), pointer :: cellsOnCell
+      type (mpas_pool_type), pointer :: geometryPool, meshPool, &
+                                        velocityPool
+      real (kind=RKIND), pointer :: config_ismip6_retreat_k, seaLevel
+      logical, pointer :: config_do_restart
+      real (kind=RKIND), dimension(:), pointer ::  &
+                                        calvingVelocity, thickness, &
+                                        xvelmean, yvelmean, calvingThickness, &
+                                        bedTopography
+      integer, pointer :: nCells, timestepNumber
+      integer, dimension(:,:), pointer :: edgesOnCell
+      integer, dimension(:), pointer :: cellMask, nEdgesOnCell
+      real (kind=RKIND) :: waterDepth
+      real (kind=RKIND), dimension(:), pointer :: dvEdge
+      real (kind=RKIND), dimension(:), pointer :: TFocean, ismip6Runoff
+      real (kind=RKIND), dimension(:), pointer :: TFoceanPrevious, ismip6RunoffPrevious
+      real (kind=RKIND), dimension(:), pointer :: TFoceanCurrent, ismip6RunoffCurrent
+      real (kind=RKIND), dimension(:), allocatable :: submergedArea
+      real (kind=RKIND) :: deltatForcing ! time between forcing updates
+      type (MPAS_Time_Type), save :: forcingTime, forcingTimeOld
+      character (len=StrKIND), pointer :: xtime, simulationStartTime, forcingTimeStamp
+      character(len=StrKIND) :: forcingTimeOldStamp
+      type (MPAS_stream_list_type), pointer :: stream_cursor
+      logical :: streamFound ! used to throw an error if required stream is not found
+
+      call mpas_pool_get_config(liConfigs, 'config_ismip6_retreat_k', config_ismip6_retreat_k)
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', seaLevel)
+      call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
+
+      if (config_ismip6_retreat_k .ge. 0.0) then
+         call mpas_log_write('Error: config_ismip6_retreat_k should be negative, but is >= 0.0.')
+         err = 1
+      endif
+
+      block => domain % blocklist
+      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+      ! get fields
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(meshPool, 'xtime', xtime)
+      call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
+      call mpas_pool_get_array(meshPool, 'forcingTimeStamp', forcingTimeStamp)
+      call mpas_pool_get_array(meshPool, 'timestepNumber', timestepNumber)
+      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+      call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(velocityPool, 'xvelmean', xvelmean)
+      call mpas_pool_get_array(velocityPool, 'yvelmean', yvelmean)
+      call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcing', TFocean)
+      call mpas_pool_get_array(geometryPool, 'ismip6Runoff', ismip6Runoff)
+      call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcingPrevious', TFoceanPrevious)
+      call mpas_pool_get_array(geometryPool, 'ismip6RunoffPrevious', ismip6RunoffPrevious)
+      call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcingCurrent', TFoceanCurrent)
+      call mpas_pool_get_array(geometryPool, 'ismip6RunoffCurrent', ismip6RunoffCurrent)
+      
+      ! submergedArea used in runoff unit conversion 
+      allocate(submergedArea(nCells+1))
+
+      ! On a restart, set forcingTime to enable elseif statement below
+      if ( (config_do_restart) .and. (timestepNumber == 1) ) then
+         call mpas_set_time(forcingTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
+         err = ior(err, err_tmp)
+      endif
+
+      streamFound = .false. ! Changed to true if ismip6-gis stream is found, otherwise throws error
+      stream_cursor => domain % streamManager % streams % head
+      do while (associated(stream_cursor))
+         ! Input stream with forcings must be called 'ismip6-gis', or this will throw an error.
+         if ( trim(stream_cursor % name) == 'ismip6-gis' .and. (stream_cursor % valid) ) then
+            streamFound = .true.
+            if (xtime == simulationStartTime) then
+               ! Use forcing fields and time from most recent time in file, which was read on init.
+               call mpas_get_time(stream_cursor%mostRecentAccessTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
+               err = ior(err, err_tmp)
+
+               TFoceanCurrent = TFocean
+               ismip6RunoffCurrent = ismip6Runoff
+
+               ! Force a read of this stream, and use the second most recent time in the file
+               call mpas_stream_mgr_read(domain % streamManager, streamID = stream_cursor % name, rightNow = .true., &
+                                when = forcingTimeStamp, whence = MPAS_STREAM_LATEST_STRICTLY_BEFORE, saveActualWhen= .true., ierr=err_tmp)
+               err = ior(err, err_tmp)
+
+               call mpas_get_time(stream_cursor%mostRecentAccessTime, dateTimeString=forcingTimeOldStamp, ierr=err_tmp)
+               err = ior(err, err_tmp)
+
+               TFoceanPrevious = TFocean
+               ismip6RunoffPrevious = ismip6Runoff
+
+               call mpas_log_write("  * Forced a read of input stream 'ismip6-gis'" // &
+                                         " from time: " // trim(forcingTimeOldStamp))
+
+               call mpas_set_time(forcingTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
+               err = ior(err, err_tmp)
+               call mpas_set_time(forcingTimeOld, dateTimeString=forcingTimeOldStamp, ierr=err_tmp)
+               err = ior(err, err_tmp)
+
+               ! Do not overwrite forcing fields with values from previous time
+               ismip6Runoff = ismip6RunoffCurrent
+               TFocean = TFoceanCurrent
+            elseif (forcingTime < stream_cursor % mostRecentAccessTime) then
+               TFoceanPrevious = TFoceanCurrent
+               ismip6RunoffPrevious = ismip6RunoffCurrent
+               TFoceanCurrent = TFocean
+               ismip6RunoffCurrent = ismip6Runoff
+
+               forcingTimeOld = forcingTime
+               forcingTime = stream_cursor % mostRecentAccessTime
+               call mpas_get_time(forcingTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
+               err = ior(err, err_tmp)
+               call mpas_get_time(forcingTimeOld, dateTimeString=forcingTimeOldStamp, ierr=err_tmp)
+               err = ior(err, err_tmp)
+               call mpas_log_write("  * ismip6 retreat forcings have been updated:" // &
+                                " forcingTime: " // trim(forcingTimeStamp) //  &
+                                "; forcingTimeOld: " // trim(forcingTimeOldStamp))
+            else
+               call mpas_log_write(" * No new forcing times for ismip6 retreat this timestep.")
+            endif
+            exit ! We have processed the stream we wanted.
+         endif
+         stream_cursor => stream_cursor % next
+      enddo ! end loop over stream_cursors
+
+      ! check that the ismip6-gis stream was found
+      if (.not. streamFound) then
+         call mpas_log_write('Input stream ismip6-gis is required for config_calving = ismip6_retreat, ' // &
+                             'but was not found.', MPAS_LOG_ERR)
+         err = 1
+      endif
+      ! Get submerged area of each cell to convert from kg m^{-2} s^{-1} to m^3 s^{-1}
+      ! TODO: ensure that this unit conversion is still appropriate when we
+      ! eventually use this subroutine with fields passed from the E3SM coupler
+      ! rather than external ISMIP6 forcings.
+      submergedArea(:) = 0.0_RKIND
+      do iCell = 1, nCells
+         if ( li_mask_is_dynamic_margin(cellMask(iCell)) .and. bedTopography(iCell) < seaLevel ) then
+            waterDepth = max(0.0_RKIND, seaLevel - bedTopography(iCell))
+            do iNeighbor = 1, nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(iNeighbor, iCell)
+               jCell = cellsOnCell(iNeighbor, iCell)
+               ! sum up length of edges adjacent to open ocean or non-dynamic cells
+               if ( (.not. li_mask_is_dynamic_ice(jCell)) &
+                       .and. (bedTopography(jCell) < seaLevel) ) then
+                  submergedArea(iCell) = submergedArea(iCell) + dvEdge(iEdge) * waterDepth
+               endif
+            enddo
+         endif
+      enddo
+
+      ! Get the time between forcings to calculate retreat rate.
+      call mpas_get_timeInterval(forcingTime - forcingTimeOld, dt=deltatForcing)
+      call mpas_log_write("ismip6 retreat deltatForcing = $r", realArgs = (/deltatForcing/))
+
+      ! This if-statement is probably unnecessary, but this ensures there is no divide-by-zero error
+      ! if somehow deltatForcing = 0.0.
+      if (forcingTime .ne. forcingTimeOld) then
+         do iCell=1, nCells
+            ! For now, hard-coding factor of 4.0 to roughly convert mean annual to mean summer runoff.
+            ! Factor of 1000.0 is freshwater density.
+            ! TODO: ensure that this scaling factor is still appropriate when we
+            ! eventually use this subroutine with fields passed from the E3SM coupler
+            ! rather than external ISMIP6 forcings.
+            calvingVelocity(iCell) = max(-1.0_RKIND * config_ismip6_retreat_k * ( ( (4.0_RKIND * submergedArea(iCell) &
+                                         * ismip6Runoff(iCell) / 1000.0_RKIND)**0.4_RKIND * TFocean(iCell) ) -  &
+                                         ( (4.0_RKIND * submergedArea(iCell) * ismip6RunoffPrevious(iCell) / 1000.0_RKIND)**0.4_RKIND &
+                                         * TFoceanPrevious(iCell) ) ) / deltatForcing + &
+                                         sqrt(xvelmean(iCell)**2.0_RKIND + yvelmean(iCell)**2.0_RKIND), 0.0_RKIND)
+         enddo
+      else ! throw an error if the forcing times are the same
+          call mpas_log_write("Forcings used in ismip6_retreat have the same timestamp. Check xtime in the input file(s).")
+          err = 1
+      endif
+
+      ! Testing indicates this halo update is necessary before calling li_apply_front_ablation_velocity.
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'calvingVelocity')
+      call mpas_timer_stop("halo updates")
+
+      call mpas_log_write("calling li_apply_front_ablation_velocity from ismip6 retreat routine")
+      ! Convert calvingVelocity to calvingThickness
+      call li_apply_front_ablation_velocity(meshPool, geometryPool,velocityPool, &
+                                              calvingThickness, calvingVelocity, applyToGrounded=.true., &
+                                              applyToFloating=.true., applyToGroundingLine=.false., &
+                                              domain=domain, err=err)
+
+      ! Update halos on calvingThickness before applying it.
+      ! NOTE: THIS WILL NOT WORK ON MULTIPLE BLOCKS PER PROCESSOR
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'calvingThickness')
+      call mpas_timer_stop("halo updates")
+
+      ! === apply calving ===
+      thickness(:) = thickness(:) - calvingThickness(:)
+
+      ! update mask
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+      err = ior(err, err_tmp)
+      call remove_small_islands(meshPool, geometryPool)
+
+      deallocate(submergedArea)
+
+   end subroutine ismip6_retreat
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !    routine li_apply_front_ablation_velocity
