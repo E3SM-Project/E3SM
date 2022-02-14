@@ -1,3 +1,595 @@
+2/11/2022
+
+* Okay, I don't know if anything below makes sense anymore, but *this* is
+  how fractions are used:
+
+1 As weights when interpolating from one grid to the next - so if we are
+  averaging the land contribution of some variable to a bigger grid, we
+  clearly want to weight by the land fractions in the smaller grid.
+
+2 As weights when calculating the contribution of each component to a grid
+  cell for a given quantity.
+
+  As an example of the latter, let's say the atmosphere is trying to
+  determine a quantity over a cell where the components are 1/3 land,
+  ocean, and ice.  Obviously, you want to scale that quantity for each
+  component in that cell by 1/3 before adding them together.
+
+* The thing is, you can apply these fractions in a lot of different places
+  in the code.  Apparently, the atm component chooses to do it not when the
+  quantity is calculated in the atm code, but in the prep_atm_merge
+  function, as soon as it grabs each components avects from the coupler.
+  That's why you see all those "* xfrac" scalings in the prep_atm_merge
+  function. 
+
+* But other components don't do this kind of scaling, presumably because
+  either they don't need to weight by fraction or because they do it
+  internally in the component model code.
+
+* Now, as far as iac is concerned, we actually have a number of fractions
+  to consider.  When iac is coupling with atm, we have already scaled the
+  co2 flux to be the contribution of the full grid cell, not just from the
+  land part (I dunno, do we consider boats?  Or we have just scaled it up
+  to full grid cell.  Whatever.)  So zfrac(a) = 1.0, for z2a.
+
+  We also have the landfrac, which should match that of the land component,
+  but we've read it in separately.  So that's zfrac(l) = lfrac(z)
+  (hopefully). 
+
+  But Alan has pointed out that we also need to further subgrid the cell by
+  vegetation fraction - some pfts are vegetation land types, while some are
+  urban, so we need a zfrac(veg), which we will use as a weight when
+  coupling z2l.
+
+  So, when coupling with atm, we have frac=1.0.  When coupling with lnd, we
+  sometimes need to just weight by landfrac (to interpolate onto the bigger
+  grid), but sometimes we need to weight by vegfrac/landfrac (if vegfrac is
+  the fraction of the whole grid cell - or, we could store the fraction of
+  the *land* part of the cell that is vegetation,
+  i.e. vegfrac'=vegfrac/landfrac).
+
+* To get this right, then, we really need to figure out how we want to
+  weight each field we are coupling in all the cases we are using them.
+  But I think that, unlike atm, we'll scale by the appropriate fractions
+  internally in the lnd and iac components, and not in the p   qy
+rep_merge
+  functions.  We also need to couple fractions_z(zair:zfrac:zvfrac), with
+  fractions_a(...:zair) and fractions_l(...:zfrac:zvfrac)
+
+2/1/2022
+
+* So, I've got a couple things we are working through.
+
+* Fractions_z, mapped to the land grid - does that make sense?  The lnd and
+  iac landfrac is ostensibly the same, but if we interpolate one onto the
+  other that could make changes.  Alan pointed out the mapping conserves
+  area, and that's what's important, but it still seems like
+  fractions_l(lfrac) and fractions_l(zfrac) should be identical, but
+  there's a lot of reason to think they might vary somewhat, and does that
+  matter. 
+
+* The other issue is coupling z->a, sending CO2 emissions across.  Right
+  now we were going to have a number of different heights, so we couple N
+  different emiss_co2[h] variables, similar to how we couple 17 different
+  variables of npp for the 17 different pfts in z->l.
+
+  Alan points out, though, that gcam calculates a single emission value on
+  its grid, without it being scaled to landfrac.  In other words, the iac
+  generates a value on the grid, not a value from the fraction of land on
+  each grid.  So we need a separate fractions_z(z->a) that gives fraction
+  values of 1.0 for use when coupling z->a.
+
+? So, my question is - isn't that the same thing as fractions_z(afrac)?
+  The atmos fractions are always 1.0, so if we interpolate that onto the z
+  grid, which I think we do, we should get 1.0 everywhere.  So if we use
+  fractions_z(afrac) to build our z->a maps rather than fractions_z(zfrac),
+  wouldn't that work automatically?
+
+? Or, do I not know what I'm talking about, wrt how fractions are
+  calcualted.  My understanding is that we build fractions_c(cfrac) on
+  component c's grid, and then run it through the mappings to calculate
+  fractions_c(yfrac) for every coupled component y's fractions on the c
+  grid.  Then the mapping uses the fractions from the source component on
+  both grids to do the interpolation. If that's true, then
+  fractions_z(afrac) makes sense, and is what we want to use while coupling
+  to atmosphere - 1.0s everywhere on the z grid.
+
+  The alternative is to build a whole new variable to hold the z2a
+  fractions (which are 1.0): something like fractions_z2a, and then make
+  sure to use that whenever we map z->a.
+
+  My worry is that we might not be able to tell it to use
+  fractions_z(afrac) while coupling z->a - the calling sequence to the
+  functions might force you to look up fractions_z(zfrac) and
+  fractions_a(zfrac) only when doing z->a coupling.  If that's the case,
+  then I'm not sure a new variable like fractions_z2a will even work,
+  unless we send the fraction (and not the index to use) into
+  seq_map_map(). 
+
+! A third possibility is to actually scale co2 emissions that we get by
+  gcam by 1/fractions_z(zfrac), so that the scaling offsets the fraction
+  used my MCT to interpolate.  I.e. we trick MCT into doing the right
+  math.  This is obviously obfuscatory and not ideal, but it might involve
+  a lot less coding and refactoring MCT functions than the other way.
+
+1/24/2022
+
+* I've found the problem - the field list of fields to couple is getting
+  truncated.   The z2x%rlist(:) is a colon-separated character string
+  listing all the fields to send to the coupler, and there's a similar one
+  built for x2l.  We are coupling way more fields than other compsets, so
+  we (eventually) end up with a truncated list, and that's why prev for
+  pft=14 and both current and pref for pfts 15 and 16 aren't getting
+  coupled. 
+
+  But it's trickier than this, because the z2x%rlist DOES allocate enough
+  space (4096 characters, the "CXX" size), and the seq_add_flds() function
+  actually does a check to make sure we don't write past the allocated
+  space, and it will throw an error if we do.  So these rlists are being
+  built and stored correctly in the coupling variables.
+
+  BUT! Deep in the MCT code, in seq_map_map(), we *copy* over these lists
+  to a working variable before calling mct_aVect_init() to set up all the
+  coupled variables.  (Maybe we destroy the fields list while using is,
+  popping off values or something?  Or, maybe no reason.)  Anyway, the
+  variable lrList in seq_map_map() was only allocated "CX" (512)
+  characters.  As it turns out, that gets you to Sz_pct_pft14, but NOT to
+  Sz_pct_pft_prev14 or the pft=15,16 variables.  So we end up truncating
+  our correct list of fields, and only couple through current_pft14.
+
+  The solution, of course, is to allocate lrList with size CXX (4096), so
+  we can copy over the full list and couple all the fields we ask.
+
+  When you do that, the normalization and other errors go away, and the
+  code (lnd/iac coupled) runs through two full model years.
+
+1/21/2022
+
+* Okay, I've learned a couple things.  Here is the output for pft=14 for
+  all 13 grid cells the masterproc (apparently) gets from the decomp, after
+  importing from the coupler
+
+           g pft      lat       lon      pft_prev   pft_curr        diff
+TRS8:      1  14  -90.00000    0.00000    0.00000    0.00000    0.0000000000
+TRS8:      2  14  -86.21053  280.00000    0.00000    0.00000    0.0000000000
+TRS8:      3  14  -80.52632  200.00000    0.00000    0.00000    0.0000000000
+TRS8:      4  14  -74.84211  152.50000    0.00000    0.00000    0.0000000000
+TRS8:      5  14  -54.00000  295.00000    0.00000    0.00000    0.0000000000
+TRS8:      6  14  -18.00000   35.00000    0.00000   51.32734   51.3273393133
+TRS8:      7  14   -0.94737  300.00000    0.00000    0.10030    0.1002995088
+TRS8:      8  14   16.10526  347.50000    0.00000   33.08695   33.0869547983
+TRS8:      9  14   29.36842   40.00000    0.00000    0.00000    0.0000000000
+TRS8:     10  14   38.84211  250.00000    0.00000    0.83565    0.8356476962
+TRS8:     11  14   48.31579  115.00000    0.00000    0.00000    0.0000000000
+TRS8:     12  14   55.89474  265.00000    0.00000    0.00000    0.0000000000
+TRS8:     13  14   63.47368  202.50000    0.00000    0.00000    0.0000000000
+
+  You will notice that pft_prev=0 for all cells.  Only four cells have
+  anything for pft_curr, and those are the ones I've found a problem with,
+  but what this means is that:
+
+! The problem is in the coupling of pft=14 (p=15 on iac side) for the
+  pft_prev field, not in the mapping or anything else.  Somehow, the pft=14
+  pft_prev field is not getting coupled correctly, while (probably/maybe/we
+  don't have any evidence otherwise) the pft_curr field IS getting coupled
+  correctly. 
+
+* Here are the index_z2x_Sz_pct_pft(p), and _pref values on the iac side:
+
+                             p         z2x_curr   z2x_prev
+ TRS: indexz2x(p):           1           1           2
+ TRS: indexz2x(p):           2           4           5
+ TRS: indexz2x(p):           3           7           8
+ TRS: indexz2x(p):           4          10          11
+ TRS: indexz2x(p):           5          13          14
+ TRS: indexz2x(p):           6          16          17
+ TRS: indexz2x(p):           7          18          19
+ TRS: indexz2x(p):           8          20          21
+ TRS: indexz2x(p):           9          22          23
+ TRS: indexz2x(p):          10          24          25
+ TRS: indexz2x(p):          11          26          27
+ TRS: indexz2x(p):          12          28          29
+ TRS: indexz2x(p):          13          30          31
+ TRS: indexz2x(p):          14          32          33
+ TRS: indexz2x(p):          15          34          35
+ TRS: indexz2x(p):          16          36          37
+ TRS: indexz2x(p):          17          38          39
+
+  ...so these look normal.  I'll investigate the lnd side in the next run,
+  to make sure the l2x(p) indeces are getting set correctly over there.
+  Then, I guess I need to track down where in the code we tell MCT which
+  fields to couple and pull over.
+
+  My conjecture is that somehow the pct_pft_prev stuff stops working at
+  pft=13, or at least before pft=14.  So some index isn't being set right,
+  we aren't looping over the right things, or there is a typo somewhere
+  that's keeping either the lnd from importing or iac from exporting the
+  prev field, but not the curr field.
+
+* Okay, I just checked the lnd log again - both prev and current are all
+  zeros for pft=15 and pft=16.  So, either they are not getting coupled
+  correctly too, or those pfts really are zero for these grid cells -
+  either way, it's consistent with fields starting at pct_pft_pref(pft=14)
+  and higher indeces not getting imported/exported correctly.
+
+  I.e. it's not just pft=14, it could be that and everything with a higher
+  index, which means there's a looping index or something that's not going
+  far enough.
+
+* In iac, the z2x_index_pct_pft_prev(p=15) = 35, so that's the limit we are
+  looking at over there.
+
+* At some point we tell MCT how many fields we expect the coupler to give
+  and take from us - my current guess is we didn't update that right for
+  either adding pref/harvest to iac, or adding iac to lnd.
+
+1/20/2022
+
+* Okay, I'm dumb - we zero-offset our pfts in the lnd model, but one-offset
+  them in the iac model, so we need to look at p=15 in iac to understand
+  whatever is going on with pft=14 in lnd.
+
+  And when we do that, we get this for the iac grid points around g=6,8
+  (lnd):
+
+        g     p   i   j     lon       lat        prev   current
+TRS:  21628  15  28  76   33.7500  -19.3194   50.6301   50.6301
+TRS:  21629  15  29  76   35.0000  -19.3194   51.5226   51.5226
+TRS:  21630  15  30  76   36.2500  -19.3194   32.5006   32.5005
+TRS:  21916  15  28  77   33.7500  -18.3770   48.8705   48.8704
+TRS:  21917  15  29  77   35.0000  -18.3770   46.3922   46.3922
+TRS:  21918  15  30  77   36.2500  -18.3770   41.9186   41.9186
+TRS:  22204  15  28  78   33.7500  -17.4346   61.1200   61.1200
+TRS:  22205  15  29  78   35.0000  -17.4346   64.5736   64.5735
+TRS:  22206  15  30  78   36.2500  -17.4346   41.2494   41.2494
+TRS:  22492  15  28  79   33.7500  -16.4921   70.1149   70.1150
+TRS:  22493  15  29  79   35.0000  -16.4921   50.1504   50.1504
+TRS:  22494  15  30  79   36.2500  -16.4921   30.1438   30.1438
+
+TRS:  32245  15 277 112  345.0000   14.6073   59.1920   59.1920
+TRS:  32246  15 278 112  346.2500   14.6073   76.3799   76.3799
+TRS:  32247  15 279 112  347.5000   14.6073   64.4084   64.4084
+TRS:  32248  15 280 112  348.7500   14.6073   70.9835   70.9835
+TRS:  32533  15 277 113  345.0000   15.5497   51.0057   51.0057
+TRS:  32534  15 278 113  346.2500   15.5497   44.7880   44.7880
+TRS:  32535  15 279 113  347.5000   15.5497   35.9804   35.9804
+TRS:  32536  15 280 113  348.7500   15.5497   58.1320   58.1320
+TRS:  32821  15 277 114  345.0000   16.4921   42.3875   42.3875
+TRS:  32822  15 278 114  346.2500   16.4921   16.2948   16.2948
+TRS:  32823  15 279 114  347.5000   16.4921   21.0899   21.0899
+TRS:  32824  15 280 114  348.7500   16.4921   45.1869   45.1869
+TRS:  33109  15 277 115  345.0000   17.4346   10.2364   10.2364
+TRS:  33110  15 278 115  346.2500   17.4346    7.9039    7.9039
+TRS:  33111  15 279 115  347.5000   17.4346    5.4487    5.4487
+TRS:  33112  15 280 115  348.7500   17.4346    5.8889    5.8889
+
+* So, the first thing we notice is that these values for g=6, which we
+  analyze below, actually do compare with the value of 51.33 we get for the
+  pct_current calculation.  Similarly, without doing the average, I can see
+  where g=8 (lat=16.11,lon=347.5) might lead to a value of 33.09 or so - we
+  have some higher and some lower, although there is more of a gradiant.
+
+* Okay, so I'll probably have to actually calculate an average at some
+  point, but for now it looks like the main problem may NOT be the mapping
+  file, but why the prev is getting mapped to zero while the current is
+  not.  The prev and current values are either identical or within 1e-5 or
+  so on the iac side, so it looks like we are somehow not mapping prev in
+  some (or all?) cases in the same way as we are mapping current.
+
+* Could we be overwriting the prev values somehow, post-coupling?  My test
+  1/19/2022 shows that it's wrong from the first time we see the x2l fields
+  in lnd, but maybe something is happening upstream of that?  Something
+  like we couple our correct fields, and then some downstream coupling
+  fields overwrites it - i.e. an ABR or something?
+
+  Or, could we somehow not be telling the coupler which mapping to use for
+  prev?  Maybe there's another place in the driver or cpl component we have
+  to send our coupling indeces and we didn't correctly add them in that
+  spot when adding in the _prev fields?  (I originally just coupled the
+  pct_current fields, but Alan, I think, updated to send prev (and harvest)
+  fields because we need to interpolate across the year.)
+
+1/19/2022
+
+* Just some test runs to nail down when the interpolation fails - I wanted
+  to check to see if maybe a memory error was corrupting the x2l fields
+  post-coupling.  But I don't think so:
+
+ TRS8:            1           1   51.3273393132519       0.000000000000000E+000
+
+  This is printing x2l(<pft_current>,<g=6>) and x2l(<pft_pref>,<g=6>) for
+  each loop over g, to see if it changes during this assignment loop from
+  the coupler fields x2l to internal lnd fields.  As you can see, the
+  values are the same from the jump, so my only conclusion is that the
+  mapping is wrong, and thus our interpolated values coming out of the
+  coupler are wrong.
+
+* Next up is examining the mapping files and seeing if I can convince
+  myself they are either correct or incorrect.
+
+1/17/2022
+
+* Okay, I don't understand something.  Looking at the g=6 case below, on
+  the lnd side we have prev=0.0, val=51.3, around lat=-18, lon=35.4
+
+  Around those lat/lons on the iac, we have these values:
+
+ TRS: g=       21628 p=          14 i=          28 j=          76
+ TRS: lon=   33.7500000000000      lat=  -19.3193717277487     
+ TRS: pft_prev=   8.43277380296120      pft_current=   8.43277166762248     
+ TRS: g=       21629 p=          14 i=          29 j=          76
+ TRS: lon=   35.0000000000000      lat=  -19.3193717277487     
+ TRS: pft_prev=   7.18035845724506      pft_current=   7.18035669368101     
+ TRS: g=       21630 p=          14 i=          30 j=          76
+ TRS: lon=   36.2500000000000      lat=  -19.3193717277487     
+ TRS: pft_prev=   7.98092779772900      pft_current=   7.98091431201467     
+ TRS: g=       21916 p=          14 i=          28 j=          77
+ TRS: lon=   33.7500000000000      lat=  -18.3769633507853     
+ TRS: pft_prev=   11.5671136481443      pft_current=   11.5671110424742     
+ TRS: g=       21917 p=          14 i=          29 j=          77
+ TRS: lon=   35.0000000000000      lat=  -18.3769633507853     
+ TRS: pft_prev=   7.27121726373166      pft_current=   7.27121706487410     
+ TRS: g=       21918 p=          14 i=          30 j=          77
+ TRS: lon=   36.2500000000000      lat=  -18.3769633507853     
+ TRS: pft_prev=   14.2817357391326      pft_current=   14.2817319949631     
+ TRS: g=       22204 p=          14 i=          28 j=          78
+ TRS: lon=   33.7500000000000      lat=  -17.4345549738220     
+ TRS: pft_prev=   5.48228584734313      pft_current=   5.48228586988706     
+ TRS: g=       22205 p=          14 i=          29 j=          78
+ TRS: lon=   35.0000000000000      lat=  -17.4345549738220     
+ TRS: pft_prev=   3.03892747447383      pft_current=   3.03892515919722     
+ TRS: g=       22206 p=          14 i=          30 j=          78
+ TRS: lon=   36.2500000000000      lat=  -17.4345549738220     
+ TRS: pft_prev=   14.2585355637895      pft_current=   14.2585308215280     
+ TRS: g=       22492 p=          14 i=          28 j=          79
+ TRS: lon=   33.7500000000000      lat=  -16.4921465968586     
+ TRS: pft_prev=  0.000000000000000E+000 pft_current=  0.000000000000000E+000
+ TRS: g=       22493 p=          14 i=          29 j=          79
+ TRS: lon=   35.0000000000000      lat=  -16.4921465968586     
+ TRS: pft_prev=   7.67635828282414      pft_current=   7.67635737261794     
+ TRS: g=       22494 p=          14 i=          30 j=          79
+ TRS: lon=   36.2500000000000      lat=  -16.4921465968586     
+ TRS: pft_prev=   19.3584850211624      pft_current=   19.3584796391147     
+
+  These are all the points in the iac grid within 2 degrees of both the
+  target lon and lat (35 degN, -18 degE).  Notice that (a) the prev and
+  current values are all very similar, if not identical, in each point, (b)
+  there are no prev=0, current>0 pairs, which is what we see on the lnd
+  side, and (c) none of the percentages approach the pft_current lnd val of 
+  51.33.  
+
+  So, I don't see how we can interpolate or average some subset of the
+  iac points (above) to get the lnd values (below).
+
+* If you look at the values in lnd_import_export.F90, right after grabbing
+  them from the coupler, you see prev=0, currrent=51.33, just like in my
+  print statement.  So the problem really is in the mapping/coupling, and
+  we aren't overwriting values with a memory error in the lnd code or
+  something.
+
+* I'm going to do a run where we try to find a prev value of 0.0 and and
+  current value of > 0.0 on iac.  That seems like a prerequisite to get
+  values like that in lnd post-coupling.  If we have none of those, then
+  I'll be very confused - how can we get 0 and non-zero interpolated values
+  starting with non-zero values, using the same mapping for both variables?
+
+? Okay, while that's building and running, let's speculate.  Obviously, the
+  mapping could be wrong somehow - the wrong grids in the mapping file?  Or
+  the iac grid could be specified incorrectly internally, so MCT maps the
+  wrong grid points.  Or, our coupling variables get messed up on the iac
+  side some time after the import/export function.
+
+  Here's a thing - it looks like the lnd import_export loops over 0,numpft
+  while extracting the pft-based variables, while in iac import_export, we
+  loop the p index from 1,npft.  So, need to check this - is numpft=16 in
+  lnd, so our pft index is 0-offset and p is 1-offset?  Or, do we have a
+  mismatch between the number of pfts we are sending/recieving on both
+  sides of the coupling?
+
+1/13/2022
+
+* Issue: veg_pp%wtcol(p), calculated in iac2lndMod.F90 c. L192, do not sum
+  to 100%.  This is calculated from the coupled pft values we send over
+  from iac, so something is wrong about the coupling.  The actual failure
+  happens in subgridWeightsMod.F90, in the calculations above L683.
+
+* Here are the key points where we have pft_prev=0 and pft_current>0 in the
+  calculation of veg_pp%wtcol(p) (basically taking our g,pft decomposed
+  percentages coupled from iac and building  patch-indexed weights):
+
+ TRS g=           6 p=         100 pft=          14 wt1=   1.00000000000000     
+ TRS lat=  -18.0000000000001      lon=   35.0000000000000     
+ TRS prev_val=  0.000000000000000E+000 val=   51.3273393132519     
+ TRS interp=  0.000000000000000E+000
+
+ TRS g=           7 p=         117 pft=          14 wt1=   1.00000000000000     
+ TRS lat= -0.947368421052715      lon=   300.000000000000     
+ TRS prev_val=  0.000000000000000E+000 val=  0.100299508791858     
+ TRS interp=  0.000000000000000E+000
+
+ TRS g=           8 p=         134 pft=          14 wt1=   1.00000000000000     
+ TRS lat=   16.1052631578947      lon=   347.500000000000     
+ TRS prev_val=  0.000000000000000E+000 val=   33.0869547982631     
+ TRS interp=  0.000000000000000E+000
+
+ TRS g=          10 p=         168 pft=          14 wt1=   1.00000000000000     
+ TRS lat=   38.8421052631578      lon=   250.000000000000     
+ TRS prev_val=  0.000000000000000E+000 val=  0.835647696229087     
+ TRS interp=  0.000000000000000E+000
+
+  So, this is for the very first sample, so wt1 = 1 (meaning completely
+  weighted towards the prev values).  It just looks wrong to have the
+  prev_val = 0.0 and the current_val greater than 1, sometimes by a lot.
+  So this is my first guess as to why we end up with weights summing to <
+  1.
+
+* As far as I can tell, the iac2lnd mapping is being set up correctly, or
+  at least in a similar way as with other components.  There might still be
+  an issue there, some irregularity in iac that makes following the (e.g.)
+  glc2lnd mapping code structure incorrect, but that seems fairly unlikely.
+
+  So, my current guess is one or more of these problems:
+
+1 The mapping file is incorrect, so we end up not interpolating between the
+  iac and lnd grid correctly.
+
+2 The prev and current values are not being correctly calculated and/or
+  read in on the iac side, which leads to problems post-coupling inside the
+  lnd code.
+
+3 Memory errors modifying values inside of lnd?  Or some kind of weird
+  initialization that corrupts the prev values?
+
+4 The mappings between components we all follow use the flux mapping
+  variables, e.g. Fa2l_foo, whereas between lnd and iac we have things set
+  up as state variables (Sz2l_foo).  It's possible, I guess, that this
+  causes a problem building the mappings?  Or there is some slightly
+  different procedure for building a state based mapping?
+
+* I'm grasping at straws with 4. above - there are state variables being
+  coupled elsewhere, and the ocean even has SFo2a_foo mappings which,
+  presumably means both state and flux variables.  Anyway, I just remember
+  seeing a thing where we were using the flux mappings as some kind of
+  baseline, and Alan added in the state mappings for iac in the same way,
+  and I need to verify that that makes sense.
+
+1/7/2022
+
+* Well, I'm dumb.  Of course we crack the iac2lnd_smapname file to build
+  the mapper_Sz2l, etc - see calls to seq_map_init_rcfile() in
+  prep_lnd_mod.F90 and similarly for other components.  But the 'aream'
+  stuff below is largely correct - we need aream for each component we are
+  going to couple, and then we also build a mapping for each coupling, and
+  some of that information comes from the same place.  So we end up
+  cracking some of our map files twice - once to read in aream for our
+  component, and once to build the mapping.
+
+* So we already have implemented the mapping stuff for z2l in
+  prep_lnd_mod.F90.  We may need to do the same thing for z2a, or maybe
+  it's already in there.  But the main thing is to update the
+  component_init_aream() code.
+
+  Do we need to do the samegrid_lz stuff we see elsewhere?  We'd have to
+  pass in samegrid_lz as an argument, which means updating where we call
+  component_init_aream()...in cime_comp_mod.F90.
+
+! Okay, more stuff - the mapper_Ab2c is always defined in the 'c'
+  component, and we do have complementary maps (mapper_Fa2l and
+  mapper_Fl2a).  So we will need both mapper_Fz2l (defined and assigned in 
+  prep_lnd_mod.F90) and mapper_Fl2z (in prep_iac_mod.F90).
+
+1/6/2022
+
+* Okay, I think I've got this aream thing figured out.  The trick is that
+  we have a default grid, the one we setup the case with - the aream
+  loading then basically works against that default grid.  So we only need
+  to crack open one fmap (or smap) file to get the area_a/b per component.
+  So, e.g., when we are setting up lnd to do the mapping between lnd and
+  air, we only need to crack the fmap_atm2lnd to get the lnd mapping,
+  because atm is on the default grid.  (I think).  
+
+* Anyway, it looks like "area_a" and "area_b" are the mapping areas
+  between components a and b, with the file variable "a2b_fmapname"
+  indicating which is a and which is b.
+
+  So, this is how it works:
+
+* First, in component_init_cc(), we set the aream attribute vector to the
+  area array of the default grid.  We do this for each component, so at
+  this point the areas are all the same and match the default grid.
+
+* Then, in component_init_aream(), we read in the areams from the mapping
+  files for each component that does not match the default grid.  So,
+  pre-iac, we have five sections:
+
+1 if atm and ocean are coupling, then if they are not on the same grid,
+  crack and read aream from the ocn2atm_fmap file, with area_a the ocean
+  and area_b the atmosphere.  I'm not exactly sure why we need both, but
+  this is the only case where we read both area_a and area_b, so my
+  conjecture is that's dilatory - the atm is on the default grid anyway, so
+  area_a will match the aream already in there.  But I don't know.
+
+  if atm and ocean are on the same grid, we skip reading a mapping file and
+  just directly call seq_map_map() to generate mapper_Fa2o.
+
+2 if ice and ocean are coupling, we don't crack any files and just do a
+  straight mapping.  Maybe ice and ocean have to be on the same grid?
+
+  Also, mapper_SFo2i - the same mapping for state and flux calculations?
+  Would we ever have different mappings?
+
+3 If rof and ocean couple and are on different grids, we crack open *two*
+  mapping files, one for liq and one for ice.  But it appears it reads both
+  of these into the rof mapping aream, with only the "string" value
+  different in seq_map_readdata().  Okay, I don't really get this either,
+  but it follows my general suggestion that ocean aream has already been
+  set (either by the default grid aream, or by the atm2ocn_fmap stuff in
+  section 1).
+
+  If rof and ocn are on the same grid, do nothing.  No mapping required?
+
+4 If lnd and atm is present and on different grids, then crack
+  atm2lnd_fmapname and read in the lnd aream, meaning the atm aream is
+  either the default grid or from atm2ocean mapping.
+
+  If atm and lnd on same grid, seq_map_map(mapper_Sa2l,...), using the
+  areams already set (probably by default grid).
+
+5 if lnd and glc and not the same grid, crack and read in aream for glc,
+  using lnd aream already set (default or as per previous couplings).  If
+  same grid, call seq_map_map() on mapper_Sl2g.
+
+* So, while I still have questions, I think we follow the glc model - if
+  lnd and iac, if samegrid generate mapper_Si2l, otherwise crack
+  iac2lnd_smapfile and read area_a into the aream attribute vector.
+
+  This will provide the right iac aream to allow us to later generate the
+  mapper_Fi2a to couple iac with atm model.  We use iac and lnd to decide
+  if we need to crack a file, because we always couple with lnd as well if
+  we are coupling with atm.
+
+  I'll need to dig in to the mapper_S/Fx2x stuff elsewhere - I think the
+  full set of these mappings are generated in the prep_foo_mod.F90 files,
+  during initialization (and maybe at run time if the grid and therefore
+  mappings change, although I don't know if that happens - I thought lnd
+  model had dynamic grid changes (i.e. sea-level changes), but I might just
+  be making that up).
+
+  Look at ~/mapper.out to find where mapper_Xy2z are used and (hopefully)
+  defined and generated.
+
+1/4/2022
+
+* So, the mapping files are set in env_run.xml in the case directory
+  (i.e. ~/zlnd_v2), and we get entries like this:
+
+    <entry id="IAC2LND_SMAPNAME" value="cpl/gridmaps/0.9x1.25/map_0.9x1.25_TO_1.9x2.5_aave.210910.nc">
+      <type>char</type>
+      <desc>iac2lnd state mapping file</desc>
+    </entry>
+    <entry id="IAC2LND_SMAPTYPE" value="X">
+      <type>char</type>
+      <valid_values>X,Y</valid_values>
+      <desc>iac2lnd state mapping file decomp type</desc>
+    </entry>
+  
+  This seems to be governed up by
+  .../cime/src/drivers/mct/cime_config/config_component.xml, or maybe is
+  set by default or something somewhere else in the build process.
+
+* Anyway, these mapping files show (e.g.) area_a for the a grid and area_b
+  for the b grid, which are fields that are passed into MCT to calculate
+  the fractions and mappings between the domain boundaries.
+
+* Leaving aside how that file name is passed in, what we need is a mapping
+  between l->z, since they are on different grids (0.9x1.25 vs. 1.9x2.5, in
+  our test case).
+
+  So, I need to revisit all this stuff - figure out how we read area_a/b
+  into the attribute vectors needed to do the mapping, then build in the
+  mapping infrastructure (mct function calls) do actually build this
+  mapping correctly.
+
 12/15/2021
 
 * Okay, with one more change to deallocate topo at the end of the iac run,
