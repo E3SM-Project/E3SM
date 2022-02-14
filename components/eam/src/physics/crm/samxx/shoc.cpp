@@ -8,9 +8,15 @@ using namespace scream::shoc;
 void shoc_initialize() {
   auto &sgs_field      = ::sgs_field;
   auto &sgs_field_diag = ::sgs_field_diag;
+  int  constexpr perturb_num_layers = 5;
 
   parallel_for( SimpleBounds<5>(nsgs_fields,nzm,dimy_s,dimx_s,ncrms) , YAKL_LAMBDA (int l, int k, int j, int i, int icrm) {
-    sgs_field(l,k,j,i,icrm) = 0.0;
+    if (k<=perturb_num_layers) {
+      real perturb_k_scaling = ((real)perturb_num_layers-k) / (real)perturb_num_layers;
+      sgs_field(l,k,j,i,icrm) = 0.01 * perturb_k_scaling + shoc_min_tke;
+    } else {
+      sgs_field(l,k,j,i,icrm) = shoc_min_tke;
+    }
   });
 
   parallel_for( SimpleBounds<5>(nsgs_fields_diag,nzm,dimy_d,dimx_d,ncrms) , YAKL_LAMBDA (int l, int k, int j, int i, int icrm) {
@@ -118,13 +124,13 @@ void shoc_proc() {
                       + fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
 
     real theta_zt = tabs(k,j,i,icrm) * inv_exner(icol, ilev);
-    thlm(icol,ilev) = theta_zt- (theta_zt/tabs(k,j,i,icrm)) * (latvap/cp)*qcl(k,j,i,icrm);
+    thlm(icol,ilev) = theta_zt - (theta_zt/tabs(k,j,i,icrm)) * (latvap/cp)*qcl(k,j,i,icrm);
     thv(icol,ilev)  = theta_zt*(1 + zvir*qv(k,j,i,icrm) - qcl(k,j,i,icrm));
     shoc_dse(icol,ilev) = cp*tabs(k,j,i,icrm) + ggr*z(k,icrm) + phis(icrm);
 
-    tke (icol,ilev) = max(0.004, sgs_field(0,k,j+offy_s,i+offx_s,icrm) ); // enforce min TKE value - same as SCREAM
+    tke (icol,ilev) = max(shoc_min_tke, sgs_field(0,k,j+offy_s,i+offx_s,icrm) ); // enforce min TKE value - same as SCREAM
     tk  (icol,ilev) = sgs_field_diag(0,k,j+offy_d,i+offx_d,icrm);
-    tkh (icol,ilev) = sgs_field_diag(1,k,j+offy_d,i+offx_d,icrm); 
+    tkh (icol,ilev) = sgs_field_diag(1,k,j+offy_d,i+offx_d,icrm);
     wthv(icol,ilev) = sgs_field_diag(2,k,j+offy_d,i+offx_d,icrm);
 
     // Cloud fraction needs to be initialized for first PBL height calculation
@@ -140,7 +146,8 @@ void shoc_proc() {
     qtracers(icol,shoc_idx_ni,ilev) = micro_field(idx_ni,k,j+offy_s,i+offx_s,icrm);
     qtracers(icol,shoc_idx_bm,ilev) = micro_field(idx_bm,k,j+offy_s,i+offx_s,icrm);
     qtracers(icol,shoc_idx_qc,ilev) = micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
-    qtracers(icol,shoc_idx_tke,ilev)= sgs_field(0,k,offy_s+j,offx_s+i,icrm);
+    // qtracers(icol,shoc_idx_tke,ilev)= sgs_field(0,k,offy_s+j,offx_s+i,icrm);
+    qtracers(icol,shoc_idx_tke,ilev)= tke (icol,ilev);
 
     // if (use_ESMT) {
     //   qtracers(icol,shoc_idx_esmt_u,ilev) = u_esmt(k,j,i,icrm)
@@ -160,11 +167,12 @@ void shoc_proc() {
   // -------------------------------------------------
   view_1d host_dx_1d("host_dx", ncol),
           host_dy_1d("host_dy", ncol),
-          wthl_sfc_1d("wthl_sfc", ncol), // wpthlp_sfc(1:ncol)
-          wqw_sfc_1d("wqw_sfc", ncol),   // wprtp_sfc(1:ncol)
-          uw_sfc_1d("uw_sfc", ncol),     // upwp_sfc(1:ncol)
-          vw_sfc_1d("vw_sfc", ncol),     // vpwp_sfc(1:ncol)
-          phis_1d("phis_1d", ncol);
+          wthl_sfc_1d("wthl_sfc", ncol),  // Surface sensible heat flux [K m/s]
+          wqw_sfc_1d("wqw_sfc", ncol),    // Surface latent heat flux [kg/kg m/s]
+          uw_sfc_1d("uw_sfc", ncol),      // Surface momentum flux (u-direction) [m2/s2]
+          vw_sfc_1d("vw_sfc", ncol),      // Surface momentum flux (v-direction) [m2/s2]
+          phis_1d("phis_1d", ncol);       // Host model surface geopotential height
+
 
   Kokkos::parallel_for("host grid", ncol, KOKKOS_LAMBDA (const int& i) {
     host_dx_1d(i) = dx;
@@ -192,14 +200,14 @@ void shoc_proc() {
     phis_1d(icol)     = phis.myData[icrm];//*100.0;
   });
 
-  view_2d zt_grid_2d("zt_grid", ncol, npack),
-          zi_grid_2d("zi_grid", ncol, nipack),
-          pmid_2d("pmid", ncol, npack),
-          pint_2d("pint", ncol, nipack),
-          pdel_2d("pdel", ncol, npack),
-          thv_2d("thv", ncol, npack),
-          w_field_2d("w_field", ncol, npack),  // wm_zt
-          wtracer_sfc_2d("wtracer", ncol, num_shoc_tracers),
+  view_2d zt_grid_2d("zt_grid", ncol, npack),                 // heights, for thermo grid [m]
+          zi_grid_2d("zi_grid", ncol, nipack),                // heights, for interface grid [m]
+          pmid_2d("pmid", ncol, npack),                       // pressure levels on thermo grid [Pa]
+          pint_2d("pint", ncol, nipack),                      // pressure levels on interface grid [Pa]
+          pdel_2d("pdel", ncol, npack),                       // Differences in pressure levels [Pa]
+          thv_2d("thv", ncol, npack),                         // virtual potential temperature [K]
+          w_field_2d("w_field", ncol, npack),                 // large scale vertical velocity [m/s]
+          wtracer_sfc_2d("wtracer", ncol, num_shoc_tracers),  // Surface flux for tracers [varies]
           inv_exner_2d("inv_exner", ncol, npack);
 
   array_to_view(zt_g.myData,      ncol, nlev,  zt_grid_2d);
@@ -220,17 +228,17 @@ void shoc_proc() {
                             w_field_2d, wthl_sfc_1d, wqw_sfc_1d, uw_sfc_1d,
                             vw_sfc_1d, wtracer_sfc_2d, inv_exner_2d, phis_1d};
 
-  view_2d host_dse_2d("host_dse", ncol, npack); // shoc_dse
-  view_2d tke_2d("tke", ncol, npack);
-  view_2d thetal_2d("thetal", ncol, npack);  // thlm
-  view_2d shoc_qw_2d("shoc_qw", ncol, npack);
-  view_2d shoc_ql_2d("shoc_ql", ncol, npack);
-  view_2d wthv_sec_2d("wthv_sec", ncol, npack);
-  view_2d tk_2d("tk", ncol, npack);
-  view_2d tkh_2d("tkh", ncol, npack); 
-  view_2d shoc_cldfrac_2d("shoc_cldfrac", ncol, npack);
-  view_3d shoc_hwind_3d("shoc_hwind",ncol,2,npack);
-  view_3d qtracers_3d("qtracers",ncol,num_shoc_tracers,npack);
+  view_2d host_dse_2d("host_dse", ncol, npack);                 // dry static energy [J/kg] : dse = Cp*T + g*z + phis
+  view_2d tke_2d("tke", ncol, npack);                           // turbulent kinetic energy [m2/s2]
+  view_2d thetal_2d("thetal", ncol, npack);                     // liquid water potential temperature [K]
+  view_2d shoc_qw_2d("shoc_qw", ncol, npack);                   // total water mixing ratio [kg/kg]
+  view_2d shoc_ql_2d("shoc_ql", ncol, npack);                   // Vector-valued wind (u,v) [m/s]
+  view_2d wthv_sec_2d("wthv_sec", ncol, npack);                 // buoyancy flux [K m/s]
+  view_2d tk_2d("tk", ncol, npack);                             // tracers [varies]
+  view_2d tkh_2d("tkh", ncol, npack);                           // eddy coefficient for momentum [m2/s]
+  view_2d shoc_cldfrac_2d("shoc_cldfrac", ncol, npack);         // eddy heat conductivity
+  view_3d shoc_hwind_3d("shoc_hwind",ncol,2,npack);             // Cloud fraction [-]
+  view_3d qtracers_3d("qtracers",ncol,num_shoc_tracers,npack);  // cloud liquid mixing ratio [kg/kg]
 
   array_to_view(shoc_dse.myData,     ncol, nlev, host_dse_2d);
   array_to_view(tke.myData,          ncol, nlev, tke_2d);
@@ -252,20 +260,20 @@ void shoc_proc() {
   view_2d shoc_ql2_2d("shoc_ql2",ncol,npack);
   SHOC::SHOCOutput shoc_output{pblh_1d, shoc_ql2_2d};
 
-  view_2d shoc_mix_2d("shoc_mix", ncol, npack),
-          w_sec_2d("w_sec", ncol, npack),
-          thl_sec_2d("thl_sec", ncol, nipack),
-          qw_sec_2d("qw_sec", ncol, nipack),
-          qwthl_sec_2d("qwthl_sec", ncol, nipack),
-          wthl_sec_2d("wthl_sec", ncol, nipack),
-          wqw_sec_2d("wqw_sec", ncol, nipack),
-          wtke_sec_2d("wtke_sec", ncol, nipack),
-          uw_sec_2d("uw_sec", ncol, nipack),
-          vw_sec_2d("vw_sec", ncol, nipack),
-          w3_2d("w3", ncol, nipack),
-          wqls_sec_2d("wqls_sec", ncol, npack),
-          brunt_2d("brunt", ncol, npack),
-          isotropy_2d("isotropy", ncol, npack);
+  view_2d shoc_mix_2d("shoc_mix", ncol, npack),     // Turbulent length scale [m]
+          w_sec_2d("w_sec", ncol, npack),           // vertical velocity variance [m2/s2]
+          thl_sec_2d("thl_sec", ncol, nipack),      // temperature variance [K^2]
+          qw_sec_2d("qw_sec", ncol, nipack),        // moisture variance [kg2/kg2]
+          qwthl_sec_2d("qwthl_sec", ncol, nipack),  // temp moisture covariance [K kg/kg]
+          wthl_sec_2d("wthl_sec", ncol, nipack),    // vertical heat flux [K m/s]
+          wqw_sec_2d("wqw_sec", ncol, nipack),      // vertical moisture flux [K m/s]
+          wtke_sec_2d("wtke_sec", ncol, nipack),    // vertical tke flux [m3/s3]
+          uw_sec_2d("uw_sec", ncol, nipack),        // vertical zonal momentum flux [m2/s2]
+          vw_sec_2d("vw_sec", ncol, nipack),        // vertical meridional momentum flux [m2/s2]
+          w3_2d("w3", ncol, nipack),                // third moment vertical velocity [m3/s3]
+          wqls_sec_2d("wqls_sec", ncol, npack),     // liquid water flux [kg/kg m/s]
+          brunt_2d("brunt", ncol, npack),           // brunt vaisala frequency [s-1]
+          isotropy_2d("isotropy", ncol, npack);     // return to isotropic timescale [s]
 
   SHOC::SHOCHistoryOutput shoc_history_output{shoc_mix_2d, w_sec_2d, thl_sec_2d, qw_sec_2d,
                                               qwthl_sec_2d, wthl_sec_2d, wqw_sec_2d, wtke_sec_2d,
