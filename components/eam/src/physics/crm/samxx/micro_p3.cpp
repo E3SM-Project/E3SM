@@ -274,7 +274,6 @@ void micro_p3_proc() {
   auto &nc_nuceat_tend     = :: nc_nuceat_tend;
   auto &nccn               = :: nccn;
   auto &ni_activated       = :: ni_activated;
-  // auto &relvar             = :: relvar;
   auto &diag_eff_radius_qc = :: diag_eff_radius_qc;
   auto &diag_eff_radius_qi = :: diag_eff_radius_qi;
   // auto &precip_total_tend  = :: precip_total_tend;
@@ -317,7 +316,7 @@ void micro_p3_proc() {
   real2d nc_nuceat_tend_in("nuceat",ncol, nlev);
   real2d nccn_in("nccn",ncol, nlev);
   real2d ni_activated_in("ni_act",ncol, nlev);
-  real2d inv_qc_relvar_in("inv_qc",ncol, nlev);
+  real2d inv_qc_relvar_in("inv_qc",ncol, nlev); // relative cloud water variance - not needed - set to 1
   real2d cld_frac_i_in("cld_frac_i",ncol, nlev);
   real2d cld_frac_l_in("cld_frac_l",ncol, nlev);
   real2d cld_frac_r_in("cld_frac_r",ncol, nlev);
@@ -439,7 +438,7 @@ void micro_p3_proc() {
     nccn_in(icol,ilev)            = nccn(k,icrm);
     nc_nuceat_tend_in(icol,ilev)  = nc_nuceat_tend(k,icrm);
     ni_activated_in(icol,ilev)    = ni_activated(k,icrm);
-    inv_qc_relvar_in(icol,ilev)   = 1.; // relvar(k,icrm); - What value should we use before SHOC provides this?
+    inv_qc_relvar_in(icol,ilev)   = 1.; // not needed - set to 1
     dz_in(icol,ilev)              = adz(k,icrm)*dz(icrm);
     pmid_in(icol,ilev)            = pres(k,icrm)*100.;
     pdel_in(icol,ilev)            = pdel(k,icrm)*100.;
