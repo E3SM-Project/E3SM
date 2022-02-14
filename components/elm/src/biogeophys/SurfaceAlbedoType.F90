@@ -132,6 +132,7 @@ contains
     use spmdMod    , only : masterproc
     use topounit_varcon, only : max_topounits
     use GridcellType , only : grc_pp
+    use shr_sys_mod ,  only : shr_sys_flush 
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds
@@ -143,7 +144,7 @@ contains
     character(len=256) :: locfn        ! local filename
     integer            :: ier          ! error status
     logical            :: readvar
-    integer  ,pointer  :: soic2d (:,:)   ! read in - soil color
+    integer  ,pointer  :: soic2d (:)   ! read in - soil color
     !---------------------------------------------------------------------
 
     ! Allocate module variable for soil color
@@ -152,14 +153,21 @@ contains
 
     ! Determine soil color and number of soil color classes
     ! if number of soil color classes is not on input dataset set it to 8
-
+    write(iulog, *) "DEBUG: SurfAlb::getfil", fsurdat 
+    call shr_sys_flush(iulog) 
     call getfil (fsurdat, locfn, 0)
+    write(iulog, *) "DEBUG: SurfAlb::getfil", locfn 
+    call shr_sys_flush(iulog) 
     call ncd_pio_openfile (ncid, locfn, 0)
 
-    call ncd_io(ncid=ncid, varname='mxsoil_color', flag='read', data=mxsoil_color, readvar=readvar)
-    if ( .not. readvar ) mxsoil_color = 8
+    !call ncd_io(ncid=ncid, varname='mxsoil_color', flag='read', data=mxsoil_color, readvar=readvar)
+    !if ( .not. readvar ) mxsoil_color = 8
+    mxsoil_color = 20
+    write(iulog, *) "DEBUG: SurfAlb::alloc soic2d"
+    call shr_sys_flush(iulog) 
 
-    allocate(soic2d(bounds%begg:bounds%endg,max_topounits))
+    !allocate(soic2d(bounds%begg:bounds%endg,max_topounits))
+    allocate(soic2d(bounds%begg:bounds%endg) ) 
     call ncd_io(ncid=ncid, varname='SOIL_COLOR', flag='read', data=soic2d, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: SOIL_COLOR NOT on surfdata file'//errMsg(__FILE__, __LINE__))
@@ -169,12 +177,15 @@ contains
        t = col_pp%topounit(c)
        topi = grc_pp%topi(g)
        ti = t - topi + 1
-       isoicol(c) = soic2d(g,ti)
+       !isoicol(c) = soic2d(g,ti)
+       isoicol(c) = soic2d(g) 
        
     end do
     deallocate(soic2d)
 
     call ncd_pio_closefile(ncid)
+    write(iulog, *) "DEBUG: SurfAlb::albsat"
+    call shr_sys_flush(iulog) 
 
     ! Determine saturated and dry soil albedos for n color classes and
     ! numrad wavebands (1=vis, 2=nir)
@@ -188,6 +199,8 @@ contains
     if (masterproc) then
        write(iulog,*) 'Attempting to read soil colo data .....'
     end if
+    write(iulog, *) "DEBUG: SurfAlb::Assinments"
+    call shr_sys_flush(iulog) 
 
     if (mxsoil_color == 8) then
        albsat(1:8,1) = (/0.12_r8,0.11_r8,0.10_r8,0.09_r8,0.08_r8,0.07_r8,0.06_r8,0.05_r8/)
@@ -209,9 +222,13 @@ contains
     end if
 
     ! Set alblakwi
+    write(iulog, *) "DEBUG: SurfAlb::alblakwi"
+    call shr_sys_flush(iulog) 
     alblakwi(:) = lake_melt_icealb(:)
 
   !$acc enter data copyin(albsat,albdry,isoicol,alblakwi )
+  write(iulog, *) "DEBUG: SurfAlb::END"
+    call shr_sys_flush(iulog) 
   end subroutine SurfaceAlbedoInitTimeConst
 
   !------------------------------------------------------------------------

@@ -422,6 +422,7 @@ contains
     type(bounds_type)               :: bounds               ! bounds
     character(len=32)               :: rdate                ! date char string for restart file names
     character(len=32), parameter    :: sub = "lnd_run_mct"
+    real :: startt, stopt 
     !---------------------------------------------------------------------------
 
     ! Determine processor bounds
@@ -468,11 +469,22 @@ contains
 
     
     ! Map to elm (only when state and/or fluxes need to be updated)
-
+    write(iulog, *) "Starting land import for CPL BYPASS runs"
+    call shr_sys_flush(iulog) 
+    call cpu_time(startt) 
     call t_startf ('lc_lnd_import')
     call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars)
     call t_stopf ('lc_lnd_import')
-
+    call cpu_time(stopt) 
+    write(iulog, *) "TIMING :: lnd_import ",(stopt-startt)*1.E+3, "ms" 
+    call shr_sys_flush(iulog) 
+   
+    call cpu_time(startt)  
+    call duplicate_lnd_points( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars)
+    call cpu_time(stopt) 
+    write(iulog, *) "TIMING :: lnd_import ",(stopt-startt)*1.E+3, "ms" 
+    call shr_sys_flush(iulog) 
+    
     ! Use infodata to set orbital values if updated mid-run
 
     call seq_infodata_GetData( infodata, orb_eccen=eccen, orb_mvelpp=mvelpp, &

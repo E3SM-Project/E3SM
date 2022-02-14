@@ -429,7 +429,8 @@ contains
           col_pp%glc_topo(c) = 0._r8
        end if
     end do
-
+    write(iulog,*) "DEBUG: end of initialization 1" 
+    call shr_sys_flush(iulog)
   end subroutine initialize1
 
 
@@ -561,6 +562,8 @@ contains
     ! Initialize daylength from the previous time step (needed so prev_dayl can be set correctly)
     ! ------------------------------------------------------------------------
 
+    write(iulog,*) "DEBUG: Last topo initialization in 2 " 
+    call shr_sys_flush(iulog)
     call t_startf('init_orbd')
 
     calday = get_curr_calday()
@@ -585,6 +588,8 @@ contains
     end do
 
     ! History file variables
+    write(iulog,*) "DEBUG: Hist file variables  " 
+    call shr_sys_flush(iulog)
 
     if (use_cn) then
        call hist_addfld1d (fname='DAYL',  units='s', &
@@ -595,6 +600,8 @@ contains
             avgflag='A', long_name='daylength from previous timestep', &
             ptr_gcell=grc_pp%prev_dayl, default='inactive')
     end if
+    write(iulog,*) "DEBUG: hist 2d " 
+    call shr_sys_flush(iulog)
 
     ! ------------------------------------------------------------------------
     ! Initialize component data structures
@@ -616,6 +623,8 @@ contains
     call hist_addfld1d (fname='ZII', units='m', &
          avgflag='A', long_name='convective boundary height', &
          ptr_col=col_pp%zii, default='inactive')
+    write(iulog,*) "DEBUG: elm_inst_biogeophys  " 
+    call shr_sys_flush(iulog)
 
     call elm_inst_biogeophys(bounds_proc)
 
@@ -627,8 +636,10 @@ contains
       call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, waterstate_vars, betr_namelist_buffer, masterproc)
       is_active_betr_bgc = ep_betr%do_soibgc()
     else
-      allocate(ep_betr, source=create_betr_simulation_alm())
+      !allocate(ep_betr, source=create_betr_simulation_alm())
     endif
+    write(iulog,*) "DEBUG: SnowOptics  " 
+    call shr_sys_flush(iulog)
 
     call SnowOptics_init( ) ! SNICAR optical parameters:
 
@@ -655,6 +666,8 @@ contains
           end if
        endif
     endif
+    write(iulog,*) "DEBUG: elm_inst_biogeochem  " 
+    call shr_sys_flush(iulog)
 
     ! FATES is instantiated in the following call.  The global is in clm_inst
     call elm_inst_biogeochem(bounds_proc)
@@ -662,6 +675,8 @@ contains
     ! ------------------------------------------------------------------------
     ! Initialize accumulated fields
     ! ------------------------------------------------------------------------
+    write(iulog,*) "DEBUG: Accumulators  " 
+    call shr_sys_flush(iulog)
 
     ! The time manager needs to be initialized before thes called is made, since
     ! the step size is needed.
@@ -693,6 +708,8 @@ contains
     ! and/or dynamic landunits); note that these will be overwritten in a
     ! restart run
     ! ------------------------------------------------------------------------
+    write(iulog,*) "DEBUG: init_dyn_subgrid  " 
+    call shr_sys_flush(iulog)
 
     call t_startf('init_dyn_subgrid')
     call init_subgrid_weights_mod(bounds_proc)
@@ -702,6 +719,8 @@ contains
     ! ------------------------------------------------------------------------
     ! Initialize modules (after time-manager initialization in most cases)
     ! ------------------------------------------------------------------------
+    write(iulog,*) "DEBUG: EcoDynInit  " 
+    call shr_sys_flush(iulog)
 
     if (use_cn .or. use_fates) then
        call EcosystemDynInit(bounds_proc,alm_fates)
@@ -729,6 +748,8 @@ contains
     if (nsrest == nsrContinue ) then
        call htapes_fieldlist()
     end if
+    write(iulog,*) "DEBUG: Restart stuff " 
+    call shr_sys_flush(iulog)
 
     ! ------------------------------------------------------------------------
     ! Read restart/initial info
@@ -900,6 +921,8 @@ contains
        call crop_vars%initAccVars(bounds_proc)
     end if
     call cnstate_vars%initAccVars(bounds_proc)
+    write(iulog,*) "DEBUG: Read mon vegetation  " 
+    call shr_sys_flush(iulog)
 
     !------------------------------------------------------------
     ! Read monthly vegetation
@@ -924,6 +947,8 @@ contains
     !------------------------------------------------------------
     ! Determine gridcell averaged properties to send to atm
     !------------------------------------------------------------
+    write(iulog,*) "DEBUG: lnd2atm_minimal  " 
+    call shr_sys_flush(iulog)
 
     if (nsrest == nsrStartup) then
        call t_startf('init_map2gc')
