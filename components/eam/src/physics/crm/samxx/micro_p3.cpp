@@ -155,9 +155,9 @@ YAKL_INLINE real saturation_specific_humidity(real tabs, real pressure) {
 YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qc_in, real &qv_in, real &tabs_in, real &pres_in ) {
   // Define a tolerance and max iterations for convergence
   real tol = 1.e-6;
-  real min_qv = 1e-6;
+  real min_qv = 1e-10;
   real min_qc = 0;
-  int max_iteration = 20;
+  int max_iteration = 10;
   int iteration_cnt = 0;
 
   // Saturation specific humidity
@@ -189,7 +189,7 @@ YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qc_in, real &qv_in, 
       // update temperature
       tabs_loc = tabs_in + fac_cond*cond;
       // update saturation value
-      real qsat = saturation_specific_humidity(tabs_in,pres_in);
+      real qsat = saturation_specific_humidity(tabs_loc,pres_in);
       // If still supersaturated condense more, otherwise condense less
       if (qv_loc> qsat) { cond1 = cond; }
       if (qv_loc<=qsat) { cond2 = cond; }
@@ -219,7 +219,7 @@ YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qc_in, real &qv_in, 
       // update temperature
       tabs_loc = tabs_in - fac_cond*evap;
       // update saturation value
-      real qsat = saturation_specific_humidity(tabs_in,pres_in);
+      real qsat = saturation_specific_humidity(tabs_loc,pres_in);
       // If still unsaturated evaporate more, otherwise evaporate less
       if (qv_loc< qsat) { evap1 = qc_in; }
       if (qv_loc>=qsat) { evap2 = qc_in; }
@@ -261,7 +261,6 @@ void micro_p3_proc() {
   auto &qpl                = :: qpl;
   auto &qpi                = :: qpi;
   auto &dt                 = :: dt;
-  auto &psfc               = :: psfc;
   auto &t                  = :: t;
   auto &gamaz              = :: gamaz;
   auto &tabs               = :: tabs;
@@ -376,13 +375,11 @@ void micro_p3_proc() {
                               qv(k,j,i,icrm), tabs(k,j,i,icrm), tmp_pres );
     });
     micro_p3_diagnose();
-    // update liq static energy
+    // update liq static energy - do we need this? LSE should be conserved for saturation adjustment
     parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       t(k,j+offy_s,i+offx_s,icrm) = tabs(k,j,i,icrm) + gamaz(k,icrm)
                     - fac_cond *( qcl(k,j,i,icrm) - qpl(k,j,i,icrm) )
                     - fac_sub  *( qci(k,j,i,icrm) - qpi(k,j,i,icrm) );
-      t_prev(k,j,i,icrm) = tabs(k,j,i,icrm);
-      q_prev(k,j,i,icrm) = qv(k,j,i,icrm);
     });
   }
 
@@ -609,11 +606,10 @@ void micro_p3_proc() {
     int icrm = (icol/nx)/ny;
     int k    = ilev*Spack::n + s;
     if (k < nlev) {
-      t(k,j+offy_s,i+offx_s,icrm) = prog_state.th(icol,ilev)[s]/inv_exner_in(icol,ilev)
-                    + gamaz(k,icrm)
+      tabs(k,j,i,icrm) = prog_state.th(icol,ilev)[s]/inv_exner_in(icol,ilev);
+      t(k,j+offy_s,i+offx_s,icrm) = tabs(k,j,i,icrm) + gamaz(k,icrm)
                     - fac_cond *( qcl(k,j,i,icrm) - qpl(k,j,i,icrm) )
                     - fac_sub  *( qci(k,j,i,icrm) - qpi(k,j,i,icrm) );
-      tabs(k,j,i,icrm) = prog_state.th(icol,ilev)[s]/inv_exner_in(icol,ilev);
       t_prev(k,j,i,icrm) = tabs(k,j,i,icrm);
       q_prev(k,j,i,icrm) = qv(k,j,i,icrm);
     }
