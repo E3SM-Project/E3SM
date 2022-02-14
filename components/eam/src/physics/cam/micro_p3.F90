@@ -4483,12 +4483,14 @@ subroutine ice_complete_melting(kts,kte,ktop,kbot,kdir,qi,ni,qm,latent_heat_fusi
             if(rv < 100.0_rtype)then
                ! ... Ice crystas melt into cld droplets
                qi(k) = max((1.0_rtype - frac_mlt)*del_mass,0.0_rtype)
+               qm(k) = max((1.0_rtype - frac_mlt)*del_mass,0.0_rtype)
                ni(k) = max((1.0_rtype - frac_mlt)*del_num,0.0_rtype)
                qc(k) = qc(k) + frac_mlt*del_mass
                nc(k) = nc(k) + frac_mlt*del_num
             else
                ! ... Unrimed snow melt to rain
                qi(k) = max((1.0_rtype - frac_mlt)*del_mass,0.0_rtype)
+               qm(k) = max((1.0_rtype - frac_mlt)*del_mass,0.0_rtype)
                ni(k) = max((1.0_rtype - frac_mlt)*del_num,0.0_rtype)
                qr(k) = qr(k) + frac_mlt*del_mass
                nr(k) = nr(k) + frac_mlt*del_num
@@ -4496,13 +4498,11 @@ subroutine ice_complete_melting(kts,kte,ktop,kbot,kdir,qi,ni,qm,latent_heat_fusi
          else
             ! ... Medium rimed snow melt to rain
             qi(k) = max((1.0_rtype - frac_mlt)*del_mass,0.0_rtype)
+            qm(k) = max((1.0_rtype - frac_mlt)*del_mass,0.0_rtype)
             ni(k) = max((1.0_rtype - frac_mlt)*del_num,0.0_rtype)
             qr(k) = qr(k) + frac_mlt*del_mass
             nr(k) = nr(k) + frac_mlt*del_num
          endif
-         qi(k) = 0.0_rtype
-         ni(k) = 0.0_rtype
-         qm(k) = 0.0_rtype
          th_atm(k) = th_atm(k) - frac_mlt*del_mass*latent_heat_fusion(k)/cp
       endif
    enddo k_loop_mlt
