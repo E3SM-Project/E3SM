@@ -141,6 +141,10 @@ module ocn_diagnostics_variables
       velocityForcingTend, &
       velocityPGFtend
 
+   real (kind=RKIND), dimension(:,:,:), pointer :: ugrad, vgrad, wgrad
+   real (kind=RKIND), dimension(:,:,:), pointer :: tgrad, sgrad
+   real (kind=RKIND), dimension(:,:), pointer :: Sm, Sh
+
    real (kind=RKIND), dimension(:,:), pointer :: vertDiffTopOfCell
    real (kind=RKIND), dimension(:,:,:), pointer :: vertNonLocalFlux
    integer, dimension(:,:), pointer :: rediLimiterCount
@@ -203,6 +207,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: SIvec_z0,SIvec_z1 ,SIvec_zh0,SIvec_zh1
 
    real (kind=RKIND), dimension(:,:), pointer :: nhPressureCorrection
+   real (kind=RKIND), dimension(:,:), pointer :: dynamicViscosity, uStar, yPlus
 
    !--------------------------------------------------------------------
    !
@@ -602,6 +607,16 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'velocityCoriolisTend', velocityCoriolisTend)
 
       call mpas_pool_get_array(diagnosticsPool, 'nhPressureCorrection', nhPressureCorrection)
+      call mpas_pool_get_array(diagnosticsPool, 'dynamicViscosity', dynamicViscosity)
+      call mpas_pool_get_array(diagnosticsPool, 'yPlus', yPlus)
+      call mpas_pool_get_array(diagnosticsPool, 'uStar', uStar)
+      call mpas_pool_get_array(diagnosticsPool, 'ugrad', ugrad)
+      call mpas_pool_get_array(diagnosticsPool, 'vgrad', vgrad)
+      call mpas_pool_get_array(diagnosticsPool, 'wgrad', wgrad)
+      call mpas_pool_get_array(diagnosticsPool, 'tgrad', tgrad)
+      call mpas_pool_get_array(diagnosticsPool, 'sgrad', sgrad)
+      call mpas_pool_get_array(diagnosticsPool, 'Sm', Sm)
+      call mpas_pool_get_array(diagnosticsPool, 'Sh', Sh)
 
       ! Semi-implicit Array Pointer retrievals
       if (trim(config_time_integrator) == 'split_implicit') then
@@ -751,8 +766,16 @@ contains
          !$acc                   velocityHmixTend,                &
          !$acc                   velocityVmixTend,                &
          !$acc                   velocityCoriolisTend,            &
-         !$acc                   nhPressureCorrection             &
-         !$acc                   )
+         !$acc                   nhPressureCorrection,            &
+         !$acc                   dynamicViscosity                 &
+         !$acc                   yPlus,                           &
+         !$acc                   uStar,                           &
+         !$acc                   ugrad,                           &
+         !$acc                   vgrad,                           &
+         !$acc                   wgrad,                           &
+         !$acc                   Sm,                              &
+         !$acc                   Sh                               &
+         !$acc                   ) 
       end if
       if ( trim(config_ocean_run_mode) == 'forward' ) then
          !$acc enter data copyin( &
@@ -995,7 +1018,15 @@ contains
          !$acc                   velocityHmixTend,                &
          !$acc                   velocityVmixTend,                &
          !$acc                   velocityCoriolisTend,            &
-         !$acc                   nhPressureCorrection             &
+         !$acc                   nhPressureCorrection,            &
+         !$acc                   dynamicViscosity,                &
+         !$acc                   yPlus,                           &
+         !$acc                   uStar,                           &
+         !$acc                   ugrad,                           &
+         !$acc                   vgrad,                           &
+         !$acc                   wgrad,                           &
+         !$acc                   Sm,                              &
+         !$acc                   Sh                               &
          !$acc                   )
       end if
       if ( trim(config_ocean_run_mode) == 'forward' ) then
@@ -1200,7 +1231,15 @@ contains
                  velocityHmixTend,                &
                  velocityVadvTend,                &
                  velocityPGFtend,                 &
-                 velocityForcingTend)
+                 velocityForcingTend,             &
+                 dynamicViscosity,                &
+                 yPlus,                           &
+                 uStar,                           &
+                 ugrad,                           &
+                 vgrad,                           &
+                 wgrad,                           &
+                 Sh,                              &
+                 Sm)
       end if
       if ( trim(config_ocean_run_mode) == 'forward' ) then
          nullify(wettingVelocity)
