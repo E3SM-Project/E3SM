@@ -1750,7 +1750,7 @@ module li_calving
                                         calvingVelocity, thickness, &
                                         xvelmean, yvelmean, calvingThickness, &
                                         bedTopography
-      integer, pointer :: nCells
+      integer, pointer :: nCells, timestepNumber
       integer, dimension(:,:), pointer :: edgesOnCell
       integer, dimension(:), pointer :: cellMask, nEdgesOnCell
       real (kind=RKIND) :: waterDepth
@@ -1786,6 +1786,7 @@ module li_calving
       call mpas_pool_get_array(meshPool, 'xtime', xtime)
       call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
       call mpas_pool_get_array(meshPool, 'forcingTimeStamp', forcingTimeStamp)
+      call mpas_pool_get_array(meshPool, 'timestepNumber', timestepNumber)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
@@ -1806,7 +1807,7 @@ module li_calving
       allocate(submergedArea(nCells+1))
 
       ! On a restart, set forcingTime to enable elseif statement below
-      if (config_do_restart) then
+      if ( (config_do_restart) .and. (timestepNumber == 1) ) then
          call mpas_set_time(forcingTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
          err = ior(err, err_tmp)
       endif
@@ -1815,7 +1816,7 @@ module li_calving
       stream_cursor => domain % streamManager % streams % head
       do while (associated(stream_cursor))
          ! Input stream with forcings must be called 'ismip6-gis', or this will throw an error.
-         if (trim(stream_cursor % name) == 'ismip6-gis') then
+         if ( trim(stream_cursor % name) == 'ismip6-gis' .and. (stream_cursor % valid) ) then
             streamFound = .true.
             if (xtime == simulationStartTime) then
                ! Use forcing fields and time from most recent time in file, which was read on init.
