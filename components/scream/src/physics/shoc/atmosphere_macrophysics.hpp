@@ -100,12 +100,15 @@ public:
 
         tke(i,k) = ekat::max(sp(0.004), tke(i,k));
 
-        // Tracers are updated as a group. The tracer tke acts as seperate inputs to shoc_main
-        // and is updated differently to the bundled tracers. We make a copy and pass to
-        // shoc_main so that changes to the tracer group does not alter tke values, then copy back
-        // correct tke values to tracer group in postprocessing.
+        // Tracers are updated as a group. The tracers tke and qc act as seperate inputs to shoc_main()
+        // and are therefore updated differently to the bundled tracers. Here, we make a copy if each
+        // of these tracers and pass to shoc_main() so that changes to the tracer group does not alter
+        // tke or qc  values. Then during post processing, we copy back correct values of tke and qc
+        // to tracer group in postprocessing.
         // TODO: remove *_copy views once SHOC can request a subset of tracers.
         tke_copy(i,k) = tke(i,k);
+        qc_copy(i,k)  = qc(i,k);
+
 
         qw(i,k) = qv(i,k) + qc(i,k);
 
@@ -184,10 +187,11 @@ public:
     view_1d_const        surf_latent_flux;
     sview_2d_const       surf_mom_flux;
     view_2d_const        qv;
+    view_2d_const        qc;
+    view_2d              qc_copy;
     view_2d              z_mid;
     view_2d              z_int;
     view_1d              cell_length;
-    view_2d              qc;
     view_2d              shoc_s;
     view_2d              tke;
     view_2d              tke_copy;
@@ -215,7 +219,7 @@ public:
                        const view_2d_const& omega_,
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_latent_flux_,
                        const sview_2d_const& surf_mom_flux_,
-                       const view_2d_const& qv_, const view_2d& qc_,
+                       const view_2d_const& qv_, const view_2d_const& qc_, const view_2d& qc_copy_,
                        const view_2d& tke_, const view_2d& tke_copy_,
                        const view_2d& z_mid_, const view_2d& z_int_,
                        const view_1d& cell_length_,
@@ -242,6 +246,7 @@ public:
       qv = qv_;
       // OUT
       qc = qc_;
+      qc_copy = qc_copy_;
       shoc_s = dse_;
       tke = tke_;
       tke_copy = tke_copy_;
@@ -283,8 +288,9 @@ public:
 
       const int nlev_packs = ekat::npack<Spack>(nlev);
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-        // See comment in SHOCPreprocess::operator() about the necessity of tke_copy
+        // See comment in SHOCPreprocess::operator() about the necessity of *_copy views
         tke(i,k) = tke_copy(i,k);
+        qc(i,k)  = qc_copy(i,k);
 
         qv(i,k) = qw(i,k) - qc(i,k);
 
@@ -312,7 +318,7 @@ public:
     int ncol, nlev;
     view_2d_const rrho;
     view_2d qv, qc, tke;
-    view_2d_const tke_copy, qw;
+    view_2d_const tke_copy, qc_copy, qw;
     view_2d_const qc2;
     view_2d cldfrac_liq;
     view_2d sgs_buoy_flux;
@@ -324,7 +330,7 @@ public:
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_,
                        const view_2d_const& rrho_,
-                       const view_2d& qv_, const view_2d_const& qw_, const view_2d& qc_,
+                       const view_2d& qv_, const view_2d_const& qw_, const view_2d& qc_, const view_2d_const& qc_copy_,
                        const view_2d& tke_, const view_2d_const& tke_copy_, const view_2d_const& qc2_,
                        const view_2d& cldfrac_liq_, const view_2d& sgs_buoy_flux_, const view_2d& inv_qc_relvar_,
                        const view_2d& T_mid_, const view_2d_const& dse_, const view_2d_const& z_mid_, const view_1d_const phis_)
@@ -335,6 +341,7 @@ public:
       qv = qv_;
       qw = qw_;
       qc = qc_;
+      qc_copy = qc_copy_;
       tke = tke_;
       tke_copy = tke_copy_;
       qc2 = qc2_;
@@ -352,7 +359,7 @@ public:
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
     static constexpr int num_1d_scalar     = 5;
-    static constexpr int num_2d_vector_mid = 17;
+    static constexpr int num_2d_vector_mid = 18;
     static constexpr int num_2d_vector_int = 12;
     static constexpr int num_2d_vector_tr  = 1;
 
@@ -377,6 +384,7 @@ public:
     uview_2d<Spack> qw;
     uview_2d<Spack> dse;
     uview_2d<Spack> tke_copy;
+    uview_2d<Spack> qc_copy;
     uview_2d<Spack> shoc_ql2;
     uview_2d<Spack> shoc_mix;
     uview_2d<Spack> isotropy;
