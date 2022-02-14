@@ -138,14 +138,16 @@ void get_cloud_fraction(int its, int ite, int kts, int kte, real2d& cloud_frac,
 
 }
 
+// August-Roche-Magnus formula for saturation vapor pressure 
+// https://en.wikipedia.org/wiki/Clausius%E2%80%93Clapeyron_relation#August%E2%80%93Roche%E2%80%93Magnus_formula
 YAKL_INLINE real saturation_vapor_pressure(real tabs) {
-  real tc = tabs - 273.15;
-  return 610.94 * exp( 17.625*tc / (243.04+tc) );
+  real tc = tabs - 273.15;                        // input temperature is K, so convert to Celsius
+  return 610.94 * exp( 17.625*tc / (243.04+tc) ); // return sat vapor pressure in Pa
 }
 YAKL_INLINE real saturation_specific_humidity(real tabs, real pressure) {
-  real esat = saturation_vapor_pressure( tabs );
-  real wsat = 0.622*esat / (pressure - esat);
-  real qsat = wsat/(1+wsat);
+  real esat = saturation_vapor_pressure( tabs ); // get sat vapor pressure in Pa
+  real wsat = 0.622*esat / (pressure - esat);    // saturation mixing ratio
+  real qsat = wsat/(1+wsat);                     // convert sat mixing ratio to sat specific humidity
   return qsat;
 }
 
