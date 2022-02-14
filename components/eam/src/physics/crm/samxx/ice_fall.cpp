@@ -22,10 +22,9 @@ void ice_fall() {
   int1d  kmin("kmin",ncrms);
   real4d fz  ("fz"  ,nz,ny,nx,ncrms);
 
-  int index_cloud_ice;
-
+  int index_cloud_ice = -1;
   if (strcmp(microphysics_scheme, "sam1mom") == 0) { index_cloud_ice = 0; }
-  if (strcmp(microphysics_scheme, "p3")      == 0) { index_cloud_ice = idx_qi; }
+  if(index_cloud_ice == -1) { return;}
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
@@ -51,8 +50,6 @@ void ice_fall() {
     qifall(k,icrm) = 0.0;
     tlatqi(k,icrm) = 0.0;
   });
-
-  if(index_cloud_ice == -1) { return;}
 
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; j<ny; j++) {
