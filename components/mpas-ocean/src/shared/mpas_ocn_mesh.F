@@ -158,6 +158,13 @@ module ocn_mesh
    real(kind=RKIND), public, dimension(:, :), allocatable :: &
       edgeAreaFractionOfCell
 
+   real(kind=RKIND), public, dimension(:,:), pointer :: &    
+      boundaryNormalAngle, &
+      distanceToBoundary
+
+   integer, public, dimension(:,:), pointer :: &
+      boundaryCellMask
+
    !}}}
 
    !----------------------------------------------------------------------------
@@ -490,6 +497,12 @@ contains
                                boundaryVertexTmp)
       call mpas_pool_get_array(meshPool, 'boundaryCell', &
                                boundaryCellTmp)
+      call mpas_pool_get_array(meshPool, 'boundaryCellMask',&
+                               boundaryCellMask)
+      call mpas_pool_get_array(meshPool, 'distanceToBoundary', &
+                               distanceToBoundary)
+      call mpas_pool_get_array(meshPool, 'boundaryNormalAngle', &
+                               boundaryNormalAngle)
 
       allocate ( &
             edgeMask(nVertLevels, nEdgesAll+1), &
@@ -658,7 +671,10 @@ contains
          !$acc                   edgeNormalVectors,        &
          !$acc                   localVerticalUnitVectors, &
          !$acc                   cellTangentPlane,         &
-         !$acc                   coeffs_reconstruct)
+         !$acc                   coeffs_reconstruct,       &
+         !$acc                   boundaryCellMask,         &
+         !$acc                   boundaryNormalAngle,      &
+         !$acc                   distanceToBoundary)
 
 !-------------------------------------------------------------------------------
 
@@ -788,7 +804,9 @@ contains
       !$acc                  edgeNormalVectors, &
       !$acc                  localVerticalUnitVectors, &
       !$acc                  cellTangentPlane,  &
-      !$acc                  coeffs_reconstruct)
+      !$acc                  coeffs_reconstruct,       &
+      !$acc                  boundaryNormalAngle, &
+      !$acc                  distanceToBoundary)
 
       ! Reset all scalars to zero
       onSphere  = .false.
@@ -870,7 +888,10 @@ contains
                edgeNormalVectors, &
                localVerticalUnitVectors, &
                cellTangentPlane, &
-               coeffs_reconstruct)
+               coeffs_reconstruct, &
+               boundaryCellMask, &
+               boundaryNormalAngle, &
+               distanceToBoundary)
 
 #ifdef MPAS_OPENACC
       !$acc exit data delete(edgeAreaFractionOfCell)
@@ -1219,7 +1240,10 @@ contains
       !$acc               edgeNormalVectors,        &
       !$acc               localVerticalUnitVectors, &
       !$acc               cellTangentPlane,         &
-      !$acc               coeffs_reconstruct)
+      !$acc               coeffs_reconstruct,       &
+      !$acc               boundaryCellMask,         &
+      !$acc               boundaryNormalAngle,      &
+      !$acc               distanceToBoundary)
 
 !-------------------------------------------------------------------------------
 
