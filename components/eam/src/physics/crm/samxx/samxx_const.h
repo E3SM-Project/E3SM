@@ -257,6 +257,8 @@ real constexpr qci0 = 1.e-4;
 real constexpr alphaelq = 1.e-3;
 real constexpr betaelq = 1.e-3;
 
+real constexpr shoc_min_tke = 0.004;
+
 real constexpr p3_mincld = 0.0001; // same as mincld in SCREAM
 real constexpr p3_qsmall = 1.e-14;
 
