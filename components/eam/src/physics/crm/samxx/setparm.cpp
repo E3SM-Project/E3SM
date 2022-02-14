@@ -34,9 +34,16 @@ extern "C" void setparm() {
 
   dtn = dt;
 
-  //Instead of writing function I just inline what sgs_setparm does
-  dosmagor = true;
-  advect_sgs = !dosmagor;
+  // Turbulence scheme options
+  if (strcmp(turbulence_scheme, "smag") == 0) {
+    dosmagor   = true;
+    advect_sgs = false;
+  }
+  if (strcmp(turbulence_scheme, "shoc") == 0) {
+    dosmagor   = false;
+    advect_sgs = true;
+  }
+
 
   if (rank==0) {
     masterproc = true;
