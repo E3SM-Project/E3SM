@@ -192,7 +192,7 @@ attributes to express the dependency.
 <icehmin>0.20</icehmin>
 <icehfac>1.00</icehfac>
 <icehinit>0.50</icehinit>
-<icedisp>.true.</icedisp>
+<icedisp>.false.</icedisp>
 <icehdisp>0.60</icehdisp>
 <icesln>1.00</icesln>
 <icewind>1.00</icewind>
