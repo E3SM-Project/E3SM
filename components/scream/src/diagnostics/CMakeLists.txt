@@ -1,5 +1,5 @@
 set(DIAGNOSTIC_SRCS
- potential_temperature.cpp
+  potential_temperature.cpp
 )
 
 set(DIAGNOSTIC_HEADERS

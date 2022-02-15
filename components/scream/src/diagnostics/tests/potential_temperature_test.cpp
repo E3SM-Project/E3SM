@@ -16,7 +16,7 @@ create_gm (const ekat::Comm& comm) {
 
   const int num_local_elems = 4;
   const int np = 4;
-  const int nlevs = 10;
+  const int nlevs = 32;
   const int num_local_cols = 13;
   const int num_global_cols = num_local_cols*comm.size();
 
@@ -49,22 +49,35 @@ TEST_CASE("potential_temperature_diagnostic", "") {
   // Construct the Diagnostic
   ekat::ParameterList params;
   params.set<std::string>("Diagnostic Name", "Potential Temperature");
-  params.set<std::string>("Grid Name", "Point Grid");
+  params.set<std::string>("Grid", "Point Grid");
   auto diag = std::make_shared<PotentialTemperatureDiagnostic>(comm,params);
-//  diag->set_grids(gm);
-//
-//  // Set the required fields for the diagnostic.
-//  for (const auto& req : diag->get_required_field_requests()) {
-//    Field f(req.fid);
-//    f.allocate_view();
-//    diag->set_required_field(f.get_const());
-//  }
-//
-//  // Initialize the diagnostic
-//  diag->initialize(t0,RunType::Initial);
-//  
-//  // Finalize the diagnostic
-//  diag->finalize(); 
+  diag->set_grids(gm);
+
+  // Set the required fields for the diagnostic.
+  for (const auto& req : diag->get_required_field_requests()) {
+    Field f(req.fid);
+    f.allocate_view();
+    const auto name = f.name();
+    if (name == "T_mid") {
+      f.deep_copy(270.0);
+    } else if (name == "p_mid") {
+      f.deep_copy(10000.0);
+    } else {
+      REQUIRE(false);
+    }
+    f.get_header().get_tracking().update_time_stamp(t0);
+    diag->set_required_field(f.get_const());
+    REQUIRE_THROWS(diag->set_computed_field(f));
+  }
+
+  // Initialize the diagnostic
+  diag->initialize(t0,RunType::Initial);
+
+  // Run the diagnostic
+  const auto& diag_out = diag->get_diagnostic(100.0);
+ 
+  // Finalize the diagnostic
+  diag->finalize(); 
 
 
 }

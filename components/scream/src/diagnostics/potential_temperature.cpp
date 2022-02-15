@@ -5,7 +5,7 @@ namespace scream
 
 // =========================================================================================
 PotentialTemperatureDiagnostic::PotentialTemperatureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
-  : AtmosphereProcess(comm,params)
+  : AtmosphereDiagnostic(comm,params)
 {
   // Nothing to do here
 }
@@ -59,6 +59,11 @@ void PotentialTemperatureDiagnostic::run_impl(const int dt)
   );
   Kokkos::fence();
 
+}
+// =========================================================================================
+void PotentialTemperatureDiagnostic::finalize_impl()
+{
+  // Nothing to do
 }
 // =========================================================================================
 } //namespace scream
