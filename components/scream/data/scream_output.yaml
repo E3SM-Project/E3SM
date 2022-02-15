@@ -55,9 +55,15 @@ Fields:
       - sfc_alb_dif_nir
       - sfc_alb_dif_vis
       - surf_lw_flux_up
+      - aero_g_sw
+      - aero_ssa_sw
+      - aero_tau_lw
+      - aero_tau_sw
+      - nc_activated
+      - p_mid
 
 Output Control:
-  Frequency: 12
+  Frequency: 2
   Frequency Units: Steps
   MPI Ranks in Filename: true
 ...
