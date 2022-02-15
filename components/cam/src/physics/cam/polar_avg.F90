@@ -95,7 +95,8 @@ module polar_avg
 	enddo
         
      end do
-     
+     n_pole=0
+     s_pole=0
      call shr_reprosum_calc(n_pole, sum(1:1), ln, plon, 1, &
                     gbl_count=plon, commid=mpicom)
 
@@ -179,6 +180,9 @@ module polar_avg
            end if
         enddo
      end do
+
+n_pole=0
+s_pole=0
      
      call shr_reprosum_calc(n_pole, sum(:,1), ln, plon, nlev, &
                     gbl_count=plon, commid=mpicom)
