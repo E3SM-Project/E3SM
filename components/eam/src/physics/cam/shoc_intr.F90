@@ -609,7 +609,7 @@ end function shoc_implements_cnst
    real(r8) :: minqn, rrho(pcols,pver), rrho_i(pcols,pverp)    ! minimum total cloud liquid + ice threshold    [kg/kg]
    real(r8) :: cldthresh, frac_limit
    real(r8) :: ic_limit, dum1
-   real(r8) :: inv_exner_surf
+   real(r8) :: inv_exner_surf, pot_temp
  
    real(r8) :: wpthlp_sfc(pcols), wprtp_sfc(pcols), upwp_sfc(pcols), vpwp_sfc(pcols)
    real(r8) :: wtracer_sfc(pcols,edsclr_dim)
@@ -777,7 +777,8 @@ end function shoc_implements_cnst
        um(i,k) = state1%u(i,k)
        vm(i,k) = state1%v(i,k)
        
-       thlm(i,k) = state1%t(i,k)*inv_exner(i,k)-(latvap/cpair)*state1%q(i,k,ixcldliq)
+       pot_temp = state1%t(i,k)*inv_exner(i,k)
+       thlm(i,k) = pot_temp-(pot_temp/state1%t(i,k))*(latvap/cpair)*state1%q(i,k,ixcldliq)
        thv(i,k) = state1%t(i,k)*inv_exner(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq)-state1%q(i,k,ixcldliq)) 
  
        tke_zt(i,k) = max(tke_tol,state1%q(i,k,ixtke))

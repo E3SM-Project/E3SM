@@ -3801,7 +3801,7 @@ subroutine update_host_dse(&
 
   do k=1,nlev
     do i=1,shcol
-      temp = (thlm(i,k)+(lcond/cp)*shoc_ql(i,k))/inv_exner(i,k)
+      temp = (thlm(i,k)/inv_exner(i,k))+(lcond/cp)*shoc_ql(i,k)
       host_dse(i,k) = cp*temp+ggr*zt_grid(i,k)+phis(i)
     enddo
   enddo
