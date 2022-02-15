@@ -24,6 +24,7 @@ module ocn_vel_hmix_del2
    use ocn_constants
    use ocn_config
    use ocn_mesh
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -137,29 +138,29 @@ contains
       !$acc            dcEdgeInv, dvEdgeInv, visc2)
 #else
 
-!      if(config_use_two_equation_turbulence_model) then
-!         !$omp parallel
-!         !$omp do schedule(runtime) private(cell1, cell2, k)
-!         do iEdge = 1, nEdgesOwned
-!            cell1 = cellsOnEdge(1,iEdge)
-!            cell2 = cellsOnEdge(2,iEdge)
-!            do k = 1, maxLevelEdgeTop(iEdge)
-!               viscosity(k,iEdge) = 0.5_RKIND*(vertDiffTopOfCell(k,cell1) + vertDiffTopOfCell(k,cell2))
-!            end do
-!         end do
-!         !$omp end do
-!         !$omp end parallel
-!      else
-!         !$omp parallel
-!         !$omp do schedule(runtime) private(k)
-!         do iEdge = 1, nEdgesOwned
-!            do k = 1, maxLevelEdgeTop(iEdge)
-!               viscosity(k,iEdge) = viscDel2 * meshScalingDel2(iEdge)
-!            end do
-!         end do
-!         !$omp end do
-!         !$omp end parallel
-!      end if
+      if(config_use_two_equation_turbulence_model) then
+         !$omp parallel
+         !$omp do schedule(runtime) private(cell1, cell2, k)
+         do iEdge = 1, nEdgesOwned
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            do k = 1, maxLevelEdgeTop(iEdge)
+               viscosity(k,iEdge) = 0.5_RKIND*(vertDiffTopOfCell(k,cell1) + vertDiffTopOfCell(k,cell2))
+            end do
+         end do
+         !$omp end do
+         !$omp end parallel
+      else
+         !$omp parallel
+         !$omp do schedule(runtime) private(k)
+         do iEdge = 1, nEdgesOwned
+            do k = 1, maxLevelEdgeTop(iEdge)
+               viscosity(k,iEdge) = viscDel2 * meshScalingDel2(iEdge)
+            end do
+         end do
+         !$omp end do
+         !$omp end parallel
+      end if
 
       !$omp parallel
       !$omp do schedule(runtime) &
@@ -175,7 +176,7 @@ contains
          dcEdgeInv = 1.0_RKIND / dcEdge(iEdge)
          dvEdgeInv = 1.0_RKIND / dvEdge(iEdge)
 
-         visc2 =  viscDel2*meshScalingDel2(iEdge)
+         !visc2 =  viscDel2*meshScalingDel2(iEdge)
 
          do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
 
@@ -190,7 +191,8 @@ contains
                    -(relVort(k,vertex2)-relVort(k,vertex1))*dvEdgeInv
 
             tend(k,iEdge) = tend(k,iEdge) + &
-                            edgeMask(k,iEdge)*visc2*uDiff
+                            !edgeMask(k,iEdge)*visc2*uDiff
+                            edgeMask(k,iEdge)*viscosity(k,iEdge)*uDiff
 
          end do
       end do

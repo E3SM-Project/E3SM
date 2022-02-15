@@ -29,6 +29,8 @@ module ocn_tracer_hmix_del2
 
    use ocn_constants
    use ocn_config
+   use ocn_mesh
+   use ocn_diagnostics_variables
 
    implicit none
    private
@@ -57,7 +59,7 @@ module ocn_tracer_hmix_del2
 
    logical :: del2On
    real (kind=RKIND) :: eddyDiff2
-
+   real (kind=RKIND), dimension(:,:), allocatable :: eddyDiff
 
 !***********************************************************************
 
@@ -115,7 +117,7 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell, iEdge, cell1, cell2
-      integer :: i, k, iTracer, num_tracers, nCells
+      integer :: i, k, iTracer, num_tracers, nCells, nEdges
       integer, dimension(:), pointer :: nCellsArray
 
       integer, dimension(:), pointer :: minLevelEdgeBot, maxLevelEdgeTop, nEdgesOnCell
@@ -149,6 +151,36 @@ contains
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
       nCells = nCellsArray( 1 )
+      nEdges = nEdgesHalo(3)
+
+      allocate(eddyDiff(nVertLevels,nEdges))
+
+      if(config_use_two_equation_turbulence_model) then
+         !$omp parallel
+         !$omp do schedule(runtime) private(k, i, iEdge, cell1, cell2)
+         do iCell = 1, nCells
+            do i = 1, nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(i, iCell)
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               do k = 1, maxLevelEdgeTop(iEdge)
+                  eddyDiff(k,iEdge) = 0.5_RKIND*(vertDiffTopOfCell(k,cell1) + vertDiffTopOfCell(k,cell2))
+               end do
+            end do
+         end do
+         !$omp end do
+         !$omp end parallel
+         else
+         !$omp parallel
+         !$omp do schedule(runtime) private(k)
+         do iEdge = 1, nEdges
+            do k = 1, maxLevelEdgeTop(iEdge)
+               eddyDiff(k,iEdge) = eddyDiff2 * meshScalingDel2(iEdge)
+            end do
+         end do
+         !$omp end do
+         !$omp end parallel
+      end if
 
       !
       ! compute a boundary mask to enforce insulating boundary conditions in the horizontal
@@ -164,7 +196,8 @@ contains
           cell1 = cellsOnEdge(1,iEdge)
           cell2 = cellsOnEdge(2,iEdge)
 
-          r_tmp = meshScalingDel2(iEdge) * eddyDiff2 * dvEdge(iEdge) / dcEdge(iEdge)
+          !r_tmp = meshScalingDel2(iEdge) * eddyDiff2 * dvEdge(iEdge) / dcEdge(iEdge)
+          r_tmp = dvEdge(iEdge) / dcEdge(iEdge)
 
           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
             do iTracer = 1, num_tracers
@@ -172,7 +205,7 @@ contains
               tracer_turb_flux = tracers(iTracer, k, cell2) - tracers(iTracer, k, cell1)
 
               ! div(h \kappa_2 \nabla \phi) at cell center
-              flux = layerThickEdgeMean(k, iEdge) * tracer_turb_flux * r_tmp
+              flux = layerThickEdgeMean(k, iEdge) * tracer_turb_flux * r_tmp * eddyDiff(k,iEdge)
 
               tend(iTracer, k, iCell) = tend(iTracer, k, iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
             end do
@@ -183,6 +216,7 @@ contains
       !$omp end do
       !$omp end parallel
 
+      deallocate(eddyDiff)
       call mpas_timer_stop("tracer del2")
 
    !--------------------------------------------------------------------

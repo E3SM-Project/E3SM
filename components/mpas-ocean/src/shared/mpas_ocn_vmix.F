@@ -142,6 +142,8 @@ contains
 
       err = 0
 
+      if (config_use_two_equation_turbulence_model) return
+
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
       else
