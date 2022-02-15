@@ -135,37 +135,37 @@ contains
 
       allocate(eddyViscArr(nVertLevels+1, nEdges))
 
-!      if(config_use_two_equation_turbulence_model) then
-!         ! Put viscosity into an array
-!         !$omp parallel
-!         !$omp schedule(runtime) private(k,i,iEdge,cell1,cell2)
-!         do iCell = 1, nCells
-!            do i = 1, nEdgesOnCell(iCell)
-!               iEdge = edgesOnCell(i, iCell)
-!               cell1 = cellsOnEdge(1,iEdge)
-!               cell2 = cellsOnEdge(2,iEdge)
-!               do k=1,maxLevelEdgeTop(iEdge)-1
-!                  eddyViscArr(k,iEdge) = 0.25_RKIND*(vertViscTopOfCell(k,cell1) + &
-!                                      vertViscTopOfCell(k,cell2) + vertViscTopOfCell(k+1,cell1) + &
-!                                      vertViscTopOfCell(k+1,cell2))
-!               end do
-!               eddyViscArr(maxLevelEdgeTop(iEdge), iEdge) = eddyViscArr(maxLevelEdgeTop(iEdge)-1,iEdge)
-!               eddyViscArr(maxLevelEdgeTop(iEdge)+1, iEdge) = 0.0_RKIND
-!            end do
-!         end do
-!         !$omp end do
-!         !$omp end parallel
-!      else !constant del2
-!         !$omp parallel
-!         !$omp schedule(runtime) private(k)
-!         do iEdge=1,nEdges
-!            do k=1,maxLevelEdgeTop(iEdge)
-!               eddyViscArr(k,iEdge) = meshScalingDel2(iEdge)*eddyVisc2
-!            end do
-!         end do
-!         !$omp end do
-!         !$omp end parallel
-!      end if
+      if(config_use_two_equation_turbulence_model) then
+         ! Put viscosity into an array
+         !$omp parallel
+         !$omp schedule(runtime) private(k,i,iEdge,cell1,cell2)
+         do iCell = 1, nCells
+            do i = 1, nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(i, iCell)
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               do k=1,maxLevelEdgeTop(iEdge)-1
+                  eddyViscArr(k,iEdge) = 0.25_RKIND*(vertViscTopOfCell(k,cell1) + &
+                                      vertViscTopOfCell(k,cell2) + vertViscTopOfCell(k+1,cell1) + &
+                                      vertViscTopOfCell(k+1,cell2))
+               end do
+               eddyViscArr(maxLevelEdgeTop(iEdge), iEdge) = eddyViscArr(maxLevelEdgeTop(iEdge)-1,iEdge)
+               eddyViscArr(maxLevelEdgeTop(iEdge)+1, iEdge) = 0.0_RKIND
+            end do
+         end do
+         !$omp end do
+         !$omp end parallel
+      else !constant del2
+         !$omp parallel
+         !$omp schedule(runtime) private(k)
+         do iEdge=1,nEdges
+            do k=1,maxLevelEdgeTop(iEdge)
+               eddyViscArr(k,iEdge) = meshScalingDel2(iEdge)*eddyVisc2
+            end do
+         end do
+         !$omp end do
+         !$omp end parallel
+      end if
 
       !
       ! compute a boundary mask to enforce insulating boundary conditions in the horizontal
@@ -181,8 +181,8 @@ contains
           cell1 = cellsOnEdge(1,iEdge)
           cell2 = cellsOnEdge(2,iEdge)
 
-          !r_tmp = dvEdge(iEdge) / dcEdge(iEdge)
-          r_tmp = meshScalingDel2(iEdge) * eddyVisc2 * dvEdge(iEdge) / dcEdge(iEdge)
+          !r_tmp = meshScalingDel2(iEdge) * eddyVisc2 * dvEdge(iEdge) / dcEdge(iEdge)
+          r_tmp = dvEdge(iEdge) / dcEdge(iEdge)
 
           do k = 2, maxLevelEdgeTop(iEdge)
               ! \kappa_2 \nabla \phi on edge
@@ -192,8 +192,8 @@ contains
               flux = 0.5_RKIND*(layerThicknessEdge(k, iEdge) + layerThicknessEdge(k-1,iEdge)) &
                         * vvel_turb_flux * r_tmp
 
-              !tend(k, iCell) = tend(k, iCell) - eddyViscArr(k,iEdge) * edgeSignOnCell(i, iCell) * flux * invAreaCell
-              tend(k, iCell) = tend(k, iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
+              !tend(k, iCell) = tend(k, iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
+              tend(k, iCell) = tend(k, iCell) - eddyViscArr(k,iEdge) * edgeSignOnCell(i, iCell) * flux * invAreaCell
           end do
         end do
       end do

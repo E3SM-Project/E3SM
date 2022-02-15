@@ -140,7 +140,7 @@ mpas_ocn_vel_vadv.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
 mpas_ocn_vel_hmix.o: mpas_ocn_vel_hmix_del2.o mpas_ocn_vel_hmix_leith.o mpas_ocn_vel_hmix_del4.o mpas_ocn_constants.o mpas_ocn_config.o
 
-mpas_ocn_vel_hmix_del2.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
+mpas_ocn_vel_hmix_del2.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_diagnostics_variables.o
 
 mpas_ocn_vel_hmix_leith.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
@@ -172,7 +172,7 @@ mpas_ocn_nonhydrostatic_pressure_solve.o: mpas_ocn_constants.o mpas_ocn_config.o
 
 mpas_ocn_tracer_hmix.o: mpas_ocn_tracer_hmix_del2.o mpas_ocn_tracer_hmix_del4.o mpas_ocn_tracer_hmix_redi.o mpas_ocn_constants.o mpas_ocn_config.o
 
-mpas_ocn_tracer_hmix_del2.o: mpas_ocn_constants.o mpas_ocn_config.o
+mpas_ocn_tracer_hmix_del2.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_diagnostics_variables.o
 
 mpas_ocn_tracer_hmix_del4.o: mpas_ocn_constants.o mpas_ocn_config.o
 
