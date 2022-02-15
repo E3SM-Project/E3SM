@@ -1,10 +1,3 @@
-if (compile_threaded)
-  string(APPEND CFLAGS " -fopenmp")
-  string(APPEND FFLAGS " -fopenmp")
-  string(APPEND CXXFLAGS " -fopenmp")
-  string(APPEND LDFLAGS " -fopenmp")
-endif()
-
 string(APPEND FFLAGS " -fallow-argument-mismatch -Wno-implicit-interface -fallow-invalid-boz -fno-tree-pta ")
 
 if (NOT DEBUG)
