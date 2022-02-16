@@ -84,6 +84,7 @@ module ocn_forward_mode
    use ocn_submesoscale_eddies
    use ocn_stokes_drift 
    use ocn_compute_nonhydrostatic_pressure
+   use ocn_two_equation_model
 
    use ocn_high_freq_thickness_hmix_del2
 
@@ -328,6 +329,11 @@ module ocn_forward_mode
         call ocn_nonhydrostatic_solver_init(domain % dminfo % comm, err_tmp)
         ierr = ior(ierr, err_tmp)
       endif
+
+      if(config_use_two_equation_turbulence_model) then
+        call ocn_two_equation_init(domain, err_tmp)
+        ierr = ior(ierr, err_tmp)
+      end if
 
       call ocn_init_routines_block(block, dt, ierr)
 
