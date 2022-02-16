@@ -130,54 +130,10 @@
 
   <!-- MMF aquaplanet compsets -->
   <compset>
-    <alias>F-MMF1-AQP1</alias>
+    <alias>F-AQUA-MMF1</alias>
     <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
   </compset>
-  <compset>
-    <alias>F-MMF1-AQP2</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP2_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQP3</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP3_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQP4</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP4_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQP5</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP5_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQP6</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP6_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQP7</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP7_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQP8</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP8_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQP9</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP9_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQP10</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP10_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQPFILE</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F-MMFXX-AQP1</alias>
-    <lname>2000_EAM%MMFXX-AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
-  </compset>
+  
 
   <!-- *********************************** -->
   <!-- Radiative-Convective Equilibrium (RCE) -->
@@ -188,13 +144,8 @@
   </compset>
 
   <compset>
-    <alias>F-MMF1-RCEMIP</alias>
+    <alias>F-RCE-MMF1</alias>
     <lname>2000_EAM%MMF1-RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F-MMFXX-RCEMIP</alias>
-    <lname>2000_EAM%MMFXX-RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- *********************************** -->
@@ -229,46 +180,24 @@
 
   <!-- ********** F compsets ********** -->
   <compset>
-    <alias>F-MMF1</alias>
+    <alias>F-2010-MMF1</alias>
     <lname>2010_EAM%MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMFXX</alias>
-    <lname>2010_EAM%MMFXX_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMFOMP</alias>
-    <lname>2010_EAM%MMFOMP_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF2-ECPP</alias>
-    <lname>2010_EAM%MMF2-ECPP_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
   
   <!-- MMF compsets for stand-alone single column mode of EAM -->
   <compset>
-    <alias>F-MMF1-SCM-ARM97</alias>
+    <alias>F-SCM-MMF1-ARM97</alias>
     <lname>AR97_EAM%MMF1-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
   <compset>
-    <alias>F-MMFXX-SCM-ARM97</alias>
-    <lname>AR97_EAM%MMFXX-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-  
-  <compset>
-    <alias>F-MMF1-SCM-RICO</alias>
+    <alias>F-SCM-MMF1-RICO</alias>
     <lname>RICO_EAM%MMF1-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMFXX-SCM-RICO</alias>
-    <lname>RICO_EAM%MMFXX-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- ********** F compsets with transient SST (AMIP) ********** -->
-
   <compset>
-    <alias>F20TR-MMFXX</alias>
-    <lname>20TR_EAM%MMFXX-CMIP6_ELM%SP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+    <alias>F-20TR-MMF1</alias>
+    <lname>20TR_EAM%MMF1-CMIP6_ELM%SP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <!-- ******************************* -->
