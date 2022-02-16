@@ -136,7 +136,7 @@ contains
       do i = 1 , nx
         do icrm = 1 , ncrms
           cloudtopheight(icrm,i,j) = 0.
-          cloudtoptemp(icrm,i,j) = sfc_tabs(icrm,i,j)
+          cloudtoptemp(icrm,i,j) = tsfc(icrm,i,j)
           echotopheight(icrm,i,j) = 0.
         enddo
       enddo

@@ -144,7 +144,7 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
             ! compute suface buoyancy flux
             bbb = 1.+epsv*qv(icrm,i,j,k)
             a_prod_bu_vert(icrm,i,j,0) = bbb*bet(icrm,k)*fluxbt(icrm,i,j) + &
-                                         bet(icrm,k)*epsv*(sfc_tabs(icrm,i,j))*fluxbq(icrm,i,j) 
+                                         bet(icrm,k)*epsv*(tsfc(icrm,i,j))*fluxbq(icrm,i,j) 
             grd=dz(icrm)*adz(icrm,k)
             Pr=1. 
             Ce1=Ce/0.7*0.19
@@ -178,7 +178,7 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
          ! but the error is small, and it's cheaper than another saturation mixing ratio computation.
          bbb = 1.+epsv*qv(icrm,i,j,k)
          a_prod_bu_vert(icrm,i,j,0) = bbb*bet(icrm,k)*fluxbt(icrm,i,j) + &
-                                      bet(icrm,k)*epsv*(sfc_tabs(icrm,i,j))*fluxbq(icrm,i,j)
+                                      bet(icrm,k)*epsv*(tsfc(icrm,i,j))*fluxbq(icrm,i,j)
          ! back buoy_sgs out from buoyancy flux, a_prod_bu = - (tkh(icrm,i,j,k)+0.001)*buoy_sgs
          buoy_sgs_vert(icrm,i,j,0) = - a_prod_bu_vert(icrm,i,j,0)/(tkh(icrm,i,j,k)+0.001D0)
       end do ! icrm

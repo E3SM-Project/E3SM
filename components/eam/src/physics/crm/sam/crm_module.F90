@@ -416,7 +416,7 @@ subroutine crm( ncrms, dt_gl, plev,       &
         fluxbt(icrm,i,j)   = crm_input%fluxt00(icrm)/rhow(icrm,1)
         fluxbq(icrm,i,j)   = crm_input%fluxq00(icrm)/rhow(icrm,1)
 #endif
-        sfc_tabs(icrm,i,j) = crm_input%tsfc(icrm)
+        tsfc(icrm,i,j) = crm_input%tsfc(icrm)
       end do
     end do
   end do
