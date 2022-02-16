@@ -17,9 +17,15 @@ void pre_timeloop() {
   auto &bflx                     = :: bflx;
   auto &wnd                      = :: wnd;
   auto &crm_input_bflxls         = :: crm_input_bflxls;
+  auto &crm_input_fluxt00        = :: crm_input_fluxt00;
+  auto &crm_input_fluxq00        = :: crm_input_fluxq00;
+  auto &crm_input_tsfc           = :: crm_input_tsfc;
   auto &crm_input_wndls          = :: crm_input_wndls;
   auto &fcor                     = :: fcor;
   auto &fcorz                    = :: fcorz;
+  auto &fluxbt                   = :: fluxbt;
+  auto &fluxbq                   = :: fluxbq;
+  auto &tsfc                     = :: tsfc;
   auto &zi                       = :: zi;
   auto &crm_input_zint           = :: crm_input_zint;
   auto &presi                    = :: presi;

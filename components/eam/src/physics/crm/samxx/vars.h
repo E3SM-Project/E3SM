@@ -54,7 +54,9 @@ extern real5d micro_field   ; // Index as sgs_field_diag(l , k , offy_s    +j , 
 void perturb_arrays();
 
 
-void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, real *crm_input_zmid_p, real *crm_input_zint_p, 
+void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, 
+                            real *crm_input_fluxt00_p, real *crm_input_fluxq00_p, real *crm_input_tsfc_p,
+                            real *crm_input_zmid_p, real *crm_input_zint_p, 
                             real *crm_input_pmid_p, real *crm_input_pint_p, real *crm_input_pdel_p, real *crm_input_ul_p, real *crm_input_vl_p, 
                             real *crm_input_tl_p, real *crm_input_qccl_p, real *crm_input_qiil_p, real *crm_input_ql_p, real *crm_input_tau00_p,
 #ifdef MMF_ESMT
@@ -438,6 +440,9 @@ extern real1d bflx            ;
 
 extern real1d crm_input_bflxls; 
 extern real1d crm_input_wndls ;
+extern real1d crm_input_fluxt00;
+extern real1d crm_input_fluxq00;
+extern real1d crm_input_tsfc  ;
 extern real2d crm_input_zmid  ;
 extern real2d crm_input_zint  ;
 extern real2d crm_input_pmid  ;
