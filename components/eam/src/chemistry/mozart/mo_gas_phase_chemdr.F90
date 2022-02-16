@@ -428,7 +428,11 @@ contains
     real(r8) :: vmr_old(ncol,pver,gas_pcnst)
     real(r8) :: vmr_old2(ncol,pver,gas_pcnst)
     real(r8) :: tmp
- 
+    
+    ! for explicit chem prodcution and loss
+    real(r8)     ::  chem_prod(ncol,pver,gas_pcnst)         ! xported species (vmr)
+    real(r8)     ::  chem_loss(ncol,pver,gas_pcnst)         ! xported species (vmr)
+
     ! flags for MMF configuration
     logical :: use_MMF, use_ECPP
 
@@ -948,7 +952,7 @@ contains
        vmr_old2(:ncol,:,:) = vmr(:ncol,:,:)
     endif
     call t_startf('exp_sol')
-    call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol )
+    call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol, chem_prod, chem_loss)
     call t_stopf('exp_sol')
 
     ! reset vmr to pre-exp_sol values for stratospheric boxes
@@ -974,6 +978,10 @@ contains
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDE' )
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DMSE' )
+         call gaschmmass_diags( lchnk, ncol, chem_prod(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DCMP' )
+         call gaschmmass_diags( lchnk, ncol, chem_loss(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DCML' )
        endif
        if ( history_gaschmbudget_2D_levels ) then
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
@@ -986,6 +994,26 @@ contains
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDE_L4' )
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDE_trop', tropFlagInt )
+         call gaschmmass_diags( lchnk, ncol, chem_prod(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DCMP_L1' )
+         call gaschmmass_diags( lchnk, ncol, chem_prod(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DCMP_L2' )
+         call gaschmmass_diags( lchnk, ncol, chem_prod(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DCMP_L3' )
+         call gaschmmass_diags( lchnk, ncol, chem_prod(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DCMP_L4' )
+         call gaschmmass_diags( lchnk, ncol, chem_prod(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DCMP_trop', tropFlagInt )
+         call gaschmmass_diags( lchnk, ncol, chem_loss(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DCML_L1' )
+         call gaschmmass_diags( lchnk, ncol, chem_loss(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DCML_L2' )
+         call gaschmmass_diags( lchnk, ncol, chem_loss(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DCML_L3' )
+         call gaschmmass_diags( lchnk, ncol, chem_loss(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DCML_L4' )
+         call gaschmmass_diags( lchnk, ncol, chem_loss(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DCML_trop', tropFlagInt )
        endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
