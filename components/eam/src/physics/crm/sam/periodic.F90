@@ -24,25 +24,7 @@ contains
     if(flag.eq.0) then
       call bound_exchange(ncrms,u,dimx1_u,dimx2_u,dimy1_u,dimy2_u,nzm,1,1,1,1,1)
       call bound_exchange(ncrms,v,dimx1_v,dimx2_v,dimy1_v,dimy2_v,nzm,1,1,1,1,2)
-      ! use w at the top level  - 0s anyway - to exchange the sst boundaries (for
-      ! surface fluxes call
-      !$acc parallel loop collapse(3) async(asyncid)
-      do j = 1 , ny
-        do i = 1 , nx
-          do icrm = 1 , ncrms
-            w(icrm,i,j,nz) = sstxy(icrm,i,j)
-          enddo
-        enddo
-      enddo
       call bound_exchange(ncrms,w,dimx1_w,dimx2_w,dimy1_w,dimy2_w,nz,1,1,1,1,3)
-      !$acc parallel loop collapse(3) async(asyncid)
-      do j = 1-YES3D , ny+YES3D
-        do i = 0 , nx+1
-          do icrm = 1 , ncrms
-            if ( i >= 0 .and. i <= nx   .and. j >= 1-YES3D .and. j <= ny       ) sstxy(icrm,i,j) = w(icrm,i,j,nz)
-          enddo
-        enddo
-      enddo
       !$acc parallel loop collapse(3) async(asyncid)
       do j = 1-YES3D , ny+YES3D
         do i = 0 , nx+1
