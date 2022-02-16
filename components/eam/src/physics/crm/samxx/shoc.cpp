@@ -250,7 +250,7 @@ void shoc_proc() {
   array_to_view(wthv.myData,         ncol, nlev, wthv_sec_2d);
   array_to_view(shoc_cldfrac.myData, ncol, nlev, shoc_cldfrac_2d);
   array_to_view(shoc_hwind.myData, ncol, 2, nlev, shoc_hwind_3d);
-  array_to_view(qtracers.myData, ncol, num_shoc_tracers, npack, qtracers_3d);
+  array_to_view(qtracers.myData, ncol, num_shoc_tracers, nlev, qtracers_3d);
 
   SHOC::SHOCInputOutput shoc_input_output{host_dse_2d, tke_2d, thetal_2d, shoc_qw_2d,
                                          shoc_hwind_3d, wthv_sec_2d, qtracers_3d,
