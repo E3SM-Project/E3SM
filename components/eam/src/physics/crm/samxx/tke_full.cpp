@@ -59,6 +59,52 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
     buoy_sgs_vert(nzm,j,i,icrm) = 0.0;
   });
 
+#ifdef MMF_TKE_MOD
+  if ((nstep==1) and (icycle==1)) {
+    // At start of simulation, make sure that subgrid TKE
+    // is non-zero at surface if surface buoyancy fluxes are positive.
+    // If they are, compute the TKE implied by local equilibrium between
+    // turbulence production by the surface fluxes and dissipation. Take
+    // the initial TKE in the lowest level to be the larger of that and the 
+    // initial value. Since the present values of TKE, eddy viscosity and eddy
+    // diffusivity are used in computing the new values, it is
+    // important for them not to be zero initially if the buoyancy
+    // flux is non-zero initially.
+    parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+      // compute suface buoyancy flux
+      bbb = 1.+epsv*qv(0,j,i,icrm)
+      a_prod_bu_vert(0,j,i,icrm) = bbb*bet(0,icrm)*fluxbt(j,i,icrm) + 
+                                   bet(0,icrm)*epsv*(tsfc(j,i,icrm))*fluxbq(j,i,icrm);
+      grd = dz(icrm)*adz(0,icrm);
+      Pr = 1.;
+      Ce1 = Ce/0.7*0.19;
+      Ce2 = Ce/0.7*0.51;
+      Cee = Ce1+Ce2;
+      // Choose the subgrid TKE to be the larger of the initial value or
+      // that which satisfies local equilibrium, buoyant production = dissipation
+      // or a_prod_bu = Cee/grd * tke^(3/2).
+      // NOTE: We're ignoring shear production here.
+      real tke_tmp = ( grd/Cee * max( 1.D-20, 0.5D0*a_prod_bu_vert(0,j,i,icrm) ) )**(2.D0/3.D0);
+      tke(ind_tke,0,j+offy_s,i+offx_s,icrm) = max( tke(ind_tke,0,j+offy_s,i+offx_s,icrm), tke_tmp );
+      // eddy viscosity = Ck*grd * sqrt(tke) --- analogous for Smagorinksy.
+      tk(ind_tk,0,j+offy_d,i+offx_d,icrm) = Ck*grd * sqrt( tke(ind_tke,0,j+offy_s,i+offx_s,icrm) );
+      // eddy diffusivity = Pr * eddy viscosity
+      tkh(ind_tkh,0,j+offy_d,i+offx_d,icrm) = Pr*tk(0,j,i,icrm);
+    });
+  }
+
+  // compute subgrid buoyancy flux at w-levels, starting with surface buoyancy flux
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+    // Use surface temperature and vapor mixing ratio. This is slightly inconsistent, 
+    // but the error is small, and it's cheaper than another saturation mixing ratio computation.
+    bbb = 1.+epsv*qv(0,j,i,icrm);
+    a_prod_bu_vert(0,j,i,icrm) = bbb*bet(0,icrm)*fluxbt(j,i,icrm) + 
+                                bet(0,icrm)*epsv*(tsfc(j,i,icrm))*fluxbq(j,i,icrm);
+    // back buoy_sgs out from buoyancy flux, a_prod_bu = - (tkh(k,j,i,icrm)+0.001)*buoy_sgs
+    buoy_sgs_vert(0,j,i,icrm) = - a_prod_bu_vert(0,j,i,icrm)/(tkh(0,j,i,icrm)+0.001D0);
+  });
+#endif
+
   // for (int k=0; k<nzm-1; k++) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
