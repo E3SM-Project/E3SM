@@ -104,28 +104,39 @@ if [ $skip_testing -eq 0 ]; then
     echo "SCREAM Stand-Alone tests were skipped, since the Github label 'AT: Skip Stand-Alone Testing' was found.\n"
   fi
 
-  # scripts-tests is pretty expensive, so we limit this testing to mappy
-  if [[ $test_scripts == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
-    # JGF: I'm not sure there's much value in these dry-run comparisons
-    # since we aren't changing HEADs
-    ./scripts/scripts-tests -g -m $SCREAM_MACHINE
-    if [[ $? != 0 ]]; then fails=$fails+1; fi
-    ./scripts/scripts-tests -c -m $SCREAM_MACHINE
-    if [[ $? != 0 ]]; then fails=$fails+1; fi
+  # Run expensive tests on mappy only
+  if [[ "$SCREAM_MACHINE" == "mappy" ]]; then
 
-    ./scripts/scripts-tests -f -m $SCREAM_MACHINE
-    if [[ $? != 0 ]]; then fails=$fails+1; fi
-  fi
+    # Run scripts-tests
+    if [[ $test_scripts == 1 ]]; then
+      # JGF: I'm not sure there's much value in these dry-run comparisons
+      # since we aren't changing HEADs
+      ./scripts/scripts-tests -g -m $SCREAM_MACHINE
+      if [[ $? != 0 ]]; then fails=$fails+1; fi
+      ./scripts/scripts-tests -c -m $SCREAM_MACHINE
+      if [[ $? != 0 ]]; then fails=$fails+1; fi
 
-  # Run SCREAM CIME suite
-  if [[ $test_v0 == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
-    ../../cime/scripts/create_test e3sm_scream -c -b master
-    if [[ $? != 0 ]]; then fails=$fails+1; fi
-  fi
+      ./scripts/scripts-tests -f -m $SCREAM_MACHINE
+      if [[ $? != 0 ]]; then fails=$fails+1; fi
+    fi
 
-  if [[ $test_v1 == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
-    ../../cime/scripts/create_test e3sm_scream_v1 --compiler=gnu9 -c -b master
-    if [[ $? != 0 ]]; then fails=$fails+1; fi
+    if [[ $test_v0 == 1 || $test_v1 == 1 ]]; then
+      # AT CIME runs may need an upstream merge in order to ensure that any DIFFs
+      # are caused by this PR and not simply because the PR is too far behind master
+      if [ -n "$PULLREQUESTNUM" ]; then
+        ./scripts/git-merge-ref origin/master
+      fi
+
+      if [[ $test_v0 == 1 ]]; then
+        ../../cime/scripts/create_test e3sm_scream -c -b master
+        if [[ $? != 0 ]]; then fails=$fails+1; fi
+      fi
+
+      if [[ $test_v1 == 1 ]]; then
+        ../../cime/scripts/create_test e3sm_scream_v1 --compiler=gnu9 -c -b master
+        if [[ $? != 0 ]]; then fails=$fails+1; fi
+      fi
+    fi
   fi
 
   if [[ $fails > 0 ]]; then
