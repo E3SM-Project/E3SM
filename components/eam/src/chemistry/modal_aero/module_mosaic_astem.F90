@@ -48,6 +48,9 @@
   use module_mosaic_ext, only: aerosol_phase_state,calc_dry_n_wet_aerosol_props,   &
        aerosolmtc
   
+!  use module_mosaic_soa_vbs, only: vbs_soa_dynamic_solver 
+  use modal_aero_data, only: nsoag
+
 ! use module_print_aer,  only: print_aer
 
   

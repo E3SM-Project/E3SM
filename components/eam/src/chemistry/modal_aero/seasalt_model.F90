@@ -30,14 +30,16 @@ module seasalt_model
   public :: init_ocean_data           ! initialize ocean data variables
   public :: ocean_data_readnl         ! read ocean data namelist
 
+! qzr added || defined MODAL_AERO_4MODE_SOA_MOM with ( defined
+! MODAL_AERO_4MODE_MOM) && (defined MOSAIC_SPECIES)
 #if  ( defined MODAL_AERO_9MODE )
   integer, parameter :: nslt = 4
-#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM ) && ( defined MOSAIC_SPECIES ) )
   integer, parameter :: nslt = 9
 #else
   integer, parameter :: nslt = max(3,ntot_amode-3)
 #endif
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM ) && ( defined MOSAIC_SPECIES ) )
   integer, parameter :: nnum = 3
 #else
   integer, parameter :: nnum = nslt
@@ -58,7 +60,7 @@ module seasalt_model
        (/ 'ncl_a1', 'ncl_a2', 'ncl_a3', &
           'num_a1', 'num_a2', 'num_a3'/)
   integer, parameter :: om_num_ind = 0
-#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM ) && ( defined MOSAIC_SPECIES ) )
   integer, parameter :: nslt_om = 3
   integer, parameter :: nnum_om = 1
   integer, parameter :: om_num_modes = 3
@@ -157,7 +159,7 @@ module seasalt_model
    integer             :: fmoa = 1
 
 ! TODO SMB: Implement better mechanism for setting this switch.
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM)
    logical :: has_mam_mom = .true.
 #else
    logical :: has_mam_mom = .false.
@@ -174,6 +176,8 @@ module seasalt_model
     real(r8), dimension(n_org_burrows), parameter :: & ! mass per sq. m at saturation
          g_per_m2_org = (/ 0.1376_r8, 0.00219_r8, 0.002593_r8 /) ! Mw_org / a_org
 
+! qzr added || defined MODAL_AERO_4MODE_SOA_MOM with ( defined
+! MODAL_AERO_4MODE_MOM) && (defined MOSAIC_SPECIES)
 #if  ( defined MODAL_AERO_7MODE )
     real(r8), parameter :: sst_sz_range_lo (nslt+nslt_om) = (/ 0.08e-6_r8, 0.02e-6_r8, 0.3e-6_r8,  1.0e-6_r8 /)  ! accu, aitken, fine, coarse
     real(r8), parameter :: sst_sz_range_hi (nslt+nslt_om) = (/ 0.3e-6_r8,  0.08e-6_r8, 1.0e-6_r8, 10.0e-6_r8 /)
@@ -193,7 +197,7 @@ module seasalt_model
          (/ 0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8 /)  ! accu, aitken, coarse
     real(r8), parameter :: sst_sz_range_hi (nslt+nslt_om) = &
          (/ 1.0e-6_r8,   0.08e-6_r8, 10.0e-6_r8 /)  ! accu, aitken, coarse
-#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM ) && ( defined MOSAIC_SPECIES ) )
     real(r8), parameter :: sst_sz_range_lo (nslt+nslt_om) = &
          (/ 0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8, &  ! accu, aitken, coarse
             0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8, &

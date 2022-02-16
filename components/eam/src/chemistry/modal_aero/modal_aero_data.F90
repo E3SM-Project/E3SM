@@ -54,13 +54,14 @@
     !
     ! definitions for aerosol chemical components
     !
+        !qzr added || defined MODAL_AERO_4MODE_SOA_MOM with && MOSAIC_SPECIES
 #if ( defined MODAL_AERO_9MODE )
   integer, parameter ::  ntot_aspectype = 11
   character(len=*),parameter ::  specname_amode(ntot_aspectype) = (/ 'sulfate   ', 'ammonium  ', 'nitrate   ', &
        'p-organic ', 's-organic ', 'black-c   ', &
        'seasalt   ', 'dust      ', &
        'm-poly    ', 'm-prot    ', 'm-lip     ' /)
-#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM ) && ( defined MOSAIC_SPECIES ) )
   integer, parameter ::  ntot_aspectype = 12
   character(len=*),parameter ::  specname_amode(ntot_aspectype) = (/ 'sulfate   ', 'ammonium  ', 'nitrate   ', &
        'p-organic ', 's-organic ', 'black-c   ', &
@@ -82,6 +83,7 @@
     !specdens_amode(:ntot_aspectype) = (/1770.0,1770.0,1770.0, 1000.0, 1000.0, 1700.0,1900.0,2600.0 /)
 
     ! rce - 06-aug-2007 - changed specmw for almost everything to match mozart
+      ! qzr addded || defined MODAL_AERO_4MODE_SOA_MOM with && MOSAIC_SPECIES
 #if ( defined MODAL_AERO_7MODE )
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/  96.0_r8,  18.0_r8,  62.0_r8, &
        12.0_r8,   12.0_r8,   12.0_r8,  58.5_r8, 135.0_r8 /)
@@ -89,7 +91,7 @@
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/  96.0_r8,  18.0_r8,  62.0_r8, &
        12.0_r8,   12.0_r8,   12.0_r8,  58.5_r8, 135.0_r8, &
        250092.0_r8, 66528.0_r8,  284.0_r8 /)
-#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM ) && ( defined MOSAIC_SPECIES ) )
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/  96.0_r8,  18.0_r8,  62.0_r8, &
        12.0_r8,   12.0_r8,   12.0_r8,  23.0_r8, 135.0_r8, &
        250092.0_r8,  40.0_r8, 60.0_r8, 35.5_r8 /)
@@ -141,12 +143,12 @@
          'aitken          ', &
          'coarse          '/)
 #endif
-
+    ! qzr added || defined MODAL_AERO_4MODE_SOA_MOM WITH && MOSAIC_SPECIES
 #if ( defined MODAL_AERO_7MODE )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 4, 2, 3, 3, 3, 3 /)  ! SS
 #elif ( defined MODAL_AERO_9MODE )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 9, 7, 5, 3, 3, 3, 3, 3, 3/)  ! SS
-#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) && ( defined MOSAIC_SPECIES ) )
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM) && ( defined RAIN_EVAP_TO_COARSE_AERO ) && ( defined MOSAIC_SPECIES ) )
     integer, parameter :: nspec_amode(ntot_amode)           = (/12,10,12, 3 /)
 #elif ( ( defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_4MODE_SOA_MOM ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 7, 3 /)

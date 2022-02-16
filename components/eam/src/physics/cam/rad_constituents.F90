@@ -207,7 +207,8 @@ end interface
 
 logical :: verbose = .true.
 character(len=1), parameter :: nl = achar(10)
-
+! qzr added || defined MODAL_AERO_4MODE_SOA_MOM with MODAL_AERO_4MODE_MOM &&
+! MOSAIC_SPECIES
 #if ( defined MODAL_AERO_9MODE )
 integer, parameter :: num_mode_types = 10
 integer, parameter :: num_spec_types = 11
@@ -219,7 +220,7 @@ character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
    'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
    's-organic', 'black-c  ', 'seasalt  ', 'dust     ', &
    'm-poly   ', 'm-prot   ', 'm-lip    ' /)
-#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM ) && ( defined MOSAIC_SPECIES ) )
 integer, parameter :: num_mode_types = 8
 integer, parameter :: num_spec_types = 12
 character(len=14), parameter :: mode_type_names(num_mode_types) = (/ &

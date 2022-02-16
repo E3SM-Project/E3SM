@@ -231,7 +231,9 @@ subroutine modal_aer_opt_init()
    call addfld ('AODBC',horiz_only,    'A','  ','Aerosol optical depth 550 nm from BC', flag_xyfill=.true.)
    call addfld ('AODSS',horiz_only,    'A','  ','Aerosol optical depth 550 nm from seasalt', flag_xyfill=.true.)
    call addfld ('AODABSBC',horiz_only, 'A','  ','Aerosol absorption optical depth 550 nm from BC', flag_xyfill=.true.)
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+! qzr added || defined MODAL_AERO_4MODE_SOA_MOM with MODAL_AERO_4MODE_MOM &&
+! MOSAIC_SPECIES
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM ) && ( defined MOSAIC_SPECIES ) )
    call addfld ('AODMOM',horiz_only,    'A','  ','Aerosol optical depth 550 nm from marine organic', flag_xyfill=.true.)
    call addfld ('AODNO3',horiz_only,    'A','  ','Aerosol optical depth 550 nm from NO3', flag_xyfill=.true.)
    call addfld ('AODNH4',horiz_only,    'A','  ','Aerosol optical depth 550 nm from NH4', flag_xyfill=.true.)
@@ -251,7 +253,9 @@ subroutine modal_aer_opt_init()
    call addfld ('BURDENSOA',horiz_only,  'A','kg/m2'    ,'SOA aerosol burden'         , flag_xyfill=.true.)
    call addfld ('BURDENBC',horiz_only,  'A','kg/m2'     ,'Black carbon aerosol burden', flag_xyfill=.true.)
    call addfld ('BURDENSEASALT',horiz_only,  'A','kg/m2','Seasalt aerosol burden'     , flag_xyfill=.true.)
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+! qzr added || defined MODAL_AERO_4MODE_SOA_MOM WITH MODAL_AERO_4MODE_MOM &&
+! MOSAIC_SPECIES
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM) && ( defined MOSAIC_SPECIES ) )
    call addfld ('BURDENMOM',horiz_only,  'A','kg/m2'    ,'Marine organic aerosol burden', flag_xyfill=.true.)
    call addfld ('BURDENNO3',horiz_only,  'A','kg/m2'    ,'Nitrate aerosol burden',        flag_xyfill=.true.)
    call addfld ('BURDENNH4',horiz_only,  'A','kg/m2'    ,'Ammonium aerosol burden',       flag_xyfill=.true.)
@@ -264,7 +268,8 @@ subroutine modal_aer_opt_init()
 #endif
    call addfld ('SSAVIS',horiz_only,    'A','  ','Aerosol singel-scatter albedo', flag_xyfill=.true.)
 
-
+    ! qzr added || defined MODAL_AERO_4MODE_SOA_MOM with MODAL_AERO_4MODE_MOM &&
+     ! MOSAIC_SPECIES
    if (history_amwg) then
       call add_default ('AODDUST1'     , 1, ' ')
       call add_default ('AODDUST3'     , 1, ' ')
@@ -280,7 +285,7 @@ subroutine modal_aer_opt_init()
       call add_default ('BURDENSOA'    , 1, ' ')
       call add_default ('BURDENBC'     , 1, ' ')
       call add_default ('BURDENSEASALT', 1, ' ')
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM ) && ( defined MOSAIC_SPECIES ) )
       call add_default ('BURDENMOM', 1, ' ')
       call add_default ('BURDENNO3', 1, ' ')
       call add_default ('BURDENNH4', 1, ' ')
@@ -327,7 +332,9 @@ subroutine modal_aer_opt_init()
       call add_default ('BURDENSOA'    , 1, ' ')
       call add_default ('BURDENBC'     , 1, ' ')
       call add_default ('BURDENSEASALT', 1, ' ')
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+!qzr added || defined MODAL_AERO_4MODE_SOA_MOM with MODAL_AERO_4MODE_MOM &&
+!MOSAIC_SPECIES
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM) && ( defined MOSAIC_SPECIES ) )
       call add_default ('BURDENNO3'    , 1, ' ')
       call add_default ('BURDENNH4'    , 1, ' ')
 #elif ( defined MODAL_AERO_4MODE_MOM || (defined MODAL_AERO_4MODE_SOA_MOM ) )
@@ -515,7 +522,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    real(r8) :: burden(pcols)
    real(r8) :: burdendust(pcols), burdenso4(pcols), burdenbc(pcols), &
                burdenpom(pcols), burdensoa(pcols), burdenseasalt(pcols)
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+! qzr added || defined MODAL_AERO_4MODE_SOA_MOM with MODAL_AERO_4MODE_MOM && MOSAIC_SPECIES
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM) && ( defined MOSAIC_SPECIES ) )
    real(r8) :: burdenmom(pcols), burdenno3(pcols), burdennh4(pcols)
 #elif ( defined MODAL_AERO_4MODE_MOM || (defined MODAL_AERO_4MODE_SOA_MOM ) )
    real(r8) :: burdenmom(pcols)
@@ -529,7 +537,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    real(r8) :: specrefr, specrefi
    real(r8) :: scatdust(pcols), scatso4(pcols), scatbc(pcols), &
                scatpom(pcols), scatsoa(pcols), scatseasalt(pcols)
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+!qzr added || defined MODAL_AERO_4MODE_SOA_MOM with MODAL_AERO_4MODE_MOM && MOSAIC_SPECIES
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM) && ( defined MOSAIC_SPECIES ) )
    real(r8) :: scatmom(pcols), scatno3(pcols), scatnh4(pcols)
 #elif ( defined MODAL_AERO_4MODE_MOM || (defined MODAL_AERO_4MODE_SOA_MOM ) )
    real(r8) :: scatmom(pcols)
@@ -538,7 +547,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 #endif
    real(r8) :: absdust(pcols), absso4(pcols), absbc(pcols), &
                abspom(pcols), abssoa(pcols), absseasalt(pcols)
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+! qzr added || defined MODAL_AERO_4MODE_SOA_MOM with MODAL_AERO_4MODE_MOM && MOSAIC_SPECIES
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM ) && ( defined MOSAIC_SPECIES ) )
    real(r8) :: absmom(pcols), absno3(pcols), absnh4(pcols)
 #elif ( defined MODAL_AERO_4MODE_MOM || (defined MODAL_AERO_4MODE_SOA_MOM ) )
    real(r8) :: absmom(pcols)
@@ -547,7 +557,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 #endif
    real(r8) :: hygrodust(pcols), hygroso4(pcols), hygrobc(pcols), &
                hygropom(pcols), hygrosoa(pcols), hygroseasalt(pcols)
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+!qzr added || defined MODAL_AERO_4MODE_SOA_MOM with MODAL_AERO_4MODE_MOM && MOSAIC_SPECIES
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM ) && ( defined MOSAIC_SPECIES ) )
    real(r8) :: hygromom(pcols), hygrono3(pcols), hygronh4(pcols)
 #elif ( defined MODAL_AERO_4MODE_MOM  || (defined MODAL_AERO_4MODE_SOA_MOM ))
    real(r8) :: hygromom(pcols)
@@ -561,7 +572,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    ! total species AOD
    real(r8) :: dustaod(pcols), so4aod(pcols), bcaod(pcols), &
                pomaod(pcols), soaaod(pcols), seasaltaod(pcols)
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+!qzr added || defined MODAL_AERO_4MODE_SOA_MOM with MODAL_AERO_4MODE_MOM && MOSAIC_SPECIES
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM ) && ( defined MOSAIC_SPECIES ) )
    real(r8) :: momaod(pcols), no3aod(pcols), nh4aod(pcols)
 #elif ( defined MODAL_AERO_4MODE_MOM || (defined MODAL_AERO_4MODE_SOA_MOM ) )
    real(r8) :: momaod(pcols)
@@ -618,7 +630,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    burdensoa(:ncol)      = 0.0_r8
    burdenbc(:ncol)       = 0.0_r8
    burdenseasalt(:ncol)  = 0.0_r8
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+! qzr added || defined MODAL_AERO_4MODE_SOA_MOM with MODAL_AERO_4MODE_MOM && MOSAIC_SPECIES
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM ) && ( defined MOSAIC_SPECIES ) )
    burdenmom(:ncol)      = 0.0_r8
    burdenno3(:ncol)      = 0.0_r8
    burdennh4(:ncol)      = 0.0_r8
@@ -726,7 +739,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
             scatseasalt(:ncol)  = 0._r8
             absseasalt(:ncol)   = 0._r8
             hygroseasalt(:ncol) = 0._r8
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+! qzr added || defined MODAL_AERO_4MODE_SOA_MOM with MODAL_AERO_4MODE_MOM && MOSAIC_SPECIES
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM ) && ( defined MOSAIC_SPECIES ) )
             scatmom(:ncol)      = 0._r8
             absmom(:ncol)       = 0._r8
             hygromom(:ncol)     = 0._r8
@@ -1005,7 +1019,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
                      scath2o        = watervol(i)*real(crefwsw(isw))
                      absh2o         = -watervol(i)*aimag(crefwsw(isw))
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+! qzr added || defined MODAL_AERO_4MODE_SOA_MOM with MODAL_AERO_4MODE_MOM && MOSAIC_SPECIES
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM ) && ( defined MOSAIC_SPECIES ) )
                      sumscat        = scatso4(i) + scatpom(i) + scatsoa(i) + scatbc(i) + &
                                       scatdust(i) + scatseasalt(i) + scath2o + &
                                       scatmom(i) + scatno3(i) + scatnh4(i)
@@ -1061,8 +1076,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
                      scatseasalt(i) = (scatseasalt(i) + scath2o*hygroseasalt(i)/sumhygro)/sumscat
                      absseasalt(i)  = (absseasalt(i) + absh2o*hygroseasalt(i)/sumhygro)/sumabs
-
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+! qzr added || defined MODAL_AERO_4MODE_SOA_MOM with MODAL_AERO_4MODE_MOM && MOSIAC_SPECIES
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM) && ( defined MOSAIC_SPECIES ) )
                      scatmom(i)     = (scatmom(i) + scath2o*hygromom(i)/sumhygro)/sumscat
                      absmom(i)      = (absmom(i) + absh2o*hygromom(i)/sumhygro)/sumabs
 
@@ -1106,8 +1121,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
                      aodc           = (absseasalt(i)*(1.0_r8 - palb(i)) + palb(i)*scatseasalt(i))*dopaer(i)
                      seasaltaod(i)  = seasaltaod(i) + aodc
-
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+! qzr added || defined MODAL_AERO_4MODE_SOA_MOM with MODAL_AERO_4MODE_MOM && MOSAIC_SPECIES
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM) && ( defined MOSAIC_SPECIES ) )
                      aodc           = (absmom(i)*(1.0_r8 - palb(i)) + palb(i)*scatmom(i))*dopaer(i)
                      momaod(i)      = momaod(i) + aodc
 
@@ -1287,7 +1302,9 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
          pomaod(idxnite(i))     = fillvalue
          soaaod(idxnite(i))     = fillvalue
          bcaod(idxnite(i))      = fillvalue
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+! qzr added || defined MODAL_AERO_4MODE_SOA_MOM with MODAL_AERO_4MODE_MOM &&
+! MOSAIC_SPECIES
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM) && ( defined MOSAIC_SPECIES ) )
          momaod(idxnite(i))     = fillvalue
          no3aod(idxnite(i))     = fillvalue
          nh4aod(idxnite(i))     = fillvalue
@@ -1311,8 +1328,9 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       call outfld('BURDENSOA' ,    burdensoa,     pcols, lchnk)
       call outfld('BURDENBC'  ,    burdenbc,      pcols, lchnk)
       call outfld('BURDENSEASALT', burdenseasalt, pcols, lchnk)
-
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+!qzr added || defined MODAL_AERO_4MODE_SOA_MOM with MODAL_AERO_4MODE_MOM &&
+!MOSAIC_SPECIES
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM) && ( defined MOSAIC_SPECIES ) )
       call outfld('BURDENMOM',     burdenmom,     pcols, lchnk)
       call outfld('BURDENNO3',     burdenno3,     pcols, lchnk)
       call outfld('BURDENNH4',     burdennh4,     pcols, lchnk)
@@ -1332,8 +1350,9 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
       call outfld('AODSOA',        soaaod,        pcols, lchnk)
       call outfld('AODBC',         bcaod,         pcols, lchnk)
       call outfld('AODSS',         seasaltaod,    pcols, lchnk)
-
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+!qzr added || defined MODAL_AERO_4MODE_SOA_MOM with MODAL_AERO_4MODE_MOM &&
+!MOSAIC_SPECIES
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM) && ( defined MOSAIC_SPECIES ) )
       call outfld('AODMOM',        momaod,        pcols, lchnk)
       call outfld('AODNO3',        no3aod,        pcols, lchnk)
       call outfld('AODNH4',        nh4aod,        pcols, lchnk)

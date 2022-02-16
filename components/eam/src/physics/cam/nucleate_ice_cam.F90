@@ -800,7 +800,9 @@ subroutine nucleate_ice_cam_calc( &
                   else
                      ! 3-mode -- needs weighting for dust since dust and seasalt
                      !           are combined in the "coarse" mode type
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) && ( defined MOSAIC_SPECIES ) )
+                        ! qzr added || defined MODAL_AERO_4MODE_SOA_MOM with &&
+                        ! MOSAIC_SPECIES
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM) && ( defined RAIN_EVAP_TO_COARSE_AERO ) && ( defined MOSAIC_SPECIES ) )
                      wght = dmc/(ssmc + dmc + so4mc + no3mc + nh4mc + bcmc + pommc + soamc + mommc)
 #elif ((defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM )&& defined RAIN_EVAP_TO_COARSE_AERO )
                      wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
