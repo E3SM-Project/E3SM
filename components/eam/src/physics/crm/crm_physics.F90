@@ -1034,6 +1034,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             crm_input%fluxv00(icrm) = wsy_tmp(i)         ! N/m2
             crm_input%fluxt00(icrm) = shf_tmp(i)/cpair   ! K Kg/ (m2 s)
             crm_input%fluxq00(icrm) = lhf_tmp(i)/latvap  ! Kg/(m2 s)
+            crm_input%tsfc(icrm)    = cam_in(c)%ts(i)
             crm_input%wndls(icrm)   = sqrt(state(c)%u(i,pver)**2 + state(c)%v(i,pver)**2)
          end do
 

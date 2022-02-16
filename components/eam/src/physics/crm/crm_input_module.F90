@@ -33,6 +33,7 @@ module crm_input_module
       real(crm_rknd), allocatable :: tau00  (:)          ! large-scale surface stress (N/m2)
       real(crm_rknd), allocatable :: wndls  (:)          ! large-scale surface wind (m/s)
       real(crm_rknd), allocatable :: bflxls (:)          ! large-scale surface buoyancy flux (K m/s)
+      real(crm_rknd), allocatable :: tsfc   (:)          ! surface temperature [K]
       real(crm_rknd), allocatable :: fluxu00(:)          ! surface momenent fluxes [N/m2]
       real(crm_rknd), allocatable :: fluxv00(:)          ! surface momenent fluxes [N/m2]
       real(crm_rknd), allocatable :: fluxt00(:)          ! surface sensible heat fluxes [K Kg/ (m2 s)]
@@ -76,6 +77,7 @@ contains
       if (.not. allocated(input%tau00))    allocate(input%tau00(ncrms))
       if (.not. allocated(input%wndls))    allocate(input%wndls(ncrms))
       if (.not. allocated(input%bflxls))   allocate(input%bflxls(ncrms))
+      if (.not. allocated(input%tsfc))     allocate(input%tsfc(ncrms))
       if (.not. allocated(input%fluxu00))  allocate(input%fluxu00(ncrms))
       if (.not. allocated(input%fluxv00))  allocate(input%fluxv00(ncrms))
       if (.not. allocated(input%fluxt00))  allocate(input%fluxt00(ncrms))
@@ -98,6 +100,7 @@ contains
       call prefetch(input%tau00)
       call prefetch(input%wndls)
       call prefetch(input%bflxls)
+      call prefetch(input%tsfc)
       call prefetch(input%fluxu00)
       call prefetch(input%fluxv00)
       call prefetch(input%fluxt00)
@@ -141,6 +144,7 @@ contains
       input%tau00   = 0
       input%wndls   = 0
       input%bflxls  = 0
+      input%tsfc    = 0
       input%fluxu00 = 0
       input%fluxv00 = 0
       input%fluxt00 = 0
@@ -184,6 +188,7 @@ contains
       if (allocated(input%tau00))   deallocate(input%tau00)
       if (allocated(input%wndls))   deallocate(input%wndls)
       if (allocated(input%bflxls))  deallocate(input%bflxls)
+      if (allocated(input%tsfc))    deallocate(input%tsfc)
       if (allocated(input%fluxu00)) deallocate(input%fluxu00)
       if (allocated(input%fluxv00)) deallocate(input%fluxv00)
       if (allocated(input%fluxt00)) deallocate(input%fluxt00)
