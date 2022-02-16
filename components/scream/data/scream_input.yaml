@@ -26,7 +26,7 @@ Atmosphere Driver:
       Enable Input Fields Checks: false
       Grid: Physics GLL
       SPA Remap File: none 
-      SPA Data File: @SCREAM_INPUT_ROOT@/scream/spa_file_unified_and_complete_ne4_scream.nc
+      SPA Data File: ${DIN_LOC_ROOT}/scream/spa_file_unified_and_complete_ne4_scream.nc
       # TODO: Fix the SPA remap file and data file to be dependent on the grid resolution.  For now we hardcode the ne4 case.
     Process 4:
       Process Name: P3
