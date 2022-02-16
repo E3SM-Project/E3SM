@@ -685,7 +685,8 @@ subroutine vertical_diffusion_tend( ztodt    , state    ,                  &
   shflx_tmp = shflx
   cflx_tmp = cflx
 
-#if defined( MMF_FLUX_BYPASS )
+#ifdef MMF_CRM_SFC_FLUX
+  ! zero out these fluxes - they are now added in the CRM as a boundary flux
   shflx_tmp(:)  = 0.
   cflx_tmp(:,1) = 0.
 #endif

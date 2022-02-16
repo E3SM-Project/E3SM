@@ -406,6 +406,22 @@ subroutine crm( ncrms, dt_gl, plev,       &
     enddo
   endif
 
+#ifdef MMF_TKE_MOD
+  ! surface fluxes and temperature
+  !$acc parallel loop collapse(3) async(asyncid)
+  do j=1,ny
+    do i=1,nx
+      do icrm=1,ncrms
+#ifdef MMF_CRM_SFC_FLUX
+        fluxbt(icrm,i,j)   = crm_input%fluxt00(icrm)/rhow(icrm,1)
+        fluxbq(icrm,i,j)   = crm_input%fluxq00(icrm)/rhow(icrm,1)
+#endif
+        sfc_tabs(icrm,i,j) = crm_input%tsfc(icrm)
+      end do
+    end do
+  end do
+#endif
+
   ! Populate microphysics array from crm_state
   !$acc parallel loop collapse(4) async(asyncid)
   do k = 1 , nzm
