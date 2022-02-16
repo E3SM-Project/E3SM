@@ -141,7 +141,7 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
     do j = 1,ny
       do i = 1,nx
          do icrm = 1 , ncrms
-            !bloss: compute suface buoyancy flux
+            ! compute suface buoyancy flux
             bbb = 1.+epsv*qv(icrm,i,j,k)
             a_prod_bu_vert(icrm,i,j,0) = bbb*bet(icrm,k)*fluxbt(icrm,i,j) + &
                                          bet(icrm,k)*epsv*(sfc_tabs(icrm,i,j))*fluxbq(icrm,i,j) 
@@ -161,10 +161,10 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
             tk(icrm,i,j,1) = Ck*grd * sqrt( tke(icrm,i,j,1) )
             ! eddy diffusivity = Pr * eddy viscosity
             tkh(icrm,i,j,1) = Pr*tk(icrm,i,j,1)
-         end do! icrm   
-      end do
-    end do
-   end if ! if(nstep.eq.1.AND.icycle.eq.1)
+         end do ! icrm   
+      end do ! i
+    end do ! j
+  end if ! if(nstep.eq.1.AND.icycle.eq.1)
 
   !-----------------------------------------------------------------------
   ! compute subgrid buoyancy flux at w-levels, starting with surface buoyancy flux
@@ -174,7 +174,6 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
   do j = 1,ny
     do i = 1,nx
       do icrm = 1 , ncrms
-         !bloss: 
          ! Use surface temperature and vapor mixing ratio. This is slightly inconsistent, 
          ! but the error is small, and it's cheaper than another saturation mixing ratio computation.
          bbb = 1.+epsv*qv(icrm,i,j,k)
@@ -182,9 +181,9 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
                                       bet(icrm,k)*epsv*(sfc_tabs(icrm,i,j))*fluxbq(icrm,i,j)
          ! back buoy_sgs out from buoyancy flux, a_prod_bu = - (tkh(icrm,i,j,k)+0.001)*buoy_sgs
          buoy_sgs_vert(icrm,i,j,0) = - a_prod_bu_vert(icrm,i,j,0)/(tkh(icrm,i,j,k)+0.001D0)
-      end do! icrm
-    end do
-  end do
+      end do ! icrm
+    end do ! i
+  end do ! j
 #endif
 
   !-----------------------------------------------------------------------
