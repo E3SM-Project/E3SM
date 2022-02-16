@@ -136,20 +136,19 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
     ! diffusivity are used in computing the new values, it is
     ! important for them not to be zero initially if the buoyancy
     ! flux is non-zero initially.
-    k = 1
     !$acc parallel loop collapse(3) async(asyncid)
     do j = 1,ny
       do i = 1,nx
          do icrm = 1 , ncrms
             ! compute suface buoyancy flux
-            bbb = 1.+epsv*qv(icrm,i,j,k)
-            a_prod_bu_vert(icrm,i,j,0) = bbb*bet(icrm,k)*fluxbt(icrm,i,j) + &
-                                         bet(icrm,k)*epsv*(tsfc(icrm,i,j))*fluxbq(icrm,i,j) 
-            grd=dz(icrm)*adz(icrm,k)
-            Pr=1. 
-            Ce1=Ce/0.7*0.19
-            Ce2=Ce/0.7*0.51
-            Cee=Ce1+Ce2
+            bbb = 1.+epsv*qv(icrm,i,j,1)
+            a_prod_bu_vert(icrm,i,j,0) = bbb*bet(icrm,1)*fluxbt(icrm,i,j) + &
+                                         bet(icrm,1)*epsv*(tsfc(icrm,i,j))*fluxbq(icrm,i,j) 
+            grd = dz(icrm)*adz(icrm,1)
+            Pr = 1. 
+            Ce1 = Ce/0.7*0.19
+            Ce2 = Ce/0.7*0.51
+            Cee = Ce1+Ce2
             ! Choose the subgrid TKE to be the larger of the initial value or
             ! that which satisfies local equilibrium, buoyant production = dissipation
             ! or a_prod_bu = Cee/grd * tke^(3/2).
@@ -169,18 +168,17 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
   !-----------------------------------------------------------------------
   ! compute subgrid buoyancy flux at w-levels, starting with surface buoyancy flux
   !-----------------------------------------------------------------------
-  k = 1
   !$acc parallel loop collapse(3) async(asyncid)
   do j = 1,ny
     do i = 1,nx
       do icrm = 1 , ncrms
          ! Use surface temperature and vapor mixing ratio. This is slightly inconsistent, 
          ! but the error is small, and it's cheaper than another saturation mixing ratio computation.
-         bbb = 1.+epsv*qv(icrm,i,j,k)
-         a_prod_bu_vert(icrm,i,j,0) = bbb*bet(icrm,k)*fluxbt(icrm,i,j) + &
-                                      bet(icrm,k)*epsv*(tsfc(icrm,i,j))*fluxbq(icrm,i,j)
+         bbb = 1.+epsv*qv(icrm,i,j,1)
+         a_prod_bu_vert(icrm,i,j,0) = bbb*bet(icrm,1)*fluxbt(icrm,i,j) + &
+                                      bet(icrm,1)*epsv*(tsfc(icrm,i,j))*fluxbq(icrm,i,j)
          ! back buoy_sgs out from buoyancy flux, a_prod_bu = - (tkh(icrm,i,j,k)+0.001)*buoy_sgs
-         buoy_sgs_vert(icrm,i,j,0) = - a_prod_bu_vert(icrm,i,j,0)/(tkh(icrm,i,j,k)+0.001D0)
+         buoy_sgs_vert(icrm,i,j,0) = - a_prod_bu_vert(icrm,i,j,0)/(tkh(icrm,i,j,1)+0.001D0)
       end do ! icrm
     end do ! i
   end do ! j
