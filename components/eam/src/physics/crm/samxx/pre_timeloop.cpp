@@ -311,6 +311,17 @@ void pre_timeloop() {
     }
   });
 
+#ifdef MMF_TKE_MOD
+  // surface fluxes and temperature
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+#ifdef MMF_CRM_SFC_FLUX
+    fluxbt(j,i,icrm)   = crm_input_fluxt00(icrm)/rhow(0,icrm)
+    fluxbq(j,i,icrm)   = crm_input_fluxq00(icrm)/rhow(0,icrm)
+#endif
+    tsfc(j,i,icrm) = crm_input_tsfc(icrm)
+  });
+#endif
+
   // Populate microphysics array from crm_state
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; j<ny; j++) {
