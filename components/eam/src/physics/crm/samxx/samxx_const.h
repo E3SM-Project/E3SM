@@ -81,10 +81,6 @@ int  constexpr dimx1_d = 0           ;
 int  constexpr dimx2_d = nxp1        ;
 int  constexpr dimy1_d = 1-YES3D     ;
 int  constexpr dimy2_d = nyp1        ;
-int  constexpr dimx1_sstxy = 0       ;
-int  constexpr dimx2_sstxy = nx      ;
-int  constexpr dimy1_sstxy = 1-YES3D ;
-int  constexpr dimy2_sstxy = ny      ;
 int  constexpr ncols = nx*ny;
 int  constexpr nadams = 3;
 
@@ -93,7 +89,6 @@ int  constexpr dimx_v     = dimx2_v - dimx1_v   + 1;
 int  constexpr dimx_w     = dimx2_w - dimx1_w   + 1;
 int  constexpr dimx_s     = dimx2_s - dimx1_s   + 1;
 int  constexpr dimx_d     = dimx2_d - dimx1_d   + 1;
-int  constexpr dimx_sstxy = dimx2_sstxy - dimx1_sstxy + 1;
 
 int  constexpr dimy_u     = dimy2_u - dimy1_u   + 1;
 int  constexpr dimy_v     = dimy2_v - dimy1_v   + 1;
@@ -102,7 +97,6 @@ int  constexpr dimy_s     = dimy2_s - dimy1_s   + 1;
 int  constexpr dimy_d     = dimy2_d - dimy1_d   + 1;
 int  constexpr dimy_p     = ny      - (1-YES3D) + 1;
 int  constexpr dimy_tk2   = nyp1    - (1-YES3D) + 1;
-int  constexpr dimy_sstxy = ny      - (1-YES3D) + 1;
 int  constexpr dimy_fcory = ny      - 0         + 1;
 
 int  constexpr offx_u     = 1 - dimx1_u  ;
@@ -110,7 +104,6 @@ int  constexpr offx_v     = 1 - dimx1_v  ;
 int  constexpr offx_w     = 1 - dimx1_w  ;
 int  constexpr offx_s     = 1 - dimx1_s  ;
 int  constexpr offx_d     = 1 - dimx1_d  ;
-int  constexpr offx_sstxy = 1 - dimx1_sstxy;
 int  constexpr offx_p     = 1 - 0;
 
 int  constexpr offy_u     = 1 - dimy1_u  ;
@@ -120,7 +113,6 @@ int  constexpr offy_s     = 1 - dimy1_s  ;
 int  constexpr offy_d     = 1 - dimy1_d  ;
 int  constexpr offy_p     = 1 - (1-YES3D);
 int  constexpr offy_tk2   = 1 - (1-YES3D);
-int  constexpr offy_sstxy = 1 - (1-YES3D);
 int  constexpr offy_fcory = 1 - 0        ;
 
 

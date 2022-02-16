@@ -147,7 +147,7 @@ void allocate() {
   ttend            = real2d( "ttend           "                        , nzm    , ncrms ); 
   utend            = real2d( "utend           "                        , nzm    , ncrms ); 
   vtend            = real2d( "vtend           "                        , nzm    , ncrms ); 
-  sstxy            = real3d( "sstxy           "           , dimy_sstxy , nxp1   , ncrms ); 
+  tsfc             = real3d( "tsfc            "           , ny         , nx     , ncrms ); 
   fcory            = real2d( "fcory           "                        , ny+1   , ncrms ); 
   fcorzy           = real2d( "fcorzy          "                        , ny     , ncrms ); 
   latitude         = real3d( "latitude        "           , ny         , nx     , ncrms ); 
@@ -327,7 +327,7 @@ void allocate() {
   yakl::memset(ttend             ,0.);
   yakl::memset(utend             ,0.);
   yakl::memset(vtend             ,0.);
-  yakl::memset(sstxy             ,0.);
+  yakl::memset(tsfc              ,0.);
   yakl::memset(fcory             ,0.);
   yakl::memset(fcorzy            ,0.);
   yakl::memset(latitude          ,0.);
@@ -612,7 +612,7 @@ void finalize() {
   ttend            = real2d();
   utend            = real2d();
   vtend            = real2d();
-  sstxy            = real3d();
+  tsfc             = real3d();
   fcory            = real2d();
   fcorzy           = real2d();
   latitude         = real3d();
@@ -1466,7 +1466,7 @@ void perturb_arrays() {
     perturb( ttend             , mag );
     perturb( utend             , mag );
     perturb( vtend             , mag );
-    perturb( sstxy             , mag );
+    perturb( tsfc              , mag );
     perturb( fcory             , mag );
     perturb( fcorzy            , mag );
     perturb( latitude          , mag );
@@ -1606,7 +1606,7 @@ real2d qtend           ;
 real2d ttend           ;
 real2d utend           ;
 real2d vtend           ;
-real3d sstxy           ;
+real3d tsfc            ;
 real2d fcory           ;
 real2d fcorzy          ;
 real3d latitude        ;

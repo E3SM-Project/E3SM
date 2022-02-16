@@ -34,7 +34,7 @@ void diagnose() {
   auto &cloudtopheight = ::cloudtopheight;
   auto &cloudtoptemp   = ::cloudtoptemp;
   auto &echotopheight  = ::echotopheight;
-  auto &sstxy          = ::sstxy;
+  auto &tsfc           = ::tsfc;
   auto &z              = ::z;
   auto &cld_xy         = ::cld_xy;
   auto &qv0            = ::qv0;
@@ -146,7 +146,7 @@ void diagnose() {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     cloudtopheight(j,i,icrm) = 0.0;
-    cloudtoptemp(j,i,icrm) = sstxy(j+offy_sstxy,i+offx_sstxy,icrm);
+    cloudtoptemp(j,i,icrm) = tsfc(j,i,icrm);
     echotopheight(j,i,icrm) = 0.0;
   });
 

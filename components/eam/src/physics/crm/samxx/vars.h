@@ -45,7 +45,6 @@ extern real4d v_esmt        ; // Index as v_esmt        (    k , offy_s    +j , 
 #endif
 extern real4d tke2          ; // Index as tke2          (    k , offy_s +j , offx_s +i , icrm )
 extern real4d tk2           ; // Index as tk2           (    k , offy_tk2(or offy_d)  +j , offx_d  +i , icrm )
-extern real3d sstxy         ; // Index as sstxy         (        offy_sstxy+j , offx_sstxy+i , icrm )
 extern real2d fcory         ; // Index as fcory         (        offy_fcory+j                , icrm )
 extern real5d sgs_field     ; // Index as sgs_field     (l , k , offy_s    +j , offx_s    +i , icrm )
 extern real5d sgs_field_diag; // Index as sgs_field_diag(l , k , offy_d    +j , offx_d    +i , icrm )
@@ -300,6 +299,7 @@ extern real2d qtend           ;
 extern real2d ttend           ;
 extern real2d utend           ;
 extern real2d vtend           ;
+extern real3d tsfc            ;
 extern real2d fcorzy          ;
 extern real3d latitude        ;
 extern real3d longitude       ;
