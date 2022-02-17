@@ -134,8 +134,8 @@ module ocn_diagnostics_variables
    type (field2DReal), pointer :: wettingVelocityField
 
    real (kind=RKIND), dimension(:,:), pointer :: &
-      velocityVmixtend, &
-      velocityHmixtend, &
+      velocityVmixTend, &
+      velocityHmixTend, &
       velocityCoriolisTend, &
       velocityVadvTend, &
       velocityForcingTend, &
