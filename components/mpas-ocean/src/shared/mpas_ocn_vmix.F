@@ -1328,6 +1328,13 @@ contains
       !$acc update host(vertViscTopOfEdge)
 #endif
 
+      nEdges = nEdgesOwned
+      do iEdge=1,nEdges
+         do k=1,nVertLevels
+            velocityVmixTend(k,iEdge) = normalVelocity(k,iEdge)
+         end do
+      end do
+
       !
       !  Implicit vertical solve for momentum
       !
@@ -1369,7 +1376,7 @@ contains
       nEdges = nEdgesOwned 
       do iEdge=1,nEdges
          do k=1,nVertLevels
-            velocityVmixTend(k,iEdge) = (normalVelocity(k,iEdge) - velocityvmixtend(k,iEdge)) / dt
+            velocityVmixTend(k,iEdge) = (normalVelocity(k,iEdge) - velocityVmixTend(k,iEdge)) / dt
          end do
       end do
 
