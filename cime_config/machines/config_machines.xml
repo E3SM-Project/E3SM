@@ -3004,7 +3004,7 @@
     <NODENAME_REGEX>.*summit.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>ibm,ibmgpu,pgi,pgigpu,gnu,gnugpu</COMPILERS>
-    <MPILIBS>spectrum-mpi,mpi-serial</MPILIBS>
+    <MPILIBS>spectrum-mpi</MPILIBS>
     <PROJECT>cli115</PROJECT>
     <CHARGE_ACCOUNT>cli115</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR>/gpfs/alpine/proj-shared/$PROJECT</SAVE_TIMING_DIR>
@@ -3039,10 +3039,9 @@
         <arg name="cpu_per_rs">--cpu_per_rs $ENV{CPU_PER_RS}</arg>
         <arg name="gpu_per_rs">--gpu_per_rs $ENV{GPU_PER_RS}</arg>
         <arg name="task_bind">--bind packed:smt:$ENV{OMP_NUM_THREADS}</arg>
-        <arg name="nthreads">-E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
-        <arg name="thread_bind">-E OMP_PROC_BIND=spread -E OMP_PLACES=threads -E OMP_STACKSIZE=256M</arg>
         <arg name="latency_priority">--latency_priority $ENV{LTC_PRT}</arg>
         <arg name="stdio_mode">--stdio_mode prepended</arg>
+        <arg name="thread_vars">$ENV{JSRUN_THREAD_VARS}</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
@@ -3084,15 +3083,11 @@
         <command name="load">gcc/9.1.0</command>
       </modules>
       <modules>
+        <command name="load">spectrum-mpi/10.4.0.3-20210112</command>
+        <command name="load">hdf5/1.10.7</command>
         <command name="load">netcdf-c/4.8.0</command>
         <command name="load">netcdf-fortran/4.4.5</command>
-      </modules>
-      <modules mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.4.0.3-20210112</command>
-      </modules>
-      <modules>
         <command name="load">parallel-netcdf/1.12.2</command>
-        <command name="load">hdf5/1.10.7</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -3102,11 +3097,15 @@
       <env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_C_ROOT}</env>
       <env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
-      <env name="PGI_ACC_POOL_ALLOC">0</env>
-    </environment_variables>
-    <environment_variables mpilib="!mpi-serial">
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
       <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
+      <env name="PGI_ACC_POOL_ALLOC">0</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="FALSE">
+      <env name="JSRUN_THREAD_VARS"> </env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE">
+      <env name="JSRUN_THREAD_VARS">-E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -E OMP_PROC_BIND=spread -E OMP_PLACES=threads -E OMP_STACKSIZE=256M</env>
     </environment_variables>
     <environment_variables>
       <env name="RS_PER_NODE">2</env>
@@ -3179,65 +3178,48 @@
         <arg name="cpu_per_rs">--cpu_per_rs $ENV{CPU_PER_RS}</arg>
         <arg name="gpu_per_rs">--gpu_per_rs $ENV{GPU_PER_RS}</arg>
         <arg name="task_bind">--bind packed:smt:$ENV{OMP_NUM_THREADS}</arg>
-        <arg name="nthreads">-E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
-        <arg name="thread_bind">-E OMP_PROC_BIND=spread -E OMP_PLACES=threads -E OMP_STACKSIZE=256M</arg>
         <arg name="latency_priority">--latency_priority $ENV{LTC_PRT}</arg>
         <arg name="stdio_mode">--stdio_mode prepended</arg>
+        <arg name="thread_vars">$ENV{JSRUN_THREAD_VARS}</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="sh">/sw/ascent/lmod/7.8.2/rhel7.5_4.8.5/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/sw/ascent/lmod/7.8.2/rhel7.5_4.8.5/lmod/lmod/init/csh</init_path>
-      <init_path lang="python">/sw/ascent/lmod/7.8.2/rhel7.5_4.8.5/lmod/lmod/init/env_modules_python.py</init_path>
-      <cmd_path lang="python">/sw/ascent/lmod/7.8.2/rhel7.5_4.8.5/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="sh">/sw/ascent/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/sw/ascent/lmod/lmod/init/csh</init_path>
+      <init_path lang="python">/sw/ascent/lmod/init/env_modules_python.py</init_path>
+      <cmd_path lang="python">/sw/ascent/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="ls"/>
         <command name="load">DefApps</command>
-        <command name="load">python/3.7.0</command>
-        <command name="load">subversion/1.9.3</command>
-        <command name="load">git/2.20.1</command>
-        <command name="load">cmake/3.18.2</command>
-        <command name="load">essl/6.1.0-2</command>
-        <command name="load">netlib-lapack/3.8.0</command>
-      </modules>
-      <modules compiler="pgigpu">
-        <command name="load">cuda/10.1.243</command>
+        <command name="load">python/3.8-anaconda3</command>
+        <command name="load">git/2.31.1</command>
+        <command name="load">cmake/3.22.2</command>
+        <command name="load">essl/6.3.0</command>
+        <command name="load">netlib-lapack/3.9.1</command>
       </modules>
       <modules compiler="pgi.*">
-        <command name="load">pgi/19.10</command>
-        <command name="use">/gpfs/wolf/cli115/world-shared/e3sm/tools</command>
-        <command name="load">pgirc/cxx14</command>
-        <command name="load">spectrum-mpi/10.3.1.2-20200121</command>
-        <command name="load">hdf5/1.10.4</command>
-        <command name="load">netcdf/4.6.1</command>
-        <command name="load">netcdf-fortran/4.4.4</command>
-        <command name="load">parallel-netcdf/1.8.1</command>
-      </modules>
-      <modules compiler="ibm.*">
-        <command name="load">xl/16.1.1-10</command>
-        <command name="load">spectrum-mpi/10.3.1.2-20200121</command>
-        <command name="load">hdf5/1.10.7</command>
-        <command name="load">netcdf-c/4.7.4</command>
-        <command name="load">netcdf-cxx/4.2</command>
-        <command name="load">netcdf-fortran/4.4.5</command>
-        <command name="load">parallel-netcdf/1.12.1</command>
+        <command name="load">nvhpc/20.9</command>
       </modules>
       <modules compiler="ibmgpu">
         <command name="load">cuda/10.1.243</command>
       </modules>
-      <modules compiler="gnu.*">
-        <command name="load">gcc/8.1.1</command>
-        <command name="load">spectrum-mpi/10.3.1.2-20200121</command>
-        <command name="load">hdf5/1.10.4</command>
-        <command name="load">netcdf/4.6.1</command>
-        <command name="load">netcdf-fortran/4.4.4</command>
-        <command name="load">parallel-netcdf/1.8.1</command>
+      <modules compiler="ibm.*">
+        <command name="load">xl/16.1.1-10</command>
       </modules>
       <modules compiler="gnugpu">
-        <command name="load">cuda/10.1.105</command>
+        <command name="load">cuda/11.0.3</command>
+      </modules>
+      <modules compiler="gnu.*">
+        <command name="load">gcc/9.1.0</command>
+      </modules>
+      <modules>
+        <command name="load">spectrum-mpi/10.4.0.3-20210112</command>
+        <command name="load">hdf5/1.10.7</command>
+        <command name="load">netcdf-c/4.8.1</command>
+        <command name="load">netcdf-fortran/4.4.5</command>
+        <command name="load">parallel-netcdf/1.12.2</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -3250,13 +3232,13 @@
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
+      <env name="PGI_ACC_POOL_ALLOC">0</env>
     </environment_variables>
-    <environment_variables compiler="ibm.*">
-      <env name="XLC_USR_CONFIG">/gpfs/wolf/cli115/world-shared/e3sm/tools/xlc/xlc.cfg.rhel.7.6.gcc.8.1.1.cuda.10.2.89</env>
-      <env name="LD_LIBRARY_PATH">/sw/ascent/gcc/8.1.1/lib64:$ENV{LD_LIBRARY_PATH}</env>
+    <environment_variables SMP_PRESENT="FALSE">
+      <env name="JSRUN_THREAD_VARS"> </env>
     </environment_variables>
-    <environment_variables compiler="pgi.*">
-      <env name="LD_LIBRARY_PATH">/sw/ascent/gcc/8.1.1/lib64:$ENV{LD_LIBRARY_PATH}</env>
+    <environment_variables SMP_PRESENT="TRUE">
+      <env name="JSRUN_THREAD_VARS">-E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -E OMP_PROC_BIND=spread -E OMP_PLACES=threads -E OMP_STACKSIZE=256M</env>
     </environment_variables>
     <environment_variables>
       <env name="RS_PER_NODE">2</env>
@@ -3279,7 +3261,6 @@
       <env name="GPU_PER_RS">1</env>
       <env name="LTC_PRT">gpu-cpu</env>
       <env name="NUM_RS">$SHELL{echo "6*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
-      <env name="PGI_ACC_POOL_ALLOC">0</env>
       <env name="NVCC_WRAPPER_DEFAULT_COMPILER">pgc++</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
