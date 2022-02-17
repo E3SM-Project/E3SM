@@ -22,7 +22,8 @@
   use ref_pres,        only:  top_lev => trop_cloud_top_lev       ! this is for ee02c
 
   use modal_aero_data_amicphys, only: max_gas, max_aer, max_mode, ntot_amode_extd, &
-       igas_soag, igas_soagzz, nufi, mode_aging_optaa, npca, iaer_pom, iaer_soa, mw_gas
+       igas_soag, igas_soagzz, nufi, mode_aging_optaa, npca, iaer_pom, iaer_soa, mw_gas, &
+       is_soa_vbs
 
 
   implicit none
@@ -2962,7 +2963,7 @@ do_newnuc_if_block50: &
              gas_avg,                 gas_netprod_otrproc,              Dp_dry_a,       &
              dp_wet_a,                jhyst_leg,                                        &
              mosaic_vars_aa,                                                            &
-             qgas_avg,                qaer_cur,     qnum_cur,           qwtr_cur,       &
+             qgas_avg, qgas_cur,      qaer_cur,     qnum_cur,           qwtr_cur,       &
              mass_dry_a_bgn,          mass_dry_a,                                       &!Intent-outs
              dens_dry_a_bgn,          dens_dry_a,   water_a_hyst,       aH2O_a,         &
              uptkrate_h2so4,          uptkaer,      gam_ratio,                          &
@@ -3323,20 +3324,20 @@ do_newnuc_if_block50: &
 
 ! do soa
       if (soa_mech_type == soa_mech_type_vbs) then
-#if 0
-         call mam_soaexch_vbs_1subarea(                                &
-            nstep,             lchnk,                                  &
-            i,                 k,                jsub,                 &
-            latndx,            lonndx,           lund,                 &
-            dtsubstep,                                                 &
-            temp,              pmid,             aircon,               &
-            n_mode,                                                    &
-            qgas_cur,          qgas_avg,                               &
-            qaer_cur,                                                  &
-            qnum_cur,                                                  &
-            qwtr_cur,                                                  &
-            uptkaer                                                    )
-#endif
+         if(.not. is_soa_vbs ) then
+            call mam_soaexch_vbs_1subarea(                                &
+                 nstep,             lchnk,                                  &
+                 i,                 k,                jsub,                 &
+                 latndx,            lonndx,           lund,                 &
+                 dtsubstep,                                                 &
+                 temp,              pmid,             aircon,               &
+                 n_mode,                                                    &
+                 qgas_cur,          qgas_avg,                               &
+                 qaer_cur,                                                  &
+                 qnum_cur,                                                  &
+                 qwtr_cur,                                                  &
+                 uptkaer                                                    )
+         endif
       else
          call mam_soaexch_default_1subarea(                            &
             nstep,             lchnk,                                  &

@@ -1,11 +1,24 @@
 !IMPORTANT NOTE: This is a *temporary file* for testing a configuration
 !variables declared here should be initialized in this file. It is very important
 ! that public variables here be declared as protected at the least!!
+
+!If we decide to make this file stay/permanent, logic for computing
+!igas_soag, igas_soagzz, nufi, mode_aging_optaa(max_mode), npca, iaer_pom, iaer_soa
+!and mw_gas(max_gas) should be added to this file
+
+
 module modal_aero_data_amicphys
   use shr_kind_mod,    only: r8 => shr_kind_r8
   use modal_aero_data, only:  ntot_amode, nsoag, nsoa, npoa, nbc
   implicit none
   private
+
+#if ( defined MODAL_AERO_4MODE_SOA_MOM)
+ logical, parameter, public :: is_soa_vbs = .true.
+#else
+ logical, parameter, public :: is_soa_vbs = .false.
+#endif
+
 
 #if ( defined MODAL_AERO_3MODE )
   integer, parameter, public :: max_gas = nsoag + 1

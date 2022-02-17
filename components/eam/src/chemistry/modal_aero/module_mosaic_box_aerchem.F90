@@ -2,6 +2,7 @@ module module_mosaic_box_aerchem
 
 use shr_kind_mod,  only: r8 => shr_kind_r8
 use physconst,     only: pi
+use modal_aero_data_amicphys, only: max_gas, max_aer, max_mode
 
 implicit none
 
@@ -78,13 +79,11 @@ contains
        gas_avg,                gas_netprod_otrproc,              Dp_dry_a,       &
        dp_wet_a,               jhyst_leg,                                        &
        mosaic_vars_aa,                                                           &
-       qgas_avg,                qaer_cur,     qnum_cur,           qwtr_cur,      &
+       qgas_avg,    qgas_cur,   qaer_cur,     qnum_cur,           qwtr_cur,      &
        mass_dry_a_bgn,         mass_dry_a,                                       &!Intent-outs
        dens_dry_a_bgn,         dens_dry_a,   water_a_hyst,       aH2O_a,         &
        uptkrate_h2so4,         uptkaer,      gam_ratio,                          &
        jaerosolstate_bgn, Hconc_sav                                              ) ! to save aerosol pH (dsj+zlu)
-
-    use modal_aero_data_amicphys, only: max_gas, max_aer, max_mode
 
     use module_data_mosaic_aero, only:                                             &
          nbin_a_max, ngas_aerchtot, ngas_volatile, naer, nsalt,                    &!Parameters
@@ -112,10 +111,6 @@ contains
     real(r8), intent(in), dimension(nbin_a_max)        :: sigmag_a
     real(r8), intent(in), dimension(naer)              :: kappa_nonelectro
     real(r8), intent(in) :: uptkaer(:,:)
-    real(r8), intent(in) :: qaer_cur(max_aer,max_mode) !Current aerosol mass mix ratios (mol/mol)
-    real(r8), intent(in) :: qnum_cur(max_mode)         !Current aerosol number mix ratios (#/kmol)
-    real(r8), intent(in) :: qwtr_cur(max_mode)         !Current aerosol water mix ratios (mol/mol)
-    real(r8), intent(in) :: qgas_avg(max_gas)          !average gas conc. over dtchem time step (mol/mol)
 
     !Intent-inouts
     integer, intent(inout), dimension(nbin_a_max) :: jaerosolstate
@@ -138,6 +133,12 @@ contains
     ! note - purpose of this data structure is to simplify passing new variables
     !        into and out of the many mosaic routines
     type (mosaic_vars_aa_type), intent(inout) :: mosaic_vars_aa
+
+    real(r8), intent(inout) :: qaer_cur(max_aer,max_mode) !Current aerosol mass mix ratios (mol/mol)
+    real(r8), intent(inout) :: qnum_cur(max_mode)         !Current aerosol number mix ratios (#/kmol)
+    real(r8), intent(inout) :: qwtr_cur(max_mode)         !Current aerosol water mix ratios (mol/mol)
+    real(r8), intent(inout) :: qgas_avg(max_gas)          !average gas conc. over dtchem time step (mol/mol)
+    real(r8), intent(inout) :: qgas_cur(max_gas)          !Current gas mix ratios (mol/mol)
 
     !Intent-outs
     integer, intent(out), dimension(nbin_a_max) :: jaerosolstate_bgn
@@ -219,7 +220,8 @@ contains
             total_species, tot_so4_in, tot_no3_in, tot_cl_in, tot_nh4_in, tot_na_in,    & !intent-outs
             tot_ca_in, tot_lim2_in )
 
-       call MOSAIC_dynamic_solver(   latndx,            lonndx,           lund,         &!Intent-ins
+       call MOSAIC_dynamic_solver(   latndx,                 lonndx,          lund,     &!Intent-ins
+            jsub_in,             n_mode,                     aircon,                    &
             mcall_print_aer,     dtchem,                                                &
             aH2O,           T_K,        RH_pc,               P_atm,                     &
             irepeat_mosaic, tot_cl_in,  sigmag_a,            kappa_nonelectro,          &
@@ -234,6 +236,7 @@ contains
             sigma_water,    MDRH_T,     molality0,                                      &
             total_species,  aH2O_a,     uptkrate_h2so4,      uptkaer,                   &
             mosaic_vars_aa,                                                             &
+            qgas_avg, qgas_cur,   qaer_cur,   qnum_cur,      qwtr_cur,                  &
             iprint_input,                                                               & !intent-outs
             mass_dry_a_bgn, dens_dry_a_bgn,                                             &
             water_a_hyst,   jaerosolstate_bgn                                           )
@@ -551,7 +554,8 @@ contains
   ! update: jan 2005
   !-----------------------------------------------------------------------
 
-  subroutine MOSAIC_dynamic_solver(    latndx,            lonndx,           lund,  &!Intent-ins
+  subroutine MOSAIC_dynamic_solver(    latndx,         lonndx,           lund,     &!Intent-ins
+       jsub_in,            n_mode,                     aircon,                     &
        mcall_print_aer,    dtchem,                                                 &
        aH2O,           T_K,        RH_pc,               P_atm,                     &
        irepeat_mosaic, tot_cl_in,  sigmag_a,                                       &
@@ -567,6 +571,7 @@ contains
        sigma_water,    MDRH_T,     molality0,                                      &
        total_species,  aH2O_a,     uptkrate_h2so4,      uptkaer,                   &
        mosaic_vars_aa,                                                             &
+       qgas_avg, qgas_cur,      qaer_cur,   qnum_cur,            qwtr_cur,         &
        iprint_input,                                                               & !intent-outs
        mass_dry_a_bgn, dens_dry_a_bgn,                                             &
        water_a_hyst,   jaerosolstate_bgn                                           )
@@ -600,9 +605,12 @@ contains
     !Intent-ins
     integer,  intent(in) :: latndx, lonndx        ! lat and lon indices
     integer,  intent(in) :: lund                  ! logical unit for diagnostic output
+    integer,  intent(in) :: jsub_in               ! subarea index
+    integer,  intent(in) :: n_mode           !current number of active modes
     integer, intent(in) :: mcall_print_aer
     integer, intent(in) :: irepeat_mosaic
 
+    real(r8), intent(in) :: aircon           !Air molar density (kmol/m3)
     real(r8), intent(in) :: dtchem
     real(r8), intent(in) :: aH2O, T_K, RH_pc, P_atm
 
@@ -631,6 +639,7 @@ contains
     real(r8), intent(inout), dimension(ngas_aerchtot) :: gas
     real(r8), intent(inout), dimension(ngas_volatile) :: sat_soa, total_species
     real(r8), intent(inout), dimension(ngas_aerchtot) :: gas_avg  ! average gas conc. over dtchem time step (nmol/m3)
+
     real(r8), intent(in),    dimension(ngas_aerchtot) :: gas_netprod_otrproc
               ! gas_netprod_otrproc = gas net production rate from other processes
               !    such as gas-phase chemistry and emissions (nmol/m3/s)
@@ -662,6 +671,12 @@ contains
     real(r8), intent(inout) :: uptkrate_h2so4  ! rate of h2so4 uptake by aerosols (1/s)
 
     type (mosaic_vars_aa_type), intent(inout) :: mosaic_vars_aa
+
+    real(r8), intent(inout) :: qaer_cur(max_aer,max_mode) !Current aerosol mass mix ratios (mol/mol)
+    real(r8), intent(inout) :: qnum_cur(max_mode)         !Current aerosol number mix ratios (#/kmol)
+    real(r8), intent(inout) :: qwtr_cur(max_mode)         !Current aerosol water mix ratios (mol/mol)
+    real(r8), intent(inout) :: qgas_avg(max_gas)          !average gas conc. over dtchem time step (mol/mol)
+    real(r8), intent(inout) :: qgas_cur(max_gas)          !Current gas mix ratios (mol/mol)
 
     !Intent-outs
     integer, intent(out) :: iprint_input
@@ -774,6 +789,7 @@ contains
 
        if(mDYNAMIC_SOLVER .eq. mASTEM)then
           call ASTEM(     latndx,            lonndx,           lund,                         &!Intent-ins
+               jsub_in,                  n_mode,              aircon,                        &
                mcall_print_aer,          dtchem,                                             &
                sigmag_a,  aH2O,     T_K,         RH_pc,        P_atm,                        &
                kappa_nonelectro,                                                             &
@@ -787,6 +803,7 @@ contains
                log_gamZ,      gam_ratio,         Keq_ll,       Keq_gl,    Keq_sg,   Kp_nh4cl,&
                Kp_nh4no3,     sigma_water,       Keq_sl,       MDRH_T,    molality0,         &
                uptkrate_h2so4,uptkaer,           mosaic_vars_aa,                             &
+               qgas_avg, qgas_cur,      qaer_cur,     qnum_cur,           qwtr_cur,          &
                area_dry_a,    area_wet_a,        mass_wet_a,vol_wet_a,                       &!intent-out
                dens_wet_a,    ri_shell_a,        ri_avg_a,     ri_core_a                     )
 

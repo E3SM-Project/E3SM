@@ -19,6 +19,7 @@
 !-----------------------------------------------------------------------
   
   subroutine ASTEM(     latndx,            lonndx,           lund,                   &!Intent-ins
+       jsub_in,                  n_mode,              aircon,                        &
        mcall_print_aer,                                                              &
        dtchem,        sigmag_a,  aH2O,   T_K,          RH_pc,     P_atm,             &
        kappa_nonelectro,                                                             &
@@ -32,9 +33,12 @@
        log_gamZ,      gam_ratio,         Keq_ll,       Keq_gl,    Keq_sg,   Kp_nh4cl,&
        Kp_nh4no3,     sigma_water,       Keq_sl,       MDRH_T,    molality0,         &
        uptkrate_h2so4,uptkaer,           mosaic_vars_aa,                             &
+       qgas_avg,      qgas_cur,          qaer_cur,     qnum_cur,           qwtr_cur, &
        area_dry_a,    area_wet_a,        mass_wet_a,vol_wet_a,                       &!intent-out
        dens_wet_a,    ri_shell_a,        ri_avg_a,     ri_core_a                     )
-  
+
+  use modal_aero_data_amicphys, only: max_gas, max_aer, max_mode, is_soa_vbs
+
   use module_data_mosaic_aero, only: nbin_a_max,                                   &
        ngas_aerchtot, ngas_volatile, nelectrolyte,                                 &
        Ncation, naer, mYES, no_aerosol, Nanion, nrxn_aer_gl, nrxn_aer_ll,          &
@@ -60,8 +64,11 @@
   !Intent-ins
   integer,  intent(in) :: latndx, lonndx        ! lat and lon indices
   integer,  intent(in) :: lund                  ! logical unit for diagnostic output
+  integer,  intent(in) :: jsub_in               ! subarea index
+  integer,  intent(in) :: n_mode           !current number of active modes
   integer, intent(in) :: mcall_print_aer
 
+  real(r8), intent(in) :: aircon           !Air molar density (kmol/m3)
   real(r8), intent(in) :: dtchem
   real(r8), intent(in) :: aH2O
   real(r8), intent(in) :: T_K, RH_pc, P_atm
@@ -122,7 +129,11 @@
   real(r8), intent(inout), dimension(naer,3,nbin_a_max)         :: aer
   real(r8), intent(inout), dimension(nelectrolyte,3,nbin_a_max) :: electrolyte
   real(r8), intent(inout), dimension(nelectrolyte,3,nbin_a_max) :: epercent
-
+  real(r8), intent(inout) :: qaer_cur(max_aer,max_mode) !Current aerosol mass mix ratios (mol/mol)
+  real(r8), intent(inout) :: qnum_cur(max_mode)         !Current aerosol number mix ratios (#/kmol)
+  real(r8), intent(inout) :: qwtr_cur(max_mode)         !Current aerosol water mix ratios (mol/mol)
+  real(r8), intent(inout) :: qgas_avg(max_gas)          !average gas conc. over dtchem time step (mol/mol)
+  real(r8), intent(inout) :: qgas_cur(max_gas)          !Current gas mix ratios (mol/mol)
   
   !Intent-out
   real(r8), intent(out), dimension(nbin_a_max) :: area_dry_a
@@ -133,7 +144,8 @@
   complex,  intent(out), dimension(nbin_a_max) :: ri_shell_a,ri_avg_a,ri_core_a
 
   !Local variables      
-  integer :: ibin, iv
+  integer :: ibin, iv, nstep, i_in, k_in, lchnk
+
 
   integer, dimension(nsalt) :: jsalt_present
   integer, dimension(ngas_volatile,3,nbin_a_max) :: integrate
@@ -252,25 +264,29 @@
                                 mosaic_vars_aa%fix_astem_negative, aer, gas )
 
   ! condense secondary organic gases (8 sorgam species)
-#if 0
-  call ASTEM_secondary_organics(dtchem,jaerosolstate,sfc_a,Heff,phi_volatile_l,  &
-       integrate,aer,kg,gas,sat_soa,total_species) ! semi-implicit euler
-#endif
-#if 0
-  call mam_soaexch_vbs_1subarea(                                  &
-       nstep,             lchnk,                                  &
-       i,                 k,                jsub,                 &
-       latndx,            lonndx,           lund,                 &
-       dtsubstep,                                                 &
-       temp,              pmid,             aircon,               &
-       n_mode,                                                    &
-       qgas_cur,          qgas_avg,                               &
-       qaer_cur,                                                  &
-       qnum_cur,                                                  &
-       qwtr_cur,                                                  &
-       uptkaer                                                    )
-#endif
-  
+  if(is_soa_vbs) then
+     nstep = mosaic_vars_aa%it_mosaic
+     i_in  = mosaic_vars_aa%hostgridinfo(1)
+     k_in  = mosaic_vars_aa%hostgridinfo(2)
+     lchnk = mosaic_vars_aa%hostgridinfo(3)
+     
+     call mam_soaexch_vbs_1subarea(                                  &
+          nstep,             lchnk,                                  &
+          i_in,              k_in,             jsub_in,              &
+          latndx,            lonndx,           lund,                 &
+          dtchem,                                                    &
+          T_K,               P_atm,             aircon,              &
+          n_mode,                                                    &
+          qgas_cur,          qgas_avg,                               &
+          qaer_cur,                                                  &
+          qnum_cur,                                                  &
+          qwtr_cur,                                                  &
+          uptkaer                                                    )
+  else
+     call ASTEM_secondary_organics(dtchem,jaerosolstate,sfc_a,Heff,phi_volatile_l,  &
+          integrate,aer,kg,gas,sat_soa,total_species) ! semi-implicit euler
+  endif
+
   call check_astem_negative( 4, mosaic_vars_aa%xnerr_astem_negative, &
                                 mosaic_vars_aa%fix_astem_negative, aer, gas )
 
