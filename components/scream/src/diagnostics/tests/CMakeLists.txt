@@ -1,5 +1,5 @@
 # NOTE: tests inside this if statement won't be built in a baselines-only build
-if (NOT ${SCREAM_BASELINES_ONLY})
+if (NOT SCREAM_BASELINES_ONLY)
   include(ScreamUtils)
 
   # Test potential temperature diagnostic

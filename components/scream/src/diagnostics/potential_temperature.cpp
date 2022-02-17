@@ -53,8 +53,9 @@ void PotentialTemperatureDiagnostic::initialize_impl(const RunType /* run_type *
 void PotentialTemperatureDiagnostic::run_impl(const int dt)
 {
 
+  const auto nk_pack  = ekat::npack<Spack>(m_num_levs);
   Kokkos::parallel_for("PotentialTemperatureDiagnostic",
-                       Kokkos::RangePolicy<>(0,m_num_cols),
+                       Kokkos::RangePolicy<>(0,m_num_cols*nk_pack),
                        run_diagnostic
   );
   Kokkos::fence();

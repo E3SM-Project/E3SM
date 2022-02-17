@@ -38,12 +38,11 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
 
   // Getting the diagnostic output
-  Field& get_diagnostic (const Real dt);
+  Field get_diagnostic (const Real dt);
 
+  void set_computed_field (const Field& f);
+  void set_computed_group (const FieldGroup& group);
 protected:
-
-  void set_computed_field_impl (const Field& f);
-  void set_computed_group_impl (const FieldGroup& group);
 
   // Diagnostics are meant to return a field
   Field m_diagnostic_output;

@@ -1,7 +1,6 @@
 #include "catch2/catch.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
-#include "share/atm_process/atmosphere_diagnostic.hpp"
 #include "diagnostics/potential_temperature.hpp"
 
 #include "physics/share/physics_constants.hpp"
@@ -106,14 +105,12 @@ void run(std::mt19937_64& engine)
   using view_1d    = typename KT::template view_1d<ScalarT>;
   using rview_1d   = typename KT::template view_1d<RealType>;
 
-  static constexpr auto test_tol = PC::macheps*1e3;
 
   constexpr int pack_size = sizeof(ScalarT) / sizeof(RealType);
   using pack_info = ekat::PackInfo<pack_size>;
 
   constexpr int num_levs = 32; // Number of levels to use for tests.
   const     int num_mid_packs = pack_info::num_packs(num_levs);
-  const     int num_int_packs = pack_info::num_packs(num_levs+1);
 
   using Check = ChecksHelpers<ScalarT,num_levs>;
 
@@ -122,22 +119,18 @@ void run(std::mt19937_64& engine)
   ekat::Comm comm(MPI_COMM_WORLD);
 
   // Create a grids manager - single column for these tests
-  auto gm = create_gm(comm,1,num_levs);
+  const int ncols = 1;
+  auto gm = create_gm(comm,ncols,num_levs);
 
   // Kokkos Policy
-  TeamPolicy policy(ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(1, 1));
+  TeamPolicy policy(ncols, 1);
 
   // Input (randomized) views
   view_1d temperature("temperature",num_mid_packs),
           pressure("pressure",num_mid_packs);
-  // Output views
-  view_1d theta("theta",num_mid_packs);
 
   auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
     return rview_1d(reinterpret_cast<RealType*>(v.data()),v.size()*pack_size);
-  };
-  auto hview_as_real = [&] (const typename view_1d::HostMirror& v) -> typename rview_1d::HostMirror {
-    return typename rview_1d::HostMirror(reinterpret_cast<RealType*>(v.data()),v.size()*pack_size);
   };
 
   // Construct random input data
@@ -180,7 +173,6 @@ void run(std::mt19937_64& engine)
   // Run tests
   const ScalarT p0   = PC::P0;
   const ScalarT zero = 0.0;
-  const ScalarT one  = 1.0;
 
   // Get views of input data and set to random values
   const auto& T_mid_f = input_fields["T_mid"];
@@ -193,27 +185,23 @@ void run(std::mt19937_64& engine)
   {
   Field zero_f = T_mid_f;  // Field with only zeros
   zero_f.deep_copy(0.0);
-  Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
-    const int i = team.league_rank();
-    const auto& T_sub = ekat::subview(T_mid_v,i);
-    const auto& p_sub = ekat::subview(p_mid_v,i);
+  for (int icol = 0; icol<ncols;++icol) {
+    const auto& T_sub = ekat::subview(T_mid_v,icol);
+    const auto& p_sub = ekat::subview(p_mid_v,icol);
     Kokkos::deep_copy(T_sub,zero);
     Kokkos::deep_copy(p_sub,p0);
-  });
-  Kokkos::fence();
+  }
   const auto& diag_out = diag->get_diagnostic(100.0);
   REQUIRE(views_are_equal(diag_out,zero_f));
   }
   //  - theta=T when p=p0
   {
-  Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
-    const int i = team.league_rank();
-    const auto& T_sub = ekat::subview(T_mid_v,i);
-    const auto& p_sub = ekat::subview(p_mid_v,i);
+  for (int icol = 0; icol<ncols;++icol) {
+    const auto& T_sub = ekat::subview(T_mid_v,icol);
+    const auto& p_sub = ekat::subview(p_mid_v,icol);
     Kokkos::deep_copy(T_sub,temperature);
     Kokkos::deep_copy(p_sub,p0);
-  });
-  Kokkos::fence();
+  } 
   const auto& diag_out = diag->get_diagnostic(100.0);
   REQUIRE(views_are_equal(diag_out,T_mid_f));
   }
@@ -248,7 +236,7 @@ TEST_CASE("potential_temp_test", "potential_temp_test]"){
 
   auto engine = scream::setup_random_test();
 
-  std::cout << " -> Number of randomized runs: " << num_runs << "\n\n";
+  printf(" -> Number of randomized runs: %d\n\n", num_runs);
 
   printf(" -> Testing Real scalar type...");
   for (int irun=0; irun<num_runs; ++irun) {

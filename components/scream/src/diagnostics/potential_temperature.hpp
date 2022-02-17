@@ -48,12 +48,12 @@ public:
     run_diagnostic_impl() = default;
     // Functor for Kokkos loop
     KOKKOS_INLINE_FUNCTION
-    void operator()(const int icol) const {
-      for (int jpack=0;jpack<m_npack;jpack++) {
-        const Spack& T_mid_ij(T_mid(icol,jpack));
-        const Spack& p_mid_ij(p_mid(icol,jpack));
-        output(icol,jpack) = PF::calculate_theta_from_T(T_mid_ij,p_mid_ij);
-      }
+    void operator() (const int& idx) const {
+      const int icol  = idx / m_npack;
+      const int jpack = idx % m_npack;
+      const Spack& T_mid_ij(T_mid(icol,jpack));
+      const Spack& p_mid_ij(p_mid(icol,jpack));
+      output(icol,jpack) = PF::calculate_theta_from_T(T_mid_ij,p_mid_ij);
     }
     int m_ncol, m_npack;
     view_2d_const T_mid;
