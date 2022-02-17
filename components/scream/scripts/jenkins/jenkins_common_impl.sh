@@ -125,6 +125,10 @@ if [ $skip_testing -eq 0 ]; then
       # are caused by this PR and not simply because the PR is too far behind master
       if [ -n "$PULLREQUESTNUM" ]; then
         ./scripts/git-merge-ref origin/master
+        if [[ $? != 0 ]]; then
+            echo "MERGE FAILED! Please resolve conflicts"
+            exit 1
+        fi
       fi
 
       if [[ $test_v0 == 1 ]]; then
