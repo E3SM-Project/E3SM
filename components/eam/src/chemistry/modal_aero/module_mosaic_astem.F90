@@ -18,7 +18,8 @@
 ! update: jan 2007
 !-----------------------------------------------------------------------
   
-  subroutine ASTEM(   mcall_print_aer,                                               &!intent-ins
+  subroutine ASTEM(     latndx,            lonndx,           lund,                   &!Intent-ins
+       mcall_print_aer,                                                              &
        dtchem,        sigmag_a,  aH2O,   T_K,          RH_pc,     P_atm,             &
        kappa_nonelectro,                                                             &
        jaerosolstate, flux_s,            flux_l,       volatile_s,iprint_input,      &!intent -inout
@@ -30,7 +31,7 @@
        water_a_up,    aH2O_a,            total_species,tot_cl_in, ma,       gam,     &
        log_gamZ,      gam_ratio,         Keq_ll,       Keq_gl,    Keq_sg,   Kp_nh4cl,&
        Kp_nh4no3,     sigma_water,       Keq_sl,       MDRH_T,    molality0,         &
-       uptkrate_h2so4,                   mosaic_vars_aa,                             &
+       uptkrate_h2so4,uptkaer,           mosaic_vars_aa,                             &
        area_dry_a,    area_wet_a,        mass_wet_a,vol_wet_a,                       &!intent-out
        dens_wet_a,    ri_shell_a,        ri_avg_a,     ri_core_a                     )
   
@@ -50,18 +51,21 @@
   
 !  use module_mosaic_soa_vbs, only: vbs_soa_dynamic_solver 
   use modal_aero_data, only: nsoag
-
+  use mam_soaexch_vbs, only:mam_soaexch_vbs_1subarea
 ! use module_print_aer,  only: print_aer
 
   
   
   !Subroutine Arguments
   !Intent-ins
+  integer,  intent(in) :: latndx, lonndx        ! lat and lon indices
+  integer,  intent(in) :: lund                  ! logical unit for diagnostic output
   integer, intent(in) :: mcall_print_aer
 
   real(r8), intent(in) :: dtchem
   real(r8), intent(in) :: aH2O
   real(r8), intent(in) :: T_K, RH_pc, P_atm
+  real(r8), intent(in) :: uptkaer(:,:)
   real(r8), intent(in), dimension(nbin_a_max) :: sigmag_a
   real(r8), intent(in), dimension(ngas_aerchtot) :: gas_netprod_otrproc
   real(r8), intent(in), dimension(naer) :: kappa_nonelectro
@@ -248,9 +252,25 @@
                                 mosaic_vars_aa%fix_astem_negative, aer, gas )
 
   ! condense secondary organic gases (8 sorgam species)
-
+#if 0
   call ASTEM_secondary_organics(dtchem,jaerosolstate,sfc_a,Heff,phi_volatile_l,  &
        integrate,aer,kg,gas,sat_soa,total_species) ! semi-implicit euler
+#endif
+#if 0
+  call mam_soaexch_vbs_1subarea(                                  &
+       nstep,             lchnk,                                  &
+       i,                 k,                jsub,                 &
+       latndx,            lonndx,           lund,                 &
+       dtsubstep,                                                 &
+       temp,              pmid,             aircon,               &
+       n_mode,                                                    &
+       qgas_cur,          qgas_avg,                               &
+       qaer_cur,                                                  &
+       qnum_cur,                                                  &
+       qwtr_cur,                                                  &
+       uptkaer                                                    )
+#endif
+  
   call check_astem_negative( 4, mosaic_vars_aa%xnerr_astem_negative, &
                                 mosaic_vars_aa%fix_astem_negative, aer, gas )
 

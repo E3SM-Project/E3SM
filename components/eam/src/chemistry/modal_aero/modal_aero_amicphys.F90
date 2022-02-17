@@ -21,6 +21,10 @@
 ! use ref_pres,        only:  top_lev => clim_modal_aero_top_lev  ! this is for gg02a
   use ref_pres,        only:  top_lev => trop_cloud_top_lev       ! this is for ee02c
 
+  use modal_aero_data_amicphys, only: max_gas, max_aer, max_mode, ntot_amode_extd, &
+       igas_soag, igas_soagzz, nufi, mode_aging_optaa, npca, iaer_pom, iaer_soa, mw_gas
+
+
   implicit none
   private
   save
@@ -106,50 +110,6 @@
   real (r8) :: newnuc_adjust_factor_dnaitdt = 1.0_r8
   real (r8) :: newnuc_adjust_factor_pbl     = 1.0_r8
 
-! qzr added || defined MODAL_AERO_4MODE_SOA_MOM with ( defined
-! MODAL_AERO_4MODE_MOM) && (defined MOSAIC_SPECIES)
-#if ( defined MODAL_AERO_3MODE )
-  integer, parameter :: max_gas = nsoag + 1
-  ! the +3 in max_aer are dst, ncl, so4
-  integer, parameter :: max_aer = nsoa + npoa + nbc + 3
-#elif ( defined MODAL_AERO_4MODE )
-  integer, parameter :: max_gas = nsoag + 1
-  ! the +3 in max_aer are dst, ncl, so4
-  integer, parameter :: max_aer = nsoa + npoa + nbc + 3
-#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM ) && ( defined MOSAIC_SPECIES ) )
-  integer, parameter :: max_gas = nsoa + 10 !4 !QZR to match ngas=11 
-  ! the +9 in max_aer are dst, ncl, so4, mom, nh4, no3, cl, ca, co3
-  integer, parameter :: max_aer = nsoa + npoa + nbc + 9
-#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM )
-  integer, parameter :: max_gas = nsoag + 1  
-  ! the +4 in max_aer are dst, ncl, so4, mom
-  integer, parameter :: max_aer = nsoa + npoa + nbc + 4
-#elif ( ( defined MODAL_AERO_7MODE ) && ( defined MOSAIC_SPECIES ) )
-  integer, parameter :: max_gas = nsoag + 4
-  integer, parameter :: max_aer = nsoa + npoa + nbc + 8
-#elif ( defined MODAL_AERO_7MODE )
-  integer, parameter :: max_gas = nsoag + 2
-  integer, parameter :: max_aer = nsoa + npoa + nbc + 4
-#elif ( defined MODAL_AERO_8MODE )
-  integer, parameter :: max_gas = nsoag + 2
-  integer, parameter :: max_aer = nsoa + npoa + nbc + 4
-#elif ( defined MODAL_AERO_9MODE )
-  integer, parameter :: max_gas = nsoag + 2
-  integer, parameter :: max_aer = nsoa + npoa + nbc + 4 + 5
-#endif
-
-#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM )|| (defined MODAL_AERO_4MODE_SOA_MOM))
-  integer, parameter :: ntot_amode_extd = ntot_amode
-#else
-  integer, parameter :: ntot_amode_extd = ntot_amode + 1
-! integer, parameter :: ntot_amode_extd = ntot_amode
-#endif
-
-  integer, parameter :: max_mode_fresh = 1
-
-  integer, parameter :: max_mode = ntot_amode_extd + max_mode_fresh
-  public max_mode !BSINGH - used in module_mosaic_cam_init.F90
-
   integer, parameter :: max_coagpair = 100
 
 #if ( defined MODAL_AERO_9MODE )
@@ -175,15 +135,14 @@
                       ! early versions of mam neglected the seasalt contribution
 
   ! species indices for various qgas_--- arrays
-  integer :: igas_soag, igas_h2so4, igas_nh3, igas_hno3, igas_hcl
-  integer :: igas_soagzz
+  integer :: igas_h2so4, igas_nh3, igas_hno3, igas_hcl
   ! species indices for various qaer_--- arrays
   !    when nsoag > 1, igas_soag is index of the first soag species in qgas arrays
   !    when nsoa  > 1, iaer_soa  is index of the first soa  species in qaer arrays
   !    when nbc   > 1, iaer_bc   is index of the first bc   species in qaer arrays
   !    when npoa  > 1, iaer_pom  is index of the first pom  species in qaer arrays
   ! and igas_soagzz, iaer_soazz, iaer_bczz, iaer_pomzz are indicies of the last ... species
-  integer :: iaer_bc, iaer_dst, iaer_ncl, iaer_nh4, iaer_pom, iaer_soa, iaer_so4, &
+  integer :: iaer_bc, iaer_dst, iaer_ncl, iaer_nh4, iaer_so4, &
              iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc, iaer_mom, &
              iaer_no3, iaer_cl, iaer_ca, iaer_co3
   integer :: iaer_bczz, iaer_pomzz, iaer_soazz
@@ -198,11 +157,10 @@
   integer :: naer_cond   ! number of aerosol species directly involved in gas/aerosol exchange (condensation)
   integer :: ngas        ! number of gas     species in qgas arrays
   integer :: ngas_cond   ! number of gas     species directly involved in gas/aerosol exchange (condensation)
-  integer :: nacc, nait, npca, nufi, nmacc, nmait
+  integer :: nacc, nait, nmacc, nmait
 
   integer :: n_agepair, n_coagpair
   integer :: modefrm_agepair(max_agepair), modetoo_agepair(max_agepair)
-  integer :: mode_aging_optaa(max_mode)
   integer :: modefrm_coagpair(max_coagpair), modetoo_coagpair(max_coagpair), &
              modeend_coagpair(max_coagpair)
 
@@ -222,8 +180,7 @@
 
   real(r8) :: fcvt_gas(max_gas), fcvt_aer(max_aer), fcvt_num, fcvt_wtr
   real(r8) :: fcvt_dgnum_dvolmean(max_mode)
-  real(r8) :: hygro_aer(max_aer)
-  real(r8) :: mw_gas(max_gas), mw_aer(max_aer)
+  real(r8) :: hygro_aer(max_aer), mw_aer(max_aer)
   real(r8) :: mwhost_gas(max_gas), mwhost_aer(max_aer), mwhost_num
   real(r8) :: mw_nh4a_host, mw_so4a_host
   real(r8) :: mwuse_soag(nsoag), mwuse_soa(nsoa), mwuse_poa(npoa)
@@ -1857,12 +1814,14 @@ do_cond_if_block10: &
          tmp_relhum = min( relhum, 0.98_r8 )
          call mosaic_gasaerexch_1subarea_intr(     nstep,                &!Intent(ins)
               lchnk,             i,                k,           jsub,    &
+              latndx,            lonndx,           lund,                 &
               temp,              tmp_relhum,       pmid,                 &
               aircon,            dtsubstep,        n_mode,               &
               dgn_a,             dgn_awet,         qaer_cur,             &!Intent(inouts)
               qgas_cur,          qnum_cur,         qwtr_cur,             &
               qgas_avg,          qgas_netprod_otrproc,                   &
-              uptkrate_h2so4,    misc_vars_aa_sub, Hconc_sav             ) ! to save aerosol pH (dsj+zlu)
+              uptkrate_h2so4,    uptkaer,          misc_vars_aa_sub,     &
+              Hconc_sav                                                  ) ! to save aerosol pH (dsj+zlu)
 
 ! pH dsj+zlu
 ! output water_a here before rename and aging
@@ -2294,12 +2253,14 @@ do_cond_if_block10: &
       if ( mosaic ) then
          call mosaic_gasaerexch_1subarea_intr(     nstep,                &!Intent(ins)
               lchnk,             i,                k,           jsub,    &
+              latndx,            lonndx,           lund,                 &
               temp,              relhum,           pmid,                 &
               aircon,            dtsubstep,        n_mode,               &
               dgn_a,             dgn_awet,         qaer_cur,             &!Intent(inouts)
               qgas_cur,          qnum_cur,         qwtr_cur,             &
               qgas_avg,          qgas_netprod_otrproc,                   &
-              uptkrate_h2so4,    misc_vars_aa_sub, Hconc_sav ) ! to save aerosol pH (dsj+zlu)
+              uptkrate_h2so4,    uptkaer,           misc_vars_aa_sub,    &
+              Hconc_sav                                                  ) ! to save aerosol pH (dsj+zlu)
 
 ! pH dsj+zlu
 ! output water_a here before rename and aging
@@ -2518,12 +2479,14 @@ do_newnuc_if_block50: &
 ! ++MW
       subroutine mosaic_gasaerexch_1subarea_intr(  nstep,                &!Intent(ins)
               lchnk,             i_in,             k_in,        jsub_in, &
+              latndx,            lonndx,           lund,                 &
               temp,              relhum,           pmid,                 &
               aircon,            dtsubstep,        n_mode,               &
               dgn_a,             dgn_awet,         qaer_cur,             &!Intent(inouts)
               qgas_cur,          qnum_cur,         qwtr_cur,             &
               qgas_avg,          qgas_netprod_otrproc,                   &
-              uptkrate_h2so4,    misc_vars_aa_sub, Hconc_sav     ) ! to save aerosol pH dsj+zlu
+              uptkrate_h2so4,    uptkaer,          misc_vars_aa_sub,     &
+              Hconc_sav                                                  ) ! to save aerosol pH dsj+zlu
 ! --MW
         !------------------------------------------------------------------------------!
         !Purpose: This routine acts as an interface between Mosaic and CAM
@@ -2568,6 +2531,8 @@ do_newnuc_if_block50: &
         integer,  intent(in) :: nstep                 ! model time-step number
         integer,  intent(in) :: i_in, k_in            ! column and level indices
         integer,  intent(in) :: jsub_in               ! subarea index
+        integer,  intent(in) :: latndx, lonndx        ! lat and lon indices
+        integer,  intent(in) :: lund                  ! logical unit for diagnostic output
       
         real(r8), intent(in) :: temp             !Temperature at model levels (K)
         real(r8), intent(in) :: relhum           !Relative humidity (0-1)
@@ -2575,6 +2540,7 @@ do_newnuc_if_block50: &
         real(r8), intent(in) :: aircon           !Air molar density (kmol/m3)
         real(r8), intent(in) :: dtsubstep        !Time sub-step (s)
         integer,  intent(in) :: n_mode           !current number of active modes
+        real(r8), intent(in) :: uptkaer(max_gas, max_mode)
 
         !Args: intent(inout)
         real(r8), intent(inout) :: dgn_a(max_mode)            !Dry geo. mean dia. (m) of number distrib.
@@ -2984,7 +2950,10 @@ do_newnuc_if_block50: &
 
 ! *** ff04a version ***
 ! ++MW
-        call mosaic_box_aerchemistry(               aH2O,               T_K,            &!Intent-ins
+
+        call mosaic_box_aerchemistry(  latndx,      lonndx,           lund,             &!Intent-ins
+             jsub_in,                 n_mode,       aircon,                             &
+             aH2O,                    T_K,                                              &
              P_atm,                   RH_pc,        dtchem,                             &
              mcall_load_mosaic_parameters,          mcall_print_aer_in, sigmag_a,       &
              kappa_nonelectro,                                                          &
@@ -2993,9 +2962,11 @@ do_newnuc_if_block50: &
              gas_avg,                 gas_netprod_otrproc,              Dp_dry_a,       &
              dp_wet_a,                jhyst_leg,                                        &
              mosaic_vars_aa,                                                            &
+             qgas_avg,                qaer_cur,     qnum_cur,           qwtr_cur,       &
              mass_dry_a_bgn,          mass_dry_a,                                       &!Intent-outs
              dens_dry_a_bgn,          dens_dry_a,   water_a_hyst,       aH2O_a,         &
-             uptkrate_h2so4,          gam_ratio,    jaerosolstate_bgn,  Hconc_sav       ) ! to save aerosol pH (dsj+zlu)
+             uptkrate_h2so4,          uptkaer,      gam_ratio,                          &
+             jaerosolstate_bgn,  Hconc_sav       ) ! to save aerosol pH (dsj+zlu)
 ! --MW
 
 ! *** ff04a version ***
@@ -3193,7 +3164,7 @@ do_newnuc_if_block50: &
          uptkaer,           uptkrate_h2so4                          )
 
 ! uses
-
+        use mam_soaexch_vbs, only:mam_soaexch_vbs_1subarea
       implicit none
 
 ! arguments
@@ -3352,6 +3323,7 @@ do_newnuc_if_block50: &
 
 ! do soa
       if (soa_mech_type == soa_mech_type_vbs) then
+#if 0
          call mam_soaexch_vbs_1subarea(                                &
             nstep,             lchnk,                                  &
             i,                 k,                jsub,                 &
@@ -3364,6 +3336,7 @@ do_newnuc_if_block50: &
             qnum_cur,                                                  &
             qwtr_cur,                                                  &
             uptkaer                                                    )
+#endif
       else
          call mam_soaexch_default_1subarea(                            &
             nstep,             lchnk,                                  &
@@ -3834,7 +3807,7 @@ time_loop: &
       return
       end subroutine mam_soaexch_default_1subarea
 
-
+#if 0
 !----------------------------------------------------------------------
 !----------------------------------------------------------------------
       subroutine mam_soaexch_vbs_1subarea(                          &
@@ -4239,7 +4212,7 @@ time_loop: &
 
       return
       end subroutine mam_soaexch_vbs_1subarea
-
+#endif
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
