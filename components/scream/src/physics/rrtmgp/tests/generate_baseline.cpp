@@ -85,8 +85,8 @@ int main (int argc, char** argv) {
     // input/outputs into the driver (persisting between calls), and
     // we would just have to setup the pointers to them in the
     // FluxesBroadband object
-    const int nswbands = 14;
-    const int nlwbands = 16;
+    const auto nswbands = scream::rrtmgp::k_dist_sw.get_nband();
+    const auto nlwbands = scream::rrtmgp::k_dist_lw.get_nband();
     real2d sw_flux_up ("sw_flux_up" , ncol, nlay+1);
     real2d sw_flux_dn ("sw_flux_dn" , ncol, nlay+1);
     real2d sw_flux_dn_dir("sw_flux_dn_dir", ncol, nlay+1);
@@ -108,7 +108,6 @@ int main (int argc, char** argv) {
       sfc_alb_dir, sfc_alb_dif);
 
     // Setup some dummy aerosol optical properties
-    const auto nlwbands = scream::rrtmgp::k_dist_lw.get_nband();
     auto aer_tau_sw = real3d("aer_tau_sw", ncol, nlay, nswbands);
     auto aer_ssa_sw = real3d("aer_ssa_sw", ncol, nlay, nswbands);
     auto aer_asm_sw = real3d("aer_asm_sw", ncol, nlay, nswbands);

@@ -37,5 +37,4 @@ Initial Conditions:
 # The parameters for I/O control
 Scorpio:
   Output YAML Files: ["rrtmgp_standalone_output.yaml"]
-
 ...

@@ -142,7 +142,6 @@ int main(int argc, char** argv) {
       sfc_alb_dir, sfc_alb_dif);
 
     // Setup some dummy aerosol optical properties
-    const auto nlwbands = scream::rrtmgp::k_dist_lw.get_nband();
     auto aer_tau_sw = real3d("aer_tau_sw", ncol, nlay, nswbands);
     auto aer_ssa_sw = real3d("aer_ssa_sw", ncol, nlay, nswbands);
     auto aer_asm_sw = real3d("aer_asm_sw", ncol, nlay, nswbands);
