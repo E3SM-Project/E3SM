@@ -266,10 +266,7 @@ module ocn_time_integration_split
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracersNew
 
       ! Remap variables
-      real (kind=RKIND) :: totalThickness
-      real (kind=RKIND), dimension(:,:), allocatable :: layerThicknessRemap
       real (kind=RKIND), dimension(:,:), pointer :: &
-         restingThickness,      &
          layerThicknessLagNew
 
       ! These are public variables used from the diagnostics module
@@ -2445,35 +2442,14 @@ module ocn_time_integration_split
 
          call mpas_timer_start("vertical remap")
 
-         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
          call mpas_pool_get_array(statePool, 'layerThicknessLag', layerThicknessLagNew, 2)
 
-         allocate(layerThicknessRemap(nVertLevels, nCellsAll))
-         ! Initialize target layerThickness for remapping to
-         ! its current, Lagrangian location
-         layerThicknessRemap = layerThicknessNew
          ! Store the current, Lagrangian location for computation of the
          ! Eulerian vertical velocity induced by remapping
          layerThicknessLagNew = layerThicknessNew
 
-         ! calc. z*-style expansions
-         !$omp parallel
-         !$omp do schedule(runtime) private(k,totalThickness)
-         do iCell = 1, nCellsAll
-            totalThickness = 0.0_RKIND
-            do k = maxLevelCell(iCell), minLevelCell(iCell), -1
-               totalThickness = totalThickness + layerThicknessNew(k,iCell)
-            end do
-            do k = maxLevelCell(iCell), minLevelCell(iCell), -1
-               layerThicknessRemap(k, iCell) = restingThickness(k, iCell) * &
-                                               totalThickness / bottomDepth(iCell)
-            end do
-         end do
-         !$omp end do
-         !$omp end parallel
-         call ocn_remap_vert_state(block, layerThicknessRemap, err)
-
-         deallocate(layerThicknessRemap)
+         ! Perform the remapping
+         call ocn_remap_vert_state(block, err)
 
          call mpas_timer_stop("vertical remap")
 

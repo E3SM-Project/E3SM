@@ -24,6 +24,7 @@ OBJS = mpas_ocn_init_routines.o \
 	   mpas_ocn_vel_forcing_explicit_bottom_drag.o \
 	   mpas_ocn_vel_pressure_grad.o \
 	   mpas_ocn_vertical_remap.o \
+	   mpas_ocn_vertical_regrid.o \
 	   mpas_ocn_vmix.o \
 	   mpas_ocn_vmix_coefs_redi.o \
 	   mpas_ocn_vmix_cvmix.o \
@@ -218,7 +219,9 @@ mpas_ocn_vel_pressure_grad.o: mpas_ocn_constants.o
 
 mpas_ocn_vel_tidal_potential.o: mpas_ocn_diagnostics_variables.o
 
-mpas_ocn_vertical_remap.o: mpas_ocn_diagnostics.o mpas_ocn_config.o mpas_ocn_constants.o mpas_ocn_mesh.o
+mpas_ocn_vertical_regrid.o: mpas_ocn_config.o mpas_ocn_constants.o mpas_ocn_mesh.o
+
+mpas_ocn_vertical_remap.o: mpas_ocn_diagnostics.o mpas_ocn_config.o mpas_ocn_constants.o mpas_ocn_mesh.o mpas_ocn_vertical_regrid.o
 
 clean:
 	$(RM) *.o *.i *.mod *.f90

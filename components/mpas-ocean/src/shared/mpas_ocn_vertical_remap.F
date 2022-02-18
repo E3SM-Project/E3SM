@@ -32,6 +32,7 @@ module ocn_vertical_remap
    use ocn_config
    use ocn_mesh
    use ocn_diagnostics
+   use ocn_vertical_regrid
 
    use ppr_1d
 
@@ -65,19 +66,18 @@ module ocn_vertical_remap
 !
 !  ocn_remap_vert_state
 !
-!> \brief MPAS ocean vertical Lagrangian remapping
-!> \author Mark Petersen, Doug Jacobsen, Todd Ringler
-!> \date   September 2011
+!> \brief  MPAS ocean vertical Lagrangian remapping
+!> \author Carolyn Begeman, Darren Engwirda, Xylar Asay-Davis
+!> \date   July 2021
 !> \details
 !>  This routine remaps state variables from current layerThickness to
 !>  a new layerThickness
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_remap_vert_state(block, layerThicknessNew, err)
+   subroutine ocn_remap_vert_state(block, err)
 
       type (block_type), intent(in) :: block
-      real (kind=RKIND), dimension(:, :), intent(in) :: layerThicknessNew
       integer, intent(out) :: err
 
       integer :: nCells, nEdges
@@ -94,6 +94,7 @@ module ocn_vertical_remap
 
       real (kind=RKIND), dimension(:, :, :), allocatable :: dataNow, dataNew
       real (kind=RKIND), dimension(:, :), allocatable :: &
+         layerThicknessNew,            & ! layerThickness (new target grid)
          layerThickEdge,               & ! layerThickness at edges (lagrangian grid)
          layerThickEdgeNew,            & ! layerThickness at edges (new target grid)
          heightCellNow, heightEdgeNow, & ! depth at layer interfaces (lagrangian grid)
@@ -135,9 +136,14 @@ module ocn_vertical_remap
       allocate(heightCellNew(nVertLevels + 1, nCells))
       allocate(heightEdgeNow(nVertLevels + 1, nEdges))
       allocate(heightEdgeNew(nVertLevels + 1, nEdges))
+      allocate(layerThicknessNew(nVertLevels, nCells + 1))
       allocate(layerThickEdge(nVertLevels, nEdges))
       allocate(layerThickEdgeNew(nVertLevels, nEdges))
 
+      ! Compute new layer thicknesses based on vertical coordinate choice
+      ! Currently, zstar coordinate is hard-coded
+      call ocn_vert_regrid(restingThickness, layerThickness, &
+                           layerThicknessNew, err)
 
       ! There's currently a silly issue in PPR: it assumes the "coordinates" for
       ! the data being remapped increases with index. Here, we have the opposite
@@ -383,6 +389,8 @@ module ocn_vertical_remap
       integer, intent(out) :: err !< Output: Error flag
 
       err = 0
+
+      call ocn_vert_regrid_init(err)
 
       if ( config_time_integrator == 'RK4' ) then
          CALL mpas_log_write('Vertical remap not supported for RK4', &
