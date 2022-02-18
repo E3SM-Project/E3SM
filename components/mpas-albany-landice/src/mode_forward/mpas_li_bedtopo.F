@@ -227,17 +227,9 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_uplift_method', config_uplift_method)
       if (trim(config_uplift_method)=='none') then
          ! do nothing
-#ifdef USE_SEALEVELMODEL
-      call mpas_log_write("MALI is built with 'SLM=true. Set 'config_uplift_method=sealevelmodel'", &
-           MPAS_LOG_ERR)
-      err = ior(err,1)
-#endif
+
       elseif (trim(config_uplift_method)=='data') then
-#ifdef USE_SEALEVELMODEL
-         call mpas_log_write("MALI is built with 'SLM=true. Set 'config_uplift_method=sealevelmodel'", &
-	           MPAS_LOG_ERR)
-	      err = ior(err,1)
-#endif
+
          block => domain % blocklist
          do while (associated(block))
 
@@ -282,12 +274,16 @@ contains
       endif
 
 
+
+
+
       ! === error check
       if (err > 0) then
-          call mpas_log_write("An error has occurred in li_bedtopo_solve.")
+          call mpas_log_write("An error has occurred in li_bedtopo_solve.", MPAS_LOG_ERR)
       endif
 
    !--------------------------------------------------------------------
+
    end subroutine li_bedtopo_solve
 
 
@@ -326,8 +322,22 @@ contains
       ! local variables
       !-----------------------------------------------------------------
 
+      character (len=StrKIND), pointer :: config_uplift_method
+
       err = 0
 
+#ifdef USE_SEALEVELMODEL
+      call mpas_pool_get_config(liConfigs, 'config_uplift_method', config_uplift_method)
+		if (trim(config_uplift_method)=='sealevelmodel') then
+	      if (curProc.eq.0) then
+	         deallocate(nCellsPerProc)
+			   deallocate(nCellsDisplacement)
+	         deallocate(indexToCellIDGathered)
+	         deallocate(toRowValues, toColValues, toSValues)
+	         deallocate(fromRowValues, fromColValues, fromSValues)
+	      endif
+		endif
+#endif
    !--------------------------------------------------------------------
    end subroutine li_bedtopo_finalize
 
@@ -396,7 +406,8 @@ contains
       err_tmp = 0
 
       ! initialize interpolation
-      call interpolate_init(domain, err)
+      call interpolate_init(domain, err_tmp)
+      err = ior(err, err_tmp)
 
       ! Set needed variables for using MPI
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
@@ -490,10 +501,11 @@ contains
          call sl_solver_init(itersl, starttime, ismIceload, ismBedtopo, ismMask)
          call sl_deallocate_array
 
-         deallocate(globalArrayThickness, gatheredArrayThickness)
-         deallocate(globalArrayBedTopography, gatheredArrayBedTopography)
+         deallocate(globalArrayThickness)
+			deallocate(gatheredArrayThickness)
+			deallocate(globalArrayBedTopography)
+			deallocate(gatheredArrayBedTopography)
          deallocate(meshMask)
-
       endif
 
 # else
@@ -557,12 +569,12 @@ contains
       type (mpas_pool_type), pointer :: velocityPool      !< velocity information
 
       real (kind=RKIND), dimension(:), pointer :: bedTopography, thickness
-      real (kind=RKIND), dimension(:), pointer :: TopoChange
+      real (kind=RKIND), dimension(:), pointer :: topoChange
 
-      real (kind=RKIND), dimension(:), allocatable :: slChange_maliMesh, meshMask
+      real (kind=RKIND), dimension(:), allocatable :: meshMask
       real (kind=RKIND), dimension(nglv,2*nglv) :: ismIceload, ismMask
       real (kind=RKIND), dimension(nglv,2*nglv) :: slmSLchange
-      real (kind=RKIND), dimension(nglv*2*nglv) :: slChange_slGrid1D
+      real (kind=RKIND), dimension(nglv*2*nglv) :: slChangeSLgrid1D
       real (kind=RKIND), dimension(nglv*2*nglv) :: thicknessSLgrid1D
       real (kind=RKIND), dimension(nglv*2*nglv) :: maskSLgrid1D
 
@@ -577,7 +589,7 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-      call mpas_pool_get_array(geometryPool, 'TopoChange', TopoChange)
+      call mpas_pool_get_array(geometryPool, 'topoChange', topoChange)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
 
@@ -621,12 +633,12 @@ contains
          call sl_deallocate_array
 
          ! reshape 2D array SLM output into 1D array
-         slChange_slGrid1D = reshape(slmSLchange, [nglv*2*nglv])
+         slChangeSLgrid1D = reshape(slmSLchange, [nglv*2*nglv])
 
          ! interpolate sea-level change from GL grid to MALI mesh.
 			! note: in the static sea-level theory, sea level and topography are globally defined !>
 			! and negative of each other. That is, topography change is negative of sea-level change
-         call interpolate(fromColValues, fromRowValues, fromSValues, -1*(slChange_slGrid1D), globalArrayTopoChange)
+         call interpolate(fromColValues, fromRowValues, fromSValues, -1*(slChangeSLgrid1D), globalArrayTopoChange)
 
          ! Rearrange back to index order
          do iCell = 1,nCellsGlobal
@@ -637,25 +649,27 @@ contains
 
       ! scatter output sea-level changes to processors
       call MPI_SCATTERV(gatheredArrayTopoChange, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
-                  TopoChange, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
+                  topoChange, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
       err = ior(err, err_tmp)
 
       ! update bedTopography
-      bedTopography(:) = bedTopography(:) + TopoChange(:)
-
-      call li_update_geometry(geometryPool)
-      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-      err = ior(err, err_tmp)
-
-      ! deallocate memory
-      if (curProc.eq.0) then
-         deallocate(globalArrayThickness, gatheredArrayThickness)
-         deallocate(globalArrayTopoChange, gatheredArrayTopoChange)
-         deallocate(meshMask)
-      endif
+      bedTopography(:) = bedTopography(:) + topoChange(:)
 
       ! Perform Halo exchange update
       call mpas_dmpar_field_halo_exch(domain,'bedTopography')
+     call mpas_log_write("C")
+      call li_update_geometry(geometryPool)
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+      err = ior(err, err_tmp)
+     call mpas_log_write("D")
+      ! deallocate memory
+      if (curProc.eq.0) then
+         deallocate(globalArrayThickness)
+			deallocate(gatheredArrayThickness)
+			deallocate(globalArrayTopoChange)
+			deallocate(gatheredArrayTopoChange)
+         deallocate(meshMask)
+      endif
 #endif
 
    !--------------------------------------------------------------------
@@ -798,27 +812,43 @@ contains
 
          ! Open netcdf weights files
          call check( nf90_open(path = mpasToGridFile, mode = nf90_nowrite, ncid = toNcId), err_tmp)
+			err = ior(err, err_tmp)
          call check( nf90_open(path = gridToMpasFile, mode = nf90_nowrite, ncid = fromNcId), err_tmp)
+			err = ior(err, err_tmp)
 
          ! Get dimension ID
          call check( nf90_inq_dimid(fromNcId, "n_s", fromNsDimId), err_tmp)
+			err = ior(err, err_tmp)
          call check( nf90_inq_dimid(toNcId, "n_a", nMpasDimId), err_tmp)
+			err = ior(err, err_tmp)
          call check( nf90_inq_dimid(toNcId, "n_s", toNsDimId), err_tmp)
+			err = ior(err, err_tmp)
          call check( nf90_inq_dimid(fromNcId, "n_a", nGridDimId), err_tmp)
+			err = ior(err, err_tmp)
 
          ! Get Variable IDs
          call check( nf90_inq_varid(toNcId, "row", toRowId), err_tmp)
+			err = ior(err, err_tmp)
          call check( nf90_inq_varid(toNcId, "col", toColId), err_tmp)
+			err = ior(err, err_tmp)
          call check( nf90_inq_varid(toNcId, "S", toSId), err_tmp)
+			err = ior(err, err_tmp)
          call check( nf90_inq_varid(fromNcId, "row", fromRowId), err_tmp)
+			err = ior(err, err_tmp)
          call check( nf90_inq_varid(fromNcId, "col", fromColId), err_tmp)
+			err = ior(err, err_tmp)
          call check( nf90_inq_varid(fromNcId, "S", fromSId), err_tmp)
+			err = ior(err, err_tmp)
 
          ! Get Dimension Length
          call check( nf90_inquire_dimension(toNcId, toNsDimId, toNsName, toNsLen), err_tmp)
+			err = ior(err, err_tmp)
          call check( nf90_inquire_dimension(fromNcId, fromNsDimId, fromNsName, fromNsLen), err_tmp)
+			err = ior(err, err_tmp)
          call check( nf90_inquire_dimension(toNcId, nMpasDimId, nMpasName, nMpas), err_tmp)
+			err = ior(err, err_tmp)
          call check( nf90_inquire_dimension(fromNcId, nGridDimId, nGridName, nGrid), err_tmp)
+			err = ior(err, err_tmp)
 
          ! Allocate matrices to read data into
          allocate ( toRowValues (toNsLen) )
@@ -830,11 +860,17 @@ contains
 
          ! Retrieve data
          call check( nf90_get_var(toNcId, toColId, toColValues(:) ), err_tmp)
+			err = ior(err, err_tmp)
          call check( nf90_get_var(toNcId, toRowId, toRowValues(:) ), err_tmp)
+			err = ior(err, err_tmp)
          call check( nf90_get_var(toNcId, toSId, toSValues(:) ), err_tmp)
+			err = ior(err, err_tmp)
          call check( nf90_get_var(fromNcId, fromColId, fromColValues(:) ), err_tmp)
+			err = ior(err, err_tmp)
          call check( nf90_get_var(fromNcId, fromRowId, fromRowValues(:) ), err_tmp)
+			err = ior(err, err_tmp)
          call check( nf90_get_var(fromNcId, fromSId, fromSValues(:) ), err_tmp)
+			err = ior(err, err_tmp)
 
       endif
 
