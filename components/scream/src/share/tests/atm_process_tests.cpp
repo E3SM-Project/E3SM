@@ -354,37 +354,6 @@ protected:
   }
 };
 
-class AddTwo : public DummyProcess
-{
-public:
-  AddTwo (const ekat::Comm& comm,const ekat::ParameterList& params)
-   : DummyProcess(comm,params)
-  {
-    // Nothing to do here
-  }
-
-  // The type of the atm proc
-  AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
-
-  void set_grids (const std::shared_ptr<const GridsManager> gm) {
-    using namespace ekat::units;
-
-    const auto grid = gm->get_grid(m_grid_name);
-    const auto lt = grid->get_2d_scalar_layout ();
-
-    add_field<Updated>("Field B",lt,K,m_grid_name);
-  }
-protected:
-    void run_impl (const int /* dt */) {
-    auto v = get_field_out("Field B", m_grid_name).get_view<Real*,Host>();
-
-    for (int i=0; i<v.extent_int(0); ++i) {
-      v[i] += Real(2.0);
-    }
-  }
-};
-
-
 // ================================ TESTS ============================== //
 
 TEST_CASE("process_factory", "") {
@@ -620,20 +589,6 @@ TEST_CASE ("diagnostics") {
   // Create a grids manager
   auto gm = create_gm(comm);
 
-  // Use the AddOne process to generate the field data to use with diagnostic
-  ekat::ParameterList params_proc_A;
-  params_proc_A.set<std::string>("Process Name", "AddOne");
-  params_proc_A.set<std::string>("Grid Name", "Point Grid");
-  auto ap1     = std::make_shared<AddOne>(comm,params_proc_A);
-  ap1->set_grids(gm);
-
-  // Use the AddTwo process to generate the field data to use with diagnostic
-  ekat::ParameterList params_proc_B;
-  params_proc_B.set<std::string>("Process Name", "AddTwo");
-  params_proc_B.set<std::string>("Grid Name", "Point Grid");
-  auto ap2     = std::make_shared<AddTwo>(comm,params_proc_B);
-  ap2->set_grids(gm);
-
   // Create the identity diagnostic
   ekat::ParameterList params_identity;
   params_identity.set<std::string>("Diagnostic Name", "DiagIdentity");
@@ -655,58 +610,38 @@ TEST_CASE ("diagnostics") {
   auto diag_fail = std::make_shared<DiagFail>(comm,params_fail);
   diag_fail->set_grids(gm);
 
-  // Create fields for ap1
-  for(const auto& req : ap1->get_required_field_requests()) {
+  std::map<std::string,Field> input_fields;
+  for (const auto& req : diag_sum->get_required_field_requests()) {
     Field f(req.fid);
     f.allocate_view();
-    f.deep_copy(0);
+    const auto name = f.name();
     f.get_header().get_tracking().update_time_stamp(t0);
-    // Set the required and computed fields for the process and for the diagnostic(s)
-    ap1->set_required_field(f.get_const());
-    ap1->set_computed_field(f);
-    diag_identity->set_required_field(f.get_const());
     diag_sum->set_required_field(f.get_const());
-  }
-
-  // Create fields for ap2
-  for(const auto& req : ap2->get_required_field_requests()) {
-    Field f(req.fid);
-    f.allocate_view();
-    f.deep_copy(0);
-    f.get_header().get_tracking().update_time_stamp(t0);
-    // Set the required and computed fields for the process and for the diagnostic(s)
-    ap2->set_required_field(f.get_const());
-    ap2->set_computed_field(f);
-    diag_sum->set_required_field(f.get_const());
-  }
-
-  // Check that computed fields fail for the fail diagnostic
-  for(const auto& req : ap2->get_required_field_requests()) {
-    Field f(req.fid);
-    f.allocate_view();
     REQUIRE_THROWS(diag_fail->set_computed_field(f));
+    if (name == "Field A") {
+      diag_identity->set_required_field(f.get_const());
+      f.deep_copy(1.0);
+    } else {
+      f.deep_copy(2.0);
+    } 
+    input_fields.emplace(name,f);
   }
+  auto f_A        = input_fields["Field A"];
+  auto f_B        = input_fields["Field B"];
+  auto v_A        = f_A.get_view<Real*,Host>();
+  auto v_B        = f_B.get_view<Real*,Host>();
 
-
-  ap1->initialize(t0,RunType::Initial);
-  ap2->initialize(t0,RunType::Initial);
   diag_identity->initialize(t0,RunType::Initial);
   diag_sum->initialize(t0,RunType::Initial);
 
   // Run the AddOne process for one timestep
-  const int dt = 5;  // Note, neither process use dt so really can be any value.
-  ap1->run(dt);
-  ap2->run(dt);
+  const int dt = 5;  // Note, none of the diagnostics actually use dt so really can be any value.
 
   // Run the diagnostics
-  auto f_identity = diag_identity->get_diagnostic(dt);
-  auto f_sum      = diag_sum->get_diagnostic(dt);
+  const auto& f_identity = diag_identity->get_diagnostic(dt);
+  const auto& f_sum      = diag_sum->get_diagnostic(dt);
 
   // For the identity diagnostic check that the fields match
-  auto f_A        = ap1->get_field_out("Field A");
-  auto f_B        = ap2->get_field_out("Field B");
-  auto v_A        = f_A.get_view<const Real*,Host>();
-  auto v_B        = f_B.get_view<const Real*,Host>();
   auto v_identity = f_identity.get_view<const Real*,Host>();
   auto v_sum      = f_sum.get_view<const Real*,Host>();
   REQUIRE (v_A.size()==v_identity.size());

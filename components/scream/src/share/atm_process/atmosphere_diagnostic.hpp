@@ -40,8 +40,8 @@ public:
   // Getting the diagnostic output
   Field get_diagnostic (const Real dt);
 
-  void set_computed_field (const Field& f);
-  void set_computed_group (const FieldGroup& group);
+  void set_computed_field (const Field& f) final;
+  void set_computed_group (const FieldGroup& group) final;
 protected:
 
   // Diagnostics are meant to return a field
