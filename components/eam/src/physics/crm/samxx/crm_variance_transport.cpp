@@ -16,8 +16,8 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
   
   yakl::RealFFT1D<nx> fftx;
   yakl::RealFFT1D<fftySize> ffty;
-  fftx.init(fftx.trig);
-  ffty.init(ffty.trig);
+  fftx.init();
+  ffty.init();
 
   //----------------------------------------------------------------------------
   // Forward Fourier transform
