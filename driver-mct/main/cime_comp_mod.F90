@@ -686,6 +686,7 @@ contains
     integer :: driver_comm
     integer :: npes_CPLID
     logical :: verbose_taskmap_output
+    logical :: bfbflag
     character(len=8) :: c_cpl_inst    ! coupler instance number
     character(len=8) :: c_cpl_npes    ! number of pes in coupler
 
@@ -931,6 +932,10 @@ contains
        write(logunit,'(2A)') subname,' MCT_INTERFACE is set'
        if (num_inst_driver > 1) &
             write(logunit,'(2A,I0,A)') subname,' Driver is running with',num_inst_driver,'instances'
+       
+       call seq_infodata_GetData(infodata, bfbflag=bfbflag)
+       write(logunit,'(2A,L4)') subname,'BFBFLAG is:',bfbflag
+       
     endif
 
     !----------------------------------------------------------
