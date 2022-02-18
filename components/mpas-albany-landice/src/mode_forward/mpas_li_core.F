@@ -390,6 +390,7 @@ module li_core
 
       integer :: err, err_tmp, err_tmp2, globalErr
 
+
       err = 0
       err_tmp = 0
       globalErr = 0
@@ -398,7 +399,7 @@ module li_core
       call mpas_pool_get_config(liConfigs, 'config_restart_timestamp_name', config_restart_timestamp_name)
       call mpas_pool_get_config(liConfigs, 'config_stats_interval', config_stats_interval)
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
-      
+
       call mpas_timer_start("land ice core run")
 
       ! initialize time step number.  initial time is 0
@@ -422,6 +423,7 @@ module li_core
       ! === Time step loop
       ! ===
       do while (.not. mpas_is_clock_stop_time(domain % clock))
+
          ! Update time step number
          block => domain % blocklist
          do while(associated(block))
@@ -437,6 +439,7 @@ module li_core
          ! === Perform Timestep
          ! ===
          call mpas_timer_start("time integration")
+
          call li_timestep(domain, err_tmp)
          err = ior(err,err_tmp)
 
@@ -539,6 +542,7 @@ module li_core
          err = ior(err, err_tmp)
          call mpas_timer_stop("write streams")
 
+
          ! === (end of output section) ===
 
          ! Move time level 1 fields (current values) into time level 2 (old values) for next time step
@@ -563,11 +567,13 @@ module li_core
          if (globalErr > 0) then
              call mpas_log_write("An error has occurred in li_core_run. Aborting...", MPAS_LOG_CRIT)
          endif
+
       end do
       call mpas_timer_stop("land ice core run")
 
    !--------------------------------------------------------------------
    end function li_core_run
+
 
 
 !***********************************************************************
@@ -1066,6 +1072,7 @@ module li_core
       call mpas_pool_get_config(configs, 'config_uplift_method', config_uplift_method)
       call mpas_pool_get_config(configs, 'config_slm_coupling_interval', config_slm_coupling_interval)
 
+
       ! Set time to the user-specified start time OR use a restart time from file
       if ( trim(config_start_time) == "file" ) then
          open(22, file=config_restart_timestamp_name, form='formatted', status='old')
@@ -1127,7 +1134,7 @@ module li_core
       endif
       ierr = ior(ierr, err_tmp)
 
-      ! Set up the coupling time interval if MALI is coupled to sea-level model 
+      ! Set up the coupling time interval if MALI is coupled to sea-level model
       if (trim(config_uplift_method) == "sealevelmodel") then
          call mpas_set_timeInterval(slm_coupling_interval, timeString=config_slm_coupling_interval, ierr=err_tmp)
          ierr = ior(ierr,err_tmp)

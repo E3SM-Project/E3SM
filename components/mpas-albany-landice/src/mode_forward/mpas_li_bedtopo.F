@@ -51,6 +51,7 @@ module li_bedtopo
    !--------------------------------------------------------------------
    ! Private module variables
    !--------------------------------------------------------------------
+	
    ! sea-level model timestep
    integer, save :: slmTimeStep
 
@@ -340,6 +341,7 @@ contains
 #endif
    !--------------------------------------------------------------------
    end subroutine li_bedtopo_finalize
+
 
 
    ! private subroutines
