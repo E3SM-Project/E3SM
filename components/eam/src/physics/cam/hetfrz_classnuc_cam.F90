@@ -1254,7 +1254,7 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
          as_ca  = aer(ii,kk,ca_accum)
          as_co3 = aer(ii,kk,co3_accum)
          as_cl  = aer(ii,kk,cl_accum)
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM)
          as_mom = aer(ii,kk,mom_accum)
 #endif
 
@@ -1598,7 +1598,7 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
       else
         fac_volsfc_bc      = exp(2.5_r8*alnsg_mode_pcarbon**2)
 
-#if (defined MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM)
         vol_shell(1) = ( aer(ii,kk,pom_pcarbon)*pom_equivso4_factor/specdens_pom + &
                          aer(ii,kk,mom_pcarbon)*mom_equivso4_factor/specdens_mom & 
                         )/rhoair
@@ -1814,7 +1814,7 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
                        aer(ii,kk,pom_coarse) + aer(ii,kk,mom_coarse) )/ &
                      ( aer(ii,kk,soa_coarse) + aer(ii,kk,pom_coarse) + &
                        aer(ii,kk,so4_coarse) + aer(ii,kk,bc_coarse) + aer(ii,kk,mom_coarse) )
-#elif (defined MODAL_AERO_4MODE_MOM)
+#elif (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM )
          awfacm(3) = ( aer(ii,kk,mom_coarse) ) / & 
                      ( aer(ii,kk,so4_coarse) + aer(ii,kk,mom_coarse) )
 #elif (defined RAIN_EVAP_TO_COARSE_AERO) 

@@ -497,8 +497,8 @@ contains
              call add_default (dummy, 1, ' ')
           endif
        enddo
-
-#if (defined MODAL_AERO_9MODE || MODAL_AERO_4MODE_MOM)
+!qzr added || defined MODAL_AERO_4MODE_SOA_MOM here
+#if (defined MODAL_AERO_9MODE || MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM)
        dummy = 'SSTSFMBL_OM'
        call addfld (dummy,horiz_only, 'A','kg/m2/s','Mobilization flux of marine organic matter at surface')
        if (history_aerosol) then
@@ -788,7 +788,7 @@ contains
     index_tot_mass(3,3) = get_spc_ndx('so4_a3')
     index_chm_mass(3,1) = get_spc_ndx('so4_a3')
     !
-#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) && ( defined MOSAIC_SPECIES ) )
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM) && ( defined RAIN_EVAP_TO_COARSE_AERO ) && ( defined MOSAIC_SPECIES ) )
     !
     ! accumulation mode #1
     !
@@ -851,7 +851,7 @@ contains
     index_tot_mass(4,3) = get_spc_ndx('mom_a4')
     index_chm_mass(4,1) = get_spc_ndx('bc_a4' )
     !
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM )
     !
     ! accumulation mode #1
     !
