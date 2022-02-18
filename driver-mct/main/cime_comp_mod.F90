@@ -686,7 +686,6 @@ contains
     integer :: driver_comm
     integer :: npes_CPLID
     logical :: verbose_taskmap_output
-    logical :: bfbflag
     character(len=8) :: c_cpl_inst    ! coupler instance number
     character(len=8) :: c_cpl_npes    ! number of pes in coupler
 
@@ -932,10 +931,6 @@ contains
        write(logunit,'(2A)') subname,' MCT_INTERFACE is set'
        if (num_inst_driver > 1) &
             write(logunit,'(2A,I0,A)') subname,' Driver is running with',num_inst_driver,'instances'
-       
-       call seq_infodata_GetData(infodata, bfbflag=bfbflag)
-       write(logunit,'(2A,L4)') subname,'BFBFLAG is:',bfbflag
-       
     endif
 
     !----------------------------------------------------------
@@ -1017,6 +1012,7 @@ contains
 
     real(r8), parameter :: epsilo = shr_const_mwwv/shr_const_mwdair
 
+    logical :: bfbflag !.true. if bfbflag is true
     integer(i8) :: beg_count          ! start time
     integer(i8) :: end_count          ! end time
     integer(i8) :: irtc_rate          ! factor to convert time to seconds
@@ -1364,6 +1360,13 @@ contains
        call pio_closefile(pioid)
     endif
 
+    !Print BFBFLAG value in the log file
+    if (iamroot_CPLID) then
+       call seq_infodata_GetData(infodata, bfbflag=bfbflag)
+       write(logunit,'(2A,L4)') subname,'BFBFLAG is:',bfbflag       
+    endif
+
+    
     call t_stopf('CPL:cime_pre_init2')
 
     ! CPL:cime_pre_init2 timer elapsed time will be double counted
