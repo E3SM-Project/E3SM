@@ -57,4 +57,4 @@
 	url = git@github.com:MCSclimate/MCT.git
 [submodule "components/mpas-albany-landice/src/SeaLevelModel"]
 	path = components/mpas-albany-landice/src/SeaLevelModel
-	url = git@github.com:hollyhan/SeaLevelModel.git
+	url = git@github.com:MALI-Dev/1DSeaLevelModel_FWTW.git
