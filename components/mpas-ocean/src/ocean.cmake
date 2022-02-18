@@ -54,6 +54,7 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_vel_forcing_explicit_bottom_drag.F
   core_ocean/shared/mpas_ocn_vel_pressure_grad.F
   core_ocean/shared/mpas_ocn_vel_forcing_topographic_wave_drag.F
+  core_ocean/shared/mpas_ocn_vertical_advection.F
   core_ocean/shared/mpas_ocn_vertical_regrid.F
   core_ocean/shared/mpas_ocn_vertical_remap.F
   core_ocean/shared/mpas_ocn_vmix.F

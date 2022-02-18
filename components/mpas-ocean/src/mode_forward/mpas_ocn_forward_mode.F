@@ -83,7 +83,8 @@ module ocn_forward_mode
    use ocn_vmix
    use ocn_vmix_gotm, only: ocn_vmix_gotm_finalize
 
-   use ocn_vertical_remap
+   use ocn_vertical_advection
+   use ocn_vertical_remap, only: ocn_vertical_remap_init
 
    use ocn_forcing
    use ocn_time_varying_forcing
@@ -464,7 +465,9 @@ module ocn_forward_mode
       ierr = ior(ierr, err_tmp)
       call ocn_tendency_init(err_tmp)
       ierr = ior(ierr,err_tmp)
-      call ocn_vertical_remap_init(err_tmp)
+      call ocn_vertical_advection_init(err_tmp)
+      if ( configVertAdvMethod == vertAdvRemap ) &
+         call ocn_vertical_remap_init(err_tmp)
       ierr = ior(ierr,err_tmp)
 
       if (ierr /= 0) then

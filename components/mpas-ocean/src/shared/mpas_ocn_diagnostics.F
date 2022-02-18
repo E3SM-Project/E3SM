@@ -37,6 +37,7 @@ module ocn_diagnostics
    use ocn_diagnostics_variables
    use ocn_mesh
    use ocn_surface_land_ice_fluxes
+   use ocn_vertical_advection
 
    implicit none
    private
@@ -239,7 +240,7 @@ contains
              vertGMBolusVelocityTop, relativeVorticityCell, divergence, &
              kineticEnergyCell, tangentialVelocity)
 
-      if ( config_vert_advection_method == 'remap' ) then
+      if ( configVertAdvMethod == vertAdvRemap ) then
 
          ! Overwrite vertVelocityTop with exact Eulerian solution from remapping
          call mpas_pool_get_array(statePool, 'layerThicknessLag', &
@@ -2334,8 +2335,8 @@ contains
 
       err = 0
 
-      if (config_vert_coord_movement.eq.'impermeable_interfaces' .or. &
-          config_vert_advection_method.eq.'remap') then
+      if (config_vert_coord_movement == 'impermeable_interfaces' .or. &
+          configVertAdvMethod == vertAdvRemap) then
         vertAleTransportTop=0.0_RKIND
         !$acc update device(vertAleTransportTop)
         return

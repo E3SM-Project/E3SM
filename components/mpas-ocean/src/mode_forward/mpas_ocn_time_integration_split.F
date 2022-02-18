@@ -40,6 +40,7 @@ module ocn_time_integration_split
 
    use ocn_equation_of_state
    use ocn_vmix
+   use ocn_vertical_advection
    use ocn_vertical_remap
    use ocn_time_average_coupled
 
@@ -84,11 +85,10 @@ module ocn_time_integration_split
                            ! outer timestep iteration
 
    integer :: &
-      configVertAdvMethod, &! type of vertical advection method
-      neededHalos,         &! number of halo levels needed
-      haloDecrement,       &! number of halos to invalidate each cycle
-      numTSIterations,     &! number of outer timestep iterations
-      nBtrSubcycles         ! number of barotropic subcycles
+      neededHalos,     &! number of halo levels needed
+      haloDecrement,   &! number of halos to invalidate each cycle
+      numTSIterations, &! number of outer timestep iterations
+      nBtrSubcycles     ! number of barotropic subcycles
 
    integer :: ssh_sal_on
 
@@ -2438,7 +2438,7 @@ module ocn_time_integration_split
 
       call mpas_timer_stop("se implicit vert mix")
 
-      if ( configVertAdvMethod == 2 ) then
+      if ( configVertAdvMethod == vertAdvRemap ) then
 
          call mpas_timer_start("vertical remap")
 
@@ -2743,12 +2743,6 @@ module ocn_time_integration_split
          useVelocityCorrection = 1.0_RKIND
       else
          useVelocityCorrection = 0.0_RKIND
-      endif
-
-      if ( config_vert_advection_method == 'flux-form' ) then
-         configVertAdvMethod = 1
-      elseif ( config_vert_advection_method == 'remap' ) then
-         configVertAdvMethod = 2
       endif
 
       !*** Compute some halo needs to reduce the number
