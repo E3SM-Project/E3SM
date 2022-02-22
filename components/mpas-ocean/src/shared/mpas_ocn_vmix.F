@@ -233,6 +233,9 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThickness !< Input: thickness at cell center
 
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         layerThicknessEdge !< Input: centered thickness at edge
+
       !-----------------------------------------------------------------
       !
       ! input/output variables
@@ -241,9 +244,6 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
          normalVelocity             !< Input: velocity
-
-      real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         layerThicknessEdge        !< Input: thickness at edge
 
       !-----------------------------------------------------------------
       !
@@ -288,13 +288,10 @@ contains
         N = maxLevelEdgeTop(iEdge)
         if (N .gt. 0) then
 
-         ! layerThicknessEdge is computed in compute_solve_diag, and is not available yet,
-         ! so recompute layerThicknessEdge here.
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          edgeThicknessTotal = 0.0_RKIND
          do k = Nsurf, N
-            layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k,cell1) + layerThickness(k,cell2))
             edgeThicknessTotal = edgeThicknessTotal + layerThicknessEdge(k,iEdge)
          enddo
 
@@ -396,6 +393,9 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThickness !< Input: thickness at cell center
 
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         layerThicknessEdge !< Input: centered thickness at edge
+
       !-----------------------------------------------------------------
       !
       ! input/output variables
@@ -404,9 +404,6 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
          normalVelocity             !< Input: velocity
-
-      real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         layerThicknessEdge        !< Input: thickness at edge
 
       !-----------------------------------------------------------------
       !
@@ -449,13 +446,8 @@ contains
         Nsurf = minLevelEdgeBot(iEdge)
         if (N .gt. 0) then
 
-         ! layerThicknessEdge is computed in compute_solve_diag, and is not available yet,
-         ! so recompute layerThicknessEdge here.
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
-         do k = Nsurf, N
-            layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k,cell1) + layerThickness(k,cell2))
-         enddo
 
          ! tridiagonal matrix algorithm
          C(Nsurf)     = -2.0_RKIND*dt*vertViscTopOfEdge(Nsurf+1,iEdge) &
@@ -551,6 +543,9 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThickness !< Input: thickness at cell center
 
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         layerThicknessEdge !< Input: centered thickness at edge
+
        real (kind=RKIND), dimension(:), intent(in) :: &
          bottomDrag !< Input: bottomDrag at cell centeres
 
@@ -562,9 +557,6 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
          normalVelocity             !< Input: velocity
-
-      real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         layerThicknessEdge        !< Input: thickness at edge
 
       !-----------------------------------------------------------------
       !
@@ -608,14 +600,8 @@ contains
         N = maxLevelEdgeTop(iEdge)
         if (N .gt. 0) then
 
-         ! layerThicknessEdge is computed in compute_solve_diag, and is not available yet,
-         ! so recompute layerThicknessEdge here.
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
-         do k = Nsurf, N
-            layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k,cell1) + layerThickness(k,cell2))
-         end do
-
          ! average cell-based implicit bottom drag to edges
          implicitCd = 0.5_RKIND*(bottomDrag(cell1) + bottomDrag(cell2))
 
@@ -717,6 +703,9 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThickness !< Input: thickness at cell center
 
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         layerThicknessEdge !< Input: centered thickness at edge
+
        real (kind=RKIND), dimension(:), intent(in) :: &
          bottomDrag !< Input: bottomDrag at cell centeres
 
@@ -730,9 +719,6 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
          normalVelocity             !< Input: velocity
-
-      real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         layerThicknessEdge        !< Input: thickness at edge
 
       !-----------------------------------------------------------------
       !
@@ -828,13 +814,8 @@ contains
         N = maxLevelEdgeTop(iEdge)
         if (N .gt. 0) then
 
-         ! layerThicknessEdge is computed in compute_solve_diag, and is not available yet,
-         ! so recompute layerThicknessEdge here.
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
-         do k = Nsurf, N
-            layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k,cell1) + layerThickness(k,cell2))
-         end do
 
          ! average cell-based implicit bottom drag to edges and convert Mannings n to Cd
          if (config_use_implicit_bottom_roughness) then
