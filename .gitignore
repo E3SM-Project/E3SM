@@ -24,5 +24,8 @@ buildnmlc
 buildlibc
 buildlib_cmakec
 
+# Ignore following directory
+cime/
+
 # Ignore emacs backup files
 *~

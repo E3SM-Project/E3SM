@@ -54,6 +54,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates_logging
    use elm_varctl        , only : use_fates_inventory_init
    use elm_varctl        , only : use_fates_fixed_biogeog
+   use elm_varctl        , only : nsrest, nsrBranch
    use elm_varctl        , only : fates_inventory_ctrl_filename
    use elm_varcon        , only : tfrz
    use elm_varcon        , only : spval 
@@ -145,8 +146,12 @@ module ELMFatesInterfaceMod
    use FatesPlantHydraulicsMod, only : InitHydrSites
    use FatesPlantHydraulicsMod, only : RestartHydrStates
 
-   use dynHarvestMod          , only : num_harvest_vars, harvest_varnames
-   
+   use pftvarcon              , only : pprodharv10
+   use dynHarvestMod          , only : harvest_rates  ! these are dynamic in space and time
+   use dynHarvestMod          , only : num_harvest_vars, harvest_varnames, wood_harvest_units
+   use FatesConstantsMod      , only : hlm_harvest_area_fraction
+   use FatesConstantsMod      , only : hlm_harvest_carbon
+   use dynSubgridControlMod   , only : get_do_harvest
    use FatesInterfaceTypesMod , only : bc_in_type, bc_out_type
    use CLMFatesParamInterfaceMod         , only : FatesReadParameters
 
@@ -200,6 +205,7 @@ module ELMFatesInterfaceMod
       procedure, public :: wrap_accumulatefluxes
       procedure, public :: prep_canopyfluxes
       procedure, public :: wrap_canopy_radiation
+      procedure, public :: wrap_WoodProducts
       procedure, public :: wrap_update_hifrq_hist
       procedure, public :: TransferZ0mDisp
       procedure, public :: UpdateLitterFluxes
@@ -255,8 +261,9 @@ contains
      integer                                        :: pass_is_restart
      integer                                        :: pass_cohort_age_tracking
      integer                                        :: pass_biogeog
-     integer                                        :: pass_num_lu_harvest_cats
+     integer                                        :: pass_num_lu_harvest_types
      integer                                        :: pass_lu_harvest
+     integer                                        :: pass_harvest_bypass_criteria
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
      ! 1 : use a global constant lightning rate found in fates_params.
@@ -277,10 +284,16 @@ contains
 
      ! We will use this switch temporarily, until  we complete
      ! the ELM-FATES harvest integration
-     logical, parameter :: do_elm_fates_harvest = .false.
+     logical, parameter :: do_elm_fates_harvest = .true.
+     ! Another switch to determine if we want to harvest forest 
+     ! by ignoring the harvest criteria
+     ! This is only useful when performing carbon-based harvest
+     ! Need to update as a namelist option in the future
+     logical, parameter :: allow_harvest_bypass_criteria = .false.
      
      if (use_fates) then
 
+        ! Shijie: Turn on verbose_output for test
         verbose_output = .false.
         call FatesInterfaceInit(iulog, verbose_output)
 
@@ -319,7 +332,7 @@ contains
         call set_fates_ctrlparms('phosphorus_spec',ival=1)
            
         
-        if(is_restart()) then
+        if(is_restart() .or. nsrest .eq. nsrBranch) then
            pass_is_restart = 1
         else
            pass_is_restart = 0
@@ -370,18 +383,25 @@ contains
            pass_logging = 0
         end if
 
-        if(do_elm_fates_harvest) then
-!        if(get_do_harvest()) then
+!        if(do_elm_fates_harvest) then
+        if(get_do_harvest()) then
            pass_logging = 1
-           pass_num_lu_harvest_cats = num_harvest_vars
+           pass_num_lu_harvest_types = num_harvest_vars
            pass_lu_harvest = 1
+           if(allow_harvest_bypass_criteria) then
+              pass_harvest_bypass_criteria = 1
+           else
+              pass_harvest_bypass_criteria = 0
+           end if
         else
            pass_lu_harvest = 0
-           pass_num_lu_harvest_cats = 0
+           pass_num_lu_harvest_types = 0
+           pass_harvest_bypass_criteria = 0
         end if
 
         call set_fates_ctrlparms('use_lu_harvest',ival=pass_lu_harvest)
-        call set_fates_ctrlparms('num_lu_harvest_cats',ival=pass_num_lu_harvest_cats)
+        call set_fates_ctrlparms('use_harvest_bypass_criteria',ival=pass_harvest_bypass_criteria)
+        call set_fates_ctrlparms('num_lu_harvest_cats',ival=pass_num_lu_harvest_types)
         call set_fates_ctrlparms('use_logging',ival=pass_logging)
         
         if(use_fates_ed_st3) then
@@ -715,6 +735,7 @@ contains
       integer  :: t                        ! topounit index (HLM)
       integer  :: ifp                      ! patch index
       integer  :: p                        ! HLM patch index
+      integer  :: g                        ! HLM grid index
       integer  :: nc                       ! clump index
       integer  :: nlevsoil                 ! number of soil layers at the site
 
@@ -783,7 +804,20 @@ contains
             this%fates(nc)%bc_in(s)%bsw_sisl(1:nlevsoil)    = soilstate_inst%bsw_col(c,1:nlevsoil)
             this%fates(nc)%bc_in(s)%h2o_liq_sisl(1:nlevsoil) =  col_ws%h2osoi_liq(c,1:nlevsoil)
          end if
-         
+
+         ! get the harvest data, which is by gridcell
+         ! for now there is one veg column per gridcell, so store all harvest data in each site
+         ! this will eventually change
+         ! the harvest data are zero if today is before the start of the harvest time series
+         g = col_pp%gridcell(c)
+         if (get_do_harvest()) then
+            this%fates(nc)%bc_in(s)%hlm_harvest_rates = harvest_rates(:,g)
+            this%fates(nc)%bc_in(s)%hlm_harvest_catnames = harvest_varnames
+            this%fates(nc)%bc_in(s)%hlm_harvest_units = wood_harvest_units
+         end if
+         ! this can be gridcell specific parameter in the future
+         this%fates(nc)%bc_in(s)%pprodharv10_forest_mean=sum(pprodharv10(1:8))/8._r8
+         this%fates(nc)%bc_in(s)%site_area=col_pp%wtgcell(c)*grc_pp%area(g)*1e6_r8
 
       end do
 
@@ -998,10 +1032,11 @@ contains
             this%fates(nc)%sites,  &
             this%fates(nc)%bc_in)
 
-       ! Canopy diagnostic outputs for HLM
+       ! Canopy diagnostic outputs for HLM, including LUC
        call update_hlm_dynamics(this%fates(nc)%nsites, &
             this%fates(nc)%sites,  &
             this%f2hmap(nc)%fcolumn, &
+            this%fates(nc)%bc_in, &
             this%fates(nc)%bc_out )
    
        !---------------------------------------------------------------------------------
@@ -2027,6 +2062,39 @@ contains
 
  ! ======================================================================================
 
+ subroutine wrap_WoodProducts(this, bounds_clump, fc, filterc)
+
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   type(bounds_type)              , intent(in)    :: bounds_clump
+   integer                        , intent(in)    :: fc                   ! size of column filter
+   integer                        , intent(in)    :: filterc(fc)          ! column filter
+   
+   ! Locacs
+   integer                                        :: s,c,icc
+   integer                                        :: nc
+
+   associate(&
+         hrv_deadstemc_to_prod10c     => col_cf%hrv_deadstemc_to_prod10c    , &
+         hrv_deadstemc_to_prod100c    => col_cf%hrv_deadstemc_to_prod100c)
+ 
+    nc = bounds_clump%clump_index
+    ! Loop over columns
+    do icc = 1,fc
+       c = filterc(icc)
+       s = this%f2hmap(nc)%hsites(c)
+
+       ! Shijie: Pass harvested wood products to ELM variable
+       hrv_deadstemc_to_prod10c(c)  = this%fates(nc)%bc_out(s)%hrv_deadstemc_to_prod10c
+       hrv_deadstemc_to_prod100c(c) = this%fates(nc)%bc_out(s)%hrv_deadstemc_to_prod100c
+    end do
+
+    end associate
+    return
+ end subroutine wrap_WoodProducts
+
+ ! ======================================================================================
+ 
  subroutine wrap_canopy_radiation(this, bounds_clump, &
          num_vegsol, filter_vegsol, coszen, surfalb_inst)
 

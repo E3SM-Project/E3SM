@@ -2729,7 +2729,7 @@
 	<command name="load">cmake/3.15.0</command>
         <command name="load">perl</command>
 	<command name="load">xml-libxml</command>
-	<command name="load">python/2.7</command>
+	<command name="load">python/3.6</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/2016.4.072</command>
@@ -2808,7 +2808,7 @@
         <command name="load">cmake/3.15.0</command>
         <command name="load">perl</command>
         <command name="load">xml-libxml</command>
-        <command name="load">python/2.7</command>
+        <command name="load">python/3.6</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/2016.4.072</command>

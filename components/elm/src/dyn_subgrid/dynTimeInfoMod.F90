@@ -144,7 +144,7 @@ contains
   ! ======================================================================
 
   !-----------------------------------------------------------------------
-  subroutine set_current_year_get_year(this)
+  subroutine set_current_year_get_year(this, offset)
     !
     ! !DESCRIPTION:
     ! Update time information (time_index_lower and time_index_upper)
@@ -154,7 +154,7 @@ contains
     ! This version of set_current_year obtains the current model year for you.
     !
     ! !USES:
-    use clm_time_manager , only : get_curr_date, get_prev_date
+    use clm_time_manager , only : get_curr_date, get_prev_date, get_days_per_year
     !
     ! !ARGUMENTS:
     class(time_info_type), intent(inout) :: this      ! this object
@@ -165,6 +165,12 @@ contains
     integer  :: day              ! day of month (1, ..., 31) for nstep+1
     integer  :: sec              ! seconds into current date for nstep+1
     
+    integer, optional, intent(in) :: offset  ! offset in years from current year
+                                             ! positive values indicate future years
+                                             ! negative values indicate previous years
+
+    integer,parameter  :: seconds_per_day = 86400
+
     character(len=*), parameter :: subname = 'set_current_year_get_year'
     !-----------------------------------------------------------------------
     
@@ -172,7 +178,11 @@ contains
     case (YEAR_POSITION_START_OF_TIMESTEP%flag)
        call get_prev_date(year, mon, day, sec)
     case (YEAR_POSITION_END_OF_TIMESTEP%flag)
-       call get_curr_date(year, mon, day, sec)
+       if (present(offset)) then
+          call get_curr_date(year, mon, day, sec, offset * get_days_per_year() * seconds_per_day)
+       else
+          call get_curr_date(year, mon, day, sec)
+       end if
     case default
        write(iulog,*) subname, ': unknown year position: ', this%year_position%flag
        call endrun(msg=errMsg(__FILE__, __LINE__))
