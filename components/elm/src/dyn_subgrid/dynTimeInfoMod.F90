@@ -164,7 +164,7 @@ contains
     integer  :: mon              ! month (1, ..., 12) for nstep+1
     integer  :: day              ! day of month (1, ..., 31) for nstep+1
     integer  :: sec              ! seconds into current date for nstep+1
-
+    
     integer, optional, intent(in) :: offset  ! offset in years from current year
                                              ! positive values indicate future years
                                              ! negative values indicate previous years

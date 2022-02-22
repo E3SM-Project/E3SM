@@ -2090,6 +2090,16 @@ contains
             avgflag='A', long_name='total column carbon, incl veg and cpool but excl product pools', &
             ptr_col=this%totcolc)
 
+       this%prod10c(begc:endc) = spval
+       call hist_addfld1d (fname='PROD10C', units='gC/m^2', &
+            avgflag='A', long_name='10-yr wood product C', &
+            ptr_col=this%prod10c, default='inactive')
+
+       this%prod100c(begc:endc) = spval
+       call hist_addfld1d (fname='PROD100C', units='gC/m^2', &
+            avgflag='A', long_name='100-yr wood product C', &
+            ptr_col=this%prod100c, default='inactive')
+
        if(.not.use_fates)then
 
           this%seedc(begc:endc) = spval
@@ -5763,6 +5773,34 @@ contains
            call hist_addfld1d (fname='HR', units='gC/m^2/s', &
                 avgflag='A', long_name='total heterotrophic respiration', &
                  ptr_col=this%hr)
+! Shijie
+          this%hrv_deadstemc_to_prod10c(begc:endc) = spval
+          call hist_addfld1d (fname='HRV_DEADSTEMC_TO_PROD10C', units='gC/m^2/s', &
+               avgflag='A', long_name='flux into 10-yr wood product C', &
+               ptr_col=this%hrv_deadstemc_to_prod10c, default='inactive')
+
+          this%hrv_deadstemc_to_prod100c(begc:endc) = spval
+          call hist_addfld1d (fname='HRV_DEADSTEMC_TO_PROD100C', units='gC/m^2/s', &
+               avgflag='A', long_name='flux into 100-yr wood product C', &
+               ptr_col=this%hrv_deadstemc_to_prod100c, default='inactive')
+
+          this%nep(begc:endc) = spval
+          call hist_addfld1d (fname='NEP', units='gC/m^2/s', &
+               avgflag='A', long_name='net ecosystem production, excludes fire, landuse, and harvest flux, positive for sink', &
+                ptr_col=this%nep)
+ 
+          this%nbp(begc:endc) = spval
+          call hist_addfld1d (fname='NBP', units='gC/m^2/s', &
+               avgflag='A', long_name='net biome production, includes fire, landuse, and harvest flux, positive for sink', &
+                ptr_col=this%nbp)
+ 
+          this%nee(begc:endc) = spval
+          call hist_addfld1d (fname='NEE', units='gC/m^2/s', &
+               avgflag='A', long_name='net ecosystem exchange of carbon, includes fire, landuse,'&
+               //' harvest, and hrv_xsmrpool flux, positive for source', &
+                ptr_col=this%nee)
+! Shijie
+
        end if
        ! end of use_fates (C12) block
 
@@ -6948,9 +6986,13 @@ contains
 
        ! total product loss
        this%product_closs(c) = &
-            this%prod10c_loss(c)  + &
+            this%prod10c_loss(c) + &
             this%prod100c_loss(c) + &
             this%prod1c_loss(c)
+       ! if (masterproc) then
+       !    write(iulog,*) "this%prod10c_loss?", this%prod10c_loss(c), "this%prod100c_loss?", &
+       !        this%prod100c_loss(c), "this%prod1c_loss?", this%prod1c_loss(c)
+       ! endif
 
        ! soil organic matter fire losses (SOMFIRE)
        this%somfire(c) = 0._r8
@@ -7451,18 +7493,18 @@ contains
 
     if(.not.use_fates) return
 
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%gpp(c) = 0._r8
-       this%ar(c) = 0._r8
-       this%npp(c) = 0._r8
-       this%vegfire(c) = 0._r8
-       this%wood_harvestc(c) = 0._r8
-       this%fire_closs_p2c(c) = 0._r8
-       !this%litfall(c) = 0._r8 (overwritten)
-       this%hrv_xsmrpool_to_atm(c) = 0._r8
+     do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        this%gpp(c) = 0._r8
+        this%ar(c) = 0._r8
+        this%npp(c) = 0._r8
+        this%vegfire(c) = 0._r8
+        this%wood_harvestc(c) = 0._r8
+        this%fire_closs_p2c(c) = 0._r8
+        !this%litfall(c) = 0._r8 (overwritten)
+        this%hrv_xsmrpool_to_atm(c) = 0._r8
 
-    end do
+     end do
 
 
   end subroutine col_cf_zero_forfates_veg

@@ -155,8 +155,7 @@ module ELMFatesInterfaceMod
    use FatesPlantHydraulicsMod, only : InitHydrSites
    use FatesPlantHydraulicsMod, only : RestartHydrStates
 
-   use dynHarvestMod          , only : num_harvest_vars, harvest_varnames
-   use dynHarvestMod          , only : harvest_rates ! these are dynamic in space and time
+   use dynHarvestMod          , only : harvest_rates  ! these are dynamic in space and time
    use dynHarvestMod          , only : num_harvest_vars, harvest_varnames, wood_harvest_units
 
    use FatesConstantsMod      , only : hlm_harvest_area_fraction
@@ -214,6 +213,7 @@ module ELMFatesInterfaceMod
       procedure, public :: wrap_accumulatefluxes
       procedure, public :: prep_canopyfluxes
       procedure, public :: wrap_canopy_radiation
+      procedure, public :: wrap_WoodProducts
       procedure, public :: wrap_update_hifrq_hist
       procedure, public :: TransferZ0mDisp
       procedure, public :: UpdateLitterFluxes
@@ -469,6 +469,11 @@ contains
            pass_logging = 1
            pass_num_lu_harvest_types = num_harvest_vars
            pass_lu_harvest = 1
+           if(allow_harvest_bypass_criteria) then
+              pass_harvest_bypass_criteria = 1
+           else
+              pass_harvest_bypass_criteria = 0
+           end if
         else
            pass_lu_harvest = 0
            pass_num_lu_harvest_types = 0
@@ -742,7 +747,6 @@ contains
             endif
 
          end do
-
 
          ! Initialize site-level static quantities dictated by the HLM
          ! currently ground layering depth
@@ -1159,10 +1163,11 @@ contains
             this%fates(nc)%sites,  &
             this%fates(nc)%bc_in)
 
-       ! Canopy diagnostic outputs for HLM
+       ! Canopy diagnostic outputs for HLM, including LUC
        call update_hlm_dynamics(this%fates(nc)%nsites, &
             this%fates(nc)%sites,  &
             this%f2hmap(nc)%fcolumn, &
+            this%fates(nc)%bc_in, &
             this%fates(nc)%bc_out )
 
        !---------------------------------------------------------------------------------
@@ -1231,7 +1236,6 @@ contains
 
           ! initialize SP mode pft order index to 0.  Below ground is the 0th patch
           veg_pp%sp_pftorder_index(col_pp%pfti(c)) = 0
-
           areacheck = veg_pp%wt_ed(col_pp%pfti(c))
 
           do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
@@ -2264,6 +2268,46 @@ contains
 
  ! ======================================================================================
 
+ subroutine wrap_WoodProducts(this, bounds_clump, fc, filterc)
+
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   type(bounds_type)              , intent(in)    :: bounds_clump
+   integer                        , intent(in)    :: fc                   ! size of column filter
+   integer                        , intent(in)    :: filterc(fc)          ! column filter
+   
+   ! Locacs
+   integer                                        :: s,c,icc
+   integer                                        :: nc
+
+   associate(&
+         gpp     => col_cf%gpp    , &
+         ar     => col_cf%ar    , &
+         hrv_deadstemc_to_prod10c     => col_cf%hrv_deadstemc_to_prod10c    , &
+         hrv_deadstemc_to_prod100c    => col_cf%hrv_deadstemc_to_prod100c)
+ 
+    nc = bounds_clump%clump_index
+    ! Loop over columns
+    do icc = 1,fc
+       c = filterc(icc)
+       s = this%f2hmap(nc)%hsites(c)
+
+       ! Shijie: Pass harvested wood products to ELM variable
+       hrv_deadstemc_to_prod10c(c)  = this%fates(nc)%bc_out(s)%hrv_deadstemc_to_prod10c
+       hrv_deadstemc_to_prod100c(c) = this%fates(nc)%bc_out(s)%hrv_deadstemc_to_prod100c
+
+       ! Pass LUC related C fluxes which are calculated in FATES [gC m-2 s-1]
+       gpp(c) = this%fates(nc)%bc_out(s)%gpp_site*1e3
+       ar(c) = this%fates(nc)%bc_out(s)%ar_site*1e3
+
+    end do
+
+    end associate
+    return
+ end subroutine wrap_WoodProducts
+
+ ! ======================================================================================
+ 
  subroutine wrap_canopy_radiation(this, bounds_clump, &
          num_vegsol, filter_vegsol, coszen, surfalb_inst)
 
