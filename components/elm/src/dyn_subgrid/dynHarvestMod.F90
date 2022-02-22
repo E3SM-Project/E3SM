@@ -25,8 +25,7 @@ module dynHarvestMod
   use ColumnDataType        , only : col_cf, col_nf, col_pf  
   use VegetationType        , only : veg_pp                
   use VegetationDataType    , only : veg_cs, veg_cf, veg_ns, veg_nf  
-  use topounit_varcon      , only : max_topounits
-  use VegetationDataType    , only : veg_ps, veg_pf  
+  use topounit_varcon       , only : max_topounits
   use VegetationDataType    , only : veg_ps, veg_pf
   use elm_varctl            , only : use_cn, use_fates, iulog
   use FatesConstantsMod      , only : hlm_harvest_area_fraction
@@ -66,22 +65,23 @@ module dynHarvestMod
   ! for FATES: capacity for passing harvest data in units of carbon harvested per year (per grid cell) has been added
   ! but these data are not yet included in the input file
   ! the code here can be changed to wood_harvest_units = harvest_carbon to pass carbon data to FATES if:
-  !  the carbon data are in the same input variables as listed below
-  !  and the carbon units in the input file match that expected by FATES
+
+  ! the carbon data are in the same input variables as listed below
+  ! and the carbon units in the input file match that expected by FATES
 
   integer, public, parameter :: num_harvest_vars = 5
   character(len=64), public, parameter :: harvest_varnames(num_harvest_vars) = &
-       [character(len=64)  :: 'HARVEST_VH1', 'HARVEST_VH2', 'HARVEST_SH1', 'HARVEST_SH2', 'HARVEST_SH3']
+       [character(len=64) :: 'HARVEST_VH1', 'HARVEST_VH2', 'HARVEST_SH1', 'HARVEST_SH2', 'HARVEST_SH3']
+
+  type(dyn_var_time_uninterp_type) :: harvest_vars(num_harvest_vars)   ! value of each harvest variable
+
   ! the units flag must match the units of harvest_varnames
   ! set this here because dynHarvest_init is called after alm_fates%init
   ! this flag is accessed only if namelist do_harvest is TRUE
-  integer, public          :: wood_harvest_units = hlm_harvest_area_fraction
-  
-  type(dyn_var_time_uninterp_type) :: harvest_vars(num_harvest_vars)   ! value of each harvest variable
 
-  real(r8) , allocatable, public   :: harvest_rates(:,:) ! category harvest rates (d1) in each gridcell (d2)
-
-  logical, private         :: do_harvest ! whether we're in a period when we should do harvest
+  integer, public, parameter    :: wood_harvest_units = 2    ! 1 = area fraction, 2 = carbon
+  real(r8), allocatable, public :: harvest_rates(:,:) ! harvest rates
+  logical, private              :: do_harvest ! whether we're in a period when we should do harvest
   !---------------------------------------------------------------------------
 
 contains
@@ -92,8 +92,9 @@ contains
     ! !DESCRIPTION:
     ! Initialize data structures for harvest information.
     ! This should be called once, during model initialization.
-    !
-    use elm_varctl            , only : use_cn
+     
+    ! !USES:
+    use elm_varctl            , only : use_cn, use_fates
     use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
     use dynTimeInfoMod        , only : YEAR_POSITION_START_OF_TIMESTEP
     use dynTimeInfoMod        , only : YEAR_POSITION_END_OF_TIMESTEP
@@ -113,6 +114,7 @@ contains
 
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
+    ! Right now we don't want to consider topounit in harvest rate
     allocate(harvest_rates(num_harvest_vars,bounds%begg:bounds%endg),stat=ier)
     harvest_rates(:,bounds%begg:bounds%endg) = 0._r8
     if (ier /= 0) then
@@ -156,8 +158,8 @@ contains
     !
     ! !USES:
     use dynTimeInfoMod , only : time_info_type
-    use elm_varctl            , only : use_cn, use_fates
-    !
+    use elm_varctl     , only : use_cn, use_fates
+    
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds  ! proc-level bounds
     
@@ -181,14 +183,16 @@ contains
           ! means that harvest rates will be maintained at the rate given in the last
           ! year of the file for all years past the end of this specified time series.
           do_harvest = .true.
+          ! Right now we don't account for the topounit in plant harvest
           allocate(this_data(bounds%begg:bounds%endg))   
           do varnum = 1, num_harvest_vars
              call harvest_vars(varnum)%get_current_data(this_data)
-             harvest_rates(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
+             harvest_rates(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)      
           end do
           deallocate(this_data)
        end if
     end if
+
   end subroutine dynHarvest_interp_harvest_types
 
 
@@ -377,9 +381,10 @@ contains
       if (ivt(p) > noveg .and. ivt(p) < nbrdlf_evr_shrub) then
 
          if (do_harvest) then
+            ! Do not consider different topo unit for harvest now
             am = 0._r8
             do varnum = 1, num_harvest_vars
-               am = am + harvest_rates(varnum,g)
+               am = am + harvest_rates(varnum, g)
             end do
             m  = am/(days_per_year * secspday)
          else

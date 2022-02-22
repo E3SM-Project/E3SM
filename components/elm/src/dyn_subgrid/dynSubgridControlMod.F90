@@ -231,7 +231,7 @@ contains
     end if
 
     if (dyn_subgrid_control_inst%do_harvest) then
-       if (.not. (use_cn .or. use_fates)) then
+       if (.not.(use_cn .or. use_fates)) then
           write(iulog,*) 'ERROR: do_harvest can be true only if use_cn is true or use_fates is true'
           call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
