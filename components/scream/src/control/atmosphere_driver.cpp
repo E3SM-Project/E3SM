@@ -802,11 +802,11 @@ void AtmosphereDriver::run (const int dt) {
   // Make sure the end of the time step is after the current start_time
   EKAT_REQUIRE_MSG (dt>0, "Error! Input time step must be positive.\n");
 
-  // Print current timestamp information
+    // Print current timestamp information
   if (m_atm_comm.am_i_root()) {
     std::cout << "Atmosphere step = " << m_current_ts.get_num_steps() << "; model time = " << m_current_ts.get_date_string() << " " << m_current_ts.get_time_string() << std::endl;
   }
-
+  
   if (m_surface_coupling) {
     // Import fluxes from the component coupler (if any)
     m_surface_coupling->do_import();

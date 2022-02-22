@@ -17,6 +17,8 @@ Fields:
       - nr
       - ni
       - bm
+      - precip_liq_surf
+      - precip_ice_surf
       - qv_prev_micro_step
       - eff_radius_qc
       - eff_radius_qi

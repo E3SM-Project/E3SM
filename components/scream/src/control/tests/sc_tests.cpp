@@ -274,6 +274,7 @@ TEST_CASE ("recreate_mct_coupling")
   FID pseudo_density_id  ("pseudo_density",  scalar3d_layout, Pa,     grid_name);
   FID qv_id              ("qv",              scalar3d_layout, nondim, grid_name);
   FID precip_liq_surf_id ("precip_liq_surf", scalar2d_layout, m/s,    grid_name);
+  FID precip_ice_surf_id ("precip_ice_surf", scalar2d_layout, m/s,    grid_name);
   FID sfc_flux_dir_nir_id("sfc_flux_dir_nir", scalar2d_layout, W/(m*m), grid_name);
   FID sfc_flux_dir_vis_id("sfc_flux_dir_vis", scalar2d_layout, W/(m*m), grid_name);
   FID sfc_flux_dif_nir_id("sfc_flux_dif_nir", scalar2d_layout, W/(m*m), grid_name);
@@ -284,7 +285,7 @@ TEST_CASE ("recreate_mct_coupling")
   // NOTE: if you add fields above, you will have to modify these counters too.
   const int num_cpl_imports    = 30;
   const int num_scream_imports = 9;
-  const int num_cpl_exports    = 35;
+  const int num_cpl_exports    = 36;
 
   // Register fields and tracer group in a FieldManager
   auto fm = std::make_shared<FieldManager> (grid);
@@ -303,6 +304,7 @@ TEST_CASE ("recreate_mct_coupling")
   fm->register_field(FR{pseudo_density_id});
   fm->register_field(FR{qv_id,"tracers"});
   fm->register_field(FR{precip_liq_surf_id});
+  fm->register_field(FR{precip_ice_surf_id});
   fm->register_field(FR{sfc_flux_dir_nir_id});
   fm->register_field(FR{sfc_flux_dir_vis_id});
   fm->register_field(FR{sfc_flux_dif_nir_id});
@@ -328,6 +330,7 @@ TEST_CASE ("recreate_mct_coupling")
   auto pseudo_density_f   = fm->get_field(pseudo_density_id);
   auto qv_f               = fm->get_field(qv_id);
   auto precip_liq_surf_f  = fm->get_field(precip_liq_surf_id);
+  auto precip_ice_surf_f  = fm->get_field(precip_ice_surf_id);
   auto sfc_flux_dir_nir_f = fm->get_field(sfc_flux_dir_nir_id);
   auto sfc_flux_dir_vis_f = fm->get_field(sfc_flux_dir_vis_id);
   auto sfc_flux_dif_nir_f = fm->get_field(sfc_flux_dif_nir_id);
@@ -353,6 +356,7 @@ TEST_CASE ("recreate_mct_coupling")
   auto pseudo_density_d   = pseudo_density_f.get_view<Real**>();
   auto qv_d               = qv_f.get_view<Real**>();
   auto precip_liq_surf_d  = precip_liq_surf_f.get_view<Real*>();
+  auto precip_ice_surf_d  = precip_ice_surf_f.get_view<Real*>();
   auto sfc_flux_dir_nir_d = sfc_flux_dir_nir_f.get_view<Real*>();
   auto sfc_flux_dir_vis_d = sfc_flux_dir_vis_f.get_view<Real*>();
   auto sfc_flux_dif_nir_d = sfc_flux_dif_nir_f.get_view<Real*>();
@@ -374,6 +378,7 @@ TEST_CASE ("recreate_mct_coupling")
   auto horiz_winds_h      = horiz_winds_f.get_view<Real***,Host>();
   auto qv_h               = qv_f.get_view<Real**,Host>();
   auto precip_liq_surf_h  = precip_liq_surf_f.get_view<Real*,Host>();
+  auto precip_ice_surf_h  = precip_ice_surf_f.get_view<Real*,Host>();
   auto sfc_flux_dir_nir_h = sfc_flux_dir_nir_f.get_view<Real*,Host>();
   auto sfc_flux_dir_vis_h = sfc_flux_dir_vis_f.get_view<Real*,Host>();
   auto sfc_flux_dif_nir_h = sfc_flux_dif_nir_f.get_view<Real*,Host>();
@@ -435,13 +440,13 @@ TEST_CASE ("recreate_mct_coupling")
   coupler.register_export("set_zero",        13);
   coupler.register_export("set_zero",        14);
   coupler.register_export("Faxa_rainl",      15);  
-  coupler.register_export("sfc_flux_lw_dn",  16);
-  coupler.register_export("sfc_flux_dir_nir",17);
-  coupler.register_export("sfc_flux_dir_vis",18);
-  coupler.register_export("sfc_flux_dif_nir",19);
-  coupler.register_export("sfc_flux_dif_vis",20);
-  coupler.register_export("sfc_flux_sw_net", 21);
-  coupler.register_export("set_zero",        22);
+  coupler.register_export("Faxa_snowl",      16);
+  coupler.register_export("sfc_flux_lw_dn",  17);
+  coupler.register_export("sfc_flux_dir_nir",18);
+  coupler.register_export("sfc_flux_dir_vis",19);
+  coupler.register_export("sfc_flux_dif_nir",20);
+  coupler.register_export("sfc_flux_dif_vis",21);
+  coupler.register_export("sfc_flux_sw_net", 22);
   coupler.register_export("set_zero",        23);
   coupler.register_export("set_zero",        24);
   coupler.register_export("set_zero",        25);
@@ -454,6 +459,7 @@ TEST_CASE ("recreate_mct_coupling")
   coupler.register_export("set_zero",        32);
   coupler.register_export("set_zero",        33);
   coupler.register_export("set_zero",        34);
+  coupler.register_export("set_zero",        35);
 
 
   // Complete setup of importer/exporter, providing raw_data
@@ -479,6 +485,7 @@ TEST_CASE ("recreate_mct_coupling")
     ekat::genRandArray(horiz_winds_d,engine,pdf);
     ekat::genRandArray(pseudo_density_d,engine,pdf);
     ekat::genRandArray(precip_liq_surf_d,engine,pdf);
+    ekat::genRandArray(precip_ice_surf_d,engine,pdf);
     ekat::genRandArray(sfc_flux_lw_dn_d,engine,pdf);
     ekat::genRandArray(sfc_flux_dir_nir_d,engine,pdf);
     ekat::genRandArray(sfc_flux_dir_vis_d,engine,pdf);
@@ -516,6 +523,7 @@ TEST_CASE ("recreate_mct_coupling")
     horiz_winds_f.sync_to_host();
     pseudo_density_f.sync_to_host();
     precip_liq_surf_f.sync_to_host();
+    precip_ice_surf_f.sync_to_host();
     sfc_flux_lw_dn_f.sync_to_host();
     sfc_flux_dir_nir_f.sync_to_host();
     sfc_flux_dir_vis_f.sync_to_host();
@@ -549,12 +557,13 @@ TEST_CASE ("recreate_mct_coupling")
       REQUIRE (export_raw_data[6 + icol*num_cpl_exports]  == qv_h             (icol,    nlevs-1)); // 7th export
       REQUIRE (export_raw_data[7 + icol*num_cpl_exports]  == p_mid_h          (icol,    nlevs-1)); // 8th export
       REQUIRE (export_raw_data[15 + icol*num_cpl_exports] == C::RHO_H2O*precip_liq_surf_h(icol));  // 16th export
-      REQUIRE (export_raw_data[16 + icol*num_cpl_exports] == sfc_flux_lw_dn_h(icol));              // 17th export
-      REQUIRE (export_raw_data[17 + icol*num_cpl_exports] == sfc_flux_dir_nir_h(icol));            // 18th export
-      REQUIRE (export_raw_data[18 + icol*num_cpl_exports] == sfc_flux_dir_vis_h(icol));            // 19th export
-      REQUIRE (export_raw_data[19 + icol*num_cpl_exports] == sfc_flux_dif_nir_h(icol));            // 20th export
-      REQUIRE (export_raw_data[20 + icol*num_cpl_exports] == sfc_flux_dif_vis_h(icol));            // 21st export
-      REQUIRE (export_raw_data[21 + icol*num_cpl_exports] == sfc_flux_sw_net_h(icol));             // 22nd export
+      REQUIRE (export_raw_data[16 + icol*num_cpl_exports] == C::RHO_H2O*precip_ice_surf_h(icol));  // 17th export
+      REQUIRE (export_raw_data[17 + icol*num_cpl_exports] == sfc_flux_lw_dn_h(icol));              // 18th export
+      REQUIRE (export_raw_data[18 + icol*num_cpl_exports] == sfc_flux_dir_nir_h(icol));            // 19th export
+      REQUIRE (export_raw_data[19 + icol*num_cpl_exports] == sfc_flux_dir_vis_h(icol));            // 20th export
+      REQUIRE (export_raw_data[20 + icol*num_cpl_exports] == sfc_flux_dif_nir_h(icol));            // 21st export
+      REQUIRE (export_raw_data[21 + icol*num_cpl_exports] == sfc_flux_dif_vis_h(icol));            // 22nd export
+      REQUIRE (export_raw_data[22 + icol*num_cpl_exports] == sfc_flux_sw_net_h(icol));             // 23rd export
 
       // These exports should be set to 0
       REQUIRE (export_raw_data[1  + icol*num_cpl_exports] == 0); // 2nd export
@@ -564,8 +573,7 @@ TEST_CASE ("recreate_mct_coupling")
       REQUIRE (export_raw_data[12 + icol*num_cpl_exports] == 0); // 13th export
       REQUIRE (export_raw_data[13 + icol*num_cpl_exports] == 0); // 14th export
       REQUIRE (export_raw_data[14 + icol*num_cpl_exports] == 0); // 15th export
-      REQUIRE (export_raw_data[22 + icol*num_cpl_exports] == 0); // 23rd export
-      REQUIRE (export_raw_data[23 + icol*num_cpl_exports] == 0);
+      REQUIRE (export_raw_data[23 + icol*num_cpl_exports] == 0); // 24th export
       REQUIRE (export_raw_data[24 + icol*num_cpl_exports] == 0);
       REQUIRE (export_raw_data[25 + icol*num_cpl_exports] == 0);
       REQUIRE (export_raw_data[26 + icol*num_cpl_exports] == 0);
@@ -576,7 +584,8 @@ TEST_CASE ("recreate_mct_coupling")
       REQUIRE (export_raw_data[31 + icol*num_cpl_exports] == 0);
       REQUIRE (export_raw_data[32 + icol*num_cpl_exports] == 0);
       REQUIRE (export_raw_data[33 + icol*num_cpl_exports] == 0);
-      REQUIRE (export_raw_data[34 + icol*num_cpl_exports] == 0); // 35th export
+      REQUIRE (export_raw_data[34 + icol*num_cpl_exports] == 0);
+      REQUIRE (export_raw_data[35 + icol*num_cpl_exports] == 0); // 35th export
     }
   }
 

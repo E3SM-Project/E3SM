@@ -86,6 +86,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
   add_field<Computed>("precip_liq_surf",    scalar2d_layout,     m/s,    grid_name);
+  add_field<Computed>("precip_ice_surf",    scalar2d_layout,     m/s,    grid_name);
   add_field<Computed>("eff_radius_qc",      scalar3d_layout_mid, micron, grid_name, ps);
   add_field<Computed>("eff_radius_qi",      scalar3d_layout_mid, micron, grid_name, ps);
 
@@ -125,10 +126,6 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(), "Error! Buffers size not sufficient.\n");
 
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
-
-  // 1d scalar views
-  m_buffer.precip_ice_surf = decltype(m_buffer.precip_ice_surf)(mem, m_num_cols);
-  mem += m_buffer.precip_ice_surf.size();
 
   // 2d scalar views
   m_buffer.col_location = decltype(m_buffer.col_location)(mem, m_num_cols, 3);
@@ -245,7 +242,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   diag_outputs.diag_eff_radius_qi = get_field_out("eff_radius_qi").get_view<Pack**>();
 
   diag_outputs.precip_liq_surf  = get_field_out("precip_liq_surf").get_view<Real*>();
-  diag_outputs.precip_ice_surf  = m_buffer.precip_ice_surf;
+  diag_outputs.precip_ice_surf  = get_field_out("precip_ice_surf").get_view<Real*>();
   diag_outputs.qv2qi_depos_tend = m_buffer.qv2qi_depos_tend;
   diag_outputs.rho_qi           = m_buffer.rho_qi;
   diag_outputs.precip_liq_flux  = m_buffer.precip_liq_flux;
