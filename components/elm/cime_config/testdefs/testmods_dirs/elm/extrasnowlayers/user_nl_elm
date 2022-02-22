@@ -1,1 +1,10 @@
 use_extrasnowlayers = .true.
+check_finidat_pct_consistency = .false.
+hist_empty_htapes = .true.
+hist_fincl1='FSDS', 'FSR', 'FLDS', 'FIRE', 'FIRA', 'FSNO', 'FSNO_EFF', 'H2OSNO', 'QICE', 'QICE_FORC', 'QICE_FRZ','QICE_MELT', 'QSNOMELT', 'SNOW', 'SNOW_SOURCES', 'SNOW_SINKS', 'TSA'
+hist_fincl2='H2OSNO', 'FSNO', 'FSNO_EFF', 'H2OSFC', 'FH2OSFC', 'SNORDSL', 'SNO_BW', 'SNO_GS', 'SNO_Z', 'SNO_LIQH2O', 'SNO_ICE', 'SOILICE_ICE', 'SOILLIQ_ICE', 'SNO_T', 'TSOI_ICE', 'TH2OSFC', 'PCT_GLC_MEC', 'TSRF_FORC', 'TOPO_FORC'
+hist_fincl3='SNOW_DEPTH', 'H2OSNO', 'SNO_T'
+hist_fincl4 = 'SNO_TK', 'SNO_ABS', 'SNO_EXISTENCE'
+hist_nhtfrq = -120, -12, -120, -12
+hist_mfilt = 1, 10, 1, 10
+hist_avgflag_pertape = 'A', 'I', 'X', 'I'
