@@ -19,7 +19,7 @@
 
 <stream_year_first_popdens phys="elm" use_cn=".true." ndepsrc="stream" >1850</stream_year_first_popdens>
 <stream_year_last_popdens  phys="elm" use_cn=".true." ndepsrc="stream" >1850</stream_year_last_popdens>
-<fsurdat>lnd/clm2/surfdata_map/topounit_based_half_degree_merge_surfdata_0.5x0.5_simyr1850_c211019.20211108.nc </fsurdat>
+<fsurdat>lnd/clm2/surfdata_map/topounit_based_half_degree_merge_surfdata_0.5x0.5_simyr1850_c211019.20211108_ed20220204.nc </fsurdat>
 <use_hydrstress>.true.</use_hydrstress>
 <use_atm_downscaling_to_topunit>.true.</use_atm_downscaling_to_topunit>
 <tw_irr>.true.</tw_irr>
