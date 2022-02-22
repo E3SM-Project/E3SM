@@ -425,7 +425,7 @@ TEST_CASE("common_physics_functions_test", "[common_physics_functions_test]"){
 
   auto engine = scream::setup_random_test();
 
-  std::cout << " -> Number of randomized runs: " << num_runs << "\n\n";
+  printf(" -> Number of randomized runs: %d\n\n", num_runs);
 
   printf(" -> Testing Real scalar type...");
   for (int irun=0; irun<num_runs; ++irun) {
