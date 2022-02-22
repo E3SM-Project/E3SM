@@ -1124,6 +1124,7 @@
 <zmconv_mx_bot_lyr_adj                                                >0       </zmconv_mx_bot_lyr_adj>
 <zmconv_dmpdz                                                         >-1.0E-3 </zmconv_dmpdz>
 <zmconv_tp_fac                                                        >0.D0 </zmconv_tp_fac>
+<zmconv_microp                                                        >.false. </zmconv_microp>
 
 <!-- Cloud sedimentation -->
 
