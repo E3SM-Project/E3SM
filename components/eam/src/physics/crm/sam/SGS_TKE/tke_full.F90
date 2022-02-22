@@ -104,6 +104,8 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
   Ck  = 0.1D0
   Ce  = Ck**3.D0/Cs**4.D0
   Ces = Ce/0.7D0*3.0D0
+  Ce1 = Ce/0.7D0*0.19D0
+  Ce2 = Ce/0.7D0*0.51D0
   Pr  = 1.D0
 
   if(RUN3D) then
@@ -145,9 +147,6 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
             a_prod_bu_vert(icrm,i,j,0) = bbb*bet(icrm,1)*fluxbt(icrm,i,j) + &
                                          bet(icrm,1)*epsv*(tsfc(icrm,i,j))*fluxbq(icrm,i,j) 
             grd = dz(icrm)*adz(icrm,1)
-            Pr = 1. 
-            Ce1 = Ce/0.7*0.19
-            Ce2 = Ce/0.7*0.51
             Cee = Ce1+Ce2
             ! Choose the subgrid TKE to be the larger of the initial value or
             ! that which satisfies local equilibrium, buoyant production = dissipation
@@ -311,8 +310,7 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
       do i = 1,nx
         do icrm = 1 , ncrms
           grd = dz(icrm)*adz(icrm,k)
-          Ce1 = Ce/0.7D0*0.19D0
-          Ce2 = Ce/0.7D0*0.51D0
+
           !!! compute correction factors for eddy visc/cond not to acceed 3D stability
           cx = dx**2.D0/dt/grdf_x(icrm,k)
           cy = dy**2.D0/dt/grdf_y(icrm,k)

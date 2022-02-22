@@ -40,6 +40,8 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
   real constexpr Ck = 0.1;
   real constexpr Ce = (Ck*Ck*Ck)/(Cs*Cs*Cs*Cs);
   real constexpr Ces = Ce/0.7*3.0;
+  real constexpr Ce1 = Ce/0.7*0.19;
+  real constexpr Ce2 = Ce/0.7*0.51;
   real constexpr Pr = 1.0;
 
   real4d def2("def2", nzm, ny, nx, ncrms);
@@ -79,8 +81,6 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
       a_prod_bu_vert(0,j,i,icrm) = bbb*bet(0,icrm)*fluxbt(j,i,icrm) + 
                                    bet(0,icrm)*epsv*(tsfc(j,i,icrm))*fluxbq(j,i,icrm);
       real grd = dz(icrm)*adz(0,icrm);
-      real Ce1 = Ce/0.7*0.19;
-      real Ce2 = Ce/0.7*0.51;
       real Cee = Ce1+Ce2;
       // Choose the subgrid TKE to be the larger of the initial value or
       // that which satisfies local equilibrium, buoyant production = dissipation
@@ -243,12 +243,10 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
-    real grd, Ce1, Ce2, cx, cy, cz, tkmax, smix, ratio, Cee, a_prod_sh, a_prod_bu,
+    real grd, cx, cy, cz, tkmax, smix, ratio, Cee, a_prod_sh, a_prod_bu,
          a_diss, tmp, buoy_sgs;
 
     grd = dz(icrm)*adz(k,icrm);
-    Ce1 = Ce/0.7*0.19;
-    Ce2 = Ce/0.7*0.51;
     // compute correction factors for eddy visc/cond not to acceed 3D stability
     cx = dx*dx/dt/grdf_x(k,icrm);
     cy = dy*dy/dt/grdf_y(k,icrm);

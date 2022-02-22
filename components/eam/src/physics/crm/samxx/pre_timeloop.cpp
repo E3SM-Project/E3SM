@@ -321,8 +321,8 @@ void pre_timeloop() {
   // surface fluxes and temperature
   parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
 #ifdef MMF_CRM_SFC_FLUX
-    fluxbt(j,i,icrm)   = crm_input_fluxt00(icrm)/rhow(0,icrm);
-    fluxbq(j,i,icrm)   = crm_input_fluxq00(icrm)/rhow(0,icrm);
+    fluxbt(j,i,icrm) = crm_input_fluxt00(icrm)/rhow(0,icrm);
+    fluxbq(j,i,icrm) = crm_input_fluxq00(icrm)/rhow(0,icrm);
 #endif
     tsfc(j,i,icrm) = crm_input_tsfc(icrm);
   });
