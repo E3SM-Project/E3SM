@@ -21,6 +21,9 @@ module zm_conv
                              cpwv, cpliq, rh2o
   use cam_abortutils,      only: endrun
   use cam_logfile,     only: iulog
+!<songxl 2014-11-20--------
+  use zm_microphysics, only: zm_mphy, zm_aero_t, zm_microp_st
+!>songxl 2014-11-20--------
 
   implicit none
 
@@ -38,7 +41,9 @@ module zm_conv
   public trigdcape_ull            ! true if to use dcape-ULL trigger
   public trig_dcape_only          ! true if to use dcape only trigger
   public trig_ull_only            ! true if to ULL along with default CAPE-based trigger
-
+!<songxl 2014-11-20--------
+  public zm_microp                ! true if microphysics
+!>songxl 2014-11-20--------
 !
 ! Private data
 !
@@ -51,9 +56,13 @@ module zm_conv
    real(r8) :: zmconv_dmpdz          = unset_r8   
    real(r8) :: zmconv_alfa           = unset_r8   
    real(r8) :: zmconv_tiedke_add     = unset_r8   
-   logical  :: zmconv_trigdcape_ull  = .false.    
-   logical  :: zmconv_trig_dcape_only  = .false.    
-   logical  :: zmconv_trig_ull_only  = .false.    
+   logical  :: zmconv_trigdcape_ull  = .false.
+   logical  :: zmconv_trig_dcape_only  = .false.
+   logical  :: zmconv_trig_ull_only  = .false.
+
+!<songxl 2014-11-20-----------
+   logical  :: zmconv_microp         = .false.   ! switch for ZM microphysics
+!>songxl 2014-11-20-----------
    integer  :: zmconv_cape_cin       = unset_int
    integer  :: zmconv_mx_bot_lyr_adj = unset_int
    real(r8) :: zmconv_tp_fac         = unset_r8
@@ -64,19 +73,23 @@ module zm_conv
 
 !DCAPE-ULL, including options for DCAPE_only and ull_only
    real(r8), parameter :: trigdcapelmt = 0._r8  ! threshold value of dcape for deep convection
-   logical :: trigdcape_ull    = .false. !true to use DCAPE trigger and ULL 
+   logical :: trigdcape_ull    = .false. !true to use DCAPE trigger and ULL
    logical :: trig_dcape_only  = .false. !true to use DCAPE trigger, ULL not used
    logical :: trig_ull_only    = .false. !true to use ULL along with default CAPE-based trigger
    integer, allocatable :: dcapemx(:) ! save maxi from 1st call for CAPE calculation and used in 2nd call when DCAPE-ULL active
 !  May need to change to use local variable !  as passed via dummy argument. For now, making it threadprivate as follows,
 !$omp threadprivate (dcapemx)
 
+
    real(r8) :: ke           ! Tunable evaporation efficiency set from namelist input zmconv_ke
    real(r8) :: c0_lnd       ! set from namelist input zmconv_c0_lnd
    real(r8) :: c0_ocn       ! set from namelist input zmconv_c0_ocn
    real(r8) :: dmpdz          = unset_r8  ! Parcel fractional mass entrainment rate (/m)
    real(r8) :: alfa_scalar  ! maximum downdraft mass flux fraction  
-   real(r8) :: tiedke_add     = unset_r8
+   real(r8) ::  tiedke_add    = unset_r8
+!<songxl 2014-11-20-----------
+   logical  :: zm_microp    ! switch for ZM microphysics
+!>songxl 2014-11-20-----------  
    integer  :: num_cin        = unset_int !number of negative buoyancy regions that are allowed before the conv. top and CAPE calc are completed
    integer  :: mx_bot_lyr_adj = unset_int !bottom layer adjustment for setting "launching" level(mx) (to be at maximum moist static energy).
    real(r8) tau   ! convective time scale
@@ -99,7 +112,7 @@ module zm_conv
    
    integer  limcnv       ! top interface level limit for convection
 
-   real(r8) :: tp_fac = unset_r8  ! PMA tunes tpert 
+   real(r8) :: tp_fac = unset_r8  ! PMA tunes tpert
 
 contains
 
@@ -118,7 +131,8 @@ subroutine zmconv_readnl(nlfile)
    namelist /zmconv_nl/ zmconv_c0_lnd, zmconv_c0_ocn, zmconv_ke, zmconv_tau, & 
            zmconv_dmpdz, zmconv_alfa, zmconv_tiedke_add,     &
            zmconv_cape_cin, zmconv_mx_bot_lyr_adj, zmconv_tp_fac, zmconv_trigdcape_ull, &
-           zmconv_trig_dcape_only, zmconv_trig_ull_only
+           zmconv_trig_dcape_only, zmconv_trig_ull_only, zmconv_microp     !<songxl------------
+
    !-----------------------------------------------------------------------------
 
    zmconv_tau = 3600._r8
@@ -143,27 +157,30 @@ subroutine zmconv_readnl(nlfile)
       trigdcape_ull  = zmconv_trigdcape_ull
       trig_dcape_only  = zmconv_trig_dcape_only
       trig_ull_only  = zmconv_trig_ull_only
+!<songxl----------
+      zm_microp      = zmconv_microp
+!>songxl----------
       tiedke_add     = zmconv_tiedke_add
       num_cin        = zmconv_cape_cin
       mx_bot_lyr_adj = zmconv_mx_bot_lyr_adj
       dmpdz          = zmconv_dmpdz
       tp_fac         = zmconv_tp_fac
-      
+     
       if ( zmconv_alfa /= unset_r8 ) then
            alfa_scalar = zmconv_alfa
       else
            alfa_scalar = 0.1_r8
       end if
 
-      if (trigdcape_ull) then 
+      if (trigdcape_ull) then
          write(iulog,*)'**** ZMCONV-DCAPE trigger with unrestricted launch level:', trigdcape_ull
       endif
 
-      if (trig_dcape_only) then 
+      if (trig_dcape_only) then
          write(iulog,*)'**** ZM scheme uses DCAPE-only trigger:', trig_dcape_only
       endif
 
-      if (trig_ull_only) then 
+      if (trig_ull_only) then
          write(iulog,*)'**** ZM scheme uses unrestricted launch level along with default CAPE-based trigger:', trig_ull_only
       endif
 
@@ -180,6 +197,9 @@ subroutine zmconv_readnl(nlfile)
    call mpibcast(trigdcape_ull,     1, mpilog, 0, mpicom)
    call mpibcast(trig_dcape_only,   1, mpilog, 0, mpicom)
    call mpibcast(trig_ull_only,     1, mpilog, 0, mpicom)
+!<sognxl--------
+   call mpibcast(zm_microp,         1, mpilog, 0, mpicom)
+!>songxl--------
    call mpibcast(tiedke_add,        1, mpir8,  0, mpicom)
    call mpibcast(num_cin,           1, mpiint, 0, mpicom)
    call mpibcast(mx_bot_lyr_adj,    1, mpiint, 0, mpicom)
@@ -245,7 +265,12 @@ subroutine zm_convr(lchnk   ,ncol    , &
                     mu      ,md      ,du      ,eu      ,ed      , &
                     dp      ,dsubcld ,jt      ,maxg    ,ideep   , &
                     lengath ,ql      ,rliq    ,landfrac, &
-                    t_star  ,q_star, dcape)
+                    t_star  ,q_star, dcape,   &
+!<songxl 2014-11-20---------------
+                    aero    ,qi      ,dif     ,dnlf    ,dnif    , & 
+                    dsf     ,dnsf    ,sprd    ,rice    ,frz     , &
+                    mudpcu  ,lambdadpcu, microp_st)
+!>songxl 2014-11-20--------------- 
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -265,7 +290,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
 ! 
 !-----------------------------------------------------------------------
    use phys_control, only: cam_physpkg_is
-   use time_manager, only: is_first_step
+   use time_manager, only: is_first_step 
 !
 ! ************************ index of variables **********************
 !
@@ -377,6 +402,13 @@ subroutine zm_convr(lchnk   ,ncol    , &
    real(r8), intent(in) :: pblh(pcols)
    real(r8), intent(in) :: tpert(pcols)
    real(r8), intent(in) :: landfrac(pcols) ! RBN Landfrac
+!<songxl 2014-05-20------------------
+   type(zm_aero_t), intent(inout) :: aero         ! aerosol object. intent(inout) because the
+                                                  ! gathered arrays are set here
+                                                  ! before passing object
+                                                  ! to microphysics
+   type(zm_microp_st), intent(inout) :: microp_st ! state and tendency of convective microphysics
+!>songxl 2014-05-20------------------
 
 !DCAPE-ULL
    real(r8), intent(in), pointer, dimension(:,:) :: t_star ! intermediate T between n and n-1 time step
@@ -395,6 +427,19 @@ subroutine zm_convr(lchnk   ,ncol    , &
    real(r8), intent(out) :: cape(pcols)        ! w  convective available potential energy.
    real(r8), intent(out) :: zdu(pcols,pver)
    real(r8), intent(out) :: rprd(pcols,pver)     ! rain production rate
+!<songxl 2014-11-20---------
+   real(r8), intent(out) :: sprd(pcols,pver)       ! snow production rate
+   real(r8), intent(out) :: dif(pcols,pver)        ! detrained convective cloud ice mixing ratio.
+   real(r8), intent(out) :: dnlf(pcols,pver)       ! detrained convective cloud water num concen.
+   real(r8), intent(out) :: dnif(pcols,pver)       ! detrained convective cloud ice num concen.
+   real(r8), intent(out) :: dsf(pcols,pver)        ! detrained convective snow mixing ratio.
+   real(r8), intent(out) :: dnsf(pcols,pver)       ! detrained convective snow num concen.
+   real(r8), intent(out) :: lambdadpcu(pcols,pver) ! slope of cloud liquid size distr
+   real(r8), intent(out) :: mudpcu(pcols,pver)     ! width parameter of droplet size distr
+   real(r8), intent(out) :: frz(pcols,pver)        ! freezing heating
+ 
+!>songxl 2014-11-20---------
+
 ! move these vars from local storage to output so that convective
 ! transports can be done in outside of conv_cam.
    real(r8), intent(out) :: mu(pcols,pver)
@@ -407,8 +452,13 @@ subroutine zm_convr(lchnk   ,ncol    , &
    real(r8), intent(out) :: jctop(pcols)  ! o row of top-of-deep-convection indices passed out.
    real(r8), intent(out) :: jcbot(pcols)  ! o row of base of cloud indices passed out.
    real(r8), intent(out) :: prec(pcols)
-   real(r8), intent(out) :: rliq(pcols) ! reserved liquid (not yet in cldliq) for energy integrals
+   real(r8), intent(out) :: rliq(pcols)   ! reserved liquid (not yet in cldliq) for energy integrals
    real(r8), intent(out) :: dcape(pcols)           ! output dynamical CAPE
+
+!<songxl 2014-05-20------------------
+   real(r8), intent(out) :: rice(pcols)   ! reserved ice (not yet in cldce) for energy integrals
+   real(r8), intent(out) :: qi(pcols,pver) ! cloud ice.
+!>songxl 2014-05-20------------------
 
    real(r8) zs(pcols)
    real(r8) dlg(pcols,pver)    ! gathrd version of the detraining cld h2o tend
@@ -422,7 +472,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
    integer lengath
 !     diagnostic field used by chem/wetdep codes
    real(r8) ql(pcols,pver)                    ! wg grid slice of cloud liquid water.
-!
+
    real(r8) pblt(pcols)           ! i row of pbl top indices.
 
 
@@ -443,7 +493,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
    real(r8) qstp(pcols,pver)           ! w  grid slice of parcel temp. saturation mixing ratio.
 
    real(r8) tl(pcols)                  ! w  row of parcel temperature at lcl.
-
+!<songxl 2014-05-20-----------------
    real(r8) tpm1(pcols,pver)           ! w parcel temperatures at n-1 time step. 
    real(r8) qstpm1(pcols,pver)         ! w parcel temp. saturation mixing ratio at n-1 time step
    real(r8) tlm1(pcols)                ! w LCL parcel Temperature at n-1 time step
@@ -452,6 +502,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
    integer lelm1(pcols)                ! w index of highest theoretical convective plume.
    integer lonm1(pcols)                ! w index of onset level for deep convection.
    integer maxim1(pcols)               ! w index of level with largest moist static energy.
+!>songxl 2014-05-20-----------------
 
    logical iclosure                    ! switch on sequence of call to buoyan_dilute to derive DCAPE
    real(r8) capelmt_wk                 ! work capelmt to allow diff values passed to closure with trigdcape
@@ -477,6 +528,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
    real(r8) ug(pcols,pver)             ! wg grid slice of gathered values of u.
    real(r8) vg(pcols,pver)             ! wg grid slice of gathered values of v.
    real(r8) cmeg(pcols,pver)
+
    real(r8) rprdg(pcols,pver)          ! wg gathered rain production rate
    real(r8) capeg(pcols)               ! wg gathered convective available potential energy.
    real(r8) tlg(pcols)                 ! wg grid slice of gathered values of tl.
@@ -506,6 +558,33 @@ subroutine zm_convr(lchnk   ,ncol    , &
    real(r8) dvdt(pcols,pver)           ! wg v-wind tendency at gathered points.
 !      real(r8) ud(pcols,pver)
 !      real(r8) vd(pcols,pver)
+!<songxl 2014-11-20--------
+   real(r8) :: lambdadpcug(pcols,pver) ! slope of cloud liquid size distr
+   real(r8) :: mudpcug(pcols,pver)     ! width parameter of droplet size distr
+
+   real(r8) sprdg(pcols,pver)          ! wg gathered snow production rate
+   real(r8) dig(pcols,pver)
+   real(r8) dsg(pcols,pver)
+   real(r8) dnlg(pcols,pver)
+   real(r8) dnig(pcols,pver)
+   real(r8) dnsg(pcols,pver)
+
+
+   real(r8) qldeg(pcols,pver)     ! cloud water mixing ratio for detrainment (kg/kg)
+   real(r8) qideg(pcols,pver)     ! cloud ice mixing ratio for detrainment (kg/kg)
+   real(r8) qsdeg(pcols,pver)     ! snow mixing ratio for detrainment (kg/kg)
+   real(r8) ncdeg(pcols,pver)     ! cloud water number concentration for detrainment (1/kg)
+   real(r8) nideg(pcols,pver)     ! cloud ice number concentration for detrainment (1/kg)
+   real(r8) nsdeg(pcols,pver)     ! snow concentration for detrainment (1/kg)
+
+   real(r8) dsfmg(pcols,pver)     !mass tendency due to detrainment of snow
+   real(r8) dsfng(pcols,pver)     !num tendency due to detrainment of snow
+   real(r8) frzg(pcols,pver)      ! gathered heating rate due to freezing
+
+   type(zm_microp_st)  :: loc_microp_st ! state and tendency of convective microphysics
+
+!>songxl 2014-11-20--------
+
 
    real(r8) mb(pcols)                  ! wg cloud base mass flux.
 
@@ -517,13 +596,20 @@ subroutine zm_convr(lchnk   ,ncol    , &
 
    integer i
    integer ii
-   integer k
+   integer k, kk
    integer msg                      !  ic number of missing moisture levels at the top of model.
    integer ierror
 
    real(r8) qdifr
    real(r8) sdifr
 
+!<songxl 2014-11-20-----------
+   integer l, m
+   real(r8), parameter :: dcon  = 25.e-6_r8
+   real(r8), parameter :: mucon = 5.3_r8
+   real(r8) negadq
+   logical doliq
+!esongxl 2014-11-20-----------
 !
 !--------------------------Data statements------------------------------
 !
@@ -538,6 +624,85 @@ subroutine zm_convr(lchnk   ,ncol    , &
    heat(:,:) = 0._r8
    mcon(:,:) = 0._r8
    rliq(:ncol)   = 0._r8
+   rice(:ncol)   = 0._r8    !songxl
+
+   if (zm_microp) then
+     allocate( &
+        loc_microp_st%wu(pcols,pver), &
+        loc_microp_st%qliq(pcols,pver), &
+        loc_microp_st%qice(pcols,pver), &
+        loc_microp_st%qrain(pcols,pver), &
+        loc_microp_st%qsnow(pcols,pver), &
+        loc_microp_st%qgraupel(pcols,pver), &
+        loc_microp_st%qnl(pcols,pver), &
+        loc_microp_st%qni(pcols,pver), &
+        loc_microp_st%qnr(pcols,pver), &
+        loc_microp_st%qns(pcols,pver), &
+        loc_microp_st%qng(pcols,pver), & 
+        loc_microp_st%autolm(pcols,pver), &
+        loc_microp_st%accrlm(pcols,pver), &
+        loc_microp_st%bergnm(pcols,pver), &
+        loc_microp_st%fhtimm(pcols,pver), &
+        loc_microp_st%fhtctm(pcols,pver), &
+        loc_microp_st%fhmlm(pcols,pver), &
+        loc_microp_st%hmpim(pcols,pver), &
+        loc_microp_st%accslm(pcols,pver), &
+        loc_microp_st%dlfm(pcols,pver), &
+        loc_microp_st%autoln(pcols,pver), &
+        loc_microp_st%accrln(pcols,pver), &
+        loc_microp_st%bergnn(pcols,pver), &
+        loc_microp_st%fhtimn(pcols,pver), &
+        loc_microp_st%fhtctn(pcols,pver), &
+        loc_microp_st%fhmln(pcols,pver), &
+        loc_microp_st%accsln(pcols,pver), &
+        loc_microp_st%activn(pcols,pver), &
+        loc_microp_st%dlfn(pcols,pver), &
+        loc_microp_st%autoim(pcols,pver), &
+        loc_microp_st%accsim(pcols,pver), &
+        loc_microp_st%difm(pcols,pver), &
+        loc_microp_st%nuclin(pcols,pver), &
+        loc_microp_st%autoin(pcols,pver), &
+        loc_microp_st%accsin(pcols,pver), &
+        loc_microp_st%hmpin(pcols,pver), &
+        loc_microp_st%difn(pcols,pver), &
+        loc_microp_st%cmel(pcols,pver), &
+        loc_microp_st%cmei(pcols,pver), & 
+        loc_microp_st%trspcm(pcols,pver), &
+        loc_microp_st%trspcn(pcols,pver), &
+        loc_microp_st%trspim(pcols,pver), &
+        loc_microp_st%trspin(pcols,pver), &
+        loc_microp_st%accgrm(pcols,pver),   & 
+        loc_microp_st%accglm(pcols,pver),   & 
+        loc_microp_st%accgslm(pcols,pver),  & 
+        loc_microp_st%accgsrm(pcols,pver),  & 
+        loc_microp_st%accgirm(pcols,pver),  & 
+        loc_microp_st%accgrim(pcols,pver),  & 
+        loc_microp_st%accgrsm(pcols,pver),  & 
+        loc_microp_st%accgsln(pcols,pver),  & 
+        loc_microp_st%accgsrn(pcols,pver),  & 
+        loc_microp_st%accgirn(pcols,pver),  & 
+        loc_microp_st%accsrim(pcols,pver),  & 
+        loc_microp_st%acciglm(pcols,pver),  & 
+        loc_microp_st%accigrm(pcols,pver),  & 
+        loc_microp_st%accsirm(pcols,pver),  & 
+        loc_microp_st%accigln(pcols,pver),  & 
+        loc_microp_st%accigrn(pcols,pver),  & 
+        loc_microp_st%accsirn(pcols,pver),  & 
+        loc_microp_st%accgln(pcols,pver),   & 
+        loc_microp_st%accgrn(pcols,pver),   & 
+        loc_microp_st%accilm(pcols,pver),   & 
+        loc_microp_st%acciln(pcols,pver),   & 
+        loc_microp_st%fallrm(pcols, pver),  & 
+        loc_microp_st%fallsm(pcols, pver),  & 
+        loc_microp_st%fallgm(pcols, pver),  & 
+        loc_microp_st%fallrn(pcols, pver),  & 
+        loc_microp_st%fallsn(pcols, pver),  & 
+        loc_microp_st%fallgn(pcols, pver),  & 
+        loc_microp_st%fhmrm (pcols,pver) ) 
+   end if
+
+
+
 !
 ! initialize convective tendencies
 !
@@ -557,8 +722,227 @@ subroutine zm_convr(lchnk   ,ncol    , &
          qlg(i,k)   = 0._r8
          dlf(i,k)   = 0._r8
          dlg(i,k)   = 0._r8
+!<songxl 2014-11-20-------
+         dif(i,k)   = 0._r8
+         dsf(i,k)   = 0._r8
+         dnlf(i,k)  = 0._r8
+         dnif(i,k)  = 0._r8
+         dnsf(i,k)  = 0._r8
+
+         dig(i,k)   = 0._r8
+         dsg(i,k)   = 0._r8
+         dnlg(i,k)  = 0._r8
+         dnig(i,k)  = 0._r8
+         dnsg(i,k)  = 0._r8
+
+         qi(i,k)    = 0._r8
+         sprd(i,k)  = 0._r8
+         frz(i,k)   = 0._r8
+         
+         sprdg(i,k) = 0._r8
+         frzg(i,k)   = 0._r8 
+
+         qldeg(i,k)  = 0._r8
+         qideg(i,k)  = 0._r8
+         qsdeg(i,k)  = 0._r8
+         ncdeg(i,k) = 0._r8
+         nideg(i,k) = 0._r8
+         nsdeg(i,k) = 0._r8
+          
+         dsfmg(i,k) = 0._r8
+         dsfng(i,k) = 0._r8
       end do
    end do
+
+   if (zm_microp) then
+     do k = 1,pver
+       do i = 1,ncol
+!< microp_st-------------------------
+  
+         microp_st%wu(i,k)    = 0._r8
+
+         microp_st%qliq(i,k)  = 0._r8
+         microp_st%qice(i,k)  = 0._r8
+         microp_st%qrain(i,k) = 0._r8
+         microp_st%qsnow(i,k) = 0._r8
+         microp_st%qgraupel(i,k) = 0._r8
+         microp_st%qnl(i,k)  = 0._r8
+         microp_st%qni(i,k)  = 0._r8
+         microp_st%qnr(i,k)  = 0._r8
+         microp_st%qns(i,k)  = 0._r8
+         microp_st%qng(i,k) = 0._r8
+
+         microp_st%autolm(i,k) = 0._r8
+         microp_st%accrlm(i,k) = 0._r8
+         microp_st%bergnm(i,k) = 0._r8
+         microp_st%fhtimm(i,k) = 0._r8
+         microp_st%fhtctm(i,k) = 0._r8
+         microp_st%fhmlm (i,k) = 0._r8
+         microp_st%hmpim (i,k) = 0._r8
+         microp_st%accslm(i,k) = 0._r8
+         microp_st%dlfm  (i,k) = 0._r8
+
+         microp_st%autoln(i,k) = 0._r8
+         microp_st%accrln(i,k) = 0._r8
+         microp_st%bergnn(i,k) = 0._r8
+         microp_st%fhtimn(i,k) = 0._r8
+         microp_st%fhtctn(i,k) = 0._r8
+         microp_st%fhmln (i,k) = 0._r8
+         microp_st%accsln(i,k) = 0._r8
+         microp_st%activn(i,k) = 0._r8
+         microp_st%dlfn  (i,k) = 0._r8
+         microp_st%cmel  (i,k) = 0._r8
+
+         microp_st%autoim(i,k) = 0._r8
+         microp_st%accsim(i,k) = 0._r8
+         microp_st%difm  (i,k) = 0._r8
+         microp_st%cmei  (i,k) = 0._r8
+
+         microp_st%nuclin(i,k) = 0._r8
+         microp_st%autoin(i,k) = 0._r8
+         microp_st%accsin(i,k) = 0._r8
+         microp_st%hmpin (i,k) = 0._r8
+         microp_st%difn  (i,k) = 0._r8
+
+         microp_st%trspcm(i,k) = 0._r8
+         microp_st%trspcn(i,k) = 0._r8
+         microp_st%trspim(i,k) = 0._r8
+         microp_st%trspin(i,k) = 0._r8
+
+         microp_st%accgrm(i,k) = 0._r8
+         microp_st%accglm(i,k) = 0._r8
+         microp_st%accgslm(i,k)= 0._r8
+         microp_st%accgsrm(i,k)= 0._r8
+         microp_st%accgirm(i,k)= 0._r8
+         microp_st%accgrim(i,k)= 0._r8
+         microp_st%accgrsm(i,k)= 0._r8
+
+         microp_st%accgsln(i,k)= 0._r8
+         microp_st%accgsrn(i,k)= 0._r8
+         microp_st%accgirn(i,k)= 0._r8
+
+         microp_st%accsrim(i,k)= 0._r8
+         microp_st%acciglm(i,k)= 0._r8
+         microp_st%accigrm(i,k)= 0._r8
+         microp_st%accsirm(i,k)= 0._r8
+
+         microp_st%accigln(i,k)= 0._r8
+         microp_st%accigrn(i,k)= 0._r8
+         microp_st%accsirn(i,k)= 0._r8
+         microp_st%accgln(i,k) = 0._r8
+         microp_st%accgrn(i,k) = 0._r8
+
+         microp_st%accilm(i,k) = 0._r8
+         microp_st%acciln(i,k) = 0._r8  
+
+         microp_st%fallrm(i,k) = 0._r8
+         microp_st%fallsm(i,k) = 0._r8
+         microp_st%fallgm(i,k) = 0._r8
+         microp_st%fallrn(i,k) = 0._r8
+         microp_st%fallsn(i,k) = 0._r8
+         microp_st%fallgn(i,k) = 0._r8
+         microp_st%fhmrm (i,k) = 0._r8
+
+!> microp_st---------------------------
+
+!< loc_microp_st----------------------
+         loc_microp_st%wu(i,k)   = 0._r8
+
+         loc_microp_st%qliq(i,k) = 0._r8
+         loc_microp_st%qice(i,k) = 0._r8
+         loc_microp_st%qrain(i,k)= 0._r8
+         loc_microp_st%qsnow(i,k)= 0._r8
+         loc_microp_st%qgraupel(i,k) = 0._r8
+         loc_microp_st%qnl(i,k)  = 0._r8
+         loc_microp_st%qni(i,k)  = 0._r8
+         loc_microp_st%qnr(i,k)  = 0._r8
+         loc_microp_st%qns(i,k)  = 0._r8
+         loc_microp_st%qng(i,k)  = 0._r8
+
+         loc_microp_st%autolm(i,k) = 0._r8
+         loc_microp_st%accrlm(i,k) = 0._r8
+         loc_microp_st%bergnm(i,k) = 0._r8
+         loc_microp_st%fhtimm(i,k) = 0._r8
+         loc_microp_st%fhtctm(i,k) = 0._r8
+         loc_microp_st%fhmlm (i,k) = 0._r8
+         loc_microp_st%hmpim (i,k) = 0._r8
+         loc_microp_st%accslm(i,k) = 0._r8
+         loc_microp_st%dlfm  (i,k) = 0._r8
+
+         loc_microp_st%autoln(i,k) = 0._r8
+         loc_microp_st%accrln(i,k) = 0._r8
+         loc_microp_st%bergnn(i,k) = 0._r8
+         loc_microp_st%fhtimn(i,k) = 0._r8
+         loc_microp_st%fhtctn(i,k) = 0._r8
+         loc_microp_st%fhmln (i,k) = 0._r8
+         loc_microp_st%accsln(i,k) = 0._r8
+         loc_microp_st%activn(i,k) = 0._r8
+         loc_microp_st%dlfn  (i,k) = 0._r8
+         loc_microp_st%cmel  (i,k) = 0._r8
+
+         loc_microp_st%autoim(i,k) = 0._r8
+         loc_microp_st%accsim(i,k) = 0._r8
+         loc_microp_st%difm  (i,k) = 0._r8
+         loc_microp_st%cmei  (i,k) = 0._r8
+
+         loc_microp_st%nuclin(i,k) = 0._r8
+         loc_microp_st%autoin(i,k) = 0._r8
+         loc_microp_st%accsin(i,k) = 0._r8
+         loc_microp_st%hmpin (i,k) = 0._r8
+         loc_microp_st%difn  (i,k) = 0._r8
+
+         loc_microp_st%trspcm(i,k) = 0._r8
+         loc_microp_st%trspcn(i,k) = 0._r8
+         loc_microp_st%trspim(i,k) = 0._r8
+         loc_microp_st%trspin(i,k) = 0._r8
+
+         loc_microp_st%accgrm(i,k) = 0._r8
+         loc_microp_st%accglm(i,k) = 0._r8
+         loc_microp_st%accgslm(i,k)= 0._r8
+         loc_microp_st%accgsrm(i,k)= 0._r8
+         loc_microp_st%accgirm(i,k)= 0._r8
+         loc_microp_st%accgrim(i,k)= 0._r8
+         loc_microp_st%accgrsm(i,k)= 0._r8 
+
+         loc_microp_st%accgsln(i,k)= 0._r8
+         loc_microp_st%accgsrn(i,k)= 0._r8
+         loc_microp_st%accgirn(i,k)= 0._r8
+
+         loc_microp_st%accsrim(i,k)= 0._r8
+         loc_microp_st%acciglm(i,k)= 0._r8
+         loc_microp_st%accigrm(i,k)= 0._r8
+         loc_microp_st%accsirm(i,k)= 0._r8
+
+         loc_microp_st%accigln(i,k)= 0._r8
+         loc_microp_st%accigrn(i,k)= 0._r8
+         loc_microp_st%accsirn(i,k)= 0._r8
+         loc_microp_st%accgln(i,k) = 0._r8
+         loc_microp_st%accgrn(i,k) = 0._r8
+
+         loc_microp_st%accilm(i,k) = 0._r8
+         loc_microp_st%acciln(i,k) = 0._r8
+
+         loc_microp_st%fallrm(i,k) = 0._r8
+         loc_microp_st%fallsm(i,k) = 0._r8
+         loc_microp_st%fallgm(i,k) = 0._r8
+         loc_microp_st%fallrn(i,k) = 0._r8
+         loc_microp_st%fallsn(i,k) = 0._r8
+         loc_microp_st%fallgn(i,k) = 0._r8
+         loc_microp_st%fhmrm (i,k) = 0._r8
+
+!> loc_microp_st-----------------------
+!>songxl 2014-11-20-------
+
+      end do
+    end do
+   end if
+!<songxl 2014-11-20----------
+   lambdadpcu  = (mucon + 1._r8)/dcon
+   mudpcu      = mucon
+   lambdadpcug = lambdadpcu
+   mudpcug     = mudpcu
+!>songxl 2014-11-20----------
+
    do i = 1,ncol
       pflx(i,pverp) = 0
       pflxg(i,pverp) = 0
@@ -644,8 +1028,8 @@ subroutine zm_convr(lchnk   ,ncol    , &
                   tp      ,qstp    ,tl      ,rl      ,cape     , &
                   pblt    ,lcl     ,lel     ,lon     ,maxi     , &
                   rgas    ,grav    ,cpres   ,msg     , &
-                  tpert   ,iclosure)
-         
+                  tpert   ,iclosure) 
+
       if (trigdcape_ull .or. trig_dcape_only) then
          if (.not. allocated(dcapemx)) then
             allocate (dcapemx(pcols), stat=ierror)
@@ -662,7 +1046,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
                  tpm1    ,qstpm1  ,tlm1    ,rl      ,capem1   , &
                  pblt    ,lclm1   ,lelm1   ,lonm1   ,maxim1   , &
                  rgas    ,grav    ,cpres   ,msg     , &
-                 tpert   ,iclosure)
+                 tpert   ,iclosure) 
 
           dcape(:ncol) = (cape(:ncol)-capem1(:ncol))/(delt*2._r8)
       endif
@@ -724,6 +1108,46 @@ subroutine zm_convr(lchnk   ,ncol    , &
          vg(i,k) = 0._r8
       end do
    end do
+
+!<songxl 2014-11-20--------
+   if (zm_microp) then
+
+      if (aero%scheme == 'modal') then
+
+         do m = 1, aero%nmodes
+
+            do k = 1,pver
+               do i = 1,lengath
+                  aero%numg_a(i,k,m) = aero%num_a(m)%val(ideep(i),k)
+                  aero%dgnumg(i,k,m) = aero%dgnum(m)%val(ideep(i),k)
+               end do
+            end do
+
+            do l = 1, aero%nspec(m)
+               do k = 1,pver
+                  do i = 1,lengath
+                     aero%mmrg_a(i,k,l,m) = aero%mmr_a(l,m)%val(ideep(i),k)
+                  end do
+               end do
+            end do
+
+         end do
+
+      else if (aero%scheme == 'bulk') then
+
+         do m = 1, aero%nbulk
+            do k = 1,pver
+               do i = 1,lengath
+                  aero%mmrg_bulk(i,k,m) = aero%mmr_bulk(m)%val(ideep(i),k)
+               end do
+            end do
+         end do
+
+      end if
+
+   end if
+!>songxl 2014-11-20---------
+
 !
    do i = 1,lengath
       zfg(i,pver+1) = zf(ideep(i),pver+1)
@@ -736,6 +1160,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
       tlg(i) = tl(ideep(i))
       landfracg(i) = landfrac(ideep(i))
       tpertg(i) = tpert(ideep(i))
+      if (maxg(i)<nint(pblt(ideep(i)))) tpertg(i)=0._r8  !songxl 2021-04-25
    end do
 !
 ! calculate sub-cloud layer pressure "thickness" for use in
@@ -788,7 +1213,13 @@ subroutine zm_convr(lchnk   ,ncol    , &
                maxg    ,j0      ,jd      ,rl      ,lengath , &
                rgas    ,grav    ,cpres   ,msg     , &
                pflxg   ,evpg    ,cug     ,rprdg   ,limcnv  , &
-               landfracg, tpertg) !PMA adds tpert to the calculation
+               landfracg, tpertg, &             !PMA adds tpert to the calculation
+!<songxl 2014-11-20------
+               aero    ,qhat ,lambdadpcug,mudpcug ,sprdg   ,frzg ,  &
+               qldeg   ,qideg   ,qsdeg   ,ncdeg   ,nideg   ,nsdeg,  &
+               dsfmg   ,dsfng   ,loc_microp_st )   
+
+
 !
 ! convert detrainment from units of "1/m" to "1/mb".
 !
@@ -800,6 +1231,10 @@ subroutine zm_convr(lchnk   ,ncol    , &
          cug  (i,k) = cug  (i,k)* (zfg(i,k)-zfg(i,k+1))/dp(i,k)
          cmeg (i,k) = cmeg (i,k)* (zfg(i,k)-zfg(i,k+1))/dp(i,k)
          rprdg(i,k) = rprdg(i,k)* (zfg(i,k)-zfg(i,k+1))/dp(i,k)
+!<songxl 2014-11-20----------
+         sprdg(i,k) = sprdg(i,k)* (zfg(i,k)-zfg(i,k+1))/dp(i,k)
+         frzg (i,k) = frzg (i,k)* (zfg(i,k)-zfg(i,k+1))/dp(i,k)
+!>songxl 2014-11-20----------
          evpg (i,k) = evpg (i,k)* (zfg(i,k)-zfg(i,k+1))/dp(i,k)
       end do
    end do
@@ -855,6 +1290,103 @@ subroutine zm_convr(lchnk   ,ncol    , &
          cug  (i,k)  = cug  (i,k)*mb(i)
          evpg (i,k)  = evpg (i,k)*mb(i)
          pflxg(i,k+1)= pflxg(i,k+1)*mb(i)*100._r8/grav
+!<songxl 2014-11-20----------
+         sprdg(i,k)  = sprdg(i,k)*mb(i)
+         frzg(i,k)   = frzg(i,k)*mb(i)
+
+
+         if ( zm_microp .and. mb(i).eq.0._r8) then
+            qlg (i,k) = 0._r8
+            dsfmg(i,k) = 0._r8
+            dsfng(i,k) = 0._r8 
+            frzg (i,k) = 0._r8
+!< loc_microp_st--------------------------
+            loc_microp_st%wu(i,k) = 0._r8
+            loc_microp_st%qliq (i,k) = 0._r8
+            loc_microp_st%qice (i,k) = 0._r8
+            loc_microp_st%qrain(i,k) = 0._r8
+            loc_microp_st%qsnow(i,k) = 0._r8
+            loc_microp_st%qgraupel(i,k)= 0._r8
+            loc_microp_st%qnl (i,k) = 0._r8
+            loc_microp_st%qni (i,k) = 0._r8
+            loc_microp_st%qnr (i,k) = 0._r8
+            loc_microp_st%qns (i,k) = 0._r8
+            loc_microp_st%qng (i,k)  = 0._r8
+
+            loc_microp_st%autolm(i,k) = 0._r8
+            loc_microp_st%accrlm(i,k) = 0._r8
+            loc_microp_st%bergnm(i,k) = 0._r8
+            loc_microp_st%fhtimm(i,k) = 0._r8
+            loc_microp_st%fhtctm(i,k) = 0._r8
+            loc_microp_st%fhmlm (i,k) = 0._r8
+            loc_microp_st%hmpim (i,k) = 0._r8
+            loc_microp_st%accslm(i,k) = 0._r8
+            loc_microp_st%dlfm  (i,k) = 0._r8
+
+            loc_microp_st%autoln(i,k) = 0._r8
+            loc_microp_st%accrln(i,k) = 0._r8
+            loc_microp_st%bergnn(i,k) = 0._r8
+            loc_microp_st%fhtimn(i,k) = 0._r8
+            loc_microp_st%fhtctn(i,k) = 0._r8
+            loc_microp_st%fhmln (i,k) = 0._r8
+            loc_microp_st%accsln(i,k) = 0._r8
+            loc_microp_st%activn(i,k) = 0._r8
+            loc_microp_st%dlfn  (i,k) = 0._r8
+            loc_microp_st%cmel  (i,k) = 0._r8
+
+
+            loc_microp_st%autoim(i,k) = 0._r8
+            loc_microp_st%accsim(i,k) = 0._r8
+            loc_microp_st%difm  (i,k) = 0._r8
+            loc_microp_st%cmei  (i,k) = 0._r8
+
+            loc_microp_st%nuclin(i,k) = 0._r8
+            loc_microp_st%autoin(i,k) = 0._r8
+            loc_microp_st%accsin(i,k) = 0._r8
+            loc_microp_st%hmpin (i,k) = 0._r8
+            loc_microp_st%difn  (i,k) = 0._r8
+
+            loc_microp_st%trspcm(i,k) = 0._r8
+            loc_microp_st%trspcn(i,k) = 0._r8
+            loc_microp_st%trspim(i,k) = 0._r8
+            loc_microp_st%trspin(i,k) = 0._r8
+
+            loc_microp_st%accgrm(i,k) = 0._r8
+            loc_microp_st%accglm(i,k) = 0._r8
+            loc_microp_st%accgslm(i,k)= 0._r8
+            loc_microp_st%accgsrm(i,k)= 0._r8
+            loc_microp_st%accgirm(i,k)= 0._r8
+            loc_microp_st%accgrim(i,k)= 0._r8
+            loc_microp_st%accgrsm(i,k)= 0._r8
+
+            loc_microp_st%accgsln(i,k)= 0._r8
+            loc_microp_st%accgsrn(i,k)= 0._r8
+            loc_microp_st%accgirn(i,k)= 0._r8
+
+            loc_microp_st%accsrim(i,k)= 0._r8
+            loc_microp_st%acciglm(i,k)= 0._r8
+            loc_microp_st%accigrm(i,k)= 0._r8
+            loc_microp_st%accsirm(i,k)= 0._r8
+
+            loc_microp_st%accigln(i,k)= 0._r8
+            loc_microp_st%accigrn(i,k)= 0._r8
+            loc_microp_st%accsirn(i,k)= 0._r8
+            loc_microp_st%accgln(i,k) = 0._r8
+            loc_microp_st%accgrn(i,k) = 0._r8
+
+            loc_microp_st%accilm(i,k) = 0._r8
+            loc_microp_st%acciln(i,k) = 0._r8
+
+            loc_microp_st%fallrm(i,k) = 0._r8
+            loc_microp_st%fallsm(i,k) = 0._r8
+            loc_microp_st%fallgm(i,k) = 0._r8
+            loc_microp_st%fallrn(i,k) = 0._r8
+            loc_microp_st%fallsn(i,k) = 0._r8
+            loc_microp_st%fallgn(i,k) = 0._r8
+            loc_microp_st%fhmrm (i,k) = 0._r8
+         end if
+!>songxl 2014-11-20----------
+
       end do
    end do
 !
@@ -863,10 +1395,116 @@ subroutine zm_convr(lchnk   ,ncol    , &
    call q1q2_pjr(lchnk   , &
                  dqdt    ,dsdt    ,qg      ,qs      ,qu      , &
                  su      ,du      ,qhat    ,shat    ,dp      , &
-                 mu      ,md      ,sd      ,qd      ,qlg     , &
+!<songxl 2014-11-20---------
+!                 mu      ,md      ,sd      ,qd      ,qlg     , &
+                 mu      ,md      ,sd      ,qd      ,qldeg   , &
+!>songxl 2014-11-20--------
                  dsubcld ,jt      ,maxg    ,1       ,lengath , &
                  cpres   ,rl      ,msg     ,          &
-                 dlg     ,evpg    ,cug     )
+!<songxl 2014-11-20------------ 
+!                 dlg     ,evpg    ,cug     )
+                 dlg     ,evpg    ,cug     ,qideg   ,dig     , &
+                 ncdeg   ,nideg   ,dnlg    ,dnig    ,frzg    , &
+                 qsdeg   ,nsdeg   ,dsg     ,dnsg    )
+!>songxl 2014-11-20------------
+
+!
+! gather back temperature and mixing ratio.
+!
+  if (zm_microp) then
+    do k = msg + 1,pver
+#ifdef CPRCRAY
+!DIR$ CONCURRENT
+#endif
+      do i = 1,lengath
+         if (dqdt(i,k)*2._r8*delt+qg(i,k)<0._r8) then
+            negadq = dqdt(i,k)+0.5_r8*qg(i,k)/delt
+            dqdt(i,k) = dqdt(i,k)-negadq
+
+! First evaporate precipitation from k layer to cloud top assuming that the preciptation above will fall down
+! and evaporate at k layer. So dsdt will be applied at k layer.
+            do kk=k,jt(i),-1
+              if (negadq<0._r8) then
+                 if (rprdg(i,kk)> -negadq*dp(i,k)/dp(i,kk)) then
+                 ! precipitation is enough
+                    dsdt(i,k) = dsdt(i,k) + negadq*rl/cpres
+                    if (rprdg(i,kk)>sprdg(i,kk)) then
+                    ! if there is rain, evaporate it first
+                       if(rprdg(i,kk)-sprdg(i,kk)<-negadq*dp(i,k)/dp(i,kk)) then
+                       ! if rain is not enough, evaporate snow and graupel
+                         dsdt(i,k) = dsdt(i,k) + (negadq+ (rprdg(i,kk)-sprdg(i,kk))*dp(i,kk)/dp(i,k))*latice/cpres
+                         sprdg(i,kk) = negadq*dp(i,k)/dp(i,kk)+rprdg(i,kk)
+                       end if
+                    else
+                    ! if there is not rain, evaporate snow and graupel
+                       sprdg(i,kk) = sprdg(i,kk)+negadq*dp(i,k)/dp(i,kk)
+                       dsdt(i,k) = dsdt(i,k) + negadq*latice/cpres
+                    end if
+                    rprdg(i,kk) = rprdg(i,kk)+negadq*dp(i,k)/dp(i,kk)
+                    negadq = 0._r8
+                 else
+                 ! precipitation is not enough. calculate the residue and evaporate next layer
+                    negadq = rprdg(i,kk)*dp(i,kk)/dp(i,k)+negadq
+                    dsdt(i,k) = dsdt(i,k) - rprdg(i,kk)*rl/cpres*dp(i,kk)/dp(i,k)
+                    dsdt(i,k) = dsdt(i,k) - sprdg(i,kk)*latice/cpres*dp(i,kk)/dp(i,k)
+                    sprdg(i,kk) = 0._r8
+                    rprdg(i,kk) = 0._r8
+                 end if
+
+
+                 if (negadq<0._r8) then
+                     if (dlg(i,kk)> -negadq*dp(i,k)/dp(i,kk)) then
+                    ! first evaporate (detrained) cloud liquid water
+                        dsdt(i,k) = dsdt(i,k) + negadq*rl/cpres
+                        dnlg(i,kk) = dnlg(i,kk)*(1._r8+negadq*dp(i,k)/dp(i,kk)/dlg(i,kk))
+                        dlg(i,kk)  = dlg(i,kk)+negadq*dp(i,k)/dp(i,kk)
+                        negadq = 0._r8
+                     else
+                    ! if cloud liquid water is not enough then calculate the residual and evaporate the detrained cloud ice
+                        negadq = negadq + dlg(i,kk)*dp(i,kk)/dp(i,k)
+                        dsdt(i,k) = dsdt(i,k) - dlg(i,kk)*dp(i,kk)/dp(i,k)*rl/cpres
+                        dlg(i,kk) = 0._r8
+                        dnlg(i,kk) = 0._r8
+                       if (dig(i,kk)> -negadq*dp(i,k)/dp(i,kk)) then
+                         dsdt(i,k) = dsdt(i,k) + negadq*(rl+latice)/cpres
+                         dnig(i,kk) = dnig(i,kk)*(1._r8+negadq*dp(i,k)/dp(i,kk)/dig(i,kk))
+                         dig(i,kk)  = dig(i,kk)+negadq*dp(i,k)/dp(i,kk)
+                         negadq = 0._r8
+                       else
+                       ! if cloud ice is not enough, then calculate the residual and evaporate the detrained snow
+                         negadq = negadq + dig(i,kk)*dp(i,kk)/dp(i,k)
+                         dsdt(i,k) = dsdt(i,k) - dig(i,kk)*dp(i,kk)/dp(i,k)*(rl+latice)/cpres
+                         dig(i,kk) = 0._r8
+                         dnig(i,kk) = 0._r8
+                         if (dsg(i,kk)> -negadq*dp(i,k)/dp(i,kk)) then
+                           dsdt(i,k) = dsdt(i,k) + negadq*(rl+latice)/cpres
+                           dnsg(i,kk) = dnsg(i,kk)*(1._r8+negadq*dp(i,k)/dp(i,kk)/dsg(i,kk))
+                           dsg(i,kk)  = dsg(i,kk)+negadq*dp(i,k)/dp(i,kk)
+                           negadq = 0._r8
+                         else
+                         ! if cloud ice is not enough, then calculate the residual and evaporate next layer
+                           negadq = negadq + dsg(i,kk)*dp(i,kk)/dp(i,k)
+                           dsdt(i,k) = dsdt(i,k) - dsg(i,kk)*dp(i,kk)/dp(i,k)*(rl+latice)/cpres
+                           dsg(i,kk) = 0._r8
+                           dnsg(i,kk) = 0._r8
+                         end if
+                        end if
+                     end if
+                 end if
+
+              end if
+            end do
+
+            if (negadq<0._r8) then
+               dqdt(i,k) = dqdt(i,k) - negadq
+            end if
+
+          end if
+      end do
+   end do
+  end if
+
+
 
 ! gather back temperature and mixing ratio.
 !
@@ -888,8 +1526,158 @@ subroutine zm_convr(lchnk   ,ncol    , &
          dlf (ideep(i),k) = dlg  (i,k)
          pflx(ideep(i),k) = pflxg(i,k)
          ql  (ideep(i),k) = qlg  (i,k)
+
+!<songxl 2014-11-20---------
+         sprd(ideep(i),k) = sprdg(i,k)
+         dif (ideep(i),k) = dig  (i,k)
+         dsf (ideep(i),k) = dsg  (i,k)
+         dnlf(ideep(i),k) = dnlg  (i,k)
+         dnif(ideep(i),k) = dnig  (i,k)
+         dnsf(ideep(i),k) = dnsg  (i,k)
+         lambdadpcu(ideep(i),k) = lambdadpcug(i,k)
+         mudpcu(ideep(i),k)     = mudpcug(i,k)
+         frz(ideep(i),k)  = frzg(i,k)*latice/cpres
+       if (zm_microp) then
+         qi  (ideep(i),k) = loc_microp_st%qice  (i,k)
+         microp_st%wu  (ideep(i),k) = loc_microp_st%wu  (i,k)
+         microp_st%qliq(ideep(i),k) = loc_microp_st%qliq (i,k)
+         microp_st%qice(ideep(i),k) = loc_microp_st%qice (i,k)
+         microp_st%qrain(ideep(i),k) = loc_microp_st%qrain (i,k)
+         microp_st%qsnow(ideep(i),k) = loc_microp_st%qsnow (i,k)
+         microp_st%qgraupel(ideep(i),k) = loc_microp_st%qgraupel (i,k)
+         microp_st%qnl(ideep(i),k)  = loc_microp_st%qnl(i,k)
+         microp_st%qni(ideep(i),k)  = loc_microp_st%qni(i,k)
+         microp_st%qnr(ideep(i),k)  = loc_microp_st%qnr(i,k)
+         microp_st%qns(ideep(i),k)  = loc_microp_st%qns(i,k)
+         microp_st%qng(ideep(i),k)  = loc_microp_st%qng(i,k)
+
+         microp_st%autolm(ideep(i),k) = loc_microp_st%autolm(i,k)
+         microp_st%accrlm(ideep(i),k) = loc_microp_st%accrlm(i,k)
+         microp_st%bergnm(ideep(i),k) = loc_microp_st%bergnm(i,k)
+         microp_st%fhtimm(ideep(i),k) = loc_microp_st%fhtimm(i,k)
+         microp_st%fhtctm(ideep(i),k) = loc_microp_st%fhtctm(i,k)
+         microp_st%fhmlm (ideep(i),k) = loc_microp_st%fhmlm (i,k)
+         microp_st%hmpim (ideep(i),k) = loc_microp_st%hmpim (i,k)
+         microp_st%accslm(ideep(i),k) = loc_microp_st%accslm(i,k)
+         microp_st%dlfm  (ideep(i),k) = loc_microp_st%dlfm  (i,k)
+
+         microp_st%autoln(ideep(i),k) = loc_microp_st%autoln(i,k)
+         microp_st%accrln(ideep(i),k) = loc_microp_st%accrln(i,k)
+         microp_st%bergnn(ideep(i),k) = loc_microp_st%bergnn(i,k)
+         microp_st%fhtimn(ideep(i),k) = loc_microp_st%fhtimn(i,k)
+         microp_st%fhtctn(ideep(i),k) = loc_microp_st%fhtctn(i,k)
+         microp_st%fhmln (ideep(i),k) = loc_microp_st%fhmln (i,k)
+         microp_st%accsln(ideep(i),k) = loc_microp_st%accsln(i,k)
+         microp_st%activn(ideep(i),k) = loc_microp_st%activn(i,k)
+         microp_st%dlfn  (ideep(i),k) = loc_microp_st%dlfn  (i,k)
+         microp_st%cmel  (ideep(i),k) = loc_microp_st%cmel  (i,k)
+
+         microp_st%autoim(ideep(i),k) = loc_microp_st%autoim(i,k)
+         microp_st%accsim(ideep(i),k) = loc_microp_st%accsim(i,k)
+         microp_st%difm  (ideep(i),k) = loc_microp_st%difm  (i,k)
+         microp_st%cmei  (ideep(i),k) = loc_microp_st%cmei  (i,k)
+
+         microp_st%nuclin(ideep(i),k) = loc_microp_st%nuclin(i,k)
+         microp_st%autoin(ideep(i),k) = loc_microp_st%autoin(i,k)
+         microp_st%accsin(ideep(i),k) = loc_microp_st%accsin(i,k)
+         microp_st%hmpin (ideep(i),k) = loc_microp_st%hmpin (i,k)
+         microp_st%difn  (ideep(i),k) = loc_microp_st%difn  (i,k)
+
+         microp_st%trspcm(ideep(i),k) = loc_microp_st%trspcm(i,k)
+         microp_st%trspcn(ideep(i),k) = loc_microp_st%trspcn(i,k)
+         microp_st%trspim(ideep(i),k) = loc_microp_st%trspim(i,k)
+         microp_st%trspin(ideep(i),k) = loc_microp_st%trspin(i,k)
+
+
+         microp_st%accgrm(ideep(i),k) = loc_microp_st%accgrm(i,k)
+         microp_st%accglm(ideep(i),k) = loc_microp_st%accglm(i,k)
+         microp_st%accgslm(ideep(i),k)= loc_microp_st%accgslm(i,k)
+         microp_st%accgsrm(ideep(i),k)= loc_microp_st%accgsrm(i,k)
+         microp_st%accgirm(ideep(i),k)= loc_microp_st%accgirm(i,k)
+         microp_st%accgrim(ideep(i),k)= loc_microp_st%accgrim(i,k)
+         microp_st%accgrsm(ideep(i),k)= loc_microp_st%accgrsm(i,k)
+
+         microp_st%accgsln(ideep(i),k)= loc_microp_st%accgsln(i,k)
+         microp_st%accgsrn(ideep(i),k)= loc_microp_st%accgsrn(i,k)
+         microp_st%accgirn(ideep(i),k)= loc_microp_st%accgirn(i,k)
+
+         microp_st%accsrim(ideep(i),k)= loc_microp_st%accsrim(i,k)
+         microp_st%acciglm(ideep(i),k)= loc_microp_st%acciglm(i,k)
+         microp_st%accigrm(ideep(i),k)= loc_microp_st%accigrm(i,k)
+         microp_st%accsirm(ideep(i),k)= loc_microp_st%accsirm(i,k)
+
+         microp_st%accigln(ideep(i),k)= loc_microp_st%accigln(i,k)
+         microp_st%accigrn(ideep(i),k)= loc_microp_st%accigrn(i,k)
+         microp_st%accsirn(ideep(i),k)= loc_microp_st%accsirn(i,k)
+         microp_st%accgln(ideep(i),k) = loc_microp_st%accgln(i,k)
+         microp_st%accgrn(ideep(i),k) = loc_microp_st%accgrn(i,k)
+
+         microp_st%accilm(ideep(i),k) = loc_microp_st%accilm(i,k)
+         microp_st%acciln(ideep(i),k) = loc_microp_st%acciln(i,k)
+
+         microp_st%fallrm(ideep(i),k) = loc_microp_st%fallrm(i,k)
+         microp_st%fallsm(ideep(i),k) = loc_microp_st%fallsm(i,k)
+         microp_st%fallgm(ideep(i),k) = loc_microp_st%fallgm(i,k)
+         microp_st%fallrn(ideep(i),k) = loc_microp_st%fallrn(i,k)
+         microp_st%fallsn(ideep(i),k) = loc_microp_st%fallsn(i,k)
+         microp_st%fallgn(ideep(i),k) = loc_microp_st%fallgn(i,k)
+         microp_st%fhmrm (ideep(i),k) = loc_microp_st%fhmrm (i,k)
+       end if
+!>songxl 2014-11-20---------
+
       end do
    end do
+
+!<songxl 2014-11-20------------
+   do k = msg + 1,pver
+      do i = 1,ncol
+
+         !Interpolate variable from interface to mid-layer and convert it from units of "kg/kg" to "g/m3"
+
+         if(k.lt.pver) then
+            microp_st%qice (i,k) = 0.5_r8*(microp_st%qice(i,k)+microp_st%qice(i,k+1))
+            microp_st%qliq (i,k) = 0.5_r8*(microp_st%qliq(i,k)+microp_st%qliq(i,k+1))
+            microp_st%qrain (i,k) = 0.5_r8*(microp_st%qrain(i,k)+microp_st%qrain(i,k+1))
+            microp_st%qsnow (i,k) = 0.5_r8*(microp_st%qsnow(i,k)+microp_st%qsnow(i,k+1))
+            microp_st%qgraupel(i,k) = 0.5_r8*(microp_st%qgraupel(i,k)+microp_st%qgraupel(i,k+1))
+            microp_st%qni (i,k) = 0.5_r8*(microp_st%qni(i,k)+microp_st%qni(i,k+1))
+            microp_st%qnl (i,k) = 0.5_r8*(microp_st%qnl(i,k)+microp_st%qnl(i,k+1))
+            microp_st%qnr (i,k) = 0.5_r8*(microp_st%qnr(i,k)+microp_st%qnr(i,k+1))
+            microp_st%qns (i,k) = 0.5_r8*(microp_st%qns(i,k)+microp_st%qns(i,k+1))
+            microp_st%qng (i,k) = 0.5_r8*(microp_st%qng(i,k)+microp_st%qng(i,k+1))
+            microp_st%wu(i,k)   = 0.5_r8*(microp_st%wu(i,k)+microp_st%wu(i,k+1))
+         end if
+
+         if (t(i,k).gt. 273.15_r8 .and. t(i,k-1).le.273.15_r8) then
+             microp_st%qice (i,k-1) = microp_st%qice (i,k-1) + microp_st%qice (i,k)
+             microp_st%qice (i,k) = 0._r8
+             microp_st%qni (i,k-1) = microp_st%qni (i,k-1) + microp_st%qni (i,k)
+             microp_st%qni (i,k) = 0._r8
+             microp_st%qsnow (i,k-1) = microp_st%qsnow (i,k-1) + microp_st%qsnow (i,k)
+             microp_st%qsnow (i,k) = 0._r8
+             microp_st%qns (i,k-1) = microp_st%qns (i,k-1) + microp_st%qns (i,k)
+             microp_st%qns (i,k) = 0._r8
+             microp_st%qgraupel (i,k-1) = microp_st%qgraupel (i,k-1) + microp_st%qgraupel (i,k)
+             microp_st%qgraupel (i,k) = 0._r8
+             microp_st%qng (i,k-1) = microp_st%qng (i,k-1) + microp_st%qng (i,k)
+             microp_st%qng (i,k) = 0._r8
+         end if
+
+         microp_st%qice (i,k) = microp_st%qice(i,k) * pap(i,k)/t(i,k)/rgas *1000._r8
+         microp_st%qliq (i,k) = microp_st%qliq(i,k) * pap(i,k)/t(i,k)/rgas *1000._r8
+         microp_st%qrain (i,k) = microp_st%qrain(i,k) * pap(i,k)/t(i,k)/rgas *1000._r8
+         microp_st%qsnow (i,k) = microp_st%qsnow(i,k) * pap(i,k)/t(i,k)/rgas *1000._r8
+         microp_st%qgraupel (i,k) = microp_st%qgraupel(i,k) * pap(i,k)/t(i,k)/rgas *1000._r8
+         microp_st%qni (i,k) = microp_st%qni(i,k) * pap(i,k)/t(i,k)/rgas
+         microp_st%qnl (i,k) = microp_st%qnl(i,k) * pap(i,k)/t(i,k)/rgas
+         microp_st%qnr (i,k) = microp_st%qnr(i,k) * pap(i,k)/t(i,k)/rgas
+         microp_st%qns (i,k) = microp_st%qns(i,k) * pap(i,k)/t(i,k)/rgas
+         microp_st%qng (i,k) = microp_st%qng(i,k) * pap(i,k)/t(i,k)/rgas 
+      end do
+   end do
+
+!>songxl 2014-11-20------------
+
 !
 #ifdef CPRCRAY
 !DIR$ CONCURRENT
@@ -905,7 +1693,10 @@ subroutine zm_convr(lchnk   ,ncol    , &
 ! Compute precip by integrating change in water vapor minus detrained cloud water
    do k = pver,msg + 1,-1
       do i = 1,ncol
-         prec(i) = prec(i) - dpp(i,k)* (q(i,k)-qh(i,k)) - dpp(i,k)*dlf(i,k)*2*delt
+!<songxl 2014-11-20---------
+!         prec(i) = prec(i) - dpp(i,k)* (q(i,k)-qh(i,k)) - dpp(i,k)*dlf(i,k)*2*delt
+          prec(i) = prec(i) - dpp(i,k)* (q(i,k)-qh(i,k)) - dpp(i,k)*(dlf(i,k)+dif(i,k)+dsf(i,k))*2._r8*delt
+!>songxl 2014-11-20---------
       end do
    end do
 
@@ -918,10 +1709,90 @@ subroutine zm_convr(lchnk   ,ncol    , &
 ! Treat rliq as flux out bottom, to be added back later.
    do k = 1, pver
       do i = 1, ncol
-         rliq(i) = rliq(i) + dlf(i,k)*dpp(i,k)/gravit
+!<songxl 2014-11-20------
+!         rliq(i) = rliq(i) + dlf(i,k)*dpp(i,k)/gravit
+          rliq(i) = rliq(i) + (dlf(i,k)+dif(i,k)+dsf(i,k))*dpp(i,k)/gravit
+          rice(i) = rice(i) + (dif(i,k)+dsf(i,k))*dpp(i,k)/gravit
+!>songxl 2014-11-20------
       end do
    end do
    rliq(:ncol) = rliq(:ncol) /1000._r8
+   rice(:ncol) = rice(:ncol) /1000._r8    !songxl 2014-11-20
+
+   if (zm_microp) then
+     deallocate( &
+       loc_microp_st%wu,      &
+       loc_microp_st%qliq,    &
+       loc_microp_st%qice,    &
+       loc_microp_st%qrain,   &
+       loc_microp_st%qsnow,   &
+       loc_microp_st%qgraupel,&
+       loc_microp_st%qnl,     &
+       loc_microp_st%qni,     &
+       loc_microp_st%qnr,     &
+       loc_microp_st%qns,     &
+       loc_microp_st%qng,     &
+       loc_microp_st%autolm,  &
+       loc_microp_st%accrlm,  &
+       loc_microp_st%bergnm,  &
+       loc_microp_st%fhtimm,  &
+       loc_microp_st%fhtctm,  &
+       loc_microp_st%fhmlm ,  &
+       loc_microp_st%hmpim ,  &
+       loc_microp_st%accslm,  &
+       loc_microp_st%dlfm  ,  &
+       loc_microp_st%autoln,  &
+       loc_microp_st%accrln,  &
+       loc_microp_st%bergnn,  &
+       loc_microp_st%fhtimn,  &
+       loc_microp_st%fhtctn,  &
+       loc_microp_st%fhmln ,  &
+       loc_microp_st%accsln,  &
+       loc_microp_st%activn,  &
+       loc_microp_st%dlfn  ,  &
+       loc_microp_st%autoim,  &
+       loc_microp_st%accsim,  &
+       loc_microp_st%difm  ,  &
+       loc_microp_st%nuclin,  &
+       loc_microp_st%autoin,  &
+       loc_microp_st%accsin,  &
+       loc_microp_st%hmpin ,  &
+       loc_microp_st%difn  ,  &
+       loc_microp_st%cmel  ,  &
+       loc_microp_st%cmei  ,  &
+       loc_microp_st%trspcm,  &
+       loc_microp_st%trspcn,  &
+       loc_microp_st%trspim,  &
+       loc_microp_st%trspin,  &
+       loc_microp_st%accgrm,   &
+       loc_microp_st%accglm,   &
+       loc_microp_st%accgslm,  &
+       loc_microp_st%accgsrm,  &
+       loc_microp_st%accgirm,  &
+       loc_microp_st%accgrim,  &
+       loc_microp_st%accgrsm,  &
+       loc_microp_st%accgsln,  &
+       loc_microp_st%accgsrn,  &
+       loc_microp_st%accgirn,  &
+       loc_microp_st%accsrim,  &
+       loc_microp_st%acciglm,  &
+       loc_microp_st%accigrm,  &
+       loc_microp_st%accsirm,  &
+       loc_microp_st%accigln,  &
+       loc_microp_st%accigrn,  &
+       loc_microp_st%accsirn,  &
+       loc_microp_st%accgln,   &
+       loc_microp_st%accgrn,   &
+       loc_microp_st%accilm,   &
+       loc_microp_st%acciln,   &
+       loc_microp_st%fallrm,  &
+       loc_microp_st%fallsm,  &
+       loc_microp_st%fallgm,  &
+       loc_microp_st%fallrn,  &
+       loc_microp_st%fallsn,  &
+       loc_microp_st%fallgn,  &
+       loc_microp_st%fhmrm )
+   end if
 
    return
 end subroutine zm_convr
@@ -931,8 +1802,10 @@ subroutine zm_conv_evap(ncol,lchnk, &
      t,pmid,pdel,q, &
      tend_s, tend_s_snwprd, tend_s_snwevmlt, tend_q, &
      prdprec, cldfrc, deltat,  &
-     prec, snow, ntprprd, ntsnprd, flxprec, flxsnow )
-
+!<songxl 2014-11-20--------
+!     prec, snow, ntprprd, ntsnprd, flxprec, flxsnow )
+     prec, snow, ntprprd, ntsnprd, flxprec, flxsnow, prdsnow, old_snow )
+!>songxl 2014-11-20--------
 !-----------------------------------------------------------------------
 ! Compute tendencies due to evaporation of rain from ZM scheme
 !--
@@ -964,6 +1837,11 @@ subroutine zm_conv_evap(ncol,lchnk, &
 
     real(r8), intent(inout) :: prec(pcols)        ! Convective-scale preciptn rate
     real(r8), intent(out)   :: snow(pcols)        ! Convective-scale snowfall rate
+
+!<songxl 2014-11-20-------------
+    real(r8), intent(in   ) :: prdsnow(pcols,pver)! snow production (kg/ks/s)
+    logical,  intent(in)    :: old_snow           ! true for old estimate of snow production
+!>songxl 2014-11-20-------------
 !
 !---------------------------Local storage-------------------------------
 
@@ -987,6 +1865,10 @@ subroutine zm_conv_evap(ncol,lchnk, &
     real(r8) :: evplimit               ! temp variable for evaporation limits
     real(r8) :: rlat(pcols)
 
+!<songxl 2014-11-20----
+    real(r8) :: dum
+    real(r8) :: omsm
+!>songxl 2014-11-20---
     integer :: i,k                     ! longitude,level indices
 
 
@@ -1006,11 +1888,14 @@ subroutine zm_conv_evap(ncol,lchnk, &
     flxprec(:ncol,1) = 0._r8
     flxsnow(:ncol,1) = 0._r8
     evpvint(:ncol)   = 0._r8
+    omsm=0.99999999_r8
 
     do k = 1, pver
        do i = 1, ncol
 
 ! Melt snow falling into layer, if necessary. 
+!<songxl 2014-11-20------------
+        if( old_snow ) then
           if (t(i,k) > tmelt) then
              flxsntm(i) = 0._r8
              snowmlt(i) = flxsnow(i,k) * gravit/ pdel(i,k)
@@ -1018,6 +1903,35 @@ subroutine zm_conv_evap(ncol,lchnk, &
              flxsntm(i) = flxsnow(i,k)
              snowmlt(i) = 0._r8
           end if
+        else
+! make sure melting snow doesn't reduce temperature below threshold
+          if (t(i,k) > tmelt) then
+              dum = -latice/cpres*flxsnow(i,k)*gravit/pdel(i,k)*deltat
+              if (t(i,k) + dum .le. tmelt) then
+                dum = (t(i,k)-tmelt)*cpres/latice/deltat
+                dum = dum/(flxsnow(i,k)*gravit/pdel(i,k))
+                dum = max(0._r8,dum)
+                dum = min(1._r8,dum)
+              else
+                dum = 1._r8
+              end if
+              dum = dum*omsm
+              flxsntm(i) = flxsnow(i,k)*(1.0_r8-dum)
+              snowmlt(i) = dum*flxsnow(i,k)*gravit/ pdel(i,k)
+           else
+             flxsntm(i) = flxsnow(i,k)
+             snowmlt(i) = 0._r8
+           end if
+         end if
+
+!          if (t(i,k) > tmelt) then
+!             flxsntm(i) = 0._r8
+!             snowmlt(i) = flxsnow(i,k) * gravit/ pdel(i,k)
+!          else
+!             flxsntm(i) = flxsnow(i,k)
+!             snowmlt(i) = 0._r8
+!          end if
+!>songxl 2014-10-10--------------------
 
 ! relative humidity depression must be > 0 for evaporation
           evplimit = max(1._r8 - q(i,k)/qs(i,k), 0._r8)
@@ -1044,6 +1958,13 @@ subroutine zm_conv_evap(ncol,lchnk, &
 
           evpprec(i) = min(evplimit, evpprec(i))
 
+!<sognxl 2014-11-20--------
+          if( .not.old_snow ) then
+            evpprec(i) = max(0._r8, evpprec(i))
+            evpprec(i) = evpprec(i)*omsm
+          end if
+!>songxl 2014-11-20--------
+
 ! evaporation of snow depends on snow fraction of total precipitation in the top after melting
           if (flxprec(i,k) > 0._r8) then
 !            evpsnow(i) = evpprec(i) * flxsntm(i) / flxprec(i,k)
@@ -1065,6 +1986,10 @@ subroutine zm_conv_evap(ncol,lchnk, &
 ! the small amount added to flxprec in the work1 expression has been increased from 
 ! 1e-36 to 8.64e-11 (1e-5 mm/day).  This causes the temperature based partitioning
 ! scheme to be used for small flxprec amounts.  This is to address error growth problems.
+
+!<songxl 2014-11-20--------
+      if( old_snow ) then
+!>songxl 2014-11-20--------
 #ifdef PERGRO
           work1 = min(max(0._r8,flxsnow(i,k)/(flxprec(i,k)+8.64e-11_r8)),1._r8)
 #else
@@ -1080,6 +2005,13 @@ subroutine zm_conv_evap(ncol,lchnk, &
           ntsnprd(i,k) = prdprec(i,k)*work2 - evpsnow(i) - snowmlt(i)
           tend_s_snwprd  (i,k) = prdprec(i,k)*work2*latice
           tend_s_snwevmlt(i,k) = - ( evpsnow(i) + snowmlt(i) )*latice
+!<songxl 2014-11-20----------
+       else
+          ntsnprd(i,k) = prdsnow(i,k) - min(flxsnow(i,k)*gravit/pdel(i,k), evpsnow(i)+snowmlt(i))
+          tend_s_snwprd  (i,k) = prdsnow(i,k)*latice
+          tend_s_snwevmlt(i,k) = -min(flxsnow(i,k)*gravit/pdel(i,k), evpsnow(i)+snowmlt(i) )*latice
+       end if
+!>songxl 2014-11-20----------
 
 ! precipitation fluxes
           flxprec(i,k+1) = flxprec(i,k) + ntprprd(i,k) * pdel(i,k)/gravit
@@ -1094,7 +2026,15 @@ subroutine zm_conv_evap(ncol,lchnk, &
 ! heating (cooling) and moistening due to evaporation 
 ! - latent heat of vaporization for precip production has already been accounted for
 ! - snow is contained in prec
-          tend_s(i,k)   =-evpprec(i)*latvap + ntsnprd(i,k)*latice
+!<songxl 2014-11-20--------
+!          tend_s(i,k)   =-evpprec(i)*latvap + ntsnprd(i,k)*latice
+          if( old_snow ) then
+             tend_s(i,k)   =-evpprec(i)*latvap + ntsnprd(i,k)*latice
+          else
+             tend_s(i,k)   =-evpprec(i)*latvap + tend_s_snwevmlt(i,k)
+          end if
+!>songxl 2014-11-20--------
+
           tend_q(i,k) = evpprec(i)
        end do
     end do
@@ -1115,7 +2055,7 @@ subroutine convtran(lchnk   , &
                     doconvtran,q       ,ncnst   ,mu      ,md      , &
                     du      ,eu      ,ed      ,dp      ,dsubcld , &
                     jt      ,mx      ,ideep   ,il1g    ,il2g    , &
-                    nstep   ,fracis  ,dqdt    ,dpdry   )
+                    nstep   ,fracis  ,dqdt    ,dpdry   ,dt ) !songxl
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -1161,7 +2101,9 @@ subroutine convtran(lchnk   , &
    integer, intent(in) :: nstep             ! Time step index
 
    real(r8), intent(in) :: dpdry(pcols,pver)       ! Delta pressure between interfaces
-
+!<songxl 2014-11-20-----------
+   real(r8), intent(in) :: dt               ! 2 delta t (model time increment)
+!>songxl 2014-11-20-----------
 
 ! input/output
 
@@ -1201,6 +2143,10 @@ subroutine convtran(lchnk   , &
    real(r8) eutmp(pcols,pver)       ! Mass entraining from updraft
    real(r8) edtmp(pcols,pver)       ! Mass entraining from downdraft
    real(r8) dptmp(pcols,pver)    ! Delta pressure between interfaces
+
+!<songxl 2014-11-20----------
+   real(r8) negadt,qtmp
+!>songxl 2014-11-20----------
 !-----------------------------------------------------------------------
 !
    small = 1.e-36_r8
@@ -1391,6 +2337,48 @@ subroutine convtran(lchnk   , &
             end do
          end do
 
+!<songxl test----------
+       if (zm_microp) then
+         do i = il1g,il2g
+           do k = jt(i),mx(i)
+             if (dcondt(i,k)*dt+const(i,k)<0._r8) then
+                negadt = dcondt(i,k)+const(i,k)/dt
+                dcondt(i,k) = -const(i,k)/dt
+                do kk= k+1, mx(i)
+                  if (negadt<0._r8 .and. dcondt(i,kk)*dt+const(i,kk)>0._r8 ) then
+                    qtmp = dcondt(i,kk)+negadt*dptmp(i,k)/dptmp(i,kk)
+                    if (qtmp*dt+const(i,kk)>0._r8) then
+                      dcondt(i,kk)= qtmp
+                      negadt=0._r8
+                    else
+                      negadt= negadt+(const(i,kk)/dt+dcondt(i,kk))*dptmp(i,kk)/dptmp(i,k)
+                      dcondt(i,kk)= -const(i,kk)/dt
+                    end if
+
+                  end if
+                end do
+                do kk= k-1, jt(i), -1
+                  if (negadt<0._r8 .and. dcondt(i,kk)*dt+const(i,kk)>0._r8 ) then
+                    qtmp = dcondt(i,kk)+negadt*dptmp(i,k)/dptmp(i,kk)
+                    if (qtmp*dt+const(i,kk)>0._r8) then
+                      dcondt(i,kk)= qtmp
+                      negadt=0._r8
+                    else
+                      negadt= negadt+(const(i,kk)/dt+dcondt(i,kk))*dptmp(i,kk)/dptmp(i,k)
+                      dcondt(i,kk)= -const(i,kk)/dt
+                    end if
+                  end if
+                end do
+
+                if (negadt<0._r8) then
+!                   write(*,*) "can not fix negadt=",negadt
+                   dcondt(i,k) = dcondt(i,k) - negadt
+                end if
+             end if
+           end do
+         end do
+       end if
+!>songxl test----------
 ! Initialize to zero everywhere, then scatter tendency back to full array
          dqdt(:,:,m) = 0._r8
          do k = 1,pver
@@ -2141,8 +3129,15 @@ subroutine cldprp(lchnk   , &
                   cmeg    ,jb      ,lel     ,jt      ,jlcl    , &
                   mx      ,j0      ,jd      ,rl      ,il2g    , &
                   rd      ,grav    ,cp      ,msg     , &
-                  pflx    ,evp     ,cu      ,rprd    ,limcnv  , &
-                  landfrac,  tpertg )
+!<songxl 2014-05-20-------
+!                  pflx    ,evp     ,cu      ,rprd    ,limcnv  ,landfrac)
+                  pflx    ,evp     ,cu      ,rprd    ,limcnv  ,landfrac,  &
+                  tpertg  , &
+                  aero    ,qhat ,lambdadpcu ,mudpcu  ,sprd   ,frz1 , &
+                  qcde    ,qide   ,qsde     ,ncde    ,nide   ,nsde , &
+                  dsfm    ,dsfn   ,loc_microp_st )
+
+!>songxl 2014-05-20-------
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -2196,6 +3191,12 @@ subroutine cldprp(lchnk   , &
    real(r8), intent(in) :: rl                    ! latent heat of vap
    real(r8), intent(in) :: shat(pcols,pver)      ! interface values of dry stat energy
    real(r8), intent(in) :: tpertg(pcols)
+
+!<songxl 2014-11-20-----------
+   real(r8), intent(in) :: qhat(pcols,pver)      ! wg grid slice of upper interface mixing ratio.
+   type(zm_aero_t), intent(in) :: aero           ! aerosol object
+!>songxl 2014-11-20-----------
+
 !
 ! output
 !
@@ -2215,6 +3216,27 @@ subroutine cldprp(lchnk   , &
    real(r8), intent(out) :: qu(pcols,pver)       ! spec hum of updraft
    real(r8), intent(out) :: sd(pcols,pver)       ! normalized dry stat energy of downdraft
    real(r8), intent(out) :: su(pcols,pver)       ! normalized dry stat energy of updraft
+
+
+   type(zm_microp_st)  :: loc_microp_st ! state and tendency of convective microphysics
+!<songxl 2014-11-20------------
+   real(r8), intent(out) :: qcde(pcols,pver)     ! cloud water mixing ratio for detrainment (kg/kg)
+   real(r8), intent(out) :: qide(pcols,pver)     ! cloud ice mixing ratio for detrainment (kg/kg)
+   real(r8), intent(out) :: qsde(pcols,pver)     ! snow mixing ratio for detrainment (kg/kg)
+   real(r8), intent(out) :: ncde(pcols,pver)     ! cloud water number concentration for detrainment (1/kg)
+   real(r8), intent(out) :: nide(pcols,pver)     ! cloud ice number concentration for detrainment (1/kg)
+   real(r8), intent(out) :: nsde(pcols,pver)     ! snow number concentration for detrainment (1/kg)
+   real(r8), intent(out) :: sprd(pcols,pver)     ! rate of production of snow at that layer
+
+
+   ! tendency for output
+
+   real(r8), intent(out) :: dsfm  (pcols,pver)   !mass tendency due to detrainment of snow
+   real(r8), intent(out) :: dsfn  (pcols,pver)   !num tendency due to detrainment of snow
+
+   real(r8), intent(inout) :: lambdadpcu(pcols,pver) ! slope of cloud liquid size distr
+   real(r8), intent(inout) :: mudpcu(pcols,pver)     ! width parameter of droplet size distr
+!>songxl 2014-11-20------------
 
    real(r8) rd                   ! gas constant for dry air
    real(r8) grav                 ! gravity
@@ -2268,6 +3290,21 @@ subroutine cldprp(lchnk   , &
    real(r8) small
    real(r8) mdt
 
+!<songxl 2014-11-20---------
+   real(r8) fice(pcols,pver)        ! ice fraction in precip production
+   real(r8) tug(pcols,pver)
+
+   real(r8) totfrz(pcols)
+   real(r8) frz1(pcols,pver)        ! rate of freezing
+   real(r8) frz (pcols,pver)        ! rate of freezing
+   integer  jto(pcols)              ! updraft plume old top
+   integer  tmplel(pcols)
+
+   integer  iter, itnum
+   integer  m
+!>songxl 2014-11-20---------
+
+
    integer khighest
    integer klowest
    integer kount
@@ -2275,8 +3312,88 @@ subroutine cldprp(lchnk   , &
 
    logical doit(pcols)
    logical done(pcols)
+
 !
 !------------------------------------------------------------------------------
+!<songxl 2014-11-20---------
+   dsfm  (:il2g,:) = 0._r8
+   dsfn  (:il2g,:) = 0._r8
+   if (zm_microp) then
+      loc_microp_st%autolm(:il2g,:) = 0._r8
+      loc_microp_st%accrlm(:il2g,:) = 0._r8
+      loc_microp_st%bergnm(:il2g,:) = 0._r8
+      loc_microp_st%fhtimm(:il2g,:) = 0._r8
+      loc_microp_st%fhtctm(:il2g,:) = 0._r8
+      loc_microp_st%fhmlm (:il2g,:) = 0._r8
+      loc_microp_st%hmpim (:il2g,:) = 0._r8
+      loc_microp_st%accslm(:il2g,:) = 0._r8
+      loc_microp_st%dlfm  (:il2g,:) = 0._r8
+
+      loc_microp_st%autoln(:il2g,:) = 0._r8
+      loc_microp_st%accrln(:il2g,:) = 0._r8
+      loc_microp_st%bergnn(:il2g,:) = 0._r8
+      loc_microp_st%fhtimn(:il2g,:) = 0._r8
+      loc_microp_st%fhtctn(:il2g,:) = 0._r8
+      loc_microp_st%fhmln (:il2g,:) = 0._r8
+      loc_microp_st%accsln(:il2g,:) = 0._r8
+      loc_microp_st%activn(:il2g,:) = 0._r8
+      loc_microp_st%dlfn  (:il2g,:) = 0._r8
+
+      loc_microp_st%autoim(:il2g,:) = 0._r8
+      loc_microp_st%accsim(:il2g,:) = 0._r8
+      loc_microp_st%difm  (:il2g,:) = 0._r8
+
+
+      loc_microp_st%nuclin(:il2g,:) = 0._r8
+      loc_microp_st%autoin(:il2g,:) = 0._r8
+      loc_microp_st%accsin(:il2g,:) = 0._r8
+      loc_microp_st%hmpin (:il2g,:) = 0._r8
+      loc_microp_st%difn  (:il2g,:) = 0._r8
+
+      loc_microp_st%trspcm(:il2g,:) = 0._r8
+      loc_microp_st%trspcn(:il2g,:) = 0._r8
+      loc_microp_st%trspim(:il2g,:) = 0._r8
+      loc_microp_st%trspin(:il2g,:) = 0._r8
+
+      do k = 1,pver
+        do i = 1,il2g
+         loc_microp_st%accgrm(i,k) = 0._r8
+         loc_microp_st%accglm(i,k) = 0._r8
+         loc_microp_st%accgslm(i,k)= 0._r8
+         loc_microp_st%accgsrm(i,k)= 0._r8
+         loc_microp_st%accgirm(i,k)= 0._r8
+         loc_microp_st%accgrim(i,k)= 0._r8
+         loc_microp_st%accgrsm(i,k)= 0._r8
+
+         loc_microp_st%accgsln(i,k)= 0._r8
+         loc_microp_st%accgsrn(i,k)= 0._r8
+         loc_microp_st%accgirn(i,k)= 0._r8
+
+         loc_microp_st%accsrim(i,k)= 0._r8
+         loc_microp_st%acciglm(i,k)= 0._r8
+         loc_microp_st%accigrm(i,k)= 0._r8
+         loc_microp_st%accsirm(i,k)= 0._r8
+
+         loc_microp_st%accigln(i,k)= 0._r8
+         loc_microp_st%accigrn(i,k)= 0._r8
+         loc_microp_st%accsirn(i,k)= 0._r8
+         loc_microp_st%accgln(i,k) = 0._r8
+         loc_microp_st%accgrn(i,k) = 0._r8
+
+         loc_microp_st%accilm(i,k) = 0._r8
+         loc_microp_st%acciln(i,k) = 0._r8
+
+         loc_microp_st%fallrm(i,k) = 0._r8
+         loc_microp_st%fallsm(i,k) = 0._r8
+         loc_microp_st%fallgm(i,k) = 0._r8
+         loc_microp_st%fallrn(i,k) = 0._r8
+         loc_microp_st%fallsn(i,k) = 0._r8
+         loc_microp_st%fallgn(i,k) = 0._r8
+         loc_microp_st%fhmrm (i,k) = 0._r8      
+       end do
+      end do
+   end if
+!>songxl 2014-11-20---------
 !
    do i = 1,il2g
       ftemp(i) = 0._r8
@@ -2333,6 +3450,34 @@ subroutine cldprp(lchnk   , &
          hu(i,k) = hmn(i,k)
          hd(i,k) = hmn(i,k)
          rprd(i,k) = 0._r8
+!<songxl 2014-11-20----------------
+         sprd(i,k) = 0._r8
+         fice(i,k) = 0._r8
+         tug(i,k)  = 0._r8
+         qcde(i,k)   = 0._r8
+         qide(i,k)   = 0._r8
+         qsde(i,k)   = 0._r8
+         ncde(i,k)  = 0._r8
+         nide(i,k)  = 0._r8
+         nsde(i,k)  = 0._r8
+         frz(i,k)  = 0._r8
+         frz1(i,k) = 0._r8
+         if (zm_microp) then
+           loc_microp_st%cmel(i,k) = 0._r8
+           loc_microp_st%cmei(i,k) = 0._r8
+           loc_microp_st%wu(i,k)   = 0._r8
+           loc_microp_st%qliq(i,k)   = 0._r8
+           loc_microp_st%qice(i,k)   = 0._r8
+           loc_microp_st%qrain(i,k)= 0._r8
+           loc_microp_st%qsnow(i,k)= 0._r8
+           loc_microp_st%qgraupel(i,k) = 0._r8
+           loc_microp_st%qnl(i,k)  = 0._r8
+           loc_microp_st%qni(i,k)  = 0._r8
+           loc_microp_st%qnr(i,k)  = 0._r8
+           loc_microp_st%qns(i,k)  = 0._r8
+           loc_microp_st%qng(i,k) = 0._r8
+         end if
+!>songxl 2014-11-20----------------
       end do
    end do
 !
@@ -2379,6 +3524,7 @@ subroutine cldprp(lchnk   , &
 !jr changed hard-wired 4 to limcnv+1 (not to exceed pver)
 !
    jt(:) = pver
+   jto(:) = pver              !songxl 2014-11-20
    do i = 1,il2g
       jt(i) = max(lel(i),limcnv+1)
       jt(i) = min(jt(i),pver)
@@ -2509,6 +3655,26 @@ subroutine cldprp(lchnk   , &
          if (k < j0(i) .and. k >= jt(i)) eps(i,k) = f(i,k)
       end do
    end do
+!<songxl 2014-11-20---------------------------
+   itnum = 1
+   if (zm_microp) itnum = 2
+
+   do iter=1, itnum
+
+      do k = pver,msg + 1,-1
+        do i = 1,il2g
+           cu(i,k) = 0._r8
+           if (zm_microp)  loc_microp_st%qliq(i,k) = 0._r8
+           if (zm_microp)  loc_microp_st%qice(i,k) = 0._r8
+           ql(i,k) = 0._r8
+           frz1(i,k) = 0._r8
+        end do
+      end do
+      do i = 1,il2g
+          totpcp(i) = 0._r8
+          hu(i,jb(i)) = hmn(i,jb(i)) + cp*tiedke_add
+      end do
+
 !
 ! specify the updraft mass flux mu, entrainment eu, detrainment du
 ! and moist static energy hu.
@@ -2519,10 +3685,20 @@ subroutine cldprp(lchnk   , &
          mu(i,jb(i)) = 1._r8
          eu(i,jb(i)) = mu(i,jb(i))/dz(i,jb(i))
       end if
+!<songxl 2014-11-20---------
+      if (zm_microp) then
+        tmplel(i) = lel(i)
+      else
+        tmplel(i) = jt(i)
+      end if
+!>songxl 2014-11-20---------
    end do
    do k = pver,msg + 1,-1
       do i = 1,il2g
-         if (eps0(i) > 0._r8 .and. (k >= jt(i) .and. k < jb(i))) then
+!<songxl 2014-11-20---------
+!         if (eps0(i) > 0._r8 .and. (k >= jt(i) .and. k < jb(i))) then
+          if (eps0(i) > 0._r8 .and. (k >= tmplel(i) .and. k < jb(i))) then
+!>songxl 2014-11-20---------
             zuef(i) = zf(i,k) - zf(i,jb(i))
             rmue(i) = (1._r8/eps0(i))* (exp(eps(i,k+1)*zuef(i))-1._r8)/zuef(i)
             mu(i,k) = (1._r8/eps0(i))* (exp(eps(i,k  )*zuef(i))-1._r8)/zuef(i)
@@ -2548,8 +3724,16 @@ subroutine cldprp(lchnk   , &
                eu(i,k) = 0._r8
                du(i,k) = mu(i,k+1)/dz(i,k)
             else
-               hu(i,k) = mu(i,k+1)/mu(i,k)*hu(i,k+1) + &
+!<songxl 2014-05-20-------------
+               if (zm_microp) then
+                hu(i,k) = (mu(i,k+1)*hu(i,k+1) + dz(i,k)*(eu(i,k)*hmn(i,k) +   &
+                            latice*frz(i,k)))/(mu(i,k)+ dz(i,k)*du(i,k))
+               else
+                hu(i,k) = mu(i,k+1)/mu(i,k)*hu(i,k+1) + &
                          dz(i,k)/mu(i,k)* (eu(i,k)*hmn(i,k)- du(i,k)*hsat(i,k))
+               end if
+
+!>songxl 2014-05-20--------------
             end if
          end if
       end do
@@ -2561,11 +3745,18 @@ subroutine cldprp(lchnk   , &
 !
    do i=1,il2g
       doit(i) = .true.
+!<songxl 2014-10-10-------------
+      totfrz(i)= 0._r8
+      do k = pver,msg + 1,-1
+         totfrz(i)= totfrz(i)+ frz(i,k)*dz(i,k)
+      end do
+!>songxl 2014-10-10--------------
+
    end do
    do k=klowest-2,khighest-1,-1
       do i=1,il2g
          if (doit(i) .and. k <= jb(i)-2 .and. k >= lel(i)-1) then
-  	        if (hu(i,k) <= hsthat(i,k) .and. hu(i,k+1) > hsthat(i,k+1) .and. mu(i,k) >= 0.02_r8) then
+            if (hu(i,k) <= hsthat(i,k) .and. hu(i,k+1) > hsthat(i,k+1) .and. mu(i,k) >= 0.02_r8) then
                if (hu(i,k)-hsthat(i,k) < -2000._r8) then
                   jt(i) = k + 1
                   doit(i) = .false.
@@ -2573,13 +3764,23 @@ subroutine cldprp(lchnk   , &
                   jt(i) = k
                   doit(i) = .false.
                end if
-              else if (hu(i,k) > hu(i,jb(i)) .or. mu(i,k) < 0.02_r8) then
+!<songxl 2014-11-20----------
+!              else if (hu(i,k) > hu(i,jb(i)) .or. mu(i,k) < 0.02_r8) then
+             else if ( (hu(i,k) > hu(i,jb(i)) .and. totfrz(i)<=0._r8) .or. mu(i,k) < 0.02_r8) then
+!>songxl 2014-11-20----------
                jt(i) = k + 1
                doit(i) = .false.
             end if
          end if
       end do
    end do
+
+!<songxl 2014-11-20------
+   do i = 1,il2g
+      if (iter == 1)  jto(i) = jt(i)
+   end do
+!>songxl 2014-11-20------
+
    do k = pver,msg + 1,-1
       do i = 1,il2g
          if (k >= lel(i) .and. k <= jt(i) .and. eps0(i) > 0._r8) then
@@ -2596,6 +3797,210 @@ subroutine cldprp(lchnk   , &
       end do
    end do
 
+!>songxl 2014-11-20------------
+!
+
+!
+   do i = 1,il2g
+      done(i) = .false.
+   end do
+   kount = 0
+   do k = pver,msg + 2,-1
+      do i = 1,il2g
+         if (k == jb(i) .and. eps0(i) > 0._r8) then
+            qu(i,k) = q(i,mx(i))
+            su(i,k) = (hu(i,k)-rl*qu(i,k))/cp
+         end if
+         if (( .not. done(i) .and. k > jt(i) .and. k < jb(i)) .and. eps0(i) > 0._r8) then
+            su(i,k) = mu(i,k+1)/mu(i,k)*su(i,k+1) + &
+                      dz(i,k)/mu(i,k)* (eu(i,k)-du(i,k))*s(i,k)
+            qu(i,k) = mu(i,k+1)/mu(i,k)*qu(i,k+1) + dz(i,k)/mu(i,k)* (eu(i,k)*q(i,k)- &
+                            du(i,k)*qst(i,k))
+            tu = su(i,k) - grav/cp*zf(i,k)
+            call qsat_hPa(tu, (p(i,k)+p(i,k-1))/2._r8, estu, qstu)
+            if (qu(i,k) >= qstu) then
+               jlcl(i) = k
+               kount = kount + 1
+               done(i) = .true.
+            end if
+         end if
+      end do
+      if (kount >= il2g) goto 690
+   end do
+690 continue
+   do k = msg + 2,pver
+      do i = 1,il2g
+         if ((k > jt(i) .and. k <= jlcl(i)) .and. eps0(i) > 0._r8) then
+            su(i,k) = shat(i,k) + (hu(i,k)-hsthat(i,k))/(cp* (1._r8+gamhat(i,k)))
+            qu(i,k) = qsthat(i,k) + gamhat(i,k)*(hu(i,k)-hsthat(i,k))/ &
+                     (rl* (1._r8+gamhat(i,k)))
+         end if
+      end do
+   end do
+
+!<songxl 2014-11-20-------------
+   do i = 1,il2g
+     if (zm_microp) then
+        tmplel(i) = jlcl(i)+1
+     else
+        tmplel(i) = jb(i)
+     end if
+   end do
+!>songxl 2014-11-20-------------
+
+! compute condensation in updraft
+   do k = pver,msg + 2,-1
+      do i = 1,il2g
+!<songxl 2014-11-20------------------
+!         if (k >= jt(i) .and. k < jb(i) .and. eps0(i) > 0._r8) then
+        if (k >= jt(i) .and. k < tmplel(i) .and. eps0(i) > 0._r8) then
+          if (zm_microp) then
+             cu(i,k) = ((mu(i,k)*su(i,k)-mu(i,k+1)*su(i,k+1))/ &
+                     dz(i,k)- eu(i,k)*s(i,k)+du(i,k)*su(i,k))/(rl/cp)  &
+                       - latice*frz(i,k)/rl
+          else
+
+            cu(i,k) = ((mu(i,k)*su(i,k)-mu(i,k+1)*su(i,k+1))/ &
+                      dz(i,k)- (eu(i,k)-du(i,k))*s(i,k))/(rl/cp)
+          end if
+!songxl 2014-11-20--------------------
+            if (k == jt(i)) cu(i,k) = 0._r8
+            cu(i,k) = max(0._r8,cu(i,k))
+         end if
+      end do
+   end do
+
+!<songxl 2014-11-20----------
+
+   if (zm_microp) then
+
+      tug(:il2g,:) = t(:il2g,:)
+      fice(:,:)    = 0._r8
+
+      do k = pver, msg+2, -1
+         do i = 1, il2g
+            tug(i,k) = su(i,k) - grav/cp*zf(i,k)
+         end do
+      end do
+
+      do k = 1, pver-1
+         do i = 1, il2g
+
+            if (tug(i,k+1) > 273.15_r8) then
+               ! If warmer than tmax then water phase
+               fice(i,k) = 0._r8
+
+            else if (tug(i,k+1) < 233.15_r8) then
+               ! If colder than tmin then ice phase
+               fice(i,k) = 1._r8
+
+            else
+               ! Otherwise mixed phase, with ice fraction decreasing linearly
+               ! from tmin to tmax
+               fice(i,k) =(273.15_r8 - tug(i,k+1)) / 40._r8
+            end if
+         end do
+      end do
+
+      do k = 1, pver
+         do i = 1,il2g
+            loc_microp_st%cmei(i,k) = cu(i,k)* fice(i,k)
+            loc_microp_st%cmel(i,k) = cu(i,k) * (1._r8-fice(i,k))
+         end do
+      end do
+
+      call  zm_mphy(su,   qu,    mu,    du,   eu,  loc_microp_st%cmel,  loc_microp_st%cmei,   zf,    p,   & 
+                     t,    q,  eps0,  jb,  jt,  jlcl,  msg,   il2g,  grav,   cp,    rd,   aero, gamhat,   &
+                    loc_microp_st%qliq,   loc_microp_st%qice,    loc_microp_st%qnl,   loc_microp_st%qni,  &
+                    qcde,  qide,  ncde,  nide,  rprd, sprd, frz, loc_microp_st%wu,  loc_microp_st%qrain,  &                 
+                    loc_microp_st%qsnow,  loc_microp_st%qnr,  loc_microp_st%qns, loc_microp_st%qgraupel,  &
+                    loc_microp_st%qng,   qsde,   nsde,    loc_microp_st%autolm,    loc_microp_st%accrlm,  &
+                    loc_microp_st%bergnm, loc_microp_st%fhtimm, loc_microp_st%fhtctm, loc_microp_st%fhmlm,   &
+                    loc_microp_st%hmpim,  loc_microp_st%accslm, loc_microp_st%dlfm,  loc_microp_st%autoln,   &
+                    loc_microp_st%accrln, loc_microp_st%bergnn, loc_microp_st%fhtimn, loc_microp_st%fhtctn,  &
+                    loc_microp_st%fhmln,  loc_microp_st%accsln, loc_microp_st%activn, loc_microp_st%dlfn,    &
+                    loc_microp_st%autoim, loc_microp_st%accsim, loc_microp_st%difm,   loc_microp_st%nuclin,  &
+                    loc_microp_st%autoin, loc_microp_st%accsin, loc_microp_st%hmpin,  loc_microp_st%difn,    &
+                    loc_microp_st%trspcm, loc_microp_st%trspcn, loc_microp_st%trspim, loc_microp_st%trspin,  &
+                    lambdadpcu, mudpcu,   &
+                    loc_microp_st%accgrm, loc_microp_st%accglm, loc_microp_st%accgslm,loc_microp_st%accgsrm, &
+                    loc_microp_st%accgirm,loc_microp_st%accgrim,loc_microp_st%accgrsm,loc_microp_st%accgsln, &
+                    loc_microp_st%accgsrn,loc_microp_st%accgirn,loc_microp_st%accsrim,loc_microp_st%acciglm, &
+                    loc_microp_st%accigrm,loc_microp_st%accsirm,loc_microp_st%accigln,loc_microp_st%accigrn, &
+                    loc_microp_st%accsirn,loc_microp_st%accgln ,loc_microp_st%accgrn ,loc_microp_st%accilm , &
+                    loc_microp_st%acciln ,loc_microp_st%fallrm ,loc_microp_st%fallsm ,loc_microp_st%fallgm , &
+                    loc_microp_st%fallrn ,loc_microp_st%fallsn ,loc_microp_st%fallgn ,loc_microp_st%fhmrm  , &
+                    dsfm,   dsfn) 
+
+
+      do k = pver,msg + 2,-1
+         do i = 1,il2g
+            ql(i,k) = loc_microp_st%qliq(i,k)+ loc_microp_st%qice(i,k)
+            frz1(i,k) = frz(i,k)         !songxl2014-11-20
+         end do
+      end do
+
+      do i = 1,il2g
+        if (iter == 2 .and. jt(i)> jto(i)) then
+          do k = jt(i), jto(i), -1
+             frz1(i,k) = 0.0_r8
+             cu(i,k)=0.0_r8
+          end do
+        end if
+      end do
+
+      do k = pver,msg + 2,-1
+         do i = 1,il2g
+            if (k >= jt(i) .and. k < jb(i) .and. eps0(i) > 0._r8 .and. mu(i,k) >= 0.0_r8) then
+               totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-du(i,k)*(qcde(i,k+1)+qide(i,k+1)+qsde(i,k+1) ))
+            end if
+         end do
+      end do
+
+
+!>songxl 2014-10-10--------------
+
+   else  ! no microphysics
+
+! compute condensed liquid, rain production rate
+! accumulate total precipitation (condensation - detrainment of liquid)
+! Note ql1 = ql(k) + rprd(k)*dz(k)/mu(k)
+! The differencing is somewhat strange (e.g. du(i,k)*ql(i,k+1)) but is
+! consistently applied.
+!    mu, ql are interface quantities
+!    cu, du, eu, rprd are midpoint quantites
+   do k = pver,msg + 2,-1
+      do i = 1,il2g
+         rprd(i,k) = 0._r8
+         if (k >= jt(i) .and. k < jb(i) .and. eps0(i) > 0._r8 .and. mu(i,k) >= 0.0_r8) then
+            if (mu(i,k) > 0._r8) then
+               ql1 = 1._r8/mu(i,k)* (mu(i,k+1)*ql(i,k+1)- &
+                     dz(i,k)*du(i,k)*ql(i,k+1)+dz(i,k)*cu(i,k))
+               ql(i,k) = ql1/ (1._r8+dz(i,k)*c0mask(i))
+            else
+               ql(i,k) = 0._r8
+            end if
+            totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-du(i,k)*ql(i,k+1))
+            rprd(i,k) = c0mask(i)*mu(i,k)*ql(i,k)
+!<songxl 2014-11-20------
+               qcde(i,k) = ql(i,k)
+               qide(i,k) = 0._r8
+               qsde(i,k) = 0._r8
+               ncde(i,k) = 0._r8
+               nide(i,k) = 0._r8
+               nsde(i,k) = 0._r8
+               sprd(i,k) = 0._r8
+               frz1(i,k) = 0._r8
+!>songxl 2014-11-20------
+         end if
+      end do
+   end do
+!<songxl 2014-11-20-------
+    end if  ! zm_microp
+
+ end do   !iter
+
+!<songxl 2014-11-20----------
 ! specify downdraft properties (no downdrafts if jd.ge.jb).
 ! scale down downward mass flux profile so that net flux
 ! (up-down) at cloud base in not negative.
@@ -2604,7 +4009,7 @@ subroutine cldprp(lchnk   , &
 !
 ! in normal downdraft strength run alfa=0.2.  In test4 alfa=0.1
 !
-      alfa(i) = alfa_scalar 
+      alfa(i) = alfa_scalar
       jt(i) = min(jt(i),jb(i)-1)
       jd(i) = max(j0(i),jt(i)+1)
       jd(i) = min(jd(i),jb(i))
@@ -2652,79 +4057,8 @@ subroutine cldprp(lchnk   , &
          end if
       end do
    end do
-!
-   do i = 1,il2g
-      done(i) = .false.
-   end do
-   kount = 0
-   do k = pver,msg + 2,-1
-      do i = 1,il2g
-         if (k == jb(i) .and. eps0(i) > 0._r8) then
-            qu(i,k) = q(i,mx(i))
-            su(i,k) = (hu(i,k)-rl*qu(i,k))/cp
-         end if
-         if (( .not. done(i) .and. k > jt(i) .and. k < jb(i)) .and. eps0(i) > 0._r8) then
-            su(i,k) = mu(i,k+1)/mu(i,k)*su(i,k+1) + &
-                      dz(i,k)/mu(i,k)* (eu(i,k)-du(i,k))*s(i,k)
-            qu(i,k) = mu(i,k+1)/mu(i,k)*qu(i,k+1) + dz(i,k)/mu(i,k)* (eu(i,k)*q(i,k)- &
-                            du(i,k)*qst(i,k))
-            tu = su(i,k) - grav/cp*zf(i,k)
-            call qsat_hPa(tu, (p(i,k)+p(i,k-1))/2._r8, estu, qstu)
-            if (qu(i,k) >= qstu) then
-               jlcl(i) = k
-               kount = kount + 1
-               done(i) = .true.
-            end if
-         end if
-      end do
-      if (kount >= il2g) goto 690
-   end do
-690 continue
-   do k = msg + 2,pver
-      do i = 1,il2g
-         if ((k > jt(i) .and. k <= jlcl(i)) .and. eps0(i) > 0._r8) then
-            su(i,k) = shat(i,k) + (hu(i,k)-hsthat(i,k))/(cp* (1._r8+gamhat(i,k)))
-            qu(i,k) = qsthat(i,k) + gamhat(i,k)*(hu(i,k)-hsthat(i,k))/ &
-                     (rl* (1._r8+gamhat(i,k)))
-         end if
-      end do
-   end do
+!>songxl 2014-11-20--------------
 
-! compute condensation in updraft
-   do k = pver,msg + 2,-1
-      do i = 1,il2g
-         if (k >= jt(i) .and. k < jb(i) .and. eps0(i) > 0._r8) then
-            cu(i,k) = ((mu(i,k)*su(i,k)-mu(i,k+1)*su(i,k+1))/ &
-                      dz(i,k)- (eu(i,k)-du(i,k))*s(i,k))/(rl/cp)
-            if (k == jt(i)) cu(i,k) = 0._r8
-            cu(i,k) = max(0._r8,cu(i,k))
-         end if
-      end do
-   end do
-
-! compute condensed liquid, rain production rate
-! accumulate total precipitation (condensation - detrainment of liquid)
-! Note ql1 = ql(k) + rprd(k)*dz(k)/mu(k)
-! The differencing is somewhat strange (e.g. du(i,k)*ql(i,k+1)) but is
-! consistently applied.
-!    mu, ql are interface quantities
-!    cu, du, eu, rprd are midpoint quantites
-   do k = pver,msg + 2,-1
-      do i = 1,il2g
-         rprd(i,k) = 0._r8
-         if (k >= jt(i) .and. k < jb(i) .and. eps0(i) > 0._r8 .and. mu(i,k) >= 0.0_r8) then
-            if (mu(i,k) > 0._r8) then
-               ql1 = 1._r8/mu(i,k)* (mu(i,k+1)*ql(i,k+1)- &
-                     dz(i,k)*du(i,k)*ql(i,k+1)+dz(i,k)*cu(i,k))
-               ql(i,k) = ql1/ (1._r8+dz(i,k)*c0mask(i))
-            else
-               ql(i,k) = 0._r8
-            end if
-            totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-du(i,k)*ql(i,k+1))
-            rprd(i,k) = c0mask(i)*mu(i,k)*ql(i,k)
-         end if
-      end do
-   end do
 !
    do i = 1,il2g
       qd(i,jd(i)) = qds(i,jd(i))
@@ -2738,7 +4072,19 @@ subroutine cldprp(lchnk   , &
             evp(i,k) = -ed(i,k)*q(i,k) + (md(i,k)*qd(i,k)-md(i,k+1)*qd(i,k+1))/dz(i,k)
             evp(i,k) = max(evp(i,k),0._r8)
             mdt = min(md(i,k+1),-small)
-            sd(i,k+1) = ((rl/cp*evp(i,k)-ed(i,k)*s(i,k))*dz(i,k) + md(i,k)*sd(i,k))/mdt
+!<songxl 2014-11-20------------
+            if (zm_microp) then
+              evp(i,k) = min(evp(i,k),rprd(i,k))
+              if (rprd(i,k)> 0._r8) then
+                sd(i,k+1) = (((rl+latice*sprd(i,k)/rprd(i,k))/cp*evp(i,k) -ed(i,k)*s(i,k))*dz(i,k) + md(i,k)*sd(i,k))/mdt
+              else
+                sd(i,k+1) = ((rl/cp*evp(i,k)-ed(i,k)*s(i,k))*dz(i,k) + md(i,k)*sd(i,k))/mdt
+              end if
+            else
+              sd(i,k+1) = ((rl/cp*evp(i,k)-ed(i,k)*s(i,k))*dz(i,k) + md(i,k)*sd(i,k))/mdt
+            end if
+!>songxl 2014-11-20-------------
+!            sd(i,k+1) = ((rl/cp*evp(i,k)-ed(i,k)*s(i,k))*dz(i,k) + md(i,k)*sd(i,k))/mdt
             totevp(i) = totevp(i) - dz(i,k)*ed(i,k)*q(i,k)
          end if
       end do
@@ -2778,6 +4124,7 @@ subroutine cldprp(lchnk   , &
 ! cmeg is the cloud water condensed - rain water evaporated
 ! rprd is the cloud water converted to rain - (rain evaporated)
          cmeg(i,k) = cu(i,k) - evp(i,k)
+         if (rprd(i,k)> 0._r8) sprd(i,k) = sprd(i,k)-evp(i,k)*sprd(i,k)/rprd(i,k)
          rprd(i,k) = rprd(i,k)-evp(i,k)
       end do
    end do
@@ -2796,6 +4143,48 @@ subroutine cldprp(lchnk   , &
       end do
    end do
 !
+   do i = 1,il2g
+     if (jt(i)>=jlcl(i)) then
+       do k = msg + 1,pver  
+          mu(i,k) = 0._r8
+          eu(i,k) = 0._r8
+          du(i,k) = 0._r8
+          ql(i,k) = 0._r8
+          cu(i,k) = 0._r8
+          evp(i,k) = 0._r8
+          cmeg(i,k) = 0._r8
+          md(i,k) = 0._r8
+          ed(i,k) = 0._r8
+          mc(i,k) = 0._r8
+          rprd(i,k) = 0._r8
+          sprd(i,k) = 0._r8
+          fice(i,k) = 0._r8
+          qcde(i,k)   = 0._r8
+          qide(i,k)   = 0._r8
+          qsde(i,k)   = 0._r8
+          ncde(i,k)  = 0._r8
+          nide(i,k)  = 0._r8
+          nsde(i,k)  = 0._r8
+          frz(i,k)  = 0._r8
+          frz1(i,k) = 0._r8
+          if (zm_microp) then            
+            loc_microp_st%wu(i,k)   = 0._r8      
+            loc_microp_st%cmel(i,k) = 0._r8
+            loc_microp_st%cmei(i,k) = 0._r8
+            loc_microp_st%qliq(i,k)   = 0._r8
+            loc_microp_st%qice(i,k)   = 0._r8
+            loc_microp_st%qrain(i,k)= 0._r8
+            loc_microp_st%qsnow(i,k)= 0._r8
+            loc_microp_st%qgraupel(i,k) = 0._r8
+            loc_microp_st%qnl(i,k)  = 0._r8
+            loc_microp_st%qni(i,k)  = 0._r8
+            loc_microp_st%qnr(i,k)  = 0._r8
+            loc_microp_st%qns(i,k)  = 0._r8
+            loc_microp_st%qng(i,k) = 0._r8
+          end if   
+       end do
+     end if
+   end do       
    return
 end subroutine cldprp
 
@@ -3009,6 +4398,7 @@ subroutine closure(lchnk   , &
    do i = il1g,il2g
       dltaa = -1._r8* (cape(i)-capelmt)
       if (dadt(i) /= 0._r8) mb(i) = max(dltaa/tau/dadt(i),0._r8)
+      if (mx(i)-jt(i) < 2._r8) mb(i) =0.0_r8
    end do
 !
    return
@@ -3020,8 +4410,12 @@ subroutine q1q2_pjr(lchnk   , &
                     mu      ,md      ,sd      ,qd      ,ql      , &
                     dsubcld ,jt      ,mx      ,il1g    ,il2g    , &
                     cp      ,rl      ,msg     ,          &
-                    dl      ,evp     ,cu      )
-
+!<songxl 2014-11-20----------
+!                    dl      ,evp     ,cu      )
+                    dl      ,evp     ,cu      ,qice    ,dice    , &
+                    qnl     ,qni     ,dnl     ,dni     ,frz     , &
+                    qsde    ,nsde    ,dsnow   ,dns    )
+!>songxl 2014-11-20----------
 
    implicit none
 
@@ -3063,8 +4457,27 @@ subroutine q1q2_pjr(lchnk   , &
    real(r8), intent(in) :: cu(pcols,pver)
    real(r8), intent(in) :: dsubcld(pcols)
 
+!<songxl 2014-11-20------------
+   real(r8), intent(in) :: frz(pcols,pver)
+   real(r8), intent(in) :: qice(pcols,pver)
+   real(r8), intent(in) :: qnl(pcols,pver)
+   real(r8), intent(in) :: qni(pcols,pver)
+   real(r8), intent(in) :: qsde(pcols,pver)
+   real(r8), intent(in) :: nsde(pcols,pver)
+!>songxl 2014-11-20------------
+
    real(r8),intent(out) :: dqdt(pcols,pver),dsdt(pcols,pver)
    real(r8),intent(out) :: dl(pcols,pver)
+
+!<songxl 2014-11-20------------
+   real(r8),intent(out) :: dice(pcols,pver)
+   real(r8),intent(out) :: dnl(pcols,pver)
+   real(r8),intent(out) :: dni(pcols,pver)
+   real(r8),intent(out) :: dsnow(pcols,pver)
+   real(r8),intent(out) :: dns(pcols,pver)
+
+!>songxl 2014-11-20------------
+
    integer kbm
    integer ktm
    integer jt(pcols)
@@ -3083,6 +4496,13 @@ subroutine q1q2_pjr(lchnk   , &
          dsdt(i,k) = 0._r8
          dqdt(i,k) = 0._r8
          dl(i,k) = 0._r8
+!<songxl 2014-11-20------
+         dice(i,k) = 0._r8
+         dnl(i,k)  = 0._r8
+         dni(i,k)  = 0._r8
+         dsnow(i,k) = 0._r8
+         dns(i,k)  = 0._r8
+!>songxl 2014-11-20------
       end do
    end do
 !
@@ -3107,6 +4527,10 @@ subroutine q1q2_pjr(lchnk   , &
                         -md(i,k)*   (sd(i,k)-shat(i,k)) &
                        )/dp(i,k)
 
+!>songxl 2014-11-20-------------
+         if (zm_microp) dsdt(i,k) = dsdt(i,k) + latice/cp*frz(i,k)
+!<songxl 2014-11-20--------------
+
          dqdt(i,k) = emc + &
                     (+mu(i,k+1)* (qu(i,k+1)-qhat(i,k+1)) &
                      -mu(i,k)*   (qu(i,k)-qhat(i,k)) &
@@ -3115,6 +4539,15 @@ subroutine q1q2_pjr(lchnk   , &
                     )/dp(i,k)
 
          dl(i,k) = du(i,k)*ql(i,k+1)
+!<songxl 2014-11-20------------
+         if (zm_microp) then
+           dice(i,k) = du(i,k)*qice(i,k+1)
+           dnl(i,k)  = du(i,k)*qnl(i,k+1)
+           dni(i,k)  = du(i,k)*qni(i,k+1)
+           dsnow(i,k) = du(i,k)*qsde(i,k+1)
+           dns(i,k)  = du(i,k)*nsde(i,k+1)
+         end if
+!>songxl 2014-11-20------------
 
       end do
    end do
@@ -3149,7 +4582,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
                   tp      ,qstp    ,tl      ,rl      ,cape    , &
                   pblt    ,lcl     ,lel     ,lon     ,mx      , &
                   rd      ,grav    ,cp      ,msg     , &
-                  tpert   ,iclosure)
+                  tpert   ,iclosure) !,lel_n)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -3209,7 +4642,18 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
    real(r8) tv(pcols,pver)       !
    real(r8) tpv(pcols,pver)      !
    real(r8) buoy(pcols,pver)
-
+!<songxl 2020-01-01---------------------------
+!   real(r8) tpv_n(pcols,pver)      !
+!   real(r8) buoy_n(pcols,pver)
+!   real(r8) pl_n(pcols)
+!   real(r8) tp_n(pcols,pver)       ! parcel temperature
+!   real(r8) qstp_n(pcols,pver)     ! saturation mixing ratio of parcel (only above lcl, just q below).
+!   real(r8) tl_n(pcols)            ! parcel temperature at lcl
+!   integer lcl_n(pcols)
+!   integer lel_n(pcols)
+!   logical plge600_n(pcols)
+!   logical findit(pcols)
+!>songxl 2020-01-01--------------------------
    real(r8) a1(pcols)
    real(r8) a2(pcols)
    real(r8) estp(pcols)
@@ -3258,6 +4702,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
       mx(i) = lon(i)
       cape(i) = 0._r8
       hmax(i) = 0._r8
+!      lel_n(i) = pver         !songxl 2020-01-01
    end do
 
    tp(:ncol,:) = t(:ncol,:)
@@ -3278,7 +4723,12 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
    tv(:ncol,:) = t(:ncol,:) *(1._r8+1.608_r8*q(:ncol,:))/ (1._r8+q(:ncol,:))
    tpv(:ncol,:) = tv(:ncol,:)
    buoy(:ncol,:) = 0._r8
-
+!<songxl 2020-01-01-------------------
+!   tp_n(:ncol,:) = tp(:ncol,:)
+!   qstp_n(:ncol,:) = qstp(:ncol,:)
+!   tpv_n(:ncol,:)  =  tpv(:ncol,:) 
+!   buoy_n(:ncol,:) = buoy(:ncol,:)
+!>songxl 2020-01-01-------------------
 !
 ! set "launching" level(mx) to be at maximum moist static energy.
 ! search for this level stops at planetary boundary layer top.
@@ -3344,6 +4794,11 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
       lcl(i) = mx(i)
       tl(i) = t(i,mx(i))
       pl(i) = p(i,mx(i))
+!<songxl 2020-01-01-----------------
+!      lcl_n(i) = lcl(i) 
+!      tl_n(i) = tl(i)
+!      pl_n(i) = pl(i)
+!>songxl 2020-01-01-----------------
    end do
 
 !
@@ -3352,8 +4807,12 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!! DILUTE PLUME CALCULATION USING ENTRAINING PLUME !!!
 !!!   RBN 9/9/04   !!!
-
-   call parcel_dilute(lchnk, ncol, msg, mx, p, t, q, tpert, tp, tpv, qstp, pl, tl, lcl)
+!<songxl 2020-01-01----------------
+!   call parcel_dilute(lchnk, ncol, msg, mx, p, t, q, tpert, tp, tpv, qstp, pl, tl, lcl)
+!    call parcel_dilute(lchnk, ncol, msg, mx, p, t, q, tpert, pblt, tp_n, tpv_n, qstp_n, pl_n, tl_n, lcl_n, .false.)  
+    call parcel_dilute(lchnk, ncol, msg, mx, p, t, q, tpert, pblt, tp, tpv, qstp, pl, tl, lcl) !, .true.)
+    
+!>songxl 2020-01-01----------------
 
 ! If lcl is above the nominal level of non-divergence (600 mbs),
 ! no deep convection is permitted (ensuing calculations
@@ -3361,6 +4820,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 !
    do i = 1,ncol
       plge600(i) = pl(i).ge.600._r8 ! Just change to always allow buoy calculation.
+!      plge600_n(i) = pl_n(i).ge.600._r8
    end do
 
 !
@@ -3371,11 +4831,15 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
          if (k <= mx(i) .and. plge600(i)) then   ! Define buoy from launch level to cloud top.
             tv(i,k) = t(i,k)* (1._r8+1.608_r8*q(i,k))/ (1._r8+q(i,k))
             buoy(i,k) = tpv(i,k) - tv(i,k) + tiedke_add  ! +0.5K or not?
+!            buoy_n(i,k) = tpv_n(i,k) - tv(i,k) + tiedke_add    !songxl 2020-01-01
          else
             qstp(i,k) = q(i,k)
             tp(i,k)   = t(i,k)            
             tpv(i,k)  = tv(i,k)
          endif
+!         if (k <= mx(i) .and. plge600_n(i)) then
+!            buoy_n(i,k) = tpv_n(i,k) - tv(i,k) + tiedke_add    !songxl 2020-01-01
+!         end if
       end do
    end do
 
@@ -3385,7 +4849,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
+!   findit(:)=.true.
 
 !
    do k = msg + 2,pver
@@ -3395,7 +4859,19 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
                knt(i) = min(num_cin,knt(i) + 1)
                lelten(i,knt(i)) = k
             end if
+!<songxl 2020-01-01---------
+!            if (buoy_n(i,k+1) > 0._r8 .and. buoy_n(i,k) <= 0._r8) then
+!               lel_n(i) = k
+!            end if
+!>songxl 2020-01-01--------
          end if
+!         if (k < lcl_n(i) .and. plge600_n(i) .and. findit(i)) then
+!           if (buoy_n(i,k+1) > 0._r8 .and. buoy_n(i,k) <= 0._r8) then
+!               lel_n(i) = k
+!               findit(i)= .false.
+!           end if
+!         end if
+
       end do
    end do
 !
@@ -3430,10 +4906,16 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
       cape(i) = max(cape(i), 0._r8)
    end do
 !
+!   do i = 1,ncol
+!     if(lel_n(i).gt.lel(i)) then
+!        lel_n(i) = lel(i)
+!     end if
+!   end do
+!
    return
 end subroutine buoyan_dilute
 
-subroutine parcel_dilute (lchnk, ncol, msg, klaunch, p, t, q, tpert, tp, tpv, qstp, pl, tl, lcl)
+subroutine parcel_dilute (lchnk, ncol, msg, klaunch, p, t, q, tpert, pblt, tp, tpv, qstp, pl, tl, lcl) !, do_entr)
 ! Routine  to determine 
 !   1. Tp   - Parcel temperature
 !   2. qstp - Saturated mixing ratio at the parcel temperature.
@@ -3442,6 +4924,7 @@ subroutine parcel_dilute (lchnk, ncol, msg, klaunch, p, t, q, tpert, tp, tpv, qs
 implicit none
 !--------------------
 
+!logical, intent(in) :: do_entr          !songxl 2020-01-01
 integer, intent(in) :: lchnk
 integer, intent(in) :: ncol
 integer, intent(in) :: msg
@@ -3452,6 +4935,9 @@ real(r8), intent(in), dimension(pcols,pver) :: p
 real(r8), intent(in), dimension(pcols,pver) :: t
 real(r8), intent(in), dimension(pcols,pver) :: q
 real(r8), intent(in), dimension(pcols) :: tpert ! PBL temperature perturbation.
+!<<songxl 2021-04-25
+real(r8), intent(in), dimension(pcols) :: pblt          ! index of pbl depth 
+!>>songxl 2021-04-25
 
 real(r8), intent(inout), dimension(pcols,pver) :: tp    ! Parcel temp.
 real(r8), intent(inout), dimension(pcols,pver) :: qstp  ! Parcel water vapour (sat value above lcl).
@@ -3486,6 +4972,8 @@ real(r8) sp(pcols)    ! Parcel entropy.
 real(r8) sp0(pcols)    ! Parcel launch entropy.
 real(r8) qtp0(pcols)   ! Parcel launch total water.
 real(r8) mp0(pcols)    ! Parcel launch relative mass flux.
+
+real(r8) tpertg(pcols)
 
 real(r8) lwmax      ! Maximum condesate that can be held in cloud before rainout.
 real(r8) dmpdp      ! Parcel fractional mass entrainment rate (/mb).
@@ -3549,6 +5037,14 @@ mp = 0._r8
 new_q = 0._r8
 new_s = 0._r8
 
+!<<songxl 2021-04-25
+! do not add PBL temperatue perturbation to the mid-level convection(i.e. launch level is above PBL).
+do i=1,ncol
+  tpertg(i)=tpert(i)
+  if (klaunch(i)<nint(pblt(i))) tpertg(i)=0._r8
+end do
+!>>songxl 2021-04-25
+
 ! **** Begin loops ****
 
 do k = pver, msg+1, -1
@@ -3584,8 +5080,14 @@ do k = pver, msg+1, -1
 
          dpdz = -(penv*grav)/(rgas*tenv) ! in mb/m since  p in mb.
          dzdp = 1._r8/dpdz                  ! in m/mb
+!<songxl 2020-01-01-------------------         
          dmpdp = dmpdz*dzdp              ! /mb Fractional entrainment
-
+!         if (do_entr)  then
+!           dmpdp = dmpdz*dzdp              ! /mb Fractional entrainment
+!         else 
+!           dmpdp = 0._r8 
+!         end if        
+!>songxl 2020-01-01-------------------
 ! Sum entrainment to current level
 ! entrains q,s out of intervening dp layers, in which linear variation is assumed
 ! so really it entrains the mean of the 2 stored values.
@@ -3676,7 +5178,7 @@ do k = pver, msg+1, -1
 
          tp(i,k)    = tmix(i,k)
          qstp(i,k)  = q(i,k) 
-         tpv(i,k)   =  (tp(i,k) + tp_fac*tpert(i)) * (1._r8+1.608_r8*qstp(i,k)) / (1._r8+qstp(i,k))
+         tpv(i,k)   =  (tp(i,k) + tp_fac*tpertg(i)) * (1._r8+1.608_r8*qstp(i,k)) / (1._r8+qstp(i,k))
          
       end if
 
@@ -3736,7 +5238,7 @@ do k = pver, msg+1, -1
             qstp(i,k) = new_q
          end if
 
-         tpv(i,k) = (tp(i,k)+tp_fac*tpert(i))* (1._r8+1.608_r8*qstp(i,k)) / (1._r8+ new_q) 
+         tpv(i,k) = (tp(i,k)+tp_fac*tpertg(i))* (1._r8+1.608_r8*qstp(i,k)) / (1._r8+ new_q)
 
       end if ! k < klaunch
       

@@ -23,6 +23,9 @@ module conv_water
 
   use perf_mod
   use cam_logfile,   only: iulog
+!<songxl 2020-01-01---------
+  use zm_conv,      only: zm_microp
+!>songxl 2020-01-01---------
 
   implicit none
   private
@@ -33,7 +36,7 @@ module conv_water
 ! pbuf indices
 
   integer :: icwmrsh_idx, icwmrdp_idx, fice_idx, sh_frac_idx, dp_frac_idx, &
-             ast_idx, sh_cldliq1_idx, sh_cldice1_idx, rei_idx
+             ast_idx, sh_cldliq1_idx, sh_cldice1_idx, rei_idx,icimrdp_idx   !songxl 2020-01-01
 
   integer :: ixcldice, ixcldliq
 
@@ -90,6 +93,7 @@ module conv_water
  
    icwmrsh_idx  = pbuf_get_index('ICWMRSH')
    icwmrdp_idx  = pbuf_get_index('ICWMRDP')
+   icimrdp_idx  = pbuf_get_index('ICIMRDP')    !songxl 2020-01-01
    fice_idx     = pbuf_get_index('FICE')
    sh_frac_idx  = pbuf_get_index('SH_FRAC')
    dp_frac_idx  = pbuf_get_index('DP_FRAC')
@@ -156,6 +160,7 @@ module conv_water
    real(r8), pointer, dimension(:,:) ::  rei      ! Ice effective drop size (microns)
 
    real(r8), pointer, dimension(:,:) ::  dp_icwmr ! Deep conv. cloud water
+   real(r8), pointer, dimension(:,:) ::  dp_icimr ! Deep conv. cloud ice     songxl 2020-01-01
    real(r8), pointer, dimension(:,:) ::  sh_icwmr ! Shallow conv. cloud water
    real(r8), pointer, dimension(:,:) ::  fice     ! Ice partitioning ratio
    real(r8), pointer, dimension(:,:) ::  sh_cldliq ! shallow convection gbx liq cld mixing ratio for COSP
@@ -177,6 +182,8 @@ module conv_water
    real(r8) :: kabs, kabsi, kabsl, alpha, dp0, sh0, ic_limit, frac_limit  
    real(r8) :: wrk1         
 
+   real(r8) :: sh_iclmr, sh_icimr, dp_iclmr        !songxl 2020-01-01 
+
    integer :: lchnk
    integer :: ncol
 
@@ -197,7 +204,9 @@ module conv_water
 
    call pbuf_get_field(pbuf, icwmrsh_idx, sh_icwmr )
    call pbuf_get_field(pbuf, icwmrdp_idx, dp_icwmr )
+   call pbuf_get_field(pbuf, icimrdp_idx, dp_icimr )         !songxl2020-01-01
    call pbuf_get_field(pbuf, fice_idx,    fice )
+
 
  ! Get convective in-cloud fraction    
 
@@ -237,14 +246,24 @@ module conv_water
 
             cu0_frac = 0._r8
             cu_icwmr = 0._r8
-         
+            conv_ice(i,k) = 0._r8
+            conv_liq(i,k) = 0._r8
+
             ls_frac = ast(i,k)
             if( ls_frac < frac_limit ) then
                 ls_frac  = 0._r8
                 ls_icwmr = 0._r8
+                tot_ice(i,k)  = 0._r8
+                tot_liq(i,k)  = 0._r8
+                totg_ice(i,k) = 0._r8
+                totg_liq(i,k) = 0._r8
             else
                 ls_icwmr = ( state%q(i,k,ixcldliq) + state%q(i,k,ixcldice) )/max(frac_limit,ls_frac) ! Convert to IC value.
-            end if
+                tot_ice(i,k)  = state%q(i,k,ixcldice)/max(frac_limit,ls_frac)
+                tot_liq(i,k)  = state%q(i,k,ixcldliq)/max(frac_limit,ls_frac)
+                totg_ice(i,k) = state%q(i,k,ixcldice)
+                totg_liq(i,k) = state%q(i,k,ixcldliq)
+            endif
 
             tot0_frac = ls_frac
             tot_icwmr = ls_icwmr
@@ -260,7 +279,21 @@ module conv_water
             endif
             kabs  = kabsl * ( 1._r8 - wrk1 ) + kabsi * wrk1
             alpha = -1.66_r8*kabs*state%pdel(i,k)/gravit*1000.0_r8
-
+           if (zm_microp) then
+             ! Selecting cumulus in-cloud water.
+             sh_iclmr = sh_icwmr(i,k)*(1-fice(i,k))
+             sh_icimr = sh_icwmr(i,k)*fice(i,k)
+             dp_iclmr = dp_icwmr(i,k)- dp_icimr(i,k)
+        
+             conv_ice(i,k) = ( sh0_frac * sh_icimr + dp0_frac*dp_icimr(i,k))/max(frac_limit,cu0_frac)
+             conv_liq(i,k) = ( sh0_frac * sh_iclmr + dp0_frac*dp_iclmr)/max(frac_limit,cu0_frac)
+             ls_frac   = ast(i,k)
+             tot0_frac = (ls_frac + cu0_frac)
+             tot_ice(i,k) = (state%q(i,k,ixcldice) + cu0_frac*conv_ice(i,k))/max(frac_limit,tot0_frac)
+             tot_liq(i,k) = (state%q(i,k,ixcldliq) + cu0_frac*conv_liq(i,k))/max(frac_limit,tot0_frac)
+             totg_ice(i,k) = tot0_frac * tot_ice(i,k)
+             totg_liq(i,k) = tot0_frac * tot_liq(i,k)
+           else        
           ! Selecting cumulus in-cloud water.            
 
             select case (conv_water_mode) ! Type of average
@@ -292,7 +325,7 @@ module conv_water
 !               call endrun ('CONV_WATER_4_RAD: Unknown option for conv_water_in_rad - exiting')
             end select
 
-      end if
+!      end if
       
       !BSINGH - Logic by Phil R. to account for insignificant condensate in large scale clouds
       if (ls_icwmr < 100._r8*ic_limit .and. pergro_mods) then ! if there is virtually  no stratiform condensate
@@ -319,6 +352,8 @@ module conv_water
       totg_ice(i,k) = tot0_frac * tot_icwmr * wrk1
       totg_liq(i,k) = tot0_frac * tot_icwmr * (1._r8-wrk1)
 
+       endif
+      endif
    end do
    end do
 
