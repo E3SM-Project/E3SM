@@ -190,8 +190,8 @@ contains
     allocate(this%root_conductance_patch(begp:endp,1:nlevsoi))          ; this%root_conductance_patch (:,:) = spval
     allocate(this%soil_conductance_patch(begp:endp,1:nlevsoi))          ; this%soil_conductance_patch (:,:) = spval
 
-    allocate(this%tillage_col          (begc:endc))                     ; this%tillage_col          (:)   = nan
-    allocate(this%litho_col            (begc:endc))                     ; this%litho_col            (:)   = nan
+    allocate(this%tillage_col          (begc:endc))                     ; this%tillage_col          (:)   = spval
+    allocate(this%litho_col            (begc:endc))                     ; this%litho_col            (:)   = spval
 
   end subroutine InitAllocate
 

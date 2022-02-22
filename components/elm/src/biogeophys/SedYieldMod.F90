@@ -24,8 +24,6 @@ module SedYieldMod
   use EnergyFluxType    , only : energyflux_type
   use SoilHydrologyType , only : soilhydrology_type
   use SoilStateType     , only : soilstate_type
-  use WaterfluxType     , only : waterflux_type
-  use WaterStateType    , only : waterstate_type
   use TemperatureType   , only : temperature_type
   use GridcellType      , only : grc_pp 
   use ColumnType        , only : col_pp
@@ -52,8 +50,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine SoilErosion (bounds, num_soilc, filter_soilc, &
-    atm2lnd_vars, canopystate_vars, cnstate_vars, soilstate_vars, &
-    waterstate_vars, waterflux_vars, sedflux_vars)
+    canopystate_vars, cnstate_vars, soilstate_vars, sedflux_vars)
     !
     ! !DESCRIPTION:
     ! Calculate rainfall and runoff driven erosion 
@@ -62,7 +59,7 @@ contains
     ! runoff.
     !
     ! !USES:
-    use elm_varctl      , only : iulog
+    use clm_time_manager, only : get_step_size
     use landunit_varcon , only : istcrop, istsoil, istice
     use pftvarcon       , only : gcbc_p, gcbc_q, gcbr_p, gcbr_q 
     use pftvarcon       , only : nc4_grass
@@ -71,7 +68,6 @@ contains
     type(bounds_type)        , intent(in)    :: bounds
     integer                  , intent(in)    :: num_soilc       ! number of column soil points in column filter
     integer                  , intent(in)    :: filter_soilc(:) ! column filter for soil points
-    type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
     type(CanopyState_type)   , intent(in)    :: canopystate_vars
     type(cnstate_type)       , intent(in)    :: cnstate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
@@ -133,7 +129,7 @@ contains
          qflx_qrgwl       =>    col_wf%qflx_qrgwl                   , & ! Input: [real(r8) (:) ] glacier runoff (mm/s) 
          qflx_dirct_rain  =>    veg_wf%qflx_dirct_rain              , & ! Input: [real(r8) (:) ] direct throughfall rain (mm/s)
          qflx_leafdrip    =>    veg_wf%qflx_leafdrip                , & ! Input: [real(r8) (:) ] leaf rain drip (mm/s)
-         qflx_real_irrig  =>    veg_wf%qflx_real_irrig_patch        , & ! Input: [real(r8) (:) ]  actual irrigation amount (mm/s)
+         qflx_real_irrig  =>    veg_wf%qflx_real_irrig_patch        , & ! Input: [real(r8) (:) ] actual irrigation amount (mm/s)
 
          flx_p_ero        =>    sedflux_vars%sed_p_ero_col          , & ! Output: [real(r8) (:) ] sed detached by rainfall (kg/m2/s)
          flx_q_ero        =>    sedflux_vars%sed_q_ero_col          , & ! Output: [real(r8) (:) ] sed detached by runoff (kg/m2/s)
