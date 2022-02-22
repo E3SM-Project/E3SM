@@ -523,13 +523,13 @@ contains
                  deltaVelocitySquared(1:minLevelCell(iCell)) = 0.0_RKIND
 
                  normalVelocitySum(minLevelCell(iCell)) = normalVelocity(minLevelCell(iCell), iEdge)* &
-                                                          layerThickEdge(minLevelCell(iCell),iEdge)
-                 layerThicknessEdgeSum(minLevelCell(iCell)) = layerThickEdge(minLevelCell(iCell),iEdge)
+                                                          layerThickEdgeFlux(minLevelCell(iCell),iEdge)
+                 layerThicknessEdgeSum(minLevelCell(iCell)) = layerThickEdgeFlux(minLevelCell(iCell),iEdge)
 
                  do kIndexOBL = minLevelCell(iCell)+1, maxLevelCell(iCell)
                     normalVelocitySum(kIndexOBL) = normalVelocitySum(kIndexOBL-1) + &
-                                      layerThickEdge(kIndexOBL, iEdge)*normalVelocity(kIndexOBL, iEdge)
-                    layerThicknessEdgeSum(kIndexOBL) = layerThicknessEdgeSum(kIndexOBL-1) + layerThickEdge(kIndexOBL, iEdge)
+                                      layerThickEdgeFlux(kIndexOBL, iEdge)*normalVelocity(kIndexOBL, iEdge)
+                    layerThicknessEdgeSum(kIndexOBL) = layerThicknessEdgeSum(kIndexOBL-1) + layerThickEdgeFlux(kIndexOBL, iEdge)
                  end do
 
                  do kIndexOBL = minLevelCell(iCell), maxLevelCell(iCell)

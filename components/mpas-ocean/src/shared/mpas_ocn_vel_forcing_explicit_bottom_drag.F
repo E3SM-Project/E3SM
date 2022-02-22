@@ -85,7 +85,7 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normVelocity,  &!< [in] normal velocity
          KECell,        &!< [in] kinetic energy at cell
-         layerThickEdge  !< [in] layer thickness at edge
+         layerThickEdge  !< [in] centered layer thickness at edge
 
       !-----------------------------------------------------------------
       ! input/output variables

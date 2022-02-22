@@ -88,7 +88,7 @@ contains
          sfcFlxAttCoeff  !< [in] attenuation coefficient for sfc fluxes
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThickEdge  !< [in] thickness at edge
+         layerThickEdge  !< [in] centered thickness at edge
 
       !-----------------------------------------------------------------
       ! input/output variables

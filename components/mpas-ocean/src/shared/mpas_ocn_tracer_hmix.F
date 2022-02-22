@@ -95,7 +95,7 @@ contains
          RediKappa
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdge, &!< Input: thickness at edge
+         layerThicknessEdge, &!< Input: flux-related thickness at edge
          layerThickness,     &!< Input: thickness at centers
          zMid                 !< Input: Z coordinate at the center of a cell
       real (kind=RKIND), dimension(:,:), intent(in), optional :: &

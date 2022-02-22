@@ -1215,22 +1215,22 @@ contains
 #endif
       if (config_use_implicit_bottom_drag_variable) then
         call ocn_vel_vmix_tend_implicit_spatially_variable(bottomDrag, dt, kineticEnergyCell, &
-          vertViscTopOfEdge, layerThickness, layerThickEdge, normalVelocity, err)
+          vertViscTopOfEdge, layerThickness, layerThickEdgeCenter, normalVelocity, err)
       else if (config_use_implicit_bottom_drag_variable_mannings.or. &
                config_use_implicit_bottom_roughness) then
         ! update bottomDrag via Cd=g*n^2*h^(-1/3)
         call ocn_vel_vmix_tend_implicit_spatially_variable_mannings(forcingPool, bottomDrag, &
           dt, kineticEnergyCell, &
-          vertViscTopOfEdge, layerThickness, layerThickEdge, normalVelocity, &
+          vertViscTopOfEdge, layerThickness, layerThickEdgeCenter, normalVelocity, &
           ssh, err)
       else if (config_Rayleigh_friction.or. &
                config_Rayleigh_bottom_friction.or. &
                config_Rayleigh_damping_depth_variable) then
         call ocn_vel_vmix_tend_implicit_rayleigh(dt, kineticEnergyCell, &
-          vertViscTopOfEdge, layerThickness, layerThickEdge, normalVelocity, err)
+          vertViscTopOfEdge, layerThickness, layerThickEdgeCenter, normalVelocity, err)
       else
         call ocn_vel_vmix_tend_implicit(dt, kineticEnergyCell, &
-          vertViscTopOfEdge, layerThickness, layerThickEdge, normalVelocity, err)
+          vertViscTopOfEdge, layerThickness, layerThickEdgeCenter, normalVelocity, err)
       end if
 #ifdef MPAS_OPENACC
       !$acc exit data copyout(normalVelocity)

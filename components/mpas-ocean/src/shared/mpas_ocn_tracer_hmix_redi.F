@@ -89,7 +89,7 @@ contains
          RediKappa
 
       real(kind=RKIND), dimension(:, :), intent(in) :: &
-         layerThicknessEdge, &!< Input: thickness at edge
+         layerThicknessEdge, &!< Input: flux-related thickness at edge
          zMid, &!< Input: Z coordinate at the center of a cell
          RediKappaSfcTaper, &!< Input: vertical structure of GM/Redi limiter
          RediKappaScaling, &

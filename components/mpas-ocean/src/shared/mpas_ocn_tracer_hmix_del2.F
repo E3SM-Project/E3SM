@@ -86,7 +86,7 @@ contains
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdge !< Input: thickness at edges
+         layerThicknessEdge !< Input: flux-related thickness at edges
 
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
         tracers !< Input: tracer quantities

@@ -83,7 +83,7 @@ contains
          normalVelocity    !< Input: velocity
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdge     !< Input: thickness at edge
+         layerThicknessEdge     !< Input: flux-related thickness at edge
 
       !-----------------------------------------------------------------
       !

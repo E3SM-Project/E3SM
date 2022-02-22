@@ -264,7 +264,7 @@ module ocn_time_integration_split
       ! indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
       ! indexSSHGradientZonal, indexSSHGradientMeridional
       ! barotropicForcing, barotropicThicknessFlux
-      ! layerThickEdge, normalTransportVelocity, normalGMBolusVelocity
+      ! layerThickEdgeFlux, normalTransportVelocity, normalGMBolusVelocity
       ! vertAleTransportTop
       ! velocityX, velocityY, velocityZ
       ! velocityZonal, velocityMeridional
@@ -563,7 +563,7 @@ module ocn_time_integration_split
 
 #ifdef MPAS_OPENACC
          !$acc enter data copyin(layerThicknessCur, normalVelocityCur, sshCur)
-         !$acc update device(layerThickEdge)
+         !$acc update device(layerThickEdgeFlux)
 #endif
          if (associated(highFreqThicknessNew)) then
 #ifdef MPAS_OPENACC
@@ -571,7 +571,7 @@ module ocn_time_integration_split
 #endif
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdge, normalVelocityCur, sshCur, dt, &
+                 layerThickEdgeFlux, normalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, err, highFreqThicknessNew)
 #ifdef MPAS_OPENACC
             !$acc exit data delete(highFreqThicknessNew)
@@ -579,7 +579,7 @@ module ocn_time_integration_split
          else
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdge, normalVelocityCur, sshCur, dt, &
+                 layerThickEdgeFlux, normalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, err)
          endif
 #ifdef MPAS_OPENACC
@@ -639,15 +639,15 @@ module ocn_time_integration_split
                ! on land boundaries maxLevelEdgeTop=0, but we want to
                ! initialize thicknessSum with a nonzero value to avoid
                ! a NaN.
-               normalThicknessFluxSum = layerThickEdge(minLevelEdgeBot(iEdge),iEdge)* &
+               normalThicknessFluxSum = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)* &
                                         uTemp(minLevelEdgeBot(iEdge))
-               thicknessSum = layerThickEdge(minLevelEdgeBot(iEdge),iEdge)
+               thicknessSum = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)
 
                do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                   normalThicknessFluxSum = normalThicknessFluxSum + &
-                                 layerThickEdge(k,iEdge)*uTemp(k)
+                                 layerThickEdgeFlux(k,iEdge)*uTemp(k)
                   thicknessSum = thicknessSum + &
-                                 layerThickEdge(k,iEdge)
+                                 layerThickEdgeFlux(k,iEdge)
                enddo
                barotropicForcing(iEdge) = splitFact* &
                               normalThicknessFluxSum/thicknessSum/dt
@@ -1441,16 +1441,16 @@ module ocn_time_integration_split
                ! on land boundaries maxLevelEdgeTop=0, but I want to
                ! initialize thicknessSum with a nonzero value to avoid
                ! a NaN.
-               normalThicknessFluxSum = layerThickEdge(minLevelEdgeBot(iEdge),iEdge)* &
+               normalThicknessFluxSum = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)* &
                                         uTemp(minLevelEdgeBot(iEdge))
-               thicknessSum  = layerThickEdge(minLevelEdgeBot(iEdge),iEdge)
+               thicknessSum  = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)
 
                do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                   normalThicknessFluxSum = normalThicknessFluxSum + &
-                                           layerThickEdge(k,iEdge)*&
+                                           layerThickEdgeFlux(k,iEdge)*&
                                            uTemp(k)
                   thicknessSum = thicknessSum + &
-                                 layerThickEdge(k,iEdge)
+                                 layerThickEdgeFlux(k,iEdge)
                enddo
 
                normalVelocityCorrection = useVelocityCorrection* &
@@ -1508,12 +1508,12 @@ module ocn_time_integration_split
          ! compute vertAleTransportTop.  Use normalTransportVelocity
          ! for advection of layerThickness and tracers.
          ! Use time level 1 values of layerThickness and
-         ! layerThickEdge because layerThickness has not yet
+         ! layerThickEdgeFlux because layerThickness has not yet
          ! been computed for time level 2.
          call mpas_timer_start('thick vert trans vel top')
 #ifdef MPAS_OPENACC
          !$acc enter data copyin(layerThicknessCur, sshCur)
-         !$acc update device(layerThickEdge, normalTransportVelocity)
+         !$acc update device(layerThickEdgeFlux, normalTransportVelocity)
 #endif
          if (associated(highFreqThicknessNew)) then
 #ifdef MPAS_OPENACC
@@ -1521,7 +1521,7 @@ module ocn_time_integration_split
 #endif
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdge, normalTransportVelocity, sshCur, &
+                 layerThickEdgeFlux, normalTransportVelocity, sshCur, &
                  dt, vertAleTransportTop, err, highFreqThicknessNew)
 #ifdef MPAS_OPENACC
             !$acc exit data delete(highFreqThicknessNew)
@@ -1529,7 +1529,7 @@ module ocn_time_integration_split
          else
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdge, normalTransportVelocity, sshCur, &
+                 layerThickEdgeFlux, normalTransportVelocity, sshCur, &
                  dt, vertAleTransportTop, err)
          endif
 #ifdef MPAS_OPENACC
@@ -1717,7 +1717,7 @@ module ocn_time_integration_split
 #endif
 
             ! Efficiency note: We really only need this to compute
-            ! layerThickEdge, density, pressure, and SSH
+            ! layerThickEdgeFlux, density, pressure, and SSH
             ! in this diagnostics solve.
             call ocn_diagnostic_solve(dt, statePool, forcingPool, &
                                       meshPool, scratchPool, &
@@ -1795,7 +1795,7 @@ module ocn_time_integration_split
                do k= minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                   activeTracerHorizontalAdvectionEdgeFlux(:,k,iEdge) = &
                   activeTracerHorizontalAdvectionEdgeFlux(:,k,iEdge) / &
-                       layerThickEdge(k,iEdge)
+                       layerThickEdgeFlux(k,iEdge)
                enddo
                enddo
                !$omp end do
@@ -2020,7 +2020,7 @@ module ocn_time_integration_split
       ! Call ocean diagnostic solve in preparation for vertical mixing.
       ! Note it is called again after vertical mixing, because u and
       ! tracers change. For Richardson vertical mixing, only density,
-      ! layerThickEdge, and kineticEnergyCell need to be computed.
+      ! layerThickEdgeFlux, and kineticEnergyCell need to be computed.
       ! For kpp, more variables may be needed.  Either way, this could
       ! be made more efficient by only computing what is needed for the
       ! implicit vmix routine that follows.
