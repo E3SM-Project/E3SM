@@ -620,9 +620,9 @@ TEST_CASE ("diagnostics") {
     REQUIRE_THROWS(diag_fail->set_computed_field(f));
     if (name == "Field A") {
       diag_identity->set_required_field(f.get_const());
-      f.deep_copy(1.0);
+      f.deep_copy<double,Host>(1.0);
     } else {
-      f.deep_copy(2.0);
+      f.deep_copy<double,Host>(2.0);
     } 
     input_fields.emplace(name,f);
   }

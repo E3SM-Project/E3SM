@@ -208,7 +208,7 @@ void run(std::mt19937_64& engine)
   // The output from the diagnostic should match what would happen if we called "calculate_theta_from_T" directly
   {
   Field theta_f = T_mid_f;
-  theta_f.deep_copy(0.0);
+  theta_f.deep_copy<double,Host>(0.0);
   const auto& theta_v = theta_f.get_view<ScalarT**>();
   Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
     const int i = team.league_rank();

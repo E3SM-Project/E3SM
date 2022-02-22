@@ -348,9 +348,6 @@ deep_copy (const Field& field_src) {
     default:
       EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");
   }
-
-  // Sync back to host
-  sync_to_host();
 }
 
 template<typename ST, HostOrDevice HD>
@@ -385,9 +382,6 @@ deep_copy (const ST value) {
     default:
       EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");
   }
-
-  // Sync back to host
-  sync_to_host();
 }
 
 template<typename ST, HostOrDevice HD>
