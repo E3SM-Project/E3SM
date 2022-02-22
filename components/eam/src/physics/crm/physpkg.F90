@@ -1149,10 +1149,11 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   !-----------------------------------------------------------------------------
   ! Check if LHF exceeds the total moisture content of the lowest layer
   !-----------------------------------------------------------------------------
+#ifndef MMF_CRM_SFC_FLUX
   call qneg4('TPHYSAC ', lchnk, ncol, ztodt, &
               state%q(1,pver,1), state%rpdel(1,pver), &
               cam_in%shf, cam_in%lhf, cam_in%cflx )
-
+#endif
   !-----------------------------------------------------------------------------
   ! Source/sink terms for advected tracers.
   !-----------------------------------------------------------------------------
@@ -1573,6 +1574,13 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   call physics_update(state, ptend, ztodt, tend)  
   call check_energy_chng(state, tend, "crm_tend", nstep, ztodt,  &
                          cam_in%shf(:), zero, zero, cam_in%cflx(:,1)) 
+#endif
+
+#ifdef MMF_CRM_SFC_FLUX
+  ! Check if LHF exceeds the total moisture content of the lowest layer
+  call qneg4('TPHYSBC ', lchnk, ncol, ztodt, &
+              state%q(1,pver,1), state%rpdel(1,pver), &
+              cam_in%shf, cam_in%lhf, cam_in%cflx )
 #endif
 
 end subroutine tphysbc1
