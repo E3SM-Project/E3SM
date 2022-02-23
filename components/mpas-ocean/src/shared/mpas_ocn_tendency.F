@@ -1117,7 +1117,7 @@ contains
             !$omp end parallel
          endif ! compute budgets
 
-         call ocn_tracer_hmix_tend(meshPool, layerThickEdgeFlux, &
+         call ocn_tracer_hmix_tend(meshPool, layerThickEdgeCenter, &
                                    layerThickness, zMid, tracerGroup, &
                                    RediKappa, slopeTriadUp, &
                                    slopeTriadDown, dt, isActiveTracer, &

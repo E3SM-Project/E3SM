@@ -84,7 +84,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdge    !< Input: flux-related thickness at edge
+         layerThicknessEdge    !< Input: mean thickness at edge
 
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
