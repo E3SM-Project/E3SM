@@ -155,7 +155,7 @@ _TESTS = {
         },
 
     "e3sm_integration" : {
-        "inherit" : ("e3sm_developer", "e3sm_atm_integration"),
+        "inherit" : ("e3sm_developer", "e3sm_atm_integration", "e3sm_mmf_integration"),
         "time"    : "03:00:00",
         "tests"   : (
             "ERS.ne11_oQU240.WCYCL1850NS",
@@ -174,12 +174,6 @@ _TESTS = {
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             "SMS_D_Ld3.T62_oQU120.CMPASO-IAF",
             "SMS_D_Ld1.ne30pg2_r05_EC30to60E2r2.WCYCL1850",
-            "ERP_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_fixed_subcycle",
-            "ERS_Ln9.ne4pg2_oQU480.F20TR-MMFXX.eam-mmf_use_VT",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFOMP.eam-single_thread",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
-            "SMS_Ln5.ne4_ne4.F-MMFXX-SCM-ARM97",
             )
         },
 
@@ -211,21 +205,14 @@ _TESTS = {
         },
 
     #e3sm MMF tests for development
-    "e3sm_mmf" : {
-        "time" : "02:00:00",
+    "e3sm_mmf_integration" : {
         "tests" : (
-            # MMF tests
-            "SMS_D_Ln3.ne4pg2_ne4pg2.F-MMF1",
-            "SMS_Ln3.ne4pg2_ne4pg2.F-MMFXX-AQP1",
-            "SMS_Ln3.ne4pg2_ne4pg2.F-MMFXX-RCEMIP",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1.eam-mmf_crmout",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_crmout",
-            "SMS_Ln9.ne4pg2_ne4pg2.F-MMF2-ECPP",
-            # MMF-SCM tests
-            "SMS_Ln5.ne4_ne4.F-MMF1-SCM-ARM97",
+            "ERP_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_fixed_subcycle",
+            "ERS_Ln9.ne4pg2_oQU480.F20TR-MMFXX.eam-mmf_use_VT",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFOMP.eam-single_thread",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
             "SMS_Ln5.ne4_ne4.F-MMFXX-SCM-ARM97",
-            # non-MMF tests with RRTMGP
-            "ERP_Ln9.ne4pg2_oQU480.F2010.eam-rrtmgp",
             )
         },
 
