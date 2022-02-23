@@ -430,7 +430,7 @@ contains
       ! Add forcing and bottom drag
       call ocn_vel_forcing_tend(normalVelocity, sfcFlxAttCoeff, &
                                 sfcStress, kineticEnergyCell, &
-                                layerThickEdgeCenter, tendVel, err)
+                                layerThickEdgeMean, tendVel, err)
 
       ! vertical mixing treated implicitly in a later routine
       ! adjust total velocity tendency based on wetting/drying
@@ -503,7 +503,7 @@ contains
 
       ! these variables input from shared diagnostics module:
       !    normalTransportVelocity - transport velocity across edge
-      !    layerThickEdgeFlux          - layer thickness on edge
+      !    layerThickEdgeFlux      - flux-related layer thickness on edge
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -1117,7 +1117,7 @@ contains
             !$omp end parallel
          endif ! compute budgets
 
-         call ocn_tracer_hmix_tend(meshPool, layerThickEdgeCenter, &
+         call ocn_tracer_hmix_tend(meshPool, layerThickEdgeMean, &
                                    layerThickness, zMid, tracerGroup, &
                                    RediKappa, slopeTriadUp, &
                                    slopeTriadDown, dt, isActiveTracer, &

@@ -212,8 +212,8 @@ contains
 #endif
 
       ! inputs: layerThickness, normalVelocity
-      ! output: layerThickEdgeCenter, layerThickEdgeFlux
-      call ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, layerThickness, layerThickEdgeCenter, layerThickEdgeFlux)
+      ! output: layerThickEdgeMean, layerThickEdgeFlux
+      call ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, layerThickness, layerThickEdgeMean, layerThickEdgeFlux)
 
       ! inputs: normalVelocity
       ! outputs: relativeVorticity, circulation
@@ -398,7 +398,7 @@ contains
 #ifdef MPAS_OPENACC
       !! Listing outputs by first routine that modifies variable
       !! ocn_diagnostic_solve_layerThicknessEdge :: layerThickEdgeFlux, (diagnostics array)
-      !!                                            layerThickEdgeCenter (diagnostics array)
+      !!                                            layerThickEdgeMean (diagnostics array)
       !! ocn_relativeVorticity_circulation       :: relativeVorticity, (diagnostics array)
       !!                                            circulation (diagnostics array)
       !! ocn_diagnostic_solve_vortVel            :: vertTransportVelocityTop, (diagnostics array)
@@ -584,16 +584,16 @@ contains
 !  routine ocn_diagnostic_solve_layerThicknessEdge
 !
 !> \brief   Computes diagnostic variables layerThickEdgeFlux and
-!>          layerThickEdgeCenter
+!>          layerThickEdgeMean
 !> \author  Matt Turner
 !> \date    October 2020
 !> \details
 !>  This routine computes the diagnostic variables layerThickEdgeFlux and
-!>  layerThickEdgeCenter
+!>  layerThickEdgeMean
 !
 !-----------------------------------------------------------------------
    subroutine ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, layerThickness, &
-                layerThicknessEdgeCenter, layerThicknessEdgeFlux)!{{{
+                layerThicknessEdgeMean, layerThicknessEdgeFlux)!{{{
 
       implicit none
 
@@ -614,9 +614,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         layerThicknessEdgeCenter, & !< Output: centered layer thickness on edge
-         layerThicknessEdgeFlux        !< Output: centered layer thickness on edge
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         layerThicknessEdgeMean, & !< Output: centered layer thickness on edge
+         layerThicknessEdgeFlux    !< Output: flux-related layer thickness on edge
 
       !-----------------------------------------------------------------
       !
@@ -634,19 +634,19 @@ contains
       nEdges = nEdgesAll
 
 #ifdef MPAS_OPENACC
-      !$acc parallel loop present(normalVelocity, layerThickness, minLevelEdgeBot, maxLevelEdgeTop, layerThicknessEdgeCenter, cellsOnEdge)
+      !$acc parallel loop present(normalVelocity, layerThickness, minLevelEdgeBot, maxLevelEdgeTop, layerThicknessEdgeMean, cellsOnEdge)
 #else
       !$omp parallel
       !$omp do schedule(runtime) private(cell1, cell2, k)
 #endif
       do iEdge = 1, nEdges
-        ! initialize layerThicknessEdgeCenter to avoid divide by zero and NaN problems.
-        layerThicknessEdgeCenter(:, iEdge) = -1.0e34_RKIND
+        ! initialize layerThicknessEdgeMean to avoid divide by zero and NaN problems.
+        layerThicknessEdgeMean(:, iEdge) = -1.0e34_RKIND
         cell1 = cellsOnEdge(1,iEdge)
         cell2 = cellsOnEdge(2,iEdge)
         do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
           ! central differenced
-          layerThicknessEdgeCenter(k,iEdge) = 0.5_RKIND * (layerThickness(k,cell1) + layerThickness(k,cell2))
+          layerThicknessEdgeMean(k,iEdge) = 0.5_RKIND * (layerThickness(k,cell1) + layerThickness(k,cell2))
         end do
       end do
 #ifndef MPAS_OPENACC
@@ -654,7 +654,7 @@ contains
       !$omp end parallel
 #endif
       if (trim(config_thickness_flux_type) .eq. 'centered') then
-        layerThicknessEdgeFlux = layerThicknessEdgeCenter
+        layerThicknessEdgeFlux = layerThicknessEdgeMean
       else
         if (config_use_wetting_drying .and. (trim(config_thickness_flux_type) .ne. 'centered')) then
           if ( trim(config_thickness_flux_type) .eq. 'upwind') then

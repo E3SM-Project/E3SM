@@ -86,7 +86,7 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normalVelocity,    &!< [in] Normal velocity at edges
          kineticEnergyCell, &!< [in] kinetic energy at cell
-         layerThicknessEdge  !< [in] centered thickness at edge
+         layerThicknessEdge  !< [in] mean thickness at edge
 
       real (kind=RKIND), dimension(:), intent(in) :: &
          sfcFlxAttCoeff, &!< [in] attenuation coefficient for sfc fluxes

@@ -2563,7 +2563,7 @@
 			 description="horizontal velocity, tangential to an edge"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="layerThicknessEdgeCenter" type="real" dimensions="nVertLevels nEdges Time" units="m"
+		<var name="layerThicknessEdgeMean" type="real" dimensions="nVertLevels nEdges Time" units="m"
 			 description="layer thickness averaged from cell center to edges"
 			 packages="forwardMode;analysisMode"
 		/>
