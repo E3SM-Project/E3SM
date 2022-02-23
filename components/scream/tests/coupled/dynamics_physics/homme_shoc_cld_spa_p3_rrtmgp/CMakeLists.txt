@@ -51,13 +51,15 @@ set (HOMME_THETA_HY_MODE true)
 set (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)
 set (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
 
+file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
+
 # Configure the namelist into the test directory
 configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
 # Copy initial conditions files
 GetInputFile(init/homme_shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/homme_shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc)
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
 
 # Create vcoord directory
 file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vcoord)
@@ -82,6 +84,12 @@ GetInputFile(init/rrtmgp-cloud-optics-coeffs-sw.nc
   ${CMAKE_CURRENT_BINARY_DIR}/data)
 GetInputFile(init/rrtmgp-cloud-optics-coeffs-lw.nc
   ${CMAKE_CURRENT_BINARY_DIR}/data)
+# SPA data files
+GetInputFile(init/map_ne4np4_to_ne2np4_mono.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
+GetInputFile(init/spa_file_unified_and_complete_ne4_scream.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
+
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if max mpi ranks is >1
