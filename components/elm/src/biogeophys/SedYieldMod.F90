@@ -191,16 +191,6 @@ contains
             end do
             Crsd = 1._r8 - exp(-6.68_r8 * Brsd)
 
-            ! surface soil root biomass density (kgC/m3): OM/OC = 1.72
-            Broot = 0._r8
-            do p = col_pp%pfti(c), col_pp%pftf(c)
-               if (veg_pp%active(p) .and. veg_pp%wtcol(p)>0._r8) then
-                  Broot = Broot + 1e-3_r8 * ( veg_cs%frootc(p)*froot_prof(p,1) + &
-                     (veg_cs%livecrootc(p)+veg_cs%deadcrootc(p))*croot_prof(p,1) ) * &
-                     veg_pp%wtcol(p) 
-               end if
-            end do
-
             stxt = (/fclay(c,1), 100._r8-fclay(c,1)-fsand(c,1), fsand(c,1), &
                 fgrvl(c,1)/)
             K = SoilDetachability(stxt)
@@ -220,10 +210,12 @@ contains
                      Dl = max(qflx_leafdrip(p)*dtime, 0._r8)      ! mm
                      KE_LD = max(15.8_r8*sqrt(0.5_r8*(htop(p)+hbot(p)))-5.87_r8, 0._r8) * &
                         fungrvl * Dl
-                     ! For crop veg types
+                     ! LAI and root biomass (kgC/m3): OM/OC = 1.72 
                      Clai = 1._r8 - exp(-tlai(p))
+                     Broot = 1e-3_r8 * ( veg_cs%frootc(p)*froot_prof(p,1) + &
+                        (veg_cs%livecrootc(p)+veg_cs%deadcrootc(p))*croot_prof(p,1) )
                      fgndcov = exp( -1e2_r8*gcbc_p(veg_pp%itype(p))*max(Crsd,Clai) - &
-                        -gcbr_p(veg_pp%itype(p))*Broot ) 
+                        gcbr_p(veg_pp%itype(p))*Broot ) 
                      if( veg_pp%itype(p) > nc4_grass )then
                         Es_Pcrp = Es_Pcrp + pfactor(c) * ftillage * flitho * &
                            fgndcov * veg_pp%wtcol(p) * K * (KE_DT+KE_LD)
@@ -260,26 +252,31 @@ contains
                fsr = 0._r8
                ftillage_tc = 0._r8 
                do p = col_pp%pfti(c), col_pp%pftf(c)
-                  Clai = 1._r8 - exp(-tlai(p))
-                  fgndcov = exp( -1e2_r8*gcbc_q(veg_pp%itype(p))*max(Crsd,Clai) - &
-                     -gcbr_q(veg_pp%itype(p))*Broot )
+                  if (veg_pp%active(p) .and. veg_pp%wtcol(p)>0._r8) then
+                     ! LAI and root biomass (kgC/m3): OM/OC = 1.72
+                     Clai = 1._r8 - exp(-tlai(p))
+                     Broot = 1e-3_r8 * ( veg_cs%frootc(p)*froot_prof(p,1) + &
+                        (veg_cs%livecrootc(p)+veg_cs%deadcrootc(p))*croot_prof(p,1) )
+                     fgndcov = exp( -1e2_r8*gcbc_q(veg_pp%itype(p))*max(Crsd,Clai) - &
+                        gcbr_q(veg_pp%itype(p))*Broot )
 
-                  nh = 0.03_r8 + 0.05_r8*max(Crsd,Clai)
-                  fsr = fsr + veg_pp%wtcol(p) * (0.03_r8/nh)**0.6_r8
+                     nh = 0.03_r8 + 0.05_r8*max(Crsd,Clai)
+                     fsr = fsr + veg_pp%wtcol(p) * (0.03_r8/nh)**0.6_r8
                   
-                  if ( veg_pp%itype(p) > nc4_grass ) then
-                     ftillage_tc = ftillage_tc + ftillage * veg_pp%wtcol(p)
+                     if ( veg_pp%itype(p) > nc4_grass ) then
+                        ftillage_tc = ftillage_tc + ftillage * veg_pp%wtcol(p)
 
-                     Es_Q = Es_Q + 19.1_r8 * qfactor(c) * 2./COH * flitho * fslp * &
-                        ftillage * fgndcov * Qss**1.5_r8 * veg_pp%wtcol(p)
+                        Es_Q = Es_Q + 19.1_r8 * qfactor(c) * 2./COH * flitho * fslp * &
+                           ftillage * fgndcov * Qss**1.5_r8 * veg_pp%wtcol(p)
 
-                     Es_Qcrp = Es_Qcrp + 19.1_r8 * qfactor(c) * 2./COH * flitho * fslp * &
-                        ftillage * fgndcov * Qss**1.5_r8 * veg_pp%wtcol(p)
-                  else
-                     ftillage_tc = ftillage_tc + veg_pp%wtcol(p)
+                        Es_Qcrp = Es_Qcrp + 19.1_r8 * qfactor(c) * 2./COH * flitho * fslp * &
+                           ftillage * fgndcov * Qss**1.5_r8 * veg_pp%wtcol(p)
+                     else
+                        ftillage_tc = ftillage_tc + veg_pp%wtcol(p)
 
-                     Es_Q = Es_Q + 19.1_r8 * qfactor(c) * 2./COH * flitho * fslp * &
-                        fgndcov * fglacier * Qss**1.5_r8 * veg_pp%wtcol(p)
+                        Es_Q = Es_Q + 19.1_r8 * qfactor(c) * 2./COH * flitho * fslp * &
+                           fgndcov * fglacier * Qss**1.5_r8 * veg_pp%wtcol(p)
+                     end if
                   end if
                end do
 
