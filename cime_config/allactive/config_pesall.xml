@@ -9526,7 +9526,7 @@
         </rootpe>
       </pes>      
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="L">
-        <comment> mmod147a32x4 s=2.7 </comment>
+        <comment> 160 nodes 32x8 s=2.2 - 2.8 </comment>
         <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>272</MAX_TASKS_PER_NODE>
         <ntasks>
