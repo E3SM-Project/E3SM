@@ -3612,22 +3612,24 @@
       </arguments>
     </mpirun>
     <module_system type="soft">
-      <init_path lang="sh">/vol0004/apps/oss/spack-v0.16/share/spack/setup-env.sh</init_path>
-      <init_path lang="csh">/vol0004/apps/oss/spack-v0.16/share/spack/setup-env.csh</init_path>
+      <init_path lang="sh">/vol0003/hp210190/data/soft/spack-v0.17.0/share/spack/setup-env.sh</init_path>
+      <init_path lang="csh">/vol0003/hp210190/data/soft/spack-v0.17.0/share/spack/setup-env.csh</init_path>
       <cmd_path lang="csh">spack</cmd_path>
       <cmd_path lang="sh">spack</cmd_path>
       <modules compiler="gnu">
         <command name="unload">--all</command>
-        <command name="load">cmake        @3.18.4%gcc@8.3.1 arch=linux-rhel8-a64fx</command>
-        <command name="load">fujitsu-mpi  @4.5.0 %gcc@8.3.1 arch=linux-rhel8-a64fx</command>
-        <command name="find">--loaded</command>
+        <command name="load">gcc @11.2.0%gcc@8.4.1  arch=linux-rhel8-a64fx</command>
+        <command name="load">fujitsu-mpi @head%gcc@11.2.0  arch=linux-rhel8-a64fx</command>
+        <command name="find">--loaded;ln -sf /lib64/libhwloc.so.15 /tmp/libhwloc.so.5</command>
       </modules>
       <modules compiler="fj">
-        <!--command name="load">lang/tcsds-1.2.33</command-->
-        <command name="load">netcdf-c%fj</command>
-        <command name="load">netcdf-cxx</command>
-        <command name="load">netcdf-fortran%fj</command>
-        <command name="load">parallel-netcdf</command>
+        <command name="unload">--all</command>
+        <command name="load">netcdf-c       @4.8.1 %fj@4.7.0 arch=linux-rhel8-a64fx</command>
+        <command name="load">netcdf-cxx     @4.2   %fj@4.7.0 arch=linux-rhel8-a64fx</command>
+        <command name="load">netcdf-fortran @4.5.3 %fj@4.7.0 arch=linux-rhel8-a64fx</command>
+        <command name="load">parallel-netcdf@1.12.2%fj@4.7.0 arch=linux-rhel8-a64fx</command>
+        <command name="load">netlib-lapack  @3.9.1 %fj@4.7.0 arch=linux-rhel8-a64fx</command>
+        <command name="find">--loaded</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR> 
@@ -3641,6 +3643,7 @@
     <environment_variables compiler="gnu">
       <env name="NETCDF_PATH">/data/hp210190/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/gcc8.3.1</env>
       <env name="LAPACK_PATH">/data/hp210190/soft/spack-v0.16/opt/spack/linux-rhel8-a64fx/gcc-8.3.1/netlib-lapack-3.8.0-jhmofiqoky6ajxmda5caawfhqnrirmm5</env>
+      <env name="LD_LIBRARY_PATH">/tmp:/data/hp210190/soft/spack-v0.16/opt/spack/linux-rhel8-a64fx/gcc-8.3.1/netlib-lapack-3.8.0-jhmofiqoky6ajxmda5caawfhqnrirmm5/lib64:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables compiler="fj">
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
