@@ -1913,13 +1913,13 @@
       <mask>EC30to60E2r2</mask>
     </model_grid>
 
-    <model_grid alias="ne30pg2_EC30to60E2r2_wQU225EC30to60E2r1">
+    <model_grid alias="ne30pg2_EC30to60E2r2_wQU225EC30to60E2r2">
       <grid name="atm">ne30np4.pg2</grid>
       <grid name="lnd">ne30np4.pg2</grid>
       <grid name="ocnice">EC30to60E2r2</grid>
       <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
-      <grid name="wav">wQU225EC30to60E2r1</grid>
+      <grid name="wav">wQU225EC30to60E2r2</grid>
       <mask>EC30to60E2r2</mask>
     </model_grid>
 
@@ -2795,6 +2795,13 @@
       <ny>1</ny>
       <file grid="wav">$DIN_LOC_ROOT/share/domains/domain.ocn.wQU225EC60to30.210413.nc</file>
       <desc>WW3 unstructured QU 225km global grid with EC60to30 coastlines</desc>
+    </domain>
+
+    <domain name="wQU225EC30to60E2r2">
+      <nx>56645</nx>
+      <ny>1</ny>
+      <file grid="wav">$DIN_LOC_ROOT/share/domains/domain.ocn.wQU225EC30to60E2r2.220224.nc</file>
+      <desc>WW3 unstructured QU 225km global grid with EC30to60E2r2 coastlines</desc>
     </domain>
 
     <!-- RRM grids -->
@@ -4058,8 +4065,8 @@
       <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_n30np4_to_wQU225EC60to30_bilin.211207.nc</map>
     </gridmap>
 
-    <gridmap atm_grid="ne30np4.pg2" wav_grid="wQU225EC30to60E2r1">
-      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC30to60E2r1/map_ne30pg2_to_wQU225EC30to60E2r1_bilin.220203.nc</map>
+    <gridmap atm_grid="ne30np4.pg2" wav_grid="wQU225EC30to60E2r2">
+      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC30to60E2r2/map_ne30pg2_TO_wQU225EC30to60E2r2_blin.20220222.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="oEC60to30v3" wav_grid="wQU225EC60to30">
@@ -4068,10 +4075,10 @@
       <map name="ICE2WAV_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_oEC60to30v3_TO_wQU225EC60to30_blin.20210428.nc</map>
     </gridmap>
 
-    <gridmap ocn_grid="EC30to60E2r1" wav_grid="wQU225EC30to60E2r1">
-      <map name="WAV2OCN_SMAPNAME">cpl/gridmaps/wQU225EC30to60E2r1/map_wQU225EC30to60E2r1_TO_EC30to60E2r1_blin.20220202.nc</map>
-      <map name="OCN2WAV_SMAPNAME">cpl/gridmaps/wQU225EC30to60E2r1/map_EC30to60E2r1_TO_wQU225EC30to60E2r1_blin.20220202.nc</map>
-      <map name="ICE2WAV_SMAPNAME">cpl/gridmaps/wQU225EC30to60E2r1/map_EC30to60E2r1_TO_wQU225EC30to60E2r1_blin.20220202.nc</map>
+    <gridmap ocn_grid="EC30to60E2r2" wav_grid="wQU225EC30to60E2r2">
+      <map name="WAV2OCN_SMAPNAME">cpl/gridmaps/wQU225EC30to60E2r2/map_wQU225EC30to60E2r2_TO_EC30to60E2r2_blin.20220222.nc</map>
+      <map name="OCN2WAV_SMAPNAME">cpl/gridmaps/wQU225EC30to60E2r2/map_EC30to60E2r2_TO_wQU225EC30to60E2r2_blin.20220222.nc</map>
+      <map name="ICE2WAV_SMAPNAME">cpl/gridmaps/wQU225EC30to60E2r2/map_EC30to60E2r2_TO_wQU225EC30to60E2r2_blin.20220222.nc</map>
     </gridmap>
 
     <gridmap atm_grid="CFSv2" wav_grid="wQU225EC60to30">
