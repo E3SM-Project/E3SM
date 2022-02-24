@@ -78,20 +78,20 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
     parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
       // compute suface buoyancy flux
       real bbb = 1.+epsv*qv(0,j,i,icrm);
-      a_prod_bu_vert(0,j,i,icrm) = bbb*bet(0,icrm)*fluxbt(j,i,icrm) + 
-                                   bet(0,icrm)*epsv*(tsfc(j,i,icrm))*fluxbq(j,i,icrm);
+      a_prod_bu_vert(0,j,i,icrm) = bbb*bet(0,icrm)*fluxbt(j,i,icrm) +
+                                   bet(0,icrm)*epsv*tsfc(j,i,icrm)*fluxbq(j,i,icrm);
       real grd = dz(icrm)*adz(0,icrm);
       real Cee = Ce1+Ce2;
       // Choose the subgrid TKE to be the larger of the initial value or
       // that which satisfies local equilibrium, buoyant production = dissipation
       // or a_prod_bu = Cee/grd * tke^(3/2).
       // NOTE: We're ignoring shear production here.
-      real tke_tmp = pow( grd/Cee * max( 1.0-20, 0.5*a_prod_bu_vert(0,j,i,icrm) ) ,(2.0/3.0));
+      real tke_tmp = pow( grd/Cee * max( 1.0e-20, 0.5*a_prod_bu_vert(0,j,i,icrm) ) ,(2.0/3.0));
       tke(ind_tke,0,j+offy_s,i+offx_s,icrm) = max( tke(ind_tke,0,j+offy_s,i+offx_s,icrm), tke_tmp );
       // eddy viscosity = Ck*grd * sqrt(tke) --- analogous for Smagorinksy.
       tk(ind_tk,0,j+offy_d,i+offx_d,icrm) = Ck*grd * sqrt( tke(ind_tke,0,j+offy_s,i+offx_s,icrm) );
       // eddy diffusivity = Pr * eddy viscosity
-      tkh(ind_tkh,0,j+offy_d,i+offx_d,icrm) = Pr*tk(0,j,i,icrm);
+      tkh(ind_tkh,0,j+offy_d,i+offx_d,icrm) = Pr*tk(ind_tk,0,j+offy_d,i+offx_d,icrm);
     });
   }
 
@@ -100,10 +100,10 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
     // Use surface temperature and vapor mixing ratio. This is slightly inconsistent, 
     // but the error is small, and it's cheaper than another saturation mixing ratio computation.
     real bbb = 1.+epsv*qv(0,j,i,icrm);
-    a_prod_bu_vert(0,j,i,icrm) = bbb*bet(0,icrm)*fluxbt(j,i,icrm) + 
-                                bet(0,icrm)*epsv*(tsfc(j,i,icrm))*fluxbq(j,i,icrm);
+    a_prod_bu_vert(0,j,i,icrm) = bbb*bet(0,icrm)*fluxbt(j,i,icrm) +
+                                 bet(0,icrm)*epsv*tsfc(j,i,icrm)*fluxbq(j,i,icrm);
     // back buoy_sgs out from buoyancy flux, a_prod_bu = - (tkh(k,j,i,icrm)+0.001)*buoy_sgs
-    buoy_sgs_vert(0,j,i,icrm) = - a_prod_bu_vert(0,j,i,icrm)/(tkh(0,j,i,icrm)+0.001);
+    buoy_sgs_vert(0,j,i,icrm) = - a_prod_bu_vert(0,j,i,icrm)/(tkh(ind_tkh,0,j+offy_d,i+offx_d,icrm)+0.001);
   });
 #endif
 

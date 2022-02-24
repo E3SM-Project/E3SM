@@ -145,7 +145,7 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
             ! compute suface buoyancy flux
             bbb = 1.+epsv*qv(icrm,i,j,1)
             a_prod_bu_vert(icrm,i,j,0) = bbb*bet(icrm,1)*fluxbt(icrm,i,j) + &
-                                         bet(icrm,1)*epsv*(tsfc(icrm,i,j))*fluxbq(icrm,i,j) 
+                                         bet(icrm,1)*epsv*tsfc(icrm,i,j)*fluxbq(icrm,i,j) 
             grd = dz(icrm)*adz(icrm,1)
             Cee = Ce1+Ce2
             ! Choose the subgrid TKE to be the larger of the initial value or

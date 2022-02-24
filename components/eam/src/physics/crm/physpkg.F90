@@ -1199,6 +1199,14 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
   obklen(:) = 0.
   surfric(:) = 0.
 
+#ifdef MMF_CRM_SFC_FLUX
+  call check_energy_chng(state, tend, "vdiff", nstep, ztodt, zero, zero, zero, zero)
+  call check_tracers_chng(state, tracerint, "vdiff", nstep, ztodt, zero)
+#else
+  call check_energy_chng(state, tend, "vdiff", nstep, ztodt, cam_in%cflx(:,1), zero, zero, cam_in%shf)
+  call check_tracers_chng(state, tracerint, "vdiff", nstep, ztodt, cam_in%cflx)
+#endif
+
   !-----------------------------------------------------------------------------
   ! Rayleigh friction calculation
   !-----------------------------------------------------------------------------
@@ -1208,10 +1216,6 @@ subroutine tphysac (ztodt, cam_in, sgh, sgh30, cam_out, state, tend, pbuf, fsds 
     call rayleigh_friction_tend( ztodt, state, ptend)
     call physics_update(state, ptend, ztodt, tend)
     call t_stopf('rayleigh_friction')
-
-    call check_energy_chng(state, tend, "vdiff", nstep, ztodt, &
-                           cam_in%cflx(:,1), zero, zero, cam_in%shf)
-    call check_tracers_chng(state, tracerint, "vdiff", nstep, ztodt, cam_in%cflx)
 
   end if ! l_rayleigh
 
