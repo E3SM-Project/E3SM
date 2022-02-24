@@ -17,7 +17,7 @@ file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
 set (RRTMGP_EXT_DIR ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external)
 
 GetInputFile(init/shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc)
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
 
 GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1
   ${CMAKE_CURRENT_BINARY_DIR}/data)
@@ -33,6 +33,10 @@ GetInputFile(init/rrtmgp-allsky.nc
 GetInputFile(init/rrtmgp-cloud-optics-coeffs-sw.nc
   ${CMAKE_CURRENT_BINARY_DIR}/data)
 GetInputFile(init/rrtmgp-cloud-optics-coeffs-lw.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
+GetInputFile(init/map_ne4np4_to_ne2np4_mono.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/data)
+GetInputFile(init/spa_file_unified_and_complete_ne4_scream.nc
   ${CMAKE_CURRENT_BINARY_DIR}/data)
 
 ## Copy (and configure) yaml files needed by tests
