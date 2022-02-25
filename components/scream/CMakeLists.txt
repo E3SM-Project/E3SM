@@ -294,7 +294,8 @@ BuildEkat(PREFIX "SCREAM")
 
 # Set compiler-specific flags
 include(EkatSetCompilerFlags)
-SetCompilerFlags()
+ResetFlags()
+SetCommonFlags()
 
 include(EkatMpiUtils)
 # We should avoid cxx bindings in mpi; they are already deprecated,
