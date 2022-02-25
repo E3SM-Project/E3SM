@@ -214,7 +214,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     integer  :: ierr
     character(len=80) :: errstr, arg
     real(kind=real_kind) :: dt_max, se_tstep
-#if defined(CAM) || defined(SCREAM
+#if defined(CAM) || defined(SCREAM)
     character(len=MAX_STRING_LEN) :: se_topology
     integer :: se_partmethod
     integer :: se_ne
