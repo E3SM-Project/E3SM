@@ -36,7 +36,7 @@ MACHINE_METADATA = {
                  ["mpicxx","mpifort","mpicc"],
                   "bsub -I -q rhel7W -n 4",
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/weaver/"),
-    "mappy"   : (["module purge", "module load sems-env sems-gcc/9.2.0 sems-cmake/3.19.1 sems-git/2.10.1 sems-openmpi/4.0.2 sems-netcdf/4.7.3/parallel"],
+    "mappy"   : (["module purge", "module load sems-archive-env sems-archive-gcc/9.2.0 sems-archive-cmake/3.19.1 sems-archive-git/2.10.1 sems-archive-openmpi/4.0.2 sems-archive-netcdf/4.7.3/parallel"],
                  ["mpicxx","mpifort","mpicc"],
                   "",
                   "/sems-data-store/ACME/baselines/scream/master-baselines"),
