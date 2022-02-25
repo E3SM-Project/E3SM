@@ -22,20 +22,12 @@ list(APPEND CMAKE_MODULE_PATH
      ${CMAKE_CURRENT_SOURCE_DIR}/cmake
      ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tpls
      ${EKAT_CMAKE_PATH}
-     ${EKAT_CMAKE_PATH}/mpi
      ${EKAT_CMAKE_PATH}/pkg_build
 )
 if (SCREAM_CIME_BUILD)
   list(APPEND CMAKE_MODULE_PATH
        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cime)
 endif ()
-
-include(EkatMpiUtils)
-
-# We should avoid cxx bindings in mpi; they are already deprecated,
-# and can cause headaches at link time, cause they require -lmpi_cxx
-# (for openpmi; -lmpicxx for mpich) flag.
-DisableMpiCxxBindings()
 
 if (Kokkos_ENABLE_CUDA)
   if (Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
@@ -53,12 +45,6 @@ if (Kokkos_ENABLE_CUDA)
       set (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "" FORCE)
     endif()
   endif()
-  include(EkatBuildKokkos)
-  # Note: we need Kokkos_SOURCE_DIR to be defined *before* calling EkatSetNvccWrapper.
-  EkatSetKokkosSourceDir()
-
-  include (EkatSetNvccWrapper)
-  EkatSetNvccWrapper()
 endif()
 
 # Homme's composef90 library (built for f90 support) requires Kokkos::Serial
@@ -309,6 +295,12 @@ BuildEkat(PREFIX "SCREAM")
 # Set compiler-specific flags
 include(EkatSetCompilerFlags)
 SetCompilerFlags()
+
+include(EkatMpiUtils)
+# We should avoid cxx bindings in mpi; they are already deprecated,
+# and can cause headaches at link time, cause they require -lmpi_cxx
+# (for openpmi; -lmpicxx for mpich) flag.
+DisableMpiCxxBindings()
 
 if (SCREAM_DOUBLE_PRECISION)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
