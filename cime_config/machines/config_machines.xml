@@ -120,8 +120,7 @@
 
       <modules compiler="gnu.*">
 	<command name="load">PrgEnv-gnu/8.2.0</command>
-	<command name="load">gcc/9.3.0</command>
-	<!--command name="load">gcc/10.3.0</command-->
+	<command name="load">gcc/10.3.0</command>
       </modules>
 
       <modules compiler="nvidia.*">
