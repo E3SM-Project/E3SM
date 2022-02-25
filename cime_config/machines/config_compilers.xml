@@ -321,7 +321,7 @@ flags should be captured within MPAS CMake files.
   <FFLAGS>
     <base>  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source </base>
     <append compile_threaded="TRUE"> -qopenmp </append>
-    <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
+    <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -check noarg_temp_created </append>
     <append DEBUG="FALSE"> -O2 -debug minimal </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
@@ -1129,7 +1129,7 @@ flags should be captured within MPAS CMake files.
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
-    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv -init=snan</append>
+    <append DEBUG="TRUE"> -g -traceback  -O0 -check  all -check noarg_temp_created </append>
   </FFLAGS>
   <NETCDF_PATH>$ENV{NETCDF_HOME}</NETCDF_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_HOME}</PNETCDF_PATH>
