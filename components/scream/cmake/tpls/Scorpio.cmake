@@ -9,7 +9,7 @@ macro (CreateScorpioTarget CREATE_FLIB)
   # If we didn't already parsed this script, proceed
   if (NOT TARGET pioc)
 
-    if (CIME_BUILD)
+    if (SCREAM_CIME_BUILD)
       # For CIME builds, we simply wrap the already built pioc/piof libs into a cmake target
       if (NOT DEFINED INSTALL_SHAREDPATH)
         message (FATAL_ERROR "Error! The cmake variable 'INSTALL_SHAREDPATH' is not defined.")
