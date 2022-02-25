@@ -132,7 +132,6 @@
       <modules compiler="gnugpu">
 	<command name="load">cudatoolkit</command>
 	<command name="load">craype-accel-nvidia80</command>
-	<command name="load">craype-x86-rome</command>
       </modules>
 
       <modules compiler="nvidiagpu">
@@ -141,8 +140,7 @@
       </modules>
 
       <modules compiler="gnu">
-	<!--command name="load">craype-accel-host</command-->
-	<command name="load">craype-x86-rome</command>
+	<command name="load">craype-accel-host</command>
       </modules>
 
       <modules compiler="nvidia">
