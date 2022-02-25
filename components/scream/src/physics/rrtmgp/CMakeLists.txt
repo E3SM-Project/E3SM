@@ -58,10 +58,10 @@ set(INTERFACE_SRC
   rrtmgp_test_utils.cpp
 )
 add_library(scream_rrtmgp ${INTERFACE_SRC})
-find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
+find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
 target_link_libraries(scream_rrtmgp PUBLIC ${NETCDF_C} rrtmgp yakl scream_share physics_share share_util)
 target_include_directories(scream_rrtmgp SYSTEM PUBLIC
-    ${NetCDF_C_PATHS}/include ${SCREAM_BASE_DIR}/../../externals ${EAM_RRTMGP_DIR}/external)
+    ${NetCDF_C_PATH}/include ${SCREAM_BASE_DIR}/../../externals ${EAM_RRTMGP_DIR}/external)
 
 # Build tests
 if (NOT SCREAM_LIB_ONLY)

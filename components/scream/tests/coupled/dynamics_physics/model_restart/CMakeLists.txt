@@ -5,7 +5,7 @@ include (BuildCprnc)
 BuildCprnc()
 
 # Needed for RRTMGP
-find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
+find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
 # Get or create the dynamics lib
 #                 HOMME_TARGET   NP PLEV QSIZE_D
 CreateDynamicsLib("theta-l_kokkos"  4   72   35)

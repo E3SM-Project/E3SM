@@ -448,10 +448,10 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         # even if no netcdf is available
         stat, f_path, _ = run_cmd("nf-config --prefix")
         if stat == 0:
-            result += " -DNetCDF_Fortran_PATHS={}".format(f_path)
+            result += " -DNetCDF_Fortran_PATH={}".format(f_path)
         stat, c_path, _ = run_cmd("nc-config --prefix")
         if stat == 0:
-            result += " -DNetCDF_C_PATHS={}".format(c_path)
+            result += " -DNetCDF_C_PATH={}".format(c_path)
 
         # Test-specific cmake options
         for key, value in extra_configs:

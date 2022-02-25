@@ -171,7 +171,7 @@ if (NF_CONFIG_SEARCH)
     OUTPUT_STRIP_TRAILING_WHITESPACE
     )
   if (NF_STATUS EQUAL 0)
-    set(DEFAULT_NetCDF_Fortran_PATHS ${NF_CONFIG_OUTPUT})
+    set(DEFAULT_NetCDF_Fortran_PATH ${NF_CONFIG_OUTPUT})
   endif()
 endif()
 
@@ -183,7 +183,7 @@ if (NC_CONFIG_SEARCH)
     OUTPUT_STRIP_TRAILING_WHITESPACE
     )
   if (NC_STATUS EQUAL 0)
-    set(DEFAULT_NetCDF_C_PATHS ${NC_CONFIG_OUTPUT})
+    set(DEFAULT_NetCDF_C_PATH ${NC_CONFIG_OUTPUT})
   endif()
 endif()
 
@@ -201,9 +201,9 @@ set(SCREAM_MPI_EXTRA_ARGS ${DEFAULT_MPI_EXTRA_ARGS} CACHE STRING "Options for mp
 set(SCREAM_MPI_NP_FLAG ${DEFAULT_MPI_NP_FLAG} CACHE STRING "The mpirun flag for designating the total number of ranks")
 set(SCREAM_LIB_ONLY ${DEFAULT_LIB_ONLY} CACHE BOOL "Only build libraries, no exes")
 set(SCREAM_AUTOTESTER ${DEFAULT_AUTOTESTER} CACHE BOOL "This is an autotester run; may disable some tests")
-set(NetCDF_Fortran_PATHS ${DEFAULT_NetCDF_Fortran_PATHS} CACHE FILEPATH "Path to netcdf fortran installation")
-set(NetCDF_C_PATHS ${DEFAULT_NetCDF_C_PATHS} CACHE FILEPATH "Path to netcdf C installation")
-set(SCREAM_MACHINE $DEFAULT_SCREAM_MACHINE CACHE STRING "The CIME/SCREAM name for the current machine")
+set(NetCDF_Fortran_PATH ${DEFAULT_NetCDF_Fortran_PATH} CACHE FILEPATH "Path to netcdf fortran installation")
+set(NetCDF_C_PATH ${DEFAULT_NetCDF_C_PATH} CACHE FILEPATH "Path to netcdf C installation")
+set(SCREAM_MACHINE ${DEFAULT_SCREAM_MACHINE} CACHE STRING "The CIME/SCREAM name for the current machine")
 
 # Handle input root
 if (SCREAM_MACHINE)
