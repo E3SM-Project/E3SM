@@ -1326,7 +1326,7 @@ If TRUE print out a CO2 conservation for the lenght of the run.
 Default: FALSE
 </entry>
 
-<entry id="co2_conserv_error_tol" type="real" category="co2_cycle"
+<entry id="co2_conserv_error_tol_per_year" type="real" category="co2_cycle"
        group="co2_cycle_nl" valid_values="" >
 error tolerance for CO2 conservation
 Default: 5.e-13

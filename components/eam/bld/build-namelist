@@ -914,7 +914,7 @@ if ($co2_cycle) {
     add_default($nl, 'co2_print_diags_timestep', 'val'=>'.false.');
     add_default($nl, 'co2_print_diags_monthly', 'val'=>'.true.');
     add_default($nl, 'co2_print_diags_total', 'val'=>'.true.');
-    add_default($nl, 'co2_conserv_error_tol', 'val'=>'5.e-13');
+    add_default($nl, 'co2_conserv_error_tol_per_year', 'val'=>'5.e-13');
 
 
     # Supply a fossil fuel dataset if the co2_cycle is active and it's a

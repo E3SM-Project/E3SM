@@ -16,7 +16,7 @@ use shr_kind_mod   , only: r8 => shr_kind_r8
 use camsrfexch     , only: cam_in_t
 use co2_cycle      , only: c_i, co2_transport, co2_print_diags_timestep, &
                            co2_print_diags_monthly, co2_print_diags_total, &
-                           co2_conserv_error_tol
+                           co2_conserv_error_tol_per_year
 use ppgrid         , only: pver, pcols, begchunk, endchunk
 use physics_types  , only: physics_state, physics_tend, physics_ptend, &
                            physics_ptend_init
@@ -387,6 +387,10 @@ contains
       real(r8) :: rel_error, expected_tc
       real(r8) :: rel_error_mon, expected_tc_mon
       real(r8) :: rel_error_run, expected_tc_run
+      real(r8) :: scaled_rel_error_tol, nyear
+      real(r8), parameter :: seconds_per_year = 31536000._r8
+      real(r8) :: seconds_in_month
+      real(r8) :: total_seconds
 
       real(r8) :: tc(      pcols,begchunk:endchunk,c_num_var)     ! array for holding carbon variables
       real(r8) :: flux_ts( pcols,begchunk:endchunk,f_ts_num_var)  ! array for holding timestep fluxes
@@ -524,7 +528,7 @@ contains
          write(iulog,C_RER)'Relative Error:', rel_error
 
          if (nstep > 0) then
-            if (abs(rel_error) > co2_conserv_error_tol) then
+            if (abs(rel_error) > co2_conserv_error_tol_per_year) then
                write(iulog,*) 'time integrated flux = ', time_integrated_flux
                write(iulog,*) 'net change in state  = ', state_net_change
                write(iulog,*) 'error                = ', abs(time_integrated_flux - state_net_change)
@@ -537,6 +541,7 @@ contains
 
       ! Whole run write outs----------------------------------------------------
       if ( is_last_step() .and. co2_print_diags_total ) then
+         total_seconds = nstep * dtime
          if (masterproc) then
             write(iulog,*   )   ''
             write(iulog,*   )   'NET CO2 FLUXES : period = full run : date = ',cdate,sec
@@ -546,23 +551,23 @@ contains
 
             write(iulog, '(71("-"),"|",20("-"))')
 
-            write(iulog,C_FF) 'Accumulated Surface Flux      ', gtc_iflx_sfc / dtime, gtc_iflx_sfc
-            write(iulog,C_FF) 'Accumulated Aircraft Emissions', gtc_iflx_air / dtime, gtc_iflx_air
+            write(iulog,C_FF) 'Accumulated Surface Flux      ', gtc_iflx_sfc / total_seconds, gtc_iflx_sfc
+            write(iulog,C_FF) 'Accumulated Aircraft Emissions', gtc_iflx_air / total_seconds, gtc_iflx_air
 
             write(iulog, '(71("-"),"|",23("-"))')
 
             write(iulog,C_FF) '   *SUM*', &
-                 gtc_iflx_tot / dtime, gtc_iflx_tot
+                 gtc_iflx_tot / total_seconds, gtc_iflx_tot
 
             time_integrated_flux = gtc_iflx_tot
 
             write(iulog, '(71("-"),"|",20("-"))')
-            write(iulog,C_FF) 'Accumulated Sfc Fssl Fuel Flux', gtc_iflx_sff / dtime, gtc_iflx_sff
-            write(iulog,C_FF) 'Accumulated Land  Surface Flux', gtc_iflx_lnd / dtime, gtc_iflx_lnd
-            write(iulog,C_FF) 'Accumulated Ocean Surface Flux', gtc_iflx_ocn / dtime, gtc_iflx_ocn
+            write(iulog,C_FF) 'Accumulated Sfc Fssl Fuel Flux', gtc_iflx_sff / total_seconds, gtc_iflx_sff
+            write(iulog,C_FF) 'Accumulated Land  Surface Flux', gtc_iflx_lnd / total_seconds, gtc_iflx_lnd
+            write(iulog,C_FF) 'Accumulated Ocean Surface Flux', gtc_iflx_ocn / total_seconds, gtc_iflx_ocn
             write(iulog, '(71("-"),"|",20("-"))')
             write(iulog,C_FF) '   *SUM*', &
-                 (gtc_iflx_sff + gtc_iflx_lnd + gtc_iflx_ocn) / dtime, &
+                 (gtc_iflx_sff + gtc_iflx_lnd + gtc_iflx_ocn) / total_seconds, &
                  (gtc_iflx_sff + gtc_iflx_lnd + gtc_iflx_ocn)
 
             write(iulog, '(71("-"),"|",23("-"))')
@@ -585,8 +590,12 @@ contains
 
             write(iulog,C_RER)'Relative Error:', rel_error_run
 
+            ! Allow error tolerance to grow in time for long simulation campaigns
+            nyear = max(1._r8, (nstep * dtime) / seconds_per_year) ! set nyear to 1 during first year
+            scaled_rel_error_tol = (1._r8 + co2_conserv_error_tol_per_year)**nyear - 1._r8
+
             if (nstep > 0) then
-               if (abs(rel_error_run) > co2_conserv_error_tol) then
+               if (abs(rel_error_run) > scaled_rel_error_tol) then
                   write(iulog,*) 'time integrated flux = ', time_integrated_flux
                   write(iulog,*) 'net change in state  = ', state_net_change
                   write(iulog,*) 'error                = ', abs(time_integrated_flux - state_net_change)
@@ -600,6 +609,7 @@ contains
 
       ! Monthly write outs------------------------------------------------------
       if ( is_end_curr_month() .and. co2_print_diags_monthly ) then
+         call get_seconds_in_curr_month(seconds_in_month)
          if (masterproc) then
             write(iulog,*   )   ''
             write(iulog,*   )   'NET CO2 FLUXES : period = monthly,: date = ',cdate,sec
@@ -609,23 +619,23 @@ contains
 
             write(iulog, '(71("-"),"|",20("-"))')
 
-            write(iulog,C_FF) 'Accumulated Surface Flux      ', gtc_mflx_sfc / dtime, gtc_mflx_sfc
-            write(iulog,C_FF) 'Accumulated Aircraft Emissions', gtc_mflx_air / dtime, gtc_mflx_air
+            write(iulog,C_FF) 'Accumulated Surface Flux      ', gtc_mflx_sfc / seconds_in_month, gtc_mflx_sfc
+            write(iulog,C_FF) 'Accumulated Aircraft Emissions', gtc_mflx_air / seconds_in_month, gtc_mflx_air
 
             write(iulog, '(71("-"),"|",23("-"))')
 
             write(iulog,C_FF) '   *SUM*', &
-                 gtc_mflx_tot / dtime, gtc_mflx_tot
+                 gtc_mflx_tot / seconds_in_month, gtc_mflx_tot
 
             time_integrated_flux = gtc_mflx_tot
 
             write(iulog, '(71("-"),"|",20("-"))')
-            write(iulog,C_FF) 'Accumulated Sfc Fssl Fuel Flux', gtc_mflx_sff / dtime, gtc_mflx_sff
-            write(iulog,C_FF) 'Accumulated Land  Surface Flux ', gtc_mflx_lnd / dtime, gtc_mflx_lnd
-            write(iulog,C_FF) 'Accumulated Ocean Surface Flux', gtc_mflx_ocn / dtime, gtc_mflx_ocn
+            write(iulog,C_FF) 'Accumulated Sfc Fssl Fuel Flux', gtc_mflx_sff / seconds_in_month, gtc_mflx_sff
+            write(iulog,C_FF) 'Accumulated Land  Surface Flux', gtc_mflx_lnd / seconds_in_month, gtc_mflx_lnd
+            write(iulog,C_FF) 'Accumulated Ocean Surface Flux', gtc_mflx_ocn / seconds_in_month, gtc_mflx_ocn
             write(iulog, '(71("-"),"|",20("-"))')
             write(iulog,C_FF) '   *SUM*', &
-                 (gtc_mflx_sff + gtc_mflx_lnd + gtc_mflx_ocn) / dtime, &
+                 (gtc_mflx_sff + gtc_mflx_lnd + gtc_mflx_ocn) / seconds_in_month, &
                  (gtc_mflx_sff + gtc_mflx_lnd + gtc_mflx_ocn)
 
             write(iulog, '(71("-"),"|",23("-"))')
@@ -649,7 +659,7 @@ contains
             write(iulog,C_RER)'Relative Error:', rel_error_mon
 
             if (nstep > 0) then
-               if (abs(rel_error_mon) > co2_conserv_error_tol) then
+               if (abs(rel_error_mon) > co2_conserv_error_tol_per_year) then
                   write(iulog,*) 'time integrated flux = ', time_integrated_flux
                   write(iulog,*) 'net change in state  = ', state_net_change
                   write(iulog,*) 'error                = ', abs(time_integrated_flux - state_net_change)
@@ -895,6 +905,31 @@ contains
      call get_prev_date(yr, mon, day, tod)
      is_start_curr_month = (day == 1  .and.  tod == 0)
    end function is_start_curr_month
+
+
+!-------------------------------------------------------------------------------
+
+   subroutine get_seconds_in_curr_month(seconds_in_month)
+   ! Return the number of seconds in the current month
+   ! It is expected that this routine is
+   ! called when is_end_curr_month is true
+
+   ! Arguments
+     real(r8), intent(out) :: seconds_in_month
+   ! Local variables
+     integer :: &
+        yr,   &! year
+        mon,  &! month
+        day,  &! day of month
+        tod    ! time of day (seconds past 00Z)
+     real(r8), parameter :: seconds_per_day = 86400._r8
+
+! if is_end_curr_month, then 
+! get_prev_date should have day == last_day_of_month
+     call get_prev_date(yr, mon, day, tod)
+     seconds_in_month = seconds_per_day * day
+     
+   end subroutine get_seconds_in_curr_month
 
 !-------------------------------------------------------------------------------
 
