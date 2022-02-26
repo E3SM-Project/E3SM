@@ -868,16 +868,16 @@
       <cmd_path lang="sh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">sems-env</command>
+        <command name="load">sems-archive-env</command>
         <command name="load">acme-env</command>
-        <command name="load">sems-git</command>
-        <command name="load">sems-cmake/3.19.1</command>
+        <command name="load">sems-archive-git</command>
+        <command name="load">sems-archive-cmake/3.19.1</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">acme-gcc/8.1.0</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">sems-intel/19.0.5</command>
+        <command name="load">sems-archive-intel/19.0.5</command>
       </modules>
       <modules mpilib="mpi-serial">
         <command name="load">acme-netcdf/4.4.1/exo_acme</command>
@@ -1178,19 +1178,19 @@
       <cmd_path lang="sh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">sems-env</command>
+        <command name="load">sems-archive-env</command>
         <command name="load">acme-env</command>
-        <command name="load">sems-git</command>
-        <command name="load">sems-cmake/3.19.1</command>
+        <command name="load">sems-archive-git</command>
+        <command name="load">sems-archive-cmake/3.19.1</command>
         <command name="load">gnu/6.3.1</command>
-        <command name="load">sems-intel/17.0.0</command>
+        <command name="load">sems-archive-intel/17.0.0</command>
       </modules>
       <modules mpilib="!mpi-serial">
-        <command name="load">sems-openmpi/1.10.5</command>
+        <command name="load">sems-archive-openmpi/1.10.5</command>
         <command name="load">acme-netcdf/4.7.4/acme</command>
       </modules>
       <modules mpilib="mpi-serial">
-        <command name="load">sems-netcdf/4.4.1/exo</command>
+        <command name="load">sems-archive-netcdf/4.4.1/exo</command>
       </modules>
     </module_system>
     <RUNDIR>/nscratch/$USER/acme_scratch/sandiatoss3/$CASE/run</RUNDIR>
