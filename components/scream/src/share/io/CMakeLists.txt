@@ -9,7 +9,7 @@ set(SCREAM_SCORPIO_SRCS
 
 # Create or import scorpio targets
 include (${SCREAM_BASE_DIR}/cmake/tpls/Scorpio.cmake)
-CreateScorpioTarget(TRUE) # Note: the input is whether we want FLIB too. We want/need both, so look for both
+CreateScorpioTargets()
 
 set (SCREAM_CIME_LIBS
      pioc
