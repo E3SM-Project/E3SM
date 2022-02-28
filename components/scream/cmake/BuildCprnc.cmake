@@ -5,6 +5,7 @@
 #
 # to your CMakeLists.txt.
 
+include (MachSpecificFlags)
 macro(BuildCprnc)
 
   # Make sure this is built only once
@@ -29,6 +30,7 @@ macro(BuildCprnc)
     set(SRC_ROOT ${SCREAM_BASE_DIR}/../..)
     add_subdirectory(${SRC_ROOT}/cime/tools/cprnc ${BLDROOT})
 
+    AddMachSpecificFlags(cprnc)
     set(CPRNC_BINARY ${BLDROOT}/cprnc CACHE INTERNAL "")
 
     configure_file (${SCREAM_BASE_DIR}/cmake/CprncTest.cmake.in

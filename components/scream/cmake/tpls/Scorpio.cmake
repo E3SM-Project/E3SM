@@ -1,3 +1,5 @@
+include (MachSpecificFlags)
+
 # If this is a CIME build, create IMPORTED target to wrap scorpio libs.
 # Otherwise, simply add scorpio subdirectory.
 set (E3SM_EXTERNALS_DIR ${CMAKE_CURRENT_LIST_DIR}/../../../../externals CACHE INTERNAL "")
@@ -81,5 +83,8 @@ macro (CreateScorpioTargets)
     EkatDisableAllWarning(pioc)
     EkatDisableAllWarning(piof)
     EkatDisableAllWarning(gptl)
+
+    # Only need to add flags to gptl, since the other two link against this
+    AddMachSpecificFlags(gptl)
   endif ()
 endmacro()
