@@ -82,7 +82,7 @@ def compare_images(
     expected_png = Image.open(path_to_expected_png).convert("RGB")
     diff = ImageChops.difference(actual_png, expected_png)
 
-    diff_dir = "image_check_failures"
+    diff_dir = f"{TEST_ROOT_PATH}image_check_failures"
     if not os.path.isdir(diff_dir):
         os.mkdir(diff_dir)
 

@@ -348,7 +348,7 @@ def _derive_metrics_per_basin(
 
             wind_new = wind[wind > 35]
             mod_ace[np.where(years - yer[0] == 0)] = (
-                mod_ace[np.where(years - yer[0] == 0)] + np.sum(wind_new ** 2) / 1e4
+                mod_ace[np.where(years - yer[0] == 0)] + np.sum(wind_new**2) / 1e4
             )
 
     mod_vars = {
@@ -490,7 +490,7 @@ def _calc_mean_ace(vsmc: "MaskedArray", yearic: np.ndarray, num_rows: int) -> fl
             if yearic[j] == OBS_YEARS[i]:
                 wind = vsmc[j, :]
                 wind_ts = wind[wind >= 35]
-                ace[i] = ace[i] + np.sum(wind_ts ** 2) / 1e4
+                ace[i] = ace[i] + np.sum(wind_ts**2) / 1e4
 
     return np.mean(ace)
 

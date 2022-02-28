@@ -159,7 +159,7 @@ def precst(precc, precl):
 
 def tauxy(taux, tauy):
     """tauxy = (taux^2 + tauy^2)sqrt"""
-    var = (taux ** 2 + tauy ** 2) ** 0.5
+    var = (taux**2 + tauy**2) ** 0.5
     var = convert_units(var, "N/m^2")
     var.long_name = "Total surface wind stress"
     return var
@@ -261,7 +261,7 @@ def netcf4srf(fsntoa, fsntoac, flntoa, flntoac):
 
 def fldsc(ts, flnsc):
     """Clearsky Surf LW downwelling flux"""
-    var = 5.67e-8 * ts ** 4 - flnsc
+    var = 5.67e-8 * ts**4 - flnsc
     var.units = "W/m2"
     var.long_name = "Clearsky Surf LW downwelling flux"
     return var

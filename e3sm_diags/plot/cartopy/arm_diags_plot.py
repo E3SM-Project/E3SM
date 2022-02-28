@@ -243,7 +243,7 @@ def plot_convection_onset_statistics(
         )
         # low_lim = -6.0
         low_lim = -4.0
-        ax3.set_ylim(10 ** low_lim, 100)
+        ax3.set_ylim(10**low_lim, 100)
         ax3.set_yticks(10 ** np.arange(low_lim, 2, dtype="float64"))
         ax3.tick_params(labelsize=axes_fontsize)
         ax3.tick_params(axis="x", pad=xtick_pad)

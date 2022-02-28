@@ -1,0 +1,28 @@
+# Conda continuous integration/continuous deployment (CI/CD) for running the repository's GitHub Actions CI/CD workflows.
+# This env includes the latest dependencies required to build the package (similar to a conda recipe `meta.yaml` file).
+# End-users are not expected to use this environment.
+name: e3sm_diags_ci
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # Base
+  # ==================
+  - python>=3.8
+  - pip
+  - numpy
+  - matplotlib
+  - beautifulsoup4
+  - cartopy
+  - cartopy_offlinedata
+  - cdp
+  - cdms2
+  - cdtime
+  - cdutil
+  - genutil
+  - lxml
+  - netcdf4
+  # Required in test suite
+  - dask
+  - scipy
+prefix: /opt/miniconda3/envs/e3sm_diags_ci

@@ -133,7 +133,7 @@ an SSL error unless you disable the SSL verification:
 
     ::
 
-        wget https://raw.githubusercontent.com/E3SM-Project/e3sm_diags/master/conda/e3sm_diags_env.yml
+        wget https://raw.githubusercontent.com/E3SM-Project/e3sm_diags/master/conda-env/prod.yml
 
 
 3. Change ``prefix`` in that file to be your conda prefix. Typically, this will be ``~/miniconda3/envs/e3sm_diags_env``.
@@ -150,7 +150,7 @@ an SSL error unless you disable the SSL verification:
 
     ::
 
-        conda env create -f e3sm_diags_env.yml
+        conda env create -f conda-env/prod.yml
         conda activate e3sm_diags_env
 
 .. _dev-env:
@@ -231,7 +231,7 @@ Instead, the developer will ``pip install .`` to build ``e3sm-diags`` with chang
 
     ::
 
-        conda env create -f conda/e3sm_diags_env_dev.yml
+        conda env create -f conda-env/dev.yml
         conda activate e3sm_diags_env_dev
 
 6. Install ``pre-commit``.

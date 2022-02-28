@@ -196,7 +196,7 @@ def fastAllGridFT(x, t):
     # Converting from complex-valued FFT to real-valued amplitude and phase
     a = X.real
     b = X.imag
-    S = numpy.sqrt(a ** 2 + b ** 2)
+    S = numpy.sqrt(a**2 + b**2)
     c = S[0]  # Zeroth harmonic = mean-value "constant term" in Fourier series.
     for n in range(3):
         # Adding first + last terms, second + second-to-last, ...

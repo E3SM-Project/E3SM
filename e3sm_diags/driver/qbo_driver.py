@@ -137,7 +137,7 @@ def get_psd_from_deseason(xraw, period_new):
     # Calculate amplitude as a function of frequency
     amplitude0 = 2 * abs(x0[0 : int(NFFT0 / 2 + 1)])
     # Calculate power spectral density as a function of frequency
-    psd_x0 = amplitude0 ** 2 / L0
+    psd_x0 = amplitude0**2 / L0
     # Total spectral power
     # In the next code block, we will perform an interpolation using the period
     # (interpolating values of amplitude0_flipped and psd_x0_flipped from period0_flipped to period_new).

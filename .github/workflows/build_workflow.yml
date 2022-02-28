@@ -9,80 +9,89 @@ on:
 
   workflow_dispatch:
 
+env:
+  CANCEL_OTHERS: true
+  PATHS_IGNORE: '["**/README.md", "**/docs/**", "**/examples/**", "**/misc/**", "**/.vscode/**"]'
+
 jobs:
-  check-jobs-to-skip:
+  pre-commit-hooks:
     runs-on: ubuntu-latest
-    outputs:
-      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    timeout-minutes: 2
     steps:
       - id: skip_check
         uses: fkirc/skip-duplicate-actions@master
         with:
-          cancel_others: true
-          paths_ignore: '["**/README.md", "**/docs/**", "**/examples/**", "**/misc/**"]'
+          cancel_others: ${{ env.CANCEL_OTHERS }}
+          paths_ignore: ${{ env.PATHS_IGNORE }}
 
-  pre-commit-hooks:
-    needs: check-jobs-to-skip
-    if: ${{ needs.check-jobs-to-skip.outputs.should_skip != 'true' }}
-    runs-on: ubuntu-latest
-    timeout-minutes: 2
-    steps:
-      - name: Checkout Code Repository
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        name: Checkout Code Repository
         uses: actions/checkout@v2
 
-      - name: Set up Python 3.7
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        name: Set up Python 3.9
         uses: actions/setup-python@v2
         with:
-          python-version: 3.7
+          python-version: 3.9
 
-      # Run all pre-commit hooks on all the files.
-      # Getting only staged files can be tricky in case a new PR is opened
-      # since the action is run on a branch in detached head state
-      - name: Install and Run Pre-commit
-        uses: pre-commit/action@v2.0.0
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        # Run all pre-commit hooks on all the files.
+        # Getting only staged files can be tricky in case a new PR is opened
+        # since the action is run on a branch in detached head state
+        name: Install and Run Pre-commit
+        uses: pre-commit/action@v2.0.3
 
   build:
-    needs: check-jobs-to-skip
-    if: ${{ needs.check-jobs-to-skip.outputs.should_skip != 'true' }}
-    runs-on: ubuntu-latest
+    name: Build (Python ${{ matrix.python-version }})
+    runs-on: "ubuntu-latest"
+    timeout-minutes: 20
     defaults:
       run:
         shell: bash -l {0}
-    timeout-minutes: 20
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9"]
     steps:
-      - uses: actions/checkout@v2
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@master
+        with:
+          cancel_others: ${{ env.CANCEL_OTHERS }}
+          paths_ignore: ${{ env.PATHS_IGNORE }}
 
-      - name: Cache Conda
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        uses: actions/checkout@v2
+
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        name: Cache Conda
         uses: actions/cache@v2
         env:
-          # Increase this value to reset cache if conda/e3sm_diags_env_dev.yml has not changed in the workflow
+          # Increase this value to reset cache if conda-env/ci.yml has not changed in the workflow
           CACHE_NUMBER: 0
         with:
           path: ~/conda_pkgs_dir
-          key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
-            hashFiles('conda/e3sm_diags_env_dev.yml') }}
+          key:
+            ${{ runner.os }}-${{ matrix.python-version }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('conda-env/dev.yml') }}
 
-      - name: Build Conda Environment
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        name: Set up Conda Environment
         uses: conda-incubator/setup-miniconda@v2
         with:
-          activate-environment: e3sm_diags_env_dev
-          environment-file: conda/e3sm_diags_env_dev.yml
+          activate-environment: "e3sm_diags_ci"
+          environment-file: conda-env/ci.yml
           channel-priority: strict
           auto-update-conda: true
           # IMPORTANT: This needs to be set for caching to work properly!
           use-only-tar-bz2: true
+          python-version: ${{ matrix.python-version }}
 
-      - if: ${{ needs.check-jobs-to-skip.outputs.should_skip != 'true' }}
-        name: Show Conda Environment Info
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        name: Install e3sm_diags
         run: |
-          conda config --set anaconda_upload no
-          conda info
-          conda list
+          python -m pip install .
 
-      - name: Install `e3sm-diags` Package
-        run: pip install .
-
-      - name: Run Tests
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        name: Run Tests
         env:
           CHECK_IMAGES: True
         run: bash tests/test.sh
@@ -100,28 +109,25 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: 3.7
-
-      - name: Cache pip
+      - name: Cache Conda
         uses: actions/cache@v2
+        env:
+          # Increase this value to reset cache if conda-env/docs.yml has not changed in the workflow
+          CACHE_NUMBER: 0
         with:
-          # This path is specific to Ubuntu
-          path: ~/.cache/pip
-          # Look to see if there is a cache hit for the corresponding requirements file
-          key: ${{ runner.os }}-pip-publish-docs
-          restore-keys: |
-            ${{ runner.os }}-pip-
-            ${{ runner.os }}-
+          path: ~/conda_pkgs_dir
+          key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('conda-env/docs.yml') }}
 
-      # Using pip for Sphinx dependencies because it takes too long to reproduce a conda environment (~10 secs vs. 3-4 mins)
-      # Low risk trade-off with mismatching dependencies in `e3sm_diags_env_dev.yml`
-      - name: Install Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install sphinx==4.0.2 sphinx_rtd_theme==0.5.2 sphinx-multiversion==0.2.4 docutils==0.16
+      - name: Set up Conda Environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: "e3sm_diags_docs"
+          environment-file: conda-env/docs.yml
+          channel-priority: strict
+          auto-update-conda: true
+          # IMPORTANT: This needs to be set for caching to work properly!
+          use-only-tar-bz2: true
 
       - name: Build Sphinx Docs
         run: |

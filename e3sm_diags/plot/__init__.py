@@ -24,8 +24,7 @@ def _get_plot_fcn(backend, set_name):
 
         mod_str = "e3sm_diags.plot.{}.{}_plot".format(backend, set_name)
         module = importlib.import_module(mod_str)
-        # FIXME: error: Module has no attribute "plot"
-        return module.plot  # type: ignore
+        return module.plot
 
     except ModuleNotFoundError:
         logger.error(

@@ -267,8 +267,7 @@ def run_diag(parameters):
         mod_str = "e3sm_diags.driver.{}_driver".format(set_name)
         try:
             module = importlib.import_module(mod_str)
-            # FIXME: error: Module has no attribute "run_diag"
-            single_result = module.run_diag(parameters)  # type: ignore
+            single_result = module.run_diag(parameters)
             print("")
             results.append(single_result)
         except Exception:

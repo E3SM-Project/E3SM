@@ -29,10 +29,7 @@ src = "setup.py"
 src = "e3sm_diags/__init__.py"
 
 [[file]]
-src = "conda/meta.yaml"
-
-[[file]]
-src = "conda/e3sm_diags_env.yml"
+src = "conda-env/prod.yml"
 search = "e3sm_diags={current_version}"
 
 # You can specify a list of commands to

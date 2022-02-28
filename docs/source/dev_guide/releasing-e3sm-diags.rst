@@ -37,10 +37,8 @@ Bumping the Version
         + setup.py:113 version="2.6.0",
         - acme_diags/__init__.py:4 __version__ = "v2.5.0"
         + acme_diags/__init__.py:4 __version__ = "v2.6.0"
-        - conda/meta.yaml:2 {% set version = "2.5.0" %}
-        + conda/meta.yaml:2 {% set version = "2.6.0" %}
-        - conda/e3sm_diags_env.yml:22 - e3sm_diags=2.5.0
-        + conda/e3sm_diags_env.yml:22 - e3sm_diags=2.6.0
+        - conda-env/prod.yml:22 - e3sm_diags=2.5.0
+        + conda-env/prod.yml:22 - e3sm_diags=2.6.0
         - tbump.toml:5 current = "2.5.0"
         + tbump.toml:5 current = "2.6.0"
         => Would run these git commands

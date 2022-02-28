@@ -116,14 +116,27 @@ data_files = [
 ]
 
 setup(
+    python_requires=">=3.8",
+    classifiers=[
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: BSD 3-Clause License",
+        "Natural Language :: English",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+    ],
     name="e3sm_diags",
     version="2.6.1",
     author="Chengzhu (Jill) Zhang, Tom Vo, Ryan Forsyth, Chris Golaz and Zeshawn Shaheen",
     author_email="zhang40@llnl.gov",
     description="E3SM Diagnostics",
+    license="BSD 3-Clause",
     scripts=["e3sm_diags/e3sm_diags_driver.py"],
     packages=find_packages(include=["e3sm_diags", "e3sm_diags.*"]),
     data_files=data_files,
+    test_suite="tests",
     entry_points={
         "console_scripts": [
             "e3sm_diags=e3sm_diags.e3sm_diags_driver:main",

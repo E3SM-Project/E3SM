@@ -183,7 +183,7 @@ def plot_panel(n, fig, proj, var, amp, amp_ref, title, parameter):
     )
     theta, R = np.meshgrid(np.linspace(0, 2 * np.pi, 24), np.linspace(0, 1, 8))
     H, S = np.meshgrid(np.linspace(0, 1, 24), np.linspace(0, 1, 8))
-    image = np.dstack(((H - 0.5) % 1, S ** 0.5, np.ones_like(S)))
+    image = np.dstack(((H - 0.5) % 1, S**0.5, np.ones_like(S)))
     image = hsv_to_rgb(image)
     # bar_ax.set_theta_zero_location('N')
     bar_ax.set_theta_direction(-1)

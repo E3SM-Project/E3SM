@@ -1,0 +1,12 @@
+# Conda production environment for production runs using the latest stable release of `e3sm_diags`.
+name: e3sm_diags_prod
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  # Base
+  # =================
+  - python=3.9.10
+  - pip=22.0.3
+  - e3sm_diags=2.6.1
+prefix: /opt/miniconda3/envs/e3sm_diags_prod
