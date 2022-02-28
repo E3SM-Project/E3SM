@@ -1129,7 +1129,7 @@ flags should be captured within MPAS CMake files.
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
-    <append DEBUG="TRUE"> -g -traceback  -O0 -check  all -check noarg_temp_created </append>
+    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv -init=snan</append>
   </FFLAGS>
   <NETCDF_PATH>$ENV{NETCDF_HOME}</NETCDF_PATH>
   <PNETCDF_PATH>$ENV{PNETCDF_HOME}</PNETCDF_PATH>
