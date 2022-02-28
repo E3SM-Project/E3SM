@@ -72,6 +72,7 @@ module prep_atm_mod
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
   logical :: iamroot_CPLID ! .true. => CPLID masterproc
+  logical :: samegrid_al   ! samegrid atm and land
   !================================================================================================
 
 contains
@@ -95,7 +96,6 @@ contains
     integer                          :: lsize_a
     integer                          :: eli, eii, emi
     logical                          :: samegrid_ao    ! samegrid atm and ocean
-    logical                          :: samegrid_al    ! samegrid atm and land
     logical                          :: esmf_map_flag  ! .true. => use esmf for mapping
     logical                          :: atm_present    ! .true.  => atm is present
     logical                          :: ocn_present    ! .true.  => ocn is present
@@ -280,8 +280,8 @@ contains
     type(mct_aVect), intent(inout) :: x2a_a
     !
     ! Local workspace
-    real(r8) :: fracl, fraci, fraco
-    integer  :: n,ka,ki,kl,ko,kx,kof,kif,klf,i,i1,o1
+    real(r8) :: fracl, fraci, fraco, fracl_nm
+    integer  :: n,ka,ki,kl,ko,kx,kof,kif,klf,klf_nm,i,i1,o1
     integer  :: lsize
     integer  :: index_x2a_Sf_lfrac
     integer  :: index_x2a_Sf_ifrac
@@ -298,6 +298,7 @@ contains
     character(CL),allocatable :: itemc_ocn(:)   ! string converted to char
     logical :: iamroot
     character(CL),allocatable :: mrgstr(:)   ! temporary string
+    character(CL) :: fracstr
     logical, save :: first_time = .true.
     type(mct_aVect_sharedindices),save :: l2x_sharedindices
     type(mct_aVect_sharedindices),save :: o2x_sharedindices
@@ -487,6 +488,15 @@ contains
     index_x2a_Sf_lfrac = mct_aVect_indexRA(x2a_a,'Sf_lfrac')
     index_x2a_Sf_ifrac = mct_aVect_indexRA(x2a_a,'Sf_ifrac')
     index_x2a_Sf_ofrac = mct_aVect_indexRA(x2a_a,'Sf_ofrac')
+
+    if (samegrid_al) then
+       klf_nm = mct_aVect_indexRA(fractions_a,"lfrac")
+       fracstr = 'lfrac'
+    else
+       klf_nm = mct_aVect_indexRA(fractions_a,"lfrin")
+       fracstr = 'lfrin'
+    endif
+
     do n = 1,lsize
        x2a_a%rAttr(index_x2a_Sf_lfrac,n) = fractions_a%Rattr(klf,n)
        x2a_a%rAttr(index_x2a_Sf_ifrac,n) = fractions_a%Rattr(kif,n)
@@ -550,7 +560,7 @@ contains
              if (lmerge(ka)) then
                 mrgstr(ka) = trim(mrgstr(ka))//' + lfrac*l2x%'//trim(field_lnd(lindx(ka)))
              else
-                mrgstr(ka) = trim(mrgstr(ka))//' = lfrac*l2x%'//trim(field_lnd(lindx(ka)))
+                mrgstr(ka) = trim(mrgstr(ka))//' = '//trim(fracstr)//'*l2x%'//trim(field_lnd(lindx(ka)))
              end if
           end if
           if (iindx(ka) > 0) then
@@ -579,13 +589,14 @@ contains
 
        do n = 1,lsize
           fracl = fractions_a%Rattr(klf,n)
+          fracl_nm = fractions_a%Rattr(klf_nm,n)
           fraci = fractions_a%Rattr(kif,n)
           fraco = fractions_a%Rattr(kof,n)
           if (lindx(ka) > 0 .and. fracl > 0._r8) then
              if (lmerge(ka)) then
                 x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + l2x_a%rAttr(lindx(ka),n) * fracl
              else
-                x2a_a%rAttr(ka,n) = l2x_a%rAttr(lindx(ka),n) * fracl
+                x2a_a%rAttr(ka,n) = l2x_a%rAttr(lindx(ka),n) * fracl_nm
              end if
           end if
           if (iindx(ka) > 0 .and. fraci > 0._r8) then
