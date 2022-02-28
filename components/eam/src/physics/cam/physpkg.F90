@@ -1416,6 +1416,7 @@ subroutine tphysac (ztodt,   cam_in,               &
     use shr_kind_mod,       only: r8 => shr_kind_r8
     use chemistry,          only: chem_is_active, chem_timestep_tend, chem_emissions
     use cam_diagnostics,    only: diag_phys_tend_writeout
+    use cam_history,        only: outfld
     use gw_drag,            only: gw_tend
     use vertical_diffusion, only: vertical_diffusion_tend
     use rayleigh_friction,  only: rayleigh_friction_tend
@@ -1791,6 +1792,11 @@ end if ! l_gw_drag
     if((Nudge_Model).and.(Nudge_ON)) then
       call nudging_timestep_tend(state,ptend)
       call physics_update(state,ptend,ztodt,tend)
+      call outfld('U_af_ndg' ,state%u,        pcols,lchnk)
+      call outfld('V_af_ndg' ,state%v,        pcols,lchnk)
+      call outfld('T_af_ndg' ,state%t,        pcols,lchnk)
+      call outfld('Q_af_ndg' ,state%q(1,1,1), pcols,lchnk)
+      call outfld('PS_af_ndg',state%ps,       pcols,lchnk)
     endif
 
     call cnd_diag_checkpoint( diag, 'NDG', state, pbuf, cam_in, cam_out )

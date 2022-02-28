@@ -835,6 +835,25 @@ contains
    call addfld('Nudge_T',(/ 'lev' /),'A','K/s'    ,'T Nudging Tendency')
    call addfld('Nudge_Q',(/ 'lev' /),'A','kg/kg/s','Q Nudging Tendency')
 
+   !-----------------------------------------------------
+   call addfld('U_bf_ndg',(/ 'lev' /),  'A','m/s/s'  ,'Zonal Wind Before Nudging')
+   call addfld('V_bf_ndg',(/ 'lev' /),  'A','m/s/s'  ,'Meridional Wind Before Nudging')
+   call addfld('T_bf_ndg',(/ 'lev' /),  'A','K/s'    ,'Temperature Before Nudging')
+   call addfld('Q_bf_ndg',(/ 'lev' /),  'A','kg/kg/s','Specific Humidity Before Nudging')
+   call addfld('PS_bf_ndg', horiz_only, 'A','Pa'     ,'Surface Pressure Before Nudging')
+
+   call addfld('U_af_ndg',(/ 'lev' /),  'A','m/s/s'  ,'Zonal Wind After Nudging')
+   call addfld('V_af_ndg',(/ 'lev' /),  'A','m/s/s'  ,'Meridional Wind After Nudging')
+   call addfld('T_af_ndg',(/ 'lev' /),  'A','K/s'    ,'Temperature After Nudging')
+   call addfld('Q_af_ndg',(/ 'lev' /),  'A','kg/kg/s','Specific Humidity After Nudging')
+   call addfld('PS_af_ndg', horiz_only, 'A','Pa'     ,'Surface Pressure After Nudging')
+
+   call addfld('U_ref_ndg',(/ 'lev' /),  'A','m/s/s'  ,'Reference for Zonal Wind')
+   call addfld('V_ref_ndg',(/ 'lev' /),  'A','m/s/s'  ,'Reference for Meridional Wind')
+   call addfld('T_ref_ndg',(/ 'lev' /),  'A','K/s'    ,'Reference for Temperature')
+   call addfld('Q_ref_ndg',(/ 'lev' /),  'A','kg/kg/s','Reference for Specific Humidity')
+   call addfld('PS_ref_ndg', horiz_only, 'A','Pa'     ,'Reference for Surface pressure')
+
    call addfld('Nudge_U_vint',horiz_only,'A','kg/m/s2','Vertical integral of U Nudging Tendency')
    call addfld('Nudge_V_vint',horiz_only,'A','kg/m/s2','Vertical integral of V Nudging Tendency')
    call addfld('Nudge_T_vint',horiz_only,'A','W/m2'   ,'Vertical integral of T Nudging Tendency')
@@ -1214,6 +1233,7 @@ contains
    use dycore       ,only: dycore_is
    use ppgrid       ,only: pver,pcols,begchunk,endchunk
    use filenames    ,only: interpret_filename_spec
+   use cam_history  ,only: outfld
 
    ! Arguments
    !-----------
@@ -1469,6 +1489,18 @@ contains
 !         write(iulog,*) 'PFC: Nudge_Xstep arrays updated:'
 !        endif
 
+         call outfld('U_bf_ndg' ,Model_U(:ncol,:pver,lchnk), pcols,lchnk)
+         call outfld('V_bf_ndg' ,Model_V(:ncol,:pver,lchnk), pcols,lchnk)
+         call outfld('T_bf_ndg' ,Model_T(:ncol,:pver,lchnk), pcols,lchnk)
+         call outfld('Q_bf_ndg' ,Model_Q(:ncol,:pver,lchnk), pcols,lchnk)
+         call outfld('PS_bf_ndg',Model_PS(:ncol,lchnk), pcols,lchnk)
+
+         call outfld('U_ref_ndg' ,Target_U(:ncol,:pver,lchnk), pcols,lchnk)
+         call outfld('V_ref_ndg' ,Target_V(:ncol,:pver,lchnk), pcols,lchnk)
+         call outfld('T_ref_ndg' ,Target_T(:ncol,:pver,lchnk), pcols,lchnk)
+         call outfld('Q_ref_ndg' ,Target_Q(:ncol,:pver,lchnk), pcols,lchnk)
+         call outfld('PS_ref_ndg',Target_PS(:ncol,lchnk), pcols,lchnk)
+
       else
          do lchnk=begchunk,endchunk
             ncol=phys_state(lchnk)%ncol
@@ -1509,6 +1541,7 @@ contains
    use physics_types,only: physics_state
    use constituents ,only: cnst_get_ind
    use ppgrid       ,only: pver,pcols
+   use cam_history  ,only: outfld
 
    ! Arguments
    !-----------
@@ -1539,6 +1572,18 @@ contains
    if (Nudge_PSprof .ne. 0) then      
       Model_PS(:ncol,lchnk)=state%ps(:ncol)
    end if
+
+   call outfld('U_bf_ndg' ,Model_U(:ncol,:pver,lchnk), pcols,lchnk)
+   call outfld('V_bf_ndg' ,Model_V(:ncol,:pver,lchnk), pcols,lchnk)
+   call outfld('T_bf_ndg' ,Model_T(:ncol,:pver,lchnk), pcols,lchnk)
+   call outfld('Q_bf_ndg' ,Model_Q(:ncol,:pver,lchnk), pcols,lchnk)
+   call outfld('PS_bf_ndg',Model_PS(:ncol,lchnk), pcols,lchnk)
+
+   call outfld('U_ref_ndg' ,Target_U(:ncol,:pver,lchnk), pcols,lchnk)
+   call outfld('V_ref_ndg' ,Target_V(:ncol,:pver,lchnk), pcols,lchnk)
+   call outfld('T_ref_ndg' ,Target_T(:ncol,:pver,lchnk), pcols,lchnk)
+   call outfld('Q_ref_ndg' ,Target_Q(:ncol,:pver,lchnk), pcols,lchnk)
+   call outfld('PS_ref_ndg',Target_PS(:ncol,lchnk), pcols,lchnk)
 
    if ((l_Before_End).and.((l_Update_Nudge).or.(l_Update_Model))) then
       if (Nudge_Uprof .ne. 0) then 
