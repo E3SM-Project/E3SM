@@ -144,8 +144,11 @@ contains
       do iCell = 1, nCellsSolve
         do k = minLevelCell(iCell), maxLevelCell(iCell)
           ! use ssh as a proxy too for baroclinic mode
-          if (trim(config_time_integrator) == 'split_explicit' .or. trim(config_time_integrator) == 'split_implicit') then
-            layerThick = min(layerThicknessNew(k, iCell), (sshSubcycleNew(iCell)+bottomDepth(iCell))/maxLevelCell(iCell))
+          ! Note: wetting-drying currently not supported for either of these time integration methods
+          if (trim(config_time_integrator) == 'split_explicit' .or. &
+              trim(config_time_integrator) == 'split_implicit') then
+            layerThick = min(layerThicknessNew(k, iCell), &
+                             (sshSubcycleNew(iCell) + bottomDepth(iCell))/maxLevelCell(iCell))
           else
             layerThick = layerThicknessNew(k, iCell)
           end if
@@ -362,26 +365,25 @@ contains
             if (k <= maxLevelEdgeBot(iEdge) .or. k >= minLevelEdgeTop(iEdge)) then
               ! only consider divergence flux leaving the cell
               if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) < 0.0_RKIND ) then
-                divOutFlux = divOutFlux + normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) &
-                  * layerThickEdgeFlux(k, iEdge) * dvEdge(iEdge)  * invAreaCell(iCell)
+                divOutFlux = divOutFlux &
+                             + normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) * &
+                               layerThickEdgeFlux(k, iEdge) * dvEdge(iEdge) * &
+                               invAreaCell(iCell)
               end if
             end if
           end do
 
           ! if layer thickness is too small, limit divergence flux outwards with opposite velocity
-          if ((layerThickness + dt*divOutFlux ) <= (config_drying_min_cell_height + config_drying_safety_height))  then
-            ! limit divOutFlux out of cell to keep it wet
-            divOutFlux = abs(divOutFlux)
-            divOutFlux = (layerThickness - (config_drying_min_cell_height + eps)) / (dt*divOutFlux + eps)
+          if ((layerThickness + dt * divOutFlux ) <= &
+              (config_drying_min_cell_height + config_drying_safety_height)) then
 
             do i = 1, nEdgesOnCell(iCell)
               iEdge = edgesOnCell(i, iCell)
               if (k <= maxLevelEdgeBot(iEdge) .or. k >= minLevelEdgeTop(iEdge)) then
-                if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) <= 0.0_RKIND ) then
+                if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) <= 0.0_RKIND &
+                     .and. config_zero_drying_velocity ) then
                   ! just go with simple boolean approach for zero wetting velocity for debugging purposes
-                  if (config_zero_drying_velocity) then
-                    wettingVelocityFactor(k, iEdge) = 1.0_RKIND
-                  end if
+                  wettingVelocityFactor(k, iEdge) = 1.0_RKIND
                 end if
               end if
             end do
