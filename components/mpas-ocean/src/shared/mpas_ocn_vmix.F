@@ -213,7 +213,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_vel_vmix_tend_implicit_rayleigh(dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, & !{{{
-                                         layerThicknessEdge, normalVelocity, err)
+                                                  layerThickEdgeMean, normalVelocity, err)
 
       !-----------------------------------------------------------------
       !
@@ -234,7 +234,7 @@ contains
          layerThickness !< Input: thickness at cell center
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdge !< Input: mean thickness at edge
+         layerThickEdgeMean !< Input: mean thickness at edge
 
       !-----------------------------------------------------------------
       !
@@ -275,7 +275,7 @@ contains
       !$acc enter data create(bTemp, C, rTemp)
 
       !$acc parallel loop present(maxLevelEdgeTop, minLevelEdgeBot, cellsOnEdge, &
-      !$acc    layerThicknessEdge, layerThickness, vertViscTopOfEdge, normalVelocity, &
+      !$acc    layerThickEdgeMean, layerThickness, vertViscTopOfEdge, normalVelocity, &
       !$acc    kineticEnergyCell) &
       !$acc    private(Nsurf, N, cell1, cell2, edgeThicknessTotal, A, bTemp, C, m, rTemp, k)
 #else
@@ -292,13 +292,13 @@ contains
          cell2 = cellsOnEdge(2,iEdge)
          edgeThicknessTotal = 0.0_RKIND
          do k = Nsurf, N
-            edgeThicknessTotal = edgeThicknessTotal + layerThicknessEdge(k,iEdge)
+            edgeThicknessTotal = edgeThicknessTotal + layerThickEdgeMean(k,iEdge)
          enddo
 
          ! tridiagonal matrix algorithm
          C(Nsurf) = -2.0_RKIND*dt*vertViscTopOfEdge(Nsurf+1,iEdge) &
-                / (layerThicknessEdge(Nsurf,iEdge) + layerThicknessEdge(Nsurf+1,iEdge)) &
-                / layerThicknessEdge(Nsurf,iEdge)
+                / (layerThickEdgeMean(Nsurf,iEdge) + layerThickEdgeMean(Nsurf+1,iEdge)) &
+                / layerThickEdgeMean(Nsurf,iEdge)
          bTemp(Nsurf) = 1.0_RKIND - C(Nsurf) &
             ! added Rayleigh terms
             + dt*rayleighDampingCoef/((1.0_RKIND - rayleighDepthVariable) + rayleighDepthVariable*edgeThicknessTotal)
@@ -307,12 +307,12 @@ contains
          ! first pass: set the coefficients
          do k = Nsurf+1, N-1
             A        = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
-                   / (layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge)) &
-                   / layerThicknessEdge(k,iEdge)
+                   / (layerThickEdgeMean(k-1,iEdge) + layerThickEdgeMean(k,iEdge)) &
+                   / layerThickEdgeMean(k,iEdge)
             m        = A/bTemp(k-1)
             C(k)     = -2.0_RKIND*dt*vertViscTopOfEdge(k+1,iEdge) &
-                   / (layerThicknessEdge(k,iEdge) + layerThicknessEdge(k+1,iEdge)) &
-                   / layerThicknessEdge(k,iEdge)
+                   / (layerThickEdgeMean(k,iEdge) + layerThickEdgeMean(k+1,iEdge)) &
+                   / layerThickEdgeMean(k,iEdge)
             bTemp(k) = 1.0_RKIND - A - C(k) &
                    ! added Rayleigh terms
                    + dt*(rayleighDampingCoef/((1.0_RKIND - rayleighDepthVariable) + rayleighDepthVariable*edgeThicknessTotal)) &
@@ -321,8 +321,8 @@ contains
          enddo
 
          A = -2.0_RKIND*dt*vertViscTopOfEdge(N,iEdge) &
-           / (layerThicknessEdge(N-1,iEdge) + layerThicknessEdge(N,iEdge)) &
-           / layerThicknessEdge(N,iEdge)
+           / (layerThickEdgeMean(N-1,iEdge) + layerThickEdgeMean(N,iEdge)) &
+           / layerThickEdgeMean(N,iEdge)
          m = A/bTemp(N-1)
 
          ! x(N) = rTemp(N) / bTemp(N)
@@ -330,7 +330,7 @@ contains
          ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
          normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
              / (1.0_RKIND - A + dt*implicitBottomDragCoef &
-             * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThicknessEdge(N,iEdge) &
+             * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
              ! added Rayleigh terms
              + dt*(rayleighBottomDampingCoef + rayleighDampingCoef &
              / ((1.0_RKIND - rayleighDepthVariable) + rayleighDepthVariable*edgeThicknessTotal)) &
@@ -373,7 +373,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_vel_vmix_tend_implicit(dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, & !{{{
-                                         layerThicknessEdge, normalVelocity, err)
+                                         layerThickEdgeMean, normalVelocity, err)
 
       !-----------------------------------------------------------------
       !
@@ -394,7 +394,7 @@ contains
          layerThickness !< Input: thickness at cell center
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdge !< Input: centered thickness at edge
+         layerThickEdgeMean !< Input: mean thickness at edge
 
       !-----------------------------------------------------------------
       !
@@ -434,7 +434,7 @@ contains
       !$acc enter data create(bTemp, C, rTemp)
 
       !$acc parallel loop present(maxLevelEdgeTop, minLevelEdgeBot, cellsOnEdge, &
-      !$acc    layerThicknessEdge, layerThickness, vertViscTopOfEdge, normalVelocity, &
+      !$acc    layerThickEdgeMean, layerThickness, vertViscTopOfEdge, normalVelocity, &
       !$acc    kineticEnergyCell) &
       !$acc    private(Nsurf, N, cell1, cell2, A, bTemp, C, m, rTemp, k)
 #else
@@ -451,27 +451,27 @@ contains
 
          ! tridiagonal matrix algorithm
          C(Nsurf)     = -2.0_RKIND*dt*vertViscTopOfEdge(Nsurf+1,iEdge) &
-                    / (layerThicknessEdge(Nsurf,iEdge) + layerThicknessEdge(Nsurf+1,iEdge)) &
-                    / layerThicknessEdge(Nsurf,iEdge)
+                    / (layerThickEdgeMean(Nsurf,iEdge) + layerThickEdgeMean(Nsurf+1,iEdge)) &
+                    / layerThickEdgeMean(Nsurf,iEdge)
          bTemp(Nsurf) = 1.0_RKIND - C(Nsurf)
          rTemp(Nsurf) = normalVelocity(Nsurf,iEdge)
 
          ! first pass: set the coefficients
          do k = Nsurf+1, N-1
             A        = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
-                   / (layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge)) &
-                   / layerThicknessEdge(k,iEdge)
+                   / (layerThickEdgeMean(k-1,iEdge) + layerThickEdgeMean(k,iEdge)) &
+                   / layerThickEdgeMean(k,iEdge)
             m        = A/bTemp(k-1)
             C(k)     = -2.0_RKIND*dt*vertViscTopOfEdge(k+1,iEdge) &
-                   / (layerThicknessEdge(k,iEdge) + layerThicknessEdge(k+1,iEdge)) &
-                   / layerThicknessEdge(k,iEdge)
+                   / (layerThickEdgeMean(k,iEdge) + layerThickEdgeMean(k+1,iEdge)) &
+                   / layerThickEdgeMean(k,iEdge)
             bTemp(k) = 1.0_RKIND - A - C(k) - m*C(k-1)
             rTemp(k) = normalVelocity(k,iEdge) - m*rTemp(k-1)
          enddo
 
          A = -2.0_RKIND*dt*vertViscTopOfEdge(N,iEdge) &
-           / (layerThicknessEdge(N-1,iEdge) + layerThicknessEdge(N,iEdge)) &
-           / layerThicknessEdge(N,iEdge)
+           / (layerThickEdgeMean(N-1,iEdge) + layerThickEdgeMean(N,iEdge)) &
+           / layerThickEdgeMean(N,iEdge)
          m = A/bTemp(N-1)
 
          ! x(N) = rTemp(N) / bTemp(N)
@@ -479,7 +479,7 @@ contains
          ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
          normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
              / (1.0_RKIND - A + dt*implicitBottomDragCoef &
-             * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThicknessEdge(N,iEdge) &
+             * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
              - m*C(N-1))
          ! second pass: back substitution
          do k = N-1, Nsurf, -1
@@ -523,7 +523,7 @@ contains
 
    subroutine ocn_vel_vmix_tend_implicit_spatially_variable(bottomDrag, dt, kineticEnergyCell, & !{{{
                                          vertViscTopOfEdge, layerThickness, &
-                                         layerThicknessEdge, normalVelocity, err)
+                                         layerThickEdgeMean, normalVelocity, err)
 
       !-----------------------------------------------------------------
       !
@@ -544,7 +544,7 @@ contains
          layerThickness !< Input: thickness at cell center
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdge !< Input: centered thickness at edge
+         layerThickEdgeMean !< Input: mean thickness at edge
 
        real (kind=RKIND), dimension(:), intent(in) :: &
          bottomDrag !< Input: bottomDrag at cell centeres
@@ -589,7 +589,7 @@ contains
       !$acc enter data create(bottomDrag)
 
       !$acc parallel loop present(maxLevelEdgeTop, minLevelEdgeBot, cellsOnEdge, &
-      !$acc    layerThicknessEdge, layerThickness, vertViscTopOfEdge, normalVelocity, &
+      !$acc    layerThickEdgeMean, layerThickness, vertViscTopOfEdge, normalVelocity, &
       !$acc    kineticEnergyCell, bottomDrag) &
       !$acc    private(Nsurf, N, cell1, cell2, implicitCd, A, bTemp, C, m, rTemp, k)
 #else
@@ -607,27 +607,27 @@ contains
 
          ! tridiagonal matrix algorithm
          C(Nsurf)     = -2.0_RKIND*dt*vertViscTopOfEdge(Nsurf+1,iEdge) &
-                    / (layerThicknessEdge(Nsurf,iEdge) + layerThicknessEdge(Nsurf+1,iEdge)) &
-                    / layerThicknessEdge(Nsurf,iEdge)
+                    / (layerThickEdgeMean(Nsurf,iEdge) + layerThickEdgeMean(Nsurf+1,iEdge)) &
+                    / layerThickEdgeMean(Nsurf,iEdge)
          bTemp(Nsurf) = 1.0_RKIND - C(Nsurf)
          rTemp(Nsurf) = normalVelocity(Nsurf,iEdge)
 
          ! first pass: set the coefficients
          do k = Nsurf+1, N-1
             A        = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
-                   / (layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge)) &
-                   / layerThicknessEdge(k,iEdge)
+                   / (layerThickEdgeMean(k-1,iEdge) + layerThickEdgeMean(k,iEdge)) &
+                   / layerThickEdgeMean(k,iEdge)
             m        = A/bTemp(k-1)
             C(k)     = -2.0_RKIND*dt*vertViscTopOfEdge(k+1,iEdge) &
-                   / (layerThicknessEdge(k,iEdge) + layerThicknessEdge(k+1,iEdge)) &
-                   / layerThicknessEdge(k,iEdge)
+                   / (layerThickEdgeMean(k,iEdge) + layerThickEdgeMean(k+1,iEdge)) &
+                   / layerThickEdgeMean(k,iEdge)
             bTemp(k) = 1.0_RKIND - A - C(k) - m*C(k-1)
             rTemp(k) = normalVelocity(k,iEdge) - m*rTemp(k-1)
          enddo
 
          A = -2.0_RKIND*dt*vertViscTopOfEdge(N,iEdge) &
-           / (layerThicknessEdge(N-1,iEdge) + layerThicknessEdge(N,iEdge)) &
-           / layerThicknessEdge(N,iEdge)
+           / (layerThickEdgeMean(N-1,iEdge) + layerThickEdgeMean(N,iEdge)) &
+           / layerThickEdgeMean(N,iEdge)
          m = A/bTemp(N-1)
 
          ! x(N) = rTemp(N) / bTemp(N)
@@ -635,7 +635,7 @@ contains
          ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
          normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
              / (1.0_RKIND - A + dt*implicitCD &
-             * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThicknessEdge(N,iEdge) &
+             * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
              - m*C(N-1))
          ! second pass: back substitution
          do k = N-1, Nsurf, -1
@@ -680,7 +680,7 @@ contains
 
    subroutine ocn_vel_vmix_tend_implicit_spatially_variable_mannings(forcingPool, bottomDrag, dt, & !{{{
                                          kineticEnergyCell, vertViscTopOfEdge, layerThickness, &
-                                         layerThicknessEdge, normalVelocity, ssh, err)
+                                         layerThickEdgeMean, normalVelocity, ssh, err)
 
       !-----------------------------------------------------------------
       !
@@ -704,7 +704,7 @@ contains
          layerThickness !< Input: thickness at cell center
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdge !< Input: centered thickness at edge
+         layerThickEdgeMean !< Input: mean thickness at edge
 
        real (kind=RKIND), dimension(:), intent(in) :: &
          bottomDrag !< Input: bottomDrag at cell centeres
@@ -803,7 +803,7 @@ contains
       !$acc enter data create(vegetationManning)
 
       !$acc parallel loop present(maxLevelEdgeTop, minLevelEdgeBot, cellsOnEdge, &
-      !$acc    layerThicknessEdge, layerThickness, vertViscTopOfEdge, normalVelocity, &
+      !$acc    layerThickEdgeMean, layerThickness, vertViscTopOfEdge, normalVelocity, &
       !$acc    kineticEnergyCell, bottomDrag, vegetationManning, ssh, bottomDepth) &
       !$acc    private(Nsurf, N, cell1, cell2, implicitCd, A, bTemp, C, m, rTemp, k)
 #else
@@ -837,27 +837,27 @@ contains
 
          ! tridiagonal matrix algorithm
          C(Nsurf)     = -2.0_RKIND*dt*vertViscTopOfEdge(Nsurf+1,iEdge) &
-                    / (layerThicknessEdge(Nsurf,iEdge) + layerThicknessEdge(Nsurf+1,iEdge)) &
-                    / layerThicknessEdge(Nsurf,iEdge)
+                    / (layerThickEdgeMean(Nsurf,iEdge) + layerThickEdgeMean(Nsurf+1,iEdge)) &
+                    / layerThickEdgeMean(Nsurf,iEdge)
          bTemp(Nsurf) = 1.0_RKIND - C(Nsurf)
          rTemp(Nsurf) = normalVelocity(Nsurf,iEdge)
 
          ! first pass: set the coefficients
          do k = Nsurf+1, N-1
             A        = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
-                   / (layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge)) &
-                   / layerThicknessEdge(k,iEdge)
+                   / (layerThickEdgeMean(k-1,iEdge) + layerThickEdgeMean(k,iEdge)) &
+                   / layerThickEdgeMean(k,iEdge)
             m        = A/bTemp(k-1)
             C(k)     = -2.0_RKIND*dt*vertViscTopOfEdge(k+1,iEdge) &
-                   / (layerThicknessEdge(k,iEdge) + layerThicknessEdge(k+1,iEdge)) &
-                   / layerThicknessEdge(k,iEdge)
+                   / (layerThickEdgeMean(k,iEdge) + layerThickEdgeMean(k+1,iEdge)) &
+                   / layerThickEdgeMean(k,iEdge)
             bTemp(k) = 1.0_RKIND - A - C(k) - m*C(k-1)
             rTemp(k) = normalVelocity(k,iEdge) - m*rTemp(k-1)
          enddo
 
          A = -2.0_RKIND*dt*vertViscTopOfEdge(N,iEdge) &
-           / (layerThicknessEdge(N-1,iEdge) + layerThicknessEdge(N,iEdge)) &
-           / layerThicknessEdge(N,iEdge)
+           / (layerThickEdgeMean(N-1,iEdge) + layerThickEdgeMean(N,iEdge)) &
+           / layerThickEdgeMean(N,iEdge)
          m = A/bTemp(N-1)
 
          ! x(N) = rTemp(N) / bTemp(N)
@@ -865,7 +865,7 @@ contains
          ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
          normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
              / (1.0_RKIND - A + dt*implicitCD &
-             * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThicknessEdge(N,iEdge) &
+             * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
              - m*C(N-1))
          ! second pass: back substitution
          do k = N-1, Nsurf, -1

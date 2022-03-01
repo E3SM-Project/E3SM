@@ -628,7 +628,7 @@ contains
 
       !
       ! Compute height on cell edges at velocity locations
-      !   Namelist options control the order of accuracy of the reconstructed layerThicknessEdge value
+      !   Namelist options control the order of accuracy of the reconstructed layerThicknessEdgeFlux value
       !
 
       nEdges = nEdgesAll
