@@ -107,7 +107,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    // compute forward fft of w
    //-----------------------------------------
    yakl::RealFFT1D<nx> fftx;
-   fftx.init(fftx.trig);
+   fftx.init();
 
    // for (int k=0; k<nzm; k++) {
    //   for (int j=0; j<ny; j++) {
