@@ -643,7 +643,7 @@ contains
               do k=minLevelEdgeBot(iEdge)+1,maxLevelEdgeTop(iEdge)
                  BruntVaisalaFreqTopEdge = 0.5_RKIND*(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
                                           max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND))
-                 shearEdgeInv = (0.5_RKIND*(layerThickEdgeFlux(k-1,iEdge) + layerThickEdgeFlux(k,iEdge)))**2.0 &
+                 shearEdgeInv = (0.5_RKIND*(layerThickEdgeMean(k-1,iEdge) + layerThickEdgeMean(k,iEdge)))**2.0 &
                     / (  (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2.0 &
                        + (tangentialVelocity(k-1,iEdge) - tangentialVelocity(k,iEdge))**2.0 &
                        + 1.0e-18_RKIND )
