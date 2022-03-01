@@ -253,7 +253,7 @@ contains
      !$omp parallel
      !$omp do schedule(runtime)
      do iEdge = 1, nEdgesAll
-       wettingVelocity(:, iEdge) = 0.0_RKIND
+       wettingVelocityFactor(:, iEdge) = 0.0_RKIND
      end do
      !$omp end do
      !$omp end parallel
@@ -263,21 +263,13 @@ contains
      call ocn_wetting_drying_wettingVelocity(layerThickEdgeFlux, layerThicknessCur, layerThicknessProvis, &
                                              normalTransportVelocity, rkSubstepWeight, wettingVelocityFactor, err)
 
-     ! prevent drying from happening with selective wettingVelocity
+     ! prevent drying from happening with selective wettingVelocityFactor
      !$omp parallel
      !$omp do schedule(runtime) private(k)
      do iEdge = 1, nEdgesAll
        do k = minLevelEdgeTop(iEdge), maxLevelEdgeBot(iEdge)
-         if (abs(normalTransportVelocity(k,iEdge) + wettingVelocity(k,iEdge)) < eps)  then
-           ! prevent spurious flux for close to zero values
-           normalTransportVelocity(k, iEdge) = 0.0_RKIND
-           normalVelocity(k, iEdge) = 0.0_RKIND
-         else if (abs(normalTransportVelocity(k,iEdge) + wettingVelocity(k,iEdge)) <= abs(normalTransportVelocity(k,iEdge))) then
-           normalTransportVelocity(k, iEdge) = normalTransportVelocity(k, iEdge) + wettingVelocity(k, iEdge)
-           normalVelocity(k, iEdge) = normalVelocity(k, iEdge) + wettingVelocity(k, iEdge)
-         end if
 
-         if (abs(wettingVelocity(k, iEdge)) > 0.0_RKIND .and. config_zero_drying_velocity) then
+         if (abs(wettingVelocityFactor(k, iEdge)) > 0.0_RKIND .and. config_zero_drying_velocity) then
            normalTransportVelocity(k, iEdge) = 0.0_RKIND
            normalVelocity(k, iEdge) = 0.0_RKIND
          end if
@@ -304,7 +296,7 @@ contains
 !-----------------------------------------------------------------------
    subroutine ocn_wetting_drying_wettingVelocity(layerThickEdgeFlux, layerThicknessCur, layerThicknessProvis, &
 
-       normalVelocity, dt, wettingVelocity, err)!{{{
+       normalVelocity, dt, wettingVelocityFactor, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -334,7 +326,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         wettingVelocity          !< Input/Output: velocity wettingVelocityency
+         wettingVelocityFactor          !< Input/Output: velocity wettingVelocityFactor
 
       !-----------------------------------------------------------------
       !
@@ -386,12 +378,9 @@ contains
               iEdge = edgesOnCell(i, iCell)
               if (k <= maxLevelEdgeBot(iEdge) .or. k >= minLevelEdgeTop(iEdge)) then
                 if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) <= 0.0_RKIND ) then
-                  ! each outgoing velocity is penalized (but not the incoming, wetting velocities)
-                  ! square the fractional term to make values near zero go to zero much quicker (to prevent threshold from being hit)
-                  wettingVelocity(k, iEdge) =  - (min(max(0.0_RKIND, 1.0_RKIND - (divOutFlux*divOutFlux)), 1.0_RKIND)) * normalVelocity(k, iEdge)
                   ! just go with simple boolean approach for zero wetting velocity for debugging purposes
                   if (config_zero_drying_velocity) then
-                    wettingVelocity(k, iEdge) = 1.0_RKIND
+                    wettingVelocityFactor(k, iEdge) = 1.0_RKIND
                   end if
                 end if
               end if
