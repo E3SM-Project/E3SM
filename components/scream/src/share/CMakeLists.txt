@@ -1,3 +1,5 @@
+include (EkatSetCompilerFlags)
+
 set(SHARE_SRC
   scream_config.cpp
   scream_session.cpp
@@ -40,6 +42,7 @@ if (Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
     target_link_options(scream_share PUBLIC "--remove-duplicate-link-files")
   endif()
 endif()
+SetOmpFlags(scream_share Fortran)
 
 # The "build_cf_dictionary" target downloads an XML file containing valid field
 # names and aliases based on the CF conventions, and transforms it into a YAML
