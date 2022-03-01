@@ -25,7 +25,8 @@ module SedYieldMod
   use SoilHydrologyType , only : soilhydrology_type
   use SoilStateType     , only : soilstate_type
   use TemperatureType   , only : temperature_type
-  use GridcellType      , only : grc_pp 
+  use GridcellType      , only : grc_pp
+  use TopounitType      , only : top_pp
   use ColumnType        , only : col_pp
   use LandunitType      , only : lun_pp
   use VegetationType    , only : veg_pp
@@ -75,7 +76,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: c, fc, p, t, l, g, j                       ! indices
-    integer  :: lg, cg                                     ! indices of glaciers
+    integer  :: lg, cg, lt                                     ! indices of glaciers
     integer  :: lp                                         ! indices of soil pools
     integer  :: dtime                                      ! timestep size [seconds]
     logical  :: found                                      ! flags
@@ -160,13 +161,13 @@ contains
                cycle
             end if
 
-            ! check the glacier landunit in the gridcell
-            lg = grc_pp%landunit_indices(istice, g) 
+            ! check the glacier landunit in the topounit
+            lt = top_pp%landunit_indices(istice, t) 
             fglacier = 1._r8
-            if (lg /= ispval) then
+            if (lt /= ispval) then
                found = .false.
-               cg = lun_pp%coli(lg)
-               do while (.not. found .and. cg <= lun_pp%colf(lg))
+               cg = lun_pp%coli(lt)
+               do while (.not. found .and. cg <= lun_pp%colf(lt))
                   if (col_pp%active(cg)) then
                      found = .true.
                   else
