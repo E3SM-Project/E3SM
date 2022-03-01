@@ -1,5 +1,3 @@
-e3sm_add_flags("eam/src/dynamics/fv/geopk.F90" "-fcray-pointer")
-
 list(APPEND MPAS_ICE_SHORTWAVE
   ${CMAKE_BINARY_DIR}/core_seaice/column/ice_shortwave.f90
 )
@@ -23,3 +21,4 @@ if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 10)
     e3sm_add_flags("${ITEM}" "-fallow-invalid-boz") # avoids build error for integer, parameter :: gen_hash_key_offset = z'000053db'
   endforeach()
 endif()
+
