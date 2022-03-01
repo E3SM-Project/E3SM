@@ -68,6 +68,9 @@
       <value compset="_EAM%MMF.*-RCE"  >-aquaplanet -rce </value>
       <value compset="_EAM%MMF.*-SCM"  >-scam </value>
 
+      <!-- CLDERA support -->
+      <value compset="CLDERA"        >-cldera_profiling</value>
+
       <!--  -->
       <value compset="GEOS_EAM"       >-offline_dyn</value>
       <value compset="GEOS_EAM"      >-nlev 56</value>
@@ -241,6 +244,7 @@
     <value compset="EAM%MMF.*-RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
     <value compset="EAM%MMF.*-SCM">$SRCROOT/components/eam/cime_config/usermods_dirs/scm</value>
     <value compset="EAM%SCAM">$SRCROOT/components/eam/cime_config/usermods_dirs/scm</value>
+    <value compset="EAM%CLDERA">$SRCROOT/components/eam/cime_config/usermods_dirs/volcaero</value>
     </values>
     <group>run_component_cam</group>
     <file>env_case.xml</file>
