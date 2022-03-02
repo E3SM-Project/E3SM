@@ -244,7 +244,7 @@
     <value compset="EAM%MMF.*-RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
     <value compset="EAM%MMF.*-SCM">$SRCROOT/components/eam/cime_config/usermods_dirs/scm</value>
     <value compset="EAM%SCAM">$SRCROOT/components/eam/cime_config/usermods_dirs/scm</value>
-    <value compset="EAM%CLDERA">$SRCROOT/components/eam/cime_config/usermods_dirs/volcaero</value>
+    <value compset="EAM%CMIP6-CLDERA">$SRCROOT/components/eam/cime_config/usermods_dirs/volcaero</value>
     </values>
     <group>run_component_cam</group>
     <file>env_case.xml</file>
