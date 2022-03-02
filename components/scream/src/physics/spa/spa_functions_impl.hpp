@@ -160,7 +160,7 @@ void SPAFunctions<S,D>
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
         // Reconstruct vertical temperature profile using the hybrid coordinate system.
-        p_src_sub(k)    = ps_src * pressure_state.hybm(k) + P0 * pressure_state.hyam(k);
+        p_src_sub(k)    = ps_src * data_beg.hybm(k)  + P0 * data_beg.hyam(k);
         // Time interpolation for CCN3
         ccn3_src_sub(k) = linear_interp(ccn3_beg_sub(k),ccn3_end_sub(k),t_norm);
     });
@@ -438,7 +438,7 @@ void SPAFunctions<S,D>
   ekat::Comm self_comm(MPI_COMM_SELF);
 
   // We have enough info to start opening the file
-  std::vector<std::string> fnames = {"PS","CCN3","AER_G_SW","AER_SSA_SW","AER_TAU_SW","AER_TAU_LW"};
+  std::vector<std::string> fnames = {"hyam","hybm","PS","CCN3","AER_G_SW","AER_SSA_SW","AER_TAU_SW","AER_TAU_LW"};
   ekat::ParameterList spa_data_in_params;
   spa_data_in_params.set("Field Names",fnames);
   spa_data_in_params.set("Filename",spa_data_file_name);
@@ -464,18 +464,24 @@ void SPAFunctions<S,D>
   //   then we will use the horizontal interpolation structure, spa_horiz_interp, to
   //   interpolate PS_v onto the simulation grid: PS_v -> spa_data.PS
   //   and so on for the other variables.
+  view_1d<Real> hyam_v("hyam",spa_horiz_interp.source_grid_nlevs);
+  view_1d<Real> hybm_v("hybm",spa_horiz_interp.source_grid_nlevs);
   view_1d<Real> PS_v("PS",spa_horiz_interp.source_grid_ncols);
   view_2d<Real> CCN3_v("CCN3",spa_horiz_interp.source_grid_ncols,spa_horiz_interp.source_grid_nlevs);
   view_3d<Real> AER_G_SW_v("AER_G_SW",spa_horiz_interp.source_grid_ncols,nswbands,spa_horiz_interp.source_grid_nlevs);
   view_3d<Real> AER_SSA_SW_v("AER_SSA_SW",spa_horiz_interp.source_grid_ncols,nswbands,spa_horiz_interp.source_grid_nlevs);
   view_3d<Real> AER_TAU_SW_v("AER_TAU_SW",spa_horiz_interp.source_grid_ncols,nswbands,spa_horiz_interp.source_grid_nlevs);
   view_3d<Real> AER_TAU_LW_v("AER_TAU_LW",spa_horiz_interp.source_grid_ncols,nlwbands,spa_horiz_interp.source_grid_nlevs);
+  auto hyam_v_h          = Kokkos::create_mirror_view(hyam_v);
+  auto hybm_v_h          = Kokkos::create_mirror_view(hybm_v);
   auto PS_v_h            = Kokkos::create_mirror_view(PS_v);
   auto CCN3_v_h          = Kokkos::create_mirror_view(CCN3_v);
   auto AER_G_SW_v_h      = Kokkos::create_mirror_view(AER_G_SW_v);
   auto AER_SSA_SW_v_h    = Kokkos::create_mirror_view(AER_SSA_SW_v);
   auto AER_TAU_SW_v_h    = Kokkos::create_mirror_view(AER_TAU_SW_v);
   auto AER_TAU_LW_v_h    = Kokkos::create_mirror_view(AER_TAU_LW_v);
+  Kokkos::deep_copy(hyam_v_h,          hyam_v);                     
+  Kokkos::deep_copy(hybm_v_h,          hybm_v);                     
   Kokkos::deep_copy(PS_v_h,            PS_v);                     
   Kokkos::deep_copy(CCN3_v_h,          CCN3_v);                   
   Kokkos::deep_copy(AER_G_SW_v_h,      AER_G_SW_v);               
@@ -491,6 +497,7 @@ void SPAFunctions<S,D>
   grid->set_dofs(dof_gids);
 
   using namespace ShortFieldTagsNames;
+  FieldLayout scalar1d_layout { {LEV}, {spa_horiz_interp.source_grid_nlevs} };
   FieldLayout scalar2d_layout_mid { {COL}, {spa_horiz_interp.source_grid_ncols} };
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {spa_horiz_interp.source_grid_ncols, spa_horiz_interp.source_grid_nlevs} };
   FieldLayout scalar3d_swband_layout { {COL,SWBND, LEV}, {spa_horiz_interp.source_grid_ncols, nswbands, spa_horiz_interp.source_grid_nlevs} }; 
@@ -498,6 +505,11 @@ void SPAFunctions<S,D>
   std::map<std::string,view_1d_host> host_views;
   std::map<std::string,FieldLayout>  layouts;
   // Define each input variable we need
+  host_views["hyam"] = view_1d_host(hyam_v_h.data(),hyam_v_h.size());
+  layouts.emplace("hyam", scalar1d_layout);
+  host_views["hybm"] = view_1d_host(hybm_v_h.data(),hybm_v_h.size());
+  layouts.emplace("hybm", scalar1d_layout);
+  //
   host_views["PS"] = view_1d_host(PS_v_h.data(),PS_v_h.size());
   layouts.emplace("PS", scalar2d_layout_mid);
   //
@@ -523,12 +535,16 @@ void SPAFunctions<S,D>
   spa_data_input.finalize();
  
   // Now that we have the data we can map the data onto the target data.
+  auto hyam_h       = Kokkos::create_mirror_view(spa_data.hyam);
+  auto hybm_h       = Kokkos::create_mirror_view(spa_data.hybm);
   auto ps_h         = Kokkos::create_mirror_view(spa_data.PS);
   auto ccn3_h       = Kokkos::create_mirror_view(spa_data.CCN3);
   auto aer_g_sw_h   = Kokkos::create_mirror_view(spa_data.AER_G_SW);
   auto aer_ssa_sw_h = Kokkos::create_mirror_view(spa_data.AER_SSA_SW);
   auto aer_tau_sw_h = Kokkos::create_mirror_view(spa_data.AER_TAU_SW);
   auto aer_tau_lw_h = Kokkos::create_mirror_view(spa_data.AER_TAU_LW);
+  Kokkos::deep_copy(hyam_h,0.0);
+  Kokkos::deep_copy(hybm_h,0.0);
   Kokkos::deep_copy(ps_h,0.0);
   Kokkos::deep_copy(ccn3_h,0.0);
   Kokkos::deep_copy(aer_g_sw_h,0.0);
@@ -566,6 +582,14 @@ void SPAFunctions<S,D>
       }
     }
   }
+  for (int kk=0; kk<spa_horiz_interp.source_grid_nlevs; kk++) {
+    int pack = kk / Spack::n; 
+    int kidx = kk % Spack::n;
+    hyam_h(pack)[kidx] = hyam_v_h(kk);
+    hybm_h(pack)[kidx] = hybm_v_h(kk);
+  }
+  Kokkos::deep_copy(spa_data.hyam,hyam_h);
+  Kokkos::deep_copy(spa_data.hybm,hybm_h);
   Kokkos::deep_copy(spa_data.PS,ps_h);
   Kokkos::deep_copy(spa_data.CCN3,ccn3_h);
   Kokkos::deep_copy(spa_data.AER_G_SW,aer_g_sw_h);

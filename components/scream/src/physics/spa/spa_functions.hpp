@@ -92,9 +92,11 @@ struct SPAFunctions
       ,nswbands(nswbands_)
       ,nlwbands(nlwbands_)
     {
-      PS        = view_1d<Real>("",ncols);
-      CCN3      = view_2d<Spack>("",ncols,nlevs);
-      AER_G_SW  = view_3d<Spack>("",ncols,nswbands,nlevs); 
+      hyam       = view_1d<Spack>("",nlevs);
+      hybm       = view_1d<Spack>("",nlevs);
+      PS         = view_1d<Real>("",ncols);
+      CCN3       = view_2d<Spack>("",ncols,nlevs);
+      AER_G_SW   = view_3d<Spack>("",ncols,nswbands,nlevs); 
       AER_SSA_SW = view_3d<Spack>("",ncols,nswbands,nlevs); 
       AER_TAU_SW = view_3d<Spack>("",ncols,nswbands,nlevs); 
       AER_TAU_LW = view_3d<Spack>("",ncols,nlwbands,nlevs); 
@@ -104,6 +106,8 @@ struct SPAFunctions
     Int nlevs;
     Int nswbands;
     Int nlwbands;
+    // Hybrid Coordinates
+    view_1d<Spack> hyam, hybm;
     // PS unit = Pa: Surface pressure
     view_1d<Real> PS;
     // CCN3: CCN concentration at S=0.1%, units = #/cm3, dimensions = (ncol,nlev)
@@ -121,6 +125,23 @@ struct SPAFunctions
 
   struct SPAOutput {
     SPAOutput() = default;
+    SPAOutput(const int ncol_, const int nlev_, const int nswbands_, const int nlwbands_) :
+      ncols(ncol_)
+      ,nlevs(nlev_)
+      ,nswbands(nswbands_)
+      ,nlwbands(nlwbands_)
+    {
+      CCN3       = view_2d<Spack>("",ncols,nlevs);
+      AER_G_SW   = view_3d<Spack>("",ncols,nswbands,nlevs); 
+      AER_SSA_SW = view_3d<Spack>("",ncols,nswbands,nlevs); 
+      AER_TAU_SW = view_3d<Spack>("",ncols,nswbands,nlevs); 
+      AER_TAU_LW = view_3d<Spack>("",ncols,nlwbands,nlevs); 
+    }
+    // Basic spatial dimensions of the data
+    Int ncols;
+    Int nlevs;
+    Int nswbands;
+    Int nlwbands;
     // CCN3: CCN concentration at S=0.1%, units = #/cm3, dimensions = (ncol,nlev)
     view_2d<Spack> CCN3;
     // AER_G_SW - 14 bands
