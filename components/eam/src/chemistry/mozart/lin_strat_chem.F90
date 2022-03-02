@@ -168,8 +168,8 @@ end subroutine linoz_readnl
 
     !linoz_v3= (o3lnz_ndx > 0 .and. n2olnz_ndx >0  .and. noylnz_ndx >0  .and. ch4lnz_ndx > 0)
     !linoz_v2= (o3lnz_ndx > 0 .and. n2olnz_ndx <0  .and. noylnz_ndx <0  .and. ch4lnz_ndx < 0)
-    linoz_v3= (n2olnz_ndx >0  .and. noylnz_ndx >0 )
-    linoz_v2= (n2olnz_ndx <0  .and. noylnz_ndx <0 )
+    linoz_v3= (n2olnz_ndx >0  .and. noylnz_ndx >0 .and. ch4lnz_ndx > 0)
+    linoz_v2= (n2olnz_ndx <0  .and. noylnz_ndx <0 .and. ch4lnz_ndx < 0)
 !    write(iulog,*)'linoz_v3=',linoz_v3,'linoz_v2=',linoz_v2
 ! real o3, ch4, n2o tracers
     o3_ndx   =   get_spc_ndx('O3')
@@ -343,7 +343,7 @@ end subroutine linoz_readnl
         o3_vmr =  xvmr(:,:, o3_ndx)
        n2o_vmr =  xvmr(:,:,n2olnz_ndx)
        noy_vmr =  xvmr(:,:,noylnz_ndx)
-       ch4_vmr =  xvmr(:,:,ch4_ndx)
+       ch4_vmr =  xvmr(:,:,ch4lnz_ndx)
        h2o_vmr =  xvmr(:,:,h2olnz_ndx)
     endif
     ! associate the field pointers
@@ -603,21 +603,19 @@ end subroutine linoz_readnl
              end if
           !
           ! update vmr
-           if (chemFlag == 'LNZ') then
-              xvmr(i,k,  o3lnz_ndx) =   o3_new
-              xvmr(i,k, n2olnz_ndx)   = n2o_new
-              xvmr(i,k, noylnz_ndx)   = noy_new
-              xvmr(i,k, ch4lnz_ndx)   = ch4_new
-              xvmr(i,k, h2olnz_ndx)   = h2o_new
-           else
+           xvmr(i,k,  o3lnz_ndx) =   o3_new
+           xvmr(i,k, n2olnz_ndx)   = n2o_new
+           xvmr(i,k, noylnz_ndx)   = noy_new
+           xvmr(i,k, ch4lnz_ndx)   = ch4_new
+           xvmr(i,k, h2olnz_ndx)   = h2o_new
+          
           !update real o3, ch4, n2o      
-              if(o3_ndx  > 0) xvmr(i,k, o3_ndx ) =  delo3   + delo3_psc +  xvmr(i,k, o3_ndx )
-              if(ch4_ndx > 0) xvmr(i,k, ch4_ndx) =  delch4  +  xvmr(i,k, ch4_ndx)
-              if(n2o_ndx > 0) xvmr(i,k, n2o_ndx) =  (dn2op + dn2ol)  +  xvmr(i,k, n2o_ndx)
-              if(no_ndx >0)  xvmr(i,k, no_ndx)   =  0.05 *(dnoyp + dnoyl) + xvmr(i,k, no_ndx)
-              if(no2_ndx>0)  xvmr(i,k, no2_ndx)  =  0.05 *(dnoyp + dnoyl) + xvmr(i,k, no2_ndx)
-              if(hno3_ndx>0) xvmr(i,k,hno3_ndx)  =  0.90 *(dnoyp + dnoyl) + xvmr(i,k, hno3_ndx)
-           endif
+           if(o3_ndx  > 0) xvmr(i,k, o3_ndx ) =  delo3   + delo3_psc +  xvmr(i,k, o3_ndx )
+           if(ch4_ndx > 0) xvmr(i,k, ch4_ndx) =  delch4  +  xvmr(i,k, ch4_ndx)
+           if(n2o_ndx > 0) xvmr(i,k, n2o_ndx) =  (dn2op + dn2ol)  +  xvmr(i,k, n2o_ndx)
+           if(no_ndx >0)  xvmr(i,k, no_ndx)   =  0.05 *(dnoyp + dnoyl) + xvmr(i,k, no_ndx)
+           if(no2_ndx>0)  xvmr(i,k, no2_ndx)  =  0.05 *(dnoyp + dnoyl) + xvmr(i,k, no2_ndx)
+           if(hno3_ndx>0) xvmr(i,k,hno3_ndx)  =  0.90 *(dnoyp + dnoyl) + xvmr(i,k, hno3_ndx)
            
         end do LOOP_LEV
 
@@ -1008,13 +1006,16 @@ end subroutine linoz_readnl
        sfc_const(1:4,:ncol) = x_sfc(1:4,:ncol)
        o3_lbl =9
      else
-       ms=2
+       ms=3
        nx(1) = n2olnz_ndx
        nx(2) = noylnz_ndx
+       nx(3) = ch4lnz_ndx
        mw(1) =  adv_mass(n2olnz_ndx)  
        mw(2) =  adv_mass(noylnz_ndx)
+       mw(3) =  adv_mass(ch4lnz_ndx)
        sfc_const(1,:ncol) = x_sfc(2,:ncol)
        sfc_const(2,:ncol) = x_sfc(3,:ncol)
+       sfc_const(3,:ncol) = x_sfc(4,:ncol)
        o3_lbl =9
      endif    
     endif    

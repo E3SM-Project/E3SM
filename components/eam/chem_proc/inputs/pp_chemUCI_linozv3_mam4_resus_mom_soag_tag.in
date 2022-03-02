@@ -41,6 +41,7 @@ SPECIES
   E90 -> O3
   N2OLNZ -> N2
   NOYLNZ -> N
+  CH4LNZ -> CH4
   H2OLNZ -> H2O
 * MAM4 species
   DMS -> C2H6S
@@ -94,7 +95,7 @@ Solution Classes
 
  Explicit
    CO, C2H6, C3H8, CH3COCH3
-   E90, N2OLNZ,NOYLNZ, H2OLNZ
+   E90, N2OLNZ, NOYLNZ, CH4LNZ, H2OLNZ
    DMS, SO2, H2SO4, SOAG
    so4_a1,  so4_a2,  so4_a3
    pom_a1,           pom_a3,  pom_a4
