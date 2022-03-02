@@ -51,7 +51,7 @@ module li_bedtopo
    !--------------------------------------------------------------------
    ! Private module variables
    !--------------------------------------------------------------------
-	
+
    ! sea-level model timestep
    integer, save :: slmTimeStep
 
@@ -329,15 +329,15 @@ contains
 
 #ifdef USE_SEALEVELMODEL
       call mpas_pool_get_config(liConfigs, 'config_uplift_method', config_uplift_method)
-		if (trim(config_uplift_method)=='sealevelmodel') then
-	      if (curProc.eq.0) then
-	         deallocate(nCellsPerProc)
-			   deallocate(nCellsDisplacement)
-	         deallocate(indexToCellIDGathered)
-	         deallocate(toRowValues, toColValues, toSValues)
-	         deallocate(fromRowValues, fromColValues, fromSValues)
-	      endif
-		endif
+      if (trim(config_uplift_method)=='sealevelmodel') then
+         if (curProc.eq.0) then
+            deallocate(nCellsPerProc)
+            deallocate(nCellsDisplacement)
+            deallocate(indexToCellIDGathered)
+            deallocate(toRowValues, toColValues, toSValues)
+            deallocate(fromRowValues, fromColValues, fromSValues)
+         endif
+      endif
 #endif
    !--------------------------------------------------------------------
    end subroutine li_bedtopo_finalize
@@ -354,8 +354,8 @@ contains
 !> \author  Holly Kyeore Han
 !> \date    January 2022
 !> \details
-!>  This wrapper routine initializes the sea-level solver
-!> (Han et al., 2022, GMD, https://doi.org/10.5281/zenodo.5775235)
+!>  This wrapper routine initializes the sea-level solver(Han et al., 2022, GMD,
+!>  https://github.com/MALI-Dev/1DSeaLevelModel_FWTW)
 !
 !-----------------------------------------------------------------------
 
@@ -456,9 +456,9 @@ contains
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
 
       if (curProc.eq.0) then
-          allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
-          allocate(globalArrayBedTopography(nCellsGlobal), gatheredArrayBedTopography(nCellsGlobal))
-          allocate(meshMask(nCellsGlobal))
+         allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
+         allocate(globalArrayBedTopography(nCellsGlobal), gatheredArrayBedTopography(nCellsGlobal))
+         allocate(meshMask(nCellsGlobal))
       endif
 
       ! Gather only the nCellsOwned from thickness and bedtopo (does not include Halos)
@@ -504,9 +504,9 @@ contains
          call sl_deallocate_array
 
          deallocate(globalArrayThickness)
-			deallocate(gatheredArrayThickness)
-			deallocate(globalArrayBedTopography)
-			deallocate(gatheredArrayBedTopography)
+         deallocate(gatheredArrayThickness)
+         deallocate(globalArrayBedTopography)
+         deallocate(gatheredArrayBedTopography)
          deallocate(meshMask)
       endif
 
@@ -572,7 +572,6 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: bedTopography, thickness
       real (kind=RKIND), dimension(:), pointer :: topoChange
-
       real (kind=RKIND), dimension(:), allocatable :: meshMask
       real (kind=RKIND), dimension(nglv,2*nglv) :: ismIceload, ismMask
       real (kind=RKIND), dimension(nglv,2*nglv) :: slmSLchange
@@ -582,7 +581,7 @@ contains
 
       integer :: err, err_tmp
 
-      integer :: itersl, dtime    ! SLM variable
+      integer :: itersl, dtime     ! SLM variable
       real    :: starttime         ! SLM variable
 
       err = 0
@@ -638,20 +637,21 @@ contains
          slChangeSLgrid1D = reshape(slmSLchange, [nglv*2*nglv])
 
          ! interpolate sea-level change from GL grid to MALI mesh.
-			! note: in the static sea-level theory, sea level and topography are globally defined !>
-			! and negative of each other. That is, topography change is negative of sea-level change
-         call interpolate(fromColValues, fromRowValues, fromSValues, -1*(slChangeSLgrid1D), globalArrayTopoChange)
+         ! note: in the static sea-level theory, sea level and topography are globally defined !>
+         ! and negative of each other. That is, topography change is negative of sea-level change
+         call interpolate(fromColValues, fromRowValues, fromSValues, -1.0_RKIND*(slChangeSLgrid1D), &
+                          globalArrayTopoChange)
 
          ! Rearrange back to index order
          do iCell = 1,nCellsGlobal
-             gatheredArrayTopoChange(iCell) = globalArrayTopoChange(indexToCellIDGathered(iCell))
+            gatheredArrayTopoChange(iCell) = globalArrayTopoChange(indexToCellIDGathered(iCell))
          enddo
 
       endif
 
       ! scatter output sea-level changes to processors
       call MPI_SCATTERV(gatheredArrayTopoChange, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
-                  topoChange, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
+                        topoChange, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
       err = ior(err, err_tmp)
 
       ! update bedTopography
@@ -659,17 +659,16 @@ contains
 
       ! Perform Halo exchange update
       call mpas_dmpar_field_halo_exch(domain,'bedTopography')
-     call mpas_log_write("C")
       call li_update_geometry(geometryPool)
       call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
       err = ior(err, err_tmp)
-     call mpas_log_write("D")
+
       ! deallocate memory
       if (curProc.eq.0) then
          deallocate(globalArrayThickness)
-			deallocate(gatheredArrayThickness)
-			deallocate(globalArrayTopoChange)
-			deallocate(gatheredArrayTopoChange)
+         deallocate(gatheredArrayThickness)
+         deallocate(globalArrayTopoChange)
+         deallocate(gatheredArrayTopoChange)
          deallocate(meshMask)
       endif
 #endif
@@ -725,14 +724,14 @@ contains
       n_S = size(sValues)
       n = 1
       do while (n .LE. n_S)
-          nRow = rowValues(n)
-          do while ( rowValues(n) .EQ. nRow )
-              nCol = colValues(n)
-              rhs = rhs + dataIn(nCol) * sValues(n)
-              n = n + 1
-          end do
-          dataOut(nRow) = rhs
-          rhs = 0
+         nRow = rowValues(n)
+         do while ( rowValues(n) .EQ. nRow )
+            nCol = colValues(n)
+            rhs = rhs + dataIn(nCol) * sValues(n)
+            n = n + 1
+         end do
+         dataOut(nRow) = rhs
+         rhs = 0
       end do
 
    !--------------------------------------------------------------------
@@ -814,43 +813,43 @@ contains
 
          ! Open netcdf weights files
          call check( nf90_open(path = mpasToGridFile, mode = nf90_nowrite, ncid = toNcId), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
          call check( nf90_open(path = gridToMpasFile, mode = nf90_nowrite, ncid = fromNcId), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
 
          ! Get dimension ID
          call check( nf90_inq_dimid(fromNcId, "n_s", fromNsDimId), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
          call check( nf90_inq_dimid(toNcId, "n_a", nMpasDimId), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
          call check( nf90_inq_dimid(toNcId, "n_s", toNsDimId), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
          call check( nf90_inq_dimid(fromNcId, "n_a", nGridDimId), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
 
          ! Get Variable IDs
          call check( nf90_inq_varid(toNcId, "row", toRowId), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
          call check( nf90_inq_varid(toNcId, "col", toColId), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
          call check( nf90_inq_varid(toNcId, "S", toSId), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
          call check( nf90_inq_varid(fromNcId, "row", fromRowId), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
          call check( nf90_inq_varid(fromNcId, "col", fromColId), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
          call check( nf90_inq_varid(fromNcId, "S", fromSId), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
 
          ! Get Dimension Length
          call check( nf90_inquire_dimension(toNcId, toNsDimId, toNsName, toNsLen), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
          call check( nf90_inquire_dimension(fromNcId, fromNsDimId, fromNsName, fromNsLen), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
          call check( nf90_inquire_dimension(toNcId, nMpasDimId, nMpasName, nMpas), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
          call check( nf90_inquire_dimension(fromNcId, nGridDimId, nGridName, nGrid), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
 
          ! Allocate matrices to read data into
          allocate ( toRowValues (toNsLen) )
@@ -862,17 +861,17 @@ contains
 
          ! Retrieve data
          call check( nf90_get_var(toNcId, toColId, toColValues(:) ), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
          call check( nf90_get_var(toNcId, toRowId, toRowValues(:) ), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
          call check( nf90_get_var(toNcId, toSId, toSValues(:) ), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
          call check( nf90_get_var(fromNcId, fromColId, fromColValues(:) ), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
          call check( nf90_get_var(fromNcId, fromRowId, fromRowValues(:) ), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
          call check( nf90_get_var(fromNcId, fromSId, fromSValues(:) ), err_tmp)
-			err = ior(err, err_tmp)
+         err = ior(err, err_tmp)
 
       endif
 
@@ -894,12 +893,13 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine check(status, err)
+
       integer, intent ( in) :: status
       integer, intent(inout) :: err
 
       if(status /= nf90_noerr) then
          err = 1
-      end if
+      endif
    !--------------------------------------------------------------------
    end subroutine check
 
