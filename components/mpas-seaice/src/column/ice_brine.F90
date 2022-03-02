@@ -144,8 +144,8 @@
                                        kperm,    bphi_min,   phi_snow,   &
                                        bSin,     brine_sal,  brine_rho,  &
                                        iphin,    ibrine_rho, ibrine_sal, &
-                                       sice_rho, iDin,       l_stop,     &
-                                       stop_label)  
+                                       sice_rho, iDin,       iSin,       &
+                                       l_stop,   stop_label)
 
       use ice_therm_mushy, only: permeability
       use ice_mushy_physics, only: temperature_mush, liquid_fraction
@@ -189,10 +189,11 @@
 
       real (kind=dbl_kind), dimension (nblyr+1), &
          intent(inout)  :: &
-         iphin       , & ! porosity on the igrid 
-         ibrine_rho  , & ! brine rho on interface  
-         ibrine_sal  , & ! brine sal on interface   
-         iTin            ! Temperature on the igrid (oC)
+         iphin       , & ! porosity on the igrid
+         ibrine_rho  , & ! brine rho on interface
+         ibrine_sal  , & ! brine sal on interface
+         iTin        , & ! Temperature on the igrid (oC)
+         iSin            ! Salinity on the igrid (ppt)
 
       real (kind=dbl_kind), dimension (nblyr+2), &
          intent(inout)  :: &
@@ -300,7 +301,7 @@
       !-----------------------------------------------------------------
       ! Define ice multiphase structure
       !-----------------------------------------------------------------
-     
+
       call prepare_hbrine (nblyr, &
                            bSin,          bTin,          iTin,       &
                            brine_sal,     brine_rho,                 &
@@ -308,17 +309,17 @@
                            sice_rho,                                 &
                            bphin,         iphin,                     &
                            kperm,         bphi_min,      phi_snow,   &
-                           igrid,         sss)
+                           igrid,         sss,           iSin)
 
       call calculate_drho(nblyr, igrid, bgrid,             &
-                          brine_rho,    ibrine_rho, drho)   
+                          brine_rho,    ibrine_rho, drho)
 
       do k= 2, nblyr+1
-         ikin(k) = k_o*iphin(k)**exp_h 
-         iDin(k) = iphin(k)*Dm/hbr_old**2  
+         ikin(k) = k_o*iphin(k)**exp_h
+         iDin(k) = iphin(k)*Dm/hbr_old**2
          if (hbr_old .GE. Ra_c) &
             iDin(k) = iDin(k) &
-                    + l_sk*ikin(k)*gravit/viscos_dynamic*drho(k)/hbr_old**2  
+                    + l_sk*ikin(k)*gravit/viscos_dynamic*drho(k)/hbr_old**2
       enddo    ! k
 
       end subroutine compute_microS_mushy
@@ -331,7 +332,7 @@
                                  ibrine_sal, ibrine_rho,      &
                                  sice_rho,   bphin,     iphin,& 
                                  kperm,      bphi_min,  phi_snow, &
-                                 i_grid,     sss)
+                                 i_grid,     sss,       iSin)
 
       use ice_colpkg_shared, only: rhosi
       use ice_therm_shared, only: calculate_Tin_from_qin
@@ -347,13 +348,14 @@
 
       real (kind=dbl_kind), dimension (:), &
          intent(inout) :: &
-         brine_sal  , & ! equilibrium brine salinity (ppt)  
+         brine_sal  , & ! equilibrium brine salinity (ppt)
          brine_rho  , & ! internal brine density (kg/m^3)
          ibrine_rho , & ! brine density on interface (kg/m^3)
          ibrine_sal , & ! brine salinity on interface (ppt)
          iphin      , & ! porosity on interface
-         iTin       , & ! Temperature on interface 
-         bphin          ! porosity of layers
+         iTin       , & ! Temperature on interface
+         bphin      , & ! porosity of layers
+         iSin           ! Bulk salinity on interface
 
       real (kind=dbl_kind), intent(in) :: &
          phi_snow,    & ! porosity of snow
@@ -399,10 +401,10 @@
          bphin    (k) = max(puny, bSin(k)*rhosi &
                       / (brine_sal(k)*brine_rho(k)))
          bphin    (k) = min(c1, bphin(k))
-         kin      (k) = k_o*bphin(k)**exp_h 
+         kin      (k) = k_o*bphin(k)**exp_h
          sice_rho     = sice_rho + (rhoi*(c1-bphin(k)) &
                       + brine_rho(k)*bphin(k))*igrm
-      enddo    ! k         
+      enddo    ! k
 
       brine_sal (nblyr+2) = sss
       brine_rho (nblyr+2) = rhow
@@ -413,6 +415,8 @@
       ibrine_rho(nblyr+1) = brine_rho (nblyr+2)
       iTin      (1)       = bTin(2)
       iTin      (nblyr+1) = bTin(nblyr+1)
+      iSin      (1)       = bSin(2)
+      iSin      (nblyr+1) = bSin(nblyr+1)
       iphin     (1)       = bphin     (2)
       iphin     (nblyr+1) = bphin     (nblyr+1)
       k_min               = MINVAL(kin(2:nblyr+1))
@@ -435,13 +439,14 @@
          ibrine_sal(k) = (brine_sal(k+1)*igrp + brine_sal(k)*igrm) * rigr
          ibrine_rho(k) = (brine_rho(k+1)*igrp + brine_rho(k)*igrm) * rigr
          iTin      (k) = (bTin     (k+1)*igrp + bTin     (k)*igrm) * rigr
+         iSin      (k) = (bSin     (k+1)*igrp + bSin     (k)*igrm) * rigr
          iphin     (k) = max(puny, &
                          (bphin    (k+1)*igrp + bphin    (k)*igrm) * rigr)
          iphin     (k) = min(c1, iphin (k))
-      enddo    ! k         
+      enddo    ! k
 
       if (k_min > c0) then
-         ktemp = ktemp + c1/kin(nblyr+1) 
+         ktemp = ktemp + c1/kin(nblyr+1)
          kperm = real(nblyr,kind=dbl_kind)/ktemp
       endif
 
@@ -600,8 +605,9 @@
                                    bSin,                 brine_sal,  &
                                    brine_rho,  iphin,    ibrine_rho, &
                                    ibrine_sal, sice_rho, sloss,      &
-                                   salinz,     l_stop,   stop_label)
- 
+                                   salinz,     iSin,     l_stop,     &
+                                   stop_label)
+
       use ice_therm_shared, only: calculate_Tin_from_qin
       use ice_colpkg_tracers, only: nt_fbri, nt_Tsfc
       use ice_colpkg_shared, only: min_salin, rhosi, salt_loss
@@ -643,7 +649,8 @@
          bSin
 
       real (kind=dbl_kind), dimension (nblyr+1), intent(out) :: &
-         iTin              ! Temperature on the interface grid
+         iTin          , & ! Temperature on the interface grid
+         iSin              ! Bulk Salinity on the interface grid
 
       real (kind=dbl_kind), dimension (nilyr), &
          intent(in) :: &
@@ -819,7 +826,7 @@
       !-----------------------------------------------------------------
       ! Define ice multiphase structure
       !-----------------------------------------------------------------
-     
+
       call prepare_hbrine (nblyr, &
                            bSin,          bTin,          iTin,       &
                            brine_sal,     brine_rho,                 &
@@ -827,7 +834,7 @@
                            sice_rho,                                 &
                            bphin,         iphin,                     &
                            kperm,         bphi_min,      phi_snow,   &
-                           igrid,         sss)
+                           igrid,         sss,           iSin)
 
       if (l_stop) then
          stop_label = 'CICE ice_brine:zsalin < min_salin'

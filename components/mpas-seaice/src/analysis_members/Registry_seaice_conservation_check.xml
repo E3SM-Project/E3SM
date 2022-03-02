@@ -27,6 +27,10 @@
 			description="Name of the restart stream the analysis member will use to initialize itself if restart is enabled."
 			possible_values="A restart stream with state of the conservation check."
 		/>
+		<nml_option name="config_AM_conservationCheck_carbon_failure_abort" type="logical" default_value="false" units="unitless"
+			description="If true, abort if carbon conservation fails bounds check."
+			possible_values="true or false"
+		/>
 	</nml_record>
 	<packages>
 		<package name="conservationCheckAMPKG" description="This package includes variables required for the conservationCheck analysis member."/>
@@ -174,29 +178,69 @@
 		/>
 	</var_struct>
 	<var_struct name="conservationCheckCarbonAM" time_levs="1" packages="conservationCheckAMPKG">
-		<var name="initialCarbon" type="real" dimensions="nHemispheres Time" units="mmol"
+		<var name="relativeErrorBounds" type="real" dimensions="Time" units=""
+			description="accumulated relative error bounds"
+		/>
+		<var name="initialCarbon" type="real" dimensions="nHemispheres Time" units="kg"
 			description="Total initial carbon of ice and snow"
 		/>
-		<var name="finalCarbon" type="real" dimensions="nHemispheres Time" units="mmol"
+		<var name="finalCarbon" type="real" dimensions="nHemispheres Time" units="kg"
 			description="Total final carbon of ice and snow"
 		/>
-		<var name="carbonChange" type="real" dimensions="nHemispheres Time" units="mmol"
+		<var name="carbonChange" type="real" dimensions="nHemispheres Time" units="kg"
 			description="Total carbon change of ice and snow during time step"
 		/>
-		<var name="carbonChangeFlux" type="real" dimensions="nHemispheres Time" units="mmol/m2s"
+		<var name="carbonChangeFlux" type="real" dimensions="nHemispheres Time" units="kg/m2s"
 			description="Total carbon change flux of ice and snow during time step"
 		/>
-		<var name="netCarbonFlux" type="real" dimensions="nHemispheres Time" units="mmol/s"
+		<var name="netCarbonFlux" type="real" dimensions="nHemispheres Time" units="kg/s"
 			description="Net carbon flux to sea ice"
 		/>
-		<var name="absoluteCarbonError" type="real" dimensions="nHemispheres Time" units="mmol"
+		<var name="absoluteCarbonError" type="real" dimensions="nHemispheres Time" units="kg"
 			description="Absolute carbon conservation error"
 		/>
 		<var name="relativeCarbonError" type="real" dimensions="nHemispheres Time" units="None"
 			description="Relative carbon conservation error"
 		/>
-		<var name="carbonConsOceanCarbonFlux" type="real" dimensions="nHemispheres Time" units="mmol/s"
+		<var name="accumAbsoluteCarbonError" type="real" dimensions="nHemispheres Time" units="kg"
+			description="Accumulated since start absolute carbon conservation error"
+		/>
+		<var name="accumRelativeCarbonError" type="real" dimensions="nHemispheres Time" units="None"
+			description="Accumulated since start relative carbon conservation error"
+		/>
+		<var name="carbonConsOceanCarbonFlux" type="real" dimensions="nHemispheres Time" units="kg/s"
 			description="Total ocean carbon flux, positive into the ocean"
+		/>
+		<var name="carbonConsOceanCarbonFluxCheck" type="real" dimensions="nHemispheres Time" units="kg/s"
+			description="Total ocean carbon flux computed
+				     from individual passed fluxes, positive into the ocean"
+		/>
+		<var name="carbonConsDiatomFlux" type="real" dimensions="nHemispheres Time" units="kg/s"
+			description="Total algal diatom carbon flux, positive into the ocean"
+		/>
+		<var name="carbonConsSmallAlgaeFlux" type="real" dimensions="nHemispheres Time" units="kg/s"
+			description="Total small algae carbon flux, positive into the ocean"
+		/>
+		<var name="carbonConsDOC1Flux" type="real" dimensions="nHemispheres Time" units="kg/s"
+			description="Total dissolved organic carbon
+				     (polysaccharids) carbon flux, positive into the ocean"
+		/>
+		<var name="carbonConsDOC2Flux" type="real" dimensions="nHemispheres Time" units="kg/s"
+			description="Total dissolved organic carbon
+				     (lipids) carbon flux, positive into the ocean"
+		/>
+		<var name="carbonConsDONCarbonFlux" type="real" dimensions="nHemispheres Time" units="kg/s"
+			description="Total dissolved organic carbon
+				     (proteins) flux, positive into the ocean"
+		/>
+		<var name="carbonConsDICFlux" type="real" dimensions="nHemispheres Time" units="kg/s"
+			description="Total dissolved inorganic carbon flux, positive into the ocean"
+		/>
+		<var name="carbonConsHumicsFlux" type="real" dimensions="nHemispheres Time" units="kg/s"
+			description="Total dissolved humics carbon flux, positive into the ocean"
+		/>
+		<var name="carbonConsSemiLabileDOCFlux" type="real" dimensions="nHemispheres Time" units="kg/s"
+			description="Total semi-labile DOC flux, positive into the ocean"
 		/>
 	</var_struct>
 	<streams>
@@ -254,9 +298,19 @@
 			<var name="carbonChange"/>
 			<var name="carbonChangeFlux"/>
 			<var name="carbonConsOceanCarbonFlux"/>
+			<var name="carbonConsOceanCarbonFluxCheck"/>
 			<var name="netCarbonFlux"/>
 			<var name="absoluteCarbonError"/>
 			<var name="relativeCarbonError"/>
+			<var name="carbonConsDiatomFlux"/>
+			<var name="carbonConsSmallAlgaeFlux"/>
+			<var name="carbonConsDOC1Flux"/>
+			<var name="carbonConsDOC2Flux"/>
+			<var name="carbonConsDONCarbonFlux"/>
+			<var name="carbonConsDICFlux"/>
+			<var name="carbonConsHumicsFlux"/>
+			<var name="carbonConsSemiLabileDOCFlux"/>
+			<var name="relativeErrorBounds"/>
 		</stream>
 
 		<stream name="conservationCheckRestart_contents"
@@ -287,6 +341,9 @@
 			<var name="saltConsOceanSaltFlux"/>
 			<var name="saltConsFrazilSaltFlux"/>
 			<var name="initialCarbon"/>
+			<var name="accumAbsoluteCarbonError"/>
+			<var name="accumRelativeCarbonError"/>
+			<var name="relativeErrorBounds"/>
 			<var name="carbonConsOceanCarbonFlux"/>
 		</stream>
 
