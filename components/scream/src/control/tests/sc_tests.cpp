@@ -235,7 +235,7 @@ TEST_CASE ("recreate_mct_coupling")
 
   // Some constants
   constexpr int ncols = 4;
-  constexpr int nlevs = 8;
+  constexpr int nlevs = 72;
   constexpr int nruns = 10;
 
   // Create a comm

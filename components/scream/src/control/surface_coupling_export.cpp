@@ -43,7 +43,7 @@ void SurfaceCoupling::do_export (const bool init_phase)
     // Local copy, to deal with CUDA's handling of *this.
     const int num_levs = m_num_levs;
 
-    const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, num_levs);
+    const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, num_levs);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) {
       const int i = team.league_rank();
 
