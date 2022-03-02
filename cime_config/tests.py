@@ -24,9 +24,11 @@ _TESTS = {
         "share" : True,
         "time"  : "0:45:00",
         "tests" : (
+            "ERS.f09_g16.IELMBC",
             "ERS.f19_g16.I1850CNECACNTBC.elm-eca",
             "ERS.f19_g16.I1850CNECACTCBC.elm-eca",
             "ERS.f19_g16.I1850CNRDCTCBC.elm-rd",
+            "ERS.f09_g16.I1850GSWCNPRDCTCBC.elm-vstrd",
             "ERS.f19_g16.I1850GSWCNPECACNTBC.elm-eca_f19_g16_I1850GSWCNPECACNTBC",
             "ERS.f19_g16.I20TRGSWCNPECACNTBC.elm-eca_f19_g16_I20TRGSWCNPECACNTBC",
             "ERS.f19_g16.I1850GSWCNPRDCTCBC.elm-ctc_f19_g16_I1850GSWCNPRDCTCBC",
@@ -38,8 +40,6 @@ _TESTS = {
         "time"  : "0:45:00",
         "tests" : (
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
-            "ERS.f09_g16.I1850GSWCNPRDCTCBC.elm-vstrd",
-            "ERS.f09_g16.IELMBC",
             )
         },
 
