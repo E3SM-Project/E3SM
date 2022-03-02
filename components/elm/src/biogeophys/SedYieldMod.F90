@@ -87,7 +87,7 @@ contains
     real(r8) :: ftillage, flitho, fglacier                 ! factors of tillage, lithology and glacier
     real(r8) :: wglc                                       ! weight of glacier land unit
     real(r8) :: Brsd, Broot                                ! biomass of residue and roots
-    real(r8) :: Crsd, Clai                                 ! ground cover calculated from residue and LAI
+    real(r8) :: Crsd, Clai, PCT_gnd                        ! ground cover calculated from residue and LAI
     real(r8) :: nh                                         ! Manning's coefficient 
     real(r8) :: K, COH                                     ! soil erodibility
     real(r8) :: Qs, Qss, Qg, Ptot, Ie, Dl                  ! water fluxes
@@ -174,8 +174,8 @@ contains
                      cg = cg + 1
                   end if
                end do
-               if (found .and. qflx_qrgwl(cg)<1e10_r8) then
-                  fglacier = 1._r8 + 9._r8 * lun_pp%wtgcell(lg)
+               if (found .and. qflx_qrgwl(cg)<1.e10_r8) then
+                  fglacier = 1._r8 + 9._r8 * lun_pp%wttopounit(lt)
                end if
             end if
 
@@ -187,7 +187,7 @@ contains
             Brsd = 0.0_r8  ! kg/m2
             do lp = 1, ndecomp_pools
                if ( decomp_cascade_con%is_litter(lp) .and. decomp_cpools_vr(c,1,lp)>0._r8 ) then
-                  Brsd = Brsd + 1e-3_r8 * decomp_cpools_vr(c,1,lp) * dzsoi_decomp(1) 
+                  Brsd = Brsd + 1.e-3_r8 * decomp_cpools_vr(c,1,lp) * dzsoi_decomp(1) 
                end if
             end do
             Crsd = 1._r8 - exp(-6.68_r8 * Brsd)
@@ -213,9 +213,10 @@ contains
                         fungrvl * Dl
                      ! LAI and root biomass (kgC/m3): OM/OC = 1.72 
                      Clai = 1._r8 - exp(-tlai(p))
-                     Broot = 1e-3_r8 * ( veg_cs%frootc(p)*froot_prof(p,1) + &
+                     PCT_gnd = 100._r8 * max(Crsd,Clai) ! ground cover in percentage
+                     Broot = 1.e-3_r8 * ( veg_cs%frootc(p)*froot_prof(p,1) + &
                         (veg_cs%livecrootc(p)+veg_cs%deadcrootc(p))*croot_prof(p,1) )
-                     fgndcov = exp( -1e2_r8*gcbc_p(veg_pp%itype(p))*max(Crsd,Clai) - &
+                     fgndcov = exp( -gcbc_p(veg_pp%itype(p))*PCT_gnd - &
                         gcbr_p(veg_pp%itype(p))*Broot ) 
                      if( veg_pp%itype(p) > nc4_grass )then
                         Es_Pcrp = Es_Pcrp + pfactor(c) * ftillage * flitho * &
@@ -230,8 +231,8 @@ contains
                   end if
                end do
             end if
-            Es_P = 1e-3_r8 / dtime * (1._r8 - frac_sno(c)) * Es_P        ! kg/m2/s 
-            Es_Pcrp = 1e-3_r8 / dtime * (1._r8 - frac_sno(c)) * Es_Pcrp  ! kg/m2/s
+            Es_P = 1.e-3_r8 / dtime * (1._r8 - frac_sno(c)) * Es_P        ! kg/m2/s 
+            Es_Pcrp = 1.e-3_r8 / dtime * (1._r8 - frac_sno(c)) * Es_Pcrp  ! kg/m2/s
 
             ! snow scaling factor from T factor of BQART
             Qs = 8.64e4_r8 * qflx_surf(c)                ! mm/d
@@ -245,7 +246,7 @@ contains
                fslp = 0._r8
                fslp_tc = 0._r8
                do j = 1, nlevslp-1
-                  sinslp = sin(atan(max(0.5_r8*(hslp_p10(c,j)+hslp_p10(c,j+1)),1e-4_r8)))
+                  sinslp = sin(atan(max(0.5_r8*(hslp_p10(c,j)+hslp_p10(c,j+1)),1.e-4_r8)))
                   fslp = fslp + frac_slp * sinslp
                   fslp_tc = fslp_tc + frac_slp * sinslp**1.25_r8
                end do
@@ -256,9 +257,10 @@ contains
                   if (veg_pp%active(p) .and. veg_pp%wtcol(p)>0._r8) then
                      ! LAI and root biomass (kgC/m3): OM/OC = 1.72
                      Clai = 1._r8 - exp(-tlai(p))
-                     Broot = 1e-3_r8 * ( veg_cs%frootc(p)*froot_prof(p,1) + &
+                     PCT_gnd = 100._r8 * max(Crsd,Clai) ! ground cover in percentage
+                     Broot = 1.e-3_r8 * ( veg_cs%frootc(p)*froot_prof(p,1) + &
                         (veg_cs%livecrootc(p)+veg_cs%deadcrootc(p))*croot_prof(p,1) )
-                     fgndcov = exp( -1e2_r8*gcbc_q(veg_pp%itype(p))*max(Crsd,Clai) - &
+                     fgndcov = exp( -gcbc_q(veg_pp%itype(p))*PCT_gnd - &
                         gcbr_q(veg_pp%itype(p))*Broot )
 
                      nh = 0.03_r8 + 0.05_r8*max(Crsd,Clai)
@@ -267,15 +269,15 @@ contains
                      if ( veg_pp%itype(p) > nc4_grass ) then
                         ftillage_tc = ftillage_tc + ftillage * veg_pp%wtcol(p)
 
-                        Es_Q = Es_Q + 19.1_r8 * qfactor(c) * 2./COH * flitho * fslp * &
+                        Es_Q = Es_Q + 19.1_r8 * qfactor(c) * 2._r8/COH * flitho * fslp * &
                            ftillage * fgndcov * Qss**1.5_r8 * veg_pp%wtcol(p)
 
-                        Es_Qcrp = Es_Qcrp + 19.1_r8 * qfactor(c) * 2./COH * flitho * fslp * &
+                        Es_Qcrp = Es_Qcrp + 19.1_r8 * qfactor(c) * 2._r8/COH * flitho * fslp * &
                            ftillage * fgndcov * Qss**1.5_r8 * veg_pp%wtcol(p)
                      else
                         ftillage_tc = ftillage_tc + veg_pp%wtcol(p)
 
-                        Es_Q = Es_Q + 19.1_r8 * qfactor(c) * 2./COH * flitho * fslp * &
+                        Es_Q = Es_Q + 19.1_r8 * qfactor(c) * 2._r8/COH * flitho * fslp * &
                            fgndcov * fglacier * Qss**1.5_r8 * veg_pp%wtcol(p)
                      end if
                   end if
@@ -284,9 +286,9 @@ contains
                Tc = 19.1_r8 * tfactor(c) * fslp_tc * fsr * ftillage_tc * &
                   flitho * fglacier * Qs**2._r8
             end if
-            Es_Q = 1e-7_r8 / 8.64_r8 * Es_Q        ! kg/m2/s
-            Es_Qcrp = 1e-7_r8 / 8.64_r8 * Es_Qcrp  ! kg/m2/s
-            Tc = 1e-7_r8 / 8.64_r8 * Tc            ! kg/m2/s
+            Es_Q = 1.e-7_r8 / 8.64_r8 * Es_Q        ! kg/m2/s
+            Es_Qcrp = 1.e-7_r8 / 8.64_r8 * Es_Qcrp  ! kg/m2/s
+            Tc = 1.e-7_r8 / 8.64_r8 * Tc            ! kg/m2/s
 
             ! assign flux values
             flx_p_ero(c) = flx_p_ero(c) + Es_P
@@ -314,10 +316,12 @@ contains
     real(r8) :: clay, silt, sand, tsum
     !------------------------------------------------------------------------------
 
+    ! calculate the percentage of clay, silt and sand in surface soil
+    ! assuming the total is 100% 
     tsum = sum(stxt(1:3))
-    clay = 1.e2_r8 * stxt(1) / tsum 
-    silt = 1.e2_r8 * stxt(2) / tsum
-    sand = 1.e2_r8 * stxt(3) / tsum
+    clay = 100._r8 * stxt(1) / tsum 
+    silt = 100._r8 * stxt(2) / tsum
+    sand = 100._r8 * stxt(3) / tsum
     if ( silt + 1.5_r8*clay < 15._r8 ) then
        SoilTextureType = 'sand'
     else if ( silt + 2.0_r8*clay < 30._r8 ) then
