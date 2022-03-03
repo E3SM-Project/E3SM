@@ -93,9 +93,9 @@ TEST_CASE("spa_read_data","spa")
   SPAFunc::SPATimeState     spa_time_state;
   PressureState             pressure_state(dofs_gids.size(), nlevs);
   SPAFunc::SPAPressureState spa_pressure_state;
-  SPAFunc::SPAData          spa_data_beg(dofs_gids.size(), nlevs, nswbands, nlwbands);
-  SPAFunc::SPAData          spa_data_end(dofs_gids.size(), nlevs, nswbands, nlwbands);
-  SPAFunc::SPAOutput        spa_data_out(dofs_gids.size(), nlevs, nswbands, nlwbands);
+  SPAFunc::SPAData          spa_data_beg(dofs_gids.size(), nlevs+2, nswbands, nlwbands);
+  SPAFunc::SPAData          spa_data_end(dofs_gids.size(), nlevs+2, nswbands, nlwbands);
+  SPAFunc::SPAOutput        spa_data_out(dofs_gids.size(), nlevs,   nswbands, nlwbands);
 
   // Verify that the interpolated values match the data, since no temporal or vertical interpolation
   // should be done at this point.
@@ -153,16 +153,19 @@ TEST_CASE("spa_read_data","spa")
   spa_pressure_state.pmid  = pressure_state.pmid;
   auto pmid_h = Kokkos::create_mirror_view(pressure_state.pmid);
 
+  // Note, hyam and hybm are padded
   for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
     for (int kk=0;kk<nlevs;kk++) {
       int kpack = kk / Spack::n;
       int kidx  = kk % Spack::n;
-      pmid_h(dof_i,kpack)[kidx] = ps_beg(dof_i)*hybm_h(kpack)[kidx] + P0*hyam_h(kpack)[kidx];
+      int kpack_pad = (kk+1) / Spack::n;
+      int kidx_pad  = (kk+1) % Spack::n;
+      pmid_h(dof_i,kpack)[kidx] = ps_beg(dof_i)*hybm_h(kpack_pad)[kidx_pad] + P0*hyam_h(kpack_pad)[kidx_pad];
     }
   }
+  int kpack_pad = (nlevs+1) / Spack::n;
+  int kidx_pad  = (nlevs+1) % Spack::n;
   Kokkos::deep_copy(pressure_state.pmid,pmid_h);
-  Kokkos::deep_copy(spa_data_beg.hyam,hyam_h);
-  Kokkos::deep_copy(spa_data_beg.hybm,hybm_h);
 
   // Run SPA main
   SPAFunc::spa_main(spa_time_state,spa_pressure_state,spa_data_beg,spa_data_end,spa_data_out,dofs_gids.size(),nlevs,nswbands,nlwbands);
@@ -179,14 +182,16 @@ TEST_CASE("spa_read_data","spa")
     for (int kk=0;kk<nlevs;kk++) {
       int kpack = kk / Spack::n;
       int kidx  = kk % Spack::n;
-      REQUIRE(ccn3_h(dof_i,kpack)[kidx] == ccn3_beg(dof_i,kpack)[kidx] );
+      int kpack_pad = (kk+1) / Spack::n;
+      int kidx_pad  = (kk+1) % Spack::n;
+      REQUIRE(ccn3_h(dof_i,kpack)[kidx] == ccn3_beg(dof_i,kpack_pad)[kidx_pad] );
       for (int n=0;n<nswbands;n++) {
-        REQUIRE(aer_g_sw_h(dof_i,n,kpack)[kidx]   == aer_g_sw_beg(dof_i,n,kpack)[kidx]   );
-        REQUIRE(aer_ssa_sw_h(dof_i,n,kpack)[kidx] == aer_ssa_sw_beg(dof_i,n,kpack)[kidx] );
-        REQUIRE(aer_tau_sw_h(dof_i,n,kpack)[kidx] == aer_tau_sw_beg(dof_i,n,kpack)[kidx] );
+        REQUIRE(aer_g_sw_h(dof_i,n,kpack)[kidx]   == aer_g_sw_beg(dof_i,n,kpack_pad)[kidx_pad]);
+        REQUIRE(aer_ssa_sw_h(dof_i,n,kpack)[kidx] == aer_ssa_sw_beg(dof_i,n,kpack_pad)[kidx_pad] );
+        REQUIRE(aer_tau_sw_h(dof_i,n,kpack)[kidx] == aer_tau_sw_beg(dof_i,n,kpack_pad)[kidx_pad] );
       }
       for (int n=0;n<nlwbands;n++) {
-        REQUIRE(aer_tau_lw_h(dof_i,n,kpack)[kidx] == aer_tau_lw_beg(dof_i,n,kpack)[kidx] );
+        REQUIRE(aer_tau_lw_h(dof_i,n,kpack)[kidx] == aer_tau_lw_beg(dof_i,n,kpack_pad)[kidx_pad] );
       }
     }
   }
@@ -199,7 +204,9 @@ TEST_CASE("spa_read_data","spa")
     for (int kk=0;kk<nlevs;kk++) {
       int kpack = kk / Spack::n;
       int kidx  = kk % Spack::n;
-      pmid_h(dof_i,kpack)[kidx] = ps_end(dof_i)*hybm_h(kpack)[kidx] + P0*hyam_h(kpack)[kidx];
+      int kpack_pad = (kk+1) / Spack::n;
+      int kidx_pad  = (kk+1) % Spack::n;
+      pmid_h(dof_i,kpack)[kidx] = ps_end(dof_i)*hybm_h(kpack_pad)[kidx_pad] + P0*hyam_h(kpack_pad)[kidx_pad];
     }
   }
   Kokkos::deep_copy(pressure_state.pmid,pmid_h);
@@ -215,17 +222,18 @@ TEST_CASE("spa_read_data","spa")
   // and the pmid profile should match the constructed profile within spa_main.
   for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
     for (int kk=0;kk<nlevs;kk++) {
-      int kpack = kk / Spack::n;
-      int kidx  = kk % Spack::n;
-      REQUIRE(ccn3_h(dof_i,kpack)[kidx] == ccn3_end(dof_i,kpack)[kidx] );
+      int kpack     = kk / Spack::n;
+      int kidx      = kk % Spack::n;
+      int kpack_pad = (kk+1) / Spack::n;
+      int kidx_pad  = (kk+1) % Spack::n;
+      REQUIRE(ccn3_h(dof_i,kpack)[kidx] == ccn3_end(dof_i,kpack_pad)[kidx_pad] );
       for (int n=0;n<nswbands;n++) {
-        REQUIRE(aer_g_sw_h(dof_i,n,kpack)[kidx]   == aer_g_sw_end(dof_i,n,kpack)[kidx]   );
-        REQUIRE(aer_ssa_sw_h(dof_i,n,kpack)[kidx] == aer_ssa_sw_end(dof_i,n,kpack)[kidx] );
-        REQUIRE(aer_tau_sw_h(dof_i,n,kpack)[kidx] == aer_tau_sw_end(dof_i,n,kpack)[kidx] );
+        REQUIRE(aer_g_sw_h(dof_i,n,kpack)[kidx]   == aer_g_sw_end(dof_i,n,kpack_pad)[kidx_pad]   );
+        REQUIRE(aer_ssa_sw_h(dof_i,n,kpack)[kidx] == aer_ssa_sw_end(dof_i,n,kpack_pad)[kidx_pad] );
+        REQUIRE(aer_tau_sw_h(dof_i,n,kpack)[kidx] == aer_tau_sw_end(dof_i,n,kpack_pad)[kidx_pad] );
       }
       for (int n=0;n<nlwbands;n++) {
-        //ASDREQUIRE((aer_tau_lw_h(dof_i,n,kpack)[kidx] - aer_tau_lw_end(dof_i,n,kpack)[kidx])<1e-11 );
-        REQUIRE(aer_tau_lw_h(dof_i,n,kpack)[kidx] == aer_tau_lw_end(dof_i,n,kpack)[kidx] );
+        REQUIRE(aer_tau_lw_h(dof_i,n,kpack)[kidx] == aer_tau_lw_end(dof_i,n,kpack_pad)[kidx_pad] );
       }
     }
   }
@@ -250,10 +258,12 @@ TEST_CASE("spa_read_data","spa")
   // This will force extrapolation.
   for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
     for (int kk=0;kk<nlevs;kk++) {
-      int kpack = kk / Spack::n;
-      int kidx  = kk % Spack::n;
+      int kpack     = kk / Spack::n;
+      int kidx      = kk % Spack::n;
+      int kpack_pad = (kk+1) / Spack::n;
+      int kidx_pad  = (kk+1) % Spack::n;
       Real ps = 1.05*std::max(ps_beg(dof_i),ps_end(dof_i));
-      pmid_h(dof_i,kpack)[kidx] = ps*hybm_h(kpack)[kidx] + P0*hyam_h(kpack)[kidx];
+      pmid_h(dof_i,kpack)[kidx] = ps*hybm_h(kpack_pad)[kidx_pad] + P0*hyam_h(kpack_pad)[kidx_pad];
     }
   }
   Kokkos::deep_copy(pressure_state.pmid,pmid_h);
@@ -278,12 +288,11 @@ TEST_CASE("spa_read_data","spa")
   auto aer_lw_tau_bnds_h = Kokkos::create_mirror_view(aer_lw_tau_bnds);
   for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
     for (int kk=0;kk<nlevs;kk++) {
-      int kpack = kk / Spack::n;
-      int kidx  = kk % Spack::n;
-//      REQUIRE(ccn3_h(dof_i,kpack)[kidx] >= 0);
+      int kpack_pad = (kk+1) / Spack::n;
+      int kidx_pad  = (kk+1) % Spack::n;
       Real tmp_min, tmp_max;
-      tmp_min = std::min(ccn3_beg(dof_i,kpack)[kidx],ccn3_end(dof_i,kpack)[kidx]);
-      tmp_max = std::max(ccn3_beg(dof_i,kpack)[kidx],ccn3_end(dof_i,kpack)[kidx]);
+      tmp_min = std::min(ccn3_beg(dof_i,kpack_pad)[kidx_pad],ccn3_end(dof_i,kpack_pad)[kidx_pad]);
+      tmp_max = std::max(ccn3_beg(dof_i,kpack_pad)[kidx_pad],ccn3_end(dof_i,kpack_pad)[kidx_pad]);
       if (kk == 0) {
         ccn3_bnds_h(0,dof_i) = tmp_min; 
         ccn3_bnds_h(1,dof_i) = tmp_max;
@@ -293,14 +302,14 @@ TEST_CASE("spa_read_data","spa")
       }
       for (int n=0;n<nswbands;n++) {
         Real tmp_min_g, tmp_max_g;
-        tmp_min_g = std::min(aer_g_sw_beg(dof_i,n,kpack)[kidx],aer_g_sw_end(dof_i,n,kpack)[kidx]);
-        tmp_max_g = std::max(aer_g_sw_beg(dof_i,n,kpack)[kidx],aer_g_sw_end(dof_i,n,kpack)[kidx]);
+        tmp_min_g = std::min(aer_g_sw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_g_sw_end(dof_i,n,kpack_pad)[kidx_pad]);
+        tmp_max_g = std::max(aer_g_sw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_g_sw_end(dof_i,n,kpack_pad)[kidx_pad]);
         Real tmp_min_ssa, tmp_max_ssa;
-        tmp_min_ssa = std::min(aer_ssa_sw_beg(dof_i,n,kpack)[kidx],aer_ssa_sw_end(dof_i,n,kpack)[kidx]);
-        tmp_max_ssa = std::max(aer_ssa_sw_beg(dof_i,n,kpack)[kidx],aer_ssa_sw_end(dof_i,n,kpack)[kidx]);
+        tmp_min_ssa = std::min(aer_ssa_sw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_ssa_sw_end(dof_i,n,kpack_pad)[kidx_pad]);
+        tmp_max_ssa = std::max(aer_ssa_sw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_ssa_sw_end(dof_i,n,kpack_pad)[kidx_pad]);
         Real tmp_min_tau, tmp_max_tau;
-        tmp_min_tau = std::min(aer_tau_sw_beg(dof_i,n,kpack)[kidx],aer_tau_sw_end(dof_i,n,kpack)[kidx]);
-        tmp_max_tau = std::max(aer_tau_sw_beg(dof_i,n,kpack)[kidx],aer_tau_sw_end(dof_i,n,kpack)[kidx]);
+        tmp_min_tau = std::min(aer_tau_sw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_tau_sw_end(dof_i,n,kpack_pad)[kidx_pad]);
+        tmp_max_tau = std::max(aer_tau_sw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_tau_sw_end(dof_i,n,kpack_pad)[kidx_pad]);
 
         if (kk == 0) {
           aer_sw_g_bnds_h(0,dof_i,n)   = tmp_min_g; 
@@ -320,8 +329,8 @@ TEST_CASE("spa_read_data","spa")
       }
       for (int n=0;n<nlwbands;n++) {
         Real tmp_min_tau, tmp_max_tau;
-        tmp_min_tau = std::min(aer_tau_lw_beg(dof_i,n,kpack)[kidx],aer_tau_lw_end(dof_i,n,kpack)[kidx]);
-        tmp_max_tau = std::max(aer_tau_lw_beg(dof_i,n,kpack)[kidx],aer_tau_lw_end(dof_i,n,kpack)[kidx]);
+        tmp_min_tau = std::min(aer_tau_lw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_tau_lw_end(dof_i,n,kpack_pad)[kidx_pad]);
+        tmp_max_tau = std::max(aer_tau_lw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_tau_lw_end(dof_i,n,kpack_pad)[kidx_pad]);
         if (kk == 0) {
           aer_lw_tau_bnds_h(0,dof_i,n) = tmp_min_tau;
           aer_lw_tau_bnds_h(1,dof_i,n) = tmp_max_tau;
@@ -330,20 +339,6 @@ TEST_CASE("spa_read_data","spa")
           aer_lw_tau_bnds_h(1,dof_i,n) = std::max(aer_lw_tau_bnds_h(1,dof_i,n), tmp_max_tau);
         }
       }
-    }
-  }
-  // Make sure the extremes are within a reasonable range, then check that the interpolated data is within the extremes.
-  for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
-    REQUIRE(ccn3_bnds_h(0,dof_i)>=0.0);
-    for (int n=0;n<nswbands;n++) {
-      REQUIRE(aer_sw_g_bnds_h  (0,dof_i,n) >= -1.0 );
-      REQUIRE(aer_sw_ssa_bnds_h(0,dof_i,n) >=  0.0 );
-      REQUIRE(aer_sw_tau_bnds_h(0,dof_i,n) >=  0.0 );
-      REQUIRE(aer_sw_g_bnds_h  (1,dof_i,n) <=  1.01 );
-      REQUIRE(aer_sw_ssa_bnds_h(1,dof_i,n) <=  1.0 );
-    }
-    for (int n=0;n<nlwbands;n++) {
-      REQUIRE(aer_lw_tau_bnds_h(0,dof_i,n) >=  0.0 );
     }
   }
 

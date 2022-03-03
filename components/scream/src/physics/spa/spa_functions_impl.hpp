@@ -106,8 +106,7 @@ void SPAFunctions<S,D>
   auto& t_beg = time_state.t_beg_month;
   auto& t_len = time_state.days_this_month;
 
-  const int nlevs_src = data_beg.nlevs
-  const int nlevs_src = data_beg.nlevs;;
+  const int nlevs_src = data_beg.nlevs;
   const auto& p_tgt = pressure_state.pmid;  //TODO: since this is the only place pressure state is used, should just pass this one view.
 
   // For now we require that the Data in and the Data out have the same number of columns.
@@ -429,6 +428,24 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(spa_horiz_interp.target_grid_loc, target_grid_loc_h);
 }  // END get_remap_weights_from_file
 /*-----------------------------------------------------------------*/
+/* Note: In this routine the SPA source data is padded in the vertical.
+ * 
+ * The padding sets the first value in a vertical column of data to 0.0.
+ * Thus the top of the model source data is always 0.0.
+ * The final value is set to match the actual surface value.  Thus for
+ * each column:
+ *   src_data = [ 0.0, actual_spa_data, actual_spa_date[-1] ]
+ * This padding will ensure that the vertical interpolation routine in
+ * spa_main doesn't extrapolate values when the target column has pressures
+ * outside of the source data column.
+ * This approach matches the vertical interpolant used in EAMv2.
+ *
+ * Note, the hyam and hybm vectors are also padded so that the source data
+ * pressure profile that is constructed in spa_main is
+ * a) the current length, and
+ * b) ensures that whatever the target pressure profile is, it's within the
+ *    the range of the source data.                                        
+ */
 template<typename S, typename D>
 void SPAFunctions<S,D>
 ::update_spa_data_from_file(
@@ -455,7 +472,9 @@ void SPAFunctions<S,D>
 
   // To construct the grid we need to determine the number of columns and levels in the data file.
   Int ncol = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"ncol");
-  spa_horiz_interp.source_grid_nlevs = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lev");
+  const int source_data_nlevs = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lev");
+  // Check that padding matches source size:
+  EKAT_REQUIRE(source_data_nlevs+2 == spa_data.nlevs);
   // while we have the file open, check that the dimensions map the simulation and the horizontal interpolation structure
   EKAT_REQUIRE_MSG(nswbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"swband"),"ERROR update_spa_data_from_file: Number of SW bands in simulation doesn't match the SPA data file");
   EKAT_REQUIRE_MSG(nlwbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lwband"),"ERROR update_spa_data_from_file: Number of LW bands in simulation doesn't match the SPA data file");
@@ -469,14 +488,14 @@ void SPAFunctions<S,D>
   //   then we will use the horizontal interpolation structure, spa_horiz_interp, to
   //   interpolate PS_v onto the simulation grid: PS_v -> spa_data.PS
   //   and so on for the other variables.
-  view_1d<Real> hyam_v("hyam",spa_horiz_interp.source_grid_nlevs);
-  view_1d<Real> hybm_v("hybm",spa_horiz_interp.source_grid_nlevs);
+  view_1d<Real> hyam_v("hyam",source_data_nlevs);
+  view_1d<Real> hybm_v("hybm",source_data_nlevs);
   view_1d<Real> PS_v("PS",spa_horiz_interp.source_grid_ncols);
-  view_2d<Real> CCN3_v("CCN3",spa_horiz_interp.source_grid_ncols,spa_horiz_interp.source_grid_nlevs);
-  view_3d<Real> AER_G_SW_v("AER_G_SW",spa_horiz_interp.source_grid_ncols,nswbands,spa_horiz_interp.source_grid_nlevs);
-  view_3d<Real> AER_SSA_SW_v("AER_SSA_SW",spa_horiz_interp.source_grid_ncols,nswbands,spa_horiz_interp.source_grid_nlevs);
-  view_3d<Real> AER_TAU_SW_v("AER_TAU_SW",spa_horiz_interp.source_grid_ncols,nswbands,spa_horiz_interp.source_grid_nlevs);
-  view_3d<Real> AER_TAU_LW_v("AER_TAU_LW",spa_horiz_interp.source_grid_ncols,nlwbands,spa_horiz_interp.source_grid_nlevs);
+  view_2d<Real> CCN3_v("CCN3",spa_horiz_interp.source_grid_ncols,source_data_nlevs);
+  view_3d<Real> AER_G_SW_v("AER_G_SW",spa_horiz_interp.source_grid_ncols,nswbands,source_data_nlevs);
+  view_3d<Real> AER_SSA_SW_v("AER_SSA_SW",spa_horiz_interp.source_grid_ncols,nswbands,source_data_nlevs);
+  view_3d<Real> AER_TAU_SW_v("AER_TAU_SW",spa_horiz_interp.source_grid_ncols,nswbands,source_data_nlevs);
+  view_3d<Real> AER_TAU_LW_v("AER_TAU_LW",spa_horiz_interp.source_grid_ncols,nlwbands,source_data_nlevs);
   auto hyam_v_h          = Kokkos::create_mirror_view(hyam_v);
   auto hybm_v_h          = Kokkos::create_mirror_view(hybm_v);
   auto PS_v_h            = Kokkos::create_mirror_view(PS_v);
@@ -494,7 +513,7 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(AER_TAU_SW_v_h,    AER_TAU_SW_v);             
   Kokkos::deep_copy(AER_TAU_LW_v_h,    AER_TAU_LW_v);             
   // Construct the grid needed for input:
-  auto grid = std::make_shared<PointGrid>("grid",spa_horiz_interp.source_grid_ncols,spa_horiz_interp.source_grid_nlevs,self_comm);
+  auto grid = std::make_shared<PointGrid>("grid",spa_horiz_interp.source_grid_ncols,source_data_nlevs,self_comm);
   PointGrid::dofs_list_type dof_gids("",spa_horiz_interp.source_grid_ncols);
   Kokkos::parallel_for("", spa_horiz_interp.source_grid_ncols, KOKKOS_LAMBDA (const int& ii) {
     dof_gids(ii) = ii;
@@ -502,11 +521,11 @@ void SPAFunctions<S,D>
   grid->set_dofs(dof_gids);
 
   using namespace ShortFieldTagsNames;
-  FieldLayout scalar1d_layout { {LEV}, {spa_horiz_interp.source_grid_nlevs} };
+  FieldLayout scalar1d_layout { {LEV}, {source_data_nlevs} };
   FieldLayout scalar2d_layout_mid { {COL}, {spa_horiz_interp.source_grid_ncols} };
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {spa_horiz_interp.source_grid_ncols, spa_horiz_interp.source_grid_nlevs} };
-  FieldLayout scalar3d_swband_layout { {COL,SWBND, LEV}, {spa_horiz_interp.source_grid_ncols, nswbands, spa_horiz_interp.source_grid_nlevs} }; 
-  FieldLayout scalar3d_lwband_layout { {COL,LWBND, LEV}, {spa_horiz_interp.source_grid_ncols, nlwbands, spa_horiz_interp.source_grid_nlevs} };
+  FieldLayout scalar3d_layout_mid { {COL,LEV}, {spa_horiz_interp.source_grid_ncols, source_data_nlevs} };
+  FieldLayout scalar3d_swband_layout { {COL,SWBND, LEV}, {spa_horiz_interp.source_grid_ncols, nswbands, source_data_nlevs} }; 
+  FieldLayout scalar3d_lwband_layout { {COL,LWBND, LEV}, {spa_horiz_interp.source_grid_ncols, nlwbands, source_data_nlevs} };
   std::map<std::string,view_1d_host> host_views;
   std::map<std::string,FieldLayout>  layouts;
   // Define each input variable we need
@@ -570,29 +589,42 @@ void SPAFunctions<S,D>
     // PS is defined only over columns
     ps_h(tgt_col) += PS_v_h(src_col)*src_wgt;
     // CCN3 and all AER variables have levels
-    for (int kk=0; kk<spa_horiz_interp.source_grid_nlevs; kk++) {
+    for (int kk=1; kk<spa_data.nlevs; kk++) {
       // Note, all variables we map to are packed, while all the data we just loaded as
       // input are in real N-D views.  So we need to back out the indices for the target
       // data.
       int pack = kk / Spack::n; 
       int kidx = kk % Spack::n;
-      ccn3_h(tgt_col,pack)[kidx] += CCN3_v_h(src_col,kk)*src_wgt;
+      // Note, we want to pad the actual source data such that
+      //   Y[0] = 0.0, note this is handled by the deep copy above
+      //   Y[nlevs-1] = Y[nlevs-2]
+      // and the data level index is kk-1 for kk = 1,nlevs-2
+      const int ksrc = kk < spa_data.nlevs-1 ? kk-1 : kk-2;
+      ccn3_h(tgt_col,pack)[kidx] += CCN3_v_h(src_col,ksrc)*src_wgt;
       for (int n=0; n<nswbands; n++) {
-        aer_g_sw_h(tgt_col,n,pack)[kidx]   += AER_G_SW_v_h(src_col,n,kk)*src_wgt;
-        aer_ssa_sw_h(tgt_col,n,pack)[kidx] += AER_SSA_SW_v_h(src_col,n,kk)*src_wgt;
-        aer_tau_sw_h(tgt_col,n,pack)[kidx] += AER_TAU_SW_v_h(src_col,n,kk)*src_wgt;
+        aer_g_sw_h(tgt_col,n,pack)[kidx]   += AER_G_SW_v_h(src_col,n,ksrc)*src_wgt;
+        aer_ssa_sw_h(tgt_col,n,pack)[kidx] += AER_SSA_SW_v_h(src_col,n,ksrc)*src_wgt;
+        aer_tau_sw_h(tgt_col,n,pack)[kidx] += AER_TAU_SW_v_h(src_col,n,ksrc)*src_wgt;
       }
       for (int n=0; n<nlwbands; n++) {
-        aer_tau_lw_h(tgt_col,n,pack)[kidx] += AER_TAU_LW_v_h(src_col,n,kk)*src_wgt;
+        aer_tau_lw_h(tgt_col,n,pack)[kidx] += AER_TAU_LW_v_h(src_col,n,ksrc)*src_wgt;
       }
     }
   }
-  for (int kk=0; kk<spa_horiz_interp.source_grid_nlevs; kk++) {
+  // We also need to pad the hyam and hybm views with
+  //   hya/b[0] = 0.0, note this is handled by deep copy above
+  //   hya/b[nlevs-1] = BIG number so always bigger than likely pmid for target
+  for (int kk=1; kk<spa_data.nlevs-1; kk++) {
     int pack = kk / Spack::n; 
     int kidx = kk % Spack::n;
-    hyam_h(pack)[kidx] = hyam_v_h(kk);
-    hybm_h(pack)[kidx] = hybm_v_h(kk);
+    hyam_h(pack)[kidx] = hyam_v_h(kk-1);
+    hybm_h(pack)[kidx] = hybm_v_h(kk-1);
   }
+  const int pack = (spa_data.nlevs-1) / Spack::n;
+  const int kidx = (spa_data.nlevs-1) % Spack::n;
+  hyam_h(pack)[kidx] = 1e5; 
+  hybm_h(pack)[kidx] = 0.0;
+  
   Kokkos::deep_copy(spa_data.hyam,hyam_h);
   Kokkos::deep_copy(spa_data.hybm,hybm_h);
   Kokkos::deep_copy(spa_data.PS,ps_h);

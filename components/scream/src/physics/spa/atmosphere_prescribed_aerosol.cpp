@@ -156,12 +156,12 @@ void SPA::initialize_impl (const RunType /* run_type */)
   // Note: only the number of levels associated with this data haven't been set.  We can
   //       take this information directly from the spa data file.
   scorpio::register_file(m_spa_data_file,scorpio::Read);
-  SPAHorizInterp.source_grid_nlevs = scorpio::get_dimlen_c2f(m_spa_data_file.c_str(),"lev");
+  const int source_data_nlevs = scorpio::get_dimlen_c2f(m_spa_data_file.c_str(),"lev")+2; // Add 2 for padding
   SPAHorizInterp.m_comm = m_comm;
 
   // Initialize the size of the SPAData structures:
-  SPAData_start = SPAFunc::SPAData(m_dofs_gids.size(), SPAHorizInterp.source_grid_nlevs, m_nswbands, m_nlwbands);
-  SPAData_end   = SPAFunc::SPAData(m_dofs_gids.size(), SPAHorizInterp.source_grid_nlevs, m_nswbands, m_nlwbands);
+  SPAData_start = SPAFunc::SPAData(m_dofs_gids.size(), source_data_nlevs, m_nswbands, m_nlwbands);
+  SPAData_end   = SPAFunc::SPAData(m_dofs_gids.size(), source_data_nlevs, m_nswbands, m_nlwbands);
 
   // Update the local time state information and load the first set of SPA data for interpolation:
   auto ts = timestamp();
