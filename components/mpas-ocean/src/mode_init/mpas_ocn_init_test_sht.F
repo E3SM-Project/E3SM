@@ -99,6 +99,8 @@ contains
       integer, pointer :: config_test_sht_n_iterations
       integer, pointer :: config_parallel_self_attraction_loading_order 
       integer, pointer :: config_parallel_self_attraction_loading_n_cells_per_block
+      integer, pointer :: config_nLatitude
+      logical, pointer :: config_use_parallel_self_attraction_loading
       integer, dimension(:), pointer :: nEdgesArray
       integer, dimension(:,:), pointer :: cellsOnEdge
       real (kind=RKIND), pointer :: sphere_radius
@@ -117,6 +119,7 @@ contains
       real (kind=RKIND) :: cellWidth
       real (kind=RKIND) :: lat_center
       real (kind=RKIND) :: error_local, error_global
+      real (kind=RKIND) :: error_local_area, error_global_area
       real (kind=RKIND) :: area_local, area_global
       real (kind=RKIND) :: sinlat_highres,sinlat_lowres,sinlon_highres,sinlon_lowres
       real (kind=RKIND) :: trans_width,trans_start,x,w1,w2,rad
@@ -158,6 +161,10 @@ contains
                                 latTransitionStart)
       call mpas_pool_get_config(domain % configs,'config_test_sht_function3_lat_transition_width', &
                                 latTransitionWidth)
+      call mpas_pool_get_config(domain % configs,'config_use_parallel_self_attraction_loading', &
+                                config_use_parallel_self_attraction_loading)
+      call mpas_pool_get_config(domain % configs,'config_nLatitude', &
+                                config_nLatitude)
 
       !load data that required to initialize the ocean simulation
       block_ptr => domain % blocklist
@@ -287,13 +294,18 @@ contains
         enddo
 
         ! Compute RMS Error
+        error_local_area = 0.0_RKIND
         error_local = 0.0_RKIND
         do iCell = 1,nCellsSolve
+          error_local_area = error_local_area + areaCell(iCell)*(ssh(iCell)-ssh_sal(iCell))**2
           error_local = error_local + (ssh(iCell)-ssh_sal(iCell))**2
         enddo 
+        call mpas_dmpar_sum_real(domain % dminfo,error_local_area,error_global_area)
         call mpas_dmpar_sum_real(domain % dminfo,error_local,error_global)
         call mpas_dmpar_sum_int(domain % dminfo,nCellsSolve,nCells)
-        error_global = sqrt(error_global/real(nCells,RKIND))
+
+        do iCell = 1,nCellsSolve
+        enddo 
 
         ! Sum cell areas to compare to perfect sphere
         area_local = 0.0_RKIND
@@ -305,9 +317,17 @@ contains
         ! Write to log
         call mpas_log_write('nCells = $i',intArgs=(/nCells/))
         call mpas_log_write('function = $i',intArgs=(/config_test_sht_function_option/))
-        call mpas_log_write('nOrder = $i',intArgs=(/config_parallel_self_attraction_loading_order/))
+        if (config_use_parallel_self_attraction_loading) then
+          call mpas_log_write('nOrder = $i',intArgs=(/config_parallel_self_attraction_loading_order/))
+        else
+          call mpas_log_write('nLat = $i',intArgs=(/config_nLatitude/))
+        endif
         call mpas_log_write('cells per block = $i',intArgs=(/config_parallel_self_attraction_loading_n_cells_per_block/))
-        call mpas_log_write('error = $r',realArgs=(/error_global/))
+        call mpas_log_write('error RMS = $r',realArgs=(/sqrt(error_global/real(nCells,RKIND))/))
+        call mpas_log_write('error L2 = $r',realArgs=(/error_global/))
+        call mpas_log_write('error RMS area weighted = $r',realArgs=(/sqrt(error_global_area/area_global)/))
+        call mpas_log_write('error L2 area weighted = $r',realArgs=(/error_global_area/))
+        call mpas_log_write('area global = $r',realArgs=(/area_global/))
         call mpas_log_write('area error = $r',realArgs=(/4.0_RKIND*pii-area_global/sphere_radius**2/))
         call mpas_log_write('sphere radius = $r',realArgs=(/sphere_radius/))
 
