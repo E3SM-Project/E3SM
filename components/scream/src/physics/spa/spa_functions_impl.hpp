@@ -83,7 +83,7 @@ ScalarT linear_interp(const ScalarT& x0, const ScalarT& x1, const ScalarS& t_nor
 //   data_out: A structure defined in spa_functions.hpp which handles the full
 //     set of SPA data projected onto the pressure profile of the current atmosphere
 //     state.  This is the data that will be passed to other processes.
-//   ncols_atm, nlevs_atm: The number of columns and levels in the simulation grid.
+//   ncols_tgt, nlevs_tgt: The number of columns and levels in the simulation grid.
 //     (not to be confused with the number of columns and levels used for the SPA data, 
 //      which can be different.)
 //   nswbands, nlwbands: The number of shortwave (sw) and longwave (lw) aerosol bands 
@@ -96,8 +96,8 @@ void SPAFunctions<S,D>
   const SPAData&   data_beg,
   const SPAData&   data_end,
   const SPAOutput& data_out,
-  Int ncols_atm,
-  Int nlevs_atm,
+  Int ncols_tgt,
+  Int nlevs_tgt,
   Int nswbands,
   Int nlwbands)
 {
@@ -106,21 +106,26 @@ void SPAFunctions<S,D>
   auto& t_beg = time_state.t_beg_month;
   auto& t_len = time_state.days_this_month;
 
+  const int nlevs_src = data_beg.nlevs
+  const int nlevs_src = data_beg.nlevs;;
+  const auto& p_tgt = pressure_state.pmid;  //TODO: since this is the only place pressure state is used, should just pass this one view.
 
   // For now we require that the Data in and the Data out have the same number of columns.
-  EKAT_REQUIRE(ncols_atm==pressure_state.ncols);
+  EKAT_REQUIRE(ncols_tgt==data_beg.ncols);
+  EKAT_REQUIRE(data_end.ncols==data_beg.ncols);
+  EKAT_REQUIRE(data_end.nlevs==data_beg.nlevs);
 
   // Set up temporary arrays that will be used for the spa interpolation.
-  view_2d<Spack> p_src("p_mid_src",ncols_atm,pressure_state.nlevs), 
-                 ccn3_src("ccn3_src",ncols_atm,pressure_state.nlevs);
-  view_3d<Spack> aer_g_sw_src("aer_g_sw_src",ncols_atm,nswbands,pressure_state.nlevs),
-                 aer_ssa_sw_src("aer_ssa_sw_src",ncols_atm,nswbands,pressure_state.nlevs),
-                 aer_tau_sw_src("aer_tau_sw_src",ncols_atm,nswbands,pressure_state.nlevs),
-                 aer_tau_lw_src("aer_tau_lw_src",ncols_atm,nlwbands,pressure_state.nlevs);
+  view_2d<Spack> p_src("p_mid_src",ncols_tgt,nlevs_src), 
+                 ccn3_src("ccn3_src",ncols_tgt,nlevs_src);
+  view_3d<Spack> aer_g_sw_src("aer_g_sw_src",ncols_tgt,nswbands,nlevs_src),
+                 aer_ssa_sw_src("aer_ssa_sw_src",ncols_tgt,nswbands,nlevs_src),
+                 aer_tau_sw_src("aer_tau_sw_src",ncols_tgt,nswbands,nlevs_src),
+                 aer_tau_lw_src("aer_tau_lw_src",ncols_tgt,nlwbands,nlevs_src);
 
   using ExeSpace = typename KT::ExeSpace;
-  const Int nk_pack = ekat::npack<Spack>(nlevs_atm);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols_atm, nk_pack);
+  const Int nk_pack = ekat::npack<Spack>(nlevs_tgt);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols_tgt, nk_pack);
   auto t_norm = (t_now-t_beg)/t_len;
   // SPA Main loop
   // Parallel loop order:
@@ -137,7 +142,7 @@ void SPAFunctions<S,D>
     // Get single-column subviews of all 2D inputs, i.e. those that don't have aerosol bands
     const auto& ps_beg_sub   = data_beg.PS(i);
     const auto& ps_end_sub   = data_end.PS(i);
-    const auto& pmid_sub     = ekat::subview(pressure_state.pmid, i);
+    const auto& pmid_sub     = ekat::subview(p_tgt, i);
     const auto& p_src_sub    = ekat::subview(p_src, i);
 
     const auto& ccn3_beg_sub = ekat::subview(data_beg.CCN3, i);
@@ -156,7 +161,7 @@ void SPAFunctions<S,D>
      *       in this loop as well.  */
     using C = scream::physics::Constants<Real>;
     static constexpr auto P0 = C::P0;
-    const Int nk_pack = ekat::npack<Spack>(pressure_state.nlevs);
+    const Int nk_pack = ekat::npack<Spack>(nlevs_src);
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
         // Reconstruct vertical temperature profile using the hybrid coordinate system.
@@ -217,7 +222,7 @@ void SPAFunctions<S,D>
    * 2. Where applicable, loop over all aerosol bands (n index)
    */
   const Int most_bands = std::max(nlwbands, nswbands);
-  typename LIV::TeamPolicy band_policy(ncols_atm, ekat::OnGpu<typename LIV::ExeSpace>::value ? most_bands : 1, VertInterp.km2_pack());
+  typename LIV::TeamPolicy band_policy(ncols_tgt, ekat::OnGpu<typename LIV::ExeSpace>::value ? most_bands : 1, VertInterp.km2_pack());
   Kokkos::parallel_for("vertical-interp-spa",
     band_policy,
     KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
@@ -228,7 +233,7 @@ void SPAFunctions<S,D>
     
       VertInterp.setup(team,tvr,
                        ekat::subview(p_src,i),
-                       ekat::subview(pressure_state.pmid,i));
+                       ekat::subview(p_tgt,i));
     }
     team.team_barrier();
     /* Conduct vertical interpolation for the 2D variable CCN3 */
@@ -237,7 +242,7 @@ void SPAFunctions<S,D>
     
       VertInterp.lin_interp(team,tvr,
                             ekat::subview(p_src,i),
-                            ekat::subview(pressure_state.pmid,i),
+                            ekat::subview(p_tgt,i),
                             ekat::subview(ccn3_src,i),
                             ekat::subview(data_out.CCN3,i));
     }
@@ -248,7 +253,7 @@ void SPAFunctions<S,D>
       VertInterp.lin_interp(team,
                             tvr,
                             ekat::subview(p_src,i),
-                            ekat::subview(pressure_state.pmid,i),
+                            ekat::subview(p_tgt,i),
                             ekat::subview(aer_tau_lw_src,i,n),
                             ekat::subview(data_out.AER_TAU_LW,i,n));
     });
@@ -259,19 +264,19 @@ void SPAFunctions<S,D>
       VertInterp.lin_interp(team,
                             tvr,
                             ekat::subview(p_src,i),
-                            ekat::subview(pressure_state.pmid,i),
+                            ekat::subview(p_tgt,i),
                             ekat::subview(aer_g_sw_src,i,n),
                             ekat::subview(data_out.AER_G_SW,i,n));
       VertInterp.lin_interp(team,
                             tvr,
                             ekat::subview(p_src,i),
-                            ekat::subview(pressure_state.pmid,i),
+                            ekat::subview(p_tgt,i),
                             ekat::subview(aer_ssa_sw_src,i,n),
                             ekat::subview(data_out.AER_SSA_SW,i,n));
       VertInterp.lin_interp(team,
                             tvr,
                             ekat::subview(p_src,i),
-                            ekat::subview(pressure_state.pmid,i),
+                            ekat::subview(p_tgt,i),
                             ekat::subview(aer_tau_sw_src,i,n),
                             ekat::subview(data_out.AER_TAU_SW,i,n));
     });
