@@ -34,6 +34,7 @@ module ocn_vel_self_attraction_loading
     use ocn_diagnostics_variables
     use ocn_config
     use netcdf
+    use mpas_global_sum_mod
 #ifdef _MPI
     use mpi
 #endif
@@ -100,6 +101,7 @@ module ocn_vel_self_attraction_loading
     real(kind=RKIND), dimension(:,:), allocatable :: complexExpRe, complexExpIm
     real(kind=RKIND), dimension(:),   allocatable :: Snm, SnmRe, SnmIm
     real(kind=RKIND), dimension(:),   allocatable :: Snm_local, SnmRe_local, SnmIm_local
+    real(kind=RKIND), dimension(:,:), allocatable :: Snm_local_reproSum, SnmRe_local_reproSum, SnmIm_local_reproSum
     real(kind=RKIND), dimension(:),   allocatable :: sshSmoothed
     integer, pointer :: nCellsOwned
     integer, pointer :: nCellsAll
@@ -293,12 +295,19 @@ contains
                     call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
 
                     ! Compute local integral contribution
-                    do iCell = endIdx, startIdx, -1
-                        !$omp atomic
-                        SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
-                        !$omp atomic
-                        SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
-                    enddo
+                    if (config_parallel_self_attraction_loading_bfb) then
+                      do iCell = endIdx, startIdx, -1
+                          SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
+                          SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
+                      enddo
+                    else
+                      do iCell = endIdx, startIdx, -1
+                          !$omp atomic
+                          SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
+                          !$omp atomic
+                          SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
+                      enddo
+                    endif
 
                     !------------
                     ! n = m+1
@@ -310,12 +319,19 @@ contains
                         call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
 
                         ! Compute local integral contribution
-                        do iCell = endIdx, startIdx, -1
-                            !$omp atomic
-                            SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
-                            !$omp atomic
-                            SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
-                        enddo
+                        if (config_parallel_self_attraction_loading_bfb) then
+                          do iCell = endIdx, startIdx, -1
+                              SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
+                              SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
+                          enddo
+                        else
+                          do iCell = endIdx, startIdx, -1
+                              !$omp atomic
+                              SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
+                              !$omp atomic
+                              SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
+                          enddo
+                        endif
 
                     endif
 
@@ -336,13 +352,19 @@ contains
                         enddo
 
                         ! Compute local integral contribution
-                        do iCell = endIdx, startIdx, -1
-                            !$omp atomic
-                            SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
-                            !$omp atomic
-                            SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
-                        enddo
-
+                        if (config_parallel_self_attraction_loading_bfb) then
+                          do iCell = endIdx, startIdx, -1
+                              SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
+                              SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
+                          enddo
+                        else
+                          do iCell = endIdx, startIdx, -1
+                              !$omp atomic
+                              SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
+                              !$omp atomic
+                              SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
+                          enddo
+                        endif
 
                     enddo ! n loop
                 enddo ! blocks loop
@@ -352,15 +374,30 @@ contains
             call mpas_timer_stop('Parallel SAL: Forward Transform')
 
             call mpas_timer_start('Parallel SAL: Communication')
-            !$omp do schedule(runtime) private(m)
-            do m = 1,lmax
-                Snm_local(m) = SnmRe_local(m)
-                Snm_local(lmax+m) = SnmIm_local(m)
-            enddo
-            !$omp end do
+            if (config_parallel_self_attraction_loading_bfb) then
+              !$omp do schedule(runtime) private(m)
+              do m = 1,lmax
+                  do iCell = 1,nCellsOwned 
+                    Snm_local_reproSum(iCell,m) = SnmRe_local_reproSum(iCell,m)
+                    Snm_local_reproSum(iCell,lmax+m) = SnmIm_local_reproSum(iCell,m)
+                  enddo
+              enddo
+              !$omp end do
+            else
+              !$omp do schedule(runtime) private(m)
+              do m = 1,lmax
+                  Snm_local(m) = SnmRe_local(m)
+                  Snm_local(lmax+m) = SnmIm_local(m)
+              enddo
+              !$omp end do
+            endif
 
             ! Compute global integral by summing local contributions
-            CALL mpas_dmpar_sum_real_array(dminfo, 2*lmax, Snm_local, Snm)
+            if (config_parallel_self_attraction_loading_bfb) then
+              Snm = mpas_global_sum_nfld(Snm_local_reproSum,dminfo%comm)
+            else
+              CALL mpas_dmpar_sum_real_array(dminfo, 2*lmax, Snm_local, Snm)
+            endif
 
             !$omp do schedule(runtime) private(m)
             do m = 1,lmax
@@ -719,6 +756,9 @@ contains
             allocate(Snm_local(2*lmax),Snm(2*lmax))
             allocate(SnmRe_local(lmax),SnmRe(lmax))
             allocate(SnmIm_local(lmax),SnmIm(lmax))
+            allocate(SnmIm_local_reproSum(nCellsOwned,lmax))
+            allocate(SnmRe_local_reproSum(nCellsOwned,lmax))
+            allocate(Snm_local_reproSum(nCellsOwned,2*lmax))
 
             ! Compute recurrence relationship coefficients
             allocate(aRecurrenceCoeff(nOrder+1,nOrder+1))

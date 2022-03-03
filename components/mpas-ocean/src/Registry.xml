@@ -799,6 +799,10 @@
 					description="Controls the number of blocks used for spherical harmonics calculation"
 					possible_values="Any positive integer value."
 		/>
+		<nml_option name="config_parallel_self_attraction_loading_bfb" type="logical" default_value=".false." units="unitless"
+					description="Use the reproducible sum algorithm"
+					possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<nml_record name="tidal_potential_forcing" mode="init;forward">
 		<nml_option name="config_use_tidal_potential_forcing" type="logical" default_value=".false." units="unitless"
