@@ -190,33 +190,6 @@ pgi-nersc:
 	"OPENMP = $(OPENMP)" \
 	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DCPRPGI" )
-
-<<<<<<< HEAD
-=======
-pgi-llnl:
-	( $(MAKE) all \
-	"FC_PARALLEL = mpipgf90" \
-	"CC_PARALLEL = pgcc" \
-	"CXX_PARALLEL = mpipgcxx" \
-	"FC_SERIAL = pgf90" \
-	"CC_SERIAL = pgcc" \
-	"CXX_SERIAL = pgc++" \
-	"FFLAGS_PROMOTION = -r8" \
-	"FFLAGS_OPT = -i4 -g -O2 -byteswapio" \
-	"CFLAGS_OPT = -fast" \
-	"CXXFLAGS_OPT = -fast" \
-	"LDFLAGS_OPT = " \
-	"FFLAGS_OMP = -mp" \
-	"CFLAGS_OMP = -mp" \
-	"BUILD_TARGET = $(@)" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
-	"USE_SHTNS = $(USE_SHTNS)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DCPRPGI" )
-
->>>>>>> a3f5a4b... Add USE_SHTNS flag to Makefile
 ifort:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpif90" \
@@ -412,32 +385,6 @@ g95:
 	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
-<<<<<<< HEAD
-=======
-pathscale-nersc:
-	( $(MAKE) all \
-	"FC_PARALLEL = ftn" \
-	"CC_PARALLEL = cc" \
-	"CXX_PARALLEL = CC" \
-	"FC_SERIAL = ftn" \
-	"CC_SERIAL = cc" \
-	"CXX_SERIAL = CC" \
-	"FFLAGS_PROMOTION = -r8" \
-	"FFLAGS_OPT = -O3 -freeform -extend-source" \
-	"CFLAGS_OPT = -O3" \
-	"CXXFLAGS_OPT = -O3" \
-	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_OMP = -mp" \
-	"CFLAGS_OMP = -mp" \
-	"BUILD_TARGET = $(@)" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
-	"USE_SHTNS = $(USE_SHTNS)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
-
->>>>>>> a3f5a4b... Add USE_SHTNS flag to Makefile
 cray-nersc:
 	( $(MAKE) all \
 	"FC_PARALLEL = ftn" \
@@ -516,36 +463,6 @@ intel-nersc:
 	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
-<<<<<<< HEAD
-=======
-bluegene:
-	( $(MAKE) all \
-	"FC_PARALLEL = mpixlf95_r" \
-	"CC_PARALLEL = mpixlc_r" \
-	"CXX_PARALLEL = mpixlcxx_r" \
-	"FC_SERIAL = bgxlf95_r" \
-	"CC_SERIAL = bgxlc_r" \
-	"CXX_SERIAL = bgxlc++_r" \
-	"FFLAGS_PROMOTION = -qrealsize=8" \
-	"FFLAGS_OPT = -O2 -g" \
-	"CFLAGS_OPT = -O2 -g" \
-	"CXXFLAGS_OPT = -O2 -g" \
-	"LDFLAGS_OPT = -O2 -g" \
-	"FFLAGS_DEBUG = -O0 -g -C -qinitalloc -qinitauto" \
-	"CFLAGS_DEBUG = -O0 -g" \
-	"CXXFLAGS_DEBUG = -O0 -g" \
-	"LDFLAGS_DEBUG = -O0 -g" \
-	"FFLAGS_OMP = -qsmp=omp" \
-	"CFLAGS_OMP = -qsmp=omp" \
-	"BUILD_TARGET = $(@)" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
-	"USE_SHTNS = $(USE_SHTNS)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
-
->>>>>>> a3f5a4b... Add USE_SHTNS flag to Makefile
 llvm:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpifort" \
@@ -575,35 +492,6 @@ llvm:
 	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
-<<<<<<< HEAD
-=======
-nag:
-	( $(MAKE) all \
-	"FC_PARALLEL = mpifort" \
-	"CC_PARALLEL = mpicc" \
-	"CXX_PARALLEL = mpic++" \
-	"FC_SERIAL = nagfor" \
-	"CC_SERIAL = gcc" \
-	"CXX_SERIAL = g++" \
-	"FFLAGS_PROMOTION = -r8" \
-	"FFLAGS_OPT = -free -mismatch -O3 -convert=big_ieee" \
-	"CFLAGS_OPT = -O3" \
-	"CXXFLAGS_OPT = -O3" \
-	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_DEBUG = -free -mismatch -O0 -g -C -convert=big_ieee" \
-	"CFLAGS_DEBUG = -O0 -g -Wall -pedantic" \
-	"CXXFLAGS_DEBUG = -O0 -g -Wall -pedantic" \
-	"LDFLAGS_DEBUG = -O0 -g -C" \
-	"FFLAGS_OMP = -qsmp=omp" \
-	"CFLAGS_OMP = -qsmp=omp" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
-	"USE_SHTNS = $(USE_SHTNS)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DUNDERSCORE -DNAG_COMPILER" )
-
->>>>>>> a3f5a4b... Add USE_SHTNS flag to Makefile
 CPPINCLUDES =
 FCINCLUDES =
 LIBS =
