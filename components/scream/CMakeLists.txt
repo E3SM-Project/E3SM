@@ -22,20 +22,12 @@ list(APPEND CMAKE_MODULE_PATH
      ${CMAKE_CURRENT_SOURCE_DIR}/cmake
      ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tpls
      ${EKAT_CMAKE_PATH}
-     ${EKAT_CMAKE_PATH}/mpi
      ${EKAT_CMAKE_PATH}/pkg_build
 )
 if (SCREAM_CIME_BUILD)
   list(APPEND CMAKE_MODULE_PATH
        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cime)
 endif ()
-
-include(EkatMpiUtils)
-
-# We should avoid cxx bindings in mpi; they are already deprecated,
-# and can cause headaches at link time, cause they require -lmpi_cxx
-# (for openpmi; -lmpicxx for mpich) flag.
-DisableMpiCxxBindings()
 
 if (Kokkos_ENABLE_CUDA)
   if (Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
@@ -53,12 +45,6 @@ if (Kokkos_ENABLE_CUDA)
       set (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "" FORCE)
     endif()
   endif()
-  include(EkatBuildKokkos)
-  # Note: we need Kokkos_SOURCE_DIR to be defined *before* calling EkatSetNvccWrapper.
-  EkatSetKokkosSourceDir()
-
-  include (EkatSetNvccWrapper)
-  EkatSetNvccWrapper()
 endif()
 
 # Homme's composef90 library (built for f90 support) requires Kokkos::Serial
@@ -171,7 +157,7 @@ if (NF_CONFIG_SEARCH)
     OUTPUT_STRIP_TRAILING_WHITESPACE
     )
   if (NF_STATUS EQUAL 0)
-    set(DEFAULT_NetCDF_Fortran_PATHS ${NF_CONFIG_OUTPUT})
+    set(DEFAULT_NetCDF_Fortran_PATH ${NF_CONFIG_OUTPUT})
   endif()
 endif()
 
@@ -183,7 +169,7 @@ if (NC_CONFIG_SEARCH)
     OUTPUT_STRIP_TRAILING_WHITESPACE
     )
   if (NC_STATUS EQUAL 0)
-    set(DEFAULT_NetCDF_C_PATHS ${NC_CONFIG_OUTPUT})
+    set(DEFAULT_NetCDF_C_PATH ${NC_CONFIG_OUTPUT})
   endif()
 endif()
 
@@ -201,9 +187,9 @@ set(SCREAM_MPI_EXTRA_ARGS ${DEFAULT_MPI_EXTRA_ARGS} CACHE STRING "Options for mp
 set(SCREAM_MPI_NP_FLAG ${DEFAULT_MPI_NP_FLAG} CACHE STRING "The mpirun flag for designating the total number of ranks")
 set(SCREAM_LIB_ONLY ${DEFAULT_LIB_ONLY} CACHE BOOL "Only build libraries, no exes")
 set(SCREAM_AUTOTESTER ${DEFAULT_AUTOTESTER} CACHE BOOL "This is an autotester run; may disable some tests")
-set(NetCDF_Fortran_PATHS ${DEFAULT_NetCDF_Fortran_PATHS} CACHE FILEPATH "Path to netcdf fortran installation")
-set(NetCDF_C_PATHS ${DEFAULT_NetCDF_C_PATHS} CACHE FILEPATH "Path to netcdf C installation")
-set(SCREAM_MACHINE $DEFAULT_SCREAM_MACHINE CACHE STRING "The CIME/SCREAM name for the current machine")
+set(NetCDF_Fortran_PATH ${DEFAULT_NetCDF_Fortran_PATH} CACHE FILEPATH "Path to netcdf fortran installation")
+set(NetCDF_C_PATH ${DEFAULT_NetCDF_C_PATH} CACHE FILEPATH "Path to netcdf C installation")
+set(SCREAM_MACHINE ${DEFAULT_SCREAM_MACHINE} CACHE STRING "The CIME/SCREAM name for the current machine")
 
 # Handle input root
 if (SCREAM_MACHINE)
@@ -308,7 +294,14 @@ BuildEkat(PREFIX "SCREAM")
 
 # Set compiler-specific flags
 include(EkatSetCompilerFlags)
-SetCompilerFlags()
+ResetFlags()
+SetCommonFlags()
+
+include(EkatMpiUtils)
+# We should avoid cxx bindings in mpi; they are already deprecated,
+# and can cause headaches at link time, cause they require -lmpi_cxx
+# (for openpmi; -lmpicxx for mpich) flag.
+DisableMpiCxxBindings()
 
 if (SCREAM_DOUBLE_PRECISION)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")

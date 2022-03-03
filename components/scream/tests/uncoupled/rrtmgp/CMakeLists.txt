@@ -5,7 +5,7 @@ if (NOT ${SCREAM_BASELINES_ONLY})
 
     SET (TEST_LABELS "rrtmgp;physics")
     # Required libraries
-    find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
+    find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
     set (NEED_LIBS scream_rrtmgp rrtmgp ${NETCDF_C} scream_control scream_share physics_share yakl)
 
     CreateUnitTest(

@@ -5,6 +5,7 @@
 #
 # to your CMakeLists.txt.
 
+include (EkatUtils)
 macro(BuildCprnc)
 
   # Make sure this is built only once
@@ -23,11 +24,12 @@ macro(BuildCprnc)
       set(SCC ${CMAKE_C_COMPILER})
       set(SFC ${CMAKE_Fortran_COMPILER})
       set(FFLAGS \"${CMAKE_Fortran_FLAGS}\")
-      set(NETCDF_PATH ${NetCDF_Fortran_PATHS})
+      set(NETCDF_PATH ${NetCDF_Fortran_PATH})
       "
     )
     set(SRC_ROOT ${SCREAM_BASE_DIR}/../..)
     add_subdirectory(${SRC_ROOT}/cime/tools/cprnc ${BLDROOT})
+    EkatDisableAllWarning(cprnc)
 
     set(CPRNC_BINARY ${BLDROOT}/cprnc CACHE INTERNAL "")
 

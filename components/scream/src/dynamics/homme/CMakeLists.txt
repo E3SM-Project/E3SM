@@ -1,3 +1,5 @@
+include (EkatSetCompilerFlags)
+
 # Set cmake config options for Homme
 set (HOMME_SOURCE_DIR ${SCREAM_BASE_DIR}/../homme CACHE INTERNAL "Homme source directory")
 set (HOMME_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/homme CACHE INTERNAL "Homme binary directory")
@@ -161,6 +163,8 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
       target_link_libraries (${hommeLibName} csm_share)
     endif ()
     target_link_libraries (${hommeLibName} composec++)
+    SetCudaFlags(${hommeLibName})
+    SetOmpFlags(${hommeLibName})
 
     # target_link_options is supported since 3.13, but there's a bug with static libs until 3.17
     # see https://gitlab.kitware.com/cmake/cmake/-/issues/20022 for details

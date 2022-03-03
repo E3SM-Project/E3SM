@@ -49,3 +49,8 @@ endforeach ()
 set(share_sources ${FORTRAN_SOURCE})
 
 add_library(share_util ${share_sources})
+
+# These CPP macros are needed in shr_infnan_mod
+target_compile_definitions(share_util PUBLIC
+  $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:GNU>>:CPRGNU>
+  $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:Intel>>:CPRINTEL>)
