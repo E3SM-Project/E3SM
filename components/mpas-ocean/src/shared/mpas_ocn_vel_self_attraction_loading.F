@@ -166,16 +166,7 @@ contains
         !
         !-----------------------------------------------------------------
 
-        ! SAL variables
-        real (kind=RKIND), dimension(:), pointer :: ssh_gg
-        ! MPI Variables
-        integer :: iCell, ilm, curProc
-        real (kind=RKIND), dimension(:), allocatable :: globalArray, gatheredArray
-
-        integer :: n, m, l, i, blk
-        integer :: startIdx, endIdx
-        real (kind=RKIND) :: mFac, area_total
-
+        integer :: iCell
 
         call mpas_timer_start('SAL Calculation')
 
@@ -191,323 +182,11 @@ contains
 
         if (.not. config_use_parallel_self_attraction_loading) then
 
-
-            call mpas_timer_start('Serial SAL: Gather')
-            ! Allocate globalArray and gatheredArray only on process 0
-            call MPI_COMM_RANK( dminfo % comm, curProc, err)
-            if (curProc.eq.0) then
-                allocate(globalArray(nCellsGlobal), gatheredArray(nCellsGlobal))
-            endif
-
-            ! Gather only the nCellsOwned from ssh (does not include Halos)
-            call MPI_GATHERV(sshSmoothed, nCellsOwned, MPI_DOUBLE, gatheredArray, nCellsPerProc, &
-                            nCellsDisplacement, MPI_DOUBLE, 0, dminfo % comm, err)
-            call mpas_timer_stop('Serial SAL: Gather')
-
-            ! Perform SAL calculation only on process 0
-            if (curProc.eq.0) then
-                call mpas_timer_start('Serial SAL: Forward')
-                allocate(ssh_gg(nGrid))
-                ssh_gg(:) = 0.0_dp
-                Slm(:)=(0.0_dp, 0.0_dp)
-
-                ! Rearrange ssh into CellID order
-                do iCell = 1,nCellsGlobal
-                   globalArray(indexToCellIDGathered(iCell)) = gatheredArray(iCell)
-                enddo
-
-                ! Interpolate ssh onto Gaussian Grid
-                call interpolate( toColValues, toRowValues, toSValues, globalArray, ssh_gg)
-                ! Perform spherical harmonic transform
-#ifdef USE_SHTNS
-                call Spat_to_SH(shtns_c, ssh_gg, Slm)
-                call mpas_timer_stop('Serial SAL: Forward')
-                call mpas_timer_start('Serial SAL: Inverse')
-                ! Multiply each harmonic coefficient by the scaling factor
-                do ilm = 1,shtns%nlm
-                    Slm(ilm) = Slm(ilm) * LoveScaling(ilm)
-                enddo
-                ! Perform inverse spherical harmonic transform
-                call SH_to_spat(shtns_c, Slm, ssh_gg)
-#endif
-                ! Interpolate back to MPAS mesh
-                call interpolate( fromColValues, fromRowValues, fromSValues, ssh_gg, globalArray)
-
-                ! Rearrange back to index order
-                do iCell = 1,nCellsGlobal
-                    gatheredArray(iCell) = globalArray(indexToCellIDGathered(iCell))
-                enddo
-                call mpas_timer_stop('Serial SAL: Inverse')
-            else
-                call mpas_timer_start('Serial SAL: Forward')
-                call mpas_timer_stop('Serial SAL: Forward')
-                call mpas_timer_start('Serial SAL: Inverse')
-                call mpas_timer_stop('Serial SAL: Inverse')
-            endif
-
-            ! Scatter back to ssh_sal
-            call mpas_timer_start('Serial SAL: Scatter')
-            call MPI_SCATTERV(gatheredArray, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
-                        ssh_sal, nCellsAll, MPI_DOUBLE, 0, dminfo % comm, err)
-
-            if (curProc.eq.0) then
-              deallocate(globalArray, gatheredArray, ssh_gg)
-            endif
-
-            ! Perform Halo exchange update
-            call mpas_dmpar_field_halo_exch(domain,'ssh_sal')
-            call mpas_timer_stop('Serial SAL: Scatter')
+          call self_attraction_loading_serial(domain, dminfo, err)
 
         else
 
-            !$omp parallel private(m,mFac)
-
-            call mpas_timer_start('Parallel SAL: Forward Transform')
-            !!!!!!!!!!!!!!!!!!!!!
-            ! Forward Transform
-            !!!!!!!!!!!!!!!!!!!!!
-
-            !$omp do schedule(runtime) private(l,n,m)
-            do m = 0,nOrder
-                do n = m,nOrder
-                    l = SHOrderDegreeToIndex(n,m)
-                    SnmRe_local(l) = 0.0_RKIND
-                    SnmIm_local(l) = 0.0_RKIND
-                    SnmRe(l) = 0.0_RKIND
-                    SnmIm(l) = 0.0_RKIND
-                enddo
-            enddo
-            !$omp end do
-
-            do m = 0,nOrder
-
-                !$omp do schedule(runtime) private(blk,startIdx,endIdx,n,l,iCell,i)
-                do blk = 1,nBlocks
-                    startIdx = blockIdxForward(1,blk)
-                    endIdx = blockIdxForward(2,blk)
-
-                    !------------
-                    ! n = m
-                    !------------
-                    n = m
-
-                    ! Calculate associated Legendre polynomial for n=m (output pmnm2)
-                    call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
-
-                    ! Compute local integral contribution
-                    if (config_parallel_self_attraction_loading_bfb) then
-                      do iCell = endIdx, startIdx, -1
-                          SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
-                          SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
-                      enddo
-                    else
-                      do iCell = endIdx, startIdx, -1
-                          !$omp atomic
-                          SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
-                          !$omp atomic
-                          SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
-                      enddo
-                    endif
-
-                    !------------
-                    ! n = m+1
-                    !------------
-                    n = m+1
-                    if (n <= nOrder) then
-
-                        ! Calculate associated Legendre polynomial for n = m+1 using recurrence relationship
-                        call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
-
-                        ! Compute local integral contribution
-                        if (config_parallel_self_attraction_loading_bfb) then
-                          do iCell = endIdx, startIdx, -1
-                              SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
-                              SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
-                          enddo
-                        else
-                          do iCell = endIdx, startIdx, -1
-                              !$omp atomic
-                              SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
-                              !$omp atomic
-                              SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
-                          enddo
-                        endif
-
-                    endif
-
-                    !------------
-                    ! n > m+1
-                    !------------
-                    do n = m+2,nOrder
-
-                        ! Calculate associated Legendre polynomial using recurrence relationship
-                        call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
-
-                        ! Update associated Ledgendre polynomial values for next recurrence
-                        do iCell = endIdx, startIdx, -1
-                            pmnm2(iCell) = pmnm1(iCell)
-                        enddo
-                        do iCell = startIdx, endIdx
-                            pmnm1(iCell) = pmn(iCell)
-                        enddo
-
-                        ! Compute local integral contribution
-                        if (config_parallel_self_attraction_loading_bfb) then
-                          do iCell = endIdx, startIdx, -1
-                              SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
-                              SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
-                          enddo
-                        else
-                          do iCell = endIdx, startIdx, -1
-                              !$omp atomic
-                              SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
-                              !$omp atomic
-                              SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
-                          enddo
-                        endif
-
-                    enddo ! n loop
-                enddo ! blocks loop
-                !$omp end do
-            enddo ! m loop
-
-            call mpas_timer_stop('Parallel SAL: Forward Transform')
-
-            call mpas_timer_start('Parallel SAL: Communication')
-            if (config_parallel_self_attraction_loading_bfb) then
-              !$omp do schedule(runtime) private(m)
-              do m = 1,lmax
-                  do iCell = 1,nCellsOwned 
-                    Snm_local_reproSum(iCell,m) = SnmRe_local_reproSum(iCell,m)
-                    Snm_local_reproSum(iCell,lmax+m) = SnmIm_local_reproSum(iCell,m)
-                  enddo
-              enddo
-              !$omp end do
-            else
-              !$omp do schedule(runtime) private(m)
-              do m = 1,lmax
-                  Snm_local(m) = SnmRe_local(m)
-                  Snm_local(lmax+m) = SnmIm_local(m)
-              enddo
-              !$omp end do
-            endif
-
-            ! Compute global integral by summing local contributions
-            if (config_parallel_self_attraction_loading_bfb) then
-              Snm = mpas_global_sum_nfld(Snm_local_reproSum,dminfo%comm)
-            else
-              CALL mpas_dmpar_sum_real_array(dminfo, 2*lmax, Snm_local, Snm)
-            endif
-
-            !$omp do schedule(runtime) private(m)
-            do m = 1,lmax
-                SnmRe(m) = Snm(m)
-                SnmIm(m) = Snm(lmax+m)
-            enddo
-            !$omp end do
-
-            call mpas_timer_stop('Parallel SAL: Communication')
-
-            call mpas_timer_start('Parallel SAL: Inverse Transform')
-
-            !!!!!!!!!!!!!!!!!!!!!
-            ! Apply SAL scaling
-            !!!!!!!!!!!!!!!!!!!!!
-
-            !$omp do schedule(runtime) private(n,m,l)
-            do m = 0,nOrder
-                do n = m,nOrder
-                    l = SHOrderDegreeToIndex(n,m)
-                    SnmRe(l) = SnmRe(l)*LoveScaling(l)
-                    SnmIm(l) = SnmIm(l)*LoveScaling(l)
-                enddo
-            enddo
-            !$omp end do
-
-            !!!!!!!!!!!!!!!!!!!!
-            ! Inverse transform
-            !!!!!!!!!!!!!!!!!!!!
-
-            !$omp do schedule(runtime)
-            do iCell = 1,nCellsAll
-               ssh_sal(iCell) = 0.0_RKIND
-            enddo
-            !$omp end do
-
-
-            do m = 0,nOrder
-
-                if (m>0) then
-                    mFac = 2.0_RKIND
-                else
-                    mFac = 1.0_RKIND
-                endif
-
-                !$omp do schedule(runtime) private(blk,startIdx,endIdx,n,iCell,l)
-                do blk = 1,nBlocks
-                    startIdx = blockIdxInverse(1,blk)
-                    endIdx = blockIdxInverse(2,blk)
-
-
-                    !------------
-                    ! n = m
-                    !------------
-                    n = m
-
-                    ! Calculate associated Legendre polynomial using recurrence relationship
-                    call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
-
-                    ! Sum together product of spherical harmonic functions and coefficients
-                    do iCell = endIdx, startIdx, -1
-                        ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmnm2(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
-                    enddo
-
-                    !------------
-                    ! n = m+1
-                    !------------
-                    n = m+1
-                    if (n <= nOrder) then
-
-                        ! Calculate associated Legendre polynomial using recurrence relationship
-                        call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
-
-                        ! Sum together product of spherical harmonic functions and coefficients
-                        do iCell = endIdx, startIdx, -1
-                            ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmnm1(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
-                        enddo
-
-                    endif
-
-                    !------------
-                    ! n > m+1
-                    !------------
-                    do n = m+2,nOrder
-
-                        ! Calculate associated Legendre polynomial using recurrence relationship
-                        call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
-
-                        ! Update associated Ledgendre polynomial values for next recurrence
-                        do iCell = endIdx, startIdx, -1
-                            pmnm2(iCell) = pmnm1(iCell)
-                        enddo
-                        do iCell = startIdx, endIdx
-                            pmnm1(iCell) = pmn(iCell)
-                        enddo
-
-                        ! Sum together product of spherical harmonic functions and coefficients
-                        do iCell = endIdx, startIdx, -1
-                            ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmn(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
-                        enddo
-
-
-                    enddo ! n loop
-                enddo ! block loop
-                !$omp end do
-            enddo ! m loop
-
-            call mpas_timer_stop('Parallel SAL: Inverse Transform')
-
-            !$omp end parallel
+          call self_attraction_loading_parallel(domain, dminfo)
 
         endif
 
@@ -516,6 +195,421 @@ contains
 
     end subroutine ocn_compute_self_attraction_loading!}}}
 
+!***********************************************************************
+!
+!  routine self_attraction_loading_serial
+!
+!> \brief   Computes self-attraction and loading
+!> \author  Kristin Barton 
+!> \date    August 2020
+!> \details
+!>  This routine computes the sea surface height perturbation due to
+!>     self-attraction and loading.
+!
+!-----------------------------------------------------------------------
+
+    subroutine self_attraction_loading_serial(domain, dminfo, err)!{{{
+
+        !-----------------------------------------------------------------
+        !
+        ! input variables
+        !
+        !-----------------------------------------------------------------
+        type (dm_info), intent(in) :: dminfo
+
+        !-----------------------------------------------------------------
+        !
+        ! input/output variables
+        !
+        !-----------------------------------------------------------------
+        type (domain_type), intent(inout) :: domain !< Input/Output: domain information
+
+        !-----------------------------------------------------------------
+        !
+        ! output variables
+        !
+        !-----------------------------------------------------------------
+
+        integer, intent(out) :: err !< Output: Error flag
+
+        !-----------------------------------------------------------------
+        !
+        ! local variables
+        !
+        !-----------------------------------------------------------------
+
+        ! SAL variables
+        real (kind=RKIND), dimension(:), pointer :: ssh_gg
+
+        ! MPI Variables
+        integer :: iCell, ilm, curProc
+        real (kind=RKIND), dimension(:), allocatable :: globalArray, gatheredArray
+
+
+        call mpas_timer_start('Serial SAL: Gather')
+        ! Allocate globalArray and gatheredArray only on process 0
+        call MPI_COMM_RANK( dminfo % comm, curProc, err)
+        if (curProc.eq.0) then
+            allocate(globalArray(nCellsGlobal), gatheredArray(nCellsGlobal))
+        endif
+
+        ! Gather only the nCellsOwned from ssh (does not include Halos)
+        call MPI_GATHERV(sshSmoothed, nCellsOwned, MPI_DOUBLE, gatheredArray, nCellsPerProc, &
+                        nCellsDisplacement, MPI_DOUBLE, 0, dminfo % comm, err)
+        call mpas_timer_stop('Serial SAL: Gather')
+
+        ! Perform SAL calculation only on process 0
+        if (curProc.eq.0) then
+            call mpas_timer_start('Serial SAL: Forward')
+            allocate(ssh_gg(nGrid))
+            ssh_gg(:) = 0.0_dp
+            Slm(:)=(0.0_dp, 0.0_dp)
+
+            ! Rearrange ssh into CellID order
+            do iCell = 1,nCellsGlobal
+               globalArray(indexToCellIDGathered(iCell)) = gatheredArray(iCell)
+            enddo
+
+            ! Interpolate ssh onto Gaussian Grid
+            call interpolate( toColValues, toRowValues, toSValues, globalArray, ssh_gg)
+            ! Perform spherical harmonic transform
+#ifdef USE_SHTNS
+            call Spat_to_SH(shtns_c, ssh_gg, Slm)
+            call mpas_timer_stop('Serial SAL: Forward')
+            call mpas_timer_start('Serial SAL: Inverse')
+            ! Multiply each harmonic coefficient by the scaling factor
+            do ilm = 1,shtns%nlm
+                Slm(ilm) = Slm(ilm) * LoveScaling(ilm)
+            enddo
+            ! Perform inverse spherical harmonic transform
+            call SH_to_spat(shtns_c, Slm, ssh_gg)
+#endif
+            ! Interpolate back to MPAS mesh
+            call interpolate( fromColValues, fromRowValues, fromSValues, ssh_gg, globalArray)
+
+            ! Rearrange back to index order
+            do iCell = 1,nCellsGlobal
+                gatheredArray(iCell) = globalArray(indexToCellIDGathered(iCell))
+            enddo
+            call mpas_timer_stop('Serial SAL: Inverse')
+        else
+            call mpas_timer_start('Serial SAL: Forward')
+            call mpas_timer_stop('Serial SAL: Forward')
+            call mpas_timer_start('Serial SAL: Inverse')
+            call mpas_timer_stop('Serial SAL: Inverse')
+        endif
+
+        ! Scatter back to ssh_sal
+        call mpas_timer_start('Serial SAL: Scatter')
+        call MPI_SCATTERV(gatheredArray, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
+                    ssh_sal, nCellsAll, MPI_DOUBLE, 0, dminfo % comm, err)
+
+        if (curProc.eq.0) then
+          deallocate(globalArray, gatheredArray, ssh_gg)
+        endif
+
+        ! Perform Halo exchange update
+        call mpas_dmpar_field_halo_exch(domain,'ssh_sal')
+        call mpas_timer_stop('Serial SAL: Scatter')
+
+    end subroutine self_attraction_loading_serial!}}}
+
+!***********************************************************************
+!
+!  routine self_attraction_loading_parallel
+!
+!> \brief   Computes self-attraction and loading
+!> \author  Steven Brus 
+!> \date    August 2020
+!> \details
+!>  This routine computes the sea surface height perturbation due to
+!>     self-attraction and loading.
+!
+!-----------------------------------------------------------------------
+
+    subroutine self_attraction_loading_parallel(domain, dminfo)!{{{
+
+        !-----------------------------------------------------------------
+        !
+        ! input variables
+        !
+        !-----------------------------------------------------------------
+        type (dm_info), intent(in) :: dminfo
+
+        !-----------------------------------------------------------------
+        !
+        ! input/output variables
+        !
+        !-----------------------------------------------------------------
+        type (domain_type), intent(inout) :: domain !< Input/Output: domain information
+
+        !-----------------------------------------------------------------
+        !
+        ! local variables
+        !
+        !-----------------------------------------------------------------
+
+        integer :: iCell 
+        integer :: n, m, l, i, blk
+        integer :: startIdx, endIdx
+        real (kind=RKIND) :: mFac
+
+        !$omp parallel private(m,mFac)
+
+        call mpas_timer_start('Parallel SAL: Forward Transform')
+        !!!!!!!!!!!!!!!!!!!!!
+        ! Forward Transform
+        !!!!!!!!!!!!!!!!!!!!!
+
+        !$omp do schedule(runtime) private(l,n,m)
+        do m = 0,nOrder
+            do n = m,nOrder
+                l = SHOrderDegreeToIndex(n,m)
+                SnmRe_local(l) = 0.0_RKIND
+                SnmIm_local(l) = 0.0_RKIND
+                SnmRe(l) = 0.0_RKIND
+                SnmIm(l) = 0.0_RKIND
+                if (config_parallel_self_attraction_loading_bfb) then
+                  do iCell = 1,nCellsAll
+                      SnmRe_local_reproSum(iCell,l) = 0.0_RKIND 
+                      SnmIm_local_reproSum(iCell,l) = 0.0_RKIND
+                   enddo
+                endif
+            enddo
+        enddo
+        !$omp end do
+
+        do m = 0,nOrder
+
+            !$omp do schedule(runtime) private(blk,startIdx,endIdx,n,l,iCell,i)
+            do blk = 1,nBlocks
+                startIdx = blockIdxForward(1,blk)
+                endIdx = blockIdxForward(2,blk)
+
+                !------------
+                ! n = m
+                !------------
+                n = m
+
+                ! Calculate associated Legendre polynomial for n=m (output pmnm2)
+                call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
+
+                ! Compute local integral contribution
+                if (config_parallel_self_attraction_loading_bfb) then
+                  do iCell = endIdx, startIdx, -1
+                      SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
+                      SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
+                  enddo
+                else
+                  do iCell = endIdx, startIdx, -1
+                      !$omp atomic
+                      SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
+                      !$omp atomic
+                      SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
+                  enddo
+                endif
+
+                !------------
+                ! n = m+1
+                !------------
+                n = m+1
+                if (n <= nOrder) then
+
+                    ! Calculate associated Legendre polynomial for n = m+1 using recurrence relationship
+                    call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
+
+                    ! Compute local integral contribution
+                    if (config_parallel_self_attraction_loading_bfb) then
+                      do iCell = endIdx, startIdx, -1
+                          SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
+                          SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
+                      enddo
+                    else
+                      do iCell = endIdx, startIdx, -1
+                          !$omp atomic
+                          SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
+                          !$omp atomic
+                          SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
+                      enddo
+                    endif
+
+                endif
+
+                !------------
+                ! n > m+1
+                !------------
+                do n = m+2,nOrder
+
+                    ! Calculate associated Legendre polynomial using recurrence relationship
+                    call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
+
+                    ! Update associated Ledgendre polynomial values for next recurrence
+                    do iCell = endIdx, startIdx, -1
+                        pmnm2(iCell) = pmnm1(iCell)
+                    enddo
+                    do iCell = startIdx, endIdx
+                        pmnm1(iCell) = pmn(iCell)
+                    enddo
+
+                    ! Compute local integral contribution
+                    if (config_parallel_self_attraction_loading_bfb) then
+                      do iCell = endIdx, startIdx, -1
+                          SnmRe_local_reproSum(iCell,l) = SnmRe_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
+                          SnmIm_local_reproSum(iCell,l) = SnmIm_local_reproSum(iCell,l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
+                      enddo
+                    else
+                      do iCell = endIdx, startIdx, -1
+                          !$omp atomic
+                          SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
+                          !$omp atomic
+                          SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
+                      enddo
+                    endif
+
+                enddo ! n loop
+            enddo ! blocks loop
+            !$omp end do
+        enddo ! m loop
+
+        call mpas_timer_stop('Parallel SAL: Forward Transform')
+
+        call mpas_timer_start('Parallel SAL: Communication')
+        if (config_parallel_self_attraction_loading_bfb) then
+          !$omp do schedule(runtime) private(m)
+          do m = 1,lmax
+              do iCell = 1,nCellsOwned 
+                Snm_local_reproSum(iCell,m) = SnmRe_local_reproSum(iCell,m)
+                Snm_local_reproSum(iCell,lmax+m) = SnmIm_local_reproSum(iCell,m)
+              enddo
+          enddo
+          !$omp end do
+        else
+          !$omp do schedule(runtime) private(m)
+          do m = 1,lmax
+              Snm_local(m) = SnmRe_local(m)
+              Snm_local(lmax+m) = SnmIm_local(m)
+          enddo
+          !$omp end do
+        endif
+
+        ! Compute global integral by summing local contributions
+        if (config_parallel_self_attraction_loading_bfb) then
+          Snm = mpas_global_sum_nfld(Snm_local_reproSum,dminfo%comm)
+        else
+          CALL mpas_dmpar_sum_real_array(dminfo, 2*lmax, Snm_local, Snm)
+        endif
+
+        !$omp do schedule(runtime) private(m)
+        do m = 1,lmax
+            SnmRe(m) = Snm(m)
+            SnmIm(m) = Snm(lmax+m)
+        enddo
+        !$omp end do
+
+        call mpas_timer_stop('Parallel SAL: Communication')
+
+        call mpas_timer_start('Parallel SAL: Inverse Transform')
+
+        !!!!!!!!!!!!!!!!!!!!!
+        ! Apply SAL scaling
+        !!!!!!!!!!!!!!!!!!!!!
+
+        !$omp do schedule(runtime) private(n,m,l)
+        do m = 0,nOrder
+            do n = m,nOrder
+                l = SHOrderDegreeToIndex(n,m)
+                SnmRe(l) = SnmRe(l)*LoveScaling(l)
+                SnmIm(l) = SnmIm(l)*LoveScaling(l)
+            enddo
+        enddo
+        !$omp end do
+
+        !!!!!!!!!!!!!!!!!!!!
+        ! Inverse transform
+        !!!!!!!!!!!!!!!!!!!!
+
+        !$omp do schedule(runtime)
+        do iCell = 1,nCellsAll
+           ssh_sal(iCell) = 0.0_RKIND
+        enddo
+        !$omp end do
+
+
+        do m = 0,nOrder
+
+            if (m>0) then
+                mFac = 2.0_RKIND
+            else
+                mFac = 1.0_RKIND
+            endif
+
+            !$omp do schedule(runtime) private(blk,startIdx,endIdx,n,iCell,l)
+            do blk = 1,nBlocks
+                startIdx = blockIdxInverse(1,blk)
+                endIdx = blockIdxInverse(2,blk)
+
+
+                !------------
+                ! n = m
+                !------------
+                n = m
+
+                ! Calculate associated Legendre polynomial using recurrence relationship
+                call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
+
+                ! Sum together product of spherical harmonic functions and coefficients
+                do iCell = endIdx, startIdx, -1
+                    ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmnm2(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
+                enddo
+
+                !------------
+                ! n = m+1
+                !------------
+                n = m+1
+                if (n <= nOrder) then
+
+                    ! Calculate associated Legendre polynomial using recurrence relationship
+                    call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
+
+                    ! Sum together product of spherical harmonic functions and coefficients
+                    do iCell = endIdx, startIdx, -1
+                        ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmnm1(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
+                    enddo
+
+                endif
+
+                !------------
+                ! n > m+1
+                !------------
+                do n = m+2,nOrder
+
+                    ! Calculate associated Legendre polynomial using recurrence relationship
+                    call associatedLegendrePolynomials(n, m, startIdx, endIdx, l, pmnm2, pmnm1, pmn)
+
+                    ! Update associated Ledgendre polynomial values for next recurrence
+                    do iCell = endIdx, startIdx, -1
+                        pmnm2(iCell) = pmnm1(iCell)
+                    enddo
+                    do iCell = startIdx, endIdx
+                        pmnm1(iCell) = pmn(iCell)
+                    enddo
+
+                    ! Sum together product of spherical harmonic functions and coefficients
+                    do iCell = endIdx, startIdx, -1
+                        ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmn(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
+                    enddo
+
+
+                enddo ! n loop
+            enddo ! block loop
+            !$omp end do
+        enddo ! m loop
+
+        call mpas_timer_stop('Parallel SAL: Inverse Transform')
+
+        !$omp end parallel
+
+    end subroutine self_attraction_loading_parallel!}}}
 
 !***********************************************************************
 !
