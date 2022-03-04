@@ -384,6 +384,80 @@ void PhysicsFunctions<DeviceT>::calculate_mmr_from_vmr(const MemberType& team,
   });
 }
 
+//+++++++++++PMC
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::lapse_T_for_psl(const ScalarT& T_ground, const ScalarT& p_ground, const ScalarT& phi_ground,
+						ScalarT& lapse, ScalarT& T_ground_tmp )
+{
+  /* 
+    Choose lapse rate and effective ground temperature to use for sea-level pressure calculation.
+    This function should only be used by calculate_psl and is separated from that function solely 
+    to improve specificity of unit testing.
+ */
+
+  using C = scream::physics::Constants<Real>;
+  constexpr Real gravit = C::gravit;
+
+  //Get preliminary surface and sea level temperature to decide on lapse rate
+  auto T_sl = T_ground + 0.0065*phi_ground/gravit; //start by assuming lapse rate is 6.5 K/km
+  T_ground_tmp= T_ground; //make copy b/c may need to modify later
+
+  if (T_ground_tmp<=290.5 && T_sl>290.5){
+    lapse=grav/phi_ground*(290.5-T_ground_tmp); //choose lapse rate to make T at sea level 290.5K
+  } else if (T_ground_tmp>290.5 && T_sl>290.5){
+    lapse=0; //choose lapse rate = 0 to not make things any worse.
+    T_ground_tmp=0.5*(290.5+T_ground_tmp); //reduce effective T in a smooth way to avoid unrealistic result
+  } else if (T_ground_tmp<255){
+  //Following EAM's treatment for cold cases even though it seems overly crude: what if T_sl>255?
+  //Or phi_ground<0 so positive lapse makes T_sl even colder? We should eventually ditch this entire scheme.
+  lapse=0.0065;
+  T_ground_tmp=0.5*(255.+T_ground_tmp);
+  } else{
+    //note lack of "elif T_ground>290.5 and T_sl<290.5" case (phi_ground<0 and hot) is missing on purpose
+    //because 6.5K/km lapse rate will cool T_sl in that case and that's what we want.
+    lapse = 0.0065; //assume 6.5K/km lapse rate for reasonable temperatures
+  }
+    
+  return lapse, T_ground_tmp;
+}
+
+  template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_INLINE_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::calculate_psl(const ScalarT& T_ground, const ScalarT& p_ground, const ScalarT& phi_ground)
+{
+  /* 
+     Compute sea level pressure (psl) assuming atmosphere below the land surface is dry and has a lapse 
+     rate of 6.5K/km unless conditions are very warm. See components/scream/docs/tech_doc/physics/psl/
+     for a description. Note that all input/out variables are only defined at the surface rather than 
+     being 3d variables so no need to template on InputProvider.
+ */
+
+
+  using C = scream::physics::Constants<Real>;
+  constexpr Real gravit = C::gravit;
+  constexpr Real Rair = C::Rair;
+  Scalar psl
+  
+  // if phi_ground is very close to sea level already, set psl to existing p_ground
+  if (std::abs(phi_ground/grav) < 1e-4){
+    psl = p_ground;
+  //otherwise compute
+  }else{
+    ScalarT lapse;
+    ScalarT T_ground_tmp;
+    lapse_T_for_psl(T_ground,p_ground,phi_ground, lapse, T_ground_tmp);
+    auto alpha=lapse*Rair/gravit;
+    auto beta=phi_ground/(Rair*T_ground_tmp);
+    psl = p_ground*std::exp(beta*( 1. - alpha*beta/2. + (alpha*beta)**2. /3.) );
+  }
+  
+  return psl
+}
+//---------------PMC
+
 } // namespace scream
 
 #endif // SCREAM_COMMON_PHYSICS_IMPL_HPP
