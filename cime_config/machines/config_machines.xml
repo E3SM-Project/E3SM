@@ -120,8 +120,7 @@
 
       <modules compiler="gnu.*">
 	<command name="load">PrgEnv-gnu/8.2.0</command>
-	<command name="load">gcc/9.3.0</command>
-	<!--command name="load">gcc/10.3.0</command-->
+	<command name="load">gcc/10.3.0</command>
       </modules>
 
       <modules compiler="nvidia.*">
@@ -150,10 +149,10 @@
       <modules>
 	<command name="load">cray-libsci</command>
 	<command name="load">craype</command>
-	<command name="load">cray-mpich/8.1.11</command>
-	<command name="load">cray-hdf5-parallel/1.12.0.7</command>
-	<command name="load">cray-netcdf-hdf5parallel/4.7.4.7</command>
-	<command name="load">cray-parallel-netcdf/1.12.1.7</command>
+	<command name="load">cray-mpich/8.1.13</command>
+	<command name="load">cray-hdf5-parallel/1.12.1.1</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.8.1.1</command>
+	<command name="load">cray-parallel-netcdf/1.12.2.1</command>
 	<command name="load">cmake/3.22.0</command>
       </modules>
     </module_system>
@@ -172,6 +171,9 @@
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
     </environment_variables>
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
   </machine>
 
   <machine MACH="spock">
