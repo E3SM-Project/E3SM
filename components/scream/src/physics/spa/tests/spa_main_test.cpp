@@ -29,22 +29,6 @@ using view_3d = typename KokkosTypes<DefaultDevice>::template view_3d<S>;
 using SPAFunc = spa::SPAFunctions<Real, DefaultDevice>;
 using Spack = SPAFunc::Spack;
 
-// Dummy pressure state structure that is non-const for pmid.  Needed to set up the test.
-struct PressureState {
-  PressureState() = default;
-  PressureState(const int ncol_, const int nlev_) :
-    ncols(ncol_)
-    ,nlevs(nlev_)
-  {
-    pmid = view_2d<Spack>("",ncols,nlevs);
-  }
-  // Number of horizontal columns and vertical levels for the data
-  Int ncols;
-  Int nlevs;
-  // Current simulation pressure levels
-  view_2d<Spack> pmid;
-}; // PressureState
-
 TEST_CASE("spa_read_data","spa")
 {
   using C = scream::physics::Constants<Real>;
@@ -91,11 +75,10 @@ TEST_CASE("spa_read_data","spa")
   spa_horiz_interp.m_comm = spa_comm;
   SPAFunc::set_remap_weights_one_to_one(ncols,min_dof,dofs_gids,spa_horiz_interp);
   SPAFunc::SPATimeState     spa_time_state;
-  PressureState             pressure_state(dofs_gids.size(), nlevs);
-  SPAFunc::SPAPressureState spa_pressure_state;
   SPAFunc::SPAData          spa_data_beg(dofs_gids.size(), nlevs+2, nswbands, nlwbands);
   SPAFunc::SPAData          spa_data_end(dofs_gids.size(), nlevs+2, nswbands, nlwbands);
   SPAFunc::SPAOutput        spa_data_out(dofs_gids.size(), nlevs,   nswbands, nlwbands);
+  auto pmid_tgt = view_2d<Spack>("",dofs_gids.size(),nlevs);
 
   // Verify that the interpolated values match the data, since no temporal or vertical interpolation
   // should be done at this point.
@@ -147,11 +130,8 @@ TEST_CASE("spa_read_data","spa")
   // coordinates in the beginning data.
   auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
   Kokkos::deep_copy(dofs_gids_h,dofs_gids);
-  spa_pressure_state.ncols = dofs_gids.size(); 
-  spa_pressure_state.nlevs = nlevs;
 
-  spa_pressure_state.pmid  = pressure_state.pmid;
-  auto pmid_h = Kokkos::create_mirror_view(pressure_state.pmid);
+  auto pmid_tgt_h = Kokkos::create_mirror_view(pmid_tgt);
 
   // Note, hyam and hybm are padded
   for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
@@ -160,15 +140,15 @@ TEST_CASE("spa_read_data","spa")
       int kidx  = kk % Spack::n;
       int kpack_pad = (kk+1) / Spack::n;
       int kidx_pad  = (kk+1) % Spack::n;
-      pmid_h(dof_i,kpack)[kidx] = ps_beg(dof_i)*hybm_h(kpack_pad)[kidx_pad] + P0*hyam_h(kpack_pad)[kidx_pad];
+      pmid_tgt_h(dof_i,kpack)[kidx] = ps_beg(dof_i)*hybm_h(kpack_pad)[kidx_pad] + P0*hyam_h(kpack_pad)[kidx_pad];
     }
   }
   int kpack_pad = (nlevs+1) / Spack::n;
   int kidx_pad  = (nlevs+1) % Spack::n;
-  Kokkos::deep_copy(pressure_state.pmid,pmid_h);
+  Kokkos::deep_copy(pmid_tgt,pmid_tgt_h);
 
   // Run SPA main
-  SPAFunc::spa_main(spa_time_state,spa_pressure_state,spa_data_beg,spa_data_end,spa_data_out,dofs_gids.size(),nlevs,nswbands,nlwbands);
+  SPAFunc::spa_main(spa_time_state,pmid_tgt,spa_data_beg,spa_data_end,spa_data_out,dofs_gids.size(),nlevs,nswbands,nlwbands);
 
   Kokkos::deep_copy(ccn3_h      , spa_data_out.CCN3);
   Kokkos::deep_copy(aer_g_sw_h  , spa_data_out.AER_G_SW);
@@ -206,12 +186,12 @@ TEST_CASE("spa_read_data","spa")
       int kidx  = kk % Spack::n;
       int kpack_pad = (kk+1) / Spack::n;
       int kidx_pad  = (kk+1) % Spack::n;
-      pmid_h(dof_i,kpack)[kidx] = ps_end(dof_i)*hybm_h(kpack_pad)[kidx_pad] + P0*hyam_h(kpack_pad)[kidx_pad];
+      pmid_tgt_h(dof_i,kpack)[kidx] = ps_end(dof_i)*hybm_h(kpack_pad)[kidx_pad] + P0*hyam_h(kpack_pad)[kidx_pad];
     }
   }
-  Kokkos::deep_copy(pressure_state.pmid,pmid_h);
+  Kokkos::deep_copy(pmid_tgt,pmid_tgt_h);
   
-  SPAFunc::spa_main(spa_time_state,spa_pressure_state,spa_data_beg,spa_data_end,spa_data_out,dofs_gids.size(),nlevs,nswbands,nlwbands);
+  SPAFunc::spa_main(spa_time_state,pmid_tgt,spa_data_beg,spa_data_end,spa_data_out,dofs_gids.size(),nlevs,nswbands,nlwbands);
   Kokkos::deep_copy(ccn3_h      , spa_data_out.CCN3);
   Kokkos::deep_copy(aer_g_sw_h  , spa_data_out.AER_G_SW);
   Kokkos::deep_copy(aer_ssa_sw_h, spa_data_out.AER_SSA_SW);
@@ -263,12 +243,12 @@ TEST_CASE("spa_read_data","spa")
       int kpack_pad = (kk+1) / Spack::n;
       int kidx_pad  = (kk+1) % Spack::n;
       Real ps = 1.05*std::max(ps_beg(dof_i),ps_end(dof_i));
-      pmid_h(dof_i,kpack)[kidx] = ps*hybm_h(kpack_pad)[kidx_pad] + P0*hyam_h(kpack_pad)[kidx_pad];
+      pmid_tgt_h(dof_i,kpack)[kidx] = ps*hybm_h(kpack_pad)[kidx_pad] + P0*hyam_h(kpack_pad)[kidx_pad];
     }
   }
-  Kokkos::deep_copy(pressure_state.pmid,pmid_h);
+  Kokkos::deep_copy(pmid_tgt,pmid_tgt_h);
 
-  SPAFunc::spa_main(spa_time_state,spa_pressure_state,spa_data_beg,spa_data_end,spa_data_out,dofs_gids.size(),nlevs,nswbands,nlwbands);
+  SPAFunc::spa_main(spa_time_state,pmid_tgt,spa_data_beg,spa_data_end,spa_data_out,dofs_gids.size(),nlevs,nswbands,nlwbands);
   Kokkos::deep_copy(ccn3_h      , spa_data_out.CCN3);
   Kokkos::deep_copy(aer_g_sw_h  , spa_data_out.AER_G_SW);
   Kokkos::deep_copy(aer_ssa_sw_h, spa_data_out.AER_SSA_SW);

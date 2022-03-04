@@ -124,11 +124,6 @@ void SPA::initialize_impl (const RunType /* run_type */)
 {
   // Initialize SPA pressure state stucture and set pointers for the SPA output data to
   // field managed variables.
-  SPAPressureState.ncols         = m_num_cols;
-  SPAPressureState.nlevs         = m_num_levs;
-  SPAPressureState.hyam          = get_field_in("hyam").get_view<const Pack*>();
-  SPAPressureState.hybm          = get_field_in("hybm").get_view<const Pack*>();
-  SPAPressureState.pmid          = get_field_in("p_mid").get_view<const Pack**>();
   SPAData_out.CCN3               = get_field_out("nc_activated").get_view<Pack**>();
   SPAData_out.AER_G_SW           = get_field_out("aero_g_sw").get_view<Pack***>();
   SPAData_out.AER_SSA_SW         = get_field_out("aero_ssa_sw").get_view<Pack***>();
@@ -179,7 +174,8 @@ void SPA::run_impl (const int /* dt */)
   SPAFunc::update_spa_timestate(m_spa_data_file,m_nswbands,m_nlwbands,ts,SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
 
   // Call the main SPA routine to get interpolated aerosol forcings.
-  SPAFunc::spa_main(SPATimeState, SPAPressureState,SPAData_start,SPAData_end,SPAData_out,m_num_cols,m_num_levs,m_nswbands,m_nlwbands);
+  const auto& pmid_tgt = get_field_in("p_mid").get_view<const Pack**>();
+  SPAFunc::spa_main(SPATimeState, pmid_tgt,SPAData_start,SPAData_end,SPAData_out,m_num_cols,m_num_levs,m_nswbands,m_nlwbands);
 }
 
 // =========================================================================================

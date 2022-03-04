@@ -73,17 +73,6 @@ struct SPAFunctions
     Real days_this_month;
   }; // SPATimeState
 
-  struct SPAPressureState {
-    SPAPressureState() = default;
-    // Number of horizontal columns and vertical levels for the data
-    Int ncols;
-    Int nlevs;
-    // Hybrid coordinate values
-    view_1d<const Spack> hyam, hybm;
-    // Current simulation pressure levels
-    view_2d<const Spack> pmid;
-  }; // SPAPressureState
-
   struct SPAData {
     SPAData() = default;
     SPAData(const int ncol_, const int nlev_, const int nswbands_, const int nlwbands_) :
@@ -191,7 +180,7 @@ struct SPAFunctions
   // SPA routines
   static void spa_main(
     const SPATimeState& time_state,
-    const SPAPressureState& pressure_state,
+    const view_2d<const Spack>& p_tgt,
     const SPAData&   data_beg,
     const SPAData&   data_end,
     const SPAOutput& data_out,

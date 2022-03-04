@@ -92,7 +92,7 @@ template <typename S, typename D>
 void SPAFunctions<S,D>
 ::spa_main(
   const SPATimeState& time_state,
-  const SPAPressureState& pressure_state,
+  const view_2d<const Spack>& p_tgt,
   const SPAData&   data_beg,
   const SPAData&   data_end,
   const SPAOutput& data_out,
@@ -107,7 +107,6 @@ void SPAFunctions<S,D>
   auto& t_len = time_state.days_this_month;
 
   const int nlevs_src = data_beg.nlevs;
-  const auto& p_tgt = pressure_state.pmid;  //TODO: since this is the only place pressure state is used, should just pass this one view.
 
   // For now we require that the Data in and the Data out have the same number of columns.
   EKAT_REQUIRE(ncols_tgt==data_beg.ncols);
