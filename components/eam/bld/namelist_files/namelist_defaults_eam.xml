@@ -1286,8 +1286,8 @@
 <se_topology dpcrm_mode="1"> "plane" </se_topology>
 <se_geometry> "sphere" </se_geometry>
 <se_geometry dpcrm_mode="1"> "plane" </se_geometry>
-<se_ne_x> -1 </se_ne_x>
-<se_ne_y> -1 </se_ne_y>
+<se_ne_x> 0 </se_ne_x>
+<se_ne_y> 0 </se_ne_y>
 <se_lx> 0.0 </se_lx>
 <se_ly> 0.0 </se_ly>
 <statefreq> 480 </statefreq>
