@@ -62,7 +62,8 @@ TEST_CASE("spa_one_to_one_remap","spa")
   SPAFunc::SPAHorizInterp spa_horiz_interp;
   spa_horiz_interp.m_comm = spa_comm;
   SPAFunc::set_remap_weights_one_to_one(ncols,min_dof,dofs_gids,spa_horiz_interp);
-  SPAFunc::SPAData spa_data(dofs_gids.size(), nlevs, nswbands, nlwbands);
+  // Recall, SPA data is padded, so we initialize with 2 more levels than the source data file.
+  SPAFunc::SPAData spa_data(dofs_gids.size(), nlevs+2, nswbands, nlwbands);
 
   // Check that the horizontal interpolation data is in fact a 1-1 mapping
   Kokkos::parallel_for("", spa_horiz_interp.length, KOKKOS_LAMBDA(const int& ii) {
@@ -101,8 +102,9 @@ TEST_CASE("spa_one_to_one_remap","spa")
       gid_type glob_i = dofs_gids_h(dof_i);
       REQUIRE(ps_h(dof_i) == ps_func(time_index,glob_i));
       for (int kk=0;kk<nlevs;kk++) {
-        int kpack = kk / Spack::n;
-        int kidx  = kk % Spack::n;
+        // Recall, SPA data read from file is padded, so we need to offset the kk index for the data by 1.
+        int kpack = (kk+1) / Spack::n;
+        int kidx  = (kk+1) % Spack::n;
         REQUIRE(ccn3_h(dof_i,kpack)[kidx] == ccn3_func(time_index, glob_i, kk));
         for (int n=0;n<nswbands;n++) {
           REQUIRE(aer_g_sw_h(dof_i,n,kpack)[kidx]   == aer_func(time_index,glob_i,n,kk,0));
