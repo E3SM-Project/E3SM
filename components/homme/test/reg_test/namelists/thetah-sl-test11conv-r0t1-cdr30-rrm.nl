@@ -37,7 +37,6 @@
   nu_q = 0
 /
 &vert_nl
-  vform             = "ccm"
   vanalytic         = 1
   vtop              = 0.2549944
 /

@@ -391,6 +391,9 @@ contains
     integer :: n0_qdp, np1_qdp
     real(kind=real_kind) :: dt_remap, dt_q
 
+    if (nsplit<1) then
+      call abortmp ('nsplit_is less than 1.')
+    endif
     if (nsplit_iteration < 1 .or. nsplit_iteration > nsplit) then
       call abortmp ('nsplit_iteration out of range')
     endif

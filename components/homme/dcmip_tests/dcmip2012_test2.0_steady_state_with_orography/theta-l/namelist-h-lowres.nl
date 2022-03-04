@@ -26,7 +26,6 @@
   dcmip2_0_zetam    = 0.785                     ! mountain half-width = pi/4
 /
 &vert_nl
-  vform             = "ccm"                     ! vertical coordinate type "ccm"=hybrid pressure/terrain
   vanalytic         = 1                         ! set vcoords in initialization routine
   vtop              = 2.05e-1                   ! vertical coordinate at top of atm (z=12000m)
 /

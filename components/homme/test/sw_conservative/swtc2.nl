@@ -12,7 +12,6 @@ ne=48
 ntrac=1
 ndays         = 12
 statefreq     = 1440
-tasknum       = 0
 restartfreq   = -1
 restartfile   = "./restart/R000000050"
 runtype       = 0

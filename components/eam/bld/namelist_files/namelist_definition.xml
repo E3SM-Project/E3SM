@@ -5790,23 +5790,12 @@ Bottom of sponge layer in hPa.
 Default: 0 (use default value based on reference pressure at model top).
 </entry>
 
-<entry id="fine_ne" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-baseline ne for scalar hypervis tuning
-Default: Set by build-namelist.
-</entry>
-
 <entry id="hypervis_scaling" type="real" category="se"
        group="ctl_nl" valid_values="" >
 Default: Set by build-namelist.
 </entry>
 
 <entry id="hypervis_power" type="real" category="se"
-       group="ctl_nl" valid_values="" >
-Default: Set by build-namelist.
-</entry>
-
-<entry id="max_hypervis_courant" type="real" category="se"
        group="ctl_nl" valid_values="" >
 Default: Set by build-namelist.
 </entry>
