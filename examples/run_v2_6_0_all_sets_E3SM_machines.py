@@ -11,6 +11,8 @@ from e3sm_diags.parameter.enso_diags_parameter import EnsoDiagsParameter
 from e3sm_diags.parameter.qbo_parameter import QboParameter
 from e3sm_diags.parameter.streamflow_parameter import StreamflowParameter
 from e3sm_diags.parameter.tc_analysis_parameter import TCAnalysisParameter
+from e3sm_diags.parameter.zonal_mean_2d_stratosphere_parameter import ZonalMean2dStratosphereParameter
+
 from e3sm_diags.run import runner
 
 
@@ -187,6 +189,7 @@ def run_all_sets(html_prefix, d):
     tc_param.ref_end_yr = "2018"
 
     ac_param = ACzonalmeanParameter()
+    zm_param = ZonalMean2dStratosphereParameter()
 
     runner.sets_to_run = [
         "lat_lon",
@@ -208,6 +211,7 @@ def run_all_sets(html_prefix, d):
     runner.run_diags(
         [
             param,
+            zm_param,
             ac_param,
             enso_param,
             qbo_param,

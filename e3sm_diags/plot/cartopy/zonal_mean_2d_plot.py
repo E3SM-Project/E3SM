@@ -152,8 +152,8 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, parameters, stats=None):
         fontdict=plotSideTitle,
     )
 
-    # if Max is smaller than 0.01, use scientific notation
-    if stats[0] < 0.01:
+    # if positive Max is smaller than 0.01, use scientific notation
+    if stats[0] < 0.01 and stats[0] > 0:
         stats_fmt = "%.e\n%.e\n%.e"
     else:
         stats_fmt = "%.2f\n%.2f\n%.2f"

@@ -1295,7 +1295,7 @@ derived_variables = {
             ),
         ]
     ),
-    "SHUM": OrderedDict(
+    "Q": OrderedDict(
         [
             (
                 ("hus",),
