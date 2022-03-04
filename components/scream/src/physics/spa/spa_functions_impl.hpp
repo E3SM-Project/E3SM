@@ -427,17 +427,42 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(spa_horiz_interp.target_grid_loc, target_grid_loc_h);
 }  // END get_remap_weights_from_file
 /*-----------------------------------------------------------------*/
-/* Note: In this routine the SPA source data is padded in the vertical.
+/* Note: In this routine the SPA source data is padded in the vertical
+ * to facilitate the proper behavior at the boundaries when doing the
+ * vertical interpolation in spa_main.
+ *
+ * The vertical interpolation routine will map the source data (y1)
+ * defined at the pressure levels (x1) onto the target data vector (y2)
+ * defined on the target pressure levels (x2) following the equation:
+ *
+ * y2 = y1(k) + ( y1(k+1)-y1(k) ) * ( x2-x1(k) )/( x1(k+1) - x1(k) )
+ *
+ * where k and k+1 are the pressure levels that bound the target pressure
+ * level x2.
+ *
+ * We pad the left-hand-side (lhs) of the data with 0.0 and the right-hand-side (rhs)
+ * of the data with a copy of the last data entry.  Similarly, we pad the
+ * lhs of the hybrid coordinate system to ensure that the lhs of the
+ * source pressure levels is 0.0 and the rhs is big enough to be larger than
+ * the highest pressure in the target pressure levels.
  * 
- * The padding sets the first value in a vertical column of data to 0.0.
- * Thus the top of the model source data is always 0.0.
- * The final value is set to match the actual surface value.  Thus for
- * each column:
- *   src_data = [ 0.0, actual_spa_data, actual_spa_date[-1] ]
- * This padding will ensure that the vertical interpolation routine in
- * spa_main doesn't extrapolate values when the target column has pressures
- * outside of the source data column.
- * This approach matches the vertical interpolant used in EAMv2.
+ * The padding sets the lhs in a vertical column of data to 0.0.
+ * This has the effect of ramping the top-of-model target data down to 0.0
+ * when the top target pressure level is smaller than the top source pressure,
+ * as follow:
+ *      y2 = y1(1) * x2/x1(1)
+ * Since x2 <= x1(1) this will slowly taper down to 0.0.
+ *
+ * The rhs value is set to match the actual rhs value of the data, such that
+ *      y1[N+1] = y1(N)
+ * where N is the number of points in the source data.
+ *
+ * Thus when the bottom target pressure level is larger than the bottom source
+ * pressure level the interpolation is:
+ *     y2 = y1[N]
+ *
+ * Thus, each column is padded as follows:
+ *   src_data = [ 0.0, actual_spa_data, actual_spa_data[-1] ]
  *
  * Note, the hyam and hybm vectors are also padded so that the source data
  * pressure profile that is constructed in spa_main is
@@ -588,39 +613,50 @@ void SPAFunctions<S,D>
     // PS is defined only over columns
     ps_h(tgt_col) += PS_v_h(src_col)*src_wgt;
     // CCN3 and all AER variables have levels
-    for (int kk=1; kk<spa_data.nlevs; kk++) {
+    for (int kk=0; kk<source_data_nlevs; kk++) {
       // Note, all variables we map to are packed, while all the data we just loaded as
-      // input are in real N-D views.  So we need to back out the indices for the target
-      // data.
-      int pack = kk / Spack::n; 
-      int kidx = kk % Spack::n;
+      // input are in real N-D views.  So we need to set the pack and index of the actual
+      // data ahead by one value.
       // Note, we want to pad the actual source data such that
-      //   Y[0] = 0.0, note this is handled by the deep copy above
-      //   Y[nlevs-1] = Y[nlevs-2]
-      // and the data level index is kk-1 for kk = 1,nlevs-2
-      const int ksrc = kk < spa_data.nlevs-1 ? kk-1 : kk-2;
-      ccn3_h(tgt_col,pack)[kidx] += CCN3_v_h(src_col,ksrc)*src_wgt;
+      //   Y[0]   = 0.0, note this is handled by the deep copy above
+      //   Y[k+1] = y[k], k = 0,source_data_nlevs (y is the data from file)
+      //   Y[N+2] = y[N-1], N = source_data_nlevs
+      int pack = (kk+1) / Spack::n; 
+      int kidx = (kk+1) % Spack::n;
+      ccn3_h(tgt_col,pack)[kidx] += CCN3_v_h(src_col,kk)*src_wgt;
       for (int n=0; n<nswbands; n++) {
-        aer_g_sw_h(tgt_col,n,pack)[kidx]   += AER_G_SW_v_h(src_col,n,ksrc)*src_wgt;
-        aer_ssa_sw_h(tgt_col,n,pack)[kidx] += AER_SSA_SW_v_h(src_col,n,ksrc)*src_wgt;
-        aer_tau_sw_h(tgt_col,n,pack)[kidx] += AER_TAU_SW_v_h(src_col,n,ksrc)*src_wgt;
+        aer_g_sw_h(tgt_col,n,pack)[kidx]   += AER_G_SW_v_h(src_col,n,kk)*src_wgt;
+        aer_ssa_sw_h(tgt_col,n,pack)[kidx] += AER_SSA_SW_v_h(src_col,n,kk)*src_wgt;
+        aer_tau_sw_h(tgt_col,n,pack)[kidx] += AER_TAU_SW_v_h(src_col,n,kk)*src_wgt;
       }
       for (int n=0; n<nlwbands; n++) {
-        aer_tau_lw_h(tgt_col,n,pack)[kidx] += AER_TAU_LW_v_h(src_col,n,ksrc)*src_wgt;
+        aer_tau_lw_h(tgt_col,n,pack)[kidx] += AER_TAU_LW_v_h(src_col,n,kk)*src_wgt;
       }
+    }
+    int kk = source_data_nlevs-1;
+    int pack = (kk+2) / Spack::n; 
+    int kidx = (kk+2) % Spack::n;
+    ccn3_h(tgt_col,pack)[kidx] += CCN3_v_h(src_col,kk)*src_wgt;
+    for (int n=0; n<nswbands; n++) {
+      aer_g_sw_h(tgt_col,n,pack)[kidx]   += AER_G_SW_v_h(src_col,n,kk)*src_wgt;
+      aer_ssa_sw_h(tgt_col,n,pack)[kidx] += AER_SSA_SW_v_h(src_col,n,kk)*src_wgt;
+      aer_tau_sw_h(tgt_col,n,pack)[kidx] += AER_TAU_SW_v_h(src_col,n,kk)*src_wgt;
+    }
+    for (int n=0; n<nlwbands; n++) {
+      aer_tau_lw_h(tgt_col,n,pack)[kidx] += AER_TAU_LW_v_h(src_col,n,kk)*src_wgt;
     }
   }
   // We also need to pad the hyam and hybm views with
   //   hya/b[0] = 0.0, note this is handled by deep copy above
-  //   hya/b[nlevs-1] = BIG number so always bigger than likely pmid for target
-  for (int kk=1; kk<spa_data.nlevs-1; kk++) {
-    int pack = kk / Spack::n; 
-    int kidx = kk % Spack::n;
-    hyam_h(pack)[kidx] = hyam_v_h(kk-1);
-    hybm_h(pack)[kidx] = hybm_v_h(kk-1);
+  //   hya/b[N+2] = BIG number so always bigger than likely pmid for target
+  for (int kk=0; kk<source_data_nlevs; kk++) {
+    int pack = (kk+1) / Spack::n; 
+    int kidx = (kk+1) % Spack::n;
+    hyam_h(pack)[kidx] = hyam_v_h(kk);
+    hybm_h(pack)[kidx] = hybm_v_h(kk);
   }
-  const int pack = (spa_data.nlevs-1) / Spack::n;
-  const int kidx = (spa_data.nlevs-1) % Spack::n;
+  const int pack = (source_data_nlevs+2) / Spack::n;
+  const int kidx = (source_data_nlevs+2) % Spack::n;
   hyam_h(pack)[kidx] = 1e5; 
   hybm_h(pack)[kidx] = 0.0;
   
