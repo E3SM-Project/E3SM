@@ -34,6 +34,10 @@ TEST_CASE("spa_read_data","spa")
   using C = scream::physics::Constants<Real>;
   static constexpr auto P0 = C::P0;
 
+ /* ====================================================================
+  *                  Test Setup, create structures, etc.
+  * ====================================================================*/
+
   // Set up the mpi communicator and init the pio subsystem
   ekat::Comm spa_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
   MPI_Fint fcomm = MPI_Comm_c2f(spa_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
@@ -126,6 +130,16 @@ TEST_CASE("spa_read_data","spa")
   Kokkos::deep_copy(aer_tau_sw_end,spa_data_end.AER_TAU_SW);
   Kokkos::deep_copy(aer_tau_lw_end,spa_data_end.AER_TAU_LW);
 
+ /* ====================================================================
+  * Test that spa_main is the identity when no time interpolation and
+  * matching pressure profiles.
+  *
+  * In this section we set the target pressure profile to match the
+  * expected source pressure profile that will be calculate in spa_main.
+  * We test when the time stamp is both at the beginning of the month and
+  * the end of the month, which should be the identity for data_out matching
+  * data_beg and data_end, respectively.
+  * ====================================================================*/
   // Create the pressure state.  Note, we need to create the pmid values for the actual data.  We will build it based on the PS and hya/bm
   // coordinates in the beginning data.
   auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
@@ -176,6 +190,7 @@ TEST_CASE("spa_read_data","spa")
     }
   }
 
+  /* Here we test the end of the month */
   // Add a month and recalculate.  Should now match the end of the month data.
   ts += util::days_in_month(ts.get_year(),ts.get_month())*86400;
   spa_time_state.t_now = ts.frac_of_year_in_days();
@@ -217,7 +232,19 @@ TEST_CASE("spa_read_data","spa")
       }
     }
   }
-
+ /* ====================================================================
+  * Test that the time interpolation is bounded by the data:
+  *
+  * In the above tests we established that when the pressure profile for
+  * source and data match and there is no time interpolation the output
+  * data and input data match.
+  *
+  * Here we introduce time interpolation by picking the middle of the month
+  * between beginning and ending months of data.  We set the target pressure profile
+  * to match the profile expected for the source data in spa_main so that
+  * only time interpolation is tested and check that all output values are
+  * bounded by the min/max of the beggining/ending data.
+  * ====================================================================*/
   // Add a few days and update spa data.  Make sure that the output values are not outside of the bounds
   // of the actual SPA data 
   ts += (int)(util::days_in_month(ts.get_year(),ts.get_month())*0.5)*86400;
@@ -234,6 +261,70 @@ TEST_CASE("spa_read_data","spa")
   Kokkos::deep_copy(aer_ssa_sw_end,spa_data_end.AER_SSA_SW);
   Kokkos::deep_copy(aer_tau_sw_end,spa_data_end.AER_TAU_SW);
   Kokkos::deep_copy(aer_tau_lw_end,spa_data_end.AER_TAU_LW);
+  // Create a target pressure profile to interpolate onto that matches what spa_main will compute for the source data 
+  auto& t_now = spa_time_state.t_now;
+  auto& t_beg = spa_time_state.t_beg_month;
+  auto& t_len = spa_time_state.days_this_month;
+  auto t_norm = (t_now-t_beg)/t_len;
+  for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
+    for (int kk=0;kk<nlevs;kk++) {
+      int kpack     = kk / Spack::n;
+      int kidx      = kk % Spack::n;
+      int kpack_pad = (kk+1) / Spack::n;
+      int kidx_pad  = (kk+1) % Spack::n;
+      Real ps = (1.0 - t_norm) * ps_beg(dof_i) + t_norm * ps_end(dof_i);
+      pmid_tgt_h(dof_i,kpack)[kidx] = ps*hybm_h(kpack_pad)[kidx_pad] + P0*hyam_h(kpack_pad)[kidx_pad];
+    }
+  }
+  Kokkos::deep_copy(pmid_tgt,pmid_tgt_h);
+
+  SPAFunc::spa_main(spa_time_state,pmid_tgt,spa_data_beg,spa_data_end,spa_data_out,dofs_gids.size(),nlevs,nswbands,nlwbands);
+  Kokkos::deep_copy(ccn3_h      , spa_data_out.CCN3);
+  Kokkos::deep_copy(aer_g_sw_h  , spa_data_out.AER_G_SW);
+  Kokkos::deep_copy(aer_ssa_sw_h, spa_data_out.AER_SSA_SW);
+  Kokkos::deep_copy(aer_tau_sw_h, spa_data_out.AER_TAU_SW);
+  Kokkos::deep_copy(aer_tau_lw_h, spa_data_out.AER_TAU_LW);
+
+  // Make sure the output data is within the same bounds as the input data.  We check bounds in each column and level.
+  for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
+    for (int kk=0;kk<nlevs;kk++) {
+      int kpack = kk / Spack::n;
+      int kidx  = kk % Spack::n;
+      int kpack_pad = (kk+1) / Spack::n;
+      int kidx_pad  = (kk+1) % Spack::n;
+      REQUIRE(ccn3_h(dof_i,kpack)[kidx]>=std::min(ccn3_beg(dof_i,kpack_pad)[kidx_pad],ccn3_end(dof_i,kpack_pad)[kidx_pad]));
+      REQUIRE(ccn3_h(dof_i,kpack)[kidx]<=std::max(ccn3_beg(dof_i,kpack_pad)[kidx_pad],ccn3_end(dof_i,kpack_pad)[kidx_pad]));
+      for (int n=0;n<nswbands;n++) {
+        REQUIRE(aer_g_sw_h(dof_i,n,kpack)[kidx]   >= std::min(aer_g_sw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_g_sw_end(dof_i,n,kpack_pad)[kidx_pad]) );
+        REQUIRE(aer_g_sw_h(dof_i,n,kpack)[kidx]   <= std::max(aer_g_sw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_g_sw_end(dof_i,n,kpack_pad)[kidx_pad]) );
+
+        REQUIRE(aer_ssa_sw_h(dof_i,n,kpack)[kidx] >= std::min(aer_ssa_sw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_ssa_sw_end(dof_i,n,kpack_pad)[kidx_pad]) );
+        REQUIRE(aer_ssa_sw_h(dof_i,n,kpack)[kidx] <= std::max(aer_ssa_sw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_ssa_sw_end(dof_i,n,kpack_pad)[kidx_pad]) );
+
+        REQUIRE(aer_tau_sw_h(dof_i,n,kpack)[kidx] >= std::min(aer_tau_sw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_tau_sw_end(dof_i,n,kpack_pad)[kidx_pad]) );
+        REQUIRE(aer_tau_sw_h(dof_i,n,kpack)[kidx] <= std::max(aer_tau_sw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_tau_sw_end(dof_i,n,kpack_pad)[kidx_pad]) );
+      }
+      for (int n=0;n<nlwbands;n++) {
+        REQUIRE(aer_tau_lw_h(dof_i,n,kpack)[kidx] >= std::min(aer_tau_lw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_tau_lw_end(dof_i,n,kpack_pad)[kidx_pad]) );
+        REQUIRE(aer_tau_lw_h(dof_i,n,kpack)[kidx] <= std::max(aer_tau_lw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_tau_lw_end(dof_i,n,kpack_pad)[kidx_pad]) );
+      }
+    }
+  }
+
+ /* ====================================================================
+  * Test that the vertical interpolation is witin the bounds of the source data
+  * on a per column basis.
+  *
+  * For simplicity we set data_beg = data_end which will ensure that no the
+  * time interpolation returns the identity.
+  *
+  * We set the target pressure level to be outside of the source pressure level
+  * that we expect spa_main to calculate.  We do this by bumping the surface pressure
+  * for the target pressure up by 5% and halve the top-of-model pressure.
+  *
+  * This will require the vertical interpolation to apply the boundary conditions, which
+  * should be still bounded by the max/min of the total column.
+  * ====================================================================*/
   // Create a target pressure profile to interpolate onto that has a slightly higher surface pressure that the bounds.
   // This will force extrapolation.
   for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
@@ -242,13 +333,16 @@ TEST_CASE("spa_read_data","spa")
       int kidx      = kk % Spack::n;
       int kpack_pad = (kk+1) / Spack::n;
       int kidx_pad  = (kk+1) % Spack::n;
-      Real ps = 1.05*std::max(ps_beg(dof_i),ps_end(dof_i));
-      pmid_tgt_h(dof_i,kpack)[kidx] = ps*hybm_h(kpack_pad)[kidx_pad] + P0*hyam_h(kpack_pad)[kidx_pad];
+      // If kk=0 then we are top-of-model, so we decrease the pressure.  Otherwise go with bigger pressure.
+      Real ps   = kk==0 ? ps_beg(dof_i) : 1.05*ps_beg(dof_i);
+      Real mult = kk==0 ? 0.5 : 1.0;
+      pmid_tgt_h(dof_i,kpack)[kidx] = mult*(ps*hybm_h(kpack_pad)[kidx_pad] + P0*hyam_h(kpack_pad)[kidx_pad]);
     }
   }
   Kokkos::deep_copy(pmid_tgt,pmid_tgt_h);
 
-  SPAFunc::spa_main(spa_time_state,pmid_tgt,spa_data_beg,spa_data_end,spa_data_out,dofs_gids.size(),nlevs,nswbands,nlwbands);
+  // Note, here we pass spa_data_beg twice, as both bounds of the input data.
+  SPAFunc::spa_main(spa_time_state,pmid_tgt,spa_data_beg,spa_data_beg,spa_data_out,dofs_gids.size(),nlevs,nswbands,nlwbands);
   Kokkos::deep_copy(ccn3_h      , spa_data_out.CCN3);
   Kokkos::deep_copy(aer_g_sw_h  , spa_data_out.AER_G_SW);
   Kokkos::deep_copy(aer_ssa_sw_h, spa_data_out.AER_SSA_SW);
@@ -271,8 +365,8 @@ TEST_CASE("spa_read_data","spa")
       int kpack_pad = (kk+1) / Spack::n;
       int kidx_pad  = (kk+1) % Spack::n;
       Real tmp_min, tmp_max;
-      tmp_min = std::min(ccn3_beg(dof_i,kpack_pad)[kidx_pad],ccn3_end(dof_i,kpack_pad)[kidx_pad]);
-      tmp_max = std::max(ccn3_beg(dof_i,kpack_pad)[kidx_pad],ccn3_end(dof_i,kpack_pad)[kidx_pad]);
+      tmp_min = ccn3_beg(dof_i,kpack_pad)[kidx_pad];
+      tmp_max = ccn3_beg(dof_i,kpack_pad)[kidx_pad];
       if (kk == 0) {
         ccn3_bnds_h(0,dof_i) = tmp_min; 
         ccn3_bnds_h(1,dof_i) = tmp_max;
@@ -282,14 +376,14 @@ TEST_CASE("spa_read_data","spa")
       }
       for (int n=0;n<nswbands;n++) {
         Real tmp_min_g, tmp_max_g;
-        tmp_min_g = std::min(aer_g_sw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_g_sw_end(dof_i,n,kpack_pad)[kidx_pad]);
-        tmp_max_g = std::max(aer_g_sw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_g_sw_end(dof_i,n,kpack_pad)[kidx_pad]);
+        tmp_min_g = aer_g_sw_beg(dof_i,n,kpack_pad)[kidx_pad];
+        tmp_max_g = aer_g_sw_beg(dof_i,n,kpack_pad)[kidx_pad];
         Real tmp_min_ssa, tmp_max_ssa;
-        tmp_min_ssa = std::min(aer_ssa_sw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_ssa_sw_end(dof_i,n,kpack_pad)[kidx_pad]);
-        tmp_max_ssa = std::max(aer_ssa_sw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_ssa_sw_end(dof_i,n,kpack_pad)[kidx_pad]);
+        tmp_min_ssa = aer_ssa_sw_beg(dof_i,n,kpack_pad)[kidx_pad];
+        tmp_max_ssa = aer_ssa_sw_beg(dof_i,n,kpack_pad)[kidx_pad];
         Real tmp_min_tau, tmp_max_tau;
-        tmp_min_tau = std::min(aer_tau_sw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_tau_sw_end(dof_i,n,kpack_pad)[kidx_pad]);
-        tmp_max_tau = std::max(aer_tau_sw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_tau_sw_end(dof_i,n,kpack_pad)[kidx_pad]);
+        tmp_min_tau = aer_tau_sw_beg(dof_i,n,kpack_pad)[kidx_pad];
+        tmp_max_tau = aer_tau_sw_beg(dof_i,n,kpack_pad)[kidx_pad];
 
         if (kk == 0) {
           aer_sw_g_bnds_h(0,dof_i,n)   = tmp_min_g; 
@@ -309,8 +403,8 @@ TEST_CASE("spa_read_data","spa")
       }
       for (int n=0;n<nlwbands;n++) {
         Real tmp_min_tau, tmp_max_tau;
-        tmp_min_tau = std::min(aer_tau_lw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_tau_lw_end(dof_i,n,kpack_pad)[kidx_pad]);
-        tmp_max_tau = std::max(aer_tau_lw_beg(dof_i,n,kpack_pad)[kidx_pad],aer_tau_lw_end(dof_i,n,kpack_pad)[kidx_pad]);
+        tmp_min_tau = aer_tau_lw_beg(dof_i,n,kpack_pad)[kidx_pad];
+        tmp_max_tau = aer_tau_lw_beg(dof_i,n,kpack_pad)[kidx_pad];
         if (kk == 0) {
           aer_lw_tau_bnds_h(0,dof_i,n) = tmp_min_tau;
           aer_lw_tau_bnds_h(1,dof_i,n) = tmp_max_tau;
@@ -345,9 +439,9 @@ TEST_CASE("spa_read_data","spa")
     }
   }
 
-
-
-
+ /* ====================================================================
+  *                         DONE WITH TESTS
+  * ====================================================================*/
   // All Done 
   scorpio::eam_pio_finalize();
 } // run_property
