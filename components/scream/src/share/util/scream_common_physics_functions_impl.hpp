@@ -405,7 +405,7 @@ void PhysicsFunctions<DeviceT>::lapse_T_for_psl(const ScalarT& T_ground, const S
   T_ground_tmp= T_ground; //make copy b/c may need to modify later
 
   if (T_ground_tmp<=290.5 && T_sl>290.5){
-    lapse=grav/phi_ground*(290.5-T_ground_tmp); //choose lapse rate to make T at sea level 290.5K
+    lapse=gravit/phi_ground*(290.5-T_ground_tmp); //choose lapse rate to make T at sea level 290.5K
   } else if (T_ground_tmp>290.5 && T_sl>290.5){
     lapse=0; //choose lapse rate = 0 to not make things any worse.
     T_ground_tmp=0.5*(290.5+T_ground_tmp); //reduce effective T in a smooth way to avoid unrealistic result
@@ -419,8 +419,6 @@ void PhysicsFunctions<DeviceT>::lapse_T_for_psl(const ScalarT& T_ground, const S
     //because 6.5K/km lapse rate will cool T_sl in that case and that's what we want.
     lapse = 0.0065; //assume 6.5K/km lapse rate for reasonable temperatures
   }
-    
-  return lapse, T_ground_tmp;
 }
 
   template<typename DeviceT>
@@ -439,10 +437,10 @@ ScalarT PhysicsFunctions<DeviceT>::calculate_psl(const ScalarT& T_ground, const 
   using C = scream::physics::Constants<Real>;
   constexpr Real gravit = C::gravit;
   constexpr Real Rair = C::Rair;
-  Scalar psl
+  ScalarT psl;
   
   // if phi_ground is very close to sea level already, set psl to existing p_ground
-  if (std::abs(phi_ground/grav) < 1e-4){
+  if (std::abs(phi_ground/gravit) < 1e-4){
     psl = p_ground;
   //otherwise compute
   }else{
@@ -451,10 +449,10 @@ ScalarT PhysicsFunctions<DeviceT>::calculate_psl(const ScalarT& T_ground, const 
     lapse_T_for_psl(T_ground,p_ground,phi_ground, lapse, T_ground_tmp);
     auto alpha=lapse*Rair/gravit;
     auto beta=phi_ground/(Rair*T_ground_tmp);
-    psl = p_ground*std::exp(beta*( 1. - alpha*beta/2. + (alpha*beta)**2. /3.) );
+    psl = p_ground*std::exp(beta*( 1. - alpha*beta/2. + std::pow(alpha*beta,2/3) ) );
   }
   
-  return psl
+  return psl;
 }
 //---------------PMC
 

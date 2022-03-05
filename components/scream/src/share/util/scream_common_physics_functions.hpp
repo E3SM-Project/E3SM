@@ -244,7 +244,7 @@ struct PhysicsFunctions
   //-----------------------------------------------------------------------------------------------//
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
-  static ScalarT lapse_T_for_psl(const ScalarT& T_ground, const ScalarT& p_ground, const ScalarT& phi_ground,
+  static void lapse_T_for_psl(const ScalarT& T_ground, const ScalarT& p_ground, const ScalarT& phi_ground,
 				 ScalarT& lapse, ScalarT& T_ground_tmp );
 
   
