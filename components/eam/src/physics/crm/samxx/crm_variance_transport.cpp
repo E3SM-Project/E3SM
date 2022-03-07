@@ -99,9 +99,7 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
 
 void VT_diagnose() {
   auto &t            = :: t;
-  auto &qv           = :: qv;
-  auto &qcl          = :: qcl;
-  auto &qci          = :: qci;
+  auto &micro_field  = :: micro_field;
   auto &factor_xy    = :: factor_xy;
   auto &t_vt_pert    = :: t_vt_pert;
   auto &q_vt_pert    = :: q_vt_pert;
@@ -112,6 +110,8 @@ void VT_diagnose() {
   // local variables
   real2d t_mean("t_mean", nzm, ncrms);
   real2d q_mean("q_mean", nzm, ncrms);
+
+  int idx_qt = index_water_vapor;
 
   //----------------------------------------------------------------------------
   // calculate horizontal mean
@@ -131,7 +131,7 @@ void VT_diagnose() {
   //      do icrm = 1,ncrms
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
     yakl::atomicAdd( t_mean(k,icrm) , t(k,j+offy_s,i+offx_s,icrm) );
-    yakl::atomicAdd( q_mean(k,icrm) , qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm) );
+    yakl::atomicAdd( q_mean(k,icrm) , micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) );
   });
 
   // do k = 1,nzm
@@ -156,7 +156,7 @@ void VT_diagnose() {
     //       do icrm = 1,ncrms
     parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       tmp_t(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm);
-      tmp_q(k,j,i,icrm) = qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm);
+      tmp_q(k,j,i,icrm) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm);
       tmp_t(k,j,i,icrm) = tmp_t(k,j,i,icrm) - t_mean(k,icrm);
       tmp_q(k,j,i,icrm) = tmp_q(k,j,i,icrm) - q_mean(k,icrm);
     });
@@ -172,7 +172,7 @@ void VT_diagnose() {
     //       do icrm = 1,ncrms
     parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       t_vt_pert(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm) - t_mean(k,icrm);
-      q_vt_pert(k,j,i,icrm) = qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm) - q_mean(k,icrm);
+      q_vt_pert(k,j,i,icrm) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - q_mean(k,icrm);
     });
     
   }

@@ -442,6 +442,8 @@ contains
         ! Turn on restarts
         call mpas_pool_get_config(domain % configs, "config_do_restart", tempLogicalConfig)
         tempLogicalConfig = .true.
+        call mpas_pool_get_config(domain % configs, "config_do_restart_bgc", tempLogicalConfig)
+        tempLogicalConfig = .true.
         call mpas_pool_get_config(domain % configs, "config_do_restart_hbrine", tempLogicalConfig)
         tempLogicalConfig = .true.
         call mpas_pool_get_config(domain % configs, "config_do_restart_snow_density", tempLogicalConfig)

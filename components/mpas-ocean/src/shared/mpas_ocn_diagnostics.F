@@ -2658,6 +2658,8 @@ contains
 
       ! Compute top drag
 #ifdef MPAS_OPENACC
+      !$acc enter data copyin(landIceFraction)
+
       !$acc parallel loop present(cellsOnEdge, kineticEnergyCell, minLevelCell, minLevelEdgeBot) &
       !$acc    present(landIceFraction, topDrag, normalVelocity)
 #else
@@ -2808,6 +2810,8 @@ contains
 
       ! modify the spatially-varying attenuation coefficient where there is land ice
 #ifdef MPAS_OPENACC
+      !$acc enter data copyin(landIceMask)
+
       !$acc parallel loop present(landIceMask, sfcFlxAttCoeff)
 #else
       !$omp parallel

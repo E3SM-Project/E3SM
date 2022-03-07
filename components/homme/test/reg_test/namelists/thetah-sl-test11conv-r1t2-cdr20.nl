@@ -36,7 +36,6 @@
   semi_lagrange_hv_q = 1
 /
 &vert_nl
-  vform             = "ccm"
   vanalytic         = 1
   vtop              = 0.2549944
 /
