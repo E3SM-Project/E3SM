@@ -271,6 +271,7 @@
 <config_use_parallel_self_attraction_loading>.false.</config_use_parallel_self_attraction_loading>
 <config_parallel_self_attraction_loading_order>10</config_parallel_self_attraction_loading_order>
 <config_parallel_self_attraction_loading_n_cells_per_block>600</config_parallel_self_attraction_loading_n_cells_per_block>
+<config_parallel_self_attraction_loading_bfb>.true.</config_parallel_self_attraction_loading_bfb>
 
 <!-- tidal_potential_forcing -->
 <config_use_tidal_potential_forcing>.false.</config_use_tidal_potential_forcing>

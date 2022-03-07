@@ -1213,6 +1213,14 @@ Valid values: Any positive integer value.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_parallel_self_attraction_loading_bfb" type="logical"
+	category="self_attraction_loading" group="self_attraction_loading">
+Controls whether a reproducible sum is used for the parallel spherical harmonics calculations
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <!-- tidal_potential_forcing -->
 
 <entry id="config_use_tidal_potential_forcing" type="logical"

@@ -241,6 +241,7 @@ add_default($nl, 'config_nLongitude');
 add_default($nl, 'config_use_parallel_self_attraction_loading');
 add_default($nl, 'config_parallel_self_attraction_loading_order');
 add_default($nl, 'config_parallel_self_attraction_loading_n_cells_per_block');
+add_default($nl, 'config_parallel_self_attraction_loading_bfb');
 
 ###########################################
 # Namelist group: tidal_potential_forcing #
