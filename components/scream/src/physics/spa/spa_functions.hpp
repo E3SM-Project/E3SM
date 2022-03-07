@@ -167,7 +167,7 @@ struct SPAFunctions
     // Number of columns and levels on source grid
     // Note, the number of columns on target grid should already be known.
     //       these are given based on the simulation grid.
-    Int source_grid_ncols, source_grid_nlevs;
+    Int source_grid_ncols;
     // 1D index of weights.  Needs decoder indexing, see below
     view_1d<Real> weights;
     // 1D index of source grid column.

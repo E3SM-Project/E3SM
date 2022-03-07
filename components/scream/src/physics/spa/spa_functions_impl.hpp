@@ -655,8 +655,8 @@ void SPAFunctions<S,D>
     hyam_h(pack)[kidx] = hyam_v_h(kk);
     hybm_h(pack)[kidx] = hybm_v_h(kk);
   }
-  const int pack = (source_data_nlevs+2) / Spack::n;
-  const int kidx = (source_data_nlevs+2) % Spack::n;
+  const int pack = (source_data_nlevs+1) / Spack::n;
+  const int kidx = (source_data_nlevs+1) % Spack::n;
   hyam_h(pack)[kidx] = 1e5; 
   hybm_h(pack)[kidx] = 0.0;
   

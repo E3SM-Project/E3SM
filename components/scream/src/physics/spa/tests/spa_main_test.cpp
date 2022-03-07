@@ -20,6 +20,8 @@ using namespace scream;
 using namespace spa;
 
 template <typename S>
+using view_1d_host = typename KokkosTypes<DefaultDevice>::template view_1d<S>::HostMirror;
+template <typename S>
 using view_1d = typename KokkosTypes<DefaultDevice>::template view_1d<S>;
 template <typename S>
 using view_2d = typename KokkosTypes<DefaultDevice>::template view_2d<S>;
@@ -30,7 +32,7 @@ using SPAFunc = spa::SPAFunctions<Real, DefaultDevice>;
 using Spack = SPAFunc::Spack;
 
 // Helper Functions
-void compute_max_min(const view_1d<const Spack>& input, const int start, const int end, Real& min, Real& max);
+void compute_max_min(const view_1d_host<const Spack>& input, const int start, const int end, Real& min, Real& max);
 
 TEST_CASE("spa_read_data","spa")
 {
@@ -160,8 +162,6 @@ TEST_CASE("spa_read_data","spa")
       pmid_tgt_h(dof_i,kpack)[kidx] = ps_beg(dof_i)*hybm_h(kpack_pad)[kidx_pad] + P0*hyam_h(kpack_pad)[kidx_pad];
     }
   }
-  int kpack_pad = (nlevs+1) / Spack::n;
-  int kidx_pad  = (nlevs+1) % Spack::n;
   Kokkos::deep_copy(pmid_tgt,pmid_tgt_h);
 
   // Run SPA main
@@ -411,7 +411,7 @@ TEST_CASE("spa_read_data","spa")
 } // run_property
 
 // Helper function
-void compute_max_min(const view_1d<const Spack>& input, const int start, const int end, Real& min, Real& max)
+void compute_max_min(const view_1d_host<const Spack>& input, const int start, const int end, Real& min, Real& max)
 {
   int kpack, kidx;
   // Initialize min and max with first entry in input
