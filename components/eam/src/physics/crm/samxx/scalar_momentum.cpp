@@ -81,7 +81,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    //  for (int j=0; j<ny; j++) {
    //    for (int i=0; i<nx; i++) {
    //      for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       // real tmp = scalar_wind(k,j,i,icrm) / real(nx);
       yakl::atomicAdd( scalar_wind_avg(k,j,icrm) , scalar_wind(k,j,i,icrm) / real(nx) );
       // note that w is on interface levels - need to interpolate to mid-levels
@@ -187,7 +187,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    //  for (int j=0; j<ny; j++) {
    //    for (int i=0; i<nx; i++) {
    //      for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+   parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       if (i>0) {
          b(k+1,j,i,icrm) = b(k+1,j,i,icrm) - a(k+1,j,i,icrm) / b(k,j,i,icrm) * c(k,j,i,icrm);
          pgf_hat(k+1,j,i,icrm) = pgf_hat(k+1,j,i,icrm) - a(k+1,j,i,icrm) / b(k,j,i,icrm) * pgf_hat(k,j,i,icrm);
@@ -232,7 +232,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    // for (int k=0; k<nzm; k++) {
    //   for (int j=0; j<ny; j++) {
    //     for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int icrm) {
+   parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
       SArray<real,1,nx+2> ftmp;
       for (int i=0; i<nx2; i++) { ftmp(i) = pgf_hat(k,j,i,icrm); }
       fftx.inverse(ftmp, fftx.trig, yakl::FFT_SCALE_ECMWF);
