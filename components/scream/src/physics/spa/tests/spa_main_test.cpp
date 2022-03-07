@@ -29,6 +29,9 @@ using view_3d = typename KokkosTypes<DefaultDevice>::template view_3d<S>;
 using SPAFunc = spa::SPAFunctions<Real, DefaultDevice>;
 using Spack = SPAFunc::Spack;
 
+// Helper Functions
+void compute_max_min(const view_1d<const Spack>& input, const int start, const int end, Real& min, Real& max);
+
 TEST_CASE("spa_read_data","spa")
 {
   using C = scream::physics::Constants<Real>;
@@ -349,7 +352,8 @@ TEST_CASE("spa_read_data","spa")
   Kokkos::deep_copy(aer_tau_sw_h, spa_data_out.AER_TAU_SW);
   Kokkos::deep_copy(aer_tau_lw_h, spa_data_out.AER_TAU_LW);
 
-  // Calculate the min and max values for all spa input data for all columns 
+  // Calculate the min and max values for all spa input data for all columns,
+  // note we need to compute only the interior values and ignore the padding. 
   auto ccn3_bnds       = view_2d<Real>("",2,ncols);
   auto aer_sw_g_bnds   = view_3d<Real>("",2,ncols,nswbands);
   auto aer_sw_ssa_bnds = view_3d<Real>("",2,ncols,nswbands);
@@ -361,80 +365,40 @@ TEST_CASE("spa_read_data","spa")
   auto aer_sw_tau_bnds_h = Kokkos::create_mirror_view(aer_sw_tau_bnds);
   auto aer_lw_tau_bnds_h = Kokkos::create_mirror_view(aer_lw_tau_bnds);
   for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
-    for (int kk=0;kk<nlevs;kk++) {
-      int kpack_pad = (kk+1) / Spack::n;
-      int kidx_pad  = (kk+1) % Spack::n;
-      Real tmp_min, tmp_max;
-      tmp_min = ccn3_beg(dof_i,kpack_pad)[kidx_pad];
-      tmp_max = ccn3_beg(dof_i,kpack_pad)[kidx_pad];
-      if (kk == 0) {
-        ccn3_bnds_h(0,dof_i) = tmp_min; 
-        ccn3_bnds_h(1,dof_i) = tmp_max;
-      } else {
-        ccn3_bnds_h(0,dof_i) = std::min(ccn3_bnds_h(0,dof_i), tmp_min);
-        ccn3_bnds_h(1,dof_i) = std::max(ccn3_bnds_h(1,dof_i), tmp_max);
-      }
-      for (int n=0;n<nswbands;n++) {
-        Real tmp_min_g, tmp_max_g;
-        tmp_min_g = aer_g_sw_beg(dof_i,n,kpack_pad)[kidx_pad];
-        tmp_max_g = aer_g_sw_beg(dof_i,n,kpack_pad)[kidx_pad];
-        Real tmp_min_ssa, tmp_max_ssa;
-        tmp_min_ssa = aer_ssa_sw_beg(dof_i,n,kpack_pad)[kidx_pad];
-        tmp_max_ssa = aer_ssa_sw_beg(dof_i,n,kpack_pad)[kidx_pad];
-        Real tmp_min_tau, tmp_max_tau;
-        tmp_min_tau = aer_tau_sw_beg(dof_i,n,kpack_pad)[kidx_pad];
-        tmp_max_tau = aer_tau_sw_beg(dof_i,n,kpack_pad)[kidx_pad];
-
-        if (kk == 0) {
-          aer_sw_g_bnds_h(0,dof_i,n)   = tmp_min_g; 
-          aer_sw_g_bnds_h(1,dof_i,n)   = tmp_max_g;
-          aer_sw_tau_bnds_h(0,dof_i,n) = tmp_min_tau;
-          aer_sw_tau_bnds_h(1,dof_i,n) = tmp_max_tau;
-          aer_sw_ssa_bnds_h(0,dof_i,n) = tmp_min_ssa;
-          aer_sw_ssa_bnds_h(1,dof_i,n) = tmp_max_ssa;
-        } else {
-          aer_sw_g_bnds_h(0,dof_i,n)   = std::min(aer_sw_g_bnds_h(0,dof_i,n),  tmp_min_g); 
-          aer_sw_g_bnds_h(1,dof_i,n)   = std::max(aer_sw_g_bnds_h(1,dof_i,n),  tmp_max_g);
-          aer_sw_tau_bnds_h(0,dof_i,n) = std::min(aer_sw_tau_bnds_h(0,dof_i,n),tmp_min_tau);
-          aer_sw_tau_bnds_h(1,dof_i,n) = std::max(aer_sw_tau_bnds_h(1,dof_i,n),tmp_max_tau);
-          aer_sw_ssa_bnds_h(0,dof_i,n) = std::min(aer_sw_ssa_bnds_h(0,dof_i,n),tmp_min_ssa);
-          aer_sw_ssa_bnds_h(1,dof_i,n) = std::max(aer_sw_ssa_bnds_h(1,dof_i,n),tmp_max_ssa);
-        }
-      }
-      for (int n=0;n<nlwbands;n++) {
-        Real tmp_min_tau, tmp_max_tau;
-        tmp_min_tau = aer_tau_lw_beg(dof_i,n,kpack_pad)[kidx_pad];
-        tmp_max_tau = aer_tau_lw_beg(dof_i,n,kpack_pad)[kidx_pad];
-        if (kk == 0) {
-          aer_lw_tau_bnds_h(0,dof_i,n) = tmp_min_tau;
-          aer_lw_tau_bnds_h(1,dof_i,n) = tmp_max_tau;
-        } else {
-          aer_lw_tau_bnds_h(0,dof_i,n) = std::min(aer_lw_tau_bnds_h(0,dof_i,n), tmp_min_tau);
-          aer_lw_tau_bnds_h(1,dof_i,n) = std::max(aer_lw_tau_bnds_h(1,dof_i,n), tmp_max_tau);
-        }
-      }
+    const auto& ccn3_in = ekat::subview(ccn3_beg,dof_i);
+    compute_max_min(ccn3_in,1,spa_data_beg.nlevs-1,ccn3_bnds_h(0,dof_i),ccn3_bnds_h(1,dof_i));
+    for (int n=0;n<nswbands;n++) {
+      const auto& sw_g_in = ekat::subview(aer_g_sw_beg,dof_i,n);
+      compute_max_min(sw_g_in,1,spa_data_beg.nlevs-1,aer_sw_g_bnds_h(0,dof_i,n),aer_sw_g_bnds_h(1,dof_i,n));
+      const auto& sw_ssa_in = ekat::subview(aer_ssa_sw_beg,dof_i,n);
+      compute_max_min(sw_ssa_in,1,spa_data_beg.nlevs-1,aer_sw_ssa_bnds_h(0,dof_i,n),aer_sw_ssa_bnds_h(1,dof_i,n));
+      const auto& sw_tau_in = ekat::subview(aer_tau_sw_beg,dof_i,n);
+      compute_max_min(sw_tau_in,1,spa_data_beg.nlevs-1,aer_sw_tau_bnds_h(0,dof_i,n),aer_sw_tau_bnds_h(1,dof_i,n));
+    }
+    for (int n=0;n<nlwbands;n++) {
+      const auto& lw_tau_in = ekat::subview(aer_tau_lw_beg,dof_i,n);
+      compute_max_min(lw_tau_in,1,spa_data_beg.nlevs-1,aer_lw_tau_bnds_h(0,dof_i,n),aer_lw_tau_bnds_h(1,dof_i,n));
     }
   }
 
   // Make sure the output data is within the same bounds as the input data.
-  Real tol = 1.1;
   for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
     for (int kk=0;kk<nlevs;kk++) {
       int kpack = kk / Spack::n;
       int kidx  = kk % Spack::n;
-      REQUIRE(ccn3_h(dof_i,kpack)[kidx]>=tol*ccn3_bnds_h(0,dof_i));
-      REQUIRE(ccn3_h(dof_i,kpack)[kidx]<=tol*ccn3_bnds_h(1,dof_i));
+      REQUIRE(ccn3_h(dof_i,kpack)[kidx]>=ccn3_bnds_h(0,dof_i));
+      REQUIRE(ccn3_h(dof_i,kpack)[kidx]<=ccn3_bnds_h(1,dof_i));
       for (int n=0;n<nswbands;n++) {
-        REQUIRE(aer_g_sw_h(dof_i,n,kpack)[kidx]   >= tol*aer_sw_g_bnds_h  (0,dof_i,n) );
-        REQUIRE(aer_ssa_sw_h(dof_i,n,kpack)[kidx] >= tol*aer_sw_ssa_bnds_h(0,dof_i,n) );
-        REQUIRE(aer_tau_sw_h(dof_i,n,kpack)[kidx] >= tol*aer_sw_tau_bnds_h(0,dof_i,n) );
-        REQUIRE(aer_g_sw_h(dof_i,n,kpack)[kidx]   <= tol*aer_sw_g_bnds_h  (1,dof_i,n) );
-        REQUIRE(aer_ssa_sw_h(dof_i,n,kpack)[kidx] <= tol*aer_sw_ssa_bnds_h(1,dof_i,n) );
-        REQUIRE(aer_tau_sw_h(dof_i,n,kpack)[kidx] <= tol*aer_sw_tau_bnds_h(1,dof_i,n) );
+        REQUIRE(aer_g_sw_h(dof_i,n,kpack)[kidx]   >= aer_sw_g_bnds_h  (0,dof_i,n) );
+        REQUIRE(aer_ssa_sw_h(dof_i,n,kpack)[kidx] >= aer_sw_ssa_bnds_h(0,dof_i,n) );
+        REQUIRE(aer_tau_sw_h(dof_i,n,kpack)[kidx] >= aer_sw_tau_bnds_h(0,dof_i,n) );
+        REQUIRE(aer_g_sw_h(dof_i,n,kpack)[kidx]   <= aer_sw_g_bnds_h  (1,dof_i,n) );
+        REQUIRE(aer_ssa_sw_h(dof_i,n,kpack)[kidx] <= aer_sw_ssa_bnds_h(1,dof_i,n) );
+        REQUIRE(aer_tau_sw_h(dof_i,n,kpack)[kidx] <= aer_sw_tau_bnds_h(1,dof_i,n) );
       }
       for (int n=0;n<nlwbands;n++) {
-        REQUIRE(aer_tau_lw_h(dof_i,n,kpack)[kidx] >= tol*aer_lw_tau_bnds_h(0,dof_i,n) );
-        REQUIRE(aer_tau_lw_h(dof_i,n,kpack)[kidx] <= tol*aer_lw_tau_bnds_h(1,dof_i,n) );
+        REQUIRE(aer_tau_lw_h(dof_i,n,kpack)[kidx] >= aer_lw_tau_bnds_h(0,dof_i,n) );
+        REQUIRE(aer_tau_lw_h(dof_i,n,kpack)[kidx] <= aer_lw_tau_bnds_h(1,dof_i,n) );
       }
     }
   }
@@ -445,6 +409,24 @@ TEST_CASE("spa_read_data","spa")
   // All Done 
   scorpio::eam_pio_finalize();
 } // run_property
+
+// Helper function
+void compute_max_min(const view_1d<const Spack>& input, const int start, const int end, Real& min, Real& max)
+{
+  int kpack, kidx;
+  // Initialize min and max with first entry in input
+  kpack = start / Spack::n;
+  kidx  = start % Spack::n;
+  min = input(kpack)[kidx];
+  max = input(kpack)[kidx];
+  // Now go through the rest of the view
+  for (int kk = start+1; kk<=end; kk++) {
+    kpack = kk / Spack::n;
+    kidx  = kk % Spack::n;
+    min = std::min(min,input(kpack)[kidx]);
+    max = std::max(max,input(kpack)[kidx]);
+  }
+}
 
 } // namespace
 
