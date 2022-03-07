@@ -481,21 +481,20 @@ contains
     ! Update surface fractions
 
     kif=mct_aVect_indexRA(fractions_a,"ifrac")
-    klf=mct_aVect_indexRA(fractions_a,"lfrac")
     kof=mct_aVect_indexRA(fractions_a,"ofrac")
+    if (samegrid_al) then
+       klf = mct_aVect_indexRA(fractions_a,"lfrac")
+       fracstr = 'lfrac'
+    else
+       klf = mct_aVect_indexRA(fractions_a,"lfrin")
+       fracstr = 'lfrin'
+    endif
+
     lsize = mct_avect_lsize(x2a_a)
 
     index_x2a_Sf_lfrac = mct_aVect_indexRA(x2a_a,'Sf_lfrac')
     index_x2a_Sf_ifrac = mct_aVect_indexRA(x2a_a,'Sf_ifrac')
     index_x2a_Sf_ofrac = mct_aVect_indexRA(x2a_a,'Sf_ofrac')
-
-    if (samegrid_al) then
-       klf_nm = mct_aVect_indexRA(fractions_a,"lfrac")
-       fracstr = 'lfrac'
-    else
-       klf_nm = mct_aVect_indexRA(fractions_a,"lfrin")
-       fracstr = 'lfrin'
-    endif
 
     do n = 1,lsize
        x2a_a%rAttr(index_x2a_Sf_lfrac,n) = fractions_a%Rattr(klf,n)
@@ -589,14 +588,13 @@ contains
 
        do n = 1,lsize
           fracl = fractions_a%Rattr(klf,n)
-          fracl_nm = fractions_a%Rattr(klf_nm,n)
           fraci = fractions_a%Rattr(kif,n)
           fraco = fractions_a%Rattr(kof,n)
           if (lindx(ka) > 0 .and. fracl > 0._r8) then
              if (lmerge(ka)) then
                 x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + l2x_a%rAttr(lindx(ka),n) * fracl
              else
-                x2a_a%rAttr(ka,n) = l2x_a%rAttr(lindx(ka),n) * fracl_nm
+                x2a_a%rAttr(ka,n) = l2x_a%rAttr(lindx(ka),n) * fracl
              end if
           end if
           if (iindx(ka) > 0 .and. fraci > 0._r8) then
