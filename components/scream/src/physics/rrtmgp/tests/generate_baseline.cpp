@@ -1,12 +1,15 @@
-#include <iostream>
-#include <cmath>
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
-#include "cpp/rrtmgp/mo_gas_concentrations.h"
 #include "physics/rrtmgp/mo_garand_atmos_io.h"
-#include "YAKL.h"
-#include "physics/rrtmgp/tests/rrtmgp_test_utils.hpp"
+#include "physics/rrtmgp/rrtmgp_test_utils.hpp"
 #include "share/scream_types.hpp"
 #include "share/scream_session.hpp"
+
+#include "cpp/rrtmgp/mo_gas_concentrations.h"
+
+#include "YAKL.h"
+
+#include <iostream>
+#include <cmath>
 
 using namespace scream;
 
@@ -82,14 +85,20 @@ int main (int argc, char** argv) {
     // input/outputs into the driver (persisting between calls), and
     // we would just have to setup the pointers to them in the
     // FluxesBroadband object
-    real2d sw_flux_up ("sw_flux_up" ,ncol,nlay+1);
-    real2d sw_flux_dn ("sw_flux_dn" ,ncol,nlay+1);
-    real2d sw_flux_dn_dir("sw_flux_dn_dir",ncol,nlay+1);
-    real2d lw_flux_up ("lw_flux_up" ,ncol,nlay+1);
-    real2d lw_flux_dn ("lw_flux_dn" ,ncol,nlay+1);
+    const int nswbands = 14;
+    const int nlwbands = 16;
+    real2d sw_flux_up ("sw_flux_up" , ncol, nlay+1);
+    real2d sw_flux_dn ("sw_flux_dn" , ncol, nlay+1);
+    real2d sw_flux_dn_dir("sw_flux_dn_dir", ncol, nlay+1);
+    real2d lw_flux_up ("lw_flux_up" , ncol, nlay+1);
+    real2d lw_flux_dn ("lw_flux_dn" , ncol, nlay+1);
+    real3d sw_bnd_flux_up ("sw_bnd_flux_up" , ncol, nlay+1, nswbands);
+    real3d sw_bnd_flux_dn ("sw_bnd_flux_dn" , ncol, nlay+1, nswbands);
+    real3d sw_bnd_flux_dir("sw_bnd_flux_dir", ncol, nlay+1, nswbands);
+    real3d lw_bnd_flux_up ("lw_bnd_flux_up" ,ncol, nlay+1, nlwbands);
+    real3d lw_bnd_flux_dn ("lw_bnd_flux_dn" ,ncol, nlay+1, nlwbands);
 
     // Compute band-by-band surface_albedos.
-    const auto nswbands = 14;
     real2d sfc_alb_dir("sfc_alb_dir", ncol, nswbands);
     real2d sfc_alb_dif("sfc_alb_dif", ncol, nswbands);
     rrtmgp::compute_band_by_band_surface_albedos(
@@ -108,7 +117,9 @@ int main (int argc, char** argv) {
         sfc_alb_dir, sfc_alb_dif, mu0,
         lwp, iwp, rel, rei,
         sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
-        lw_flux_up, lw_flux_dn
+        lw_flux_up, lw_flux_dn,
+        sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
+        lw_bnd_flux_up, lw_bnd_flux_dn
     );
 
     // Write fluxes
@@ -148,6 +159,11 @@ int main (int argc, char** argv) {
     sw_flux_dn_dir.deallocate();
     lw_flux_up.deallocate();
     lw_flux_dn.deallocate();
+    sw_bnd_flux_up.deallocate();
+    sw_bnd_flux_dn.deallocate();
+    sw_bnd_flux_dir.deallocate();
+    lw_bnd_flux_up.deallocate();
+    lw_bnd_flux_dn.deallocate();
 
     gas_concs.reset();
     rrtmgp::rrtmgp_finalize();

@@ -5,15 +5,14 @@
 module sl_advection
   use kinds, only              : real_kind, int_kind
   use dimensions_mod, only     : nlev, nlevp, np, qsize, qsize_d
-  use physical_constants, only : rgas, Rwater_vapor, kappa, g, rearth, rrearth, cp
   use derivative_mod, only     : derivative_t, gradient_sphere, divergence_sphere
   use element_mod, only        : element_t
   use hybvcoord_mod, only      : hvcoord_t
   use time_mod, only           : TimeLevel_t, TimeLevel_Qdp
-  use control_mod, only        : integration, test_case, hypervis_order, transport_alg, limiter_option
-  use edge_mod, only           : edgevpack_nlyr, edgevunpack_nlyr, edge_g, &
-       initghostbuffer3D, ghostVpack_unoriented, ghostVunpack_unoriented
-  use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t, ghostbuffer3D_t
+  use control_mod, only        : integration, test_case, hypervis_order, transport_alg, limiter_option,&
+                                 vert_remap_q_alg
+  use edge_mod, only           : edgevpack_nlyr, edgevunpack_nlyr, edge_g
+  use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t
   use hybrid_mod, only         : hybrid_t
   use bndry_mod, only          : bndry_exchangev
   use perf_mod, only           : t_startf, t_stopf, t_barrierf ! _EXTERNAL
@@ -29,14 +28,20 @@ module sl_advection
        half = 0.5_real_kind, one = 1.0_real_kind, two = 2.0_real_kind, &
        eps = epsilon(1.0_real_kind)
 
-  type (ghostBuffer3D_t)   :: ghostbuf_tr
   type (cartesian3D_t), allocatable :: dep_points_all(:,:,:,:) ! (np,np,nlev,nelemd)
   real(kind=real_kind), dimension(:,:,:,:,:), allocatable :: minq, maxq ! (np,np,nlev,qsize,nelemd)
+  logical :: is_sphere
 
   ! For use in make_positive.
   real(kind=real_kind) :: dp_tol
 
-  public :: Prim_Advec_Tracers_remap_ALE, sl_init1, sl_vertically_remap_tracers, sl_unittest
+  public :: prim_advec_tracers_remap_ALE, sl_init1, sl_vertically_remap_tracers, sl_unittest
+
+  ! For testing
+  public :: calc_trajectory, dep_points_all, sphere2cart
+
+  ! For C++
+  public :: sl_get_params
 
   logical, parameter :: barrier = .false.
 
@@ -61,12 +66,28 @@ contains
     independent_time_steps = dt_remap_factor < dt_tracer_factor
   end subroutine sl_parse_transport_alg
 
+  subroutine sphere2cart(sphere, cart)
+    use coordinate_systems_mod, only: spherical_polar_t, cartesian3D_t, change_coordinates
+
+    type (spherical_polar_t), intent(in) :: sphere
+    type (cartesian3D_t), intent(out) :: cart
+
+    if (is_sphere) then
+       cart = change_coordinates(sphere)
+    else
+       ! See conventions established in planar_mod::coordinates_atomic.
+       cart%x = sphere%lon
+       cart%y = sphere%lat
+       cart%z = 0
+    end if
+  end subroutine sphere2cart
+
   subroutine sl_init1(par, elem)
     use interpolate_mod,        only : interpolate_tracers_init
     use control_mod,            only : transport_alg, semi_lagrange_cdr_alg, cubed_sphere_map, &
-         nu_q, semi_lagrange_hv_q
+         nu_q, semi_lagrange_hv_q, semi_lagrange_cdr_check, geometry
     use element_state,          only : timelevels
-    use coordinate_systems_mod, only : cartesian3D_t, change_coordinates
+    use coordinate_systems_mod, only : cartesian3D_t
     use perf_mod, only: t_startf, t_stopf
     use kinds, only: iulog
 
@@ -82,21 +103,21 @@ contains
        call sl_parse_transport_alg(transport_alg, slmm, cisl, qos, sl_test, independent_time_steps)
        if (par%masterproc .and. nu_q > 0 .and. semi_lagrange_hv_q > 0) &
             write(iulog,*) 'COMPOSE> use HV; nu_q, all:', nu_q, semi_lagrange_hv_q
+       is_sphere = trim(geometry) /= 'plane'
        nslots = nlev*qsize
-       call interpolate_tracers_init()
        ! Technically a memory leak, but the array persists for the entire
        ! run, so not a big deal for now.
        allocate(dep_points_all(np,np,nlev,size(elem)))
        do ie = 1, size(elem)
           ! Provide a point inside the target element.
-          pinside = change_coordinates(elem(ie)%spherep(2,2))
+          call sphere2cart(elem(ie)%spherep(2,2), pinside)
           num_neighbors = elem(ie)%desc%actual_neigh_edges + 1
           call slmm_init_local_mesh(ie, elem(ie)%desc%neigh_corners, num_neighbors, &
                pinside, size(elem(ie)%desc%neigh_corners,2))
           if (sl_test) then
              do j = 1,np
                 do i = 1,np
-                   pinside = change_coordinates(elem(ie)%spherep(i,j))
+                   call sphere2cart(elem(ie)%spherep(i,j), pinside)
                    call slmm_check_ref2sphere(ie, pinside)
                 end do
              end do
@@ -114,17 +135,38 @@ contains
 #endif
   end subroutine sl_init1
 
+  subroutine sl_get_params(nu_q_out, hv_scaling, hv_q, hv_subcycle_q, limiter_option_out, &
+       cdr_check, geometry_type) bind(c)
+    use control_mod, only: semi_lagrange_hv_q, hypervis_subcycle_q, semi_lagrange_cdr_check, &
+         nu_q, hypervis_scaling, limiter_option, geometry
+    use iso_c_binding, only: c_int, c_double
+
+    real(c_double), intent(out) :: nu_q_out, hv_scaling
+    integer(c_int), intent(out) :: hv_q, hv_subcycle_q, limiter_option_out, cdr_check, geometry_type
+
+    nu_q_out = nu_q
+    hv_scaling = hypervis_scaling
+    hv_q = semi_lagrange_hv_q
+    hv_subcycle_q = hypervis_subcycle_q
+    limiter_option_out = limiter_option
+    cdr_check = 0
+    if (semi_lagrange_cdr_check) cdr_check = 1
+    geometry_type = 0 ! sphere
+    if (trim(geometry) == "plane") geometry_type = 1
+
+  end subroutine sl_get_params
+
   subroutine prim_advec_tracers_remap_ALE(elem, deriv, hvcoord, hybrid, dt, tl, nets, nete)
     use coordinate_systems_mod, only : cartesian3D_t, cartesian2D_t
     use dimensions_mod,         only : max_neigh_edges
-    use bndry_mod,              only : ghost_exchangevfull
     use interpolate_mod,        only : interpolate_tracers, minmax_tracers
     use control_mod,            only : dt_tracer_factor, nu_q, transport_alg, semi_lagrange_hv_q, &
          semi_lagrange_cdr_alg, semi_lagrange_cdr_check
     ! For DCMIP16 supercell test case.
     use control_mod,            only : dcmip16_mu_q
     use prim_advection_base,    only : advance_physical_vis
-    use vertremap_base,         only : remap1
+    use compose_mod,            only : compose_h2d, compose_d2h
+    use iso_c_binding,          only : c_bool
 
     implicit none
     type (element_t)     , intent(inout) :: elem(:)
@@ -139,63 +181,34 @@ contains
     type(cartesian3D_t)   :: dep_points  (np,np)
 
     integer :: i,j,k,l,n,q,ie,n0_qdp,np1_qdp
-    integer :: num_neighbors, scalar_q_bounds, info
+    integer :: scalar_q_bounds, info
     logical :: slmm, cisl, qos, sl_test, independent_time_steps
-    real(kind=real_kind) :: wr(np,np,nlev,2)
+    logical(kind=c_bool) :: h2d, d2h
 
 #ifdef HOMME_ENABLE_COMPOSE
     call t_barrierf('Prim_Advec_Tracers_remap_ALE', hybrid%par%comm)
     call t_startf('Prim_Advec_Tracers_remap_ALE')
 
     call sl_parse_transport_alg(transport_alg, slmm, cisl, qos, sl_test, independent_time_steps)
+    ! Until I get the DSS onto GPU, always need to h<->d.
+    !h2d = hybrid%par%nprocs > 1 .or. semi_lagrange_cdr_check .or. & (semi_lagrange_hv_q > 0 .and. nu_q > 0)
+    h2d = .true.
+    d2h = compose_d2h .or. h2d
+    h2d = compose_h2d .or. h2d
 
     call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
 
-    do ie = nets,nete
-       elem(ie)%derived%vn0 = elem(ie)%state%v(:,:,:,:,tl%np1)
-    end do
-    if (independent_time_steps) then
-       call t_startf('SLMM_reconstruct')
-       if (dp_tol < zero) then
-          ! Thread write race condition; benign b/c written value is same in all threads.
-          call set_dp_tol(hvcoord, dp_tol)
-       end if
-       do ie = nets,nete
-          ! divdp is dp_star
-          call calc_vertically_lagrangian_levels(hybrid, elem(ie), ie, hvcoord, tl, dt, &
-               deriv, dp_tol, elem(ie)%derived%divdp)
-          wr(:,:,:,1) = elem(ie)%derived%vn0(:,:,1,:)*elem(ie)%state%dp3d(:,:,:,tl%np1)
-          wr(:,:,:,2) = elem(ie)%derived%vn0(:,:,2,:)*elem(ie)%state%dp3d(:,:,:,tl%np1)
-          call remap1(wr, np, 2, elem(ie)%state%dp3d(:,:,:,tl%np1), elem(ie)%derived%divdp)
-          elem(ie)%derived%vn0(:,:,1,:) = wr(:,:,:,1)/elem(ie)%derived%divdp
-          elem(ie)%derived%vn0(:,:,2,:) = wr(:,:,:,2)/elem(ie)%derived%divdp
-       end do
-       call t_stopf('SLMM_reconstruct')
-    end if
-
-    call ALE_RKdss(elem, nets, nete, hybrid, deriv, dt, tl, independent_time_steps)
-
-    if (barrier) call perf_barrier(hybrid)
-    call t_startf('SLMM_v2x')
-    do ie = nets, nete
-       num_neighbors = elem(ie)%desc%actual_neigh_edges + 1
-#if (defined COLUMN_OPENMP)
-       !$omp parallel do private(k)
-#endif
-       do k = 1, nlev
-          call ALE_departure_from_gll(dep_points_all(:,:,k,ie), &
-               elem(ie)%derived%vstar(:,:,:,k), elem(ie), dt, normalize=.true.)
-       end do
-    end do
-    call t_stopf('SLMM_v2x')
+    call calc_trajectory(elem, deriv, hvcoord, hybrid, dt, tl, &
+         independent_time_steps, nets, nete)
 
     call t_startf('SLMM_csl')
     !todo Here and in the set-pointer loop for CEDR, do just in the first call.
     do ie = nets, nete
        call slmm_csl_set_elem_data(ie, elem(ie)%metdet, &
-            elem(ie)%state%Qdp(:,:,:,:,n0_qdp), &
+            elem(ie)%state%Qdp, n0_qdp, &
             elem(ie)%derived%dp, elem(ie)%state%Q, &
-            elem(ie)%desc%actual_neigh_edges + 1)
+            elem(ie)%desc%actual_neigh_edges + 1, &
+            h2d, d2h)
     end do
     ! edge_g buffers are shared by SLMM, CEDR, other places in HOMME, and
     ! dp_coupling in EAM. Thus, we must take care to protected threaded
@@ -218,7 +231,7 @@ contains
     end if
 
     ! CEDR works with either classical SL or IR.
-    if (semi_lagrange_cdr_alg > 1) then
+    if (semi_lagrange_cdr_alg > 1 .and. semi_lagrange_cdr_alg /= 42) then
        scalar_q_bounds = 0
        call cedr_sl_set_pointers_begin(nets, nete)
        do ie = nets, nete
@@ -232,10 +245,10 @@ contains
           end if
           call cedr_sl_set_Q(ie, elem(ie)%state%Q)
        end do
-       call cedr_sl_set_pointers_end()
+       call cedr_sl_set_pointers_end(h2d, d2h)
        call t_startf('CEDR')
        ! No barrier needed: A barrier was already called.
-       call cedr_sl_run(minq, maxq, nets, nete)
+       call cedr_sl_run_global(minq, maxq, nets, nete)
        ! No barrier needed: run_cdr has a horiz thread barrier at the end.
        if (barrier) call perf_barrier(hybrid)
        call t_stopf('CEDR')
@@ -280,6 +293,62 @@ contains
     call t_stopf('Prim_Advec_Tracers_remap_ALE')
 #endif
   end subroutine prim_advec_tracers_remap_ALE
+  
+  subroutine calc_trajectory(elem, deriv, hvcoord, hybrid, dt, tl, &
+       independent_time_steps, nets, nete)
+    use vertremap_base, only : remap1
+
+    type (element_t)     , intent(inout) :: elem(:)
+    type (derivative_t)  , intent(in   ) :: deriv
+    type (hvcoord_t)     , intent(in   ) :: hvcoord
+    type (hybrid_t)      , intent(in   ) :: hybrid
+    real(kind=real_kind) , intent(in   ) :: dt
+    type (TimeLevel_t)   , intent(in   ) :: tl
+    logical              , intent(in   ) :: independent_time_steps
+    integer              , intent(in   ) :: nets
+    integer              , intent(in   ) :: nete
+
+    real(kind=real_kind) :: wr(np,np,nlev,2)
+    integer :: ie, k
+
+    do ie = nets,nete
+       elem(ie)%derived%vn0 = elem(ie)%state%v(:,:,:,:,tl%np1)
+    end do
+    if (independent_time_steps) then
+       call t_startf('SLMM_reconstruct')
+       if (dp_tol < zero) then
+          ! Thread write race condition; benign b/c written value is same in all threads.
+          call set_dp_tol(hvcoord, dp_tol)
+       end if
+       do ie = nets,nete
+          ! divdp is dp_star
+          call calc_vertically_lagrangian_levels(hybrid, elem(ie), ie, hvcoord, tl, dt, &
+               deriv, dp_tol, elem(ie)%derived%divdp)
+          wr(:,:,:,1) = elem(ie)%derived%vn0(:,:,1,:)*elem(ie)%state%dp3d(:,:,:,tl%np1)
+          wr(:,:,:,2) = elem(ie)%derived%vn0(:,:,2,:)*elem(ie)%state%dp3d(:,:,:,tl%np1)
+          call remap1(wr, np, 2, elem(ie)%state%dp3d(:,:,:,tl%np1), elem(ie)%derived%divdp,&
+               vert_remap_q_alg)
+          elem(ie)%derived%vn0(:,:,1,:) = wr(:,:,:,1)/elem(ie)%derived%divdp
+          elem(ie)%derived%vn0(:,:,2,:) = wr(:,:,:,2)/elem(ie)%derived%divdp
+       end do
+       call t_stopf('SLMM_reconstruct')
+    end if
+
+    call ALE_RKdss(elem, nets, nete, hybrid, deriv, dt, tl, independent_time_steps)
+
+    if (barrier) call perf_barrier(hybrid)
+    call t_startf('SLMM_v2x')
+    do ie = nets, nete
+#if (defined COLUMN_OPENMP)
+       !$omp parallel do private(k)
+#endif
+       do k = 1, nlev
+          call ALE_departure_from_gll(dep_points_all(:,:,k,ie), &
+               elem(ie)%derived%vstar(:,:,:,k), elem(ie), dt, normalize=is_sphere)
+       end do
+    end do
+    call t_stopf('SLMM_v2x')
+  end subroutine calc_trajectory
 
   ! ----------------------------------------------------------------------------------!
   !SUBROUTINE ALE_RKDSS
@@ -353,15 +422,19 @@ contains
           elem(ie)%derived%vstar(:,:,:,k) = &
                (elem(ie)%derived%vn0(:,:,:,k) + elem(ie)%derived%vstar(:,:,:,k))/2 - dt*vtmp(:,:,:)/2
 
-          elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%spheremp*elem(ie)%rspheremp
-          elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%spheremp*elem(ie)%rspheremp
+          elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)* &
+               elem(ie)%spheremp*elem(ie)%rspheremp
+          elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)* &
+               elem(ie)%spheremp*elem(ie)%rspheremp
           if (independent_time_steps) then
              ! divdp contains the reconstructed dp.
-             elem(ie)%derived%divdp(:,:,k) = elem(ie)%derived%divdp(:,:,k)*elem(ie)%spheremp*elem(ie)%rspheremp
+             elem(ie)%derived%divdp(:,:,k) = elem(ie)%derived%divdp(:,:,k)*elem(ie)%spheremp* &
+                  elem(ie)%rspheremp
           end if
        enddo
        call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%derived%vstar,2*nlev,0,nlyr)
-       if (independent_time_steps) call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%derived%divdp,nlev,2*nlev,nlyr)
+       if (independent_time_steps) &
+            call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%derived%divdp,nlev,2*nlev,nlyr)
     enddo
 
     call t_startf('ALE_RKdss_bexchV')
@@ -428,8 +501,8 @@ contains
   ! OUTPUT:
   !-----------------------------------------------------------------------------------!
   subroutine ALE_departure_from_gll(acart, vstar, elem, dt, normalize)
-    use physical_constants,     only : rearth
-    use coordinate_systems_mod, only : spherical_polar_t, cartesian3D_t, change_coordinates
+    use physical_constants,     only : scale_factor
+    use coordinate_systems_mod, only : spherical_polar_t, cartesian3D_t
     use time_mod,               only : timelevel_t
     use element_mod,            only : element_t
     use kinds,                  only : real_kind
@@ -437,7 +510,7 @@ contains
 
     implicit none
 
-    type(cartesian3D_t)     ,intent(out)  :: acart(np,np)
+    type (cartesian3D_t)    ,intent(out)  :: acart(np,np)
     real (kind=real_kind)   ,intent(in)   :: vstar(np,np,2)
     type (element_t)        ,intent(in)   :: elem
     real (kind=real_kind)   ,intent(in)   :: dt
@@ -459,10 +532,10 @@ contains
     ! crude, 1st order accurate approximation.  to be improved
     do i=1,np
        do j=1,np
-          acart(i,j) = change_coordinates(elem%spherep(i,j)) 
-          acart(i,j)%x = acart(i,j)%x - dt*uxyz(i,j,1)/rearth
-          acart(i,j)%y = acart(i,j)%y - dt*uxyz(i,j,2)/rearth
-          acart(i,j)%z = acart(i,j)%z - dt*uxyz(i,j,3)/rearth
+          call sphere2cart(elem%spherep(i,j), acart(i,j))
+          acart(i,j)%x = acart(i,j)%x - dt*uxyz(i,j,1)/scale_factor
+          acart(i,j)%y = acart(i,j)%y - dt*uxyz(i,j,2)/scale_factor
+          acart(i,j)%z = acart(i,j)%z - dt*uxyz(i,j,3)/scale_factor
           if (normalize) then
              norm = sqrt(acart(i,j)%x*acart(i,j)%x + acart(i,j)%y*acart(i,j)%y + &
                   acart(i,j)%z*acart(i,j)%z)
@@ -524,63 +597,6 @@ contains
     end do
   end subroutine dss_Qdp
 
-  ! Replacement for edge_mod_base::ghostvpack_unoriented, which has a strange
-  ! 'threadsafe' module variable that causes a race condition when HORIZ and
-  ! COLUMN threading are on at the same time.
-  subroutine amb_ghostvpack_unoriented(edge,v,nc,vlyr,kptr,desc)
-    use edgetype_mod, only : edgedescriptor_t, ghostbuffer3d_t 
-    implicit none
-    type (Ghostbuffer3D_t),intent(inout) :: edge
-    integer,              intent(in)   :: vlyr
-    integer,              intent(in)   :: nc
-    real (kind=real_kind),intent(in)   :: v(nc,nc,vlyr)
-    integer,              intent(in)   :: kptr
-    type (EdgeDescriptor_t),intent(in) :: desc
-
-    integer :: k,l,l_local,is
-
-    do l_local=1,desc%actual_neigh_edges
-       l=desc%loc2buf(l_local)
-       is = desc%putmapP_ghost(l)
-       do k=1,vlyr
-          edge%buf(:,:,kptr+k,is) = v(:,:,k)  
-       enddo
-    end do
-  end subroutine amb_ghostvpack_unoriented
-
-  subroutine amb_ghostvunpack_unoriented(edge,v,nc,vlyr,kptr,desc,GlobalId,u)
-    use edgetype_mod, only : Ghostbuffer3d_t, EdgeDescriptor_t
-    implicit none
-
-    type (Ghostbuffer3D_t),intent(inout)  :: edge
-    integer,               intent(in)     :: vlyr
-    integer,               intent(in)     :: nc
-    real (kind=real_kind), intent(out)    :: v(nc,nc,vlyr,*)
-    integer,               intent(in)     :: kptr
-    type (EdgeDescriptor_t),intent(in)    :: desc
-    integer(kind=int_kind),intent(in)     :: GlobalId
-    real (kind=real_kind), intent(in)     :: u(nc,nc,vlyr)
-
-    integer :: k,l,n,is,m,pid,gid
-
-    m=0
-    gid = GlobalID
-    do n=1,desc%actual_neigh_edges+1
-       l = desc%loc2buf(m+1)
-       pid = desc%globalID(l)
-       if (m==desc%actual_neigh_edges .OR. pid < gid) then
-          gid = -1
-          v(:,:,:,n) = u(:,:,:)
-       else
-          m = m+1
-          is = desc%getmapP_ghost(l)
-          do k=1,vlyr
-             v(:,:,k,n) = edge%buf(:,:,kptr+k,is) 
-          enddo
-       end if
-    end do
-  end subroutine amb_ghostvunpack_unoriented
-
   subroutine perf_barrier(hybrid)
     use hybrid_mod, only : hybrid_t
     implicit none
@@ -623,8 +639,8 @@ contains
     real (kind=real_kind), intent(in   )         :: dt2
 
     ! local
-    real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: Qtens
-    real (kind=real_kind), dimension(np,np,nlev                ) :: dp
+    real (kind=real_kind), dimension(np,np,nlev,nq,nets:nete) :: Qtens
+    real (kind=real_kind), dimension(np,np,nlev             ) :: dp
     real (kind=real_kind) :: dt
     integer :: k , ie , ic , q
 
@@ -701,7 +717,7 @@ contains
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
     integer :: nets,nete,nq
-    real (kind=real_kind), dimension(np,np,nlev,qsize,nets:nete) :: qtens
+    real (kind=real_kind), dimension(np,np,nlev,nq,nets:nete) :: qtens
     type (EdgeBuffer_t)  , intent(inout) :: edgeq
     type (derivative_t)  , intent(in) :: deriv
 
@@ -829,6 +845,15 @@ contains
     real(real_kind) :: dp_neg_min
     integer :: i, j, k, k1, k2, d, t
 
+#ifndef NDEBUG
+    if (abs(hvcoord%hybi(1)) > 10*eps .or. hvcoord%hyai(nlevp) > 10*eps) then
+       if (hybrid%masterthread) &
+            print *, 'calc_vertically_lagrangian_levels: bi(1)', hvcoord%hybi(1), 'ai(nlevp)', &
+            hvcoord%hyai(nlevp)
+       call abortmp('hvcoord has unexpected non-0 entries at the bottom and/or top')
+    end if
+#endif
+
     ! Reconstruct an approximation to endpoint eta_dot_dpdn on
     ! Eulerian levels.
     do t = 1,2
@@ -879,20 +904,37 @@ contains
        v1 = half*(elem%derived%vstar(:,:,1,k1) + elem%derived%vstar(:,:,1,k2))
        v2 = half*(elem%derived%vstar(:,:,2,k1) + elem%derived%vstar(:,:,2,k2))
 
+#define SL_ADVECTION_TRAJ_OLD
+#ifdef SL_ADVECTION_TRAJ_OLD
        ! Reconstruct departure level coordinate at final time.
        p1r(:,:,k) = pref(:,:,k) + &
             half*dt*(eta_dot_dpdn(:,:,k,1) + eta_dot_dpdn(:,:,k,2) + &
-                     dt*(ptp0*eta_dot_dpdn(:,:,k,1) - grad(:,:,1)*v1 - grad(:,:,2)*v2))
+            dt*(ptp0*eta_dot_dpdn(:,:,k,1) - grad(:,:,1)*v1 - grad(:,:,2)*v2))
+#else
+       ! Reconstruct eta_dot_dpdn over the time interval.
+       eta_dot_dpdn(:,:,k,1) = &
+            half*(eta_dot_dpdn(:,:,k,1) + eta_dot_dpdn(:,:,k,2) + &
+            dt*(ptp0*eta_dot_dpdn(:,:,k,1) - grad(:,:,1)*v1 - grad(:,:,2)*v2))
+#endif
     end do
 
     ! Reconstruct eta_dot_dpdn over the time interval.
+#ifdef SL_ADVECTION_TRAJ_OLD
     eta_dot_dpdn(:,:,:,1) = (p1r - pref)/dt
+#endif
     ! Boundary points are always 0.
     eta_dot_dpdn(:,:,1,1) = zero
     eta_dot_dpdn(:,:,nlevp,1) = zero
 
     dp_neg_min = reconstruct_and_limit_dp(elem%state%dp3d(:,:,:,tl%np1), &
          dt, dp_tol, eta_dot_dpdn(:,:,:,1), dprecon)
+#ifndef NDEBUG
+    if (dp_neg_min < dp_tol) then
+       write(iulog, '(a,i7,i7,es11.4)') &
+            'sl_advection: reconstruct_and_limit_dp (rank,ie) returned', &
+            hybrid%par%rank, ie, dp_neg_min
+    end if
+#endif
   end subroutine calc_vertically_lagrangian_levels
 
   subroutine eval_lagrange_poly_derivative(n, xs, ys, xi, yp)
@@ -1020,7 +1062,7 @@ contains
        end if
 #endif
        call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp), np, qsize, elem(ie)%derived%divdp, &
-            elem(ie)%state%dp3d(:,:,:,tl%np1))
+            elem(ie)%state%dp3d(:,:,:,tl%np1),vert_remap_q_alg)
        do q = 1,qsize
           elem(ie)%state%Q(:,:,:,q) = elem(ie)%state%Qdp(:,:,:,q,np1_qdp)/ &
                                       elem(ie)%state%dp3d(:,:,:,tl%np1)
@@ -1066,7 +1108,7 @@ contains
   function test_reconstruct_and_limit_dp() result(nerr)
     use physical_constants, only: p0
     real(real_kind), parameter :: dt = 1800_real_kind, dp_tol = (p0/nlev)*eps, &
-         tol = 100_real_kind*eps
+         tol = 1.e3_real_kind*eps
 
     real(real_kind) :: dpref(np,np,nlev), dpfin(np,np,nlev,2), eta_dot_dpdn(np,np,nlevp), tmp
     integer :: nerr, i, j, k

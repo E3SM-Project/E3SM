@@ -3,7 +3,6 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
-#include "physics/p3/p3_main_impl.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 
@@ -42,9 +41,6 @@ namespace scream
 class P3Microphysics : public AtmosphereProcess
 {
 public:
-  using field_type       = Field<      Real>;
-  using const_field_type = Field<const Real>;
-
   // Constructors
   P3Microphysics (const ekat::Comm& comm, const ekat::ParameterList& params);
 
@@ -93,6 +89,38 @@ public:
         cld_frac_l(icol,ipack) = ekat::max(cld_frac_t_pack,mincld);
         cld_frac_i(icol,ipack) = ekat::max(cld_frac_t_pack,mincld);
         cld_frac_r(icol,ipack) = ekat::max(cld_frac_t_pack,mincld);
+
+        /*----------------------------------------------------------------------------------------------------------------------
+         *Wet to dry mixing ratios:
+         *-------------------------
+         *Since state constituents from the host model (or AD) are  wet mixing ratios and P3 needs
+         *these constituents in dry mixing ratios, we convert the wet mixing ratios to dry mixing ratios.
+
+         *NOTE:Function calculate_drymmr_from_wetmmr takes 2 arguments: ( wet mmr and "wet" water vapor mixing ratio)
+
+         *IMPORTANT:Convert "qv wet mmr" to "qv dry mmr" after converting all other constituents to dry mmr as "qv" (as wet mmr)
+         * is an input for converting all other constituent5Bs to have dry mmr.
+
+         *----------------------------------------------------------------------------------------------------------------------
+         */
+
+        //Since "qv" has a wet mixing ratio, we can use "qv" to compute dry mixing ratios of the following constituents:
+        //Units of all constituents below are [kg/kg(dry-air)] for mass and [#/kg(dry-air)] for number
+        qc(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qc(icol,ipack),qv(icol,ipack)); //Cloud liquid mass
+        nc(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(nc(icol,ipack),qv(icol,ipack)); //Cloud liquid numbe
+        qr(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qr(icol,ipack),qv(icol,ipack)); //Rain mass
+        nr(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(nr(icol,ipack),qv(icol,ipack)); //Rain number
+        qi(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qi(icol,ipack),qv(icol,ipack)); //Cloud ice mass
+        ni(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(ni(icol,ipack),qv(icol,ipack)); //Cloud ice number
+        qm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qm(icol,ipack),qv(icol,ipack)); //Rimmed ice mass
+        bm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(bm(icol,ipack),qv(icol,ipack)); //Rimmed ice number
+        //Water vapor from previous time step
+        qv_prev(icol, ipack) = PF::calculate_drymmr_from_wetmmr(qv_prev(icol,ipack),qv(icol,ipack));
+
+        // ^^ Ensure that qv is "wet mmr" till this point ^^
+        //NOTE: Convert "qv" to dry mmr in the end after converting all other constituents to dry mmr
+        qv(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qv(icol,ipack),qv(icol,ipack));
+
         // update rain cloud fraction given neighboring levels using max-overlap approach.
         for (int ivec=0;ivec<Spack::n;ivec++)
         {
@@ -119,6 +147,15 @@ public:
     view_2d       T_atm;
     view_2d_const cld_frac_t;
     view_2d       qv;
+    view_2d       qc;
+    view_2d       nc;
+    view_2d       qr;
+    view_2d       nr;
+    view_2d       qi;
+    view_2d       qm;
+    view_2d       ni;
+    view_2d       bm;
+    view_2d       qv_prev;
     view_2d       inv_exner;
     view_2d       th_atm;
     view_2d       cld_frac_l;
@@ -127,19 +164,32 @@ public:
     view_2d       dz;
     // Assigning local variables
     void set_variables(const int ncol, const int npack,
-           const view_2d_const& pmid_, const view_2d_const& pseudo_density_, const view_2d& T_atm_, const view_2d_const& cld_frac_t_, const view_2d& qv_,
-           const view_2d& inv_exner_, const view_2d& th_atm_, const view_2d& cld_frac_l_, const view_2d& cld_frac_i_, const view_2d& cld_frac_r_, const view_2d& dz_
+           const view_2d_const& pmid_, const view_2d_const& pseudo_density_, const view_2d& T_atm_,
+           const view_2d_const& cld_frac_t_, const view_2d& qv_, const view_2d& qc_,
+           const view_2d& nc_, const view_2d& qr_, const view_2d& nr_, const view_2d& qi_,
+           const view_2d& qm_, const view_2d& ni_, const view_2d& bm_, const view_2d& qv_prev_,
+           const view_2d& inv_exner_, const view_2d& th_atm_, const view_2d& cld_frac_l_,
+           const view_2d& cld_frac_i_, const view_2d& cld_frac_r_, const view_2d& dz_
            )
     {
       m_ncol = ncol;
       m_npack = npack;
       // IN
-      pmid = pmid_;
+      pmid           = pmid_;
       pseudo_density = pseudo_density_;
-      T_atm = T_atm_;
-      cld_frac_t = cld_frac_t_;
-      qv = qv_;
+      T_atm          = T_atm_;
+      cld_frac_t     = cld_frac_t_;
       // OUT
+      qv             = qv_;
+      qc             = qc_;
+      nc             = nc_;
+      qr             = qr_;
+      nr             = nr_;
+      qi             = qi_;
+      qm             = qm_;
+      ni             = ni_;
+      bm             = bm_;
+      qv_prev        = qv_prev_;
       inv_exner = inv_exner_;
       th_atm = th_atm_;
       cld_frac_l = cld_frac_l_;
@@ -162,8 +212,36 @@ public:
         // Update the atmospheric temperature and the previous temperature.
         T_atm(icol,ipack)  = PF::calculate_T_from_theta(th_atm(icol,ipack),pmid(icol,ipack));
         T_prev(icol,ipack) = T_atm(icol,ipack);
-        // Update qv_prev
+
+        /*----------------------------------------------------------------------------------------------------------------------
+         *DRY-TO-WET MMRs:
+         *-----------------
+         *Since the host model (or AD) needs wet mixing ratios, we need to convert dry mixing ratios from P3 to
+         *wet mixing ratios.
+
+         *NOTE: Function calculate_wetmmr_from_drymmr takes 2 arguments: ( dry mmr and "dry" water vapor mixing ratio)
+
+         *IMPORTANT:Convert "qv dry mmr" to "qv wet mmr" after converting all other constituents to wet mmr as "qv" (as dry mmr)
+         * is an input for converting all other constituents to have wet mmr.
+         *----------------------------------------------------------------------------------------------------------------------
+         */
+        //Units of all constituents below are [kg/kg(wet-air)] for mass and [#/kg(wet-air)] for number
+        qc(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qc(icol,ipack), qv(icol,ipack));//Cloud liquid mass
+        nc(icol,ipack) = PF::calculate_wetmmr_from_drymmr(nc(icol,ipack), qv(icol,ipack));//Cloud liquid number
+        qr(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qr(icol,ipack), qv(icol,ipack));//Rain mass
+        nr(icol,ipack) = PF::calculate_wetmmr_from_drymmr(nr(icol,ipack), qv(icol,ipack));//Rain number
+        qi(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qi(icol,ipack), qv(icol,ipack));//Cloud ice mass
+        ni(icol,ipack) = PF::calculate_wetmmr_from_drymmr(ni(icol,ipack), qv(icol,ipack));//Cloud ice number
+        qm(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qm(icol,ipack), qv(icol,ipack));//Rimmed ice mass
+        bm(icol,ipack) = PF::calculate_wetmmr_from_drymmr(bm(icol,ipack), qv(icol,ipack));//Rimmed ice number
+
+        // ^^ Ensure that qv is "dry mmr" till this point ^^
+        //NOTE:Convert "qv" to wet mmr in the end after converting all other constituents to wet mmr
+        qv(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qv(icol,ipack), qv(icol,ipack));
+
+        // Update qv_prev with qv(which should now be a wet mmr) so that qv_prev is in wet mmr
         qv_prev(icol,ipack) = qv(icol,ipack);
+
         // Rescale effective radius' into microns
         diag_eff_radius_qc(icol,ipack) *= 1e6;
         diag_eff_radius_qi(icol,ipack) *= 1e6;
@@ -176,13 +254,24 @@ public:
     view_2d       th_atm;
     view_2d       T_prev;
     view_2d       qv;
+    view_2d       qc;
+    view_2d       nc;
+    view_2d       qr;
+    view_2d       nr;
+    view_2d       qi;
+    view_2d       qm;
+    view_2d       ni;
+    view_2d       bm;
     view_2d       qv_prev;
     view_2d       diag_eff_radius_qc;
     view_2d       diag_eff_radius_qi;
     // Assigning local values
     void set_variables(const int ncol, const int npack,
                     const view_2d& th_atm_, const view_2d_const& pmid_, const view_2d& T_atm_, const view_2d& T_prev_,
-                    const view_2d& qv_, const view_2d& qv_prev_, const view_2d& diag_eff_radius_qc_, const view_2d& diag_eff_radius_qi_)
+                    const view_2d& qv_, const view_2d& qc_, const view_2d& nc_, const view_2d& qr_, const view_2d& nr_,
+                    const view_2d& qi_, const view_2d& qm_, const view_2d& ni_, const view_2d& bm_,
+                    const view_2d& qv_prev_, const view_2d& diag_eff_radius_qc_,
+                    const view_2d& diag_eff_radius_qi_)
     {
       m_ncol  = ncol;
       m_npack = npack;
@@ -190,6 +279,14 @@ public:
       th_atm      = th_atm_;
       pmid        = pmid_;
       qv          = qv_;
+      qc          = qc_;
+      nc          = nc_;
+      qr          = qr_;
+      nr          = nr_;
+      qi          = qi_;
+      qm          = qm_;
+      ni          = ni_;
+      bm          = bm_;
       // OUT
       T_atm              = T_atm_;
       T_prev             = T_prev_;
@@ -210,12 +307,11 @@ public:
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
     // 1d view scalar, size (ncol)
-    static constexpr int num_1d_scalar = 1;
+    static constexpr int num_1d_scalar = 0; //no 2d vars now, but keeping 1d struct for future expansion
     // 2d view packed, size (ncol, nlev_packs)
     static constexpr int num_2d_vector = 8;
     static constexpr int num_2dp1_vector = 2;
 
-    uview_1d precip_ice_surf;
     uview_2d inv_exner;
     uview_2d th_atm;
     uview_2d cld_frac_l;
@@ -235,8 +331,8 @@ public:
 protected:
 
   // The three main overrides for the subcomponent
-  void initialize_impl (const util::TimeStamp& t0);
-  void run_impl        (const Real dt);
+  void initialize_impl (const RunType run_type);
+  void run_impl        (const int dt);
   void finalize_impl   ();
 
   // Computes total number of bytes needed for local variables
@@ -259,9 +355,14 @@ protected:
   P3F::P3DiagnosticInputs  diag_inputs;
   P3F::P3DiagnosticOutputs diag_outputs;
   P3F::P3HistoryOnly       history_only;
+  P3F::P3LookupTables      lookup_tables;
   P3F::P3Infrastructure    infrastructure;
   p3_preamble              p3_preproc;
   p3_postamble             p3_postproc;
+
+  // WSM for internal local variables
+  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr;
+
   // Iteration count is internal to P3 and keeps track of the number of times p3_main has been called.
   // infrastructure.it is passed as an arguement to p3_main and is used for identifying which iteration an error occurs.
 

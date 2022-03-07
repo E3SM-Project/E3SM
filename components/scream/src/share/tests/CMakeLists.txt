@@ -11,6 +11,9 @@ if (NOT ${SCREAM_BASELINES_ONLY})
   # Test fields
   CreateUnitTest(field "field_tests.cpp" scream_share)
 
+  # Test property checks
+  CreateUnitTest(property_checks "property_checks.cpp" scream_share)
+
   # Test grids
   CreateUnitTest(grid "grid_tests.cpp" scream_share
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})

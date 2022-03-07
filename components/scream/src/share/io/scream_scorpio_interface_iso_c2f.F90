@@ -28,6 +28,26 @@ contains
     call eam_pio_finalize()
   end subroutine eam_pio_finalize_c2f
 !=====================================================================!
+  function is_file_open_c2f(filename_in,purpose) result(res) bind(c)
+    use scream_scorpio_interface, only : lookup_pio_atm_file, pio_atm_file_t
+
+    type(c_ptr), intent(in)         :: filename_in
+    integer(kind=c_int), intent(in) :: purpose
+
+    type(pio_atm_file_t), pointer :: atm_file
+    character(len=256)      :: filename
+    logical (kind=c_bool)   :: res
+    logical :: found
+
+    call convert_c_string(filename_in,filename)
+    call lookup_pio_atm_file(filename,atm_file,found)
+    if (found) then
+      res = atm_file%purpose .eq. purpose
+    else
+      res = .false.
+    endif
+  end function is_file_open_c2f
+!=====================================================================!
   subroutine register_file_c2f(filename_in,purpose) bind(c)
     use scream_scorpio_interface, only : register_file
     type(c_ptr), intent(in)         :: filename_in
@@ -163,11 +183,12 @@ contains
     call set_int_attribute(file_name,attr_name,val)
   end subroutine set_int_attribute_c2f
 !=====================================================================!
-  subroutine register_variable_c2f(filename_in, shortname_in, longname_in, numdims, var_dimensions_in, dtype, pio_decomp_tag_in) bind(c)
+  subroutine register_variable_c2f(filename_in, shortname_in, longname_in, units_in, numdims, var_dimensions_in, dtype, pio_decomp_tag_in) bind(c)
     use scream_scorpio_interface, only : register_variable
     type(c_ptr), intent(in)                :: filename_in
     type(c_ptr), intent(in)                :: shortname_in
     type(c_ptr), intent(in)                :: longname_in
+    type(c_ptr), intent(in)                :: units_in
     integer(kind=c_int), value, intent(in) :: numdims
     type(c_ptr), intent(in)                :: var_dimensions_in(numdims)
     integer(kind=c_int), value, intent(in) :: dtype
@@ -176,6 +197,7 @@ contains
     character(len=256) :: filename
     character(len=256) :: shortname
     character(len=256) :: longname
+    character(len=256) :: units
     character(len=256) :: var_dimensions(numdims)
     character(len=256) :: pio_decomp_tag
     integer            :: ii
@@ -183,12 +205,13 @@ contains
     call convert_c_string(filename_in,filename)
     call convert_c_string(shortname_in,shortname)
     call convert_c_string(longname_in,longname)
+    call convert_c_string(units_in,units)
     call convert_c_string(pio_decomp_tag_in,pio_decomp_tag)
     do ii = 1,numdims
       call convert_c_string(var_dimensions_in(ii), var_dimensions(ii))
     end do
    
-    call register_variable(filename,shortname,longname,numdims,var_dimensions,dtype,pio_decomp_tag)
+    call register_variable(filename,shortname,longname,units,numdims,var_dimensions,dtype,pio_decomp_tag)
 
   end subroutine register_variable_c2f
 !=====================================================================!
@@ -210,6 +233,21 @@ contains
     
   end subroutine register_dimension_c2f
 !=====================================================================!
+  function get_dimlen_c2f(filename_in,dimname_in) result(val) bind(c)
+    use scream_scorpio_interface, only : get_dimlen
+    type(c_ptr), intent(in) :: filename_in
+    type(c_ptr), intent(in) :: dimname_in
+    integer(kind=c_int)     :: val
+
+    character(len=256) :: filename
+    character(len=256) :: dimname
+
+    call convert_c_string(filename_in,filename)
+    call convert_c_string(dimname_in,dimname)
+    val = get_dimlen(filename,dimname)
+
+  end function get_dimlen_c2f
+!=====================================================================!
   subroutine eam_pio_enddef_c2f(filename_in) bind(c)
     use scream_scorpio_interface, only : eam_pio_enddef
     type(c_ptr), intent(in) :: filename_in
@@ -220,11 +258,12 @@ contains
     call eam_pio_enddef(filename)
   end subroutine eam_pio_enddef_c2f
 !=====================================================================!
-  subroutine count_pio_atm_file_c2f() bind(c)
+  function count_pio_atm_file_c2f() bind(c) result(file_count)
     use scream_scorpio_interface, only : count_pio_atm_file
+    integer(kind=c_int) :: file_count
 
-    call count_pio_atm_file()
-  end subroutine count_pio_atm_file_c2f
+    file_count = count_pio_atm_file()
+  end function count_pio_atm_file_c2f
 !=====================================================================!
   subroutine convert_c_string(c_string_ptr,f_string)
   ! Purpose: To convert a c_string pointer to the proper fortran string format.

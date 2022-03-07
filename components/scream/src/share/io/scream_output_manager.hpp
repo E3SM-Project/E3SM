@@ -1,11 +1,13 @@
 #ifndef SCREAM_OUTPUT_MANAGER_HPP
 #define SCREAM_OUTPUT_MANAGER_HPP
 
-#include "share/field/field_manager.hpp"
-#include "share/grid/grids_manager.hpp"
-
 #include "share/io/scorpio_output.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/scream_io_utils.hpp"
+
+#include "share/field/field_manager.hpp"
+#include "share/grid/grids_manager.hpp"
+#include "share/util/scream_time_stamp.hpp"
 
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/ekat_parameter_list.hpp"
@@ -56,7 +58,7 @@ namespace scream
 class OutputManager
 {
 public:
-  using fm_type = FieldManager<Real>;
+  using fm_type = FieldManager;
   using gm_type = GridsManager;
 
   // Constructor(s) & Destructor
@@ -67,33 +69,69 @@ public:
   //  - params: the parameter list with file/fields info, as well as method of output options
   //  - model_restart_output: whether this output stream is to write a model restart file
   void setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
-              const std::shared_ptr<const fm_type>& field_mgr,
+              const std::shared_ptr<fm_type>& field_mgr,
               const std::shared_ptr<const gm_type>& grids_mgr,
-              const bool runtype_restart);
-  void run(util::TimeStamp& current_ts);
+              const util::TimeStamp& run_t0,
+              const bool is_model_restart_output,
+              const bool is_restarted_run,
+              const util::TimeStamp& case_t0 = util::TimeStamp());
+
+  void setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
+              const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
+              const std::shared_ptr<const gm_type>& grids_mgr,
+              const util::TimeStamp& run_t0,
+              const bool is_model_restart_output,
+              const bool is_restarted_run,
+              const util::TimeStamp& case_t0 = util::TimeStamp());
+  void run (const util::TimeStamp& current_ts);
   void finalize();
 
+  const util::TimeStamp& get_case_t0 () const { return m_case_t0; }
 protected:
-  // Add an output stream. Inputs:
-  //  - params: the parameter list with file/fields info, as well as method of output options
-  //  - model_restart_output: whether this output stream is to write a model restart file
-  void add_output_stream(const ekat::ParameterList& params, const bool model_restart_output);
+
+  std::string compute_filename_root (const IOControl& control, const IOFileSpecs& file_specs) const;
+  std::string find_filename_in_rpointer (const std::string& casename, const std::string& suffix) const;
 
   // Craft the restart parameter list
-  void make_restart_param_list(ekat::ParameterList& params);
+  void set_params (const ekat::ParameterList& params,
+                   const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs);
 
   using output_type     = AtmosphereOutput;
   using output_ptr_type = std::shared_ptr<output_type>;
 
-  std::vector<output_ptr_type>        m_output_streams;
-  ekat::Comm                          m_io_comm;
-  ekat::ParameterList                 m_params;
-  std::shared_ptr<const fm_type>      m_field_mgr;
-  std::shared_ptr<const gm_type>      m_grids_mgr;
+  std::vector<output_ptr_type>   m_output_streams;
+  ekat::Comm                     m_io_comm;
+  ekat::ParameterList            m_params;
 
-  bool m_runtype_restart  = false;
+  // The output filename root
+  std::string       m_casename;
 
-}; // class OutputManager
+  // How to combine multiple snapshots in the output: Instant, Max, Min, Average
+  OutputAvgType     m_avg_type;
+
+  // Whether this OutputManager handles a model restart file, or normal model output.
+  bool m_is_model_restart_output;
+
+  // Frequency of output and checkpointing
+  // See scream_io_utils.hpp for details.
+  IOControl m_output_control;
+  IOControl m_checkpoint_control;
+
+  // The specs (name, capacity, size) of output and checkpoint file.
+  // See scream_io_utils.hpp for details.
+  IOFileSpecs m_output_file_specs;
+  IOFileSpecs m_checkpoint_file_specs;
+
+  // Whether this run is the restart of a previous run, in which case
+  // we might have to load an output checkpoint file (depending on avg type)
+  bool m_is_restarted_run;
+
+  // The initial time stamp of the simulation and run. For initial runs, they coincide,
+  // but for restarted runs, run_t0>case_t0, with the former being the time at which the
+  // restart happens, and the latter being the start time of the *original* run.
+  util::TimeStamp   m_case_t0;
+  util::TimeStamp   m_run_t0;
+};
 
 } // namespace scream
 

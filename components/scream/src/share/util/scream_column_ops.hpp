@@ -431,6 +431,9 @@ protected:
                     const view_1d<ScalarT,MT>& x_i,
                     const scalar_type& s0 = zero())
   {
+    EKAT_KERNEL_ASSERT_MSG(pack_size<ScalarT>() <= num_mid_levels,
+                           "Error! Currently, column_scan_impl() is not implemented for pack_size > num_mid_levels.");
+
     using pack_type = ScalarT;
     constexpr int PackLength = pack_size<ScalarT>();
     using pack_info = ekat::PackInfo<PackLength>;
@@ -472,7 +475,7 @@ protected:
           }
           x_i(k)[0] = s;
 
-          const auto this_pack_end = pack_info::vec_end(num_mid_levels,k);
+          const auto this_pack_end = pack_info::vec_end(num_mid_levels+1,k);
           for (int i=1; i<this_pack_end; ++i) {
             x_i(k)[i] = x_i(k)[i-1] + dx_m(k)[i-1];
           }

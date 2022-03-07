@@ -149,17 +149,6 @@ struct BackToCellAverageData
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct PreventIceOverdepletionData
-{
-  // inputs
-  Real pres, T_atm, qv, latent_heat_sublim, inv_dt;
-
-  //output
-  Real qv2qi_vapdep_tend, qi2qv_sublim_tend;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-
 struct CloudWaterConservationData
 {
   // inputs
@@ -537,13 +526,17 @@ struct P3UpdatePrognosticLiqData
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct IceDepSublimationData
+struct IceDepositionSublimationData
 {
   //Inputs
-  Real qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i, epsi, abi, qv;
+  Real qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i, epsi, abi, qv, inv_dt;
 
   //Outs
   Real qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend;
+
+  // This populates all input fields with test data within [0,1].
+  void randomize(std::mt19937_64& engine);
+
 };
 
 struct IceCldliqCollectionData
@@ -817,6 +810,17 @@ struct NiConservationData {
   void randomize(std::mt19937_64& engine);
 };
 
+struct PreventLiqSupersaturationData {
+  // Inputs
+  Real pres, t_atm, qv, latent_heat_vapor, latent_heat_sublim, dt, qidep, qinuc;
+
+  // Inputs/Outputs
+  Real qi2qv_sublim_tend, qr2qv_evap_tend;
+
+  // This populates all fields with test data within [0,1].
+  void randomize(std::mt19937_64& engine);
+};
+
 // Glue functions to call fortran from from C++ with the Data struct
 void p3_init_a(P3InitAFortranData& d);
 void find_lookuptable_indices_1a(LookupIceData& d);
@@ -824,7 +828,6 @@ void find_lookuptable_indices_1b(LookupIceDataB& d);
 void access_lookup_table(AccessLookupTableData& d);
 void access_lookup_table_coll(AccessLookupTableCollData& d);
 void back_to_cell_average(BackToCellAverageData& d);
-void prevent_ice_overdepletion(PreventIceOverdepletionData& d);
 void cloud_water_conservation(CloudWaterConservationData& d);
 void rain_water_conservation(RainWaterConservationData& d);
 void ice_water_conservation(IceWaterConservationData& d);
@@ -852,7 +855,7 @@ void get_time_space_phys_variables(GetTimeSpacePhysVarsData& d);
 void update_prognostic_ice(P3UpdatePrognosticIceData& d);
 void evaporate_rain(EvapRainData& d);
 void update_prognostic_liquid(P3UpdatePrognosticLiqData& d);
-void ice_deposition_sublimation(IceDepSublimationData& d);
+void ice_deposition_sublimation(IceDepositionSublimationData& d);
 void ice_cldliq_collection(IceCldliqCollectionData& d);
 void ice_rain_collection(IceRainCollectionData& d);
 void ice_self_collection(IceSelfCollectionData& d);
@@ -872,6 +875,7 @@ void ice_supersat_conservation(IceSupersatConservationData& d);
 void nc_conservation(NcConservationData& d);
 void nr_conservation(NrConservationData& d);
 void ni_conservation(NiConservationData& d);
+void prevent_liq_supersaturation(PreventLiqSupersaturationData& d);
 extern "C" { // _f function decls
 
 void calc_first_order_upwind_step_f(

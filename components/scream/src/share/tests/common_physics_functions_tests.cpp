@@ -100,6 +100,8 @@ void run(std::mt19937_64& engine)
   view_1d temperature("temperature",num_mid_packs),
           height("height",num_mid_packs),
           qv("qv",num_mid_packs),
+          qv_dry("qv_dry",num_mid_packs),
+          qv_wet("qv_wet",num_mid_packs),
           pressure("pressure",num_mid_packs),
           pseudo_density("pseudo_density",num_mid_packs),
           dz_for_testing("dz_for_testing",num_mid_packs),
@@ -147,6 +149,8 @@ void run(std::mt19937_64& engine)
   ekat::genRandArray(dview_as_real(temperature),     engine,pdf_temp);
   ekat::genRandArray(dview_as_real(height),          engine,pdf_height);
   ekat::genRandArray(dview_as_real(qv),              engine,pdf_qv);
+  ekat::genRandArray(dview_as_real(qv_wet),          engine,pdf_qv);
+  ekat::genRandArray(dview_as_real(qv_dry),          engine,pdf_qv);
   ekat::genRandArray(dview_as_real(pressure),        engine,pdf_pres);
   ekat::genRandArray(dview_as_real(pseudo_density),  engine,pdf_dp);
   ekat::genRandArray(dview_as_real(mmr_for_testing), engine,pdf_mmr);
@@ -166,7 +170,8 @@ void run(std::mt19937_64& engine)
   const ScalarT zero = 0.0;
   const ScalarT one  = 1.0;
 
-  ScalarT p, T0, theta0, tmp, qv0, dp0, mmr0, vmr0, wetmmr0, dz0, Tv0, rho0, rand_int0, z0, dse0;
+  ScalarT p, T0, theta0, tmp, qv0, dp0, mmr0, vmr0, dz0, Tv0, rho0, rand_int0, z0, dse0;
+  ScalarT wetmmr0, drymmr0, qv_dry0, qv_wet0;
   RealType surf_height;
 
   // calculate density property tests:
@@ -255,35 +260,26 @@ void run(std::mt19937_64& engine)
 
 
   // WETMMR to DRYMMR (and vice versa) property tests
-  wetmmr0 = pdf_mmr(engine);// get initial inputs for wetmmr_from_drymmr and drymmr_from_wetmmr functions
-  qv0  = pdf_qv(engine);  // This is an input for mmr_tests, so it won't be modified by mmr tests
+  wetmmr0 = pdf_mmr(engine);// get initial wet mmr
+  drymmr0 = pdf_mmr(engine);// get initial dry mmr
+  qv_wet0 = pdf_qv(engine); // get initial qv in wet mmr
+  qv_dry0 = pdf_qv(engine); // get initial qv in dry mmr
   // mmr_test1: For zero drymmr, wetmmr should be zero
   // mmr_test2: For zero wetmmr, drymmr should be zero
   // mmr_test3: Compute drymmr from wetmmr0 and then use the result to compute wetmmr, which should be approximately
-  //            equal to wetmmr0
+  //            equal to wetmmr0. NOTE: calculate_wetmmr_from_drymmr takes qv in dry mmr as an argument and
+  //            calculate_drymmr_from_wetmmr takes qv in wet mmr as an argument. Therefore, we need to convert
+  //            qv from wet mmr to dry mmr as well as part of these conversions
 
-  // mmr_test4: [to test mathematical properties of the function]
-  //            Compute drymmr from wetmmr0 and then use the result to
-  //            compute wetmmr. "qv" should be in the form of 2^k+1 (1 is added as we have [1-qv] in the numerator or
-  //            denominator of this function), so that the results of wet->dry->wet are exactly
-  //            the same as the initial input mmr(wetmmr0). This is a mathematical property test, so unphysical invalid qv
-  //            values are also acceptable
-  //
-  //            *WARNING* This test might fail if a check is added to this function to accept only valid values for qv0
-
-  REQUIRE( Check::equal(PF::calculate_wetmmr_from_drymmr(zero,qv0),zero) ); //mmr_test1
-  REQUIRE( Check::equal(PF::calculate_drymmr_from_wetmmr(zero,qv0),zero) ); //mmr_test2
+  REQUIRE( Check::equal(PF::calculate_wetmmr_from_drymmr(zero,qv_dry0),zero) ); //mmr_test1
+  REQUIRE( Check::equal(PF::calculate_drymmr_from_wetmmr(zero,qv_wet0),zero) ); //mmr_test2
 
   //mmr_test3
-  tmp = PF::calculate_drymmr_from_wetmmr(wetmmr0,qv0);//get drymmr from wetmmr0
-  tmp = PF::calculate_wetmmr_from_drymmr(tmp, qv0);//convert it back to wetmmr0
+  drymmr0 = PF::calculate_drymmr_from_wetmmr(wetmmr0,qv_wet0);//get drymmr from wetmmr0 using qv_wet0
+  // Now convert qv wet mmr to qv dry mmr as qv dry mmr is an input for the "calculate_wetmmr_from_drymmr" function
+  qv_dry0 = PF::calculate_drymmr_from_wetmmr(qv_wet0, qv_wet0);
+  tmp     = PF::calculate_wetmmr_from_drymmr(drymmr0, qv_dry0);//convert it back to wetmmr0
   REQUIRE( Check::approx_equal(tmp,wetmmr0,test_tol) );// wetmmr0 should be equal to tmp
-
-  //mmr_test4
-  ScalarT qv0_2k_m1 = pow(2,rand_int0)+1; // 2^rand_int+1
-  tmp = PF::calculate_drymmr_from_wetmmr(wetmmr0,qv0_2k_m1);//get drymmr from wetmmr0
-  tmp = PF::calculate_wetmmr_from_drymmr(tmp, qv0_2k_m1);//convert it back to wetmmr0
-  REQUIRE( Check::equal(tmp,wetmmr0) );// wetmmr0 should be exactly equal to tmp
 
   // DZ property tests:
   //  - calculate_dz(pseudo_density=0) = 0
@@ -355,10 +351,13 @@ void run(std::mt19937_64& engine)
     PF::calculate_mmr_from_vmr(team,h2o_mol,qv,vmr,mmr);
 
     // Compute drymmr from wetmmr
-    PF::calculate_drymmr_from_wetmmr(team,wetmmr_for_testing,qv,drymmr);
+    PF::calculate_drymmr_from_wetmmr(team,wetmmr_for_testing,qv_wet,drymmr);
+    
+    //convert qv_wet to qv_dry
+    PF::calculate_drymmr_from_wetmmr(team,qv_wet,qv_wet,qv_dry);
 
     // Convert drymmr computed above to wetmmr
-    PF::calculate_wetmmr_from_drymmr(team,drymmr,qv,wetmmr);
+    PF::calculate_wetmmr_from_drymmr(team,drymmr,qv_dry,wetmmr);
 
   }); // Kokkos parallel_for "test_universal_physics"
   Kokkos::fence();
@@ -426,7 +425,7 @@ TEST_CASE("common_physics_functions_test", "[common_physics_functions_test]"){
 
   auto engine = scream::setup_random_test();
 
-  std::cout << " -> Number of randomized runs: " << num_runs << "\n\n";
+  printf(" -> Number of randomized runs: %d\n\n", num_runs);
 
   printf(" -> Testing Real scalar type...");
   for (int irun=0; irun<num_runs; ++irun) {

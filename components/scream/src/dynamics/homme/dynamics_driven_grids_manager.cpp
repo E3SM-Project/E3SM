@@ -1,6 +1,7 @@
 #include "dynamics/homme/dynamics_driven_grids_manager.hpp"
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
+#include "dynamics/homme/homme_dynamics_helpers.hpp"
 
 #include "share/grid/se_grid.hpp"
 #include "share/grid/point_grid.hpp"
@@ -19,6 +20,9 @@ DynamicsDrivenGridsManager (const ekat::Comm& comm,
                             const ekat::ParameterList& p)
  : m_comm (comm)
 {
+  // This class needs Homme's context, so register as a user
+  HommeContextUser::singleton().add_user();
+
   if (!is_parallel_inited_f90()) {
     // While we're here, we can init homme's parallel session
     auto fcomm = MPI_Comm_c2f(comm.mpi_comm());
@@ -65,6 +69,9 @@ DynamicsDrivenGridsManager::
 ~DynamicsDrivenGridsManager () {
   // Cleanup the grids stuff
   finalize_geometry_f90 ();
+
+  // This class is done needing Homme's context, so remove myself as customer
+  Homme::Context::singleton().finalize_singleton();
 }
 
 DynamicsDrivenGridsManager::remapper_ptr_type
@@ -81,13 +88,13 @@ DynamicsDrivenGridsManager::do_create_remapper (const grid_ptr_type from_grid,
   auto dyn_grid = m_grids.at("Dynamics");
 
   if (from=="Physics GLL" || to=="Physics GLL") {
-    using PDR = PhysicsDynamicsRemapper<remapper_type::real_type>;
+    using PDR = PhysicsDynamicsRemapper;
 
     auto pd_remapper = std::make_shared<PDR>(m_grids.at("Physics GLL"),dyn_grid);
     if (p2d) {
       return pd_remapper;
     } else {
-      return std::make_shared<InverseRemapper<Real>>(pd_remapper);
+      return std::make_shared<InverseRemapper>(pd_remapper);
     }
   } else {
     ekat::error::runtime_abort("Error! P-D remapping only implemented for 'Physics GLL' phys grid.\n");
@@ -134,33 +141,35 @@ build_grids (const std::set<std::string>& grid_names)
 }
 
 void DynamicsDrivenGridsManager::build_dynamics_grid () {
-  if (m_grids.find("Dynamics")==m_grids.end()) {
-    // Build the Physics GLL grid, to be used as 'unique grid' in the dyn grid
-    build_physics_grid("Physics GLL");
-    auto phys_gll = m_grids.at("Physics GLL");
 
+  const std::string name = "Dynamics";
+  if (m_grids.find(name)==m_grids.end()) {
     // Get dimensions and create "empty" grid
     const int nlelem = get_num_local_elems_f90();
     const int nlev   = get_nlev_f90();
-    auto dyn_grid = std::make_shared<SEGrid>("Dynamics",nlelem,HOMMEXX_NP,nlev,phys_gll,m_comm);
+
+    auto dyn_grid = std::make_shared<SEGrid>("Dynamics",nlelem,HOMMEXX_NP,nlev,m_comm);
     dyn_grid->setSelfPointer(dyn_grid);
 
     const int ndofs = nlelem*HOMMEXX_NP*HOMMEXX_NP;
 
     // Create the gids, elgpgp, coords, area views
-    AbstractGrid::dofs_list_type      dofs("dyn dofs",ndofs);
+    AbstractGrid::dofs_list_type      dg_dofs("dyn dofs",ndofs);
+    AbstractGrid::dofs_list_type      cg_dofs("dyn dofs",ndofs);
     AbstractGrid::lid_to_idx_map_type elgpgp("dof idx",ndofs,3);
     AbstractGrid::geo_view_type       lat("lat",ndofs);
     AbstractGrid::geo_view_type       lon("lon",ndofs);
-    auto h_dofs   = Kokkos::create_mirror_view(dofs);
+    auto h_cg_dofs   = Kokkos::create_mirror_view(cg_dofs);
+    auto h_dg_dofs   = Kokkos::create_mirror_view(dg_dofs);
     auto h_elgpgp = Kokkos::create_mirror_view(elgpgp);
     auto h_lat    = Kokkos::create_mirror_view(lat);
     auto h_lon    = Kokkos::create_mirror_view(lon);
 
     // Get (ie,igp,jgp,gid) data for each dof
-    get_dyn_grid_data_f90 (h_dofs.data(),h_elgpgp.data(), h_lat.data(), h_lon.data());
+    get_dyn_grid_data_f90 (h_dg_dofs.data(),h_cg_dofs.data(),h_elgpgp.data(), h_lat.data(), h_lon.data());
 
-    Kokkos::deep_copy(dofs,h_dofs);
+    Kokkos::deep_copy(dg_dofs,h_dg_dofs);
+    Kokkos::deep_copy(cg_dofs,h_cg_dofs);
     Kokkos::deep_copy(elgpgp,h_elgpgp);
     Kokkos::deep_copy(lat,h_lat);
     Kokkos::deep_copy(lon,h_lon);
@@ -172,13 +181,14 @@ void DynamicsDrivenGridsManager::build_dynamics_grid () {
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
       const Int i = team.league_rank();
 
-      EKAT_KERNEL_ASSERT_MSG(!isnan(lat(i)), "Error! NaN values detected for latitude.");
-      EKAT_KERNEL_ASSERT_MSG(!isnan(lon(i)), "Error! NaN values detected for longitude.");
+      EKAT_KERNEL_ASSERT_MSG(!ekat::impl::is_nan(lat(i)), "Error! NaN values detected for latitude.");
+      EKAT_KERNEL_ASSERT_MSG(!ekat::impl::is_nan(lon(i)), "Error! NaN values detected for longitude.");
     });
 #endif
 
     // Set dofs and geo data in the grid
-    dyn_grid->set_dofs (dofs);
+    dyn_grid->set_dofs (dg_dofs);
+    dyn_grid->set_cg_dofs (cg_dofs);
     dyn_grid->set_lid_to_idx_map(elgpgp);
     dyn_grid->set_geometry_data ("lat", lat);
     dyn_grid->set_geometry_data ("lon", lon);
@@ -228,9 +238,9 @@ build_physics_grid (const std::string& name) {
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
       const Int i = team.league_rank();
 
-      EKAT_KERNEL_ASSERT_MSG(!isnan(lat(i)),                   "Error! NaN values detected for latitude.");
-      EKAT_KERNEL_ASSERT_MSG(!isnan(lon(i)),                   "Error! NaN values detected for longitude.");
-      EKAT_KERNEL_ASSERT_MSG(area(i) >  0  && !isnan(area(i)), "Error! Non-positve or NaN values detected for area.");
+      EKAT_KERNEL_ASSERT_MSG(!ekat::impl::is_nan(lat(i)),                   "Error! NaN values detected for latitude.");
+      EKAT_KERNEL_ASSERT_MSG(!ekat::impl::is_nan(lon(i)),                   "Error! NaN values detected for longitude.");
+      EKAT_KERNEL_ASSERT_MSG(area(i) >  0  && !ekat::impl::is_nan(area(i)), "Error! Non-positve or NaN values detected for area.");
     });
 #endif
 

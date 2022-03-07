@@ -27,6 +27,12 @@
 <config_explicit_proc_decomp>.false.</config_explicit_proc_decomp>
 <config_proc_decomp_file_prefix>'graph.info.part.'</config_proc_decomp_file_prefix>
 
+<!-- transport_tests -->
+<config_transport_tests_vert_levels>3</config_transport_tests_vert_levels>
+<config_transport_tests_temperature>15</config_transport_tests_temperature>
+<config_transport_tests_salinity>35</config_transport_tests_salinity>
+<config_transport_tests_flow_id>0</config_transport_tests_flow_id>
+
 <!-- time_integration -->
 <config_dt ocn_grid="oQU480">'02:00:00'</config_dt>
 <config_dt ocn_grid="oQU240">'01:00:00'</config_dt>
@@ -504,8 +510,8 @@
 <config_use_ecosysTracers_idealAge_forcing>.false.</config_use_ecosysTracers_idealAge_forcing>
 <config_use_ecosysTracers_ttd_forcing>.false.</config_use_ecosysTracers_ttd_forcing>
 <config_use_ecosysTracers_surface_value>.false.</config_use_ecosysTracers_surface_value>
-<config_use_ecosysTracers_sea_ice_coupling>.false.</config_use_ecosysTracers_sea_ice_coupling>
 <config_use_ecosysTracers_river_inputs_from_coupler>.false.</config_use_ecosysTracers_river_inputs_from_coupler>
+<config_use_ecosysTracers_sea_ice_coupling>.false.</config_use_ecosysTracers_sea_ice_coupling>
 <config_ecosysTracers_diagnostic_fields_level1>.false.</config_ecosysTracers_diagnostic_fields_level1>
 <config_ecosysTracers_diagnostic_fields_level2>.false.</config_ecosysTracers_diagnostic_fields_level2>
 <config_ecosysTracers_diagnostic_fields_level3>.false.</config_ecosysTracers_diagnostic_fields_level3>
@@ -542,6 +548,17 @@
 <config_use_idealAgeTracers_exponential_decay>.false.</config_use_idealAgeTracers_exponential_decay>
 <config_use_idealAgeTracers_idealAge_forcing>.true.</config_use_idealAgeTracers_idealAge_forcing>
 <config_use_idealAgeTracers_ttd_forcing>.false.</config_use_idealAgeTracers_ttd_forcing>
+
+<!-- tracer_forcing_CFCTracers -->
+<config_use_CFCTracers>.false.</config_use_CFCTracers>
+<config_use_CFCTracers_surface_bulk_forcing>.false.</config_use_CFCTracers_surface_bulk_forcing>
+<config_use_CFCTracers_surface_restoring>.false.</config_use_CFCTracers_surface_restoring>
+<config_use_CFCTracers_interior_restoring>.false.</config_use_CFCTracers_interior_restoring>
+<config_use_CFCTracers_exponential_decay>.false.</config_use_CFCTracers_exponential_decay>
+<config_use_CFCTracers_idealAge_forcing>.false.</config_use_CFCTracers_idealAge_forcing>
+<config_use_CFCTracers_ttd_forcing>.false.</config_use_CFCTracers_ttd_forcing>
+<config_use_CFC11>.true.</config_use_CFC11>
+<config_use_CFC12>.true.</config_use_CFC12>
 
 <!-- AM_globalStats -->
 <config_AM_globalStats_enable>.true.</config_AM_globalStats_enable>
@@ -985,8 +1002,8 @@
 <!-- AM_harmonicAnalysis -->
 <config_AM_harmonicAnalysis_enable>.false.</config_AM_harmonicAnalysis_enable>
 <config_AM_harmonicAnalysis_compute_interval>'output_interval'</config_AM_harmonicAnalysis_compute_interval>
-<config_AM_harmonicAnalysis_start>'0001-01-01_00:00:00'</config_AM_harmonicAnalysis_start>
-<config_AM_harmonicAnalysis_end>'0001-01-01_00:00:00'</config_AM_harmonicAnalysis_end>
+<config_AM_harmonicAnalysis_start_delay>20</config_AM_harmonicAnalysis_start_delay>
+<config_AM_harmonicAnalysis_duration>90</config_AM_harmonicAnalysis_duration>
 <config_AM_harmonicAnalysis_output_stream>'harmonicAnalysisOutput'</config_AM_harmonicAnalysis_output_stream>
 <config_AM_harmonicAnalysis_restart_stream>'harmonicAnalysisRestart'</config_AM_harmonicAnalysis_restart_stream>
 <config_AM_harmonicAnalysis_compute_on_startup>.false.</config_AM_harmonicAnalysis_compute_on_startup>
@@ -999,5 +1016,14 @@
 <config_AM_harmonicAnalysis_use_O1>.true.</config_AM_harmonicAnalysis_use_O1>
 <config_AM_harmonicAnalysis_use_Q1>.true.</config_AM_harmonicAnalysis_use_Q1>
 <config_AM_harmonicAnalysis_use_P1>.true.</config_AM_harmonicAnalysis_use_P1>
+
+<!-- AM_conservationCheck -->
+<config_AM_conservationCheck_enable>.false.</config_AM_conservationCheck_enable>
+<config_AM_conservationCheck_compute_interval>'dt'</config_AM_conservationCheck_compute_interval>
+<config_AM_conservationCheck_output_stream>'conservationCheckOutput'</config_AM_conservationCheck_output_stream>
+<config_AM_conservationCheck_compute_on_startup>.false.</config_AM_conservationCheck_compute_on_startup>
+<config_AM_conservationCheck_write_on_startup>.false.</config_AM_conservationCheck_write_on_startup>
+<config_AM_conservationCheck_write_to_logfile>.true.</config_AM_conservationCheck_write_to_logfile>
+<config_AM_conservationCheck_restart_stream>'conservationCheckRestart'</config_AM_conservationCheck_restart_stream>
 
 </namelist_defaults>

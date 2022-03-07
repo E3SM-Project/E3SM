@@ -3870,7 +3870,7 @@ Default: -1
 </entry>
 
 <entry id="do_spa_optics" type="logical" category="radiation"
-       group="radiation_nl" valid_values=".true., .false." >
+       group="radiation_nl" valid_values=".true.,.false." >
 Specify if optics are read in from spa ncdf file.
 Default: FALSE
 </entry>
@@ -6055,6 +6055,12 @@ Default: -1.
        group="ctl_nl" valid_values="" >
 Second-order viscosity applied only near the model top [m^2/s].
 Default: Set by build-namelist.
+</entry>
+
+<entry id="tom_sponge_start" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Bottom of sponge layer in hPa.
+Default: 0 (use default value based on reference pressure at model top).
 </entry>
 
 <entry id="fine_ne" type="integer" category="se"

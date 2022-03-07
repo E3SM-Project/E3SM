@@ -1,5 +1,5 @@
 #include "atmosphere_cld_fraction.hpp"
-#include "share/field/field_property_checks/field_within_interval_check.hpp"
+#include "share/property_checks/field_within_interval_check.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -52,16 +52,16 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
 }
 
 // =========================================================================================
-void CldFraction::initialize_impl (const util::TimeStamp& /* t0 */)
+void CldFraction::initialize_impl (const RunType /* run_type */)
 {
   // Set property checks for fields in this process
-  auto frac_interval_check = std::make_shared<FieldWithinIntervalCheck<Real> >(0,1);
-  get_field_out("cldfrac_ice").add_property_check(frac_interval_check);
-  get_field_out("cldfrac_tot").add_property_check(frac_interval_check);
+  using FWIC = FieldWithinIntervalCheck;
+  add_postcondition_check<FWIC>(get_field_out("cldfrac_ice"),0,1);
+  add_postcondition_check<FWIC>(get_field_out("cldfrac_tot"),0,1);
 }
 
 // =========================================================================================
-void CldFraction::run_impl (const Real dt)
+void CldFraction::run_impl (const int /* dt */)
 {
   // Calculate ice cloud fraction and total cloud fraction given the liquid cloud fraction
   // and the ice mass mixing ratio. 

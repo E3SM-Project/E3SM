@@ -137,28 +137,34 @@ struct PhysicsFunctions
   static ScalarT calculate_temperature_from_dse(const ScalarT& dse, const ScalarT& z, const Real surf_geopotential);
 
   //-----------------------------------------------------------------------------------------------//
-  // Calculate the dry mass mixing ratio given the wet mass mixing ratio:
-  //   drymmr = wetmmr / (1 - qv)
+  // Computes drymmr (mass of a constituent divided by mass of dry air; commonly known as mixing ratio)
+  // for any wetmmr constituent (mass of a constituent divided by mass of dry air plus water
+  // vapor) using qv_wet (mass of water vapor divided by mass of dry air plus
+  // water vapor; see specific humidity):
+  //   drymmr = wetmmr / (1 - qv_wet)
   // where
   //   drymmr         is the dry mass mixing ratio of a species
   //   wetmmr         is the wet mass mixing ratio of a species
-  //   qv             is specific humidity of water vapor
+  //   qv_wet         is water vapor wet mass mixing ratio
   //-----------------------------------------------------------------------------------------------//
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_drymmr_from_wetmmr(const ScalarT& wetmmr, const ScalarT& qv);
+  static ScalarT calculate_drymmr_from_wetmmr(const ScalarT& wetmmr, const ScalarT& qv_wet);
 
   //-----------------------------------------------------------------------------------------------//
-  // Calculate the wet mass mixing ratio given the dry mass mixing ratio:
-  //   wetmmr = drymmr * (1 - qv)
+  // Computes wetmmr (mass of a constituent divided by mass of dry air plus water vapor)
+  // for any drymmr constituent (mass of a constituent divided by mass of dry air;
+  // commonly known as mixing ratio) using qv_dry (mass of water vapor divided by mass
+  // of dry air):
+  //   wetmmr = drymmr / (1 + qv_dry)
   // where
   //   wetmmr         is the wet mass mixing ratio of a species
   //   drymmr         is the dry mass mixing ratio of a species
-  //   qv             is specific humidity of water vapor
+  //   qv_dry         is specific humidity of water vapor
   //-----------------------------------------------------------------------------------------------//
   template<typename ScalarT>
   KOKKOS_INLINE_FUNCTION
-  static ScalarT calculate_wetmmr_from_drymmr(const ScalarT& drymmr, const ScalarT& qv);
+  static ScalarT calculate_wetmmr_from_drymmr(const ScalarT& drymmr, const ScalarT& qv_dry);
 
   //-----------------------------------------------------------------------------------------------//
   // Determines the vertical layer thickness using the equation of state:
@@ -241,8 +247,8 @@ struct PhysicsFunctions
   using KT = KokkosTypes<Device>;
   using MemberType = typename KT::MemberType;
 
-  template <typename S>
-  using view_1d = typename KT::template view_1d<S>;
+  template<typename ScalarT, typename MT = Kokkos::MemoryManaged>
+  using view_1d = typename KT::template view_1d<ScalarT, MT>;
 
   template<typename ScalarT, typename InputProviderP, typename InputProviderZ>
   KOKKOS_INLINE_FUNCTION
@@ -313,19 +319,20 @@ struct PhysicsFunctions
   KOKKOS_INLINE_FUNCTION
   static void calculate_drymmr_from_wetmmr (const MemberType& team,
                              const InputProviderX& wetmmr,
-                             const InputProviderQ& qv,
+                             const InputProviderQ& qv_wet,
                              const view_1d<ScalarT>& drymmr);
 
   template<typename ScalarT,
            typename InputProviderPD, typename InputProviderP,
-           typename InputProviderT,  typename InputProviderQ>
+           typename InputProviderT,  typename InputProviderQ,
+           typename MT = Kokkos::MemoryManaged>
   KOKKOS_INLINE_FUNCTION
   static void calculate_dz (const MemberType& team,
                             const InputProviderPD& pseudo_density,
                             const InputProviderP& p_mid,
                             const InputProviderT& T_mid,
                             const InputProviderQ& qv,
-                            const view_1d<ScalarT>& dz);
+                            const view_1d<ScalarT, MT>& dz);
 
   template<typename ScalarT, typename InputProviderQ, typename InputProviderX>
   KOKKOS_INLINE_FUNCTION
@@ -351,15 +358,26 @@ struct PhysicsFunctions
   // Note: because this function does an integral it cannot be run just on a single level.  It requires
   // the full column wise integration.
   //-----------------------------------------------------------------------------------------------//
-  template<typename ScalarT, typename InputProviderZ>
+  template<typename ScalarT, typename InputProviderZ, typename MT = Kokkos::MemoryManaged>
   KOKKOS_INLINE_FUNCTION
   static void calculate_z_int (const MemberType& team,
                                const int num_levs,
                                const InputProviderZ& dz,
                                const Real z_surf,
-                               const view_1d<ScalarT>& z_int);
+                               const view_1d<ScalarT, MT>& z_int);
 
-  
+  //-----------------------------------------------------------------------------------------------//
+  // Determines the vertical layer height on mid points from the vertical layer interface height:
+  //   z_mid(i,k) = (z_int(i,k) + z_int(i,k+1))/2.0
+  // where
+  //   z_int is the vertical layer interface height, [m]
+  //-----------------------------------------------------------------------------------------------//
+  template<typename ScalarT, typename InputProviderZ, typename MT = Kokkos::MemoryManaged>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_z_mid (const MemberType& team,
+                               const int num_levs,
+                               const InputProviderZ& z_int,
+                               const view_1d<ScalarT, MT>& z_mid);
 
 }; // struct PhysicsFunctions
 

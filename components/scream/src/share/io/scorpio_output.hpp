@@ -2,6 +2,7 @@
 #define SCREAM_SCORPIO_OUTPUT_HPP
 
 #include "share/io/scream_scorpio_interface.hpp"
+#include "share/io/scream_io_utils.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/grids_manager.hpp"
@@ -27,11 +28,21 @@
  *  Casename:                     STRING
  *  Averaging Type:               STRING
  *  Max Snapshots Per File:       INT                   (default: 1)
- *  Fields:                       ARRAY OF STRINGS
- *  Output:
-      Frequency:                  INT
+ *  Fields:
+ *     GRID_NAME_1:
+ *        Field Names:            ARRAY OF STRINGS
+ *        IO Grid Name:           STRING                (optional)
+ *     GRID_NAME_2:
+ *        Field Names:            ARRAY OF STRINGS
+ *        IO Grid Name:           STRING                (optional)
+ *     ...
+ *     GRID_NAME_N:
+ *        Field Names:            ARRAY OF STRINGS
+ *        IO Grid Name:           STRING                (optional)
+ *  Output Control:
+ *    Frequency:                  INT
  *    Frequency Units:            STRING                (default: Steps)
- *  Checkpointing:
+ *  Checkpoint Control:
  *    Frequency:                  INT                   (default: 0)
  *    Frequency Units:            STRING                (default: ${Output->Frequency Units})
  *  Restart:
@@ -47,7 +58,11 @@
  *      max     - maximum value of the field over time interval.
  *    Here, 'time interval' is described by ${Output Frequency} and ${Output Frequency Units}.
  *    E.g., with 'Output Frequency'=10 and 'Output Frequency Units'="Days", the time interval is 10 days.
- *  - Fields: a list of fields that need to be added to this output stream
+ *  - Fields: parameters specifying fields to output
+ *     - GRID_NAME: parameters specifyign fields to output from grid $GRID_NAME
+ *        - Field Names: names of fields defined on grid $grid_name that need to be outputed
+ *        - IO Grid Name: if provided, remap fields to this grid before output (useful to remap
+ *                        SEGrid fields to PointGrid fields on the fly, to save on output size)
  *  - Max Snapshots Per File: the maximum number of snapshots saved per file. After this many
  *  - Output: parameters for output control
  *    - Frequency: the frequency of output writes (in the units specified by ${Output Frequency Units})
@@ -63,19 +78,28 @@
  *      determines whether we want to restart the output history or start from scrach. That is,
  *      you can set this to false to force a fresh new history, even in a restarted run.
 
- *  Note: you can specify lists (such as the 'Fields' list above) with either of the two syntaxes
- *    Fields: [field_name1, field_name2, ... , field_name_N]
- *    Fields:
- *      - field_name_1
- *      - field_name_2
- *        ...
- *      - field_name_N
+ *  Notes:
+ *   - you can specify lists with either of the two syntaxes:
  *
- *  Usage of this class is to create an output file, write data to the file and close the file.
- *  This class keeps a temp array for all output fields to be used to perform averaging.
+ *    LIST_NAME: [item_1,item_2,...,item_N]
+ *    LIST_NAME:
+ *      - item_1
+ *      - item_2
+ *        ...
+ *      - item_N
+ *
+ *   - in case of single-grid tests, you can specify fields names by adding 'Field Names' directly
+ *     in the top-level parameter list. In that case, you can also add 'IO Grid Name' in the top-level
+ *     parameter list.
+ *   - each instance of this class can only handle ONE grid, so if multiple grids are specified,
+ *     you will need one instance per grid.
+ *   - usage of this class is to create an output file, write data to the file and close the file.
+ *   - this class keeps a temp array for all output fields to be used to perform averaging.
  * --------------------------------------------------------------------------------
  *  (2020-10-21) Aaron S. Donahue (LLNL)
  *  (2021-08-19) Luca Bertagna (SNL)
+ *  (2021-10-14) Luca Bertagna (SNL)
+ *  (2021-11-10) Luca Bertagna (SNL)
  */
 
 namespace scream
@@ -84,10 +108,10 @@ namespace scream
 class AtmosphereOutput 
 {
 public:
-  using fm_type       = FieldManager<Real>;
+  using fm_type       = FieldManager;
   using grid_type     = AbstractGrid;
   using gm_type       = GridsManager;
-  using remapper_type = AbstractRemapper<Real>;
+  using remapper_type = AbstractRemapper;
 
   using KT = KokkosTypes<DefaultDevice>;
   template<int N>
@@ -106,21 +130,19 @@ public:
   //    contains metadata, and is expected by the component coupled)
   AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params, 
                    const std::shared_ptr<const fm_type>& field_mgr,
-                   const std::shared_ptr<const gm_type>& grids_mgr,
-                   const bool is_restarted_run = false,
-                   const bool is_model_restart_output = false);
+                   const std::shared_ptr<const gm_type>& grids_mgr);
 
   // Main Functions
+  void restart (const std::string& filename);
   void init();
-  void run (const util::TimeStamp& time);
-  void finalize();
+  void setup_output_file (const std::string& filename);
+  void run (const std::string& filename, const bool write, const int nsteps_since_last_output);
+  void finalize() {}
 
 protected:
 
   // Internal functions
-  void set_params (const ekat::ParameterList& params);
-  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
-                          const std::shared_ptr<const gm_type>& grids_mgr);
+  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr);
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
 
   void register_dimensions(const std::string& name);
@@ -128,29 +150,17 @@ protected:
   void set_degrees_of_freedom(const std::string& filename);
   std::vector<int> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
-  void new_file(const std::string& filename);
-  void run_impl(const Real time, const std::string& time_str);
-  std::string compute_filename_root (const std::string& casename) const;
-  void combine (const Real& new_val, Real& curr_val) const;
+  void combine (const Real& new_val, Real& curr_val, const int nsteps_since_last_output) const;
 
   // --- Internal variables --- //
-  ekat::Comm                                  m_comm;
-  std::shared_ptr<const FieldManager<Real>>   m_field_mgr;
-  std::shared_ptr<const AbstractGrid>         m_grid;
-  std::shared_ptr<remapper_type>              m_remapper;
-  
-  // The output filename root
-  std::string       m_casename;
+  ekat::Comm                          m_comm;
 
-  // The output filename
-  std::string       m_filename;
+  std::shared_ptr<const fm_type>      m_field_mgr;
+  std::shared_ptr<const grid_type>    m_io_grid;
+  std::shared_ptr<remapper_type>      m_remapper;
 
   // How to combine multiple snapshots in the output: Instant, Max, Min, Average
-  std::string       m_avg_type;
-
-  // Frequency of output control
-  int m_out_frequency;
-  std::string m_out_frequency_units;
+  OutputAvgType     m_avg_type;
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
   std::vector<std::string>            m_fields_names;
@@ -160,36 +170,6 @@ protected:
 
   // Local views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_1d_host>    m_host_views_1d;
-
-  // Whether this Output object writes a model restart file, or normal model output.
-  bool m_is_model_restart_output;
-
-  // If this is normal output, whether data to restart the history is needed/generated.
-  bool m_has_restart_data;
-  
-  // Frequency of checkpoint writes
-  int m_checkpoint_freq;
-  std::string m_checkpoint_freq_units;
-
-  // Whether this run is the restart of a previous run (in which case, we might load an output checkpoint)
-  bool m_is_restarted_run;
-  std::string m_hist_restart_casename;
-
-  // Whether the output file is open.
-  // Note: this is redundant, since it's equal to m_num_snapshots_in_file==0, but it makes code more readable.
-  bool m_is_output_file_open = false;
-
-  // When this equals m_out_frequency, it's time to write the output.
-  int m_nsteps_since_last_output = 0;
-
-  // When this equals m_checkpoint_freq, it's time to write a history restart file.
-  int m_nsteps_since_last_checkpoint = 0;
-
-  // To keep nc files small, we limit the number of snapshots in each nc file
-  // When the number of snapshots in a file reaches m_out_max_steps, it's time
-  // to close the out file, and open a new one.
-  int m_max_snapshots_per_file;
-  int m_num_snapshots_in_file = 0;
 };
 
 // ===================== IMPLEMENTATION ======================== //
@@ -197,18 +177,26 @@ protected:
 // This helper function updates the current output val with a new one,
 // according to the "averaging" type, and according to the number of
 // model time steps since the last output step.
-inline void AtmosphereOutput::combine (const Real& new_val, Real& curr_val) const
+inline void AtmosphereOutput::combine (const Real& new_val, Real& curr_val, const int nsteps_since_last_output) const
 {
-  if (m_avg_type=="INSTANT" || m_nsteps_since_last_output == 1) {
+  if (nsteps_since_last_output==1) {
     curr_val = new_val;
   } else {
-    // Update local view given the averaging type.
-    if (m_avg_type == "AVERAGE") {
-      curr_val = (curr_val*(m_nsteps_since_last_output-1) + new_val)/(m_nsteps_since_last_output);
-    } else if (m_avg_type == "MAX") {
-      curr_val = std::max(curr_val,new_val);
-    } else if (m_avg_type == "Min") {
-      curr_val = std::min(curr_val,new_val);
+    switch (m_avg_type) {
+      case OutputAvgType::Instant:
+        curr_val = new_val;
+        break;
+      case OutputAvgType::Max:
+        curr_val = std::max(curr_val,new_val);
+        break;
+      case OutputAvgType::Min:
+        curr_val = std::min(curr_val,new_val);
+        break;
+      case OutputAvgType::Average:
+        curr_val = (curr_val*(nsteps_since_last_output-1) + new_val)/(nsteps_since_last_output);
+        break;
+      default:
+        EKAT_ERROR_MSG ("Unexpected value for m_avg_type. Please, contact developers.\n");
     }
   }
 }

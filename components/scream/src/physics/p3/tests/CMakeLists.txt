@@ -7,7 +7,6 @@ set(P3_TESTS_SRCS
     p3_ice_tables_unit_tests.cpp
     p3_table3_unit_tests.cpp
     p3_back_to_cell_average_unit_tests.cpp
-    p3_prevent_ice_overdepletion_unit_tests.cpp
     p3_find_unit_tests.cpp
     p3_upwind_unit_tests.cpp
     p3_calc_rime_density_unit_tests.cpp
@@ -37,6 +36,8 @@ set(P3_TESTS_SRCS
     p3_nc_conservation_tests.cpp
     p3_nr_conservation_tests.cpp
     p3_ni_conservation_tests.cpp
+    p3_ice_deposition_sublimation_tests.cpp
+    p3_prevent_liq_supersaturation_tests.cpp
     ) # P3_TESTS_SRCS
 
 # The p3_test_setup executable generates tables used by all p3 tests. This
@@ -45,7 +46,13 @@ set(P3_TESTS_SRCS
 # it via the FIXTURES_REQUIRED property.
 # (See https://cmake.org/cmake/help/latest/prop_test/FIXTURES_REQUIRED.html)
 CreateUnitTest(p3_test_setup p3_test_setup.cpp "${NEED_LIBS}"
-               PROPERTIES FIXTURES_SETUP p3_tables)
+               EXCLUDE_MAIN_CPP PROPERTIES FIXTURES_SETUP p3_tables)
+
+if (SCREAM_DEBUG AND NOT EKAT_ENABLE_CUDA_MEMCHECK)
+  set (FORCE_RUN_DIFF_FAILS TRUE)
+else ()
+  set (FORCE_RUN_DIFF_FAILS FALSE)
+endif()
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
 if (NOT ${SCREAM_BASELINES_ONLY})
@@ -53,27 +60,37 @@ if (NOT ${SCREAM_BASELINES_ONLY})
                  THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
                  PROPERTIES FIXTURES_REQUIRED p3_tables
                  LABELS "p3;physics")
-endif()
 
-# Set inf tolerance for release builds. This will effectively disable all baseline
-# checking, but we still want to ensure things run without crashing
-if (CMAKE_BUILD_TYPE MATCHES ".*Rel.*")
-  set(TOL_FLAG "--tol inf")
+  # Make sure that a diff in the two implementation triggers a failed test (in debug only)
+  CreateUnitTest (p3_tests_fail p3_rain_sed_unit_tests.cpp "${NEED_LIBS}"
+                 COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
+                 THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC}
+                 PROPERTIES FIXTURES_REQUIRED p3_tables WILL_FAIL ${FORCE_RUN_DIFF_FAILS}
+                 LABELS "p3;physics;fail")
 endif()
 
 CreateUnitTest(p3_run_and_cmp_cxx "p3_run_and_cmp.cpp" "${NEED_LIBS}"
                THREADS ${SCREAM_TEST_MAX_THREADS}
-               EXE_ARGS "${TOL_FLAG} -b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
+               EXE_ARGS "-b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
                PROPERTIES FIXTURES_REQUIRED p3_tables
                EXCLUDE_MAIN_CPP
                LABELS "p3;physics")
 
 CreateUnitTest(p3_run_and_cmp_f90 "p3_run_and_cmp.cpp" "${NEED_LIBS}"
                THREADS ${SCREAM_TEST_MAX_THREADS}
-               EXE_ARGS "${TOL_FLAG} -f -b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
+               EXE_ARGS "-f -b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
                PROPERTIES FIXTURES_REQUIRED p3_tables
                EXCLUDE_MAIN_CPP
                LABELS "p3;physics")
+
+# Make sure that a diff from baselines triggers a failed test (in debug only)
+CreateUnitTest(p3_run_and_cmp_cxx_fail "p3_run_and_cmp.cpp" "${NEED_LIBS}"
+               COMPILER_CXX_DEFS SCREAM_FORCE_RUN_DIFF
+               THREADS ${SCREAM_TEST_MAX_THREADS}
+               EXE_ARGS "-b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
+               PROPERTIES FIXTURES_REQUIRED p3_tables WILL_FAIL ${FORCE_RUN_DIFF_FAILS}
+               EXCLUDE_MAIN_CPP
+               LABELS "p3;physics;fail")
 
 # By default, baselines should be created using all fortran (make baseline). If the user wants
 # to use CXX to generate their baselines, they should use "make baseline_cxx".
@@ -87,4 +104,4 @@ add_custom_target(p3_baseline_cxx
 add_dependencies(baseline     p3_baseline_f90)
 add_dependencies(baseline_cxx p3_baseline_cxx)
 
-configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4.1.1 data/p3_lookup_table_1.dat-v4.1.1 COPYONLY)
+GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1 data/p3_lookup_table_1.dat-v4.1.1)

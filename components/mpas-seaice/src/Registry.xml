@@ -161,7 +161,7 @@
 			description="Specifies the third dimension of the modal aerosol optical parameter matrix"
 		/>
 		<dim name="nAlgae"
-			definition="3"
+			definition="2"
 			description="Number of algal species in use"
 		/>
 		<dim name="nDOC"
@@ -794,6 +794,11 @@
 			description="Use the chlorophyll tracer (currently not implemented!)"
 			possible_values="false"
 			icepack_name="tr_bgc_chl"
+		/>
+		<nml_option name="config_use_macromolecules" type="logical" default_value="false" units="unitless"
+			description="Use ocean macromolecule to determine DOC fractions in ice-ocean coupling"
+			possible_values="true or false"
+			icepack_name="use_macromolecules"
 		/>
 		<nml_option name="config_use_ammonium" type="logical" default_value="false" units="unitless"
 			description="Use the ammonium tracer"
@@ -4089,6 +4094,7 @@
 		<var name="verticalShortwaveGrid"		type="real"	dimensions="nIceLayersP1"				name_in_code="verticalShortwaveGrid"		packages="pkgColumnBiogeochemistry;pkgColumnPackage"/>
 		<var name="carbonToNitrogenRatioAlgae"		type="real"	dimensions="maxAlgaeType"				name_in_code="carbonToNitrogenRatioAlgae"/>
 		<var name="carbonToNitrogenRatioDON"		type="real"	dimensions="maxDONType"				name_in_code="carbonToNitrogenRatioDON"/>
+		<var name="DOCPoolFractions"		type="real"	dimensions="maxDOCType"				name_in_code="DOCPoolFractions"/>
 	</var_struct>
 
 	<!-- prescribed ice mode -->

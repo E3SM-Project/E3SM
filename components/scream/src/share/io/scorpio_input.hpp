@@ -44,6 +44,10 @@
  *      - field_name_2
  *        ...
  *      - field_name_N
+ *  Note: an alternative way of specifying Fields names is to have
+ *    Grid: STRING
+ *    Fields:
+ *      $GRID: [field_name1,...,field_name_N]
  *
  *  TODO: add a rename option if variable names differ in file and field manager.
  *
@@ -58,10 +62,10 @@ namespace scream
 class AtmosphereInput 
 {
 public:
-  using fm_type       = FieldManager<Real>;
+  using fm_type       = FieldManager;
   using grid_type     = AbstractGrid;
   using gm_type       = GridsManager;
-  using remapper_type = AbstractRemapper<Real>;
+  using remapper_type = AbstractRemapper;
 
   using KT = KokkosTypes<DefaultDevice>;
   template<int N>
@@ -89,8 +93,8 @@ public:
   //               variables from the input filed will be read into.
   //               Fields can be padded/strided.
   // It calls init(field_mgr) at the end.
-  AtmosphereInput (const ekat::Comm& comm,
-                   const ekat::ParameterList& params,
+  // TODO: is comm superfluous, considering we can get it from the grid in the field_mgr?
+  AtmosphereInput (const ekat::ParameterList& params,
                    const std::shared_ptr<const fm_type>& field_mgr,
                    const std::shared_ptr<const gm_type>& grids_mgr = nullptr);
 
@@ -107,8 +111,8 @@ public:
   //  - layouts: the layout of the vars (used to reshape the views).
   // It calls init(grid,host_views_1d,layouts) at the end.
   // TODO: do not require layouts, and read them from file.
-  AtmosphereInput (const ekat::Comm& comm,
-                   const ekat::ParameterList& params,
+  // TODO: is comm superfluous, considering we can get it from the grid?
+  AtmosphereInput (const ekat::ParameterList& params,
                    const std::shared_ptr<const grid_type>& grid,
                    const std::map<std::string,view_1d_host>& host_views_1d,
                    const std::map<std::string,FieldLayout>&  layouts);
@@ -116,23 +120,14 @@ public:
   virtual ~AtmosphereInput () = default;
 
   // --- Methods --- //
-  // Sets up the scorpio metadata to preare for reading
-  // Inputs:
-  //  - field_mgr: the FieldManager containing the Field's where the
-  //               variables from the input filed will be read into.
-  //               Fields can be padded/strided.
-  void init(const std::shared_ptr<const fm_type>& field_mgr,
-            const std::shared_ptr<const gm_type>& grids_mgr = nullptr);
-
-  // Sets up the scorpio metadata to preare for reading
-  // Inputs:
-  //  - grid: the grid where the variables live
-  //  - host_views_1d: the 1d flattened views where data will be read into.
-  //                   These views must be contiguous (no padding/striding).
-  //  - layouts: the layout of the vars (used to reshape the views).
-  void init(const std::shared_ptr<const grid_type>& grid,
-            const std::map<std::string,view_1d_host>& host_views_1d,
-            const std::map<std::string,FieldLayout>&  layouts);
+  // In case the class was constructed with the minimal ctor, these methods
+  // allow to finalize initialization later.
+  // NOTE: these two init methods are mutually exclusive
+  void init (const std::shared_ptr<const fm_type>& field_mgr,
+             const std::shared_ptr<const gm_type>& grids_mgr = nullptr);
+  void init (const std::shared_ptr<const grid_type>& grid,
+             const std::map<std::string,view_1d_host>& host_views_1d,
+             const std::map<std::string,FieldLayout>&  layouts);
 
   // Read fields that were required via parameter list.
   void read_variables (const int time_index = -1);
@@ -140,35 +135,42 @@ public:
   void finalize();
 
 protected:
-  // Internal functions
-  void set_parameters (const ekat::ParameterList& params);
+
+  void set_fields_and_grid_names (const std::string& grid_name);
+  void build_remapper (const std::shared_ptr<const gm_type>& grids_mgr);
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
   void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
                           const std::shared_ptr<const gm_type>& grids_mgr);
-
+  void set_views (const std::map<std::string,view_1d_host>& host_views_1d,
+                  const std::map<std::string,FieldLayout>&  layouts);
   void init_scorpio_structures ();
+
+  void register_fields_specs ();
+
   void register_variables();
   void set_degrees_of_freedom();
 
   std::vector<std::string> get_vec_of_dims (const FieldLayout& layout);
-  std::string get_io_decomp (const std::vector<std::string>& vec_of_dims);
+  std::string get_io_decomp (const FieldLayout& layout);
   std::vector<int> get_var_dof_offsets (const FieldLayout& layout);
 
   // Internal variables
-  ekat::Comm          m_comm;
+  ekat::Comm            m_comm;
+  ekat::ParameterList   m_params;
 
   std::shared_ptr<const fm_type>        m_field_mgr;
-  std::shared_ptr<const AbstractGrid>   m_grid;
+  std::shared_ptr<const AbstractGrid>   m_io_grid;
   std::shared_ptr<remapper_type>        m_remapper;
 
   std::map<std::string, view_1d_host>   m_host_views_1d;
   std::map<std::string, FieldLayout>    m_layouts;
   
   std::string               m_filename;
+  std::string               m_io_grid_name;
   std::vector<std::string>  m_fields_names;
 
-  bool m_is_inited = false;
-
+  bool m_inited_with_fields        = false;
+  bool m_inited_with_views         = false;
 }; // Class AtmosphereInput
 
 } //namespace scream

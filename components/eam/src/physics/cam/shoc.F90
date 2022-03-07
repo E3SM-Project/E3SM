@@ -53,9 +53,9 @@ real(rtype) :: vk    ! von karmann constant [-]
 
 ! Set default values, if not overwritten by namelist.
 !  All are unitless (unless units are stated)
-real(rtype) :: thl2tune = 0.15_rtype ! Temperature variance tuning factor
-real(rtype) :: qw2tune = 0.15_rtype ! Moisture variance tuning factor
-real(rtype) :: qwthl2tune = 0.15_rtype ! Temperature moisture covariance
+real(rtype) :: thl2tune = 1.0_rtype ! Temperature variance tuning factor
+real(rtype) :: qw2tune = 1.0_rtype ! Moisture variance tuning factor
+real(rtype) :: qwthl2tune = 1.0_rtype ! Temperature moisture covariance
 real(rtype) :: w2tune = 1.0_rtype ! Vertical velocity variance
 real(rtype) :: length_fac = 0.5_rtype ! Length scale factor
 real(rtype) :: c_diag_3rd_mom = 7.0_rtype ! w3 factor
@@ -67,8 +67,8 @@ real(rtype) :: Ckh = 0.1_rtype ! Eddy diffusivity coefficient for heat
 real(rtype) :: Ckm = 0.1_rtype ! Eddy diffusivity coefficient for momentum
 real(rtype) :: Ckh_s_min = 0.1_rtype ! Stable PBL diffusivity minimum for heat
 real(rtype) :: Ckm_s_min = 0.1_rtype ! Stable PBL diffusivity minimum for momentum
-real(rtype) :: Ckh_s_max = 1.0_rtype ! Stable PBL diffusivity maximum for heat
-real(rtype) :: Ckm_s_max = 1.0_rtype ! Stable PBL diffusivity maximum for momentum
+real(rtype) :: Ckh_s_max = 0.1_rtype ! Stable PBL diffusivity maximum for heat
+real(rtype) :: Ckm_s_max = 0.1_rtype ! Stable PBL diffusivity maximum for momentum
 
 !=========================================================
 ! Private module parameters
@@ -2864,6 +2864,13 @@ subroutine shoc_assumed_pdf_compute_s(&
       qn=s
     endif
   endif
+  
+  ! Prevent possibility of empty clouds or rare occurence of 
+  !  cloud liquid less than zero
+  if (qn .le. 0._rtype) then
+    C=0._rtype
+    qn=0._rtype
+  endif
 
 end subroutine shoc_assumed_pdf_compute_s
 
@@ -3794,7 +3801,7 @@ subroutine update_host_dse(&
 
   do k=1,nlev
     do i=1,shcol
-      temp = (thlm(i,k)+(lcond/cp)*shoc_ql(i,k))/inv_exner(i,k)
+      temp = (thlm(i,k)/inv_exner(i,k))+(lcond/cp)*shoc_ql(i,k)
       host_dse(i,k) = cp*temp+ggr*zt_grid(i,k)+phis(i)
     enddo
   enddo
@@ -4219,7 +4226,7 @@ subroutine pblintd(&
 #ifdef SCREAM_CONFIG_IS_CMAKE
   if (use_cxx) then
     call pblintd_f(&
-      shcol,nlev,nlevi,&             ! Input
+      shcol,nlev,nlevi,npbl,&        ! Input
       z,zi,thl,ql,&                  ! Input
       q,u,v,&                        ! Input
       ustar,obklen,kbfs,cldn,&       ! Input
@@ -4400,8 +4407,8 @@ subroutine pblintd_height(&
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
-      call pblintd_height_f(shcol,nlev,z,u,v,ustar,thv,thv_ref,&             ! Input
-                            pblh,rino,check)          ! Output
+      call pblintd_height_f(shcol,nlev,npbl,z,u,v,ustar,thv,thv_ref,& ! Input
+                            pblh,rino,check)                          ! Output
       return
    endif
 #endif

@@ -1,22 +1,27 @@
 %YAML 1.1
 ---
-FILENAME: shoc_stand_alone_output
-AVERAGING TYPE: Instant
-GRID: Point Grid
-FREQUENCY:
-  OUT_N: 5
-  OUT_OPTION: Steps
-  OUT_MAX_STEPS: 1
-FIELDS:
-  Number of Fields: 10
-  field 1: T_mid
-  field 2: cldfrac_liq
-  field 3: eddy_diff_mom
-  field 4: horiz_winds
-  field 5: qc
-  field 6: qv
-  field 7: sgs_buoy_flux
-  field 8: tke
-  field 9: inv_qc_relvar
-  field 10: pbl_height
+Casename: shoc_standalone_output
+Averaging Type: Instant
+Max Snapshots Per File: 1
+Fields:
+  - T_mid
+  - cldfrac_liq
+  - eddy_diff_mom
+  - horiz_winds
+  - qv
+  - qc
+  - sgs_buoy_flux
+  - tke
+  - inv_qc_relvar
+  - pbl_height
+  - omega
+  - p_int
+  - p_mid
+  - phis
+  - pseudo_density
+Output Control:
+  Frequency: ${NUM_STEPS}
+  Frequency Units: Steps
+  Timestamp in Filename: false
+  MPI Ranks in Filename: true
 ...

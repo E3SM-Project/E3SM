@@ -992,110 +992,6 @@ struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticLiq
 
 }; //TestP3UpdatePrognosticLiq
 
-
-template <typename D>
-struct UnitWrap::UnitTest<D>::TestP3IceDepSublimation
-{
-  static void  ice_deposition_sublimation_unit_bfb_tests(){
-
-    //fortran generated data is input to the following
-    //NOTE: This array has 8 values instead of 12 as 4 are intent-out at the end and we do not need
-    // to pass those (they are assumed to be zero)
-    IceDepSublimationData ids[max_pack_size] = {
-      {1.0000E-04,4.5010E+05,2.8750E+02,1.1279E-02,1.1279E-02,0.0000E+00,3.3648E+00,5.0000E-03},
-      {5.1000E-03,4.5370E+05,2.8542E+02,9.9759E-03,9.9759E-03,0.0000E+00,3.1223E+00,5.0000E-03},
-      {5.1000E-03,4.5742E+05,2.8334E+02,8.8076E-03,8.8076E-03,0.0000E+00,2.9014E+00,5.0000E-03},
-      {5.1000E-03,4.6125E+05,2.8125E+02,7.7615E-03,7.7615E-03,0.0000E+00,2.7005E+00,5.0000E-03},
-      {5.1000E-03,4.6521E+05,2.7917E+02,6.8265E-03,6.8265E-03,0.0000E+00,2.5180E+00,5.0000E-03},
-      {5.1000E-03,4.6930E+05,2.7709E+02,5.9921E-03,5.9921E-03,0.0000E+00,2.3526E+00,5.0000E-03},
-      {5.1000E-03,4.7353E+05,2.7501E+02,5.2488E-03,5.2488E-03,0.0000E+00,2.2028E+00,5.0000E-03},
-      {5.1000E-03,4.7790E+05,2.7292E+02,4.5879E-03,4.5766E-03,6.2108E-02,2.0649E+00,5.0000E-03},
-      {5.1000E-03,4.8241E+05,2.7084E+02,4.0015E-03,3.9112E-03,6.1911E-02,1.9241E+00,5.0000E-03},
-      {5.1000E-03,4.8709E+05,2.6876E+02,3.4821E-03,3.3349E-03,6.1708E-02,1.8002E+00,5.0000E-03},
-      {5.1000E-03,4.9193E+05,2.6667E+02,3.0231E-03,2.8368E-03,6.1502E-02,1.6914E+00,5.0000E-03},
-      {5.1000E-03,4.9695E+05,2.6459E+02,2.6183E-03,2.4074E-03,6.1290E-02,1.5960E+00,5.0000E-03},
-      {5.1000E-03,5.0216E+05,2.6251E+02,2.2621E-03,2.0379E-03,6.1073E-02,1.5125E+00,5.0000E-03},
-      {5.1000E-03,5.0756E+05,2.6042E+02,1.9495E-03,1.7207E-03,6.0850E-02,1.4397E+00,5.0000E-03},
-      {5.1000E-03,5.1317E+05,2.5834E+02,1.6757E-03,1.4491E-03,6.0620E-02,1.3763E+00,5.0000E-03},
-      {5.0000E-08,5.4479E+05,2.4793E+02,7.5430E-04,5.8895E-04,4.6769E-04,1.1661E+00,1.5278E-04},
-    };
-
-    // Sync to device
-    view_1d<IceDepSublimationData> ids_device("ids", max_pack_size);
-    auto ids_host = Kokkos::create_mirror_view(ids_device);
-
-    // This copy only copies the input variables.
-    std::copy(&ids[0], &ids[0] + max_pack_size, ids_host.data());
-    Kokkos::deep_copy(ids_device, ids_host);
-
-    // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
-      ice_deposition_sublimation(ids[i]);
-    }
-
-    // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(RangePolicy(0, num_test_itrs), KOKKOS_LAMBDA(const Int& i) {
-      const Int offset = i * Spack::n;
-
-      // Init pack inputs
-      Spack qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i, epsi, abi, qv, qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend;
-
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        qi_incld[s]                = ids_device(vs).qi_incld;
-        ni_incld[s]                = ids_device(vs).ni_incld;
-        T_atm[s]                   = ids_device(vs).T_atm;
-        qv_sat_l[s]                = ids_device(vs).qv_sat_l;
-        qv_sat_i[s]                = ids_device(vs).qv_sat_i;
-        epsi[s]                    = ids_device(vs).epsi;
-        abi[s]                     = ids_device(vs).abi;
-        qv[s]                      = ids_device(vs).qv;
-        qv2qi_vapdep_tend[s]       = ids_device(vs).qv2qi_vapdep_tend;
-        qi2qv_sublim_tend[s]       = ids_device(vs).qi2qv_sublim_tend;
-        ni_sublim_tend[s]          = ids_device(vs).ni_sublim_tend;
-        qc2qi_berg_tend[s]         = ids_device(vs).qc2qi_berg_tend;
-      }
-
-      Functions::ice_deposition_sublimation(qi_incld, ni_incld, T_atm, qv_sat_l, qv_sat_i, epsi, abi, qv,
-                                            qv2qi_vapdep_tend, qi2qv_sublim_tend, ni_sublim_tend, qc2qi_berg_tend);
-
-      // Copy results back into views
-      for (Int s = 0, vs = offset; s < Spack::n; ++s, ++vs) {
-        ids_device(vs).qi_incld             = qi_incld[s];
-        ids_device(vs).ni_incld             = ni_incld[s];
-        ids_device(vs).T_atm                = T_atm[s];
-        ids_device(vs).qv_sat_l             = qv_sat_l[s];
-        ids_device(vs).qv_sat_i             = qv_sat_i[s];
-        ids_device(vs).epsi                 = epsi[s];
-        ids_device(vs).abi                  = abi[s];
-        ids_device(vs).qv                   = qv[s];
-        ids_device(vs).qv2qi_vapdep_tend    = qv2qi_vapdep_tend[s];
-        ids_device(vs).qi2qv_sublim_tend    = qi2qv_sublim_tend[s];
-        ids_device(vs).ni_sublim_tend       = ni_sublim_tend[s];
-        ids_device(vs).qc2qi_berg_tend      = qc2qi_berg_tend[s];
-      }
-    });
-
-    // Sync back to host
-    Kokkos::deep_copy(ids_host, ids_device);
-
-    // Validate results
-    if (SCREAM_BFB_TESTING) {
-      for (Int s = 0; s < max_pack_size; ++s) {
-        REQUIRE(ids[s].qv2qi_vapdep_tend  == ids_host(s).qv2qi_vapdep_tend);
-        REQUIRE(ids[s].qi2qv_sublim_tend  == ids_host(s).qi2qv_sublim_tend);
-        REQUIRE(ids[s].ni_sublim_tend  == ids_host(s).ni_sublim_tend);
-        REQUIRE(ids[s].qc2qi_berg_tend == ids_host(s).qc2qi_berg_tend);
-      }
-    }
-  }
-
-  static void run_bfb(){
-    ice_deposition_sublimation_unit_bfb_tests();
-  }
-
-}; //TestP3UpdatePrognosticLiq
-
-
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestP3FunctionsImposeMaxTotalNi
 {
@@ -1196,10 +1092,6 @@ TEST_CASE("p3_update_prognostic_ice_test", "[p3_unit_tests]"){
 
 TEST_CASE("p3_update_prognostic_liquid_test", "[p3_unit_tests]"){
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3UpdatePrognosticLiq::run_bfb();
-}
-
-TEST_CASE("p3_ice_deposition_sublimation_test", "[p3_unit_tests]"){
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3IceDepSublimation::run_bfb();
 }
 
 TEST_CASE("p3_impose_max_total_ni_test", "[p3_unit_tests]"){

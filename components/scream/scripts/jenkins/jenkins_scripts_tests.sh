@@ -1,6 +1,6 @@
 #!/bin/bash -xe
 
-export JENKINS_SCRIPT_DIR=$( cd "$( dirname "$0" )" && pwd )
+export JENKINS_SCRIPT_DIR=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
 DATE_STAMP=$(date "+%Y-%m-%d_%H%M%S")
 
 set -o pipefail

@@ -31,6 +31,12 @@ enum class RepoState {
   Closed
 };
 
+// The type of this run
+enum class RunType {
+  Initial,
+  Restarted
+};
+
 // We cannot expect BFB results between f90 and cxx if optimizations are on.
 // Same goes for cuda-memcheck because it makes the bfb math layer prohibitively
 // expensive and so must be turned off.

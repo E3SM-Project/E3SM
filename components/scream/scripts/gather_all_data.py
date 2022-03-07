@@ -24,7 +24,11 @@ class GatherAllData(object):
     ###########################################################################
     def formulate_command(self, machine):
     ###########################################################################
-        env_setup    = get_mach_env_setup_command(machine)
+        # gather-all runs on login, not compute nodes, so we cannot rely on
+        # probed values to be accurate, so we should not set CTEST_PARALLEL_LEVEL
+        # based on these potentially wrong values.
+        env_setup    = get_mach_env_setup_command(machine, ctest_j=-1)
+
         cxx_compiler = get_mach_cxx_compiler(machine)
         f90_compiler = get_mach_f90_compiler(machine)
         c_compiler   = get_mach_c_compiler(machine)
@@ -109,7 +113,7 @@ class GatherAllData(object):
                     print("Warning moving old results to {}".format(old_path))
                     os.rename(result_path, old_path)
 
-                with open(result_path, "w") as fd:
+                with open(result_path, "w", encoding="utf-8") as fd:
                     fd.write(output)
 
         print("Completed analysis on {}".format(machine))

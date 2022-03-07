@@ -52,7 +52,13 @@ static Int compare (const std::string& label, const Scalar* a,
       continue;
     }
 
-    const auto num = std::abs(a[i] - b[i]);
+    // The code below is to force a result difference. This is used by the
+    // scream/scripts internal testing to verify that various DIFFs are detected.
+#if defined(SCREAM_FORCE_RUN_DIFF)
+    const Real num = std::abs(a[i]*Real(1.2) - b[i]);
+#else
+    const Real num = std::abs(a[i] - b[i]);
+#endif
     if (num > tol*den) {
       ++nerr2;
       worst = std::max(worst, num);
@@ -134,7 +140,9 @@ struct Baseline {
 
         if (ps.repeat > 0 && r == -1) {
           std::cout << "Running P3 with ni=" << d->ncol << ", nk=" << d->nlev
-                    << ", dt=" << d->dt << ", ts=" << d->it << ", predict_nc=" << d->do_predict_nc;
+                    << ", dt=" << d->dt << ", ts=" << d->it
+                    << ", predict_nc=" << d->do_predict_nc
+                    << ", prescribed_CCN=" << d->do_prescribed_CCN;
 
           if (!use_fortran) {
             std::cout << ", small_packn=" << SCREAM_SMALL_PACK_SIZE;
@@ -270,7 +278,7 @@ int main (int argc, char** argv) {
   }
 
   bool generate = false, use_fortran = false;
-  scream::Real tol = 0;
+  scream::Real tol = SCREAM_BFB_TESTING ? 0 : std::numeric_limits<Real>::infinity();
   Int timesteps = 6;
   Int dt = 300;
   Int ncol = 3;

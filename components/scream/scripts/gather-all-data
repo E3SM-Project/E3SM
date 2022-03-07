@@ -28,7 +28,7 @@ check_minimum_python_version(3, 5)
 import argparse, sys, pathlib
 
 from gather_all_data import GatherAllData
-from machines_specs import MACHINE_METADATA
+from machines_specs import get_all_supported_machines
 
 ###############################################################################
 def parse_command_line(args, description):
@@ -60,7 +60,7 @@ OR
 
     parser.add_argument("-c", "--commit", help="Commit to test. Default is current HEAD.")
 
-    parser.add_argument("-m", "--machine", dest="machines", action="append", choices=MACHINE_METADATA.keys(),
+    parser.add_argument("-m", "--machine", dest="machines", action="append", choices=get_all_supported_machines(),
                         help="Select which machines to run on, default is all")
 
     parser.add_argument("-o", "--scream-docs", action="store_true", help="Test scream-docs instead of scream.")
@@ -86,7 +86,7 @@ OR
     args = parser.parse_args(args[1:])
 
     if not args.machines:
-        args.machines = MACHINE_METADATA.keys()
+        args.machines = get_all_supported_machines()
 
     expect(not (args.local and len(args.machines) > 1),
            "Cannot run on multiple machines if local")

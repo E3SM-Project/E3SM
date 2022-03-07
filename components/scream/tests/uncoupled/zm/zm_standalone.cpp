@@ -10,19 +10,30 @@
 #include "ekat/ekat_parse_yaml_file.hpp"
 
 #include <iostream>
+#include <iomanip>
+
 namespace scream {
 
 TEST_CASE("zm-standalone", "") {
-  
   using namespace scream;
   using namespace scream::control;
-  constexpr int num_iters = 20;
-//  constexpr int num_cols  = 32;
 
   // Load ad parameter list
   std::string fname = "input.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
   REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
+
+  // Time stepping parameters
+  auto& ts = ad_params.sublist("Time Stepping");
+  const auto dt = ts.get<int>("Time Step");
+  const auto start_date = ts.get<std::vector<int>>("Start Date");
+  const auto start_time  = ts.get<std::vector<int>>("Start Time");
+  const auto nsteps     = ts.get<int>("Number of Steps");
+
+  EKAT_ASSERT_MSG (dt>0, "Error! Time step must be positive.\n");
+
+  util::TimeStamp t0 (start_date, start_time);
+  EKAT_ASSERT_MSG (t0.is_valid(), "Error! Invalid start date.\n");
 
   // Create a comm
   ekat::Comm atm_comm (MPI_COMM_WORLD);
@@ -40,18 +51,18 @@ TEST_CASE("zm-standalone", "") {
   // Create the driver
   AtmosphereDriver ad;
 
-  // Init and run (do not finalize, or you'll clear the field repo!)
-  util::TimeStamp time (0,0,0,0);
-  ad.initialize(atm_comm,ad_params,time);
-  for (int i=0; i<num_iters; ++i) {
-    ad.run(300.0);
+  // Init, run, and finalize
+  ad.initialize(atm_comm,ad_params,t0);
+  printf("Start time stepping loop...       [  0%%]\n");
+  for (int i=0; i<nsteps; ++i) {
+    ad.run(dt);
+    std::cout << "  - Iteration " << std::setfill(' ') << std::setw(3) << i+1 << " completed";
+    std::cout << "       [" << std::setfill(' ') << std::setw(3) << 100*(i+1)/nsteps << "%]\n";
   }
-
-  // Finalize 
   ad.finalize();
 
   // If we got here, we were able to run zm 
   REQUIRE(true);
 }
 
-} // empty namespace
+} // namespace scream

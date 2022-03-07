@@ -34,21 +34,6 @@ namespace scream
  * assumptions or switches on the particular grid, and simply rely on common
  * grid interfaces to retrieve the correct layout, based on known field properties,
  * like spatial dimension or "physical" rank.
- *
- * The grid class also offers the ability to retrieve a "unique" grid associated
- * with this grid. A unique grid is a grid where each GID appears *once* globally.
- * This means that no two MPI rank can have the same dof GID, but also that each
- * GID must appear only once on each rank.
- * An example of *non*-unique grid is a SEGrid, where the same dof GID is shared
- * by neighboring spectral elements.
- * If the grid is not unique, the corresponding unique grid must have been passed
- * at construction time in order to access it. On the other hand, if a valid
- * unique grid is passed at construction time, this->is_unique() will always
- * return fals, and get_unique_grid() will always return the grid passed at
- * construction time, regardless of whether the current grid is in fact unique or not.
- * Also, notice that the ctor cannot check that the dofs in the unique_grid
- * are indeed a subset of the dofs of the current grid, since the dofs are not
- * set yet.
  */
 
 class AbstractGrid : public ekat::enable_shared_from_this<AbstractGrid>
@@ -74,13 +59,6 @@ public:
                 const int num_vertical_lev,
                 const ekat::Comm& comm);
 
-  AbstractGrid (const std::string& name,
-                const GridType type,
-                const int num_local_dofs,
-                const int num_vertical_lev,
-                const std::shared_ptr<const AbstractGrid>& unique_grid,
-                const ekat::Comm& comm);
-
   virtual ~AbstractGrid () = default;
 
   // Grid description utilities
@@ -101,15 +79,15 @@ public:
   // Whether this grid contains unique dof GIDs
   bool is_unique () const;
 
-  // Retrieve the unique grid associated with this grid
-  std::shared_ptr<const AbstractGrid> get_unique_grid () const;
-
   // The number of dofs on this MPI rank
   int get_num_local_dofs  () const { return m_num_local_dofs;  }
   gid_type get_num_global_dofs () const { return m_num_global_dofs; }
+  gid_type get_global_min_dof_gid () const;
+  gid_type get_global_max_dof_gid () const;
 
   // Set the dofs list
-  // NOTE: this method must be called on all ranks in the stored comm.
+  // NOTE: this method calls valid_dofs_list, which may contain collective
+  //       operations over the stored communicator.
   void set_dofs (const dofs_list_type& dofs);
 
   // Get a 1d view containing the dof gids
@@ -117,20 +95,32 @@ public:
 
   // Set the the map dof_lid->dof_indices, where the indices are the ones used
   // to access the dof in the layout returned by get_2d_scalar_layout().
-  // NOTE: this method must be called on all ranks in the stored comm.
+  // NOTE: this method calls valid_lid_to_idx_map, which may contain collective
+  //       operations over the stored communicator.
   void set_lid_to_idx_map (const lid_to_idx_map_type& lid_to_idx);
 
   // Get a 2d view, where (i,j) entry contains the j-th coordinate of
   // the i-th dof in the native dof layout.
   const lid_to_idx_map_type& get_lid_to_idx_map () const;
 
-  // Set/get geometric views. The setter is virtual, so each grid can check if "name" is supported.
-  virtual void set_geometry_data (const std::string& name, const geo_view_type& data) = 0;
+  // Set/get geometric views.
+  // NOTE: this method calls valid_geo_data, which may contain collective
+  //       operations over the stored communicator.
+  void set_geometry_data (const std::string& name, const geo_view_type& data);
   const geo_view_type& get_geometry_data (const std::string& name) const;
 
 protected:
 
-  void set_unique_grid (const std::shared_ptr<const AbstractGrid>& unique_grid);
+  // Derived classes can override these methods, which are called inside the
+  // set_dofs, set_lid_to_idx_map, and set_geometry_data methods respectively, to verify that the
+  // views have been set to something that satisfies any requirement of the grid type.
+  // This class already checks the extents of the view, but derived classes can add
+  // some extra consistency check.
+  virtual bool valid_dofs_list (const dofs_list_type& /*dofs_gids*/)      const { return true; }
+  virtual bool valid_lid_to_idx_map (const lid_to_idx_map_type& /*lid_to_idx*/) const { return true; }
+  virtual bool valid_geo_data (const std::string& /*name*/, const geo_view_type& /*data*/) const { return true; }
+
+private:
 
   // The grid name and type
   GridType     m_type;
@@ -153,9 +143,6 @@ protected:
   lid_to_idx_map_type   m_lid_to_idx;
 
   geo_view_map_type     m_geo_views;
-
-  // The unique grid associated with this grid, in case this grid is not unique.
-  std::shared_ptr<const AbstractGrid> m_unique_grid;
 
   // The MPI comm containing the ranks across which the global mesh is partitioned
   ekat::Comm            m_comm;

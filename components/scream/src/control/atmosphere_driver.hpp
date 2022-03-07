@@ -40,7 +40,7 @@ namespace control {
 class AtmosphereDriver
 {
 public:
-  using field_mgr_type = FieldManager<Real>;
+  using field_mgr_type = FieldManager;
   using field_mgr_ptr  = std::shared_ptr<field_mgr_type>;
 
   AtmosphereDriver () = default;
@@ -77,7 +77,7 @@ public:
   void initialize_fields (const util::TimeStamp& t0);
 
   // Initialie I/O structures for output
-  void initialize_output_managers (const bool restarted_run = false);
+  void initialize_output_managers ();
 
   // Call 'initialize' on all atm procs
   void initialize_atm_procs ();
@@ -89,16 +89,15 @@ public:
   //  - atm_comm: the MPI comm containing all ranks assigned to the atmosphere
   //  - params: parameter list with all atm options (organized in sublists)
   //  - t0: the time stamp where the simulation starts
-  //  - restarted_run: whether this run is restarting from the output of a previous run
   void initialize (const ekat::Comm& atm_comm,
                    const ekat::ParameterList& params,
-                   const util::TimeStamp& t0,
-                   const bool restarted_run = false);
+                   const util::TimeStamp& t0);
 
   // The run method is responsible for advancing the atmosphere component by one atm time step
   // Inside here you should find calls to the run method of each subcomponent, including parameterizations
   // and dynamics (HOMME).
-  void run (const Real dt);
+  // Note: dt is assumed to be in seconds
+  void run (const int dt);
 
   // Clean up the driver (includes cleaning up the parameterizations and the fm's);
   void finalize ( /* inputs */ );
@@ -113,33 +112,41 @@ public:
 
   const std::shared_ptr<GridsManager>& get_grids_manager () const { return m_grids_manager; }
 
-  const ATMBufferManager& get_memory_buffer() const { return m_memory_buffer; }
+  const std::shared_ptr<ATMBufferManager>& get_memory_buffer() const { return m_memory_buffer; }
+
+  const std::shared_ptr<AtmosphereProcessGroup>& get_atm_processes () const { return m_atm_process_group; }
 
 protected:
 
+  void set_initial_conditions ();
+  void restart_model ();
   void initialize_constant_field(const FieldIdentifier& fid, const ekat::ParameterList& ic_pl);
+  void read_fields_from_file (const std::vector<std::string>& field_names,
+                              const std::string& grid_name,
+                              const std::string& file_name,
+                              const util::TimeStamp& t0);
   void register_groups ();
 
-  std::map<std::string,field_mgr_ptr>    m_field_mgrs;
+  std::map<std::string,field_mgr_ptr>       m_field_mgrs;
 
-  std::shared_ptr<AtmosphereProcessGroup>             m_atm_process_group;
+  std::shared_ptr<AtmosphereProcessGroup>   m_atm_process_group;
 
-  std::shared_ptr<GridsManager>                       m_grids_manager;
+  std::shared_ptr<GridsManager>             m_grids_manager;
 
-  ekat::ParameterList                                 m_atm_params;
+  ekat::ParameterList                       m_atm_params;
 
-  std::map<std::string,OutputManager>                 m_output_managers;
+  std::list<OutputManager>                  m_output_managers;
 
-  ATMBufferManager                                    m_memory_buffer;
+  std::shared_ptr<ATMBufferManager>         m_memory_buffer;
 
   // Surface coupling stuff
-  std::shared_ptr<SurfaceCoupling>            m_surface_coupling;
+  std::shared_ptr<SurfaceCoupling>          m_surface_coupling;
 
   // This are the time stamps of the start and end of the time step.
-  util::TimeStamp                       m_current_ts;
+  util::TimeStamp                           m_current_ts;
 
   // This is the comm containing all (and only) the processes assigned to the atmosphere
-  ekat::Comm   m_atm_comm;
+  ekat::Comm                                m_atm_comm;
 
   // Some status flags, used to make sure we call the init functions in the right order
   static constexpr int s_comm_set       =   1;

@@ -312,10 +312,8 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, nCells, nEdges
+      integer :: iCell, nCells
       integer, dimension(:), pointer :: nCellsArray
-
-      integer, dimension(:,:), pointer :: cellsOnEdge
 
       real (kind=RKIND), dimension(:), pointer :: evaporationFlux, snowFlux
       real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, iceRunoffFlux
@@ -463,9 +461,9 @@ contains
       real (kind=RKIND), dimension(:), pointer :: shortWaveHeatFlux, penetrativeTemperatureFlux
       real (kind=RKIND), dimension(:), pointer :: snowFlux, rainFlux
       real (kind=RKIND), dimension(:), pointer :: rainTemperatureFlux, evapTemperatureFlux, &
-                                                  seaIceFreshWaterTemperatureFlux, icebergFreshWaterTemperatureFlux, &
+                                                  seaIceTemperatureFlux, icebergTemperatureFlux, &
                                                   totalFreshWaterTemperatureFlux
-      real (kind=RKIND) :: requiredSalt, allowedSalt
+      real (kind=RKIND) :: requiredSalt, allowedSalt, surfaceTemperatureFluxWithoutRunoff
 
       err = 0
 
@@ -496,8 +494,8 @@ contains
 
       call mpas_pool_get_array(forcingPool, 'rainTemperatureFlux', rainTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'evapTemperatureFlux', evapTemperatureFlux)
-      call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterTemperatureFlux', seaIceFreshWaterTemperatureFlux)
-      call mpas_pool_get_array(forcingPool, 'icebergFreshWaterTemperatureFlux', icebergFreshWaterTemperatureFlux)
+      call mpas_pool_get_array(forcingPool, 'seaIceTemperatureFlux', seaIceTemperatureFlux)
+      call mpas_pool_get_array(forcingPool, 'icebergTemperatureFlux', icebergTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'totalFreshWaterTemperatureFlux', totalFreshWaterTemperatureFlux)
 
       nCells = nCellsArray( 3 )
@@ -542,7 +540,7 @@ contains
       ! indices on tracerGroup are (iTracer, iLevel, iCell)
       if (.not. bulkThicknessFluxOff) then
          !$omp parallel
-         !$omp do schedule(runtime)
+         !$omp do schedule(runtime) private(surfaceTemperatureFluxWithoutRunoff)
          do iCell = 1, nCells
 
            ! Accumulate fluxes that use the surface temperature
@@ -554,21 +552,22 @@ contains
                       * max(tracerGroup(index_temperature_flux,minLevelCell(iCell),iCell), 0.0_RKIND) / rho_sw
 
            ! Accumulate fluxes that use the freezing point
-           seaIceFreshWaterTemperatureFlux(iCell) = seaIceFreshWaterFlux(iCell) * &
+! mrp performance note: should call ocn_freezing_temperature just once here 
+           seaIceTemperatureFlux(iCell) = seaIceFreshWaterFlux(iCell) * &
                ocn_freezing_temperature( tracerGroup(index_salinity_flux, minLevelCell(iCell), iCell), pressure=0.0_RKIND, &
                                          inLandIceCavity=.false.) / rho_sw
-           icebergFreshWaterTemperatureFlux(iCell) = icebergFreshWaterFlux(iCell) * &
+           icebergTemperatureFlux(iCell) = icebergFreshWaterFlux(iCell) * &
                ocn_freezing_temperature( tracerGroup(index_salinity_flux, minLevelCell(iCell), iCell), pressure=0.0_RKIND, &
                                          inLandIceCavity=.false.) / rho_sw
 
-           totalFreshWaterTemperatureFlux(iCell) = rainTemperatureFlux(iCell) + evapTemperatureFlux(iCell) + &
-                                                   seaIceFreshWaterTemperatureFlux(iCell) + icebergFreshWaterTemperatureFlux(iCell)
+           surfaceTemperatureFluxWithoutRunoff = rainTemperatureFlux(iCell) + evapTemperatureFlux(iCell) + &
+                                                 seaIceTemperatureFlux(iCell) + icebergTemperatureFlux(iCell)
 
            tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
-              + totalFreshWaterTemperatureFlux(iCell)
+              + surfaceTemperatureFluxWithoutRunoff
 
            ! add runoff contribution for sending through coupler
-           totalFreshWaterTemperatureFlux(iCell) = totalFreshWaterTemperatureFlux(iCell) &
+           totalFreshWaterTemperatureFlux(iCell) = surfaceTemperatureFluxWithoutRunoff &
               + tracersSurfaceFluxRunoff(index_temperature_flux,iCell)
 
            ! Fields with zero temperature are not accumulated. These include:

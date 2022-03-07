@@ -60,6 +60,18 @@ public:
   // Initialize memory buffer for each process
   void initialize_atm_memory_buffer (ATMBufferManager& memory_buffer);
 
+  // The APG class needs to perform special checks before establishing whether
+  // a required group/field is indeed a required group for this APG
+  void set_required_field (const Field& field);
+  void set_required_group (const FieldGroup& group);
+
+  // Gather internal fields from all processes in the group
+  // NOTE: this method *must* be called before any attempt to query this atm proc group
+  //       for its internal fields, otherwise it will appear as if this atm proc group
+  //       stores ZERO internal fields. In other words, this method populates the list
+  //       of internal fields of the group.
+  void gather_internal_fields ();
+
 protected:
 
   // Adds fid to the list of required/computed fields of the group (as a whole).
@@ -67,18 +79,19 @@ protected:
   void process_required_group (const GroupRequest& req);
 
   // The initialization, run, and finalization methods
-  void initialize_impl (const TimeStamp& t0);
-  void run_impl        (const Real dt);
+  void initialize_impl(const RunType run_type);
+  void initialize_impl ();
+  void run_impl        (const int dt);
   void finalize_impl   (/* what inputs? */);
 
   void run_sequential (const Real dt);
   void run_parallel   (const Real dt);
 
   // The methods to set the fields/groups in the right processes of the group
-  void set_required_group_impl (const FieldGroup<const Real>& group);
-  void set_updated_group_impl (const FieldGroup<Real>& group);
-  void set_required_field_impl (const Field<const Real>& f);
-  void set_computed_field_impl (const Field<      Real>& f);
+  void set_required_field_impl (const Field& f);
+  void set_computed_field_impl (const Field& f);
+  void set_required_group_impl (const FieldGroup& group);
+  void set_computed_group_impl (const FieldGroup& group);
 
   // The name of the group. This is usually a concatenation of the names of the individual processes
   std::string       m_group_name;

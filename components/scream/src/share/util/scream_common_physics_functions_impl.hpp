@@ -226,9 +226,9 @@ template<typename DeviceT>
 template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::
-calculate_wetmmr_from_drymmr(const ScalarT& drymmr, const ScalarT& qv)
+calculate_wetmmr_from_drymmr(const ScalarT& drymmr, const ScalarT& qv_dry)
 {
-  return drymmr*(1-qv);
+  return drymmr/(1+qv_dry);
 }
 
 template<typename DeviceT>
@@ -236,12 +236,12 @@ template<typename ScalarT, typename InputProviderX, typename InputProviderQ>
 KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::calculate_wetmmr_from_drymmr(const MemberType& team,
                                                              const InputProviderX& drymmr,
-                                                             const InputProviderQ& qv,
+                                                             const InputProviderQ& qv_dry,
                                                              const view_1d<ScalarT>& wetmmr)
 {
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team,wetmmr.extent(0)),
                        [&] (const int k) {
-                         wetmmr(k) = calculate_wetmmr_from_drymmr(drymmr(k),qv(k));
+                         wetmmr(k) = calculate_wetmmr_from_drymmr(drymmr(k),qv_dry(k));
                        });
 }
 
@@ -249,9 +249,9 @@ template<typename DeviceT>
 template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::
-calculate_drymmr_from_wetmmr(const ScalarT& wetmmr, const ScalarT& qv)
+calculate_drymmr_from_wetmmr(const ScalarT& wetmmr, const ScalarT& qv_wet)
 {
-  return wetmmr/(1-qv);
+  return wetmmr/(1-qv_wet);
 }
 
 template<typename DeviceT>
@@ -259,12 +259,12 @@ template<typename ScalarT, typename InputProviderX, typename InputProviderQ>
 KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::calculate_drymmr_from_wetmmr(const MemberType& team,
                                                              const InputProviderX& wetmmr,
-                                                             const InputProviderQ& qv,
+                                                             const InputProviderQ& qv_wet,
                                                              const view_1d<ScalarT>& drymmr)
 {
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team,drymmr.extent(0)),
                        [&] (const int k) {
-                         drymmr(k) = calculate_drymmr_from_wetmmr(wetmmr(k),qv(k));
+                         drymmr(k) = calculate_drymmr_from_wetmmr(wetmmr(k),qv_wet(k));
                        });
 }
 
@@ -286,14 +286,15 @@ calculate_dz(const ScalarT& pseudo_density, const ScalarT& p_mid, const ScalarT&
 template<typename DeviceT>
 template<typename ScalarT,
          typename InputProviderPD, typename InputProviderP,
-         typename InputProviderT,  typename InputProviderQ>
+         typename InputProviderT,  typename InputProviderQ,
+         typename MT>
 KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::calculate_dz(const MemberType& team,
                                              const InputProviderPD& pseudo_density,
                                              const InputProviderP& p_mid,
                                              const InputProviderT& T_mid,
                                              const InputProviderQ& qv,
-                                             const view_1d<ScalarT>& dz)
+                                             const view_1d<ScalarT, MT>& dz)
 {
   Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dz.extent(0)),
                        [&] (const int k) {
@@ -302,18 +303,30 @@ void PhysicsFunctions<DeviceT>::calculate_dz(const MemberType& team,
 }
 
 template<typename DeviceT>
-template<typename ScalarT, typename InputProviderZ>
+template<typename ScalarT, typename InputProviderZ, typename MT>
 KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::calculate_z_int(const MemberType& team,
                                                 const int num_levs,
                                                 const InputProviderZ& dz,
                                                 const Real z_surf,
-                                                const view_1d<ScalarT>& z_int)
+                                                const view_1d<ScalarT, MT>& z_int)
 {
   using column_ops  = ColumnOps<DeviceT,Real>;
   // Note, we set FromTop to false since we are prescribing the *bottom* elevation.
   constexpr bool FromTop = false;
   column_ops::template column_scan<FromTop>(team,num_levs,dz,z_int,z_surf);
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProvider, typename MT>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::calculate_z_mid(const MemberType& team,
+                                                const int num_levs,
+                                                const InputProvider& z_int,
+                                                const view_1d<ScalarT, MT>& z_mid)
+{
+  using column_ops  = ColumnOps<DeviceT,Real>;
+  column_ops::compute_midpoint_values(team,num_levs,z_int,z_mid);
 }
 
 template<typename DeviceT>

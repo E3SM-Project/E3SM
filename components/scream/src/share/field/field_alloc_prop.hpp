@@ -59,31 +59,44 @@ namespace scream
  *        field layout refer to that scalar_type.
  */
 
+// Helper struct to store info related to the subviewing process
+struct SubviewInfo {
+  SubviewInfo () = default;
+  SubviewInfo (const int dim, const int slice, const int extent, const bool is_dynamic) :
+    dim_idx(dim), slice_idx(slice), dim_extent(extent), dynamic(is_dynamic) {}
+  SubviewInfo (const SubviewInfo&) = default;
+  SubviewInfo& operator= (const SubviewInfo&) = default;
+
+  int dim_idx    = -1;  // Dimension along which slicing happened
+  int slice_idx  = -1;  // Slice along dimension $dim_idx
+  int dim_extent = -1;  // Extent of dimension $dim_idx
+  bool dynamic   = false; // Whether this is a dynamic subview (slice_idx can change)
+};
+
+inline bool operator== (const SubviewInfo& lhs, const SubviewInfo& rhs) {
+  return lhs.dim_idx==rhs.dim_idx &&
+         lhs.slice_idx==rhs.slice_idx &&
+         lhs.dim_extent==rhs.dim_extent &&
+         lhs.dynamic==rhs.dynamic;
+}
+
 class FieldAllocProp {
 public:
   using layout_type      = FieldLayout;
   using layout_ptr_type  = std::shared_ptr<const layout_type>;
 
-  FieldAllocProp ();
+  FieldAllocProp (const int scalar_size);
   FieldAllocProp (const FieldAllocProp&) = default;
 
   FieldAllocProp& operator= (const FieldAllocProp&);
 
   // Return allocation props of an unmanaged subivew of this field
-  // at entry k along dimension idim.
-  FieldAllocProp subview (const int idim, const int k) const;
-
-  // Request allocation able to accommodate the given ValueType
-  template<typename ValueType>
-  void request_allocation ();
+  // at entry k along dimension idim. If dynamic = true, then it will be
+  // possible to change the entry index (k) at runtime.
+  FieldAllocProp subview (const int idim, const int k, const bool dynamic) const;
 
   // Request allocation able to accommodate a pack of ScalarType of the given pack size
-  template<typename ScalarType>
-  void request_allocation (int pack_size);
-
-  // Request allocation able to accommodate pack_size scalars,
-  // where scalars have size scalar_size
-  void request_allocation (int scalar_size, int pack_size);
+  void request_allocation (const int pack_size = 1);
 
   // Request allocation able to accommodate all the alloc props in src.
   // Note: src does not need to be committed yet.
@@ -92,10 +105,19 @@ public:
   // Locks the allocation properties, preventing furter value types requests
   void commit (const layout_ptr_type& layout);
 
+  // For dynamic subfield, reset the slice index
+  void reset_subview_idx (const int idx);
+
   // ---- Getters ---- //
 
   // Whether commit has been called
   bool is_committed () const { return m_committed; }
+
+  // Whether this field is a subfield of another
+  bool is_subfield () const { return m_subview_info.dim_idx>=0; }
+
+  // Whether this field is a dynamic subfield of another
+  bool is_dynamic_subfield () const { return m_subview_info.dynamic; }
 
   // Get the overall allocation size (in Bytes)
   int  get_alloc_size () const;
@@ -114,7 +136,7 @@ public:
   int  get_padding () const;
 
   // Return the slice information of this subview allocation.
-  const std::pair<int,int>& get_subview_idx () const { return m_subview_idx; }
+  const SubviewInfo& get_subview_info () const { return m_subview_info; }
 
   // Whether the allocation properties are compatible with ValueType
   template<typename ValueType>
@@ -140,9 +162,9 @@ protected:
   // The total size of this allocation.
   int   m_alloc_size;
 
-  // If this allocation is a subview of another, this pair stores the
-  // dimension idim and entry k along dimension idim of the slice.
-  std::pair<int,int>  m_subview_idx;
+  // If this allocation is a subview of another, store info about the subview
+  // process (see SubviewInfo documentation for details)
+  SubviewInfo         m_subview_info;
 
   // Whether the allocation is contiguous
   bool  m_contiguous;
@@ -152,19 +174,6 @@ protected:
 };
 
 // ================================= IMPLEMENTATION ================================== //
-
-template<typename ValueType>
-void FieldAllocProp::request_allocation () {
-  using ekat::ScalarTraits;
-  using scalar_type = typename ScalarTraits<ValueType>::scalar_type;
-  const int n = sizeof(ValueType) / sizeof(scalar_type);
-  request_allocation<scalar_type>(n);
-}
-
-template<typename ScalarType>
-void FieldAllocProp::request_allocation (const int pack_size) {
-  request_allocation (sizeof(ScalarType),pack_size);
-}
 
 template<typename ValueType>
 bool FieldAllocProp::is_compatible () const {

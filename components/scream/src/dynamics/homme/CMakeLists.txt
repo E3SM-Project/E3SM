@@ -1,5 +1,7 @@
+include (EkatSetCompilerFlags)
+
 # Set cmake config options for Homme
-set (HOMME_SOURCE_DIR ${SCREAM_SOURCE_DIR}/../homme CACHE INTERNAL "Homme source directory")
+set (HOMME_SOURCE_DIR ${SCREAM_BASE_DIR}/../homme CACHE INTERNAL "Homme source directory")
 set (HOMME_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/homme CACHE INTERNAL "Homme binary directory")
 
 # If using Intel, we need to tell Homme to link against mkl rather than lapack
@@ -21,8 +23,14 @@ set(BUILD_HOMME_PREQX_KOKKOS OFF CACHE BOOL "")
 set(BUILD_HOMME_PESE         OFF CACHE BOOL "")
 set(BUILD_HOMME_SWIM         OFF CACHE BOOL "")
 set(BUILD_HOMME_PRIM         OFF CACHE BOOL "")
-set(HOMME_ENABLE_COMPOSE     OFF CACHE BOOL "")
+set(HOMME_ENABLE_COMPOSE     ON  CACHE BOOL "")
 set(BUILD_HOMME_TOOL         OFF CACHE BOOL "")
+
+if (NOT Kokkos_ENABLE_SERIAL)
+  # We don't really *need* composef90, but Homme always builds it, so we need
+  # to make sure it can build without errors.
+  message(FATAL_ERROR "Homme's composef90 library requires Kokkos_ENABLE_SERIAL=ON.")
+endif()
 
 # We DON'T want homme's pio support, so force this option
 set(BUILD_HOMME_WITHOUT_PIOLIBRARY ON  CACHE BOOL "" FORCE)
@@ -132,8 +140,8 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
       ### HACK ALERT! ###
 
       # Remove shr_blah_mod.F90 from homme/utils/csm_share,
-      # since we use those from cime/src/share/util.
-      # Note: the cleanest thing is to mod homme, to use cime stuff
+      # since we use those from $repo_root/share/util.
+      # Note: the cleanest thing would be to mod homme, to use cime stuff
       set (REMOVE_FILES)
       foreach (file IN_LIST ${THETAL_DEPS})
         if (file MATCHES "csm_share/shr_")
@@ -154,6 +162,9 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
       # Link to cime's csm_share lib
       target_link_libraries (${hommeLibName} csm_share)
     endif ()
+    target_link_libraries (${hommeLibName} composec++)
+    SetCudaFlags(${hommeLibName})
+    SetOmpFlags(${hommeLibName})
 
     # target_link_options is supported since 3.13, but there's a bug with static libs until 3.17
     # see https://gitlab.kitware.com/cmake/cmake/-/issues/20022 for details
@@ -175,6 +186,7 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
 
     set (SCREAM_DYNAMICS_SOURCES
       ${SCREAM_DYNAMICS_SRC_DIR}/atmosphere_dynamics.cpp
+      ${SCREAM_DYNAMICS_SRC_DIR}/physics_dynamics_remapper.cpp
       ${SCREAM_DYNAMICS_SRC_DIR}/dynamics_driven_grids_manager.cpp
       ${SCREAM_DYNAMICS_SRC_DIR}/interface/homme_context_mod.F90
       ${SCREAM_DYNAMICS_SRC_DIR}/interface/homme_driver_mod.F90

@@ -12,6 +12,7 @@
 #include "physics/shoc/atmosphere_macrophysics.hpp"
 #include "physics/cld_fraction/atmosphere_cld_fraction.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
+#include "physics/spa/atmosphere_prescribed_aerosol.hpp"
 
 namespace scream {
 
@@ -22,6 +23,7 @@ inline void register_physics () {
   proc_factory.register_product("SHOC",&create_atmosphere_process<SHOCMacrophysics>);
   proc_factory.register_product("CldFraction",&create_atmosphere_process<CldFraction>);
   proc_factory.register_product("RRTMGP",&create_atmosphere_process<RRTMGPRadiation>);
+  proc_factory.register_product("SPA",&create_atmosphere_process<SPA>);
 }
 
 } // namespace scream

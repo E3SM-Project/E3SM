@@ -391,23 +391,6 @@ TEST_CASE("ppm_mirrored", "vertical remap") {
   SECTION("remap") { remap_test_mirrored.test_remap(); }
 }
 
-TEST_CASE("ppm_fixed_parabola", "vertical remap") {
-  constexpr int num_elems = 2;
-  constexpr int num_remap = 3;
-  ppm_remap_functor_test<PpmFixedParabola> remap_test_fixed(num_elems, num_remap);
-  SECTION("grid") { remap_test_fixed.test_grid(); }
-  SECTION("ppm") { remap_test_fixed.test_ppm(); }
-  SECTION("remap") { remap_test_fixed.test_remap(); }
-}
-
-TEST_CASE("ppm_fixed_means", "vertical remap") {
-  constexpr int num_elems = 2;
-  constexpr int num_remap = 3;
-  ppm_remap_functor_test<PpmFixedMeans> remap_test_fixed(num_elems, num_remap);
-  SECTION("grid") { remap_test_fixed.test_grid(); }
-  SECTION("ppm") { remap_test_fixed.test_ppm(); }
-  SECTION("remap") { remap_test_fixed.test_remap(); }
-}
 
 TEST_CASE("binary_search","binary_search")
 {

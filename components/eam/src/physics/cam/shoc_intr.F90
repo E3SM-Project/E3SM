@@ -38,6 +38,7 @@ module shoc_intr
              tk_idx, &
              wthv_idx, &       ! buoyancy flux
              cld_idx, &          ! Cloud fraction
+             tot_cloud_frac_idx, & ! Cloud fraction with higher ice threshold 
              concld_idx, &       ! Convective cloud fraction
              ast_idx, &          ! Stratiform cloud fraction
              alst_idx, &         ! Liquid stratiform cloud fraction
@@ -165,6 +166,7 @@ module shoc_intr
     call pbuf_add_field('QLST',       'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    qlst_idx)
     call pbuf_add_field('CONCLD',     'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    concld_idx)
     call pbuf_add_field('CLD',        'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    cld_idx)
+    call pbuf_add_field('TOT_CLOUD_FRAC',        'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    tot_cloud_frac_idx)
     call pbuf_add_field('FICE',       'physpkg',dtype_r8, (/pcols,pver/), fice_idx)
     call pbuf_add_field('RAD_CLUBB',  'global', dtype_r8, (/pcols,pver/), radf_idx)
     call pbuf_add_field('CMELIQ',     'physpkg',dtype_r8, (/pcols,pver/), cmeliq_idx)
@@ -331,6 +333,7 @@ end function shoc_implements_cnst
     
     ! Define physics buffers indexes
     cld_idx     = pbuf_get_index('CLD')         ! Cloud fraction
+    tot_cloud_frac_idx     = pbuf_get_index('TOT_CLOUD_FRAC')         ! Cloud fraction
     concld_idx  = pbuf_get_index('CONCLD')      ! Convective cloud cover
     ast_idx     = pbuf_get_index('AST')         ! Stratiform cloud fraction
     alst_idx    = pbuf_get_index('ALST')        ! Liquid stratiform cloud fraction
@@ -408,6 +411,10 @@ end function shoc_implements_cnst
     call addfld('CONCLD',(/'lev'/),  'A',        'fraction', 'Convective cloud cover')
     call addfld('BRUNT',(/'lev'/), 'A', 's-1', 'Brunt frequency')
     call addfld('RELVAR',(/'lev'/), 'A', 'kg/kg', 'SHOC cloud liquid relative variance')
+    call addfld('ICE_CLOUD_FRAC',(/'lev'/), 'A', 'fraction', 'Ice number aware cloud fraction')
+    call addfld('PRECIPITATING_ICE_FRAC',(/'lev'/), 'A', 'fraction', 'Precipitating ice fraction')
+    call addfld('LIQ_CLOUD_FRAC',(/'lev'/), 'A', 'fraction', 'Liquid cloud fraction')
+    call addfld('TOT_CLOUD_FRAC',(/'lev'/), 'A', 'fraction', 'total cloud fraction')
 
     call add_default('SHOC_TKE', 1, ' ')
     call add_default('WTHV_SEC', 1, ' ')
@@ -430,6 +437,10 @@ end function shoc_implements_cnst
     call add_default('CONCLD',1,' ')
     call add_default('BRUNT',1,' ')
     call add_default('RELVAR',1,' ')
+    call add_default('ICE_CLOUD_FRAC',1,' ')
+    call add_default('PRECIPITATING_ICE_FRAC',1,' ')
+    call add_default('LIQ_CLOUD_FRAC',1,' ')
+    call add_default('TOT_CLOUD_FRAC',1,' ')
 
     ! ---------------------------------------------------------------!
     ! Initialize SHOC                                                !
@@ -569,6 +580,9 @@ end function shoc_implements_cnst
    real(r8) :: dz_g(pcols,pver)
    real(r8) :: zi_g(pcols,pverp)
    real(r8) :: cloud_frac(pcols,pver)          ! CLUBB cloud fraction                          [fraction]
+   real(r8) :: ice_cloud_frac(pcols,pver)          ! ice number aware cloud fraction, 0 or 1
+   real(r8) :: precipitating_ice_frac(pcols,pver)        ! precipitating ice fraction, 0 or 1
+   real(r8) :: liq_cloud_frac(pcols,pver)     
    real(r8) :: dlf2(pcols,pver)
    real(r8) :: isotropy(pcols,pver)
    real(r8) :: host_dx, host_dy
@@ -595,9 +609,11 @@ end function shoc_implements_cnst
    real(r8) :: minqn, rrho(pcols,pver), rrho_i(pcols,pverp)    ! minimum total cloud liquid + ice threshold    [kg/kg]
    real(r8) :: cldthresh, frac_limit
    real(r8) :: ic_limit, dum1
+   real(r8) :: inv_exner_surf, pot_temp
  
    real(r8) :: wpthlp_sfc(pcols), wprtp_sfc(pcols), upwp_sfc(pcols), vpwp_sfc(pcols)
    real(r8) :: wtracer_sfc(pcols,edsclr_dim)
+
   
    ! Variables below are needed to compute energy integrals for conservation
    real(r8) :: ke_a(pcols), ke_b(pcols), te_a(pcols), te_b(pcols)
@@ -614,6 +630,7 @@ end function shoc_implements_cnst
    real(r8), pointer, dimension(:,:) :: tkh 
    real(r8), pointer, dimension(:,:) :: tk
    real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction                               [fraction]
+   real(r8), pointer, dimension(:,:) :: tot_cloud_frac      ! cloud fraction                               [fraction]
    real(r8), pointer, dimension(:,:) :: concld   ! convective cloud fraction                    [fraction]
    real(r8), pointer, dimension(:,:) :: ast      ! stratiform cloud fraction                    [fraction]
    real(r8), pointer, dimension(:,:) :: alst     ! liquid stratiform cloud fraction             [fraction]
@@ -672,6 +689,7 @@ end function shoc_implements_cnst
    call pbuf_get_field(pbuf, tkh_idx,      tkh,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))  
    call pbuf_get_field(pbuf, tk_idx,       tk,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))  
    call pbuf_get_field(pbuf, cld_idx,     cld,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+   call pbuf_get_field(pbuf, tot_cloud_frac_idx,     tot_cloud_frac,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, concld_idx,  concld,  start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, ast_idx,     ast,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, alst_idx,    alst,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
@@ -759,7 +777,8 @@ end function shoc_implements_cnst
        um(i,k) = state1%u(i,k)
        vm(i,k) = state1%v(i,k)
        
-       thlm(i,k) = state1%t(i,k)*inv_exner(i,k)-(latvap/cpair)*state1%q(i,k,ixcldliq)
+       pot_temp = state1%t(i,k)*inv_exner(i,k)
+       thlm(i,k) = pot_temp-(pot_temp/state1%t(i,k))*(latvap/cpair)*state1%q(i,k,ixcldliq)
        thv(i,k) = state1%t(i,k)*inv_exner(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq)-state1%q(i,k,ixcldliq)) 
  
        tke_zt(i,k) = max(tke_tol,state1%q(i,k,ixtke))
@@ -803,9 +822,13 @@ end function shoc_implements_cnst
                       rrho_i(:ncol,:pverp),pver,pverp,ncol,0._r8)
 
    do i=1,ncol
-      !  Surface fluxes provided by host model
+      !  Compute inverse of exner function at surface
+      inv_exner_surf = 1._r8/((state1%pint(i,pverp)/p0_shoc)**(rair/cpair))
 
+      !  Surface fluxes provided by host model
       wpthlp_sfc(i) = cam_in%shf(i)/(cpair*rrho_i(i,pverp))       ! Sensible heat flux
+      wpthlp_sfc(i) = wpthlp_sfc(i)*inv_exner_surf
+
       wprtp_sfc(i)  = cam_in%cflx(i,1)/(rrho_i(i,pverp))      ! Latent heat flux
       upwp_sfc(i)   = cam_in%wsx(i)/rrho_i(i,pverp)               ! Surface meridional momentum flux
       vpwp_sfc(i)   = cam_in%wsy(i)/rrho_i(i,pverp)               ! Surface zonal momentum flux  
@@ -1069,11 +1092,29 @@ end function shoc_implements_cnst
     enddo
    
     !  Probably need to add deepcu cloud fraction to the cloud fraction array, else would just 
-    !  be outputting the shallow convective cloud fraction 
+    !  be outputting the shallow convective cloud fraction
+ 
+    !  Add liq, ice, and precipitating ice fractions here. These are purely
+    !  diagnostic outputs and do not impact the rest of the code. The qi threshold for
+    !  setting ice_cloud_fraction and the qi dependent ni_threshold are tunable. 
 
+    liq_cloud_frac = 0.0_r8
+    ice_cloud_frac = 0.0_r8
+    precipitating_ice_frac = 0.0_r8
+    tot_cloud_frac = 0.0_r8
+ 
     do k=1,pver
       do i=1,ncol
         cloud_frac(i,k) = min(ast(i,k)+deepcu(i,k),1.0_r8)
+        liq_cloud_frac(i,k) = alst(i,k)
+        if (state1%q(i,k,ixcldice) .ge. 1.0e-5_r8) then 
+           if (state1%q(i,k,ixnumice) .ge. state1%q(i,k,ixcldice)*5.0e7_r8) then
+              ice_cloud_frac(i,k) = 1.0_r8
+           else
+              precipitating_ice_frac(i,k) = 1.0_r8
+           endif
+        endif
+        tot_cloud_frac(i,k) = min(1.0_r8, max(ice_cloud_frac(i,k),liq_cloud_frac(i,k))+deepcu(i,k))
       enddo
     enddo
    
@@ -1118,6 +1159,10 @@ end function shoc_implements_cnst
     call outfld('BRUNT',brunt_out,pcols,lchnk)
     call outfld('RELVAR',relvar,pcols,lchnk)
     call outfld('SHOC_QL',rcm,pcols,lchnk)
+    call outfld('ICE_CLOUD_FRAC',ice_cloud_frac,pcols,lchnk)
+    call outfld('PRECIPITATING_ICE_FRAC',precipitating_ice_frac,pcols,lchnk)
+    call outfld('LIQ_CLOUD_FRAC',liq_cloud_frac,pcols,lchnk)
+    call outfld('TOT_CLOUD_FRAC',tot_cloud_frac,pcols,lchnk)
 
 #endif    
     return         

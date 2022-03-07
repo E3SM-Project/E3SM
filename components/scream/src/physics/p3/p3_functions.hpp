@@ -77,6 +77,22 @@ struct Functions
   template <typename S>
   using view_2d = typename KT::template view_2d<S>;
 
+  // lookup table values for rain shape parameter mu_r
+  using view_1d_table = typename KT::template view_1d_table<Scalar, C::MU_R_TABLE_DIM>;
+
+  // lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
+  using view_2d_table = typename KT::template view_2d_table<Scalar, C::VTABLE_DIM0, C::VTABLE_DIM1>;
+
+  // ice lookup table values
+  using view_ice_table    = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::ice_table_size]>;
+
+  // ice lookup table values for ice-rain collision/collection
+  using view_collect_table = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::rcollsize][P3C::collect_table_size]>;
+
+  // droplet spectral shape parameter for mass spectra, used for Seifert and Beheng (2001)
+  // warm rain autoconversion/accretion option only (iparam = 1)
+  using view_dnu_table = typename KT::template view_1d_table<Scalar, P3C::dnusize>;
+
   template <typename S, int N>
   using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
 
@@ -202,6 +218,20 @@ struct Functions
     view_2d<Spack> vap_ice_exchange;
   };
 
+  // This struct stores kokkos views for the lookup tables needed in p3_main()
+  struct P3LookupTables {
+    // lookup table values for rain shape parameter mu_r
+    view_1d_table mu_r_table_vals;
+    // lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
+    view_2d_table vn_table_vals, vm_table_vals, revap_table_vals;
+    // ice lookup table values
+    view_ice_table ice_table_vals;
+    // ice lookup table values for ice-rain collision/collection
+    view_collect_table collect_table_vals;
+    // droplet spectral shape parameter for mass spectra
+    view_dnu_table dnu_table_vals;
+  };
+
   // -- Table3 --
 
   struct Table3 {
@@ -218,22 +248,6 @@ struct Functions
     IntSmallPack dumj;
     Spack dum3;
   };
-
-  // lookup table values for rain shape parameter mu_r
-  using view_1d_table = typename KT::template view_1d_table<Scalar, C::MU_R_TABLE_DIM>;
-
-  // lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
-  using view_2d_table = typename KT::template view_2d_table<Scalar, C::VTABLE_DIM0, C::VTABLE_DIM1>;
-
-  // ice lookup table values
-  using view_ice_table    = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::ice_table_size]>;
-
-  // ice lookup table values for ice-rain collision/collection
-  using view_collect_table = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::rcollsize][P3C::collect_table_size]>;
-
-  // droplet spectral shape parameter for mass spectra, used for Seifert and Beheng (2001)
-  // warm rain autoconversion/accretion option only (iparam = 1)
-  using view_dnu_table = typename KT::template view_1d_table<Scalar, P3C::dnusize>;
 
   //
   // --------- Functions ---------
@@ -268,14 +282,6 @@ struct Functions
                                    Spack& nr2ni_immers_freeze_tend, Spack& ni_sublim_tend, Spack& qv2qi_nucleat_tend,
                                    Spack& ni_nucleat_tend, Spack& qc2qi_berg_tend,
                                    const Smask& context = Smask(true) );
-
-  // Limits ice process rates to prevent overdepletion of sources such that
-  // the subsequent adjustments are done with maximum possible rates for the
-  // time step.
-  KOKKOS_FUNCTION
-  static void prevent_ice_overdepletion(
-    const Spack& pres, const Spack& T_atm, const Spack& qv, const Spack& latent_heat_sublim, const Scalar& inv_dt,
-    Spack& qv2qi_vapdep_tend, Spack& qi2qv_sublim_tend, const Smask& context = Smask(true) );
 
   //------------------------------------------------------------------------------------------!
   // Finds indices in 3D ice (only) lookup table
@@ -684,13 +690,9 @@ struct Functions
     const Scalar dt, Spack& th_atm, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr,
     const Smask& context = Smask(true));
 
-  // TODO (comments)
+  // compute deposition onto ice or sublimation from ice
   KOKKOS_FUNCTION
-  static void ice_deposition_sublimation(const Spack& qi_incld,
-    const Spack& ni_incld, const Spack& T_atm, const Spack& qv_sat_l, const Spack& qv_sat_i,
-    const Spack& epsi, const Spack& abi, const Spack& qv, Spack& qv2qi_vapdep_tend,
-    Spack& qi2qv_sublim_tend, Spack& ni_sublim_tend, Spack& qc2qi_berg_tend,
-    const Smask& context = Smask(true));
+  static void ice_deposition_sublimation(const Spack& qi_incld, const Spack& ni_incld, const Spack& t_atm, const Spack& qv_sat_l, const Spack& qv_sat_i, const Spack& epsi, const Spack& abi, const Spack& qv, const Scalar& inv_dt, Spack& qidep, Spack& qi2qv_sublim_tend, Spack& ni_sublim_tend, Spack& qiberg, const Smask& context = Smask(true) );
 
   KOKKOS_FUNCTION
   static void ice_relaxation_timescale(
@@ -953,6 +955,7 @@ struct Functions
     const P3DiagnosticOutputs& diagnostic_outputs,
     const P3Infrastructure& infrastructure,
     const P3HistoryOnly& history_only,
+    const P3LookupTables& lookup_tables,
     const WorkspaceManager& workspace_mgr,
     Int nj, // number of columns
     Int nk); // number of vertical cells per column
@@ -968,6 +971,9 @@ struct Functions
 
   KOKKOS_FUNCTION
   static void ni_conservation(const Spack& ni, const Spack& ni_nucleat_tend, const Spack& nr2ni_immers_freeze_tend, const Spack& nc2ni_immers_freeze_tend, const Real& dt, Spack& ni2nr_melt_tend, Spack& ni_sublim_tend, Spack& ni_selfcollect_tend, const Smask& context = Smask(true));
+
+  KOKKOS_FUNCTION
+  static void prevent_liq_supersaturation(const Spack& pres, const Spack& t_atm, const Spack& qv, const Spack& latent_heat_vapor, const Spack& latent_heat_sublim, const Scalar& dt, const Spack& qidep, const Spack& qinuc, Spack& qi2qv_sublim_tend, Spack& qr2qv_evap_tend, const Smask& context = Smask(true) );
 }; // struct Functions
 
 template <typename ScalarT, typename DeviceT>
@@ -983,13 +989,12 @@ void init_tables_from_f90_c(Real* vn_table_vals_data, Real* vm_table_vals_data,
 } // namespace p3
 } // namespace scream
 
-// If a GPU build, make all code available to the translation unit; otherwise,
-// ETI is used.
-#ifdef KOKKOS_ENABLE_CUDA
+// If a GPU build, without relocatable device code enabled, make all code available
+// to the translation unit; otherwise, ETI is used.
+#if defined(KOKKOS_ENABLE_CUDA) && !defined(KOKKOS_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
 # include "p3_table3_impl.hpp"
 # include "p3_table_ice_impl.hpp"
 # include "p3_back_to_cell_average_impl.hpp"
-# include "p3_prevent_ice_overdepletion_impl.hpp"
 # include "p3_dsd2_impl.hpp"
 # include "p3_upwind_impl.hpp"
 # include "p3_find_impl.hpp"
@@ -1020,10 +1025,13 @@ void init_tables_from_f90_c(Real* vn_table_vals_data, Real* vm_table_vals_data,
 # include "p3_incloud_mixingratios_impl.hpp"
 # include "p3_subgrid_variance_scaling_impl.hpp"
 # include "p3_main_impl.hpp"
+# include "p3_main_impl_part1.hpp"
+# include "p3_main_impl_part2.hpp"
+# include "p3_main_impl_part3.hpp"
 # include "p3_ice_supersat_conservation_impl.hpp"
 # include "p3_nc_conservation_impl.hpp"
 # include "p3_nr_conservation_impl.hpp"
 # include "p3_ni_conservation_impl.hpp"
-#endif // KOKKOS_ENABLE_CUDA
-
+# include "p3_prevent_liq_supersaturation_impl.hpp"
+#endif // KOKKOS_ENABLE_CUDA || !KOKKOS_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP

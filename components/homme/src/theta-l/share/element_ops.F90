@@ -67,7 +67,7 @@ module element_ops
 
   type(elem_state_t), dimension(:), allocatable :: state0 ! storage for save_initial_state routine
 
-  public get_field, get_field_i, get_state
+  public get_field, get_field_i, get_state, get_pottemp
   public get_temperature, get_phi, get_R_star, get_hydro_pressure
   public set_thermostate, set_state, set_state_i, set_elem_state
   public set_forcing_rayleigh_friction, set_theta_ref
@@ -293,9 +293,15 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   do k=1,nlev  ! SCAN
      p_i(:,:,k+1)=p_i(:,:,k) + dp(:,:,k)
   enddo
+#ifdef HOMMEXX_BFB_TESTING
+  do k=1,nlev
+     p(:,:,k) = (p_i(:,:,k+1)+p_i(:,:,k))/2
+  enddo
+#else
   do k=1,nlev
      p(:,:,k)=p_i(:,:,k) + dp(:,:,k)/2
   enddo
+#endif
   
   
   end subroutine get_hydro_pressure

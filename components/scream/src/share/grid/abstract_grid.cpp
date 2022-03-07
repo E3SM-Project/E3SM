@@ -1,5 +1,6 @@
 #include "share/grid//abstract_grid.hpp"
 #include <Kokkos_CopyViews.hpp>
+#include <Kokkos_ExecPolicy.hpp>
 #include <algorithm>
 #include <cstring>
 #include <string>
@@ -26,25 +27,8 @@ AbstractGrid (const std::string& name,
   m_comm.all_reduce(&m_num_local_dofs,&m_num_global_dofs,1,MPI_SUM);
 }
 
-AbstractGrid::
-AbstractGrid (const std::string& name,
-              const GridType type,
-              const int num_local_dofs,
-              const int num_vertical_lev,
-              const std::shared_ptr<const AbstractGrid>& unique_grid,
-              const ekat::Comm& comm)
- : AbstractGrid(name,type,num_local_dofs,num_vertical_lev,comm)
-{
-  set_unique_grid(unique_grid);
-}
-
 bool AbstractGrid::is_unique () const {
-  // If a unique grid was passed, then assume we're not unique
-  if (m_unique_grid) {
-    return false;
-  }
-
-  EKAT_REQUIRE_MSG (m_dofs_gids.size()>0,
+  EKAT_REQUIRE_MSG (m_dofs_set,
       "Error! We cannot establish if this grid is unique before the dofs GIDs are set.\n");
 
   // Get a copy of gids on host. CAREFUL: do not use create_mirror_view,
@@ -54,9 +38,9 @@ bool AbstractGrid::is_unique () const {
   Kokkos::deep_copy(dofs_h,m_dofs_gids);
 
   std::sort(dofs_h.data(),dofs_h.data()+m_num_local_dofs);
-  auto end = std::unique(dofs_h.data(),dofs_h.data()+m_num_local_dofs);
+  auto unique_end = std::unique(dofs_h.data(),dofs_h.data()+m_num_local_dofs);
 
-  int locally_unique = end==(dofs_h.data()+m_num_local_dofs);
+  int locally_unique = unique_end==(dofs_h.data()+m_num_local_dofs);
   int unique;
   m_comm.all_reduce(&locally_unique,&unique,1,MPI_PROD);
   if (unique==0) {
@@ -118,10 +102,11 @@ set_dofs (const dofs_list_type& dofs)
       "       Input gids list size   : " + std::to_string(dofs.size()) + "\n");
 
   m_dofs_gids  = dofs;
-
-  m_comm.barrier();
-
   m_dofs_set = true;
+
+#ifndef NDEBUG
+  EKAT_REQUIRE_MSG(this->valid_dofs_list(dofs), "Error! Invalid list of dofs gids.\n");
+#endif
 }
 
 void AbstractGrid::
@@ -136,31 +121,69 @@ set_lid_to_idx_map (const lid_to_idx_map_type& lid_to_idx)
       "       Expected sizes: (" + std::to_string(m_num_local_dofs) + "," + std::to_string(get_2d_scalar_layout().rank()) + ")\n"
       "       Input map sizes: (" + std::to_string(lid_to_idx.extent(0)) + "," + std::to_string(lid_to_idx.extent(1)) + ")\n");
 
-  // TODO: We should check that the gids of the unique grid (if present) are a subset of m_dofs_gids.
-  // TODO: Should the aforementioned check be global or local (w.r.t. m_comm)?
+#ifndef NDEBUG
+  EKAT_REQUIRE_MSG(this->valid_lid_to_idx_map(lid_to_idx), "Error! Invalid lid->idx map.\n");
+#endif
 
   m_lid_to_idx = lid_to_idx;
-
-  m_comm.barrier();
-
   m_lid_to_idx_set = true;
 }
 
-std::shared_ptr<const AbstractGrid>
-AbstractGrid::get_unique_grid () const {
-  // If this grid is unique, return it, otherwise return the stored unique grid.
-  return is_unique() ? shared_from_this() : m_unique_grid;
+void AbstractGrid::
+set_geometry_data (const std::string& name, const geo_view_type& data) {
+  // Sanity checks
+  EKAT_REQUIRE_MSG (data.extent_int(0)==m_num_local_dofs,
+                    "Error! Input geometry data has wrong dimensions.\n");
+
+#ifndef NDEBUG
+  EKAT_REQUIRE_MSG(this->valid_geo_data(name,data), "Error! Invalid geo data.\n");
+#endif
+
+  m_geo_views[name] = data;
 }
 
-void AbstractGrid::
-set_unique_grid (const std::shared_ptr<const AbstractGrid>& unique_grid) {
-  // Sanity check
-  EKAT_REQUIRE_MSG (unique_grid, "Error! Unique grid pointer is invalid.\n");
-  EKAT_REQUIRE_MSG (unique_grid->is_unique(), "Error! Unique grid is not, in fact, unique.\n");
-  EKAT_REQUIRE_MSG (unique_grid->get_num_global_dofs()<=m_num_global_dofs,
-      "Error! The unique grid has more global dofs than this grid.\n");
+AbstractGrid::gid_type
+AbstractGrid::get_global_min_dof_gid () const
+{
+  EKAT_REQUIRE_MSG (m_dofs_set,
+      "Error! You need to set dofs gids before you can compute the global min dof.\n");
+  // TODO: we could probably cache these into mutable variables.
+  //       But unless we call this method *many* times, it won't matter
+  gid_type local_min, global_min;
+  auto dofs = get_dofs_gids();
+  Kokkos::parallel_reduce(Kokkos::RangePolicy<>(0,get_num_local_dofs()),
+      KOKKOS_LAMBDA (const int& i, gid_type& lmin) {
+        if (dofs(i) < lmin) {
+          lmin = dofs(i);
+        }
+      },Kokkos::Min<gid_type>(local_min));
+  Kokkos::fence();
 
-  m_unique_grid = unique_grid;
+  m_comm.all_reduce(&local_min,&global_min,1,MPI_MIN);
+
+  return global_min;
+}
+
+AbstractGrid::gid_type
+AbstractGrid::get_global_max_dof_gid () const
+{
+  EKAT_REQUIRE_MSG (m_dofs_set,
+      "Error! You need to set dofs gids before you can compute the global max dof.\n");
+  // TODO: we could probably cache these into mutable variables.
+  //       But unless we call this method *many* times, it won't matter
+  gid_type local_max, global_max;
+  auto dofs = get_dofs_gids();
+  Kokkos::parallel_reduce(Kokkos::RangePolicy<>(0,get_num_local_dofs()),
+      KOKKOS_LAMBDA (const int& i, gid_type& lmax) {
+        if (dofs(i) > lmax) {
+          lmax = dofs(i);
+        }
+      },Kokkos::Max<gid_type>(local_max));
+  Kokkos::fence();
+
+  m_comm.all_reduce(&local_max,&global_max,1,MPI_MAX);
+
+  return global_max;
 }
 
 } // namespace scream

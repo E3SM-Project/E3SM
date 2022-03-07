@@ -107,8 +107,9 @@ get_rain_dsd2 (
 
     // check for slope
     const auto lammax = (mu_r+1.)*sp(1.e+5);
-    // set to small value since breakup is explicitly included (mean size 0.8 mm)
-    const auto lammin = (mu_r+1.)*sp(1250.0);
+    //Below, 500 is inverse of max allowable number-weighted mean raindrop size=2mm
+    //Since breakup is explicitly included, mean raindrop size can be relatively small
+    const auto lammin = (mu_r+1.)*500; 
 
     // apply lambda limiters for rain
     const auto lt = qr_gt_small && (lamr < lammin);

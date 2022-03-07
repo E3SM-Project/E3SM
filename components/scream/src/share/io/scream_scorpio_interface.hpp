@@ -46,8 +46,8 @@ namespace scorpio {
   /* Register a dimension coordinate with a file. Called during the file setup. */
   void register_dimension(const std::string& filename,const std::string& shortname, const std::string& longname, const int length);
   /* Register a variable with a file.  Called during the file setup, for an output stream. */
-  void register_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const int numdims, const char**&& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
-  void register_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const int numdims, const std::vector<std::string>& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
+  void register_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const std::string& units, const int numdims, const char**&& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
+  void register_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const std::string& units, const int numdims, const std::vector<std::string>& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
   /* Register a variable with a file.  Called during the file setup, for an input stream. */
   void get_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const int numdims, const char**&& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
   void get_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const int numdims, const std::vector<std::string>& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
@@ -58,19 +58,22 @@ namespace scorpio {
   void pio_update_time(const std::string &filename, const Real time);
 
   /* Read data for a specific variable from a specific file. */
-  void grid_read_data_array (const std::string &filename, const std::string &varname, const int time_index, Real* hbuf);
+  void grid_read_data_array (const std::string &filename, const std::string &varname, const int time_index, void* hbuf);
   /* Write data for a specific variable to a specific file. */
   void grid_write_data_array(const std::string &filename, const std::string &varname, const Real* hbuf);
 
   /* Helper functions */
-  void count_pio_atm_file();
+  int count_pio_atm_file();
 
 extern "C" {
   /* Query whether the pio subsystem is inited or not */
   bool is_eam_pio_subsystem_inited();
   int  eam_pio_subsystem_comm ();
+  /* Checks if a file is already open, with the given mode */
+  bool is_file_open_c2f(const char*&& filename, const int& mode);
   int get_int_attribute_c2f (const char*&& filename, const char*&& attr_name);
   void set_int_attribute_c2f (const char*&& filename, const char*&& attr_name, const int& value);
+  int get_dimlen_c2f(const char*&& filename, const char*&& dimname);
 } // extern "C"
 
 // The strings returned by e2str(const FieldTag&) are different from

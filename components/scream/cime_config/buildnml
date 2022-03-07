@@ -2,9 +2,13 @@
 
 """
 Namelist creator for E3SM's SCREAM component
+
+This script is mostly for processing the scream_input.yaml file.
+
+See SCREAM_YAML_README for documentation on how to use scream_input.yaml.
 """
 
-import os, sys
+import os, sys, re
 from collections import OrderedDict
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
@@ -16,70 +20,127 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "script
 # Cime imports
 from standard_script_setup import *
 from CIME.case import Case
-from CIME.utils import expect, run_cmd_no_fail, safe_copy, SharedArea
-from CIME.buildnml import create_namelist_infile, parse_input
+from CIME.utils import expect, safe_copy, SharedArea
+from CIME.buildnml import parse_input
 
 # SCREAM imports
-from utils import ensure_yaml, multilevel_dict_change
+from utils import ensure_yaml
 ensure_yaml()
 import yaml
 
 logger = logging.getLogger(__name__)
 
-###############################################################################
-def load_comments(filepath):
-###############################################################################
-    """
-    Loading and dumping YAML files does not preserve the whitespace or comments
-    from the original. Since SCREAM users will be interacting with the scream_input.yaml,
-    we really want to keep these comments. This function will parse the text of
-    a YAML file and store the comments and whitespace in a simple list of 3-ples
-    [(do_insert, line idx, text)] with the idea that this data can be applied
-    to a freshly generated YAML file via the apply_comments function.
-    """
-    with open(filepath, "r") as fd:
-        lines = fd.readlines()
+CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
+SWITCH_RE   = re.compile(r'<\s*([^:]+)\s*:')
 
-    result = []
-    for idx, line in enumerate(lines):
-        sline = line.strip()
+###############################################################################
+def do_cime_vars(entry, case):
+###############################################################################
+    m = CIME_VAR_RE.search(entry)
+    while m:
+        cime_var = m.groups()[0]
+        value = case.get_value(cime_var)
+        expect(value is not None, "Cannot resolve yaml entry {}, CIME has no value for {}".format(entry, cime_var))
+        entry = entry.replace("${{{}}}".format(cime_var), value)
+        m = CIME_VAR_RE.search(entry)
 
-        if sline.startswith("%YAML"):
-            result.append((True, idx, line))
-        elif sline in ["---", "..."]:
-            result.append((True, idx, line))
-        elif sline == "":
-            result.append((True, idx, line))
-        elif "#" in line:
-            try:
-                before, after = line.split("#")
-            except ValueError:
-                expect(False, "Bad line, too many #: {}".format(line))
-            before_nows = before.strip()
-            if before_nows == "":
-                result.append((True, idx, line))
+    return entry
+
+###############################################################################
+def do_switches(entry):
+###############################################################################
+    m = SWITCH_RE.search(entry)
+    while m:
+        begin_switch_idx, end_cond_idx = m.span()
+        value = m.groups()[0]
+        opens = 1
+        idx = end_cond_idx
+        segments = [""]
+        for idx in range(end_cond_idx, len(entry)):
+            if entry[idx] == "<":
+                opens += 1
+            elif entry[idx] == ">" and entry[idx-1] != "=":
+                opens -= 1
+                if opens == 0:
+                    break
+
+            if entry[idx] == ":" and opens == 1:
+                segments.append("")
             else:
-                result.append((False, idx, after))
+                segments[-1] += entry[idx]
 
-    return result
+        expect(idx < len(entry), "Switch statement parse error in string '{}'".format(entry))
+        end_switch_idx = idx + 1
+        best_val = None
+        for segment in segments:
+            components = segment.split("=>", 1)
+            if (len(components) == 1 or '<' in components[0]):
+                if best_val is None:
+                    best_val = do_switches(segment).strip()
+            else:
+                compare = re.compile(components[0].strip())
+                if compare.match(value):
+                    best_val = do_switches(components[-1]).strip()
+                    break
+
+        expect(best_val is not None, "Couldn't resolve switch statement for '{}', no matches".format(entry))
+
+        entry = entry[0:begin_switch_idx] + best_val + entry[end_switch_idx:]
+        m = SWITCH_RE.search(entry)
+
+    return entry
 
 ###############################################################################
-def apply_comments(filepath, comments):
+def refine_type(entry):
+###############################################################################
+    try:
+        v = int(entry)
+        return v
+    except ValueError:
+        pass
+
+    try:
+        v = float(entry)
+        return v
+    except ValueError:
+        return entry
+
+###############################################################################
+def process_leaf(leaf_str, case):
+###############################################################################
+    orig_str = leaf_str
+    leaf_str = do_cime_vars(leaf_str, case)
+    leaf_str = do_switches(leaf_str)
+    if leaf_str != orig_str:
+        return True, refine_type(leaf_str)
+    else:
+        return False, orig_str
+
+###############################################################################
+def process_node(node, itr, case):
 ###############################################################################
     """
-    Apply the comments from load_comments to a freshly generated YAML file.
+    Processes a node in the YAML data. A node is a piece of data in the python
+    dict representing the "raw" YAML. Because we support an extra level of
+    special syntax, described in SCREAM_YAML_README, we must do an extra
+    phase of processing this data. A node can be a dict, list, or string.
+    String data is considered a terminating 'leaf'.
     """
-    with open(filepath, "r") as fd:
-        lines = fd.readlines()
+    modified = False
+    for k, v in itr:
+        if isinstance(v, str):
+            curr_modified, leaf_val = process_leaf(v, case)
+            if curr_modified:
+                node[k] = leaf_val
+                modified = True
 
-    for is_insert, idx, contents in comments:
-        if is_insert:
-            lines.insert(idx, contents)
-        else:
-            lines[idx] = "{} # {}".format(lines[idx].rstrip(), contents)
+        elif isinstance(v, dict):
+            modified |= process_node(v, v.items(), case)
 
-    with open(filepath, "w") as fd:
-        fd.writelines(lines)
+        elif isinstance(v, list):
+            modified |= process_node(v, enumerate(v), case)
+
+    return modified
 
 ###############################################################################
 def ordered_load(item, Loader=yaml.SafeLoader, object_pairs_hook=OrderedDict):
@@ -137,13 +198,6 @@ def buildnml(case, caseroot, compname):
     src      = os.path.join(case.get_value("SRCROOT"), "components/scream/data")
     yaml_tgt = os.path.join(target, "scream_input.yaml")
 
-    # Specify yaml input changes that are driven by case env
-    # maps key-tuple to case env name to lookup
-    yaml_changes = {
-        ("SCREAM", "Start Date"): "RUN_STARTDATE",
-        ("SCREAM", "Input Files", "input_root"): "DIN_LOC_ROOT"
-    }
-
     # Copy scream/data to rundir/data
     with SharedArea():
         if not os.path.isdir(target):
@@ -153,24 +207,16 @@ def buildnml(case, caseroot, compname):
             # Do not overwrite existing files because that would remove any
             # local mods made by the user.
             if not os.path.exists(os.path.join(target, item)):
-                safe_copy(os.path.join(src, item), target)
+                 safe_copy(os.path.join(src, item), target)
 
-    # Load scream inputs from yaml and store original-file comments
-    comments = load_comments(yaml_tgt)
+    # Load scream inputs from yaml
     scream_input = ordered_load(yaml_tgt)
 
-    # Change yaml values based on case env
-    modified = False
-    for keys, envname in yaml_changes.items():
-        envval = case.get_value(envname)
-        expect("\n" not in envval, "Multiline env vals breaks us")
-        modified |= multilevel_dict_change(scream_input, keys, envval)
+    modified = process_node(scream_input, scream_input.items(), case)
 
-    # If we have to re-dump the YAML file due to CIME case updates,
-    # we need to also restore the original comments.
+    # Check If we have to re-dump the YAML file due to CIME case updates
     if modified:
         ordered_dump(scream_input, yaml_tgt)
-        apply_comments(yaml_tgt, comments)
 
     # Create homme namelists from scream inputs
     homme_nl_path = os.path.join(rundir, scream_input["Atmosphere Driver"]["Grids Manager"]["Dynamics Driven"]["Dynamics Namelist File Name"])
@@ -186,6 +232,25 @@ def buildnml(case, caseroot, compname):
                     fd.write("{} = {}\n".format(k, v))
 
             fd.write("/\n")
+
+    # Create input data list
+    input_data_list_file = "{}/Buildconf/scream.input_data_list".format(caseroot)
+    if os.path.exists(input_data_list_file):
+        os.remove(input_data_list_file)
+
+    input_file = scream_input["Atmosphere Driver"]["Initial Conditions"]["Physics GLL"]["Filename"]
+    tables     = scream_input["SCREAM"]["Input Files"]
+    with open(input_data_list_file, "w") as fd:
+        fd.write("ic_file = {}\n".format(input_file))
+        for idx, table in enumerate(tables):
+            fd.write("table_{} = {}\n".format(idx, table))
+
+    # SCREAM is currently hardcoded to expect tables to be in data
+    for table in tables:
+        table_name = os.path.basename(table)
+        tgt_table = os.path.join(target, table_name)
+        if not os.path.exists(tgt_table) and not os.path.islink(tgt_table):
+            os.symlink(table, os.path.join(target, table_name))
 
 ###############################################################################
 def _main_func():

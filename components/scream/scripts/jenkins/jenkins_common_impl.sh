@@ -3,20 +3,38 @@
 # Check if the env var PR_LABELS is defined, and contains something meaningful
 IFS=';' read -r -a labels <<< "$PR_LABELS";
 
-# default values
+# default values. By default, test only Stand-Alone (SA) on all machines
 skip_testing=0
 test_scripts=0
-test_cime=0
+test_v0=0
+test_v1=0
+test_SA=1
+skip_mappy=0
+skip_weaver=0
+skip_blake=0
 if [ ${#labels[@]} -gt 0 ]; then
   # We do have some labels. Look for some supported ones.
   for label in "${labels[@]}"
   do
     if [ "$label" == "AT: Integrate Without Testing" ]; then
       skip_testing=1
+    elif [ "$label" == "AT: Skip Stand-Alone Testing" ]; then
+      test_SA=0
     elif [ "$label" == "scripts" ]; then
       test_scripts=1
+    elif [ "$label" == "SCREAMv1" ]; then
+      test_v1=1
+    elif [ "$label" == "SCREAMv0" ]; then
+      test_v0=1
     elif [ "$label" == "CIME" ]; then
-      test_cime=1
+      test_v0=1
+      test_v1=1
+    elif [ "$label" == "AT: Skip mappy" ]; then
+      skip_mappy=1
+    elif [ "$label" == "AT: Skip weaver" ]; then
+      skip_weaver=1
+    elif [ "$label" == "AT: Skip blake" ]; then
+      skip_blake=1
     fi
   done
 fi
@@ -27,6 +45,18 @@ if [ $skip_testing -eq 0 ]; then
   cd $JENKINS_SCRIPT_DIR/../..
 
   source scripts/jenkins/${NODE_NAME}_setup
+
+  # Check machine-specific skipping
+  if [[ $skip_mappy == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
+    echo "Tests were skipped, since the Github label 'AT: Skip mappy' was found.\n"
+    exit 0
+  elif [[ $skip_weaver == 1 && "$SCREAM_MACHINE" == "weaver" ]]; then
+    echo "Tests were skipped, since the Github label 'AT: Skip weaver' was found.\n"
+    exit 0
+  elif [[ $skip_blake == 1 && "$SCREAM_MACHINE" == "blake" ]]; then
+    echo "Tests were skipped, since the Github label 'AT: Skip blake' was found.\n"
+    exit 0
+  fi
 
   if [[ "$(whoami)" == "e3sm-jenkins" ]]; then
       git config --local user.email "jenkins@ignore.com"
@@ -40,13 +70,13 @@ if [ $skip_testing -eq 0 ]; then
   fi
 
   AUTOTESTER_CMAKE=""
-  # If this is a nightly run, we do NOT want this script to stop on the first failed command
-  # since that will prevent subsequent dashboard submissions
+  # Now that we are starting to run things that we expect could fail, we
+  # do not want the script to exit on any fail since this will prevent
+  # later tests from running.
   set +e
   if [ -n "$PULLREQUESTNUM" ]; then
       SUBMIT="" # We don't submit AT runs
       AUTOTESTER_CMAKE="-c SCREAM_AUTOTESTER=ON"
-      set -e # This is an AT run, not nightly, so it's OK to stop on first fail
   fi
 
   declare -i fails=0
@@ -54,38 +84,63 @@ if [ $skip_testing -eq 0 ]; then
   # IF such dir is not found, then the default (ctest-build/baselines) is used
   BASELINES_DIR=AUTO
 
-  ./scripts/gather-all-data "./scripts/test-all-scream --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON $AUTOTESTER_CMAKE -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
-  if [[ $? != 0 ]]; then fails=$fails+1; fi
-
-  # Add a valgrind and coverage tests for mappy for nightlies
-  if [[ -n "$SUBMIT" && "$SCREAM_MACHINE" == "mappy" ]]; then
-    ./scripts/gather-all-data "./scripts/test-all-scream -t valg -t cov --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
+  # Run scream stand-alone tests (SA)
+  if [ $test_SA -eq 1 ]; then
+    ./scripts/gather-all-data "./scripts/test-all-scream --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON $AUTOTESTER_CMAKE -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
     if [[ $? != 0 ]]; then fails=$fails+1; fi
+
+    # Add a valgrind and coverage tests for mappy for nightlies
+    if [[ -n "$SUBMIT" && "$SCREAM_MACHINE" == "mappy" ]]; then
+      ./scripts/gather-all-data "./scripts/test-all-scream -t valg -t cov --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
+      if [[ $? != 0 ]]; then fails=$fails+1; fi
+    fi
+
+    # Add a cuda-memcheck test for weaver for nightlies
+    if [[ -n "$SUBMIT" && "$SCREAM_MACHINE" == "weaver" ]]; then
+      ./scripts/gather-all-data "./scripts/test-all-scream -t cmc --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
+      if [[ $? != 0 ]]; then fails=$fails+1; fi
+    fi
+  else
+    echo "SCREAM Stand-Alone tests were skipped, since the Github label 'AT: Skip Stand-Alone Testing' was found.\n"
   fi
 
-  # Add a cuda-memcheck test for weaver for nightlies
-  if [[ -n "$SUBMIT" && "$SCREAM_MACHINE" == "weaver" ]]; then
-    ./scripts/gather-all-data "./scripts/test-all-scream -t cmc --baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine $SUBMIT" -l -m $SCREAM_MACHINE
-    if [[ $? != 0 ]]; then fails=$fails+1; fi
-  fi
+  # Run expensive tests on mappy only
+  if [[ "$SCREAM_MACHINE" == "mappy" ]]; then
 
-  # scripts-tests is pretty expensive, so we limit this testing to mappy
-  if [[ $test_scripts == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
-    # JGF: I'm not sure there's much value in these dry-run comparisons
-    # since we aren't changing HEADs
-    ./scripts/scripts-tests -g
-    if [[ $? != 0 ]]; then fails=$fails+1; fi
-    ./scripts/scripts-tests -c
-    if [[ $? != 0 ]]; then fails=$fails+1; fi
+    # Run scripts-tests
+    if [[ $test_scripts == 1 ]]; then
+      # JGF: I'm not sure there's much value in these dry-run comparisons
+      # since we aren't changing HEADs
+      ./scripts/scripts-tests -g -m $SCREAM_MACHINE
+      if [[ $? != 0 ]]; then fails=$fails+1; fi
+      ./scripts/scripts-tests -c -m $SCREAM_MACHINE
+      if [[ $? != 0 ]]; then fails=$fails+1; fi
 
-    ./scripts/scripts-tests -f -m $SCREAM_MACHINE
-    if [[ $? != 0 ]]; then fails=$fails+1; fi
-  fi
+      ./scripts/scripts-tests -f -m $SCREAM_MACHINE
+      if [[ $? != 0 ]]; then fails=$fails+1; fi
+    fi
 
-  # Run SCREAM CIME suite
-  if [[ $test_cime == 1 && "$SCREAM_MACHINE" == "mappy" ]]; then
-    ../../cime/scripts/create_test e3sm_scream -c -b master
-    if [[ $? != 0 ]]; then fails=$fails+1; fi
+    if [[ $test_v0 == 1 || $test_v1 == 1 ]]; then
+      # AT CIME runs may need an upstream merge in order to ensure that any DIFFs
+      # are caused by this PR and not simply because the PR is too far behind master
+      if [ -n "$PULLREQUESTNUM" ]; then
+        ./scripts/git-merge-ref origin/master
+        if [[ $? != 0 ]]; then
+            echo "MERGE FAILED! Please resolve conflicts"
+            exit 1
+        fi
+      fi
+
+      if [[ $test_v0 == 1 ]]; then
+        ../../cime/scripts/create_test e3sm_scream -c -b master
+        if [[ $? != 0 ]]; then fails=$fails+1; fi
+      fi
+
+      if [[ $test_v1 == 1 ]]; then
+        ../../cime/scripts/create_test e3sm_scream_v1 --compiler=gnu9 -c -b master
+        if [[ $? != 0 ]]; then fails=$fails+1; fi
+      fi
+    fi
   fi
 
   if [[ $fails > 0 ]]; then

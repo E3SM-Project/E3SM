@@ -62,7 +62,6 @@ struct UnitWrap {
     struct TestTableIce;
     struct TestTable3;
     struct TestBackToCellAverage;
-    struct TestPreventIceOverdepletion;
     struct TestFind;
     struct TestUpwind;
     struct TestGenSed;
@@ -100,6 +99,8 @@ struct UnitWrap {
     struct TestNcConservation;
     struct TestNrConservation;
     struct TestNiConservation;
+    struct TestIceDepositionSublimation;
+    struct TestPreventLiqSupersaturation;
   };
 
 };

@@ -1,6 +1,7 @@
 #include "atmosphere_prescribed_aerosol.hpp"
 
 #include "share/util/scream_time_stamp.hpp"
+#include "share/io/scream_scorpio_interface.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -33,6 +34,9 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   auto grid  = grids_manager->get_grid(grid_name);
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
+  m_dofs_gids = grid->get_dofs_gids();
+  m_total_global_dofs = grid->get_num_global_dofs();
+  m_min_global_dof    = grid->get_global_min_dof_gid();
 
   // Define the different field layouts that will be used for this process
 
@@ -46,22 +50,9 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   // Set of fields used strictly as input
   constexpr int ps = Pack::n;
-  add_field<Required>("p_mid"      , scalar3d_layout_mid, 1/kg,   grid_name, ps);
+  add_field<Required>("p_mid"      , scalar3d_layout_mid, Pa,     grid_name, ps);
   add_field<Required>("hyam"       , scalar1d_layout_mid, nondim, grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
   add_field<Required>("hybm"       , scalar1d_layout_mid, nondim, grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-
-  add_field<Required>("PS_beg"     , scalar2d_layout,     Pa,     grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("PS_end"     , scalar2d_layout,     Pa,     grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("CCN3_beg"   , scalar3d_layout_mid, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("CCN3_end"   , scalar3d_layout_mid, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("AER_G_SW_beg"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("AER_G_SW_end"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("AER_SSA_SW_beg"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("AER_SSA_SW_end"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("AER_TAU_SW_beg"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("AER_TAU_SW_end"   , scalar3d_swband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("AER_TAU_LW_beg"   , scalar3d_lwband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("AER_TAU_LW_end"   , scalar3d_lwband_layout, 1/kg,   grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
 
   // Set of fields used strictly as output
   add_field<Computed>("nc_activated",   scalar3d_layout_mid,    1/kg,   grid_name,ps);
@@ -129,30 +120,63 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
 }
 
 // =========================================================================================
-void SPA::initialize_impl (const util::TimeStamp& /* t0 */)
+void SPA::initialize_impl (const RunType /* run_type */)
 {
-  // Initialize Time Data
-  auto ts = timestamp();
-  SPATimeState.current_month = ts.get_months();
-  SPATimeState.t_beg_month = util::julian_day(ts.get_years(),ts.get_months(),0,0);
-  SPATimeState.days_this_month = (Real)ts.get_dpm();
+  // Initialize SPA pressure state stucture and set pointers for the SPA output data to
+  // field managed variables.
+  SPAPressureState.ncols         = m_num_cols;
+  SPAPressureState.nlevs         = m_num_levs;
+  SPAPressureState.hyam          = get_field_in("hyam").get_view<const Pack*>();
+  SPAPressureState.hybm          = get_field_in("hybm").get_view<const Pack*>();
+  SPAPressureState.pmid          = get_field_in("p_mid").get_view<const Pack**>();
+  SPAData_out.CCN3               = get_field_out("nc_activated").get_view<Pack**>();
+  SPAData_out.AER_G_SW           = get_field_out("aero_g_sw").get_view<Pack***>();
+  SPAData_out.AER_SSA_SW         = get_field_out("aero_ssa_sw").get_view<Pack***>();
+  SPAData_out.AER_TAU_SW         = get_field_out("aero_tau_sw").get_view<Pack***>();
+  SPAData_out.AER_TAU_LW         = get_field_out("aero_tau_lw").get_view<Pack***>();
 
-  // Initialize SPA input data
-  initialize_spa_impl();
+  // Retrieve the remap and data file locations from the parameter list:
+  EKAT_REQUIRE_MSG(m_params.isParameter("SPA Remap File"),"ERROR: SPA Remap File is missing from SPA parameter list.");
+  EKAT_REQUIRE_MSG(m_params.isParameter("SPA Data File"),"ERROR: SPA Data File is missing from SPA parameter list.");
+  m_spa_remap_file = m_params.get<std::string>("SPA Remap File");
+  m_spa_data_file = m_params.get<std::string>("SPA Data File");
+
+  // Set the SPA remap weights.  
+  // TODO: We may want to provide an option to calculate weights on-the-fly. 
+  //       If so, then the EKAT_REQUIRE_MSG above will need to be removed and 
+  //       we can have a default m_spa_data_file option that is online calculation.
+  using ci_string = ekat::CaseInsensitiveString;
+  ci_string no_filename = "none";
+  if (m_spa_remap_file == no_filename) {
+    printf("WARNING: SPA Remap File has been set to 'NONE', assuming that SPA data and simulation are on the same grid - skipping horizontal interpolation");
+    SPAFunc::set_remap_weights_one_to_one(m_total_global_dofs,m_min_global_dof,m_dofs_gids,SPAHorizInterp);
+  } else {
+    SPAFunc::get_remap_weights_from_file(m_spa_remap_file,m_total_global_dofs,m_min_global_dof,m_dofs_gids,SPAHorizInterp);
+  }
+  // Note: only the number of levels associated with this data haven't been set.  We can
+  //       take this information directly from the spa data file.
+  scorpio::register_file(m_spa_data_file,scorpio::Read);
+  SPAHorizInterp.source_grid_nlevs = scorpio::get_dimlen_c2f(m_spa_data_file.c_str(),"lev");
+  SPAHorizInterp.m_comm = m_comm;
+
+  // Initialize the size of the SPAData structures:
+  SPAData_start = SPAFunc::SPAData(m_dofs_gids.size(), SPAHorizInterp.source_grid_nlevs, m_nswbands, m_nlwbands);
+  SPAData_end   = SPAFunc::SPAData(m_dofs_gids.size(), SPAHorizInterp.source_grid_nlevs, m_nswbands, m_nlwbands);
+
+  // Update the local time state information and load the first set of SPA data for interpolation:
+  auto ts = timestamp();
+  SPATimeState.inited = false;
+  SPATimeState.current_month = ts.get_month();
+  SPAFunc::update_spa_timestate(m_spa_data_file,m_nswbands,m_nlwbands,ts,SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
 }
 
 // =========================================================================================
-void SPA::run_impl (const Real /* dt */)
+void SPA::run_impl (const int /* dt */)
 {
   /* Gather time and state information for interpolation */
   auto ts = timestamp();
-  /* Update time data if the month has changed */
-  SPATimeState.t_now = ts.get_julian_day();
-  if (ts.get_months() != SPATimeState.current_month) {
-    SPATimeState.current_month = ts.get_months();
-    SPATimeState.t_beg_month = util::julian_day(ts.get_years(),ts.get_months(),0,0);
-    SPATimeState.days_this_month = (Real)ts.get_dpm();
-  }
+  /* Update time state and if the month has changed, update the data.*/
+  SPAFunc::update_spa_timestate(m_spa_data_file,m_nswbands,m_nlwbands,ts,SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
 
   // Call the main SPA routine to get interpolated aerosol forcings.
   SPAFunc::spa_main(SPATimeState, SPAPressureState,SPAData_start,SPAData_end,SPAData_out,m_num_cols,m_num_levs,m_nswbands,m_nlwbands);

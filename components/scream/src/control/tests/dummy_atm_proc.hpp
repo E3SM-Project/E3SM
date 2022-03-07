@@ -55,19 +55,22 @@ public:
       add_field<Required>("A",layout,ekat::units::m,m_grid->name());
       add_field<Computed>("B",layout,ekat::units::m,m_grid->name(),"The Group");
       add_field<Computed>("C",layout,ekat::units::m,m_grid->name(),"The Group");
-      add_field<Required>("D",layout_vec,ekat::units::m,m_grid->name());
-      add_field<Required>("E",layout,ekat::units::m,m_grid->name());
+      // These are not used at run time, but we use them to test
+      // the initialization of IC fields
+      add_field<Required>("V",layout_vec,ekat::units::m,m_grid->name());
+      add_field<Required>("Z",layout,ekat::units::m,m_grid->name());
     } else if (m_dummy_type == G2A) {
       add_field<Computed>("A",layout,ekat::units::m,m_grid->name());
       add_group<Required>("The Group",m_grid->name());
     } else {
+      add_field<Required>("B",layout,ekat::units::m,m_grid->name());
       add_group<Updated>("The Group",m_grid->name());
     }
   }
 
 protected:
 
-  void initialize_impl (const util::TimeStamp&) {
+  void initialize_impl (const RunType /* run_type */) {
     // Do nothing
   }
 
@@ -75,7 +78,7 @@ protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  void run_impl (const Real /* dt */) {
+  void run_impl (const int /* dt */) {
     const int ncols = m_grid->get_num_local_dofs();
     const int nlevs = m_grid->get_num_vertical_levels();
     auto policy = KokkosTypes<exec_space>::RangePolicy(0,ncols*nlevs);

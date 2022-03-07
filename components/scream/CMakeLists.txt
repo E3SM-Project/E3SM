@@ -4,8 +4,6 @@ if (NOT DEFINED PROJECT_NAME)
   set(SCREAM_CIME_BUILD FALSE)
 else()
   set(SCREAM_CIME_BUILD TRUE)
-  set (SCREAM_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-  set (SCREAM_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
 if (${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.12.0")
@@ -24,7 +22,6 @@ list(APPEND CMAKE_MODULE_PATH
      ${CMAKE_CURRENT_SOURCE_DIR}/cmake
      ${CMAKE_CURRENT_SOURCE_DIR}/cmake/tpls
      ${EKAT_CMAKE_PATH}
-     ${EKAT_CMAKE_PATH}/mpi
      ${EKAT_CMAKE_PATH}/pkg_build
 )
 if (SCREAM_CIME_BUILD)
@@ -32,21 +29,28 @@ if (SCREAM_CIME_BUILD)
        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cime)
 endif ()
 
-include(EkatMpiUtils)
-
-# We should avoid cxx bindings in mpi; they are already deprecated,
-# and can cause headaches at link time, cause they require -lmpi_cxx
-# (for openpmi; -lmpicxx for mpich) flag.
-DisableMpiCxxBindings()
-
 if (Kokkos_ENABLE_CUDA)
-  include(EkatBuildKokkos)
-  # Note: we need Kokkos_SOURCE_DIR to be defined *before* calling EkatSetNvccWrapper.
-  EkatSetKokkosSourceDir()
-
-  include (EkatSetNvccWrapper)
-  EkatSetNvccWrapper()
+  if (Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
+    if (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK)
+      string (CONCAT msg
+          "Kokkos_ENALBE_CUDA_RELOCATABLE_DEVICE_CODE=ON, and Kokkos_ENALBE_DEBUG_BOUNDS_CHECK=ON.\n"
+          "   -> Disabling bounds checks, to prevent internal compiler errors.")
+      message(WARNING "${msg}")
+      set (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "" FORCE)
+    else()
+      string (CONCAT msg
+          "Kokkos_ENALBE_CUDA_RELOCATABLE_DEVICE_CODE=ON.\n"
+          "   -> Disabling bounds checks, to prevent internal compiler errors.")
+      message(STATUS "${msg}")
+      set (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK OFF CACHE BOOL "" FORCE)
+    endif()
+  endif()
 endif()
+
+# Homme's composef90 library (built for f90 support) requires Kokkos::Serial
+# to be defined, which in turn requires the CMake var Kokkos_ENABLE_SERIAL
+# to be on. For now, simply ensure Kokkos Serial is enabled
+option (Kokkos_ENABLE_SERIAL "" ON)
 
 set (CMAKE_CXX_STANDARD 14)
 
@@ -76,6 +80,7 @@ option (SCREAM_ENABLE_EXPERIMENTAL "Whether to enable experimental code in screa
 set(SCREAM_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SCREAM_SRC_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(SCREAM_DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
+set(SCREAM_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR})
 
 # Shortcut function, to print a variable
 function (print_var var)
@@ -92,6 +97,11 @@ endfunction ()
 # Compute reasonable defaults. This needs to happen before the CACHE variables
 # are set.
 string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
+if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+  set (SCREAM_DEBUG TRUE)
+else ()
+  set (SCREAM_DEBUG FALSE)
+endif()
 
 enable_testing()
 include(CTest)
@@ -107,7 +117,7 @@ endif ()
 
 # Add CUDA as a language for CUDA builds
 if (CUDA_BUILD)
-    enable_language(CUDA)
+  enable_language(CUDA)
 endif()
 
 ### Scream default configuration options
@@ -124,7 +134,7 @@ if (CUDA_BUILD)
   # Limit to 1 rank, cause parallel builds testing might limit the number of available gpus
   set(DEFAULT_MAX_RANKS 1)
 else()
-  if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+  if (SCREAM_DEBUG)
     set(DEFAULT_MIMIC_GPU TRUE)
   endif()
 endif ()
@@ -147,7 +157,7 @@ if (NF_CONFIG_SEARCH)
     OUTPUT_STRIP_TRAILING_WHITESPACE
     )
   if (NF_STATUS EQUAL 0)
-    set(DEFAULT_NetCDF_Fortran_PATHS ${NF_CONFIG_OUTPUT})
+    set(DEFAULT_NetCDF_Fortran_PATH ${NF_CONFIG_OUTPUT})
   endif()
 endif()
 
@@ -159,8 +169,12 @@ if (NC_CONFIG_SEARCH)
     OUTPUT_STRIP_TRAILING_WHITESPACE
     )
   if (NC_STATUS EQUAL 0)
-    set(DEFAULT_NetCDF_C_PATHS ${NC_CONFIG_OUTPUT})
+    set(DEFAULT_NetCDF_C_PATH ${NC_CONFIG_OUTPUT})
   endif()
+endif()
+
+if (DEFINED ENV{SCREAM_MACHINE})
+  set(DEFAULT_SCREAM_MACHINE $ENV{SCREAM_MACHINE})
 endif()
 
 ### Set CACHE vars
@@ -173,8 +187,23 @@ set(SCREAM_MPI_EXTRA_ARGS ${DEFAULT_MPI_EXTRA_ARGS} CACHE STRING "Options for mp
 set(SCREAM_MPI_NP_FLAG ${DEFAULT_MPI_NP_FLAG} CACHE STRING "The mpirun flag for designating the total number of ranks")
 set(SCREAM_LIB_ONLY ${DEFAULT_LIB_ONLY} CACHE BOOL "Only build libraries, no exes")
 set(SCREAM_AUTOTESTER ${DEFAULT_AUTOTESTER} CACHE BOOL "This is an autotester run; may disable some tests")
-set(NetCDF_Fortran_PATHS ${DEFAULT_NetCDF_Fortran_PATHS} CACHE FILEPATH "Path to netcdf fortran installation")
-set(NetCDF_C_PATHS ${DEFAULT_NetCDF_C_PATHS} CACHE FILEPATH "Path to netcdf C installation")
+set(NetCDF_Fortran_PATH ${DEFAULT_NetCDF_Fortran_PATH} CACHE FILEPATH "Path to netcdf fortran installation")
+set(NetCDF_C_PATH ${DEFAULT_NetCDF_C_PATH} CACHE FILEPATH "Path to netcdf C installation")
+set(SCREAM_MACHINE ${DEFAULT_SCREAM_MACHINE} CACHE STRING "The CIME/SCREAM name for the current machine")
+
+# Handle input root
+if (SCREAM_MACHINE)
+    execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/query-cime ${SCREAM_MACHINE} DIN_LOC_ROOT
+    RESULT_VARIABLE QC_STATUS
+    OUTPUT_VARIABLE QC_OUTPUT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+  if (QC_STATUS EQUAL 0)
+    set(DEFAULT_SCREAM_INPUT_ROOT ${QC_OUTPUT})
+  endif()
+endif()
+
+set(SCREAM_INPUT_ROOT ${DEFAULT_SCREAM_INPUT_ROOT} CACHE FILEPATH "Root of downloaded input files. Should match DIN_LOC_ROOT on CIME machines")
 
 # Assuming SCREAM_LIB_ONLY is FALSE (else, no exec is built at all), we provide the option
 # of building only baseline-related execs. By default, this option is off (menaing "build everything).
@@ -185,6 +214,7 @@ set(SCREAM_BASELINES_ONLY FALSE CACHE BOOL "Whether building only baselines-rela
 set(SCREAM_NUM_VERTICAL_LEV ${DEFAULT_NUM_VERTICAL_LEV} CACHE STRING
     "The number of levels used in the vertical grid."
 )
+option(SCREAM_HAS_LEAP_YEAR "Whether scream uses leap years or not" ON)
 
 ## Work out pack sizes.
 # Determine the master pack size.
@@ -214,7 +244,7 @@ check_pack_size(${SCREAM_PACK_SIZE} ${SCREAM_POSSIBLY_NO_PACK_SIZE} "possibly no
 ## Now we have pack sizes. Proceed with other config options that depend on
 ## these.
 
-if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+if (SCREAM_DEBUG)
   set(DEFAULT_FPMODEL "strict")
   if (${SCREAM_PACK_SIZE} EQUAL 1 AND NOT ${CUDA_BUILD})
     set(DEFAULT_FPE TRUE)
@@ -264,7 +294,14 @@ BuildEkat(PREFIX "SCREAM")
 
 # Set compiler-specific flags
 include(EkatSetCompilerFlags)
-SetCompilerFlags()
+ResetFlags()
+SetCommonFlags()
+
+include(EkatMpiUtils)
+# We should avoid cxx bindings in mpi; they are already deprecated,
+# and can cause headaches at link time, cause they require -lmpi_cxx
+# (for openpmi; -lmpicxx for mpich) flag.
+DisableMpiCxxBindings()
 
 if (SCREAM_DOUBLE_PRECISION)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
@@ -303,20 +340,6 @@ endif()
 if ($ENV{SCREAM_FORCE_RUN_FAIL})
   add_definitions(-DSCREAM_FORCE_RUN_FAIL)
 endif()
-if ($ENV{SCREAM_FORCE_RUN_FPE_FAIL})
-  add_definitions(-DSCREAM_FORCE_RUN_FPE_FAIL)
-endif()
-if ($ENV{SCREAM_FORCE_RUN_DIFF})
-  add_definitions(-DSCREAM_FORCE_RUN_DIFF)
-  set(SCREAM_FAKE_NEED_P3 ON)
-endif()
-if ($ENV{SCREAM_FORCE_RUN_DIFF_BFB_UNIT})
-  add_definitions(-DSCREAM_FORCE_RUN_DIFF_BFB_UNIT)
-  set(SCREAM_FAKE_NEED_P3 ON)
-endif()
-if ($ENV{SCREAM_FORCE_RUN_KOKKOS_OOB})
-  add_definitions(-DSCREAM_FORCE_RUN_KOKKOS_OOB)
-endif()
 
 set(DEFAULT_SCREAM_DYNAMICS_DYCORE "NONE")
 if (SCREAM_CIME_BUILD AND SCREAM_DYN_TARGET STREQUAL "theta-l_kokkos")
@@ -347,27 +370,34 @@ file(MAKE_DIRECTORY ${SCREAM_TEST_DATA_DIR})
 
 add_custom_target(baseline)
 add_custom_target(baseline_cxx)
-
-add_subdirectory(src)
-if (NOT SCREAM_LIB_ONLY)
-  add_subdirectory(tests)
-  include(BuildCprnc)
-  BuildCprnc()
-endif()
-
-# Generate scream_config.h and scream_config.f
-include (EkatUtils)
-EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
-               ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
-               F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
-
+# SCREAM_FAKE_ONLY is used to run some tests to ensure the enclosing testing
+# scripts work correctly. We are not really interested in building/testing SCREAM.
 if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
+
+  add_subdirectory(src)
+
+  if (NOT SCREAM_LIB_ONLY)
+    add_subdirectory(tests)
+    include(BuildCprnc)
+    BuildCprnc()
+  endif()
+
+  # Generate scream_config.h and scream_config.f
+  include (EkatUtils)
+  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
+                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
+
   # Build any tools in the scripts/ dir.
   add_subdirectory(scripts)
-endif()
 
-# Generate scream_config.h and scream_config.f
-include (EkatUtils)
-EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
-               ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
-               F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
+  # Generate scream_config.h and scream_config.f
+  include (EkatUtils)
+  EkatConfigFile(${CMAKE_CURRENT_SOURCE_DIR}/src/scream_config.h.in
+                 ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.h
+                 F90_FILE ${CMAKE_CURRENT_BINARY_DIR}/src/scream_config.f)
+else()
+  # This is a "fake" build of scream, to stress test the testing scripts.
+  # We only need to build something in our tests folder
+  add_subdirectory(tests/meta-tests)
+endif()

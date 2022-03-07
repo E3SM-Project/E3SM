@@ -32,11 +32,6 @@ public:
              const int num_vertical_levels,
              const ekat::Comm& comm);
 
-  PointGrid (const std::string& grid_name,
-             const int num_my_cols,
-             const int num_vertical_levels,
-             const std::shared_ptr<const AbstractGrid>& unique_grid,
-             const ekat::Comm& comm);
 
   virtual ~PointGrid () = default;
 
@@ -47,7 +42,8 @@ public:
   FieldLayout get_3d_scalar_layout (const bool midpoints) const override;
   FieldLayout get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, const int vector_dim) const override;
 
-  void set_geometry_data (const std::string& name, const geo_view_type& data) override;
+protected:
+  bool valid_geo_data (const std::string& name, const geo_view_type& data) const override;
 };
 
 // Create a point grid, with linear range of gids, evenly partitioned

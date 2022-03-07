@@ -4,16 +4,12 @@ set(P3_SRCS
   p3_ic_cases.cpp
   p3_iso_c.f90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/micro_p3.F90
+  atmosphere_microphysics.cpp
+  atmosphere_microphysics_run.cpp
 )
 
-if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
-  list(APPEND P3_SRCS
-    atmosphere_microphysics.cpp
-    atmosphere_microphysics_run.cpp)
-endif()
-
 # Add ETI source files if not on CUDA
-if (NOT CUDA_BUILD)
+if (NOT CUDA_BUILD OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
   list(APPEND P3_SRCS
     p3_upwind.cpp
     p3_cloud_sed.cpp
@@ -32,7 +28,6 @@ if (NOT CUDA_BUILD)
     p3_conservation.cpp
     p3_rain_self_collection.cpp
     p3_back_to_cell_average.cpp
-    p3_prevent_ice_overdepletion.cpp
     p3_cloud_rain_acc.cpp
     p3_calc_rime_density.cpp
     p3_cldliq_imm_freezing.cpp
@@ -50,10 +45,14 @@ if (NOT CUDA_BUILD)
     p3_incloud_mixingratios.cpp
     p3_subgrid_variance_scaling.cpp
     p3_main.cpp
+    p3_main_part1.cpp
+    p3_main_part2.cpp
+    p3_main_part3.cpp
     p3_ice_supersat_conservation.cpp
     p3_nc_conservation.cpp
     p3_nr_conservation.cpp
     p3_ni_conservation.cpp
+    p3_prevent_liq_supersaturation.cpp
   ) # P3 ETI SRCS
 endif()
 

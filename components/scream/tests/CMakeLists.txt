@@ -1,3 +1,6 @@
+# Some tests for checking testing works
+add_subdirectory(generic)
+
 if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
   # Testing individual atm processes
   add_subdirectory(uncoupled)
@@ -5,6 +8,3 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
   # Testing multiple atm processes coupled together
   add_subdirectory(coupled)
 endif()
-
-# Some fake tests for testing infrastructure
-add_subdirectory(generic)

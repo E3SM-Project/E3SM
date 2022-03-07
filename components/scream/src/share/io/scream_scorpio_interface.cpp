@@ -17,8 +17,7 @@ extern "C" {
   void register_file_c2f(const char*&& filename, const int& mode);
   void set_decomp_c2f(const char*&& filename);
   void set_dof_c2f(const char*&& filename,const char*&& varname,const Int dof_len,const Int *x_dof);
-  void grid_read_data_array_c2f(const char*&& filename, const char*&& varname, const Int time_index, Real *&hbuf);
-  void grid_read_data_array_c2f_int(const char*&& filename, const char*&& varname, const Int dim1_length, Int *hbuf);
+  void grid_read_data_array_c2f(const char*&& filename, const char*&& varname, const Int time_index, void *&hbuf);
 
   void grid_write_data_array_c2f_real(const char*&& filename, const char*&& varname, const Real*& hbuf);
   void eam_init_pio_subsystem_c2f(const int mpicom, const int compid, const bool local);
@@ -27,11 +26,11 @@ extern "C" {
   void eam_pio_closefile_c2f(const char*&& filename);
   void pio_update_time_c2f(const char*&& filename,const Real time);
   void register_dimension_c2f(const char*&& filename, const char*&& shortname, const char*&& longname, const int length);
-  void register_variable_c2f(const char*&& filename,const char*&& shortname, const char*&& longname, const int numdims, const char** var_dimensions, const int dtype, const char*&& pio_decomp_tag);
+  void register_variable_c2f(const char*&& filename,const char*&& shortname, const char*&& longname, const char*&& units, const int numdims, const char** var_dimensions, const int dtype, const char*&& pio_decomp_tag);
   void get_variable_c2f(const char*&& filename,const char*&& shortname, const char*&& longname, const int numdims, const char** var_dimensions, const int dtype, const char*&& pio_decomp_tag);
   void eam_pio_enddef_c2f(const char*&& filename);
 
-  void count_pio_atm_file_c2f();
+  int count_pio_atm_file_c2f();
 } // extern C
 
 namespace scream {
@@ -103,7 +102,7 @@ void get_variable(const std::string &filename, const std::string& shortname, con
   get_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), numdims, var_dimensions, dtype, pio_decomp_tag.c_str());
 }
 /* ----------------------------------------------------------------- */
-void register_variable(const std::string &filename, const std::string& shortname, const std::string& longname, const int numdims, const std::vector<std::string>& var_dimensions, const int dtype, const std::string& pio_decomp_tag) {
+void register_variable(const std::string &filename, const std::string& shortname, const std::string& longname, const std::string& units, const int numdims, const std::vector<std::string>& var_dimensions, const int dtype, const std::string& pio_decomp_tag) {
 
   /* Convert the vector of strings that contains the variable dimensions to a char array */
   const char** var_dimensions_c = new const char*[numdims];
@@ -111,26 +110,26 @@ void register_variable(const std::string &filename, const std::string& shortname
   {
     var_dimensions_c[ii] = var_dimensions[ii].c_str();
   }
-  register_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), numdims, var_dimensions_c, dtype, pio_decomp_tag.c_str());
+  register_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), units.c_str(), numdims, var_dimensions_c, dtype, pio_decomp_tag.c_str());
   delete[] var_dimensions_c;
 }
 /* ----------------------------------------------------------------- */
-void register_variable(const std::string &filename, const std::string& shortname, const std::string& longname, const int numdims, const char**&& var_dimensions, const int dtype, const std::string& pio_decomp_tag) {
+void register_variable(const std::string &filename, const std::string& shortname, const std::string& longname, const std::string& units, const int numdims, const char**&& var_dimensions, const int dtype, const std::string& pio_decomp_tag) {
 
-  register_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), numdims, var_dimensions, dtype, pio_decomp_tag.c_str());
+  register_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), units.c_str(), numdims, var_dimensions, dtype, pio_decomp_tag.c_str());
 }
 /* ----------------------------------------------------------------- */
 void eam_pio_enddef(const std::string &filename) {
   eam_pio_enddef_c2f(filename.c_str());
 }
 /* ----------------------------------------------------------------- */
-void count_pio_atm_file() {
+int count_pio_atm_file() {
 
-  count_pio_atm_file_c2f();
+  return count_pio_atm_file_c2f();
 
 }
 /* ----------------------------------------------------------------- */
-void grid_read_data_array(const std::string &filename, const std::string &varname, const int time_index, Real *hbuf) {
+void grid_read_data_array(const std::string &filename, const std::string &varname, const int time_index, void *hbuf) {
   grid_read_data_array_c2f(filename.c_str(),varname.c_str(),time_index,hbuf);
 }
 /* ----------------------------------------------------------------- */
@@ -138,6 +137,5 @@ void grid_write_data_array(const std::string &filename, const std::string &varna
   grid_write_data_array_c2f_real(filename.c_str(),varname.c_str(),hbuf);
 }
 /* ----------------------------------------------------------------- */
-
 } // namespace scorpio
 } // namespace scream

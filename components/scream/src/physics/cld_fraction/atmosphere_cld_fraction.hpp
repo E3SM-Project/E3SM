@@ -20,9 +20,6 @@ namespace scream
 class CldFraction : public AtmosphereProcess
 {
 public:
-  using field_type       = Field<      Real>;
-  using const_field_type = Field<const Real>;
-
   using CldFractionFunc = cld_fraction::CldFractionFunctions<Real, DefaultDevice>;
   using Spack           = CldFractionFunc::Spack;
   using Smask           = CldFractionFunc::Smask;
@@ -50,8 +47,8 @@ public:
 protected:
 
   // The three main overrides for the subcomponent
-  void initialize_impl (const util::TimeStamp& t0);
-  void run_impl        (const Real dt);
+  void initialize_impl (const RunType run_type);
+  void run_impl        (const int dt);
   void finalize_impl   ();
 
   // Keep track of field dimensions and the iteration count

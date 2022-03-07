@@ -22,6 +22,9 @@ _TESTS = {
             "ERS.f19_g16.I1850CNECACTCBC.elm-eca",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-force_netcdf_pio",
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
+            "SMS_Ld20.f45_f45.IELMFATES.elm-fates_rd",
+            "SMS_Ld20.f45_f45.IELMFATES.elm-fates_eca",
+            "SMS_Ld30.f45_f45.IELMFATES.elm-fates_satphen",
             "ERS.f19_g16.I1850ELM.elm-betr",
             "ERS.f19_g16.I1850ELM.elm-vst",
             "ERS.f09_g16.I1850GSWCNPRDCTCBC.elm-vstrd",
@@ -39,19 +42,22 @@ _TESTS = {
             "ERS.r05_r05.RMOSGPCC.mosart-gpcc_1972",
             "ERS.MOS_USRDAT.RMOSGPCC.mosart-mos_usrdat",
             "SMS.MOS_USRDAT.RMOSGPCC.mosart-unstructure",
-            "ERS.ELM_USRDAT.I1850ELM.elm-usrdat"
+            "SMS.r05_r05.IELM.elm-topounit",
+            "ERS.ELM_USRDAT.I1850ELM.elm-usrdat",
+            "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features"
             )
         },
 
     "e3sm_atm_developer" : {
         "inherit" : ("eam_theta_pg2"),
         "tests"   : (
-            "ERP_Ld3.ne4_oQU240.F2010",
+            "ERP_Ln18.ne4_oQU240.F2010",
             "SMS_Ln9.ne4_oQU240.F2010.eam-outfrq9s",
             "SMS.ne4_oQU240.F2010.eam-cosplite",
             "SMS_R_Ld5.ne4_ne4.FSCM5A97.eam-scm",
             "SMS_D_Ln5.ne4_oQU240.F2010",
-            "SMS_Ln5.ne4pg2_oQU480.F2010"
+            "SMS_Ln5.ne4pg2_oQU480.F2010",
+            "ERS.ne4_oQU240.F2010.eam-hommexx"
             )
         },
 
@@ -65,8 +71,11 @@ _TESTS = {
             "PEM_Ln5.ne4_oQU240.F2010",
             "SMS_D_Ln5.ne4_oQU240.F2010.eam-cosplite_nhtfrq5",
             "SMS_Ln1.ne4_oQU240.F2010.eam-chem_pp",
+            "SMS_Ln5.ne30pg2_EC30to60E2r2.BGCEXP_LNDATM_CNORDCTC_20TR",
+            "SMS_Ln5.ne30pg2_EC30to60E2r2.BGCEXP_LNDATM_CNORDCTC_1850",
             "SMS_D_Ln5.ne4_oQU240.F2010.eam-clubb_sp",
             "ERS_Ld5.ne4_oQU240.F2010.eam-rrtmgp",
+            "ERS_Ld5.ne4_oQU240.F2010.eam-rrtmgpxx",
             "REP_Ln5.ne4_oQU240.F2010",
             "SMS_Ld9.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2_mass",
             )
@@ -90,7 +99,7 @@ _TESTS = {
     #atmopheric tests for hi-res
     "e3sm_atm_hi_res" : {
         "time" : "01:30:00",
-        "tests" : "SMS.ne120_ne120.F2010"
+        "tests" : "SMS.ne120pg2_r0125_oRRS18to6v3.F2010"
         },
 
     #atmopheric tests to mimic low res production runs
@@ -134,7 +143,6 @@ _TESTS = {
             "SMS.f09_g16_a.IGELM_MLI",
             "SMS_P12x2.ne4_oQU240.WCYCL1850NS.allactive-mach_mods",
             "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1.eam-mmf_crmout",
-            "SMS_B.ne4_ne4.F-EAM-AQP1.eam-hommexx",
             )
         },
 
@@ -161,12 +169,13 @@ _TESTS = {
             "PEM_Ln9.ne30pg2_EC30to60E2r2.WCYCL1850",
             "ERP_Ld3.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-pioroot1",
             "SMS_D_Ln5.conusx4v1_r05_oECv3.F2010",
-            "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPECACNT_1850.elm-bgcexp",
-            "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPRDCTC_1850.elm-bgcexp",
+            "SMS_Ld2.ne30pg2_r05_EC30to60E2r2.BGCEXP_CNTL_CNPECACNT_1850.elm-bgcexp",
+            "SMS_Ld2.ne30pg2_r05_EC30to60E2r2.BGCEXP_CNTL_CNPRDCTC_1850.elm-bgcexp",
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
+            "SMS_D_Ld3.T62_oQU120.CMPASO-IAF",
             "SMS_D_Ld1.ne30pg2_r05_EC30to60E2r2.WCYCL1850",
             "ERP_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_fixed_subcycle",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_VT",
+            "ERS_Ln9.ne4pg2_oQU480.F20TR-MMFXX.eam-mmf_use_VT",
             "ERS_Ln9_P96x1.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
             "ERS_Ln9.ne4pg2_ne4pg2.F-MMFOMP.eam-single_thread",
             "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
@@ -178,8 +187,8 @@ _TESTS = {
     "e3sm_extra_coverage" : {
         "inherit" : ("e3sm_atm_extra_coverage", "e3sm_ocnice_extra_coverage"),
         "tests"   : (
-            "SMS_D_Ln5.enax4v1_enax4v1.F2010",
-            "SMS_D_Ln5.twpx4v1_twpx4v1.F2010",
+            "SMS_D_Ln5.enax4v1_enax4v1.F2010-CICE",
+            "SMS_D_Ln5.twpx4v1_twpx4v1.F2010-CICE",
             )
         },
 
@@ -187,7 +196,7 @@ _TESTS = {
     "e3sm_hi_res" : {
         "inherit" : "e3sm_atm_hi_res",
         "tests"   : (
-            "SMS.ne120_oRRS18v3.WCYCL1950.eam-cosplite",
+            "SMS.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.eam-cosplite",
             "SMS.T62_oRRS30to10v3wLI.GMPAS-IAF",
             )
         },
@@ -238,6 +247,17 @@ _TESTS = {
                "SMS_Ld2.ne30_oECv3.BGCEXP_CNTL_CNPECACNT_1850S.allactive-v1bgceca_1850",
                "SMS_Ld2.ne30_oECv3.BGCEXP_BDRD_CNPECACNT_20TRS.allactive-v1bgceca",
                )
+        },
+
+    #e3sm performance-benching of production-like runs
+    "e3sm_prod_bench" : {
+        "tests"   : (
+            "PFS.ne30pg2_r05_oECv3.F2010.bench-noio",
+            "PFS.ne30pg2_r05_oECv3.F20TR.bench-noio",
+            "PFS.ne30pg2_r05_EC30to60E2r2.WCYCL1850.bench-noio",
+            "PFS.ne30pg2_EC30to60E2r2.WCYCL1850.bench-noio",
+            "PFS_PS.northamericax4v1pg2_WC14to60E2r3.WCYCL1850.bench-noio",
+            )
         },
 
     "fates" : {
@@ -295,12 +315,14 @@ _TESTS = {
         "tests"    : (
                  "SMS_Ln5.ne4pg2_oQU480.F2010.eam-thetahy_pg2",
                  "SMS_Ln5.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2",
-                 "ERS_Ld3.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2"
+                 "ERS_Ld3.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2",
+                 "SMS_Ln5.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2_ftype0",
+                 "ERS_Ld3.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2_ftype0",
                  )
     },
     "e3sm_bench_hires_g" : {
         "share"    : True,
-        "time"     : "01:00:00",
+        "time"     : "03:00:00",
         "tests"    : (
                  "PFS_P2560.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
                  "PFS_P2792.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
@@ -337,57 +359,61 @@ _TESTS = {
                  )
     },
     "e3sm_bench_hires_f" : {
-        "time"     : "01:00:00",
+        "share"    : True,
+        "time"     : "03:00:00",
         "tests"    : (
-                 "PFS_P7200.ne120_ne120.F2010.eam-bench-noio",
-                 "PFS_P8640.ne120_ne120.F2010.eam-bench-noio",
-                 "PFS_P10800.ne120_ne120.F2010.eam-bench-noio",
-                 "PFS_P14400.ne120_ne120.F2010.eam-bench-noio",
-                 "PFS_P21600.ne120_ne120.F2010.eam-bench-noio",
-                 "PFS_P43200.ne120_ne120.F2010.eam-bench-noio",
-                 "PFS_P86400.ne120_ne120.F2010.eam-bench-noio",
+                 "PFS_P7200.ne120pg2_r05_EC30to60E2r2.F2010.eam-bench-noio",
+                 "PFS_P8640.ne120pg2_r05_EC30to60E2r2.F2010.eam-bench-noio",
+                 "PFS_P10800.ne120pg2_r05_EC30to60E2r2.F2010.eam-bench-noio",
+                 "PFS_P14400.ne120pg2_r05_EC30to60E2r2.F2010.eam-bench-noio",
+                 "PFS_P21600.ne120pg2_r05_EC30to60E2r2.F2010.eam-bench-noio",
+                 "PFS_P43200.ne120pg2_r05_EC30to60E2r2.F2010.eam-bench-noio",
+                 "PFS_P86400.ne120pg2_r05_EC30to60E2r2.F2010.eam-bench-noio",
                  )
     },
     "e3sm_bench_hires" : {
+        "share"    : True,
         "inherit" : ("e3sm_bench_hires_g", "e3sm_bench_hires_f"),
-        "time"    : "01:00:00",
+        "time"    : "03:00:00",
         "tests"   : (
-                 "PFS_PS.ne120_oRRS18v3.WCYCL1950.bench-wcycl-hires",
-                 "PFS_PM.ne120_oRRS18v3.WCYCL1950.bench-wcycl-hires",
-                 "PFS_PL.ne120_oRRS18v3.WCYCL1950.bench-wcycl-hires",
+                 "PFS_PS.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.bench-wcycl-hires",
+                 "PFS_PM.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.bench-wcycl-hires",
+                 "PFS_PL.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.bench-wcycl-hires",
                  )
     },
     "e3sm_bench_lores_g" : {
         "share"    : True,
-        "time"     : "01:00:00",
+        "time"     : "03:00:00",
         "tests"    : (
-                 "PFS_P320.T62_oEC60to30v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P480.T62_oEC60to30v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P640.T62_oEC60to30v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P960.T62_oEC60to30v3.GMPAS-IAF.bench-gmpas_noio",
-                 "PFS_P1280.T62_oEC60to30v3.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P320.T62_EC30to60E2r2.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P480.T62_EC30to60E2r2.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P640.T62_EC30to60E2r2.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P960.T62_EC30to60E2r2.GMPAS-IAF.bench-gmpas_noio",
+                 "PFS_P1280.T62_EC30to60E2r2.GMPAS-IAF.bench-gmpas_noio",
                  )
     },
     "e3sm_bench_lores_f" : {
-        "time"     : "01:00:00",
+        "share"    : True,
+        "time"     : "03:00:00",
         "tests"    : (
-                 "PFS_P1350.ne30_ne30.F2010.eam-bench-noio",
-                 "PFS_P2700.ne30_ne30.F2010.eam-bench-noio",
-                 "PFS_P5400.ne30_ne30.F2010.eam-bench-noio",
+                 "PFS_P1350.ne30pg2_EC30to60E2r2.F2010.eam-bench-noio",
+                 "PFS_P2700.ne30pg2_EC30to60E2r2.F2010.eam-bench-noio",
+                 "PFS_P5400.ne30pg2_EC30to60E2r2.F2010.eam-bench-noio",
                  )
     },
     "e3sm_bench_lores" : {
+        "share"    : True,
         "inherit" : ("e3sm_bench_lores_g", "e3sm_bench_lores_f"),
-        "time"    : "01:00:00",
+        "time"    : "03:00:00",
         "tests"   : (
-                 "PFS_PS.ne30_oECv3.WCYCL1850.bench-wcycl-lores",
-                 "PFS_PM.ne30_oECv3.WCYCL1850.bench-wcycl-lores",
-                 "PFS_PL.ne30_oECv3.WCYCL1850.bench-wcycl-lores",
+                 "PFS_PS.ne30pg2_EC30to60E2r2.WCYCL1850.bench-wcycl-lores",
+                 "PFS_PM.ne30pg2_EC30to60E2r2.WCYCL1850.bench-wcycl-lores",
+                 "PFS_PL.ne30pg2_EC30to60E2r2.WCYCL1850.bench-wcycl-lores",
                  )
     },
     "e3sm_bench_all" : {
         "inherit" : ("e3sm_bench_hires", "e3sm_bench_lores"),
-        "time"    : "01:00:00",
+        "time"    : "03:00:00",
     },
 
     "e3sm_scream" : {
@@ -405,6 +431,15 @@ _TESTS = {
             "PEM.ne4pg2_ne4pg2.F2010-SCREAM-LR",
             "SMS_R_Ln10.ne4_ne4.FDPSCREAMA97",
             "ERS_R_Ln10.ne4_ne4.FDPSCREAMA97",
+            "ERP_R_Ln10.ne4_ne4.FDPSCREAMA97",
+            )
+    },
+
+    "e3sm_scream_v1" : {
+        "time"  : "03:00:00",
+        "tests" : (
+            "SMS_D_Ln2_P24x1.ne4_ne4.F2000SCREAMv1.scream-30min_ts",
+            "SMS_D_Ln2_P24x1.ne4_ne4.F2000-SCREAMv1-AQP1.scream-30min_ts",
             )
     },
 

@@ -127,7 +127,7 @@ void scream_setup_surface_coupling (
     const char*& x2a_names, const int*& x2a_indices, double*& cpl_x2a_ptr, const int*& vec_comp_x2a,
     const int& num_cpl_imports, const int& num_scream_imports,
     const char*& a2x_names, const int*& a2x_indices, double*& cpl_a2x_ptr, const int*& vec_comp_a2x,
-    const int& num_cpl_exports)
+    const bool*& can_be_exported_during_init, const int& num_cpl_exports)
 {
   fpe_guard_wrapper([&](){
     // Fortran gives a 1d array of 32char strings. So let's memcpy the input char
@@ -150,10 +150,14 @@ void scream_setup_surface_coupling (
       sc->register_import(names_in[i],x2a_indices[i]-1,vec_comp_x2a[i]);
     }
     for (int i=0; i<num_cpl_exports; ++i) {
-      sc->register_export(names_out[i],a2x_indices[i]-1,vec_comp_a2x[i]);
+      sc->register_export(names_out[i],a2x_indices[i]-1,vec_comp_a2x[i],can_be_exported_during_init[i]);
     }
 
     sc->registration_ends(cpl_x2a_ptr, cpl_a2x_ptr);
+
+    // After registration we need to export all fields (except those that require scream computations)
+    // as other models will need these values.
+    sc->do_export(true);
   });
 }
 
@@ -171,11 +175,17 @@ void scream_init_atm (const int& start_ymd,
     auto& atm_comm = ad.get_comm();
 
     // Recall that e3sm uses the int YYYYMMDD to store a date
-    if (atm_comm.am_i_root()) std::cout << "start_ymd: " << start_ymd << "\n";
-    const int dd = start_ymd % 100;
-    const int mm = (start_ymd / 100) % 100;
-    const int yy = start_ymd / 10000;
-    util::TimeStamp t0 (yy,mm,dd,start_tod);
+    if (atm_comm.am_i_root()) {
+      std::cout << "start_ymd: " << start_ymd << "\n";
+      std::cout << "start_tod: " << start_tod << "\n";
+    }
+    const int yy  = start_ymd / 10000;
+    const int mm  = (start_ymd / 100) % 100;
+    const int dd  = start_ymd % 100;
+    const int hr  =  start_tod / 3600;
+    const int min = (start_tod % 3600) / 60;
+    const int sec = (start_tod % 3600) % 60;
+    util::TimeStamp t0 (yy,mm,dd,hr,min,sec);
 
     // Init and run (to finalize, wait till checks are completed,
     // or you'll clear the field managers!)

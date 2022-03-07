@@ -12,48 +12,57 @@ KOKKOS_FUNCTION
 void Functions<S,D>
 ::ice_deposition_sublimation(
   const Spack& qi_incld, const Spack& ni_incld, const Spack& T_atm,   const Spack& qv_sat_l,
-  const Spack& qv_sat_i,         const Spack& epsi,        const Spack& abi, const Spack& qv,
+  const Spack& qv_sat_i,         const Spack& epsi,        const Spack& abi, const Spack& qv, const Scalar& inv_dt,
   Spack& qv2qi_vapdep_tend, Spack& qi2qv_sublim_tend, Spack& ni_sublim_tend, Spack& qc2qi_berg_tend,
   const Smask& context)
 {
   constexpr Scalar QSMALL   = C::QSMALL;
   constexpr Scalar T_zerodegc = C::T_zerodegc;
-  const auto oabi           = 1 / abi;
 
+  Spack qi_tend;   //temporary var for mass tend before splitting into sublim or depos
+
+  //INITIALIZE EVERYTHING TO 0:
+  qc2qi_berg_tend=0;
+  qv2qi_vapdep_tend=0;
+  qi2qv_sublim_tend=0;
+  ni_sublim_tend=0;
+
+  //CAN'T HAVE DEPOSITION/SUBLIMATION IF NO ICE MASS
   const auto qi_incld_not_small = qi_incld >= QSMALL && context;
-  const auto qi_incld_small     = qi_incld < QSMALL  && context;
-
-  //Compute deposition/sublimation
-  qv2qi_vapdep_tend.set(qi_incld_not_small,epsi * oabi * (qv - qv_sat_i));
-
-  //Split into deposition or sublimation.
-  //if "t" is greater than 0 degree celcius and qv2qi_vapdep_tend is positive
-  const auto t_gt_T_zerodegc_pos_qv2qi_vapdep_tend = (T_atm < T_zerodegc && qv2qi_vapdep_tend > 0);
-
-  qi2qv_sublim_tend.set(qi_incld_not_small && t_gt_T_zerodegc_pos_qv2qi_vapdep_tend, 0);
-
-  //make qi2qv_sublim_tend positive for consistency with other evap/sub processes
-  qi2qv_sublim_tend.set(qi_incld_not_small && !t_gt_T_zerodegc_pos_qv2qi_vapdep_tend, -min(qv2qi_vapdep_tend,0));
-  qv2qi_vapdep_tend.set(qi_incld_not_small && !t_gt_T_zerodegc_pos_qv2qi_vapdep_tend, 0);
-
-  //sublimation occurs @ any T. Not so for berg.
-  const auto t_lt_T_zerodegc = T_atm < T_zerodegc;
-
-  //Compute bergeron rate assuming cloud for whole step.
-  qc2qi_berg_tend.set(qi_incld_not_small && t_lt_T_zerodegc, max(epsi*oabi*(qv_sat_l - qv_sat_i), 0));
-  qc2qi_berg_tend.set(qi_incld_not_small && !t_lt_T_zerodegc, 0);
 
   if (qi_incld_not_small.any()) {
-    ni_sublim_tend.set(qi_incld_not_small, qi2qv_sublim_tend*(ni_incld/qi_incld));
-  }
+  
+    //COMPUTE NET MASS TENDENCY: USING MIN IN THE LINE BELOW TO PREVENT SUBLIM OR DEPOS
+    //FROM PUSHING QV BEYOND ICE SAT WITHIN THE GIVEN TIMESTEP. APPLYING MIN HERE IS
+    //EQUIVALENT TO LIMITING THE TENDENCY LATER TO ENSURE END-OF-STEP QV ISN'T
+    //INAPPROPRIATELY SUPER OR SUBSATURATED.
+    qi_tend.set(qi_incld_not_small,min(epsi/abi,inv_dt) * (qv - qv_sat_i));
 
-  //if qi_incld is small (i.e. !qi_incld_not_small is true)
-  qc2qi_berg_tend.set(qi_incld_small, 0);
-  qv2qi_vapdep_tend.set (qi_incld_small, 0);
-  qi2qv_sublim_tend.set (qi_incld_small, 0);
-  ni_sublim_tend.set (qi_incld_small, 0);
+    //SUBLIMATE WHERE qi_tend<0. MAKE POSITIVE TO MATCH CONVENTION
+    const auto neg_qi_tend = (qi_tend < 0 );
+    qi2qv_sublim_tend.set(qi_incld_not_small && neg_qi_tend, -qi_tend);
+    ni_sublim_tend.set(qi_incld_not_small && neg_qi_tend, qi2qv_sublim_tend*(ni_incld/qi_incld));
+
+    //DEPOSITION (FROM VAPOR OR LIQ) ONLY OCCURS BELOW FREEZING:
+    const auto T_lt_frz = (T_atm < T_zerodegc);
+
+    //BERGERON OCCURS WHERE LIQUID IS PRESENT AND DEPOSITION FROM VAPOR OCCURS WHERE IT ISN'T.
+    //IF ALL LIQUID IS CONSUMED PARTWAY THROUGH A STEP, BERGERON SHOULD BE ACTIVE FOR THE
+    //FRACTION OF THE STEP WHEN LIQUID IS PRESENT AND DEPOSITION FROM VAPOR SHOULD BE ACTIVE FOR
+    //THE REST OF THE STEP. THE FRACTION OF THE STEP WITH LIQUID ISN'T KNOWN UNTIL THE 'CONSERVATION
+    //CHECKS' AT THE END OF THE STEP, SO WE COMPUTE BERGERON AND VAPOR DEPOSITION HERE ASSUMING
+    //LIQUID IS OR ISN'T PRESENT FOR THE WHOLE STEP (RESPECTIVELY). 
+    
+    //VAPOR DEPOSITION
+    qv2qi_vapdep_tend.set(qi_incld_not_small && T_lt_frz && !neg_qi_tend, qi_tend);
+    
+    //BERGERON: NOTE THAT AS FORMULATED, BERG DOESN'T HAVE ANYTHING TO DO WITH QV, SO CAN'T
+    //PUSH IT BEYOND SATURATION. THUS, NOT LIMITING WITH INV_DT HERE. 
+    qc2qi_berg_tend.set(qi_incld_not_small && T_lt_frz, max(epsi/abi*(qv_sat_l - qv_sat_i), 0));
+    
+  } //end if at least 1 qi is greater than qmall
+  
 }
-
 } // namespace p3
 } // namespace scream
 

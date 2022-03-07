@@ -79,6 +79,8 @@ OR
         help="Provide machine name. This is *always* required")
 
     parser.add_argument("--no-tests", action="store_true", help="Only build baselines, skip testing phase")
+    parser.add_argument("--config-only", action="store_true",
+            help="In the testing phase, only run config step, skip build and tests")
 
     parser.add_argument("-k", "--keep-tree", action="store_true",
         help="Allow to keep the current work tree when testing against HEAD (only valid with `-b HEAD`)")
@@ -121,6 +123,12 @@ OR
 
     parser.add_argument("--ctest-parallel-level", action="store", type=int, default=0,
         help="Force to use this value for CTEST_PARALLEL_LEVEL. If not provided, use default for given machine.")
+
+    parser.add_argument("-x", "--extra-verbose", action="store_true",
+                        help="Have ctest run in extra-verbose mode, which should print full output from all tests")
+
+    parser.add_argument("--limit-test-regex",
+                        help="Limit ctest to running only tests that match this regex")
 
     return parser.parse_args(args[1:])
 

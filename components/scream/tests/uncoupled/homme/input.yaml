@@ -3,16 +3,15 @@
 Debug:
   Atmosphere DAG Verbosity Level: 5
 
+Time Stepping:
+  Time Step: ${ATM_TIME_STEP}
+  Start Time: [12, 30, 00]      # Hours, Minutes, Seconds
+  Start Date: [2021, 10, 12]    # Year, Month, Day
+  Number of Steps: ${NUM_STEPS}
+
 Initial Conditions:
   Physics GLL:
     Filename: homme_standalone_ne4np4.nc
-    # Set X_prev = X
-    T_mid_prev: T_mid
-    horiz_winds_prev: horiz_winds
-    w_int: 0.0 # Start from zero vert velocity
-    w_int_prev: 0.0
-  Dynamics:
-    tracers: tracers, Physics GLL
 
 Atmosphere Processes:
   Number of Entries: 1
@@ -24,4 +23,8 @@ Grids Manager:
   Reference Grid: Physics GLL
   Dynamics Driven:
     Dynamics Namelist File Name: namelist.nl
+
+# The parameters for I/O control
+Scorpio:
+  Output YAML Files: ["homme_standalone_output.yaml"]
 ...

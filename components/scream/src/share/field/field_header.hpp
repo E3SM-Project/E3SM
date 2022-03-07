@@ -84,7 +84,7 @@ protected:
   friend std::shared_ptr<FieldHeader>
   create_subfield_header (const FieldIdentifier&,
                           std::shared_ptr<FieldHeader>,
-                          const int, const int);
+                          const int, const int, const bool);
 
   // Static information about the field: name, rank, tags
   identifier_type                 m_identifier;
@@ -114,7 +114,7 @@ create_header(const Args&... args) {
 std::shared_ptr<FieldHeader>
 create_subfield_header (const FieldIdentifier& id,
                         std::shared_ptr<FieldHeader> parent,
-                        const int idim, const int k);
+                        const int idim, const int k, const bool dynamic);
 
 } // namespace scream
 

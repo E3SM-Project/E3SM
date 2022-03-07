@@ -4,19 +4,26 @@ set (E3SM_EXTERNALS_DIR ${CMAKE_CURRENT_LIST_DIR}/../../../../externals CACHE IN
 
 set (SCREAM_TPLS_MODULE_DIR ${CMAKE_CURRENT_LIST_DIR} CACHE INTERNAL "")
 
-macro (CreateScorpioTarget CREATE_FLIB)
+macro (CreateScorpioTargets)
 
-  # If we didn't already parsed this script, proceed
-  if (NOT TARGET pioc)
+  if (SCREAM_CIME_BUILD)
+    # For CIME builds, we simply wrap the already built pioc/piof libs into a cmake target
+    if (NOT DEFINED INSTALL_SHAREDPATH)
+      message (FATAL_ERROR "Error! The cmake variable 'INSTALL_SHAREDPATH' is not defined.")
+    endif ()
 
-    if (CIME_BUILD)
-      # For CIME builds, we simply wrap the already built pioc/piof libs into a cmake target
-      if (NOT DEFINED INSTALL_SHAREDPATH)
-        message (FATAL_ERROR "Error! The cmake variable 'INSTALL_SHAREDPATH' is not defined.")
-      endif ()
+    # If we already parsed this script, then pioc/piof are already targets
+    if (NOT TARGET pioc)
+      if (TARGET piof)
+        message (FATAL_ERROR "Something is off: pioc was not yet imported but piof was.")
+      endif()
 
       set (SCORPIO_LIB_DIR ${INSTALL_SHAREDPATH}/lib)
       set (SCORPIO_INC_DIR ${INSTALL_SHAREDPATH}/include)
+
+      ######################
+      #        PIOc        #
+      ######################
 
       # Look for pioc in INSTALL_SHAREDPATH/lib
       find_library(SCORPIO_C_LIB pioc REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
@@ -26,6 +33,10 @@ macro (CreateScorpioTarget CREATE_FLIB)
       set_target_properties(pioc PROPERTIES
                 IMPORTED_LOCATION "${SCORPIO_C_LIB}"
                 INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_SHAREDPATH}/include)
+
+      ######################
+      #  PIOc dependencies #
+      ######################
 
       # Look for pioc deps, and attach them to the pioc target, so that cmake will
       # propagate them to any downstream target linking against pioc
@@ -38,31 +49,37 @@ macro (CreateScorpioTarget CREATE_FLIB)
         target_link_libraries(pioc INTERFACE "${pnetcdf_lib}")
       endif ()
 
-      # If f lib is requested (and we didn't already parsed this script), proceed
-      if (CREATE_FLIB AND NOT TARGET piof)
-        # Look for piof lib in INSTALL_SHAREDPATH/lib
-        find_library(SCORPIO_F_LIB piof REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
+      ######################
+      #        PIOf        #
+      ######################
 
-        # Create the imported library that scream targets can link to
-        add_library(piof UNKNOWN IMPORTED GLOBAL)
-        set_target_properties(piof PROPERTIES
-                IMPORTED_LOCATION "${SCORPIO_F_LIB}"
-                INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_SHAREDPATH}/include)
-        # Link pioc and netcdf-fortran, so cmake will propagate them to any downstream
-        # target linking against piof
-        target_link_libraries(piof INTERFACE "${netcdf_f_lib};pioc")
-      endif ()
-    else ()
-      # Not a CIME build. Add scorpio as a subdir
-      add_subdirectory (${E3SM_EXTERNALS_DIR}/scorpio ${CMAKE_BINARY_DIR}/externals/scorpio)
-      EkatDisableAllWarning(pioc)
-      EkatDisableAllWarning(gptl)
-      # target piof is not always created by scorpio depending on CMake settings
-      # if it is created, we don't want to see warnings from it when building SCREAM
-      if (TARGET piof)
-        EkatDisableAllWarning(piof)
-      endif()
+      # Look for piof lib in INSTALL_SHAREDPATH/lib
+      find_library(SCORPIO_F_LIB piof REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
+
+      # Create the imported library that scream targets can link to
+      add_library(piof UNKNOWN IMPORTED GLOBAL)
+      set_target_properties(piof PROPERTIES
+              IMPORTED_LOCATION "${SCORPIO_F_LIB}"
+              INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_SHAREDPATH}/include)
+      # Link pioc and netcdf-fortran, so cmake will propagate them to any downstream
+      # target linking against piof
+      target_link_libraries(piof INTERFACE "${netcdf_f_lib};pioc")
+    endif ()
+  elseif (NOT TARGET pioc)
+    # Not a CIME build. We'll add scorpio as a subdir
+    if (TARGET piof)
+      message (FATAL_ERROR "Something is off: pioc ws not yet created but piof was.")
     endif()
-  endif ()
 
+    # We don't need (yet) SCORPIO tools
+    option (PIO_ENABLE_TOOLS "Enable SCORPIO tools" OFF)
+
+    # This is the default, but just in case scorpio changes it
+    option (PIO_ENABLE_FORTRAN "Enable the Fortran library builds" ON)
+
+    add_subdirectory (${E3SM_EXTERNALS_DIR}/scorpio ${CMAKE_BINARY_DIR}/externals/scorpio)
+    EkatDisableAllWarning(pioc)
+    EkatDisableAllWarning(piof)
+    EkatDisableAllWarning(gptl)
+  endif ()
 endmacro()

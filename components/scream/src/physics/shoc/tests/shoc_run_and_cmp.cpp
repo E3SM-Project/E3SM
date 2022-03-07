@@ -254,7 +254,7 @@ int main (int argc, char** argv) {
   }
 
   bool generate = false, use_fortran = false;
-  scream::Real tol = 0;
+  scream::Real tol = SCREAM_BFB_TESTING ? 0 : std::numeric_limits<Real>::infinity();
   Int nsteps = 10;
   Int dt = 150;
   Int ncol = 8;
