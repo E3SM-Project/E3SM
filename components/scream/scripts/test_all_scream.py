@@ -236,18 +236,11 @@ class TestAllScream(object):
         expect (not self._baseline_dir or self._work_dir != self._baseline_dir,
                 "Error! For your safety, do NOT use '{}' to store baselines. Move them to a different directory (even a subdirectory if that works).".format(self._work_dir))
 
-        # If no baseline ref/dir was provided, try to figure out one based on other options
+        # If no baseline ref/dir was provided, use default master baseline dir for this machine
+        # NOTE: if user specifies baseline ref, baseline dir will be set later to a path within work dir
         if self._baseline_dir is None and self._baseline_ref is None:
-            expect (self._integration_test or self._keep_tree,
-                    "Error! If you don't provide a baseline dir or ref, either provide -i or -k flag."
-                    "    -i will do an integration test (setting baseline dir to AUTO"
-                    "    -k will do a test against HEAD")
-
-            # Figure out how to get baselines
-            if self._integration_test:
-                self._baseline_dir = "AUTO"
-            else:
-                self._baseline_ref = "HEAD"
+            self._baseline_dir = "AUTO"
+            print ("No '--baseline-dir XYZ' nor '-b XYZ' provided. Testing against default baselines dir for this machine.")
 
         # If -k was used, make sure it's allowed
         if self._keep_tree:
@@ -258,6 +251,11 @@ class TestAllScream(object):
             if self._baseline_dir is None:
                 # Make sure the baseline ref is HEAD
                 expect(self._baseline_ref == "HEAD",
+                       "The option --keep-tree is only available when testing against pre-built baselines "
+                       "(--baseline-dir) or HEAD (-b HEAD)")
+            else:
+                # Make sure the baseline ref is unset (or HEAD)
+                expect(self._baseline_dir is None or self._baseline_ref == "HEAD",
                        "The option --keep-tree is only available when testing against pre-built baselines "
                        "(--baseline-dir) or HEAD (-b HEAD)")
         else:
@@ -286,6 +284,9 @@ class TestAllScream(object):
 
         else:
             if self._baseline_dir == "AUTO":
+                expect (self._baseline_ref is None or self._baseline_ref == 'origin/master',
+                        "Do not specify `-b XYZ` when using `--baseline-dir AUTO`. The AUTO baseline dir should be used for the master baselines only.\n"
+                        "       `-b XYZ` needs to probably build baselines for ref XYZ. However, no baselines will be built if the dir already contains baselines.\n")
                 # We treat the "AUTO" string as a request for automatic baseline dir.
                 auto_dir = get_mach_baseline_root_dir(self._machine)
                 self._baseline_dir = Path(auto_dir) if auto_dir else default_baselines_root_dir
