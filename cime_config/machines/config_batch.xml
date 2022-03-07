@@ -544,6 +544,12 @@
      </queues>
    </batch_system>
 
+   <batch_system MACH="weaver" type="lsf" >
+     <queues>
+       <queue walltimemax="02:00" default="true">rhel7W</queue>
+     </queues>
+   </batch_system>
+
    <batch_system MACH="snl-blake" type="slurm" >
      <queues>
        <queue walltimemax="02:00" default="true">blake</queue>
