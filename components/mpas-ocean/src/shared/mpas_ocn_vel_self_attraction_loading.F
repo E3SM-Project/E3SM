@@ -365,15 +365,14 @@ contains
         do m = 0,nOrder
             do n = m,nOrder
                 l = SHOrderDegreeToIndex(n,m)
-                SnmRe_local(l) = 0.0_RKIND
-                SnmIm_local(l) = 0.0_RKIND
-                SnmRe(l) = 0.0_RKIND
-                SnmIm(l) = 0.0_RKIND
                 if (config_parallel_self_attraction_loading_bfb) then
-                  do iCell = 1,nCellsAll
+                  do iCell = 1,nCellsOwned
                       SnmRe_local_reproSum(iCell,l) = 0.0_RKIND 
                       SnmIm_local_reproSum(iCell,l) = 0.0_RKIND
                    enddo
+                else
+                  SnmRe_local(l) = 0.0_RKIND
+                  SnmIm_local(l) = 0.0_RKIND
                 endif
             enddo
         enddo
