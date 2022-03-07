@@ -22,6 +22,8 @@ AtmosphereInput (const ekat::Comm& comm,
   // get called. This allows users to read global scalar values from
   // an nc file, by easily creating an AtmosphereInput on the fly.
   scorpio::register_file(m_filename,scorpio::Read);
+
+  // TODO: check that comm is compatible with the pio subsystem comm?
 }
 
 AtmosphereInput::

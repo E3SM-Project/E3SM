@@ -46,7 +46,7 @@ set (HOMME_TEST_NUTOP 2.5e5)
 
 # Testcase settings
 set (HOMME_TEST_MOISTURE notdry)
-set (HOMME_THETA_HY_MODE true)
+set (HOMME_THETA_HY_MODE .true.)
 
 # Vert coord settings
 set (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)

@@ -10,6 +10,7 @@ Atmosphere Driver:
       Enable Output Fields Checks: false
       Enable Input Fields Checks: false
       Grid: Dynamics
+      Moisture: moist
     Process 1:
       Process Name: SHOC
       Enable Output Fields Checks: false

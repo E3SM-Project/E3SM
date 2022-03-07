@@ -17,6 +17,8 @@ Atmosphere Processes:
   Number of Entries: 1
   Process 0:
     Process Name: Dynamics
+    Vertical Coordinate Filename: homme_standalone_ne4np4.nc
+    Moisture: moist
 
 Grids Manager:
   Type: Dynamics Driven
