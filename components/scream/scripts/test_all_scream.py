@@ -236,18 +236,11 @@ class TestAllScream(object):
         expect (not self._baseline_dir or self._work_dir != self._baseline_dir,
                 "Error! For your safety, do NOT use '{}' to store baselines. Move them to a different directory (even a subdirectory if that works).".format(self._work_dir))
 
-        # If no baseline ref/dir was provided, try to figure out one based on other options
+        # If no baseline ref/dir was provided, use default master baseline dir for this machine
+        # NOTE: if user specifies baseline ref, baseline dir will be set later to a path within work dir
         if self._baseline_dir is None and self._baseline_ref is None:
-            expect (self._integration_test or self._keep_tree,
-                    "Error! If you don't provide a baseline dir or ref, either provide -i or -k flag."
-                    "    -i will do an integration test (setting baseline dir to AUTO"
-                    "    -k will do a test against HEAD")
-
-            # Figure out how to get baselines
-            if self._integration_test:
-                self._baseline_dir = "AUTO"
-            else:
-                self._baseline_ref = "HEAD"
+            self._baseline_dir = "AUTO"
+            print ("No '--baseline-dir XYZ' nor '-b XYZ' provided. Testing against default baselines dir for this machine.")
 
         # If -k was used, make sure it's allowed
         if self._keep_tree:
