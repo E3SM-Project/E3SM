@@ -253,6 +253,11 @@ class TestAllScream(object):
                 expect(self._baseline_ref == "HEAD",
                        "The option --keep-tree is only available when testing against pre-built baselines "
                        "(--baseline-dir) or HEAD (-b HEAD)")
+            else:
+                # Make sure the baseline ref is unset (or HEAD)
+                expect(self._baseline_dir is None or self._baseline_ref == "HEAD",
+                       "The option --keep-tree is only available when testing against pre-built baselines "
+                       "(--baseline-dir) or HEAD (-b HEAD)")
         else:
             expect(self._dry_run or is_repo_clean(),
                    "Repo must be clean before running. If testing against HEAD or pre-built baselines, "
@@ -279,6 +284,9 @@ class TestAllScream(object):
 
         else:
             if self._baseline_dir == "AUTO":
+                expect (self._baseline_ref is None or self._baseline_ref == 'origin/master',
+                        "Do not specify `-b XYZ` when using `--baseline-dir AUTO`. The AUTO baseline dir should be used for the master baselines only.\n"
+                        "       `-b XYZ` needs to probably build baselines for ref XYZ. However, no baselines will be built if the dir already contains baselines.\n")
                 # We treat the "AUTO" string as a request for automatic baseline dir.
                 auto_dir = get_mach_baseline_root_dir(self._machine)
                 self._baseline_dir = Path(auto_dir) if auto_dir else default_baselines_root_dir
