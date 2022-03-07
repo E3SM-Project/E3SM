@@ -3,7 +3,7 @@
 #endif
 
 module homme_driver_mod
-  use iso_c_binding, only: c_ptr, c_f_pointer, c_int, c_double, c_bool, C_NULL_CHAR
+  use iso_c_binding, only: c_ptr, c_int, c_double, c_bool, C_NULL_CHAR
 
   use parallel_mod,  only: abortmp
   use perf_mod,      only: t_initf, t_finalizef, t_prf, t_startf, t_stopf
@@ -12,6 +12,7 @@ module homme_driver_mod
   private 
 
   public :: prim_init_data_structures_f90
+  public :: prim_set_hvcoords_f90
   public :: prim_init_model_f90
   public :: prim_run_f90
   public :: prim_finalize_f90
@@ -25,15 +26,8 @@ contains
     use prim_cxx_driver_base, only: setup_element_pointers
     use derivative_mod_base,  only: derivinit
     use time_mod,             only: TimeLevel_init
-    use hybvcoord_mod,        only: hvcoord_init
-    use hybrid_mod,           only: hybrid_create
-    use control_mod,          only: vfile_mid, vfile_int
     use homme_context_mod,    only: is_geometry_inited, is_data_structures_inited, &
-                                    par, elem, tl, deriv, hybrid, hvcoord, init_parallel_f90
-    !
-    ! Local(s)
-    !
-    integer :: ierr
+                                    par, elem, tl, deriv, hvcoord, init_parallel_f90
 
     if (is_data_structures_inited) then
       call abortmp ("Error! prim_init_data_structures_f90 was already called.\n")
@@ -66,14 +60,40 @@ contains
     ! Initialize the time levels
     call TimeLevel_init(tl)
 
-    ! Init hvcoord
-    hvcoord = hvcoord_init(vfile_mid, vfile_int, .true., hybrid%masterthread, ierr)
-
     ! Initialize Kokkos data structures
     call prim_create_c_data_structures (tl, hvcoord, elem(1)%mp)
 
     is_data_structures_inited = .true.
   end subroutine prim_init_data_structures_f90
+
+  subroutine prim_set_hvcoords_f90 (ps0, hyai_ptr, hybi_ptr, hyam_ptr, hybm_ptr) bind(c)
+    use iso_c_binding,     only: c_f_pointer
+    use homme_context_mod, only: hvcoord, masterproc
+    use dimensions_mod,    only: nlev, nlevp
+    use hybvcoord_mod,     only: set_layer_locations
+    !
+    ! Inputs
+    !
+    type (c_ptr), intent(in) :: hyai_ptr, hybi_ptr, hyam_ptr, hybm_ptr
+    real(kind=c_double), intent(in) :: ps0
+    !
+    ! Locals
+    !
+    real(kind=c_double), pointer :: hyai(:), hybi(:), hyam(:), hybm(:)
+
+    call c_f_pointer (hyai_ptr, hyai, [nlevp])
+    call c_f_pointer (hybi_ptr, hybi, [nlevp])
+    call c_f_pointer (hyam_ptr, hyam, [nlev])
+    call c_f_pointer (hybm_ptr, hybm, [nlev])
+
+    hvcoord%ps0 = ps0
+    hvcoord%hyai = hyai
+    hvcoord%hybi = hybi
+    hvcoord%hyam = hyam
+    hvcoord%hybm = hybm
+
+    call set_layer_locations(hvcoord,.true.,masterproc)
+  end subroutine prim_set_hvcoords_f90
 
   subroutine prim_copy_cxx_to_f90 (copy_phis)
     use iso_c_binding,       only: c_ptr, c_loc
