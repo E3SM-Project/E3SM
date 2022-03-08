@@ -16,7 +16,7 @@ use shr_kind_mod   , only: r8 => shr_kind_r8
 use camsrfexch     , only: cam_in_t
 use co2_cycle      , only: c_i, co2_transport, co2_print_diags_timestep, &
                            co2_print_diags_monthly, co2_print_diags_total, &
-                           co2_conserv_error_tol_per_year
+                           co2_conserv_error_tol_per_year, co2_readFlux_aircraft
 use ppgrid         , only: pver, pcols, begchunk, endchunk
 use physics_types  , only: physics_state, physics_tend, physics_ptend, &
                            physics_ptend_init
@@ -303,7 +303,7 @@ contains
       real(r8) :: air_flux(pcols)           ! aircraft carbon flux
       !------------------------------------------------------------------------
 
-      if ( .not. co2_transport() ) return
+      if ( .not. co2_transport() .or. .not. co2_readFlux_aircraft ) return
 
       ! Set CO2 global index
       do m = 1, ncnst

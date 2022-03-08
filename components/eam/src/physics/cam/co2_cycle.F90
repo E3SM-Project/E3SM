@@ -46,6 +46,7 @@ TYPE(co2_data_flux_type) :: data_flux_fuel
 public c_i                           ! global index for new constituents
 public co2_readFlux_ocn              ! read co2 flux from data file 
 public co2_readFlux_fuel             ! read co2 flux from data file 
+public co2_readFlux_aircraft         ! read co2 flux from data file
 public co2_print_diags_timestep      ! print out co2 conservation diagnostics every timestep
 public co2_print_diags_monthly       ! print out co2 conservation diagnostics monthly
 public co2_print_diags_total         ! print out a co2 conservation check for the full run
