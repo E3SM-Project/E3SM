@@ -149,7 +149,8 @@ class TestAllScream(object):
                    "Bad root-dir '{}', should be: $scream_repo/components/scream".format(self._root_dir))
 
         if self._work_dir is not None:
-            expect(Path(self._work_dir).absolute().is_dir(),
+            self._work_dir = Path(self._work_dir).absolute()
+            expect(self._work_dir.is_dir(),
                    "Error! Work directory '{}' does not exist.".format(self._work_dir))
         else:
             self._work_dir = self._root_dir.absolute().joinpath("ctest-build")
