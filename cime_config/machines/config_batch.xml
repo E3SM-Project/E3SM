@@ -544,6 +544,15 @@
      </queues>
    </batch_system>
 
+   <batch_system MACH="weaver" type="lsf" >
+     <submit_args>
+       <arg flag="-n" name=" $TOTALPES/$MAX_MPITASKS_PER_NODE"/>
+     </submit_args>
+     <queues>
+       <queue walltimemax="02:00" default="true">rhel7W</queue>
+     </queues>
+   </batch_system>
+
    <batch_system MACH="snl-blake" type="slurm" >
      <queues>
        <queue walltimemax="02:00" default="true">blake</queue>
