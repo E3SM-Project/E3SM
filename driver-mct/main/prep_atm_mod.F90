@@ -280,8 +280,8 @@ contains
     type(mct_aVect), intent(inout) :: x2a_a
     !
     ! Local workspace
-    real(r8) :: fracl, fraci, fraco, fracl_nm
-    integer  :: n,ka,ki,kl,ko,kx,kof,kif,klf,klf_nm,i,i1,o1
+    real(r8) :: fracl, fraci, fraco
+    integer  :: n,ka,ki,kl,ko,kx,kof,kif,klf,i,i1,o1
     integer  :: lsize
     integer  :: index_x2a_Sf_lfrac
     integer  :: index_x2a_Sf_ifrac
@@ -504,7 +504,7 @@ contains
 
     !--- document fraction operations ---
     if (first_time) then
-       mrgstr(index_x2a_sf_lfrac) = trim(mrgstr(index_x2a_sf_lfrac))//' = fractions_a%lfrac'
+       mrgstr(index_x2a_sf_lfrac) = trim(mrgstr(index_x2a_sf_lfrac))//' = fractions_a%'//trim(fracstr)
        mrgstr(index_x2a_sf_ifrac) = trim(mrgstr(index_x2a_sf_ifrac))//' = fractions_a%ifrac'
        mrgstr(index_x2a_sf_ofrac) = trim(mrgstr(index_x2a_sf_ofrac))//' = fractions_a%ofrac'
     endif
@@ -557,7 +557,7 @@ contains
        if (first_time) then
           if (lindx(ka) > 0) then
              if (lmerge(ka)) then
-                mrgstr(ka) = trim(mrgstr(ka))//' + lfrac*l2x%'//trim(field_lnd(lindx(ka)))
+                mrgstr(ka) = trim(mrgstr(ka))//' + '//trim(fracstr)//'*l2x%'//trim(field_lnd(lindx(ka)))
              else
                 mrgstr(ka) = trim(mrgstr(ka))//' = '//trim(fracstr)//'*l2x%'//trim(field_lnd(lindx(ka)))
              end if
