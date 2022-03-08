@@ -69,6 +69,9 @@ contains
     str_len = index(nl_fname_ptr, C_NULL_CHAR) - 1
     nl_fname = trim(nl_fname_ptr(1:str_len))
 
+    ! This simply gets rid of a valgrind error in readnl
+    nsplit = -1
+
     call readnl(par,nl_fname)
     
     is_params_inited = .true.
