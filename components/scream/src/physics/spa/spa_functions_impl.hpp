@@ -210,9 +210,8 @@ void SPAFunctions<S,D>
   // This is done using the EKAT linear interpolation routine, see /externals/ekat/util/ekat_lin_interp.hpp
   // for more details. 
   using LIV = ekat::LinInterp<Real,Spack::n>;
-  Real minthreshold = 0.0;  // Hard-code a minimum value for aerosol concentration to zero.
 
-  LIV VertInterp(ncols_atm,pressure_state.nlevs,nlevs_atm,minthreshold);
+  LIV VertInterp(ncols_atm,pressure_state.nlevs,nlevs_atm);
   /* Parallel loop strategy:
    * 1. Loop over all simulation columns (i index)
    * 2. Where applicable, loop over all aerosol bands (n index)
