@@ -255,7 +255,7 @@ class TestAllScream(object):
                        "(--baseline-dir) or HEAD (-b HEAD)")
             else:
                 # Make sure the baseline ref is unset (or HEAD)
-                expect(self._baseline_dir is None or self._baseline_ref == "HEAD",
+                expect(self._baseline_ref is None or self._baseline_ref == "HEAD",
                        "The option --keep-tree is only available when testing against pre-built baselines "
                        "(--baseline-dir) or HEAD (-b HEAD)")
         else:
