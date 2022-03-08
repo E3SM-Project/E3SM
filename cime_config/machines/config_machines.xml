@@ -1465,12 +1465,12 @@
         <command name="load">intel-mkl/2020.4.304-g2qaxzf</command>
       </modules>
       <modules compiler="intel" mpilib="openmpi">
-        <command name="load">openmpi/4.1.1-qiqkjbu</command>
-        <command name="load">hdf5/1.8.16-35xugty</command>
-        <command name="load">netcdf-c/4.4.1-2vngykq</command>
-        <command name="load">netcdf-cxx/4.2-gzago6i</command>
-        <command name="load">netcdf-fortran/4.4.4-2kddbib</command>
-        <command name="load">parallel-netcdf/1.11.0-go65een</command>
+        <command name="load">openmpi/4.1.2-k5epdq6</command>
+        <command name="load">hdf5/1.8.16-kyyksst</command>
+        <command name="load">netcdf-c/4.4.1-rrkbpws</command>
+        <command name="load">netcdf-cxx/4.2-2hotooj</command>
+        <command name="load">netcdf-fortran/4.4.4-znpfscr</command>
+        <command name="load">parallel-netcdf/1.11.0-c6fn7rw</command>
       </modules>
       <modules compiler="intel" mpilib="impi">
         <command name="load">intel-mpi/2019.9.304-tkzvizk</command>
@@ -1485,12 +1485,12 @@
         <command name="load">intel-mkl/2020.4.304-n3b5fye</command>
       </modules>
       <modules compiler="gnu" mpilib="openmpi">
-        <command name="load">openmpi/4.1.1-73gbwq4</command>
-        <command name="load">hdf5/1.8.16-dqjdy2d</command>
-        <command name="load">netcdf-c/4.4.1-y6dun2a</command>
-        <command name="load">netcdf-cxx/4.2-vwlvgn6</command>
-        <command name="load">netcdf-fortran/4.4.4-4lnfxki</command>
-        <command name="load">parallel-netcdf/1.11.0-3x2favk</command>
+        <command name="load">openmpi/4.1.2-zdskwit</command>
+        <command name="load">hdf5/1.8.16-oh66njw</command>
+        <command name="load">netcdf-c/4.4.1-54pwnbt</command>
+        <command name="load">netcdf-cxx/4.2-zgdnfys</command>
+        <command name="load">netcdf-fortran/4.4.4-fkyjosv</command>
+        <command name="load">parallel-netcdf/1.11.0-x6vnnuz</command>
       </modules>
       <modules compiler="gnu" mpilib="impi">
         <command name="load">intel-mpi/2019.9.304-jdih7h5</command>
