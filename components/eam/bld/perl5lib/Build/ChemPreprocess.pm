@@ -401,7 +401,7 @@ EOF
 # searches $PATH for available compiler for the preprocessor
 sub find_preproc_compiler {
     # these are the compilers the preprocessor Makefile is setup for :
-    my @compilers = qw(pgf90 pgf95 ifort gfortran g95 f90 f95 ftn);
+    my @compilers = qw(xlf95 pgf90 pgf95 ifort gfortran g95 f90 f95 ftn);
     my $path = $ENV{'PATH'};
     my @dirs = split(':',$path);
     foreach my $fc (@compilers) {
