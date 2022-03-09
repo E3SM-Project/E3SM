@@ -366,7 +366,15 @@ TEST_CASE("spa_read_data","spa")
       auto ssv = [&](const view_3d<Spack>& v, const int dof_i, const int n) -> col_type {
         return ekat::subview(ekat::scalarize(v),dof_i,n);
       };
+      check_bounds (ssv(aer_g_sw_h,dof_i,n),ssv(aer_g_sw_beg,dof_i,n));
       check_bounds (ssv(aer_ssa_sw_h,dof_i,n),ssv(aer_ssa_sw_beg,dof_i,n));
+      check_bounds (ssv(aer_tau_sw_h,dof_i,n),ssv(aer_tau_sw_beg,dof_i,n));
+    }
+    for (int n=0;n<nlwbands;n++) {
+      auto ssv = [&](const view_3d<Spack>& v, const int dof_i, const int n) -> col_type {
+        return ekat::subview(ekat::scalarize(v),dof_i,n);
+      };
+      check_bounds (ssv(aer_tau_lw_h,dof_i,n),ssv(aer_tau_lw_beg,dof_i,n));
     }
   }
  /* ====================================================================
