@@ -359,7 +359,7 @@ TEST_CASE("spa_read_data","spa")
   };
 
   for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
-    auto ssv = [&](const view_3d<Spack>& v, const int col, const int band) -> col_type {
+    auto ssv = [&](const view_3d<Spack>::HostMirror& v, const int col, const int band) -> col_type {
       return ekat::subview(ekat::scalarize(v),col,band);
     };
     const auto& ccn3_in  = ekat::subview(ekat::scalarize(ccn3_beg),dof_i);
