@@ -2,7 +2,129 @@
 
 <namelist_defaults>
 
-  <file name="scream_input" format="yaml">
+  <file name="scream_input.yaml" format="yaml">
+    <Atmosphere Driver>
+      <Atmosphere Processes>
+        <Number of Entries>6</Number of Entries>
+        <Schedule Type>Sequential</Schedule Type>
+        <Process 0>
+          <Process Name>Homme</Process Name>
+          <Enable Output Fields Checks>False</Enable Output Fields Checks>
+          <Enable Input Fields Checks>False</Enable Input Fields Checks>
+          <Grid>Dynamics</Grid>
+        <\Process 0>
+        <Process 1>
+          <Process Name>SHOC</Process Name>
+          <Enable Output Fields Checks>False</Enable Output Fields Checks>
+          <Enable Input Fields Checks>False</Enable Input Fields Checks>
+          <Grid>Physics GLL</Grid>
+        <\Process 1>
+        <Process 2>
+          <Process Name>CldFraction</Process Name>
+          <Enable Output Fields Checks>False</Enable Output Fields Checks>
+          <Enable Input Fields Checks>False</Enable Input Fields Checks>
+          <Grid>Physics GLL</Grid>
+        <\Process 2>
+        <Process 3>
+          <Process Name>SPA</Process Name>
+          <Enable Output Fields Checks>False</Enable Output Fields Checks>
+          <Enable Input Fields Checks>False</Enable Input Fields Checks>
+          <Grid>Physics GLL</Grid>
+          <SPA Remap File>none</SPA Remap File>
+          <SPA Data File>${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_scream.nc</SPA Data File>
+        <\Process 3>
+        <Process 4>
+          <Process Name>P3</Process Name>
+          <Enable Output Fields Checks>False</Enable Output Fields Checks>
+          <Enable Input Fields Checks>False</Enable Input Fields Checks>
+          <Grid>Physics GLL</Grid>
+        <\Process 4>
+        <Process 5>
+          <Process Name>RRTMGP</Process Name>
+          <Enable Output Fields Checks>False</Enable Output Fields Checks>
+          <Enable Input Fields Checks>False</Enable Input Fields Checks>
+          <Grid>Physics GLL</Grid>
+          <active_gases>h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
+          <Orbital Year>-9999</Orbital Year>
+          <Orbital Eccentricity>-9999</Orbital Eccentricity>
+          <Orbital Eccentricity COMPSET=".*SCREAM%AQUA.*">0</Orbital Eccentricity>
+          <Orbital Obliquity>-9999</Orbital Obliquity>
+          <Orbital Obliquity COMPSET=".*SCREAM%AQUA.*">0</Orbital Obliquity>
+          <Orbital MVELP>-9999</Orbital MVELP>
+          <Orbital MVELP COMPSET=".*SCREAM%AQUA.*">0</Orbital MVELP>
+        <\Process 5>
+      <\Atmosphere Processes>
+      <Time Stepping>
+        <Time Step>300</Time Step>
+        <Start Time>12, 30, 0</Start Time>
+        <Start Date>2000, 2, 1</Start Date>
+        <Number of Steps>288</Number of Steps>
+      <\Time Stepping>
+      <Grids Manager>
+        <Type>Dynamics Driven</Type>
+        <Reference Grid>Physics GLL</Reference Grid>
+        <Dynamics Driven>
+          <Dynamics Namelist File Name>./data/namelist.nl</Dynamics Namelist File Name>
+        <\Dynamics Driven>
+      <\Grids Manager>
+      <Initial Conditions>
+        <Physics GLL>
+          <Filename>${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Filename>
+          <Filename COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Filename>
+          <T_mid_prev>T_mid</T_mid_prev>
+          <horiz_winds_prev>horiz_winds</horiz_winds_prev>
+          <w_int>0.0</w_int>
+          <w_int_prev>0.0</w_int_prev>
+        <\Physics GLL>
+        <Dynamics>
+          <tracers>tracers, Physics GLL</tracers>
+        <\Dynamics>
+      <\Initial Conditions>
+      <Scorpio>
+        <Output YAML Files>data/scream_output.yaml</Output YAML Files>
+      <\Scorpio>
+    <\Atmosphere Driver>
+    <SCREAM>
+      <Start Date>${RUN_STARTDATE}</Start Date>
+      <Input Files>${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-sw-g224-2018-12-04.nc, ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-lw-g256-2018-12-04.nc, ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc, ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc, ${DIN_LOC_ROOT}/atm/scream/tables/p3_lookup_table_1.dat-v4.1.1</Input Files>
+    <\SCREAM>
+  </file>
+
+  <file name="namelist.nl" format="nml">
+    <ctl_nl>
+      <partmethod>4</partmethod>
+      <cubed_sphere_map>0</cubed_sphere_map>
+      <topology>cube</topology>
+      <u_perturb>1</u_perturb>
+      <rotate_grid>0</rotate_grid>
+      <ne>4</ne>
+      <statefreq>9999</statefreq>
+      <mesh_file>/dev/null</mesh_file>
+      <tstep>300</tstep>
+      <nu>3.4e-08</nu>
+      <nu_div>-1</nu_div>
+      <nu_p>-1</nu_p>
+      <nu_q>-1</nu_q>
+      <nu_s>-1</nu_s>
+      <nu_top>250000.0</nu_top>
+      <se_ftype>0</se_ftype>
+      <limiter_option>9</limiter_option>
+      <vert_remap_q_alg>10</vert_remap_q_alg>
+      <hypervis_scaling>3.0</hypervis_scaling>
+      <hypervis_order>2</hypervis_order>
+      <hypervis_subcycle>1</hypervis_subcycle>
+      <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
+      <theta_hydrostatic_mode>True</theta_hydrostatic_mode>
+      <theta_advect_form>1</theta_advect_form>
+      <tstep_type>5</tstep_type>
+      <dt_remap_factor>1</dt_remap_factor>
+      <dt_tracer_factor>1</dt_tracer_factor>
+      <moisture>moist</moisture>
+    </ctl_nl>
+    <vert_nl>
+      <vfile_mid>./data/scream-72m.ascii</vfile_mid>
+      <vfile_int>./data/scream-72i.ascii</vfile_int>
+    </vert_nl>
   </file>
 
 </namelist_defaults>
