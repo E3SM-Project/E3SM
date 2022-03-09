@@ -1,8 +1,11 @@
+include(EkatUtils)
+include(EkatSetCompilerFlags
+)
 # Add CUDA flags for YAKL
 set(YAKL_CXX_FLAGS "")
 if (CUDA_BUILD)
-    set(YAKL_ARCH "CUDA")
-    list(APPEND YAKL_CXX_FLAGS -DYAKL_ARCH_CUDA --expt-extended-lambda --expt-relaxed-constexpr)
+  set(YAKL_ARCH "CUDA")
+  list(APPEND YAKL_CXX_FLAGS -DYAKL_ARCH_CUDA --expt-extended-lambda --expt-relaxed-constexpr)
 endif()
 
 # RRTMGP++ requires YAKL
@@ -28,6 +31,7 @@ set(EXTERNAL_SRC
 )
 add_library(rrtmgp ${EXTERNAL_SRC})
 EkatDisableAllWarning(rrtmgp)
+SetCudaFlags(rrtmgp)
 target_link_libraries(rrtmgp PUBLIC yakl)
 target_include_directories(rrtmgp PUBLIC 
     ${SCREAM_BASE_DIR}/../../externals/YAKL
