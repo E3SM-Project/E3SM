@@ -61,9 +61,9 @@ def do_switches(k, entry, indent):
         for segment in reversed(segments):
             components = [item.strip() for item in segment.split("=>", 1)]
             if len(components) == 1:
-                print(f'{" "*indent}<item name="{k}">{components[0]}</item>')
+                print(f'{" "*indent}<{k}>{components[0]}</{k}>')
             else:
-                print(f'{" "*indent}<item name="{k}" {value}="{components[0]}">{components[1]}</item>')
+                print(f'{" "*indent}<{k} {value}="{components[0]}">{components[1]}</{k}>')
 
         m = None
 
@@ -73,7 +73,7 @@ def process_leaf(k, v, indent):
     if SWITCH_RE.match(str(v)):
         do_switches(k, v, indent)
     else:
-        print(f'{" "*indent}<item name="{k}">{v}</item>')
+        print(f'{" "*indent}<{k}>{v}</{k}>')
 
 ###############################################################################
 def process_node(node, itr, indent):
@@ -81,12 +81,12 @@ def process_node(node, itr, indent):
     for k, v in itr:
 
         if isinstance(v, dict):
-            print(f'{" "*indent}<dict name="{k}">')
+            print(f'{" "*indent}<{k}>')
             process_node(v, v.items(), indent+2)
-            print(f"{' '*indent}<\dict>")
+            print(f"{' '*indent}<\{k}>")
 
         elif isinstance(v, list):
-            print(f'{" "*indent}<list name="{k}">{", ".join([str(item) for item in v])}</list>')
+            print(f'{" "*indent}<{k}>{", ".join([str(item) for item in v])}</{k}>')
         else:
             process_leaf(k, v, indent)
 
