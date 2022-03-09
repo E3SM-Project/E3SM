@@ -253,6 +253,7 @@ TEST_CASE ("recreate_mct_coupling")
   FL scalar2d_layout{ {COL          }, {ncols          } };
   FL vector2d_layout{ {COL, CMP     }, {ncols, 2       } };
   FL scalar3d_layout{ {COL, LEV     }, {ncols,    nlevs} };
+  FL scalar3d_int_layout{ {COL, LEV     }, {ncols,    nlevs+1} };
   FL vector3d_layout{ {COL, CMP, LEV}, {ncols, 2, nlevs} };
 
   // Create import fields
@@ -281,6 +282,8 @@ TEST_CASE ("recreate_mct_coupling")
   FID sfc_flux_dif_vis_id("sfc_flux_dif_vis", scalar2d_layout, W/(m*m), grid_name);
   FID sfc_flux_sw_net_id ("sfc_flux_sw_net",  scalar2d_layout, W/(m*m), grid_name);
   FID sfc_flux_lw_dn_id  ("sfc_flux_lw_dn",   scalar2d_layout, W/(m*m), grid_name);
+  FID p_int_id           ("p_int",            scalar3d_int_layout, Pa, grid_name);
+  FID phis_id            ("phis",             scalar2d_layout, (m*m)/(s*s), grid_name);
 
   // NOTE: if you add fields above, you will have to modify these counters too.
   const int num_cpl_imports    = 30;
@@ -311,6 +314,8 @@ TEST_CASE ("recreate_mct_coupling")
   fm->register_field(FR{sfc_flux_dif_vis_id});
   fm->register_field(FR{sfc_flux_sw_net_id});
   fm->register_field(FR{sfc_flux_lw_dn_id});
+  fm->register_field(FR{p_int_id});
+  fm->register_field(FR{phis_id});
 
   fm->register_group(GR("tracers", grid_name ,Bundling::Required));
   fm->registration_ends();
@@ -337,6 +342,8 @@ TEST_CASE ("recreate_mct_coupling")
   auto sfc_flux_dif_vis_f = fm->get_field(sfc_flux_dif_vis_id);
   auto sfc_flux_sw_net_f  = fm->get_field(sfc_flux_sw_net_id);
   auto sfc_flux_lw_dn_f   = fm->get_field(sfc_flux_lw_dn_id);
+  auto p_int_f            = fm->get_field(p_int_id);
+  auto phis_f             = fm->get_field(phis_id);
 
   auto group = fm->get_field_group("tracers");
   const auto& Q_name = group.m_bundle->get_header().get_identifier().name();
@@ -363,6 +370,8 @@ TEST_CASE ("recreate_mct_coupling")
   auto sfc_flux_dif_vis_d = sfc_flux_dif_vis_f.get_view<Real*>();
   auto sfc_flux_sw_net_d  = sfc_flux_sw_net_f.get_view<Real*>();
   auto sfc_flux_lw_dn_d   = sfc_flux_lw_dn_f.get_view<Real*>();
+  auto p_int_d            = p_int_f.get_view<Real**>();
+  auto phis_d             = phis_f.get_view<Real*>();
 
   auto surf_latent_flux_h = surf_latent_flux_f.get_view<Real*,Host>();
   auto surf_sens_flux_h   = surf_sens_flux_f.get_view<Real*,Host>();
@@ -385,6 +394,8 @@ TEST_CASE ("recreate_mct_coupling")
   auto sfc_flux_dif_vis_h = sfc_flux_dif_vis_f.get_view<Real*,Host>();
   auto sfc_flux_sw_net_h  = sfc_flux_sw_net_f.get_view<Real*,Host>();
   auto sfc_flux_lw_dn_h   = sfc_flux_lw_dn_f.get_view<Real*,Host>();
+  auto p_int_h            = p_int_f.get_view<Real**,Host>();
+  auto phis_h             = phis_f.get_view<Real*,Host>();
 
   // Create SC object and set number of import/export fields
   control::SurfaceCoupling coupler(fm);
@@ -434,7 +445,7 @@ TEST_CASE ("recreate_mct_coupling")
   coupler.register_export("p_mid",           7);
   coupler.register_export("Sa_dens",         8);
   coupler.register_export("set_zero",        9);
-  coupler.register_export("set_zero",        10);
+  coupler.register_export("Sa_pslv",         10);
   coupler.register_export("set_zero",        11);
   coupler.register_export("set_zero",        12);
   coupler.register_export("set_zero",        13);
@@ -492,6 +503,8 @@ TEST_CASE ("recreate_mct_coupling")
     ekat::genRandArray(sfc_flux_dif_nir_d,engine,pdf);
     ekat::genRandArray(sfc_flux_dif_vis_d,engine,pdf);
     ekat::genRandArray(sfc_flux_sw_net_d,engine,pdf);
+    ekat::genRandArray(p_int_d,engine,pdf);
+    ekat::genRandArray(phis_d,engine,pdf);
     auto Q_size = Q.get_header().get_alloc_properties().get_num_scalars();
     ekat::genRandArray(Q.get_internal_view_data<Real,Host>(),Q_size,engine,pdf);
 
@@ -568,7 +581,6 @@ TEST_CASE ("recreate_mct_coupling")
       // These exports should be set to 0
       REQUIRE (export_raw_data[1  + icol*num_cpl_exports] == 0); // 2nd export
       REQUIRE (export_raw_data[9  + icol*num_cpl_exports] == 0); // 10th export
-      REQUIRE (export_raw_data[10 + icol*num_cpl_exports] == 0); // 11th export
       REQUIRE (export_raw_data[11 + icol*num_cpl_exports] == 0); // 12th export
       REQUIRE (export_raw_data[12 + icol*num_cpl_exports] == 0); // 13th export
       REQUIRE (export_raw_data[13 + icol*num_cpl_exports] == 0); // 14th export
