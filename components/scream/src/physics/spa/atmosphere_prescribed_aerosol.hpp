@@ -109,7 +109,6 @@ protected:
 
   // Structures to store the data used for interpolation
   SPAFunc::SPATimeState     SPATimeState;
-  SPAFunc::SPAPressureState SPAPressureState;
   SPAFunc::SPAData          SPAData_start;
   SPAFunc::SPAData          SPAData_end;
   SPAFunc::SPAHorizInterp   SPAHorizInterp;

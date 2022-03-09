@@ -73,17 +73,6 @@ struct SPAFunctions
     Real days_this_month;
   }; // SPATimeState
 
-  struct SPAPressureState {
-    SPAPressureState() = default;
-    // Number of horizontal columns and vertical levels for the data
-    Int ncols;
-    Int nlevs;
-    // Hybrid coordinate values
-    view_1d<const Spack> hyam, hybm;
-    // Current simulation pressure levels
-    view_2d<const Spack> pmid;
-  }; // SPAPressureState
-
   struct SPAData {
     SPAData() = default;
     SPAData(const int ncol_, const int nlev_, const int nswbands_, const int nlwbands_) :
@@ -92,9 +81,11 @@ struct SPAFunctions
       ,nswbands(nswbands_)
       ,nlwbands(nlwbands_)
     {
-      PS        = view_1d<Real>("",ncols);
-      CCN3      = view_2d<Spack>("",ncols,nlevs);
-      AER_G_SW  = view_3d<Spack>("",ncols,nswbands,nlevs); 
+      hyam       = view_1d<Spack>("",nlevs);
+      hybm       = view_1d<Spack>("",nlevs);
+      PS         = view_1d<Real>("",ncols);
+      CCN3       = view_2d<Spack>("",ncols,nlevs);
+      AER_G_SW   = view_3d<Spack>("",ncols,nswbands,nlevs); 
       AER_SSA_SW = view_3d<Spack>("",ncols,nswbands,nlevs); 
       AER_TAU_SW = view_3d<Spack>("",ncols,nswbands,nlevs); 
       AER_TAU_LW = view_3d<Spack>("",ncols,nlwbands,nlevs); 
@@ -104,6 +95,8 @@ struct SPAFunctions
     Int nlevs;
     Int nswbands;
     Int nlwbands;
+    // Hybrid Coordinates
+    view_1d<Spack> hyam, hybm;
     // PS unit = Pa: Surface pressure
     view_1d<Real> PS;
     // CCN3: CCN concentration at S=0.1%, units = #/cm3, dimensions = (ncol,nlev)
@@ -121,6 +114,23 @@ struct SPAFunctions
 
   struct SPAOutput {
     SPAOutput() = default;
+    SPAOutput(const int ncol_, const int nlev_, const int nswbands_, const int nlwbands_) :
+      ncols(ncol_)
+      ,nlevs(nlev_)
+      ,nswbands(nswbands_)
+      ,nlwbands(nlwbands_)
+    {
+      CCN3       = view_2d<Spack>("",ncols,nlevs);
+      AER_G_SW   = view_3d<Spack>("",ncols,nswbands,nlevs); 
+      AER_SSA_SW = view_3d<Spack>("",ncols,nswbands,nlevs); 
+      AER_TAU_SW = view_3d<Spack>("",ncols,nswbands,nlevs); 
+      AER_TAU_LW = view_3d<Spack>("",ncols,nlwbands,nlevs); 
+    }
+    // Basic spatial dimensions of the data
+    Int ncols;
+    Int nlevs;
+    Int nswbands;
+    Int nlwbands;
     // CCN3: CCN concentration at S=0.1%, units = #/cm3, dimensions = (ncol,nlev)
     view_2d<Spack> CCN3;
     // AER_G_SW - 14 bands
@@ -157,7 +167,7 @@ struct SPAFunctions
     // Number of columns and levels on source grid
     // Note, the number of columns on target grid should already be known.
     //       these are given based on the simulation grid.
-    Int source_grid_ncols, source_grid_nlevs;
+    Int source_grid_ncols;
     // 1D index of weights.  Needs decoder indexing, see below
     view_1d<Real> weights;
     // 1D index of source grid column.
@@ -170,7 +180,7 @@ struct SPAFunctions
   // SPA routines
   static void spa_main(
     const SPATimeState& time_state,
-    const SPAPressureState& pressure_state,
+    const view_2d<const Spack>& p_tgt,
     const SPAData&   data_beg,
     const SPAData&   data_end,
     const SPAOutput& data_out,

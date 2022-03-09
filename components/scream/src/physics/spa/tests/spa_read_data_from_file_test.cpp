@@ -62,7 +62,8 @@ TEST_CASE("spa_read_data","spa")
   SPAFunc::SPAHorizInterp spa_horiz_interp;
   spa_horiz_interp.m_comm = spa_comm;
   SPAFunc::get_remap_weights_from_file(spa_remap_file,ncols,min_dof,dofs_gids,spa_horiz_interp);
-  SPAFunc::SPAData spa_data(dofs_gids.size(), nlevs, nswbands, nlwbands);
+  // Recall, SPA data is padded, so we initialize with 2 more levels than the source data file.
+  SPAFunc::SPAData spa_data(dofs_gids.size(), nlevs+2, nswbands, nlwbands);
 
   // Verify that the interpolated values match the algorithm for the data and the weights.
   //       weights(i) = 1 / (2**i), weights(-1) = 1 / (2**(ncols-1)) such that sum(weights) = 1., for i=0,1,2
@@ -93,8 +94,9 @@ TEST_CASE("spa_read_data","spa")
     for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
       REQUIRE(ps_h(dof_i) == ps_func(time_index,spa_horiz_interp.source_grid_ncols));
       for (int kk=0;kk<nlevs;kk++) {
-        int kpack = kk / Spack::n;
-        int kidx  = kk % Spack::n;
+        // Recall, SPA data read from file is padded, so we need to offset the kk index for the data by 1.
+        int kpack = (kk+1) / Spack::n;
+        int kidx  = (kk+1) % Spack::n;
         REQUIRE(ccn3_h(dof_i,kpack)[kidx] == ccn3_func(time_index, kk, spa_horiz_interp.source_grid_ncols));
         for (int n=0;n<nswbands;n++) {
           REQUIRE(aer_g_sw_h(dof_i,n,kpack)[kidx]   == aer_func(time_index,n,kk,spa_horiz_interp.source_grid_ncols,0));
