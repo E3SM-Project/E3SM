@@ -73,10 +73,7 @@ ScalarT linear_interp(const ScalarT& x0, const ScalarT& x1, const ScalarS& t_nor
 // Inputs:
 //   time_state: A structure defined in spa_functions.hpp which handles
 //     the current temporal state of the simulation.
-//   pressure_state: A structure defined in spa_functions.hpp which handles
-//     the vertical pressure profile for the atmospheric simulation state, and
-//     all of the data needed to reconstruct the vertical pressure profile for
-//     the SPA data.  See hybrid coordinate (hyam,hybm) and surface pressure (PS)
+//   p_tgt: the vertical pressure profile for the atmospheric simulation state
 //   data_beg: A structure defined in spa_functions.hpp which handles the full
 //     set of SPA data for the beginning of the month.
 //   data_end: Similar to data_beg, but for SPA data for the end of the month.
@@ -214,7 +211,7 @@ void SPAFunctions<S,D>
   // for more details. 
   using LIV = ekat::LinInterp<Real,Spack::n>;
 
-  LIV VertInterp(ncols_atm,pressure_state.nlevs,nlevs_atm);
+  LIV VertInterp(ncols_tgt,nlevs_src,nlevs_tgt);
   /* Parallel loop strategy:
    * 1. Loop over all simulation columns (i index)
    * 2. Where applicable, loop over all aerosol bands (n index)

@@ -20,8 +20,6 @@ using namespace scream;
 using namespace spa;
 
 template <typename S>
-using view_1d_host = typename KokkosTypes<DefaultDevice>::template view_1d<S>::HostMirror;
-template <typename S>
 using view_1d = typename KokkosTypes<DefaultDevice>::template view_1d<S>;
 template <typename S>
 using view_2d = typename KokkosTypes<DefaultDevice>::template view_2d<S>;
@@ -32,7 +30,7 @@ using SPAFunc = spa::SPAFunctions<Real, DefaultDevice>;
 using Spack = SPAFunc::Spack;
 
 // Helper Functions
-void compute_max_min(const view_1d_host<const Spack>& input, const int start, const int end, Real& min, Real& max);
+std::pair<Real,Real> compute_max_min(const view_1d<Real>::HostMirror& input, const int start, const int end);
 
 TEST_CASE("spa_read_data","spa")
 {
@@ -352,57 +350,25 @@ TEST_CASE("spa_read_data","spa")
   Kokkos::deep_copy(aer_tau_sw_h, spa_data_out.AER_TAU_SW);
   Kokkos::deep_copy(aer_tau_lw_h, spa_data_out.AER_TAU_LW);
 
-  // Calculate the min and max values for all spa input data for all columns,
-  // note we need to compute only the interior values and ignore the padding. 
-  auto ccn3_bnds       = view_2d<Real>("",2,ncols);
-  auto aer_sw_g_bnds   = view_3d<Real>("",2,ncols,nswbands);
-  auto aer_sw_ssa_bnds = view_3d<Real>("",2,ncols,nswbands);
-  auto aer_sw_tau_bnds = view_3d<Real>("",2,ncols,nswbands);
-  auto aer_lw_tau_bnds = view_3d<Real>("",2,ncols,nlwbands);
-  auto ccn3_bnds_h       = Kokkos::create_mirror_view(ccn3_bnds      );
-  auto aer_sw_g_bnds_h   = Kokkos::create_mirror_view(aer_sw_g_bnds  );
-  auto aer_sw_ssa_bnds_h = Kokkos::create_mirror_view(aer_sw_ssa_bnds);
-  auto aer_sw_tau_bnds_h = Kokkos::create_mirror_view(aer_sw_tau_bnds);
-  auto aer_lw_tau_bnds_h = Kokkos::create_mirror_view(aer_lw_tau_bnds);
+  using col_type = view_1d<Real>::HostMirror;
+  auto check_bounds = [&](const col_type& data,const col_type& output) {
+    auto data_minmax   = compute_max_min(data,0,nlevs+1);
+    auto output_minmax = compute_max_min(output,0,nlevs);
+    REQUIRE( data_minmax.first  >= output_minmax.first );
+    REQUIRE( data_minmax.second >= output_minmax.second );
+  };
+
   for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
-    const auto& ccn3_in = ekat::subview(ccn3_beg,dof_i);
-    compute_max_min(ccn3_in,1,spa_data_beg.nlevs-1,ccn3_bnds_h(0,dof_i),ccn3_bnds_h(1,dof_i));
+    const auto& ccn3_in  = ekat::subview(ekat::scalarize(ccn3_beg),dof_i);
+    const auto& ccn3_out = ekat::subview(ekat::scalarize(ccn3_h),dof_i);
+    check_bounds( ccn3_in, ccn3_out );
     for (int n=0;n<nswbands;n++) {
-      const auto& sw_g_in = ekat::subview(aer_g_sw_beg,dof_i,n);
-      compute_max_min(sw_g_in,1,spa_data_beg.nlevs-1,aer_sw_g_bnds_h(0,dof_i,n),aer_sw_g_bnds_h(1,dof_i,n));
-      const auto& sw_ssa_in = ekat::subview(aer_ssa_sw_beg,dof_i,n);
-      compute_max_min(sw_ssa_in,1,spa_data_beg.nlevs-1,aer_sw_ssa_bnds_h(0,dof_i,n),aer_sw_ssa_bnds_h(1,dof_i,n));
-      const auto& sw_tau_in = ekat::subview(aer_tau_sw_beg,dof_i,n);
-      compute_max_min(sw_tau_in,1,spa_data_beg.nlevs-1,aer_sw_tau_bnds_h(0,dof_i,n),aer_sw_tau_bnds_h(1,dof_i,n));
-    }
-    for (int n=0;n<nlwbands;n++) {
-      const auto& lw_tau_in = ekat::subview(aer_tau_lw_beg,dof_i,n);
-      compute_max_min(lw_tau_in,1,spa_data_beg.nlevs-1,aer_lw_tau_bnds_h(0,dof_i,n),aer_lw_tau_bnds_h(1,dof_i,n));
+      auto ssv = [&](const view_3d<Spack>& v, const int dof_i, const int n) -> col_type {
+        return ekat::subview(ekat::scalarize(v),dof_i,n);
+      };
+      check_bounds (ssv(aer_ssa_sw_h,dof_i,n),ssv(aer_ssa_sw_beg,dof_i,n));
     }
   }
-
-  // Make sure the output data is within the same bounds as the input data.
-  for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
-    for (int kk=0;kk<nlevs;kk++) {
-      int kpack = kk / Spack::n;
-      int kidx  = kk % Spack::n;
-      REQUIRE(ccn3_h(dof_i,kpack)[kidx]>=ccn3_bnds_h(0,dof_i));
-      REQUIRE(ccn3_h(dof_i,kpack)[kidx]<=ccn3_bnds_h(1,dof_i));
-      for (int n=0;n<nswbands;n++) {
-        REQUIRE(aer_g_sw_h(dof_i,n,kpack)[kidx]   >= aer_sw_g_bnds_h  (0,dof_i,n) );
-        REQUIRE(aer_ssa_sw_h(dof_i,n,kpack)[kidx] >= aer_sw_ssa_bnds_h(0,dof_i,n) );
-        REQUIRE(aer_tau_sw_h(dof_i,n,kpack)[kidx] >= aer_sw_tau_bnds_h(0,dof_i,n) );
-        REQUIRE(aer_g_sw_h(dof_i,n,kpack)[kidx]   <= aer_sw_g_bnds_h  (1,dof_i,n) );
-        REQUIRE(aer_ssa_sw_h(dof_i,n,kpack)[kidx] <= aer_sw_ssa_bnds_h(1,dof_i,n) );
-        REQUIRE(aer_tau_sw_h(dof_i,n,kpack)[kidx] <= aer_sw_tau_bnds_h(1,dof_i,n) );
-      }
-      for (int n=0;n<nlwbands;n++) {
-        REQUIRE(aer_tau_lw_h(dof_i,n,kpack)[kidx] >= aer_lw_tau_bnds_h(0,dof_i,n) );
-        REQUIRE(aer_tau_lw_h(dof_i,n,kpack)[kidx] <= aer_lw_tau_bnds_h(1,dof_i,n) );
-      }
-    }
-  }
-
  /* ====================================================================
   *                         DONE WITH TESTS
   * ====================================================================*/
@@ -411,21 +377,18 @@ TEST_CASE("spa_read_data","spa")
 } // run_property
 
 // Helper function
-void compute_max_min(const view_1d_host<const Spack>& input, const int start, const int end, Real& min, Real& max)
+std::pair<Real,Real> compute_max_min(const view_1d<Real>::HostMirror& input, const int start, const int end)
 {
-  int kpack, kidx;
+  std::pair<Real,Real> result;
   // Initialize min and max with first entry in input
-  kpack = start / Spack::n;
-  kidx  = start % Spack::n;
-  min = input(kpack)[kidx];
-  max = input(kpack)[kidx];
+  result.first = input[start];
+  result.second = input[start];
   // Now go through the rest of the view
   for (int kk = start+1; kk<=end; kk++) {
-    kpack = kk / Spack::n;
-    kidx  = kk % Spack::n;
-    min = std::min(min,input(kpack)[kidx]);
-    max = std::max(max,input(kpack)[kidx]);
+    result.first  = std::min(result.first,input[kk]);
+    result.second = std::max(result.second,input[kk]);
   }
+  return result;
 }
 
 } // namespace
