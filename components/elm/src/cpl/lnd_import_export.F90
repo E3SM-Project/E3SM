@@ -751,7 +751,6 @@ contains
               call mpi_bcast (smap05_lat, 360, MPI_REAL8, 0, mpicom, ier)
             end if
           end if
-        !end if
 
           !figure out which point to get
           if (atm2lnd_vars%loaded_bypassdata == 0) then 
@@ -925,7 +924,7 @@ contains
   
           atm2lnd_vars%forc_ndep_grc(g)    = (atm2lnd_vars%ndep1(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt1(1) + &
                                               atm2lnd_vars%ndep2(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt2(1)) / (365._r8 * 86400._r8)
-       end if model_filter
+        end if model_filter
 
    !------------------------------------Aerosol forcing--------------------------------------------------
         if (atm2lnd_vars%loaded_bypassdata .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
