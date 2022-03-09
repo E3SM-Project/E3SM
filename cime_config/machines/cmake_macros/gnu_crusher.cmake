@@ -1,4 +1,4 @@
-string(APPEND FFLAGS " -fallow-argument-mismatch -Wno-implicit-interface -fallow-invalid-boz -fno-tree-pta ")
+string(APPEND FFLAGS " -Wno-implicit-interface")
 
 if (NOT DEBUG)
   string(APPEND FFLAGS " -O2")
