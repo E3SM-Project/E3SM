@@ -2335,7 +2335,8 @@ contains
     ! contents.
     !
     ! !USES:
-    use elm_varcon      , only : zsoi, zlak, secspday,nlevsoi
+    use elm_varcon      , only : zsoi, zlak, secspday
+    use elm_varpar      , only : nlevsoi
     use domainMod       , only : ldomain, lon1d, lat1d
     use clm_time_manager, only : get_nstep, get_curr_date, get_curr_time
     use clm_time_manager, only : get_ref_date, get_calendar, NO_LEAP_C, GREGORIAN_C
