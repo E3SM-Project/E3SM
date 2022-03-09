@@ -1,0 +1,45 @@
+#!/usr/bin/env python3
+
+"""
+Convert YAML into XML for our namelists.xml file
+"""
+
+from utils import check_minimum_python_version
+check_minimum_python_version(3, 4)
+
+import argparse, sys, pathlib
+
+from yaml_to_xml import yaml_to_xml
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <YAML file> [<file>]
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Convert ./scream_input.yaml to XML \033[0m
+    > {0} scream_input.yaml
+""".format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("filepath", help="The path to the YAML file to convert")
+
+    parser.add_argument("-i", "--indent", default=0, type=int, help="Starting indent level")
+
+    return parser.parse_args(args[1:])
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    success = yaml_to_xml(**vars(parse_command_line(sys.argv, description)))
+    sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

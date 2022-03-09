@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+  <file name="scream_input" format="yaml">
+  </file>
+
+</namelist_defaults>
