@@ -353,28 +353,25 @@ TEST_CASE("spa_read_data","spa")
   using col_type = view_1d<Real>::HostMirror;
   auto check_bounds = [&](const col_type& data,const col_type& output) {
     auto data_minmax   = compute_max_min(data,0,nlevs+1);
-    auto output_minmax = compute_max_min(output,0,nlevs);
-    REQUIRE( data_minmax.first  >= output_minmax.first );
+    auto output_minmax = compute_max_min(output,0,nlevs-1);
+    REQUIRE( data_minmax.first  <= output_minmax.first );
     REQUIRE( data_minmax.second >= output_minmax.second );
   };
 
   for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
+    auto ssv = [&](const view_3d<Spack>& v, const int col, const int band) -> col_type {
+      return ekat::subview(ekat::scalarize(v),col,band);
+    };
     const auto& ccn3_in  = ekat::subview(ekat::scalarize(ccn3_beg),dof_i);
     const auto& ccn3_out = ekat::subview(ekat::scalarize(ccn3_h),dof_i);
     check_bounds( ccn3_in, ccn3_out );
     for (int n=0;n<nswbands;n++) {
-      auto ssv = [&](const view_3d<Spack>& v, const int dof_i, const int n) -> col_type {
-        return ekat::subview(ekat::scalarize(v),dof_i,n);
-      };
-      check_bounds (ssv(aer_g_sw_h,dof_i,n),ssv(aer_g_sw_beg,dof_i,n));
-      check_bounds (ssv(aer_ssa_sw_h,dof_i,n),ssv(aer_ssa_sw_beg,dof_i,n));
-      check_bounds (ssv(aer_tau_sw_h,dof_i,n),ssv(aer_tau_sw_beg,dof_i,n));
+      check_bounds (ssv(aer_g_sw_beg,dof_i,n),ssv(aer_g_sw_h,dof_i,n));
+      check_bounds (ssv(aer_ssa_sw_beg,dof_i,n),ssv(aer_ssa_sw_h,dof_i,n));
+      check_bounds (ssv(aer_tau_sw_beg,dof_i,n),ssv(aer_tau_sw_h,dof_i,n));
     }
     for (int n=0;n<nlwbands;n++) {
-      auto ssv = [&](const view_3d<Spack>& v, const int dof_i, const int n) -> col_type {
-        return ekat::subview(ekat::scalarize(v),dof_i,n);
-      };
-      check_bounds (ssv(aer_tau_lw_h,dof_i,n),ssv(aer_tau_lw_beg,dof_i,n));
+      check_bounds (ssv(aer_tau_lw_beg,dof_i,n),ssv(aer_tau_lw_h,dof_i,n));
     }
   }
  /* ====================================================================
