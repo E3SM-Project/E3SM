@@ -250,11 +250,11 @@ TEST_CASE ("recreate_mct_coupling")
   const auto grid_name = grid->name();
 
   // Layouts matching those in AD
-  FL scalar2d_layout{ {COL          }, {ncols          } };
-  FL vector2d_layout{ {COL, CMP     }, {ncols, 2       } };
-  FL scalar3d_layout{ {COL, LEV     }, {ncols,    nlevs} };
-  FL scalar3d_int_layout{ {COL, LEV     }, {ncols,    nlevs+1} };
-  FL vector3d_layout{ {COL, CMP, LEV}, {ncols, 2, nlevs} };
+  FL scalar2d_layout    { {COL          }, {ncols            } };
+  FL vector2d_layout    { {COL, CMP     }, {ncols, 2         } };
+  FL scalar3d_layout    { {COL, LEV     }, {ncols,    nlevs  } };
+  FL scalar3d_int_layout{ {COL, ILEV    }, {ncols,    nlevs+1} };
+  FL vector3d_layout    { {COL, CMP, LEV}, {ncols, 2, nlevs  } };
 
   // Create import fields
   const auto nondim = Units::nondimensional();

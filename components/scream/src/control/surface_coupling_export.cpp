@@ -33,7 +33,7 @@ void SurfaceCoupling::do_export (const bool init_phase)
     const auto& pseudo_density  = m_field_mgr->get_field("pseudo_density").get_view<const Real**>();
     const auto& precip_liq_surf = m_field_mgr->get_field("precip_liq_surf").get_view<const Real*>();
     const auto& precip_ice_surf = m_field_mgr->get_field("precip_ice_surf").get_view<const Real*>();
-    const auto& phis = m_field_mgr->get_field("phis").get_view<const Real*>();
+    const auto& phis            = m_field_mgr->get_field("phis").get_view<const Real*>();
     const auto l_dz             = dz;
     const auto l_z_int          = z_int;
     const auto l_z_mid          = z_mid;
