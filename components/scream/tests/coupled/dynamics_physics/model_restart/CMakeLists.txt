@@ -19,7 +19,7 @@ set (NEED_LIBS cld_fraction shoc p3 scream_rrtmgp rrtmgp ${NETCDF_C} ${dynLibNam
 # We can use the same namelist for all tests, using 3 different input yaml files
 
 # Create a single executable for all the 3 runs
-CreateUnitTestExec(model_restart model_restart.cpp "${NEED_LIBS};ekat_test_main;ekat_test_session;ekat")
+CreateUnitTestExec(model_restart model_restart.cpp "${NEED_LIBS}")
 
 # Create the baseline (run all 6 timsteps in a single run)
 CreateUnitTestFromExec(model_baseline model_restart
