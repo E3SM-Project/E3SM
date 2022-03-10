@@ -104,64 +104,27 @@ SCREAM:
 # Note: HOMME settings will be translated into data/namelist.nl
 HOMME:
   ctl_nl:
-    disable_diagnostics             : .false.
-    se_partmethod                   : 4
-    se_topology                     : "cube"
-    se_ftype                        : 0
-    se_limiter_option               : 9
-    se_ne                           : 4
-    se_geometry                     : "sphere"
-    se_tstep                        : 300
-    mesh_file                       : '/dev/null'
-    rotate_grid                     : 0
-    u_perturb                       : 1
-    statefreq                       : 9999
-    tstep_type                      : 5
+    cubed_sphere_map                : 0
+    disable_diagnostics             : false
     dt_remap_factor                 : 1
     dt_tracer_factor                : 1
-    nu                              : 3.4e-8
-    nu_div                          : -1
-    nu_p                            : -1
-    nu_q                            : -1
-    nu_s                            : -1
-    nu_top                          : 2.5e+5
-    vert_remap_q_alg                : 10
-    hypervis_scaling                : 3.0
     hypervis_order                  : 2
+    hypervis_scaling                : 3.0
     hypervis_subcycle               : 1
     hypervis_subcycle_tom           : 1
-    hypervis_subcycle_q             : 1
-    theta_hydrostatic_mode          : true
+    nu                              : 3.4e-8
+    nu_top                          : 2.5e+5
+    se_ftype                        : 0
+    se_geometry                     : "sphere"
+    se_limiter_option               : 9
+    se_ne                           : 4
+    se_nsplit                       : -1
+    se_partmethod                   : 4
+    se_topology                     : "cube"
+    se_tstep                        : 300
+    statefreq                       : 9999
     theta_advect_form               : 1
-    COORD_TRANSFORM_METHOD          : 0
-    Z2_MAP_METHOD                   : 0
-    vthreads                        : 1
-    npart                           : 0
-    numnodes                        : 0
-    se_ne_x                         : 0
-    se_ne_y                         : 0
-    integration                     : "explicit"
-    transport_alg                   : 0
-    semi_lagrange_cdr_alg           : 0
-    semi_lagrange_cdr_check         : .false.
-    semi_lagrange_hv_q              : 0
-    semi_lagrange_nearest_point_lev : 0
-    cubed_sphere_map                : 0
-    prescribed_wind                 : 0
-    tom_sponge_start                : 0
-    dcmip16_mu                      : 0
-    dcmip16_mu_s                    : 0
-    dcmip16_mu_q                    : 0
-    dcmip16_prec_type               : 0
-    dcmip16_pbl_type                : 0
-    smooth_phis_numcycle            : 0
-    smooth_phis_p2filt              : 0
-    smooth_phis_nudt                : 0
-    initial_total_mass              : 0
-    vtheta_thresh                   : 0
-    pgrad_correction                : 0
-    hv_ref_profiles                 : 0
-    hv_theta_correction             : 0
-    hv_theta_thresh                 : 0
-    vert_remap_u_alg                : -2
+    theta_hydrostatic_mode          : true
+    tstep_type                      : 5
+    vert_remap_q_alg                : 10
 ...
