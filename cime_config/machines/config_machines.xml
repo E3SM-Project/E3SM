@@ -257,6 +257,95 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="crusher">
+    <DESC>Crusher. NCCS moderate-security system that contains similar hardware and software as the upcoming Frontier system at ORNL. 192 AMD EPYC 7A53 64C nodes, 128 hwthreads, 512GB DDR4, 4 MI250X GPUs</DESC>
+    <NODENAME_REGEX>.*crusher.*</NODENAME_REGEX>
+    <OS>CNL</OS>
+    <COMPILERS>gnu,crayclang,amdclang</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <PROJECT>cli133</PROJECT>
+    <CIME_OUTPUT_ROOT>/gpfs/alpine/$PROJECT/proj-shared/$ENV{USER}/e3sm_scratch/crusher</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/gpfs/alpine/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/gpfs/alpine/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+       <CCSM_CPRNC>/gpfs/alpine/cli133/world-shared/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <NTEST_PARALLEL_JOBS>1</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+
+    <mpirun mpilib="default">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="num_tasks"> -l -K -n {{ total_tasks }} -N {{ num_nodes }} </arg>
+        <arg name="binding">--cpu_bind=cores</arg>
+        <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
+        <arg name="placement">-m plane={{ tasks_per_node }}</arg>
+      </arguments>
+    </mpirun>
+
+    <module_system type="module" allow_error="true">
+      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
+      <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
+      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+
+      <modules compiler="amdclang">
+        <command name="reset"></command>
+        <command name="switch">PrgEnv-cray PrgEnv-amd/8.2.0</command>
+      </modules>
+
+
+      <modules compiler="crayclang">
+        <command name="reset"></command>
+        <command name="switch">PrgEnv-cray PrgEnv-cray/8.2.0</command>
+        <command name="switch">cce cce/13.0.1</command>
+      </modules>
+
+      <modules compiler="gnu">
+        <command name="reset"></command>
+        <command name="switch">PrgEnv-cray PrgEnv-gnu/8.2.0</command>
+      </modules>
+      <modules>
+        <command name="load">cray-mpich/8.1.12</command>
+        <command name="load">cray-python/3.9.4.2</command>
+        <command name="load">subversion/1.14.0</command>
+        <command name="load">git/2.31.1</command>
+        <command name="load">cmake/3.21.3</command>
+        <command name="load">zlib/1.2.11</command>
+        <command name="load">cray-libsci/21.08.1.2</command>
+        <command name="load">cray-hdf5-parallel/1.12.0.7</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.7.4.7</command>
+        <command name="load">cray-parallel-netcdf/1.12.1.7</command>
+      </modules>
+
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <environment_variables>
+      <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
+      <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
+    </environment_variables>
+
+    <environment_variables compiler="amdclang">
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LIBSCI_DIR}/amd/4.0/x86_64/lib:$ENV{LD_LIBRARY_PATH}</env>
+    </environment_variables>
+
+    <environment_variables SMP_PRESENT="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+    </environment_variables>
+  </machine>
+
   <machine MACH="cori-haswell">
     <DESC>Cori. XC40 Cray system at NERSC. Haswell partition. os is CNL, 32 pes/node, batch system is SLURM</DESC>
     <NODENAME_REGEX>cori-knl-is-default</NODENAME_REGEX>
