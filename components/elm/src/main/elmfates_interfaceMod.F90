@@ -150,24 +150,11 @@ module ELMFatesInterfaceMod
    use FatesPlantHydraulicsMod, only : InitHydrSites
    use FatesPlantHydraulicsMod, only : RestartHydrStates
 
-<<<<<<< HEAD
-   use dynHarvestMod          , only : num_harvest_vars, harvest_varnames
-   use dynHarvestMod          , only : harvest_rates ! these are dynamic in space and time
-   use dynHarvestMod          , only : num_harvest_vars, harvest_varnames, wood_harvest_units
-
-   use FatesConstantsMod      , only : hlm_harvest_area_fraction
-   use FatesConstantsMod      , only : hlm_harvest_carbon
-
-   use dynSubgridControlMod, only : get_do_harvest ! this gets the namelist value
-
-=======
-   use pftvarcon              , only : pprodharv10
    use dynHarvestMod          , only : harvest_rates  ! these are dynamic in space and time
    use dynHarvestMod          , only : num_harvest_vars, harvest_varnames, wood_harvest_units
    use FatesConstantsMod      , only : hlm_harvest_area_fraction
    use FatesConstantsMod      , only : hlm_harvest_carbon
    use dynSubgridControlMod   , only : get_do_harvest
->>>>>>> 975c41a6de... Add LUC fluxes in ELM-FATES interface.
    use FatesInterfaceTypesMod , only : bc_in_type, bc_out_type
    use CLMFatesParamInterfaceMod         , only : FatesReadParameters
 
@@ -277,13 +264,9 @@ contains
      integer                                        :: pass_biogeog
      integer                                        :: pass_num_lu_harvest_types
      integer                                        :: pass_lu_harvest
-<<<<<<< HEAD
      integer                                        :: pass_nocomp
      integer                                        :: pass_sp
-
-=======
      integer                                        :: pass_harvest_bypass_criteria
->>>>>>> 975c41a6de... Add LUC fluxes in ELM-FATES interface.
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
      ! 1 : use a global constant lightning rate found in fates_params.
@@ -304,13 +287,6 @@ contains
 
      ! We will use this switch temporarily, until  we complete
      ! the ELM-FATES harvest integration
-<<<<<<< HEAD
-     logical, parameter :: do_elm_fates_harvest = .false.
-
-     if (use_fates) then
-
-verbose_output = .false.
-=======
      logical, parameter :: do_elm_fates_harvest = .true.
      ! Another switch to determine if we want to harvest forest 
      ! by ignoring the harvest criteria
@@ -320,9 +296,8 @@ verbose_output = .false.
      
      if (use_fates) then
 
-        ! Shijie: Turn on verbose_output for test
+        ! Turn on verbose_output for test
         verbose_output = .false.
->>>>>>> 975c41a6de... Add LUC fluxes in ELM-FATES interface.
         call FatesInterfaceInit(iulog, verbose_output)
 
         ! Force FATES parameters that are recieve type, to the unset value
@@ -443,17 +418,11 @@ verbose_output = .false.
         else
            pass_lu_harvest = 0
            pass_num_lu_harvest_types = 0
-<<<<<<< HEAD
-        end if
-
-        call set_fates_ctrlparms('use_lu_harvest',ival=pass_lu_harvest)
-=======
            pass_harvest_bypass_criteria = 0
         end if
 
         call set_fates_ctrlparms('use_lu_harvest',ival=pass_lu_harvest)
         call set_fates_ctrlparms('use_harvest_bypass_criteria',ival=pass_harvest_bypass_criteria)
->>>>>>> 975c41a6de... Add LUC fluxes in ELM-FATES interface.
         call set_fates_ctrlparms('num_lu_harvest_cats',ival=pass_num_lu_harvest_types)
         call set_fates_ctrlparms('use_logging',ival=pass_logging)
 
@@ -914,12 +883,8 @@ verbose_output = .false.
             this%fates(nc)%bc_in(s)%hlm_harvest_catnames = harvest_varnames
             this%fates(nc)%bc_in(s)%hlm_harvest_units = wood_harvest_units
          end if
-<<<<<<< HEAD
-=======
          ! this can be gridcell specific parameter in the future
-         this%fates(nc)%bc_in(s)%pprodharv10_forest_mean=sum(pprodharv10(1:8))/8._r8
-         this%fates(nc)%bc_in(s)%site_area=col_pp%wtgcell(c)*grc_pp%area(g)*1e6_r8
->>>>>>> 975c41a6de... Add LUC fluxes in ELM-FATES interface.
+         !this%fates(nc)%bc_in(s)%site_area=col_pp%wtgcell(c)*grc_pp%area(g)*1e6_r8
 
       end do
 
