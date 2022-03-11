@@ -7,10 +7,13 @@ module LakeBGCType
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use elm_varcon        , only : zisoi, spval
+  use elm_varpar        , only : ngaslak, nphytolak, nsoilclak
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
   use ColumnType        , only : col_pp
+  use GridcellType      , only : grc_pp
   use LandunitType      , only : lun_pp
+  use topounit_varcon   , only : max_topounits
   !
   implicit none
   save
@@ -31,6 +34,8 @@ module LakeBGCType
   integer, parameter, public :: thaw_lake = 2
   ! sub-cycle time step
   integer, parameter, public :: nsubstep = 10
+  ! respiration fraction of sediment C pools
+  real(r8), parameter, public :: frac_resp(nsoilclak) = (/0.49_r8, 1.0_r8/) 
   !
   ! !PUBLIC TYPES:
   type, public :: lakebgc_type
@@ -38,8 +43,11 @@ module LakeBGCType
      ! Lake BGC input variables
      real(r8), pointer :: tp_col(:)                   ! col epilimnion average total phosphorus  (gP/m3)
      real(r8), pointer :: ph_col(:)                   ! col water average pH
-     real(r8), pointer :: sdep_col(:)                 ! col sediment deposition rate (g/m2/yr)
+     real(r8), pointer :: csed_col(:)                 ! col sediment OC density (kgC/m3)
+     real(r8), pointer :: cdep_col(:)                 ! col terrestrial OC deposition rate (gC/m2/yr)
      integer,  pointer :: ltype_col(:)                ! col lake type (regular lake = 0) 
+
+     real(r8), pointer :: cdist_factor(:,:)           ! col active sediment OC distribution factor 
 
      ! Lake BGC state variables
      real(r8), pointer :: conc_wat_col(:,:,:)         ! col water-column depth-resolved dissolved gas conc (mol/m3)
@@ -65,8 +73,13 @@ module LakeBGCType
      real(r8), pointer :: nem_col(:)                  ! net adjustment to atm. C flux from methane production (g C/m**2/s)
      real(r8), pointer :: ch4_oxid_wat_col(:,:)       ! col water-column depth-resolved CH4 oxidation (mol/m3/s)
      real(r8), pointer :: ch4_oxid_sed_col(:,:)       ! col sed-column depth-resolved CH4 oxidation (mol/m3/s)
-     real(r8), pointer :: gpp_col(:)                  ! col depth-integrated gross primary production (gC/m2/s)
-     real(r8), pointer :: npp_col(:)                  ! col depth-integrated net primary production (gC/m2/s)
+     real(r8), pointer :: gpp_tot_col(:)              ! col depth-integrated gross primary production (gC/m2/s)
+     real(r8), pointer :: npp_tot_col(:)              ! col depth-integrated net primary production (gC/m2/s)
+     real(r8), pointer :: gpp_vr_col(:,:)             ! col depth-resolved gross primary production (gC/m3/s)
+     real(r8), pointer :: npp_vr_col(:,:)             ! col depth-resolved net primary production (gC/m3/s)
+     real(r8), pointer :: hr_wat_vr_col(:,:)          ! col water-column depth-resolved heterotrophic respiration (gC/m3/s)
+     real(r8), pointer :: hr_sed_vr_col(:,:)          ! col sed-column depth-resolved heterotrophic respiration (gC/m3/s)
+     real(r8), pointer :: ctot_dep_col(:)             ! col lake C deposition rate (gC/m2/s)
 
   contains
 
@@ -116,8 +129,11 @@ contains
 
     allocate( this%tp_col              (begc:endc))                                  ; this%tp_col             (:)     = nan
     allocate( this%ph_col              (begc:endc))                                  ; this%ph_col             (:)     = nan
-    allocate( this%sdep_col            (begc:endc))                                  ; this%sdep_col           (:)     = nan
+    allocate( this%csed_col            (begc:endc))                                  ; this%csed_col           (:)     = nan
+    allocate( this%cdep_col            (begc:endc))                                  ; this%cdep_col           (:)     = nan
     allocate( this%ltype_col           (begc:endc))                                  ; this%ltype_col          (:)     = 0
+
+    allocate( this%cdist_factor        (begc:endc,1:nlevgrnd))                       ; this%cdist_factor       (:,:)   = nan
 
     allocate( this%conc_wat_col        (begc:endc,1:nlevlak,1:ngaslak))              ; this%conc_wat_col       (:,:,:) = nan
     allocate( this%conc_sed_col        (begc:endc,1:nlevgrnd,1:ngaslak))             ; this%conc_sed_col       (:,:,:) = nan
@@ -126,14 +142,20 @@ contains
     allocate( this%soilc_col           (begc:endc,1:nlevgrnd,1:nsoilclak))           ; this%soilc_col          (:,:,:) = nan
     allocate( this%chla_col            (begc:endc,1:nlevlak))                        ; this%chla_col           (:,:)   = nan
     allocate( this%conc_iceb_col       (begc:endc,1:ngaslak))                        ; this%conc_iceb_col      (:,:)   = nan
-   
+    allocate( this%totsoilc_col        (begc:endc))                                  ; this%totsoilc_col       (:)     = nan
+    allocate( this%totphytoc_col       (begc:endc))                                  ; this%totphytoc_col      (:)     = nan
+
     allocate( this%ch4_sed_diff_col    (begc:endc))                                  ; this%ch4_sed_diff_col   (:)     = nan
     allocate( this%ch4_surf_diff_col   (begc:endc))                                  ; this%ch4_surf_diff_col  (:)     = nan
     allocate( this%ch4_sed_ebul_col    (begc:endc))                                  ; this%ch4_sed_ebul_col   (:)     = nan
     allocate( this%ch4_surf_ebul_col   (begc:endc))                                  ; this%ch4_surf_ebul_col  (:)     = nan
     allocate( this%ch4_surf_totflux_col(begc:endc))                                  ; this%ch4_surf_totflux_col(:)    = nan
-    allocate( this%gpp_col             (begc:endc))                                  ; this%gpp_col            (:)     = nan
-    allocate( this%npp_col             (begc:endc))                                  ; this%npp_col            (:)     = nan
+    allocate( this%gpp_tot_col         (begc:endc))                                  ; this%gpp_tot_col        (:)     = nan
+    allocate( this%npp_tot_col         (begc:endc))                                  ; this%npp_tot_col        (:)     = nan
+    allocate( this%gpp_vr_col          (begc:endc,1:nlevlak))                        ; this%gpp_vr_col         (:,:)   = nan
+    allocate( this%npp_vr_col          (begc:endc,1:nlevlak))                        ; this%npp_vr_col         (:,:)   = nan
+    allocate( this%hr_wat_vr_col       (begc:endc,1:nlevlak))                        ; this%hr_wat_vr_col      (:,:)   = nan
+    allocate( this%hr_sed_vr_col       (begc:endc,1:nlevgrnd))                       ; this%hr_sed_vr_col      (:,:)   = nan
     allocate( this%ch4_prod_wat_col    (begc:endc,1:nlevlak))                        ; this%ch4_prod_wat_col   (:,:)   = nan
     allocate( this%ch4_oxid_wat_col    (begc:endc,1:nlevlak))                        ; this%ch4_oxid_wat_col   (:,:)   = nan
     allocate( this%ch4_prod_sed_col    (begc:endc,1:nlevgrnd))                       ; this%ch4_prod_sed_col   (:,:)   = nan
@@ -141,8 +163,7 @@ contains
     allocate( this%ch4_prod_tot_col    (begc:endc))                                  ; this%ch4_prod_tot_col   (:)     = nan
     allocate( this%ch4_oxid_tot_col    (begc:endc))                                  ; this%ch4_oxid_tot_col   (:)     = nan
     allocate( this%nem_col             (begc:endc))                                  ; this%nem_col            (:)     = nan
-    allocate( this%totsoilc_col        (begc:endc))                                  ; this%totsoilc_col       (:)     = nan
-    allocate( this%totphytoc_col       (begc:endc))                                  ; this%totphytoc_col      (:)     = nan
+    allocate( this%ctot_dep_col        (begc:endc))                                  ; this%ctot_dep_col       (:)     = nan
 
   end subroutine InitAllocate
 
@@ -174,96 +195,126 @@ contains
     this%ch4_sed_diff_col(begc:endc) = spval
     call hist_addfld1d (fname='CH4_SED_DIFF_LAKE',  units='mol/m^2/s',  &
          avgflag='A', long_name='diffusive CH4 flux at the water-sediment interface', &
-         ptr_col=this%ch4_sed_diff_col, default='inactive')
+         ptr_col=this%ch4_sed_diff_col, l2g_scale_type='lake', default='inactive')
 
     this%ch4_surf_diff_col(begc:endc) = spval
     call hist_addfld1d (fname='CH4_SURF_DIFF_LAKE',  units='mol/m^2/s',  &
          avgflag='A', long_name='diffusive CH4 flux at the lake surface', &
-         ptr_col=this%ch4_surf_diff_col, default='inactive')
+         ptr_col=this%ch4_surf_diff_col, l2g_scale_type='lake', default='inactive')
 
     this%ch4_sed_ebul_col(begc:endc) = spval
     call hist_addfld1d (fname='CH4_SED_EBUL_LAKE',  units='mol/m^2/s',  &
          avgflag='A', long_name='ebullition CH4 flux at the water-sediment interface', &
-         ptr_col=this%ch4_sed_ebul_col, default='inactive')
+         ptr_col=this%ch4_sed_ebul_col, l2g_scale_type='lake', default='inactive')
 
     this%ch4_surf_ebul_col(begc:endc) = spval
     call hist_addfld1d (fname='CH4_SURF_EBUL_LAKE',  units='mol/m^2/s',  &
          avgflag='A', long_name='ebullition CH4 flux at the lake surface', &
-         ptr_col=this%ch4_surf_ebul_col, default='inactive')
+         ptr_col=this%ch4_surf_ebul_col, l2g_scale_type='lake', default='inactive')
 
     this%ch4_surf_totflux_col(begc:endc) = spval
     call hist_addfld1d (fname='CH4_SURF_FLUX_LAKE',  units='kgC/m^2/s',  &
          avgflag='A', long_name='total CH4 flux at the lake surface', &
-         ptr_col=this%ch4_surf_totflux_col, default='inactive')
+         ptr_col=this%ch4_surf_totflux_col, l2g_scale_type='lake', default='inactive')
 
-    this%gpp_col(begc:endc) = spval
+    this%gpp_tot_col(begc:endc) = spval
     call hist_addfld1d (fname='GPP_LAKE',  units='gC/m^2/s',  &
-         avgflag='A', long_name='lake gross primary production', &
-         ptr_col=this%gpp_col, default='inactive')
+         avgflag='A', long_name='lake total gross primary production', &
+         ptr_col=this%gpp_tot_col, l2g_scale_type='lake', default='inactive')
 
-    this%npp_col(begc:endc) = spval
+    this%npp_tot_col(begc:endc) = spval
     call hist_addfld1d (fname='NPP_LAKE',  units='gC/m^2/s',  &
+         avgflag='A', long_name='lake total net primary production', &
+         ptr_col=this%npp_tot_col, l2g_scale_type='lake', default='inactive')
+
+    this%gpp_vr_col(begc:endc,1:nlevlak) = spval
+    call hist_addfld2d (fname='GPP_LAKE_vr',  units='gC/m^3/s', type2d='levlak', &
+         avgflag='A', long_name='lake gross primary production', &
+         ptr_col=this%gpp_vr_col, l2g_scale_type='lake', default='inactive')
+   
+    this%npp_vr_col(begc:endc,1:nlevlak) = spval
+    call hist_addfld2d (fname='NPP_LAKE_vr',  units='gC/m^3/s', type2d='levlak', &
          avgflag='A', long_name='lake net primary production', &
-         ptr_col=this%npp_col, default='inactive')
+         ptr_col=this%npp_vr_col, l2g_scale_type='lake', default='inactive')
 
     this%conc_wat_col(begc:endc,1:nlevlak,1:ngaslak) = spval
     data2dptr => this%conc_wat_col(:,:,gch4lak)
     call hist_addfld2d (fname='CONC_CH4_LAKE',  units='mol/m^3', type2d='levlak', & 
          avgflag='A', long_name='CH4 concentration in the lake water', &
-         ptr_col=data2dptr, default='inactive')
+         ptr_col=data2dptr, l2g_scale_type='lake', default='inactive')
 
     data2dptr => this%conc_wat_col(:,:,go2lak)
     call hist_addfld2d (fname='CONC_O2_LAKE',  units='mol/m^3', type2d='levlak', &
          avgflag='A', long_name='O2 concentration in the lake water', &
-         ptr_col=data2dptr, default='inactive')
+         ptr_col=data2dptr, l2g_scale_type='lake', default='inactive')
 
     this%conc_sed_col(begc:endc,1:nlevgrnd,1:ngaslak) = spval
     data2dptr => this%conc_sed_col(:,:,gch4lak)
     call hist_addfld2d (fname='CONC_CH4_SED',  units='mol/m^3', type2d='levgrnd', & 
          avgflag='A', long_name='CH4 concentration in the lake sediment', &
-         ptr_col=data2dptr, default='inactive')
+         ptr_col=data2dptr, l2g_scale_type='lake', default='inactive')
+
+    data2dptr => this%conc_sed_col(:,:,go2lak)
+    call hist_addfld2d (fname='CONC_O2_SED',  units='mol/m^3', type2d='levgrnd', &
+         avgflag='A', long_name='O2 concentration in the lake sediment', &
+         ptr_col=data2dptr, l2g_scale_type='lake', default='inactive') 
 
     this%conc_bubl_col(begc:endc,1:nlevlak,1:ngaslak) = spval
     data2dptr => this%conc_bubl_col(:,:,gch4lak)
     call hist_addfld2d (fname='BUBL_CH4_LAKE',  units='mol/m^3', type2d='levlak', &
          avgflag='A', long_name='Bubble CH4 concentration in the lake water', &
-         ptr_col=data2dptr, default='inactive')
+         ptr_col=data2dptr, l2g_scale_type='lake', default='inactive')
 
     this%conc_iceb_col(begc:endc,1:ngaslak) = spval
     data1dptr => this%conc_iceb_col(:,gch4lak)
     call hist_addfld1d (fname='BUBL_ICE_CH4',  units='mol/m^2',  & 
          avgflag='A', long_name='lake CH4 trapped in ice layers', &
-         ptr_col=data1dptr, default='inactive')
+         ptr_col=data1dptr, l2g_scale_type='lake', default='inactive')
 
     this%ch4_prod_wat_col(begc:endc,1:nlevlak) = spval
     call hist_addfld2d (fname='CH4_PROD_LAKE',  units='mol/m^3/s', type2d='levlak', &
          avgflag='A', long_name='CH4 production in the lake water', &
-         ptr_col=this%ch4_prod_wat_col, default='inactive')
+         ptr_col=this%ch4_prod_wat_col, l2g_scale_type='lake', default='inactive')
 
     this%ch4_prod_sed_col(begc:endc,1:nlevgrnd) = spval
     call hist_addfld2d (fname='CH4_PROD_SED',  units='mol/m^3/s', type2d='levgrnd', &
          avgflag='A', long_name='CH4 production in the lake sediment', &
-         ptr_col=this%ch4_prod_sed_col, default='inactive')
+         ptr_col=this%ch4_prod_sed_col, l2g_scale_type='lake', default='inactive')
 
     this%ch4_oxid_wat_col(begc:endc,1:nlevlak) = spval
     call hist_addfld2d (fname='CH4_OXID_LAKE',  units='mol/m^3/s', type2d='levlak', &
          avgflag='A', long_name='CH4 oxidation in the lake water', &
-         ptr_col=this%ch4_oxid_wat_col, default='inactive')
+         ptr_col=this%ch4_oxid_wat_col, l2g_scale_type='lake', default='inactive')
 
     this%ch4_oxid_sed_col(begc:endc,1:nlevgrnd) = spval
     call hist_addfld2d (fname='CH4_OXID_SED',  units='mol/m^3/s', type2d='levgrnd', &
          avgflag='A', long_name='CH4 oxidation in the lake sediment', &
-         ptr_col=this%ch4_oxid_sed_col, default='inactive')
+         ptr_col=this%ch4_oxid_sed_col, l2g_scale_type='lake', default='inactive')
 
     this%ch4_prod_tot_col(begc:endc) = spval
     call hist_addfld1d (fname='CH4_TOTPROD_LAKE',  units='mol/m^2/s',  &
          avgflag='A', long_name='total CH4 production in lake', &
-         ptr_col=this%ch4_prod_tot_col, default='inactive')
+         ptr_col=this%ch4_prod_tot_col, l2g_scale_type='lake', default='inactive')
 
     this%ch4_oxid_tot_col(begc:endc) = spval
     call hist_addfld1d (fname='CH4_TOTOXID_LAKE',  units='mol/m^2/s',  &
          avgflag='A', long_name='total CH4 oxidation in lake', &
-         ptr_col=this%ch4_oxid_tot_col, default='inactive')
+         ptr_col=this%ch4_oxid_tot_col, l2g_scale_type='lake', default='inactive')
+
+    this%hr_wat_vr_col(begc:endc,1:nlevlak) = spval
+    call hist_addfld2d (fname='HR_LAKE',  units='gC/m^3/s', type2d='levlak', &
+         avgflag='A', long_name='heterotrophic respiration in the lake water', &
+         ptr_col=this%hr_wat_vr_col, l2g_scale_type='lake', default='inactive')
+
+    this%hr_sed_vr_col(begc:endc,1:nlevgrnd) = spval
+    call hist_addfld2d (fname='HR_SED',  units='gC/m^3/s', type2d='levgrnd', &
+         avgflag='A', long_name='heterotrophic respiration in the lakes sediment', &
+         ptr_col=this%hr_sed_vr_col, l2g_scale_type='lake', default='inactive')
+
+    this%ctot_dep_col(begc:endc) = spval
+    call hist_addfld1d (fname='CDEP_LAK',  units='gC/m^2/s',  &
+         avgflag='A', long_name='lake OC deposition rate', &
+         ptr_col=this%ctot_dep_col, l2g_scale_type='lake', default='inactive')
 
     this%soilc_col(begc:endc,1:nlevgrnd,1:nsoilclak) = spval
     do k = 1, nsoilclak
@@ -271,7 +322,8 @@ contains
        write(fieldname, "(A,I0,A)") 'SED', k, 'C_LAKE'
        write(longname, "(A,I0,A)") 'lake sediment ', k, ' C'
        call hist_addfld2d (fname=fieldname,  units='gC/m^3', type2d='levgrnd', &
-            avgflag='A', long_name=longname, ptr_col=data2dptr, default='inactive')
+            avgflag='A', long_name=longname, ptr_col=data2dptr, &
+            l2g_scale_type='lake', default='inactive')
     end do 
 
     this%biomas_phyto_col(begc:endc,1:nlevlak,1:nphytolak) = spval
@@ -280,23 +332,24 @@ contains
        write(fieldname, "(A,I0,A)") 'PHYTO', k, 'C_LAKE'
        write(longname, "(A,I0)") 'biomass of lake phytoplankton group', k
        call hist_addfld2d (fname=fieldname,  units='gC/m^3', type2d='levlak', &
-            avgflag='A', long_name=longname, ptr_col=data2dptr, default='inactive')
+            avgflag='A', long_name=longname, ptr_col=data2dptr, &
+            l2g_scale_type='lake', default='inactive')
     end do
 
     this%totsoilc_col(begc:endc) = spval
     call hist_addfld1d (fname='TOTSEDC_LAKE',  units='gC/m^2',  &
          avgflag='A', long_name='total OC in lake sediment', &
-         ptr_col=this%totsoilc_col, default='inactive')
+         ptr_col=this%totsoilc_col, l2g_scale_type='lake', default='inactive')
 
     this%totphytoc_col(begc:endc) = spval
     call hist_addfld1d (fname='TOTVEGC_LAKE',  units='gC/m^2',  &
          avgflag='A', long_name='total live phytoplankton biomass in lake', &
-         ptr_col=this%totphytoc_col, default='inactive')
+         ptr_col=this%totphytoc_col, l2g_scale_type='lake', default='inactive')
 
     this%chla_col(begc:endc,1:nlevlak) = spval
     call hist_addfld2d (fname='CHLA_LAKE',  units='g/m^3', type2d='levlak', &
          avgflag='A', long_name='chlorophyll-a concentration in the lake water', &
-         ptr_col=this%chla_col, default='inactive')
+         ptr_col=this%chla_col, l2g_scale_type='lake', default='inactive')
 
   end subroutine InitHistory
 
@@ -309,7 +362,7 @@ contains
     ! !USES:
     use shr_kind_mod   , only : r8 => shr_kind_r8
     use elm_varcon     , only : grlnd
-    use elm_varctl     , only : fsurdat
+    use elm_varctl     , only : fsurdat, paramfile
     use elm_varpar     , only : nlevlak, nlevgrnd, nlevsoi, nlevsoifl
     use elm_varpar     , only : ngaslak, nphytolak, nsoilclak
     use elm_varpar     , only : more_vertlayers
@@ -322,29 +375,32 @@ contains
     class(lakebgc_type) :: this
     type(bounds_type) , intent(in) :: bounds
     ! !CONSTANTS
-    real(r8), parameter :: carb0 = 8.9386e3_r8  ! gC/m2
     !
     ! !LOCAL VARIABLES:
-    integer            :: c, g, l
-    integer            :: j, lev
+    integer            :: c, g, l, t, ti, topi
+    integer            :: j, js 
     integer            :: dimid                         ! dimension id
     logical            :: readvar
     type(file_desc_t)  :: ncid
     character(len=256) :: locfn
-    real(r8) ,pointer  :: zsoifl     (:)      ! Output: [real(r8) (:)]  original soil midpoint 
-    real(r8) ,pointer  :: zisoifl    (:)      ! Output: [real(r8) (:)]  original soil interface depth 
-    real(r8) ,pointer  :: dzsoifl    (:)      ! Output: [real(r8) (:)]  original soil thickness 
-    real(r8) ,pointer  :: tp2d       (:)      ! read in - TP 
-    real(r8) ,pointer  :: ph2d       (:)      ! read in - pH
-    real(r8) ,pointer  :: sdep2d     (:)      ! read in - sediment deposition
-    real(r8) ,pointer  :: type2d     (:)      ! read in - lake type 
-    real(r8) :: carbon
+    real(r8) ,pointer  :: zsoifl     (:)      ! original soil midpoint 
+    real(r8) ,pointer  :: zisoifl    (:)      ! original soil interface depth 
+    real(r8) ,pointer  :: dzsoifl    (:)      ! original soil thickness 
+    real(r8) ,pointer  :: tp2d       (:,:)    ! read in - TP 
+    real(r8) ,pointer  :: ph2d       (:,:)    ! read in - pH
+    real(r8) ,pointer  :: csed2d     (:,:)    ! read in - sediment OC density
+    real(r8) ,pointer  :: cdep2d     (:,:)    ! read in - OC deposition
+    integer  ,pointer  :: type2d     (:,:)    ! read in - lake type 
+    real(r8)           :: carbon, dampen, ztot
+    character(len=100) :: tString ! temp. var for reading
+    character(len=100) :: errCode = '-Error reading in parameters file:'
     !-----------------------------------------------------------------------
 
-    allocate(tp2d(bounds%begg:bounds%endg))
-    allocate(ph2d(bounds%begg:bounds%endg))
-    allocate(sdep2d(bounds%begg:bounds%endg))
-    allocate(type2d(bounds%begg:bounds%endg))
+    allocate(tp2d(bounds%begg:bounds%endg,max_topounits))
+    allocate(ph2d(bounds%begg:bounds%endg,max_topounits))
+    allocate(csed2d(bounds%begg:bounds%endg,max_topounits))
+    allocate(cdep2d(bounds%begg:bounds%endg,max_topounits))
+    allocate(type2d(bounds%begg:bounds%endg,max_topounits))
 
     call getfil (fsurdat, locfn, 0)
     call ncd_pio_openfile (ncid, locfn, 0)
@@ -360,14 +416,26 @@ contains
     end if
 
     call ncd_io(ncid=ncid, varname='LAKE_TP', flag='read', data=tp2d, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) tp2d(:) = 0._r8
+    if (.not. readvar) tp2d(:,:) = 0._r8
     call ncd_io(ncid=ncid, varname='LAKE_PH', flag='read', data=ph2d, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) ph2d(:) = 7._r8
-    call ncd_io(ncid=ncid, varname='LAKE_SDEP', flag='read', data=sdep2d, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) sdep2d(:) = 0._r8
+    if (.not. readvar) ph2d(:,:) = 7._r8
+    call ncd_io(ncid=ncid, varname='LAKE_CSED', flag='read', data=csed2d, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) csed2d(:,:) = 0._r8
+    call ncd_io(ncid=ncid, varname='LAKE_CDEP', flag='read', data=cdep2d, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) cdep2d(:,:) = 0._r8
     call ncd_io(ncid=ncid, varname='LAKE_TYPE', flag='read', data=type2d, dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) type2d(:) = 0
+    if (.not. readvar) type2d(:,:) = 0
  
+    call ncd_pio_closefile(ncid)
+
+    ! Read the e-folding factor of sediment OC vertical distribution
+    call getfil (paramfile, locfn, 0)
+    call ncd_pio_openfile (ncid, trim(locfn), 0)
+
+    tString='csedDMP'
+    call ncd_io(trim(tString), dampen, 'read', ncid, readvar=readvar)
+    if ( .not. readvar ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+
     call ncd_pio_closefile(ncid)
 
     ! --------------------------------------------------------------------
@@ -391,7 +459,8 @@ contains
     enddo
     zisoifl(nlevsoifl+1) = zsoifl(nlevsoifl) + 0.5_r8*dzsoifl(nlevsoifl)
 
-    carbon = carb0 / zisoifl(nlevsoi+1) / 0.6321_r8
+    js = COUNT(zisoifl<=0.5_r8)
+    ztot = zisoifl(js)
 
     do c = bounds%begc, bounds%endc
 
@@ -400,8 +469,13 @@ contains
        this%ch4_sed_ebul_col(c)                       = 0._r8
        this%ch4_surf_ebul_col(c)                      = 0._r8
        this%ch4_surf_totflux_col(c)                   = 0._r8
-       this%gpp_col(c)                                = 0._r8
-       this%npp_col(c)                                = 0._r8
+       this%gpp_tot_col(c)                            = 0._r8
+       this%npp_tot_col(c)                            = 0._r8
+       this%gpp_vr_col(c,1:nlevlak)                   = 0._r8
+       this%npp_vr_col(c,1:nlevlak)                   = 0._r8
+       this%hr_wat_vr_col(c,1:nlevlak)                = 0._r8
+       this%hr_sed_vr_col(c,1:nlevgrnd)               = 0._r8
+       this%ctot_dep_col(c)                           = 0._r8
        this%ch4_prod_wat_col(c,1:nlevlak)             = 0._r8
        this%ch4_oxid_wat_col(c,1:nlevlak)             = 0._r8
        this%ch4_prod_sed_col(c,1:nlevgrnd)            = 0._r8
@@ -418,19 +492,30 @@ contains
        this%soilc_col(c,1:nlevgrnd,1:nsoilclak)       = 0._r8
 
        g = col_pp%gridcell(c)
+       t = col_pp%topounit(c)
        l = col_pp%landunit(c)
+       topi = grc_pp%topi(g)
+       ti = t - topi + 1
+
        if (lun_pp%itype(l) /= istdlak) then
           this%tp_col(c)                              = spval
           this%ph_col(c)                              = spval          
-          this%sdep_col(c)                            = spval
+          this%csed_col(c)                            = spval
+          this%cdep_col(c)                            = spval
           this%ltype_col(c)                           = 0
+          this%cdist_factor(c,:)                      = spval
           this%ch4_sed_diff_col(c)                    = spval
           this%ch4_surf_diff_col(c)                   = spval
           this%ch4_sed_ebul_col(c)                    = spval
           this%ch4_surf_ebul_col(c)                   = spval
           this%ch4_surf_totflux_col(c)                = spval
-          this%gpp_col(c)                             = spval
-          this%npp_col(c)                             = spval
+          this%gpp_tot_col(c)                         = spval
+          this%npp_tot_col(c)                         = spval
+          this%gpp_vr_col(c,:)                        = spval
+          this%npp_vr_col(c,:)                        = spval
+          this%hr_wat_vr_col(c,:)                     = spval
+          this%hr_sed_vr_col(c,:)                     = spval
+          this%ctot_dep_col(c)                        = spval
           this%ch4_prod_wat_col(c,:)                  = spval
           this%ch4_oxid_wat_col(c,:)                  = spval
           this%ch4_prod_sed_col(c,:)                  = spval
@@ -445,10 +530,11 @@ contains
           this%chla_col(c,:)                          = spval
           this%soilc_col(c,:,:)                       = spval
        else
-          this%tp_col(c)                              = tp2d(g)
-          this%ph_col(c)                              = ph2d(g)
-          this%sdep_col(c)                            = sdep2d(g)
-          this%ltype_col(c)                           = type2d(g)
+          this%tp_col(c)                              = tp2d(g,ti)
+          this%ph_col(c)                              = ph2d(g,ti)
+          this%csed_col(c)                            = csed2d(g,ti)
+          this%cdep_col(c)                            = cdep2d(g,ti)
+          this%ltype_col(c)                           = type2d(g,ti)
           this%conc_wat_col(c,:,gn2lak)               = 0.347_r8
           this%conc_wat_col(c,:,go2lak)               = 0.425_r8 
           this%conc_wat_col(c,:,gco2lak)              = 0.032_r8
@@ -461,19 +547,26 @@ contains
           this%conc_sed_col(c,:,gco2lak)              = 0.013_r8
           this%conc_sed_col(c,:,gch4lak)              = 0.617e-6_r8
           
+          carbon = 1e3_r8 * csed2d(g,ti) * dampen / (1._r8 - exp(-dampen))
           do j = 1, nlevgrnd
              if (j<=nlevsoi) then
-                this%soilc_col(c,j,actC)              = 0.05e3 * carbon * exp(-zisoifl(j)) 
-                this%soilc_col(c,j,pasC)              = 0.95e3 * carbon * exp(-zisoifl(j)) 
+                this%soilc_col(c,j,actC)              = 0._r8 
+                this%soilc_col(c,j,pasC)              = carbon * exp(-dampen*zisoifl(j)) 
              else
                 this%soilc_col(c,j,actC)              = 0._r8
                 this%soilc_col(c,j,pasC)              = 0._r8
+             end if
+             if (j<js) then
+                this%cdist_factor(c,j) = dampen / (1._r8-exp(-dampen*ztot)) * &
+                   exp(-dampen*zisoifl(j))
+             else
+                this%cdist_factor(c,j) = 0._r8
              end if
           end do
        end if
     end do
 
-    deallocate(tp2d, ph2d, sdep2d, type2d)
+    deallocate(tp2d, ph2d, csed2d, cdep2d, type2d)
 
   end subroutine InitCold
 
