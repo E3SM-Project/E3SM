@@ -46,4 +46,8 @@ Initial Conditions:
     ch4: 0.0
     o2: 0.0
     n2: 0.0
+    aero_g_sw: 0.0
+    aero_ssa_sw: 0.0
+    aero_tau_sw: 0.0
+    aero_tau_lw: 0.0
 ...

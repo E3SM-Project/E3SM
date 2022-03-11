@@ -85,8 +85,8 @@ int main (int argc, char** argv) {
     // input/outputs into the driver (persisting between calls), and
     // we would just have to setup the pointers to them in the
     // FluxesBroadband object
-    const int nswbands = 14;
-    const int nlwbands = 16;
+    const auto nswbands = scream::rrtmgp::k_dist_sw.get_nband();
+    const auto nlwbands = scream::rrtmgp::k_dist_lw.get_nband();
     real2d sw_flux_up ("sw_flux_up" , ncol, nlay+1);
     real2d sw_flux_dn ("sw_flux_dn" , ncol, nlay+1);
     real2d sw_flux_dn_dir("sw_flux_dn_dir", ncol, nlay+1);
@@ -107,6 +107,20 @@ int main (int argc, char** argv) {
       sfc_alb_dif_vis, sfc_alb_dif_nir,
       sfc_alb_dir, sfc_alb_dif);
 
+    // Setup some dummy aerosol optical properties
+    auto aer_tau_sw = real3d("aer_tau_sw", ncol, nlay, nswbands);
+    auto aer_ssa_sw = real3d("aer_ssa_sw", ncol, nlay, nswbands);
+    auto aer_asm_sw = real3d("aer_asm_sw", ncol, nlay, nswbands);
+    auto aer_tau_lw = real3d("aer_tau_lw", ncol, nlay, nlwbands);
+    parallel_for(Bounds<3>(nswbands,nlay,ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
+        aer_tau_sw(icol,ilay,ibnd) = 0;
+        aer_ssa_sw(icol,ilay,ibnd) = 0;
+        aer_asm_sw(icol,ilay,ibnd) = 0;
+    });
+    parallel_for(Bounds<3>(nlwbands,nlay,ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
+        aer_tau_lw(icol,ilay,ibnd) = 0;
+    });
+
     // Run RRTMGP standalone codes and compare with AD run
     // Do something interesting here...
     // NOTE: these will get replaced with AD stuff that handles these
@@ -116,6 +130,8 @@ int main (int argc, char** argv) {
         p_lay, t_lay, p_lev, t_lev, gas_concs,
         sfc_alb_dir, sfc_alb_dif, mu0,
         lwp, iwp, rel, rei,
+        aer_tau_sw, aer_ssa_sw, aer_asm_sw,
+        aer_tau_lw,
         sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
         lw_flux_up, lw_flux_dn,
         sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
@@ -149,6 +165,10 @@ int main (int argc, char** argv) {
     rel.deallocate();
     rei.deallocate();
     cld.deallocate();
+    aer_tau_sw.deallocate();
+    aer_ssa_sw.deallocate();
+    aer_asm_sw.deallocate();
+    aer_tau_lw.deallocate();
     sw_flux_up_ref.deallocate();
     sw_flux_dn_ref.deallocate();
     sw_flux_dn_dir_ref.deallocate();

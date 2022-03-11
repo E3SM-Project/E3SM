@@ -57,6 +57,8 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   FieldLayout scalar2d_layout     { {COL   }, {m_ncol    } };
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_ncol,m_nlay} };
   FieldLayout scalar3d_layout_int { {COL,ILEV}, {m_ncol,m_nlay+1} };
+  FieldLayout scalar3d_swband_layout { {COL,SWBND,LEV}, {m_ncol, m_nswbands, m_nlay} };
+  FieldLayout scalar3d_lwband_layout { {COL,LWBND,LEV}, {m_ncol, m_nlwbands, m_nlay} };
 
   constexpr int ps = SCREAM_SMALL_PACK_SIZE;
   // Set required (input) fields here
@@ -82,6 +84,12 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
       add_field<Required>(it,scalar3d_layout_mid,kgkg,grid->name(), ps);
     }
   }
+  // Required aerosol optical properties from SPA
+  add_field<Required>("aero_tau_sw", scalar3d_swband_layout, nondim, grid->name(), ps);
+  add_field<Required>("aero_ssa_sw", scalar3d_swband_layout, nondim, grid->name(), ps);
+  add_field<Required>("aero_g_sw"  , scalar3d_swband_layout, nondim, grid->name(), ps);
+  add_field<Required>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid->name(), ps);
+
   // Set computed (output) fields
   add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid->name(), ps);
   add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid->name(), ps);
@@ -115,8 +123,10 @@ int RRTMGPRadiation::requested_buffer_size_in_bytes() const
                                 Buffer::num_2d_nlay*m_ncol*m_nlay*sizeof(Real) +
                                 Buffer::num_2d_nlay_p1*m_ncol*(m_nlay+1)*sizeof(Real) +
                                 Buffer::num_2d_nswbands*m_ncol*m_nswbands*sizeof(Real) +
-                                Buffer::num_3d_nswbands*m_ncol*(m_nlay+1)*m_nswbands*sizeof(Real) +
-                                Buffer::num_3d_nlwbands*m_ncol*(m_nlay+1)*m_nlwbands*sizeof(Real);
+                                Buffer::num_3d_nlev_nswbands*m_ncol*(m_nlay+1)*m_nswbands*sizeof(Real) +
+                                Buffer::num_3d_nlev_nlwbands*m_ncol*(m_nlay+1)*m_nlwbands*sizeof(Real) +
+                                Buffer::num_3d_nlay_nswbands*m_ncol*(m_nlay)*m_nswbands*sizeof(Real) +
+                                Buffer::num_3d_nlay_nlwbands*m_ncol*(m_nlay)*m_nlwbands*sizeof(Real);
 
   return interface_request;
 } // RRTMGPRadiation::requested_buffer_size
@@ -214,6 +224,15 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   m_buffer.sfc_alb_dif = decltype(m_buffer.sfc_alb_dif)("sfc_alb_dif", mem, m_ncol, m_nswbands);
   mem += m_buffer.sfc_alb_dif.totElems();
 
+  m_buffer.aero_tau_sw = decltype(m_buffer.aero_tau_sw)("aero_tau_sw", mem, m_ncol, m_nlay, m_nswbands);
+  mem += m_buffer.aero_tau_sw.totElems();
+  m_buffer.aero_ssa_sw = decltype(m_buffer.aero_ssa_sw)("aero_ssa_sw", mem, m_ncol, m_nlay, m_nswbands);
+  mem += m_buffer.aero_ssa_sw.totElems();
+  m_buffer.aero_g_sw   = decltype(m_buffer.aero_g_sw  )("aero_g_sw"  , mem, m_ncol, m_nlay, m_nswbands);
+  mem += m_buffer.aero_g_sw.totElems();
+  m_buffer.aero_tau_lw = decltype(m_buffer.aero_tau_lw)("aero_tau_lw", mem, m_ncol, m_nlay, m_nlwbands);
+  mem += m_buffer.aero_tau_lw.totElems();
+
   int used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for RRTMGPRadiation.");
 } // RRTMGPRadiation::init_buffers
@@ -282,6 +301,10 @@ void RRTMGPRadiation::run_impl (const int dt) {
   auto d_surf_lw_flux_up = get_field_in("surf_lw_flux_up").get_view<const Real*>();
   // Output fields
   auto d_tmid = get_field_out("T_mid").get_view<Real**>();
+  auto d_aero_tau_sw = get_field_in("aero_tau_sw").get_view<const Real***>();
+  auto d_aero_ssa_sw = get_field_in("aero_ssa_sw").get_view<const Real***>();
+  auto d_aero_g_sw   = get_field_in("aero_g_sw"  ).get_view<const Real***>();
+  auto d_aero_tau_lw = get_field_in("aero_tau_lw").get_view<const Real***>();
   auto d_sw_flux_up = get_field_out("SW_flux_up").get_view<Real**>();
   auto d_sw_flux_dn = get_field_out("SW_flux_dn").get_view<Real**>();
   auto d_sw_flux_dn_dir = get_field_out("SW_flux_dn_dir").get_view<Real**>();
@@ -328,6 +351,10 @@ void RRTMGPRadiation::run_impl (const int dt) {
   auto sfc_flux_dir_nir = m_buffer.sfc_flux_dir_nir;
   auto sfc_flux_dif_vis = m_buffer.sfc_flux_dif_vis;
   auto sfc_flux_dif_nir = m_buffer.sfc_flux_dif_nir;
+  auto aero_tau_sw     = m_buffer.aero_tau_sw;
+  auto aero_ssa_sw     = m_buffer.aero_ssa_sw;
+  auto aero_g_sw       = m_buffer.aero_g_sw;
+  auto aero_tau_lw     = m_buffer.aero_tau_lw;
 
   constexpr auto stebol = PC::stebol;
   const auto ncol = m_ncol;
@@ -439,6 +466,20 @@ void RRTMGPRadiation::run_impl (const int dt) {
 
       p_lev(i+1,nlay+1) = d_pint(i,nlay);
       t_lev(i+1,nlay+1) = d_tint(i,nlay);
+
+      // Note that RRTMGP expects ordering (col,lay,bnd) but the FM keeps things in (col,bnd,lay) order
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_nswbands*nlay), [&] (const int&idx) {
+          auto b = idx / nlay;
+          auto k = idx % nlay;
+            aero_tau_sw(i+1,k+1,b+1) = d_aero_tau_sw(i,b,k);
+            aero_ssa_sw(i+1,k+1,b+1) = d_aero_ssa_sw(i,b,k);
+            aero_g_sw  (i+1,k+1,b+1) = d_aero_g_sw  (i,b,k);
+      });
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_nlwbands*nlay), [&] (const int&idx) {
+          auto b = idx / nlay;
+          auto k = idx % nlay;
+          aero_tau_lw(i+1,k+1,b+1) = d_aero_tau_lw(i,b,k);
+      });
     });
   }
   Kokkos::fence();
@@ -497,6 +538,8 @@ void RRTMGPRadiation::run_impl (const int dt) {
     gas_concs,
     sfc_alb_dir, sfc_alb_dif, mu0,
     lwp, iwp, rel, rei,
+    aero_tau_sw, aero_ssa_sw, aero_g_sw,
+    aero_tau_lw,
     sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
     lw_flux_up, lw_flux_dn, 
     sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,

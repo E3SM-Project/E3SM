@@ -33,6 +33,10 @@ Initial Conditions:
     Filename: rrtmgp_init_ne2np4.nc
     Load Latitude:  true
     Load Longitude: true
+    aero_g_sw: 0.0
+    aero_ssa_sw: 0.0
+    aero_tau_sw: 0.0
+    aero_tau_lw: 0.0
 
 # The parameters for I/O control
 Scorpio:
