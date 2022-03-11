@@ -157,6 +157,14 @@ def precst(precc, precl):
     return var
 
 
+def tref_range(tmax, tmin):
+    """TREF daily range = TREFMXAV - TREFMNAV"""
+    var = tmax - tmin
+    var.units = "K"
+    var.long_name = "Surface Temperature Daily Range"
+    return var
+
+
 def tauxy(taux, tauy):
     """tauxy = (taux^2 + tauy^2)sqrt"""
     var = (taux**2 + tauy**2) ** 0.5
@@ -1372,6 +1380,12 @@ derived_variables = {
         [
             (("TREFMXAV",), lambda t: convert_units(t, target_units="DegC")),
             (("tasmax",), lambda t: convert_units(t, target_units="DegC")),
+        ]
+    ),
+    "TREF_range": OrderedDict(
+        [
+            (("TREFMXAV", "TREFMNAV"), lambda tmax, tmin: tref_range(tmax, tmin)),
+            (("tasmax", "tasmin"), lambda tmax, tmin: tref_range(tmax, tmin)),
         ]
     ),
     "TCO": OrderedDict([(("TCO",), rename)]),
