@@ -385,7 +385,7 @@ class TestAllScream(object):
     ###############################################################################
         """
         Check that all baselines are present (one subdir for all values of self._tests)
-        Note: if selt._test_uses_baselines[test]=False, skip the check
+        Note: if self._test_uses_baselines[test]=False, skip the check
         """
         # Sanity check
         expect(self._baseline_dir is not None,
@@ -416,7 +416,7 @@ class TestAllScream(object):
         expect(self._baseline_dir is not None, "Error! This routine should only be called when testing against pre-existing baselines.")
 
         for test in self._tests:
-            if selt._test_uses_baselines[test] and test not in self._tests_needing_baselines:
+            if self._test_uses_baselines[test] and test not in self._tests_needing_baselines:
                 # this test is not missing a baseline, but it may be expired.
 
                 baseline_file_sha = self.get_baseline_file_sha(test)
