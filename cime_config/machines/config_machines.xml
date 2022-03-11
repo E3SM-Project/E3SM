@@ -960,7 +960,7 @@
     <environment_variables>
       <env name="LD_LIBRARY_PATH">/ascldap/users/projects/e3sm/scream/libs/mpfr/install/weaver/lib:/ascldap/users/projects/e3sm/scream/libs/gcc/install/weaver/gcc/8.5.0/lib64:/ascldap/users/projects/e3sm/scream/libs/gcc/install/weaver/gcc/8.5.0/lib:$ENV{LD_LIBRARY_PATH}</env>
       <env name="PATH">/ascldap/users/projects/e3sm/scream/libs/gcc/install/weaver/gcc/8.5.0/bin:/ascldap/users/projects/e3sm/scream/libs/gcc/install/weaver/gcc/8.5.0/libexec/gcc/powerpc64le-unknown-linux-gnu/8.5.0:/ascldap/users/projects/e3sm/scream/libs/openmpi/install/weaver/gcc/8.5.0/cuda/10.1.105/bin:/ascldap/users/projects/e3sm/scream/libs/pnetcdf/install/weaver/gcc/8.5.0/cuda/10.1.105/bin:/ascldap/users/projects/e3sm/scream/libs/netcdf-c/install/weaver/gcc/8.5.0/cuda/10.1.105/bin:/ascldap/users/projects/e3sm/scream/libs/netcdf-fortran/install/weaver/gcc/8.5.0/cuda/10.1.105/bin:/ascldap/users/projects/e3sm/scream/libs/wget/bin:/ascldap/users/jgfouca/perl5/bin:$ENV{PATH}</env>
-      <env name="PERL5LIB">/ascldap/users/jgfouca/perl5/lib/perl5:/usr/share/perl5</env>
+      <env name="PERL5LIB">/ascldap/users/jgfouca/perl5/lib/perl5</env>
       <env name="PERL_LOCAL_LIB_ROOT">/ascldap/users/jgfouca/perl5</env>
     </environment_variables>
   </machine>
