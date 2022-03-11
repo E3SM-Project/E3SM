@@ -532,9 +532,9 @@
       <value stream="CLMCRUNCEPv7.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715/Solar6Hrly</value>
       <value stream="CLMCRUNCEPv7.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715/Precip6Hrly</value>
       <value stream="CLMCRUNCEPv7.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.cruncep_qianFill.0.5d.v7.c160715/TPHWL6Hrly</value>
-      <value stream="CLMGSWP3v1.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Solar</value>
-      <value stream="CLMGSWP3v1.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Precip</value>
-      <value stream="CLMGSWP3v1.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/TPHWL</value>
+      <value stream="CLMGSWP3v1.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Solar3Hrly</value>
+      <value stream="CLMGSWP3v1.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/Precip3Hrly</value>
+      <value stream="CLMGSWP3v1.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3.0.5d.v1.c170516/TPHWL3Hrly</value>
       <value stream="ELMGSWP3w5e5.Solar">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3-w5e5.c211106/Solar6Hrly</value>
       <value stream="ELMGSWP3w5e5.Precip">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3-w5e5.c211106/Precip6Hrly</value>
       <value stream="ELMGSWP3w5e5.TPQW">$DIN_LOC_ROOT_CLMFORC/atm_forcing.datm7.GSWP3-w5e5.c211106/TPHWL6Hrly</value> 
