@@ -699,6 +699,9 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   call addfld('DDSE_GWD',(/'lev'/),'A','J/kg/s','DSE tend from gw_tend()' )
   call addfld('DDSE_RAY',(/'lev'/),'A','J/kg/s','DSE tendency from Rayleigh friction' )
 
+  call addfld('DDSE_CRM_ALT',(/'lev'/),'A','J/kg/s','DSE tend from crm_physics_tend()' )
+  call addfld('DQLV_CRM_ALT',(/'lev'/),'A','J/kg/s','qLv tend from crm_physics_tend()' )
+
 end subroutine phys_init
 
 !===================================================================================================
@@ -719,12 +722,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   use crm_physics,            only: ncrms, crm_physics_tend
   use crm_ecpp_output_module, only: crm_ecpp_output_type, crm_ecpp_output_initialize, &
                                     crm_ecpp_output_copy, crm_ecpp_output_finalize
-#ifdef MMF_GLOBAL_LW
-  use physics_buffer,         only: pbuf_get_field
-  use phys_gmean,             only: gmean
-  use crmdims,                only: crm_nx_rad, crm_ny_rad, crm_nz
-  use physconst,              only: cpair
-#endif
   !-----------------------------------------------------------------------------
   ! Interface arguments
   !-----------------------------------------------------------------------------
@@ -770,15 +767,8 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
   integer :: i,k
 
-#ifdef MMF_GLOBAL_LW
-  real(r8), pointer :: qrl(:,:)
-  real(r8), pointer :: crm_qrad(:,:,:,:)
-  real(r8) :: qrl_gbl(pcols,begchunk:endchunk,pver)
-  real(r8) :: qrl_avg(pver)
-  integer :: crm_k
-  integer :: qrl_idx
-  integer :: crm_qrad_idx
-#endif
+  real(r8), dimension(begchunk:endchunk,pcols,pver)   :: DSE_save_chnk, QLV_save_chnk
+
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
   zero = 0._r8
@@ -853,6 +843,13 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     call crm_ecpp_output_initialize(crm_ecpp_output,      ncrms,pver)
   end if
 
+  ! Save MSE components
+  do c=begchunk, endchunk
+    ncol = phys_state(c)%ncol
+    DSE_save_chnk(c,1:ncol,1:pver) = phys_state(c)%s(1:ncol,1:pver)
+    QLV_save_chnk(c,1:ncol,1:pver) = phys_state(c)%q(1:ncol,1:pver,1)*latvap
+  end do
+
   call t_startf('crm_physics_tend')
   call crm_physics_tend(ztodt, phys_state, phys_tend, ptend, pbuf2d, cam_in, cam_out, &
                         species_class, crm_ecpp_output, &
@@ -863,6 +860,13 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     call physics_update(phys_state(c), ptend(c), ztodt, phys_tend(c))
     call check_energy_chng(phys_state(c), phys_tend(c), "crm_tend", nstep, ztodt, zero, &
                            mmf_qchk_prec_dp(c,:), mmf_qchk_snow_dp(c,:), mmf_rad_flux(c,:))
+  end do
+
+  ! Calculate MSE tend
+  do c=begchunk, endchunk
+    ncol = phys_state(c)%ncol
+    call outfld('DDSE_CRM_ALT',( phys_state(c)%s(1:ncol,1:pver)          - DSE_save_chnk(c,1:ncol,1:pver) )/ztodt, ncol, phys_state(c)%lchnk )
+    call outfld('DQLV_CRM_ALT',( phys_state(c)%q(1:ncol,1:pver,1)*latvap - QLV_save_chnk(c,1:ncol,1:pver) )/ztodt, ncol, phys_state(c)%lchnk )
   end do
 
   !-----------------------------------------------------------------------------
@@ -903,45 +907,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
   call t_stopf ('bc_physics2')
   call t_stopf ('bc_physics')
-
-#ifdef MMF_GLOBAL_LW
-  qrl_idx = pbuf_get_index('QRL')
-  crm_qrad_idx = pbuf_get_index('CRM_QRAD')
-
-  ! gather data for calculating global mean LW heating
-  do c=begchunk, endchunk
-    ncol = phys_state(c)%ncol
-    call shr_sys_flush(iulog)
-    phys_buffer_chunk => pbuf_get_chunk(pbuf2d, c)
-    call pbuf_get_field(phys_buffer_chunk, qrl_idx, qrl)
-    do k = 1, pver
-      qrl_gbl(1:ncol,c,k) = qrl(1:ncol,k)
-    end do
-  end do
-
-  ! Calculate global mean longwave heating
-  do k = 1, pver
-    call gmean(qrl_gbl(:,:,k), qrl_avg(k))
-  end do
-
-  ! apply global mean longwave tendency to local columns
-  do c=begchunk, endchunk
-    phys_buffer_chunk => pbuf_get_chunk(pbuf2d, c)
-    call pbuf_get_field(phys_buffer_chunk, crm_qrad_idx, crm_qrad)
-    call pbuf_get_field(phys_buffer_chunk, qrl_idx, qrl)
-    do i = 1,ncol
-      do k = 1, pver
-        qrl(i,k) = qrl_avg(k)
-        crm_k = pver - k + 1
-        if (crm_k>=1 .and. crm_k<=crm_nz) then
-          ! Note that QRL has already been multiplied by pdel (i.e. phys_state(c)%pdel(i,k))
-          crm_qrad(i,:,:,crm_k) = crm_qrad(i,:,:,crm_k) + qrl_avg(k) / cpair
-        end if
-      end do
-    end do
-  end do
-  
-#endif
 
   if (use_ECPP) then
     call crm_ecpp_output_finalize(crm_ecpp_output_chunk)
