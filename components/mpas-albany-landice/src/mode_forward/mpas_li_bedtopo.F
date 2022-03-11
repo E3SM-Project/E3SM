@@ -396,7 +396,7 @@ contains
       real (kind=RKIND), dimension(nglv*2*nglv) :: maskSLgrid1D
 
       integer :: err_tmp
-      integer :: unit_num      ! SLM variable
+      integer :: unit_num_slm   ! SLM variable
       integer :: itersl, dtime ! SLM variable
       real    :: starttime     ! SLM variable
 
@@ -492,10 +492,10 @@ contains
          slmTimeStep = 0
 
          ! set SLM unit number to the MALI output log file unit
-         unit_num = domain % logInfo % outputLog % unitNum
+         unit_num_slm = domain % logInfo % outputLog % unitNum
 
          ! series of calling SLM routines
-         call sl_set_unit_num(unit_num)
+         call sl_set_unit_num(unit_num_slm)
          call sl_drive_readnl(itersl, dtime, starttime)
          call sl_call_readnl
          call sl_solver_checkpoint(itersl, dtime)
