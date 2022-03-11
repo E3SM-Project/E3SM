@@ -101,6 +101,8 @@ contains
        c=veg_pp%column(p) ! for hr
 
        ! Assign values
+       write(iulog,*) 'TRS0: ', p, c, g, pft, begp, endp, begg, endg
+       write(iulog,*) 'TRS3: ', col_cf%hr(:)
        this%hr(g,pft) = col_cf%hr(c)   ! Every pft in this column gets this hr value
        this%npp(g,pft) = veg_cf%npp(p)
        this%pftwgt(g,pft) = veg_pp%wtgcell(p)

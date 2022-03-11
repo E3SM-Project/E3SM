@@ -11,7 +11,7 @@ module EcosystemDynMod
   use decompMod           , only : bounds_type
   use perf_mod            , only : t_startf, t_stopf
   use spmdMod             , only : masterproc
-  use clm_varctl          , only : use_century_decomp
+  use clm_varctl          , only : use_century_decomp, iulog
   use CNStateType         , only : cnstate_type
   use CNCarbonFluxType    , only : carbonflux_type
   use CNCarbonStateType   , only : carbonstate_type
@@ -150,6 +150,8 @@ contains
 
     !-----------------------------------------------------------------------
   
+    write(iulog, *) 'TRS: in EcosystemDynLeaching'
+
     ! only do if ed is off
     if( .not. use_fates) then
        !if(.not.(use_pflotran.and.pf_cmode)) then

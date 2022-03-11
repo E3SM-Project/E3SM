@@ -98,7 +98,8 @@ contains
          lnd_present=lnd_present,       &
          iac_present=iac_present,       &
          lnd_gnam=lnd_gnam,             &
-         iac_gnam=iac_gnam)
+         iac_gnam=iac_gnam,             &
+         esmf_map_flag=esmf_map_flag)
 
 
     if (iac_present) then
@@ -143,6 +144,8 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Sl2z'
           end if
+
+          write(logunit, *) 'TRS prep_iac_mod esmf_map_flag', esmf_map_flag
 
           call seq_map_init_rcfile(mapper_Sl2z, lnd(1), iac(1), &
                'seq_maps.rc','lnd2iac_smapname:','lnd2iac_smaptype:',samegrid_lz, &
