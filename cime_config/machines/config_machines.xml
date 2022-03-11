@@ -926,13 +926,13 @@
     <DIN_LOC_ROOT_CLMFORC>/home/projects/e3sm/scream/data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/home/projects/e3sm/baselines/weaver/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/home/projects/e3sm/mappy/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>64</GMAKE_J>
+    <CCSM_CPRNC>/home/projects/e3sm/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>32</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>1</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>1</MAX_MPITASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
@@ -964,8 +964,6 @@
       <env name="PATH">/ascldap/users/projects/e3sm/scream/libs/gcc/install/weaver/gcc/8.5.0/bin:/ascldap/users/projects/e3sm/scream/libs/gcc/install/weaver/gcc/8.5.0/libexec/gcc/powerpc64le-unknown-linux-gnu/8.5.0:/ascldap/users/projects/e3sm/scream/libs/openmpi/install/weaver/gcc/8.5.0/cuda/10.1.105/bin:/ascldap/users/projects/e3sm/scream/libs/pnetcdf/install/weaver/gcc/8.5.0/cuda/10.1.105/bin:/ascldap/users/projects/e3sm/scream/libs/netcdf-c/install/weaver/gcc/8.5.0/cuda/10.1.105/bin:/ascldap/users/projects/e3sm/scream/libs/netcdf-fortran/install/weaver/gcc/8.5.0/cuda/10.1.105/bin:/ascldap/users/projects/e3sm/scream/libs/wget/bin:/ascldap/users/jgfouca/perl5/bin:$ENV{PATH}</env>
       <env name="PERL5LIB">/ascldap/users/jgfouca/perl5/lib/perl5</env>
       <env name="PERL_LOCAL_LIB_ROOT">/ascldap/users/jgfouca/perl5</env>
-      <env name="PERL_MB_OPT">--install_base /ascldap/users/jgfouca/perl5</env>
-      <env name="PERL_MM_OPT">INSTALL_BASE=/ascldap/users/jgfouca/perl5</env>
     </environment_variables>
   </machine>
 
