@@ -146,7 +146,6 @@ module ELMFatesInterfaceMod
    use FatesPlantHydraulicsMod, only : InitHydrSites
    use FatesPlantHydraulicsMod, only : RestartHydrStates
 
-   use pftvarcon              , only : pprodharv10
    use dynHarvestMod          , only : harvest_rates  ! these are dynamic in space and time
    use dynHarvestMod          , only : num_harvest_vars, harvest_varnames, wood_harvest_units
    use FatesConstantsMod      , only : hlm_harvest_area_fraction
@@ -815,9 +814,7 @@ contains
             this%fates(nc)%bc_in(s)%hlm_harvest_catnames = harvest_varnames
             this%fates(nc)%bc_in(s)%hlm_harvest_units = wood_harvest_units
          end if
-         ! this can be gridcell specific parameter in the future
-         this%fates(nc)%bc_in(s)%pprodharv10_forest_mean=sum(pprodharv10(1:8))/8._r8
-         this%fates(nc)%bc_in(s)%site_area=col_pp%wtgcell(c)*grc_pp%area(g)*1e6_r8
+         !this%fates(nc)%bc_in(s)%site_area=col_pp%wtgcell(c)*grc_pp%area(g)*1e6_r8
 
       end do
 
