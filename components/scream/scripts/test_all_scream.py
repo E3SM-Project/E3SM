@@ -80,6 +80,17 @@ class TestAllScream(object):
             ("cov" , "coverage"),
         ])
 
+        # Not all builds are ment to perform comparisons against pre-built baselines
+        self._test_uses_baselines = OrderedDict([
+            ("dbg" , True),
+            ("sp"  , True),
+            ("fpe" , False),
+            ("opt" , True),
+            ("valg", False),
+            ("cmc",  False),
+            ("cov" , False),
+        ])
+
         self._tests_cmake_args = {
             "dbg" : [("CMAKE_BUILD_TYPE", "Debug"),
                      ("EKAT_DEFAULT_BFB", "True")],
@@ -374,18 +385,22 @@ class TestAllScream(object):
     ###############################################################################
         """
         Check that all baselines are present (one subdir for all values of self._tests)
+        Note: if selt._test_uses_baselines[test]=False, skip the check
         """
         # Sanity check
         expect(self._baseline_dir is not None,
                 "Error! Baseline directory not correctly set.")
 
         for test in self._tests:
-            data_dir = self.get_preexisting_baseline(test)
-            if not data_dir.is_dir():
-                self._tests_needing_baselines.append(test)
-                print(" -> Test {} is missing baselines".format(test))
+            if self._test_uses_baselines[test]:
+                data_dir = self.get_preexisting_baseline(test)
+                if not data_dir.is_dir():
+                    self._tests_needing_baselines.append(test)
+                    print(" -> Test {} is missing baselines".format(test))
+                else:
+                    print(" -> Test {} appears to have baselines".format(test))
             else:
-                print(" -> Test {} appears to have baselines".format(test))
+                print(" -> Test {} does not use baselines".format(test))
 
     ###############################################################################
     def baselines_are_expired(self):
@@ -401,7 +416,7 @@ class TestAllScream(object):
         expect(self._baseline_dir is not None, "Error! This routine should only be called when testing against pre-existing baselines.")
 
         for test in self._tests:
-            if test not in self._tests_needing_baselines:
+            if selt._test_uses_baselines[test] and test not in self._tests_needing_baselines:
                 # this test is not missing a baseline, but it may be expired.
 
                 baseline_file_sha = self.get_baseline_file_sha(test)
@@ -565,7 +580,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         result += "SCREAM_BUILD_PARALLEL_LEVEL={} CTEST_PARALLEL_LEVEL={} ctest {} ".format(self._compile_res_count[test], self._testing_res_count[test], verbosity)
         result += "--resource-spec-file {}/ctest_resource_file.json ".format(test_dir)
 
-        if self._baseline_dir is not None:
+        if self._baseline_dir is not None and self._test_uses_baselines[test]:
             cmake_config += " -DSCREAM_TEST_DATA_DIR={}".format(self.get_preexisting_baseline(test))
 
         if not self._submit:
@@ -596,48 +611,50 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
     ###############################################################################
     def generate_baselines(self, test, commit):
     ###############################################################################
-        test_dir = self.get_test_dir(self._baseline_dir, test)
-
-        cmake_config = self.generate_cmake_config(self._tests_cmake_args[test])
-        cmake_config += " -DSCREAM_BASELINES_ONLY=ON"
-
-        print("===============================================================================")
-        print("Generating baseline for test {} with config '{}'".format(self._test_full_names[test], cmake_config))
-        print("===============================================================================")
 
         success = True
 
-        try:
-            # We cannot just crash if we fail to generate baselines, since we would
-            # not get a dashboard report if we did that. Instead, just ensure there is
-            # no baseline file to compare against if there's a problem.
-            stat, _, err = run_cmd("{} {}".format(cmake_config, self._root_dir),
-                                   from_dir=test_dir, verbose=True, dry_run=self._dry_run)
-            if stat != 0:
-                print ("WARNING: Failed to configure baselines:\n{}".format(err))
-                success = False
+        if self._test_uses_baselines[test]:
+            test_dir = self.get_test_dir(self._baseline_dir, test)
 
-            else:
-                cmd = "make -j{} && make -j{} baseline".format(self._compile_res_count[test], self._testing_res_count[test])
-                if self._parallel:
-                    start, end = self.get_taskset_range(test)
-                    cmd = "taskset -c {}-{} sh -c '{}'".format(start,end,cmd)
+            cmake_config = self.generate_cmake_config(self._tests_cmake_args[test])
+            cmake_config += " -DSCREAM_BASELINES_ONLY=ON"
 
-                stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+            print("===============================================================================")
+            print("Generating baseline for test {} with config '{}'".format(self._test_full_names[test], cmake_config))
+            print("===============================================================================")
 
+            try:
+                # We cannot just crash if we fail to generate baselines, since we would
+                # not get a dashboard report if we did that. Instead, just ensure there is
+                # no baseline file to compare against if there's a problem.
+                stat, _, err = run_cmd("{} {}".format(cmake_config, self._root_dir),
+                                       from_dir=test_dir, verbose=True, dry_run=self._dry_run)
                 if stat != 0:
-                    print("WARNING: Failed to create baselines:\n{}".format(err))
+                    print ("WARNING: Failed to configure baselines:\n{}".format(err))
                     success = False
 
-        finally:
-            # Clean up the directory, by removing everything but the 'data' subfolder. This must
-            # happen unconditionally or else subsequent runs could be corrupted
-            run_cmd_no_fail(r"find -maxdepth 1 -not -name data ! -path . -exec rm -rf {} \;",
-                            from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+                else:
+                    cmd = "make -j{} && make -j{} baseline".format(self._compile_res_count[test], self._testing_res_count[test])
+                    if self._parallel:
+                        start, end = self.get_taskset_range(test)
+                        cmd = "taskset -c {}-{} sh -c '{}'".format(start,end,cmd)
 
-        if success:
-            # Store the sha used for baselines generation
-            self.set_baseline_file_sha(test, commit)
+                    stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+
+                    if stat != 0:
+                        print("WARNING: Failed to create baselines:\n{}".format(err))
+                        success = False
+
+            finally:
+                # Clean up the directory, by removing everything but the 'data' subfolder. This must
+                # happen unconditionally or else subsequent runs could be corrupted
+                run_cmd_no_fail(r"find -maxdepth 1 -not -name data ! -path . -exec rm -rf {} \;",
+                                from_dir=test_dir, verbose=True, dry_run=self._dry_run)
+
+            if success:
+                # Store the sha used for baselines generation
+                self.set_baseline_file_sha(test, commit)
 
         return success
 
