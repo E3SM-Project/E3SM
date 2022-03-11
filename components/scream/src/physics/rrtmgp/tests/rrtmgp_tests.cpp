@@ -157,6 +157,7 @@ int main(int argc, char** argv) {
 
     // Run RRTMGP code on dummy atmosphere
     std::cout << "Run RRTMGP...\n";
+    const Real tsi_scaling = 1;
     scream::rrtmgp::rrtmgp_main(
             ncol, nlay,
             p_lay, t_lay, p_lev, t_lev, gas_concs,
@@ -167,7 +168,7 @@ int main(int argc, char** argv) {
             sw_flux_up, sw_flux_dn, sw_flux_dir,
             lw_flux_up, lw_flux_dn,
             sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
-            lw_bnd_flux_up, lw_bnd_flux_dn);
+            lw_bnd_flux_up, lw_bnd_flux_dn, tsi_scaling);
 
     // Check values against baseline
     std::cout << "Check values...\n";

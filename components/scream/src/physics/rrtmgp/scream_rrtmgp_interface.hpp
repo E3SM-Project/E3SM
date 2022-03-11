@@ -66,7 +66,7 @@ namespace scream {
                 real2d &lw_flux_up, real2d &lw_flux_dn,
                 real3d &sw_bnd_flux_up, real3d &sw_bnd_flux_dn, real3d &sw_bnd_flux_dn_dir,
                 real3d &lw_bnd_flux_up, real3d &lw_bnd_flux_dn,
-                const bool i_am_root = true);
+                const Real tsi_scaling, const bool i_am_root = true);
         /*
          * Perform any clean-up tasks
          */
@@ -80,7 +80,7 @@ namespace scream {
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
                 OpticalProps2str &aerosol, OpticalProps2str &clouds,
-                FluxesByband &fluxes, const bool i_am_root);
+                FluxesByband &fluxes, const Real tsi_scaling, const bool i_am_root);
         /*
          * Longwave driver (called by rrtmgp_main)
          */
