@@ -173,6 +173,9 @@ module ocn_init_mode
       ! Expand sphere if it needs to be expanded
       call ocn_init_expand_sphere(domain, domain % streamManager, a, ierr)
 
+      ! Set the Coriolis parameter is a realist value is requested
+      call ocn_init_realistic_coriolis_parameter(domain, ierr)
+
    end function ocn_init_mode_init!}}}
 
 !***********************************************************************

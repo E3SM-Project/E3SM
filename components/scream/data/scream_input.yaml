@@ -10,6 +10,8 @@ Atmosphere Driver:
       Enable Output Fields Checks: false
       Enable Input Fields Checks: false
       Grid: Dynamics
+      Vertical Coordinate Filename: "<${COMPSET} : .*SCREAM%AQUA.* => ${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc : ${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc>"
+      Moisture: moist
     Process 1:
       Process Name: SHOC
       Enable Output Fields Checks: false
@@ -102,37 +104,27 @@ SCREAM:
 # Note: HOMME settings will be translated into data/namelist.nl
 HOMME:
   ctl_nl:
-    partmethod        : 4
-    cubed_sphere_map  : 0
-    topology          : cube
-    u_perturb         : 1
-    rotate_grid       : 0
-    ne                : 4
-    statefreq         : 9999
-    mesh_file         : /dev/null
-    tstep             : 300
-    nu                : 3.4e-8 
-    nu_div            : -1 
-    nu_p              : -1
-    nu_q              : -1
-    nu_s              : -1
-    nu_top            : 2.5e+5
-    se_ftype          : 0
-    limiter_option    : 9
-    vert_remap_q_alg  : 10
-    hypervis_scaling  : 3.0
-    hypervis_order    : 2
-    hypervis_subcycle : 1
-    hypervis_subcycle_tom : 1
-    theta_hydrostatic_mode : true
-    theta_advect_form : 1
-    tstep_type        : 5
-    dt_remap_factor   : 1
-    dt_tracer_factor  : 1
-    moisture:           moist
-
-  vert_nl:
-    vfile_mid : ./data/scream-72m.ascii
-    vfile_int : ./data/scream-72i.ascii
-
+    cubed_sphere_map                : 0
+    disable_diagnostics             : false
+    dt_remap_factor                 : 1
+    dt_tracer_factor                : 1
+    hypervis_order                  : 2
+    hypervis_scaling                : 3.0
+    hypervis_subcycle               : 1
+    hypervis_subcycle_tom           : 1
+    nu                              : 3.4e-8
+    nu_top                          : 2.5e+5
+    se_ftype                        : 0
+    se_geometry                     : "sphere"
+    se_limiter_option               : 9
+    se_ne                           : 4
+    se_nsplit                       : -1
+    se_partmethod                   : 4
+    se_topology                     : "cube"
+    se_tstep                        : 300
+    statefreq                       : 9999
+    theta_advect_form               : 1
+    theta_hydrostatic_mode          : true
+    tstep_type                      : 5
+    vert_remap_q_alg                : 10
 ...

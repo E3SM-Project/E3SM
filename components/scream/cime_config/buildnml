@@ -225,9 +225,10 @@ def buildnml(case, caseroot, compname):
             fd.write("&{}\n".format(outer))
             for k, v in inner.items():
                 if type(v) is str:
-                    fd.write("{} = '{}'\n".format(k, v))
-                elif type(v) is bool:
-                    fd.write("{} = {}\n".format(k, str(v).lower()))
+                    if str(v).lower() in ['.false.','.true.']:
+                        fd.write("{} = {}\n".format(k, v))
+                    else:
+                        fd.write("{} = '{}'\n".format(k, v))
                 else:
                     fd.write("{} = {}\n".format(k, v))
 
