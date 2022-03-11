@@ -1,3 +1,223 @@
+3/4/2022
+
+* Heh, so here's something funny.  Kate's original ZATM compset string was:
+
+  2000_CAM5_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM
+
+  I think she was trying to find a real CAM/CLM coupling case to attach
+  GCAM to.  However, SPBC doesn't run the carbon nitrogen model (and other
+  bgc options), so we need to use CLM45%%CNPRDCTCBC like ZLND does.  (I
+  think any CN* or BGC* option to clm would probably work, but any SP*
+  option definitely will not.  See
+  ~/compy/E3SM_current/components/clm/bld/CLMBuildNamelist.pm).
+
+! But, I wasn't sure what CICE was doing there - we had never talked about
+  coupling with the ice model.  So I also changed things to stub out ice
+  and ocean - ...SICE_SOCN....
+
+  But, obviously, that doesn't work - you can't just stub out the ocean
+  model when coupling with atmosphere, because all those water grid cells
+  then are just using their initialized data values.  In practical terms,
+  this means that the surface temp (along with all the other variables) is
+  set to zero (degK), which ends up failing in some calculation where we
+  are dividing by surf_t.
+
+  So, of course we need at least DOCN set when using the atm/lnd coupling.
+  Apparently, CICE *also* prescribes ice values - DICE does not work, but I
+  don't think CICE actually runs a model but inputs data values?  Maybe
+  calculated ice values?
+
+  Anyway, I could find no existing compsets with atm/lnd coupling where we
+  didn't either have an active ice model or CICE set, so which is probably
+  why Kate included it in the first place.
+
+* The 2000_CAM5_CLM45%CNPRDCTCBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_GCAM
+  compset with 480 procs for lnd and atm runs without bombing, but it times
+  out after only one day of processing, with 4 hours wall clock.  That
+  seems really really slow, but maybe that's just the way these things
+  work.  That's why restarting is so important, and maybe I need thousands
+  of procs to run with as well.
+
+  I've turned off DEBUG and rebuilt and resubmitted, to see if that will
+  speed things up.
+
+* Also, Kate encountered run issues with DEBUG=FALSE.  I briefly looked at
+  her log message, and it failed while trying to do E3SM mapping (which
+  isn't supported), which is crazy because that is governed by a namelist
+  variable which should always be false.  So my guess was a memory error,
+  but I've fixed some issues in the merged code since then, and Alan had
+  made some changes in his code (which is merged into my branch), so I'm
+  kind of hoping the thing just runs now.  Kate was unable to get ZATM to
+  run off her branch and I'm cranking out a full day (about 50 timesteps)
+  before time out, so maybe that will even happen.
+
+* If things really are this slow, then we'll have to figure something out
+  to test lnd->iac coupling, which will only happen at the end of a model
+  year.  In principle, it shouldn't change between ZLND and ZATM, and we
+  can run a full year of ZLND in our four hour block, so there's that.  But
+  we definitely want to make sure it still works correctly under ZATM as
+  well. 
+
+  Given how ZLND runs relatively quickly, I'm skeptical that adding ZATM
+  coupling (and maybe the ocean/ice calculations) could make it run
+  something like 700 times slower (as we get two years of ZLND in 4.5 wall
+  clock hours).  But I don't really know how slow cam is on compy, so I
+  definitely need to ask somebody about that, and what the usual number of
+  procs are used for lnd/atm runs.
+
+3/1/2022
+
+* I never included Kate's last update, which splains where we are and where
+  we should be going when she left.
+
+----
+  From:	Bond-Lamberty, Benjamin
+  Sent:	Wednesday, January 12, 2022 9:40 AM
+  To:	Alan Di Vittorio; Shippert, Timothy R
+  Subject:	Current status notes
+
+  Hi guys, as promised here are Kate's notes from last week on the current
+  status of the GCAM coupling work. Thoughts/corrections are welcome if you
+  see something surprising. 
+
+  Thanks,
+  Ben
+
+Current status
+* We have three compsets that we've been testing: Z, ZLND, ZATM
+
+o Z: GCAM + all iac code (GLM, mksurfdat, etc). This compset will complete 
+  without errors.
+
+o ZLND: GCAM + all iac code + ELM. This compset will complete without
+  errors.  However, Alan & Tim are still verifying that the land is
+  being passed correctly from GCAM to ELM (they think that the
+  mapping file isn't doing fractions correctly right
+  now). Additionally, I don't think we've tested whether the ELM data
+  used for scalars (NPP, HR) are being passed correctly. 
+
+o ZATM: GCAM + ELM + EAM. This compset currently times out in the atm run. 
+  I have not tried giving it a large enough wall clock or enough
+  nodes to see if it  would complete successfully. It does
+  successfully run the initialization code +  GCAM. I doubt that CO2
+  emissions are being passed correctly from GCAM to  EAM even though
+  we have no errors (Kate will try to check this more before  Sunday) 
+
+* Everything has been tested in debug mode. For reasons I don't
+  understand, running with DEBUG set to false generates an error for
+  compsets that work in DEBUG mode. 
+
+o For ZLND, the error is: "ERROR: (seq_map_init_rcfile)  ERROR: esmf
+  SMM not supported" 
+
+* We have tested running multiple years and running from annual
+  restarts. I have not tried using a monthly restart, but don't
+  expect issues. 
+
+* We have several branches. 
+
+o The main branches are Tim's:
+? E3SM: shippert/gcam/active-gcam-debug
+? GIAC: shippert/merge
+
+o Alan & Kate will create new branches from those and then Tim integrates those 
+  changes later. I think all of Alan's changes have been incorporated
+  into Tim's branches. Kate still has changes on these branches: 
+
+? E3SM: kvcalvin/gcam/atm-coupling
+? GIAC: kvcalvin/cleanup
+o GCAM is using the `e3sm-integration` branch on GitHub (jgcri/gcam-core repo). 
+
+  It branched from GCAMv5.3 and then added a bunch of coupling
+  code. I've also cherry-picked some post v5.3 bugfixes (e.g., those
+  related to tidyr). I debated upgrading to v5.4 since it includes
+  DACCS and lets GCAM run on multiple processors on a single
+  node. But, GCAMv5.4 has a lot more solver failures and that seemed
+  too risky for E3SM. 
+
+Remaining work
+* Need to thoroughly test the coupling
+
+o We've got things mechanically working, but need to check that
+  everything that is being passed through the coupler is being passed
+  correctly 
+
+* Need to get all input files in the right spot. Right now, our run
+  scripts copy a bunch of files to the case directory to work. 
+
+o Namelist defaults: The namelist isn't being generated with the
+  right defaults (Tim was looking into this). 
+
+o GCAM inputs: The model was slow when it was using GCAM input files
+  from the inputdata directory. To speed up testing, we've just been
+  copying those files to the case directory, but they should not be
+  there. 
+
+o Something else: I think there was some other issue related to
+  having C/C++ copy files to the right directory on its own, but I
+  need to look into this to remember what was going wrong. 
+
+* Need to figure out (and fix) whatever is leading to the creation of
+  a $RUNDIR folder in the scratch directory. 
+
+* Need to add tests, clean up code, and open a PR
+
+o Once the coupling is working correctly, we need to open the PR. We
+  have only been testing on compy. Rob J says the infrastructure team
+  can help port to other E3SM supported machines when we are ready
+
+o We need to add a set of smoke tests at a minimum to ensure no one
+  breaks the code. I don't think those need to be scientifically
+  valid compsets, but they do need to work out of the box.
+
+o There is probably some code clean up to be done. Not sure how
+  important that is given E3SM coding/style standards but probably
+  worth a look 
+
+* Need to document, including how to use and how to extend the
+  coupling to other variables
+
+o We may want to check with Rob on whether there would be value in
+  having documentation on how to add a new component - in general, I
+  would think so, but I think they are switching couplers at some
+  point in the future. 
+
+* Need to develop scientifically valid compsets
+
+o Resolution: We wanted a coarser resolution version of the land &
+  atm for testing, but you have to make mapping files between
+  components. We've currently set up the land/atm to be at ~2 x 2.5
+  and the iac at 0.9 x 1.25. However, the land/atm resolution is not
+  scientifically supported in E3SM. It will need to be changed to a
+  ne grid (standard low res is ne30, but they test sometimes at
+  ne4). We could change the resolution of the iac grid but we'd need
+  to regenerate some mapping files there between GCAM regions and the
+  grid.  
+
+o GCAM configurations: 
+
+? I've just been using a GCAM reference case for testing. We will
+  need to set up configurations for the specific v2 scenarios planned
+  (low radiative forcing scenarios with different types of CDR).  
+
+? For reasons I don't completely understand, the GCAM reference
+  scenario has solving problems in 2020 --- this could be related to
+  debug mode (testing that now).  
+
+? GCAM uses binary restarts, so changing the scenario (or the machine
+  or the compiler) means we need to regenerate the restarts for the
+  GCAM historical period (this can be done by simply running GCAM
+  through that period with the exact compiler options & configuration
+  planned). I do not know whether that needs to be done when you turn
+  off debug mode (testing that now). 
+
+* Need to develop some standard diagnostics and analysis scripts. We
+  have stuff from both E3SM and GCAM, but haven't standardized or
+  automated stuff related to the coupling. We could probably start
+  from my GEC paper figure scripts or other iESM scripts.  
+
+----
+
 2/11/2022
 
 * Okay, I don't know if anything below makes sense anymore, but *this* is
@@ -913,7 +1133,7 @@ TRS:  33112  15 280 115  348.7500   17.4346    5.8889    5.8889
   # Set these to reflect what directories to clone and build into, and what
   # branches and submodule branches to change to.
   clone=E3SM_current
-  build=zlnd_merge
+  build=zatm_v2
   branch=shippert/gcam/active-gcam-debug
   giac_branch=kvcalvin/working
   gcam_branch=e3sm-integration
@@ -931,8 +1151,7 @@ TRS:  33112  15 280 115  348.7500   17.4346    5.8889    5.8889
 
   cd ~/$clone/cime/scripts
 
-  mkdir ~/$build
-  ./create_newcase --project e3sm --case ~/$build --compset ZLND --res f19_g16
+  ./create_newcase --project e3sm --case ~/$build --compset ZATM --res f19_g16
 
   cd ~/$build
 
@@ -946,11 +1165,7 @@ TRS:  33112  15 280 115  348.7500   17.4346    5.8889    5.8889
   ./xmlchange -id "STOP_OPTION" -val "nyears"
   ./xmlchange --id "JOB_WALLCLOCK_TIME" --val 4:00:00
   ./xmlchange --id "NTASKS_LND" --val 480
-
-XXX  This doesn't work - don't know the right base one, but
-XXX  ~/zlnd_v2/user_nl_gcam works
-  cp /compyfs/d3x132/iac_E3SM_working_Z/user_nl_gcam .
-XXX
+  ./xmlchange --id "NTASKS_ATM" --val 480
 
   cp ~/zlnd_v2/user_nl_gcam .
 
@@ -960,7 +1175,7 @@ XXX
   # Modify this to match the new build directory name
   scratchdir=/compyfs/d3a230/e3sm_scratch/$build
   rundir=$scratchdir/run
-  kdir=/compyfs/d3x132/e3sm_scratch/gcam_Z
+  kdir=/compyfs/d3x132/e3sm_scratch/zatm
 
   cp -r $kdir/input $scratchdir
   cp $kdir/run/log_conf.xml $rundir
@@ -984,9 +1199,7 @@ XXX
   cp $rundir/surfdata_360x720_mcrop_init.nc  $rundir/surfdata_360x720_mcrop_dyn.nc
   cp $rundir/landuse.timeseries_0.9x1.25_HIST_simyr2015_c201021.nc  $rundir/surfdata_iESM_dyn.nc
 
-  ./case.build --clean-all
-  ./case.build 
-  ./case.submit
+  ./case.build --clean-all && ./case.build && ./case.submit
 
 11/8/2021
 

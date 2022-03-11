@@ -75,6 +75,11 @@ contains
           cam_in(c)%asdif(i)     =  x2a(index_x2a_Sx_avsdf, ig)  
           cam_in(c)%aldif(i)     =  x2a(index_x2a_Sx_anidf, ig)
           cam_in(c)%ts(i)        =  x2a(index_x2a_Sx_t,     ig)  
+
+          if (c == 487) then 
+             write(*,*) "TRS %ts: ", c, i, cam_in(c)%ts(i)
+          endif
+
           cam_in(c)%sst(i)       =  x2a(index_x2a_So_t,     ig)             
           cam_in(c)%snowhland(i) =  x2a(index_x2a_Sl_snowh, ig)  
           cam_in(c)%snowhice(i)  =  x2a(index_x2a_Si_snowh, ig)  
@@ -131,7 +136,7 @@ contains
           ig=ig+1
 
        end do
-    end do
+    end do 
 
     ! Get total co2 flux from components,
     ! Note - co2_transport determines if cam_in(c)%cflx(i,c_i(1:4)) is allocated
