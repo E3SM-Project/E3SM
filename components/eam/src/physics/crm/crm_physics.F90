@@ -2,6 +2,9 @@ module crm_physics
 !---------------------------------------------------------------------------------------------------
 ! Purpose: Provides the interface to the crm code for the MMF configuration
 !---------------------------------------------------------------------------------------------------
+#ifdef SPMD
+   use mpishorthand
+#endif
    use shr_kind_mod,    only: r8 => shr_kind_r8
    use shr_sys_mod,     only: shr_sys_flush   
    use cam_abortutils,  only: endrun
@@ -13,6 +16,13 @@ module crm_physics
    use modal_aero_data, only: ntot_amode
 #endif
    use cam_history,     only: outfld
+
+#if defined(MMF_GLOBAL_QRT) || defined(MMF_GLOBAL_QRS) || defined(MMF_GLOBAL_QRL)
+  use physics_buffer,         only: pbuf_get_field
+  use phys_gmean,             only: gmean
+  use crmdims,                only: crm_nx_rad, crm_ny_rad, crm_nz
+  use physconst,              only: cpair
+#endif
 
    implicit none 
    private
@@ -427,10 +437,10 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
       if (use_gw_convect) call pbuf_set_field(pbuf2d, ttend_dp_idx, 0._r8)
    end if
 
-   call addfld('DDSE_CRM',(/'lev'/), 'A', 'm/s2 ','DSE tendency due to CRM (excluding rad)' )
-   call addfld('DQLV_CRM',(/'lev'/), 'A', 'm/s2 ','QLV tendency due to CRM' )
-   call addfld('DDSE_QRS',(/'lev'/), 'A', 'm/s2 ','DSE tendency due to SW rad in CRM' )
-   call addfld('DDSE_QRL',(/'lev'/), 'A', 'm/s2 ','DSE tendency due to LW rad in CRM' )
+   call addfld('DDSE_CRM',(/'lev'/), 'A', 'J/kg/s','DSE tendency due to CRM (excluding rad)' )
+   call addfld('DQLV_CRM',(/'lev'/), 'A', 'J/kg/s','QLV tendency due to CRM' )
+   call addfld('DDSE_QRS',(/'lev'/), 'A', 'J/kg/s','DSE tendency due to SW rad in CRM' )
+   call addfld('DDSE_QRL',(/'lev'/), 'A', 'J/kg/s','DSE tendency due to LW rad in CRM' )
 
 end subroutine crm_physics_init
 
@@ -628,6 +638,17 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    real(crm_rknd), pointer :: crm_qg(:,:,:,:) ! 2-mom number concentration of snow
    real(crm_rknd), pointer :: crm_ng(:,:,:,:) ! 2-mom mass mixing ratio of graupel
    real(crm_rknd), pointer :: crm_qc(:,:,:,:) ! 2-mom number concentration of graupel
+
+   ! stuff for homogenizing radiation
+   real(r8) :: qrs_gbl(pcols,begchunk:endchunk,pver)
+   real(r8) :: qrl_gbl(pcols,begchunk:endchunk,pver)
+   real(r8) :: qrs_avg(pver)
+   real(r8) :: qrl_avg(pver)
+   integer  :: crm_k
+   integer  :: qrs_idx
+   integer  :: qrl_idx
+   logical :: homogenize_lw
+   logical :: homogenize_sw
 
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
@@ -1068,6 +1089,75 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          ncol_sum = ncol_sum + ncol
 
       end do ! c=begchunk, endchunk
+
+
+   homogenize_lw = .false.
+   homogenize_sw = .false.
+#ifdef MMF_GLOBAL_QRT
+   homogenize_lw = .true.
+   homogenize_sw = .true.
+#endif
+#ifdef MMF_GLOBAL_QRS
+   homogenize_lw = .false.
+   homogenize_sw = .true.
+#endif
+#ifdef MMF_GLOBAL_QRL
+   homogenize_lw = .true.
+   homogenize_sw = .false.
+#endif
+
+   if (homogenize_lw .or. homogenize_sw) then
+      qrl_idx = pbuf_get_index('QRL')
+      qrs_idx = pbuf_get_index('QRS')
+      crm_qrad_idx = pbuf_get_index('CRM_QRAD')
+      ! gather data for calculating global mean rad heating
+      do c=begchunk, endchunk
+         ncol = state(c)%ncol
+         pbuf_chunk => pbuf_get_chunk(pbuf2d, c)
+         call pbuf_get_field(pbuf_chunk, qrl_idx, qrl)
+         call pbuf_get_field(pbuf_chunk, qrs_idx, qrs)
+         do i = 1,ncol
+            do k = 1, pver
+               if (homogenize_lw) qrl_gbl(i,c,k) = qrl(i,k) / state(c)%pdel(i,k)
+               if (homogenize_sw) qrs_gbl(i,c,k) = qrs(i,k) / state(c)%pdel(i,k)
+            end do
+         end do
+      end do
+      call t_barrierf('sync_MMF_GLOBAL_QRAD_1', mpicom)
+      ! Calculate global mean rad heating
+      do k = 1, pver
+         qrl_avg(k) = 0
+         qrs_avg(k) = 0
+         if (homogenize_lw) call gmean(qrl_gbl(:,:,k), qrl_avg(k))
+         if (homogenize_sw) call gmean(qrs_gbl(:,:,k), qrs_avg(k))
+      end do
+      call t_barrierf('sync_MMF_GLOBAL_QRAD_2', mpicom)
+      ! apply global mean longwave tendency to local columns
+      ncol_sum = 0
+      do c=begchunk, endchunk
+         ncol = state(c)%ncol
+         pbuf_chunk => pbuf_get_chunk(pbuf2d, c)
+         call pbuf_get_field(pbuf_chunk, crm_qrad_idx, crm_qrad)
+         call pbuf_get_field(pbuf_chunk, qrl_idx, qrl)
+         call pbuf_get_field(pbuf_chunk, qrs_idx, qrs)
+         do i = 1,ncol
+            icrm = ncol_sum + i
+            do k = 1, pver
+               if (homogenize_lw) qrl(i,k) = qrl_avg(k) * state(c)%pdel(i,k)
+               if (homogenize_sw) qrs(i,k) = qrs_avg(k) * state(c)%pdel(i,k)
+               crm_k = pver - k + 1
+               if (crm_k>=1 .and. crm_k<=crm_nz) then
+                  ! crm_qrad(i,:,:,crm_k) = ( qrs_avg(k) + qrl_avg(k) ) / cpair
+                  if (homogenize_lw .and. homogenize_sw) crm_qrad(i,:,:,crm_k) = ( qrs_avg(k) + qrl_avg(k) ) / cpair
+                  if (homogenize_lw .and. .not. homogenize_sw) crm_qrad(i,:,:,crm_k) = crm_qrad(i,:,:,crm_k)/state(c)%pdel(i,k) + qrl_avg(k) / cpair
+                  if (homogenize_sw .and. .not. homogenize_lw) crm_qrad(i,:,:,crm_k) = crm_qrad(i,:,:,crm_k)/state(c)%pdel(i,k) + qrs_avg(k) / cpair
+                  crm_rad%qrad(icrm,:,:,crm_k) = crm_qrad(i,:,:,crm_k)
+               end if
+            end do
+         end do
+         ncol_sum = ncol_sum + ncol
+      end do
+   end if
 
       !---------------------------------------------------------------------------------------------
       ! Run the CRM

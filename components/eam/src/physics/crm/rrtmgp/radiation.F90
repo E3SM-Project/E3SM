@@ -946,13 +946,12 @@ contains
 
 #ifdef MMF_PRESCRIBED_LW
 
-      prescribed_lw_file_name = '/global/cscratch1/sd/whannah/e3sm_scratch/init_files/prescribed_rad/E3SM.GNUGPU.ne30pg2.F-MMFXX-RCEROT.BVT.01.QRL.nc'
-      ! prescribed_lw_file_name = '/pscratch/sd/w/whannah/e3sm_scratch/perlmutter/init_data/prescribed_rad/E3SM.GNUGPU.ne30pg2.F-MMFXX-RCEROT.BVT.01.QRL.nc'
+      ! prescribed_lw_file_name = '/global/cscratch1/sd/whannah/e3sm_scratch/init_files/prescribed_rad/E3SM.GNUGPU.ne30pg2.F-MMFXX-RCEROT.BVT.01.QRL.nc'
+      prescribed_lw_file_name = '/pscratch/sd/w/whannah/e3sm_scratch/perlmutter/init_data/prescribed_rad/E3SM.GNUGPU.ne30pg2.F-MMFXX-RCEROT.BVT.01.QRL.nc'
       varName = 'QRL'
 
       if(nf90_open(trim(prescribed_lw_file_name), NF90_NOWRITE, ncid) /= NF90_NOERR) &
          call endrun("radiation_init(): can't open file " // trim(prescribed_lw_file_name))
-      ! nlev = get_dim_size(ncid,'lev')
 
       if(nf90_inq_dimid(ncid, trim('lev'), dimid) == NF90_NOERR) then
          if(nf90_inquire_dimension(ncid, dimid, len=nlev) /= NF90_NOERR) nlev = -1
@@ -1750,6 +1749,10 @@ contains
                   pint(1:ncol_tot,ktop:kbot+1), &
                   qrsc_all(1:ncol_tot,1:pver) &
                )
+#ifdef MMF_DISABLE_SW
+               qrs_all (:,:) = 0.
+               qrsc_all(:,:) = 0.
+#endif
                call t_stopf('rad_heating_rate_sw')
                ! Calculate CRM domain averages
                call t_startf('rad_average_fluxes_sw')
@@ -1867,10 +1870,12 @@ contains
                call average_packed_array(fluxes_clrsky_all%flux_dn (1:ncol_tot,:), fluxes_clrsky%flux_dn (1:ncol,:))
                call average_packed_array(fluxes_clrsky_all%flux_net(1:ncol_tot,:), fluxes_clrsky%flux_net(1:ncol,:))
                call t_stopf('rad_average_fluxes_lw')
-                         
+#if defined(MMF_PRESCRIBED_LW)
+               ! move this call down
+#else
                ! Send fluxes to history buffer
                call output_fluxes_lw(icall, state, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
-
+#endif
                ! Map to CRM columns
                if (use_MMF) then
                   j = 1
@@ -1916,8 +1921,6 @@ contains
             ! which is the same as qrl here, except it is divided by cpair
             ! in the outfld('QRL'...) call within output_fluxes_lw().
 
-            nstep = get_nstep() 
-
             ! do ic = 1,ncol
             !    do iz = 1,crm_nz
             !       ilev = pver - iz + 1
@@ -1928,21 +1931,21 @@ contains
             ! call shr_sys_flush(iulog)
             ! call endrun('MMF_PRESCRIBED_LW  stopping')
 
-            ! if (nstep>0) then
-               do ic = 1,ncol
-                  do ilev = 1, pver
-                     qrl(ic,ilev) = qrl_prescribed(ilev) / state%pdel(ic,ilev)
-                  end do
-                  do iy = 1,crm_ny_rad
-                     do ix = 1,crm_nx_rad
-                        do iz = 1,crm_nz
-                           ilev = pver - iz + 1
-                           crm_qrl(ic,ix,iy,iz) = qrl_prescribed(ilev) / state%pdel(ic,ilev)
-                        end do
+            do ic = 1,ncol
+               do ilev = 1, pver
+                  qrl(ic,ilev) = qrl_prescribed(ilev) * cpair / 86400.
+               end do
+               do iy = 1,crm_ny_rad
+                  do ix = 1,crm_nx_rad
+                     do iz = 1,crm_nz
+                        ilev = pver - iz + 1
+                        crm_qrl(ic,ix,iy,iz) = qrl_prescribed(ilev) * cpair / 86400.
                      end do
                   end do
                end do
-            ! end if
+            end do
+
+            call output_fluxes_lw(0, state, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
 
 ! 222 format('WHDEBUG-step:',i3,'  c:',i4,'  k:',i3,'  Gqrl:',f6.3,'  Cqrl:',f6.3,'  Pqrl:',f6.3,'  ratio:',f8.2)
 #endif
@@ -1993,11 +1996,12 @@ contains
                do iy = 1,crm_ny_rad
                   do ix = 1,crm_nx_rad
                      do ic = 1,ncol
-#ifdef MMF_GLOBAL_LW
-                        ! only keep SW for this, add LW later in phys_run1() with global avg of QRL
-                        crm_qrad(ic,ix,iy,iz) = ( crm_qrs(ic,ix,iy,iz) ) / cpair
-#else
                         crm_qrad(ic,ix,iy,iz) = (crm_qrs(ic,ix,iy,iz) + crm_qrl(ic,ix,iy,iz)) / cpair
+#ifdef MMF_GLOBAL_QRS
+                        crm_qrad(ic,ix,iy,iz) = crm_qrl(ic,ix,iy,iz) / cpair
+#endif
+#ifdef MMF_GLOBAL_QRL
+                        crm_qrad(ic,ix,iy,iz) = crm_qrs(ic,ix,iy,iz) / cpair
 #endif
                         if (conserve_energy) then
                            ilev = pver - iz + 1
