@@ -3,8 +3,8 @@ include(ScreamUtils)
 # Required libraries
 set (NEED_LIBS scream_rrtmgp)
 
-# NOTE: tests inside this if statement won't be built in a baselines-only build
-if (NOT ${SCREAM_BASELINES_ONLY})
+# NOTE: tests inside this if statement are run only if this build has baseline tests
+if (NOT SCREAM_BASELINES_ONLY AND SCREAM_ENABLE_BASELINES_TESTS)
     CreateUnitTest(
         rrtmgp_tests rrtmgp_tests.cpp "${NEED_LIBS}" LABELS "rrtmgp;physics"
         EXE_ARGS "-i ${CMAKE_CURRENT_BINARY_DIR}/data/rrtmgp-allsky.nc -b ${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
