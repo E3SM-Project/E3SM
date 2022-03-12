@@ -100,16 +100,20 @@ class TestAllScream(object):
             "fpe" : [("CMAKE_BUILD_TYPE", "Debug"),
                      ("SCREAM_PACK_SIZE", "1"),
                      ("SCREAM_SMALL_PACK_SIZE", "1"),
+                     ("SCREAM_ENABLE_BASELINE_TESTS", "False"),
                      ("EKAT_DEFAULT_BFB", "True")],
             "opt" : [("CMAKE_BUILD_TYPE", "Release")],
             "valg" : [("CMAKE_BUILD_TYPE", "Debug"),
                       ("SCREAM_TEST_PROFILE", "SHORT"),
+                     ("SCREAM_ENABLE_BASELINE_TESTS", "False"),
                       ("EKAT_ENABLE_VALGRIND", "True")],
             "cmc"  : [("CMAKE_BUILD_TYPE", "Debug"),
                       ("SCREAM_TEST_PROFILE", "SHORT"),
+                     ("SCREAM_ENABLE_BASELINE_TESTS", "False"),
                       ("EKAT_ENABLE_CUDA_MEMCHECK", "True")],
             "cov" : [("CMAKE_BUILD_TYPE", "Debug"),
-                      ("EKAT_ENABLE_COVERAGE", "True")],
+                     ("SCREAM_ENABLE_BASELINE_TESTS", "False"),
+                     ("EKAT_ENABLE_COVERAGE", "True")],
         }
 
         if self._quick_rerun_failed:
