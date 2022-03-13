@@ -1640,7 +1640,7 @@ contains
                    d_fabi_sun = (1._r8 - omega(p,ib)) / avmu(p) * (da1 + da2) * fi_top_adjust(p,ib)
                 else
                    d_fabi_sun = (1._r8 - omega(p,ib)) / avmu(p) * (da1 + da2)
-                end
+                endif
                 d_fabi_sha = d_fabi - d_fabi_sun
 
                 fabi_sun_z(p,iv) = max(d_fabi_sun, 0._r8)
