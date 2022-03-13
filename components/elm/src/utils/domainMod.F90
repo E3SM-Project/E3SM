@@ -176,6 +176,12 @@ contains
     domain%firrig   = 0.7_r8    
     domain%f_surf   = 1.0_r8
     domain%f_grd    = 0.0_r8
+    
+    domain%stdev_elev        = 0.0_r8
+    domain%sky_view          = 1.0_r8
+    domain%terrain_config    = 0.0_r8
+    domain%sinsl_cosas       = 0.0_r8
+    domain%sinsl_sinas       = 0.0_r8
 
     domain%set      = .true.
     if (domain%nbeg == 1 .and. domain%nend == domain%ns) then

@@ -43,9 +43,7 @@ module SurfaceAlbedoMod
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: SoilAlbedo    ! Determine ground surface albedo
   private :: TwoStream     ! Two-stream fluxes for canopy radiative transfer
-  private :: Albedo_TOP_Adjustment_novegsol     ! TOP solar radiation parameterization for non-vegetation
-  private :: Albedo_TOP_Adjustment_vegsol_direct     ! TOP solar radiation parameterization for direct radiation over non-vegetation
-  private :: Albedo_TOP_Adjustment_vegsol_diffuse     ! TOP solar radiation parameterization for diffuse radiation over non-vegetation
+  private :: Albedo_TOP_Adjustment     ! TOP solar radiation parameterization for non-vegetation
 
   !
   !
@@ -93,7 +91,7 @@ contains
     !
     ! !USES:
       !$acc routine seq
-    use elm_varctl         , only : iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad
+    use elm_varctl         , only : iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad, use_top_solar_rad
     use shr_orb_mod
 
     !
@@ -939,6 +937,11 @@ contains
             coszen_patch(bounds%begp:bounds%endp), surfalb_vars)
 #endif
     else
+    
+      if (use_top_solar_rad) then
+        call Albedo_TOP_Adjustment(bounds, num_vegsol, filter_vegsol, nextsw_cday, &
+                                  coszen_patch(bounds%begp:bounds%endp), declinp1, surfalb_vars, .true.)
+      endif
 
       call TwoStream (bounds, filter_vegsol, num_vegsol, &
                coszen_patch(bounds%begp:bounds%endp), &
@@ -970,8 +973,8 @@ contains
     end do
 
     if (use_top_solar_rad) then
-       call Albedo_TOP_Adjustment_novegsol(bounds, num_novegsol, filter_novegsol, nextsw_cday, &
-	                                  coszen_patch(bounds%begp:bounds%endp), declinp1, surfalb_vars)
+       call Albedo_TOP_Adjustment(bounds, num_novegsol, filter_novegsol, nextsw_cday, &
+                                  coszen_patch(bounds%begp:bounds%endp), declinp1, surfalb_vars, .false.)
     endif
 
      end associate
@@ -1131,7 +1134,7 @@ contains
       !$acc routine seq
      use elm_varpar, only : numrad, nlevcan
      use elm_varcon, only : omegas, tfrz, betads, betais
-     use elm_varctl, only : iulog
+     use elm_varctl, only : iulog, use_top_solar_rad
      !
      ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds
@@ -1169,6 +1172,7 @@ contains
      real(r8) :: temp0    (bounds%begp:bounds%endp)                ! temporary
      real(r8) :: temp2(bounds%begp:bounds%endp)                    ! temporary
      real(r8) :: t1                                                ! temporary
+     real(r8) :: albd_adjust,albi_adjust,fd_prime,fi_prime         ! temporary
      real(r8) :: a1,a2                                             ! parameter for sunlit/shaded leaf radiation absorption
      real(r8) :: v,dv,u,du                                         ! temporary for flux derivatives
      real(r8) :: dh2,dh3,dh5,dh6,dh7,dh8,dh9,dh10                  ! temporary for flux derivatives
@@ -1200,8 +1204,12 @@ contains
           albgrd        =>    surfalb_vars%albgrd_col             , & ! Input:  [real(r8) (:,:) ]  ground albedo (direct) (column-level)
           albgri        =>    surfalb_vars%albgri_col             , & ! Input:  [real(r8) (:,:) ]  ground albedo (diffuse)(column-level)
           
-          fd_top_adjust =>   surfalb_vars%fd_top_adjust           , & ! Input: TOP adjusted factor for direct radiation 
-	  fi_top_adjust =>   surfalb_vars%fi_top_adjust           , & ! Input: TOP adjusted factor for diffuse radiation 
+          fd_top_adjust =>    surfalb_vars%fd_top_adjust          , & ! Input: TOP adjusted factor for direct radiation 
+	      fi_top_adjust =>    surfalb_vars%fi_top_adjust          , & ! Input: TOP adjusted factor for diffuse radiation
+          f_dir         =>    surfalb_vars%f_dir                  , & ! Input: TOP adjusted factor for direct radiation 
+	      f_rdir        =>    surfalb_vars%f_rdir                 , & ! Input: TOP adjusted factor for diffuse radiation 
+          f_dif         =>    surfalb_vars%f_dif                  , & ! Input: TOP adjusted factor for direct radiation 
+	      f_rdif        =>    surfalb_vars%f_rdif                 , & ! Input: TOP adjusted factor for diffuse radiation 
           
           fsun_z        =>    surfalb_vars%fsun_z_patch           , & ! Output: [real(r8) (:,:) ]  sunlit fraction of canopy layer
           vcmaxcintsun  =>    surfalb_vars%vcmaxcintsun_patch     , & ! Output: [real(r8) (:)   ]  leaf to canopy scaling coefficient, sunlit leaf vcmax
@@ -1358,9 +1366,21 @@ contains
           ftdd(p,ib) = s2
           fabd(p,ib) = 1._r8 - albd(p,ib) - (1._r8-albgrd(c,ib))*ftdd(p,ib) - (1._r8-albgri(c,ib))*ftid(p,ib)
   
-          if (use_top_solar_rad) then
-            call Albedo_TOP_Adjustment_vegsol_direct( p, ib, nextsw_cday, &
-	                              cosz, decl, surfalb_vars)
+          if (use_top_solar_rad) then            
+            f_rdir(p, ib) = f_rdir(p, ib) * (albd(p,ib) / 0.1_r8)     
+            fd_prime = 1._r8 + f_dir(p, ib) + f_rdir(p, ib)
+            albd_adjust = fd_prime * albd(p,ib) - (fd_prime-1._r8)
+
+            if (albd_adjust <= 0._r8) then 
+               albd_adjust = 0._r8
+               fd_prime = 1._r8 / (1._r8 - albd(p,ib))
+            endif
+
+            albd(p,ib) = albd_adjust
+            fabd(p,ib) = fabd(p,ib) * fd_prime
+            ftdd(p,ib) = ftdd(p,ib) * fd_prime
+            ftid(p,ib) = ftid(p,ib) * fd_prime
+            fd_top_adjust(p,ib) = fd_prime
           endif
 
           a1 = h1 / sigma * (1._r8 - s2*s2) / (2._r8 * twostext(p)) &
@@ -1371,10 +1391,12 @@ contains
              + h5         * (1._r8 - s2*s1) / (twostext(p) + h) &
              + h6         * (1._r8 - s2/s1) / (twostext(p) - h)
 
-
-          fabd_sun(p,ib) = (1._r8 - omega(p,ib)) * ( 1._r8 - s2 + 1._r8 / avmu(p) * (a1 + a2) ) * fd_top_adjust(p,ib)
+          if (use_top_solar_rad) then
+             fabd_sun(p,ib) = (1._r8 - omega(p,ib)) * ( 1._r8 - s2 + 1._r8 / avmu(p) * (a1 + a2) ) * fd_top_adjust(p,ib)
+          else
+             fabd_sun(p,ib) = (1._r8 - omega(p,ib)) * ( 1._r8 - s2 + 1._r8 / avmu(p) * (a1 + a2) )
+          endif
           fabd_sha(p,ib) = fabd(p,ib) - fabd_sun(p,ib)
-
           ! Diffuse
 
           u1 = b - c1/albgri(c,ib)
@@ -1395,15 +1417,29 @@ contains
           fabi(p,ib) = 1._r8 - albi(p,ib) - (1._r8-albgri(c,ib))*ftii(p,ib)
 
           if (use_top_solar_rad) then
-            call Albedo_TOP_Adjustment_vegsol_diffuse(p, ib, nextsw_cday, &
-	                              cosz, decl, surfalb_vars)
+            f_rdif(p,ib) = f_rdif(p,ib) * (albi(p,ib) / 0.1_r8)
+            fi_prime = 1._r8 + f_dif(p,ib) + f_rdif(p,ib)
+            albi_adjust = fi_prime * albi(p,ib) - (fi_prime-1._r8)  
+
+            if (albi_adjust <= 0._r8) then
+               albi_adjust = 0._r8
+               fi_prime = 1._r8 / (1._r8 - albi(p,ib))
+            endif
+
+            albi(p,ib) = albi_adjust
+            fabi(p,ib) = fabi(p,ib) * fi_prime
+            ftii(p,ib) = ftii(p,ib) * fi_prime
+            fi_top_adjust(p,ib) = fi_prime
           endif
           
           a1 = h7 * (1._r8 - s2*s1) / (twostext(p) + h) +  h8 * (1._r8 - s2/s1) / (twostext(p) - h)
           a2 = h9 * (1._r8 - s2*s1) / (twostext(p) + h) + h10 * (1._r8 - s2/s1) / (twostext(p) - h)
 
-
-	  fabi_sun(p,ib) = (1._r8 - omega(p,ib)) / avmu(p) * (a1 + a2) * fi_top_adjust(p,ib)  
+          if (use_top_solar_rad) then
+            fabi_sun(p,ib) = (1._r8 - omega(p,ib)) / avmu(p) * (a1 + a2) * fi_top_adjust(p,ib)
+          else
+            fabi_sun(p,ib) = (1._r8 - omega(p,ib)) / avmu(p) * (a1 + a2)
+          endif
           fabi_sha(p,ib) = fabi(p,ib) - fabi_sun(p,ib)
 
           ! Repeat two-stream calculations for each canopy layer to calculate derivatives.
@@ -1530,7 +1566,11 @@ contains
 
                 d_ftid = -twostext(p)*h4/sigma*s2 - h*h5*s1 + h*h6/s1 + dh5*s1 + dh6/s1
                 d_fabd = -(dh2+dh3) + (1._r8-albgrd(c,ib))*twostext(p)*s2 - (1._r8-albgri(c,ib))*d_ftid
-                d_fabd_sun = (1._r8 - omega(p,ib)) * (twostext(p)*s2 + 1._r8 / avmu(p) * (da1 + da2)) * fd_top_adjust(p,ib)
+                if (use_top_solar_rad) then
+                   d_fabd_sun = (1._r8 - omega(p,ib)) * (twostext(p)*s2 + 1._r8 / avmu(p) * (da1 + da2)) * fd_top_adjust(p,ib)
+                else
+                   d_fabd_sun = (1._r8 - omega(p,ib)) * (twostext(p)*s2 + 1._r8 / avmu(p) * (da1 + da2))
+                endif
                 d_fabd_sha = d_fabd - d_fabd_sun
 
                 fabd_sun_z(p,iv) = max(d_fabd_sun, 0._r8)
@@ -1596,7 +1636,11 @@ contains
 
                 d_ftii = -h * h9 * s1 + h * h10 / s1 + dh9 * s1 + dh10 / s1
                 d_fabi = -(dh7+dh8) - (1._r8-albgri(c,ib))*d_ftii
-                d_fabi_sun = (1._r8 - omega(p,ib)) / avmu(p) * (da1 + da2) * fi_top_adjust(p,ib)
+                if (use_top_solar_rad) then
+                   d_fabi_sun = (1._r8 - omega(p,ib)) / avmu(p) * (da1 + da2) * fi_top_adjust(p,ib)
+                else
+                   d_fabi_sun = (1._r8 - omega(p,ib)) / avmu(p) * (da1 + da2)
+                end
                 d_fabi_sha = d_fabi - d_fabi_sun
 
                 fabi_sun_z(p,iv) = max(d_fabi_sun, 0._r8)
@@ -1621,8 +1665,8 @@ contains
     end subroutine TwoStream
     
 !----------------------------------------------------------------------
-  subroutine Albedo_TOP_Adjustment_novegsol(bounds, num_novegsol, filter_novegsol, &
-                                  nextsw_cday, coszen, decl, surfalb_vars)
+  subroutine Albedo_TOP_Adjustment(bounds, num_pft, filter_pft, &
+                                  nextsw_cday, coszen, decl, surfalb_vars, is_veg)
 ! !DESCRIPTION:
 ! Adjust surface albedo by accounting for sub-grid topographic effect on surface solar radiation
 !
@@ -1635,12 +1679,14 @@ contains
 ! !ARGUMENTS:
     implicit none
     type(bounds_type)  , intent(in)   :: bounds                     ! bounds
-    integer            , intent(in)   :: num_novegsol               ! number of pfts in non-urban filter
-    integer            , intent(in)   :: filter_novegsol(:)         ! bounds%endg-bounds%endg+1 pft filter for non-urban points
+    integer            , intent(in)   :: num_pft                    ! number of pfts
+    integer            , intent(in)   :: filter_pft(:)              ! bounds%endg-bounds%endg+1 pft filter
     real(r8)           , intent(in)   :: nextsw_cday                ! calendar day at Greenwich (1.00, ..., days/year)
     real(r8)           , intent(in)   :: coszen( bounds%begp: )     ! cos solar zenith angle next time step [gridcell]
     real(r8)           , intent(in)   :: decl                       ! declination angle (radians) for next time step
+    logical            , intent(in)   :: is_veg                     ! True: vegetation; False: non-vegetation
     type(surfalb_type) , intent(inout):: surfalb_vars
+
  
 !
 ! !CALLED FROM:
@@ -1660,10 +1706,6 @@ contains
     real(r8) :: azi_angle                                 ! solar azimuth angle
     real(r8) :: next_tod                                  ! time of day for nextsw_cday in second
     real(r8) :: solar_inc                                 ! (solar incident angle) / cos(slope) / cosz
-    real(r8) :: f_dir                                     ! adjustment factor for direct flux
-    real(r8) :: f_rdir, f_rdir_temp                       ! adjustment factor for reflected-direct flux
-    real(r8) :: f_dif                                     ! adjustment factor for diffuse flux
-    real(r8) :: f_rdif, f_rdif_temp                       ! adjustment factor for reflected-diffuse flux
     real(r8) :: fd_prime                                  ! temp adjustment factor for direct flux
     real(r8) :: fi_prime                                  ! temp adjustment factor for diffuse flux
     real(r8) :: albd_adjust                               ! adjusted albedo for direct flux
@@ -1720,7 +1762,7 @@ contains
           stdev_elev     =>    grc_pp%stdev_elev                  , & ! Input:   standard deviation of elevation 
           sky_view       =>    grc_pp%sky_view                    , & ! Input:   sky view factor
           terrain_config =>    grc_pp%terrain_config              , & ! Input:   terrain configuration factor
-	  sinsl_cosas    =>    grc_pp%sinsl_cosas                 , & ! Input:   sin(slope) * cos(aspect)
+	      sinsl_cosas    =>    grc_pp%sinsl_cosas                 , & ! Input:   sin(slope) * cos(aspect)
           sinsl_sinas    =>    grc_pp%sinsl_sinas                 , & ! Input:   sin(slope) * sin(aspect)
           albd           =>    surfalb_vars%albd_patch            , & ! Output:  surface albedo (direct)               
           albi           =>    surfalb_vars%albi_patch            , & ! Output:  surface albedo (diffuse)              
@@ -1729,8 +1771,12 @@ contains
           ftdd           =>    surfalb_vars%ftdd_patch            , & ! Output:  down direct flux below canopy per unit direct flux
           ftid           =>    surfalb_vars%ftid_patch            , & ! Output:  down diffuse flux below canopy per unit direct flux
           ftii           =>    surfalb_vars%ftii_patch            , & ! Output:  down diffuse flux below canopy per unit diffuse flux
-          fd_top_adjust  =>   surfalb_vars%fd_top_adjust          , & ! Output:  adjusted factor for direct radiation
-          fi_top_adjust  =>   surfalb_vars%fi_top_adjust            & ! Output:  adjusted factor for diffuse radiation
+          fd_top_adjust  =>    surfalb_vars%fd_top_adjust         , & ! Output:  TOP adjusted factor for direct radiation
+          fi_top_adjust  =>    surfalb_vars%fi_top_adjust         , & ! Output:  TOP adjusted factor for diffuse radiation
+          f_dir          =>    surfalb_vars%f_dir                 , & ! Output:  TOP adjusted factor for direct radiation 
+	      f_rdir         =>    surfalb_vars%f_rdir                , & ! Output:  TOP adjusted factor for reflected_direct radiation 
+          f_dif          =>    surfalb_vars%f_dif                 , & ! Output:  TOP adjusted factor for diffuse radiation 
+	      f_rdif         =>    surfalb_vars%f_rdif                  & ! Output:  TOP adjusted factor for reflected_diffuse radiation 
           )
 
 
@@ -1742,10 +1788,10 @@ contains
 
      next_tod = 86400._r8 * (nextsw_cday - int(nextsw_cday))
 
-     do fp = 1,num_novegsol
-        p = filter_novegsol(fp)
+     do fp = 1,num_pft
+        p = filter_pft(fp)
         g = pgridcell(p)
-        !c = pcolumn(p)
+        
         cosz = coszen(p)
         fd_top_adjust(p,1:numrad) = 1._r8
         fi_top_adjust(p,1:numrad) = 1._r8
@@ -1790,14 +1836,14 @@ contains
                      coeff_dir(2,izen) * solar_inc + coeff_dir(3,izen)
             ftemp2 = coeff_dir(1,izen+1) * sky_view(g) + &
                      coeff_dir(2,izen+1) * solar_inc + coeff_dir(3,izen+1)
-            f_dir = ftemp2 * dzen1 + ftemp1 * dzen2
-            f_dir = max(-1._r8,f_dir)
+            f_dir(p,1:numrad) = ftemp2 * dzen1 + ftemp1 * dzen2
+            f_dir(p,1:numrad) = max(-1._r8,f_dir(p,1:numrad))
 
             ftemp1 = coeff_rdir(1,izen) * sky_view(g) + &
                      coeff_rdir(2,izen) * terrain_config(g) + coeff_rdir(3,izen)
             ftemp2 = coeff_rdir(1,izen+1) * sky_view(g) + &
                      coeff_rdir(2,izen+1) * terrain_config(g) + coeff_rdir(3,izen+1)
-            f_rdir_temp = ftemp2 * dzen1 + ftemp1 * dzen2
+            f_rdir(p,1:numrad) = ftemp2 * dzen1 + ftemp1 * dzen2
 
             ftemp1 = coeff_dif(1,izen) * stdev_elev(g) + &
                      coeff_dif(2,izen) * sky_view(g) + &
@@ -1805,373 +1851,55 @@ contains
             ftemp2 = coeff_dif(1,izen+1) * stdev_elev(g) + &
                      coeff_dif(2,izen+1) * sky_view(g) + &
                      coeff_dif(3,izen+1) * solar_inc + coeff_dif(4,izen+1)
-            f_dif = ftemp2 * dzen1 + ftemp1 * dzen2
-            f_dif = max(-1._r8,f_dif) 
+            f_dif(p,1:numrad) = ftemp2 * dzen1 + ftemp1 * dzen2
+            f_dif(p,1:numrad) = max(-1._r8,f_dif(p,1:numrad)) 
 
             ftemp1 = coeff_rdif(1,izen) * sky_view(g) + &
                      coeff_rdif(2,izen) * terrain_config(g) + coeff_rdif(3,izen)
             ftemp2 = coeff_rdif(1,izen+1) * sky_view(g) + &
                      coeff_rdif(2,izen+1) * terrain_config(g) + coeff_rdif(3,izen+1)
-            f_rdif_temp = ftemp2 * dzen1 + ftemp1 * dzen2
+            f_rdif(p,1:numrad) = ftemp2 * dzen1 + ftemp1 * dzen2
+            
+            if(.not. is_veg) then
+               do ib = 1, numrad
+                 f_rdir(p,ib) = f_rdir(p,ib) * (albd(p,ib) / 0.1_r8)
+                 f_rdif(p,ib) = f_rdif(p,ib) * (albi(p,ib) / 0.1_r8)
 
-            do ib = 1, numrad
-               f_rdir = f_rdir_temp * (albd(p,ib) / 0.1_r8)
-               f_rdif = f_rdif_temp * (albi(p,ib) / 0.1_r8)
+                 fd_prime = 1._r8 + f_dir(p,ib) + f_rdir(p,ib)
+                 fi_prime = 1._r8 + f_dif(p,ib) + f_rdif(p,ib)
 
-               fd_prime = 1._r8 + f_dir + f_rdir
-               fi_prime = 1._r8 + f_dif + f_rdif
+                 albd_adjust = fd_prime * albd(p,ib) - (fd_prime-1._r8)
+                 albi_adjust = fi_prime * albi(p,ib) - (fi_prime-1._r8)
 
-               albd_adjust = fd_prime * albd(p,ib) - (fd_prime-1._r8)
-               albi_adjust = fi_prime * albi(p,ib) - (fi_prime-1._r8)
+                 if (albd_adjust <= 0._r8) then 
+                    albd_adjust = 0._r8
+                    fd_prime = 1._r8 / (1._r8 - albd(p,ib))
+                 endif
 
-               if (albd_adjust <= 0._r8) then 
-                  albd_adjust = 0._r8
-                  fd_prime = 1._r8 / (1._r8 - albd(p,ib))
-               endif
+                 if (albi_adjust <= 0._r8) then
+                    albi_adjust = 0._r8
+                    fi_prime = 1._r8 / (1._r8 - albi(p,ib))
+                 endif
 
-               if (albi_adjust <= 0._r8) then
-                  albi_adjust = 0._r8
-                  fi_prime = 1._r8 / (1._r8 - albi(p,ib))
-               endif
+                 albd(p,ib) = albd_adjust
+                 fabd(p,ib) = fabd(p,ib) * fd_prime
+                 ftdd(p,ib) = ftdd(p,ib) * fd_prime
+                 ftid(p,ib) = ftid(p,ib) * fd_prime
+                 fd_top_adjust(p,ib) = fd_prime
 
-               albd(p,ib) = albd_adjust
-               fabd(p,ib) = fabd(p,ib) * fd_prime
-               ftdd(p,ib) = ftdd(p,ib) * fd_prime
-               ftid(p,ib) = ftid(p,ib) * fd_prime
-               fd_top_adjust(p,ib) = fd_prime
-
-               albi(p,ib) = albi_adjust
-               fabi(p,ib) = fabi(p,ib) * fi_prime
-               ftii(p,ib) = ftii(p,ib) * fi_prime
-               fi_top_adjust(p,ib) = fi_prime
-            enddo
+                 albi(p,ib) = albi_adjust
+                 fabi(p,ib) = fabi(p,ib) * fi_prime
+                 ftii(p,ib) = ftii(p,ib) * fi_prime
+                 fi_top_adjust(p,ib) = fi_prime
+               enddo
+            endif
+            
          endif
       enddo
 	
      end associate
 
-  end subroutine Albedo_TOP_Adjustment_novegsol
+  end subroutine Albedo_TOP_Adjustment
 
-
-!----------------------------------------------------------------------
-  subroutine Albedo_TOP_Adjustment_vegsol_direct(p, ib, &
-                                  nextsw_cday, cosz, decl, surfalb_vars)
-! !DESCRIPTION:
-! Adjust surface albedo by accounting for sub-grid topographic effect on surface solar radiation
-!
-
-! !USES:
-    use shr_orb_mod
-    use elm_varctl  , only: iulog
-
-!
-! !ARGUMENTS:
-    implicit none
-    real(r8)          , intent(in)    :: nextsw_cday                   ! calendar day at Greenwich (1.00, ..., days/year)
-    real(r8)          , intent(in)    :: cosz                          ! cos solar zenith angle next time step [col]
-    real(r8)          , intent(in)    :: decl                          ! declination angle (radians) for next time step
-    integer           , intent(in)    :: p      
-    integer           , intent(in)    :: ib  
-    type(surfalb_type), intent(inout) :: surfalb_vars
-   
-!
-! !CALLED FROM:
-! subroutine SurfaceAlbedo
-
-!
-! !OTHER LOCAL VARIABLES:
-!
-    real(r8), parameter :: mpe = 1.e-06_r8                ! prevents overflow for division by zero
-    real(r8), parameter :: pi = 3.14159265358979323846_r8 ! pi
-    integer  :: g                                         ! indices
-    integer  :: izen
-    real(r8) :: lon_180                                   ! lon starting from -180
-    real(r8) :: sinz                                      ! sine of solar zenith angle
-    real(r8) :: azi_angle                                 ! solar azimuth angle
-    real(r8) :: next_tod                                  ! time of day for nextsw_cday in second
-    real(r8) :: solar_inc                                 ! (solar incident angle) / cos(slope) / cosz
-    real(r8) :: f_dir                                     ! adjustment factor for direct flux
-    real(r8) :: f_rdir, f_rdir_temp                       ! adjustment factor for reflected-direct flux
-    real(r8) :: fd_prime                                  ! temp adjustment factor for direct flux
-    real(r8) :: albd_adjust                               ! adjusted albedo for direct flux
-    real(r8) :: ftemp1, ftemp2, dzen1, dzen2
-    real(r8) :: local_timeofday                           ! local time of day (second)
-    real(r8) :: coeff_dir(3,0:7)                          ! regression coefficients for f_dir
-    real(r8) :: coeff_rdir(3,0:7)                         ! regression coefficients for f_rdir
-
-
-    data coeff_dir(:,1) /2.045E+1_r8, 6.792E-1_r8, -2.103E+1_r8/
-    data coeff_dir(:,2) /1.993E+0_r8, 9.284E-1_r8, -2.911E+0_r8/
-    data coeff_dir(:,3) /5.900E-2_r8, 9.863E-1_r8, -1.045E+0_r8/
-    data coeff_dir(:,4) /5.270E-3_r8, 9.942E-1_r8, -9.995E-1_r8/
-    data coeff_dir(:,5) /2.977E-3_r8, 9.959E-1_r8, -9.990E-1_r8/
-    data coeff_dir(:,6) /2.977E-3_r8, 9.959E-1_r8, -9.990E-1_r8/
-    data coeff_dir(:,7) /8.347E-3_r8,       0._r8, -8.393E-3_r8/
-
-    data coeff_rdir(:,1) / 2.351E-1_r8, 1.590E-1_r8, -2.332E-1_r8/
-    data coeff_rdir(:,2) / 1.368E-1_r8, 1.642E-1_r8, -1.358E-1_r8/
-    data coeff_rdir(:,3) / 1.254E-1_r8, 1.653E-1_r8, -1.247E-1_r8/
-    data coeff_rdir(:,4) / 1.274E-1_r8, 1.635E-1_r8, -1.267E-1_r8/
-    data coeff_rdir(:,5) / 1.314E-1_r8, 1.623E-1_r8, -1.307E-1_r8/
-    data coeff_rdir(:,6) / 1.359E-1_r8, 1.620E-1_r8, -1.352E-1_r8/
-    data coeff_rdir(:,7) /-4.463E-6_r8, 1.556E-1_r8,  1.287E-3_r8/
-
-
-! Assign local pointers to derived subtypes components (gridcell-level)
-
-   associate(&
-          lat            =>    grc_pp%lat                         , & ! Input:   latitude            
-          lon            =>    grc_pp%lon                         , & ! Input:   longitude              
-          pgridcell      =>    veg_pp%gridcell                    , & ! Input:   gridcell
-          pcolumn        =>    veg_pp%column                      , & ! Input:   column
-          stdev_elev     =>    grc_pp%stdev_elev                  , & ! Input:   standard deviation of elevation
-          sky_view       =>    grc_pp%sky_view                    , & ! Input:   sky view factor
-          terrain_config =>    grc_pp%terrain_config              , & ! Input:   terrain configuration factor
-	  sinsl_cosas    =>    grc_pp%sinsl_cosas                 , & ! Input:   sin(slope) * cos(aspect)
-	  sinsl_sinas    =>    grc_pp%sinsl_sinas                 , & ! Input:   sin(slope) * cos(aspect)
-          albd           =>    surfalb_vars%albd_patch            , & ! Output:  surface albedo (direct)               
-          fabd           =>    surfalb_vars%fabd_patch            , & ! Output:  flux absorbed by canopy per unit direct flux
-          ftdd           =>    surfalb_vars%ftdd_patch            , & ! Output:  down direct flux below canopy per unit direct flux
-          ftid           =>    surfalb_vars%ftid_patch            , & ! Output:  down diffuse flux below canopy per unit direct flux
-          fd_top_adjust  =>    surfalb_vars%fd_top_adjust           & ! Output:  adjusted factor for direct radiation 
-          )
-
-    coeff_dir(:,0) = coeff_dir(:,1)
-    coeff_rdir(:,0) = coeff_rdir(:,1)
-
-    next_tod = 86400._r8 * (nextsw_cday - int(nextsw_cday))
-
-    g = pgridcell(p)
-    fd_top_adjust(p,ib) = 1._r8
-
-    ! make sure the lon is between 0-180
-    lon_180 = lon(g)
-    if (lon_180 > pi) lon_180 = lon_180-2._r8*pi
-
-    if (cosz > 0._r8 .and. abs(lat(g)) < 1.047_r8 .and. stdev_elev(g) > 0._r8) then
-       local_timeofday = next_tod + lon_180 / pi * 180._r8 * 240._r8
-
-       if (local_timeofday >= 86400._r8) then
-          local_timeofday = local_timeofday - 86400._r8
-       endif
-          
-       if (local_timeofday < 0._r8) then
-          local_timeofday = local_timeofday + 86400._r8
-       endif
-          
-       if (cosz == 1._r8) then
-          azi_angle = 0._r8
-          sinz = 0._r8
-          solar_inc = 1._r8
-       else
-          sinz = sqrt(1._r8-cosz*cosz)
-          azi_angle = (sin(lat(g))*cosz-sin(decl)) / (cos(lat(g))*sinz) !decl
-          azi_angle = max(-1._r8,min(1._r8,azi_angle))
-          azi_angle = acos(-azi_angle)
-          if (local_timeofday >=43200._r8) then
-             azi_angle = 2._r8*pi - azi_angle
-          endif
-          azi_angle = pi / 2._r8 - azi_angle
-          solar_inc = 1._r8 + (sinz/cosz)*(cos(azi_angle)*sinsl_cosas(g)+sin(azi_angle)*sinsl_sinas(g))
-       endif
-
-       izen = int((cosz + 0.05_r8) / 0.15_r8)
-       dzen1 = (cosz - (izen * 0.15_r8 - 0.05_r8)) / 0.15_r8
-       dzen2 = 1._r8 - dzen1
-
-       ftemp1 = coeff_dir(1,izen) * sky_view(g) + &
-                coeff_dir(2,izen) * solar_inc + coeff_dir(3,izen)
-       ftemp2 = coeff_dir(1,izen+1) * sky_view(g) + &
-                coeff_dir(2,izen+1) * solar_inc + coeff_dir(3,izen+1)
-       f_dir = ftemp2 * dzen1 + ftemp1 * dzen2
-       f_dir = max(-1._r8,f_dir)
-
-       ftemp1 = coeff_rdir(1,izen) * sky_view(g) + &
-                coeff_rdir(2,izen) * terrain_config(g) + coeff_rdir(3,izen)
-       ftemp2 = coeff_rdir(1,izen+1) * sky_view(g) + &
-                coeff_rdir(2,izen+1) * terrain_config(g) + coeff_rdir(3,izen+1)
-       f_rdir_temp = ftemp2 * dzen1 + ftemp1 * dzen2
-
-       f_rdir = f_rdir_temp * (albd(p,ib) / 0.1_r8)     
-
-       fd_prime = 1._r8 + f_dir + f_rdir
-
-       albd_adjust = fd_prime * albd(p,ib) - (fd_prime-1._r8)
-
-       if (albd_adjust <= 0._r8) then 
-          albd_adjust = 0._r8
-          fd_prime = 1._r8 / (1._r8 - albd(p,ib))
-       endif
-
-       albd(p,ib) = albd_adjust
-       fabd(p,ib) = fabd(p,ib) * fd_prime
-       ftdd(p,ib) = ftdd(p,ib) * fd_prime
-       ftid(p,ib) = ftid(p,ib) * fd_prime
-       fd_top_adjust(p,ib) = fd_prime
-    endif
-	
-     end associate
-
-  end subroutine Albedo_TOP_Adjustment_vegsol_direct
-
-!----------------------------------------------------------------------
-  subroutine Albedo_TOP_Adjustment_vegsol_diffuse(p, ib, &
-                                  nextsw_cday, cosz, decl, surfalb_vars)
-! !DESCRIPTION:
-! Adjust surface albedo by accounting for sub-grid topographic effect on surface solar radiation
-!
-
-! !USES:
-    use shr_orb_mod
-    use elm_varctl  , only: iulog
-
-!
-! !ARGUMENTS:
-    implicit none
-  
-    real(r8)          , intent(in) :: nextsw_cday                   ! calendar day at Greenwich (1.00, ..., days/year)
-    real(r8)          , intent(in) :: cosz                          ! cos solar zenith angle next time step [col]
-    real(r8)          , intent(in) :: decl                          ! declination angle (radians) for next time step
-    integer           , intent(in) :: p      
-    integer           , intent(in) :: ib      
-    type(surfalb_type), intent(inout) :: surfalb_vars
-   
-!
-! !CALLED FROM:
-! subroutine TwoStream
-
-! !OTHER LOCAL VARIABLES:
-!
-    real(r8), parameter :: mpe = 1.e-06_r8                ! prevents overflow for division by zero
-    real(r8), parameter :: pi = 3.14159265358979323846_r8 ! pi
-    integer  :: g                                         ! indices
-    integer  :: izen
-    real(r8) :: lon_180                                   ! lon starting from -180
-    real(r8) :: sinz                                      ! sine of solar zenith angle
-    real(r8) :: azi_angle                                 ! solar azimuth angle
-    real(r8) :: next_tod                                  ! time of day for nextsw_cday in second
-    real(r8) :: solar_inc                                 ! (solar incident angle) / cos(slope) / cosz
-    real(r8) :: f_dif                                     ! adjustment factor for diffuse flux
-    real(r8) :: f_rdif, f_rdif_temp                       ! adjustment factor for reflected-diffuse flux
-    real(r8) :: fi_prime                                  ! temp adjustment factor for diffuse flux
-    real(r8) :: albi_adjust                               ! adjusted albedo for diffuse flux
-    real(r8) :: ftemp1, ftemp2, dzen1, dzen2
-    real(r8) :: local_timeofday                           ! local time of day (second)
-    real(r8) :: coeff_dif(4,0:7)                          ! regression coefficients for f_dif
-    real(r8) :: coeff_rdif(3,0:7)                         ! regression coefficients for f_rdif
-
-
-    data coeff_dif(:,1) /3.146E-7_r8, 4.385E+0_r8, 6.723E-3_r8, -4.382E+0_r8/
-    data coeff_dif(:,2) /6.001E-7_r8, 4.068E+0_r8, 2.456E-2_r8, -4.085E+0_r8/
-    data coeff_dif(:,3) /7.436E-7_r8, 3.911E+0_r8, 5.606E-2_r8, -3.960E+0_r8/
-    data coeff_dif(:,4) /7.806E-7_r8, 3.763E+0_r8, 1.049E-1_r8, -3.863E+0_r8/
-    data coeff_dif(:,5) /7.581E-7_r8, 3.559E+0_r8, 1.734E-1_r8, -3.727E+0_r8/
-    data coeff_dif(:,6) /7.015E-7_r8, 3.298E+0_r8, 2.543E-1_r8, -3.547E+0_r8/
-    data coeff_dif(:,7) /6.359E-7_r8, 2.984E+0_r8,       0._r8, -2.984E+0_r8/
-
-    data coeff_rdif(:,1) / 1.493E-1_r8, 1.621E-1_r8, -1.483E-1_r8/
-    data coeff_rdif(:,2) / 1.462E-1_r8, 1.654E-1_r8, -1.454E-1_r8/
-    data coeff_rdif(:,3) / 1.454E-1_r8, 1.673E-1_r8, -1.446E-1_r8/
-    data coeff_rdif(:,4) / 1.465E-1_r8, 1.683E-1_r8, -1.457E-1_r8/
-    data coeff_rdif(:,5) / 1.443E-1_r8, 1.682E-1_r8, -1.435E-1_r8/
-    data coeff_rdif(:,6) / 1.446E-1_r8, 1.686E-1_r8, -1.439E-1_r8/
-    data coeff_rdif(:,7) /-3.427E-6_r8, 1.576E-1_r8,  1.199E-3_r8/
-
-! Assign local pointers to derived subtypes components (gridcell-level)
-
-   associate(&
-          lat            =>    grc_pp%lat                         , & ! Input:   latitude              
-          lon            =>    grc_pp%lon                         , & ! Input:   longitude              
-          pgridcell      =>    veg_pp%gridcell                    , & ! Input:   gridcell
-          pcolumn        =>    veg_pp%column                      , & ! Input:   column
-          stdev_elev     =>    grc_pp%stdev_elev                  , & ! Input:   standard deviation of elevation
-          sky_view       =>    grc_pp%sky_view                    , & ! Input:   sky view factor
-	  terrain_config =>    grc_pp%terrain_config              , & ! Input:   terrain configuration factor
-	  sinsl_cosas    =>    grc_pp%sinsl_cosas                 , & ! Input:   sin(slope) * cos(aspect)
-	  sinsl_sinas    =>    grc_pp%sinsl_sinas                 , & ! Input:   sin(slope) * sin(aspect)
-          albi           =>    surfalb_vars%albi_patch            , & ! Output:  surface albedo (diffuse)              
-          fabi           =>    surfalb_vars%fabi_patch            , & ! Output:  flux absorbed by canopy per unit diffuse flux
-          ftii           =>    surfalb_vars%ftii_patch            , & ! Output:  down diffuse flux below canopy per unit diffuse flux
-          fi_top_adjust  =>    surfalb_vars%fi_top_adjust           & ! Output:  adjusted factor for diffuse radiation
-          )
-
-    coeff_dif(:,0) = coeff_dif(:,1)
-    coeff_rdif(:,0) = coeff_rdif(:,1)
-
-    next_tod = 86400._r8 * (nextsw_cday - int(nextsw_cday))
-    
-    g = pgridcell(p)
-    fi_top_adjust(p,ib) = 1._r8
-       
-    ! make sure the lon is between 0-180
-    lon_180 = lon(g)
-    if (lon_180 > pi) lon_180 = lon_180-2._r8*pi
-
-    if (cosz > 0._r8 .and. abs(lat(g)) < 1.047_r8 .and. stdev_elev(g) > 0._r8) then
-          local_timeofday = next_tod + lon_180 / pi * 180._r8 * 240._r8  ! need to check make sure is 0-180
-
-          if (local_timeofday >= 86400._r8) then
-             local_timeofday = local_timeofday - 86400._r8
-          endif
-    
-          if (local_timeofday < 0._r8) then
-             local_timeofday = local_timeofday + 86400._r8
-          endif
-          
-          if (cosz == 1._r8) then
-             azi_angle = 0._r8
-             sinz = 0._r8
-             solar_inc = 1._r8
-          else
-             sinz = sqrt(1._r8-cosz*cosz)
-             azi_angle = (sin(lat(g))*cosz-sin(decl)) / (cos(lat(g))*sinz) !decl
-             azi_angle = max(-1._r8,min(1._r8,azi_angle))
-             azi_angle = acos(-azi_angle)
-             if (local_timeofday >=43200._r8) then
-                azi_angle = 2._r8*pi - azi_angle
-             endif
-             azi_angle = pi / 2._r8 - azi_angle
-             solar_inc = 1._r8 + (sinz/cosz)*(cos(azi_angle)*sinsl_cosas(g)+sin(azi_angle)*sinsl_sinas(g))
-          endif
-
-          izen = int((cosz + 0.05_r8) / 0.15_r8)
-          dzen1 = (cosz - (izen * 0.15_r8 - 0.05_r8)) / 0.15_r8
-          dzen2 = 1._r8 - dzen1
-
-          ftemp1 = coeff_dif(1,izen) * stdev_elev(g) + &
-                   coeff_dif(2,izen) * sky_view(g) + &
-                   coeff_dif(3,izen) * solar_inc + coeff_dif(4,izen)
-          ftemp2 = coeff_dif(1,izen+1) * stdev_elev(g) + &
-                   coeff_dif(2,izen+1) * sky_view(g) + &
-                   coeff_dif(3,izen+1) * solar_inc + coeff_dif(4,izen+1)
-          f_dif = ftemp2 * dzen1 + ftemp1 * dzen2
-          f_dif = max(-1._r8,f_dif) 
-
-          ftemp1 = coeff_rdif(1,izen) * sky_view(g) + &
-                   coeff_rdif(2,izen) * terrain_config(g) + coeff_rdif(3,izen)
-          ftemp2 = coeff_rdif(1,izen+1) * sky_view(g) + &
-                   coeff_rdif(2,izen+1) * terrain_config(g) + coeff_rdif(3,izen+1)
-          f_rdif_temp = ftemp2 * dzen1 + ftemp1 * dzen2
-
-          f_rdif = f_rdif_temp * (albi(p,ib) / 0.1_r8)
-
-          fi_prime = 1._r8 + f_dif + f_rdif
-
-          albi_adjust = fi_prime * albi(p,ib) - (fi_prime-1._r8)  
-
-          if (albi_adjust <= 0._r8) then
-             albi_adjust = 0._r8
-             fi_prime = 1._r8 / (1._r8 - albi(p,ib))
-          endif
-
-          albi(p,ib) = albi_adjust
-          fabi(p,ib) = fabi(p,ib) * fi_prime
-          ftii(p,ib) = ftii(p,ib) * fi_prime
-          fi_top_adjust(p,ib) = fi_prime
-    endif
-	
-     end associate
-
-  end subroutine Albedo_TOP_Adjustment_vegsol_diffuse
 
 end module SurfaceAlbedoMod
