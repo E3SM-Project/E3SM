@@ -1205,11 +1205,11 @@ contains
           albgri        =>    surfalb_vars%albgri_col             , & ! Input:  [real(r8) (:,:) ]  ground albedo (diffuse)(column-level)
           
           fd_top_adjust =>    surfalb_vars%fd_top_adjust          , & ! Input: TOP adjusted factor for direct radiation 
-	      fi_top_adjust =>    surfalb_vars%fi_top_adjust          , & ! Input: TOP adjusted factor for diffuse radiation
+	  fi_top_adjust =>    surfalb_vars%fi_top_adjust          , & ! Input: TOP adjusted factor for diffuse radiation
           f_dir         =>    surfalb_vars%f_dir                  , & ! Input: TOP adjusted factor for direct radiation 
-	      f_rdir        =>    surfalb_vars%f_rdir                 , & ! Input: TOP adjusted factor for diffuse radiation 
-          f_dif         =>    surfalb_vars%f_dif                  , & ! Input: TOP adjusted factor for direct radiation 
-	      f_rdif        =>    surfalb_vars%f_rdif                 , & ! Input: TOP adjusted factor for diffuse radiation 
+	  f_rdir        =>    surfalb_vars%f_rdir                 , & ! Input: TOP adjusted factor for reflected-direct radiation 
+          f_dif         =>    surfalb_vars%f_dif                  , & ! Input: TOP adjusted factor for diffuse radiation 
+	  f_rdif        =>    surfalb_vars%f_rdif                 , & ! Input: TOP adjusted factor for reflected-diffuse radiation 
           
           fsun_z        =>    surfalb_vars%fsun_z_patch           , & ! Output: [real(r8) (:,:) ]  sunlit fraction of canopy layer
           vcmaxcintsun  =>    surfalb_vars%vcmaxcintsun_patch     , & ! Output: [real(r8) (:)   ]  leaf to canopy scaling coefficient, sunlit leaf vcmax
@@ -1762,7 +1762,7 @@ contains
           stdev_elev     =>    grc_pp%stdev_elev                  , & ! Input:   standard deviation of elevation 
           sky_view       =>    grc_pp%sky_view                    , & ! Input:   sky view factor
           terrain_config =>    grc_pp%terrain_config              , & ! Input:   terrain configuration factor
-	      sinsl_cosas    =>    grc_pp%sinsl_cosas                 , & ! Input:   sin(slope) * cos(aspect)
+	  sinsl_cosas    =>    grc_pp%sinsl_cosas                 , & ! Input:   sin(slope) * cos(aspect)
           sinsl_sinas    =>    grc_pp%sinsl_sinas                 , & ! Input:   sin(slope) * sin(aspect)
           albd           =>    surfalb_vars%albd_patch            , & ! Output:  surface albedo (direct)               
           albi           =>    surfalb_vars%albi_patch            , & ! Output:  surface albedo (diffuse)              
@@ -1774,9 +1774,9 @@ contains
           fd_top_adjust  =>    surfalb_vars%fd_top_adjust         , & ! Output:  TOP adjusted factor for direct radiation
           fi_top_adjust  =>    surfalb_vars%fi_top_adjust         , & ! Output:  TOP adjusted factor for diffuse radiation
           f_dir          =>    surfalb_vars%f_dir                 , & ! Output:  TOP adjusted factor for direct radiation 
-	      f_rdir         =>    surfalb_vars%f_rdir                , & ! Output:  TOP adjusted factor for reflected_direct radiation 
+	  f_rdir         =>    surfalb_vars%f_rdir                , & ! Output:  TOP adjusted factor for reflected_direct radiation 
           f_dif          =>    surfalb_vars%f_dif                 , & ! Output:  TOP adjusted factor for diffuse radiation 
-	      f_rdif         =>    surfalb_vars%f_rdif                  & ! Output:  TOP adjusted factor for reflected_diffuse radiation 
+	  f_rdif         =>    surfalb_vars%f_rdif                  & ! Output:  TOP adjusted factor for reflected_diffuse radiation 
           )
 
 
