@@ -27,7 +27,7 @@ readonly PROJECT="e3sm"
 
 readonly COMPSET="F2010-P3"
 readonly sstplus4K=false                     # true if to run plus4k experiment, otherwise false
-readonly RESOLUTION="ne30pg2_r05_oECv3"      # or ne120pg2_r0125_oRRS18to6v3
+readonly RESOLUTION="ne30pg2_EC30to60E2r2"      # or ne120pg2_r0125_oRRS18to6v3
 readonly DESCRIPTOR="F2010-P3.ZMmicro.ne30pg2"      # This will be the main part of the casename
 
 readonly CASE_GROUP="NGD.Integration"
@@ -175,9 +175,8 @@ cat << EOF >> user_nl_eam
 
  mfilt = 1,30,120,720,240
  
- history_budget=.false.
- history_aerosol=.false.
- history_aero_optics=.false.
+ history_budget=.true.
+ history_aerosol=.true.
 
  fexcl1='P3_mtend_NUMLIQ','P3_mtend_NUMRAIN','P3_mtend_Q','P3_mtend_TH','P3_nc2ni_immers_frz_tend',
  'P3_nc2nr_autoconv_tend', 'P3_nc_accret_tend','P3_nc_collect_tend','P3_nc_nuceat_tend','P3_nc_selfcollect_tend',
