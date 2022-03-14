@@ -16,7 +16,7 @@ if (Kokkos_ENABLE_CUDA)
   # This is to silence some nvcc warning that is a CUDA compiler bug
   # See https://github.com/kokkos/kokkos/issues/1473 for more details
   target_compile_options (scream_control PUBLIC
-    -Xcudafe --diag_suppress=esa_on_defaulted_function_ignored)
+      $<$<COMPILE_LANGUAGE:CXX>:-Xcudafe --diag_suppress=esa_on_defaulted_function_ignored>)
 endif()
 
 if (NOT SCREAM_LIB_ONLY)
