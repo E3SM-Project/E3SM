@@ -6,8 +6,8 @@ using namespace scream::shoc;
 
 // initialize shoc
 void shoc_initialize() {
-  auto &sgs_field      = ::sgs_field;
-  auto &sgs_field_diag = ::sgs_field_diag;
+  YAKL_SCOPE( sgs_field      , ::sgs_field);
+  YAKL_SCOPE( sgs_field_diag , ::sgs_field_diag);
   int  constexpr perturb_num_layers = 5;
 
   parallel_for( SimpleBounds<5>(nsgs_fields,nzm,dimy_s,dimx_s,ncrms) , YAKL_LAMBDA (int l, int k, int j, int i, int icrm) {
@@ -33,29 +33,36 @@ void shoc_proc() {
   using view_3d    = typename SHOC::view_3d<Spack>;
   using ExeSpace   = typename SHOC::KT::ExeSpace;
   using MemberType = typename SHOC::MemberType;
-  auto &dtime          = :: dt;
-  auto &ncrms          = :: ncrms;
-  auto &dx             = :: dx;
-  auto &dy             = :: dy;
-  auto &dz             = :: dz;
-  auto &u              = :: u;
-  auto &v              = :: v;
-  auto &w              = :: w;
-  auto &fluxbu         = :: fluxbu;
-  auto &fluxbv         = :: fluxbv;
-  auto &gamaz          = :: gamaz;
-  auto &t              = :: t;
-  auto &tabs           = :: tabs;
-  auto &qc             = :: qc;
-  auto &qv             = :: qv;
-  auto &pmid_in        = :: pres;
-  auto &pint_in        = :: presi;
-  auto &pdel_in        = :: pdel;
-  auto &phis           = :: phis;
-  auto &CF3D           = :: CF3D;
-  auto &sgs_field      = :: sgs_field;
-  auto &sgs_field_diag = :: sgs_field_diag;
- 
+  YAKL_SCOPE( dtime          , :: dt);
+  YAKL_SCOPE( ncrms          , :: ncrms);
+  YAKL_SCOPE( dx             , :: dx);
+  YAKL_SCOPE( dy             , :: dy);
+  YAKL_SCOPE( dz             , :: dz);
+  YAKL_SCOPE( u              , :: u);
+  YAKL_SCOPE( v              , :: v);
+  YAKL_SCOPE( w              , :: w);
+  YAKL_SCOPE( fluxbu         , :: fluxbu);
+  YAKL_SCOPE( fluxbv         , :: fluxbv);
+  YAKL_SCOPE( gamaz          , :: gamaz);
+  YAKL_SCOPE( t              , :: t);
+  YAKL_SCOPE( tabs           , :: tabs);
+  YAKL_SCOPE( qc             , :: qc);
+  YAKL_SCOPE( qv             , :: qv);
+  YAKL_SCOPE( pmid_in        , :: pres);
+  YAKL_SCOPE( pint_in        , :: presi);
+  YAKL_SCOPE( pdel_in        , :: pdel);
+  YAKL_SCOPE( phis           , :: phis);
+  YAKL_SCOPE( CF3D           , :: CF3D);
+  YAKL_SCOPE( sgs_field      , :: sgs_field);
+  YAKL_SCOPE( sgs_field_diag , :: sgs_field_diag);
+  YAKL_SCOPE( z              , :: z);
+  YAKL_SCOPE( zi             , :: zi);
+  YAKL_SCOPE( qcl            , :: qcl);
+  YAKL_SCOPE( qci            , :: qci);
+  YAKL_SCOPE( qpl            , :: qpl);
+  YAKL_SCOPE( qpi            , :: qpi); 
+  YAKL_SCOPE( micro_field    , :: micro_field);
+
   const int nlev   = nzm;
   const int nlevi  = nzm+1;
   const int ncol   = ncrms*nx*ny;
@@ -316,8 +323,8 @@ void shoc_proc() {
   });
 
   // update diagnostic micro fields based on micro scheme
-  if (strcmp(microphysics_scheme, "sam1mom") == 0) { micro_diagnose(); }
-  if (strcmp(microphysics_scheme, "p3")      == 0) { micro_p3_diagnose(); }
+  if (is_same_str(microphysics_scheme, "sam1mom") == 0) { micro_diagnose(); }
+  if (is_same_str(microphysics_scheme, "p3")      == 0) { micro_p3_diagnose(); }
 
   // update other variables
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {

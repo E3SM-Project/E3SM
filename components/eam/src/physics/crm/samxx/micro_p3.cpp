@@ -8,12 +8,12 @@ using namespace scream;
 using namespace scream::p3;
 
 void micro_p3_diagnose() {
-  auto &qv          = :: qv;
-  auto &qcl         = :: qcl;
-  auto &qci         = :: qci;
-  auto &qpl         = :: qpl;
-  auto &qpi         = :: qpi;
-  auto &micro_field = :: micro_field;
+  YAKL_SCOPE( qv          , :: qv);
+  YAKL_SCOPE( qcl         , :: qcl);
+  YAKL_SCOPE( qci         , :: qci);
+  YAKL_SCOPE( qpl         , :: qpl);
+  YAKL_SCOPE( qpi         , :: qpi);
+  YAKL_SCOPE( micro_field , :: micro_field);
 
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     qv(k,j,i,icrm)  = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
@@ -26,15 +26,15 @@ void micro_p3_diagnose() {
 
 
 void micro_p3_init() {
-  auto &fluxbmk = ::fluxbmk;
-  auto &fluxtmk = ::fluxtmk;
-  auto &mkwle   = ::mkwle;
-  auto &mkwsb   = ::mkwsb;
-  auto &mkadv   = ::mkadv;
-  auto &mkdiff  = ::mkdiff;
-  auto &qpsrc   = ::qpsrc;
-  auto &qpevp   = ::qpevp;
-  auto &ncrms   = ::ncrms;
+  YAKL_SCOPE( fluxbmk , ::fluxbmk);
+  YAKL_SCOPE( fluxtmk , ::fluxtmk);
+  YAKL_SCOPE( mkwle   , ::mkwle);
+  YAKL_SCOPE( mkwsb   , ::mkwsb);
+  YAKL_SCOPE( mkadv   , ::mkadv);
+  YAKL_SCOPE( mkdiff  , ::mkdiff);
+  YAKL_SCOPE( qpsrc   , ::qpsrc);
+  YAKL_SCOPE( qpevp   , ::qpevp);
+  YAKL_SCOPE( ncrms   , ::ncrms);
 
   // for (int l=0; l<nmicro_fields; k++) {
   //   for (int j=0; j<ny; j++) {
@@ -254,50 +254,46 @@ void micro_p3_proc() {
   using sview_1d   = typename P3F::view_1d<Real>;
   using sview_2d   = typename P3F::view_2d<Real>;
 
-  auto &micro_field        = :: micro_field;
-  auto &qv                 = :: qv;
-  auto &qcl                = :: qcl;
-  auto &qci                = :: qci;
-  auto &qpl                = :: qpl;
-  auto &qpi                = :: qpi;
-  auto &dt                 = :: dt;
-  auto &t                  = :: t;
-  auto &gamaz              = :: gamaz;
-  auto &tabs               = :: tabs;
-  auto &ncrms              = :: ncrms;
-  auto &dz                 = :: dz;
-  auto $adz                = :: adz;
-  auto $pdel               = :: pdel;
-  auto $pres               = :: pres;
-  auto &longitude0         = :: longitude0;
-  auto &latitude0          = :: latitude0;
-  auto &z0                 = :: z0;
-  auto &nc_nuceat_tend     = :: nc_nuceat_tend;
-  auto &nccn               = :: nccn;
-  auto &ni_activated       = :: ni_activated;
-  auto &diag_eff_radius_qc = :: diag_eff_radius_qc;
-  auto &diag_eff_radius_qi = :: diag_eff_radius_qi;
-  // auto &precip_total_tend  = :: precip_total_tend;
-  // auto &qr_evap_tend       = :: qr_evap_tend;
-  auto &t_prev             = :: t_prev;
-  auto &q_prev             = :: q_prev;
-  // auto &ast                = :: ast;
+  YAKL_SCOPE( micro_field        , :: micro_field);
+  YAKL_SCOPE( qv                 , :: qv);
+  YAKL_SCOPE( qcl                , :: qcl);
+  YAKL_SCOPE( qci                , :: qci);
+  YAKL_SCOPE( qpl                , :: qpl);
+  YAKL_SCOPE( qpi                , :: qpi);
+  YAKL_SCOPE( dt                 , :: dt);
+  YAKL_SCOPE( t                  , :: t);
+  YAKL_SCOPE( gamaz              , :: gamaz);
+  YAKL_SCOPE( tabs               , :: tabs);
+  YAKL_SCOPE( ncrms              , :: ncrms);
+  YAKL_SCOPE( dz                 , :: dz);
+  YAKL_SCOPE( adz                , :: adz);
+  YAKL_SCOPE( pdel               , :: pdel);
+  YAKL_SCOPE( pres               , :: pres);
+  YAKL_SCOPE( longitude0         , :: longitude0);
+  YAKL_SCOPE( latitude0          , :: latitude0);
+  YAKL_SCOPE( z0                 , :: z0);
+  YAKL_SCOPE( nc_nuceat_tend     , :: nc_nuceat_tend);
+  YAKL_SCOPE( nccn               , :: nccn);
+  YAKL_SCOPE( ni_activated       , :: ni_activated);
+  YAKL_SCOPE( diag_eff_radius_qc , :: diag_eff_radius_qc);
+  YAKL_SCOPE( diag_eff_radius_qi , :: diag_eff_radius_qi);
+  YAKL_SCOPE( t_prev             , :: t_prev);
+  YAKL_SCOPE( q_prev             , :: q_prev);
 
   // output 
-  auto &qv2qi_depos_tend   = :: qv2qi_depos_tend;
-  // auto &precip_liq_surf    = :: precip_liq_surf;
-  // auto &precip_ice_surf    = :: precip_ice_surf;
-  auto &rho_qi             = :: rho_qi;
-  auto &precip_liq_flux    = :: precip_liq_flux;
-  auto &precip_ice_flux    = :: precip_ice_flux;
+  YAKL_SCOPE( qv2qi_depos_tend   , :: qv2qi_depos_tend);
+  YAKL_SCOPE( rho_qi             , :: rho_qi);
+  YAKL_SCOPE( precip_liq_flux    , :: precip_liq_flux);
+  YAKL_SCOPE( precip_ice_flux    , :: precip_ice_flux);
 
-  auto &liq_ice_exchange  =  :: liq_ice_exchange;
-  auto &vap_liq_exchange  =  :: vap_liq_exchange;
-  auto &vap_ice_exchange  =  :: vap_ice_exchange;
+  YAKL_SCOPE( liq_ice_exchange,  :: liq_ice_exchange);
+  YAKL_SCOPE( vap_liq_exchange,  :: vap_liq_exchange);
+  YAKL_SCOPE( vap_ice_exchange,  :: vap_ice_exchange);
 
   // output
-  auto &precsfc           = :: precsfc;
-  auto &precssfc          = :: precssfc;
+  YAKL_SCOPE( precsfc           , :: precsfc);
+  YAKL_SCOPE( precssfc          , :: precssfc);
+  YAKL_SCOPE( CF3D              , :: CF3D);
 
   const int nlev  = nzm;
   const int ncol  = ncrms*nx*ny;
@@ -367,7 +363,7 @@ void micro_p3_proc() {
   });
 
   // Saturation adjustment - without SHOC we need to do a saturation adjustment and set qc
-  if (strcmp(turbulence_scheme, "smag") == 0) {
+  if (is_same_str(turbulence_scheme, "smag") == 0) {
     parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       real tmp_pres = pres(k,icrm)*100.;
       compute_adjusted_state( micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm), 

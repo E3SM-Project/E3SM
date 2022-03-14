@@ -23,7 +23,7 @@ void esmt_fft_forward(real2d& arr_in, real1d& k_out, real2d& arr_out) {
  * Author: Walter Hannah - Lawrence Livermore National Lab
  * adapted from SP-WRF code provided by Stefan Tulich
  *------------------------------------------------------------------*/
-   auto& dx  = ::dx;
+   YAKL_SCOPE( dx  , ::dx);
 
    int lensave, ier, nh, nl;
    int lot, jump, n, inc, lenr, lensav, lenwrk;
@@ -141,12 +141,12 @@ void scalar_momentum_pgf( int icrm, real3d& u_s, real3d& tend ) {
    ! Author: Walter Hannah - Lawrence Livermore National Lab
    ! adapted from SP-WRF code by Stefan Tulich
    !------------------------------------------------------------------*/
-   auto &ncrms = :: ncrms;
-   auto &z     = :: z;
-   auto &pres  = :: pres;
-   auto &zi    = :: zi;
-   auto &w     = :: w;
-   auto &rho   = :: rho;
+   YAKL_SCOPE( ncrms , :: ncrms);
+   YAKL_SCOPE( z     , :: z);
+   YAKL_SCOPE( pres  , :: pres);
+   YAKL_SCOPE( zi    , :: zi);
+   YAKL_SCOPE( w     , :: w);
+   YAKL_SCOPE( rho   , :: rho);
    
    real dampwt;
    real1d k_arr("k_arr",nx);
@@ -318,10 +318,10 @@ void scalar_momentum_tend() {
    * Purpose: Calculate pressure gradient effects on scalar momentum
    * Author: Walter Hannah - Lawrence Livermore National Lab
    *------------------------------------------------------------------*/
-   auto &dtn       = :: dtn;
-   auto &ncrms     = :: ncrms;
-   auto &u_esmt    = :: u_esmt;
-   auto &v_esmt    = :: v_esmt;
+   YAKL_SCOPE( dtn       , :: dtn);
+   YAKL_SCOPE( ncrms     , :: ncrms);
+   YAKL_SCOPE( u_esmt    , :: u_esmt);
+   YAKL_SCOPE( v_esmt    , :: v_esmt);
    
    real3d u_esmt_pgf_3D("u_esmt_pgf_3D",nzm,ny,nx);
    real3d v_esmt_pgf_3D("v_esmt_pgf_3d",nzm,ny,nx);

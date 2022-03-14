@@ -1,184 +1,186 @@
 #include "pre_timeloop.h"
+#include "samxx_utils.h"
 
 void pre_timeloop() {
-  auto &latitude0                 = :: latitude0;
-  auto &longitude0                = :: longitude0;
-  auto &lat0                      = :: lat0;
-  auto &long0                     = :: long0;
-  auto &idt_gl                    = :: idt_gl;
-  auto &factor_xy                 = :: factor_xy;
-  auto &crm_rad_temperature       = :: crm_rad_temperature;
-  auto &crm_rad_qv                = :: crm_rad_qv;
-  auto &crm_rad_qc                = :: crm_rad_qc;
-  auto &crm_rad_qi                = :: crm_rad_qi;
-  auto &crm_rad_nc                = :: crm_rad_nc;
-  auto &crm_rad_ni                = :: crm_rad_ni;
-  auto &crm_rad_cld               = :: crm_rad_cld;
-  auto &crm_clear_rh              = :: crm_clear_rh;
-  auto &crm_clear_rh_cnt          = :: crm_clear_rh_cnt;
-  auto &bflx                      = :: bflx;
-  auto &wnd                       = :: wnd;
-  auto &crm_input_bflxls          = :: crm_input_bflxls;
-  auto &crm_input_wndls           = :: crm_input_wndls;
-  auto &fcor                      = :: fcor;
-  auto &fcorz                     = :: fcorz;
-  auto &zi                        = :: zi;
-  auto &crm_input_zint            = :: crm_input_zint;
-  auto &presi                     = :: presi;
-  auto &crm_input_pint            = :: crm_input_pint;
-  auto &pdel                      = :: pdel;
-  auto &adzw                      = :: adzw;
-  auto &fcory                     = :: fcory;
-  auto &fcorzy                    = :: fcorzy;
-  auto &latitude                  = :: latitude;
-  auto &longitude                 = :: longitude;
-  auto &z                         = :: z;
-  auto &crm_input_zmid            = :: crm_input_zmid;
-  auto &crm_input_pmid            = :: crm_input_pmid;
-  auto &pres                      = :: pres;
-  auto &prespot                   = :: prespot;
-  auto &bet                       = :: bet;
-  auto &crm_input_tl              = :: crm_input_tl;
-  auto &gamaz                     = :: gamaz;
-  auto &dz                        = :: dz;
-  auto &adz                       = :: adz;
-  auto &rho                       = :: rho;
-  auto &crm_input_pdel            = :: crm_input_pdel;
-  auto &u                         = :: u;
-  auto &v                         = :: v;
-  auto &w                         = :: w;
-  auto &tabs                      = :: tabs;
-  auto &crm_state_u_wind          = :: crm_state_u_wind;
-  auto &crm_state_v_wind          = :: crm_state_v_wind;
-  auto &crm_state_w_wind          = :: crm_state_w_wind;
-  auto &crm_state_temperature     = :: crm_state_temperature; 
-  auto &micro_field               = :: micro_field;
-  auto &microphysics_scheme       = :: microphysics_scheme;
-  auto &crm_input_nccn            = :: crm_input_nccn;
-  auto &crm_input_nc_nuceat_tend  = :: crm_input_nc_nuceat_tend;
-  auto &crm_input_ni_activated    = :: crm_input_ni_activated;
-  auto &crm_state_qt              = :: crm_state_qt;
-  auto &crm_state_qp              = :: crm_state_qp;
-  auto &crm_state_qn              = :: crm_state_qn;
-  auto &crm_state_qc              = :: crm_state_qc;
-  auto &crm_state_nc              = :: crm_state_nc;
-  auto &crm_state_qr              = :: crm_state_qr;
-  auto &crm_state_nr              = :: crm_state_nr;
-  auto &crm_state_qi              = :: crm_state_qi;
-  auto &crm_state_ni              = :: crm_state_ni;
-  auto &crm_state_qm              = :: crm_state_qm;
-  auto &crm_state_bm              = :: crm_state_bm;
-  auto &crm_state_t_prev          = :: crm_state_t_prev;
-  auto &crm_state_q_prev          = :: crm_state_q_prev;
-  auto &t_prev                    = :: t_prev;
-  auto &q_prev                    = :: q_prev;
-  auto &qn                        = :: qn;
-  auto &u0                        = :: u0;
-  auto &v0                        = :: v0;
-  auto &t0                        = :: t0;
-  auto &t00                       = :: t00;
-  auto &tabs0                     = :: tabs0;
-  auto &q0                        = :: q0;
-  auto &qv0                       = :: qv0;
-  auto &qn0                       = :: qn0;
-  auto &qp0                       = :: qp0;
-  auto &tke0                      = :: tke0;
-  auto &t                         = :: t;
-  auto &qcl                       = :: qcl;
-  auto &qci                       = :: qci;
-  auto &qpl                       = :: qpl;
-  auto &qpi                       = :: qpi;
-  auto &sgs_field                 = :: sgs_field;
-  auto &uln                       = :: uln;
-  auto &vln                       = :: vln;
+  YAKL_SCOPE( latitude0                 , :: latitude0 );
+  YAKL_SCOPE( longitude0                , :: longitude0 );
+  YAKL_SCOPE( lat0                      , :: lat0 );
+  YAKL_SCOPE( long0                     , :: long0 );
+  YAKL_SCOPE( idt_gl                    , :: idt_gl );
+  YAKL_SCOPE( factor_xy                 , :: factor_xy );
+  YAKL_SCOPE( crm_rad_temperature       , :: crm_rad_temperature );
+  YAKL_SCOPE( crm_rad_qv                , :: crm_rad_qv );
+  YAKL_SCOPE( crm_rad_qc                , :: crm_rad_qc );
+  YAKL_SCOPE( crm_rad_qi                , :: crm_rad_qi );
+  YAKL_SCOPE( crm_rad_nc                , :: crm_rad_nc );
+  YAKL_SCOPE( crm_rad_ni                , :: crm_rad_ni );
+  YAKL_SCOPE( crm_rad_cld               , :: crm_rad_cld );
+  YAKL_SCOPE( crm_clear_rh              , :: crm_clear_rh );
+  YAKL_SCOPE( crm_clear_rh_cnt          , :: crm_clear_rh_cnt );
+  YAKL_SCOPE( bflx                      , :: bflx );
+  YAKL_SCOPE( wnd                       , :: wnd );
+  YAKL_SCOPE( crm_input_bflxls          , :: crm_input_bflxls );
+  YAKL_SCOPE( crm_input_wndls           , :: crm_input_wndls );
+  YAKL_SCOPE( fcor                      , :: fcor );
+  YAKL_SCOPE( fcorz                     , :: fcorz );
+  YAKL_SCOPE( zi                        , :: zi );
+  YAKL_SCOPE( crm_input_zint            , :: crm_input_zint );
+  YAKL_SCOPE( presi                     , :: presi );
+  YAKL_SCOPE( crm_input_pint            , :: crm_input_pint );
+  YAKL_SCOPE( pdel                      , :: pdel );
+  YAKL_SCOPE( adzw                      , :: adzw );
+  YAKL_SCOPE( fcory                     , :: fcory );
+  YAKL_SCOPE( fcorzy                    , :: fcorzy );
+  YAKL_SCOPE( latitude                  , :: latitude );
+  YAKL_SCOPE( longitude                 , :: longitude );
+  YAKL_SCOPE( z                         , :: z );
+  YAKL_SCOPE( crm_input_zmid            , :: crm_input_zmid );
+  YAKL_SCOPE( crm_input_pmid            , :: crm_input_pmid );
+  YAKL_SCOPE( pres                      , :: pres );
+  YAKL_SCOPE( prespot                   , :: prespot );
+  YAKL_SCOPE( bet                       , :: bet );
+  YAKL_SCOPE( crm_input_tl              , :: crm_input_tl );
+  YAKL_SCOPE( gamaz                     , :: gamaz );
+  YAKL_SCOPE( dz                        , :: dz );
+  YAKL_SCOPE( adz                       , :: adz );
+  YAKL_SCOPE( rho                       , :: rho );
+  YAKL_SCOPE( crm_input_pdel            , :: crm_input_pdel );
+  YAKL_SCOPE( u                         , :: u );
+  YAKL_SCOPE( v                         , :: v );
+  YAKL_SCOPE( w                         , :: w );
+  YAKL_SCOPE( tabs                      , :: tabs );
+  YAKL_SCOPE( crm_state_u_wind          , :: crm_state_u_wind );
+  YAKL_SCOPE( crm_state_v_wind          , :: crm_state_v_wind );
+  YAKL_SCOPE( crm_state_w_wind          , :: crm_state_w_wind );
+  YAKL_SCOPE( crm_state_temperature     , :: crm_state_temperature ); 
+  YAKL_SCOPE( micro_field               , :: micro_field );
+  YAKL_SCOPE( crm_input_nccn            , :: crm_input_nccn );
+  YAKL_SCOPE( crm_input_nc_nuceat_tend  , :: crm_input_nc_nuceat_tend );
+  YAKL_SCOPE( crm_input_ni_activated    , :: crm_input_ni_activated );
+  YAKL_SCOPE( crm_state_qt              , :: crm_state_qt );
+  YAKL_SCOPE( crm_state_qp              , :: crm_state_qp );
+  YAKL_SCOPE( crm_state_qn              , :: crm_state_qn );
+  YAKL_SCOPE( crm_state_qc              , :: crm_state_qc );
+  YAKL_SCOPE( crm_state_nc              , :: crm_state_nc );
+  YAKL_SCOPE( crm_state_qr              , :: crm_state_qr );
+  YAKL_SCOPE( crm_state_nr              , :: crm_state_nr );
+  YAKL_SCOPE( crm_state_qi              , :: crm_state_qi );
+  YAKL_SCOPE( crm_state_ni              , :: crm_state_ni );
+  YAKL_SCOPE( crm_state_qm              , :: crm_state_qm );
+  YAKL_SCOPE( crm_state_bm              , :: crm_state_bm );
+  YAKL_SCOPE( crm_state_t_prev          , :: crm_state_t_prev );
+  YAKL_SCOPE( crm_state_q_prev          , :: crm_state_q_prev );
+  YAKL_SCOPE( t_prev                    , :: t_prev );
+  YAKL_SCOPE( q_prev                    , :: q_prev );
+  YAKL_SCOPE( qn                        , :: qn );
+  YAKL_SCOPE( u0                        , :: u0 );
+  YAKL_SCOPE( v0                        , :: v0 );
+  YAKL_SCOPE( t0                        , :: t0 );
+  YAKL_SCOPE( t00                       , :: t00 );
+  YAKL_SCOPE( tabs0                     , :: tabs0 );
+  YAKL_SCOPE( q0                        , :: q0 );
+  YAKL_SCOPE( qv0                       , :: qv0 );
+  YAKL_SCOPE( qn0                       , :: qn0 );
+  YAKL_SCOPE( qp0                       , :: qp0 );
+  YAKL_SCOPE( tke0                      , :: tke0 );
+  YAKL_SCOPE( t                         , :: t );
+  YAKL_SCOPE( qcl                       , :: qcl );
+  YAKL_SCOPE( qci                       , :: qci );
+  YAKL_SCOPE( qpl                       , :: qpl );
+  YAKL_SCOPE( qpi                       , :: qpi );
+  YAKL_SCOPE( sgs_field                 , :: sgs_field );
+  YAKL_SCOPE( uln                       , :: uln );
+  YAKL_SCOPE( vln                       , :: vln );
 #ifdef MMF_ESMT
-  auto &u_esmt                    = :: u_esmt;
-  auto &v_esmt                    = :: v_esmt;
-  auto &uln_esmt                  = :: uln_esmt;
-  auto &vln_esmt                  = :: vln_esmt;
+  YAKL_SCOPE( u_esmt                    , :: u_esmt );
+  YAKL_SCOPE( v_esmt                    , :: v_esmt );
+  YAKL_SCOPE( uln_esmt                  , :: uln_esmt );
+  YAKL_SCOPE( vln_esmt                  , :: vln_esmt );
 #endif
-  auto &ttend                     = :: ttend;
-  auto &qtend                     = :: qtend;
-  auto &crm_input_qccl            = :: crm_input_qccl;
-  auto &crm_input_qiil            = :: crm_input_qiil;
-  auto &utend                     = :: utend;
-  auto &vtend                     = :: vtend;
-  auto &ug0                       = :: ug0;
-  auto &vg0                       = :: vg0;
-  auto &tg0                       = :: tg0;
-  auto &qg0                       = :: qg0;
-  auto &crm_input_ql              = :: crm_input_ql;
-  auto &uhl                       = :: uhl;
-  auto &vhl                       = :: vhl;
-  auto &crm_input_tau00           = :: crm_input_tau00;
-  auto &ustar                     = :: ustar;
-  auto &z0                        = :: z0;
-  auto &crm_output_subcycle_factor = :: crm_output_subcycle_factor;
-  auto &rhow                       = :: rhow;
-  auto &qv                         = :: qv;
-  auto &CF3D                       = :: CF3D;
-  auto &crm_input_ul               = :: crm_input_ul;
-  auto &crm_input_vl               = :: crm_input_vl;
+  YAKL_SCOPE( ttend                     , :: ttend );
+  YAKL_SCOPE( qtend                     , :: qtend );
+  YAKL_SCOPE( crm_input_qccl            , :: crm_input_qccl );
+  YAKL_SCOPE( crm_input_qiil            , :: crm_input_qiil );
+  YAKL_SCOPE( utend                     , :: utend );
+  YAKL_SCOPE( vtend                     , :: vtend );
+  YAKL_SCOPE( ug0                       , :: ug0 );
+  YAKL_SCOPE( vg0                       , :: vg0 );
+  YAKL_SCOPE( tg0                       , :: tg0 );
+  YAKL_SCOPE( qg0                       , :: qg0 );
+  YAKL_SCOPE( crm_input_ql              , :: crm_input_ql );
+  YAKL_SCOPE( uhl                       , :: uhl );
+  YAKL_SCOPE( vhl                       , :: vhl );
+  YAKL_SCOPE( crm_input_tau00           , :: crm_input_tau00 );
+  YAKL_SCOPE( ustar                     , :: ustar );
+  YAKL_SCOPE( z0                        , :: z0 );
+  YAKL_SCOPE( crm_output_subcycle_factor , :: crm_output_subcycle_factor );
+  YAKL_SCOPE( rhow                       , :: rhow );
+  YAKL_SCOPE( qv                         , :: qv );
+  YAKL_SCOPE( CF3D                       , :: CF3D );
+  YAKL_SCOPE( crm_input_ul               , :: crm_input_ul );
+  YAKL_SCOPE( crm_input_vl               , :: crm_input_vl );
 #ifdef MMF_ESMT
-  auto &crm_input_ul_esmt          = :: crm_input_ul_esmt;
-  auto &crm_input_vl_esmt          = :: crm_input_vl_esmt;
+  YAKL_SCOPE( crm_input_ul_esmt          , :: crm_input_ul_esmt );
+  YAKL_SCOPE( crm_input_vl_esmt          , :: crm_input_vl_esmt );
 #endif
-  auto &crm_output_cld             = :: crm_output_cld; 
-  auto &crm_output_cldtop          = :: crm_output_cldtop; 
-  auto &crm_output_gicewp          = :: crm_output_gicewp; 
-  auto &crm_output_gliqwp          = :: crm_output_gliqwp; 
-  auto &crm_output_mctot           = :: crm_output_mctot; 
-  auto &crm_output_mcup            = :: crm_output_mcup; 
-  auto &crm_output_mcdn            = :: crm_output_mcdn; 
-  auto &crm_output_mcuup           = :: crm_output_mcuup; 
-  auto &crm_output_mcudn           = :: crm_output_mcudn; 
-  auto &crm_output_qc_mean         = :: crm_output_qc_mean; 
-  auto &crm_output_qi_mean         = :: crm_output_qi_mean; 
-  auto &crm_output_qs_mean         = :: crm_output_qs_mean; 
-  auto &crm_output_qg_mean         = :: crm_output_qg_mean; 
-  auto &crm_output_qr_mean         = :: crm_output_qr_mean; 
-  auto &crm_output_mu_crm          = :: crm_output_mu_crm; 
-  auto &crm_output_md_crm          = :: crm_output_md_crm; 
-  auto &crm_output_eu_crm          = :: crm_output_eu_crm; 
-  auto &crm_output_du_crm          = :: crm_output_du_crm; 
-  auto &crm_output_ed_crm          = :: crm_output_ed_crm; 
-  auto &crm_output_flux_qt         = :: crm_output_flux_qt; 
-  auto &crm_output_flux_u          = :: crm_output_flux_u; 
-  auto &crm_output_flux_v          = :: crm_output_flux_v; 
-  auto &crm_output_fluxsgs_qt      = :: crm_output_fluxsgs_qt;
-  auto &crm_output_tkez            = :: crm_output_tkez; 
-  auto &crm_output_tkew            = :: crm_output_tkew; 
-  auto &crm_output_tkesgsz         = :: crm_output_tkesgsz; 
-  auto &crm_output_tkz             = :: crm_output_tkz; 
-  auto &crm_output_flux_qp         = :: crm_output_flux_qp; 
-  auto &crm_output_precflux        = :: crm_output_precflux; 
-  auto &crm_output_qt_trans        = :: crm_output_qt_trans; 
-  auto &crm_output_qp_trans        = :: crm_output_qp_trans; 
-  auto &crm_output_qp_fall         = :: crm_output_qp_fall; 
-  auto &crm_output_qp_evp          = :: crm_output_qp_evp; 
-  auto &crm_output_qp_src          = :: crm_output_qp_src; 
-  auto &crm_output_qt_ls           = :: crm_output_qt_ls; 
-  auto &crm_output_t_ls            = :: crm_output_t_ls; 
-  auto &dd_crm                     = :: dd_crm; 
-  auto &mui_crm                    = :: mui_crm; 
-  auto &mdi_crm                    = :: mdi_crm; 
-  auto &crm_output_jt_crm          = :: crm_output_jt_crm;
-  auto &crm_output_mx_crm          = :: crm_output_mx_crm;
-  auto &ncrms                      = :: ncrms;
-  auto &crm_input_t_vt             = :: crm_input_t_vt;
-  auto &crm_input_q_vt             = :: crm_input_q_vt;
-  auto &t_vt_tend                  = :: t_vt_tend;
-  auto &q_vt_tend                  = :: q_vt_tend;
-  auto &t_vt                       = :: t_vt;
-  auto &q_vt                       = :: q_vt;
-  auto &use_VT                     = :: use_VT;
-  auto &crm_input_phis             = :: crm_input_phis;
-  auto &crm_input_ps               = :: crm_input_ps;
-  auto &phis                       = :: phis;
-  auto &psfc                       = :: psfc;
-  auto &nccn                       = :: nccn;
-  auto &nc_nuceat_tend             = :: nc_nuceat_tend;
-  auto &ni_activated               = :: ni_activated;
+  YAKL_SCOPE( crm_output_cld             , :: crm_output_cld ); 
+  YAKL_SCOPE( crm_output_cldtop          , :: crm_output_cldtop ); 
+  YAKL_SCOPE( crm_output_gicewp          , :: crm_output_gicewp ); 
+  YAKL_SCOPE( crm_output_gliqwp          , :: crm_output_gliqwp ); 
+  YAKL_SCOPE( crm_output_mctot           , :: crm_output_mctot ); 
+  YAKL_SCOPE( crm_output_mcup            , :: crm_output_mcup ); 
+  YAKL_SCOPE( crm_output_mcdn            , :: crm_output_mcdn ); 
+  YAKL_SCOPE( crm_output_mcuup           , :: crm_output_mcuup ); 
+  YAKL_SCOPE( crm_output_mcudn           , :: crm_output_mcudn ); 
+  YAKL_SCOPE( crm_output_qc_mean         , :: crm_output_qc_mean ); 
+  YAKL_SCOPE( crm_output_qi_mean         , :: crm_output_qi_mean ); 
+  YAKL_SCOPE( crm_output_qs_mean         , :: crm_output_qs_mean ); 
+  YAKL_SCOPE( crm_output_qg_mean         , :: crm_output_qg_mean ); 
+  YAKL_SCOPE( crm_output_qr_mean         , :: crm_output_qr_mean ); 
+  YAKL_SCOPE( crm_output_mu_crm          , :: crm_output_mu_crm ); 
+  YAKL_SCOPE( crm_output_md_crm          , :: crm_output_md_crm ); 
+  YAKL_SCOPE( crm_output_eu_crm          , :: crm_output_eu_crm ); 
+  YAKL_SCOPE( crm_output_du_crm          , :: crm_output_du_crm ); 
+  YAKL_SCOPE( crm_output_ed_crm          , :: crm_output_ed_crm ); 
+  YAKL_SCOPE( crm_output_flux_qt         , :: crm_output_flux_qt ); 
+  YAKL_SCOPE( crm_output_flux_u          , :: crm_output_flux_u ); 
+  YAKL_SCOPE( crm_output_flux_v          , :: crm_output_flux_v ); 
+  YAKL_SCOPE( crm_output_fluxsgs_qt      , :: crm_output_fluxsgs_qt );
+  YAKL_SCOPE( crm_output_tkez            , :: crm_output_tkez ); 
+  YAKL_SCOPE( crm_output_tkew            , :: crm_output_tkew ); 
+  YAKL_SCOPE( crm_output_tkesgsz         , :: crm_output_tkesgsz ); 
+  YAKL_SCOPE( crm_output_tkz             , :: crm_output_tkz ); 
+  YAKL_SCOPE( crm_output_flux_qp         , :: crm_output_flux_qp ); 
+  YAKL_SCOPE( crm_output_precflux        , :: crm_output_precflux ); 
+  YAKL_SCOPE( crm_output_qt_trans        , :: crm_output_qt_trans ); 
+  YAKL_SCOPE( crm_output_qp_trans        , :: crm_output_qp_trans ); 
+  YAKL_SCOPE( crm_output_qp_fall         , :: crm_output_qp_fall ); 
+  YAKL_SCOPE( crm_output_qp_evp          , :: crm_output_qp_evp ); 
+  YAKL_SCOPE( crm_output_qp_src          , :: crm_output_qp_src ); 
+  YAKL_SCOPE( crm_output_qt_ls           , :: crm_output_qt_ls ); 
+  YAKL_SCOPE( crm_output_t_ls            , :: crm_output_t_ls ); 
+  YAKL_SCOPE( dd_crm                     , :: dd_crm ); 
+  YAKL_SCOPE( mui_crm                    , :: mui_crm ); 
+  YAKL_SCOPE( mdi_crm                    , :: mdi_crm ); 
+  YAKL_SCOPE( crm_output_jt_crm          , :: crm_output_jt_crm );
+  YAKL_SCOPE( crm_output_mx_crm          , :: crm_output_mx_crm );
+  YAKL_SCOPE( ncrms                      , :: ncrms );
+  YAKL_SCOPE( crm_input_t_vt             , :: crm_input_t_vt );
+  YAKL_SCOPE( crm_input_q_vt             , :: crm_input_q_vt );
+  YAKL_SCOPE( t_vt_tend                  , :: t_vt_tend );
+  YAKL_SCOPE( q_vt_tend                  , :: q_vt_tend );
+  YAKL_SCOPE( t_vt                       , :: t_vt );
+  YAKL_SCOPE( q_vt                       , :: q_vt );
+  YAKL_SCOPE( use_VT                     , :: use_VT );
+  YAKL_SCOPE( crm_input_phis             , :: crm_input_phis );
+  YAKL_SCOPE( crm_input_ps               , :: crm_input_ps );
+  YAKL_SCOPE( phis                       , :: phis );
+  YAKL_SCOPE( psfc                       , :: psfc );
+  YAKL_SCOPE( nccn                       , :: nccn );
+  YAKL_SCOPE( nc_nuceat_tend             , :: nc_nuceat_tend );
+  YAKL_SCOPE( ni_activated               , :: ni_activated );
+  YAKL_SCOPE( turbulence_scheme          , :: turbulence_scheme );
+  YAKL_SCOPE( microphysics_scheme        , :: microphysics_scheme );
 
   crm_accel_ceaseflag = false;
 
@@ -343,12 +345,12 @@ void pre_timeloop() {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-    if (strcmp(microphysics_scheme, "sam1mom") == 0) {
+    if (is_same_str(microphysics_scheme, "sam1mom") == 0) {
       micro_field(0,k,j+offy_s,i+offx_s,icrm) = crm_state_qt(k,j,i,icrm);
       micro_field(1,k,j+offy_s,i+offx_s,icrm) = crm_state_qp(k,j,i,icrm);
       qn(k,j,i,icrm) = crm_state_qn(k,j,i,icrm);
     }
-    if (strcmp(microphysics_scheme, "p3")      == 0) {
+    if (is_same_str(microphysics_scheme, "p3") == 0) {
       micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = crm_state_qt(k,j,i,icrm);
       micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm) = crm_state_qi(k,j,i,icrm);
       micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm) = crm_state_nc(k,j,i,icrm);
@@ -361,17 +363,17 @@ void pre_timeloop() {
       t_prev(k,j,i,icrm)                           = crm_state_t_prev(k,j,i,icrm);
       q_prev(k,j,i,icrm)                           = crm_state_q_prev(k,j,i,icrm);
     }
-    if (strcmp(turbulence_scheme, "smag") == 0) { CF3D(k,j,i,icrm) = 1.0; }
-    if (strcmp(turbulence_scheme, "shoc") == 0) { CF3D(k,j,i,icrm) = 1.0; }
+    if (is_same_str(turbulence_scheme, "smag") == 0) { CF3D(k,j,i,icrm) = 1.0; }
+    if (is_same_str(turbulence_scheme, "shoc") == 0) { CF3D(k,j,i,icrm) = 1.0; }
   });
 
   // microphysics scheme initialization
-  if (strcmp(microphysics_scheme, "sam1mom") == 0) { micro_init(); }
-  if (strcmp(microphysics_scheme, "p3")      == 0) { micro_p3_init(); }
+  if (is_same_str(microphysics_scheme, "sam1mom") == 0) { micro_init(); }
+  if (is_same_str(microphysics_scheme, "p3") == 0) { micro_p3_init(); }
   
   // subgrid scale turbulence scheme initialization
-  if (strcmp(turbulence_scheme, "smag") == 0) { sgs_init(); }
-  if (strcmp(turbulence_scheme, "shoc") == 0) { shoc_initialize(); }
+  if (is_same_str(turbulence_scheme, "smag") == 0) { sgs_init(); }
+  if (is_same_str(turbulence_scheme, "shoc") == 0) { shoc_initialize(); }
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
@@ -448,7 +450,7 @@ void pre_timeloop() {
       t_vt_tend(k,icrm) = ( crm_input_t_vt(l,icrm) - t_vt(k,icrm) )*idt_gl ;
       q_vt_tend(k,icrm) = ( crm_input_q_vt(l,icrm) - q_vt(k,icrm) )*idt_gl ;
     }
-    if (strcmp(microphysics_scheme, "p3")      == 0) {
+    if (is_same_str(microphysics_scheme, "p3") == 0) {
       nccn(k,icrm)           = crm_input_nccn(l,icrm);
       nc_nuceat_tend(k,icrm) = crm_input_nc_nuceat_tend(plev-(k+1),icrm);
       ni_activated(k,icrm)   = crm_input_ni_activated(plev-(k+1),icrm);

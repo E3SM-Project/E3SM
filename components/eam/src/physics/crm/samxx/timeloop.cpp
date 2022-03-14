@@ -1,15 +1,16 @@
 
 #include "timeloop.h"
+#include "samxx_utils.h"
 
 void timeloop() {
-  auto &crm_output_subcycle_factor = :: crm_output_subcycle_factor;
-  auto &t                        = :: t;
-  auto &crm_rad_qrad             = :: crm_rad_qrad;
-  auto &dtn                      = :: dtn;
-  auto &ncrms                    = :: ncrms;
-  auto &na                       = :: na;
-  auto &dt3                      = :: dt3;
-  auto &rank                     = :: rank;
+  YAKL_SCOPE( crm_output_subcycle_factor , :: crm_output_subcycle_factor );
+  YAKL_SCOPE( t                        , :: t );
+  YAKL_SCOPE( crm_rad_qrad             , :: crm_rad_qrad );
+  YAKL_SCOPE( dtn                      , :: dtn );
+  YAKL_SCOPE( ncrms                    , :: ncrms );
+  YAKL_SCOPE( na                       , :: na );
+  YAKL_SCOPE( dt3                      , :: dt3 );
+  YAKL_SCOPE( rank                     , :: rank );
 
   nstep = 0;
 
@@ -93,7 +94,7 @@ void timeloop() {
 
       //---------------------------------------------------------
       //   Ice fall-out
-      if (strcmp(microphysics_scheme, "sam1mom") == 0) {
+      if (is_same_str(microphysics_scheme, "sam1mom") == 0) {
         ice_fall();
       }
 
@@ -114,8 +115,8 @@ void timeloop() {
       //-----------------------------------------------------------
       //  SGS physics:
       if (dosgs) {
-        if (strcmp(turbulence_scheme, "smag") == 0) { sgs_proc(); }
-        if (strcmp(turbulence_scheme, "shoc") == 0) { shoc_proc(); }
+        if (is_same_str(turbulence_scheme, "smag") == 0) { sgs_proc(); }
+        if (is_same_str(turbulence_scheme, "shoc") == 0) { shoc_proc(); }
       }
 
       //----------------------------------------------------------
@@ -129,7 +130,7 @@ void timeloop() {
       //----------------------------------------------------------
       //  SGS effects on momentum:
       if (dosgs) {
-        if (strcmp(turbulence_scheme, "smag") == 0) { sgs_mom(); }
+        if (is_same_str(turbulence_scheme, "smag") == 0) { sgs_mom(); }
       }
 
 #if defined(MMF_ESMT)
@@ -170,7 +171,7 @@ void timeloop() {
       //---------------------------------------------------------
       //      SGS effects on scalars :
       if (dosgs) {
-        if (strcmp(turbulence_scheme, "smag") == 0) { sgs_scalars(); }
+        if (is_same_str(turbulence_scheme, "smag") == 0) { sgs_scalars(); }
       }
 
       //-----------------------------------------------------------
@@ -179,8 +180,8 @@ void timeloop() {
       //-----------------------------------------------------------
       //       Cloud condensation/evaporation and precipitation processes:
       if (docloud || dosmoke) {
-        if (strcmp(microphysics_scheme, "sam1mom") == 0) { micro_proc(); }
-        if (strcmp(microphysics_scheme, "p3")      == 0) { micro_p3_proc(); }
+        if (is_same_str(microphysics_scheme, "sam1mom") == 0) { micro_proc(); }
+        if (is_same_str(microphysics_scheme, "p3")      == 0) { micro_p3_proc(); }
       }
 
       //-----------------------------------------------------------
