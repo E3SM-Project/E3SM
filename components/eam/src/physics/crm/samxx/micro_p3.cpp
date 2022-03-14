@@ -570,12 +570,11 @@ void micro_p3_proc() {
     int i    = icol%nx;
     int j    = (icol/nx)%ny;
     int icrm = (icol/nx)/ny;
-    auto tmp_precip_liq = diag_outputs.precip_liq_surf(icol);
-    auto tmp_precip_ice = diag_outputs.precip_ice_surf(icol);
-    auto precsfc_tmp  = precsfc(j,i,icrm);
+    auto precsfc_tmp  = precsfc (j,i,icrm);
     auto precssfc_tmp = precssfc(j,i,icrm);
-    precsfc(j,i,icrm) = precsfc_tmp +(tmp_precip_liq+tmp_precip_ice) * 1000.0 * dt / dz(icrm);
-    precssfc(j,i,icrm)= precssfc_tmp+(               tmp_precip_ice) * 1000.0 * dt / dz(icrm);
+    precsfc(j,i,icrm) = precsfc_tmp +(diag_outputs.precip_liq_surf(icol)
+                                     +diag_outputs.precip_ice_surf(icol)) * 1000.0 * dt / dz(icrm);
+    precssfc(j,i,icrm)= precssfc_tmp+(diag_outputs.precip_ice_surf(icol)) * 1000.0 * dt / dz(icrm);
   });
 
   // update microfield
