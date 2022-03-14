@@ -33,6 +33,42 @@ void timeloop() {
       });
       dtfactor = dtn/dt;
 
+// std::cout<<"WHDEBUG0 nstep:"<< nstep <<" icycle:"<< icycle <<std::endl;
+
+// for (int k=0; k<nzm; k++) {
+//   int j = 0;
+//   // for (int i=0; i<crm_nx; i++) {
+//   for (int s=0; s<dimx_s; s++) {
+//     int i = s-3;
+//     for (int icrm=0; icrm<ncrms; icrm++) {
+//       int icol = i+nx*(j+ny*icrm);
+//       int ilev = k;
+//       std::cout<<"WHDEBUG1 "
+//       <<"  i:"<<i 
+//       <<"  s:"<<s 
+//       <<"  k:"<<k 
+//       // <<"  tabs:"<<tabs(k,j,i,icrm)
+//       // <<"  w:"<<w(k,j+offy_w,i+offx_w,icrm) 
+//       // <<"  u:"<<u(k,j+offy_u,i+offx_u,icrm)
+//       // <<"  qt:"<<micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm)
+//       // <<"  qc:"<<micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm)
+//       // <<"  qi:"<<micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm)
+//       // <<"  qr:"<<micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm)
+//       // <<"  qm:"<<micro_field(idx_qm,k,j+offy_s,i+offx_s,icrm)
+//       <<"  qt:"<<micro_field(idx_qt,k,j+offy_s,s,icrm)
+//       <<"  qc:"<<micro_field(idx_qc,k,j+offy_s,s,icrm)
+//       <<"  qi:"<<micro_field(idx_qi,k,j+offy_s,s,icrm)
+//       <<"  qr:"<<micro_field(idx_qr,k,j+offy_s,s,icrm)
+//       <<"  qm:"<<micro_field(idx_qm,k,j+offy_s,s,icrm)
+//       // <<"  tke:"<<sgs_field(0,k,j+offy_s,i+offx_s,icrm)
+//       // <<"  tk:"<<sgs_field_diag(0,k,j+offy_d,i+offx_d,icrm)
+//       // <<"  tkh:"<<sgs_field_diag(1,k,j+offy_d,i+offx_d,icrm)
+//       // <<"  :"<<
+//       <<std::endl;
+//     }
+//   }
+// }
+
       parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
         crm_output_subcycle_factor(icrm) = crm_output_subcycle_factor(icrm)+1;
       });
@@ -117,6 +153,40 @@ void timeloop() {
         if (strcmp(turbulence_scheme, "smag") == 0) { sgs_proc(); }
         if (strcmp(turbulence_scheme, "shoc") == 0) { shoc_proc(); }
       }
+
+// for (int k=0; k<nzm; k++) {
+//   int j = 0;
+//   // for (int i=0; i<crm_nx; i++) {
+//   for (int s=0; s<dimx_s; s++) {
+//     int i = s-3;
+//     for (int icrm=0; icrm<ncrms; icrm++) {
+//       int icol = i+nx*(j+ny*icrm);
+//       int ilev = k;
+//       std::cout<<"WHDEBUG2 "
+//       <<"  i:"<<i 
+//       <<"  s:"<<s 
+//       <<"  k:"<<k 
+//       // <<"  tabs:"<<tabs(k,j,i,icrm)
+//       // <<"  w:"<<w(k,j+offy_w,i+offx_w,icrm) 
+//       // <<"  u:"<<u(k,j+offy_u,i+offx_u,icrm)
+//       // <<"  qt:"<<micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm)
+//       // <<"  qc:"<<micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm)
+//       // <<"  qi:"<<micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm)
+//       // <<"  qr:"<<micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm)
+//       // <<"  qm:"<<micro_field(idx_qm,k,j+offy_s,i+offx_s,icrm)
+//       <<"  qt:"<<micro_field(idx_qt,k,j+offy_s,s,icrm)
+//       <<"  qc:"<<micro_field(idx_qc,k,j+offy_s,s,icrm)
+//       <<"  qi:"<<micro_field(idx_qi,k,j+offy_s,s,icrm)
+//       <<"  qr:"<<micro_field(idx_qr,k,j+offy_s,s,icrm)
+//       <<"  qm:"<<micro_field(idx_qm,k,j+offy_s,s,icrm)
+//       // <<"  tke:"<<sgs_field(0,k,j+offy_s,i+offx_s,icrm)
+//       // <<"  tk:"<<sgs_field_diag(0,k,j+offy_d,i+offx_d,icrm)
+//       // <<"  tkh:"<<sgs_field_diag(1,k,j+offy_d,i+offx_d,icrm)
+//       // <<"  :"<<
+//       <<std::endl;
+//     }
+//   }
+// }
 
       //----------------------------------------------------------
       //     Fill boundaries for SGS diagnostic fields:
