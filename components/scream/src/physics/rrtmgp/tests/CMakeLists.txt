@@ -7,7 +7,7 @@ if (NOT SCREAM_BASELINES_ONLY)
 
   CreateUnitTest(
       rrtmgp_tests rrtmgp_tests.cpp "${NEED_LIBS}" LABELS "rrtmgp;physics"
-      EXE_ARGS "-i ${CMAKE_CURRENT_BINARY_DIR}/data/rrtmgp-allsky.nc -b ${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
+      EXE_ARGS "-i ${CMAKE_CURRENT_BINARY_DIR}/data/rrtmgp-allsky.nc -b ${SCREAM_BIN_DIR}/data/rrtmgp-allsky-baseline.nc"
       EXCLUDE_MAIN_CPP
   )
   CreateUnitTest(
@@ -35,11 +35,15 @@ if (NOT SCREAM_BASELINES_ONLY)
   configure_file(${EAM_RRTMGP_DIR}/external/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
                  ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
 
-  add_custom_target(rrtmgp_allsky_baseline.nc
+  # Generate allsky baseline with the usual cmake custom command-target pair pattern
+  add_custom_command (
+      OUTPUT  ${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc
       COMMAND ${CMAKE_COMMAND} -E env $<TARGET_FILE:generate_baseline>
               ${EAM_RRTMGP_DIR}/external/examples/all-sky/rrtmgp-allsky.nc
               ${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc
   )
+  add_custom_target(rrtmgp_allsky_baseline.nc
+      DEPENDS ${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc
+  )
 
-  add_dependencies(baseline rrtmgp_allsky_baseline.nc)
 endif()

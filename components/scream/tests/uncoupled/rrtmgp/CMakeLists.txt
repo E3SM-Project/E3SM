@@ -10,8 +10,11 @@ if (NOT SCREAM_BASELINES_ONLY)
 
   CreateUnitTest(
       rrtmgp_standalone_unit rrtmgp_standalone_unit.cpp "${NEED_LIBS}" LABELS ${TEST_LABELS}
-      EXE_ARGS "--ekat-test-params rrtmgp_inputfile=${CMAKE_CURRENT_BINARY_DIR}/data/rrtmgp-allsky.nc,rrtmgp_baseline=${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
+      EXE_ARGS "--ekat-test-params rrtmgp_inputfile=${CMAKE_CURRENT_BINARY_DIR}/data/rrtmgp-allsky.nc,rrtmgp_baseline=${SCREAM_BIN_DIR}/data/rrtmgp-allsky-baseline.nc"
   )
+  # This test needs the allsky baselines file
+  add_dependencies (rrtmgp_standalone_unit rrtmgp_allsky_baseline.nc)
+
   target_include_directories(rrtmgp_standalone_unit PUBLIC
         ${SCREAM_BASE_DIR}/src/physics/rrtmgp
         ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests
