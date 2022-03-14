@@ -76,7 +76,7 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(shoc_tests "${SHOC_TESTS_SRCS}" "${NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP shoc_tests_ut_np1_omp1)
 endif()
 
-if (SCREAM_ENABLE_BASELINES_TESTS)
+if (SCREAM_ENABLE_BASELINE_TESTS)
   CreateUnitTest(shoc_run_and_cmp_cxx "shoc_run_and_cmp.cpp" "${NEED_LIBS}"
                  THREADS ${SCREAM_TEST_MAX_THREADS}
                  EXE_ARGS "-b ${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline"

@@ -69,7 +69,7 @@ if (NOT SCREAM_BASELINES_ONLY)
                  LABELS "p3;physics;fail")
 endif()
 
-if (SCREAM_ENABLE_BASELINES_TESTS)
+if (SCREAM_ENABLE_BASELINE_TESTS)
   CreateUnitTest(p3_run_and_cmp_cxx "p3_run_and_cmp.cpp" "${NEED_LIBS}"
                  THREADS ${SCREAM_TEST_MAX_THREADS}
                  EXE_ARGS "-b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"

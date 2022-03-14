@@ -212,12 +212,12 @@ set(SCREAM_BASELINES_ONLY FALSE CACHE BOOL "Whether building only baselines-rela
 
 # Certain builds are not meant to compare against baselines. For instance, a valgrind build
 # has the sole purpose of detecting memory errors. For these builds, we can disable baselines tests
-set(SCREAM_ENABLE_BASELINES_TESTS TRUE CACHE BOOL "Whether to run baselines-related tests")
+set(SCREAM_ENABLE_BASELINE_TESTS TRUE CACHE BOOL "Whether to run baselines-related tests")
 
-if (SCREAM_BASELINES_ONLY AND NOT SCREAM_ENABLE_BASELINES_TESTS)
+if (SCREAM_BASELINES_ONLY AND NOT SCREAM_ENABLE_BASELINE_TESTS)
   message (FATAL_ERROR
     "Makes no sense to set SCREAM_BASELINES_ONLY=ON,\n"
-    "but set SCREAM_ENABLE_BASELINES_TESTS=OFF.")
+    "but set SCREAM_ENABLE_BASELINE_TESTS=OFF.")
 endif()
 
 # Set number of vertical levels
