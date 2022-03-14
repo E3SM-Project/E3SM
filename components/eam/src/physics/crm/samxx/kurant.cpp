@@ -1,21 +1,22 @@
 
 #include "kurant.h"
 #include "vars.h"
+#include "samxx_utils.h"
 
 void kurant () {
-  auto &w     = ::w;
-  auto &u     = ::u;
-  auto &v     = ::v;
-  auto &dt    = ::dt;
-  auto &dx    = ::dx;
-  auto &dy    = ::dy;
-  auto &dz    = ::dz;
-  auto &adzw  = ::adzw;
-  auto &ncrms = ::ncrms;
-  auto &tabs  = ::tabs;
-  auto &micro_field = ::micro_field;
-  auto &longitude0 = :: longitude0;
-  auto &latitude0  = :: latitude0;
+  YAKL_SCOPE( w     , ::w);
+  YAKL_SCOPE( u     , ::u);
+  YAKL_SCOPE( v     , ::v);
+  YAKL_SCOPE( dt    , ::dt);
+  YAKL_SCOPE( dx    , ::dx);
+  YAKL_SCOPE( dy    , ::dy);
+  YAKL_SCOPE( dz    , ::dz);
+  YAKL_SCOPE( adzw  , ::adzw);
+  YAKL_SCOPE( ncrms , ::ncrms);
+  YAKL_SCOPE( tabs  , ::tabs);
+  YAKL_SCOPE( micro_field , ::micro_field);
+  YAKL_SCOPE( longitude0 , :: longitude0);
+  YAKL_SCOPE( latitude0  , :: latitude0);
 
   int constexpr max_ncycle = 4;
   real cfl;
@@ -67,7 +68,7 @@ void kurant () {
     exit(-1);
   }
 
-  if (strcmp(turbulence_scheme, "smag") == 0) { kurant_sgs(cfl); }
+  if (is_same_str(turbulence_scheme, "smag") == 0) { kurant_sgs(cfl); }
 
   ncycle = max(ncycle,max(1,static_cast<int>(ceil(cfl/0.7))));
 

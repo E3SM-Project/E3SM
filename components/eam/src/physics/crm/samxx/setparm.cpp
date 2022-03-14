@@ -1,5 +1,6 @@
 
 #include "setparm.h"
+#include "samxx_utils.h"
 
 extern "C" void setparm() {
   doprecip  = true;
@@ -35,11 +36,11 @@ extern "C" void setparm() {
   dtn = dt;
 
   // Turbulence scheme options
-  if (strcmp(turbulence_scheme, "smag") == 0) {
+  if (is_same_str(turbulence_scheme, "smag") == 0) {
     dosmagor   = true;
     advect_sgs = false;
   }
-  if (strcmp(turbulence_scheme, "shoc") == 0) {
+  if (is_same_str(turbulence_scheme, "shoc") == 0) {
     dosmagor   = false;
     advect_sgs = true;
   }
