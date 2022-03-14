@@ -192,22 +192,23 @@ contains
       !! ocn_diagnostic_solve_ssh                :: ssh, (not on device)
       !!                                            landIceDraft (not on device)
 
-      !$acc enter data copyin(layerThickness, normalVelocity)
-      !$acc update device (normalTransportVelocity, &
-      !$acc                normalGMBolusVelocity)
+!     !$acc enter data copyin(layerThickness, normalVelocity)
+!     !$acc update device (normalTransportVelocity, &
+!     !$acc                normalGMBolusVelocity)
 
-      !$acc enter data copyin(atmosphericPressure, seaIcePressure)
+!     !$acc enter data copyin(atmosphericPressure, seaIcePressure)
 
-      !$acc enter data copyin(activeTracers, ssh)
-      !$acc update device(tracersSurfaceValue)
+!     !$acc enter data copyin(activeTracers, ssh)
+!     !$acc enter data copyin(activeTracers)
+!     !$acc update device(tracersSurfaceValue)
 
-      if ( associated(frazilSurfacePressure) ) then
-         !$acc enter data copyin(frazilSurfacePressure)
-      endif
-      if (landIcePressureOn) then
-         !$acc enter data copyin(landIcePressure)
-         !$acc enter data copyin(landIceDraft)
-      endif
+!     if ( associated(frazilSurfacePressure) ) then
+!        !$acc enter data copyin(frazilSurfacePressure)
+!     endif
+!     if (landIcePressureOn) then
+!        !$acc enter data copyin(landIcePressure)
+!        !$acc enter data copyin(landIceDraft)
+!     endif
 #endif
 
       ! inputs: layerThickness, normalVelocity
@@ -433,50 +434,50 @@ contains
       !! ocn_diagnostic_solve_ssh                :: pressureAdjustedSSH, (diagnostics array)
       !!                                            gradSSH (diagnostics array)
 
-      !$acc update host(layerThickEdge)
-      !$acc update host(relativeVorticity, circulation)
-      !$acc update host(vertTransportVelocityTop, &
-      !$acc             vertGMBolusVelocityTop, &
-      !$acc             relativeVorticityCell, &
-      !$acc             divergence, &
-      !$acc             kineticEnergyCell, &
-      !$acc             tangentialVelocity, &
-      !$acc             vertVelocityTop)
-      !$acc update host(normRelVortEdge, normPlanetVortEdge, &
-      !$acc             normalizedRelativeVorticityCell)
-      !$acc update host (surfacePressure)
-      !$acc update host(zMid, zTop)
-      !$acc exit data copyout(ssh)
-      !$acc update host(density, potentialDensity, displacedDensity)
-      !$acc update host(thermExpCoeff,  &
-      !$acc&            salineContractCoeff)
-      !$acc update host(tracersSurfaceValue)
+!     !$acc update host(layerThickEdge)
+!     !$acc update host(relativeVorticity, circulation)
+!     !$acc update host(vertTransportVelocityTop, &
+!     !$acc             vertGMBolusVelocityTop, &
+!     !$acc             relativeVorticityCell, &
+!     !$acc             divergence, &
+!     !$acc             kineticEnergyCell, &
+!     !$acc             tangentialVelocity, &
+!     !$acc             vertVelocityTop)
+!     !$acc update host(normRelVortEdge, normPlanetVortEdge, &
+!     !$acc             normalizedRelativeVorticityCell)
+!     !$acc update host (surfacePressure)
+!     !$acc update host(zMid, zTop)
+!     !$acc exit data copyout(ssh)
+!     !$acc update host(density, potentialDensity, displacedDensity)
+!     !$acc update host(thermExpCoeff,  &
+!     !$acc&            salineContractCoeff)
+!     !$acc update host(tracersSurfaceValue)
 
-      !$acc update host(normalVelocitySurfaceLayer)
-      !$acc update host(montgomeryPotential, pressure)
+!     !$acc update host(normalVelocitySurfaceLayer)
+!     !$acc update host(montgomeryPotential, pressure)
 
-      if ( full_compute ) then
-         !$acc update host(RiTopOfCell, BruntVaisalaFreqTop)
-         !$acc update host(BruntVaisalaFreqTop)
+!     if ( full_compute ) then
+!        !$acc update host(RiTopOfCell, &
+!        !$acc             BruntVaisalaFreqTop)
 
-         !$acc update host(tracersSurfaceLayerValue, &
-         !$acc             indexSurfaceLayerDepth, &
-         !$acc             normalVelocitySurfaceLayer, &
-         !$acc             sfcFlxAttCoeff, &
-         !$acc             surfaceFluxAttenuationCoefficientRunoff)
-      end if ! full_compute
+!        !$acc update host(tracersSurfaceLayerValue, &
+!        !$acc             indexSurfaceLayerDepth, &
+!        !$acc             normalVelocitySurfaceLayer, &
+!        !$acc             sfcFlxAttCoeff, &
+!        !$acc             surfaceFluxAttenuationCoefficientRunoff)
+!     end if ! full_compute
 
-      !$acc exit data delete (atmosphericPressure, seaIcePressure)
-      if ( associated(frazilSurfacePressure) ) then
-         !$acc exit data delete(frazilSurfacePressure)
-      endif
-      if (landIcePressureOn) then
-         !$acc exit data delete(landIcePressure)
-         !$acc exit data delete(landIceDraft)
-      endif
+!     !$acc exit data delete (atmosphericPressure, seaIcePressure)
+!     if ( associated(frazilSurfacePressure) ) then
+!        !$acc exit data delete(frazilSurfacePressure)
+!     endif
+!     if (landIcePressureOn) then
+!        !$acc exit data delete(landIcePressure)
+!        !$acc exit data delete(landIceDraft)
+!     endif
 
-      !$acc exit data delete (layerThickness, normalVelocity, &
-      !$acc                   activeTracers)
+!     !$acc exit data delete (layerThickness, normalVelocity, &
+!     !$acc                   activeTracers)
 #endif
 
       call mpas_timer_stop('diagnostic solve')
@@ -1281,11 +1282,6 @@ contains
       real(kind=RKIND) :: surfaceLayerDepth
       real(kind=RKIND) :: sumSurfaceLayer
 
-      real(kind=RKIND) :: flux_attenuation_coefficient, flux_attenuation_coefficient_runoff
-
-      flux_attenuation_coefficient = config_flux_attenuation_coefficient
-      flux_attenuation_coefficient_runoff = config_flux_attenuation_coefficient_runoff
-
       !
       ! average tracer values over the ocean surface layer
       ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
@@ -1402,8 +1398,8 @@ contains
       !$omp do schedule(runtime)
 #endif
       do iCell = 1, nCells
-         surfaceFluxAttenuationCoefficient(iCell) = flux_attenuation_coefficient
-         surfaceFluxAttenuationCoefficientRunoff(iCell) = flux_attenuation_coefficient_runoff
+         surfaceFluxAttenuationCoefficient(iCell) = varinp_flux_attenuation_coefficient
+         surfaceFluxAttenuationCoefficientRunoff(iCell) = varinp_flux_attenuation_coefficient_runoff
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
@@ -2625,22 +2621,7 @@ contains
          kVonKarman = 0.4_RKIND, &      ! the von Karman constant
          xiN = 0.052_RKIND              ! dimensionless planetary boundary layer constant
 
-      real (kind=RKIND) :: land_ice_flux_topDragCoeff
-      real (kind=RKIND) :: land_ice_flux_rms_tidal_velocity
-      real (kind=RKIND) :: land_ice_flux_boundaryLayerThickness
-      real (kind=RKIND) :: land_ice_flux_jenkins_heat_transfer_coefficient
-      real (kind=RKIND) :: land_ice_flux_jenkins_salt_transfer_coefficient
-      real (kind=RKIND) :: land_ice_flux_attenuation_coefficient
-      real (kind=RKIND) :: land_ice_flux_boundaryLayerNeighborWeight
       integer :: indexBLTval, indexBLSval, indexHeatTransval, indexSaltTransval
-
-      land_ice_flux_topDragCoeff = config_land_ice_flux_topDragCoeff
-      land_ice_flux_rms_tidal_velocity = config_land_ice_flux_rms_tidal_velocity
-      land_ice_flux_boundaryLayerThickness = config_land_ice_flux_boundaryLayerThickness
-      land_ice_flux_jenkins_heat_transfer_coefficient = config_land_ice_flux_jenkins_heat_transfer_coefficient
-      land_ice_flux_jenkins_salt_transfer_coefficient = config_land_ice_flux_jenkins_salt_transfer_coefficient
-      land_ice_flux_attenuation_coefficient = config_land_ice_flux_attenuation_coefficient
-      land_ice_flux_boundaryLayerNeighborWeight  = config_land_ice_flux_boundaryLayerNeighborWeight
 
       if ( trim(config_land_ice_flux_mode) .ne. 'standalone' .and. trim(config_land_ice_flux_mode) .ne. 'coupled' ) then
          return
@@ -2674,7 +2655,7 @@ contains
          velocityMagnitude = sqrt(kineticEnergyCell(minLevelCell(cell1),cell1) + kineticEnergyCell(minLevelCell(cell2),cell2))
          landIceEdgeFraction = 0.5_RKIND*(landIceFraction(cell1)+landIceFraction(cell2))
 
-         topDrag(iEdge) = - rho_sw * landIceEdgeFraction * land_ice_flux_topDragCoeff &
+         topDrag(iEdge) = - rho_sw * landIceEdgeFraction * varinp_land_ice_flux_topDragCoeff &
                           * velocityMagnitude * normalVelocity(minLevelEdgeBot(iEdge),iEdge)
 
       end do
@@ -2692,13 +2673,13 @@ contains
       do iCell = 1, nCellsAll
          ! the magnitude of the top drag is CD*u**2 = CD*(2*KE)
          topDragMag(iCell) = rho_sw * landIceFraction(iCell) &
-                           * 2.0_RKIND * land_ice_flux_topDragCoeff *  kineticEnergyCell(minLevelCell(iCell),iCell)
+                           * 2.0_RKIND * varinp_land_ice_flux_topDragCoeff *  kineticEnergyCell(minLevelCell(iCell),iCell)
 
          ! the friction velocity is the square root of the top drag + variance of tidal velocity
          ! (computed regardless of land-ice coverage)
-         landIceFrictionVelocity(iCell) = sqrt(land_ice_flux_topDragCoeff * &
+         landIceFrictionVelocity(iCell) = sqrt(varinp_land_ice_flux_topDragCoeff * &
                                    (2.0_RKIND * kineticEnergyCell(minLevelCell(iCell),iCell) &
-                                   + land_ice_flux_rms_tidal_velocity**2))
+                                   + varinp_land_ice_flux_rms_tidal_velocity**2))
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
@@ -2715,7 +2696,7 @@ contains
          blTempScratch(iCell) = 0.0_RKIND
          blSaltScratch(iCell) = 0.0_RKIND
          do iLevel = minLevelCell(iCell), maxLevelCell(iCell)
-            dz = min(layerThickness(iLevel,iCell),land_ice_flux_boundaryLayerThickness-blThickness)
+            dz = min(layerThickness(iLevel,iCell),varinp_land_ice_flux_boundaryLayerThickness-blThickness)
             if(dz <= 0.0_RKIND) exit
             blTempScratch(iCell) = blTempScratch(iCell) + activeTracers(indexTval, iLevel, iCell)*dz
             blSaltScratch(iCell) = blSaltScratch(iCell) + activeTracers(indexSval, iLevel, iCell)*dz
@@ -2739,16 +2720,16 @@ contains
       do iCell = 1, nCellsAll
          landIceBoundaryLayerTracers(indexBLTval, iCell) = blTempScratch(iCell)
          landIceBoundaryLayerTracers(indexBLSval, iCell) = blSaltScratch(iCell)
-         if(land_ice_flux_boundaryLayerNeighborWeight > 0.0_RKIND) then
+         if(varinp_land_ice_flux_boundaryLayerNeighborWeight > 0.0_RKIND) then
             weightSum = 1.0_RKIND
             do i = 1, nEdgesOnCell(iCell)
                cell2 = cellsOnCell(i,iCell)
 
                landIceBoundaryLayerTracers(indexBLTval, iCell) = landIceBoundaryLayerTracers(indexBLTval, iCell) &
-                 + cellMask(minLevelCell(cell2),cell2)*land_ice_flux_boundaryLayerNeighborWeight*blTempScratch(cell2)
+                 + cellMask(minLevelCell(cell2),cell2)*varinp_land_ice_flux_boundaryLayerNeighborWeight*blTempScratch(cell2)
                landIceBoundaryLayerTracers(indexBLSval, iCell) = landIceBoundaryLayerTracers(indexBLSval, iCell) &
-                 + cellMask(minLevelCell(cell2),cell2)*land_ice_flux_boundaryLayerNeighborWeight*blSaltScratch(cell2)
-               weightSum = weightSum + cellMask(minLevelCell(cell2),cell2)*land_ice_flux_boundaryLayerNeighborWeight
+                 + cellMask(minLevelCell(cell2),cell2)*varinp_land_ice_flux_boundaryLayerNeighborWeight*blSaltScratch(cell2)
+               weightSum = weightSum + cellMask(minLevelCell(cell2),cell2)*varinp_land_ice_flux_boundaryLayerNeighborWeight
             end do
             landIceBoundaryLayerTracers(:, iCell) = landIceBoundaryLayerTracers(:, iCell)/weightSum
          end if
@@ -2768,9 +2749,9 @@ contains
          do iCell = 1, nCellsAll
             ! transfer coefficients from namelist
             landIceTracerTransferVelocities(indexHeatTransval, iCell) = landIceFrictionVelocity(iCell) &
-                                             * land_ice_flux_jenkins_heat_transfer_coefficient
+                                             * varinp_land_ice_flux_jenkins_heat_transfer_coefficient
             landIceTracerTransferVelocities(indexSaltTransval, iCell) = landIceFrictionVelocity(iCell) &
-                                             * land_ice_flux_jenkins_salt_transfer_coefficient
+                                             * varinp_land_ice_flux_jenkins_salt_transfer_coefficient
          end do
 #ifndef MPAS_OPENACC
          !$omp end do
@@ -2819,7 +2800,7 @@ contains
 #endif
       do iCell = 1, nCellsAll
          if(landIceMask(iCell) == 1) then
-            sfcFlxAttCoeff(iCell) = land_ice_flux_attenuation_coefficient
+            sfcFlxAttCoeff(iCell) = varinp_land_ice_flux_attenuation_coefficient
          end if
       end do
 #ifndef MPAS_OPENACC

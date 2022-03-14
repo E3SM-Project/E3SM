@@ -112,7 +112,7 @@ contains
       real (kind=RKIND) :: weightSum
 
       integer :: iCell, cell2, i
-      integer, pointer :: nCells
+      integer :: nCells
 
       integer, dimension(:,:), pointer :: cellsOnCell, cellMask
 
@@ -122,6 +122,9 @@ contains
       ! effectiveDensityScratch: effective seawater density in land ice before horizontal averaging
       !                   units: kg m^{-3}
       real (kind=RKIND), dimension(:), allocatable :: effectiveDensityScratch
+#ifdef MPAS_OPENACC
+      !$acc declare device_resident(effectiveDensityScratch)
+#endif
 
       ierr = 0
 
@@ -129,7 +132,7 @@ contains
          return
       end if
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_dimension_scalar(meshPool, 'nCells', nCells)
 
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
@@ -143,8 +146,16 @@ contains
 
       allocate(effectiveDensityScratch(nCells))
 
+#ifdef MPAS_OPENACC
+      !$acc parallel present(ssh, landIcePressure, landIceMask, nEdgesOnCell, cellsOnCell, cellMask)
+#endif
+
+#ifdef MPAS_OPENACC
+      !$acc loop
+#else
       !$omp parallel
       !$omp do schedule(runtime)
+#endif
       do iCell = 1, nCells
          ! TODO: should only apply to floating land ice, once wetting/drying is supported
          if(landIceMask(iCell) == 1) then
@@ -155,9 +166,15 @@ contains
             effectiveDensityScratch(iCell) = effectiveDensityCur(iCell)
          end if
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
+#endif
 
+#ifdef MPAS_OPENACC
+      !$acc loop private(weightSum)
+#else
       !$omp do schedule(runtime) private(weightSum, i, cell2)
+#endif
       do iCell = 1, nCells
          ! smooth/extrapolate by averaging with nearest neighbors
          weightSum = 1.0_RKIND
@@ -170,8 +187,12 @@ contains
          end do
          effectiveDensityNew(iCell) = effectiveDensityNew(iCell)/weightSum
       end do
+#ifdef MPAS_OPENACC
+      !$acc end parallel
+#else
       !$omp end do
       !$omp end parallel
+#endif
 
       deallocate(effectiveDensityScratch)
 
