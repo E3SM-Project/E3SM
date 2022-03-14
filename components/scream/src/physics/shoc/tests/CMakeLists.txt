@@ -76,7 +76,7 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(shoc_tests "${SHOC_TESTS_SRCS}" "${NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP shoc_tests_ut_np1_omp1)
 endif()
 
-if (SCREAM_BASELINES_ONLY OR SCREAM_RUN_BASELINES_TESTS)
+if (SCREAM_ENABLE_BASELINES_TESTS)
   CreateUnitTest(shoc_run_and_cmp_cxx "shoc_run_and_cmp.cpp" "${NEED_LIBS}"
                  THREADS ${SCREAM_TEST_MAX_THREADS}
                  EXE_ARGS "-b ${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline"
@@ -86,16 +86,16 @@ if (SCREAM_BASELINES_ONLY OR SCREAM_RUN_BASELINES_TESTS)
                  THREADS ${SCREAM_TEST_MAX_THREADS}
                  EXE_ARGS "-f -b ${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline"
                  EXCLUDE_MAIN_CPP)
+
+  # By default, baselines should be created using all fortran (make baseline). If the user wants
+  # to use CXX to generate their baselines, they should use "make baseline_cxx".
+
+  add_custom_target(shoc_baseline_f90
+    COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} $<TARGET_FILE:shoc_run_and_cmp_f90> -f -g -b ${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline)
+
+  add_custom_target(shoc_baseline_cxx
+    COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} $<TARGET_FILE:shoc_run_and_cmp_cxx> -g -b ${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline)
+
+  add_dependencies(baseline     shoc_baseline_f90)
+  add_dependencies(baseline_cxx shoc_baseline_cxx)
 endif()
-
-# By default, baselines should be created using all fortran (make baseline). If the user wants
-# to use CXX to generate their baselines, they should use "make baseline_cxx".
-
-add_custom_target(shoc_baseline_f90
-  COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} $<TARGET_FILE:shoc_run_and_cmp_f90> -f -g -b ${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline)
-
-add_custom_target(shoc_baseline_cxx
-  COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} $<TARGET_FILE:shoc_run_and_cmp_cxx> -g -b ${SCREAM_TEST_DATA_DIR}/shoc_run_and_cmp.baseline)
-
-add_dependencies(baseline     shoc_baseline_f90)
-add_dependencies(baseline_cxx shoc_baseline_cxx)

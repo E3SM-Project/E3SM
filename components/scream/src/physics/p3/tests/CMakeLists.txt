@@ -69,7 +69,7 @@ if (NOT SCREAM_BASELINES_ONLY)
                  LABELS "p3;physics;fail")
 endif()
 
-if (SCREAM_BASELINES_ONLY OR SCREAM_ENABLE_BASELINES_TESTS)
+if (SCREAM_ENABLE_BASELINES_TESTS)
   CreateUnitTest(p3_run_and_cmp_cxx "p3_run_and_cmp.cpp" "${NEED_LIBS}"
                  THREADS ${SCREAM_TEST_MAX_THREADS}
                  EXE_ARGS "-b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline"
@@ -92,18 +92,18 @@ if (SCREAM_BASELINES_ONLY OR SCREAM_ENABLE_BASELINES_TESTS)
                  PROPERTIES FIXTURES_REQUIRED p3_tables WILL_FAIL ${FORCE_RUN_DIFF_FAILS}
                  EXCLUDE_MAIN_CPP
                  LABELS "p3;physics;fail")
+
+  # By default, baselines should be created using all fortran (make baseline). If the user wants
+  # to use CXX to generate their baselines, they should use "make baseline_cxx".
+
+  add_custom_target(p3_baseline_f90
+    COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} $<TARGET_FILE:p3_run_and_cmp_f90> -f -g -b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline)
+
+  add_custom_target(p3_baseline_cxx
+    COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} $<TARGET_FILE:p3_run_and_cmp_cxx> -g -b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline)
+
+  add_dependencies(baseline     p3_baseline_f90)
+  add_dependencies(baseline_cxx p3_baseline_cxx)
 endif()
-
-# By default, baselines should be created using all fortran (make baseline). If the user wants
-# to use CXX to generate their baselines, they should use "make baseline_cxx".
-
-add_custom_target(p3_baseline_f90
-  COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} $<TARGET_FILE:p3_run_and_cmp_f90> -f -g -b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline)
-
-add_custom_target(p3_baseline_cxx
-  COMMAND ${CMAKE_COMMAND} -E env OMP_NUM_THREADS=${SCREAM_TEST_MAX_THREADS} $<TARGET_FILE:p3_run_and_cmp_cxx> -g -b ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline)
-
-add_dependencies(baseline     p3_baseline_f90)
-add_dependencies(baseline_cxx p3_baseline_cxx)
 
 GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1 data/p3_lookup_table_1.dat-v4.1.1)
