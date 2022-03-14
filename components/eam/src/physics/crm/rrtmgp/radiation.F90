@@ -50,7 +50,7 @@ module radiation
    ! For MMF
    use crmdims, only: crm_nx_rad, crm_ny_rad, crm_nz
 
-#ifdef MMF_PRESCRIBED_LW
+#if defined(MMF_PRESCRIBED_QRL) || defined(MMF_PRESCRIBED_QRS)
    ! use mo_simple_netcdf, only: read_field
    use netcdf
 #endif
@@ -321,8 +321,11 @@ contains
       call pbuf_add_field('QRS', 'global', dtype_r8, (/pcols,pver/), idx)
       call pbuf_add_field('QRL', 'global', dtype_r8, (/pcols,pver/), idx)
 
-#ifdef MMF_PRESCRIBED_LW
+#ifdef MMF_PRESCRIBED_QRL
       call pbuf_add_field('QRL_PRESCRIBED', 'global', dtype_r8, (/pver/), idx)
+#endif
+#ifdef MMF_PRESCRIBED_QRS
+      call pbuf_add_field('QRS_PRESCRIBED', 'global', dtype_r8, (/pver/), idx)
 #endif
 
       ! If the namelist has been configured for preserving the spectral fluxes, then create
@@ -383,7 +386,7 @@ contains
                              .or. nstep <= irad_always
             end if
          case ('lw') ! do a longwave heating calc this timestep?
-! #ifdef MMF_PRESCRIBED_LW
+! #ifdef MMF_PRESCRIBED_QRL
 !             radiation_do = .false.
 ! #else
             if (iradlw==0) then
@@ -494,18 +497,13 @@ contains
 
       character(len=10), dimension(3) :: dims_crm_rad = (/'crm_nx_rad','crm_ny_rad','crm_nz    '/)
 
-#ifdef MMF_PRESCRIBED_LW
-      real(r8), pointer :: qrl_prescribed(:)
-      character(len=256) :: prescribed_lw_file_name
+#if defined(MMF_PRESCRIBED_QRL) || defined(MMF_PRESCRIBED_QRS)
+      real(r8), pointer :: qrl_prescribed(:), qrs_prescribed(:)
+      character(len=256) :: prescribed_rad_path, prescribed_rad_file
       character(len=8) :: varName
-      integer :: ncid
-      integer :: dimid
-      integer :: nlev
-      integer :: varid
-      integer :: chnk, k
-      ! real(r8), dimension(:), allocatable :: qrl_data
-      real(r8), dimension(pver) :: qrl_data
-      integer :: qrl_idx
+      integer :: ncid, dimid, nlev, varid, chnk, k
+      real(r8), dimension(pver) :: qrl_data, qrs_data
+      integer :: qrl_idx, qrs_idx
       type(physics_buffer_desc), pointer :: pbuf_chunk(:) ! temporary pbuf pointer for single chunk
 #endif
 
@@ -944,39 +942,49 @@ contains
                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
       endif
 
-#ifdef MMF_PRESCRIBED_LW
+      ! prescribed_rad_path = '/global/cscratch1/sd/whannah/e3sm_scratch/init_files/prescribed_rad/E3SM.GNUGPU.ne30pg2.F-MMFXX-RCEROT.BVT.RADNX_1.03.global-mean-QR.nc'
+      prescribed_rad_path = '/pscratch/sd/w/whannah/e3sm_scratch/perlmutter/init_data/prescribed_rad'
 
-      ! prescribed_lw_file_name = '/global/cscratch1/sd/whannah/e3sm_scratch/init_files/prescribed_rad/E3SM.GNUGPU.ne30pg2.F-MMFXX-RCEROT.BVT.01.QRL.nc'
-      prescribed_lw_file_name = '/pscratch/sd/w/whannah/e3sm_scratch/perlmutter/init_data/prescribed_rad/E3SM.GNUGPU.ne30pg2.F-MMFXX-RCEROT.BVT.01.QRL.nc'
+#ifdef MMF_PRESCRIBED_QRL
+      prescribed_rad_file = prescribed_rad_path//'/E3SM.GNUGPU.ne30pg2.F-MMFXX-RCEROT.BVT.RADNX_1.03.global-mean-QR.nc'
       varName = 'QRL'
-
-      if(nf90_open(trim(prescribed_lw_file_name), NF90_NOWRITE, ncid) /= NF90_NOERR) &
-         call endrun("radiation_init(): can't open file " // trim(prescribed_lw_file_name))
-
+      if(nf90_open(trim(prescribed_rad_file), NF90_NOWRITE, ncid) /= NF90_NOERR) &
+         call endrun("radiation_init(): can't open file " // trim(prescribed_rad_file))
       if(nf90_inq_dimid(ncid, trim('lev'), dimid) == NF90_NOERR) then
          if(nf90_inquire_dimension(ncid, dimid, len=nlev) /= NF90_NOERR) nlev = -1
       else
          nlev = -1
       end if
-      
-      if (nlev/=pver) call endrun('MMF_PRESCRIBED_LW: number of vertical levels do not match file!')
-
-      ! qrl_data = read_field(ncid, varName, lev_data)
-
-      if(nf90_inq_varid(ncid, trim(varName), varid) /= NF90_NOERR) &
-        call endrun("MMF_PRESCRIBED_LW - nf90_inq_varid: can't find variable " // trim(varName))
-      if(nf90_get_var(ncid, varid, qrl_data)  /= NF90_NOERR) &
-        call endrun("MMF_PRESCRIBED_LW - nf90_get_var: can't read variable " // trim(varName))
-
+      if (nlev/=pver) call endrun('MMF_PRESCRIBED_QRL: number of vertical levels do not match file!')
+      if(nf90_inq_varid(ncid,trim(varName),varid) /= NF90_NOERR) call endrun("MMF_PRESCRIBED_QRL - nf90_inq_varid: can't find variable " // trim(varName))
+      if(nf90_get_var(ncid,varid,qrl_data)        /= NF90_NOERR) call endrun("MMF_PRESCRIBED_QRL - nf90_get_var: can't read variable " // trim(varName))
       ncid = nf90_close(ncid)
-
-      qrl_idx = pbuf_get_index('QRL_PRESCRIBED')
       do chnk=begchunk, endchunk
          pbuf_chunk => pbuf_get_chunk(pbuf2d, chnk)
-         call pbuf_get_field(pbuf_chunk, qrl_idx, qrl_prescribed)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('QRL_PRESCRIBED'), qrl_prescribed)
          qrl_prescribed(1:pver) = qrl_data(1:pver)
       end do
+#endif
 
+#ifdef MMF_PRESCRIBED_QRS
+      prescribed_rad_file = prescribed_rad_path//'/E3SM.GNUGPU.ne30pg2.F-MMFXX-RCEROT.BVT.RADNX_1.03.global-mean-QR.nc'
+      varName = 'QRS'
+      if(nf90_open(trim(prescribed_rad_file), NF90_NOWRITE, ncid) /= NF90_NOERR) &
+         call endrun("radiation_init(): can't open file " // trim(prescribed_rad_file))
+      if(nf90_inq_dimid(ncid, trim('lev'), dimid) == NF90_NOERR) then
+         if(nf90_inquire_dimension(ncid, dimid, len=nlev) /= NF90_NOERR) nlev = -1
+      else
+         nlev = -1
+      end if
+      if (nlev/=pver) call endrun('MMF_PRESCRIBED_QRS: number of vertical levels do not match file!')
+      if(nf90_inq_varid(ncid,trim(varName),varid) /= NF90_NOERR) call endrun("MMF_PRESCRIBED_QRS - nf90_inq_varid: can't find variable " // trim(varName))
+      if(nf90_get_var(ncid,varid,qrs_data)        /= NF90_NOERR) call endrun("MMF_PRESCRIBED_QRS - nf90_get_var: can't read variable " // trim(varName))
+      ncid = nf90_close(ncid)
+      do chnk=begchunk, endchunk
+         pbuf_chunk => pbuf_get_chunk(pbuf2d, chnk)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('QRS_PRESCRIBED'), qrs_prescribed)
+         qrs_prescribed(1:pver) = qrs_data(1:pver)
+      end do
 #endif
 
    end subroutine radiation_init
@@ -1231,8 +1239,9 @@ contains
       ! Pointers to heating rates on physics buffer
       real(r8), pointer :: qrs(:,:)  ! shortwave radiative heating rate 
       real(r8), pointer :: qrl(:,:)  ! longwave  radiative heating rate 
-#ifdef MMF_PRESCRIBED_LW
+#if defined(MMF_PRESCRIBED_QRL) || defined(MMF_PRESCRIBED_QRS)
       real(r8), pointer :: qrl_prescribed(:)
+      real(r8), pointer :: qrs_prescribed(:)
       integer :: nstep
       real(r8) :: ratio
 #endif
@@ -1386,8 +1395,11 @@ contains
       ! modified in this routine.
       call pbuf_get_field(pbuf, pbuf_get_index('QRS'), qrs)
       call pbuf_get_field(pbuf, pbuf_get_index('QRL'), qrl)
-#ifdef MMF_PRESCRIBED_LW
+#ifdef MMF_PRESCRIBED_QRL
       call pbuf_get_field(pbuf, pbuf_get_index('QRL_PRESCRIBED'), qrl_prescribed)
+#endif
+#ifdef MMF_PRESCRIBED_QRS
+      call pbuf_get_field(pbuf, pbuf_get_index('QRS_PRESCRIBED'), qrs_prescribed)
 #endif
 
       ! Get pbuf fields
@@ -1780,8 +1792,12 @@ contains
                end do
                call t_stopf('rad_average_fluxes_sw')
 
+#if defined(MMF_PRESCRIBED_QRS)
+               ! move this call down
+#else
                ! Send fluxes to history buffer
                call output_fluxes_sw(icall, state, fluxes_allsky, fluxes_clrsky, qrs,  qrsc)
+#endif
 
                ! Map to CRM columns
                if (use_MMF) then
@@ -1822,6 +1838,26 @@ contains
                end if
 
             end if  ! dosw
+
+#ifdef MMF_PRESCRIBED_QRS
+            ! Note that qrs_prescribed is derived from the QRs history variable,
+            ! which is the same as qrs here, except it is divided by cpair
+            ! in the outfld('QRS'...) call within output_fluxes_lw().
+            do ic = 1,ncol
+               do ilev = 1, pver
+                  qrs(ic,ilev) = qrs_prescribed(ilev) * cpair / 86400.
+               end do
+               do iy = 1,crm_ny_rad
+                  do ix = 1,crm_nx_rad
+                     do iz = 1,crm_nz
+                        ilev = pver - iz + 1
+                        crm_qrs(ic,ix,iy,iz) = qrs_prescribed(ilev) * cpair / 86400.
+                     end do
+                  end do
+               end do
+            end do
+            call output_fluxes_sw(0, state, fluxes_allsky, fluxes_clrsky, qrs, qrsc)
+#endif
 
             ! Do longwave stuff...
             if (radiation_do('lw')) then
@@ -1870,7 +1906,7 @@ contains
                call average_packed_array(fluxes_clrsky_all%flux_dn (1:ncol_tot,:), fluxes_clrsky%flux_dn (1:ncol,:))
                call average_packed_array(fluxes_clrsky_all%flux_net(1:ncol_tot,:), fluxes_clrsky%flux_net(1:ncol,:))
                call t_stopf('rad_average_fluxes_lw')
-#if defined(MMF_PRESCRIBED_LW)
+#if defined(MMF_PRESCRIBED_QRL)
                ! move this call down
 #else
                ! Send fluxes to history buffer
@@ -1916,7 +1952,7 @@ contains
 
             end if  ! radiation_do('lw')
 
-#ifdef MMF_PRESCRIBED_LW
+#ifdef MMF_PRESCRIBED_QRL
             ! Note that qrl_prescribed is derived from the QRL history variable,
             ! which is the same as qrl here, except it is divided by cpair
             ! in the outfld('QRL'...) call within output_fluxes_lw().
@@ -1929,7 +1965,7 @@ contains
             !    end do
             ! end do
             ! call shr_sys_flush(iulog)
-            ! call endrun('MMF_PRESCRIBED_LW  stopping')
+            ! call endrun('MMF_PRESCRIBED_QRL  stopping')
 
             do ic = 1,ncol
                do ilev = 1, pver
