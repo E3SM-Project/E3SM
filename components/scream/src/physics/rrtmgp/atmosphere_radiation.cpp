@@ -359,6 +359,8 @@ void RRTMGPRadiation::run_impl (const int dt) {
   constexpr auto stebol = PC::stebol;
   const auto ncol = m_ncol;
   const auto nlay = m_nlay;
+  const auto nlwbands = m_nlwbands;
+  const auto nswbands = m_nswbands;
 
   // Compute orbital parameters; these are used both for computing
   // the solar zenith angle and also for computing total solar
@@ -468,14 +470,14 @@ void RRTMGPRadiation::run_impl (const int dt) {
       t_lev(i+1,nlay+1) = d_tint(i,nlay);
 
       // Note that RRTMGP expects ordering (col,lay,bnd) but the FM keeps things in (col,bnd,lay) order
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_nswbands*nlay), [&] (const int&idx) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nswbands*nlay), [&] (const int&idx) {
           auto b = idx / nlay;
           auto k = idx % nlay;
             aero_tau_sw(i+1,k+1,b+1) = d_aero_tau_sw(i,b,k);
             aero_ssa_sw(i+1,k+1,b+1) = d_aero_ssa_sw(i,b,k);
             aero_g_sw  (i+1,k+1,b+1) = d_aero_g_sw  (i,b,k);
       });
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_nlwbands*nlay), [&] (const int&idx) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlwbands*nlay), [&] (const int&idx) {
           auto b = idx / nlay;
           auto k = idx % nlay;
           aero_tau_lw(i+1,k+1,b+1) = d_aero_tau_lw(i,b,k);
