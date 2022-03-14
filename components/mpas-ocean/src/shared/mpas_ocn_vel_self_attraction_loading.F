@@ -955,11 +955,12 @@ contains
 
         integer, dimension(:) :: rowValues, colValues
         real (kind=RKIND), dimension(:) :: sValues, dataOut, dataIn
-        real (kind=RKIND) :: rhs = 0
+        real (kind=RKIND) :: rhs
         integer :: n_S, n, nRow, nCol
 
         n_S = size(sValues)
         n = 1
+        rhs = 0.0_RKIND
 
         do while (n .LE. n_S)
             nRow = rowValues(n)
@@ -969,7 +970,7 @@ contains
                 n = n + 1
             end do
             dataOut(nRow) = rhs
-            rhs = 0
+            rhs = 0.0_RKIND
         end do
 
     end subroutine!}}}
