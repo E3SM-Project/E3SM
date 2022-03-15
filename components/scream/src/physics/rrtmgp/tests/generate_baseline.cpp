@@ -125,6 +125,7 @@ int main (int argc, char** argv) {
     // Do something interesting here...
     // NOTE: these will get replaced with AD stuff that handles these
     std::cout << "rrtmgp_main..." << std::endl;
+    const Real tsi_scaling = 1;
     rrtmgp::rrtmgp_main(
         ncol, nlay,
         p_lay, t_lay, p_lev, t_lev, gas_concs,
@@ -135,7 +136,7 @@ int main (int argc, char** argv) {
         sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
         lw_flux_up, lw_flux_dn,
         sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
-        lw_bnd_flux_up, lw_bnd_flux_dn
+        lw_bnd_flux_up, lw_bnd_flux_dn, tsi_scaling
     );
 
     // Write fluxes

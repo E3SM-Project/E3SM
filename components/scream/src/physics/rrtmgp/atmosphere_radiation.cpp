@@ -40,7 +40,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   kgkg.set_string("kg/kg");
   auto m3 = m * m * m;
   auto Wm2 = W / m / m;
-  Wm2.set_string("W/m2)");
+  Wm2.set_string("W/m2");
   auto nondim = m/m;  // dummy unit for non-dimensional fields
   auto micron = m / 1000000;
 
@@ -546,7 +546,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
     lw_flux_up, lw_flux_dn, 
     sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
     lw_bnd_flux_up, lw_bnd_flux_dn, 
-    get_comm().am_i_root()
+    eccf, get_comm().am_i_root()
   );
 
   // Compute and apply heating rates

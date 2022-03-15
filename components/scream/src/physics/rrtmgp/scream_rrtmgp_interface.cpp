@@ -201,7 +201,7 @@ namespace scream {
                 real2d &lw_flux_up, real2d &lw_flux_dn,
                 real3d &sw_bnd_flux_up, real3d &sw_bnd_flux_dn, real3d &sw_bnd_flux_dn_dir,
                 real3d &lw_bnd_flux_up, real3d &lw_bnd_flux_dn,
-                const bool i_am_root) {
+                const Real tsi_scaling, const bool i_am_root) {
 
             // Setup pointers to RRTMGP SW fluxes
             FluxesByband fluxes_sw;
@@ -247,7 +247,7 @@ namespace scream {
                 ncol, nlay,
                 k_dist_sw, p_lay, t_lay, p_lev, t_lev, gas_concs, 
                 sfc_alb_dir, sfc_alb_dif, mu0, aerosol_sw, clouds_sw, fluxes_sw,
-                i_am_root
+                tsi_scaling, i_am_root
             );
 
             // Do longwave
@@ -322,7 +322,7 @@ namespace scream {
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, 
                 OpticalProps2str &aerosol, OpticalProps2str &clouds,
                 FluxesByband &fluxes,
-                const bool i_am_root) {
+                const Real tsi_scaling, const bool i_am_root) {
 
             // Get problem sizes
             int nbnd = k_dist.get_nband();
@@ -444,6 +444,11 @@ namespace scream {
             bool top_at_1 = p_lay_host(1, 1) < p_lay_host(1, nlay);
 
             k_dist.gas_optics(nday, nlay, top_at_1, p_lay_day, p_lev_day, t_lay_day, gas_concs_day, optics, toa_flux);
+
+            // Apply tsi_scaling
+            parallel_for(Bounds<2>(ngpt,nday), YAKL_LAMBDA(int igpt, int iday) {
+                toa_flux(iday,igpt) = tsi_scaling * toa_flux(iday,igpt);
+            });
 
             // Combine gas and aerosol optics
             aerosol_day.delta_scale();
