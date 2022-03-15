@@ -1,69 +1,77 @@
-commit 5d29760c18d2ac2209dae94af7bba6439a9b6dd3
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Wed Jul 10 14:23:09 2019 -0500
+commit d0bc4c6b2a3fe086aa365dccfdbcc651b3242e9a
+Author: Gunther Huebler <huebler@uwm.edu>
+Date:   Thu Feb 24 04:15:12 2022 -0600
 
-    Rensure plots match plotgen output. lba plots should now be consistent with plotgen. Added a few missing SAM plots for some panels.
-    https://github.com/larson-group/sys_admin/issues/542
+    Fixing small bug that breaks runs with scalars.
 
-commit 1204d043849de0e5c3dc790f0ef7108a319bc890
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Tue Jul 9 14:10:59 2019 -0500
+commit d284c4656d237114f6ee5db3a8221bb3f1dd09b8
+Author: huebleruwm <37674341+huebleruwm@users.noreply.github.com>
+Date:   Wed Feb 23 14:52:59 2022 -0600
 
-    Rename Lineplot to Line
-    https://github.com/larson-group/sys_admin/issues/542
+    Gunthers branch (#989)
+    
+    * Refactoring to remove need for global stats scratch variables. larson-group/clubb#972
+    
+    * Changing name of new stats_scratch variables to be more descriptive.
+    
+    * Breaking up column loop in solve_xm_wpxp_with_single_lhs. larson-group/clubb#972
+    
+    * Pushing loop into solve_xm_wpxp_with_multiple_lhs and breaking it up. larson-group/clubb#972
+    
+    * Pusing loop into xm_wpxp_rhs and xm_wpxp_lhs. larson-group/clubb#972
+    
+    * Pushing loop into xm_wpxp_solve and xm_wpxp_clipping_and_stats. larson-group/clubb#972
 
-commit 44946b9a02aaaa6fa7a4318c4a876d01462b6635
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Tue Jul 9 11:14:48 2019 -0500
+commit 65fb263b15719f312c881622a3d2ae61eb96fc7c
+Author: huebleruwm <37674341+huebleruwm@users.noreply.github.com>
+Date:   Mon Feb 21 14:27:05 2022 -0600
 
-    Add initial version lba case, though the output is not yet identical to plotgen's.
-    https://github.com/larson-group/sys_admin/issues/542
+    Refactoring to remove need for global stats scratch variables. (#988)
+    
+    * Refactoring to remove need for global stats scratch variables. larson-group/clubb#972
+    
+    * Changing name of new stats_scratch variables to be more descriptive.
 
-commit 36f0c546d0978cffbee001320e63fc3453f639d6
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Tue Jul 9 10:04:52 2019 -0500
+commit 7e2a2265b003b9e9db59902fdbb3059b7815d5b9
+Author: huebleruwm <37674341+huebleruwm@users.noreply.github.com>
+Date:   Thu Feb 17 18:15:50 2022 -0600
 
-    Add initial versions of multiple variable groups
-    https://github.com/larson-group/sys_admin/issues/542
+    Pushing loop into solve_xm_wpxp_with_single_lhs (#986)
+    
+    Co-authored-by: Peter Roels <56004443+pbroels@users.noreply.github.com>
 
-commit 15f62b1155b133f79af128b8bdcf891dd97a08bb
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Tue Jul 9 07:55:47 2019 -0500
+commit 42cd7b738bb3c10d52dd6fd840c84ec65a26103e
+Author: Vincent Larson <vlarson@users.noreply.github.com>
+Date:   Thu Feb 17 17:57:17 2022 -0600
 
-    Fix time averaging bug that prevented many LES plots from appearing as expected/like their plotgen counterparts.
-    https://github.com/larson-group/sys_admin/issues/542
+    Adds a naming convention for CLUBB's indices
 
-commit 93326ab89ca144e1bc00cd33e6199a0571b9ea4c
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Mon Jul 8 15:08:32 2019 -0500
+commit f9b6bb6132447cc3c074be9bef38fb701bd7f08a
+Author: huebler <huebler@uwm.edu>
+Date:   Wed Feb 16 14:43:28 2022 -0600
 
-    Fix bug where timeseries were being plotted as profile panels.
-    https://github.com/larson-group/sys_admin/issues/542
+    Adding 2D version of zt2zm and zm2zt to clubb_api
 
-commit 6a7474e714a3b47f57d542d7aba8ddf31838f805
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Mon Jul 8 14:31:19 2019 -0500
+commit f069daadb4a27126f9940d1184a90b50e486b432
+Author: Vincent Larson <vlarson@users.noreply.github.com>
+Date:   Thu Feb 10 09:40:09 2022 -0600
 
-    Resolve sam output wasn't being time averaged. Some code cleanup, indluding moving VariableGroupTest.py to VariableGroupBase.py. Removed some old/commented code, cleaned up print statements.
-    https://github.com/larson-group/sys_admin/issues/542
+    Add coding rule to write variables to disk immediately after they are set.
 
-commit f31e1654ea4d2f359a1040674f9d4839dea59bd2
-Merge: aed6ab0 e9dad98
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Mon Jul 8 12:57:14 2019 -0500
+commit 262b7d9fc30851d432951b97533acab4884b2c45
+Author: huebler <huebler@uwm.edu>
+Date:   Wed Feb 9 18:00:32 2022 -0600
 
-    Merge remote-tracking branch 'origin/master'
+    The last commit was BIT_CHANGING:fc75c887ae516e55f31156a6c1cccaedfaf34ff3 since it does change when uprcp and vprcp are saved to stats output. Was not answer changing though.
 
-commit aed6ab0b3e36c41772bb1ba36e84a662c8442dbd
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Mon Jul 8 10:16:55 2019 -0500
+commit fc75c887ae516e55f31156a6c1cccaedfaf34ff3
+Author: huebler <huebler@uwm.edu>
+Date:   Wed Feb 9 16:11:43 2022 -0600
 
-    Implement output folder command line parameter and general code cleanup. Passing an output folder into the launch parameters will now result in pyplotgen creating that folder (if not exists) and placing output in there.
-    https://github.com/larson-group/sys_admin/issues/542
+    Moving stats call for uprcp and vprcp to after they are calculated. This fixes the silhs restart test. But does not seem to fix the E3SM or CAM tests that are still failing.
 
-commit e01ea3f6f6dbffe24c8a7b3f230cbf9b3d0fd2df
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Mon Jul 8 08:51:44 2019 -0500
+commit 68f91aa403537e1f24c3b3756fefcb9930d033da
+Author: Peter Roels <56004443+pbroels@users.noreply.github.com>
+Date:   Mon Feb 7 16:21:24 2022 -0600
 
-    Further generalized variable group creation to make variable groups easier to create. Improved console output to provide useful information during plotting.
-    https://github.com/larson-group/sys_admin/issues/542
+    Adding a line to trigger the nightly tests.

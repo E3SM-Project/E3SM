@@ -18,7 +18,9 @@ module hydromet_pdf_parameter_module
   private ! Default scope
 
   public :: hydromet_pdf_parameter,   & ! Variable type
-            init_hydromet_pdf_params    ! Procedure
+            precipitation_fractions, &
+            init_hydromet_pdf_params, & ! Procedure
+            init_precip_fracs
 
   integer, parameter, private :: &
     max_hydromet_dim = 8
@@ -49,12 +51,17 @@ module hydromet_pdf_parameter_module
       sigma_Ncn_1, & ! Standard deviation of Ncn (1st PDF component)    [num/kg]
       sigma_Ncn_2    ! Standard deviation of Ncn (2nd PDF component)    [num/kg]
 
-    real( kind = core_rknd ) :: &
+  end type hydromet_pdf_parameter
+  
+  type precipitation_fractions
+    
+    real( kind = core_rknd ), dimension(:,:), allocatable :: &
       precip_frac,   & ! Precipitation fraction (overall)           [-]
       precip_frac_1, & ! Precipitation fraction (1st PDF component) [-]
       precip_frac_2    ! Precipitation fraction (2nd PDF component) [-]
-
-  end type hydromet_pdf_parameter
+      
+  end type 
+    
 
 contains
 
@@ -98,14 +105,47 @@ contains
     hydromet_pdf_params%sigma_Ncn_1 = zero
     hydromet_pdf_params%sigma_Ncn_2 = zero
 
-    hydromet_pdf_params%precip_frac = zero
-    hydromet_pdf_params%precip_frac_1 = zero
-    hydromet_pdf_params%precip_frac_2 = zero
-
-
     return
 
   end subroutine init_hydromet_pdf_params
+  
+  !=============================================================================
+  subroutine init_precip_fracs( nz, ngrdcol, &
+                                precip_fracs )
+
+    ! Description:
+    ! Initialize the elements of precip_fracs.
+
+    ! References:
+    !-----------------------------------------------------------------------
+
+    use constants_clubb, only: &
+        zero  ! Constant(s)
+
+    implicit none
+    
+    ! Input Variable(s)
+    integer, intent(in) :: &
+      nz,     & ! Number of vertical grid levels    [-]
+      ngrdcol   ! Number of grid columns            [-]
+
+    ! Output Variable
+    type(precipitation_fractions), intent(out) :: &
+      precip_fracs    ! Hydrometeor PDF parameters      [units vary]
+
+    ! Allocate precip frac arrays
+    allocate( precip_fracs%precip_frac(ngrdcol,nz), &
+              precip_fracs%precip_frac_1(ngrdcol,nz), &
+              precip_fracs%precip_frac_2(ngrdcol,nz)  )
+
+    ! Initialize precip_fracs.
+    precip_fracs%precip_frac   = zero
+    precip_fracs%precip_frac_1 = zero
+    precip_fracs%precip_frac_2 = zero
+
+    return
+
+  end subroutine init_precip_fracs
 
 !===============================================================================
 

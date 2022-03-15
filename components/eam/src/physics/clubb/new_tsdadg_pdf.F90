@@ -19,13 +19,15 @@ module new_tsdadg_pdf
   contains
 
   !=============================================================================
-  subroutine tsdadg_pdf_driver( wm, rtm, thlm, wp2, rtp2, thlp2,   & ! In
-                                Skw, Skrt, Skthl, wprtp, wpthlp,   & ! In
-                                mu_w_1, mu_w_2, mu_rt_1, mu_rt_2,  & ! Out
-                                mu_thl_1, mu_thl_2, sigma_w_1_sqd, & ! Out
-                                sigma_w_2_sqd, sigma_rt_1_sqd,     & ! Out
-                                sigma_rt_2_sqd, sigma_thl_1_sqd,   & ! Out
-                                sigma_thl_2_sqd, mixt_frac         ) ! Out
+  subroutine tsdadg_pdf_driver( gr, wm, rtm, thlm, wp2, rtp2, thlp2,    & ! In
+                                Skw, Skrt, Skthl, wprtp, wpthlp,    & ! In
+                                mu_w_1, mu_w_2,                     & ! Out
+                                mu_rt_1, mu_rt_2,                   & ! Out
+                                mu_thl_1, mu_thl_2,                 & ! Out
+                                sigma_w_1_sqd, sigma_w_2_sqd,       & ! Out
+                                sigma_rt_1_sqd, sigma_rt_2_sqd,     & ! Out
+                                sigma_thl_1_sqd, sigma_thl_2_sqd,   & ! Out
+                                mixt_frac )                           ! Out
 
 
     ! Description:
@@ -39,7 +41,7 @@ module new_tsdadg_pdf
     !-----------------------------------------------------------------------
 
     use grid_class, only: &
-        gr    ! Variable type(s)
+        grid ! Type
 
     use constants_clubb, only: &
         one,     & ! Variable(s)
@@ -50,6 +52,8 @@ module new_tsdadg_pdf
         core_rknd    ! Variable(s)
 
     implicit none
+
+    type (grid), target, intent(in) :: gr
 
     ! Input Variables
     real( kind = core_rknd ), dimension(gr%nz), intent(in) :: &

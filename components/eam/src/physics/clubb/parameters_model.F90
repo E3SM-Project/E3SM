@@ -67,7 +67,7 @@ module parameters_model
 
 !-------------------------------------------------------------------------------
   subroutine setup_parameters_model &
-             ( T0_in, ts_nudge_in, &
+             ( T0_in, ts_nudge_in, Skw_max_mag, &
                hydromet_dim_in, & 
                sclr_dim_in, sclr_tol_in, edsclr_dim_in &
 #ifdef GFDL
@@ -82,11 +82,9 @@ module parameters_model
 ! References:
 !   None
 !-------------------------------------------------------------------------------
-    use parameters_tunable, only: &
-        Skw_max_mag
 
     use clubb_precision, only: &
-      core_rknd ! Variable(s)
+        core_rknd ! Variable(s)
 
     implicit none
 
@@ -98,8 +96,9 @@ module parameters_model
 
     ! Input Variables
     real( kind = core_rknd ), intent(in) ::  & 
-      T0_in,        & ! Ref. temperature             [K]
-      ts_nudge_in     ! Timescale for u/v nudging    [s]
+      T0_in,       & ! Ref. temperature                         [K]
+      ts_nudge_in, & ! Timescale for u/v nudging                [s]
+      Skw_max_mag    ! Maximum allowable magnitude of Skewness  [-]
 
 #ifdef GFDL
     real( kind = core_rknd ), intent(in) ::  cloud_frac_min_in  ! h1g, 2010-06-15

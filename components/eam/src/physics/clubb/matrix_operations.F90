@@ -18,7 +18,8 @@ module matrix_operations
   contains
  
 !-----------------------------------------------------------------------
-  subroutine symm_covar_matrix_2_corr_matrix( ndim, covar, corr )
+  subroutine symm_covar_matrix_2_corr_matrix( ndim, covar, &
+                                              corr )
 
 ! Description:
 !   Convert a matrix of covariances in to a matrix of correlations.
@@ -29,7 +30,7 @@ module matrix_operations
 !-----------------------------------------------------------------------
 
     use clubb_precision, only: &
-      core_rknd ! double precision
+        core_rknd ! double precision
 
     implicit none
 
@@ -71,7 +72,7 @@ module matrix_operations
 !-----------------------------------------------------------------------
 
     use clubb_precision, only: &
-      core_rknd ! double precision
+        core_rknd ! double precision
 
     implicit none
 
@@ -117,19 +118,20 @@ module matrix_operations
 !    <http://www.netlib.org/lapack/explore-html/a00753.html> dlaqsy
 !-------------------------------------------------------------------------------
     use error_code, only: &
-      clubb_at_least_debug_level ! Procedure
+        clubb_at_least_debug_level ! Procedure
 
     use constants_clubb, only: &
-      fstderr ! Constant
+        fstderr ! Constant
 
     use clubb_precision, only: & 
-      core_rknd
+        core_rknd
+      
+    use lapack_interfaces, only: &
+        lapack_potrf, &   ! Procedures
+        lapack_poequ, &
+        lapack_laqsy
 
     implicit none
-
-    ! External
-    external :: dpotrf, dpoequ, dlaqsy, & ! LAPACK subroutines
-                spotrf, spoequ, slaqsy
 
     ! Constant Parameters
     integer, parameter :: itermax = 10 ! Max iterations of the modified method
@@ -161,8 +163,6 @@ module matrix_operations
 
     character :: equed
 
-    logical :: l_dp
-
     ! ---- Begin code ----
 
     a_scaled = a_input ! Copy input array into output array
@@ -177,28 +177,14 @@ module matrix_operations
 
     equed = 'N'
 
-    if ( kind( 0.0_core_rknd ) == kind( 0.0d0 ) ) then
-      l_dp = .true.
-    else if ( kind( 0.0_core_rknd ) == kind( 0.0 ) ) then
-      l_dp = .false.
-    else
-      stop "Precision is not single or double precision in Cholesky_factor"
-    end if
-
-    ! Compute scaling for a_input
-    if ( l_dp ) then
-      call dpoequ( ndim, a_input, ndim, a_scaling, scond, amax, info )
-    else
-      call spoequ( ndim, a_input, ndim, a_scaling, scond, amax, info )
-    end if
+    ! Compute scaling for a_input, using Lapack routine spoequ for single precision,
+    ! or dpoequ for double precision
+    call lapack_poequ( ndim, a_input, ndim, a_scaling, scond, amax, info )
 
     if ( info == 0 ) then
-      ! Apply scaling to a_input
-      if ( l_dp ) then
-        call dlaqsy( 'Lower', ndim, a_scaled, ndim, a_scaling, scond, amax, equed )
-      else
-        call slaqsy( 'Lower', ndim, a_scaled, ndim, a_scaling, scond, amax, equed )
-      end if
+      ! Apply scaling to a_input, using Lapack routine slaqsy for single precision,
+      ! or dlaqsy for double precision
+      call lapack_laqsy( 'Lower', ndim, a_scaled, ndim, a_scaling, scond, amax, equed )
     end if
 
     ! Determine if scaling was necessary
@@ -212,17 +198,14 @@ module matrix_operations
 
     do iter = 1, itermax
 
-      if ( l_dp ) then
-        call dpotrf( 'Lower', ndim, a_Cholesky, ndim, info )
-      else
-        call spotrf( 'Lower', ndim, a_Cholesky, ndim, info )
-      end if
+      ! Lapack Cholesky factorization, spotrf for single or dpotrf for double precision
+      call lapack_potrf( 'Lower', ndim, a_Cholesky, ndim, info )
 
       select case( info )
       case( :-1 )
         write(fstderr,*) "Cholesky_factor " // & 
           " illegal value for argument ", -info
-        stop
+        error stop
       case( 0 )
         ! Success!
         if ( clubb_at_least_debug_level( 1 ) .and. iter > 1 ) then
@@ -260,14 +243,16 @@ module matrix_operations
         end if
 
         if ( clubb_at_least_debug_level( 2 ) ) then
-          call Symm_matrix_eigenvalues( ndim, a_input, a_eigenvalues )
+          call Symm_matrix_eigenvalues( ndim, a_input, & ! intent(in)
+                                        a_eigenvalues ) ! intent(out)
           write(fstderr,*) "a_eigenvalues="
           do i = 1, ndim
             write(fstderr,'(g10.3)',advance='no') a_eigenvalues(i)
           end do
           write(fstderr,*) ""
 
-          call symm_covar_matrix_2_corr_matrix( ndim, a_input, a_corr )
+          call symm_covar_matrix_2_corr_matrix( ndim, a_input, & ! intent(in)
+                                                a_corr ) ! intent(out)
           write(fstderr,*) "a_correlations="
           do i = 1, ndim
             do j = 1, i
@@ -317,7 +302,8 @@ module matrix_operations
         end do
 
         if ( clubb_at_least_debug_level( 2 ) ) then
-          call Symm_matrix_eigenvalues( ndim, a_Cholesky, a_eigenvalues )
+          call Symm_matrix_eigenvalues( ndim, a_Cholesky, & ! intent(in)
+                                        a_eigenvalues ) ! intent(out)
           write(fstderr,*) "a_modified eigenvalues="
           do i = 1, ndim
             write(fstderr,'(e10.3)',advance='no') a_eigenvalues(i)
@@ -332,7 +318,8 @@ module matrix_operations
   end subroutine Cholesky_factor
 
 !----------------------------------------------------------------------
-  subroutine Symm_matrix_eigenvalues( ndim, a_input, a_eigenvalues )
+  subroutine Symm_matrix_eigenvalues( ndim, a_input, &
+                                      a_eigenvalues )
 
 !   Description:
 !     Computes the eigevalues of a_input
@@ -342,15 +329,15 @@ module matrix_operations
 !-----------------------------------------------------------------------
 
     use constants_clubb, only: &
-      fstderr ! Constant
+        fstderr ! Constant
 
     use clubb_precision, only: &
-      core_rknd ! double precision
+        core_rknd ! double precision
+      
+    use lapack_interfaces, only: &
+        lapack_syev       ! Procedure
 
     implicit none
-
-    ! External
-    external :: dsyev, ssyev ! LAPACK subroutine(s)
 
     ! Parameters
     integer, parameter :: &
@@ -383,15 +370,10 @@ module matrix_operations
 !   end do
 !   pause
 
-    if ( kind( 0.0_core_rknd ) == kind( 0.0d0 ) ) then
-      call dsyev( 'No eigenvectors', 'Lower', ndim, a_scratch, ndim, &
-                  a_eigenvalues, work, lwork, info )
-    else if ( kind( 0.0_core_rknd ) == kind( 0.0 ) ) then
-      call ssyev( 'No eigenvectors', 'Lower', ndim, a_scratch, ndim, &
-                  a_eigenvalues, work, lwork, info )
-    else
-      stop "Precision is not single or double in Symm_matrix_eigenvalues"
-    end if
+    ! Lapack routine for computing eigenvalues and, optionally, eigenvectors. ssyev for 
+    ! single precision  or dsyev for double precision
+    call lapack_syev( 'No eigenvectors', 'Lower', ndim, a_scratch, ndim, &
+                      a_eigenvalues, work, lwork, info )
 
     select case( info )
     case( :-1 )
@@ -461,7 +443,7 @@ module matrix_operations
 !-------------------------------------------------------------------------------
 
     use clubb_precision, only: &
-      core_rknd
+        core_rknd
 
     implicit none
 
@@ -504,7 +486,7 @@ module matrix_operations
 !-----------------------------------------------------------------------
 
     use clubb_precision, only: &
-      core_rknd ! Variable(s)
+        core_rknd ! Variable(s)
 
     implicit none
 
@@ -532,7 +514,8 @@ module matrix_operations
   end subroutine print_lower_triangular_matrix
 
   !-----------------------------------------------------------------------
-  subroutine mirror_lower_triangular_matrix( nvars, matrix )
+  subroutine mirror_lower_triangular_matrix( nvars, &
+                                             matrix )
 
   ! Description:
   !   Mirrors the elements of a lower triangular matrix to the upper
@@ -543,7 +526,7 @@ module matrix_operations
   !-----------------------------------------------------------------------
 
     use clubb_precision, only: &
-      core_rknd  ! Constant
+        core_rknd  ! Constant
 
     implicit none
 
