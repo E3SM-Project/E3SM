@@ -163,7 +163,7 @@ TEST_CASE("spa_read_data","spa")
   Kokkos::deep_copy(pmid_tgt,pmid_tgt_h);
 
   // Run SPA main
-  SPAFunc::spa_main(spa_time_state,pmid_tgt,spa_data_beg,spa_data_end,spa_data_out,dofs_gids.size(),nlevs,nswbands,nlwbands);
+  SPAFunc::spa_main(spa_time_state,pmid_tgt,spa_data_beg,spa_data_end,spa_data_out)
 
   Kokkos::deep_copy(ccn3_h      , spa_data_out.CCN3);
   Kokkos::deep_copy(aer_g_sw_h  , spa_data_out.AER_G_SW);
@@ -207,7 +207,7 @@ TEST_CASE("spa_read_data","spa")
   }
   Kokkos::deep_copy(pmid_tgt,pmid_tgt_h);
   
-  SPAFunc::spa_main(spa_time_state,pmid_tgt,spa_data_beg,spa_data_end,spa_data_out,dofs_gids.size(),nlevs,nswbands,nlwbands);
+  SPAFunc::spa_main(spa_time_state,pmid_tgt,spa_data_beg,spa_data_end,spa_data_out);
   Kokkos::deep_copy(ccn3_h      , spa_data_out.CCN3);
   Kokkos::deep_copy(aer_g_sw_h  , spa_data_out.AER_G_SW);
   Kokkos::deep_copy(aer_ssa_sw_h, spa_data_out.AER_SSA_SW);
@@ -279,7 +279,7 @@ TEST_CASE("spa_read_data","spa")
   }
   Kokkos::deep_copy(pmid_tgt,pmid_tgt_h);
 
-  SPAFunc::spa_main(spa_time_state,pmid_tgt,spa_data_beg,spa_data_end,spa_data_out,dofs_gids.size(),nlevs,nswbands,nlwbands);
+  SPAFunc::spa_main(spa_time_state,pmid_tgt,spa_data_beg,spa_data_end,spa_data_out);
   Kokkos::deep_copy(ccn3_h      , spa_data_out.CCN3);
   Kokkos::deep_copy(aer_g_sw_h  , spa_data_out.AER_G_SW);
   Kokkos::deep_copy(aer_ssa_sw_h, spa_data_out.AER_SSA_SW);
@@ -343,7 +343,7 @@ TEST_CASE("spa_read_data","spa")
   Kokkos::deep_copy(pmid_tgt,pmid_tgt_h);
 
   // Note, here we pass spa_data_beg twice, as both bounds of the input data.
-  SPAFunc::spa_main(spa_time_state,pmid_tgt,spa_data_beg,spa_data_beg,spa_data_out,dofs_gids.size(),nlevs,nswbands,nlwbands);
+  SPAFunc::spa_main(spa_time_state,pmid_tgt,spa_data_beg,spa_data_beg,spa_data_out);
   Kokkos::deep_copy(ccn3_h      , spa_data_out.CCN3);
   Kokkos::deep_copy(aer_g_sw_h  , spa_data_out.AER_G_SW);
   Kokkos::deep_copy(aer_ssa_sw_h, spa_data_out.AER_SSA_SW);

@@ -92,11 +92,7 @@ void SPAFunctions<S,D>
   const view_2d<const Spack>& p_tgt,
   const SPAData&   data_beg,
   const SPAData&   data_end,
-  const SPAOutput& data_out,
-  Int ncols_tgt,
-  Int nlevs_tgt,
-  Int nswbands,
-  Int nlwbands)
+  const SPAOutput& data_out)
 {
   // Gather time stamp info
   auto& t_now = time_state.t_now;
@@ -104,6 +100,8 @@ void SPAFunctions<S,D>
   auto& t_len = time_state.days_this_month;
 
   const int nlevs_src = data_beg.nlevs;
+  const int ncols_tgt = data_out.ncols;
+  const int nlevs_tgt = data_out.nlevs;
 
   // For now we require that the Data in and the Data out have the same number of columns.
   EKAT_REQUIRE(ncols_tgt==data_beg.ncols);

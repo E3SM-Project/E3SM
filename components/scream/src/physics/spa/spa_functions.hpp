@@ -184,10 +184,7 @@ struct SPAFunctions
     const SPAData&   data_beg,
     const SPAData&   data_end,
     const SPAOutput& data_out,
-    Int ncols_scream,
-    Int nlevs_scream,
-    Int nswbands,
-    Int nlwbands);
+    const SPAOutput& data_out);
 
   static void get_remap_weights_from_file(
     const std::string&       remap_file_name,

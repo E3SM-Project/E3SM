@@ -129,6 +129,10 @@ void SPA::initialize_impl (const RunType /* run_type */)
   SPAData_out.AER_SSA_SW         = get_field_out("aero_ssa_sw").get_view<Pack***>();
   SPAData_out.AER_TAU_SW         = get_field_out("aero_tau_sw").get_view<Pack***>();
   SPAData_out.AER_TAU_LW         = get_field_out("aero_tau_lw").get_view<Pack***>();
+  SPAData_out.ncols = m_num_cols;
+  SPAData_out.nlevs = m_num_levs;
+  SPAData_out.nswbands = m_nswbands;
+  SPAData_out.nswbands = m_nlwbands;
 
   // Retrieve the remap and data file locations from the parameter list:
   EKAT_REQUIRE_MSG(m_params.isParameter("SPA Remap File"),"ERROR: SPA Remap File is missing from SPA parameter list.");
@@ -175,7 +179,7 @@ void SPA::run_impl (const int /* dt */)
 
   // Call the main SPA routine to get interpolated aerosol forcings.
   const auto& pmid_tgt = get_field_in("p_mid").get_view<const Pack**>();
-  SPAFunc::spa_main(SPATimeState, pmid_tgt,SPAData_start,SPAData_end,SPAData_out,m_num_cols,m_num_levs,m_nswbands,m_nlwbands);
+  SPAFunc::spa_main(SPATimeState, pmid_tgt,SPAData_start,SPAData_end,SPAData_out);
 }
 
 // =========================================================================================
