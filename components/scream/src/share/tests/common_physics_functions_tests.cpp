@@ -68,10 +68,10 @@ template<typename DeviceT>
 void run_scalar_valued_fns()
 {
   /*
-  Most common physics functions operate simultaneously on packs of vertical indices. The functions tested here
-  don't include any vertical dimension (e.g. they handle variables only defined at the surface), so are only defined
-  for scalar reals. This is fundamentally different than the other functions, so these functions get their own run
-  test.
+  Most of the common physics functions are templated to operate on scalars or on packs of vertical indices. 
+  The functions tested here don't include any vertical dimension (e.g. they handle variables only defined 
+  at the surface), so are only defined for scalar reals. This is fundamentally different than the other 
+  functions, so these functions get their own run test.
   */	
 
   using RealType   = scream::Real;
@@ -83,6 +83,15 @@ void run_scalar_valued_fns()
   static constexpr auto g        = PC::gravit;
   static constexpr auto test_tol = PC::macheps*1e3;
 
+  //calculate_surface_air_T property tests:
+  // If z_mid_bot==0, output should equal T_mid_bot
+  // If z_mid_bot>0, output should be warmer that T_mid_bot
+  // If z_mid_bot<0, output should be colder than T_mid_bot
+  // if z_mid_bot is 1 km, output should be exactly 6.5 K warmer
+  REQUIRE( Check::approx_equal(PF::calculate_surface_air_T(300,0),300,test_tol) );
+  REQUIRE( Check::approx_equal(PF::calculate_surface_air_T(300,1000),306.5,test_tol) );
+  REQUIRE( Check::approx_equal(PF::calculate_surface_air_T(250.3,-10.2),250.2337,test_tol) );
+  
   // lapse_T_for_psl property tests:
   // If T_ground = 0, T_ground_tmp should be 255/2 and lapse should be 0.0065 Really cold case.
   // If T_ground = 300 K with phi_ground>0 m2/s2, lapse = 0 and T_ground_tmp=0.5*(290.5+T_ground). Really hot case.
@@ -93,7 +102,7 @@ void run_scalar_valued_fns()
   RealType T_ground_tmp;
   RealType T_ground=0;
   RealType phi_ground=100;
-  RealType p_ground=100000; //can't use p0 because that's a pack
+  RealType p_ground=100000; //can't use p0 because that is a ScalarT which could be a pack
   PF::lapse_T_for_psl(T_ground, p_ground,  phi_ground, lapse, T_ground_tmp );
   REQUIRE( Check::approx_equal(T_ground_tmp,0.5*255.,test_tol) );
   REQUIRE( Check::equal(lapse,0.0065) );

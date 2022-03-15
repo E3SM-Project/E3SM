@@ -386,6 +386,26 @@ void PhysicsFunctions<DeviceT>::calculate_mmr_from_vmr(const MemberType& team,
 
 template<typename DeviceT>
 KOKKOS_INLINE_FUNCTION
+Real PhysicsFunctions<DeviceT>::calculate_surface_air_T(const Real& T_mid_bot, const Real& z_mid_bot)
+{
+  /*Compute temperature at the bottom of the gridcell closest to the ground. The implementation here
+    is really clunky and is meant to provide calculate_psl with the values used by CESM... Think
+    twice before using it for anything else. Inputs are T at midpoint of layer closest to the surface (K) and 
+    the geometric height at that point (m). Note that z_mid_bot is distance from the surface rather than from
+    sea level!
+  */
+
+  //Old version extrapolated off lowest 2 midpoint values (needs different function arguments).
+  //Ditching this version for fear that weird lowest layer T relationships could yield strange surface values.
+  //const Real T_weighting = ( p_int_i(num_levs) - p_mid_i(last_entry))/(p_mid_i(last_entry - 1) - p_mid_i(last_entry) );
+  //return T_mid_i(last_entry - 1)*T_weighting + T_mid_i(last_entry)*(1-T_weighting);
+  
+  //Assume 6.5 K/km lapse rate between cell's midpoint and its bottom edge
+  return T_mid_bot + sp(0.0065)*z_mid_bot;
+}
+
+template<typename DeviceT>
+KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::lapse_T_for_psl(const Real& T_ground, const Real& p_ground, const Real& phi_ground,
 					        Real& lapse, Real& T_ground_tmp )
 {
@@ -399,19 +419,19 @@ void PhysicsFunctions<DeviceT>::lapse_T_for_psl(const Real& T_ground, const Real
   constexpr Real gravit = C::gravit;
 
   //Get preliminary surface and sea level temperature to decide on lapse rate
-  auto T_sl = T_ground + 0.0065*phi_ground/gravit; //start by assuming lapse rate is 6.5 K/km
+  auto T_sl = T_ground + sp(0.0065)*phi_ground/gravit; //start by assuming lapse rate is 6.5 K/km
   T_ground_tmp= T_ground; //make copy b/c may need to modify later
 
   if (T_ground<=290.5 && T_sl>290.5){
-    lapse=gravit/phi_ground*(290.5-T_ground); //choose lapse rate to make T at sea level 290.5K
+    lapse=gravit/phi_ground*(sp(290.5)-T_ground); //choose lapse rate to make T at sea level 290.5K
   } else if (T_ground>290.5 && T_sl>290.5){
     lapse=0; //choose lapse rate = 0 to not make things any worse.
-    T_ground_tmp=0.5*(290.5+T_ground); //reduce effective T in a smooth way to avoid unrealistic result
+    T_ground_tmp=sp(0.5)*(sp(290.5)+T_ground); //reduce effective T in a smooth way to avoid unrealistic result
   } else if (T_ground<255){
   //Following EAM's treatment for cold cases even though it seems overly crude: what if T_sl>255?
   //Or phi_ground<0 so positive lapse makes T_sl even colder? We should eventually ditch this entire scheme.
   lapse=0.0065;
-  T_ground_tmp=0.5*(255.+T_ground);
+  T_ground_tmp=sp(0.5)*(255+T_ground);
   } else{
     //note lack of "elif T_ground>290.5 and T_sl<290.5" case (phi_ground<0 and hot) is missing on purpose
     //because 6.5K/km lapse rate will cool T_sl in that case and that's what we want.
@@ -446,7 +466,7 @@ Real PhysicsFunctions<DeviceT>::calculate_psl(const Real& T_ground, const Real& 
     lapse_T_for_psl(T_ground,p_ground,phi_ground, lapse, T_ground_tmp);
     Real alpha=lapse*Rair/gravit;
     Real beta=phi_ground/(Rair*T_ground_tmp);
-    psl = p_ground*std::exp(beta*( 1. - alpha*beta/2. + std::pow(alpha*beta,2)/3 ) );
+    psl = p_ground*std::exp(beta*( 1 - alpha*beta/2 + std::pow(alpha*beta,2)/3 ) );
   }
   
   return psl;

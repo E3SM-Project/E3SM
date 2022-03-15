@@ -23,7 +23,7 @@ void SurfaceCoupling::do_export (const bool init_phase)
       (m_field_mgr->has_field("qv") && m_field_mgr->has_field("T_mid") &&
        m_field_mgr->has_field("p_mid") && m_field_mgr->has_field("pseudo_density") &&
        m_field_mgr->has_field("precip_liq_surf") && m_field_mgr->has_field("precip_ice_surf") &&
-       m_field_mgr->has_field("p_int") && m_field_mgr->has_field("phis") ); //PMC added
+       m_field_mgr->has_field("p_int") && m_field_mgr->has_field("phis") );
   if (scream_ad_run) {
     const int last_entry = m_num_levs-1;
     const auto& qv              = m_field_mgr->get_field("qv").get_view<const Real**>();
@@ -73,10 +73,8 @@ void SurfaceCoupling::do_export (const bool init_phase)
       team.team_barrier();
 
       // Calculate air temperature at bottom of cell closest to the ground for PSL
-      // ?would be better to do this in a function so it can be better tested?
-      const Real T_weighting = ( p_int_i(num_levs) - p_mid_i(last_entry))/(p_mid_i(last_entry - 1) - p_mid_i(last_entry) );
-      const Real T_int_bot = T_mid_i(last_entry - 1)*T_weighting + T_mid_i(last_entry)*(1-T_weighting);
-
+      const Real T_int_bot = PF::calculate_surface_air_T(T_mid_i(last_entry),z_mid_i(last_entry));
+      
       l_Sa_z(i)       = z_mid_i(last_entry);
       l_Sa_ptem(i)    = PF::calculate_theta_from_T(T_mid_i(last_entry), p_mid_i(last_entry));
       l_Sa_dens(i)    = PF::calculate_density(pseudo_density_i(last_entry), dz_i(last_entry));

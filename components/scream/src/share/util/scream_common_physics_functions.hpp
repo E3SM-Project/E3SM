@@ -216,6 +216,20 @@ struct PhysicsFunctions
   KOKKOS_INLINE_FUNCTION
   static ScalarT calculate_mmr_from_vmr(const Real& gas_mol_weight, const ScalarT& qv, const ScalarT& vmr);
 
+  //-----------------------------------------------------------------------------------------------
+  // Calculate T at the bottom of the grid cell closest to the surface for use in PSL computation.
+  // This is done assuming a 6.5 K/km lapse rate, which is a horrible assumption but avoids problems that
+  // computing lapse rate via extrapolation might produce strange answers. It is also what CESM has done
+  // for the last 20 yrs so seems to be sufficient. Don't assume this method is appropriate for any other use.
+  // INPUTS:
+  // T_mid_bot
+  // z_mid_bot
+  // RETURNS:
+  // T at the bottom of the cell nearest the surface (K)
+  //-----------------------------------------------------------------------------------------------
+  KOKKOS_INLINE_FUNCTION
+  static Real PhysicsFunctions<DeviceT>::calculate_surface_air_T(const Real& T_mid_bot, const Real& z_mid_bot);
+
   //-----------------------------------------------------------------------------------------------//
   // Calculate sea level pressure assuming dry air between ground and sea level and using a lapse
   // rate of 6.5K/km except in very warm conditions. See docs/tech_doc/physics/psl/psl_doc.tex for details
