@@ -353,16 +353,6 @@ contains
     call hist_addfld2d (fname='ALBI', units='proportion', type2d='numrad', &
          avgflag='A', long_name='surface albedo (indirect)', &
          ptr_patch=this%albi_patch, default='inactive', c2l_scale_type='urbanf')
-	
-    this%fd_top_adjust(begp:endp,:) = spval
-    call hist_addfld2d (fname='fd_top_adjust', units='none', type2d='numrad', &
-         avgflag='A', long_name='fd_top_adjust', &
-         ptr_patch=this%fd_top_adjust)
-		 
-    this%fi_top_adjust(begp:endp,:) = spval
-    call hist_addfld2d (fname='fi_top_adjust', units='none', type2d='numrad', &
-         avgflag='A', long_name='fi_top_adjust', &
-         ptr_patch=this%fi_top_adjust)
     
   end subroutine InitHistory
 
