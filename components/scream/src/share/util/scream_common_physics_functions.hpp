@@ -228,7 +228,7 @@ struct PhysicsFunctions
   // T at the bottom of the cell nearest the surface (K)
   //-----------------------------------------------------------------------------------------------
   KOKKOS_INLINE_FUNCTION
-  static Real PhysicsFunctions<DeviceT>::calculate_surface_air_T(const Real& T_mid_bot, const Real& z_mid_bot);
+  static Real calculate_surface_air_T(const Real& T_mid_bot, const Real& z_mid_bot);
 
   //-----------------------------------------------------------------------------------------------//
   // Calculate sea level pressure assuming dry air between ground and sea level and using a lapse
