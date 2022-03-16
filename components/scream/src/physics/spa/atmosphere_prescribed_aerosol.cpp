@@ -68,13 +68,19 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 int SPA::requested_buffer_size_in_bytes() const
 {
   using PackInfo = ekat::PackInfo<Spack::n>;
-  const int num_mid_packs = PackInfo::num_packs(m_num_levs);
 
-  // We have two 2d mid view (p_mid_src, spa_data.ccn), three
-  // 3d swbands mid views (aer_g_sw, aer_ssa_sw, aer_tau_sw),
-  // and one 3d lwbands mid view (aer_tau_lw)
-  // Number of Reals needed by local views in the interface
-  const int num_reals = m_num_cols*num_mid_packs*(2 + 3*m_nswbands + m_nlwbands);
+  // Recall: the quantities in spa_temp defined over vlevs have 1 Real of
+  //         padding in each column (at beginning and end).
+  //         That's why we have m_num_levs+2
+  const int nlevs = m_num_levs+2;
+  const int num_mid_packs = PackInfo::num_packs(nlevs);
+
+  // We have
+  //  - one (ncols) view (spa_temp's ps)
+  //  - two (ncols,nlevs) mid view (p_mid_src, spa_temp's ccn)
+  //  - three (ncols,nswbands,nlevs) views (spa_temp's aer_g_sw, aer_ssa_sw, aer_tau_sw)
+  //  - one (ncols,nlwbands,nlevs) view (aer_tau_lw)
+  const int num_reals = m_num_cols*(1+num_mid_packs*(2 + 3*m_nswbands + m_nlwbands));
 
   return num_reals*sizeof(Real);
 }
@@ -89,7 +95,11 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
   using PackInfo = ekat::PackInfo<Spack::n>;
 
   // Short names make following rows fit on text editor screen
-  const int npacks = PackInfo::num_packs(m_num_levs);
+  // Recall: the quantities in spa_temp defined over vlevs have 1 Real of
+  //         padding in each column (at beginning and end).
+  //         That's why we have m_num_levs+2
+  const int nlevs  = m_num_levs+2;
+  const int npacks = PackInfo::num_packs(nlevs);
   const int ncols  = m_num_cols;
   const int nswb   = m_nswbands;
   const int nlwb   = m_nlwbands;
@@ -100,23 +110,28 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
   m_buffer.p_mid_src = decltype(m_buffer.p_mid_src)(mem, ncols, npacks);
   mem += m_buffer.p_mid_src.size();
 
-  // SPA data temporaries
+  // SPA temporaries
   auto& spa_data = m_buffer.spa_temp.data;
+  spa_data.init(ncols,nlevs,nswb,nlwb,false);
 
   spa_data.CCN3 = decltype(spa_data.CCN3)(mem, ncols, npacks);
   mem += spa_data.CCN3.size();
 
-  spa_data.AER_G_SW = decltype(spa_data.AER_G_SW)(mem, ncols, npacks, nswb);
+  spa_data.AER_G_SW = decltype(spa_data.AER_G_SW)(mem, ncols, nswb, npacks);
   mem += spa_data.AER_G_SW.size();
-  spa_data.AER_SSA_SW = decltype(spa_data.AER_SSA_SW)(mem, ncols, npacks, nswb);
+  spa_data.AER_SSA_SW = decltype(spa_data.AER_SSA_SW)(mem, ncols, nswb, npacks);
   mem += spa_data.AER_SSA_SW.size();
-  spa_data.AER_TAU_SW = decltype(spa_data.AER_TAU_SW)(mem, ncols, npacks, nswb);
+  spa_data.AER_TAU_SW = decltype(spa_data.AER_TAU_SW)(mem, ncols, nswb, npacks);
   mem += spa_data.AER_TAU_SW.size();
 
-  spa_data.AER_TAU_LW = decltype(spa_data.AER_TAU_LW)(mem, ncols, npacks, nlwb);
+  spa_data.AER_TAU_LW = decltype(spa_data.AER_TAU_LW)(mem, ncols, nlwb, npacks);
   mem += spa_data.AER_TAU_LW.size();
 
-  int used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
+  Real* r_mem = reinterpret_cast<Real*>(mem);
+  m_buffer.spa_temp.PS = decltype(m_buffer.spa_temp.PS)(r_mem,ncols);
+  r_mem += m_buffer.spa_temp.PS.size();
+
+  int used_mem = (r_mem - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(),
       "Error! Used memory != requested memory for SPA.");
 }
