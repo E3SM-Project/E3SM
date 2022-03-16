@@ -80,6 +80,17 @@ class TestAllScream(object):
             ("cov" , "coverage"),
         ])
 
+        # Not all builds are ment to perform comparisons against pre-built baselines
+        self._test_uses_baselines = OrderedDict([
+            ("dbg" , True),
+            ("sp"  , True),
+            ("fpe" , False),
+            ("opt" , True),
+            ("valg", False),
+            ("cmc",  False),
+            ("cov" , False),
+        ])
+
         self._tests_cmake_args = {
             "dbg" : [("CMAKE_BUILD_TYPE", "Debug"),
                      ("EKAT_DEFAULT_BFB", "True")],
@@ -89,16 +100,20 @@ class TestAllScream(object):
             "fpe" : [("CMAKE_BUILD_TYPE", "Debug"),
                      ("SCREAM_PACK_SIZE", "1"),
                      ("SCREAM_SMALL_PACK_SIZE", "1"),
+                     ("SCREAM_ENABLE_BASELINE_TESTS", "False"),
                      ("EKAT_DEFAULT_BFB", "True")],
             "opt" : [("CMAKE_BUILD_TYPE", "Release")],
             "valg" : [("CMAKE_BUILD_TYPE", "Debug"),
                       ("SCREAM_TEST_PROFILE", "SHORT"),
+                     ("SCREAM_ENABLE_BASELINE_TESTS", "False"),
                       ("EKAT_ENABLE_VALGRIND", "True")],
             "cmc"  : [("CMAKE_BUILD_TYPE", "Debug"),
                       ("SCREAM_TEST_PROFILE", "SHORT"),
+                     ("SCREAM_ENABLE_BASELINE_TESTS", "False"),
                       ("EKAT_ENABLE_CUDA_MEMCHECK", "True")],
             "cov" : [("CMAKE_BUILD_TYPE", "Debug"),
-                      ("EKAT_ENABLE_COVERAGE", "True")],
+                     ("SCREAM_ENABLE_BASELINE_TESTS", "False"),
+                     ("EKAT_ENABLE_COVERAGE", "True")],
         }
 
         if self._quick_rerun_failed:
@@ -374,18 +389,22 @@ class TestAllScream(object):
     ###############################################################################
         """
         Check that all baselines are present (one subdir for all values of self._tests)
+        Note: if self._test_uses_baselines[test]=False, skip the check
         """
         # Sanity check
         expect(self._baseline_dir is not None,
                 "Error! Baseline directory not correctly set.")
 
         for test in self._tests:
-            data_dir = self.get_preexisting_baseline(test)
-            if not data_dir.is_dir():
-                self._tests_needing_baselines.append(test)
-                print(" -> Test {} is missing baselines".format(test))
+            if self._test_uses_baselines[test]:
+                data_dir = self.get_preexisting_baseline(test)
+                if not data_dir.is_dir():
+                    self._tests_needing_baselines.append(test)
+                    print(" -> Test {} is missing baselines".format(test))
+                else:
+                    print(" -> Test {} appears to have baselines".format(test))
             else:
-                print(" -> Test {} appears to have baselines".format(test))
+                print(" -> Test {} does not use baselines".format(test))
 
     ###############################################################################
     def baselines_are_expired(self):
@@ -401,7 +420,7 @@ class TestAllScream(object):
         expect(self._baseline_dir is not None, "Error! This routine should only be called when testing against pre-existing baselines.")
 
         for test in self._tests:
-            if test not in self._tests_needing_baselines:
+            if self._test_uses_baselines[test] and test not in self._tests_needing_baselines:
                 # this test is not missing a baseline, but it may be expired.
 
                 baseline_file_sha = self.get_baseline_file_sha(test)
@@ -565,7 +584,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         result += "SCREAM_BUILD_PARALLEL_LEVEL={} CTEST_PARALLEL_LEVEL={} ctest {} ".format(self._compile_res_count[test], self._testing_res_count[test], verbosity)
         result += "--resource-spec-file {}/ctest_resource_file.json ".format(test_dir)
 
-        if self._baseline_dir is not None:
+        if self._baseline_dir is not None and self._test_uses_baselines[test]:
             cmake_config += " -DSCREAM_TEST_DATA_DIR={}".format(self.get_preexisting_baseline(test))
 
         if not self._submit:
@@ -596,6 +615,10 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
     ###############################################################################
     def generate_baselines(self, test, commit):
     ###############################################################################
+
+        expect (self._test_uses_baselines[test],
+            "Something is off. generate_baseline should have not be called for test {}".format(test))
+
         test_dir = self.get_test_dir(self._baseline_dir, test)
 
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test])

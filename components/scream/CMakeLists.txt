@@ -206,9 +206,19 @@ endif()
 set(SCREAM_INPUT_ROOT ${DEFAULT_SCREAM_INPUT_ROOT} CACHE FILEPATH "Root of downloaded input files. Should match DIN_LOC_ROOT on CIME machines")
 
 # Assuming SCREAM_LIB_ONLY is FALSE (else, no exec is built at all), we provide the option
-# of building only baseline-related execs. By default, this option is off (menaing "build everything).
+# of building only baseline-related execs. By default, this option is off (menaing "build everything").
 # However, when generating baselines, this can be useful to reduce the amount of stuff compiled.
 set(SCREAM_BASELINES_ONLY FALSE CACHE BOOL "Whether building only baselines-related executables")
+
+# Certain builds are not meant to compare against baselines. For instance, a valgrind build
+# has the sole purpose of detecting memory errors. For these builds, we can disable baselines tests
+set(SCREAM_ENABLE_BASELINE_TESTS TRUE CACHE BOOL "Whether to run baselines-related tests")
+
+if (SCREAM_BASELINES_ONLY AND NOT SCREAM_ENABLE_BASELINE_TESTS)
+  message (FATAL_ERROR
+    "Makes no sense to set SCREAM_BASELINES_ONLY=ON,\n"
+    "but set SCREAM_ENABLE_BASELINE_TESTS=OFF.")
+endif()
 
 # Set number of vertical levels
 set(SCREAM_NUM_VERTICAL_LEV ${DEFAULT_NUM_VERTICAL_LEV} CACHE STRING

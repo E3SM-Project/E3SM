@@ -103,7 +103,7 @@ namespace scream {
         int ngas     =   8;  // TODO: get this intelligently
 
         // Make sure we have the right dimension sizes
-        REQUIRE(nlay == sw_flux_up_ref.dimension[1]-1);
+        REQUIRE(nlay == static_cast<int>(sw_flux_up_ref.dimension[1])-1);
 
         // Create yakl arrays to store the input data
         auto p_lay = real2d("p_lay", ncol, nlay);
