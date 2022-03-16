@@ -53,6 +53,7 @@ module ocn_gm
    logical :: local_config_GM_kappa_lat_depth_variable
    logical :: local_config_GM_compute_EdenGreatbatch
    real(kind=RKIND) :: slopeTaperFactor, sfcTaperFactor, rediGMinitValue
+   real(kind=RKIND) :: gm_constant_gravWaveSpeed, gm_computed_gravWaveSpeed_on
 
 !***********************************************************************
 
@@ -132,7 +133,7 @@ contains
       real(kind=RKIND)                 :: sumRi, RiTopOfEdge, zEdge, zMLD, sfcTaper
       real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, invAreaCell
-      real(kind=RKIND) :: lt1, lt2
+      real(kind=RKIND) :: lt1, lt2, c_min
       real(kind=RKIND) :: sigma, Lr, Length, L_rhines, shearEdgeInv
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
       real(kind=RKIND) :: c_Visbeck   ! baroclinic wave speed from Visbeck parameterization
@@ -543,12 +544,12 @@ contains
          ! config_GM_spatially_variable_baroclinic_mode
          if (local_config_GM_lat_variable_c2) then
             !$omp parallel
-            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, lt1, lt2)
+            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, lt1, lt2, ltSum, c_min)
             do iEdge = 1, nEdges
                cell1 = cellsOnEdge(1, iEdge)
                cell2 = cellsOnEdge(2, iEdge)
-               sumN2 = 0.0
-
+               sumN2 = 0.0_RKIND
+               ltSum = epsGM
                do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)-1
 
                   lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
@@ -556,9 +557,13 @@ contains
                   sumN2 = sumN2 + 0.5_RKIND*(lt1*sqrt(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND)) + &
                                 lt2*sqrt(max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND)))
 
+                  ltSum = ltSum + 0.5*(lt1+lt2)
                end do
 
-               cGMphaseSpeed(iEdge) = max(config_GM_constant_gravWaveSpeed,                          &
+               ! compute gravity wave speed, either a specified constant, or
+               ! computed from the Brunt-Vaisala frequency.
+               c_min = gm_constant_gravWaveSpeed + gm_computed_gravWaveSpeed_on*max(0.01_RKIND,sumN2/ltSum*(0.5*(lt1+lt2)))
+               cGMphaseSpeed(iEdge) = max(c_min,                          &
                                           sumN2/(config_GM_spatially_variable_baroclinic_mode*3.141592_RKIND))
 
             end do
@@ -908,6 +913,17 @@ contains
             end if
          else
             sfcTaperFactor = 0.0_RKIND
+         end if
+
+         if (config_gm_gravWaveSpeed=='constant') then
+            gm_constant_gravWaveSpeed = config_gm_constant_gravWaveSpeed
+            gm_computed_gravWaveSpeed_on = 0.0_RKIND
+         elseif (config_gm_gravWaveSpeed=='computed') then
+            gm_constant_gravWaveSpeed = 0.0_RKIND
+            gm_computed_gravWaveSpeed_on = 1.0_RKIND
+         else
+            call mpas_log_write('config_gm_gravWaveSpeed must be constant or computed', &
+                                 MPAS_LOG_CRIT)
          end if
 
          RediGMinitValue = 1.0_RKIND

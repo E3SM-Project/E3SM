@@ -357,6 +357,10 @@
 		<nml_option name="config_GM_constant_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Only used when config_GM_closure is set to constant."
 		/>
+		<nml_option name="config_GM_gravWaveSpeed" type="character" default_value="constant" units="NA"
+					description="Determines how GM gravity wave speed is computed. If 'constant' then use config_GM_constant_gravWaveSpeed. If 'computed' then compute at every edge at every time step using the Brunt-Vaisala frequency"
+					possible_values="'constant' and 'computed'"
+		/>
 		<nml_option name="config_GM_constant_gravWaveSpeed" type="real" default_value="0.3" units="m/s"
 					description="Gravity wave speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004)."
 					possible_values="Positive real numbers"
