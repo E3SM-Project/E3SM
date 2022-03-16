@@ -443,7 +443,7 @@ void post_timeloop() {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int j, int i, int icrm) {
-    precsfc(j,i,icrm) = precsfc(j,i,icrm)*dz(icrm)/dt/((real) nstop);
+    precsfc(j,i,icrm)  = precsfc(j,i,icrm) *dz(icrm)/dt/((real) nstop);
     precssfc(j,i,icrm) = precssfc(j,i,icrm)*dz(icrm)/dt/((real) nstop);
     if (precsfc(j,i,icrm) > 10.0/86400.0) {
       yakl::atomicAdd(crm_output_precc (icrm) , precsfc (j,i,icrm));

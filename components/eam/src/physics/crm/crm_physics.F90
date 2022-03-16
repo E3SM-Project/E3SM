@@ -1119,12 +1119,13 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             crm_state%v_wind     (icrm,:,:,:) = crm_v (i,:,:,:)
             crm_state%w_wind     (icrm,:,:,:) = crm_w (i,:,:,:)
             crm_state%temperature(icrm,:,:,:) = crm_t (i,:,:,:)
-            crm_state%qt         (icrm,:,:,:) = crm_qt(i,:,:,:)
             if (MMF_microphysics_scheme .eq. 'sam1mom') then
+               crm_state%qt      (icrm,:,:,:) = crm_qt(i,:,:,:)
                crm_state%qp      (icrm,:,:,:) = crm_qp(i,:,:,:)
                crm_state%qn      (icrm,:,:,:) = crm_qn(i,:,:,:)
             end if
             if (MMF_microphysics_scheme .eq. 'm2005') then
+               crm_state%qt      (icrm,:,:,:) = crm_qt(i,:,:,:)
                crm_state%nc      (icrm,:,:,:) = crm_nc(i,:,:,:)
                crm_state%qr      (icrm,:,:,:) = crm_qr(i,:,:,:)
                crm_state%nr      (icrm,:,:,:) = crm_nr(i,:,:,:)
@@ -1137,6 +1138,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_state%qc      (icrm,:,:,:) = crm_qc(i,:,:,:)
             end if
             if (MMF_microphysics_scheme .eq. 'p3') then
+               crm_state%qt      (icrm,:,:,:) = crm_qt(i,:,:,:)
                crm_state%qc      (icrm,:,:,:) = crm_qc(i,:,:,:)
                crm_state%qi      (icrm,:,:,:) = crm_qi(i,:,:,:)
                crm_state%qr      (icrm,:,:,:) = crm_qr(i,:,:,:)

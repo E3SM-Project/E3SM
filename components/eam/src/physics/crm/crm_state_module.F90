@@ -24,10 +24,10 @@ module crm_state_module
       real(crm_rknd), allocatable :: u_wind(:,:,:,:)       ! CRM u-wind component
       real(crm_rknd), allocatable :: v_wind(:,:,:,:)       ! CRM v-wind component
       real(crm_rknd), allocatable :: w_wind(:,:,:,:)       ! CRM w-wind component
-      real(crm_rknd), allocatable :: temperature(:,:,:,:)  ! CRM temperuture
+      real(crm_rknd), allocatable :: temperature(:,:,:,:)  ! CRM temperature
       real(crm_rknd), allocatable :: qt(:,:,:,:)           ! CRM total water
 
-      ! 2-moment microphsics variables (both p3 and m2005)
+      ! 2-moment microphysics variables (both p3 and m2005)
       real(crm_rknd), allocatable :: qc(:,:,:,:)   ! mass mixing ratio of cloud water
       real(crm_rknd), allocatable :: nc(:,:,:,:)   ! number concentration of cloud water
       real(crm_rknd), allocatable :: qr(:,:,:,:)   ! mass mixing ratio of rain
