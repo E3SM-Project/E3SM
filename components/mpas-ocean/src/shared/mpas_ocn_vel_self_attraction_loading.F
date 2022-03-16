@@ -679,6 +679,10 @@ contains
             return
         endif
 
+        if (.not. config_use_tidal_potential_forcing) then
+          call mpas_log_write('config_use_self_attraction_loading = .true. requires config_use_tidal_potential_forcing = .true.' , MPAS_LOG_CRIT)
+        endif
+
         call mpas_pool_get_config(ocnConfigs, 'config_mpas_to_grid_weights_file', config_mpas_to_grid_weights_file)
         call mpas_pool_get_config(ocnConfigs, 'config_grid_to_mpas_weights_file', config_grid_to_mpas_weights_file)
         call mpas_pool_get_config(ocnConfigs, 'config_self_attraction_loading_compute_interval', config_self_attraction_loading_compute_interval)
