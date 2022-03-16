@@ -545,6 +545,8 @@ contains
          if (local_config_GM_lat_variable_c2) then
             !$omp parallel
             !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, lt1, lt2, ltSum, c_min)
+            lt1 = 0.0_RKIND
+            lt2 = 0.0_RKIND
             do iEdge = 1, nEdges
                cell1 = cellsOnEdge(1, iEdge)
                cell2 = cellsOnEdge(2, iEdge)
