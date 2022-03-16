@@ -85,7 +85,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     // Register all output fields in the remapper.
     m_remapper->registration_begins();
     for (const auto& fname : m_fields_names) {
-      auto f = m_field_mgr->get_field(fname);
+      auto f = get_field(fname);
       const auto& src_fid = f.get_header().get_identifier();
       EKAT_REQUIRE_MSG(src_fid.data_type()==DataType::RealType,
           "Error! I/O supports only Real data, for now.\n");
@@ -104,7 +104,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
     // Now that fields have been allocated on the io grid, we can bind them in the remapper
     for (const auto& fname : m_fields_names) {
-      auto src = m_field_mgr->get_field(fname);
+      auto src = get_field(fname);
       auto tgt = io_fm->get_field(fname);
       m_remapper->bind_field(src,tgt);
     }
@@ -179,7 +179,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
   // Take care of updating and possibly writing fields.
   for (auto const& name : m_fields_names) {
     // Get all the info for this field.
-    const auto  field = m_field_mgr->get_field(name);
+    const auto  field = get_field(name);
     const auto& layout = m_layouts.at(name);
     const auto& dims = layout.dims();
     const auto  rank = layout.rank();
@@ -335,7 +335,7 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
   using namespace scorpio;
 
   // Store the field layout
-  const auto& fid = m_field_mgr->get_field(name).get_header().get_identifier();
+  const auto& fid = get_field(name).get_header().get_identifier();
   const auto& layout = fid.get_layout();
   m_layouts.emplace(name,layout);
 
@@ -367,7 +367,7 @@ void AtmosphereOutput::register_views()
 {
   // Cycle through all fields and register.
   for (auto const& name : m_fields_names) {
-    auto field = m_field_mgr->get_field(name);
+    auto field = get_field(name);
 
     // These local views are really only needed if the averaging time is not 'Instant',
     // to store running tallies for the average operation. However, we create them
@@ -419,7 +419,7 @@ void AtmosphereOutput::register_variables(const std::string& filename)
 
   // Cycle through all fields and register.
   for (auto const& name : m_fields_names) {
-    auto field = m_field_mgr->get_field(name);
+    auto field = get_field(name);
     auto& fid  = field.get_header().get_identifier();
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     std::string io_decomp_tag = "Real";  // Note, for now we only assume REAL variables.  This may change in the future.
@@ -510,7 +510,7 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
 
   // Cycle through all fields and set dof.
   for (auto const& name : m_fields_names) {
-    auto field = m_field_mgr->get_field(name);
+    auto field = get_field(name);
     const auto& fid  = field.get_header().get_identifier();
     auto var_dof = get_var_dof_offsets(fid.get_layout());
     set_dof(filename,name,var_dof.size(),var_dof.data());
@@ -536,6 +536,20 @@ void AtmosphereOutput::setup_output_file(const std::string& filename)
 
   // Set the offsets of the local dofs in the global vector.
   set_degrees_of_freedom(filename);
+}
+/* ---------------------------------------------------------- */
+// General get_field routine for output.
+// This routine will first check if a field is in the local field
+// manager.  If not it will next check to see if it is in the list
+// of available diagnostics.  If neither of these two options it
+// will throw an error.
+Field AtmosphereOutput::get_field(const std::string& name)
+{
+  if (m_field_mgr->has_field(name)) {
+    return m_field_mgr->get_field(name);
+  } else {
+    EKAT_ERROR_MSG ("Field " + name + " not found in output field manager");
+  }
 }
 
 } // namespace scream

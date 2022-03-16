@@ -154,6 +154,7 @@ protected:
   void set_degrees_of_freedom(const std::string& filename);
   std::vector<int> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
+  Field get_field(const std::string& name);
 
   // --- Internal variables --- //
   ekat::Comm                          m_comm;
