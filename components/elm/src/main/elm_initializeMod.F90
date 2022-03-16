@@ -64,7 +64,7 @@ contains
     use soilorder_varcon          , only: soilorder_conrd
     use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_gtlcp
     use domainMod                 , only: domain_check, ldomain, domain_init
-    use surfrdMod                 , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data
+    use surfrdMod                 , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data,surfrd_get_topo_for_solar_rad
     use controlMod                , only: control_init, control_print, NLFilename
     use ncdio_pio                 , only: ncd_pio_init
     use initGridCellsMod          , only: initGridCells, initGhostGridCells
@@ -82,6 +82,7 @@ contains
     use reweightMod               , only: reweight_wrapup
     use ELMFatesInterfaceMod      , only: ELMFatesGlobals
     use topounit_varcon           , only: max_topounits, has_topounit, topounit_varcon_init    
+    use elm_varctl                , only: use_top_solar_rad
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -220,7 +221,17 @@ contains
           write(iulog,*) 'Attempting to read atm topo from ',trim(flndtopo)
           call shr_sys_flush(iulog)
        endif
-       call surfrd_get_topo(ldomain, flndtopo)
+
+       call surfrd_get_topo(ldomain, flndtopo)  
+    endif    
+    
+    if (fsurdat /= " " .and. use_top_solar_rad) then
+       if (masterproc) then
+          write(iulog,*) 'Attempting to read topo parameters for TOP solar radiation parameterization from ',trim(fsurdat)
+          call shr_sys_flush(iulog)
+       endif
+       call surfrd_get_topo_for_solar_rad(ldomain, fsurdat)  
+
     endif
     
     !-------------------------------------------------------------------------

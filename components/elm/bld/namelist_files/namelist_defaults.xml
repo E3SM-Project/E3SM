@@ -555,6 +555,11 @@ this mask will have smb calculated over the entire global land surface
 <!--flndtopo hgrid="ne30np4.pg2"      >lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_simyr1850_c201210.nc</flndtopo-->
 <flndtopo hgrid="ne30np4.pg2"      >lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1850_c210402.nc</flndtopo>
 
+<!-- datasets for TOP solar radiation parameterization -->
+<!--  ***********  Resolution dependent:   *********** -->
+<!--ftopdat>same as fsurfdat </ftopdat-->
+<use_top_solar_rad>.false.</use_top_solar_rad>
+
 <!-- SNICAR (SNow, ICe, and Aerosol Radiative model) datasets -->
 <!--  ***********  Resolution independent:   ***********  -->
 <fsnowoptics >lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</fsnowoptics>
