@@ -60,7 +60,8 @@
       <value compset="_EAM%MMF"        >-rad rrtmgp -rrtmgpxx</value>
       <value compset="_EAM%MMF"        >-crm samxx</value>
       <value compset="_EAM%MMF1"       >-MMF_microphysics_scheme sam1mom -chem none</value>
-      <value compset="_EAM%MMF2"       >-MMF_microphysics_scheme p3 -chem none</value>
+      <!-- MMF2 coming soon... -->
+      <!-- <value compset="_EAM%MMF2"       >-MMF_microphysics_scheme p3 -chem none</value> -->
       <value compset="_EAM%MMF.*-AQUA" >-aquaplanet </value>
       <value compset="_EAM%MMF.*-RCE"  >-aquaplanet -rce </value>
       <value compset="_EAM%MMF.*-SCM"  >-scam </value>
