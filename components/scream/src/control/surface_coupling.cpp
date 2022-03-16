@@ -54,6 +54,7 @@ set_num_fields (const int num_cpl_imports, const int num_scream_imports,
   Sa_z       = decltype(Sa_z)       ("", m_num_cols);
   Sa_ptem    = decltype(Sa_ptem)    ("", m_num_cols);
   Sa_dens    = decltype(Sa_dens)    ("", m_num_cols);
+  Sa_pslv    = decltype(Sa_pslv)    ("", m_num_cols);
   Faxa_rainl = decltype(Faxa_rainl) ("", m_num_cols);
   Faxa_snowl = decltype(Faxa_snowl) ("", m_num_cols);
   zero_view  = decltype(zero_view)  ("", m_num_cols);
@@ -189,6 +190,7 @@ register_export (const std::string& fname,
     else if (fname == "Sa_z")       info.data = Sa_z.data();
     else if (fname == "Sa_ptem")    info.data = Sa_ptem.data();
     else if (fname == "Sa_dens")    info.data = Sa_dens.data();
+    else if (fname == "Sa_pslv")    info.data = Sa_pslv.data();
     else if (fname == "Faxa_rainl") info.data = Faxa_rainl.data();
     else if (fname == "Faxa_snowl") info.data = Faxa_snowl.data();
     else                            EKAT_ERROR_MSG("Error! Unrecognized export field name \"" + fname + "\".");
