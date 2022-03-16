@@ -306,6 +306,7 @@ BuildEkat(PREFIX "SCREAM")
 include(EkatSetCompilerFlags)
 ResetFlags()
 SetCommonFlags()
+SetProfilingFlags(PROFILER ${EKAT_PROFILING_TOOL} COVERAGE ${EKAT_ENABLE_COVERAGE})
 
 include(EkatMpiUtils)
 # We should avoid cxx bindings in mpi; they are already deprecated,
