@@ -181,7 +181,7 @@ template<typename ScalarT, typename AllocType>
 void PhysicsDynamicsRemapper::
 compute_view_dims (const AllocType& alloc_prop, const std::vector<int>& field_dims, Dims& view_dims)
 {
-  int num_values = alloc_prop.get_alloc_size()/sizeof(ScalarT);
+  auto num_values = alloc_prop.get_alloc_size()/sizeof(ScalarT);
   int N = field_dims.size();
 
   view_dims.size = N;

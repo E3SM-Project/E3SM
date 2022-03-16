@@ -59,7 +59,7 @@ TEST_CASE("property_checks", "") {
 
   // Check positivity.
   SECTION ("field_positivity_check") {
-    const int num_reals = f.get_header().get_alloc_properties().get_num_scalars();
+    const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
 
     // Assign positive values to the field and make sure it passes our test for
     // positivity.
@@ -79,7 +79,7 @@ TEST_CASE("property_checks", "") {
 
   // Check positivity with repairs.
   SECTION ("field_positivity_check_with_repairs") {
-    const int num_reals = f.get_header().get_alloc_properties().get_num_scalars();
+    const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
 
     // Assign non-positive values to the field, make sure it fails the check,
     // and then repair the field so it passes.
@@ -96,7 +96,7 @@ TEST_CASE("property_checks", "") {
 
   // Check that values are not NaN
   SECTION("field_not_nan_check") {
-    const int num_reals = f.get_header().get_alloc_properties().get_num_scalars();
+    const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
 
     auto nan_check = std::make_shared<FieldNaNCheck>(f);
 
@@ -115,7 +115,7 @@ TEST_CASE("property_checks", "") {
 
   // Check that the values of a field lie within an interval.
   SECTION ("field_within_interval_check") {
-    const int num_reals = f.get_header().get_alloc_properties().get_num_scalars();
+    const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
 
     auto interval_check = std::make_shared<FieldWithinIntervalCheck>(f, 0, 1);
     REQUIRE(interval_check->can_repair());
@@ -139,7 +139,7 @@ TEST_CASE("property_checks", "") {
 
   // Check that the values of a field are above a lower bound
   SECTION ("field_lower_bound_check") {
-    const int num_reals = f.get_header().get_alloc_properties().get_num_scalars();
+    const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
 
     auto lower_bound_check = std::make_shared<FieldLowerBoundCheck>(f,-1.0);
     REQUIRE(lower_bound_check->can_repair());
@@ -172,7 +172,7 @@ TEST_CASE("property_checks", "") {
   SECTION ("field_upper_bound_check") {
     auto upper_bound_check = std::make_shared<FieldUpperBoundCheck>(f,1.0);
     REQUIRE(upper_bound_check->can_repair());
-    const int num_reals = f.get_header().get_alloc_properties().get_num_scalars();
+    const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
 
     // Assign in-bound values to the field and make sure it passes the upper_bound check
     auto f_data = reinterpret_cast<Real*>(f.get_internal_view_data<Real,Host>());
@@ -199,7 +199,7 @@ TEST_CASE("property_checks", "") {
   }
 
   SECTION ("check_and_repair_wrapper") {
-    const int num_reals = f.get_header().get_alloc_properties().get_num_scalars();
+    const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
 
     // Two separate FPC for check and for repair
     constexpr Real ub_check  = 1.0;

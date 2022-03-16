@@ -125,7 +125,7 @@ void Field::allocate_view ()
   alloc_prop.commit(layout);
 
   // Create the view, by quering allocation properties for the allocation size
-  const int view_dim = alloc_prop.get_alloc_size();
+  const auto view_dim = alloc_prop.get_alloc_size();
 
   m_data.d_view = decltype(m_data.d_view)(id.name(),view_dim);
   m_data.h_view = Kokkos::create_mirror_view(m_data.d_view);
