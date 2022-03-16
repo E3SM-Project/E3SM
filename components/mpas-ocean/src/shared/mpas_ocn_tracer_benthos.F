@@ -30,7 +30,7 @@ module ocn_tracer_benthos
    use mpas_log
    use ocn_constants
    use ocn_config
-   use ocn_tracer_ecosys   
+   use ocn_tracer_ecosys
    use ocn_framework_forcing
    use ocn_benthos_mod
    use ocn_benthos_parms
@@ -105,7 +105,7 @@ contains
 !> \date    07/29/2020
 !> \details
 !>  This routine computes a seafloor tracer tendency due to the benthos biogeochemistry,
-!>  and vertical transport and updates the benthos tracers        
+!>  and vertical transport and updates the benthos tracers
 !
 !-----------------------------------------------------------------------
 
@@ -161,7 +161,7 @@ contains
 
       type (mpas_pool_type), intent(in) :: &
          statePool
-      
+
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
          benthosTracers        ! benthos BGC
 
@@ -173,7 +173,7 @@ contains
       ! input/output variables
       !
       !-----------------------------------------------------------------
-      
+
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
          benthosPhPrev3d, &    ! pH
          benthosTracersStorage  ! Deep storage
@@ -329,7 +329,7 @@ contains
       err = 0
 
 !      call mpas_log_write('benthos_compute start, mpas_ocn_tracer_benthos.F',MPAS_LOG_ERR)
-      
+
       call mpas_timer_start("benthos source-sink")
 
       call mpas_pool_get_subpool(forcingPool, 'benthosAuxiliary', benthosAuxiliaryPool)

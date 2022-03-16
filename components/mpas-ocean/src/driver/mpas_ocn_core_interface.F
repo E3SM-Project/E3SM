@@ -468,7 +468,7 @@ module ocn_core_interface
       !
       ! test for Benthic biogeochemistry  (not part of tracerGroup)
       !
-      
+
       call mpas_pool_get_package(packagePool, 'benthosTracersPKGActive', benthosTracersPKGActive)
       call mpas_pool_get_config(configPool, 'config_use_benthosTracers', config_use_benthosTracers)
 

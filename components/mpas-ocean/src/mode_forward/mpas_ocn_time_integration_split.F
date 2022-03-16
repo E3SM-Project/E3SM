@@ -151,8 +151,8 @@ module ocn_time_integration_split
          activeTracersOnly   ! only compute tendencies for active tracers
 
       logical, pointer :: &
-         config_use_tracerGroup,  &! flag for using each tracer group
-         config_use_benthosTracers ! flag for using benthos tracers
+         config_use_tracerGroup,    & ! flag for using each tracer group
+         config_use_benthosTracers    ! flag for using benthos tracers
 
       integer :: &
          iCell, iEdge, k, &! loop iterators for cell, edge, vert loops
@@ -369,7 +369,6 @@ module ocn_time_integration_split
                                           highFreqThicknessTend)
       call mpas_pool_get_array(tendPool, 'lowFreqDivergence', &
                                           lowFreqDivergenceTend)
-
       if (config_transport_tests_flow_id > 0) then
         ! This is a transport test. Write advection velocity from prescribed
         ! flow field.
@@ -441,7 +440,6 @@ module ocn_time_integration_split
             end if
          end if
       end do
-
       call mpas_pool_get_config(domain % configs, 'config_use_benthosTracers', config_use_benthosTracers)
       if (config_use_benthosTracers) then    ! need to add benthosStorage
          call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
@@ -489,7 +487,6 @@ module ocn_time_integration_split
          !$omp end do
          !$omp end parallel
       endif
-
       call mpas_timer_stop("se prep")
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

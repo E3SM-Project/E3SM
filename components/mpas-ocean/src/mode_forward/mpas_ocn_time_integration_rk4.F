@@ -290,16 +290,15 @@ module ocn_time_integration_rk4
                end if
             end if
          end do
-         if (config_use_benthosTracers) then    ! need to add benthosStorage                                     
-            call mpas_pool_get_subpool(block % structs, 'tend', tendPool)                                        
-            call mpas_pool_get_dimension(meshPool, 'nBenthicVertLevels', nBenthicVertLevels)                     
-            call mpas_pool_get_subpool(statePool, 'seafloorTracers', seafloorTracersPool)                        
-            call mpas_pool_get_subpool(tendPool, 'seafloorTend', seafloorTendPool)                               
-            call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersCur,1)                 
+         if (config_use_benthosTracers) then    ! need to add benthosStorage
+            call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
+            call mpas_pool_get_dimension(meshPool, 'nBenthicVertLevels', nBenthicVertLevels)
+            call mpas_pool_get_subpool(statePool, 'seafloorTracers', seafloorTracersPool)
+            call mpas_pool_get_subpool(tendPool, 'seafloorTend', seafloorTendPool)
+            call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersCur,1)
             call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracersNew,2)
             call mpas_pool_get_array(seafloorTendPool, 'benthosInterfaceLayerThickness', benthosInterfaceLayerThickness)
-                                                                                                               
-            if (associated(benthosTracersCur) .and. associated(benthosTracersNew)) then                          
+            if (associated(benthosTracersCur) .and. associated(benthosTracersNew)) then
                   !$omp parallel
                   !$omp do schedule(runtime) private(k)
                   do iCell = 1, nCells  ! couple tracers to thickness
@@ -309,7 +308,7 @@ module ocn_time_integration_rk4
                   end do
                   !$omp end do
                   !$omp end parallel
-            end if                                                                                               
+            end if
          end if
 
          if (associated(highFreqThicknessCur)) then

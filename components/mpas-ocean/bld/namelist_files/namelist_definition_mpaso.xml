@@ -2763,6 +2763,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_do_benthos_spinup" type="logical"
+        category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
+if true, run the benthos only with data forcing
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_benthosTracers_diagnostic_fields_level1" type="logical"
         category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
 if true, make variables in benthosDiagFieldsLevel1 available for output

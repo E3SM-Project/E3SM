@@ -2282,7 +2282,8 @@ contains
        test_flag
 
   real(KIND=benthos_r8) :: &
-       dts,              & ! timestep during subcycling
+       dts,              &       ! timestep
+       dts_o,            &       ! timestep if subcycling
        oceanBottomTemperature, & ! oC
        oceanBottomSalinity, & !  (g salt/kg seawater)
        oceanBottomPressure, & ! N/m2
@@ -2321,7 +2322,6 @@ contains
        sum_init, &
        totalOceanSolidFluxm, & !
        benthosBottomFluxm, &
-       subN, &
        dt_old, &
        del_ph, &
        phlo_3d_init, &
@@ -2426,7 +2426,10 @@ contains
        iTracers, &
        iElements, &
        ii, &
-       subtt
+       subtt, &
+       subN, &
+       subN_o, &
+       cnt_sub
 
   real (KIND=benthos_r8) :: &
        co3_mol, &   ! comp_CO3terms
@@ -2864,9 +2867,9 @@ contains
    !
 
    ! initialize
-   dts = dt
+   dts_o = 300.0_benthos_r8
    dt_old = dt
-   subN = p1_benthos
+   subN_o = NINT(dt/dts,KIND=benthos_i4) !p1_benthos
    tooLarge = .true.
 
    !  make sure there is consistency to start:
@@ -2964,10 +2967,16 @@ contains
           initBenthosTracerBulk_Carbonate(:,:),vertBenthosGridThickI)
 
       end if ! useCarbonateSaturation
-
+      cnt_sub = 0
       do while (tooLarge)
-         subN = NINT(subN*10.0_benthos_r8)
-         dts = dts/real(subN, KIND=benthos_r8)
+         cnt_sub = cnt_sub+1
+         if (cnt_sub == 1) then
+            subN = 1
+            dts = dt
+         else
+            subN = subN_o
+            dts = dts_o
+         end if
          tooLarge = .false.
          do iTracers = 1, nBenthicTracers
             do iLevels = 1, nBenthicVertLevels+1
@@ -3078,7 +3087,7 @@ contains
                         rel_error(iElements) = rel_error(iElements)/(netElements_end_reactions_tmp(iElements) + c1_benthos)
                      end do
                      if ( abs(maxval(rel_error)) .gt. 1.0e-11_benthos_r8 .and. &
-                          .not. tooLarge .and.  (subN .lt. 100.0_benthos_r8)) then
+                          .not. tooLarge .and.  (subN .lt. subN_o)) then
                         tooLarge = .true. ! subcycle
                         rel_error_tot(:) = c0_benthos
                         exit

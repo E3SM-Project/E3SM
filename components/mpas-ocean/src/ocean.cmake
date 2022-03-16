@@ -27,6 +27,7 @@ list(APPEND RAW_SOURCES
   core_ocean/mode_forward/mpas_ocn_time_integration_rk4.F
   core_ocean/mode_forward/mpas_ocn_time_integration_split.F
   core_ocean/mode_forward/mpas_ocn_time_integration_si.F
+  core_ocean/mode_forward/mpas_ocn_time_integration_benthos.F
 
   core_ocean/mode_analysis/mpas_ocn_analysis_mode.F
 
@@ -59,6 +60,7 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_vmix_cvmix.F
   core_ocean/shared/mpas_ocn_vmix_gotm.F
   core_ocean/shared/mpas_ocn_tendency.F
+  core_ocean/shared/mpas_ocn_tendency_benthos.F
   core_ocean/shared/mpas_ocn_tracer_hmix.F
   core_ocean/shared/mpas_ocn_tracer_hmix_del2.F
   core_ocean/shared/mpas_ocn_tracer_hmix_del4.F

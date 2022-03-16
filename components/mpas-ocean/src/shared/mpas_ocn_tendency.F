@@ -511,19 +511,19 @@ contains
 
       type (mpas_pool_type), intent(inout) :: &
          forcingPool,   &!< [inout] forcing data
-         swForcingPool, &!< [inout] shortwave forcing data                        
-         tendPool,      &!< [inout] Tendency terms for all variables              
-         diagnosticsPool !< [inout] tracer diagnostics 
+         swForcingPool, &!< [inout] shortwave forcing data
+         tendPool,      &!< [inout] Tendency terms for all variables
+         diagnosticsPool !< [inout] tracer diagnostics
 
       integer :: &
          iCell, iEdge, k, n, &! loop counters for cell,edge,vert,tracer
-         err,                &! internal error flag 
+         err,                &! internal error flag
          timeLevel,          &! time level to use for state variables
          indxTemp, indxSalt, &! tracer index for temperature, salinity
          indxCFC11,          &! tracer index for CFC11
          indxCFC12,          &! tracer index for CFC12
          nTracersGroup,      &! number of tracers in each tracer group
-         nTracersEcosys,     &! number of ecosystem tracers                       
+         nTracersEcosys,     &! number of ecosystem tracers
          nBenthicTracers      ! number of benthic tracers
 
       logical :: &
@@ -550,15 +550,15 @@ contains
          tracersIdealAgeFieldsPool,         &! ideal age
          tracersTTDFieldsPool     ! transit time distribution
 
-      ! benthos biogeochemistry                                                   
+      ! benthos biogeochemistry
       type (mpas_pool_type), pointer :: &
-         seafloorTracersPool,  &! benthos tracers                                 
-         seafloorTendPool,     &! benthos tracer tendencies                       
+         seafloorTracersPool,  &! benthos tracers
+         seafloorTendPool,     &! benthos tracer tendencies
          seafloorStoragePool
 
       ! pointers for retrieving data from pools
       integer, pointer :: &
-         indexTemperature, indexSalinity, &! tracer index for temp,salt           
+         indexTemperature, indexSalinity, &! tracer index for temp,salt
          nBenthicVertLevels ! number of benthic vertical grid levels
 
       integer, pointer :: &
@@ -599,14 +599,14 @@ contains
          tracerGroupTend, &! tendencies for current tracer group
          activeTracers,   &! retain active tracers
          ecosysTracers,   &! retain ecosys tracers for DMS, MacroMols
-         tracerGroupInteriorRestoringRate, &! int restoring timescale 
-         tracerGroupInteriorRestoringValue,&! int restoring value                
+         tracerGroupInteriorRestoringRate, &! int restoring timescale
+         tracerGroupInteriorRestoringValue,&! int restoring value
          benthosTracers,  &
          benthosTracersTend
 
       real (kind=RKIND), dimension(:,:), pointer, contiguous :: &
-         benthosPhPrev3d, &! retain ph in sediment                                 
-         benthosTracersStorage! retain losses of benthos tracers 
+         benthosPhPrev3d, &! retain ph in sediment
+         benthosTracersStorage! retain losses of benthos tracers
 
       ! Scratch Arrays
       real (kind=RKIND), dimension(:,:), allocatable :: &
@@ -618,7 +618,7 @@ contains
 
       ! return if all tracer tendencies disabled
       ! otherwise start timer and proceed
-   
+
       if (config_disable_tr_all_tend) return
       call mpas_timer_start("ocn_tend_tracer")
 
@@ -636,13 +636,13 @@ contains
          activeTracersOnly = .false.
       end if
 
-      ! retrieve data from pools 
+      ! retrieve data from pools
       call mpas_pool_get_subpool(statePool,   'tracers', &
                                                tracersPool)
       call mpas_pool_get_subpool(tendPool,    'tracersTend', &
                                                tracersTendPool)
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', &
-                                               tracersSurfaceFluxPool)            
+                                               tracersSurfaceFluxPool)
       call mpas_pool_get_subpool(statePool,   'seafloorTracers', &
                                                seafloorTracersPool)
       call mpas_pool_get_subpool(tendPool,    'seafloorTend', &
@@ -709,7 +709,7 @@ contains
       !  - the pool member is a field
       !  - the group is the active tracer group
       !  - other groups if the active tracer only flag not on
-      !  - the specific use flag for the given group is enabled 
+      !  - the specific use flag for the given group is enabled
       ! We do not indent these various loops/conditions to avoid
       ! excessive indentation.
       !
@@ -739,7 +739,7 @@ contains
 
       if ( config_use_tracerGroup ) then
 
-         ! This group meets all requirements, now check for 
+         ! This group meets all requirements, now check for
          ! requested options
 
          computeBudgets =  (isActiveTracer .and.  &
@@ -781,7 +781,7 @@ contains
                                   modifiedGroupName, &
                                   tracerGroupSurfaceFlux)
 
-         ! Get Array of total surface temp/salt flux 
+         ! Get Array of total surface temp/salt flux
          ! (includes thickness tendencies)
          call mpas_pool_get_array(tracersSurfaceFluxPool, &
                                   'nonLocalSurfaceTracerFlux', &
@@ -863,7 +863,7 @@ contains
                                            zMid, minLevelCell, indxTemp, &
                                            indxSalt, tracerGroupSurfaceFlux, &
                                            err)
-                                           
+
          endif ! ecosys tracers
 
          !
@@ -1312,7 +1312,7 @@ contains
       end if ! member is field
       end do ! loop over tracer groups
 
-      if (config_use_benthosTracers .and. .not.activeTracersOnly) then            
+      if (config_use_benthosTracers .and. .not.activeTracersOnly) then
          call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, timeLevel)
          call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
          call mpas_pool_get_array(seafloorTracersPool, 'benthosTracers', benthosTracers, timeLevel)
@@ -1330,8 +1330,8 @@ contains
          !
 
 
-         !$omp parallel                                                         
-         !$omp do schedule(runtime) private(k,n)                                
+         !$omp parallel
+         !$omp do schedule(runtime) private(k,n)
          do iCell = 1, nCellsAll
          do k=1,nBenthicVertLevels+1
          do n=1,nBenthicTracers
@@ -1340,8 +1340,8 @@ contains
          end do
          end do
 
-         !$omp end do                                                           
-         !$omp end parallel                                                     
+         !$omp end do
+         !$omp end parallel
 
          if (config_use_ecosysTracers) then
             call mpas_pool_get_array(tracersPool, 'ecosysTracers', ecosysTracers, timeLevel)

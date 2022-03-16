@@ -83,6 +83,10 @@
 			description="if true, use monthly data file of terrigenous fluxes"
 			possible_values=".true. or .false."
 		/>
+		<nml_option name="config_do_benthos_spinup" type="logical" default_value=".false." units="unitless"
+			description="if true, run the benthos only with data forcing"
+			possible_values=".true. or .false."
+		/>
 		<nml_option name="config_benthosTracers_diagnostic_fields_level1" type="logical" default_value=".false." units="unitless"
 			description="if true, make variables in benthosDiagFieldsLevel1 available for output"
 			possible_values=".true. or .false."
