@@ -431,15 +431,15 @@
       </modules>
 
       <modules compiler="intel">
-        <command name="load">PrgEnv-intel/6.0.5</command>
+        <command name="load">PrgEnv-intel/6.0.10</command>
         <command name="rm">intel</command>
         <command name="load">intel/19.0.3.199</command>
       </modules>
 
       <modules compiler="gnu">
-        <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.9</command>
+        <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.10</command>
         <command name="rm">gcc</command>
-        <command name="load">gcc/9.3.0</command>
+        <command name="load">gcc/10.3.0</command>
         <command name="rm">cray-libsci</command>
         <command name="load">cray-libsci/20.09.1</command>
       </modules>
@@ -467,10 +467,8 @@
       </modules>
 
       <modules>
-        <command name="rm">git</command>
-        <command name="load">git</command>
         <command name="rm">cmake</command>
-        <command name="load">cmake/3.21.3</command>
+        <command name="load">cmake</command>
         <command name="load">perl5-extras</command>
       </modules>
     </module_system>
@@ -580,19 +578,19 @@
       </modules>
 
       <modules mpilib="impi">
-        <command name="swap">cray-mpich impi/2020</command>
+        <command name="swap">cray-mpich impi/2020.up4</command>
       </modules>
 
       <modules compiler="intel">
-        <command name="load">PrgEnv-intel/6.0.5</command>
+        <command name="load">PrgEnv-intel/6.0.10</command>
         <command name="rm">intel</command>
         <command name="load">intel/19.0.3.199</command>
       </modules>
 
       <modules compiler="gnu">
-        <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.9</command>
+        <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.10</command>
         <command name="rm">gcc</command>
-        <command name="load">gcc/9.3.0</command>
+        <command name="load">gcc/10.3.0</command>
         <command name="rm">cray-libsci</command>
         <command name="load">cray-libsci/20.09.1</command>
       </modules>
@@ -620,10 +618,8 @@
       </modules>
 
       <modules>
-        <command name="rm">git</command>
-        <command name="load">git</command>
         <command name="rm">cmake</command>
-        <command name="load">cmake/3.21.3</command>
+        <command name="load">cmake</command>
         <command name="load">perl5-extras</command>
       </modules>
 
@@ -650,7 +646,6 @@
       <env name="MPICH_GNI_DYNAMIC_CONN">disabled</env>
     </environment_variables>
     <environment_variables compiler="intel">
-      <!--env name="FORT_BUFFERED">yes</env-->
       <env name="MPICH_MEMORY_REPORT">1</env>
     </environment_variables>
   </machine>
