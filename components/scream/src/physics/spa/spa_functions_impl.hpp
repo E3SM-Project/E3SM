@@ -96,13 +96,31 @@ void SPAFunctions<S,D>
   const SPAInput&   data_tmp,
   const SPAOutput&  data_out)
 {
-  // Number of bands must match.
-  EKAT_REQUIRE(data_end.data.nswbands==data_beg.data.nswbands);
-  EKAT_REQUIRE(data_end.data.nlwbands==data_beg.data.nlwbands);
+  // Beg/End/Tmp month must have all sizes matching
+  EKAT_REQUIRE_MSG (
+      data_end.data.nswbands==data_beg.data.nswbands &&
+      data_end.data.nswbands==data_tmp.data.nswbands &&
+      data_end.data.nlwbands==data_beg.data.nlwbands &&
+      data_end.data.nlwbands==data_tmp.data.nlwbands,
+      "Error! SPAInput data structs must have the same number of SW/LW bands.\n");
+  EKAT_REQUIRE_MSG (
+      data_end.data.ncols==data_beg.data.ncols &&
+      data_end.data.ncols==data_tmp.data.ncols &&
+      data_end.data.nlevs==data_beg.data.nlevs &&
+      data_end.data.nlevs==data_tmp.data.nlevs,
+      "Error! SPAInput data structs must have the same number of columns/levels.\n");
 
-  // For now we require input and output to have same geometric sizes
-  EKAT_REQUIRE(data_end.data.ncols==data_beg.data.ncols);
-  EKAT_REQUIRE(data_end.data.nlevs==data_beg.data.nlevs);
+  // Output must have same number of bands
+  EKAT_REQUIRE_MSG (
+      data_end.data.nswbands==data_out.nswbands &&
+      data_end.data.nlwbands==data_out.nlwbands,
+      "Error! SPAInput and SPAOutput data structs must have the same number of SW/LW bands.\n");
+
+  // While horiz interp is not supported, we also require matching ncols
+  EKAT_REQUIRE_MSG (
+      data_end.data.ncols==data_out.ncols,
+      "Error! While horizontal interpolation is not supported in spa_main,\n"
+      "       SPAInput and SPAOutput data structs must have the same number columns.\n");
 
   // Step 1. Perform horizontal interpolation (todo)
 
