@@ -522,8 +522,6 @@ end subroutine clubb_init_cnst
     logical :: clubb_history, clubb_rad_history, clubb_cloudtop_cooling, clubb_rainevap_turb, &
                clubb_stabcorrect, clubb_expldiff ! Stats enabled (T/F)
     logical :: clubb_use_sgv !PMA This flag controls tuning for tpert and gustiness
-    logical :: clubb_vert_avg_closure !XZheng This flag sets four clubb config flags for pdf_closure and the trapezoidal rule to  compute the varibles that are output from high order closure
-    integer :: clubb_ipdf_call_placement  !XZheng This flag sets options for the placement of the call to CLUBB's PDF.
 
     integer :: iunit, read_status
 
@@ -554,9 +552,6 @@ end subroutine clubb_init_cnst
     clubb_do_adv       = .false.   ! Initialize to false
     clubb_do_deep      = .false.   ! Initialize to false
     use_sgv            = .false.
-    clubb_vert_avg_closure = .true.
-    clubb_ipdf_call_placement = -999
-
 
     !  Read namelist to determine if CLUBB history should be called
     if (masterproc) then
