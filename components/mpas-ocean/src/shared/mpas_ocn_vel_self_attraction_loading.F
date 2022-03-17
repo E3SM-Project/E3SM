@@ -350,18 +350,19 @@ contains
         !-----------------------------------------------------------------
 
         integer :: iCell 
-        integer :: n, m, l, i, blk
+        integer :: n, m, l, blk
         integer :: startIdx, endIdx
+        integer :: threadNum
         real (kind=RKIND) :: mFac
 
-        !$omp parallel private(m,mFac)
+        !$omp parallel 
 
         call mpas_timer_start('Parallel SAL: Forward Transform')
         !!!!!!!!!!!!!!!!!!!!!
         ! Forward Transform
         !!!!!!!!!!!!!!!!!!!!!
 
-        !$omp do schedule(runtime) private(l,n,m)
+        !$omp do schedule(runtime) private(l,n,m,iCell)
         do m = 0,nOrder
             do n = m,nOrder
                 l = SHOrderDegreeToIndex(n,m)
@@ -378,9 +379,9 @@ contains
         enddo
         !$omp end do
 
+        !$omp do schedule(runtime) private(blk,startIdx,endIdx,m,n,l,iCell)
         do m = 0,nOrder
 
-            !$omp do schedule(runtime) private(blk,startIdx,endIdx,n,l,iCell,i)
             do blk = 1,nBlocks
                 startIdx = blockIdxForward(1,blk)
                 endIdx = blockIdxForward(2,blk)
@@ -467,14 +468,14 @@ contains
 
                 enddo ! n loop
             enddo ! blocks loop
-            !$omp end do
         enddo ! m loop
+        !$omp end do
 
         call mpas_timer_stop('Parallel SAL: Forward Transform')
 
         call mpas_timer_start('Parallel SAL: Communication')
         if (config_parallel_self_attraction_loading_bfb) then
-          !$omp do schedule(runtime) private(m)
+          !$omp do schedule(runtime) private(m,iCell)
           do m = 1,lmax
               do iCell = 1,nCellsOwned 
                 Snm_local_reproSum(iCell,m) = SnmRe_local_reproSum(iCell,m)
@@ -493,7 +494,12 @@ contains
 
         ! Compute global integral by summing local contributions
         if (config_parallel_self_attraction_loading_bfb) then
-          Snm = mpas_global_sum_nfld(Snm_local_reproSum,dminfo%comm)
+           !threadNum = mpas_threading_get_thread_num()
+           !if ( threadNum == 0 ) then
+           !$omp single
+               Snm = mpas_global_sum_nfld(Snm_local_reproSum,dminfo%comm)
+           !$omp end single
+           !endif
         else
           CALL mpas_dmpar_sum_real_array(dminfo, 2*lmax, Snm_local, Snm)
         endif
@@ -527,13 +533,14 @@ contains
         ! Inverse transform
         !!!!!!!!!!!!!!!!!!!!
 
-        !$omp do schedule(runtime)
+        !$omp do schedule(runtime) private(iCell)
         do iCell = 1,nCellsAll
            ssh_sal(iCell) = 0.0_RKIND
         enddo
         !$omp end do
 
 
+        !$omp do schedule(runtime) private(blk,startIdx,endIdx,n,iCell,l,m,mFac)
         do m = 0,nOrder
 
             if (m>0) then
@@ -542,7 +549,6 @@ contains
                 mFac = 1.0_RKIND
             endif
 
-            !$omp do schedule(runtime) private(blk,startIdx,endIdx,n,iCell,l)
             do blk = 1,nBlocks
                 startIdx = blockIdxInverse(1,blk)
                 endIdx = blockIdxInverse(2,blk)
@@ -601,8 +607,8 @@ contains
 
                 enddo ! n loop
             enddo ! block loop
-            !$omp end do
         enddo ! m loop
+        !$omp end do
 
         call mpas_timer_stop('Parallel SAL: Inverse Transform')
 
