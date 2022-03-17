@@ -74,13 +74,14 @@ int SPA::requested_buffer_size_in_bytes() const
   //         That's why we have m_num_levs+2
   const int nlevs = m_num_levs+2;
   const int num_mid_packs = PackInfo::num_packs(nlevs);
+  const int nlevs_alloc = num_mid_packs*Spack::n;
 
   // We have
   //  - one (ncols) view (spa_temp's ps)
   //  - two (ncols,nlevs) mid view (p_mid_src, spa_temp's ccn)
   //  - three (ncols,nswbands,nlevs) views (spa_temp's aer_g_sw, aer_ssa_sw, aer_tau_sw)
   //  - one (ncols,nlwbands,nlevs) view (aer_tau_lw)
-  const int num_reals = m_num_cols*(1+num_mid_packs*(2 + 3*m_nswbands + m_nlwbands));
+  const int num_reals = m_num_cols*(1+nlevs_alloc*(2 + 3*m_nswbands + m_nlwbands));
 
   return num_reals*sizeof(Real);
 }
@@ -133,7 +134,9 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
 
   int used_mem = (r_mem - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(),
-      "Error! Used memory != requested memory for SPA.");
+      "Error! Used memory != requested memory for SPA.\n"
+      "   - used mem     : " + std::to_string(used_mem) + "\n"
+      "   - requested mem: " + std::to_string(requested_buffer_size_in_bytes()) + "\n");
 }
 
 // =========================================================================================
