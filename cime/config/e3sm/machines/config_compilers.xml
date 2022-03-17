@@ -426,6 +426,8 @@ for mct, etc.
   <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
        so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
   <FFLAGS> -mcmodel=medium -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </FFLAGS>
+  <!-- for gnu v10 and above, we are using these flags to avoid build errors -->
+  <!--ADD_FFLAGS> -fallow-argument-mismatch -fallow-invalid-boz</ADD_FFLAGS-->
   <CFLAGS> -mcmodel=medium </CFLAGS>
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
   <FC_AUTO_R8> -fdefault-real-8 </FC_AUTO_R8>
