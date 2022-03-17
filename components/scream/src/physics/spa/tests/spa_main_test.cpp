@@ -47,11 +47,11 @@ struct SPADataHost {
   view_3d_host   aer_tau_lw;
 
   SPADataHost (const SPAFunc::SPAData& spa_out) {
-    ccn3       = ekat::scalarize(Kokkos::create_mirror_view (spa_out.CCN3));
-    aer_g_sw   = ekat::scalarize(Kokkos::create_mirror_view (spa_out.AER_G_SW));
-    aer_ssa_sw = ekat::scalarize(Kokkos::create_mirror_view (spa_out.AER_SSA_SW));
-    aer_tau_sw = ekat::scalarize(Kokkos::create_mirror_view (spa_out.AER_TAU_SW));
-    aer_tau_lw = ekat::scalarize(Kokkos::create_mirror_view (spa_out.AER_TAU_LW));
+    ccn3       = Kokkos::create_mirror_view (ekat::scalarize(spa_out.CCN3));
+    aer_g_sw   = Kokkos::create_mirror_view (ekat::scalarize(spa_out.AER_G_SW));
+    aer_ssa_sw = Kokkos::create_mirror_view (ekat::scalarize(spa_out.AER_SSA_SW));
+    aer_tau_sw = Kokkos::create_mirror_view (ekat::scalarize(spa_out.AER_TAU_SW));
+    aer_tau_lw = Kokkos::create_mirror_view (ekat::scalarize(spa_out.AER_TAU_LW));
   }
 
   void copy_from_dev (const SPAFunc::SPAData& spa_out) {
