@@ -1,6 +1,7 @@
 # Load all kokkos settings from Ekat's mach file
 set (EKAT_MACH_FILES_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../../externals/ekat/cmake/machine-files)
-IF (USE_CUDA OR KOKKOS_ENABLE_CUDA)
+
+IF (USE_CUDA)
   include (${EKAT_MACH_FILES_PATH}/kokkos/nvidia-a100.cmake)
   include (${EKAT_MACH_FILES_PATH}/kokkos/cuda.cmake)
 else()  
@@ -18,7 +19,6 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     set(CMAKE_Fortran_FLAGS "-fallow-argument-mismatch"  CACHE STRING "" FORCE)
   endif()
 endif()
-
 
 set(SCREAM_MPIRUN_EXE "srun" CACHE STRING "")
 set(SCREAM_MPI_NP_FLAG "-n" CACHE STRING "")
