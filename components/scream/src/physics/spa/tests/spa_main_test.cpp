@@ -255,9 +255,14 @@ TEST_CASE("spa_main")
 
   // Make a monotonic tgt pressure profile
   ekat::genRandArray(p_tgt,engine,RPDF(1e3,1e5));
+  Kokkos::deep_copy(p_tgt_h, ekat::scalarize(p_tgt));
   for (int i=0; i<ncols; ++i) {
     auto col = ekat::subview(p_tgt_h,i);
     std::sort(col.data(),col.data()+nlevs);
+    // For safety, set padding back to NaN's, in case we accidentally use it
+    for (int k=nlevs; k<npacks_tgt*Spack::n; ++k) {
+      col(k) = ekat::ScalarTraits<Real>::invalid();
+    }
   }
   Kokkos::deep_copy(ekat::scalarize(p_tgt),p_tgt_h);
 
