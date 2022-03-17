@@ -187,7 +187,7 @@ void FieldAllocProp::commit (const layout_ptr_type& layout)
   m_committed = true;
 }
 
-int FieldAllocProp::get_alloc_size () const {
+long long FieldAllocProp::get_alloc_size () const {
   EKAT_REQUIRE_MSG(is_committed(),
       "Error! You cannot query the allocation properties until they have been committed.");
   return m_alloc_size;
