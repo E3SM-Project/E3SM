@@ -213,8 +213,7 @@ compute_source_pressure_levels(
   constexpr auto P0 = C::P0;
 
   const int ncols = ps_src.extent(0);
-  const int nlevs = p_src.extent(1);
-  const int num_vert_packs = ekat::PackInfo<Spack::n>::num_packs(nlevs);
+  const int num_vert_packs = p_src.extent(1);
   const auto policy = ESU::get_default_team_policy(ncols, num_vert_packs);
 
   Kokkos::parallel_for("spa_compute_p_src_loop", policy,
