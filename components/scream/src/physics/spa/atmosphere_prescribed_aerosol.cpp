@@ -183,6 +183,13 @@ void SPA::initialize_impl (const RunType /* run_type */)
   SPATimeState.inited = false;
   SPATimeState.current_month = ts.get_month();
   SPAFunc::update_spa_timestate(m_spa_data_file,m_nswbands,m_nlwbands,ts,SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
+
+  // NOTE: we *assume* hybrid v coordinates don't change with time.
+  //       IF this ever ceases to be the case, you need to remove these
+  //       lines, and have spa_main interpolate those during the call
+  //       to performe_time_interpolation.
+  m_buffer.spa_temp.hyam = SPAData_start.hyam;
+  m_buffer.spa_temp.hybm = SPAData_start.hybm;
 }
 
 // =========================================================================================

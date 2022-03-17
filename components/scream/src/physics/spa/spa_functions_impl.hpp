@@ -128,9 +128,6 @@ void SPAFunctions<S,D>
   perform_time_interpolation(time_state,data_beg,data_end,data_tmp);
 
   // Step 3. Compute source pressure levels
-  // NOTE: we assume data_beg and data_end have the *same* hybrid v coords.
-  //       IF this ever ceases to be the case, you can interp those too,
-  //       and stored them in data_tmp.
   compute_source_pressure_levels(data_tmp.PS, p_src, data_beg.hyam, data_beg.hybm);
 
   // Step 4. Perform vertical interpolation
@@ -146,6 +143,9 @@ void SPAFunctions<S,D>
   const SPAInput&  data_end,
   const SPAInput&  data_out)
 {
+  // NOTE: we *assume* data_beg and data_end have the *same* hybrid v coords.
+  //       IF this ever ceases to be the case, you can interp those too.
+
   using ExeSpace = typename KT::ExeSpace;
   using ESU = ekat::ExeSpaceUtils<ExeSpace>;
 
