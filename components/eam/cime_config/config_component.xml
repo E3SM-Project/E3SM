@@ -71,7 +71,7 @@
       <!--  -->
       <value compset="GEOS_EAM"       >-offline_dyn</value>
       <value compset="GEOS_EAM"      >-nlev 56</value>
-      <value compset="_EAM.*_BGC%B"   >-co2_cycle</value>
+      <value compset="_EAM.*_BGC%*"   >-co2_cycle</value>
       <value compset="EAM%SCAM"   >-scam</value>
       <value compset="AR97_EAM%SCAM"   >-phys default -scam -nlev 72 -clubb_sgs -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates</value>
       <value compset="_EAM.%L60"      >-nlev 60</value>
@@ -116,14 +116,14 @@
       <value compset="1850(?:SOI)?_EAM.*CMIP6"  >1850_eam_CMIP6</value>
       <value compset="1850(?:SOI)?_EAM.*CMIP6-1pctCO2"  >1850_eam_CMIP6-1pctCO2</value>
       <value compset="1950(?:SOI)?_EAM.*CMIP6"  >1950_eam_CMIP6</value>
-      <value compset="1850(?:SOI)?_EAM.*CMIP6.*_BGC%B"  >1850_cam5_CMIP6_bgc</value>
+      <value compset="1850(?:SOI)?_EAM.*CMIP6.*_BGC%*"  >1850_eam_CMIP6_bgc</value>
       <value compset="2010(?:SOI)?_EAM.*CMIP6"  >2010_eam_CMIP6</value>
       <value compset="1850(?:SOI)?_EAM.*AR5sf"   >1850_E3SMv1_superfast_ar5-emis</value>
       <value compset="1850S_EAM.*AR5sf"  >1850S_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6"  >20TR_eam_CMIP6</value>
-      <value compset="20TR(?:SOI)?_EAM.*CMIP6.*_BGC%B"  >20TR_cam5_CMIP6_bgc</value>
+      <value compset="20TR(?:SOI)?_EAM.*CMIP6.*_BGC*"  >20TR_eam_CMIP6_bgc</value>
       <value compset="SSP585(?:SOI)?_EAM.*CMIP6">SSP585_cam5_CMIP6</value>
-      <value compset="SSP585(?:SOI)?_EAM.*CMIP6.*_BGC%B">SSP585_cam5_CMIP6_bgc</value>
+      <value compset="SSP585(?:SOI)?_EAM.*CMIP6.*_BGC%*">SSP585_cam5_CMIP6_bgc</value>
       <value compset="20TR(?:SOI)?_EAM.*AR5sf" >20TR_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TRS_EAM.*AR5sf">20TRS_E3SMv1_superfast_ar5-emis</value>
       <value compset="1850(?:SOI)?_EAM%WCCM"   >waccm_1850_cam5</value>
@@ -219,7 +219,7 @@
     <desc compset="AMIP">Atmospheric Model Intercomparison Project protocol: </desc>
     <desc compset="_EAM%MG1M"   >MG1.0 w/ modified activation:</desc>
     <desc compset="_EAM%UNI"    >UNICON (modified mg1.0):</desc>
-    <desc compset="EAM.*_BGC%B">EAM prognostic CO2 cycle turned on.</desc>
+    <desc compset="EAM.*_BGC%*">EAM prognostic CO2 cycle turned on.</desc>
     <!-- MMF / Super-Parameterization -->
     <desc compset="_EAM%MMF1"     >E3SM-MMF (Fortran w/ OpenACC offload),RRTMGP, 1-mom micro, prescribed aerosol</desc>
     <desc compset="_EAM%MMF2-ECPP">E3SM-MMF (Fortran no GPU offload),    RRTMGP, 2-mom micro, prognostic aerosol, ECPP </desc>
