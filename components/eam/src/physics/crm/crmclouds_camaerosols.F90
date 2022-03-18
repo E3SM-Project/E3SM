@@ -19,7 +19,7 @@ subroutine crmclouds_mixnuc_tend (state, ptend, dtime, cflx, pblht, pbuf, &
                                   wwqui_cen, wwqui_cloudy_cen, wwqui_bnd, &
                                   wwqui_cloudy_bnd,  species_class )
   !-----------------------------------------------------------------------------
-  ! Purpose: calculate aerosol tendency from dropelt activation and mixing
+  ! Purpose: calculate aerosol tendency from droplet activation and mixing
   !          Adopted from mmicro_pcond in cldwat2m.F90
   !-----------------------------------------------------------------------------
   use physics_types,    only: physics_state, physics_ptend, physics_ptend_init
