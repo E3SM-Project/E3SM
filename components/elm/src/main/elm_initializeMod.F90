@@ -482,6 +482,7 @@ contains
     use tracer_varcon         , only : is_active_betr_bgc
     use clm_time_manager      , only : is_restart
     use ALMbetrNLMod          , only : betr_namelist_buffer
+    use ELMFatesInterfaceMod  , only: ELMFatesTimesteps
     !
     ! !ARGUMENTS
     implicit none
@@ -549,7 +550,12 @@ contains
        call restFile_close( ncid=ncid )
        call timemgr_restart()
     end if
-
+    
+    ! ------------------------------------------------------------------------
+    ! Pass model timestep info to FATES
+    ! ------------------------------------------------------------------------
+    call ELMFatesTimesteps()
+    
     ! ------------------------------------------------------------------------
     ! Initialize daylength from the previous time step (needed so prev_dayl can be set correctly)
     ! ------------------------------------------------------------------------

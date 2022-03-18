@@ -1245,6 +1245,13 @@ contains
 
        ! Execute FATES dynamics
        if ( use_fates ) then
+          
+          ! FATES has its own running mean functions, such as 24hr
+          ! vegetation temperature and exponential moving averages
+          ! for leaf photosynthetic acclimation temperature. These
+          ! moving averages are updated here
+          call alm_fates%WrapUpdateFatesRmean(nc)
+          
            ! Update high-frequency history diagnostics for FATES
            call alm_fates%wrap_update_hifrq_hist(bounds_clump)
            if ( is_beg_curr_day() ) then ! run ED at the start of each day

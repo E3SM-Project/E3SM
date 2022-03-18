@@ -926,15 +926,17 @@ contains
     end do
 
     ! Calculate surface albedos and fluxes
-       ! Only perform on vegetated patches where coszen > 0
+    ! Only perform on vegetated patches where coszen > 0
 
     ! Calculate surface albedos and fluxes
     ! Only perform on vegetated pfts where coszen > 0
     if(use_fates)then
 #ifndef _OPENACC
+
        call alm_fates%wrap_canopy_radiation(bounds, &
             num_vegsol, filter_vegsol, &
-            coszen_patch(bounds%begp:bounds%endp), surfalb_vars)
+            coszen_patch(bounds%begp:bounds%endp), &
+            surfalb_vars)
 #endif
     else
     
@@ -1302,6 +1304,12 @@ contains
                  * ((1._r8+chil(p))/2._r8)**2) / omegal
 
           ! Adjust omega, betad, and betai for intercepted snow
+
+          ! NOTE: If improvements to the canopy snow module emerge,
+          ! Please notify the FATES team (RGK,GL,RAF,CDK,etc) to help us adapt
+          ! changes into the FATES albedo and canopy radiation calculations.
+          ! At present (01-2022), we are using a similar calculation here,
+          ! where fwet = fsnow if t_veg <= tfrz, and 0 otherwise.
 
           if (t_veg(p) > tfrz) then                             !no snow
              tmp0 = omegal

@@ -1425,6 +1425,8 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/4x5/map_0.5x0.5_MODIS_to_4x5_nomask_aave_da_c110822.nc</map>
 <map frm_hgrid="0.5x0.5"  frm_lmask="AVHRR"  to_hgrid="4x5"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/4x5/map_0.5x0.5_AVHRR_to_4x5_nomask_aave_da_c110822.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="GSDTG2000"  to_hgrid="4x5"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/4x5/map_0.5x0.5_GSDTG2000_to_4x5_nomask_aave_da_c200311.nc</map>
 <map frm_hgrid="10x10min" frm_lmask="nomask" to_hgrid="4x5"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/4x5/map_10x10min_nomask_to_4x5_nomask_aave_da_c110822.nc</map>
 <map frm_hgrid="5x5min"   frm_lmask="IGBP-GSDP" to_hgrid="4x5"   to_lmask="nomask"
@@ -1449,6 +1451,7 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/4x5/map_360x720_cruncep_to_4x5_nomask_aave_da_c130326.nc</map>
 <map frm_hgrid="1km-merge-10min"    frm_lmask="HYDRO1K-merge-nomask"  to_hgrid="4x5"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/4x5/map_1km-merge-10min_HYDRO1K-merge-nomask_to_4x5_nomask_aave_da_c130411.nc</map>
+
 
 <map frm_hgrid="0.5x0.5"  frm_lmask="MODIS"  to_hgrid="0.23x0.31"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/0.23x0.31/map_0.5x0.5_MODIS_to_0.23x0.31_nomask_aave_da_c110920.nc</map>
