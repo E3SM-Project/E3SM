@@ -1308,6 +1308,30 @@ Filepath for dataset containing CO2 flux from fossil fuel.
 Default: none
 </entry>
 
+<entry id="co2_print_diags_timestep" type="logical"  category="co2_cycle"
+       group="co2_cycle_nl" valid_values="" >
+If TRUE print out CO2 conservation checks every timestep.
+Default: FALSE
+</entry>
+
+<entry id="co2_print_diags_monthly" type="logical"  category="co2_cycle"
+       group="co2_cycle_nl" valid_values="" >
+If TRUE print out CO2 conservation checks monthly.
+Default: FALSE
+</entry>
+
+<entry id="co2_print_diags_total" type="logical"  category="co2_cycle"
+       group="co2_cycle_nl" valid_values="" >
+If TRUE print out a CO2 conservation for the lenght of the run.
+Default: FALSE
+</entry>
+
+<entry id="co2_conserv_error_tol_per_year" type="real" category="co2_cycle"
+       group="co2_cycle_nl" valid_values="" >
+error tolerance for CO2 conservation
+Default: 5.e-13
+</entry>
+
 <!-- History and Initial Conditions Output -->
 
 <entry id="avgflag_pertape" type="char*1(10)"  category="history"
