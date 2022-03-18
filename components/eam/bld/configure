@@ -2538,15 +2538,17 @@ sub write_filepath
           print $fh "$camsrcdir/eam/src/physics/crm/sam/SGS_TKE\n";
 
           # advection scheme
-          my $crm_adv = $cfg_ref->get('crm_adv');
           if (defined $opts{'crm_adv'}) {
-             if ($crm_adv eq 'UM5') {
-                 print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_UM5\n";
-             } else {
-                 print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_MPDATA\n";
-             }
+            my $crm_adv = $cfg_ref->get('crm_adv');
           } else {
+            my $crm_adv = 'MPDATA';
+          }
+          if ($crm_adv eq 'UM5') {
+            print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_UM5\n";
+          } elsif ($crm_adv eq 'MPDATA') {
             print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_MPDATA\n";
+          } else {
+            die "configure ERROR: invalid option - crm_adv: $crm_adv.\n".
           }
 
         } elsif ($crm eq 'samomp') {
@@ -2567,15 +2569,17 @@ sub write_filepath
           print $fh "$camsrcdir/eam/src/physics/crm/samomp/SGS_TKE\n";
 
           # advection scheme
-          my $crm_adv = $cfg_ref->get('crm_adv');
           if (defined $opts{'crm_adv'}) {
-             if ($crm_adv eq 'UM5') {
-                 print $fh "$camsrcdir/eam/src/physics/crm/samomp/ADV_UM5\n";
-             } else {
-                 print $fh "$camsrcdir/eam/src/physics/crm/samomp/ADV_MPDATA\n";
-             }
+            my $crm_adv = $cfg_ref->get('crm_adv');
           } else {
+            my $crm_adv = 'MPDATA';
+          }
+          if ($crm_adv eq 'UM5') {
+            print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_UM5\n";
+          } elsif ($crm_adv eq 'MPDATA') {
             print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_MPDATA\n";
+          } else {
+            die "configure ERROR: invalid option - crm_adv: $crm_adv.\n".
           }
                               
         } elsif ($crm eq 'samxx') {
