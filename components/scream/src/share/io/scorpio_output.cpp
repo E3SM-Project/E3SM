@@ -54,6 +54,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   set_field_manager (field_mgr);
 
   // By default, IO is done directly on the field mgr grid
+  m_grids_manager = grids_mgr;
   std::shared_ptr<const grid_type> fm_grid, io_grid;
   io_grid = fm_grid = field_mgr->get_grid();
   if (params.isParameter("Field Names")) {
@@ -142,12 +143,16 @@ void AtmosphereOutput::restart (const std::string& filename)
 
 void AtmosphereOutput::init()
 {
+  // Register any diagnostics needed by this output stream
+  set_diagnostics();
+
   for (const auto& var_name : m_fields_names) {
     register_dimensions(var_name);
   }
 
   // Now that the fields have been gathered register the local views which will be used to determine output data to be written.
   register_views();
+
 
 } // init
 /*-----*/
@@ -547,9 +552,39 @@ Field AtmosphereOutput::get_field(const std::string& name)
 {
   if (m_field_mgr->has_field(name)) {
     return m_field_mgr->get_field(name);
+  } else if (m_diagnostics.find(name) != m_diagnostics.end()) {
+    const auto& diag = m_diagnostics[name];
+    const auto& diag_out = diag->get_diagnostic(100.0);
+    return diag_out;
   } else {
-    EKAT_ERROR_MSG ("Field " + name + " not found in output field manager");
+    EKAT_ERROR_MSG ("Field " + name + " not found in output field manager or diagnostics list");
   }
+}
+/* ---------------------------------------------------------- */
+void AtmosphereOutput::set_diagnostics()
+{
+  util::TimeStamp t0 ({2000,1,1},{0,0,0});  //TODO - we need a way to handle the timestamp to match the actual simulation
+  auto& diag_factory = AtmosphereDiagnosticFactory::instance();
+  for (const auto& fname : m_fields_names) {
+    if (!(m_field_mgr->has_field(fname))) {
+      // Construct a diagnostic by this name
+      ekat::ParameterList params;
+      params.set<std::string>("Diagnostic Name", fname);
+      const auto grid_name = m_io_grid->name(); 
+      params.set<std::string>("Grid", grid_name);
+      auto diag = diag_factory.create(fname,m_comm,params);
+      diag->set_grids(m_grids_manager);
+      // Set required fields using fields manager
+      for (const auto& req : diag->get_required_field_requests()) {
+        diag->set_required_field(m_field_mgr->get_field(req.fid).get_const());
+      }
+      diag->initialize(t0,RunType::Initial);
+      m_diagnostics.emplace(fname,diag);
+    }
+  }
+  for (const auto& m : m_diagnostics) {
+  }
+  
 }
 
 } // namespace scream

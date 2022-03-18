@@ -31,7 +31,7 @@ using namespace scream;
 using namespace ekat::units;
 using input_type = AtmosphereInput;
 // Make sure packsize isn't bigger than the packsize for this machine, but not so big that we end up with only 1 pack.
-const int packsize = 2;
+const int packsize = SCREAM_SMALL_PACK_SIZE; //2;
 using Pack         = ekat::Pack<Real,packsize>;
 
 std::shared_ptr<FieldManager>
@@ -50,7 +50,7 @@ TEST_CASE("input_output_basic","io")
 
   ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
   Int num_gcols = 2*io_comm.size();
-  Int num_levs = 3;
+  Int num_levs = 2 + SCREAM_SMALL_PACK_SIZE;
 
   // Initialize the pio_subsystem for this test:
   MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
@@ -303,6 +303,8 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
   FieldIdentifier fid2("field_2",FL{tag_v,dims_v},kg,gn);
   FieldIdentifier fid3("field_3",FL{tag_2d,dims_2d},kg/m,gn);
   FieldIdentifier fid4("field_packed",FL{tag_2d,dims_2d},kg/m,gn);
+  FieldIdentifier fidT("T_mid",FL{tag_2d,dims_2d},K,gn);
+  FieldIdentifier fidP("p_mid",FL{tag_2d,dims_2d},Pa,gn);
 
   // Register fields with fm
   // Make sure packsize isn't bigger than the packsize for this machine, but not so big that we end up with only 1 pack.
@@ -311,6 +313,8 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
   fm->register_field(FR{fid2,"output"});
   fm->register_field(FR{fid3,"output"});
   fm->register_field(FR{fid4,"output",Pack::n}); // Register field as packed
+  fm->register_field(FR{fidT,"T_mid",Pack::n}); // Register field as packed
+  fm->register_field(FR{fidP,"p_mid",Pack::n}); // Register field as packed
   fm->registration_ends();
 
   // Make sure that field 4 is in fact a packed field
@@ -323,10 +327,14 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
   auto f2 = fm->get_field(fid2);
   auto f3 = fm->get_field(fid3);
   auto f4 = fm->get_field(fid4);
+  auto fT = fm->get_field(fidT);
+  auto fP = fm->get_field(fidP);
   auto f1_host = f1.get_view<Real*,Host>(); 
   auto f2_host = f2.get_view<Real*,Host>(); 
   auto f3_host = f3.get_view<Real**,Host>();
   auto f4_host = f4.get_view<Pack**,Host>(); 
+  auto fT_host = fT.get_view<Pack**,Host>(); 
+  auto fP_host = fP.get_view<Pack**,Host>(); 
   for (int ii=0;ii<num_lcols;++ii) {
     f1_host(ii) = ii;
     for (int jj=0;jj<num_levs;++jj) {
@@ -335,6 +343,8 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
       int ipack = jj / packsize;
       int ivec  = jj % packsize;
       f4_host(ii,ipack)[ivec] = (ii) + (jj+1)/10.0;
+      fT_host(ii,ipack)[ivec] = 0.0;
+      fP_host(ii,ipack)[ivec] = 100000.0; //TODO grab this from physics_constants.
     }
   }
   // Update timestamp
@@ -345,6 +355,8 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
   f2.sync_to_dev();
   f3.sync_to_dev();
   f4.sync_to_dev();
+  fT.sync_to_dev();
+  fP.sync_to_dev();
 
   return fm;
 }

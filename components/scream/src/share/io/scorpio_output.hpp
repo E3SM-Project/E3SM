@@ -7,6 +7,7 @@
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/grids_manager.hpp"
 #include "share/util//scream_time_stamp.hpp"
+#include "share/atm_process/atmosphere_diagnostic.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
@@ -112,6 +113,7 @@ public:
   using grid_type     = AbstractGrid;
   using gm_type       = GridsManager;
   using remapper_type = AbstractRemapper;
+  using atm_diag_type = AtmosphereDiagnostic;
 
   using KT = KokkosTypes<DefaultDevice>;
   template<int N>
@@ -155,6 +157,7 @@ protected:
   std::vector<int> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
   Field get_field(const std::string& name);
+  void set_diagnostics();
 
   // --- Internal variables --- //
   ekat::Comm                          m_comm;
@@ -162,15 +165,17 @@ protected:
   std::shared_ptr<const fm_type>      m_field_mgr;
   std::shared_ptr<const grid_type>    m_io_grid;
   std::shared_ptr<remapper_type>      m_remapper;
+  std::shared_ptr<const gm_type>      m_grids_manager;
 
   // How to combine multiple snapshots in the output: Instant, Max, Min, Average
   OutputAvgType     m_avg_type;
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
-  std::vector<std::string>            m_fields_names;
-  std::map<std::string,FieldLayout>   m_layouts;
-  std::map<std::string,int>           m_dofs;
-  std::map<std::string,int>           m_dims;
+  std::vector<std::string>                              m_fields_names;
+  std::map<std::string,FieldLayout>                     m_layouts;
+  std::map<std::string,int>                             m_dofs;
+  std::map<std::string,int>                             m_dims;
+  std::map<std::string,std::shared_ptr<atm_diag_type>>  m_diagnostics;
 
   // Local views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_1d_host>    m_host_views_1d;
