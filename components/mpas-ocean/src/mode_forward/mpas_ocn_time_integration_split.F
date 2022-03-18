@@ -824,6 +824,8 @@ module ocn_time_integration_split
                                              'tidalPotentialEta', &
                                               tidalPotentialEta)
 
+                     !$omp parallel
+                     !$omp do schedule(runtime)
                      do iCell = 1, nCellsAll
                         sshSubcycleCurWithTides(iCell) = &
                                  sshSubcycleCur(iCell) - &
@@ -834,6 +836,8 @@ module ocn_time_integration_split
                            (1 - ssh_sal_on) * config_self_attraction_and_loading_beta* &
                                  sshSubcycleCur(iCell)
                      end do
+                     !$omp end do
+                     !$omp end parallel
 
                      call mpas_pool_get_array(forcingPool, &
                                           'sshSubcycleCurWithTides', &
@@ -1062,6 +1066,8 @@ module ocn_time_integration_split
                                              'tidalPotentialEta',  &
                                               tidalPotentialEta)
 
+                     !$omp parallel
+                     !$omp do schedule(runtime)
                      do iCell = 1, nCellsAll
                         sshSubcycleCurWithTides(iCell) = &
                                  sshSubcycleCur(iCell) - &
@@ -1077,6 +1083,8 @@ module ocn_time_integration_split
                            (1 - ssh_sal_on) * config_self_attraction_and_loading_beta* &
                                  sshSubcycleNew(iCell)
                      end do
+                     !$omp end do
+                     !$omp end parallel
 
                      call mpas_pool_get_array(forcingPool, &
                                     'sshSubcycleCurWithTides',  &
