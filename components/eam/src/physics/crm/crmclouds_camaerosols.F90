@@ -47,11 +47,11 @@ subroutine crmclouds_mixnuc_tend (state, ptend, dtime, cflx, pblht, pbuf, &
   type(physics_ptend), intent(out)              :: ptend             ! output tendencies
   !-----------------------------------------------------------------------------
   ! Local variables
-  integer :: i,k,m, k1, k2
+  integer :: i, k, m, k1, k2
   integer :: itim
   integer :: ixcldliq, ixcldice, ixnumliq
-  integer :: l,lnum,lnumcw,lmass,lmasscw
-  integer :: lchnk,ncol
+  integer :: l, lnum, lnumcw, lmass, lmasscw
+  integer :: lchnk, ncol
   integer :: nmodes
 
   logical :: lq(pcnst)
@@ -84,7 +84,7 @@ subroutine crmclouds_mixnuc_tend (state, ptend, dtime, cflx, pblht, pbuf, &
   real(r8), pointer, dimension(:,:) :: cldn       ! cloud fractin at the current time step
   real(r8), pointer, dimension(:,:) :: cldo       ! cloud fraction at the previous time step
   real(r8), pointer, dimension(:,:) :: acldy_cen  ! liquid cloud fraction at the previous time step from ECPP
-  real(r8), pointer, dimension(:,:) ::  kkvh      ! vertical diffusivity
+  real(r8), pointer, dimension(:,:) :: kkvh       ! vertical diffusivity
   real(r8), pointer, dimension(:,:) :: tke        ! turbulence kenetic energy 
   real(r8), pointer, dimension(:,:) :: tk_crm     ! m2/s
   !-----------------------------------------------------------------------------
