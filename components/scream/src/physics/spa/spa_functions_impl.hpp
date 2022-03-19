@@ -116,21 +116,21 @@ void SPAFunctions<S,D>
       data_end.data.nlwbands==data_out.nlwbands,
       "Error! SPAInput and SPAOutput data structs must have the same number of SW/LW bands.\n");
 
-  // While horiz interp is not supported, we also require matching ncols
+  // Horiz interpolation can be expensive, and does not depend on the particular time of
+  // the month, so it can be done ONCE per month, *outside* spa_main (when updating
+  // the beg/end states, reading them from file).
   EKAT_REQUIRE_MSG (
       data_end.data.ncols==data_out.ncols,
-      "Error! While horizontal interpolation is not supported in spa_main,\n"
+      "Error! Horizontal interpolation is performed *before* calling spa_main,\n"
       "       SPAInput and SPAOutput data structs must have the same number columns.\n");
 
-  // Step 1. Perform horizontal interpolation (todo)
-
-  // Step 2. Perform time interpolation
+  // Step 1. Perform time interpolation
   perform_time_interpolation(time_state,data_beg,data_end,data_tmp);
 
-  // Step 3. Compute source pressure levels
+  // Step 2. Compute source pressure levels
   compute_source_pressure_levels(data_tmp.PS, p_src, data_beg.hyam, data_beg.hybm);
 
-  // Step 4. Perform vertical interpolation
+  // Step 3. Perform vertical interpolation
   perform_vertical_interpolation(p_src, p_tgt, data_tmp.data, data_out);
 }
 
