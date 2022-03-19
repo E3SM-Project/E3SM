@@ -91,7 +91,8 @@ module ocn_time_integration_split
 
    real (kind=RKIND) :: &
       useVelocityCorrection,&! mask for velocity correction
-      splitFact          ! mask for terms in split or unsplit cases
+      splitFact, &! mask for terms in split or unsplit cases
+      self_attraction_and_loading_beta
 
 !***********************************************************************
 
@@ -830,10 +831,8 @@ module ocn_time_integration_split
                         sshSubcycleCurWithTides(iCell) = &
                                  sshSubcycleCur(iCell) - &
                               tidalPotentialEta(iCell) - &
-                              !!!!!!!!!!!!!!!! note config flag here is not set
-                              !correctly in init for tidal !!!!!!!!!
                            ssh_sal_on * ssh_sal(iCell) - &
-                           (1 - ssh_sal_on) * config_self_attraction_and_loading_beta* &
+                           (1 - ssh_sal_on) * self_attraction_and_loading_beta* &
                                  sshSubcycleCur(iCell)
                      end do
                      !$omp end do
@@ -1073,14 +1072,14 @@ module ocn_time_integration_split
                                  sshSubcycleCur(iCell) - &
                               tidalPotentialEta(iCell) - &
                            ssh_sal_on * ssh_sal(iCell) - &
-                           (1 - ssh_sal_on) * config_self_attraction_and_loading_beta* &
+                           (1 - ssh_sal_on) * self_attraction_and_loading_beta* &
                                  sshSubcycleCur(iCell)
 
                         sshSubcycleNewWithTides(iCell) = &
                                  sshSubcycleNew(iCell) - &
                               tidalPotentialEta(iCell) - &
                            ssh_sal_on * ssh_sal(iCell) - &
-                           (1 - ssh_sal_on) * config_self_attraction_and_loading_beta* &
+                           (1 - ssh_sal_on) * self_attraction_and_loading_beta* &
                                  sshSubcycleNew(iCell)
                      end do
                      !$omp end do
@@ -2330,6 +2329,8 @@ module ocn_time_integration_split
       else
          ssh_sal_on = 0
       endif
+
+      self_attraction_and_loading_beta = config_self_attraction_and_loading_beta
 
    end subroutine ocn_time_integration_split_init!}}}
 
