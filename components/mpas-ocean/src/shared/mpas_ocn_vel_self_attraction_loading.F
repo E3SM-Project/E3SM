@@ -355,14 +355,11 @@ contains
         integer :: threadNum
         real (kind=RKIND) :: mFac
 
-        !ignore:!$omp parallel 
-
         call mpas_timer_start('Parallel SAL: Forward Transform')
         !!!!!!!!!!!!!!!!!!!!!
         ! Forward Transform
         !!!!!!!!!!!!!!!!!!!!!
 
-        !ignore:!$omp do schedule(runtime) private(l,n,m,iCell)
         do m = 0,nOrder
             do n = m,nOrder
                 l = SHOrderDegreeToIndex(n,m)
@@ -377,9 +374,7 @@ contains
                 endif
             enddo
         enddo
-        !ignore:!$omp end do
 
-        !ignore:!$omp do schedule(runtime) private(blk,startIdx,endIdx,m,n,l,iCell)
         do m = 0,nOrder
 
             do blk = 1,nBlocks
@@ -402,9 +397,7 @@ contains
                   enddo
                 else
                   do iCell = endIdx, startIdx, -1
-                      !ignore:!$omp atomic
                       SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorRe(iCell,m+1)
-                      !ignore:!$omp atomic
                       SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmnm2(iCell)*complexFactorIm(iCell,m+1)
                   enddo
                 endif
@@ -426,9 +419,7 @@ contains
                       enddo
                     else
                       do iCell = endIdx, startIdx, -1
-                          !ignore:!$omp atomic
                           SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorRe(iCell,m+1)
-                          !ignore:!$omp atomic
                           SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmnm1(iCell)*complexFactorIm(iCell,m+1)
                       enddo
                     endif
@@ -459,9 +450,7 @@ contains
                       enddo
                     else
                       do iCell = endIdx, startIdx, -1
-                          !ignore:!$omp atomic
                           SnmRe_local(l) = SnmRe_local(l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorRe(iCell,m+1)
-                          !ignore:!$omp atomic
                           SnmIm_local(l) = SnmIm_local(l) + sshSmoothed(iCell)*pmn(iCell)*complexFactorIm(iCell,m+1)
                       enddo
                     endif
@@ -469,47 +458,38 @@ contains
                 enddo ! n loop
             enddo ! blocks loop
         enddo ! m loop
-        !ignore:!$omp end do
 
         call mpas_timer_stop('Parallel SAL: Forward Transform')
 
         call mpas_timer_start('Parallel SAL: Communication')
         if (config_parallel_self_attraction_loading_bfb) then
-          !ignore:!$omp do schedule(runtime) private(m,iCell)
           do m = 1,lmax
               do iCell = 1,nCellsOwned 
                 Snm_local_reproSum(iCell,m) = SnmRe_local_reproSum(iCell,m)
                 Snm_local_reproSum(iCell,lmax+m) = SnmIm_local_reproSum(iCell,m)
               enddo
           enddo
-          !ignore:!$omp end do
         else
-          !ignore:!$omp do schedule(runtime) private(m)
           do m = 1,lmax
               Snm_local(m) = SnmRe_local(m)
               Snm_local(lmax+m) = SnmIm_local(m)
           enddo
-          !ignore:!$omp end do
         endif
 
         ! Compute global integral by summing local contributions
         if (config_parallel_self_attraction_loading_bfb) then
            !threadNum = mpas_threading_get_thread_num()
            !if ( threadNum == 0 ) then
-           !ignore:!$omp single
                Snm = mpas_global_sum_nfld(Snm_local_reproSum,dminfo%comm)
-           !ignore:!$omp end single
            !endif
         else
           CALL mpas_dmpar_sum_real_array(dminfo, 2*lmax, Snm_local, Snm)
         endif
 
-        !ignore:!$omp do schedule(runtime) private(m)
         do m = 1,lmax
             SnmRe(m) = Snm(m)
             SnmIm(m) = Snm(lmax+m)
         enddo
-        !ignore:!$omp end do
 
         call mpas_timer_stop('Parallel SAL: Communication')
 
@@ -519,7 +499,6 @@ contains
         ! Apply SAL scaling
         !!!!!!!!!!!!!!!!!!!!!
 
-        !ignore:!$omp do schedule(runtime) private(n,m,l)
         do m = 0,nOrder
             do n = m,nOrder
                 l = SHOrderDegreeToIndex(n,m)
@@ -527,20 +506,15 @@ contains
                 SnmIm(l) = SnmIm(l)*LoveScaling(l)
             enddo
         enddo
-        !ignore:!$omp end do
 
         !!!!!!!!!!!!!!!!!!!!
         ! Inverse transform
         !!!!!!!!!!!!!!!!!!!!
 
-        !ignore:!$omp do schedule(runtime) private(iCell)
         do iCell = 1,nCellsAll
            ssh_sal(iCell) = 0.0_RKIND
         enddo
-        !ignore:!$omp end do
 
-
-        !ignore:!$omp do schedule(runtime) private(blk,startIdx,endIdx,n,iCell,l,m,mFac)
         do m = 0,nOrder
 
             if (m>0) then
@@ -552,7 +526,6 @@ contains
             do blk = 1,nBlocks
                 startIdx = blockIdxInverse(1,blk)
                 endIdx = blockIdxInverse(2,blk)
-
 
                 !------------
                 ! n = m
@@ -604,15 +577,12 @@ contains
                         ssh_sal(iCell) = ssh_sal(iCell) + mFac*pmn(iCell)*(SnmRe(l)*complexExpRe(iCell,m+1)+SnmIm(l)*complexExpIm(iCell,m+1))
                     enddo
 
-
                 enddo ! n loop
             enddo ! block loop
         enddo ! m loop
-        !ignore:!$omp end do
 
         call mpas_timer_stop('Parallel SAL: Inverse Transform')
 
-        !ignore:!$omp end parallel
 
     end subroutine self_attraction_loading_parallel!}}}
 
