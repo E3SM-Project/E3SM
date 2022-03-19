@@ -53,7 +53,8 @@ module ocn_gm
    logical :: local_config_GM_kappa_lat_depth_variable
    logical :: local_config_GM_compute_EdenGreatbatch
    real(kind=RKIND) :: slopeTaperFactor, sfcTaperFactor, rediGMinitValue
-   real(kind=RKIND) :: gm_constant_gravWaveSpeed, gm_computed_gravWaveSpeed_on
+   real(kind=RKIND) :: local_config_GM_constant_bclModeSpeed
+   real(kind=RKIND) :: gm_minBclModeSpeed_constant, gm_minBclModeSpeed_compute_on
 
 !***********************************************************************
 
@@ -543,10 +544,10 @@ contains
          ! spatially variable baroclinic phase speed, the mode can be specified by
          ! config_GM_spatially_variable_baroclinic_mode
          if (local_config_GM_lat_variable_c2) then
-            !$omp parallel
-            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, lt1, lt2, ltSum, c_min)
             lt1 = 0.0_RKIND
             lt2 = 0.0_RKIND
+            !$omp parallel
+            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, lt1, lt2, ltSum, c_min)
             do iEdge = 1, nEdges
                cell1 = cellsOnEdge(1, iEdge)
                cell2 = cellsOnEdge(2, iEdge)
@@ -562,9 +563,13 @@ contains
                   ltSum = ltSum + 0.5*(lt1+lt2)
                end do
 
-               ! compute gravity wave speed, either a specified constant, or
-               ! computed from the Brunt-Vaisala frequency.
-               c_min = gm_constant_gravWaveSpeed + gm_computed_gravWaveSpeed_on*max(0.01_RKIND,sumN2/ltSum*(0.5*(lt1+lt2)))
+               ! Compute the minimum allowed speed of the first baroclinic mode. 
+               ! If config_GM_minBclModeSpeed_method='constant' use local_config_GM_constant_bclModeSpeed.
+               ! If config_GM_minBclModeSpeed_method='computed' use Brunt-Vaisala frequency on this edge.
+               ! See initialization of these variables in this modules init routine.
+               c_min = gm_minBclModeSpeed_constant + gm_minBclModeSpeed_compute_on*max(0.01_RKIND,sumN2/ltSum*(0.5*(lt1+lt2)))
+
+               ! Compute the speed of the first baroclinic mode from the Brunt-Vaisala frequency.
                cGMphaseSpeed(iEdge) = max(c_min,                          &
                                           sumN2/(config_GM_spatially_variable_baroclinic_mode*3.141592_RKIND))
 
@@ -576,7 +581,7 @@ contains
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
-               cGMphaseSpeed(iEdge) = config_GM_constant_gravWaveSpeed
+               cGMphaseSpeed(iEdge) = local_config_GM_constant_bclModeSpeed
             end do
             !$omp end do
             !$omp end parallel
@@ -917,14 +922,16 @@ contains
             sfcTaperFactor = 0.0_RKIND
          end if
 
-         if (config_gm_gravWaveSpeed=='constant') then
-            gm_constant_gravWaveSpeed = config_gm_constant_gravWaveSpeed
-            gm_computed_gravWaveSpeed_on = 0.0_RKIND
-         elseif (config_gm_gravWaveSpeed=='computed') then
-            gm_constant_gravWaveSpeed = 0.0_RKIND
-            gm_computed_gravWaveSpeed_on = 1.0_RKIND
+         local_config_GM_constant_bclModeSpeed = config_GM_constant_bclModeSpeed
+
+         if (config_GM_minBclModeSpeed_method=='constant') then
+            gm_minBclModeSpeed_compute_on = 0.0_RKIND
+            gm_minBclModeSpeed_constant = config_GM_constant_bclModeSpeed
+         elseif (config_GM_minBclModeSpeed_method=='computed') then
+            gm_minBclModeSpeed_compute_on = 1.0_RKIND
+            gm_minBclModeSpeed_constant = 0.0_RKIND
          else
-            call mpas_log_write('config_gm_gravWaveSpeed must be constant or computed', &
+            call mpas_log_write('config_GM_minBclModeSpeed_method must be constant or computed', &
                                  MPAS_LOG_CRIT)
          end if
 
