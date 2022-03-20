@@ -567,6 +567,11 @@ contains
                ! If config_GM_minBclModeSpeed_method='constant' use local_config_GM_constant_bclModeSpeed.
                ! If config_GM_minBclModeSpeed_method='computed' use Brunt-Vaisala frequency on this edge.
                ! See initialization of these variables in this modules init routine.
+               ! The value 0.5*(lt1+lt2) is meant to be an estimate of the largest thickness
+               ! in the column, and c_min is constructed such that we satisfy
+               ! the condition c/N < dz.  The condition is an estimate, but
+               ! tries to insure that the streamfunction is well resolved even
+               ! for the thickest layers.
                c_min = gm_minBclModeSpeed_constant + gm_minBclModeSpeed_compute_on*max(0.01_RKIND,sumN2/ltSum*(0.5*(lt1+lt2)))
 
                ! Compute the speed of the first baroclinic mode from the Brunt-Vaisala frequency.
