@@ -109,14 +109,14 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k, i, kMax, kMin
+      integer :: iCell, k, kMax, kMin
       integer, pointer :: nVertLevels
       integer :: nCells
       integer, dimension(:), pointer :: maxLevelCell
       integer, dimension(:), pointer :: minLevelCell
       integer, dimension(:), pointer :: nCellsArray
 
-      real (kind=RKIND) :: weightSum, thicknessSum, remainder, newThickness, thicknessWithRemainder
+      real (kind=RKIND) :: weightSum, thicknessSum, remainder, newThickness
       real (kind=RKIND), dimension(:), pointer :: vertCoordMovementWeights
       real (kind=RKIND), dimension(:), allocatable :: &
          prelim_ALE_thickness,   & !> ALE thickness at new time

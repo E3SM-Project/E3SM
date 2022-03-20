@@ -30,6 +30,8 @@ module dynHarvestMod
   use elm_varctl            , only : use_cn, use_fates, iulog
   use FatesConstantsMod      , only : hlm_harvest_area_fraction
   use FatesConstantsMod      , only : hlm_harvest_carbon
+
+  !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
   private
@@ -37,7 +39,7 @@ module dynHarvestMod
   public :: dynHarvest_init    ! initialize data structures for harvest information
   public :: dynHarvest_interp_harvest_types  ! get harvest data for each harvest type, if needed
   public :: CNHarvest          ! harvest mortality routine for CN code (non-FATES)
-  
+  !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: CNHarvestPftToColumn   ! gather pft-level harvest fluxes to the column level
   
@@ -79,6 +81,7 @@ module dynHarvestMod
   integer, public, parameter    :: wood_harvest_units = 2    ! 1 = area fraction, 2 = carbon
   real(r8), allocatable, public :: harvest_rates(:,:) ! harvest rates
   logical, private              :: do_harvest ! whether we're in a period when we should do harvest
+
   !---------------------------------------------------------------------------
 
 contains
@@ -111,7 +114,6 @@ contains
 
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
-    ! Shijie: Right now we don't want to consider topounit in harvest rate
     allocate(harvest_rates(num_harvest_vars,bounds%begg:bounds%endg),stat=ier)
     harvest_rates(:,bounds%begg:bounds%endg) = 0._r8
     if (ier /= 0) then
@@ -123,7 +125,7 @@ contains
     
     ! Get initial harvest data
     if (use_cn .or. use_fates) then
-       num_points = (bounds%endg - bounds%begg + 1)  
+       num_points = (bounds%endg - bounds%begg + 1)
        harvest_shape(1) = num_points
        do varnum = 1, num_harvest_vars
           harvest_vars(varnum) = dyn_var_time_uninterp_type( &
@@ -131,14 +133,14 @@ contains
                dim1name=grlnd, conversion_factor=1.0_r8, &
                do_check_sums_equal_1=.false., data_shape=harvest_shape)
        end do
+
     end if
     
   end subroutine dynHarvest_init
 
-
-  !-----------------------------------------------------------------------
+!-----------------------------------------------------------------------
   subroutine dynHarvest_interp_harvest_types(bounds)
-    
+    !
     ! !DESCRIPTION:
     ! Get harvest data for model time, by land category, when needed.
     ! this function called only for CN (non-FATES) or FATES
@@ -156,7 +158,7 @@ contains
     ! !USES:
     use dynTimeInfoMod , only : time_info_type
     use elm_varctl     , only : use_cn, use_fates
-    
+    !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds  ! proc-level bounds
     
@@ -165,7 +167,6 @@ contains
     real(r8), allocatable :: this_data(:) ! data for a single harvest variable
     character(len=*), parameter :: subname = 'dynHarvest_interp_harvest_types'
     !-----------------------------------------------------------------------
-
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
     ! input harvest data for current year are stored in year+1 in the file
@@ -182,15 +183,14 @@ contains
           ! year of the file for all years past the end of this specified time series.
           do_harvest = .true.
           ! Right now we don't account for the topounit in plant harvest
-          allocate(this_data(bounds%begg:bounds%endg))   
+          allocate(this_data(bounds%begg:bounds%endg))
           do varnum = 1, num_harvest_vars
              call harvest_vars(varnum)%get_current_data(this_data)
-             harvest_rates(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)      
+             harvest_rates(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
           end do
           deallocate(this_data)
        end if
     end if
-
   end subroutine dynHarvest_interp_harvest_types
 
 
@@ -379,10 +379,9 @@ contains
       if (ivt(p) > noveg .and. ivt(p) < nbrdlf_evr_shrub) then
 
          if (do_harvest) then
-            ! Do not consider different topo unit for harvest now
             am = 0._r8
             do varnum = 1, num_harvest_vars
-               am = am + harvest_rates(varnum, g)
+               am = am + harvest_rates(varnum,g)
             end do
             m  = am/(days_per_year * secspday)
          else

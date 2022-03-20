@@ -24,10 +24,7 @@
 module ocn_equation_of_state_wright
 
    use mpas_kind_types
-   use mpas_derived_types
    use mpas_pool_routines
-   use mpas_dmpar
-   use mpas_log
    use mpas_constants
    use ocn_constants
    use ocn_config

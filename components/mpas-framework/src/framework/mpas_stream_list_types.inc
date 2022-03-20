@@ -31,6 +31,7 @@
         type (mpas_pool_type), pointer :: field_pkg_pool => null()
         type (mpas_pool_type), pointer :: pkg_pool => null()
         type (MPAS_Time_type), pointer :: referenceTime => null()
+        type (MPAS_Time_type), pointer :: mostRecentAccessTime => null()
 
         ! Used by alarms
         type (MPAS_stream_list_type), pointer :: streamList => null()

@@ -11,7 +11,6 @@ test_case     = "swsj1"
 ne            = 24
 ndays         = 1
 statefreq     = 8640
-tasknum       = 0
 restartfreq   = -1
 restartfile   = "./restart/R000000050"
 runtype       = 0

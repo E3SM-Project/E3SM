@@ -571,6 +571,7 @@ add_default($nl, 'config_Redi_use_surface_taper');
 add_default($nl, 'config_Redi_N2_based_taper_enable');
 add_default($nl, 'config_Redi_N2_based_taper_min');
 add_default($nl, 'config_Redi_N2_based_taper_limit_term1');
+add_default($nl, 'config_Redi_min_layers_diag_terms');
 
 ############################################
 # Namelist group: GM_eddy_parameterization #
@@ -1002,6 +1003,11 @@ if ($ocn_co2_type eq 'constant' ) {
         add_default($nl, 'config_ecosys_atm_alt_co2_option', 'val'=>"diagnostic");
         add_default($nl, 'config_ecosys_atm_alt_co2_use_eco', 'val'=>".false.");
         add_default($nl, 'config_ecosys_atm_co2_constant_value', 'val'=>$atm_co2_const_val);
+} elsif ($ocn_co2_type eq 'prognostic' ) {
+        add_default($nl, 'config_ecosys_atm_co2_option', 'val'=>"prognostic");
+        add_default($nl, 'config_ecosys_atm_alt_co2_option', 'val'=>"prognostic");
+        add_default($nl, 'config_ecosys_atm_alt_co2_use_eco', 'val'=>".false.");
+        add_default($nl, 'config_ecosys_atm_co2_constant_value', 'val'=>$atm_co2_const_val);
 } else {
         add_default($nl, 'config_ecosys_atm_co2_option', 'val'=>"diagnostic");
         add_default($nl, 'config_ecosys_atm_alt_co2_option', 'val'=>"diagnostic");
@@ -1058,9 +1064,9 @@ add_default($nl, 'config_use_MacroMoleculesTracers_ttd_forcing');
 add_default($nl, 'config_use_MacroMoleculesTracers_surface_value');
 add_default($nl, 'config_use_MacroMoleculesTracers_sea_ice_coupling');
 
-###############################################
+##################################################
 # Namelist group: tracer_forcing_idealAgeTracers #
-###############################################
+##################################################
 
 add_default($nl, 'config_use_idealAgeTracers');
 add_default($nl, 'config_use_idealAgeTracers_surface_bulk_forcing');
@@ -1070,9 +1076,9 @@ add_default($nl, 'config_use_idealAgeTracers_exponential_decay');
 add_default($nl, 'config_use_idealAgeTracers_idealAge_forcing');
 add_default($nl, 'config_use_idealAgeTracers_ttd_forcing');
 
-###############################################
+#############################################
 # Namelist group: tracer_forcing_CFCTracers #
-###############################################
+#############################################
 
 add_default($nl, 'config_use_CFCTracers');
 add_default($nl, 'config_use_CFCTracers_surface_bulk_forcing');
@@ -1611,8 +1617,8 @@ add_default($nl, 'config_AM_sedimentTransport_use_lat_lon_coords');
 
 add_default($nl, 'config_AM_harmonicAnalysis_enable');
 add_default($nl, 'config_AM_harmonicAnalysis_compute_interval');
-add_default($nl, 'config_AM_harmonicAnalysis_start');
-add_default($nl, 'config_AM_harmonicAnalysis_end');
+add_default($nl, 'config_AM_harmonicAnalysis_start_delay');
+add_default($nl, 'config_AM_harmonicAnalysis_duration');
 add_default($nl, 'config_AM_harmonicAnalysis_output_stream');
 add_default($nl, 'config_AM_harmonicAnalysis_restart_stream');
 add_default($nl, 'config_AM_harmonicAnalysis_compute_on_startup');

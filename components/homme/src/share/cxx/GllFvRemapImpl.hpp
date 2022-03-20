@@ -60,7 +60,7 @@ struct GllFvRemapImpl {
 
   struct Data {
     int nelemd, qsize, nf2, n_dss_fld;
-    bool q_adjustment, use_moisture, theta_hydrostatic_mode;
+    bool use_moisture, theta_hydrostatic_mode;
 
     static constexpr int nbuf1 = 2, nbuf2 = 1;
     Buf1 buf1[nbuf1];
@@ -113,8 +113,8 @@ struct GllFvRemapImpl {
   void run_dyn_to_fv_phys(const int time_idx, const Phys1T& ps, const Phys1T& phis,
                           const Phys2T& T, const Phys2T& omega, const Phys3T& uv,
                           const Phys3T& q);
-  void run_fv_phys_to_dyn(const int time_idx, const Real dt,
-                          const CPhys2T& T, const CPhys3T& uv, const CPhys3T& q);
+  void run_fv_phys_to_dyn(const int time_idx, const CPhys2T& T, const CPhys3T& uv,
+                          const CPhys3T& q);
   void run_fv_phys_to_dyn_dss();
 
   /* Compute pressure level increments on the FV grid given ps on the FV grid.

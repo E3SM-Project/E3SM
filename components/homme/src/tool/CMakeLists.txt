@@ -72,4 +72,3 @@ tool_setup()
 ############################################################################
 createTestExec(homme_tool tool ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO} ${PREQX_USE_ENERGY} ${QSIZE_D})
 
-TARGET_LINK_LIBRARIES(homme_tool dl)

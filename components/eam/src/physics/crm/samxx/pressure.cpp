@@ -51,8 +51,8 @@ void pressure() {
 
     yakl::RealFFT1D<nx> fftx;
     yakl::RealFFT1D<fftySize> ffty;
-    fftx.init(fftx.trig);
-    ffty.init(ffty.trig);
+    fftx.init();
+    ffty.init();
 
     // for (int k=0; k<nzslab; k++) {
     //  for (int j=0; j<ny; j++) {

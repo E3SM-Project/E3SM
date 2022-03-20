@@ -22,6 +22,12 @@
   </compset>
 
   <compset>
+    <alias>CMPASO-JRA1p4</alias>
+    <lname>2000_DATM%JRA-1p4-2018_SLND_DICE%SSMI_MPASO%DATMFORCED_DROF%JRA-1p4-2018_SGLC_SWAV</lname>
+    <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
     <alias>GMPAS-NYF</alias>
     <lname>2000_DATM%NYF_SLND_MPASSI_MPASO%DATMFORCED_DROF%NYF_SGLC_SWAV</lname>
   </compset>

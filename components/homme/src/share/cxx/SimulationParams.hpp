@@ -18,7 +18,7 @@ namespace Homme
  */
 struct SimulationParams
 {
-  SimulationParams() : ftype(ForcingAlg::FORCING_OFF), params_set(false) {}
+  SimulationParams() : ftype(ForcingAlg::FORCING_OFF), params_set(false), nsplit(0) {}
 
   void print();
 
@@ -53,8 +53,12 @@ struct SimulationParams
   double    nu_div;
   int       hypervis_order;
   int       hypervis_subcycle;
+  int       hypervis_subcycle_tom;
   double    hypervis_scaling;
   double    nu_ratio1, nu_ratio2; //control balance between div and vort components in vector laplace
+  int       nsplit;
+  int       nsplit_iteration;
+  double    rearth; //propagated then to Geometry and SphereOps
 
   // Use this member to check whether the struct has been initialized
   bool      params_set;
@@ -83,6 +87,7 @@ inline void SimulationParams::print () {
   printf ("   nu_div: %f\n", nu_div);
   printf ("   hypervis_order: %d\n", hypervis_order);
   printf ("   hypervis_subcycle: %d\n", hypervis_subcycle);
+  printf ("   hypervis_subcycle_tom: %d\n", hypervis_subcycle_tom);
   printf ("   hypervis_scaling: %f\n", hypervis_scaling);
   printf ("   nu_ratio1: %f\n", nu_ratio1);
   printf ("   nu_ratio2: %f\n", nu_ratio2);
@@ -91,6 +96,8 @@ inline void SimulationParams::print () {
   printf ("   disable_diagnostics: %s\n", (disable_diagnostics ? "yes" : "no"));
   printf ("   theta_hydrostatic_mode: %s\n", (theta_hydrostatic_mode ? "yes" : "no"));
   printf ("   prescribed_wind: %s\n", (prescribed_wind ? "yes" : "no"));
+  printf ("   nsplit: %d\n", nsplit);
+  printf ("   rearth: %f\n", rearth);
   printf ("\n**********************************************************\n");
 }
 

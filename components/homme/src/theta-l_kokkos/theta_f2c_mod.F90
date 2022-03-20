@@ -9,20 +9,23 @@ interface
   ! Copies simulation parameters to C++ structures
   subroutine init_simulation_params_c (remap_alg, limiter_option, rsplit, qsplit, time_step_type,    &
                                        qsize, state_frequency, nu, nu_p, nu_q, nu_s, nu_div, nu_top, &
-                                       hypervis_order, hypervis_subcycle, hypervis_scaling,          &
+                                       hypervis_order, hypervis_subcycle, hypervis_subcycle_tom,     &
+                                       hypervis_scaling,                                             &
                                        dcmip16_mu, ftype, theta_adv_form, prescribed_wind, moisture, &
-                                       disable_diagnostics, use_cpstar, transport_alg, &
+                                       disable_diagnostics, use_cpstar, transport_alg,               &
                                        theta_hydrostatic_mode, test_case_name, dt_remap_factor,      &
-                                       dt_tracer_factor) bind(c)
+                                       dt_tracer_factor, rearth, nsplit) bind(c)
+
     use iso_c_binding, only: c_int, c_bool, c_double, c_ptr
     !
     ! Inputs
     !
-    integer(kind=c_int),  intent(in) :: remap_alg, limiter_option, rsplit, qsplit, time_step_type
+    integer(kind=c_int),  intent(in) :: remap_alg, limiter_option, rsplit, qsplit, time_step_type, nsplit
     integer(kind=c_int),  intent(in) :: dt_remap_factor, dt_tracer_factor, transport_alg
     integer(kind=c_int),  intent(in) :: state_frequency, qsize
-    real(kind=c_double),  intent(in) :: nu, nu_p, nu_q, nu_s, nu_div, nu_top, hypervis_scaling, dcmip16_mu
-    integer(kind=c_int),  intent(in) :: hypervis_order, hypervis_subcycle
+    real(kind=c_double),  intent(in) :: nu, nu_p, nu_q, nu_s, nu_div, nu_top, hypervis_scaling, dcmip16_mu, &
+                                        rearth
+    integer(kind=c_int),  intent(in) :: hypervis_order, hypervis_subcycle, hypervis_subcycle_tom
     integer(kind=c_int),  intent(in) :: ftype, theta_adv_form
     logical(kind=c_bool), intent(in) :: prescribed_wind, moisture, disable_diagnostics, use_cpstar
     logical(kind=c_bool), intent(in) :: theta_hydrostatic_mode
@@ -165,12 +168,12 @@ interface
   end subroutine push_forcing_to_c
 
   ! Run dycore for a full atm timesteps
-  subroutine prim_run_subcycle_c(tstep,nstep,nm1,n0,np1,next_output_step) bind(c)
+  subroutine prim_run_subcycle_c(tstep,nstep,nm1,n0,np1,next_output_step,nsplit_iter) bind(c)
     use iso_c_binding, only: c_int, c_double
     !
     ! Inputs
     !
-    integer(kind=c_int),  intent(in) :: nstep, nm1, n0, np1, next_output_step
+    integer(kind=c_int),  intent(in) :: nstep, nm1, n0, np1, next_output_step, nsplit_iter
     real (kind=c_double), intent(in) :: tstep
   end subroutine prim_run_subcycle_c
 

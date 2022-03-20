@@ -307,7 +307,7 @@ contains
     ! !USES:
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     use elm_varctl     , only : create_glacier_mec_landunit, use_cn, use_lch4
-    use elm_varctl     , only : hist_wrtch4diag
+    use elm_varctl     , only : hist_wrtch4diag, use_lake_wat_storage
     use elm_varpar     , only : nlevsno, crop_prog 
     use histFileMod    , only : hist_addfld1d, hist_addfld2d, no_snow_normal, no_snow_zero
     !
@@ -326,6 +326,7 @@ contains
     begp = bounds%begp; endp= bounds%endp
     begc = bounds%begc; endc= bounds%endc
     begg = bounds%begg; endg= bounds%endg
+
 
     ! h2osno also includes snow that is part of the soil column (an 
     ! initial snow layer is only created if h2osno > 10mm). 
@@ -431,6 +432,7 @@ contains
 
       this%frac_h2osfc_col(bounds%begc:bounds%endc) = 0._r8
 
+
       this%fwet_patch(bounds%begp:bounds%endp) = 0._r8
       this%fdry_patch(bounds%begp:bounds%endp) = 0._r8
 
@@ -495,7 +497,7 @@ contains
     use landunit_varcon  , only : istcrop, istdlak, istsoil  
     use column_varcon    , only : icol_roof, icol_sunwall, icol_shadewall
     use clm_time_manager , only : is_first_step
-    use elm_varctl       , only : bound_h2osoi
+    use elm_varctl       , only : bound_h2osoi, use_lake_wat_storage
     use ncdio_pio        , only : file_desc_t, ncd_io, ncd_double
     use restUtilMod
     use subgridAveMod    , only : c2g
