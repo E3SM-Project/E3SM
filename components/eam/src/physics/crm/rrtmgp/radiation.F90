@@ -1286,6 +1286,8 @@ contains
       real(r8), dimension(pcols,pver,nswbands) :: liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw
       real(r8), dimension(pcols,pver,nlwbands) :: liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw
 
+      real(r8), dimension(pcols,pver) :: cld_emis_lw
+
       integer, dimension(nswgpts) :: gpoint_bands_sw
       integer, dimension(nlwgpts) :: gpoint_bands_lw
 
@@ -1629,7 +1631,7 @@ contains
                            do iz = 1,crm_nz
                               do ic = 1,ncol
                                  ilay = pver - iz + 1
-                                 crm_emis(ic,ix,iy,iz) = cld_tau_bnd_lw(ic,ilay,cosp_lwband)
+                                 crm_emis(ic,ix,iy,iz) = 1._r8 - exp(-cld_tau_bnd_lw(ic,ilay,cosp_lwband))
                               end do
                            end do
                         end if 
@@ -1867,6 +1869,35 @@ contains
 
          end if  ! active calls
       end do  ! loop over diagnostic calls
+
+      ! If we ran radiation this timestep, check if we should run COSP
+      if (radiation_do('sw') .or. radiation_do('lw')) then
+         if (docosp) then
+            ! Advance counter and run COSP if new count value is equal to cosp_nradsteps
+            cosp_cnt(state%lchnk) = cosp_cnt(state%lchnk) + 1
+            if (cosp_cnt(state%lchnk) == cosp_nradsteps) then
+
+               ! Find bands used for cloud simulator calculations
+               cosp_lwband = get_band_index_lw(10.5_r8, 'micron')
+               cosp_swband = get_band_index_sw(0.67_r8, 'micron')
+
+               ! Compute quantities needed for COSP
+               cld_emis_lw = 1._r8 - exp(-cld_tau_bnd_lw(:,:,cosp_lwband))
+
+               ! Call cosp
+               call t_startf('cospsimulator_intr_run')
+               call cospsimulator_intr_run( &
+                  state, pbuf, cam_in, cld_emis_lw, coszrs, &
+                  cld_tau_bnd_sw(:,:,cosp_swband) &
+               )
+               call t_stopf('cospsimulator_intr_run')
+
+               ! Reset counter
+               cosp_cnt(state%lchnk) = 0
+            end if
+         end if
+      end if
+
 
       ! Restore pbuf fields
       iclwp = iclwp_save

@@ -606,7 +606,7 @@ CONTAINS
 
     use mod_cosp_config,  only : R_UNDEF    
     
-    integer :: ncid,latid,lonid,did,hrid,minid,secid, istat
+    integer :: errcode
     integer :: i
     
     ! ISCCP OUTPUTS
@@ -1042,26 +1042,33 @@ CONTAINS
        call add_default ('CS_g_vol',        cosp_histfile_aux_num,' ')
     end if
     
-    rei_idx        = pbuf_get_index('REI')
-    rel_idx        = pbuf_get_index('REL')
-    cld_idx        = pbuf_get_index('CLD')
-    concld_idx     = pbuf_get_index('CONCLD')
-    lsreffrain_idx = pbuf_get_index('LS_REFFRAIN')
-    lsreffsnow_idx = pbuf_get_index('LS_REFFSNOW')
-    cvreffliq_idx  = pbuf_get_index('CV_REFFLIQ')
-    cvreffice_idx  = pbuf_get_index('CV_REFFICE')
-    dpcldliq_idx   = pbuf_get_index('DP_CLDLIQ')
-    dpcldice_idx   = pbuf_get_index('DP_CLDICE')
-    shcldliq_idx   = pbuf_get_index('SH_CLDLIQ')
-    shcldice_idx   = pbuf_get_index('SH_CLDICE')
-    shcldliq1_idx  = pbuf_get_index('SH_CLDLIQ1')
-    shcldice1_idx  = pbuf_get_index('SH_CLDICE1')
-    dpflxprc_idx   = pbuf_get_index('DP_FLXPRC')
-    dpflxsnw_idx   = pbuf_get_index('DP_FLXSNW')
-    shflxprc_idx   = pbuf_get_index('SH_FLXPRC')
-    shflxsnw_idx   = pbuf_get_index('SH_FLXSNW')
-    lsflxprc_idx   = pbuf_get_index('LS_FLXPRC')
-    lsflxsnw_idx   = pbuf_get_index('LS_FLXSNW')
+    ! These fields may or may not exist in pbuf, depending on physics
+    ! configuration. The extra particle sizes and precipitation fluxes will not
+    ! exist for MMF, for example. Rather than add logic here that we would need
+    ! to keep consistent with the accesses in cospsimulator_intr_run, pass an
+    ! error code here to allow for the possibility that these do not exist. If
+    ! a field does not exist in pbuf, the resulting index will be zero, and pbuf
+    ! will abort the run if we try to access these during runtime.
+    rei_idx        = pbuf_get_index('REI', errcode=errcode)
+    rel_idx        = pbuf_get_index('REL', errcode=errcode)
+    cld_idx        = pbuf_get_index('CLD', errcode=errcode)
+    concld_idx     = pbuf_get_index('CONCLD', errcode=errcode)
+    lsreffrain_idx = pbuf_get_index('LS_REFFRAIN', errcode=errcode)
+    lsreffsnow_idx = pbuf_get_index('LS_REFFSNOW', errcode=errcode)
+    cvreffliq_idx  = pbuf_get_index('CV_REFFLIQ', errcode=errcode)
+    cvreffice_idx  = pbuf_get_index('CV_REFFICE', errcode=errcode)
+    dpcldliq_idx   = pbuf_get_index('DP_CLDLIQ', errcode=errcode)
+    dpcldice_idx   = pbuf_get_index('DP_CLDICE', errcode=errcode)
+    shcldliq_idx   = pbuf_get_index('SH_CLDLIQ', errcode=errcode)
+    shcldice_idx   = pbuf_get_index('SH_CLDICE', errcode=errcode)
+    shcldliq1_idx  = pbuf_get_index('SH_CLDLIQ1', errcode=errcode)
+    shcldice1_idx  = pbuf_get_index('SH_CLDICE1', errcode=errcode)
+    dpflxprc_idx   = pbuf_get_index('DP_FLXPRC', errcode=errcode)
+    dpflxsnw_idx   = pbuf_get_index('DP_FLXSNW', errcode=errcode)
+    shflxprc_idx   = pbuf_get_index('SH_FLXPRC', errcode=errcode)
+    shflxsnw_idx   = pbuf_get_index('SH_FLXSNW', errcode=errcode)
+    lsflxprc_idx   = pbuf_get_index('LS_FLXPRC', errcode=errcode)
+    lsflxsnw_idx   = pbuf_get_index('LS_FLXSNW', errcode=errcode)
     
 #endif    
   end subroutine cospsimulator_intr_init
@@ -1114,7 +1121,7 @@ CONTAINS
 #else
     npoints = ncol
 #endif
-  
+
     ! Construct COSP output derived type.
     call t_startf('cosp_construct_cosp_outputs')
     call construct_cosp_outputs(npoints,nscol_cosp,pver,Nlvgrid,0,cospOUT)
@@ -1140,7 +1147,7 @@ CONTAINS
 
     ! Call COSP and check status
     call t_startf('cosp_simulator')
-    cosp_status = COSP_SIMULATOR(cospIN, cospstateIN, cospOUT, start_idx=1, stop_idx=ncol,debug=.false.)
+    cosp_status = COSP_SIMULATOR(cospIN, cospstateIN, cospOUT, start_idx=1, stop_idx=npoints,debug=.false.)
     nerror = 0
     do i = 1, ubound(cosp_status, 1)
        if (len_trim(cosp_status(i)) > 0) then
@@ -1331,24 +1338,25 @@ CONTAINS
     
     ! Local vars related to calculations to go from CAM input to COSP input
     ! cosp convective value includes both deep and shallow convection
-    real(r8) :: mr_lsliq(pcols,pver)                     ! mixing_ratio_large_scale_cloud_liquid (kg/kg)
-    real(r8) :: mr_lsice(pcols,pver)                     ! mixing_ratio_large_scale_cloud_ice (kg/kg)
-    real(r8) :: mr_ccliq(pcols,pver)                     ! mixing_ratio_convective_cloud_liquid (kg/kg)
-    real(r8) :: mr_ccice(pcols,pver)                     ! mixing_ratio_convective_cloud_ice (kg/kg)
-    real(r8) :: rain_cv(pcols,pverp)                     ! interface flux_convective_cloud_rain (kg m^-2 s^-1)
-    real(r8) :: snow_cv(pcols,pverp)                     ! interface flux_convective_cloud_snow (kg m^-2 s^-1)
-    real(r8) :: rain_cv_interp(pcols,pver)               ! midpoint flux_convective_cloud_rain (kg m^-2 s^-1)
-    real(r8) :: snow_cv_interp(pcols,pver)               ! midpoint flux_convective_cloud_snow (kg m^-2 s^-1)
-    real(r8) :: grpl_ls_interp(pcols,pver)               ! midpoint ls grp flux, should be 0
-    real(r8) :: rain_ls_interp(pcols,pver)               ! midpoint ls rain flux (kg m^-2 s^-1)
-    real(r8) :: snow_ls_interp(pcols,pver)               ! midpoint ls snow flux
-    real(r8) :: reff_cosp(pcols,pver,nhydro)             ! effective radius for cosp input
-    real(r8) :: dtau_s(pcols,pver)                       ! Optical depth of stratiform cloud at 0.67 um
-    real(r8) :: dtau_c(pcols,pver)                       ! Optical depth of convective cloud at 0.67 um
-    real(r8) :: dtau_s_snow(pcols,pver)                  ! Grid-box mean Optical depth of stratiform snow at 0.67 um
-    real(r8) :: dem_s(pcols,pver)                        ! Longwave emis of stratiform cloud at 10.5 um
-    real(r8) :: dem_c(pcols,pver)                        ! Longwave emis of convective cloud at 10.5 um
-    real(r8) :: dem_s_snow(pcols,pver)                   ! Grid-box mean Optical depth of stratiform snow at 10.5 um
+    real(r8) :: mr_lsliq(npoints,pver)                     ! mixing_ratio_large_scale_cloud_liquid (kg/kg)
+    real(r8) :: mr_lsice(npoints,pver)                     ! mixing_ratio_large_scale_cloud_ice (kg/kg)
+    real(r8) :: mr_ccliq(npoints,pver)                     ! mixing_ratio_convective_cloud_liquid (kg/kg)
+    real(r8) :: mr_ccice(npoints,pver)                     ! mixing_ratio_convective_cloud_ice (kg/kg)
+    real(r8) :: rain_cv(npoints,pverp)                     ! interface flux_convective_cloud_rain (kg m^-2 s^-1)
+    real(r8) :: snow_cv(npoints,pverp)                     ! interface flux_convective_cloud_snow (kg m^-2 s^-1)
+    real(r8) :: rain_cv_interp(npoints,pver)               ! midpoint flux_convective_cloud_rain (kg m^-2 s^-1)
+    real(r8) :: snow_cv_interp(npoints,pver)               ! midpoint flux_convective_cloud_snow (kg m^-2 s^-1)
+    real(r8) :: grpl_ls_interp(npoints,pver)               ! midpoint ls grp flux, should be 0
+    real(r8) :: rain_ls_interp(npoints,pver)               ! midpoint ls rain flux (kg m^-2 s^-1)
+    real(r8) :: snow_ls_interp(npoints,pver)               ! midpoint ls snow flux
+    real(r8) :: reff_cosp(npoints,pver,nhydro)             ! effective radius for cosp input
+    real(r8) :: dtau_s(npoints,pver)                       ! Optical depth of stratiform cloud at 0.67 um
+    real(r8) :: dtau_c(npoints,pver)                       ! Optical depth of convective cloud at 0.67 um
+    real(r8) :: dtau_s_snow(npoints,pver)                  ! Grid-box mean Optical depth of stratiform snow at 0.67 um
+    real(r8) :: dem_s(npoints,pver)                        ! Longwave emis of stratiform cloud at 10.5 um
+    real(r8) :: dem_c(npoints,pver)                        ! Longwave emis of convective cloud at 10.5 um
+    real(r8) :: dem_s_snow(npoints,pver)                   ! Grid-box mean Optical depth of stratiform snow at 10.5 um
+    real(r8) :: psfc(npoints)                              ! Surface pressure
     
     ! CAM pointers to get variables from radiation interface (get from rad_cnst_get_gas)
     real(r8), pointer, dimension(:,:) :: q               ! specific humidity (kg/kg)
@@ -1401,9 +1409,28 @@ CONTAINS
 
     cospIN%emsfc_lw      = emsfc_lw
 
+    ! State variables
+#ifdef MMF_PACK
+    psfc = 0
+    do iy = 1,crm_ny_rad
+      do ix = 1,crm_nx_rad
+        do i = 1,ncol
+          j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
+          psfc(j) = state%ps(i)
+        end do
+      end do
+    end do
+#else
+    do i = 1,ncol
+      psfc(i) = state%ps(i)
+    end do
+#endif
+
     ! Cloud fractions
 #ifdef MMF_PACK
     call pbuf_get_field(pbuf, pbuf_get_index('CRM_CLD_RAD'), crm_cld)
+    cld_s = 0
+    cld_c = 0
     do iz = 1,crm_nz
       do iy = 1,crm_ny_rad
         do ix = 1,crm_nx_rad
@@ -1430,6 +1457,10 @@ CONTAINS
     ! precipitation fluxes (use for both cam4 and cam5 for now....)
 #ifdef MMF_PACK
     use_precipitation_fluxes = .false.
+    snow_ls_interp = 0
+    grpl_ls_interp = 0
+    rain_cv_interp = 0
+    snow_cv_interp = 0
     do iz = 1,crm_nz
       do iy = 1,crm_ny_rad
         do ix = 1,crm_nx_rad
@@ -1501,6 +1532,10 @@ CONTAINS
     ! indices; handle preciptation mixing ratios here
     call pbuf_get_field(pbuf, pbuf_get_index('CRM_QC_RAD'), crm_qc)
     call pbuf_get_field(pbuf, pbuf_get_index('CRM_QI_RAD'), crm_qi)
+    mr_lsliq = 0
+    mr_lsice = 0
+    mr_ccliq = 0
+    mr_ccice = 0
     do iz = 1,crm_nz
       do iy = 1,crm_ny_rad
         do ix = 1,crm_nx_rad
@@ -1601,6 +1636,10 @@ CONTAINS
 #ifdef MMF_PACK
     call pbuf_get_field(pbuf, pbuf_get_index('CRM_EMIS'), crm_emis)
     call pbuf_get_field(pbuf, pbuf_get_index('CRM_DTAU'), crm_dtau)
+    dtau_s = 0
+    dtau_c = 0
+    dem_s = 0
+    dem_c = 0
     do iz = 1,crm_nz
       do iy = 1,crm_ny_rad
         do ix = 1,crm_nx_rad
@@ -1637,17 +1676,18 @@ CONTAINS
        cospIN%rcfg_cloudsat = rcfg_cs(lchnk)
        sd_wk = sd_cs(lchnk)
     end if
-    call subsample_and_optics(ncol,pver,nscol_cosp,nhydro,overlap,             &
-         use_precipitation_fluxes,lidar_ice_type,sd_wk,cld_s(1:ncol,1:pver),     &
-         cld_c(1:ncol,1:pver),rain_ls_interp(1:ncol,1:pver),                  &
-         snow_ls_interp(1:ncol,1:pver),grpl_ls_interp(1:ncol,1:pver),          &
-         rain_cv_interp(1:ncol,1:pver),snow_cv_interp(1:ncol,1:pver),          &
-         mr_lsliq(1:ncol,1:pver),mr_lsice(1:ncol,1:pver),                      &
-         mr_ccliq(1:ncol,1:pver),mr_ccice(1:ncol,1:pver),                      &
-         reff_cosp(1:ncol,1:pver,:),dtau_c(1:ncol,1:pver),                     &
-         dtau_s(1:ncol,1:pver),dem_c(1:ncol,1:pver),                           &
-         dem_s(1:ncol,1:pver),dtau_s_snow(1:ncol,1:pver),                      &
-         dem_s_snow(1:ncol,1:pver),state%ps(1:ncol),cospstateIN,cospIN)
+
+    call subsample_and_optics(npoints,pver,nscol_cosp,nhydro,overlap,             &
+         use_precipitation_fluxes,lidar_ice_type,sd_wk,cld_s(1:npoints,1:pver),     &
+         cld_c(1:npoints,1:pver),rain_ls_interp(1:npoints,1:pver),                  &
+         snow_ls_interp(1:npoints,1:pver),grpl_ls_interp(1:npoints,1:pver),          &
+         rain_cv_interp(1:npoints,1:pver),snow_cv_interp(1:npoints,1:pver),          &
+         mr_lsliq(1:npoints,1:pver),mr_lsice(1:npoints,1:pver),                      &
+         mr_ccliq(1:npoints,1:pver),mr_ccice(1:npoints,1:pver),                      &
+         reff_cosp(1:npoints,1:pver,:),dtau_c(1:npoints,1:pver),                     &
+         dtau_s(1:npoints,1:pver),dem_c(1:npoints,1:pver),                           &
+         dem_s(1:npoints,1:pver),dtau_s_snow(1:npoints,1:pver),                      &
+         dem_s_snow(1:npoints,1:pver),psfc(1:npoints),cospstateIN,cospIN)
     if (lradar_sim) sd_cs(lchnk) = sd_wk
 
    end subroutine populate_cosp_subcol
@@ -2155,7 +2195,7 @@ CONTAINS
         call packed_average(nc, nx, ny, cospOUTpacked%isccp_meanptop     , cospOUT%isccp_meanptop     )
         call packed_average(nc, nx, ny, cospOUTpacked%isccp_meantaucld   , cospOUT%isccp_meantaucld   )
       end if
-      
+
       ! CALIPSO SIMULATOR OUTPUTS
       if (llidar_sim) then
         call packed_average(nc, nx, ny, cospOUTpacked%calipso_cldlayer     , cospOUT%calipso_cldlayer     )
@@ -2847,6 +2887,9 @@ CONTAINS
     ! Outputs
     type(cosp_column_inputs),intent(out) :: y         
     
+    y%npoints  = npoints
+    y%ncolumns = ncolumns
+    y%nlevels  = nlevels
     allocate(y%sunlit(npoints),y%skt(npoints),y%land(npoints),y%at(npoints,nlevels),     &
              y%pfull(npoints,nlevels),y%phalf(npoints,nlevels+1),y%qv(npoints,nlevels),  &
              y%o3(npoints,nlevels),y%hgt_matrix(npoints,nlevels),y%u_sfc(npoints),       &
