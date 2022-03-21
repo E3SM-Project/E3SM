@@ -34,6 +34,12 @@ using input_type = AtmosphereInput;
 const int packsize = SCREAM_SMALL_PACK_SIZE; //2;
 using Pack         = ekat::Pack<Real,packsize>;
 
+using KT = KokkosTypes<DefaultDevice>;
+template <typename S>
+using view_1d = typename KT::template view_1d<S>;
+template <typename S>
+using view_2d = typename KT::template view_2d<S>;
+
 std::shared_ptr<FieldManager>
 get_test_fm(std::shared_ptr<const AbstractGrid> grid);
 
@@ -44,6 +50,78 @@ ekat::ParameterList get_in_params(const std::string& type,
                                   const ekat::Comm& comm,
                                   const util::TimeStamp& t0,
                                   const int dt, const int max_steps);
+
+view_2d<Real>::HostMirror get_diagnostic_input(const ekat::Comm& comm, const std::shared_ptr<GridsManager>& gm, const int time_index, const std::string& filename);
+
+class DiagTest : public AtmosphereDiagnostic
+{
+public:
+  DiagTest (const ekat::Comm& comm, const ekat::ParameterList&params)
+    : AtmosphereDiagnostic(comm,params)
+  {
+    //Do nothing
+  }
+
+  std::string name() const { return "DiagnosticTest"; }
+
+  // Get the required grid for the diagnostic
+  std::set<std::string> get_required_grids () const {
+    static std::set<std::string> s;
+    s.insert(m_params.get<std::string>("Grid"));
+    return s;
+  }
+
+  void set_grids (const std::shared_ptr<const GridsManager> gm) {
+    using namespace ekat::units;
+    using namespace ShortFieldTagsNames;
+    using FL = FieldLayout;
+
+    const auto& grid_name = m_params.get<std::string>("Grid");
+    const auto grid = gm->get_grid(grid_name);
+    m_num_cols  = grid->get_num_local_dofs(); // Number of columns on this rank
+    m_num_levs  = grid->get_num_vertical_levels();  // Number of levels per column
+
+    std::vector<FieldTag> tag_2d = {COL,LEV};
+    std::vector<Int>     dims_2d = {m_num_cols,m_num_levs};
+    FL lt( tag_2d, dims_2d );
+
+    constexpr int ps = Pack::n;
+    add_field<Required>("field_packed",lt,kg/m,grid_name,ps);
+
+    // We have to initialize the m_diagnostic_output:
+    FieldIdentifier fid (name(), lt, K, grid_name);
+    m_diagnostic_output = Field(fid);
+    auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
+    C_ap.request_allocation(ps);
+    m_diagnostic_output.allocate_view();
+  }
+
+protected:
+
+  // The initialization method should prepare all stuff needed to import/export from/to
+  // f90 structures.
+  void initialize_impl (const RunType /* run_type */ ) {}
+
+  // The run method is responsible for exporting atm states to the e3sm coupler, and
+  // import surface states from the e3sm coupler.
+  void run_impl (const int /* dt */) {
+    const auto& v_A  = get_field_in("field_packed").get_view<const Real**,Host>();
+    auto v_me = m_diagnostic_output.get_view<Real**,Host>();
+    // Have the dummy diagnostic just manipulate the field_packed data arithmetically.  In this case (x*3 + 2)
+    for (size_t i=0; i<m_num_cols; ++i) {
+      for (size_t k=0; k<m_num_levs; ++k) {
+        v_me(i,k) = v_A(i,k)*3.0 + 2.0;
+      }
+    }
+  }
+
+  // Clean up
+  void finalize_impl ( /* inputs */ ) {}
+
+  // Internal variables
+  int m_num_cols, m_num_levs;
+
+};
 
 TEST_CASE("input_output_basic","io")
 {
@@ -60,6 +138,11 @@ TEST_CASE("input_output_basic","io")
   auto gm = get_test_gm(io_comm,num_gcols,num_levs);
   auto grid = gm->get_grid("Point Grid");
   int num_lcols = grid->get_num_local_dofs();
+  int num_llevs = grid->get_num_vertical_levels();
+
+  // Need to register the Test Diagnostic so that IO can access it
+  auto& diag_factory = AtmosphereDiagnosticFactory::instance();
+  diag_factory.register_product("DummyDiagnostic",&create_atmosphere_diagnostic<DiagTest>);
 
   // Construct a timestamp
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
@@ -169,6 +252,7 @@ TEST_CASE("input_output_basic","io")
   auto f3_host = f3.get_view<Real**,Host>();
   auto f4_host = f4.get_view<Real**,Host>();
 
+
   // Check instant output
   input_type ins_input(ins_params,field_manager);
   ins_input.read_variables();
@@ -177,11 +261,16 @@ TEST_CASE("input_output_basic","io")
   f3.sync_to_host();
   f4.sync_to_host();
 
+  // The diagnostic is not present in the field manager.  So we can't use the scorpio_input class
+  // to read in the data.  Here we use raw IO routines to gather the data for testing.
+  auto f_diag_ins_h = get_diagnostic_input(io_comm, gm, 1, ins_params.get<std::string>("Filename"));
+
   for (int ii=0;ii<num_lcols;++ii) {
     REQUIRE(std::abs(f1_host(ii)-(max_steps*dt+ii))<tol);
     for (int jj=0;jj<num_levs;++jj) {
       REQUIRE(std::abs(f3_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
       REQUIRE(std::abs(f4_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
+      REQUIRE(std::abs(f_diag_ins_h(ii,jj)-(3.0*f4_host(ii,jj)+2.0))<tol);
     }
   }
   for (int jj=0;jj<num_levs;++jj) {
@@ -303,8 +392,6 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
   FieldIdentifier fid2("field_2",FL{tag_v,dims_v},kg,gn);
   FieldIdentifier fid3("field_3",FL{tag_2d,dims_2d},kg/m,gn);
   FieldIdentifier fid4("field_packed",FL{tag_2d,dims_2d},kg/m,gn);
-  FieldIdentifier fidT("T_mid",FL{tag_2d,dims_2d},K,gn);
-  FieldIdentifier fidP("p_mid",FL{tag_2d,dims_2d},Pa,gn);
 
   // Register fields with fm
   // Make sure packsize isn't bigger than the packsize for this machine, but not so big that we end up with only 1 pack.
@@ -313,8 +400,6 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
   fm->register_field(FR{fid2,"output"});
   fm->register_field(FR{fid3,"output"});
   fm->register_field(FR{fid4,"output",Pack::n}); // Register field as packed
-  fm->register_field(FR{fidT,"T_mid",Pack::n}); // Register field as packed
-  fm->register_field(FR{fidP,"p_mid",Pack::n}); // Register field as packed
   fm->registration_ends();
 
   // Make sure that field 4 is in fact a packed field
@@ -327,14 +412,10 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
   auto f2 = fm->get_field(fid2);
   auto f3 = fm->get_field(fid3);
   auto f4 = fm->get_field(fid4);
-  auto fT = fm->get_field(fidT);
-  auto fP = fm->get_field(fidP);
   auto f1_host = f1.get_view<Real*,Host>(); 
   auto f2_host = f2.get_view<Real*,Host>(); 
   auto f3_host = f3.get_view<Real**,Host>();
   auto f4_host = f4.get_view<Pack**,Host>(); 
-  auto fT_host = fT.get_view<Pack**,Host>(); 
-  auto fP_host = fP.get_view<Pack**,Host>(); 
   for (int ii=0;ii<num_lcols;++ii) {
     f1_host(ii) = ii;
     for (int jj=0;jj<num_levs;++jj) {
@@ -343,8 +424,6 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
       int ipack = jj / packsize;
       int ivec  = jj % packsize;
       f4_host(ii,ipack)[ivec] = (ii) + (jj+1)/10.0;
-      fT_host(ii,ipack)[ivec] = 0.0;
-      fP_host(ii,ipack)[ivec] = 100000.0; //TODO grab this from physics_constants.
     }
   }
   // Update timestamp
@@ -355,8 +434,6 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
   f2.sync_to_dev();
   f3.sync_to_dev();
   f4.sync_to_dev();
-  fT.sync_to_dev();
-  fP.sync_to_dev();
 
   return fm;
 }
@@ -392,6 +469,35 @@ ekat::ParameterList get_in_params(const std::string& type,
   in_params.set<std::string>("Filename",filename);
   in_params.set<vos_type>("Field Names",{"field_1", "field_2", "field_3", "field_packed"});
   return in_params;
+}
+/*===================================================================================================================*/
+view_2d<Real>::HostMirror get_diagnostic_input(const ekat::Comm& comm, const std::shared_ptr<GridsManager>& gm, const int time_index, const std::string& filename) {
+
+  using namespace ShortFieldTagsNames;
+
+  auto grid = gm->get_grid("Point Grid");
+  int ncols = grid->get_num_local_dofs();
+  int nlevs = grid->get_num_vertical_levels();
+
+  view_2d<Real> f_diag("DummyDiag",ncols,nlevs);
+  auto f_diag_h = Kokkos::create_mirror_view(f_diag);
+
+  std::vector<std::string> fnames = {"DummyDiagnostic"};
+  std::map<std::string,view_1d<Real>::HostMirror> host_views;
+  std::map<std::string,FieldLayout>  layouts;
+  host_views["DummyDiagnostic"] = view_1d<Real>::HostMirror(f_diag_h.data(),f_diag_h.size());
+  layouts.emplace("DummyDiagnostic",FieldLayout( {COL,LEV}, {ncols,nlevs} ) );
+
+  ekat::ParameterList in_params;
+  in_params.set("Field Names",fnames);
+  in_params.set("Filename",filename);
+  AtmosphereInput input(comm,in_params);
+  input.init(grid,host_views,layouts);
+  input.read_variables(time_index);
+  input.finalize();
+
+  return f_diag_h;
+  
 }
 /*===================================================================================================================*/
 } // undefined namespace
