@@ -65,13 +65,13 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   // - There are no fields used as both input and output.
 }
 // =========================================================================================
-int SPA::requested_buffer_size_in_bytes() const
+size_t SPA::requested_buffer_size_in_bytes() const
 {
   const Int num_mid_packs    = ekat::npack<Spack>(m_num_levs);
   const Int num_int_packs = ekat::npack<Spack>(m_num_levs+1);
 
   // Number of Reals needed by local views in the interface
-  const int interface_request =
+  const size_t interface_request =
       // 1d view scalar, size (ncol)
       Buffer::num_1d_scalar*m_num_cols*sizeof(Real) +
       // 2d view packed, size (ncol, nlev_packs)
@@ -80,7 +80,7 @@ int SPA::requested_buffer_size_in_bytes() const
 
   // Number of Reals needed by the WorkspaceManager
   const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, num_mid_packs);
-  const int wsm_request   = WSM::get_total_bytes_needed(num_mid_packs, 3, policy);
+  const size_t wsm_request   = WSM::get_total_bytes_needed(num_mid_packs, 3, policy);
 
   return interface_request + wsm_request;
 }
