@@ -243,19 +243,23 @@ contains
 
         ! MPI Variables
         integer :: iCell, ilm, curProc
+        integer :: err_tmp
         real (kind=RKIND), dimension(:), allocatable :: globalArray, gatheredArray
-
+        
+        err = 0 
 
         call mpas_timer_start('Serial SAL: Gather')
         ! Allocate globalArray and gatheredArray only on process 0
-        call MPI_COMM_RANK( dminfo % comm, curProc, err)
+        call MPI_COMM_RANK( dminfo % comm, curProc, err_tmp)
+        err = ior(err, err_tmp)
         if (curProc.eq.0) then
             allocate(globalArray(nCellsGlobal), gatheredArray(nCellsGlobal))
         endif
 
         ! Gather only the nCellsOwned from ssh (does not include Halos)
         call MPI_GATHERV(sshSmoothed, nCellsOwned, MPI_DOUBLE, gatheredArray, nCellsPerProc, &
-                        nCellsDisplacement, MPI_DOUBLE, 0, dminfo % comm, err)
+                        nCellsDisplacement, MPI_DOUBLE, 0, dminfo % comm, err_tmp)
+        err = ior(err, err_tmp)
         call mpas_timer_stop('Serial SAL: Gather')
 
         ! Perform SAL calculation only on process 0
@@ -302,7 +306,8 @@ contains
         ! Scatter back to ssh_sal
         call mpas_timer_start('Serial SAL: Scatter')
         call MPI_SCATTERV(gatheredArray, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
-                    ssh_sal, nCellsAll, MPI_DOUBLE, 0, dminfo % comm, err)
+                    ssh_sal, nCellsAll, MPI_DOUBLE, 0, dminfo % comm, err_tmp)
+        err = ior(err, err_tmp)
 
         if (curProc.eq.0) then
           deallocate(globalArray, gatheredArray, ssh_gg)
@@ -639,6 +644,7 @@ contains
         integer :: iCell
         integer :: nl
         integer :: nCellBlock
+        integer :: err_tmp
 
         real(kind=RKIND) :: d
         real(kind=RKIND) :: trans_start, trans_width
@@ -718,8 +724,10 @@ contains
             call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
 
             ! Begin MPI portion
-            call MPI_COMM_RANK( domain % dminfo % comm, curProc, err)
-            call MPI_COMM_SIZE( domain % dminfo % comm, nProcs, err)
+            call MPI_COMM_RANK( domain % dminfo % comm, curProc, err_tmp)
+            err = ior(err, err_tmp)
+            call MPI_COMM_SIZE( domain % dminfo % comm, nProcs, err_tmp)
+            err = ior(err, err_tmp)
 
             if (curProc.eq.0) then
                 allocate(nCellsPerProc(nProcs))
@@ -728,7 +736,8 @@ contains
 
             ! Gather nCellsOwned
             call MPI_GATHER( nCellsOwned, 1, MPI_INTEGER, nCellsPerProc, 1, MPI_INTEGER, &
-                             0, domain % dminfo % comm, err)
+                             0, domain % dminfo % comm, err_tmp)
+            err = ior(err, err_tmp)
 
             ! Set Displacement variable for GATHERV command
             if (curProc.eq.0) then
@@ -744,7 +753,8 @@ contains
 
             ! Gather indexToCellID
             call MPI_GATHERV( indexToCellID, nCellsOwned, MPI_INTEGER, indexToCellIDGathered, &
-                    nCellsPerProc, nCellsDisplacement, MPI_INTEGER, 0, domain % dminfo % comm, err)
+                    nCellsPerProc, nCellsDisplacement, MPI_INTEGER, 0, domain % dminfo % comm, err_tmp)
+            err = ior(err, err_tmp)
 
             ! SAL calculations only need to be initialized on process 1
             if (curProc.eq.0) then
@@ -891,7 +901,8 @@ contains
 
         endif
 
-        call MPI_Barrier(domain % dminfo % comm, err)
+        call MPI_Barrier(domain % dminfo % comm, err_tmp)
+        err = ior(err, err_tmp)
 
         call mpas_timer_stop('SAL Init')
 
@@ -912,9 +923,11 @@ contains
     subroutine check(status,err) !{{{
         integer, intent ( in) :: status
         integer, intent(inout) :: err
+        integer :: err_tmp
 
         if(status /= nf90_noerr) then
-            err = 1
+            err_tmp = 1
+            err = ior(err, err_tmp)
         end if
     end subroutine!}}}
 
