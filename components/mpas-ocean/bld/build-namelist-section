@@ -114,6 +114,7 @@ add_default($nl, 'config_Redi_use_surface_taper');
 add_default($nl, 'config_Redi_N2_based_taper_enable');
 add_default($nl, 'config_Redi_N2_based_taper_min');
 add_default($nl, 'config_Redi_N2_based_taper_limit_term1');
+add_default($nl, 'config_Redi_min_layers_diag_terms');
 
 ############################################
 # Namelist group: GM_eddy_parameterization #

@@ -617,7 +617,7 @@ contains
 
       ! Copy diagnostic variables to accelerator
       if ( trim(config_land_ice_flux_mode) /= 'off' ) then
-         !$acc enter data copyin(                                 &
+         !$acc enter data create(                                 &
          !$acc                   topDrag,                         &
          !$acc                   topDragMag,                      &
          !$acc                   indexBLT,                        &
@@ -629,10 +629,10 @@ contains
          !$acc                   landIceFrictionVelocity)
       end if
       if (config_use_topographic_wave_drag) then
-         !$acc enter data copyin(topographic_wave_drag)
+         !$acc enter data create(topographic_wave_drag)
       end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
-         !$acc enter data copyin(                          &
+         !$acc enter data create(                          &
          !$acc                   rx1Edge,                  &
          !$acc                   rx1Cell,                  &
          !$acc                   rx1MaxEdge,               &
@@ -644,13 +644,13 @@ contains
       end if
       if ( trim(config_ocean_run_mode) == 'init' .or. &
                 config_AM_debugDiagnostics_enable ) then
-         !$acc enter data copyin(                          &
+         !$acc enter data create(                          &
          !$acc                   rx1MaxCell,               &
          !$acc                   globalRx1Max)
       end if
       if ( trim(config_ocean_run_mode) == 'forward' .or. &
            trim(config_ocean_run_mode) == 'analysis' ) then
-         !$acc enter data copyin(                                 &
+         !$acc enter data create(                                 &
          !$acc                   k33,                             &
          !$acc                   gradSSH,                         &
          !$acc                   gradSSHX,                        &
@@ -730,12 +730,12 @@ contains
          !$acc                   )
       end if
       if ( trim(config_ocean_run_mode) == 'forward' ) then
-         !$acc enter data copyin( &
+         !$acc enter data create( &
          !$acc                   wettingVelocity              &
          !$acc                   )
       end if
       if ( config_use_GM ) then
-         !$acc enter data copyin(                   &
+         !$acc enter data create(                   &
          !$acc                   RediKappa,         &
          !$acc                   gmBolusKappa,      &
          !$acc                   gmKappaScaling,    &
@@ -746,7 +746,7 @@ contains
          !$acc                   )
       end if
       if ( config_compute_active_tracer_budgets ) then
-         !$acc enter data copyin(                                         &
+         !$acc enter data create(                                         &
          !$acc                   activeTracerHorMixTendency,              &
          !$acc                   activeTracerVertMixTendency,             &
          !$acc                   temperatureShortWaveTendency,            &
@@ -759,12 +759,12 @@ contains
          !$acc                   )
       end if
       if ( config_use_activeTracers_surface_restoring ) then
-         !$acc enter data copyin(                                  &
+         !$acc enter data create(                                  &
          !$acc                   salinitySurfaceRestoringTendency  &
          !$acc                   )
       end if
       if ( trim(config_time_integrator) == 'split_implicit' ) then
-         !$acc enter data copyin(                       &
+         !$acc enter data create(                       &
          !$acc                   SIvec_r0,              &
          !$acc                   SIvec_r00,             &
          !$acc                   SIvec_r1,              &
@@ -796,7 +796,7 @@ contains
          !$acc                   )
       end if
 
-      !$acc enter data copyin(                                         &
+      !$acc enter data create(                                         &
       !$acc                   zMid,                                    &
       !$acc                   zTop,                                    &
       !$acc                   xtime,                                   &

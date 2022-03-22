@@ -581,6 +581,13 @@ If TRUE, use implicit method to calculate stresses output to atmosphere.
 If TRUE, use an extra gustiness supplied by the atmosphere in addition to mean wind.
 </entry>
 
+<!-- TOP solar radiation parameterization                        -->
+<entry id="use_top_solar_rad" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" value=".false.">
+If TRUE, TOP solar radiation parameterization will be activated, which considers the effects of sub-grid topography.
+</entry>
+<!-- End TOP solar radiation parameterization                   -->
+
 <!-- ========================================================================================  -->
 <!-- Former CPP tokens -->
 <!-- ========================================================================================  -->

@@ -298,8 +298,10 @@ module pftvarcon
   ! Hydrology
   real(r8)              :: rsub_top_globalmax
   ! Soil erosion ground cover
-  real(r8), allocatable :: gcpsi(:)            !bare ground LAI-decay parameter
-  real(r8), allocatable :: pftcc(:)            !plant cover reduction factor for transport capacity
+  real(r8), allocatable :: gcbc_p(:)           !effectiveness of surface cover in reducing rainfall-driven erosion
+  real(r8), allocatable :: gcbc_q(:)           !effectiveness of surface cover in reducing runoff-driven erosion
+  real(r8), allocatable :: gcbr_p(:)           !effectiveness of roots in reducing rainfall-driven erosion
+  real(r8), allocatable :: gcbr_q(:)           !effectiveness of roots in reducing runoff-driven erosion
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -591,8 +593,10 @@ contains
     allocate( nstor              (0:mxpft) )
     allocate( br_xr              (0:mxpft) )
     ! Ground cover for soil erosion
-    allocate( gcpsi              (0:mxpft) )
-    allocate( pftcc              (0:mxpft) )
+    allocate( gcbc_p             (0:mxpft) )
+    allocate( gcbc_q             (0:mxpft) )
+    allocate( gcbr_p             (0:mxpft) )
+    allocate( gcbr_q             (0:mxpft) )
 
     ! Set specific vegetation type values
 
@@ -999,10 +1003,14 @@ contains
     if (.not. readv) br_xr(:) = 0._r8
     call ncd_io('tc_stress', tc_stress, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
-    call ncd_io('gcpsi',gcpsi, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) gcpsi(:) = 0._r8
-    call ncd_io('pftcc',pftcc, 'read', ncid, readvar=readv, posNOTonfile=.true.)
-    if ( .not. readv ) pftcc(:) = 1._r8
+    call ncd_io('gcbc_p',gcbc_p, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) gcbc_p(:) = 0._r8
+    call ncd_io('gcbc_q',gcbc_q, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) gcbc_q(:) = 0._r8
+    call ncd_io('gcbr_p',gcbr_p, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) gcbr_p(:) = 0._r8
+    call ncd_io('gcbr_q',gcbr_q, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) gcbr_q(:) = 0._r8
        
     call ncd_io('mergetoelmpft', mergetoelmpft, 'read', ncid, readvar=readv)  
     if ( .not. readv ) then
