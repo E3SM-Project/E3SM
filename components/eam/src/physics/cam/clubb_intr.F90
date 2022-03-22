@@ -779,8 +779,8 @@ end subroutine clubb_init_cnst
        pdf_implicit_coefs_terms_chnk(pcols,begchunk:endchunk) )
 
     do idx_chunk = begchunk, endchunk
-       call init_pdf_params_api( pverp, 1, pdf_params_chnk(idx_chunk) )
-       call init_pdf_params_api( pverp, 1, pdf_params_zm_chnk(idx_chunk) )
+       call init_pdf_params_api( pverp, pcols, pdf_params_chnk(idx_chunk) )
+       call init_pdf_params_api( pverp, pcols, pdf_params_zm_chnk(idx_chunk) )
     end do
 
     do idx_chunk = begchunk, endchunk
@@ -1515,7 +1515,6 @@ end subroutine clubb_init_cnst
    real(core_rknd) :: qrl_zm(pverp)
    real(core_rknd) :: thlp2_rad_out(pverp)
 
-   real(core_rknd), dimension(nparams)  :: clubb_params ! These adjustable CLUBB parameters (C1, C2 ...)
    real(core_rknd), dimension(sclr_dim) :: sclr_tol     ! Tolerance on passive scalar       [units vary]
 
    real(core_rknd) :: dum_core_rknd                    ! dummy variable  [units vary]
@@ -1938,6 +1937,10 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, prec_dp_idx, prec_dp)
    call pbuf_get_field(pbuf, snow_dp_idx, snow_dp)
    call pbuf_get_field(pbuf, vmag_gust_idx, vmag_gust)
+
+   ! Allocate arrays in single column versions of pdf_params
+   call init_pdf_params_api( pverp, 1, pdf_params_single_col )
+   call init_pdf_params_api( pverp, 1, pdf_params_zm_single_col )
 
    if (linearize_pbl_winds) then
       call pbuf_get_field(pbuf, wsresp_idx, wsresp)
