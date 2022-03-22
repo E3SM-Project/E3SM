@@ -1928,6 +1928,7 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, sh_frac_idx, shalcu)
    call pbuf_get_field(pbuf, kvm_idx,     khzt)
    call pbuf_get_field(pbuf, kvh_idx,     khzm)
+   call pbuf_get_field(pbuf, w_up_in_cl_idx, w_up_in_cloud)
    call pbuf_get_field(pbuf, pblh_idx,    pblh)
    call pbuf_get_field(pbuf, icwmrdp_idx, dp_icwmr)
    call pbuf_get_field(pbuf, cmfmc_sh_idx, cmfmc_sh)
