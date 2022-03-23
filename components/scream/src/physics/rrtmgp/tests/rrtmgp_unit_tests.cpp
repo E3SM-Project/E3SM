@@ -1,5 +1,5 @@
 #include "catch2/catch.hpp"
-#include "physics/rrtmgp/rrtmgp_heating_rate.hpp"
+#include "physics/rrtmgp/rrtmgp_utils.hpp"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "YAKL.h"
 #include "physics/share/physics_constants.hpp"
@@ -402,4 +402,19 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
     sfc_flux_dif_nir.deallocate();
     sfc_flux_dif_vis.deallocate();
     if (yakl::isInitialized()) { yakl::finalize(); }
+}
+
+TEST_CASE("rrtmgp_test_radiation_do") {
+
+    //
+    REQUIRE(scream::rrtmgp::radiation_do(2, 0) == true);
+    REQUIRE(scream::rrtmgp::radiation_do(2, 1) == false);
+    REQUIRE(scream::rrtmgp::radiation_do(2, 2) == true);
+    REQUIRE(scream::rrtmgp::radiation_do(2, 3) == false);
+
+    REQUIRE(scream::rrtmgp::radiation_do(3, 0) == true);
+    REQUIRE(scream::rrtmgp::radiation_do(3, 1) == false);
+    REQUIRE(scream::rrtmgp::radiation_do(3, 2) == false);
+    REQUIRE(scream::rrtmgp::radiation_do(3, 3) == true);
+    REQUIRE(scream::rrtmgp::radiation_do(3, 4) == false);
 }
