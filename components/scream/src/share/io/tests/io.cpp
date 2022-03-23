@@ -404,8 +404,10 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
 
   // Make sure that field 4 is in fact a packed field
   auto field4 = fm->get_field(fid4);
-  auto fid4_padding = field4.get_header().get_alloc_properties().get_padding();
-  REQUIRE(fid4_padding > 0);
+  if (SCREAM_SMALL_PACK_SIZE > 1) {
+    auto fid4_padding = field4.get_header().get_alloc_properties().get_padding();
+    REQUIRE(fid4_padding > 0);
+  }
 
   // Initialize these fields
   auto f1 = fm->get_field(fid1);
@@ -416,6 +418,7 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
   auto f2_host = f2.get_view<Real*,Host>(); 
   auto f3_host = f3.get_view<Real**,Host>();
   auto f4_host = f4.get_view<Pack**,Host>(); 
+
   for (int ii=0;ii<num_lcols;++ii) {
     f1_host(ii) = ii;
     for (int jj=0;jj<num_levs;++jj) {

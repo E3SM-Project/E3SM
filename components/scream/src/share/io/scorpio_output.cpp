@@ -373,6 +373,7 @@ void AtmosphereOutput::register_views()
   // Cycle through all fields and register.
   for (auto const& name : m_fields_names) {
     auto field = get_field(name);
+    bool is_diagnostic = (m_diagnostics.find(name) != m_diagnostics.end());
 
     // These local views are really only needed if the averaging time is not 'Instant',
     // to store running tallies for the average operation. However, we create them
@@ -382,10 +383,14 @@ void AtmosphereOutput::register_views()
     // views of the field, provided that the field does not have padding,
     // and that it is not a subfield of another field (or else the view
     // would be strided).
+    //
+    // We also don't want to alias to a diagnostic output since it could share memory
+    // with another diagnostic.
     bool can_alias_field_view =
         m_avg_type==OutputAvgType::Instant &&
         field.get_header().get_alloc_properties().get_padding()==0 &&
-        field.get_header().get_parent().expired();
+        field.get_header().get_parent().expired() &&
+        not is_diagnostic;
 
     const auto size = m_layouts.at(name).size();
     if (can_alias_field_view) {
@@ -554,8 +559,7 @@ Field AtmosphereOutput::get_field(const std::string& name)
     return m_field_mgr->get_field(name);
   } else if (m_diagnostics.find(name) != m_diagnostics.end()) {
     const auto& diag = m_diagnostics[name];
-    const auto& diag_out = diag->get_diagnostic(100.0);
-    return diag_out;
+    return diag->get_diagnostic(100.0);
   } else {
     EKAT_ERROR_MSG ("Field " + name + " not found in output field manager or diagnostics list");
   }
