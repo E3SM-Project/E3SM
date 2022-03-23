@@ -1,3 +1,12 @@
+Note: The version of CLUBB core that was copied into this directory is the
+version listed below (d0bc4c6), but with modifications that were made in
+the commit 1e93c1d (March 11, 2022) to the UWM E3SM repository, which
+changes the l_enable_relaxed_clipping flag to .true. and uncomments the
+a3_coef clipping in advance_clubb_core_module.  This undoes the
+hard-coded CLUBB commits that caused changes to E3SM-CLUBB results.
+
+Brian Griffin; March 23, 2022
+
 commit d0bc4c6b2a3fe086aa365dccfdbcc651b3242e9a
 Author: Gunther Huebler <huebler@uwm.edu>
 Date:   Thu Feb 24 04:15:12 2022 -0600
