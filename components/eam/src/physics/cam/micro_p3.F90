@@ -58,7 +58,8 @@ module micro_p3
        T_rainfrz, T_icenuc, T_homogfrz, iulog=>iulog_e3sm, &
        masterproc=>masterproc_e3sm, calculate_incloud_mixingratios, mu_r_constant, &
        lookup_table_1a_dum1_c, rho_h2o, &
-       p3_qc_autocon_expon, p3_qc_accret_expon, do_Cooper_inP3
+       p3_qc_autocon_expon, p3_qc_accret_expon, do_Cooper_inP3, &
+       p3_autocon_coeff, p3_nc_autocon_expon, p3_accret_coeff
 
    use wv_sat_scream, only:qv_sat
 
@@ -862,6 +863,7 @@ end function bfb_expm1
       ! cloud water autoconversion
       ! NOTE: cloud_water_autoconversion must be called before droplet_self_collection
       call cloud_water_autoconversion(rho(k),qc_incld(k),nc_incld(k),inv_qc_relvar(k),&
+           p3_autocon_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,&
            qc2qr_autoconv_tend,nc2nr_autoconv_tend,ncautr)
 
       !............................
@@ -873,6 +875,7 @@ end function bfb_expm1
       ! accretion of cloud by rain
       call cloud_rain_accretion(rho(k),inv_rho(k),&
            qc_incld(k),nc_incld(k), qr_incld(k),inv_qc_relvar(k),&
+           p3_accret_coeff,p3_qc_accret_expon,&
            qc2qr_accret_tend, nc_accret_tend)
 
       !.....................................
@@ -2810,7 +2813,8 @@ subroutine droplet_self_collection(rho,inv_rho,qc_incld,mu_c,nu,nc2nr_autoconv_t
 end subroutine droplet_self_collection
 
 subroutine cloud_rain_accretion(rho,inv_rho,qc_incld,nc_incld,qr_incld,inv_qc_relvar,    &
-   qc2qr_accret_tend,nc_accret_tend)
+  p3_accret_coeff,p3_qc_accret_expon,     &
+  qc2qr_accret_tend,nc_accret_tend)
 
   !............................
   ! accretion of cloud by rain
@@ -2823,6 +2827,8 @@ subroutine cloud_rain_accretion(rho,inv_rho,qc_incld,nc_incld,qr_incld,inv_qc_re
   real(rtype), intent(in) :: nc_incld
   real(rtype), intent(in) :: qr_incld
   real(rtype), intent(in) :: inv_qc_relvar
+  real(rtype), intent(in) :: p3_accret_coeff
+  real(rtype), intent(in) :: p3_qc_accret_expon
 
   real(rtype), intent(out) :: qc2qr_accret_tend
   real(rtype), intent(out) :: nc_accret_tend
@@ -2849,8 +2855,8 @@ subroutine cloud_rain_accretion(rho,inv_rho,qc_incld,nc_incld,qr_incld,inv_qc_re
         sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, 1.15_rtype ) !p3_qc_accret_expon
         !qc2qr_accret_tend = sbgrd_var_coef*67._rtype*bfb_pow(qc_incld*qr_incld, 1.15_rtype) !p3_qc_accret_expon
 ! +++ E3SMv2 tuning +++        
-        qc2qr_accret_tend = 1.75_rtype*sbgrd_var_coef*67._rtype*bfb_pow(qc_incld*qr_incld, 1.15_rtype) !p3_qc_accret_expon
-
+        !qc2qr_accret_tend = 1.75_rtype*sbgrd_var_coef*67._rtype*bfb_pow(qc_incld*qr_incld, 1.15_rtype) !p3_qc_accret_expon
+        qc2qr_accret_tend = sbgrd_var_coef*p3_accret_coeff*bfb_pow(qc_incld*qr_incld, p3_qc_accret_expon) !p3_qc_accret_expon
         nc_accret_tend = qc2qr_accret_tend*nc_incld/qc_incld
      endif
 
@@ -2907,6 +2913,7 @@ end subroutine rain_self_collection
 
 
 subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,inv_qc_relvar,    &
+   p3_autocon_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,     &
    qc2qr_autoconv_tend,nc2nr_autoconv_tend,ncautr)
 
    implicit none
@@ -2915,6 +2922,9 @@ subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,inv_qc_relvar,    &
    real(rtype), intent(in) :: qc_incld
    real(rtype), intent(in) :: nc_incld
    real(rtype), intent(in) :: inv_qc_relvar
+   real(rtype), intent(in) :: p3_autocon_coeff
+   real(rtype), intent(in) :: p3_qc_autocon_expon
+   real(rtype), intent(in) :: p3_nc_autocon_expon
 
    real(rtype), intent(out) :: qc2qr_autoconv_tend
    real(rtype), intent(out) :: nc2nr_autoconv_tend
@@ -2931,9 +2941,10 @@ subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,inv_qc_relvar,    &
 
 ! +++ E3SMv2 tunning +++
       sbgrd_var_coef = subgrid_variance_scaling(inv_qc_relvar, 3.19_rtype)
-      qc2qr_autoconv_tend = sbgrd_var_coef*30500.0_rtype*bfb_pow(qc_incld,3.19_rtype)*bfb_pow(nc_incld*1.e-6_rtype*rho,-1.40_rtype)
+      !qc2qr_autoconv_tend = sbgrd_var_coef*30500.0_rtype*bfb_pow(qc_incld,3.19_rtype)*bfb_pow(nc_incld*1.e-6_rtype*rho,-1.40_rtype)
+      qc2qr_autoconv_tend = sbgrd_var_coef*p3_autocon_coeff*bfb_pow(qc_incld,p3_qc_autocon_expon)*bfb_pow(nc_incld*1.e-6_rtype*rho,p3_nc_autocon_expon)
       
-      ! note: ncautr is change in Nr; nc2nr_autoconv_tend is change in Nc
+      ! Note: ncautr is change in Nr; nc2nr_autoconv_tend is change in Nc
       ncautr = qc2qr_autoconv_tend*cons3
       nc2nr_autoconv_tend = qc2qr_autoconv_tend*nc_incld/qc_incld
 
