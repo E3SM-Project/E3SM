@@ -146,7 +146,7 @@ contains
       !-----------------------------------------------------------------
 
       integer ::           &
-         iEdge, iCell, k,  &! loop indices for edge, cell, vertical loops
+         iEdge, k,  &! loop indices for edge, cell, vertical loops
          cell1, cell2,     &! neighbor cell indices across edge
          kMin, kMax         ! shallowest and deepest active layer
 

@@ -57,6 +57,10 @@
 	<var name="stress12weak"/>
 	<var name="stressDivergenceU"/>
 	<var name="stressDivergenceV"/>
+	<var name="basisIntegralsU"/>
+	<var name="basisIntegralsV"/>
+	<var name="basisIntegralsMetric"/>
+	<var name="variationalDenominator"/>
 </stream>
 
 <immutable_stream name="LYqSixHourlyForcing"

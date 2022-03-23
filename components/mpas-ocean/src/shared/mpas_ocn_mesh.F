@@ -919,7 +919,7 @@ contains
          meshPool                 ! mesh variables in MPAS pool structure
 
       ! temporary pointers for converting masks
-      integer i, k, n          ! loop indices
+      integer k, n          ! loop indices
       integer, dimension(:, :), pointer :: &
          edgeMaskTmp, &
          vertexMaskTmp, &
@@ -1409,7 +1409,7 @@ contains
       !-----------------------------------------------------------------
       ! Local variables
       !-----------------------------------------------------------------
-      integer :: iCell, iEdge, iVertex, i, j, k
+      integer :: iCell, iEdge, iVertex, i, j
 
       ! End preamble
       !-------------

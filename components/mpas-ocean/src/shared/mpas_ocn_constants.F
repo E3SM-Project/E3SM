@@ -96,7 +96,6 @@ contains
    subroutine ocn_constants_init(configPool, packagePool)!{{{
        type (mpas_pool_type), pointer :: configPool
        type (mpas_pool_type), pointer :: packagePool
-       integer :: n
 
        real (kind=RKIND), pointer :: config_density0
 

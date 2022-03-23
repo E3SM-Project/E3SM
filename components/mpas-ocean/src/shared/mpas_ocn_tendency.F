@@ -50,6 +50,7 @@ module ocn_tendency
    use ocn_tracer_ecosys
    use ocn_tracer_DMS
    use ocn_tracer_MacroMolecules
+   use ocn_tracer_CFC
 
    use ocn_thick_hadv
    use ocn_thick_vadv
@@ -110,14 +111,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tend_thick(tendPool, forcingPool, meshPool)!{{{
-
-      !-----------------------------------------------------------------
-      ! input variables
-      !-----------------------------------------------------------------
-
-      type (mpas_pool_type), intent(in) :: &
-         meshPool            !< [in] Mesh information (for pass-thru)
+   subroutine ocn_tend_thick(tendPool, forcingPool)!{{{
 
       !-----------------------------------------------------------------
       ! output variables
@@ -165,9 +159,16 @@ contains
       ! layer thickness tendency: 
       !    initialize to zero and start accumulating tendency terms
       !
+#ifdef MPAS_OPENACC
+      !$acc enter data create(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff)
 
+      !$acc parallel loop &
+      !$acc     present(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff) &
+      !$acc     private(k)
+#else
       !$omp parallel
       !$omp do schedule(runtime) private(k)
+#endif
       do iCell = 1, nCellsAll
          surfaceThicknessFlux(iCell) = 0.0_RKIND
          surfaceThicknessFluxRunoff(iCell) = 0.0_RKIND
@@ -175,8 +176,10 @@ contains
             tendThick(k, iCell) = 0.0_RKIND
          end do
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
 
       ! If turned off, return with zero fluxes, tendencies
       ! Otherwise, start time and call routines to accumulate
@@ -184,12 +187,12 @@ contains
       call mpas_timer_start("ocn_tend_thick")
 
       ! Compute surface mass flux array from bulk forcing
-      call ocn_surface_bulk_forcing_thick(meshPool, forcingPool, &
+      call ocn_surface_bulk_forcing_thick(forcingPool, &
                                           surfaceThicknessFlux, &
                                           surfaceThicknessFluxRunoff, err)
 
       ! Compute surface thickness flux from land ice
-      call ocn_surface_land_ice_fluxes_thick(meshPool, forcingPool, &
+      call ocn_surface_land_ice_fluxes_thick(forcingPool, &
                                              surfaceThicknessFlux, err)
 
       !
@@ -197,27 +200,31 @@ contains
       ! See Ringler et al. (2010) jcp paper, eqn 19, 21, and fig. 3.
       ! for explanation of divergence operator.
       !
-      call ocn_thick_hadv_tend(meshPool, normalTransportVelocity, &
+      call ocn_thick_hadv_tend(normalTransportVelocity, &
                                layerThickEdge, tendThick, err)
 
       ! Compute vertical advection term -d/dz(hw)
-      call ocn_thick_vadv_tend(meshPool, vertAleTransportTop, &
+      call ocn_thick_vadv_tend(vertAleTransportTop, &
                                tendThick, err)
 
       ! Compute surface flux tendency
-      call ocn_thick_surface_flux_tend(meshPool, fractionAbsorbed, &
+      call ocn_thick_surface_flux_tend(fractionAbsorbed, &
                                        fractionAbsorbedRunoff, &
                                        surfaceThicknessFlux, &
                                        surfaceThicknessFluxRunoff, &
                                        tendThick, err)
 
       ! Compute contribution from frazil ice formation
-      call ocn_frazil_forcing_layer_thickness(meshPool, forcingPool, &
+      call ocn_frazil_forcing_layer_thickness(forcingPool, &
                                               tendThick, err)
 
       ! Compute thickness change due to tidal forcing
-      call ocn_tidal_forcing_layer_thickness(meshPool, forcingPool, &
+      call ocn_tidal_forcing_layer_thickness(forcingPool, &
                                              tendThick, err)
+
+#ifdef MPAS_OPENACC
+      !$acc exit data copyout(tendThick, surfaceThicknessFlux, surfaceThicknessFluxRunoff)
+#endif
 
       call mpas_timer_stop("ocn_tend_thick")
 
@@ -512,6 +519,8 @@ contains
          err,                &! internal error flag 
          timeLevel,          &! time level to use for state variables
          indxTemp, indxSalt, &! tracer index for temperature, salinity
+         indxCFC11,          &! tracer index for CFC11
+         indxCFC12,          &! tracer index for CFC12
          nTracersGroup,      &! number of tracers in each tracer group
          nTracersEcosys       ! number of ecosystem tracers
 
@@ -542,6 +551,8 @@ contains
       ! pointers for retrieving data from pools
       integer, pointer :: &
          indexTemperature, indexSalinity ! tracer index for temp,salt
+      integer, pointer :: &
+         indexCFC11, indexCFC12 ! tracer indicies for CFCs
 
       logical, pointer :: & ! option configuration flags
          config_use_tracerGroup, &
@@ -551,9 +562,6 @@ contains
          config_use_tracerGroup_exponential_decay,    &
          config_use_tracerGroup_idealAge_forcing,     &
          config_use_tracerGroup_ttd_forcing
-
-      real (kind=RKIND), pointer :: &
-         salinity_restoring_constant_piston_velocity
 
       real (kind=RKIND), dimension(:), pointer, contiguous :: &
          penetrativeTemperatureFlux, &! heat flux penetrating below sfc
@@ -876,6 +884,31 @@ contains
                                   tracerGroupSurfaceFlux, err)
 
          endif ! MacroMolecules
+
+         !
+         ! compute CFC surface fluxes, there are no interior sources/sinks
+         !
+         if ( groupName == 'CFCTracers' ) then
+
+            call mpas_pool_get_array(tracersPool, 'activeTracers', &
+                                     activeTracers, timeLevel)
+
+            indxCFC11 = 0
+            indxCFC12 = 0
+            if (config_use_CFC11) then
+              call mpas_pool_get_dimension(tracersPool, 'index_CFC11', indexCFC11)
+              indxCFC11 = indexCFC11 ! convert to int scalar due to problems with int scalar pointers
+            endif
+            if (config_use_CFC12) then
+              call mpas_pool_get_dimension(tracersPool, 'index_CFC12', indexCFC12)
+              indxCFC12 = indexCFC12 ! convert to int scalar due to problems with int scalar pointers
+            endif
+                                                 
+            call ocn_tracer_CFC_surface_flux_compute(activeTracers, &
+                                        tracerGroup, forcingPool,  &
+                                        nTracersGroup, nCellsOwned, &
+                                        indxTemp, indxSalt, tracerGroupSurfaceFlux, indxCFC11, indxCFC12, err)
+         endif ! CFC
 
          !
          ! ocean surface restoring

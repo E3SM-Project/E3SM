@@ -10,7 +10,6 @@ topology      = "cube"
 test_case     = "swtc6"
 ndays         = 15
 statefreq     = 1440
-tasknum       = 0
 restartfreq   = -1
 restartfile   = "./restart/R000000050"
 runtype       = 0

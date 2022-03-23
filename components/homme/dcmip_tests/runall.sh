@@ -66,6 +66,13 @@ if [ "$#" -lt "2" ]; then
     echo "./homme.sh /path/to/output/dir {submit,status,latex} testno"
     exit 1
 fi
+
+if ! which ncl >&/dev/null > /dev/null ; then
+   echo "'which ncl' failed. NCL is required to produce PDFs. Exiting."
+   exit 1
+fi
+
+
 WDIR=${args[0]}
 opt=${args[1]}
 

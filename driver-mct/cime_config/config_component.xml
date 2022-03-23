@@ -896,6 +896,22 @@
     <desc>logical to diagnose model timing at the end of the run</desc>
   </entry>
 
+  <entry id="TEST_MEMLEAK_TOLERANCE">
+    <type>real</type>
+    <default_value>0.10</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Expected relative memory usage growth for test</desc>
+  </entry>
+
+  <entry id="TEST_TPUT_TOLERANCE">
+    <type>real</type>
+    <default_value>0.25</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>Expected throughput deviation</desc>
+  </entry>
+
   <entry id="PROFILE_PAPI_ENABLE">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
@@ -2703,22 +2719,6 @@
     <group>test</group>
     <file>env_test.xml</file>
     <desc>supplied or computed test id</desc>
-  </entry>
-
-  <entry id="TEST_MEMLEAK_TOLERANCE">
-    <type>real</type>
-    <default_value>0.10</default_value>
-    <group>test</group>
-    <file>env_test.xml</file>
-    <desc>Expected relative memory usage growth for test</desc>
-  </entry>
-
-  <entry id="TEST_TPUT_TOLERANCE">
-    <type>real</type>
-    <default_value>0.25</default_value>
-    <group>test</group>
-    <file>env_test.xml</file>
-    <desc>Expected throughput deviation</desc>
   </entry>
 
   <entry id="GENERATE_BASELINE">
