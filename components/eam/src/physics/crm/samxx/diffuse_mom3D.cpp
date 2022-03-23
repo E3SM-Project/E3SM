@@ -121,7 +121,7 @@ void diffuse_mom3D(real5d &tk) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int jb=j-1;
     int kc=k+1;
     int ib=i-1;
@@ -149,7 +149,7 @@ void diffuse_mom3D(real5d &tk) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int j, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     real rdz=1.0/dz(icrm);
     real rdz2 = rdz*rdz * grdf_z(nzm-2,icrm);
     real tkz=rdz2*grdf_z(nzm-1,icrm)*tk(0,nzm-1,j+offy_d,i+offx_d,icrm);

@@ -21,12 +21,7 @@
 module ocn_equation_of_state_linear
 
    use mpas_kind_types
-   use mpas_derived_types
-   use mpas_pool_routines
-   use ocn_constants
    use ocn_config
-   use mpas_dmpar
-   use mpas_log
 
    implicit none
    private

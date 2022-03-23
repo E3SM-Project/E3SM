@@ -52,7 +52,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     // calculate tendency * dtn
     yakl::atomicAdd( tbaccel(k,icrm) , t(k,j+offy_s,i+offx_s,icrm) * crm_accel_coef );
     yakl::atomicAdd( qtbaccel(k,icrm) , (qcl(k,j,i,icrm) + qci(k,j,i,icrm) + qv(k,j,i,icrm)) * crm_accel_coef );
@@ -144,7 +144,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) < 0.0) {
       yakl::atomicAdd( qneg(k,icrm) , micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) ); 
     }

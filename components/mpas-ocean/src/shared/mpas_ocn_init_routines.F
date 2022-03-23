@@ -110,6 +110,16 @@ contains
 
       integer, pointer :: nCells, nEdges, nVertices, nVertLevels
 
+      real (kind=RKIND), dimension(:), pointer :: &
+        seaIcePressure, atmosphericPressure
+
+      real (kind=RKIND), dimension(:), pointer :: &
+        frazilSurfacePressure
+
+      real (kind=RKIND), dimension(:), pointer :: ssh
+
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+
       type (mpas_pool_iterator_type) :: groupItr
 
       call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
@@ -128,7 +138,13 @@ contains
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+      call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
 
+      call mpas_pool_get_array(forcingPool, 'seaIcePressure', seaIcePressure)
+      call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
+      call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
+
+      call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
 
       if (.not. config_do_restart) then
          do iCell=1,nCells
@@ -137,7 +153,62 @@ contains
          end do
       end if
 
+#ifdef MPAS_OPENACC
+      !$acc enter data copyin(layerThickness, normalVelocity)
+      !$acc update device (normalTransportVelocity, &
+      !$acc                normalGMBolusVelocity)
+      !$acc enter data copyin(atmosphericPressure, seaIcePressure)
+      !$acc enter data copyin(ssh)
+      !$acc enter data copyin(activeTracers)
+      !$acc update device(tracersSurfaceValue)
+      if ( associated(frazilSurfacePressure) ) then
+         !$acc enter data copyin(frazilSurfacePressure)
+      endif
+      if (landIcePressureOn) then
+         !$acc enter data copyin(landIcePressure)
+         !$acc enter data copyin(landIceDraft)
+      endif
+#endif
       call ocn_diagnostic_solve(dt,  statePool, forcingPool, meshPool, scratchPool, tracersPool)
+#ifdef MPAS_OPENACC
+      !$acc update host(layerThickEdge)
+      !$acc update host(relativeVorticity, circulation)
+      !$acc update host(vertTransportVelocityTop, &
+      !$acc             vertGMBolusVelocityTop, &
+      !$acc             relativeVorticityCell, &
+      !$acc             divergence, &
+      !$acc             kineticEnergyCell, &
+      !$acc             tangentialVelocity, &
+      !$acc             vertVelocityTop)
+      !$acc update host(normRelVortEdge, normPlanetVortEdge, &
+      !$acc             normalizedRelativeVorticityCell)
+      !$acc update host (surfacePressure)
+      !$acc update host(zMid, zTop)
+      !$acc exit data copyout(ssh)
+      !$acc exit data delete(activeTracers)
+      !$acc update host(tracersSurfaceValue)
+      !$acc update host(normalVelocitySurfaceLayer)
+      !$acc exit data delete (atmosphericPressure, seaIcePressure)
+      !$acc update host(density, potentialDensity, displacedDensity)
+      !$acc update host(thermExpCoeff,  &
+      !$acc&            salineContractCoeff)
+      !$acc update host(montgomeryPotential, pressure)
+      !$acc update host(RiTopOfCell, &
+      !$acc             BruntVaisalaFreqTop)
+      !$acc update host(tracersSurfaceLayerValue, &
+      !$acc             indexSurfaceLayerDepth, &
+      !$acc             normalVelocitySurfaceLayer, &
+      !$acc             sfcFlxAttCoeff, &
+      !$acc             surfaceFluxAttenuationCoefficientRunoff)
+      if ( associated(frazilSurfacePressure) ) then
+         !$acc exit data delete(frazilSurfacePressure)
+      endif
+      if (landIcePressureOn) then
+         !$acc exit data delete(landIcePressure)
+         !$acc exit data delete(landIceDraft)
+      endif
+      !$acc exit data delete(layerThickness, normalVelocity)
+#endif
 
       layerThickness(:, nCells+1) = 0.0_RKIND
 

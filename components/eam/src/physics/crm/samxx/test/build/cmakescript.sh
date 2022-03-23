@@ -129,6 +129,7 @@ cd ..
 ## GET THE NETCDF LINKING FLAGS
 ############################################################################
 NCFLAGS="`$NFHOME/bin/nf-config --flibs` `$NCHOME/bin/nc-config --libs`"
+NCFLAGS=`echo "$NCFLAGS" | xargs`
 printf "NetCDF Flags: $NCFLAGS\n\n"
 
 

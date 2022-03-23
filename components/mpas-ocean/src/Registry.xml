@@ -337,8 +337,12 @@
 					possible_values="greater than zero and less than 1"
 		/>
 		<nml_option name="config_Redi_N2_based_taper_limit_term1" type="logical" default_value=".true." units="unitless"
-					description="If true, the N2 lim iting is applied to the horizontal diffusion term"
+					description="If true, the N2 limiting is applied to the horizontal diffusion term"
 					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Redi_min_layers_diag_terms" type="integer" default_value="6" units="NA"
+					description="Redi diagonal terms (2 and 3) are turned off from layer 1 through config_Redi_min_layers_diag_terms-1, and on from config_Redi_min_layers_diag_terms to nVertLevels. The Redi diagonal terms are not guaranteed to produce bounded tracer fields, and in practice produce growing temperatures in a few columns with fewer than 5 vertical cells. Redi is meant for isopycnal mixing in the deep ocean, so not applying Redi diagonal terms in very shallow regions is an acceptable solution."
+					possible_values="any integer between 0 (all layers on) and nVertLevels (all layers off)"
 		/>
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">

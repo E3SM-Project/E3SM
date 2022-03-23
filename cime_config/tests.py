@@ -66,7 +66,8 @@ _TESTS = {
             "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-per_crop",
             "SMS.r05_r05.IELM.elm-topounit",
             "ERS.ELM_USRDAT.I1850ELM.elm-usrdat",
-            "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features"
+            "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features",
+            "ERS.f09_f09.IELM.elm-solar_rad"
             )
         },
 
@@ -93,8 +94,8 @@ _TESTS = {
             "PEM_Ln5.ne4_oQU240.F2010",
             "SMS_D_Ln5.ne4_oQU240.F2010.eam-cosplite_nhtfrq5",
             "SMS_Ln1.ne4_oQU240.F2010.eam-chem_pp",
-            "SMS_Ln5.ne30pg2_EC30to60E2r2.BGCEXP_LNDATM_CNORDCTC_20TR",
-            "SMS_Ln5.ne30pg2_EC30to60E2r2.BGCEXP_LNDATM_CNORDCTC_1850",
+            "SMS_Ln5.ne30pg2_r05_EC30to60E2r2.BGCEXP_LNDATM_CNPRDCTC_20TR",
+            "SMS_Ln5.ne30pg2_r05_EC30to60E2r2.BGCEXP_LNDATM_CNPRDCTC_1850",
             "SMS_D_Ln5.ne4_oQU240.F2010.eam-clubb_sp",
             "ERS_Ld5.ne4_oQU240.F2010.eam-rrtmgp",
             "ERS_Ld5.ne4_oQU240.F2010.eam-rrtmgpxx",
