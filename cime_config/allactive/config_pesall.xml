@@ -6939,7 +6939,7 @@
   <grid name="a%ne30np4.pg2_l%.+_oi%EC30to60E2r2">
     <mach name="anvil">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="S">
-        <comment> --compset WCYCL* --res ne30pg2_EC30to60E2r2 on 25 nodes pure-MPI, ~5 sypd </comment>
+        <comment> --compset WCYCL* --res ne30pg2_EC30to60E2r2 on 25 nodes pure-MPI, ~5.4 sypd </comment>
         <ntasks>
           <ntasks_atm>675</ntasks_atm>
           <ntasks_lnd>36</ntasks_lnd>
@@ -6966,7 +6966,7 @@
         </rootpe>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="M">
-        <comment> --compset WCYCL* --res ne30pg2_EC30to60E2r2 on 48 nodes pure-MPI, ~8.8 sypd </comment>
+        <comment> --compset WCYCL* --res ne30pg2_EC30to60E2r2 on 48 nodes pure-MPI, ~9.4 sypd </comment>
         <ntasks>
           <ntasks_atm>1350</ntasks_atm>
           <ntasks_lnd>72</ntasks_lnd>
