@@ -25,9 +25,7 @@ module micro_p3_utils
        inv_rho_h2o,inv_dropmass,cp,g,rd,rv,ep_2,inv_cp,   &
        thrd,sxth,piov3,piov6,rho_rimeMin,     &
        rho_rimeMax,inv_rho_rimeMax,max_total_ni,dbrk,nmltratio,clbfact_sub,  &
-       clbfact_dep, &
-       p3_qc_autocon_expon, p3_qc_accret_expon, &
-       p3_autocon_coeff, p3_nc_autocon_expon, p3_accret_coeff
+       clbfact_dep
 
     logical,public  :: do_Cooper_inP3   ! Use prescribed CCN       
 
