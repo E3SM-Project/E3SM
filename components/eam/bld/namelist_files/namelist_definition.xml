@@ -2255,17 +2255,36 @@ Default: TRUE
 </entry>
 
 <!-- micro_p3 -->
-<entry id="p3_qc_autoCon_Expon" type="real" category="microphysics"
+<entry id="p3_qc_autocon_expon" type="real" category="microphysics"
 	group="micro_nl" valid_values="" >
 Exponent of power function fit used by P3 qc in autoconversion 
 Default: 2.47_rtype
 </entry>
 
-<entry id="p3_qc_accret_Expon" type="real" category="microphysics"
+<entry id="p3_qc_accret_expon" type="real" category="microphysics"
 	group="micro_nl" valid_values="" >
 Exponent of power function fit used by P3 qc in accretion 
 Default: 1.15_rtype
 </entry>
+
+<entry id="p3_nc_autocon_expon" type="real" category="microphysics"
+	group="micro_nl" valid_values="" >
+Exponent of power function fit used by P3 nc in autoconversion 
+Default: -1.79_rtype
+</entry>
+
+<entry id="p3_accret_coeff" type="real" category="microphysics"
+	group="micro_nl" valid_values="" >
+Coefficient fit used by P3 in accretion 
+Default: 67._rtype
+</entry>
+
+<entry id="p3_autocon_coeff" type="real" category="microphysics"
+	group="micro_nl" valid_values="" >
+Coefficient fit used by P3 in autoconversion 
+Default: 1350._rtype
+</entry>
+
 
 <entry id="do_prescribed_CCN" type="logical" category="microphys"
        group="micro_nl" valid_values="" >
