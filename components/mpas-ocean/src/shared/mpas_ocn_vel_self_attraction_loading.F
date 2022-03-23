@@ -956,13 +956,22 @@ contains
         rhs = 0.0_RKIND
 
         do while (n .LE. n_S)
+
             nRow = rowValues(n)
-            ! Do while n<size(rowVals), where size(rowVals) = n_S
-            do while ( (n.LE.n_S) .AND. (rowValues(n).EQ.nRow) )
+
+            ! Iterate up until the second to last element
+            do while ( (n.LT.(n_S)) .AND. (rowValues(n).EQ.nRow) )
                 nCol = colValues(n)
                 rhs = rhs + dataIn(nCol) * sValues(n)
                 n = n + 1
             end do
+            ! If we're at the last element, do one last calucation, no loop
+            if ( (n.EQ.n_S) .AND. (rowValues(n).EQ.nRow) ) then
+                nCol = colValues(n)
+                rhs = rhs + dataIn(nCol) * sValues(n)
+                n = n + 1
+            endif
+            
             dataOut(nRow) = rhs
             rhs = 0.0_RKIND
         end do
