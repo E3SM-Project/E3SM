@@ -3,7 +3,7 @@
 
 #include "physics/share/physics_constants.hpp"
 #include "cpp/rrtmgp_const.h"
-#include "YAKL/YAKL.h"
+#include "YAKL.h"
 
 namespace scream {
     namespace rrtmgp {

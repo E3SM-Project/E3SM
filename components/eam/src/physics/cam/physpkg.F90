@@ -138,6 +138,7 @@ subroutine phys_register
     use convect_shallow,    only: convect_shallow_register
     use radiation,          only: radiation_register
     use co2_cycle,          only: co2_register
+    use co2_diagnostics,    only: co2_diags_register
     use flux_avg,           only: flux_avg_register
     use iondrag,            only: iondrag_register
     use ionosphere,         only: ionos_register
@@ -268,6 +269,7 @@ subroutine phys_register
 
        ! co2 constituents
        call co2_register()
+       call co2_diags_register()
 
        ! register data model ozone with pbuf
        if (cam3_ozone_data_on) then
@@ -709,6 +711,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use radheat,            only: radheat_init
     use radiation,          only: radiation_init
     use cloud_diagnostics,  only: cloud_diagnostics_init
+    use co2_diagnostics,    only: co2_diags_init
     use stratiform,         only: stratiform_init
     use wv_saturation,      only: wv_sat_init
     use microp_driver,      only: microp_driver_init
@@ -849,6 +852,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     if (co2_transport()) then
        call co2_init()
     end if
+    call co2_diags_init(phys_state)
 
     ! CAM3 prescribed ozone
     if (cam3_ozone_data_on) call cam3_ozone_data_init(phys_state)
@@ -1235,9 +1239,13 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 #if ( defined OFFLINE_DYN )
     use metdata,        only: get_met_srf2
 #endif
-    use time_manager,   only: get_nstep
+    use time_manager,   only: get_nstep, is_first_step, is_end_curr_month, &
+                              is_first_restart_step, is_last_step
     use check_energy,   only: ieflx_gmean, check_ieflx_fix 
     use phys_control,   only: ieflx_opt
+    use co2_diagnostics,only: get_total_carbon, print_global_carbon_diags, &
+                              co2_diags_store_fields, co2_diags_read_fields
+    use co2_cycle,      only: co2_transport
     !
     ! Input arguments
     !
@@ -1305,6 +1313,13 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        call ieflx_gmean(phys_state, phys_tend, pbuf2d, cam_in, cam_out, nstep)
     end if
 
+    ! Get carbon conservation fields from pbuf if restarting
+    if ( co2_transport() ) then
+       if ( is_first_restart_step() ) then
+          call co2_diags_read_fields(phys_state, pbuf2d)
+       end if
+    end if
+
     call system_clock(count=beg_proc_cnt)
 
 !$OMP PARALLEL DO SCHEDULE(STATIC,1) &
@@ -1353,6 +1368,29 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 #ifdef TRACER_CHECK
     call gmean_mass ('after tphysac FV:WET)', phys_state)
 #endif
+
+    !
+    ! Check for carbon conservation
+    !
+    if ( co2_transport() ) then
+       do c = begchunk, endchunk
+          call get_total_carbon(phys_state(c), 'wet')
+       end do
+       call print_global_carbon_diags(phys_state, ztodt, nstep)
+       do c = begchunk, endchunk
+          ncol = get_ncols_p(c)
+          phys_state(c)%tc_prev(:ncol) = phys_state(c)%tc_curr(:ncol)
+          if ( is_first_step() ) then
+             phys_state(c)%tc_init(:ncol) = phys_state(c)%tc_curr(:ncol)
+          end if
+          if ( is_end_curr_month() ) then
+             phys_state(c)%tc_mnst(:ncol) = phys_state(c)%tc_curr(:ncol)
+          end if
+       end do
+       if ( is_last_step() ) then
+          call co2_diags_store_fields(phys_state, pbuf2d)
+       end if
+    end if
 
     call t_startf ('physpkg_st2')
     call pbuf_deallocate(pbuf2d, 'physpkg')
@@ -1449,7 +1487,7 @@ subroutine tphysac (ztodt,   cam_in,  &
                                   check_prect, check_qflx , &
                                   check_tracers_data, check_tracers_init, &
                                   check_tracers_chng, check_tracers_fini
-    use time_manager,       only: get_nstep
+    use time_manager,       only: get_nstep, is_first_step, is_end_curr_month
     use cam_abortutils,         only: endrun
     use dycore,             only: dycore_is
     use cam_control_mod,    only: aqua_planet 
@@ -1463,7 +1501,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     use flux_avg,           only: flux_avg_run
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
-    use co2_cycle,          only: co2_cycle_set_ptend
+    use co2_cycle,          only: co2_cycle_set_ptend, co2_transport
+    use co2_diagnostics,    only: get_carbon_sfc_fluxes, get_carbon_air_fluxes
 
     implicit none
 
@@ -1649,6 +1688,7 @@ if (l_tracer_aero) then
     ! add tendency from aircraft emissions
     call co2_cycle_set_ptend(state, pbuf, ptend)
     call physics_update(state, ptend, ztodt, tend)
+    call get_carbon_air_fluxes(state, pbuf, ztodt)
 
     ! Chemistry calculation
     if (chem_is_active()) then
@@ -1700,6 +1740,9 @@ end if ! l_tracer_aero
     
     end if ! l_vdiff
     endif
+
+    ! collect surface carbon fluxes
+    call get_carbon_sfc_fluxes(state, cam_in, ztodt)
 
 
 if (l_rayleigh) then

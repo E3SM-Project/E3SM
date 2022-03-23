@@ -130,6 +130,7 @@ contains
 
       integer :: iCell, iEdge, cell1, cell2, iCellSelf
       integer :: i, k, iTr, nTracers, nCells, nEdges, nCellsP1
+      logical :: use_Redi_diag_terms
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
@@ -200,8 +201,14 @@ contains
       !$omp do schedule(runtime) &
       !$omp private(fluxRediZTop, invAreaCell, i, iEdge, cell1, cell2, iCellSelf, r_tmp, coef, k, &
       !$omp         kappaRediEdgeVal, iTr, tracer_turb_flux, flux, flux_term2, flux_term3, &
-      !$omp         dTracerDx)
+      !$omp         dTracerDx, use_Redi_diag_terms)
       do iCell = 1, nCells
+         if (maxLevelCell(iCell) .ge. config_Redi_min_layers_diag_terms) then
+            use_Redi_diag_terms = .true.
+         else
+            use_Redi_diag_terms = .false.
+         endif
+
          redi_term1(:, :, iCell) = 0.0_RKIND
          redi_term2(:, :, iCell) = 0.0_RKIND
          redi_term3(:, :, iCell) = 0.0_RKIND
@@ -240,6 +247,9 @@ contains
                redi_term1(iTr, k, iCell) = redi_term1(iTr, k, iCell) - (1.0_RKIND + term1TaperFactor* &
                                            (kappaRediEdgeVal - 1.0_RKIND))*edgeSignOnCell(i, iCell)*flux*invAreaCell
 
+               if (.not.use_Redi_diag_terms) cycle
+
+               ! Term 2: div( h S dphi/dz)
                flux_term2 = coef*kappaRediEdgeVal*RediKappa(iEdge)*layerThicknessEdge(k, iEdge)* &
                             0.25_RKIND* &
                             (slopeTriadDown(k, 1, iEdge)*(tracers(iTr, k, cell1) - tracers(iTr, k + 1, cell1)) &
@@ -278,6 +288,8 @@ contains
                   redi_term1(iTr, k, iCell) = redi_term1(iTr, k, iCell) - (1.0_RKIND + term1TaperFactor* &
                                               (kappaRediEdgeVal - 1.0_RKIND))*edgeSignOnCell(i, iCell)*flux*invAreaCell
 
+                  if (.not.use_Redi_diag_terms) cycle
+
                   flux_term2 = coef*RediKappa(iEdge)*kappaRediEdgeVal*layerThicknessEdge(k, iEdge)* &
                                0.25_RKIND* &
                                (slopeTriadUp(k, 1, iEdge)*(tracers(iTr, k - 1, cell1) - tracers(iTr, k, cell1)) &
@@ -311,6 +323,8 @@ contains
                redi_term1(iTr, k, iCell) = redi_term1(iTr, k, iCell) - (1.0_RKIND + term1TaperFactor* &
                                            (kappaRediEdgeVal - 1.0_RKIND))*edgeSignOnCell(i, iCell)*flux*invAreaCell
 
+               if (.not.use_Redi_diag_terms) cycle
+
                ! For bottom layer, only use triads pointing up:
                flux_term2 = coef*kappaRediEdgeVal*RediKappa(iEdge)*layerThicknessEdge(k, iEdge)* &
                             0.25_RKIND* &
@@ -340,28 +354,31 @@ contains
             end do
          end do ! nEdgesOnCell(iCell)
 
-         ! impose no-flux boundary conditions at top and bottom of column
-         fluxRediZTop(:, 1:minLevelCell(iCell)) = 0.0_RKIND
-         fluxRediZTop(:, maxLevelCell(iCell) + 1) = 0.0_RKIND
-         redi_term3_topOfCell(:, 1:minLevelCell(iCell), iCell) = 0.0_RKIND
-         do k = minLevelCell(iCell) + 1, maxLevelCell(iCell)
-            redi_term3_topOfCell(:, k, iCell) = fluxRediZTop(:, k) * invAreaCell
-         end do
-         redi_term3_topOfCell(:, maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
-
-         do k = minLevelCell(iCell), maxLevelCell(iCell)
-            do iTr = 1, nTracers
-               ! Add tendency for Term 3: d/dz ( h S grad phi) = ( S grad phi) fluxes
-               ! 2.0 in next line is because a dot product on a C-grid
-               ! requires a factor of 1/2 to average to the cell center.
-               flux_term3 = rediKappaCell(iCell)*2.0_RKIND* &
-                            (RediKappaSfcTaper(k, iCell)*RediKappaScaling(k, iCell)*fluxRediZTop(iTr, k)  &
-                            * invAreaCell - RediKappaSfcTaper(k + 1, iCell)*RediKappaScaling(k + 1, iCell) &
-                            *fluxRediZTop(iTr, k + 1) * invAreaCell)
-
-               redi_term3(iTr, k, iCell) = redi_term3(iTr, k, iCell) + flux_term3
+         if ( use_Redi_diag_terms) then
+            ! impose no-flux boundary conditions at top and bottom of column
+            fluxRediZTop(:, 1:minLevelCell(iCell)) = 0.0_RKIND
+            fluxRediZTop(:, maxLevelCell(iCell) + 1) = 0.0_RKIND
+            redi_term3_topOfCell(:, 1:minLevelCell(iCell), iCell) = 0.0_RKIND
+            do k = minLevelCell(iCell) + 1, maxLevelCell(iCell)
+               redi_term3_topOfCell(:, k, iCell) = fluxRediZTop(:, k) * invAreaCell
             end do
-         end do
+            redi_term3_topOfCell(:, maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
+
+            do k = minLevelCell(iCell), maxLevelCell(iCell)
+               do iTr = 1, nTracers
+                  ! Add tendency for Term 3: d/dz ( h S grad phi) = ( S grad phi) fluxes
+                  ! 2.0 in next line is because a dot product on a C-grid
+                  ! requires a factor of 1/2 to average to the cell center.
+                  flux_term3 = rediKappaCell(iCell)*2.0_RKIND* &
+                               (RediKappaSfcTaper(k, iCell)*RediKappaScaling(k, iCell)*fluxRediZTop(iTr, k)  &
+                               * invAreaCell - RediKappaSfcTaper(k + 1, iCell)*RediKappaScaling(k + 1, iCell) &
+                               *fluxRediZTop(iTr, k + 1) * invAreaCell)
+
+                  redi_term3(iTr, k, iCell) = redi_term3(iTr, k, iCell) + flux_term3
+               end do
+            end do
+         end if
+
       end do ! iCell
       !$omp end do
       !$omp end parallel
@@ -416,22 +433,29 @@ contains
          do k = minLevelCell(iCell), maxLevelCell(iCell)
             do iTr = 1, ntracers
                tend(iTr, k, iCell) = tend(iTr, k, iCell) + redi_term1(iTr, k, iCell)
-               tend(iTr, k, iCell) = tend(iTr, k, iCell) + rediKappaCell(iCell)*2.0_RKIND* &
-                                     (RediKappaSfcTaper(k, iCell)*RediKappaScaling(k, iCell)* &
-                                      redi_term3_topOfCell(iTr, k, iCell) - RediKappaSfcTaper(k + 1, iCell) &
-                                      *RediKappaScaling(k + 1, iCell)*redi_term3_topOfCell(iTr, k + 1, iCell))
             end do
          end do
 
-         do i = 1, nEdgesOnCell(iCell)
-            if (cellsOnCell(i, iCell) .eq. nCellsP1) cycle
-            iEdge = edgesOnCell(i, iCell)
-            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+         if (maxLevelCell(iCell) .ge. config_Redi_min_layers_diag_terms) then
+            do k = minLevelCell(iCell), maxLevelCell(iCell)
                do iTr = 1, ntracers
-                  tend(iTr, k, iCell) = tend(iTr, k, iCell) + edgeSignOnCell(i, iCell)*invAreaCell*redi_term2_edge(iTr, k, iEdge)
+                  tend(iTr, k, iCell) = tend(iTr, k, iCell) + rediKappaCell(iCell)*2.0_RKIND* &
+                                        (RediKappaSfcTaper(k, iCell)*RediKappaScaling(k, iCell)* &
+                                         redi_term3_topOfCell(iTr, k, iCell) - RediKappaSfcTaper(k + 1, iCell) &
+                                         *RediKappaScaling(k + 1, iCell)*redi_term3_topOfCell(iTr, k + 1, iCell))
                end do
             end do
-         end do
+
+            do i = 1, nEdgesOnCell(iCell)
+               if (cellsOnCell(i, iCell) .eq. nCellsP1) cycle
+               iEdge = edgesOnCell(i, iCell)
+               do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+                  do iTr = 1, ntracers
+                     tend(iTr, k, iCell) = tend(iTr, k, iCell) + edgeSignOnCell(i, iCell)*invAreaCell*redi_term2_edge(iTr, k, iEdge)
+                  end do
+               end do
+            end do
+         end if
       end do ! iCell
       !$omp end do
       !$omp end parallel

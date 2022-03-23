@@ -5,7 +5,7 @@
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/util/scream_column_ops.hpp"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
-#include "YAKL/YAKL.h"
+#include "YAKL.h"
 #include "ekat/ekat_assert.hpp"
 
 namespace scream {

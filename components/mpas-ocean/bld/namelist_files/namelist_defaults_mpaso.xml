@@ -152,6 +152,7 @@
 <config_Redi_N2_based_taper_enable>.true.</config_Redi_N2_based_taper_enable>
 <config_Redi_N2_based_taper_min>0.1</config_Redi_N2_based_taper_min>
 <config_Redi_N2_based_taper_limit_term1>.true.</config_Redi_N2_based_taper_limit_term1>
+<config_Redi_min_layers_diag_terms>6</config_Redi_min_layers_diag_terms>
 
 <!-- GM_eddy_parameterization -->
 <config_use_GM>.true.</config_use_GM>
