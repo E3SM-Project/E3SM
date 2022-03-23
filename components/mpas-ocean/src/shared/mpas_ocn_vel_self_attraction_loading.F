@@ -957,7 +957,8 @@ contains
 
         do while (n .LE. n_S)
             nRow = rowValues(n)
-            do while ( rowValues(n) .EQ. nRow )
+            ! Do while n<size(rowVals), where size(rowVals) = n_S
+            do while ( (n.LE.n_S) .AND. (rowValues(n).EQ.nRow) )
                 nCol = colValues(n)
                 rhs = rhs + dataIn(nCol) * sValues(n)
                 n = n + 1
