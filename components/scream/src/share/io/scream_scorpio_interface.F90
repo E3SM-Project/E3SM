@@ -663,7 +663,7 @@ contains
   ! that has been initialized by the component coupler.  Otherwise, it will be
   ! initalized locally.
   subroutine eam_init_pio_subsystem(mpicom,atm_id,local)
-#ifdef CIME_BUILD
+#ifdef SCREAM_CIME_BUILD
   ! Note, these three variables from shr_pio_mod are only needed in the
   ! case when we want to use the pio_subsystem that has already been defined by
   ! the component coupler.
@@ -688,7 +688,7 @@ contains
     call MPI_Comm_rank(pio_mpicom, pio_myrank, ierr)
     call MPI_Comm_size(pio_mpicom, pio_ntasks , ierr)
 
-#ifdef CIME_BUILD
+#ifdef SCREAM_CIME_BUILD
     if (.not.local) then
       pio_subsystem  => shr_pio_getiosys(atm_id)
       pio_iotype     = shr_pio_getiotype(atm_id)
@@ -708,7 +708,7 @@ contains
       base           = 0
       call PIO_init(pio_myrank, pio_mpicom, pio_ntasks, num_aggregator, stride, &
            pio_rearr_subset, pio_subsystem, base=base)
-#ifdef CIME_BUILD
+#ifdef SCREAM_CIME_BUILD
     end if
 #endif
 
