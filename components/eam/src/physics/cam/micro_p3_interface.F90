@@ -35,7 +35,7 @@ module micro_p3_interface
   use cam_logfile,    only: iulog
   use time_manager,   only: is_first_step, get_curr_date
   use perf_mod,       only: t_startf, t_stopf
-  use micro_p3_utils, only: p3_qc_autocon_expon, p3_qc_accret_expon, do_Cooper_inP3
+  use micro_p3_utils, only: do_Cooper_inP3
   use pio,            only: file_desc_t, pio_nowrite
   use cam_pio_utils,    only: cam_pio_openfile,cam_pio_closefile
   use cam_grid_support, only: cam_grid_check, cam_grid_id, cam_grid_get_dim_names
@@ -122,7 +122,13 @@ module micro_p3_interface
       micro_mg_accre_enhan_fac = huge(1.0_rtype), & !Accretion enhancement factor from namelist
       prc_coef1_in             = huge(1.0_rtype), &
       prc_exp_in               = huge(1.0_rtype), &
-      prc_exp1_in              = huge(1.0_rtype)
+      prc_exp1_in              = huge(1.0_rtype), &
+      p3_autocon_coeff         = huge(1.0_rtype), &
+      p3_accret_coeff          = huge(1.0_rtype), &
+      p3_qc_autocon_expon      = huge(1.0_rtype), &
+      p3_nc_autocon_expon      = huge(1.0_rtype), &
+      p3_qc_accret_expon       = huge(1.0_rtype)
+   
 
    integer :: ncnst
 
@@ -153,7 +159,9 @@ subroutine micro_p3_readnl(nlfile)
 
   namelist /micro_nl/ &
        micro_p3_tableversion, micro_p3_lookup_dir, micro_aerosolactivation, micro_subgrid_cloud, &
-       micro_tend_output, p3_qc_autocon_expon, p3_qc_accret_expon, do_prescribed_CCN, do_Cooper_inP3
+       micro_tend_output, p3_autocon_coeff, p3_qc_autocon_expon, p3_nc_autocon_expon, p3_accret_coeff, &
+       p3_qc_accret_expon, &
+       do_prescribed_CCN, do_Cooper_inP3
 
   !-----------------------------------------------------------------------------
 
@@ -176,7 +184,10 @@ subroutine micro_p3_readnl(nlfile)
      write(iulog,'(A30,1x,L)')    'micro_aerosolactivation: ', micro_aerosolactivation
      write(iulog,'(A30,1x,L)')    'micro_subgrid_cloud: ',     micro_subgrid_cloud
      write(iulog,'(A30,1x,L)')    'micro_tend_output: ',       micro_tend_output
+     write(iulog,'(A30,1x,8e12.4)') 'p3_autocon_coeff',        p3_autocon_coeff
+     write(iulog,'(A30,1x,8e12.4)') 'p3_accret_coeff',         p3_accret_coeff
      write(iulog,'(A30,1x,8e12.4)') 'p3_qc_autocon_expon',     p3_qc_autocon_expon
+     write(iulog,'(A30,1x,8e12.4)') 'p3_nc_autocon_expon',     p3_nc_autocon_expon
      write(iulog,'(A30,1x,8e12.4)') 'p3_qc_accret_expon',      p3_qc_accret_expon
      write(iulog,'(A30,1x,L)')    'do_prescribed_CCN: ',       do_prescribed_CCN
      write(iulog,'(A30,1x,L)')    'do_Cooper_inP3: ',          do_Cooper_inP3
@@ -190,8 +201,11 @@ subroutine micro_p3_readnl(nlfile)
   call mpibcast(micro_aerosolactivation, 1,                          mpilog,  0, mpicom)
   call mpibcast(micro_subgrid_cloud,     1,                          mpilog,  0, mpicom)
   call mpibcast(micro_tend_output,       1,                          mpilog,  0, mpicom)
-  call mpibcast(p3_qc_autocon_expon,     1,                          mpir8,   0, mpicom)
-  call mpibcast(p3_qc_accret_expon,      1,                          mpir8,   0, mpicom)
+  call mpibcast(p3_autocon_coeff,        1 ,                         mpir8,   0, mpicom)
+  call mpibcast(p3_qc_autocon_expon,     1 ,                         mpir8,   0, mpicom)
+  call mpibcast(p3_nc_autocon_expon,     1 ,                         mpir8,   0, mpicom)
+  call mpibcast(p3_accret_coeff,         1 ,                         mpir8,   0, mpicom)
+  call mpibcast(p3_qc_accret_expon,      1 ,                         mpir8,   0, mpicom)
   call mpibcast(do_prescribed_CCN,       1,                          mpilog,  0, mpicom)
   call mpibcast(do_Cooper_inP3,          1,                          mpilog,  0, mpicom)
 
@@ -421,8 +435,7 @@ end subroutine micro_p3_readnl
 
     call micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
              cpliq,tmelt,pi,iulog,masterproc)
-
-
+         
     ! CALL P3 INIT:
     !==============
     !might want to add all E3SM parameter vals to p3_init call...

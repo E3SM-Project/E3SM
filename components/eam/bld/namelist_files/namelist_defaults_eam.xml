@@ -866,14 +866,17 @@
 <micro_nicons         microphys="mg2">  0.1D6       </micro_nicons>
 <micro_mincdnc        microphys="mg2">  -999.       </micro_mincdnc>
 
-<!-- P3 specific namelist variables -->
+<!-- P3 specific namelist variables (using v2 defaults rather than KK defaults) -->
 <micro_p3_lookup_dir	    > atm/cam/physprops </micro_p3_lookup_dir>
 <micro_p3_tableversion		      >  4.1.2 	</micro_p3_tableversion>
 <micro_aerosolactivation        > .true.  </micro_aerosolactivation>
 <micro_subgrid_cloud     	      > .true.  </micro_subgrid_cloud>
 <micro_tend_output       	      > .true.  </micro_tend_output>
-<p3_qc_autoCon_Expon    		    >  2.47   </p3_qc_autoCon_Expon>
-<p3_qc_accret_Expon    		      >  1.15   </p3_qc_accret_Expon>
+<p3_autocon_coeff    		    >  30500.0   </p3_autocon_coeff>
+<p3_qc_autocon_expon    		    >  3.19   </p3_qc_autocon_expon>
+<p3_nc_autocon_expon    		    >  -1.40   </p3_nc_autocon_expon>
+<p3_accret_coeff    		    >  117.25   </p3_accret_coeff>
+<p3_qc_accret_expon    		      >  1.15   </p3_qc_accret_expon>
 <do_prescribed_CCN              > .false. </do_prescribed_CCN>
 <do_Cooper_inP3                 > .false. </do_Cooper_inP3>
 

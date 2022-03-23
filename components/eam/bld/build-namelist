@@ -3572,8 +3572,11 @@ if ($cfg->get('microphys') =~ /^p3/) {
     add_default($nl, 'micro_aerosolactivation');
     add_default($nl, 'micro_subgrid_cloud');
     add_default($nl, 'micro_tend_output');
-    add_default($nl, 'p3_qc_autoCon_Expon');
-    add_default($nl, 'p3_qc_accret_Expon');
+    add_default($nl, 'p3_autocon_coeff');
+    add_default($nl, 'p3_qc_autocon_expon');
+    add_default($nl, 'p3_nc_autocon_expon');
+    add_default($nl, 'p3_accret_coeff');
+    add_default($nl, 'p3_qc_accret_expon');
     add_default($nl, 'do_prescribed_CCN');
     add_default($nl, 'do_Cooper_inP3');
 }
