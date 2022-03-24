@@ -13,6 +13,7 @@ se_ftype                = ${HOMME_SE_FTYPE}
 se_geometry             = "sphere"
 se_limiter_option       = ${HOMME_TEST_LIM}
 se_ne                   = ${HOMME_TEST_NE}
+se_nsplit               = -1
 se_partmethod           = 4
 se_topology             = "cube"
 se_tstep                = ${HOMME_TEST_TIME_STEP}
