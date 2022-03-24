@@ -113,6 +113,7 @@ protected:
         v_me(i,k) = v_A(i,k)*3.0 + 2.0;
       }
     }
+    m_diagnostic_output.sync_to_dev();
   }
 
   // Clean up
