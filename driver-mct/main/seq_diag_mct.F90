@@ -1751,7 +1751,7 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
+  SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, do_bgc_budg, &
        budg_print_inst,  budg_print_daily,  budg_print_month,  &
        budg_print_ann,  budg_print_ltann,  budg_print_ltend, infodata)
 
@@ -1761,6 +1761,7 @@ contains
 
     type(ESMF_Clock) , intent(in) :: EClock
     logical          , intent(in) :: stop_alarm
+    logical          , intent(in) :: do_bgc_budg
     integer          , intent(in) :: budg_print_inst
     integer          , intent(in) :: budg_print_daily
     integer          , intent(in) :: budg_print_month
@@ -1834,7 +1835,9 @@ contains
        if (plev > 0) then
           ! ---- doprint ---- doprint ---- doprint ----
 
-          call seq_diagBGC_preprint_mct()
+          if (do_bgc_budg) then
+             call seq_diagBGC_preprint_mct()
+          endif
           if (.not.sumdone) then
              call seq_diag_sum0_mct()
              dataGpr = budg_dataG
@@ -2195,7 +2198,9 @@ contains
 
           ! ---- doprint ---- doprint ---- doprint ----
 
-          call seq_diagBGC_print_mct(EClock, ip, plev) 
+          if (do_bgc_budg) then
+             call seq_diagBGC_print_mct(EClock, ip, plev) 
+          endif
 
        endif  ! plev > 0
     enddo  ! ip = 1,p_size

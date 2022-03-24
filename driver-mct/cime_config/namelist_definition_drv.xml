@@ -1019,6 +1019,20 @@
     </values>
   </entry>
 
+  <entry id="do_bgc_budgets">
+    <type>logical</type>
+    <category>budget</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      logical that turns on BGC diagnostic budgets, false means BGC budgets will never be written
+    </desc>
+    <values>
+      <value>.false.</value>
+      <value BGC_MODE="CO2.*">.true.</value>
+      <value BGC_MODE=".*_OI">.true.</value>
+    </values>
+  </entry>
+
   <entry id="do_histinit">
     <type>logical</type>
     <category>history</category>
