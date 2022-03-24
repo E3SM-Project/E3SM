@@ -98,13 +98,13 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 }
 
 // =========================================================================================
-int P3Microphysics::requested_buffer_size_in_bytes() const
+size_t P3Microphysics::requested_buffer_size_in_bytes() const
 {
   const Int nk_pack    = ekat::npack<Spack>(m_num_levs);
   const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
 
   // Number of Reals needed by local views in the interface
-  const int interface_request =
+  const size_t interface_request =
       // 1d view scalar, size (ncol)
       Buffer::num_1d_scalar*m_num_cols*sizeof(Real) +
       // 2d view packed, size (ncol, nlev_packs)
@@ -115,7 +115,7 @@ int P3Microphysics::requested_buffer_size_in_bytes() const
 
   // Number of Reals needed by the WorkspaceManager passed to p3_main
   const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
-  const int wsm_request   = WSM::get_total_bytes_needed(nk_pack, 52, policy);
+  const size_t wsm_request   = WSM::get_total_bytes_needed(nk_pack, 52, policy);
 
   return interface_request + wsm_request;
 }

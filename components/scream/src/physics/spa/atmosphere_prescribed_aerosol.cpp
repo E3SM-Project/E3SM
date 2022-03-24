@@ -65,7 +65,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   SPAData_out.init(m_num_cols,m_num_levs,m_nswbands,m_nlwbands,false);
 }
 // =========================================================================================
-int SPA::requested_buffer_size_in_bytes() const
+size_t SPA::requested_buffer_size_in_bytes() const
 {
   using PackInfo = ekat::PackInfo<Spack::n>;
 

@@ -168,7 +168,7 @@ public:
   bool has_computed_group (const std::string& name, const std::string& grid) const;
 
   // Computes total number of bytes needed for local variables
-  virtual int requested_buffer_size_in_bytes () const { return 0; }
+  virtual size_t requested_buffer_size_in_bytes () const { return 0; }
 
   // Set local variables using memory provided by
   // the ATMBufferManager

@@ -208,7 +208,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   m_ic_remapper = grids_manager->create_remapper(m_ref_grid,m_dyn_grid);
 }
 
-int HommeDynamics::requested_buffer_size_in_bytes() const
+size_t HommeDynamics::requested_buffer_size_in_bytes() const
 {
   using namespace Homme;
 

@@ -117,16 +117,16 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("sfc_flux_lw_dn"  , scalar2d_layout, Wm2, grid->name());
 }  // RRTMGPRadiation::set_grids
 
-int RRTMGPRadiation::requested_buffer_size_in_bytes() const
+size_t RRTMGPRadiation::requested_buffer_size_in_bytes() const
 {
-  const int interface_request = Buffer::num_1d_ncol*m_ncol*sizeof(Real) +
-                                Buffer::num_2d_nlay*m_ncol*m_nlay*sizeof(Real) +
-                                Buffer::num_2d_nlay_p1*m_ncol*(m_nlay+1)*sizeof(Real) +
-                                Buffer::num_2d_nswbands*m_ncol*m_nswbands*sizeof(Real) +
-                                Buffer::num_3d_nlev_nswbands*m_ncol*(m_nlay+1)*m_nswbands*sizeof(Real) +
-                                Buffer::num_3d_nlev_nlwbands*m_ncol*(m_nlay+1)*m_nlwbands*sizeof(Real) +
-                                Buffer::num_3d_nlay_nswbands*m_ncol*(m_nlay)*m_nswbands*sizeof(Real) +
-                                Buffer::num_3d_nlay_nlwbands*m_ncol*(m_nlay)*m_nlwbands*sizeof(Real);
+  const size_t interface_request = Buffer::num_1d_ncol*m_ncol*sizeof(Real) +
+                                   Buffer::num_2d_nlay*m_ncol*m_nlay*sizeof(Real) +
+                                   Buffer::num_2d_nlay_p1*m_ncol*(m_nlay+1)*sizeof(Real) +
+                                   Buffer::num_2d_nswbands*m_ncol*m_nswbands*sizeof(Real) +
+                                   Buffer::num_3d_nlev_nswbands*m_ncol*(m_nlay+1)*m_nswbands*sizeof(Real) +
+                                   Buffer::num_3d_nlev_nlwbands*m_ncol*(m_nlay+1)*m_nlwbands*sizeof(Real) +
+                                   Buffer::num_3d_nlay_nswbands*m_ncol*(m_nlay)*m_nswbands*sizeof(Real) +
+                                   Buffer::num_3d_nlay_nlwbands*m_ncol*(m_nlay)*m_nlwbands*sizeof(Real);
 
   return interface_request;
 } // RRTMGPRadiation::requested_buffer_size
@@ -233,7 +233,7 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   m_buffer.aero_tau_lw = decltype(m_buffer.aero_tau_lw)("aero_tau_lw", mem, m_ncol, m_nlay, m_nlwbands);
   mem += m_buffer.aero_tau_lw.totElems();
 
-  int used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
+  size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for RRTMGPRadiation.");
 } // RRTMGPRadiation::init_buffers
 
