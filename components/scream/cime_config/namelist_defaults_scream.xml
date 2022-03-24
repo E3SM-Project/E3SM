@@ -2,7 +2,7 @@
 
 <namelist_defaults>
 
-  <file name="scream_input.yaml" format="yaml">
+  <file name="data/scream_input.yaml" format="yaml">
     <Atmosphere__Driver>
       <Atmosphere__Processes>
         <Number__of__Entries>6</Number__of__Entries>
@@ -81,7 +81,7 @@
         </Dynamics>
       </Initial__Conditions>
       <Scorpio>
-        <Output__YAML__Files>data/scream_output.yaml</Output__YAML__Files>
+        <Output__YAML__Files>data/scream_output.yaml, </Output__YAML__Files>
       </Scorpio>
     </Atmosphere__Driver>
     <SCREAM>
@@ -90,7 +90,7 @@
     </SCREAM>
   </file>
 
-  <file name="namelist.nl" format="nml">
+  <file name="data/namelist.nl" format="nml">
     <ctl_nl>
       <partmethod>4</partmethod>
       <cubed_sphere_map>0</cubed_sphere_map>
