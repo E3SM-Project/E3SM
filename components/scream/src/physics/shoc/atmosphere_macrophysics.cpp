@@ -317,6 +317,14 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
   input_output.horiz_wind   = get_field_out("horiz_winds").get_view<Spack***>();
   input_output.wthv_sec     = sgs_buoy_flux;
   input_output.qtracers     = get_group_out("tracers").m_bundle->get_view<Spack***>();
+
+  auto btracers     = get_group_out("tracers");//.m_bundle->get_view<Spack***>();
+  for (const auto& fname : btracers.m_info->m_fields_names) {
+    std::cout<<"BALLI:"<< fname<<std::endl;
+  }
+
+
+
   input_output.tk           = get_field_out("eddy_diff_mom").get_view<Spack**>();
   input_output.shoc_cldfrac = cldfrac_liq;
   input_output.shoc_ql      = qc;

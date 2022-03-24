@@ -410,7 +410,7 @@ end function shoc_implements_cnst
        enddo
     enddo
 
-    !Ensure tha we have captured all the scalars which needs to participate in
+    !Ensure that we have captured all the scalars which needs to participate in
     !dry<->wet mmr conversion
     if(count(lq_dry_wet_cnvr) .ne. size(dry_wet_scalars)) then
        write(iulog,*)'One or more scalars which have to participate in the', &
