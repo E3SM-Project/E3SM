@@ -221,8 +221,8 @@ module ocn_compute_nonhydrostatic_pressure
                   nhPressureCorrection(k,iCell)
        end do 
     end do
-    print*, 'nonhydrostaticPressure ', nonhydrostaticPressure(10,100)
-    print*, 'nhPressureCorrection ', nhPressureCorrection(10,100)
+    !print*, 'nonhydrostaticPressure ', nonhydrostaticPressure(10,100)
+    !print*, 'nhPressureCorrection ', nhPressureCorrection(10,100)
     !$omp end do
     !$omp end parallel
 
@@ -485,7 +485,7 @@ module ocn_compute_nonhydrostatic_pressure
           nhPressureCorrection(k,iCell) = values(vecSpot+1)
         end do 
      end do
-     print*, nhPressureCorrection(10,100)
+     !print*, nhPressureCorrection(10,100)
      !$omp end do
      !$omp end parallel 
 
