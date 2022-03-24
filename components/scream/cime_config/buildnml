@@ -266,6 +266,9 @@ def buildnml(case, caseroot, compname):
             if not os.path.exists(os.path.join(target, item)):
                  safe_copy(os.path.join(src, item), target)
 
+        # Copy nml config change/query scripts
+        safe_copy(os.path.join(src, "../scripts/atm-config-chg"), caseroot)
+
     create_raw_xml_file(case, caseroot)
 
     nmls_as_dicts = create_nml_files(case, caseroot, rundir)
