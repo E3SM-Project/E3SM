@@ -58,8 +58,7 @@ module micro_p3
        T_rainfrz, T_icenuc, T_homogfrz, iulog=>iulog_e3sm, &
        masterproc=>masterproc_e3sm, calculate_incloud_mixingratios, mu_r_constant, &
        lookup_table_1a_dum1_c, rho_h2o, &
-       p3_qc_autocon_expon, p3_qc_accret_expon, do_Cooper_inP3, &
-       p3_autocon_coeff, p3_nc_autocon_expon, p3_accret_coeff
+       do_Cooper_inP3
 
    use wv_sat_scream, only:qv_sat
 
@@ -546,6 +545,7 @@ end function bfb_expm1
   END SUBROUTINE p3_main_part1
 
   SUBROUTINE p3_main_part2(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, inv_dt, &
+       p3_autocon_coeff,p3_accret_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_qc_accret_expon, &
        pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, &
        inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r, qv_prev, t_prev, &
        t_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th_atm, qc, nc, qr, nr, qi, ni, &
@@ -561,6 +561,7 @@ end function bfb_expm1
     integer, intent(in) :: kts, kte, kbot, ktop, kdir
     logical(btype), intent(in) :: do_predict_nc, do_prescribed_CCN
     real(rtype), intent(in) :: dt, inv_dt
+    real(rtype), intent(in) :: p3_autocon_coeff, p3_accret_coeff, p3_qc_autocon_expon, p3_nc_autocon_expon, p3_qc_accret_expon
 
     real(rtype), intent(in), dimension(kts:kte) :: pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l,      &
          inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r, qv_prev, t_prev, &
@@ -1242,7 +1243,7 @@ end function bfb_expm1
 
   SUBROUTINE p3_main(qc,nc,qr,nr,th_atm,qv,dt,qi,qm,ni,bm,                                                                                                               &
        pres,dz,nc_nuceat_tend,nccn_prescribed,ni_activated,frzimm,frzcnt,frzdep,inv_qc_relvar,it,precip_liq_surf,precip_ice_surf,its,ite,kts,kte,diag_eff_radius_qc,     &
-       diag_eff_radius_qi,rho_qi,do_predict_nc, do_prescribed_CCN,                                                                                                       &
+       diag_eff_radius_qi,rho_qi,do_predict_nc, do_prescribed_CCN,p3_autocon_coeff,p3_accret_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_qc_accret_expon,           &
        dpres,exner,qv2qi_depos_tend,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,rflx,sflx,cflx,cld_frac_r,cld_frac_l,cld_frac_i,               &
        p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange,                                                                                                          &
        vap_ice_exchange,qv_prev,t_prev,col_location,diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice                                                                     &
@@ -1322,6 +1323,13 @@ end function bfb_expm1
 
     ! INPUT for prescribed CCN option
     logical(btype), intent(in)                                  :: do_prescribed_CCN
+
+    ! INPUT for autoconversion and accretion tuning parameters
+    real(rtype), intent(in)                                     :: p3_autocon_coeff         ! autconversion coefficient
+    real(rtype), intent(in)                                     :: p3_accret_coeff          ! accretion coefficient
+    real(rtype), intent(in)                                     :: p3_qc_autocon_expon      ! autconversion qc exponent
+    real(rtype), intent(in)                                     :: p3_nc_autocon_expon      ! autconversion nc exponent
+    real(rtype), intent(in)                                     :: p3_qc_accret_expon       ! accretion qc and qr exponent
 
     ! INPUT needed for PBUF variables used by other parameterizations
 
@@ -1501,6 +1509,7 @@ end function bfb_expm1
        if (.not. (is_nucleat_possible .or. is_hydromet_present)) goto 333
 
        call p3_main_part2(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, inv_dt, &
+            p3_autocon_coeff,p3_accret_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_qc_accret_expon, &
             pres(i,:), dpres(i,:), dz(i,:), nc_nuceat_tend(i,:), exner(i,:), inv_exner(i,:), &
             inv_cld_frac_l(i,:), inv_cld_frac_i(i,:), inv_cld_frac_r(i,:), ni_activated(i,:), inv_qc_relvar(i,:), &
             cld_frac_i(i,:), cld_frac_l(i,:), cld_frac_r(i,:), qv_prev(i,:), t_prev(i,:), &

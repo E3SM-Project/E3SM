@@ -1309,6 +1309,11 @@ end subroutine micro_p3_readnl
          rho_qi(its:ite,kts:kte),  & ! OUT    bulk density of ice              kg m-3
          do_predict_nc,               & ! IN     .true.=prognostic Nc, .false.=specified Nc
          do_prescribed_CCN,           & ! IN
+         p3_autocon_coeff,            & ! IN  autoconversion coefficient
+         p3_accret_coeff,             & ! IN  accretion coefficient
+         p3_qc_autocon_expon,         & ! IN  autoconversion qc exponent
+         p3_nc_autocon_expon,         & ! IN  autoconversion nc exponent
+         p3_qc_accret_expon,          & ! IN  autoconversion coefficient
          ! AaronDonahue new stuff
          state%pdel(its:ite,kts:kte), & ! IN pressure level thickness for computing total mass
          exner(its:ite,kts:kte),      & ! IN exner values
