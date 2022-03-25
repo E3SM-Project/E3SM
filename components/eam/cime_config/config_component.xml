@@ -114,6 +114,7 @@
       <value compset="2010(?:SOI)?_EAM%MMF1"            >2010_mmf_1mom</value>
       <value compset="2010(?:SOI)?_EAM%MMF2"            >2010_mmf_2mom</value>
       <value compset="_EAM%AQP.*MMF"                    >aquaplanet_MMF-1mom</value>
+      <value compset="_EAM%RCE.*MMF"                    >RCEMIP_EAMv1</value>
       <value compset="AR97_EAM%SCM.*MMF"                >scam_arm97_MMF-1mom</value>
       <value compset="RICO_EAM%SCM.*MMF"                >scam_rico_MMF-1mom</value>
       <value compset="20TR_EAM%CMIP6.*MMF"              >20TR_MMF-1mom_CMIP6</value>
