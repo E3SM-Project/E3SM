@@ -393,6 +393,9 @@ void RRTMGPRadiation::run_impl (const int dt) {
   shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
                    obliqr, &delta, &eccf);
 
+  // Are we going to update fluxes and heating this step?
+  auto update_rad = scream::rrtmgp::radiation_do(m_rad_freq_in_steps, ts.get_num_steps());
+
   // Copy data from the FieldManager to the YAKL arrays
   {
     // Determine the cosine zenith angle
@@ -539,20 +542,22 @@ void RRTMGPRadiation::run_impl (const int dt) {
     sfc_alb_dir, sfc_alb_dif);
 
   // Run RRTMGP driver
-  rrtmgp::rrtmgp_main(
-    m_ncol, m_nlay,
-    p_lay, t_lay, p_lev, t_lev,
-    gas_concs,
-    sfc_alb_dir, sfc_alb_dif, mu0,
-    lwp, iwp, rel, rei,
-    aero_tau_sw, aero_ssa_sw, aero_g_sw,
-    aero_tau_lw,
-    sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
-    lw_flux_up, lw_flux_dn, 
-    sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
-    lw_bnd_flux_up, lw_bnd_flux_dn, 
-    eccf, m_atm_logger
-  );
+  if (update_rad) {
+    rrtmgp::rrtmgp_main(
+      m_ncol, m_nlay,
+      p_lay, t_lay, p_lev, t_lev,
+      gas_concs,
+      sfc_alb_dir, sfc_alb_dif, mu0,
+      lwp, iwp, rel, rei,
+      aero_tau_sw, aero_ssa_sw, aero_g_sw,
+      aero_tau_lw,
+      sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
+      lw_flux_up, lw_flux_dn, 
+      sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
+      lw_bnd_flux_up, lw_bnd_flux_dn, 
+      eccf, m_atm_logger
+    );
+  }
 
   // Compute and apply heating rates
   auto sw_heating  = m_buffer.sw_heating;
@@ -594,27 +599,39 @@ void RRTMGPRadiation::run_impl (const int dt) {
   );
 
   // Copy output data back to FieldManager
+  if (update_rad) {
+    std::cout << "Update rad fluxes in FM...\n";
+    {
+      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+        const int i = team.league_rank();
+        d_sfc_flux_dir_nir(i) = sfc_flux_dir_nir(i+1);
+        d_sfc_flux_dir_vis(i) = sfc_flux_dir_vis(i+1);
+        d_sfc_flux_dif_nir(i) = sfc_flux_dif_nir(i+1);
+        d_sfc_flux_dif_vis(i) = sfc_flux_dif_vis(i+1);
+        d_sfc_flux_sw_net(i)  = sw_flux_dn(i+1,kbot) - sw_flux_up(i+1,kbot);
+        d_sfc_flux_lw_dn(i)   = lw_flux_dn(i+1,kbot);
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay+1), [&] (const int& k) {
+          d_sw_flux_up(i,k)     = sw_flux_up(i+1,k+1);
+          d_sw_flux_dn(i,k)     = sw_flux_dn(i+1,k+1);
+          d_sw_flux_dn_dir(i,k) = sw_flux_dn_dir(i+1,k+1);
+          d_lw_flux_up(i,k)     = lw_flux_up(i+1,k+1);
+          d_lw_flux_dn(i,k)     = lw_flux_dn(i+1,k+1);
+        });
+      });
+    }
+  }
+  // Temperature is always updated
   {
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int i = team.league_rank();
-      d_sfc_flux_dir_nir(i) = sfc_flux_dir_nir(i+1);
-      d_sfc_flux_dir_vis(i) = sfc_flux_dir_vis(i+1);
-      d_sfc_flux_dif_nir(i) = sfc_flux_dif_nir(i+1);
-      d_sfc_flux_dif_vis(i) = sfc_flux_dif_vis(i+1);
-      d_sfc_flux_sw_net(i)  = sw_flux_dn(i+1,kbot) - sw_flux_up(i+1,kbot);
-      d_sfc_flux_lw_dn(i)   = lw_flux_dn(i+1,kbot);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay+1), [&] (const int& k) {
-        if (k < nlay) d_tmid(i,k) = t_lay(i+1,k+1);
-
-        d_sw_flux_up(i,k)     = sw_flux_up(i+1,k+1);
-        d_sw_flux_dn(i,k)     = sw_flux_dn(i+1,k+1);
-        d_sw_flux_dn_dir(i,k) = sw_flux_dn_dir(i+1,k+1);
-        d_lw_flux_up(i,k)     = lw_flux_up(i+1,k+1);
-        d_lw_flux_dn(i,k)     = lw_flux_dn(i+1,k+1);
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+        d_tmid(i,k) = t_lay(i+1,k+1);
       });
     });
   }
+   
 }
 // =========================================================================================
 
