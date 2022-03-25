@@ -71,12 +71,12 @@
   </compset>
 
   <compset>
-    <alias>FSCM-MMF1-ARM97</alias>
+    <alias>FSCM-ARM97-MMF1</alias>
     <lname>AR97_EAM%SCM-MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
-    <alias>FSCM-MMF1-RICO</alias>
+    <alias>FSCM-RICO-MMF1</alias>
     <lname>RICO_EAM%SCM-MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
