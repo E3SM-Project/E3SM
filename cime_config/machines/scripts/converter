@@ -1,0 +1,228 @@
+#! /usr/bin/env python3
+
+"""
+Convert config_compilers.xml to a heirarchy of cache files. Puts files
+in pwd.
+"""
+
+import argparse, sys, os, re
+import xml.etree.ElementTree as ET
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <filename>
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Convert $path/file.xml \033[0m
+    > {0} $path/file.xml
+""".format(os.path.basename(args[0])),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("filepath", help="The path to the file to convert")
+
+    parser.add_argument("-m", "--machine", help="Limit conversion to certain machines")
+
+    parser.add_argument("-c", "--compiler", help="Limit conversion to certain compilers")
+
+    args = parser.parse_args(args[1:])
+
+    return args
+
+###############################################################################
+def create_shell_cmd(cmd, count):
+###############################################################################
+    return \
+f"execute_process(COMMAND {cmd} OUTPUT_VARIABLE SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE{count} OUTPUT_STRIP_TRAILING_WHITESPACE)\n"
+
+###############################################################################
+def _create_set_statement_impl(child_text, varname, append=False):
+###############################################################################
+    r"""
+    Impl of create_test_statement
+
+    >>> _create_set_statement_impl("haha", "FOO", append=False)
+    'set(FOO "haha")\n'
+    >>> _create_set_statement_impl("haha", "FOO", append=True)
+    'string(APPEND FOO " haha")\n'
+    >>> print(_create_set_statement_impl("$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -lblas -llapack", "FOO", append=True))
+    execute_process(COMMAND $ENV{NETCDF_PATH}/bin/nf-config --flibs OUTPUT_VARIABLE SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0 OUTPUT_STRIP_TRAILING_WHITESPACE)
+    string(APPEND FOO " ${SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0} -lblas -llapack")
+    <BLANKLINE>
+    >>> print(_create_set_statement_impl("STUFF $SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -lblas -llapack", "FOO", append=True))
+    execute_process(COMMAND $ENV{NETCDF_PATH}/bin/nf-config --flibs OUTPUT_VARIABLE SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0 OUTPUT_STRIP_TRAILING_WHITESPACE)
+    string(APPEND FOO " STUFF ${SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0} -lblas -llapack")
+    <BLANKLINE>
+    >>> print(_create_set_statement_impl("STUFF $SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs}", "FOO", append=True))
+    execute_process(COMMAND $ENV{NETCDF_PATH}/bin/nf-config --flibs OUTPUT_VARIABLE SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0 OUTPUT_STRIP_TRAILING_WHITESPACE)
+    string(APPEND FOO " STUFF ${SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0}")
+    <BLANKLINE>
+    >>> print(_create_set_statement_impl("$SHELL{echo hi}", "FOO", append=True))
+    execute_process(COMMAND echo hi OUTPUT_VARIABLE SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0 OUTPUT_STRIP_TRAILING_WHITESPACE)
+    string(APPEND FOO " ${SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0}")
+    <BLANKLINE>
+    >>> print(_create_set_statement_impl("STUFF $SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} $SHELL{echo hi} there", "FOO", append=True))
+    execute_process(COMMAND $ENV{NETCDF_PATH}/bin/nf-config --flibs OUTPUT_VARIABLE SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0 OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND echo hi OUTPUT_VARIABLE SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE1 OUTPUT_STRIP_TRAILING_WHITESPACE)
+    string(APPEND FOO " STUFF ${SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0} ${SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE1} there")
+    <BLANKLINE>
+    >>> print(_create_set_statement_impl("STUFF $SHELL{$NETCDF_PATH/bin/nf-config --flibs} $SHELL{echo hi} there", "FOO", append=True))
+    execute_process(COMMAND ${NETCDF_PATH}/bin/nf-config --flibs OUTPUT_VARIABLE SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0 OUTPUT_STRIP_TRAILING_WHITESPACE)
+    execute_process(COMMAND echo hi OUTPUT_VARIABLE SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE1 OUTPUT_STRIP_TRAILING_WHITESPACE)
+    string(APPEND FOO " STUFF ${SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0} ${SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE1} there")
+    <BLANKLINE>
+    >>>
+    """
+    bad_deref_re = re.compile(r'[$](?![{]|ENV[{]|SHELL[{])([a-zA-Z0-9_]+)')
+    child_text = bad_deref_re.sub(r"${\1}", child_text)
+
+    return_text = ""
+    shell_cmd_count = 0
+    while "$SHELL" in child_text:
+        start_idx = child_text.index("$SHELL") + len("$SHELL") + 1
+        assert child_text[start_idx-1] == "{", f"Bad SHELL in {child_text}"
+        brace_depth = 1
+        curr_idx = start_idx
+        while brace_depth > 0:
+            if child_text[curr_idx] == "{":
+                brace_depth += 1
+            elif child_text[curr_idx] == "}":
+                brace_depth -= 1
+
+            curr_idx += 1
+
+        cmd = child_text[start_idx:curr_idx-1]
+        child_text = child_text.replace(child_text[start_idx - (len("$SHELL")+1):curr_idx], f"${{SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE{shell_cmd_count}}}")
+        return_text += create_shell_cmd(cmd, shell_cmd_count)
+        shell_cmd_count += 1
+
+    return_text += '{}{} "{}{}")\n'.format("string(APPEND " if append else "set(", varname, " " if append else "", child_text)
+    return return_text
+
+###############################################################################
+def create_set_statement(child, varname=None, append=False):
+###############################################################################
+    child_text = "" if child.text is None else child.text.strip()
+    return _create_set_statement_impl(child_text, varname if varname else child.tag, append=append)
+
+###############################################################################
+def create_if_statement(child, varname=None, append=False):
+###############################################################################
+    assert child.attrib, "Cannot create if statement from child with no attribs"
+    statement = "if ("
+    needs_and = False
+    for k,v in child.attrib.items():
+        if needs_and:
+            statement += " AND "
+
+        if v == "TRUE":
+            statement += k
+        elif v == "FALSE":
+            statement += f"NOT {k}"
+        elif v.startswith("!"):
+            statement += f"NOT {k} STREQUAL {v.strip('!')}"
+        else:
+            statement += f"{k} STREQUAL {v}"
+
+        needs_and = True
+
+    statement += ")\n"
+
+    statement += "  " + create_set_statement(child, varname=varname, append=append)
+    statement += "endif()\n"
+
+    return statement
+
+###############################################################################
+def create_append_statement(subchild, childname):
+###############################################################################
+    if not subchild.attrib:
+        return create_set_statement(subchild, varname=childname, append=True)
+    else:
+        return create_if_statement(subchild, varname=childname, append=True)
+
+###############################################################################
+def make_file_based_on_child(filename, compiler_element):
+###############################################################################
+    with open(filename, "w") as fd:
+        file_contents = ""
+        for child in compiler_element:
+            children = [c for c in child]
+            if not children:
+                if not child.attrib:
+                    file_contents += create_set_statement(child)
+                else:
+                    file_contents += create_if_statement(child)
+            else:
+                for subchild in children:
+                    if subchild.tag == "base":
+                        assert not subchild.attrib, "No attributes allowed on a base child"
+                        file_contents += create_append_statement(subchild, child.tag)
+                    elif subchild.tag == "append":
+                        file_contents += create_append_statement(subchild, child.tag)
+                    else:
+                        assert False, f"Unrecognized subchild {subchild.tag}"
+
+        fd.write(file_contents)
+
+###############################################################################
+def convert(filepath, machine, compiler):
+###############################################################################
+    with open(filepath, "r") as fd:
+        tree = ET.parse(fd)
+        root = tree.getroot()
+
+    for child in root:
+        assert child.tag == "compiler", f"Unexpected child.tag {child.tag}"
+        compiler = None
+        the_os = None
+        mach = None
+        if "COMPILER" in child.attrib:
+            compiler = child.attrib["COMPILER"]
+        if "OS" in child.attrib:
+            the_os = child.attrib["OS"]
+        if "MACH" in child.attrib:
+            mach = child.attrib["MACH"]
+
+        for k in child.attrib.keys():
+            assert k in ["COMPILER", "OS", "MACH"], f"Unexpected compiler attribute {k}"
+
+        if compiler:
+            filename = compiler
+            if the_os:
+                filename += f"_{the_os}"
+                assert not mach, "Should not specify OS and MACH"
+            elif mach:
+                filename += f"_{mach}"
+
+            filename += ".cmake"
+        elif the_os:
+            assert mach is None, "Do not support OS+MACH, the OS on any MACH should be known and fixed"
+
+            filename = f"{the_os}.cmake"
+        elif mach:
+            filename = f"{mach}.cmake"
+
+        else:
+            filename = "universal.cmake"
+
+        make_file_based_on_child(filename, child)
+
+    return True
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    success = convert(**vars(parse_command_line(sys.argv, description)))
+
+    sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

@@ -137,7 +137,7 @@ contains
 !> \author  Phillip Wolfram
 !> \date    07/01/2014
 !> \details
-!>  This routine builds and allocates particlces following initalization
+!>  This routine builds and allocates particles following initalization
 !
 !-----------------------------------------------------------------------
    subroutine mpas_particle_list_build_and_assign_particle_list(domain,err) !{{{
@@ -3456,7 +3456,7 @@ end subroutine allocate_list_particlelists !}}}
      integer :: MPI_TYPE
      type (mpas_list_of_particle_list_type), dimension(:), pointer :: listSend, listRecv
 
-     integer :: i, j, ii, numProcs, numFields, numRecv, numSends, numReals, numInts
+     integer :: i, j, ii, numProcs, numRecv, numSends, numReals, numInts
      integer, dimension(:), pointer :: recvRequestID, sendRequestID
      integer :: mpi_ierr
      type (mpas_pool_type), pointer :: lagrPartTrackPool

@@ -8,7 +8,7 @@ mpas_tools_dir = os.environ['MPAS_TOOLS_DIR']
 
 for nGrid in nGrids:
 
-    filein = Dataset("x1.%i.grid.nc" %(nGrid), "r")
+    filein = Dataset("grid.%i.nc" %(nGrid), "r")
 
     nCells = len(filein.dimensions["nCells"])
     nVertices = len(filein.dimensions["nVertices"])
@@ -24,7 +24,7 @@ for nGrid in nGrids:
 
     filein.close()
 
-    fileout = Dataset("grid_in.%i.nc" %(nGrid),"w",format="NETCDF3_CLASSIC")
+    fileout = Dataset("grid1.%i.nc" %(nGrid),"w",format="NETCDF3_CLASSIC")
 
     fileout.ON_A_SPHERE = "YES"
     fileout.sphere_radius = 1.0
@@ -52,5 +52,5 @@ for nGrid in nGrids:
 
     fileout.close()
 
-    cmd = "%s/mesh_tools/mesh_conversion_tools/MpasMeshConverter.x grid_in.%i.nc grid.%i.nc" %(mpas_tools_dir, nGrid,nGrid)
+    cmd = "%s/mesh_tools/mesh_conversion_tools/MpasMeshConverter.x grid1.%i.nc grid2.%i.nc" %(mpas_tools_dir, nGrid,nGrid)
     os.system(cmd)
