@@ -165,9 +165,6 @@
         <value  compset="HIST_EAM">1850-01-01</value>
         <value  compset="7905_EAM">1979-01-01</value>
         <value  compset="5505_EAM">1955-01-01</value>
-        <value  compset="1996_EAM\d+%WCMX">1996-01-01</value>
-        <value  compset="2000_EAM\d+%WCMX">2000-01-01</value>
-        <value  compset="2000_EAM\d+%WCXI">2000-01-01</value>
         <value  compset="RCP[2468]_EAM\d+">2005-01-01</value>
         <value  compset="C2R[68]_EAM">1950-01-01</value>
         <value  compset="C2R4_EAM">2004-01-01</value>

@@ -52,10 +52,6 @@
       <value compset="_ELM%[^_]*BC"    >-bc_dep_to_snow_updates</value>
       <value compset="_EAM.*_BGC%*"    >-co2_cycle</value>
 
-      <!-- WACCMI -->
-      <value compset="_EAM%WC"         >&eam_phys_defaults; -chem waccm_mozart_mam3</value>
-      <value compset="_EAM%WCMX"       >&eam_phys_defaults; -waccmx</value>
-
       <!-- Single column model (SCM) -->
       <value compset="_EAM%SCM_"       >&eam_phys_defaults; &eam_chem_defaults; -scam</value>
 
@@ -109,8 +105,6 @@
       <value compset="SSP585(?:SOI)?_EAM%CMIP6_.*_BGC%*">SSP585_cam5_CMIP6_bgc</value>
       <value compset="20TR(?:SOI)?_EAM%AR5sf"           >20TR_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TRS_EAM%AR5sf"                  >20TRS_E3SMv1_superfast_ar5-emis</value>
-      <value compset="1850(?:SOI)?_EAM%WCCM"            >waccm_1850_cam5</value>
-      <value compset="2000(?:SOI)?_EAM%WCCM"            >waccm_2000_cam5</value>
       <value compset="AR95_EAM%SCM_"                    >scam_arm95</value>
       <value compset="AR97_EAM%SCM_"                    >scam_arm97</value>
       <value compset="PIPD_EAM"                         >1850-PD_cam5</value>
@@ -166,9 +160,6 @@
     <desc compset="_EAM.*CMIP6-HR" >high-res (ne120 w/ 18to6 ocn) 72 layer E3SM v1 atmos model with CMIP6 forcings </desc>
     <desc compset="_EAM.*CMIP6-LR" >low-res (ne30 w/ oECv3 ocn) 72 layer E3SM v1 atmos model with CMIP6 forcings </desc>
     <desc compset="_EAM.*AR5sf"    >E3SM plus super-fast chemistry with AR5 emissions:</desc>
-    <desc compset="_EAM%WCCM">EAM WACCM with daily solar data and SPEs:</desc>
-    <desc compset="_EAM%WCMX">EAM WACCM-X:</desc>
-    <desc compset="_EAM%WCSC">EAM WACCM specified chemistry:</desc>
     <desc compset="_EAM%FCHM">EAM super_fast_llnl chemistry:</desc>
     <desc compset="_EAM%RCO2">EAM CO2 ramp: </desc>
     <desc compset="AR95_EAM%">single column EAM ARM95 IOP test case:</desc>
