@@ -53,10 +53,11 @@ TEST_CASE("rrtmgp-stand-alone", "") {
   const auto& grid = ad.get_grids_manager()->get_grid("Point Grid");
   const auto& field_mgr = *ad.get_field_mgr(grid->name());
 
-
-  // Make copies of field managed variables
+  // Get field managed variables we need to check
   auto d_sw_flux_up = field_mgr.get_field("sw_flux_up").get_view<Real**,Host>();
-  auto dims = field_mgr.get_field("sw_flux_up").get_header().get_identifier().get_layout().dims();
+
+  // Create deep copies so that we can check values before and after call to ad.run
+  scream::RRTMGPRadiation::view_2d_real::HostMirror d_sw_flux_up_before = create_mirror(d_sw_flux_up);
 
   // Start stepping
   if (atm_comm.am_i_root()) {
@@ -66,32 +67,27 @@ TEST_CASE("rrtmgp-stand-alone", "") {
 
     // Test that in between rad steps, we maintain the same values of fluxes and heating rates
     // get rad fluxes and heating rates before; we set rad_requency to 3 in the input.yaml, so
-    // the first three steps should look the same
-    auto d_sw_data = d_sw_flux_up.data();
-    scream::RRTMGPRadiation::view_2d_real::HostMirror d_sw_flux_up_before(d_sw_data,dims[0],dims[1]);
-    //Kokkos::deep_copy(d_sw_flux_up_before, d_sw_flux_up);
+    // the first two steps should look the same
+    deep_copy(d_sw_flux_up_before, d_sw_flux_up);
 
     ad.run(dt);
 
     // compare before and after
-    //auto d_sw_flux_dn_after = field_mgr.get_field("sw_flux_dn").get_view<Real**>();
-    //auto d_sw_flux_dn_dir_after = field_mgr.get_field("sw_flux_dn_dir").get_view<Real**>();
-    //auto d_lw_flux_up_after = field_mgr.get_field("lw_flux_up").get_view<Real**>();
-    //auto d_lw_flux_dn_after = field_mgr.get_field("lw_flux_dn").get_view<Real**>();
-    // First step (i = 0) should be different
-    if (i == 0) {
-        REQUIRE(d_sw_flux_up_before(2,2) != d_sw_flux_up(2,2));
-    } else if (i == 1) {
-        REQUIRE(d_sw_flux_up_before(2,2) == d_sw_flux_up(2,2));
-    } else if (i == 2) {
-        REQUIRE(d_sw_flux_up_before(2,2) == d_sw_flux_up(2,2));
-    } else if (i == 3) {
-        REQUIRE(d_sw_flux_up_before(2,2) != d_sw_flux_up(2,2));
-    }
+    int icol = 2;
+    int ilev = 2;
     if (atm_comm.am_i_root()) {
+      std::cout << "after ad flux_up: " << d_sw_flux_up(icol,ilev) << "; flux_up_before: " << d_sw_flux_up_before(icol,ilev) << std::endl;
       std::cout << "  - Iteration " << std::setfill(' ') << std::setw(3) << i+1 << " completed";
       std::cout << "       [" << std::setfill(' ') << std::setw(3) << 100*(i+1)/nsteps << "%]\n";
-      std::cout << "flux_up: " << d_sw_flux_up(2,2) << "; flux_up_before: " << d_sw_flux_up_before(2,2) << std::endl;
+    }
+    if (i == 0) {
+        REQUIRE(d_sw_flux_up_before(icol,ilev) != d_sw_flux_up(icol,ilev));
+    } else if (i == 1) {
+        REQUIRE(d_sw_flux_up_before(icol,ilev) == d_sw_flux_up(icol,ilev));
+    } else if (i == 2) {
+        REQUIRE(d_sw_flux_up_before(icol,ilev) == d_sw_flux_up(icol,ilev));
+    } else if (i == 3) {
+        REQUIRE(d_sw_flux_up_before(icol,ilev) != d_sw_flux_up(icol,ilev));
     }
   }
 
