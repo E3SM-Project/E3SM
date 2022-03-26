@@ -2,6 +2,30 @@
 
 <namelist_defaults>
 
+  <!--
+      The following block defines convenience selectors. Case settings
+      can be used as selectors, but they are often not covenient due to
+      long names or having to process their values through regular expressions
+      to get the subpiece you are interested in. The convenience selectors
+      allow you to express this logic and capture it with a short name.
+
+      The follow attributes are how one defines a selector
+        name     : The name of the selector
+        case_env : The case value (thing you can xmlquery)
+        regex    : OPTIONAL, how to pick out the piece of the value you are interested in
+                   By default, the entire value is grabbed. If the regex does not match
+                   the case value, then the selector will evaluate to False.
+
+      Example using the nlev selector
+        <partmethod nlev="128">42</partmethod>
+        <partmethod nlev="72">420</partmethod>
+  -->
+  <selectors>
+    <selector name="hgrid" case_env="ATM_GRID"/>
+    <selector name="dyn" case_env="ATM_DYN_TARGET"/>
+    <selector name="nlev" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_VERTICAL_LEV ([0-9]+).*"/>
+  </selectors>
+
   <file name="data/scream_input.yaml" format="yaml">
     <Atmosphere__Driver>
       <Atmosphere__Processes>

@@ -70,7 +70,7 @@ def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
         return yaml.dump(data, item, OrderedDumper, **kwds)
 
 ###############################################################################
-def evaluate_selectors(element, case):
+def evaluate_selectors(element, case, ez_selectors):
 ###############################################################################
     child_values = {} # elem_name -> evaluated XML element
     children_to_remove = []
@@ -79,7 +79,7 @@ def evaluate_selectors(element, case):
         child_val = child.text
 
         has_children = False
-        for grand_child in child:
+        for _ in child:
             has_children = True
             break
 
@@ -89,10 +89,26 @@ def evaluate_selectors(element, case):
                 expect(child_name in child_values, "Child {} with selectors has no default value".format(child_name))
                 all_match = True
                 for k, v in selectors.items():
-                    case_val = case.get_value(k)
                     val_re = re.compile(v)
 
-                    if val_re.match(case_val) is None:
+                    if k in ez_selectors:
+                        ez_env, ez_regex = ez_selectors[k]
+                        case_val = case.get_value(ez_env)
+                        expect(case_val is not None, "Could not get selector value {} from case".format(ez_env))
+
+                        ez_regex_re = re.compile(ez_regex)
+                        m = ez_regex_re.match(case_val)
+                        if m:
+                            val = m.groups()[0]
+                        else:
+                            val = "DOES NOT MATCH"
+
+                    else:
+                        val = case.get_value(k)
+                        expect(val is not None, "Could not get selector value {} from case".format(k))
+
+
+                    if val_re.match(val) is None:
                         all_match = False
                         break
 
@@ -108,7 +124,7 @@ def evaluate_selectors(element, case):
                 child.text = do_cime_vars(child_val, case)
 
         else:
-            evaluate_selectors(child, case)
+            evaluate_selectors(child, case, ez_selectors)
 
     for child_to_remove in children_to_remove:
         element.remove(child_to_remove)
@@ -126,13 +142,36 @@ def create_raw_xml_file(case, caseroot):
             tree = ET.parse(fd)
             root = tree.getroot()
 
+        selectors = None
+        selectors_elem = None
         for child in root:
-            expect(child.tag == "file", "Unexpected child.tag {}".format(child.tag))
-            expect("name" in child.attrib, "file element missing required 'name' attribute")
-            expect("format" in child.attrib, "file element missing required 'format' attribute")
+            if selectors is None:
+                expect(child.tag == "selectors", "Unexpected child.tag {}".format(child.tag))
+                selectors_elem = child
 
-            for grandchild in child:
-                evaluate_selectors(grandchild, case)
+                selectors = {}
+                for selector in child:
+                    expect(selector.tag == "selector", "Expected selector tag, not {}".format(selector.tag))
+
+                    selector_name  = selector.attrib["name"]
+                    selector_env   = selector.attrib["case_env"]
+                    if "regex" in selector.attrib:
+                        selector_regex = selector.attrib["regex"]
+                    else:
+                        selector_regex = ".*" # Just grab the whole thing
+
+                    selectors[selector_name] = (selector_env, selector_regex)
+
+            else:
+                expect(child.tag == "file", "Unexpected child.tag {}".format(child.tag))
+                expect("name" in child.attrib, "file element missing required 'name' attribute")
+                expect("format" in child.attrib, "file element missing required 'format' attribute")
+
+                for grandchild in child:
+                    evaluate_selectors(grandchild, case, selectors)
+
+        if selectors_elem is not None:
+            root.remove(selectors_elem)
 
         tree.write(raw_xml_file)
 
@@ -197,7 +236,7 @@ def dump_to_nml(dict_contents, fd):
             fd.write("{} = {}\n".format(k, v))
 
 ###############################################################################
-def create_nml_files(case, caseroot, rundir):
+def create_nml_files(caseroot, rundir):
 ###############################################################################
     raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
     with open(raw_xml_file, "r") as fd:
@@ -264,14 +303,14 @@ def buildnml(case, caseroot, compname):
             # Do not overwrite existing files because that would remove any
             # local mods made by the user.
             if not os.path.exists(os.path.join(target, item)):
-                 safe_copy(os.path.join(src, item), target)
+                safe_copy(os.path.join(src, item), target)
 
         # Copy nml config change/query scripts
         safe_copy(os.path.join(src, "../scripts/atm-config-chg"), caseroot)
 
     create_raw_xml_file(case, caseroot)
 
-    nmls_as_dicts = create_nml_files(case, caseroot, rundir)
+    nmls_as_dicts = create_nml_files(caseroot, rundir)
     scream_input = nmls_as_dicts["data/scream_input.yaml"]
 
     # Create input data list
