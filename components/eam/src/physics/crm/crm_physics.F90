@@ -17,12 +17,12 @@ module crm_physics
 #endif
    use cam_history,     only: outfld
 
-#if defined(MMF_GLOBAL_QRT) || defined(MMF_GLOBAL_QRS) || defined(MMF_GLOBAL_QRL)
+! #if defined(MMF_GLOBAL_QRT) || defined(MMF_GLOBAL_QRS) || defined(MMF_GLOBAL_QRL)
   use physics_buffer,         only: pbuf_get_field
   use phys_gmean,             only: gmean
   use crmdims,                only: crm_nx_rad, crm_ny_rad, crm_nz
   use physconst,              only: cpair
-#endif
+! #endif
 
    implicit none 
    private
