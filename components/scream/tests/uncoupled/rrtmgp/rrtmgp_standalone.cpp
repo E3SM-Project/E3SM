@@ -6,6 +6,7 @@
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
+#include "share/field/field_utils.hpp"
 
 #include "ekat/ekat_parse_yaml_file.hpp"
 
@@ -54,10 +55,18 @@ TEST_CASE("rrtmgp-stand-alone", "") {
   const auto& field_mgr = *ad.get_field_mgr(grid->name());
 
   // Get field managed variables we need to check
-  auto d_sw_flux_up = field_mgr.get_field("sw_flux_up").get_view<Real**,Host>();
+  auto sw_flux_up = field_mgr.get_field("sw_flux_up");
 
   // Create deep copies so that we can check values before and after call to ad.run
-  scream::RRTMGPRadiation::view_2d_real::HostMirror d_sw_flux_up_before = create_mirror(d_sw_flux_up);
+  // Note: we have to do some trickery here to make sure the new fields we allocate
+  // get the same size as the (packed) ones in the FM, otherwise the vertical dim
+  // might be padded in the FM fields and unpadded in our copies, which will cause
+  // the deep_copy below to fail.
+  Field sw_flux_up_old = Field(sw_flux_up.get_header().get_identifier());
+  const auto& ap_new = sw_flux_up.get_header().get_alloc_properties();
+  auto& ap_old = sw_flux_up_old.get_header().get_alloc_properties();
+  ap_old.request_allocation(ap_new.get_largest_pack_size());
+  sw_flux_up_old.allocate_view();
 
   // Start stepping
   if (atm_comm.am_i_root()) {
@@ -65,29 +74,30 @@ TEST_CASE("rrtmgp-stand-alone", "") {
   }
   for (int i=0; i<nsteps; ++i) {
 
-    // Test that in between rad steps, we maintain the same values of fluxes and heating rates
-    // get rad fluxes and heating rates before; we set rad_requency to 3 in the input.yaml, so
-    // the first two steps should look the same
-    deep_copy(d_sw_flux_up_before, d_sw_flux_up);
+    // Create a (deep) copy of fields we want to check before calling ad.run() so we can verify
+    // that these fields do or do not change as we expect them to based on the rad frequency
+    sw_flux_up_old.deep_copy(sw_flux_up);
 
     ad.run(dt);
 
     // compare before and after
-    int icol = 2;
-    int ilev = 2;
+    auto d_sw_flux_up_new = sw_flux_up.get_view<Real**,Host>();
+    auto d_sw_flux_up_old = sw_flux_up_old.get_view<Real**,Host>();
     if (atm_comm.am_i_root()) {
-      std::cout << "after ad flux_up: " << d_sw_flux_up(icol,ilev) << "; flux_up_before: " << d_sw_flux_up_before(icol,ilev) << std::endl;
       std::cout << "  - Iteration " << std::setfill(' ') << std::setw(3) << i+1 << " completed";
       std::cout << "       [" << std::setfill(' ') << std::setw(3) << 100*(i+1)/nsteps << "%]\n";
     }
+    // Test that in between rad steps, we maintain the same values of fluxes and heating rates
+    // get rad fluxes and heating rates before; we set rad_requency to 3 in the input.yaml, so
+    // the first two steps should look the same
     if (i == 0) {
-        REQUIRE(d_sw_flux_up_before(icol,ilev) != d_sw_flux_up(icol,ilev));
+        REQUIRE(!views_are_equal(sw_flux_up_old, sw_flux_up));
     } else if (i == 1) {
-        REQUIRE(d_sw_flux_up_before(icol,ilev) == d_sw_flux_up(icol,ilev));
+        REQUIRE(views_are_equal(sw_flux_up_old, sw_flux_up));
     } else if (i == 2) {
-        REQUIRE(d_sw_flux_up_before(icol,ilev) == d_sw_flux_up(icol,ilev));
+        REQUIRE(views_are_equal(sw_flux_up_old, sw_flux_up));
     } else if (i == 3) {
-        REQUIRE(d_sw_flux_up_before(icol,ilev) != d_sw_flux_up(icol,ilev));
+        REQUIRE(!views_are_equal(sw_flux_up_old, sw_flux_up));
     }
   }
 
