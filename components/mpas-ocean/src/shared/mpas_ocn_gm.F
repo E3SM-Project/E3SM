@@ -682,6 +682,46 @@ contains
          endif
 
          nEdges = nEdgesArray(3)
+         if(config_gm_enable_horizontal_resolution_function) then
+            !$omp parallel
+            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, lt1, lt2)
+            do iEdge = 1, nEdges
+               cell1 = cellsOnEdge(1, iEdge)
+               cell2 = cellsOnEdge(2, iEdge)
+               sumN2 = 0.0
+
+               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)-1
+
+                  lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
+                  lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
+                  sumN2 = sumN2 + 0.5_RKIND*(lt1*sqrt(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND)) + &
+                                  lt2*sqrt(max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND)))
+               end do
+
+!               c_mode1 = max(0.0_RKIND, sumN2/(3.141592_RKIND))
+!               cGMphasespeed(iEdge) = c_mode1
+!               resolution = sqrt(c_mode1 / (fEdge(iEdge)**2.0 + betaEdge(iEdge)*c_mode1 + 1.0E-15_RKIND)) &
+!                            / dcEdge(iEdge)
+!               if (resolution .ge. 2.0 .or. c_mode1 .lt. 0.1_RKIND) then
+!                  gmResolutionTaper(iEdge) = 0.0_RKIND
+!               else
+!                  gmResolutionTaper(iEdge) = 1.0_RKIND
+!               end if
+            end do
+            !$omp end do
+            !$omp end parallel
+         end if
+
+         if(config_Redi_closure == 'equalGM') then
+           !$omp parallel
+           !$omp do schedule(runtime)
+           do iEdge=1,nEdges
+              RediKappa(iEdge) = gmBolusKappa(iEdge)
+           end do
+           !$omp end do
+           !$omp end parallel
+         end if
+
          !!$omp parallel
          !!$omp do schedule(runtime) private(cell1, cell2, k, &
          !!$omp             BruntVaisalaFreqTopEdge, N) &
@@ -943,6 +983,23 @@ contains
          end if
 
          RediGMinitValue = 1.0_RKIND
+         !compute beta
+         if(config_GM_closure == 'Visbeck'.or. &
+            config_GM_closure == 'visbeck'.or. &
+            config_GM_closure == 'EdenGreatbatch'.or. &
+            config_GM_closure == 'edengreatbatch'.or. &
+            config_GM_closure == 'edenGreatbatch'.or. &
+            config_gm_enable_horizontal_resolution_function) then
+            call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+            call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
+            !$omp parallel
+            !$omp do schedule(runtime)
+            do iEdge=1,nEdges
+               betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
+            end do
+            !$omp end do
+            !$omp end parallel
+         end if
          if (config_GM_closure == 'constant') then
             local_config_GM_lat_variable_c2 = .false.
             local_config_GM_kappa_lat_depth_variable = .false.
@@ -1014,7 +1071,8 @@ contains
          end if
 
          ! Add resolution taper
-         if (config_eddying_resolution_taper == 'none') then
+         if (config_eddying_resolution_taper == 'none' .or. &
+             config_gm_enable_horizontal_resolution_function) then
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1,nEdges
@@ -1023,7 +1081,8 @@ contains
             !$omp end do
             !$omp end parallel
             ! Nothing to do, as we just keep the same assignment as above.
-         else if (config_eddying_resolution_taper == 'ramp') then
+         else if (config_eddying_resolution_taper == 'ramp' .and. &
+                  .not. config_gm_enable_horizontal_resolution_function) then
             !$omp parallel
             !$omp do schedule(runtime) 
             do iEdge = 1, nEdges
