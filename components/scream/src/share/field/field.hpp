@@ -105,6 +105,10 @@ public:
 
   bool is_read_only () const { return m_is_read_only; }
 
+  // Creates a deep copy version of this field.
+  // It is created with a pristine header (no providers/customers)
+  Field clone () const;
+
   // Allows to get the underlying view, reshaped for a different data type.
   // The class will check that the requested data type is compatible with the
   // allocation. This allows each field to be stored as a 1d array, but then
