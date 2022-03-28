@@ -59,6 +59,8 @@ def buildnml(case, caseroot, compname):
  
 
     os.chdir(caseroot)
+
+    print("GLC_GRID ","(",case.get_value("GLC_GRID"),")",sep="")
     
     cimeroot          = case.get_value("CIMEROOT")
     caseroot          = case.get_value("CASEROOT")

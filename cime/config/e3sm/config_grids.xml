@@ -905,6 +905,17 @@
 
     <!--- BISICLES grids -->
 
+    <model_grid alias="f09_g16_g" compset="_BISICLES">
+      <grid name="atm">0.9x1.25</grid>
+      <grid name="lnd">0.9x1.25</grid>
+      <grid name="ocnice">gx1v6</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">mpas.gis20km</grid>
+      <grid name="wav">null</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+
     <model_grid alias="f09_g16_a" compset="_BISICLES">
       <grid name="atm">0.9x1.25</grid>
       <grid name="lnd">0.9x1.25</grid>
@@ -1279,6 +1290,26 @@
       <grid name="ocnice">oQU120</grid>
       <grid name="rof">rx1</grid>
       <grid name="glc">mpas.ais20km</grid>
+      <grid name="wav">null</grid>
+      <mask>oQU120</mask>
+    </model_grid>
+
+    <model_grid alias="T62_oQU120_gis20_bisicles" compset="MPASO.*_BISICLES">
+      <grid name="atm">T62</grid>
+      <grid name="lnd">T62</grid>
+      <grid name="ocnice">oQU120</grid>
+      <grid name="rof">rx1</grid>
+      <grid name="glc">mpas.gis20km</grid>
+      <grid name="wav">null</grid>
+      <mask>oQU120</mask>
+    </model_grid>
+
+    <model_grid alias="T62_oQU120_gisbis_bisicles" compset="MPASO.*_BISICLES">
+      <grid name="atm">T62</grid>
+      <grid name="lnd">T62</grid>
+      <grid name="ocnice">oQU120</grid>
+      <grid name="rof">rx1</grid>
+      <grid name="glc">mpas.gisbis</grid>
       <grid name="wav">null</grid>
       <mask>oQU120</mask>
     </model_grid>
