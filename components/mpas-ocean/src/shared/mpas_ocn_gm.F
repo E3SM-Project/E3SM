@@ -139,6 +139,7 @@ contains
       real (kind=RKIND) :: eddyLength, eddyTime
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
       real(kind=RKIND) :: c_Visbeck   ! baroclinic wave speed from Visbeck parameterization
+      real(kind=RKIND) :: c_mode1, resolution
       ! Dimensions
       integer :: nCells, nEdges
       integer, pointer :: nVertLevels
@@ -698,15 +699,15 @@ contains
                                   lt2*sqrt(max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND)))
                end do
 
-!               c_mode1 = max(0.0_RKIND, sumN2/(3.141592_RKIND))
-!               cGMphasespeed(iEdge) = c_mode1
-!               resolution = sqrt(c_mode1 / (fEdge(iEdge)**2.0 + betaEdge(iEdge)*c_mode1 + 1.0E-15_RKIND)) &
-!                            / dcEdge(iEdge)
-!               if (resolution .ge. 2.0 .or. c_mode1 .lt. 0.1_RKIND) then
-!                  gmResolutionTaper(iEdge) = 0.0_RKIND
-!               else
-!                  gmResolutionTaper(iEdge) = 1.0_RKIND
-!               end if
+               c_mode1 = max(0.0_RKIND, sumN2/(3.141592_RKIND))
+               cGMphaseSpeed(iEdge) = c_mode1
+               resolution = sqrt(c_mode1 / (fEdge(iEdge)**2.0 + betaEdge(iEdge)*c_mode1 + 1.0E-15_RKIND)) &
+                            / dcEdge(iEdge)
+               if (resolution .ge. 2.0 .or. c_mode1 .lt. 0.1_RKIND) then
+                  gmResolutionTaper(iEdge) = 0.0_RKIND
+               else
+                  gmResolutionTaper(iEdge) = 1.0_RKIND
+               end if
             end do
             !$omp end do
             !$omp end parallel
