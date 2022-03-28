@@ -123,6 +123,7 @@ add_default($nl, 'config_Redi_min_layers_diag_terms');
 add_default($nl, 'config_use_GM');
 add_default($nl, 'config_GM_closure');
 add_default($nl, 'config_GM_constant_kappa');
+add_default($nl, 'config_gm_enable_horizontal_resolution_function');
 add_default($nl, 'config_GM_constant_bclModeSpeed');
 add_default($nl, 'config_GM_minBclModeSpeed_method');
 add_default($nl, 'config_GM_spatially_variable_min_kappa');
