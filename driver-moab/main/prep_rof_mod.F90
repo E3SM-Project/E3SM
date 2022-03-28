@@ -424,8 +424,8 @@ contains
    ! we should do this only if ocn_present
    context_id = ocn(1)%cplcompid
    wgtIdef = 'map-from-file'//C_NULL_CHAR
-   tagName = 'mbForr_rofl;mbForr_rofi;'//C_NULL_CHAR  
-   tagNameProj = 'mbForr_rofl_proj;mbForr_rofi_proj;'//C_NULL_CHAR
+   tagName = 'mbForr_rofl:mbForr_rofi:'//C_NULL_CHAR  
+   tagNameProj = 'mbForr_rofl_proj:mbForr_rofi_proj:'//C_NULL_CHAR
    num_proj = num_proj + 1
 
    if (rof_present .and. ocn_present) then

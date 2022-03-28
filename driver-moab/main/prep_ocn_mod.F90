@@ -1542,7 +1542,7 @@ contains
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
     context_id = -1
     ! now send the tag a2oTbot_proj, a2oUbot_proj, a2oVbot_proj from ocn on coupler pes towards original ocean mesh
-    tagName = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//C_NULL_CHAR !  defined in prep_atm_mod.F90!!!
+    tagName = 'a2oTbot_proj:a2oUbot_proj:a2oVbot_proj:'//C_NULL_CHAR !  defined in prep_atm_mod.F90!!!
 
     if (mboxid .ge. 0) then !  send because we are on coupler pes
 

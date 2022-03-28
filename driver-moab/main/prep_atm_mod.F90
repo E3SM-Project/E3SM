@@ -659,7 +659,7 @@ contains
 
     context_id = ocn(1)%cplcompid
     wgtIdef = 'scalar'//C_NULL_CHAR
-    tagNameProj = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//C_NULL_CHAR
+    tagNameProj = 'a2oTbot_proj:a2oUbot_proj:a2oVbot_proj:'//C_NULL_CHAR
     num_proj = num_proj + 1
 
     if (atm_present .and. ocn_present) then
@@ -670,7 +670,7 @@ contains
           ! basically, adjust the migration of the tag we want to project; it was sent initially with
           ! trivial partitioning, now we need to adjust it for "coverage" mesh
           ! as always, use nonblocking sends
-          tagName = 'T_ph;u_ph;v_ph;'//C_NULL_CHAR ! they are defined in initialize_moab_atm_phys in atm_comp_mct
+          tagName = 'T_ph:u_ph:v_ph:'//C_NULL_CHAR ! they are defined in initialize_moab_atm_phys in atm_comp_mct
           context_id = 100*atm(1)%cplcompid + ocn(1)%cplcompid !send to atm/ocn intx !
           ierr = iMOAB_SendElementTag(mphaid, tagName, mpicom_join, context_id)
           if (ierr .ne. 0) then
@@ -681,7 +681,7 @@ contains
         endif
 
         if (mbintxoa .ge. 0 ) then ! we are for sure on coupler pes!
-          tagName = 'T_ph16;u_ph16;v_ph16;'//C_NULL_CHAR ! they are defined in cplcomp_exchange mod
+          tagName = 'T_ph16:u_ph16:v_ph16:'//C_NULL_CHAR ! they are defined in cplcomp_exchange mod
           ! context_id = atm(1)%cplcompid == atm_id above (5)
           ! we use the same name as spectral case, even thought in pg2 case, the size of tag is 1, not 16
           ! in imoab_apg2_ol_coupler.cpp we use at this stage, receiver, the same name as sender, T_ph
@@ -701,7 +701,7 @@ contains
           endif
         endif
       else  ! original send from spectral elements
-        tagName = 'a2oTbot;a2oUbot;a2oVbot;'//C_NULL_CHAR ! they are defined in semoab_mod.F90!!!
+        tagName = 'a2oTbot:a2oUbot:a2oVbot:'//C_NULL_CHAR ! they are defined in semoab_mod.F90!!!
         !  the separator will be ';' semicolon
 
         if (mhid .ge. 0) then !  send because we are on atm pes
@@ -765,7 +765,7 @@ contains
 
     endif  ! if atm and ocn
     ! repeat this for land data, that is already on atm tag
-    tagNameProj = 'a2lTbot_proj;a2lUbot_proj;a2lVbot_proj;'//C_NULL_CHAR
+    tagNameProj = 'a2lTbot_proj:a2lUbot_proj:a2lVbot_proj:'//C_NULL_CHAR
 
     context_id = lnd(1)%cplcompid
 
@@ -779,7 +779,7 @@ contains
             ! basically, adjust the migration of the tag we want to project; it was sent initially with
             ! original partitioning, now we need to adjust it for "coverage" mesh
             ! as always, use nonblocking sends
-            tagName = 'T_ph;u_ph;v_ph;'//C_NULL_CHAR ! they are defined in initialize_moab_atm_phys in atm_comp_mct
+            tagName = 'T_ph:u_ph:v_ph:'//C_NULL_CHAR ! they are defined in initialize_moab_atm_phys in atm_comp_mct
             context_id = 100*atm(1)%cplcompid + lnd(1)%cplcompid !send to atm/lnd intx !
             ! use computed graph
             ierr = iMOAB_SendElementTag(mphaid, tagName, mpicom_join, context_id)
@@ -791,7 +791,7 @@ contains
           endif
           if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
             ! receive on atm on coupler pes, that was redistributed according to coverage
-            tagName = 'T_ph;u_ph;v_ph;'//C_NULL_CHAR ! they are defined in initialize_moab_atm_phys
+            tagName = 'T_ph:u_ph:v_ph:'//C_NULL_CHAR ! they are defined in initialize_moab_atm_phys
             ierr = iMOAB_ReceiveElementTag(mbintxla, tagName, mpicom_join, atm_id)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in receiving tag from atm to atm land intx '
@@ -809,7 +809,7 @@ contains
             endif
           endif
         else ! regular coarse homme mesh if (.not. atm_pg_active)
-          tagName = 'a2oTbot;a2oUbot;a2oVbot;'//C_NULL_CHAR
+          tagName = 'a2oTbot:a2oUbot:a2oVbot:'//C_NULL_CHAR
           ! context_id = lnd(1)%cplcompid !
           if (mhid .ge. 0) then !  send because we are on atm pes
 
