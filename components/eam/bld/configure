@@ -2539,7 +2539,7 @@ sub write_filepath
 
           # advection scheme
           my $crm_adv = 'MPDATA';
-          if (defined $opts{'crm_adv'}) { my $crm_adv = $cfg_ref->get('crm_adv'); }
+          if (defined $opts{'crm_adv'}) { $crm_adv = $cfg_ref->get('crm_adv'); }
           if ($crm_adv eq 'MPDATA') {
             print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_MPDATA\n";
           } elsif ($crm_adv eq 'UM5') {
@@ -2567,7 +2567,7 @@ sub write_filepath
 
           # advection scheme
           my $crm_adv = 'MPDATA';
-          if (defined $opts{'crm_adv'}) { my $crm_adv = $cfg_ref->get('crm_adv'); }
+          if (defined $opts{'crm_adv'}) { $crm_adv = $cfg_ref->get('crm_adv'); }
           if ($crm_adv eq 'MPDATA') {
             print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_MPDATA\n";
           } elsif ($crm_adv eq 'UM5') {
