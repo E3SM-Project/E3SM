@@ -251,6 +251,7 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
   const auto& surf_sens_flux   = get_field_in("surf_sens_flux").get_view<const Real*>();
   const auto& surf_latent_flux = get_field_in("surf_latent_flux").get_view<const Real*>();
   const auto& surf_mom_flux    = get_field_in("surf_mom_flux").get_view<const Real**>();
+  const auto& qtracers         = get_group_out("tracers").m_bundle->get_view<Spack***>();
   const auto& qc               = get_field_out("qc").get_view<Spack**>();
   const auto& qv               = get_field_out("qv").get_view<Spack**>();
   const auto& tke              = get_field_out("tke").get_view<Spack**>();
@@ -287,7 +288,7 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
 
   shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,z_surf,m_cell_area,
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
-                                surf_mom_flux,qv,qc,tke,tke_copy,z_mid,z_int,cell_length,
+                                surf_mom_flux,qtracers,qv,qc,tke,tke_copy,z_mid,z_int,cell_length,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
                                 wtracer_sfc,wm_zt,inv_exner,thlm,qw);
 

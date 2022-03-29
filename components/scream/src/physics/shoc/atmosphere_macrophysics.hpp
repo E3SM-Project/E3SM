@@ -100,6 +100,7 @@ public:
 
         tke(i,k) = ekat::max(sp(0.004), tke(i,k));
 
+        qtracers(i,k,0) = 0;//qtracers(i,k,1);//balli
         // Tracers are updated as a group. The tracer tke acts as seperate inputs to shoc_main
         // and is updated differently to the bundled tracers. We make a copy and pass to
         // shoc_main so that changes to the tracer group does not alter tke values, then copy back
@@ -183,6 +184,7 @@ public:
     view_1d_const        surf_sens_flux;
     view_1d_const        surf_latent_flux;
     sview_2d_const       surf_mom_flux;
+    view_3d        qtracers;
     view_2d_const        qv;
     view_2d              z_mid;
     view_2d              z_int;
@@ -215,6 +217,7 @@ public:
                        const view_2d_const& omega_,
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_latent_flux_,
                        const sview_2d_const& surf_mom_flux_,
+                       const view_3d& qtracers_,
                        const view_2d_const& qv_, const view_2d& qc_,
                        const view_2d& tke_, const view_2d& tke_copy_,
                        const view_2d& z_mid_, const view_2d& z_int_,
@@ -241,6 +244,7 @@ public:
       surf_mom_flux = surf_mom_flux_;
       qv = qv_;
       // OUT
+      qtracers = qtracers_;
       qc = qc_;
       shoc_s = dse_;
       tke = tke_;
