@@ -47,7 +47,7 @@ void PotentialTemperatureDiagnostic::initialize_impl(const RunType /* run_type *
 
   const auto& output         = m_diagnostic_output.get_view<Pack**>();
 
-  auto ts = timestamp();  // TODO - how confident are we with how this timestamp is being handled?
+  auto ts = timestamp(); 
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 
   const auto nk_pack  = ekat::npack<Spack>(m_num_levs);
