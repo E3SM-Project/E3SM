@@ -177,17 +177,14 @@
     <!--  -->
   </description>
 
-  <!-- Aqua planet uses this for setting orbital parameters -->
+  <!-- Aquaplanet and RCE use this for setting orbital parameters -->
   <entry id="EAM_USER_MODS">
     <type>char</type>
     <valid_values></valid_values>
     <default_value></default_value>
     <values match="last">
     <value compset="DOCN%AQP">$SRCROOT/components/eam/cime_config/usermods_dirs/aquap</value>
-    <value compset="DOCN%SOMAQP">$SRCROOT/components/eam/cime_config/usermods_dirs/aquap</value>
     <value compset="EAM%RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
-    <value compset="EAM%MMF.*-RCE">$SRCROOT/components/eam/cime_config/usermods_dirs/rcemip</value>
-    <value compset="EAM%MMF.*-SCM">$SRCROOT/components/eam/cime_config/usermods_dirs/scm</value>
     <value compset="EAM%SCM">$SRCROOT/components/eam/cime_config/usermods_dirs/scm</value>
     </values>
     <group>run_component_cam</group>
