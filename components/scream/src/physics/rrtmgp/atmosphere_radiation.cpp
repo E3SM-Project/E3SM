@@ -98,6 +98,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid->name(), ps);
   add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid->name(), ps);
   add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid->name(), ps);
+  add_field<Computed>("rad_heating_pdel", scalar3d_layout_mid, Pa*K/s, grid->name(), ps);
 
   // Translation of variables from EAM
   // --------------------------------------------------------------
@@ -315,6 +316,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
   auto d_sw_flux_dn_dir = get_field_out("SW_flux_dn_dir").get_view<Real**>();
   auto d_lw_flux_up = get_field_out("LW_flux_up").get_view<Real**>();
   auto d_lw_flux_dn = get_field_out("LW_flux_dn").get_view<Real**>();
+  auto d_rad_heating_pdel = get_field_out("rad_heating_pdel").get_view<Real**>();
   auto d_sfc_flux_dir_vis = get_field_out("sfc_flux_dir_vis").get_view<Real*>();
   auto d_sfc_flux_dir_nir = get_field_out("sfc_flux_dir_nir").get_view<Real*>();
   auto d_sfc_flux_dif_vis = get_field_out("sfc_flux_dif_vis").get_view<Real*>();
@@ -559,28 +561,50 @@ void RRTMGPRadiation::run_impl (const int dt) {
     );
   }
 
-  // Compute and apply heating rates
+  // Compute and apply heating tendency
   auto sw_heating  = m_buffer.sw_heating;
   auto lw_heating  = m_buffer.lw_heating;
   auto rad_heating = m_buffer.rad_heating;
-  rrtmgp::compute_heating_rate(
-    sw_flux_up, sw_flux_dn, p_del, sw_heating
-  );
-  rrtmgp::compute_heating_rate(
-    lw_flux_up, lw_flux_dn, p_del, lw_heating
-  );
-  {
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-    const int k = team.league_rank()+1; // Note that for YAKL arrays i and k start with index 1
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ncol), [&] (const int& icol) {
-      int i = icol+1;
-      rad_heating(i,k) = sw_heating(i,k) + lw_heating(i,k);
-      t_lay(i,k) = t_lay(i,k) + rad_heating(i,k) * dt;
-    });
-  });
+  if (update_rad) {
+    rrtmgp::compute_heating_rate(
+      sw_flux_up, sw_flux_dn, p_del, sw_heating
+    );
+    rrtmgp::compute_heating_rate(
+      lw_flux_up, lw_flux_dn, p_del, lw_heating
+    );
+    {
+      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+        const int k = team.league_rank()+1; // Note that for YAKL arrays i and k start with index 1
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ncol), [&] (const int& icol) {
+          int i = icol+1;
+          // Combine SW and LW heating into a net heating tendency
+          rad_heating(i,k) = sw_heating(i,k) + lw_heating(i,k);
+          // Apply heating tendency to temperature
+          t_lay(i,k) = t_lay(i,k) + rad_heating(i,k) * dt;
+          // Compute pdel * rad_heating to conserve energy across timesteps in case
+          // levels change before next heating update.
+          d_rad_heating_pdel(icol,k-1) = d_pdel(icol,k-1) * rad_heating(i,k);
+        });
+      });
+    }
+    Kokkos::fence();
+  } else {
+    {
+      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+        const int k = team.league_rank()+1; // Note that for YAKL arrays i and k start with index 1
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ncol), [&] (const int& icol) {
+          int i = icol+1;
+          // Back out net heating tendency from the pdel weighted quantity we keep in the FM
+          rad_heating(i,k) = d_rad_heating_pdel(icol,k-1) / d_pdel(icol,k-1);
+          // Apply heating tendency to temperature
+          t_lay(i,k) = t_lay(i,k) + rad_heating(i,k) * dt;
+        });
+      });
+    }
+    Kokkos::fence();
   }
-  Kokkos::fence();
 
   // Index to surface (bottom of model); used to get surface fluxes below
   const int kbot = nlay+1;

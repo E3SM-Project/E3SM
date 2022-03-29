@@ -79,17 +79,16 @@ TEST_CASE("rrtmgp-stand-alone", "") {
     sw_flux_up_old.deep_copy(sw_flux_up);
 
     ad.run(dt);
-
-    // compare before and after
-    auto d_sw_flux_up_new = sw_flux_up.get_view<Real**,Host>();
-    auto d_sw_flux_up_old = sw_flux_up_old.get_view<Real**,Host>();
     if (atm_comm.am_i_root()) {
       std::cout << "  - Iteration " << std::setfill(' ') << std::setw(3) << i+1 << " completed";
       std::cout << "       [" << std::setfill(' ') << std::setw(3) << 100*(i+1)/nsteps << "%]\n";
     }
+
     // Test that in between rad steps, we maintain the same values of fluxes and heating rates
     // get rad fluxes and heating rates before; we set rad_requency to 3 in the input.yaml, so
     // the first two steps should look the same
+    auto d_sw_flux_up_new = sw_flux_up.get_view<Real**,Host>();
+    auto d_sw_flux_up_old = sw_flux_up_old.get_view<Real**,Host>();
     if (i == 0) {
         REQUIRE(!views_are_equal(sw_flux_up_old, sw_flux_up));
     } else if (i == 1) {
@@ -99,6 +98,7 @@ TEST_CASE("rrtmgp-stand-alone", "") {
     } else if (i == 3) {
         REQUIRE(!views_are_equal(sw_flux_up_old, sw_flux_up));
     }
+
   }
 
   // TODO: get the field repo from the driver, and go get (one of)
