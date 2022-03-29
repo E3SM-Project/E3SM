@@ -925,15 +925,13 @@ contains
 
       type(block_type), pointer :: block
       type(mpas_pool_type), pointer :: meshPool
-      type(mpas_pool_type), pointer :: diagnosticsPool
       real(kind=RKIND), dimension(:), pointer :: dcEdge 
 
       integer :: iEdge
       integer, pointer :: nEdges
       integer, pointer :: nVertLevels
       real(kind=RKIND), pointer :: sphere_radius
-      real(kind=RKIND), dimension(:), pointer   :: latEdge, fEdge, &
-            gmResolutionTaper, gmBolusKappa
+      real(kind=RKIND), dimension(:), pointer   :: latEdge, fEdge
       integer, dimension(:, :), pointer :: cellsOnEdge
 
       err = 0
@@ -943,14 +941,11 @@ contains
       block => domain%blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block%structs, 'mesh', meshPool)
-         call mpas_pool_get_subpool(block%structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-         call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
          call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
-         call mpas_pool_get_array(diagnosticsPool, 'gmResolutionTaper', gmResolutionTaper)
          if (config_Redi_use_slope_taper) then
             slopeTaperFactor = 1.0_RKIND
          else
