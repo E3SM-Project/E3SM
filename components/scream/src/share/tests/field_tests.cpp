@@ -199,6 +199,13 @@ TEST_CASE("field", "") {
     REQUIRE(f2.is_allocated());
     REQUIRE(fap2.get_alloc_size()==fap1.get_alloc_size());
     REQUIRE(views_are_equal(f1,f2));
+
+    // Changing f2 should leave f1 unchanged
+    f2.deep_copy<Real>(0.0);
+    REQUIRE (field_max<Real>(f2)==0.0);
+    REQUIRE (field_min<Real>(f2)==0.0);
+    REQUIRE (field_max<Real>(f1)==3.0);
+    REQUIRE (field_min<Real>(f1)==3.0);
   }
 
   SECTION ("deep_copy") {
