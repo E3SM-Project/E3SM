@@ -699,7 +699,7 @@ contains
                                   lt2*sqrt(max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND)))
                end do
 
-               c_mode1 = max(0.0_RKIND, sumN2/(3.141592_RKIND))
+               c_mode1 = max(1.0E-5_RKIND, sumN2/3.141592_RKIND)
                cGMphaseSpeed(iEdge) = c_mode1
                resolution = sqrt(c_mode1 / (fEdge(iEdge)**2.0 + betaEdge(iEdge)*c_mode1 + 1.0E-15_RKIND)) &
                             / dcEdge(iEdge)
