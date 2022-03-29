@@ -932,7 +932,7 @@ contains
       integer, pointer :: nEdges
       integer, pointer :: nVertLevels
       real(kind=RKIND), pointer :: sphere_radius
-      real(kind=RKIND), dimension(:), pointer   :: latEdge, betaEdge, fEdge, &
+      real(kind=RKIND), dimension(:), pointer   :: latEdge, fEdge, &
             gmResolutionTaper, gmBolusKappa
       integer, dimension(:, :), pointer :: cellsOnEdge
 
@@ -1036,7 +1036,6 @@ contains
             local_config_GM_compute_Visbeck = .true.
             local_config_GM_compute_EdenGreatbatch = .false.
 
-            call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
             call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
             call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
             !$omp parallel
@@ -1054,7 +1053,6 @@ contains
             local_config_GM_compute_Visbeck = .false.
             local_config_GM_compute_EdenGreatbatch = .true.
 
-            call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
             call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
             call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
             !$omp parallel
