@@ -567,10 +567,12 @@ Field AtmosphereOutput::get_field(const std::string& name)
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::set_diagnostics()
 {
-  util::TimeStamp t0 ({2000,1,1},{0,0,0});  //TODO - we need a way to handle the timestamp to match the actual simulation
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
   for (const auto& fname : m_fields_names) {
-    if (!(m_field_mgr->has_field(fname))) {
+    if (!m_field_mgr->has_field(fname)) {
+      // TimeStamp control
+      util::TimeStamp t0;
+      bool t0_set = false;
       // Construct a diagnostic by this name
       ekat::ParameterList params;
       params.set<std::string>("Diagnostic Name", fname);
@@ -580,15 +582,18 @@ void AtmosphereOutput::set_diagnostics()
       diag->set_grids(m_grids_manager);
       // Set required fields using fields manager
       for (const auto& req : diag->get_required_field_requests()) {
-        diag->set_required_field(m_field_mgr->get_field(req.fid).get_const());
+        // Any required fields should be in the field manager, so we can gather
+        // the TimeStamp for initialization from the first of these.
+        const auto& req_field = m_field_mgr->get_field(req.fid);
+        if (!t0_set) {
+          t0 = req_field.get_header().get_tracking().get_time_stamp();
+        }
+        diag->set_required_field(req_field.get_const());
       }
       diag->initialize(t0,RunType::Initial);
       m_diagnostics.emplace(fname,diag);
     }
   }
-  for (const auto& m : m_diagnostics) {
-  }
-  
 }
 
 } // namespace scream

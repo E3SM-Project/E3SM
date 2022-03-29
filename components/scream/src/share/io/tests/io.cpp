@@ -31,7 +31,7 @@ using namespace scream;
 using namespace ekat::units;
 using input_type = AtmosphereInput;
 // Make sure packsize isn't bigger than the packsize for this machine, but not so big that we end up with only 1 pack.
-const int packsize = SCREAM_SMALL_PACK_SIZE; //2;
+const int packsize = SCREAM_SMALL_PACK_SIZE;
 using Pack         = ekat::Pack<Real,packsize>;
 
 using KT = KokkosTypes<DefaultDevice>;
@@ -98,12 +98,8 @@ public:
 
 protected:
 
-  // The initialization method should prepare all stuff needed to import/export from/to
-  // f90 structures.
   void initialize_impl (const RunType /* run_type */ ) {}
 
-  // The run method is responsible for exporting atm states to the e3sm coupler, and
-  // import surface states from the e3sm coupler.
   void run_impl (const int /* dt */) {
     const auto& v_A  = get_field_in("field_packed").get_view<const Real**,Host>();
     auto v_me = m_diagnostic_output.get_view<Real**,Host>();
