@@ -2495,7 +2495,8 @@ contains
          glc(ens1)%iamroot_compid .or. &
          rof(ens1)%iamroot_compid .or. &
          wav(ens1)%iamroot_compid .or. &
-         iac(ens1)%iamroot_compid) then
+         iac(ens1)%iamroot_compid .or. &
+         info_mprof == 2) then
 
        write(logunit,105) ' memory_write: model date = ',ymd,tod, &
             ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)', &
@@ -3350,7 +3351,8 @@ contains
                glc(ens1)%iamroot_compid .or. &
                wav(ens1)%iamroot_compid .or. &
                rof(ens1)%iamroot_compid .or. &
-               iac(ens1)%iamroot_compid)) then
+               iac(ens1)%iamroot_compid .or. &
+               info_mprof == 2)) then
 
              write(logunit,105) ' memory_write: model date = ',ymd,tod, &
                   ' memory = ',msize,' MB (highwater)    ',mrss,' MB (usage)', &

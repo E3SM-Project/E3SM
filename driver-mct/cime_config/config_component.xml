@@ -2374,6 +2374,25 @@
 
   </entry>
 
+  <entry id="EXCL_STRIDE">
+    <type>integer</type>
+    <values>
+      <value compclass="ATM">0</value>
+      <value compclass="CPL">0</value>
+      <value compclass="OCN">0</value>
+      <value compclass="WAV">0</value>
+      <value compclass="GLC">0</value>
+      <value compclass="ICE">0</value>
+      <value compclass="ROF">0</value>
+      <value compclass="LND">0</value>
+      <value compclass="ESP">0</value>
+      <value compclass="IAC">0</value>
+    </values>
+    <group>mach_pes</group>
+    <file>env_mach_pes.xml</file>
+    <desc>Stride of MPI tasks owned exclusively by a component. If 0, exclusivity is disabled.</desc>
+  </entry>
+
   <entry id="TOTALPES">
     <type>integer</type>
     <default_value>0</default_value>
