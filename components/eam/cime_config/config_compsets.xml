@@ -67,12 +67,12 @@
 
   <compset>
     <alias>FSCM-ARM97</alias>
-    <lname>AR97_EAM%SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>ARM97_EAM%SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
     <alias>FSCM-ARM97-MMF1</alias>
-    <lname>AR97_EAM%SCM-MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <lname>ARM97_EAM%SCM-MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -168,8 +168,8 @@
         <value  compset="RCP[2468]_EAM\d+">2005-01-01</value>
         <value  compset="C2R[68]_EAM">1950-01-01</value>
         <value  compset="C2R4_EAM">2004-01-01</value>
-        <value  compset="AR95_EAM">1995-07-18</value>
-        <value  compset="AR97_EAM">1997-06-19</value>
+        <value  compset="ARM95_EAM">1995-07-18</value>
+        <value  compset="ARM97_EAM">1997-06-19</value>
         <value  compset="RICO_EAM">2004-12-16</value>
       </values>
     </entry>
@@ -182,31 +182,31 @@
 
     <entry id="START_TOD">
       <values>
-        <value  compset="AR95_EAM">19800</value>
-        <value  compset="AR97_EAM">84585</value>
+        <value  compset="ARM95_EAM">19800</value>
+        <value  compset="ARM97_EAM">84585</value>
         <value  compset="RICO_EAM">0</value>
       </values>
     </entry>
 
     <entry id="STOP_OPTION">
       <values>
-        <value compset="AR95_EAM">ndays</value>
-        <value compset="AR97_EAM">ndays</value>
+        <value compset="ARM95_EAM">ndays</value>
+        <value compset="ARM97_EAM">ndays</value>
         <value compset="RICO_EAM">ndays</value>
       </values>
     </entry>
 
     <entry id="STOP_N">
       <values>
-        <value compset="AR95_EAM">2</value>
-        <value compset="AR97_EAM">29</value>
+        <value compset="ARM95_EAM">2</value>
+        <value compset="ARM97_EAM">29</value>
         <value compset="RICO_EAM">1</value>
       </values>
     </entry>
 
     <entry id="MASK_GRID">
       <values>
-        <value compset="AR97_EAM">USGS</value>
+        <value compset="ARM97_EAM">USGS</value>
         <value compset="RICO_EAM">USGS</value>
       </values>
     </entry>
@@ -225,14 +225,14 @@
     
     <entry id="PTS_LAT">
       <values>
-        <value compset="AR9[57]_EAM">36.6</value>
+        <value compset="ARM9[57]_EAM">36.6</value>
         <value compset="RICO_EAM">17.97</value>
       </values>
     </entry>
 
     <entry id="PTS_LON">
       <values>
-        <value compset="AR9[57]_EAM">262.5</value>
+        <value compset="ARM9[57]_EAM">262.5</value>
         <value compset="RICO_EAM">298.54</value>
       </values>
     </entry>

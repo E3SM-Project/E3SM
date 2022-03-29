@@ -105,8 +105,8 @@
       <value compset="SSP585(?:SOI)?_EAM%CMIP6_.*_BGC%*">SSP585_cam5_CMIP6_bgc</value>
       <value compset="20TR(?:SOI)?_EAM%AR5sf"           >20TR_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TRS_EAM%AR5sf"                  >20TRS_E3SMv1_superfast_ar5-emis</value>
-      <value compset="AR95_EAM%SCM_"                    >scam_arm95</value>
-      <value compset="AR97_EAM%SCM_"                    >scam_arm97</value>
+      <value compset="ARM95_EAM%SCM_"                   >scam_arm95</value>
+      <value compset="ARM97_EAM%SCM_"                   >scam_arm97</value>
       <value compset="PIPD_EAM"                         >1850-PD_cam5</value>
       <value compset="_EAM%AQP_"                        >aquaplanet_EAMv1</value>
       <value compset="_EAM%RCE_"                        >RCEMIP_EAMv1</value>
@@ -115,7 +115,7 @@
       <value compset="2010(?:SOI)?_EAM%MMF2"            >2010_mmf_2mom</value>
       <value compset="_EAM%AQP.*MMF"                    >aquaplanet_MMF-1mom</value>
       <value compset="_EAM%RCE.*MMF"                    >RCEMIP_EAMv1</value>
-      <value compset="AR97_EAM%SCM.*MMF"                >scam_arm97_MMF-1mom</value>
+      <value compset="ARM97_EAM%SCM.*MMF"               >scam_arm97_MMF-1mom</value>
       <value compset="RICO_EAM%SCM.*MMF"                >scam_rico_MMF-1mom</value>
       <value compset="20TR_EAM%CMIP6.*MMF"              >20TR_MMF-1mom_CMIP6</value>
     </values>
@@ -163,8 +163,8 @@
     <desc compset="_EAM.*AR5sf"    >E3SM plus super-fast chemistry with AR5 emissions:</desc>
     <desc compset="_EAM%FCHM">EAM super_fast_llnl chemistry:</desc>
     <desc compset="_EAM%RCO2">EAM CO2 ramp: </desc>
-    <desc compset="AR95_EAM%">single column EAM ARM95 IOP test case:</desc>
-    <desc compset="AR97_EAM%">single column EAM ARM97 IOP test case:</desc>
+    <desc compset="ARM95_EAM%">single column EAM ARM95 IOP test case:</desc>
+    <desc compset="ARM97_EAM%">single column EAM ARM97 IOP test case:</desc>
     <desc compset="RICO_EAM%">single column EAM RICO IOP test case:</desc>
     <desc compset="ADIAB"        >EAM adiabatic physics:</desc>
     <desc compset="IDEAL"        >EAM ideal physics:</desc>
