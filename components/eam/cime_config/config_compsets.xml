@@ -66,6 +66,11 @@
   <!-- *********************************** -->
 
   <compset>
+    <alias>FSCM</alias>
+    <lname>SCM_EAM%SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>FSCM-ARM97</alias>
     <lname>ARM97_EAM%SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
