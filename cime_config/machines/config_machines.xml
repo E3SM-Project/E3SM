@@ -3291,7 +3291,7 @@
         <command name="load">netlib-lapack/3.9.1</command>
       </modules>
       <modules compiler="pgi.*">
-        <command name="load">nvhpc/20.9</command>
+        <command name="load">nvhpc/21.3</command>
       </modules>
       <modules compiler="ibmgpu">
         <command name="load">cuda/10.1.243</command>
