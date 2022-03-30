@@ -44,7 +44,7 @@ void sort (std::list<T>& l) {
     return;
   }
   l.sort();
-};
+}
 
 // This routine tries to find an arrangment of elements that allow each
 // of the input groups to be a contiguous subarray of the global arrangement.
