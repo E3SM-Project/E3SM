@@ -28,6 +28,7 @@
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
 #include "physics/share/physics_constants.hpp"
+#include "share/io/scorpio_input.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/util//scream_column_ops.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
@@ -56,10 +57,24 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
 
 void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 {
+  // Grab dynamics and reference grid
+  const auto dgn = "Dynamics";
+  m_dyn_grid = grids_manager->get_grid(dgn);
+  m_ref_grid = grids_manager->get_reference_grid();
+  const auto& rgn = m_ref_grid->name();
+
   // Init prim structures
   // TODO: they should not be inited yet; should we error out if they are?
   //       I'm gonna say 'no', for now, cause it might be a pb with unit tests.
   if (!is_data_structures_inited_f90()) {
+    // Set moisture in homme base on input file:
+    const auto& moisture = m_params.get<std::string>("Moisture");
+    set_homme_param("moisture",ekat::upper_case(moisture)!="DRY");
+
+    // Read vertical coordinates, before initing the data structures,
+    // so that Homme::HybridVCoords will be valid when stored in all the functors.
+    init_homme_vcoord ();
+
     prim_init_data_structures_f90 ();
   }
 
@@ -86,11 +101,6 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   const auto rho = kg/(m*m*m);
   auto Q = kg/kg;
   Q.set_string("kg/kg");
-
-  const auto dgn = "Dynamics";
-  m_dyn_grid = grids_manager->get_grid(dgn);
-  m_ref_grid = grids_manager->get_reference_grid();
-  const auto& rgn = m_ref_grid->name();
 
   const int ncols = m_ref_grid->get_num_local_dofs();
   const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
@@ -198,7 +208,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   m_ic_remapper = grids_manager->create_remapper(m_ref_grid,m_dyn_grid);
 }
 
-int HommeDynamics::requested_buffer_size_in_bytes() const
+size_t HommeDynamics::requested_buffer_size_in_bytes() const
 {
   using namespace Homme;
 
@@ -1119,6 +1129,56 @@ copy_dyn_states_to_all_timelevels () {
   vtheta_dp.subfield(1,np1).deep_copy(vtheta_dp.subfield(1,n0));
   qdp.subfield(1,np1_qdp).deep_copy(qdp.subfield(1,n0_qdp));
 }
+
+void HommeDynamics::init_homme_vcoord () {
+  using view_1d_host = AtmosphereInput::view_1d_host; 
+  using vos_t = std::vector<std::string>;
+  using namespace ShortFieldTagsNames;
+
+  const int nlev_int = HOMMEXX_NUM_INTERFACE_LEV;
+  const int nlev_mid = HOMMEXX_NUM_PHYSICAL_LEV;
+
+  // Read vcoords into host views
+  ekat::ParameterList vcoord_reader_pl;
+  vcoord_reader_pl.set("Filename",m_params.get<std::string>("Vertical Coordinate Filename"));
+  vcoord_reader_pl.set<vos_t>("Field Names",{"hyai","hybi","hyam","hybm"});
+  std::map<std::string,view_1d_host> host_views = {
+    { "hyai", view_1d_host("hyai",nlev_int) },
+    { "hybi", view_1d_host("hybi",nlev_int) },
+    { "hyam", view_1d_host("hyam",nlev_mid) },
+    { "hybm", view_1d_host("hybm",nlev_mid) }
+  };
+  std::map<std::string,FieldLayout> layouts = {
+    { "hyai", FieldLayout({ILEV},{nlev_int}) },
+    { "hybi", FieldLayout({ILEV},{nlev_int}) },
+    { "hyam", FieldLayout({LEV}, {nlev_mid}) },
+    { "hybm", FieldLayout({LEV}, {nlev_mid}) }
+  };
+
+  AtmosphereInput vcoord_reader(m_comm,vcoord_reader_pl);
+  vcoord_reader.init(m_dyn_grid,host_views,layouts);
+  vcoord_reader.read_variables();
+  vcoord_reader.finalize();
+  
+  // Pass host views data to hvcoord init function
+  // const auto& c = Homme::Context().singleton();
+  // auto& hvcoord = c.get<Homme::HybridVCoord>();
+  const auto ps0 = Homme::PhysicalConstants::p0;
+  // hvcoord.init (ps0,
+  //               host_views["hyam"].data(),
+  //               host_views["hyai"].data(),
+  //               host_views["hybm"].data(),
+  //               host_views["hybi"].data()
+  // );
+
+  // Set vcoords in f90
+  prim_set_hvcoords_f90 (ps0,
+                         host_views["hyai"].data(),
+                         host_views["hybi"].data(),
+                         host_views["hyam"].data(),
+                         host_views["hybm"].data());
+}
+
 // =========================================================================================
 void HommeDynamics::update_pressure() {
   using KT = KokkosTypes<DefaultDevice>;

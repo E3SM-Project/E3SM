@@ -117,23 +117,23 @@ set_computed_group_impl (const FieldGroup& group)
 }
 
 // =========================================================================================
-int SHOCMacrophysics::requested_buffer_size_in_bytes() const
+size_t SHOCMacrophysics::requested_buffer_size_in_bytes() const
 {
   const int nlev_packs       = ekat::npack<Spack>(m_num_levs);
   const int nlevi_packs      = ekat::npack<Spack>(m_num_levs+1);
   const int num_tracer_packs = ekat::npack<Spack>(m_num_tracers);
 
   // Number of Reals needed by local views in the interface
-  const int interface_request = Buffer::num_1d_scalar*m_num_cols*sizeof(Real) +
-                                Buffer::num_2d_vector_mid*m_num_cols*nlev_packs*sizeof(Spack) +
-                                Buffer::num_2d_vector_int*m_num_cols*nlevi_packs*sizeof(Spack) +
-                                Buffer::num_2d_vector_tr*m_num_cols*num_tracer_packs*sizeof(Spack);
+  const size_t interface_request = Buffer::num_1d_scalar*m_num_cols*sizeof(Real) +
+                                   Buffer::num_2d_vector_mid*m_num_cols*nlev_packs*sizeof(Spack) +
+                                   Buffer::num_2d_vector_int*m_num_cols*nlevi_packs*sizeof(Spack) +
+                                   Buffer::num_2d_vector_tr*m_num_cols*num_tracer_packs*sizeof(Spack);
 
   // Number of Reals needed by the WorkspaceManager passed to shoc_main
   const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
   const int n_wind_slots  = ekat::npack<Spack>(2)*Spack::n;
   const int n_trac_slots  = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
-  const int wsm_request   = WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy);
+  const size_t wsm_request   = WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy);
 
   return interface_request + wsm_request;
 }
@@ -238,7 +238,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   const int wsm_size     = WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy)/sizeof(Spack);
   s_mem += wsm_size;
 
-  int used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
+  size_t used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for SHOCMacrophysics.");
 }
 

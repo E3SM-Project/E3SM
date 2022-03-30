@@ -6,9 +6,13 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/grid/point_grid.hpp"
 #include "physics/share/physics_constants.hpp"
+
 #include "ekat/kokkos/ekat_subview_utils.hpp"
 #include "ekat/util/ekat_lin_interp.hpp"
+#include "ekat/ekat_pack_utils.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
+
+#include <numeric>
 
 /*-----------------------------------------------------------------
  * The main SPA routines used to convert SPA data into a format that
@@ -62,10 +66,6 @@
 namespace scream {
 namespace spa {
 
-// Helper function
-template<typename ScalarT,typename ScalarS>
-KOKKOS_INLINE_FUNCTION
-ScalarT linear_interp(const ScalarT& x0, const ScalarT& x1, const ScalarS& t_norm);
 /*-----------------------------------------------------------------*/
 // The main SPA routine which handles projecting SPA data onto the
 // horizontal columns and vertical pressure profiles of the atmospheric
@@ -73,17 +73,14 @@ ScalarT linear_interp(const ScalarT& x0, const ScalarT& x1, const ScalarS& t_nor
 // Inputs:
 //   time_state: A structure defined in spa_functions.hpp which handles
 //     the current temporal state of the simulation.
-//   pressure_state: A structure defined in spa_functions.hpp which handles
-//     the vertical pressure profile for the atmospheric simulation state, and
-//     all of the data needed to reconstruct the vertical pressure profile for
-//     the SPA data.  See hybrid coordinate (hyam,hybm) and surface pressure (PS)
+//   p_tgt: the vertical pressure profile for the atmospheric simulation state
 //   data_beg: A structure defined in spa_functions.hpp which handles the full
 //     set of SPA data for the beginning of the month.
 //   data_end: Similar to data_beg, but for SPA data for the end of the month.
 //   data_out: A structure defined in spa_functions.hpp which handles the full
 //     set of SPA data projected onto the pressure profile of the current atmosphere
 //     state.  This is the data that will be passed to other processes.
-//   ncols_atm, nlevs_atm: The number of columns and levels in the simulation grid.
+//   ncols_tgt, nlevs_tgt: The number of columns and levels in the simulation grid.
 //     (not to be confused with the number of columns and levels used for the SPA data, 
 //      which can be different.)
 //   nswbands, nlwbands: The number of shortwave (sw) and longwave (lw) aerosol bands 
@@ -92,193 +89,205 @@ template <typename S, typename D>
 void SPAFunctions<S,D>
 ::spa_main(
   const SPATimeState& time_state,
-  const SPAPressureState& pressure_state,
-  const SPAData&   data_beg,
-  const SPAData&   data_end,
-  const SPAOutput& data_out,
-  Int ncols_atm,
-  Int nlevs_atm,
-  Int nswbands,
-  Int nlwbands)
+  const view_2d<const Spack>& p_tgt,
+  const view_2d<      Spack>& p_src,
+  const SPAInput&   data_beg,
+  const SPAInput&   data_end,
+  const SPAInput&   data_tmp,
+  const SPAOutput&  data_out)
 {
+  // Beg/End/Tmp month must have all sizes matching
+  EKAT_REQUIRE_MSG (
+      data_end.data.nswbands==data_beg.data.nswbands &&
+      data_end.data.nswbands==data_tmp.data.nswbands &&
+      data_end.data.nlwbands==data_beg.data.nlwbands &&
+      data_end.data.nlwbands==data_tmp.data.nlwbands,
+      "Error! SPAInput data structs must have the same number of SW/LW bands.\n");
+  EKAT_REQUIRE_MSG (
+      data_end.data.ncols==data_beg.data.ncols &&
+      data_end.data.ncols==data_tmp.data.ncols &&
+      data_end.data.nlevs==data_beg.data.nlevs &&
+      data_end.data.nlevs==data_tmp.data.nlevs,
+      "Error! SPAInput data structs must have the same number of columns/levels.\n");
+
+  // Output must have same number of bands
+  EKAT_REQUIRE_MSG (
+      data_end.data.nswbands==data_out.nswbands &&
+      data_end.data.nlwbands==data_out.nlwbands,
+      "Error! SPAInput and SPAOutput data structs must have the same number of SW/LW bands.\n");
+
+  // Horiz interpolation can be expensive, and does not depend on the particular time of
+  // the month, so it can be done ONCE per month, *outside* spa_main (when updating
+  // the beg/end states, reading them from file).
+  EKAT_REQUIRE_MSG (
+      data_end.data.ncols==data_out.ncols,
+      "Error! Horizontal interpolation is performed *before* calling spa_main,\n"
+      "       SPAInput and SPAOutput data structs must have the same number columns.\n");
+
+  // Step 1. Perform time interpolation
+  perform_time_interpolation(time_state,data_beg,data_end,data_tmp);
+
+  // Step 2. Compute source pressure levels
+  compute_source_pressure_levels(data_tmp.PS, p_src, data_beg.hyam, data_beg.hybm);
+
+  // Step 3. Perform vertical interpolation
+  perform_vertical_interpolation(p_src, p_tgt, data_tmp.data, data_out);
+}
+
+/*-----------------------------------------------------------------*/
+template <typename S, typename D>
+void SPAFunctions<S,D>
+::perform_time_interpolation(
+  const SPATimeState& time_state,
+  const SPAInput&  data_beg,
+  const SPAInput&  data_end,
+  const SPAInput&  data_out)
+{
+  // NOTE: we *assume* data_beg and data_end have the *same* hybrid v coords.
+  //       IF this ever ceases to be the case, you can interp those too.
+
+  using ExeSpace = typename KT::ExeSpace;
+  using ESU = ekat::ExeSpaceUtils<ExeSpace>;
+
   // Gather time stamp info
   auto& t_now = time_state.t_now;
   auto& t_beg = time_state.t_beg_month;
-  auto& t_len = time_state.days_this_month;
+  auto& delta_t = time_state.days_this_month;
 
+  // Makes no sense to have different number of bands
+  EKAT_REQUIRE(data_end.data.nswbands==data_beg.data.nswbands);
+  EKAT_REQUIRE(data_end.data.nlwbands==data_beg.data.nlwbands);
 
-  // For now we require that the Data in and the Data out have the same number of columns.
-  EKAT_REQUIRE(ncols_atm==pressure_state.ncols);
+  // At this stage, begin/end must have the same dimensions
+  EKAT_REQUIRE(data_end.data.ncols==data_beg.data.ncols);
+  EKAT_REQUIRE(data_end.data.nlevs==data_beg.data.nlevs);
 
-  // Set up temporary arrays that will be used for the spa interpolation.
-  view_2d<Spack> p_src("p_mid_src",ncols_atm,pressure_state.nlevs), 
-                 ccn3_src("ccn3_src",ncols_atm,pressure_state.nlevs);
-  view_3d<Spack> aer_g_sw_src("aer_g_sw_src",ncols_atm,nswbands,pressure_state.nlevs),
-                 aer_ssa_sw_src("aer_ssa_sw_src",ncols_atm,nswbands,pressure_state.nlevs),
-                 aer_tau_sw_src("aer_tau_sw_src",ncols_atm,nswbands,pressure_state.nlevs),
-                 aer_tau_lw_src("aer_tau_lw_src",ncols_atm,nlwbands,pressure_state.nlevs);
+  // We can ||ize over columns as well as over variables and bands
+  const int num_vars = 1+data_beg.data.nswbands*3+data_beg.data.nlwbands;
+  const int outer_iters = data_beg.data.ncols*num_vars;
+  const int num_vert_packs = ekat::PackInfo<Spack::n>::num_packs(data_beg.data.nlevs);
+  const auto policy = ESU::get_default_team_policy(outer_iters, num_vert_packs);
 
-  using ExeSpace = typename KT::ExeSpace;
-  const Int nk_pack = ekat::npack<Spack>(nlevs_atm);
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols_atm, nk_pack);
-  auto t_norm = (t_now-t_beg)/t_len;
-  // SPA Main loop
-  // Parallel loop order:
-  // 1. Loop over all horizontal columns (i index)
-  // 2. Loop over all aerosol bands (n index) - where applicable
-  // 3. Loop over all vertical packs (k index)
-  Kokkos::parallel_for(
-    "spa main loop",
-    policy,
+  auto delta_t_fraction = (t_now-t_beg) / delta_t;
+
+  Kokkos::parallel_for("spa_time_interp_loop", policy,
     KOKKOS_LAMBDA(const MemberType& team) {
 
-    const Int i = team.league_rank();  // SCREAM column index
+    // The policy is over ncols*num_vars, so retrieve icol/ivar
+    const int icol = team.league_rank() / num_vars;
+    const int ivar = team.league_rank() % num_vars;
 
-    // Get single-column subviews of all 2D inputs, i.e. those that don't have aerosol bands
-    const auto& ps_beg_sub   = data_beg.PS(i);
-    const auto& ps_end_sub   = data_end.PS(i);
-    const auto& pmid_sub     = ekat::subview(pressure_state.pmid, i);
-    const auto& p_src_sub    = ekat::subview(p_src, i);
-
-    const auto& ccn3_beg_sub = ekat::subview(data_beg.CCN3, i);
-    const auto& ccn3_end_sub = ekat::subview(data_end.CCN3, i);
-    const auto& ccn3_src_sub = ekat::subview(ccn3_src, i);
-
-    // First Step: Horizontal Interpolation if needed - Skip for Now
-  
-    // Second Step: Temporal Interpolation
-    // Use basic linear interpolation function y = b + mx
-    /* Determine PS for the source data at this time */
-    auto ps_src = linear_interp(ps_beg_sub,ps_end_sub,t_norm);
-    /* Reconstruct the vertical pressure profile for the data and time interpolation
-     * of the data.
-     * Note: CCN3 has the same dimensions as pressure so we handle that time interpolation
-     *       in this loop as well.  */
-    using C = scream::physics::Constants<Real>;
-    static constexpr auto P0 = C::P0;
-    const Int nk_pack = ekat::npack<Spack>(pressure_state.nlevs);
-    Kokkos::parallel_for(
-      Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
-        // Reconstruct vertical temperature profile using the hybrid coordinate system.
-        p_src_sub(k)    = ps_src * pressure_state.hybm(k) + P0 * pressure_state.hyam(k);
-        // Time interpolation for CCN3
-        ccn3_src_sub(k) = linear_interp(ccn3_beg_sub(k),ccn3_end_sub(k),t_norm);
-    });
-    team.team_barrier();
-    /* Loop over all SW variables with nswbands */
-    Kokkos::parallel_for(
-      Kokkos::TeamThreadRange(team, nswbands), [&] (int n) {
-      const auto& aer_g_sw_beg_sub           = ekat::subview(data_beg.AER_G_SW, i, n);
-      const auto& aer_g_sw_end_sub           = ekat::subview(data_end.AER_G_SW, i, n);
-      const auto& aer_g_sw_src_sub           = ekat::subview(aer_g_sw_src, i, n);
-
-      const auto& aer_ssa_sw_beg_sub         = ekat::subview(data_beg.AER_SSA_SW, i, n);
-      const auto& aer_ssa_sw_end_sub         = ekat::subview(data_end.AER_SSA_SW, i, n);
-      const auto& aer_ssa_sw_src_sub         = ekat::subview(aer_ssa_sw_src, i, n);
-  
-      const auto& aer_tau_sw_beg_sub         = ekat::subview(data_beg.AER_TAU_SW, i, n);
-      const auto& aer_tau_sw_end_sub         = ekat::subview(data_end.AER_TAU_SW, i, n);
-      const auto& aer_tau_sw_src_sub         = ekat::subview(aer_tau_sw_src, i, n);
-
-      /* Now loop over fastest index, the number of vertical packs */
-      Kokkos::parallel_for(
-        Kokkos::ThreadVectorRange(team, nk_pack), [&] (Int k) {
-        aer_g_sw_src_sub(k)   = linear_interp(aer_g_sw_beg_sub(k),   aer_g_sw_end_sub(k),   t_norm);
-        aer_ssa_sw_src_sub(k) = linear_interp(aer_ssa_sw_beg_sub(k), aer_ssa_sw_end_sub(k), t_norm);
-        aer_tau_sw_src_sub(k) = linear_interp(aer_tau_sw_beg_sub(k), aer_tau_sw_end_sub(k), t_norm);
+    // Compute ps out only once
+    if (ivar==0) {
+      // PS is a 2d var, so we need to make one team member handle it.
+      Kokkos::single(Kokkos::PerTeam(team),[&]{
+          data_out.PS(icol) = linear_interp(data_beg.PS(icol),data_end.PS(icol),delta_t_fraction);
       });
-    });
-    team.team_barrier();
-    /* Loop over all LW variables with nlwbands */
-    Kokkos::parallel_for(
-      Kokkos::TeamThreadRange(team, nlwbands), [&] (int n) {
-      const auto& aer_tau_lw_beg_sub         = ekat::subview(data_beg.AER_TAU_LW, i, n);
-      const auto& aer_tau_lw_end_sub         = ekat::subview(data_end.AER_TAU_LW, i, n);
-      const auto& aer_tau_lw_src_sub         = ekat::subview(aer_tau_lw_src, i, n);
+    }
 
-      /* Now loop over fastest index, the number of vertical packs */
-      Kokkos::parallel_for(
-        Kokkos::ThreadVectorRange(team, nk_pack), [&] (Int k) {
-        aer_tau_lw_src_sub(k) = linear_interp(aer_tau_lw_beg_sub(k), aer_tau_lw_end_sub(k), t_norm);
-      });
+    // Get column of beg/end/out variable
+    auto var_beg = get_var_column (data_beg.data,icol,ivar);
+    auto var_end = get_var_column (data_end.data,icol,ivar);
+    auto var_out = get_var_column (data_out.data,icol,ivar);
+
+    Kokkos::parallel_for (Kokkos::TeamThreadRange(team,num_vert_packs),
+                          [&] (const int& k) {
+      var_out(k) = linear_interp(var_beg(k),var_end(k),delta_t_fraction);
     });
-    team.team_barrier();
   });
   Kokkos::fence();
+}
 
-  // Third Step: Vertical interpolation, project the SPA data onto the pressure profile for this simulation.
-  // This is done using the EKAT linear interpolation routine, see /externals/ekat/util/ekat_lin_interp.hpp
-  // for more details. 
+template<typename S, typename D>
+void SPAFunctions<S,D>::
+compute_source_pressure_levels(
+  const view_1d<const Real>& ps_src,
+  const view_2d<      Spack>& p_src,
+  const view_1d<const Spack>& hyam,
+  const view_1d<const Spack>& hybm)
+{
+  using ExeSpace = typename KT::ExeSpace;
+  using ESU = ekat::ExeSpaceUtils<ExeSpace>;
+  using C = scream::physics::Constants<Real>;
+
+  constexpr auto P0 = C::P0;
+
+  const int ncols = ps_src.extent(0);
+  const int num_vert_packs = p_src.extent(1);
+  const auto policy = ESU::get_default_team_policy(ncols, num_vert_packs);
+
+  Kokkos::parallel_for("spa_compute_p_src_loop", policy,
+    KOKKOS_LAMBDA (const MemberType& team) {
+    const int icol = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_vert_packs),
+                         [&](const int k) {
+      p_src(icol,k) = ps_src(icol) * hybm(k)  + P0 * hyam(k);
+    });
+  });
+}
+
+template<typename S, typename D>
+void SPAFunctions<S,D>::
+perform_vertical_interpolation(
+  const view_2d<const Spack>& p_src,
+  const view_2d<const Spack>& p_tgt,
+  const SPAData& input,
+  const SPAData& output)
+{
+  using ExeSpace = typename KT::ExeSpace;
+  using ESU = ekat::ExeSpaceUtils<ExeSpace>;
   using LIV = ekat::LinInterp<Real,Spack::n>;
 
-  LIV VertInterp(ncols_atm,pressure_state.nlevs,nlevs_atm);
-  /* Parallel loop strategy:
-   * 1. Loop over all simulation columns (i index)
-   * 2. Where applicable, loop over all aerosol bands (n index)
-   */
-  const Int most_bands = std::max(nlwbands, nswbands);
-  typename LIV::TeamPolicy band_policy(ncols_atm, ekat::OnGpu<typename LIV::ExeSpace>::value ? most_bands : 1, VertInterp.km2_pack());
-  Kokkos::parallel_for("vertical-interp-spa",
-    band_policy,
+  // Makes no sense to have different number of bands
+  EKAT_REQUIRE(input.nswbands==output.nswbands);
+  EKAT_REQUIRE(input.nlwbands==output.nlwbands);
+
+  // At this stage, begin/end must have the same horiz dimensions
+  EKAT_REQUIRE(input.ncols==output.ncols);
+
+  const int ncols     = input.ncols;
+  const int nlevs_src = input.nlevs;
+  const int nlevs_tgt = output.nlevs;
+
+  LIV vert_interp(ncols,nlevs_src,nlevs_tgt);
+
+  // We can ||ize over columns as well as over variables and bands
+  const int num_vars = 1+input.nswbands*3+input.nlwbands;
+  const int num_vert_packs = ekat::PackInfo<Spack::n>::num_packs(nlevs_tgt);
+  const auto policy_setup = ESU::get_default_team_policy(ncols, num_vert_packs);
+
+  // Setup the linear interpolation object
+  Kokkos::parallel_for("spa_vert_interp_setup_loop", policy_setup,
     KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
-    const int i = team.league_rank();
-    /* Setup the linear interpolater for this column. */
-    if (team.team_rank()==0) {
-      const auto tvr = Kokkos::ThreadVectorRange(team, VertInterp.km2_pack());
-    
-      VertInterp.setup(team,tvr,
-                       ekat::subview(p_src,i),
-                       ekat::subview(pressure_state.pmid,i));
-    }
-    team.team_barrier();
-    /* Conduct vertical interpolation for the 2D variable CCN3 */
-    if (team.team_rank()==0) {
-      const auto tvr = Kokkos::ThreadVectorRange(team, VertInterp.km2_pack());
-    
-      VertInterp.lin_interp(team,tvr,
-                            ekat::subview(p_src,i),
-                            ekat::subview(pressure_state.pmid,i),
-                            ekat::subview(ccn3_src,i),
-                            ekat::subview(data_out.CCN3,i));
-    }
-    /* Conduct vertical interpolation for the LW banded data - nlwbands (n index) */
-    Kokkos::parallel_for(
-      Kokkos::TeamThreadRange(team, nlwbands), [&] (int n) {
-      const auto& tvr = Kokkos::ThreadVectorRange(team, VertInterp.km2_pack());
-      VertInterp.lin_interp(team,
-                            tvr,
-                            ekat::subview(p_src,i),
-                            ekat::subview(pressure_state.pmid,i),
-                            ekat::subview(aer_tau_lw_src,i,n),
-                            ekat::subview(data_out.AER_TAU_LW,i,n));
-    });
-    /* Conduct vertical interpolation for the SW banded data - nswbands (n index) */
-    Kokkos::parallel_for(
-      Kokkos::TeamThreadRange(team, nswbands), [&] (int n) {
-      const auto& tvr = Kokkos::ThreadVectorRange(team, VertInterp.km2_pack());
-      VertInterp.lin_interp(team,
-                            tvr,
-                            ekat::subview(p_src,i),
-                            ekat::subview(pressure_state.pmid,i),
-                            ekat::subview(aer_g_sw_src,i,n),
-                            ekat::subview(data_out.AER_G_SW,i,n));
-      VertInterp.lin_interp(team,
-                            tvr,
-                            ekat::subview(p_src,i),
-                            ekat::subview(pressure_state.pmid,i),
-                            ekat::subview(aer_ssa_sw_src,i,n),
-                            ekat::subview(data_out.AER_SSA_SW,i,n));
-      VertInterp.lin_interp(team,
-                            tvr,
-                            ekat::subview(p_src,i),
-                            ekat::subview(pressure_state.pmid,i),
-                            ekat::subview(aer_tau_sw_src,i,n),
-                            ekat::subview(data_out.AER_TAU_SW,i,n));
-    });
+
+    const int icol = team.league_rank();
+  
+    // Setup
+    vert_interp.setup(team, ekat::subview(p_src,icol),
+                            ekat::subview(p_tgt,icol));
   });
   Kokkos::fence();
 
-}  // END spa_main
+  // Now use the interpolation object in || over all variables.
+  const int outer_iters = ncols*num_vars;
+  const auto policy_interp = ESU::get_default_team_policy(outer_iters, num_vert_packs);
+  Kokkos::parallel_for("spa_vert_interp_loop", policy_interp,
+    KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
+
+    const int icol = team.league_rank() / num_vars;
+    const int ivar = team.league_rank() % num_vars;
+
+    const auto x1 = ekat::subview(p_src,icol);
+    const auto x2 = ekat::subview(p_tgt,icol);
+
+    const auto y1 = get_var_column(input, icol,ivar);
+    const auto y2 = get_var_column(output,icol,ivar);
+
+    vert_interp.lin_interp(team, x1, x2, y1, y2, icol);
+  });
+  Kokkos::fence();
+}
+
 /*-----------------------------------------------------------------*/
 // Function to read the weights for conducting horizontal remapping
 // from a file.
@@ -424,21 +433,64 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(spa_horiz_interp.target_grid_loc, target_grid_loc_h);
 }  // END get_remap_weights_from_file
 /*-----------------------------------------------------------------*/
+/* Note: In this routine the SPA source data is padded in the vertical
+ * to facilitate the proper behavior at the boundaries when doing the
+ * vertical interpolation in spa_main.
+ *
+ * The vertical interpolation routine will map the source data (y1)
+ * defined at the pressure levels (x1) onto the target data vector (y2)
+ * defined on the target pressure levels (x2) following the equation:
+ *
+ * y2 = y1(k) + ( y1(k+1)-y1(k) ) * ( x2-x1(k) )/( x1(k+1) - x1(k) )
+ *
+ * where k and k+1 are the pressure levels that bound the target pressure
+ * level x2.
+ *
+ * We pad the left-hand-side (lhs) of the data with 0.0 and the right-hand-side (rhs)
+ * of the data with a copy of the last data entry.  Similarly, we pad the
+ * lhs of the hybrid coordinate system to ensure that the lhs of the
+ * source pressure levels is 0.0 and the rhs is big enough to be larger than
+ * the highest pressure in the target pressure levels.
+ * 
+ * The padding sets the lhs in a vertical column of data to 0.0.
+ * This has the effect of ramping the top-of-model target data down to 0.0
+ * when the top target pressure level is smaller than the top source pressure,
+ * as follow:
+ *      y2 = y1(1) * x2/x1(1)
+ * Since x2 <= x1(1) this will slowly taper down to 0.0.
+ *
+ * The rhs value is set to match the actual rhs value of the data, such that
+ *      y1[N+1] = y1(N)
+ * where N is the number of points in the source data.
+ *
+ * Thus when the bottom target pressure level is larger than the bottom source
+ * pressure level the interpolation is:
+ *     y2 = y1[N]
+ *
+ * Thus, each column is padded as follows:
+ *   src_data = [ 0.0, actual_spa_data, actual_spa_data[-1] ]
+ *
+ * Note, the hyam and hybm vectors are also padded so that the source data
+ * pressure profile that is constructed in spa_main is
+ * a) the current length, and
+ * b) ensures that whatever the target pressure profile is, it's within the
+ *    the range of the source data.                                        
+ */
 template<typename S, typename D>
 void SPAFunctions<S,D>
 ::update_spa_data_from_file(
-    const std::string&    spa_data_file_name,
-    const Int             time_index,
-    const Int             nswbands,
-    const Int             nlwbands,
-          SPAHorizInterp& spa_horiz_interp,
-          SPAData&        spa_data)
+    const std::string&          spa_data_file_name,
+    const Int                   time_index,
+    const Int                   nswbands,
+    const Int                   nlwbands,
+          SPAHorizInterp&       spa_horiz_interp,
+          SPAInput&             spa_data)
 {
   // Ensure all ranks are operating independently when reading the file, so there's a copy on all ranks
   ekat::Comm self_comm(MPI_COMM_SELF);
 
   // We have enough info to start opening the file
-  std::vector<std::string> fnames = {"PS","CCN3","AER_G_SW","AER_SSA_SW","AER_TAU_SW","AER_TAU_LW"};
+  std::vector<std::string> fnames = {"hyam","hybm","PS","CCN3","AER_G_SW","AER_SSA_SW","AER_TAU_SW","AER_TAU_LW"};
   ekat::ParameterList spa_data_in_params;
   spa_data_in_params.set("Field Names",fnames);
   spa_data_in_params.set("Filename",spa_data_file_name);
@@ -450,7 +502,9 @@ void SPAFunctions<S,D>
 
   // To construct the grid we need to determine the number of columns and levels in the data file.
   Int ncol = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"ncol");
-  spa_horiz_interp.source_grid_nlevs = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lev");
+  const int source_data_nlevs = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lev");
+  // Check that padding matches source size:
+  EKAT_REQUIRE(source_data_nlevs+2 == spa_data.data.nlevs);
   // while we have the file open, check that the dimensions map the simulation and the horizontal interpolation structure
   EKAT_REQUIRE_MSG(nswbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"swband"),"ERROR update_spa_data_from_file: Number of SW bands in simulation doesn't match the SPA data file");
   EKAT_REQUIRE_MSG(nlwbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lwband"),"ERROR update_spa_data_from_file: Number of LW bands in simulation doesn't match the SPA data file");
@@ -464,26 +518,17 @@ void SPAFunctions<S,D>
   //   then we will use the horizontal interpolation structure, spa_horiz_interp, to
   //   interpolate PS_v onto the simulation grid: PS_v -> spa_data.PS
   //   and so on for the other variables.
-  view_1d<Real> PS_v("PS",spa_horiz_interp.source_grid_ncols);
-  view_2d<Real> CCN3_v("CCN3",spa_horiz_interp.source_grid_ncols,spa_horiz_interp.source_grid_nlevs);
-  view_3d<Real> AER_G_SW_v("AER_G_SW",spa_horiz_interp.source_grid_ncols,nswbands,spa_horiz_interp.source_grid_nlevs);
-  view_3d<Real> AER_SSA_SW_v("AER_SSA_SW",spa_horiz_interp.source_grid_ncols,nswbands,spa_horiz_interp.source_grid_nlevs);
-  view_3d<Real> AER_TAU_SW_v("AER_TAU_SW",spa_horiz_interp.source_grid_ncols,nswbands,spa_horiz_interp.source_grid_nlevs);
-  view_3d<Real> AER_TAU_LW_v("AER_TAU_LW",spa_horiz_interp.source_grid_ncols,nlwbands,spa_horiz_interp.source_grid_nlevs);
-  auto PS_v_h            = Kokkos::create_mirror_view(PS_v);
-  auto CCN3_v_h          = Kokkos::create_mirror_view(CCN3_v);
-  auto AER_G_SW_v_h      = Kokkos::create_mirror_view(AER_G_SW_v);
-  auto AER_SSA_SW_v_h    = Kokkos::create_mirror_view(AER_SSA_SW_v);
-  auto AER_TAU_SW_v_h    = Kokkos::create_mirror_view(AER_TAU_SW_v);
-  auto AER_TAU_LW_v_h    = Kokkos::create_mirror_view(AER_TAU_LW_v);
-  Kokkos::deep_copy(PS_v_h,            PS_v);                     
-  Kokkos::deep_copy(CCN3_v_h,          CCN3_v);                   
-  Kokkos::deep_copy(AER_G_SW_v_h,      AER_G_SW_v);               
-  Kokkos::deep_copy(AER_SSA_SW_v_h,    AER_SSA_SW_v);             
-  Kokkos::deep_copy(AER_TAU_SW_v_h,    AER_TAU_SW_v);             
-  Kokkos::deep_copy(AER_TAU_LW_v_h,    AER_TAU_LW_v);             
+  typename view_1d<Real>::HostMirror hyam_v_h("hyam",source_data_nlevs);
+  typename view_1d<Real>::HostMirror hybm_v_h("hybm",source_data_nlevs);
+  typename view_1d<Real>::HostMirror PS_v_h("PS",spa_horiz_interp.source_grid_ncols);
+  typename view_2d<Real>::HostMirror CCN3_v_h("CCN3",spa_horiz_interp.source_grid_ncols,source_data_nlevs);
+  typename view_3d<Real>::HostMirror AER_G_SW_v_h("AER_G_SW",spa_horiz_interp.source_grid_ncols,nswbands,source_data_nlevs);
+  typename view_3d<Real>::HostMirror AER_SSA_SW_v_h("AER_SSA_SW",spa_horiz_interp.source_grid_ncols,nswbands,source_data_nlevs);
+  typename view_3d<Real>::HostMirror AER_TAU_SW_v_h("AER_TAU_SW",spa_horiz_interp.source_grid_ncols,nswbands,source_data_nlevs);
+  typename view_3d<Real>::HostMirror AER_TAU_LW_v_h("AER_TAU_LW",spa_horiz_interp.source_grid_ncols,nlwbands,source_data_nlevs);
+
   // Construct the grid needed for input:
-  auto grid = std::make_shared<PointGrid>("grid",spa_horiz_interp.source_grid_ncols,spa_horiz_interp.source_grid_nlevs,self_comm);
+  auto grid = std::make_shared<PointGrid>("grid",spa_horiz_interp.source_grid_ncols,source_data_nlevs,self_comm);
   PointGrid::dofs_list_type dof_gids("",spa_horiz_interp.source_grid_ncols);
   Kokkos::parallel_for("", spa_horiz_interp.source_grid_ncols, KOKKOS_LAMBDA (const int& ii) {
     dof_gids(ii) = ii;
@@ -491,13 +536,19 @@ void SPAFunctions<S,D>
   grid->set_dofs(dof_gids);
 
   using namespace ShortFieldTagsNames;
+  FieldLayout scalar1d_layout { {LEV}, {source_data_nlevs} };
   FieldLayout scalar2d_layout_mid { {COL}, {spa_horiz_interp.source_grid_ncols} };
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {spa_horiz_interp.source_grid_ncols, spa_horiz_interp.source_grid_nlevs} };
-  FieldLayout scalar3d_swband_layout { {COL,SWBND, LEV}, {spa_horiz_interp.source_grid_ncols, nswbands, spa_horiz_interp.source_grid_nlevs} }; 
-  FieldLayout scalar3d_lwband_layout { {COL,LWBND, LEV}, {spa_horiz_interp.source_grid_ncols, nlwbands, spa_horiz_interp.source_grid_nlevs} };
+  FieldLayout scalar3d_layout_mid { {COL,LEV}, {spa_horiz_interp.source_grid_ncols, source_data_nlevs} };
+  FieldLayout scalar3d_swband_layout { {COL,SWBND, LEV}, {spa_horiz_interp.source_grid_ncols, nswbands, source_data_nlevs} }; 
+  FieldLayout scalar3d_lwband_layout { {COL,LWBND, LEV}, {spa_horiz_interp.source_grid_ncols, nlwbands, source_data_nlevs} };
   std::map<std::string,view_1d_host> host_views;
   std::map<std::string,FieldLayout>  layouts;
   // Define each input variable we need
+  host_views["hyam"] = view_1d_host(hyam_v_h.data(),hyam_v_h.size());
+  layouts.emplace("hyam", scalar1d_layout);
+  host_views["hybm"] = view_1d_host(hybm_v_h.data(),hybm_v_h.size());
+  layouts.emplace("hybm", scalar1d_layout);
+  //
   host_views["PS"] = view_1d_host(PS_v_h.data(),PS_v_h.size());
   layouts.emplace("PS", scalar2d_layout_mid);
   //
@@ -523,12 +574,16 @@ void SPAFunctions<S,D>
   spa_data_input.finalize();
  
   // Now that we have the data we can map the data onto the target data.
+  auto hyam_h       = Kokkos::create_mirror_view(spa_data.hyam);
+  auto hybm_h       = Kokkos::create_mirror_view(spa_data.hybm);
   auto ps_h         = Kokkos::create_mirror_view(spa_data.PS);
-  auto ccn3_h       = Kokkos::create_mirror_view(spa_data.CCN3);
-  auto aer_g_sw_h   = Kokkos::create_mirror_view(spa_data.AER_G_SW);
-  auto aer_ssa_sw_h = Kokkos::create_mirror_view(spa_data.AER_SSA_SW);
-  auto aer_tau_sw_h = Kokkos::create_mirror_view(spa_data.AER_TAU_SW);
-  auto aer_tau_lw_h = Kokkos::create_mirror_view(spa_data.AER_TAU_LW);
+  auto ccn3_h       = Kokkos::create_mirror_view(spa_data.data.CCN3);
+  auto aer_g_sw_h   = Kokkos::create_mirror_view(spa_data.data.AER_G_SW);
+  auto aer_ssa_sw_h = Kokkos::create_mirror_view(spa_data.data.AER_SSA_SW);
+  auto aer_tau_sw_h = Kokkos::create_mirror_view(spa_data.data.AER_TAU_SW);
+  auto aer_tau_lw_h = Kokkos::create_mirror_view(spa_data.data.AER_TAU_LW);
+  Kokkos::deep_copy(hyam_h,0.0);
+  Kokkos::deep_copy(hybm_h,0.0);
   Kokkos::deep_copy(ps_h,0.0);
   Kokkos::deep_copy(ccn3_h,0.0);
   Kokkos::deep_copy(aer_g_sw_h,0.0);
@@ -549,12 +604,16 @@ void SPAFunctions<S,D>
     // PS is defined only over columns
     ps_h(tgt_col) += PS_v_h(src_col)*src_wgt;
     // CCN3 and all AER variables have levels
-    for (int kk=0; kk<spa_horiz_interp.source_grid_nlevs; kk++) {
+    for (int kk=0; kk<source_data_nlevs; kk++) {
       // Note, all variables we map to are packed, while all the data we just loaded as
-      // input are in real N-D views.  So we need to back out the indices for the target
-      // data.
-      int pack = kk / Spack::n; 
-      int kidx = kk % Spack::n;
+      // input are in real N-D views.  So we need to set the pack and index of the actual
+      // data ahead by one value.
+      // Note, we want to pad the actual source data such that
+      //   Y[0]   = 0.0, note this is handled by the deep copy above
+      //   Y[k+1] = y[k], k = 0,source_data_nlevs (y is the data from file)
+      //   Y[N+2] = y[N-1], N = source_data_nlevs
+      int pack = (kk+1) / Spack::n; 
+      int kidx = (kk+1) % Spack::n;
       ccn3_h(tgt_col,pack)[kidx] += CCN3_v_h(src_col,kk)*src_wgt;
       for (int n=0; n<nswbands; n++) {
         aer_g_sw_h(tgt_col,n,pack)[kidx]   += AER_G_SW_v_h(src_col,n,kk)*src_wgt;
@@ -565,15 +624,44 @@ void SPAFunctions<S,D>
         aer_tau_lw_h(tgt_col,n,pack)[kidx] += AER_TAU_LW_v_h(src_col,n,kk)*src_wgt;
       }
     }
+    int kk = source_data_nlevs-1;
+    int pack = (kk+2) / Spack::n; 
+    int kidx = (kk+2) % Spack::n;
+    ccn3_h(tgt_col,pack)[kidx] += CCN3_v_h(src_col,kk)*src_wgt;
+    for (int n=0; n<nswbands; n++) {
+      aer_g_sw_h(tgt_col,n,pack)[kidx]   += AER_G_SW_v_h(src_col,n,kk)*src_wgt;
+      aer_ssa_sw_h(tgt_col,n,pack)[kidx] += AER_SSA_SW_v_h(src_col,n,kk)*src_wgt;
+      aer_tau_sw_h(tgt_col,n,pack)[kidx] += AER_TAU_SW_v_h(src_col,n,kk)*src_wgt;
+    }
+    for (int n=0; n<nlwbands; n++) {
+      aer_tau_lw_h(tgt_col,n,pack)[kidx] += AER_TAU_LW_v_h(src_col,n,kk)*src_wgt;
+    }
   }
+  // We also need to pad the hyam and hybm views with
+  //   hya/b[0] = 0.0, note this is handled by deep copy above
+  //   hya/b[N+2] = BIG number so always bigger than likely pmid for target
+  for (int kk=0; kk<source_data_nlevs; kk++) {
+    int pack = (kk+1) / Spack::n; 
+    int kidx = (kk+1) % Spack::n;
+    hyam_h(pack)[kidx] = hyam_v_h(kk);
+    hybm_h(pack)[kidx] = hybm_v_h(kk);
+  }
+  const int pack = (source_data_nlevs+1) / Spack::n;
+  const int kidx = (source_data_nlevs+1) % Spack::n;
+  hyam_h(pack)[kidx] = 1e5; 
+  hybm_h(pack)[kidx] = 0.0;
+  
+  Kokkos::deep_copy(spa_data.hyam,hyam_h);
+  Kokkos::deep_copy(spa_data.hybm,hybm_h);
   Kokkos::deep_copy(spa_data.PS,ps_h);
-  Kokkos::deep_copy(spa_data.CCN3,ccn3_h);
-  Kokkos::deep_copy(spa_data.AER_G_SW,aer_g_sw_h);
-  Kokkos::deep_copy(spa_data.AER_SSA_SW,aer_ssa_sw_h);
-  Kokkos::deep_copy(spa_data.AER_TAU_SW,aer_tau_sw_h);
-  Kokkos::deep_copy(spa_data.AER_TAU_LW,aer_tau_lw_h);
+  Kokkos::deep_copy(spa_data.data.CCN3,ccn3_h);
+  Kokkos::deep_copy(spa_data.data.AER_G_SW,aer_g_sw_h);
+  Kokkos::deep_copy(spa_data.data.AER_SSA_SW,aer_ssa_sw_h);
+  Kokkos::deep_copy(spa_data.data.AER_TAU_SW,aer_tau_sw_h);
+  Kokkos::deep_copy(spa_data.data.AER_TAU_LW,aer_tau_lw_h);
 
 } // END update_spa_data_from_file
+
 /*-----------------------------------------------------------------*/
 template<typename S, typename D>
 void SPAFunctions<S,D>
@@ -584,8 +672,8 @@ void SPAFunctions<S,D>
   const util::TimeStamp& ts,
         SPAHorizInterp&  spa_horiz_interp,
         SPATimeState&    time_state, 
-        SPAData&         spa_beg,
-        SPAData&         spa_end)
+        SPAInput&        spa_beg,
+        SPAInput&        spa_end)
 {
 
   // We always want to update the current time in the time_state.
@@ -612,19 +700,39 @@ void SPAFunctions<S,D>
   }
 
 } // END updata_spa_timestate
-/*-----------------------------------------------------------------*/
-// A helper function to manage basic linear interpolation in time.
-// The inputs of x0 and x1 represent the data to interpolate from at
-// times t0 and t1, respectively.  To keep the signature of the function 
-// simple we use
-//    t_norm = (t-t0)/(t1-t0).
-template<typename ScalarT, typename ScalarS>
-inline ScalarT linear_interp(
-  const ScalarT& x0,
-  const ScalarT& x1,
-  const ScalarS& t_norm)
+
+template<typename S,typename D>
+KOKKOS_INLINE_FUNCTION
+auto SPAFunctions<S,D>::
+get_var_column (const SPAData& data, const int icol, const int ivar)
+  -> view_1d<Spack> 
 {
-  return (1.0 - t_norm) * x0 + t_norm * x1;
+  if (ivar==0) {
+    return ekat::subview(data.CCN3,icol);
+  } else {
+    // NOTE: if we ever get 2+ long-wave vars, you will have to do 
+    //       something like
+    //    if (jvar<num_sw_vars) {..} else { // compute lw var index }
+    int jvar   = (ivar-1) / data.nswbands;
+    int swband = (ivar-1) % data.nswbands;
+    int lwband = (ivar-1) - 3*data.nswbands;
+    switch (jvar) {
+      case 0: return ekat::subview(data.AER_G_SW,icol,swband);
+      case 1: return ekat::subview(data.AER_SSA_SW,icol,swband); 
+      case 2: return ekat::subview(data.AER_TAU_SW,icol,swband); 
+      default: return ekat::subview(data.AER_TAU_LW,icol,lwband); 
+
+    }
+  }
+}
+
+template<typename S,typename D>
+template<typename ScalarX,typename ScalarT>
+KOKKOS_INLINE_FUNCTION
+ScalarX SPAFunctions<S,D>::
+linear_interp(const ScalarX& x0, const ScalarX& x1, const ScalarT& t)
+{
+  return (1 - t)*x0 + t*x1;
 }
 /*-----------------------------------------------------------------*/
 

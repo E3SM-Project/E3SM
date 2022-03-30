@@ -62,7 +62,14 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   Errors::check_option("init_simulation_params_c","nu",nu,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","nu_div",nu_div,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","theta_advection_form",theta_adv_form,{0,1});
+#ifndef SCREAM
   Errors::check_option("init_simulation_params_c","nsplit",nsplit,1,Errors::ComparisonOp::GE);
+#else
+  if (nsplit<1) {
+    printf ("Note: nsplit=%d, while nsplit must be >=1. We know SCREAM does not know nsplit until runtime, so this is fine.\n"
+            "      Make sure nsplit is set to a valid value before calling prim_advance_subcycle!\n",nsplit);
+  }
+#endif
 
   // Get the simulation params struct
   SimulationParams& params = Context::singleton().create<SimulationParams>();

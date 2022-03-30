@@ -33,40 +33,43 @@
         <Schedule__Type>Sequential</Schedule__Type>
         <Process__0>
           <Process__Name>Homme</Process__Name>
-          <Enable__Output__Fields__Checks>False</Enable__Output__Fields__Checks>
-          <Enable__Input__Fields__Checks>False</Enable__Input__Fields__Checks>
+          <Enable__Postcondition__Checks>True</Enable__Postcondition__Checks>
+          <Enable__Precondition__Checks>True</Enable__Precondition__Checks>
           <Grid>Dynamics</Grid>
+          <Vertical__Coordinate__Filename>${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Vertical__Coordinate__Filename>
+          <Vertical__Coordinate__Filename COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Vertical__Coordinate__Filename>
+          <Moisture>moist</Moisture>
         </Process__0>
         <Process__1>
           <Process__Name>SHOC</Process__Name>
-          <Enable__Output__Fields__Checks>False</Enable__Output__Fields__Checks>
-          <Enable__Input__Fields__Checks>False</Enable__Input__Fields__Checks>
+          <Enable__Postcondition__Checks>True</Enable__Postcondition__Checks>
+          <Enable__Precondition__Checks>True</Enable__Precondition__Checks>
           <Grid>Physics GLL</Grid>
         </Process__1>
         <Process__2>
           <Process__Name>CldFraction</Process__Name>
-          <Enable__Output__Fields__Checks>False</Enable__Output__Fields__Checks>
-          <Enable__Input__Fields__Checks>False</Enable__Input__Fields__Checks>
+          <Enable__Postcondition__Checks>True</Enable__Postcondition__Checks>
+          <Enable__Precondition__Checks>True</Enable__Precondition__Checks>
           <Grid>Physics GLL</Grid>
         </Process__2>
         <Process__3>
           <Process__Name>SPA</Process__Name>
-          <Enable__Output__Fields__Checks>False</Enable__Output__Fields__Checks>
-          <Enable__Input__Fields__Checks>False</Enable__Input__Fields__Checks>
+          <Enable__Postcondition__Checks>True</Enable__Postcondition__Checks>
+          <Enable__Precondition__Checks>True</Enable__Precondition__Checks>
           <Grid>Physics GLL</Grid>
           <SPA__Remap__File>none</SPA__Remap__File>
           <SPA__Data__File>${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_scream.nc</SPA__Data__File>
         </Process__3>
         <Process__4>
           <Process__Name>P3</Process__Name>
-          <Enable__Output__Fields__Checks>False</Enable__Output__Fields__Checks>
-          <Enable__Input__Fields__Checks>False</Enable__Input__Fields__Checks>
+          <Enable__Postcondition__Checks>True</Enable__Postcondition__Checks>
+          <Enable__Precondition__Checks>True</Enable__Precondition__Checks>
           <Grid>Physics GLL</Grid>
         </Process__4>
         <Process__5>
           <Process__Name>RRTMGP</Process__Name>
-          <Enable__Output__Fields__Checks>False</Enable__Output__Fields__Checks>
-          <Enable__Input__Fields__Checks>False</Enable__Input__Fields__Checks>
+          <Enable__Postcondition__Checks>True</Enable__Postcondition__Checks>
+          <Enable__Precondition__Checks>True</Enable__Precondition__Checks>
           <Grid>Physics GLL</Grid>
           <active_gases>h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
           <Orbital__Year>-9999</Orbital__Year>
@@ -116,39 +119,30 @@
 
   <file name="data/namelist.nl" format="nml">
     <ctl_nl>
-      <partmethod>4</partmethod>
       <cubed_sphere_map>0</cubed_sphere_map>
-      <topology>cube</topology>
-      <u_perturb>1</u_perturb>
-      <rotate_grid>0</rotate_grid>
-      <ne>4</ne>
-      <statefreq>9999</statefreq>
-      <mesh_file>/dev/null</mesh_file>
-      <tstep>300</tstep>
-      <nu>3.4e-08</nu>
-      <nu_div>-1</nu_div>
-      <nu_p>-1</nu_p>
-      <nu_q>-1</nu_q>
-      <nu_s>-1</nu_s>
-      <nu_top>250000.0</nu_top>
-      <se_ftype>0</se_ftype>
-      <limiter_option>9</limiter_option>
-      <vert_remap_q_alg>10</vert_remap_q_alg>
-      <hypervis_scaling>3.0</hypervis_scaling>
-      <hypervis_order>2</hypervis_order>
-      <hypervis_subcycle>1</hypervis_subcycle>
-      <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
-      <theta_hydrostatic_mode>True</theta_hydrostatic_mode>
-      <theta_advect_form>1</theta_advect_form>
-      <tstep_type>5</tstep_type>
+      <disable_diagnostics>False</disable_diagnostics>
       <dt_remap_factor>1</dt_remap_factor>
       <dt_tracer_factor>1</dt_tracer_factor>
-      <moisture>moist</moisture>
+      <hypervis_order>2</hypervis_order>
+      <hypervis_scaling>3.0</hypervis_scaling>
+      <hypervis_subcycle>1</hypervis_subcycle>
+      <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
+      <nu>3.4e-08</nu>
+      <nu_top>250000.0</nu_top>
+      <se_ftype>0</se_ftype>
+      <se_geometry>sphere</se_geometry>
+      <se_limiter_option>9</se_limiter_option>
+      <se_ne>4</se_ne>
+      <se_nsplit>-1</se_nsplit>
+      <se_partmethod>4</se_partmethod>
+      <se_topology>cube</se_topology>
+      <se_tstep>300</se_tstep>
+      <statefreq>9999</statefreq>
+      <theta_advect_form>1</theta_advect_form>
+      <theta_hydrostatic_mode>True</theta_hydrostatic_mode>
+      <tstep_type>5</tstep_type>
+      <vert_remap_q_alg>10</vert_remap_q_alg>
     </ctl_nl>
-    <vert_nl>
-      <vfile_mid>./data/scream-72m.ascii</vfile_mid>
-      <vfile_int>./data/scream-72i.ascii</vfile_int>
-    </vert_nl>
   </file>
 
 </namelist_defaults>

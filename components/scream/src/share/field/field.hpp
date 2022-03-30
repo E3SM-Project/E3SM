@@ -531,7 +531,7 @@ auto Field::get_ND_view () const ->
 
   // Compute extents from FieldLayout
   const auto& alloc_prop = m_header->get_alloc_properties();
-  size_t num_values = alloc_prop.get_alloc_size() / sizeof(T);
+  auto num_values = alloc_prop.get_alloc_size() / sizeof(T);
   Kokkos::LayoutRight kl;
   for (int i=0; i<N-1; ++i) {
     kl.dimension[i] = fl.dim(i);
@@ -559,7 +559,7 @@ auto Field::get_ND_view () const ->
 
   // Compute extents from FieldLayout
   const auto& alloc_prop = m_header->get_alloc_properties();
-  size_t num_values = alloc_prop.get_alloc_size() / sizeof(T);
+  auto num_values = alloc_prop.get_alloc_size() / sizeof(T);
   Kokkos::LayoutRight kl;
   for (int i=0; i<N-1; ++i) {
     kl.dimension[i] = fl.dim(i);

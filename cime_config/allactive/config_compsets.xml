@@ -190,7 +190,7 @@
 </compset>
 
 <compset>
-  <alias>BGCEXP_LNDATM_CNORDCTC_1850</alias>
+  <alias>BGCEXP_LNDATM_CNPRDCTC_1850</alias>
   <lname>1850_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_BGC%LNDATM</lname>
 </compset>
 
@@ -275,12 +275,7 @@
 </compset>
 
 <compset>
-  <alias>BGCEXP_LNDATM_CNORDCTC_20TR</alias>
-  <lname>20TR_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_BGC%LNDATM</lname>
-</compset>
-
-<compset>
-  <alias>BGCEXP_LNDATM_CNORDCTC_20TR</alias>
+  <alias>BGCEXP_LNDATM_CNPRDCTC_20TR</alias>
   <lname>20TR_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_BGC%LNDATM</lname>
 </compset>
 

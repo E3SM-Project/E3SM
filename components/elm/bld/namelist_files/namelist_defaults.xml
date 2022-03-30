@@ -116,7 +116,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
      for the CLM2 data in the CESM distribution -->
 <!-- Plant function types (relative to {csmdata}) -->
 <paramfile                 >lnd/clm2/paramdata/clm_params_c180301.nc</paramfile>
-<paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c210219.nc</paramfile>
+<paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c220120.nc</paramfile>
 <paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.cbgc.c07292018.nc</paramfile>
 <paramfile nu_com="RD" use_crop=".false." >lnd/clm2/paramdata/clm_params_c180524.nc</paramfile>
 
@@ -245,6 +245,7 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".true." irrigate=".true." nu_co
 <finidat hgrid="ne0np4_twpx4v1" ic_ymd="101" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45SP.2000-01-01.twpx4v1_oRRS18to6v3_simyr2000_c180430.nc</finidat>
 
 <!-- Initial conditions for DYAMOND1 -->
+<finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="20160801">lnd/clm2/initdata/20211212.I2010CRUELM.ne1024pg2_ICOS10.elm.r.2016-08-01-00000.nc</finidat>
 <finidat hgrid="360x720cru" mask="oRRS15to5"   ic_ymd="20160801">lnd/clm2/initdata/ICRUCLM45-360x720cru.clm2.r.2016-08-01-00000.nc</finidat>
 <finidat hgrid="r0125"      mask="oRRS15to5"   sim_year="2000"    ic_ymd="20160801">lnd/clm2/initdata/ICRUCLM45.r0125_oRRS15to5.clm2.r.2016-08-01-00000.nc</finidat>
 <finidat hgrid="r0125"      mask="oRRS18to6v3" sim_year="2000"    ic_ymd="20160801">lnd/clm2/initdata/ICRUCLM45.r0125_oRRS18to6v3.clm2.r.2016-08-01-00000.nc</finidat>
@@ -263,7 +264,7 @@ lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr2010_c191025.nc</fsurdat>
 <fsurdat hgrid="ne30np4.pg2"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr2010_c210402.nc</fsurdat>
 <fsurdat hgrid="ne1024np4.pg2"   sim_year="2010" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_ne1024pg2_simyr2010_c210902.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_ne1024pg2_simyr2010_c211021.nc</fsurdat>
 
 <!-- for present day simulations - year 2000 -->
 <fsurdat hgrid="360x720cru"   sim_year="2000" use_crop=".false." >
@@ -561,6 +562,11 @@ this mask will have smb calculated over the entire global land surface
 <flndtopo hgrid="r0125"     >lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</flndtopo>
 <!--flndtopo hgrid="ne30np4.pg2"      >lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_simyr1850_c201210.nc</flndtopo-->
 <flndtopo hgrid="ne30np4.pg2"      >lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1850_c210402.nc</flndtopo>
+
+<!-- datasets for TOP solar radiation parameterization -->
+<!--  ***********  Resolution dependent:   *********** -->
+<!--ftopdat>same as fsurfdat </ftopdat-->
+<use_top_solar_rad>.false.</use_top_solar_rad>
 
 <!-- SNICAR (SNow, ICe, and Aerosol Radiative model) datasets -->
 <!--  ***********  Resolution independent:   ***********  -->
@@ -1427,6 +1433,8 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/4x5/map_0.5x0.5_MODIS_to_4x5_nomask_aave_da_c110822.nc</map>
 <map frm_hgrid="0.5x0.5"  frm_lmask="AVHRR"  to_hgrid="4x5"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/4x5/map_0.5x0.5_AVHRR_to_4x5_nomask_aave_da_c110822.nc</map>
+<map frm_hgrid="0.5x0.5"    frm_lmask="GSDTG2000"  to_hgrid="4x5"   to_lmask="nomask"
+>lnd/clm2/mappingdata/maps/4x5/map_0.5x0.5_GSDTG2000_to_4x5_nomask_aave_da_c200311.nc</map>
 <map frm_hgrid="10x10min" frm_lmask="nomask" to_hgrid="4x5"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/4x5/map_10x10min_nomask_to_4x5_nomask_aave_da_c110822.nc</map>
 <map frm_hgrid="5x5min"   frm_lmask="IGBP-GSDP" to_hgrid="4x5"   to_lmask="nomask"
@@ -1451,6 +1459,7 @@ this mask will have smb calculated over the entire global land surface
 >lnd/clm2/mappingdata/maps/4x5/map_360x720_cruncep_to_4x5_nomask_aave_da_c130326.nc</map>
 <map frm_hgrid="1km-merge-10min"    frm_lmask="HYDRO1K-merge-nomask"  to_hgrid="4x5"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/4x5/map_1km-merge-10min_HYDRO1K-merge-nomask_to_4x5_nomask_aave_da_c130411.nc</map>
+
 
 <map frm_hgrid="0.5x0.5"  frm_lmask="MODIS"  to_hgrid="0.23x0.31"   to_lmask="nomask"
 >lnd/clm2/mappingdata/maps/0.23x0.31/map_0.5x0.5_MODIS_to_0.23x0.31_nomask_aave_da_c110920.nc</map>

@@ -49,7 +49,7 @@ module scream_scorpio_interface
   use pio_types,  only : iosystem_desc_t, file_desc_t, &
       pio_noerr, PIO_iotype_netcdf, var_desc_t, io_desc_t, PIO_int, &
       pio_clobber, PIO_nowrite, PIO_unlimited, pio_global, PIO_real, &
-      PIO_double, pio_rearr_subset, pio_write, pio_nowrite
+      PIO_double, pio_rearr_subset, pio_write, pio_nowrite, PIO_64BIT_DATA
   use pio_kinds,  only : PIO_OFFSET_KIND, i4
   use pio_nf,     only : PIO_redef, PIO_def_dim, PIO_def_var, PIO_enddef, PIO_inq_dimid, &
                          PIO_inq_dimlen, PIO_inq_varid, PIO_inq_att
@@ -101,6 +101,7 @@ module scream_scorpio_interface
   integer               :: pio_rearranger
   integer               :: pio_ntasks
   integer               :: pio_myrank
+  integer               :: pio_mode
 
   ! TYPES to handle history coordinates and files
   integer,parameter :: max_hcoordname_len = 16
@@ -662,12 +663,15 @@ contains
   ! that has been initialized by the component coupler.  Otherwise, it will be
   ! initalized locally.
   subroutine eam_init_pio_subsystem(mpicom,atm_id,local)
-#ifdef CIME_BUILD
+#ifdef SCREAM_CIME_BUILD
   ! Note, these three variables from shr_pio_mod are only needed in the
   ! case when we want to use the pio_subsystem that has already been defined by
   ! the component coupler.
-  use shr_pio_mod,  only: shr_pio_getrearranger, shr_pio_getiosys, shr_pio_getiotype
+  use shr_pio_mod,  only: shr_pio_getrearranger, shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
 #endif
+! TODO - Change CIME_BUILD to SCREAM_CIME_BUILD.  Unfortunately the shared
+! modules we need are not added yet to the SCREAM build, so doing this will take
+! a little more work, which will happen in a subsequent PR.
 
     integer, intent(in) :: mpicom
     integer, intent(in) :: atm_id
@@ -684,11 +688,12 @@ contains
     call MPI_Comm_rank(pio_mpicom, pio_myrank, ierr)
     call MPI_Comm_size(pio_mpicom, pio_ntasks , ierr)
 
-#ifdef CIME_BUILD
+#ifdef SCREAM_CIME_BUILD
     if (.not.local) then
       pio_subsystem  => shr_pio_getiosys(atm_id)
       pio_iotype     = shr_pio_getiotype(atm_id)
       pio_rearranger = shr_pio_getrearranger(atm_id)
+      pio_mode       = shr_pio_getioformat(atm_id)
     else
 #else
       ! Just for removing unused dummy warnings
@@ -699,10 +704,11 @@ contains
       num_aggregator = 0
       pio_rearranger = pio_rearr_subset
       pio_iotype     = PIO_iotype_netcdf
+      pio_mode       = PIO_64BIT_DATA ! Default to 64 bit
       base           = 0
       call PIO_init(pio_myrank, pio_mpicom, pio_ntasks, num_aggregator, stride, &
            pio_rearr_subset, pio_subsystem, base=base)
-#ifdef CIME_BUILD
+#ifdef SCREAM_CIME_BUILD
     end if
 #endif
 
@@ -743,7 +749,7 @@ contains
     integer                          :: retval           ! PIO error return value
     integer                          :: mode             ! Mode for how to handle the new file
 
-    mode = pio_clobber ! Set to CLOBBER for now, TODO: fix to allow for optional mode type like in CAM
+    mode = ior(pio_mode,pio_clobber) ! Set to CLOBBER for now, TODO: fix to allow for optional mode type like in CAM
     retval = pio_createfile(pio_subsystem,File,pio_iotype,fname,mode)
     call errorHandle("PIO ERROR: unable to create file: "//trim(fname),retval)
 

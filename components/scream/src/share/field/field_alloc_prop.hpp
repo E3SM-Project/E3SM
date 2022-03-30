@@ -120,13 +120,13 @@ public:
   bool is_dynamic_subfield () const { return m_subview_info.dynamic; }
 
   // Get the overall allocation size (in Bytes)
-  int  get_alloc_size () const;
+  long long get_alloc_size () const;
 
   // Get number of m_scalar_type_size-sized scalars in the allocation.
-  int  get_num_scalars () const { return get_alloc_size () / m_scalar_type_size; }
+  long long get_num_scalars () const { return get_alloc_size () / m_scalar_type_size; }
 
   // Get the largest pack size that this allocation was requested to accommodate
-  int  get_largest_pack_size () const;
+  int get_largest_pack_size () const;
 
   // Wether this allocation is contiguous
   bool contiguous () const { return m_contiguous; }
@@ -160,7 +160,7 @@ protected:
   int   m_last_extent;
 
   // The total size of this allocation.
-  int   m_alloc_size;
+  long long   m_alloc_size;
 
   // If this allocation is a subview of another, store info about the subview
   // process (see SubviewInfo documentation for details)

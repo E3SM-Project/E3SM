@@ -22,21 +22,25 @@ void SurfaceCoupling::do_export (const bool init_phase)
   const bool scream_ad_run =
       (m_field_mgr->has_field("qv") && m_field_mgr->has_field("T_mid") &&
        m_field_mgr->has_field("p_mid") && m_field_mgr->has_field("pseudo_density") &&
-       m_field_mgr->has_field("precip_liq_surf") && m_field_mgr->has_field("precip_ice_surf"));
+       m_field_mgr->has_field("precip_liq_surf") && m_field_mgr->has_field("precip_ice_surf") &&
+       m_field_mgr->has_field("p_int") && m_field_mgr->has_field("phis") );
   if (scream_ad_run) {
     const int last_entry = m_num_levs-1;
     const auto& qv              = m_field_mgr->get_field("qv").get_view<const Real**>();
     const auto& T_mid           = m_field_mgr->get_field("T_mid").get_view<const Real**>();
     const auto& p_mid           = m_field_mgr->get_field("p_mid").get_view<const Real**>();
+    const auto& p_int           = m_field_mgr->get_field("p_int").get_view<const Real**>();
     const auto& pseudo_density  = m_field_mgr->get_field("pseudo_density").get_view<const Real**>();
     const auto& precip_liq_surf = m_field_mgr->get_field("precip_liq_surf").get_view<const Real*>();
     const auto& precip_ice_surf = m_field_mgr->get_field("precip_ice_surf").get_view<const Real*>();
+    const auto& phis            = m_field_mgr->get_field("phis").get_view<const Real*>();
     const auto l_dz             = dz;
     const auto l_z_int          = z_int;
     const auto l_z_mid          = z_mid;
     const auto l_Sa_z           = Sa_z;
     const auto l_Sa_ptem        = Sa_ptem;
     const auto l_Sa_dens        = Sa_dens;
+    const auto l_Sa_pslv        = Sa_pslv;
     const auto l_Faxa_rainl     = Faxa_rainl;
     const auto l_Faxa_snowl     = Faxa_snowl;
 
@@ -50,6 +54,7 @@ void SurfaceCoupling::do_export (const bool init_phase)
       const auto qv_i              = ekat::subview(qv, i);
       const auto T_mid_i           = ekat::subview(T_mid, i);
       const auto p_mid_i           = ekat::subview(p_mid, i);
+      const auto p_int_i           = ekat::subview(p_int, i);
       const auto pseudo_density_i  = ekat::subview(pseudo_density, i);
       const auto dz_i              = ekat::subview(l_dz, i);
       const auto z_int_i           = ekat::subview(l_z_int, i);
@@ -59,16 +64,21 @@ void SurfaceCoupling::do_export (const bool init_phase)
       PF::calculate_dz(team, pseudo_density_i, p_mid_i, T_mid_i, qv_i, dz_i);
       team.team_barrier();
 
-      // Compute vertical layer heights. Use z_int(nlevs) = z_surf = 0.0.
+      // Compute vertical layer heights (relative to ground surface rather than from sea level).
+      // Use z_int(nlevs) = z_surf = 0.0.
       const Real z_surf = 0.0;
       PF::calculate_z_int(team, num_levs, dz_i, z_surf, z_int_i);
       team.team_barrier();
       PF::calculate_z_mid(team, num_levs, z_int_i, z_mid_i);
       team.team_barrier();
 
+      // Calculate air temperature at bottom of cell closest to the ground for PSL
+      const Real T_int_bot = PF::calculate_surface_air_T(T_mid_i(last_entry),z_mid_i(last_entry));
+      
       l_Sa_z(i)       = z_mid_i(last_entry);
       l_Sa_ptem(i)    = PF::calculate_theta_from_T(T_mid_i(last_entry), p_mid_i(last_entry));
       l_Sa_dens(i)    = PF::calculate_density(pseudo_density_i(last_entry), dz_i(last_entry));
+      l_Sa_pslv(i)    = PF::calculate_psl(T_int_bot, p_int_i(num_levs), phis(i) );
       l_Faxa_rainl(i) = precip_liq_surf(i)*C::RHO_H2O;
       l_Faxa_snowl(i) = precip_ice_surf(i)*C::RHO_H2O; //p3_ice_sed_impl.hpp uses INV_RHO_H2O
     });

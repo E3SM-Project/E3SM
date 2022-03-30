@@ -130,6 +130,10 @@ foreach(ITEM IN LISTS FILES_NEED_OPENACC_FLAGS)
 endforeach()
 
 foreach(ITEM IN LISTS MPAS_ADD_ACC_FLAGS)
-  e3sm_add_flags("${ITEM}" "-acc -gpu=cc70,cc60,deepcopy -Minfo=accel")
+  if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 20)
+    e3sm_add_flags("${ITEM}" "-acc -gpu=cc70,cc60,deepcopy -Minfo=accel")
+  else()
+    e3sm_add_flags("${ITEM}" "-acc -ta=tesla:cc70,cc60,deepcopy,nonvvm -Minfo=accel")
+  endif()
 endforeach()
 

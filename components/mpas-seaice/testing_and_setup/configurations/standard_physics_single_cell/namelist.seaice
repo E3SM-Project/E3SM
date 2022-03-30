@@ -19,6 +19,10 @@
     config_number_of_blocks = 0
     config_explicit_proc_decomp = false
     config_proc_decomp_file_prefix = 'graphs/graph.info.part.'
+    config_use_halo_exch = true
+    config_aggregate_halo_exch = false
+    config_reuse_halo_exch = false
+    config_load_balance_timers = false
 /
 &restart
     config_do_restart = false
@@ -283,13 +287,13 @@
 /
 &snow
     config_snow_redistribution_scheme = 'none'
-    config_fallen_snow_radius = 54.4
+    config_fallen_snow_radius = 54.526
     config_use_snow_liquid_ponds = false
     config_new_snow_density = 100.0
     config_max_snow_density = 450.0
     config_minimum_wind_compaction = 10.0
     config_wind_compaction_factor = 27.3
-    config_max_dry_snow_radius = 2800.0
+    config_max_dry_snow_radius = 1800.0
 /
 &meltponds
     config_snow_to_ice_transition_depth = 0.0
@@ -335,6 +339,9 @@
     config_min_friction_velocity = 0.0005
     config_ocean_heat_transfer_type = 'constant'
     config_sea_freezing_temperature_type = 'mushy'
+    config_ocean_surface_type = 'free'
+    config_couple_biogeochemistry_fields = false
+    config_use_data_icebergs = false
 /
 &diagnostics
     config_check_state = false

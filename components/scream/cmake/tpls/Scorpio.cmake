@@ -18,21 +18,23 @@ macro (CreateScorpioTargets)
         message (FATAL_ERROR "Something is off: pioc was not yet imported but piof was.")
       endif()
 
-      set (SCORPIO_LIB_DIR ${INSTALL_SHAREDPATH}/lib)
-      set (SCORPIO_INC_DIR ${INSTALL_SHAREDPATH}/include)
+      set(SCORPIO_LIB_DIR ${INSTALL_SHAREDPATH}/lib)
+      set(SCORPIO_INC_DIR ${INSTALL_SHAREDPATH}/include)
+      set(CSM_SHR_INCLUDE ${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/noesmf/${NINST_VALUE}/include)
+      set(INTF_INCL_DIRS ${SCORPIO_INC_DIR} ${CSM_SHR_INCLUDE})
 
       ######################
       #        PIOc        #
       ######################
 
       # Look for pioc in INSTALL_SHAREDPATH/lib
-      find_library(SCORPIO_C_LIB pioc REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
+      find_library(SCORPIO_C_LIB pioc REQUIRED PATHS ${SCORPIO_LIB_DIR})
 
       # Create imported target
       add_library(pioc UNKNOWN IMPORTED GLOBAL)
       set_target_properties(pioc PROPERTIES
                 IMPORTED_LOCATION "${SCORPIO_C_LIB}"
-                INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_SHAREDPATH}/include)
+                INTERFACE_INCLUDE_DIRECTORIES "${INTF_INCL_DIRS}")
 
       ######################
       #  PIOc dependencies #

@@ -88,8 +88,10 @@ public:
     static constexpr int num_2d_nlay        = 14;
     static constexpr int num_2d_nlay_p1     = 7;
     static constexpr int num_2d_nswbands    = 2;
-    static constexpr int num_3d_nswbands    = 4;
-    static constexpr int num_3d_nlwbands    = 2;
+    static constexpr int num_3d_nlev_nswbands = 4;
+    static constexpr int num_3d_nlev_nlwbands = 2;
+    static constexpr int num_3d_nlay_nswbands = 3;
+    static constexpr int num_3d_nlay_nlwbands = 1;
 
     // 1d size (ncol)
     real1d mu0;
@@ -141,12 +143,18 @@ public:
     // 2d size (ncol, nswbands)
     real2d sfc_alb_dir;
     real2d sfc_alb_dif;
+
+    // 3d size (ncol, nlay, n[sw,lw]bands)
+    real3d aero_tau_sw;
+    real3d aero_ssa_sw;
+    real3d aero_g_sw;
+    real3d aero_tau_lw;
   };
 
 protected:
 
   // Computes total number of bytes needed for local variables
-  int requested_buffer_size_in_bytes() const;
+  size_t requested_buffer_size_in_bytes() const;
 
   // Set local variables using memory provided by
   // the ATMBufferManager

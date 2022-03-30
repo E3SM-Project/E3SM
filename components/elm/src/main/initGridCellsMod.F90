@@ -220,6 +220,13 @@ contains
           grc_pp%londeg(gdc) = ldomain%lonc(gdc) 
           grc_pp%lat(gdc)    = grc_pp%latdeg(gdc) * SHR_CONST_PI/180._r8  
           grc_pp%lon(gdc)    = grc_pp%londeg(gdc) * SHR_CONST_PI/180._r8
+
+          grc_pp%stdev_elev(gdc)     = ldomain%stdev_elev(gdc)
+          grc_pp%sky_view(gdc)       = ldomain%sky_view(gdc)
+          grc_pp%terrain_config(gdc) = ldomain%terrain_config(gdc)
+          grc_pp%sinsl_cosas(gdc)    = ldomain%sinsl_cosas(gdc)
+          grc_pp%sinsl_sinas(gdc)    = ldomain%sinsl_sinas(gdc)
+          
        enddo
 
        ! Fill in subgrid datatypes

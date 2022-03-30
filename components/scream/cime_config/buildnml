@@ -252,6 +252,8 @@ def dump_to_nml(dict_contents, fd):
 
         elif isinstance(v, list):
             fd.write("{}(:) = {}\n".format(k, ", ".join(v)))
+        elif isinstance(v, bool):
+            fd.write("{} = {}\n".format(k, ".true." if v else ".false.")
         elif isinstance(v, str):
             fd.write("{} = '{}'\n".format(k, v))
         else:
