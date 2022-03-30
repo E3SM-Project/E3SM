@@ -259,6 +259,7 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
   const auto& sgs_buoy_flux    = get_field_out("sgs_buoy_flux").get_view<Spack**>();
   const auto& inv_qc_relvar    = get_field_out("inv_qc_relvar").get_view<Spack**>();
   const auto& phis             = get_field_in("phis").get_view<const Real*>();
+  const auto& tracer_names     = get_group_out("tracers").m_info->m_fields_names;
 
   // Alias local variables from temporary buffer
   auto z_mid       = m_buffer.z_mid;
@@ -286,9 +287,27 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
   // For now, set z_int(i,nlevs) = z_surf = 0
   const Real z_surf = 0.0;
 
-  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,z_surf,m_cell_area,
+  // Find index of qv (water vapor, kg/kg-of-wet-air) and tke (units??) in the qtracer 3d view
+  // These indices are later used for converting tracers from wet mmr to dry mmr and vice-versa
+  auto tke_index = -1; // index of tke in qtracer view
+  auto qv_index  = -1; // index of qv  in qtracer view
+
+  auto iter      = 0;
+  for (auto const& it_names : tracer_names ){ //iterate of tracer_names to find the indices
+    if(it_names == "tke"){tke_index = iter;}
+    if(it_names == "qv" ){qv_index  = iter;}
+    iter++;
+  }
+
+  //check if we found tke and qv tracers otherwise error out
+  EKAT_REQUIRE_MSG(tke_index != -1,
+                   "Error! Shoc requires tke index to be greater than 0.");
+  EKAT_REQUIRE_MSG(qv_index != -1,
+                   "Error! Shoc requires qv index to be greater than 0.");
+
+  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers, tke_index, qv_index, z_surf,m_cell_area,
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
-                                surf_mom_flux,qtracers,qv,qc,tke,tke_copy,z_mid,z_int,cell_length,
+                                surf_mom_flux,tracer_names,qtracers,qv,qc,tke,tke_copy,z_mid,z_int,cell_length,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
                                 wtracer_sfc,wm_zt,inv_exner,thlm,qw);
 
@@ -319,11 +338,11 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
   input_output.wthv_sec     = sgs_buoy_flux;
   input_output.qtracers     = get_group_out("tracers").m_bundle->get_view<Spack***>();
 
-  auto btracers     = get_group_out("tracers");//.m_bundle->get_view<Spack***>();
-  for (const auto& fname : btracers.m_info->m_fields_names) {
-    std::cout<<"BALLI:"<< fname<<std::endl;
-  }
-
+  //auto btracers     = get_group_out("tracers");//.m_bundle->get_view<Spack***>();
+  //for (const auto& fname : btracers.m_info->m_fields_names) {
+  //  std::cout<<"BALLI:"<< fname<<std::endl;
+  //}
+  std::cout<<"BALLI:"<<typeid(tracer_names).name()<<std::endl;
 
 
   input_output.tk           = get_field_out("eddy_diff_mom").get_view<Spack**>();
@@ -350,8 +369,8 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
   history_output.wqls_sec  = m_buffer.wqls_sec;
   history_output.brunt     = m_buffer.brunt;
 
-  shoc_postprocess.set_variables(m_num_cols,m_num_levs,
-                                 rrho,qv,qw,qc,tke,tke_copy,shoc_ql2,
+  shoc_postprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,tke_index,qv_index,
+                                 rrho,qv,qw,qc,tke,tke_copy,qtracers,shoc_ql2,
                                  cldfrac_liq,sgs_buoy_flux,inv_qc_relvar,
                                  T_mid, dse, z_mid, phis);
 
