@@ -404,7 +404,7 @@ ST field_max(const Field& f)
   // TODO: compute directly on device
   f.sync_to_host();
 
-  ST max = -std::numeric_limits<ST>::max();
+  ST max = std::numeric_limits<ST>::lowest();
   switch (fl.rank()) {
     case 1:
       {
