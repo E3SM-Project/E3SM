@@ -136,7 +136,7 @@ build_grids (const std::set<std::string>& grid_names)
     build_physics_grid(m_ref_grid_name);
   }
 
-  // Now we can cleanup all the grid stuff in f90
+  // Clean up temporaries used during grid initialization
   cleanup_grid_init_data_f90 ();
 }
 

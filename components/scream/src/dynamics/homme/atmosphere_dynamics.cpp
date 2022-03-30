@@ -270,26 +270,36 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   const auto& dgn = m_dyn_grid->name();
   const auto& rgn = m_ref_grid->name();
 
-  const auto& c = Homme::Context::singleton();
-  const auto& params = c.get<Homme::SimulationParams>();
-
   // Use common/shorter names for tracers.
   alias_group_in  ("tracers",rgn,"Q");
   alias_group_out ("tracers",rgn,"Q");
 
+  // Grab handles of some Homme data structure
+  const auto& c       = Homme::Context::singleton();
+        auto& params  = c.get<Homme::SimulationParams>();
+        auto& tracers = c.get<Homme::Tracers>();
+
+  // Set runtime number of tracers in Homme, anc finalize tracers initialization
+  const int qsize = get_group_out("Q",rgn).m_info->size();
+  params.qsize = qsize;           // Set in the CXX data structure
+  set_homme_param("qsize",qsize); // Set in the F90 module
+  tracers.init(tracers.num_elems(),qsize);
+
+  // Complete Homme prim_init1_xyz sequence
+  prim_complete_init1_phase_f90 ();
+
   // ------ Sanity checks ------- //
 
-  // Nobody should claim to be a provider for dp, w_i.
+  // Nobody should claim to be a provider for dp.
   // WARNING! If the assumption on 'pseudo_density' ceases to be true, you have to revisit
   //          how you restart homme. In particular, p_mid is restarted from pseudo_density,
   //          as it is read from restart file. If other procs update it, the restarted value
   //          might no longer match the end-of-homme-step value, which is what you need
   //          to compute p_mid. Hence, if this assumption goes away, you need to restart
   //          p_mid by first remapping the restarted dp3d_dyn back to ref grid, and using
-  //          that value to compute p_mid.
-  const auto& rho_track = get_field_out("pseudo_density").get_header().get_tracking();
+  //          that value to compute p_mid. Or, perhaps easier, write p_mid to restart file.
   EKAT_REQUIRE_MSG (
-      rho_track.get_providers().size()==1,
+      get_field_out("pseudo_density").get_header().get_tracking().get_providers().size()==1,
       "Error! Someone other than Dynamics is trying to update the pseudo_density.\n");
 
   // The groups 'tracers' and 'tracers_mass_dyn' should contain the same fields
@@ -298,7 +308,6 @@ void HommeDynamics::initialize_impl (const RunType run_type)
 
   // Create remaining internal fields
   constexpr int NGP  = HOMMEXX_NP;
-  const int qsize = params.qsize;
   const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
   const int ncols = m_ref_grid->get_num_local_dofs();
   const int nlevs = m_dyn_grid->get_num_vertical_levels();
@@ -426,20 +435,6 @@ void HommeDynamics::finalize_impl (/* what inputs? */)
 
   // This class is done needing Homme's context, so remove myself as customer
   Homme::Context::singleton().finalize_singleton();
-}
-
-void HommeDynamics::set_computed_group_impl (const FieldGroup& group)
-{
-  if (group.m_info->m_group_name=="tracers") {
-    // Set runtime number of tracers in Homme
-    const auto& c = Homme::Context::singleton();
-    auto& params = c.get<Homme::SimulationParams>();
-    auto& tracers = c.get<Homme::Tracers>();
-    const int qsize = group.m_info->size();
-    params.qsize = qsize;           // Set in the CXX data structure
-    set_homme_param("qsize",qsize); // Set in the F90 module
-    tracers.init(tracers.num_elems(),qsize);
-  }
 }
 
 void HommeDynamics::homme_pre_process (const int dt) {
