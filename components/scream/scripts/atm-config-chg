@@ -37,11 +37,7 @@ def perform_change(element, change, parent, any_change):
     for child in element:
         child_name = child.tag
 
-        has_children = False
-        for _ in child:
-            has_children = True
-            break
-
+        has_children = len(child) > 0
         if not has_children:
             if change_matches(param_namespace, parent, child_name):
                 expect(not any_change,

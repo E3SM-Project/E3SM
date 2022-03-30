@@ -37,6 +37,9 @@ CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
 ###############################################################################
 def do_cime_vars(entry, case):
 ###############################################################################
+    """
+    For a parameter value, process any references to case values ("${CASEVAR}")
+    """
     m = CIME_VAR_RE.search(entry)
     while m:
         cime_var = m.groups()[0]
@@ -72,20 +75,27 @@ def ordered_dump(data, item, Dumper=yaml.SafeDumper, **kwds):
 ###############################################################################
 def evaluate_selectors(element, case, ez_selectors):
 ###############################################################################
+    """
+    Evaluate and remove selectors from the unprocessed XML nml file in the repo.
+
+    Elements with selectors are removed. If the selector evaulates to True, then
+    the corresponding element text becomes the new text value of the original
+    (no-selectors, AKA default) element.
+    """
     child_values = {} # elem_name -> evaluated XML element
     children_to_remove = []
     for child in element:
         child_name = child.tag
         child_val = child.text
 
-        has_children = False
-        for _ in child:
-            has_children = True
-            break
-
+        # Note: in our system, an XML element is either a "node" (has children)
+        # or a "leaf" (has a value).
+        has_children = len(child) > 0
         if not has_children:
             selectors = child.attrib
             if selectors:
+                # This is a key assumption. The default value element must exist
+                # and come first, before selector elements
                 expect(child_name in child_values, "Child {} with selectors has no default value".format(child_name))
                 all_match = True
                 for k, v in selectors.items():
@@ -101,6 +111,9 @@ def evaluate_selectors(element, case, ez_selectors):
                         if m:
                             val = m.groups()[0]
                         else:
+                            # If the regex doesn't even match the case val, then we consider
+                            # the selector to evaluate to False. Setting the raw val to the
+                            # string below should ensure the selector will never match.
                             val = "DOES NOT MATCH"
 
                     else:
@@ -132,6 +145,11 @@ def evaluate_selectors(element, case, ez_selectors):
 ###############################################################################
 def create_raw_xml_file(case, caseroot):
 ###############################################################################
+    """
+    Create the raw $case/namelist_scream.xml file. This file is intended to be
+    modified by users via editor or the atm-config-chg script if they want
+    to make tweaks to input files (yaml and/or nml).
+    """
     src = os.path.join(case.get_value("SRCROOT"), "components/scream/cime_config/namelist_defaults_scream.xml")
 
     raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
@@ -178,6 +196,9 @@ def create_raw_xml_file(case, caseroot):
 ###############################################################################
 def refine_type(entry):
 ###############################################################################
+    """
+    Try to convert the text entry to the appropriate type based on its contents.
+    """
     if "," in entry:
         return [refine_type(item) for item in entry.split(", ") if item.strip() != ""]
 
@@ -201,19 +222,17 @@ def refine_type(entry):
 ###############################################################################
 def convert_to_dict(element):
 ###############################################################################
+    """
+    Convert an XML element to a dictonary where the tags are the keys
+    """
     result = OrderedDict()
     for child in element:
         child_name = child.tag.replace("__", " ")
         child_val = child.text
 
-        has_children = False
-        for grand_child in child:
-            has_children = True
-            break
-
+        has_children = len(child) > 0
         if not has_children:
             result[child_name] = refine_type(child_val)
-
         else:
             result[child_name] = convert_to_dict(child)
 
@@ -222,6 +241,9 @@ def convert_to_dict(element):
 ###############################################################################
 def dump_to_nml(dict_contents, fd):
 ###############################################################################
+    """
+    Convert a dictionary to namelist file
+    """
     for k, v in dict_contents.items():
         if isinstance(v, dict):
             fd.write("&{}\n".format(k))
@@ -238,6 +260,9 @@ def dump_to_nml(dict_contents, fd):
 ###############################################################################
 def create_nml_files(caseroot, rundir):
 ###############################################################################
+    """
+    Based on $case/namelist_scream.xml, create the actual input files.
+    """
     raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
     with open(raw_xml_file, "r") as fd:
         tree = ET.parse(fd)
@@ -288,13 +313,13 @@ def buildnml(case, caseroot, compname):
 ###############################################################################
     expect(compname == "scream", compname)
 
-    # Copy data inputs to a place where they are convenient to find the run
-    # area.
     rundir   = case.get_value("RUNDIR")
     target   = os.path.join(rundir, "data")
     src      = os.path.join(case.get_value("SRCROOT"), "components/scream/data")
 
+    #
     # Copy scream/data to rundir/data
+    #
     with SharedArea():
         if not os.path.isdir(target):
             os.mkdir(target)
@@ -308,12 +333,18 @@ def buildnml(case, caseroot, compname):
         # Copy nml config change/query scripts
         safe_copy(os.path.join(src, "../scripts/atm-config-chg"), caseroot)
 
+    #
+    # Create the raw/processed XML input file and create nml files
+    # from it.
+    #
     create_raw_xml_file(case, caseroot)
 
     nmls_as_dicts = create_nml_files(caseroot, rundir)
     scream_input = nmls_as_dicts["data/scream_input.yaml"]
 
+    #
     # Create input data list
+    #
     input_data_list_file = "{}/Buildconf/scream.input_data_list".format(caseroot)
     if os.path.exists(input_data_list_file):
         os.remove(input_data_list_file)
