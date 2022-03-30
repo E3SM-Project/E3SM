@@ -127,11 +127,13 @@ public:
         const auto qv_wet = qtracers(i,qv_index,k); // stroe qv as wet mmr [kg/kg(wet-air)]
 
         //iterate over all tracers and convert wet mmr to dry mmr (except TKE)
-        for(int q_iter = 0; q_iter<num_qtracers; q_iter++){
-          if(q_iter != tke_index){PF::calculate_drymmr_from_wetmmr(qtracers(i,q_iter,k),qv_wet);}
-        }
+        const int num_qtracer_packs = ekat::npack<Spack>(num_qtracers);
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_qtracer_packs), [&] (const Int& q_iter) {
+            const auto is_not_tke_index = q_iter != tke_index;
+            if(is_not_tke_index){PF::calculate_drymmr_from_wetmmr(qtracers(i,q_iter,k),qv_wet);}
+          });
 
-        //convert wetmmr to dry mmr for "qw" (is qw water??, units: kg/kg(dry-air) after conversion
+        //convert wet mmr to dry mmr for "qw" (is qw water??, units: kg/kg(dry-air)?? after conversion)
         qw(i,k) = PF::calculate_drymmr_from_wetmmr(qv(i,k),qv_wet) + PF::calculate_drymmr_from_wetmmr(qc(i,k), qv_wet);
 
         // Temperature
@@ -337,9 +339,12 @@ public:
         const auto qv_dry = qtracers(i,qv_index,k);// store qv "dry" mmr
 
         //iterate over all tracers and convert dry mmr to wet mmr (except TKE)
-        for(int q_iter = 0; q_iter<num_qtracers; q_iter++){
-          if(q_iter != tke_index){PF::calculate_wetmmr_from_drymmr(qtracers(i,q_iter,k),qv_dry);}
-        }
+        const int num_qtracer_packs = ekat::npack<Spack>(num_qtracers);
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_qtracer_packs), [&] (const Int& q_iter) {
+            const auto is_not_tke_index = q_iter != tke_index;
+            if(is_not_tke_index){PF::calculate_wetmmr_from_drymmr(qtracers(i,q_iter,k),qv_dry);}
+          });
+
 
         //convert qc from dry to wet mmr[kg/kg(wet-air)]
         qc(i,k) = PF::calculate_wetmmr_from_drymmr(qc(i,k), qv_dry);
