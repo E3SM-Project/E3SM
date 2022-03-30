@@ -259,7 +259,7 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
   const auto& sgs_buoy_flux    = get_field_out("sgs_buoy_flux").get_view<Spack**>();
   const auto& inv_qc_relvar    = get_field_out("inv_qc_relvar").get_view<Spack**>();
   const auto& phis             = get_field_in("phis").get_view<const Real*>();
-  const auto& tracer_names     = get_group_out("tracers").m_info->m_fields_names;
+  const auto& tracer_names     = get_group_out("tracers").m_info->m_fields_names;// obtain tracer names in the qtracer view
 
   // Alias local variables from temporary buffer
   auto z_mid       = m_buffer.z_mid;
@@ -289,8 +289,8 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
 
   // Find index of qv (water vapor, kg/kg-of-wet-air) and tke (units??) in the qtracer 3d view
   // These indices are later used for converting tracers from wet mmr to dry mmr and vice-versa
-  auto tke_index = -1; // index of tke in qtracer view
-  auto qv_index  = -1; // index of qv  in qtracer view
+  auto tke_index = -1; // initialize index of tke in qtracers view
+  auto qv_index  = -1; // initialize index of qv  in qtracers view
 
   auto iter      = 0;
   for (auto const& it_names : tracer_names ){ //iterate of tracer_names to find the indices
@@ -307,7 +307,7 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
 
   shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers, tke_index, qv_index, z_surf,m_cell_area,
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
-                                surf_mom_flux,tracer_names,qtracers,qv,qc,tke,tke_copy,z_mid,z_int,cell_length,
+                                surf_mom_flux,qtracers,qv,qc,tke,tke_copy,z_mid,z_int,cell_length,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
                                 wtracer_sfc,wm_zt,inv_exner,thlm,qw);
 

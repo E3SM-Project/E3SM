@@ -41,7 +41,6 @@ class SHOCMacrophysics : public scream::AtmosphereProcess
   using view_3d              = typename SHF::view_3d<Spack>;
   using view_3d_const        = typename SHF::view_3d<const Spack>;
 
-  using ci_string = ekat::CaseInsensitiveString;
   using WSM       = ekat::WorkspaceManager<Spack, KT::Device>;
 
   template<typename ScalarT>
@@ -78,10 +77,10 @@ public:
   struct SHOCPreprocess {
     SHOCPreprocess() = default;
 
-
     KOKKOS_INLINE_FUNCTION
     void operator()(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) const {
       const int i = team.league_rank();
+
       const Real zvir = C::ZVIR;
       const Real latvap = C::LatVap;
       const Real cpair = C::Cpair;
@@ -113,18 +112,18 @@ public:
          *-------------------------
          *Since tracers from the host model (or AD) are  wet mixing ratios and SHOC expects
          *these tracers in dry mixing ratios, we convert the wet mixing ratios to dry mixing
-         *ratios for all tracers except TKE (a comment about why leave TKE??).
+         *ratios for all the tracers except TKE (a comment about why leave TKE??).
 
          *NOTE:Function calculate_drymmr_from_wetmmr takes 2 arguments: ( wet mmr and "wet"
          *water vapor mixing ratio)
          *----------------------------------------------------------------------------------
          */
 
-        //Since "qv" has a wet mixing ratio, store it as qv_wet. We can then use "qv" to
+        //Since "qv" has a wet mixing ratio, store it as qv_wet. We can then use "qv_wet" to
         //compute dry mixing ratios for all other tracers (except TKE)
         //Units of all tracers (except TKE) below will become [kg/kg(dry-air)] for mass and
         //[#/kg(dry-air)] for number after the conversion
-        const auto qv_wet = qtracers(i,qv_index,k); // stroe qv as wet mmr [kg/kg(wet-air)]
+        const auto qv_wet = qtracers(i,qv_index,k); // store qv as wet mmr [kg/kg(wet-air)]
 
         //iterate over all tracers and convert wet mmr to dry mmr (except TKE)
         const int num_qtracer_packs = ekat::npack<Spack>(num_qtracers);
@@ -211,7 +210,6 @@ public:
     view_1d_const        surf_latent_flux;
     sview_2d_const       surf_mom_flux;
     view_3d        qtracers;
-    std::list<ci_string> tracer_names;
     view_2d_const        qv;
     view_2d              z_mid;
     view_2d              z_int;
@@ -245,7 +243,6 @@ public:
                        const view_2d_const& omega_,
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_latent_flux_,
                        const sview_2d_const& surf_mom_flux_,
-                       const std::list<ci_string> tracer_names_,
                        const view_3d& qtracers_,
                        const view_2d_const& qv_, const view_2d& qc_,
                        const view_2d& tke_, const view_2d& tke_copy_,
@@ -276,7 +273,6 @@ public:
       qv = qv_;
       // OUT
       qtracers = qtracers_;
-      tracer_names = tracer_names_;
       qc = qc_;
       shoc_s = dse_;
       tke = tke_;
