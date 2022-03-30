@@ -396,7 +396,7 @@ contains
       real (kind=RKIND), dimension(nglv*2*nglv) :: maskSLgrid1D
 
       integer :: err_tmp
-      integer :: unit_num_slm   ! SLM variable
+      integer :: unit_num_slm  ! SLM variable
       integer :: itersl, dtime ! SLM variable
       real    :: starttime     ! SLM variable
 
@@ -718,21 +718,23 @@ contains
       ! local variables
       !-----------------------------------------------------------------
 
-      real (kind=RKIND) :: rhs = 0
+      real (kind=RKIND) :: rhs
       integer :: n_S, n, nRow, nCol
 
       n_S = size(sValues)
       n = 1
+      rhs = 0.0_RKIND
+
       do while (n .LE. n_S)
          nRow = rowValues(n)
          do while ( rowValues(n) .EQ. nRow )
             nCol = colValues(n)
             rhs = rhs + dataIn(nCol) * sValues(n)
             n = n + 1
-         end do
+         enddo
          dataOut(nRow) = rhs
-         rhs = 0
-      end do
+         rhs = 0.0_RKIND
+      enddo
 
    !--------------------------------------------------------------------
    end subroutine interpolate
@@ -809,7 +811,7 @@ contains
       if (curProc.eq.0) then
 
          mpasToGridFile = trim(config_MALI_to_SLM_weights_file)
-         gridToMpasFile = trim(config_MALI_to_SLM_weights_file)
+         gridToMpasFile = trim(config_SLM_to_MALI_weights_file)
 
          ! Open netcdf weights files
          call check( nf90_open(path = mpasToGridFile, mode = nf90_nowrite, ncid = toNcId), err_tmp)
@@ -818,13 +820,13 @@ contains
          err = ior(err, err_tmp)
 
          ! Get dimension ID
-         call check( nf90_inq_dimid(fromNcId, "n_s", fromNsDimId), err_tmp)
-         err = ior(err, err_tmp)
          call check( nf90_inq_dimid(toNcId, "n_a", nMpasDimId), err_tmp)
          err = ior(err, err_tmp)
          call check( nf90_inq_dimid(toNcId, "n_s", toNsDimId), err_tmp)
          err = ior(err, err_tmp)
          call check( nf90_inq_dimid(fromNcId, "n_a", nGridDimId), err_tmp)
+         err = ior(err, err_tmp)
+         call check( nf90_inq_dimid(fromNcId, "n_s", fromNsDimId), err_tmp)
          err = ior(err, err_tmp)
 
          ! Get Variable IDs
