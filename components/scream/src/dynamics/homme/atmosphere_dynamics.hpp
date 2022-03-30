@@ -23,8 +23,9 @@ class HommeDynamics : public AtmosphereProcess
 {
 public:
 
-  // Constructor(s)
+  // Constructor(s) and Destructor
   HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList& params);
+  ~HommeDynamics ();
 
   // The type of the subcomponent (dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }

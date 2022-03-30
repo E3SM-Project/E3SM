@@ -55,6 +55,12 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
   HommeContextUser::singleton().add_user();
 }
 
+HommeDynamics::~HommeDynamics ()
+{
+  // This class is done with Homme. Remove from its users list
+  HommeContextUser::singleton().remove_user();
+}
+
 void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 {
   // Grab dynamics and reference grid
