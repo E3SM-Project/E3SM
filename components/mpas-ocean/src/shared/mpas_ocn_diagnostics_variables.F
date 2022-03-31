@@ -56,7 +56,8 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: salineContractCoeff
    real (kind=RKIND), dimension(:,:), pointer :: BruntVaisalaFreqTop
    real (kind=RKIND), dimension(:,:), pointer :: tangentialVelocity
-   real (kind=RKIND), dimension(:,:), pointer :: layerThickEdge
+   real (kind=RKIND), dimension(:,:), pointer :: layerThickEdgeFlux
+   real (kind=RKIND), dimension(:,:), pointer :: layerThickEdgeMean
    real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell
    real (kind=RKIND), dimension(:,:), pointer :: vertVelocityTop
    real (kind=RKIND), dimension(:,:), pointer :: vertTransportVelocityTop
@@ -415,8 +416,10 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'vertGMBolusVelocityTop', &
                    vertGMBolusVelocityTop)
 
-         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', &
-                   layerThickEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdgeFlux', &
+                   layerThickEdgeFlux)
+         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdgeMean', &
+                   layerThickEdgeMean)
 
          call mpas_pool_get_array(diagnosticsPool, &
                   'normalizedRelativeVorticityEdge', &
@@ -672,7 +675,8 @@ contains
          !$acc                   GMStreamFuncX,                   &
          !$acc                   GMStreamFuncY,                   &
          !$acc                   GMStreamFuncZ,                   &
-         !$acc                   layerThickEdge,                  &
+         !$acc                   layerThickEdgeFlux,              &
+         !$acc                   layerThickEdgeMean,              &
          !$acc                   slopeTriadDown,                  &
          !$acc                   normRelVortEdge,                 &
          !$acc                   surfaceVelocity,                 &
@@ -909,7 +913,8 @@ contains
          !$acc                   GMStreamFuncX,                   &
          !$acc                   GMStreamFuncY,                   &
          !$acc                   GMStreamFuncZ,                   &
-         !$acc                   layerThickEdge,                  &
+         !$acc                   layerThickEdgeFlux,              &
+         !$acc                   layerThickEdgeMean,              &
          !$acc                   slopeTriadDown,                  &
          !$acc                   normRelVortEdge,                 &
          !$acc                   surfaceVelocity,                 &
@@ -1107,7 +1112,8 @@ contains
                  GMStreamFuncX,                   &
                  GMStreamFuncY,                   &
                  GMStreamFuncZ,                   &
-                 layerThickEdge,                  &
+                 layerThickEdgeFlux,              &
+                 layerThickEdgeMean,              &
                  slopeTriadDown,                  &
                  normRelVortEdge,                 &
                  surfaceVelocity,                 &

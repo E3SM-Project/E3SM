@@ -201,7 +201,7 @@ contains
       ! for explanation of divergence operator.
       !
       call ocn_thick_hadv_tend(normalTransportVelocity, &
-                               layerThickEdge, tendThick, err)
+                               layerThickEdgeFlux, tendThick, err)
 
       ! Compute vertical advection term -d/dz(hw)
       call ocn_thick_vadv_tend(vertAleTransportTop, &
@@ -345,7 +345,7 @@ contains
       !$acc update device(zMid, divergence, relativeVorticity, normPlanetVortEdge, &
       !$acc               density, normRelVortEdge, montgomeryPotential, pressure, &
       !$acc               thermExpCoeff, salineContractCoeff, tangentialVelocity, &
-      !$acc               layerThickEdge, kineticEnergyCell, sfcFlxAttCoeff, potentialDensity, &
+      !$acc               layerThickEdgeFlux, kineticEnergyCell, sfcFlxAttCoeff, potentialDensity, &
       !$acc               vertAleTransportTop, vertViscTopOfEdge, wettingVelocity)
       !$acc enter data &
       !$acc    copyin(tendVel, sfcStress, sfcStressMag, &
@@ -402,11 +402,11 @@ contains
       ! momentum, formulated as grad of kinetic energy
       call ocn_vel_hadv_coriolis_tend(normRelVortEdge, &
                                       normPlanetVortEdge, &
-                                      layerThickEdge, normalVelocity, &
+                                      layerThickEdgeFlux, normalVelocity, &
                                       kineticEnergyCell, tendVel, err)
 
       ! Add vertical advection term -w du/dz
-      call ocn_vel_vadv_tend(normalVelocity, layerThickEdge, &
+      call ocn_vel_vadv_tend(normalVelocity, layerThickEdgeFlux, &
                              vertAleTransportTop, tendVel, err)
 
       ! Add pressure gradient
@@ -430,7 +430,7 @@ contains
       ! Add forcing and bottom drag
       call ocn_vel_forcing_tend(normalVelocity, sfcFlxAttCoeff, &
                                 sfcStress, kineticEnergyCell, &
-                                layerThickEdge, tendVel, err)
+                                layerThickEdgeMean, tendVel, err)
 
       ! vertical mixing treated implicitly in a later routine
       ! adjust total velocity tendency based on wetting/drying
@@ -503,7 +503,7 @@ contains
 
       ! these variables input from shared diagnostics module:
       !    normalTransportVelocity - transport velocity across edge
-      !    layerThickEdge          - layer thickness on edge
+      !    layerThickEdgeFlux      - flux-related layer thickness on edge
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -648,14 +648,14 @@ contains
       !$acc            copyin(layerThickness)
       !TEMPORARY - once diagnotics module ported, these should already
       !            be on the device
-      !$acc update device (normalTransportVelocity, layerThickEdge, &
+      !$acc update device (normalTransportVelocity, layerThickEdgeFlux, &
       !$acc                vertAleTransportTop)
 
       ! compute transport velocity to use for all tracers
 #ifdef MPAS_OPENACC
       !$acc parallel loop collapse(2) &
       !$acc    present(normalThicknessFlux, normalTransportVelocity, &
-      !$acc            layerThickEdge)
+      !$acc            layerThickEdgeFlux)
 #else
       !$omp parallel
       !$omp do schedule(runtime) private(k)
@@ -664,7 +664,7 @@ contains
       do k = 1,nVertLevels
          normalThicknessFlux(k,iEdge) = &
                  normalTransportVelocity(k,iEdge)* &
-                 layerThickEdge(k, iEdge)
+                 layerThickEdgeFlux(k, iEdge)
       end do
       end do
 #ifndef MPAS_OPENACC
@@ -1117,7 +1117,7 @@ contains
             !$omp end parallel
          endif ! compute budgets
 
-         call ocn_tracer_hmix_tend(meshPool, layerThickEdge, &
+         call ocn_tracer_hmix_tend(meshPool, layerThickEdgeMean, &
                                    layerThickness, zMid, tracerGroup, &
                                    RediKappa, slopeTriadUp, &
                                    slopeTriadDown, dt, isActiveTracer, &
@@ -1417,7 +1417,7 @@ contains
             iEdge = edgesOnCell(i, iCell)
 
             do k = 1, maxLevelEdgeTop(iEdge)
-               flux = layerThickEdge(k,iEdge)*normalVelocity(k,iEdge)* &
+               flux = layerThickEdgeFlux(k,iEdge)*normalVelocity(k,iEdge)* &
                       dvEdge(iEdge)*edgeSignOnCell(i,iCell)*invAreaCell
                div_hu(k) = div_hu(k) - flux
                div_hu_btr = div_hu_btr - flux

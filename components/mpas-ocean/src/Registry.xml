@@ -1014,7 +1014,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_thickness_flux_type" type="character" default_value="centered" units="unitless"
-					description="If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThicknessEdge.  The standard MPAS-O approach is 'centered'."
+					description="If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThickEdgeFlux.  The standard MPAS-O approach is 'centered'."
 					possible_values="'upwind', 'centered'"
 		/>
 		<nml_option name="config_drying_safety_height" type="real" default_value="1.0e-10" units="m"
@@ -2563,8 +2563,12 @@
 			 description="horizontal velocity, tangential to an edge"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" units="m"
+		<var name="layerThicknessEdgeMean" type="real" dimensions="nVertLevels nEdges Time" units="m"
 			 description="layer thickness averaged from cell center to edges"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="layerThicknessEdgeFlux" type="real" dimensions="nVertLevels nEdges Time" units="m"
+			 description="layer thickness used for fluxes through edges. May be centered, upwinded, or a combination of the two."
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="layerThicknessVertex" type="real" dimensions="nVertLevels nVertices Time" units="m"

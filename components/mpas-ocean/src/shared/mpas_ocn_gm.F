@@ -473,8 +473,8 @@ contains
             ! The interpolation can only be carried out on non-boundary edges
             if (maxLevelEdgeTop(iEdge) .GE. minLevelEdgeBot(iEdge)) then
                do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
-                  h1 = layerThickEdge(k-1,iEdge)
-                  h2 = layerThickEdge(k,iEdge)
+                  h1 = layerThickEdgeMean(k-1,iEdge)
+                  h2 = layerThickEdgeMean(k,iEdge)
                   ! Using second-order interpolation below
                   gradDensityTopOfEdge(k,iEdge) = (h2 * gradDensityEdge(k-1,iEdge) + h1 * &
                                 gradDensityEdge(k,iEdge)) / (h1 + h2)
@@ -592,7 +592,7 @@ contains
               cell2 = cellsOnEdge(2, iEdge)
 
               k = minLevelEdgeBot(iEdge)+1
-              zEdge = -layerThickEdge(k-1,iEdge)
+              zEdge = -layerThickEdgeMean(k-1,iEdge)
               do while(zEdge > -config_GM_Visbeck_max_depth .and. k < maxLevelEdgeTop(iEdge))
                 lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
                 lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
@@ -604,7 +604,7 @@ contains
                 countN2 = countN2 + 1
 
                 k = k + 1
-                zEdge = zEdge - layerThickEdge(k-1,iEdge)
+                zEdge = zEdge - layerThickEdgeMean(k-1,iEdge)
               end do
 
               if (countN2 > 0) then
@@ -643,7 +643,7 @@ contains
               do k=minLevelEdgeBot(iEdge)+1,maxLevelEdgeTop(iEdge)
                  BruntVaisalaFreqTopEdge = 0.5_RKIND*(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
                                           max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND))
-                 shearEdgeInv = (0.5_RKIND*(layerThickEdge(k-1,iEdge) + layerThickEdge(k,iEdge)))**2.0 &
+                 shearEdgeInv = (0.5_RKIND*(layerThickEdgeMean(k-1,iEdge) + layerThickEdgeMean(k,iEdge)))**2.0 &
                     / (  (normalVelocity(k-1,iEdge) - normalVelocity(k,iEdge))**2.0 &
                        + (tangentialVelocity(k-1,iEdge) - tangentialVelocity(k,iEdge))**2.0 &
                        + 1.0e-18_RKIND )
@@ -680,10 +680,10 @@ contains
 
                BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-               tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThickEdge(k - 1, iEdge) &
-                                                                     *layerThickEdge(k, iEdge)) - BruntVaisalaFreqTopEdge
-               tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdge(k, iEdge) &
-                                 /(layerThickEdge(k - 1, iEdge) + layerThickEdge(k, iEdge))
+               tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThickEdgeMean(k - 1, iEdge) &
+                                                                     *layerThickEdgeMean(k, iEdge)) - BruntVaisalaFreqTopEdge
+               tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdgeMean(k, iEdge) &
+                                 /(layerThickEdgeMean(k - 1, iEdge) + layerThickEdgeMean(k, iEdge))
                rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity/rho_sw &
                                       *gradDensityConstZTopOfEdge(k,iEdge)
 
@@ -691,12 +691,12 @@ contains
                do k = minLevelEdgeBot(iEdge) + 2, maxLevelEdgeTop(iEdge) - 1
                   BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
                   BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-                  tridiagA(k - 2) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdge(k - 1, iEdge) &
-                                    /(layerThickEdge(k - 1, iEdge) + layerThickEdge(k, iEdge))
-                  tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThickEdge(k - 1, iEdge) &
-                                                                        *layerThickEdge(k, iEdge)) - BruntVaisalaFreqTopEdge
-                  tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdge(k, iEdge) &
-                                    /(layerThickEdge(k - 1, iEdge) + layerThickEdge(k, iEdge))
+                  tridiagA(k - 2) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdgeMean(k - 1, iEdge) &
+                                    /(layerThickEdgeMean(k - 1, iEdge) + layerThickEdgeMean(k, iEdge))
+                  tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThickEdgeMean(k - 1, iEdge) &
+                                                                        *layerThickEdgeMean(k, iEdge)) - BruntVaisalaFreqTopEdge
+                  tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdgeMean(k, iEdge) &
+                                    /(layerThickEdgeMean(k - 1, iEdge) + layerThickEdgeMean(k, iEdge))
                   rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity/rho_sw &
                                          *gradDensityConstZTopOfEdge(k,iEdge)
                end do
@@ -705,10 +705,10 @@ contains
                k = maxLevelEdgeTop(iEdge)
                BruntVaisalaFreqTopEdge = 0.5_RKIND*(BruntVaisalaFreqTop(k, cell1) + BruntVaisalaFreqTop(k, cell2))
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
-               tridiagA(k - 2) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdge(k - 1, iEdge) &
-                                 /(layerThickEdge(k - 1, iEdge) + layerThickEdge(k, iEdge))
-               tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThickEdge(k - 1, iEdge) &
-                                                                     *layerThickEdge(k, iEdge)) - BruntVaisalaFreqTopEdge
+               tridiagA(k - 2) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdgeMean(k - 1, iEdge) &
+                                 /(layerThickEdgeMean(k - 1, iEdge) + layerThickEdgeMean(k, iEdge))
+               tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThickEdgeMean(k - 1, iEdge) &
+                                                                     *layerThickEdgeMean(k, iEdge)) - BruntVaisalaFreqTopEdge
                rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity/rho_sw &
                                       *gradDensityConstZTopOfEdge(k,iEdge)
                ! Total number of rows
@@ -731,7 +731,7 @@ contains
          do iEdge = 1, nEdges
             do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                normalGMBolusVelocity(k, iEdge) = gmResolutionTaper(iEdge) * (gmStreamFuncTopOfEdge(k, iEdge) &
-                      - gmStreamFuncTopOfEdge(k + 1, iEdge)) /layerThickEdge(k, iEdge)
+                      - gmStreamFuncTopOfEdge(k + 1, iEdge)) /layerThickEdgeMean(k, iEdge)
             end do
          end do
          !$omp end do

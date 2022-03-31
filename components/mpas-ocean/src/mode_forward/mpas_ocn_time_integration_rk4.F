@@ -887,12 +887,12 @@ module ocn_time_integration_rk4
       ! advection of u uses u, while advection of layerThickness and tracers use normalTransportVelocity.
       if (associated(highFreqThicknessProvis)) then
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur,layerThickEdge, normalVelocityProvis, &
+            layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
             sshCur, rkSubstepWeight, &
             vertAleTransportTop, err, highFreqThicknessProvis)
       else
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur,layerThickEdge, normalVelocityProvis, &
+            layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
             sshCur, rkSubstepWeight, &
             vertAleTransportTop, err)
       endif
@@ -955,12 +955,12 @@ module ocn_time_integration_rk4
       ! advection of u uses u, while advection of layerThickness and tracers use normalTransportVelocity.
       if (associated(highFreqThicknessProvis)) then
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur, layerThickEdge, normalTransportVelocity, &
+            layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
             sshCur, rkSubstepWeight, &
             vertAleTransportTop, err, highFreqThicknessProvis)
       else
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur, layerThickEdge, normalTransportVelocity, &
+            layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
             sshCur, rkSubstepWeight, &
             vertAleTransportTop, err)
       endif
@@ -1025,12 +1025,12 @@ module ocn_time_integration_rk4
       ! advection of u uses u, while advection of layerThickness and tracers use normalTransportVelocity.
       if (associated(highFreqThicknessProvis)) then
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur, layerThickEdge, normalTransportVelocity, &
+            layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
             sshCur, rkSubstepWeight, &
             vertAleTransportTop, err, highFreqThicknessProvis)
       else
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur, layerThickEdge, normalTransportVelocity, &
+            layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
             sshCur, rkSubstepWeight, &
             vertAleTransportTop, err)
       endif
@@ -1086,12 +1086,12 @@ module ocn_time_integration_rk4
       ! advection of u uses u, while advection of layerThickness and tracers use normalTransportVelocity.
       if (associated(highFreqThicknessProvis)) then
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur,layerThickEdge, normalVelocityProvis, &
+            layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
             sshCur, rkWeight, &
             vertAleTransportTop, err, highFreqThicknessProvis)
       else
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur,layerThickEdge, normalVelocityProvis, &
+            layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
             sshCur, rkWeight, &
             vertAleTransportTop, err)
       endif
@@ -1100,12 +1100,12 @@ module ocn_time_integration_rk4
 
       if (associated(highFreqThicknessProvis)) then
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur, layerThickEdge, normalTransportVelocity, &
+            layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
             sshCur, rkWeight, &
             vertAleTransportTop, err, highFreqThicknessProvis)
       else
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
-            layerThicknessCur, layerThickEdge, normalTransportVelocity, &
+            layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
             sshCur, rkWeight, &
             vertAleTransportTop, err)
       endif

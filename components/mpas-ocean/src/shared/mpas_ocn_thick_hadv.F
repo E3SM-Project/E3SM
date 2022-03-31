@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_thick_hadv_tend(normalVelocity, layerThicknessEdge, tend, err)!{{{
+   subroutine ocn_thick_hadv_tend(normalVelocity, layerThickEdgeFlux, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -83,7 +83,7 @@ contains
          normalVelocity    !< Input: velocity
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdge     !< Input: thickness at edge
+         layerThickEdgeFlux     !< Input: flux-related thickness at edge
 
       !-----------------------------------------------------------------
       !
@@ -140,7 +140,7 @@ contains
         do i = 1, nEdgesOnCell(iCell)
           iEdge = edgesOnCell(i, iCell)
           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-            flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThicknessEdge(k, iEdge)
+            flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThickEdgeFlux(k, iEdge)
             tend(k, iCell) = tend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell
           end do
         end do
