@@ -6,6 +6,12 @@ Namelist creator for E3SM's SCREAM component
 This script is mostly for processing the scream_input.yaml file.
 
 See SCREAM_YAML_README for documentation on how to use scream_input.yaml.
+
+This script can be internally tested standalone via: buildnml --test
+
+It is also encouraged to run pylint on this file when it gets changed:
+python3 -m pylint --disable C --disable R buildnml
+Some import errors are expected and can be ignored
 """
 
 import os, sys, re
@@ -17,7 +23,7 @@ _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","
 sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
 # Add path to scream libs
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "scripts"))
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 
 # Cime imports
 from standard_script_setup import *
@@ -35,17 +41,46 @@ logger = logging.getLogger(__name__)
 CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
 
 ###############################################################################
+class MockCase(object):
+###############################################################################
+
+    def __init__(self, kv_dict):
+        self._kv_dict = dict(kv_dict)
+
+    def get_value(self, key):
+        if key in self._kv_dict:
+            return self._kv_dict[key]
+        else:
+            return None
+
+###############################################################################
 def do_cime_vars(entry, case):
 ###############################################################################
     """
     For a parameter value, process any references to case values ("${CASEVAR}")
+
+    >>> case = MockCase({'foo':1, 'bar':2, 'baz_bar':'blah', 'baz2_bar2':4})
+    >>> do_cime_vars('${foo}', case)
+    '1'
+    >>> do_cime_vars('hi ${foo} there', case)
+    'hi 1 there'
+    >>> do_cime_vars('hi ${foo}${bar} there', case)
+    'hi 12 there'
+    >>> do_cime_vars('hi ${baz_bar} there', case)
+    'hi blah there'
+    >>> do_cime_vars('hi ${baz2_bar2} there', case)
+    'hi 4 there'
+    >>> do_cime_vars('hi ${invalid} there', case)
+    Traceback (most recent call last):
+      ...
+    CIME.utils.CIMEError: ERROR: Cannot resolve yaml entry 'hi ${invalid} there', CIME has no value for 'invalid'
     """
     m = CIME_VAR_RE.search(entry)
     while m:
         cime_var = m.groups()[0]
         value = case.get_value(cime_var)
-        expect(value is not None, "Cannot resolve yaml entry {}, CIME has no value for {}".format(entry, cime_var))
-        entry = entry.replace("${{{}}}".format(cime_var), value)
+        expect(value is not None, "Cannot resolve yaml entry '{}', CIME has no value for '{}'".format(entry, cime_var))
+        entry = entry.replace("${{{}}}".format(cime_var), str(value))
         m = CIME_VAR_RE.search(entry)
 
     return entry
@@ -96,7 +131,8 @@ def evaluate_selectors(element, case, ez_selectors):
             if selectors:
                 # This is a key assumption. The default value element must exist
                 # and come first, before selector elements
-                expect(child_name in child_values, "Child {} with selectors has no default value".format(child_name))
+                expect(child_name in child_values,
+                       "Child '{}' with selectors has either no default value or default value does not come before selector element".format(child_name))
                 all_match = True
                 for k, v in selectors.items():
                     val_re = re.compile(v)
@@ -104,24 +140,25 @@ def evaluate_selectors(element, case, ez_selectors):
                     if k in ez_selectors:
                         ez_env, ez_regex = ez_selectors[k]
                         case_val = case.get_value(ez_env)
-                        expect(case_val is not None, "Could not get selector value {} from case".format(ez_env))
+                        expect(case_val is not None, "Bad easy selector '{}' definition. Relies on unknown case value '{}'".format(k, ez_env))
 
                         ez_regex_re = re.compile(ez_regex)
                         m = ez_regex_re.match(case_val)
                         if m:
-                            val = m.groups()[0]
+                            groups = m.groups()
+                            expect(len(groups) == 1, "Selector '{}' has invalid custom regex '{}' which does not capture exactly 1 group".format(k, ez_regex))
+                            val = groups[0]
                         else:
                             # If the regex doesn't even match the case val, then we consider
-                            # the selector to evaluate to False. Setting the raw val to the
                             # string below should ensure the selector will never match.
-                            val = "DOES NOT MATCH"
+                            val = None
 
                     else:
                         val = case.get_value(k)
-                        expect(val is not None, "Could not get selector value {} from case".format(k))
+                        expect(val is not None, "Bad selector '{0}' for child '{1}'. '{0}' is not a valid case value or easy selector".format(k, child_name))
 
 
-                    if val_re.match(val) is None:
+                    if val is None or val_re.match(val) is None:
                         all_match = False
                         break
 
@@ -132,7 +169,7 @@ def evaluate_selectors(element, case, ez_selectors):
                 children_to_remove.append(child)
 
             else:
-                expect(child_name not in child_values, "Repeat of child {} without selectors".format(child_name))
+                expect(child_name not in child_values, "Repeat of child '{}' without selectors".format(child_name))
                 child_values[child_name] = child
                 child.text = do_cime_vars(child_val, case)
 
@@ -141,6 +178,212 @@ def evaluate_selectors(element, case, ez_selectors):
 
     for child_to_remove in children_to_remove:
         element.remove(child_to_remove)
+
+###############################################################################
+def _create_raw_xml_file_impl(case, defaults_xml):
+###############################################################################
+    """
+    >>> case = MockCase({'ATM_GRID':'ne4ne4', 'SCREAM_CMAKE_OPTIONS':'FOO=ON SCREAM_NUM_VERTICAL_LEV 128 BAR=OFF'})
+    >>> test_empty_selectors = '''
+    ... <namelist_defaults>
+    ...   <selectors>
+    ...   </selectors>
+    ...   <file name="test.yaml" format="yaml">
+    ...     <testval>42</testval>
+    ...   </file>
+    ... </namelist_defaults>
+    ... '''
+    >>> print(_create_raw_xml_file_impl(case, test_empty_selectors))
+    <namelist_defaults>
+      <file name="test.yaml" format="yaml">
+        <testval>42</testval>
+      </file>
+    </namelist_defaults>
+    >>> ######################################################################
+    >>> test_err_repeat_val = '''
+    ... <namelist_defaults>
+    ...   <selectors>
+    ...   </selectors>
+    ...   <file name="test.yaml" format="yaml">
+    ...     <testval>42</testval>
+    ...     <testval>420</testval>
+    ...   </file>
+    ... </namelist_defaults>
+    ... '''
+    >>> _create_raw_xml_file_impl(case, test_err_repeat_val)
+    Traceback (most recent call last):
+      ...
+    CIME.utils.CIMEError: ERROR: Repeat of child 'testval' without selectors
+    >>> ######################################################################
+    >>> test_err_bad_selector = '''
+    ... <namelist_defaults>
+    ...   <selectors>
+    ...   </selectors>
+    ...   <file name="test.yaml" format="yaml">
+    ...     <testval>42</testval>
+    ...     <testval foo="bar">420</testval>
+    ...   </file>
+    ... </namelist_defaults>
+    ... '''
+    >>> _create_raw_xml_file_impl(case, test_err_bad_selector)
+    Traceback (most recent call last):
+      ...
+    CIME.utils.CIMEError: ERROR: Bad selector 'foo' for child 'testval'. 'foo' is not a valid case value or easy selector
+    >>> ######################################################################
+    >>> test_err_missing_default = '''
+    ... <namelist_defaults>
+    ...   <selectors>
+    ...     <selector name="hgrid" case_env="ATM_GRID"/>
+    ...   </selectors>
+    ...   <file name="test.yaml" format="yaml">
+    ...     <testval hgrid="ne4ne4">420</testval>
+    ...   </file>
+    ... </namelist_defaults>
+    ... '''
+    >>> _create_raw_xml_file_impl(case, test_err_missing_default)
+    Traceback (most recent call last):
+      ...
+    CIME.utils.CIMEError: ERROR: Child 'testval' with selectors has either no default value or default value does not come before selector element
+    >>> ######################################################################
+    >>> test_err_wrong_order = '''
+    ... <namelist_defaults>
+    ...   <selectors>
+    ...     <selector name="hgrid" case_env="ATM_GRID"/>
+    ...   </selectors>
+    ...   <file name="test.yaml" format="yaml">
+    ...     <testval hgrid="ne4ne4">420</testval>
+    ...     <testval>42</testval>
+    ...   </file>
+    ... </namelist_defaults>
+    ... '''
+    >>> _create_raw_xml_file_impl(case, test_err_wrong_order)
+    Traceback (most recent call last):
+      ...
+    CIME.utils.CIMEError: ERROR: Child 'testval' with selectors has either no default value or default value does not come before selector element
+    >>> ######################################################################
+    >>> test_err_bad_selector_def = '''
+    ... <namelist_defaults>
+    ...   <selectors>
+    ...     <selector name="hgrid" case_env="BADVAL"/>
+    ...   </selectors>
+    ...   <file name="test.yaml" format="yaml">
+    ...     <testval>42</testval>
+    ...     <testval hgrid="ne4ne4">420</testval>
+    ...   </file>
+    ... </namelist_defaults>
+    ... '''
+    >>> _create_raw_xml_file_impl(case, test_err_bad_selector_def)
+    Traceback (most recent call last):
+      ...
+    CIME.utils.CIMEError: ERROR: Bad easy selector 'hgrid' definition. Relies on unknown case value 'BADVAL'
+    >>> ######################################################################
+    >>> test_err_bad_selector_def_regex = '''
+    ... <namelist_defaults>
+    ...   <selectors>
+    ...     <selector name="hgrid" case_env="ATM_GRID" regex=".*"/>
+    ...   </selectors>
+    ...   <file name="test.yaml" format="yaml">
+    ...     <testval>42</testval>
+    ...     <testval hgrid="ne4ne4">420</testval>
+    ...   </file>
+    ... </namelist_defaults>
+    ... '''
+    >>> _create_raw_xml_file_impl(case, test_err_bad_selector_def_regex)
+    Traceback (most recent call last):
+      ...
+    CIME.utils.CIMEError: ERROR: Selector 'hgrid' has invalid custom regex '.*' which does not capture exactly 1 group
+    >>> ######################################################################
+    >>> full_test = '''
+    ... <namelist_defaults>
+    ...   <selectors>
+    ...     <selector name="hgrid" case_env="ATM_GRID"/>
+    ...     <selector name="nlev" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_VERTICAL_LEV ([0-9]+).*"/>
+    ...     <selector name="nomatch" case_env="SCREAM_CMAKE_OPTIONS" regex=".*(NO_MATCH).*"/>
+    ...   </selectors>
+    ...   <file name="test.yaml" format="yaml">
+    ...     <group1>
+    ...       <testval>42</testval>
+    ...       <testval2>123</testval2>
+    ...       <interleave>hi</interleave>
+    ...       <testval2 hgrid="ne4ne4">1234</testval2>
+    ...     </group1>
+    ...     <group2>
+    ...       <testval>42</testval>
+    ...       <testval2>123</testval2>
+    ...       <interleave>hi</interleave>
+    ...       <testval2 hgrid="ne4ne4">1234</testval2>
+    ...       <prec_tester>1</prec_tester>
+    ...       <prec_tester hgrid="ne4ne4" nlev="128">2</prec_tester>
+    ...       <prec_tester nlev="128">3</prec_tester>
+    ...       <foo>1</foo>
+    ...       <foo hgrid=".*ne4.*">2</foo>
+    ...       <bar>1</bar>
+    ...       <bar hgrid="no_match">2</bar>
+    ...       <baz>1</baz>
+    ...       <baz hgrid="no_match" nlev="128">2</baz>
+    ...       <bat>1</bat>
+    ...       <bat nlev="128" hgrid="no_match">2</bat>
+    ...       <sel_regex_no_match>1</sel_regex_no_match>
+    ...       <sel_regex_no_match nomatch=".*">2</sel_regex_no_match>
+    ...     </group2>
+    ...   </file>
+    ... </namelist_defaults>
+    ... '''
+    >>> print(_create_raw_xml_file_impl(case, full_test))
+    <namelist_defaults>
+      <file name="test.yaml" format="yaml">
+        <group1>
+          <testval>42</testval>
+          <testval2>1234</testval2>
+          <interleave>hi</interleave>
+          </group1>
+        <group2>
+          <testval>42</testval>
+          <testval2>1234</testval2>
+          <interleave>hi</interleave>
+          <prec_tester>3</prec_tester>
+          <foo>2</foo>
+          <bar>1</bar>
+          <baz>1</baz>
+          <bat>1</bat>
+          <sel_regex_no_match>1</sel_regex_no_match>
+          </group2>
+      </file>
+    </namelist_defaults>
+    """
+    root = ET.fromstring(defaults_xml)
+
+    selectors = None
+    selectors_elem = None
+    for child in root:
+        if selectors is None:
+            expect(child.tag == "selectors", "Unexpected child.tag {}".format(child.tag))
+            selectors_elem = child
+
+            selectors = {}
+            for selector in child:
+                expect(selector.tag == "selector", "Expected selector tag, not {}".format(selector.tag))
+
+                selector_name  = selector.attrib["name"]
+                selector_env   = selector.attrib["case_env"]
+                if "regex" in selector.attrib:
+                    selector_regex = selector.attrib["regex"]
+                else:
+                    selector_regex = "(.*)" # Just grab the whole thing
+
+                selectors[selector_name] = (selector_env, selector_regex)
+
+        else:
+            expect(child.tag == "file", "Unexpected child.tag {}".format(child.tag))
+            expect("name" in child.attrib, "file element missing required 'name' attribute")
+            expect("format" in child.attrib, "file element missing required 'format' attribute")
+
+            evaluate_selectors(child, case, selectors)
+
+    if selectors_elem is not None:
+        root.remove(selectors_elem)
+
+    return ET.tostring(root, encoding="unicode")
 
 ###############################################################################
 def create_raw_xml_file(case, caseroot):
@@ -157,41 +400,10 @@ def create_raw_xml_file(case, caseroot):
         print("{} already exists, will not overwrite. Remove to regenerate".format(raw_xml_file))
     else:
         with open(src, "r") as fd:
-            tree = ET.parse(fd)
-            root = tree.getroot()
+            raw_xml = _create_raw_xml_file_impl(case, fd.read())
 
-        selectors = None
-        selectors_elem = None
-        for child in root:
-            if selectors is None:
-                expect(child.tag == "selectors", "Unexpected child.tag {}".format(child.tag))
-                selectors_elem = child
-
-                selectors = {}
-                for selector in child:
-                    expect(selector.tag == "selector", "Expected selector tag, not {}".format(selector.tag))
-
-                    selector_name  = selector.attrib["name"]
-                    selector_env   = selector.attrib["case_env"]
-                    if "regex" in selector.attrib:
-                        selector_regex = selector.attrib["regex"]
-                    else:
-                        selector_regex = ".*" # Just grab the whole thing
-
-                    selectors[selector_name] = (selector_env, selector_regex)
-
-            else:
-                expect(child.tag == "file", "Unexpected child.tag {}".format(child.tag))
-                expect("name" in child.attrib, "file element missing required 'name' attribute")
-                expect("format" in child.attrib, "file element missing required 'format' attribute")
-
-                for grandchild in child:
-                    evaluate_selectors(grandchild, case, selectors)
-
-        if selectors_elem is not None:
-            root.remove(selectors_elem)
-
-        tree.write(raw_xml_file)
+        with open(raw_xml_file, "w") as fd:
+            fd.write(raw_xml)
 
 ###############################################################################
 def refine_type(entry):
@@ -239,25 +451,70 @@ def convert_to_dict(element):
     return result
 
 ###############################################################################
+def _dump_to_nml_impl(dict_contents):
+###############################################################################
+    """
+    >>> xml = '''
+    ... <file name="test.yaml" format="yaml">
+    ...   <group1>
+    ...     <testval>42</testval>
+    ...     <testval2>42.3</testval2>
+    ...     <interleave>hi</interleave>
+    ...    </group1>
+    ...    <group2>
+    ...      <testval>False</testval>
+    ...      <testval2>1, 2, 3, 4.2</testval2>
+    ...      <interleave>hi, there</interleave>
+    ...    </group2>
+    ...  </file>
+    ... '''
+    >>> root = ET.fromstring(xml)
+    >>> print(_dump_to_nml_impl(convert_to_dict(root)))
+    &group1
+    testval = 42
+    testval2 = 42.3
+    interleave = 'hi'
+    /
+    &group2
+    testval = .false.
+    testval2(:) = 1, 2, 3, 4.2
+    interleave(:) = hi, there
+    /
+    <BLANKLINE>
+    """
+    result = ""
+    for k, v in dict_contents.items():
+        if isinstance(v, dict):
+            result += "&{}\n".format(k)
+            result += _dump_to_nml_impl(v)
+            result += "/\n"
+
+        elif isinstance(v, list):
+            result += "{}(:) = {}\n".format(k, ", ".join([str(item) for item in v]))
+        elif isinstance(v, bool):
+            result += "{} = {}\n".format(k, ".true." if v else ".false.")
+        elif isinstance(v, str):
+            result += "{} = '{}'\n".format(k, v)
+        else:
+            result += "{} = {}\n".format(k, v)
+
+    return result
+
+###############################################################################
 def dump_to_nml(dict_contents, fd):
 ###############################################################################
     """
     Convert a dictionary to namelist file
     """
-    for k, v in dict_contents.items():
-        if isinstance(v, dict):
-            fd.write("&{}\n".format(k))
-            dump_to_nml(v, fd)
-            fd.write("/\n")
+    fd.write(
+"""!---------------------------------------------------------------
+! Do NOT modify this file. It is generated by scream/buildnml using
+! the data from $case/namelist_scream.xml. If you want to make some
+! local changes, you can edit this XML file or use atm-config-chg.
+!---------------------------------------------------------------
+""")
 
-        elif isinstance(v, list):
-            fd.write("{}(:) = {}\n".format(k, ", ".join(v)))
-        elif isinstance(v, bool):
-            fd.write("{} = {}\n".format(k, ".true." if v else ".false."))
-        elif isinstance(v, str):
-            fd.write("{} = '{}'\n".format(k, v))
-        else:
-            fd.write("{} = {}\n".format(k, v))
+    fd.write(_dump_to_nml_impl(dict_contents))
 
 ###############################################################################
 def create_nml_files(caseroot, rundir):
@@ -294,13 +551,6 @@ def create_nml_files(caseroot, rundir):
 
         elif nml_file_format == "nml":
             with open(nml_filename, "w") as fd:
-                fd.write(
-"""!---------------------------------------------------------------
-! Do NOT modify this file. It is generated by scream/buildnml using
-! the data from $case/namelist_scream.xml. If you want to make some
-! local changes, you can edit this XML file or use atm-config-chg.
-!---------------------------------------------------------------
-""")
                 dump_to_nml(dict_contents, fd)
 
         else:
@@ -368,9 +618,14 @@ def buildnml(case, caseroot, compname):
 ###############################################################################
 def _main_func():
 ###############################################################################
-    caseroot = parse_input(sys.argv)
-    with Case(caseroot) as case:
-        buildnml(case, caseroot, "scream")
+    if "--test" in sys.argv:
+        from doctest import testmod
+        testmod()
+
+    else:
+        caseroot = parse_input(sys.argv)
+        with Case(caseroot) as case:
+            buildnml(case, caseroot, "scream")
 
 if __name__ == "__main__":
     _main_func()
