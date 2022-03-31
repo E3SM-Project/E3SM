@@ -570,9 +570,6 @@ void AtmosphereOutput::set_diagnostics()
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
   for (const auto& fname : m_fields_names) {
     if (!m_field_mgr->has_field(fname)) {
-      // TimeStamp control
-      util::TimeStamp t0;
-      bool t0_set = false;
       // Construct a diagnostic by this name
       ekat::ParameterList params;
       params.set<std::string>("Diagnostic Name", fname);
@@ -580,19 +577,25 @@ void AtmosphereOutput::set_diagnostics()
       params.set<std::string>("Grid", grid_name);
       auto diag = diag_factory.create(fname,m_comm,params);
       diag->set_grids(m_grids_manager);
-      // Set required fields using fields manager
-      for (const auto& req : diag->get_required_field_requests()) {
-        // Any required fields should be in the field manager, so we can gather
-        // the TimeStamp for initialization from the first of these.
-        const auto& req_field = m_field_mgr->get_field(req.fid);
-        if (!t0_set) {
-          t0 = req_field.get_header().get_tracking().get_time_stamp();
-        }
-        diag->set_required_field(req_field.get_const());
-      }
-      diag->initialize(t0,RunType::Initial);
       m_diagnostics.emplace(fname,diag);
     }
+  }
+  // Set required fields for all diagnostics
+  for (const auto& dd : m_diagnostics) {
+    const auto& diag = dd.second;
+    // TimeStamp control
+    util::TimeStamp t0;
+    bool t0_set = false;
+    for (const auto& req : diag->get_required_field_requests()) {
+      // Any required fields should be in the field manager, so we can gather
+      // the TimeStamp for initialization from the first of these.
+      const auto& req_field = get_field(req.fid.name());
+      if (!t0_set) {
+        t0 = req_field.get_header().get_tracking().get_time_stamp();
+      }
+      diag->set_required_field(req_field.get_const());
+    }
+    diag->initialize(t0,RunType::Initial);
   }
 }
 
