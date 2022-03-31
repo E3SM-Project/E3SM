@@ -246,7 +246,7 @@ def buildnml(case, caseroot, compname):
             grid_prefix = 'mpassi.ECwISC30to60E2r1.rstFromG-anvil'
 
     elif ice_grid == 'QU30':
-        grid_date = '220329'
+        grid_date = '220330'
         grid_prefix = 'seaice.QU30'
         decomp_date = '220330'
         decomp_prefix = 'mpas-seaice.graph.info.'
