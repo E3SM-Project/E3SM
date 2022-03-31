@@ -3316,6 +3316,7 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <MAX_GB_OLD_TEST_DATA>9000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
       <env name="PATH">/gpfs/wolf/cli115/world-shared/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
