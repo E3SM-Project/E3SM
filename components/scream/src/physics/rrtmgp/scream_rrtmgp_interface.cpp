@@ -10,8 +10,8 @@
 namespace scream {
     namespace rrtmgp {
 
-        OpticalProps2str get_cloud_optics_sw(const int ncol, const int nlay, CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, real2d &p_lay, real2d &t_lay, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei);
-        OpticalProps1scl get_cloud_optics_lw(const int ncol, const int nlay, CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, real2d &p_lay, real2d &t_lay, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei);
+        OpticalProps2str get_cloud_optics_sw(const int ncol, const int nlay, CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei);
+        OpticalProps1scl get_cloud_optics_lw(const int ncol, const int nlay, CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei);
 
         /*
          * Names of input files we will need.
@@ -239,8 +239,8 @@ namespace scream {
             });
 
             // Convert cloud physical properties to optical properties for input to RRTMGP
-            OpticalProps2str clouds_sw = get_cloud_optics_sw(ncol, nlay, cloud_optics_sw, k_dist_sw, p_lay, t_lay, lwp, iwp, rel, rei);
-            OpticalProps1scl clouds_lw = get_cloud_optics_lw(ncol, nlay, cloud_optics_lw, k_dist_lw, p_lay, t_lay, lwp, iwp, rel, rei);        
+            OpticalProps2str clouds_sw = get_cloud_optics_sw(ncol, nlay, cloud_optics_sw, k_dist_sw, lwp, iwp, rel, rei);
+            OpticalProps1scl clouds_lw = get_cloud_optics_lw(ncol, nlay, cloud_optics_lw, k_dist_lw, lwp, iwp, rel, rei);        
 
             // Do shortwave
             rrtmgp_sw(
@@ -263,7 +263,7 @@ namespace scream {
         OpticalProps2str get_cloud_optics_sw(
                 const int ncol, const int nlay,
                 CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist,
-                real2d &p_lay, real2d &t_lay, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei) {
+                real2d &lwp, real2d &iwp, real2d &rel, real2d &rei) {
  
             // Initialize optics
             OpticalProps2str clouds;
@@ -290,7 +290,7 @@ namespace scream {
         OpticalProps1scl get_cloud_optics_lw(
                 const int ncol, const int nlay,
                 CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, 
-                real2d &p_lay, real2d &t_lay, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei) {
+                real2d &lwp, real2d &iwp, real2d &rel, real2d &rei) {
 
             // Initialize optics
             OpticalProps1scl clouds;

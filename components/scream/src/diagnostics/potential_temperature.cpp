@@ -50,7 +50,7 @@ void PotentialTemperatureDiagnostic::initialize_impl(const RunType /* run_type *
   run_diagnostic.set_variables(m_num_cols,nk_pack,p_mid,T_mid,output);
 }
 // =========================================================================================
-void PotentialTemperatureDiagnostic::run_impl(const int dt)
+void PotentialTemperatureDiagnostic::run_impl(const int /* dt */)
 {
 
   const auto nk_pack  = ekat::npack<Spack>(m_num_levs);
