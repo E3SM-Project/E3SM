@@ -3,9 +3,9 @@
 """
 Namelist creator for E3SM's SCREAM component
 
-This script is mostly for processing the scream_input.yaml file.
-
-See SCREAM_YAML_README for documentation on how to use scream_input.yaml.
+This scripts takes the namelist_defaults_scream.xml file from the repo
+and produces the processed $case/namelist_scream.xml. From the processed
+file, raw input files are produced which should not be modified by users.
 
 This script can be internally tested standalone via: buildnml --test
 

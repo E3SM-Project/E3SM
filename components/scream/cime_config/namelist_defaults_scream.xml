@@ -1,30 +1,89 @@
 <?xml version="1.0"?>
 
+<!--
+
+The file that defines all parameter input files for SCREAM. This file
+will be processed by SCREAM's buildnml script and produces the
+$case/namelist_scream.xml which is the fully resolved/processed
+info from this file. We recommend users use atm-config-chg for
+tweaking their $case/namelist_scream.xml file.
+
+-->
+
 <namelist_defaults>
 
   <!--
-      The following block defines convenience selectors. Case settings
-      can be used as selectors, but they are often not covenient due to
-      long names or having to process their values through regular expressions
-      to get the subpiece you are interested in. The convenience selectors
-      allow you to express this logic and capture it with a short name.
+    The following block defines convenience selectors. Case settings
+    can be used as selectors, but they are often not covenient due to
+    long names or having to process their values through regular expressions
+    to get the subpiece you are interested in. The convenience selectors
+    allow you to express this logic and capture it with a short name.
 
-      The follow attributes are how one defines a selector
-        name     : The name of the selector
-        case_env : The case value (thing you can xmlquery)
-        regex    : OPTIONAL, how to pick out the piece of the value you are interested in
-                   By default, the entire value is grabbed. If the regex does not match
-                   the case value, then the selector will evaluate to False.
+    The follow attributes are how one defines a selector
+      name     : The name of the selector
+      case_env : The case value (thing you can xmlquery)
+      regex    : OPTIONAL, how to pick out the piece of the value you are interested in
+                 By default, the entire value is grabbed. If the regex does not match
+                 the case value, then the selector will evaluate to False.
 
-      Example using the nlev selector
-        <partmethod nlev="128">42</partmethod>
-        <partmethod nlev="72">420</partmethod>
+    Example using the nlev selector
+      <partmethod nlev="128">42</partmethod>
+      <partmethod nlev="72">420</partmethod>
+
+    Selector info will not be duplicated in the processed $case/namelist_scream.xml file.
   -->
   <selectors>
     <selector name="hgrid" case_env="ATM_GRID"/>
     <selector name="dyn" case_env="ATM_DYN_TARGET"/>
     <selector name="nlev" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_VERTICAL_LEV ([0-9]+).*"/>
   </selectors>
+
+  <!--
+      The following blocks define the input files for the model.
+      There are some rules that must be followed.
+
+      Lingo:
+        Outer element: An XML element that is not intended to be an input paramter,
+                       it is only for grouping/namespacing the elements within it
+        Default element: An XML element representing the default value of an input parameter.
+                         This element should not have child elements or selectors.
+                         It should have element text representing the desired default value.
+        Selection element: An XML element representing the desire to change the value of
+                           input parameter based on certain properties being true for
+                           your case. This element must contain at least one selector and
+                           no child elements. It should have element text representing
+                           the desired new value.
+        Selector: An XML attribute that checks a property of the case. See the documentation
+                  above the <selectors> element above for more details.
+        Metadata: An XML attribute that represents metadata for an input parameter
+
+      Rules:
+        1) Every parameter must have exactly one default element
+        2) Parameters can have any number of selection elements, but these
+           must come after the default element. If multiple selection elements
+           are matched, then the match the occurs last takes precendence.
+        3) Parameter types will be inferred. You can override the inferred type
+           via the 'type' metadata attribute. Types are:
+             logical: will be inferred from any case of true/false
+             int: will be inferred from any sequence of 0-9
+             real: will be inferred from any numeric expression with a decimal point or scientific notation
+             string: everything else
+        4) A parameter can be set to any value of the correct type unless
+           the 'valid_values' metadata attribute is set. If desired, this
+           metadata should be set up as a comma-separated list of values.
+           TODO support numeric checks??
+        5) Parameter metadata can be overriden in selection elements, but
+           by default, metadata will be the same as the default element.
+        6) You can inline case values into parameter values via this syntax:
+           <param>MY GRID IS ${ATM_GRID}</param>
+           This would result in parameter 'param' having the value 'MY GRID IS ne4ne4'
+        7) Any parameter value with a comma will be assumed to be a list.
+           TODO allow this behavior to be overridden?
+        8) Every value in a list should be of the same type
+        9) All local changes made to $case/namelist_scream.xml must conform
+           to the structure and metadata derived from this file.
+
+  -->
 
   <file name="data/scream_input.yaml" format="yaml">
     <Atmosphere__Driver>
