@@ -245,6 +245,15 @@ def buildnml(case, caseroot, compname):
             grid_date = '210414'
             grid_prefix = 'mpassi.ECwISC30to60E2r1.rstFromG-anvil'
 
+    elif ice_grid == 'QU30':
+        grid_date = '220329'
+        grid_prefix = 'seaice.QU30'
+        decomp_date = '220330'
+        decomp_prefix = 'mpas-seaice.graph.info.'
+        if ice_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
 
     #--------------------------------------------------------------------
     # Set the initial file, changing to a restart file for branch and hybrid runs
