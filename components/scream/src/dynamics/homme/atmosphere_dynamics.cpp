@@ -218,9 +218,10 @@ size_t HommeDynamics::requested_buffer_size_in_bytes() const
 {
   using namespace Homme;
 
-  auto& c = Context::singleton();
-  const auto num_elems   = c.get<Elements>().num_elems();
+  auto& c       = Context::singleton();
   auto& params  = c.get<SimulationParams>();
+
+  const auto num_elems = c.get<Elements>().num_elems();
 
   auto& caar = c.create_if_not_there<CaarFunctor>(num_elems,params);
   auto& esf  = c.create_if_not_there<EulerStepFunctor>(num_elems);
@@ -229,15 +230,9 @@ size_t HommeDynamics::requested_buffer_size_in_bytes() const
   auto& diag = c.create_if_not_there<Diagnostics> (num_elems,params.theta_hydrostatic_mode);
   auto& vrm  = c.create_if_not_there<VerticalRemapManager>(num_elems);
 
-
   const bool need_dirk = (params.time_step_type==TimeStepType::ttype7_imex ||
                           params.time_step_type==TimeStepType::ttype9_imex ||
                           params.time_step_type==TimeStepType::ttype10_imex  );
-
-  if (need_dirk) {
-    // Create dirk functor only if needed
-    c.create_if_not_there<DirkFunctor>(num_elems);
-  }
 
   // Request buffer sizes in FunctorsBuffersManager and then
   // return the total bytes using the calculated buffer size.
@@ -249,7 +244,8 @@ size_t HommeDynamics::requested_buffer_size_in_bytes() const
   fbm.request_size(ff.requested_buffer_size());
   fbm.request_size(vrm.requested_buffer_size());
   if (need_dirk) {
-    const auto& dirk = c.get<DirkFunctor>();
+    // Create dirk functor only if needed
+    auto& dirk = c.create_if_not_there<DirkFunctor>(num_elems);
     fbm.request_size(dirk.requested_buffer_size());
   }
 
@@ -282,14 +278,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
 
   // Grab handles of some Homme data structure
   const auto& c       = Homme::Context::singleton();
-        auto& params  = c.get<Homme::SimulationParams>();
-        auto& tracers = c.get<Homme::Tracers>();
-
-  // Set runtime number of tracers in Homme, anc finalize tracers initialization
-  const int qsize = get_group_out("Q",rgn).m_info->size();
-  params.qsize = qsize;           // Set in the CXX data structure
-  set_homme_param("qsize",qsize); // Set in the F90 module
-  tracers.init(tracers.num_elems(),qsize);
+  const auto& params  = c.get<Homme::SimulationParams>();
 
   // Complete Homme prim_init1_xyz sequence
   prim_complete_init1_phase_f90 ();
@@ -317,6 +306,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
   const int ncols = m_ref_grid->get_num_local_dofs();
   const int nlevs = m_dyn_grid->get_num_vertical_levels();
+  const int qsize = params.qsize;
 
   using namespace ShortFieldTagsNames;
   create_helper_field("FQ_dyn",{EL,CMP,GP,GP,LEV},{nelem,qsize,NGP,NGP,nlevs},dgn);
@@ -377,7 +367,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   }
 
   // For BFB restarts, set nstep counter in Homme's TimeLevel to match
-  // what's in the timestamp (which, for restarted runs, is
+  // what's in the timestamp (which, for restarted runs, is read from restart file)
   set_homme_param("num_steps",timestamp().get_num_steps());
   Homme::Context::singleton().get<Homme::TimeLevel>().nstep = timestamp().get_num_steps();
 
@@ -441,6 +431,22 @@ void HommeDynamics::finalize_impl (/* what inputs? */)
 
   // This class is done needing Homme's context, so remove myself as customer
   Homme::Context::singleton().finalize_singleton();
+}
+
+
+void HommeDynamics::set_computed_group_impl (const FieldGroup& group)
+{
+  const auto& c = Homme::Context::singleton();
+        auto& tracers = c.get<Homme::Tracers>();
+
+  if (group.m_info->m_group_name=="tracers") {
+    // Set runtime number of tracers in Homme
+    auto& params = c.get<Homme::SimulationParams>();
+    const int qsize = group.m_info->size();
+    params.qsize = qsize;           // Set in the CXX data structure
+    set_homme_param("qsize",qsize); // Set in the F90 module
+    tracers.init(tracers.num_elems(),qsize);
+  }
 }
 
 void HommeDynamics::homme_pre_process (const int dt) {
