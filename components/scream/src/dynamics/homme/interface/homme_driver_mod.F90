@@ -1,3 +1,4 @@
+! Include Homme's config settings
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -12,6 +13,7 @@ module homme_driver_mod
   private 
 
   public :: prim_init_data_structures_f90
+  public :: prim_complete_init1_phase_f90
   public :: prim_set_hvcoords_f90
   public :: prim_init_model_f90
   public :: prim_run_f90
@@ -20,14 +22,13 @@ module homme_driver_mod
 contains
 
   subroutine prim_init_data_structures_f90 () bind(c)
-    use prim_driver_mod,      only: prim_create_c_data_structures, prim_init_kokkos_functors
-    use prim_driver_base,     only: prim_init1_geometry, prim_init1_elem_arrays, &
-                                    prim_init1_cleanup, prim_init1_buffers
+    use prim_driver_mod,      only: prim_create_c_data_structures
+    use prim_driver_base,     only: prim_init1_elem_arrays
     use prim_cxx_driver_base, only: setup_element_pointers
     use derivative_mod_base,  only: derivinit
     use time_mod,             only: TimeLevel_init
     use homme_context_mod,    only: is_geometry_inited, is_data_structures_inited, &
-                                    par, elem, tl, deriv, hvcoord, init_parallel_f90
+                                    par, elem, tl, deriv, hvcoord
 
     if (is_data_structures_inited) then
       call abortmp ("Error! prim_init_data_structures_f90 was already called.\n")
@@ -41,11 +42,6 @@ contains
     ! Initialize derivative structure
     ! ==================================
     call derivinit(deriv)
-
-    ! ==================================
-    ! Initialize the buffers for exchanges
-    ! ==================================
-    call prim_init1_buffers(elem,par)
 
     ! ==================================
     ! Initialize element pointers
@@ -65,6 +61,28 @@ contains
 
     is_data_structures_inited = .true.
   end subroutine prim_init_data_structures_f90
+
+  subroutine prim_complete_init1_phase_f90 () bind(c)
+    use prim_driver_base,  only: prim_init1_buffers, prim_init1_compose, prim_init1_cleanup
+    use homme_context_mod, only: par, elem
+    use compose_mod,       only: compose_control_kokkos_init_and_fin
+
+    ! Compose is not in charge of init/finalize kokkos
+    call compose_control_kokkos_init_and_fin(.false.)
+
+    ! Init compose
+    call prim_init1_compose(par,elem)
+
+    ! ==================================
+    ! Initialize the buffers for exchanges
+    ! ==================================
+    call prim_init1_buffers(elem,par)
+
+    ! Cleanup the tmp stuff used in prim_init1_geometry
+    call prim_init1_cleanup()
+
+  end subroutine prim_complete_init1_phase_f90
+
 
   subroutine prim_set_hvcoords_f90 (ps0, hyai_ptr, hybi_ptr, hyam_ptr, hybm_ptr) bind(c)
     use iso_c_binding,     only: c_f_pointer
