@@ -12,7 +12,7 @@ module SurfaceAlbedoMod
   use abortutils        , only : endrun
   use decompMod         , only : bounds_type
   use landunit_varcon   , only : istsoil, istcrop, istdlak
-  use elm_varcon        , only : grlnd, namep, namet
+  use elm_varcon        , only : grlnd, namep
   use elm_varpar        , only : numrad, nlevcan, nlevsno, nlevcan
   use elm_varctl        , only : fsurdat, iulog, subgridflag, use_snicar_frc, use_fates, use_snicar_ad
   use VegetationPropertiesType    , only : veg_vp
@@ -30,9 +30,7 @@ module SurfaceAlbedoMod
 
   use SurfaceAlbedoType , only : lake_melt_icealb, alblak, alblakwi
   use SurfaceAlbedoType , only : albice, albsat, albdry, isoicol
-  use elm_instMod , only : alm_fates
-  use topounit_varcon   , only : max_topounits  
-  use TopounitType      , only : top_pp
+  !#fates_py use elm_instMod , only : alm_fates
   !
   implicit none
   save
@@ -48,6 +46,9 @@ module SurfaceAlbedoMod
   ! From D. Mironov (2010) Boreal Env. Research
   real(r8), parameter :: calb = 95.6_r8
   !$acc declare copyin(calb)
+
+
+  !-----------------------------------------------------------------------
 
 contains
 
@@ -110,8 +111,8 @@ contains
     type(surfalb_type)     , intent(inout) :: surfalb_vars
     !
     ! !LOCAL VARIABLES:
-    integer  :: i                                                                         ! index for layers [idx]
-    integer  :: aer                                                                       ! index for sno_nbr_aer
+    integer  :: i                          ! index for layers [idx]
+    integer  :: aer                        ! index for sno_nbr_aer
     real(r8) :: extkn                      ! nitrogen allocation coefficient
     integer  :: fp,fc,g,c,p,iv             ! indices
     integer  :: ib                         ! band index
@@ -121,18 +122,18 @@ contains
     real(r8) :: dincmax_sum                ! cumulative sum of maximum lai+sai increment for canopy layer
     real(r8) :: laisum                     ! sum of canopy layer lai for error check
     real(r8) :: saisum                     ! sum of canopy layer sai for error check
-    integer  :: flg_slr                                                                   ! flag for SNICAR (=1 if direct, =2 if diffuse)
-    integer  :: flg_snw_ice                                                               ! flag for SNICAR (=1 when called from ELM, =2 when called from sea-ice)
-    integer  :: num_vegsol                                                                ! number of vegetated patches where coszen>0
-    integer  :: num_novegsol                                                              ! number of vegetated patches where coszen>0
-    integer  :: filter_vegsol   (bounds%endp-bounds%begp+1)                               ! patch filter where vegetated and coszen>0
-    integer  :: filter_novegsol (bounds%endp-bounds%begp+1)                               ! patch filter where vegetated and coszen>0
-    real(r8) :: wl              (bounds%begp:bounds%endp)                                 ! fraction of LAI+SAI that is LAI
-    real(r8) :: ws              (bounds%begp:bounds%endp)                                 ! fraction of LAI+SAI that is SAI
+    integer  :: flg_slr                                     ! flag for SNICAR (=1 if direct, =2 if diffuse)
+    integer  :: flg_snw_ice                                 ! flag for SNICAR (=1 when called from ELM, =2 when called from sea-ice)
+    integer  :: num_vegsol                                  ! number of vegetated patches where coszen>0
+    integer  :: num_novegsol                                ! number of vegetated patches where coszen>0
+    integer  :: filter_vegsol   (bounds%endp-bounds%begp+1) ! patch filter where vegetated and coszen>0
+    integer  :: filter_novegsol (bounds%endp-bounds%begp+1) ! patch filter where vegetated and coszen>0
+    real(r8) :: wl              (bounds%begp:bounds%endp)   ! fraction of LAI+SAI that is LAI
+    real(r8) :: ws              (bounds%begp:bounds%endp)   ! fraction of LAI+SAI that is SAI
     real(r8) :: blai(bounds%begp:bounds%endp)              ! lai buried by snow: tlai - elai
     real(r8) :: bsai(bounds%begp:bounds%endp)              ! sai buried by snow: tsai - esai
-    real(r8) :: coszen_gcell    (bounds%begg:bounds%endg)                                 ! cosine solar zenith angle for next time step (grc)
-    real(r8) :: coszen_patch    (bounds%begp:bounds%endp)                                 ! cosine solar zenith angle for next time step (pft)
+    real(r8) :: coszen_gcell    (bounds%begg:bounds%endg)  ! cosine solar zenith angle for next time step (grc)
+    real(r8) :: coszen_patch    (bounds%begp:bounds%endp)  ! cosine solar zenith angle for next time step (pft)
     real(r8) :: rho(bounds%begp:bounds%endp,numrad)        ! leaf/stem refl weighted by fraction LAI and SAI
     real(r8) :: tau(bounds%begp:bounds%endp,numrad)        ! leaf/stem tran weighted by fraction LAI and SAI
     real(r8) :: albsfc(numrad)                          ! albedo of surface underneath snow (col,bnd)
@@ -157,8 +158,8 @@ contains
     real(r8) :: mss_cnc_aer_in_frc_oc  (-nlevsno+1:0,sno_nbr_aer) ! mass concentration of aerosol species for OC forcing (col,lyr,aer) [kg kg-1]
     real(r8) :: mss_cnc_aer_in_frc_dst (-nlevsno+1:0,sno_nbr_aer) ! mass concentration of aerosol species for dust forcing (col,lyr,aer) [kg kg-1]
     real(r8) :: mss_cnc_aer_in_fdb     (-nlevsno+1:0,sno_nbr_aer) ! mass concentration of all aerosol species for feedback calculation (col,lyr,aer) [kg kg-1]
-    real(r8), parameter :: mpe = 1.e-06_r8                                                ! prevents overflow for division by zero
-    integer , parameter :: nband =numrad                                                  ! number of solar radiation waveband classes
+    real(r8), parameter :: mpe = 1.e-06_r8     ! prevents overflow for division by zero
+    integer , parameter :: nband =numrad       ! number of solar radiation waveband classes
   !-----------------------------------------------------------------------
 
    associate(&
@@ -285,7 +286,6 @@ contains
           ftii(p,ib) = 0._r8
 
        end do
-
     end do  ! end of numrad loop
 
     ! SoilAlbedo called before SNICAR_RT/SNICAR_AD_RT
@@ -353,7 +353,6 @@ contains
       endif
 
       ! If radiative forcing is being calculated, first estimate clean-snow albedo
-
       if (use_snicar_frc) then
          ! 1. BC input array:
          !  set dust and (optionally) OC concentrations, so BC_FRC=[(BC+OC+dust)-(OC+dust)]
@@ -369,8 +368,7 @@ contains
 
        ! BC FORCING CALCULATIONS
           flg_slr = 1; ! direct-beam
-          if (use_snicar_ad) then
-              call SNICAR_AD_RT(flg_snw_ice, fc, c,    &
+          call SNICAR_AD_RT(flg_snw_ice, fc, c,    &
                            coszen_col(c), &
                            flg_slr, &
                            h2osno_liq(:), &
@@ -380,21 +378,9 @@ contains
                            albsfc( :), &
                            albsnd_bc( :), &
                            foo_snw(:, :) )
-          else
-             call SNICAR_RT(flg_snw_ice, fc, num_nourbanc, filter_nourbanc,    &
-                          coszen_col(c), &
-                          flg_slr, &
-                          h2osno_liq(:), &
-                          h2osno_ice(:), &
-                          snw_rds_in(:), &
-                          mss_cnc_aer_in_frc_bc( :, :), &
-                          albsfc( :), &
-                          albsnd_bc( :), &
-                          foo_snw(:, :) )
-          endif ! end if use_snicar_ad
+
 
           flg_slr = 2; ! diffuse
-          if (use_snicar_ad) then
               call SNICAR_AD_RT(flg_snw_ice, fc, c, &
                             coszen_col(c), &
                             flg_slr, &
@@ -405,19 +391,6 @@ contains
                             albsfc( :), &
                             albsni_bc(:), &
                             foo_snw(:, :) )
-          else
-             call SNICAR_RT(flg_snw_ice,fc, &
-                           num_nourbanc, filter_nourbanc,    &
-                           coszen_col(c), &
-                           flg_slr, &
-                           h2osno_liq(:), &
-                           h2osno_ice(:), &
-                           snw_rds_in(:), &
-                           mss_cnc_aer_in_frc_bc(:, :), &
-                           albsfc( :), &
-                           albsni_bc(:), &
-                           foo_snw(:, :) )
-          endif ! end if use_snicar_ad
 
           ! 2. OC input array:
           !  set BC and dust concentrations, so OC_FRC=[(BC+OC+dust)-(BC+dust)]
@@ -431,8 +404,7 @@ contains
 
             ! OC FORCING CALCULATIONS
             flg_slr = 1; ! direct-beam
-            if (use_snicar_ad) then
-              call SNICAR_AD_RT(flg_snw_ice, fc, c,    &
+            call SNICAR_AD_RT(flg_snw_ice, fc, c,    &
                              coszen_col(c), &
                              flg_slr, &
                              h2osno_liq(:), &
@@ -442,22 +414,9 @@ contains
                              albsfc( :), &
                              albsnd_oc( :), &
                              foo_snw(:, :) )
-           else
-             call SNICAR_RT(flg_snw_ice,fc, num_nourbanc, filter_nourbanc,    &
-                            coszen_col(c), &
-                            flg_slr, &
-                            h2osno_liq(:), &
-                            h2osno_ice(:), &
-                            snw_rds_in(:), &
-                            mss_cnc_aer_in_frc_oc( :, :), &
-                            albsfc( :), &
-                            albsnd_oc( :), &
-                            foo_snw(:, :) )
-           endif ! end if use_snicar_ad
 
-          flg_slr = 2; ! diffuse
-          if (use_snicar_ad) then
-              call SNICAR_AD_RT(flg_snw_ice, fc,c,    &
+             flg_slr = 2; ! diffuse
+             call SNICAR_AD_RT(flg_snw_ice, fc,c,    &
                             coszen_col(c), &
                             flg_slr, &
                             h2osno_liq( :), &
@@ -467,19 +426,7 @@ contains
                             albsfc( :), &
                             albsni_oc(:), &
                             foo_snw(:, :) )
-          else
-             call SNICAR_RT(flg_snw_ice, fc, num_nourbanc, filter_nourbanc,    &
-                           coszen_col(c), &
-                           flg_slr, &
-                           h2osno_liq( :), &
-                           h2osno_ice( :), &
-                           snw_rds_in( :), &
-                           mss_cnc_aer_in_frc_oc( :, :), &
-                           albsfc( :), &
-                           albsni_oc(:), &
-                           foo_snw(:, :) )
-          endif ! end if use_snicar_ad
-       endif
+          endif
 
        ! 3. DUST input array:
        ! set BC and OC concentrations, so DST_FRC=[(BC+OC+dust)-(BC+OC)]
@@ -491,9 +438,8 @@ contains
        endif
 
        ! DUST FORCING CALCULATIONS
-          flg_slr = 1; ! direct-beam
-          if (use_snicar_ad) then
-              call SNICAR_AD_RT(flg_snw_ice,fc, c,   &
+       flg_slr = 1; ! direct-beam
+       call SNICAR_AD_RT(flg_snw_ice,fc, c,   &
                              coszen_col(c), &
                              flg_slr, &
                              h2osno_liq( :), &
@@ -503,22 +449,9 @@ contains
                              albsfc( :), &
                              albsnd_dst(:), &
                              foo_snw(:, :) )
-          else
-             call SNICAR_RT(flg_snw_ice,fc, num_nourbanc, filter_nourbanc,    &
-                            coszen_col(c), &
-                            flg_slr, &
-                            h2osno_liq( :), &
-                            h2osno_ice( :), &
-                            snw_rds_in( :), &
-                            mss_cnc_aer_in_frc_dst( :, :), &
-                            albsfc( :), &
-                            albsnd_dst(:), &
-                            foo_snw(:, :) )
-          endif ! end if use_snicar_ad
 
-          flg_slr = 2; ! diffuse
-          if (use_snicar_ad) then
-              call SNICAR_AD_RT(flg_snw_ice,fc, c,    &
+       flg_slr = 2; ! diffuse
+       call SNICAR_AD_RT(flg_snw_ice,fc, c,    &
                             coszen_col(c), &
                             flg_slr, &
                             h2osno_liq( :), &
@@ -528,24 +461,11 @@ contains
                             albsfc( :), &
                             albsni_dst(:), &
                             foo_snw(:, :)  )
-          else
-             call SNICAR_RT(flg_snw_ice,fc, num_nourbanc, filter_nourbanc,    &
-                           coszen_col(c), &
-                           flg_slr, &
-                           h2osno_liq( :), &
-                           h2osno_ice( :), &
-                           snw_rds_in( :), &
-                           mss_cnc_aer_in_frc_dst( :, :), &
-                           albsfc( :), &
-                           albsni_dst(:), &
-                           foo_snw(:, :)  )
-          endif ! end if use_snicar_ad
 
        ! 4. ALL AEROSOL FORCING CALCULATION
        ! (pure snow albedo)
-          flg_slr = 1; ! direct-beam
-          if (use_snicar_ad) then
-              call SNICAR_AD_RT(flg_snw_ice,fc, c,    &
+       flg_slr = 1; ! direct-beam
+       call SNICAR_AD_RT(flg_snw_ice,fc, c,    &
                             coszen_col(c), &
                             flg_slr, &
                             h2osno_liq( :), &
@@ -555,22 +475,9 @@ contains
                             albsfc(:), &
                             albsnd_pur(:), &
                             foo_snw(:, :) )
-          else
-             call SNICAR_RT(flg_snw_ice,fc, num_nourbanc, filter_nourbanc,    &
-                           coszen_col(c), &
-                           flg_slr, &
-                           h2osno_liq( :), &
-                           h2osno_ice( :), &
-                           snw_rds_in( :), &
-                           mss_cnc_aer_in_frc_pur( :, :), &
-                           albsfc(:), &
-                           albsnd_pur(:), &
-                           foo_snw(:, :) )
-          endif ! end if use_snicar_ad
 
-          flg_slr = 2; ! diffuse
-          if (use_snicar_ad) then
-              call SNICAR_AD_RT(flg_snw_ice,fc, c, &
+       flg_slr = 2; ! diffuse
+       call SNICAR_AD_RT(flg_snw_ice,fc, c, &
                             coszen_col(c), &
                             flg_slr, &
                             h2osno_liq( :), &
@@ -580,26 +487,11 @@ contains
                             albsfc( :), &
                             albsni_pur(:), &
                             foo_snw(:, :) )
-          else
-             call SNICAR_RT(flg_snw_ice,fc, &
-                           num_nourbanc, filter_nourbanc,    &
-                           coszen_col(c), &
-                           flg_slr, &
-                           h2osno_liq( :), &
-                           h2osno_ice( :), &
-                           snw_rds_in( :), &
-                           mss_cnc_aer_in_frc_pur( :, :), &
-                           albsfc( :), &
-                           albsni_pur(:), &
-                           foo_snw(:, :) )
-          endif ! end if use_snicar_ad
-    end if !end if use_snicar_frc
-
+      end if !end if use_snicar_frc
 
     ! CLIMATE FEEDBACK CALCULATIONS, ALL AEROSOLS:
-       flg_slr = 1; ! direct-beam
-       if (use_snicar_ad) then
-           call SNICAR_AD_RT(flg_snw_ice,fc, c,    &
+    flg_slr = 1; ! direct-beam
+    call SNICAR_AD_RT(flg_snw_ice,fc, c,    &
                          coszen_col(c), &
                          flg_slr, &
                          h2osno_liq(:), &
@@ -609,22 +501,9 @@ contains
                          albsfc(:), &
                          albsnd(c,:), &
                          flx_absd_snw(:, :) )
-       else
-          call SNICAR_RT(flg_snw_ice,fc, num_nourbanc, filter_nourbanc,    &
-                         coszen_col(c), &
-                         flg_slr, &
-                         h2osno_liq(:), &
-                         h2osno_ice(:), &
-                         snw_rds_in(:), &
-                         mss_cnc_aer_in_fdb( :, :), &
-                         albsfc(:), &
-                         albsnd(c,:), &
-                         flx_absd_snw( :, :) )
-       endif ! end if use_snicar_ad
 
-       flg_slr = 2; ! diffuse
-       if (use_snicar_ad) then
-           call SNICAR_AD_RT(flg_snw_ice, fc, c,    &
+     flg_slr = 2; ! diffuse
+     call SNICAR_AD_RT(flg_snw_ice, fc, c,    &
                              coszen_col(c), &
                              flg_slr, &
                              h2osno_liq( :), &
@@ -634,18 +513,6 @@ contains
                              albsfc( :), &
                              albsni(c, :), &
                              flx_absi_snw( :, :) )
-       else
-          call SNICAR_RT(flg_snw_ice,fc, num_nourbanc, filter_nourbanc,    &
-                         coszen_col(c), &
-                         flg_slr, &
-                         h2osno_liq(:), &
-                         h2osno_ice(:), &
-                         snw_rds_in(:), &
-                         mss_cnc_aer_in_fdb(:, :), &
-                         albsfc(:), &
-                         albsni(c,:), &
-                         flx_absi_snw( :, :) )
-       endif ! end if use_snicar_ad
 
     ! ground albedos and snow-fraction weighting of snow absorption factors
     do ib = 1, nband
@@ -679,36 +546,35 @@ contains
              !  weight snow layer radiative absorption factors based on snow fraction and soil albedo
              !  (NEEDED FOR ENERGY CONSERVATION)
              do i = -nlevsno+1,1,1
-              if (subgridflag == 0 .or. lun_pp%itype(col_pp%landunit(c)) == istdlak) then
-                if (ib == 1) then
-                   flx_absdv(c,i) = flx_absd_snw(i,ib)*frac_sno(c) + &
+                if (subgridflag == 0 .or. lun_pp%itype(col_pp%landunit(c)) == istdlak) then
+                   if (ib == 1) then
+                      flx_absdv(c,i) = flx_absd_snw(i,ib)*frac_sno(c) + &
                         ((1.-frac_sno(c))*(1-albsod(c,ib))*(flx_absd_snw(i,ib)/(1.-albsnd(c,ib))))
-                   flx_absiv(c,i) = flx_absi_snw(i,ib)*frac_sno(c) + &
+                      flx_absiv(c,i) = flx_absi_snw(i,ib)*frac_sno(c) + &
                         ((1.-frac_sno(c))*(1-albsoi(c,ib))*(flx_absi_snw(i,ib)/(1.-albsni(c,ib))))
-                elseif (ib == 2) then
-                   flx_absdn(c,i) = flx_absd_snw(i,ib)*frac_sno(c) + &
+                   elseif (ib == 2) then
+                      flx_absdn(c,i) = flx_absd_snw(i,ib)*frac_sno(c) + &
                         ((1.-frac_sno(c))*(1-albsod(c,ib))*(flx_absd_snw(i,ib)/(1.-albsnd(c,ib))))
-                   flx_absin(c,i) = flx_absi_snw(i,ib)*frac_sno(c) + &
+                      !
+                      flx_absin(c,i) = flx_absi_snw(i,ib)*frac_sno(c) + &
                         ((1.-frac_sno(c))*(1-albsoi(c,ib))*(flx_absi_snw(i,ib)/(1.-albsni(c,ib))))
+                   endif
+                else
+                   if (ib == 1) then
+                      flx_absdv(c,i) = flx_absd_snw(i,ib)*(1.-albsnd(c,ib))
+                      flx_absiv(c,i) = flx_absi_snw(i,ib)*(1.-albsni(c,ib))
+                   elseif (ib == 2) then
+                      flx_absdn(c,i) = flx_absd_snw(i,ib)*(1.-albsnd(c,ib))
+                      flx_absin(c,i) = flx_absi_snw(i,ib)*(1.-albsni(c,ib))
+                   endif
                 endif
-             else
-                if (ib == 1) then
-                   flx_absdv(c,i) = flx_absd_snw(i,ib)*(1.-albsnd(c,ib))
-                   flx_absiv(c,i) = flx_absi_snw(i,ib)*(1.-albsni(c,ib))
-                elseif (ib == 2) then
-                   flx_absdn(c,i) = flx_absd_snw(i,ib)*(1.-albsnd(c,ib))
-                   flx_absin(c,i) = flx_absi_snw(i,ib)*(1.-albsni(c,ib))
-                endif
-             endif
-             enddo
+            enddo
        enddo
-
     enddo !! end column loop
 
-       ! For diagnostics, set snow albedo to spval over non-snow non-urban points
-       ! so that it is not averaged in history buffer (OPTIONAL)
-       ! TODO - this is set to 0 not spval - seems wrong since it will be averaged in
-
+    ! For diagnostics, set snow albedo to spval over non-snow non-urban points
+    ! so that it is not averaged in history buffer (OPTIONAL)
+    ! TODO - this is set to 0 not spval - seems wrong since it will be averaged in
     do ib = 1, nband
        do fc = 1,num_nourbanc
           c = filter_nourbanc(fc)
@@ -723,7 +589,6 @@ contains
     enddo
 
     ! Create solar-vegetated filter for the following calculations
-
     num_vegsol = 0
     num_novegsol = 0
     do fp = 1,num_nourbanp
@@ -743,7 +608,6 @@ contains
 
     ! Weight reflectance/transmittance by lai and sai
     ! Only perform on vegetated patches where coszen > 0
-
     do fp = 1,num_vegsol
        p = filter_vegsol(fp)
        wl(p) = elai(p) / max( elai(p)+esai(p), mpe )
@@ -785,7 +649,6 @@ contains
     dincmax = 0.25_r8
     do fp = 1,num_nourbanp
        p = filter_nourbanp(fp)
-
        if (nlevcan == 1) then
           nrad(p) = 1
           ncan(p) = 1
@@ -825,7 +688,6 @@ contains
        end if
 
        ! Error check: make sure cumulative of increments does not exceed total
-
        laisum = 0._r8
        saisum = 0._r8
        do iv = 1, nrad(p)
@@ -841,7 +703,6 @@ contains
 #endif
 
        ! Repeat to find canopy layers buried by snow
-
        if (nlevcan > 1) then
           blai(p) = tlai(p) - elai(p)
           bsai(p) = tsai(p) - esai(p)
@@ -981,7 +842,6 @@ contains
     use elm_varcon      , only : tfrz
     use landunit_varcon, only : istice, istice_mec, istdlak
     use LakeCon         , only : lakepuddling
-    use domainMod       , only : ldomain
     !
     ! !ARGUMENTS:
      type(bounds_type)      , intent(in)    :: bounds
@@ -997,7 +857,7 @@ contains
      !
     integer, parameter :: nband =numrad ! number of solar radiation waveband classes
     integer  :: fc            ! non-urban filter column index
-    integer  :: c,l,t,g,gi,pi,mi           ! indices
+    integer  :: c,l           ! indices
     integer  :: ib            ! waveband number (1=vis, 2=nir)
     real(r8) :: inc           ! soil water correction factor for soil albedo
     integer  :: soilcol       ! soilcolor
@@ -1026,14 +886,10 @@ contains
     do ib = 1, nband
        do fc = 1,num_nourbanc
           c = filter_nourbanc(fc)
-          g = col_pp%gridcell(c)
-          t = col_pp%topounit(c)
-          gi = grc_pp%gindex(g)
-          mi = ldomain%mask(g)
-          pi = ldomain%pftm(g)
           if (coszen(c) > 0._r8) then
              l = col_pp%landunit(c)
-             if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop .and. top_pp%active(t))  then ! soil
+
+             if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop)  then ! soil
                 inc    = max(0.11_r8-0.40_r8*h2osoi_vol(c,1), 0._r8)
                 soilcol = isoicol(c)
                 ! changed from local variable to elm_type:
@@ -1041,15 +897,15 @@ contains
                 !albsoi = albsod
                 albsod(c,ib) = min(albsat(soilcol,ib)+inc, albdry(soilcol,ib))
                 albsoi(c,ib) = albsod(c,ib)
-             else if (lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec .and. top_pp%active(t))  then  ! land ice
-                ! changed from local variable to clm_type:
+             else if (lun_pp%itype(l) == istice .or. lun_pp%itype(l) == istice_mec)  then  ! land ice
+                ! changed from local variable to elm_type:
                 !albsod = albice(ib)
                 !albsoi = albsod
                 albsod(c,ib) = albice(ib)
                 albsoi(c,ib) = albsod(c,ib)
              ! unfrozen lake, wetland
              else if (t_grnd(c) > tfrz .or. (lakepuddling .and. lun_pp%itype(l) == istdlak .and. t_grnd(c) == tfrz .and. &
-                      lake_icefrac(c,1) < 1._r8 .and. lake_icefrac(c,2) > 0._r8)  .and. top_pp%active(t)) then
+                      lake_icefrac(c,1) < 1._r8 .and. lake_icefrac(c,2) > 0._r8) ) then
 
                 albsod(c,ib) = 0.05_r8/(max(0.001_r8,coszen(c)) + 0.15_r8)
                 ! This expression is apparently from BATS according to Yongjiu Dai.
@@ -1072,7 +928,7 @@ contains
                 ! Tenatively I'm restricting this to lakes because I haven't tested it for wetlands. But if anything
                 ! the albedo should be lower when melting over frozen ground than a solid frozen lake.
                 !
-                if (lun_pp%itype(l) == istdlak .and. .not. lakepuddling .and. snl(c) == 0  .and. top_pp%active(t)) then
+                if (lun_pp%itype(l) == istdlak .and. .not. lakepuddling .and. snl(c) == 0) then
                     ! Need to reference snow layers here because t_grnd could be over snow or ice
                                       ! but we really want the ice surface temperature with no snow
                    sicefr = 1._r8 - exp(-calb * (tfrz - t_grnd(c))/tfrz)

@@ -28,7 +28,7 @@ module SnowSnicarMod
   save
   !
   ! !PUBLIC MEMBER FUNCTIONS:
-  public :: SNICAR_RT        ! Snow albedo and vertically-resolved solar absorption
+  public :: SNICAR_RT, SNICAR_AD_RT  ! Snow albedo and vertically-resolved solar absorption
   public :: SnowAge_grain    ! Snow effective grain size evolution
   public :: SnowAge_init     ! Initial read in of snow-aging file
   public :: SnowOptics_init  ! Initial read in of snow-optics file
@@ -120,12 +120,12 @@ module SnowSnicarMod
   real(r8) :: asm_prm_snw_dfs    (idx_Mie_snw_mx,numrad_snw);
   real(r8) :: ext_cff_mss_snw_dfs(idx_Mie_snw_mx,numrad_snw);
 
-  !$acc declare create(ss_alb_snw_drc     )
-  !$acc declare create(asm_prm_snw_drc    )
-  !$acc declare create(ext_cff_mss_snw_drc)
-  !$acc declare create(ss_alb_snw_dfs     )
-  !$acc declare create(asm_prm_snw_dfs    )
-  !$acc declare create(ext_cff_mss_snw_dfs)
+  !$acc declare create(ss_alb_snw_drc     (:,:))
+  !$acc declare create(asm_prm_snw_drc    (:,:))
+  !$acc declare create(ext_cff_mss_snw_drc(:,:))
+  !$acc declare create(ss_alb_snw_dfs     (:,:))
+  !$acc declare create(asm_prm_snw_dfs    (:,:))
+  !$acc declare create(ext_cff_mss_snw_dfs(:,:))
 
 #ifdef MODAL_AER
   !mgf++
@@ -138,9 +138,9 @@ module SnowSnicarMod
   real(r8) :: ss_alb_bc1     (numrad_snw,idx_bc_nclrds_max);
   real(r8) :: asm_prm_bc1    (numrad_snw,idx_bc_nclrds_max);
   real(r8) :: ext_cff_mss_bc1(numrad_snw,idx_bc_nclrds_max);
-  !$acc declare create(ss_alb_bc1     )
-  !$acc declare create(asm_prm_bc1    )
-  !$acc declare create(ext_cff_mss_bc1)
+  !$acc declare create(ss_alb_bc1     (:,:))
+  !$acc declare create(asm_prm_bc1    (:,:))
+  !$acc declare create(ext_cff_mss_bc1(:,:))
 
   ! external BC
   real(r8) :: ss_alb_bc2     (numrad_snw,idx_bc_nclrds_max);
@@ -155,17 +155,17 @@ module SnowSnicarMod
   real(r8) :: ss_alb_bc1     (numrad_snw);
   real(r8) :: asm_prm_bc1    (numrad_snw);
   real(r8) :: ext_cff_mss_bc1(numrad_snw);
-  !$acc declare create(ss_alb_bc1     )
-  !$acc declare create(asm_prm_bc1    )
-  !$acc declare create(ext_cff_mss_bc1)
+  !$acc declare create(ss_alb_bc1     (:))
+  !$acc declare create(asm_prm_bc1    (:))
+  !$acc declare create(ext_cff_mss_bc1(:))
 
   ! hydrophobic BC
   real(r8) :: ss_alb_bc2     (numrad_snw);
   real(r8) :: asm_prm_bc2    (numrad_snw);
   real(r8) :: ext_cff_mss_bc2(numrad_snw);
-  !$acc declare create(ss_alb_bc2     )
-  !$acc declare create(asm_prm_bc2    )
-  !$acc declare create(ext_cff_mss_bc2)
+  !$acc declare create(ss_alb_bc2     (:))
+  !$acc declare create(asm_prm_bc2    (:))
+  !$acc declare create(ext_cff_mss_bc2(:))
 #endif
 
 !  ! hydrophiliic BC
@@ -182,25 +182,25 @@ module SnowSnicarMod
   real(r8) :: ss_alb_oc1     (numrad_snw);
   real(r8) :: asm_prm_oc1    (numrad_snw);
   real(r8) :: ext_cff_mss_oc1(numrad_snw);
-  !$acc declare create(ss_alb_oc1     )
-  !$acc declare create(asm_prm_oc1    )
-  !$acc declare create(ext_cff_mss_oc1)
+  !$acc declare create(ss_alb_oc1     (:))
+  !$acc declare create(asm_prm_oc1    (:))
+  !$acc declare create(ext_cff_mss_oc1(:))
 
   ! hydrophilic OC
   real(r8) :: ss_alb_oc2     (numrad_snw);
   real(r8) :: asm_prm_oc2    (numrad_snw);
   real(r8) :: ext_cff_mss_oc2(numrad_snw);
-  !$acc declare create(ss_alb_oc2     )
-  !$acc declare create(asm_prm_oc2    )
-  !$acc declare create(ext_cff_mss_oc2)
+  !$acc declare create(ss_alb_oc2     (:))
+  !$acc declare create(asm_prm_oc2    (:))
+  !$acc declare create(ext_cff_mss_oc2(:))
 
   ! dust species 1:
   real(r8) :: ss_alb_dst1     (numrad_snw);
   real(r8) :: asm_prm_dst1    (numrad_snw);
   real(r8) :: ext_cff_mss_dst1(numrad_snw);
-  !$acc declare create(ss_alb_dst1     )
-  !$acc declare create(asm_prm_dst1    )
-  !$acc declare create(ext_cff_mss_dst1)
+  !$acc declare create(ss_alb_dst1     (:))
+  !$acc declare create(asm_prm_dst1    (:))
+  !$acc declare create(ext_cff_mss_dst1(:))
 
   ! dust species 2:
   real(r8) :: ss_alb_dst2     (numrad_snw);
@@ -214,24 +214,24 @@ module SnowSnicarMod
   real(r8) :: ss_alb_dst3     (numrad_snw);
   real(r8) :: asm_prm_dst3    (numrad_snw);
   real(r8) :: ext_cff_mss_dst3(numrad_snw);
-  !$acc declare create(ss_alb_dst3     )
-  !$acc declare create(asm_prm_dst3    )
-  !$acc declare create(ext_cff_mss_dst3)
+  !$acc declare create(ss_alb_dst3     (:))
+  !$acc declare create(asm_prm_dst3    (:))
+  !$acc declare create(ext_cff_mss_dst3(:))
 
   ! dust species 4:
   real(r8) :: ss_alb_dst4     (numrad_snw);
   real(r8) :: asm_prm_dst4    (numrad_snw);
   real(r8) :: ext_cff_mss_dst4(numrad_snw);
-  !$acc declare create(ss_alb_dst4     )
-  !$acc declare create(asm_prm_dst4    )
-  !$acc declare create(ext_cff_mss_dst4)
+  !$acc declare create(ss_alb_dst4     (:))
+  !$acc declare create(asm_prm_dst4    (:))
+  !$acc declare create(ext_cff_mss_dst4(:))
 
 
 #ifdef MODAL_AER
   !mgf++
   ! Absorption enhancement factors for within-ice BC
   real(r8) :: bcenh(numrad_snw,idx_bc_nclrds_max,idx_bcint_icerds_max);
-  !$acc declare create(bcenh)
+  !$acc declare create(bcenh(:,:,:))
   !mgf--
 #endif
 
@@ -277,7 +277,7 @@ contains
     ! J. Geophys. Res., 112, D11202, doi: 10.1029/2006JD008003
     !
     ! !USES:
-      !$acc routine seq
+    !!   !$acc routine seq
     use elm_varpar       , only : nlevsno, numrad
     use shr_const_mod    , only : SHR_CONST_PI
     !
@@ -1196,7 +1196,7 @@ contains
     !   I am aware.
     !
     ! !USES:
-      !$acc routine seq
+    !$acc routine seq
     use elm_varpar       , only : nlevsno
     use elm_varcon       , only : spval
     use shr_const_mod    , only : SHR_CONST_RHOICE, SHR_CONST_PI
@@ -1455,29 +1455,29 @@ contains
 
   !-----------------------------------------------------------------------
      subroutine SnowOptics_init( )
-
+!#py
       use fileutils  , only : getfil
       use elm_varctl , only : fsnowoptics
       use spmdMod    , only : masterproc
       use ncdio_pio  , only : file_desc_t, ncd_io, ncd_pio_openfile, ncd_pio_closefile
       use ncdio_pio  , only : ncd_pio_openfile, ncd_inqfdims, ncd_pio_closefile, ncd_inqdid, ncd_inqdlen
-
+!#py
       type(file_desc_t)  :: ncid                        ! netCDF file id
       character(len=256) :: locfn                       ! local filename
       character(len= 32) :: subname = 'SnowOptics_init' ! subroutine name
       integer            :: ier                         ! error status
-
+!#py
      !mgf++
      logical :: readvar      ! determine if variable was read from NetCDF file
      !mgf--
-
+!#py
       !
       ! Open optics file:
       if(masterproc) write(iulog,*) 'Attempting to read snow optical properties .....'
       call getfil (fsnowoptics, locfn, 0)
       call ncd_pio_openfile(ncid, locfn, 0)
       if(masterproc) write(iulog,*) subname,trim(fsnowoptics)
-
+!#py
       ! direct-beam snow Mie parameters:
       call ncd_io('ss_alb_ice_drc', ss_alb_snw_drc,            'read', ncid, posNOTonfile=.true.)
       call ncd_io( 'asm_prm_ice_drc',asm_prm_snw_drc,          'read', ncid, posNOTonfile=.true.)
@@ -1595,7 +1595,7 @@ contains
      !$acc ss_alb_dst4        ,&
      !$acc asm_prm_dst4      ,&
      !$acc ext_cff_mss_dst4  )
-
+!#py
       call ncd_pio_closefile(ncid)
       if (masterproc) then
         !
@@ -1659,7 +1659,7 @@ contains
      use fileutils       , only : getfil
      use spmdMod         , only : masterproc
      use ncdio_pio       , only : file_desc_t, ncd_io, ncd_pio_openfile, ncd_pio_closefile
-
+!#py
      type(file_desc_t)  :: ncid                        ! netCDF file id
      character(len=256) :: locfn                       ! local filename
      character(len= 32) :: subname = 'SnowOptics_init' ! subroutine name
@@ -1693,7 +1693,7 @@ contains
         write (iulog,*) 'SNICAR: snowage dr/dt_0 for T=263K, dTdz = 100 K/m, rhos = 150 kg/m3: ', snowage_drdt0(3,11,9)
      endif
      !$acc update device(snowage_tau, snowage_kappa, snowage_drdt0)
-
+!#py
     end subroutine SnowAge_init
 
    !-----------------------------------------------------------------------
@@ -1744,7 +1744,6 @@ contains
      ! !LOCAL VARIABLES:
      !
      ! variables for snow radiative transfer calculations
-
      ! Local variables representing single-column values of arrays:
      integer :: snl_lcl                            ! negative number of snow layers [nbr]
      integer :: snw_rds_lcl(-nlevsno+1:0)          ! snow effective radius [m^-6]
@@ -1761,28 +1760,22 @@ contains
      real(r8):: ss_alb_aer_lcl(sno_nbr_aer)        ! single-scatter albedo of aerosol species (aer_nbr) [frc]
      real(r8):: asm_prm_aer_lcl(sno_nbr_aer)       ! asymmetry parameter of aerosol species (aer_nbr) [frc]
      real(r8):: ext_cff_mss_aer_lcl(sno_nbr_aer)   ! mass extinction coefficient of aerosol species (aer_nbr) [m2/kg]
-
 #ifdef MODAL_AER
      !mgf++
      real(r8) :: rds_bcint_lcl   ! effective radius of within-ice BC [nm]
      real(r8) :: rds_bcext_lcl   ! effective radius of external BC [nm]
      !mgf--
 #endif
-
-
      ! Other local variables
-     integer :: DELTA                              ! flag to use Delta approximation (Joseph, 1976)
-                                                   ! (1= use, 0= don't use)
-     real(r8):: flx_wgt(1:numrad_snw)              ! weights applied to spectral bands,
-                                                   ! specific to direct and diffuse cases (bnd) [frc]
-     integer :: flg_nosnl                          ! flag: =1 if there is snow, but zero snow layers,
-                                                   ! =0 if at least 1 snow layer [flg]
-     !integer :: trip                               ! flag: =1 to redo RT calculation if result is unrealistic
-     !integer :: flg_dover                          ! defines conditions for RT redo (explained below)
-
-     real(r8):: albedo                             ! temporary snow albedo [frc]
-     real(r8):: flx_sum                            ! temporary summation variable for NIR weighting
-     real(r8):: albout_lcl(numrad_snw)             ! snow albedo by band [frc]
+     integer, parameter :: DELTA=1             ! flag to use Delta approximation (Joseph, 1976)
+                                               ! (1= use, 0= don't use)
+     real(r8):: flx_wgt(1:numrad_snw)          ! weights applied to spectral bands,
+                                               ! specific to direct and diffuse cases (bnd) [frc]
+     integer :: flg_nosnl                      ! flag: =1 if there is snow, but zero snow layers,
+                                               ! =0 if at least 1 snow layer [flg]
+     real(r8):: albedo                              ! temporary snow albedo [frc]
+     real(r8):: flx_sum                             ! temporary summation variable for NIR weighting
+     real(r8):: albout_lcl(numrad_snw)              ! snow albedo by band [frc]
      real(r8):: flx_abs_lcl(-nlevsno+1:1,numrad_snw)! absorbed flux per unit incident flux at top of snowpack (lyr,bnd) [frc]
 
      real(r8):: L_snw        ! h2o mass (liquid+solid) in snow layer (lyr) [kg/m2]
@@ -1820,93 +1813,90 @@ contains
      real(r8):: mu_not                             ! cosine of solar zenith angle (used locally) [frc]
 
      integer :: err_idx                            ! counter for number of times through error loop [nbr]
-     ! real(r8):: lat_coord                          ! gridcell latitude (debugging only)
-     ! real(r8):: lon_coord                          ! gridcell longitude (debugging only)
-     ! integer :: sfctype                            ! underlying surface type (debugging only)
-     real(r8):: pi                                 ! 3.1415...
+     real(r8), parameter :: pi = SHR_CONST_PI ! 3.1415...
 
      ! SNICAR_AD new variables, follow sea-ice shortwave conventions
-     real(r8):: &
-        trndir(-nlevsno+1:1)  , & ! solar beam down transmission from top
-        trntdr(-nlevsno+1:1)  , & ! total transmission to direct beam for layers above
-        trndif(-nlevsno+1:1)  , & ! diffuse transmission to diffuse beam for layers above
-        rupdir(-nlevsno+1:1)  , & ! reflectivity to direct radiation for layers below
-        rupdif(-nlevsno+1:1)  , & ! reflectivity to diffuse radiation for layers below
-        rdndif(-nlevsno+1:1)  , & ! reflectivity to diffuse radiation for layers above
-        dfdir(-nlevsno+1:1)   , & ! down-up flux at interface due to direct beam at top surface
-        dfdif(-nlevsno+1:1)   , & ! down-up flux at interface due to diffuse beam at top surface
-        dftmp(-nlevsno+1:1)       ! temporary variable for down-up flux at interface
+     real(r8) :: trndir(-nlevsno+1:1)  ! solar beam down transmission from top
+     real(r8) :: trntdr(-nlevsno+1:1)  ! total transmission to direct beam for layers above
+     real(r8) :: trndif(-nlevsno+1:1)  ! diffuse transmission to diffuse beam for layers above
+     real(r8) :: rupdir(-nlevsno+1:1)  ! reflectivity to direct radiation for layers below
+     real(r8) :: rupdif(-nlevsno+1:1)  ! reflectivity to diffuse radiation for layers below
+     real(r8) :: rdndif(-nlevsno+1:1)  ! reflectivity to diffuse radiation for layers above
+     real(r8) :: dfdir(-nlevsno+1:1)   ! down-up flux at interface due to direct beam at top surface
+     real(r8) :: dfdif(-nlevsno+1:1)   ! down-up flux at interface due to diffuse beam at top surface
+     real(r8) :: dftmp(-nlevsno+1:1)   ! temporary variable for down-up flux at interface
+     !
+     real(r8) :: rdir(-nlevsno+1:0)    ! layer reflectivity to direct radiation
+     real(r8) :: rdif_a(-nlevsno+1:0)  ! layer reflectivity to diffuse radiation from above
+     real(r8) :: rdif_b(-nlevsno+1:0)  ! layer reflectivity to diffuse radiation from below
+     real(r8) :: tdir(-nlevsno+1:0)    ! layer transmission to direct radiation (solar beam + diffuse)
+     real(r8) :: tdif_a(-nlevsno+1:0)  ! layer transmission to diffuse radiation from above
+     real(r8) :: tdif_b(-nlevsno+1:0)  ! layer transmission to diffuse radiation from below
+     real(r8) :: trnlay(-nlevsno+1:0)  ! solar beam transm for layer (direct beam only)
 
-     real(r8):: &
-        rdir(-nlevsno+1:0)       , & ! layer reflectivity to direct radiation
-        rdif_a(-nlevsno+1:0)     , & ! layer reflectivity to diffuse radiation from above
-        rdif_b(-nlevsno+1:0)     , & ! layer reflectivity to diffuse radiation from below
-        tdir(-nlevsno+1:0)       , & ! layer transmission to direct radiation (solar beam + diffuse)
-        tdif_a(-nlevsno+1:0)     , & ! layer transmission to diffuse radiation from above
-        tdif_b(-nlevsno+1:0)     , & ! layer transmission to diffuse radiation from below
-        trnlay(-nlevsno+1:0)         ! solar beam transm for layer (direct beam only)
-
-     real(r8):: &
-         ts       , & ! layer delta-scaled extinction optical depth
-         ws       , & ! layer delta-scaled single scattering albedo
-         gs       , & ! layer delta-scaled asymmetry parameter
-         extins   , & ! extinction
-         alp      , & ! temporary for alpha
-         gam      , & ! temporary for agamm
-         amg      , & ! alp - gam
-         apg      , & ! alp + gam
-         ue       , & ! temporary for u
-         refk     , & ! interface multiple scattering
-         refkp1   , & ! interface multiple scattering for k+1
-         refkm1   , & ! interface multiple scattering for k-1
-         tdrrdir  , & ! direct tran times layer direct ref
-         tdndif       ! total down diffuse = tot tran - direct tran
-
-     real(r8) :: &
-         alpha    , & ! term in direct reflectivity and transmissivity
-         agamm    , & ! term in direct reflectivity and transmissivity
-         el       , & ! term in alpha,agamm,n,u
-         taus     , & ! scaled extinction optical depth
-         omgs     , & ! scaled single particle scattering albedo
-         asys     , & ! scaled asymmetry parameter
-         u        , & ! term in diffuse reflectivity and transmissivity
-         n        , & ! term in diffuse reflectivity and transmissivity
-         lm       , & ! temporary for el
-         mu       , & ! cosine solar zenith for either snow or water
-         ne           ! temporary for n
-
+     real(r8):: ts       ! layer delta-scaled extinction optical depth
+     real(r8):: ws       ! layer delta-scaled single scattering albedo
+     real(r8):: gs       ! layer delta-scaled asymmetry parameter
+     real(r8):: extins   ! extinction
+     real(r8):: alp      ! temporary for alpha
+     real(r8):: gam      ! temporary for agamm
+     real(r8):: amg      ! alp - gam
+     real(r8):: apg      ! alp + gam
+     real(r8):: ue       ! temporary for u
+     real(r8):: refk     ! interface multiple scattering
+     real(r8):: refkp1   ! interface multiple scattering for k+1
+     real(r8):: refkm1   ! interface multiple scattering for k-1
+     real(r8):: tdrrdir  ! direct tran times layer direct ref
+     real(r8):: tdndif   ! total down diffuse = tot tran - direct tran
+     !
+     real(r8) :: alpha  ! term in direct reflectivity and transmissivity
+     real(r8) :: agamm  ! term in direct reflectivity and transmissivity
+     real(r8) :: el     ! term in alpha,agamm,n,u
+     real(r8) :: taus   ! scaled extinction optical depth
+     real(r8) :: omgs   ! scaled single particle scattering albedo
+     real(r8) :: asys   ! scaled asymmetry parameter
+     real(r8) :: u      ! term in diffuse reflectivity and transmissivity
+     real(r8) :: n      ! term in diffuse reflectivity and transmissivity
+     real(r8) :: lm     ! temporary for el
+     real(r8) :: mu     ! cosine solar zenith for either snow or water
+     real(r8) :: ne     ! temporary for n
      ! perpendicular and parallel relative to plane of incidence and scattering
-     real(r8) :: &
-         R1       , & ! perpendicular polarization reflection amplitude
-         R2       , & ! parallel polarization reflection amplitude
-         T1       , & ! perpendicular polarization transmission amplitude
-         T2       , & ! parallel polarization transmission amplitude
-         Rf_dir_a , & ! fresnel reflection to direct radiation
-         Tf_dir_a , & ! fresnel transmission to direct radiation
-         Rf_dif_a , & ! fresnel reflection to diff radiation from above
-         Rf_dif_b , & ! fresnel reflection to diff radiation from below
-         Tf_dif_a , & ! fresnel transmission to diff radiation from above
-         Tf_dif_b     ! fresnel transmission to diff radiation from below
+     real(r8) :: R1        ! perpendicular polarization reflection amplitude
+     real(r8) :: R2        ! parallel polarization reflection amplitude
+     real(r8) :: T1        ! perpendicular polarization transmission amplitude
+     real(r8) :: T2        ! parallel polarization transmission amplitude
+     real(r8) :: Rf_dir_a  ! fresnel reflection to direct radiation
+     real(r8) :: Tf_dir_a  ! fresnel transmission to direct radiation
+     real(r8) :: Rf_dif_a  ! fresnel reflection to diff radiation from above
+     real(r8) :: Rf_dif_b  ! fresnel reflection to diff radiation from below
+     real(r8) :: Tf_dif_a  ! fresnel transmission to diff radiation from above
+     real(r8) :: Tf_dif_b  ! fresnel transmission to diff radiation from below
+     !
+     real(r8) :: gwt      ! gaussian weight
+     real(r8) :: swt      ! sum of weights
+     real(r8) :: trn      ! layer transmission
+     real(r8) :: rdr      ! rdir for gaussian integration
+     real(r8) :: tdr      ! tdir for gaussian integration
+     real(r8) :: smr      ! accumulator for rdif gaussian integration
+     real(r8) :: smt      ! accumulator for tdif gaussian integration
+     real(r8) :: exp_min  ! minimum exponential value
+     !
+     integer :: ng           ! gaussian integration index
+     integer :: snl_btm_itf  ! index of bottom snow layer interfaces (1) [idx]
+     integer,parameter :: ngmax = 8    ! gaussian integration index
+     !Gaussian integration angle and coefficients for diffuse radiation
+     real(r8), parameter,dimension(8) :: difgauspt  & ! gaussian angles (radians)
+         = (/ 0.9894009_r8,  0.9445750_r8, &
+            0.8656312_r8,  0.7554044_r8, &
+            0.6178762_r8,  0.4580168_r8, &
+            0.2816036_r8,  0.0950125_r8/)
+     real(r8),parameter,dimension(8) :: difgauswt  & ! gaussian weights
+         = (/ 0.0271525_r8,  0.0622535_r8, &
+            0.0951585_r8,  0.1246290_r8, &
+            0.1495960_r8,  0.1691565_r8, &
+            0.1826034_r8,  0.1894506_r8/)
 
-     real(r8) :: &
-         gwt      , & ! gaussian weight
-         swt      , & ! sum of weights
-         trn      , & ! layer transmission
-         rdr      , & ! rdir for gaussian integration
-         tdr      , & ! tdir for gaussian integration
-         smr      , & ! accumulator for rdif gaussian integration
-         smt      , & ! accumulator for tdif gaussian integration
-         exp_min      ! minimum exponential value
 
-     integer :: &
-         ng             , & ! gaussian integration index
-         snl_btm_itf    , & ! index of bottom snow layer interfaces (1) [idx]
-         ngmax = 8          ! gaussian integration index
-
-     ! Gaussian integration angle and coefficients
-     real(r8) :: &
-         difgauspt(1:8)  , &
-         difgauswt(1:8)
      ! real(r8),  dimension (1:8) :: &
      !     dif_gauspt     & ! gaussian angles (radians)
      !       = (/ 0.9894009_r8,  0.9445750_r8, &
@@ -1920,7 +1910,7 @@ contains
      !            0.1826034_r8,  0.1894506_r8/)
 
      ! constants used in algorithm
-     real(r8) :: &
+     real(r8), parameter  :: &
          c0      = 0.0_r8     , &
          c1      = 1.0_r8     , &
          c3      = 3.0_r8     , &
@@ -1934,7 +1924,7 @@ contains
          argmax  = 10.0_r8       ! maximum argument of exponential
 
      ! cconstant coefficients used for SZA parameterization
-     real(r8) :: &
+     real(r8), parameter :: &
          sza_a0 =  0.085730_r8 , &
          sza_a1 = -0.630883_r8 , &
          sza_a2 =  1.303723_r8 , &
@@ -1958,7 +1948,6 @@ contains
      ! n(uu,et)         = ((uu+c1)*(uu+c1)/et ) - ((uu-c1)*(uu-c1)*et)
      ! u(w,gg,e)        = c1p5*(c1 - w*gg)/e
      ! el(w,gg)         = sqrt(c3*(c1-w)*(c1 - w*gg))
-
      !-----------------------------------------------------------------------
 #ifdef MODAL_AER
          !mgf++
@@ -1969,33 +1958,12 @@ contains
          real(r8):: tmp1                              ! temporary variable
          !mgf--
 #endif
-
      ! Enforce expected array sizes
-
      associate(&
           snl         =>   col_pp%snl           , & ! Input:  [integer (:)]  negative number of snow layers (col) [nbr]
           h2osno      =>   col_ws%h2osno        , & ! Input:  [real(r8) (:)]  snow liquid water equivalent (col) [kg/m2]
           frac_sno    =>   col_ws%frac_sno_eff    & ! Input:  [real(r8) (:)]  fraction of ground covered by snow (0 to 1)
           )
-
-       ! Define constants
-       pi = SHR_CONST_PI
-
-       ! always use Delta approximation for snow
-       DELTA = 1
-
-       !Gaussian integration angle and coefficients for diffuse radiation
-       difgauspt(1:8)     & ! gaussian angles (radians)
-         = (/ 0.9894009_r8,  0.9445750_r8, &
-              0.8656312_r8,  0.7554044_r8, &
-              0.6178762_r8,  0.4580168_r8, &
-              0.2816036_r8,  0.0950125_r8/)
-       difgauswt(1:8)     & ! gaussian weights
-         = (/ 0.0271525_r8,  0.0622535_r8, &
-              0.0951585_r8,  0.1246290_r8, &
-              0.1495960_r8,  0.1691565_r8, &
-              0.1826034_r8,  0.1894506_r8/)
-
 
       ! Loop over all non-urban columns
       ! (when called from CSIM, there is only one column)
@@ -2049,8 +2017,6 @@ contains
                 ! ! sfctype   = lun_pp%itype(l_idx)
                 ! ! lat_coord = grc_pp%latdeg(g_idx)
                 ! ! lon_coord = grc_pp%londeg(g_idx)
-
-
                 ! Set variables specific to CSIM
              else
                 flg_nosnl         = 0
@@ -2077,17 +2043,14 @@ contains
            rds_bcext_lcl  =  100._r8
            !mgf--
 #endif
-
              ! ! Set local aerosol array
              ! do j=1,sno_nbr_aer
              !    mss_cnc_aer_lcl(:,j) = mss_cnc_aer_in(c_idx,:,j)
              ! enddo
 
-
              ! ! Set spectral underlying surface albedos to their corresponding VIS or NIR albedos
              ! albsfc_lcl(1)                       = albsfc(c_idx,1)
              ! albsfc_lcl(nir_bnd_bgn:nir_bnd_end) = albsfc(c_idx,2)
-
 
              ! Error check for snow grain size:
 #ifndef _OPENACC

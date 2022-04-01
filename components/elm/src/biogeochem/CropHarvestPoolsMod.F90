@@ -33,22 +33,20 @@ contains
     ! associated with crop harvest.
     !
     ! !ARGUMENTS:
-      !$acc routine seq
+    !! $acc routine seq
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! filter for soil columns
     real(r8)                 , intent(in)     :: dt        ! time step (seconds)
     ! !LOCAL VARIABLES:
     integer :: fc        ! lake filter indices
     integer :: c         ! indices
-    real(r8) :: kprod1       ! decay constant for 1-year product pool
+    real(r8),parameter :: kprod1=7.2e-9       ! decay constant for 1-year product pool
     !-----------------------------------------------------------------------
-
-
     ! calculate column-level losses from product pools
     ! the following (1/s) rate constants result in ~90% loss of initial state over 1 year,
     ! using a discrete-time fractional decay algorithm.
-    kprod1 = 7.2e-9
 
+    !$acc parallel loop independent gang vector default(present)
     do fc = 1,num_soilc
        c = filter_soilc(fc)
 
@@ -69,6 +67,7 @@ contains
 
 
    ! update wood product state variables
+   !$acc parallel loop independent gang vector default(present)
     do fc = 1,num_soilc
        c = filter_soilc(fc)
 

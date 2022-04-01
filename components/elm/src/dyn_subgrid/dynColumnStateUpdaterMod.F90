@@ -119,17 +119,17 @@ module dynColumnStateUpdaterMod
 
   type :: column_state_updater_type
 
-     real(r8), allocatable :: cwtgcell_old(:)  ! old column weights on the grid cell
-     real(r8), allocatable :: cwtgcell_new(:)  ! new column weights on the grid cell
+     real(r8), pointer :: cwtgcell_old(:) => null() ! old column weights on the grid cell
+     real(r8), pointer :: cwtgcell_new(:) => null()  ! new column weights on the grid cell
 
      ! (cwtgcell_new - cwtgcell_old) from last call to set_new_weights
-     real(r8), allocatable :: area_gained_col(:)
+     real(r8), pointer :: area_gained_col(:) => null() 
 
      ! For each column, a 'template' column determined as: the first active column on the
      ! natural veg landunit in the same grid cell as the target column. 'active' is
      ! determined at the time of the call to set_old_weights, so that we consider whether
      ! a column was active in the previous time step, rather than newly-active.
-     integer , allocatable :: natveg_template_col(:)
+     integer , pointer :: natveg_template_col(:) => null() 
 
      ! Whether there have been any changes in this time step. This is indexed by clump so
      ! that it is thread-safe (so the different clumps don't stomp on each other). This
@@ -137,25 +137,28 @@ module dynColumnStateUpdaterMod
      ! clumps. (In the future, we plan to rework threading so that there is a separate
      ! object for each clump. In this case the indexing by clump will go away here -
      ! instead, there will be a single scalar 'any_changes' logical for each object.)
-     logical, allocatable :: any_changes(:)
+     logical, pointer :: any_changes(:) => null() 
 
    contains
 
 
-     ! Various ways to update a column-level state variable based on changing column areas:
-     !procedure, public :: update_column_state_no_special_handling
-     procedure, public :: update_column_state_fill_special_using_natveg
-     procedure, public :: update_column_state_fill_using_fixed_values
-     procedure, public :: update_column_state_fill_special_using_fixed_value
+  ! Various ways to update a column-level state variable based on changing column areas:
+  !procedure, public :: update_column_state_no_special_handling
+  procedure, public  :: update_column_state_fill_special_using_natveg
+  procedure, public  :: update_column_state_fill_using_fixed_values
+  procedure, public  :: update_column_state_fill_special_using_fixed_value
 
 
   end type column_state_updater_type
 
-  interface column_state_updater_type
-     module procedure constructor  ! initialize a column_state_updater_type object
-  end interface column_state_updater_type
+ ! interface column_state_updater_type
+ !    module procedure constructor  ! initialize a column_state_updater_type object
+ ! end interface column_state_updater_type
 
-
+  public :: init_column_state_updater
+  
+  ! object used to update column-level states after subgrid weight updates
+  type(column_state_updater_type), public :: column_state_updater
   ! !PUBLIC VARIABLES:
   ! For update_column_state_fill_using_fixed_values, any landunit with
   ! FILLVAL_USE_EXISTING_VALUE will use the existing value in the state variable
@@ -204,6 +207,40 @@ contains
     constructor%any_changes(:) = .false.
 
   end function constructor
+
+  !-----------------------------------------------------------------------
+  subroutine init_column_state_updater(this, bounds, nclumps)
+   !
+   ! !DESCRIPTION:
+   ! Initialize a column_state_updater_type object
+   !
+   ! !USES:
+   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+   !
+   ! !ARGUMENTS:
+   type(column_state_updater_type) :: this  ! function result
+   type(bounds_type), intent(in)   :: bounds       ! processor bounds
+   integer          , intent(in)   :: nclumps      ! number of clumps per proc
+   !
+   ! !LOCAL VARIABLES:
+   ! character(len=*), parameter :: subname = 'constructor'
+   !-----------------------------------------------------------------------
+
+   SHR_ASSERT(bounds%level == BOUNDS_LEVEL_PROC, errMsg(sourcefile, __LINE__))
+
+   allocate(this%cwtgcell_old(bounds%begc:bounds%endc))
+   this%cwtgcell_old(:) = nan
+   allocate(this%cwtgcell_new(bounds%begc:bounds%endc))
+   this%cwtgcell_new(:) = nan
+   allocate(this%area_gained_col(bounds%begc:bounds%endc))
+   this%area_gained_col(:) = nan
+   allocate(this%natveg_template_col(bounds%begc:bounds%endc))
+   this%natveg_template_col(:) = TEMPLATE_NONE_FOUND
+
+   allocate(this%any_changes(nclumps))
+   this%any_changes(:) = .false.
+
+  end subroutine init_column_state_updater
 
   ! ========================================================================
   ! Public methods

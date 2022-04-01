@@ -9,13 +9,14 @@ module dynSubgridDriverMod
   ! dynamic landunits).
   !
   ! !USES:
-  use shr_kind_mod           , only : r8 => shr_kind_r8
+  use shr_kind_mod        , only : r8 => shr_kind_r8
   use dynSubgridControlMod, only : get_flanduse_timeseries
   use dynSubgridControlMod, only : get_do_transient_pfts, get_do_transient_crops
   use dynSubgridControlMod, only : get_do_harvest
   use dynPriorWeightsMod  , only : prior_weights_type
   use dynPatchStateUpdaterMod      , only : patch_state_updater_type
-  use dynColumnStateUpdaterMod     , only : column_state_updater_type
+  use dynColumnStateUpdaterMod     , only : column_state_updater_type, init_column_state_updater
+  use dynColumnStateUpdaterMod     , only : column_state_updater 
   use UrbanParamsType     , only : urbanparams_type
   use CanopyStateType     , only : canopystate_type
   use CNStateType         , only : cnstate_type
@@ -27,7 +28,7 @@ module dynSubgridDriverMod
   use glc2lndMod          , only : glc2lnd_type
   use dynLandunitAreaMod  , only : update_landunit_weights
   use CropType            , only : crop_type
-  use dyncropFileMod      , only : dyncrop_init, dyncrop_interp
+  ! use dyncropFileMod      , only : dyncrop_init, dyncrop_interp
   use filterMod           , only : filter, filter_inactive_and_active
 
   use GridcellDataType    , only : gridcell_carbon_state, gridcell_carbon_flux
@@ -52,9 +53,9 @@ module dynSubgridDriverMod
   ! object used to update patch-level states after subgrid weight updates
   type(patch_state_updater_type), public,target :: patch_state_updater
 
-  ! object used to update column-level states after subgrid weight updates
-  type(column_state_updater_type), public, target :: column_state_updater
   !---------------------------------------------------------------------------
+
+  !$acc declare create(prior_weights, patch_state_updater)
 
 contains
 
@@ -73,9 +74,9 @@ contains
     ! !USES:
     use decompMod         , only : bounds_type, BOUNDS_LEVEL_PROC
     use decompMod         , only : get_proc_clumps, get_clump_bounds
-    use dynpftFileMod     , only : dynpft_init
-    use dynHarvestMod     , only : dynHarvest_init
-    use dynpftFileMod     , only : dynpft_interp
+    ! use dynpftFileMod     , only : dynpft_init
+    ! use dynHarvestMod     , only : dynHarvest_init
+    ! use dynpftFileMod     , only : dynpft_interp
     !
     ! !ARGUMENTS:
     type(bounds_type) , intent(in)    :: bounds  ! processor-level bounds
@@ -95,35 +96,36 @@ contains
 
     prior_weights        = prior_weights_type(bounds)
     patch_state_updater  = patch_state_updater_type(bounds)
-    column_state_updater = column_state_updater_type(bounds, nclumps)
-
+    !column_state_updater = column_state_updater_type(bounds, nclumps)
+    write(*,*) "initializing column_state_updater" 
+    call init_column_state_updater(column_state_updater, bounds, nclumps)
     ! Initialize stuff for prescribed transient Patches
-    if (get_do_transient_pfts()) then
-       call dynpft_init(bounds, dynpft_filename=get_flanduse_timeseries())
-    end if
+    ! if (get_do_transient_pfts()) then
+    !    call dynpft_init(bounds, dynpft_filename=get_flanduse_timeseries())
+    ! end if
 
     ! Initialize stuff for harvest (currently shares the flanduse_timeseries file)
-    if (get_do_harvest()) then
-       call dynHarvest_init(bounds, harvest_filename=get_flanduse_timeseries())
-    end if
+    ! if (get_do_harvest()) then
+    !    call dynHarvest_init(bounds, harvest_filename=get_flanduse_timeseries())
+    ! end if
 
     ! Initialize stuff for prescribed transient crops
-    if (get_do_transient_crops()) then
-       call dyncrop_init(bounds, dyncrop_filename=get_flanduse_timeseries())
-    end if
+    ! if (get_do_transient_crops()) then
+    !    call dyncrop_init(bounds, dyncrop_filename=get_flanduse_timeseries())
+    ! end if
 
     ! ------------------------------------------------------------------------
     ! Set initial subgrid weights for aspects that are read from file. This is relevant
     ! for cold start and use_init_interp-based initialization.
     ! ------------------------------------------------------------------------
+    !
+    ! if (get_do_transient_pfts()) then
+    !    call dynpft_interp(bounds)
+    ! end if
 
-    if (get_do_transient_pfts()) then
-       call dynpft_interp(bounds)
-    end if
-
-    if (get_do_transient_crops()) then
-       call dyncrop_interp(bounds, crop_vars)
-    end if
+    ! if (get_do_transient_crops()) then
+    !    call dyncrop_interp(bounds, crop_vars)
+    ! end if
 
     !$OMP PARALLEL DO PRIVATE (nc, bounds_clump)
     do nc = 1, nclumps
@@ -159,9 +161,9 @@ contains
     use dynInitColumnsMod    , only : initialize_new_columns
     use dynConsBiogeophysMod , only : dyn_hwcontent_init, dyn_hwcontent_final
     use dynConsBiogeochemMod , only : dyn_cnbal_patch, dyn_cnbal_column
-    use dynpftFileMod        , only : dynpft_interp
+    ! use dynpftFileMod        , only : dynpft_interp
     use dynHarvestMod        , only : dynHarvest_interp
-    use dynEDMod             , only : dyn_ED
+    ! use dynEDMod             , only : dyn_ED
     use reweightMod          , only : reweight_wrapup
     use subgridWeightsMod    , only : compute_higher_order_weights, set_subgrid_diagnostic_fields
     use CarbonStateUpdate1Mod   , only : CarbonStateUpdateDynPatch
@@ -170,7 +172,6 @@ contains
     use dynPatchStateUpdaterMod   , only : set_old_patch_weights, set_new_patch_weights
     use dynColumnStateUpdaterMod  , only : set_old_column_weights, set_new_column_weights
     use dynPriorWeightsMod        , only : set_prior_weights
-    use clm_time_manager , only : get_step_size
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds_proc  ! processor-level bounds
@@ -207,7 +208,6 @@ contains
     SHR_ASSERT(bounds_proc%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
     nclumps = get_proc_clumps()
-    dt = real(get_step_size(), r8)
     ! ==========================================================================
     ! Do initialization, prior to land cover change
     ! ==========================================================================
@@ -232,17 +232,17 @@ contains
     ! Do land cover change that requires I/O, and thus must be outside a threaded region
     ! ==========================================================================
 
-    if (get_do_transient_pfts()) then
-       call dynpft_interp(bounds_proc)
-    end if
-
-    if (get_do_transient_crops()) then
-       call dyncrop_interp(bounds_proc,crop_vars)
-    end if
-
-    if (get_do_harvest()) then
-       call dynHarvest_interp(bounds_proc)
-    end if
+    ! if (get_do_transient_pfts()) then
+    !    call dynpft_interp(bounds_proc)
+    ! end if
+    !
+    ! if (get_do_transient_crops()) then
+    !    call dyncrop_interp(bounds_proc,crop_vars)
+    ! end if
+    !
+    ! if (get_do_harvest()) then
+    !    call dynHarvest_interp(bounds_proc)
+    ! end if
 
     ! ==========================================================================
     ! Do everything else related to land cover change
@@ -252,9 +252,9 @@ contains
     do nc = 1, nclumps
        call get_clump_bounds(nc, bounds_clump)
 
-       if (use_fates) then
-          call dyn_ED(bounds_clump)
-       end if
+       ! if (use_fates) then
+       !    call dyn_ED(bounds_clump)
+       ! end if
 
        if (create_glacier_mec_landunit) then
           call glc2lnd_vars%update_glc2lnd(bounds_clump)
@@ -295,15 +295,15 @@ contains
                veg_cs, c13_veg_cs, c14_veg_cs, &
                veg_ns, veg_ps, dt)
 
-          ! Transfer root/seed litter C/N/P to decomposer pools
-          call CarbonStateUpdateDynPatch(bounds_clump, &
-               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc,dt)
+          ! ! Transfer root/seed litter C/N/P to decomposer pools
+          ! call CarbonStateUpdateDynPatch(bounds_clump, &
+          !      filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc,dt)
 
-          call NitrogenStateUpdateDynPatch(bounds_clump, &
-               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc,dt)
+          ! call NitrogenStateUpdateDynPatch(bounds_clump, &
+          !      filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc,dt)
 
-          call PhosphorusStateUpdateDynPatch(bounds_clump, &
-               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc,dt)
+          ! call PhosphorusStateUpdateDynPatch(bounds_clump, &
+          !      filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc,dt)
 
        end if
 

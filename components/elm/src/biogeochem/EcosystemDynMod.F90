@@ -478,9 +478,6 @@ contains
     ! !USES:
     use PhenologyMod         , only: Phenology, CNLitterToColumn
     use GrowthRespMod             , only: GrowthResp
-    use CarbonStateUpdate1Mod     , only: CarbonStateUpdate1,CarbonStateUpdate0
-    use NitrogenStateUpdate1Mod   , only: NitrogenStateUpdate1
-    use PhosphorusStateUpdate1Mod , only: PhosphorusStateUpdate1
     use GapMortalityMod           , only: GapMortality
     use CarbonStateUpdate2Mod     , only: CarbonStateUpdate2, CarbonStateUpdate2h
     use NitrogenStateUpdate2Mod   , only: NitrogenStateUpdate2, NitrogenStateUpdate2h
@@ -568,7 +565,7 @@ contains
         event = 'Phenology'
         call t_start_lnd(event)
         call Phenology(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-             num_pcropp, filter_pcropp, num_ppercropp, filter_ppercropp, doalb, atm2lnd_vars, &
+             num_pcropp, filter_pcropp, num_ppercropp, filter_ppercropp, doalb, &
              crop_vars, canopystate_vars, soilstate_vars, &
              cnstate_vars )
         call t_stop_lnd(event)
@@ -609,19 +606,6 @@ contains
         !--------------------------------------------
         ! CNUpdate0
         !--------------------------------------------
-
-       event = 'CNUpdate0'
-       call t_start_lnd(event)
-       do fp = 1, num_soilp
-          p = filter_soilp(fp)
-          call CarbonStateUpdate0(p,veg_cs,veg_cf, dtime_mod)
-          if ( use_c13 ) then
-             call CarbonStateUpdate0(p,c13_veg_cs,c13_veg_cf, dtime_mod)
-         end if
-         if ( use_c14 ) then
-             call CarbonStateUpdate0(p,c14_veg_cs,c14_veg_cf, dtime_mod)
-         end if
-       end do
        call t_stop_lnd(event)
 
         !-------------------------------------------
@@ -679,23 +663,6 @@ contains
    event = 'CNUpdate1'
    call t_start_lnd(event)
 
-   call CarbonStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-         crop_vars, col_cs, veg_cs, col_cf, veg_cf, dt)
-
-   if ( use_c13 ) then
-      call CarbonStateUpdate1( num_soilc, filter_soilc, num_soilp, filter_soilp, &
-           crop_vars, c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf,dt)
-   end if
-   if ( use_c14 ) then
-      call CarbonStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-           crop_vars, c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf,dt)
-   end if
-
-   call NitrogenStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-        cnstate_vars, dt)
-
-   call PhosphorusStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-        cnstate_vars, dt)
 
    call t_stop_lnd(event)
 
@@ -731,21 +698,19 @@ contains
        end if
 
        call CarbonStateUpdate2( num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            col_cs, veg_cs, col_cf, veg_cf, dt)
+            col_cs, veg_cs, col_cf, veg_cf)
 
        if ( use_c13 ) then
           call CarbonStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-                c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf,dt)
+                c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf)
        end if
        if ( use_c14 ) then
           call CarbonStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf, dt)
+               c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf)
        end if
-       call NitrogenStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            dt )
+       call NitrogenStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp )
 
-       call PhosphorusStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            dt)
+       call PhosphorusStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp)
 
       ! if (get_do_harvest()) then
       !    call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
@@ -764,17 +729,17 @@ contains
        end if
 
        call CarbonStateUpdate2h( num_soilc, filter_soilc,  num_soilp, filter_soilp, &
-             col_cs, veg_cs, col_cf, veg_cf, dt)
+             col_cs, veg_cs, col_cf, veg_cf)
        if ( use_c13 ) then
           call CarbonStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf, dt)
+               c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf)
        end if
        if ( use_c14 ) then
           call CarbonStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf, dt)
+               c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf)
        end if
-       call NitrogenStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, dt)
-       call PhosphorusStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp,dt)
+       call NitrogenStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp)
+       call PhosphorusStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp)
        call WoodProducts(num_soilc, filter_soilc )
        call CropHarvestPools(num_soilc, filter_soilc, dt)
 

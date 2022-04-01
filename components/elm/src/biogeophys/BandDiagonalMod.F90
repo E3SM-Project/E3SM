@@ -19,6 +19,7 @@ module BandDiagonalMod
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: BandDiagonal
+  public :: BandDiagonal_noloop
   !-----------------------------------------------------------------------
 
 contains
@@ -51,15 +52,6 @@ contains
     real(r8),allocatable :: result(:)
 
     !-----------------------------------------------------------------------
-
-    ! Enforce expected array sizes
-    ! SHR_ASSERT_ALL((ubound(jtop) == (/bounds%endc/)),             errMsg(__FILE__, __LINE__))
-    ! SHR_ASSERT_ALL((ubound(jbot) == (/bounds%endc/)),             errMsg(__FILE__, __LINE__))
-    ! SHR_ASSERT_ALL((ubound(b)    == (/bounds%endc, nband, ubj/)), errMsg(__FILE__, __LINE__))
-    ! SHR_ASSERT_ALL((ubound(r)    == (/bounds%endc, ubj/)),        errMsg(__FILE__, __LINE__))
-    ! SHR_ASSERT_ALL((ubound(u)    == (/bounds%endc, ubj/)),        errMsg(__FILE__, __LINE__))
-
-
 !!$     SUBROUTINE SGBSV( N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
 !!$*
 !!$*  -- LAPACK driver routine (version 3.1) --
@@ -176,7 +168,7 @@ contains
 
        allocate(ab(m,n))
        ab=0.0
-
+      
        ab(kl+ku-1,3:n)=b(ci,1,jtop(ci):jbot(ci)-2)   ! 2nd superdiagonal
        ab(kl+ku+0,2:n)=b(ci,2,jtop(ci):jbot(ci)-1)   ! 1st superdiagonal
        ab(kl+ku+1,1:n)=b(ci,3,jtop(ci):jbot(ci))     ! diagonal
@@ -195,8 +187,8 @@ contains
 #ifdef _OPENACC
                  call dgbsv_oacc(n, kl, ku, 1, ab, m ,ipiv, result,n,info)
 #else
-              ! DGBSV( N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
-               call dgbsv( n, kl, ku, 1, ab, m, ipiv, result, n, info )
+              ! ! DGBSV( N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
+              !  call dgbsv( n, kl, ku, 1, ab, m, ipiv, result, n, info )
 #endif
 
        u(ci,jtop(ci):jbot(ci))=result(:)
@@ -226,4 +218,99 @@ contains
 
   end subroutine BandDiagonal
 
+  subroutine BandDiagonal_noloop(ci, lbj, ubj, jtop, jbot, nband, b, r, u)
+    !
+    ! !DESCRIPTION:
+    ! Tridiagonal matrix solution
+    !$acc routine seq
+    use lapack_acc_seq
+
+    implicit none
+    ! type(bounds_type), intent(in) :: bounds
+    integer , intent(in), value :: ci 
+    integer , intent(in)    :: lbj, ubj             ! lbinning and ubing level indices
+    integer , intent(in)    :: jtop( : )            ! top level for each column [col]
+    integer , intent(in)    :: jbot( : )            ! bottom level for each column [col]
+    ! integer , intent(in)    :: numf               ! filter dimension
+    integer , intent(in)    :: nband                ! band width
+    ! integer , intent(in)    :: filter(:)          ! filter
+    real(r8), intent(in)    :: b(: , 1:   , lbj: )  ! compact band matrix [col, nband, j]
+    real(r8), intent(in)    :: r(: , lbj: )         ! "r" rhs of linear system [col, j]
+    real(r8), intent(inout) :: u(: , lbj: )         ! solution [col, j]
+    !
+    ! ! LOCAL VARIABLES:
+    integer  :: j,fc,info,m,n              !indices
+    integer  :: kl,ku                         !number of sub/super diagonals
+    integer, allocatable :: ipiv(:)           !temporary
+    real(r8),allocatable :: ab(:,:),temp(:,:) !compact storage array
+    real(r8),allocatable :: result(:)
+
+!Set up input matrix AB
+!An m-by-n band matrix with kl subdiagonals and ku superdiagonals
+!may be stored compactly in a two-dimensional array with
+!kl+ku+1 rows and n columns
+!AB(KL+KU+1+i-j,j) = A(i,j)
+
+    ! do fc = 1,numf
+      !  ci = filter(fc)
+
+       kl=(nband-1)/2
+       ku=kl
+       ! m is the number of rows required for storage space by dgbsv
+       m=2*kl+ku+1
+       ! n is the number of levels (snow/soil)
+       !scs: replace ubj with jbot
+       n=jbot(ci)-jtop(ci)+1
+
+       allocate(ab(m,n))
+
+       ab(kl+ku-1,3:n)=b(ci,1,jtop(ci):jbot(ci)-2)   ! 2nd superdiagonal
+       ab(kl+ku+0,2:n)=b(ci,2,jtop(ci):jbot(ci)-1)   ! 1st superdiagonal
+       ab(kl+ku+1,1:n)=b(ci,3,jtop(ci):jbot(ci))     ! diagonal
+       ab(kl+ku+2,1:n-1)=b(ci,4,jtop(ci)+1:jbot(ci)) ! 1st subdiagonal
+       ab(kl+ku+3,1:n-2)=b(ci,5,jtop(ci)+2:jbot(ci)) ! 2nd subdiagonal
+
+       allocate(temp(m,n))
+       temp(:,:) = ab(:,:)
+
+       allocate(ipiv(n))
+       allocate(result(n))
+
+       ! on input result is rhs, on output result is solution vector
+       result(:)=r(ci,jtop(ci):jbot(ci))
+
+#ifdef _OPENACC
+                 call dgbsv_oacc(n, kl, ku, 1, ab, m ,ipiv, result,n,info)
+#else
+              ! ! DGBSV( N, KL, KU, NRHS, AB, LDAB, IPIV, B, LDB, INFO )
+              !  call dgbsv( n, kl, ku, 1, ab, m, ipiv, result, n, info )
+#endif
+
+       u(ci,jtop(ci):jbot(ci))=result(:)
+
+       if(info /= 0) then
+        print *, "info error"
+#ifndef _OPENACC
+          write(iulog,*)'index: ', ci
+          write(iulog,*)'n,kl,ku,m ',n,kl,ku,m
+          write(iulog,*)'dgbsv info: ',ci,info
+
+          write(iulog,*) ''
+          write(iulog,*) 'ab matrix'
+          ! do j=1,n
+             !             write(iulog,'(i2,7f18.7)') j,temp(:,j)
+             write(iulog,'(i2,5f18.7)') j,temp(3:7,j)
+          ! enddo
+          write(iulog,*) ''
+          stop
+#endif
+       endif
+       deallocate(temp)
+
+       deallocate(ab)
+       deallocate(ipiv)
+       deallocate(result)
+    ! end do
+
+  end subroutine BandDiagonal_noloop
 end module BandDiagonalMod

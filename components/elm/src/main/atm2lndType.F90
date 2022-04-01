@@ -35,13 +35,17 @@ module atm2lndType
   ! code. Instead use the datatype variables that have a _col suffix
   ! which gives the downscaled versions of these fields.
   !----------------------------------------------------
-  type, public :: atm2lnd_type
+
+  type,public :: cplbypass_atminput_type
       !DMR additions for CPL_BYPASS option
-#ifdef CPL_BYPASS
       integer*2, pointer :: atm_input                (:,:,:,:) => null()  !Single-site meteorological input
+  end type
+
+  type, public :: atm2lnd_type
+#ifdef CPL_BYPASS
       integer, pointer  :: loaded_bypassdata                   => null()
       real(r8), pointer :: add_offsets                     (:) => null()  !offsets for compressed met drivers
-      real(r8), pointer :: scale_factors                   (:) => null()  !scale factors for compressed met drivers      
+      real(r8), pointer :: scale_factors                   (:) => null()  !scale factors for compressed met drivers
       integer(r8), pointer :: startyear_met                    => null()  !staring driver met year
       integer(r8), pointer :: endyear_met_spinup               => null()  !end driver met year for spinup cycle
       integer(r8), pointer :: endyear_met_trans                => null()  !end driver met year for transient simulation
@@ -57,15 +61,15 @@ module atm2lndType
       real(r8), pointer :: c13o2_input                 (:,:,:) => null()  !annual C13O2 input data
       integer, pointer :: ndepind                        (:,:) => null()  !annual nitrogen deposition data
       integer, pointer :: hdmind                         (:,:) => null()  !popluation density
-      real(r8), pointer :: forc_hdm                      (:)   => null() 
-      real(r8), pointer :: forc_lnfm                     (:)   => null()
-      real(r8), pointer ::  hdm1                       (:,:,:) => null() 
+      real(r8), pointer ::  hdm1                       (:,:,:) => null()
       real(r8), pointer ::  hdm2                       (:,:,:) => null()
       real(r8), pointer ::  lnfm_all                   (:,:,:) => null()
       real(r8), pointer ::  lnfm                         (:,:) => null()
       real(r8), pointer ::  ndep1                      (:,:,:) => null()
       real(r8), pointer ::  ndep2                      (:,:,:) => null()
       real(r8), pointer ::  aerodata                 (:,:,:,:) => null()
+      real(r8), pointer :: forc_hdm                      (:)   => null()
+      real(r8), pointer :: forc_lnfm                     (:)   => null()
 #endif
      ! atm->lnd not downscaled
      real(r8), pointer :: forc_u_grc                    (:)   => null() ! atm wind speed, east direction (m/s)
@@ -88,14 +92,14 @@ module atm2lndType
      real(r8), pointer :: forc_aer_grc                  (:,:) => null() ! aerosol deposition array
      real(r8), pointer :: forc_pch4_grc                 (:)   => null() ! CH4 partial pressure (Pa)
 
-     real(r8), pointer :: forc_t_not_downscaled_grc     (:)   => null() ! not downscaled atm temperature (Kelvin)       
-     real(r8), pointer :: forc_th_not_downscaled_grc    (:)   => null() ! not downscaled atm potential temperature (Kelvin)    
-     real(r8), pointer :: forc_q_not_downscaled_grc     (:)   => null() ! not downscaled atm specific humidity (kg/kg)  
-     real(r8), pointer :: forc_pbot_not_downscaled_grc  (:)   => null() ! not downscaled atm pressure (Pa)              
-     real(r8), pointer :: forc_rho_not_downscaled_grc   (:)   => null() ! not downscaled atm density (kg/m**3)                      
-     real(r8), pointer :: forc_rain_not_downscaled_grc  (:)   => null() ! not downscaled atm rain rate [mm/s]                       
-     real(r8), pointer :: forc_snow_not_downscaled_grc  (:)   => null() ! not downscaled atm snow rate [mm/s]                       
-     real(r8), pointer :: forc_lwrad_not_downscaled_grc (:)   => null() ! not downscaled atm downwrd IR longwave radiation (W/m**2) 
+     real(r8), pointer :: forc_t_not_downscaled_grc     (:)   => null() ! not downscaled atm temperature (Kelvin)
+     real(r8), pointer :: forc_th_not_downscaled_grc    (:)   => null() ! not downscaled atm potential temperature (Kelvin)
+     real(r8), pointer :: forc_q_not_downscaled_grc     (:)   => null() ! not downscaled atm specific humidity (kg/kg)
+     real(r8), pointer :: forc_pbot_not_downscaled_grc  (:)   => null() ! not downscaled atm pressure (Pa)
+     real(r8), pointer :: forc_rho_not_downscaled_grc   (:)   => null() ! not downscaled atm density (kg/m**3)
+     real(r8), pointer :: forc_rain_not_downscaled_grc  (:)   => null() ! not downscaled atm rain rate [mm/s]
+     real(r8), pointer :: forc_snow_not_downscaled_grc  (:)   => null() ! not downscaled atm snow rate [mm/s]
+     real(r8), pointer :: forc_lwrad_not_downscaled_grc (:)   => null() ! not downscaled atm downwrd IR longwave radiation (W/m**2)
 
      ! atm->lnd downscaled
      real(r8), pointer :: forc_t_downscaled_col         (:)   => null() ! downscaled atm temperature (Kelvin)
@@ -113,27 +117,27 @@ module atm2lndType
      real(r8), pointer :: volrmch_grc                   (:)   => null() ! rof volr main channel (m3)
      real(r8), pointer :: supply_grc                    (:)   => null() ! rof volr supply (mm/s)
      real(r8), pointer :: deficit_grc                   (:)   => null() ! rof volr deficit (mm/s)
-	 
+
      ! anomaly forcing
-     real(r8), pointer :: af_precip_grc                 (:)   => null() ! anomaly forcing 
-     real(r8), pointer :: af_uwind_grc                  (:)   => null() ! anomaly forcing 
-     real(r8), pointer :: af_vwind_grc                  (:)   => null() ! anomaly forcing 
-     real(r8), pointer :: af_tbot_grc                   (:)   => null() ! anomaly forcing 
-     real(r8), pointer :: af_pbot_grc                   (:)   => null() ! anomaly forcing 
-     real(r8), pointer :: af_shum_grc                   (:)   => null() ! anomaly forcing 
-     real(r8), pointer :: af_swdn_grc                   (:)   => null() ! anomaly forcing 
-     real(r8), pointer :: af_lwdn_grc                   (:)   => null() ! anomaly forcing 
+     real(r8), pointer :: af_precip_grc                 (:)   => null() ! anomaly forcing
+     real(r8), pointer :: af_uwind_grc                  (:)   => null() ! anomaly forcing
+     real(r8), pointer :: af_vwind_grc                  (:)   => null() ! anomaly forcing
+     real(r8), pointer :: af_tbot_grc                   (:)   => null() ! anomaly forcing
+     real(r8), pointer :: af_pbot_grc                   (:)   => null() ! anomaly forcing
+     real(r8), pointer :: af_shum_grc                   (:)   => null() ! anomaly forcing
+     real(r8), pointer :: af_swdn_grc                   (:)   => null() ! anomaly forcing
+     real(r8), pointer :: af_lwdn_grc                   (:)   => null() ! anomaly forcing
      real(r8), pointer :: bc_precip_grc                 (:)   => null() ! anomaly forcing - add bias correction
 
      ! time averaged quantities
-     real(r8) , pointer :: fsd24_patch                  (:)   => null() ! patch 24hr average of direct beam radiation 
-     real(r8) , pointer :: fsd240_patch                 (:)   => null() ! patch 240hr average of direct beam radiation 
-     real(r8) , pointer :: fsi24_patch                  (:)   => null() ! patch 24hr average of diffuse beam radiation 
-     real(r8) , pointer :: fsi240_patch                 (:)   => null() ! patch 240hr average of diffuse beam radiation 
+     real(r8) , pointer :: fsd24_patch                  (:)   => null() ! patch 24hr average of direct beam radiation
+     real(r8) , pointer :: fsd240_patch                 (:)   => null() ! patch 240hr average of direct beam radiation
+     real(r8) , pointer :: fsi24_patch                  (:)   => null() ! patch 24hr average of diffuse beam radiation
+     real(r8) , pointer :: fsi240_patch                 (:)   => null() ! patch 240hr average of diffuse beam radiation
      real(r8) , pointer :: prec365_patch                (:)   => null() ! patch 365-day running mean of tot. precipitation
-     real(r8) , pointer :: prec60_patch                 (:)   => null() ! patch 60-day running mean of tot. precipitation (mm/s) 
-     real(r8) , pointer :: prec10_patch                 (:)   => null() ! patch 10-day running mean of tot. precipitation (mm/s) 
-     real(r8) , pointer :: prec24_patch                 (:)   => null() ! patch 24-hour running mean of tot. precipitation (mm/s) 
+     real(r8) , pointer :: prec60_patch                 (:)   => null() ! patch 60-day running mean of tot. precipitation (mm/s)
+     real(r8) , pointer :: prec10_patch                 (:)   => null() ! patch 10-day running mean of tot. precipitation (mm/s)
+     real(r8) , pointer :: prec24_patch                 (:)   => null() ! patch 24-hour running mean of tot. precipitation (mm/s)
      real(r8) , pointer :: rh24_patch                   (:)   => null() ! patch 24-hour running mean of relative humidity
      real(r8) , pointer :: wind24_patch                 (:)   => null() ! patch 24-hour running mean of wind
      real(r8) , pointer :: t_mo_patch                   (:)   => null() ! patch 30-day average temperature (Kelvin)
@@ -142,8 +146,8 @@ module atm2lndType
    contains
 
      procedure, public  :: Init
-     procedure, private :: InitAllocate 
-     procedure, private :: InitHistory  
+     procedure, private :: InitAllocate
+     procedure, private :: InitHistory
      procedure, public  :: InitAccBuffer
      procedure, public  :: InitAccVars
      procedure, public  :: UpdateAccVars
@@ -158,13 +162,22 @@ contains
   subroutine Init(this, bounds)
 
     class(atm2lnd_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
 
     call this%InitAllocate(bounds)
     call this%InitHistory(bounds)
-    
+
   end subroutine Init
 
+  subroutine cplBypassInitAllocate(this, bounds)
+    implicit none
+
+    class(cplbypass_atminput_type) :: this
+    type(bounds_type), intent(in) :: bounds
+
+
+
+  end subroutine cplBypassInitAllocate
   !------------------------------------------------------------------------
   subroutine InitAllocate(this, bounds)
     !
@@ -173,7 +186,7 @@ contains
     !
     ! !ARGUMENTS:
     class(atm2lnd_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     real(r8) :: ival  = 0.0_r8  ! initial value
@@ -191,16 +204,16 @@ contains
 
     ! atm->lnd
 
-    !DMR - variables added for CPL_BYPASS option 
+    !DMR - variables added for CPL_BYPASS option
 #ifdef CPL_BYPASS
     allocate(this%timelen                            (1:14))        ; this%timelen                       (:)   = ival_int
     allocate(this%timelen_spinup                     (1:14))        ; this%timelen_spinup                (:)   = ival_int
     allocate(this%tindex               (begg:endg,1:14,1:2))        ; this%tindex                    (:,:,:)   = ival_int
-    allocate(this%metsource                                )        ; this%metsource                           = ival_int   
+    allocate(this%metsource                                )        ; this%metsource                           = ival_int
     allocate(this%npf                                (1:14))        ; this%npf                           (:)   = ival
     !allocate(this%atm_input       (14,begg:endg,1,1:600000))        ; this%atm_input               (:,:,:,:)   = ival_short
     allocate(this%loaded_bypassdata                        )        ; this%loaded_bypassdata                   = 0
-    allocate(this%add_offsets                        (1:14))        ; this%add_offsets                   (:)   = ival_float 
+    allocate(this%add_offsets                        (1:14))        ; this%add_offsets                   (:)   = ival_float
     allocate(this%scale_factors                      (1:14))        ; this%scale_factors                 (:)   = ival_float
     allocate(this%startyear_met                            )        ; this%startyear_met                       = ival_int
     allocate(this%endyear_met_spinup                       )        ; this%endyear_met_spinup                  = ival_int
@@ -208,7 +221,7 @@ contains
     allocate(this%timeres                            (1:14))        ; this%timeres                       (:)   = ival
     allocate(this%var_offset              (14,begg:endg,12))        ; this%var_offset                (:,:,:)   = ival
     allocate(this%var_mult                (14,begg:endg,12))        ; this%var_mult                  (:,:,:)   = ival
-    allocate(this%co2_input                      (1,1,3000))        ; this%co2_input                 (:,:,:)   = ival    
+    allocate(this%co2_input                      (1,1,3000))        ; this%co2_input                 (:,:,:)   = ival
     allocate(this%c13o2_input                    (1,1,3000))        ; this%c13o2_input               (:,:,:)   = ival
     allocate(this%ndepind                     (begg:endg,2))        ; this%ndepind                     (:,:)   = ival_int
     allocate(this%hdmind                      (begg:endg,2))        ; this%hdmind                      (:,:)   = ival_int
@@ -216,7 +229,7 @@ contains
     allocate(this%forc_lnfm                     (begg:endg))        ; this%forc_lnfm                     (:)   = ival
     allocate(this%hdm1                          (720,360,1))        ; this%hdm1                      (:,:,:)   = ival
     allocate(this%hdm2                          (720,360,1))        ; this%hdm2                      (:,:,:)   = ival
-    allocate(this%lnfm                     (begg:endg,2920))        ; this%lnfm                        (:,:)   = ival 
+    allocate(this%lnfm                     (begg:endg,2920))        ; this%lnfm                        (:,:)   = ival
     allocate(this%ndep1                          (144,96,1))        ; this%ndep1                     (:,:,:)   = ival
     allocate(this%ndep2                          (144,96,1))        ; this%ndep2                     (:,:,:)   = ival
     allocate(this%aerodata                   (14,144,96,14))        ; this%aerodata                (:,:,:,:)   = ival
@@ -251,7 +264,7 @@ contains
     allocate(this%forc_lwrad_not_downscaled_grc (begg:endg))        ; this%forc_lwrad_not_downscaled_grc (:)   = ival
     allocate(this%forc_rain_not_downscaled_grc  (begg:endg))        ; this%forc_rain_not_downscaled_grc  (:)   = ival
     allocate(this%forc_snow_not_downscaled_grc  (begg:endg))        ; this%forc_snow_not_downscaled_grc  (:)   = ival
-    
+
     ! atm->lnd downscaled
     allocate(this%forc_t_downscaled_col         (begc:endc))        ; this%forc_t_downscaled_col         (:)   = ival
     allocate(this%forc_q_downscaled_col         (begc:endc))        ; this%forc_q_downscaled_col         (:)   = ival
@@ -305,7 +318,7 @@ contains
     !
     ! !ARGUMENTS:
     class(atm2lnd_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer  :: begg, endg
@@ -329,12 +342,12 @@ contains
     call hist_addfld1d (fname='VOLRMCH',  units='m3',  &
          avgflag='A', long_name='river channel main channel water storage', &
          ptr_lnd=this%volrmch_grc)
-		 
+
     this%supply_grc(begg:endg) = spval
     call hist_addfld1d (fname='SUPPLY',  units='mm/s',  &
          avgflag='A', long_name='runoff supply for land use', &
          ptr_lnd=this%supply_grc)
-         
+
     this%deficit_grc(begg:endg) = spval
     call hist_addfld1d (fname='DEFICIT',  units='mm/s',  &
          avgflag='A', long_name='runoff supply deficit', &
@@ -445,7 +458,7 @@ contains
    call hist_addfld1d (fname='HDM', units='counts/km^2',      &
          avgflag='A', long_name='human population density',   &
          ptr_lnd=this%forc_hdm, default='inactive')
-   
+
     call hist_addfld1d (fname='LNFM', units='counts/km^2/hr',  &
          avgflag='A', long_name='Lightning frequency',        &
          ptr_lnd=this%forc_lnfm, default='inactive')
@@ -482,13 +495,13 @@ contains
     ! This routine set defaults values that are then overwritten by the
     ! restart file for restart or branch runs
     !
-    ! !USES 
+    ! !USES
     use elm_varcon  , only : spval
     use accumulMod  , only : init_accum_field
     !
     ! !ARGUMENTS:
     class(atm2lnd_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !---------------------------------------------------------------------
 
     this%fsd24_patch(bounds%begp:bounds%endp) = spval
@@ -526,10 +539,10 @@ contains
             desc='24hr sum of precipitation', accum_type='runmean', accum_period=-1, &
             subgrid_type='pft', numlev=1, init_value=0._r8)
 
-       ! Fudge - this neds to be initialized from the restat file eventually. 
+       ! Fudge - this neds to be initialized from the restat file eventually.
        call init_accum_field (name='RH24', units='m', &
             desc='24hr average of RH', accum_type='runmean', accum_period=-1, &
-            subgrid_type='pft', numlev=1, init_value=100._r8) 
+            subgrid_type='pft', numlev=1, init_value=100._r8)
 
        call init_accum_field (name='WIND24', units='m', &
             desc='24hr average of wind', accum_type='runmean', accum_period=-1, &
@@ -544,16 +557,16 @@ contains
     ! !DESCRIPTION:
     ! Initialize module variables that are associated with
     ! time accumulated fields. This routine is called for both an initial run
-    ! and a restart run (and must therefore must be called after the restart file 
+    ! and a restart run (and must therefore must be called after the restart file
     ! is read in and the accumulation buffer is obtained)
     !
-    ! !USES 
+    ! !USES
     use accumulMod       , only : extract_accum_field
     use clm_time_manager , only : get_nstep
     !
     ! !ARGUMENTS:
     class(atm2lnd_type) :: this
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer  :: begp, endp
@@ -619,7 +632,7 @@ contains
     !
     ! !ARGUMENTS:
     class(atm2lnd_type)                 :: this
-    type(bounds_type)      , intent(in) :: bounds  
+    type(bounds_type)      , intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
     integer :: g,c,p                     ! indices
@@ -642,7 +655,7 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     endif
 
-    ! Accumulate and extract forc_solad24 & forc_solad240 
+    ! Accumulate and extract forc_solad24 & forc_solad240
     do p = begp,endp
        g = veg_pp%gridcell(p)
        rbufslp(p) = this%forc_solad_grc(g,1)
@@ -652,7 +665,7 @@ contains
     call update_accum_field  ('FSD24' , rbufslp               , nstep)
     call extract_accum_field ('FSD24' , this%fsd24_patch      , nstep)
 
-    ! Accumulate and extract forc_solai24 & forc_solai240 
+    ! Accumulate and extract forc_solai24 & forc_solai240
     do p = begp,endp
        g = veg_pp%gridcell(p)
        rbufslp(p) = this%forc_solai_grc(g,1)
@@ -684,7 +697,7 @@ contains
        do p = bounds%begp,bounds%endp
           c = veg_pp%column(p)
           g = veg_pp%gridcell(p)
-          rbufslp(p) = this%forc_wind_grc(g) 
+          rbufslp(p) = this%forc_wind_grc(g)
        end do
        call update_accum_field  ('WIND24', rbufslp, nstep)
        call extract_accum_field ('WIND24', this%wind24_patch, nstep)
@@ -692,7 +705,7 @@ contains
        do p = bounds%begp,bounds%endp
           c = veg_pp%column(p)
           g = veg_pp%gridcell(p)
-          rbufslp(p) = this%forc_rh_grc(g) 
+          rbufslp(p) = this%forc_rh_grc(g)
        end do
        call update_accum_field  ('RH24', rbufslp, nstep)
        call extract_accum_field ('RH24', this%rh24_patch, nstep)
@@ -704,19 +717,19 @@ contains
 
   !------------------------------------------------------------------------
   subroutine Restart(this, bounds, ncid, flag)
-    ! 
+    !
     ! !USES:
     use restUtilMod
     use ncdio_pio
     !
     ! !ARGUMENTS:
     class(atm2lnd_type) :: this
-    type(bounds_type), intent(in) :: bounds  
-    type(file_desc_t), intent(inout) :: ncid   
-    character(len=*) , intent(in)    :: flag   
+    type(bounds_type), intent(in) :: bounds
+    type(file_desc_t), intent(inout) :: ncid
+    character(len=*) , intent(in)    :: flag
     !
     ! !LOCAL VARIABLES:
-    logical            :: readvar 
+    logical            :: readvar
     !------------------------------------------------------------------------
 
     call restartvar(ncid=ncid, flag=flag, varname='qflx_floodg', xtype=ncd_double, &

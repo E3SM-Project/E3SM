@@ -79,7 +79,6 @@ module CNEcosystemDynBetrMod
     use SoilLittDecompMod            , only : SoilLittDecompAlloc
     use CNPhenologyBeTRMod           , only : CNPhenology
     use GrowthRespMod                , only : GrowthResp
-    use CarbonStateUpdate1Mod        , only : CarbonStateUpdate1,CarbonStateUpdate0
     use CNNStateUpdate1BeTRMod       , only : NStateUpdate1
     use CNGapMortalityBeTRMod        , only : CNGapMortality
     use CarbonStateUpdate2Mod        , only : CarbonStateUpdate2, CarbonStateUpdate2h
@@ -99,7 +98,6 @@ module CNEcosystemDynBetrMod
     use CNAllocationBetrMod       , only : SetPlantMicNPDemand, Allocation3_PlantCNPAlloc
     use CNNStateUpdate3BeTRMod    , only : NStateUpdate3
     use NitrogenDynamicsMod       , only : NitrogenFixation_balance
-    use PhosphorusStateUpdate1Mod , only : PhosphorusStateUpdate1
     use PhosphorusStateUpdate2Mod , only : PhosphorusStateUpdate2, PhosphorusStateUpdate2h
     use PhosphorusDynamicsMod     , only : PhosphorusBiochemMin_balance,PhosphorusDeposition,PhosphorusWeathering
     use VerticalProfileMod        , only : decomp_vertprofiles
@@ -310,23 +308,8 @@ module CNEcosystemDynBetrMod
                isotope=c14, isocol_cs=c14_col_cs, isoveg_cs=c14_veg_cs, isocol_cf=c14_col_cf, isoveg_cf=c14_veg_cf)
        end if
 
-       call CarbonStateUpdate1( num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            crop_vars, col_cs, veg_cs, col_cf, veg_cf, dt)
-
-       if ( use_c13 ) then
-          call CarbonStateUpdate1( num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               crop_vars, c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf,dt)
-       end if
-       if ( use_c14 ) then
-          call CarbonStateUpdate1( num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               crop_vars, c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf,dt)
-       end if
-
        call NStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars,nitrogenflux_vars, nitrogenstate_vars)
-
-       call PhosphorusStateUpdate1(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            cnstate_vars, dt)
 
        call t_stopf('CNUpdate1')
 
@@ -355,23 +338,6 @@ module CNEcosystemDynBetrMod
                isotope=c14, isocol_cs=c14_col_cs, isoveg_cs=c14_veg_cs, isocol_cf=c14_col_cf, isoveg_cf=c14_veg_cf)
        end if
 
-       call CarbonStateUpdate2( num_soilc, filter_soilc, num_soilp, filter_soilp, &
-             col_cs, veg_cs, col_cf, veg_cf, dt )
-
-       if ( use_c13 ) then
-          call CarbonStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf, dt)
-       end if
-       if ( use_c14 ) then
-          call CarbonStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf, dt)
-       end if
-       call NStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            nitrogenflux_vars, nitrogenstate_vars)
-
-       call PhosphorusStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            dt)
-
        if (get_do_harvest()) then
           call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars)
@@ -387,27 +353,6 @@ module CNEcosystemDynBetrMod
                cnstate_vars , &
                isotope=c14, isocol_cs=c14_col_cs, isoveg_cs=c14_veg_cs, isocol_cf=c14_col_cf, isoveg_cf=c14_veg_cf)
        end if
-
-       call CarbonStateUpdate2h( num_soilc, filter_soilc,  num_soilp, filter_soilp, &
-             col_cs, veg_cs, col_cf, veg_cf, dt)
-       if ( use_c13 ) then
-          call CarbonStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c13_col_cs, c13_veg_cs, c13_col_cf, c13_veg_cf, dt)
-       end if
-       if ( use_c14 ) then
-          call CarbonStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-               c14_col_cs, c13_veg_cs, c14_col_cf, c14_veg_cf, dt)
-       end if
-
-       call NStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            nitrogenflux_vars, nitrogenstate_vars)
-
-       call PhosphorusStateUpdate2h(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            dt)
-
-       call WoodProducts(num_soilc, filter_soilc )
-
-       call CropHarvestPools(num_soilc, filter_soilc, dt)
 
        call FireArea( num_soilc, filter_soilc, num_soilp, filter_soilp, &
             atm2lnd_vars, energyflux_vars, soilhydrology_vars, &

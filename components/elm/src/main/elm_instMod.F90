@@ -41,7 +41,7 @@ module elm_instMod
   use WaterfluxType              , only : waterflux_type,   waterflux_vars
   use WaterstateType             , only : waterstate_type, waterstate_vars
   use VOCEmissionMod             , only : vocemis_type
-  use atm2lndType                , only : atm2lnd_type
+  use atm2lndType                , only : atm2lnd_type, cplbypass_atminput_type
   use lnd2atmType                , only : lnd2atm_type
   use lnd2glcMod                 , only : lnd2glc_type
   use glc2lndMod                 , only : glc2lnd_type
@@ -131,9 +131,13 @@ module elm_instMod
   type(hlm_fates_interface_type)                      :: alm_fates
   class(betr_simulation_alm_type), pointer            :: ep_betr
   type(PlantMicKinetics_type)                         :: PlantMicKinetics_vars
+  
+  type(cplbypass_atminput_type)                       :: cpl_bypass_input 
+ 
   public :: elm_inst_biogeochem
   public :: elm_inst_biogeophys
   public :: alm_fates
+    
 
   !$acc declare create(ch4_vars)
   !$acc declare create(crop_vars)

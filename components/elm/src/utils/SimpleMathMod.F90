@@ -83,7 +83,7 @@ contains
   !USES
   use shr_kind_mod, only: r8 => shr_kind_r8
   implicit none
-  integer,  intent(in) :: ubj1         !right bound of dim 1
+  integer,  intent(in) :: lbj2         !right bound of dim 1
   integer,  intent(in) :: ubj2         !right bound of dim 2
   integer,  intent(in) :: numf         !filter size
   integer,  intent(in) :: filter(:)    !filter

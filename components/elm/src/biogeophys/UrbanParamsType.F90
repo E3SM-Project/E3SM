@@ -107,7 +107,7 @@ module UrbanParamsType
   !$acc declare copyin(urban_hac_off     )
   !$acc declare copyin(urban_hac_on      )
   !$acc declare copyin(urban_wasteheat_on)
-  !!!$acc declare copyin(urban_hac       )
+  !$acc declare create(urban_hac       )
   !$acc declare copyin(urban_traffic     )
   !-----------------------------------------------------------------------
 

@@ -1712,7 +1712,6 @@ contains
               end if
               plant_nalloc(p) = (plant_ndemand(p) + retransn_to_npool(p)) / r
 
-       end if
               if ( carbon_only  .or.  carbonnitrogen_only ) then
                 r = 1.0_r8
               else
@@ -1939,7 +1938,6 @@ contains
        ! (2) maintain plant NC stoichiometry at optimal ratio under CP mode
        ! (3) maintain plant PC/NC stoichiometry at optimal ratios under C mode
 
-     !end do ! end pft loop
 
      end associate
   end subroutine DistributeN_RD

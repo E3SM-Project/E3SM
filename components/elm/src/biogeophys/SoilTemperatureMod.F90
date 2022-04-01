@@ -29,15 +29,18 @@ module SoilTemperatureMod
   use VegetationDataType, only : veg_ef, veg_wf
   use timeinfoMod
   use perfMod_GPU
+  use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
+
+
   use ExternalModelConstants   , only : EM_ID_PTM
   use ExternalModelConstants   , only : EM_PTM_TBASED_SOLVE_STAGE
   use ExternalModelInterfaceMod, only : EMI_Driver
 
   !! Needed beacuse EMI is still using them as arguments
-  use WaterstateType    , only : waterstate_type
-  use TemperatureType   , only : temperature_type
-  use WaterfluxType     , only : waterflux_type
-  use elm_instMod , only : waterflux_vars, waterstate_vars, temperature_vars
+!   use WaterstateType    , only : waterstate_type
+!   use TemperatureType   , only : temperature_type
+!   use WaterfluxType     , only : waterflux_type
+!   use elm_instMod , only : waterflux_vars, waterstate_vars, temperature_vars
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -47,7 +50,7 @@ module SoilTemperatureMod
   public :: SoilTemperature
   !
   !    -> SoilTemperature:      soil/snow and ground temperatures
-  !          -> SoilTermProp    thermal conductivities and heat capacities
+  !          -> SoilTermProp    thermal: conductivities and heat capacities
   !          -> Tridiagonal     tridiagonal matrix solution
   !          -> PhaseChange     phase change of liquid/ice contents
   !
@@ -148,8 +151,8 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine SoilTemperature(bounds, num_urbanl, filter_urbanl, num_nolakec, filter_nolakec, &
-       atm2lnd_vars, urbanparams_vars, canopystate_vars, &
-       solarabs_vars, soilstate_vars, energyflux_vars )
+       urbanparams_vars, canopystate_vars, &
+       solarabs_vars, soilstate_vars )
     !
     ! !DESCRIPTION:
     ! Snow and soil temperatures including phase change
@@ -171,15 +174,12 @@ contains
     !   results in a tridiagonal system equation.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varpar               , only : nlevsno, nlevgrnd, nlevurb
     use elm_varctl               , only : iulog
     use elm_varcon               , only : cnfac, cpice, cpliq, denh2o
     use landunit_varcon          , only : istice, istice_mec, istsoil, istcrop
     use column_varcon            , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv
     use landunit_varcon          , only : istwet, istice, istice_mec, istsoil, istcrop
-    use BandDiagonalMod          , only : BandDiagonal
-
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -187,12 +187,10 @@ contains
     integer                , intent(in)    :: filter_nolakec(:)                  ! column filter for non-lake points
     integer                , intent(in)    :: num_urbanl                         ! number of urban landunits in clump
     integer                , intent(in)    :: filter_urbanl(:)                   ! urban landunit filter
-    type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
     type(urbanparams_type) , intent(in)    :: urbanparams_vars
     type(canopystate_type) , intent(in)    :: canopystate_vars
     type(soilstate_type)   , intent(inout) :: soilstate_vars
     type(solarabs_type)    , intent(inout) :: solarabs_vars
-    type(energyflux_type)  , intent(inout) :: energyflux_vars
     real(r8) :: dtime                                                       ! land model time step (sec)
 
     !
@@ -200,8 +198,8 @@ contains
     integer  :: j,c,l,g,pi                                                  ! indices
     integer  :: fc                                                          ! lake filtered column indices
     integer  :: fl                                                          ! urban filtered landunit indices
-    integer  :: jtop(bounds%begc:bounds%endc)                               ! top level at each column
-    real(r8) :: cv (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)            ! heat capacity [J/(m2 K)]
+   !  integer  :: jtop(bounds%begc:bounds%endc)                               ! top level at each column
+    real(r8) :: cv (num_nolakec,-nlevsno+1:nlevgrnd)            ! heat capacity [J/(m2 K)]
     real(r8) :: tk (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)            ! thermal conductivity [W/(m K)]
     real(r8) :: fn (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)            ! heat diffusion through the layer interface [W/m2]
     real(r8) :: fn1(bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)            ! heat diffusion through the layer interface [W/m2]
@@ -212,7 +210,7 @@ contains
     real(r8) :: hs_top(bounds%begc:bounds%endc)                             ! net energy flux into surface layer (col) [W/m2]
     logical  :: cool_on(bounds%begl:bounds%endl)                            ! is urban air conditioning on?
     logical  :: heat_on(bounds%begl:bounds%endl)                            ! is urban heating on?
-    real(r8) :: fn_h2osfc(bounds%begc:bounds%endc)                          ! heat diffusion through standing-water/soil interface [W/m2]
+   !  real(r8) :: fn_h2osfc(bounds%begc:bounds%endc)                          ! heat diffusion through standing-water/soil interface [W/m2]
     real(r8) :: dz_h2osfc(bounds%begc:bounds%endc)                          ! height of standing surface water [m]
     real(r8) :: tvector_nourbanc(bounds%begc:bounds%endc,-nlevsno:nlevgrnd) ! initial temperature solution for non-urban columns [Kelvin]
     real(r8) :: tvector_urbanc(bounds%begc:bounds%endc,-nlevsno:nlevgrnd)   ! initial temperature solution for urban columns [Kelvin]
@@ -230,6 +228,8 @@ contains
     integer, allocatable :: filter_lun(:)
     logical  :: urban_column
     logical  :: update_temperature
+    real :: startt, stopt
+    real(r8) :: sum1, sum2  
     !-----------------------------------------------------------------------
 
     associate(                                                                   &
@@ -255,13 +255,13 @@ contains
          qflx_ev_soil            => veg_wf%qflx_ev_soil       , & ! Input:  [real(r8) (:)   ]  evaporation flux from soil (W/m**2) [+ to atm]
          qflx_ev_h2osfc          => veg_wf%qflx_ev_h2osfc     , & ! Input:  [real(r8) (:)   ]  evaporation flux from h2osfc (W/m**2) [+ to atm]
 
-         sabg_soil               => solarabs_vars%sabg_soil_patch           , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by soil (W/m**2)
-         sabg_snow               => solarabs_vars%sabg_snow_patch           , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by snow (W/m**2)
-         sabg_chk                => solarabs_vars%sabg_chk_patch            , & ! Output: [real(r8) (:)   ]  sum of soil/snow using current fsno, for balance check
-         sabg_lyr                => solarabs_vars%sabg_lyr_patch            , & ! Input:  [real(r8) (:,:) ]  absorbed solar radiation (pft,lyr) [W/m2]
-         sabg                    => solarabs_vars%sabg_patch                , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by ground (W/m**2)
+         sabg_soil               => solarabs_vars%sabg_soil_patch  , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by soil (W/m**2)
+         sabg_snow               => solarabs_vars%sabg_snow_patch  , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by snow (W/m**2)
+         sabg_chk                => solarabs_vars%sabg_chk_patch   , & ! Output: [real(r8) (:)   ]  sum of soil/snow using current fsno, for balance check
+         sabg_lyr                => solarabs_vars%sabg_lyr_patch   , & ! Input:  [real(r8) (:,:) ]  absorbed solar radiation (pft,lyr) [W/m2]
+         sabg                    => solarabs_vars%sabg_patch       , & ! Input:  [real(r8) (:)   ]  solar radiation absorbed by ground (W/m**2)
 
-         htvp                    => col_ef%htvp               , & ! Input:  [real(r8) (:)   ]  latent heat of vapor of water (or sublimation) [j/kg]
+         htvp                    => col_ef%htvp              , & ! Input:  [real(r8) (:)   ]  latent heat of vapor of water (or sublimation) [j/kg]
          cgrnd                   => veg_ef%cgrnd             , & ! Input:  [real(r8) (:)   ]  deriv. of soil energy flux wrt to soil temp [w/m2/k]
          dlrad                   => veg_ef%dlrad             , & ! Input:  [real(r8) (:)   ]  downward longwave radiation blow the canopy [W/m2]
          eflx_sh_grnd            => veg_ef%eflx_sh_grnd      , & ! Input:  [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
@@ -272,7 +272,7 @@ contains
          eflx_bot                => col_ef%eflx_bot            , & ! Input:  [real(r8) (:)   ]  heat flux from beneath column (W/m**2) [+ = upward]
          eflx_fgr12              => col_ef%eflx_fgr12          , & ! Input:  [real(r8) (:)   ]  heat flux between soil layer 1 and 2 (W/m2)
          eflx_fgr                => col_ef%eflx_fgr            , & ! Input:  [real(r8) (:,:) ]  (rural) soil downward heat flux (W/m2) (1:nlevgrnd)
-         eflx_gnet               => veg_ef%eflx_gnet         , & ! Output: [real(r8) (:)   ]  net ground heat flux into the surface (W/m**2)
+         eflx_gnet               => veg_ef%eflx_gnet           , & ! Output: [real(r8) (:)   ]  net ground heat flux into the surface (W/m**2)
          eflx_building_heat      => col_ef%eflx_building_heat  , & ! Output: [real(r8) (:)   ]  heat flux from urban building interior to walls, roof (W/m**2)
          eflx_urban_ac           => col_ef%eflx_urban_ac       , & ! Output: [real(r8) (:)   ]  urban air conditioning flux (W/m**2)
          eflx_urban_heat         => col_ef%eflx_urban_heat     , & ! Output: [real(r8) (:)   ]  urban heating flux (W/m**2)
@@ -300,6 +300,12 @@ contains
 
       ! Restrict internal building temperature to between min and max
       ! and determine if heating or air conditioning is on
+      !$acc enter data create(cool_on(bounds%begl:bounds%endl), &
+      !$acc      heat_on(bounds%begl:bounds%endl), jbot(begc:endc), &
+      !$acc    fn(:,:), fn1(:,:), hs_top(:),dz_h2osfc(:), &
+      !$acc    dhsdT(:), hs_soil(:), hs_top_snow(:), hs_h2osfc(:),sabg_lyr_col(bounds%begc:bounds%endc,-nlevsno+1:1) )
+
+      !$acc parallel loop independent gang vector default(present) 
       do fl = 1,num_urbanl
          l = filter_urbanl(fl)
          if (lun_pp%urbpoi(l)) then
@@ -319,10 +325,11 @@ contains
 
       ! set up compact matrix for band diagonal solver, requires additional
       !     sub/super diagonals (1 each), and one additional row for t_h2osfc
-      jtop = -9999
+      ! jtop(:) = -9999
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
-         jtop(c) = snl(c)
+         ! jtop(c) = snl(c)
          ! compute jbot
          if ((col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
               .or. col_pp%itype(c) == icol_roof) ) then
@@ -336,16 +343,22 @@ contains
       ! Setup two new filters:
       ! - filter_nolakec_and_nourbanc: No Lakes + No Urban columns
       ! - filter_nolakec_and_urbanc  : No Lakes + Urban columns
-      !
+      ! 
+
       num_nolakec_and_nourbanc = 0
       num_nolakec_and_urbanc   = 0
+      !$acc parallel loop independent gang vector copy(num_nolakec_and_nourbanc, num_nolakec_and_urbanc)
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
          if (lun_pp%urbpoi(l)) then
+            !$acc atomic update 
             num_nolakec_and_urbanc = num_nolakec_and_urbanc + 1
+            !$acc end atomic 
          else
+            !$acc atomic update 
             num_nolakec_and_nourbanc = num_nolakec_and_nourbanc + 1
+            !$acc end atomic 
          endif
       enddo
 
@@ -354,20 +367,33 @@ contains
 
       num_nolakec_and_nourbanc = 0
       num_nolakec_and_urbanc   = 0
+      !$acc enter data copyin(num_nolakec_and_nourbanc, num_nolakec_and_urbanc ) &
+      !$acc       create(filter_nolakec_and_nourbanc(:), filter_nolakec_and_urbanc(:) )
+
+      !$acc parallel loop independent gang vector default(present) private(fl,c,l)
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
          if (lun_pp%urbpoi(l)) then
+            !$acc atomic capture 
             num_nolakec_and_urbanc = num_nolakec_and_urbanc + 1
-            filter_nolakec_and_urbanc(num_nolakec_and_urbanc) = c
+            fl = num_nolakec_and_urbanc
+            !$acc end atomic 
+            filter_nolakec_and_urbanc(fl) = c
          else
+            !$acc atomic capture
             num_nolakec_and_nourbanc = num_nolakec_and_nourbanc + 1
-            filter_nolakec_and_nourbanc(num_nolakec_and_nourbanc) = c
+            fl = num_nolakec_and_nourbanc
+            !$acc end atomic 
+            filter_nolakec_and_nourbanc(fl) = c
          endif
       end do
 
       num_filter_lun = bounds%endl - bounds%begl + 1
       allocate(filter_lun(num_filter_lun))
+      !$acc enter data create(filter_lun(1:num_filter_lun) ) 
+
+      !$acc parallel loop independent gang vector default(present) 
       do fc = 1, num_filter_lun
          filter_lun(fc) = bounds%begl + fc - 1
       enddo
@@ -377,18 +403,21 @@ contains
       !------------------------------------------------------
 
       ! Thermal conductivity and Heat capacity
-
       tk_h2osfc(begc:endc) = spval
+      call cpu_time(startt) 
+      !$acc enter data create(tk(:,:), cv(:,:)) copyin(tk_h2osfc(:))
       call SoilThermProp(bounds, num_nolakec, filter_nolakec, &
            tk(begc:endc, :), &
-           cv(begc:endc, :), &
+           cv(1:num_nolakec, :), &
            tk_h2osfc(begc:endc), &
            urbanparams_vars, soilstate_vars)
-
+      call cpu_time(stopt)
+      write(iulog,*) "SoilTemp:: SoilThermProp ",(stopt-startt)*1.E+3,"ms"  
       ! Net ground heat flux into the surface and its temperature derivative
       ! Added a patches loop here to get the average of hs and dhsdT over
       ! all Patches on the column. Precalculate the terms that do not depend on PFT.
 
+      call cpu_time(startt) 
       call ComputeGroundHeatFluxAndDeriv(bounds, num_nolakec, filter_nolakec, &
            hs_h2osfc( begc:endc ),                                            &
            hs_top_snow( begc:endc ),                                          &
@@ -396,8 +425,10 @@ contains
            hs_top( begc:endc ),                                               &
            dhsdT( begc:endc ),                                                &
            sabg_lyr_col( begc:endc, -nlevsno+1: ),                            &
-           atm2lnd_vars, urbanparams_vars, canopystate_vars, &
-           solarabs_vars, energyflux_vars)
+           urbanparams_vars, canopystate_vars, &
+           solarabs_vars)
+      call cpu_time(stopt) 
+      write(iulog,*) "SoilTemp::ComputeGroundHeatFluxAndDeriv ", (stopt-startt)*1.E+3,"ms"
 
       ! Determine heat diffusion through the layer interface and factor used in computing
       ! banded diagonal matrix and set up vector r and vectors a, b, c that define banded
@@ -406,13 +437,12 @@ contains
       call ComputeHeatDiffFluxAndFactor(bounds, num_nolakec, filter_nolakec, &
            dtime,                                                            &
            tk( begc:endc, -nlevsno+1: ),                                     &
-           cv( begc:endc, -nlevsno+1: ),                                     &
+           cv( 1:num_nolakec, -nlevsno+1: ),                                 &
            fn( begc:endc, -nlevsno+1: ),                                     &
-           fact( begc:endc, -nlevsno+1: ),                                   &
-           energyflux_vars)
+           fact( begc:endc, -nlevsno+1: ) )
 
       ! compute thermal properties of h2osfc
-
+      !$acc parallel loop independent gang vector default(present) 
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          if ( (h2osfc(c) > thin_sfclayer) .and. (frac_h2osfc(c) > thin_sfclayer) ) then
@@ -428,21 +458,37 @@ contains
 
       tvector_nourbanc(begc:endc, :) = spval
       tvector_urbanc(  begc:endc, :) = spval
-      do fc = 1,num_nolakec
-         c = filter_nolakec(fc)
-         do j = snl(c)+1, 0
+
+      !$acc enter data copyin(tvector_nourbanc(:,:), tvector_urbanc(:,:))
+
+      !$acc parallel loop independent gang default(present) 
+      do j = snl(c)+1, 0
+         !$acc loop vector independent
+         do fc = 1,num_nolakec
+            c = filter_nolakec(fc)
             tvector_nourbanc(c,j-1) = t_soisno(c,j)
             tvector_urbanc(  c,j-1) = t_soisno(c,j)
          end do
+      enddo
+      
+      !$acc parallel loop independent gang default(present) 
+      do j=1,nlevgrnd
+         !$acc loop vector independent 
+         do fc = 1,num_nolakec
+            c = filter_nolakec(fc) 
+            ! soil layers; top layer will have one offset and one extra coefficient
+            tvector_nourbanc(c,j) = t_soisno(c,j)
+            tvector_urbanc(c,j)   = t_soisno(c,j)
+         end do 
+      enddo
+      
+      !$acc parallel loop independent gang vector default(present)
+      do fc = 1, num_nolakec 
+         c = filter_nolakec(fc)
          ! surface water layer has two coefficients
          tvector_nourbanc(c,0) = t_h2osfc(c)
          tvector_urbanc(  c,0) = t_h2osfc(c)
-
-         ! soil layers; top layer will have one offset and one extra coefficient
-         tvector_nourbanc(c,1:nlevgrnd) = t_soisno(c,1:nlevgrnd)
-         tvector_urbanc(c,1:nlevgrnd)   = t_soisno(c,1:nlevgrnd)
-      enddo
-
+      end do 
 
       !
       ! Solve temperature for non-lake + non-urban columns
@@ -451,7 +497,7 @@ contains
       update_temperature = .true.
       select case(thermal_model)
       case (default_thermal_model)
-
+         call cpu_time(startt) 
          urban_column = .false.
          call SolveTemperature(bounds,                &
               num_nolakec_and_nourbanc,               &
@@ -469,11 +515,12 @@ contains
               fn( begc:endc, -nlevsno+1: ),           &
               c_h2osfc( begc:endc ),                  &
               dz_h2osfc( begc:endc ),                 &
-              jtop( begc:endc ),                      &
+              snl( begc:endc ),                      &
               jbot( begc:endc ),                      &
               urban_column,                           &
               tvector_nourbanc( begc:endc, -nlevsno: ))
-
+         call cpu_time(stopt) 
+         write(iulog,*) "SoilTemp::SolveTemp NonUrban ",(stopt-startt)*1.e+3,"ms"
       case (petsc_thermal_model)
 #ifdef USE_PETSC_LIB
          update_temperature = .false.
@@ -484,9 +531,7 @@ contains
              dhsdT( begc:endc ),                    &
              hs_soil( begc:endc ),                  &
              hs_top_snow( begc:endc ),              &
-             hs_h2osfc( begc:endc ),                &
-             energyflux_vars                        &
-             )
+             hs_h2osfc( begc:endc ) )
 
         call EMI_Driver(EM_ID_PTM,                                      &
              EM_PTM_TBASED_SOLVE_STAGE,                                 &
@@ -505,7 +550,7 @@ contains
       !
       ! Solve temperature for lake + urban column
       !
-
+      call cpu_time(startt) 
       urban_column = .true.
       call SolveTemperature(bounds,                &
            num_nolakec_and_urbanc,                 &
@@ -523,13 +568,18 @@ contains
            fn( begc:endc, -nlevsno+1: ),           &
            c_h2osfc( begc:endc ),                  &
            dz_h2osfc( begc:endc ),                 &
-           jtop( begc:endc ),                      &
+           snl( begc:endc ),                      &
            jbot( begc:endc ),                      &
            urban_column,                           &
            tvector_urbanc( begc:endc, -nlevsno: ))
 
+      call cpu_time(stopt) 
+      write(iulog,*) "SoilTemp::SolveTemp Urban ",(stopt-startt)*1.e+3,"ms"
+
       ! return temperatures to original array
 
+       call cpu_time(startt) 
+      !$acc parallel loop independent gang vector default(present) 
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
@@ -548,7 +598,7 @@ contains
 
          else
 
-            if (update_temperature) then
+            if (.true.) then !update_temperature) then
                do j = snl(c)+1, 0
                   t_soisno(c,j)       = tvector_nourbanc(c,j-1)        !snow layers
                end do
@@ -566,7 +616,7 @@ contains
       enddo
 
       ! Melting or Freezing
-
+      !$acc parallel loop independent gang vector collapse(2) default(present) 
       do j = -nlevsno+1,nlevgrnd
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
@@ -598,6 +648,7 @@ contains
          end do
       end do
 
+      !$acc parallel loop independent gang vector default(present) 
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
@@ -620,19 +671,22 @@ contains
          end if
       end do
 
+      call cpu_time(stopt) 
+      write(iulog,*) "SoilTemp::PrePhaseChange"
       ! compute phase change of h2osfc
 
-      do fc = 1,num_nolakec
-         c = filter_nolakec(fc)
-         xmf_h2osfc(c) = 0.
-      end do
+      ! do fc = 1,num_nolakec
+      !    c = filter_nolakec(fc)
+      !    xmf_h2osfc(c) = 0.
+      ! end do
 
       call PhaseChangeH2osfc (bounds, num_nolakec, filter_nolakec, &
-           dhsdT(bounds%begc:bounds%endc), energyflux_vars,dtime )
+           dhsdT(bounds%begc:bounds%endc),dtime )
 
       call Phasechange_beta (bounds, num_nolakec, filter_nolakec, &
-           dhsdT(bounds%begc:bounds%endc), soilstate_vars, energyflux_vars, dtime)
+           dhsdT(bounds%begc:bounds%endc), soilstate_vars, dtime)
 
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          ! this expression will (should) work whether there is snow or not
@@ -656,7 +710,7 @@ contains
       end do
 
       ! Initialize soil heat content
-
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
@@ -668,7 +722,8 @@ contains
       end do
 
       ! Calculate soil heat content and soil plus snow heat content
-
+      !NOTE:  Split into reduction loop 
+      !$acc parallel loop independent gang vector collapse(2) default(present) 
       do j = -nlevsno+1,nlevgrnd
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
@@ -685,20 +740,47 @@ contains
 
             if (.not. lun_pp%urbpoi(l)) then
                if (j >= snl(c)+1) then
-                  hc_soisno(c) = hc_soisno(c) + cv(c,j)*t_soisno(c,j) / 1.e6_r8
+                  !$acc atomic update 
+                  hc_soisno(c) = hc_soisno(c) + cv(fc,j)*t_soisno(c,j) / 1.e6_r8
+                  !$acc end atomic 
                endif
                if (j >= 1) then
-                  hc_soi(c) = hc_soi(c) + cv(c,j)*t_soisno(c,j) / 1.e6_r8
+                  !$acc atomic update 
+                  hc_soi(c) = hc_soi(c) + cv(fc,j)*t_soisno(c,j) / 1.e6_r8
+                  !$acc end atomic 
                end if
             end if
          end do
       end do
 
-
+      !$acc parallel loop independent gang worker default(present) private(sum1,sum2)  
+      do fc = 1,num_nolakec
+         c = filter_nolakec(fc)
+         l = col_pp%landunit(c)
+         sum1 = 0.0_r8 ; sum2 = 0.0_r8 
+         if (.not. lun_pp%urbpoi(l)) then
+            !$acc loop vector reduction(+:sum1,sum2) 
+            do j = -nlevsno+1,nlevgrnd
+               if (j >= snl(c)+1) then
+                  sum1 = sum1 + cv(fc,j)*t_soisno(c,j) / 1.e6_r8
+               endif
+               if (j >= 1) then
+                  sum2 = sum2 + cv(fc,j)*t_soisno(c,j) / 1.e6_r8
+               end if
+            end do
+            hc_soisno(c) = hc_soisno(c) + sum1
+            hc_soi(c)    = hc_soi(c) + sum2 
+         end if
+      end do
       ! Free up memory
       deallocate(filter_nolakec_and_nourbanc)
       deallocate(filter_nolakec_and_urbanc  )
       deallocate(filter_lun                 )
+      !$acc exit data delete(cool_on(:),heat_on(:), jbot(:), num_nolakec_and_nourbanc, &
+      !$acc    num_nolakec_and_urbanc, filter_nolakec_and_nourbanc(:), filter_nolakec_and_urbanc(:), &
+      !$acc    filter_lun(:), tk(:,:), cv(:,:),tk_h2osfc(:), &
+      !$acc    tvector_nourbanc(:,:), tvector_urbanc(:,:), fn(:,:), fn1(:,:), hs_top(:),dz_h2osfc(:), &
+      !$acc    dhsdT(:), hs_soil(:), hs_top_snow(:), hs_h2osfc(:),sabg_lyr_col(bounds%begc:bounds%endc,-nlevsno+1:1) )
 
     end associate
 
@@ -716,13 +798,12 @@ contains
     !  Assembles and solves the banded penta-diagonal system of equations
     !
     ! !USES:
-      !$acc routine seq
     use elm_varpar       , only : nlevsno, nlevgrnd, nlevurb
     use elm_varctl       , only : iulog
     use elm_varcon       , only : cnfac, cpice, cpliq, denh2o
     use landunit_varcon  , only : istice, istice_mec, istsoil, istcrop
-    use landunit_varcon  , only : istwet, istice, istice_mec, istsoil, istcrop
-    use BandDiagonalMod  , only : BandDiagonal
+    use landunit_varcon  , only : istwet, istsoil
+    use BandDiagonalMod  , only : BandDiagonal, BandDiagonal_noloop
     !
     ! !ARGUMENTS:
     implicit none
@@ -753,7 +834,7 @@ contains
     integer, parameter :: nband=5
     real(r8)           :: bmatrix(bounds%begc:bounds%endc,nband,-nlevsno:nlevgrnd) ! banded matrix for numerical solution of temperature
     real(r8)           :: rvector(bounds%begc:bounds%endc,-nlevsno:nlevgrnd)       ! RHS vector for numerical solution of temperature
-
+    real  :: startt, stopt 
     character(len=64) :: event
     !-----------------------------------------------------------------------
 
@@ -763,7 +844,9 @@ contains
          )
 
       ! Enforce expected array sizes
-
+    call cpu_time(startt) 
+    !$acc enter data create(rvector(:,:), bmatrix(:,:,:) )
+    
     call SetRHSVec(bounds, num_filter, filter,   &
          dtime,                                  &
          hs_h2osfc( begc:endc ),                 &
@@ -780,9 +863,11 @@ contains
          dz_h2osfc( begc:endc ),                 &
          urban_column,                           &
          rvector( begc:endc, -nlevsno: ))
-
+    call cpu_time(stopt) 
+    write(iulog, *) "SoilTemp::SetRHSVec ",(stopt-startt)*1.E+3,"ms"
     ! Set up the banded diagonal matrix
-
+    
+    call cpu_time(startt) 
     call SetMatrix(bounds, num_filter, filter,   &
          dtime,                                  &
          nband,                                  &
@@ -794,16 +879,26 @@ contains
          dz_h2osfc( begc:endc ),                 &
          urban_column,                           &
          bmatrix( begc:endc, 1:, -nlevsno: ))
-
+     
+    call cpu_time(stopt) 
+    write(iulog,*) "SoilTemp::SetMatrix ",(stopt-startt)*1.E+3,"ms"
 
     ! Solve the system
     event = 'SoilTempBandDiag'
     call t_start_lnd(event)
-    call BandDiagonal(bounds, -nlevsno, nlevgrnd, jtop(begc:endc), jbot(begc:endc), &
-         num_filter, filter, nband, bmatrix(begc:endc, :, :), &
-         rvector(begc:endc, :), tvector(begc:endc, :))
+    !$acc parallel loop independent gang vector default(present) 
+    do fc = 1, num_filter
+      c = filter(fc) 
+      call BandDiagonal_noloop(c, -nlevsno, nlevgrnd, jtop(:), jbot(:), &
+         nband, bmatrix(:, :, :), rvector(:, :), tvector(:, :))
+    end do 
+   !  call BandDiagonal(bounds, -nlevsno, nlevgrnd, jtop(begc:endc), jbot(begc:endc), &
+   !       num_filter, filter, nband, bmatrix(begc:endc, :, :), &
+   !       rvector(begc:endc, :), tvector(begc:endc, :))
     call t_stop_lnd(event)
-
+   
+    !$acc exit data delete(rvector(:,:), bmatrix(:,:,:) )
+   
   end associate
 
   end subroutine SolveTemperature
@@ -829,7 +924,6 @@ contains
     ! flux from the interface to the node j+1.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varpar      , only : nlevsno, nlevgrnd, nlevurb, nlevsoi
     use elm_varcon      , only : denh2o, denice, tfrz, tkwat, tkice, tkair, cpice,  cpliq, thk_bedrock
     use landunit_varcon , only : istice, istice_mec, istwet
@@ -840,7 +934,7 @@ contains
     type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_nolakec                      ! number of column non-lake points in column filter
     integer                , intent(in)    :: filter_nolakec(:)                ! column filter for non-lake points
-    real(r8)               , intent(out)   :: cv( bounds%begc: , -nlevsno+1: ) ! heat capacity [J/(m2 K)                              ] [col, lev]
+    real(r8)               , intent(out)   :: cv( 1: , -nlevsno+1: ) ! heat capacity [J/(m2 K)                              ] [col, lev]
     real(r8)               , intent(out)   :: tk( bounds%begc: , -nlevsno+1: ) ! thermal conductivity at the layer interface [W/(m K) ] [col, lev]
     real(r8)               , intent(out)   :: tk_h2osfc( bounds%begc: )        ! thermal conductivity of h2osfc [W/(m K)              ] [col]
     type(urbanparams_type) , intent(in)    :: urbanparams_vars
@@ -897,7 +991,9 @@ contains
       ! scheme with direct measurements from dry districts in two cities, J. Appl. Meteorol.,
       ! 41, 1011-1026.
 
+      !$acc parallel loop gang independent default(present) 
       do j = -nlevsno+1,nlevgrnd
+         !$acc loop vector independent 
          do fc = 1, num_nolakec
             c = filter_nolakec(fc)
             nlevbed = nlev2bed(c)
@@ -950,13 +1046,13 @@ contains
                bw(c,j) = (h2osoi_ice(c,j)+h2osoi_liq(c,j))/(frac_sno(c)*dz(c,j))
                thk(c,j) = tkair + (7.75e-5_r8 *bw(c,j) + 1.105e-6_r8*bw(c,j)*bw(c,j))*(tkice-tkair)
             end if
-
          end do
       end do
 
       ! Thermal conductivity at the layer interface
-
+      !$acc parallel loop independent gang default(present) 
       do j = -nlevsno+1,nlevgrnd
+         !$acc loop vector independent 
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
             if ((col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
@@ -984,6 +1080,7 @@ contains
       end do
 
       ! calculate thermal conductivity of h2osfc
+      !$acc parallel loop independent gang vector default(present)  private(c,zh2osfc)
       do fc = 1, num_nolakec
          c = filter_nolakec(fc)
          zh2osfc=1.0e-3*(0.5*h2osfc(c)) !convert to [m] from [mm]
@@ -995,31 +1092,31 @@ contains
       ! Urban values are from Masson et al. 2002, Evaluation of the Town Energy Balance (TEB)
       ! scheme with direct measurements from dry districts in two cities, J. Appl. Meteorol.,
       ! 41, 1011-1026.
-
+      !$acc parallel loop gang vector collapse(2) independent default(present)
       do j = 1, nlevgrnd
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
             l = col_pp%landunit(c)
             nlevbed = nlev2bed(c)
             if ((col_pp%itype(c) == icol_sunwall .OR. col_pp%itype(c) == icol_shadewall) .and. j <= nlevurb) then
-               cv(c,j) = cv_wall(l,j) * dz(c,j)
+               cv(fc,j) = cv_wall(l,j) * dz(c,j)
             else if (col_pp%itype(c) == icol_roof .and. j <= nlevurb) then
-               cv(c,j) = cv_roof(l,j) * dz(c,j)
+               cv(fc,j) = cv_roof(l,j) * dz(c,j)
             else if (col_pp%itype(c) == icol_road_imperv .and. j >= 1 .and. j <= nlev_improad(l)) then
-               cv(c,j) = cv_improad(l,j) * dz(c,j)
+               cv(fc,j) = cv_improad(l,j) * dz(c,j)
             else if (lun_pp%itype(l) /= istwet .AND. lun_pp%itype(l) /= istice .AND. lun_pp%itype(l) /= istice_mec &
                  .AND. col_pp%itype(c) /= icol_sunwall .AND. col_pp%itype(c) /= icol_shadewall .AND. &
                  col_pp%itype(c) /= icol_roof) then
-               cv(c,j) = csol(c,j)*(1._r8-watsat(c,j))*dz(c,j) + (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
+               cv(fc,j) = csol(c,j)*(1._r8-watsat(c,j))*dz(c,j) + (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
             else if (lun_pp%itype(l) == istwet) then
-               cv(c,j) = (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
-               if (j > nlevbed) cv(c,j) = csol(c,j)*dz(c,j)
+               cv(fc,j) = (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
+               if (j > nlevbed) cv(fc,j) = csol(c,j)*dz(c,j)
             else if (lun_pp%itype(l) == istice .OR. lun_pp%itype(l) == istice_mec) then
-               cv(c,j) = (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
+               cv(fc,j) = (h2osoi_ice(c,j)*cpice + h2osoi_liq(c,j)*cpliq)
             endif
             if (j == 1) then
                if (snl(c)+1 == 1 .AND. h2osno(c) > 0._r8) then
-                  cv(c,j) = cv(c,j) + cpice*h2osno(c)
+                  cv(fc,j) = cv(fc,j) + cpice*h2osno(c)
                end if
             end if
          enddo
@@ -1032,9 +1129,9 @@ contains
             c = filter_nolakec(fc)
             if (snl(c)+1 < 1 .and. j >= snl(c)+1) then
                if (frac_sno(c) > 0._r8) then
-                  cv(c,j) = max(thin_sfclayer, (cpliq*h2osoi_liq(c,j) + cpice*h2osoi_ice(c,j))/frac_sno(c))
+                  cv(fc,j) = max(thin_sfclayer, (cpliq*h2osoi_liq(c,j) + cpice*h2osoi_ice(c,j))/frac_sno(c))
                else
-                  cv(c,j) = thin_sfclayer
+                  cv(fc,j) = thin_sfclayer
                end if
             end if
          end do
@@ -1047,13 +1144,12 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine PhaseChangeH2osfc (bounds, num_nolakec, filter_nolakec, &
-       dhsdT, energyflux_vars, dtime)
+       dhsdT, dtime)
     !
     ! !DESCRIPTION:
     ! Only freezing is considered.  When water freezes, move ice to bottom snow layer.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon       , only : tfrz, hfus, grav, denice, cnfac, cpice, cpliq
     use elm_varpar       , only : nlevsno, nlevgrnd
     use elm_varctl       , only : iulog
@@ -1063,18 +1159,17 @@ contains
     integer                , intent(in)    :: num_nolakec                          ! number of column non-lake points in column filter
     integer                , intent(in)    :: filter_nolakec(:)                    ! column filter for non-lake points
     real(r8)               , intent(in)    :: dhsdT ( bounds%begc: )               ! temperature derivative of "hs" [col               ]
-    type(energyflux_type)  , intent(inout) :: energyflux_vars
     real(r8), intent(in) :: dtime                       !land model time step (sec)
 
     !
     ! !LOCAL VARIABLES:
-    integer  :: j,c,g                       !do loop index
-    integer  :: fc                          !lake filtered column indices
-    real(r8) :: temp1                       !temporary variables [kg/m2                    ]
-    real(r8) :: hm(bounds%begc:bounds%endc) !energy residual [W/m2                         ]
-    real(r8) :: xm(bounds%begc:bounds%endc) !melting or freezing within a time step [kg/m2 ]
-    real(r8) :: tinc                        !t(n+1)-t(n) (K)
-    real(r8) :: smp                         !frozen water potential (mm)
+    integer  :: j,c,g      !do loop index
+    integer  :: fc         !lake filtered column indices
+    real(r8) :: temp1      !temporary variables [kg/m2                    ]
+    real(r8) :: hm         !energy residual [W/m2                         ]
+    real(r8) :: xm         !melting or freezing within a time step [kg/m2 ]
+    real(r8) :: tinc       !t(n+1)-t(n) (K)
+    real(r8) :: smp        !frozen water potential (mm)
     real(r8) :: rho_avg
     real(r8) :: z_avg
     real(r8) :: c1
@@ -1110,33 +1205,27 @@ contains
 
       ! Get step size
 
-      ! Initialization
-
+      ! Freezing identification
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
-
+         
          xmf_h2osfc(c)              = 0._r8
-         hm(c)                      = 0._r8
-         xm(c)                      = 0._r8
+         hm                         = 0._r8
+         xm                         = 0._r8
          qflx_h2osfc_to_ice(c)      = 0._r8
          eflx_h2osfc_to_snow_col(c) = 0._r8
-      end do
-
-      ! Freezing identification
-      do fc = 1,num_nolakec
-         c = filter_nolakec(fc)
-
          ! If liquid exists below melt point, freeze some to ice.
          if ( frac_h2osfc(c) > 0._r8 .AND. t_h2osfc(c) <= tfrz) then
             tinc = tfrz - t_h2osfc(c)
             t_h2osfc(c) = tfrz
 
             ! energy absorbed beyond freezing temperature
-            hm(c) = frac_h2osfc(c)*(dhsdT(c)*tinc - tinc*c_h2osfc(c)/dtime)
+            hm = frac_h2osfc(c)*(dhsdT(c)*tinc - tinc*c_h2osfc(c)/dtime)
 
             ! mass of water converted from liquid to ice
-            xm(c) = hm(c)*dtime/hfus
-            temp1 = h2osfc(c) + xm(c)
+            xm = hm*dtime/hfus
+            temp1 = h2osfc(c) + xm
 
             z_avg=frac_sno(c)*snow_depth(c)
             if (z_avg > 0._r8) then
@@ -1149,16 +1238,16 @@ contains
             if(temp1 >= 0._r8) then ! add some frozen water to snow column
 
                ! add ice to snow column
-               h2osno(c) = h2osno(c) - xm(c)
-               int_snow(c) = int_snow(c) - xm(c)
+               h2osno(c) = h2osno(c) - xm
+               int_snow(c) = int_snow(c) - xm
 
-               if(snl(c) < 0) h2osoi_ice(c,0) = h2osoi_ice(c,0) - xm(c)
+               if(snl(c) < 0) h2osoi_ice(c,0) = h2osoi_ice(c,0) - xm
 
                ! remove ice from h2osfc
-               h2osfc(c) = h2osfc(c) + xm(c)
+               h2osfc(c) = h2osfc(c) + xm
 
-               xmf_h2osfc(c) = hm(c)
-               qflx_h2osfc_to_ice(c) = -xm(c)/dtime
+               xmf_h2osfc(c) = hm
+               qflx_h2osfc_to_ice(c) = -xm/dtime
 
                ! update snow depth
                if (frac_sno(c) > 0 .and. snl(c) < 0) then
@@ -1179,7 +1268,7 @@ contains
                      c1=frac_sno(c)/fact(c,0)*dtime
                   end if
                   if ( frac_h2osfc(c) /= 0.0_r8 )then
-                     c2=(-cpliq*xm(c) - frac_h2osfc(c)*dhsdT(c)*dtime)
+                     c2=(-cpliq*xm - frac_h2osfc(c)*dhsdT(c)*dtime)
                   else
                      c2=0.0_r8
                   end if
@@ -1208,7 +1297,7 @@ contains
                ! cool frozen h2osfc layer with extra heat
                t_h2osfc(c) = t_h2osfc(c) - temp1*hfus/(dtime*dhsdT(c) - c_h2osfc(c))
 
-               xmf_h2osfc(c) = (hm(c) - frac_h2osfc(c)*temp1*hfus/dtime)
+               xmf_h2osfc(c) = (hm - frac_h2osfc(c)*temp1*hfus/dtime)
 
                ! next, determine equilibrium temperature of combined ice/snow layer
                if (snl(c) == 0) then
@@ -1260,7 +1349,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine Phasechange_beta (bounds, num_nolakec, filter_nolakec, dhsdT, &
-       soilstate_vars, energyflux_vars, dtime)
+       soilstate_vars, dtime)
     !
     ! !DESCRIPTION:
     ! Calculation of the phase change within snow and soil layers:
@@ -1275,7 +1364,6 @@ contains
     ! (3) Re-adjust the ice and liquid mass, and the layer temperature
     !
     ! !USES:
-      !$acc routine seq
     use elm_varpar       , only : nlevsno, nlevgrnd,nlevurb
     use elm_varctl       , only : iulog
     use elm_varcon       , only : tfrz, hfus, grav
@@ -1288,7 +1376,6 @@ contains
     integer                , intent(in)    :: filter_nolakec(:)       ! column filter for non-lake points
     real(r8)               , intent(in)    :: dhsdT ( bounds%begc: )  ! temperature derivative of "hs" [col]
     type(soilstate_type)   , intent(in)    :: soilstate_vars
-    type(energyflux_type)  , intent(inout) :: energyflux_vars
     real(r8), intent(in) :: dtime            !land model time step (sec)
 
     !
@@ -1297,16 +1384,15 @@ contains
     integer  :: fc                                 !lake filtered column indices
     real(r8) :: heatr                              !energy residual or loss after melting or freezing
     real(r8) :: temp1                              !temporary variables [kg/m2]
-    real(r8) :: hm(bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)    !energy residual [W/m2]
-    real(r8) :: xm(bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)    !melting or freezing within a time step [kg/m2]
-    real(r8) :: wmass0(bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)!initial mass of ice and liquid (kg/m2)
-    real(r8) :: wice0 (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)!initial mass of ice (kg/m2)
-    real(r8) :: wliq0 (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)!initial mass of liquid (kg/m2)
-    real(r8) :: supercool(bounds%begc:bounds%endc,nlevgrnd)        !supercooled water in soil (kg/m2)
+    real(r8) :: hm     !energy residual [W/m2]
+    real(r8) :: xm     !melting or freezing within a time step [kg/m2]
+    real(r8) :: wmass0 !initial mass of ice and liquid (kg/m2)
+    real(r8) :: wice0  !initial mass of ice (kg/m2)
+    real(r8) :: supercool(num_nolakec,nlevgrnd)    !supercooled water in soil (kg/m2)
     real(r8) :: propor                             !proportionality constant (-)
-    real(r8) :: tinc(bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)  !t(n+1)-t(n) (K)
+    real(r8) :: tinc(num_nolakec,-nlevsno+1:nlevgrnd)  !t(n+1)-t(n) (K)
     real(r8) :: smp                                !frozen water potential (mm)
-    
+    real(r8) :: sum1,sum2 
     character(len=64) :: event 
     !-----------------------------------------------------------------------
     event = 'PhaseChangebeta'
@@ -1340,54 +1426,57 @@ contains
          eflx_snomelt_u   =>    col_ef%eflx_snomelt_u  , & ! Output: [real(r8) (:)   ] urban snow melt heat flux (W/m**2)
 
          xmf              =>    col_ef%xmf            , &
-         fact             =>    col_es%fact                         , &
+         fact             =>    col_es%fact           , &
 
          imelt            =>    col_ef%imelt          , & ! Output: [integer  (:,:) ] flag for melting (=1), freezing (=2), Not=0 (new)
          t_soisno         =>    col_es%t_soisno         & ! Output: [real(r8) (:,:) ] soil temperature (Kelvin)
          )
 
       ! Initialization
+      !$acc enter data create(supercool(:,:), tinc(:,:),sum1,sum2) 
 
+      !$acc parallel loop independent gang vector default(present)  
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
 
          qflx_snomelt(c) = 0._r8
          xmf(c) = 0._r8
-         qflx_snofrz_lyr(c,-nlevsno+1:0) = 0._r8
          qflx_snofrz_col(c) = 0._r8
          qflx_glcice_melt(c) = 0._r8
          qflx_snow_melt(c) = 0._r8
       end do
 
-      do j = -nlevsno+1,nlevgrnd       ! all layers
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
-            if (j >= snl(c)+1) then
+      ! do j = -nlevsno+1,nlevgrnd       ! all layers
+      !    do fc = 1,num_nolakec
+      !       c = filter_nolakec(fc)
+      !       if (j >= snl(c)+1) then
 
-               ! Initialization
-               imelt(c,j) = 0
-               hm(c,j) = 0._r8
-               xm(c,j) = 0._r8
-               wice0(c,j) = h2osoi_ice(c,j)
-               wliq0(c,j) = h2osoi_liq(c,j)
-               wmass0(c,j) = h2osoi_ice(c,j) + h2osoi_liq(c,j)
-            endif   ! end of snow layer if-block
-         end do   ! end of column-loop
-      enddo   ! end of level-loop
+      !          ! Initialization
+      !          ! hm(c,j) = 0._r8
+      !          ! xm(c,j) = 0._r8
+      !          ! wice0(c,j) = h2osoi_ice(c,j)
+      !          ! wmass0(c,j) = h2osoi_ice(c,j) + h2osoi_liq(c,j)
+      !       endif   ! end of snow layer if-block
+      !    end do   ! end of column-loop
+      ! enddo   ! end of level-loop
 
       !--  snow layers  ---------------------------------------------------
+      !$acc parallel loop independent collapse(2) gang vector default(present) 
       do j = -nlevsno+1,0
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
+            qflx_snofrz_lyr(c,j) = 0._r8
+
             if (j >= snl(c)+1) then
+               imelt(c,j) = 0
 
                ! Melting identification
                ! If ice exists above melt point, melt some to liquid.
                if (h2osoi_ice(c,j) > 0._r8 .AND. t_soisno(c,j) > tfrz) then
                   imelt(c,j) = 1
                   !                tinc(c,j) = t_soisno(c,j) - tfrz
-                  tinc(c,j) = tfrz - t_soisno(c,j)
+                  tinc(fc,j) = tfrz - t_soisno(c,j)
                   t_soisno(c,j) = tfrz
                endif
 
@@ -1396,7 +1485,7 @@ contains
                if (h2osoi_liq(c,j) > 0._r8 .AND. t_soisno(c,j) < tfrz) then
                   imelt(c,j) = 2
                   !                tinc(c,j) = t_soisno(c,j) - tfrz
-                  tinc(c,j) = tfrz - t_soisno(c,j)
+                  tinc(fc,j) = tfrz - t_soisno(c,j)
                   t_soisno(c,j) = tfrz
                endif
             endif   ! end of snow layer if-block
@@ -1404,38 +1493,37 @@ contains
       enddo   ! end of level-loop
 
       !-- soil layers   ---------------------------------------------------
+      !$acc parallel loop independent gang vector collapse(2) default(present) 
       do j = 1,nlevgrnd
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
             l = col_pp%landunit(c)
-            supercool(c,j) = 0.0_r8
+            supercool(fc,j) = 0.0_r8
             ! add in urban condition if-block
             if ((col_pp%itype(c) /= icol_sunwall .and. col_pp%itype(c) /= icol_shadewall &
                  .and. col_pp%itype(c) /= icol_roof) .or. ( j <= nlevurb)) then
 
-
-
                if (h2osoi_ice(c,j) > 0. .AND. t_soisno(c,j) > tfrz) then
                   imelt(c,j) = 1
                   !             tinc(c,j) = t_soisno(c,j) - tfrz
-                  tinc(c,j) = tfrz - t_soisno(c,j)
+                  tinc(fc,j) = tfrz - t_soisno(c,j)
                   t_soisno(c,j) = tfrz
                endif
 
                ! from Zhao (1997) and Koren (1999)
-               supercool(c,j) = 0.0_r8
+               supercool(fc,j) = 0.0_r8
                if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop .or. col_pp%itype(c) == icol_road_perv) then
                   if(t_soisno(c,j) < tfrz) then
                      smp = hfus*(tfrz-t_soisno(c,j))/(grav*t_soisno(c,j)) * 1000._r8  !(mm)
-                     supercool(c,j) = watsat(c,j)*(smp/sucsat(c,j))**(-1._r8/bsw(c,j))
-                     supercool(c,j) = supercool(c,j)*dz(c,j)*1000._r8       ! (mm)
+                     supercool(fc,j) = watsat(c,j)*(smp/sucsat(c,j))**(-1._r8/bsw(c,j))
+                     supercool(fc,j) = supercool(fc,j)*dz(c,j)*1000._r8       ! (mm)
                   endif
                endif
 
-               if (h2osoi_liq(c,j) > supercool(c,j) .AND. t_soisno(c,j) < tfrz) then
+               if (h2osoi_liq(c,j) > supercool(fc,j) .AND. t_soisno(c,j) < tfrz) then
                   imelt(c,j) = 2
                   !             tinc(c,j) = t_soisno(c,j) - tfrz
-                  tinc(c,j) = tfrz - t_soisno(c,j)
+                  tinc(fc,j) = tfrz - t_soisno(c,j)
                   t_soisno(c,j) = tfrz
                endif
 
@@ -1444,7 +1532,7 @@ contains
                   if (t_soisno(c,j) > tfrz) then
                      imelt(c,j) = 1
                      !                tincc,j) = t_soisno(c,j) - tfrz
-                     tinc(c,j) = tfrz - t_soisno(c,j)
+                     tinc(fc,j) = tfrz - t_soisno(c,j)
                      t_soisno(c,j) = tfrz
                   endif
                endif
@@ -1454,10 +1542,14 @@ contains
          end do
       enddo
 
-
+      !$acc parallel loop independent gang vector collapse(2) default(present)
       do j = -nlevsno+1,nlevgrnd       ! all layers
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
+            hm = 0.0_r8 
+            xm = 0.0_r8
+            wmass0 = h2osoi_ice(c,j) + h2osoi_liq(c,j)
+            wice0  = h2osoi_ice(c,j)
 
             if ((col_pp%itype(c) /= icol_sunwall .and. col_pp%itype(c) /= icol_shadewall &
                  .and. col_pp%itype(c) /= icol_roof) .or. ( j <= nlevurb)) then
@@ -1473,58 +1565,58 @@ contains
                      !==================================================================
                      if (j == snl(c)+1) then ! top layer
                         if(j > 0) then
-                           hm(c,j) = dhsdT(c)*tinc(c,j) - tinc(c,j)/fact(c,j)
+                           hm = dhsdT(c)*tinc(fc,j) - tinc(fc,j)/fact(c,j)
                         else
-                           hm(c,j) = frac_sno_eff(c)*(dhsdT(c)*tinc(c,j) - tinc(c,j)/fact(c,j))
+                           hm = frac_sno_eff(c)*(dhsdT(c)*tinc(fc,j) - tinc(fc,j)/fact(c,j))
                         endif
 
                         if ( j==1 .and. frac_h2osfc(c) /= 0.0_r8 ) then
-                           hm(c,j) = hm(c,j) - frac_h2osfc(c)*(dhsdT(c)*tinc(c,j))
+                           hm = hm - frac_h2osfc(c)*(dhsdT(c)*tinc(fc,j))
                         end if
                      else if (j == 1) then
-                        hm(c,j) = (1.0_r8 - frac_sno_eff(c) - frac_h2osfc(c)) &
-                             *dhsdT(c)*tinc(c,j) - tinc(c,j)/fact(c,j)
+                        hm = (1.0_r8 - frac_sno_eff(c) - frac_h2osfc(c)) &
+                             *dhsdT(c)*tinc(fc,j) - tinc(fc,j)/fact(c,j)
                      else ! non-interfacial snow/soil layers
                         if(j < 1) then
-                           hm(c,j) = - frac_sno_eff(c)*(tinc(c,j)/fact(c,j))
+                           hm = - frac_sno_eff(c)*(tinc(fc,j)/fact(c,j))
                         else
-                           hm(c,j) = - tinc(c,j)/fact(c,j)
+                           hm = - tinc(fc,j)/fact(c,j)
                         endif
                      endif
                   endif
 
                   ! These two errors were checked carefully (Y. Dai).  They result from the
                   ! computed error of "Tridiagonal-Matrix" in subroutine "thermal".
-                  if (imelt(c,j) == 1 .AND. hm(c,j) < 0._r8) then
-                     hm(c,j) = 0._r8
+                  if (imelt(c,j) == 1 .AND. hm < 0._r8) then
+                     hm = 0._r8
                      imelt(c,j) = 0
                   endif
-                  if (imelt(c,j) == 2 .AND. hm(c,j) > 0._r8) then
-                     hm(c,j) = 0._r8
+                  if (imelt(c,j) == 2 .AND. hm > 0._r8) then
+                     hm = 0._r8
                      imelt(c,j) = 0
                   endif
 
                   ! The rate of melting and freezing
 
-                  if (imelt(c,j) > 0 .and. abs(hm(c,j)) > 0._r8) then
-                     xm(c,j) = hm(c,j)*dtime/hfus                           ! kg/m2
+                  if (imelt(c,j) > 0 .and. abs(hm) > 0._r8) then
+                     xm = hm * dtime/hfus       ! kg/m2
 
                      ! If snow exists, but its thickness is less than the critical value
                      ! (1 cm). Note: more work is needed to determine how to tune the
                      ! snow depth for this case
                      if (j == 1) then
-                        if (snl(c)+1 == 1 .AND. h2osno(c) > 0._r8 .AND. xm(c,j) > 0._r8) then
+                        if (snl(c)+1 == 1 .AND. h2osno(c) > 0._r8 .AND. xm > 0._r8) then
                            temp1 = h2osno(c)                           ! kg/m2
-                           h2osno(c) = max(0._r8,temp1-xm(c,j))
+                           h2osno(c) = max(0._r8,temp1-xm)
                            propor = h2osno(c)/temp1
                            snow_depth(c) = propor * snow_depth(c)
-                           heatr = hm(c,j) - hfus*(temp1-h2osno(c))/dtime   ! W/m2
+                           heatr = hm - hfus*(temp1-h2osno(c))/dtime   ! W/m2
                            if (heatr > 0._r8) then
-                              xm(c,j) = heatr*dtime/hfus                    ! kg/m2
-                              hm(c,j) = heatr                               ! W/m2
+                              xm = heatr*dtime/hfus                    ! kg/m2
+                              hm = heatr                               ! W/m2
                            else
-                              xm(c,j) = 0._r8
-                              hm(c,j) = 0._r8
+                              xm = 0._r8
+                              hm = 0._r8
                            endif
                            qflx_snomelt(c) = max(0._r8,(temp1-h2osno(c)))/dtime   ! kg/(m2 s)
                            xmf(c) = hfus*qflx_snomelt(c)
@@ -1533,23 +1625,23 @@ contains
                      endif
 
                      heatr = 0._r8
-                     if (xm(c,j) > 0._r8) then
-                        h2osoi_ice(c,j) = max(0._r8, wice0(c,j)-xm(c,j))
-                        heatr = hm(c,j) - hfus*(wice0(c,j)-h2osoi_ice(c,j))/dtime
-                     else if (xm(c,j) < 0._r8) then
+                     if (xm > 0._r8) then
+                        h2osoi_ice(c,j) = max(0._r8, wice0-xm)
+                        heatr = hm - hfus*(wice0-h2osoi_ice(c,j))/dtime
+                     else if (xm < 0._r8) then
                         if (j <= 0) then
-                           h2osoi_ice(c,j) = min(wmass0(c,j), wice0(c,j)-xm(c,j))  ! snow
+                           h2osoi_ice(c,j) = min(wmass0, wice0-xm)  ! snow
                         else
-                           if (wmass0(c,j) < supercool(c,j)) then
+                           if (wmass0 < supercool(fc,j)) then
                               h2osoi_ice(c,j) = 0._r8
                            else
-                              h2osoi_ice(c,j) = min(wmass0(c,j) - supercool(c,j),wice0(c,j)-xm(c,j))
+                              h2osoi_ice(c,j) = min(wmass0 - supercool(fc,j),wice0 - xm)
                            endif
                         endif
-                        heatr = hm(c,j) - hfus*(wice0(c,j)-h2osoi_ice(c,j))/dtime
+                        heatr = hm - hfus*(wice0 - h2osoi_ice(c,j))/dtime
                      endif
 
-                     h2osoi_liq(c,j) = max(0._r8,wmass0(c,j)-h2osoi_ice(c,j))
+                     h2osoi_liq(c,j) = max(0._r8,wmass0 - h2osoi_ice(c,j))
 
                      if (abs(heatr) > 0._r8) then
                         if (j == snl(c)+1) then
@@ -1579,21 +1671,25 @@ contains
                         end if
                      endif  ! end of heatr > 0 if-block
 
-                     if (j >= 1) then
-                        xmf(c) = xmf(c) + hfus*(wice0(c,j)-h2osoi_ice(c,j))/dtime
-                     else
-                        xmf(c) = xmf(c) + hfus*(wice0(c,j)-h2osoi_ice(c,j))/dtime
-                     endif
+                     !NOTE is this a bug or just redundant ?
+                     ! if (j >= 1) then
+                     !    xmf(c) = xmf(c) + hfus*(wice0 - h2osoi_ice(c,j))/dtime
+                     ! else
+                     !    xmf(c) = xmf(c) + hfus*(wice0 - h2osoi_ice(c,j))/dtime
+                     ! endif
+                     !$acc atomic update 
+                     xmf(c) = xmf(c) + hfus*(wice0 - h2osoi_ice(c,j))/dtime
+                     !$acc end atomic 
 
                      if (imelt(c,j) == 1 .AND. j < 1) then
-                        qflx_snomelt(c) = qflx_snomelt(c) + max(0._r8,(wice0(c,j)-h2osoi_ice(c,j)))/dtime
-
-
+                        !$acc atomic update 
+                        qflx_snomelt(c) = qflx_snomelt(c) + max(0._r8,(wice0 - h2osoi_ice(c,j)))/dtime
+                        !$acc end atomic 
                      endif
 
                      ! layer freezing mass flux (positive):
                      if (imelt(c,j) == 2 .AND. j < 1) then
-                        qflx_snofrz_lyr(c,j) = max(0._r8,(h2osoi_ice(c,j)-wice0(c,j)))/dtime
+                        qflx_snofrz_lyr(c,j) = max(0._r8,(h2osoi_ice(c,j)-wice0 ))/dtime
                      endif
 
                   endif
@@ -1601,18 +1697,25 @@ contains
                endif   ! end of snow layer if-block
 
             endif
-
-            ! For glacier_mec columns, compute negative ice flux from melted ice.
-            ! Note that qflx_glcice can also include a positive component from excess snow,
-            ! as computed in HydrologyDrainageMod.F90.
-
-            l = col_pp%landunit(c)
+         end do   ! end of column-loop
+      enddo   ! end of level-loop
+      
+      ! For glacier_mec columns, compute negative ice flux from melted ice.
+      ! Note that qflx_glcice can also include a positive component from excess snow,
+      ! as computed in HydrologyDrainageMod.F90.
+      !$acc parallel loop independent gang worker default(present) private(sum1,sum2)
+      do fc = 1,num_nolakec
+         l = col_pp%landunit(c)
+         c = filter_nolakec(fc)
+         sum1 = 0.0_r8 
+         sum2 = 0.0_r8
+         !$acc loop vector reduction(+:sum1,sum2)
+         do j = -nlevsno+1,nlevgrnd       ! all layers
             if (lun_pp%itype(l)==istice_mec) then
-
                if (j>=1 .and. h2osoi_liq(c,j) > 0._r8) then   ! ice layer with meltwater
                   ! melting corresponds to a negative ice flux
-                  qflx_glcice_melt(c) = qflx_glcice_melt(c) + h2osoi_liq(c,j)/dtime
-                  qflx_glcice(c) = qflx_glcice(c) - h2osoi_liq(c,j)/dtime
+                  sum1 = sum1 + h2osoi_liq(c,j)/dtime
+                  sum2 = sum2 - h2osoi_liq(c,j)/dtime
 
                   ! convert layer back to pure ice by "borrowing" ice from below the column
                   h2osoi_ice(c,j) = h2osoi_ice(c,j) + h2osoi_liq(c,j)
@@ -1620,12 +1723,14 @@ contains
 
                endif  ! liquid water is present
             endif     ! istice_mec
-
-         end do   ! end of column-loop
-      enddo   ! end of level-loop
+         enddo   ! end of level-loop
+         qflx_glcice_melt(c) = qflx_glcice_melt(c) + sum1
+         qflx_glcice(c) = qflx_glcice(c) + sum2 
+      end do   ! end of column-loop
 
       ! Needed for history file output
 
+      !$acc parallel loop independent gang vector default(present) 
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
          eflx_snomelt(c) = qflx_snomelt(c) * hfus
@@ -1638,12 +1743,18 @@ contains
       end do
 
       call t_stop_lnd( event )
-      do j = -nlevsno+1,0
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
-            qflx_snofrz_col(c) = qflx_snofrz_col(c) + qflx_snofrz_lyr(c,j)
+      !$acc parallel loop independent gang worker default(present) private(sum1) 
+      do fc = 1,num_nolakec   
+         c = filter_nolakec(fc)
+         sum1 = 0.0_r8 
+         !$acc loop vector reduction(+:sum1)
+         do j = -nlevsno+1,0
+            sum1 = sum1 + qflx_snofrz_lyr(c,j)
          end do
+         qflx_snofrz_col(c) = qflx_snofrz_col(c) + sum1 
       end do
+
+      !$acc exit data delete(supercool(:,:), tinc(:,:), sum1,sum2 ) 
 
     end associate
 
@@ -1652,8 +1763,8 @@ contains
   !-----------------------------------------------------------------------
   subroutine ComputeGroundHeatFluxAndDeriv(bounds, num_nolakec, filter_nolakec, &
        hs_h2osfc, hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, &
-       atm2lnd_vars, urbanparams_vars, canopystate_vars,  &
-       solarabs_vars, energyflux_vars)
+       urbanparams_vars, canopystate_vars,  &
+       solarabs_vars)
     !
     ! !DESCRIPTION:
     ! Computes ground heat flux on:
@@ -1664,7 +1775,6 @@ contains
     ! Additionally, derivative of ground heat flux w.r.t to temeprature
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : sb, hvap
     use column_varcon  , only : icol_road_perv, icol_road_imperv
     use elm_varpar     , only : nlevsno, max_patch_per_col
@@ -1680,30 +1790,27 @@ contains
     real(r8)               , intent(out)   :: hs_top (bounds%begc: )                    ! net energy flux into surface layer (col) [W/m2]
     real(r8)               , intent(out)   :: dhsdT( bounds%begc: )                     ! temperature derivative of "hs" [col]
     real(r8)               , intent(out)   :: sabg_lyr_col( bounds%begc:, -nlevsno+1: ) ! absorbed solar radiation (col,lyr) [W/m2]
-    type(atm2lnd_type)     , intent(in)    :: atm2lnd_vars
     type(urbanparams_type) , intent(in)    :: urbanparams_vars
     type(canopystate_type) , intent(in)    :: canopystate_vars
     type(solarabs_type)    , intent(inout) :: solarabs_vars
-    type(energyflux_type)  , intent(inout) :: energyflux_vars
     !
     ! !LOCAL VARIABLES:
-    integer  :: j,c,p,l,t,g,pi                                         ! indices
-    integer  :: fc                                                     ! lake filtered column indices
-    real(r8) :: hs(bounds%begc:bounds%endc)                            ! net energy flux into the surface (w/m2)
-    real(r8) :: lwrad_emit(bounds%begc:bounds%endc)                    ! emitted longwave radiation
-    real(r8) :: dlwrad_emit(bounds%begc:bounds%endc)                   ! time derivative of emitted longwave radiation
-    integer  :: lyr_top                                                ! index of top layer of snowpack (-4 to 0) [idx]
-    real(r8) :: eflx_gnet_top                                          ! net energy flux into surface layer, pft-level [W/m2]
-    real(r8) :: lwrad_emit_snow(bounds%begc:bounds%endc)               !
-    real(r8) :: lwrad_emit_soil(bounds%begc:bounds%endc)               !
-    real(r8) :: lwrad_emit_h2osfc(bounds%begc:bounds%endc)             !
-    real(r8) :: eflx_gnet_snow                                         !
-    real(r8) :: eflx_gnet_soil                                         !
-    real(r8) :: eflx_gnet_h2osfc                                       !
+    integer  :: j,c,p,l,t,g,pi                      ! indices
+    integer  :: fc                                  ! lake filtered column indices
+    !  real(r8) :: hs(bounds%begc:bounds%endc)      ! net energy flux into the surface (w/m2)
+    real(r8) :: lwrad_emit(num_nolakec)             ! emitted longwave radiation
+    real(r8) :: dlwrad_emit(num_nolakec)            ! time derivative of emitted longwave radiation
+    integer  :: lyr_top                             ! index of top layer of snowpack (-4 to 0) [idx]
+    real(r8) :: eflx_gnet_top                       ! net energy flux into surface layer, pft-level [W/m2]
+    real(r8) :: lwrad_emit_snow(num_nolakec)        !
+    real(r8) :: lwrad_emit_soil(num_nolakec)        !
+    real(r8) :: lwrad_emit_h2osfc(num_nolakec)      !
+    real(r8) :: eflx_gnet_snow                      !
+    real(r8) :: eflx_gnet_soil                      !
+    real(r8) :: eflx_gnet_h2osfc                    !
+    real(r8) :: sum1,sum2,sum3                      !
     !-----------------------------------------------------------------------
-
     ! Enforce expected array sizes
-
     associate(                                                                &
          snl                     => col_pp%snl                              , & ! Input:  [integer (:)    ]  number of snow layers
          z                       => col_pp%z                                , & ! Input:  [real(r8) (:,:) ]  layer thickness (m)
@@ -1725,9 +1832,9 @@ contains
          t_grnd                  => col_es%t_grnd             , & ! Input:  [real(r8) (:)   ]  ground surface temperature [K]
          t_soisno                => col_es%t_soisno           , & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)
 
-         htvp                    => col_ef%htvp                , & ! Input:  [real(r8) (:)   ]  latent heat of vapor of water (or sublimation) [j/kg]
-         cgrnd                   => veg_ef%cgrnd             , & ! Input:  [real(r8) (:)   ]  deriv. of soil energy flux wrt to soil temp [w/m2/k]
-         dlrad                   => veg_ef%dlrad             , & ! Input:  [real(r8) (:)   ]  downward longwave radiation blow the canopy [W/m2]
+         htvp                    => col_ef%htvp               , & ! Input:  [real(r8) (:)   ]  latent heat of vapor of water (or sublimation) [j/kg]
+         cgrnd                   => veg_ef%cgrnd              , & ! Input:  [real(r8) (:)   ]  deriv. of soil energy flux wrt to soil temp [w/m2/k]
+         dlrad                   => veg_ef%dlrad              , & ! Input:  [real(r8) (:)   ]  downward longwave radiation blow the canopy [W/m2]
          eflx_traffic            => lun_ef%eflx_traffic        , & ! Input:  [real(r8) (:)   ]  traffic sensible heat flux (W/m**2)
          eflx_wasteheat          => lun_ef%eflx_wasteheat      , & ! Input:  [real(r8) (:)   ]  sensible heat flux from urban heating/cooling sources of waste heat (W/m**2)
          eflx_heat_from_ac       => lun_ef%eflx_heat_from_ac   , & ! Input:  [real(r8) (:)   ]  sensible heat flux put back into canyon due to removal by AC (W/m**2)
@@ -1756,85 +1863,97 @@ contains
       ! Net ground heat flux into the surface and its temperature derivative
       ! Added a pfts loop here to get the average of hs and dhsdT over
       ! all PFTs on the column. Precalculate the terms that do not depend on PFT.
-
-      do fc = 1,num_nolakec
+      !$acc enter data create(lwrad_emit_snow(:), lwrad_emit_soil(:), &
+      !$acc      lwrad_emit_h2osfc(:), lwrad_emit(:), dlwrad_emit(:) )
+      
+      !$acc parallel loop independent gang vector default(present) 
+      do fc = 1, num_nolakec
          c = filter_nolakec(fc)
-         lwrad_emit(c)  =    emg(c) * sb * t_grnd(c)**4
-         dlwrad_emit(c) = 4._r8*emg(c) * sb * t_grnd(c)**3
+         lwrad_emit(fc)  =    emg(c) * sb * t_grnd(c)**4
+         dlwrad_emit(fc) = 4._r8*emg(c) * sb * t_grnd(c)**3
 
          ! fractionate lwrad_emit; balanced in CanopyFluxes & Biogeophysics2
-         lwrad_emit_snow(c)    =    emg(c) * sb * t_soisno(c,snl(c)+1)**4
-         lwrad_emit_soil(c)    =    emg(c) * sb * t_soisno(c,1)**4
-         lwrad_emit_h2osfc(c)  =    emg(c) * sb * t_h2osfc(c)**4
+         lwrad_emit_snow(fc)    =  emg(c) * sb * t_soisno(c,snl(c)+1)**4
+         lwrad_emit_h2osfc(fc)  =  emg(c) * sb * t_h2osfc(c)**4
+         lwrad_emit_soil(fc)    =  emg(c) * sb * t_soisno(c,1)**4
       end do
 
-      hs_soil(begc:endc)   = 0._r8
-      hs_h2osfc(begc:endc) = 0._r8
-      hs(begc:endc)        = 0._r8
-      dhsdT(begc:endc)     = 0._r8
-      do pi = 1,max_patch_per_col
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
-            if ( pi <= col_pp%npfts(c) ) then
-               p = col_pp%pfti(c) + pi - 1
-               l = veg_pp%landunit(p)
-               t = veg_pp%topounit(p)
-               g = veg_pp%gridcell(p)
+      !$acc parallel loop independent gang default(present) private(sum1,sum2,sum3)
+      do fc = 1,num_nolakec
+         c = filter_nolakec(fc)
+         hs_soil(c)   = 0._r8
+         hs_h2osfc(c) = 0._r8
+         ! hs(begc:endc)        = 0._r8
+         dhsdT(c)     = 0._r8
+         sum1 = 0.0_r8; 
+         sum2 = 0.0_r8; 
+         sum3 = 0.0_r8; 
+         !$acc loop vector independent reduction(+:sum1,sum2,sum3)
+         do p = col_pp%pfti(c), col_pp%pftf(c)
+            !
+            l = veg_pp%landunit(p)
+            t = veg_pp%topounit(p)
+            g = veg_pp%gridcell(p)
 
-               if (veg_pp%active(p)) then
-                  if (.not. lun_pp%urbpoi(l)) then
-                     eflx_gnet(p) = sabg(p) + dlrad(p) &
-                          + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) - lwrad_emit(c) &
-                          - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
-                     ! save sabg for balancecheck, in case frac_sno is set to zero later
-                     sabg_chk(p) = frac_sno_eff(c) * sabg_snow(p) + (1._r8 - frac_sno_eff(c) ) * sabg_soil(p)
+            if (veg_pp%active(p)) then
+               if (.not. lun_pp%urbpoi(l)) then
+                  eflx_gnet(p) = sabg(p) + dlrad(p) &
+                        + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) - lwrad_emit(fc) &
+                        - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
+                  ! save sabg for balancecheck, in case frac_sno is set to zero later
+                  sabg_chk(p) = frac_sno_eff(c) * sabg_snow(p) + (1._r8 - frac_sno_eff(c) ) * sabg_soil(p)
 
-                     eflx_gnet_snow = sabg_snow(p) + dlrad(p) &
-                          + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) - lwrad_emit_snow(c) &
-                          - (eflx_sh_snow(p)+qflx_ev_snow(p)*htvp(c))
+                  eflx_gnet_snow = sabg_snow(p) + dlrad(p) &
+                       + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) - lwrad_emit_snow(fc) &
+                       - (eflx_sh_snow(p)+qflx_ev_snow(p)*htvp(c))
 
-                     eflx_gnet_soil = sabg_soil(p) + dlrad(p) &
-                          + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) - lwrad_emit_soil(c) &
-                          - (eflx_sh_soil(p)+qflx_ev_soil(p)*htvp(c))
+                  eflx_gnet_soil = sabg_soil(p) + dlrad(p) &
+                        + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) - lwrad_emit_soil(fc) &
+                        - (eflx_sh_soil(p)+qflx_ev_soil(p)*htvp(c))
 
-                     eflx_gnet_h2osfc = sabg_soil(p) + dlrad(p) &
-                          + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) - lwrad_emit_h2osfc(c) &
-                          - (eflx_sh_h2osfc(p)+qflx_ev_h2osfc(p)*htvp(c))
+                  eflx_gnet_h2osfc = sabg_soil(p) + dlrad(p) &
+                        + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) - lwrad_emit_h2osfc(fc) &
+                        - (eflx_sh_h2osfc(p)+qflx_ev_h2osfc(p)*htvp(c))
+               else
+                  ! For urban columns we use the net longwave radiation (eflx_lwrad_net) because of
+                  ! interactions between urban columns.
+
+                  ! All wasteheat and traffic flux goes into canyon floor
+                  if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
+                     eflx_wasteheat_patch(p) = eflx_wasteheat(l)/(1._r8-lun_pp%wtlunit_roof(l))
+                     eflx_heat_from_ac_patch(p) = eflx_heat_from_ac(l)/(1._r8-lun_pp%wtlunit_roof(l))
+                     eflx_traffic_patch(p) = eflx_traffic(l)/(1._r8-lun_pp%wtlunit_roof(l))
                   else
-                     ! For urban columns we use the net longwave radiation (eflx_lwrad_net) because of
-                     ! interactions between urban columns.
-
-                     ! All wasteheat and traffic flux goes into canyon floor
-                     if (col_pp%itype(c) == icol_road_perv .or. col_pp%itype(c) == icol_road_imperv) then
-                        eflx_wasteheat_patch(p) = eflx_wasteheat(l)/(1._r8-lun_pp%wtlunit_roof(l))
-                        eflx_heat_from_ac_patch(p) = eflx_heat_from_ac(l)/(1._r8-lun_pp%wtlunit_roof(l))
-                        eflx_traffic_patch(p) = eflx_traffic(l)/(1._r8-lun_pp%wtlunit_roof(l))
-                     else
-                        eflx_wasteheat_patch(p) = 0._r8
-                        eflx_heat_from_ac_patch(p) = 0._r8
-                        eflx_traffic_patch(p) = 0._r8
-                     end if
-                     ! Include transpiration term because needed for previous road
-                     ! and include wasteheat and traffic flux
-                     eflx_gnet(p) = sabg(p) + dlrad(p)  &
-                          - eflx_lwrad_net(p) &
-                          - (eflx_sh_grnd(p) + qflx_evap_soi(p)*htvp(c) + qflx_tran_veg(p)*hvap) &
-                          + eflx_wasteheat_patch(p) + eflx_heat_from_ac_patch(p) + eflx_traffic_patch(p)
-                     eflx_anthro(p)   = eflx_wasteheat_patch(p) + eflx_traffic_patch(p)
-                     eflx_gnet_snow   = eflx_gnet(p)
-                     eflx_gnet_soil   = eflx_gnet(p)
-                     eflx_gnet_h2osfc = eflx_gnet(p)
+                     eflx_wasteheat_patch(p) = 0._r8
+                     eflx_heat_from_ac_patch(p) = 0._r8
+                     eflx_traffic_patch(p) = 0._r8
                   end if
-                  dgnetdT(p) = - cgrnd(p) - dlwrad_emit(c)
-                  hs(c) = hs(c) + eflx_gnet(p) * veg_pp%wtcol(p)
-                  dhsdT(c) = dhsdT(c) + dgnetdT(p) * veg_pp%wtcol(p)
-                  ! separate surface fluxes for soil/snow
-                  hs_soil(c) = hs_soil(c) + eflx_gnet_soil * veg_pp%wtcol(p)
-                  hs_h2osfc(c) = hs_h2osfc(c) + eflx_gnet_h2osfc * veg_pp%wtcol(p)
-
+                  ! Include transpiration term because needed for previous road
+                  ! and include wasteheat and traffic flux
+                  eflx_gnet(p) = sabg(p) + dlrad(p)  &
+                        - eflx_lwrad_net(p) &
+                        - (eflx_sh_grnd(p) + qflx_evap_soi(p)*htvp(c) + qflx_tran_veg(p)*hvap) &
+                        + eflx_wasteheat_patch(p) + eflx_heat_from_ac_patch(p) + eflx_traffic_patch(p)
+                  eflx_anthro(p)   = eflx_wasteheat_patch(p) + eflx_traffic_patch(p)
+                  eflx_gnet_snow   = eflx_gnet(p)
+                  eflx_gnet_soil   = eflx_gnet(p)
+                  eflx_gnet_h2osfc = eflx_gnet(p)
                end if
+               dgnetdT(p) = - cgrnd(p) - dlwrad_emit(fc)
+               !hs(c) = hs(c) + eflx_gnet(p) * veg_pp%wtcol(p)
+               sum1 = sum1 + dgnetdT(p) * veg_pp%wtcol(p)
+               ! dhsdT(c) = dhsdT(c) + dgnetdT(p) * veg_pp%wtcol(p)
+               
+               ! separate surface fluxes for soil/snow
+               sum2 = sum2 + eflx_gnet_soil * veg_pp%wtcol(p)
+               sum3 = sum3 + eflx_gnet_h2osfc * veg_pp%wtcol(p)
+
             end if
          end do
+         !!!
+         dhsdT(c)     = dhsdT(c)     + sum1; 
+         hs_soil(c)   = hs_soil(c)   + sum2; 
+         hs_h2osfc(c) = hs_h2osfc(c) + sum3;
       end do
 
       ! Additional calculations with SNICAR:
@@ -1847,50 +1966,60 @@ contains
       ! to each layer
 
       ! Initialize:
-      sabg_lyr_col(begc:endc,-nlevsno+1:1) = 0._r8
-      hs_top(begc:endc)                    = 0._r8
-      hs_top_snow(begc:endc)               = 0._r8
+      ! sabg_lyr_col(begc:endc,-nlevsno+1:1) = 0._r8
+      ! hs_top(begc:endc)                    = 0._r8
+      ! hs_top_snow(begc:endc)               = 0._r8
 
-      do pi = 1,max_patch_per_col
-         do fc = 1,num_nolakec
-            c = filter_nolakec(fc)
-            lyr_top = snl(c) + 1
-            if ( pi <= col_pp%npfts(c) ) then
-               p = col_pp%pfti(c) + pi - 1
-               if (veg_pp%active(p)) then
-                  g = veg_pp%gridcell(p)
-                  t = veg_pp%topounit(p)
-                  l = veg_pp%landunit(p)
-                  if (.not. lun_pp%urbpoi(l)) then
+      !$acc parallel loop independent gang default(present) private(sum1,sum2,sum3)
+      do fc = 1,num_nolakec
+         
+         c = filter_nolakec(fc)
+         lyr_top = snl(c) + 1
+         sabg_lyr_col(c,lyr_top) = 0.0_r8
+         hs_top(c)               = 0.0_r8
+         hs_top_snow(c)          = 0.0_r8
+         !
+         sum1 = 0.0_r8; sum2 = 0.0_r8; sum3 = 0.0_r8; 
+         !$acc loop vector independent reduction(+:sum1,sum2,sum3)
+         do p = col_pp%pfti(c), col_pp%pftf(c)
+            if (veg_pp%active(p)) then
+               g = veg_pp%gridcell(p)
+               t = veg_pp%topounit(p)
+               l = veg_pp%landunit(p)
+               if (.not. lun_pp%urbpoi(l)) then
 
-                     eflx_gnet_top = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) &
-                          - lwrad_emit(c) - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
+                  eflx_gnet_top = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) &
+                        - lwrad_emit(fc) - (eflx_sh_grnd(p)+qflx_evap_soi(p)*htvp(c))
 
-                     hs_top(c) = hs_top(c) + eflx_gnet_top*veg_pp%wtcol(p)
+                  sum1 = sum1 + eflx_gnet_top*veg_pp%wtcol(p)
 
-                     eflx_gnet_snow = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) &
-                          - lwrad_emit_snow(c) - (eflx_sh_snow(p)+qflx_ev_snow(p)*htvp(c))
+                  eflx_gnet_snow = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) &
+                        - lwrad_emit_snow(fc) - (eflx_sh_snow(p)+qflx_ev_snow(p)*htvp(c))
 
-                     eflx_gnet_soil = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) &
-                          - lwrad_emit_soil(c) - (eflx_sh_soil(p)+qflx_ev_soil(p)*htvp(c))
+                  eflx_gnet_soil = sabg_lyr(p,lyr_top) + dlrad(p) + (1._r8-frac_veg_nosno(p))*emg(c)*forc_lwrad(t) &
+                        - lwrad_emit_soil(fc) - (eflx_sh_soil(p)+qflx_ev_soil(p)*htvp(c))
 
-                     hs_top_snow(c) = hs_top_snow(c) + eflx_gnet_snow*veg_pp%wtcol(p)
+                  sum2 = sum2 + eflx_gnet_snow*veg_pp%wtcol(p)
+                  !$acc loop seq 
+                  do j = lyr_top,1,1
+                    sabg_lyr_col(c,j) = sabg_lyr_col(c,j) + sabg_lyr(p,j) * veg_pp%wtcol(p)
+                  enddo
+               else
+                  !
+                  sum1 = sum1 + eflx_gnet(p) * veg_pp%wtcol(p)
+                  sum2 = sum2 + eflx_gnet(p) * veg_pp%wtcol(p)
+                  sum3 = sum3 + sabg(p) * veg_pp%wtcol(p)
 
-                     do j = lyr_top,1,1
-                        sabg_lyr_col(c,j) = sabg_lyr_col(c,j) + sabg_lyr(p,j) * veg_pp%wtcol(p)
-                     enddo
-                  else
-
-                     hs_top(c)      = hs_top(c) + eflx_gnet(p)*veg_pp%wtcol(p)
-                     hs_top_snow(c) = hs_top_snow(c) + eflx_gnet(p)*veg_pp%wtcol(p)
-                     sabg_lyr_col(c,lyr_top) = sabg_lyr_col(c,lyr_top) + sabg(p) * veg_pp%wtcol(p)
-
-                  endif
                endif
-
             endif
          enddo
+         hs_top(c) = hs_top(c) + sum1 
+         hs_top_snow(c) = hs_top_snow(c) + sum2 
+         sabg_lyr_col(c,lyr_top) = sabg_lyr_col(c,lyr_top) + sum3
       enddo
+
+      !$acc exit data delete(lwrad_emit_snow(:), lwrad_emit_soil(:), &
+      !$acc      lwrad_emit_h2osfc(:), lwrad_emit(:), dlwrad_emit(:) )
 
     end associate
 
@@ -1898,8 +2027,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine ComputeHeatDiffFluxAndFactor(bounds, num_nolakec, filter_nolakec, dtime, &
-       tk, cv, fn, fact, &
-       energyflux_vars)
+       tk, cv, fn, fact )
     !
     ! !DESCRIPTION:
     ! Computes:
@@ -1907,7 +2035,6 @@ contains
     ! (2) Factor used in computing tridiagonal matrix
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : capr, cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -1919,33 +2046,33 @@ contains
     integer                , intent(in)  :: filter_nolakec(:)                  ! column filter for non-lake points
     real(r8)               , intent(in)  :: dtime                              ! land model time step (sec)
     real(r8)               , intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )     ! thermal conductivity [W/(m K)]
-    real(r8)               , intent(in)  :: cv (bounds%begc: ,-nlevsno+1: )    ! heat capacity [J/(m2 K)]
-    real(r8)               , intent(out) :: fn (bounds%begc: ,-nlevsno+1: )    ! heat diffusion through the layer interface [W/m2]
-    real(r8)               , intent(out) :: fact( bounds%begc: , -nlevsno+1: ) ! used in computing tridiagonal matrix [col, lev]
-    type(energyflux_type)  , intent(in)  :: energyflux_vars
+    real(r8)               , intent(in)  :: cv  (1: ,-nlevsno+1: )             ! heat capacity [J/(m2 K)]
+    real(r8)               , intent(out) :: fn  (bounds%begc:, -nlevsno+1: )   ! heat diffusion through the layer interface [W/m2]
+    real(r8)               , intent(out) :: fact(bounds%begc:, -nlevsno+1: )   ! used in computing tridiagonal matrix [col, lev]
     !
-    ! !LOCAL VARIABLES:
-    integer  :: j,c,l                                           ! indices
-    integer  :: fc                                              ! lake filtered column indices
-    real(r8) :: dzm                                             ! used in computing tridiagonal matrix
+    ! LOCAL VARIABLES:
+    integer  :: j,c,l    ! indices
+    integer  :: fc       ! lake filtered column indices
+    real(r8) :: dzm      ! used in computing tridiagonal matrix
     !-----------------------------------------------------------------------
-
-    ! Enforce expected array sizes
-
+    ! Enforce expected array sizes     
+    !-----------------------------------------------------------------------
     associate(&
-         zi         => col_pp%zi                          , & ! Input: [real(r8) (:,:) ] interface level below a "z" level (m)
-         dz         => col_pp%dz                          , & ! Input: [real(r8) (:,:) ] layer depth (m)
-         z          => col_pp%z                           , & ! Input: [real(r8) (:,:) ] layer thickness (m)
+         zi         => col_pp%zi         , & ! Input: [real(r8) (:,:) ] interface level below a "z" level (m)
+         dz         => col_pp%dz         , & ! Input: [real(r8) (:,:) ] layer depth (m)
+         z          => col_pp%z          , & ! Input: [real(r8) (:,:) ] layer thickness (m)
          t_building => lun_es%t_building , & ! Input: [real(r8) (:)   ] internal building temperature (K)
          t_soisno   => col_es%t_soisno   , & ! Input: [real(r8) (:,:) ] soil temperature (Kelvin)
-         eflx_bot   => col_ef%eflx_bot      & ! Input: [real(r8) (:)   ] heat flux from beneath column (W/m**2) [+ = upward]
+         eflx_bot   => col_ef%eflx_bot     & ! Input: [real(r8) (:)   ] heat flux from beneath column (W/m**2) [+ = upward]
          )
 
       ! Determine heat diffusion through the layer interface and factor used in computing
       ! tridiagonal matrix and set up vector r and vectors a, b, c that define tridiagonal
       ! matrix and solve system
-
+      
+      !$acc parallel loop independent gang default(present) 
       do j = -nlevsno+1,nlevgrnd
+         !$acc loop vector independent 
          do fc = 1,num_nolakec
             c = filter_nolakec(fc)
             l = col_pp%landunit(c)
@@ -1953,14 +2080,14 @@ contains
                  .or. col_pp%itype(c) == icol_roof) .and. j <= nlevurb) then
                if (j >= col_pp%snl(c)+1) then
                   if (j == col_pp%snl(c)+1) then
-                     fact(c,j) = dtime/cv(c,j)
+                     fact(c,j) = dtime/cv(fc,j)
                      fn(c,j) = tk(c,j)*(t_soisno(c,j+1)-t_soisno(c,j))/(z(c,j+1)-z(c,j))
                   else if (j <= nlevurb-1) then
-                     fact(c,j) = dtime/cv(c,j)
+                     fact(c,j) = dtime/cv(fc,j)
                      fn(c,j) = tk(c,j)*(t_soisno(c,j+1)-t_soisno(c,j))/(z(c,j+1)-z(c,j))
                      dzm     = (z(c,j)-z(c,j-1))
                   else if (j == nlevurb) then
-                     fact(c,j) = dtime/cv(c,j)
+                     fact(c,j) = dtime/cv(fc,j)
                      ! For urban sunwall, shadewall, and roof columns, there is a non-zero heat flux across
                      ! the bottom "soil" layer and the equations are derived assuming a prescribed internal
                      ! building temperature. (See Oleson urban notes of 6/18/03).
@@ -1971,14 +2098,14 @@ contains
                  .and. col_pp%itype(c) /= icol_roof) then
                if (j >= col_pp%snl(c)+1) then
                   if (j == col_pp%snl(c)+1) then
-                     fact(c,j) = dtime/cv(c,j) * dz(c,j) / (0.5_r8*(z(c,j)-zi(c,j-1)+capr*(z(c,j+1)-zi(c,j-1))))
+                     fact(c,j) = dtime/cv(fc,j) * dz(c,j) / (0.5_r8*(z(c,j)-zi(c,j-1)+capr*(z(c,j+1)-zi(c,j-1))))
                      fn(c,j) = tk(c,j)*(t_soisno(c,j+1)-t_soisno(c,j))/(z(c,j+1)-z(c,j))
                   else if (j <= nlevgrnd-1) then
-                     fact(c,j) = dtime/cv(c,j)
+                     fact(c,j) = dtime/cv(fc,j)
                      fn(c,j) = tk(c,j)*(t_soisno(c,j+1)-t_soisno(c,j))/(z(c,j+1)-z(c,j))
                      dzm     = (z(c,j)-z(c,j-1))
                   else if (j == nlevgrnd) then
-                     fact(c,j) = dtime/cv(c,j)
+                     fact(c,j) = dtime/cv(fc,j)
                      fn(c,j) = eflx_bot(c)
                   end if
                end if
@@ -2010,7 +2137,6 @@ contains
     !           !===========|
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon      , only : cnfac, cpliq
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -2039,11 +2165,11 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: j,c                                                     ! indices
     integer  :: fc                                                      ! lake filtered column indices
-    real(r8) :: rt (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)        ! "r" vector for tridiagonal solution
-    real(r8) :: fn_h2osfc(bounds%begc:bounds%endc)                      ! heat diffusion through standing-water/soil interface [W/m2]
-    real(r8) :: rt_snow(bounds%begc:bounds%endc,-nlevsno:-1)            ! RHS vector corresponding to snow layers
-    real(r8) :: rt_ssw(bounds%begc:bounds%endc,1)                       ! RHS vector corresponding to standing surface water
-    real(r8) :: rt_soil(bounds%begc:bounds%endc,1:nlevgrnd)             ! RHS vector corresponding to soil layer
+   !  real(r8) :: rt (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)        ! "r" vector for tridiagonal solution
+    real(r8) :: fn_h2osfc(num_filter)                      ! heat diffusion through standing-water/soil interface [W/m2]
+   !  real(r8) :: rt_snow(bounds%begc:bounds%endc,-nlevsno:-1)            ! RHS vector corresponding to snow layers
+   !  real(r8) :: rt_ssw(bounds%begc:bounds%endc,1)                       ! RHS vector corresponding to standing surface water
+   !  real(r8) :: rt_soil(bounds%begc:bounds%endc,1:nlevgrnd)             ! RHS vector corresponding to soil layer
     !-----------------------------------------------------------------------
 
     ! Enforce expected array sizes
@@ -2059,7 +2185,7 @@ contains
 
       ! Initialize
       rvector(begc:endc, :) = spval
-
+      !$acc enter data create(fn_h2osfc(:))
       call SetRHSVec_Snow(bounds, num_filter, filter, &
            hs_top_snow( begc:endc ),                           &
            hs_top( begc:endc ),                                &
@@ -2070,7 +2196,7 @@ contains
            t_soisno ( begc:endc, -nlevsno+1: ),                &
            t_h2osfc ( begc:endc ),                             &
            urban_column,                                       &
-           rt_snow( begc:endc, -nlevsno:))
+           rvector( begc:endc, -nlevsno:))
 
       ! Set entries in RHS vector for surface water layer
       call SetRHSVec_StandingSurfaceWater(bounds, num_filter, filter, &
@@ -2080,10 +2206,10 @@ contains
            tk_h2osfc( begc:endc ),                                             &
            c_h2osfc( begc:endc ),                                              &
            dz_h2osfc( begc:endc ),                                             &
-           fn_h2osfc( begc:endc ),                                             &
+           fn_h2osfc( 1:num_filter ),                                             &
            t_soisno ( begc:endc, -nlevsno+1: ),                                &
            t_h2osfc ( begc:endc),                                              &
-           rt_ssw( begc:endc, 1:1))
+           rvector( begc:endc, 0))
 
       ! Set entries in RHS vector for soil layers
       call SetRHSVec_Soil(bounds, num_filter, filter, &
@@ -2094,21 +2220,22 @@ contains
            sabg_lyr_col (begc:endc, -nlevsno+1: ),             &
            fact( begc:endc, -nlevsno+1: ),                     &
            fn( begc:endc, -nlevsno+1: ),                       &
-           fn_h2osfc( begc:endc ),                             &
+           fn_h2osfc( 1:num_filter ),                             &
            c_h2osfc( begc:endc ),                              &
            frac_h2osfc ( begc:endc),                           &
            frac_sno_eff( begc:endc),                           &
            t_soisno ( begc:endc, -nlevsno+1: ),                &
            urban_column,                                       &
-           rt_soil( begc:endc, 1: ))
+           rvector( begc:endc, 1:nlevgrnd ))
 
       ! Combine the RHS vector
-      do fc = 1,num_filter
-         c = filter(fc)
-         rvector(c, -nlevsno:-1) = rt_snow(c, -nlevsno:-1)
-         rvector(c, 0         )  = rt_ssw(c, 1          )
-         rvector(c, 1:nlevgrnd)  = rt_soil(c, 1:nlevgrnd )
-      end do
+      ! do fc = 1,num_filter
+      !    c = filter(fc)
+      !    rvector(c, -nlevsno:-1) = rt_snow(c, -nlevsno:-1)
+      !    rvector(c, 0         )  = rt_ssw(c)
+      !    rvector(c, 1:nlevgrnd)  = rt_soil(c, 1:nlevgrnd )
+      ! end do
+      !$acc exit data delete(fn_h2osfc(:))
 
     end associate
 
@@ -2123,7 +2250,6 @@ contains
     ! Sets up RHS vector corresponding to snow layers.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varpar     , only : nlevsno, nlevgrnd
     !
     ! !ARGUMENTS:
@@ -2190,7 +2316,6 @@ contains
     ! Sets up RHS vector corresponding to snow layers for urban columns
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd
@@ -2257,7 +2382,6 @@ contains
     ! Sets up RHS vector corresponding to snow layers for urban sunwall/shadewall/roof columns
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon      , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd
@@ -2281,8 +2405,8 @@ contains
     integer  :: fc                                                      ! lake filtered column indices
     real(r8) :: dzm                                                     ! used in computing tridiagonal matrix
     real(r8) :: dzp                                                     ! used in computing tridiagonal matrix
-    real(r8) :: rt_snow_urban(bounds%begc:bounds%endc,-nlevsno:-1)      ! rhs vector entries for urban columns
-    real(r8) :: rt_snow_nonurban(bounds%begc:bounds%endc,-nlevsno:-1)   ! rhs vector entries for non-urban columns
+   !  real(r8) :: rt_snow_urban(bounds%begc:bounds%endc,-nlevsno:-1)      ! rhs vector entries for urban columns
+   !  real(r8) :: rt_snow_nonurban(bounds%begc:bounds%endc,-nlevsno:-1)   ! rhs vector entries for non-urban columns
     !-----------------------------------------------------------------------
 
     ! Enforce expected array sizes
@@ -2294,7 +2418,9 @@ contains
       !
       ! urban columns ------------------------------------------------------------------
       !
+      !$acc parallel loop independent gang default(present) 
       do j = -nlevsno+1,0
+         !$acc loop vector independent 
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
@@ -2332,7 +2458,6 @@ contains
     ! (impervious + pervious) columns
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_road_perv, icol_road_imperv
     use elm_varpar     , only : nlevsno, nlevgrnd
@@ -2357,8 +2482,8 @@ contains
     integer  :: fc                                                      ! lake filtered column indices
     real(r8) :: dzm                                                     ! used in computing tridiagonal matrix
     real(r8) :: dzp                                                     ! used in computing tridiagonal matrix
-    real(r8) :: rt_snow_urban(bounds%begc:bounds%endc,-nlevsno:-1)      !
-    real(r8) :: rt_snow_nonurban(bounds%begc:bounds%endc,-nlevsno:-1)   !
+   !  real(r8) :: rt_snow_urban(bounds%begc:bounds%endc,-nlevsno:-1)      !
+   !  real(r8) :: rt_snow_nonurban(bounds%begc:bounds%endc,-nlevsno:-1)   !
     !-----------------------------------------------------------------------
 
     ! Enforce expected array sizes
@@ -2370,7 +2495,9 @@ contains
       !
       ! urban road columns -------------------------------------------------------------
       !
+      !$acc parallel loop independent gang default(present)
       do j = -nlevsno+1,0
+         !$acc loop vector independent 
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
@@ -2409,7 +2536,6 @@ contains
     ! Sets up RHS vector corresponding to snow layers for non-urban columns
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd
@@ -2444,7 +2570,9 @@ contains
       !
       ! non-urban columns --------------------------------------------------------------
       !
+      !$acc parallel loop independent gang default(present) 
       do j = -nlevsno+1,0
+         !$acc loop vector independent 
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
@@ -2481,7 +2609,6 @@ contains
     ! Sets up RHS vector corresponding to standing surface water
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd
@@ -2500,7 +2627,7 @@ contains
     real(r8), intent(out) :: fn_h2osfc (bounds%begc: )           ! heat diffusion through standing-water/soil interface [W/m2]
     real(r8), intent(in)  :: t_soisno(bounds%begc:, -nlevsno+1:) ! soil temperature (Kelvin)
     real(r8), intent(in)  :: t_h2osfc(bounds%begc:)              ! surface water temperature temperature (Kelvin)
-    real(r8), intent(out) :: rt(bounds%begc:bounds%endc, 1:1 )   ! rhs vector entries
+    real(r8), intent(out) :: rt(bounds%begc:bounds%endc )        ! rhs vector entries
     !
     ! !LOCAL VARIABLES:
     integer  :: j,c                                             ! indices
@@ -2511,11 +2638,12 @@ contains
     ! Enforce expected array sizes
 
     ! Initialize
-    rt(bounds%begc:bounds%endc, : ) = spval
+    !  rt(bounds%begc:bounds%endc, : ) = spval
 
     !
     ! surface water ------------------------------------------------------------------
     !
+    !$acc parallel loop independent gang vector default(present)
     do fc = 1,num_filter
        c = filter(fc)
 
@@ -2523,7 +2651,7 @@ contains
        dzm=(0.5*dz_h2osfc(c)+col_pp%z(c,1))
 
        fn_h2osfc(c)=tk_h2osfc(c)*(t_soisno(c,1)-t_h2osfc(c))/dzm
-       rt(c,1)= t_h2osfc(c) +  (dtime/c_h2osfc(c)) &
+       rt(c)= t_h2osfc(c) +  (dtime/c_h2osfc(c)) &
             *( hs_h2osfc(c) - dhsdT(c)*t_h2osfc(c) + cnfac*fn_h2osfc(c) )!rhs for h2osfc
 
     enddo
@@ -2539,7 +2667,6 @@ contains
     ! Sets up RHS vector corresponding to soil layers
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -2556,7 +2683,7 @@ contains
     real(r8), intent(in)  :: sabg_lyr_col(bounds%begc:, -nlevsno+1: )           ! absorbed solar radiation (col,lyr) [W/m2]
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )                 ! used in computing tridiagonal matrix [col, lev]
     real(r8), intent(in)  :: fn (bounds%begc: ,-nlevsno+1: )                    ! heat diffusion through the layer interface [W/m2]
-    real(r8), intent(in)  :: fn_h2osfc (bounds%begc: )                          ! heat diffusion through standing-water/soil interface [W/m2]
+    real(r8), intent(in)  :: fn_h2osfc (1: )                          ! heat diffusion through standing-water/soil interface [W/m2]
     real(r8), intent(in)  :: c_h2osfc( bounds%begc: )                           ! heat capacity of surface water [col]
     real(r8), intent(in)  :: frac_h2osfc(bounds%begc: )                         ! fractional area with surface water greater than zero
     real(r8), intent(in)  :: frac_sno_eff(bounds%begc: )                        ! fraction of ground covered by snow (0 to 1)
@@ -2584,7 +2711,6 @@ contains
               sabg_lyr_col (begc:endc, -nlevsno+1: ),                  &
               fact( begc:endc, -nlevsno+1: ),                          &
               fn( begc:endc, -nlevsno+1: ),                            &
-              fn_h2osfc( begc:endc ),                                  &
               c_h2osfc( begc:endc ),                                   &
               frac_sno_eff( begc:endc ),                               &
               t_soisno( begc:endc, -nlevsno+1: ),                      &
@@ -2598,7 +2724,6 @@ contains
               sabg_lyr_col (begc:endc, -nlevsno+1: ),                     &
               fact( begc:endc, -nlevsno+1: ),                             &
               fn( begc:endc, -nlevsno+1: ),                               &
-              fn_h2osfc( begc:endc ),                                     &
               c_h2osfc( begc:endc ),                                      &
               frac_sno_eff(begc:endc),                                    &
               t_soisno( begc:endc, -nlevsno+1: ),                         &
@@ -2613,7 +2738,7 @@ contains
            sabg_lyr_col (begc:endc, -nlevsno+1: ),                                  &
            fact( begc:endc, -nlevsno+1: ),                                          &
            fn( begc:endc, -nlevsno+1: ),                                            &
-           fn_h2osfc( begc:endc ),                                                  &
+           fn_h2osfc( 1:num_filter ),                                                  &
            c_h2osfc( begc:endc ),                                                   &
            frac_h2osfc(begc:endc),                                                  &
            t_soisno( begc:endc, -nlevsno+1: ),                                      &
@@ -2625,14 +2750,13 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine SetRHSVec_SoilUrban(bounds, num_filter, filter, &
-       hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, fact, fn, fn_h2osfc, c_h2osfc, &
+       hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, fact, fn, c_h2osfc, &
        frac_sno_eff, t_soisno, rt)
     !
     ! !DESCRIPTION:
     ! Sets up RHS vector corresponding to soil layers for urban columns
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -2649,7 +2773,6 @@ contains
     real(r8), intent(in)  :: sabg_lyr_col(bounds%begc:, -nlevsno+1: )           ! absorbed solar radiation (col,lyr) [W/m2]
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )                 ! used in computing tridiagonal matrix [col, lev]
     real(r8), intent(in)  :: fn (bounds%begc: ,-nlevsno+1: )                    ! heat diffusion through the layer interface [W/m2]
-    real(r8), intent(in)  :: fn_h2osfc (bounds%begc: )                          ! heat diffusion through standing-water/soil interface [W/m2]
     real(r8), intent(in)  :: c_h2osfc( bounds%begc: )                           ! heat capacity of surface water [col]
     real(r8), intent(in)  :: frac_sno_eff(bounds%begc: )                        ! fraction of ground covered by snow (0 to 1)
     real(r8), intent(in)  :: t_soisno(bounds%begc:, -nlevsno+1:)                ! soil temperature (Kelvin)
@@ -2675,7 +2798,6 @@ contains
            sabg_lyr_col (begc:endc, -nlevsno+1: ),                         &
            fact( begc:endc, -nlevsno+1: ),                                 &
            fn( begc:endc, -nlevsno+1: ),                                   &
-           fn_h2osfc( begc:endc ),                                         &
            c_h2osfc( begc:endc ),                                          &
            t_soisno( begc:endc, -nlevsno+1: ),                             &
            rt( begc:endc, 1: ))
@@ -2688,7 +2810,6 @@ contains
            sabg_lyr_col (begc:endc, -nlevsno+1: ),                      &
            fact( begc:endc, -nlevsno+1: ),                              &
            fn( begc:endc, -nlevsno+1: ),                                &
-           fn_h2osfc( begc:endc ),                                      &
            c_h2osfc( begc:endc ),                                       &
            frac_sno_eff( begc:endc ),                                   &
            t_soisno( begc:endc, -nlevsno+1: ),                          &
@@ -2700,14 +2821,13 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine SetRHSVec_SoilUrbanNonRoad(bounds, num_filter, filter, &
-       hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, fact, fn, fn_h2osfc, c_h2osfc, &
+       hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, fact, fn, c_h2osfc, &
        t_soisno, rt)
     !
     ! !DESCRIPTION:
     ! Sets up RHS vector corresponding to soil layers for urban sunwall/shadewall/roof columns
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon      , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -2724,7 +2844,6 @@ contains
     real(r8), intent(in)  :: sabg_lyr_col(bounds%begc:, -nlevsno+1: )           ! absorbed solar radiation (col,lyr) [W/m2]
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )                 ! used in computing tridiagonal matrix [col, lev]
     real(r8), intent(in)  :: fn (bounds%begc: ,-nlevsno+1: )                    ! heat diffusion through the layer interface [W/m2]
-    real(r8), intent(in)  :: fn_h2osfc (bounds%begc: )                          ! heat diffusion through standing-water/soil interface [W/m2]
     real(r8), intent(in)  :: c_h2osfc( bounds%begc: )                           ! heat capacity of surface water [col]
     real(r8), intent(in)  :: t_soisno(bounds%begc:, -nlevsno+1:)                ! soil temperature (Kelvin)
     real(r8), intent(inout) :: rt(bounds%begc: ,1: )                            ! rhs vector entries
@@ -2733,7 +2852,6 @@ contains
     integer  :: j,c,l                                                           ! indices
     integer  :: fc                                                              ! lake filtered column indices
     !-----------------------------------------------------------------------
-
     ! Enforce expected array sizes
 
     associate(                                      &
@@ -2743,7 +2861,9 @@ contains
       !
       ! urban columns ------------------------------------------------------------------
       !
+      !$acc parallel loop independent gang default(present) 
       do j = 1,nlevurb
+         !$acc loop vector independent 
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
@@ -2782,7 +2902,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine SetRHSVec_SoilUrbanRoad(bounds, num_filter, filter, &
-       hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, fact, fn, fn_h2osfc, c_h2osfc, &
+       hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, fact, fn, c_h2osfc, &
        frac_sno_eff, t_soisno, rt)
     !
     ! !DESCRIPTION:
@@ -2790,7 +2910,6 @@ contains
     ! (impervious + pervious) columns
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon      , only : cnfac
     use column_varcon  , only : icol_road_perv, icol_road_imperv
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -2807,7 +2926,6 @@ contains
     real(r8), intent(in)  :: sabg_lyr_col(bounds%begc:, -nlevsno+1: )           ! absorbed solar radiation (col,lyr) [W/m2]
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )                 ! used in computing tridiagonal matrix [col, lev]
     real(r8), intent(in)  :: fn (bounds%begc: ,-nlevsno+1: )                    ! heat diffusion through the layer interface [W/m2]
-    real(r8), intent(in)  :: fn_h2osfc (bounds%begc: )                          ! heat diffusion through standing-water/soil interface [W/m2]
     real(r8), intent(in)  :: c_h2osfc( bounds%begc: )                           ! heat capacity of surface water [col]
     real(r8), intent(in)  :: frac_sno_eff(bounds%begc: )                        ! fraction of ground covered by snow (0 to 1)
     real(r8), intent(in)  :: t_soisno(bounds%begc:, -nlevsno+1:)                ! soil temperature (Kelvin)
@@ -2817,17 +2935,18 @@ contains
     integer  :: j,c,l                                                           ! indices
     integer  :: fc                                                              ! lake filtered column indices
     !-----------------------------------------------------------------------
-
     ! Enforce expected array sizes
 
-    associate(                                              &
-         z            => col_pp%z                              & ! Input: [real(r8) (:,:) ]  layer thickness (m)
+    associate(                      &
+         z            => col_pp%z   & ! Input: [real(r8) (:,:) ]  layer thickness (m)
          )
 
       !
       ! urban road columns -------------------------------------------------------------
       !
+      !$acc parallel loop independent gang default(present) 
       do j = 1,nlevgrnd
+         !$acc loop vector independent 
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
@@ -2861,14 +2980,13 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine SetRHSVec_SoilNonUrban(bounds, num_filter, filter, &
-       hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, fact, fn, fn_h2osfc, c_h2osfc, &
+       hs_top_snow, hs_soil, hs_top, dhsdT, sabg_lyr_col, fact, fn, c_h2osfc, &
        frac_sno_eff, t_soisno, rt)
     !
     ! !DESCRIPTION:
     ! Sets up RHS vector corresponding to soil layers.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -2885,7 +3003,6 @@ contains
     real(r8), intent(in)  :: sabg_lyr_col(bounds%begc:, -nlevsno+1: )           ! absorbed solar radiation (col,lyr) [W/m2]
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )                 ! used in computing tridiagonal matrix [col, lev]
     real(r8), intent(in)  :: fn (bounds%begc: ,-nlevsno+1: )                    ! heat diffusion through the layer interface [W/m2]
-    real(r8), intent(in)  :: fn_h2osfc (bounds%begc: )                          ! heat diffusion through standing-water/soil interface [W/m2]
     real(r8), intent(in)  :: c_h2osfc( bounds%begc: )                           ! heat capacity of surface water [col]
     real(r8), intent(in)  :: frac_sno_eff(bounds%begc: )                        ! fractional area with surface water greater than zero
     real(r8), intent(in)  :: t_soisno(bounds%begc:, -nlevsno+1:)                ! soil temperature (Kelvin)
@@ -2905,7 +3022,9 @@ contains
       !
       ! non-urban columns --------------------------------------------------------------
       !
+      !$acc parallel loop independent gang default(present) 
       do j = 1,nlevgrnd
+         !$acc loop vector independent 
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
@@ -2944,7 +3063,6 @@ contains
     ! Sets up RHS vector corresponding to soil layers.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -2977,6 +3095,7 @@ contains
     !
     ! surface water  -----------------------------------------------------------------
     !
+    !$acc parallel loop independent gang vector default(present)
     do fc = 1,num_filter
        c = filter(fc)
        if ( frac_h2osfc(c) /= 0.0_r8 )then
@@ -3009,7 +3128,6 @@ contains
     !
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -3033,45 +3151,46 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: j,c                                                            ! indices
     integer  :: fc                                                             ! lake filtered column indices
-    real(r8) :: at (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)               ! "a" vector for tridiagonal matrix
-    real(r8) :: bt (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)               ! "b" vector for tridiagonal matrix
-    real(r8) :: ct (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)               ! "c" vector for tridiagonal matrix
-    real(r8) :: dzm                                                            ! used in computing tridiagonal matrix
-    real(r8) :: dzp                                                            ! used in computing tridiagonal matrix
-    real(r8) :: bmatrix_snow(bounds%begc:bounds%endc,nband,-nlevsno:-1      )  ! block-diagonal matrix for snow layers
-    real(r8) :: bmatrix_ssw(bounds%begc:bounds%endc,nband,       0:0       )   ! block-diagonal matrix for standing surface water
-    real(r8) :: bmatrix_soil(bounds%begc:bounds%endc,nband,       1:nlevgrnd)  ! block-diagonal matrix for soil layers
-    real(r8) :: bmatrix_snow_soil(bounds%begc:bounds%endc,nband,-1:-1)         ! off-diagonal matrix for snow-soil interaction
-    real(r8) :: bmatrix_ssw_soil(bounds%begc:bounds%endc,nband, 0:0 )          ! off-diagonal matrix for standing surface water-soil interaction
-    real(r8) :: bmatrix_soil_snow(bounds%begc:bounds%endc,nband, 1:1 )         ! off-diagonal matrix for soil-snow interaction
-    real(r8) :: bmatrix_soil_ssw(bounds%begc:bounds%endc,nband, 1:1 )          ! off-diagonal matrix for soil-standing surface water interaction
+   !  real(r8) :: at (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)               ! "a" vector for tridiagonal matrix
+   !  real(r8) :: bt (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)               ! "b" vector for tridiagonal matrix
+   !  real(r8) :: ct (bounds%begc:bounds%endc,-nlevsno+1:nlevgrnd)               ! "c" vector for tridiagonal matrix
+    real(r8) :: dzm                                                              ! used in computing tridiagonal matrix
+    real(r8) :: dzp                                                              ! used in computing tridiagonal matrix
+   !  real(r8) :: bmatrix_snow(bounds%begc:bounds%endc,nband,-nlevsno:-1      )  ! block-diagonal matrix for snow layers
+   !  real(r8) :: bmatrix_ssw(bounds%begc:bounds%endc,nband,        0:0       )  ! block-diagonal matrix for standing surface water
+   !  real(r8) :: bmatrix_soil(bounds%begc:bounds%endc,nband,       1:nlevgrnd)  ! block-diagonal matrix for soil layers
+   !  real(r8) :: bmatrix_snow_soil(bounds%begc:bounds%endc,nband,-1:-1)         ! off-diagonal matrix for snow-soil interaction
+   !  real(r8) :: bmatrix_ssw_soil(bounds%begc:bounds%endc,nband, 0:0 )          ! off-diagonal matrix for standing surface water-soil interaction
+   !  real(r8) :: bmatrix_soil_snow(bounds%begc:bounds%endc,nband, 1:1 )         ! off-diagonal matrix for soil-snow interaction
+   !  real(r8) :: bmatrix_soil_ssw(bounds%begc:bounds%endc,nband, 1:1 )          ! off-diagonal matrix for soil-standing surface water interaction
     !-----------------------------------------------------------------------
 
     ! Enforce expected array sizes
 
-    associate(                                              &
-         z            => col_pp%z                            , & ! Input: [real(r8) (:,:) ]  layer thickness (m)
+    associate(                                 &
+         z            => col_pp%z            , & ! Input: [real(r8) (:,:) ]  layer thickness (m)
          frac_h2osfc  => col_ws%frac_h2osfc  , & ! Input: [real(r8) (:)   ]  fraction of ground covered by surface water (0 to 1)
          frac_sno_eff => col_ws%frac_sno_eff , & ! Input: [real(r8) (:)   ]  fraction of ground covered by snow (0 to 1)
-         begc         => bounds%begc                      , & ! Input: [integer        ] beginning column index
-         endc         => bounds%endc                        & ! Input: [integer        ] ending column index
+         begc         => bounds%begc         , & ! Input: [integer        ] beginning column index
+         endc         => bounds%endc           & ! Input: [integer        ] ending column index
          )
 
       ! Assemble smaller matrices
+      !NOTE: Slicing of the bmatrix may need to be adjusted 
 
       call SetMatrix_Snow(bounds, num_filter, filter, nband, &
-           dhsdT( begc:endc ),                                        &
-           tk( begc:endc, -nlevsno+1: ),                              &
-           fact( begc:endc, -nlevsno+1: ),                            &
-           frac_sno_eff(begc:endc),                                   &
-           urban_column,                                              &
-           bmatrix_snow( begc:endc, 1:, -nlevsno: ))
+           dhsdT( begc:endc ),                               &
+           tk( begc:endc, -nlevsno+1: ),                     &
+           fact( begc:endc, -nlevsno+1: ),                   &
+           frac_sno_eff(begc:endc),                          &
+           urban_column,                                     &
+           bmatrix(begc:endc, 1:, -nlevsno: ))
 
       call SetMatrix_Snow_Soil(bounds, num_filter, filter, nband, &
            tk( begc:endc, -nlevsno+1: ),                                   &
            fact( begc:endc, -nlevsno+1: ),                                 &
            urban_column,                                                   &
-           bmatrix_snow_soil( begc:endc, 1:, -1: ))
+           bmatrix( begc:endc, 1:, -1: ))
 
       call SetMatrix_Soil(bounds, num_filter, filter, nband, &
            dhsdT( begc:endc ),                                        &
@@ -3082,48 +3201,66 @@ contains
            frac_h2osfc(begc:endc),                                    &
            frac_sno_eff(begc:endc),                                   &
            urban_column,                                              &
-           bmatrix_soil( begc:endc, 1:, 1: ))
+           bmatrix( begc:endc, 1:, 1: ))
 
       call SetMatrix_Soil_Snow(bounds, num_filter, filter, nband, &
            tk( begc:endc, -nlevsno+1: ),                                   &
            fact( begc:endc, -nlevsno+1: ),                                 &
            frac_sno_eff(begc:endc),                                        &
            urban_column,                                                   &
-           bmatrix_soil_snow( begc:endc, 1:, 1: ))
+           bmatrix( begc:endc, 1:, 1: ))
 
-      call SetMatrix_StandingSurfaceWater(bounds, num_filter, filter, dtime, nband, &
-           dhsdT( begc:endc ),                                                               &
-           tk( begc:endc, -nlevsno+1: ),                                                     &
-           tk_h2osfc( begc:endc ),                                                           &
-           fact( begc:endc, -nlevsno+1: ),                                                   &
-           c_h2osfc( begc:endc ),                                                            &
-           dz_h2osfc( begc:endc ),                                                           &
-           bmatrix_ssw( begc:endc, 1:, 0: ))
+      ! call SetMatrix_StandingSurfaceWater(bounds, num_filter, filter, dtime, nband, &
+      !      dhsdT( begc:endc ),                                                               &
+      !      tk( begc:endc, -nlevsno+1: ),                                                     &
+      !      tk_h2osfc( begc:endc ),                                                           &
+      !      fact( begc:endc, -nlevsno+1: ),                                                   &
+      !      c_h2osfc( begc:endc ),                                                            &
+      !      dz_h2osfc( begc:endc ),                                                           &
+      !      bmatrix( begc:endc, 1:, 0: ))
 
-      call SetMatrix_StandingSurfaceWater_Soil(bounds, num_filter, filter, dtime, nband, &
-           tk( begc:endc, -nlevsno+1: ),                                                          &
-           tk_h2osfc( begc:endc ),                                                                &
-           fact( begc:endc, -nlevsno+1: ),                                                        &
-           c_h2osfc( begc:endc ),                                                                 &
-           dz_h2osfc( begc:endc ),                                                                &
-           bmatrix_ssw_soil( begc:endc, 1:, 0: ))
+      ! call SetMatrix_StandingSurfaceWater_Soil(bounds, num_filter, filter, dtime, nband, &
+      !      tk( begc:endc, -nlevsno+1: ),                                                          &
+      !      tk_h2osfc( begc:endc ),                                                                &
+      !      fact( begc:endc, -nlevsno+1: ),                                                        &
+      !      c_h2osfc( begc:endc ),                                                                 &
+      !      dz_h2osfc( begc:endc ),                                                                &
+      !      bmatrix( begc:endc, 1:, 0: ))
+      do fc = 1,num_filter
+         c = filter(fc)
+   
+         ! surface water layer has two coefficients
+         dzm=(0.5*dz_h2osfc(c)+col_pp%z(c,1))
+   
+         bmatrix(c,3,0)= 1._r8+(1._r8-cnfac)*(dtime/c_h2osfc(c)) &
+               *tk_h2osfc(c)/dzm -(dtime/c_h2osfc(c))*dhsdT(c) !interaction from atm
+         
+         bmatrix(c,2,0)= -(1._r8-cnfac)*(dtime/c_h2osfc(c))*tk_h2osfc(c)/dzm !flux to top soil layer
+         
+         ! top soil layer has sub coeff shifted to 2nd super diagonal
+         if ( frac_h2osfc(c) /= 0.0_r8 )then
+            bmatrix(c,4,1)=  - frac_h2osfc(c) * (1._r8-cnfac) * fact(c,1) &
+                 * tk_h2osfc(c)/dzm !flux from h2osfc
+         end if
+      enddo
+          
 
-      call SetMatrix_Soil_StandingSurfaceWater(bounds, num_filter, filter, nband, &
-           tk_h2osfc( begc:endc ),                                                         &
-           fact( begc:endc, -nlevsno+1: ),                                                 &
-           dz_h2osfc( begc:endc ),                                                         &
-           frac_h2osfc(begc:endc),                                                         &
-           bmatrix_soil_ssw( begc:endc, 1:, 1: ))
+      ! call SetMatrix_Soil_StandingSurfaceWater(bounds, num_filter, filter, nband, &
+      !      tk_h2osfc( begc:endc ),                                                         &
+      !      fact( begc:endc, -nlevsno+1: ),                                                 &
+      !      dz_h2osfc( begc:endc ),                                                         &
+      !      frac_h2osfc(begc:endc),                                                         &
+      !      bmatrix( begc:endc, 1:, 1: ))
 
-      call AssembleMatrixFromSubmatrices(bounds, num_filter, filter, nband, &
-           bmatrix_snow( begc:endc, 1:, -nlevsno: ),                                 &
-           bmatrix_ssw( begc:endc, 1:, 0: ),                                         &
-           bmatrix_soil( begc:endc, 1:, 1: ),                                        &
-           bmatrix_snow_soil( begc:endc, 1:, -1: ),                                  &
-           bmatrix_ssw_soil( begc:endc, 1:, 0: ),                                    &
-           bmatrix_soil_snow( begc:endc, 1:, 1: ),                                   &
-           bmatrix_soil_ssw( begc:endc, 1:, 1: ),                                    &
-           bmatrix( begc:endc, 1:, -nlevsno: ))
+      ! call AssembleMatrixFromSubmatrices(bounds, num_filter, filter, nband, &
+      !      bmatrix_snow( begc:endc, 1:, -nlevsno: ),                                 &
+      !      bmatrix_ssw( begc:endc, 1:, 0: ),                                         &
+      !      bmatrix_soil( begc:endc, 1:, 1: ),                                        &
+      !      bmatrix_snow_soil( begc:endc, 1:, -1: ),                                  &
+      !      bmatrix_ssw_soil( begc:endc, 1:, 0: ),                                    &
+      !      bmatrix_soil_snow( begc:endc, 1:, 1: ),                                   &
+      !      bmatrix_soil_ssw( begc:endc, 1:, 1: ),                                    &
+      !      bmatrix( begc:endc, 1:, -nlevsno: ))
 
 
     end associate
@@ -3178,7 +3315,6 @@ contains
     !
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon      , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -3212,7 +3348,7 @@ contains
        c = filter(fc)
 
        ! Snow
-	   bmatrix(c,2:3,-nlevsno) = bmatrix_snow(c,2:3,-nlevsno)
+	    bmatrix(c,2:3,-nlevsno) = bmatrix_snow(c,2:3,-nlevsno)
        bmatrix(c,2:4,-nlevsno+1:-2) = bmatrix_snow(c,2:4,-nlevsno+1:-2)
        bmatrix(c,3:4,-1   ) = bmatrix_snow(c,3:4,-1   )
 
@@ -3248,7 +3384,6 @@ contains
     ! Setup the matrix entries corresponding to internal snow layers
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -3266,28 +3401,26 @@ contains
     logical , intent(in)  :: urban_column                                 ! Is true if solving temperature for urban column, otherwise false
     real(r8), intent(out) :: bmatrix_snow(bounds%begc: , 1:, -nlevsno: )  ! matrix enteries
     !-----------------------------------------------------------------------
-
     ! Enforce expected array sizes
-
+    !----------------------------------------------------------------------- 
     associate(&
          begc =>    bounds%begc                   , & ! Input:  [integer ] beginning column index
          endc =>    bounds%endc                     & ! Input:  [integer ] ending column index
          )
 
       ! Initialize
-      bmatrix_snow(begc:endc, :, :) = 0.0_r8
-
+      ! bmatrix_snow(begc:endc, :, :) = 0.0_r8
       if (urban_column) then
          call SetMatrix_SnowUrban(bounds, num_filter, filter, nband, &
-              dhsdT( begc:endc ),                                             &
-              tk( begc:endc, -nlevsno+1: ),                                   &
-              fact( begc:endc, -nlevsno+1: ),                                 &
+              dhsdT( begc:endc ),                                    &
+              tk( begc:endc, -nlevsno+1: ),                          &
+              fact( begc:endc, -nlevsno+1: ),                        &
               bmatrix_snow( begc:endc, 1:, -nlevsno: ))
       else
          call SetMatrix_SnowNonUrban(bounds, num_filter, filter, nband, &
-              dhsdT( begc:endc ),                                                &
-              tk( begc:endc, -nlevsno+1: ),                                      &
-              fact( begc:endc, -nlevsno+1: ),                                    &
+              dhsdT( begc:endc ),                                       &
+              tk( begc:endc, -nlevsno+1: ),                             &
+              fact( begc:endc, -nlevsno+1: ),                           &
               bmatrix_snow( begc:endc, 1:, -nlevsno: ))
       endif
 
@@ -3305,7 +3438,6 @@ contains
     ! urban soil columns
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -3320,34 +3452,96 @@ contains
     real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )                 ! thermal conductivity [W/(m K)]
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )             ! used in computing tridiagonal matrix [col, lev]
     real(r8), intent(inout) :: bmatrix_snow(bounds%begc: , 1:, -nlevsno: )  ! matrix enteries
+
+    integer  :: j,l,c,fc        ! indices
+    real(r8) :: dzm        ! used in computing tridiagonal matrix
+    real(r8) :: dzp        ! used in computing tridiagonal matrix
+
     !-----------------------------------------------------------------------
 
     ! Enforce expected array sizes
 
     associate(&
-         begc =>    bounds%begc                   , & ! Input:  [integer ] beginning column index
-         endc =>    bounds%endc                     & ! Input:  [integer ] ending column index
+         begc =>    bounds%begc  , & ! Input:  [integer ] beginning column index
+         endc =>    bounds%endc  , & ! Input:  [integer ] ending column index
+         z  => col_pp%z            & ! Input:  [real(r8) (:,:)]  layer thickness (m)
          )
 
-      call SetMatrix_SnowUrbanNonRoad(bounds, num_filter, filter, nband, &
-           dhsdT( begc:endc ),                                                    &
-           tk( begc:endc, -nlevsno+1: ),                                          &
-           fact( begc:endc, -nlevsno+1: ),                                        &
-           bmatrix_snow( begc:endc, 1:, -nlevsno: ))
+      ! call SetMatrix_SnowUrbanNonRoad(bounds, num_filter, filter, nband, &
+      !      dhsdT( begc:endc ),                                                    &
+      !      tk( begc:endc, -nlevsno+1: ),                                          &
+      !      fact( begc:endc, -nlevsno+1: ),                                        &
+      !      bmatrix_snow( begc:endc, 1:, -nlevsno: ))
 
-      call SetMatrix_SnowUrbanRoad(bounds, num_filter, filter, nband, &
-           dhsdT( begc:endc ),                                                 &
-           tk( begc:endc, -nlevsno+1: ),                                       &
-           fact( begc:endc, -nlevsno+1: ),                                     &
-           bmatrix_snow( begc:endc, 1:, -nlevsno: ))
+      ! call SetMatrix_SnowUrbanRoad(bounds, num_filter, filter, nband, &
+      !      dhsdT( begc:endc ),                                                 &
+      !      tk( begc:endc, -nlevsno+1: ),                                       &
+      !      fact( begc:endc, -nlevsno+1: ),                                     &
+      !      bmatrix_snow( begc:endc, 1:, -nlevsno: ))
+      !$acc parallel loop independent gang default(present)
+      do j = -nlevsno+1,0 
+         !$acc loop vector independent 
+         do fc=1,num_filter 
+            c = filter(fc) 
+            
+            if (lun_pp%urbpoi(l)) then
+               if ((col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
+                    .or. col_pp%itype(c) == icol_roof)) then
+                  if (j >= col_pp%snl(c)+1) then
+                     if (j == col_pp%snl(c)+1) then
+                        dzp     = z(c,j+1)-z(c,j)
+                        bmatrix_snow(c,4,j-1) = 0._r8
+                        bmatrix_snow(c,3,j-1) = 1._r8+(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp-fact(c,j)*dhsdT(c)
+                        if ( j /= 0) then
+                           bmatrix_snow(c,2,j-1) =  -(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp
+                        end if
+                     else if (j <= nlevurb-1) then
+                        dzm     = (z(c,j)-z(c,j-1))
+                        dzp     = (z(c,j+1)-z(c,j))
+                        bmatrix_snow(c,4,j-1) =   - (1._r8-cnfac)*fact(c,j)* tk(c,j-1)/dzm
+                        bmatrix_snow(c,3,j-1) = 1._r8+ (1._r8-cnfac)*fact(c,j)*(tk(c,j)/dzp + tk(c,j-1)/dzm)
+                        if (j /= 0) then
+                           bmatrix_snow(c,2,j-1) =   - (1._r8-cnfac)*fact(c,j)* tk(c,j)/dzp
+                        end if
+                     end if
+                  end if
+               end if
+               if (col_pp%itype(c) == icol_road_imperv .or. col_pp%itype(c) == icol_road_perv) then
+                  if (j >= col_pp%snl(c)+1) then
+                     if (j == col_pp%snl(c)+1) then
+                        dzp     = z(c,j+1)-z(c,j)
+                        bmatrix_snow(c,4,j-1) = 0._r8
+                        bmatrix_snow(c,3,j-1) = 1._r8+(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp-fact(c,j)*dhsdT(c)
+                        if ( j /= 0) then
+                           bmatrix_snow(c,2,j-1) =  -(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp
+                        end if
+                     else if (j <= nlevgrnd-1) then
+                        dzm     = (z(c,j)-z(c,j-1))
+                        dzp     = (z(c,j+1)-z(c,j))
+                        bmatrix_snow(c,4,j-1) =   - (1._r8-cnfac)*fact(c,j)* tk(c,j-1)/dzm
+                        bmatrix_snow(c,3,j-1) = 1._r8+ (1._r8-cnfac)*fact(c,j)*(tk(c,j)/dzp + tk(c,j-1)/dzm)
+                        if ( j /= 0) then
+                           bmatrix_snow(c,2,j-1) =   - (1._r8-cnfac)*fact(c,j)* tk(c,j)/dzp
+                        end if
+                     end if
+                  end if
+               end if
+
+            end if
+            ! call SetMatrix_SnowUrbanNonRoad(c,fc, &
+            !    dhsdT( c),                                                    &
+            !    tk( c, j ),                                          &
+            !    fact( c, j ),                                        &
+            !    bmatrix_snow( c, 1:, j))
+         end do 
+      end do 
 
     end associate
 
   end subroutine SetMatrix_SnowUrban
 
   !-----------------------------------------------------------------------
-  subroutine SetMatrix_SnowUrbanNonRoad(bounds, num_filter, filter, nband, &
-       dhsdT, tk, fact, bmatrix_snow)
+  subroutine SetMatrix_SnowUrbanNonRoad(bounds,num_filter,filter,nband, dhsdT, tk, fact, bmatrix_snow)
 
     !
     ! !DESCRIPTION:
@@ -3355,27 +3549,25 @@ contains
     ! urban sunwall/shadewall/roof columns
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
-    type(bounds_type), intent(in) :: bounds                                 ! bounds
-    integer , intent(in)  :: num_filter                                     ! number of column the in filter
-    integer , intent(in)  :: filter(:)                                      ! column filter
-    integer , intent(in)  :: nband                                          ! number of bands of the tridigonal matrix
+    type(bounds_type), intent(in) :: bounds       ! bounds
+    integer, intent(in)  :: num_filter            ! number of column the in filter
+    integer, intent(in)  :: filter(:)             ! column filter
+    integer, intent(in)  :: nband                 ! number of bands of the tridigonal matrix
     real(r8), intent(in)  :: dhsdT(bounds%begc: )                           ! temperature derivative of "hs" [col]
-    real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )                 ! thermal conductivity [W/(m K)]
-    real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )             ! used in computing tridiagonal matrix [col, lev]
-    real(r8), intent(inout) :: bmatrix_snow(bounds%begc: , 1:, -nlevsno: )  ! matrix enteries
+    real(r8), intent(in)  :: tk   (bounds%begc: ,-nlevsno+1: )              ! thermal conductivity [W/(m K)]
+    real(r8), intent(in)  :: fact ( bounds%begc: , -nlevsno+1: )            ! used in computing tridiagonal matrix [col, lev]
+    real(r8), intent(inout) :: bmatrix_snow(bounds%begc:,:,-nlevsno+1:)  ! matrix enteries
     !
     ! !LOCAL VARIABLES:
-    integer  :: j,c,l                                                       ! indices
-    integer  :: fc                                                          ! lake filtered column indices
-    real(r8) :: dzm                                                         ! used in computing tridiagonal matrix
-    real(r8) :: dzp                                                         ! used in computing tridiagonal matrix
+    integer  :: j,l,c,fc        ! indices
+    real(r8) :: dzm        ! used in computing tridiagonal matrix
+    real(r8) :: dzp        ! used in computing tridiagonal matrix
     !-----------------------------------------------------------------------
 
     ! Enforce expected array sizes
@@ -3505,7 +3697,6 @@ contains
     ! Setup the matrix entries corresponding to internal snow layers for non-urban columns
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -3537,6 +3728,7 @@ contains
       !
       ! non-urban landunits ------------------------------------------------------------
       !
+      !$acc parallel loop independent gang vector collapse(2) default(present)
       do j = -nlevsno+1,0
          do fc = 1,num_filter
             c = filter(fc)
@@ -3577,7 +3769,6 @@ contains
     ! Setup the matrix entries corresponding to snow-soil interaction
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -3601,7 +3792,7 @@ contains
          )
 
       ! Initialize
-      bmatrix_snow_soil(begc:endc, :, :) = 0.0_r8
+      ! bmatrix_snow_soil(begc:endc, :, :) = 0.0_r8
 
       if (urban_column) then
          call SetMatrix_Snow_SoilUrban(bounds, num_filter, filter, nband, &
@@ -3627,7 +3818,6 @@ contains
     ! Setup the matrix entries corresponding to snow-soil interaction for urban columns
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -3642,23 +3832,59 @@ contains
     real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )           ! used in computing tridiagonal matrix [col, lev]
     real(r8), intent(inout) :: bmatrix_snow_soil(bounds%begc: , 1:,-1: )  ! matrix enteries
     !-----------------------------------------------------------------------
-
-    ! Enforce expected array sizes
+    integer, parameter :: j = 0 
+    integer :: fc ,c ,l 
+    real(r8) :: dzm                     ! used in computing tridiagonal matrix
+    real(r8) :: dzp                     ! used in computing tridiagonal matrix
+    
 
     associate(&
          begc => bounds%begc                   , & ! Input:  [integer ] beginning column index
-         endc => bounds%endc                     & ! Input:  [integer ] ending column index
+         endc => bounds%endc                   , & ! Input:  [integer ] ending column index
+         z  => col_pp%z  & ! Input:  [real(r8) (:,:)]  layer thickness (m)
          )
 
-      call SetMatrix_Snow_SoilUrbanNonRoad(bounds, num_filter, filter, nband, &
-           tk( begc:endc, -nlevsno+1: ),                                               &
-           fact( begc:endc, -nlevsno+1: ),                                             &
-           bmatrix_snow_soil( begc:endc, 1:, -1: ))
+      ! call SetMatrix_Snow_SoilUrbanNonRoad(bounds, num_filter, filter, nband, &
+      !      tk( begc:endc, -nlevsno+1: ),                                               &
+      !      fact( begc:endc, -nlevsno+1: ),                                             &
+      !      bmatrix_snow_soil( begc:endc, 1:, -1: ))
 
-      call SetMatrix_Snow_SoilUrbanRoad(bounds, num_filter, filter, nband, &
-           tk( begc:endc, -nlevsno+1: ),                                            &
-           fact( begc:endc, -nlevsno+1: ),                                          &
-           bmatrix_snow_soil( begc:endc, 1:, -1: ))
+      ! call SetMatrix_Snow_SoilUrbanRoad(bounds, num_filter, filter, nband, &
+      !      tk( begc:endc, -nlevsno+1: ),                                            &
+      !      fact( begc:endc, -nlevsno+1: ),                                          &
+      !      bmatrix_snow_soil( begc:endc, 1:, -1: ))
+      !$acc parallel loop independent gang vector default(present) 
+      do fc = 1,num_filter
+         c = filter(fc)
+         l = col_pp%landunit(c)
+         if (lun_pp%urbpoi(l)) then
+            if ((col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
+                  .or. col_pp%itype(c) == icol_roof)) then
+               if (j >= col_pp%snl(c)+1) then
+                  if (j == col_pp%snl(c)+1) then
+                     dzp     = z(c,j+1)-z(c,j)
+                     bmatrix_snow_soil(c,1,j-1) =  -(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp
+                  else if (j <= nlevurb-1) then
+                     dzm     = (z(c,j)-z(c,j-1))
+                     dzp     = (z(c,j+1)-z(c,j))
+                     bmatrix_snow_soil(c,1,j-1) =   - (1._r8-cnfac)*fact(c,j)* tk(c,j)/dzp
+                  end if
+               end if
+            end if
+            if (col_pp%itype(c) == icol_road_imperv .or. col_pp%itype(c) == icol_road_perv) then
+               if (j >= col_pp%snl(c)+1) then
+                  if (j == col_pp%snl(c)+1) then
+                     dzp     = z(c,j+1)-z(c,j)
+                     bmatrix_snow_soil(c,1,j-1) =  -(1._r8-cnfac)*fact(c,j)*tk(c,j)/dzp
+                  else if (j <= nlevgrnd-1) then
+                     dzm     = (z(c,j)-z(c,j-1))
+                     dzp     = (z(c,j+1)-z(c,j))
+                     bmatrix_snow_soil(c,1,j-1) =   - (1._r8-cnfac)*fact(c,j)* tk(c,j)/dzp
+                  end if
+               end if
+            end if
+         end if
+      enddo
 
     end associate
 
@@ -3866,7 +4092,6 @@ contains
     ! Setup the matrix entries corresponding to internal soil layers.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -3902,7 +4127,7 @@ contains
          )
 
       ! Initialize
-      bmatrix_soil(begc:endc, :, :) = 0.0_r8
+      ! bmatrix_soil(begc:endc, :, :) = 0.0_r8
 
       if (urban_column) then
          call SetMatrix_SoilUrban(bounds, num_filter, filter, nband, &
@@ -3928,6 +4153,7 @@ contains
 
       ! the solution will be organized as (snow:h2osfc:soil) to minimize
       !     bandwidth; this requires a 5-element band instead of 3
+      !$acc parallel loop independent gang vector default(present)
       do fc = 1,num_filter
          c = filter(fc)
 
@@ -3955,7 +4181,6 @@ contains
     ! urban columns
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -4012,7 +4237,6 @@ contains
     ! urban sunwall/shadewall/roof columns
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -4047,6 +4271,7 @@ contains
       !
       ! urban non-road columns ---------------------------------------------------------
       !
+      !$acc parallel loop independent gang vector collapse(2) default(present)
       do j = 1,nlevurb
          do fc = 1,num_filter
             c = filter(fc)
@@ -4099,7 +4324,6 @@ contains
     ! urban road (impervious + pervious) columns
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_road_perv, icol_road_imperv
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -4133,7 +4357,7 @@ contains
 
       !
       ! urban road columns -------------------------------------------------------------
-      !
+      !$acc parallel loop independent gang vector collapse(2) default(present) 
       do j = 1,nlevgrnd
          do fc = 1,num_filter
             c = filter(fc)
@@ -4190,7 +4414,6 @@ contains
     ! Setup the matrix entries corresponding to internal soil layers.
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -4225,7 +4448,9 @@ contains
       !
       ! non-urban columns --------------------------------------------------------------
       !
+      !$acc parallel loop independent gang default(present) 
       do j = 1,nlevgrnd
+         !$acc loop vector independent 
          do fc = 1,num_filter
             c = filter(fc)
             l = col_pp%landunit(c)
@@ -4280,7 +4505,6 @@ contains
     ! Setup the matrix entries corresponding to soil-snow interaction
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -4306,7 +4530,7 @@ contains
          )
 
       ! Initialize
-      bmatrix_soil_snow(begc:endc, :, :) = 0.0_r8
+      ! bmatrix_soil_snow(begc:endc, :, :) = 0.0_r8
 
       if (urban_column) then
          call SetMatrix_Soil_SnowUrban(bounds, num_filter, filter, nband, &
@@ -4335,41 +4559,80 @@ contains
     ! urban columns
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
     !
     ! !ARGUMENTS:
     implicit none
-    type(bounds_type), intent(in) :: bounds                               ! bounds
-    integer , intent(in)  :: num_filter                                   ! number of column the in filter
-    integer , intent(in)  :: filter(:)                                    ! column filter
-    integer , intent(in)  :: nband                                        ! number of bands of the tridigonal matrix
-    real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )               ! thermal conductivity [W/(m K)]
-    real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )           ! used in computing tridiagonal matrix [col, lev]
+    type(bounds_type), intent(in) :: bounds                       ! bounds
+    integer , intent(in)  :: num_filter                           ! number of column the in filter
+    integer , intent(in)  :: filter(:)                            ! column filter
+    integer , intent(in)  :: nband                                ! number of bands of the tridigonal matrix
+    real(r8), intent(in)  :: tk(bounds%begc: ,-nlevsno+1: )       ! thermal conductivity [W/(m K)]
+    real(r8), intent(in)  :: fact( bounds%begc: , -nlevsno+1: )   ! used in computing tridiagonal matrix [col, lev]
     real(r8), intent(in)  :: frac_sno_eff(bounds%begc: )          ! fraction of ground covered by snow (0 to 1)
     real(r8), intent(inout) :: bmatrix_soil_snow(bounds%begc: , 1: ,1: )  ! matrix enteries
     !-----------------------------------------------------------------------
-
-    ! Enforce expected array sizes
-
+    ! !LOCAL VARIABLES:
+    integer  :: c,l                ! indices
+    integer  :: fc                 ! lake filtered column indices
+    real(r8) :: dzm                ! used in computing tridiagonal matrix
+    real(r8) :: dzp                ! used in computing tridiagonal matrix
+    integer, parameter :: j=1 
+    
     associate(&
-         begc =>    bounds%begc , & ! Input:  [integer ] beginning column index
-         endc =>    bounds%endc   & ! Input:  [integer ] ending column index
+         begc => bounds%begc , & ! Input:  [integer ] beginning column index
+         endc => bounds%endc , & ! Input:  [integer ] ending column index
+         z => col_pp%z         & ! Input:  [real(r8) (:,:)]  layer thickness (m)
          )
 
-      call SetMatrix_Soil_SnowUrbanNonRoad(bounds, num_filter, filter, nband, &
-           tk( begc:endc, -nlevsno+1: ),                                               &
-           fact( begc:endc, -nlevsno+1: ),                                             &
-           bmatrix_soil_snow( begc:endc, 1:, 1: ))
+      ! call SetMatrix_Soil_SnowUrbanNonRoad(bounds, num_filter, filter, nband, &
+      !      tk( begc:endc, -nlevsno+1: ),                                      &
+      !      fact( begc:endc, -nlevsno+1: ),                                    &
+      !      bmatrix_soil_snow( begc:endc, 1:, 1: ))
 
-      call SetMatrix_Soil_SnowUrbanRoad(bounds, num_filter, filter, nband, &
-           tk( begc:endc, -nlevsno+1: ),                                            &
-           fact( begc:endc, -nlevsno+1: ),                                          &
-           frac_sno_eff(begc:endc),                                                 &
-           bmatrix_soil_snow( begc:endc, 1:, 1: ))
+      ! call SetMatrix_Soil_SnowUrbanRoad(bounds, num_filter, filter, nband, &
+      !      tk( begc:endc, -nlevsno+1: ),                                   &
+      !      fact( begc:endc, -nlevsno+1: ),                                 &
+      !      frac_sno_eff(begc:endc),                                        &
+      !      bmatrix_soil_snow( begc:endc, 1:, 1: ) )
+         !$acc parallel loop independent gang vector default(present)
+         do fc = 1,num_filter
+            c = filter(fc)
+            l = col_pp%landunit(c)
+            if (lun_pp%urbpoi(l)) then
+               if ((col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
+                     .or. col_pp%itype(c) == icol_roof)) then
+                  if (j >= col_pp%snl(c)+1) then
+                     if (j == col_pp%snl(c)+1) then
+                        dzp     = z(c,j+1)-z(c,j)
+                        bmatrix_soil_snow(c,5,j) = 0._r8
+                     else if (j <= nlevurb-1) then
+                        dzm     = (z(c,j)-z(c,j-1))
+                        dzp     = (z(c,j+1)-z(c,j))
+                        bmatrix_soil_snow(c,5,j) =   - (1._r8-cnfac)*fact(c,j)* tk(c,j-1)/dzm
+                     end if
+                  end if
+               end if
+               if (col_pp%itype(c) == icol_road_imperv .or. col_pp%itype(c) == icol_road_perv) then
+                  if (j >= col_pp%snl(c)+1) then
+                     if (j == col_pp%snl(c)+1) then
+                        dzp     = z(c,j+1)-z(c,j)
+                        bmatrix_soil_snow(c,5,j) = 0._r8
+                     else if (j == 1) then
+                        ! this is the snow/soil interface layer
+                        dzm     = (z(c,j)-z(c,j-1))
+                        dzp     = (z(c,j+1)-z(c,j))
+   
+                        bmatrix_soil_snow(c,5,j) =   - frac_sno_eff(c) * (1._r8-cnfac) * fact(c,j) &
+                              * tk(c,j-1)/dzm
+                     end if
+                  end if
+               end if
 
+            end if
+         enddo
     end associate
 
   end subroutine SetMatrix_Soil_SnowUrban
@@ -4383,7 +4646,6 @@ contains
     ! urban sunwall/shadewall/roof columns
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -4399,10 +4661,11 @@ contains
     real(r8), intent(inout) :: bmatrix_soil_snow(bounds%begc: , 1: ,1: )  ! matrix enteries
     !
     ! !LOCAL VARIABLES:
-    integer  :: j,c,l                                                     ! indices
+    integer  :: c,l,j                                                    ! indices
     integer  :: fc                                                        ! lake filtered column indices
     real(r8) :: dzm                                                       ! used in computing tridiagonal matrix
     real(r8) :: dzp                                                       ! used in computing tridiagonal matrix
+   
     !-----------------------------------------------------------------------
 
     ! Enforce expected array sizes
@@ -4412,27 +4675,27 @@ contains
          )
       !
       !
-      do j = 1,1
-         do fc = 1,num_filter
-            c = filter(fc)
-            l = col_pp%landunit(c)
-            if (lun_pp%urbpoi(l)) then
-               if ((col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
-                    .or. col_pp%itype(c) == icol_roof)) then
-                  if (j >= col_pp%snl(c)+1) then
-                     if (j == col_pp%snl(c)+1) then
-                        dzp     = z(c,j+1)-z(c,j)
-                        bmatrix_soil_snow(c,5,j) = 0._r8
-                     else if (j <= nlevurb-1) then
-                        dzm     = (z(c,j)-z(c,j-1))
-                        dzp     = (z(c,j+1)-z(c,j))
-                        bmatrix_soil_snow(c,5,j) =   - (1._r8-cnfac)*fact(c,j)* tk(c,j-1)/dzm
-                     end if
+    do j = 1,1
+      do fc = 1,num_filter
+         c = filter(fc)
+         l = col_pp%landunit(c)
+         if (lun_pp%urbpoi(l)) then
+            if ((col_pp%itype(c) == icol_sunwall .or. col_pp%itype(c) == icol_shadewall &
+                  .or. col_pp%itype(c) == icol_roof)) then
+               if (j >= col_pp%snl(c)+1) then
+                  if (j == col_pp%snl(c)+1) then
+                     dzp     = z(c,j+1)-z(c,j)
+                     bmatrix_soil_snow(c,5,j) = 0._r8
+                  else if (j <= nlevurb-1) then
+                     dzm     = (z(c,j)-z(c,j-1))
+                     dzp     = (z(c,j+1)-z(c,j))
+                     bmatrix_soil_snow(c,5,j) =   - (1._r8-cnfac)*fact(c,j)* tk(c,j-1)/dzm
                   end if
                end if
             end if
-         enddo
-      end do
+         end if
+      enddo
+   end do
 
     end associate
 
@@ -4447,7 +4710,6 @@ contains
     ! urban road (impervious + pervious) columns
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_road_imperv, icol_road_perv
     use elm_varpar     , only : nlevsno, nlevgrnd, nlevurb
@@ -4464,12 +4726,11 @@ contains
     real(r8), intent(inout) :: bmatrix_soil_snow(bounds%begc: , 1: ,1: )  ! matrix enteries
     !
     ! !LOCAL VARIABLES:
-    integer  :: j,c,l                                                     ! indices
-    integer  :: fc                                                        ! lake filtered column indices
-    real(r8) :: dzm                                                       ! used in computing tridiagonal matrix
-    real(r8) :: dzp                                                       ! used in computing tridiagonal matrix
+    integer  :: c,l,j               ! indices
+    integer  :: fc                  ! lake filtered column indices
+    real(r8) :: dzm                 ! used in computing tridiagonal matrix
+    real(r8) :: dzp                 ! used in computing tridiagonal matrix
     !-----------------------------------------------------------------------
-
     ! Enforce expected array sizes
 
     associate(&
@@ -4495,7 +4756,7 @@ contains
                         dzp     = (z(c,j+1)-z(c,j))
 
                         bmatrix_soil_snow(c,5,j) =   - frac_sno_eff(c) * (1._r8-cnfac) * fact(c,j) &
-                             * tk(c,j-1)/dzm
+                              * tk(c,j-1)/dzm
                      end if
                   end if
                end if
@@ -4582,7 +4843,6 @@ contains
     ! Setup the matrix entries corresponding to internal standing water layer
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd
@@ -4611,8 +4871,7 @@ contains
     ! Enforce expected array sizes
 
     ! Initialize
-    bmatrix_ssw(bounds%begc:bounds%endc, :, :) = 0.0_r8
-
+   !  bmatrix_ssw(bounds%begc:bounds%endc, :, :) = 0.0_r8
     do fc = 1,num_filter
        c = filter(fc)
 
@@ -4634,7 +4893,6 @@ contains
     ! Setup the matrix entries corresponding to standing surface water-soil layer interaction
     !
     ! !USES:
-      !$acc routine seq
     use elm_varcon     , only : cnfac
     use column_varcon  , only : icol_roof, icol_sunwall, icol_shadewall
     use elm_varpar     , only : nlevsno, nlevgrnd
@@ -4662,8 +4920,7 @@ contains
     ! Enforce expected array sizes
 
     ! Initialize
-    bmatrix_ssw_soil(bounds%begc:bounds%endc, :, :) = 0.0_r8
-
+   !  bmatrix_ssw_soil(bounds%begc:bounds%endc, :, :) = 0.0_r8
     do fc = 1,num_filter
        c = filter(fc)
 
@@ -4729,16 +4986,15 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine Prepare_Data_for_EM_PTM_Driver(bounds, num_filter, filter, &
-       sabg_lyr, dhsdT, hs_soil, hs_top_snow, hs_h2osfc, &
-       energyflux_vars)
+       sabg_lyr, dhsdT, hs_soil, hs_top_snow, hs_h2osfc )
     !
     ! !DESCRIPTION:
     ! Prepare data needed for the external model, PETSc-based Thermal
     ! Model (PTM).
     !
     ! !USES:
+      !$acc routine seq 
     use shr_kind_mod    , only : r8 => shr_kind_r8
-    use TemperatureType , only : temperature_type
     use elm_varpar      , only : nlevsno
     !
     implicit none
@@ -4752,7 +5008,6 @@ contains
     real(r8)               , intent(in)    :: hs_soil(bounds%begc:bounds%endc)                   ! heat flux on soil [W/m2]
     real(r8)               , intent(in)    :: hs_top_snow(bounds%begc:bounds%endc)               ! heat flux on top snow layer [W/m2]
     real(r8)               , intent(in)    :: hs_h2osfc(bounds%begc:bounds%endc)                 ! heat flux on standing water [W/m2]
-    type(energyflux_type)  , intent(inout) :: energyflux_vars
     !
     ! !LOCAL VARIABLES:
     integer                                :: c, j

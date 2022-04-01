@@ -51,7 +51,7 @@ contains
     ! !ARGUMENTS:
       !$acc routine seq
     type(bounds_type)        , intent(in)    :: bounds                        ! bounds
-    logical                  , intent(in)    :: cactive_prior( bounds%begc: ) ! column-level active flags from prior time step
+    logical                  , intent(in)    :: cactive_prior(:) ! column-level active flags from prior time step
     type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
     !
     ! !LOCAL VARIABLES:

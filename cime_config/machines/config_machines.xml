@@ -3065,7 +3065,7 @@
         <command name="list"/>
       </modules>
       <modules compiler="pgi.*">
-        <command name="load">nvhpc/20.9</command>
+        <command name="load">nvhpc/21.9</command>
       </modules>
       <modules compiler="pgigpu">
         <command name="load">cuda/10.1.243</command>
