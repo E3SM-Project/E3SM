@@ -102,6 +102,7 @@ SCREAM:
     - "${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc"
     - "${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc"
     - "${DIN_LOC_ROOT}/atm/scream/tables/p3_lookup_table_1.dat-v4.1.1"
+    - "${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_scream.nc"
 
 # Note: HOMME settings will be translated into data/namelist.nl
 HOMME:
