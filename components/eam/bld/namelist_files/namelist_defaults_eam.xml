@@ -873,10 +873,13 @@
 <micro_subgrid_cloud     	      > .true.  </micro_subgrid_cloud>
 <micro_tend_output       	      > .true.  </micro_tend_output>
 <p3_autocon_coeff    		    >  30500.0   </p3_autocon_coeff>
-<p3_qc_autocon_expon    		    >  3.19   </p3_qc_autocon_expon>
-<p3_nc_autocon_expon    		    >  -1.40   </p3_nc_autocon_expon>
+<p3_qc_autocon_expon    	    >  3.19   </p3_qc_autocon_expon>
+<p3_nc_autocon_expon                >  -1.40   </p3_nc_autocon_expon>
 <p3_accret_coeff    		    >  117.25   </p3_accret_coeff>
-<p3_qc_accret_expon    		      >  1.15   </p3_qc_accret_expon>
+<p3_qc_accret_expon    		    >  1.15   </p3_qc_accret_expon>
+<p3_wbf_coeff                       > 0.7     </p3_wbf_coeff>
+<p3_max_mean_rain_size              > 0.005     </p3_max_mean_rain_size>
+<p3_embryonic_rain_size             > 0.000025  </p3_embryonic_rain_size>
 <do_prescribed_CCN              > .false. </do_prescribed_CCN>
 <do_Cooper_inP3                 > .false. </do_Cooper_inP3>
 
