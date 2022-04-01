@@ -75,7 +75,7 @@ function(e3sm_remove_flags FILE_ARG FLAGS_ARG)
 endfunction()
 
 function(e3sm_deoptimize_file FILE_ARG FFLAGS_NOOPT)
-  if (CMAKE_Fortran_COMPILER_ID STREQUAL "PGI")
+  if (CMAKE_Fortran_COMPILER_ID STREQUAL "PGI" OR CMAKE_Fortran_COMPILER_ID STREQUAL "NVHPC")
     # PGI does not support bulk-disabling of optimization by appending -O0,
     # we have to remove the optimization flags first
 

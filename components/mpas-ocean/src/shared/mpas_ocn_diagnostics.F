@@ -1150,7 +1150,6 @@ contains
       real(kind=RKIND) :: coef, shearSquared, delU2, shearMean
       integer :: iCell, k, i, iEdge
       integer :: nCells
-      real(kind=RKIND) :: invAreaCell1
 
       !
       ! Brunt-Vaisala frequency (this has units of s^{-2})
@@ -1783,8 +1782,10 @@ contains
          ssh(iCell) = zTop(minLevelCell(iCell),iCell)
 
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
 
    end subroutine ocn_diagnostic_solve_z_coordinates!}}}
 
@@ -2657,6 +2658,8 @@ contains
 
       ! Compute top drag
 #ifdef MPAS_OPENACC
+      !$acc enter data copyin(landIceFraction)
+
       !$acc parallel loop present(cellsOnEdge, kineticEnergyCell, minLevelCell, minLevelEdgeBot) &
       !$acc    present(landIceFraction, topDrag, normalVelocity)
 #else
@@ -2807,6 +2810,8 @@ contains
 
       ! modify the spatially-varying attenuation coefficient where there is land ice
 #ifdef MPAS_OPENACC
+      !$acc enter data copyin(landIceMask)
+
       !$acc parallel loop present(landIceMask, sfcFlxAttCoeff)
 #else
       !$omp parallel

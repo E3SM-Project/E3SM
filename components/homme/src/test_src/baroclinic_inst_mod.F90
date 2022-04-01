@@ -55,6 +55,7 @@ contains
 
 
 subroutine jw_baroclinic(elem,hybrid,hvcoord,nets,nete)
+    use control_mod, only: use_moisture
 !=======================================================================================================!
     type(element_t), intent(inout) :: elem(:)
     type (hvcoord_t)                  :: hvcoord
@@ -267,6 +268,13 @@ if (qsize==10) then
       elem(ie)%state%Q(:,:,:,idex) = var3d(:,:,:,ie)
    enddo
    enddo
+   if (use_moisture) then
+      ! Make the first tracer's magnitude similar to that of specific humidity.
+      idex = 1
+      do ie=nets,nete
+         elem(ie)%state%Q(:,:,:,idex) = 1d-2*elem(ie)%state%Q(:,:,:,idex)
+      enddo
+   end if
 endif
 
 

@@ -151,15 +151,15 @@ contains
 
       integer, dimension(:,:), pointer :: edgesOnCell, cellsOnEdge, cellsOnCell, cellMask
 
-      integer :: k, i, iCell, jCell, iNeighbor, iter, timeLevel, kIndexOBL, kav, iEdge, nCells
+      integer :: k, i, iCell, iNeighbor, timeLevel, kIndexOBL, kav, iEdge, nCells
       integer :: edgeCount, nEdges, topIndex, nsmooth, kpp_stage
       integer, pointer :: nVertLevels, nVertLevelsP1
       integer, dimension(:), pointer :: nCellsArray
       integer, dimension(:), allocatable :: surfaceAverageIndex
 
-      real (kind=RKIND) :: x, r, layerSum, bulkRichardsonNumberStop, sfc_layer_depth
+      real (kind=RKIND) :: x, bulkRichardsonNumberStop, sfc_layer_depth
       real (kind=RKIND) :: normalVelocityAv, delU2, areaSum, blTemp
-      real (kind=RKIND) :: sigma, turbulentScalarVelocityScalePoint
+      real (kind=RKIND) :: sigma
       real (kind=RKIND), dimension(:), allocatable :: Nsqr_iface, turbulentScalarVelocityScale, &
                                                       deltaVelocitySquared, normalVelocitySum, &
                                                       potentialDensitySum, RiTemp,              &
@@ -833,7 +833,6 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       integer, pointer :: nVertLevels
-      type (block_type), pointer :: block
 
       !
       ! assume no errors during initialization and set to 1 when error is encountered

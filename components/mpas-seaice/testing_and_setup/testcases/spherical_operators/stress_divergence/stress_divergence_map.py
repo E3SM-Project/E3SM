@@ -98,7 +98,7 @@ def plot_subfigure(axes, fig, nVertices, vertexDegree, cellsOnVertex, xCell, yCe
 def stress_divergence_map():
 
     # grid
-    fileGrid = Dataset("x1.40962.grid.nc","r")
+    fileGrid = Dataset("grid.40962.nc","r")
 
     nCells = len(fileGrid.dimensions["nCells"])
     nVertices = len(fileGrid.dimensions["nVertices"])

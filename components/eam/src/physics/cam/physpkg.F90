@@ -33,6 +33,7 @@ module physpkg
                               do_zmconv_dcape_only => trig_dcape_only
   use scamMod,          only: single_column, scm_crm_mode
   use flux_avg,         only: flux_avg_init
+  use infnan,           only: posinf, assignment(=)
 #ifdef SPMD
   use mpishorthand
 #endif
@@ -470,6 +471,10 @@ subroutine phys_inidat( cam_out, pbuf2d )
        call pbuf_set_field(pbuf2d, m, tptr, start=(/1,n/), kount=(/pcols,1/))
     end do
     deallocate(tptr)
+
+    do lchnk=begchunk,endchunk
+       cam_out(lchnk)%tbot(:) = posinf
+    end do
 
     !
     ! 3-D fields
@@ -1037,6 +1042,11 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
        !-----------------------------------------------------------------------
        !
 
+#if (defined BFB_CAM_SCAM_IOP )
+       do c=begchunk, endchunk
+          call outfld('Tg',cam_in(c)%ts,pcols   ,c     )
+       end do
+#endif
        call t_barrierf('sync_bc_physics', mpicom)
        call t_startf ('bc_physics')
        !call t_adj_detailf(+1)
@@ -1347,6 +1357,7 @@ subroutine phys_final( phys_state, phys_tend, pbuf2d )
     use physics_buffer, only : physics_buffer_desc, pbuf_deallocate
     use chemistry, only : chem_final
     use wv_saturation, only : wv_sat_final
+    use radiation, only: radiation_final
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: 
@@ -1372,6 +1383,10 @@ subroutine phys_final( phys_state, phys_tend, pbuf2d )
     call t_startf ('wv_sat_final')
     call wv_sat_final
     call t_stopf ('wv_sat_final')
+
+    call t_startf ('radiation_final')
+    call radiation_final()
+    call t_stopf ('radiation_final')
 
     call t_startf ('print_cost_p')
     call print_cost_p
@@ -1896,6 +1911,7 @@ subroutine tphysbc (ztodt,               &
                                check_tracers_chng, check_tracers_fini
     use dycore,          only: dycore_is
     use aero_model,      only: aero_model_wetdep
+    use froude,          only: calc_uovern
     use radiation,       only: radiation_tend
     use cloud_diagnostics, only: cloud_diagnostics_calc
     use perf_mod
@@ -1910,6 +1926,7 @@ subroutine tphysbc (ztodt,               &
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
     use nudging,         only: Nudge_Model,Nudge_Loc_PhysOut,nudging_calc_tend
+    use lnd_infodata,    only: precip_downscaling_method
 
     implicit none
 
@@ -2700,6 +2717,11 @@ end if ! l_rad
 
     if(do_aerocom_ind3) then
        call cloud_top_aerocom(state, pbuf) 
+    end if
+
+    if (trim(adjustl(precip_downscaling_method)) == "FNM") then
+       !if the land model's precip downscaling method is FNM, compute uovern
+       call calc_uovern(state,cam_out)
     end if
 
     ! Diagnose the location of the tropopause and its location to the history file(s).
