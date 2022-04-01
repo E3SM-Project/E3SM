@@ -545,7 +545,7 @@ end function bfb_expm1
   END SUBROUTINE p3_main_part1
 
   SUBROUTINE p3_main_part2(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, inv_dt, &
-       p3_autocon_coeff,p3_accret_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_qc_accret_expon, &
+       p3_autocon_coeff,p3_accret_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_qc_accret_expon,p3_wbf_coeff,p3_embryonic_rain_size, &
        pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, &
        inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r, qv_prev, t_prev, &
        t_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th_atm, qc, nc, qr, nr, qi, ni, &
@@ -561,7 +561,8 @@ end function bfb_expm1
     integer, intent(in) :: kts, kte, kbot, ktop, kdir
     logical(btype), intent(in) :: do_predict_nc, do_prescribed_CCN
     real(rtype), intent(in) :: dt, inv_dt
-    real(rtype), intent(in) :: p3_autocon_coeff, p3_accret_coeff, p3_qc_autocon_expon, p3_nc_autocon_expon, p3_qc_accret_expon
+    real(rtype), intent(in) :: p3_autocon_coeff, p3_accret_coeff, p3_qc_autocon_expon, p3_nc_autocon_expon, p3_qc_accret_expon, &
+         p3_wbf_coeff, p3_embryonic_rain_size
 
     real(rtype), intent(in), dimension(kts:kte) :: pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l,      &
          inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r, qv_prev, t_prev, &
@@ -849,7 +850,7 @@ end function bfb_expm1
            qr2qv_evap_tend,nr_evap_tend)
 
       call ice_deposition_sublimation(qi_incld(k), ni_incld(k), t_atm(k), &
-           qv_sat_l(k),qv_sat_i(k),epsi,abi,qv(k), &
+           qv_sat_l(k),qv_sat_i(k),epsi,abi,qv(k), wbf_coeff, &
            qidep,qi2qv_sublim_tend,ni_sublim_tend,qiberg)
 
 444   continue
@@ -864,7 +865,7 @@ end function bfb_expm1
       ! cloud water autoconversion
       ! NOTE: cloud_water_autoconversion must be called before droplet_self_collection
       call cloud_water_autoconversion(rho(k),qc_incld(k),nc_incld(k),inv_qc_relvar(k),&
-           p3_autocon_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,&
+           p3_autocon_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_embryonic_rain_size,&
            qc2qr_autoconv_tend,nc2nr_autoconv_tend,ncautr)
 
       !............................
@@ -1071,7 +1072,7 @@ end function bfb_expm1
 
  END SUBROUTINE p3_main_part2
 
- subroutine p3_main_part3(kts, kte, kbot, ktop, kdir,                                                                      &
+ subroutine p3_main_part3(kts, kte, kbot, ktop, kdir, p3_max_mean_rain_size                                                &
       exner, cld_frac_l, cld_frac_r, cld_frac_i,                                                                           &
       rho, inv_rho, rhofaci, qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim,            &
       mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange,                                                                        &
@@ -1082,7 +1083,7 @@ end function bfb_expm1
 
    ! args
 
-   integer, intent(in) :: kts, kte, kbot, ktop, kdir
+   integer, intent(in) :: kts, kte, kbot, ktop, kdir, p3_max_mean_rain_size
 
    real(rtype), intent(in), dimension(kts:kte) :: exner, cld_frac_l, cld_frac_r, cld_frac_i
 
@@ -1137,7 +1138,7 @@ end function bfb_expm1
       if (qr(k).ge.qsmall) then
          qr_incld = qr(k)/cld_frac_r(k)
          nr_incld = nr(k)/cld_frac_r(k)
-         call get_rain_dsd2(qr_incld,nr_incld,mu_r(k),lamr(k),tmp1,tmp2)
+         call get_rain_dsd2(qr_incld,p3_max_mean_rain_size,nr_incld,mu_r(k),lamr(k),tmp1,tmp2)
          nr(k) = nr_incld*cld_frac_r(k) !limiters might change nc_incld... enforcing consistency
 
          !Note that integrating over the drop-size PDF as done here should only be done to in-cloud
@@ -1244,6 +1245,7 @@ end function bfb_expm1
   SUBROUTINE p3_main(qc,nc,qr,nr,th_atm,qv,dt,qi,qm,ni,bm,                                                                                                               &
        pres,dz,nc_nuceat_tend,nccn_prescribed,ni_activated,frzimm,frzcnt,frzdep,inv_qc_relvar,it,precip_liq_surf,precip_ice_surf,its,ite,kts,kte,diag_eff_radius_qc,     &
        diag_eff_radius_qi,rho_qi,do_predict_nc, do_prescribed_CCN,p3_autocon_coeff,p3_accret_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_qc_accret_expon,           &
+       p3_wbf_coeff,p3_max_mean_rain_size,p3_embryonic_rain_size,                                                                                                        &
        dpres,exner,qv2qi_depos_tend,precip_total_tend,nevapr,qr_evap_tend,precip_liq_flux,precip_ice_flux,rflx,sflx,cflx,cld_frac_r,cld_frac_l,cld_frac_i,               &
        p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange,                                                                                                          &
        vap_ice_exchange,qv_prev,t_prev,col_location,diag_equiv_reflectivity,diag_ze_rain,diag_ze_ice                                                                     &
@@ -1324,12 +1326,15 @@ end function bfb_expm1
     ! INPUT for prescribed CCN option
     logical(btype), intent(in)                                  :: do_prescribed_CCN
 
-    ! INPUT for autoconversion and accretion tuning parameters
+    ! INPUT for p3 tuning parameters
     real(rtype), intent(in)                                     :: p3_autocon_coeff         ! autconversion coefficient
     real(rtype), intent(in)                                     :: p3_accret_coeff          ! accretion coefficient
     real(rtype), intent(in)                                     :: p3_qc_autocon_expon      ! autconversion qc exponent
     real(rtype), intent(in)                                     :: p3_nc_autocon_expon      ! autconversion nc exponent
     real(rtype), intent(in)                                     :: p3_qc_accret_expon       ! accretion qc and qr exponent
+    real(rtype), intent(in)                                     :: p3_wbf_coeff             ! WBF coefficient
+    real(rtype), intent(in)                                     :: p3_max_mean_rain_size    ! max mean rain size allowed
+    real(rtype), intent(in)                                     :: p3_embryonic_rain_size   ! embryonic rain size from autoconversion
 
     ! INPUT needed for PBUF variables used by other parameterizations
 
@@ -1509,7 +1514,7 @@ end function bfb_expm1
        if (.not. (is_nucleat_possible .or. is_hydromet_present)) goto 333
 
        call p3_main_part2(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, inv_dt, &
-            p3_autocon_coeff,p3_accret_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_qc_accret_expon, &
+            p3_autocon_coeff,p3_accret_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_qc_accret_expon,p3_wbf_coeff,p3_embryonic_rain_size, &
             pres(i,:), dpres(i,:), dz(i,:), nc_nuceat_tend(i,:), exner(i,:), inv_exner(i,:), &
             inv_cld_frac_l(i,:), inv_cld_frac_i(i,:), inv_cld_frac_r(i,:), ni_activated(i,:), inv_qc_relvar(i,:), &
             cld_frac_i(i,:), cld_frac_l(i,:), cld_frac_r(i,:), qv_prev(i,:), t_prev(i,:), &
@@ -1609,7 +1614,7 @@ end function bfb_expm1
        !...................................................
        ! final checks to ensure consistency of mass/number
        ! and compute diagnostic fields for output
-       call p3_main_part3(kts, kte, kbot, ktop, kdir,                                                                         &
+       call p3_main_part3(kts, kte, kbot, ktop, kdir, p3_max_mean_rain_size                                                   &
             exner(i,:), cld_frac_l(i,:), cld_frac_r(i,:), cld_frac_i(i,:),                                                    &
             rho(i,:), inv_rho(i,:), rhofaci(i,:), qv(i,:), th_atm(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), qi(i,:), ni(i,:), &
             qm(i,:), bm(i,:), latent_heat_vapor(i,:), latent_heat_sublim(i,:),                                                &
@@ -1992,7 +1997,7 @@ end function bfb_expm1
 
 
   !===========================================================================================
-  subroutine get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r)
+  subroutine get_rain_dsd2(qr,p3_max_mean_rain_size,nr,mu_r,lamr,cdistr,logn0r)
 
     ! Computes and returns rain size distribution parameters
 
@@ -2000,6 +2005,7 @@ end function bfb_expm1
 
     !arguments:
     real(rtype),     intent(in)            :: qr
+    real(rtype),     intent(in)            :: p3_max_mean_rain_size
     real(rtype),     intent(inout)         :: nr
     real(rtype),     intent(out)           :: lamr,mu_r,cdistr,logn0r
 
@@ -2022,7 +2028,7 @@ end function bfb_expm1
        mu_r = mu_r_constant
        lamr   = bfb_cbrt(cons1*nr*(mu_r+3._rtype)*(mu_r+2._rtype)*(mu_r+1._rtype)/(qr))  ! recalculate slope based on mu_r
        lammax = (mu_r+1._rtype)*1.e+5_rtype   ! check for slope
-       lammin = (mu_r+1._rtype)*200._rtype   ! set to small value since breakup is explicitly included (mean size 0.8 mm)
+       lammin = (mu_r+1._rtype)*(1._rtype)/p3_max_mean_rain_size   ! breakup is explicitly included (mean size set by namelist parameter)
 
        ! apply lambda limiters for rain
        if (lamr.lt.lammin) then
@@ -2921,8 +2927,8 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
 end subroutine rain_self_collection
 
 
-subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,inv_qc_relvar,    &
-   p3_autocon_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,     &
+subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,inv_qc_relvar,          &
+   p3_autocon_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_embryonic_rain_size, &
    qc2qr_autoconv_tend,nc2nr_autoconv_tend,ncautr)
 
    implicit none
@@ -2934,6 +2940,7 @@ subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,inv_qc_relvar,    &
    real(rtype), intent(in) :: p3_autocon_coeff
    real(rtype), intent(in) :: p3_qc_autocon_expon
    real(rtype), intent(in) :: p3_nc_autocon_expon
+   real(rtype), intent(in) :: p3_embryonic_rain_size
 
    real(rtype), intent(out) :: qc2qr_autoconv_tend
    real(rtype), intent(out) :: nc2nr_autoconv_tend
@@ -2954,7 +2961,7 @@ subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,inv_qc_relvar,    &
       qc2qr_autoconv_tend = sbgrd_var_coef*p3_autocon_coeff*bfb_pow(qc_incld,p3_qc_autocon_expon)*bfb_pow(nc_incld*1.e-6_rtype*rho,p3_nc_autocon_expon)
       
       ! Note: ncautr is change in Nr; nc2nr_autoconv_tend is change in Nc
-      ncautr = qc2qr_autoconv_tend*cons3
+      ncautr = qc2qr_autoconv_tend*cons3*(1._rtype/bfb_pow(p3_embryonic_rain_size,3._rtype))
       nc2nr_autoconv_tend = qc2qr_autoconv_tend*nc_incld/qc_incld
 
       if (qc2qr_autoconv_tend .eq.0._rtype) nc2nr_autoconv_tend = 0._rtype
@@ -3531,7 +3538,7 @@ end subroutine update_prognostic_liquid
 
 
 subroutine ice_deposition_sublimation(qi_incld,ni_incld,t_atm,    &
-qv_sat_l,qv_sat_i,epsi,abi,qv,    &
+qv_sat_l,qv_sat_i,epsi,abi,qv,wbf_coeff,    &
 qidep,qi2qv_sublim_tend,ni_sublim_tend,qiberg)
 
    implicit none
@@ -3544,6 +3551,7 @@ qidep,qi2qv_sublim_tend,ni_sublim_tend,qiberg)
    real(rtype), intent(in)  :: epsi
    real(rtype), intent(in)  :: abi
    real(rtype), intent(in)  :: qv
+   real(rtype), intent(in)  :: wbf_coeff
    real(rtype), intent(out) :: qidep
    real(rtype), intent(out) :: qi2qv_sublim_tend
    real(rtype), intent(out) :: ni_sublim_tend
@@ -3567,7 +3575,7 @@ qidep,qi2qv_sublim_tend,ni_sublim_tend,qiberg)
       if (t_atm < T_zerodegc) then
          !Compute bergeron rate assuming cloud for whole step.
          qiberg = max(epsi*oabi*(qv_sat_l - qv_sat_i), 0._rtype)
-         qiberg = qiberg*0.7_rtype
+         qiberg = qiberg*wbf_coeff
       else !T>frz
          qiberg=0._rtype
       end if !T<frz

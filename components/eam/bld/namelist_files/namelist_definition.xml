@@ -2285,6 +2285,23 @@ Coefficient fit used by P3 in autoconversion
 Default: 1350._rtype
 </entry>
 
+<entry id="p3_wbf_coeff" type="real" category="microphysics"
+	group="micro_nl" valid_values="" >
+Coefficient for Wegener-Bergeron-Findeisen process in P3 
+Default: 0.7_rtype
+</entry>
+
+<entry id="p3_max_mean_rain_size" type="real" category="microphysics"
+	group="micro_nl" valid_values="" >
+Maximal mean rain size in P3
+Default: 0.005_rtype
+</entry>
+
+<entry id="p3_embronic_rain_size" type="real" category="microphysics"
+	group="micro_nl" valid_values="" >
+Embryonic rain size from autoconversion in P3
+Default: 0.000025_rtype
+</entry>
 
 <entry id="do_prescribed_CCN" type="logical" category="microphys"
        group="micro_nl" valid_values="" >
