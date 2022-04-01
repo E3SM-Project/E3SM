@@ -3785,6 +3785,9 @@ add_default($nl, 'zmconv_tp_fac');
 add_default($nl, 'zmconv_alfa');
 add_default($nl, 'zmconv_trigdcape_ull');
 add_default($nl, 'zmconv_microp');
+add_default($nl, 'zmconv_auto_fac');
+add_default($nl, 'zmconv_accr_fac');
+add_default($nl, 'zmconv_micro_dcs');
 
 # moist convection rainwater coefficients
 # These no more needed for EAM, including uwshcu_rpen. No need to reset for 'cam5'
