@@ -727,11 +727,16 @@ contains
 
       do while (n .LE. n_S)
          nRow = rowValues(n)
-         do while ( rowValues(n) .EQ. nRow )
+         do while ( (n.LT.(n_S)) .AND. (rowValues(n).EQ.nRow) )
             nCol = colValues(n)
             rhs = rhs + dataIn(nCol) * sValues(n)
             n = n + 1
          enddo
+         if ( (n.EQ.n_S) .AND. (rowValues(n).EQ.nRow) ) then
+            nCol = colValues(n)
+            rhs = rhs + dataIn(nCol) * sValues(n)
+            n = n + 1
+         endif
          dataOut(nRow) = rhs
          rhs = 0.0_RKIND
       enddo
