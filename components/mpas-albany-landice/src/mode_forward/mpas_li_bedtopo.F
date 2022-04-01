@@ -386,6 +386,7 @@ contains
       !-----------------------------------------------------------------
 
 #ifdef USE_SEALEVELMODEL
+      character (len=StrKIND), pointer :: config_slm_coupling_interval
       type (mpas_pool_type), pointer :: meshPool     !< mesh information
       type (mpas_pool_type), pointer :: geometryPool
       real (kind=RKIND), dimension(:), pointer :: thickness, bedTopography
@@ -394,7 +395,7 @@ contains
       real (kind=RKIND), dimension(nglv*2*nglv) :: thicknessSLgrid1D
       real (kind=RKIND), dimension(nglv*2*nglv) :: bedtopoSLgrid1D
       real (kind=RKIND), dimension(nglv*2*nglv) :: maskSLgrid1D
-
+      integer :: slm_coupling_interval
       integer :: err_tmp
       integer :: unit_num_slm  ! SLM variable
       integer :: itersl, dtime ! SLM variable
@@ -471,6 +472,17 @@ contains
 
       if (curProc.eq.0) then
 
+         ! First, check consistency in coupling interval set up in MALI and SLM
+         err = 0
+         call mpas_pool_get_config(liConfigs, 'config_slm_coupling_interval', config_slm_coupling_interval)
+         read(config_slm_coupling_interval(1:4),*) slm_coupling_interval
+         call sl_drive_readnl(itersl, dtime, starttime) !SLM subroutine
+         if (slm_coupling_interval .NE. dtime) then
+            call mpas_log_write("The coupling interval in MALI and SLM settings are inconsistent", &
+                 MPAS_LOG_ERR)
+            err = ior(err,1)
+         endif
+
          ! Rearrange data into CellID order
          do iCell = 1,nCellsGlobal
             globalArrayThickness(indexToCellIDGathered(iCell)) = gatheredArrayThickness(iCell)
@@ -496,7 +508,6 @@ contains
 
          ! series of calling SLM routines
          call sl_set_unit_num(unit_num_slm)
-         call sl_drive_readnl(itersl, dtime, starttime)
          call sl_call_readnl
          call sl_solver_checkpoint(itersl, dtime)
          call sl_timewindow(slmTimeStep)
