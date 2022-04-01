@@ -128,8 +128,9 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
-      !$acc     present(tend, normalVelocity, dvEdge, layerThicknessEdge, edgeSignOnCell, &
-      !$acc     minLevelEdgeBot, maxLevelEdgeBot) &
+      !$acc     present(tend, normalVelocity, dvEdge, &
+      !$acc             layerThickEdgeFlux, edgeSignOnCell, &
+      !$acc             minLevelEdgeBot, maxLevelEdgeBot) &
       !$acc     private(i, k, invAreaCell, flux)
 #else
       !$omp parallel

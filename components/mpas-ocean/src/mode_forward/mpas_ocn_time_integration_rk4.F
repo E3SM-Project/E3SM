@@ -728,7 +728,7 @@ module ocn_time_integration_rk4
          call ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, err)
 
 #ifdef MPAS_OPENACC
-         !$acc update host(layerThickEdge)
+         !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
          !$acc update host(relativeVorticity, circulation)
          !$acc update host(vertTransportVelocityTop, &
          !$acc             vertGMBolusVelocityTop, &
@@ -1308,7 +1308,7 @@ module ocn_time_integration_rk4
 #endif
       call ocn_diagnostic_solve(dt, provisStatePool, forcingPool, meshPool, scratchPool, tracersPool, 1)
 #ifdef MPAS_OPENACC
-      !$acc update host(layerThickEdge)
+      !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
       !$acc update host(relativeVorticity, circulation)
       !$acc update host(vertTransportVelocityTop, &
       !$acc             vertGMBolusVelocityTop, &
@@ -1598,7 +1598,7 @@ module ocn_time_integration_rk4
 #endif
       call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, 2)
 #ifdef MPAS_OPENACC
-      !$acc update host(layerThickEdge)
+      !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
       !$acc update host(relativeVorticity, circulation)
       !$acc update host(vertTransportVelocityTop, &
       !$acc             vertGMBolusVelocityTop, &
