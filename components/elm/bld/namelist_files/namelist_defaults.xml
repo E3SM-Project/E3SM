@@ -225,6 +225,16 @@ lnd/clm2/surfdata_map/surfdata_ne0np4_northamericax4v1.pg2_simyr1850_c210112.nc<
 <fsurdat hgrid="ne0np4_northamericax4v1.pg2"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne0np4_northamericax4v1.pg2_simyr2010_c210112.nc</fsurdat>
 
+<!-- ne0np4_arcticx4v1.pg2 -->
+<finidat hgrid="ne0np4_arcticx4v1.pg2">lnd/clm2/initdata/arcticx4v1pg2_oARRM60to10.ICRUELM.spinup-from-interp.elm.r.0051-01-01-00000.nc</finidat>
+<fsurdat hgrid="ne0np4_arcticx4v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_arcticx4v1pg2_simyr2010_c210805.nc</fsurdat>
+<fsurdat hgrid="ne0np4_arcticx4v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_arcticx4v1pg2_simyr2000_c210707.nc</fsurdat>
+<fsurdat hgrid="ne0np4_arcticx4v1.pg2"   sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_arcticx4v1pg2_simyr1850_c210707.nc</fsurdat>
+
+
 <!-- f10 resolution -->
 
 <finidat hgrid="10x15"    maxpft="25"  mask="USGS" use_cn=".true." use_cndv=".false." ic_ymd="00010101" more_vertlayers=".false." use_vertsoilc=".true."
