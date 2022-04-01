@@ -61,8 +61,6 @@ clean:
 	(cd shared; $(MAKE) clean)
 	(cd mode_forward; $(MAKE) clean)
 	(cd analysis_members; $(MAKE) clean)
-ifeq "$(SLM)" "true"
 	if [ -e SeaLevelModel/.git ]; then \
 		(cd SeaLevelModel; $(MAKE) clean) \
 	fi
-endif
