@@ -582,7 +582,7 @@ contains
       type (mpas_pool_type), pointer :: velocityPool      !< velocity information
 
       real (kind=RKIND), dimension(:), pointer :: bedTopography, thickness
-      real (kind=RKIND), dimension(:), pointer :: topoChange
+      real (kind=RKIND), dimension(:), pointer :: bedTopographyChange
       real (kind=RKIND), dimension(:), allocatable :: meshMask
       real (kind=RKIND), dimension(nglv,2*nglv) :: ismIceload, ismMask
       real (kind=RKIND), dimension(nglv,2*nglv) :: slmSLchange
@@ -601,7 +601,7 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-      call mpas_pool_get_array(geometryPool, 'topoChange', topoChange)
+      call mpas_pool_get_array(geometryPool, 'bedTopographyChange', bedTopographyChange)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
 
@@ -662,11 +662,11 @@ contains
 
       ! scatter output sea-level changes to processors
       call MPI_SCATTERV(gatheredArrayTopoChange, nCellsPerProc, nCellsDisplacement, MPI_DOUBLE, &
-                        topoChange, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
+                        bedTopographyChange, nCellsAll, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
       err = ior(err, err_tmp)
 
       ! update bedTopography
-      bedTopography(:) = bedTopography(:) + topoChange(:)
+      bedTopography(:) = bedTopography(:) + bedTopographyChange(:)
 
       ! Perform Halo exchange update
       call mpas_dmpar_field_halo_exch(domain,'bedTopography')
