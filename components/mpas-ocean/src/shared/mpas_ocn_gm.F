@@ -684,6 +684,8 @@ contains
 
          nEdges = nEdgesArray(3)
          if(config_gm_enable_horizontal_resolution_function) then
+            call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
+
             !$omp parallel
             !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, lt1, lt2, c_mode1, resolution)
             do iEdge = 1, nEdges
