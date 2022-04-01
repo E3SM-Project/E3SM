@@ -34,6 +34,8 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
   m_group_name = "Group [";
   m_group_name += m_group_schedule_type==ScheduleType::Sequential
                 ? "Sequential]:" : "Parallel]:";
+
+  auto& apf = AtmosphereProcessFactory::instance();
   for (int i=0; i<m_group_size; ++i) {
     // The comm to be passed to the processes construction is
     //  - the same as the input comm if num_entries=1 or sched_type=Sequential
@@ -55,9 +57,12 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
       ekat::error::runtime_abort("Error! Parallel schedule type not yet implemented.\n");
     }
 
-    const auto& params_i = m_params.sublist(ekat::strint("Process",i));
+    // Set the logger in this AP's params
+    auto& params_i = m_params.sublist(ekat::strint("Process",i));
+    params_i.set("Logger",this->m_atm_logger);
     const std::string& process_name = params_i.get<std::string>("Process Name");
-    m_atm_processes.emplace_back(AtmosphereProcessFactory::instance().create(process_name,proc_comm,params_i));
+
+    m_atm_processes.emplace_back(apf.create(process_name,proc_comm,params_i));
 
     // NOTE: the shared_ptr of the new atmosphere process *MUST* have been created correctly.
     //       Namely, the creation process must have set up enable_shared_from_this's status correctly.

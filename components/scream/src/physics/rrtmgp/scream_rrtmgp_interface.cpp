@@ -1,4 +1,5 @@
 #include "scream_rrtmgp_interface.hpp"
+
 #include "mo_load_coefficients.h"
 #include "mo_load_cloud_coefficients.h"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
@@ -52,11 +53,13 @@ namespace scream {
          * can be used as-is, but are intended to be wrapped by the SCREAM AD
          * interface to radiation.
          */
-        void rrtmgp_initialize(GasConcs &gas_concs) {
+        void rrtmgp_initialize(GasConcs &gas_concs,
+                               const std::shared_ptr<spdlog::logger>& logger) {
 
             // If we've already initialized, just exit
-            if (initialized) { 
-                std::cout << "RRTMGP is already initialized; skipping\n";
+            if (initialized) {
+                if (logger)
+                  logger->info("RRTMGP is already initialized; skipping\n");
                 return; 
             }
 
@@ -201,7 +204,8 @@ namespace scream {
                 real2d &lw_flux_up, real2d &lw_flux_dn,
                 real3d &sw_bnd_flux_up, real3d &sw_bnd_flux_dn, real3d &sw_bnd_flux_dn_dir,
                 real3d &lw_bnd_flux_up, real3d &lw_bnd_flux_dn,
-                const Real tsi_scaling, const bool i_am_root) {
+                const Real tsi_scaling,
+                const std::shared_ptr<spdlog::logger>& logger) {
 
             // Setup pointers to RRTMGP SW fluxes
             FluxesByband fluxes_sw;
@@ -247,7 +251,7 @@ namespace scream {
                 ncol, nlay,
                 k_dist_sw, p_lay, t_lay, p_lev, t_lev, gas_concs, 
                 sfc_alb_dir, sfc_alb_dif, mu0, aerosol_sw, clouds_sw, fluxes_sw,
-                tsi_scaling, i_am_root
+                tsi_scaling, logger
             );
 
             // Do longwave
@@ -322,7 +326,8 @@ namespace scream {
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, 
                 OpticalProps2str &aerosol, OpticalProps2str &clouds,
                 FluxesByband &fluxes,
-                const Real tsi_scaling, const bool i_am_root) {
+                const Real tsi_scaling,
+                const std::shared_ptr<spdlog::logger>& logger) {
 
             // Get problem sizes
             int nbnd = k_dist.get_nband();
@@ -366,7 +371,8 @@ namespace scream {
             // Copy data back to the device
             dayIndices_h.deep_copy_to(dayIndices);
             if (nday == 0) { 
-                if (i_am_root) std::cout << "WARNING: no daytime columns found for this chunk!\n";
+                if (logger)
+                  logger->warn("WARNING: no daytime columns found for this chunk!\n");
                 return;
             }
 

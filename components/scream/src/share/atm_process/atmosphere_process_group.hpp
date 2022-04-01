@@ -30,7 +30,7 @@ public:
   using atm_proc_type     = AtmosphereProcess;
 
   // Constructor(s)
-  explicit AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& params);
+  AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   virtual ~AtmosphereProcessGroup () = default;
 

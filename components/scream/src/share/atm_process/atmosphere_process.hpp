@@ -16,6 +16,7 @@
 #include "ekat/util/ekat_factory.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
+#include "ekat/logging/ekat_logger.hpp"
 
 #include <memory>
 #include <string>
@@ -72,6 +73,8 @@ class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess
 public:
   using TimeStamp   = util::TimeStamp;
   using ci_string   = ekat::CaseInsensitiveString;
+  using logger_t    = spdlog::logger;
+  using LogLevel    = ekat::logger::LogLevel;
 
   template<typename T>
   using str_map = std::map<std::string,T>;
@@ -219,6 +222,9 @@ public:
   void add_invariant_check (const Args... args);
 
 protected:
+
+  // Sends a message to the atm log
+  void log (const LogLevel lev, const std::string& msg) const;
 
   // Derived classes can used these method, so that if we change how fields/groups
   // requirement are stored (e.g., change the std container), they don't need to change
@@ -375,6 +381,19 @@ protected:
 
   // Parameter list
   ekat::ParameterList m_params;
+
+  // The logger for the whole atmosphere
+  // WARNING: this is non-const, but you should *NOT* modify its
+  //          log level and/or its sinks. If you just need to log
+  //          a message, use the log method.
+  //
+  // TODO: I'm not fond of letting derived classes access the log, since
+  //       they can modify log levels or sinks. However, RRTMGPRadiation
+  //       calls some external functions, which can print info/warnings,
+  //       so we need to pass a logger reference to them. Also, logging
+  //       is a non-const op on the logger, so since we need a non-const
+  //       logger, we might as well expose the member to all derived classes.
+  std::shared_ptr<logger_t>  m_atm_logger;
 
 private:
   // Called from initialize, this method creates the m_[fields|groups]_[in|out]_pointers

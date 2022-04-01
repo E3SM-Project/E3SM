@@ -9,10 +9,20 @@
 namespace scream
 {
 
-AtmosphereProcess::AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
-  : m_comm  (comm)
-  , m_params(params)
-{}
+AtmosphereProcess::
+AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
+  : m_comm       (comm)
+  , m_params     (params)
+{
+  if (m_params.isParameter("Logger")) {
+    m_atm_logger = m_params.get<std::shared_ptr<logger_t>>("Logger");
+  } else {
+    // Create a console-only logger, that logs all ranks
+    using namespace ekat::logger;
+    using logger_impl_t = Logger<LogNoFile,LogAllRanks>;
+    m_atm_logger = std::make_shared<logger_impl_t>("",LogLevel::trace,m_comm);
+  }
+}
 
 void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type) {
   set_fields_and_groups_pointers();
@@ -174,10 +184,11 @@ void AtmosphereProcess::run_precondition_checks () const {
       pc->repair();
     } else if (it.first==CheckFailHandling::Warning) {
       // Still ok, but warn the user
-      std::cout << "WARNING: Pre-condition property check failed.\n"
+      log (LogLevel::warn,
+        "WARNING: Pre-condition property check failed.\n"
         "  - Property check name: " + pc->name() + "\n"
         "  - Atmosphere process name: " + name() + "\n"
-        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n";
+        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
     } else {
       // No hope. Crash.
       EKAT_ERROR_MSG(
@@ -205,10 +216,11 @@ void AtmosphereProcess::run_postcondition_checks () const {
       pc->repair();
     } else if (it.first==CheckFailHandling::Warning) {
       // Still ok, but warn the user
-      std::cout << "WARNING: Post-condition property check failed.\n"
+      log (LogLevel::warn,
+        "WARNING: Post-condition property check failed.\n"
         "  - Property check name: " + pc->name() + "\n"
         "  - Atmosphere process name: " + name() + "\n"
-        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n";
+        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
     } else {
       // No hope. Crash.
       EKAT_ERROR_MSG(
@@ -254,6 +266,10 @@ bool AtmosphereProcess::has_computed_group (const std::string& name, const std::
     }
   }
   return false;
+}
+
+void AtmosphereProcess::log (const LogLevel lev, const std::string& msg) const {
+  m_atm_logger->log(lev,msg);
 }
 
 void AtmosphereProcess::update_time_stamps () {
