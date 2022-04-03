@@ -47,7 +47,9 @@ module LakeBGCType
      real(r8), pointer :: cdep_col(:)                 ! col terrestrial OC deposition rate (gC/m2/yr)
      integer,  pointer :: ltype_col(:)                ! col lake type (regular lake = 0) 
 
+     ! Lake BGC intermediate variables
      real(r8), pointer :: cdist_factor(:,:)           ! col active sediment OC distribution factor 
+     real(r8), pointer :: soilpor_col(:,:)            ! col sediment porosity (fraction)
 
      ! Lake BGC state variables
      real(r8), pointer :: conc_wat_col(:,:,:)         ! col water-column depth-resolved dissolved gas conc (mol/m3)
@@ -134,6 +136,7 @@ contains
     allocate( this%ltype_col           (begc:endc))                                  ; this%ltype_col          (:)     = 0
 
     allocate( this%cdist_factor        (begc:endc,1:nlevgrnd))                       ; this%cdist_factor       (:,:)   = nan
+    allocate( this%soilpor_col         (begc:endc,1:nlevgrnd))                       ; this%soilpor_col        (:,:)   = nan
 
     allocate( this%conc_wat_col        (begc:endc,1:nlevlak,1:ngaslak))              ; this%conc_wat_col       (:,:,:) = nan
     allocate( this%conc_sed_col        (begc:endc,1:nlevgrnd,1:ngaslak))             ; this%conc_sed_col       (:,:,:) = nan
@@ -490,6 +493,7 @@ contains
        this%biomas_phyto_col(c,1:nlevlak,1:nphytolak) = 0._r8
        this%chla_col(c,1:nlevlak)                     = 0._r8
        this%soilc_col(c,1:nlevgrnd,1:nsoilclak)       = 0._r8
+       this%soilpor_col(c,1:nlevgrnd)                 = 0.4_r8
 
        g = col_pp%gridcell(c)
        t = col_pp%topounit(c)
@@ -504,6 +508,7 @@ contains
           this%cdep_col(c)                            = spval
           this%ltype_col(c)                           = 0
           this%cdist_factor(c,:)                      = spval
+          this%soilpor_col(c,:)                       = spval
           this%ch4_sed_diff_col(c)                    = spval
           this%ch4_surf_diff_col(c)                   = spval
           this%ch4_sed_ebul_col(c)                    = spval
@@ -552,15 +557,15 @@ contains
              if (j<=nlevsoi) then
                 this%soilc_col(c,j,actC)              = 0._r8 
                 this%soilc_col(c,j,pasC)              = carbon * exp(-dampen*zisoifl(j)) 
+                if (j<js) then
+                   this%cdist_factor(c,j)             = dampen / (1._r8-exp(-dampen*ztot)) * exp(-dampen*zisoifl(j))
+                else
+                   this%cdist_factor(c,j)             = 0._r8
+                end if
              else
                 this%soilc_col(c,j,actC)              = 0._r8
                 this%soilc_col(c,j,pasC)              = 0._r8
-             end if
-             if (j<js) then
-                this%cdist_factor(c,j) = dampen / (1._r8-exp(-dampen*ztot)) * &
-                   exp(-dampen*zisoifl(j))
-             else
-                this%cdist_factor(c,j) = 0._r8
+                this%cdist_factor(c,j)                = 0._r8
              end if
           end do
        end if
