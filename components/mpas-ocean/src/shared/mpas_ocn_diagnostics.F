@@ -2077,7 +2077,11 @@ contains
 
       if (landIcePressureOn) then
 #ifdef MPAS_OPENACC
-         !$acc parallel loop present(pressureAdjustedSSH, landIceDraft)
+         !! This first directive should be correct, but there may
+         !! be a problem with the optional argument. Removing optional
+         !! landIceDraft from the present list for now.
+         !!acc parallel loop present(pressureAdjustedSSH, landIceDraft)
+         !$acc parallel loop present(pressureAdjustedSSH)
 #else
          !$omp parallel
          !$omp do schedule(runtime)
