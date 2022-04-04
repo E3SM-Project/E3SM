@@ -220,7 +220,8 @@ module advance_clubb_core_module
         ibeta,                   &
         iSkw_denom_coef,         &
         iSkw_max_mag,            &
-        iup2_sfc_coef
+        iup2_sfc_coef,           &
+        ia3_coef_min
 
     use parameters_tunable, only: &
         nu_vertical_res_dep    ! Type(s)
@@ -1196,7 +1197,7 @@ module advance_clubb_core_module
     ! We found we obtain fewer spikes in wp3 when we clip a3 to be no greater
     ! than -1.4 -dschanen 4 Jan 2011
     !a3_coef = max( a3_coef, -1.4_core_rknd ) ! Known magic number
-    a3_coef = max( a3_coef, 1.6_core_rknd ) ! Known magic number
+    a3_coef = max( a3_coef, clubb_params(ia3_coef_min) )
     a3_coef_zt(:,:) = zm2zt( nz, ngrdcol, gr, a3_coef(:,:) )
 
     ! Interpolate thlp2, rtp2, and rtpthlp to thermodynamic levels.
@@ -1697,6 +1698,7 @@ module advance_clubb_core_module
                             clubb_config_flags%l_brunt_vaisala_freq_moist,        & ! intent(in)
                             clubb_config_flags%l_use_thvm_in_bv_freq,             & ! intent(in)
                             clubb_config_flags%l_lmm_stepping,                    & ! intent(in)
+                            clubb_config_flags%l_enable_relaxed_clipping,         & ! intent(in)
                             order_xm_wpxp, order_xp2_xpyp, order_wp2_wp3,         & ! intent(in)
                             stats_zt, stats_zm, stats_sfc,                        & ! intent(i/o)
                             rtm, wprtp, thlm, wpthlp,                             & ! intent(i/o)
@@ -1746,34 +1748,34 @@ module advance_clubb_core_module
       ! Advance the prognostic equations
       !   for scalar variances and covariances,
       !   plus the horizontal wind variances by one time step, by one time step.
-      do i = 1, ngrdcol
-        call advance_xp2_xpyp( gr(i), invrs_tau_xp2_zm(i,:), invrs_tau_C4_zm(i,:),       & ! intent(in)
-                               invrs_tau_C14_zm(i,:), wm_zm(i,:),                     & ! intent(in)
-                               rtm(i,:), wprtp(i,:), thlm(i,:), wpthlp(i,:), wpthvp(i,:), um(i,:), vm(i,:),    & ! intent(in)
-                               wp2(i,:), wp2_zt(i,:), wp3(i,:), upwp(i,:), vpwp(i,:),                & ! intent(in)
-                               sigma_sqd_w(i,:), Skw_zm(i,:), wprtp2(i,:), wpthlp2(i,:),        & ! intent(in)
-                               wprtpthlp(i,:), Kh_zt(i,:), rtp2_forcing(i,:),              & ! intent(in)
-                               thlp2_forcing(i,:), rtpthlp_forcing(i,:),              & ! intent(in)
-                               rho_ds_zm(i,:), rho_ds_zt(i,:), invrs_rho_ds_zm(i,:),       & ! intent(in)
-                               thv_ds_zm(i,:), cloud_frac(i,:),                       & ! intent(in)
-                               wp3_on_wp2(i,:), wp3_on_wp2_zt(i,:),                   & ! intent(in)
-                               pdf_implicit_coefs_terms(i),                    & ! intent(in)
-                               dt_advance,                                  & ! intent(in)
-                               sclrm(i,:,:), wpsclrp(i,:,:),                              & ! intent(in)
-                               wpsclrp2(i,:,:), wpsclrprtp(i,:,:), wpsclrpthlp(i,:,:),           & ! intent(in)
-                               wp2_splat(i,:),                                   & ! intent(in)
-                               clubb_params, nu_vert_res_dep(i),               & ! intent(in)
-                               clubb_config_flags%iiPDF_type,               & ! intent(in)
-                               clubb_config_flags%l_predict_upwp_vpwp,      & ! intent(in)
-                               clubb_config_flags%l_min_xp2_from_corr_wx,   & ! intent(in)
-                               clubb_config_flags%l_C2_cloud_frac,          & ! intent(in)
-                               clubb_config_flags%l_upwind_xpyp_ta,         & ! intent(in)
-                               clubb_config_flags%l_godunov_upwind_xpyp_ta, & ! intent(in)
-                               clubb_config_flags%l_lmm_stepping,           & ! intent(in)
-                               stats_zt(i), stats_zm(i), stats_sfc(i),               & ! intent(inout)
-                               rtp2(i,:), thlp2(i,:), rtpthlp(i,:), up2(i,:), vp2(i,:),              & ! intent(inout)
-                               sclrp2(i,:,:), sclrprtp(i,:,:), sclrpthlp(i,:,:))                   ! intent(inout)
-      end do
+      call advance_xp2_xpyp( nz, ngrdcol, gr,                             & ! intent(in)
+                             invrs_tau_xp2_zm, invrs_tau_C4_zm,           & ! intent(in)
+                             invrs_tau_C14_zm, wm_zm,                     & ! intent(in)
+                             rtm, wprtp, thlm, wpthlp, wpthvp, um, vm,    & ! intent(in)
+                             wp2, wp2_zt, wp3, upwp, vpwp,                & ! intent(in)
+                             sigma_sqd_w, wprtp2, wpthlp2,                & ! intent(in)
+                             wprtpthlp, Kh_zt, rtp2_forcing,              & ! intent(in)
+                             thlp2_forcing, rtpthlp_forcing,              & ! intent(in)
+                             rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm,       & ! intent(in)
+                             thv_ds_zm, cloud_frac,                       & ! intent(in)
+                             wp3_on_wp2, wp3_on_wp2_zt,                   & ! intent(in)
+                             pdf_implicit_coefs_terms,                    & ! intent(in)
+                             dt_advance,                                  & ! intent(in)
+                             sclrm, wpsclrp,                              & ! intent(in)
+                             wpsclrp2, wpsclrprtp, wpsclrpthlp,           & ! intent(in)
+                             wp2_splat,                                   & ! intent(in)
+                             clubb_params, nu_vert_res_dep,               & ! intent(in)
+                             clubb_config_flags%iiPDF_type,               & ! intent(in)
+                             clubb_config_flags%l_predict_upwp_vpwp,      & ! intent(in)
+                             clubb_config_flags%l_min_xp2_from_corr_wx,   & ! intent(in)
+                             clubb_config_flags%l_C2_cloud_frac,          & ! intent(in)
+                             clubb_config_flags%l_upwind_xpyp_ta,         & ! intent(in)
+                             clubb_config_flags%l_godunov_upwind_xpyp_ta, & ! intent(in)
+                             clubb_config_flags%l_lmm_stepping,           & ! intent(in)
+                             stats_zt, stats_zm, stats_sfc,               & ! intent(inout)
+                             rtp2, thlp2, rtpthlp, up2, vp2,              & ! intent(inout)
+                             sclrp2, sclrprtp, sclrpthlp)                   ! intent(inout)
+
       
       if ( clubb_at_least_debug_level( 0 ) ) then
          if ( err_code == clubb_fatal_error ) then
@@ -3565,7 +3567,8 @@ module advance_clubb_core_module
                  l_min_xp2_from_corr_wx,                  & ! intent(in)
                  l_prescribed_avg_deltaz,                 & ! intent(in)
                  l_damp_wp2_using_em,                     & ! intent(in)
-                 l_stability_correct_tau_zm               & ! intent(in)
+                 l_stability_correct_tau_zm,              & ! intent(in)
+                 l_enable_relaxed_clipping                & ! intent(in)
 
 #ifdef GFDL
                  , cloud_frac_min                         & ! intent(in)  h1g, 2010-06-16
@@ -3619,9 +3622,6 @@ module advance_clubb_core_module
           iiPDF_LY93,       &
           iiPDF_new_hybrid, &
           l_explicit_turbulent_adv_wpxp
-
-      use advance_xm_wpxp_module, only: &
-          l_enable_relaxed_clipping
 
       use clubb_precision, only: &
           core_rknd ! Variable(s)
@@ -3713,19 +3713,23 @@ module advance_clubb_core_module
                                ! CLUBB's PDF.
 
       logical, intent(in) :: &
-        l_predict_upwp_vpwp,     & ! Flag to predict <u'w'> and <v'w'> along with <u> and <v>
-                                   ! alongside the advancement of <rt>, <w'rt'>, <thl>, <wpthlp>,
-                                   ! <sclr>, and <w'sclr'> in subroutine advance_xm_wpxp.
-                                   ! Otherwise, <u'w'> and <v'w'> are still approximated by eddy
-                                   ! diffusivity when <u> and <v> are advanced in subroutine
-                                   ! advance_windm_edsclrm.
-        l_min_xp2_from_corr_wx,  & ! Flag to base the threshold minimum value of xp2 (rtp2 and
-                                   ! thlp2) on keeping the overall correlation of w and x within
-                                   ! the limits of -max_mag_correlation_flux to
-                                   ! max_mag_correlation_flux.
-        l_prescribed_avg_deltaz, &  ! used in adj_low_res_nu. If .true., avg_deltaz = deltaz
-        l_damp_wp2_using_em,     &
-        l_stability_correct_tau_zm
+        l_predict_upwp_vpwp,        & ! Flag to predict <u'w'> and <v'w'> along with <u> and <v>
+                                      ! alongside the advancement of <rt>, <w'rt'>, <thl>, <wpthlp>,
+                                      ! <sclr>, and <w'sclr'> in subroutine advance_xm_wpxp.
+                                      ! Otherwise, <u'w'> and <v'w'> are still approximated by eddy
+                                      ! diffusivity when <u> and <v> are advanced in subroutine
+                                      ! advance_windm_edsclrm.
+        l_min_xp2_from_corr_wx,     & ! Flag to base the threshold minimum value of xp2 (rtp2 and
+                                      ! thlp2) on keeping the overall correlation of w and x within
+                                      ! the limits of -max_mag_correlation_flux to
+                                      ! max_mag_correlation_flux.
+        l_prescribed_avg_deltaz,    & ! used in adj_low_res_nu. If .true., avg_deltaz = deltaz
+        l_stability_correct_tau_zm, & ! Use tau_N2_zm instead of tau_zm in wpxp_pr1 stability
+                                      ! correction
+        l_damp_wp2_using_em,        & ! In wp2 equation, use a dissipation formula of
+                                      ! -(2/3)*em/tau_zm, as in Bougeault (1981)
+        l_enable_relaxed_clipping     ! Flag to relax clipping on wpxp in
+                                      ! xm_wpxp_clipping_and_stats
 
 #ifdef GFDL
       logical, intent(in) :: &  ! h1g, 2010-06-16 begin mod

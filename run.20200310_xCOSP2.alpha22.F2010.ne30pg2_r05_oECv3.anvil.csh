@@ -11,7 +11,7 @@ set echo
 ###===================================================================
 
 ### BASIC INFO ABOUT RUN
-set job_name       = clubb_in_E3SMv2_COMPILE_TEST_1
+set job_name       = April_Fools_Clubb_compile_test
 set compset        = F2010-CICE
 set resolution     = ne30pg2_r05_oECv3
 set machine        = anvil

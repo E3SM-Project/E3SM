@@ -254,9 +254,11 @@ module model_flags
                                       ! Looking at issue #905 on the clubb repo
       l_use_tke_in_wp3_pr_turb_term, &! Use TKE formulation for wp3 pr_turb term
       l_use_tke_in_wp2_wp3_K_dfsn,  & ! Use TKE in eddy diffusion for wp2 and wp3
-      l_smooth_Heaviside_tau_wpxp     ! Use smoothed Heaviside 'Peskin' function
+      l_smooth_Heaviside_tau_wpxp,  & ! Use smoothed Heaviside 'Peskin' function
                                       ! in the calculation of H_invrs_tau_wpxp_N2
                                       ! in src/CLUBB_core/mixing_length.F90
+      l_enable_relaxed_clipping       ! Flag to relax clipping on wpxp in
+                                      ! xm_wpxp_clipping_and_stats
 
   end type clubb_config_flags_type
 
@@ -372,7 +374,8 @@ module model_flags
                                              l_vary_convect_depth, &
                                              l_use_tke_in_wp3_pr_turb_term, &
                                              l_use_tke_in_wp2_wp3_K_dfsn, &
-                                             l_smooth_Heaviside_tau_wpxp )
+                                             l_smooth_Heaviside_tau_wpxp, &
+                                             l_enable_relaxed_clipping )
 
 ! Description:
 !   Sets all CLUBB flags to a default setting.
@@ -494,9 +497,11 @@ module model_flags
                                       ! Looking at issue #905 on the clubb repo
       l_use_tke_in_wp3_pr_turb_term,& ! Use TKE formulation for wp3 pr_turb term
       l_use_tke_in_wp2_wp3_K_dfsn,  & ! Use TKE in eddy diffusion for wp2 and wp3
-      l_smooth_Heaviside_tau_wpxp     ! Use smoothed Heaviside 'Peskin' function
+      l_smooth_Heaviside_tau_wpxp,  & ! Use smoothed Heaviside 'Peskin' function
                                       ! in the calculation of H_invrs_tau_wpxp_N2
                                       ! in src/CLUBB_core/mixing_length.F90
+      l_enable_relaxed_clipping       ! Flag to relax clipping on wpxp in
+                                      ! xm_wpxp_clipping_and_stats
 
 !-----------------------------------------------------------------------
     ! Begin code
@@ -554,6 +559,7 @@ module model_flags
     l_use_tke_in_wp3_pr_turb_term = .false.
     l_use_tke_in_wp2_wp3_K_dfsn = .false.
     l_smooth_Heaviside_tau_wpxp = .false.
+    l_enable_relaxed_clipping = .false.
 
     return
   end subroutine set_default_clubb_config_flags
@@ -606,6 +612,7 @@ module model_flags
                                                  l_use_tke_in_wp3_pr_turb_term, &
                                                  l_use_tke_in_wp2_wp3_K_dfsn, &
                                                  l_smooth_Heaviside_tau_wpxp, &
+                                                 l_enable_relaxed_clipping, &
                                                  clubb_config_flags )
 
 ! Description:
@@ -728,9 +735,11 @@ module model_flags
                                       ! Looking at issue #905 on the clubb repo
       l_use_tke_in_wp3_pr_turb_term,& ! Use TKE formulation for wp3 pr_turb term
       l_use_tke_in_wp2_wp3_K_dfsn,  & ! Use TKE in eddy diffusion for wp2 and wp3
-      l_smooth_Heaviside_tau_wpxp     ! Use smoothed Heaviside 'Peskin' function
+      l_smooth_Heaviside_tau_wpxp, &  ! Use smoothed Heaviside 'Peskin' function
                                       ! in the calculation of H_invrs_tau_wpxp_N2
                                       ! in src/CLUBB_core/mixing_length.F90
+      l_enable_relaxed_clipping       ! Flag to relax clipping on wpxp in
+                                      ! xm_wpxp_clipping_and_stats
 
     ! Output variables
     type(clubb_config_flags_type), intent(out) :: &
@@ -786,6 +795,8 @@ module model_flags
     clubb_config_flags%l_use_tke_in_wp3_pr_turb_term = l_use_tke_in_wp3_pr_turb_term
     clubb_config_flags%l_use_tke_in_wp2_wp3_K_dfsn = l_use_tke_in_wp2_wp3_K_dfsn
     clubb_config_flags%l_smooth_Heaviside_tau_wpxp = l_smooth_Heaviside_tau_wpxp
+    clubb_config_flags%l_enable_relaxed_clipping = l_enable_relaxed_clipping
+
     return
   end subroutine initialize_clubb_config_flags_type
 
@@ -859,6 +870,7 @@ module model_flags
     write(iunit,*) "l_use_tke_in_wp3_pr_turb_term = ", clubb_config_flags%l_use_tke_in_wp3_pr_turb_term
     write(iunit,*) "l_use_tke_in_wp2_wp3_K_dfsn = ", clubb_config_flags%l_use_tke_in_wp2_wp3_K_dfsn
     write(iunit,*) "l_smooth_Heaviside_tau_wpxp = ", clubb_config_flags%l_smooth_Heaviside_tau_wpxp
+    write(iunit,*) "l_enable_relaxed_clipping = ", clubb_config_flags%l_enable_relaxed_clipping
 
     return
   end subroutine print_clubb_config_flags

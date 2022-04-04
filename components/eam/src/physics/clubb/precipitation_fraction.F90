@@ -78,9 +78,6 @@ module precipitation_fraction
 
     implicit none
 
-    type (stats), target, intent(inout) :: &
-      stats_sfc
-
     ! Input Variables
     integer, intent(in) :: &
       nz,       & ! Number of model vertical grid levels
@@ -103,6 +100,10 @@ module precipitation_fraction
 
     logical, intent(in) :: &
       l_stats_samp     ! Flag to record statistical output.
+      
+    ! Inout Variables
+    type (stats), target, dimension(ngrdcol), intent(inout) :: &
+      stats_sfc
 
     ! Output Variables
     real( kind = core_rknd ), dimension(ngrdcol,nz), intent(out) :: &
@@ -378,7 +379,7 @@ module precipitation_fraction
       if ( iprecip_frac_tol > 0 ) then
         do j = 1, ngrdcol
           call stat_update_var_pt( iprecip_frac_tol, 1, precip_frac_tol(j), & ! intent(in)
-                                   stats_sfc ) ! intent(inout)
+                                   stats_sfc(j) ) ! intent(inout)
         end do
       end if ! iprecip_frac_tol
     end if ! l_stats_samp

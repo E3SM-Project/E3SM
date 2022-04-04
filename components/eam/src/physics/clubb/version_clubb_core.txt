@@ -1,86 +1,62 @@
-Note: The version of CLUBB core that was copied into this directory is the
-version listed below (d0bc4c6), but with modifications that were made in
-the commit 1e93c1d (March 11, 2022) to the UWM E3SM repository, which
-changes the l_enable_relaxed_clipping flag to .true. and uncomments the
-a3_coef clipping in advance_clubb_core_module.  This undoes the
-hard-coded CLUBB commits that caused changes to E3SM-CLUBB results.
+commit 96059a242e69c4e7ed340487ee6b7e4239c33541
+Author: bmg929 <bmg2@uwm.edu>
+Date:   Tue Mar 29 17:04:58 2022 -0500
 
-Brian Griffin; March 23, 2022
-
-commit d0bc4c6b2a3fe086aa365dccfdbcc651b3242e9a
-Author: Gunther Huebler <huebler@uwm.edu>
-Date:   Thu Feb 24 04:15:12 2022 -0600
-
-    Fixing small bug that breaks runs with scalars.
-
-commit d284c4656d237114f6ee5db3a8221bb3f1dd09b8
-Author: huebleruwm <37674341+huebleruwm@users.noreply.github.com>
-Date:   Wed Feb 23 14:52:59 2022 -0600
-
-    Gunthers branch (#989)
+    Added a3_coef_min to the list of CLUBB's tunable parameter and then
+    commented-in the a3_coef clipping line found in advance_clubb_core.F90.
     
-    * Refactoring to remove need for global stats scratch variables. larson-group/clubb#972
-    
-    * Changing name of new stats_scratch variables to be more descriptive.
-    
-    * Breaking up column loop in solve_xm_wpxp_with_single_lhs. larson-group/clubb#972
-    
-    * Pushing loop into solve_xm_wpxp_with_multiple_lhs and breaking it up. larson-group/clubb#972
-    
-    * Pusing loop into xm_wpxp_rhs and xm_wpxp_lhs. larson-group/clubb#972
-    
-    * Pushing loop into xm_wpxp_solve and xm_wpxp_clipping_and_stats. larson-group/clubb#972
+    The results of this revision are bit-for-bit.
 
-commit 65fb263b15719f312c881622a3d2ae61eb96fc7c
-Author: huebleruwm <37674341+huebleruwm@users.noreply.github.com>
-Date:   Mon Feb 21 14:27:05 2022 -0600
+commit e63d361593282937950c000aa56281fe1331f04b
+Author: bmg929 <bmg2@uwm.edu>
+Date:   Fri Mar 25 17:43:41 2022 -0500
 
-    Refactoring to remove need for global stats scratch variables. (#988)
-    
-    * Refactoring to remove need for global stats scratch variables. larson-group/clubb#972
-    
-    * Changing name of new stats_scratch variables to be more descriptive.
+    I added l_relax_clipping to CLUBB's config flags.
 
-commit 7e2a2265b003b9e9db59902fdbb3059b7815d5b9
-Author: huebleruwm <37674341+huebleruwm@users.noreply.github.com>
-Date:   Thu Feb 17 18:15:50 2022 -0600
-
-    Pushing loop into solve_xm_wpxp_with_single_lhs (#986)
-    
-    Co-authored-by: Peter Roels <56004443+pbroels@users.noreply.github.com>
-
-commit 42cd7b738bb3c10d52dd6fd840c84ec65a26103e
-Author: Vincent Larson <vlarson@users.noreply.github.com>
-Date:   Thu Feb 17 17:57:17 2022 -0600
-
-    Adds a naming convention for CLUBB's indices
-
-commit f9b6bb6132447cc3c074be9bef38fb701bd7f08a
-Author: huebler <huebler@uwm.edu>
-Date:   Wed Feb 16 14:43:28 2022 -0600
-
-    Adding 2D version of zt2zm and zm2zt to clubb_api
-
-commit f069daadb4a27126f9940d1184a90b50e486b432
-Author: Vincent Larson <vlarson@users.noreply.github.com>
-Date:   Thu Feb 10 09:40:09 2022 -0600
-
-    Add coding rule to write variables to disk immediately after they are set.
-
-commit 262b7d9fc30851d432951b97533acab4884b2c45
-Author: huebler <huebler@uwm.edu>
-Date:   Wed Feb 9 18:00:32 2022 -0600
-
-    The last commit was BIT_CHANGING:fc75c887ae516e55f31156a6c1cccaedfaf34ff3 since it does change when uprcp and vprcp are saved to stats output. Was not answer changing though.
-
-commit fc75c887ae516e55f31156a6c1cccaedfaf34ff3
-Author: huebler <huebler@uwm.edu>
-Date:   Wed Feb 9 16:11:43 2022 -0600
-
-    Moving stats call for uprcp and vprcp to after they are calculated. This fixes the silhs restart test. But does not seem to fix the E3SM or CAM tests that are still failing.
-
-commit 68f91aa403537e1f24c3b3756fefcb9930d033da
+commit 29c1bb840079d4030b27a37631bfe3cbbf380d04
 Author: Peter Roels <56004443+pbroels@users.noreply.github.com>
-Date:   Mon Feb 7 16:21:24 2022 -0600
+Date:   Wed Mar 23 13:43:41 2022 -0500
 
-    Adding a line to trigger the nightly tests.
+    Adding a line to the README to trigger the nightly tests.
+
+commit afafe6ff1798e19d664aa0153d148814cd53c172
+Author: Peter Roels <56004443+pbroels@users.noreply.github.com>
+Date:   Mon Mar 21 15:35:46 2022 -0500
+
+    Removing a line at the top of the README to trigger the nightly tests.
+
+commit e92c73005948d5698d3a2eada6c8a2881bb41414
+Author: huebler <huebler@uwm.edu>
+Date:   Tue Mar 15 18:27:41 2022 -0500
+
+    Changing names of dp1 variables for up2 and vp2. Surrounding where they're set to be within a l_stats_samp.
+
+commit 757d6ea41b756a86b891b30e5d7de3d0e4067428
+Author: huebler <huebler@uwm.edu>
+Date:   Tue Mar 15 17:55:20 2022 -0500
+
+    Adding slicing for some lhs arrays being saved in stats. This was causing bit changing in a few lhs terms when run in multicolumn.
+
+commit 81be36dbac0aa39981bed980966bece2baed5ecb
+Author: huebler <huebler@uwm.edu>
+Date:   Tue Mar 15 14:37:32 2022 -0500
+
+    Removing need for stats scratch variables by passing lhs terms to save through agument lists. This makes everything better in every way.
+
+commit eefc4e8b7a13d7eaf2e6ccbc0b2b0f9a677166ef
+Author: huebler <huebler@uwm.edu>
+Date:   Tue Mar 15 13:09:07 2022 -0500
+
+    Moving the lmm_stepping and stats calls to immediately after calls to xp2_xpyp_solve. This is because xp2_xpyp_implicit_stats saves things that are saved by scratch variables, and these scratch variables are set by the lhs and rhs setup calls. So for the multiple lhs routine, we need to save the scratch variables immediately after these calls before overwriting them by calling lhs and rhs again for a different variable. Since the stats also saves the variable were solving for, we also have to move the lmm_stepping to before this call.
+
+commit 3efae613c219a686eeeaf53617e8c24304fb24ab
+Author: huebler <huebler@uwm.edu>
+Date:   Mon Mar 14 19:07:00 2022 -0500
+
+    Moving the lhs_dp1 calculation to outside of xp2_xpyp_lhs. This gives us more flexibility, since we want to pass lhs_dp1 into xp2_xpyp_implicit_stats.
+
+commit 47e9d1e613c2c715ea532edb1d4fb72d0fab5b4c
+Author: huebler <huebler@uwm.edu>
+Date:   Mon Mar 14 15:53:38 2022 -0500
+
+    Pushing loop into advance_xp2_wpxp.

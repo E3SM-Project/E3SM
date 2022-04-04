@@ -40,20 +40,16 @@ module clubb_intr
 
   implicit none
 #ifdef CLUBB_SGS
-  type(grid), target :: gr ! Variable
-!$omp threadprivate(gr)
 
   ! Variables that contains all the statistics
 
-  type (stats), target, save :: stats_zt,   &    ! stats_zt grid
-                                        stats_zm,   &    ! stats_zm grid
-                                        stats_lh_zt,  &  ! stats_lh_zt grid
-                                        stats_lh_sfc,  & ! stats_lh_sfc grid
-                                        stats_rad_zt,  & ! stats_rad_zt grid
-                                        stats_rad_zm,  & ! stats_rad_zm grid
-                                        stats_sfc        ! stats_sfc
+  type (stats), allocatable, target, save :: stats_zt(:),      & ! stats_zt grid
+                                             stats_zm(:),      & ! stats_zm grid
+                                             stats_rad_zt(:),  & ! stats_rad_zt grid
+                                             stats_rad_zm(:),  & ! stats_rad_zm grid
+                                             stats_sfc(:)        ! stats_sfc
 
-!$omp threadprivate(stats_zt, stats_zm, stats_lh_zt, stats_lh_sfc)
+!$omp threadprivate(stats_zt, stats_zm)
 !$omp threadprivate(stats_rad_zt, stats_rad_zm, stats_sfc)
 #endif
 
@@ -69,9 +65,7 @@ module clubb_intr
             ! This utilizes CLUBB specific variables in its interface
             stats_init_clubb, &
             init_clubb_config_flags, &
-            gr, &
             stats_zt, stats_zm, stats_sfc, &
-            stats_lh_zt, stats_lh_sfc, &
             stats_rad_zt, stats_rad_zm, &
 #endif
             stats_end_timestep_clubb, &
@@ -90,8 +84,7 @@ module clubb_intr
 #ifdef CLUBB_SGS
   type(clubb_config_flags_type), public, save :: clubb_config_flags
   real(r8), dimension(nparams), public, save :: clubb_params  ! Adjustable CLUBB parameters (C1, C2 ...)
-  type(nu_vertical_res_dep), private, save :: nu_vert_res_dep ! Vertical resolution dependent nu values
-  real(r8), private, save  :: lmin
+
 #endif
 
   ! ------------ !
@@ -748,6 +741,10 @@ end subroutine clubb_init_cnst
     real(core_rknd)  :: zt_g(pverp)                        ! Height dummy array
     real(core_rknd)  :: zi_g(pverp)                        ! Height dummy array
 
+    type(grid), target :: dummy_gr
+    type(nu_vertical_res_dep) :: dummy_nu_vert_res_dep   ! Vertical resolution dependent nu values
+    real(r8) :: dummy_lmin
+
     real(r8) :: &
       C1, C1b, C1c, C2rt, C2thl, C2rtthl, &
       C4, C_uu_shr, C_uu_buoy, C6rt, C6rtb, C6rtc, C6thl, C6thlb, C6thlc, &
@@ -769,7 +766,7 @@ end subroutine clubb_init_cnst
       C_invrs_tau_shear, C_invrs_tau_N2, C_invrs_tau_N2_wp2, &
       C_invrs_tau_N2_xp2, C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
       C_invrs_tau_wpxp_Ri, C_invrs_tau_wpxp_N2_thresh, &
-      Cx_min, Cx_max, Richardson_num_min, Richardson_num_max
+      Cx_min, Cx_max, Richardson_num_min, Richardson_num_max, a3_coef_min
 
     !----- Begin Code -----
 
@@ -777,11 +774,6 @@ end subroutine clubb_init_cnst
        pdf_params_chnk(begchunk:endchunk),   &
        pdf_params_zm_chnk(begchunk:endchunk), &
        pdf_implicit_coefs_terms_chnk(pcols,begchunk:endchunk) )
-
-    do idx_chunk = begchunk, endchunk
-       call init_pdf_params_api( pverp, pcols, pdf_params_chnk(idx_chunk) )
-       call init_pdf_params_api( pverp, pcols, pdf_params_zm_chnk(idx_chunk) )
-    end do
 
     do idx_chunk = begchunk, endchunk
        do idx_pcols = 1, pcols
@@ -920,7 +912,8 @@ end subroutine clubb_init_cnst
                C_invrs_tau_N2_wp2, C_invrs_tau_N2_xp2, &
                C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
                C_invrs_tau_wpxp_Ri, C_invrs_tau_wpxp_N2_thresh, &
-               Cx_min, Cx_max, Richardson_num_min, Richardson_num_max )
+               Cx_min, Cx_max, Richardson_num_min, &
+               Richardson_num_max, a3_coef_min )
 
 !$OMP PARALLEL
     call read_parameters_api( -99, "", &
@@ -946,7 +939,8 @@ end subroutine clubb_init_cnst
                               C_invrs_tau_N2_wp2, C_invrs_tau_N2_xp2, &
                               C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
                               C_invrs_tau_wpxp_Ri, C_invrs_tau_wpxp_N2_thresh, &
-                              Cx_min, Cx_max, Richardson_num_min, Richardson_num_max, &
+                              Cx_min, Cx_max, Richardson_num_min, &
+                              Richardson_num_max, a3_coef_min, &
                               clubb_params )
 !$OMP END PARALLEL
 
@@ -1000,7 +994,8 @@ end subroutine clubb_init_cnst
            clubb_config_flags%l_prescribed_avg_deltaz, &              ! In
            clubb_config_flags%l_damp_wp2_using_em, &                  ! In
            clubb_config_flags%l_stability_correct_tau_zm, &           ! In
-           gr, lmin, nu_vert_res_dep, err_code )                      ! Out
+           clubb_config_flags%l_enable_relaxed_clipping, &            ! In
+           dummy_gr, dummy_lmin, dummy_nu_vert_res_dep, err_code )    ! Out
            
     if ( err_code == clubb_fatal_error ) then
        call endrun('clubb_ini_cam:  FATAL ERROR CALLING SETUP_CLUBB_CORE')
@@ -1119,17 +1114,27 @@ end subroutine clubb_init_cnst
     dum2 = 1200._r8
     dum3 = 300._r8
 
-    if (l_stats) then
+    if (l_stats) then 
+      
+        allocate(stats_zt(pcols), &
+                 stats_zm(pcols), &
+                 stats_sfc(pcols), &
+                 stats_rad_zt(pcols), &
+                 stats_rad_zm(pcols)  )
+      
+       do i=1, pcols
+         call stats_init_clubb( .true., dum1, dum2, &
+                                pverp, pverp, pverp, dum3, &
+                                stats_zt(i), stats_zm(i), stats_sfc(i), &
+                                stats_rad_zt(i), stats_rad_zm(i))
+       end do     
 
-       call stats_init_clubb( .true., dum1, dum2, &
-                         pverp, pverp, pverp, dum3 )
+       allocate(out_zt(pcols,pverp,stats_zt(1)%num_output_fields))
+       allocate(out_zm(pcols,pverp,stats_zm(1)%num_output_fields))
+       allocate(out_sfc(pcols,1,stats_sfc(1)%num_output_fields))
 
-       allocate(out_zt(pcols,pverp,stats_zt%num_output_fields))
-       allocate(out_zm(pcols,pverp,stats_zm%num_output_fields))
-       allocate(out_sfc(pcols,1,stats_sfc%num_output_fields))
-
-       allocate(out_radzt(pcols,pverp,stats_rad_zt%num_output_fields))
-       allocate(out_radzm(pcols,pverp,stats_rad_zm%num_output_fields))
+       allocate(out_radzt(pcols,pverp,stats_rad_zt(1)%num_output_fields))
+       allocate(out_radzm(pcols,pverp,stats_rad_zm(1)%num_output_fields))
 
     endif
 
@@ -1327,7 +1332,7 @@ end subroutine clubb_init_cnst
         advance_clubb_core_api, &
         advance_clubb_core_api_single_col, &
         zt2zm_api, zm2zt_api, &
-        setup_grid_heights_api, &
+        setup_grid_api, &
         cleanup_clubb_core_api, &
         w_tol_sqd, &
         rt_tol, &
@@ -1392,6 +1397,7 @@ end subroutine clubb_init_cnst
    integer :: itim_old
    integer :: ncol, lchnk                       ! # of columns, and chunk identifier
    integer :: err_code                          ! Diagnostic, for if some calculation goes amiss.
+   integer :: begin_height, end_height
    integer :: icnt, clubbtop
 
    real(r8) :: frac_limit, ic_limit
@@ -1729,6 +1735,10 @@ end subroutine clubb_init_cnst
 
    type(pdf_parameter) :: pdf_params_single_col, &
                           pdf_params_zm_single_col
+                          
+   type(grid) :: gr(pcols)
+   type(nu_vertical_res_dep) :: nu_vert_res_dep   ! Vertical resolution dependent nu values
+   real(r8) :: lmin
 
    real(r8) :: sfc_v_diff_tau(pcols) ! Response to tau perturbation, m/s
    real(r8), parameter :: pert_tau = 0.1_r8 ! tau perturbation, Pa
@@ -1942,6 +1952,12 @@ end subroutine clubb_init_cnst
    ! Allocate arrays in single column versions of pdf_params
    call init_pdf_params_api( pverp, 1, pdf_params_single_col )
    call init_pdf_params_api( pverp, 1, pdf_params_zm_single_col )
+   
+    ! Allocate pdf_params only if they aren't allocated already.
+    if ( .not. allocated(pdf_params_chnk(lchnk)%mixt_frac) ) then
+      call init_pdf_params_api( pverp, ncol, pdf_params_chnk(lchnk) )
+      call init_pdf_params_api( pverp, ncol, pdf_params_zm_chnk(lchnk) )
+    end if
 
    if (linearize_pbl_winds) then
       call pbuf_get_field(pbuf, wsresp_idx, wsresp)
@@ -2296,21 +2312,23 @@ end subroutine clubb_init_cnst
       !  Important note:  do not make any calls that use CLUBB grid-height
       !                   operators (such as zt2zm_api, etc.) until AFTER the
       !                   call to setup_grid_heights_api.
-      call setup_grid_heights_api(l_implemented, grid_type, zi_g(2), &
-         zi_g(1), zi_g, gr, zt_g)
+      call setup_grid_api( pverp, sfc_elevation, l_implemented,      & ! intent(in)
+                           grid_type, zi_g(2), zi_g(1), zi_g(pverp), & ! intent(in)
+                           zi_g(:), zt_g(:),                         & ! intent(in)
+                           gr(i), begin_height, end_height )           ! intent(out)
 
       call setup_parameters_api( zi_g(2), clubb_params, pverp, grid_type, &
                                  zi_g, zt_g, &
                                  clubb_config_flags%l_prescribed_avg_deltaz, &
                                  lmin, nu_vert_res_dep, err_code )
- 
+
       !  Compute some inputs from the thermodynamic grid
       !  to the momentum grid
-      rho_ds_zm       = zt2zm_api(gr, rho_ds_zt)
-      rho_zm          = zt2zm_api(gr, rho_zt)
-      invrs_rho_ds_zm = zt2zm_api(gr, invrs_rho_ds_zt)
-      thv_ds_zm       = zt2zm_api(gr, thv_ds_zt)
-      wm_zm           = zt2zm_api(gr, wm_zt)
+      rho_ds_zm       = zt2zm_api(gr(i), rho_ds_zt)
+      rho_zm          = zt2zm_api(gr(i), rho_zt)
+      invrs_rho_ds_zm = zt2zm_api(gr(i), invrs_rho_ds_zt)
+      thv_ds_zm       = zt2zm_api(gr(i), thv_ds_zt)
+      wm_zm           = zt2zm_api(gr(i), wm_zt)
       
       !  Surface fluxes provided by host model
       wpthlp_sfc = real(cam_in%shf(i), kind = core_rknd)/(real(cpair, kind = core_rknd)*rho_ds_zm(1)) ! Sensible heat flux
@@ -2445,15 +2463,15 @@ end subroutine clubb_init_cnst
 
       if (clubb_do_adv) then
         if (macmic_it .eq. 1) then
-          wp2_in=zt2zm_api(gr, wp2_in)
-          wpthlp_in=zt2zm_api(gr, wpthlp_in)
-          wprtp_in=zt2zm_api(gr, wprtp_in)
-          up2_in=zt2zm_api(gr, up2_in)
-          vp2_in=zt2zm_api(gr, vp2_in)
-          thlp2_in=zt2zm_api(gr, thlp2_in)
-          rtp2_in=zt2zm_api(gr, rtp2_in)
-          rtpthlp_in=zt2zm_api(gr, rtpthlp_in)
-
+          wp2_in=zt2zm_api(gr(i), wp2_in)    
+          wpthlp_in=zt2zm_api(gr(i), wpthlp_in)
+          wprtp_in=zt2zm_api(gr(i), wprtp_in)
+          up2_in=zt2zm_api(gr(i), up2_in)
+          vp2_in=zt2zm_api(gr(i), vp2_in)
+          thlp2_in=zt2zm_api(gr(i), thlp2_in)
+          rtp2_in=zt2zm_api(gr(i), rtp2_in)
+          rtpthlp_in=zt2zm_api(gr(i), rtpthlp_in)
+ 
           do k=1,pverp
             thlp2_in(k)=max(thl_tol**2,thlp2_in(k))
             rtp2_in(k)=max(rt_tol**2,rtp2_in(k))
@@ -2544,7 +2562,7 @@ end subroutine clubb_init_cnst
          !Balli- to do: check whether initent-ins and intent-inouts are actually what they say
 
          call advance_clubb_core_api_single_col &
-              ( gr, l_implemented, dtime, fcor, sfc_elevation, hydromet_dim, & ! intent(in)
+              ( gr(i), l_implemented, dtime, fcor, sfc_elevation, hydromet_dim, & ! intent(in)
               thlm_forcing, rtm_forcing, um_forcing, vm_forcing, &         ! intent(in)
               sclrm_forcing, edsclrm_forcing, wprtp_forcing, &             ! intent(in)
               wpthlp_forcing, rtp2_forcing, thlp2_forcing, &               ! intent(in)
@@ -2563,7 +2581,7 @@ end subroutine clubb_init_cnst
               host_dx, host_dy, &                                          ! intent(in)
               clubb_params, nu_vert_res_dep, lmin, &                       ! intent(in)
               clubb_config_flags, &                                        ! intent(in)
-              stats_zt, stats_zm, stats_sfc, &                             ! intent(inout)
+              stats_zt(i), stats_zm(i), stats_sfc(i), &                    ! intent(inout)
               um_in, vm_in, upwp_in, vpwp_in, &                            ! intent(inout)
               up2_in, vp2_in, up3_in, vp3_in, &                            ! intent(inout)
               thlm_in, rtm_in, wprtp_in, wpthlp_in, &                      ! intent(inout)
@@ -2611,8 +2629,8 @@ end subroutine clubb_init_cnst
          pdf_zm_mixt_frac_inout = pdf_params_zm_single_col%mixt_frac(1,:)
 
          if (do_rainturb) then
-            rvm_in = rtm_in - rcm_inout
-            call update_xp2_mc_api(gr, pverp, dtime, cloud_frac_inout, &
+            rvm_in = rtm_in - rcm_inout 
+            call update_xp2_mc_api(gr(i), pverp, dtime, cloud_frac_inout, &
             rcm_inout, rvm_in, thlm_in, wm_zt, exner, pre_in, pdf_params_single_col, &
             rtp2_mc_out, thlp2_mc_out, &
             wprtp_mc_out, wpthlp_mc_out, &
@@ -2636,9 +2654,9 @@ end subroutine clubb_init_cnst
          endif
 
          if (do_cldcool) then
-
-            rcm_out_zm = zt2zm_api(gr, rcm_inout)
-            qrl_zm = zt2zm_api(gr, qrl_clubb)
+         
+            rcm_out_zm = zt2zm_api(gr(i), rcm_inout)
+            qrl_zm = zt2zm_api(gr(i), qrl_clubb)
             thlp2_rad_out(:) = 0._r8
             call calculate_thlp2_rad_api(pverp, rcm_out_zm, thlprcp_out, qrl_zm, clubb_params, &
                                          thlp2_rad_out)
@@ -2648,22 +2666,26 @@ end subroutine clubb_init_cnst
 
           !  Check to see if stats should be output, here stats are read into
           !  output arrays to make them conformable to CAM output
-          if (l_stats) call stats_end_timestep_clubb(lchnk,i,out_zt,out_zm,&
-                                                     out_radzt,out_radzm,out_sfc)
+          if (l_stats) then
+              call stats_end_timestep_clubb(i, stats_zt(i), stats_zm(i), stats_rad_zt(i), &
+                                            stats_rad_zm(i), stats_sfc(i), &
+                                            out_zt, out_zm, out_radzt, out_radzm, out_sfc)
+          end if
+
 
       enddo  ! end time loop
       call t_stopf('adv_clubb_core_ts_loop')
 
       if (clubb_do_adv) then
          if (macmic_it .eq. cld_macmic_num_steps) then 
-            wp2_in=zm2zt_api(gr, wp2_in)
-            wpthlp_in=zm2zt_api(gr, wpthlp_in)
-            wprtp_in=zm2zt_api(gr, wprtp_in)
-            up2_in=zm2zt_api(gr, up2_in)
-            vp2_in=zm2zt_api(gr, vp2_in)
-            thlp2_in=zm2zt_api(gr, thlp2_in)
-            rtp2_in=zm2zt_api(gr, rtp2_in)
-            rtpthlp_in=zm2zt_api(gr, rtpthlp_in)
+            wp2_in=zm2zt_api(gr(i), wp2_in)
+            wpthlp_in=zm2zt_api(gr(i), wpthlp_in)
+            wprtp_in=zm2zt_api(gr(i), wprtp_in)
+            up2_in=zm2zt_api(gr(i), up2_in)
+            vp2_in=zm2zt_api(gr(i), vp2_in)
+            thlp2_in=zm2zt_api(gr(i), thlp2_in)
+            rtp2_in=zm2zt_api(gr(i), rtp2_in)
+            rtpthlp_in=zm2zt_api(gr(i), rtpthlp_in)
 
             do k=1,pverp
                thlp2_in(k)=max(thl_tol**2,thlp2_in(k))
@@ -3337,38 +3359,38 @@ end subroutine clubb_init_cnst
    call outfld( 'CONCLD',           concld,                  pcols, lchnk )
 
    !  Output CLUBB history here
-   if (l_stats) then
-
-      do i=1,stats_zt%num_output_fields
-
-         temp1 = trim(stats_zt%file%grid_avg_var(i)%name)
+   if (l_stats) then 
+      
+      do i=1,stats_zt(1)%num_output_fields
+   
+         temp1 = trim(stats_zt(1)%file%grid_avg_var(i)%name)
          sub   = temp1
          if (len(temp1) .gt. 16) sub = temp1(1:16)
 
          call outfld(trim(sub), out_zt(:,:,i), pcols, lchnk )
       enddo
-
-      do i=1,stats_zm%num_output_fields
-
-         temp1 = trim(stats_zm%file%grid_avg_var(i)%name)
+   
+      do i=1,stats_zm(1)%num_output_fields
+   
+         temp1 = trim(stats_zm(1)%file%grid_avg_var(i)%name)
          sub   = temp1
          if (len(temp1) .gt. 16) sub = temp1(1:16)
 
          call outfld(trim(sub),out_zm(:,:,i), pcols, lchnk)
       enddo
 
-      if (l_output_rad_files) then
-         do i=1,stats_rad_zt%num_output_fields
-            call outfld(trim(stats_rad_zt%file%grid_avg_var(i)%name), out_radzt(:,:,i), pcols, lchnk)
+      if (l_output_rad_files) then  
+         do i=1,stats_rad_zt(1)%num_output_fields
+            call outfld(trim(stats_rad_zt(1)%file%grid_avg_var(i)%name), out_radzt(:,:,i), pcols, lchnk)
          enddo
-
-         do i=1,stats_rad_zm%num_output_fields
-            call outfld(trim(stats_rad_zm%file%grid_avg_var(i)%name), out_radzm(:,:,i), pcols, lchnk)
+   
+         do i=1,stats_rad_zm(1)%num_output_fields
+            call outfld(trim(stats_rad_zm(1)%file%grid_avg_var(i)%name), out_radzm(:,:,i), pcols, lchnk)
          enddo
       endif
-
-      do i=1,stats_sfc%num_output_fields
-         call outfld(trim(stats_sfc%file%grid_avg_var(i)%name), out_sfc(:,:,i), pcols, lchnk)
+   
+      do i=1,stats_sfc(1)%num_output_fields
+         call outfld(trim(stats_sfc(1)%file%grid_avg_var(i)%name), out_sfc(:,:,i), pcols, lchnk)
       enddo
 
    endif
@@ -3606,7 +3628,9 @@ end function diag_ustar
 #ifdef CLUBB_SGS
 
   subroutine stats_init_clubb( l_stats_in, stats_tsamp_in, stats_tout_in, &
-                         nnzp, nnrad_zt,nnrad_zm, delt )
+                         nnzp, nnrad_zt,nnrad_zm, delt, &
+                         stats_zt, stats_zm, stats_sfc, &
+                         stats_rad_zt, stats_rad_zm)
     !
     ! Description: Initializes the statistics saving functionality of
     !   the CLUBB model.  This is for purpose of CAM-CLUBB interface.  Here
@@ -3698,6 +3722,13 @@ end function diag_ustar
 
     real(kind=time_precision), intent(in) ::   delt         ! Timestep (dtmain in CLUBB)         [s]
 
+    ! Output Variables
+    type (stats), intent(out) :: stats_zt,      & ! stats_zt grid
+                                 stats_zm,      & ! stats_zm grid
+                                 stats_rad_zt,  & ! stats_rad_zt grid
+                                 stats_rad_zm,  & ! stats_rad_zm grid
+                                 stats_sfc        ! stats_sfc
+
 
     !  Local Variables
 
@@ -3718,7 +3749,8 @@ end function diag_ustar
 
     !  Local Variables
 
-    logical :: l_error
+    logical :: l_error, &
+               first_call = .false.
 
     character(len=200) :: fname, temp1, sub
 
@@ -3822,55 +3854,59 @@ end function diag_ustar
     allocate( stats_zt%file%z( stats_zt%kk ) )
 
     !  Allocate scratch space
+    first_call = (.not. allocated(ztscr01))
 
-    allocate( ztscr01(stats_zt%kk) )
-    allocate( ztscr02(stats_zt%kk) )
-    allocate( ztscr03(stats_zt%kk) )
-    allocate( ztscr04(stats_zt%kk) )
-    allocate( ztscr05(stats_zt%kk) )
-    allocate( ztscr06(stats_zt%kk) )
-    allocate( ztscr07(stats_zt%kk) )
-    allocate( ztscr08(stats_zt%kk) )
-    allocate( ztscr09(stats_zt%kk) )
-    allocate( ztscr10(stats_zt%kk) )
-    allocate( ztscr11(stats_zt%kk) )
-    allocate( ztscr12(stats_zt%kk) )
-    allocate( ztscr13(stats_zt%kk) )
-    allocate( ztscr14(stats_zt%kk) )
-    allocate( ztscr15(stats_zt%kk) )
-    allocate( ztscr16(stats_zt%kk) )
-    allocate( ztscr17(stats_zt%kk) )
-    allocate( ztscr18(stats_zt%kk) )
-    allocate( ztscr19(stats_zt%kk) )
-    allocate( ztscr20(stats_zt%kk) )
-    allocate( ztscr21(stats_zt%kk) )
+    if (first_call) then
+      allocate( ztscr01(stats_zt%kk) )
+      allocate( ztscr02(stats_zt%kk) )
+      allocate( ztscr03(stats_zt%kk) )
+      allocate( ztscr04(stats_zt%kk) )
+      allocate( ztscr05(stats_zt%kk) )
+      allocate( ztscr06(stats_zt%kk) )
+      allocate( ztscr07(stats_zt%kk) )
+      allocate( ztscr08(stats_zt%kk) )
+      allocate( ztscr09(stats_zt%kk) )
+      allocate( ztscr10(stats_zt%kk) )
+      allocate( ztscr11(stats_zt%kk) )
+      allocate( ztscr12(stats_zt%kk) )
+      allocate( ztscr13(stats_zt%kk) )
+      allocate( ztscr14(stats_zt%kk) )
+      allocate( ztscr15(stats_zt%kk) )
+      allocate( ztscr16(stats_zt%kk) )
+      allocate( ztscr17(stats_zt%kk) )
+      allocate( ztscr18(stats_zt%kk) )
+      allocate( ztscr19(stats_zt%kk) )
+      allocate( ztscr20(stats_zt%kk) )
+      allocate( ztscr21(stats_zt%kk) )
 
-    ztscr01 = 0.0_core_rknd
-    ztscr02 = 0.0_core_rknd
-    ztscr03 = 0.0_core_rknd
-    ztscr04 = 0.0_core_rknd
-    ztscr05 = 0.0_core_rknd
-    ztscr06 = 0.0_core_rknd
-    ztscr07 = 0.0_core_rknd
-    ztscr08 = 0.0_core_rknd
-    ztscr09 = 0.0_core_rknd
-    ztscr10 = 0.0_core_rknd
-    ztscr11 = 0.0_core_rknd
-    ztscr12 = 0.0_core_rknd
-    ztscr13 = 0.0_core_rknd
-    ztscr14 = 0.0_core_rknd
-    ztscr15 = 0.0_core_rknd
-    ztscr16 = 0.0_core_rknd
-    ztscr17 = 0.0_core_rknd
-    ztscr18 = 0.0_core_rknd
-    ztscr19 = 0.0_core_rknd
-    ztscr20 = 0.0_core_rknd
-    ztscr21 = 0.0_core_rknd
+      ztscr01 = 0.0_r8
+      ztscr02 = 0.0_r8
+      ztscr03 = 0.0_r8
+      ztscr04 = 0.0_r8
+      ztscr05 = 0.0_r8
+      ztscr06 = 0.0_r8
+      ztscr07 = 0.0_r8
+      ztscr08 = 0.0_r8
+      ztscr09 = 0.0_r8
+      ztscr10 = 0.0_r8
+      ztscr11 = 0.0_r8
+      ztscr12 = 0.0_r8
+      ztscr13 = 0.0_r8
+      ztscr14 = 0.0_r8
+      ztscr15 = 0.0_r8
+      ztscr16 = 0.0_r8
+      ztscr17 = 0.0_r8
+      ztscr18 = 0.0_r8
+      ztscr19 = 0.0_r8
+      ztscr20 = 0.0_r8
+      ztscr21 = 0.0_r8
+    end if
 
     !  Default initialization for array indices for zt
-
-    call stats_init_zt_api( clubb_vars_zt, l_error, &
-                            stats_zt )
+    if (first_call) then
+      call stats_init_zt_api( clubb_vars_zt, l_error, &
+                              stats_zt )
+    end if
 
     !  Initialize zm (momentum points)
 
@@ -3905,45 +3941,48 @@ end function diag_ustar
     allocate( stats_zm%file%z( stats_zm%kk ) )
 
     !  Allocate scratch space
+    if (first_call) then
+      allocate( zmscr01(stats_zm%kk) )
+      allocate( zmscr02(stats_zm%kk) )
+      allocate( zmscr03(stats_zm%kk) )
+      allocate( zmscr04(stats_zm%kk) )
+      allocate( zmscr05(stats_zm%kk) )
+      allocate( zmscr06(stats_zm%kk) )
+      allocate( zmscr07(stats_zm%kk) )
+      allocate( zmscr08(stats_zm%kk) )
+      allocate( zmscr09(stats_zm%kk) )
+      allocate( zmscr10(stats_zm%kk) )
+      allocate( zmscr11(stats_zm%kk) )
+      allocate( zmscr12(stats_zm%kk) )
+      allocate( zmscr13(stats_zm%kk) )
+      allocate( zmscr14(stats_zm%kk) )
+      allocate( zmscr15(stats_zm%kk) )
+      allocate( zmscr16(stats_zm%kk) )
+      allocate( zmscr17(stats_zm%kk) )
 
-    allocate( zmscr01(stats_zm%kk) )
-    allocate( zmscr02(stats_zm%kk) )
-    allocate( zmscr03(stats_zm%kk) )
-    allocate( zmscr04(stats_zm%kk) )
-    allocate( zmscr05(stats_zm%kk) )
-    allocate( zmscr06(stats_zm%kk) )
-    allocate( zmscr07(stats_zm%kk) )
-    allocate( zmscr08(stats_zm%kk) )
-    allocate( zmscr09(stats_zm%kk) )
-    allocate( zmscr10(stats_zm%kk) )
-    allocate( zmscr11(stats_zm%kk) )
-    allocate( zmscr12(stats_zm%kk) )
-    allocate( zmscr13(stats_zm%kk) )
-    allocate( zmscr14(stats_zm%kk) )
-    allocate( zmscr15(stats_zm%kk) )
-    allocate( zmscr16(stats_zm%kk) )
-    allocate( zmscr17(stats_zm%kk) )
+      zmscr01 = 0.0_r8
+      zmscr02 = 0.0_r8
+      zmscr03 = 0.0_r8
+      zmscr04 = 0.0_r8
+      zmscr05 = 0.0_r8
+      zmscr06 = 0.0_r8
+      zmscr07 = 0.0_r8
+      zmscr08 = 0.0_r8
+      zmscr09 = 0.0_r8
+      zmscr10 = 0.0_r8
+      zmscr11 = 0.0_r8
+      zmscr12 = 0.0_r8
+      zmscr13 = 0.0_r8
+      zmscr14 = 0.0_r8
+      zmscr15 = 0.0_r8
+      zmscr16 = 0.0_r8
+      zmscr17 = 0.0_r8
+    end if
 
-    zmscr01 = 0.0_core_rknd
-    zmscr02 = 0.0_core_rknd
-    zmscr03 = 0.0_core_rknd
-    zmscr04 = 0.0_core_rknd
-    zmscr05 = 0.0_core_rknd
-    zmscr06 = 0.0_core_rknd
-    zmscr07 = 0.0_core_rknd
-    zmscr08 = 0.0_core_rknd
-    zmscr09 = 0.0_core_rknd
-    zmscr10 = 0.0_core_rknd
-    zmscr11 = 0.0_core_rknd
-    zmscr12 = 0.0_core_rknd
-    zmscr13 = 0.0_core_rknd
-    zmscr14 = 0.0_core_rknd
-    zmscr15 = 0.0_core_rknd
-    zmscr16 = 0.0_core_rknd
-    zmscr17 = 0.0_core_rknd
-
-    call stats_init_zm_api( clubb_vars_zm, l_error, &
-                            stats_zm )
+    if (first_call) then
+      call stats_init_zm_api( clubb_vars_zm, l_error, &
+                              stats_zm )
+    end if
 
     !  Initialize rad_zt (radiation points)
 
@@ -3981,9 +4020,11 @@ end function diag_ustar
       allocate( stats_rad_zt%file%z( stats_rad_zt%kk ) )
 
        fname = trim( fname_rad_zt )
-
-      call stats_init_rad_zt_api( clubb_vars_rad_zt, l_error, &
-                                  stats_rad_zt )
+      
+      if (first_call) then
+        call stats_init_rad_zt_api( clubb_vars_rad_zt, l_error, &
+                                    stats_rad_zt )
+      end if
 
        !  Initialize rad_zm (radiation points)
 
@@ -4019,9 +4060,11 @@ end function diag_ustar
        allocate( stats_rad_zm%file%z( stats_rad_zm%kk ) )
 
        fname = trim( fname_rad_zm )
-
-       call stats_init_rad_zm_api( clubb_vars_rad_zm, l_error, &
-                                   stats_rad_zm )
+ 
+      if (first_call) then
+        call stats_init_rad_zm_api( clubb_vars_rad_zm, l_error, &
+                                    stats_rad_zm )
+      end if
     end if ! l_output_rad_files
 
 
@@ -4060,8 +4103,10 @@ end function diag_ustar
 
     fname = trim( fname_sfc )
 
-    call stats_init_sfc_api( clubb_vars_sfc, l_error, &
-                             stats_sfc )
+    if (first_call) then
+      call stats_init_sfc_api( clubb_vars_sfc, l_error, &
+                               stats_sfc )
+    end if
 
     ! Check for errors
 
@@ -4070,45 +4115,48 @@ end function diag_ustar
     endif
 
 !   Now call add fields
-    do i = 1, stats_zt%num_output_fields
-
-      temp1 = trim(stats_zt%file%grid_avg_var(i)%name)
-      sub   = temp1
-      if (len(temp1) .gt. 16) sub = temp1(1:16)
-
-       call addfld(trim(sub),(/ 'ilev' /),&
-            'A',trim(stats_zt%file%grid_avg_var(i)%units),trim(stats_zt%file%grid_avg_var(i)%description))
-    enddo
-
-    do i = 1, stats_zm%num_output_fields
-
-      temp1 = trim(stats_zm%file%grid_avg_var(i)%name)
-      sub   = temp1
-      if (len(temp1) .gt. 16) sub = temp1(1:16)
-
-      call addfld(trim(sub),(/ 'ilev' /),&
-           'A',trim(stats_zm%file%grid_avg_var(i)%units),trim(stats_zm%file%grid_avg_var(i)%description))
-    enddo
-
-    if (l_output_rad_files) then
-      do i = 1, stats_rad_zt%num_output_fields
-        call addfld(trim(stats_rad_zt%file%grid_avg_var(i)%name),(/ 'ilev' /),&
-           'A',trim(stats_rad_zt%file%grid_avg_var(i)%units),trim(stats_rad_zt%file%grid_avg_var(i)%description))
+    if (first_call) then
+      do i = 1, stats_zt%num_output_fields
+      
+        temp1 = trim(stats_zt%file%grid_avg_var(i)%name)
+        sub   = temp1
+        if (len(temp1) .gt. 16) sub = temp1(1:16)
+       
+  !!XXgoldyXX: Probably need a hist coord for nnzp for the vertical     
+         call addfld(trim(sub),(/ 'ilev' /),&
+              'A',trim(stats_zt%file%grid_avg_var(i)%units),trim(stats_zt%file%grid_avg_var(i)%description))
+      enddo
+      
+      do i = 1, stats_zm%num_output_fields
+      
+        temp1 = trim(stats_zm%file%grid_avg_var(i)%name)
+        sub   = temp1
+        if (len(temp1) .gt. 16) sub = temp1(1:16)
+      
+        call addfld(trim(sub),(/ 'ilev' /),&
+             'A',trim(stats_zm%file%grid_avg_var(i)%units),trim(stats_zm%file%grid_avg_var(i)%description))
       enddo
 
-      do i = 1, stats_rad_zm%num_output_fields
-        call addfld(trim(stats_rad_zm%file%grid_avg_var(i)%name),(/ 'ilev' /),&
-           'A',trim(stats_rad_zm%file%grid_avg_var(i)%units),trim(stats_rad_zm%file%grid_avg_var(i)%description))
+      if (l_output_rad_files) then     
+        do i = 1, stats_rad_zt%num_output_fields
+          call addfld(trim(stats_rad_zt%file%grid_avg_var(i)%name),(/ 'ilev' /),&
+             'A',trim(stats_rad_zt%file%grid_avg_var(i)%units),trim(stats_rad_zt%file%grid_avg_var(i)%description))
+        enddo
+      
+        do i = 1, stats_rad_zm%num_output_fields
+          call addfld(trim(stats_rad_zm%file%grid_avg_var(i)%name),(/ 'ilev' /),&
+             'A',trim(stats_rad_zm%file%grid_avg_var(i)%units),trim(stats_rad_zm%file%grid_avg_var(i)%description))
+        enddo
+      endif 
+      
+      do i = 1, stats_sfc%num_output_fields
+        call addfld(trim(stats_sfc%file%grid_avg_var(i)%name),horiz_only,&
+             'A',trim(stats_sfc%file%grid_avg_var(i)%units),trim(stats_sfc%file%grid_avg_var(i)%description))
       enddo
-    endif
 
-    do i = 1, stats_sfc%num_output_fields
-      call addfld(trim(stats_sfc%file%grid_avg_var(i)%name),horiz_only,&
-           'A',trim(stats_sfc%file%grid_avg_var(i)%units),trim(stats_sfc%file%grid_avg_var(i)%description))
-    enddo
+    end if
 
     return
-
 
   end subroutine stats_init_clubb
 
@@ -4120,7 +4168,8 @@ end function diag_ustar
 
 
     !-----------------------------------------------------------------------
-  subroutine stats_end_timestep_clubb(lchnk,thecol,out_zt,out_zm,out_radzt,out_radzm,out_sfc)
+  subroutine stats_end_timestep_clubb(thecol, stats_zt, stats_zm, stats_rad_zt, stats_rad_zm, stats_sfc, &
+                                      out_zt, out_zm, out_radzt, out_radzm, out_sfc)
 
     !     Description: Called when the stats timestep has ended. This subroutine
     !     is responsible for calling statistics to be written to the output
@@ -4148,9 +4197,15 @@ end function diag_ustar
 
 #endif
 
-    integer :: lchnk
     integer :: thecol
-
+    
+    ! Input Variables
+    type (stats), intent(inout) :: stats_zt,      & ! stats_zt grid
+                                   stats_zm,      & ! stats_zm grid
+                                   stats_rad_zt,  & ! stats_rad_zt grid
+                                   stats_rad_zm,  & ! stats_rad_zm grid
+                                   stats_sfc        ! stats_sfc
+    
     real(r8), intent(inout) :: out_zt(:,:,:)     ! (pcols,pverp,stats_zt%num_output_fields)
     real(r8), intent(inout) :: out_zm(:,:,:)     ! (pcols,pverp,stats_zt%num_output_fields)
     real(r8), intent(inout) :: out_radzt(:,:,:)  ! (pcols,pverp,stats_rad_zt%num_output_fields)
@@ -4579,7 +4634,8 @@ end function diag_ustar
                                       ! Looking at issue #905 on the clubb repo
       l_use_tke_in_wp3_pr_turb_term,& ! Use TKE formulation for wp3 pr_turb term
       l_use_tke_in_wp2_wp3_K_dfsn,  & ! Use TKE in eddy diffusion for wp2 and wp3
-      l_smooth_Heaviside_tau_wpxp     ! Use smooth 'Peskin' Heaviside function in calculation of invrs_tau
+      l_smooth_Heaviside_tau_wpxp,  & ! Use smooth 'Peskin' Heaviside function in calculation of invrs_tau
+      l_enable_relaxed_clipping       ! Flag to relax clipping on wpxp in xm_wpxp_clipping_and_stats
 
     logical, save :: first_call = .true.
 
@@ -4630,8 +4686,9 @@ end function diag_ustar
                                                l_e3sm_config, & ! Intent(out)
                                                l_vary_convect_depth, & ! Intent(out)
                                                l_use_tke_in_wp3_pr_turb_term, & ! Intent(out)
-                                               l_use_tke_in_wp2_wp3_K_dfsn, &
-                                               l_smooth_Heaviside_tau_wpxp ) ! Intent(out)
+                                               l_use_tke_in_wp2_wp3_K_dfsn, & ! Intent(out)
+                                               l_smooth_Heaviside_tau_wpxp, & ! Intent(out)
+                                               l_enable_relaxed_clipping ) ! Intent(out)
 
       l_e3sm_config = .true. ! Hard-coded .true. for E3SM
 
@@ -4682,6 +4739,7 @@ end function diag_ustar
                                                    l_use_tke_in_wp3_pr_turb_term, & ! Intent(in)
                                                    l_use_tke_in_wp2_wp3_K_dfsn, & ! Intent(in)
                                                    l_smooth_Heaviside_tau_wpxp, & ! Intent(in)
+                                                   l_enable_relaxed_clipping, & ! Intent(in)
                                                    clubb_config_flags ) ! Intent(out)
 
       first_call = .false.

@@ -158,7 +158,7 @@ module clubb_api_module
     iC_invrs_tau_sfc, iC_invrs_tau_shear, iC_invrs_tau_N2, &
     iC_invrs_tau_N2_wp2, iC_invrs_tau_N2_xp2, iC_invrs_tau_N2_wpxp, &
     iC_invrs_tau_N2_clear_wp3, ialtitude_threshold, irtp2_clip_coef, &
-    iRichardson_num_min, iRichardson_num_max, iCx_min, iCx_max
+    iRichardson_num_min, iRichardson_num_max, ia3_coef_min, iCx_min, iCx_max
 
 
   use pdf_parameter_module, only : &
@@ -270,7 +270,7 @@ module clubb_api_module
         iC_invrs_tau_sfc, iC_invrs_tau_shear, iC_invrs_tau_N2, &
         iC_invrs_tau_N2_wp2, iC_invrs_tau_N2_xp2, iC_invrs_tau_N2_wpxp, &
         iC_invrs_tau_N2_clear_wp3, ialtitude_threshold, irtp2_clip_coef, &
-        iRichardson_num_min, iRichardson_num_max, iCx_min, iCx_max
+        iRichardson_num_min, iRichardson_num_max, ia3_coef_min, iCx_min, iCx_max
 
 
 
@@ -1634,6 +1634,7 @@ contains
     l_prescribed_avg_deltaz,                            & ! intent(in)
     l_damp_wp2_using_em,                                & ! intent(in)
     l_stability_correct_tau_zm,                         & ! intent(in)
+    l_enable_relaxed_clipping,                          & ! intent(in)
 #ifdef GFDL
     cloud_frac_min ,                                    & ! intent(in)  h1g, 2010-06-16
 #endif
@@ -1732,19 +1733,21 @@ contains
                              ! CLUBB's PDF.
 
     logical, intent(in) :: &
-      l_predict_upwp_vpwp,     & ! Flag to predict <u'w'> and <v'w'> along with <u> and <v>
-                                 ! alongside the advancement of <rt>, <w'rt'>, <thl>, <wpthlp>,
-                                 ! <sclr>, and <w'sclr'> in subroutine advance_xm_wpxp.
-                                 ! Otherwise, <u'w'> and <v'w'> are still approximated by eddy
-                                 ! diffusivity when <u> and <v> are advanced in subroutine
-                                 ! advance_windm_edsclrm.
-      l_min_xp2_from_corr_wx,  & ! Flag to base the threshold minimum value of xp2 (rtp2 and
-                                 ! thlp2) on keeping the overall correlation of w and x within
-                                 ! the limits of -max_mag_correlation_flux to
-                                 ! max_mag_correlation_flux.
-      l_prescribed_avg_deltaz, &  ! used in adj_low_res_nu. If .true., avg_deltaz = deltaz
-      l_damp_wp2_using_em,     &
-      l_stability_correct_tau_zm
+      l_predict_upwp_vpwp,         & ! Flag to predict <u'w'> and <v'w'> along with <u> and <v>
+                                     ! alongside the advancement of <rt>, <w'rt'>, <thl>, <wpthlp>,
+                                     ! <sclr>, and <w'sclr'> in subroutine advance_xm_wpxp.
+                                     ! Otherwise, <u'w'> and <v'w'> are still approximated by eddy
+                                     ! diffusivity when <u> and <v> are advanced in subroutine
+                                     ! advance_windm_edsclrm.
+      l_min_xp2_from_corr_wx,     & ! Flag to base the threshold minimum value of xp2 (rtp2 and
+                                    ! thlp2) on keeping the overall correlation of w and x within
+                                    ! the limits of -max_mag_correlation_flux to
+                                    ! max_mag_correlation_flux.
+      l_prescribed_avg_deltaz,    & ! used in adj_low_res_nu. If .true., avg_deltaz = deltaz
+      l_damp_wp2_using_em,        &
+      l_stability_correct_tau_zm, &
+      l_enable_relaxed_clipping     ! Flag to relax clipping on wpxp in
+                                    ! xm_wpxp_clipping_and_stats
 
 #ifdef GFDL
       logical, intent(in) :: &  ! h1g, 2010-06-16 begin mod
@@ -1784,8 +1787,9 @@ contains
       l_prescribed_avg_deltaz,                              & ! intent(in)
       l_damp_wp2_using_em,                                  & ! intent(in)
       l_stability_correct_tau_zm,                           & ! intent(in)
+      l_enable_relaxed_clipping,                            & ! intent(in)
 #ifdef GFDL
-      , cloud_frac_min                                      & ! intent(in)  h1g, 2010-06-16
+      cloud_frac_min,                                       & ! intent(in)  h1g, 2010-06-16
 #endif
       gr, lmin, nu_vert_res_dep, err_code_api )               ! intent(out)
 
@@ -2327,7 +2331,8 @@ contains
                                   C_invrs_tau_N2_wp2, C_invrs_tau_N2_xp2, &
                                   C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
                                   C_invrs_tau_wpxp_Ri, C_invrs_tau_wpxp_N2_thresh, &
-                                  Cx_min, Cx_max, Richardson_num_min, Richardson_num_max, &
+                                  Cx_min, Cx_max, Richardson_num_min, &
+                                  Richardson_num_max, a3_coef_min, &
                                   params )
 
     use parameters_tunable, only : read_parameters
@@ -2364,7 +2369,7 @@ contains
       C_invrs_tau_shear, C_invrs_tau_N2, C_invrs_tau_N2_wp2, &
       C_invrs_tau_N2_xp2, C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
       C_invrs_tau_wpxp_Ri, C_invrs_tau_wpxp_N2_thresh, &
-      Cx_min, Cx_max, Richardson_num_min, Richardson_num_max
+      Cx_min, Cx_max, Richardson_num_min, Richardson_num_max, a3_coef_min
 
     ! Output variables
     real( kind = core_rknd ), intent(out), dimension(nparams) :: params
@@ -2392,7 +2397,8 @@ contains
                           C_invrs_tau_N2_wp2, C_invrs_tau_N2_xp2, &
                           C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
                           C_invrs_tau_wpxp_Ri, C_invrs_tau_wpxp_N2_thresh, &
-                          Cx_min, Cx_max, Richardson_num_min, Richardson_num_max, &
+                          Cx_min, Cx_max, Richardson_num_min, &
+                          Richardson_num_max, a3_coef_min, &
                           params ) ! intent(out)
 
   end subroutine read_parameters_api
@@ -3004,6 +3010,14 @@ contains
 
     type(hydromet_pdf_parameter), dimension(1,nz) :: &
       hydromet_pdf_params_col    ! Hydrometeor PDF parameters        [units vary]
+      
+    type(stats), dimension(1) :: &
+      stats_zt_col, &
+      stats_zm_col, &
+      stats_sfc_col
+
+    type(grid), target, dimension(1) :: &
+      gr_col
 
 
     Nc_in_cloud_col(1,:) = Nc_in_cloud
@@ -3014,8 +3028,14 @@ contains
     
     hydromet_col(1,:,:) = hydromet
     wphydrometp_col(1,:,:) = wphydrometp
+    
+    gr_col(1) = gr
+    
+    stats_zt_col(1) = stats_zt
+    stats_zm_col(1) = stats_zm
+    stats_sfc_col(1) = stats_sfc
 
-    call setup_pdf_parameters( gr, &                          ! intent(in)
+    call setup_pdf_parameters( gr_col, &                          ! intent(in)
       nz, 1, pdf_dim, dt, &                                   ! Intent(in)
       Nc_in_cloud_col, rcm_col, cloud_frac_col, Kh_zm_col, &  ! Intent(in)
       ice_supersat_frac_col, hydromet_col, wphydrometp_col, & ! Intent(in)
@@ -3029,7 +3049,7 @@ contains
       l_calc_w_corr, &                                        ! Intent(in)
       l_const_Nc_in_cloud, &                                  ! Intent(in)
       l_fix_w_chi_eta_correlations, &                         ! Intent(in)
-      stats_zt, stats_zm, stats_sfc, &                        ! intent(inout)
+      stats_zt_col, stats_zm_col, stats_sfc_col, &            ! Intent(inout)
       hydrometp2_col, &                                       ! Intent(inout)
       mu_x_1_n_col, mu_x_2_n_col, &                           ! Intent(out)
       sigma_x_1_n_col, sigma_x_2_n_col, &                     ! Intent(out)
@@ -3039,6 +3059,23 @@ contains
       hydromet_pdf_params_col )                               ! Optional(out)
 
     if ( err_code == clubb_fatal_error ) error stop
+    
+    ! The following does not work for stats 
+    !     stats_zt = stats_zt_col(1)
+    !     stats_zm = stats_zm_col(1) 
+    !     stats_sfc = stats_sfc_col(1)
+    ! because of some mysterious pointer issue. However, the only thing that 
+    ! updates in stats is the field values, so we can copy only those instead.
+    if ( l_stats ) then 
+      stats_zm%accum_field_values = stats_zm_col(1)%accum_field_values
+      stats_zm%accum_num_samples = stats_zm_col(1)%accum_num_samples
+      
+      stats_zt%accum_field_values = stats_zt_col(1)%accum_field_values
+      stats_zt%accum_num_samples = stats_zt_col(1)%accum_num_samples
+      
+      stats_sfc%accum_field_values = stats_sfc_col(1)%accum_field_values
+      stats_sfc%accum_num_samples = stats_sfc_col(1)%accum_num_samples
+    end if
     
     hydrometp2 = hydrometp2_col(1,:,:)
     mu_x_1_n = mu_x_1_n_col(1,:,:)
@@ -3094,18 +3131,13 @@ contains
 
     implicit none
 
-    type(stats), target, intent(inout) :: &
-      stats_zt, &
-      stats_zm, &
-      stats_sfc
-
-    type(grid), target, intent(in) :: gr
-
     ! Input Variables
     integer, intent(in) :: &
       nz,          & ! Number of model vertical grid levels
       pdf_dim,     & ! Number of variables in the correlation array
       ngrdcol        ! Number of grid columns
+      
+    type(grid), target, dimension(ngrdcol), intent(in) :: gr
 
     real( kind = core_rknd ), intent(in) ::  &
       dt    ! Model timestep                                           [s]
@@ -3159,6 +3191,11 @@ contains
     ! Input/Output Variables
     real( kind = core_rknd ), dimension(ngrdcol,nz,hydromet_dim), intent(inout) :: &
       hydrometp2    ! Variance of a hydrometeor (overall) (m-levs.)   [units^2]
+
+    type(stats), target, dimension(ngrdcol), intent(inout) :: &
+      stats_zt, &
+      stats_zm, &
+      stats_sfc
 
     ! Output Variables
     real( kind = core_rknd ), dimension(ngrdcol,nz,pdf_dim), intent(out) :: &
@@ -4168,7 +4205,8 @@ contains
                C_invrs_tau_N2_wp2, C_invrs_tau_N2_xp2, &
                C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
                C_invrs_tau_wpxp_Ri, C_invrs_tau_wpxp_N2_thresh, &
-               Cx_min, Cx_max, Richardson_num_min, Richardson_num_max )
+               Cx_min, Cx_max, Richardson_num_min, &
+               Richardson_num_max, a3_coef_min )
 
     use parameters_tunable, only: &
         set_default_parameters    ! Procedure(s)
@@ -4197,7 +4235,7 @@ contains
       C_invrs_tau_shear, C_invrs_tau_N2, C_invrs_tau_N2_wp2, &
       C_invrs_tau_N2_xp2, C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
       C_invrs_tau_wpxp_Ri, C_invrs_tau_wpxp_N2_thresh, &
-      Cx_min, Cx_max, Richardson_num_min, Richardson_num_max
+      Cx_min, Cx_max, Richardson_num_min, Richardson_num_max, a3_coef_min
 
     call set_default_parameters( &
                C1, C1b, C1c, C2rt, C2thl, C2rtthl, &
@@ -4222,7 +4260,8 @@ contains
                C_invrs_tau_N2_wp2, C_invrs_tau_N2_xp2, &
                C_invrs_tau_N2_wpxp, C_invrs_tau_N2_clear_wp3, &
                C_invrs_tau_wpxp_Ri, C_invrs_tau_wpxp_N2_thresh, &
-               Cx_min, Cx_max, Richardson_num_min, Richardson_num_max )
+               Cx_min, Cx_max, Richardson_num_min, &
+               Richardson_num_max, a3_coef_min )
 
     return
 
@@ -4277,7 +4316,8 @@ contains
                                                  l_vary_convect_depth, & ! Out
                                                  l_use_tke_in_wp3_pr_turb_term, & ! Out
                                                  l_use_tke_in_wp2_wp3_K_dfsn, & ! Out
-                                                 l_smooth_Heaviside_tau_wpxp ) ! Out
+                                                 l_smooth_Heaviside_tau_wpxp, & ! Out
+                                                 l_enable_relaxed_clipping ) ! Out
 
     use model_flags, only: &
         set_default_clubb_config_flags  ! Procedure
@@ -4395,9 +4435,11 @@ contains
                                       ! Looking at issue #905 on the clubb repo
       l_use_tke_in_wp3_pr_turb_term,& ! Use TKE formulation for wp3 pr_turb term
       l_use_tke_in_wp2_wp3_K_dfsn, &  ! Use TKE in eddy diffusion for wp2 and wp3
-      l_smooth_Heaviside_tau_wpxp     ! Use smoothed Heaviside 'Peskin' function
+      l_smooth_Heaviside_tau_wpxp,  & ! Use smoothed Heaviside 'Peskin' function
                                       ! in the calculation of H_invrs_tau_wpxp_N2
                                       ! in src/CLUBB_core/mixing_length.F90
+      l_enable_relaxed_clipping       ! Flag to relax clipping on wpxp
+                                      ! in xm_wpxp_clipping_and_stats
 
     call set_default_clubb_config_flags( iiPDF_type, & ! Out
                                          ipdf_call_placement, & ! Out
@@ -4445,7 +4487,8 @@ contains
                                          l_vary_convect_depth, & ! Out
                                          l_use_tke_in_wp3_pr_turb_term, & ! Out
                                          l_use_tke_in_wp2_wp3_K_dfsn, & ! Out
-                                         l_smooth_Heaviside_tau_wpxp ) ! Out
+                                         l_smooth_Heaviside_tau_wpxp, & ! Out
+                                         l_enable_relaxed_clipping ) ! Out
 
   end subroutine set_default_clubb_config_flags_api
 
@@ -4499,6 +4542,7 @@ contains
                                                      l_use_tke_in_wp3_pr_turb_term, & ! In
                                                      l_use_tke_in_wp2_wp3_K_dfsn, & ! In
                                                      l_smooth_Heaviside_tau_wpxp, & ! In
+                                                     l_enable_relaxed_clipping, & ! In/
                                                      clubb_config_flags ) ! Out
 
     use model_flags, only: &
@@ -4618,9 +4662,11 @@ contains
                                       ! Looking at issue #905 on the clubb repo
       l_use_tke_in_wp3_pr_turb_term,& ! Use TKE formulation for wp3 pr_turb term
       l_use_tke_in_wp2_wp3_K_dfsn, &  ! Use TKE in eddy diffusion for wp2 and wp3
-      l_smooth_Heaviside_tau_wpxp     ! Use smoothed Heaviside 'Peskin' function
+      l_smooth_Heaviside_tau_wpxp, &  ! Use smoothed Heaviside 'Peskin' function
                                       ! in the calculation of H_invrs_tau_wpxp_N2
                                       ! in src/CLUBB_core/mixing_length.F90
+      l_enable_relaxed_clipping       ! Flag to relax clipping on wpxp
+                                      ! in xm_wpxp_clipping_and_stats
 
     ! Output variables
     type(clubb_config_flags_type), intent(out) :: &
@@ -4673,6 +4719,7 @@ contains
                                              l_use_tke_in_wp3_pr_turb_term, & ! In
                                              l_use_tke_in_wp2_wp3_K_dfsn, & ! In
                                              l_smooth_Heaviside_tau_wpxp, & ! In
+                                             l_enable_relaxed_clipping, & ! In
                                              clubb_config_flags ) ! Out
 
   end subroutine initialize_clubb_config_flags_type_api
