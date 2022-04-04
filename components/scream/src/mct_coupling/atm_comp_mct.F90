@@ -55,11 +55,12 @@ CONTAINS
                                   scr_names_x2a, scr_names_a2x, index_x2a, index_a2x, vec_comp_x2a, vec_comp_a2x, &
                                   can_be_exported_during_init
     use ekat_string_utils,  only: string_f2c
+    use kinds,              only: homme_iulog=>iulog
 
     use mct_mod,        only: mct_aVect_init, mct_gsMap_lsize
     use seq_flds_mod,   only: seq_flds_a2x_fields, seq_flds_x2a_fields
     use seq_comm_mct,   only: seq_comm_inst, seq_comm_name, seq_comm_suffix
-    use shr_file_mod,   only: shr_file_getunit
+    use shr_file_mod,   only: shr_file_getunit, shr_file_setIO
     use shr_sys_mod,    only: shr_sys_abort
 
     ! !INPUT/OUTPUT PARAMETERS:
@@ -86,7 +87,7 @@ CONTAINS
 
     ! TODO: read this from the namelist?
     character(len=256)                :: yaml_fname = "./data/scream_input.yaml"
-    character(kind=c_char,len=256), target :: yaml_fname_c, atm_log_fname_c
+    character(kind=c_char,len=256), target :: yaml_fname_c, atm_log_fname_c, dyn_log_fname
 
     ! Note: diri is unused, but *is* in the nml file, and the nml read woud return
     !       a nonzero err code if we don't add diri to the modelio nml
@@ -136,6 +137,10 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Initialize atm
     !----------------------------------------------------------------------------
+
+    ! Set Homme Output to ${diro}/${logfile}.dyn
+    dyn_log_fname = trim(diro)//"/"//trim(logfile)//".dyn"
+    open (unit=homme_iulog,file=trim(dyn_log_fname))
 
     ! Init the AD
     call seq_timemgr_EClockGetData(EClock, start_ymd=start_ymd, start_tod=start_tod)
@@ -218,6 +223,7 @@ CONTAINS
   !===============================================================================
   subroutine atm_final_mct(EClock, cdata, x2a, a2x)
     use scream_f2c_mod, only: scream_finalize
+    use kinds,          only: homme_iulog=>iulog
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            ,intent(inout) :: EClock     ! clock
@@ -232,6 +238,9 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call scream_finalize()
+
+    ! Close homme's log file
+    close (homme_iulog)
 
   end subroutine atm_final_mct
   !===============================================================================
