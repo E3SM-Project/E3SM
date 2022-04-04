@@ -533,10 +533,12 @@ contains
             end do
             !$omp end do
             !$omp end parallel
-          else if (config_Redi_closure == 'data') then
+         else if (config_Redi_closure == 'data') then
             ! read RediKappa in from input
             call mpas_log_write("config_Redi_closure = 'data'. "// &
                                 "Make sure that the variable RediKappa is read in from an input file.")
+         else if (config_Redi_closure == 'equalGM') then
+            call mpas_log_write( "config_Redi_closure = 'equalGM'. RediKappa will be set to gmBolusKappa values")
          else
             call mpas_log_write('Invalid choice of config_Redi_closure.', MPAS_LOG_CRIT)
             err = 1
