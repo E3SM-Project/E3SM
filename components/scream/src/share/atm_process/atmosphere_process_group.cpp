@@ -155,7 +155,13 @@ void AtmosphereProcessGroup::run_sequential (const Real dt) {
   auto ts = timestamp();
   ts += dt;
 
+  // The stored atm procs should update the timestamp if both
+  //  - this is the last subcycle iteration
+  //  - nobody from outside told this APG to not update timestamps
+  const bool do_update = do_update_time_stamp() &&
+                      (get_subcycle_iter()==get_num_subcycles()-1);
   for (auto atm_proc : m_atm_processes) {
+    atm_proc->set_update_time_stamps(do_update);
     // Run the process
     atm_proc->run(dt);
   }
