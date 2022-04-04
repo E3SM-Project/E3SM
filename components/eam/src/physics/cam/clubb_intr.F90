@@ -184,7 +184,8 @@ module clubb_intr
     clubb_l_diag_Lscale_from_tau, &
     clubb_l_use_C7_Richardson, &
     clubb_l_rcm_supersat_adj, &
-    clubb_l_damp_wp3_Skw_squared
+    clubb_l_damp_wp3_Skw_squared, &
+    clubb_l_enable_relaxed_clipping
 
 !  define physics buffer indicies here
   integer :: &
@@ -532,7 +533,8 @@ end subroutine clubb_init_cnst
                                 clubb_l_call_pdf_closure_twice, clubb_l_use_cloud_cover, &
                                 clubb_l_stability_correct_tau_zm, clubb_l_damp_wp2_using_em, &
                                 clubb_l_diag_Lscale_from_tau, clubb_l_use_C7_Richardson, &
-                                clubb_l_rcm_supersat_adj, clubb_l_damp_wp3_Skw_squared
+                                clubb_l_rcm_supersat_adj, clubb_l_damp_wp3_Skw_squared, &
+                                clubb_l_enable_relaxed_clipping
 
     !----- Begin Code -----
 
@@ -609,6 +611,7 @@ end subroutine clubb_init_cnst
       call mpibcast(clubb_l_use_C7_Richardson,        1,   mpilog,   0, mpicom)
       call mpibcast(clubb_l_rcm_supersat_adj,         1,   mpilog,   0, mpicom)
       call mpibcast(clubb_l_damp_wp3_Skw_squared,     1,   mpilog,   0, mpicom)
+      call mpibcast(clubb_l_enable_relaxed_clipping,  1,   mpilog,   0, mpicom)
 #endif
 
     !  Overwrite defaults if they are true
@@ -972,6 +975,7 @@ end subroutine clubb_init_cnst
     clubb_config_flags%l_use_C7_Richardson = clubb_l_use_C7_Richardson
     clubb_config_flags%l_rcm_supersat_adj = clubb_l_rcm_supersat_adj
     clubb_config_flags%l_damp_wp3_Skw_squared = clubb_l_damp_wp3_Skw_squared
+    clubb_config_flags%l_enable_relaxed_clipping = clubb_l_enable_relaxed_clipping
 
     !  Set up CLUBB core.  Note that some of these inputs are overwrote
     !  when clubb_tend_cam is called.  The reason is that heights can change
