@@ -3332,6 +3332,12 @@ Altitude above which damping should occur for turbulent fluxes (wpxp)
 Default: 100.0
 </entry>
 
+<entry id="clubb_a3_coef_min" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Minimum value for CLUBB's a3 coefficient
+Default: 1.6
+</entry>
+
 <entry id="clubb_iiPDF_type" type="integer"  category="pblrad"
        group="clubbpbl_diff_nl" valid_values="" >
 Selected option for the two-component normal (double Gaussian) PDF type to use
@@ -3474,6 +3480,13 @@ Flag to damp CLUBB's wp3 by the square of skewness of w (Skw).  When this flag
 is turned off, wp3 is damped according to Skw to the 4th power.  This damping
 equation also involves the coefficient clubb_C8b (see description of clubb_C8b).
 Default: .false.
+</entry>
+
+<entry id="clubb_l_enable_relaxed_clipping" type="logical"  category="pblrad"
+       group="clubbpbl_diff_nl" valid_values="" >
+Flag to relax clipping on wpxp in CLUBB's xm_wpxp_clipping_and_stats.  This
+flag should always have the opposite value of clubb_l_min_xp2_from_corr_wx.
+Default: .true.
 </entry>
 
 =======

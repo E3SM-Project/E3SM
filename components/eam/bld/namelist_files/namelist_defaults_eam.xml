@@ -798,6 +798,7 @@
 <clubb_up2_sfc_coef                               > 2.0 </clubb_up2_sfc_coef>
 <clubb_Skw_max_mag                                > 4.5 </clubb_Skw_max_mag>
 <clubb_altitude_threshold                         > 100.0 </clubb_altitude_threshold>
+<clubb_a3_coef_min                                > 1.6 </clubb_a3_coef_min>
 <clubb_iiPDF_type                                 > 1 </clubb_iiPDF_type>
 <clubb_ipdf_call_placement                        > 1 </clubb_ipdf_call_placement>
 <clubb_l_predict_upwp_vpwp                        > .false. </clubb_l_predict_upwp_vpwp>
@@ -814,6 +815,7 @@
 <clubb_l_use_C7_Richardson                        > .false. </clubb_l_use_C7_Richardson>
 <clubb_l_rcm_supersat_adj                         > .false. </clubb_l_rcm_supersat_adj>
 <clubb_l_damp_wp3_Skw_squared                     > .false. </clubb_l_damp_wp3_Skw_squared>
+<clubb_l_enable_relaxed_clipping                  > .true. </clubb_l_enable_relaxed_clipping>
 <relvar_fix                                       > .false.  </relvar_fix>      
 <clubb_use_sgv                                    > .false. </clubb_use_sgv>
 

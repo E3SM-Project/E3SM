@@ -3665,6 +3665,7 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_up2_sfc_coef');
    add_default($nl, 'clubb_Skw_max_mag');
    add_default($nl, 'clubb_altitude_threshold');
+   add_default($nl, 'clubb_a3_coef_min');
    add_default($nl, 'clubb_iiPDF_type');
    add_default($nl, 'clubb_ipdf_call_placement');
    add_default($nl, 'clubb_l_predict_upwp_vpwp');
@@ -3681,6 +3682,7 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_l_use_C7_Richardson');
    add_default($nl, 'clubb_l_rcm_supersat_adj');
    add_default($nl, 'clubb_l_damp_wp3_Skw_squared');
+   add_default($nl, 'clubb_l_enable_relaxed_clipping');
    add_default($nl, 'relvar_fix');
    add_default($nl, 'clubb_use_sgv');
 
