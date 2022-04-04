@@ -1678,77 +1678,114 @@ contains
 !> \date    Jan 2021
 !> \details
 !>  This routine computes the diagnostic variable for surface pressure
+!>  It must be called in the code after computing the density.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_diagnostic_solve_surface_pressure(forcingPool, atmosphericPressure, &
-                seaIcePressure, surfacePressure)!{{{
 
-      implicit none
+   subroutine ocn_diagnostic_solve_surface_pressure(forcingPool, &
+               atmosphericPressure, seaIcePressure, surfacePressure)!{{{
 
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), intent(in) :: forcingPool !< Input: Forcing information
+      type (mpas_pool_type), intent(in) :: &
+         forcingPool         !< [in] Forcing information
+
       real (kind=RKIND), dimension(:), intent(in) :: &
-         atmosphericPressure
-      real (kind=RKIND), dimension(:), intent(in) :: &
-         seaIcePressure
+         atmosphericPressure, &!< [in] atmospheric pressure on surface
+         seaIcePressure        !< [in] sea-ice pressure on surface
 
       !-----------------------------------------------------------------
-      !
       ! output variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:), intent(out) :: &
-         surfacePressure
+         surfacePressure       !< [out] total surface pressure
 
       !-----------------------------------------------------------------
-      !
       ! local variables
-      !
       !-----------------------------------------------------------------
 
-      integer :: nCells
-      integer :: iCell
+      integer :: iCell ! cell loop index
 
       real (kind=RKIND), dimension(:), pointer :: &
-        frazilSurfacePressure, landIcePressure
+         frazilSurfacePressure, &! frazil ice pressure from forcing
+         landIcePressure         ! land ice pressure
 
-      !
+      ! End preamble
+      !-----------------------------------------------------------------
+      ! Begin code
+
       ! Pressure
-      ! This section must be placed in the code after computing the density.
       !
-      call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
-      call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
+      call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', &
+                                             frazilSurfacePressure)
+      call mpas_pool_get_array(forcingPool, 'landIcePressure', &
+                                             landIcePressure)
 
-      nCells = nCellsAll
+      ! Compute pressure for generalized coordinates.
+      ! Pressure at top surface may be due to atmospheric pressure,
+      ! sea ice, frazil ice or the weight of an ice shelf
+      ! The latter two are only available when those options are on.
 
 #ifdef MPAS_OPENACC
-      !$acc parallel loop present(surfacePressure, atmosphericPressure, &
-      !$acc                       seaIcePressure, frazilSurfacePressure, &
-      !$acc                       landIcePressure)
+      !$acc parallel loop &
+      !$acc    present(surfacePressure, atmosphericPressure, &
+      !$acc            seaIcePressure)
 #else
       !$omp parallel
       !$omp do schedule(runtime)
 #endif
-      do iCell = 1, nCells
-         ! Pressure for generalized coordinates.
-         ! Pressure at top surface may be due to atmospheric pressure, frazil
-         ! ice, sea ice or the weight of an ice shelf
-         surfacePressure(iCell) = atmosphericPressure(iCell) + seaIcePressure(iCell)
-         if ( associated(frazilSurfacePressure) ) &
-            surfacePressure(iCell) = surfacePressure(iCell) + frazilSurfacePressure(iCell)
-         if ( associated(landIcePressure) ) &
-            surfacePressure(iCell) = surfacePressure(iCell) + landIcePressure(iCell)
+      do iCell = 1, nCellsAll
+
+         surfacePressure(iCell) = atmosphericPressure(iCell) &
+                                + seaIcePressure(iCell)
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
+#endif
+
+      ! Add frazil component if needed
+      if ( associated(frazilSurfacePressure) ) then
+
+#ifdef MPAS_OPENACC
+         !$acc parallel loop &
+         !$acc    present(surfacePressure, frazilSurfacePressure)
+#else
+         !$omp do schedule(runtime)
+#endif
+         do iCell = 1, nCellsAll
+            surfacePressure(iCell) = surfacePressure(iCell) &
+                                   + frazilSurfacePressure(iCell)
+         end do
+#ifndef MPAS_OPENACC
+         !$omp end do
+#endif
+      endif ! frazil pressure
+
+      ! Add land ice pressure if needed
+
+      if (landIcePressureOn) then
+#ifdef MPAS_OPENACC
+         !$acc parallel loop &
+         !$acc    present(surfacePressure, landIcePressure)
+#else
+         !$omp do schedule(runtime)
+#endif
+         do iCell = 1, nCellsAll
+            surfacePressure(iCell) = surfacePressure(iCell) &
+                                   + landIcePressure(iCell)
+         end do
+#ifndef MPAS_OPENACC
+         !$omp end do
+#endif
+      endif ! land ice pressure
+#ifndef MPAS_OPENACC
       !$omp end parallel
 #endif
+
+   !--------------------------------------------------------------------
 
    end subroutine ocn_diagnostic_solve_surface_pressure!}}}
 
