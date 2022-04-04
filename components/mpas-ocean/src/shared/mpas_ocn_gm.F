@@ -611,8 +611,8 @@ contains
                 c_Visbeck = sqrt(sumN2*ltsum)
                 sumRi = sumRi / (ltsum + 1.0E-11_RKIND)
 
-                eddyLength(iEdge) = min(c_Visbeck/(1.0E-15_RKIND + abs(fEdge(iEdge))), &
-                                sqrt(c_Visbeck/ (2.0_RKIND*betaEdge(iEdge))))
+                eddyLength(iEdge) = max(dcEdge(iEdge), min(c_Visbeck/(1.0E-15_RKIND + abs(fEdge(iEdge))), &
+                                sqrt(c_Visbeck/ (2.0_RKIND*betaEdge(iEdge)))))
                 eddyTime(iEdge) = 1.0_RKIND / (max(abs(fEdge(iEdge)), sqrt(2.0_RKIND*c_Visbeck*betaEdge(iEdge))) /  &
                                       (1.0E-11_RKIND + sqrt(sumRi)))
                 gmBolusKappa(iEdge) = config_GM_Visbeck_alpha * eddyLength(iEdge)**2.0_RKIND / (1.0E-15 + eddyTime(iEdge))
