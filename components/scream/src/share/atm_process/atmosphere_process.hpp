@@ -172,7 +172,12 @@ public:
 
   // Set local variables using memory provided by
   // the ATMBufferManager
-  virtual void init_buffers(const ATMBufferManager& /*buffer_manager*/) {}
+  virtual void init_buffers(const ATMBufferManager& /* buffer_manager */) {
+    EKAT_REQUIRE_MSG (requested_buffer_size_in_bytes()==0,
+        "Error! This Atm Process requested a non-zero buffer size,\n"
+        "       but does not override 'init_buffers'. Please, fix this.\n"
+        "   - Atm proc name: " + this->name() + "\n");
+  }
 
   // Convenience function to retrieve input/output fields from the field/group (and grid) name.
   // Note: the version without grid name only works if there is only one copy of the field/group.

@@ -410,13 +410,20 @@ process_required_field (const FieldRequest& req) {
   }
 }
 
-void AtmosphereProcessGroup::initialize_atm_memory_buffer(ATMBufferManager &memory_buffer) {
-  for (auto& atm_proc : m_atm_processes) {
-    memory_buffer.request_bytes(atm_proc->requested_buffer_size_in_bytes());
+size_t AtmosphereProcessGroup::requested_buffer_size_in_bytes () const
+{
+  size_t buf_size = 0;
+  for (const auto& proc : m_atm_processes) {
+    buf_size = std::max(buf_size,proc->requested_buffer_size_in_bytes());
   }
-  memory_buffer.allocate();
+
+  return buf_size;
+}
+
+void AtmosphereProcessGroup::
+init_buffers(const ATMBufferManager& buffer_manager) {
   for (auto& atm_proc : m_atm_processes) {
-    atm_proc->init_buffers(memory_buffer);
+    atm_proc->init_buffers(buffer_manager);
   }
 }
 
