@@ -270,6 +270,7 @@ def buildnml(case, caseroot, compname):
     elif ocn_grid == 'QU30':
         decomp_date = '220330'
         decomp_prefix = 'mpas-o.graph.info.'
+        restoring_file = 'sss.PHC3.0_monthlyClimatology.QU30.220404.nc'
         ic_date = '220330'
         ic_prefix = 'ocean.QU30'
         if ocn_ic_mode == 'spunup':
