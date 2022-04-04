@@ -715,16 +715,6 @@ contains
             !$omp end parallel
          end if
 
-         if(config_Redi_closure == 'equalGM') then
-           !$omp parallel
-           !$omp do schedule(runtime)
-           do iEdge=1,nEdges
-              RediKappa(iEdge) = gmBolusKappa(iEdge)
-           end do
-           !$omp end do
-           !$omp end parallel
-         end if
-
          !!$omp parallel
          !!$omp do schedule(runtime) private(cell1, cell2, k, &
          !!$omp             BruntVaisalaFreqTopEdge, N) &
