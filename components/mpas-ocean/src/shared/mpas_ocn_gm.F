@@ -1028,7 +1028,6 @@ contains
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge=1,nEdges
-              betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
               gmBolusKappa(iEdge) = config_GM_spatially_variable_max_kappa
             end do
             !$omp end do
@@ -1045,7 +1044,6 @@ contains
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge=1,nEdges
-              betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
               gmBolusKappa(iEdge) = config_GM_spatially_variable_max_kappa
             end do
             !$omp end do
