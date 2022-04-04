@@ -3316,6 +3316,9 @@ Factor used in calculating the surface values of up2 (variance of the u wind com
 Maximum magnitude of skewness allowed.
 </entry>
 
+
+
+
 <entry id="clubb_xp3_coef_base"  type="real" category="pblrad"
        group="clubb_param_nl" valid_values="" >
 "Base" value of xp3_coef in simple equation for xp3 (rtp3, thlp3, etc.)

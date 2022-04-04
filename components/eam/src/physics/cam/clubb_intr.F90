@@ -1118,13 +1118,13 @@ end subroutine clubb_init_cnst
     dum2 = 1200._r8
     dum3 = 300._r8
 
-    if (l_stats) then 
+    allocate(stats_zt(pcols), &
+             stats_zm(pcols), &
+             stats_sfc(pcols), &
+             stats_rad_zt(pcols), &
+             stats_rad_zm(pcols)  )
       
-        allocate(stats_zt(pcols), &
-                 stats_zm(pcols), &
-                 stats_sfc(pcols), &
-                 stats_rad_zt(pcols), &
-                 stats_rad_zm(pcols)  )
+    if (l_stats) then 
       
        do i=1, pcols
          call stats_init_clubb( .true., dum1, dum2, &
