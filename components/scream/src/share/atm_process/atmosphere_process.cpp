@@ -12,20 +12,19 @@ namespace scream
 AtmosphereProcess::AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
   : m_comm  (comm)
   , m_params(params)
-{}
+{
+  if (m_params.isParameter("Number of Subcycles")) {
+    m_num_subcycles = m_params.get<int>("Number of Subcycles");
+  }
+  EKAT_REQUIRE_MSG (m_num_subcycles>0,
+      "Error! Invalid number of subcycles in param list " + m_params.name() + ".\n"
+      "  - Num subcycles: " + std::to_string(m_num_subcycles) + "\n");
+}
 
 void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type) {
   set_fields_and_groups_pointers();
   m_time_stamp = t0;
   initialize_impl(run_type);
-
-  if (m_params.isParameter("Number of Subcycles")) {
-    m_num_subcycles = m_params.get<int>("Number of Subcycles");
-  }
-  EKAT_REQUIRE_MSG (m_num_subcycles>0,
-      "Error! Invalid number of subcycles.\n"
-      "  - Atm proc name: " + this->name() + "\n"
-      "  - Num subcycles: " + std::to_string(m_num_subcycles) + "\n");
 }
 
 void AtmosphereProcess::run (const int dt) {
