@@ -42,7 +42,7 @@ for the CLM data in the CESM distribution
 <!-- River Transport Model river routing file (relative to {csmdata}) -->
 
 <frivinp_rtm rof_grid="r0125" >rof/mosart/MOSART_global_8th_20180211c.nc</frivinp_rtm>
-<frivinp_rtm rof_grid="r05" >rof/mosart/MOSART_global_half_20180721a.nc</frivinp_rtm>
+<frivinp_rtm rof_grid="r05" >rof/mosart/MOSART_Global_half_20210422.nc</frivinp_rtm>
 <frivinp_rtm rof_grid="r2" >rof/mosart/MOSART_Global_2deg_antarctica_flowing_to_north_c09162020.nc</frivinp_rtm>
 <frivinp_rtm rof_grid="NLDAS" >rof/mosart/MOSART_NLDAS_8th_20160426.nc</frivinp_rtm>
 
@@ -52,7 +52,7 @@ for the CLM data in the CESM distribution
 <frivinp_mesh rof_grid="r2" >share/meshes/rof/SCRIPgrid_2x2_nomask_c210211.nc</frivinp_mesh>
 
 <!-- WRM -->
-
+<paraFile rof_grid="r05" >rof/mosart/global_reservoir_halfdegree_c20200917.nc</paraFile>
 <paraFile rof_grid="NLDAS" >rof/mosart/US_reservoir_8th_NLDAS3_c20161220_updated_20170314.nc</paraFile>
 <demandPath rof_grid="NLDAS" >rof/mosart/NLDAS2_GCAM_water_demand_</demandPath> 
 <ExtractionFlag>1</ExtractionFlag>
