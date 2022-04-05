@@ -16,6 +16,8 @@
 using namespace scream;
 
 int main (int argc, char** argv) {
+    MPI_Init(&argc,&argv);
+
     using namespace ekat::logger;
     using logger_t = Logger<LogNoFile,LogRootRank>;
 
@@ -42,7 +44,7 @@ int main (int argc, char** argv) {
     real2d sw_flux_dn_dir_ref;
     real2d lw_flux_up_ref;
     real2d lw_flux_dn_ref;
-    logger->info("read_fluxes...\n");
+    logger->info("read_fluxes...");
     rrtmgpTest::read_fluxes(inputfile, sw_flux_up_ref, sw_flux_dn_ref, sw_flux_dn_dir_ref, lw_flux_up_ref, lw_flux_dn_ref );
 
     // Get dimension sizes
@@ -66,7 +68,7 @@ int main (int argc, char** argv) {
 
     // Initialize the RRTMGP interface; this will read in the k-distribution
     // data that contains information about absorption coefficients for gases
-    logger->info("rrtmgp_initialize...\n");
+    logger->info("rrtmgp_initialize...");
     rrtmgp::rrtmgp_initialize(gas_concs,logger);
 
     // Setup dummy all-sky problem
@@ -131,7 +133,7 @@ int main (int argc, char** argv) {
     // Run RRTMGP standalone codes and compare with AD run
     // Do something interesting here...
     // NOTE: these will get replaced with AD stuff that handles these
-    logger->info("rrtmgp_main...\n");
+    logger->info("rrtmgp_main...");
     const Real tsi_scaling = 1;
     rrtmgp::rrtmgp_main(
         ncol, nlay,
@@ -148,14 +150,14 @@ int main (int argc, char** argv) {
     );
 
     // Write fluxes
-    logger->info("write_fluxes...\n");
+    logger->info("write_fluxes...");
     rrtmgpTest::write_fluxes(
         baseline, 
         sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
         lw_flux_up, lw_flux_dn
     );
 
-    logger->info("cleaning up...\n");
+    logger->info("cleaning up...");
     // Clean up from test; this is probably not necessary, these things
     // should be deallocated when they fall out of scope, but we should be
     // good citizens and clean up our mess.
@@ -198,6 +200,8 @@ int main (int argc, char** argv) {
     gas_concs.reset();
     rrtmgp::rrtmgp_finalize();
     yakl::finalize();
+
+    MPI_Finalize();
 
     return 0;
 }
