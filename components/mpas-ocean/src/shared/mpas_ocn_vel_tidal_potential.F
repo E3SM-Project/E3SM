@@ -160,7 +160,7 @@ contains
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, maxLevelEdgeTop, dcEdge, edgeMask, &
-      !$acc            tidalPotEta, ssh, surfacePressure, tend) &
+      !$acc            tidalPotEta, ssh, surfacePressure, tend, ssh_sal) &
       !$acc    private(cell1, cell2, invdcEdge, potentialGrad, k, kMax)
 #else
       !$omp parallel do schedule(runtime) &
