@@ -921,6 +921,7 @@ this mask will have smb calculated over the entire global land surface
 
 <!-- Create crop on a separate land-unit -->
 <create_crop_landunit use_crop=".true."                  >.true.</create_crop_landunit>
+<create_crop_landunit use_crop=".false."  use_hydrstress=".true."  >.true.</create_crop_landunit>
 <create_crop_landunit use_crop=".false."                 >.false.</create_crop_landunit>
 <create_crop_landunit use_crop=".false." hgrid="r05" use_cn=".true." use_top_solar_rad=".true.">.false.</create_crop_landunit>
 <create_crop_landunit use_crop=".false." hgrid="r05" use_cn=".true." >.true.</create_crop_landunit>
