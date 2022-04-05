@@ -56,8 +56,8 @@
 
   -->
   <machine MACH="perlmutter">
-    <DESC>Perlmutter at NERSC.  Each GPU node has single AMD EPYC 7713 64-Core (Milan) and 4 nvidia A100's.</DESC>
-    <NODENAME_REGEX>login</NODENAME_REGEX>
+    <DESC>Perlmutter at NERSC.  Phase1 only: Each GPU node has single AMD EPYC 7713 64-Core (Milan) and 4 nvidia A100's.</DESC>
+    <NODENAME_REGEX>$ENV{NERSC_HOST}:perlmutter</NODENAME_REGEX>
     <OS>Linux</OS>
     <COMPILERS>gnu,gnugpu,nvidia,nvidiagpu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
@@ -89,12 +89,12 @@
       <arguments>
 	<arg name="label"> --label</arg>
 	<arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
-        <arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
-        <arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+	<arg name="thread_count">-c $SHELL{echo 128/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
+	<arg name="binding"> $SHELL{if [ 64 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
 	<arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
     </mpirun>
-    <module_system type="module">
+    <module_system type="module" allow_error="true">
       <init_path lang="perl">/usr/share/lmod/8.3.1/init/perl</init_path>
       <init_path lang="python">/usr/share/lmod/8.3.1/init/python</init_path>
       <init_path lang="sh">/usr/share/lmod/8.3.1/init/sh</init_path>
@@ -106,71 +106,79 @@
 
       <modules>
 	<command name="unload">cray-hdf5-parallel</command>
-        <command name="unload">cray-netcdf-hdf5parallel</command>
+	<command name="unload">cray-netcdf-hdf5parallel</command>
 	<command name="unload">cray-parallel-netcdf</command>
-        <command name="unload">PrgEnv-gnu</command>
-        <command name="unload">PrgEnv-nvidia</command>
-        <command name="unload">cuda</command>
-        <command name="unload">cudatoolkit</command>
-        <command name="unload">craype-accel-nvidia80</command>
-        <command name="unload">craype-accel-host</command>
-        <command name="unload">perftools-base</command>
-        <command name="unload">perftools</command>
-        <command name="unload">darshan</command>
+	<command name="unload">PrgEnv-gnu</command>
+	<command name="unload">PrgEnv-nvidia</command>
+	<command name="unload">cudatoolkit</command>
+	<command name="unload">craype-accel-nvidia80</command>
+	<command name="unload">craype-accel-host</command>
+	<command name="unload">perftools-base</command>
+	<command name="unload">perftools</command>
+	<command name="unload">darshan</command>
       </modules>
 
       <modules compiler="gnu.*">
 	<command name="load">PrgEnv-gnu/8.2.0</command>
-	<command name="load">gcc/9.3.0</command>
-	<!--command name="load">gcc/10.3.0</command-->
+	<command name="load">gcc/10.3.0</command>
       </modules>
 
       <modules compiler="nvidia.*">
 	<command name="load">PrgEnv-nvidia</command>
-	<command name="load">nvidia/21.7</command>
+	<command name="load">nvidia/21.9</command>
       </modules>
-      
+
       <modules compiler="gnugpu">
-	<command name="load">cuda</command>
-      </modules>      
+	<command name="load">cudatoolkit</command>
+	<command name="load">craype-accel-nvidia80</command>
+      </modules>
 
       <modules compiler="nvidiagpu">
-	<command name="load">cuda</command>
+	<command name="load">cudatoolkit</command>
+	<command name="load">craype-accel-nvidia80</command>
       </modules>
-      
+
       <modules compiler="gnu">
-        <command name="load">craype-accel-host</command>
-      </modules>      
+	<command name="load">craype-accel-host</command>
+      </modules>
 
       <modules compiler="nvidia">
-        <command name="load">craype-accel-host</command>
-      </modules>      
+	<command name="load">craype-accel-host</command>
+      </modules>
 
       <modules>
-	<command name="load">cray-libsci/21.08.1.2</command>
+	<command name="load">cray-libsci</command>
 	<command name="load">craype</command>
-	<command name="load">cray-mpich/8.1.10</command>
-	<command name="load">cray-hdf5-parallel/1.12.0.7</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.7.4.7</command>
-	<command name="load">cray-parallel-netcdf/1.12.1.7</command>
-	<command name="load">cmake/3.20.5</command>
+	<command name="load">cray-mpich/8.1.13</command>
+	<command name="load">cray-hdf5-parallel/1.12.1.1</command>
+	<command name="load">cray-netcdf-hdf5parallel/4.8.1.1</command>
+	<command name="load">cray-parallel-netcdf/1.12.2.1</command>
+	<command name="load">cmake/3.22.0</command>
       </modules>
     </module_system>
 
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
-    
+
     <environment_variables>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
-      <!--env name="MPICH_GPU_SUPPORT_ENABLED">1</env-->
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
     </environment_variables>
+    <environment_variables compiler="gnugpu">
+      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
+    </environment_variables>
+    <environment_variables compiler="nvidiagpu">
+      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
+    </environment_variables>
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
   </machine>
 
   <machine MACH="spock">
@@ -247,6 +255,95 @@
       <env name="NETCDF_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+    </environment_variables>
+  </machine>
+
+  <machine MACH="crusher">
+    <DESC>Crusher. NCCS moderate-security system that contains similar hardware and software as the upcoming Frontier system at ORNL. 192 AMD EPYC 7A53 64C nodes, 128 hwthreads, 512GB DDR4, 4 MI250X GPUs</DESC>
+    <NODENAME_REGEX>.*crusher.*</NODENAME_REGEX>
+    <OS>CNL</OS>
+    <COMPILERS>gnu,crayclang,amdclang</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <PROJECT>cli133</PROJECT>
+    <CIME_OUTPUT_ROOT>/gpfs/alpine/$PROJECT/proj-shared/$ENV{USER}/e3sm_scratch/crusher</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/gpfs/alpine/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/gpfs/alpine/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+       <CCSM_CPRNC>/gpfs/alpine/cli133/world-shared/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <NTEST_PARALLEL_JOBS>1</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+
+    <mpirun mpilib="default">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="num_tasks"> -l -K -n {{ total_tasks }} -N {{ num_nodes }} </arg>
+        <arg name="binding">--cpu_bind=cores</arg>
+        <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
+        <arg name="placement">-m plane={{ tasks_per_node }}</arg>
+      </arguments>
+    </mpirun>
+
+    <module_system type="module" allow_error="true">
+      <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
+      <init_path lang="perl">/usr/share/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/usr/share/lmod/lmod/init/env_modules_python.py</init_path>
+      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+
+      <modules compiler="amdclang">
+        <command name="reset"></command>
+        <command name="switch">PrgEnv-cray PrgEnv-amd/8.2.0</command>
+      </modules>
+
+
+      <modules compiler="crayclang">
+        <command name="reset"></command>
+        <command name="switch">PrgEnv-cray PrgEnv-cray/8.2.0</command>
+        <command name="switch">cce cce/13.0.1</command>
+      </modules>
+
+      <modules compiler="gnu">
+        <command name="reset"></command>
+        <command name="switch">PrgEnv-cray PrgEnv-gnu/8.2.0</command>
+      </modules>
+      <modules>
+        <command name="load">cray-mpich/8.1.12</command>
+        <command name="load">cray-python/3.9.4.2</command>
+        <command name="load">subversion/1.14.0</command>
+        <command name="load">git/2.31.1</command>
+        <command name="load">cmake/3.21.3</command>
+        <command name="load">zlib/1.2.11</command>
+        <command name="load">cray-libsci/21.08.1.2</command>
+        <command name="load">cray-hdf5-parallel/1.12.0.7</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.7.4.7</command>
+        <command name="load">cray-parallel-netcdf/1.12.1.7</command>
+      </modules>
+
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <environment_variables>
+      <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
+      <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
+    </environment_variables>
+
+    <environment_variables compiler="amdclang">
+      <env name="LD_LIBRARY_PATH">$ENV{CRAY_LIBSCI_DIR}/amd/4.0/x86_64/lib:$ENV{LD_LIBRARY_PATH}</env>
+    </environment_variables>
+
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
@@ -339,17 +436,17 @@
       </modules>
 
       <modules compiler="intel">
-        <command name="load">PrgEnv-intel/6.0.5</command>
+        <command name="load">PrgEnv-intel/6.0.10</command>
         <command name="rm">intel</command>
         <command name="load">intel/19.0.3.199</command>
       </modules>
 
       <modules compiler="gnu">
-        <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.5</command>
+        <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.10</command>
         <command name="rm">gcc</command>
-        <command name="load">gcc/8.3.0</command>
+        <command name="load">gcc/10.3.0</command>
         <command name="rm">cray-libsci</command>
-        <command name="load">cray-libsci/19.06.1</command>
+        <command name="load">cray-libsci/20.09.1</command>
       </modules>
 
       <modules>
@@ -375,10 +472,8 @@
       </modules>
 
       <modules>
-        <command name="rm">git</command>
-        <command name="load">git</command>
         <command name="rm">cmake</command>
-        <command name="load">cmake/3.21.3</command>
+        <command name="load">cmake</command>
         <command name="load">perl5-extras</command>
       </modules>
     </module_system>
@@ -488,21 +583,21 @@
       </modules>
 
       <modules mpilib="impi">
-        <command name="swap">cray-mpich impi/2020</command>
+        <command name="swap">cray-mpich impi/2020.up4</command>
       </modules>
 
       <modules compiler="intel">
-        <command name="load">PrgEnv-intel/6.0.5</command>
+        <command name="load">PrgEnv-intel/6.0.10</command>
         <command name="rm">intel</command>
         <command name="load">intel/19.0.3.199</command>
       </modules>
 
       <modules compiler="gnu">
-        <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.5</command>
+        <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.10</command>
         <command name="rm">gcc</command>
-        <command name="load">gcc/8.3.0</command>
+        <command name="load">gcc/10.3.0</command>
         <command name="rm">cray-libsci</command>
-        <command name="load">cray-libsci/19.06.1</command>
+        <command name="load">cray-libsci/20.09.1</command>
       </modules>
 
       <modules>
@@ -528,10 +623,8 @@
       </modules>
 
       <modules>
-        <command name="rm">git</command>
-        <command name="load">git</command>
         <command name="rm">cmake</command>
-        <command name="load">cmake/3.21.3</command>
+        <command name="load">cmake</command>
         <command name="load">perl5-extras</command>
       </modules>
 
@@ -558,7 +651,6 @@
       <env name="MPICH_GNI_DYNAMIC_CONN">disabled</env>
     </environment_variables>
     <environment_variables compiler="intel">
-      <!--env name="FORT_BUFFERED">yes</env-->
       <env name="MPICH_MEMORY_REPORT">1</env>
     </environment_variables>
   </machine>
@@ -867,19 +959,19 @@
       <cmd_path lang="sh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">sems-env</command>
+        <command name="load">sems-archive-env</command>
         <command name="load">acme-env</command>
-        <command name="load">sems-git</command>
-        <command name="load">sems-cmake/3.19.1</command>
+        <command name="load">sems-archive-git</command>
+        <command name="load">sems-archive-cmake/3.19.1</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">acme-gcc/8.1.0</command>
       </modules>
       <modules compiler="gnu9">
-        <command name="load">sems-gcc/9.2.0</command>
+        <command name="load">sems-archive-gcc/9.2.0</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">sems-intel/19.0.5</command>
+        <command name="load">sems-archive-intel/19.0.5</command>
       </modules>
       <modules mpilib="mpi-serial" compiler="!gnu9">
         <command name="load">acme-netcdf/4.4.1/exo_acme</command>
@@ -890,11 +982,11 @@
         <command name="load">acme-netcdf/4.7.4/acme</command>
       </modules>
       <modules mpilib="mpi-serial" compiler="gnu9">
-        <command name="load">sems-netcdf/4.7.3/base</command>
+        <command name="load">sems-archive-netcdf/4.7.3/base</command>
       </modules>
       <modules mpilib="!mpi-serial" compiler="gnu9">
-        <command name="load">sems-openmpi/4.0.2</command>
-        <command name="load">sems-netcdf/4.7.3/parallel</command>
+        <command name="load">sems-archive-openmpi/4.0.2</command>
+        <command name="load">sems-archive-netcdf/4.7.3/parallel</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -907,6 +999,60 @@
       <env name="OMP_STACKSIZE">64M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
+    </environment_variables>
+  </machine>
+
+  <machine MACH="weaver">
+    <DESC>Sandia GPU testbed</DESC>
+    <NODENAME_REGEX>weaver</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>gnugpu</COMPILERS>
+    <MPILIBS>openmpi</MPILIBS>
+    <SAVE_TIMING_DIR>/home/projects/e3sm/timings</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/acme/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/home/projects/e3sm/scream/data</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/home/projects/e3sm/scream/data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/home/projects/e3sm/baselines/weaver/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/home/projects/e3sm/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>32</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
+    <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module" allow_error="false">
+      <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+      <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
+      <modules>
+        <command name="purge"/>
+        <command name="load">cuda/10.1.105</command>
+        <command name="load">ucx/1.6.0</command>
+        <command name="load">git/2.10.1</command>
+        <command name="load">python/3.7.3</command>
+        <command name="load">cmake/3.18.0</command>
+        <command name="load">perl/5.22.1</command>
+      </modules>
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
+    <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
+    <environment_variables>
+      <env name="LD_LIBRARY_PATH">/ascldap/users/projects/e3sm/scream/libs/mpfr/install/weaver/lib:/ascldap/users/projects/e3sm/scream/libs/gcc/install/weaver/gcc/8.5.0/lib64:/ascldap/users/projects/e3sm/scream/libs/gcc/install/weaver/gcc/8.5.0/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="PATH">/ascldap/users/projects/e3sm/scream/libs/gcc/install/weaver/gcc/8.5.0/bin:/ascldap/users/projects/e3sm/scream/libs/gcc/install/weaver/gcc/8.5.0/libexec/gcc/powerpc64le-unknown-linux-gnu/8.5.0:/ascldap/users/projects/e3sm/scream/libs/openmpi/install/weaver/gcc/8.5.0/cuda/10.1.105/bin:/ascldap/users/projects/e3sm/scream/libs/pnetcdf/install/weaver/gcc/8.5.0/cuda/10.1.105/bin:/ascldap/users/projects/e3sm/scream/libs/netcdf-c/install/weaver/gcc/8.5.0/cuda/10.1.105/bin:/ascldap/users/projects/e3sm/scream/libs/netcdf-fortran/install/weaver/gcc/8.5.0/cuda/10.1.105/bin:/ascldap/users/projects/e3sm/scream/libs/wget/bin:/ascldap/users/jgfouca/perl5/bin:$ENV{PATH}</env>
+      <env name="PERL5LIB">/ascldap/users/jgfouca/perl5/lib/perl5</env>
+      <env name="PERL_LOCAL_LIB_ROOT">/ascldap/users/jgfouca/perl5</env>
     </environment_variables>
   </machine>
 
@@ -1122,13 +1268,17 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <environment_variables mpilib="mpi-serial">
+      <!-- We currently don't have modules for serial NetCDF -->
+      <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-11.1.0</env>
+    </environment_variables>
     <environment_variables mpilib="mpich">
       <!-- We currently don't have modules for HDF5, NetCDF & PnetCDF -->
       <env name="LD_LIBRARY_PATH">/nfs/gce/projects/climate/software/mpich/3.4.2/gcc-11.1.0/lib:$ENV{LD_LIBRARY_PATH}</env>
       <env name="PATH">/nfs/gce/projects/climate/software/mpich/3.4.2/gcc-11.1.0/bin:$ENV{PATH}</env>
       <env name="ZLIB_PATH">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.5.0/zlib-1.2.11-smoyzzo</env>
       <env name="HDF5_PATH">/nfs/gce/projects/climate/software/hdf5/1.12.1/mpich-3.4.2/gcc-11.1.0</env>
-      <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/netcdf/4.8.1c-4.3.1cxx-4.5.3f-parallel/mpich-3.4.2/gcc-11.1.0</env>
+      <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/netcdf/4.8.0c-4.3.1cxx-4.5.3f-parallel/mpich-3.4.2/gcc-11.1.0</env>
       <env name="PNETCDF_PATH">/nfs/gce/projects/climate/software/pnetcdf/1.12.2/mpich-3.4.2/gcc-11.1.0</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
@@ -1149,7 +1299,7 @@
     <PROJECT>fy210162</PROJECT>
     <SAVE_TIMING_DIR>/projects/ccsm/timings</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
-    <CIME_OUTPUT_ROOT>/gpfs1/$USER/acme_scratch/sandiatoss3</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/gpfs/$USER/acme_scratch/sandiatoss3</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/projects/ccsm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/projects/ccsm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
@@ -1183,19 +1333,19 @@
       <cmd_path lang="sh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">sems-env</command>
+        <command name="load">sems-archive-env</command>
         <command name="load">acme-env</command>
-        <command name="load">sems-git</command>
-        <command name="load">sems-cmake/3.19.1</command>
+        <command name="load">sems-archive-git</command>
+        <command name="load">sems-archive-cmake/3.19.1</command>
         <command name="load">gnu/6.3.1</command>
-        <command name="load">sems-intel/17.0.0</command>
+        <command name="load">sems-archive-intel/17.0.0</command>
       </modules>
       <modules mpilib="!mpi-serial">
-        <command name="load">sems-openmpi/1.10.5</command>
+        <command name="load">sems-archive-openmpi/1.10.5</command>
         <command name="load">acme-netcdf/4.7.4/acme</command>
       </modules>
       <modules mpilib="mpi-serial">
-        <command name="load">sems-netcdf/4.4.1/exo</command>
+        <command name="load">sems-archive-netcdf/4.4.1/exo</command>
       </modules>
     </module_system>
     <RUNDIR>/nscratch/$USER/acme_scratch/sandiatoss3/$CASE/run</RUNDIR>
@@ -1435,7 +1585,7 @@
     <CCSM_CPRNC>/lcrc/group/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_integration</TESTS>
-    <NTEST_PARALLEL_JOBS>8</NTEST_PARALLEL_JOBS>
+    <NTEST_PARALLEL_JOBS>6</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>E3SM</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
@@ -1468,12 +1618,12 @@
         <command name="load">intel-mkl/2020.4.304-g2qaxzf</command>
       </modules>
       <modules compiler="intel" mpilib="openmpi">
-        <command name="load">openmpi/4.1.1-qiqkjbu</command>
-        <command name="load">hdf5/1.8.16-35xugty</command>
-        <command name="load">netcdf-c/4.4.1-2vngykq</command>
-        <command name="load">netcdf-cxx/4.2-gzago6i</command>
-        <command name="load">netcdf-fortran/4.4.4-2kddbib</command>
-        <command name="load">parallel-netcdf/1.11.0-go65een</command>
+        <command name="load">openmpi/4.1.2-k5epdq6</command>
+        <command name="load">hdf5/1.8.16-kyyksst</command>
+        <command name="load">netcdf-c/4.4.1-rrkbpws</command>
+        <command name="load">netcdf-cxx/4.2-2hotooj</command>
+        <command name="load">netcdf-fortran/4.4.4-znpfscr</command>
+        <command name="load">parallel-netcdf/1.11.0-c6fn7rw</command>
       </modules>
       <modules compiler="intel" mpilib="impi">
         <command name="load">intel-mpi/2019.9.304-tkzvizk</command>
@@ -1488,12 +1638,12 @@
         <command name="load">intel-mkl/2020.4.304-n3b5fye</command>
       </modules>
       <modules compiler="gnu" mpilib="openmpi">
-        <command name="load">openmpi/4.1.1-73gbwq4</command>
-        <command name="load">hdf5/1.8.16-dqjdy2d</command>
-        <command name="load">netcdf-c/4.4.1-y6dun2a</command>
-        <command name="load">netcdf-cxx/4.2-vwlvgn6</command>
-        <command name="load">netcdf-fortran/4.4.4-4lnfxki</command>
-        <command name="load">parallel-netcdf/1.11.0-3x2favk</command>
+        <command name="load">openmpi/4.1.2-zdskwit</command>
+        <command name="load">hdf5/1.8.16-oh66njw</command>
+        <command name="load">netcdf-c/4.4.1-54pwnbt</command>
+        <command name="load">netcdf-cxx/4.2-zgdnfys</command>
+        <command name="load">netcdf-fortran/4.4.4-fkyjosv</command>
+        <command name="load">parallel-netcdf/1.11.0-x6vnnuz</command>
       </modules>
       <modules compiler="gnu" mpilib="impi">
         <command name="load">intel-mpi/2019.9.304-jdih7h5</command>
@@ -1506,7 +1656,8 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
-    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <TEST_TPUT_TOLERANCE>0.05</TEST_TPUT_TOLERANCE>
+    <TEST_MEMLEAK_TOLERANCE>0.05</TEST_MEMLEAK_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
       <env name="PERL5LIB">/lcrc/group/e3sm/soft/perl/chrys/lib/perl5</env>
@@ -1625,7 +1776,9 @@
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>E3SM</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="pgigpu">16</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="pgigpu">16</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>srun</executable>
@@ -1722,6 +1875,7 @@
       <modules>
         <command name="purge"/>
         <command name="load">cmake/3.20.3-vedypwm</command>
+        <command name="load">anaconda3/5.2.0</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/18.0.4-443hhug</command>
@@ -1994,7 +2148,9 @@
     <BATCH_SYSTEM>cobalt_theta</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>112</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="oneapi-ifx">96</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>112</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifx">24</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
@@ -2018,15 +2174,11 @@
       <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
       <modules>
 	<command name="purge"/>
-        <command name="use">/soft/modulefiles</command>
-        <command name="use">/soft/packaging/spack-builds/modules/linux-rhel7-x86_64</command>
-        <command name="use">/soft/restricted/CNDA/modulefiles</command>
-        <command name="use">/home/azamat/soft/modulefiles</command>
-        <command name="load">cmake/3.17.0-gcc-9.3.0-5dgh2gv</command>
+        <command name="use">/soft/restricted/CNDA/modules</command>
       </modules>
       <modules compiler="!gnu">
-	<command name="load">e3sm-env-vars/2021.06.10</command>
-	<command name="load">oneapi/2021.04.30.003</command>
+	<command name="load">oneapi/release/2021.10.30.001</command>
+        <command name="load">cmake/3.22.1</command>
       </modules>
       <modules compiler="gnu">
         <command name="unload">cmake</command>
@@ -2091,8 +2243,12 @@
     <COMPILERS>intel,pgi</COMPILERS>
     <MPILIBS>mvapich2</MPILIBS>
     <CIME_OUTPUT_ROOT>/lustre/$USER/cime_output_root</CIME_OUTPUT_ROOT>
+    <!--
     <DIN_LOC_ROOT>/lustre/climate/csmdata/</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lustre/climate/csmdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    -->
+    <DIN_LOC_ROOT>/pic/projects/sooty2/$ENV{USER}/e3sm_inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/pic/projects/sooty2/$ENV{USER}/e3sm_inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lustre/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/lustre/climate/acme_baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/lustre/climate/acme_baselines/cprnc/cprnc</CCSM_CPRNC>
@@ -2129,21 +2285,20 @@
       <modules>
         <command name="load">perl/5.20.0</command>
         <command name="load">cmake/3.17.1</command>
-        <command name="load">python/2.7.8</command>
         <command name="load">svn/1.8.13</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/15.0.1</command>
-        <command name="load">mkl/15.0.1</command>
+        <command name="load">intel/19.0.5</command>
+        <command name="load">mkl/2019u5</command>
       </modules>
       <modules compiler="pgi">
         <command name="load">pgi/14.10</command>
       </modules>
       <modules mpilib="mvapich2">
-        <command name="load">mvapich2/2.1</command>
+        <command name="load">mvapich2/2.3.1</command>
       </modules>
       <modules>
-        <command name="load">netcdf/4.3.2</command>
+        <command name="load">netcdf/4.6.3</command>
       </modules>
     </module_system>
     <RUNDIR>/lustre/$USER/csmruns/$CASE/run</RUNDIR>
@@ -2152,6 +2307,10 @@
       <env name="MKL_PATH">$ENV{MKLROOT} </env>
       <env name="NETCDF_PATH">$ENV{NETCDF_LIB}/../</env>
       <env name="OMP_STACKSIZE">64M</env>
+      <!-- PJR next lines force a modern python from python/3.7.2
+      module first and supply some gcc libraries last -->
+      <env name="LD_LIBRARY_PATH">/share/apps/python/3.7.2/lib/:/share/apps/openssl/1.0.2r/lib:$ENV{LD_LIBRARY_PATH}:/share/apps/gcc/8.1.0/lib:/share/apps/gcc/8.1.0/lib64:</env>
+      <env name="PATH">/share/apps/python/3.7.2/bin:$ENV{PATH}</env>
     </environment_variables>
   </machine>
 
@@ -2569,10 +2728,10 @@
     <MPILIBS>openmpi,impi,mvapich</MPILIBS>
     <PROJECT>climateacme</PROJECT>
     <CIME_OUTPUT_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+    <DIN_LOC_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
@@ -2649,10 +2808,10 @@
     <MPILIBS>openmpi,impi,mvapich</MPILIBS>
     <PROJECT>climateacme</PROJECT>
     <CIME_OUTPUT_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/scratch</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/lustre/scratch3/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+    <DIN_LOC_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
@@ -2998,7 +3157,7 @@
     <NODENAME_REGEX>.*summit.*</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>ibm,ibmgpu,pgi,pgigpu,gnu,gnugpu</COMPILERS>
-    <MPILIBS>spectrum-mpi,mpi-serial</MPILIBS>
+    <MPILIBS>spectrum-mpi</MPILIBS>
     <PROJECT>cli115</PROJECT>
     <CHARGE_ACCOUNT>cli115</CHARGE_ACCOUNT>
     <SAVE_TIMING_DIR>/gpfs/alpine/proj-shared/$PROJECT</SAVE_TIMING_DIR>
@@ -3033,10 +3192,10 @@
         <arg name="cpu_per_rs">--cpu_per_rs $ENV{CPU_PER_RS}</arg>
         <arg name="gpu_per_rs">--gpu_per_rs $ENV{GPU_PER_RS}</arg>
         <arg name="task_bind">--bind packed:smt:$ENV{OMP_NUM_THREADS}</arg>
-        <arg name="nthreads">-E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
-        <arg name="thread_bind">-E OMP_PROC_BIND=spread -E OMP_PLACES=threads -E OMP_STACKSIZE=256M</arg>
         <arg name="latency_priority">--latency_priority $ENV{LTC_PRT}</arg>
         <arg name="stdio_mode">--stdio_mode prepended</arg>
+        <arg name="thread_vars">$ENV{JSRUN_THREAD_VARS}</arg>
+        <arg name="smpiargs">--smpiargs="-gpu"</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
@@ -3066,7 +3225,7 @@
         <command name="load">cuda/10.1.243</command>
       </modules>
       <modules compiler="gnugpu">
-        <command name="load">cuda/11.0.3</command>
+        <command name="load">cuda/10.1.168</command>
       </modules>
       <modules compiler="ibm.*">
         <command name="load">xl/16.1.1-10</command>
@@ -3075,18 +3234,14 @@
         <command name="load">cuda/10.1.243</command>
       </modules>
       <modules compiler="gnu.*">
-        <command name="load">gcc/9.1.0</command>
+        <command name="load">gcc/7.5.0</command>
       </modules>
       <modules>
+        <command name="load">spectrum-mpi/10.4.0.3-20210112</command>
+        <command name="load">hdf5/1.10.7</command>
         <command name="load">netcdf-c/4.8.0</command>
         <command name="load">netcdf-fortran/4.4.5</command>
-      </modules>
-      <modules mpilib="!mpi-serial">
-        <command name="load">spectrum-mpi/10.4.0.3-20210112</command>
-      </modules>
-      <modules>
         <command name="load">parallel-netcdf/1.12.2</command>
-        <command name="load">hdf5/1.10.7</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -3096,11 +3251,15 @@
       <env name="NETCDF_C_PATH">$ENV{OLCF_NETCDF_C_ROOT}</env>
       <env name="NETCDF_FORTRAN_PATH">$ENV{OLCF_NETCDF_FORTRAN_ROOT}</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
-      <env name="PGI_ACC_POOL_ALLOC">0</env>
-    </environment_variables>
-    <environment_variables mpilib="!mpi-serial">
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
       <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
+      <env name="PGI_ACC_POOL_ALLOC">0</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="FALSE">
+      <env name="JSRUN_THREAD_VARS"> </env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE">
+      <env name="JSRUN_THREAD_VARS">-E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -E OMP_PROC_BIND=spread -E OMP_PLACES=threads -E OMP_STACKSIZE=256M</env>
     </environment_variables>
     <environment_variables>
       <env name="RS_PER_NODE">2</env>
@@ -3173,65 +3332,48 @@
         <arg name="cpu_per_rs">--cpu_per_rs $ENV{CPU_PER_RS}</arg>
         <arg name="gpu_per_rs">--gpu_per_rs $ENV{GPU_PER_RS}</arg>
         <arg name="task_bind">--bind packed:smt:$ENV{OMP_NUM_THREADS}</arg>
-        <arg name="nthreads">-E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS}</arg>
-        <arg name="thread_bind">-E OMP_PROC_BIND=spread -E OMP_PLACES=threads -E OMP_STACKSIZE=256M</arg>
         <arg name="latency_priority">--latency_priority $ENV{LTC_PRT}</arg>
         <arg name="stdio_mode">--stdio_mode prepended</arg>
+        <arg name="thread_vars">$ENV{JSRUN_THREAD_VARS}</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="sh">/sw/ascent/lmod/7.8.2/rhel7.5_4.8.5/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/sw/ascent/lmod/7.8.2/rhel7.5_4.8.5/lmod/lmod/init/csh</init_path>
-      <init_path lang="python">/sw/ascent/lmod/7.8.2/rhel7.5_4.8.5/lmod/lmod/init/env_modules_python.py</init_path>
-      <cmd_path lang="python">/sw/ascent/lmod/7.8.2/rhel7.5_4.8.5/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="sh">/sw/ascent/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/sw/ascent/lmod/lmod/init/csh</init_path>
+      <init_path lang="python">/sw/ascent/lmod/init/env_modules_python.py</init_path>
+      <cmd_path lang="python">/sw/ascent/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="ls"/>
         <command name="load">DefApps</command>
-        <command name="load">python/3.7.0</command>
-        <command name="load">subversion/1.9.3</command>
-        <command name="load">git/2.20.1</command>
-        <command name="load">cmake/3.18.2</command>
-        <command name="load">essl/6.1.0-2</command>
-        <command name="load">netlib-lapack/3.8.0</command>
-      </modules>
-      <modules compiler="pgigpu">
-        <command name="load">cuda/10.1.243</command>
+        <command name="load">python/3.8-anaconda3</command>
+        <command name="load">git/2.31.1</command>
+        <command name="load">cmake/3.22.2</command>
+        <command name="load">essl/6.3.0</command>
+        <command name="load">netlib-lapack/3.9.1</command>
       </modules>
       <modules compiler="pgi.*">
-        <command name="load">pgi/19.10</command>
-        <command name="use">/gpfs/wolf/cli115/world-shared/e3sm/tools</command>
-        <command name="load">pgirc/cxx14</command>
-        <command name="load">spectrum-mpi/10.3.1.2-20200121</command>
-        <command name="load">hdf5/1.10.4</command>
-        <command name="load">netcdf/4.6.1</command>
-        <command name="load">netcdf-fortran/4.4.4</command>
-        <command name="load">parallel-netcdf/1.8.1</command>
-      </modules>
-      <modules compiler="ibm.*">
-        <command name="load">xl/16.1.1-10</command>
-        <command name="load">spectrum-mpi/10.3.1.2-20200121</command>
-        <command name="load">hdf5/1.10.7</command>
-        <command name="load">netcdf-c/4.7.4</command>
-        <command name="load">netcdf-cxx/4.2</command>
-        <command name="load">netcdf-fortran/4.4.5</command>
-        <command name="load">parallel-netcdf/1.12.1</command>
+        <command name="load">nvhpc/20.9</command>
       </modules>
       <modules compiler="ibmgpu">
         <command name="load">cuda/10.1.243</command>
       </modules>
-      <modules compiler="gnu.*">
-        <command name="load">gcc/8.1.1</command>
-        <command name="load">spectrum-mpi/10.3.1.2-20200121</command>
-        <command name="load">hdf5/1.10.4</command>
-        <command name="load">netcdf/4.6.1</command>
-        <command name="load">netcdf-fortran/4.4.4</command>
-        <command name="load">parallel-netcdf/1.8.1</command>
+      <modules compiler="ibm.*">
+        <command name="load">xl/16.1.1-10</command>
       </modules>
       <modules compiler="gnugpu">
-        <command name="load">cuda/10.1.105</command>
+        <command name="load">cuda/11.0.3</command>
+      </modules>
+      <modules compiler="gnu.*">
+        <command name="load">gcc/9.1.0</command>
+      </modules>
+      <modules>
+        <command name="load">spectrum-mpi/10.4.0.3-20210112</command>
+        <command name="load">hdf5/1.10.7</command>
+        <command name="load">netcdf-c/4.8.1</command>
+        <command name="load">netcdf-fortran/4.4.5</command>
+        <command name="load">parallel-netcdf/1.12.2</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
@@ -3244,13 +3386,13 @@
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
+      <env name="PGI_ACC_POOL_ALLOC">0</env>
     </environment_variables>
-    <environment_variables compiler="ibm.*">
-      <env name="XLC_USR_CONFIG">/gpfs/wolf/cli115/world-shared/e3sm/tools/xlc/xlc.cfg.rhel.7.6.gcc.8.1.1.cuda.10.2.89</env>
-      <env name="LD_LIBRARY_PATH">/sw/ascent/gcc/8.1.1/lib64:$ENV{LD_LIBRARY_PATH}</env>
+    <environment_variables SMP_PRESENT="FALSE">
+      <env name="JSRUN_THREAD_VARS"> </env>
     </environment_variables>
-    <environment_variables compiler="pgi.*">
-      <env name="LD_LIBRARY_PATH">/sw/ascent/gcc/8.1.1/lib64:$ENV{LD_LIBRARY_PATH}</env>
+    <environment_variables SMP_PRESENT="TRUE">
+      <env name="JSRUN_THREAD_VARS">-E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -E OMP_PROC_BIND=spread -E OMP_PLACES=threads -E OMP_STACKSIZE=256M</env>
     </environment_variables>
     <environment_variables>
       <env name="RS_PER_NODE">2</env>
@@ -3273,7 +3415,6 @@
       <env name="GPU_PER_RS">1</env>
       <env name="LTC_PRT">gpu-cpu</env>
       <env name="NUM_RS">$SHELL{echo "6*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
-      <env name="PGI_ACC_POOL_ALLOC">0</env>
       <env name="NVCC_WRAPPER_DEFAULT_COMPILER">pgc++</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
@@ -3495,12 +3636,12 @@
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf-config))}</env>
       <env name="OPENBLAS_PATH">/apps/spack/opt/spack/linux-centos7-skylake_avx512/gcc-8.5.0/openblas-0.3.17-avqlf5r7hpzvwesfqg25awhqrpypwgfe</env>
       <env name="LAPACK_PATH">/apps/spack/opt/spack/linux-centos7-skylake_avx512/gcc-8.5.0/netlib-lapack-3.9.1-gton74muo2csn5l3bzf636276ig6h3yx</env>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
     </environment_variables>
 
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PLACES">threads</env>
-      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
     </environment_variables>
   </machine>
 

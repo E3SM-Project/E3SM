@@ -1,0 +1,8 @@
+%YAML 1.1
+---
+SPA Data File: @CMAKE_CURRENT_BINARY_DIR@/data/spa_file_unified_and_complete_ne4_scream.nc
+ncols: 866
+nlevs: 72
+nswbands: 14
+nlwbands: 16
+...

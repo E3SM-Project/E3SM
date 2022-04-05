@@ -307,12 +307,11 @@ public:
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
     // 1d view scalar, size (ncol)
-    static constexpr int num_1d_scalar = 1;
+    static constexpr int num_1d_scalar = 0; //no 2d vars now, but keeping 1d struct for future expansion
     // 2d view packed, size (ncol, nlev_packs)
     static constexpr int num_2d_vector = 8;
     static constexpr int num_2dp1_vector = 2;
 
-    uview_1d precip_ice_surf;
     uview_2d inv_exner;
     uview_2d th_atm;
     uview_2d cld_frac_l;
@@ -337,7 +336,7 @@ protected:
   void finalize_impl   ();
 
   // Computes total number of bytes needed for local variables
-  int requested_buffer_size_in_bytes() const;
+  size_t requested_buffer_size_in_bytes() const;
 
   // Set local variables using memory provided by
   // the ATMBufferManager
@@ -356,6 +355,7 @@ protected:
   P3F::P3DiagnosticInputs  diag_inputs;
   P3F::P3DiagnosticOutputs diag_outputs;
   P3F::P3HistoryOnly       history_only;
+  P3F::P3LookupTables      lookup_tables;
   P3F::P3Infrastructure    infrastructure;
   p3_preamble              p3_preproc;
   p3_postamble             p3_postproc;

@@ -183,11 +183,12 @@ contains
     call set_int_attribute(file_name,attr_name,val)
   end subroutine set_int_attribute_c2f
 !=====================================================================!
-  subroutine register_variable_c2f(filename_in, shortname_in, longname_in, numdims, var_dimensions_in, dtype, pio_decomp_tag_in) bind(c)
+  subroutine register_variable_c2f(filename_in, shortname_in, longname_in, units_in, numdims, var_dimensions_in, dtype, pio_decomp_tag_in) bind(c)
     use scream_scorpio_interface, only : register_variable
     type(c_ptr), intent(in)                :: filename_in
     type(c_ptr), intent(in)                :: shortname_in
     type(c_ptr), intent(in)                :: longname_in
+    type(c_ptr), intent(in)                :: units_in
     integer(kind=c_int), value, intent(in) :: numdims
     type(c_ptr), intent(in)                :: var_dimensions_in(numdims)
     integer(kind=c_int), value, intent(in) :: dtype
@@ -196,6 +197,7 @@ contains
     character(len=256) :: filename
     character(len=256) :: shortname
     character(len=256) :: longname
+    character(len=256) :: units
     character(len=256) :: var_dimensions(numdims)
     character(len=256) :: pio_decomp_tag
     integer            :: ii
@@ -203,12 +205,13 @@ contains
     call convert_c_string(filename_in,filename)
     call convert_c_string(shortname_in,shortname)
     call convert_c_string(longname_in,longname)
+    call convert_c_string(units_in,units)
     call convert_c_string(pio_decomp_tag_in,pio_decomp_tag)
     do ii = 1,numdims
       call convert_c_string(var_dimensions_in(ii), var_dimensions(ii))
     end do
    
-    call register_variable(filename,shortname,longname,numdims,var_dimensions,dtype,pio_decomp_tag)
+    call register_variable(filename,shortname,longname,units,numdims,var_dimensions,dtype,pio_decomp_tag)
 
   end subroutine register_variable_c2f
 !=====================================================================!

@@ -24,11 +24,11 @@ class ScriptsCtestDriver(object):
         if self._machine is None:
             # We could potentially integrate more with CIME here to do actual
             # nodename probing.
-            if "CIME_MACHINE" in os.environ and is_machine_supported(os.environ["CIME_MACHINE"]):
-                self._machine = os.environ["CIME_MACHINE"]
+            if "SCREAM_MACHINE" in os.environ and is_machine_supported(os.environ["SCREAM_MACHINE"]):
+                self._machine = os.environ["SCREAM_MACHINE"]
             else:
                 expect(False,
-                       "scripts-ctest-driver requires either the machine arg or CIME_MACHINE in env")
+                       "scripts-ctest-driver requires either the machine arg or SCREAM_MACHINE in env")
 
         # Compute root dir (where repo is) and work dir (where build/test will happen)
         if not self._root_dir:
@@ -56,7 +56,7 @@ class ScriptsCtestDriver(object):
     ###############################################################################
     def generate_ctest_config(self, extra_configs):
     ###############################################################################
-        result = "CIME_MACHINE={} ".format(self._machine)
+        result = "SCREAM_MACHINE={} ".format(self._machine)
 
         result += "ctest -j1 -V --output-on-failure "
 

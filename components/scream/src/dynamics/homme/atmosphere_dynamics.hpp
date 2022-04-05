@@ -58,6 +58,9 @@ protected:
   // Restart homme
   void restart_homme_state ();
 
+  // Read vertical coordinates and set them in hommexx's structures
+  void init_homme_vcoord ();
+
   // Updates p_mid
   void update_pressure ();
 
@@ -74,7 +77,7 @@ protected:
   void set_computed_group_impl (const FieldGroup& group);
 
   // Computes total number of bytes needed for local variables
-  int requested_buffer_size_in_bytes() const;
+  size_t requested_buffer_size_in_bytes() const;
 
   // Set local variables using memory provided by
   // the ATMBufferManager
@@ -97,10 +100,6 @@ protected:
   // The dynamics and reference grids
   std::shared_ptr<const AbstractGrid>  m_dyn_grid;
   std::shared_ptr<const AbstractGrid>  m_ref_grid;
-
-  // Store these flag, so we can keep more readable code later
-  bool  m_computes_w_int;
-  bool  m_has_w_forcing;
 };
 
 } // namespace scream

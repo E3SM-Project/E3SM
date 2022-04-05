@@ -90,6 +90,15 @@ set_comm(const ekat::Comm& atm_comm)
 
   m_atm_comm = atm_comm;
 
+  // Init scorpio right away, in case some class (atm procs, grids,...)
+  // needs to source some data from NC files during construction,
+  // before we start processing IC files.
+  EKAT_REQUIRE_MSG (!scorpio::is_eam_pio_subsystem_inited(),
+      "Error! The PIO subsystem was alreday inited before the driver was constructed.\n"
+      "       This is an unexpected behavior. Please, contact developers.\n");
+  MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
+  scorpio::eam_init_pio_subsystem(fcomm);
+
   m_ad_status |= s_comm_set;
 }
 
@@ -389,14 +398,6 @@ initialize_fields (const util::TimeStamp& t0)
     }
 
     if (load_longitude || load_latitude) {
-      MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
-      if (!scorpio::is_eam_pio_subsystem_inited()) {
-        scorpio::eam_init_pio_subsystem(fcomm);
-      } else {
-        EKAT_REQUIRE_MSG (fcomm==scorpio::eam_pio_subsystem_comm(),
-            "Error! EAM subsystem was inited with a comm different from the current atm comm.\n");
-      }
-
       using namespace ShortFieldTagsNames;
       using view_d = AbstractGrid::geo_view_type;
       using view_h = view_d::HostMirror;
@@ -471,14 +472,6 @@ void AtmosphereDriver::restart_model ()
   broadcast_string(filename,m_atm_comm,m_atm_comm.root_rank());
 
   // Restart the num steps counter in the atm time stamp
-  if (!scorpio::is_eam_pio_subsystem_inited()) {
-    MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
-    scorpio::eam_init_pio_subsystem(fcomm);
-  } else {
-    MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
-    EKAT_REQUIRE_MSG (fcomm==scorpio::eam_pio_subsystem_comm(),
-        "Error! EAM subsystem was inited with a comm different from the current atm comm.\n");
-  }
 
   ekat::ParameterList rest_pl;
   rest_pl.set<std::string>("Filename",filename);
@@ -699,14 +692,6 @@ read_fields_from_file (const std::vector<std::string>& field_names,
     return;
   }
 
-  MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
-  if (!scorpio::is_eam_pio_subsystem_inited()) {
-    scorpio::eam_init_pio_subsystem(fcomm);
-  } else {
-    EKAT_REQUIRE_MSG (fcomm==scorpio::eam_pio_subsystem_comm(),
-        "Error! EAM subsystem was inited with a comm different from the current atm comm.\n");
-  }
-
   // Loop over all grids, setup and run an AtmosphereInput object,
   // loading all fields in the RESTART group on that grid from
   // the nc file stored in the rpointer file
@@ -802,6 +787,11 @@ void AtmosphereDriver::run (const int dt) {
   // Make sure the end of the time step is after the current start_time
   EKAT_REQUIRE_MSG (dt>0, "Error! Input time step must be positive.\n");
 
+    // Print current timestamp information
+  if (m_atm_comm.am_i_root()) {
+    std::cout << "Atmosphere step = " << m_current_ts.get_num_steps() << "; model time = " << m_current_ts.get_date_string() << " " << m_current_ts.get_time_string() << std::endl;
+  }
+  
   if (m_surface_coupling) {
     // Import fluxes from the component coupler (if any)
     m_surface_coupling->do_import();

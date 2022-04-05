@@ -19,7 +19,6 @@ namespace Homme
 void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnostics);
 void prim_advec_tracers_remap (const Real);
 void vertical_remap (const Real);
-void apply_test_forcing ();
 
 static void set_tracer_transport_derived_values (
   const SimulationParams& params, const Elements& elements, const TimeLevel& tl)
@@ -123,23 +122,31 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
   Elements& elements = context.get<Elements>();
   TimeLevel& tl = context.get<TimeLevel>();
 
-  const auto dt_q = dt*params.dt_tracer_factor;
   const auto dt_remap = params.dt_remap_factor == 0 ? dt : dt*params.dt_remap_factor;
 
   tl.update_tracers_levels(params.dt_tracer_factor);
   
-  const bool forcing_0or2 = (params.ftype == ForcingAlg::FORCING_DEBUG ||
+  const bool forcing_0or2 = (params.ftype == ForcingAlg::FORCING_0 ||
                              params.ftype == ForcingAlg::FORCING_2);
   bool apply_forcing;
-#ifdef CAM
-  apply_forcing = params.ftype == ForcingAlg::FORCING_DEBUG;
+
+  const auto dt_q =        dt * params.dt_tracer_factor;
+  //standalone homme nsplit=1
+  const auto dt_q_nsplit = dt * params.dt_tracer_factor * params.nsplit;
+  
+  //decide on tracer forcing
+#if defined(CAM) || defined(SCREAM)
+  //CAM + xx supports only ftype2 and ftype0
+  apply_forcing = ( params.ftype == ForcingAlg::FORCING_0 ) ||
+                  ( params.ftype == ForcingAlg::FORCING_2  && params.nsplit_iteration == 1 );
 #else
   apply_forcing = forcing_0or2;
 #endif
 
   if (apply_forcing) {
-    // Apply tracer forcings over tracer time step.
-    apply_cam_forcing_tracers(dt_q);
+
+    if (params.ftype == ForcingAlg::FORCING_0) apply_cam_forcing_tracers(dt_q);
+    if (params.ftype == ForcingAlg::FORCING_2) apply_cam_forcing_tracers(dt_q_nsplit);
   }
 
   set_tracer_transport_derived_values(params, elements, tl);

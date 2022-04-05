@@ -1,7 +1,8 @@
 IF (NOT DEFINED PROJECT_NAME)
+  SET (HOMME_STANDALONE TRUE CACHE BOOL "Whether Homme is built in standalone mode" FORCE)
+
   # Best practice to put cmake required version at the top
   CMAKE_MINIMUM_REQUIRED(VERSION 2.8.5)
-  PROJECT(HOMME C Fortran)
 
   # Print the sha of the last commit,
   # useful to double check which version was build in the build folder.
@@ -12,18 +13,18 @@ IF (NOT DEFINED PROJECT_NAME)
   SET (LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA} CACHE STRING "The sha of the last git commit.")
   MESSAGE (STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
 
-  # By default, build executables/tests, and do not build 'library-style' targets
-  OPTION (HOMME_BUILD_EXECS "Whether Homme should build executables and tests." ON)
-  OPTION (HOMME_BUILD_LIBS  "Whether Homme should build a library for each dycore target." OFF)
 ELSE ()
+  SET (HOMME_STANDALONE FALSE CACHE BOOL "Whether Homme is built in standalone mode" FORCE)
+
   # Manually enable languages, in case they were not enabled by host project
   ENABLE_LANGUAGE(C)
   ENABLE_LANGUAGE(Fortran)
-
-  # By default, do not build executables/tests, and build 'library-style' targets
-  OPTION (HOMME_BUILD_EXECS "Whether Homme should build executables and tests." OFF)
-  OPTION (HOMME_BUILD_LIBS  "Whether Homme should build a library for each dycore target." ON)
 ENDIF ()
+
+# By default, build executables only in standalone mode
+OPTION (HOMME_BUILD_EXECS "Whether Homme should build executables and tests." ${HOMME_STANDALONE})
+
+PROJECT(HOMME C Fortran)
 
 INCLUDE(FortranCInterface)
 
@@ -135,6 +136,7 @@ ENDIF()
 #if kokkos is needed, then so is cxx
 SET (HOMME_USE_KOKKOS FALSE)
 SET (HOMME_BUILD_KOKKOS_DYCORE FALSE)
+
 IF (BUILD_HOMME_PREQX_KOKKOS OR BUILD_HOMME_THETA_KOKKOS)
   SET (HOMME_BUILD_KOKKOS_DYCORE TRUE)
 ENDIF ()
@@ -166,6 +168,10 @@ IF (HOMME_BUILD_KOKKOS_DYCORE)
     SET (BUILD_HOMME_THETA TRUE)
   ENDIF ()
 ENDIF ()
+
+IF (BUILD_HOMME_PREQX OR BUILD_HOMME_THETA OR BUILD_HOMME_PREQX_ACC)
+  SET (HOMME_BUILD_FORTRAN_DYCORE TRUE)
+ENDIF()
 
 IF (HOMME_ENABLE_COMPOSE)
   SET (HOMME_USE_CXX TRUE)
@@ -220,16 +226,14 @@ ENDIF()
 ##############################################################################
 # Compiler options set in cmake/SetCompiler.cmake
 ##############################################################################
-INCLUDE(${HOMME_SOURCE_DIR}/cmake/SetCompilerFlags.cmake)
+IF (HOMME_STANDALONE)
+  INCLUDE(${HOMME_SOURCE_DIR}/cmake/SetCompilerFlags.cmake)
+ENDIF()
 
 
 OPTION(HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" FALSE)
-IF(${HOMME_USE_MKL})
-  MESSAGE(STATUS "HOMME_USE_MKL=${HOMME_USE_MKL}, adding -mkl")
-  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mkl")
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mkl")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mkl")
-  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -mkl")
+IF(HOMME_USE_MKL)
+  MESSAGE(STATUS "HOMME_USE_MKL is ON. The flag -mkl will be added to each executable/library.")
 ELSE()
   OPTION(HOMME_FIND_BLASLAPACK "Whether to use system blas/lapack" FALSE)
   MESSAGE(STATUS "HOMME_FIND_BLASLAPACK=${HOMME_FIND_BLASLAPACK}")
@@ -421,19 +425,31 @@ ADD_SUBDIRECTORY(test/unit_tests)
 # Add libcompose, consisting of just C++ files, so we can build it just once for
 # all exes. It does not depend on compile-time sizes.
 if (HOMME_ENABLE_COMPOSE)
+  message (STATUS "COMPOSE semi-Lagrangian transport enabled")
+  if (HOMME_BUILD_KOKKOS_DYCORE)
+    set (HOMME_BUILD_COMPOSE_CPP TRUE)
+  endif()
+  if (HOMME_BUILD_FORTRAN_DYCORE OR BUILD_HOMME_TOOL)
+    # Fortran dycore(s) and the homme_tool exec do need composef90
+    set (HOMME_BUILD_COMPOSE_F90 TRUE)
+  endif()
   add_definitions(-DHOMME_ENABLE_COMPOSE)
+else ()
+  message (STATUS "COMPOSE semi-Lagrangian transport was explicitly disabled")
+endif()
+
+if (HOMME_BUILD_COMPOSE_F90)
   set (COMPOSE_LIBRARY_F90 "composef90")
   set (COMPOSE_LIBRARY ${COMPOSE_LIBRARY_F90})
   set (COMPOSE_PORT FALSE)
   add_subdirectory(src/share/compose ${COMPOSE_LIBRARY_F90})
-  if (HOMME_BUILD_KOKKOS_DYCORE)
-    set (COMPOSE_LIBRARY_CPP "composec++")
-    set (COMPOSE_LIBRARY ${COMPOSE_LIBRARY_CPP})
-    set (COMPOSE_PORT TRUE)
-    add_subdirectory(src/share/compose ${COMPOSE_LIBRARY_CPP})
-  endif ()
-else ()
-  message ("-- COMPOSE semi-Lagrangian transport was explicitly disabled")
+endif()
+
+if (HOMME_BUILD_COMPOSE_CPP)
+  set (COMPOSE_LIBRARY_CPP "composec++")
+  set (COMPOSE_LIBRARY ${COMPOSE_LIBRARY_CPP})
+  set (COMPOSE_PORT TRUE)
+  add_subdirectory(src/share/compose ${COMPOSE_LIBRARY_CPP})
 endif ()
 
 SET(EXEC_LIST ""  CACHE INTERNAL "List of configured executables")
@@ -487,14 +503,6 @@ ADD_CUSTOM_TARGET(clean-all
    COMMAND ${CMAKE_BUILD_TOOL} clean
    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean-cmake-files.cmake"
 )
-
-IF (NOT "${PROJECT_NAME}" STREQUAL "HOMME")
-  # Homme is used as a subproject. We need to make the compiler options available to the outside
-  SET (HOMME_C_FLAGS ${CMAKE_C_FLAGS} PARENT_SCOPE)
-  SET (HOMME_CXX_FLAGS ${CMAKE_CXX_FLAGS} PARENT_SCOPE)
-  SET (HOMME_Fortran_FLAGS ${CMAKE_Fortran_FLAGS} PARENT_SCOPE)
-  SET (HOMME_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} PARENT_SCOPE)
-ENDIF ()
 
 IF (${HOMME_USE_KOKKOS})
   # Put this last so that tribits.cmake's 'check' target doesn't conflict with

@@ -4,6 +4,7 @@
 #include "share/grid/abstract_grid.hpp"
 
 #include "Hommexx_Session.hpp"
+#include "Types.hpp"
 #include "Context.hpp"
 #include "mpi/Comm.hpp"
 
@@ -43,7 +44,11 @@ void finalize_geometry_f90 ();
 
 // Prim init/run/finalize
 void prim_init_data_structures_f90 ();
-void prim_set_test_initial_conditions_f90 ();
+void prim_set_hvcoords_f90 (const double& ps0,
+                            Homme::CF90Ptr& hyai_ptr,
+                            Homme::CF90Ptr& hybi_ptr,
+                            Homme::CF90Ptr& hyam_ptr,
+                            Homme::CF90Ptr& hybm_ptr);
 void prim_init_model_f90 ();
 void prim_run_f90 ();
 void prim_finalize_f90 ();

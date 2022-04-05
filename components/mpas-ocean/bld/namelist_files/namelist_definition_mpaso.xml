@@ -493,6 +493,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_Redi_min_layers_diag_terms" type="integer"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+Redi diagonal terms (2 and 3) are turned off from layer 1 through config_Redi_min_layers_diag_terms-1, and on from config_Redi_min_layers_diag_terms to nVertLevels. The Redi diagonal terms are not guaranteed to produce bounded tracer fields, and in practice produce growing temperatures in a few columns with fewer than 5 vertical cells. Redi is meant for isopycnal mixing in the deep ocean, so not applying Redi diagonal terms in very shallow regions is an acceptable solution.
+
+Valid values: any integer between 0 (all layers on) and nVertLevels (all layers off)
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- GM_eddy_parameterization -->
 

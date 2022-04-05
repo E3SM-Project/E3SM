@@ -81,7 +81,7 @@ public:
   const std::vector<int>& dims () const { return m_dims; }
   const extents_type& extents () const { return m_extents; }
 
-  int      size ()               const;
+  long long  size () const;
 
   bool is_dimension_set  (const int idim) const;
   bool are_dimensions_set () const;
@@ -132,9 +132,9 @@ inline int FieldLayout::dim (const int idim) const {
   return m_dims[idim];
 }
 
-inline int FieldLayout::size () const {
+inline long long FieldLayout::size () const {
   ekat::error::runtime_check(are_dimensions_set(), "Error! Field dimensions not yet set.\n",-1);
-  int prod = m_rank>0 ? 1 : 0;
+  long long prod = m_rank>0 ? 1 : 0;
   for (int idim=0; idim<m_rank; ++idim) {
     prod *= m_dims[idim];
   }

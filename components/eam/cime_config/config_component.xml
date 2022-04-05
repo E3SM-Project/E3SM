@@ -28,7 +28,7 @@
 
   <entry id="CAM_TARGET">
     <type>char</type>
-    <valid_values>preqx,preqx_kokkos,preqx_acc,theta-l</valid_values>
+    <valid_values>preqx,preqx_kokkos,preqx_acc,theta-l,theta-l_kokkos</valid_values>
     <default_value>theta-l</default_value>
     <group>build_component_cam</group>
     <file>env_build.xml</file>
@@ -71,7 +71,7 @@
       <!--  -->
       <value compset="GEOS_EAM"       >-offline_dyn</value>
       <value compset="GEOS_EAM"      >-nlev 56</value>
-      <value compset="_EAM.*_BGC%B"   >-co2_cycle</value>
+      <value compset="_EAM.*_BGC%*"   >-co2_cycle</value>
       <value compset="EAM%SCAM"   >-scam</value>
       <value compset="AR97_EAM%SCAM">-phys default -scam -nlev 72 -shoc_sgs -microphys p3 -rad rrtmgp -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates</value>
       <value compset="_EAM.%L60"      >-nlev 60</value>
@@ -124,14 +124,14 @@
       <value compset="1850(?:SOI)?_EAM.*CMIP6"  >1850_eam_CMIP6</value>
       <value compset="1850(?:SOI)?_EAM.*CMIP6-1pctCO2"  >1850_eam_CMIP6-1pctCO2</value>
       <value compset="1950(?:SOI)?_EAM.*CMIP6"  >1950_eam_CMIP6</value>
-      <value compset="1850(?:SOI)?_EAM.*CMIP6.*_BGC%B"  >1850_cam5_CMIP6_bgc</value>
+      <value compset="1850(?:SOI)?_EAM.*CMIP6.*_BGC%*"  >1850_eam_CMIP6_bgc</value>
       <value compset="2010(?:SOI)?_EAM.*CMIP6"  >2010_eam_CMIP6</value>
       <value compset="1850(?:SOI)?_EAM.*AR5sf"   >1850_E3SMv1_superfast_ar5-emis</value>
       <value compset="1850S_EAM.*AR5sf"  >1850S_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6"  >20TR_eam_CMIP6</value>
-      <value compset="20TR(?:SOI)?_EAM.*CMIP6.*_BGC%B"  >20TR_cam5_CMIP6_bgc</value>
+      <value compset="20TR(?:SOI)?_EAM.*CMIP6.*_BGC*"  >20TR_eam_CMIP6_bgc</value>
       <value compset="SSP585(?:SOI)?_EAM.*CMIP6">SSP585_cam5_CMIP6</value>
-      <value compset="SSP585(?:SOI)?_EAM.*CMIP6.*_BGC%B">SSP585_cam5_CMIP6_bgc</value>
+      <value compset="SSP585(?:SOI)?_EAM.*CMIP6.*_BGC%*">SSP585_cam5_CMIP6_bgc</value>
       <value compset="20TR(?:SOI)?_EAM.*AR5sf" >20TR_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TRS_EAM.*AR5sf">20TRS_E3SMv1_superfast_ar5-emis</value>
       <value compset="1850(?:SOI)?_EAM%WCCM"   >waccm_1850_cam5</value>
@@ -161,6 +161,7 @@
       <value compset="_EAM%MMF.*-AQUA"          >aquaplanet_MMF-1mom</value>
       <value compset="AR97_EAM%MMF.*-SCM"       >scam_arm97_MMF-1mom</value>
       <value compset="RICO_EAM%MMF.*-SCM"       >scam_rico_MMF-1mom</value>
+      <value compset="20TR_EAM%MMF.*CMIP6"      >20TR_MMF-1mom_CMIP6</value>
     </values>
 
     <group>run_component_cam</group>
@@ -233,7 +234,7 @@
     <desc compset="AMIP">Atmospheric Model Intercomparison Project protocol: </desc>
     <desc compset="_EAM%MG1M"   >MG1.0 w/ modified activation:</desc>
     <desc compset="_EAM%UNI"    >UNICON (modified mg1.0):</desc>
-    <desc compset="EAM.*_BGC%B">EAM prognostic CO2 cycle turned on.</desc>
+    <desc compset="EAM.*_BGC%*">EAM prognostic CO2 cycle turned on.</desc>
     <desc compset="_EAM%SCREAM-LR-DYAMOND1">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol. Initialized for DYAMOND1 (2016-08-01).</desc>
     <desc compset="_EAM%SCREAM-HR-DYAMOND1">Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, prescribed aerosol, and no deep convection. Initialized for DYAMOND1 (2016-08-01).</desc>
     <desc compset="_EAM%SCREAM-LR-DYAMOND2">Fortran version of SCREAM with SHOC, P3, RRTMGP, and prescribed aerosol. Initialized for DYAMOND2 (2020-01-20).</desc>

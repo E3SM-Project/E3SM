@@ -1,8 +1,11 @@
+include(EkatUtils)
+include(EkatSetCompilerFlags
+)
 # Add CUDA flags for YAKL
 set(YAKL_CXX_FLAGS "")
 if (CUDA_BUILD)
-    set(YAKL_ARCH "CUDA")
-    list(APPEND YAKL_CXX_FLAGS -DYAKL_ARCH_CUDA --expt-extended-lambda --expt-relaxed-constexpr)
+  set(YAKL_ARCH "CUDA")
+  list(APPEND YAKL_CXX_FLAGS -DYAKL_ARCH_CUDA --expt-extended-lambda --expt-relaxed-constexpr)
 endif()
 
 # RRTMGP++ requires YAKL
@@ -24,9 +27,11 @@ set(EXTERNAL_SRC
   ${EAM_RRTMGP_DIR}/external/cpp/rte/kernels/mo_fluxes_broadband_kernels.cpp
   ${EAM_RRTMGP_DIR}/external/cpp/rte/kernels/mo_optical_props_kernels.cpp
   ${EAM_RRTMGP_DIR}/external/cpp/rte/kernels/mo_rte_solver_kernels.cpp
+  ${EAM_RRTMGP_DIR}/external/cpp/extensions/fluxes_byband/mo_fluxes_byband_kernels.cpp
 )
 add_library(rrtmgp ${EXTERNAL_SRC})
 EkatDisableAllWarning(rrtmgp)
+SetCudaFlags(rrtmgp)
 target_link_libraries(rrtmgp PUBLIC yakl)
 target_include_directories(rrtmgp PUBLIC 
     ${SCREAM_BASE_DIR}/../../externals/YAKL
@@ -36,6 +41,12 @@ target_include_directories(rrtmgp PUBLIC
     ${EAM_RRTMGP_DIR}/external/cpp/rrtmgp
     ${EAM_RRTMGP_DIR}/external/cpp/rrtmgp/kernels
 )
+
+# The lines below are needed to ensure that kokkos_launch_compiler injects
+# nvcc into compilations. rrtmgp uses YAKL, not kokkos, so the wrapper
+# didn't know to add nvcc without these lines.
+target_compile_definitions(rrtmgp PRIVATE KOKKOS_DEPENDENCE)
+target_link_options(rrtmgp PRIVATE -DKOKKOS_DEPENDENCE)
 
 # Build RRTMGP interface; note that we separate the SCREAM-specific RRTMGP interface
 # from the external core RRTMGP library because, ideally, the RRTMGP library has its
@@ -51,10 +62,10 @@ set(INTERFACE_SRC
   rrtmgp_test_utils.cpp
 )
 add_library(scream_rrtmgp ${INTERFACE_SRC})
-find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATHS}/lib)
+find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
 target_link_libraries(scream_rrtmgp PUBLIC ${NETCDF_C} rrtmgp yakl scream_share physics_share share_util)
 target_include_directories(scream_rrtmgp SYSTEM PUBLIC
-    ${NetCDF_C_PATHS}/include ${SCREAM_BASE_DIR}/../../externals ${EAM_RRTMGP_DIR}/external)
+    ${NetCDF_C_PATH}/include ${SCREAM_BASE_DIR}/../../externals ${EAM_RRTMGP_DIR}/external)
 
 # Build tests
 if (NOT SCREAM_LIB_ONLY)

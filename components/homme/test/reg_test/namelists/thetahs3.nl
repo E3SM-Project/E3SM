@@ -36,7 +36,7 @@ hypervis_subcycle_q = 6
 hypervis_subcycle_tom  = 6
 theta_hydrostatic_mode = false
 theta_advect_form = 1
-tstep_type        = 10
+tstep_type        = 9
 moisture          = 'notdry'
 /
 &solver_nl
@@ -55,7 +55,6 @@ wght_fm       = 0.10D0
 kcut_fm       = 2
 /
 &vert_nl
-vform     = "ccm"
 vfile_mid = './vcoord/${HOMME_TEST_VCOORD_MID_FILE}'
 vfile_int = './vcoord/${HOMME_TEST_VCOORD_INT_FILE}'
 /

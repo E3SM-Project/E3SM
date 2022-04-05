@@ -1,8 +1,8 @@
 #include "ekat/ekat_assert.hpp"
 #include "physics/shoc/atmosphere_macrophysics.hpp"
 
-#include "share/field/field_property_checks/field_positivity_check.hpp"
-#include "share/field/field_property_checks/field_within_interval_check.hpp"
+#include "share/property_checks/field_positivity_check.hpp"
+#include "share/property_checks/field_within_interval_check.hpp"
 namespace scream
 {
 
@@ -61,13 +61,16 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
   constexpr int ps = Spack::n;
 
+  const auto m2 = m*m;
+  const auto s2 = s*s;
+
   // These variables are needed by the interface, but not actually passed to shoc_main.
   // TODO: Replace pref_mid in the FM with pref_mid read in from the grid data.
   add_field<Required>("pref_mid",         pref_mid_layout,      Pa,      grid_name, ps);
   add_field<Required>("omega",            scalar3d_layout_mid,  Pa/s,    grid_name, ps);
-  add_field<Required>("surf_sens_flux",   scalar2d_layout_col,  W/(m*m), grid_name);
-  add_field<Required>("surf_latent_flux", scalar2d_layout_col,  W/(m*m), grid_name);
-  add_field<Required>("surf_mom_flux",    surf_mom_flux_layout, N/(m*m), grid_name);
+  add_field<Required>("surf_sens_flux",   scalar2d_layout_col,  W/m2, grid_name);
+  add_field<Required>("surf_latent_flux", scalar2d_layout_col,  W/m2, grid_name);
+  add_field<Required>("surf_mom_flux",    surf_mom_flux_layout, N/m2, grid_name);
 
   add_field<Updated> ("T_mid",            scalar3d_layout_mid, K,       grid_name, ps);
   add_field<Updated> ("qv",               scalar3d_layout_mid, Qunit,   grid_name, "tracers", ps);
@@ -76,13 +79,13 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Required>("p_mid",          scalar3d_layout_mid, Pa, grid_name, ps);
   add_field<Required>("p_int",          scalar3d_layout_int, Pa, grid_name, ps);
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name, ps);
-  add_field<Required>("phis",           scalar2d_layout_col, m,  grid_name, ps);
+  add_field<Required>("phis",           scalar2d_layout_col, m2/s2, grid_name, ps);
 
   // Input/Output variables
-  add_field<Updated>("tke",           scalar3d_layout_mid, (m*m)/(s*s), grid_name, "tracers", ps);
+  add_field<Updated>("tke",           scalar3d_layout_mid, m2/s2,   grid_name, "tracers", ps);
   add_field<Updated>("horiz_winds",   horiz_wind_layout,   m/s,         grid_name, ps);
   add_field<Updated>("sgs_buoy_flux", scalar3d_layout_mid, K*(m/s),     grid_name, ps);
-  add_field<Updated>("eddy_diff_mom", scalar3d_layout_mid, (m*m)/s,     grid_name, ps);
+  add_field<Updated>("eddy_diff_mom", scalar3d_layout_mid, m2/s,    grid_name, ps);
   add_field<Updated>("qc",            scalar3d_layout_mid, Qunit,       grid_name, "tracers", ps);
   add_field<Updated>("cldfrac_liq",   scalar3d_layout_mid, nondim,      grid_name, ps);
 
@@ -114,14 +117,14 @@ set_computed_group_impl (const FieldGroup& group)
 }
 
 // =========================================================================================
-int SHOCMacrophysics::requested_buffer_size_in_bytes() const
+size_t SHOCMacrophysics::requested_buffer_size_in_bytes() const
 {
   const int nlev_packs       = ekat::npack<Spack>(m_num_levs);
   const int nlevi_packs      = ekat::npack<Spack>(m_num_levs+1);
   const int num_tracer_packs = ekat::npack<Spack>(m_num_tracers);
 
   // Number of Reals needed by local views in the interface
-  const int interface_request = Buffer::num_1d_scalar*m_num_cols*sizeof(Real) +
+  const size_t interface_request = Buffer::num_1d_scalar*m_num_cols*sizeof(Real) +
                                 Buffer::num_2d_vector_mid*m_num_cols*nlev_packs*sizeof(Spack) +
                                 Buffer::num_2d_vector_int*m_num_cols*nlevi_packs*sizeof(Spack) +
                                 Buffer::num_2d_vector_tr*m_num_cols*num_tracer_packs*sizeof(Spack);
@@ -130,7 +133,7 @@ int SHOCMacrophysics::requested_buffer_size_in_bytes() const
   const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
   const int n_wind_slots  = ekat::npack<Spack>(2)*Spack::n;
   const int n_trac_slots  = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
-  const int wsm_request   = WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy);
+  const size_t wsm_request   = WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy);
 
   return interface_request + wsm_request;
 }
@@ -191,6 +194,8 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   s_mem += m_buffer.dse.size();
   m_buffer.tke_copy = decltype(m_buffer.tke_copy)(s_mem, m_num_cols, nlev_packs);
   s_mem += m_buffer.tke_copy.size();
+  m_buffer.qc_copy = decltype(m_buffer.qc_copy)(s_mem, m_num_cols, nlev_packs);
+  s_mem += m_buffer.qc_copy.size();
   m_buffer.shoc_ql2 = decltype(m_buffer.shoc_ql2)(s_mem, m_num_cols, nlev_packs);
   s_mem += m_buffer.shoc_ql2.size();
   m_buffer.shoc_mix = decltype(m_buffer.shoc_mix)(s_mem, m_num_cols, nlev_packs);
@@ -233,7 +238,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   const int wsm_size     = WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy)/sizeof(Spack);
   s_mem += wsm_size;
 
-  int used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
+  size_t used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for SHOCMacrophysics.");
 }
 
@@ -259,7 +264,7 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
   const auto& sgs_buoy_flux    = get_field_out("sgs_buoy_flux").get_view<Spack**>();
   const auto& inv_qc_relvar    = get_field_out("inv_qc_relvar").get_view<Spack**>();
   const auto& phis             = get_field_in("phis").get_view<const Real*>();
-  const auto& tracer_names     = get_group_out("tracers").m_info->m_fields_names;// obtain tracer names in the qtracer view
+  const auto& tracer_info      = get_group_out("tracers").m_info; // obtain tracer info structure
 
   // Alias local variables from temporary buffer
   auto z_mid       = m_buffer.z_mid;
@@ -282,32 +287,39 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
   auto qw          = m_buffer.qw;
   auto dse         = m_buffer.dse;
   auto tke_copy    = m_buffer.tke_copy;
+  auto qc_copy     = m_buffer.qc_copy;
   auto shoc_ql2    = m_buffer.shoc_ql2;
 
   // For now, set z_int(i,nlevs) = z_surf = 0
   const Real z_surf = 0.0;
 
-  // Find index of qv (water vapor, kg/kg-of-wet-air) and tke (units??) in the qtracer 3d view
+  // Find index of qv (water vapor, kg/kg(wet-air) and tke (J/kg(wet-air)) in the qtracer 3d view
   // These indices are later used for converting tracers from wet mmr to dry mmr and vice-versa
-  auto tke_index = -1; // initialize index of tke in qtracers view
-  auto qv_index  = -1; // initialize index of qv  in qtracers view
+  auto qv_index  = tracer_info->m_subview_idx.at("qv");
+  auto tke_index = tracer_info->m_subview_idx.at("tke");
 
-  auto iter      = 0;
-  for (auto const& it_names : tracer_names ){ //iterate of tracer_names to find the indices
-    if(it_names == "tke"){tke_index = iter;}
-    if(it_names == "qv" ){qv_index  = iter;}
-    iter++;
+  //view to store indices of tracers which will participate in wet<->dry conversion; we are excluding
+  //"tke" [as it is not "water based" tracer] and "qv"[as "qv" (before conversion) is needed for
+  //computing conversion for all other tracers] from qtracers view
+  using view_1d    = typename KT::template view_1d<Int>;
+
+  //host view containing indices of tracers participating in wet<->dry conversion (2 tracers, qv and tke, are excluded)
+  view_1d convert_wet_dry_idx_h("convert_wet_dry_idx_h",m_num_tracers-2);
+
+  //loop over all tracers to store of all tracer indices except for tke and qv
+  for (int it=0,iq=0; it<m_num_tracers; ++it) {
+    if (it!=qv_index && it!= tke_index) { //skip if "it" is a tke or qv index
+      convert_wet_dry_idx_h(iq) = it;
+      ++iq;
+    }
   }
 
-  //check if we found tke and qv tracers otherwise error out
-  EKAT_REQUIRE_MSG(tke_index != -1,
-                   "Error! Shoc requires tke index to be greater than 0.");
-  EKAT_REQUIRE_MSG(qv_index != -1,
-                   "Error! Shoc requires qv index to be greater than 0.");
+  auto convert_wet_dry_idx = Kokkos::create_mirror_view(convert_wet_dry_idx_h);//mirror view on device
+  Kokkos::deep_copy(convert_wet_dry_idx_h,convert_wet_dry_idx);// copy to device
 
-  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers, tke_index, qv_index, z_surf,m_cell_area,
+  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,convert_wet_dry_idx_h,z_surf,m_cell_area,
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
-                                surf_mom_flux,qtracers,qv,qc,tke,tke_copy,z_mid,z_int,cell_length,
+                                surf_mom_flux,qtracers,qv,qc,qc_copy,tke,tke_copy,z_mid,z_int,cell_length,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
                                 wtracer_sfc,wm_zt,inv_exner,thlm,qw);
 
@@ -339,7 +351,7 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
   input_output.qtracers     = shoc_preprocess.qtracers;
   input_output.tk           = get_field_out("eddy_diff_mom").get_view<Spack**>();
   input_output.shoc_cldfrac = cldfrac_liq;
-  input_output.shoc_ql      = qc;
+  input_output.shoc_ql      = qc_copy;
 
   // Output Variables
   output.pblh     = get_field_out("pbl_height").get_view<Real*>();
@@ -361,17 +373,14 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
   history_output.wqls_sec  = m_buffer.wqls_sec;
   history_output.brunt     = m_buffer.brunt;
 
-  shoc_postprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,tke_index,qv_index,
-                                 rrho,qv,qw,qc,tke,tke_copy,qtracers,shoc_ql2,
+  shoc_postprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,convert_wet_dry_idx_h,
+                                 rrho,qv,qw,qc,qc_copy,tke,tke_copy,qtracers,shoc_ql2,
                                  cldfrac_liq,sgs_buoy_flux,inv_qc_relvar,
                                  T_mid, dse, z_mid, phis);
 
   // Set field property checks for the fields in this process
-  auto T_interval_check = std::make_shared<FieldWithinIntervalCheck>(150, 500);
-  auto positivity_check = std::make_shared<FieldPositivityCheck>();
-
-  add_property_check<Computed>(get_field_out("T_mid").get_header().get_identifier(),T_interval_check);
-  add_property_check<Computed>(get_field_out("tke").get_header().get_identifier(),positivity_check);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140,500);
+  add_postcondition_check<FieldPositivityCheck>(get_field_out("tke"));
 
   // Setup WSM for internal local variables
   const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);

@@ -442,6 +442,8 @@ contains
         ! Turn on restarts
         call mpas_pool_get_config(domain % configs, "config_do_restart", tempLogicalConfig)
         tempLogicalConfig = .true.
+        call mpas_pool_get_config(domain % configs, "config_do_restart_bgc", tempLogicalConfig)
+        tempLogicalConfig = .true.
         call mpas_pool_get_config(domain % configs, "config_do_restart_hbrine", tempLogicalConfig)
         tempLogicalConfig = .true.
         call mpas_pool_get_config(domain % configs, "config_do_restart_snow_density", tempLogicalConfig)
@@ -2064,7 +2066,7 @@ contains
            oceanDOCConc(2,i)             = x2i_i % rAttr(index_x2i_So_doc2, n) * DOCPoolFractions(2)
            oceanDOCConc(3,i)             = 0.0_RKIND
            oceanDICConc(1,i)             = x2i_i % rAttr(index_x2i_So_dic1, n)
-           oceanDONConc(1,i)             = x2i_i % rAttr(index_x2i_So_don1, n) * DOCPoolFractions(3) &
+           oceanDONConc(1,i)             = x2i_i % rAttr(index_x2i_So_doc3, n) * DOCPoolFractions(3) &
               /carbonToNitrogenRatioDON(1)
            oceanNitrateConc(i)           = x2i_i % rAttr(index_x2i_So_no3, n)
            oceanSilicateConc(i)          = x2i_i % rAttr(index_x2i_So_sio3, n)

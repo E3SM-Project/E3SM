@@ -40,7 +40,7 @@ def buildnml(case, caseroot, compname):
     #ninst_ice       = case.get_value("NINST_ICE")
     ninst_ice        = 1 # Change if you want multiple instances... though this isn't coded yet.
     ninst_ice_real   = case.get_value("NINST_ICE")
-    ntasks_ice       = case.get_value("NTASKS_ICE")
+    ntasks_ice       = case.get_value("NTASKS_PER_INST_ICE")
     rundir           = case.get_value("RUNDIR")
     run_type         = case.get_value("RUN_TYPE")
     run_refcase      = case.get_value("RUN_REFCASE")
@@ -186,8 +186,8 @@ def buildnml(case, caseroot, compname):
         grid_date = '180715'
         grid_prefix = 'seaice.ARRM60to10'
         if ice_ic_mode == 'spunup':
-            grid_date = '200422'
-            grid_prefix = 'seaice.ARRM60to10.restart_grizzly'
+            grid_date = '210204'
+            grid_prefix = 'mpassi.oARRM60to10.rstFromG-cori'
 
     elif ice_grid == 'oARRM60to6':
         decomp_date = '180820'
@@ -244,6 +244,16 @@ def buildnml(case, caseroot, compname):
         if ice_ic_mode == 'spunup':
             grid_date = '210414'
             grid_prefix = 'mpassi.ECwISC30to60E2r1.rstFromG-anvil'
+
+    elif ice_grid == 'ICOS10':
+        grid_date = '211015'
+        grid_prefix = 'seaice.ICOS10'
+        decomp_date = '220110'
+        decomp_prefix = 'mpas-seaice.graph.info.'
+        if ice_ic_mode == 'spunup':
+            grid_date = '211015'
+            # Below is just a placeholder
+            grid_prefix = 'seaice.ICOS10_80Layer.restartFromChrysalis'
 
 
     #--------------------------------------------------------------------

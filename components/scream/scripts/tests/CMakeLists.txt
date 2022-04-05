@@ -6,5 +6,5 @@ project(SCRIPTS_TESTS)
 enable_testing()
 include(CTest)
 
-add_test(NAME scripts_tests_tas COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../gather-all-data -l -m $ENV{CIME_MACHINE} "${CMAKE_CURRENT_SOURCE_DIR}/../scripts-tests -f -m \$machine TestTestAllScream")
-add_test(NAME scripts_tests_jenkins COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../scripts-tests -j -m $ENV{CIME_MACHINE} TestTestAllScream)
+add_test(NAME scripts_tests_tas COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../gather-all-data -l -m $ENV{SCREAM_MACHINE} "${CMAKE_CURRENT_SOURCE_DIR}/../scripts-tests -f -m \$machine TestTestAllScream")
+add_test(NAME scripts_tests_jenkins COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../scripts-tests -j -m $ENV{SCREAM_MACHINE} TestTestAllScream)

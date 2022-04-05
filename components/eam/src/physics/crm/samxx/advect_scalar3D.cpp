@@ -142,7 +142,7 @@ void advect_scalar3D(real4d &f, real2d &flux) {
   //   for (int j=0; j<ny+4; j++) {
   //     for (int i=0; i<nx+4; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (i >= 2 && i <= nx+1 && j >= 2 && j <= ny+1) {
       yakl::atomicAdd(flux(k,icrm),www(k,j,i,icrm));
     }
@@ -256,7 +256,7 @@ void advect_scalar3D(real4d &f, real2d &flux) {
     //   for (int j=0; j<ny+1; j++) {
     //     for (int i=0; i<nx+1; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(nzm,ny+1,nx+1,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny+1,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       if (j <= ny-1) {
         int ib=i-1;
         uuu(k,j+offy_uuu,i+offx_uuu,icrm) = 
@@ -439,7 +439,7 @@ void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
   //   for (int j=0; j<ny+4; j++) {
   //     for (int i=0; i<nx+4; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (i >= 2 && i <= nx+1 && j >= 2 && j <= ny+1) {
       yakl::atomicAdd(flux(k,icrm),www(k,j,i,icrm));
     }
@@ -553,7 +553,7 @@ void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
     //   for (int j=0; j<ny+1; j++) {
     //     for (int i=0; i<nx+1; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(nzm,ny+1,nx+1,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny+1,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       if (j <= ny-1) {
         int ib=i-1;
         uuu(k,j+offy_uuu,i+offx_uuu,icrm) = 
@@ -738,7 +738,7 @@ void advect_scalar3D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
   //   for (int j=0; j<ny+4; j++) {
   //     for (int i=0; i<nx+4; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny+4,nx+4,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (i >= 2 && i <= nx+1 && j >= 2 && j <= ny+1) {
       yakl::atomicAdd(flux(ind_flux,k,icrm),www(k,j,i,icrm));
     }
@@ -879,7 +879,7 @@ void advect_scalar3D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
     //   for (int j=0; j<ny+1; j++) {
     //     for (int i=0; i<nx+1; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(nzm,ny+1,nx+1,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny+1,nx+1,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       if (j <= ny-1) {
         int ib=i-1;
         uuu(k,j+offy_uuu,i+offx_uuu,icrm) = 

@@ -3,15 +3,15 @@
 // The AD
 #include "control/atmosphere_driver.hpp"
 
-// Dynamics includes
-#include "dynamics/register_dynamics.hpp"
-#include "dynamics/homme/interface/scream_homme_interface.hpp"
-
 // Physics includes
 #include "physics/p3/atmosphere_microphysics.hpp"
 #include "physics/shoc/atmosphere_macrophysics.hpp"
 #include "physics/cld_fraction/atmosphere_cld_fraction.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
+
+// Dynamics includes
+#include "dynamics/register_dynamics.hpp"
+#include "dynamics/homme/interface/scream_homme_interface.hpp"
 
 // EKAT headers
 #include "ekat/ekat_assert.hpp"

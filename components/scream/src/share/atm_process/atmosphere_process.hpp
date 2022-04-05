@@ -5,7 +5,7 @@
 #include "share/atm_process/ATMBufferManager.hpp"
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_manager.hpp"
-#include "share/field/field_property_check.hpp"
+#include "share/property_checks/property_check.hpp"
 #include "share/field/field_request.hpp"
 #include "share/field/field.hpp"
 #include "share/field/field_group.hpp"
@@ -76,6 +76,8 @@ public:
   template<typename T>
   using str_map = std::map<std::string,T>;
 
+  using prop_check_ptr = std::shared_ptr<PropertyCheck>;
+
   // Base constructor to set MPI communicator and params
   AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params);
 
@@ -128,17 +130,16 @@ public:
   virtual void set_required_group (const FieldGroup& group);
   virtual void set_computed_group (const FieldGroup& group);
 
-  // These methods checks that all the in/out fields of this atm process are valid.
-  // For each field, these routines run all the property checks stored in the field.
-  // Derived classes can perform additional checks (or repairs) by overriding the
-  // corresponding check_xyz_fields_impl method(s).
-  // Note: We don't want inputs to be 'repaired', since they might break assumptions
-  //       in other atm procs (e.g., some atm procs might have a "backup" copy).
-  //       However, we allow computed fields to be repaired, so check_computed_fields
-  //       is not a const method.  If a process wants to repair computed fields
-  //       it can do so by overriding the "check_computed_fields_impl" routine.
-  void check_required_fields () const;
-  void check_computed_fields ();
+  // These methods check that some properties are satisfied before/after
+  // the run_impl method is called.
+  // For more info on what a property check can be, see content of the
+  // folder $scream/src/share/property_checks.
+  // Note, for each property check, in case the property does not hold,
+  // an attempt can be made to repair the fields involved. If any of
+  // the repairable fields is read only, or not in the list of fields computed
+  // by this atm process, an error will be thrown.
+  void run_precondition_checks () const;
+  void run_postcondition_checks () const;
 
   // These methods allow the AD to figure out what each process needs, with very fine
   // grain detail. See field_request.hpp for more info on what FieldRequest and GroupRequest
@@ -167,7 +168,7 @@ public:
   bool has_computed_group (const std::string& name, const std::string& grid) const;
 
   // Computes total number of bytes needed for local variables
-  virtual int requested_buffer_size_in_bytes () const { return 0; }
+  virtual size_t requested_buffer_size_in_bytes () const { return 0; }
 
   // Set local variables using memory provided by
   // the ATMBufferManager
@@ -201,15 +202,21 @@ public:
   const Field& get_internal_field(const std::string& field_name) const;
         Field& get_internal_field(const std::string& field_name);
 
-  // Create a property check for in/out/inout fields of this AP. The check is to be run
-  // before and/or after run_impl, depending on the request type template.
-  // NOTE: if, say,  RT=Computed, but the field is not computed (e.g., it's an input),
-  //       this methods will throw.
-  template<RequestType RT, template<typename> class FPC, typename... Args>
-  void add_property_check (const FieldIdentifier& fid, const Args... args);
+  // Add a pre-built property check (PC) for precondition, postcondition, or invariant (i.e., pre+post) check.
+  template<CheckFailHandling CFH = CheckFailHandling::Fatal>
+  void add_precondition_check (const prop_check_ptr& prop_check);
+  template<CheckFailHandling CFH = CheckFailHandling::Fatal>
+  void add_postcondition_check (const prop_check_ptr& prop_check);
+  template<CheckFailHandling CFH = CheckFailHandling::Fatal>
+  void add_invariant_check (const prop_check_ptr& prop_check);
 
-  template<RequestType RT, typename FPC>
-  void add_property_check (const FieldIdentifier& fid, const std::shared_ptr<FPC>& prop_check);
+  // Build a property check on the fly, then call the methods above
+  template<typename FPC, CheckFailHandling CFH = CheckFailHandling::Fatal, typename... Args>
+  void add_precondition_check (const Args... args);
+  template<typename FPC, CheckFailHandling CFH = CheckFailHandling::Fatal, typename... Args>
+  void add_postcondition_check (const Args... args);
+  template<typename FPC, CheckFailHandling CFH = CheckFailHandling::Fatal, typename... Args>
+  void add_invariant_check (const Args... args);
 
 protected:
 
@@ -342,15 +349,6 @@ protected:
   virtual void set_required_group_impl (const FieldGroup& /* group */) {}
   virtual void set_computed_group_impl (const FieldGroup& /* group */) {}
 
-  // The Base class already runs all registered field checks for all fields.
-  // Similar to the set_required/computed_field_impl comment above, it is
-  // not necessary for a derived class to overwrite these two routines.
-  // An example of a case where a derived class may want to override these is
-  // if the derived class is able to 'repair' a field in case the check fails.
-  // See field_property_check.hpp for more info on check/repair.
-  virtual void check_required_fields_impl () const {}
-  virtual void check_computed_fields_impl () {}
-
   // Adds a field to the list of internal fields
   void add_internal_field (const Field& f);
 
@@ -396,6 +394,11 @@ private:
   FieldGroup& get_group_out_impl(const std::string& group_name, const std::string& grid_name) const;
   FieldGroup& get_group_out_impl(const std::string& group_name) const;
 
+  // NOTE: all these members are private, so that derived classes cannot
+  //       bypass checks from the base class by accessing the members directly.
+  //       Instead, they are forced to use access function, which include
+  //       sanity checks and any setup/cleanup logic.
+
   // Store input/output/internal fields and groups.
   std::list<FieldGroup>   m_groups_in;
   std::list<FieldGroup>   m_groups_out;
@@ -419,9 +422,8 @@ private:
   std::set<GroupRequest>   m_computed_group_requests;
 
   // List of property checks for fields
-  using prop_check_ptr = std::shared_ptr<FieldPropertyCheck>; 
-  std::list<std::pair<FieldIdentifier,prop_check_ptr>> m_property_checks_in;
-  std::list<std::pair<FieldIdentifier,prop_check_ptr>> m_property_checks_out;
+  std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_precondition_checks;
+  std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_postcondition_checks;
 
   // This process's copy of the timestamp, which is set on initialization and
   // updated during stepping.
@@ -431,40 +433,71 @@ private:
   int m_num_subcycles = 1;
 };
 
-// ====================== IMPLEMENTATION ======================= //
+// ================= IMPLEMENTATION ================== //
 
-template<RequestType RT, template<typename> class FPC, typename... Args>
-void AtmosphereProcess::add_property_check (const FieldIdentifier& fid, const Args... args) {
-  auto fpc = std::make_shared<FPC<Real>>(args...);
-  add_property_check(fid,fpc);
-}
-
-template<RequestType RT, typename FPC>
+template<typename FPC, CheckFailHandling CFH, typename... Args>
 void AtmosphereProcess::
-add_property_check (const FieldIdentifier& fid, const std::shared_ptr<FPC>& fpc) {
-  switch (RT) {
-    case Updated:
-      add_property_check<Required>(fid,fpc);
-      add_property_check<Computed>(fid,fpc);
-      break;
-    case Required:
-    {
-      EKAT_REQUIRE_MSG(has_required_field(fid) || has_required_group(fid.name(),fid.get_grid_name()),
-        "Error! Cannot create property check '" + fpc->name() + "' for field '" + fid.get_id_string() + "'.\n"
-        "       Field is not required by atm process '" + this->name() + "'.\n");
-      m_property_checks_in.push_back(std::make_pair(fid,fpc));
-      break;
-    }
-    case Computed:
-    {
-      EKAT_REQUIRE_MSG(has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
-        "Error! Cannot create property check '" + fpc->name() + "' for field '" + fid.get_id_string() + "'.\n"
-        "       Field is not computed by atm process '" + this->name() + "'.\n");
-      m_property_checks_out.push_back(std::make_pair(fid,fpc));
-      break;
-    }
-  }
+add_precondition_check (const Args... args) {
+  auto fpc = std::make_shared<FPC>(args...);
+  add_precondition_check<CFH>(fpc);
 }
+template<typename FPC, CheckFailHandling CFH, typename... Args>
+void AtmosphereProcess::
+add_postcondition_check (const Args... args) {
+  auto fpc = std::make_shared<FPC>(args...);
+  add_postcondition_check<CFH>(fpc);
+}
+template<typename FPC, CheckFailHandling CFH, typename... Args>
+void AtmosphereProcess::
+add_invariant_check (const Args... args) {
+  auto fpc = std::make_shared<FPC>(args...);
+  add_invariant_check<CFH>(fpc);
+}
+
+template<CheckFailHandling CFH>
+void AtmosphereProcess::
+add_invariant_check (const prop_check_ptr& pc)
+{
+  add_precondition_check<CFH> (pc);
+  add_postcondition_check<CFH> (pc);
+}
+template<CheckFailHandling CFH>
+void AtmosphereProcess::
+add_precondition_check (const prop_check_ptr& pc)
+{
+  // If a pc can repair, we need to make sure the repairable
+  // fields are among the computed fields of this atm proc.
+  // Otherwise, it would be possible for this AP to implicitly
+  // update a field, without that appearing in the dag.
+  for (const auto& ptr : pc->repairable_fields()) {
+    const auto& fid = ptr->get_header().get_identifier();
+    EKAT_REQUIRE_MSG (
+        has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
+        "Error! Input property check can repair a non-computed field.\n"
+        "  - Atmosphere process name: " + name() + "\n"
+        "  - Property check name: " + name() + "\n");
+  }
+  m_precondition_checks.push_back(std::make_pair(CFH,pc));
+}
+template<CheckFailHandling CFH>
+void AtmosphereProcess::
+add_postcondition_check (const prop_check_ptr& pc)
+{
+  // If a pc can repair, we need to make sure the repairable
+  // fields are among the computed fields of this atm proc.
+  // Otherwise, it would be possible for this AP to implicitly
+  // update a field, without that appearing in the dag.
+  for (const auto& ptr : pc->repairable_fields()) {
+    const auto& fid = ptr->get_header().get_identifier();
+    EKAT_REQUIRE_MSG (
+        has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
+        "Error! Input property check can repair a non-computed field.\n"
+        "  - Atmosphere process name: " + name() + "\n"
+        "  - Property check name: " + name() + "\n");
+  }
+  m_postcondition_checks.push_back(std::make_pair(CFH,pc));
+}
+
 
 // A short name for the factory for atmosphere processes
 // WARNING: you do not need to write your own creator function to register your atmosphere process in the factory.

@@ -39,7 +39,7 @@ void damping() {
   });
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_DEVICE_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     if(z(nzm-1,icrm)-z(k,icrm) < fractional_damp_depth*z(nzm-1,icrm)) {
       do_damping(k,icrm)=1;
     } else {
@@ -75,7 +75,7 @@ void damping() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real tmp;
 
     tmp = u(k,offy_u+j,offx_u+i,icrm)/( (real) nx * (real) ny );

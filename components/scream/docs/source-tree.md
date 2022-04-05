@@ -4,9 +4,6 @@ All SCREAM-specific code can be found in `components/scream` within the
 [SCREAM repo](https://github.com/E3SM-Project/scream). Here's how things are
 organized:
 
-+ `bin`: Miscellaneous tools for helping with the build process. Currently, this
-  directory only contains a template for generating the `scream_mpicxx` compiler
-  script.
 + `cime_config`: Tools and XML files for integrating SCREAM with E3SM via the
   CIME framework.
 + `cmake`: CMake functions and macros used by the configuration/build system.

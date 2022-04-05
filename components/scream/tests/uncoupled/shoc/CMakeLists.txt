@@ -13,11 +13,11 @@ SetVarDependingOnTestProfile(NUM_STEPS 2 5 48)
 set (ATM_TIME_STEP 1800)
 
 # Copy input files to run directory
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/shoc_init_ne2np4.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/shoc_init_ne2np4.nc COPYONLY)
+GetInputFile(init/shoc_init_ne2np4.nc
+               ${CMAKE_CURRENT_BINARY_DIR}/shoc_init_ne2np4.nc)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-CONFIGURE_FILE(shoc_standalone_output.yaml shoc_standalone_output.yaml)
+configure_file(shoc_standalone_output.yaml shoc_standalone_output.yaml)
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if max mpi ranks is >1

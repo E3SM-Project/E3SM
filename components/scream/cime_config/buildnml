@@ -5,23 +5,7 @@ Namelist creator for E3SM's SCREAM component
 
 This script is mostly for processing the scream_input.yaml file.
 
-That file supports some special syntax in addition to basic YAML:
-'${VAR}' will be used to refer to env variables in the CIME case
-
-'<switch_val : key1 => val1 : key2 => val2 : elseval>' will be used to express conditional
-statements. If switch_val matches key1, then the expression evaluates to val1; if switch_val
-matches key2, then the expression evaluates to val2; if it matches neither, then
-the expression evaluates to elseval. The elseval component of this expression is optional.
-
-Example, if you wanted tstep to depend on atm grid resolution:
-
-  tstep: "<${ATM_GRID} : ne4np4 => 300 : 30>"
-
-This would give all ne4 cases a timestep of 300, otherwise it would be 30.
-
-You could specify multiple grid->timestep relationships this way:
-
-  tstep: "<${ATM_GRID} : ne4np4 => 300 : ne30np4 => 100 : 30>"
+See SCREAM_YAML_README for documentation on how to use scream_input.yaml.
 """
 
 import os, sys, re
@@ -36,8 +20,8 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(__file__)), "script
 # Cime imports
 from standard_script_setup import *
 from CIME.case import Case
-from CIME.utils import expect, run_cmd_no_fail, safe_copy, SharedArea
-from CIME.buildnml import create_namelist_infile, parse_input
+from CIME.utils import expect, safe_copy, SharedArea
+from CIME.buildnml import parse_input
 
 # SCREAM imports
 from utils import ensure_yaml
@@ -47,7 +31,7 @@ import yaml
 logger = logging.getLogger(__name__)
 
 CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
-SWITCH_RE   = re.compile(r'<\s*(\w+)\s*:')
+SWITCH_RE   = re.compile(r'<\s*([^:]+)\s*:')
 
 ###############################################################################
 def do_cime_vars(entry, case):
@@ -63,7 +47,7 @@ def do_cime_vars(entry, case):
     return entry
 
 ###############################################################################
-def do_switches(entry, case):
+def do_switches(entry):
 ###############################################################################
     m = SWITCH_RE.search(entry)
     while m:
@@ -92,11 +76,11 @@ def do_switches(entry, case):
             components = segment.split("=>", 1)
             if (len(components) == 1 or '<' in components[0]):
                 if best_val is None:
-                    best_val = do_switches(segment, case).strip()
+                    best_val = do_switches(segment).strip()
             else:
                 compare = re.compile(components[0].strip())
                 if compare.match(value):
-                    best_val = do_switches(components[-1], case).strip()
+                    best_val = do_switches(components[-1]).strip()
                     break
 
         expect(best_val is not None, "Couldn't resolve switch statement for '{}', no matches".format(entry))
@@ -122,78 +106,41 @@ def refine_type(entry):
         return entry
 
 ###############################################################################
-def process_leaves(yaml_entry, case):
+def process_leaf(leaf_str, case):
 ###############################################################################
+    orig_str = leaf_str
+    leaf_str = do_cime_vars(leaf_str, case)
+    leaf_str = do_switches(leaf_str)
+    if leaf_str != orig_str:
+        return True, refine_type(leaf_str)
+    else:
+        return False, orig_str
+
+###############################################################################
+def process_node(node, itr, case):
+###############################################################################
+    """
+    Processes a node in the YAML data. A node is a piece of data in the python
+    dict representing the "raw" YAML. Because we support an extra level of
+    special syntax, described in SCREAM_YAML_README, we must do an extra
+    phase of processing this data. A node can be a dict, list, or string.
+    String data is considered a terminating 'leaf'.
+    """
     modified = False
-    for k, v in yaml_entry.items():
+    for k, v in itr:
         if isinstance(v, str):
-            orig_str = v
-            v = do_cime_vars(v, case)
-            v = do_switches(v, case)
-            if v != orig_str:
-                v = refine_type(v)
+            curr_modified, leaf_val = process_leaf(v, case)
+            if curr_modified:
+                node[k] = leaf_val
                 modified = True
-                yaml_entry[k] = v
 
         elif isinstance(v, dict):
-            modified |= process_leaves(v, case)
+            modified |= process_node(v, v.items(), case)
+
+        elif isinstance(v, list):
+            modified |= process_node(v, enumerate(v), case)
 
     return modified
-
-###############################################################################
-def load_comments(filepath):
-###############################################################################
-    """
-    Loading and dumping YAML files does not preserve the whitespace or comments
-    from the original. Since SCREAM users will be interacting with the scream_input.yaml,
-    we really want to keep these comments. This function will parse the text of
-    a YAML file and store the comments and whitespace in a simple list of 3-ples
-    [(do_insert, line idx, text)] with the idea that this data can be applied
-    to a freshly generated YAML file via the apply_comments function.
-    """
-    with open(filepath, "r") as fd:
-        lines = fd.readlines()
-
-    result = []
-    for idx, line in enumerate(lines):
-        sline = line.strip()
-
-        if sline.startswith("%YAML"):
-            result.append((True, idx, line))
-        elif sline in ["---", "..."]:
-            result.append((True, idx, line))
-        elif sline == "":
-            result.append((True, idx, line))
-        elif "#" in line:
-            try:
-                before, after = line.split("#")
-            except ValueError:
-                expect(False, "Bad line, too many #: {}".format(line))
-            before_nows = before.strip()
-            if before_nows == "":
-                result.append((True, idx, line))
-            else:
-                result.append((False, idx, after))
-
-    return result
-
-###############################################################################
-def apply_comments(filepath, comments):
-###############################################################################
-    """
-    Apply the comments from load_comments to a freshly generated YAML file.
-    """
-    with open(filepath, "r") as fd:
-        lines = fd.readlines()
-
-    for is_insert, idx, contents in comments:
-        if is_insert:
-            lines.insert(idx, contents)
-        else:
-            lines[idx] = "{} # {}".format(lines[idx].rstrip(), contents)
-
-    with open(filepath, "w") as fd:
-        fd.writelines(lines)
 
 ###############################################################################
 def ordered_load(item, Loader=yaml.SafeLoader, object_pairs_hook=OrderedDict):
@@ -260,19 +207,16 @@ def buildnml(case, caseroot, compname):
             # Do not overwrite existing files because that would remove any
             # local mods made by the user.
             if not os.path.exists(os.path.join(target, item)):
-                safe_copy(os.path.join(src, item), target)
+                 safe_copy(os.path.join(src, item), target)
 
-    # Load scream inputs from yaml and store original-file comments
-    comments = load_comments(yaml_tgt)
+    # Load scream inputs from yaml
     scream_input = ordered_load(yaml_tgt)
 
-    modified = process_leaves(scream_input, case)
+    modified = process_node(scream_input, scream_input.items(), case)
 
-    # If we have to re-dump the YAML file due to CIME case updates,
-    # we need to also restore the original comments.
+    # Check If we have to re-dump the YAML file due to CIME case updates
     if modified:
         ordered_dump(scream_input, yaml_tgt)
-        apply_comments(yaml_tgt, comments)
 
     # Create homme namelists from scream inputs
     homme_nl_path = os.path.join(rundir, scream_input["Atmosphere Driver"]["Grids Manager"]["Dynamics Driven"]["Dynamics Namelist File Name"])
@@ -281,13 +225,33 @@ def buildnml(case, caseroot, compname):
             fd.write("&{}\n".format(outer))
             for k, v in inner.items():
                 if type(v) is str:
-                    fd.write("{} = '{}'\n".format(k, v))
-                elif type(v) is bool:
-                    fd.write("{} = {}\n".format(k, str(v).lower()))
+                    if str(v).lower() in ['.false.','.true.']:
+                        fd.write("{} = {}\n".format(k, v))
+                    else:
+                        fd.write("{} = '{}'\n".format(k, v))
                 else:
                     fd.write("{} = {}\n".format(k, v))
 
             fd.write("/\n")
+
+    # Create input data list
+    input_data_list_file = "{}/Buildconf/scream.input_data_list".format(caseroot)
+    if os.path.exists(input_data_list_file):
+        os.remove(input_data_list_file)
+
+    input_file = scream_input["Atmosphere Driver"]["Initial Conditions"]["Physics GLL"]["Filename"]
+    tables     = scream_input["SCREAM"]["Input Files"]
+    with open(input_data_list_file, "w") as fd:
+        fd.write("ic_file = {}\n".format(input_file))
+        for idx, table in enumerate(tables):
+            fd.write("table_{} = {}\n".format(idx, table))
+
+    # SCREAM is currently hardcoded to expect tables to be in data
+    for table in tables:
+        table_name = os.path.basename(table)
+        tgt_table = os.path.join(target, table_name)
+        if not os.path.exists(tgt_table) and not os.path.islink(tgt_table):
+            os.symlink(table, os.path.join(target, table_name))
 
 ###############################################################################
 def _main_func():

@@ -200,6 +200,7 @@
 	</var_struct>
 	<streams>
 		<stream name="conservationCheckOutput" type="output"
+				mode="forward;analysis"
 				filename_template="analysis_members/conservationCheck.nc"
 				filename_interval="none"
 				output_interval="00-00-00_01:00:00"
@@ -262,6 +263,7 @@
 
 		<stream name="conservationCheckRestart"
 				type="input;output"
+				mode="forward;analysis"
 				filename_template="restarts/restart.AM.conservationCheck.$Y-$M-$D_$h.$m.$s.nc"
 				filename_interval="output_interval"
 				clobber_mode="replace_files"

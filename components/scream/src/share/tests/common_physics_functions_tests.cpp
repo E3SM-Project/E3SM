@@ -64,6 +64,88 @@ auto cmvdc (const ViewT& v_d) -> typename ViewT::HostMirror {
   return v_h;
 }
 
+template<typename DeviceT>
+void run_scalar_valued_fns()
+{
+  /*
+  Most of the common physics functions are templated to operate on scalars or on packs of vertical indices. 
+  The functions tested here don't include any vertical dimension (e.g. they handle variables only defined 
+  at the surface), so are only defined for scalar reals. This is fundamentally different than the other 
+  functions, so these functions get their own run test.
+  */	
+
+  using RealType   = scream::Real;
+  using PF         = scream::PhysicsFunctions<DeviceT>;
+  using PC         = scream::physics::Constants<RealType>;
+  using Check = ChecksHelpers<RealType,1>; //1 is for number of levels.
+
+  static constexpr auto Rd       = PC::RD;
+  static constexpr auto g        = PC::gravit;
+  static constexpr auto test_tol = PC::macheps*1e3;
+
+  //calculate_surface_air_T property tests:
+  // If z_mid_bot==0, output should equal T_mid_bot
+  // If z_mid_bot>0, output should be warmer that T_mid_bot
+  // If z_mid_bot<0, output should be colder than T_mid_bot
+  // if z_mid_bot is 1 km, output should be exactly 6.5 K warmer
+  REQUIRE( Check::approx_equal(PF::calculate_surface_air_T(300,0),300,test_tol) );
+  REQUIRE( Check::approx_equal(PF::calculate_surface_air_T(300,1000),306.5,test_tol) );
+  REQUIRE( Check::approx_equal(PF::calculate_surface_air_T(250.3,-10.2),250.2337,test_tol) );
+  
+  // lapse_T_for_psl property tests:
+  // If T_ground = 0, T_ground_tmp should be 255/2 and lapse should be 0.0065 Really cold case.
+  // If T_ground = 300 K with phi_ground>0 m2/s2, lapse = 0 and T_ground_tmp=0.5*(290.5+T_ground). Really hot case.
+  // If T_ground = 290 K and phi_ground=10000 m2/s2, T_ground_tmp=T_ground and lapse
+  //    is such that T_sl=T_ground+lapse*phi_ground/gravit is within roundoff of 290.5 K. Marginally hot case.
+  // If T_ground = 280 K and phi_ground=100 m2/s2, T_ground_tmp=T_ground and lapse=6.5 K/km (typical conditions)
+  RealType lapse;
+  RealType T_ground_tmp;
+  RealType T_ground=0;
+  RealType phi_ground=100;
+  RealType p_ground=100000; //can't use p0 because that is a ScalarT which could be a pack
+  PF::lapse_T_for_psl(T_ground, p_ground,  phi_ground, lapse, T_ground_tmp );
+  REQUIRE( Check::approx_equal(T_ground_tmp,0.5*255.,test_tol) );
+  REQUIRE( Check::equal(lapse,0.0065) );
+  T_ground=300;
+  PF::lapse_T_for_psl(T_ground, p_ground,  phi_ground, lapse, T_ground_tmp );
+  REQUIRE( Check::approx_equal(T_ground_tmp,0.5*(290.5+T_ground),test_tol) );
+  REQUIRE( Check::equal(lapse,0) );
+  T_ground=290;
+  phi_ground=10000;
+  PF::lapse_T_for_psl(T_ground, p_ground,  phi_ground, lapse, T_ground_tmp );
+  REQUIRE( Check::equal(T_ground_tmp, T_ground) );
+  REQUIRE( Check::approx_equal( T_ground_tmp+lapse*phi_ground/g, 290.5 , test_tol) );
+  T_ground=280;
+  phi_ground=100;
+  PF::lapse_T_for_psl(T_ground, p_ground,  phi_ground, lapse, T_ground_tmp );
+  REQUIRE( Check::equal(T_ground_tmp, T_ground) );
+  REQUIRE( Check::equal(lapse,0.0065) );
+  
+  // PSL property tests:
+  // PSL==surface pressure if surface height = 0 m
+  // computed value close to exact solution when lapse rate is zero (i.e. very warm conditions)
+  // computed value close to exact solution when lapse rate is 6.5 K/km (typical conditions)
+  // PSL lower than surface pressure whenever surface height > 0 m
+  // PSL greater than surface pressure whenever surface height < 0 m
+  REQUIRE( Check::equal(PF::calculate_psl(310 , p_ground, 0 ), p_ground) );
+  REQUIRE( Check::equal(PF::calculate_psl( 2 , 2, 0 ), 2) );
+  
+  T_ground=300;
+  T_ground_tmp=0.5*(290.5+T_ground);
+  RealType psl_exact = p_ground*std::exp(phi_ground/(Rd*T_ground_tmp));
+  RealType psl=PF::calculate_psl( T_ground , p_ground, phi_ground );
+  REQUIRE( Check::approx_equal( psl_exact, psl, test_tol) );
+  REQUIRE( psl>p_ground);
+  
+  T_ground=280;
+  phi_ground=-100;
+  lapse=0.0065;
+  psl_exact = p_ground*std::pow( 1. + lapse/g*phi_ground/T_ground, g/(Rd*lapse));
+  psl=PF::calculate_psl( T_ground , p_ground, phi_ground );
+  REQUIRE( Check::approx_equal( psl_exact, psl, test_tol) );
+  REQUIRE( psl<p_ground );
+} 
+
 //-----------------------------------------------------------------------------------------------//
 template<typename ScalarT, typename DeviceT>
 void run(std::mt19937_64& engine)
@@ -258,7 +340,6 @@ void run(std::mt19937_64& engine)
   REQUIRE( Check::approx_equal(PF::calculate_temperature_from_dse(PF::calculate_dse(T0,z0,surf_height),
                                z0,surf_height),T0,test_tol) );
 
-
   // WETMMR to DRYMMR (and vice versa) property tests
   wetmmr0 = pdf_mmr(engine);// get initial wet mmr
   drymmr0 = pdf_mmr(engine);// get initial dry mmr
@@ -315,7 +396,7 @@ void run(std::mt19937_64& engine)
   tmp = PF::calculate_mmr_from_vmr(h2o_mol,qv0,vmr0);
   REQUIRE( Check::approx_equal(PF::calculate_vmr_from_mmr(h2o_mol,qv0,tmp),vmr0,test_tol) );
   REQUIRE( !Check::approx_equal(PF::calculate_vmr_from_mmr(o2_mol,qv0,tmp),vmr0,test_tol) );
-
+  
   // --------- Run tests on full columns of data ----------- //
   TeamPolicy policy(ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(1, 1));
   Kokkos::parallel_for("test_universal_physics", policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -416,8 +497,18 @@ void run(std::mt19937_64& engine)
   }
 } // run()
 
+//===============================================================================
 TEST_CASE("common_physics_functions_test", "[common_physics_functions_test]"){
-  // Run tests for both Real and Pack, and for (potentially) different pack sizes
+
+// Run tests of functions only defined for a scalar (e.g. a particular column
+//of a variable only defined at the surface)
+   using Device = scream::DefaultDevice;
+   printf("\n -> Testing scalar-valued functions...");
+   run_scalar_valued_fns<Device>();
+   printf("ok!\n\n");
+
+// Run tests of vertically dimensioned-functions for both Real and Pack,
+// and for (potentially) different pack sizes
   using scream::Real;
   using Device = scream::DefaultDevice;
 
@@ -425,7 +516,7 @@ TEST_CASE("common_physics_functions_test", "[common_physics_functions_test]"){
 
   auto engine = scream::setup_random_test();
 
-  std::cout << " -> Number of randomized runs: " << num_runs << "\n\n";
+  printf(" -> Number of randomized runs: %d\n\n", num_runs);
 
   printf(" -> Testing Real scalar type...");
   for (int irun=0; irun<num_runs; ++irun) {

@@ -213,7 +213,8 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       register_dimension(filename,"time","time",0);
 
       // Register time as a variable.
-      register_variable(filename,"time","time",1,{"time"},  PIO_REAL,"time");
+      auto time_units="days since " + m_case_t0.get_date_string() + " " + m_case_t0.get_time_string();
+      register_variable(filename,"time","time",time_units,1,{"time"},  PIO_REAL,"time");
 
       // Make all output streams register their dims/vars
       for (auto& it : m_output_streams) {
@@ -248,7 +249,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     }
 
     // Update time and nsteps in the output file
-    pio_update_time(filename,timestamp.seconds_from(m_case_t0));
+    pio_update_time(filename,timestamp.days_from(m_case_t0));
     if (m_is_model_restart_output) {
       // Only write nsteps on model restart
       set_int_attribute_c2f(filename.c_str(),"nsteps",timestamp.get_num_steps());
@@ -257,7 +258,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
   // Run the output streams
   for (auto& it : m_output_streams) {
-    // Note: filename might referencing an invalid string, but it's only used
+    // Note: filename might reference an invalid string, but it's only used
     //       in case is_write_step=true, in which case it will *for sure* contain
     //       a valid file name.
     it->run(filename,is_write_step,m_output_control.nsteps_since_last_write);
@@ -270,12 +271,14 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     // Finish up any updates to output file
     sync_outfile(filename);
 
+    // Now that we've written output to this file we need reset the nsteps.
+    control.nsteps_since_last_write = 0;
+
     // Check if we need to close the output file
     if (filespecs.file_is_full()) {
       eam_pio_closefile(filename);
       filespecs.num_snapshots_in_file = 0;
       filespecs.is_open = false;
-      control.nsteps_since_last_write = 0;
     }
 
     // Whether we wrote an output or a checkpoint, the checkpoint counter needs to be reset

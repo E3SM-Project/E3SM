@@ -56,67 +56,87 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   // Set of fields used strictly as output
   add_field<Computed>("nc_activated",   scalar3d_layout_mid,    1/kg,   grid_name,ps);
-  add_field<Computed>("aero_g_sw",      scalar3d_swband_layout, 1/kg,   grid_name,ps);
-  add_field<Computed>("aero_ssa_sw",    scalar3d_swband_layout, 1/kg,   grid_name,ps);
-  add_field<Computed>("aero_tau_sw",    scalar3d_swband_layout, 1/kg,   grid_name,ps);
-  add_field<Computed>("aero_tau_lw",    scalar3d_lwband_layout, 1/kg,   grid_name,ps);
+  add_field<Computed>("aero_g_sw",      scalar3d_swband_layout, nondim, grid_name,ps);
+  add_field<Computed>("aero_ssa_sw",    scalar3d_swband_layout, nondim, grid_name,ps);
+  add_field<Computed>("aero_tau_sw",    scalar3d_swband_layout, nondim, grid_name,ps);
+  add_field<Computed>("aero_tau_lw",    scalar3d_lwband_layout, nondim, grid_name,ps);
 
-  // Set of fields used as input and output
-  // - There are no fields used as both input and output.
+  // Init output data structure
+  SPAData_out.init(m_num_cols,m_num_levs,m_nswbands,m_nlwbands,false);
 }
 // =========================================================================================
-int SPA::requested_buffer_size_in_bytes() const
+size_t SPA::requested_buffer_size_in_bytes() const
 {
-  const Int num_mid_packs    = ekat::npack<Spack>(m_num_levs);
-  const Int num_int_packs = ekat::npack<Spack>(m_num_levs+1);
+  using PackInfo = ekat::PackInfo<Spack::n>;
 
-  // Number of Reals needed by local views in the interface
-  const int interface_request =
-      // 1d view scalar, size (ncol)
-      Buffer::num_1d_scalar*m_num_cols*sizeof(Real) +
-      // 2d view packed, size (ncol, nlev_packs)
-      Buffer::num_2d_vector*m_num_cols*num_mid_packs*sizeof(Spack) +
-      Buffer::num_2dp1_vector*m_num_cols*num_int_packs*sizeof(Spack);
+  // Recall: the quantities in spa_temp defined over vlevs have 1 Real of
+  //         padding in each column (at beginning and end).
+  //         That's why we have m_num_levs+2
+  const int nlevs = m_num_levs+2;
+  const int num_mid_packs = PackInfo::num_packs(nlevs);
+  const int nlevs_alloc = num_mid_packs*Spack::n;
 
-  // Number of Reals needed by the WorkspaceManager
-  const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, num_mid_packs);
-  const int wsm_request   = WSM::get_total_bytes_needed(num_mid_packs, 3, policy);
+  // We have
+  //  - one (ncols) view (spa_temp's ps)
+  //  - two (ncols,nlevs) mid view (p_mid_src, spa_temp's ccn)
+  //  - three (ncols,nswbands,nlevs) views (spa_temp's aer_g_sw, aer_ssa_sw, aer_tau_sw)
+  //  - one (ncols,nlwbands,nlevs) view (aer_tau_lw)
+  const int num_reals = m_num_cols*(1+nlevs_alloc*(2 + 3*m_nswbands + m_nlwbands));
 
-  return interface_request + wsm_request;
+  return num_reals*sizeof(Real);
 }
 
 // =========================================================================================
 void SPA::init_buffers(const ATMBufferManager &buffer_manager)
 {
-  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(), "Error! Buffers size not sufficient.\n");
+  EKAT_REQUIRE_MSG(
+      buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
+      "Error! Buffers size not sufficient.\n");
 
-  Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
+  using PackInfo = ekat::PackInfo<Spack::n>;
 
-  // 1d scalar views
-  m_buffer.ps_src = decltype(m_buffer.ps_src)(mem, m_num_cols);
-  mem += m_buffer.ps_src.size();
+  // Short names make following rows fit on text editor screen
+  // Recall: the quantities in spa_temp defined over vlevs have 1 Real of
+  //         padding in each column (at beginning and end).
+  //         That's why we have m_num_levs+2
+  const int nlevs  = m_num_levs+2;
+  const int npacks = PackInfo::num_packs(nlevs);
+  const int ncols  = m_num_cols;
+  const int nswb   = m_nswbands;
+  const int nlwb   = m_nlwbands;
 
-  Spack* s_mem = reinterpret_cast<Spack*>(mem);
+  Spack* mem = reinterpret_cast<Spack*>(buffer_manager.get_memory());
 
-  // 2d packed views
-  const Int num_mid_packs    = ekat::npack<Spack>(m_num_levs);
+  // Source pressure levels
+  m_buffer.p_mid_src = decltype(m_buffer.p_mid_src)(mem, ncols, npacks);
+  mem += m_buffer.p_mid_src.size();
 
-  m_buffer.p_mid_src = decltype(m_buffer.p_mid_src)(s_mem, m_num_cols, num_mid_packs);
-  s_mem += m_buffer.p_mid_src.size();
-  m_buffer.ccn3_src = decltype(m_buffer.ccn3_src)(s_mem, m_num_cols, num_mid_packs);
-  s_mem += m_buffer.ccn3_src.size();
+  // SPA temporaries
+  auto& spa_data = m_buffer.spa_temp.data;
+  spa_data.init(ncols,nlevs,nswb,nlwb,false);
 
-  // WSM data
-  m_buffer.wsm_data = s_mem;
+  spa_data.CCN3 = decltype(spa_data.CCN3)(mem, ncols, npacks);
+  mem += spa_data.CCN3.size();
 
-  // Compute workspace manager size to check used memory
-  // vs. requested memory
-  const auto policy  = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, num_mid_packs);
-  const int wsm_size = WSM::get_total_bytes_needed(num_mid_packs, 3, policy)/sizeof(Spack);
-  s_mem += wsm_size;
+  spa_data.AER_G_SW = decltype(spa_data.AER_G_SW)(mem, ncols, nswb, npacks);
+  mem += spa_data.AER_G_SW.size();
+  spa_data.AER_SSA_SW = decltype(spa_data.AER_SSA_SW)(mem, ncols, nswb, npacks);
+  mem += spa_data.AER_SSA_SW.size();
+  spa_data.AER_TAU_SW = decltype(spa_data.AER_TAU_SW)(mem, ncols, nswb, npacks);
+  mem += spa_data.AER_TAU_SW.size();
 
-  int used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
-  EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for SPA.");
+  spa_data.AER_TAU_LW = decltype(spa_data.AER_TAU_LW)(mem, ncols, nlwb, npacks);
+  mem += spa_data.AER_TAU_LW.size();
+
+  Real* r_mem = reinterpret_cast<Real*>(mem);
+  m_buffer.spa_temp.PS = decltype(m_buffer.spa_temp.PS)(r_mem,ncols);
+  r_mem += m_buffer.spa_temp.PS.size();
+
+  int used_mem = (r_mem - buffer_manager.get_memory())*sizeof(Real);
+  EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(),
+      "Error! Used memory != requested memory for SPA.\n"
+      "   - used mem     : " + std::to_string(used_mem) + "\n"
+      "   - requested mem: " + std::to_string(requested_buffer_size_in_bytes()) + "\n");
 }
 
 // =========================================================================================
@@ -124,11 +144,6 @@ void SPA::initialize_impl (const RunType /* run_type */)
 {
   // Initialize SPA pressure state stucture and set pointers for the SPA output data to
   // field managed variables.
-  SPAPressureState.ncols         = m_num_cols;
-  SPAPressureState.nlevs         = m_num_levs;
-  SPAPressureState.hyam          = get_field_in("hyam").get_view<const Pack*>();
-  SPAPressureState.hybm          = get_field_in("hybm").get_view<const Pack*>();
-  SPAPressureState.pmid          = get_field_in("p_mid").get_view<const Pack**>();
   SPAData_out.CCN3               = get_field_out("nc_activated").get_view<Pack**>();
   SPAData_out.AER_G_SW           = get_field_out("aero_g_sw").get_view<Pack***>();
   SPAData_out.AER_SSA_SW         = get_field_out("aero_ssa_sw").get_view<Pack***>();
@@ -156,18 +171,25 @@ void SPA::initialize_impl (const RunType /* run_type */)
   // Note: only the number of levels associated with this data haven't been set.  We can
   //       take this information directly from the spa data file.
   scorpio::register_file(m_spa_data_file,scorpio::Read);
-  SPAHorizInterp.source_grid_nlevs = scorpio::get_dimlen_c2f(m_spa_data_file.c_str(),"lev");
+  const int source_data_nlevs = scorpio::get_dimlen_c2f(m_spa_data_file.c_str(),"lev")+2; // Add 2 for padding
   SPAHorizInterp.m_comm = m_comm;
 
   // Initialize the size of the SPAData structures:
-  SPAData_start = SPAFunc::SPAData(m_dofs_gids.size(), SPAHorizInterp.source_grid_nlevs, m_nswbands, m_nlwbands);
-  SPAData_end   = SPAFunc::SPAData(m_dofs_gids.size(), SPAHorizInterp.source_grid_nlevs, m_nswbands, m_nlwbands);
+  SPAData_start = SPAFunc::SPAInput(m_dofs_gids.size(), source_data_nlevs, m_nswbands, m_nlwbands);
+  SPAData_end   = SPAFunc::SPAInput(m_dofs_gids.size(), source_data_nlevs, m_nswbands, m_nlwbands);
 
   // Update the local time state information and load the first set of SPA data for interpolation:
   auto ts = timestamp();
   SPATimeState.inited = false;
   SPATimeState.current_month = ts.get_month();
   SPAFunc::update_spa_timestate(m_spa_data_file,m_nswbands,m_nlwbands,ts,SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
+
+  // NOTE: we *assume* hybrid v coordinates don't change with time.
+  //       IF this ever ceases to be the case, you need to remove these
+  //       lines, and have spa_main interpolate those during the call
+  //       to performe_time_interpolation.
+  m_buffer.spa_temp.hyam = SPAData_start.hyam;
+  m_buffer.spa_temp.hybm = SPAData_start.hybm;
 }
 
 // =========================================================================================
@@ -179,7 +201,9 @@ void SPA::run_impl (const int /* dt */)
   SPAFunc::update_spa_timestate(m_spa_data_file,m_nswbands,m_nlwbands,ts,SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
 
   // Call the main SPA routine to get interpolated aerosol forcings.
-  SPAFunc::spa_main(SPATimeState, SPAPressureState,SPAData_start,SPAData_end,SPAData_out,m_num_cols,m_num_levs,m_nswbands,m_nlwbands);
+  const auto& pmid_tgt = get_field_in("p_mid").get_view<const Pack**>();
+  SPAFunc::spa_main(SPATimeState, pmid_tgt, m_buffer.p_mid_src,
+                    SPAData_start,SPAData_end,m_buffer.spa_temp,SPAData_out);
 }
 
 // =========================================================================================

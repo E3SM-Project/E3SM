@@ -20,8 +20,8 @@ OR
 {0} --help
 
 \033[1mEXAMPLES:\033[0m
-    \033[1;32m# Query machine 'mappy' for parameter 'mpicxx' \033[0m
-    > {0} mappy mpicxx
+    \033[1;32m# Query machine 'mappy' for parameter 'cxx_compiler' \033[0m
+    > {0} mappy cxx_compiler
 """.format(pathlib.Path(args[0]).name),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter

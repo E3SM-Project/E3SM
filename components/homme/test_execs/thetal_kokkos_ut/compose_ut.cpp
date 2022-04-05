@@ -20,6 +20,7 @@
 #include "profiling.hpp"
 #include "ErrorDefs.hpp"
 #include "VerticalRemapManager.hpp"
+#include "PhysicalConstants.hpp"
 
 #include "utilities/TestUtils.hpp"
 #include "utilities/SyncUtils.hpp"
@@ -133,6 +134,7 @@ struct Session {
     p.dt_remap_factor = -1;
     p.params_set = true;
     p.theta_hydrostatic_mode = true;
+    p.rearth = PhysicalConstants::rearth0;
 
     const auto hyai = cmvdc(h.hybrid_ai);
     const auto hybi = cmvdc(h.hybrid_bi);
@@ -154,6 +156,7 @@ struct Session {
 
     init_geometry_f90();    
     auto& geo = c.get<ElementsGeometry>();
+    //geo.m_rearth = PhysicalConstants::rearth0;
 
     auto& sphop = c.create<SphereOperators>();
     sphop.setup(geo, ref_FE);

@@ -30,7 +30,7 @@ void ice_fall() {
   // for (int j=0; j<ny; j++) {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int j, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     for(int k=0; k < nzm; k++) {
       if(qcl(k,j,i,icrm)+qci(k,j,i,icrm) > 0.0 && tabs(k,j,i,icrm) < 273.15) {
         yakl::atomicMin(kmin(icrm),k);
@@ -113,7 +113,7 @@ void ice_fall() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nz,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nz,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if ( k >= max(0,kmin(icrm)-2) && k <= kmax(icrm) ) {
       real coef = dtn/(dz(icrm)*adz(k,icrm)*rho(k,icrm));
       // The cloud ice increment is the difference of the fluxes.

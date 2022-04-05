@@ -49,7 +49,7 @@ module scream_scorpio_interface
   use pio_types,  only : iosystem_desc_t, file_desc_t, &
       pio_noerr, PIO_iotype_netcdf, var_desc_t, io_desc_t, PIO_int, &
       pio_clobber, PIO_nowrite, PIO_unlimited, pio_global, PIO_real, &
-      PIO_double, pio_rearr_subset, pio_write, pio_nowrite
+      PIO_double, pio_rearr_subset, pio_write, pio_nowrite, PIO_64BIT_DATA
   use pio_kinds,  only : PIO_OFFSET_KIND, i4
   use pio_nf,     only : PIO_redef, PIO_def_dim, PIO_def_var, PIO_enddef, PIO_inq_dimid, &
                          PIO_inq_dimlen, PIO_inq_varid, PIO_inq_att
@@ -101,6 +101,7 @@ module scream_scorpio_interface
   integer               :: pio_rearranger
   integer               :: pio_ntasks
   integer               :: pio_myrank
+  integer               :: pio_mode
 
   ! TYPES to handle history coordinates and files
   integer,parameter :: max_hcoordname_len = 16
@@ -479,9 +480,10 @@ contains
   !                 decomposition for reading this variable.  It is ok to reuse
   !                 the pio_decomp_tag for variables that have the same
   !                 dimensionality.  See get_decomp for more details.
-  subroutine register_variable(filename,shortname,longname,numdims,var_dimensions,dtype,pio_decomp_tag)
+  subroutine register_variable(filename,shortname,longname,units,numdims,var_dimensions,dtype,pio_decomp_tag)
     character(len=*), intent(in) :: filename         ! Name of the file to register this variable with
     character(len=*), intent(in) :: shortname,longname       ! short and long names for the variable.  Short: variable name in file, Long: more descriptive name
+    character(len=*), intent(in) :: units                    ! units for variable
     integer, intent(in)          :: numdims                  ! Number of dimensions for this variable, including time dimension
     character(len=*), intent(in) :: var_dimensions(numdims)  ! String array with shortname descriptors for each dimension of variable.
     integer, intent(in)          :: dtype                    ! datatype for this variable, REAL, DOUBLE, INTEGER, etc.
@@ -496,7 +498,7 @@ contains
     character(len=256)           :: dimlen_str
 
     type(hist_var_list_t), pointer :: curr, prev
-
+    
     var_found = .false.
 
     ! Find the pointer for this file
@@ -529,6 +531,7 @@ contains
       ! Populate meta-data associated with this variable
       hist_var%name      = trim(shortname)
       hist_var%long_name = trim(longname)
+      hist_var%units = trim(units)
       hist_var%numdims   = numdims
       hist_var%dtype     = dtype
       hist_var%pio_decomp_tag = trim(pio_decomp_tag)
@@ -549,7 +552,11 @@ contains
       ierr = PIO_def_var(pio_atm_file%pioFileDesc, trim(shortname), hist_var%dtype, hist_var%dimid(:numdims), hist_var%piovar)
       call errorHandle("PIO ERROR: could not define variable "//trim(shortname),ierr)
 
-      ! Update the number of variables on file
+      !PMC
+      ierr=PIO_put_att(pio_atm_file%pioFileDesc, hist_var%piovar, 'units', hist_var%units )
+      ierr=PIO_put_att(pio_atm_file%pioFileDesc, hist_var%piovar, 'long_name', hist_var%long_name )
+
+            ! Update the number of variables on file
       pio_atm_file%varcounter = pio_atm_file%varcounter + 1
     else
       ! The var was already registered by another input/output instance. Check that everything matches
@@ -557,6 +564,9 @@ contains
       if ( trim(hist_var%long_name) .ne. trim(longname) ) then
         ! Different long name
         call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different longname, in file: "//trim(filename),-999)
+     elseif ( trim(hist_var%units) .ne. trim(units) ) then
+        ! Different units
+        call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different units, in file: "//trim(filename),-999)
       elseif (hist_var%dtype .ne. dtype) then
         ! Different data type
         call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different dtype, in file: "//trim(filename),-999)
@@ -628,17 +638,21 @@ contains
     integer                       :: retval
 
     ! TODO change options below to match specific simulation case
-    retval=pio_put_att (File, PIO_GLOBAL, 'source', 'SCREAM')
-    retval=pio_put_att (File, PIO_GLOBAL, 'case', 'TEST 1')
-    retval=pio_put_att (File, PIO_GLOBAL, 'title', 'SCORPIO TEST')
-    retval=pio_put_att (File, PIO_GLOBAL, 'logname','THE GIT LOG HASH')
-    retval=pio_put_att (File, PIO_GLOBAL, 'host', 'THE HOST')
-    retval=pio_put_att (File, PIO_GLOBAL, 'Version', &
-           '0')
-    retval=pio_put_att (File, PIO_GLOBAL, 'revision_Id', &
-           'None')
-    retval=pio_put_att (File, PIO_GLOBAL, 'initial_file', 'NONE FOR NOW')
-    retval=pio_put_att (File, PIO_GLOBAL, 'topography_file', 'NONE FOR NOW')
+    retval=pio_put_att (File, PIO_GLOBAL, 'source', 'E3SM Atmosphere Model Version 4')
+    retval=pio_put_att (File, PIO_GLOBAL, 'case', 'TEST 1') ! NEED TO FIX THIS!!!
+    retval=pio_put_att (File, PIO_GLOBAL, 'title', 'EAMv4 History File')
+    retval=pio_put_att (File, PIO_GLOBAL, 'git_hash','THE GIT LOG HASH')  ! NEED TO FIX THIS!!!
+    retval=pio_put_att (File, PIO_GLOBAL, 'host', 'THE HOST')  ! NEED TO FIX THIS!!!
+    retval=pio_put_att (File, PIO_GLOBAL, 'Version', '1.0')
+    retval=pio_put_att (File, PIO_GLOBAL, 'revision_Id', 'None')  !WHAT IS THIS? NOT IN EAM.
+    retval=pio_put_att (File, PIO_GLOBAL, 'initial_file', 'NONE FOR NOW')  !NEED TO FIX THIS
+    retval=pio_put_att (File, PIO_GLOBAL, 'topography_file', 'NONE FOR NOW')  !NEED TO FIX THIS
+    retval=pio_put_att (File, PIO_GLOBAL, 'contact', 'e3sm-data-support@llnl.gov')
+    retval=pio_put_att (File, PIO_GLOBAL, 'institution_id', 'E3SM-Project')
+    retval=pio_put_att (File, PIO_GLOBAL, 'product', 'model-output')
+    retval=pio_put_att (File, PIO_GLOBAL, 'realm','atmos')
+    retval=pio_put_att (File, PIO_GLOBAL, 'Conventions','None yet')
+    retval=pio_put_att (File, PIO_GLOBAL, 'institution', 'LLNL (Lawrence Livermore National Laboratory, Livermore, CA 94550, USA); ANL (Argonne National Laboratory, Argonne, IL 60439, USA); BNL (Brookhaven National Laboratory, Upton, NY 11973, USA); LANL (Los Alamos National Laboratory, Los Alamos, NM 87545, USA); LBNL (Lawrence Berkeley National Laboratory, Berkeley, CA 94720, USA); ORNL (Oak Ridge National Laboratory, Oak Ridge, TN 37831, USA); PNNL (Pacific Northwest National Laboratory, Richland, WA 99352, USA); SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA). Mailing address: LLNL Climate Program, c/o David C. Bader, Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
 
   end subroutine eam_pio_createHeader
 !=====================================================================!
@@ -649,12 +663,15 @@ contains
   ! that has been initialized by the component coupler.  Otherwise, it will be
   ! initalized locally.
   subroutine eam_init_pio_subsystem(mpicom,atm_id,local)
-#ifdef CIME_BUILD
+#ifdef SCREAM_CIME_BUILD
   ! Note, these three variables from shr_pio_mod are only needed in the
   ! case when we want to use the pio_subsystem that has already been defined by
   ! the component coupler.
-  use shr_pio_mod,  only: shr_pio_getrearranger, shr_pio_getiosys, shr_pio_getiotype
+  use shr_pio_mod,  only: shr_pio_getrearranger, shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
 #endif
+! TODO - Change CIME_BUILD to SCREAM_CIME_BUILD.  Unfortunately the shared
+! modules we need are not added yet to the SCREAM build, so doing this will take
+! a little more work, which will happen in a subsequent PR.
 
     integer, intent(in) :: mpicom
     integer, intent(in) :: atm_id
@@ -671,11 +688,12 @@ contains
     call MPI_Comm_rank(pio_mpicom, pio_myrank, ierr)
     call MPI_Comm_size(pio_mpicom, pio_ntasks , ierr)
 
-#ifdef CIME_BUILD
+#ifdef SCREAM_CIME_BUILD
     if (.not.local) then
       pio_subsystem  => shr_pio_getiosys(atm_id)
       pio_iotype     = shr_pio_getiotype(atm_id)
       pio_rearranger = shr_pio_getrearranger(atm_id)
+      pio_mode       = shr_pio_getioformat(atm_id)
     else
 #else
       ! Just for removing unused dummy warnings
@@ -686,10 +704,11 @@ contains
       num_aggregator = 0
       pio_rearranger = pio_rearr_subset
       pio_iotype     = PIO_iotype_netcdf
+      pio_mode       = PIO_64BIT_DATA ! Default to 64 bit
       base           = 0
       call PIO_init(pio_myrank, pio_mpicom, pio_ntasks, num_aggregator, stride, &
            pio_rearr_subset, pio_subsystem, base=base)
-#ifdef CIME_BUILD
+#ifdef SCREAM_CIME_BUILD
     end if
 #endif
 
@@ -730,7 +749,7 @@ contains
     integer                          :: retval           ! PIO error return value
     integer                          :: mode             ! Mode for how to handle the new file
 
-    mode = pio_clobber ! Set to CLOBBER for now, TODO: fix to allow for optional mode type like in CAM
+    mode = ior(pio_mode,pio_clobber) ! Set to CLOBBER for now, TODO: fix to allow for optional mode type like in CAM
     retval = pio_createfile(pio_subsystem,File,pio_iotype,fname,mode)
     call errorHandle("PIO ERROR: unable to create file: "//trim(fname),retval)
 

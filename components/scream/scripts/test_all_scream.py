@@ -27,7 +27,7 @@ class TestAllScream(object):
     ###########################################################################
     def __init__(self, cxx_compiler=None, f90_compiler=None, c_compiler=None,
                  submit=False, parallel=False, fast_fail=False,
-                 baseline_ref=None, baseline_dir=None, machine=None, no_tests=False, keep_tree=False,
+                 baseline_ref=None, baseline_dir=None, machine=None, no_tests=False, config_only=False, keep_tree=False,
                  custom_cmake_opts=(), custom_env_vars=(), preserve_env=False, tests=(),
                  integration_test=False, local=False, root_dir=None, work_dir=None,
                  quick_rerun=False,quick_rerun_failed=False,dry_run=False,
@@ -52,6 +52,7 @@ class TestAllScream(object):
         self._machine                 = machine
         self._local                   = local
         self._perform_tests           = not no_tests
+        self._config_only             = config_only
         self._keep_tree               = keep_tree
         self._baseline_dir            = baseline_dir
         self._custom_cmake_opts       = custom_cmake_opts
@@ -79,6 +80,17 @@ class TestAllScream(object):
             ("cov" , "coverage"),
         ])
 
+        # Not all builds are ment to perform comparisons against pre-built baselines
+        self._test_uses_baselines = OrderedDict([
+            ("dbg" , True),
+            ("sp"  , True),
+            ("fpe" , False),
+            ("opt" , True),
+            ("valg", False),
+            ("cmc",  False),
+            ("cov" , False),
+        ])
+
         self._tests_cmake_args = {
             "dbg" : [("CMAKE_BUILD_TYPE", "Debug"),
                      ("EKAT_DEFAULT_BFB", "True")],
@@ -88,16 +100,20 @@ class TestAllScream(object):
             "fpe" : [("CMAKE_BUILD_TYPE", "Debug"),
                      ("SCREAM_PACK_SIZE", "1"),
                      ("SCREAM_SMALL_PACK_SIZE", "1"),
+                     ("SCREAM_ENABLE_BASELINE_TESTS", "False"),
                      ("EKAT_DEFAULT_BFB", "True")],
             "opt" : [("CMAKE_BUILD_TYPE", "Release")],
             "valg" : [("CMAKE_BUILD_TYPE", "Debug"),
                       ("SCREAM_TEST_PROFILE", "SHORT"),
+                     ("SCREAM_ENABLE_BASELINE_TESTS", "False"),
                       ("EKAT_ENABLE_VALGRIND", "True")],
             "cmc"  : [("CMAKE_BUILD_TYPE", "Debug"),
                       ("SCREAM_TEST_PROFILE", "SHORT"),
+                     ("SCREAM_ENABLE_BASELINE_TESTS", "False"),
                       ("EKAT_ENABLE_CUDA_MEMCHECK", "True")],
             "cov" : [("CMAKE_BUILD_TYPE", "Debug"),
-                      ("EKAT_ENABLE_COVERAGE", "True")],
+                     ("SCREAM_ENABLE_BASELINE_TESTS", "False"),
+                     ("EKAT_ENABLE_COVERAGE", "True")],
         }
 
         if self._quick_rerun_failed:
@@ -107,16 +123,20 @@ class TestAllScream(object):
         #  Sanity checks and helper structs setup  #
         ############################################
 
+        # Quick rerun skips config phase, and config-only runs only config. You can't ask for both...
+        expect (not (self._quick_rerun and self._config_only),
+                "Makes no sense to ask for --quick-rerun and --config-only at the same time")
+
         # Probe machine if none was specified
         if self._machine is None:
             # We could potentially integrate more with CIME here to do actual
             # nodename probing.
-            if "CIME_MACHINE" in os.environ and is_machine_supported(os.environ["CIME_MACHINE"]):
-                self._machine = os.environ["CIME_MACHINE"]
+            if "SCREAM_MACHINE" in os.environ and is_machine_supported(os.environ["SCREAM_MACHINE"]):
+                self._machine = os.environ["SCREAM_MACHINE"]
             else:
                 expect(self._local,
                        "test-all-scream requires either the machine arg (-m $machine) or the -l flag,"
-                       "which makes it lookf for machine specs in '~/.cime/scream_mach_specs.py'.")
+                       "which makes it look for machine specs in '~/.cime/scream_mach_specs.py'.")
                 self._machine = "local"
         else:
             expect (not self._local, "Specifying a machine while passing '-l,--local' is ambiguous.")
@@ -144,7 +164,8 @@ class TestAllScream(object):
                    "Bad root-dir '{}', should be: $scream_repo/components/scream".format(self._root_dir))
 
         if self._work_dir is not None:
-            expect(Path(self._work_dir).absolute().is_dir(),
+            self._work_dir = Path(self._work_dir).absolute()
+            expect(self._work_dir.is_dir(),
                    "Error! Work directory '{}' does not exist.".format(self._work_dir))
         else:
             self._work_dir = self._root_dir.absolute().joinpath("ctest-build")
@@ -231,18 +252,11 @@ class TestAllScream(object):
         expect (not self._baseline_dir or self._work_dir != self._baseline_dir,
                 "Error! For your safety, do NOT use '{}' to store baselines. Move them to a different directory (even a subdirectory if that works).".format(self._work_dir))
 
-        # If no baseline ref/dir was provided, try to figure out one based on other options
+        # If no baseline ref/dir was provided, use default master baseline dir for this machine
+        # NOTE: if user specifies baseline ref, baseline dir will be set later to a path within work dir
         if self._baseline_dir is None and self._baseline_ref is None:
-            expect (self._integration_test or self._keep_tree,
-                    "Error! If you don't provide a baseline dir or ref, either provide -i or -k flag."
-                    "    -i will do an integration test (setting baseline dir to AUTO"
-                    "    -k will do a test against HEAD")
-
-            # Figure out how to get baselines
-            if self._integration_test:
-                self._baseline_dir = "AUTO"
-            else:
-                self._baseline_ref = "HEAD"
+            self._baseline_dir = "AUTO"
+            print ("No '--baseline-dir XYZ' nor '-b XYZ' provided. Testing against default baselines dir for this machine.")
 
         # If -k was used, make sure it's allowed
         if self._keep_tree:
@@ -253,6 +267,11 @@ class TestAllScream(object):
             if self._baseline_dir is None:
                 # Make sure the baseline ref is HEAD
                 expect(self._baseline_ref == "HEAD",
+                       "The option --keep-tree is only available when testing against pre-built baselines "
+                       "(--baseline-dir) or HEAD (-b HEAD)")
+            else:
+                # Make sure the baseline ref is unset (or HEAD)
+                expect(self._baseline_ref is None or self._baseline_ref == "HEAD",
                        "The option --keep-tree is only available when testing against pre-built baselines "
                        "(--baseline-dir) or HEAD (-b HEAD)")
         else:
@@ -281,6 +300,9 @@ class TestAllScream(object):
 
         else:
             if self._baseline_dir == "AUTO":
+                expect (self._baseline_ref is None or self._baseline_ref == 'origin/master',
+                        "Do not specify `-b XYZ` when using `--baseline-dir AUTO`. The AUTO baseline dir should be used for the master baselines only.\n"
+                        "       `-b XYZ` needs to probably build baselines for ref XYZ. However, no baselines will be built if the dir already contains baselines.\n")
                 # We treat the "AUTO" string as a request for automatic baseline dir.
                 auto_dir = get_mach_baseline_root_dir(self._machine)
                 self._baseline_dir = Path(auto_dir) if auto_dir else default_baselines_root_dir
@@ -367,18 +389,22 @@ class TestAllScream(object):
     ###############################################################################
         """
         Check that all baselines are present (one subdir for all values of self._tests)
+        Note: if self._test_uses_baselines[test]=False, skip the check
         """
         # Sanity check
         expect(self._baseline_dir is not None,
                 "Error! Baseline directory not correctly set.")
 
         for test in self._tests:
-            data_dir = self.get_preexisting_baseline(test)
-            if not data_dir.is_dir():
-                self._tests_needing_baselines.append(test)
-                print(" -> Test {} is missing baselines".format(test))
+            if self._test_uses_baselines[test]:
+                data_dir = self.get_preexisting_baseline(test)
+                if not data_dir.is_dir():
+                    self._tests_needing_baselines.append(test)
+                    print(" -> Test {} is missing baselines".format(test))
+                else:
+                    print(" -> Test {} appears to have baselines".format(test))
             else:
-                print(" -> Test {} appears to have baselines".format(test))
+                print(" -> Test {} does not use baselines".format(test))
 
     ###############################################################################
     def baselines_are_expired(self):
@@ -394,7 +420,7 @@ class TestAllScream(object):
         expect(self._baseline_dir is not None, "Error! This routine should only be called when testing against pre-existing baselines.")
 
         for test in self._tests:
-            if test not in self._tests_needing_baselines:
+            if self._test_uses_baselines[test] and test not in self._tests_needing_baselines:
                 # this test is not missing a baseline, but it may be expired.
 
                 baseline_file_sha = self.get_baseline_file_sha(test)
@@ -443,10 +469,10 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         # even if no netcdf is available
         stat, f_path, _ = run_cmd("nf-config --prefix")
         if stat == 0:
-            result += " -DNetCDF_Fortran_PATHS={}".format(f_path)
+            result += " -DNetCDF_Fortran_PATH={}".format(f_path)
         stat, c_path, _ = run_cmd("nc-config --prefix")
         if stat == 0:
-            result += " -DNetCDF_C_PATHS={}".format(c_path)
+            result += " -DNetCDF_C_PATH={}".format(c_path)
 
         # Test-specific cmake options
         for key, value in extra_configs:
@@ -548,7 +574,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         name = self._test_full_names[test]
         result = ""
         if self._submit:
-            result += "CIME_MACHINE={} ".format(self._machine)
+            result += "SCREAM_MACHINE={} ".format(self._machine)
 
         test_dir = self.get_test_dir(self._work_dir,test)
         num_test_res = self.create_ctest_resource_file(test,test_dir)
@@ -558,7 +584,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         result += "SCREAM_BUILD_PARALLEL_LEVEL={} CTEST_PARALLEL_LEVEL={} ctest {} ".format(self._compile_res_count[test], self._testing_res_count[test], verbosity)
         result += "--resource-spec-file {}/ctest_resource_file.json ".format(test_dir)
 
-        if self._baseline_dir is not None:
+        if self._baseline_dir is not None and self._test_uses_baselines[test]:
             cmake_config += " -DSCREAM_TEST_DATA_DIR={}".format(self.get_preexisting_baseline(test))
 
         if not self._submit:
@@ -589,6 +615,10 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
     ###############################################################################
     def generate_baselines(self, test, commit):
     ###############################################################################
+
+        expect (self._test_uses_baselines[test],
+            "Something is off. generate_baseline should have not be called for test {}".format(test))
+
         test_dir = self.get_test_dir(self._baseline_dir, test)
 
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test])
@@ -681,6 +711,9 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         test_dir = self.get_test_dir(self._work_dir,test)
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test], for_ctest=True)
         ctest_config = self.generate_ctest_config(cmake_config, [], test)
+
+        if self._config_only:
+            ctest_config += "-DCONFIG_ONLY=TRUE"
 
         if self._quick_rerun and (test_dir/"CMakeCache.txt").is_file():
             # Do not purge bld dir, and do not rerun config step.

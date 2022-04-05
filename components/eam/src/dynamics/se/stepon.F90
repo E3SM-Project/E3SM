@@ -429,8 +429,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    ! we will output dycore variables here to ensure they are always at the same
    ! time as what the physics is writing.  
    ! in single_column mode, dycore is not fully initialized so dont use
-   ! outfld() on dycore decompositions
-   if (.not. single_column) then 
+   ! outfld() on dycore decompositions, but allow it for doubly periodic CRM
+   if (.not. single_column .or. dp_crm) then
    if (hist_fld_active('VOR')) then
       call compute_zeta_C0(tmp_dyn,dyn_in%elem,par,tl_f)
       do ie=1,nelemd
@@ -645,7 +645,7 @@ end subroutine stepon_run3
 subroutine stepon_final(dyn_in, dyn_out)
   use dyn_grid,         only: fv_physgrid_final, fv_nphys
   use cam_logfile, only: iulog
-  use prim_driver_base,only: prim_finalize
+  use prim_driver_mod,only: prim_finalize
 ! !PARAMETERS:
   ! WARNING: intent(out) here means that pointers in dyn_in and dyn_out
   ! are nullified. Unless this memory is released in some other routine,

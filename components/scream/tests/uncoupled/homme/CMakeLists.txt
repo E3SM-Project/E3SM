@@ -26,7 +26,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_standalone_output.yaml
 # Set homme's test options, so that we can configure the namelist correctly
 
 # Discretization/algorithm settings
-set (HOMME_TEST_NE 4)
+set (HOMME_TEST_NE 2)
 set (HOMME_TEST_LIM 9)
 set (HOMME_TEST_REMAP_FACTOR 3)
 set (HOMME_TEST_TRACERS_FACTOR 1)
@@ -46,19 +46,19 @@ set (HOMME_TEST_NUTOP 2.5e5)
 
 # Testcase settings
 set (HOMME_TEST_MOISTURE notdry)
-set (HOMME_THETA_HY_MODE true)
+set (HOMME_THETA_HY_MODE .true.)
 
 # Vert coord settings
 set (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)
 set (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
 
 # Configure the namelist into the test directory
-configure_file(${SCREAM_SOURCE_DIR}/src/dynamics/homme/tests/theta.nl
+configure_file(${SCREAM_BASE_DIR}/src/dynamics/homme/tests/theta.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
 # Copy initial conditions files
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_standalone_ne4np4.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/homme_standalone_ne4np4.nc COPYONLY)
+GetInputFile(init/homme_physics_ne2np4.nc
+  ${CMAKE_CURRENT_BINARY_DIR}/homme_physics_ne2np4.nc)
 
 # Create vcoord directory
 file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vcoord)

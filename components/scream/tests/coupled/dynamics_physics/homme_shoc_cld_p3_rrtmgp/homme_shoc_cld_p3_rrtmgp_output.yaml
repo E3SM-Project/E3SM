@@ -36,7 +36,6 @@ Fields:
       - SW_flux_up
       - SW_flux_dn
       - SW_flux_dn_dir
-      - phi_int
       - ps
       - omega
       - p_int

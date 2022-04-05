@@ -213,6 +213,9 @@ void scream_finalize (/* args ? */) {
 
     // Clean up the context
     scream::ScreamContext::singleton().clean_up();
+
+    // Finalize scream session
+    scream::finalize_scream_session();
   });
 }
 

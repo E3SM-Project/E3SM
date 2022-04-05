@@ -181,8 +181,8 @@ void DynamicsDrivenGridsManager::build_dynamics_grid () {
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
       const Int i = team.league_rank();
 
-      EKAT_KERNEL_ASSERT_MSG(!isnan(lat(i)), "Error! NaN values detected for latitude.");
-      EKAT_KERNEL_ASSERT_MSG(!isnan(lon(i)), "Error! NaN values detected for longitude.");
+      EKAT_KERNEL_ASSERT_MSG(!ekat::impl::is_nan(lat(i)), "Error! NaN values detected for latitude.");
+      EKAT_KERNEL_ASSERT_MSG(!ekat::impl::is_nan(lon(i)), "Error! NaN values detected for longitude.");
     });
 #endif
 
@@ -238,9 +238,9 @@ build_physics_grid (const std::string& name) {
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
       const Int i = team.league_rank();
 
-      EKAT_KERNEL_ASSERT_MSG(!isnan(lat(i)),                   "Error! NaN values detected for latitude.");
-      EKAT_KERNEL_ASSERT_MSG(!isnan(lon(i)),                   "Error! NaN values detected for longitude.");
-      EKAT_KERNEL_ASSERT_MSG(area(i) >  0  && !isnan(area(i)), "Error! Non-positve or NaN values detected for area.");
+      EKAT_KERNEL_ASSERT_MSG(!ekat::impl::is_nan(lat(i)),                   "Error! NaN values detected for latitude.");
+      EKAT_KERNEL_ASSERT_MSG(!ekat::impl::is_nan(lon(i)),                   "Error! NaN values detected for longitude.");
+      EKAT_KERNEL_ASSERT_MSG(area(i) >  0  && !ekat::impl::is_nan(area(i)), "Error! Non-positve or NaN values detected for area.");
     });
 #endif
 

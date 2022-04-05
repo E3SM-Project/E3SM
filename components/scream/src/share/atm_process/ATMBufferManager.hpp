@@ -25,17 +25,17 @@ struct ATMBufferManager {
   // needed for local variables. Since no two process runs at
   // the same time, the total allocation will be the maximum
   // of each request.
-  void request_bytes (const int num_bytes) {
+  void request_bytes (const size_t num_bytes) {
     ekat::error::runtime_check(num_bytes%sizeof(Real)==0,
                                "Error! Must request number of bytes which is divisible by sizeof(Real).\n");
 
-    const int num_reals = num_bytes/sizeof(Real);
+    const size_t num_reals = num_bytes/sizeof(Real);
     m_size = std::max(num_reals, m_size);
   }
 
   Real* get_memory () const { return m_buffer.data(); }
 
-  int allocated_bytes () const { return m_size*sizeof(Real); }
+  size_t allocated_bytes () const { return m_size*sizeof(Real); }
 
   void allocate () {
     ekat::error::runtime_check(!m_allocated, "Error! Cannot call 'allocate' more than once.\n");
@@ -49,7 +49,7 @@ struct ATMBufferManager {
 protected:
 
   view_1d<Real> m_buffer;
-  int           m_size;
+  size_t        m_size;
   bool          m_allocated;
 };
 

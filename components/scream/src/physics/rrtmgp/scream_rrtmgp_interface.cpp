@@ -133,26 +133,110 @@ namespace scream {
             });
         }
 
+
+        void compute_broadband_surface_fluxes(
+                const int ncol, const int ktop, const int nswbands,
+                real3d &sw_bnd_flux_dir , real3d &sw_bnd_flux_dif ,
+                real1d &sfc_flux_dir_vis, real1d &sfc_flux_dir_nir,
+                real1d &sfc_flux_dif_vis, real1d &sfc_flux_dif_nir) {
+            // Band 10 straddles the near-IR and visible, so divide contributions from band 10 between both broadband sums
+            // TODO: Hard-coding these band indices is really bad practice. If the bands ever were to change (like when
+            // the RRTMG bands were re-ordered for RRTMGP), we would be using the wrong bands for the IR and UV/VIS. This
+            // should be refactored to grab the correct bands by specifying appropriate wavenumber rather than index.
+            //sfc_flux_dir_nir(i) = sum(sw_bnd_flux_dir(i+1,kbot,1:9))   + 0.5 * sw_bnd_flux_dir(i+1,kbot,10);
+            //sfc_flux_dir_vis(i) = sum(sw_bnd_flux_dir(i+1,kbot,11:14)) + 0.5 * sw_bnd_flux_dir(i+1,kbot,10);
+            //sfc_flux_dif_nir(i) = sum(sw_bnd_flux_dif(i+1,kbot,1:9))   + 0.5 * sw_bnd_flux_dif(i+1,kbot,10);
+            //sfc_flux_dif_vis(i) = sum(sw_bnd_flux_dif(i+1,kbot,11:14)) + 0.5 * sw_bnd_flux_dif(i+1,kbot,10);
+
+            // Initialize sums over bands
+            memset(sfc_flux_dir_nir, 0);
+            memset(sfc_flux_dir_vis, 0);
+            memset(sfc_flux_dif_nir, 0);
+            memset(sfc_flux_dif_vis, 0);
+ 
+            // Threshold between visible and infrared is 0.7 micron, or 14286 cm^-1.
+            const real visible_wavenumber_threshold = 14286;
+            auto wavenumber_limits = k_dist_sw.get_band_lims_wavenumber();
+            parallel_for(Bounds<2>(nswbands, ncol), YAKL_DEVICE_LAMBDA(const int ibnd, const int icol) {
+
+                // Wavenumber is in the visible if it is above the visible wavenumber
+                // threshold, and in the infrared if it is below the threshold
+                const bool is_visible_wave1 = (wavenumber_limits(1, ibnd) > visible_wavenumber_threshold ? true : false);
+                const bool is_visible_wave2 = (wavenumber_limits(2, ibnd) > visible_wavenumber_threshold ? true : false);
+
+                if (is_visible_wave1 && is_visible_wave2) {
+
+                    // Entire band is in the visible
+                    yakl::atomicAdd(sfc_flux_dir_vis(icol), sw_bnd_flux_dir(icol,ktop,ibnd));
+                    yakl::atomicAdd(sfc_flux_dif_vis(icol), sw_bnd_flux_dif(icol,ktop,ibnd));
+
+                } else if (!is_visible_wave1 && !is_visible_wave2) {
+
+                    // Entire band is in the longwave (near-infrared)
+                    yakl::atomicAdd(sfc_flux_dir_nir(icol), sw_bnd_flux_dir(icol,ktop,ibnd));
+                    yakl::atomicAdd(sfc_flux_dif_nir(icol), sw_bnd_flux_dif(icol,ktop,ibnd));
+
+                } else {
+
+                    // Band straddles the visible to near-infrared transition, so put half 
+                    // the flux in visible and half in near-infrared fluxes
+                    yakl::atomicAdd(sfc_flux_dir_vis(icol), 0.5 * sw_bnd_flux_dir(icol,ktop,ibnd));
+                    yakl::atomicAdd(sfc_flux_dif_vis(icol), 0.5 * sw_bnd_flux_dif(icol,ktop,ibnd));
+                    yakl::atomicAdd(sfc_flux_dir_nir(icol), 0.5 * sw_bnd_flux_dir(icol,ktop,ibnd));
+                    yakl::atomicAdd(sfc_flux_dif_nir(icol), 0.5 * sw_bnd_flux_dif(icol,ktop,ibnd));
+                }
+            });
+        }
+
+ 
         void rrtmgp_main(
                 const int ncol, const int nlay,
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
                 real2d &lwp, real2d &iwp, real2d &rel, real2d &rei,
+                real3d &aer_tau_sw, real3d &aer_ssa_sw, real3d &aer_asm_sw,
+                real3d &aer_tau_lw,
                 real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
                 real2d &lw_flux_up, real2d &lw_flux_dn,
-                const bool i_am_root) {
+                real3d &sw_bnd_flux_up, real3d &sw_bnd_flux_dn, real3d &sw_bnd_flux_dn_dir,
+                real3d &lw_bnd_flux_up, real3d &lw_bnd_flux_dn,
+                const Real tsi_scaling, const bool i_am_root) {
 
             // Setup pointers to RRTMGP SW fluxes
-            FluxesBroadband fluxes_sw;
+            FluxesByband fluxes_sw;
             fluxes_sw.flux_up = sw_flux_up;
             fluxes_sw.flux_dn = sw_flux_dn;
             fluxes_sw.flux_dn_dir = sw_flux_dn_dir;
+            fluxes_sw.bnd_flux_up = sw_bnd_flux_up;
+            fluxes_sw.bnd_flux_dn = sw_bnd_flux_dn;
+            fluxes_sw.bnd_flux_dn_dir = sw_bnd_flux_dn_dir;
 
             // Setup pointers to RRTMGP LW fluxes
-            FluxesBroadband fluxes_lw;
+            FluxesByband fluxes_lw;
             fluxes_lw.flux_up = lw_flux_up;
             fluxes_lw.flux_dn = lw_flux_dn;
+            fluxes_lw.bnd_flux_up = lw_bnd_flux_up;
+            fluxes_lw.bnd_flux_dn = lw_bnd_flux_dn;
+
+            auto nswbands = k_dist_sw.get_nband();
+            auto nlwbands = k_dist_lw.get_nband();
+
+            // Setup aerosol optical properties
+            OpticalProps2str aerosol_sw;
+            OpticalProps1scl aerosol_lw;
+            aerosol_sw.init(k_dist_sw.get_band_lims_wavenumber());
+            aerosol_sw.alloc_2str(ncol, nlay);
+            parallel_for(Bounds<3>(nswbands,nlay,ncol) , YAKL_LAMBDA (int ibnd, int ilay, int icol) {
+                aerosol_sw.tau(icol,ilay,ibnd) = aer_tau_sw(icol,ilay,ibnd);
+                aerosol_sw.ssa(icol,ilay,ibnd) = aer_ssa_sw(icol,ilay,ibnd);
+                aerosol_sw.g  (icol,ilay,ibnd) = aer_asm_sw(icol,ilay,ibnd);
+            });
+            aerosol_lw.init(k_dist_lw.get_band_lims_wavenumber());
+            aerosol_lw.alloc_1scl(ncol, nlay);
+            parallel_for(Bounds<3>(nlwbands,nlay,ncol) , YAKL_LAMBDA (int ibnd, int ilay, int icol) {
+                aerosol_lw.tau(icol,ilay,ibnd) = aer_tau_lw(icol,ilay,ibnd);
+            });
 
             // Convert cloud physical properties to optical properties for input to RRTMGP
             OpticalProps2str clouds_sw = get_cloud_optics_sw(ncol, nlay, cloud_optics_sw, k_dist_sw, p_lay, t_lay, lwp, iwp, rel, rei);
@@ -162,15 +246,15 @@ namespace scream {
             rrtmgp_sw(
                 ncol, nlay,
                 k_dist_sw, p_lay, t_lay, p_lev, t_lev, gas_concs, 
-                sfc_alb_dir, sfc_alb_dif, mu0, clouds_sw, fluxes_sw,
-                i_am_root
+                sfc_alb_dir, sfc_alb_dif, mu0, aerosol_sw, clouds_sw, fluxes_sw,
+                tsi_scaling, i_am_root
             );
 
             // Do longwave
             rrtmgp_lw(
                 ncol, nlay,
                 k_dist_lw, p_lay, t_lay, p_lev, t_lev, gas_concs,
-                clouds_lw, fluxes_lw
+                aerosol_lw, clouds_lw, fluxes_lw
             );
             
             // Calculate heating rates
@@ -235,23 +319,34 @@ namespace scream {
                 GasOpticsRRTMGP &k_dist,
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
-                real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, OpticalProps2str &clouds,
-                FluxesBroadband &fluxes,
-                const bool i_am_root) {
+                real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, 
+                OpticalProps2str &aerosol, OpticalProps2str &clouds,
+                FluxesByband &fluxes,
+                const Real tsi_scaling, const bool i_am_root) {
 
             // Get problem sizes
             int nbnd = k_dist.get_nband();
             int ngpt = k_dist.get_ngpt();
             int ngas = gas_concs.get_num_gases();
 
-            // Reset fluxes
+            // Associate local pointers for fluxes
             auto &flux_up = fluxes.flux_up;
             auto &flux_dn = fluxes.flux_dn;
             auto &flux_dn_dir = fluxes.flux_dn_dir;
+            auto &bnd_flux_up = fluxes.bnd_flux_up;
+            auto &bnd_flux_dn = fluxes.bnd_flux_dn;
+            auto &bnd_flux_dn_dir = fluxes.bnd_flux_dn_dir;
+
+            // Reset fluxes to zero
             parallel_for(Bounds<2>(nlay+1,ncol), YAKL_LAMBDA(int ilev, int icol) {
                 flux_up    (icol,ilev) = 0;
                 flux_dn    (icol,ilev) = 0;
                 flux_dn_dir(icol,ilev) = 0;
+            });
+            parallel_for(Bounds<3>(nbnd,nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilev, int icol) {
+                bnd_flux_up    (icol,ilev,ibnd) = 0;
+                bnd_flux_dn    (icol,ilev,ibnd) = 0;
+                bnd_flux_dn_dir(icol,ilev,ibnd) = 0;
             });
  
             // Get daytime indices
@@ -309,6 +404,16 @@ namespace scream {
                 gas_concs_day.set_vmr(gas_names(igas), vmr_day);
             }
 
+            // Subset aerosol optics
+            OpticalProps2str aerosol_day;
+            aerosol_day.init(k_dist.get_band_lims_wavenumber());
+            aerosol_day.alloc_2str(nday, nlay);
+            parallel_for(Bounds<3>(nbnd,nlay,nday), YAKL_LAMBDA(int ibnd, int ilay, int iday) {
+                aerosol_day.tau(iday,ilay,ibnd) = aerosol.tau(dayIndices(iday),ilay,ibnd);
+                aerosol_day.ssa(iday,ilay,ibnd) = aerosol.ssa(dayIndices(iday),ilay,ibnd);
+                aerosol_day.g  (iday,ilay,ibnd) = aerosol.g  (dayIndices(iday),ilay,ibnd);
+            });
+
             // Subset cloud optics
             OpticalProps2str clouds_day;
             clouds_day.init(k_dist.get_band_lims_wavenumber());
@@ -340,6 +445,15 @@ namespace scream {
 
             k_dist.gas_optics(nday, nlay, top_at_1, p_lay_day, p_lev_day, t_lay_day, gas_concs_day, optics, toa_flux);
 
+            // Apply tsi_scaling
+            parallel_for(Bounds<2>(ngpt,nday), YAKL_LAMBDA(int igpt, int iday) {
+                toa_flux(iday,igpt) = tsi_scaling * toa_flux(iday,igpt);
+            });
+
+            // Combine gas and aerosol optics
+            aerosol_day.delta_scale();
+            aerosol_day.increment(optics);
+
             // Combine gas and cloud optics
             clouds_day.delta_scale();
             clouds_day.increment(optics);
@@ -348,19 +462,30 @@ namespace scream {
             auto flux_up_day = real2d("flux_up_day", nday, nlay+1);
             auto flux_dn_day = real2d("flux_dn_day", nday, nlay+1);
             auto flux_dn_dir_day = real2d("flux_dn_dir_day", nday, nlay+1);
-            FluxesBroadband fluxes_day;
-            fluxes_day.flux_up     = flux_up_day; //real2d("flux_up"    , nday,nlay+1);
-            fluxes_day.flux_dn     = flux_dn_day; //real2d("flux_dn"    , nday,nlay+1);
-            fluxes_day.flux_dn_dir = flux_dn_dir_day; //real2d("flux_dn_dir", nday,nlay+1);
+            auto bnd_flux_up_day = real3d("bnd_flux_up_day", nday, nlay+1, nbnd);
+            auto bnd_flux_dn_day = real3d("bnd_flux_dn_day", nday, nlay+1, nbnd);
+            auto bnd_flux_dn_dir_day = real3d("bnd_flux_dn_dir_day", nday, nlay+1, nbnd);
+            FluxesByband fluxes_day;
+            fluxes_day.flux_up         = flux_up_day;
+            fluxes_day.flux_dn         = flux_dn_day;
+            fluxes_day.flux_dn_dir     = flux_dn_dir_day;
+            fluxes_day.bnd_flux_up     = bnd_flux_up_day;
+            fluxes_day.bnd_flux_dn     = bnd_flux_dn_day;
+            fluxes_day.bnd_flux_dn_dir = bnd_flux_dn_dir_day;
             rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
 
-           
             // Expand daytime fluxes to all columns
             parallel_for(Bounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
                 int icol = dayIndices(iday);
                 flux_up    (icol,ilev) = flux_up_day    (iday,ilev);
                 flux_dn    (icol,ilev) = flux_dn_day    (iday,ilev);
                 flux_dn_dir(icol,ilev) = flux_dn_dir_day(iday,ilev);
+            });
+            parallel_for(Bounds<3>(nbnd,nlay+1,nday), YAKL_LAMBDA(int ibnd, int ilev, int iday) {
+                int icol = dayIndices(iday);
+                bnd_flux_up    (icol,ilev,ibnd) = bnd_flux_up_day    (iday,ilev,ibnd);
+                bnd_flux_dn    (icol,ilev,ibnd) = bnd_flux_dn_day    (iday,ilev,ibnd);
+                bnd_flux_dn_dir(icol,ilev,ibnd) = bnd_flux_dn_dir_day(iday,ilev,ibnd);
             });
         }
 
@@ -369,8 +494,9 @@ namespace scream {
                 GasOpticsRRTMGP &k_dist,
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
+                OpticalProps1scl &aerosol,
                 OpticalProps1scl &clouds,
-                FluxesBroadband &fluxes) {
+                FluxesByband &fluxes) {
 
             // Problem size
             int nbnd = k_dist.get_nband();
@@ -395,6 +521,9 @@ namespace scream {
 
             // Do gas optics
             k_dist.gas_optics(ncol, nlay, top_at_1, p_lay, p_lev, t_lay, t_sfc, gas_concs, optics, lw_sources, real2d(), t_lev);
+
+            // Combine gas and aerosol optics
+            aerosol.increment(optics);
 
             // Combine gas and cloud optics
             clouds.increment(optics);
@@ -426,6 +555,7 @@ namespace scream {
             rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, optics, top_at_1, lw_sources, emis_sfc, fluxes);
 
         }
+
 
     }  // namespace rrtmgp
 }  // namespace scream

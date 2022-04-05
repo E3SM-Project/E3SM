@@ -1,6 +1,6 @@
 #include "physics/p3/atmosphere_microphysics.hpp"
-#include "share/field/field_property_checks/field_positivity_check.hpp"
-#include "share/field/field_property_checks/field_within_interval_check.hpp"
+// #include "share/property_checks/field_positivity_check.hpp"
+#include "share/property_checks/field_within_interval_check.hpp"
 // Needed for p3_init, the only F90 code still used.
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_f90.hpp"
@@ -86,6 +86,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
   add_field<Computed>("precip_liq_surf",    scalar2d_layout,     m/s,    grid_name);
+  add_field<Computed>("precip_ice_surf",    scalar2d_layout,     m/s,    grid_name);
   add_field<Computed>("eff_radius_qc",      scalar3d_layout_mid, micron, grid_name, ps);
   add_field<Computed>("eff_radius_qi",      scalar3d_layout_mid, micron, grid_name, ps);
 
@@ -97,13 +98,13 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 }
 
 // =========================================================================================
-int P3Microphysics::requested_buffer_size_in_bytes() const
+size_t P3Microphysics::requested_buffer_size_in_bytes() const
 {
   const Int nk_pack    = ekat::npack<Spack>(m_num_levs);
   const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
 
   // Number of Reals needed by local views in the interface
-  const int interface_request =
+  const size_t interface_request =
       // 1d view scalar, size (ncol)
       Buffer::num_1d_scalar*m_num_cols*sizeof(Real) +
       // 2d view packed, size (ncol, nlev_packs)
@@ -114,7 +115,7 @@ int P3Microphysics::requested_buffer_size_in_bytes() const
 
   // Number of Reals needed by the WorkspaceManager passed to p3_main
   const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
-  const int wsm_request   = WSM::get_total_bytes_needed(nk_pack, 52, policy);
+  const size_t wsm_request   = WSM::get_total_bytes_needed(nk_pack, 52, policy);
 
   return interface_request + wsm_request;
 }
@@ -125,10 +126,6 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(), "Error! Buffers size not sufficient.\n");
 
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
-
-  // 1d scalar views
-  m_buffer.precip_ice_surf = decltype(m_buffer.precip_ice_surf)(mem, m_num_cols);
-  mem += m_buffer.precip_ice_surf.size();
 
   // 2d scalar views
   m_buffer.col_location = decltype(m_buffer.col_location)(mem, m_num_cols, 3);
@@ -178,18 +175,7 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
 void P3Microphysics::initialize_impl (const RunType /* run_type */)
 {
   // Set property checks for fields in this process
-  // auto positivity_check = std::make_shared<FieldPositivityCheck<Real> >();
-  // get_field_out("qv").add_property_check(positivity_check);
-  // get_field_out("qc").add_property_check(positivity_check);
-  // get_field_out("qr").add_property_check(positivity_check);
-  // get_field_out("qi").add_property_check(positivity_check);
-  // get_field_out("qm").add_property_check(positivity_check);
-  // get_field_out("nc").add_property_check(positivity_check);
-  // get_field_out("nr").add_property_check(positivity_check);
-  // get_field_out("ni").add_property_check(positivity_check);
-  // get_field_out("bm").add_property_check(positivity_check);
-  auto T_interval_check = std::make_shared<FieldWithinIntervalCheck>(150, 500);
-  add_property_check<Updated>(get_field_out("T_mid").get_header().get_identifier(),T_interval_check);
+  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140, 500);
 
   // Initialize p3
   p3_init();
@@ -256,7 +242,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   diag_outputs.diag_eff_radius_qi = get_field_out("eff_radius_qi").get_view<Pack**>();
 
   diag_outputs.precip_liq_surf  = get_field_out("precip_liq_surf").get_view<Real*>();
-  diag_outputs.precip_ice_surf  = m_buffer.precip_ice_surf;
+  diag_outputs.precip_ice_surf  = get_field_out("precip_ice_surf").get_view<Real*>();
   diag_outputs.qv2qi_depos_tend = m_buffer.qv2qi_depos_tend;
   diag_outputs.rho_qi           = m_buffer.rho_qi;
   diag_outputs.precip_liq_flux  = m_buffer.precip_liq_flux;
@@ -280,6 +266,12 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
       prog_state.qv, prog_state.qc, prog_state.nc, prog_state.qr,prog_state.nr,
       prog_state.qi, prog_state.qm, prog_state.ni,prog_state.bm,qv_prev,
       diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi);
+
+  // Load tables
+  P3F::init_kokkos_ice_lookup_tables(lookup_tables.ice_table_vals, lookup_tables.collect_table_vals);
+  P3F::init_kokkos_tables(lookup_tables.vn_table_vals, lookup_tables.vm_table_vals,
+                          lookup_tables.revap_table_vals, lookup_tables.mu_r_table_vals,
+                          lookup_tables.dnu_table_vals);
 
   // Setup WSM for internal local variables
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);

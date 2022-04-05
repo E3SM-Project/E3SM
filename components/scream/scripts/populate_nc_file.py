@@ -2,6 +2,8 @@ from utils import expect, run_cmd_no_fail
 
 from netCDF4 import Dataset
 from nco import Nco
+from nco.custom import Atted
+import numpy as np
 
 import re, pathlib
 
@@ -12,10 +14,12 @@ class PopulateNcFile(object):
     ###########################################################################
     def __init__(self,nc_file,import_file=None,map_file=None,overwrite=False,
                  add_dimensions=None,add_variables=None,import_variables=None,
-                 compute_variables=None,remove_variables=None,vector_variables=None):
+                 compute_variables=None,remove_variables=None,slice_variables=None,
+                 vector_variables=None, prune_history=False):
     ###########################################################################
 
         self._overwrite = overwrite
+        self._prun_hist = prune_history
 
         self._ofile = pathlib.Path(nc_file).resolve().absolute()
         self._ifile = pathlib.Path(import_file).resolve().absolute()
@@ -27,6 +31,7 @@ class PopulateNcFile(object):
         self._ivars     = import_variables
         self._cvars     = compute_variables
         self._rvars     = remove_variables
+        self._svars     = slice_variables
         self._vvars     = vector_variables
 
         expect (self._ofile.exists(), "Error! File '{}' does not exist.".format(self._ofile))
@@ -392,6 +397,69 @@ class PopulateNcFile(object):
             Nco().ncks(str(self._ofile),output=str(self._ofile),exclude=True,force=True,variable=",".join(self._rvars))
 
     ###########################################################################
+    def slice_variables(self):
+    ###########################################################################
+
+        ds = self.get_database(self._ofile,'a')
+        for item in self._svars:
+            # Syntax: new_var=old_var(dim_name=N) to extract N-th slice along dim $dim_name
+            tokens = item.split('=')
+
+            expect (len(tokens)==3,
+                    "Invalid variable declaration: {}\n"
+                    "       Syntax: new_var=old_var(dim_name=slice_idx).".format(item))
+
+            # First token is 'new_var'
+            new_var_name = tokens[0]
+            expect (not new_var_name in ds.variables.keys(),
+                    "Variable '{0}' already exists in the database.\n"
+                    "       Please, remove it first, using '-rvars {0}'".format(new_var_name))
+
+            # Second token is 'old_var(dim_name'
+            expect(len(tokens[1].split('('))==2,
+                  "Invalid variable declaration: {}\n"
+                  "       Syntax: new_var=old_var(dim_name=slice_idx).".format(item))
+
+            old_var_name = tokens[1].split('(')[0]
+            dim_name     = tokens[1].split('(')[1]
+            expect (old_var_name in ds.variables,
+                    "RHS variable '{}' not found in the database.".format(old_var_name))
+
+            old_var = ds.variables[old_var_name];
+            expect (dim_name in old_var.dimensions,
+                    "RHS variable '{0}' does not have dimension '{1}'\n"
+                    "       {0} layout: {2}".format(old_var_name,dim_name,old_var.dimensions))
+            
+            # Third token is 'slice_idx)'
+            expect(tokens[2][-1]==')',
+                   "Invalid variable declaration: {}\n"
+                   "       Syntax: new_var=old_var(dim_name=slice_idx).".format(item))
+
+            # Check input slice idx
+            try:
+                slice_idx = int(tokens[2][:-1])
+            except ValueError:
+                print("ERROR! Invalid variable declaration: {}\n"
+                      "       Syntax: new_var=old_var(dim_name=slice_idx).".format(item))
+                raise
+
+            expect (slice_idx>=0 and slice_idx<ds.dimensions[dim_name].size,
+                    "Slice index for dim {} out of bounds.\n"
+                    "     - slice index: {}\n"
+                    "     - dimension size: {}".format(dim_name,slice_idx,ds.dimensions[dim_name].size))
+
+            new_dims = list(old_var.dimensions)
+            dim_idx = new_dims.index(dim_name)
+            new_dims.remove(dim_name)
+
+            new_var = ds.createVariable(new_var_name,"f8",new_dims)
+            new_var[:] = old_var[:].take(slice_idx,axis=dim_idx)
+
+        ds.sync()
+        ds.close()
+
+
+    ###########################################################################
     def vector_variables(self):
     ###########################################################################
 
@@ -483,7 +551,18 @@ class PopulateNcFile(object):
         # Compute variables from math expressions (possibly involving other stored vars)
         self.compute_variables()
 
+        # Extract slices from existing variables
+        self.slice_variables()
+
         # Remove variables
         self.remove_variables()
+
+        if self._prun_hist:
+            opt = [
+                    Atted(mode='delete',att_name='history',var_name='global'),
+                    "-h"
+            ]
+
+            Nco().ncatted(input=str(self._ofile),output=str(self._ofile),options=opt,use_shell=True)
 
         return True
