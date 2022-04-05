@@ -685,12 +685,12 @@ TEST_CASE ("do_initial_export")
     // Perform export with init_phase=true
     exporter.do_export(true);
 
-    // Check that only f1 was exported
+    // Check f1 was exported, but f2 was set to 0
     f1_exp.sync_to_host();
     f2_exp.sync_to_host();
     for (int icol=0; icol<ncols; ++icol) {
       REQUIRE (raw_data[0 + icol*num_fields] == f1_exp_h(icol));
-      REQUIRE (raw_data[1 + icol*num_fields] == -1);
+      REQUIRE (raw_data[1 + icol*num_fields] == 0.0);
     }
 
     // Set all raw_data back to -1
