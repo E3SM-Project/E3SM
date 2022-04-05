@@ -139,8 +139,9 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     ! Set Homme Output to ${diro}/${logfile}.dyn
-    dyn_log_fname = "homme_"//trim(diro)//"/"//trim(logfile)
-    open (unit=homme_iulog,file=trim(dyn_log_fname))
+    dyn_log_fname = trim(diro)//"/homme_"//trim(logfile)
+    open (unit=homme_iulog,file=trim(dyn_log_fname),status='REPLACE', &
+          action='WRITE', access='SEQUENTIAL')
 
     ! Init the AD
     call seq_timemgr_EClockGetData(EClock, start_ymd=start_ymd, start_tod=start_tod)
