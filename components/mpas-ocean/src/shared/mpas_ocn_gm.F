@@ -544,14 +544,14 @@ contains
          ! spatially variable baroclinic phase speed, the mode can be specified by
          ! config_GM_spatially_variable_baroclinic_mode
          if (local_config_GM_lat_variable_c2) then
-            lt1 = 0.0_RKIND
-            lt2 = 0.0_RKIND
             !$omp parallel
             !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, lt1, lt2, ltSum, c_min)
             do iEdge = 1, nEdges
                cell1 = cellsOnEdge(1, iEdge)
                cell2 = cellsOnEdge(2, iEdge)
                sumN2 = 0.0_RKIND
+               lt1 = 0.0_RKIND
+               lt2 = 0.0_RKIND
                ltSum = epsGM
                do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)-1
 
