@@ -7,6 +7,7 @@ set(O1MODELSRC
 
 set(O0MODELSRC
   ../driver-mct/main/component_mod.F90
+  ../driver-mct/main/cime_comp_mod.F90
 )
 
 if (NOT DEBUG)
