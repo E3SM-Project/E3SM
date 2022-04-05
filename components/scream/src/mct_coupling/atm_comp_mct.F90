@@ -139,7 +139,7 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     ! Set Homme Output to ${diro}/${logfile}.dyn
-    dyn_log_fname = trim(diro)//"/"//trim(logfile)//".dyn"
+    dyn_log_fname = "homme_"//trim(diro)//"/"//trim(logfile)
     open (unit=homme_iulog,file=trim(dyn_log_fname))
 
     ! Init the AD
