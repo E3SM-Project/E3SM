@@ -1769,7 +1769,10 @@ contains
       if (landIcePressureOn) then
 #ifdef MPAS_OPENACC
          !$acc parallel loop &
-         !$acc    present(surfacePressure, landIcePressure)
+         !$acc    present(surfacePressure)
+         !! need this eventually, but there is currently
+         !! an issue, probably with the re-retrieval of pointer
+         !!acc    present(surfacePressure, landIcePressure)
 #else
          !$omp do schedule(runtime)
 #endif
