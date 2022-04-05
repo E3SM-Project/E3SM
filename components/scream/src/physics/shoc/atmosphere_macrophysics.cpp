@@ -69,7 +69,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Required>("pref_mid",         pref_mid_layout,      Pa,   grid_name, ps);
   add_field<Required>("omega",            scalar3d_layout_mid,  Pa/s, grid_name, ps);
   add_field<Required>("surf_sens_flux",   scalar2d_layout_col,  W/m2, grid_name);
-  add_field<Required>("surf_latent_flux", scalar2d_layout_col,  W/m2, grid_name);
+  add_field<Required>("surf_latent_flux", scalar2d_layout_col,kg/m2/s, grid_name);
   add_field<Required>("surf_mom_flux",    surf_mom_flux_layout, N/m2, grid_name);
 
   add_field<Updated> ("T_mid",            scalar3d_layout_mid, K,       grid_name, ps);

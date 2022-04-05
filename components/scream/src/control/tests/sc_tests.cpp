@@ -258,7 +258,7 @@ TEST_CASE ("recreate_mct_coupling")
 
   // Create import fields
   const auto nondim = Units::nondimensional();
-  FID surf_latent_flux_id ("surf_latent_flux",   scalar2d_layout, W/(m*m), grid_name);
+  FID surf_latent_flux_id ("surf_latent_flux",   scalar2d_layout, kg/(m*m*s), grid_name);
   FID surf_sens_flux_id   ("surf_sens_flux",     scalar2d_layout, W/(m*m), grid_name);
   FID surf_mom_flux_id    ("surf_mom_flux",      vector2d_layout, W/(m*m), grid_name);
   FID sfc_alb_dir_vis_id  ("sfc_alb_dir_vis",    scalar2d_layout, nondim,  grid_name);
