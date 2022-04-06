@@ -174,7 +174,8 @@
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="WCAtl12to45E2r4">600.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="SOwISC12to60E2r4">600.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="ECwISC30to60E2r1">600.0</config_GM_constant_kappa>
-<config_GM_constant_gravWaveSpeed>0.3</config_GM_constant_gravWaveSpeed>
+<config_GM_constant_bclModeSpeed>0.3</config_GM_constant_bclModeSpeed>
+<config_GM_minBclModeSpeed_method>'constant'</config_GM_minBclModeSpeed_method>
 <config_GM_spatially_variable_min_kappa>300.0</config_GM_spatially_variable_min_kappa>
 <config_GM_spatially_variable_max_kappa>1800.0</config_GM_spatially_variable_max_kappa>
 <config_GM_spatially_variable_baroclinic_mode>3.0</config_GM_spatially_variable_baroclinic_mode>

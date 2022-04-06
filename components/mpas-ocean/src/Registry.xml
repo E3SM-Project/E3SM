@@ -357,9 +357,13 @@
 		<nml_option name="config_GM_constant_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Only used when config_GM_closure is set to constant."
 		/>
-		<nml_option name="config_GM_constant_gravWaveSpeed" type="real" default_value="0.3" units="m/s"
-					description="Gravity wave speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004)."
+		<nml_option name="config_GM_constant_bclModeSpeed" type="real" default_value="0.3" units="m/s"
+					description="The parameter setting for the first baroclinic mode speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004)."
 					possible_values="Positive real numbers"
+		/>
+		<nml_option name="config_GM_minBclModeSpeed_method" type="character" default_value="constant" units="NA"
+					description="Determines how the GM setting for the minimum of the first baroclinic mode speed is computed. If 'constant' then use config_GM_constant_bclModeSpeed. If 'computed' then compute at every edge at every time step using the Brunt-Vaisala frequency"
+					possible_values="'constant' and 'computed'"
 		/>
 		<nml_option name="config_GM_spatially_variable_min_kappa" type="real" default_value="300.0" units="m^2 s^{-1}"
 					description="minimum value of bolus diffusivity for spatially variable GM schemes. Used for all choices of config_GM_closure other than 'constant'."
