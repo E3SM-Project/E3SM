@@ -12,20 +12,19 @@ namespace scream
 AtmosphereProcess::AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
   : m_comm  (comm)
   , m_params(params)
-{}
+{
+  if (m_params.isParameter("Number of Subcycles")) {
+    m_num_subcycles = m_params.get<int>("Number of Subcycles");
+  }
+  EKAT_REQUIRE_MSG (m_num_subcycles>0,
+      "Error! Invalid number of subcycles in param list " + m_params.name() + ".\n"
+      "  - Num subcycles: " + std::to_string(m_num_subcycles) + "\n");
+}
 
 void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type) {
   set_fields_and_groups_pointers();
   m_time_stamp = t0;
   initialize_impl(run_type);
-
-  if (m_params.isParameter("Number of Subcycles")) {
-    m_num_subcycles = m_params.get<int>("Number of Subcycles");
-  }
-  EKAT_REQUIRE_MSG (m_num_subcycles>0,
-      "Error! Invalid number of subcycles.\n"
-      "  - Atm proc name: " + this->name() + "\n"
-      "  - Num subcycles: " + std::to_string(m_num_subcycles) + "\n");
 }
 
 void AtmosphereProcess::run (const int dt) {
@@ -42,7 +41,7 @@ void AtmosphereProcess::run (const int dt) {
 
   // Let the derived class do the actual run
   auto dt_sub = dt / m_num_subcycles;
-  for (int isub=0; isub<m_num_subcycles; ++isub) {
+  for (m_subcycle_iter=0; m_subcycle_iter<m_num_subcycles; ++m_subcycle_iter) {
     run_impl(dt_sub);
   }
 
@@ -51,9 +50,11 @@ void AtmosphereProcess::run (const int dt) {
     run_postcondition_checks();
   }
 
-  // Update all output fields time stamps
   m_time_stamp += dt;
-  update_time_stamps ();
+  if (m_update_time_stamps) {
+    // Update all output fields time stamps
+    update_time_stamps ();
+  }
 }
 
 void AtmosphereProcess::finalize (/* what inputs? */) {
@@ -158,7 +159,7 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
   set_computed_group_impl(group);
 }
 
-void AtmosphereProcess::run_precondition_checks () const { 
+void AtmosphereProcess::run_precondition_checks () const {
   // Run all pre-condition property checks
   for (const auto& it : m_precondition_checks) {
     const auto& pc = it.second;
@@ -254,6 +255,10 @@ bool AtmosphereProcess::has_computed_group (const std::string& name, const std::
     }
   }
   return false;
+}
+
+void AtmosphereProcess::set_update_time_stamps (const bool do_update) {
+  m_update_time_stamps = do_update;
 }
 
 void AtmosphereProcess::update_time_stamps () {
