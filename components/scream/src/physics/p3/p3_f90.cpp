@@ -116,7 +116,7 @@ void p3_init () {
   static bool is_init = false;
   if (!is_init) {
     micro_p3_utils_init();
-    static const char* dir = "./data";
+    static const char* dir = SCREAM_DATA_DIR;
     Int info;
     p3_init_c(&dir, &info);
     EKAT_REQUIRE_MSG(info == 0, "p3_init_c returned info " << info);
