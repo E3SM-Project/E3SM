@@ -1,9 +1,10 @@
 #include "share/io/scorpio_output.hpp"
-#include "ekat/std_meta/ekat_std_utils.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include "share/util/scream_view_utils.hpp"
 
+#include "ekat/util/ekat_units.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
+#include "ekat/std_meta/ekat_std_utils.hpp"
 
 #include <numeric>
 #include <fstream>
@@ -107,6 +108,12 @@ void AtmosphereOutput::restart (const std::string& filename)
   AtmosphereInput hist_restart (res_params,m_io_grid,m_host_views_1d,m_layouts);
   hist_restart.read_variables();
   hist_restart.finalize();
+  for (auto& it : m_host_views_1d) {
+    const auto& name = it.first;
+    const auto& host = it.second;
+    const auto& dev  = m_dev_views_1d.at(name);
+    Kokkos::deep_copy(dev,host);
+  }
 }
 
 void AtmosphereOutput::init()
@@ -157,82 +164,85 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
     EKAT_REQUIRE_MSG (field.get_header().get_tracking().get_time_stamp().is_valid(),
         "Error! Output field '" + name + "' has not been initialized yet\n.");
 
-    // Make sure host data is up to date
-    field.sync_to_host();
-
     // Manually update the 'running-tally' views with data from the field,
     // by combining new data with current avg values.
     // NOTE: the running-tally is not a tally for Instant avg_type.
-    auto data = m_host_views_1d.at(name).data();
+    auto data = m_dev_views_1d.at(name).data();
+    KT::RangePolicy policy(0,layout.size());
+    const auto extents = layout.extents();
     switch (rank) {
       case 1:
       {
         auto new_view_1d = field.get_view<const Real*,Host>();
         auto avg_view_1d = view_Nd_host<1>(data,dims[0]);
 
-        for (int i=0; i<dims[0]; ++i) {
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
           combine(new_view_1d(i), avg_view_1d(i),nsteps_since_last_output);
-        }
+        });
         break;
       }
       case 2:
       {
-        auto new_view_2d = field.get_view<const Real**,Host>();
-        auto avg_view_2d = view_Nd_host<2>(data,dims[0],dims[1]);
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
-            combine(new_view_2d(i,j), avg_view_2d(i,j),nsteps_since_last_output);
-        }}
+        auto new_view_2d = field.get_view<const Real**,Device>();
+        auto avg_view_2d = view_Nd_dev<2>(data,dims[0],dims[1]);
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+          int i,j;
+          unflatten_idx(idx,extents,i,j);
+          combine(new_view_2d(i,j), avg_view_2d(i,j),nsteps_since_last_output);
+        });
         break;
       }
       case 3:
       {
-        auto new_view_3d = field.get_view<const Real***,Host>();
-        auto avg_view_3d = view_Nd_host<3>(data,dims[0],dims[1],dims[2]);
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
-            for (int k=0; k<dims[2]; ++k) {
-              combine(new_view_3d(i,j,k), avg_view_3d(i,j,k),nsteps_since_last_output);
-        }}}
+        auto new_view_3d = field.get_view<const Real***,Device>();
+        auto avg_view_3d = view_Nd_dev<3>(data,dims[0],dims[1],dims[2]);
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+          int i,j,k;
+          unflatten_idx(idx,extents,i,j,k);
+          combine(new_view_3d(i,j,k), avg_view_3d(i,j,k),nsteps_since_last_output);
+        });
         break;
       }
       case 4:
       {
-        auto new_view_4d = field.get_view<const Real****,Host>();
-        auto avg_view_4d = view_Nd_host<4>(data,dims[0],dims[1],dims[2],dims[3]);
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
-            for (int k=0; k<dims[2]; ++k) {
-              for (int l=0; l<dims[3]; ++l) {
-                combine(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),nsteps_since_last_output);
-        }}}}
+        auto new_view_4d = field.get_view<const Real****,Device>();
+        auto avg_view_4d = view_Nd_dev<4>(data,dims[0],dims[1],dims[2],dims[3]);
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+          int i,j,k,l;
+          unflatten_idx(idx,extents,i,j,k,l);
+          combine(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),nsteps_since_last_output);
+        });
         break;
       }
       case 5:
       {
-        auto new_view_5d = field.get_view<const Real*****,Host>();
-        auto avg_view_5d = view_Nd_host<5>(data,dims[0],dims[1],dims[2],dims[3],dims[4]);
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
-            for (int k=0; k<dims[2]; ++k) {
-              for (int l=0; l<dims[3]; ++l) {
-                for (int m=0; m<dims[4]; ++m) {
-                  combine(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),nsteps_since_last_output);
-        }}}}}
+        auto new_view_5d = field.get_view<const Real*****,Device>();
+        auto avg_view_5d = view_Nd_dev<5>(data,dims[0],dims[1],dims[2],dims[3],dims[4]);
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+          int i,j,k,l,m;
+          unflatten_idx(idx,extents,i,j,k,l,m);
+          combine(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),nsteps_since_last_output);
+        });
         break;
       }
       case 6:
       {
-        auto new_view_6d = field.get_view<const Real******,Host>();
-        auto avg_view_6d = view_Nd_host<6>(data,dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]);
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
-            for (int k=0; k<dims[2]; ++k) {
-              for (int l=0; l<dims[3]; ++l) {
-                for (int m=0; m<dims[4]; ++m) {
-                  for (int n=0; n<dims[5]; ++n) {
-                    combine(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n),nsteps_since_last_output);
-        }}}}}}
+        auto new_view_6d = field.get_view<const Real******,Device>();
+        auto avg_view_6d = view_Nd_dev<6>(data,dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]);
+        auto dim1 = dims[1];
+        auto dim2 = dims[2];
+        auto dim3 = dims[3];
+        auto dim4 = dims[4];
+        auto dim5 = dims[5];
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+          const int i = ((((idx / dim5) / dim4) / dim3) / dim2) / dim1;
+          const int j = ((((idx / dim5) / dim4) / dim3) / dim2) % dim1;
+          const int k =  (((idx / dim5) / dim4) / dim3) % dim2;
+          const int l =   ((idx / dim5) / dim4) % dim3;
+          const int m =    (idx / dim5) % dim4;
+          const int n =     idx % dim5;
+          combine(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n),nsteps_since_last_output);
+        });
         break;
       }
       default:
@@ -240,6 +250,8 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
     }
 
     if (is_write_step) {
+      // Bring data to host
+      Kokkos::deep_copy (m_host_views_1d.at(name),m_dev_views_1d.at(name));
       grid_write_data_array(filename,name,data);
     }
   }
@@ -328,8 +340,8 @@ void AtmosphereOutput::register_views()
     // to store running tallies for the average operation. However, we create them
     // also for Instant avg_type, for simplicity later on.
 
-    // If we have an 'Instant' avg type, we can alias the tmp views with the
-    // host view of the field, provided that the field does not have padding,
+    // If we have an 'Instant' avg type, we can alias the 1d views with the
+    // views of the field, provided that the field does not have padding,
     // and that it is not a subfield of another field (or else the view
     // would be strided).
     bool can_alias_field_view =
@@ -340,10 +352,12 @@ void AtmosphereOutput::register_views()
     const auto size = m_layouts.at(name).size();
     if (can_alias_field_view) {
       // Alias field's data, to save storage.
+      m_dev_views_1d.emplace(name,view_1d_dev(field.get_internal_view_data<Real,Device>(),size));
       m_host_views_1d.emplace(name,view_1d_host(field.get_internal_view_data<Real,Host>(),size));
     } else {
-      // Create a local host view.
-      m_host_views_1d.emplace(name,view_1d_host("",size));
+      // Create a local view.
+      m_dev_views_1d.emplace(name,view_1d_dev("",size));
+      m_host_views_1d.emplace(name,Kokkos::create_mirror(m_dev_views_1d[name]));
     }
   }
 }
