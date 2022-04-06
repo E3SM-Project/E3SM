@@ -1084,7 +1084,7 @@ end function bfb_expm1
 
    ! args
 
-   integer, intent(in) :: kts, kte, kbot, ktop, kdir, p3_max_mean_rain_size
+   integer, intent(in) :: kts, kte, kbot, ktop, kdir
 
    real(rtype), intent(in) :: p3_max_mean_rain_size
 
