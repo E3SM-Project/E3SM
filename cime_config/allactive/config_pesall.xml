@@ -1460,9 +1460,9 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4.*_l%r05_oi%EC.+">
-    <mach name="sandiatoss3|cori-knl|cori-haswell|theta|anvil|bebop">
-      <pes compset="any" pesize="any">
+  <grid name="a%ne30np4.pg2_l%r05_oi%EC30to60E2r2_r%null_g%null_w%null_z%null_m%EC30to60E2r2">
+    <mach name="anvil|bebop">
+      <pes compset="EAM." pesize="any">
         <comment>pelayout for tri-grid tests with EAM</comment>
         <ntasks>
           <ntasks_atm>-8</ntasks_atm>
