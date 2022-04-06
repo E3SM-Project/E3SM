@@ -110,12 +110,6 @@ configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72i.ascii
 configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72m.ascii
                ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
 
-# P3 data files
-GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1
-  ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_1.dat-v4.1.1)
-GetInputFile(tables/p3_lookup_table_2.dat-v4.1.1
-  ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_2.dat-v4.1.1)
-
 # RRTMGP data files
 set(RRTMGP_EXTERNAL_DIR ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external)
 GetInputFile(init/rrtmgp-data-sw-g224-2018-12-04.nc
