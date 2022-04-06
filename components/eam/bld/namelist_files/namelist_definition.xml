@@ -2297,7 +2297,7 @@ Maximal mean rain size in P3
 Default: 0.005_rtype
 </entry>
 
-<entry id="p3_embronic_rain_size" type="real" category="microphysics"
+<entry id="p3_embryonic_rain_size" type="real" category="microphysics"
 	group="micro_nl" valid_values="" >
 Embryonic rain size from autoconversion in P3
 Default: 0.000025_rtype
