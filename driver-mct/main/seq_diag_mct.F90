@@ -1834,11 +1834,13 @@ contains
 
        if (plev > 0) then
           ! ---- doprint ---- doprint ---- doprint ----
-
-          if (do_bgc_budg) then
-             call seq_diagBGC_preprint_mct()
-          endif
+  
           if (.not.sumdone) then
+
+             if (do_bgc_budg) then
+                call seq_diagBGC_preprint_mct()
+             endif
+
              call seq_diag_sum0_mct()
              dataGpr = budg_dataG
              sumdone = .true.
