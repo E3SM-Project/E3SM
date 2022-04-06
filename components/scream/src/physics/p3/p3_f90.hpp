@@ -61,7 +61,7 @@ private:
   void init(const FortranData::Ptr& d);
 };
 
-void p3_init();
+void p3_init(const bool write_tables = false);
 
 // Returns number of microseconds of p3_main execution
 Int p3_main(const FortranData& d, bool use_fortran=false);
