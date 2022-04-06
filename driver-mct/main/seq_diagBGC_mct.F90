@@ -145,11 +145,11 @@ module seq_diagBGC_mct
   ! !PUBLIC DATA MEMBERS
 
   !--- time-averaged (annual?) global budget diagnostics ---
-  !--- note: call sum0 then save budg_dataG and budg_ns on restart from/to root pe ---
-  real(r8),public :: budg_dataL(f_size,c_size,p_size) ! local sum, valid on all pes
-  real(r8),public :: budg_dataG(f_size,c_size,p_size) ! global sum, valid only on root pe
-  real(r8),public :: budg_ns   (f_size,c_size,p_size) ! counter, valid only on root pe
-  real(r8),public :: dataGpr   (f_size,c_size,p_size) ! values to print, scaled and such
+  !--- note: call sum0 then save budg_dataGBGC and budg_nsBGC on restart from/to root pe ---
+  real(r8),public :: budg_dataL   (f_size,c_size,p_size) ! local sum, valid on all pes
+  real(r8),public :: budg_dataGBGC(f_size,c_size,p_size) ! global sum, valid only on root pe
+  real(r8),public :: budg_nsBGC   (f_size,c_size,p_size) ! counter, valid only on root pe
+  real(r8),public :: dataGpr      (f_size,c_size,p_size) ! values to print, scaled and such
 
   character(len=*),parameter :: afldname  = 'aream'
   character(len=*),parameter :: latname   = 'lat'
@@ -249,23 +249,23 @@ contains
        do ip = 1,p_size
           if (ip == p_inst) then
              budg_dataL(:,:,ip) = 0.0_r8
-             budg_dataG(:,:,ip) = 0.0_r8
-             budg_ns(:,:,ip) = 0.0_r8
+             budg_dataGBGC(:,:,ip) = 0.0_r8
+             budg_nsBGC(:,:,ip) = 0.0_r8
           endif
           if (ip==p_day .and. sec==0) then
              budg_dataL(:,:,ip) = 0.0_r8
-             budg_dataG(:,:,ip) = 0.0_r8
-             budg_ns(:,:,ip) = 0.0_r8
+             budg_dataGBGC(:,:,ip) = 0.0_r8
+             budg_nsBGC(:,:,ip) = 0.0_r8
           endif
           if (ip==p_mon .and. day==1 .and. sec==0) then
              budg_dataL(:,:,ip) = 0.0_r8
-             budg_dataG(:,:,ip) = 0.0_r8
-             budg_ns(:,:,ip) = 0.0_r8
+             budg_dataGBGC(:,:,ip) = 0.0_r8
+             budg_nsBGC(:,:,ip) = 0.0_r8
           endif
           if (ip==p_ann .and. mon==1 .and. day==1 .and. sec==0) then
              budg_dataL(:,:,ip) = 0.0_r8
-             budg_dataG(:,:,ip) = 0.0_r8
-             budg_ns(:,:,ip) = 0.0_r8
+             budg_dataGBGC(:,:,ip) = 0.0_r8
+             budg_nsBGC(:,:,ip) = 0.0_r8
           endif
        enddo
     endif
@@ -273,28 +273,28 @@ contains
     if (present(mode)) then
        if (trim(mode) == 'inst') then
           budg_dataL(:,:,p_inst) = 0.0_r8
-          budg_dataG(:,:,p_inst) = 0.0_r8
-          budg_ns(:,:,p_inst) = 0.0_r8
+          budg_dataGBGC(:,:,p_inst) = 0.0_r8
+          budg_nsBGC(:,:,p_inst) = 0.0_r8
        elseif (trim(mode) == 'day') then
           budg_dataL(:,:,p_day) = 0.0_r8
-          budg_dataG(:,:,p_day) = 0.0_r8
-          budg_ns(:,:,p_day) = 0.0_r8
+          budg_dataGBGC(:,:,p_day) = 0.0_r8
+          budg_nsBGC(:,:,p_day) = 0.0_r8
        elseif (trim(mode) == 'mon') then
           budg_dataL(:,:,p_mon) = 0.0_r8
-          budg_dataG(:,:,p_mon) = 0.0_r8
-          budg_ns(:,:,p_mon) = 0.0_r8
+          budg_dataGBGC(:,:,p_mon) = 0.0_r8
+          budg_nsBGC(:,:,p_mon) = 0.0_r8
        elseif (trim(mode) == 'ann') then
           budg_dataL(:,:,p_ann) = 0.0_r8
-          budg_dataG(:,:,p_ann) = 0.0_r8
-          budg_ns(:,:,p_ann) = 0.0_r8
+          budg_dataGBGC(:,:,p_ann) = 0.0_r8
+          budg_nsBGC(:,:,p_ann) = 0.0_r8
        elseif (trim(mode) == 'inf') then
           budg_dataL(:,:,p_inf) = 0.0_r8
-          budg_dataG(:,:,p_inf) = 0.0_r8
-          budg_ns(:,:,p_inf) = 0.0_r8
+          budg_dataGBGC(:,:,p_inf) = 0.0_r8
+          budg_nsBGC(:,:,p_inf) = 0.0_r8
        elseif (trim(mode) == 'all') then
           budg_dataL(:,:,:) = 0.0_r8
-          budg_dataG(:,:,:) = 0.0_r8
-          budg_ns(:,:,:) = 0.0_r8
+          budg_dataGBGC(:,:,:) = 0.0_r8
+          budg_nsBGC(:,:,:) = 0.0_r8
        else
           call shr_sys_abort(subname//' ERROR in mode '//trim(mode))
        endif
@@ -333,7 +333,7 @@ contains
     do ip = p_inst+1,p_size
        budg_dataL(:,:,ip) = budg_dataL(:,:,ip) + budg_dataL(:,:,p_inst)
     enddo
-    budg_ns(:,:,:) = budg_ns(:,:,:) + 1.0_r8
+    budg_nsBGC(:,:,:) = budg_nsBGC(:,:,:) + 1.0_r8
 
   end subroutine seq_diagBGC_accum_mct
 
@@ -368,7 +368,7 @@ contains
     call seq_comm_setptrs(CPLID,mpicom=mpicom)
     budg_dataGtmp = 0.0_r8
     call shr_mpi_sum(budg_dataL,budg_dataGtmp,mpicom,subName)
-    budg_dataG = budg_dataG + budg_dataGtmp
+    budg_dataGBGC = budg_dataGBGC + budg_dataGtmp
     budg_dataL = 0.0_r8
 
   end subroutine seq_diagBGC_sum0_mct
@@ -1000,7 +1000,6 @@ contains
     !EOP
 
     !--- local ---
-    logical          :: sumdone     ! has a sum been computed yet
 
     !-------------------------------------------------------------------------------
 
@@ -1008,19 +1007,13 @@ contains
     ! prepare instantaneous budget data for printing
     !-------------------------------------------------------------------------------
 
-    sumdone = .false.
+    call seq_diagBGC_sum0_mct()
+    dataGpr = budg_dataGBGC
 
-    if (.not.sumdone) then
-      call seq_diagBGC_sum0_mct()
-      dataGpr = budg_dataG
-      sumdone = .true.
-
-      !  old budget normalizations (global area and 1e9 for carbon)
-      dataGpr = dataGpr/(4.0_r8*shr_const_pi)
-      dataGpr(f_c:f_c_end,:,:) = dataGpr(f_c:f_c_end,:,:) * 1.0e9_r8
-      dataGpr = dataGpr/budg_ns
-
-   endif
+    !  old budget normalizations (global area and 1e9 for carbon)
+    dataGpr = dataGpr/(4.0_r8*shr_const_pi)
+    dataGpr(f_c:f_c_end,:,:) = dataGpr(f_c:f_c_end,:,:) * 1.0e9_r8
+    dataGpr = dataGpr/budg_nsBGC
 
   end subroutine seq_diagBGC_preprint_mct
 
@@ -1043,8 +1036,8 @@ contains
     ! !INPUT/OUTPUT PARAMETERS:
 
     type(ESMF_Clock) , intent(in) :: EClock
-    integer          , intent(in) :: ip
-    integer          , intent(in) :: plev        ! print level
+    integer(in)      , intent(in) :: ip
+    integer(in)      , intent(in) :: plev        ! print level
 
     !EOP
 

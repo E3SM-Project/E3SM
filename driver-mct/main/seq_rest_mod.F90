@@ -33,7 +33,8 @@ module seq_rest_mod
   use component_type_mod
 
   ! diagnostic routines
-  use seq_diag_mct, only : budg_dataG, budg_ns
+  use seq_diag_mct,    only: budg_dataG, budg_ns
+  use seq_diagBGC_mct, only: budg_dataGBGC, budg_nsBGC
 
   ! Sets mpi communicators, logunit and loglevel
   use seq_comm_mct, only: seq_comm_getdata=>seq_comm_setptrs, seq_comm_setnthreads, &
@@ -44,9 +45,6 @@ module seq_rest_mod
 
   ! clock & alarm routines
   use seq_timemgr_mod, only: seq_timemgr_type, seq_timemgr_EClockGetData
-
-  ! diagnostic routines
-  use seq_diag_mct, only: budg_datag
 
   ! lower level io routines
   use seq_io_mod, only: seq_io_read, seq_io_write, seq_io_enddef
@@ -121,6 +119,8 @@ module seq_rest_mod
   logical     :: iac_prognostic         ! .true.  => iac comp expects input
 
   logical     :: ocn_c2_glcshelf        ! .true.  => ocn to glcshelf coupling on
+
+  logical     :: do_bgc_budgets         ! BGC budgets on
 
   !--- temporary pointers ---
   type(mct_gsMap), pointer :: gsmap
@@ -206,7 +206,8 @@ contains
          wav_prognostic=wav_prognostic,      &
          iac_prognostic=iac_prognostic,      &
          esp_prognostic=esp_prognostic,      &
-         ocn_c2_glcshelf=ocn_c2_glcshelf)
+         ocn_c2_glcshelf=ocn_c2_glcshelf,    &
+         do_bgc_budgets=do_bgc_budgets)
 
     if (iamin_CPLID) then
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -301,8 +302,27 @@ contains
           enddo
        enddo
        !     call shr_mpi_bcast(budg_dataG,cpl_io_root) ! not necessary, io lib does bcast
-
        deallocate(ds,ns)
+
+       if (do_bgc_budgets) then
+          n = size(budg_dataGBGC)
+          allocate(ds(n),ns(n))
+          call seq_io_read(rest_file, ds, 'budg_dataGBGC')
+          call seq_io_read(rest_file, ns, 'budg_nsBGC')
+
+          n = 0
+          do n1 = 1,size(budg_dataGBGC,dim=1)
+             do n2 = 1,size(budg_dataGBGC,dim=2)
+                do n3 = 1,size(budg_dataGBGC,dim=3)
+                   n = n + 1
+                   budg_dataGBGC(n1,n2,n3) = ds(n)
+                   budg_nsBGC   (n1,n2,n3) = ns(n)
+                enddo
+             enddo
+          enddo
+          !     call shr_mpi_bcast(budg_dataG,cpl_io_root) ! not necessary, io lib does bcast
+          deallocate(ds,ns)
+       endif
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
 
@@ -359,6 +379,8 @@ contains
 
     real(r8),allocatable :: ds(:)     ! for reshaping diag data for restart file
     real(r8),allocatable :: ns(:)     ! for reshaping diag data for restart file
+    real(r8),allocatable :: dsBGC(:)  ! for reshaping diag data for restart file
+    real(r8),allocatable :: nsBGC(:)  ! for reshaping diag data for restart file
     character(CL) :: model_doi_url
     character(len=*),parameter :: subname = "(seq_rest_write) "
 
@@ -399,6 +421,7 @@ contains
          esp_prognostic=esp_prognostic,      &
          iac_prognostic=iac_prognostic,      &
          ocn_c2_glcshelf=ocn_c2_glcshelf,    &
+         do_bgc_budgets=do_bgc_budgets,      &
          case_name=case_name,                &
          model_doi_url=model_doi_url)
 
@@ -431,6 +454,24 @@ contains
              enddo
           enddo
        enddo
+
+       ! copy budg_dataGBGC into 1d array if BGC budgets are on
+       if (do_bgc_budgets) then
+          n = size(budg_dataGBGC)
+          allocate(dsBGC(n),nsBGC(n))
+          call shr_mpi_bcast(budg_dataGBGC,mpicom_CPLID) ! pio requires data on all pe's?
+
+          n = 0
+          do n1 = 1,size(budg_dataGBGC,dim=1)
+             do n2 = 1,size(budg_dataGBGC,dim=2)
+                do n3 = 1,size(budg_dataGBGC,dim=3)
+                   n = n + 1
+                   dsBGC(n) = budg_dataGBGC(n1,n2,n3)
+                   nsBGC(n) = budg_nsBGC(n1,n2,n3)
+                enddo
+             enddo
+          enddo
+       endif
 
        if (cplroot) then
           iun = shr_file_getUnit()
@@ -480,6 +521,11 @@ contains
 
           call seq_io_write(rest_file,ds,'budg_dataG',whead=whead,wdata=wdata)
           call seq_io_write(rest_file,ns,'budg_ns',whead=whead,wdata=wdata)
+
+          if (do_bgc_budgets) then
+             call seq_io_write(rest_file,dsBGC,'budg_dataGBGC',whead=whead,wdata=wdata)
+             call seq_io_write(rest_file,nsBGC,'budg_nsBGC',whead=whead,wdata=wdata)
+          endif
 
           if (atm_present) then
              gsmap => component_get_gsmap_cx(atm(1))
@@ -582,6 +628,7 @@ contains
 
        call seq_io_close(rest_file)
        deallocate(ds,ns)
+       if (do_bgc_budgets) deallocate(dsBGC,nsBGC)
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
     endif
