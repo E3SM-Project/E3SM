@@ -39,7 +39,7 @@ SET(CMAKE_C_COMPILER "cc" CACHE STRING "")
 SET(CMAKE_Fortran_COMPILER "ftn" CACHE STRING "")
 SET(CMAKE_CXX_COMPILER "hipcc" CACHE STRING "")
 #SET(CMAKE_CXX_COMPILER "/ccs/home/onguba/kokkos/bin/nvcc_wrapper" CACHE STRING "")
-SET(E3SM_KOKKOS_PATH "/ccs/home/onguba/kokkos-example-spock-hipcc/bld-hipcc" CACHE STRING "")
+SET(E3SM_KOKKOS_PATH "/ccs/home/onguba/kokkos-example-spock-hipcc2/bld-hipcc" CACHE STRING "")
 
 #not the proper way!!!
 SET(MPICH_DIR "/opt/cray/pe/mpich/8.1.12/ofi/crayclang/10.0" CACHE STRING "")
