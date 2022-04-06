@@ -227,7 +227,8 @@ void HybridVCoord::compute_eta ()
   Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,NUM_LEV),
                        KOKKOS_LAMBDA(const int& ilev){
     l_etam(ilev) = l_hybrid_am(ilev) + l_hybrid_bm(ilev);
-    l_exner0(ilev) = pow(l_etam(ilev)*l_ps0/PhysicalConstants::p0,PhysicalConstants::kappa);
+    //l_exner0(ilev) = pow(l_etam(ilev)*l_ps0/PhysicalConstants::p0,PhysicalConstants::kappa);
+    l_exner0(ilev) = 1.0;
   });
   Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,NUM_INTERFACE_LEV),
                        KOKKOS_LAMBDA(const int& ilev){

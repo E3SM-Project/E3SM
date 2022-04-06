@@ -413,7 +413,9 @@ public:
     ExecSpace::impl_static_fence();
     m_kernel_will_run_limiters = true;
     Kokkos::parallel_for(
-      Homme::get_default_team_policy<ExecSpace, AALTracerPhase>(
+      //to play with launch bounds
+      //Homme::get_default_team_policy<ExecSpace, AALTracerPhase, Kokkos::LaunchBounds<128,1> >(
+      Homme::get_default_team_policy<ExecSpace, AALTracerPhase >(
         m_geometry.num_elems() * m_data.qsize, m_tpref),
       *this);
     ExecSpace::impl_static_fence();
