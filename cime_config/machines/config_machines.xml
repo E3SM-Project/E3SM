@@ -1181,41 +1181,41 @@
       </arguments>
     </mpirun>
     <module_system type="module">
-      <init_path lang="python">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.3.0/lmod-7.7.29-zg24dcc/lmod/lmod/init/env_modules_python.py</init_path>
-      <init_path lang="perl">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.3.0/lmod-7.7.29-zg24dcc/lmod/lmod/init/perl</init_path>
-      <init_path lang="bash">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.3.0/lmod-7.7.29-zg24dcc/lmod/lmod/init/bash</init_path>
-      <init_path lang="sh">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.3.0/lmod-7.7.29-zg24dcc/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.3.0/lmod-7.7.29-zg24dcc/lmod/lmod/init/csh</init_path>
-      <cmd_path lang="python">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.3.0/lmod-7.7.29-zg24dcc/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="python">/nfs/gce/software/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/lmod-8.3-6fjdtku/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="perl">/nfs/gce/software/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/lmod-8.3-6fjdtku/lmod/lmod/init/perl</init_path>
+      <init_path lang="bash">/nfs/gce/software/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/lmod-8.3-6fjdtku/lmod/lmod/init/bash</init_path>
+      <init_path lang="sh">/nfs/gce/software/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/lmod-8.3-6fjdtku/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/nfs/gce/software/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/lmod-8.3-6fjdtku/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="python">/nfs/gce/software/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/lmod-8.3-6fjdtku/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="perl">module</cmd_path>
       <cmd_path lang="bash">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">autoconf/2.69-tz6eue5</command>
-        <command name="load">automake/1.16.3-fm5m6qc</command>
-        <command name="load">libtool/2.4.6-jdxbjft</command>
-        <command name="load">m4/1.4.19-wq3bm42</command>
-        <command name="load">cmake/3.20.5-yjp2hz6</command>
-        <command name="load">gcc/11.1.0-5ikoznk</command>
-        <command name="load">zlib/1.2.11-smoyzzo</command>
+        <command name="load">autoconf/2.69-bmnwajj</command>
+        <command name="load">automake/1.16.3-r7w24o4</command>
+        <command name="load">libtool/2.4.6-uh3mpsu</command>
+        <command name="load">m4/1.4.19-7fztfyz</command>
+        <command name="load">cmake/3.20.5-zyz2eld</command>
+        <command name="load">gcc/11.1.0-qsjmpcg</command>
+        <command name="load">zlib/1.2.11-p7dmb5p</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables mpilib="mpi-serial">
       <!-- We currently don't have modules for serial NetCDF -->
-      <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-11.1.0</env>
+      <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-serial/gcc-11.1.0</env>
     </environment_variables>
     <environment_variables mpilib="mpich">
       <!-- We currently don't have modules for HDF5, NetCDF & PnetCDF -->
-      <env name="LD_LIBRARY_PATH">/nfs/gce/projects/climate/software/mpich/3.4.2/gcc-11.1.0/lib:$ENV{LD_LIBRARY_PATH}</env>
-      <env name="PATH">/nfs/gce/projects/climate/software/mpich/3.4.2/gcc-11.1.0/bin:$ENV{PATH}</env>
-      <env name="ZLIB_PATH">/nfs/gce/software/spack/opt/spack/linux-ubuntu18.04-x86_64/gcc-7.5.0/zlib-1.2.11-smoyzzo</env>
-      <env name="HDF5_PATH">/nfs/gce/projects/climate/software/hdf5/1.12.1/mpich-3.4.2/gcc-11.1.0</env>
-      <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/netcdf/4.8.0c-4.3.1cxx-4.5.3f-parallel/mpich-3.4.2/gcc-11.1.0</env>
-      <env name="PNETCDF_PATH">/nfs/gce/projects/climate/software/pnetcdf/1.12.2/mpich-3.4.2/gcc-11.1.0</env>
+      <env name="LD_LIBRARY_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/mpich/4.0/gcc-11.1.0/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/mpich/4.0/gcc-11.1.0/bin:$ENV{PATH}</env>
+      <env name="ZLIB_PATH">/nfs/gce/software/spack/opt/spack/linux-ubuntu20.04-x86_64/gcc-9.3.0/zlib-1.2.11-p7dmb5p</env>
+      <env name="HDF5_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/hdf5/1.12.1/mpich-4.0/gcc-11.1.0</env>
+      <env name="NETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/netcdf/4.8.0c-4.3.1cxx-4.5.3f-parallel/mpich-4.0/gcc-11.1.0</env>
+      <env name="PNETCDF_PATH">/nfs/gce/projects/climate/software/linux-ubuntu20.04-x86_64/pnetcdf/1.12.2/mpich-4.0/gcc-11.1.0</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
