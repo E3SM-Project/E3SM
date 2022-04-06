@@ -1581,7 +1581,7 @@ end function bfb_expm1
        p3_tend_out(i,:,39) = nr(i,:) ! Rain # sedimentation tendency, initialize
 
        call rain_sedimentation(kts,kte,ktop,kbot,kdir, &
-         qr_incld(i,:),rho(i,:),inv_rho(i,:),rhofacr(i,:),cld_frac_r(i,:),inv_dz(i,:),dt,inv_dt,p3_max_mean_rain_size, &&
+         qr_incld(i,:),rho(i,:),inv_rho(i,:),rhofacr(i,:),cld_frac_r(i,:),inv_dz(i,:),dt,inv_dt,p3_max_mean_rain_size, &
          qr(i,:),nr(i,:),nr_incld(i,:),mu_r(i,:),lamr(i,:),precip_liq_surf(i),precip_liq_flux(i,:),rflx(i,:),p3_tend_out(i,:,38), &
          p3_tend_out(i,:,39))
 
