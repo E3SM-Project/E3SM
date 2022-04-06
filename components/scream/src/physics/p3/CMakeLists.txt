@@ -85,7 +85,7 @@ add_custom_command (
   OUTPUT  ${TABLES_FILES}
   COMMAND ${CMAKE_COMMAND} -E env $<TARGET_FILE:p3_tables_setup>
 )
-add_custom_target(p3_tables
+add_custom_target(p3_create_tables ALL
   DEPENDS ${TABLES_FILES}
 )
 
