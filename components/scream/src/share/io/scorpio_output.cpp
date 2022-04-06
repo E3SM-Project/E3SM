@@ -122,6 +122,12 @@ void AtmosphereOutput::init()
 /*-----*/
 void AtmosphereOutput::run (const std::string& filename, const bool is_write_step, const int nsteps_since_last_output)
 {
+  // If we do INSTANT output, but this is not an write step,
+  // we can immediately return
+  if (not is_write_step and m_avg_type==OutputAvgType::Instant) {
+    return;
+  }
+
   using namespace scream::scorpio;
 
   // If needed, remap fields from their grid to the unique grid, for I/O
