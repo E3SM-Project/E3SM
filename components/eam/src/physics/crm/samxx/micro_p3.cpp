@@ -352,6 +352,28 @@ void micro_p3_proc() {
   //----------------------------------------------------------------------------
   micro_p3_diagnose();
 
+  // Saturation adjustment - without SHOC we need to do a saturation adjustment and set qc
+  if (is_same_str(turbulence_scheme, "smag") == 0) {
+    parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      tabs(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm) - gamaz(k,icrm)
+                      + fac_cond *( qcl(k,j,i,icrm) + qpl(k,j,i,icrm) ) 
+                      + fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
+      real tmp_pres = pres(k,icrm)*100.;
+      compute_adjusted_state( micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm), 
+                              micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm), 
+                              qv(k,j,i,icrm), tabs(k,j,i,icrm), tmp_pres );
+    });
+    // update diagnostic fields
+    micro_p3_diagnose();
+    // update liq static energy - do we need this? LSE should be conserved for saturation adjustment
+    parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      t(k,j+offy_s,i+offx_s,icrm) = tabs(k,j,i,icrm) + gamaz(k,icrm)
+                    - fac_cond *( qcl(k,j,i,icrm) + qpl(k,j,i,icrm) )
+                    - fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
+    });
+  }
+
+  // Diagnose potential temperature
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
@@ -361,23 +383,6 @@ void micro_p3_proc() {
                       + fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
     th_in(icol, ilev) = tabs(k,j,i,icrm)*inv_exner_in(icol, ilev);
   });
-
-  // Saturation adjustment - without SHOC we need to do a saturation adjustment and set qc
-  if (is_same_str(turbulence_scheme, "smag") == 0) {
-    parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-      real tmp_pres = pres(k,icrm)*100.;
-      compute_adjusted_state( micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm), 
-                              micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm), 
-                              qv(k,j,i,icrm), tabs(k,j,i,icrm), tmp_pres );
-    });
-    micro_p3_diagnose();
-    // update liq static energy - do we need this? LSE should be conserved for saturation adjustment
-    parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-      t(k,j+offy_s,i+offx_s,icrm) = tabs(k,j,i,icrm) + gamaz(k,icrm)
-                    - fac_cond *( qcl(k,j,i,icrm) + qpl(k,j,i,icrm) )
-                    - fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
-    });
-  }
 
 // auto fp=fopen("q.txt","w");
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
@@ -408,7 +413,7 @@ void micro_p3_proc() {
           qm_d("qm", ncol, npack),
           ni_d("ni", ncol, npack),
           bm_d("bm", ncol, npack),
-          th_atm_d("th", ncol, npack);
+          th_d("th", ncol, npack);
 
   array_to_view(qc_in.myData, ncol, nlev, qc_d);
   array_to_view(nc_in.myData, ncol, nlev, nc_d);
@@ -419,10 +424,10 @@ void micro_p3_proc() {
   array_to_view(ni_in.myData, ncol, nlev, ni_d);
   array_to_view(bm_in.myData, ncol, nlev, bm_d);
   array_to_view(qv_in.myData, ncol, nlev, qv_d);
-  array_to_view(th_in.myData, ncol, nlev, th_atm_d);
+  array_to_view(th_in.myData, ncol, nlev, th_d);
    
   P3F::P3PrognosticState prog_state{qc_d, nc_d, qr_d, nr_d, qi_d, qm_d,
-                                    ni_d, bm_d, qv_d, th_atm_d};
+                                    ni_d, bm_d, qv_d, th_d};
 
   //----------------------------------------------------------------------------
   // Populate P3 diagnostic inputs
@@ -522,7 +527,7 @@ void micro_p3_proc() {
   bool do_predict_nc, do_prescribed_CCN;
   sview_2d col_location_d("col_location_d", ncol, 3);
 
-  do_predict_nc = false;
+  do_predict_nc = true;
   do_prescribed_CCN = false;
 
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<4>>({0, 0, 0, 0}, {nzm, ny, nx, ncrms}), KOKKOS_LAMBDA(int k, int j, int i, int icrm) {
@@ -569,8 +574,8 @@ void micro_p3_proc() {
     auto precsfc_tmp  = precsfc (j,i,icrm);
     auto precssfc_tmp = precssfc(j,i,icrm);
     precsfc(j,i,icrm) = precsfc_tmp +(diag_outputs.precip_liq_surf(icol)
-                                     +diag_outputs.precip_ice_surf(icol)); * 1000.0 * dt / dz(icrm);
-    precssfc(j,i,icrm)= precssfc_tmp+(diag_outputs.precip_ice_surf(icol)); * 1000.0 * dt / dz(icrm);
+                                     +diag_outputs.precip_ice_surf(icol)) * 1000.0 * dt / dz(icrm);
+    precssfc(j,i,icrm)= precssfc_tmp+(diag_outputs.precip_ice_surf(icol)) * 1000.0 * dt / dz(icrm);
   });
 
   // update microfield
