@@ -545,7 +545,8 @@ end function bfb_expm1
   END SUBROUTINE p3_main_part1
 
   SUBROUTINE p3_main_part2(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, inv_dt, &
-       p3_autocon_coeff,p3_accret_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_qc_accret_expon,p3_wbf_coeff,p3_embryonic_rain_size, &
+       p3_autocon_coeff,p3_accret_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_qc_accret_expon, &
+       p3_wbf_coeff,p3_embryonic_rain_size, p3_max_mean_rain_size, &
        pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l, inv_cld_frac_i, inv_cld_frac_r, ni_activated, &
        inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r, qv_prev, t_prev, &
        t_atm, rho, inv_rho, qv_sat_l, qv_sat_i, qv_supersat_i, rhofacr, rhofaci, acn, qv, th_atm, qc, nc, qr, nr, qi, ni, &
@@ -562,7 +563,7 @@ end function bfb_expm1
     logical(btype), intent(in) :: do_predict_nc, do_prescribed_CCN
     real(rtype), intent(in) :: dt, inv_dt
     real(rtype), intent(in) :: p3_autocon_coeff, p3_accret_coeff, p3_qc_autocon_expon, p3_nc_autocon_expon, p3_qc_accret_expon, &
-         p3_wbf_coeff, p3_embryonic_rain_size
+         p3_wbf_coeff, p3_embryonic_rain_size, p3_max_mean_rain_size
 
     real(rtype), intent(in), dimension(kts:kte) :: pres, dpres, dz, nc_nuceat_tend, exner, inv_exner, inv_cld_frac_l,      &
          inv_cld_frac_i, inv_cld_frac_r, ni_activated, inv_qc_relvar, cld_frac_i, cld_frac_l, cld_frac_r, qv_prev, t_prev, &
@@ -702,7 +703,7 @@ end function bfb_expm1
            cdist(k),cdist1(k))
       nc(k) = nc_incld(k)*cld_frac_l(k)
 
-      call get_rain_dsd2(qr_incld(k),nr_incld(k),mu_r(k),lamr(k),   &
+      call get_rain_dsd2(qr_incld(k),p3_max_mean_rain_size,nr_incld(k),mu_r(k),lamr(k),   &
            cdistr(k),logn0r(k))
       nr(k) = nr_incld(k)*cld_frac_r(k)
 
@@ -850,7 +851,7 @@ end function bfb_expm1
            qr2qv_evap_tend,nr_evap_tend)
 
       call ice_deposition_sublimation(qi_incld(k), ni_incld(k), t_atm(k), &
-           qv_sat_l(k),qv_sat_i(k),epsi,abi,qv(k), wbf_coeff, &
+           qv_sat_l(k),qv_sat_i(k),epsi,abi,qv(k), p3_wbf_coeff, &
            qidep,qi2qv_sublim_tend,ni_sublim_tend,qiberg)
 
 444   continue
@@ -1072,7 +1073,7 @@ end function bfb_expm1
 
  END SUBROUTINE p3_main_part2
 
- subroutine p3_main_part3(kts, kte, kbot, ktop, kdir, p3_max_mean_rain_size                                                &
+ subroutine p3_main_part3(kts, kte, kbot, ktop, kdir, p3_max_mean_rain_size,                                                &
       exner, cld_frac_l, cld_frac_r, cld_frac_i,                                                                           &
       rho, inv_rho, rhofaci, qv, th_atm, qc, nc, qr, nr, qi, ni, qm, bm, latent_heat_vapor, latent_heat_sublim,            &
       mu_c, nu, lamc, mu_r, lamr, vap_liq_exchange,                                                                        &
@@ -1084,6 +1085,8 @@ end function bfb_expm1
    ! args
 
    integer, intent(in) :: kts, kte, kbot, ktop, kdir, p3_max_mean_rain_size
+
+   real(rtype), intent(in) :: p3_max_mean_rain_size
 
    real(rtype), intent(in), dimension(kts:kte) :: exner, cld_frac_l, cld_frac_r, cld_frac_i
 
@@ -1514,7 +1517,8 @@ end function bfb_expm1
        if (.not. (is_nucleat_possible .or. is_hydromet_present)) goto 333
 
        call p3_main_part2(kts, kte, kbot, ktop, kdir, do_predict_nc, do_prescribed_CCN, dt, inv_dt, &
-            p3_autocon_coeff,p3_accret_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_qc_accret_expon,p3_wbf_coeff,p3_embryonic_rain_size, &
+            p3_autocon_coeff,p3_accret_coeff,p3_qc_autocon_expon,p3_nc_autocon_expon,p3_qc_accret_expon, &
+            p3_wbf_coeff,p3_embryonic_rain_size, p3_max_mean_rain_size, &
             pres(i,:), dpres(i,:), dz(i,:), nc_nuceat_tend(i,:), exner(i,:), inv_exner(i,:), &
             inv_cld_frac_l(i,:), inv_cld_frac_i(i,:), inv_cld_frac_r(i,:), ni_activated(i,:), inv_qc_relvar(i,:), &
             cld_frac_i(i,:), cld_frac_l(i,:), cld_frac_r(i,:), qv_prev(i,:), t_prev(i,:), &
@@ -1577,7 +1581,7 @@ end function bfb_expm1
        p3_tend_out(i,:,39) = nr(i,:) ! Rain # sedimentation tendency, initialize
 
        call rain_sedimentation(kts,kte,ktop,kbot,kdir, &
-         qr_incld(i,:),rho(i,:),inv_rho(i,:),rhofacr(i,:),cld_frac_r(i,:),inv_dz(i,:),dt,inv_dt, &
+         qr_incld(i,:),rho(i,:),inv_rho(i,:),rhofacr(i,:),cld_frac_r(i,:),inv_dz(i,:),dt,inv_dt,p3_max_mean_rain_size, &&
          qr(i,:),nr(i,:),nr_incld(i,:),mu_r(i,:),lamr(i,:),precip_liq_surf(i),precip_liq_flux(i,:),rflx(i,:),p3_tend_out(i,:,38), &
          p3_tend_out(i,:,39))
 
@@ -1614,7 +1618,7 @@ end function bfb_expm1
        !...................................................
        ! final checks to ensure consistency of mass/number
        ! and compute diagnostic fields for output
-       call p3_main_part3(kts, kte, kbot, ktop, kdir, p3_max_mean_rain_size                                                   &
+       call p3_main_part3(kts, kte, kbot, ktop, kdir, p3_max_mean_rain_size,                                                  &
             exner(i,:), cld_frac_l(i,:), cld_frac_r(i,:), cld_frac_i(i,:),                                                    &
             rho(i,:), inv_rho(i,:), rhofaci(i,:), qv(i,:), th_atm(i,:), qc(i,:), nc(i,:), qr(i,:), nr(i,:), qi(i,:), ni(i,:), &
             qm(i,:), bm(i,:), latent_heat_vapor(i,:), latent_heat_sublim(i,:),                                                &
@@ -3538,7 +3542,7 @@ end subroutine update_prognostic_liquid
 
 
 subroutine ice_deposition_sublimation(qi_incld,ni_incld,t_atm,    &
-qv_sat_l,qv_sat_i,epsi,abi,qv,wbf_coeff,    &
+qv_sat_l,qv_sat_i,epsi,abi,qv,p3_wbf_coeff,    &
 qidep,qi2qv_sublim_tend,ni_sublim_tend,qiberg)
 
    implicit none
@@ -3551,7 +3555,7 @@ qidep,qi2qv_sublim_tend,ni_sublim_tend,qiberg)
    real(rtype), intent(in)  :: epsi
    real(rtype), intent(in)  :: abi
    real(rtype), intent(in)  :: qv
-   real(rtype), intent(in)  :: wbf_coeff
+   real(rtype), intent(in)  :: p3_wbf_coeff
    real(rtype), intent(out) :: qidep
    real(rtype), intent(out) :: qi2qv_sublim_tend
    real(rtype), intent(out) :: ni_sublim_tend
@@ -3575,7 +3579,7 @@ qidep,qi2qv_sublim_tend,ni_sublim_tend,qiberg)
       if (t_atm < T_zerodegc) then
          !Compute bergeron rate assuming cloud for whole step.
          qiberg = max(epsi*oabi*(qv_sat_l - qv_sat_i), 0._rtype)
-         qiberg = qiberg*wbf_coeff
+         qiberg = qiberg*p3_wbf_coeff
       else !T>frz
          qiberg=0._rtype
       end if !T<frz
@@ -4014,8 +4018,8 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
 end subroutine cloud_sedimentation
 
-subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,                            &
-   qr_incld,rho,inv_rho,rhofacr,cld_frac_r,inv_dz,dt,inv_dt,                     &
+subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,                             &
+   qr_incld,rho,inv_rho,rhofacr,cld_frac_r,inv_dz,dt,inv_dt,p3_max_mean_rain_size,&
    qr,nr,nr_incld,mu_r,lamr,precip_liq_surf,precip_liq_flux,rflx,qr_tend,nr_tend)
 
    implicit none
@@ -4029,6 +4033,7 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,                           
    real(rtype), intent(in), dimension(kts:kte) :: inv_dz
    real(rtype), intent(in) :: dt
    real(rtype), intent(in) :: inv_dt
+   real(rtype), intent(in) :: p3_max_mean_rain_size
 
    real(rtype), intent(inout), target, dimension(kts:kte) :: qr
    real(rtype), intent(inout), target, dimension(kts:kte) :: nr
@@ -4098,7 +4103,7 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,                           
 
             qr_notsmall_r1: if (qr_incld(k)>qsmall) then
 
-               call compute_rain_fall_velocity(qr_incld(k), rhofacr(k), nr_incld(k), &
+               call compute_rain_fall_velocity(qr_incld(k), rhofacr(k), p3_max_mean_rain_size, nr_incld(k), &
                     mu_r(k), lamr(k), V_qr(k), V_nr(k))
 
                !in compute_rain_fall_velocity, get_rain_dsd2 keeps the drop-size
@@ -4139,10 +4144,11 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,                           
 
 end subroutine rain_sedimentation
 
-subroutine compute_rain_fall_velocity(qr_incld, rhofacr, nr_incld, mu_r, lamr, V_qr, V_nr)
+subroutine compute_rain_fall_velocity(qr_incld, rhofacr, p3_max_mean_rain_size, nr_incld, mu_r, lamr, V_qr, V_nr)
 
    real(rtype), intent(in) :: qr_incld
    real(rtype), intent(in) :: rhofacr
+   real(rtype), intent(in) :: p3_max_mean_rain_size
    real(rtype), intent(inout) :: nr_incld
    real(rtype), intent(out) :: mu_r
    real(rtype), intent(out) :: lamr
@@ -4154,7 +4160,7 @@ subroutine compute_rain_fall_velocity(qr_incld, rhofacr, nr_incld, mu_r, lamr, V
 
    !Compute Vq, Vn:
 
-   call get_rain_dsd2(qr_incld,nr_incld,mu_r,lamr,tmp1,tmp2)
+   call get_rain_dsd2(qr_incld,p3_max_mean_rain_size,nr_incld,mu_r,lamr,tmp1,tmp2)
 
    call find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3,mu_r,lamr)
 
