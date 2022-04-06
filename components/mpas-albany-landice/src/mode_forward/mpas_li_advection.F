@@ -776,7 +776,7 @@ module li_advection
 
          ! Zero out any positive surface mass balance for ice-free ocean cells
          if (sfcMassBalApplied(iCell) > 0.0_RKIND .and. &
-             bedTopography(iCell) < config_sea_level .and. .not.(li_mask_is_ice(cellMask(iCell)) ) ) then
+             bedTopography(iCell) <= config_sea_level .and. .not.(li_mask_is_ice(cellMask(iCell)) ) ) then
             sfcMassBalApplied(iCell) = 0.0_RKIND
          end if
 
