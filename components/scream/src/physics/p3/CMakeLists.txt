@@ -75,10 +75,10 @@ else()
   set (PRECISION_SUFFIX "4")
 endif()
 set (TABLES_FILES
-  mu_r_table_vals.dat${PRECISION_SUFFIX}
-  revap_table_vals.dat${PRECISION_SUFFIX}
-  vm_table_vals.dat${PRECISION_SUFFIX}
-  vn_table_vals.dat${PRECISION_SUFFIX}
+  ${SCREAM_BIN_DIR}/data/mu_r_table_vals.dat${PRECISION_SUFFIX}
+  ${SCREAM_BIN_DIR}/data/revap_table_vals.dat${PRECISION_SUFFIX}
+  ${SCREAM_BIN_DIR}/data/vm_table_vals.dat${PRECISION_SUFFIX}
+  ${SCREAM_BIN_DIR}/data/vn_table_vals.dat${PRECISION_SUFFIX}
 )
 
 add_custom_command (

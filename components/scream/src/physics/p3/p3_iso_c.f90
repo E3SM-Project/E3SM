@@ -16,7 +16,7 @@ module p3_iso_c
 contains
   subroutine append_precision(string, prefix)
 
-    character(kind=c_char, len=128), intent(inout) :: string
+    character(kind=c_char, len=256), intent(inout) :: string
     character(*), intent(in) :: prefix
     real(kind=c_real) :: s
 
@@ -57,7 +57,7 @@ contains
     real(kind=c_real), dimension(300,10), target :: vn_table_vals, vm_table_vals, revap_table_vals
 
     character(len=256), pointer :: lookup_file_dir
-    character(kind=c_char, len=128) :: mu_r_filename, revap_filename, vn_filename, vm_filename
+    character(kind=c_char, len=256) :: mu_r_filename, revap_filename, vn_filename, vm_filename
     integer :: len
     logical :: ok
     character(len=16) :: p3_version="4.1.1"  ! TODO: Change to be dependent on table version and path specified in p3_functions.hpp
@@ -69,10 +69,10 @@ contains
     info = 0
     ok = .false.
 
-    call append_precision(mu_r_filename, c_char_"mu_r_table_vals.dat")
-    call append_precision(revap_filename, c_char_"revap_table_vals.dat")
-    call append_precision(vn_filename, c_char_"vn_table_vals.dat")
-    call append_precision(vm_filename, c_char_"vm_table_vals.dat")
+    call append_precision(mu_r_filename, SCREAM_DATA_DIR//"/mu_r_table_vals.dat")
+    call append_precision(revap_filename, SCREAM_DATA_DIR//"/revap_table_vals.dat")
+    call append_precision(vn_filename, SCREAM_DATA_DIR//"/vn_table_vals.dat")
+    call append_precision(vm_filename, SCREAM_DATA_DIR//"/vm_table_vals.dat")
 
     if (write_tables) then
        call p3_init_b()
