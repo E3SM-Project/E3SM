@@ -69,6 +69,7 @@ configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72m.ascii
                ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
 
 # RRTMGP data files
+file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
 GetInputFile(init/rrtmgp-data-sw-g224-2018-12-04.nc
   ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
 GetInputFile(init/rrtmgp-data-lw-g256-2018-12-04.nc
