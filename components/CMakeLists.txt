@@ -79,7 +79,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
 
 # Set global targets
 add_custom_target(genf90
-  DEPENDS ${CIMEROOT}/src/externals/genf90/genf90.pl)
+  DEPENDS ${CIMEROOT}/CIME/non_py/externals/genf90/genf90.pl)
 
 # Build E3SM components
 set(IDX 0)
