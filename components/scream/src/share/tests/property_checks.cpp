@@ -31,14 +31,18 @@ TEST_CASE("property_check_base", "") {
     REQUIRE_THROWS (std::make_shared<FieldNaNCheck>(f));
   }
 
-  SECTION ("field_not_allocated") {
+  SECTION ("field_read_only") {
     Field f(fid);
     f.allocate_view();
     auto cf = f.get_const();
 
     // Field must not be read-only if repair is needed
     REQUIRE_THROWS (std::make_shared<FieldPositivityCheck>(cf,true));
+
+    // But ok if no repair is needed
+    REQUIRE_NOTHROW (std::make_shared<FieldPositivityCheck>(cf,false));
   }
+
 }
 
 TEST_CASE("property_checks", "") {
