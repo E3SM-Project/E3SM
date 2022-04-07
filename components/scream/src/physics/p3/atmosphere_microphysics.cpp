@@ -185,8 +185,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<FieldPositivityCheck>(get_field_out("nr"));
   add_postcondition_check<FieldPositivityCheck>(get_field_out("ni"));
   add_postcondition_check<FieldPositivityCheck>(get_field_out("bm"));
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("precip_liq_surf"),0.0, 0.002);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("precip_ice_surf"),0.0, 0.002);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("precip_liq_surf"),0.0, 0.001);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("precip_ice_surf"),0.0, 0.001);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qc"),0.0, 2.0e2);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qi"),0.0, 2.0e3);
 
