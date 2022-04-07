@@ -12,13 +12,12 @@ namespace scream
 // inherits from FieldWithinIntervalCheck, and sets lower bound to -infinity
 class FieldUpperBoundCheck: public FieldWithinIntervalCheck {
 public:
-  // Constructor with upper bound. By default, this property check
-  // can repair fields that fail the check by overwriting nonpositive values
-  // with the given upper bound. If can_repair is false, the check cannot
-  // apply repairs to the field.
+  // Constructor with lower bound. By default, this property check
+  // can *NOT* repair fields that fail the check. If can_repair is true,
+  // this class will overwrite values out of bounds with the stored upper bound
   FieldUpperBoundCheck (const Field& field,
                         const double upper_bound,
-                        const bool can_repair = true)
+                        const bool can_repair = false)
    : FieldWithinIntervalCheck(field,
                               -std::numeric_limits<double>::max(),
                               upper_bound,
