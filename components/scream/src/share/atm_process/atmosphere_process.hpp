@@ -118,6 +118,11 @@ public:
   // Return the parameter list
   const ekat::ParameterList& get_params () const { return m_params; }
 
+  // Note: if we are being subcycled from the outside, the host will set
+  //       do_update=false, and we will not update the timestamp of the AP
+  //       or that of the output fields.
+  void set_update_time_stamps (const bool do_update);
+
   // These methods set fields/groups in the atm process. The fields/groups are stored
   // in a list (with some helpers maps that can be used to quickly retrieve them).
   // If derived class need additional bookkeping/checks, they can override the
@@ -175,7 +180,12 @@ public:
 
   // Set local variables using memory provided by
   // the ATMBufferManager
-  virtual void init_buffers(const ATMBufferManager& /*buffer_manager*/) {}
+  virtual void init_buffers(const ATMBufferManager& /* buffer_manager */) {
+    EKAT_REQUIRE_MSG (requested_buffer_size_in_bytes()==0,
+        "Error! This Atm Process requested a non-zero buffer size,\n"
+        "       but does not override 'init_buffers'. Please, fix this.\n"
+        "   - Atm proc name: " + this->name() + "\n");
+  }
 
   // Convenience function to retrieve input/output fields from the field/group (and grid) name.
   // Note: the version without grid name only works if there is only one copy of the field/group.
@@ -225,6 +235,10 @@ protected:
 
   // Sends a message to the atm log
   void log (const LogLevel lev, const std::string& msg) const;
+
+  int get_num_subcycles () const { return m_num_subcycles; }
+  int get_subcycle_iter () const { return m_subcycle_iter; }
+  bool do_update_time_stamp () const { return m_update_time_stamps; }
 
   // Derived classes can used these method, so that if we change how fields/groups
   // requirement are stored (e.g., change the std container), they don't need to change
@@ -450,6 +464,13 @@ private:
 
   // The number of times this process needs to be subcycled
   int m_num_subcycles = 1;
+
+  // This can be queried by derived classes, in case they need to know which
+  // iteration of the subcycle this is
+  int m_subcycle_iter;
+
+  // Whether we need to update time stamps at the end of the run method
+  bool m_update_time_stamps = true;
 };
 
 // ================= IMPLEMENTATION ================== //

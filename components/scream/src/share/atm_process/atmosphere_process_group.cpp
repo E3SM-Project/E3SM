@@ -36,6 +36,7 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
                 ? "Sequential]:" : "Parallel]:";
 
   auto& apf = AtmosphereProcessFactory::instance();
+  apf.register_product("group",&create_atmosphere_process<AtmosphereProcessGroup>);
   for (int i=0; i<m_group_size; ++i) {
     // The comm to be passed to the processes construction is
     //  - the same as the input comm if num_entries=1 or sched_type=Sequential
@@ -158,7 +159,13 @@ void AtmosphereProcessGroup::run_sequential (const Real dt) {
   auto ts = timestamp();
   ts += dt;
 
+  // The stored atm procs should update the timestamp if both
+  //  - this is the last subcycle iteration
+  //  - nobody from outside told this APG to not update timestamps
+  const bool do_update = do_update_time_stamp() &&
+                      (get_subcycle_iter()==get_num_subcycles()-1);
   for (auto atm_proc : m_atm_processes) {
+    atm_proc->set_update_time_stamps(do_update);
     // Run the process
     atm_proc->run(dt);
   }
@@ -415,13 +422,20 @@ process_required_field (const FieldRequest& req) {
   }
 }
 
-void AtmosphereProcessGroup::initialize_atm_memory_buffer(ATMBufferManager &memory_buffer) {
-  for (auto& atm_proc : m_atm_processes) {
-    memory_buffer.request_bytes(atm_proc->requested_buffer_size_in_bytes());
+size_t AtmosphereProcessGroup::requested_buffer_size_in_bytes () const
+{
+  size_t buf_size = 0;
+  for (const auto& proc : m_atm_processes) {
+    buf_size = std::max(buf_size,proc->requested_buffer_size_in_bytes());
   }
-  memory_buffer.allocate();
+
+  return buf_size;
+}
+
+void AtmosphereProcessGroup::
+init_buffers(const ATMBufferManager& buffer_manager) {
   for (auto& atm_proc : m_atm_processes) {
-    atm_proc->init_buffers(memory_buffer);
+    atm_proc->init_buffers(buffer_manager);
   }
 }
 

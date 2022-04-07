@@ -102,6 +102,8 @@ void SurfaceCoupling::do_export (const bool init_phase)
     bool do_export = (!init_phase || info.do_initial_export);
     if (do_export) {
       cpl_exports_view_d(icol,info.cpl_idx) = info.data[offset];
+    } else {
+      cpl_exports_view_d(icol,info.cpl_idx) = 0.0;
     }
   });
 

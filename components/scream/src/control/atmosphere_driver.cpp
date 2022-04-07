@@ -791,7 +791,9 @@ void AtmosphereDriver::initialize_atm_procs ()
 {
   // Initialize memory buffer for all atm processes
   m_memory_buffer = std::make_shared<ATMBufferManager>();
-  m_atm_process_group->initialize_atm_memory_buffer(*m_memory_buffer);
+  m_memory_buffer->request_bytes(m_atm_process_group->requested_buffer_size_in_bytes());
+  m_memory_buffer->allocate();
+  m_atm_process_group->init_buffers(*m_memory_buffer);
 
   const bool restarted_run = m_atm_params.sublist("Initial Conditions").get<bool>("Restart Run",false);
 
