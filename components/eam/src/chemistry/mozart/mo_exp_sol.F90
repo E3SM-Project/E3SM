@@ -113,10 +113,8 @@ contains
        end if
 
        wrk(:,:) = (prod(:,:,m) + ind_prd(:,:,m))*xhnm
-!       wrk(:,:) = chem_prod(:,:,l)
        call outfld( trim(solsym(l))//'_CHMP', wrk(:,:), ncol, lchnk )
        wrk(:,:) = (loss(:,:,m))*xhnm
-!       wrk(:,:) = chem_loss(:,:,l)
        call outfld( trim(solsym(l))//'_CHML', wrk(:,:), ncol, lchnk )
        
     end do
