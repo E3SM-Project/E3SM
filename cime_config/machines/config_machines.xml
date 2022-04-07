@@ -686,14 +686,14 @@
     <NODENAME_REGEX>macbook-pro.local</NODENAME_REGEX>
     <OS>Darwin</OS>
     <COMPILERS>gnu</COMPILERS>
-    <MPILIBS>mpich, mpi-serial</MPILIBS>
+    <MPILIBS>mpich,openmpi,mpi-serial</MPILIBS>
     <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/acme/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{HOME}/project_acme/cesm-inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/project_acme/cesm-inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{HOME}/project_acme/scratch/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{HOME}/project_acme/baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
-    <GMAKE>gnumake</GMAKE>
+    <GMAKE>gmake</GMAKE>
     <GMAKE_J>4</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
@@ -703,18 +703,24 @@
     <mpirun mpilib="mpi-serial">
       <executable> </executable>
     </mpirun>
-    <mpirun mpilib="default">
+    <mpirun mpilib="openmpi">
       <executable>$ENV{MPI_ROOT}/bin/mpirun</executable>
       <arguments>
         <arg name="num_tasks"> -np $TOTALPES</arg>
       </arguments>
     </mpirun>
-    <module_system type="none"></module_system>   
+    <mpirun mpilib="mpich">
+      <executable>$ENV{MPI_ROOT}/bin/mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np $TOTALPES</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="none"></module_system>
     <RUNDIR>$ENV{HOME}/project_acme/scratch/$CASE/run</RUNDIR>
     <EXEROOT>$ENV{HOME}/project_acme/scratch/$CASE/bld</EXEROOT>
     <environment_variables>
       <!--  env name="PATH">$ENV{PATH}</env> -->
-      <env name="PATH">$ENV{FC_ROOT}/bin:$ENV{CC_ROOT}/bin:/usr/local/CMake.App/Contents/bin/:/usr/local/bin/:/opt/local/sbin/:/opt/local/bin:/usr/bin/:/bin/</env>   <!--This is for Cmake, needed by PIO -->
+      <env name="PATH">$ENV{FC_ROOT}/bin:$ENV{CC_ROOT}/bin:/usr/local/CMake.App/Contents/bin/:/usr/local/bin/:/usr/bin/:/bin/</env>   <!--This is for Cmake, needed by PIO -->
     </environment_variables>       
 
     <environment_variables>
