@@ -1221,6 +1221,7 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+
 <!-- tidal_potential_forcing -->
 
 <entry id="config_use_tidal_potential_forcing" type="logical"
