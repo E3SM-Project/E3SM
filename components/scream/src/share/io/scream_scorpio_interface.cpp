@@ -5,8 +5,6 @@
 #include "ekat/ekat_assert.hpp"
 #include "share/scream_types.hpp"
 
-#include "gptl.h"
-
 #include <string>
 
 using scream::Real;
@@ -40,13 +38,11 @@ void eam_init_pio_subsystem(const int mpicom, const int atm_id) {
   // When surface coupling is established we will need to refactor this
   // routine to pass the appropriate values depending on if we are running
   // the full model or a unit test.
-  GPTLinitialize();
   eam_init_pio_subsystem_c2f(mpicom,atm_id);
 }
 /* ----------------------------------------------------------------- */
 void eam_pio_finalize() {
   eam_pio_finalize_c2f();
-  GPTLfinalize();
 }
 /* ----------------------------------------------------------------- */
 void register_file(const std::string& filename, const FileMode mode) {
