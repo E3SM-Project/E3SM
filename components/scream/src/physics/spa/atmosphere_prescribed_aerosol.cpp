@@ -196,7 +196,6 @@ void SPA::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nc_activated"),0.0,1.0e6,false);
   // upper bound set to 1.01 as max(g_sw)=1.00757 in current ne4 data assumingly due to remapping
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_g_sw"),0.0,1.01,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_g_sw"),0.0,1.01,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_ssa_sw"),0.0,1.0,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_tau_sw"),0.0,1.0,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_tau_lw"),0.0,1.0,false);

@@ -197,7 +197,7 @@ void AtmosphereProcess::run_postcondition_checks () const {
     auto check = pc->check();
     if (check) {
       continue;
-    } 
+    }
 
     // Failed check.
     if (pc->can_repair()) {
