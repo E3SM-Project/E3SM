@@ -283,8 +283,9 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
         });
       }
       // Bring data to host
-      Kokkos::deep_copy (m_host_views_1d.at(name),m_dev_views_1d.at(name));
-      grid_write_data_array(filename,name,data);
+      auto view_host = m_host_views_1d.at(name);
+      Kokkos::deep_copy (view_host,view_dev);
+      grid_write_data_array(filename,name,view_host.data());
     }
   }
 } // run
