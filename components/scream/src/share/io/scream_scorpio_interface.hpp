@@ -62,13 +62,9 @@ namespace scorpio {
   /* Write data for a specific variable to a specific file. */
   void grid_write_data_array(const std::string &filename, const std::string &varname, const Real* hbuf);
 
-  /* Helper functions */
-  int count_pio_atm_file();
-
 extern "C" {
   /* Query whether the pio subsystem is inited or not */
   bool is_eam_pio_subsystem_inited();
-  int  eam_pio_subsystem_comm ();
   /* Checks if a file is already open, with the given mode */
   bool is_file_open_c2f(const char*&& filename, const int& mode);
   int get_int_attribute_c2f (const char*&& filename, const char*&& attr_name);

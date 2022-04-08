@@ -76,7 +76,6 @@ module scream_scorpio_interface
             eam_pio_enddef,              & ! Register variables and dimensions with PIO files
             eam_init_pio_subsystem,      & ! Gather pio specific data from the component coupler
             is_eam_pio_subsystem_inited, & ! Query whether the pio subsystem is inited already
-            eam_pio_subsystem_comm,      & ! Return comm used for pio subsystem
             eam_pio_finalize,            & ! Run any final PIO commands
             register_file,               & ! Creates/opens a pio input/output file
             register_variable,           & ! Register a variable with a particular pio output file
@@ -88,7 +87,6 @@ module scream_scorpio_interface
             grid_read_data_array,        & ! Read gridded data from a pio managed netCDF file
             eam_sync_piofile,            & ! Syncronize the piofile, to be done after all output is written during a single timestep
             eam_update_time,             & ! Update the timestamp (i.e. time variable) for a given pio netCDF file
-            count_pio_atm_file,          & ! Diagnostic to count how many files are still open
             get_int_attribute,           & ! Retrieves an integer global attribute from the nc file
             set_int_attribute,           & ! Writes an integer global attribute to the nc file
             get_dimlen                     ! Returns the length of a specific dimension in a file
@@ -726,20 +724,6 @@ contains
     is_it = associated(pio_subsystem)
   end function is_eam_pio_subsystem_inited
 !=====================================================================!
-  ! Returns the mpi comm used to init the pio subsystem (or MPI_COMM_NULL if not inited)
-  ! This can be useful to avoid double-init or double-finalize calls.
-  function eam_pio_subsystem_comm() result(fcomm) bind(c)
-#include <mpif.h>
-
-    integer(kind=c_int) :: fcomm
-
-    if (is_eam_pio_subsystem_inited()) then
-      fcomm = pio_mpicom
-    else
-      fcomm = MPI_COMM_NULL
-    endif
-  end function eam_pio_subsystem_comm
-!=====================================================================!
   ! Create a pio netCDF file with the appropriate name.
   subroutine eam_pio_createfile(File,fname)
 
@@ -875,41 +859,6 @@ contains
     end if
 
   end subroutine errorHandle
-!=====================================================================!
-  ! Algorithm to determine the degrees-of-freedom in the global array that this
-  ! PIO rank is responsible for writing.  Needed in the pio_write interface.
-  ! TODO: For unit test at least this isn't used.  Should we delete it and
-  ! always expect the C++ code to establish the DOF locally, or keep this as a
-  ! tool that can be used if needed?
-  subroutine get_compdof(numdims,dimension_len,dof_len,istart,istop)
-
-    integer, intent(in)  :: numdims                ! Number of dimensions
-    integer, intent(in)  :: dimension_len(numdims) ! Array of each dimension length
-    integer, intent(out) :: dof_len, istart, istop ! Length of degrees-of-freedom for this rank (dof), start and stop in global array (flattened to 1d)
-
-    integer :: extra_procs, total_dimlen
-
-    ! Get the total number of array elements for this output
-    total_dimlen = product(dimension_len)
-    dof_len   = total_dimlen/pio_ntasks
-    ! If the number of pio tasks does not evenly divide the total number of
-    ! array elements we need to assign less degrees of freedom to the final PIO
-    ! task.
-    extra_procs = mod(total_dimlen,pio_ntasks)
-    if (extra_procs > 0) dof_len = dof_len + 1
-    ! Determine the starting and finishing array location for the output chunk
-    ! handled by this PIO task
-    istart = pio_myrank * dof_len + 1
-    istop  = istart +  dof_len - 1
-    ! Special treatment for the final PIO task, which may have less dof's to
-    ! write
-    if (pio_myrank == pio_ntasks-1) then
-      istop = total_dimlen
-      dof_len = istop-istart+1
-    end if
-    return
-
-  end subroutine get_compdof
 !=====================================================================!
  ! Determine the unique pio_decomposition for this output grid, if it hasn't
  ! been defined create a new one.
@@ -1067,20 +1016,6 @@ contains
     call errorHandle("PIO ERROR: unable to find variable: "//trim(varname)//" in file: "//trim(pio_file%filename),999)
 
   end subroutine get_var
-!=====================================================================!
-  ! Diagnostic routine to determine how many pio files are currently open:
-  function count_pio_atm_file() result(total_count)
-    integer :: total_count
-
-    type(pio_file_list_t), pointer :: curr_file_ptr ! Used to cycle through recursive list of pio atm files
-
-    total_count = 0
-    curr_file_ptr => pio_file_list_front
-    do while (associated(curr_file_ptr))
-      total_count = total_count+1
-      curr_file_ptr => curr_file_ptr%next
-    end do
-  end function count_pio_atm_file
 !=====================================================================!
   ! Retrieves an integer global attribute from the nc file
   function get_int_attribute (file_name, attr_name) result(val)

@@ -29,8 +29,6 @@ extern "C" {
   void register_variable_c2f(const char*&& filename,const char*&& shortname, const char*&& longname, const char*&& units, const int numdims, const char** var_dimensions, const int dtype, const char*&& pio_decomp_tag);
   void get_variable_c2f(const char*&& filename,const char*&& shortname, const char*&& longname, const int numdims, const char** var_dimensions, const int dtype, const char*&& pio_decomp_tag);
   void eam_pio_enddef_c2f(const char*&& filename);
-
-  int count_pio_atm_file_c2f();
 } // extern C
 
 namespace scream {
@@ -121,12 +119,6 @@ void register_variable(const std::string &filename, const std::string& shortname
 /* ----------------------------------------------------------------- */
 void eam_pio_enddef(const std::string &filename) {
   eam_pio_enddef_c2f(filename.c_str());
-}
-/* ----------------------------------------------------------------- */
-int count_pio_atm_file() {
-
-  return count_pio_atm_file_c2f();
-
 }
 /* ----------------------------------------------------------------- */
 void grid_read_data_array(const std::string &filename, const std::string &varname, const int time_index, void *hbuf) {
