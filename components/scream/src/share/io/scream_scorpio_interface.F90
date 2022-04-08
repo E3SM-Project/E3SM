@@ -755,7 +755,9 @@ contains
     use piolib_mod, only: PIO_finalize, pio_freedecomp
     ! May not be needed, possibly handled by PIO directly.
 
+#if !defined(SCREAM_CIME_BUILD)
     integer :: ierr
+#endif
     type(pio_file_list_t), pointer :: curr_file_ptr, prev_file_ptr
     type(iodesc_list_t),   pointer :: iodesc_ptr
 
@@ -777,8 +779,10 @@ contains
       iodesc_ptr => iodesc_ptr%next
     end do
 
+#if !defined(SCREAM_CIME_BUILD)
     call PIO_finalize(pio_subsystem, ierr)
     nullify(pio_subsystem)
+#endif
 
   end subroutine eam_pio_finalize
 !=====================================================================!
