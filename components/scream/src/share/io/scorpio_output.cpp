@@ -229,18 +229,9 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
       {
         auto new_view_6d = field.get_view<const Real******,Device>();
         auto avg_view_6d = view_Nd_dev<6>(data,dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]);
-        auto dim1 = dims[1];
-        auto dim2 = dims[2];
-        auto dim3 = dims[3];
-        auto dim4 = dims[4];
-        auto dim5 = dims[5];
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
-          const int i = ((((idx / dim5) / dim4) / dim3) / dim2) / dim1;
-          const int j = ((((idx / dim5) / dim4) / dim3) / dim2) % dim1;
-          const int k =  (((idx / dim5) / dim4) / dim3) % dim2;
-          const int l =   ((idx / dim5) / dim4) % dim3;
-          const int m =    (idx / dim5) % dim4;
-          const int n =     idx % dim5;
+          int i,j,k,l,m,n;
+          unflatten_idx(idx,extents,i,j,k,l,m,n);
           combine(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n),nsteps_since_last_output);
         });
         break;
