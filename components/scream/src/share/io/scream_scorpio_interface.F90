@@ -92,12 +92,10 @@ module scream_scorpio_interface
 
   private :: errorHandle
   ! Universal PIO variables for the module
-  integer               :: pio_mpicom
+  integer               :: atm_mpicom
   integer               :: pio_iotype
   type(iosystem_desc_t), pointer, public :: pio_subsystem
   integer               :: pio_rearranger
-  integer               :: pio_ntasks
-  integer               :: pio_myrank
   integer               :: pio_mode
 
   ! TYPES to handle history coordinates and files
@@ -641,65 +639,51 @@ contains
 
   end subroutine eam_pio_createHeader
 !=====================================================================!
-  ! Query the pio subsystem, pio rank and number of pio ranks from the component
-  ! coupler.  This is a MANDATORY first step before any other pio calls to files
-  ! can be initiated.
-  ! If local is set to false than pio subsystem will look for the pio_subsystem
-  ! that has been initialized by the component coupler.  Otherwise, it will be
-  ! initalized locally.
-  subroutine eam_init_pio_subsystem(mpicom,atm_id,local)
+  ! Ensures a pio system is in place, by either creating a new one
+  ! or getting the one created by CIME (for CIME builds)
+  subroutine eam_init_pio_subsystem(mpicom,atm_id)
 #ifdef SCREAM_CIME_BUILD
-  ! Note, these three variables from shr_pio_mod are only needed in the
-  ! case when we want to use the pio_subsystem that has already been defined by
-  ! the component coupler.
-  use shr_pio_mod,  only: shr_pio_getrearranger, shr_pio_getiosys, shr_pio_getiotype, shr_pio_getioformat
+    use shr_pio_mod,  only: shr_pio_getrearranger, shr_pio_getiosys, &
+                            shr_pio_getiotype, shr_pio_getioformat
+#else
+    integer :: ierr, stride, atm_rank, atm_size, num_aggregator
 #endif
-! TODO - Change CIME_BUILD to SCREAM_CIME_BUILD.  Unfortunately the shared
-! modules we need are not added yet to the SCREAM build, so doing this will take
-! a little more work, which will happen in a subsequent PR.
 
     integer, intent(in) :: mpicom
     integer, intent(in) :: atm_id
-    logical, intent(in) :: local
-
-    integer :: ierr
-    integer :: stride
-    integer :: num_aggregator
-    integer :: base
 
     if (associated(pio_subsystem)) call errorHandle("PIO ERROR: local pio_subsystem pointer has already been established.",-999)
 
-    pio_mpicom = mpicom
-    call MPI_Comm_rank(pio_mpicom, pio_myrank, ierr)
-    call MPI_Comm_size(pio_mpicom, pio_ntasks , ierr)
+    atm_mpicom = mpicom
 
 #ifdef SCREAM_CIME_BUILD
-    if (.not.local) then
-      pio_subsystem  => shr_pio_getiosys(atm_id)
-      pio_iotype     = shr_pio_getiotype(atm_id)
-      pio_rearranger = shr_pio_getrearranger(atm_id)
-      pio_mode       = shr_pio_getioformat(atm_id)
-    else
+    pio_subsystem  => shr_pio_getiosys(atm_id)
+    pio_iotype     = shr_pio_getiotype(atm_id)
+    pio_rearranger = shr_pio_getrearranger(atm_id)
+    pio_mode       = shr_pio_getioformat(atm_id)
 #else
-      ! Just for removing unused dummy warnings
-      if (.false.) print *, atm_id, local
-#endif
-      allocate(pio_subsystem)
-      stride         = 1
-      num_aggregator = 0
-      pio_rearranger = pio_rearr_subset
-      pio_iotype     = PIO_iotype_netcdf
-      pio_mode       = PIO_64BIT_DATA ! Default to 64 bit
-      base           = 0
-      call PIO_init(pio_myrank, pio_mpicom, pio_ntasks, num_aggregator, stride, &
-           pio_rearr_subset, pio_subsystem, base=base)
-#ifdef SCREAM_CIME_BUILD
-    end if
+    ! WARNING: we're assuming *every atm rank* is an I/O rank
+    call MPI_Comm_rank(atm_mpicom, atm_rank, ierr)
+    call MPI_Comm_size(atm_mpicom, atm_size, ierr)
+
+    ! Just for removing unused dummy warnings
+    if (.false.) print *, atm_id
+
+    stride = 1
+    num_aggregator = 0
+
+    allocate(pio_subsystem)
+    pio_rearranger = pio_rearr_subset
+    pio_iotype     = PIO_iotype_netcdf
+    pio_mode       = PIO_64BIT_DATA ! Default to 64 bit
+    call PIO_init(atm_rank, atm_mpicom, atm_size, num_aggregator, stride, &
+                  pio_rearr_subset, pio_subsystem, base=0)
 #endif
 
     ! Init the list of pio files so that begin==end==null
     pio_file_list_back   => null()
     pio_file_list_front => null()
+
   end subroutine eam_init_pio_subsystem
 !=====================================================================!
   ! Query whether the pio subsystem is inited already
@@ -842,7 +826,7 @@ contains
       ! Kill run
       call eam_pio_finalize()
       call finalize_scream_session()
-      call mpi_abort(pio_mpicom,retVal,ierr)
+      call mpi_abort(atm_mpicom,retVal,ierr)
     end if
 
   end subroutine errorHandle
@@ -1346,5 +1330,4 @@ contains
 
   end subroutine convert_int_2_str
 !=====================================================================!
-
 end module scream_scorpio_interface

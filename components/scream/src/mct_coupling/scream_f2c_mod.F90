@@ -13,12 +13,12 @@ interface
   ! It does *NOT* initialize the fields and the atm processes, nor it initializes
   ! any structure related to the component coupler. Other subroutines
   ! will have to be called *after* this one, to achieve that.
-  subroutine scream_create_atm_instance (f_comm,yaml_fname,atm_log_fname) bind(c)
+  subroutine scream_create_atm_instance (f_comm,atm_id,yaml_fname,atm_log_fname) bind(c)
     use iso_c_binding, only: c_int, c_char
     !
     ! Input(s)
     !
-    integer (kind=c_int),   intent(in) :: f_comm
+    integer (kind=c_int),   intent(in) :: f_comm, atm_id
     character(kind=c_char), target, intent(in) :: yaml_fname(*), atm_log_fname(*)
   end subroutine scream_create_atm_instance
 

@@ -30,7 +30,7 @@ namespace scorpio {
     Write = 2
   };
   /* All scorpio usage requires that the pio_subsystem is initialized. Happens only once per simulation */
-  void eam_init_pio_subsystem(const int mpicom);
+  void eam_init_pio_subsystem(const int mpicom, const int atm_id = 0);
   /* Cleanup scorpio with pio_finalize */
   void eam_pio_finalize();
   /* Close a file currently open in scorpio */

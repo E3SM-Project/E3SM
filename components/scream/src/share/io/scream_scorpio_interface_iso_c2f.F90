@@ -13,13 +13,11 @@ module scream_scorpio_interface_iso_c2f
 !
 contains
 !=====================================================================!
-  subroutine eam_init_pio_subsystem_c2f(mpicom,compid,local) bind(c)
+  subroutine eam_init_pio_subsystem_c2f(mpicom,compid) bind(c)
     use scream_scorpio_interface, only : eam_init_pio_subsystem
-    integer(kind=c_int), value, intent(in) :: mpicom
-    integer(kind=c_int), value, intent(in) :: compid
-    logical(kind=c_bool),value, intent(in) :: local
+    integer(kind=c_int), value, intent(in) :: mpicom,compid
 
-    call eam_init_pio_subsystem(mpicom,compid,LOGICAL(local))
+    call eam_init_pio_subsystem(mpicom,compid)
   end subroutine eam_init_pio_subsystem_c2f
 !=====================================================================!
   subroutine eam_pio_finalize_c2f() bind(c)

@@ -147,7 +147,7 @@ CONTAINS
     call seq_timemgr_EClockGetData(EClock, start_ymd=start_ymd, start_tod=start_tod)
     call string_f2c(yaml_fname,yaml_fname_c)
     call string_f2c(trim(diro)//"/"//trim(logfile),atm_log_fname_c)
-    call scream_create_atm_instance (mpicom_atm, yaml_fname_c, atm_log_fname_c)
+    call scream_create_atm_instance (mpicom_atm, ATM_ID, yaml_fname_c, atm_log_fname_c)
 
     ! Init MCT gsMap
     call atm_Set_gsMap_mct (mpicom_atm, ATM_ID, gsMap_atm)

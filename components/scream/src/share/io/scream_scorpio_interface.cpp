@@ -20,7 +20,7 @@ extern "C" {
   void grid_read_data_array_c2f(const char*&& filename, const char*&& varname, const Int time_index, void *&hbuf);
 
   void grid_write_data_array_c2f_real(const char*&& filename, const char*&& varname, const Real*& hbuf);
-  void eam_init_pio_subsystem_c2f(const int mpicom, const int compid, const bool local);
+  void eam_init_pio_subsystem_c2f(const int mpicom, const int atm_id);
   void eam_pio_finalize_c2f();
   void eam_pio_closefile_c2f(const char*&& filename);
   void pio_update_time_c2f(const char*&& filename,const Real time);
@@ -33,14 +33,15 @@ extern "C" {
 namespace scream {
 namespace scorpio {
 /* ----------------------------------------------------------------- */
-void eam_init_pio_subsystem(const int mpicom) {
+
+void eam_init_pio_subsystem(const int mpicom, const int atm_id) {
   // TODO: Right now the compid has been hardcoded to 0 and the flag
   // to create a init a subsystem in SCREAM is hardcoded to true.
   // When surface coupling is established we will need to refactor this
   // routine to pass the appropriate values depending on if we are running
   // the full model or a unit test.
   GPTLinitialize();
-  eam_init_pio_subsystem_c2f(mpicom,0,true);
+  eam_init_pio_subsystem_c2f(mpicom,atm_id);
 }
 /* ----------------------------------------------------------------- */
 void eam_pio_finalize() {

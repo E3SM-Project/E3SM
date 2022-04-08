@@ -62,6 +62,9 @@ public:
   // Set AD params
   void set_params (const ekat::ParameterList& params);
 
+  // Set AD params
+  void init_scorpio (const int atm_id = 0);
+
   // Create atm processes, without initializing them
   void create_atm_processes ();
 
@@ -156,13 +159,14 @@ protected:
   // Some status flags, used to make sure we call the init functions in the right order
   static constexpr int s_comm_set       =   1;
   static constexpr int s_params_set     =   2;
-  static constexpr int s_procs_created  =   4;
-  static constexpr int s_grids_created  =   8;
-  static constexpr int s_fields_created =  16;
-  static constexpr int s_sc_set         =  32;
-  static constexpr int s_output_inited  =  64;
-  static constexpr int s_fields_inited  = 128;
-  static constexpr int s_procs_inited   = 256;
+  static constexpr int s_scorpio_inited =   4;
+  static constexpr int s_procs_created  =   8;
+  static constexpr int s_grids_created  =  16;
+  static constexpr int s_fields_created =  32;
+  static constexpr int s_sc_set         =  64;
+  static constexpr int s_output_inited  = 128;
+  static constexpr int s_fields_inited  = 256;
+  static constexpr int s_procs_inited   = 512;
 
   // Lazy version to ensure s_atm_inited & flag is true for every flag,
   // even if someone adds new flags later on
