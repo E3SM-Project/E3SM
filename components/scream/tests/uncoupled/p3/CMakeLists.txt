@@ -19,8 +19,6 @@ configure_file(p3_standalone_output.yaml p3_standalone_output.yaml)
 
 # Get init file
 GetInputFile(init/p3_init_ne2np4.nc p3_init_ne2np4.nc)
-configure_file(${SCREAM_DATA_DIR}/p3_universal_constants.inp
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if max mpi ranks is >1

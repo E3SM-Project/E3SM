@@ -8,20 +8,29 @@
 
 #include "YAKL.h"
 
+#include <ekat/logging/ekat_logger.hpp>
+
 #include <iostream>
 #include <cmath>
 
 using namespace scream;
 
 int main (int argc, char** argv) {
+    MPI_Init(&argc,&argv);
+
+    using namespace ekat::logger;
+    using logger_t = Logger<LogNoFile,LogRootRank>;
+
+    ekat::Comm comm(MPI_COMM_WORLD);
+    auto logger = std::make_shared<logger_t>("",LogLevel::info,comm);
 
     // Get filenames from command line
     if (argc != 3) {
-        std::cout <<
-            argv[0] << " [options] inputfile baseline\n"
-            "Options:\n"
-            "  (there are no options)\n";
-        return 1;
+      std::string msg = "Missing required inputs. Usage:\n";
+      msg += argv[0];
+      msg += " inputfile baseline\n";
+      logger->error(msg);
+      return 1;
     }
     std::string inputfile(argv[argc-2]);
     std::string baseline(argv[argc-1]);
@@ -35,7 +44,7 @@ int main (int argc, char** argv) {
     real2d sw_flux_dn_dir_ref;
     real2d lw_flux_up_ref;
     real2d lw_flux_dn_ref;
-    std::cout << "read_fluxes..." << std::endl;
+    logger->info("read_fluxes...");
     rrtmgpTest::read_fluxes(inputfile, sw_flux_up_ref, sw_flux_dn_ref, sw_flux_dn_dir_ref, lw_flux_up_ref, lw_flux_dn_ref );
 
     // Get dimension sizes
@@ -59,8 +68,8 @@ int main (int argc, char** argv) {
 
     // Initialize the RRTMGP interface; this will read in the k-distribution
     // data that contains information about absorption coefficients for gases
-    std::cout << "rrtmgp_initialize..." << std::endl;
-    rrtmgp::rrtmgp_initialize(gas_concs);
+    logger->info("rrtmgp_initialize...");
+    rrtmgp::rrtmgp_initialize(gas_concs,logger);
 
     // Setup dummy all-sky problem
     real1d sfc_alb_dir_vis ("sfc_alb_dir_vis", ncol);
@@ -124,7 +133,7 @@ int main (int argc, char** argv) {
     // Run RRTMGP standalone codes and compare with AD run
     // Do something interesting here...
     // NOTE: these will get replaced with AD stuff that handles these
-    std::cout << "rrtmgp_main..." << std::endl;
+    logger->info("rrtmgp_main...");
     const Real tsi_scaling = 1;
     rrtmgp::rrtmgp_main(
         ncol, nlay,
@@ -136,17 +145,19 @@ int main (int argc, char** argv) {
         sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
         lw_flux_up, lw_flux_dn,
         sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
-        lw_bnd_flux_up, lw_bnd_flux_dn, tsi_scaling
+        lw_bnd_flux_up, lw_bnd_flux_dn, tsi_scaling,
+        logger
     );
 
     // Write fluxes
-    std::cout << "write_fluxes..." << std::endl;
+    logger->info("write_fluxes...");
     rrtmgpTest::write_fluxes(
         baseline, 
         sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
         lw_flux_up, lw_flux_dn
     );
 
+    logger->info("cleaning up...");
     // Clean up from test; this is probably not necessary, these things
     // should be deallocated when they fall out of scope, but we should be
     // good citizens and clean up our mess.
@@ -189,6 +200,8 @@ int main (int argc, char** argv) {
     gas_concs.reset();
     rrtmgp::rrtmgp_finalize();
     yakl::finalize();
+
+    MPI_Finalize();
 
     return 0;
 }

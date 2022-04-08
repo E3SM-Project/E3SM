@@ -14,6 +14,7 @@
 #include "share/scream_types.hpp"
 
 #include "ekat/ekat_parse_yaml_file.hpp"
+#include "ekat/logging/ekat_logger.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_assert.hpp"
@@ -72,7 +73,8 @@ extern "C"
 /*===============================================================================================*/
 // WARNING: make sure input_yaml_file is a null-terminated string!
 void scream_create_atm_instance (const MPI_Fint& f_comm,
-                                 const char* input_yaml_file) {
+                                 const char* input_yaml_file,
+                                 const char* atm_log_file) {
                   // const int& compid) {
   using namespace scream;
   using namespace scream::control;
@@ -90,21 +92,15 @@ void scream_create_atm_instance (const MPI_Fint& f_comm,
     scream::initialize_scream_session(atm_comm.am_i_root());
 
     // Create a parameter list for inputs
-    if (atm_comm.am_i_root()) {
-      printf("[scream] reading parameterr from yaml file: %s\n",input_yaml_file);
-    }
     ekat::ParameterList scream_params("Scream Parameters");
     parse_yaml_file (input_yaml_file, scream_params);
-
-    if (atm_comm.am_i_root()) {
-      scream_params.print();
-    }
 
     ekat::error::runtime_check(scream_params.isSublist("Atmosphere Driver"),
          "Error! Sublist 'Atmosphere Driver' not found inside '" +
          std::string(input_yaml_file) + "'.\n");
 
     auto& ad_params = scream_params.sublist("Atmosphere Driver");
+    ad_params.set<std::string>("Atm Log File",atm_log_file);
 
     // Need to register products in the factories *before* we attempt to create any.
     // In particular, register all atm processes, and all grids managers.

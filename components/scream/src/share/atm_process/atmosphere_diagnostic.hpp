@@ -30,7 +30,7 @@ class AtmosphereDiagnostic : public AtmosphereProcess
 public:
 
   // Constructor(s)
-  explicit AtmosphereDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
+  AtmosphereDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   virtual ~AtmosphereDiagnostic () = default;
 
