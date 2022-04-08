@@ -2833,10 +2833,6 @@
 			 description="GM stream function"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="gmStreamFuncTopOfCell" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-1}"
-			 description="GM stream function reconstructed to the cell centers"
-			 packages="forwardMode;analysisMode"
-		/>
 		<var name="GMStreamFuncX" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
 			 description="GM stream function"
 			 packages="forwardMode;analysisMode"

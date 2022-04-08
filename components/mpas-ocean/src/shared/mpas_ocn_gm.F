@@ -789,33 +789,6 @@ contains
          !$omp end do
          !$omp end parallel
 
-         nCells = nCellsArray(1)
-
-         ! Interpolate gmStreamFuncTopOfEdge to cell centers for visualization
-         !$omp parallel
-         !$omp do schedule(runtime) private(i, iEdge, areaEdge, k, rtmp)
-         do iCell = 1, nCells
-            gmStreamFuncTopOfCell(:, iCell) = 0.0_RKIND
-            do i = 1, nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i, iCell)
-
-               areaEdge = 0.25_RKIND*dcEdge(iEdge)*dvEdge(iEdge)
-
-               do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-                  rtmp = 0.5_RKIND*(gmStreamFuncTopOfEdge(k, iEdge) + gmStreamFuncTopOfEdge(k + 1, iEdge))*areaEdge
-                  gmStreamFuncTopOfCell(k, iCell) = gmStreamFuncTopOfCell(k, iCell) + gmResolutionTaper(iEdge) * rtmp
-               end do
-            end do
-         end do
-         !$omp end do
-
-         !$omp do schedule(runtime)
-         do iCell = 1, nCells
-            gmStreamFuncTopOfCell(:, iCell) = gmStreamFuncTopOfCell(:, iCell)/areaCell(iCell)
-         end do
-         !$omp end do
-         !$omp end parallel
-
          deallocate (rightHandSide)
          deallocate (tridiagA)
          deallocate (tridiagB)

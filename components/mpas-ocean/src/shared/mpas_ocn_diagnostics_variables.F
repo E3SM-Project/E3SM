@@ -98,8 +98,7 @@ module ocn_diagnostics_variables
       transportVelocityX, transportVelocityY, transportVelocityZ, transportVelocityZonal, &
       transportVelocityMeridional, GMBolusVelocityX, GMBolusVelocityY, &
       GMBolusVelocityZ, GMBolusVelocityZonal, GMBolusVelocityMeridional, gmStreamFuncTopOfEdge, &
-      GMStreamFuncX, GMStreamFuncY, GMStreamFuncZ, GMStreamFuncZonal, GMStreamFuncMeridional, &
-      gmStreamFuncTopOfCell
+      GMStreamFuncX, GMStreamFuncY, GMStreamFuncZ, GMStreamFuncZonal, GMStreamFuncMeridional
 
    real (kind=RKIND), dimension(:,:), pointer :: rx1Edge
    real (kind=RKIND), dimension(:,:), pointer :: rx1Cell
@@ -385,8 +384,6 @@ contains
          ! GM-related fields
          call mpas_pool_get_array(diagnosticsPool, 'cGMphaseSpeed', &
                    cGMphaseSpeed)
-         call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfCell', &
-                   gmStreamFuncTopOfCell)
          call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfEdge', &
                    gmStreamFuncTopOfEdge)
          call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncX', &
@@ -700,7 +697,6 @@ contains
          !$acc                   vertAleTransportTop,             &
          !$acc                   GMBolusVelocityZonal,            &
          !$acc                   bulkRichardsonNumber,            &
-         !$acc                   gmStreamFuncTopOfCell,           &
          !$acc                   gmStreamFuncTopOfEdge,           &
          !$acc                   indexSSHGradientZonal,           &
          !$acc                   relativeVorticityCell,           &
@@ -936,7 +932,6 @@ contains
          !$acc                   vertAleTransportTop,             &
          !$acc                   GMBolusVelocityZonal,            &
          !$acc                   bulkRichardsonNumber,            &
-         !$acc                   gmStreamFuncTopOfCell,           &
          !$acc                   gmStreamFuncTopOfEdge,           &
          !$acc                   indexSSHGradientZonal,           &
          !$acc                   relativeVorticityCell,           &
@@ -1133,7 +1128,6 @@ contains
                  vertAleTransportTop,             &
                  GMBolusVelocityZonal,            &
                  bulkRichardsonNumber,            &
-                 gmStreamFuncTopOfCell,           &
                  gmStreamFuncTopOfEdge,           &
                  indexSSHGradientZonal,           &
                  relativeVorticityCell,           &
