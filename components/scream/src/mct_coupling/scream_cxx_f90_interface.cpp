@@ -72,7 +72,7 @@ extern "C"
 
 /*===============================================================================================*/
 // WARNING: make sure input_yaml_file is a null-terminated string!
-void scream_create_atm_instance (const MPI_Fint& f_comm, const int atm_id,
+void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
                                  const char* input_yaml_file,
                                  const char* atm_log_file) {
   using namespace scream;

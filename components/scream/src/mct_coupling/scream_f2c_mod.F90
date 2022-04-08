@@ -18,7 +18,7 @@ interface
     !
     ! Input(s)
     !
-    integer (kind=c_int),   intent(in) :: f_comm, atm_id
+    integer (kind=c_int), value, intent(in) :: f_comm, atm_id
     character(kind=c_char), target, intent(in) :: yaml_fname(*), atm_log_fname(*)
   end subroutine scream_create_atm_instance
 
