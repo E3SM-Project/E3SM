@@ -43,19 +43,14 @@ module scream_scorpio_interface
 !==============================================================================!
 
   !------------
-  use piolib_mod, only : PIO_init, PIO_finalize, PIO_createfile, PIO_closefile, &
-      PIO_initdecomp, PIO_freedecomp, PIO_syncfile, PIO_openfile, PIO_setframe, &
-      pio_init, pio_freedecomp
-  use pio_types,  only : iosystem_desc_t, file_desc_t, &
-      pio_noerr, PIO_iotype_netcdf, var_desc_t, io_desc_t, PIO_int, &
-      pio_clobber, PIO_nowrite, PIO_unlimited, pio_global, PIO_real, &
-      PIO_double, pio_rearr_subset, pio_write, pio_nowrite, PIO_64BIT_DATA
-  use pio_kinds,  only : PIO_OFFSET_KIND, i4
-  use pio_nf,     only : PIO_redef, PIO_def_dim, PIO_def_var, PIO_enddef, PIO_inq_dimid, &
-                         PIO_inq_dimlen, PIO_inq_varid, PIO_inq_att
-  use piodarray,  only : PIO_write_darray, PIO_read_darray
-  use pionfatt_mod, only : PIO_put_att   => put_att
-  use pionfput_mod, only : PIO_put_var   => put_var
+  use pio_types,    only: iosystem_desc_t, file_desc_t, var_desc_t, io_desc_t, &
+                          pio_noerr, pio_global, &
+                          PIO_int, PIO_real, PIO_double
+  use pio_kinds,    only: PIO_OFFSET_KIND
+  use pio_nf,       only: PIO_enddef, PIO_inq_dimid, PIO_inq_dimlen, PIO_inq_varid
+  use pionfatt_mod, only: PIO_put_att   => put_att
+
+  use mpi
 
   use iso_c_binding
   implicit none
@@ -107,23 +102,14 @@ module scream_scorpio_interface
   integer,parameter :: file_purpose_in  = 1
   integer,parameter :: file_purpose_out = 2
 
-!----------------------------------------------------------------------
   type, public :: hist_coord_t
-    character(len=max_hcoordname_len) :: name = ''          ! coordinate name
-    integer                  :: dimsize = 0                 ! size of dimension
-    integer                  :: dimid                       ! Unique PIO Id for this dimension
-    character(len=max_chars) :: long_name = ''              ! 'long_name' attribute
-    character(len=max_chars) :: units = ''                  ! 'units' attribute
-    character(len=max_chars) :: bounds_name = ''            ! 'bounds' attribute (& name of bounds variable)
-    character(len=max_chars) :: standard_name = ''          ! 'standard_name' attribute
-    character(len=4)         :: positive = ''               ! 'positive' attribute ('up' or 'down')
-    integer,  pointer        :: integer_values(:) => null() ! dim values if integer
-    real(rtype), pointer     :: real_values(:) => null()    ! dim values if real
-    real(rtype), pointer     :: bounds(:,:) => null()       ! dim bounds
-    logical                  :: integer_dim                 ! .true. iff dim has integral values
-    logical                  :: vertical_coord              ! .true. iff dim is vertical
+    character(len=max_hcoordname_len) :: name = ''  ! coordinate name
+    integer                  :: dimsize = 0         ! size of dimension
+    integer                  :: dimid               ! Unique PIO Id for this dimension
+    character(len=max_chars) :: long_name = ''      ! 'long_name' attribute
+    character(len=max_chars) :: units = ''          ! 'units' attribute
   end type hist_coord_t
-!----------------------------------------------------------------------
+
   type, public :: hist_var_t
     character(len=max_hvarname_len) :: name   ! coordinate name
     character(len=max_chars) :: long_name     ! 'long_name' attribute
@@ -137,9 +123,8 @@ module scream_scorpio_interface
     integer, allocatable :: dimid(:)          ! array of PIO dimension id's for this variable
     integer, allocatable :: dimlen(:)         ! array of PIO dimension lengths for this variable
     logical              :: has_t_dim         ! true, if variable has a time dimension
-    logical              :: compdof_set = .false. ! true after the dof for this rank has been set.
   end type hist_var_t
-!----------------------------------------------------------------------
+
   ! The iodesc_list allows us to cache existing PIO decompositions
   ! The tag needs the dim lengths, the dtype and map id (+ optional permutation)
   ! Define a recursive structure because we do not know ahead of time how many
@@ -151,6 +136,7 @@ module scream_scorpio_interface
     type(iodesc_list_t), pointer :: next => NULL()   ! Needed for recursive definition
     logical                      :: iodesc_set = .false.
   end type iodesc_list_t
+
   ! Define the first iodesc_list_t
   type(iodesc_list_t), target :: iodesc_list_top
 !----------------------------------------------------------------------
@@ -172,35 +158,17 @@ module scream_scorpio_interface
   ! Define the first pio_file_list
   type(pio_file_list_t), pointer :: pio_file_list_front
   type(pio_file_list_t), pointer :: pio_file_list_back
+
 !----------------------------------------------------------------------
   type, public :: pio_atm_file_t
-        !> @brief Filename.
-        character(len=max_chars) :: filename = ""
-
-        !> @brief Purpose (in/out).
-        integer :: purpose = file_purpose_not_set
-
-        !> @brief Contains data identifying the file.
-        type(file_desc_t)     :: pioFileDesc
-
-        !> @brief Recursive list of variables
-        type(hist_coord_list_t) :: coord_list_top
-
-        !> @brief Number of output variable and counter to track them during
-        !  registration
-        integer               :: VarCounter = 0
-        !> @brief Recursive list of variables
-        type(hist_var_list_t) :: var_list_top
-
-        !> @brief Number of history records on this file
-        integer               :: numRecs
-
-        !> @brief Whether or not the dim/var definition phase is still open
-        logical                         :: is_enddef = .false.
-
-        ! The number of customer that requested to open the file.
-        ! Increased at every open request, decreased at every close request.
-        integer :: num_customers
+    character(len=max_chars) :: filename = ""
+    integer :: purpose = file_purpose_not_set       ! Input or Output file
+    type(file_desc_t)        :: pioFileDesc         ! Contains data identifying the file.
+    type(hist_coord_list_t)  :: coord_list_top      ! Recursive list of variables
+    type(hist_var_list_t)    :: var_list_top        ! Recursive list of variables
+    integer                  :: numRecs             ! Number of history records on file
+    logical                  :: is_enddef = .false. ! Whether definition phase is open
+    integer                  :: num_customers       ! The number of customer that requested to open the file.
   end type pio_atm_file_t
 
 !----------------------------------------------------------------------
@@ -212,6 +180,7 @@ module scream_scorpio_interface
     module procedure grid_write_darray_1d
   end interface
 !----------------------------------------------------------------------
+
 contains
 !=====================================================================!
   ! Register a PIO file to be used for input/output operations.
@@ -272,6 +241,9 @@ contains
   !            dimensions as having "unlimited" length which is used for
   !            dimensions such as time.
   subroutine register_dimension(filename,shortname,longname,length)
+    use pio_types, only: pio_unlimited
+    use pio_nf,    only: PIO_def_dim
+
     character(len=*), intent(in)        :: filename   ! Name of file to register the dimension on.
     character(len=*), intent(in)        :: shortname,longname ! Short- and long- names for this dimension, short: brief identifier and name for netCDF output, long: longer descriptor sentence to be included as meta-data in file.
     integer, intent(in)                 :: length             ! Length of the dimension, 0: unlimited (like time), >0 actual length of dimension
@@ -367,7 +339,6 @@ contains
     integer                      :: dim_ii
     integer                      :: ierr
     logical                      :: found,var_found
-    character(len=256)           :: dimlen_str
 
     type(hist_var_list_t), pointer :: curr, prev
 
@@ -421,9 +392,6 @@ contains
       ! check to see if variable already is defined with file (for use with input)
       ierr = PIO_inq_varid(pio_atm_file%pioFileDesc,trim(shortname),hist_var%piovar)
       call errorHandle("PIO ERROR: could not find variable "//trim(shortname)//" in file "//trim(filename),ierr)
-
-      ! Update the number of variables on file
-      pio_atm_file%varcounter = pio_atm_file%varcounter + 1
     else
       ! The var was already registered by another input/output instance. Check that everything matches
       hist_var => curr%var
@@ -476,6 +444,8 @@ contains
   !                 the pio_decomp_tag for variables that have the same
   !                 dimensionality.  See get_decomp for more details.
   subroutine register_variable(filename,shortname,longname,units,numdims,var_dimensions,dtype,pio_decomp_tag)
+    use pio_nf, only: PIO_def_var
+
     character(len=*), intent(in) :: filename         ! Name of the file to register this variable with
     character(len=*), intent(in) :: shortname,longname       ! short and long names for the variable.  Short: variable name in file, Long: more descriptive name
     character(len=*), intent(in) :: units                    ! units for variable
@@ -550,9 +520,6 @@ contains
       !PMC
       ierr=PIO_put_att(pio_atm_file%pioFileDesc, hist_var%piovar, 'units', hist_var%units )
       ierr=PIO_put_att(pio_atm_file%pioFileDesc, hist_var%piovar, 'long_name', hist_var%long_name )
-
-            ! Update the number of variables on file
-      pio_atm_file%varcounter = pio_atm_file%varcounter + 1
     else
       ! The var was already registered by another input/output instance. Check that everything matches
       hist_var => curr%var
@@ -596,6 +563,8 @@ contains
   ! scream decides to allow for other "unlimited" dimensions to be used our
   ! input/output than this routine will need to be adjusted.
   subroutine eam_update_time(filename,time)
+    use pionfput_mod, only: PIO_put_var   => put_var
+
     character(len=*), intent(in) :: filename       ! PIO filename
     real(rtype), intent(in)      :: time
 
@@ -646,6 +615,9 @@ contains
     use shr_pio_mod,  only: shr_pio_getrearranger, shr_pio_getiosys, &
                             shr_pio_getiotype, shr_pio_getioformat
 #else
+    use pio_types,  only: pio_rearr_subset, PIO_iotype_netcdf, PIO_64BIT_DATA
+    use piolib_mod, only: pio_init
+
     integer :: ierr, stride, atm_rank, atm_size, num_aggregator
 #endif
 
@@ -697,6 +669,8 @@ contains
 !=====================================================================!
   ! Create a pio netCDF file with the appropriate name.
   subroutine eam_pio_createfile(File,fname)
+    use piolib_mod, only: pio_createfile
+    use pio_types,  only: pio_clobber
 
     type(file_desc_t), intent(inout) :: File             ! Pio file Handle
     character(len=*),  intent(in)    :: fname            ! Pio file name
@@ -712,6 +686,8 @@ contains
 !=====================================================================!
   ! Open an already existing netCDF file.
   subroutine eam_pio_openfile(pio_file,fname)
+    use piolib_mod, only: pio_openfile
+    use pio_types,  only: pio_write, pio_nowrite
 
     type(pio_atm_file_t), pointer, intent(in) :: pio_file     ! Pointer to pio file struct associated with this filename
     character(len=*),  intent(in)    :: fname            ! Pio file name
@@ -732,6 +708,7 @@ contains
   ! Close a netCDF file.  To be done as a last step after all input or output
   ! for that file has been finished.
   subroutine eam_pio_closefile(fname)
+    use piolib_mod, only: PIO_syncfile, PIO_closefile
 
     character(len=*),  intent(in)    :: fname            ! Pio file name
     !--
@@ -775,6 +752,7 @@ contains
   ! Finalize a PIO session within scream.  Close all open files and deallocate
   ! the pio_subsystem session.
   subroutine eam_pio_finalize()
+    use piolib_mod, only: PIO_finalize, pio_freedecomp
     ! May not be needed, possibly handled by PIO directly.
 
     integer :: ierr
@@ -834,6 +812,7 @@ contains
  ! Determine the unique pio_decomposition for this output grid, if it hasn't
  ! been defined create a new one.
   subroutine get_decomp(tag,dtype,dimension_len,compdof,iodesc)
+    use piolib_mod, only: pio_initdecomp
     ! TODO: CAM code creates the decomp tag for the user.  Theoretically it is
     ! unique because it is based on dimensions and datatype.  But the tag ends
     ! up not being very descriptive.  The todo item is to revisit how tags are
@@ -925,7 +904,6 @@ contains
     do ii = 1,dof_len
       var%compdof(ii) = dof_vec(ii)
     end do
-    var%compdof_set = .true.
 
   end subroutine set_dof
 !=====================================================================!
@@ -951,7 +929,7 @@ contains
     do while (associated(curr))
       if (associated(curr%var)) then
         hist_var => curr%var
-        if (.not.hist_var%compdof_set) call errorHandle("PIO ERROR: unable to set decomp for file, var: "//trim(current_atm_file%filename)//", "//trim(hist_var%name)//". Set DOF.",999)
+        if (.not.associated(hist_var)) call errorHandle("PIO ERROR: unable to set decomp for file, var: "//trim(current_atm_file%filename)//", "//trim(hist_var%name)//". Set DOF.",999)
         ! Assign decomp
         if (hist_var%has_t_dim) then
           loc_len = max(1,hist_var%numdims-1)
@@ -990,7 +968,7 @@ contains
 !=====================================================================!
   ! Retrieves an integer global attribute from the nc file
   function get_int_attribute (file_name, attr_name) result(val)
-    use pionfatt_mod, only : PIO_get_att => get_att
+    use pionfatt_mod, only: PIO_get_att => get_att
     character(len=*), intent(in) :: file_name  ! Name of the filename
     character(len=*), intent(in) :: attr_name  ! Name of the attribute
     type(pio_atm_file_t), pointer :: pio_atm_file
@@ -1010,7 +988,9 @@ contains
 
   ! Writes an integer global attribute to the nc file
   subroutine set_int_attribute (file_name, attr_name, val)
-    use pionfatt_mod, only : PIO_put_att => put_att
+    use pionfatt_mod, only: PIO_put_att => put_att
+    use pio_nf, only: pio_redef, PIO_inq_att
+
     character(len=*), intent(in) :: file_name  ! Name of the filename
     character(len=*), intent(in) :: attr_name  ! Name of the attribute
     integer, intent(in) :: val
@@ -1192,6 +1172,9 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_1d(filename, varname, var_data_ptr)
+    use piolib_mod, only: PIO_setframe
+    use piodarray,  only: PIO_write_darray
+
     ! Dummy arguments
     character(len=*),   intent(in) :: filename       ! PIO filename
     character(len=*),   intent(in) :: varname
@@ -1244,6 +1227,8 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_read_darray_1d(filename, varname, var_data_ptr, time_index)
+    use piolib_mod, only: PIO_setframe
+    use piodarray,  only: PIO_read_darray
 
     ! Dummy arguments
     character(len=*), intent(in) :: filename       ! PIO filename
