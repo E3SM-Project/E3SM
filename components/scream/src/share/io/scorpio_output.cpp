@@ -12,6 +12,34 @@
 namespace scream
 {
 
+// This helper function updates the current output val with a new one,
+// according to the "averaging" type, and according to the number of
+// model time steps since the last output step.
+KOKKOS_INLINE_FUNCTION
+void combine (const Real& new_val, Real& curr_val, const int nsteps_since_last_output, const OutputAvgType avg_type) const
+{
+  if (nsteps_since_last_output==1) {
+    curr_val = new_val;
+  } else {
+    switch (avg_type) {
+      case OutputAvgType::Instant:
+        curr_val = new_val;
+        break;
+      case OutputAvgType::Max:
+        curr_val = ekat::impl::max(curr_val,new_val);
+        break;
+      case OutputAvgType::Min:
+        curr_val = ekat::impl::min(curr_val,new_val);
+        break;
+      case OutputAvgType::Average:
+        curr_val = (curr_val*(nsteps_since_last_output-1) + new_val)/(nsteps_since_last_output);
+        break;
+      default:
+        EKAT_KERNEL_ERROR_MSG ("Unexpected value for m_avg_type. Please, contact developers.\n");
+    }
+  }
+}
+
 AtmosphereOutput::
 AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
                   const std::shared_ptr<const fm_type>& field_mgr,
@@ -170,6 +198,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
     auto data = m_dev_views_1d.at(name).data();
     KT::RangePolicy policy(0,layout.size());
     const auto extents = layout.extents();
+    auto avg_type = m_avg_type;
     switch (rank) {
       case 1:
       {
@@ -177,7 +206,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
         auto avg_view_1d = view_Nd_host<1>(data,dims[0]);
 
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
-          combine(new_view_1d(i), avg_view_1d(i),nsteps_since_last_output);
+          combine(new_view_1d(i), avg_view_1d(i),nsteps_since_last_output,avg_type);
         });
         break;
       }
@@ -188,7 +217,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
           int i,j;
           unflatten_idx(idx,extents,i,j);
-          combine(new_view_2d(i,j), avg_view_2d(i,j),nsteps_since_last_output);
+          combine(new_view_2d(i,j), avg_view_2d(i,j),nsteps_since_last_output,avg_type);
         });
         break;
       }
@@ -199,7 +228,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
           int i,j,k;
           unflatten_idx(idx,extents,i,j,k);
-          combine(new_view_3d(i,j,k), avg_view_3d(i,j,k),nsteps_since_last_output);
+          combine(new_view_3d(i,j,k), avg_view_3d(i,j,k),nsteps_since_last_output,avg_type);
         });
         break;
       }
@@ -210,7 +239,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
           int i,j,k,l;
           unflatten_idx(idx,extents,i,j,k,l);
-          combine(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),nsteps_since_last_output);
+          combine(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),nsteps_since_last_output,avg_type);
         });
         break;
       }
@@ -221,7 +250,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
           int i,j,k,l,m;
           unflatten_idx(idx,extents,i,j,k,l,m);
-          combine(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),nsteps_since_last_output);
+          combine(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),nsteps_since_last_output,avg_type);
         });
         break;
       }
@@ -232,7 +261,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
           int i,j,k,l,m,n;
           unflatten_idx(idx,extents,i,j,k,l,m,n);
-          combine(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n),nsteps_since_last_output);
+          combine(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n),nsteps_since_last_output,avg_type);
         });
         break;
       }
