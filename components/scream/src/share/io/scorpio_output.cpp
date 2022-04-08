@@ -188,87 +188,100 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
     EKAT_REQUIRE_MSG (field.get_header().get_tracking().get_time_stamp().is_valid(),
         "Error! Output field '" + name + "' has not been initialized yet\n.");
 
+    const bool is_aliasing_field_view =
+        m_avg_type==OutputAvgType::Instant &&
+        field.get_header().get_alloc_properties().get_padding()==0 &&
+        field.get_header().get_parent().expired();
+
     // Manually update the 'running-tally' views with data from the field,
     // by combining new data with current avg values.
-    // NOTE: the running-tally is not a tally for Instant avg_type.
-    auto data = m_dev_views_1d.at(name).data();
+    // NOTE: this is skipped for instant output, if IO view is aliasing Field view.
+    auto view_dev = m_dev_views_1d.at(name);
+    auto data = view_dev.data();
     KT::RangePolicy policy(0,layout.size());
     const auto extents = layout.extents();
+
     auto avg_type = m_avg_type;
-    switch (rank) {
-      case 1:
-      {
-        auto new_view_1d = field.get_view<const Real*,Device>();
-        auto avg_view_1d = view_Nd_dev<1>(data,dims[0]);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
-          combine(new_view_1d(i), avg_view_1d(i),avg_type);
-        });
-        break;
+    // If the dev_view_1d is aliasing the field device view (must be Instant output),
+    // then there's no point in copying from the field's view to dev_view
+    if (not is_aliasing_field_view) {
+      switch (rank) {
+        case 1:
+        {
+          auto new_view_1d = field.get_view<const Real*,Device>();
+          auto avg_view_1d = view_Nd_dev<1>(data,dims[0]);
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
+            combine(new_view_1d(i), avg_view_1d(i),avg_type);
+          });
+          break;
+        }
+        case 2:
+        {
+          auto new_view_2d = field.get_view<const Real**,Device>();
+          auto avg_view_2d = view_Nd_dev<2>(data,dims[0],dims[1]);
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+            int i,j;
+            unflatten_idx(idx,extents,i,j);
+            combine(new_view_2d(i,j), avg_view_2d(i,j),avg_type);
+          });
+          break;
+        }
+        case 3:
+        {
+          auto new_view_3d = field.get_view<const Real***,Device>();
+          auto avg_view_3d = view_Nd_dev<3>(data,dims[0],dims[1],dims[2]);
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+            int i,j,k;
+            unflatten_idx(idx,extents,i,j,k);
+            combine(new_view_3d(i,j,k), avg_view_3d(i,j,k),avg_type);
+          });
+          break;
+        }
+        case 4:
+        {
+          auto new_view_4d = field.get_view<const Real****,Device>();
+          auto avg_view_4d = view_Nd_dev<4>(data,dims[0],dims[1],dims[2],dims[3]);
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+            int i,j,k,l;
+            unflatten_idx(idx,extents,i,j,k,l);
+            combine(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),avg_type);
+          });
+          break;
+        }
+        case 5:
+        {
+          auto new_view_5d = field.get_view<const Real*****,Device>();
+          auto avg_view_5d = view_Nd_dev<5>(data,dims[0],dims[1],dims[2],dims[3],dims[4]);
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+            int i,j,k,l,m;
+            unflatten_idx(idx,extents,i,j,k,l,m);
+            combine(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),avg_type);
+          });
+          break;
+        }
+        case 6:
+        {
+          auto new_view_6d = field.get_view<const Real******,Device>();
+          auto avg_view_6d = view_Nd_dev<6>(data,dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]);
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+            int i,j,k,l,m,n;
+            unflatten_idx(idx,extents,i,j,k,l,m,n);
+            combine(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n),avg_type);
+          });
+          break;
+        }
+        default:
+          EKAT_ERROR_MSG ("Error! Field rank (" + std::to_string(rank) + ") not supported by AtmosphereOutput.\n");
       }
-      case 2:
-      {
-        auto new_view_2d = field.get_view<const Real**,Device>();
-        auto avg_view_2d = view_Nd_dev<2>(data,dims[0],dims[1]);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
-          int i,j;
-          unflatten_idx(idx,extents,i,j);
-          combine(new_view_2d(i,j), avg_view_2d(i,j),avg_type);
-        });
-        break;
-      }
-      case 3:
-      {
-        auto new_view_3d = field.get_view<const Real***,Device>();
-        auto avg_view_3d = view_Nd_dev<3>(data,dims[0],dims[1],dims[2]);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
-          int i,j,k;
-          unflatten_idx(idx,extents,i,j,k);
-          combine(new_view_3d(i,j,k), avg_view_3d(i,j,k),avg_type);
-        });
-        break;
-      }
-      case 4:
-      {
-        auto new_view_4d = field.get_view<const Real****,Device>();
-        auto avg_view_4d = view_Nd_dev<4>(data,dims[0],dims[1],dims[2],dims[3]);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
-          int i,j,k,l;
-          unflatten_idx(idx,extents,i,j,k,l);
-          combine(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),avg_type);
-        });
-        break;
-      }
-      case 5:
-      {
-        auto new_view_5d = field.get_view<const Real*****,Device>();
-        auto avg_view_5d = view_Nd_dev<5>(data,dims[0],dims[1],dims[2],dims[3],dims[4]);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
-          int i,j,k,l,m;
-          unflatten_idx(idx,extents,i,j,k,l,m);
-          combine(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),avg_type);
-        });
-        break;
-      }
-      case 6:
-      {
-        auto new_view_6d = field.get_view<const Real******,Device>();
-        auto avg_view_6d = view_Nd_dev<6>(data,dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
-          int i,j,k,l,m,n;
-          unflatten_idx(idx,extents,i,j,k,l,m,n);
-          combine(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n),avg_type);
-        });
-        break;
-      }
-      default:
-        EKAT_ERROR_MSG ("Error! Field rank (" + std::to_string(rank) + ") not supported by AtmosphereOutput.\n");
     }
 
     if (is_write_step) {
-      // Divide by steps count only when the summation is complete
-      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
-        data[i] /= nsteps_since_last_output;
-      });
+      if (avg_type==OutputAvgType::Average) {
+        // Divide by steps count only when the summation is complete
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
+          data[i] /= nsteps_since_last_output;
+        });
+      }
       // Bring data to host
       Kokkos::deep_copy (m_host_views_1d.at(name),m_dev_views_1d.at(name));
       grid_write_data_array(filename,name,data);
