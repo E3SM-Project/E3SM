@@ -85,7 +85,6 @@ module scream_scorpio_interface
             set_dof,                     & ! Set the pio dof decomposition for specific variable in file.
             grid_write_data_array,       & ! Write gridded data to a pio managed netCDF file
             grid_read_data_array,        & ! Read gridded data from a pio managed netCDF file
-            eam_sync_piofile,            & ! Syncronize the piofile, to be done after all output is written during a single timestep
             eam_update_time,             & ! Update the timestamp (i.e. time variable) for a given pio netCDF file
             get_int_attribute,           & ! Retrieves an integer global attribute from the nc file
             set_int_attribute,           & ! Writes an integer global attribute to the nc file
@@ -613,18 +612,6 @@ contains
     ! Only update time on the file if a valid time is provided
     if (time>=0) ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,(/ pio_atm_file%numRecs /), (/ 1 /), (/ time /))
   end subroutine eam_update_time
-!=====================================================================!
-  ! Synchronize a pio file after updating the unlimited dimensions and accessing
-  ! all desired variables.
-  subroutine eam_sync_piofile(filename)
-    character(len=*),          intent(in)    :: filename       ! PIO filename
-
-    type(pio_atm_file_t),pointer             :: pio_atm_file
-    logical                      :: found
-
-    call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
-    call PIO_syncfile(pio_atm_file%pioFileDesc)
-  end subroutine eam_sync_piofile
 !=====================================================================!
   ! Assign header metadata to a specific pio output file.  TODO: Fix this to be
   ! more general.  Right now it is all dummy boiler plate.  Would make the most

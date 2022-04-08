@@ -22,7 +22,6 @@ extern "C" {
   void grid_write_data_array_c2f_real(const char*&& filename, const char*&& varname, const Real*& hbuf);
   void eam_init_pio_subsystem_c2f(const int mpicom, const int compid, const bool local);
   void eam_pio_finalize_c2f();
-  void sync_outfile_c2f(const char*&& filename);
   void eam_pio_closefile_c2f(const char*&& filename);
   void pio_update_time_c2f(const char*&& filename,const Real time);
   void register_dimension_c2f(const char*&& filename, const char*&& shortname, const char*&& longname, const int length);
@@ -56,11 +55,6 @@ void register_file(const std::string& filename, const FileMode mode) {
 void eam_pio_closefile(const std::string& filename) {
 
   eam_pio_closefile_c2f(filename.c_str());
-}
-/* ----------------------------------------------------------------- */
-void sync_outfile(const std::string& filename) {
-
-  sync_outfile_c2f(filename.c_str());
 }
 /* ----------------------------------------------------------------- */
 void set_decomp(const std::string& filename) {

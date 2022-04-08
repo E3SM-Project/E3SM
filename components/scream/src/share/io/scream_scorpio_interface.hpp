@@ -37,8 +37,6 @@ namespace scorpio {
   void eam_pio_closefile(const std::string& filename);
   /* Register a new file to be used for input/output with the scorpio module */
   void register_file(const std::string& filename, const FileMode mode);
-  /* Every timestep each output file needs to be synced, call once per timestep, per file */
-  void sync_outfile(const std::string& filename);
   /* Sets the IO decompostion for all variables in a particular filename.  Required after all variables have been registered.  Called once per file. */
   void set_decomp(const std::string& filename);
   /* Sets the degrees-of-freedom for a particular variable in a particular file.  Called once for each variable, for each file. */

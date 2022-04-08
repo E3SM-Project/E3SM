@@ -268,9 +268,6 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     // We're adding one snapshot to the file
     ++filespecs.num_snapshots_in_file;
 
-    // Finish up any updates to output file
-    sync_outfile(filename);
-
     // Now that we've written output to this file we need reset the nsteps.
     control.nsteps_since_last_write = 0;
 

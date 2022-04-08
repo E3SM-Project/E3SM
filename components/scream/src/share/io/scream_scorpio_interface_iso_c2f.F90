@@ -60,17 +60,6 @@ contains
 
   end subroutine register_file_c2f
 !=====================================================================!
-  subroutine sync_outfile_c2f(filename_in) bind(c)
-    use scream_scorpio_interface, only : eam_sync_piofile
-    type(c_ptr), intent(in) :: filename_in
-
-    character(len=256)       :: filename
-
-    call convert_c_string(filename_in,filename)
-    call eam_sync_piofile(trim(filename))
-
-  end subroutine sync_outfile_c2f
-!=====================================================================!
   subroutine set_decomp_c2f(filename_in) bind(c)
     use scream_scorpio_interface, only : set_decomp
     type(c_ptr), intent(in) :: filename_in
