@@ -49,4 +49,7 @@
 // Whether experimental code should be enabled
 #cmakedefine SCREAM_ENABLE_EXPERIMENTAL
 
+// Data directory for the scream project
+#define SCREAM_DATA_DIR "${SCREAM_BIN_DIR}/data"
+
 #endif

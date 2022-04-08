@@ -19,11 +19,6 @@ set (RRTMGP_EXT_DIR ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external)
 GetInputFile(init/shoc_cld_p3_rrtmgp_init_ne2np4.nc
   ${CMAKE_CURRENT_BINARY_DIR}/shoc_cld_p3_rrtmgp_init_ne2np4.nc)
 
-GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(tables/p3_lookup_table_2.dat-v4.1.1
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-
 GetInputFile(init/rrtmgp-data-sw-g224-2018-12-04.nc
   ${CMAKE_CURRENT_BINARY_DIR}/data)
 GetInputFile(init/rrtmgp-data-lw-g256-2018-12-04.nc
