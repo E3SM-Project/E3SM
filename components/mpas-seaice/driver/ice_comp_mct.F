@@ -43,6 +43,7 @@ module ice_comp_mct
 #ifdef HAVE_MOAB
    use mpas_moabmesh
    use seq_comm_mct, only: MPSIID
+   use iMOAB, only: iMOAB_DefineTagStorage
 #endif
 
    use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
@@ -89,7 +90,7 @@ module ice_comp_mct
 !
 #ifdef HAVE_MOAB
   private :: ice_export_moab
-  integer , private :: mblsize
+  integer , private :: mblsize, totalmbls
   real (kind=RKIND) , allocatable, private :: i2x_im(:,:) 
 #endif
 ! !PRIVATE MODULE VARIABLES
@@ -213,7 +214,10 @@ contains
     character(len=strKIND) :: curdate
     character(len=strKIND) :: curtime
     character(len=strKIND) :: history
-
+#ifdef HAVE_MOAB
+    integer :: ierrmb, numco, tagtype, tagindex
+    character(len=400) :: tagname
+#endif
     logical, pointer :: tempLogicalConfig
     character(len=StrKIND), pointer :: tempCharConfig
     real (kind=RKIND), pointer :: tempRealConfig
@@ -689,7 +693,16 @@ contains
 #ifdef HAVE_MOAB
    ! initialize moab tag fields array
     mblsize = lsize
+    totalmbls = mblsize * nsend ! size of the double array
     allocate (i2x_im(lsize, nsend) )
+    ! define tags according to the seq_flds_i2x_fields 
+    tagtype = 1  ! dense, double
+    numco = 1 !  one value per cell / entity
+    tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+    ierrmb = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
+    if ( ierrmb == 1 ) then
+      call mpas_log_write('cannot define tags for MOAB i2x fields ' // trim(seq_flds_i2x_fields), MPAS_LOG_ERR)
+    endif
 #endif
     
 
@@ -2995,9 +3008,10 @@ contains
       integer :: ent_type, ierr
       character(len=32), parameter :: sub = 'ice_export_moab'
    
-      character*100 outfile, wopts, localmeshfile, tagname, lnum
+      character(len=100) :: outfile, wopts, localmeshfile, lnum
+      character(len=400) :: tagname
    !----------------------------------------------------------------------- 
-         
+      call shr_file_setLogUnit (iceLogUnit)
       n = 0
       i2x_im(: ,:) = 0.0_RKIND
       block_ptr => domain % blocklist
@@ -3218,32 +3232,21 @@ contains
       enddo
 
       ent_type = 1 ! cells
-      tagname='Fioi_swpen'//C_NULL_CHAR
-      ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, mblsize , ent_type, i2x_im(1, index_i2x_Fioi_swpen) )
-      tagname='Fioi_melth'//C_NULL_CHAR
-      ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, mblsize , ent_type, i2x_im(1, index_i2x_Fioi_melth) )
-      tagname='Fioi_meltw'//C_NULL_CHAR
-      ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, mblsize , ent_type, i2x_im(1, index_i2x_Fioi_meltw) )
-      tagname='Fioi_salt'//C_NULL_CHAR
-      ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, mblsize , ent_type, i2x_im(1, index_i2x_Fioi_salt) )
-      tagname='Fioi_taux'//C_NULL_CHAR
-      ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, mblsize , ent_type, i2x_im(1, index_i2x_Fioi_taux) )
-      tagname='Fioi_tauy'//C_NULL_CHAR
-      ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, mblsize , ent_type, i2x_im(1, index_i2x_Fioi_tauy) )
-      if (config_use_data_icebergs) then
-         tagname='Fioi_bergw'//C_NULL_CHAR
-         ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, mblsize , ent_type, i2x_im(1, index_i2x_Fioi_bergw) )
-         tagname='Fioi_bergh'//C_NULL_CHAR
-         ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, mblsize , ent_type, i2x_im(1, index_i2x_Fioi_bergh) )
+      !  set all tags in one method
+      tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+      ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, totalmbls , ent_type, i2x_im(1, 1) )
+      if ( ierr /= 0 ) then
+         write(iceLogUnit,*) 'Fail to set MOAB fields '
       endif
+      
 
-#ifdef MOABDEBUG
+!#ifdef MOABDEBUG
       num_mb_exports = num_mb_exports +1
       write(lnum,"(I0.2)")num_mb_exports
       outfile = 'ice_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(MPSIID, outfile, wopts)
-#endif
+!#endif
    end subroutine ice_export_moab
 #endif
 end module ice_comp_mct

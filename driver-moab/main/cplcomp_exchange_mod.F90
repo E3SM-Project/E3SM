@@ -1331,26 +1331,6 @@ contains
       call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
 
       if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component p
-        ! define here the fields from seq_flds_i2x_fields to be received by ocean !
-        tagtype = 1  ! dense, double
-        numco = 1 !  one value per cell / entity
-        tagname = 'Fioi_swpen'//C_NULL_CHAR  ! sw: net penetrating ice
-        ierr = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
-        tagname = 'Fioi_melth'//C_NULL_CHAR      ! heat  flux from melting ice (<0)
-        ierr = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
-        tagname = 'Fioi_meltw'//C_NULL_CHAR      ! water flux from melting ice
-        ierr = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
-        tagname = 'Fioi_salt'//C_NULL_CHAR       ! salt  flux from meting  ice
-        ierr = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
-        tagname = 'Fioi_taux'//C_NULL_CHAR       ! ice/ocn stress, zonal
-        ierr = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
-        tagname = 'Fioi_tauy'//C_NULL_CHAR       ! ice/ocn stress, zonal
-        ierr = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
-        tagname = 'Fioi_bergh'//C_NULL_CHAR      ! heat  flux from melting icebergs (<0)
-        ierr = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
-        tagname = 'Fioi_bergw'//C_NULL_CHAR      ! water flux from melting icebergs
-        ierr = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
-
 #ifdef MOABDEBUG
         outfile = 'wholeSeaIce.h5m'//C_NULL_CHAR
         wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
@@ -1374,25 +1354,6 @@ contains
         ! migrated mesh gets another app id, moab moab sea ice to coupler (mbox)
         ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbixid)
         ierr = iMOAB_ReceiveMesh(mbixid, mpicom_join, mpigrp_old, id_old)
-   ! define the same tags on coupler side
-        tagtype = 1  ! dense, double
-        numco = 1 !  one value per cell / entity
-        tagname = 'Fioi_swpen'//C_NULL_CHAR  ! sw: net penetrating ice
-        ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-        tagname = 'Fioi_melth'//C_NULL_CHAR      ! heat  flux from melting ice (<0)
-        ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-        tagname = 'Fioi_meltw'//C_NULL_CHAR      ! water flux from melting ice
-        ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-        tagname = 'Fioi_salt'//C_NULL_CHAR       ! salt  flux from meting  ice
-        ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-        tagname = 'Fioi_taux'//C_NULL_CHAR       ! ice/ocn stress, zonal
-        ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-        tagname = 'Fioi_tauy'//C_NULL_CHAR       ! ice/ocn stress, zonal
-        ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-        tagname = 'Fioi_bergh'//C_NULL_CHAR      ! heat  flux from melting icebergs (<0)
-        ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-        tagname = 'Fioi_bergw'//C_NULL_CHAR      ! water flux from melting icebergs
-        ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
 #ifdef MOABDEBUG
 !      debug test
         outfile = 'recSeaIce.h5m'//C_NULL_CHAR
