@@ -38,7 +38,6 @@ module atm_comp_mct
   character(len=16)      :: inst_name           ! fullname of current instance (ie. "lnd_0001")
   character(len=16)      :: inst_suffix = ""    ! char string associated with instance (ie. "_0001" or "")
   integer(IN)            :: ATM_ID              ! mct comp id
-  real(r8) ,  pointer    :: gbuf(:,:)           ! model grid
   integer(IN),parameter  :: master_task=0       ! task number of master task
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -73,8 +72,6 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap_atm
     type(mct_gGrid)        , pointer :: dom_atm
-    integer(IN)                      :: nxg            ! global dim i-direction
-    integer(IN)                      :: nyg            ! global dim j-direction
     integer(IN)                      :: phase          ! initialization phase
     integer(IN)                      :: ierr           ! error code
     integer(IN)                      :: modelio_fid    ! file descriptor for atm_modelio.nml
@@ -170,14 +167,6 @@ CONTAINS
                                         c_loc(scr_names_a2x), c_loc(index_a2x), c_loc(a2x%rAttr), c_loc(vec_comp_a2x), &
                                         c_loc(can_be_exported_during_init), num_cpl_exports)
 
-    !----------------------------------------------------------------------------
-    ! Reset shr logging to my log file
-    !----------------------------------------------------------------------------
-
-    ! call shr_file_getLogUnit (shrlogunit)
-    ! call shr_file_getLogLevel(shrloglev)
-    ! call shr_file_setLogUnit (logunit)
-
   end subroutine atm_init_mct
 
   !===============================================================================
@@ -196,8 +185,6 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer(IN)                      :: shrlogunit     ! original log unit
-    integer(IN)                      :: shrloglev      ! original log level
     real(R8)                         :: nextsw_cday    ! calendar of next atm sw
     integer                          :: dt_scream
     real(kind=c_double)              :: dt_scream_r
@@ -302,7 +289,6 @@ CONTAINS
     !
     ! Local Variables
     !
-    integer  :: n,i,c,ncols           ! indices	
     real(r8), pointer :: data1(:)
     real(r8), pointer :: data2(:)     ! temporary
     integer , pointer :: idata(:)     ! temporary
