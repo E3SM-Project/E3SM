@@ -2,7 +2,7 @@
 
 #include "share/util/scream_time_stamp.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
-#include "share/property_checks/field_positivity_check.hpp"
+#include "share/property_checks/field_within_interval_check.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -193,11 +193,11 @@ void SPA::initialize_impl (const RunType /* run_type */)
   m_buffer.spa_temp.hybm = SPAData_start.hybm;
 
   //  Set property checks for fields in this process
-  add_postcondition_check<FieldPositivityCheck>(get_field_out("nc_activated"));
-  add_postcondition_check<FieldPositivityCheck>(get_field_out("aero_g_sw"));
-  add_postcondition_check<FieldPositivityCheck>(get_field_out("aero_ssa_sw"));
-  add_postcondition_check<FieldPositivityCheck>(get_field_out("aero_tau_sw"));
-  add_postcondition_check<FieldPositivityCheck>(get_field_out("aero_tau_lw"));
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nc_activated"),0.0,1.0e6,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_g_sw"),0.0,1.0,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_ssa_sw"),0.0,1.0,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_tau_sw"),0.0,1.0,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_tau_lw"),0.0,1.0,false);
 }
 
 // =========================================================================================

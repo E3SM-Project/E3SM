@@ -273,7 +273,7 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
 
   // Set property checks for fields in this process
 
-  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140.0, 500.0);
+  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140.0, 500.0,false);
 
 }
 // =========================================================================================
