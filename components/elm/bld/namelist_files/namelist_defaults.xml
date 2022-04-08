@@ -370,7 +370,8 @@ lnd/clm2/surfdata_map/surfdata_1x1_brazil_simyr1850_c140610.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_c180306.nc</fsurdat>
 
 <fsurdat hgrid="ne30np4.pg2"   sim_year="1850" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1850_c210402.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_simyr1850_c201210.nc</fsurdat>
+<!--lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1850_c210402.nc</fsurdat-->
 
 <fsurdat hgrid="ne30np4.pg2"   sim_year="1950" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1950_c210729.nc</fsurdat>
@@ -562,8 +563,8 @@ this mask will have smb calculated over the entire global land surface
 <flndtopo hgrid="48x96"     >lnd/clm2/griddata/topodata_48x96_USGS_070110.nc</flndtopo>
 <flndtopo hgrid="r05"       >lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609.nc</flndtopo>
 <flndtopo hgrid="r0125"     >lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</flndtopo>
-<!--flndtopo hgrid="ne30np4.pg2"      >lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_simyr1850_c201210.nc</flndtopo-->
-<flndtopo hgrid="ne30np4.pg2"      >lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1850_c210402.nc</flndtopo>
+<flndtopo hgrid="ne30np4.pg2"      >lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_simyr1850_c201210.nc</flndtopo>
+<!--flndtopo hgrid="ne30np4.pg2"      >lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1850_c210402.nc</flndtopo-->
 
 <!-- datasets for TOP solar radiation parameterization -->
 <!--  ***********  Resolution dependent:   *********** -->

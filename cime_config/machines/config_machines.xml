@@ -55,6 +55,114 @@
      This allows using a different mpirun command to launch unit tests
 
   -->
+
+
+
+  <machine MACH="miller">
+    <DESC> ORNL AF cluster 800-node AMD Epyc 2-sockets 64-cores per node</DESC>
+    <NODENAME_REGEX>login.*</NODENAME_REGEX>
+    <OS>CNL</OS>
+    <COMPILERS>gnu,cray,intel</COMPILERS>
+    <MPILIBS>mpt</MPILIBS>
+    <PROJECT>nwp501</PROJECT>
+    <SAVE_TIMING_DIR>/lustre/storm/nwp501/proj-shared/e3sm</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>e3sm,nwp501</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>/lustre/storm/nwp501/proj-shared/e3sm/e3sm_scratch/</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lustre/storm/nwp501/proj-shared/e3sm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lustre/storm/nwp501/proj-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/lustre/storm/nwp501/proj-shared/e3sm/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/lustre/storm/nwp501/proj-shared/e3sm/tools/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>miller_slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="num_tasks">-n {{ total_tasks }} -N {{ num_nodes }} --kill-on-bad-exit </arg>
+        <arg name="thread_count">-c $SHELL{echo 128/ {{ tasks_per_node }} |bc}</arg>
+        <arg name="binding"> $SHELL{if [ 128 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+        <arg name="placement">-m plane={{ tasks_per_node }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl">/opt/cray/pe/modules/default/init/perl.pm</init_path>
+      <init_path lang="python">/opt/cray/pe/modules/default/init/python.py</init_path>
+      <init_path lang="sh">/opt/cray/pe/modules/default/init/sh</init_path>
+      <init_path lang="csh">/opt/cray/pe/modules/default/init/csh</init_path>
+      <cmd_path lang="perl">/opt/cray/pe/modules/default/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/opt/cray/pe/modules/default/bin/modulecmd python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+        <command name="unload">craype</command>
+        <command name="unload">cray-mpich</command>
+        <command name="unload">cray-parallel-netcdf</command>
+        <command name="unload">cray-hdf5-parallel</command>
+        <command name="unload">cray-hdf5</command>
+        <command name="unload">cray-netcdf</command>
+        <command name="unload">cray-netcdf-hdf5parallel</command>
+        <command name="load">craype/2.7.12</command>
+      </modules>
+      <modules compiler="intel">
+        <command name="rm">PrgEnv-gnu</command>
+        <command name="rm">PrgEnv-cray</command>
+        <command name="load">PrgEnv-intel/8.1.0</command>
+        <command name="swap">intel/19.1.0.166</command>
+      </modules>
+      <modules compiler="gnu">
+        <command name="unload">PrgEnv-cray</command>
+        <command name="load">PrgEnv-gnu/8.1.0</command>
+        <command name="swap">gcc/9.3.0</command>
+      </modules>
+      <modules compiler="cray">
+        <command name="unload">PrgEnv-intel</command>
+        <command name="unload">PrgEnv-gnu</command>
+        <command name="load">gcc/9.3.0</command>
+        <command name="load">PrgEnv-cray/8.1.0</command>
+        <command name="rm">darshan</command>
+      </modules>
+      <modules compiler="!intel">
+        <command name="swap">cray-libsci/21.06.1.1</command>
+      </modules>
+      <modules>
+        <command name="load">cray-mpich/8.1.11</command>
+        <command name="load">cray-hdf5-parallel/1.12.0.7</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.7.4.7</command>
+        <command name="load">cray-parallel-netcdf/1.12.1.7</command>
+      </modules>
+    </module_system>
+
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
+    <environment_variables>
+      <env name="PERL5LIB">/usr/lib/perl5/5.26.1</env>
+      <env name="NETCDF_C_PATH">opt/cray/pe/netcdf-hdf5parallel/4.7.4.4/gnu/9.1/</env>
+      <env name="NETCDF_FORTRAN_PATH">opt/cray/pe/netcdf-hdf5parallel/4.7.4.4/gnu/9.1/</env>
+      <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE">
+      <env name="OMP_STACKSIZE">128M</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" compiler="intel" MAX_TASKS_PER_NODE="!128">
+      <env name="KMP_AFFINITY">granularity=core,balanced</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" compiler="intel" MAX_TASKS_PER_NODE="128">
+      <env name="KMP_AFFINITY">granularity=thread,balanced</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
+      <env name="OMP_PLACES">cores</env>
+    </environment_variables>
+  </machine>
+
+
   <machine MACH="perlmutter">
     <DESC>Perlmutter at NERSC.  Phase1 only: Each GPU node has single AMD EPYC 7713 64-Core (Milan) and 4 nvidia A100's.</DESC>
     <NODENAME_REGEX>$ENV{NERSC_HOST}:perlmutter</NODENAME_REGEX>
