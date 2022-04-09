@@ -60,7 +60,6 @@
 
   <machine MACH="miller">
     <DESC> ORNL AF cluster 800-node AMD Epyc 2-sockets 64-cores per node</DESC>
-    <NODENAME_REGEX>login.*</NODENAME_REGEX>
     <OS>CNL</OS>
     <COMPILERS>gnu,cray,intel</COMPILERS>
     <MPILIBS>mpt</MPILIBS>

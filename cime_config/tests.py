@@ -436,7 +436,6 @@ _TESTS = {
 
     "e3sm_gpuomp" : {
         "tests"    : (
-                 "SMS_Ln9.ne4pg2_ne4pg2.F-MMFOMP.eam-single_thread",
                  "SMS_Ld1.T62_oEC60to30v3.DTESTM",
                  )
     },
