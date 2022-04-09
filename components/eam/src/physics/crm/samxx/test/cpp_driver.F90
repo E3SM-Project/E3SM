@@ -3,7 +3,7 @@ program driver
   use crmdims
   use params, only: crm_iknd, crm_lknd
   use params_kind, only: crm_rknd
-  use cpp_interface_mod, only: crm
+  use cpp_interface_mod, only: crm, scream_session_init, scream_session_finalize
   use crm_input_module
   use crm_output_module
   use crm_state_module
@@ -27,21 +27,26 @@ program driver
   real(crm_rknd), pointer, contiguous  :: dt_gl (:)
   integer                      :: icrm, ierr, nranks, rank, myTasks_beg, myTasks_end, irank
   logical                      :: masterTask
-  real(crm_rknd), allocatable :: read_crm_input_zmid       (:,:)
-  real(crm_rknd), allocatable :: read_crm_input_zint       (:,:)
-  real(crm_rknd), allocatable :: read_crm_input_tl         (:,:)
-  real(crm_rknd), allocatable :: read_crm_input_ql         (:,:)
-  real(crm_rknd), allocatable :: read_crm_input_qccl       (:,:)
-  real(crm_rknd), allocatable :: read_crm_input_qiil       (:,:)
-  real(crm_rknd), allocatable :: read_crm_input_pmid       (:,:)
-  real(crm_rknd), allocatable :: read_crm_input_pint       (:,:)
-  real(crm_rknd), allocatable :: read_crm_input_pdel       (:,:)
-  real(crm_rknd), allocatable :: read_crm_input_ul         (:,:)
-  real(crm_rknd), allocatable :: read_crm_input_vl         (:,:)
+  real(crm_rknd), allocatable :: read_crm_input_zmid          (:,:)
+  real(crm_rknd), allocatable :: read_crm_input_zint          (:,:)
+  real(crm_rknd), allocatable :: read_crm_input_tl            (:,:)
+  real(crm_rknd), allocatable :: read_crm_input_ql            (:,:)
+  real(crm_rknd), allocatable :: read_crm_input_qccl          (:,:)
+  real(crm_rknd), allocatable :: read_crm_input_qiil          (:,:)
+  real(crm_rknd), allocatable :: read_crm_input_pmid          (:,:)
+  real(crm_rknd), allocatable :: read_crm_input_pint          (:,:)
+  real(crm_rknd), allocatable :: read_crm_input_pdel          (:,:)
+  real(crm_rknd), allocatable :: read_crm_input_ul            (:,:)
+  real(crm_rknd), allocatable :: read_crm_input_vl            (:,:)
+  real(crm_rknd), allocatable :: read_crm_input_nccn          (:,:)  
+  real(crm_rknd), allocatable :: read_crm_input_nc_nuceat_tend(:,:) 
+  real(crm_rknd), allocatable :: read_crm_input_ni_activated  (:,:)   
+
 #ifdef MMF_ESMT
   real(crm_rknd), allocatable :: read_crm_input_ul_esmt    (:,:)
   real(crm_rknd), allocatable :: read_crm_input_vl_esmt    (:,:)
 #endif
+
   real(crm_rknd), allocatable :: read_crm_state_u_wind     (:,:,:,:)
   real(crm_rknd), allocatable :: read_crm_state_v_wind     (:,:,:,:)
   real(crm_rknd), allocatable :: read_crm_state_w_wind     (:,:,:,:)
@@ -49,6 +54,17 @@ program driver
   real(crm_rknd), allocatable :: read_crm_state_qt         (:,:,:,:)
   real(crm_rknd), allocatable :: read_crm_state_qp         (:,:,:,:)
   real(crm_rknd), allocatable :: read_crm_state_qn         (:,:,:,:)
+
+  real(crm_rknd), allocatable :: read_crm_state_nc         (:,:,:,:)
+  real(crm_rknd), allocatable :: read_crm_state_qr         (:,:,:,:)
+  real(crm_rknd), allocatable :: read_crm_state_nr         (:,:,:,:)
+  real(crm_rknd), allocatable :: read_crm_state_qi         (:,:,:,:)
+  real(crm_rknd), allocatable :: read_crm_state_ni         (:,:,:,:)
+  real(crm_rknd), allocatable :: read_crm_state_qc         (:,:,:,:)
+  real(crm_rknd), allocatable :: read_crm_state_qv         (:,:,:,:)
+  real(crm_rknd), allocatable :: read_crm_state_qm         (:,:,:,:)
+  real(crm_rknd), allocatable :: read_crm_state_bm         (:,:,:,:)
+
   real(crm_rknd), allocatable :: read_crm_rad_qrad         (:,:,:,:)
   real(crm_rknd), allocatable :: read_crm_rad_temperature  (:,:,:,:)
   real(crm_rknd), allocatable :: read_crm_rad_qv           (:,:,:,:)
@@ -62,8 +78,9 @@ program driver
 
   logical(c_bool):: use_MMF_VT      ! flag for MMF variance transport
   integer        :: MMF_VT_wn_max   ! wavenumber cutoff for filtered variance transport
-  character(len=7) :: microphysics_scheme = 'sam1mom'
-
+  character(len=10) :: MMF_microphysics_scheme = 'p3'
+  character(len=10) :: MMF_turbulence_scheme = 'smag'
+ 
 #if HAVE_MPI
   call mpi_init(ierr)
   call mpi_comm_size(mpi_comm_world,nranks,ierr)
@@ -73,9 +90,11 @@ program driver
   rank = 0
 #endif
   call distr_indices(NCRMS,nranks,rank,myTasks_beg,myTasks_end)
+
   ncrms = myTasks_end - myTasks_beg + 1
   masterTask = rank == 0
 
+  call scream_session_init()
   call gator_init()
 
   if (masterTask) then
@@ -89,10 +108,10 @@ program driver
   endif
 
   ! Allocate model data
-  call crm_state_initialize(crm_state  , ncrms, crm_nx, crm_ny, crm_nz, trim(microphysics_scheme))
-  call crm_rad_initialize  (crm_rad    , ncrms, crm_nx_rad, crm_ny_rad, crm_nz, trim(microphysics_scheme))
-  call crm_input_initialize(crm_input  , ncrms, plev, trim(microphysics_scheme))
-  call crm_output_initialize(crm_output, ncrms, plev, crm_nx, crm_ny, crm_nz, trim(microphysics_scheme))
+  call crm_state_initialize(crm_state  , ncrms, crm_nx, crm_ny, crm_nz, trim(MMF_microphysics_scheme))
+  call crm_rad_initialize  (crm_rad    , ncrms, crm_nx_rad, crm_ny_rad, crm_nz, trim(MMF_microphysics_scheme))
+  call crm_input_initialize(crm_input  , ncrms, plev, trim(MMF_microphysics_scheme))
+  call crm_output_initialize(crm_output, ncrms, plev, crm_nx, crm_ny, crm_nz, trim(MMF_microphysics_scheme))
 
   ! These are normally allocated by pbuf, so we have to do it explicitly
   allocate( lat0                 (ncrms) )
@@ -113,6 +132,10 @@ program driver
   allocate( read_crm_input_pdel       (plev  ,ncrms))
   allocate( read_crm_input_ul         (plev  ,ncrms))
   allocate( read_crm_input_vl         (plev  ,ncrms))
+  allocate( read_crm_input_nccn          (plev, ncrms))
+  allocate( read_crm_input_nc_nuceat_tend(plev, ncrms))
+  allocate( read_crm_input_ni_activated  (plev, ncrms))
+
 #ifdef MMF_ESMT
   allocate( read_crm_input_ul_esmt    (plev, ncrms))
   allocate( read_crm_input_vl_esmt    (plev, ncrms))
@@ -124,6 +147,17 @@ program driver
   allocate( read_crm_state_qt         (crm_nx    ,crm_ny    ,crm_nz,ncrms) )
   allocate( read_crm_state_qp         (crm_nx    ,crm_ny    ,crm_nz,ncrms) )
   allocate( read_crm_state_qn         (crm_nx    ,crm_ny    ,crm_nz,ncrms) )
+
+  allocate( read_crm_state_nc         (crm_nx    ,crm_ny    ,crm_nz,ncrms) )
+  allocate( read_crm_state_qr         (crm_nx    ,crm_ny    ,crm_nz,ncrms) )
+  allocate( read_crm_state_nr         (crm_nx    ,crm_ny    ,crm_nz,ncrms) )
+  allocate( read_crm_state_qi         (crm_nx    ,crm_ny    ,crm_nz,ncrms) )
+  allocate( read_crm_state_ni         (crm_nx    ,crm_ny    ,crm_nz,ncrms) )
+  allocate( read_crm_state_qc         (crm_nx    ,crm_ny    ,crm_nz,ncrms) )
+  allocate( read_crm_state_qv         (crm_nx    ,crm_ny    ,crm_nz,ncrms) )
+  allocate( read_crm_state_qm         (crm_nx    ,crm_ny    ,crm_nz,ncrms) )
+  allocate( read_crm_state_bm         (crm_nx    ,crm_ny    ,crm_nz,ncrms) )
+
   allocate( read_crm_rad_qrad         (crm_nx_rad,crm_ny_rad,crm_nz,ncrms) )
   allocate( read_crm_rad_temperature  (crm_nx_rad,crm_ny_rad,crm_nz,ncrms) )
   allocate( read_crm_rad_qv           (crm_nx_rad,crm_ny_rad,crm_nz,ncrms) )
@@ -160,6 +194,17 @@ program driver
   call dmdf_read( read_crm_state_qt          , fname_in , trim("state_qt         ") , myTasks_beg , myTasks_end , .false. , .false. )
   call dmdf_read( read_crm_state_qp          , fname_in , trim("state_qp         ") , myTasks_beg , myTasks_end , .false. , .false. )
   call dmdf_read( read_crm_state_qn          , fname_in , trim("state_qn         ") , myTasks_beg , myTasks_end , .false. , .false. )
+
+  call dmdf_read( read_crm_state_nc          , fname_in , trim("state_nc         ") , myTasks_beg , myTasks_end , .false. , .false. )
+  call dmdf_read( read_crm_state_qr          , fname_in , trim("state_qr         ") , myTasks_beg , myTasks_end , .false. , .false. )
+  call dmdf_read( read_crm_state_nr          , fname_in , trim("state_nr         ") , myTasks_beg , myTasks_end , .false. , .false. )
+  call dmdf_read( read_crm_state_qi          , fname_in , trim("state_qi         ") , myTasks_beg , myTasks_end , .false. , .false. )
+  call dmdf_read( read_crm_state_ni          , fname_in , trim("state_ni         ") , myTasks_beg , myTasks_end , .false. , .false. )
+  call dmdf_read( read_crm_state_qc          , fname_in , trim("state_qc         ") , myTasks_beg , myTasks_end , .false. , .false. )
+  call dmdf_read( read_crm_state_qv          , fname_in , trim("state_qv         ") , myTasks_beg , myTasks_end , .false. , .false. )
+  call dmdf_read( read_crm_state_qm          , fname_in , trim("state_qm         ") , myTasks_beg , myTasks_end , .false. , .false. )
+  call dmdf_read( read_crm_state_bm          , fname_in , trim("state_bm         ") , myTasks_beg , myTasks_end , .false. , .false. )
+
   call dmdf_read( read_crm_rad_qrad          , fname_in , trim("rad_qrad         ") , myTasks_beg , myTasks_end , .false. , .false. )
   call dmdf_read( read_crm_rad_temperature   , fname_in , trim("rad_temperature  ") , myTasks_beg , myTasks_end , .false. , .false. )
   call dmdf_read( read_crm_rad_qv            , fname_in , trim("rad_qv           ") , myTasks_beg , myTasks_end , .false. , .false. )
@@ -179,17 +224,21 @@ program driver
   call dmdf_read( crm_output%subcycle_factor   , fname_in , trim("out_subcycle_factor") , myTasks_beg , myTasks_end , .false. , .true.  )
 
   do icrm = 1 , ncrms
-    crm_input%zmid       (icrm,:)     = read_crm_input_zmid       (:    ,icrm)                       
-    crm_input%zint       (icrm,:)     = read_crm_input_zint       (:    ,icrm)                       
-    crm_input%tl         (icrm,:)     = read_crm_input_tl         (:    ,icrm)                       
-    crm_input%ql         (icrm,:)     = read_crm_input_ql         (:    ,icrm)                       
-    crm_input%qccl       (icrm,:)     = read_crm_input_qccl       (:    ,icrm)                       
-    crm_input%qiil       (icrm,:)     = read_crm_input_qiil       (:    ,icrm)                       
-    crm_input%pmid       (icrm,:)     = read_crm_input_pmid       (:    ,icrm)                       
-    crm_input%pint       (icrm,:)     = read_crm_input_pint       (:    ,icrm)                       
-    crm_input%pdel       (icrm,:)     = read_crm_input_pdel       (:    ,icrm)                       
-    crm_input%ul         (icrm,:)     = read_crm_input_ul         (:    ,icrm)                       
-    crm_input%vl         (icrm,:)     = read_crm_input_vl         (:    ,icrm)                      
+    crm_input%zmid          (icrm,:)  = read_crm_input_zmid       (:    ,icrm)                       
+    crm_input%zint          (icrm,:)  = read_crm_input_zint       (:    ,icrm)                       
+    crm_input%tl            (icrm,:)  = read_crm_input_tl         (:    ,icrm)                       
+    crm_input%ql            (icrm,:)  = read_crm_input_ql         (:    ,icrm)                       
+    crm_input%qccl          (icrm,:)  = read_crm_input_qccl       (:    ,icrm)                       
+    crm_input%qiil          (icrm,:)  = read_crm_input_qiil       (:    ,icrm)                       
+    crm_input%pmid          (icrm,:)  = read_crm_input_pmid       (:    ,icrm)                       
+    crm_input%pint          (icrm,:)  = read_crm_input_pint       (:    ,icrm)                       
+    crm_input%pdel          (icrm,:)  = read_crm_input_pdel       (:    ,icrm)                       
+    crm_input%ul            (icrm,:)  = read_crm_input_ul         (:    ,icrm)                       
+    crm_input%vl            (icrm,:)  = read_crm_input_vl         (:    ,icrm)                      
+    crm_input_nccn          (icrm,:)  = 1.0e3
+    crm_input_nc_nuceat_tend(icrm,:)  = 1.0
+    crm_input_ni_activated  (icrm,:)  = 1.0
+
 #ifdef MMF_ESMT
     crm_input%ul_esmt    (icrm,:)     = read_crm_input_ul_esmt    (:    ,icrm)
     crm_input%vl_esmt    (icrm,:)     = read_crm_input_vl_esmt    (:    ,icrm)
@@ -200,7 +249,20 @@ program driver
     crm_state%temperature(icrm,:,:,:) = read_crm_state_temperature(:,:,:,icrm) 
     crm_state%qt         (icrm,:,:,:) = read_crm_state_qt         (:,:,:,icrm) 
     crm_state%qp         (icrm,:,:,:) = read_crm_state_qp         (:,:,:,icrm) 
-    crm_state%qn         (icrm,:,:,:) = read_crm_state_qn         (:,:,:,icrm) 
+    crm_state%qn         (icrm,:,:,:) = read_crm_state_qn         (:,:,:,icrm)
+
+    crm_state%nc         (icrm,:,:,:) = read_crm_state_nc         (:,:,:,icrm)
+    crm_state%qr         (icrm,:,:,:) = read_crm_state_qr         (:,:,:,icrm)
+    crm_state%nr         (icrm,:,:,:) = read_crm_state_nr         (:,:,:,icrm)
+    crm_state%qi         (icrm,:,:,:) = read_crm_state_qi         (:,:,:,icrm)
+    crm_state%ni         (icrm,:,:,:) = read_crm_state_ni         (:,:,:,icrm)
+    crm_state%qc         (icrm,:,:,:) = read_crm_state_qc         (:,:,:,icrm)
+    crm_state%qm         (icrm,:,:,:) = read_crm_state_qm         (:,:,:,icrm)
+    crm_state%bm         (icrm,:,:,:) = read_crm_state_bm         (:,:,:,icrm)
+
+    crm_state%t_prev     (icrm,:,:,:) = read_crm_state_temperature(:,:,:,icrm)
+    crm_state%q_prev     (icrm,:,:,:) = read_crm_state_qt         (:,:,:,icrm) - read_crm_state_qc(:,:,:,icrm)
+ 
     crm_rad%qrad         (icrm,:,:,:) = read_crm_rad_qrad         (:,:,:,icrm) 
     crm_rad%temperature  (icrm,:,:,:) = read_crm_rad_temperature  (:,:,:,icrm) 
     crm_rad%qv           (icrm,:,:,:) = read_crm_rad_qv           (:,:,:,icrm) 
@@ -228,42 +290,56 @@ program driver
   ! here you might need to remove this argument
 
   ! Run the code
-  call crm(ncrms, ncrms, dt_gl(1), plev, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, &
-           crm_input%pmid, crm_input%pint, crm_input%pdel, crm_input%ul, crm_input%vl, &
-           crm_input%tl, crm_input%qccl, crm_input%qiil, crm_input%ql, crm_input%tau00, &
+      call crm(ncrms, ncrms, dt_gl(1), plev, &
+               crm_input%bflxls, crm_input%wndls, &
+               crm_input%zmid, crm_input%zint, &
+               crm_input%pmid, crm_input%pint, crm_input%pdel, &
+               crm_input%ul, crm_input%vl, crm_input%tl, &
+               crm_input%qccl, crm_input%qiil, crm_input%ql, &
+               crm_input%tau00, crm_input%phis, crm_input%ps, &
 #ifdef MMF_ESMT
-           crm_input%ul_esmt, crm_input%vl_esmt,                                        &
+               crm_input%ul_esmt, crm_input%vl_esmt, &
 #endif
-           crm_input%t_vt, crm_input%q_vt, &
-           crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, crm_state%temperature, &
-           crm_state%qt, crm_state%qp, crm_state%qn, crm_rad%qrad, crm_rad%temperature, &
-           crm_rad%qv, crm_rad%qc, crm_rad%qi, crm_rad%cld, crm_output%subcycle_factor, &
-           crm_output%prectend, crm_output%precstend, crm_output%cld, crm_output%cldtop, &
-           crm_output%gicewp, crm_output%gliqwp, crm_output%mctot, crm_output%mcup, crm_output%mcdn, &
-           crm_output%mcuup, crm_output%mcudn, crm_output%qc_mean, crm_output%qi_mean, crm_output%qs_mean, &
-           crm_output%qg_mean, crm_output%qr_mean, crm_output%mu_crm, crm_output%md_crm, crm_output%eu_crm, &
-           crm_output%du_crm, crm_output%ed_crm, crm_output%flux_qt, crm_output%flux_u, crm_output%flux_v, &
-           crm_output%fluxsgs_qt, crm_output%tkez, crm_output%tkew, crm_output%tkesgsz, crm_output%tkz, crm_output%flux_qp, &
-           crm_output%precflux, crm_output%qt_trans, crm_output%qp_trans, crm_output%qp_fall, crm_output%qp_evp, &
-           crm_output%qp_src, crm_output%qt_ls, crm_output%t_ls, crm_output%jt_crm, crm_output%mx_crm, crm_output%cltot, &
-           crm_output%clhgh, crm_output%clmed, crm_output%cllow, &
-           crm_output%sltend, crm_output%qltend, crm_output%qcltend, crm_output%qiltend, &
-           crm_output%t_vt_tend, crm_output%q_vt_tend, crm_output%t_vt_ls, crm_output%q_vt_ls, &
+               crm_input%t_vt, crm_input%q_vt, &
+               crm_input%nccn, crm_input%nc_nuceat_tend, crm_input%ni_activated, &
+               crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, &
+               crm_state%temperature, crm_state%qt, crm_state%qp, crm_state%qn, &
+               crm_state%qc, crm_state%nc, crm_state%qr, crm_state%nr, &
+               crm_state%qi, crm_state%ni, crm_state%qm, crm_state%bm, &
+               crm_state%t_prev, crm_state%q_prev, &
+               crm_rad%qrad, crm_rad%temperature, crm_rad%qv, &
+               crm_rad%qc, crm_rad%qi, crm_rad%cld,  &
+               crm_rad%nc, crm_rad%ni, &
+               crm_output%subcycle_factor, &
+               crm_output%cld, crm_output%cldtop, crm_output%gicewp, crm_output%gliqwp, &
+               crm_output%mctot, crm_output%mcup, crm_output%mcdn, crm_output%mcuup, crm_output%mcudn, &
+               crm_output%qc_mean, crm_output%qi_mean, crm_output%qs_mean, crm_output%qg_mean, crm_output%qr_mean, &
+               crm_output%mu_crm, crm_output%md_crm, crm_output%eu_crm, crm_output%du_crm, crm_output%ed_crm, &
+               crm_output%flux_qt, crm_output%flux_u, crm_output%flux_v, crm_output%fluxsgs_qt, &
+               crm_output%tkez, crm_output%tkew, crm_output%tkesgsz, crm_output%tkz, &
+               crm_output%flux_qp, crm_output%precflux, crm_output%qt_trans, crm_output%qp_trans, &
+               crm_output%qp_fall, crm_output%qp_evp, crm_output%qp_src, &
+               crm_output%qt_ls, crm_output%t_ls, &
+               crm_output%jt_crm, crm_output%mx_crm, crm_output%cltot, &
+               crm_output%clhgh, crm_output%clmed, crm_output%cllow, &
+               crm_output%sltend, crm_output%qltend, crm_output%qcltend, crm_output%qiltend, &
+               crm_output%t_vt_tend, crm_output%q_vt_tend, crm_output%t_vt_ls, crm_output%q_vt_ls, &
 #if defined(MMF_MOMENTUM_FEEDBACK)
-           crm_output%ultend, crm_output%vltend, &
+               crm_output%ultend, crm_output%vltend, &
 #endif /* MMF_MOMENTUM_FEEDBACK */
-           crm_output%tk, crm_output%tkh, crm_output%qcl, crm_output%qci, crm_output%qpl, crm_output%qpi, &
-           crm_output%z0m, crm_output%taux, crm_output%tauy, crm_output%precc, crm_output%precl, crm_output%precsc, &
-           crm_output%precsl, crm_output%prec_crm,  &
+               crm_output%tk, crm_output%tkh, &
+               crm_output%qcl, crm_output%qci, crm_output%qpl, crm_output%qpi, &
+               crm_output%precc, crm_output%precl, crm_output%precsc, &
+               crm_output%precsl, crm_output%prec_crm, &
 #ifdef MMF_ESMT
-           crm_output%u_tend_esmt, crm_output%v_tend_esmt,       &
+               crm_output%u_tend_esmt, crm_output%v_tend_esmt, &
 #endif
-           crm_clear_rh, &
-           lat0, long0, gcolp, 2, &
-           use_MMF_VT, MMF_VT_wn_max, &
-           logical(.true.,c_bool) , 2._c_double , logical(.true.,c_bool) )
-
-
+               crm_clear_rh, &
+               lat0, long0, gcolp, 2, &
+               use_MMF_VT, MMF_VT_wn_max, &
+               trim(MMF_microphysics_scheme), &
+               trim(MMF_turbulence_scheme), &
+               logical(.true.,c_bool) , 2._c_double , logical(.true.,c_bool) )
 #if HAVE_MPI
   call mpi_barrier(mpi_comm_world,ierr)
 #endif
@@ -275,6 +351,8 @@ program driver
   if (masterTask) then
     write(*,*) 'Writing output data'
   endif
+
+#if 0
   ! dmdf_write(dat,rank,fprefix,vname       ,first,last) !For scalar values
   ! dmdf_write(dat,rank,fprefix,vname,dnames,first,last) !For array values
   do irank = 0 , nranks-1
@@ -356,11 +434,6 @@ program driver
         call dmdf_write( crm_output%u_tend_esmt   (icrm,:)     , 1 , fprefix , trim('output_u_tend_esmt  ') , (/'nlev'/)                                 , .false. , .false. )
         call dmdf_write( crm_output%v_tend_esmt   (icrm,:)     , 1 , fprefix , trim('output_v_tend_esmt  ') , (/'nlev'/)                                 , .false. , .false. )
 #endif
-        call dmdf_write( crm_output%prectend      (icrm)       , 1 , fprefix , trim('output_prectend     ')                                              ,.false. , .false. )
-        call dmdf_write( crm_output%precstend     (icrm)       , 1 , fprefix , trim('output_precstend    ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%taux          (icrm)       , 1 , fprefix , trim('output_taux         ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%tauy          (icrm)       , 1 , fprefix , trim('output_tauy         ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%z0m           (icrm)       , 1 , fprefix , trim('output_z0m          ')                                              , .false. , .false. )
         call dmdf_write( crm_output%subcycle_factor (icrm)       , 1 , fprefix , trim('output_subcycle_factor')                                              , .false. , .false. )
         call dmdf_write( crm_rad%qrad             (icrm,:,:,:) , 1 , fprefix , trim('rad_qrad            ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
         call dmdf_write( crm_rad%temperature      (icrm,:,:,:) , 1 , fprefix , trim('rad_temperature     ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
@@ -375,15 +448,15 @@ program driver
     call mpi_barrier(mpi_comm_world,ierr)
 #endif
   enddo
+#endif
 
   call gator_finalize()
+  call scream_session_finalize()
 #if HAVE_MPI
   call mpi_finalize(ierr)
 #endif
 
-
 contains
-
 
   subroutine distr_indices(nTasks,nThreads,myThreadID,myTasks_beg,myTasks_end)
     implicit none
@@ -397,7 +470,6 @@ contains
     myTasks_beg = nint( nper* myThreadID    )+1
     myTasks_end = nint( nper*(myThreadID+1) )
   end subroutine distr_indices
-
 
 end program driver
 
