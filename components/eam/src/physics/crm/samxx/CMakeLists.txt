@@ -7,8 +7,6 @@ file(GLOB F90_SRC   cpp_interface_mod.F90 fft.F90 params.F90 fftpack5.F90 fftpac
 file(GLOB CXX_SRC   *.cpp)
 file(GLOB SAMXX_SRC ${CXX_SRC} ${F90_SRC})
 
-SET( CMAKE_BUILD_TYPE Debug ... FORCE )
-
 # samxx will be a static library
 add_library(samxx STATIC ${SAMXX_SRC})
 if (${USE_CUDA})
