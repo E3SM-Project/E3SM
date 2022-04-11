@@ -312,8 +312,12 @@
 
       <modules compiler="crayclang">
         <command name="reset"></command>
+<!--
         <command name="switch">PrgEnv-cray PrgEnv-cray/8.2.0</command>
         <command name="switch">cce cce/13.0.1</command>
+-->
+        <command name="switch">PrgEnv-cray PrgEnv-cray/8.3.3</command>
+        <command name="switch">cce cce/13.0.2</command>
       </modules>
 
       <modules compiler="gnu">
