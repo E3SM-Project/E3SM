@@ -179,6 +179,9 @@ subroutine crm( ncrms, dt_gl, plev,       &
   !-----------------------------------------------------------------------------------------------
   !-----------------------------------------------------------------------------------------------
 
+  call task_init ()
+  call setparm()
+  
   allocate( t00(ncrms,nz) )
   allocate( tln(ncrms,plev) )
   allocate( qln(ncrms,plev) )
@@ -295,9 +298,6 @@ subroutine crm( ncrms, dt_gl, plev,       &
   enddo
 
 !-----------------------------------------
-
-  call task_init ()
-  call setparm()
 
   do icrm = 1 , ncrms
     fcor(icrm)= 4*pi/86400.D0*sin(latitude0(icrm)*pi/180.D0)

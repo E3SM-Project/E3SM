@@ -317,7 +317,7 @@ subroutine crm_physics_register()
    ! miscellaneous fields previously added by offline parameterizations
    !----------------------------------------------------------------------------
    call pbuf_add_field('QME',          'physpkg',dtype_r8,dims_gcm_2D,idx) ! net condensation/evaporation of cloud water
-   call pbuf_add_field('PRAIN',        'physpkg',dtype_r8,dims_gcm_2D,idx) ! total precip rate?
+   call pbuf_add_field('PRAIN',        'physpkg',dtype_r8,dims_gcm_2D,idx) ! sum of precip tendencies = qc2qr_accret_tend + qc2qr_autoconv_tend + qc2qr_ice_shed_tend + qc2qi_collect_tend
    call pbuf_add_field('NEVAPR',       'physpkg',dtype_r8,dims_gcm_2D,idx) ! total precip evaporation rate (rain + snow)
    call pbuf_add_field('PRER_EVAP',    'global' ,dtype_r8,dims_gcm_2D,idx) ! rain evaporation rate
    call pbuf_add_field('WSEDL',        'physpkg',dtype_r8,dims_gcm_2D,idx) ! Sed. velocity of liq stratus cloud droplet [m/s]
@@ -1419,7 +1419,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_output%subcycle_factor, &
                crm_output%cld, crm_output%cldtop, crm_output%gicewp, crm_output%gliqwp, &
                crm_output%mctot, crm_output%mcup, crm_output%mcdn, crm_output%mcuup, crm_output%mcudn, &
-               crm_output%qc_mean, crm_output%qi_mean, crm_output%qs_mean, crm_output%qg_mean, crm_output%qr_mean, &
+               crm_output%qc_mean, crm_output%qi_mean, &
+               crm_output%qs_mean, crm_output%qg_mean, crm_output%qr_mean, &
+               crm_output%nc_mean, crm_output%ni_mean, &
                crm_output%mu_crm, crm_output%md_crm, crm_output%eu_crm, crm_output%du_crm, crm_output%ed_crm, &
                crm_output%flux_qt, crm_output%flux_u, crm_output%flux_v, crm_output%fluxsgs_qt, &
                crm_output%tkez, crm_output%tkew, crm_output%tkesgsz, crm_output%tkz, &

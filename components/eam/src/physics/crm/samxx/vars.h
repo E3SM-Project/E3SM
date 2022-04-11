@@ -85,8 +85,11 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
                   real *crm_output_subcycle_factor_p, 
                   real *crm_output_cld_p, real *crm_output_cldtop_p,
                   real *crm_output_gicewp_p, real *crm_output_gliqwp_p, real *crm_output_mctot_p, real *crm_output_mcup_p, real *crm_output_mcdn_p, 
-                  real *crm_output_mcuup_p, real *crm_output_mcudn_p, real *crm_output_qc_mean_p, real *crm_output_qi_mean_p, real *crm_output_qs_mean_p, 
-                  real *crm_output_qg_mean_p, real *crm_output_qr_mean_p, real *crm_output_mu_crm_p, real *crm_output_md_crm_p, real *crm_output_eu_crm_p, 
+                  real *crm_output_mcuup_p, real *crm_output_mcudn_p, 
+                  real *crm_output_qc_mean_p, real *crm_output_qi_mean_p, 
+                  real *crm_output_qs_mean_p, real *crm_output_qg_mean_p, real *crm_output_qr_mean_p, 
+                  real *crm_output_nc_mean_p, real *crm_output_ni_mean_p, 
+                  real *crm_output_mu_crm_p, real *crm_output_md_crm_p, real *crm_output_eu_crm_p, 
                   real *crm_output_du_crm_p, real *crm_output_ed_crm_p, real *crm_output_flux_qt_p, real *crm_output_flux_u_p, real *crm_output_flux_v_p, 
                   real *crm_output_fluxsgs_qt_p, real *crm_output_tkez_p, real *crm_output_tkew_p, real *crm_output_tkesgsz_p, real *crm_output_tkz_p, real *crm_output_flux_qp_p, 
                   real *crm_output_precflux_p, real *crm_output_qt_trans_p, real *crm_output_qp_trans_p, real *crm_output_qp_fall_p, real *crm_output_qp_evp_p, 
@@ -121,9 +124,10 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
                               real *crm_output_gicewp_p, real *crm_output_gliqwp_p, 
                               real *crm_output_mctot_p, real *crm_output_mcup_p, real *crm_output_mcdn_p, 
                               real *crm_output_mcuup_p, real *crm_output_mcudn_p, 
-                              real *crm_output_qc_mean_p, real *crm_output_qi_mean_p, real *crm_output_qs_mean_p, 
-                              real *crm_output_qg_mean_p, real *crm_output_qr_mean_p, real *crm_output_mu_crm_p, 
-                              real *crm_output_md_crm_p, real *crm_output_eu_crm_p, 
+                              real *crm_output_qc_mean_p, real *crm_output_qi_mean_p, 
+                              real *crm_output_qs_mean_p, real *crm_output_qg_mean_p, real *crm_output_qr_mean_p, 
+                              real *crm_output_nc_mean_p, real *crm_output_ni_mean_p, 
+                              real *crm_output_mu_crm_p, real *crm_output_md_crm_p, real *crm_output_eu_crm_p, 
                               real *crm_output_du_crm_p, real *crm_output_ed_crm_p, real *crm_output_flux_qt_p, 
                               real *crm_output_flux_u_p, real *crm_output_flux_v_p, 
                               real *crm_output_fluxsgs_qt_p, real *crm_output_tkez_p, real *crm_output_tkew_p, real *crm_output_tkesgsz_p, real *crm_output_tkz_p, 
@@ -482,6 +486,8 @@ extern real2d crm_output_qi_mean;
 extern real2d crm_output_qs_mean;
 extern real2d crm_output_qg_mean;
 extern real2d crm_output_qr_mean;
+extern real2d crm_output_nc_mean;
+extern real2d crm_output_ni_mean;
 extern real2d crm_output_mu_crm;
 extern real2d crm_output_md_crm;
 extern real2d crm_output_eu_crm;

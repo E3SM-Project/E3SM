@@ -137,6 +137,8 @@ void pre_timeloop() {
   YAKL_SCOPE( crm_output_qs_mean         , :: crm_output_qs_mean ); 
   YAKL_SCOPE( crm_output_qg_mean         , :: crm_output_qg_mean ); 
   YAKL_SCOPE( crm_output_qr_mean         , :: crm_output_qr_mean ); 
+  YAKL_SCOPE( crm_output_nc_mean         , :: crm_output_nc_mean ); 
+  YAKL_SCOPE( crm_output_ni_mean         , :: crm_output_ni_mean ); 
   YAKL_SCOPE( crm_output_mu_crm          , :: crm_output_mu_crm ); 
   YAKL_SCOPE( crm_output_md_crm          , :: crm_output_md_crm ); 
   YAKL_SCOPE( crm_output_eu_crm          , :: crm_output_eu_crm ); 
@@ -485,6 +487,8 @@ void pre_timeloop() {
       crm_output_qs_mean   (k,icrm) = 0.0;
       crm_output_qg_mean   (k,icrm) = 0.0;
       crm_output_qr_mean   (k,icrm) = 0.0;
+      crm_output_nc_mean   (k,icrm) = 0.0;
+      crm_output_ni_mean   (k,icrm) = 0.0;
       crm_output_mu_crm    (k,icrm) = 0.0;
       crm_output_md_crm    (k,icrm) = 0.0;
       crm_output_eu_crm    (k,icrm) = 0.0;
