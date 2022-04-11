@@ -35,6 +35,6 @@
 #cmakedefine SCREAM_ENABLE_EXPERIMENTAL
 
 // Data directory for the scream project
-#define SCREAM_DATA_DIR "${SCREAM_BIN_DIR}/data"
+#define SCREAM_DATA_DIR "${SCREAM_DATA_DIR}"
 
 #endif
