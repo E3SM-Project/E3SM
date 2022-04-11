@@ -33,6 +33,7 @@ module seq_diagBGC_mct
   use shr_sys_mod, only : shr_sys_abort, shr_sys_flush
   use shr_mpi_mod, only : shr_mpi_max, shr_mpi_sum
   use shr_const_mod, only: shr_const_rearth, shr_const_pi, shr_const_isspval
+  use shr_const_mod, only: shr_const_mwc, shr_const_mwco2
   use mct_mod, only: mct_ggrid, mct_avect, mct_avect_lsize, mct_string, &
        mct_string_tochar, mct_gsmap, mct_aVect_indexRA, MCT_AVECT_NRATTR, &
        mct_string_clean, mct_avect_getrlist
@@ -162,6 +163,8 @@ module seq_diagBGC_mct
   character(*),parameter :: modName = "(seq_diagBGC_mct) "
 
   integer(in),parameter :: debug = 0 ! internal debug level
+
+  real(r8),parameter :: CO2toC = shr_const_mwc/shr_const_mwco2
 
   ! !PRIVATE DATA MEMBERS
 
@@ -520,10 +523,12 @@ contains
 
              nf = f_area  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_a
              if (index_x2a_Fall_fco2_lnd /= 0) then
-                nf = f_csurf ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_a*x2a_a%rAttr(index_x2a_Fall_fco2_lnd,n)
+                nf = f_csurf ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) &
+                                                    + ca_a*x2a_a%rAttr(index_x2a_Fall_fco2_lnd,n)*CO2toC
              end if
              if (index_x2a_Faoo_fco2_ocn /= 0) then
-                nf = f_csurf ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_a*x2a_a%rAttr(index_x2a_Faoo_fco2_ocn,n)
+                nf = f_csurf ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) &
+                                                    + ca_a*x2a_a%rAttr(index_x2a_Faoo_fco2_ocn,n)*CO2toC
              end if
 
           enddo
@@ -599,7 +604,8 @@ contains
           ca_l =  dom_l%data%rAttr(kArea,n) * frac_l%rAttr(kl,n)
           nf = f_area  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_l
           if (index_x2a_Fall_fco2_lnd /= 0) then
-             nf = f_csurf ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_l*l2x_l%rAttr(index_l2x_Fall_fco2_lnd,n)
+             nf = f_csurf ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) &
+                                                 + ca_l*l2x_l%rAttr(index_l2x_Fall_fco2_lnd,n)*CO2toC
           end if
        end do
     end if
@@ -839,7 +845,8 @@ contains
           ca_i =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ki,n)
           nf = f_area ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_o
           if (index_x2a_Faoo_fco2_ocn /= 0) then
-             nf = f_csurf; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Faoo_fco2_ocn,n)
+             nf = f_csurf; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) &
+                                                + (ca_o+ca_i)*o2x_o%rAttr(index_o2x_Faoo_fco2_ocn,n)*CO2toC
           end if
        end do
     end if
