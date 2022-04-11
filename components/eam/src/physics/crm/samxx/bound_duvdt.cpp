@@ -1,10 +1,10 @@
 #include "bound_duvdt.h"
 
 void bound_duvdt() {
-  auto &dudt  = ::dudt;
-  auto &dvdt  = ::dvdt;
-  auto &na    = ::na;  
-  auto &ncrms = ::ncrms;
+  YAKL_SCOPE( dudt   , ::dudt);
+  YAKL_SCOPE( dvdt   , ::dvdt);
+  YAKL_SCOPE( na     , ::na);  
+  YAKL_SCOPE( ncrms  , ::ncrms);
 
   // for (int k=0; k<nzm; k++) {
   //  for (int j=0; j<ny; j++) {

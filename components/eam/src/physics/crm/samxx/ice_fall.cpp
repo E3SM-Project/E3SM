@@ -2,20 +2,20 @@
 #include "ice_fall.h"
 
 void ice_fall() {
-  auto &qcl           = :: qcl;
-  auto &qci           = :: qci;
-  auto &tabs          = :: tabs;
-  auto &qifall        = :: qifall;
-  auto &tlatqi        = :: tlatqi;
-  auto &dtn           = :: dtn;
-  auto &adz           = :: adz;
-  auto &dz            = :: dz;
-  auto &rho           = :: rho;
-  auto &micro_field   = :: micro_field;
-  auto &t             = :: t;
-  auto &ncrms         = :: ncrms;
-  auto &precsfc       = :: precsfc;
-  auto &precssfc      = :: precssfc;
+  YAKL_SCOPE( qcl           , :: qcl );
+  YAKL_SCOPE( qci           , :: qci );
+  YAKL_SCOPE( tabs          , :: tabs );
+  YAKL_SCOPE( qifall        , :: qifall );
+  YAKL_SCOPE( tlatqi        , :: tlatqi );
+  YAKL_SCOPE( dtn           , :: dtn );
+  YAKL_SCOPE( adz           , :: adz );
+  YAKL_SCOPE( dz            , :: dz );
+  YAKL_SCOPE( rho           , :: rho );
+  YAKL_SCOPE( micro_field   , :: micro_field );
+  YAKL_SCOPE( t             , :: t );
+  YAKL_SCOPE( ncrms         , :: ncrms );
+  YAKL_SCOPE( precsfc       , :: precsfc );
+  YAKL_SCOPE( precssfc      , :: precssfc );
 
   int1d  kmax("kmax",ncrms);
   int1d  kmin("kmin",ncrms);

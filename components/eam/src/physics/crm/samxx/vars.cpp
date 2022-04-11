@@ -389,8 +389,8 @@ void allocate() {
 
 
 void init_values() {
-  auto &z0   = ::z0  ;
-  auto &CF3D = ::CF3D;
+  YAKL_SCOPE( z0   , ::z0  );
+  YAKL_SCOPE( CF3D , ::CF3D );
 
   flag_precip(0) = 0;
   flag_precip(1) = 1;
