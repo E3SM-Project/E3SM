@@ -235,9 +235,9 @@ program driver
     crm_input%pdel          (icrm,:)  = read_crm_input_pdel       (:    ,icrm)                       
     crm_input%ul            (icrm,:)  = read_crm_input_ul         (:    ,icrm)                       
     crm_input%vl            (icrm,:)  = read_crm_input_vl         (:    ,icrm)                      
-    crm_input_nccn          (icrm,:)  = 1.0e3
-    crm_input_nc_nuceat_tend(icrm,:)  = 1.0
-    crm_input_ni_activated  (icrm,:)  = 1.0
+    crm_input%nccn          (icrm,:)  = 1.0e3
+    crm_input%nc_nuceat_tend(icrm,:)  = 1.0
+    crm_input%ni_activated  (icrm,:)  = 1.0
 
 #ifdef MMF_ESMT
     crm_input%ul_esmt    (icrm,:)     = read_crm_input_ul_esmt    (:    ,icrm)
