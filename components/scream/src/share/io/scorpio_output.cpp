@@ -592,6 +592,7 @@ void AtmosphereOutput::set_diagnostics()
       const auto& req_field = get_field(req.fid.name());
       if (!t0_set) {
         t0 = req_field.get_header().get_tracking().get_time_stamp();
+        t0_set = true;
       }
       diag->set_required_field(req_field.get_const());
     }
