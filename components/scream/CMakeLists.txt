@@ -85,7 +85,7 @@ set(SCREAM_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR})
 if (SCREAM_CIME_BUILD)
   set(SCREAM_DATA_DIR ${CASEROOT}/run/data)
 else()
-  set(SCREAM_DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
+  set(SCREAM_DATA_DIR ${CMAKE_CURRENT_BINARY_DIR}/data)
 endif()
 
 # Shortcut function, to print a variable
