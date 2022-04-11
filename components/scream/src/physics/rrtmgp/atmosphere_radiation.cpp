@@ -624,7 +624,6 @@ void RRTMGPRadiation::run_impl (const int dt) {
 
   // Copy output data back to FieldManager
   if (update_rad) {
-    std::cout << "Update rad fluxes in FM...\n";
     {
       const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
