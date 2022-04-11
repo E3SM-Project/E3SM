@@ -9,10 +9,12 @@ unset NCRMS
 unset CXXFLAGS
 unset FFLAGS
 unset FCLAGS
+unset ARCH
 
+export MACH="summit"
 export NCHOME=${OLCF_NETCDF_C_ROOT}
 export NFHOME=${OLCF_NETCDF_FORTRAN_ROOT}
-export NCRMS=42
+export NCRMS=168
 export CC=mpicc
 export CXX=mpic++
 export FC=mpif90
