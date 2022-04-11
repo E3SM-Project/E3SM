@@ -83,7 +83,12 @@ set(SCREAM_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR})
 
 # For CIME builds, the inputs are managed through CIME
 if (SCREAM_CIME_BUILD)
-  set(SCREAM_DATA_DIR ${CASEROOT}/run/data)
+  execute_process (
+    COMMAND ${CASEROOT}/xmlquery --value RUNDIR
+    WORKING_DIRECTORY ${CASEROOT}
+    OUTPUT_VARIABLE RUNDIR
+  )
+  set(SCREAM_DATA_DIR ${RUNDIR}/data)
 else()
   set(SCREAM_DATA_DIR ${CMAKE_CURRENT_BINARY_DIR}/data)
 endif()
