@@ -324,7 +324,7 @@ subroutine zm_mphyi
 
 ! autoconversion size threshold for cloud ice to snow (m)
 
-        Dcs = 150.e-6_r8
+!        Dcs = 150.e-6_r8
 ! immersion freezing parameters, bigg 1953
 
 	bimm = 100._r8
@@ -380,7 +380,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                    accgrm, accglm, accgslm,accgsrm,accgirm,accgrim,accgrsm,accgsln,accgsrn,   &
                    accgirn,accsrim,acciglm,accigrm,accsirm,accigln,accigrn,accsirn,accgln,    &
                    accgrn ,accilm, acciln ,fallrm ,fallsm ,fallgm ,fallrn ,fallsn ,fallgn,    &
-                   fhmrm  ,dsfm, dsfn)
+                   fhmrm  ,dsfm, dsfn, auto_fac, accr_fac, dcs)
    
 
 ! Purpose:
@@ -421,6 +421,9 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
   real(r8) grav                                 ! gravity
   real(r8) cp                                   ! heat capacity of dry air
   real(r8) rd                                   ! gas constant for dry air
+  real(r8) auto_fac                             ! droplet-rain autoconversion enhancement factor  
+  real(r8) accr_fac                             ! droplet-rain accretion enhancement factor
+  real(r8) dcs                                  ! autoconversion size threshold for cloud ice to snow (m)
 
 ! output variables
   real(r8), intent(out) :: qc(pcols,pver)       ! cloud water mixing ratio (kg/kg)
@@ -1487,7 +1490,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  ! Khrouditnov and Kogan (2000) 
 !                 prc(k) = 1350._r8*qcic(i,k)**2.47_r8*    &
 !                    (ncic(i,k)/1.e6_r8*rho(i,k))**(-1.79_r8)
-                 prc(k) = 213500._r8*qcic(i,k)**3.19_r8*    &
+                 prc(k) = auto_fac*30500._r8*qcic(i,k)**3.19_r8*    &
                     (ncic(i,k)/1.e6_r8*rho(i,k))**(-1.2_r8)
                  nprc1(k) = prc(k)/(qcic(i,k)/ncic(i,k))
                  nprc(k) = prc(k) * (1._r8/droplet_mass_25um)
@@ -1982,7 +1985,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
 
               if (qric(i,k).ge.qsmall .and. qcic(i,k).ge.qsmall) then
 !                 pra(k) = 67._r8*(qcic(i,k)*qric(i,k))**1.15_r8
-                 pra(k) = 1.5_r8*67._r8*(qcic(i,k)*qric(i,k))**1.15_r8
+                 pra(k) = accr_fac*67._r8*(qcic(i,k)*qric(i,k))**1.15_r8
                  npra(k) = pra(k)/(qcic(i,k)/ncic(i,k))
               else
                  pra(k)=0._r8
