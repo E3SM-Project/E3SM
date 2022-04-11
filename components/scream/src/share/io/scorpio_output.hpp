@@ -115,7 +115,11 @@ public:
 
   using KT = KokkosTypes<DefaultDevice>;
   template<int N>
+  using view_Nd_dev  = typename KT::template view_ND<Real,N>;
+  template<int N>
   using view_Nd_host = typename KT::template view_ND<Real,N>::HostMirror;
+
+  using view_1d_dev  = view_Nd_dev<1>;
   using view_1d_host = view_Nd_host<1>;
 
   virtual ~AtmosphereOutput () = default;
@@ -150,7 +154,6 @@ protected:
   void set_degrees_of_freedom(const std::string& filename);
   std::vector<int> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
-  void combine (const Real& new_val, Real& curr_val, const int nsteps_since_last_output) const;
 
   // --- Internal variables --- //
   ekat::Comm                          m_comm;
@@ -170,36 +173,8 @@ protected:
 
   // Local views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_1d_host>    m_host_views_1d;
+  std::map<std::string,view_1d_dev>     m_dev_views_1d;
 };
-
-// ===================== IMPLEMENTATION ======================== //
-
-// This helper function updates the current output val with a new one,
-// according to the "averaging" type, and according to the number of
-// model time steps since the last output step.
-inline void AtmosphereOutput::combine (const Real& new_val, Real& curr_val, const int nsteps_since_last_output) const
-{
-  if (nsteps_since_last_output==1) {
-    curr_val = new_val;
-  } else {
-    switch (m_avg_type) {
-      case OutputAvgType::Instant:
-        curr_val = new_val;
-        break;
-      case OutputAvgType::Max:
-        curr_val = std::max(curr_val,new_val);
-        break;
-      case OutputAvgType::Min:
-        curr_val = std::min(curr_val,new_val);
-        break;
-      case OutputAvgType::Average:
-        curr_val = (curr_val*(nsteps_since_last_output-1) + new_val)/(nsteps_since_last_output);
-        break;
-      default:
-        EKAT_ERROR_MSG ("Unexpected value for m_avg_type. Please, contact developers.\n");
-    }
-  }
-}
 
 } //namespace scream
 
