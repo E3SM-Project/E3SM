@@ -192,7 +192,7 @@ void scream_init_atm (const int& start_ymd,
 }
 
 /*===============================================================================================*/
-void scream_run (const scream::Real& dt) {
+void scream_run (const int dt) {
   // TODO: uncomment once you have valid inputs. I fear AD may crash with no inputs.
   fpe_guard_wrapper([&](){
     // Get the AD, and run it

@@ -70,11 +70,11 @@ interface
 
   ! This subroutine will run the whole atm model for one atm timestep
   subroutine scream_run (dt) bind(c)
-    use iso_c_binding, only: c_double
+    use iso_c_binding, only: c_int
     !
     ! arguments
     !
-    real(kind=c_double), intent(in) :: dt
+    integer(kind=c_int), value, intent(in) :: dt
   end subroutine scream_run
 
   subroutine scream_finalize () bind(c)

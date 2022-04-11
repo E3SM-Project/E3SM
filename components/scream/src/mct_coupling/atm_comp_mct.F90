@@ -187,7 +187,6 @@ CONTAINS
     type(mct_gGrid)        , pointer :: ggrid
     real(R8)                         :: nextsw_cday    ! calendar of next atm sw
     integer                          :: dt_scream
-    real(kind=c_double)              :: dt_scream_r
 
     !-------------------------------------------------------------------------------
 
@@ -200,8 +199,7 @@ CONTAINS
     call seq_timemgr_EClockGetData (EClock, next_cday=nextsw_cday, dtime=dt_scream)
 
     ! Run scream
-    dt_scream_r = dt_scream
-    call scream_run( dt_scream_r )
+    call scream_run( dt_scream )
 
     ! Set time of next radiadtion computation
     call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday)
