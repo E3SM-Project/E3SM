@@ -65,8 +65,7 @@ target_compile_options(p3 PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_
 # The p3_table_setup executable generates tables used by p3. This
 include (ScreamUtils)
 GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1
-             ${SCREAM_BIN_DIR}/data/p3_lookup_table_1.dat-v4.1.1)
-file (MAKE_DIRECTORY ${SCREAM_BIN_DIR}/data)
+  ${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4.1.1)
 add_executable(p3_tables_setup p3_tables_setup.cpp)
 target_link_libraries(p3_tables_setup p3)
 
@@ -76,10 +75,10 @@ else()
   set (PRECISION_SUFFIX "4")
 endif()
 set (TABLES_FILES
-  ${SCREAM_BIN_DIR}/data/mu_r_table_vals.dat${PRECISION_SUFFIX}
-  ${SCREAM_BIN_DIR}/data/revap_table_vals.dat${PRECISION_SUFFIX}
-  ${SCREAM_BIN_DIR}/data/vm_table_vals.dat${PRECISION_SUFFIX}
-  ${SCREAM_BIN_DIR}/data/vn_table_vals.dat${PRECISION_SUFFIX}
+  ${SCREAM_DATA_DIR}/mu_r_table_vals.dat${PRECISION_SUFFIX}
+  ${SCREAM_DATA_DIR}/revap_table_vals.dat${PRECISION_SUFFIX}
+  ${SCREAM_DATA_DIR}/vm_table_vals.dat${PRECISION_SUFFIX}
+  ${SCREAM_DATA_DIR}/vn_table_vals.dat${PRECISION_SUFFIX}
 )
 
 add_custom_command (
