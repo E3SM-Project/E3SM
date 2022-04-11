@@ -63,6 +63,7 @@ target_link_libraries(p3 physics_share scream_share)
 target_compile_options(p3 PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
 
 # The p3_table_setup executable generates tables used by p3. This
+include (ScreamUtils)
 GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1
              ${SCREAM_BIN_DIR}/data/p3_lookup_table_1.dat-v4.1.1)
 file (MAKE_DIRECTORY ${SCREAM_BIN_DIR}/data)
