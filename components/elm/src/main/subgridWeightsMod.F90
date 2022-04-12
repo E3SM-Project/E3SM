@@ -635,7 +635,8 @@ contains
        if (topo_active_only) then ! Check only for the valid topounits
           if (.not. weights_okay(sumwtcol(c), active_only, col_pp%active(c))) then
              write(iulog,*) trim(subname),' ERROR: at c = ',c,'total PFT weight is ',sumwtcol(c), &
-                         'active_only = ', active_only
+                         'active_only = ', active_only, 'wtcol = ', veg_pp%wtcol(:), &
+                         'begp:', bounds%begp, 'endp:', bounds%endp 
              error_found = .true.
           end if
        end if

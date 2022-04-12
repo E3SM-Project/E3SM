@@ -147,14 +147,14 @@
       <pes compset="any" pesize="any">
         <comment>1 node default</comment>
         <ntasks>
-          <ntasks_atm>1</ntasks_atm>
-          <ntasks_lnd>1</ntasks_lnd>
-          <ntasks_rof>1</ntasks_rof>
-          <ntasks_ice>1</ntasks_ice>
-          <ntasks_ocn>1</ntasks_ocn>
-          <ntasks_glc>1</ntasks_glc>
-          <ntasks_wav>1</ntasks_wav>
-          <ntasks_cpl>1</ntasks_cpl>
+          <ntasks_atm>32</ntasks_atm>
+          <ntasks_lnd>960</ntasks_lnd>
+          <ntasks_rof>32</ntasks_rof>
+          <ntasks_ice>32</ntasks_ice>
+          <ntasks_ocn>32</ntasks_ocn>
+          <ntasks_glc>32</ntasks_glc>
+          <ntasks_wav>32</ntasks_wav>
+          <ntasks_cpl>32</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>

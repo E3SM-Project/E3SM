@@ -321,7 +321,7 @@ contains
         call set_fates_ctrlparms('hlm_name',cval='ELM')
         call set_fates_ctrlparms('hio_ignore_val',rval=spval)
         call set_fates_ctrlparms('soilwater_ipedof',ival=get_ipedof(0))
-        call set_fates_ctrlparms('max_patch_per_site',ival=(natpft_size-1))
+        call set_fates_ctrlparms('max_patch_per_site',ival=2*(natpft_size-1))
 
 
         call set_fates_ctrlparms('parteh_mode',ival=fates_parteh_mode)
@@ -706,7 +706,6 @@ contains
             endif
 
          end do
-
 
          ! Initialize site-level static quantities dictated by the HLM
          ! currently ground layering depth
@@ -1197,7 +1196,6 @@ contains
 
           ! initialize SP mode pft order index to 0.  Below ground is the 0th patch
           veg_pp%sp_pftorder_index(col_pp%pfti(c)) = 0
-
           areacheck = veg_pp%wt_ed(col_pp%pfti(c))
 
           do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
@@ -1245,6 +1243,17 @@ contains
 
 
           end do
+
+          if(0) then
+            write(iulog,*) 'Area fraction FATES->ELM:', veg_pp%wt_ed
+            write(iulog,*) 'See which column?', veg_pp%column
+            write(iulog,*) 'Column Type?', col_pp%itype
+            write(iulog,*) 'Soil Column index?', istsoil
+            write(iulog,*) 'Check if activate?', col_pp%active
+            write(iulog,*) 'See which column?', veg_pp%column
+            write(iulog,*) 'Is veg?', veg_pp%is_veg
+            write(iulog,*) 'Is bg?', veg_pp%is_bareground
+          endif
 
           if(abs(areacheck - 1.0_r8).gt.1.e-9_r8)then
             write(iulog,*) 'area wrong in interface',areacheck - 1.0_r8
@@ -1449,7 +1458,9 @@ contains
                     data=this%fates_restart%rvars(ivar)%int1d,readvar=readvar)
 
            case(site_int)
-
+               if(masterproc) then
+                  write(iulog,*) 'See which variable?', trim(vname)
+               endif
               call restartvar(ncid=ncid, flag=flag, varname=trim(vname), &
                     xtype=ncd_int,dim1name=trim('column'),long_name=trim(vlong), &
                     units=trim(vunits),interpinic_flag='interp', &

@@ -40,7 +40,7 @@ contains
     !
     ! !USES
     use elm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
-    use elm_varctl  , only : create_crop_landunit
+    use elm_varctl  , only : create_crop_landunit, use_fates
     use elm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
                              isturb_tbd, isturb_hd, isturb_md
@@ -138,7 +138,11 @@ contains
        ! start of the run. And to support transient pfts or dynamic vegetation, we always
        ! allocate space for ALL PFTs on this landunit.
 
-       npfts_per_lunit = natpft_size
+       if (use_fates) then
+          npfts_per_lunit = 20
+       else
+          npfts_per_lunit = natpft_size
+       endif
 
        ! Assume that the vegetated landunit has one column
        ilunits = ilunits + 1
@@ -334,7 +338,7 @@ contains
     !
     ! !USES
     use elm_varpar  , only : natpft_size, cft_size, maxpatch_urb, maxpatch_glcmec
-    use elm_varctl  , only : create_crop_landunit
+    use elm_varctl  , only : create_crop_landunit, use_fates
     use elm_varsur  , only : wt_lunit, urban_valid, wt_glc_mec
     use landunit_varcon  , only : istsoil, istcrop, istice, istice_mec, istdlak, istwet, &
                              isturb_tbd, isturb_hd, isturb_md
@@ -402,7 +406,11 @@ contains
     ! start of the run. And to support transient pfts or dynamic vegetation, we always
     ! allocate space for ALL PFTs on this landunit.
 
-    npfts_per_lunit = natpft_size
+    if (use_fates) then
+       npfts_per_lunit = 20
+    else
+       npfts_per_lunit = natpft_size
+    endif
 
     ! Assume that the vegetated landunit has one column
     ilunits = ilunits + 1
