@@ -405,16 +405,23 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
 }
 
 TEST_CASE("rrtmgp_test_radiation_do") {
+    // If we specify rad every step, radiation_do should always be true
+    REQUIRE(scream::rrtmgp::radiation_do(1, 0) == true);
+    REQUIRE(scream::rrtmgp::radiation_do(1, 1) == true);
+    REQUIRE(scream::rrtmgp::radiation_do(1, 2) == true);
 
-    //
+    // Test cases where we want rad called every other step
     REQUIRE(scream::rrtmgp::radiation_do(2, 0) == true);
     REQUIRE(scream::rrtmgp::radiation_do(2, 1) == false);
     REQUIRE(scream::rrtmgp::radiation_do(2, 2) == true);
     REQUIRE(scream::rrtmgp::radiation_do(2, 3) == false);
 
+    // Test cases where we want rad every third step
     REQUIRE(scream::rrtmgp::radiation_do(3, 0) == true);
     REQUIRE(scream::rrtmgp::radiation_do(3, 1) == false);
     REQUIRE(scream::rrtmgp::radiation_do(3, 2) == false);
     REQUIRE(scream::rrtmgp::radiation_do(3, 3) == true);
     REQUIRE(scream::rrtmgp::radiation_do(3, 4) == false);
+    REQUIRE(scream::rrtmgp::radiation_do(3, 5) == false);
+    REQUIRE(scream::rrtmgp::radiation_do(3, 6) == true);
 }
