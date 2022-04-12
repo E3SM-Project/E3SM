@@ -13,15 +13,10 @@
 !    Sign convention:
 !       positive value <=> the model is gaining water, heat, momentum, etc.
 !    Unit convention:
-!       water flux    ~ (kg/s)/m^2
-!       salt  flux    ~ (kg/s)/m^2
+!       carbon flux   ~ (kg-C/s)/m^2
 !
 ! !REVISION HISTORY:
-!    2012-aug-20 - T. Craig    - add rof component
-!    2008-jul-10 - T. Craig    - updated budget implementation
-!    2007-may-07 - B. Kauffman - initial port to cpl7.
-!    2002-nov-21 - R. Jacob    - initial port to cpl6.
-!    199x-mmm-dd - B. Kauffman - original version in cpl4.
+!    2022-apr-12 - J. Wolfe    - initial budget implementation
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
@@ -220,7 +215,7 @@ contains
   !    Zero out global budget diagnostic data.
   !
   ! !REVISION HISTORY:
-  !    2008-jul-11 - T. Craig - update
+  !    2022-apr-12 - J. Wolfe - initial budget implementation
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
@@ -314,7 +309,7 @@ contains
   !    Accum out global budget diagnostic data.
   !
   ! !REVISION HISTORY:
-  !    2008-jul-11 - T. Craig - update
+  !    2022-apr-12 - J. Wolfe - initial budget implementation
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
@@ -349,7 +344,7 @@ contains
   !    Sum local values to global on root
   !
   ! !REVISION HISTORY:
-  !    2008-jul-19 - T. Craig - update
+  !    2022-apr-12 - J. Wolfe - initial budget implementation
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
@@ -385,7 +380,7 @@ contains
   !     Compute global atm input/output flux diagnostics
   !
   ! !REVISION HISTORY:
-  !    2008-jul-10 - T. Craig - update
+  !    2022-apr-12 - J. Wolfe - initial budget implementation
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
@@ -548,7 +543,7 @@ contains
   !     Compute global lnd input/output flux diagnostics
   !
   ! !REVISION HISTORY:
-  !    2008-jul-10 - T. Craig - update
+  !    2022-apr-12 - J. Wolfe - initial budget implementation
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
@@ -647,7 +642,7 @@ contains
   !     Compute global rof input/output flux diagnostics
   !
   ! !REVISION HISTORY:
-  !    2008-jul-10 - T. Craig - update
+  !    2022-apr-12 - J. Wolfe - initial budget implementation
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
@@ -719,7 +714,7 @@ contains
   !     Compute global glc input/output flux diagnostics
   !
   ! !REVISION HISTORY:
-  !    2008-jul-10 - T. Craig - update
+  !    2022-apr-12 - J. Wolfe - initial budget implementation
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
@@ -779,7 +774,7 @@ contains
   !     Compute global ocn input/output flux diagnostics
   !
   ! !REVISION HISTORY:
-  !    2008-jul-10 - T. Craig - update
+  !    2022-apr-12 - J. Wolfe - initial budget implementation
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
@@ -890,7 +885,7 @@ contains
   !     Compute global ice input/output flux diagnostics
   !
   ! !REVISION HISTORY:
-  !    2008-jul-10 - T. Craig - update
+  !    2022-apr-12 - J. Wolfe - initial budget implementation
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
@@ -995,6 +990,7 @@ contains
   !   Print global BGC budget diagnostics.
   !
   ! !REVISION HISTORY:
+  !    2022-apr-12 - J. Wolfe - initial budget implementation
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
@@ -1033,6 +1029,7 @@ contains
   !   Print global BGC budget diagnostics.
   !
   ! !REVISION HISTORY:
+  !    2022-apr-12 - J. Wolfe - initial budget implementation
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
@@ -1067,7 +1064,6 @@ contains
     character(*),parameter :: FA1= "('    ',a12,6f15.8)"
     character(*),parameter :: FA0r="('    ',12x,8(6x,a8,1x))"
     character(*),parameter :: FA1r="('    ',a12,8f15.8)"
-!JW    character(*),parameter :: FA1r="('    ',a12,8e15.4)"
 
     !-------------------------------------------------------------------------------
 
@@ -1349,7 +1345,6 @@ contains
     deallocate(weight)
 
     if (iam == 0) then
-       !      write(logunit,*) 'sdAV: *** writing ',trim(lcomment),': k fld min/max/sum ***'
        do k = 1,kflds
           call mct_aVect_getRList(mstring,k,AV)
           itemc = mct_string_toChar(mstring)
