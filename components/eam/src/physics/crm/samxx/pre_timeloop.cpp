@@ -375,7 +375,7 @@ void pre_timeloop() {
   
   // subgrid scale turbulence scheme initialization
   if (is_same_str(turbulence_scheme, "smag") == 0) { sgs_init(); }
-  if (is_same_str(turbulence_scheme, "shoc") == 0) { shoc_initialize(); }
+  // if (is_same_str(turbulence_scheme, "shoc") == 0) { shoc_initialize(); }
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {

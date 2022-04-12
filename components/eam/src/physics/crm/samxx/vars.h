@@ -584,3 +584,9 @@ extern real dt_glob;
 extern bool crm_accel_ceaseflag;
 
 extern int igstep;
+
+//using namespace scream;
+//using namespace scream::p3;
+//using P3F        = Functions<Real, DefaultDevice>;
+//extern P3F::P3LookupTables      lookup_tables;
+

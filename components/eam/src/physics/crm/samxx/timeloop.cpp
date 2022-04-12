@@ -152,7 +152,7 @@ void timeloop() {
       //  SGS physics:
       if (dosgs) {
         if (is_same_str(turbulence_scheme, "smag") == 0) { sgs_proc(); }
-        if (is_same_str(turbulence_scheme, "shoc") == 0) { shoc_proc(); }
+        // if (is_same_str(turbulence_scheme, "shoc") == 0) { shoc_proc(); }
       }
 
 // for (int k=0; k<nzm; k++) {

@@ -35,6 +35,7 @@ void micro_p3_init() {
   YAKL_SCOPE( qpsrc   , ::qpsrc);
   YAKL_SCOPE( qpevp   , ::qpevp);
   YAKL_SCOPE( ncrms   , ::ncrms);
+  YAKL_SCOPE( lookup_tables_save, ::lookup_tables_save);
 
   // for (int l=0; l<nmicro_fields; k++) {
   //   for (int j=0; j<ny; j++) {
@@ -63,6 +64,14 @@ void micro_p3_init() {
     qpsrc(k,icrm) = 0.0;
     qpevp(k,icrm) = 0.0;
   });
+
+  // Load lookup tables
+  using P3F  = Functions<Real, DefaultDevice>;
+  P3F::init_kokkos_ice_lookup_tables(lookup_tables_save.ice_table_vals, lookup_tables_save.collect_table_vals);
+  P3F::init_kokkos_tables(lookup_tables_save.vn_table_vals, lookup_tables_save.vm_table_vals,
+                          lookup_tables_save.revap_table_vals, lookup_tables_save.mu_r_table_vals,
+                          lookup_tables_save.dnu_table_vals);
+
 }
 
 
@@ -70,6 +79,9 @@ void get_cloud_fraction(int its, int ite, int kts, int kte, real2d& cloud_frac,
                        real2d& qc, real2d& qr, real2d& qi, std::string& method,
                        real2d& cld_frac_i, real2d& cld_frac_l, real2d& cld_frac_r)
 {
+  YAKL_SCOPE( dz                 , :: dz);
+  YAKL_SCOPE( adz                , :: adz);
+  YAKL_SCOPE( rho                , :: rho);
   // Temporary method for initial P3 implementation
 
   // old comment for "cldm" from EAM = "mean cloud fraction over the time step"
@@ -85,18 +97,18 @@ void get_cloud_fraction(int its, int ite, int kts, int kte, real2d& cloud_frac,
   real cld_water_threshold = 0.001;
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+icrm*ny);
-    cld_frac_l(icol,k) = 1.0;
-    cld_frac_i(icol,k) = 1.0;
-    cld_frac_r(icol,k) = 1.0;
-    // cld_frac_l(icol,k) = p3_mincld;
-    // cld_frac_i(icol,k) = p3_mincld;
-    // cld_frac_r(icol,k) = p3_mincld;
-    // real cld_water_tmp = rho(k,icrm)*adz(k,icrm)*dz(icrm)*(qcl(k,j,i,icrm)+qci(k,j,i,icrm)+qpl(k,j,i,icrm));
-    // if(cld_water_tmp > cld_water_threshold) {
-    //   if (qcl(k,j,i,icrm)>0) { cld_frac_l(icol,k) = 1.0; }
-    //   if (qci(k,j,i,icrm)>0) { cld_frac_i(icol,k) = 1.0; }
-    //   if (qpl(k,j,i,icrm)>0) { cld_frac_r(icol,k) = 1.0; }
-    // }
+    // cld_frac_l(icol,k) = 1.0;
+    // cld_frac_i(icol,k) = 1.0;
+    // cld_frac_r(icol,k) = 1.0;
+    cld_frac_l(icol,k) = p3_mincld;
+    cld_frac_i(icol,k) = p3_mincld;
+    cld_frac_r(icol,k) = p3_mincld;
+    real cld_water_tmp = rho(k,icrm)*adz(k,icrm)*dz(icrm)*(qc(k,j,i,icrm)+qc(k,j,i,icrm)+qr(k,j,i,icrm));
+    if(cld_water_tmp > cld_water_threshold) {
+      if (qc(k,j,i,icrm)>0) { cld_frac_l(icol,k) = 1.0; }
+      if (qi(k,j,i,icrm)>0) { cld_frac_i(icol,k) = 1.0; }
+      if (qr(k,j,i,icrm)>0) { cld_frac_r(icol,k) = 1.0; }
+    }
   });
 
 #if 0
@@ -279,6 +291,7 @@ void micro_p3_proc() {
   YAKL_SCOPE( diag_eff_radius_qi , :: diag_eff_radius_qi);
   YAKL_SCOPE( t_prev             , :: t_prev);
   YAKL_SCOPE( q_prev             , :: q_prev);
+  YAKL_SCOPE( lookup_tables_save , ::lookup_tables_save);
 
   // output 
   YAKL_SCOPE( qv2qi_depos_tend   , :: qv2qi_depos_tend);
@@ -564,7 +577,7 @@ void micro_p3_proc() {
   ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlev_pack, 52, policy);
 
   auto elapsed_time = P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
-                                   history_only, workspace_mgr, ncol, nlev);
+                                   history_only, lookup_tables_save, workspace_mgr, ncol, nlev);
 
   //----------------------------------------------------------------------------
   Kokkos::parallel_for("precip", ncol, KOKKOS_LAMBDA (const int& icol) {

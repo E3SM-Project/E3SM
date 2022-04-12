@@ -1,6 +1,9 @@
 
 #include "shoc.h"
 
+// temporarily disable all this code for now
+#ifdef use_shoc
+
 using namespace scream;
 using namespace scream::shoc;
 
@@ -350,3 +353,5 @@ void shoc_proc() {
   });
 
 }
+
+#endif
