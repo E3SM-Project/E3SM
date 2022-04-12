@@ -11,7 +11,7 @@ set echo
 ###===================================================================
 
 ### BASIC INFO ABOUT RUN
-set job_name       = April_Fools_Clubb_run_test
+set job_name       = merge_test
 set compset        = F2010-CICE
 set resolution     = ne30pg2_r05_oECv3
 set machine        = anvil
@@ -989,6 +989,7 @@ fsurdat = '/lcrc/group/acme/griffinb/E3SM_run_files/surfdata_0.5x0.5_simyr2000_c
 EOF
 
 cat <<EOF >> user_nl_eam
+ zmconv_microp = .true.
  nhtfrq =   0,-24,-6,-6,-3,-24
  mfilt  = 1,30,120,120,240,30
  avgflag_pertape = 'A','A','I','A','A','A'
