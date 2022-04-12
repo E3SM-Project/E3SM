@@ -142,8 +142,7 @@ echo $'\n----- All done -----\n'
 
 user_nl() {
 
-cat <<EOF
- EOF >> user_nl_eam
+cat << EOF >> user_nl_eam
  nhtfrq =   0,-24,-6,-6,-3,-24,0
  mfilt  = 1,30,120,120,240,30,1
  avgflag_pertape = 'A','A','I','A','A','A','I'
@@ -160,10 +159,10 @@ cat <<EOF
  gw_convect_hcf = 10.0
  ! Add ZM convective microphysics
  zmconv_microp = .true.
+
 EOF
 
-cat <<EOF
- EOF >> user_nl_elm
+cat << EOF >> user_nl_elm
  hist_dov2xy = .true.,.true.
  hist_fincl2 = 'H2OSNO', 'FSNO', 'QRUNOFF', 'QSNOMELT', 'FSNO_EFF', 'SNORDSL', 'SNOW', 'FSDS', 'FSR', 'FLDS', 'FIRE', 'FIRA'
  hist_mfilt = 1,365
@@ -171,8 +170,7 @@ cat <<EOF
  hist_avgflag_pertape = 'A','A'
 EOF
 
-cat <<EOF
- EOF >> user_nl_mosart
+cat << EOF >> user_nl_mosart
  rtmhist_fincl2 = 'RIVER_DISCHARGE_OVER_LAND_LIQ'
  rtmhist_mfilt = 1,365
  rtmhist_ndens = 2
@@ -302,7 +300,7 @@ case_setup() {
     local input_data_dir=`./xmlquery DIN_LOC_ROOT --value`
 
     # Custom user_nl
-    user_nl
+    user_nl()
 
     # Finally, run CIME case.setup
     ./case.setup --reset
