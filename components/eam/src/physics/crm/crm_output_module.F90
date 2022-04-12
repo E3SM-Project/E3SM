@@ -212,11 +212,9 @@ contains
       call prefetch(output%qg_mean)
       call prefetch(output%qr_mean)
 
-      if (trim(MMF_microphysics_scheme) .eq. 'p3') then
-         if (.not. allocated(output%nc_mean)) allocate(output%nc_mean(ncol,nlev))
-         if (.not. allocated(output%ni_mean)) allocate(output%ni_mean(ncol,nlev))
-         if (.not. allocated(output%nr_mean)) allocate(output%nr_mean(ncol,nlev))
-      end if
+      if (.not. allocated(output%nc_mean)) allocate(output%nc_mean(ncol,nlev))
+      if (.not. allocated(output%ni_mean)) allocate(output%ni_mean(ncol,nlev))
+      if (.not. allocated(output%nr_mean)) allocate(output%nr_mean(ncol,nlev))
 
       if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          if (.not. allocated(output%nc_mean)) allocate(output%nc_mean(ncol,nlev))
@@ -373,11 +371,9 @@ contains
       output%qg_mean = 0
       output%qr_mean = 0
 
-      if (trim(MMF_microphysics_scheme) .eq. 'p3') then
-         output%nc_mean = 0
-         output%ni_mean = 0
-         output%nr_mean = 0
-      end if
+      output%nc_mean = 0
+      output%ni_mean = 0
+      output%nr_mean = 0
 
       if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          output%nc_mean = 0
@@ -494,11 +490,9 @@ contains
       if (allocated(output%qg_mean)) deallocate(output%qg_mean)
       if (allocated(output%qr_mean)) deallocate(output%qr_mean)
       
-      if (trim(MMF_microphysics_scheme) .eq. 'p3') then
-         if (allocated(output%nc_mean)) deallocate(output%nc_mean)
-         if (allocated(output%ni_mean)) deallocate(output%ni_mean)
-         if (allocated(output%nr_mean)) deallocate(output%nr_mean)
-      end if
+      if (allocated(output%nc_mean)) deallocate(output%nc_mean)
+      if (allocated(output%ni_mean)) deallocate(output%ni_mean)
+      if (allocated(output%nr_mean)) deallocate(output%nr_mean)
 
       if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          if (allocated(output%nc_mean)) deallocate(output%nc_mean)
