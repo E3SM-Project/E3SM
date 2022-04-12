@@ -328,7 +328,7 @@ IF (${ENABLE_NANOTIMERS})
     ADD_DEFINITIONS(-DBIT64)
   ENDIF ()
 ENDIF ()
-ADD_SUBDIRECTORY(utils/cime/src/share/timing)
+ADD_SUBDIRECTORY(utils/cime/CIME/non_py/src/timing)
 
 
 # CMAKE_CURRENT_SOURCE_DIR == homme
