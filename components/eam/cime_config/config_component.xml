@@ -122,8 +122,9 @@
       <value compset="1850S_EAM.*AR5sf"  >1850S_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6"  >20TR_eam_CMIP6</value>
       <value compset="20TR(?:SOI)?_EAM.*CMIP6.*_BGC*"  >20TR_eam_CMIP6_bgc</value>
-      <value compset="SSP585(?:SOI)?_EAM.*CMIP6">SSP585_cam5_CMIP6</value>
-      <value compset="SSP585(?:SOI)?_EAM.*CMIP6.*_BGC%*">SSP585_cam5_CMIP6_bgc</value>
+      <value compset="SSP585(?:SOI)?_EAM.*CMIP6">SSP585_eam_CMIP6</value>
+      <value compset="SSP370(?:SOI)?_EAM.*CMIP6">SSP370_eam_CMIP6</value>
+      <value compset="SSP585(?:SOI)?_EAM.*CMIP6.*_BGC%B">SSP585_cam5_CMIP6_bgc</value>
       <value compset="20TR(?:SOI)?_EAM.*AR5sf" >20TR_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TRS_EAM.*AR5sf">20TRS_E3SMv1_superfast_ar5-emis</value>
       <value compset="1850(?:SOI)?_EAM%WCCM"   >waccm_1850_cam5</value>
