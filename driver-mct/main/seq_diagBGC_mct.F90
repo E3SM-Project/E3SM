@@ -128,7 +128,7 @@ module seq_diagBGC_mct
   integer(in),parameter :: f_c_end    = f_corgnc      ! Last index for carbon
 
   character(len=12),parameter :: fname(f_size) = &
-       (/'        area',' surf carbon','black carbon','orgnc carbon' /)
+       (/'        area',' surface co2','black carbon','orgnc carbon' /)
 
   !--- P for period ---
 
@@ -1017,9 +1017,9 @@ contains
     call seq_diagBGC_sum0_mct()
     dataGpr = budg_dataGBGC
 
-    !  old budget normalizations (global area and 1e9 for carbon)
+    !  old budget normalizations (global area and 1e10 for carbon)
     dataGpr = dataGpr/(4.0_r8*shr_const_pi)
-    dataGpr(f_c:f_c_end,:,:) = dataGpr(f_c:f_c_end,:,:) * 1.0e9_r8
+    dataGpr(f_c:f_c_end,:,:) = dataGpr(f_c:f_c_end,:,:) * 1.0e10_r8
     dataGpr = dataGpr/budg_nsBGC
 
   end subroutine seq_diagBGC_preprint_mct
@@ -1108,7 +1108,7 @@ contains
             endif
 
             write(logunit,*) ' '
-            write(logunit,FAH) subname,trim(str)//' CARBON BUDGET (kg/m2s*1e9): period = ',trim(pname(ip)),': date = ',cdate,sec
+            write(logunit,FAH) subname,trim(str)//' CARBON BUDGET (kg-C/m2s*1e10): period = ',trim(pname(ip)),': date = ',cdate,sec
             write(logunit,FA0) cname(ica),cname(icl),cname(icn),cname(ics),cname(ico),' *SUM*  '
             do nf = f_c, f_c_end
                write(logunit,FA1)    fname(nf),dataGpr(nf,ica,ip),dataGpr(nf,icl,ip), &
@@ -1158,7 +1158,7 @@ contains
             endif
 
             write(logunit,*) ' '
-            write(logunit,FAH) subname,trim(str)//' CARBON BUDGET (kg/m2s*1e9): period = ',trim(pname(ip)),': date = ',cdate,sec
+            write(logunit,FAH) subname,trim(str)//' CARBON BUDGET (kg-C/m2s*1e10): period = ',trim(pname(ip)),': date = ',cdate,sec
             write(logunit,FA0) cname(icar),cname(icxs),cname(icxr),cname(icas),' *SUM*  '
             do nf = f_c, f_c_end
                write(logunit,FA1)    fname(nf),-dataGpr(nf,icar,ip),dataGpr(nf,icxs,ip), &
@@ -1181,7 +1181,7 @@ contains
       if (plev >= 1) then
 
          write(logunit,*) ' '
-         write(logunit,FAH) subname,'NET CARBON BUDGET (kg/m2s*1e9): period = ',trim(pname(ip)),': date = ',cdate,sec
+         write(logunit,FAH) subname,'NET CARBON BUDGET (kg-C/m2s*1e10): period = ',trim(pname(ip)),': date = ',cdate,sec
          write(logunit,FA0r) '     atm','     lnd','     rof','     ocn','  ice nh','  ice sh','     glc',' *SUM*  '
          do nf = f_c, f_c_end
             write(logunit,FA1r)   fname(nf),dataGpr(nf,c_atm_ar,ip)+dataGpr(nf,c_atm_as,ip), &
