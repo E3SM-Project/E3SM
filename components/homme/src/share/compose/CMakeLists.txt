@@ -1,6 +1,6 @@
 include_directories (
   ${CMAKE_CURRENT_BINARY_DIR}
-  ${HOMME_SOURCE_DIR}/utils/cime/src/share/timing)
+  ${HOMME_SOURCE_DIR}/utils/cime/CIME/non_py/src/timing)
 if (ENABLE_HORIZ_OPENMP)
   add_definitions(-DHORIZ_OPENMP)
 endif ()
