@@ -12,9 +12,12 @@ interface
    subroutine compose_unittest() bind(c)
    end subroutine compose_unittest
 
-   subroutine compose_stt_init(np, nlev, qsize, qsize_d, nelemd) bind(c)
-     use iso_c_binding, only: c_int
-     integer (kind=c_int), value, intent(in) :: np, nlev, qsize, qsize_d, nelemd
+   subroutine compose_stt_init(np, nlev, qsize, qsize_d, nelemd, testno, &
+        geometry, Sx, Sy, Lx, Ly) bind(c)
+     use iso_c_binding, only: c_int, c_double
+     integer (kind=c_int), value, intent(in) :: np, nlev, qsize, qsize_d, nelemd, &
+          testno, geometry
+     real (kind=c_double), value, intent(in) :: Sx, Sy, Lx, Ly
    end subroutine compose_stt_init
 
    subroutine compose_stt_fill_uniform_density(ie, np1, dp3d, dp) bind(c)
@@ -59,9 +62,14 @@ interface
           dp3d(np,np,nlev,timelevels), qdp(np,np,nlev,qsize_d,2)
    end subroutine compose_stt_record_q
 
-   subroutine compose_stt_finish(comm, root, rank) bind(c)
-     use iso_c_binding, only: c_int
+   subroutine compose_stt_clear() bind(c)
+   end subroutine compose_stt_clear
+
+   subroutine compose_stt_finish(comm, root, rank, eval) bind(c)
+     use iso_c_binding, only: c_int, c_double
+     use dimensions_mod, only: nlev, qsize
      integer (kind=c_int), value, intent(in) :: comm, root, rank
+     real (kind=c_double), intent(out) :: eval((nlev+1)*qsize)
    end subroutine compose_stt_finish
 #endif
 
@@ -70,7 +78,8 @@ end interface
 contains
 
   ! For comprehensive testing.
-  subroutine compose_test(par, hvcoord, dom_mt, elem)
+  subroutine compose_test(par, hvcoord, dom_mt, elem, eval)
+    use kinds, only: real_kind
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
     use element_mod, only: element_t
@@ -86,9 +95,10 @@ contains
 #endif
 
     type (parallel_t), intent(in) :: par
+    type (hvcoord_t) , intent(in) :: hvcoord
     type (domain1d_t), pointer, intent(in) :: dom_mt(:)
     type (element_t), intent(inout) :: elem(:)
-    type (hvcoord_t) , intent(in) :: hvcoord
+    real (real_kind), optional, intent(out) :: eval(:)
 
     type (hybrid_t) :: hybrid
     type (derivative_t) :: deriv
@@ -123,7 +133,7 @@ contains
 
     ! 2. Standalone tracer advection test, useful as a basic but comprehensive
     ! correctness test and also as part of a convergence test.
-    call compose_stt(hybrid, dom_mt, nets, nete, hvcoord, deriv, elem)
+    call compose_stt(hybrid, dom_mt, nets, nete, hvcoord, deriv, elem, eval)
 #if (defined HORIZ_OPENMP)
     !$omp end parallel
 #endif
@@ -161,7 +171,7 @@ contains
     end if
   end subroutine print_software_statistics
 
-  subroutine compose_stt(hybrid, dom_mt, nets, nete, hvcoord, deriv, elem)
+  subroutine compose_stt(hybrid, dom_mt, nets, nete, hvcoord, deriv, elem, eval)
     use iso_c_binding, only: c_loc
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
@@ -173,13 +183,17 @@ contains
     use derivative_mod, only: derivative_t, derivinit
     use dimensions_mod, only: ne, np, nlev, qsize, qsize_d, nelemd
     use coordinate_systems_mod, only: spherical_polar_t
-    use control_mod, only: qsplit, statefreq, se_fv_phys_remap_alg
+    use control_mod, only: qsplit, statefreq, se_fv_phys_remap_alg, geometry
+    use physical_constants, only: Sx, Sy, Lx, Ly
     use time_mod, only: nmax
     use hybvcoord_mod, only: hvcoord_t
     use perf_mod
     use sl_advection
     use gllfvremap_mod
     use gllfvremap_util_mod
+#ifdef HOMME_ENABLE_COMPOSE
+    use compose_mod, only: compose_h2d, compose_d2h
+#endif
 
     type (hybrid_t), intent(in) :: hybrid
     type (domain1d_t), pointer, intent(in) :: dom_mt(:)
@@ -187,25 +201,31 @@ contains
     type (element_t), intent(inout) :: elem(:)
     type (hvcoord_t) , intent(in) :: hvcoord
     integer, intent(in) :: nets, nete
+    real (real_kind), optional, intent(out) :: eval(:)
 
     real (kind=real_kind), parameter :: twelve_days = 3600.d0 * 24 * 12
 
     type (timelevel_t) :: tl
-    integer :: nsteps, n0_qdp, np1_qdp, ie, i, j
-    real (kind=real_kind) :: dt, tprev, t
+    integer :: nsteps, n0_qdp, np1_qdp, ie, i, j, geometry_type, nerr
+    real (kind=real_kind) :: dt, tprev, t, unused((nlev+1)*qsize)
 
+    nerr = 0
+    
     if (se_fv_phys_remap_alg == -1) then
-       call gfr_test(hybrid, dom_mt, hvcoord, deriv, elem)
-       call gfr_check_api(hybrid, nets, nete, hvcoord, elem)
+       nerr = nerr + gfr_test(hybrid, dom_mt, hvcoord, deriv, elem)
+       nerr = nerr + gfr_check_api(hybrid, nets, nete, hvcoord, elem)
        return
     end if
 
 #ifdef HOMME_ENABLE_COMPOSE  
     call t_startf('compose_stt')
+    geometry_type = 0 ! sphere
+    if (trim(geometry) == "plane") geometry_type = 1
     ! Set up time stepping and initialize q and density.
     call timelevel_init_default(tl)
     call timelevel_qdp(tl, qsplit, np1_qdp, n0_qdp)
-    call compose_stt_init(np, nlev, qsize, qsize_d, nelemd)
+    call compose_stt_init(np, nlev, qsize, qsize_d, nelemd, 0, &
+         geometry_type, Sx, Sy, Lx, Ly)
     do ie = nets, nete
        call compose_stt_fill_uniform_density(ie, tl%np1, elem(ie)%state%dp3d, &
             elem(ie)%derived%dp)
@@ -223,8 +243,11 @@ contains
        print *, 'COMPOSE> nsteps', nsteps
     end if
     dt = twelve_days / nsteps
+    call t_barrierf('compose_stt_step_start_barrier', hybrid%par%comm)
     call t_startf('compose_stt_step')
     do i = 1, nsteps
+       compose_h2d = i == 1
+       compose_d2h = i == 1 .or. i == nsteps
        tprev = dt*(i-1)
        t = dt*i
        do ie = nets, nete
@@ -239,6 +262,7 @@ contains
           call print_software_statistics(hybrid, nets, nete)
        end if
     end do
+    call t_barrierf('compose_stt_step_stop_barrier', hybrid%par%comm)
     call t_stopf('compose_stt_step')
     ! Record final q values.
     call compose_stt_begin_record()
@@ -248,7 +272,11 @@ contains
             tl%np1, elem(ie)%state%dp3d, np1_qdp, elem(ie)%state%qdp)
     end do
     ! Do the global reductions, print diagnostic information, and clean up.
-    call compose_stt_finish(hybrid%par%comm, hybrid%par%root, hybrid%par%rank)
+    if (present(eval)) then
+       call compose_stt_finish(hybrid%par%comm, hybrid%par%root, hybrid%par%rank, eval)
+    else
+       call compose_stt_finish(hybrid%par%comm, hybrid%par%root, hybrid%par%rank, unused)
+    end if
     call t_stopf('compose_stt')
 #endif
   end subroutine compose_stt

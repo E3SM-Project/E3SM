@@ -361,7 +361,7 @@ module ocn_tracer_advection_shared
          polynomial_order = 2  ! option for polynomial order, forced to 2
 
       integer :: &
-         i, j, k, n,   &! loop counters
+         i, j, n,   &! loop counters
          ip1, ip2,     &! temps for i+1, i+2
          iCell, iEdge, &! loop indices for cell, edge loops
          ma, na, cell_add, mw

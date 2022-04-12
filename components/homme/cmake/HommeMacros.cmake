@@ -116,6 +116,10 @@ macro(createTestExec execName execType macroNP macroNC
   IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
     TARGET_COMPILE_DEFINITIONS(${execName} PUBLIC HOMME_WITHOUT_PIOLIBRARY)
   ENDIF()
+  IF(BUILD_HOMMEXX_BENCHMARK_NOFORCING)
+    TARGET_COMPILE_DEFINITIONS(${execName} PUBLIC HOMMEXX_BENCHMARK_NOFORCING)
+  ENDIF()
+
 
   IF (CXXLIB_SUPPORTED_CACHE)
     MESSAGE(STATUS "   Linking Fortran with -cxxlib")
@@ -130,7 +134,18 @@ macro(createTestExec execName execType macroNP macroNC
   # Add this executable to a list
   SET(EXEC_LIST ${EXEC_LIST} ${execName} CACHE INTERNAL "List of configured executables")
 
-  TARGET_LINK_LIBRARIES(${execName} timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+  # If this is a Kokkos executable, e.g. theta-l_kokkos, then link to the C++
+  # Compose library; if not, then link to the F90 one.
+  #   If Compose is not enabled, then COMPOSE_LIBRARY_F90 and
+  # COMPOSE_LIBRARY_CPP are empty, so then COMPOSE_LIBRARY_TYPE will be, too.
+  string(FIND ${execType} "kokkos" KOKKOS_SUFFIX_LOC)
+  if (KOKKOS_SUFFIX_LOC EQUAL -1)
+    set (COMPOSE_LIBRARY_TYPE ${COMPOSE_LIBRARY_F90})
+  else ()
+    set (COMPOSE_LIBRARY_TYPE ${COMPOSE_LIBRARY_CPP})
+  endif ()
+
+  TARGET_LINK_LIBRARIES(${execName} timing ${COMPOSE_LIBRARY_TYPE} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
   IF(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
     IF(HOMME_USE_SCORPIO)
       TARGET_LINK_LIBRARIES(${execName} piof pioc)
@@ -149,7 +164,8 @@ macro(createTestExec execName execType macroNP macroNC
                         PROPERTIES Fortran_MODULE_DIRECTORY ${EXEC_MODULE_DIR})
 
   IF (HOMME_USE_MKL)
-    TARGET_LINK_LIBRARIES(${execName})
+    TARGET_COMPILE_OPTIONS(${execName} PUBLIC -mkl)
+    TARGET_LINK_LIBRARIES(${execName} -mkl)
   ELSE()
     IF (NOT HOMME_FIND_BLASLAPACK)
       TARGET_LINK_LIBRARIES(${execName} lapack blas)
@@ -234,13 +250,17 @@ macro(createExecLib libName execType libSrcs inclDirs macroNP
     TARGET_LINK_LIBRARIES(${libName} ittnotify)
   ENDIF ()
 
+  # COMPOSE_LIBRARY is empty if Compose SL transport is not enabled.
   TARGET_LINK_LIBRARIES(${libName} timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 
   IF (HOMME_USE_KOKKOS)
     TARGET_LINK_LIBRARIES(${libName} kokkos)
   ENDIF ()
 
-  IF (NOT HOMME_USE_MKL)
+  IF (HOMME_USE_MKL)
+    TARGET_COMPILE_OPTIONS(${libName} PUBLIC -mkl)
+    TARGET_LINK_LIBRARIES(${libName} -mkl)
+  ELSE()
     IF (NOT HOMME_FIND_BLASLAPACK)
       TARGET_LINK_LIBRARIES(${libName} lapack blas)
     ENDIF()

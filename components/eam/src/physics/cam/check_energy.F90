@@ -270,6 +270,7 @@ end subroutine check_energy_get_integrals
     real(r8) :: ws(state%ncol)                     ! vertical integral of snow
     integer :: ixrain
     integer :: ixsnow
+    integer :: ixrim                               ! Index for RIME constituent
 !-----------------------------------------------------------------------
 
     lchnk = state%lchnk
@@ -278,6 +279,7 @@ end subroutine check_energy_get_integrals
     call cnst_get_ind('CLDLIQ', ixcldliq, abrtf=.false.)
     call cnst_get_ind('RAINQM', ixrain, abrtf=.false.)
     call cnst_get_ind('SNOWQM', ixsnow, abrtf=.false.)
+    call cnst_get_ind('BVRIM ', ixrim,  abrtf=.false.)
 
     ! cpairv_loc needs to be allocated to a size which matches state and ptend
     ! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
@@ -323,10 +325,16 @@ end subroutine check_energy_get_integrals
        end do
     end if
 
-    if (ixrain   > 1  .and.  ixsnow   > 1 ) then
+    if (ixrain   > 1) then
        do k = 1, pver
           do i = 1, ncol
              wr(i) = wr(i) + state%q(i,k,ixrain)*state%pdel(i,k)/gravit
+          end do
+       end do
+    end if
+    if (ixsnow > 1) then 
+        do k = 1, pver
+           do i = 1, ncol   
              ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
           end do
        end do
@@ -419,6 +427,7 @@ end subroutine check_energy_get_integrals
     real(r8) :: ws(state%ncol)                     ! vertical integral of snow
     integer :: ixrain
     integer :: ixsnow
+    integer :: ixrim                               ! Index for RIME constituent
 !-----------------------------------------------------------------------
 
     lchnk = state%lchnk
@@ -427,6 +436,7 @@ end subroutine check_energy_get_integrals
     call cnst_get_ind('CLDLIQ', ixcldliq, abrtf=.false.)
     call cnst_get_ind('RAINQM', ixrain, abrtf=.false.)
     call cnst_get_ind('SNOWQM', ixsnow, abrtf=.false.)
+    call cnst_get_ind('BVRIM ', ixrim,  abrtf=.false.)
 
     ! cpairv_loc needs to be allocated to a size which matches state and ptend
     ! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
@@ -472,13 +482,19 @@ end subroutine check_energy_get_integrals
        end do
     end if
 
-    if (ixrain   > 1  .and.  ixsnow   > 1 ) then
+    if (ixrain   > 1) then
        do k = 1, pver
           do i = 1, ncol
              wr(i) = wr(i) + state%q(i,k,ixrain)*state%pdel(i,k)/gravit
-             ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
           end do
        end do
+    end if
+    if (ixsnow > 1) then 
+         do k = 1, pver
+            do i = 1, ncol   
+             ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
+            end do
+         end do
     end if
 
     ! Compute vertical integrals of frozen static energy and total water.

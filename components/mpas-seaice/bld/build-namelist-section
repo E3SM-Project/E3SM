@@ -193,6 +193,7 @@ add_default($nl, 'config_use_skeletal_biochemistry');
 add_default($nl, 'config_use_nitrate');
 add_default($nl, 'config_use_carbon');
 add_default($nl, 'config_use_chlorophyll');
+add_default($nl, 'config_use_macromolecules');
 add_default($nl, 'config_use_ammonium');
 add_default($nl, 'config_use_silicate');
 add_default($nl, 'config_use_DMS');

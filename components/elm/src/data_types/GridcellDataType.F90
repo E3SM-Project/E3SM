@@ -558,7 +558,6 @@ contains
     allocate(this%tcs_month_beg         (begg:endg));     this%tcs_month_beg         (:) = nan
     allocate(this%tcs_month_end         (begg:endg));     this%tcs_month_end         (:) = nan
     allocate(this%begcb                 (begg:endg));     this%begcb                 (:) = nan
-    allocate(this%begcb                 (begg:endg));     this%begcb                 (:) = nan
     allocate(this%endcb                 (begg:endg));     this%endcb                 (:) = nan
     allocate(this%errcb                 (begg:endg));     this%errcb                 (:) = nan
 
@@ -613,6 +612,10 @@ contains
     call hist_addfld1d (fname='TCS_MONTH_END',  units='mm',  &
          avgflag='I', long_name='total carbon storage at the end of a month', &
          ptr_lnd=this%tcs_month_end)
+
+    call hist_addfld1d (fname='CMASS_BALANCE_ERROR',  units='gC/m^2',  &
+         avgflag='A', long_name='Gridcell carbon mass balance error', &
+         ptr_lnd=this%errcb)
 
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of grc_cs
