@@ -763,6 +763,9 @@
 			<var name="bedTopography"/>
 			<var name="sfcMassBal"/>
                         <var name="floatingBasalMassBal"/>
+                        <!-- If restart file sizes become too large, eigencalvingParameter,
+                             groundedVonMisesThresholdStress, and floatingVonMisesThresholdStress
+                             could be moved to packages. -->
                         <var name="eigencalvingParameter"/>
                         <var name="groundedVonMisesThresholdStress"/>
                         <var name="floatingVonMisesThresholdStress"/>

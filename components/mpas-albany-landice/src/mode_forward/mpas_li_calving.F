@@ -1563,15 +1563,6 @@ module li_calving
       call mpas_pool_get_config(liConfigs, 'config_floating_von_Mises_threshold_stress', config_floating_von_Mises_threshold_stress)
       call mpas_pool_get_config(liConfigs, 'config_calving_speed_limit', config_calving_speed_limit)
 
-      if ( config_grounded_von_Mises_threshold_stress <=  0.0_RKIND ) then
-         err = 1
-         call mpas_log_write("config_grounded_von_Mises_threshold_stress must be >0.0", MPAS_LOG_ERR)
-         endif
-
-      if ( config_floating_von_Mises_threshold_stress < 0.0_RKIND ) then
-         err = 1
-         call mpas_log_write("config_floating_von_Mises_threshold_stress must be >=0.0", MPAS_LOG_ERR)
-      endif
       !call mpas_pool_get_config(liConfigs, 'config_default_flowParamA',
       !config_default_flowParamA) ! REMOVE THIS ONCE YOU CAN GET A FROM
       !ALBANY!!!!!
@@ -1606,7 +1597,7 @@ module li_calving
           call mpas_pool_get_array(geometryPool, 'floatingVonMisesThresholdStress', floatingVonMisesThresholdStress)
           call mpas_pool_get_array(thermalPool, 'temperature', temperature)
 
-          ! get parameter value
+          ! get parameter value and check that values are valid
           if (trim(config_grounded_von_Mises_threshold_stress_source) == 'scalar') then
                 groundedVonMisesThresholdStress(:) = config_grounded_von_Mises_threshold_stress
           elseif (trim(config_grounded_von_Mises_threshold_stress_source) == 'data') then
@@ -1617,6 +1608,11 @@ module li_calving
                       config_grounded_von_Mises_threshold_stress_source, MPAS_LOG_ERR)
           endif
 
+          if ( minval(groundedVonMisesThresholdStress(:)) <= 0.0_RKIND ) then
+                err = 1
+                call mpas_log_write("groundedVonMisesThresholdStress must be >0.0", MPAS_LOG_ERR)
+          endif
+
           if (trim(config_floating_von_Mises_threshold_stress_source) == 'scalar') then
                 floatingVonMisesThresholdStress(:) = config_floating_von_Mises_threshold_stress
           elseif (trim(config_floating_von_Mises_threshold_stress_source) == 'data') then
@@ -1625,6 +1621,17 @@ module li_calving
                 err = 1
                 call mpas_log_write("Invalid value specified for option config_floating_von_Mises_threshold_stress_source" // &
                       config_floating_von_Mises_threshold_stress_source, MPAS_LOG_ERR)
+          endif
+
+          if ( minval(floatingVonMisesThresholdStress(:)) < 0.0_RKIND ) then
+                err = 1
+                call mpas_log_write("floatingVonMisesThresholdStress must be >=0.0", MPAS_LOG_ERR)
+          endif
+
+          ! If von Mises threshold stresses contain invalid values, do not
+          ! continue.
+          if ( err == 1 ) then
+             return
           endif
 
           vonMisesStress(:) = 0.0_RKIND
@@ -1671,7 +1678,8 @@ module li_calving
          ! Convert calvingVelocity to calvingThickness
           call li_apply_front_ablation_velocity(meshPool, geometryPool,velocityPool, &
                                               calvingThickness, calvingVelocity, applyToGrounded, &
-                                              applyToFloating, applyToGroundingLine, domain, err)
+                                              applyToFloating, applyToGroundingLine, domain, err_tmp)
+          err = ior(err, err_tmp)
          ! Update halos on calvingThickness or faceMeltingThickness before
          ! applying it.
          ! Testing seemed to indicate this is not necessary, but I don't
