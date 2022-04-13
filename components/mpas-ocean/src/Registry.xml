@@ -331,7 +331,7 @@
 					possible_values="any integer between 0 (all layers on) and nVertLevels (all layers off)"
 		/>
 		<nml_option name="config_Redi_horizontal_taper" type="character" default_value="ramp" units="unitless"
-					description="Control how the Redi Bolus $\kappa$ value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
+					description="Control how the Redi $\kappa$ value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
 					possible_values="'none', 'ramp', 'RossbyRadius'"
 		/>
 		<nml_option name="config_Redi_horizontal_ramp_min" type="real" default_value="20e3" units="m"
@@ -400,7 +400,7 @@
 					possible_values="small positive values less than equal to one"
 		/>
 		<nml_option name="config_GM_horizontal_taper" type="character" default_value="ramp" units="unitless"
-					description="Control how the GM Bolus $\kappa$ value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
+					description="Control how the GM Bolus value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
 					possible_values="'none', 'ramp', 'RossbyRadius'"
 		/>
 		<nml_option name="config_GM_horizontal_ramp_min" type="real" default_value="20e3" units="m"
