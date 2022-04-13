@@ -586,19 +586,20 @@ def convert_to_dict(element, metadata):
     """
     result = OrderedDict()
     for child in element:
-        child_name = child.tag.replace("__", " ")
+        child_name_raw = child.tag
+        child_name = child_name_raw.replace("__", " ")
         child_val = child.text
-        expect(child_name in metadata, "No metadata for child '{}'".format(child_name))
+        expect(child_name_raw in metadata, "No metadata for child '{}'".format(child_name))
 
         has_children = len(child) > 0
         if not has_children:
-            child_type, child_valids = metadata[child_name]
+            child_type, child_valids = metadata[child_name_raw]
             child_refined_val = refine_type(child_val, force_type=child_type)
             if child_valids:
                 check_valid(child_name, child_refined_val, child_valids, child_type)
             result[child_name] = child_refined_val
         else:
-            result[child_name] = convert_to_dict(child, metadata[child_name])
+            result[child_name] = convert_to_dict(child, metadata[child_name_raw])
 
     return result
 
@@ -786,10 +787,11 @@ def create_nml_files(caseroot, rundir, metadata):
         expect("name" in child.attrib, "file element missing required 'name' attribute")
         expect("format" in child.attrib, "file element missing required 'format' attribute")
 
-        nml_filename    = os.path.join(rundir, child.attrib["name"])
+        child_fname     = child.attrib["name"]
+        nml_filename    = os.path.join(rundir, child_fname)
         nml_file_format = child.attrib["format"]
 
-        dict_contents = convert_to_dict(child, metadata[nml_filename])
+        dict_contents = convert_to_dict(child, metadata[child_fname])
 
         if nml_file_format == "yaml":
             with open(nml_filename, "w") as fd:
