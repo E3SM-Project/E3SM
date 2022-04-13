@@ -101,15 +101,6 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
 GetInputFile(init/homme_physics_ne2np4.nc
   ${CMAKE_CURRENT_BINARY_DIR}/homme_physics_ne2np4.nc)
 
-# Create vcoord directory
-file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vcoord)
-
-# Copy vcoord files to build dir
-configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72i.ascii
-               ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
-configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72m.ascii
-               ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
-
 # RRTMGP data files
 file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
 set(RRTMGP_EXTERNAL_DIR ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external)

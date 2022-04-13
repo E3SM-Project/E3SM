@@ -61,15 +61,6 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
 GetInputFile(init/homme_shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc
   ${CMAKE_CURRENT_BINARY_DIR}/data)
 
-# Create vcoord directory
-file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vcoord)
-
-# Copy vcoord files to build dir
-configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72i.ascii
-               ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
-configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72m.ascii
-               ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
-
 # RRTMGP data files
 GetInputFile(init/rrtmgp-data-sw-g224-2018-12-04.nc
   ${CMAKE_CURRENT_BINARY_DIR}/data)

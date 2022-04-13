@@ -60,14 +60,6 @@ configure_file(${SCREAM_BASE_DIR}/src/dynamics/homme/tests/theta.nl
 GetInputFile(init/homme_physics_ne2np4.nc
   ${CMAKE_CURRENT_BINARY_DIR}/homme_physics_ne2np4.nc)
 
-# Create vcoord directory
-file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vcoord)
-
-# Copy vcoord files to build dir
-configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72i.ascii
-               ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
-configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72m.ascii
-               ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if max mpi ranks is >1
