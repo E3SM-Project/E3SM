@@ -258,7 +258,7 @@ TEST_CASE ("recreate_mct_coupling")
 
   // Create import fields
   const auto nondim = Units::nondimensional();
-  FID surf_latent_flux_id ("surf_latent_flux",   scalar2d_layout, W/(m*m), grid_name);
+  FID surf_latent_flux_id ("surf_latent_flux",   scalar2d_layout, kg/(m*m*s), grid_name);
   FID surf_sens_flux_id   ("surf_sens_flux",     scalar2d_layout, W/(m*m), grid_name);
   FID surf_mom_flux_id    ("surf_mom_flux",      vector2d_layout, W/(m*m), grid_name);
   FID sfc_alb_dir_vis_id  ("sfc_alb_dir_vis",    scalar2d_layout, nondim,  grid_name);
@@ -685,12 +685,12 @@ TEST_CASE ("do_initial_export")
     // Perform export with init_phase=true
     exporter.do_export(true);
 
-    // Check that only f1 was exported
+    // Check f1 was exported, but f2 was set to 0
     f1_exp.sync_to_host();
     f2_exp.sync_to_host();
     for (int icol=0; icol<ncols; ++icol) {
       REQUIRE (raw_data[0 + icol*num_fields] == f1_exp_h(icol));
-      REQUIRE (raw_data[1 + icol*num_fields] == -1);
+      REQUIRE (raw_data[1 + icol*num_fields] == 0.0);
     }
 
     // Set all raw_data back to -1

@@ -20,14 +20,14 @@ DynamicsDrivenGridsManager (const ekat::Comm& comm,
                             const ekat::ParameterList& p)
  : m_comm (comm)
 {
-  // This class needs Homme's context, so register as a user
-  HommeContextUser::singleton().add_user();
-
   if (!is_parallel_inited_f90()) {
     // While we're here, we can init homme's parallel session
     auto fcomm = MPI_Comm_c2f(comm.mpi_comm());
     init_parallel_f90 (fcomm);
   }
+
+  // This class needs Homme's context, so register as a user
+  HommeContextUser::singleton().add_user();
 
   if (!is_params_inited_f90()) {
     // While we're here, we can init homme's parameters
@@ -70,8 +70,8 @@ DynamicsDrivenGridsManager::
   // Cleanup the grids stuff
   finalize_geometry_f90 ();
 
-  // This class is done needing Homme's context, so remove myself as customer
-  Homme::Context::singleton().finalize_singleton();
+  // This class is done with Homme. Remove from its users list
+  HommeContextUser::singleton().remove_user();
 }
 
 DynamicsDrivenGridsManager::remapper_ptr_type
@@ -136,7 +136,7 @@ build_grids (const std::set<std::string>& grid_names)
     build_physics_grid(m_ref_grid_name);
   }
 
-  // Now we can cleanup all the grid stuff in f90
+  // Clean up temporaries used during grid initialization
   cleanup_grid_init_data_f90 ();
 }
 

@@ -5,8 +5,11 @@
 #include "cpp/extensions/cloud_optics/mo_cloud_optics.h"
 #include "cpp/extensions/fluxes_byband/mo_fluxes_byband.h"
 #include "cpp/rrtmgp_const.h"
+
 #include "physics/share/physics_constants.hpp"
+
 #include "ekat/mpi/ekat_comm.hpp"
+#include "ekat/logging/ekat_logger.hpp"
 
 namespace scream {
     namespace rrtmgp {
@@ -31,7 +34,8 @@ namespace scream {
         /*
          * Initialize data for RRTMGP driver
          */
-        extern void rrtmgp_initialize(GasConcs &gas_concs);
+        extern void rrtmgp_initialize(GasConcs &gas_concs,
+                                      const std::shared_ptr<spdlog::logger>& logger);
         /*
          * Compute band-by-band surface albedos from broadband albedos.
          */
@@ -49,10 +53,9 @@ namespace scream {
                 real1d &sfc_flux_dir_vis, real1d &sfc_flux_dir_nir,
                 real1d &sfc_flux_dif_vis, real1d &sfc_flux_dif_nir);
         /*
-         * Main driver code to run RRTMGP. Optional input
-         * i_am_root is defaulted to true, and is used to
-         * determine whether or not info should be printed
-         * to the screen.
+         * Main driver code to run RRTMGP.
+         * The input logger is in charge of outputing info to
+         * screen and/or to file (or neither), depending on how it was set up.
          */
         extern void rrtmgp_main(
                 const int ncol, const int nlay,
@@ -66,7 +69,8 @@ namespace scream {
                 real2d &lw_flux_up, real2d &lw_flux_dn,
                 real3d &sw_bnd_flux_up, real3d &sw_bnd_flux_dn, real3d &sw_bnd_flux_dn_dir,
                 real3d &lw_bnd_flux_up, real3d &lw_bnd_flux_dn,
-                const Real tsi_scaling, const bool i_am_root = true);
+                const Real tsi_scaling,
+                const std::shared_ptr<spdlog::logger>& logger);
         /*
          * Perform any clean-up tasks
          */
@@ -80,7 +84,8 @@ namespace scream {
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
                 OpticalProps2str &aerosol, OpticalProps2str &clouds,
-                FluxesByband &fluxes, const Real tsi_scaling, const bool i_am_root);
+                FluxesByband &fluxes, const Real tsi_scaling,
+                const std::shared_ptr<spdlog::logger>& logger);
         /*
          * Longwave driver (called by rrtmgp_main)
          */

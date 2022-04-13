@@ -11,6 +11,7 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 
+#include "ekat/logging/ekat_logger.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 
@@ -118,6 +119,7 @@ public:
 
 protected:
 
+  void create_logger ();
   void set_initial_conditions ();
   void restart_model ();
   void initialize_constant_field(const FieldIdentifier& fid, const ekat::ParameterList& ic_pl);
@@ -148,6 +150,9 @@ protected:
   // This is the comm containing all (and only) the processes assigned to the atmosphere
   ekat::Comm                                m_atm_comm;
 
+  // The logger to be used throughout the ATM to log message
+  std::shared_ptr<spdlog::logger>           m_atm_logger;
+
   // Some status flags, used to make sure we call the init functions in the right order
   static constexpr int s_comm_set       =   1;
   static constexpr int s_params_set     =   2;
@@ -165,7 +170,6 @@ protected:
 
   // Utility function to check the ad status
   void check_ad_status (const int flag, const bool must_be_set = true);
-
 
   // Current ad initialization status
   int m_ad_status = 0;

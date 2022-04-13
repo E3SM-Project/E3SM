@@ -186,6 +186,28 @@ TEST_CASE("field", "") {
     REQUIRE(views_are_equal(f1,f2));
   }
 
+  SECTION ("clone") {
+    Field f1 (fid);
+    auto& fap1 = f1.get_header().get_alloc_properties();
+
+    fap1.request_allocation(16);
+    f1.allocate_view();
+    f1.deep_copy(3.0);
+
+    Field f2 = f1.clone();
+    auto& fap2 = f2.get_header().get_alloc_properties();
+    REQUIRE(f2.is_allocated());
+    REQUIRE(fap2.get_alloc_size()==fap1.get_alloc_size());
+    REQUIRE(views_are_equal(f1,f2));
+
+    // Changing f2 should leave f1 unchanged
+    f2.deep_copy<Real>(0.0);
+    REQUIRE (field_max<Real>(f2)==0.0);
+    REQUIRE (field_min<Real>(f2)==0.0);
+    REQUIRE (field_max<Real>(f1)==3.0);
+    REQUIRE (field_min<Real>(f1)==3.0);
+  }
+
   SECTION ("deep_copy") {
     std::vector<FieldTag> t1 = {COL,CMP,LEV};
     std::vector<int> d1 = {3,2,24};

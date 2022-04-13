@@ -4,3 +4,4 @@ if (SCREAM_DOUBLE_PRECISION)
   add_subdirectory(shoc_cld_spa_p3_rrtmgp)
 endif()
 
+add_subdirectory (atm_proc_subcycling)

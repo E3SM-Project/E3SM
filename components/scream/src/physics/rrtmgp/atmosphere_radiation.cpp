@@ -14,7 +14,8 @@ namespace scream {
   using ExeSpace = KT::ExeSpace;
   using MemberType = KT::MemberType;
 
-RRTMGPRadiation::RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params) 
+RRTMGPRadiation::
+RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
   // Nothing to do here
@@ -266,11 +267,12 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
     gas_mol_w_host[igas]            = PC::get_gas_mol_weight(m_gas_names[igas]);
   }
   Kokkos::deep_copy(m_gas_mol_weights,gas_mol_w_host);
+
   // Initialize GasConcs object to pass to RRTMGP initializer;
   gas_concs.init(gas_names_yakl_offset,m_ncol,m_nlay);
-  rrtmgp::rrtmgp_initialize(gas_concs);
-
+  rrtmgp::rrtmgp_initialize(gas_concs, m_atm_logger);
 }
+
 // =========================================================================================
 
 void RRTMGPRadiation::run_impl (const int dt) {
@@ -546,7 +548,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
     lw_flux_up, lw_flux_dn, 
     sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
     lw_bnd_flux_up, lw_bnd_flux_dn, 
-    eccf, get_comm().am_i_root()
+    eccf, m_atm_logger
   );
 
   // Compute and apply heating rates

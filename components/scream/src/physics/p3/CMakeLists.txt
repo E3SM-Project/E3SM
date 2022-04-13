@@ -62,6 +62,33 @@ set_target_properties(p3 PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULE
 target_link_libraries(p3 physics_share scream_share)
 target_compile_options(p3 PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
 
+# The p3_table_setup executable generates tables used by p3. This
+include (ScreamUtils)
+GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1
+  ${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4.1.1)
+add_executable(p3_tables_setup p3_tables_setup.cpp)
+target_link_libraries(p3_tables_setup p3)
+
+if (SCREAM_DOUBLE_PRECISION)
+  set (PRECISION_SUFFIX "8")
+else()
+  set (PRECISION_SUFFIX "4")
+endif()
+set (TABLES_FILES
+  ${SCREAM_DATA_DIR}/mu_r_table_vals.dat${PRECISION_SUFFIX}
+  ${SCREAM_DATA_DIR}/revap_table_vals.dat${PRECISION_SUFFIX}
+  ${SCREAM_DATA_DIR}/vm_table_vals.dat${PRECISION_SUFFIX}
+  ${SCREAM_DATA_DIR}/vn_table_vals.dat${PRECISION_SUFFIX}
+)
+
+add_custom_command (
+  OUTPUT  ${TABLES_FILES}
+  COMMAND ${CMAKE_COMMAND} -E env $<TARGET_FILE:p3_tables_setup>
+)
+add_custom_target(p3_create_tables ALL
+  DEPENDS ${TABLES_FILES}
+)
+
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
 endif()
