@@ -23,8 +23,10 @@ module atm_comp_mct
   use shr_taskmap_mod  , only: shr_taskmap_write
 
   use cam_cpl_indices
-  ! it has atm_import, atm_export and cam_moab_phys_export
+  ! it has atm_import, atm_export 
   use atm_import_export
+  !  cam_moab_phys_export is private here
+
   !   we defined cam_moab_export in cam_comp; it has cam_init, cam_run1, 2, 3, 4, cam_final
   use cam_comp
   use cam_instance     , only: cam_instance_init, inst_index, inst_suffix
@@ -104,6 +106,12 @@ module atm_comp_mct
 
   integer,                 pointer :: dof(:) ! needed for pio_init decomp for restarts
   type(seq_infodata_type), pointer :: infodata
+
+#ifdef HAVE_MOAB
+  ! to store all fields to be set in moab 
+  integer , private :: mblsize, totalmbls, nsend 
+  real(r8) , allocatable, private :: a2x_am(:,:) ! atm to coupler, on atm mesh 
+#endif 
 !
 !================================================================================
 CONTAINS
@@ -382,6 +390,10 @@ CONTAINS
        ! on the atm
 #ifdef HAVE_MOAB
        call initialize_moab_atm_phys( cdata_a )
+       mblsize = lsize
+       nsend = mct_avect_nRattr(a2x_a)
+       totalmbls = mblsize * nsend   ! size of the double array
+       allocate (a2x_am(mblsize, nsend) )
 #endif
 
        first_time = .false.
@@ -600,7 +612,7 @@ CONTAINS
     ! move method out of the  do while (.not. do send) loop; do not send yet
     call cam_moab_export()
 
-    ! method to load temp, u and v on moab atm phys grd;
+    ! call method to set all seq_flds_a2x_fields  on phys grid point cloud;
     ! it will be moved then to Atm Spectral mesh on coupler ; just to show how to move it to atm spectral
     ! on coupler
     call cam_moab_phys_export(cam_out)
@@ -1024,7 +1036,8 @@ CONTAINS
     integer , dimension(:), allocatable :: chunk_index(:)    ! temporary
     !real(r8), parameter:: radtodeg = 180.0_r8/SHR_CONST_PI
 
-    character*100 outfile, wopts, tagname
+    character*100 outfile, wopts
+    character*400 tagname ! will store all seq_flds_a2x_fields 
     character*32 appname
 
 
@@ -1125,20 +1138,20 @@ CONTAINS
     if (ierr > 0 )  &
       call endrun('Error: fail to set area tag ')
 
-    ! create some tags for T, u, v bottoms
+   !  ! create some tags for T, u, v bottoms: not anymore
 
-    tagname='T_ph'//C_NULL_CHAR
-    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to create temp on phys tag ')
-    tagname='u_ph'//C_NULL_CHAR
-    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to create u velo on phys tag ')
-    tagname='v_ph'//C_NULL_CHAR
-    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
-    if (ierr > 0 )  &
-      call endrun('Error: fail to create v velo on phys tag ')
+   !  tagname='T_ph'//C_NULL_CHAR
+   !  ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
+   !  if (ierr > 0 )  &
+   !    call endrun('Error: fail to create temp on phys tag ')
+   !  tagname='u_ph'//C_NULL_CHAR
+   !  ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
+   !  if (ierr > 0 )  &
+   !    call endrun('Error: fail to create u velo on phys tag ')
+   !  tagname='v_ph'//C_NULL_CHAR
+   !  ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
+   !  if (ierr > 0 )  &
+   !    call endrun('Error: fail to create v velo on phys tag ')
 
     ! need to identify that the mesh is indeed point cloud
     !  this call will set the point_cloud to true inside iMOAB appData structure
@@ -1164,6 +1177,15 @@ CONTAINS
     if (ierr > 0 )  &
       call endrun('Error: fail to write the atm phys mesh file')
 #endif
+   ! define fields seq_flds_a2x_fields 
+    tagtype = 1  ! dense, double
+    numco = 1 !  one value per vertex / entity
+    tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
+    if ( ierr > 0) then
+       call endrun('Error: fail to define seq_flds_a2x_fields for atm physgrid moab mesh')
+    endif
+
     num_moab_exports = 0 ! will be used for counting number of calls
     deallocate(moab_vert_coords)
     deallocate(vgids)
@@ -1171,6 +1193,101 @@ CONTAINS
     deallocate(chunk_index)
 
   end subroutine initialize_moab_atm_phys
+
+  subroutine cam_moab_phys_export(cam_out)
+  !-------------------------------------------------------------------
+    use camsrfexch, only: cam_out_t
+    use phys_grid , only: get_ncols_p, get_nlcols_p
+    use ppgrid    , only: begchunk, endchunk
+    use seq_comm_mct, only: mphaid ! imoab pid for atm physics
+    use seq_comm_mct, only : num_moab_exports !
+    use cam_abortutils       , only: endrun
+    use iMOAB, only:  iMOAB_WriteMesh,  iMOAB_SetDoubleTagStorage
+    use iso_c_binding 
+    !
+    ! Arguments
+    !
+    type(cam_out_t), intent(in)    :: cam_out(begchunk:endchunk)
+
+    integer tagtype, numco, ent_type
+    character*100 outfile, wopts, lnum
+    character*400 tagname ! 
+
+    integer ierr, c, nlcols, ig, i, ncols
+
+    ! Copy from component arrays into chunk array data structure
+    ! Rearrange data from chunk structure into lat-lon buffer and subsequently
+    ! create double array for moab tags
+
+    ig=1
+    do c=begchunk, endchunk
+       ncols = get_ncols_p(c)
+       do i=1,ncols
+          a2x_am(ig, index_a2x_Sa_pslv   ) = cam_out(c)%psl(i)
+          a2x_am(ig, index_a2x_Sa_z      ) = cam_out(c)%zbot(i)   
+          a2x_am(ig, index_a2x_Sa_u      ) = cam_out(c)%ubot(i)   
+          a2x_am(ig, index_a2x_Sa_v      ) = cam_out(c)%vbot(i)   
+          a2x_am(ig, index_a2x_Sa_tbot   ) = cam_out(c)%tbot(i)   
+          a2x_am(ig, index_a2x_Sa_ptem   ) = cam_out(c)%thbot(i)  
+          a2x_am(ig, index_a2x_Sa_pbot   ) = cam_out(c)%pbot(i)   
+          a2x_am(ig, index_a2x_Sa_shum   ) = cam_out(c)%qbot(i,1) 
+	       a2x_am(ig, index_a2x_Sa_dens   ) = cam_out(c)%rho(i)
+          a2x_am(ig, index_a2x_Faxa_swnet) = cam_out(c)%netsw(i)      
+          a2x_am(ig, index_a2x_Faxa_lwdn ) = cam_out(c)%flwds(i)  
+          a2x_am(ig, index_a2x_Faxa_rainc) = (cam_out(c)%precc(i)-cam_out(c)%precsc(i))*1000._r8
+          a2x_am(ig, index_a2x_Faxa_rainl) = (cam_out(c)%precl(i)-cam_out(c)%precsl(i))*1000._r8
+          a2x_am(ig, index_a2x_Faxa_snowc) = cam_out(c)%precsc(i)*1000._r8
+          a2x_am(ig, index_a2x_Faxa_snowl) = cam_out(c)%precsl(i)*1000._r8
+          a2x_am(ig, index_a2x_Faxa_swndr) = cam_out(c)%soll(i)   
+          a2x_am(ig, index_a2x_Faxa_swvdr) = cam_out(c)%sols(i)   
+          a2x_am(ig, index_a2x_Faxa_swndf) = cam_out(c)%solld(i)  
+          a2x_am(ig, index_a2x_Faxa_swvdf) = cam_out(c)%solsd(i)  
+
+          ! aerosol deposition fluxes
+          a2x_am(ig, index_a2x_Faxa_bcphidry) = cam_out(c)%bcphidry(i)
+          a2x_am(ig, index_a2x_Faxa_bcphodry) = cam_out(c)%bcphodry(i)
+          a2x_am(ig, index_a2x_Faxa_bcphiwet) = cam_out(c)%bcphiwet(i)
+          a2x_am(ig, index_a2x_Faxa_ocphidry) = cam_out(c)%ocphidry(i)
+          a2x_am(ig, index_a2x_Faxa_ocphodry) = cam_out(c)%ocphodry(i)
+          a2x_am(ig, index_a2x_Faxa_ocphiwet) = cam_out(c)%ocphiwet(i)
+          a2x_am(ig, index_a2x_Faxa_dstwet1)  = cam_out(c)%dstwet1(i)
+          a2x_am(ig, index_a2x_Faxa_dstdry1)  = cam_out(c)%dstdry1(i)
+          a2x_am(ig, index_a2x_Faxa_dstwet2)  = cam_out(c)%dstwet2(i)
+          a2x_am(ig, index_a2x_Faxa_dstdry2)  = cam_out(c)%dstdry2(i)
+          a2x_am(ig, index_a2x_Faxa_dstwet3)  = cam_out(c)%dstwet3(i)
+          a2x_am(ig, index_a2x_Faxa_dstdry3)  = cam_out(c)%dstdry3(i)
+          a2x_am(ig, index_a2x_Faxa_dstwet4)  = cam_out(c)%dstwet4(i)
+          a2x_am(ig, index_a2x_Faxa_dstdry4)  = cam_out(c)%dstdry4(i)
+
+          if (index_a2x_Sa_co2prog /= 0) then
+             a2x_am(ig, index_a2x_Sa_co2prog) = cam_out(c)%co2prog(i) ! atm prognostic co2
+          end if
+          if (index_a2x_Sa_co2diag /= 0) then
+             a2x_am(ig, index_a2x_Sa_co2diag) = cam_out(c)%co2diag(i) ! atm diagnostic co2
+          end if
+
+          ig=ig+1
+       end do
+    end do
+    tagname=trim(seq_flds_a2x_fields)//C_NULL_CHAR
+    ent_type = 0 ! vertices, point cloud
+    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, totalmbls , ent_type, a2x_am(1,1) )
+    if ( ierr > 0) then
+      call endrun('Error: fail to set  seq_flds_a2x_fields for atm physgrid moab mesh')
+    endif
+#ifdef MOABDEBUG
+    num_moab_exports = num_moab_exports + 1
+    write(lnum,"(I0.2)")num_moab_exports
+    outfile = 'AtmPhys_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+    ierr = iMOAB_WriteMesh(mphaid, outfile, wopts)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to write the atm phys mesh file with data')
+#endif
+    
+
+  end subroutine cam_moab_phys_export
+
 #endif
 
 end module atm_comp_mct
