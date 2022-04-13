@@ -15,17 +15,6 @@ if (NOT SCREAM_BASELINES_ONLY)
   # This test needs the allsky baselines file
   add_dependencies (rrtmgp_standalone_unit rrtmgp_allsky_baseline.nc)
 
-  target_include_directories(rrtmgp_standalone_unit PUBLIC
-        ${SCREAM_BASE_DIR}/src/physics/rrtmgp
-        ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests
-        ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp
-        ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rrtmgp
-        ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rrtmgp/kernels
-        ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte
-        ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte/kernels
-        ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/extensions/cloud_optics
-  )
-
   ## Create free running rrtmgp stand alone test that runs from an initial condition file.
   CreateUnitTest(
       rrtmgp_standalone "rrtmgp_standalone.cpp" "${NEED_LIBS}" LABELS ${TEST_LABELS}
