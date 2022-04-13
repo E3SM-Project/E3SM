@@ -193,10 +193,12 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
     EKAT_REQUIRE_MSG (field.get_header().get_tracking().get_time_stamp().is_valid(),
         "Error! Output field '" + name + "' has not been initialized yet\n.");
 
+    const bool is_diagnostic = (m_diagnostics.find(name) != m_diagnostics.end());
     const bool is_aliasing_field_view =
         m_avg_type==OutputAvgType::Instant &&
         field.get_header().get_alloc_properties().get_padding()==0 &&
-        field.get_header().get_parent().expired();
+        field.get_header().get_parent().expired() &&
+        not is_diagnostic;
 
     // Manually update the 'running-tally' views with data from the field,
     // by combining new data with current avg values.
