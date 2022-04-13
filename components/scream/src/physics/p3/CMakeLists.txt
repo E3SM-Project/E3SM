@@ -62,17 +62,24 @@ set_target_properties(p3 PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULE
 target_link_libraries(p3 physics_share scream_share)
 target_compile_options(p3 PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
 
-include (ScreamUtils)
+# Ensure tables are present in the data dir
 if (SCREAM_DOUBLE_PRECISION)
   set (PRECISION_SUFFIX "8")
 else()
   set (PRECISION_SUFFIX "4")
 endif()
-GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1            ${SCREAM_DATA_DIR})
-GetInputFile(tables/mu_r_table_vals.dat${PRECISION_SUFFIX}  ${SCREAM_DATA_DIR})
-GetInputFile(tables/revap_table_vals.dat${PRECISION_SUFFIX} ${SCREAM_DATA_DIR})
-GetInputFile(tables/vm_table_vals.dat${PRECISION_SUFFIX}    ${SCREAM_DATA_DIR})
-GetInputFile(tables/vn_table_vals.dat${PRECISION_SUFFIX}    ${SCREAM_DATA_DIR})
+set (P3_TABLES
+  tables/p3_lookup_table_1.dat-v4.1.1
+  tables/mu_r_table_vals.dat${PRECISION_SUFFIX}
+  tables/revap_table_vals.dat${PRECISION_SUFFIX}
+  tables/vm_table_vals.dat${PRECISION_SUFFIX}
+  tables/vn_table_vals.dat${PRECISION_SUFFIX}
+)
+
+include (ScreamUtils)
+foreach (file IN ITEMS ${P3_TABLES})
+  GetInputFile(${file} ${SCREAM_DATA_DIR}/)
+endforeach()
 
 # This executable can be used to re-generate tables in ${SCREAM_DATA_DIR}
 add_executable(p3_tables_setup p3_tables_setup.cpp)

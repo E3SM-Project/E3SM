@@ -56,10 +56,8 @@ set (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
 configure_file(${SCREAM_BASE_DIR}/src/dynamics/homme/tests/theta.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
-# Copy initial conditions files
-GetInputFile(init/homme_physics_ne2np4.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/homme_physics_ne2np4.nc)
-
+# Ensure test input files are present in the data dir
+GetInputFile(init/homme_physics_ne2np4.nc ${SCREAM_DATA_DIR}/)
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if max mpi ranks is >1

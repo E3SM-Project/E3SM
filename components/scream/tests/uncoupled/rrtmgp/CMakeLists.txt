@@ -37,20 +37,8 @@ if (NOT SCREAM_BASELINES_ONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input_unit.yaml
                  ${CMAKE_CURRENT_BINARY_DIR}/input_unit.yaml COPYONLY)
 
-  # Copy RRTMGP initial condition to local data directory
-  file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
-
-  # Copy RRTMGP absorption coefficient lookup tables to local data directory
-  GetInputFile(init/rrtmgp-data-sw-g224-2018-12-04.nc
-    ${CMAKE_CURRENT_BINARY_DIR}/data)
-  GetInputFile(init/rrtmgp-data-lw-g256-2018-12-04.nc
-    ${CMAKE_CURRENT_BINARY_DIR}/data)
-  GetInputFile(init/rrtmgp-allsky.nc
-    ${CMAKE_CURRENT_BINARY_DIR}/data)
-  GetInputFile(init/rrtmgp-cloud-optics-coeffs-sw.nc
-    ${CMAKE_CURRENT_BINARY_DIR}/data)
-  GetInputFile(init/rrtmgp-cloud-optics-coeffs-lw.nc
-    ${CMAKE_CURRENT_BINARY_DIR}/data)
+  # Ensure test input files are present in the data dir
+  GetInputFile(init/rrtmgp_init_ne2np4.nc ${SCREAM_DATA_DIR}/)
 
   # The RRTMGP stand-alone test that runs multi-step
   # Set AD configurable options
@@ -61,9 +49,6 @@ if (NOT SCREAM_BASELINES_ONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                  ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
   configure_file(rrtmgp_standalone_output.yaml rrtmgp_standalone_output.yaml)
-
-  GetInputFile(init/rrtmgp_init_ne2np4.nc
-    ${CMAKE_CURRENT_BINARY_DIR}/rrtmgp_init_ne2np4.nc)
 
   ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
   ## Only if max mpi ranks is >1
