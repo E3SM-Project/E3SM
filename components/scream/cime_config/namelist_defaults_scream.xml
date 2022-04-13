@@ -65,9 +65,9 @@ tweaking their $case/namelist_scream.xml file.
         3) Parameter types will be inferred. You can override the inferred type
            via the 'type' metadata attribute. Types are:
              logical: will be inferred from any case of true/false
-             int: will be inferred from any sequence of 0-9
-             real: will be inferred from any numeric expression with a decimal point or scientific notation
-             string: everything else
+             integer: will be inferred from any sequence of 0-9
+             real   : will be inferred from any numeric expression with a decimal point or scientific notation
+             string : everything else
         4) A parameter can be set to any value of the correct type unless
            the 'valid_values' metadata attribute is set. If desired, this
            metadata should be set up as a comma-separated list of values.

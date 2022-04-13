@@ -116,7 +116,10 @@ def evaluate_selectors(element, case, ez_selectors):
     Elements with selectors are removed. If the selector evaulates to True, then
     the corresponding element text becomes the new text value of the original
     (no-selectors, AKA default) element.
+
+    Return metadata for the given outer element
     """
+    metadata = {} # elem_name -> (type, valid_values)
     child_values = {} # elem_name -> evaluated XML element
     children_to_remove = []
     for child in element:
@@ -128,6 +131,12 @@ def evaluate_selectors(element, case, ez_selectors):
         has_children = len(child) > 0
         if not has_children:
             selectors = child.attrib
+            child_type, child_valids = selectors.pop("type", None), selectors.pop("valid_values", None)
+
+            if child_type:
+                expect(child_type in ["integer", "logical", "real", "string"],
+                       "Child '{}' has invalid type '{}'".format(child_name, child_type))
+
             if selectors:
                 # This is a key assumption. The default value element must exist
                 # and come first, before selector elements
@@ -165,19 +174,26 @@ def evaluate_selectors(element, case, ez_selectors):
                 if all_match:
                     orig_child = child_values[child_name]
                     orig_child.text = do_cime_vars(child_val, case)
+                    metadata[child_name][0] = child_type if child_type else derive_type(orig_child.text)
+                    if child_valids:
+                        metadata[child_name][1] = child_valids
 
                 children_to_remove.append(child)
 
             else:
+                # This is the default element
                 expect(child_name not in child_values, "Repeat of child '{}' without selectors".format(child_name))
                 child_values[child_name] = child
                 child.text = do_cime_vars(child_val, case)
+                metadata[child_name] = [child_type if child_type else derive_type(child.text), child_valids]
 
         else:
-            evaluate_selectors(child, case, ez_selectors)
+            metadata[child_name] = evaluate_selectors(child, case, ez_selectors)
 
     for child_to_remove in children_to_remove:
         element.remove(child_to_remove)
+
+    return metadata
 
 ###############################################################################
 def _create_raw_xml_file_impl(case, defaults_xml):
@@ -406,13 +422,36 @@ def create_raw_xml_file(case, caseroot):
             fd.write(raw_xml)
 
 ###############################################################################
+def derive_type(entry):
+###############################################################################
+    refined_value = refine_type(entry)
+    if isinstance(refined_value, bool):
+        return "logical"
+    elif isinstance(refined_value, int):
+        return "integer"
+    elif isinstance(refined_value, float):
+        return "real"
+    elif isinstance(refined_value, str):
+        return "string"
+    elif isinstance(refined_value, list):
+        return derive_type(refined_value[0])
+    else:
+        expect(False, "Couldn't derive type of '{}'".format(entry))
+        return None
+
+###############################################################################
 def refine_type(entry):
 ###############################################################################
     """
     Try to convert the text entry to the appropriate type based on its contents.
     """
     if "," in entry:
-        return [refine_type(item) for item in entry.split(", ") if item.strip() != ""]
+        result = [refine_type(item) for item in entry.split(", ") if item.strip() != ""]
+        expected_type = type(result[0])
+        for item in result[1:]:
+            expect(isinstance(item, expected_type), "List '{}' has inconsistent types inside".format(entry))
+
+        return result
 
     if entry.upper() == "TRUE":
         return True
