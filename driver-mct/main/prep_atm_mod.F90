@@ -72,6 +72,7 @@ module prep_atm_mod
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
   logical :: iamroot_CPLID ! .true. => CPLID masterproc
+  logical :: samegrid_al   ! samegrid atm and land
   !================================================================================================
 
 contains
@@ -95,7 +96,6 @@ contains
     integer                          :: lsize_a
     integer                          :: eli, eii, emi
     logical                          :: samegrid_ao    ! samegrid atm and ocean
-    logical                          :: samegrid_al    ! samegrid atm and land
     logical                          :: esmf_map_flag  ! .true. => use esmf for mapping
     logical                          :: atm_present    ! .true.  => atm is present
     logical                          :: ocn_present    ! .true.  => ocn is present
@@ -298,6 +298,7 @@ contains
     character(CL),allocatable :: itemc_ocn(:)   ! string converted to char
     logical :: iamroot
     character(CL),allocatable :: mrgstr(:)   ! temporary string
+    character(CL) :: fracstr
     logical, save :: first_time = .true.
     type(mct_aVect_sharedindices),save :: l2x_sharedindices
     type(mct_aVect_sharedindices),save :: o2x_sharedindices
@@ -480,13 +481,21 @@ contains
     ! Update surface fractions
 
     kif=mct_aVect_indexRA(fractions_a,"ifrac")
-    klf=mct_aVect_indexRA(fractions_a,"lfrac")
     kof=mct_aVect_indexRA(fractions_a,"ofrac")
+    if (samegrid_al) then
+       klf = mct_aVect_indexRA(fractions_a,"lfrac")
+       fracstr = 'lfrac'
+    else
+       klf = mct_aVect_indexRA(fractions_a,"lfrin")
+       fracstr = 'lfrin'
+    endif
+
     lsize = mct_avect_lsize(x2a_a)
 
     index_x2a_Sf_lfrac = mct_aVect_indexRA(x2a_a,'Sf_lfrac')
     index_x2a_Sf_ifrac = mct_aVect_indexRA(x2a_a,'Sf_ifrac')
     index_x2a_Sf_ofrac = mct_aVect_indexRA(x2a_a,'Sf_ofrac')
+
     do n = 1,lsize
        x2a_a%rAttr(index_x2a_Sf_lfrac,n) = fractions_a%Rattr(klf,n)
        x2a_a%rAttr(index_x2a_Sf_ifrac,n) = fractions_a%Rattr(kif,n)
@@ -495,7 +504,7 @@ contains
 
     !--- document fraction operations ---
     if (first_time) then
-       mrgstr(index_x2a_sf_lfrac) = trim(mrgstr(index_x2a_sf_lfrac))//' = fractions_a%lfrac'
+       mrgstr(index_x2a_sf_lfrac) = trim(mrgstr(index_x2a_sf_lfrac))//' = fractions_a%'//trim(fracstr)
        mrgstr(index_x2a_sf_ifrac) = trim(mrgstr(index_x2a_sf_ifrac))//' = fractions_a%ifrac'
        mrgstr(index_x2a_sf_ofrac) = trim(mrgstr(index_x2a_sf_ofrac))//' = fractions_a%ofrac'
     endif
@@ -548,9 +557,9 @@ contains
        if (first_time) then
           if (lindx(ka) > 0) then
              if (lmerge(ka)) then
-                mrgstr(ka) = trim(mrgstr(ka))//' + lfrac*l2x%'//trim(field_lnd(lindx(ka)))
+                mrgstr(ka) = trim(mrgstr(ka))//' + '//trim(fracstr)//'*l2x%'//trim(field_lnd(lindx(ka)))
              else
-                mrgstr(ka) = trim(mrgstr(ka))//' = lfrac*l2x%'//trim(field_lnd(lindx(ka)))
+                mrgstr(ka) = trim(mrgstr(ka))//' = '//trim(fracstr)//'*l2x%'//trim(field_lnd(lindx(ka)))
              end if
           end if
           if (iindx(ka) > 0) then

@@ -2908,7 +2908,7 @@ contains
        longname = 'Surface flux of CO2 from land'
        stdname  = 'surface_upward_flux_of_carbon_dioxide_where_land'
        units    = 'moles m-2 s-1'
-       attname  = 'Fall_foc2_lnd'
+       attname  = 'Fall_fco2_lnd'
        call metadata_set(attname, longname, stdname, units)
 
        call seq_flds_add(o2x_fluxes, "Faoo_fco2_ocn")
@@ -2950,7 +2950,7 @@ contains
        longname = 'Surface flux of CO2 from land'
        stdname  = 'surface_upward_flux_of_carbon_dioxide_where_land'
        units    = 'moles m-2 s-1'
-       attname  = 'Fall_foc2_lnd'
+       attname  = 'Fall_fco2_lnd'
        call metadata_set(attname, longname, stdname, units)
 
        call seq_flds_add(o2x_fluxes, "Faoo_fco2_ocn")
