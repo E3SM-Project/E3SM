@@ -623,6 +623,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test])
         cmake_config += " -DSCREAM_BASELINES_ONLY=ON"
+        cmake_config += " -DSCREAM_TEST_DATA_DIR={}/data".format(test_dir)
 
         print("===============================================================================")
         print("Generating baseline for test {} with config '{}'".format(self._test_full_names[test], cmake_config))
