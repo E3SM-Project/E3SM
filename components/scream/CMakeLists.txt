@@ -81,17 +81,7 @@ set(SCREAM_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SCREAM_SRC_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(SCREAM_BIN_DIR  ${CMAKE_CURRENT_BINARY_DIR})
 
-# For CIME builds, the inputs are managed through CIME
-if (SCREAM_CIME_BUILD)
-  execute_process (
-    COMMAND ${CASEROOT}/xmlquery --value RUNDIR
-    WORKING_DIRECTORY ${CASEROOT}
-    OUTPUT_VARIABLE RUNDIR
-  )
-  set(SCREAM_DATA_DIR ${RUNDIR}/data)
-else()
-  set(SCREAM_DATA_DIR ${CMAKE_CURRENT_BINARY_DIR}/data)
-endif()
+set (SCREAM_DATA_DIR ${SCREAM_INPUT_ROOT}/atm/scream CACHE PATH "" FORCE)
 
 # Shortcut function, to print a variable
 function (print_var var)
