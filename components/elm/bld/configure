@@ -177,7 +177,7 @@ my %cfg = ();           # build configuration
 # Look for them in the directory that contains the configure script.
 
 my $cesmroot   = abs_path( "$cfgdir/../../../");
-my $casecfgdir = "$cesmroot/cime/scripts/Tools";
+my $casecfgdir = "$cesmroot/cime/CIME/Tools";
 my $perl5lib   = "$cesmroot/cime/utils/perl5lib/";
 
 # The Build::Config module provides utilities to store and manipulate the configuration.
