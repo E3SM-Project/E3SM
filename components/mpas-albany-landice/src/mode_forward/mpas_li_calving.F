@@ -2107,7 +2107,7 @@ module li_calving
       real(kind=RKIND), dimension(6) :: localInfo, globalInfo
       real(kind=RKIND) :: edgeLengthScaling
       real(kind=RKIND), parameter :: ablationSmallThk = 1.0e-8_RKIND ! in meters, a small thickness threshold
-      integer :: err_tmp, iter, nDynNeighbors
+      integer :: err_tmp, nDynNeighbors
 
       err = 0
       err_tmp = 0
@@ -2588,13 +2588,14 @@ module li_calving
       ! b. Apply ablation
       do iCell = 1, nCells
           if ((li_mask_is_dynamic_ice(cellMask(iCell))) .and. (bedTopography(iCell) <= config_sea_level) &
-               .and. (cellVolume(iCell) > 0.0_RKIND) )then
+               .and. (cellVolume(iCell) > 0.0_RKIND) .and. (unablatedVolumeDynCell(iCell) > 0.0_RKIND) ) then
                removeVolumeHere = min(cellVolume(iCell), unablatedVolumeDynCell(iCell))  ! Don't use more than available
                ablationThickness(iCell) = ablationThickness(iCell) + removeVolumeHere / areaCell(iCell) ! add to ablationThickness calculated in 2c
                ablatedVolumeDynCell(iCell) = ablatedVolumeDynCell(iCell) + removeVolumeHere
                unablatedVolumeDynCell(iCell) = unablatedVolumeDynCell(iCell) - removeVolumeHere
                cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere
-
+               ! For debugging it may be helpful to add a separate metric for
+               ! this step.
                if (iCell <= nCellsSolve) ablationSubtotal2 = ablationSubtotal2 + removeVolumeHere
            endif
       enddo
