@@ -76,7 +76,9 @@ module ocn_constants
       fwflux_factor    ,&! fw flux (kg/m^2/s) to salt((msu/psu)*m/s)
       salinity_factor  ,&! fw flux (kg/m^2/s) to salt flux (msu*m/s)
       sflux_factor     ,&! salt flux (kg/m^2/s) to salt flux (msu*m/s)
-      fwmass_to_fwflux   ! fw flux (kg/m^2/s) to fw flux (m/s)
+      fwmass_to_fwflux ,&! fw flux (kg/m^2/s) to fw flux (m/s)
+      carbon_mol_mass  ,&! carbon molar mass (g/mol)
+      nitrogen_mol_mass  ! nitrogen molar mass (g/mol)
 
 !***********************************************************************
 
@@ -144,7 +146,7 @@ contains
        heat_to_PW    = 4.186e-15_RKIND    ! heat flux to Petawatts
        salt_to_Svppt = 1.0e-9_RKIND       ! salt flux to Sv*ppt
        salt_to_mmday = 3.1536e+5_RKIND    ! salt to water (mm/day)
-
+ 
        !-----------------------------------------------------------------------
        !
        !  physical constants -- E3SM override
@@ -170,6 +172,20 @@ contains
 !#ifdef ZERO_SEA_ICE_REF_SAL
 !      sea_ice_salinity       = c0
 !#endif
+
+       !-----------------------------------------------------------------------
+       !
+       !  biogeochemical constants -- E3SM override
+       !
+       !-----------------------------------------------------------------------
+
+       carbon_mol_mass              = 12.0107_RKIND ! grams carbon per mole
+       nitrogen_mol_mass            = 14.0067_RKIND ! grams nitrogen per mole
+
+#ifdef MPAS_ESM_SHR_CONST
+       carbon_mol_mass              = SHR_CONST_MOL_MASS_C ! carbon molar mass
+       nitrogen_mol_mass            = SHR_CONST_MOL_MASS_N ! nitrogen molar mass
+#endif
 
        !-----------------------------------------------------------------------
        !
