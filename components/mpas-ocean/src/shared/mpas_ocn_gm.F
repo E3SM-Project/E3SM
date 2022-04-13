@@ -704,8 +704,22 @@ contains
                                   lt2*sqrt(max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND)))
                end do
 
+               ! See Hallberg (2013) https://doi.org/10.1016/j.ocemod.2013.08.007
+               ! eqn 4 for the first-mode baroclinic gravity wave speed:
+               ! c_g = sqrt( g drho h1 h2 / ( rho0 (h1+h2) )
+               ! here c_mode1 is the square of c_g:
+               ! c_mode1 = c_g^2 ~ abs ( h^2 * g/rho0 drho/dz ) = h*N^2
+               ! at an edge where N^2 = BruntVaisalaFreq = -g/rho0 * drho/dz
+               ! note BruntVaisalaFreqTop is actually N^2, not N.
                c_mode1 = max(1.0E-5_RKIND, sumN2/3.141592_RKIND)
                cGMphaseSpeed(iEdge) = c_mode1
+
+               ! just after eqn 4 in Hallberg (2013) he defines the deformation
+               ! radius as:
+               ! L = sqrt( c_g^2/ ( f^2 + 2*beta*c_g) )
+               ! Here resolution = L / dcEdge is the ratio, so resolution>2 is
+               ! considered sufficiently well resolved, i.e. the Rossby Radius 
+               ! is at least two cells wide.
                resolution = sqrt(c_mode1 / (fEdge(iEdge)**2.0 + betaEdge(iEdge)*c_mode1 + 1.0E-15_RKIND)) &
                             / dcEdge(iEdge)
                if (resolution .ge. 2.0 .or. c_mode1 .lt. 0.1_RKIND) then
@@ -741,6 +755,10 @@ contains
          end if
 
          if (config_Redi_closure == 'equalGM') then
+            ! Set Redi closure to be the same as the GM closure, i.e. if
+            ! config_GM_closure is EdenGreatbatch or Visbeck, you will see those
+            ! same closure fields in RediKappa. The horizontal tapering still
+            ! comes from the config_Redi_horizontal_taper flag, not GM.
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge=1, nEdges

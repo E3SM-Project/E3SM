@@ -295,8 +295,8 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_Redi_closure" type="character" default_value="constant" units="unitless"
-					description="Control what type of function is used for Redi $\kappa$."
-					possible_values="'constant', 'data'"
+					description="Control what type of function is used for Redi $\kappa$. For 'equalGM', RediKappa is set to gmBolusKappa, so picks up the closure used by GM."
+					possible_values="'constant', 'equalGM', 'data'"
 		/>
 		<nml_option name="config_Redi_constant_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="The Redi diffusion coefficient. Only used when config_Redi_closure = 'constant'."
@@ -2708,7 +2708,7 @@
 			packages="forwardMode;analysisMode"
 		/>
 		<var name="betaEdge" type="real" dimensions="nEdges Time" units="m^{-1} s^{-1}"
-			description="meridional gradient of the coriolis parameter, used in GM"
+			description="meridional gradient of the coriolis parameter, used in the mesoscale eddy parameterization schemes"
 		/>
 		<var name="gmKappaScaling" type="real" dimensions="nVertLevelsP1 nEdges Time" units="NA" default_value="1.0"
 			description="spatially and depth varying GM kappa.  The scaling is based on the Brunt Vaisala Frequency relative to a maximum value below the mixed layer, follows from Danabasoglu and Marshall 2007.  If config_GM_closure is not set to N2_dependent the scaling value is set to 1 everywhere."
