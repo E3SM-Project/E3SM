@@ -183,7 +183,7 @@ module ocn_diagnostics_variables
 
    real (kind=RKIND), pointer :: globalVerticalStretchMax, globalVerticalStretchMin
    real (kind=RKIND), dimension(:), pointer :: betaEdge
-   real (kind=RKIND), dimension(:), pointer :: gmResolutionTaper
+   real (kind=RKIND), dimension(:), pointer :: RediHorizontalTaper, gmHorizontalTaper
 
    ! Semi-implicit Array Pointers
    real (kind=RKIND), dimension(:), pointer :: SIvec_r0,SIvec_r00,SIvec_r1 ,SIvec_rh0,SIvec_rh1,SIvec_ph0,SIvec_ph1
@@ -242,7 +242,7 @@ contains
                    wettingVelocityField)
       end if
 
-      if ( config_use_GM ) then
+      if (config_use_GM.or.config_use_Redi) then
          call mpas_pool_get_array(diagnosticsPool, 'RediKappa', &
                    RediKappa)
          call mpas_pool_get_array(diagnosticsPool, 'RediKappaScaling', &
@@ -256,8 +256,10 @@ contains
                    gmBolusKappa)
          call mpas_pool_get_array(diagnosticsPool, 'gmKappaScaling', &
                    gmKappaScaling)
-         call mpas_pool_get_array(diagnosticsPool, 'gmResolutionTaper', &
-                   gmResolutionTaper)
+         call mpas_pool_get_array(diagnosticsPool, 'RediHorizontalTaper', &
+                   RediHorizontalTaper)
+         call mpas_pool_get_array(diagnosticsPool, 'gmHorizontalTaper', &
+                   gmHorizontalTaper)
       end if
 
       if ( config_compute_active_tracer_budgets ) then
@@ -730,7 +732,7 @@ contains
          !$acc                   wettingVelocity              &
          !$acc                   )
       end if
-      if ( config_use_GM ) then
+      if (config_use_GM.or.config_use_Redi) then
          !$acc enter data create(                   &
          !$acc                   RediKappa,         &
          !$acc                   gmBolusKappa,      &
@@ -738,7 +740,8 @@ contains
          !$acc                   RediKappaScaling,  &
          !$acc                   rediLimiterCount,  &
          !$acc                   RediKappaSfcTaper, &
-         !$acc                   gmResolutionTaper  &
+         !$acc                   RediHorizontalTaper  &
+         !$acc                   gmHorizontalTaper  &
          !$acc                   )
       end if
       if ( config_compute_active_tracer_budgets ) then
@@ -965,7 +968,7 @@ contains
          !$acc                   wettingVelocity              &
          !$acc                   )
       end if
-      if ( config_use_GM ) then
+      if (config_use_GM.or.config_use_Redi) then
          !$acc exit data delete(                    &
          !$acc                   RediKappa,         &
          !$acc                   gmBolusKappa,      &
@@ -973,7 +976,8 @@ contains
          !$acc                   RediKappaScaling,  &
          !$acc                   rediLimiterCount,  &
          !$acc                   RediKappaSfcTaper, &
-         !$acc                   gmResolutionTaper  &
+         !$acc                   RediHorizontalTaper  &
+         !$acc                   gmHorizontalTaper  &
          !$acc                   )
       end if
       if ( config_compute_active_tracer_budgets ) then
@@ -1158,14 +1162,15 @@ contains
       if ( trim(config_ocean_run_mode) == 'forward' ) then
          nullify(wettingVelocity)
       end if
-      if ( config_use_GM ) then
+      if (config_use_GM.or.config_use_Redi) then
          nullify(RediKappa,         &
                  gmBolusKappa,      &
                  gmKappaScaling,    &
                  RediKappaScaling,  &
                  rediLimiterCount,  &
                  RediKappaSfcTaper, &
-                 gmResolutionTaper)
+                 RediHorizontalTaper, &
+                 gmHorizontalTaper)
       end if
       if ( config_compute_active_tracer_budgets ) then
          nullify(activeTracerHorMixTendency,              &

@@ -289,20 +289,6 @@
 					possible_values="any positive real"
 		/>
 	</nml_record>
-	<nml_record name="mesoscale_eddy_parameterizations" mode="forward">
-		<nml_option name="config_eddying_resolution_taper" type="character" default_value="ramp" units="unitless"
-					description="Control how the Redi and GM Bolus $\kappa$ value varies as a function of horizontal resolution"
-					possible_values="'none' and 'ramp'"
-		/>
-		<nml_option name="config_eddying_resolution_ramp_min" type="real" default_value="20e3" units="m"
-					description="Minimum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp."
-					possible_values="Any positive real value."
-		/>
-		<nml_option name="config_eddying_resolution_ramp_max" type="real" default_value="30e3" units="m"
-					description="Maximum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp."
-					possible_values="Any positive real value."
-		/>
-	</nml_record>
 	<nml_record name="Redi_isopycnal_mixing" mode="forward">
 		<nml_option name="config_use_Redi" type="logical" default_value=".false." units="unitless"
 					description="If true, Redi isopycnal mixing is turned on"
@@ -344,6 +330,18 @@
 					description="Redi diagonal terms (2 and 3) are turned off from layer 1 through config_Redi_min_layers_diag_terms-1, and on from config_Redi_min_layers_diag_terms to nVertLevels. The Redi diagonal terms are not guaranteed to produce bounded tracer fields, and in practice produce growing temperatures in a few columns with fewer than 5 vertical cells. Redi is meant for isopycnal mixing in the deep ocean, so not applying Redi diagonal terms in very shallow regions is an acceptable solution."
 					possible_values="any integer between 0 (all layers on) and nVertLevels (all layers off)"
 		/>
+		<nml_option name="config_Redi_horizontal_taper" type="character" default_value="ramp" units="unitless"
+					description="Control how the Redi Bolus $\kappa$ value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
+					possible_values="'none', 'ramp', 'RossbyRadius'"
+		/>
+		<nml_option name="config_Redi_horizontal_ramp_min" type="real" default_value="20e3" units="m"
+					description="Minimum value in grid cell size for Redi $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_Redi_horizontal_taper is set to ramp."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_Redi_horizontal_ramp_max" type="real" default_value="30e3" units="m"
+					description="Maximum value in grid cell size for Redi $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_Redi_horizontal_taper is set to ramp."
+					possible_values="Any positive real value."
+		/>
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
 		<nml_option name="config_use_GM" type="logical" default_value=".false." units="NA"
@@ -356,10 +354,6 @@
 		/>
 		<nml_option name="config_GM_constant_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Only used when config_GM_closure is set to constant."
-		/>
-		<nml_option name="config_gm_enable_horizontal_resolution_function" type="logical" default_value=".false." units="unitless"
-					description="Flag to enable the resolution tapering in the horizontal following Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
-					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_GM_constant_bclModeSpeed" type="real" default_value="0.3" units="m/s"
 					description="The parameter setting for the first baroclinic mode speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004)."
@@ -404,6 +398,18 @@
 		<nml_option name="config_GM_EG_Rhines_factor" type="real" default_value="0.3" units="NA"
 					description="factor multiplying the Rhines length in the scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)"
 					possible_values="small positive values less than equal to one"
+		/>
+		<nml_option name="config_GM_horizontal_taper" type="character" default_value="ramp" units="unitless"
+					description="Control how the GM Bolus $\kappa$ value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
+					possible_values="'none', 'ramp', 'RossbyRadius'"
+		/>
+		<nml_option name="config_GM_horizontal_ramp_min" type="real" default_value="20e3" units="m"
+					description="Minimum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_horizontal_taper is set to ramp."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_GM_horizontal_ramp_max" type="real" default_value="30e3" units="m"
+					description="Maximum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_horizontal_taper is set to ramp."
+					possible_values="Any positive real value."
 		/>
 	</nml_record>
 	<nml_record name="Rayleigh_damping" mode="forward">
@@ -2702,7 +2708,7 @@
 			packages="forwardMode;analysisMode"
 		/>
 		<var name="betaEdge" type="real" dimensions="nEdges Time" units="m^{-1} s^{-1}"
-			description="meridional gradient of the coriolis parameter"
+			description="meridional gradient of the coriolis parameter, used in GM"
 		/>
 		<var name="gmKappaScaling" type="real" dimensions="nVertLevelsP1 nEdges Time" units="NA" default_value="1.0"
 			description="spatially and depth varying GM kappa.  The scaling is based on the Brunt Vaisala Frequency relative to a maximum value below the mixed layer, follows from Danabasoglu and Marshall 2007.  If config_GM_closure is not set to N2_dependent the scaling value is set to 1 everywhere."
@@ -2861,8 +2867,12 @@
 			 description="Redi Kappa value.  This is constant in time, and set at init based on the constant or ramp fuction."
 			 packages="gm"
 		/>
-		<var name="gmResolutionTaper" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
-			 description="resolution tapering for GM and Redi"
+		<var name="RediHorizontalTaper" type="real" dimensions="nEdges Time" units="unitless"
+			 description="Horizontal tapering for Redi. Varies between 0 and 1."
+			 packages="gm"
+		/>
+		<var name="gmHorizontalTaper" type="real" dimensions="nEdges Time" units="unitless"
+			 description="Horizontal tapering for GM. Varies between 0 and 1."
 			 packages="gm"
 		/>
 		<var name="surfaceFluxAttenuationCoefficient" type="real" dimensions="nCells Time" units="m"

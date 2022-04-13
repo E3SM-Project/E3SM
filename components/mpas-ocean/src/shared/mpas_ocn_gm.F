@@ -138,6 +138,7 @@ contains
       real(kind=RKIND) :: sigma, Lr, Length, L_rhines, shearEdgeInv
       real (kind=RKIND) :: eddyLength, eddyTime
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
+      real(kind=RKIND), dimension(:), allocatable :: RossbyRadiusTaper
       real(kind=RKIND) :: c_Visbeck   ! baroclinic wave speed from Visbeck parameterization
       real(kind=RKIND) :: c_mode1, resolution
       ! Dimensions
@@ -683,7 +684,9 @@ contains
          endif
 
          nEdges = nEdgesArray(3)
-         if(config_gm_enable_horizontal_resolution_function) then
+         if (config_GM_horizontal_taper == 'RossbyRadius'.or. &
+             config_Redi_horizontal_taper == 'RossbyRadius') then
+            allocate (RossbyRadiusTaper(nEdges))
             call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
 
             !$omp parallel
@@ -706,10 +709,51 @@ contains
                resolution = sqrt(c_mode1 / (fEdge(iEdge)**2.0 + betaEdge(iEdge)*c_mode1 + 1.0E-15_RKIND)) &
                             / dcEdge(iEdge)
                if (resolution .ge. 2.0 .or. c_mode1 .lt. 0.1_RKIND) then
-                  gmResolutionTaper(iEdge) = 0.0_RKIND
+                  RossbyRadiusTaper(iEdge) = 0.0_RKIND
                else
-                  gmResolutionTaper(iEdge) = 1.0_RKIND
+                  RossbyRadiusTaper(iEdge) = 1.0_RKIND
                end if
+            end do
+            !$omp end do
+            !$omp end parallel
+
+            if (config_GM_horizontal_taper == 'RossbyRadius') then
+               !$omp parallel
+               !$omp do schedule(runtime)
+               do iEdge = 1,nEdges
+                  gmHorizontalTaper(iEdge) = RossbyRadiusTaper(iEdge)
+               end do
+               !$omp end do
+               !$omp end parallel
+            end if
+
+            if (config_Redi_horizontal_taper == 'RossbyRadius') then
+               !$omp parallel
+               !$omp do schedule(runtime)
+               do iEdge = 1,nEdges
+                  RediHorizontalTaper(iEdge) = RossbyRadiusTaper(iEdge)
+               end do
+               !$omp end do
+               !$omp end parallel
+            end if
+
+            deallocate (RossbyRadiusTaper)
+         end if
+
+         if (config_Redi_closure == 'equalGM') then
+            !$omp parallel
+            !$omp do schedule(runtime)
+            do iEdge=1, nEdges
+               RediKappa(iEdge) = RediHorizontalTaper(iEdge) * gmBolusKappa(iEdge)
+            end do
+            !$omp end do
+            !$omp end parallel
+         else if (config_Redi_closure == 'constant'.and. &
+                   config_Redi_horizontal_taper == 'RossbyRadius') then
+            !$omp parallel
+            !$omp do schedule(runtime)
+            do iEdge=1, nEdges
+               RediKappa(iEdge) = RediHorizontalTaper(iEdge) * config_Redi_constant_kappa
             end do
             !$omp end do
             !$omp end parallel
@@ -782,7 +826,7 @@ contains
          !$omp do schedule(runtime) private(k)
          do iEdge = 1, nEdges
             do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-               normalGMBolusVelocity(k, iEdge) = gmResolutionTaper(iEdge) * (gmStreamFuncTopOfEdge(k, iEdge) &
+               normalGMBolusVelocity(k, iEdge) = gmHorizontalTaper(iEdge) * (gmStreamFuncTopOfEdge(k, iEdge) &
                       - gmStreamFuncTopOfEdge(k + 1, iEdge)) /layerThickEdgeMean(k, iEdge)
             end do
          end do
@@ -945,22 +989,16 @@ contains
 
          RediGMinitValue = 1.0_RKIND
          !compute beta
-         if(config_GM_closure == 'Visbeck'.or. &
-            config_GM_closure == 'visbeck'.or. &
-            config_GM_closure == 'EdenGreatbatch'.or. &
-            config_GM_closure == 'edengreatbatch'.or. &
-            config_GM_closure == 'edenGreatbatch'.or. &
-            config_gm_enable_horizontal_resolution_function) then
-            call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
-            call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
-            !$omp parallel
-            !$omp do schedule(runtime)
-            do iEdge=1,nEdges
-               betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
-            end do
-            !$omp end do
-            !$omp end parallel
-         end if
+         call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+         call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
+         !$omp parallel
+         !$omp do schedule(runtime)
+         do iEdge=1,nEdges
+            betaEdge(iEdge) = 2.0_RKIND*omega*cos(latEdge(iEdge)) / sphere_radius
+         end do
+         !$omp end do
+         !$omp end parallel
+
          if (config_GM_closure == 'constant') then
             local_config_GM_lat_variable_c2 = .false.
             local_config_GM_kappa_lat_depth_variable = .false.
@@ -1027,36 +1065,36 @@ contains
             call mpas_dmpar_finalize(domain%dminfo)
          end if
 
-         ! Add resolution taper
-         if (config_eddying_resolution_taper == 'none' .or. &
-             config_gm_enable_horizontal_resolution_function) then
+         ! Add horizontal taper
+         if (config_GM_horizontal_taper == 'none' .or. &
+             config_GM_horizontal_taper == 'RossbyRadius') then
+            ! For 'RossbyRadius', the taper is recomputed at every time step.
+            ! but just set to one here
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1,nEdges
-               gmResolutionTaper(iEdge) = 1.0_RKIND
+               gmHorizontalTaper(iEdge) = 1.0_RKIND
             end do
             !$omp end do
             !$omp end parallel
-            ! Nothing to do, as we just keep the same assignment as above.
-         else if (config_eddying_resolution_taper == 'ramp' .and. &
-                  .not. config_gm_enable_horizontal_resolution_function) then
+         else if (config_GM_horizontal_taper == 'ramp') then
             !$omp parallel
             !$omp do schedule(runtime) 
             do iEdge = 1, nEdges
-               if (dcEdge(iEdge) <= config_eddying_resolution_ramp_min) then
-                  gmResolutionTaper(iEdge) = 0.0_RKIND
-               else if (dcEdge(iEdge) >= config_eddying_resolution_ramp_max) then
-                  gmResolutionTaper(iEdge) = 1.0_RKIND 
+               if (dcEdge(iEdge) <= config_GM_horizontal_ramp_min) then
+                  gmHorizontalTaper(iEdge) = 0.0_RKIND
+               else if (dcEdge(iEdge) >= config_GM_horizontal_ramp_max) then
+                  gmHorizontalTaper(iEdge) = 1.0_RKIND
                else
-                  gmResolutionTaper(iEdge) = 1.0_RKIND &
-                                        /(config_eddying_resolution_ramp_max - config_eddying_resolution_ramp_min) &
-                                        *(dcEdge(iEdge) - config_eddying_resolution_ramp_min)
+                  gmHorizontalTaper(iEdge) = 1.0_RKIND &
+                     /(config_GM_horizontal_ramp_max - config_GM_horizontal_ramp_min) &
+                     *(dcEdge(iEdge) - config_GM_horizontal_ramp_min)
                end if
             end do
             !$omp end do
             !$omp end parallel
          else
-            call mpas_log_write('Invalid choice of config_eddying_resolution_taper.', MPAS_LOG_CRIT)
+            call mpas_log_write('Invalid choice of config_GM_horizontal_taper.', MPAS_LOG_CRIT)
             err = 1
             call mpas_dmpar_finalize(domain%dminfo)
          end if
