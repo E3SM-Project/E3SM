@@ -19,6 +19,7 @@ Atmosphere Processes:
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
     Orbital Year: 1990
     Can Initialize All Inputs: true
+    rad_frequency: 3
 
 Grids Manager:
   Type: Mesh Free
