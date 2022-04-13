@@ -264,7 +264,8 @@ module ocn_time_integration_split
       ! indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
       ! indexSSHGradientZonal, indexSSHGradientMeridional
       ! barotropicForcing, barotropicThicknessFlux
-      ! layerThickEdgeFlux, normalTransportVelocity, normalGMBolusVelocity
+      ! layerThickEdgeFlux, layerThickEdgeMean,
+      ! normalTransportVelocity, normalGMBolusVelocity
       ! vertAleTransportTop
       ! velocityX, velocityY, velocityZ
       ! velocityZonal, velocityMeridional
@@ -1723,7 +1724,7 @@ module ocn_time_integration_split
                                       meshPool, scratchPool, &
                                       tracersPool, 2, full=.false.)
 #ifdef MPAS_OPENACC
-            !$acc update host(layerThickEdge)
+            !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
             !$acc update host(relativeVorticity, circulation)
             !$acc update host(vertTransportVelocityTop, &
             !$acc             vertGMBolusVelocityTop, &
@@ -2043,7 +2044,7 @@ module ocn_time_integration_split
       call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, &
                                 scratchPool, tracersPool, 2)
 #ifdef MPAS_OPENACC
-      !$acc update host(layerThickEdge)
+      !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
       !$acc update host(relativeVorticity, circulation)
       !$acc update host(vertTransportVelocityTop, &
       !$acc             vertGMBolusVelocityTop, &
@@ -2262,7 +2263,7 @@ module ocn_time_integration_split
 #endif
 
 #ifdef MPAS_OPENACC
-      !$acc update host(layerThickEdge)
+      !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
       !$acc update host(relativeVorticity, circulation)
       !$acc update host(vertTransportVelocityTop, &
       !$acc             vertGMBolusVelocityTop, &
