@@ -184,8 +184,6 @@ module ocn_diagnostics_variables
 
    real (kind=RKIND), pointer :: globalVerticalStretchMax, globalVerticalStretchMin
    real (kind=RKIND), dimension(:), pointer :: betaEdge
-   real (kind=RKIND), dimension(:), pointer :: eddyLength
-   real (kind=RKIND), dimension(:), pointer :: eddyTime
    real (kind=RKIND), dimension(:), pointer :: gmResolutionTaper
 
    ! Semi-implicit Array Pointers
@@ -572,8 +570,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'barotropicCoriolisTerm', &
                 barotropicCoriolisTerm)
       call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'eddyLength', eddyLength)
-      call mpas_pool_get_array(diagnosticsPool, 'eddyTime', eddyTime)
       call mpas_pool_get_array(diagnosticsPool, &
                'bottomLayerShortwaveTemperatureFlux', &
                 bottomLayerShortwaveTemperatureFlux)
@@ -807,9 +803,7 @@ contains
       !$acc                   indMLD,                                  &
       !$acc                   density,                                 &
       !$acc                   betaEdge,                                &
-      !$acc                   eddyTime,                                &
       !$acc                   pressure,                                &
-      !$acc                   eddyLength,                              &
       !$acc                   thermExpCoeff,                           &
       !$acc                   sfcFlxAttCoeff,                          &
       !$acc                   surfacePressure,                         &
@@ -1045,9 +1039,7 @@ contains
       !$acc                   indMLD,                                  &
       !$acc                   density,                                 &
       !$acc                   betaEdge,                                &
-      !$acc                   eddyTime,                                &
       !$acc                   pressure,                                &
-      !$acc                   eddyLength,                              &
       !$acc                   thermExpCoeff,                           &
       !$acc                   sfcFlxAttCoeff,                          &
       !$acc                   surfacePressure,                         &
@@ -1232,9 +1224,7 @@ contains
               indMLD,                                  &
               density,                                 &
               betaEdge,                                &
-              eddyTime,                                &
               pressure,                                &
-              eddyLength,                              &
               thermExpCoeff,                           &
               sfcFlxAttCoeff,                          &
               surfacePressure,                         &
