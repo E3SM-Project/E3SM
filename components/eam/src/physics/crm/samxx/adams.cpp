@@ -2,27 +2,27 @@
 #include "adams.h"
 
 void adams() {
-  auto &dtn    = ::dtn   ;
-  auto &dx     = ::dx    ;
-  auto &dy     = ::dy    ;
-  auto &dz     = ::dz    ;
-  auto &rho    = ::rho   ;
-  auto &rhow   = ::rhow  ;
-  auto &dudt   = ::dudt  ;
-  auto &dvdt   = ::dvdt  ;
-  auto &dwdt   = ::dwdt  ;
-  auto &u      = ::u     ;
-  auto &v      = ::v     ;
-  auto &w      = ::w     ;
-  auto &misc   = ::misc  ;
-  auto &dt3    = ::dt3   ;
-  auto &na     = ::na    ;
-  auto &nb     = ::nb    ;
-  auto &nc     = ::nc    ;
-  auto &at     = ::at    ;
-  auto &bt     = ::bt    ;
-  auto &ct     = ::ct    ;
-  auto &ncrms  = ::ncrms ;
+  YAKL_SCOPE( dtn     , ::dtn   );
+  YAKL_SCOPE( dx      , ::dx    );
+  YAKL_SCOPE( dy      , ::dy    );
+  YAKL_SCOPE( dz      , ::dz    );
+  YAKL_SCOPE( rho     , ::rho   );
+  YAKL_SCOPE( rhow    , ::rhow  );
+  YAKL_SCOPE( dudt    , ::dudt  );
+  YAKL_SCOPE( dvdt    , ::dvdt  );
+  YAKL_SCOPE( dwdt    , ::dwdt  );
+  YAKL_SCOPE( u       , ::u     );
+  YAKL_SCOPE( v       , ::v     );
+  YAKL_SCOPE( w       , ::w     );
+  YAKL_SCOPE( misc    , ::misc  );
+  YAKL_SCOPE( dt3     , ::dt3   );
+  YAKL_SCOPE( na      , ::na    );
+  YAKL_SCOPE( nb      , ::nb    );
+  YAKL_SCOPE( nc      , ::nc    );
+  YAKL_SCOPE( at      , ::at    );
+  YAKL_SCOPE( bt      , ::bt    );
+  YAKL_SCOPE( ct      , ::ct    );
+  YAKL_SCOPE( ncrms   , ::ncrms );
 
   // Adams-Bashforth scheme
   real dtdx = dtn/dx;

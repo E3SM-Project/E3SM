@@ -1,20 +1,20 @@
 #include "advect2_mom_xy.h"
 
 void advect2_mom_xy() {
-  auto &dx            = :: dx;
-  auto &dy            = :: dy;
-  auto &rhow          = :: rhow; 
-  auto &adzw          = :: adzw;
-  auto &u             = :: u;
-  auto &dudt          = :: dudt;
-  auto &v             = :: v;
-  auto &dvdt          = :: dvdt;
-  auto &w             = :: w;
-  auto &dwdt          = :: dwdt;
-  auto &rho           = :: rho;
-  auto &adz           = :: adz;
-  auto &na            = :: na;
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( dx             , :: dx);
+  YAKL_SCOPE( dy             , :: dy);
+  YAKL_SCOPE( rhow           , :: rhow); 
+  YAKL_SCOPE( adzw           , :: adzw);
+  YAKL_SCOPE( u              , :: u);
+  YAKL_SCOPE( dudt           , :: dudt);
+  YAKL_SCOPE( v              , :: v);
+  YAKL_SCOPE( dvdt           , :: dvdt);
+  YAKL_SCOPE( w              , :: w);
+  YAKL_SCOPE( dwdt           , :: dwdt);
+  YAKL_SCOPE( rho            , :: rho);
+  YAKL_SCOPE( adz            , :: adz);
+  YAKL_SCOPE( na             , :: na);
+  YAKL_SCOPE( ncrms          , :: ncrms);
 
   real dx25 = 0.25 / dx;
   real dy25 = 0.25 / dy;

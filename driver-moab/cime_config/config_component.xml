@@ -103,10 +103,10 @@
 
   <entry id="UTILROOT">
     <type>char</type>
-    <default_value>$CIMEROOT/scripts/Tools</default_value>
+    <default_value>$CIMEROOT/CIME/Tools</default_value>
     <group>case_der</group>
     <file>env_case.xml</file>
-    <desc>Scripts root utils directory location (setup automatically to $CIMEROOT/scripts/Tools - DO NOT EDIT)</desc>
+    <desc>Scripts root utils directory location (setup automatically to $CIMEROOT/CIME/Tools - DO NOT EDIT)</desc>
   </entry>
 
   <!-- ===================================================================== -->
@@ -540,7 +540,7 @@
   <entry id="BATCH_SYSTEM">
      <type>char</type>
      <default_value>none</default_value>
-     <valid_values>nersc_slurm,lc_slurm,moab,pbs,lsf,slurm,cobalt,cobalt_theta,none</valid_values>
+     <valid_values>miller_slurm,nersc_slurm,lc_slurm,moab,pbs,lsf,slurm,cobalt,cobalt_theta,none</valid_values>
      <group>config_batch</group>
      <file>env_batch.xml</file>
      <desc>The batch system type to use for this machine.</desc>

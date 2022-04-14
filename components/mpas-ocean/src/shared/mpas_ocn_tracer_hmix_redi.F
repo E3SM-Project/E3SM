@@ -73,7 +73,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_Redi_tend(meshPool, layerThickness, layerThicknessEdge, zMid, tracers, &
+   subroutine ocn_tracer_hmix_Redi_tend(meshPool, layerThickness, layerThickEdgeMean, zMid, tracers, &
                                         RediKappa, dt, isActiveTracer, slopeTriadUp, slopeTriadDown, &
                                         RediKappaSfcTaper, RediKappaScaling, rediLimiterCount, tend, err)!{{{
 
@@ -89,7 +89,7 @@ contains
          RediKappa
 
       real(kind=RKIND), dimension(:, :), intent(in) :: &
-         layerThicknessEdge, &!< Input: thickness at edge
+         layerThickEdgeMean, &!< Input: mean thickness at edge
          zMid, &!< Input: Z coordinate at the center of a cell
          RediKappaSfcTaper, &!< Input: vertical structure of GM/Redi limiter
          RediKappaScaling, &
@@ -243,14 +243,14 @@ contains
 
             do iTr = 1, nTracers
                tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
-               flux = layerThicknessEdge(k, iEdge)*tracer_turb_flux*r_tmp*RediKappa(iEdge)
+               flux = layerThickEdgeMean(k, iEdge)*tracer_turb_flux*r_tmp*RediKappa(iEdge)
                redi_term1(iTr, k, iCell) = redi_term1(iTr, k, iCell) - (1.0_RKIND + term1TaperFactor* &
                                            (kappaRediEdgeVal - 1.0_RKIND))*edgeSignOnCell(i, iCell)*flux*invAreaCell
 
                if (.not.use_Redi_diag_terms) cycle
 
                ! Term 2: div( h S dphi/dz)
-               flux_term2 = coef*kappaRediEdgeVal*RediKappa(iEdge)*layerThicknessEdge(k, iEdge)* &
+               flux_term2 = coef*kappaRediEdgeVal*RediKappa(iEdge)*layerThickEdgeMean(k, iEdge)* &
                             0.25_RKIND* &
                             (slopeTriadDown(k, 1, iEdge)*(tracers(iTr, k, cell1) - tracers(iTr, k + 1, cell1)) &
                              /(zMid(k, cell1) - zMid(k + 1, cell1)) &
@@ -258,12 +258,12 @@ contains
                              /(zMid(k, cell2) - zMid(k + 1, cell2)))
                if (minLevelCell(cell1) < minLevelEdgeBot(iEdge)) then
                   flux_term2 = flux_term2 + coef*RediKappa(iEdge)* &
-                               layerThicknessEdge(minLevelEdgeBot(iEdge), iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadUp(minLevelEdgeBot(iEdge), 1, iEdge)* &
+                               layerThickEdgeMean(minLevelEdgeBot(iEdge), iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadUp(minLevelEdgeBot(iEdge), 1, iEdge)* &
                                (tracers(iTr, minLevelEdgeBot(iEdge) - 1, cell1) - tracers(iTr, minLevelEdgeBot(iEdge), cell1))/(zMid(minLevelEdgeBot(iEdge) - 1, cell1) - zMid(minLevelEdgeBot(iEdge), cell1))
                endif
                if (minLevelCell(cell2) < minLevelEdgeBot(iEdge)) then
                   flux_term2 = flux_term2 + coef*RediKappa(iEdge)* &
-                               layerThicknessEdge(minLevelEdgeBot(iEdge), iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadUp(minLevelEdgeBot(iEdge), 2, iEdge)* &
+                               layerThickEdgeMean(minLevelEdgeBot(iEdge), iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadUp(minLevelEdgeBot(iEdge), 2, iEdge)* &
                                (tracers(iTr, minLevelEdgeBot(iEdge) - 1, cell2) - tracers(iTr, minLevelEdgeBot(iEdge), cell2))/(zMid(minLevelEdgeBot(iEdge) - 1, cell2) - zMid(minLevelEdgeBot(iEdge), cell2))
                endif
 
@@ -283,14 +283,14 @@ contains
                   tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
 
                   ! div(h \kappa_2 \nabla \phi) at cell center
-                  flux = layerThicknessEdge(k, iEdge)*tracer_turb_flux*r_tmp*RediKappa(iEdge)
+                  flux = layerThickEdgeMean(k, iEdge)*tracer_turb_flux*r_tmp*RediKappa(iEdge)
 
                   redi_term1(iTr, k, iCell) = redi_term1(iTr, k, iCell) - (1.0_RKIND + term1TaperFactor* &
                                               (kappaRediEdgeVal - 1.0_RKIND))*edgeSignOnCell(i, iCell)*flux*invAreaCell
 
                   if (.not.use_Redi_diag_terms) cycle
 
-                  flux_term2 = coef*RediKappa(iEdge)*kappaRediEdgeVal*layerThicknessEdge(k, iEdge)* &
+                  flux_term2 = coef*RediKappa(iEdge)*kappaRediEdgeVal*layerThickEdgeMean(k, iEdge)* &
                                0.25_RKIND* &
                                (slopeTriadUp(k, 1, iEdge)*(tracers(iTr, k - 1, cell1) - tracers(iTr, k, cell1)) &
                                 /(zMid(k - 1, cell1) - zMid(k, cell1)) &
@@ -319,14 +319,14 @@ contains
 
             do iTr = 1, nTracers
                tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
-               flux = layerThicknessEdge(k, iEdge)*tracer_turb_flux*r_tmp*RediKappa(iEdge)
+               flux = layerThickEdgeMean(k, iEdge)*tracer_turb_flux*r_tmp*RediKappa(iEdge)
                redi_term1(iTr, k, iCell) = redi_term1(iTr, k, iCell) - (1.0_RKIND + term1TaperFactor* &
                                            (kappaRediEdgeVal - 1.0_RKIND))*edgeSignOnCell(i, iCell)*flux*invAreaCell
 
                if (.not.use_Redi_diag_terms) cycle
 
                ! For bottom layer, only use triads pointing up:
-               flux_term2 = coef*kappaRediEdgeVal*RediKappa(iEdge)*layerThicknessEdge(k, iEdge)* &
+               flux_term2 = coef*kappaRediEdgeVal*RediKappa(iEdge)*layerThickEdgeMean(k, iEdge)* &
                             0.25_RKIND* &
                             (slopeTriadUp(k, 1, iEdge)*(tracers(iTr, k - 1, cell1) - tracers(iTr, k, cell1)) &
                              /(zMid(k - 1, cell1) - zMid(k, cell1)) &
@@ -335,12 +335,12 @@ contains
 
                if (maxLevelCell(cell1) > maxLevelEdgeTop(iEdge)) then
                   flux_term2 = flux_term2 + coef*RediKappa(iEdge)* &
-                               layerThicknessEdge(k, iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadDown(k, 1, iEdge)* &
+                               layerThickEdgeMean(k, iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadDown(k, 1, iEdge)* &
                                (tracers(iTr, k, cell1) - tracers(iTr, k + 1, cell1))/(zMid(k, cell1) - zMid(k + 1, cell1))
                endif
                if (maxLevelCell(cell2) > maxLevelEdgeTop(iEdge)) then
                   flux_term2 = flux_term2 + coef*RediKappa(iEdge)* &
-                               layerThicknessEdge(k, iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadDown(k, 2, iEdge)* &
+                               layerThickEdgeMean(k, iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadDown(k, 2, iEdge)* &
                                (tracers(iTr, k, cell2) - tracers(iTr, k + 1, cell2))/(zMid(k, cell2) - zMid(k + 1, cell2))
                endif
                redi_term2(iTr, k, iCell) = redi_term2(iTr, k, iCell) - edgeSignOnCell(i, iCell)*flux_term2 &

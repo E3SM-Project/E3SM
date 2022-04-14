@@ -1,29 +1,29 @@
 #include "microphysics.h"
 
 void precip_fall(int hydro_type, real4d &omega) {
-  auto &rho           = :: rho;
-  auto &adz           = :: adz;
-  auto &dtn           = :: dtn;
-  auto &dz            = :: dz;
-  auto &micro_field   = :: micro_field;
-  auto &rhow          = :: rhow;
-  auto &qpfall        = :: qpfall;
-  auto &tlat          = :: tlat;
-  auto &precflux      = :: precflux;
-  auto &precsfc       = :: precsfc;
-  auto &precssfc      = :: precssfc;
-  auto &prec_xy       = :: prec_xy;
-  auto &t             = :: t;
-  auto &vrain         = :: vrain;
-  auto &vsnow         = :: vsnow;
-  auto &vgrau         = :: vgrau;
-  auto &crain         = :: crain;
-  auto &csnow         = :: csnow;
-  auto &cgrau         = :: cgrau;
-  auto &tabs          = :: tabs;
-  auto &a_pr          = :: a_pr;
-  auto &a_gr          = :: a_gr;
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( rho           , :: rho );
+  YAKL_SCOPE( adz           , :: adz );
+  YAKL_SCOPE( dtn           , :: dtn );
+  YAKL_SCOPE( dz            , :: dz );
+  YAKL_SCOPE( micro_field   , :: micro_field );
+  YAKL_SCOPE( rhow          , :: rhow );  
+  YAKL_SCOPE( qpfall        , :: qpfall );
+  YAKL_SCOPE( tlat          , :: tlat );
+  YAKL_SCOPE( precflux      , :: precflux );
+  YAKL_SCOPE( precsfc       , :: precsfc );
+  YAKL_SCOPE( precssfc      , :: precssfc );
+  YAKL_SCOPE( prec_xy       , :: prec_xy );
+  YAKL_SCOPE( t             , :: t );
+  YAKL_SCOPE( vrain         , :: vrain );
+  YAKL_SCOPE( vsnow         , :: vsnow );
+  YAKL_SCOPE( vgrau         , :: vgrau );
+  YAKL_SCOPE( crain         , :: crain );
+  YAKL_SCOPE( csnow         , :: csnow );
+  YAKL_SCOPE( cgrau         , :: cgrau );
+  YAKL_SCOPE( tabs          , :: tabs );
+  YAKL_SCOPE( a_pr          , :: a_pr );
+  YAKL_SCOPE( a_gr          , :: a_gr );
+  YAKL_SCOPE( ncrms         , :: ncrms );
 
   real constexpr eps = 1.e-10;
   bool constexpr nonos = true;
@@ -251,9 +251,9 @@ void precip_fall(int hydro_type, real4d &omega) {
 
 
 void micro_precip_fall() {
-  auto &tabs  = ::tabs;
-  auto &a_pr  = ::a_pr;
-  auto &ncrms = ::ncrms;
+  YAKL_SCOPE( tabs  , ::tabs );
+  YAKL_SCOPE( a_pr  , ::a_pr );
+  YAKL_SCOPE( ncrms , ::ncrms );
 
   real4d omega("omega", nzm, ny, nx, ncrms);
 
@@ -277,11 +277,11 @@ void micro_precip_fall() {
 
 
 void micro_flux() {
-  auto &fluxbmk       = :: fluxbmk;
-  auto &fluxbq        = :: fluxbq;
-  auto &fluxtmk       = :: fluxtmk;
-  auto &fluxtq        = :: fluxtq;
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( fluxbmk       , :: fluxbmk );
+  YAKL_SCOPE( fluxbq        , :: fluxbq );
+  YAKL_SCOPE( fluxtmk       , :: fluxtmk );
+  YAKL_SCOPE( fluxtq        , :: fluxtq );
+  YAKL_SCOPE( ncrms         , :: ncrms );
 
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
@@ -293,17 +293,17 @@ void micro_flux() {
 }
 
 void micro_diagnose() {
-  auto &qv            = :: qv;
-  auto &micro_field   = :: micro_field;
-  auto &qn            = :: qn;
-  auto &tabs          = :: tabs;
-  auto &a_bg          = :: a_bg;
-  auto &a_pr          = :: a_pr;
-  auto &qcl           = :: qcl;
-  auto &qci           = :: qci;
-  auto &qpl           = :: qpl;
-  auto &qpi           = :: qpi;
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( qv            , :: qv );
+  YAKL_SCOPE( micro_field   , :: micro_field );
+  YAKL_SCOPE( qn            , :: qn );
+  YAKL_SCOPE( tabs          , :: tabs );
+  YAKL_SCOPE( a_bg          , :: a_bg );
+  YAKL_SCOPE( a_pr          , :: a_pr );
+  YAKL_SCOPE( qcl           , :: qcl );
+  YAKL_SCOPE( qci           , :: qci );
+  YAKL_SCOPE( qpl           , :: qpl );
+  YAKL_SCOPE( qpi           , :: qpi );
+  YAKL_SCOPE( ncrms         , :: ncrms );
 
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; j<ny; j++) {
@@ -339,15 +339,15 @@ void micro_proc() {
 }
 
 void micro_init() {
-  auto &fluxbmk = ::fluxbmk;
-  auto &fluxtmk = ::fluxtmk;
-  auto &mkwle   = ::mkwle;
-  auto &mkwsb   = ::mkwsb;
-  auto &mkadv   = ::mkadv;
-  auto &mkdiff  = ::mkdiff;
-  auto &qpsrc   = ::qpsrc;
-  auto &qpevp   = ::qpevp;
-  auto &ncrms   = ::ncrms;
+  YAKL_SCOPE( fluxbmk , ::fluxbmk );
+  YAKL_SCOPE( fluxtmk , ::fluxtmk );
+  YAKL_SCOPE( mkwle   , ::mkwle );
+  YAKL_SCOPE( mkwsb   , ::mkwsb );
+  YAKL_SCOPE( mkadv   , ::mkadv );
+  YAKL_SCOPE( mkdiff  , ::mkdiff );
+  YAKL_SCOPE( qpsrc   , ::qpsrc );
+  YAKL_SCOPE( qpevp   , ::qpevp );
+  YAKL_SCOPE( ncrms   , ::ncrms );
 
   a_bg = 1.0/(tbgmax-tbgmin);
   a_pr = 1.0/(tprmax-tprmin);

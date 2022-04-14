@@ -124,7 +124,6 @@
 !	... Function declarations
 !----------------------------------------------------------------------------------
       integer  ::   LENOF
-      integer  ::   STRLEN
       
 !----------------------------------------------------------------------------------
 !       ... The options array has the following mapping:
@@ -638,11 +637,11 @@
       if( relcnt /= 0 ) then
          write(lout,235)
          do j = 1,relcnt
-            length = STRLEN( solsym(relmap(j,1)) )
+            length = LEN_TRIM( solsym(relmap(j,1)) )
             buff = ' '
             write(buff,'(6x,''('',i2,'')'')') j
-            buff(STRLEN(buff)+2:) = solsym(relmap(j,1))(:length) // ' ~ ' // solsym(relmap(j,2))
-            write(lout,'(a)') buff(:STRLEN(buff))
+            buff(LEN_TRIM(buff)+2:) = solsym(relmap(j,1))(:length) // ' ~ ' // solsym(relmap(j,2))
+            write(lout,'(a)') buff(:LEN_TRIM(buff))
          end do
       end if
       if( nfs /= 0 ) then

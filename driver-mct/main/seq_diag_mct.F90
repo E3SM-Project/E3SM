@@ -622,17 +622,20 @@ contains
     !EOP
 
     !----- local -----
-    type(mct_aVect), pointer :: a2x_a        ! model to drv bundle
-    type(mct_aVect), pointer :: x2a_a        ! drv to model bundle
+    type(mct_aVect), pointer :: a2x_a             ! model to drv bundle
+    type(mct_aVect), pointer :: x2a_a             ! drv to model bundle
     type(mct_ggrid), pointer :: dom_a
+    character(CL)            :: atm_gnam          ! atm grid
+    character(CL)            :: lnd_gnam          ! lnd grid
     integer(in)              :: k,n,ic,nf,ip      ! generic index
     integer(in)              :: kArea             ! index of area field in aVect
     integer(in)              :: kLat              ! index of lat field in aVect
     integer(in)              :: kl,ka,ko,ki       ! fraction indices
     integer(in)              :: lSize             ! size of aVect
-    real(r8)                 :: ca_a       ! area of a grid cell
+    real(r8)                 :: ca_a              ! area of a grid cell
     logical,save             :: first_time    = .true.
     logical,save             :: flds_wiso_atm = .false.
+    logical,save             :: samegrid_al       ! samegrid atm and lnd
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diag_atm_mct) '
@@ -648,9 +651,22 @@ contains
     kArea = mct_aVect_indexRA(dom_a%data,afldname)
     kLat  = mct_aVect_indexRA(dom_a%data,latname)
     ka    = mct_aVect_indexRA(frac_a,afracname)
-    kl    = mct_aVect_indexRA(frac_a,lfracname)
+    kl    = mct_aVect_indexRA(frac_a,lfrinname)
     ko    = mct_aVect_indexRA(frac_a,ofracname)
     ki    = mct_aVect_indexRA(frac_a,ifracname)
+    if (first_time) then
+       call seq_infodata_getData(infodata , &
+            lnd_gnam=lnd_gnam             , &
+            atm_gnam=atm_gnam             )
+       samegrid_al = .true.
+       if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
+    end if
+
+    if (samegrid_al) then
+       kl = mct_aVect_indexRA(frac_a,lfracname)
+    else
+       kl = mct_aVect_indexRA(frac_a,lfrinname)
+    endif
 
     !---------------------------------------------------------------------------
     ! add values found in this bundle to the budget table
