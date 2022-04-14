@@ -6,6 +6,25 @@
 
 using namespace scream;
 using namespace scream::p3;
+using P3F = Functions<Real, DefaultDevice>;
+
+P3F::P3LookupTables lookup_tables_save;
+
+// Load lookup tables
+extern "C" void initialize_p3_lookup() {
+  P3F::init_kokkos_ice_lookup_tables(lookup_tables_save.ice_table_vals,
+                                     lookup_tables_save.collect_table_vals);
+  P3F::init_kokkos_tables(lookup_tables_save.vn_table_vals,
+                          lookup_tables_save.vm_table_vals,
+                          lookup_tables_save.revap_table_vals,
+                          lookup_tables_save.mu_r_table_vals,
+                          lookup_tables_save.dnu_table_vals);
+}
+
+// can we directly destroy lookup_tables_save here?
+extern "C" void finalize_p3_lookup() {
+  // lookup_tables_save = nullptr;
+}
 
 void micro_p3_diagnose() {
   YAKL_SCOPE( qv          , :: qv);
@@ -35,7 +54,6 @@ void micro_p3_init() {
   YAKL_SCOPE( qpsrc   , ::qpsrc);
   YAKL_SCOPE( qpevp   , ::qpevp);
   YAKL_SCOPE( ncrms   , ::ncrms);
-  YAKL_SCOPE( lookup_tables_save, ::lookup_tables_save);
 
   // for (int l=0; l<nmicro_fields; k++) {
   //   for (int j=0; j<ny; j++) {
@@ -65,13 +83,6 @@ void micro_p3_init() {
     qpevp(k,icrm) = 0.0;
   });
 
-  // Load lookup tables
-  using P3F  = Functions<Real, DefaultDevice>;
-  P3F::init_kokkos_ice_lookup_tables(lookup_tables_save.ice_table_vals, lookup_tables_save.collect_table_vals);
-  P3F::init_kokkos_tables(lookup_tables_save.vn_table_vals, lookup_tables_save.vm_table_vals,
-                          lookup_tables_save.revap_table_vals, lookup_tables_save.mu_r_table_vals,
-                          lookup_tables_save.dnu_table_vals);
-
 }
 
 
@@ -97,18 +108,18 @@ void get_cloud_fraction(int its, int ite, int kts, int kte, real2d& cloud_frac,
   real cld_water_threshold = 0.001;
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+icrm*ny);
-    // cld_frac_l(icol,k) = 1.0;
-    // cld_frac_i(icol,k) = 1.0;
-    // cld_frac_r(icol,k) = 1.0;
-    cld_frac_l(icol,k) = p3_mincld;
-    cld_frac_i(icol,k) = p3_mincld;
-    cld_frac_r(icol,k) = p3_mincld;
-    real cld_water_tmp = rho(k,icrm)*adz(k,icrm)*dz(icrm)*(qc(k,j,i,icrm)+qc(k,j,i,icrm)+qr(k,j,i,icrm));
-    if(cld_water_tmp > cld_water_threshold) {
-      if (qc(k,j,i,icrm)>0) { cld_frac_l(icol,k) = 1.0; }
-      if (qi(k,j,i,icrm)>0) { cld_frac_i(icol,k) = 1.0; }
-      if (qr(k,j,i,icrm)>0) { cld_frac_r(icol,k) = 1.0; }
-    }
+    cld_frac_l(icol,k) = 1.0;
+    cld_frac_i(icol,k) = 1.0;
+    cld_frac_r(icol,k) = 1.0;
+    // cld_frac_l(icol,k) = p3_mincld;
+    // cld_frac_i(icol,k) = p3_mincld;
+    // cld_frac_r(icol,k) = p3_mincld;
+    // real cld_water_tmp = rho(k,icrm)*adz(k,icrm)*dz(icrm)*(qc(k,j,i,icrm)+qc(k,j,i,icrm)+qr(k,j,i,icrm));
+    // if(cld_water_tmp > cld_water_threshold) {
+    //   if (qc(k,j,i,icrm)>0) { cld_frac_l(icol,k) = 1.0; }
+    //   if (qi(k,j,i,icrm)>0) { cld_frac_i(icol,k) = 1.0; }
+    //   if (qr(k,j,i,icrm)>0) { cld_frac_r(icol,k) = 1.0; }
+    // }
   });
 
 #if 0
@@ -291,7 +302,6 @@ void micro_p3_proc() {
   YAKL_SCOPE( diag_eff_radius_qi , :: diag_eff_radius_qi);
   YAKL_SCOPE( t_prev             , :: t_prev);
   YAKL_SCOPE( q_prev             , :: q_prev);
-  YAKL_SCOPE( lookup_tables_save , ::lookup_tables_save);
 
   // output 
   YAKL_SCOPE( qv2qi_depos_tend   , :: qv2qi_depos_tend);
@@ -570,6 +580,12 @@ void micro_p3_proc() {
                                    vap_ice_exchange_d};
 
   //----------------------------------------------------------------------------
+  // Retreive lookup table data
+  //----------------------------------------------------------------------------
+  // using P3F = scream::p3::Functions<Real, DefaultDevice>;
+  // P3F::P3LookupTables lookup_tables_tmp = p3_lookup::get_p3_lookup();
+  // auto lookup_tables_tmp = p3_lookup::get_p3_lookup();
+  //----------------------------------------------------------------------------
   // Call p3_main
   //----------------------------------------------------------------------------
   const int nlev_pack = ekat::npack<Spack>(nlev);
@@ -629,8 +645,6 @@ void micro_p3_proc() {
   });
 
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, {ncol, npack, Spack::n}), KOKKOS_LAMBDA(int icol, int ilev, int s) {
-    int i    = icol%nx;
-    int j    = (icol/nx)%ny;
     int icrm = (icol/nx)/ny;
     int k    = ilev*Spack::n + s;
     if (k < nlev) {
