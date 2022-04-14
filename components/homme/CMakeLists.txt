@@ -409,7 +409,7 @@ if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
     
     SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc)
     SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
-    ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
+    ADD_SUBDIRECTORY(utils/cime/CIME/non_py/cprnc)
   ENDIF ()
 ENDIF ()
 
