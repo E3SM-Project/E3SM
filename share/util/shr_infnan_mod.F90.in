@@ -1,6 +1,7 @@
 ! Flag representing compiler support of Fortran 2003's
 ! ieee_arithmetic intrinsic module.
-#if defined CPRIBM || defined CPRPGI || defined CPRNVIDIA || defined CPRINTEL ||  defined CPRCRAY || defined CPRNAG || defined CPRAMD
+#if defined CPRIBM || defined CPRPGI || defined CPRNVIDIA || defined CPRINTEL ||  defined CPRCRAY || defined CPRNAG \
+  || defined CPRAMD || defined CPRFJ
 #define HAVE_IEEE_ARITHMETIC
 #endif
 
@@ -191,8 +192,12 @@ end function shr_infnan_isinf_{TYPE}
 elemental function shr_infnan_isposinf_{TYPE}(x) result(isposinf)
   use, intrinsic :: ieee_arithmetic, only: &
        ieee_class, &
+#ifdef CPRFJ
+       ieee_positive_inf
+#else
        ieee_positive_inf, &
        operator(==)
+#endif
   {VTYPE}, intent(in) :: x
   logical :: isposinf
 
@@ -204,8 +209,12 @@ end function shr_infnan_isposinf_{TYPE}
 elemental function shr_infnan_isneginf_{TYPE}(x) result(isneginf)
   use, intrinsic :: ieee_arithmetic, only: &
        ieee_class, &
+#ifdef CPRFJ
+       ieee_negative_inf
+#else
        ieee_negative_inf, &
        operator(==)
+#endif
   {VTYPE}, intent(in) :: x
   logical :: isneginf
 

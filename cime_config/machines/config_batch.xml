@@ -171,28 +171,18 @@
     </directives>
   </batch_system>
 
-  <batch_system type="moab" >
-    <batch_query>showq</batch_query>
-    <batch_submit>msub </batch_submit>
-    <batch_cancel>canceljob</batch_cancel>
-    <batch_directive>#MSUB</batch_directive>
-    <jobid_pattern>(\d+)$</jobid_pattern>
-    <depend_string>-W depend=afterok:jobid</depend_string>
-    <depend_allow_string>-W depend=afterany:jobid</depend_allow_string>
-    <depend_separator>:</depend_separator>
+  <batch_system type="moab">
+    <batch_query>pjstat</batch_query>
+    <batch_submit>pjsub</batch_submit>
+    <batch_cancel>pjdel</batch_cancel>
+    <batch_directive>#PJM</batch_directive>
+    <jobid_pattern>(\d\d\d\d\d+)</jobid_pattern>
     <walltime_format>%H:%M:%S</walltime_format>
-    <batch_mail_flag>-M</batch_mail_flag>
-    <batch_mail_type_flag>-m</batch_mail_type_flag>
-    <batch_mail_type>, bea, b, e, a</batch_mail_type>
-    <submit_args>
-      <arg flag="-l walltime=" name="$JOB_WALLCLOCK_TIME"/>
-      <arg flag="-A" name="$CHARGE_ACCOUNT"/>
-    </submit_args>
     <directives>
-      <directive> -N {{ job_id }}</directive>
-      <directive> -j oe </directive>
-      <directive default="n"> -r {{ rerunnable }} </directive>
-      <directive default="/bin/bash" > -S {{ shell }}</directive>
+      <directive> -L "node={{ num_nodes }}"</directive>
+      <directive> -L "elapse={{ job_wallclock_time }}"</directive>
+      <directive> --mpi "proc={{ total_tasks }}"</directive>
+      <directive> -s </directive>
     </directives>
   </batch_system>
 
@@ -489,12 +479,6 @@
     </queues>
   </batch_system>
 
-  <batch_system MACH="mustang" type="moab" >
-    <directives>
-      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-    </directives>
-  </batch_system>
-
   <batch_system MACH="grizzly" type="slurm" >
 	<directives>
 		<directive>--nodes={{ num_nodes }}</directive>
@@ -643,6 +627,12 @@
       <queue walltimemax="01:00:00" nodemin="1" nodemax="5">amdMI60</queue>
       <queue walltimemax="01:00:00" nodemin="1" nodemax="7">amdMI100</queue>
     </queues>
+   </batch_system>
+
+   <batch_system MACH="fugaku" type="moab">
+     <queues>
+       <queue walltimemax="1:00:00" default="true" strict="true">default</queue>
+     </queues>
    </batch_system>
 
 </config_batch>
