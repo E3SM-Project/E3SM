@@ -34,6 +34,9 @@ from CIME.utils import expect, safe_copy, SharedArea
 from CIME.buildnml import parse_input
 
 # SCREAM imports
+from eamxx_buildnml_impl import get_valid_selectors, get_child, \
+        resolve_all_inheritances, gen_atm_procs, find_node
+
 from utils import ensure_yaml
 ensure_yaml()
 import yaml
@@ -120,9 +123,8 @@ def evaluate_selectors(element, case, ez_selectors):
     the corresponding element text becomes the new text value of the original
     (no-selectors, AKA default) element.
 
-    Return metadata for the given outer element
+    The metadata attributes are kept, to allow checks during calls to atm-config-chg
     """
-    metadata = {} # elem_name -> (type, valid_values)
     child_values = {} # elem_name -> evaluated XML element
     children_to_remove = []
     for child in element:
@@ -132,15 +134,10 @@ def evaluate_selectors(element, case, ez_selectors):
         # Note: in our system, an XML element is either a "node" (has children)
         # or a "leaf" (has a value).
         has_children = len(child) > 0
-        if not has_children:
+        if has_children:
+            evaluate_selectors(child, case, ez_selectors)
+        else:
             selectors = child.attrib
-            child_type, child_valids = \
-                selectors.pop(METADATA_ATTRIBS[0], None), selectors.pop(METADATA_ATTRIBS[1], None)
-
-            if child_type:
-                expect(child_type in ["integer", "logical", "real", "string"],
-                       "Child '{}' has invalid type '{}'".format(child_name, child_type))
-
             if selectors:
                 all_match = True
                 is_first = False
@@ -176,20 +173,12 @@ def evaluate_selectors(element, case, ez_selectors):
                     if child_name in child_values:
                         orig_child = child_values[child_name]
                         orig_child.text = do_cime_vars(child_val, case)
-                        # Allow explicit metadata overrides for matched selection elements
-                        expect(child_name in metadata, "How was it not already in metadata?")
-                        if child_type:
-                            metadata[child_name][0] = child_type
-                        if child_valids:
-                            metadata[child_name][1] = child_valids
 
                     else:
                         is_first = True
                         child_values[child_name] = child
                         child.text = do_cime_vars(child_val, case)
                         child.attrib.clear()
-                        expect(child_name not in metadata, "How was it already in metadata?")
-                        metadata[child_name] = [child_type if child_type else derive_type(child.text), child_valids]
 
                 if not is_first:
                     children_to_remove.append(child)
@@ -199,281 +188,270 @@ def evaluate_selectors(element, case, ez_selectors):
                        "child '{}' element without selectors occured after other parameter elements for this parameter".format(child_name))
                 child_values[child_name] = child
                 child.text = do_cime_vars(child_val, case)
-                metadata[child_name] = [child_type if child_type else derive_type(child.text), child_valids]
-
-        else:
-            metadata[child_name] = evaluate_selectors(child, case, ez_selectors)
 
     for child_to_remove in children_to_remove:
         element.remove(child_to_remove)
 
-    return metadata
-
 ###############################################################################
 def _create_raw_xml_file_impl(case, defaults_xml):
 ###############################################################################
-    """
-    >>> case = MockCase({'ATM_GRID':'ne4ne4', 'SCREAM_CMAKE_OPTIONS':'FOO=ON SCREAM_NUM_VERTICAL_LEV 128 BAR=OFF'})
-    >>> test_empty_selectors = '''
-    ... <namelist_defaults>
-    ...   <selectors>
-    ...   </selectors>
-    ...   <file name="test.yaml" format="yaml">
-    ...     <testval>42</testval>
-    ...   </file>
-    ... </namelist_defaults>
-    ... '''
-    >>> print(_create_raw_xml_file_impl(case, test_empty_selectors)[0])
-    <namelist_defaults>
-      <file name="test.yaml" format="yaml">
-        <testval>42</testval>
-      </file>
-    </namelist_defaults>
-    >>> _create_raw_xml_file_impl(case, test_empty_selectors)[1]
-    {'test.yaml': {'testval': ['integer', None]}}
-    >>> ######################################################################
-    >>> test_err_repeat_val = '''
-    ... <namelist_defaults>
-    ...   <selectors>
-    ...   </selectors>
-    ...   <file name="test.yaml" format="yaml">
-    ...     <testval>42</testval>
-    ...     <testval>420</testval>
-    ...   </file>
-    ... </namelist_defaults>
-    ... '''
-    >>> _create_raw_xml_file_impl(case, test_err_repeat_val)
-    Traceback (most recent call last):
-      ...
-    CIME.utils.CIMEError: ERROR: child 'testval' element without selectors occured after other parameter elements for this parameter
-    >>> ######################################################################
-    >>> test_err_bad_selector = '''
-    ... <namelist_defaults>
-    ...   <selectors>
-    ...   </selectors>
-    ...   <file name="test.yaml" format="yaml">
-    ...     <testval>42</testval>
-    ...     <testval foo="bar">420</testval>
-    ...   </file>
-    ... </namelist_defaults>
-    ... '''
-    >>> _create_raw_xml_file_impl(case, test_err_bad_selector)
-    Traceback (most recent call last):
-      ...
-    CIME.utils.CIMEError: ERROR: Bad selector 'foo' for child 'testval'. 'foo' is not a valid case value or easy selector
-    >>> ######################################################################
-    >>> test_selector_default = '''
-    ... <namelist_defaults>
-    ...   <selectors>
-    ...     <selector name="hgrid" case_env="ATM_GRID"/>
-    ...   </selectors>
-    ...   <file name="test.yaml" format="yaml">
-    ...     <testval hgrid="ne4ne4">420</testval>
-    ...   </file>
-    ... </namelist_defaults>
-    ... '''
-    >>> print(_create_raw_xml_file_impl(case, test_selector_default)[0])
-    <namelist_defaults>
-      <file name="test.yaml" format="yaml">
-        <testval>420</testval>
-      </file>
-    </namelist_defaults>
-    >>> _create_raw_xml_file_impl(case, test_selector_default)[1]
-    {'test.yaml': {'testval': ['integer', None]}}
-    >>> ######################################################################
-    >>> test_selector_no_match_default = '''
-    ... <namelist_defaults>
-    ...   <selectors>
-    ...     <selector name="hgrid" case_env="ATM_GRID"/>
-    ...   </selectors>
-    ...   <file name="test.yaml" format="yaml">
-    ...     <testval hgrid="no_match">420</testval>
-    ...   </file>
-    ... </namelist_defaults>
-    ... '''
-    >>> print(_create_raw_xml_file_impl(case, test_selector_no_match_default)[0])
-    <namelist_defaults>
-      <file name="test.yaml" format="yaml">
-        </file>
-    </namelist_defaults>
-    >>> _create_raw_xml_file_impl(case, test_selector_no_match_default)[1]
-    {'test.yaml': {}}
-    >>> ######################################################################
-    >>> test_err_wrong_order = '''
-    ... <namelist_defaults>
-    ...   <selectors>
-    ...     <selector name="hgrid" case_env="ATM_GRID"/>
-    ...   </selectors>
-    ...   <file name="test.yaml" format="yaml">
-    ...     <testval hgrid="ne4ne4">420</testval>
-    ...     <testval>42</testval>
-    ...   </file>
-    ... </namelist_defaults>
-    ... '''
-    >>> _create_raw_xml_file_impl(case, test_err_wrong_order)
-    Traceback (most recent call last):
-      ...
-    CIME.utils.CIMEError: ERROR: child 'testval' element without selectors occured after other parameter elements for this parameter
-    >>> ######################################################################
-    >>> test_err_bad_selector_def = '''
-    ... <namelist_defaults>
-    ...   <selectors>
-    ...     <selector name="hgrid" case_env="BADVAL"/>
-    ...   </selectors>
-    ...   <file name="test.yaml" format="yaml">
-    ...     <testval>42</testval>
-    ...     <testval hgrid="ne4ne4">420</testval>
-    ...   </file>
-    ... </namelist_defaults>
-    ... '''
-    >>> _create_raw_xml_file_impl(case, test_err_bad_selector_def)
-    Traceback (most recent call last):
-      ...
-    CIME.utils.CIMEError: ERROR: Bad easy selector 'hgrid' definition. Relies on unknown case value 'BADVAL'
-    >>> ######################################################################
-    >>> test_err_bad_selector_def_regex = '''
-    ... <namelist_defaults>
-    ...   <selectors>
-    ...     <selector name="hgrid" case_env="ATM_GRID" regex=".*"/>
-    ...   </selectors>
-    ...   <file name="test.yaml" format="yaml">
-    ...     <testval>42</testval>
-    ...     <testval hgrid="ne4ne4">420</testval>
-    ...   </file>
-    ... </namelist_defaults>
-    ... '''
-    >>> _create_raw_xml_file_impl(case, test_err_bad_selector_def_regex)
-    Traceback (most recent call last):
-      ...
-    CIME.utils.CIMEError: ERROR: Selector 'hgrid' has invalid custom regex '.*' which does not capture exactly 1 group
-    >>> ######################################################################
-    >>> full_test = '''
-    ... <namelist_defaults>
-    ...   <selectors>
-    ...     <selector name="hgrid" case_env="ATM_GRID"/>
-    ...     <selector name="nlev" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_VERTICAL_LEV ([0-9]+).*"/>
-    ...     <selector name="nomatch" case_env="SCREAM_CMAKE_OPTIONS" regex=".*(NO_MATCH).*"/>
-    ...   </selectors>
-    ...   <file name="test.yaml" format="yaml">
-    ...     <group1>
-    ...       <testval>42</testval>
-    ...       <testval2>123</testval2>
-    ...       <interleave>hi</interleave>
-    ...       <testval2 hgrid="ne4ne4">1234</testval2>
-    ...     </group1>
-    ...     <group2>
-    ...       <testval>42</testval>
-    ...       <testval2>123</testval2>
-    ...       <interleave>hi</interleave>
-    ...       <testval2 hgrid="ne4ne4">1234</testval2>
-    ...       <prec_tester>1</prec_tester>
-    ...       <prec_tester hgrid="ne4ne4" nlev="128">2</prec_tester>
-    ...       <prec_tester nlev="128">3</prec_tester>
-    ...       <foo>1</foo>
-    ...       <foo hgrid=".*ne4.*">2</foo>
-    ...       <bar>1</bar>
-    ...       <bar hgrid="no_match">2</bar>
-    ...       <baz>1</baz>
-    ...       <baz hgrid="no_match" nlev="128">2</baz>
-    ...       <bat>1</bat>
-    ...       <bat nlev="128" hgrid="no_match">2</bat>
-    ...       <sel_regex_no_match>1</sel_regex_no_match>
-    ...       <sel_regex_no_match nomatch=".*">2</sel_regex_no_match>
-    ...     </group2>
-    ...   </file>
-    ... </namelist_defaults>
-    ... '''
-    >>> print(_create_raw_xml_file_impl(case, full_test)[0])
-    <namelist_defaults>
-      <file name="test.yaml" format="yaml">
-        <group1>
-          <testval>42</testval>
-          <testval2>1234</testval2>
-          <interleave>hi</interleave>
-          </group1>
-        <group2>
-          <testval>42</testval>
-          <testval2>1234</testval2>
-          <interleave>hi</interleave>
-          <prec_tester>3</prec_tester>
-          <foo>2</foo>
-          <bar>1</bar>
-          <baz>1</baz>
-          <bat>1</bat>
-          <sel_regex_no_match>1</sel_regex_no_match>
-          </group2>
-      </file>
-    </namelist_defaults>
-    >>> import pprint
-    >>> pp = pprint.PrettyPrinter(indent=4)
-    >>> pp.pprint(_create_raw_xml_file_impl(case, full_test)[1])
-    {   'test.yaml': {   'group1': {   'interleave': ['string', None],
-                                       'testval': ['integer', None],
-                                       'testval2': ['integer', None]},
-                         'group2': {   'bar': ['integer', None],
-                                       'bat': ['integer', None],
-                                       'baz': ['integer', None],
-                                       'foo': ['integer', None],
-                                       'interleave': ['string', None],
-                                       'prec_tester': ['integer', None],
-                                       'sel_regex_no_match': ['integer', None],
-                                       'testval': ['integer', None],
-                                       'testval2': ['integer', None]}}}
-    >>> ######################################################################
-    >>> test_metadata_override = '''
-    ... <namelist_defaults>
-    ...   <selectors>
-    ...     <selector name="hgrid" case_env="ATM_GRID"/>
-    ...   </selectors>
-    ...   <file name="test.yaml" format="yaml">
-    ...     <testval valid_values="1,2,3">1</testval>
-    ...     <testval hgrid="ne4ne4" valid_values="1,2,3,4">2</testval>
-    ...     <testval hgrid="no_match" valid_values="1,2,3,4,5">3</testval>
-    ...     <testval2 valid_values="1,2,3">1</testval2>
-    ...     <testval2 hgrid="ne4ne4">2</testval2>
-    ...     <testval2 hgrid="no_match">3</testval2>
-    ...   </file>
-    ... </namelist_defaults>
-    ... '''
-    >>> _create_raw_xml_file_impl(case, test_metadata_override)[1]
-    {'test.yaml': {'testval': ['integer', '1,2,3,4'], 'testval2': ['integer', '1,2,3']}}
-    """
+    #  """
+    #  >>> case = MockCase({'ATM_GRID':'ne4ne4', 'SCREAM_CMAKE_OPTIONS':'FOO=ON SCREAM_NUM_VERTICAL_LEV 128 BAR=OFF'})
+    #  >>> test_empty_selectors = '''
+    #  ... <namelist_defaults>
+    #  ...   <selectors>
+    #  ...   </selectors>
+    #  ...   <file name="test.yaml" format="yaml">
+    #  ...     <testval>42</testval>
+    #  ...   </file>
+    #  ... </namelist_defaults>
+    #  ... '''
+    #  >>> print(_create_raw_xml_file_impl(case, test_empty_selectors)[0])
+    #  <namelist_defaults>
+    #    <file name="test.yaml" format="yaml">
+    #      <testval>42</testval>
+    #    </file>
+    #  </namelist_defaults>
+    #  >>> _create_raw_xml_file_impl(case, test_empty_selectors)[1]
+    #  {'test.yaml': {'testval': ['integer', None]}}
+    #  >>> ######################################################################
+    #  >>> test_err_repeat_val = '''
+    #  ... <namelist_defaults>
+    #  ...   <selectors>
+    #  ...   </selectors>
+    #  ...   <file name="test.yaml" format="yaml">
+    #  ...     <testval>42</testval>
+    #  ...     <testval>420</testval>
+    #  ...   </file>
+    #  ... </namelist_defaults>
+    #  ... '''
+    #  >>> _create_raw_xml_file_impl(case, test_err_repeat_val)
+    #  Traceback (most recent call last):
+    #    ...
+    #  CIME.utils.CIMEError: ERROR: child 'testval' element without selectors occured after other parameter elements for this parameter
+    #  >>> ######################################################################
+    #  >>> test_err_bad_selector = '''
+    #  ... <namelist_defaults>
+    #  ...   <selectors>
+    #  ...   </selectors>
+    #  ...   <file name="test.yaml" format="yaml">
+    #  ...     <testval>42</testval>
+    #  ...     <testval foo="bar">420</testval>
+    #  ...   </file>
+    #  ... </namelist_defaults>
+    #  ... '''
+    #  >>> _create_raw_xml_file_impl(case, test_err_bad_selector)
+    #  Traceback (most recent call last):
+    #    ...
+    #  CIME.utils.CIMEError: ERROR: Bad selector 'foo' for child 'testval'. 'foo' is not a valid case value or easy selector
+    #  >>> ######################################################################
+    #  >>> test_selector_default = '''
+    #  ... <namelist_defaults>
+    #  ...   <selectors>
+    #  ...     <selector name="hgrid" case_env="ATM_GRID"/>
+    #  ...   </selectors>
+    #  ...   <file name="test.yaml" format="yaml">
+    #  ...     <testval hgrid="ne4ne4">420</testval>
+    #  ...   </file>
+    #  ... </namelist_defaults>
+    #  ... '''
+    #  >>> print(_create_raw_xml_file_impl(case, test_selector_default)[0])
+    #  <namelist_defaults>
+    #    <file name="test.yaml" format="yaml">
+    #      <testval>420</testval>
+    #    </file>
+    #  </namelist_defaults>
+    #  >>> _create_raw_xml_file_impl(case, test_selector_default)[1]
+    #  {'test.yaml': {'testval': ['integer', None]}}
+    #  >>> ######################################################################
+    #  >>> test_selector_no_match_default = '''
+    #  ... <namelist_defaults>
+    #  ...   <selectors>
+    #  ...     <selector name="hgrid" case_env="ATM_GRID"/>
+    #  ...   </selectors>
+    #  ...   <file name="test.yaml" format="yaml">
+    #  ...     <testval hgrid="no_match">420</testval>
+    #  ...   </file>
+    #  ... </namelist_defaults>
+    #  ... '''
+    #  >>> print(_create_raw_xml_file_impl(case, test_selector_no_match_default)[0])
+    #  <namelist_defaults>
+    #    <file name="test.yaml" format="yaml">
+    #      </file>
+    #  </namelist_defaults>
+    #  >>> _create_raw_xml_file_impl(case, test_selector_no_match_default)[1]
+    #  {'test.yaml': {}}
+    #  >>> ######################################################################
+    #  >>> test_err_wrong_order = '''
+    #  ... <namelist_defaults>
+    #  ...   <selectors>
+    #  ...     <selector name="hgrid" case_env="ATM_GRID"/>
+    #  ...   </selectors>
+    #  ...   <file name="test.yaml" format="yaml">
+    #  ...     <testval hgrid="ne4ne4">420</testval>
+    #  ...     <testval>42</testval>
+    #  ...   </file>
+    #  ... </namelist_defaults>
+    #  ... '''
+    #  >>> _create_raw_xml_file_impl(case, test_err_wrong_order)
+    #  Traceback (most recent call last):
+    #    ...
+    #  CIME.utils.CIMEError: ERROR: child 'testval' element without selectors occured after other parameter elements for this parameter
+    #  >>> ######################################################################
+    #  >>> test_err_bad_selector_def = '''
+    #  ... <namelist_defaults>
+    #  ...   <selectors>
+    #  ...     <selector name="hgrid" case_env="BADVAL"/>
+    #  ...   </selectors>
+    #  ...   <file name="test.yaml" format="yaml">
+    #  ...     <testval>42</testval>
+    #  ...     <testval hgrid="ne4ne4">420</testval>
+    #  ...   </file>
+    #  ... </namelist_defaults>
+    #  ... '''
+    #  >>> _create_raw_xml_file_impl(case, test_err_bad_selector_def)
+    #  Traceback (most recent call last):
+    #    ...
+    #  CIME.utils.CIMEError: ERROR: Bad easy selector 'hgrid' definition. Relies on unknown case value 'BADVAL'
+    #  >>> ######################################################################
+    #  >>> test_err_bad_selector_def_regex = '''
+    #  ... <namelist_defaults>
+    #  ...   <selectors>
+    #  ...     <selector name="hgrid" case_env="ATM_GRID" regex=".*"/>
+    #  ...   </selectors>
+    #  ...   <file name="test.yaml" format="yaml">
+    #  ...     <testval>42</testval>
+    #  ...     <testval hgrid="ne4ne4">420</testval>
+    #  ...   </file>
+    #  ... </namelist_defaults>
+    #  ... '''
+    #  >>> _create_raw_xml_file_impl(case, test_err_bad_selector_def_regex)
+    #  Traceback (most recent call last):
+    #    ...
+    #  CIME.utils.CIMEError: ERROR: Selector 'hgrid' has invalid custom regex '.*' which does not capture exactly 1 group
+    #  >>> ######################################################################
+    #  >>> full_test = '''
+    #  ... <namelist_defaults>
+    #  ...   <selectors>
+    #  ...     <selector name="hgrid" case_env="ATM_GRID"/>
+    #  ...     <selector name="nlev" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_VERTICAL_LEV ([0-9]+).*"/>
+    #  ...     <selector name="nomatch" case_env="SCREAM_CMAKE_OPTIONS" regex=".*(NO_MATCH).*"/>
+    #  ...   </selectors>
+    #  ...   <file name="test.yaml" format="yaml">
+    #  ...     <group1>
+    #  ...       <testval>42</testval>
+    #  ...       <testval2>123</testval2>
+    #  ...       <interleave>hi</interleave>
+    #  ...       <testval2 hgrid="ne4ne4">1234</testval2>
+    #  ...     </group1>
+    #  ...     <group2>
+    #  ...       <testval>42</testval>
+    #  ...       <testval2>123</testval2>
+    #  ...       <interleave>hi</interleave>
+    #  ...       <testval2 hgrid="ne4ne4">1234</testval2>
+    #  ...       <prec_tester>1</prec_tester>
+    #  ...       <prec_tester hgrid="ne4ne4" nlev="128">2</prec_tester>
+    #  ...       <prec_tester nlev="128">3</prec_tester>
+    #  ...       <foo>1</foo>
+    #  ...       <foo hgrid=".*ne4.*">2</foo>
+    #  ...       <bar>1</bar>
+    #  ...       <bar hgrid="no_match">2</bar>
+    #  ...       <baz>1</baz>
+    #  ...       <baz hgrid="no_match" nlev="128">2</baz>
+    #  ...       <bat>1</bat>
+    #  ...       <bat nlev="128" hgrid="no_match">2</bat>
+    #  ...       <sel_regex_no_match>1</sel_regex_no_match>
+    #  ...       <sel_regex_no_match nomatch=".*">2</sel_regex_no_match>
+    #  ...     </group2>
+    #  ...   </file>
+    #  ... </namelist_defaults>
+    #  ... '''
+    #  >>> print(_create_raw_xml_file_impl(case, full_test)[0])
+    #  <namelist_defaults>
+    #    <file name="test.yaml" format="yaml">
+    #      <group1>
+    #        <testval>42</testval>
+    #        <testval2>1234</testval2>
+    #        <interleave>hi</interleave>
+    #        </group1>
+    #      <group2>
+    #        <testval>42</testval>
+    #        <testval2>1234</testval2>
+    #        <interleave>hi</interleave>
+    #        <prec_tester>3</prec_tester>
+    #        <foo>2</foo>
+    #        <bar>1</bar>
+    #        <baz>1</baz>
+    #        <bat>1</bat>
+    #        <sel_regex_no_match>1</sel_regex_no_match>
+    #        </group2>
+    #    </file>
+    #  </namelist_defaults>
+    #  >>> import pprint
+    #  >>> pp = pprint.PrettyPrinter(indent=4)
+    #  >>> pp.pprint(_create_raw_xml_file_impl(case, full_test)[1])
+    #  {   'test.yaml': {   'group1': {   'interleave': ['string', None],
+    #                                     'testval': ['integer', None],
+    #                                     'testval2': ['integer', None]},
+    #                       'group2': {   'bar': ['integer', None],
+    #                                     'bat': ['integer', None],
+    #                                     'baz': ['integer', None],
+    #                                     'foo': ['integer', None],
+    #                                     'interleave': ['string', None],
+    #                                     'prec_tester': ['integer', None],
+    #                                     'sel_regex_no_match': ['integer', None],
+    #                                     'testval': ['integer', None],
+    #                                     'testval2': ['integer', None]}}}
+    #  >>> ######################################################################
+    #  >>> test_metadata_override = '''
+    #  ... <namelist_defaults>
+    #  ...   <selectors>
+    #  ...     <selector name="hgrid" case_env="ATM_GRID"/>
+    #  ...   </selectors>
+    #  ...   <file name="test.yaml" format="yaml">
+    #  ...     <testval valid_values="1,2,3">1</testval>
+    #  ...     <testval hgrid="ne4ne4" valid_values="1,2,3,4">2</testval>
+    #  ...     <testval hgrid="no_match" valid_values="1,2,3,4,5">3</testval>
+    #  ...     <testval2 valid_values="1,2,3">1</testval2>
+    #  ...     <testval2 hgrid="ne4ne4">2</testval2>
+    #  ...     <testval2 hgrid="no_match">3</testval2>
+    #  ...   </file>
+    #  ... </namelist_defaults>
+    #  ... '''
+    #  >>> _create_raw_xml_file_impl(case, test_metadata_override)[1]
+    #  {'test.yaml': {'testval': ['integer', '1,2,3,4'], 'testval2': ['integer', '1,2,3']}}
+    #  """
     root = ET.fromstring(defaults_xml)
 
-    selectors = None
-    selectors_elem = None
-    metadata = {}
-    for child in root:
-        if selectors is None:
-            expect(child.tag == "selectors", "Unexpected child.tag {}".format(child.tag))
-            selectors_elem = child
+    # 0. Remove internal sections, that are not to appear in the
+    #    processed xml file.
+    #    Note: get_valid_selectors also removes the section
+    get_child(root,"input_files",remove=True)
+    get_child(root,"generated_files",remove=True)
+    compset_grids = get_child(root,"valid_grids",remove=True).text.split(',')
+    selectors = get_valid_selectors(root)
 
-            selectors = {}
-            for selector in child:
-                expect(selector.tag == "selector", "Expected selector tag, not {}".format(selector.tag))
+    # 1. Resolve all inheritances, and evaluate all selectors
+    resolve_all_inheritances(root)
+    evaluate_selectors(root, case, selectors)
 
-                selector_name  = selector.attrib["name"]
-                expect(selector_name not in METADATA_ATTRIBS,
-                       "Cannot use '{}' as a selector name, that name is reserved for defining metdata".format(selector_name))
-                selector_env   = selector.attrib["case_env"]
-                if "regex" in selector.attrib:
-                    selector_regex = selector.attrib["regex"]
-                else:
-                    selector_regex = "(.*)" # Just grab the whole thing
+    # 2. Grab the atmosphere_processes macro list, with all the defaults
+    atm_procs_defaults = get_child(root,"atmosphere_processes_defaults",remove=True)
 
-                selectors[selector_name] = (selector_env, selector_regex)
+    # 3. Get atm procs list
+    atm_procs_list = get_child(atm_procs_defaults,"atm_procs_list",remove=True)
 
-        else:
-            expect(child.tag == "file", "Unexpected child.tag {}".format(child.tag))
-            expect("name" in child.attrib, "file element missing required 'name' attribute")
-            expect("format" in child.attrib, "file element missing required 'format' attribute")
+    # 4. Form the nested list of atm procs needed, append to atmosphere_driver section
+    atm_procs = gen_atm_procs (atm_procs_list.text, atm_procs_defaults)
+    atm_procs.tag = "atmosphere_processes"
+    root.append(atm_procs);
 
-            metadata[child.attrib["name"]] = evaluate_selectors(child, case, selectors)
-
-    if selectors_elem is not None:
-        root.remove(selectors_elem)
-
-    return ET.tostring(root, encoding="unicode"), metadata
+    # 5. Check IC list
+    ic = get_child(root,"Initial__Conditions")
+    for grid in ic:
+        if grid.tag not in compset_grids:
+            ic.remove(grid)
+    return ET.tostring(root, encoding="unicode")
 
 ###############################################################################
 def create_raw_xml_file(case, caseroot):
@@ -487,15 +465,13 @@ def create_raw_xml_file(case, caseroot):
 
     raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
     with open(src, "r") as fd:
-        raw_xml, metadata = _create_raw_xml_file_impl(case, fd.read())
+        raw_xml = _create_raw_xml_file_impl(case, fd.read())
 
     if os.path.exists(raw_xml_file):
         print("{} already exists, will not overwrite. Remove to regenerate".format(raw_xml_file))
     else:
         with open(raw_xml_file, "w") as fd:
             fd.write(raw_xml)
-
-    return metadata
 
 ###############################################################################
 def derive_type(entry):
@@ -522,6 +498,11 @@ def refine_type(entry, force_type=None):
     """
     Try to convert the text entry to the appropriate type based on its contents.
     """
+    # We want to preserve strings representing lists
+    if (entry[0]=="(" and entry[-1]==")") or \
+       (entry[0]=="[" and entry[-1]=="]") :
+        return entry
+
     if "," in entry:
         result = [refine_type(item.strip(), force_type=force_type) for item in entry.split(",") if item.strip() != ""]
         expected_type = type(result[0])
@@ -581,163 +562,157 @@ def check_valid(child_name, val, valids_str, child_type):
     expect(val in valids, "child '{}' has value '{}' that is not in the valid list ('{}')".format(child_name, str(val), str(valids)))
 
 ###############################################################################
-def convert_to_dict(element, metadata):
+def convert_to_dict(element):
 ###############################################################################
     """
     Convert an XML element to a dictonary where the tags are the keys
     """
     result = OrderedDict()
     for child in element:
-        child_name_raw = child.tag
-        child_name = child_name_raw.replace("__", " ")
+        child_name = child.tag.replace("__", " ")
         child_val = child.text
-        expect(child_name_raw in metadata, "No metadata for child '{}'".format(child_name))
 
         has_children = len(child) > 0
         if not has_children:
-            child_type, child_valids = metadata[child_name_raw]
-            child_refined_val = refine_type(child_val, force_type=child_type)
-            if child_valids:
-                check_valid(child_name, child_refined_val, child_valids, child_type)
-            result[child_name] = child_refined_val
+            result[child_name] = refine_type(child_val)
         else:
-            result[child_name] = convert_to_dict(child, metadata[child_name_raw])
+            result[child_name] = convert_to_dict(child)
 
     return result
 
 ###############################################################################
 def _dump_to_nml_impl(dict_contents):
 ###############################################################################
-    """
-    >>> case = MockCase({'ATM_GRID':'ne4ne4', 'SCREAM_CMAKE_OPTIONS':'FOO=ON SCREAM_NUM_VERTICAL_LEV 128 BAR=OFF'})
-    >>> nmlxml = '''
-    ... <namelist_defaults>
-    ...   <selectors>
-    ...   </selectors>
-    ...   <file name="test.yaml" format="yaml">
-    ...   <group1>
-    ...     <testval valid_values="42,43,44">42</testval>
-    ...     <testval2>42.3</testval2>
-    ...     <interleave>hi</interleave>
-    ...    </group1>
-    ...    <group2>
-    ...      <testval>False</testval>
-    ...      <testval2>1, 2, 3, 4</testval2>
-    ...      <interleave>hi, there</interleave>
-    ...    </group2>
-    ...   </file>
-    ... </namelist_defaults>
-    ... '''
-    >>> metadata = _create_raw_xml_file_impl(case, nmlxml)[1]["test.yaml"]
-    >>> rawxml = '''
-    ... <file name="test.yaml" format="yaml">
-    ...   <group1>
-    ...     <testval>42</testval>
-    ...     <testval2>42.3</testval2>
-    ...     <interleave>hi</interleave>
-    ...    </group1>
-    ...    <group2>
-    ...      <testval>False</testval>
-    ...      <testval2>1, 2, 3, 4.2</testval2>
-    ...      <interleave>hi, there</interleave>
-    ...    </group2>
-    ...  </file>
-    ... '''
-    >>> root = ET.fromstring(rawxml)
-    >>> _dump_to_nml_impl(convert_to_dict(root, metadata))
-    Traceback (most recent call last):
-      ...
-    CIME.utils.CIMEError: ERROR: Could not use '4.2' as type 'integer'
-    >>> ######################################################################
-    >>> rawxml = '''
-    ... <file name="test.yaml" format="yaml">
-    ...   <group1>
-    ...     <testval>39</testval>
-    ...     <testval2>42.3</testval2>
-    ...     <interleave>hi</interleave>
-    ...    </group1>
-    ...    <group2>
-    ...      <testval>False</testval>
-    ...      <testval2>1, 2, 3, 4</testval2>
-    ...      <interleave>hi, there</interleave>
-    ...    </group2>
-    ...  </file>
-    ... '''
-    >>> root = ET.fromstring(rawxml)
-    >>> _dump_to_nml_impl(convert_to_dict(root, metadata))
-    Traceback (most recent call last):
-      ...
-    CIME.utils.CIMEError: ERROR: child 'testval' has value '39' that is not in the valid list ('[42, 43, 44]')
-    >>> ######################################################################
-    >>> rawxml = '''
-    ... <file name="test.yaml" format="yaml">
-    ...   <group1>
-    ...     <testval>hi</testval>
-    ...     <testval2>42.3</testval2>
-    ...     <interleave>hi</interleave>
-    ...    </group1>
-    ...    <group2>
-    ...      <testval>False</testval>
-    ...      <testval2>1, 2, 3, 4</testval2>
-    ...      <interleave>hi, there</interleave>
-    ...    </group2>
-    ...  </file>
-    ... '''
-    >>> root = ET.fromstring(rawxml)
-    >>> _dump_to_nml_impl(convert_to_dict(root, metadata))
-    Traceback (most recent call last):
-      ...
-    CIME.utils.CIMEError: ERROR: Could not use 'hi' as type 'integer'
-    >>> ######################################################################
-    >>> rawxml = '''
-    ... <file name="test.yaml" format="yaml">
-    ...   <group1>
-    ...     <testval>42</testval>
-    ...     <testval2>42.3</testval2>
-    ...     <interleave>hi</interleave>
-    ...    </group1>
-    ...    <group2>
-    ...      <testval>False</testval>
-    ...      <testval2>1, 2, 3, 4</testval2>
-    ...      <interleave>hi, there</interleave>
-    ...      <alien_nation>hi, there</alien_nation>
-    ...    </group2>
-    ...  </file>
-    ... '''
-    >>> root = ET.fromstring(rawxml)
-    >>> _dump_to_nml_impl(convert_to_dict(root, metadata))
-    Traceback (most recent call last):
-      ...
-    CIME.utils.CIMEError: ERROR: No metadata for child 'alien_nation'
-    >>> ######################################################################
-    >>> rawxml = '''
-    ... <file name="test.yaml" format="yaml">
-    ...   <group1>
-    ...     <testval>42</testval>
-    ...     <testval2>42.3</testval2>
-    ...     <interleave>hi</interleave>
-    ...    </group1>
-    ...    <group2>
-    ...      <testval>False</testval>
-    ...      <testval2>1, 2, 3, 4</testval2>
-    ...      <interleave>hi, there</interleave>
-    ...    </group2>
-    ...  </file>
-    ... '''
-    >>> root = ET.fromstring(rawxml)
-    >>> print(_dump_to_nml_impl(convert_to_dict(root, metadata)))
-    &group1
-    testval = 42
-    testval2 = 42.3
-    interleave = 'hi'
-    /
-    &group2
-    testval = .false.
-    testval2(:) = 1, 2, 3, 4
-    interleave(:) = hi, there
-    /
-    <BLANKLINE>
-    """
+    #  """
+    #  >>> case = MockCase({'ATM_GRID':'ne4ne4', 'SCREAM_CMAKE_OPTIONS':'FOO=ON SCREAM_NUM_VERTICAL_LEV 128 BAR=OFF'})
+    #  >>> nmlxml = '''
+    #  ... <namelist_defaults>
+    #  ...   <selectors>
+    #  ...   </selectors>
+    #  ...   <file name="test.yaml" format="yaml">
+    #  ...   <group1>
+    #  ...     <testval valid_values="42,43,44">42</testval>
+    #  ...     <testval2>42.3</testval2>
+    #  ...     <interleave>hi</interleave>
+    #  ...    </group1>
+    #  ...    <group2>
+    #  ...      <testval>False</testval>
+    #  ...      <testval2>1, 2, 3, 4</testval2>
+    #  ...      <interleave>hi, there</interleave>
+    #  ...    </group2>
+    #  ...   </file>
+    #  ... </namelist_defaults>
+    #  ... '''
+    #  >>> metadata = _create_raw_xml_file_impl(case, nmlxml)[1]["test.yaml"]
+    #  >>> rawxml = '''
+    #  ... <file name="test.yaml" format="yaml">
+    #  ...   <group1>
+    #  ...     <testval>42</testval>
+    #  ...     <testval2>42.3</testval2>
+    #  ...     <interleave>hi</interleave>
+    #  ...    </group1>
+    #  ...    <group2>
+    #  ...      <testval>False</testval>
+    #  ...      <testval2>1, 2, 3, 4.2</testval2>
+    #  ...      <interleave>hi, there</interleave>
+    #  ...    </group2>
+    #  ...  </file>
+    #  ... '''
+    #  >>> root = ET.fromstring(rawxml)
+    #  >>> _dump_to_nml_impl(convert_to_dict(root, metadata))
+    #  Traceback (most recent call last):
+    #    ...
+    #  CIME.utils.CIMEError: ERROR: Could not use '4.2' as type 'integer'
+    #  >>> ######################################################################
+    #  >>> rawxml = '''
+    #  ... <file name="test.yaml" format="yaml">
+    #  ...   <group1>
+    #  ...     <testval>39</testval>
+    #  ...     <testval2>42.3</testval2>
+    #  ...     <interleave>hi</interleave>
+    #  ...    </group1>
+    #  ...    <group2>
+    #  ...      <testval>False</testval>
+    #  ...      <testval2>1, 2, 3, 4</testval2>
+    #  ...      <interleave>hi, there</interleave>
+    #  ...    </group2>
+    #  ...  </file>
+    #  ... '''
+    #  >>> root = ET.fromstring(rawxml)
+    #  >>> _dump_to_nml_impl(convert_to_dict(root, metadata))
+    #  Traceback (most recent call last):
+    #    ...
+    #  CIME.utils.CIMEError: ERROR: child 'testval' has value '39' that is not in the valid list ('[42, 43, 44]')
+    #  >>> ######################################################################
+    #  >>> rawxml = '''
+    #  ... <file name="test.yaml" format="yaml">
+    #  ...   <group1>
+    #  ...     <testval>hi</testval>
+    #  ...     <testval2>42.3</testval2>
+    #  ...     <interleave>hi</interleave>
+    #  ...    </group1>
+    #  ...    <group2>
+    #  ...      <testval>False</testval>
+    #  ...      <testval2>1, 2, 3, 4</testval2>
+    #  ...      <interleave>hi, there</interleave>
+    #  ...    </group2>
+    #  ...  </file>
+    #  ... '''
+    #  >>> root = ET.fromstring(rawxml)
+    #  >>> _dump_to_nml_impl(convert_to_dict(root, metadata))
+    #  Traceback (most recent call last):
+    #    ...
+    #  CIME.utils.CIMEError: ERROR: Could not use 'hi' as type 'integer'
+    #  >>> ######################################################################
+    #  >>> rawxml = '''
+    #  ... <file name="test.yaml" format="yaml">
+    #  ...   <group1>
+    #  ...     <testval>42</testval>
+    #  ...     <testval2>42.3</testval2>
+    #  ...     <interleave>hi</interleave>
+    #  ...    </group1>
+    #  ...    <group2>
+    #  ...      <testval>False</testval>
+    #  ...      <testval2>1, 2, 3, 4</testval2>
+    #  ...      <interleave>hi, there</interleave>
+    #  ...      <alien_nation>hi, there</alien_nation>
+    #  ...    </group2>
+    #  ...  </file>
+    #  ... '''
+    #  >>> root = ET.fromstring(rawxml)
+    #  >>> _dump_to_nml_impl(convert_to_dict(root, metadata))
+    #  Traceback (most recent call last):
+    #    ...
+    #  CIME.utils.CIMEError: ERROR: No metadata for child 'alien_nation'
+    #  >>> ######################################################################
+    #  >>> rawxml = '''
+    #  ... <file name="test.yaml" format="yaml">
+    #  ...   <group1>
+    #  ...     <testval>42</testval>
+    #  ...     <testval2>42.3</testval2>
+    #  ...     <interleave>hi</interleave>
+    #  ...    </group1>
+    #  ...    <group2>
+    #  ...      <testval>False</testval>
+    #  ...      <testval2>1, 2, 3, 4</testval2>
+    #  ...      <interleave>hi, there</interleave>
+    #  ...    </group2>
+    #  ...  </file>
+    #  ... '''
+    #  >>> root = ET.fromstring(rawxml)
+    #  >>> print(_dump_to_nml_impl(convert_to_dict(root, metadata)))
+    #  &group1
+    #  testval = 42
+    #  testval2 = 42.3
+    #  interleave = 'hi'
+    #  /
+    #  &group2
+    #  testval = .false.
+    #  testval2(:) = 1, 2, 3, 4
+    #  interleave(:) = hi, there
+    #  /
+    #  <BLANKLINE>
+    #  """
     result = ""
     for k, v in dict_contents.items():
         if isinstance(v, dict):
@@ -773,7 +748,7 @@ def dump_to_nml(dict_contents, fd):
     fd.write(_dump_to_nml_impl(dict_contents))
 
 ###############################################################################
-def create_nml_files(caseroot, rundir, metadata):
+def create_input_files(caseroot, screamroot, rundir):
 ###############################################################################
     """
     Based on $case/namelist_scream.xml, create the actual input files.
@@ -781,22 +756,29 @@ def create_nml_files(caseroot, rundir, metadata):
     raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
     with open(raw_xml_file, "r") as fd:
         tree = ET.parse(fd)
-        root = tree.getroot()
+        raw_xml = tree.getroot()
+
+    def_xml_file = os.path.join(screamroot, "cime_config/namelist_defaults_scream.xml")
+    with open(def_xml_file, "r") as fd:
+        tree = ET.parse(fd)
+        generated_files = get_child(tree.getroot(),"generated_files")
 
     result = {}
-    for child in root:
-        expect(child.tag == "file", "Unexpected child.tag {}".format(child.tag))
-        expect("name" in child.attrib, "file element missing required 'name' attribute")
-        expect("format" in child.attrib, "file element missing required 'format' attribute")
+    for file in generated_files:
+        expect("name" in file.attrib, "file element missing required 'name' attribute")
+        expect("format" in file.attrib, "file element missing required 'format' attribute")
+        filename    = os.path.join(rundir, file.attrib["name"])
+        file_format = file.attrib["format"]
+        
+        xml_sections = get_child(file,"sections").text.split(",")
 
-        child_fname     = child.attrib["name"]
-        nml_filename    = os.path.join(rundir, child_fname)
-        nml_file_format = child.attrib["format"]
+        dict_contents = {}
+        for section_name in xml_sections:
+            section = get_child(raw_xml,section_name)
+            dict_contents[section_name.replace("__"," ")] = convert_to_dict(section)
 
-        dict_contents = convert_to_dict(child, metadata[child_fname])
-
-        if nml_file_format == "yaml":
-            with open(nml_filename, "w") as fd:
+        if file_format == "yaml":
+            with open(filename, "w") as fd:
                 fd.write(
 """################################################################
 # Do NOT modify this file. It is generated by scream/buildnml using
@@ -806,14 +788,14 @@ def create_nml_files(caseroot, rundir, metadata):
 """)
                 ordered_dump(dict_contents, fd)
 
-        elif nml_file_format == "nml":
-            with open(nml_filename, "w") as fd:
+        elif file_format == "nml":
+            with open(filename, "w") as fd:
                 dump_to_nml(dict_contents, fd)
 
         else:
-            expect(False, "Unknown nml file format '{}'".format(nml_file_format))
+            expect(False, "Unknown input file format '{}'".format(file_format))
 
-        result[child.attrib["name"]] = dict_contents
+        result[file.attrib["name"]] = dict_contents
 
     return result
 
@@ -824,7 +806,8 @@ def buildnml(case, caseroot, compname):
 
     rundir   = case.get_value("RUNDIR")
     target   = os.path.join(rundir, "data")
-    src      = os.path.join(case.get_value("SRCROOT"), "components/scream/data")
+    screamroot = os.path.join(case.get_value("SRCROOT"), "components/scream")
+    srcdata    = os.path.join(screamroot,"data")
 
     #
     # Copy scream/data to rundir/data
@@ -833,38 +816,52 @@ def buildnml(case, caseroot, compname):
         if not os.path.isdir(target):
             os.mkdir(target)
 
-        for item in os.listdir(src):
+        for item in os.listdir(srcdata):
             # Do not overwrite existing files because that would remove any
             # local mods made by the user.
             if not os.path.exists(os.path.join(target, item)):
-                safe_copy(os.path.join(src, item), target)
+                safe_copy(os.path.join(srcdata, item), target)
 
         # Copy nml config change/query scripts
-        safe_copy(os.path.join(src, "../scripts/atm-config-chg"), caseroot)
+        safe_copy(os.path.join(screamroot, "scripts/atm-config-chg"), caseroot)
 
     #
     # Create the raw/processed XML input file and create nml files
     # from it.
     #
-    metadata = create_raw_xml_file(case, caseroot)
+    create_raw_xml_file(case, caseroot)
 
-    nmls_as_dicts = create_nml_files(caseroot, rundir, metadata)
-    scream_input = nmls_as_dicts["data/scream_input.yaml"]
+    files_as_dicts = create_input_files(caseroot, screamroot, rundir)
 
     #
-    # Create input data list
+    # Create input data list. This is the list of files that CIME needs
+    # to ensure are present on the machine (possibly downloading them)
     #
+    scream_input = files_as_dicts["data/scream_input.yaml"]
+    ic_section = scream_input["Initial Conditions"]
+    create_input_data_list_file(case,caseroot,screamroot,ic_section)
+
+###############################################################################
+def create_input_data_list_file(case,caseroot,screamroot,ic_section):
+###############################################################################
+
+    rundir   = case.get_value("RUNDIR")
+    target   = os.path.join(rundir, "data")
+
     input_data_list_file = "{}/Buildconf/scream.input_data_list".format(caseroot)
     if os.path.exists(input_data_list_file):
         os.remove(input_data_list_file)
 
-    input_file = scream_input["Atmosphere Driver"]["Initial Conditions"]["Physics GLL"]["Filename"]
+    def_xml_file = os.path.join(screamroot, "cime_config/namelist_defaults_scream.xml")
+    with open(def_xml_file, "r") as fd:
+        tree = ET.parse(fd)
+        root = tree.getroot()
+        tables = get_child(root,"input_files").text.split(',')
 
-    # Input files are provided one per line. Call 'strip' on each
-    # line, to remove leading/trailing spaces/newline.
-    tables = scream_input["SCREAM"]["Input Files"]
     with open(input_data_list_file, "w") as fd:
-        fd.write("ic_file = {}\n".format(input_file))
+        for idx,grid in enumerate(ic_section.keys()):
+            ic_file = ic_section[grid]
+            fd.write("ic_file_{} = {}\n".format(idx,ic_file))
         for idx, table in enumerate(tables):
             fd.write("table_{} = {}\n".format(idx, table.strip()))
 
@@ -874,6 +871,7 @@ def buildnml(case, caseroot, compname):
         tgt_table = os.path.join(target, table_name)
         if not os.path.exists(tgt_table) and not os.path.islink(tgt_table):
             os.symlink(table, os.path.join(target, table_name))
+
 
 ###############################################################################
 def _main_func():
