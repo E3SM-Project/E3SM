@@ -19,7 +19,7 @@ tweaking their $case/namelist_scream.xml file.
     to get the subpiece you are interested in. The convenience selectors
     allow you to express this logic and capture it with a short name.
 
-    The follow attributes are how one defines a selector
+    The following attributes are how one defines a selector
       name     : The name of the selector
       case_env : The case value (thing you can xmlquery)
       regex    : OPTIONAL, how to pick out the piece of the value you are interested in
@@ -48,21 +48,26 @@ tweaking their $case/namelist_scream.xml file.
         Parameter element: An XML element representing an individual input parameter.
                            This element should not have child elements. It should have element text
                            representing the desired value. These elements can have
-                           one or more selectors.
+                           one or more selectors. We call a parameter element "matched"
+                           if it either has no selectors or all its selectors are True.
+        Parameter: A named input value. It can have multiple parameter elements if
+                   it needs to have different values/types based on case settings.
         Selector: An XML attribute that checks a property of the case. See the documentation
                   above the <selectors> element above for more details.
         Metadata: An XML attribute that represents metadata for an input parameter
 
       Rules:
-        1) Parameters can have any number of parameter elements. A parameter element
-           with no selectors, which means it controls the default param value, must
-           come before parameter elements with selectors. If multiple selection elements
+        1) Parameters can have any number of parameter elements, each with their own
+           set of selectors. A parameter element with no selectors, which means it controls the default param value, must
+           come before parameter elements with selectors. If multiple parameter elements
            are matched, then the match the occurs last takes precendence.
-        2) The first parameter element encounter for a parameter will define the default metadata
+        2) The first matched parameter element encountered for a parameter will define the default metadata
            for that parameter. All subsequent parameter elements will assume the same
            metadata as the first unless an explicit override occurs.
+           User changes to the case XML file must be compatible with the metadata.
         3) For a parameter whose elements all have selectors, if none of the selectors
-           are matched, then the parameter will be omitted from the inputs.
+           are matched, then the parameter will be omitted from the case XML
+           file ($case/namelist_scream.xml).
         4) Parameter types will be inferred. You can override the inferred type
            via the 'type' metadata attribute. Types are:
              logical: will be inferred from any case of true/false
@@ -70,20 +75,16 @@ tweaking their $case/namelist_scream.xml file.
              real   : will be inferred from any numeric expression with a decimal point or scientific notation
              string : everything else
         5) A parameter can be set to any value of the correct type unless
-           the 'valid_values' metadata attribute is set. If desired, this
-           metadata should be set up as a comma-separated list of values.
+           the 'valid_values' metadata attribute is set. If desired, valid_values
+           should be set up as a comma-separated list of values, e.g. 'valid_values="1,2,3"'
            TODO support numeric checks (<, >, ...)??
-        6) Parameter metadata can be overriden in subsequent parameter elements, but
-           by default, metadata will be the same as the first parameter element. The
-           final metadata for a parameter will reflect what's in the last matching
-           parameter element. User changes to the case XML file must be compatible
-        7) You can inline case values into parameter values via this syntax:
-           <param>MY GRID IS ${ATM_GRID}</param>
-           This would result in parameter 'param' having the value 'MY GRID IS ne4ne4'
-        8) Any parameter value with a comma will be assumed to be a list.
+        6) You can inline case values into parameter values via this syntax, e.g.:
+           <init_file>scream_init_${ATM_GRID}.nc</init_file>
+           This would result in parameter init_file' having the value 'scream_init_ne4ne4.nc'
+        7) Any parameter value with a comma will be assumed to be a list.
            TODO allow this behavior to be overridden?
-        9) Every value in a list should be of the same type
-       10) All local changes made to $case/namelist_scream.xml must conform
+        8) Every value in a list should be of the same type
+        9) All local changes made to $case/namelist_scream.xml must conform
            to the structure and metadata derived from this file.
 
   -->
