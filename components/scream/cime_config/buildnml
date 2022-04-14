@@ -427,7 +427,7 @@ def _create_raw_xml_file_impl(case, defaults_xml):
     #  >>> _create_raw_xml_file_impl(case, test_metadata_override)[1]
     #  {'test.yaml': {'testval': ['integer', '1,2,3,4'], 'testval2': ['integer', '1,2,3']}}
     #  """
-    root = ET.fromstring(defaults_xml)
+    root = defaults_xml.getroot()
 
     # 0. Remove internal sections, that are not to appear in the
     #    processed xml file.
@@ -457,7 +457,8 @@ def _create_raw_xml_file_impl(case, defaults_xml):
     for grid in ic:
         if grid.tag not in compset_grids:
             ic.remove(grid)
-    return ET.tostring(root, encoding="unicode")
+
+    return root
 
 ###############################################################################
 def create_raw_xml_file(case, caseroot):
@@ -471,13 +472,14 @@ def create_raw_xml_file(case, caseroot):
 
     raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
     with open(src, "r") as fd:
-        raw_xml = _create_raw_xml_file_impl(case, fd.read())
+        defaults = ET.parse(fd)
+        raw_xml = _create_raw_xml_file_impl(case,defaults)
 
     if os.path.exists(raw_xml_file):
         print("{} already exists, will not overwrite. Remove to regenerate".format(raw_xml_file))
     else:
         with open(raw_xml_file, "w") as fd:
-            fd.write(raw_xml)
+            ET.ElementTree(raw_xml).write(fd, method='xml', encoding="unicode")
 
 ###############################################################################
 def derive_type(entry):
@@ -832,11 +834,10 @@ def buildnml(case, caseroot, compname):
         safe_copy(os.path.join(screamroot, "scripts/atm-config-chg"), caseroot)
 
     #
-    # Create the raw/processed XML input file and create nml files
+    # Create the raw/processed XML input file and create input files
     # from it.
     #
     create_raw_xml_file(case, caseroot)
-
     files_as_dicts = create_input_files(caseroot, screamroot, rundir)
 
     #
