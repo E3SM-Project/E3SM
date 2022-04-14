@@ -20,7 +20,7 @@ set (TEST_INPUT_FILES
   init/spa_file_unified_and_complete_ne4_scream.nc
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
-  GetInputFile(${file} ${SCREAM_DATA_DIR}/)
+  GetInputFile(${file})
 endforeach()
 
 ## Copy (and configure) yaml files needed by tests

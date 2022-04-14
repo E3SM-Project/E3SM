@@ -78,7 +78,7 @@ set (P3_TABLES
 
 include (ScreamUtils)
 foreach (file IN ITEMS ${P3_TABLES})
-  GetInputFile(${file} ${SCREAM_DATA_DIR}/)
+  GetInputFile(${file})
 endforeach()
 
 # This executable can be used to re-generate tables in ${SCREAM_DATA_DIR}

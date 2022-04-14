@@ -69,10 +69,10 @@ contains
     info = 0
     ok = .false.
 
-    call append_precision(mu_r_filename, SCREAM_DATA_DIR//"/mu_r_table_vals.dat")
-    call append_precision(revap_filename, SCREAM_DATA_DIR//"/revap_table_vals.dat")
-    call append_precision(vn_filename, SCREAM_DATA_DIR//"/vn_table_vals.dat")
-    call append_precision(vm_filename, SCREAM_DATA_DIR//"/vm_table_vals.dat")
+    call append_precision(mu_r_filename, SCREAM_DATA_DIR//"/tables/mu_r_table_vals.dat")
+    call append_precision(revap_filename, SCREAM_DATA_DIR//"/tables/revap_table_vals.dat")
+    call append_precision(vn_filename, SCREAM_DATA_DIR//"/tables/vn_table_vals.dat")
+    call append_precision(vm_filename, SCREAM_DATA_DIR//"/tables/vm_table_vals.dat")
 
     if (write_tables) then
        call p3_init_b()

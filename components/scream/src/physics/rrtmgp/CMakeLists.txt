@@ -80,7 +80,7 @@ set (RRTMGP_TABLES
 )
 
 foreach (file IN ITEMS ${RRTMGP_TABLES})
-  GetInputFile(${file} ${SCREAM_DATA_DIR}/)
+  GetInputFile(${file})
 endforeach()
 
 # Build tests

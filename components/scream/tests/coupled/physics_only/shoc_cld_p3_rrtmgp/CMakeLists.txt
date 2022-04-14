@@ -13,7 +13,7 @@ set (ATM_TIME_STEP 1800)
 SetVarDependingOnTestProfile(NUM_STEPS 2 5 48)  # 1h 4h 24h
 
 # Ensure test input files are present in the data dir
-GetInputFile(init/shoc_cld_p3_rrtmgp_init_ne2np4.nc ${SCREAM_DATA_DIR}/)
+GetInputFile(init/shoc_cld_p3_rrtmgp_init_ne2np4.nc)
 
 ## Copy (and configure) yaml files needed by tests
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml

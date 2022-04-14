@@ -63,7 +63,7 @@ set (TEST_INPUT_FILES
   init/homme_shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
-  GetInputFile(${file} ${SCREAM_DATA_DIR}/)
+  GetInputFile(${file})
 endforeach()
 
 

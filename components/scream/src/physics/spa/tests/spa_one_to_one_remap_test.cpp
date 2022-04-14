@@ -35,7 +35,7 @@ TEST_CASE("spa_one_to_one_remap","spa")
   MPI_Fint fcomm = MPI_Comm_c2f(spa_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
   scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
 
-  std::string spa_data_file = "spa_data_for_testing.nc";
+  std::string spa_data_file = SCREAM_DATA_DIR "/init/spa_data_for_testing.nc";
 
   Int max_time = 3;
   Int ncols    = 20;

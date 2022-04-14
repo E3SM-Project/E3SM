@@ -4,7 +4,7 @@ INCLUDE (ScreamUtils)
 CreateUnitTestExec (shoc_p3 shoc_p3.cpp "shoc;p3;scream_control")
 
 # Ensure test input files are present in the data dir
-GetInputFile(init/shoc_cld_p3_rrtmgp_init_ne2np4.nc ${SCREAM_DATA_DIR}/)
+GetInputFile(init/shoc_cld_p3_rrtmgp_init_ne2np4.nc)
 
 # Run a test with subcycling
 set (NUM_SUBCYCLES 3)
