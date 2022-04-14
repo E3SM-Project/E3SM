@@ -8,6 +8,38 @@ after case.setup.
 import argparse, sys, pathlib, os, re
 import xml.etree.ElementTree as ET
 
+# Add path to cime_config folder
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","cime_config"))
+from buildnml import refine_type
+
+###############################################################################
+def num_nodes_with_name (root,name,recurse=True):
+###############################################################################
+
+    count = 0
+
+    for elem in root:
+        if elem.tag==name:
+            count += 1
+        if recurse:
+            count += num_nodes_with_name(elem,name)
+
+    return count
+
+###############################################################################
+def find_node (root,name,recurse=True):
+###############################################################################
+
+    for elem in root:
+        if elem.tag==name:
+            return elem
+        if recurse:
+            found = find_node(elem,name)
+            if found is not None:
+                return found
+
+    return None
+
 ###############################################################################
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
 ###############################################################################
@@ -20,39 +52,6 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         raise exc_type(msg)
 
 ###############################################################################
-def change_matches(param_namespace, parent, child_name):
-###############################################################################
-    param_ns_re = re.compile(".*" + param_namespace + "$")
-    m = param_ns_re.match(parent + "::" + child_name)
-    return m is not None
-
-###############################################################################
-def perform_change(element, change, parent, any_change):
-###############################################################################
-    expect(change.count("=") > 0,
-           "Bad change request '{}', expected format is 'param=val'".format(change))
-
-    param_namespace, new_value = change.split("=", maxsplit=1)
-
-    for child in element:
-        child_name = child.tag
-
-        has_children = len(child) > 0
-        if not has_children:
-            if change_matches(param_namespace, parent, child_name):
-                expect(not any_change,
-                       "{} is too ambiguous any matched multiple entries".format(param_namespace))
-
-                child.text = new_value
-                print("Changing {}::{} to {}".format(parent, child_name, new_value))
-                any_change = True
-
-        else:
-            any_change |= perform_change(child, change, parent + "::{}".format(child_name), any_change)
-
-    return any_change
-
-###############################################################################
 def atm_config_chg(changes):
 ###############################################################################
     expect(os.path.exists("namelist_scream.xml"),
@@ -62,20 +61,34 @@ def atm_config_chg(changes):
         tree = ET.parse(fd)
         root = tree.getroot()
 
+    any_change = False
     for change in changes:
-        any_change = False
 
-        for child in root:
-            expect(child.tag == "file", "Unexpected child.tag {}".format(child.tag))
-            expect("name" in child.attrib, "file element missing required 'name' attribute")
-            expect("format" in child.attrib, "file element missing required 'format' attribute")
+        tokens = change.split('=')
+        expect (len(tokens)==2, "Invalid change format. Expected A[::B[...]=value, got' {}'".format(change))
+        selectors = tokens[0].split("::")
+        new_value = tokens[1]
 
-            for grandchild in child:
-                any_change |= perform_change(grandchild, change, child.attrib["name"], any_change)
+        # Regardless of whether we have namespaces or not, the first selector must be unique through the whole XML tree
+        s = selectors[0]
+        expect (num_nodes_with_name(root,s,recurse=True)>0,"Error! XML entry {} not found in section {}".format(s,root.tag))
+        expect (num_nodes_with_name(root,s,recurse=True)==1,"Error! Multiple XML entries with name {} found in section {}".format(s,root.tag))
+        node = find_node(root,s,recurse=True)
 
-        expect(any_change, "Change '{}' did not match anything in namelist_scream.xml".format(change))
+        # If user specified selectors via namespace, recurse over them
+        for s in selectors[1:]:
+            expect (num_nodes_with_name(node,s,recurse=False)>0,"Error! XML entry {} not found in section {}".format(s,node.tag))
+            expect (num_nodes_with_name(node,s,recurse=False)==1,"Error! Multiple XML entries with name {} found in section {}".format(s,node.tag))
+            node = find_node(node,s,recurse=False)
 
-    tree.write("namelist_scream.xml")
+        if node.text != new_value:
+            check_value(node,new_value)
+            node.text = new_value
+            any_change = True
+
+    if any_change:
+        tree.write("namelist_scream.xml")
+
     return True
 
 ###############################################################################
