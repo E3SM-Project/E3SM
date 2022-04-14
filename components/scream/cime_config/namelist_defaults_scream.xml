@@ -31,8 +31,6 @@ tweaking their $case/namelist_scream.xml file.
       <partmethod nlev="72">420</partmethod>
 
     Selector info will not be duplicated in the processed $case/namelist_scream.xml file.
-    If multiple parameter elements have selectors that evaluate to True, then the last
-    one takes precendence.
   -->
   <selectors>
     <selector name="hgrid" case_env="ATM_GRID"/>
