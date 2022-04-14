@@ -744,6 +744,7 @@ module li_advection
       integer :: nLayers    ! number of layers
       integer :: nTracers   ! number of tracers
       real (kind=RKIND), pointer :: config_sea_level ! sea level relative to z = 0
+      logical, pointer :: config_zero_sfcMassBalApplied_over_bare_land
 
       integer :: iCell, iLayer, iTracer
 
@@ -754,6 +755,8 @@ module li_advection
       allocate(thckTracerProducts(nTracers))
 
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+      call mpas_pool_get_config(liConfigs, 'config_zero_sfcMassBalApplied_over_bare_land', &
+		                config_zero_sfcMassBalApplied_over_bare_land)
 
       ! apply surface mass balance
       ! If positive, then add the SMB to the top layer, conserving mass*tracer products
@@ -775,9 +778,17 @@ module li_advection
 
          ! Zero out any positive surface mass balance for ice-free ocean cells
          if (sfcMassBalApplied(iCell) > 0.0_RKIND .and. &
-             bedTopography(iCell) < config_sea_level .and. .not.(li_mask_is_ice(cellMask(iCell)) ) ) then
+            bedTopography(iCell) < config_sea_level .and. .not.(li_mask_is_ice(cellMask(iCell)) ) ) then
             sfcMassBalApplied(iCell) = 0.0_RKIND
          end if
+
+         ! Zero out positive surface mass balance for bare land cells
+         if (config_zero_sfcMassBalApplied_over_bare_land) then
+            if (sfcMassBalApplied(iCell) > 0.0_RKIND .and. &
+               bedTopography(iCell) >= config_sea_level .and. .not.(li_mask_is_ice(cellMask(iCell)) ) ) then
+               sfcMassBalApplied(iCell) = 0.0_RKIND
+            endif
+         endif
 
          ! surface accumulation
          if (sfcMassBalApplied(iCell) > 0.0_RKIND) then
