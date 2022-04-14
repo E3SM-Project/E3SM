@@ -142,6 +142,10 @@ def evaluate_selectors(element, case, ez_selectors):
                 all_match = True
                 is_first = False
                 for k, v in selectors.items():
+                    # Metadata attributes are used only when it's time to generate the input files
+                    if k in selectors:
+                        continue
+
                     val_re = re.compile(v)
 
                     if k in ez_selectors:
@@ -178,7 +182,9 @@ def evaluate_selectors(element, case, ez_selectors):
                         is_first = True
                         child_values[child_name] = child
                         child.text = do_cime_vars(child_val, case)
-                        child.attrib.clear()
+                        for k in selectors.keys():
+                            if k not in METADATA_ATTRIBS:
+                                del child.attrib[k]
 
                 if not is_first:
                     children_to_remove.append(child)
