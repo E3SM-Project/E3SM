@@ -1,4 +1,4 @@
-exclude: "docs|node_modules|migrations|.git|.tox|examples|analysis_data_preprocess|conda/meta.yaml"
+exclude: "docs|node_modules|migrations|.git|.tox|examples|analysis_data_preprocess|auxiliary_tools|conda/meta.yaml"
 default_stages: [commit]
 fail_fast: true
 
