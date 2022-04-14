@@ -1239,8 +1239,8 @@ module li_calving
          calvingVelocity(:) = eigencalvingParameter(:) * max(0.0_RKIND, eMax(:)) * max(0.0_RKIND, eMin(:)) ! m/s
 
          call mpas_log_write("calling li_apply_front_ablation_velocity from eigencalving")
-          ! Convert calvingVelocity to calvingThickness
-          call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, &
+         ! Convert calvingVelocity to calvingThickness
+         call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, &
                                               calvingThickness, calvingVelocity, applyToGrounded, &
                                               applyToFloating, applyToGroundingLine, domain, err)
          ! Update halos on calvingThickness or faceMeltingThickness before
@@ -1673,6 +1673,9 @@ module li_calving
              endif
           enddo
 
+          call mpas_timer_start("halo updates")
+          call mpas_dmpar_field_halo_exch(domain, 'calvingVelocity')
+          call mpas_timer_stop("halo updates")
 
           call mpas_log_write("calling li_apply_front_ablation_velocity from von Mises stress calving routine")
          ! Convert calvingVelocity to calvingThickness
@@ -2034,8 +2037,11 @@ module li_calving
 !> otherwise it is applied to the last grounded cell.
 !> If applyToFloating = .true., ablation is applied to dynamic floating margin cells
 !> The output of this routine is calvingThickness or faceMeltingThickness, which then needs to be applied to thickness
-!> by the calling routine. The calling routine should perform a halo update
-!> after the call and before applying ablation.
+!> by the calling routine.
+
+!> IMPORTANT: The calling routine may need to perform a halo update on calving or melting velocity
+!> before the call. Testing shows this is necessary for von Mises calving, but not for eigencalving, for instance.
+!> The calling routine should always perform a halo update on calving or melting thickness after the call and before applying ablation.
 !-----------------------------------------------------------------------
 
    subroutine li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, ablationThickness, ablationVelocity, &
