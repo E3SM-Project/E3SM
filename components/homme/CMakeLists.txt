@@ -10,7 +10,7 @@ IF (NOT DEFINED PROJECT_NAME)
                      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
                      OUTPUT_VARIABLE LAST_GIT_COMMIT_SHA
                      OUTPUT_STRIP_TRAILING_WHITESPACE)
-  SET (LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA} CACHE STRING "The sha of the last git commit.")
+  SET (LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA})
   MESSAGE (STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
 
 ELSE ()
@@ -292,6 +292,8 @@ IF (${HOMME_USE_KOKKOS})
   CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/src/share/cxx/Hommexx_config.h.in ${HOMME_BINARY_DIR}/src/share/cxx/Hommexx_config.h)
 
 ENDIF ()
+
+CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/cmake/homme_git_sha.h.in ${HOMME_BINARY_DIR}//homme_git_sha.h)
 
 
 ##############################################################################
