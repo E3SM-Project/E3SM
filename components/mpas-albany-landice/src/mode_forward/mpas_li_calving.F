@@ -1534,10 +1534,14 @@ module li_calving
       real (kind=RKIND), pointer :: config_grounded_von_Mises_threshold_stress, &
                                     config_floating_von_Mises_threshold_stress, &
                                     config_flowLawExponent, config_calving_speed_limit
+      character (len=StrKIND), pointer :: config_grounded_von_Mises_threshold_stress_source, &
+                            config_floating_von_Mises_threshold_stress_source
       logical, pointer :: config_use_Albany_flowA_eqn_for_vM
       real (kind=RKIND), dimension(:), pointer :: eMax, eMin, &
                                         calvingVelocity, thickness, &
-                                        xvelmean, yvelmean, calvingThickness
+                                        xvelmean, yvelmean, calvingThickness, &
+                                        floatingVonMisesThresholdStress, &
+                                        groundedVonMisesThresholdStress
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA, &
                                         temperature, layerThickness
       real (kind=RKIND), pointer :: config_default_flowParamA
@@ -1553,14 +1557,12 @@ module li_calving
       applyToFloating = .true.
       applyToGroundingLine = .false.
 
+      call mpas_pool_get_config(liConfigs, 'config_grounded_von_Mises_threshold_stress_source', config_grounded_von_Mises_threshold_stress_source)
+      call mpas_pool_get_config(liConfigs, 'config_floating_von_Mises_threshold_stress_source', config_floating_von_Mises_threshold_stress_source)
       call mpas_pool_get_config(liConfigs, 'config_grounded_von_Mises_threshold_stress', config_grounded_von_Mises_threshold_stress)
       call mpas_pool_get_config(liConfigs, 'config_floating_von_Mises_threshold_stress', config_floating_von_Mises_threshold_stress)
       call mpas_pool_get_config(liConfigs, 'config_calving_speed_limit', config_calving_speed_limit)
 
-      if ( config_grounded_von_Mises_threshold_stress <=  0.0_RKIND ) then
-         call mpas_log_write("config_grounded_von_Mises_threshold_stress must be >0.0", MPAS_LOG_ERR)
-         err = 1
-      endif
       !call mpas_pool_get_config(liConfigs, 'config_default_flowParamA',
       !config_default_flowParamA) ! REMOVE THIS ONCE YOU CAN GET A FROM
       !ALBANY!!!!!
@@ -1591,7 +1593,46 @@ module li_calving
           call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
           call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
           call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+          call mpas_pool_get_array(geometryPool, 'groundedVonMisesThresholdStress', groundedVonMisesThresholdStress)
+          call mpas_pool_get_array(geometryPool, 'floatingVonMisesThresholdStress', floatingVonMisesThresholdStress)
           call mpas_pool_get_array(thermalPool, 'temperature', temperature)
+
+          ! get parameter value and check that values are valid
+          if (trim(config_grounded_von_Mises_threshold_stress_source) == 'scalar') then
+                groundedVonMisesThresholdStress(:) = config_grounded_von_Mises_threshold_stress
+          elseif (trim(config_grounded_von_Mises_threshold_stress_source) == 'data') then
+                ! do nothing - use value from input file
+          else
+                err = 1
+                call mpas_log_write("Invalid value specified for option config_grounded_von_Mises_threshold_stress_source" // &
+                      config_grounded_von_Mises_threshold_stress_source, MPAS_LOG_ERR)
+          endif
+
+          if ( minval(groundedVonMisesThresholdStress(:)) <= 0.0_RKIND ) then
+                err = 1
+                call mpas_log_write("groundedVonMisesThresholdStress must be >0.0", MPAS_LOG_ERR)
+          endif
+
+          if (trim(config_floating_von_Mises_threshold_stress_source) == 'scalar') then
+                floatingVonMisesThresholdStress(:) = config_floating_von_Mises_threshold_stress
+          elseif (trim(config_floating_von_Mises_threshold_stress_source) == 'data') then
+                ! do nothing - use value from input file
+          else
+                err = 1
+                call mpas_log_write("Invalid value specified for option config_floating_von_Mises_threshold_stress_source" // &
+                      config_floating_von_Mises_threshold_stress_source, MPAS_LOG_ERR)
+          endif
+
+          if ( minval(floatingVonMisesThresholdStress(:)) < 0.0_RKIND ) then
+                err = 1
+                call mpas_log_write("floatingVonMisesThresholdStress must be >=0.0", MPAS_LOG_ERR)
+          endif
+
+          ! If von Mises threshold stresses contain invalid values, do not
+          ! continue.
+          if ( err == 1 ) then
+             return
+          endif
 
           vonMisesStress(:) = 0.0_RKIND
 
@@ -1622,13 +1663,13 @@ module li_calving
              ! Calculate calving velocity for grounded cells at marine margin
              if ( .not. li_mask_is_floating_ice(cellMask(iCell)) ) then
                 calvingVelocity(iCell) = min(sqrt(xvelmean(iCell)**2.0_RKIND + yvelmean(iCell)**2.0_RKIND) * &
-                                         vonMisesStress(iCell) / config_grounded_von_Mises_threshold_stress, config_calving_speed_limit)
+                                         vonMisesStress(iCell) / groundedVonMisesThresholdStress(iCell), config_calving_speed_limit)
              ! If config_floating_von_Mises_threshold_stress is not 0.0, calculate
              ! calvingVelocity. If config_floating_von_Mises_threshold_stress is
              ! 0.0, remove floating ice in loop below.
              elseif ( li_mask_is_floating_ice(cellMask(iCell)) .and. config_floating_von_Mises_threshold_stress .ne. 0.0_RKIND) then
                 calvingVelocity(iCell) = min(sqrt(xvelmean(iCell)**2 + yvelmean(iCell)**2) * &
-                                         vonMisesStress(iCell) / config_floating_von_Mises_threshold_stress, config_calving_speed_limit)
+                                         vonMisesStress(iCell) / floatingVonMisesThresholdStress(iCell), config_calving_speed_limit)
              endif
           enddo
 
@@ -1637,7 +1678,8 @@ module li_calving
          ! Convert calvingVelocity to calvingThickness
           call li_apply_front_ablation_velocity(meshPool, geometryPool,velocityPool, &
                                               calvingThickness, calvingVelocity, applyToGrounded, &
-                                              applyToFloating, applyToGroundingLine, domain, err)
+                                              applyToFloating, applyToGroundingLine, domain, err_tmp)
+          err = ior(err, err_tmp)
          ! Update halos on calvingThickness or faceMeltingThickness before
          ! applying it.
          ! Testing seemed to indicate this is not necessary, but I don't
