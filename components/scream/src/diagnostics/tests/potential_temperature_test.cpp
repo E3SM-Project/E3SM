@@ -2,6 +2,7 @@
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "diagnostics/potential_temperature.hpp"
+#include "diagnostics/register_diagnostics.hpp"
 
 #include "physics/share/physics_constants.hpp"
 
@@ -152,8 +153,11 @@ void run(std::mt19937_64& engine)
   ekat::ParameterList params;
   params.set<std::string>("Diagnostic Name", "Potential Temperature");
   params.set<std::string>("Grid", "Point Grid");
-  auto diag = std::make_shared<PotentialTemperatureDiagnostic>(comm,params);
+  register_diagnostics();
+  auto& diag_factory = AtmosphereDiagnosticFactory::instance();
+  auto diag = diag_factory.create("PotentialTemperature",comm,params);
   diag->set_grids(gm);
+
 
   // Set the required fields for the diagnostic.
   std::map<std::string,Field> input_fields;

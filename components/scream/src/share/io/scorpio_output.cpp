@@ -54,6 +54,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   set_field_manager (field_mgr);
 
   // By default, IO is done directly on the field mgr grid
+  m_grids_manager = grids_mgr;
   std::shared_ptr<const grid_type> fm_grid, io_grid;
   io_grid = fm_grid = field_mgr->get_grid();
   if (params.isParameter("Field Names")) {
@@ -85,7 +86,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     // Register all output fields in the remapper.
     m_remapper->registration_begins();
     for (const auto& fname : m_fields_names) {
-      auto f = m_field_mgr->get_field(fname);
+      auto f = get_field(fname);
       const auto& src_fid = f.get_header().get_identifier();
       EKAT_REQUIRE_MSG(src_fid.data_type()==DataType::RealType,
           "Error! I/O supports only Real data, for now.\n");
@@ -104,7 +105,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
     // Now that fields have been allocated on the io grid, we can bind them in the remapper
     for (const auto& fname : m_fields_names) {
-      auto src = m_field_mgr->get_field(fname);
+      auto src = get_field(fname);
       auto tgt = io_fm->get_field(fname);
       m_remapper->bind_field(src,tgt);
     }
@@ -142,12 +143,16 @@ void AtmosphereOutput::restart (const std::string& filename)
 
 void AtmosphereOutput::init()
 {
+  // Register any diagnostics needed by this output stream
+  set_diagnostics();
+
   for (const auto& var_name : m_fields_names) {
     register_dimensions(var_name);
   }
 
   // Now that the fields have been gathered register the local views which will be used to determine output data to be written.
   register_views();
+
 
 } // init
 /*-----*/
@@ -179,7 +184,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
   // Take care of updating and possibly writing fields.
   for (auto const& name : m_fields_names) {
     // Get all the info for this field.
-    const auto  field = m_field_mgr->get_field(name);
+    const auto  field = get_field(name);
     const auto& layout = m_layouts.at(name);
     const auto& dims = layout.dims();
     const auto  rank = layout.rank();
@@ -188,10 +193,12 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
     EKAT_REQUIRE_MSG (field.get_header().get_tracking().get_time_stamp().is_valid(),
         "Error! Output field '" + name + "' has not been initialized yet\n.");
 
+    const bool is_diagnostic = (m_diagnostics.find(name) != m_diagnostics.end());
     const bool is_aliasing_field_view =
         m_avg_type==OutputAvgType::Instant &&
         field.get_header().get_alloc_properties().get_padding()==0 &&
-        field.get_header().get_parent().expired();
+        field.get_header().get_parent().expired() &&
+        not is_diagnostic;
 
     // Manually update the 'running-tally' views with data from the field,
     // by combining new data with current avg values.
@@ -335,7 +342,7 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
   using namespace scorpio;
 
   // Store the field layout
-  const auto& fid = m_field_mgr->get_field(name).get_header().get_identifier();
+  const auto& fid = get_field(name).get_header().get_identifier();
   const auto& layout = fid.get_layout();
   m_layouts.emplace(name,layout);
 
@@ -367,7 +374,8 @@ void AtmosphereOutput::register_views()
 {
   // Cycle through all fields and register.
   for (auto const& name : m_fields_names) {
-    auto field = m_field_mgr->get_field(name);
+    auto field = get_field(name);
+    bool is_diagnostic = (m_diagnostics.find(name) != m_diagnostics.end());
 
     // These local views are really only needed if the averaging time is not 'Instant',
     // to store running tallies for the average operation. However, we create them
@@ -377,10 +385,14 @@ void AtmosphereOutput::register_views()
     // views of the field, provided that the field does not have padding,
     // and that it is not a subfield of another field (or else the view
     // would be strided).
+    //
+    // We also don't want to alias to a diagnostic output since it could share memory
+    // with another diagnostic.
     bool can_alias_field_view =
         m_avg_type==OutputAvgType::Instant &&
         field.get_header().get_alloc_properties().get_padding()==0 &&
-        field.get_header().get_parent().expired();
+        field.get_header().get_parent().expired() &&
+        not is_diagnostic;
 
     const auto size = m_layouts.at(name).size();
     if (can_alias_field_view) {
@@ -419,7 +431,7 @@ void AtmosphereOutput::register_variables(const std::string& filename)
 
   // Cycle through all fields and register.
   for (auto const& name : m_fields_names) {
-    auto field = m_field_mgr->get_field(name);
+    auto field = get_field(name);
     auto& fid  = field.get_header().get_identifier();
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     std::string io_decomp_tag = "Real";  // Note, for now we only assume REAL variables.  This may change in the future.
@@ -510,7 +522,7 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
 
   // Cycle through all fields and set dof.
   for (auto const& name : m_fields_names) {
-    auto field = m_field_mgr->get_field(name);
+    auto field = get_field(name);
     const auto& fid  = field.get_header().get_identifier();
     auto var_dof = get_var_dof_offsets(fid.get_layout());
     set_dof(filename,name,var_dof.size(),var_dof.data());
@@ -536,6 +548,58 @@ void AtmosphereOutput::setup_output_file(const std::string& filename)
 
   // Set the offsets of the local dofs in the global vector.
   set_degrees_of_freedom(filename);
+}
+/* ---------------------------------------------------------- */
+// General get_field routine for output.
+// This routine will first check if a field is in the local field
+// manager.  If not it will next check to see if it is in the list
+// of available diagnostics.  If neither of these two options it
+// will throw an error.
+Field AtmosphereOutput::get_field(const std::string& name)
+{
+  if (m_field_mgr->has_field(name)) {
+    return m_field_mgr->get_field(name);
+  } else if (m_diagnostics.find(name) != m_diagnostics.end()) {
+    const auto& diag = m_diagnostics[name];
+    return diag->get_diagnostic(100.0);
+  } else {
+    EKAT_ERROR_MSG ("Field " + name + " not found in output field manager or diagnostics list");
+  }
+}
+/* ---------------------------------------------------------- */
+void AtmosphereOutput::set_diagnostics()
+{
+  auto& diag_factory = AtmosphereDiagnosticFactory::instance();
+  for (const auto& fname : m_fields_names) {
+    if (!m_field_mgr->has_field(fname)) {
+      // Construct a diagnostic by this name
+      ekat::ParameterList params;
+      params.set<std::string>("Diagnostic Name", fname);
+      const auto grid_name = m_io_grid->name(); 
+      params.set<std::string>("Grid", grid_name);
+      auto diag = diag_factory.create(fname,m_comm,params);
+      diag->set_grids(m_grids_manager);
+      m_diagnostics.emplace(fname,diag);
+    }
+  }
+  // Set required fields for all diagnostics
+  for (const auto& dd : m_diagnostics) {
+    const auto& diag = dd.second;
+    // TimeStamp control
+    util::TimeStamp t0;
+    bool t0_set = false;
+    for (const auto& req : diag->get_required_field_requests()) {
+      // Any required fields should be in the field manager, so we can gather
+      // the TimeStamp for initialization from the first of these.
+      const auto& req_field = get_field(req.fid.name());
+      if (!t0_set) {
+        t0 = req_field.get_header().get_tracking().get_time_stamp();
+        t0_set = true;
+      }
+      diag->set_required_field(req_field.get_const());
+    }
+    diag->initialize(t0,RunType::Initial);
+  }
 }
 
 } // namespace scream
