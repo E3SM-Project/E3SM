@@ -3,9 +3,11 @@
 """
 Namelist creator for E3SM's SCREAM component
 
-This scripts takes the namelist_defaults_scream.xml file from the repo
+This script takes the namelist_defaults_scream.xml file from the repo
 and produces the processed $case/namelist_scream.xml. From the processed
 file, raw input files are produced which should not be modified by users.
+The user is allowed to modify $case/namelist_scream.xml either directly
+via text editor or via atm-config-chg.
 
 This script can be internally tested standalone via: buildnml --test
 
@@ -74,13 +76,13 @@ def do_cime_vars(entry, case):
     >>> do_cime_vars('hi ${invalid} there', case)
     Traceback (most recent call last):
       ...
-    CIME.utils.CIMEError: ERROR: Cannot resolve yaml entry 'hi ${invalid} there', CIME has no value for 'invalid'
+    CIME.utils.CIMEError: ERROR: Cannot resolve XML entry 'hi ${invalid} there', CIME has no value for 'invalid'
     """
     m = CIME_VAR_RE.search(entry)
     while m:
         cime_var = m.groups()[0]
         value = case.get_value(cime_var)
-        expect(value is not None, "Cannot resolve yaml entry '{}', CIME has no value for '{}'".format(entry, cime_var))
+        expect(value is not None, "Cannot resolve XML entry '{}', CIME has no value for '{}'".format(entry, cime_var))
         entry = entry.replace("${{{}}}".format(cime_var), str(value))
         m = CIME_VAR_RE.search(entry)
 
