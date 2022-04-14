@@ -102,7 +102,8 @@ function(build_model COMP_CLASS COMP_NAME)
       # Add samxx F90 files to the main E3SM build
       set(SOURCES ${SOURCES} cmake/atm/../../eam/src/physics/crm/samxx/cpp_interface_mod.F90
                              cmake/atm/../../eam/src/physics/crm/samxx/params.F90
-                             cmake/atm/../../eam/src/physics/crm/crm_ecpp_output_module.F90 )
+                             cmake/atm/../../eam/src/physics/crm/crm_ecpp_output_module.F90
+                             cmake/atm/../../eam/src/physics/crm/samxx/p3_lookup_interface_mod.F90 )
     endif()
 
     # Add rrtmgp++ source code if asked for
