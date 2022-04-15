@@ -717,7 +717,8 @@ contains
                ! just after eqn 4 in Hallberg (2013) he defines the deformation
                ! radius as:
                ! L = sqrt( c_g^2/ ( f^2 + 2*beta*c_g) )
-               RossbyRadius(iEdge) = sqrt(c_mode1*c_mode1 / &
+               !   = c_g * sqrt(1/( f^2 + 2*beta*c_g) )  (note c_g is guaranteed non-negative)
+               RossbyRadius(iEdge) = c_mode1*sqrt( 1.0_RKIND / &
                   (fEdge(iEdge)*fEdge(iEdge) + 2.0_RKIND*betaEdge(iEdge)*c_mode1 + 1.0E-15_RKIND))
 
                ! If the RossbyRadius is larger than two cell widths, then this
