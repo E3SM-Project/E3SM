@@ -33,7 +33,7 @@ module cam_history_support
 
   integer, parameter, public :: pflds  = 1000      ! max number of fields for namelist entries fincl and fexcl
                                                    ! also used in write restart
-  integer, parameter, public :: ptapes = 12        ! max number of tapes
+  integer, parameter, public :: ptapes = 17        ! max number of tapes
 
   ! A special symbol for declaring a field which has no vertical or
   ! non-grid dimensions. It is here (rather than cam_history) so that it
