@@ -440,7 +440,7 @@ contains
     use elm_varcon            , only : h2osno_max, bdsno, spval
     use landunit_varcon       , only : istice, istice_mec, istsoil
     use elm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
-    use elm_varctl            , only : use_century_decomp, single_column, scmlat, scmlon, use_cn, use_fates
+    use elm_varctl            , only : use_century_decomp, single_column, scmlat, scmlon, use_cn
     use elm_varorb            , only : eccen, mvelpp, lambm0, obliqr
     use clm_time_manager      , only : get_step_size, get_curr_calday
     use clm_time_manager      , only : get_curr_date, get_nstep, advance_timestep
@@ -554,7 +554,9 @@ contains
     ! ------------------------------------------------------------------------
     ! Pass model timestep info to FATES
     ! ------------------------------------------------------------------------
-    call ELMFatesTimesteps()
+    if(use_fates) then
+       call ELMFatesTimesteps()
+    end if
     
     ! ------------------------------------------------------------------------
     ! Initialize daylength from the previous time step (needed so prev_dayl can be set correctly)

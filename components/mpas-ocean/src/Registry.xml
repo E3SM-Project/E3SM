@@ -2700,12 +2700,6 @@
 		<var name="betaEdge" type="real" dimensions="nEdges Time" units="m^{-1} s^{-1}"
 			description="meridional gradient of the coriolis parameter"
 		/>
-		<var name="eddyLength" type="real" dimensions="nEdges Time" units="m"
-			description="eddy length scale in Visbeck 1997 closure"
-		/>
-		<var name="eddyTime" type="real" dimensions="nEdges Time" units="s^{-1}"
-			description="inverse eddy time scale in Visbeck 1997 closure"
-		/>
 		<var name="gmKappaScaling" type="real" dimensions="nVertLevelsP1 nEdges Time" units="NA" default_value="1.0"
 			description="spatially and depth varying GM kappa.  The scaling is based on the Brunt Vaisala Frequency relative to a maximum value below the mixed layer, follows from Danabasoglu and Marshall 2007.  If config_GM_closure is not set to N2_dependent the scaling value is set to 1 everywhere."
 			packages="gm"
