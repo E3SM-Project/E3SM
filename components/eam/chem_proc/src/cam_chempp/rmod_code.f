@@ -33,8 +33,6 @@
       logical  ::  found
       logical  ::  lexist
       
-      integer  ::  strlen
-      
       inquire( file = trim( temp_path ) // 'mo_rxtmod.F', exist = lexist )
       if( lexist ) then
          call system( 'rm ' // trim( temp_path ) // 'mo_rxt_mod.F' )
@@ -144,16 +142,16 @@
                line(7:) = 'rate(:,   ) = rate(:,   )'
                write(line(14:16),'(i3)') rxno
                write(line(28:30),'(i3)') rxno
-               line(strlen(line)+2:) = ' * grp_ratios(:,'
-               write(line(strlen(line)+1:),'(i2)') grp_rxt_map(row,l+1,index)
-               line(strlen(line)+1:) = ')'
+               line(len_trim(line)+2:) = ' * grp_ratios(:,'
+               write(line(len_trim(line)+1:),'(i2)') grp_rxt_map(row,l+1,index)
+               line(len_trim(line)+1:) = ')'
 	    else
 	       line(len_trim(line)+1:) = ' &'
 	       write(30,100) trim(line)
 	       line(6:) = ' '
                line(33:) = ' * grp_ratios(:,'
-               write(line(strlen(line)+1:),'(i2)') grp_rxt_map(row,l+1,index)
-               line(strlen(line)+1:) = ')'
+               write(line(len_trim(line)+1:),'(i2)') grp_rxt_map(row,l+1,index)
+               line(len_trim(line)+1:) = ')'
             end if
          end do
          if( found ) then
@@ -170,9 +168,9 @@
             line(7:) = '    het_rates(j,   ) = het_rates(j,   )'
             write(line(19:21),'(i3)') k
             write(line(38:40),'(i3)') k
-            line(strlen(line)+2:) = ' * grp_ratios(:,'
-            write(line(strlen(line)+1:),'(i2)') hetmap(k)
-            line(strlen(line)+1:) = ')'
+            line(len_trim(line)+2:) = ' * grp_ratios(:,'
+            write(line(len_trim(line)+1:),'(i2)') hetmap(k)
+            line(len_trim(line)+1:) = ')'
             write(30,100) trim(line)
          end if
       end do

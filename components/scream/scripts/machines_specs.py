@@ -60,7 +60,7 @@ MACHINE_METADATA = {
                 ["CC","ftn","cc"],
                 "srun --time 00:30:00 --nodes=1 --constraint=gpu --exclusive -q regular --account e3sm_g",
                 ""),
-    "cori-knl" : (["eval $(../../cime/scripts/Tools/get_case_env)", "export OMP_NUM_THREADS=68"],
+    "cori-knl" : (["eval $(../../cime/CIME/Tools/get_case_env)", "export OMP_NUM_THREADS=68"],
                   ["CC","ftn","cc"],
                   "srun --time 02:00:00 --nodes=1 --constraint=knl,quad,cache --exclusive -q regular --account e3sm",
                   ""),

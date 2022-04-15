@@ -2,28 +2,28 @@
 #include "precip_proc.h"
 
 void precip_proc(real5d &q, int ind_q, real5d &qp, int ind_qp) {
-  auto &tabs          = :: tabs;
-  auto &a_bg          = :: a_bg;
-  auto &a_pr          = :: a_pr;
-  auto &a_gr          = :: a_gr;
-  auto &coefice       = :: coefice;
-  auto &accrrc        = :: accrrc;
-  auto &accrsc        = :: accrsc;
-  auto &accrsi        = :: accrsi;
-  auto &accrgc        = :: accrgc;
-  auto &accrgi        = :: accrgi;
-  auto &dtn           = :: dtn;
-  auto &pres          = :: pres;
-  auto &evapr1        = :: evapr1;
-  auto &evapr2        = :: evapr2;
-  auto &evaps1        = :: evaps1;
-  auto &evaps2        = :: evaps2;
-  auto &evapg1        = :: evapg1;
-  auto &evapg2        = :: evapg2;
-  auto &qpsrc         = :: qpsrc;
-  auto &qpevp         = :: qpevp;
-  auto &qn            = :: qn;
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( tabs          , :: tabs );
+  YAKL_SCOPE( a_bg          , :: a_bg );
+  YAKL_SCOPE( a_pr          , :: a_pr );
+  YAKL_SCOPE( a_gr          , :: a_gr );
+  YAKL_SCOPE( coefice       , :: coefice );
+  YAKL_SCOPE( accrrc        , :: accrrc );
+  YAKL_SCOPE( accrsc        , :: accrsc );
+  YAKL_SCOPE( accrsi        , :: accrsi );
+  YAKL_SCOPE( accrgc        , :: accrgc );
+  YAKL_SCOPE( accrgi        , :: accrgi );
+  YAKL_SCOPE( dtn           , :: dtn );
+  YAKL_SCOPE( pres          , :: pres );
+  YAKL_SCOPE( evapr1        , :: evapr1 );
+  YAKL_SCOPE( evapr2        , :: evapr2 );
+  YAKL_SCOPE( evaps1        , :: evaps1 );
+  YAKL_SCOPE( evaps2        , :: evaps2 );
+  YAKL_SCOPE( evapg1        , :: evapg1 );
+  YAKL_SCOPE( evapg2        , :: evapg2 );
+  YAKL_SCOPE( qpsrc         , :: qpsrc );
+  YAKL_SCOPE( qpevp         , :: qpevp );
+  YAKL_SCOPE( qn            , :: qn );
+  YAKL_SCOPE( ncrms         , :: ncrms );
 
   real powr1 = (3.0 + b_rain) / 4.0;
   real powr2 = (5.0 + b_rain) / 8.0;
