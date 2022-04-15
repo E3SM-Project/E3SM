@@ -72,10 +72,9 @@ extern "C"
 
 /*===============================================================================================*/
 // WARNING: make sure input_yaml_file is a null-terminated string!
-void scream_create_atm_instance (const MPI_Fint& f_comm,
+void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
                                  const char* input_yaml_file,
                                  const char* atm_log_file) {
-                  // const int& compid) {
   using namespace scream;
   using namespace scream::control;
 
@@ -112,6 +111,7 @@ void scream_create_atm_instance (const MPI_Fint& f_comm,
 
     ad.set_comm(atm_comm);
     ad.set_params(ad_params);
+    ad.init_scorpio(atm_id);
     ad.create_atm_processes ();
     ad.create_grids ();
     ad.create_fields ();
@@ -192,7 +192,7 @@ void scream_init_atm (const int& start_ymd,
 }
 
 /*===============================================================================================*/
-void scream_run (const scream::Real& dt) {
+void scream_run (const int dt) {
   // TODO: uncomment once you have valid inputs. I fear AD may crash with no inputs.
   fpe_guard_wrapper([&](){
     // Get the AD, and run it

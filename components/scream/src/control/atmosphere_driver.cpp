@@ -90,15 +90,6 @@ set_comm(const ekat::Comm& atm_comm)
 
   m_atm_comm = atm_comm;
 
-  // Init scorpio right away, in case some class (atm procs, grids,...)
-  // needs to source some data from NC files during construction,
-  // before we start processing IC files.
-  EKAT_REQUIRE_MSG (!scorpio::is_eam_pio_subsystem_inited(),
-      "Error! The PIO subsystem was alreday inited before the driver was constructed.\n"
-      "       This is an unexpected behavior. Please, contact developers.\n");
-  MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
-  scorpio::eam_init_pio_subsystem(fcomm);
-
   m_ad_status |= s_comm_set;
 }
 
@@ -114,6 +105,23 @@ set_params(const ekat::ParameterList& atm_params)
   create_logger ();
 
   m_ad_status |= s_params_set;
+}
+
+void AtmosphereDriver::
+init_scorpio(const int atm_id)
+{
+  check_ad_status (s_comm_set, true);
+
+  // Init scorpio right away, in case some class (atm procs, grids,...)
+  // needs to source some data from NC files during construction,
+  // before we start processing IC files.
+  EKAT_REQUIRE_MSG (!scorpio::is_eam_pio_subsystem_inited(),
+      "Error! The PIO subsystem was alreday inited before the driver was constructed.\n"
+      "       This is an unexpected behavior. Please, contact developers.\n");
+  MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
+  scorpio::eam_init_pio_subsystem(fcomm,atm_id);
+
+  m_ad_status |= s_scorpio_inited;
 }
 
 void AtmosphereDriver::create_atm_processes()
@@ -810,6 +818,8 @@ initialize (const ekat::Comm& atm_comm,
 {
   set_comm(atm_comm);
   set_params(params);
+
+  init_scorpio ();
 
   create_atm_processes ();
 

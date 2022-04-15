@@ -13,13 +13,11 @@ module scream_scorpio_interface_iso_c2f
 !
 contains
 !=====================================================================!
-  subroutine eam_init_pio_subsystem_c2f(mpicom,compid,local) bind(c)
+  subroutine eam_init_pio_subsystem_c2f(mpicom,compid) bind(c)
     use scream_scorpio_interface, only : eam_init_pio_subsystem
-    integer(kind=c_int), value, intent(in) :: mpicom
-    integer(kind=c_int), value, intent(in) :: compid
-    logical(kind=c_bool),value, intent(in) :: local
+    integer(kind=c_int), value, intent(in) :: mpicom,compid
 
-    call eam_init_pio_subsystem(mpicom,compid,LOGICAL(local))
+    call eam_init_pio_subsystem(mpicom,compid)
   end subroutine eam_init_pio_subsystem_c2f
 !=====================================================================!
   subroutine eam_pio_finalize_c2f() bind(c)
@@ -59,17 +57,6 @@ contains
     call register_file(trim(filename),purpose)
 
   end subroutine register_file_c2f
-!=====================================================================!
-  subroutine sync_outfile_c2f(filename_in) bind(c)
-    use scream_scorpio_interface, only : eam_sync_piofile
-    type(c_ptr), intent(in) :: filename_in
-
-    character(len=256)       :: filename
-
-    call convert_c_string(filename_in,filename)
-    call eam_sync_piofile(trim(filename))
-
-  end subroutine sync_outfile_c2f
 !=====================================================================!
   subroutine set_decomp_c2f(filename_in) bind(c)
     use scream_scorpio_interface, only : set_decomp
@@ -257,13 +244,6 @@ contains
     call convert_c_string(filename_in,filename)
     call eam_pio_enddef(filename)
   end subroutine eam_pio_enddef_c2f
-!=====================================================================!
-  function count_pio_atm_file_c2f() bind(c) result(file_count)
-    use scream_scorpio_interface, only : count_pio_atm_file
-    integer(kind=c_int) :: file_count
-
-    file_count = count_pio_atm_file()
-  end function count_pio_atm_file_c2f
 !=====================================================================!
   subroutine convert_c_string(c_string_ptr,f_string)
   ! Purpose: To convert a c_string pointer to the proper fortran string format.
