@@ -1,5 +1,9 @@
-import copy
+import os, sys, copy
 import xml.etree.ElementTree as ET
+
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "lib"))
+
 from CIME.utils import expect
 
 ###############################################################################
@@ -99,6 +103,122 @@ def has_child (root,name):
     """
 
     return False if root.find(name) is None else True
+
+###############################################################################
+def refine_type(entry, force_type=None):
+###############################################################################
+    """
+    Try to convert the text entry to the appropriate type based on its contents.
+    """
+    # We want to preserve strings representing lists
+    if (entry[0]=="(" and entry[-1]==")") or \
+       (entry[0]=="[" and entry[-1]=="]") :
+        return entry
+
+    if "," in entry:
+        result = [refine_type(item.strip(), force_type=force_type) for item in entry.split(",") if item.strip() != ""]
+        expected_type = type(result[0])
+        for item in result[1:]:
+            expect(isinstance(item, expected_type), "List '{}' has inconsistent types inside".format(entry))
+
+        return result
+
+    if force_type:
+        try:
+            if force_type == "logical":
+                if entry.upper() == "TRUE":
+                    return True
+                elif entry.upper() == "FALSE":
+                    return False
+                else:
+                    return bool(int(entry))
+
+            elif force_type == "integer":
+                return int(entry)
+            elif force_type == "real":
+                return float(entry)
+            elif force_type == "string":
+                return str(entry)
+            else:
+                expect(False, "Bad force_type '{}'".format(force_type))
+                return None
+
+        except ValueError:
+            expect(False, "Could not use '{}' as type '{}'".format(entry, force_type))
+            return None
+
+    if entry.upper() == "TRUE":
+        return True
+    elif entry.upper() == "FALSE":
+        return False
+
+    try:
+        v = int(entry)
+        return v
+    except ValueError:
+        pass
+
+    try:
+        v = float(entry)
+        return v
+    except ValueError:
+        return entry
+
+###############################################################################
+def derive_type(entry):
+###############################################################################
+    refined_value = refine_type(entry)
+    if isinstance(refined_value, list):
+        refined_value = refined_value[0]
+
+    if isinstance(refined_value, bool):
+        return "logical"
+    elif isinstance(refined_value, int):
+        return "integer"
+    elif isinstance(refined_value, float):
+        return "real"
+    elif isinstance(refined_value, str):
+        return "string"
+    else:
+        expect(False, "Couldn't derive type of '{}'".format(entry))
+        return None
+
+###############################################################################
+def check_value(elem, value):
+###############################################################################
+    """
+    Check that a parameter's value is in the valid list
+    """
+    v = value
+    vtype = None
+    if "type" in elem.attrib.keys():
+        vtype = elem.attrib["type"]
+        v = refine_type(v,force_type=vtype)
+        expect (v is not None,
+                "Error! Value '{}' for element '{}' does not satisfy the constraint type={}"
+                .format(value,elem.tag,vtype))
+
+    if "valid_values" in elem.attrib.keys():
+        valids_str = elem.attrib["valid_values"]
+        valids = [refine_type(item.strip(), force_type=vtype) for item in valids_str.split(",")]
+        expect(v in valids,
+                "Invalid value '{}' for element '{}'. Value not in the valid list ('{}')".format(value, elem.tag, valids))
+
+###############################################################################
+def check_all_values(root):
+###############################################################################
+    """
+    Check that all values in the xml tree do not violate their metadata
+    """
+
+    has_children = len(root)>0
+    if has_children:
+        for c in root:
+            check_all_values(c)
+    else:
+        if "type" not in root.attrib.keys():
+            root.attrib["type"] = derive_type(root.text)
+        check_value(root,root.text)
 
 ###############################################################################
 def resolve_inheritance (root,elem):

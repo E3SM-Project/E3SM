@@ -9,8 +9,8 @@ import argparse, sys, pathlib, os, re
 import xml.etree.ElementTree as ET
 
 # Add path to cime_config folder
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","cime_config"))
-from buildnml import refine_type
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "cime_config"))
+from eamxx_buildnml_impl import check_value
 
 ###############################################################################
 def num_nodes_with_name (root,name,recurse=True):
