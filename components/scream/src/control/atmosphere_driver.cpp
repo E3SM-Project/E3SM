@@ -451,7 +451,8 @@ void AtmosphereDriver::restart_model ()
   // First, figure out the name of the netcdf file containing the restart data
   std::string filename, content;
   bool found = false;
-  std::string match = m_run_t0.to_string() + ".r.nc";
+  std::string head = m_atm_params.sublist("Initial Conditions").get<std::string>("Restart Casename");
+  std::string tail = m_run_t0.to_string() + ".r.nc";
 
   if (m_atm_comm.am_i_root()) {
     std::ifstream rpointer_file;
@@ -463,7 +464,7 @@ void AtmosphereDriver::restart_model ()
     //       the last one (which is the last restart file that was written).
     while (rpointer_file >> line) {
       content += line + "\n";
-      if (line.find(match) != std::string::npos) {
+      if (line.find(head) != std::string::npos && line.find(tail) != std::string::npos) {
         found = true;
         filename = line;
       }
@@ -476,7 +477,8 @@ void AtmosphereDriver::restart_model ()
     broadcast_string(content,m_atm_comm,m_atm_comm.root_rank());
     EKAT_REQUIRE_MSG (found,
         "Error! Output restart requested, but no model restart file found in 'rpointer.atm'.\n"
-        "   restart file suffix: " + match +
+        "   restart file casename: " + head + "\n"
+        "   restart file suffix: " + tail + "\n"
         "   rpointer content:\n" + content);
   }
 

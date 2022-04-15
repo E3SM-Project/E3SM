@@ -12,6 +12,7 @@ Time Stepping:
 
 Initial Conditions:
   Restart Run: true
+  Restart Casename: model_restart
 
 Atmosphere Processes:
   Number of Entries: 5

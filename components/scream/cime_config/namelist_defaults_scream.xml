@@ -152,6 +152,7 @@ tweaking their $case/namelist_scream.xml file.
         </Dynamics__Driven>
       </Grids__Manager>
       <Initial__Conditions>
+        <Restart__Casename>${CASE}</Restart__Casename>
         <Physics__GLL>
           <Filename>${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Filename>
           <Filename COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Filename>
@@ -167,7 +168,7 @@ tweaking their $case/namelist_scream.xml file.
       <Scorpio>
         <Output__YAML__Files>data/scream_output.yaml, </Output__YAML__Files>
         <Model__Restart>
-          <Casename>eamxx_model_restart</Casename>
+          <Casename>${CASE}</Casename>
           <Output__Control>
             <Frequency>${REST_N}</Frequency>
             <Frequency__Units>INVALID</Frequency__Units>
