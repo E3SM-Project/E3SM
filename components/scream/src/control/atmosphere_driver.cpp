@@ -316,7 +316,7 @@ void AtmosphereDriver::create_fields()
 void AtmosphereDriver::initialize_output_managers () {
   check_ad_status (s_comm_set | s_params_set | s_grids_created | s_fields_created);
 
-  const bool restarted_run = m_atm_params.sublist("Initial Conditions").get<bool>("Restart Run",false);
+  const bool restarted_run = m_case_t0<m_run_t0;
 
   auto& io_params = m_atm_params.sublist("Scorpio");
 
@@ -348,7 +348,7 @@ void AtmosphereDriver::initialize_output_managers () {
 }
 
 void AtmosphereDriver::
-initialize_fields (const util::TimeStamp& t0)
+initialize_fields (const util::TimeStamp& t0, const RunType run_type)
 {
   // See if we need to print a DAG. We do this first, cause if any input
   // field is missing from the initial condition file, an error will be thrown.
@@ -380,7 +380,8 @@ initialize_fields (const util::TimeStamp& t0)
 
   m_run_t0 = m_current_ts = t0;
 
-  const bool restarted_run = m_atm_params.sublist("Initial Conditions").get<bool>("Restart Run",false);
+  const bool restarted_run = run_type==RunType::Restarted;
+
   if (restarted_run) {
     restart_model ();
   } else {
@@ -485,7 +486,6 @@ void AtmosphereDriver::restart_model ()
   broadcast_string(filename,m_atm_comm,m_atm_comm.root_rank());
 
   // Restart the num steps counter in the atm time stamp
-
   ekat::ParameterList rest_pl;
   rest_pl.set<std::string>("Filename",filename);
   AtmosphereInput model_restart(m_atm_comm,rest_pl);
@@ -810,7 +810,7 @@ void AtmosphereDriver::initialize_atm_procs ()
   m_memory_buffer->allocate();
   m_atm_process_group->init_buffers(*m_memory_buffer);
 
-  const bool restarted_run = m_atm_params.sublist("Initial Conditions").get<bool>("Restart Run",false);
+  const bool restarted_run = m_case_t0 < m_run_t0;
 
   // Initialize the processes
   m_atm_process_group->initialize(m_current_ts, restarted_run ? RunType::Restarted : RunType::Initial);
@@ -834,7 +834,8 @@ initialize (const ekat::Comm& atm_comm,
 
   create_fields ();
 
-  initialize_fields (t0);
+  const bool restarted_run = m_atm_params.sublist("Initial Conditions").get<bool>("Restart Run",false);
+  initialize_fields (t0, restarted_run ? RunType::Restarted : RunType::Initial);
 
   initialize_output_managers ();
 

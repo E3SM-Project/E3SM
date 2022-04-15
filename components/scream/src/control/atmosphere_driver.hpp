@@ -78,7 +78,7 @@ public:
   void set_surface_coupling (const std::shared_ptr<SurfaceCoupling>& sc) { m_surface_coupling = sc; }
 
   // Load initial conditions for atm inputs
-  void initialize_fields (const util::TimeStamp& t0);
+  void initialize_fields (const util::TimeStamp& t0, const RunType run_type = RunType::Initial);
 
   // Initialie I/O structures for output
   void initialize_output_managers ();
