@@ -144,12 +144,6 @@ tweaking their $case/namelist_scream.xml file.
           <Orbital__MVELP COMPSET=".*SCREAM%AQUA.*">0</Orbital__MVELP>
         </Process__5>
       </Atmosphere__Processes>
-      <Time__Stepping>
-        <Time__Step>300</Time__Step>
-        <Start__Time>12, 30, 0</Start__Time>
-        <Start__Date>2000, 2, 1</Start__Date>
-        <Number__of__Steps>288</Number__of__Steps>
-      </Time__Stepping>
       <Grids__Manager>
         <Type>Dynamics Driven</Type>
         <Reference__Grid>Physics GLL</Reference__Grid>
