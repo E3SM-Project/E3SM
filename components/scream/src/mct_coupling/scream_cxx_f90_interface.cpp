@@ -157,8 +157,9 @@ void scream_setup_surface_coupling (
   });
 }
 
-void scream_init_atm (const int& start_ymd,
-                      const int& start_tod)
+void scream_init_atm (const int  start_ymd,
+                      const int  start_tod,
+                      const bool restarted_run)
 {
   using namespace scream;
   using namespace scream::control;
@@ -185,7 +186,8 @@ void scream_init_atm (const int& start_ymd,
 
     // Init and run (to finalize, wait till checks are completed,
     // or you'll clear the field managers!)
-    ad.initialize_fields (t0);
+    RunType run_type = restarted_run ? RunType::Restarted : RunType::Initial;
+    ad.initialize_fields (t0,run_type);
     ad.initialize_output_managers ();
     ad.initialize_atm_procs ();
   });

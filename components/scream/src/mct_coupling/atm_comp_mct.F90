@@ -73,18 +73,20 @@ CONTAINS
     type(mct_gsMap)        , pointer :: gsMap_atm
     type(mct_gGrid)        , pointer :: dom_atm
     integer(IN)                      :: phase          ! initialization phase
-    integer(IN)                      :: ierr           ! error code
+    integer(IN)                      :: ierr,mpi_ierr  ! error codes
     integer(IN)                      :: modelio_fid    ! file descriptor for atm_modelio.nml
     integer(IN)                      :: start_tod, start_ymd
     integer                          :: lsize
     character(CL)                    :: diri           ! Unused
     character(CL)                    :: diro           ! directory where ATM log file is
     character(CL)                    :: logfile        ! name of ATM log file
+    character(CS)                    :: run_type       ! name of ATM log file
     type(c_ptr) :: x2a_ptr, a2x_ptr
 
     ! TODO: read this from the namelist?
     character(len=256)                :: yaml_fname = "./data/scream_input.yaml"
     character(kind=c_char,len=256), target :: yaml_fname_c, atm_log_fname_c, dyn_log_fname
+    logical (kind=c_bool) :: restarted_run
 
     ! Note: diri is unused, but *is* in the nml file, and the nml read woud return
     !       a nonzero err code if we don't add diri to the modelio nml
@@ -103,7 +105,7 @@ CONTAINS
          gsMap=gsmap_atm, &
          dom=dom_atm, &
          infodata=infodata)
-    call seq_infodata_getData(infodata, atm_phase=phase)
+    call seq_infodata_getData(infodata, atm_phase=phase, start_type=run_type)
     call seq_infodata_PutData(infodata, atm_aero=.true.)
     call seq_infodata_PutData(infodata, atm_prognostic=.true.)
 
@@ -119,15 +121,17 @@ CONTAINS
 
     !--- Retrieve the name of the atm log file
     if (my_task == master_task) then
-       modelio_fid = shr_file_getUnit()
-       open (modelio_fid,file='atm_modelio.nml'//trim(inst_suffix),action="READ")
-       read (modelio_fid,nml=modelio,iostat=ierr)
-       close(modelio_fid)
-       if (ierr /= 0) then
-          print *,'[eamxx] ERROR reading ','atm_modelio.nml'//trim(inst_suffix),': iostat=',ierr
-          call shr_sys_abort("[eamxx] ERROR reading 'atm_modelio.nml'"//trim(inst_suffix) )
-       end if
+      modelio_fid = shr_file_getUnit()
+      open (modelio_fid,file='atm_modelio.nml'//trim(inst_suffix),action="READ")
+      read (modelio_fid,nml=modelio,iostat=ierr)
+      close(modelio_fid)
     endif
+    mpi_bcast(ierr,1,MPI_INTEGER,master_task,mpicom_atm,mpi_ierr)
+    if (ierr /= 0) then
+      print *,'[eamxx] ERROR reading ','atm_modelio.nml'//trim(inst_suffix),': iostat=',ierr
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    end if
+
     call mpi_bcast(diro,CL,MPI_CHARACTER,master_task,mpicom_atm,ierr)
     call mpi_bcast(logfile,CL,MPI_CHARACTER,master_task,mpicom_atm,ierr)
 
@@ -157,8 +161,16 @@ CONTAINS
     call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
     call mct_aVect_init(a2x, rList=seq_flds_a2x_fields, lsize=lsize)
 
-    ! Complete AD initialization
-    call scream_init_atm (INT(start_ymd,kind=C_INT), INT(start_tod,kind=C_INT))
+    ! Complete AD initialization based on run type
+    if (trim(run_type) == trim(seq_infodata_start_type_start)) then
+      restarted_run = .false.
+    else if (trim(run_type) == trim(seq_infodata_start_type_cont) ) then
+      restarted_run = .true.
+    else
+      print *, "[eamxx] ERROR! Unsupported starttype: "//trim(run_type)
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+    call scream_init_atm (INT(start_ymd,kind=C_INT), INT(start_tod,kind=C_INT),restarted_run)
 
     ! Init surface coupling stuff in the AD
     call scream_set_cpl_indices (x2a, a2x)
