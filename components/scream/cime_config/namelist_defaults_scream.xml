@@ -172,6 +172,14 @@ tweaking their $case/namelist_scream.xml file.
       </Initial__Conditions>
       <Scorpio>
         <Output__YAML__Files>data/scream_output.yaml, </Output__YAML__Files>
+        <Model__Restart>
+          <Casename>eamxx_model_restart</Casename>
+          <Output__Control>
+            <Frequency>${REST_N}</Frequency>
+            <Frequency__Units>INVALID</Frequency__Units>
+            <Frequency__Units REST_OPTION="nstep*">Steps</Frequency__Units>
+          </Output__Control>
+        </Model__Restart>
       </Scorpio>
     </Atmosphere__Driver>
     <SCREAM>
