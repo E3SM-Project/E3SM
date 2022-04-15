@@ -17,10 +17,10 @@ namespace scream {
         /*
          * Names of input files we will need.
          */
-        std::string coefficients_file_sw = "./data/rrtmgp-data-sw-g224-2018-12-04.nc";
-        std::string coefficients_file_lw = "./data/rrtmgp-data-lw-g256-2018-12-04.nc";
-        std::string cloud_optics_file_sw = "./data/rrtmgp-cloud-optics-coeffs-sw.nc";
-        std::string cloud_optics_file_lw = "./data/rrtmgp-cloud-optics-coeffs-lw.nc";
+        std::string coefficients_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-data-sw-g224-2018-12-04.nc";
+        std::string coefficients_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-data-lw-g256-2018-12-04.nc";
+        std::string cloud_optics_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-sw.nc";
+        std::string cloud_optics_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-lw.nc";
 
         /* 
          * Objects containing k-distribution information need to be initialized

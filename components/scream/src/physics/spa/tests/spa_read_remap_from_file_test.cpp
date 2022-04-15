@@ -35,7 +35,7 @@ TEST_CASE("spa_read_remap_data","spa")
   SPAFunc::SPAHorizInterp spa_horiz_interp;
   spa_horiz_interp.m_comm = spa_comm;
 
-  const std::string remap_file_name = "spa_data_for_testing.nc";
+  const std::string remap_file_name = SCREAM_DATA_DIR "/init/spa_data_for_testing.nc";
 
   Int tgt_grid_ncols_total = 48;
   Int src_grid_ncols = 20;

@@ -3,14 +3,8 @@ INCLUDE (ScreamUtils)
 # Create the exec
 CreateUnitTestExec (shoc_p3 shoc_p3.cpp "shoc;p3;scream_control")
 
-## Copy input files to run directory
-file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
-
-GetInputFile(init/shoc_cld_p3_rrtmgp_init_ne2np4.nc
-             ${CMAKE_CURRENT_BINARY_DIR}/shoc_cld_p3_rrtmgp_init_ne2np4.nc)
-
-GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1 ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(tables/p3_lookup_table_2.dat-v4.1.1 ${CMAKE_CURRENT_BINARY_DIR}/data)
+# Ensure test input files are present in the data dir
+GetInputFile(init/shoc_cld_p3_rrtmgp_init_ne2np4.nc)
 
 # Run a test with subcycling
 set (NUM_SUBCYCLES 3)

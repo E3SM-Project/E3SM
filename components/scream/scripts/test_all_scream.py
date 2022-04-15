@@ -623,6 +623,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test])
         cmake_config += " -DSCREAM_BASELINES_ONLY=ON"
+        cmake_config += " -DSCREAM_TEST_DATA_DIR={}/data".format(test_dir)
 
         print("===============================================================================")
         print("Generating baseline for test {} with config '{}'".format(self._test_full_names[test], cmake_config))
@@ -718,7 +719,6 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         if self._quick_rerun and (test_dir/"CMakeCache.txt").is_file():
             # Do not purge bld dir, and do not rerun config step.
             # Note: make will still rerun cmake if some cmake file has changed
-            ctest_config += "-DSKIP_CONFIG_STEP=TRUE "
             if self._quick_rerun_failed:
                 ctest_config += "--rerun-failed "
         else:
