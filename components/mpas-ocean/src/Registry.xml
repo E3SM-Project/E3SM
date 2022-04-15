@@ -2875,6 +2875,10 @@
 			 description="Horizontal tapering for GM. Varies between 0 and 1."
 			 packages="gm"
 		/>
+		<var name="RossbyRadius" type="real" dimensions="nEdges Time" units="m"
+			 description="Rossby Radius, computed in GM routine for some settings"
+			 packages="gm"
+		/>
 		<var name="surfaceFluxAttenuationCoefficient" type="real" dimensions="nCells Time" units="m"
 			description="The spatially-dependent length scale of exponential decay of surface fluxes. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
 		/>

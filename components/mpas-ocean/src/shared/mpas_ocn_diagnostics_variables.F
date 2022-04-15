@@ -183,7 +183,7 @@ module ocn_diagnostics_variables
 
    real (kind=RKIND), pointer :: globalVerticalStretchMax, globalVerticalStretchMin
    real (kind=RKIND), dimension(:), pointer :: betaEdge
-   real (kind=RKIND), dimension(:), pointer :: RediHorizontalTaper, gmHorizontalTaper
+   real (kind=RKIND), dimension(:), pointer :: RediHorizontalTaper, gmHorizontalTaper, RossbyRadius
 
    ! Semi-implicit Array Pointers
    real (kind=RKIND), dimension(:), pointer :: SIvec_r0,SIvec_r00,SIvec_r1 ,SIvec_rh0,SIvec_rh1,SIvec_ph0,SIvec_ph1
@@ -260,6 +260,8 @@ contains
                    RediHorizontalTaper)
          call mpas_pool_get_array(diagnosticsPool, 'gmHorizontalTaper', &
                    gmHorizontalTaper)
+         call mpas_pool_get_array(diagnosticsPool, 'RossbyRadius', &
+                   RossbyRadius)
       end if
 
       if ( config_compute_active_tracer_budgets ) then
@@ -740,8 +742,9 @@ contains
          !$acc                   RediKappaScaling,  &
          !$acc                   rediLimiterCount,  &
          !$acc                   RediKappaSfcTaper, &
-         !$acc                   RediHorizontalTaper  &
-         !$acc                   gmHorizontalTaper  &
+         !$acc                   RediHorizontalTaper,  &
+         !$acc                   gmHorizontalTaper,  &
+         !$acc                   RossbyRadius  &
          !$acc                   )
       end if
       if ( config_compute_active_tracer_budgets ) then
@@ -976,8 +979,9 @@ contains
          !$acc                   RediKappaScaling,  &
          !$acc                   rediLimiterCount,  &
          !$acc                   RediKappaSfcTaper, &
-         !$acc                   RediHorizontalTaper  &
-         !$acc                   gmHorizontalTaper  &
+         !$acc                   RediHorizontalTaper,  &
+         !$acc                   gmHorizontalTaper,  &
+         !$acc                   RossbyRadius  &
          !$acc                   )
       end if
       if ( config_compute_active_tracer_budgets ) then
@@ -1170,7 +1174,8 @@ contains
                  rediLimiterCount,  &
                  RediKappaSfcTaper, &
                  RediHorizontalTaper, &
-                 gmHorizontalTaper)
+                 gmHorizontalTaper, &
+                 RossbyRadius)
       end if
       if ( config_compute_active_tracer_budgets ) then
          nullify(activeTracerHorMixTendency,              &

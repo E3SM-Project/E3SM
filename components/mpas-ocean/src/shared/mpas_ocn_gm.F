@@ -130,7 +130,7 @@ contains
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOnCell
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iCellSelf, maxLocation
       real(kind=RKIND)                 :: h1, h2, areaEdge, BruntVaisalaFreqTopEdge, rtmp
-      real(kind=RKIND)                 :: sumN2, countN2, maxN, ltSum
+      real(kind=RKIND)                 :: sum_hN, countN2, maxN, ltSum
       real(kind=RKIND)                 :: sumRi, RiTopOfEdge, zEdge, zMLD, sfcTaper
       real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, invAreaCell
@@ -548,11 +548,11 @@ contains
          ! config_GM_spatially_variable_baroclinic_mode
          if (local_config_GM_lat_variable_c2) then
             !$omp parallel
-            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, lt1, lt2, ltSum, c_min)
+            !$omp do schedule(runtime) private(k, cell1, cell2, sum_hN, lt1, lt2, ltSum, c_min)
             do iEdge = 1, nEdges
                cell1 = cellsOnEdge(1, iEdge)
                cell2 = cellsOnEdge(2, iEdge)
-               sumN2 = 0.0_RKIND
+               sum_hN = 0.0_RKIND
                lt1 = 0.0_RKIND
                lt2 = 0.0_RKIND
                ltSum = epsGM
@@ -560,7 +560,7 @@ contains
 
                   lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
                   lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
-                  sumN2 = sumN2 + 0.5_RKIND*(lt1*sqrt(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND)) + &
+                  sum_hN = sum_hN + 0.5_RKIND*(lt1*sqrt(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND)) + &
                                 lt2*sqrt(max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND)))
 
                   ltSum = ltSum + 0.5*(lt1+lt2)
@@ -575,11 +575,11 @@ contains
                ! the condition c/N < dz.  The condition is an estimate, but
                ! tries to insure that the streamfunction is well resolved even
                ! for the thickest layers.
-               c_min = gm_minBclModeSpeed_constant + gm_minBclModeSpeed_compute_on*max(0.01_RKIND,sumN2/ltSum*(0.5*(lt1+lt2)))
+               c_min = gm_minBclModeSpeed_constant + gm_minBclModeSpeed_compute_on*max(0.01_RKIND,sum_hN/ltSum*(0.5*(lt1+lt2)))
 
                ! Compute the speed of the first baroclinic mode from the Brunt-Vaisala frequency.
                cGMphaseSpeed(iEdge) = max(c_min,                          &
-                                          sumN2/(config_GM_spatially_variable_baroclinic_mode*3.141592_RKIND))
+                                          sum_hN/(config_GM_spatially_variable_baroclinic_mode*3.141592_RKIND))
 
             end do
             !$omp end do
@@ -600,12 +600,12 @@ contains
          if (local_config_GM_compute_Visbeck) then
            call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
            !$omp parallel
-           !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, ltSum, sumRi, countN2, &
+           !$omp do schedule(runtime) private(k, cell1, cell2, sum_hN, ltSum, sumRi, countN2, &
            !$omp             zEdge, RiTopOfEdge, BruntVaisalaFreqTopEdge, lt1, lt2, c_Visbeck, &
            !$omp             eddyLength, eddyTime)
            do iEdge = 1, nEdges
               k=minLevelEdgeBot(iEdge)
-              sumN2 = 0.0_RKIND
+              sum_hN = 0.0_RKIND
               ltSum = 0.0_RKIND
               sumRi = 0.0_RKIND
               countN2 = 0
@@ -617,7 +617,7 @@ contains
               do while(zEdge > -config_GM_Visbeck_max_depth .and. k < maxLevelEdgeTop(iEdge))
                 lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
                 lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
-                sumN2 = sumN2 + 0.5_RKIND*(lt1*max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
+                sum_hN = sum_hN + 0.5_RKIND*(lt1*max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
                                 lt2*max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND))
                 sumRi = sumRi + 0.5_RKIND*(lt1*max(RiTopOfCell(k,cell1),0.0_RKIND) + &
                                     lt2*max(RiTopOfCell(k,cell2),0.0_RKIND))
@@ -629,7 +629,7 @@ contains
               end do
 
               if (countN2 > 0) then
-                c_Visbeck = sqrt(sumN2*ltsum)
+                c_Visbeck = sqrt(sum_hN*ltsum)
                 sumRi = sumRi / (ltsum + 1.0E-11_RKIND)
 
                 eddyLength = max(dcEdge(iEdge), min(c_Visbeck/(1.0E-15_RKIND + abs(fEdge(iEdge))), &
@@ -690,39 +690,40 @@ contains
             call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
 
             !$omp parallel
-            !$omp do schedule(runtime) private(k, cell1, cell2, sumN2, lt1, lt2, c_mode1, resolution)
+            !$omp do schedule(runtime) private(k, cell1, cell2, sum_hN, lt1, lt2, c_mode1, resolution)
             do iEdge = 1, nEdges
                cell1 = cellsOnEdge(1, iEdge)
                cell2 = cellsOnEdge(2, iEdge)
-               sumN2 = 0.0
+               sum_hN = 0.0
 
                do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)-1
 
                   lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
                   lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
-                  sumN2 = sumN2 + 0.5_RKIND*(lt1*sqrt(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND)) + &
+                  sum_hN = sum_hN + 0.5_RKIND*(lt1*sqrt(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND)) + &
                                   lt2*sqrt(max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND)))
                end do
 
                ! See Hallberg (2013) https://doi.org/10.1016/j.ocemod.2013.08.007
-               ! eqn 4 for the first-mode baroclinic gravity wave speed:
+               ! eqn 4 for the first-mode baroclinic gravity wave speed in m/s
                ! c_g = sqrt( g drho h1 h2 / ( rho0 (h1+h2) )
                ! here c_mode1 is the square of c_g:
-               ! c_mode1 = c_g^2 ~ abs ( h^2 * g/rho0 drho/dz ) = h*N^2
+               ! c_mode1 = c_g ~ sqrt ( h^2 * g/rho0 drho/dz ) ~ h*N
                ! at an edge where N^2 = BruntVaisalaFreq = -g/rho0 * drho/dz
                ! note BruntVaisalaFreqTop is actually N^2, not N.
-               c_mode1 = max(1.0E-5_RKIND, sumN2/3.141592_RKIND)
+               c_mode1 = max(1.0E-5_RKIND, sum_hN/3.141592_RKIND)
                cGMphaseSpeed(iEdge) = c_mode1
 
                ! just after eqn 4 in Hallberg (2013) he defines the deformation
                ! radius as:
                ! L = sqrt( c_g^2/ ( f^2 + 2*beta*c_g) )
-               ! Here resolution = L / dcEdge is the ratio, so resolution>2 is
-               ! considered sufficiently well resolved, i.e. the Rossby Radius 
-               ! is at least two cells wide.
-               resolution = sqrt(c_mode1 / (fEdge(iEdge)**2.0 + betaEdge(iEdge)*c_mode1 + 1.0E-15_RKIND)) &
-                            / dcEdge(iEdge)
-               if (resolution .ge. 2.0 .or. c_mode1 .lt. 0.1_RKIND) then
+               RossbyRadius(iEdge) = sqrt(c_mode1*c_mode1 / &
+                  (fEdge(iEdge)*fEdge(iEdge) + 2.0_RKIND*betaEdge(iEdge)*c_mode1 + 1.0E-15_RKIND))
+
+               ! If the RossbyRadius is larger than two cell widths, then this
+               ! edge is sufficiently well-resolved, and turn off the
+               ! parameterization.
+               if (RossbyRadius(iEdge).ge.2.0*dcEdge(iEdge) .or. c_mode1 .lt. 0.1_RKIND) then
                   RossbyRadiusTaper(iEdge) = 0.0_RKIND
                else
                   RossbyRadiusTaper(iEdge) = 1.0_RKIND
