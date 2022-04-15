@@ -324,7 +324,36 @@ public:
       const Real inv_qc_relvar_max = 10;
       const Real inv_qc_relvar_min = 0.001;
 
+      //In the following loop, tke, qc and qv are updated. All these variables are slices of "qtracers" array
+      //After these updates, all tracers (except TKE) in the qtarcers array will be converted
+      //from dry mmr to wet mmr
       const int nlev_packs = ekat::npack<Spack>(nlev);
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+        // See comment in SHOCPreprocess::operator() about the necessity of *_copy views
+        tke(i,k) = tke_copy(i,k);
+        qc(i,k)  = qc_copy(i,k);
+
+        qv(i,k) = qw(i,k) - qc(i,k);
+
+        cldfrac_liq(i,k) = ekat::min(cldfrac_liq(i,k), 1);
+        sgs_buoy_flux(i,k) = sgs_buoy_flux(i,k)*rrho(i,k)*cpair;
+
+        inv_qc_relvar(i,k) = 1;
+        const auto condition = (qc(i,k) != 0 && qc2(i,k) != 0);
+        if (condition.any()) {
+          //inv_qc_relvar is used in P3 and is computed here using qc and qc2, which are in dry mmr
+          inv_qc_relvar(i,k).set(condition,
+                                 ekat::min(inv_qc_relvar_max,
+                                           ekat::max(inv_qc_relvar_min,
+                                                     ekat::square(qc(i,k))/qc2(i,k))));
+        }
+
+        // Temperature
+        const Spack dse_ik(dse(i,k));
+        const Spack z_mid_ik(z_mid(i,k));
+        const Real  phis_i(phis(i));
+        T_mid(i,k) = PF::calculate_temperature_from_dse(dse_ik,z_mid_ik,phis_i);
+      });
 
       /*--------------------------------------------------------------------------------
        *DRY-TO-WET MMRs:
@@ -348,34 +377,12 @@ public:
         });
       team.team_barrier();
 
-
+      //Convert qv from dry mmr to wet mmr
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-        // See comment in SHOCPreprocess::operator() about the necessity of *_copy views
-        tke(i,k) = tke_copy(i,k);
-        // question: Should I convert qc_copy from dry to wet here?
-        qc(i,k)  = qc_copy(i,k);
+          PF::calculate_wetmmr_from_drymmr(qv(i,k), qv(i,k));
+        });
+      team.team_barrier();
 
-        // question: what about qw, do I need to convert qw as well (assuming qc has already been converted)?
-        qv(i,k) = qw(i,k) - qc(i,k);
-
-        cldfrac_liq(i,k) = ekat::min(cldfrac_liq(i,k), 1);
-        sgs_buoy_flux(i,k) = sgs_buoy_flux(i,k)*rrho(i,k)*cpair;
-
-        inv_qc_relvar(i,k) = 1;
-        const auto condition = (qc(i,k) != 0 && qc2(i,k) != 0);
-        if (condition.any()) {
-          inv_qc_relvar(i,k).set(condition,
-                                 ekat::min(inv_qc_relvar_max,
-                                           ekat::max(inv_qc_relvar_min,
-                                                     ekat::square(qc(i,k))/qc2(i,k))));
-        }
-
-        // Temperature
-        const Spack dse_ik(dse(i,k));
-        const Spack z_mid_ik(z_mid(i,k));
-        const Real  phis_i(phis(i));
-        T_mid(i,k) = PF::calculate_temperature_from_dse(dse_ik,z_mid_ik,phis_i);
-      });
     } // operator
 
     // Local variables
