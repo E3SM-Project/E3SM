@@ -156,7 +156,7 @@ CHEMISTRY
 [uci1] O3 + H2O -> 2*OH                           ; 1.630E-10, 60
 *   fix typo, exp(-B/T), B=60 (JPL15)
 [uci2] O3 + H2 -> OH + HO2                        ; 1.200E-10,  0
-[uci3] O3 + CH4 -> OH + CH3OO                     ; 1.750E-10,  0
+[uci3] O3 + CH4LNZ -> OH + CH3OO                     ; 1.750E-10,  0
 *  These 3 rates for O(1D) rxt w/ H2O, H2, CH4 are scaled with jo1d and divided
 *     by the key quenching rates are: N2 = 3.30e-11 exp(55/T), O2 = 2.15e-11 exp(110/T)
 *     and H2O = 1.63e-10 exp(60/T), and then multiplied by the rates above.
@@ -166,7 +166,7 @@ CHEMISTRY
 [lco_h]      CO + OH -> H                                   ; 1.500E-13,  0
 [lco_ho2]    CO + OH + M -> HO2 + M                         ; 5.90e-33, 1.0, 1.10E-12, -1.3, 0.6
 [lh2_ho2]    H2 + OH -> HO2 + H2O                           ; 2.800E-12, -1800
-[lch4]       CH4 + OH -> CH3O2 + H2O                        ; 2.450E-12, -1775
+[lch4]       CH4LNZ + OH -> CH3O2 + H2O                     ; 2.450E-12, -1775
 [lc2h6]      C2H6 + OH -> C2H5O2                            ; 7.660E-12, -1020
 [lc3h8]      C3H8 + OH -> HO2 + 0.80*CH3COCH3 + 0.20*CH3CHO ; 8.700E-12, -615
 [lc2h4_oh]   C2H4 + OH + M -> ROHO2                         ; 1.10E-28, 3.5, 8.40E-12, 1.75, 0.6
