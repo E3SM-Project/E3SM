@@ -75,7 +75,7 @@ CONTAINS
     integer(IN)                      :: phase          ! initialization phase
     integer(IN)                      :: ierr,mpi_ierr  ! error codes
     integer(IN)                      :: modelio_fid    ! file descriptor for atm_modelio.nml
-    integer(IN)                      :: start_tod, start_ymd, cur_tod, cur_ymd
+    integer(IN)                      :: case_start_tod, case_start_ymd, cur_tod, cur_ymd
     integer                          :: lsize
     character(CL)                    :: diri           ! Unused
     character(CL)                    :: diro           ! directory where ATM log file is
@@ -171,8 +171,9 @@ CONTAINS
       print *, "[eamxx] ERROR! Unsupported starttype: "//trim(run_type)
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)
     endif
-    call seq_timemgr_EClockGetData(EClock, curr_ymd=cur_ymd, curr_tod=cur_tod, start_ymd=start_ymd, start_tod=start_tod)
-    call scream_init_atm (INT(start_ymd,kind=C_INT), INT(start_tod,kind=C_INT),restarted_run)
+    call seq_timemgr_EClockGetData(EClock, curr_ymd=cur_ymd, curr_tod=cur_tod, start_ymd=case_start_ymd, start_tod=case_start_tod)
+    call scream_init_atm (INT(cur_ymd,kind=C_INT),  INT(cur_tod,kind=C_INT), &
+                          INT(case_start_ymd,kind=C_INT), INT(case_start_tod,kind=C_INT))
 
     ! Init surface coupling stuff in the AD
     call scream_set_cpl_indices (x2a, a2x)

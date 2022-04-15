@@ -60,13 +60,13 @@ interface
   ! During this call, all fields are initialized (i.e., initial conditions are
   ! loaded), as well as the atm procs (which might use some initial conditions
   ! to further initialize internal structures), and the output manager.
-  subroutine scream_init_atm (start_ymd,start_tod,restarted_run) bind(c)
-    use iso_c_binding, only: c_int, c_bool
+  subroutine scream_init_atm (run_start_ymd,run_start_tod,case_start_ymd,case_start_tod) bind(c)
+    use iso_c_binding, only: c_int
     !
     ! Input(s)
     !
-    integer (kind=c_int),  value, intent(in) :: start_tod, start_ymd
-    logical (kind=c_bool), value, intent(in) :: restarted_run
+    integer (kind=c_int),  value, intent(in) :: run_start_tod, run_start_ymd
+    integer (kind=c_int),  value, intent(in) :: case_start_tod, case_start_ymd
   end subroutine scream_init_atm
 
   ! This subroutine will run the whole atm model for one atm timestep

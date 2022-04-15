@@ -158,10 +158,10 @@ void scream_setup_surface_coupling (
   });
 }
 
-void scream_init_atm (const int start_ymd,
-                      const int start_tod,
-                      const int curr_ymd,
-                      const int curr_tod)
+void scream_init_atm (const int run_start_ymd,
+                      const int run_start_tod,
+                      const int case_start_ymd,
+                      const int case_start_tod)
 {
   using namespace scream;
   using namespace scream::control;
@@ -170,29 +170,22 @@ void scream_init_atm (const int start_ymd,
     // Get the ad, then complete initialization
     auto& ad = get_ad_nonconst();
 
-    // Get the ekat comm
-    auto& atm_comm = ad.get_comm();
-
     // Recall that e3sm uses the int YYYYMMDD to store a date
-    if (atm_comm.am_i_root()) {
-      std::cout << "start_ymd: " << start_ymd << "\n";
-      std::cout << "start_tod: " << start_tod << "\n";
-    }
-
     int yy,mm,dd,hr,min,sec;
-    yy  = (curr_ymd / 100) / 100;
-    mm  = (curr_ymd / 100) % 100;
-    dd  =  curr_ymd % 100;
-    hr  = (curr_tod / 60) / 60;
-    min = (curr_tod / 60) % 60;
-    sec =  curr_tod % 60;
+    yy  = (run_start_ymd / 100) / 100;
+    mm  = (run_start_ymd / 100) % 100;
+    dd  =  run_start_ymd % 100;
+    hr  = (run_start_tod / 60) / 60;
+    min = (run_start_tod / 60) % 60;
+    sec =  run_start_tod % 60;
     util::TimeStamp run_t0 (yy,mm,dd,hr,min,sec);
-    yy  = (start_ymd / 100) / 100;
-    mm  = (start_ymd / 100) % 100;
-    dd  =  start_ymd % 100;
-    hr  = (start_tod / 60) / 60;
-    min = (start_tod / 60) % 60;
-    sec =  start_tod % 60;
+
+    yy  = (case_start_ymd / 100) / 100;
+    mm  = (case_start_ymd / 100) % 100;
+    dd  =  case_start_ymd % 100;
+    hr  = (case_start_tod / 60) / 60;
+    min = (case_start_tod / 60) % 60;
+    sec =  case_start_tod % 60;
     util::TimeStamp case_t0 (yy,mm,dd,hr,min,sec);
 
     // Init and run (to finalize, wait till checks are completed,
