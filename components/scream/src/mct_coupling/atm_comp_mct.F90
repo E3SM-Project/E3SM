@@ -3,7 +3,7 @@ module atm_comp_mct
   ! Modules used acros atm_xyz_mct routines
 
   ! shr mods
-  use shr_kind_mod,     only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CL=>SHR_KIND_CL!, CS=>SHR_KIND_CS
+  use shr_kind_mod,     only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CL=>SHR_KIND_CL, CS=>SHR_KIND_CS
 
   ! seq mods
   use seq_cdata_mod,    only: seq_cdata, seq_cdata_setptrs
@@ -46,7 +46,7 @@ CONTAINS
 
   !===============================================================================
   subroutine atm_init_mct( EClock, cdata, x2a, a2x, NLFilename )
-    use iso_c_binding,      only: c_ptr, c_loc, c_int, c_char
+    use iso_c_binding,      only: c_ptr, c_loc, c_int, c_char, c_bool
     use scream_f2c_mod,     only: scream_create_atm_instance, scream_setup_surface_coupling, &
                                   scream_init_atm
     use scream_cpl_indices, only: scream_set_cpl_indices, num_cpl_exports, &
@@ -55,12 +55,12 @@ CONTAINS
                                   can_be_exported_during_init
     use ekat_string_utils,  only: string_f2c
     use kinds,              only: homme_iulog=>iulog
-
-    use mct_mod,        only: mct_aVect_init, mct_gsMap_lsize
-    use seq_flds_mod,   only: seq_flds_a2x_fields, seq_flds_x2a_fields
-    use seq_comm_mct,   only: seq_comm_inst, seq_comm_name, seq_comm_suffix
-    use shr_file_mod,   only: shr_file_getunit, shr_file_setIO
-    use shr_sys_mod,    only: shr_sys_abort
+    use mct_mod,            only: mct_aVect_init, mct_gsMap_lsize
+    use seq_flds_mod,       only: seq_flds_a2x_fields, seq_flds_x2a_fields
+    use seq_infodata_mod,   only: seq_infodata_start_type_start, seq_infodata_start_type_cont
+    use seq_comm_mct,       only: seq_comm_inst, seq_comm_name, seq_comm_suffix
+    use shr_file_mod,       only: shr_file_getunit, shr_file_setIO
+    use shr_sys_mod,        only: shr_sys_abort
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            , intent(inout) :: EClock
@@ -126,7 +126,7 @@ CONTAINS
       read (modelio_fid,nml=modelio,iostat=ierr)
       close(modelio_fid)
     endif
-    mpi_bcast(ierr,1,MPI_INTEGER,master_task,mpicom_atm,mpi_ierr)
+    call mpi_bcast(ierr,1,MPI_INTEGER,master_task,mpicom_atm,mpi_ierr)
     if (ierr /= 0) then
       print *,'[eamxx] ERROR reading ','atm_modelio.nml'//trim(inst_suffix),': iostat=',ierr
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)
