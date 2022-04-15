@@ -157,9 +157,10 @@ void scream_setup_surface_coupling (
   });
 }
 
-void scream_init_atm (const int  start_ymd,
-                      const int  start_tod,
-                      const bool restarted_run)
+void scream_init_atm (const int start_ymd,
+                      const int start_tod,
+                      const int curr_ymd,
+                      const int curr_tod)
 {
   using namespace scream;
   using namespace scream::control;
@@ -176,18 +177,26 @@ void scream_init_atm (const int  start_ymd,
       std::cout << "start_ymd: " << start_ymd << "\n";
       std::cout << "start_tod: " << start_tod << "\n";
     }
-    const int yy  = start_ymd / 10000;
-    const int mm  = (start_ymd / 100) % 100;
-    const int dd  = start_ymd % 100;
-    const int hr  =  start_tod / 3600;
-    const int min = (start_tod % 3600) / 60;
-    const int sec = (start_tod % 3600) % 60;
-    util::TimeStamp t0 (yy,mm,dd,hr,min,sec);
+
+    int yy,mm,dd,hr,min,sec;
+    yy  = (curr_ymd / 100) / 100;
+    mm  = (curr_ymd / 100) % 100;
+    dd  =  curr_ymd % 100;
+    hr  = (curr_tod / 60) / 60;
+    min = (curr_tod / 60) % 60;
+    sec =  curr_tod % 60;
+    util::TimeStamp run_t0 (yy,mm,dd,hr,min,sec);
+    yy  = (start_ymd / 100) / 100;
+    mm  = (start_ymd / 100) % 100;
+    dd  =  start_ymd % 100;
+    hr  = (start_tod / 60) / 60;
+    min = (start_tod / 60) % 60;
+    sec =  start_tod % 60;
+    util::TimeStamp case_t0 (yy,mm,dd,hr,min,sec);
 
     // Init and run (to finalize, wait till checks are completed,
     // or you'll clear the field managers!)
-    RunType run_type = restarted_run ? RunType::Restarted : RunType::Initial;
-    ad.initialize_fields (t0,run_type);
+    ad.initialize_fields (run_t0,case_t0);
     ad.initialize_output_managers ();
     ad.initialize_atm_procs ();
   });

@@ -126,6 +126,8 @@ init_scorpio(const int atm_id)
 
 void AtmosphereDriver::create_atm_processes()
 {
+  m_atm_logger->info("[EAMXX] create_atm_processes  ...");
+
   // At this point, must have comm and params set.
   check_ad_status(s_comm_set | s_params_set);
 
@@ -137,10 +139,13 @@ void AtmosphereDriver::create_atm_processes()
   m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_comm,atm_proc_params);
 
   m_ad_status |= s_procs_created;
+  m_atm_logger->info("[EAMXX] create_atm_processes  ... done!");
 }
 
 void AtmosphereDriver::create_grids()
 {
+  m_atm_logger->info("[EAMXX] create_grids ...");
+
   // Must have procs created by now (and comm/params set)
   check_ad_status (s_procs_created | s_comm_set | s_params_set);
 
@@ -158,10 +163,13 @@ void AtmosphereDriver::create_grids()
   m_atm_process_group->set_grids(m_grids_manager);
 
   m_ad_status |= s_grids_created;
+
+  m_atm_logger->info("[EAMXX] create_grids ... done!");
 }
 
 void AtmosphereDriver::create_fields()
 {
+  m_atm_logger->info("[EAMXX] create_fields ...");
   // Must have grids and procs at this point
   check_ad_status (s_procs_created | s_grids_created);
 
@@ -311,9 +319,13 @@ void AtmosphereDriver::create_fields()
   }
 
   m_ad_status |= s_fields_created;
+
+  m_atm_logger->info("[EAMXX] create_fields ... done!");
 }
 
 void AtmosphereDriver::initialize_output_managers () {
+  m_atm_logger->info("[EAMXX] initialize_output_managers ...");
+
   check_ad_status (s_comm_set | s_params_set | s_grids_created | s_fields_created);
 
   auto& io_params = m_atm_params.sublist("Scorpio");
@@ -343,11 +355,19 @@ void AtmosphereDriver::initialize_output_managers () {
   }
 
   m_ad_status |= s_output_inited;
+
+  m_atm_logger->info("[EAMXX] initialize_output_managers ... done!");
 }
 
 void AtmosphereDriver::
 initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0)
 {
+  m_atm_logger->info("[EAMXX] initialize_fields ...");
+
+  m_atm_logger->info("  [EAMXX] Run  start time stamp: " + run_t0.to_string());
+  m_atm_logger->info("  [EAMXX] Case start time stamp: " + case_t0.to_string());
+
+
   // See if we need to print a DAG. We do this first, cause if any input
   // field is missing from the initial condition file, an error will be thrown.
   // By printing the DAG first, we give the user the possibility of seeing
@@ -444,10 +464,13 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
   }
 
   m_ad_status |= s_fields_inited;
+  m_atm_logger->info("[EAMXX] initialize_fields ... done!");
 }
 
 void AtmosphereDriver::restart_model ()
 {
+  m_atm_logger->info("  [EAMXX] restart_model ...");
+
   // First, figure out the name of the netcdf file containing the restart data
   std::string filename, content;
   bool found = false;
@@ -511,6 +534,8 @@ void AtmosphereDriver::restart_model ()
 
   // Close files and finalize all pio data structs
   model_restart.finalize();
+
+  m_atm_logger->info("  [EAMXX] restart_model ... done!");
 }
 
 void AtmosphereDriver::create_logger () {
@@ -548,6 +573,8 @@ void AtmosphereDriver::create_logger () {
 
 void AtmosphereDriver::set_initial_conditions ()
 {
+  m_atm_logger->info("  [EAMXX] set_initial_conditions ...");
+
   auto& ic_pl = m_atm_params.sublist("Initial Conditions");
 
   // When processing groups and fields separately, we might end up processing the same
@@ -732,6 +759,8 @@ void AtmosphereDriver::set_initial_conditions ()
       }
     }
   }
+
+  m_atm_logger->info("  [EAMXX] set_initial_conditions ... done!");
 }
 
 void AtmosphereDriver::
@@ -802,6 +831,8 @@ initialize_constant_field(const FieldIdentifier& fid,
 
 void AtmosphereDriver::initialize_atm_procs ()
 {
+  m_atm_logger->info("[EAMXX] initialize_atm_procs ...");
+
   // Initialize memory buffer for all atm processes
   m_memory_buffer = std::make_shared<ATMBufferManager>();
   m_memory_buffer->request_bytes(m_atm_process_group->requested_buffer_size_in_bytes());
@@ -814,6 +845,8 @@ void AtmosphereDriver::initialize_atm_procs ()
   m_atm_process_group->initialize(m_current_ts, restarted_run ? RunType::Restarted : RunType::Initial);
 
   m_ad_status |= s_procs_inited;
+
+  m_atm_logger->info("[EAMXX] initialize_atm_procs ... done!");
 }
 
 void AtmosphereDriver::
@@ -880,6 +913,8 @@ void AtmosphereDriver::run (const int dt) {
 
 void AtmosphereDriver::finalize ( /* inputs? */ ) {
 
+  m_atm_logger->info("[EAMXX] Finalize ...");
+
   // Finalize and destroy output streams, make sure files are closed
   for (auto& out_mgr : m_output_managers) {
     out_mgr.finalize();
@@ -908,6 +943,8 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   if (scorpio::is_eam_pio_subsystem_inited()) {
     scorpio::eam_pio_finalize();
   }
+
+  m_atm_logger->info("[EAMXX] Finalize ... done!");
 }
 
 AtmosphereDriver::field_mgr_ptr

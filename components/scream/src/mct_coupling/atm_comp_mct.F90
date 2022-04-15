@@ -75,7 +75,7 @@ CONTAINS
     integer(IN)                      :: phase          ! initialization phase
     integer(IN)                      :: ierr,mpi_ierr  ! error codes
     integer(IN)                      :: modelio_fid    ! file descriptor for atm_modelio.nml
-    integer(IN)                      :: start_tod, start_ymd
+    integer(IN)                      :: start_tod, start_ymd, cur_tod, cur_ymd
     integer                          :: lsize
     character(CL)                    :: diri           ! Unused
     character(CL)                    :: diro           ! directory where ATM log file is
@@ -126,7 +126,9 @@ CONTAINS
       read (modelio_fid,nml=modelio,iostat=ierr)
       close(modelio_fid)
     endif
+    print *, "bcasting ierr..."
     call mpi_bcast(ierr,1,MPI_INTEGER,master_task,mpicom_atm,mpi_ierr)
+    print *, "bcasting ierr...done!"
     if (ierr /= 0) then
       print *,'[eamxx] ERROR reading ','atm_modelio.nml'//trim(inst_suffix),': iostat=',ierr
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)
@@ -145,7 +147,6 @@ CONTAINS
           action='WRITE', access='SEQUENTIAL')
 
     ! Init the AD
-    call seq_timemgr_EClockGetData(EClock, start_ymd=start_ymd, start_tod=start_tod)
     call string_f2c(yaml_fname,yaml_fname_c)
     call string_f2c(trim(diro)//"/"//trim(logfile),atm_log_fname_c)
     call scream_create_atm_instance (mpicom_atm, ATM_ID, yaml_fname_c, atm_log_fname_c)
@@ -170,6 +171,7 @@ CONTAINS
       print *, "[eamxx] ERROR! Unsupported starttype: "//trim(run_type)
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)
     endif
+    call seq_timemgr_EClockGetData(EClock, curr_ymd=cur_ymd, curr_tod=cur_tod, start_ymd=start_ymd, start_tod=start_tod)
     call scream_init_atm (INT(start_ymd,kind=C_INT), INT(start_tod,kind=C_INT),restarted_run)
 
     ! Init surface coupling stuff in the AD
