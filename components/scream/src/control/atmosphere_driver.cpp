@@ -567,7 +567,9 @@ void AtmosphereDriver::create_logger () {
   using logger_t = Logger<LogBasicFile,LogRootRank>;
   auto logger = std::make_shared<logger_t>(log_fname,log_level,m_atm_comm,"");
   logger->set_no_format();
-  logger->set_console_level(LogLevel::off);
+  if (not m_atm_params.get<bool>("Standalone",true)) {
+    logger->set_console_level(LogLevel::off);
+  }
   m_atm_logger = logger;
 }
 

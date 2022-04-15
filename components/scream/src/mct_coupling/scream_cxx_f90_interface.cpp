@@ -100,6 +100,7 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
 
     auto& ad_params = scream_params.sublist("Atmosphere Driver");
     ad_params.set<std::string>("Atm Log File",atm_log_file);
+    ad_params.set<bool>("Standalone",false);
 
     // Need to register products in the factories *before* we attempt to create any.
     // In particular, register all atm processes, and all grids managers.
