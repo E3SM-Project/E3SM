@@ -82,7 +82,7 @@ foreach (file IN ITEMS ${P3_TABLES})
 endforeach()
 
 # This executable can be used to re-generate tables in ${SCREAM_DATA_DIR}
-add_executable(p3_tables_setup p3_tables_setup.cpp)
+add_executable(p3_tables_setup EXCLUDE_FROM_ALL p3_tables_setup.cpp)
 target_link_libraries(p3_tables_setup p3)
 
 if (NOT SCREAM_LIB_ONLY)
