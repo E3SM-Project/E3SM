@@ -316,8 +316,6 @@ void AtmosphereDriver::create_fields()
 void AtmosphereDriver::initialize_output_managers () {
   check_ad_status (s_comm_set | s_params_set | s_grids_created | s_fields_created);
 
-  const bool restarted_run = m_case_t0<m_run_t0;
-
   auto& io_params = m_atm_params.sublist("Scorpio");
 
   // IMPORTANT: create model restart OutputManager first! This OM will be able to
@@ -330,7 +328,7 @@ void AtmosphereDriver::initialize_output_managers () {
     // Signal that this is not a normal output, but the model restart one
     m_output_managers.emplace_back();
     auto& om = m_output_managers.back();
-    om.setup(m_atm_comm,restart_pl,m_field_mgrs,m_grids_manager,m_run_t0,true,restarted_run);
+    om.setup(m_atm_comm,restart_pl,m_field_mgrs,m_grids_manager,m_run_t0,m_case_t0,true);
   }
 
   // Build one manager per output yaml file
@@ -341,7 +339,7 @@ void AtmosphereDriver::initialize_output_managers () {
     ekat::parse_yaml_file(fname,params);
     m_output_managers.emplace_back();
     auto& om = m_output_managers.back();
-    om.setup(m_atm_comm,params,m_field_mgrs,m_grids_manager,m_run_t0,false,restarted_run,m_case_t0);
+    om.setup(m_atm_comm,params,m_field_mgrs,m_grids_manager,m_run_t0,m_case_t0,false);
   }
 
   m_ad_status |= s_output_inited;

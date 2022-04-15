@@ -20,14 +20,13 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
        const std::shared_ptr<fm_type>& field_mgr,
        const std::shared_ptr<const gm_type>& grids_mgr,
        const util::TimeStamp& run_t0,
-       const bool is_model_restart_output,
-       const bool is_restarted_run,
-       const util::TimeStamp& case_t0)
+       const util::TimeStamp& case_t0,
+       const bool is_model_restart_output)
 {
   using map_t = std::map<std::string,std::shared_ptr<fm_type>>;
   map_t fms;
   fms[field_mgr->get_grid()->name()] = field_mgr;
-  setup(io_comm,params,fms,grids_mgr,run_t0,is_model_restart_output,is_restarted_run,case_t0);
+  setup(io_comm,params,fms,grids_mgr,run_t0,case_t0,is_model_restart_output);
 }
 
 void OutputManager::
@@ -35,13 +34,23 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
        const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
        const std::shared_ptr<const gm_type>& grids_mgr,
        const util::TimeStamp& run_t0,
-       const bool is_model_restart_output,
-       const bool is_restarted_run,
-       const util::TimeStamp& case_t0)
+       const util::TimeStamp& case_t0,
+       const bool is_model_restart_output)
 {
+  // Sanity checks
+  EKAT_REQUIRE_MSG (run_t0.is_valid(),
+      "Error! Invalid case_t0 timestamp: " + case_t0.to_string() + "\n");
+  EKAT_REQUIRE_MSG (run_t0.is_valid(),
+      "Error! Invalid run_t0 timestamp: " + case_t0.to_string() + "\n");
+  EKAT_REQUIRE_MSG (case_t0<=run_t0,
+      "Error! The case_t0 timestamp must precede run_t0.\n"
+      "   run_t0 : " + run_t0.to_string() + "\n"
+      "   case_t0: " + case_t0.to_string() + "\n");
+
   m_io_comm = io_comm;
-  m_run_t0 = m_case_t0 = run_t0;
-  m_is_restarted_run = is_restarted_run;
+  m_run_t0 = run_t0;
+  m_case_t0 = case_t0;
+  m_is_restarted_run = (case_t0<run_t0);
   m_is_model_restart_output = is_model_restart_output;
 
   // Register all potential diagnostics
@@ -98,10 +107,8 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     }
   }
 
-  // A restarted run needs at the very least to figure out the start date/time of
-  // the original simulation.
-  // On top of that, if this is normal output (not the model restart output),
-  // and if the output specs require it, we might have to restart the output history.
+  // If this is normal output (not the model restart output) and the output specs
+  // require it, we need to restart the output history.
   // E.g., we might save 30-day avg value for field F, but due to job size
   // break the run into three 10-day runs. We then need to save the state of
   // our averaging in a "restart" file (e.g., the current avg and avg_count).
@@ -109,45 +116,11 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   //       of disabling the restart. Also, the user might want to change the
   //       casename, so allow to specify a different casename for the restart file.
   if (m_is_restarted_run) {
-
     // Allow to skip history restart, or to specify a casename for the restart file
     // that is different from the casename of the current output.
     auto& restart_pl = m_params.sublist("Restart");
     bool perform_history_restart = has_restart_data && restart_pl.get("Perform Restart",true);
     auto hist_restart_casename = restart_pl.get("Casename",m_casename);
-
-    if (m_is_model_restart_output) {
-      // If this is the model restart output, We look for the original start date/time
-      // in the model restart file. For "normal" output, we fully trust the t0 that was
-      // passed to the setup method. The reasons are the following:
-      //  - history restart files may not have been written, if the last model restart
-      //    step coincided with an output step.
-      //  - reading the model restart file would require this OutputManager to be provided
-      //    with the casename of the model restart output file.
-      // It is simpler to just have the AD handle the retrieval of the original simulation
-      // start date/time, and pass it to the setup method. This can be easily achieved by
-      // setting up the OM for the model restart *before* those of the normal output.
-
-      // Find out model restart file name
-      auto model_restart_filename = find_filename_in_rpointer(hist_restart_casename,".r.nc");
-
-      // Recover the original simulation start date/time
-      if (m_io_comm.am_i_root()) {
-        std::cout << "Restarting simulation from '" << model_restart_filename << "' nc file.\n";
-      }
-      ekat::ParameterList res_params("Input Parameters");
-      res_params.set<std::string>("Filename",model_restart_filename);
-      AtmosphereInput model_restart (m_io_comm,res_params);
-      int start_date = model_restart.read_int_scalar("start_date"); // YYYYMMDD
-      int start_time = model_restart.read_int_scalar("start_time"); // HHMMSS
-      model_restart.finalize();
-
-      std::vector<int> date = {start_date/10000, (start_date/100) % 100, start_date % 100};
-      std::vector<int> time = {start_time/10000, (start_time/100) % 100, start_time % 100};
-      m_case_t0 = util::TimeStamp(date,time);
-    } else {
-      m_case_t0 = case_t0.is_valid() ? case_t0 : run_t0;
-    }
 
     if (perform_history_restart) {
       auto output_restart_filename = find_filename_in_rpointer(hist_restart_casename,".rhist.nc");
@@ -336,7 +309,7 @@ find_filename_in_rpointer (const std::string& casename, const std::string& suffi
         // If there's no time stamp in one of the filenames, we assume this is some sort of
         // unit test, with no time stamp in the filename, and we accept the filename.
         auto ts = extract_ts(line);
-        if (not ts.is_valid() || ts<m_run_t0) {
+        if (not ts.is_valid() || !(ts<=m_run_t0) ) {
           found = true;
           filename = line;
         }
@@ -396,7 +369,7 @@ set_params (const ekat::ParameterList& params,
       }
       fields_pl.sublist(it.first).set("Field Names",fnames);
     }
-    m_casename = m_params.get<std::string>("Casename", "scream_restart");
+    m_casename = m_params.get<std::string>("Casename");
   } else {
     auto avg_type = m_params.get<std::string>("Averaging Type");
     m_avg_type = str2avg(avg_type);

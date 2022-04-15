@@ -67,26 +67,44 @@ public:
 
   // Set up the manager, creating all output streams. Inputs:
   //  - params: the parameter list with file/fields info, as well as method of output options
-  //  - model_restart_output: whether this output stream is to write a model restart file
+  //  - field_mgr/field_mgrs: field manager(s) storing fields to be outputed
+  //  - grids_mgr: grid manager to create remapping from field managers grids onto the IO grid.
+  //               This is needed, e.g., when outputing SEGrid fields without duplicating dofs.
+  //  - run_t0: the timestamp of the start of the current simulation
+  //  - case_t0: the timestamp of the start of the overall simulation (precedes run_r0 for
+  //             a restarted simulation. Restart logic is triggered *only* if case_t0<run_t0.
+  //  - is_model_restart_output: whether this output stream is to write a model restart file
   void setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
               const std::shared_ptr<fm_type>& field_mgr,
               const std::shared_ptr<const gm_type>& grids_mgr,
               const util::TimeStamp& run_t0,
-              const bool is_model_restart_output,
-              const bool is_restarted_run,
-              const util::TimeStamp& case_t0 = util::TimeStamp());
+              const util::TimeStamp& case_t0,
+              const bool is_model_restart_output);
+  void setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
+              const std::shared_ptr<fm_type>& field_mgr,
+              const std::shared_ptr<const gm_type>& grids_mgr,
+              const util::TimeStamp& run_t0,
+              const bool is_model_restart_output) {
+    setup (io_comm,params,field_mgr,grids_mgr,run_t0,run_t0,is_model_restart_output);
+  }
 
   void setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
               const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
               const std::shared_ptr<const gm_type>& grids_mgr,
               const util::TimeStamp& run_t0,
-              const bool is_model_restart_output,
-              const bool is_restarted_run,
-              const util::TimeStamp& case_t0 = util::TimeStamp());
+              const util::TimeStamp& case_t0,
+              const bool is_model_restart_output);
+
+  void setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
+              const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs,
+              const std::shared_ptr<const gm_type>& grids_mgr,
+              const util::TimeStamp& run_t0,
+              const bool is_model_restart_output) {
+    setup (io_comm,params,field_mgrs,grids_mgr,run_t0,run_t0,is_model_restart_output);
+  }
+
   void run (const util::TimeStamp& current_ts);
   void finalize();
-
-  const util::TimeStamp& get_case_t0 () const { return m_case_t0; }
 protected:
 
   std::string compute_filename_root (const IOControl& control, const IOFileSpecs& file_specs) const;

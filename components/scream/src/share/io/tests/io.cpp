@@ -156,7 +156,7 @@ TEST_CASE("input_output_basic","io")
     ekat::ParameterList params;
     ekat::parse_yaml_file("io_test_" + type + ".yaml",params);
     OutputManager om;
-    om.setup(io_comm,params,field_manager,gm,t0,false,false);
+    om.setup(io_comm,params,field_manager,gm,t0,t0,false);
     io_comm.barrier();
 
     const auto& out_fields = field_manager->get_groups_info().at("output");
