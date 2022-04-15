@@ -5,9 +5,11 @@ Debug:
 
 Time Stepping:
   Time Step: 300
-  Start Time: [12, 00, 00]      # Hours, Minutes, Seconds
-  Start Date: [2021, 10, 12]    # Year, Month, Day
   Number of Steps: 1
+  Run Start Time: [12, 00, 00]      # Hours, Minutes, Seconds
+  Run Start Date: [2021, 10, 12]    # Year, Month, Day
+  Case Start Time: [12, 00, 00]      # Hours, Minutes, Seconds
+  Case Start Date: [2021, 10, 12]    # Year, Month, Day
 
 Initial Conditions:
   Restart Run: false

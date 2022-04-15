@@ -346,7 +346,7 @@ void AtmosphereDriver::initialize_output_managers () {
 }
 
 void AtmosphereDriver::
-initialize_fields (const util::TimeStamp& t0, const RunType run_type)
+initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0)
 {
   // See if we need to print a DAG. We do this first, cause if any input
   // field is missing from the initial condition file, an error will be thrown.
@@ -376,14 +376,14 @@ initialize_fields (const util::TimeStamp& t0, const RunType run_type)
     dag.write_dag("scream_atm_dag.dot",std::max(verb_lvl,0));
   }
 
-  m_run_t0 = m_current_ts = t0;
+  // Initialize time stamps
+  m_run_t0 = m_current_ts = run_t0;
+  m_case_t0 = case_t0;
 
-  const bool restarted_run = run_type==RunType::Restarted;
-
-  if (restarted_run) {
+  // Initialize fields
+  if (m_case_t0<m_run_t0) {
     restart_model ();
   } else {
-    m_case_t0 = m_run_t0;
     set_initial_conditions ();
   }
 
@@ -489,7 +489,6 @@ void AtmosphereDriver::restart_model ()
   ekat::ParameterList rest_pl;
   rest_pl.set<std::string>("Filename",filename);
   AtmosphereInput model_restart(m_atm_comm,rest_pl);
-  m_current_ts.set_num_steps(model_restart.read_int_scalar("nsteps"));
 
   for (auto& it : m_field_mgrs) {
     if (not it.second->has_group("RESTART")) {
@@ -504,12 +503,11 @@ void AtmosphereDriver::restart_model ()
     read_fields_from_file (fnames,it.first,filename,m_current_ts);
   }
 
-  // Read case start date/time
-  int start_date = model_restart.read_int_scalar("start_date"); // YYYYMMDD
-  int start_time = model_restart.read_int_scalar("start_time"); // HHMMSS
-  std::vector<int> date = {start_date/10000, (start_date/100) % 100, start_date % 100};
-  std::vector<int> time = {start_time/10000, (start_time/100) % 100, start_time % 100};
-  m_case_t0 = util::TimeStamp(date,time);
+  // Read number of steps from restart file
+  int nsteps = model_restart.read_int_scalar("nsteps");
+  m_current_ts.set_num_steps(nsteps);
+  m_case_t0.set_num_steps(nsteps);
+  m_run_t0.set_num_steps(nsteps);
 
   // Close files and finalize all pio data structs
   model_restart.finalize();
@@ -821,7 +819,8 @@ void AtmosphereDriver::initialize_atm_procs ()
 void AtmosphereDriver::
 initialize (const ekat::Comm& atm_comm,
             const ekat::ParameterList& params,
-            const util::TimeStamp& t0)
+            const util::TimeStamp& run_t0,
+            const util::TimeStamp& case_t0)
 {
   set_comm(atm_comm);
   set_params(params);
@@ -834,8 +833,7 @@ initialize (const ekat::Comm& atm_comm,
 
   create_fields ();
 
-  const bool restarted_run = m_atm_params.sublist("Initial Conditions").get<bool>("Restart Run",false);
-  initialize_fields (t0, restarted_run ? RunType::Restarted : RunType::Initial);
+  initialize_fields (run_t0, case_t0);
 
   initialize_output_managers ();
 
