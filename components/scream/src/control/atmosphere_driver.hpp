@@ -147,8 +147,14 @@ protected:
   // Surface coupling stuff
   std::shared_ptr<SurfaceCoupling>          m_surface_coupling;
 
-  // This are the time stamps of the start and end of the time step.
+  // This is the time stamp at the beginning of the time step.
   util::TimeStamp                           m_current_ts;
+
+  // These are the time stamps of the beginning of this run and case
+  // respectively. For initial runs, they are the same, but for
+  // restarted runs, the latter is "older" than the former
+  util::TimeStamp                           m_run_t0;
+  util::TimeStamp                           m_case_t0;
 
   // This is the comm containing all (and only) the processes assigned to the atmosphere
   ekat::Comm                                m_atm_comm;

@@ -320,10 +320,6 @@ void AtmosphereDriver::initialize_output_managers () {
 
   auto& io_params = m_atm_params.sublist("Scorpio");
 
-
-  // Simulation start time. Will be overwritten if this is a restarted run.
-  auto case_t0 = m_current_ts;
-
   // IMPORTANT: create model restart OutputManager first! This OM will be able to
   // retrieve the original simulation start date, which we later pass to the
   // OM of all the requested outputs.
@@ -334,8 +330,7 @@ void AtmosphereDriver::initialize_output_managers () {
     // Signal that this is not a normal output, but the model restart one
     m_output_managers.emplace_back();
     auto& om = m_output_managers.back();
-    om.setup(m_atm_comm,restart_pl,m_field_mgrs,m_grids_manager,m_current_ts,true,restarted_run);
-    case_t0 = om.get_case_t0();
+    om.setup(m_atm_comm,restart_pl,m_field_mgrs,m_grids_manager,m_run_t0,true,restarted_run);
   }
 
   // Build one manager per output yaml file
@@ -346,7 +341,7 @@ void AtmosphereDriver::initialize_output_managers () {
     ekat::parse_yaml_file(fname,params);
     m_output_managers.emplace_back();
     auto& om = m_output_managers.back();
-    om.setup(m_atm_comm,params,m_field_mgrs,m_grids_manager,m_current_ts,false,restarted_run,case_t0);
+    om.setup(m_atm_comm,params,m_field_mgrs,m_grids_manager,m_run_t0,false,restarted_run,m_case_t0);
   }
 
   m_ad_status |= s_output_inited;
@@ -383,12 +378,13 @@ initialize_fields (const util::TimeStamp& t0)
     dag.write_dag("scream_atm_dag.dot",std::max(verb_lvl,0));
   }
 
-  m_current_ts = t0;
+  m_run_t0 = m_current_ts = t0;
 
   const bool restarted_run = m_atm_params.sublist("Initial Conditions").get<bool>("Restart Run",false);
   if (restarted_run) {
     restart_model ();
   } else {
+    m_case_t0 = m_run_t0;
     set_initial_conditions ();
   }
 
@@ -503,8 +499,15 @@ void AtmosphereDriver::restart_model ()
     }
     read_fields_from_file (fnames,it.first,filename,m_current_ts);
   }
-  // Finalize after the above loop, so we don't delete-recreate the pio file struct
-  // in the F90 interface while calling 'read_fields_from_file'.
+
+  // Read case start date/time
+  int start_date = model_restart.read_int_scalar("start_date"); // YYYYMMDD
+  int start_time = model_restart.read_int_scalar("start_time"); // HHMMSS
+  std::vector<int> date = {start_date/10000, (start_date/100) % 100, start_date % 100};
+  std::vector<int> time = {start_time/10000, (start_time/100) % 100, start_time % 100};
+  m_case_t0 = util::TimeStamp(date,time);
+
+  // Close files and finalize all pio data structs
   model_restart.finalize();
 }
 
