@@ -2249,13 +2249,13 @@
 		<var name="kiteAreasOnVertex" type="real" dimensions="vertexDegree nVertices" units="m^2"
 			 description="Area of the portions of each dual cell that are part of each cellsOnVertex."
 		/>
-		<var name="fEdge" type="real" dimensions="nEdges" units="s^{-1}"
+		<var name="fEdge" type="real" dimensions="nEdges" units="radians s^{-1}"
 			 description="Coriolis parameter at edges."
 		/>
-		<var name="fVertex" type="real" dimensions="nVertices" units="s^{-1}"
+		<var name="fVertex" type="real" dimensions="nVertices" units="radians s^{-1}"
 			 description="Coriolis parameter at vertices."
 		/>
-		<var name="fCell" type="real" dimensions="nCells" units="s^{-1}"
+		<var name="fCell" type="real" dimensions="nCells" units="radians s^{-1}"
 			 description="Coriolis parameter at cell centers."
 		/>
 		<var name="bottomDepth" type="real" dimensions="nCells" units="m"

@@ -704,27 +704,29 @@ contains
                                   lt2*sqrt(max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND)))
                end do
 
-               ! See Hallberg (2013) https://doi.org/10.1016/j.ocemod.2013.08.007
-               ! eqn 4 for the first-mode baroclinic gravity wave speed in m/s
-               ! c_g = sqrt( g drho h1 h2 / ( rho0 (h1+h2) )
-               ! here c_mode1 is the square of c_g:
-               ! c_mode1 = c_g ~ sqrt ( h^2 * g/rho0 drho/dz ) ~ h*N
-               ! at an edge where N^2 = BruntVaisalaFreq = -g/rho0 * drho/dz
-               ! note BruntVaisalaFreqTop is actually N^2, not N.
+               ! See Chelton (1998)
+               ! https://journals.ametsoc.org/view/journals/phoc/28/3/1520-0485_1998_028_0433_gvotfb_2.0.co_2.xml
+               ! eqn 2.2a, also Appendix A,
+               ! for the first-mode (m=1) baroclinic gravity wave speed in m/s
+               ! c_m = 1/pi integral(N dz )
+
                c_mode1 = max(1.0E-5_RKIND, sum_hN/3.141592_RKIND)
                cGMphaseSpeed(iEdge) = c_mode1
 
-               ! just after eqn 4 in Hallberg (2013) he defines the deformation
+               ! See Hallberg (2013) https://doi.org/10.1016/j.ocemod.2013.08.007
+               ! just after eqn 4 the defines the deformation
                ! radius as:
                ! L = sqrt( c_g^2/ ( f^2 + 2*beta*c_g) )
                !   = c_g * sqrt(1/( f^2 + 2*beta*c_g) )  (note c_g is guaranteed non-negative)
+               ! This comes from a combination of Chelton (1998) eqns 2.3a and
+               ! 2.3b, with a smooth transition in between.
                RossbyRadius(iEdge) = c_mode1*sqrt( 1.0_RKIND / &
                   (fEdge(iEdge)*fEdge(iEdge) + 2.0_RKIND*betaEdge(iEdge)*c_mode1 + 1.0E-15_RKIND))
 
                ! If the RossbyRadius is larger than two cell widths, then this
                ! edge is sufficiently well-resolved, and turn off the
                ! parameterization.
-               if (RossbyRadius(iEdge).ge.2.0*dcEdge(iEdge) .or. c_mode1 .lt. 0.1_RKIND) then
+               if (RossbyRadius(iEdge).ge.2.0_RKIND*dcEdge(iEdge) .or. c_mode1.lt.0.1_RKIND) then
                   RossbyRadiusTaper(iEdge) = 0.0_RKIND
                else
                   RossbyRadiusTaper(iEdge) = 1.0_RKIND
