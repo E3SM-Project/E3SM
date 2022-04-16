@@ -310,16 +310,15 @@ contains
           ! Adjust flux of CO2 by the net conversion of mineralizing C to CH4
           do g = bounds%begg,bounds%endg
              ! nem is in g C/m2/sec
-             if (use_lake_bgc) then
-                lnd2atm_vars%nem_grc(g) = lnd2atm_vars%nem_grc(g) + lnd2atm_vars%nem_lake_grc(g)
-             end if
              nee_grc(g) = nee_grc(g) + lnd2atm_vars%nem_grc(g) 
           end do
-       else if (use_lake_bgc) then
+       end if
+       if (use_lake_bgc .and. use_lch4) then
+          ! Adjust flux of CO2 by the net conversion of mineralizing C to CH4
           do g = bounds%begg,bounds%endg
              ! nem is in g C/m2/sec
-             lnd2atm_vars%nem_grc(g) = lnd2atm_vars%nem_lake_grc(g)
-             nee_grc(g) = nee_grc(g) + lnd2atm_vars%nem_grc(g)
+             lnd2atm_vars%nem_grc(g) = lnd2atm_vars%nem_grc(g) + lnd2atm_vars%nem_lake_grc(g)
+             nee_grc(g) = nee_grc(g) + lnd2atm_vars%nem_lake_grc(g)
           end do
        end if
 
@@ -357,7 +356,7 @@ contains
 
     if (use_lake_bgc) then
        call c2g( bounds, &
-            lakebgc_vars%ch4_surf_totflux_col (bounds%begc:bounds%endc), &
+            lakebgc_vars%ch4_surf_flux_col (bounds%begc:bounds%endc), &
             lnd2atm_vars%flux_lake_ch4_grc     (bounds%begg:bounds%endg), &
             c2l_scale_type = unity, l2g_scale_type=unity )
     end if
@@ -370,7 +369,7 @@ contains
             c2l_scale_type= unity, l2g_scale_type=unity )
 
        call c2g( bounds, &
-            lakebgc_vars%ch4_surf_totflux_col (bounds%begc:bounds%endc), &
+            lakebgc_vars%ch4_surf_flux_col (bounds%begc:bounds%endc), &
             lnd2atm_vars%flux_lake_ch4_grc     (bounds%begg:bounds%endg), &
             c2l_scale_type = unity, l2g_scale_type=unity )
 
@@ -384,7 +383,7 @@ contains
             c2l_scale_type= unity, l2g_scale_type=unity )
     else if (use_lake_bgc) then
        call c2g( bounds, &
-            lakebgc_vars%ch4_surf_totflux_col (bounds%begc:bounds%endc), &
+            lakebgc_vars%ch4_surf_flux_col (bounds%begc:bounds%endc), &
             lnd2atm_vars%flux_lake_ch4_grc     (bounds%begg:bounds%endg), &
             c2l_scale_type = unity, l2g_scale_type=unity )
        do g = bounds%begg, bounds%endg

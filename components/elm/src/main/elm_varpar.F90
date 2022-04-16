@@ -67,6 +67,7 @@ module elm_varpar
   integer, parameter :: nlevslp = 11          ! number of slope percentile levels
 
   integer, parameter :: ngaslak = 4           ! number of gases in lake BGC
+  integer, parameter :: nsolulak = 5          ! number of solutes in lake BGC
   integer, parameter :: nphytolak = 2         ! number of phytoplankton types in lake BGC 
   integer, parameter :: nsoilclak = 2         ! number of C pools in lake BGC
 

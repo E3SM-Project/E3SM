@@ -7,7 +7,7 @@ module LakeBGCType
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use elm_varcon        , only : zisoi, spval
-  use elm_varpar        , only : ngaslak, nphytolak, nsoilclak
+  use elm_varpar        , only : ngaslak, nsolulak, nphytolak, nsoilclak
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
   use ColumnType        , only : col_pp
@@ -23,6 +23,12 @@ module LakeBGCType
   integer, parameter, public :: go2lak = 2
   integer, parameter, public :: gco2lak = 3
   integer, parameter, public :: gch4lak = 4
+  ! solute identifier
+  integer, parameter, public :: wn2lak = 1
+  integer, parameter, public :: wo2lak = 2
+  integer, parameter, public :: wco2lak = 3
+  integer, parameter, public :: wch4lak = 4
+  integer, parameter, public :: wsrplak = 5
   ! phytoplankton group identifier
   integer, parameter, public :: small_phyto = 1
   integer, parameter, public :: large_phyto = 2
@@ -36,6 +42,11 @@ module LakeBGCType
   integer, parameter, public :: nsubstep = 10
   ! respiration fraction of sediment C pools
   real(r8), parameter, public :: frac_resp(nsoilclak) = (/0.49_r8, 1.0_r8/) 
+  ! molar stoichemistry of C:P in POM and in allochthonous DOM
+  real(r8), parameter, public :: YC2P_POM = 106.0_r8
+  real(r8), parameter, public :: YC2P_DOM = 199.0_r8
+  ! Redfield C : DOM mass ratio (C106H175O42N16P) (g/g)
+  real(r8), parameter, public :: YC2DOM = 0.5358_r8
   !
   ! !PUBLIC TYPES:
   type, public :: lakebgc_type
@@ -67,7 +78,7 @@ module LakeBGCType
      real(r8), pointer :: ch4_surf_diff_col(:)        ! col CH4 diffusion at the air-water interface (mol/m2/s)
      real(r8), pointer :: ch4_sed_ebul_col(:)         ! col CH4 ebullition at the water-sediment interface (mol/m2/s)
      real(r8), pointer :: ch4_surf_ebul_col(:)        ! col CH4 ebullition at the air-water interface (mol/m2/s)
-     real(r8), pointer :: ch4_surf_totflux_col(:)     ! col total CH4 flux at the air-water interface (kg C/m**2/s)
+     real(r8), pointer :: ch4_surf_flux_col(:)        ! col total CH4 flux at the air-water interface (kg C/m**2/s)
      real(r8), pointer :: ch4_prod_wat_col(:,:)       ! col water-column depth-resolved CH4 production (mol/m3/s)
      real(r8), pointer :: ch4_prod_sed_col(:,:)       ! col sed-column depth-resolved CH4 production (mol/m3/s)
      real(r8), pointer :: ch4_prod_tot_col(:)         ! col integrated CH4 production (mol/m2/s)
@@ -116,7 +127,7 @@ contains
     !
     ! !USES:
     use elm_varpar     , only : nlevlak, nlevgrnd, nlevsoi
-    use elm_varpar     , only : ngaslak, nphytolak, nsoilclak
+    use elm_varpar     , only : ngaslak, nsolulak, nphytolak, nsoilclak
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     !
     ! !ARGUMENTS:
@@ -138,8 +149,8 @@ contains
     allocate( this%cdist_factor        (begc:endc,1:nlevgrnd))                       ; this%cdist_factor       (:,:)   = nan
     allocate( this%soilpor_col         (begc:endc,1:nlevgrnd))                       ; this%soilpor_col        (:,:)   = nan
 
-    allocate( this%conc_wat_col        (begc:endc,1:nlevlak,1:ngaslak))              ; this%conc_wat_col       (:,:,:) = nan
-    allocate( this%conc_sed_col        (begc:endc,1:nlevgrnd,1:ngaslak))             ; this%conc_sed_col       (:,:,:) = nan
+    allocate( this%conc_wat_col        (begc:endc,1:nlevlak,1:nsolulak))             ; this%conc_wat_col       (:,:,:) = nan
+    allocate( this%conc_sed_col        (begc:endc,1:nlevgrnd,1:nsolulak))            ; this%conc_sed_col       (:,:,:) = nan
     allocate( this%conc_bubl_col       (begc:endc,1:nlevlak,1:ngaslak))              ; this%conc_bubl_col      (:,:,:) = nan 
     allocate( this%biomas_phyto_col    (begc:endc,1:nlevlak,1:nphytolak))            ; this%biomas_phyto_col   (:,:,:) = nan
     allocate( this%soilc_col           (begc:endc,1:nlevgrnd,1:nsoilclak))           ; this%soilc_col          (:,:,:) = nan
@@ -152,7 +163,7 @@ contains
     allocate( this%ch4_surf_diff_col   (begc:endc))                                  ; this%ch4_surf_diff_col  (:)     = nan
     allocate( this%ch4_sed_ebul_col    (begc:endc))                                  ; this%ch4_sed_ebul_col   (:)     = nan
     allocate( this%ch4_surf_ebul_col   (begc:endc))                                  ; this%ch4_surf_ebul_col  (:)     = nan
-    allocate( this%ch4_surf_totflux_col(begc:endc))                                  ; this%ch4_surf_totflux_col(:)    = nan
+    allocate( this%ch4_surf_flux_col   (begc:endc))                                  ; this%ch4_surf_flux_col  (:)    = nan
     allocate( this%gpp_tot_col         (begc:endc))                                  ; this%gpp_tot_col        (:)     = nan
     allocate( this%npp_tot_col         (begc:endc))                                  ; this%npp_tot_col        (:)     = nan
     allocate( this%gpp_vr_col          (begc:endc,1:nlevlak))                        ; this%gpp_vr_col         (:,:)   = nan
@@ -178,7 +189,7 @@ contains
     !
     ! !USES:
     use elm_varpar     , only : nlevlak, nlevgrnd
-    use elm_varpar     , only : ngaslak, nphytolak, nsoilclak
+    use elm_varpar     , only : ngaslak, nsolulak, nphytolak, nsoilclak
     use histFileMod    , only : hist_addfld1d, hist_addfld2d
     use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     !
@@ -215,10 +226,10 @@ contains
          avgflag='A', long_name='ebullition CH4 flux at the lake surface', &
          ptr_col=this%ch4_surf_ebul_col, l2g_scale_type='lake', default='inactive')
 
-    this%ch4_surf_totflux_col(begc:endc) = spval
+    this%ch4_surf_flux_col(begc:endc) = spval
     call hist_addfld1d (fname='CH4_SURF_FLUX_LAKE',  units='kgC/m^2/s',  &
          avgflag='A', long_name='total CH4 flux at the lake surface', &
-         ptr_col=this%ch4_surf_totflux_col, l2g_scale_type='lake', default='inactive')
+         ptr_col=this%ch4_surf_flux_col, l2g_scale_type='lake', default='inactive')
 
     this%gpp_tot_col(begc:endc) = spval
     call hist_addfld1d (fname='GPP_LAKE',  units='gC/m^2/s',  &
@@ -240,24 +251,34 @@ contains
          avgflag='A', long_name='lake net primary production', &
          ptr_col=this%npp_vr_col, l2g_scale_type='lake', default='inactive')
 
-    this%conc_wat_col(begc:endc,1:nlevlak,1:ngaslak) = spval
-    data2dptr => this%conc_wat_col(:,:,gch4lak)
+    this%conc_wat_col(begc:endc,1:nlevlak,1:nsolulak) = spval
+    data2dptr => this%conc_wat_col(:,:,wch4lak)
     call hist_addfld2d (fname='CONC_CH4_LAKE',  units='mol/m^3', type2d='levlak', & 
          avgflag='A', long_name='CH4 concentration in the lake water', &
          ptr_col=data2dptr, l2g_scale_type='lake', default='inactive')
 
-    data2dptr => this%conc_wat_col(:,:,go2lak)
+    data2dptr => this%conc_wat_col(:,:,wo2lak)
     call hist_addfld2d (fname='CONC_O2_LAKE',  units='mol/m^3', type2d='levlak', &
          avgflag='A', long_name='O2 concentration in the lake water', &
          ptr_col=data2dptr, l2g_scale_type='lake', default='inactive')
 
-    this%conc_sed_col(begc:endc,1:nlevgrnd,1:ngaslak) = spval
-    data2dptr => this%conc_sed_col(:,:,gch4lak)
+    data2dptr => this%conc_wat_col(:,:,wco2lak)
+    call hist_addfld2d (fname='CONC_CO2_LAKE',  units='mol/m^3', type2d='levlak', &
+         avgflag='A', long_name='CO2 concentration in the lake water', &
+         ptr_col=data2dptr, l2g_scale_type='lake', default='inactive')
+
+    data2dptr => this%conc_wat_col(:,:,wsrplak)
+    call hist_addfld2d (fname='CONC_SRP_LAKE',  units='mol/m^3', type2d='levlak', &
+         avgflag='A', long_name='SRP concentration in the lake water', &
+         ptr_col=data2dptr, l2g_scale_type='lake', default='inactive')
+
+    this%conc_sed_col(begc:endc,1:nlevgrnd,1:nsolulak) = spval
+    data2dptr => this%conc_sed_col(:,:,wch4lak)
     call hist_addfld2d (fname='CONC_CH4_SED',  units='mol/m^3', type2d='levgrnd', & 
          avgflag='A', long_name='CH4 concentration in the lake sediment', &
          ptr_col=data2dptr, l2g_scale_type='lake', default='inactive')
 
-    data2dptr => this%conc_sed_col(:,:,go2lak)
+    data2dptr => this%conc_sed_col(:,:,wo2lak)
     call hist_addfld2d (fname='CONC_O2_SED',  units='mol/m^3', type2d='levgrnd', &
          avgflag='A', long_name='O2 concentration in the lake sediment', &
          ptr_col=data2dptr, l2g_scale_type='lake', default='inactive') 
@@ -364,10 +385,10 @@ contains
     !
     ! !USES:
     use shr_kind_mod   , only : r8 => shr_kind_r8
-    use elm_varcon     , only : grlnd
+    use elm_varcon     , only : grlnd, patomw
     use elm_varctl     , only : fsurdat, paramfile
     use elm_varpar     , only : nlevlak, nlevgrnd, nlevsoi, nlevsoifl
-    use elm_varpar     , only : ngaslak, nphytolak, nsoilclak
+    use elm_varpar     , only : ngaslak, nsolulak, nphytolak, nsoilclak
     use elm_varpar     , only : more_vertlayers
     use landunit_varcon, only : istdlak
     use fileutils      , only : getfil
@@ -471,7 +492,7 @@ contains
        this%ch4_surf_diff_col(c)                      = 0._r8
        this%ch4_sed_ebul_col(c)                       = 0._r8
        this%ch4_surf_ebul_col(c)                      = 0._r8
-       this%ch4_surf_totflux_col(c)                   = 0._r8
+       this%ch4_surf_flux_col(c)                      = 0._r8
        this%gpp_tot_col(c)                            = 0._r8
        this%npp_tot_col(c)                            = 0._r8
        this%gpp_vr_col(c,1:nlevlak)                   = 0._r8
@@ -486,8 +507,8 @@ contains
        this%ch4_prod_tot_col(c)                       = 0._r8
        this%ch4_oxid_tot_col(c)                       = 0._r8
        this%nem_col(c)                                = 0._r8
-       this%conc_wat_col(c,1:nlevlak,1:ngaslak)       = 0._r8
-       this%conc_sed_col(c,1:nlevgrnd,1:ngaslak)      = 0._r8
+       this%conc_wat_col(c,1:nlevlak,1:nsolulak)      = 0._r8
+       this%conc_sed_col(c,1:nlevgrnd,1:nsolulak)     = 0._r8
        this%conc_bubl_col(c,1:nlevlak,1:ngaslak)      = 0._r8
        this%conc_iceb_col(c,1:ngaslak)                = 0._r8
        this%biomas_phyto_col(c,1:nlevlak,1:nphytolak) = 0._r8
@@ -513,7 +534,7 @@ contains
           this%ch4_surf_diff_col(c)                   = spval
           this%ch4_sed_ebul_col(c)                    = spval
           this%ch4_surf_ebul_col(c)                   = spval
-          this%ch4_surf_totflux_col(c)                = spval
+          this%ch4_surf_flux_col(c)                   = spval
           this%gpp_tot_col(c)                         = spval
           this%npp_tot_col(c)                         = spval
           this%gpp_vr_col(c,:)                        = spval
@@ -540,19 +561,21 @@ contains
           this%csed_col(c)                            = csed2d(g,ti)
           this%cdep_col(c)                            = cdep2d(g,ti)
           this%ltype_col(c)                           = type2d(g,ti)
-          this%conc_wat_col(c,:,gn2lak)               = 0.347_r8
-          this%conc_wat_col(c,:,go2lak)               = 0.425_r8 
-          this%conc_wat_col(c,:,gco2lak)              = 0.032_r8
-          this%conc_wat_col(c,:,gch4lak)              = 1.544e-6_r8
+          this%conc_wat_col(c,:,wn2lak)               = 0.347_r8
+          this%conc_wat_col(c,:,wo2lak)               = 0.425_r8 
+          this%conc_wat_col(c,:,wco2lak)              = 0.032_r8
+          this%conc_wat_col(c,:,wch4lak)              = 1.544e-6_r8
+          this%conc_wat_col(c,:,wsrplak)              = 0.1_r8*tp2d(g,ti)/patomw 
           this%biomas_phyto_col(c,:,small_phyto)      = 0.025_r8
           this%biomas_phyto_col(c,:,large_phyto)      = 0.025_r8
           this%chla_col(c,:)                          = 5.e-4_r8 
-          this%conc_sed_col(c,:,gn2lak)               = 0.139_r8
-          this%conc_sed_col(c,:,go2lak)               = 0._r8
-          this%conc_sed_col(c,:,gco2lak)              = 0.013_r8
-          this%conc_sed_col(c,:,gch4lak)              = 0.617e-6_r8
+          this%conc_sed_col(c,:,wn2lak)               = 0.139_r8
+          this%conc_sed_col(c,:,wo2lak)               = 0._r8
+          this%conc_sed_col(c,:,wco2lak)              = 0.013_r8
+          this%conc_sed_col(c,:,wch4lak)              = 0.617e-6_r8
+          this%conc_sed_col(c,:,wsrplak)              = 0.04_r8*tp2d(g,ti)/patomw
           
-          carbon = 1e3_r8 * csed2d(g,ti) * dampen / (1._r8 - exp(-dampen))
+          carbon = 1.e3_r8 * csed2d(g,ti) * dampen / (1._r8 - exp(-dampen))
           do j = 1, nlevgrnd
              if (j<=nlevsoi) then
                 this%soilc_col(c,j,actC)              = 0._r8 
@@ -596,52 +619,64 @@ contains
     real(r8), pointer :: data2dptr(:,:), data1dptr(:) ! temp. pointers for slicing larger arrays
     !-----------------------------------------------------------------------
 
-    data2dptr => this%conc_wat_col(:,:,gn2lak) 
+    data2dptr => this%conc_wat_col(:,:,wn2lak) 
     call restartvar(ncid=ncid, flag=flag, varname='CONC_N2_LAKE', xtype=ncd_double, &
          dim1name='column', dim2name='levlak', switchdim=.true., &
          long_name='nitrogen lake concentration', units='mol/m^3', &
          readvar=readvar, interpinic_flag='interp', data=data2dptr) 
 
-    data2dptr => this%conc_wat_col(:,:,go2lak)
+    data2dptr => this%conc_wat_col(:,:,wo2lak)
     call restartvar(ncid=ncid, flag=flag, varname='CONC_O2_LAKE', xtype=ncd_double, &
          dim1name='column', dim2name='levlak', switchdim=.true., &
          long_name='oxygen lake concentration', units='mol/m^3', &
          readvar=readvar, interpinic_flag='interp', data=data2dptr)  
 
-    data2dptr => this%conc_wat_col(:,:,gco2lak)
+    data2dptr => this%conc_wat_col(:,:,wco2lak)
     call restartvar(ncid=ncid, flag=flag, varname='CONC_CO2_LAKE', xtype=ncd_double, &
          dim1name='column', dim2name='levlak', switchdim=.true., &
          long_name='carbon dioxide lake concentration', units='mol/m^3', &
          readvar=readvar, interpinic_flag='interp', data=data2dptr)  
 
-    data2dptr => this%conc_wat_col(:,:,gch4lak)
+    data2dptr => this%conc_wat_col(:,:,wch4lak)
     call restartvar(ncid=ncid, flag=flag, varname='CONC_CH4_LAKE', xtype=ncd_double, &
          dim1name='column', dim2name='levlak', switchdim=.true., &
          long_name='methane lake concentration', units='mol/m^3', &
          readvar=readvar, interpinic_flag='interp', data=data2dptr)  
 
-    data2dptr => this%conc_sed_col(:,:,gn2lak)
+    data2dptr => this%conc_wat_col(:,:,wsrplak)
+    call restartvar(ncid=ncid, flag=flag, varname='CONC_SRP_LAKE', xtype=ncd_double, &
+         dim1name='column', dim2name='levlak', switchdim=.true., &
+         long_name='soluble reactive phosphorus lake concentration', units='mol/m^3', &
+         readvar=readvar, interpinic_flag='interp', data=data2dptr) 
+
+    data2dptr => this%conc_sed_col(:,:,wn2lak)
     call restartvar(ncid=ncid, flag=flag, varname='CONC_N2_SED', xtype=ncd_double, &
          dim1name='column', dim2name='levgrnd', switchdim=.true., &
          long_name='nitrogen lake sediment concentration', units='mol/m^3', &
          readvar=readvar, interpinic_flag='interp', data=data2dptr)  
 
-    data2dptr => this%conc_sed_col(:,:,go2lak)
+    data2dptr => this%conc_sed_col(:,:,wo2lak)
     call restartvar(ncid=ncid, flag=flag, varname='CONC_O2_SED', xtype=ncd_double, &
          dim1name='column', dim2name='levgrnd', switchdim=.true., &
          long_name='oxygen lake sediment concentration', units='mol/m^3', &
          readvar=readvar, interpinic_flag='interp', data=data2dptr)  
 
-    data2dptr => this%conc_sed_col(:,:,gco2lak)
+    data2dptr => this%conc_sed_col(:,:,wco2lak)
     call restartvar(ncid=ncid, flag=flag, varname='CONC_CO2_SED', xtype=ncd_double, &
          dim1name='column', dim2name='levgrnd', switchdim=.true., &
          long_name='carbon dioxide lake sediment concentration', units='mol/m^3', &
          readvar=readvar, interpinic_flag='interp', data=data2dptr)  
 
-    data2dptr => this%conc_sed_col(:,:,gch4lak)
+    data2dptr => this%conc_sed_col(:,:,wch4lak)
     call restartvar(ncid=ncid, flag=flag, varname='CONC_CH4_SED', xtype=ncd_double, &
          dim1name='column', dim2name='levgrnd', switchdim=.true., &
          long_name='methane lake sediment concentration', units='mol/m^3', &
+         readvar=readvar, interpinic_flag='interp', data=data2dptr)
+
+    data2dptr => this%conc_sed_col(:,:,wsrplak)
+    call restartvar(ncid=ncid, flag=flag, varname='CONC_SRP_SED', xtype=ncd_double, &
+         dim1name='column', dim2name='levgrnd', switchdim=.true., &
+         long_name='soluble reactive phosphorus lake sediment concentration', units='mol/m^3', &
          readvar=readvar, interpinic_flag='interp', data=data2dptr)
 
     data2dptr => this%conc_bubl_col(:,:,gn2lak)
