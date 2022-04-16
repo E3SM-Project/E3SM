@@ -247,6 +247,7 @@
       <value compset="20TR_CAM5%AV">1850</value>
       <value compset="20TR_CAM5%CMIP6">1869</value>
       <value compset="20TR_EAM%CMIP6">1869</value>
+      <value compset="20TR_EAM%CHEMUCI">1869</value>
     </values>
     <group>run_component_cam_sstice</group>
     <file>env_run.xml</file>
@@ -272,6 +273,7 @@
       <value compset="20TR_CAM5%AV">1850</value>
       <value compset="20TR_CAM5%CMIP6">1869</value>
       <value compset="20TR_EAM%CMIP6">1869</value>
+      <value compset="20TR_EAM%CHEMUCI">1869</value>
     </values>
     <group>run_component_cam_sstice</group>
     <file>env_run.xml</file>
@@ -291,6 +293,7 @@
       <value compset="20TR_CAM5%AV">2012</value>
       <value compset="20TR_CAM5%CMIP6">2016</value>
       <value compset="20TR_EAM%CMIP6">2016</value>
+      <value compset="20TR_EAM%CHEMUCI">2016</value>
     </values>
     <group>run_component_cam_sstice</group>
     <file>env_run.xml</file>
