@@ -1453,8 +1453,8 @@ contains
       !$omp do schedule(runtime)
 #endif
       do iCell = 1, nCells
-         surfaceFluxAttenuationCoefficient(iCell) = varinp_flux_attenuation_coefficient
-         surfaceFluxAttenuationCoefficientRunoff(iCell) = varinp_flux_attenuation_coefficient_runoff
+         surfaceFluxAttenuationCoefficient(iCell) = config_flux_attenuation_coefficient
+         surfaceFluxAttenuationCoefficientRunoff(iCell) = config_flux_attenuation_coefficient_runoff
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
@@ -2754,7 +2754,7 @@ contains
          velocityMagnitude = sqrt(kineticEnergyCell(minLevelCell(cell1),cell1) + kineticEnergyCell(minLevelCell(cell2),cell2))
          landIceEdgeFraction = 0.5_RKIND*(landIceFraction(cell1)+landIceFraction(cell2))
 
-         topDrag(iEdge) = - rho_sw * landIceEdgeFraction * varinp_land_ice_flux_topDragCoeff &
+         topDrag(iEdge) = - rho_sw * landIceEdgeFraction * config_land_ice_flux_topDragCoeff &
                           * velocityMagnitude * normalVelocity(minLevelEdgeBot(iEdge),iEdge)
 
       end do
@@ -2772,13 +2772,13 @@ contains
       do iCell = 1, nCellsAll
          ! the magnitude of the top drag is CD*u**2 = CD*(2*KE)
          topDragMag(iCell) = rho_sw * landIceFraction(iCell) &
-                           * 2.0_RKIND * varinp_land_ice_flux_topDragCoeff *  kineticEnergyCell(minLevelCell(iCell),iCell)
+                           * 2.0_RKIND * config_land_ice_flux_topDragCoeff *  kineticEnergyCell(minLevelCell(iCell),iCell)
 
          ! the friction velocity is the square root of the top drag + variance of tidal velocity
          ! (computed regardless of land-ice coverage)
-         landIceFrictionVelocity(iCell) = sqrt(varinp_land_ice_flux_topDragCoeff * &
+         landIceFrictionVelocity(iCell) = sqrt(config_land_ice_flux_topDragCoeff * &
                                    (2.0_RKIND * kineticEnergyCell(minLevelCell(iCell),iCell) &
-                                   + varinp_land_ice_flux_rms_tidal_velocity**2))
+                                   + config_land_ice_flux_rms_tidal_velocity**2))
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
@@ -2795,7 +2795,7 @@ contains
          blTempScratch(iCell) = 0.0_RKIND
          blSaltScratch(iCell) = 0.0_RKIND
          do iLevel = minLevelCell(iCell), maxLevelCell(iCell)
-            dz = min(layerThickness(iLevel,iCell),varinp_land_ice_flux_boundaryLayerThickness-blThickness)
+            dz = min(layerThickness(iLevel,iCell),config_land_ice_flux_boundaryLayerThickness-blThickness)
             if(dz <= 0.0_RKIND) exit
             blTempScratch(iCell) = blTempScratch(iCell) + activeTracers(indexTval, iLevel, iCell)*dz
             blSaltScratch(iCell) = blSaltScratch(iCell) + activeTracers(indexSval, iLevel, iCell)*dz
@@ -2819,16 +2819,16 @@ contains
       do iCell = 1, nCellsAll
          landIceBoundaryLayerTracers(indexBLTval, iCell) = blTempScratch(iCell)
          landIceBoundaryLayerTracers(indexBLSval, iCell) = blSaltScratch(iCell)
-         if(varinp_land_ice_flux_boundaryLayerNeighborWeight > 0.0_RKIND) then
+         if(config_land_ice_flux_boundaryLayerNeighborWeight > 0.0_RKIND) then
             weightSum = 1.0_RKIND
             do i = 1, nEdgesOnCell(iCell)
                cell2 = cellsOnCell(i,iCell)
 
                landIceBoundaryLayerTracers(indexBLTval, iCell) = landIceBoundaryLayerTracers(indexBLTval, iCell) &
-                 + cellMask(minLevelCell(cell2),cell2)*varinp_land_ice_flux_boundaryLayerNeighborWeight*blTempScratch(cell2)
+                 + cellMask(minLevelCell(cell2),cell2)*config_land_ice_flux_boundaryLayerNeighborWeight*blTempScratch(cell2)
                landIceBoundaryLayerTracers(indexBLSval, iCell) = landIceBoundaryLayerTracers(indexBLSval, iCell) &
-                 + cellMask(minLevelCell(cell2),cell2)*varinp_land_ice_flux_boundaryLayerNeighborWeight*blSaltScratch(cell2)
-               weightSum = weightSum + cellMask(minLevelCell(cell2),cell2)*varinp_land_ice_flux_boundaryLayerNeighborWeight
+                 + cellMask(minLevelCell(cell2),cell2)*config_land_ice_flux_boundaryLayerNeighborWeight*blSaltScratch(cell2)
+               weightSum = weightSum + cellMask(minLevelCell(cell2),cell2)*config_land_ice_flux_boundaryLayerNeighborWeight
             end do
             landIceBoundaryLayerTracers(:, iCell) = landIceBoundaryLayerTracers(:, iCell)/weightSum
          end if
@@ -2848,9 +2848,9 @@ contains
          do iCell = 1, nCellsAll
             ! transfer coefficients from namelist
             landIceTracerTransferVelocities(indexHeatTransval, iCell) = landIceFrictionVelocity(iCell) &
-                                             * varinp_land_ice_flux_jenkins_heat_transfer_coefficient
+                                             * config_land_ice_flux_jenkins_heat_transfer_coefficient
             landIceTracerTransferVelocities(indexSaltTransval, iCell) = landIceFrictionVelocity(iCell) &
-                                             * varinp_land_ice_flux_jenkins_salt_transfer_coefficient
+                                             * config_land_ice_flux_jenkins_salt_transfer_coefficient
          end do
 #ifndef MPAS_OPENACC
          !$omp end do
@@ -2899,7 +2899,7 @@ contains
 #endif
       do iCell = 1, nCellsAll
          if(landIceMask(iCell) == 1) then
-            sfcFlxAttCoeff(iCell) = varinp_land_ice_flux_attenuation_coefficient
+            sfcFlxAttCoeff(iCell) = config_land_ice_flux_attenuation_coefficient
          end if
       end do
 #ifndef MPAS_OPENACC
