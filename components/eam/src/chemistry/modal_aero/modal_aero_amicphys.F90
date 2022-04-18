@@ -171,7 +171,7 @@
   integer :: lmapcc_all(gas_pcnst)
   integer, parameter :: lmapcc_val_gas = 1, lmapcc_val_aer = 2, lmapcc_val_num = 3
   integer :: ngas, naer
-  integer :: nacc, nait, npca, nufi, nmacc, nmait
+  integer :: nacc, nait, npca, nufi, ncrs, nmacc, nmait !hybrown, added ncrs
 
   integer :: n_agepair, n_coagpair
   integer :: modefrm_agepair(max_agepair), modetoo_agepair(max_agepair)
@@ -255,6 +255,7 @@ subroutine modal_aero_amicphys_intr(                             &
                         loffset,  deltat,                        &
                         latndx,   lonndx,                        &
                         t,        pmid,     pdel,                &
+                        troplev,                                 & !hybrown
                         zm,       pblh,                          &
                         qv,       cld,                           &
                         q,                  qqcw,                &
@@ -300,6 +301,8 @@ implicit none
 #endif
 
    real(r8), intent(in)    :: deltat               ! time step (s)
+
+   integer, intent(in)    :: troplev(pcols)       ! hybrown, tropopause level
 
    real(r8), intent(inout) :: q(ncol,pver,pcnstxx) ! current tracer mixing ratios (TMRs)
                                                    ! these values are updated (so out /= in)
@@ -902,6 +905,7 @@ main_i_loop: &
          nsubarea,  ncldy_subarea,                &
          iscldy_subarea,      afracsub,           &
          t(i,k),   pmid(i,k), pdel(i,k),          &
+         troplev(i),                              & !hybrown
          zm(i,k),  pblh(i),   relhumsub,          &
          dgn_a,    dgn_awet,  wetdens,            &
          qsub1,                                   &
@@ -1128,6 +1132,7 @@ main_i_loop: &
          nsubarea,  ncldy_subarea,                &
          iscldy_subarea,     afracsub,            &
          temp,     pmid,     pdel,                &
+         troplev,                                 & !hybrown
          zmid,     pblh,     relhumsub,           &
          dgn_a,    dgn_awet, wetdens,             &
          qsub1,                                   &
@@ -1155,6 +1160,8 @@ main_i_loop: &
 
       real(r8), intent(in)    :: deltat                ! time step (s)
       real(r8), intent(in)    :: afracsub(maxsubarea)   ! sub-area fractional area (0-1)
+
+      integer, intent(in)    :: troplev               ! hybrown, tropopause index
 
       real(r8), intent(in)    :: temp                  ! temperature at model levels (K)
       real(r8), intent(in)    :: pmid                  ! pressure at layer center (Pa)
@@ -1336,6 +1343,7 @@ main_jsub_loop: &
          jsub,                   nsubarea,           &
          iscldy_subarea(jsub),   afracsub(jsub),     &
          temp,       pmid,       pdel,               &
+         troplev,                                    & !hybrown
          zmid,       pblh,       relhumsub(jsub),    &
          dgn_a,      dgn_awet,   wetdens,            &
          qgas1,      qgas3,      qgas4,              &
@@ -1362,6 +1370,7 @@ main_jsub_loop: &
          jsub,                   nsubarea,           &
          iscldy_subarea(jsub),   afracsub(jsub),     &
          temp,       pmid,       pdel,               &
+         troplev,                                    & !hybrown
          zmid,       pblh,       relhumsub(jsub),    &
          dgn_a,      dgn_awet,   wetdens,            &
          qgas1,      qgas3,      qgas4,              &
@@ -1442,6 +1451,7 @@ main_jsub_loop: &
          jsub,                   nsubarea,           &
          iscldy_subarea,         afracsub,           &
          temp,       pmid,       pdel,               &
+         troplev,                                    & !hybrown
          zmid,       pblh,       relhum,             &
          dgn_a,      dgn_awet,   wetdens,            &
          qgas1,      qgas3,      qgas4,              &
@@ -1487,6 +1497,8 @@ main_jsub_loop: &
 
       real(r8), intent(in)    :: afracsub              ! fractional area of sub-area (0-1)
       real(r8), intent(in)    :: deltat                ! time step (s)
+
+      integer, intent(in)    :: troplev               ! !hybrown, tropopause level index
 
       real(r8), intent(in)    :: temp                  ! temperature at model levels (K)
       real(r8), intent(in)    :: pmid                  ! pressure at layer center (Pa)
@@ -1788,6 +1800,7 @@ do_rename_if_block30: &
 
       mtoo_renamexf(:) = 0
       mtoo_renamexf(nait) = nacc
+      mtoo_renamexf(nacc) = ncrs !hybrown
 
 ! qaer_delsub_grow4rnam   = change in qaer from cloud chemistry and gas condensation
 ! qaercw_delsub_grow4rnam = change in qaercw from cloud chemistry
@@ -1802,6 +1815,7 @@ do_rename_if_block30: &
       call mam_rename_1subarea(                                      &
          nstep,             lchnk,                                   &
          i,                 k,                jsub,                  &
+         troplev,                                                    & !hybrown
          latndx,            lonndx,           lund,                  &
          iscldy_subarea,                                             &
          mtoo_renamexf,                                              &
@@ -1905,6 +1919,7 @@ do_rename_if_block30: &
          jsub,                   nsubarea,           &
          iscldy_subarea,         afracsub,           &
          temp,       pmid,       pdel,               &
+         troplev,                                    & !hybrown
          zmid,       pblh,       relhum,             &
          dgn_a,      dgn_awet,   wetdens,            &
          qgas1,      qgas3,      qgas4,              &
@@ -1941,6 +1956,8 @@ do_rename_if_block30: &
 
       real(r8), intent(in)    :: afracsub              ! fractional area of sub-area (0-1)
       real(r8), intent(in)    :: deltat                ! time step (s)
+
+      integer, intent(in)    :: troplev               ! hybrown, tropopause level index
 
       real(r8), intent(in)    :: temp                  ! temperature at model levels (K)
       real(r8), intent(in)    :: pmid                  ! pressure at layer center (Pa)
@@ -2210,6 +2227,7 @@ do_rename_if_block30: &
 
       mtoo_renamexf(:) = 0
       mtoo_renamexf(nait) = nacc
+      mtoo_renamexf(nacc) = ncrs !hybrown
 
       qnum_sv1 = qnum_cur
       qaer_sv1 = qaer_cur
@@ -2217,6 +2235,7 @@ do_rename_if_block30: &
       call mam_rename_1subarea(                                    &
          nstep,             lchnk,                                 &
          i,                 k,                jsub,                &
+         troplev,                                                  &
          latndx,            lonndx,           lund,                &
          iscldy_subarea,                                           &
          mtoo_renamexf,                                            &
@@ -3587,6 +3606,7 @@ time_loop: &
       subroutine mam_rename_1subarea(                               &
          nstep,             lchnk,                                  &
          i,                 k,                jsub,                 &
+         troplev,                                                   & !hybrown
          latndx,            lonndx,           lund,                 &
          iscldy_subarea,                                            &
          mtoo_renamexf,                                             &
@@ -3612,6 +3632,8 @@ time_loop: &
       integer,  intent(in)    :: lund                  ! logical unit for diagnostic output
       integer,  intent(in)    :: mtoo_renamexf(max_mode)
       integer,  intent(in)    :: n_mode                ! current number of modes (including temporary)
+
+      integer,  intent(in)    :: troplev               ! hybrown, tropopause level index
 
       real(r8), intent(inout), dimension( 1:max_mode ) :: &
          qnum_cur
@@ -3749,6 +3771,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
       mfrm = n
       mtoo = mtoo_renamexf(n)
       if (mtoo <= 0) cycle mainloop1_ipair
+      if ( mtoo == ncrs .and. k >= troplev ) cycle mainloop1_ipair !hybrown, only rename accum-coarse in stratosphere
 
 !   dryvol_t_old is the old total (a+c) dry-volume for the "from" mode 
 !      in m^3-AP/kmol-air
@@ -5115,7 +5138,7 @@ use modal_aero_data, only : &
     cnst_name_cw, &
     dgnum_amode, dgnumlo_amode, dgnumhi_amode, &
     lmassptr_amode, lmassptrcw_amode, &
-    modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine, &
+    modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine, modeptr_coarse, & !hybrown, added modeptr_coarse
     modeptr_maccum, modeptr_maitken, &
     nspec_amode, &
     numptr_amode, numptrcw_amode, sigmag_amode
@@ -5498,6 +5521,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       nait = modeptr_aitken
       npca = modeptr_pcarbon
       nufi = modeptr_ufine
+      ncrs = modeptr_coarse !hybrown
 #if ( defined MODAL_AERO_9MODE )
       nmacc = modeptr_maccum
       nmait = modeptr_maitken
@@ -5772,7 +5796,7 @@ use phys_control,only  :  phys_getopts
 
 use modal_aero_data, only : &
     cnst_name_cw, &
-    modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine
+    modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine, modeptr_coarse !hybrown, added modeptr_coarse
 !use modal_aero_rename
 
 implicit none
@@ -5884,27 +5908,36 @@ implicit none
 ! renaming during gas-->aer condensation or cloud chemistry
       na = modeptr_aitken
       nb = modeptr_accum
-      if (na > 0 .and. nb > 0) then
+      nc = modeptr_coarse !hybrown, coarse mode renaming
+      if (na > 0 .and. nb > 0 .and. nc > 0) then !hybrown, added nc to include coarse mode renaming
          lmza = lmap_num(na)
          lmzb = lmap_num(nb)
+         lmzc = lmap_num(nc) !hybrown
          do_q_coltendaa(lmza,iqtend_rnam) = .true.
          do_q_coltendaa(lmzb,iqtend_rnam) = .true.
+         do_q_coltendaa(lmzc,iqtend_rnam) = .true. !hybrown
          lmza = lmap_numcw(na)
          lmzb = lmap_numcw(nb)
+         lmzc = lmap_numcw(nc) !hybrown
          do_qqcw_coltendaa(lmza,iqqcwtend_rnam) = .true.
          do_qqcw_coltendaa(lmzb,iqqcwtend_rnam) = .true.
+         do_qqcw_coltendaa(lmzc,iqqcwtend_rnam) = .true. !hybrown
          do iaer = 1, naer
             lmza = lmap_aer(iaer,na)
             lmzb = lmap_aer(iaer,nb)
+            lmzc = lmap_aer(iaer,nc) !hybrown
             if (lmza > 0) then
                do_q_coltendaa(lmza,iqtend_rnam) = .true.
                if (lmzb > 0) do_q_coltendaa(lmzb,iqtend_rnam) = .true.
+               if (lmzc > 0) do_q_coltendaa(lmzc,iqtend_rnam) = .true. !hybrown
             end if
             lmza = lmap_aercw(iaer,na)
             lmzb = lmap_aercw(iaer,nb)
+            lmzc = lmap_aercw(iaer,nc) !hybrown
             if (lmza > 0) then
                do_qqcw_coltendaa(lmza,iqqcwtend_rnam) = .true.
                if (lmzb > 0) do_qqcw_coltendaa(lmzb,iqqcwtend_rnam) = .true.
+               if (lmzc > 0) do_qqcw_coltendaa(lmzc,iqqcwtend_rnam)  =.true. !hybrown
             end if
          end do ! iaer
       end if ! (na > 0 .and. nb > 0)
