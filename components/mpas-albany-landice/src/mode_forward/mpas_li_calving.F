@@ -1247,13 +1247,24 @@ module li_calving
                                               calvingThickness, calvingVelocity, applyToGrounded, &
                                               applyToFloating, applyToGroundingLine, domain, err)
 
-         if ( trim(config_damage_calving_method) == 'threshold' ) then
-             ! remove ice exceeding damage threshold
-            call mpas_log_write(' config_damage_calving_method == threshold; &
-                                  removing ice with damage > $r', realArgs=(/config_damage_calving_threshold/))
-            
+         if ( trim(config_damage_calving_method) == 'none' ) then
+            ! do nothing
+         elseif ( trim(config_damage_calving_method) == 'threshold' ) then
+            ! remove ice exceeding damage threshold
+            call mpas_log_write('config_damage_calving_method == threshold; &
+                                 removing ice with damage > $r', realArgs=(/config_damage_calving_threshold/))
+
             call apply_calving_damage_threshold(meshPool, geometryPool, scratchPool, domain, err_tmp)
             err = ior(err, err_tmp)
+         elseif ( trim(config_damage_calving_method) == 'calving_rate' ) then
+             call mpas_log_write('config_damage_calving_method == calving_rate &
+                                  is not supported with config_calving == eigencalving', MPAS_LOG_ERR)
+             err = 1
+             return
+         else
+             call mpas_log_write('Invalid setting for config_damage_calving_method', MPAS_LOG_ERR)
+             err = 1
+             return
          endif
          ! Update halos on calvingThickness or faceMeltingThickness before
          ! applying it.
@@ -1739,13 +1750,24 @@ module li_calving
              enddo
           endif
 
-          if ( trim(config_damage_calving_method) == 'threshold' ) then
+          if ( trim(config_damage_calving_method) == 'none' ) then
+             ! do nothing
+          elseif ( trim(config_damage_calving_method) == 'threshold' ) then
              ! remove ice exceeding damage threshold
              call mpas_log_write('config_damage_calving_method == threshold; &
                                   removing ice with damage > $r', realArgs=(/config_damage_calving_threshold/))
             
              call apply_calving_damage_threshold(meshPool, geometryPool, scratchPool, domain, err_tmp)
              err = ior(err, err_tmp)
+          elseif ( trim(config_damage_calving_method) == 'calving_rate' ) then
+              call mpas_log_write('config_damage_calving_method == calving_rate &
+                                   is not supported with config_calving == von_Mises_stress', MPAS_LOG_ERR)
+              err = 1
+              return
+          else
+              call mpas_log_write('Invalid setting for config_damage_calving_method', MPAS_LOG_ERR)
+              err = 1
+              return
           endif
 
           ! Update halos on calvingThickness or faceMeltingThickness before

@@ -244,9 +244,9 @@
 		                description="Selection of the method for initializing damage in the first floating grid cells past the grounding line: 'nye' uses Nye's zero stress criteria (Nye, 1957, Proc. R. Soc. A, 239) for defining the damage value, 'extrapolate' extrapolates values from the floating ice downstream back to the first floating cells."
 		            possible_values="'nye', 'extrapolate'"
 		/>
-		        <nml_option name="config_damage_calving_method" type="character" default_value="threshold" units="unitless"
-		                description="Selection of the method for damage calving. For 'threshold', ice with damage above the value specified by 'config_damage_calving_threshold' will be removed (currently, only if this ice is also AT a marine margin, but eventually this will be expanded to also include any ice at the threshold adjacent to cells at the marine margin). For 'calving_rate', a rate of calving is specified as proportional to the damage value above some threshold, with the constant of proportionality specified by 'config_damagecalvingParameter' and the threshold defined by config_damage_calving_threshold."
-		            possible_values="'calving_rate', 'threshold'"
+		        <nml_option name="config_damage_calving_method" type="character" default_value="none" units="unitless"
+		                description="Selection of the method for damage calving. For 'threshold', ice with damage above the value specified by 'config_damage_calving_threshold' will be removed if it is connected to the marine margin. The 'threshold' option can be combined with config_calving = 'von_Mises_stress' and config_calving = 'eigencalving'. For 'calving_rate', a rate of calving is specified as proportional to the damage value above some threshold, with the constant of proportionality specified by 'config_damagecalvingParameter' and the threshold defined by config_damage_calving_threshold. The 'calving_rate' option cannot currently be combined with other calving routines, and requires config_calving = 'damagecalving'."
+		            possible_values="'calving_rate', 'threshold', 'none'"
 		/>
     <nml_option name="config_damagecalvingParameter" type="real" default_value="1.0e-4" units="m/s"
                         description="A scalar parameter that specifies a calving rate as proportional to the value of damage above some threshold value when using the 'calving_rate' method for the 'config_damage_calving_method' option (with the threshold damage value specified by 'config_damage_calving_threshold')."
