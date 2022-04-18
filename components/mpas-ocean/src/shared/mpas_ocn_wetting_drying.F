@@ -267,20 +267,22 @@ contains
                                              normalTransportVelocity, rkSubstepWeight, wettingVelocityFactor, err)
 
      ! prevent drying from happening with selective wettingVelocityFactor
-     !$omp parallel
-     !$omp do schedule(runtime) private(k)
-     do iEdge = 1, nEdgesAll
-       do k = minLevelEdgeTop(iEdge), maxLevelEdgeBot(iEdge)
+     if (config_zero_drying_velocity) then
+       !$omp parallel
+       !$omp do schedule(runtime) private(k)
+       do iEdge = 1, nEdgesAll
+         do k = minLevelEdgeTop(iEdge), maxLevelEdgeBot(iEdge)
 
-         if (abs(wettingVelocityFactor(k, iEdge)) > 0.0_RKIND .and. config_zero_drying_velocity) then
-           normalTransportVelocity(k, iEdge) = 0.0_RKIND
-           normalVelocity(k, iEdge) = 0.0_RKIND
-         end if
+           if (abs(wettingVelocityFactor(k, iEdge)) > 0.0_RKIND) then
+             normalTransportVelocity(k, iEdge) = 0.0_RKIND
+             normalVelocity(k, iEdge) = 0.0_RKIND
+           end if
 
+         end do
        end do
-     end do
-     !$omp end do
-     !$omp end parallel
+       !$omp end do
+       !$omp end parallel
+     end if
 
    end subroutine ocn_prevent_drying_rk4 !}}}
 
@@ -352,6 +354,8 @@ contains
 
       err = 0
 
+      if (.not. config_zero_drying_velocity ) return
+
       ! need predicted transport velocity to limit drying flux
       !$omp parallel
       !$omp do schedule(runtime) private(i, iEdge, k, divOutFlux, layerThickness)
@@ -380,8 +384,7 @@ contains
             do i = 1, nEdgesOnCell(iCell)
               iEdge = edgesOnCell(i, iCell)
               if (k <= maxLevelEdgeBot(iEdge) .or. k >= minLevelEdgeTop(iEdge)) then
-                if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) <= 0.0_RKIND &
-                     .and. config_zero_drying_velocity ) then
+                if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) <= 0.0_RKIND ) then
                   ! just go with simple boolean approach for zero wetting velocity for debugging purposes
                   wettingVelocityFactor(k, iEdge) = 1.0_RKIND
                 end if
