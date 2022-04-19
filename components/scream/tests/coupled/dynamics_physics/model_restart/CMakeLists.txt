@@ -8,7 +8,7 @@ BuildCprnc()
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
 # Get or create the dynamics lib
 #                 HOMME_TARGET   NP PLEV QSIZE_D
-CreateDynamicsLib("theta-l_kokkos"  4   72   35)
+CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 
 set (NEED_LIBS cld_fraction shoc p3 scream_rrtmgp rrtmgp ${NETCDF_C} ${dynLibName} scream_control scream_share physics_share yakl)
 
