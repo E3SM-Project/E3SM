@@ -17,7 +17,7 @@ Module HydrologyNoDrainageMod
   use SoilStateType     , only : soilstate_type
   use LandunitType      , only : lun_pp
   use ColumnType        , only : col_pp
-  use ColumnDataType    , only : col_es, col_ws
+  use ColumnDataType    , only : col_es, col_ws, col_wf
   use VegetationType    , only : veg_pp
   use TopounitDataType  , only : top_as, top_af ! Atmospheric state and flux variables
   use elm_instMod       , only : alm_fates , ep_betr
@@ -210,7 +210,7 @@ contains
       !!TODO:  need to fix the waterstate_vars dependence here.
 #ifndef _OPENACC
       if (use_betr) then
-        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
+        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws)
         call ep_betr%PreDiagSoilColWaterFlux(num_hydrologyc, filter_hydrologyc)
       endif
 #endif
@@ -248,12 +248,12 @@ contains
 
 #ifndef _OPENACC
        if (use_betr) then
-          call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars, &
-             waterflux_vars=waterflux_vars, soilhydrology_vars = soilhydrology_vars)
+          call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws, &
+             waterflux_vars=col_wf, soilhydrology_vars = soilhydrology_vars)
 
           call ep_betr%DiagAdvWaterFlux(num_hydrologyc, filter_hydrologyc)
 
-          call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=waterflux_vars)
+          call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=col_wf)
        endif
 #endif
 

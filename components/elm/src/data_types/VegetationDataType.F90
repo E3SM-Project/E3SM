@@ -776,6 +776,8 @@ module VegetationDataType
     ! allocation fluxes
     real(r8), pointer :: retransn_to_npool                   (:)   => null()  ! deployment of retranslocated N (gN/m2/s)
     real(r8), pointer :: sminn_to_npool                      (:)   => null()  ! deployment of soil mineral N uptake (gN/m2/s)
+    real(r8), pointer :: smin_no3_to_plant_vr                (:,:) => null()
+    real(r8), pointer  :: smin_nh4_to_plant_vr               (:,:) => null()
     real(r8), pointer :: npool_to_grainn                     (:)   => null()  ! allocation to grain N for prognostic crop (gN/m2/s)
     real(r8), pointer :: npool_to_grainn_storage             (:)   => null()  ! allocation to grain N storage for prognostic crop (gN/m2/s)
     real(r8), pointer :: npool_to_leafn                      (:)   => null()  ! allocation to leaf N (gN/m2/s)
@@ -994,6 +996,7 @@ module VegetationDataType
     real(r8), pointer :: avail_retransp                      (:)     ! P flux available from retranslocation pool (gP/m2/s)
     real(r8), pointer :: plant_palloc                        (:)     ! total allocated P flux (gP/m2/s)
     real(r8), pointer :: sminp_to_plant                      (:)     ! plant p uptake (gP/m2/s)
+    real(r8), pointer :: sminp_to_plant_trans                (:)     ! plant p uptake through transpiration flow
     real(r8), pointer :: plant_pdemand_vr                    (:,:)   ! plant P demand
     real(r8), pointer :: prev_leafp_to_litter                (:)     ! previous timestep leaf P litterfall flux (gP/m2/s)
     real(r8), pointer :: prev_frootp_to_litter               (:)     ! previous timestep froot P litterfall flux (gP/m2/s)
@@ -8969,6 +8972,8 @@ module VegetationDataType
     allocate(this%dwt_crop_productn_gain              (begp:endp)) ; this%dwt_crop_productn_gain              (:) = nan
     allocate(this%dwt_seedn_to_npool                  (begp:endp)) ; this%dwt_seedn_to_npool                  (:) = nan
     allocate(this%plant_ndemand                       (begp:endp)) ; this%plant_ndemand                       (:) = nan
+    allocate(this%smin_no3_to_plant_vr                (begp:endp,1:nlevdecomp_full)) ; this%smin_no3_to_plant_vr(:,:) = nan
+    allocate(this%smin_nh4_to_plant_vr                (begp:endp,1:nlevdecomp_full)); this%smin_nh4_to_plant_vr(:,:) = nan
     allocate(this%avail_retransn                      (begp:endp)) ; this%avail_retransn                      (:) = nan
     allocate(this%plant_nalloc                        (begp:endp)) ; this%plant_nalloc                        (:) = nan
     allocate(this%smin_no3_to_plant                   (begp:endp)) ; this%smin_no3_to_plant                   (:) = nan
@@ -10100,6 +10105,7 @@ module VegetationDataType
     allocate(this%avail_retransp                      (begp:endp)) ; this%avail_retransp                      (:) = nan
     allocate(this%plant_palloc                        (begp:endp)) ; this%plant_palloc                        (:) = nan
     allocate(this%sminp_to_plant                      (begp:endp)) ; this%sminp_to_plant                      (:) = nan
+    allocate(this%sminp_to_plant_trans                (begp:endp)) ; this%sminp_to_plant_trans                (:) = nan
     allocate(this%plant_pdemand_vr                    (begp:endp,1:nlevdecomp_full )) ; this%plant_pdemand_vr (:,:) = nan
     allocate(this%prev_leafp_to_litter                (begp:endp)) ; this%prev_leafp_to_litter                (:) = nan
     allocate(this%prev_frootp_to_litter               (begp:endp)) ; this%prev_frootp_to_litter               (:) = nan

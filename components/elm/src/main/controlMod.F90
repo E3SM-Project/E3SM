@@ -18,7 +18,7 @@ module controlMod
   use abortutils              , only: endrun
   use spmdMod                 , only: masterproc
   use decompMod               , only: clump_pproc
-  use elm_varpar              , only: maxpatch_pft, maxpatch_glcmec, more_vertlayers
+  use elm_varpar              , only: maxpatch_pft, maxpatch_glcmec, more_vertlayers,nlevdecomp_full, nsoilorder
   use histFileMod             , only: max_tapes, max_namlen
   use histFileMod             , only: hist_empty_htapes, hist_dov2xy, hist_avgflag_pertape, hist_type1d_pertape
   use histFileMod             , only: hist_nhtfrq, hist_ndens, hist_mfilt, hist_fincl1, hist_fincl2, hist_fincl3
@@ -117,7 +117,7 @@ contains
     use fileutils                 , only : getavu, relavu
     use shr_string_mod            , only : shr_string_getParentDir
     use elm_interface_pflotranMod , only : elm_pf_readnl
-    use ALMBeTRNLMod              , only : betr_readNL
+    use ELMBeTRNLMod              , only : betr_readNL
     
     implicit none
     
@@ -528,7 +528,7 @@ contains
     end if
 
     if (use_betr) then
-       call betr_readNL( NLFilename, use_c13, use_c14)
+       call betr_readNL( NLFilename, use_c13, use_c14, nsoilorder)
     endif
 
     ! ----------------------------------------------------------------------
