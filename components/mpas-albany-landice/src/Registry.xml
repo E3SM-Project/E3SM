@@ -135,8 +135,20 @@
 	<nml_record name="solidearth" in_defaults="true">
 		<nml_option name="config_uplift_method" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for bedrock uplift calculation."
-		            possible_values="'none', 'data'"
+		            possible_values="'none', 'data', 'sealevelmodel'"
+        />
+        <nml_option name="config_slm_coupling_interval" type="character" default_value="0002-00-00_00:00:00" units="time"
+            description="Time interval at which the sea-level model is called by MALI. The interval has to be an even multiple of the option 'config_adaptive_timestep_force_interval"
+            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'"
 		/>
+        <nml_option name="config_MALI_to_SLM_weights_file" type="character" default_value="mpas_to_grid.nc" units="unitless"
+            description="File containing the interpolation weights for regridding from MPAS mesh to the Gaussian grid used by the Sea Level Model."
+            possible_values="Any file name string"
+        />
+        <nml_option name="config_SLM_to_MALI_weights_file" type="character" default_value="grid_to_mpas.nc" units="unitless"
+            description="File containing the interpolation weights for regridding from the Gaussian grid used by the Sea Level Model to the MPAS mesh."
+            possible_values="Any file name string"
+        />
 	</nml_record>
 
 	<nml_record name="calving" in_defaults="true">
@@ -1304,6 +1316,9 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="upliftRate"            type="real"     dimensions="nCells Time"
                      units="m s^{-1}"  description="time rate of change in bedTopography.  This field is prescribed as input and not currently calculated in the model."
+                />
+                <var name="bedTopographyChange" type="real" dimensions="nCells Time"
+                     units="m"  description="amount of change in bedTopography.  This field is calculated by the sea-level model over its time step. Positive values indicate bed uplift relative to sea level."
                 />
                <!-- Scratch variables related to geometry -->
 	       <var name="cellMaskTemporary" type="integer" dimensions="nCells" units="none"
