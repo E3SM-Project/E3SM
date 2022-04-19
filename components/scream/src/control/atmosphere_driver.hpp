@@ -78,7 +78,7 @@ public:
   void set_surface_coupling (const std::shared_ptr<SurfaceCoupling>& sc) { m_surface_coupling = sc; }
 
   // Load initial conditions for atm inputs
-  void initialize_fields (const util::TimeStamp& t0);
+  void initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0);
 
   // Initialie I/O structures for output
   void initialize_output_managers ();
@@ -92,10 +92,19 @@ public:
   // which is handy for scream standalone tests.
   //  - atm_comm: the MPI comm containing all ranks assigned to the atmosphere
   //  - params: parameter list with all atm options (organized in sublists)
-  //  - t0: the time stamp where the simulation starts
+  //  - run_t0 : the time stamp where the run starts
+  //  - case_t0: the time stamp where the original simulation started (for restarts)
   void initialize (const ekat::Comm& atm_comm,
                    const ekat::ParameterList& params,
-                   const util::TimeStamp& t0);
+                   const util::TimeStamp& run_t0,
+                   const util::TimeStamp& case_t0);
+
+  // Shortcut for tests not doing restart
+  void initialize (const ekat::Comm& atm_comm,
+                   const ekat::ParameterList& params,
+                   const util::TimeStamp& t0) {
+    initialize(atm_comm,params,t0,t0);
+  }
 
   // The run method is responsible for advancing the atmosphere component by one atm time step
   // Inside here you should find calls to the run method of each subcomponent, including parameterizations
@@ -147,8 +156,14 @@ protected:
   // Surface coupling stuff
   std::shared_ptr<SurfaceCoupling>          m_surface_coupling;
 
-  // This are the time stamps of the start and end of the time step.
+  // This is the time stamp at the beginning of the time step.
   util::TimeStamp                           m_current_ts;
+
+  // These are the time stamps of the beginning of this run and case
+  // respectively. For initial runs, they are the same, but for
+  // restarted runs, the latter is "older" than the former
+  util::TimeStamp                           m_run_t0;
+  util::TimeStamp                           m_case_t0;
 
   // This is the comm containing all (and only) the processes assigned to the atmosphere
   ekat::Comm                                m_atm_comm;

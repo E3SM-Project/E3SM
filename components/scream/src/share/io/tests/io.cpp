@@ -104,8 +104,8 @@ protected:
     const auto& v_A  = get_field_in("field_packed").get_view<const Real**,Host>();
     auto v_me = m_diagnostic_output.get_view<Real**,Host>();
     // Have the dummy diagnostic just manipulate the field_packed data arithmetically.  In this case (x*3 + 2)
-    for (size_t i=0; i<m_num_cols; ++i) {
-      for (size_t k=0; k<m_num_levs; ++k) {
+    for (int i=0; i<m_num_cols; ++i) {
+      for (int k=0; k<m_num_levs; ++k) {
         v_me(i,k) = v_A(i,k)*3.0 + 2.0;
       }
     }
@@ -135,7 +135,6 @@ TEST_CASE("input_output_basic","io")
   auto gm = get_test_gm(io_comm,num_gcols,num_levs);
   auto grid = gm->get_grid("Point Grid");
   int num_lcols = grid->get_num_local_dofs();
-  int num_llevs = grid->get_num_vertical_levels();
 
   // Need to register the Test Diagnostic so that IO can access it
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
@@ -157,7 +156,7 @@ TEST_CASE("input_output_basic","io")
     ekat::ParameterList params;
     ekat::parse_yaml_file("io_test_" + type + ".yaml",params);
     OutputManager om;
-    om.setup(io_comm,params,field_manager,gm,t0,false,false);
+    om.setup(io_comm,params,field_manager,gm,t0,t0,false);
     io_comm.barrier();
 
     const auto& out_fields = field_manager->get_groups_info().at("output");

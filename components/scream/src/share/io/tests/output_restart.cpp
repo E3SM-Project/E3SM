@@ -71,7 +71,7 @@ TEST_CASE("output_restart","io")
   ekat::ParameterList output_params;
   ekat::parse_yaml_file(param_filename,output_params);
   OutputManager output_manager;
-  output_manager.setup(io_comm,output_params,field_manager,gm,t0,false,false);
+  output_manager.setup(io_comm,output_params,field_manager,gm,t0,t0,false);
 
   // We advance the fields, by adding dt to each entry of the fields at each time step
   // The output restart data is written every 5 time steps, while the output freq is 10.
@@ -139,7 +139,7 @@ TEST_CASE("output_restart","io")
   ekat::parse_yaml_file(param_filename_res,output_params_res);
 
   OutputManager output_manager_res;
-  output_manager_res.setup(io_comm,output_params_res,fm_res,gm,time_res,false,true,t0);
+  output_manager_res.setup(io_comm,output_params_res,fm_res,gm,time_res,t0,false);
 
   // Run 5 more steps from the restart, to get to the next output step.
   // We should be generating the same output file as before.

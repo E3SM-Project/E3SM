@@ -3,7 +3,7 @@ module atm_comp_mct
   ! Modules used acros atm_xyz_mct routines
 
   ! shr mods
-  use shr_kind_mod,     only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CL=>SHR_KIND_CL!, CS=>SHR_KIND_CS
+  use shr_kind_mod,     only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CL=>SHR_KIND_CL, CS=>SHR_KIND_CS
 
   ! seq mods
   use seq_cdata_mod,    only: seq_cdata, seq_cdata_setptrs
@@ -46,7 +46,7 @@ CONTAINS
 
   !===============================================================================
   subroutine atm_init_mct( EClock, cdata, x2a, a2x, NLFilename )
-    use iso_c_binding,      only: c_ptr, c_loc, c_int, c_char
+    use iso_c_binding,      only: c_ptr, c_loc, c_int, c_char, c_bool
     use scream_f2c_mod,     only: scream_create_atm_instance, scream_setup_surface_coupling, &
                                   scream_init_atm
     use scream_cpl_indices, only: scream_set_cpl_indices, num_cpl_exports, &
@@ -55,12 +55,12 @@ CONTAINS
                                   can_be_exported_during_init
     use ekat_string_utils,  only: string_f2c
     use kinds,              only: homme_iulog=>iulog
-
-    use mct_mod,        only: mct_aVect_init, mct_gsMap_lsize
-    use seq_flds_mod,   only: seq_flds_a2x_fields, seq_flds_x2a_fields
-    use seq_comm_mct,   only: seq_comm_inst, seq_comm_name, seq_comm_suffix
-    use shr_file_mod,   only: shr_file_getunit, shr_file_setIO
-    use shr_sys_mod,    only: shr_sys_abort
+    use mct_mod,            only: mct_aVect_init, mct_gsMap_lsize
+    use seq_flds_mod,       only: seq_flds_a2x_fields, seq_flds_x2a_fields
+    use seq_infodata_mod,   only: seq_infodata_start_type_start, seq_infodata_start_type_cont
+    use seq_comm_mct,       only: seq_comm_inst, seq_comm_name, seq_comm_suffix
+    use shr_file_mod,       only: shr_file_getunit, shr_file_setIO
+    use shr_sys_mod,        only: shr_sys_abort
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            , intent(inout) :: EClock
@@ -73,18 +73,20 @@ CONTAINS
     type(mct_gsMap)        , pointer :: gsMap_atm
     type(mct_gGrid)        , pointer :: dom_atm
     integer(IN)                      :: phase          ! initialization phase
-    integer(IN)                      :: ierr           ! error code
+    integer(IN)                      :: ierr,mpi_ierr  ! error codes
     integer(IN)                      :: modelio_fid    ! file descriptor for atm_modelio.nml
-    integer(IN)                      :: start_tod, start_ymd
+    integer(IN)                      :: case_start_tod, case_start_ymd, cur_tod, cur_ymd
     integer                          :: lsize
     character(CL)                    :: diri           ! Unused
     character(CL)                    :: diro           ! directory where ATM log file is
     character(CL)                    :: logfile        ! name of ATM log file
+    character(CS)                    :: run_type       ! name of ATM log file
     type(c_ptr) :: x2a_ptr, a2x_ptr
 
     ! TODO: read this from the namelist?
     character(len=256)                :: yaml_fname = "./data/scream_input.yaml"
     character(kind=c_char,len=256), target :: yaml_fname_c, atm_log_fname_c, dyn_log_fname
+    logical (kind=c_bool) :: restarted_run
 
     ! Note: diri is unused, but *is* in the nml file, and the nml read woud return
     !       a nonzero err code if we don't add diri to the modelio nml
@@ -103,7 +105,7 @@ CONTAINS
          gsMap=gsmap_atm, &
          dom=dom_atm, &
          infodata=infodata)
-    call seq_infodata_getData(infodata, atm_phase=phase)
+    call seq_infodata_getData(infodata, atm_phase=phase, start_type=run_type)
     call seq_infodata_PutData(infodata, atm_aero=.true.)
     call seq_infodata_PutData(infodata, atm_prognostic=.true.)
 
@@ -119,15 +121,19 @@ CONTAINS
 
     !--- Retrieve the name of the atm log file
     if (my_task == master_task) then
-       modelio_fid = shr_file_getUnit()
-       open (modelio_fid,file='atm_modelio.nml'//trim(inst_suffix),action="READ")
-       read (modelio_fid,nml=modelio,iostat=ierr)
-       close(modelio_fid)
-       if (ierr /= 0) then
-          print *,'[eamxx] ERROR reading ','atm_modelio.nml'//trim(inst_suffix),': iostat=',ierr
-          call shr_sys_abort("[eamxx] ERROR reading 'atm_modelio.nml'"//trim(inst_suffix) )
-       end if
+      modelio_fid = shr_file_getUnit()
+      open (modelio_fid,file='atm_modelio.nml'//trim(inst_suffix),action="READ")
+      read (modelio_fid,nml=modelio,iostat=ierr)
+      close(modelio_fid)
     endif
+    print *, "bcasting ierr..."
+    call mpi_bcast(ierr,1,MPI_INTEGER,master_task,mpicom_atm,mpi_ierr)
+    print *, "bcasting ierr...done!"
+    if (ierr /= 0) then
+      print *,'[eamxx] ERROR reading ','atm_modelio.nml'//trim(inst_suffix),': iostat=',ierr
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    end if
+
     call mpi_bcast(diro,CL,MPI_CHARACTER,master_task,mpicom_atm,ierr)
     call mpi_bcast(logfile,CL,MPI_CHARACTER,master_task,mpicom_atm,ierr)
 
@@ -141,7 +147,6 @@ CONTAINS
           action='WRITE', access='SEQUENTIAL')
 
     ! Init the AD
-    call seq_timemgr_EClockGetData(EClock, start_ymd=start_ymd, start_tod=start_tod)
     call string_f2c(yaml_fname,yaml_fname_c)
     call string_f2c(trim(diro)//"/"//trim(logfile),atm_log_fname_c)
     call scream_create_atm_instance (mpicom_atm, ATM_ID, yaml_fname_c, atm_log_fname_c)
@@ -157,8 +162,18 @@ CONTAINS
     call mct_aVect_init(x2a, rList=seq_flds_x2a_fields, lsize=lsize)
     call mct_aVect_init(a2x, rList=seq_flds_a2x_fields, lsize=lsize)
 
-    ! Complete AD initialization
-    call scream_init_atm (INT(start_ymd,kind=C_INT), INT(start_tod,kind=C_INT))
+    ! Complete AD initialization based on run type
+    if (trim(run_type) == trim(seq_infodata_start_type_start)) then
+      restarted_run = .false.
+    else if (trim(run_type) == trim(seq_infodata_start_type_cont) ) then
+      restarted_run = .true.
+    else
+      print *, "[eamxx] ERROR! Unsupported starttype: "//trim(run_type)
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    endif
+    call seq_timemgr_EClockGetData(EClock, curr_ymd=cur_ymd, curr_tod=cur_tod, start_ymd=case_start_ymd, start_tod=case_start_tod)
+    call scream_init_atm (INT(cur_ymd,kind=C_INT),  INT(cur_tod,kind=C_INT), &
+                          INT(case_start_ymd,kind=C_INT), INT(case_start_tod,kind=C_INT))
 
     ! Init surface coupling stuff in the AD
     call scream_set_cpl_indices (x2a, a2x)

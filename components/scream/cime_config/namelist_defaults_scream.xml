@@ -144,12 +144,6 @@ tweaking their $case/namelist_scream.xml file.
           <Orbital__MVELP COMPSET=".*SCREAM%AQUA.*">0</Orbital__MVELP>
         </Process__5>
       </Atmosphere__Processes>
-      <Time__Stepping>
-        <Time__Step>300</Time__Step>
-        <Start__Time>12, 30, 0</Start__Time>
-        <Start__Date>2000, 2, 1</Start__Date>
-        <Number__of__Steps>288</Number__of__Steps>
-      </Time__Stepping>
       <Grids__Manager>
         <Type>Dynamics Driven</Type>
         <Reference__Grid>Physics GLL</Reference__Grid>
@@ -158,6 +152,7 @@ tweaking their $case/namelist_scream.xml file.
         </Dynamics__Driven>
       </Grids__Manager>
       <Initial__Conditions>
+        <Restart__Casename>${CASE}</Restart__Casename>
         <Physics__GLL>
           <Filename>${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Filename>
           <Filename COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Filename>
@@ -172,6 +167,14 @@ tweaking their $case/namelist_scream.xml file.
       </Initial__Conditions>
       <Scorpio>
         <Output__YAML__Files>data/scream_output.yaml, </Output__YAML__Files>
+        <Model__Restart>
+          <Casename>${CASE}</Casename>
+          <Output__Control>
+            <Frequency>${REST_N}</Frequency>
+            <Frequency__Units>INVALID</Frequency__Units>
+            <Frequency__Units REST_OPTION="nstep*">Steps</Frequency__Units>
+          </Output__Control>
+        </Model__Restart>
       </Scorpio>
     </Atmosphere__Driver>
     <SCREAM>
