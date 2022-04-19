@@ -65,7 +65,7 @@ subroutine cam_ctrl_set_physics_type(phys_package)
   character(len=*), parameter :: subname = 'cam_ctrl_set_physics_type'
 
   adiabatic = trim(phys_package) == 'adiabatic'
-  ideal_phys = trim(phys_package) == 'held_suarez'
+  ideal_phys = trim(phys_package) == 'ideal'
   moist_physics = .not. (adiabatic .or. ideal_phys)
   if (adiabatic .and. ideal_phys) then
     call endrun (subname//': FATAL: Only one of ADIABATIC or HELD_SUAREZ can be .true.')
