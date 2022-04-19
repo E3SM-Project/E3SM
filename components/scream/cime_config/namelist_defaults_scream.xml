@@ -1,0 +1,211 @@
+<?xml version="1.0"?>
+
+<!--
+
+The file that defines all parameter input files for SCREAM. This file
+will be processed by SCREAM's buildnml script and produces the
+$case/namelist_scream.xml which is the fully resolved/processed
+info from this file. We recommend users use atm-config-chg for
+tweaking their $case/namelist_scream.xml file.
+
+-->
+
+<namelist_defaults>
+
+  <!--
+    The following block defines convenience selectors. Case settings
+    can be used as selectors, but they are often not covenient due to
+    long names or having to process their values through regular expressions
+    to get the subpiece you are interested in. The convenience selectors
+    allow you to express this logic and capture it with a short name.
+
+    The following attributes are how one defines a selector
+      name     : The name of the selector
+      case_env : The case value (thing you can xmlquery)
+      regex    : OPTIONAL, how to pick out the piece of the value you are interested in
+                 By default, the entire value is grabbed. If the regex does not match
+                 the case value, then the selector will evaluate to False.
+
+    Example using the nlev selector
+      <partmethod nlev="128">42</partmethod>
+      <partmethod nlev="72">420</partmethod>
+
+    Selector info will not be duplicated in the processed $case/namelist_scream.xml file.
+  -->
+  <selectors>
+    <selector name="hgrid" case_env="ATM_GRID"/>
+    <selector name="dyn" case_env="ATM_DYN_TARGET"/>
+    <selector name="nlev" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_VERTICAL_LEV ([0-9]+).*"/>
+  </selectors>
+
+  <!--
+      The following blocks define the input files for the model.
+      There are some rules that must be followed.
+
+      Lingo:
+        Outer element: An XML element that is not intended to be an input paramter,
+                       it is only for grouping/namespacing the elements within it
+        Parameter element: An XML element representing an individual input parameter.
+                           This element should not have child elements. It should have element text
+                           representing the desired value. These elements can have
+                           one or more selectors. We call a parameter element "matched"
+                           if it either has no selectors or all its selectors are True.
+        Parameter: A named input value. It can have multiple parameter elements if
+                   it needs to have different values/types based on case settings.
+        Selector: An XML attribute that checks a property of the case. See the documentation
+                  above the <selectors> element above for more details.
+        Metadata: An XML attribute that represents metadata for an input parameter
+
+      Rules:
+        1) Parameters can have any number of parameter elements, each with their own
+           set of selectors. A parameter element with no selectors, which means it controls the default param value, must
+           come before parameter elements with selectors. If multiple parameter elements
+           are matched, then the match the occurs last takes precendence.
+        2) The first matched parameter element encountered for a parameter will define the default metadata
+           for that parameter. All subsequent parameter elements will assume the same
+           metadata as the first unless an explicit override occurs.
+           User changes to the case XML file must be compatible with the metadata.
+        3) For a parameter whose elements all have selectors, if none of the selectors
+           are matched, then the parameter will be omitted from the case XML
+           file ($case/namelist_scream.xml).
+        4) Parameter types will be inferred. You can override the inferred type
+           via the 'type' metadata attribute. Types are:
+             logical: will be inferred from any case of true/false
+             integer: will be inferred from any sequence of 0-9
+             real   : will be inferred from any numeric expression with a decimal point or scientific notation
+             string : everything else
+        5) A parameter can be set to any value of the correct type unless
+           the 'valid_values' metadata attribute is set. If desired, valid_values
+           should be set up as a comma-separated list of values, e.g. 'valid_values="1,2,3"'
+           TODO support numeric checks (<, >, ...)??
+        6) You can inline case values into parameter values via this syntax, e.g.:
+           <init_file>scream_init_${ATM_GRID}.nc</init_file>
+           This would result in parameter init_file' having the value 'scream_init_ne4ne4.nc'
+        7) Any parameter value with a comma will be assumed to be a list.
+           TODO allow this behavior to be overridden?
+        8) Every value in a list should be of the same type
+        9) All local changes made to $case/namelist_scream.xml must conform
+           to the structure and metadata derived from this file.
+
+  -->
+
+  <file name="data/scream_input.yaml" format="yaml">
+    <Atmosphere__Driver>
+      <Atmosphere__Processes>
+        <Number__of__Entries>6</Number__of__Entries>
+        <Schedule__Type>Sequential</Schedule__Type>
+        <Process__0>
+          <Process__Name>Homme</Process__Name>
+          <Enable__Postcondition__Checks>True</Enable__Postcondition__Checks>
+          <Enable__Precondition__Checks>True</Enable__Precondition__Checks>
+          <Grid>Dynamics</Grid>
+          <Vertical__Coordinate__Filename>${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Vertical__Coordinate__Filename>
+          <Vertical__Coordinate__Filename COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Vertical__Coordinate__Filename>
+          <Moisture>moist</Moisture>
+        </Process__0>
+        <Process__1>
+          <Process__Name>SHOC</Process__Name>
+          <Enable__Postcondition__Checks>True</Enable__Postcondition__Checks>
+          <Enable__Precondition__Checks>True</Enable__Precondition__Checks>
+          <Grid>Physics GLL</Grid>
+        </Process__1>
+        <Process__2>
+          <Process__Name>CldFraction</Process__Name>
+          <Enable__Postcondition__Checks>True</Enable__Postcondition__Checks>
+          <Enable__Precondition__Checks>True</Enable__Precondition__Checks>
+          <Grid>Physics GLL</Grid>
+        </Process__2>
+        <Process__3>
+          <Process__Name>SPA</Process__Name>
+          <Enable__Postcondition__Checks>True</Enable__Postcondition__Checks>
+          <Enable__Precondition__Checks>True</Enable__Precondition__Checks>
+          <Grid>Physics GLL</Grid>
+          <SPA__Remap__File>none</SPA__Remap__File>
+          <SPA__Data__File>${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_scream.nc</SPA__Data__File>
+        </Process__3>
+        <Process__4>
+          <Process__Name>P3</Process__Name>
+          <Enable__Postcondition__Checks>True</Enable__Postcondition__Checks>
+          <Enable__Precondition__Checks>True</Enable__Precondition__Checks>
+          <Grid>Physics GLL</Grid>
+        </Process__4>
+        <Process__5>
+          <Process__Name>RRTMGP</Process__Name>
+          <Enable__Postcondition__Checks>True</Enable__Postcondition__Checks>
+          <Enable__Precondition__Checks>True</Enable__Precondition__Checks>
+          <Grid>Physics GLL</Grid>
+          <active_gases>h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
+          <Orbital__Year>-9999</Orbital__Year>
+          <Orbital__Eccentricity>-9999</Orbital__Eccentricity>
+          <Orbital__Eccentricity COMPSET=".*SCREAM%AQUA.*">0</Orbital__Eccentricity>
+          <Orbital__Obliquity>-9999</Orbital__Obliquity>
+          <Orbital__Obliquity COMPSET=".*SCREAM%AQUA.*">0</Orbital__Obliquity>
+          <Orbital__MVELP>-9999</Orbital__MVELP>
+          <Orbital__MVELP COMPSET=".*SCREAM%AQUA.*">0</Orbital__MVELP>
+        </Process__5>
+      </Atmosphere__Processes>
+      <Time__Stepping>
+        <Time__Step>300</Time__Step>
+        <Start__Time>12, 30, 0</Start__Time>
+        <Start__Date>2000, 2, 1</Start__Date>
+        <Number__of__Steps>288</Number__of__Steps>
+      </Time__Stepping>
+      <Grids__Manager>
+        <Type>Dynamics Driven</Type>
+        <Reference__Grid>Physics GLL</Reference__Grid>
+        <Dynamics__Driven>
+          <Dynamics__Namelist__File__Name>./data/namelist.nl</Dynamics__Namelist__File__Name>
+        </Dynamics__Driven>
+      </Grids__Manager>
+      <Initial__Conditions>
+        <Physics__GLL>
+          <Filename>${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Filename>
+          <Filename COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Filename>
+          <T_mid_prev>T_mid</T_mid_prev>
+          <horiz_winds_prev>horiz_winds</horiz_winds_prev>
+          <w_int>0.0</w_int>
+          <w_int_prev>0.0</w_int_prev>
+        </Physics__GLL>
+        <Dynamics>
+          <tracers>tracers, Physics GLL</tracers>
+        </Dynamics>
+      </Initial__Conditions>
+      <Scorpio>
+        <Output__YAML__Files>data/scream_output.yaml, </Output__YAML__Files>
+      </Scorpio>
+    </Atmosphere__Driver>
+    <SCREAM>
+      <Start__Date>${RUN_STARTDATE}</Start__Date>
+      <Input__Files>${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-sw-g224-2018-12-04.nc, ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-lw-g256-2018-12-04.nc, ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc, ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc, ${DIN_LOC_ROOT}/atm/scream/tables/p3_lookup_table_1.dat-v4.1.1, ${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_scream.nc</Input__Files>
+    </SCREAM>
+  </file>
+
+  <file name="data/namelist.nl" format="nml">
+    <ctl_nl>
+      <cubed_sphere_map>0</cubed_sphere_map>
+      <disable_diagnostics>False</disable_diagnostics>
+      <dt_remap_factor>1</dt_remap_factor>
+      <dt_tracer_factor>1</dt_tracer_factor>
+      <hypervis_order>2</hypervis_order>
+      <hypervis_scaling>3.0</hypervis_scaling>
+      <hypervis_subcycle>1</hypervis_subcycle>
+      <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
+      <nu>3.4e-08</nu>
+      <nu_top>250000.0</nu_top>
+      <se_ftype>0</se_ftype>
+      <se_geometry>sphere</se_geometry>
+      <se_limiter_option>9</se_limiter_option>
+      <se_ne>4</se_ne>
+      <se_nsplit>-1</se_nsplit>
+      <se_partmethod>4</se_partmethod>
+      <se_topology>cube</se_topology>
+      <se_tstep>300</se_tstep>
+      <statefreq>9999</statefreq>
+      <theta_advect_form>1</theta_advect_form>
+      <theta_hydrostatic_mode>True</theta_hydrostatic_mode>
+      <tstep_type>5</tstep_type>
+      <vert_remap_q_alg>10</vert_remap_q_alg>
+    </ctl_nl>
+  </file>
+
+</namelist_defaults>

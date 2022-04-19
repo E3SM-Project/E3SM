@@ -3,6 +3,8 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
 
+#include "diagnostics/register_diagnostics.hpp"
+
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
@@ -41,6 +43,9 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_run_t0 = m_case_t0 = run_t0;
   m_is_restarted_run = is_restarted_run;
   m_is_model_restart_output = is_model_restart_output;
+
+  // Register all potential diagnostics
+  register_diagnostics();
 
   // Check for model restart output
   set_params(params,field_mgrs);
@@ -267,9 +272,6 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   if (is_write_step) {
     // We're adding one snapshot to the file
     ++filespecs.num_snapshots_in_file;
-
-    // Finish up any updates to output file
-    sync_outfile(filename);
 
     // Now that we've written output to this file we need reset the nsteps.
     control.nsteps_since_last_write = 0;

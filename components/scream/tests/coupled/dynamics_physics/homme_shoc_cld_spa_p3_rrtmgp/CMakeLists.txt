@@ -8,9 +8,9 @@ CreateDynamicsLib("theta-l_kokkos"  4   72   35)
 set (TEST_LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
 set (NEED_LIBS cld_fraction shoc spa p3 scream_rrtmgp ${dynLibName} scream_control scream_share physics_share)
 CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp "homme_shoc_cld_spa_p3_rrtmgp.cpp" "${NEED_LIBS}"
-               LABELS ${TEST_LABELS} 
-               MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
-               PROPERTIES FIXTURES_SETUP homme_shoc_cld_spa_p3_rrtmgp_generate_output_nc_files
+    LABELS ${TEST_LABELS}
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    PROPERTIES FIXTURES_SETUP homme_shoc_cld_spa_p3_rrtmgp_generate_output_nc_files
 )
 
 # Set AD configurable options
@@ -51,44 +51,20 @@ set (HOMME_THETA_HY_MODE true)
 set (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)
 set (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
 
-file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
-
 # Configure the namelist into the test directory
 configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
-# Copy initial conditions files
-GetInputFile(init/homme_shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-
-# Create vcoord directory
-file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vcoord)
-
-# Copy vcoord files to build dir
-configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72i.ascii
-               ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
-configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72m.ascii
-               ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
-
-# P3 data files
-GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1
-  ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_1.dat-v4.1.1)
-GetInputFile(tables/p3_lookup_table_2.dat-v4.1.1
-  ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_2.dat-v4.1.1)
-# RRTMGP data files
-GetInputFile(init/rrtmgp-data-sw-g224-2018-12-04.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(init/rrtmgp-data-lw-g256-2018-12-04.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(init/rrtmgp-cloud-optics-coeffs-sw.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(init/rrtmgp-cloud-optics-coeffs-lw.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-# SPA data files
-GetInputFile(init/map_ne4np4_to_ne2np4_mono.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(init/spa_file_unified_and_complete_ne4_scream.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
+# Ensure test input files are present in the data dir
+set (TEST_INPUT_FILES
+  init/spa_init_ne2np4.nc
+  init/map_ne4np4_to_ne2np4_mono.nc
+  init/spa_file_unified_and_complete_ne4_scream.nc
+  init/homme_shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc
+)
+foreach (file IN ITEMS ${TEST_INPUT_FILES})
+  GetInputFile(${file})
+endforeach()
 
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC

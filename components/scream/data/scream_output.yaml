@@ -63,6 +63,7 @@ Fields:
       - aero_tau_sw
       - nc_activated
       - p_mid
+      - PotentialTemperature
 
 Output Control:
   Frequency: 2

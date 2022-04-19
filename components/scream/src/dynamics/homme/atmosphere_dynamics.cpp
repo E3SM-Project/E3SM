@@ -716,6 +716,7 @@ create_helper_field (const std::string& name,
 void HommeDynamics::init_homme_views () {
 
   const auto& c = Homme::Context::singleton();
+  auto& params  = c.get<Homme::SimulationParams>();
   auto& state  = c.get<Homme::ElementsState>();
   auto& tracers = c.get<Homme::Tracers>();
   auto& forcing = c.get<Homme::ElementsForcing>();
@@ -731,7 +732,41 @@ void HommeDynamics::init_homme_views () {
   const int qsize = tracers.num_tracers();
 
   // Print homme's parameters, so user can see whether something wasn't set right.
-  if (get_comm().am_i_root()) c.get<Homme::SimulationParams>().print();
+  // TODO: make Homme::SimulationParams::print accept an ostream.
+  std::stringstream msg;
+  msg << "\n************** CXX SimulationParams **********************\n\n";
+  msg << "   time_step_type: " << Homme::etoi(params.time_step_type) << "\n";
+  msg << "   moisture: " << (params.moisture==Homme::MoistDry::DRY ? "dry" : "moist") << "\n";
+  msg << "   remap_alg: " << Homme::etoi(params.remap_alg) << "\n";
+  msg << "   test case: " << Homme::etoi(params.test_case) << "\n";
+  msg << "   ftype: " << Homme::etoi(params.ftype) << "\n";
+  msg << "   theta_adv_form: " << Homme::etoi(params.theta_adv_form) << "\n";
+  msg << "   rsplit: " << params.rsplit << "\n";
+  msg << "   qsplit: " << params.qsplit << "\n";
+  msg << "   qsize: " << qsize << "\n";
+  msg << "   limiter_option: " << params.limiter_option << "\n";
+  msg << "   state_frequency: " << params.state_frequency << "\n";
+  msg << "   dcmip16_mu: " << params.dcmip16_mu << "\n";
+  msg << "   nu: " << params.nu << "\n";
+  msg << "   nu_p: " << params.nu_p << "\n";
+  msg << "   nu_q: " << params.nu_q << "\n";
+  msg << "   nu_s: " << params.nu_s << "\n";
+  msg << "   nu_top: " << params.nu_top << "\n";
+  msg << "   nu_div: " << params.nu_div << "\n";
+  msg << "   hypervis_order: " << params.hypervis_order << "\n";
+  msg << "   hypervis_subcycle: " << params.hypervis_subcycle << "\n";
+  msg << "   hypervis_subcycle_tom: " << params.hypervis_subcycle_tom << "\n";
+  msg << "   hypervis_scaling: " << params.hypervis_scaling << "\n";
+  msg << "   nu_ratio1: " << params.nu_ratio1 << "\n";
+  msg << "   nu_ratio2: " << params.nu_ratio2 << "\n";
+  msg << "   use_cpstar: " << (params.use_cpstar ? "yes" : "no") << "\n";
+  msg << "   transport_alg: " << params.transport_alg << "\n";
+  msg << "   disable_diagnostics: " << (params.disable_diagnostics ? "yes" : "no") << "\n";
+  msg << "   theta_hydrostatic_mode: " << (params.theta_hydrostatic_mode ? "yes" : "no") << "\n";
+  msg << "   prescribed_wind: " << (params.prescribed_wind ? "yes" : "no") << "\n";
+  msg << "   rearth: " << params.rearth << "\n";
+  msg << "\n**********************************************************\n" << "\n";
+  this->log(LogLevel::info,msg.str());
 
   // ------------ Set views in Homme ------------- //
   // Velocity

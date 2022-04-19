@@ -1,15 +1,40 @@
 #include "share/io/scorpio_output.hpp"
-#include "ekat/std_meta/ekat_std_utils.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "ekat/util/ekat_units.hpp"
+#include "share/util/scream_view_utils.hpp"
 
+#include "ekat/util/ekat_units.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
+#include "ekat/std_meta/ekat_std_utils.hpp"
 
 #include <numeric>
 #include <fstream>
 
 namespace scream
 {
+
+// This helper function updates the current output val with a new one,
+// according to the "averaging" type, and according to the number of
+// model time steps since the last output step.
+KOKKOS_INLINE_FUNCTION
+void combine (const Real& new_val, Real& curr_val, const OutputAvgType avg_type)
+{
+  switch (avg_type) {
+    case OutputAvgType::Instant:
+      curr_val = new_val;
+      break;
+    case OutputAvgType::Max:
+      curr_val = ekat::impl::max(curr_val,new_val);
+      break;
+    case OutputAvgType::Min:
+      curr_val = ekat::impl::min(curr_val,new_val);
+      break;
+    case OutputAvgType::Average:
+      curr_val += new_val;
+      break;
+    default:
+      EKAT_KERNEL_ERROR_MSG ("Unexpected value for m_avg_type. Please, contact developers.\n");
+  }
+}
 
 AtmosphereOutput::
 AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
@@ -29,6 +54,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   set_field_manager (field_mgr);
 
   // By default, IO is done directly on the field mgr grid
+  m_grids_manager = grids_mgr;
   std::shared_ptr<const grid_type> fm_grid, io_grid;
   io_grid = fm_grid = field_mgr->get_grid();
   if (params.isParameter("Field Names")) {
@@ -60,7 +86,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     // Register all output fields in the remapper.
     m_remapper->registration_begins();
     for (const auto& fname : m_fields_names) {
-      auto f = m_field_mgr->get_field(fname);
+      auto f = get_field(fname);
       const auto& src_fid = f.get_header().get_identifier();
       EKAT_REQUIRE_MSG(src_fid.data_type()==DataType::RealType,
           "Error! I/O supports only Real data, for now.\n");
@@ -79,7 +105,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
     // Now that fields have been allocated on the io grid, we can bind them in the remapper
     for (const auto& fname : m_fields_names) {
-      auto src = m_field_mgr->get_field(fname);
+      auto src = get_field(fname);
       auto tgt = io_fm->get_field(fname);
       m_remapper->bind_field(src,tgt);
     }
@@ -107,10 +133,19 @@ void AtmosphereOutput::restart (const std::string& filename)
   AtmosphereInput hist_restart (res_params,m_io_grid,m_host_views_1d,m_layouts);
   hist_restart.read_variables();
   hist_restart.finalize();
+  for (auto& it : m_host_views_1d) {
+    const auto& name = it.first;
+    const auto& host = it.second;
+    const auto& dev  = m_dev_views_1d.at(name);
+    Kokkos::deep_copy(dev,host);
+  }
 }
 
 void AtmosphereOutput::init()
 {
+  // Register any diagnostics needed by this output stream
+  set_diagnostics();
+
   for (const auto& var_name : m_fields_names) {
     register_dimensions(var_name);
   }
@@ -118,10 +153,17 @@ void AtmosphereOutput::init()
   // Now that the fields have been gathered register the local views which will be used to determine output data to be written.
   register_views();
 
+
 } // init
 /*-----*/
 void AtmosphereOutput::run (const std::string& filename, const bool is_write_step, const int nsteps_since_last_output)
 {
+  // If we do INSTANT output, but this is not an write step,
+  // we can immediately return
+  if (not is_write_step and m_avg_type==OutputAvgType::Instant) {
+    return;
+  }
+
   using namespace scream::scorpio;
 
   // If needed, remap fields from their grid to the unique grid, for I/O
@@ -142,7 +184,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
   // Take care of updating and possibly writing fields.
   for (auto const& name : m_fields_names) {
     // Get all the info for this field.
-    const auto  field = m_field_mgr->get_field(name);
+    const auto  field = get_field(name);
     const auto& layout = m_layouts.at(name);
     const auto& dims = layout.dims();
     const auto  rank = layout.rank();
@@ -151,90 +193,106 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
     EKAT_REQUIRE_MSG (field.get_header().get_tracking().get_time_stamp().is_valid(),
         "Error! Output field '" + name + "' has not been initialized yet\n.");
 
-    // Make sure host data is up to date
-    field.sync_to_host();
+    const bool is_diagnostic = (m_diagnostics.find(name) != m_diagnostics.end());
+    const bool is_aliasing_field_view =
+        m_avg_type==OutputAvgType::Instant &&
+        field.get_header().get_alloc_properties().get_padding()==0 &&
+        field.get_header().get_parent().expired() &&
+        not is_diagnostic;
 
     // Manually update the 'running-tally' views with data from the field,
     // by combining new data with current avg values.
-    // NOTE: the running-tally is not a tally for Instant avg_type.
-    auto data = m_host_views_1d.at(name).data();
-    switch (rank) {
-      case 1:
-      {
-        auto new_view_1d = field.get_view<const Real*,Host>();
-        auto avg_view_1d = view_Nd_host<1>(data,dims[0]);
+    // NOTE: this is skipped for instant output, if IO view is aliasing Field view.
+    auto view_dev = m_dev_views_1d.at(name);
+    auto data = view_dev.data();
+    KT::RangePolicy policy(0,layout.size());
+    const auto extents = layout.extents();
 
-        for (int i=0; i<dims[0]; ++i) {
-          combine(new_view_1d(i), avg_view_1d(i),nsteps_since_last_output);
+    auto avg_type = m_avg_type;
+    // If the dev_view_1d is aliasing the field device view (must be Instant output),
+    // then there's no point in copying from the field's view to dev_view
+    if (not is_aliasing_field_view) {
+      switch (rank) {
+        case 1:
+        {
+          auto new_view_1d = field.get_view<const Real*,Device>();
+          auto avg_view_1d = view_Nd_dev<1>(data,dims[0]);
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
+            combine(new_view_1d(i), avg_view_1d(i),avg_type);
+          });
+          break;
         }
-        break;
+        case 2:
+        {
+          auto new_view_2d = field.get_view<const Real**,Device>();
+          auto avg_view_2d = view_Nd_dev<2>(data,dims[0],dims[1]);
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+            int i,j;
+            unflatten_idx(idx,extents,i,j);
+            combine(new_view_2d(i,j), avg_view_2d(i,j),avg_type);
+          });
+          break;
+        }
+        case 3:
+        {
+          auto new_view_3d = field.get_view<const Real***,Device>();
+          auto avg_view_3d = view_Nd_dev<3>(data,dims[0],dims[1],dims[2]);
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+            int i,j,k;
+            unflatten_idx(idx,extents,i,j,k);
+            combine(new_view_3d(i,j,k), avg_view_3d(i,j,k),avg_type);
+          });
+          break;
+        }
+        case 4:
+        {
+          auto new_view_4d = field.get_view<const Real****,Device>();
+          auto avg_view_4d = view_Nd_dev<4>(data,dims[0],dims[1],dims[2],dims[3]);
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+            int i,j,k,l;
+            unflatten_idx(idx,extents,i,j,k,l);
+            combine(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),avg_type);
+          });
+          break;
+        }
+        case 5:
+        {
+          auto new_view_5d = field.get_view<const Real*****,Device>();
+          auto avg_view_5d = view_Nd_dev<5>(data,dims[0],dims[1],dims[2],dims[3],dims[4]);
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+            int i,j,k,l,m;
+            unflatten_idx(idx,extents,i,j,k,l,m);
+            combine(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),avg_type);
+          });
+          break;
+        }
+        case 6:
+        {
+          auto new_view_6d = field.get_view<const Real******,Device>();
+          auto avg_view_6d = view_Nd_dev<6>(data,dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]);
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int idx) {
+            int i,j,k,l,m,n;
+            unflatten_idx(idx,extents,i,j,k,l,m,n);
+            combine(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n),avg_type);
+          });
+          break;
+        }
+        default:
+          EKAT_ERROR_MSG ("Error! Field rank (" + std::to_string(rank) + ") not supported by AtmosphereOutput.\n");
       }
-      case 2:
-      {
-        auto new_view_2d = field.get_view<const Real**,Host>();
-        auto avg_view_2d = view_Nd_host<2>(data,dims[0],dims[1]);
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
-            combine(new_view_2d(i,j), avg_view_2d(i,j),nsteps_since_last_output);
-        }}
-        break;
-      }
-      case 3:
-      {
-        auto new_view_3d = field.get_view<const Real***,Host>();
-        auto avg_view_3d = view_Nd_host<3>(data,dims[0],dims[1],dims[2]);
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
-            for (int k=0; k<dims[2]; ++k) {
-              combine(new_view_3d(i,j,k), avg_view_3d(i,j,k),nsteps_since_last_output);
-        }}}
-        break;
-      }
-      case 4:
-      {
-        auto new_view_4d = field.get_view<const Real****,Host>();
-        auto avg_view_4d = view_Nd_host<4>(data,dims[0],dims[1],dims[2],dims[3]);
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
-            for (int k=0; k<dims[2]; ++k) {
-              for (int l=0; l<dims[3]; ++l) {
-                combine(new_view_4d(i,j,k,l), avg_view_4d(i,j,k,l),nsteps_since_last_output);
-        }}}}
-        break;
-      }
-      case 5:
-      {
-        auto new_view_5d = field.get_view<const Real*****,Host>();
-        auto avg_view_5d = view_Nd_host<5>(data,dims[0],dims[1],dims[2],dims[3],dims[4]);
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
-            for (int k=0; k<dims[2]; ++k) {
-              for (int l=0; l<dims[3]; ++l) {
-                for (int m=0; m<dims[4]; ++m) {
-                  combine(new_view_5d(i,j,k,l,m), avg_view_5d(i,j,k,l,m),nsteps_since_last_output);
-        }}}}}
-        break;
-      }
-      case 6:
-      {
-        auto new_view_6d = field.get_view<const Real******,Host>();
-        auto avg_view_6d = view_Nd_host<6>(data,dims[0],dims[1],dims[2],dims[3],dims[4],dims[5]);
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
-            for (int k=0; k<dims[2]; ++k) {
-              for (int l=0; l<dims[3]; ++l) {
-                for (int m=0; m<dims[4]; ++m) {
-                  for (int n=0; n<dims[5]; ++n) {
-                    combine(new_view_6d(i,j,k,l,m,n), avg_view_6d(i,j,k,l,m,n),nsteps_since_last_output);
-        }}}}}}
-        break;
-      }
-      default:
-        EKAT_ERROR_MSG ("Error! Field rank (" + std::to_string(rank) + ") not supported by AtmosphereOutput.\n");
     }
 
     if (is_write_step) {
-      grid_write_data_array(filename,name,data);
+      if (avg_type==OutputAvgType::Average) {
+        // Divide by steps count only when the summation is complete
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
+          data[i] /= nsteps_since_last_output;
+        });
+      }
+      // Bring data to host
+      auto view_host = m_host_views_1d.at(name);
+      Kokkos::deep_copy (view_host,view_dev);
+      grid_write_data_array(filename,name,view_host.data());
     }
   }
 } // run
@@ -284,7 +342,7 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
   using namespace scorpio;
 
   // Store the field layout
-  const auto& fid = m_field_mgr->get_field(name).get_header().get_identifier();
+  const auto& fid = get_field(name).get_header().get_identifier();
   const auto& layout = fid.get_layout();
   m_layouts.emplace(name,layout);
 
@@ -316,28 +374,53 @@ void AtmosphereOutput::register_views()
 {
   // Cycle through all fields and register.
   for (auto const& name : m_fields_names) {
-    auto field = m_field_mgr->get_field(name);
+    auto field = get_field(name);
+    bool is_diagnostic = (m_diagnostics.find(name) != m_diagnostics.end());
 
     // These local views are really only needed if the averaging time is not 'Instant',
     // to store running tallies for the average operation. However, we create them
     // also for Instant avg_type, for simplicity later on.
 
-    // If we have an 'Instant' avg type, we can alias the tmp views with the
-    // host view of the field, provided that the field does not have padding,
+    // If we have an 'Instant' avg type, we can alias the 1d views with the
+    // views of the field, provided that the field does not have padding,
     // and that it is not a subfield of another field (or else the view
     // would be strided).
+    //
+    // We also don't want to alias to a diagnostic output since it could share memory
+    // with another diagnostic.
     bool can_alias_field_view =
         m_avg_type==OutputAvgType::Instant &&
         field.get_header().get_alloc_properties().get_padding()==0 &&
-        field.get_header().get_parent().expired();
+        field.get_header().get_parent().expired() &&
+        not is_diagnostic;
 
     const auto size = m_layouts.at(name).size();
     if (can_alias_field_view) {
       // Alias field's data, to save storage.
+      m_dev_views_1d.emplace(name,view_1d_dev(field.get_internal_view_data<Real,Device>(),size));
       m_host_views_1d.emplace(name,view_1d_host(field.get_internal_view_data<Real,Host>(),size));
     } else {
-      // Create a local host view.
-      m_host_views_1d.emplace(name,view_1d_host("",size));
+      // Create a local view.
+      m_dev_views_1d.emplace(name,view_1d_dev("",size));
+      m_host_views_1d.emplace(name,Kokkos::create_mirror(m_dev_views_1d[name]));
+
+      // Init dev view with an "identity" for avg_type
+      switch (m_avg_type) {
+        case OutputAvgType::Instant:
+          // No averaging
+          break;
+        case OutputAvgType::Max:
+          Kokkos::deep_copy(m_dev_views_1d[name],-std::numeric_limits<Real>::infinity());
+          break;
+        case OutputAvgType::Min:
+          Kokkos::deep_copy(m_dev_views_1d[name],std::numeric_limits<Real>::infinity());
+          break;
+        case OutputAvgType::Average:
+          Kokkos::deep_copy(m_dev_views_1d[name],0);
+          break;
+        default:
+          EKAT_ERROR_MSG ("Unrecognized averaging type.\n");
+      }
     }
   }
 }
@@ -348,7 +431,7 @@ void AtmosphereOutput::register_variables(const std::string& filename)
 
   // Cycle through all fields and register.
   for (auto const& name : m_fields_names) {
-    auto field = m_field_mgr->get_field(name);
+    auto field = get_field(name);
     auto& fid  = field.get_header().get_identifier();
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     std::string io_decomp_tag = "Real";  // Note, for now we only assume REAL variables.  This may change in the future.
@@ -439,7 +522,7 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
 
   // Cycle through all fields and set dof.
   for (auto const& name : m_fields_names) {
-    auto field = m_field_mgr->get_field(name);
+    auto field = get_field(name);
     const auto& fid  = field.get_header().get_identifier();
     auto var_dof = get_var_dof_offsets(fid.get_layout());
     set_dof(filename,name,var_dof.size(),var_dof.data());
@@ -465,6 +548,58 @@ void AtmosphereOutput::setup_output_file(const std::string& filename)
 
   // Set the offsets of the local dofs in the global vector.
   set_degrees_of_freedom(filename);
+}
+/* ---------------------------------------------------------- */
+// General get_field routine for output.
+// This routine will first check if a field is in the local field
+// manager.  If not it will next check to see if it is in the list
+// of available diagnostics.  If neither of these two options it
+// will throw an error.
+Field AtmosphereOutput::get_field(const std::string& name)
+{
+  if (m_field_mgr->has_field(name)) {
+    return m_field_mgr->get_field(name);
+  } else if (m_diagnostics.find(name) != m_diagnostics.end()) {
+    const auto& diag = m_diagnostics[name];
+    return diag->get_diagnostic(100.0);
+  } else {
+    EKAT_ERROR_MSG ("Field " + name + " not found in output field manager or diagnostics list");
+  }
+}
+/* ---------------------------------------------------------- */
+void AtmosphereOutput::set_diagnostics()
+{
+  auto& diag_factory = AtmosphereDiagnosticFactory::instance();
+  for (const auto& fname : m_fields_names) {
+    if (!m_field_mgr->has_field(fname)) {
+      // Construct a diagnostic by this name
+      ekat::ParameterList params;
+      params.set<std::string>("Diagnostic Name", fname);
+      const auto grid_name = m_io_grid->name(); 
+      params.set<std::string>("Grid", grid_name);
+      auto diag = diag_factory.create(fname,m_comm,params);
+      diag->set_grids(m_grids_manager);
+      m_diagnostics.emplace(fname,diag);
+    }
+  }
+  // Set required fields for all diagnostics
+  for (const auto& dd : m_diagnostics) {
+    const auto& diag = dd.second;
+    // TimeStamp control
+    util::TimeStamp t0;
+    bool t0_set = false;
+    for (const auto& req : diag->get_required_field_requests()) {
+      // Any required fields should be in the field manager, so we can gather
+      // the TimeStamp for initialization from the first of these.
+      const auto& req_field = get_field(req.fid.name());
+      if (!t0_set) {
+        t0 = req_field.get_header().get_tracking().get_time_stamp();
+        t0_set = true;
+      }
+      diag->set_required_field(req_field.get_const());
+    }
+    diag->initialize(t0,RunType::Initial);
+  }
 }
 
 } // namespace scream

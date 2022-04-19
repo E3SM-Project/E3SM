@@ -133,7 +133,7 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
   m_buffer.spa_temp.PS = decltype(m_buffer.spa_temp.PS)(r_mem,ncols);
   r_mem += m_buffer.spa_temp.PS.size();
 
-  int used_mem = (r_mem - buffer_manager.get_memory())*sizeof(Real);
+  size_t used_mem = (r_mem - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(),
       "Error! Used memory != requested memory for SPA.\n"
       "   - used mem     : " + std::to_string(used_mem) + "\n"

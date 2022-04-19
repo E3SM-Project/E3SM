@@ -487,7 +487,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_Redi_N2_based_taper_limit_term1" type="logical"
 	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-If true, the N2 lim iting is applied to the horizontal diffusion term
+If true, the N2 limiting is applied to the horizontal diffusion term
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -528,11 +528,19 @@ Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_GM_constant_gravWaveSpeed" type="real"
+<entry id="config_GM_constant_bclModeSpeed" type="real"
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-Gravity wave speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004).
+The parameter setting for the first baroclinic mode speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004).
 
 Valid values: Positive real numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_minBclModeSpeed_method" type="char*1024"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Determines how the GM setting for the minimum of the first baroclinic mode speed is computed. If 'constant' then use config_GM_constant_bclModeSpeed. If 'computed' then compute at every edge at every time step using the Brunt-Vaisala frequency
+
+Valid values: 'constant' and 'computed'
 Default: Defined in namelist_defaults.xml
 </entry>
 

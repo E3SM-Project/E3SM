@@ -167,7 +167,7 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   const int wsm_size = WSM::get_total_bytes_needed(nk_pack, 52, policy)/sizeof(Spack);
   s_mem += wsm_size;
 
-  int used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
+  size_t used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for P3Microphysics.");
 }
 

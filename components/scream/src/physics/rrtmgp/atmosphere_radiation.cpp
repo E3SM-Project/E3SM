@@ -1,6 +1,6 @@
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
-#include "physics/rrtmgp/rrtmgp_heating_rate.hpp"
+#include "physics/rrtmgp/rrtmgp_utils.hpp"
 #include "physics/rrtmgp/share/shr_orb_mod_c2f.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
@@ -15,7 +15,8 @@ namespace scream {
   using ExeSpace = KT::ExeSpace;
   using MemberType = KT::MemberType;
 
-RRTMGPRadiation::RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params) 
+RRTMGPRadiation::
+RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
   // Nothing to do here
@@ -98,6 +99,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid->name(), ps);
   add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid->name(), ps);
   add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid->name(), ps);
+  add_field<Computed>("rad_heating_pdel", scalar3d_layout_mid, Pa*K/s, grid->name(), ps);
 
   // Translation of variables from EAM
   // --------------------------------------------------------------
@@ -241,6 +243,9 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
 void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   using PC = scream::physics::Constants<Real>;
 
+  // Determine rad timestep, specified as number of atm steps
+  m_rad_freq_in_steps = m_params.get<Int>("rad_frequency", 1);
+
   // Determine orbital year. If Orbital Year is negative, use current year
   // from timestamp for orbital year; if positive, use provided orbital year
   // for duration of simulation.
@@ -267,9 +272,10 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
     gas_mol_w_host[igas]            = PC::get_gas_mol_weight(m_gas_names[igas]);
   }
   Kokkos::deep_copy(m_gas_mol_weights,gas_mol_w_host);
+
   // Initialize GasConcs object to pass to RRTMGP initializer;
   gas_concs.init(gas_names_yakl_offset,m_ncol,m_nlay);
-  rrtmgp::rrtmgp_initialize(gas_concs);
+  rrtmgp::rrtmgp_initialize(gas_concs, m_atm_logger);
 
   // Set property checks for fields in this process
 
@@ -280,6 +286,7 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   add_precondition_check<FieldWithinIntervalCheck>(get_field_in("sfc_alb_dif_nir"),0.0,1.0,false);
 
 }
+
 // =========================================================================================
 
 void RRTMGPRadiation::run_impl (const int dt) {
@@ -319,6 +326,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
   auto d_sw_flux_dn_dir = get_field_out("SW_flux_dn_dir").get_view<Real**>();
   auto d_lw_flux_up = get_field_out("LW_flux_up").get_view<Real**>();
   auto d_lw_flux_dn = get_field_out("LW_flux_dn").get_view<Real**>();
+  auto d_rad_heating_pdel = get_field_out("rad_heating_pdel").get_view<Real**>();
   auto d_sfc_flux_dir_vis = get_field_out("sfc_flux_dir_vis").get_view<Real*>();
   auto d_sfc_flux_dir_nir = get_field_out("sfc_flux_dir_nir").get_view<Real*>();
   auto d_sfc_flux_dif_vis = get_field_out("sfc_flux_dif_vis").get_view<Real*>();
@@ -396,6 +404,9 @@ void RRTMGPRadiation::run_impl (const int dt) {
   auto calday = ts.frac_of_year_in_days();
   shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
                    obliqr, &delta, &eccf);
+
+  // Are we going to update fluxes and heating this step?
+  auto update_rad = scream::rrtmgp::radiation_do(m_rad_freq_in_steps, ts.get_num_steps());
 
   // Copy data from the FieldManager to the YAKL arrays
   {
@@ -543,43 +554,67 @@ void RRTMGPRadiation::run_impl (const int dt) {
     sfc_alb_dir, sfc_alb_dif);
 
   // Run RRTMGP driver
-  rrtmgp::rrtmgp_main(
-    m_ncol, m_nlay,
-    p_lay, t_lay, p_lev, t_lev,
-    gas_concs,
-    sfc_alb_dir, sfc_alb_dif, mu0,
-    lwp, iwp, rel, rei,
-    aero_tau_sw, aero_ssa_sw, aero_g_sw,
-    aero_tau_lw,
-    sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
-    lw_flux_up, lw_flux_dn, 
-    sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
-    lw_bnd_flux_up, lw_bnd_flux_dn, 
-    eccf, get_comm().am_i_root()
-  );
+  if (update_rad) {
+    rrtmgp::rrtmgp_main(
+      m_ncol, m_nlay,
+      p_lay, t_lay, p_lev, t_lev,
+      gas_concs,
+      sfc_alb_dir, sfc_alb_dif, mu0,
+      lwp, iwp, rel, rei,
+      aero_tau_sw, aero_ssa_sw, aero_g_sw,
+      aero_tau_lw,
+      sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
+      lw_flux_up, lw_flux_dn, 
+      sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
+      lw_bnd_flux_up, lw_bnd_flux_dn, 
+      eccf, m_atm_logger
+    );
+  }
 
-  // Compute and apply heating rates
+  // Compute and apply heating tendency
   auto sw_heating  = m_buffer.sw_heating;
   auto lw_heating  = m_buffer.lw_heating;
   auto rad_heating = m_buffer.rad_heating;
-  rrtmgp::compute_heating_rate(
-    sw_flux_up, sw_flux_dn, p_del, sw_heating
-  );
-  rrtmgp::compute_heating_rate(
-    lw_flux_up, lw_flux_dn, p_del, lw_heating
-  );
-  {
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-    const int k = team.league_rank()+1; // Note that for YAKL arrays i and k start with index 1
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ncol), [&] (const int& icol) {
-      int i = icol+1;
-      rad_heating(i,k) = sw_heating(i,k) + lw_heating(i,k);
-      t_lay(i,k) = t_lay(i,k) + rad_heating(i,k) * dt;
-    });
-  });
+  if (update_rad) {
+    rrtmgp::compute_heating_rate(
+      sw_flux_up, sw_flux_dn, p_del, sw_heating
+    );
+    rrtmgp::compute_heating_rate(
+      lw_flux_up, lw_flux_dn, p_del, lw_heating
+    );
+    {
+      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+        const int k = team.league_rank()+1; // Note that for YAKL arrays i and k start with index 1
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ncol), [&] (const int& icol) {
+          int i = icol+1;
+          // Combine SW and LW heating into a net heating tendency
+          rad_heating(i,k) = sw_heating(i,k) + lw_heating(i,k);
+          // Apply heating tendency to temperature
+          t_lay(i,k) = t_lay(i,k) + rad_heating(i,k) * dt;
+          // Compute pdel * rad_heating to conserve energy across timesteps in case
+          // levels change before next heating update.
+          d_rad_heating_pdel(icol,k-1) = d_pdel(icol,k-1) * rad_heating(i,k);
+        });
+      });
+    }
+    Kokkos::fence();
+  } else {
+    {
+      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+        const int k = team.league_rank()+1; // Note that for YAKL arrays i and k start with index 1
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ncol), [&] (const int& icol) {
+          int i = icol+1;
+          // Back out net heating tendency from the pdel weighted quantity we keep in the FM
+          rad_heating(i,k) = d_rad_heating_pdel(icol,k-1) / d_pdel(icol,k-1);
+          // Apply heating tendency to temperature
+          t_lay(i,k) = t_lay(i,k) + rad_heating(i,k) * dt;
+        });
+      });
+    }
+    Kokkos::fence();
   }
-  Kokkos::fence();
 
   // Index to surface (bottom of model); used to get surface fluxes below
   const int kbot = nlay+1;
@@ -598,27 +633,38 @@ void RRTMGPRadiation::run_impl (const int dt) {
   );
 
   // Copy output data back to FieldManager
+  if (update_rad) {
+    {
+      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+        const int i = team.league_rank();
+        d_sfc_flux_dir_nir(i) = sfc_flux_dir_nir(i+1);
+        d_sfc_flux_dir_vis(i) = sfc_flux_dir_vis(i+1);
+        d_sfc_flux_dif_nir(i) = sfc_flux_dif_nir(i+1);
+        d_sfc_flux_dif_vis(i) = sfc_flux_dif_vis(i+1);
+        d_sfc_flux_sw_net(i)  = sw_flux_dn(i+1,kbot) - sw_flux_up(i+1,kbot);
+        d_sfc_flux_lw_dn(i)   = lw_flux_dn(i+1,kbot);
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay+1), [&] (const int& k) {
+          d_sw_flux_up(i,k)     = sw_flux_up(i+1,k+1);
+          d_sw_flux_dn(i,k)     = sw_flux_dn(i+1,k+1);
+          d_sw_flux_dn_dir(i,k) = sw_flux_dn_dir(i+1,k+1);
+          d_lw_flux_up(i,k)     = lw_flux_up(i+1,k+1);
+          d_lw_flux_dn(i,k)     = lw_flux_dn(i+1,k+1);
+        });
+      });
+    }
+  }
+  // Temperature is always updated
   {
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int i = team.league_rank();
-      d_sfc_flux_dir_nir(i) = sfc_flux_dir_nir(i+1);
-      d_sfc_flux_dir_vis(i) = sfc_flux_dir_vis(i+1);
-      d_sfc_flux_dif_nir(i) = sfc_flux_dif_nir(i+1);
-      d_sfc_flux_dif_vis(i) = sfc_flux_dif_vis(i+1);
-      d_sfc_flux_sw_net(i)  = sw_flux_dn(i+1,kbot) - sw_flux_up(i+1,kbot);
-      d_sfc_flux_lw_dn(i)   = lw_flux_dn(i+1,kbot);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay+1), [&] (const int& k) {
-        if (k < nlay) d_tmid(i,k) = t_lay(i+1,k+1);
-
-        d_sw_flux_up(i,k)     = sw_flux_up(i+1,k+1);
-        d_sw_flux_dn(i,k)     = sw_flux_dn(i+1,k+1);
-        d_sw_flux_dn_dir(i,k) = sw_flux_dn_dir(i+1,k+1);
-        d_lw_flux_up(i,k)     = lw_flux_up(i+1,k+1);
-        d_lw_flux_dn(i,k)     = lw_flux_dn(i+1,k+1);
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+        d_tmid(i,k) = t_lay(i+1,k+1);
       });
     });
   }
+   
 }
 // =========================================================================================
 

@@ -1,6 +1,7 @@
 include(EkatUtils)
-include(EkatSetCompilerFlags
-)
+include(EkatSetCompilerFlags)
+include(ScreamUtils)
+
 # Add CUDA flags for YAKL
 set(YAKL_CXX_FLAGS "")
 if (CUDA_BUILD)
@@ -65,7 +66,22 @@ add_library(scream_rrtmgp ${INTERFACE_SRC})
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
 target_link_libraries(scream_rrtmgp PUBLIC ${NETCDF_C} rrtmgp yakl scream_share physics_share share_util)
 target_include_directories(scream_rrtmgp SYSTEM PUBLIC
-    ${NetCDF_C_PATH}/include ${SCREAM_BASE_DIR}/../../externals ${EAM_RRTMGP_DIR}/external)
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${NetCDF_C_PATH}/include
+    ${EAM_RRTMGP_DIR}/external)
+
+# Ensure RRTMGP lookup tables are present in the data dir
+set (RRTMGP_TABLES
+  init/rrtmgp-data-sw-g224-2018-12-04.nc
+  init/rrtmgp-data-lw-g256-2018-12-04.nc
+  init/rrtmgp-allsky.nc
+  init/rrtmgp-cloud-optics-coeffs-sw.nc
+  init/rrtmgp-cloud-optics-coeffs-lw.nc
+)
+
+foreach (file IN ITEMS ${RRTMGP_TABLES})
+  GetInputFile(${file})
+endforeach()
 
 # Build tests
 if (NOT SCREAM_LIB_ONLY)

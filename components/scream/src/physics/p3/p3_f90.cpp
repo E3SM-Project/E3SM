@@ -11,7 +11,7 @@ extern "C" {
   void micro_p3_utils_init_c(Real Cpair, Real Rair, Real RH2O, Real RHO_H2O,
                  Real MWH2O, Real MWdry, Real gravit, Real LatVap, Real LatIce,
                  Real CpLiq, Real Tmelt, Real Pi, Int iulog, bool masterproc);
-  void p3_init_c(const char** lookup_file_dir, int* info);
+  void p3_init_c(const char** lookup_file_dir, int* info, const bool& write_tables);
   void p3_main_c(Real* qc, Real* nc, Real* qr, Real* nr, Real* th_atm,
                  Real* qv, Real dt, Real* qi, Real* qm,
                  Real* ni, Real* bm, Real* pres,
@@ -112,13 +112,13 @@ void micro_p3_utils_init () {
                  c::CpLiq, c::Tmelt, c::Pi, c::iulog, c::masterproc);
 }
 
-void p3_init () {
+void p3_init (const bool write_tables) {
   static bool is_init = false;
   if (!is_init) {
     micro_p3_utils_init();
-    static const char* dir = "./data";
+    static const char* dir = SCREAM_DATA_DIR "/tables";
     Int info;
-    p3_init_c(&dir, &info);
+    p3_init_c(&dir, &info, write_tables);
     EKAT_REQUIRE_MSG(info == 0, "p3_init_c returned info " << info);
     is_init = true;
   }

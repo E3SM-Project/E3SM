@@ -71,7 +71,7 @@
 				 description="Minimum global value of tangentialVelocity on ocean edges."
 			/>
 			<var name="layerThicknessEdgeMin" array_group="mins" units="m"
-				 description="Minimum global value of layerThicknessEdge on ocean edges."
+				 description="Minimum global value of layerThicknessEdgeMean on ocean edges."
 			/>
 			<var name="relativeVorticityMin" array_group="mins" units="s^{-1}"
 				 description="Minimum global value of relativeVorticity on ocean vertices."
@@ -170,7 +170,7 @@
 				 description="Maximum global value of tangentialVelocity on ocean edges."
 			/>
 			<var name="layerThicknessEdgeMax" array_group="maxes" units="m"
-				 description="Maximum global value of layerThicknessEdge on ocean edges."
+				 description="Maximum global value of layerThicknessEdgeMean on ocean edges."
 			/>
 			<var name="relativeVorticityMax" array_group="maxes" units="s^{-1}"
 				 description="Maximum global value of relativeVorticity on ocean vertices."
@@ -269,7 +269,7 @@
 				 description="Accumulated global value of tangentialVelocity on ocean edges."
 			/>
 			<var name="layerThicknessEdgeSum" array_group="sums" units="m^3"
-				 description="Accumulated global value of layerThicknessEdge on ocean edges."
+				 description="Accumulated global value of layerThicknessEdgeMean on ocean edges."
 			/>
 			<var name="relativeVorticitySum" array_group="sums" units="m^2 s^{-1}"
 				 description="Accumulated global value of relativeVorticity on ocean vertices."
@@ -368,7 +368,7 @@
 				 description="Global root mean square value of tangentialVelocity on ocean edges."
 			/>
 			<var name="layerThicknessEdgeRms" array_group="rms" units="m"
-				 description="Global root mean square value of layerThicknessEdge on ocean edges."
+				 description="Global root mean square value of layerThicknessEdgeMean on ocean edges."
 			/>
 			<var name="relativeVorticityRms" array_group="rms" units="s^{-1}"
 				 description="Global root mean square value of relativeVorticity on ocean vertices."
@@ -467,7 +467,7 @@
 				 description="Average value of tangentialVelocity on ocean edges."
 			/>
 			<var name="layerThicknessEdgeAvg" array_group="avg" units="m"
-				 description="Average value of layerThicknessEdge on ocean edges."
+				 description="Average value of layerThicknessEdgeMean on ocean edges."
 			/>
 			<var name="relativeVorticityAvg" array_group="avg" units="s^{-1}"
 				 description="Average value of relativeVorticity on ocean vertices."
@@ -566,7 +566,7 @@
 				 description="Minimum vertical sum of tangentialVelocity on ocean edges."
 			/>
 			<var name="layerThicknessEdgeMinVertSum" array_group="vertSumMin" units="m"
-				 description="Minimum vertical sum of layerThicknessEdge on ocean edges."
+				 description="Minimum vertical sum of layerThicknessEdgeMean on ocean edges."
 			/>
 			<var name="relativeVorticityMinVertSum" array_group="vertSumMin" units="s^{-1}"
 				 description="Minimum vertical sum of relativeVorticity on ocean vertices."
@@ -665,7 +665,7 @@
 				 description="Maximum vertical sum of tangentialVelocity on ocean edges."
 			/>
 			<var name="layerThicknessEdgeMaxVertSum" array_group="vertSumMax" units="m"
-				 description="Maximum vertical sum of layerThicknessEdge on ocean edges."
+				 description="Maximum vertical sum of layerThicknessEdgeMean on ocean edges."
 			/>
 			<var name="relativeVorticityMaxVertSum" array_group="vertSumMax" units="s^{-1}"
 				 description="Maximum vertical sum of relativeVorticity on ocean vertices."

@@ -21,8 +21,8 @@ Atmosphere Processes:
   Process 2:
     Process Name: SPA
     Grid: Point Grid
-    SPA Remap File: @CMAKE_CURRENT_BINARY_DIR@/data/map_ne4np4_to_ne2np4_mono.nc
-    SPA Data File: @CMAKE_CURRENT_BINARY_DIR@/data/spa_file_unified_and_complete_ne4_scream.nc
+    SPA Remap File: ${SCREAM_DATA_DIR}/init/map_ne4np4_to_ne2np4_mono.nc
+    SPA Data File: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_scream.nc
   Process 3:
     Process Name: P3
     Grid: Point Grid
@@ -41,7 +41,7 @@ Grids Manager:
 # The name of the file containing the initial conditions for this test.
 Initial Conditions:
   Point Grid:
-    Filename: @CMAKE_CURRENT_BINARY_DIR@/data/shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc
+    Filename: ${SCREAM_DATA_DIR}/init/shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc
     Load Latitude:  true
     Load Longitude: true
     surf_latent_flux: 0.0

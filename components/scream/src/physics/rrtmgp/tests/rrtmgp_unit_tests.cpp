@@ -1,9 +1,10 @@
 #include "catch2/catch.hpp"
-#include "physics/rrtmgp/rrtmgp_heating_rate.hpp"
+#include "physics/rrtmgp/rrtmgp_utils.hpp"
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "YAKL.h"
 #include "physics/share/physics_constants.hpp"
 #include "physics/rrtmgp/share/shr_orb_mod_c2f.hpp"
+
 TEST_CASE("rrtmgp_test_heating") {
     // Initialize YAKL
     if (!yakl::isInitialized()) { yakl::init(); }
@@ -219,6 +220,11 @@ TEST_CASE("rrtmgp_test_zenith") {
 }
 
 TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
+    using namespace ekat::logger;
+    using logger_t = Logger<LogNoFile,LogRootRank>;
+
+    ekat::Comm comm(MPI_COMM_WORLD);
+    auto logger = std::make_shared<logger_t>("",LogLevel::info,comm);
 
     // Initialize YAKL
     if (!yakl::isInitialized()) { yakl::init(); }
@@ -234,7 +240,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
     auto sfc_flux_dif_vis = real1d("sfc_flux_dif_vis", ncol);
 
     // Need to initialize RRTMGP with dummy gases
-    std::cout << "Init gases...\n";
+    logger->info("Init gases...\n");
     GasConcs gas_concs;
     int ngas = 8;
     string1d gas_names("gas_names",ngas);
@@ -247,8 +253,8 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
     gas_names(7) = std::string("o2" );
     gas_names(8) = std::string("n2" );
     gas_concs.init(gas_names,ncol,nlay);
-    std::cout << "Init RRTMGP...\n";
-    scream::rrtmgp::rrtmgp_initialize(gas_concs);
+    logger->info("Init RRTMGP...\n");
+    scream::rrtmgp::rrtmgp_initialize(gas_concs,logger);
 
     // Create simple test cases; We expect, given the input data, that band 10
     // will straddle the NIR and VIS, bands 1-9 will be purely NIR, and bands 11-14
@@ -261,7 +267,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
     // Test case: flux only in straddled band
     auto sw_bnd_flux_dir = real3d("sw_bnd_flux_dir", ncol, nlay+1, nbnd);
     auto sw_bnd_flux_dif = real3d("sw_bnd_flux_dif", ncol, nlay+1, nbnd);
-    std::cout << "Populate band-resolved 3d fluxes for test case with only transition band flux...\n";
+    logger->info("Populate band-resolved 3d fluxes for test case with only transition band flux...\n");
     parallel_for(Bounds<3>(nbnd,nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
         if (ibnd < 10) {
             sw_bnd_flux_dir(icol,ilay,ibnd) = 0;
@@ -275,7 +281,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
         }
     });
     // Compute surface fluxes
-    std::cout << "Compute broadband surface fluxes...\n";
+    logger->info("Compute broadband surface fluxes...\n");
     scream::rrtmgp::compute_broadband_surface_fluxes(
         ncol, kbot, nbnd,
         sw_bnd_flux_dir, sw_bnd_flux_dif,
@@ -283,7 +289,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
         sfc_flux_dif_vis, sfc_flux_dif_nir
     );
     // Check computed surface fluxes
-    std::cout << "Check computed fluxes...\n";
+    logger->info("Check computed fluxes...\n");
     const double tol = 1e-10;  // tolerance on floating point inequality for assertions
     REQUIRE(std::abs(sfc_flux_dir_nir.createHostCopy()(1) - 0.5) < tol);
     REQUIRE(std::abs(sfc_flux_dir_vis.createHostCopy()(1) - 0.5) < tol);
@@ -293,7 +299,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
 
     // ---------------------------------
     // Test case, only flux in NIR bands
-    std::cout << "Populate band-resolved 3d fluxes for test case with only NIR flux...\n";
+    logger->info("Populate band-resolved 3d fluxes for test case with only NIR flux...\n");
     parallel_for(Bounds<3>(nbnd,nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
         if (ibnd < 10) {
             sw_bnd_flux_dir(icol,ilay,ibnd) = 1;
@@ -307,7 +313,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
         }
     });
     // Compute surface fluxes
-    std::cout << "Compute broadband surface fluxes...\n";
+    logger->info("Compute broadband surface fluxes...\n");
     scream::rrtmgp::compute_broadband_surface_fluxes(
         ncol, kbot, nbnd,
         sw_bnd_flux_dir, sw_bnd_flux_dif,
@@ -315,7 +321,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
         sfc_flux_dif_vis, sfc_flux_dif_nir
     );
     // Check computed surface fluxes
-    std::cout << "Check computed fluxes...\n";
+    logger->info("Check computed fluxes...\n");
     REQUIRE(std::abs(sfc_flux_dir_nir.createHostCopy()(1) - 9.0) < tol);
     REQUIRE(std::abs(sfc_flux_dir_vis.createHostCopy()(1) - 0.0) < tol);
     REQUIRE(std::abs(sfc_flux_dif_nir.createHostCopy()(1) - 9.0) < tol);
@@ -324,7 +330,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
  
     // ---------------------------------
     // Test case, only flux in VIS bands
-    std::cout << "Populate band-resolved 3d fluxes for test case with only VIS/UV flux...\n";
+    logger->info("Populate band-resolved 3d fluxes for test case with only VIS/UV flux...\n");
     parallel_for(Bounds<3>(nbnd,nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
         if (ibnd < 10) {
             sw_bnd_flux_dir(icol,ilay,ibnd) = 0;
@@ -338,7 +344,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
         }
     });
     // Compute surface fluxes
-    std::cout << "Compute broadband surface fluxes...\n";
+    logger->info("Compute broadband surface fluxes...\n");
     scream::rrtmgp::compute_broadband_surface_fluxes(
         ncol, kbot, nbnd,
         sw_bnd_flux_dir, sw_bnd_flux_dif,
@@ -346,7 +352,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
         sfc_flux_dif_vis, sfc_flux_dif_nir
     );
     // Check computed surface fluxes
-    std::cout << "Check computed fluxes...\n";
+    logger->info("Check computed fluxes...\n");
     REQUIRE(std::abs(sfc_flux_dir_nir.createHostCopy()(1) - 0.0) < tol);
     REQUIRE(std::abs(sfc_flux_dir_vis.createHostCopy()(1) - 4.0) < tol);
     REQUIRE(std::abs(sfc_flux_dif_nir.createHostCopy()(1) - 0.0) < tol);
@@ -355,7 +361,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
 
     // ---------------------------------
     // Test case, only flux in all bands
-    std::cout << "Populate band-resolved 3d fluxes for test with non-zero flux in all bands...\n";
+    logger->info("Populate band-resolved 3d fluxes for test with non-zero flux in all bands...\n");
     parallel_for(Bounds<3>(nbnd,nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
         if (ibnd < 10) {
             sw_bnd_flux_dir(icol,ilay,ibnd) = 1.0;
@@ -369,7 +375,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
         }
     });
     // Compute surface fluxes
-    std::cout << "Compute broadband surface fluxes...\n";
+    logger->info("Compute broadband surface fluxes...\n");
     scream::rrtmgp::compute_broadband_surface_fluxes(
         ncol, kbot, nbnd,
         sw_bnd_flux_dir, sw_bnd_flux_dif,
@@ -377,7 +383,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
         sfc_flux_dif_vis, sfc_flux_dif_nir
     );
     // Check computed surface fluxes
-    std::cout << "Check computed fluxes...\n";
+    logger->info("Check computed fluxes...\n");
     REQUIRE(std::abs(sfc_flux_dir_nir.createHostCopy()(1) - 10.5) < tol);
     REQUIRE(std::abs(sfc_flux_dir_vis.createHostCopy()(1) - 21.5) < tol);
     REQUIRE(std::abs(sfc_flux_dif_nir.createHostCopy()(1) - 20.0) < tol);
@@ -385,7 +391,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
     // ---------------------------------
 
     // Finalize YAKL
-    std::cout << "Free memory...\n";
+    logger->info("Free memory...\n");
     scream::rrtmgp::rrtmgp_finalize();
     gas_concs.reset();
     gas_names.deallocate();
@@ -396,4 +402,26 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
     sfc_flux_dif_nir.deallocate();
     sfc_flux_dif_vis.deallocate();
     if (yakl::isInitialized()) { yakl::finalize(); }
+}
+
+TEST_CASE("rrtmgp_test_radiation_do") {
+    // If we specify rad every step, radiation_do should always be true
+    REQUIRE(scream::rrtmgp::radiation_do(1, 0) == true);
+    REQUIRE(scream::rrtmgp::radiation_do(1, 1) == true);
+    REQUIRE(scream::rrtmgp::radiation_do(1, 2) == true);
+
+    // Test cases where we want rad called every other step
+    REQUIRE(scream::rrtmgp::radiation_do(2, 0) == true);
+    REQUIRE(scream::rrtmgp::radiation_do(2, 1) == false);
+    REQUIRE(scream::rrtmgp::radiation_do(2, 2) == true);
+    REQUIRE(scream::rrtmgp::radiation_do(2, 3) == false);
+
+    // Test cases where we want rad every third step
+    REQUIRE(scream::rrtmgp::radiation_do(3, 0) == true);
+    REQUIRE(scream::rrtmgp::radiation_do(3, 1) == false);
+    REQUIRE(scream::rrtmgp::radiation_do(3, 2) == false);
+    REQUIRE(scream::rrtmgp::radiation_do(3, 3) == true);
+    REQUIRE(scream::rrtmgp::radiation_do(3, 4) == false);
+    REQUIRE(scream::rrtmgp::radiation_do(3, 5) == false);
+    REQUIRE(scream::rrtmgp::radiation_do(3, 6) == true);
 }

@@ -26,7 +26,7 @@ Grids Manager:
 # The name of the file containing the initial conditions for this test.
 Initial Conditions:
   Point Grid:
-    Filename: p3_init_ne2np4.nc
+    Filename: ${SCREAM_DATA_DIR}/init/p3_init_ne2np4.nc
 
 # The parameters for I/O control
 Scorpio:

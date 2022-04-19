@@ -56,7 +56,8 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: salineContractCoeff
    real (kind=RKIND), dimension(:,:), pointer :: BruntVaisalaFreqTop
    real (kind=RKIND), dimension(:,:), pointer :: tangentialVelocity
-   real (kind=RKIND), dimension(:,:), pointer :: layerThickEdge
+   real (kind=RKIND), dimension(:,:), pointer :: layerThickEdgeFlux
+   real (kind=RKIND), dimension(:,:), pointer :: layerThickEdgeMean
    real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell
    real (kind=RKIND), dimension(:,:), pointer :: vertVelocityTop
    real (kind=RKIND), dimension(:,:), pointer :: vertTransportVelocityTop
@@ -183,8 +184,6 @@ module ocn_diagnostics_variables
 
    real (kind=RKIND), pointer :: globalVerticalStretchMax, globalVerticalStretchMin
    real (kind=RKIND), dimension(:), pointer :: betaEdge
-   real (kind=RKIND), dimension(:), pointer :: eddyLength
-   real (kind=RKIND), dimension(:), pointer :: eddyTime
    real (kind=RKIND), dimension(:), pointer :: gmResolutionTaper
 
    ! Semi-implicit Array Pointers
@@ -415,8 +414,10 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'vertGMBolusVelocityTop', &
                    vertGMBolusVelocityTop)
 
-         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', &
-                   layerThickEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdgeFlux', &
+                   layerThickEdgeFlux)
+         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdgeMean', &
+                   layerThickEdgeMean)
 
          call mpas_pool_get_array(diagnosticsPool, &
                   'normalizedRelativeVorticityEdge', &
@@ -569,8 +570,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'barotropicCoriolisTerm', &
                 barotropicCoriolisTerm)
       call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'eddyLength', eddyLength)
-      call mpas_pool_get_array(diagnosticsPool, 'eddyTime', eddyTime)
       call mpas_pool_get_array(diagnosticsPool, &
                'bottomLayerShortwaveTemperatureFlux', &
                 bottomLayerShortwaveTemperatureFlux)
@@ -672,7 +671,8 @@ contains
          !$acc                   GMStreamFuncX,                   &
          !$acc                   GMStreamFuncY,                   &
          !$acc                   GMStreamFuncZ,                   &
-         !$acc                   layerThickEdge,                  &
+         !$acc                   layerThickEdgeFlux,              &
+         !$acc                   layerThickEdgeMean,              &
          !$acc                   slopeTriadDown,                  &
          !$acc                   normRelVortEdge,                 &
          !$acc                   surfaceVelocity,                 &
@@ -803,9 +803,7 @@ contains
       !$acc                   indMLD,                                  &
       !$acc                   density,                                 &
       !$acc                   betaEdge,                                &
-      !$acc                   eddyTime,                                &
       !$acc                   pressure,                                &
-      !$acc                   eddyLength,                              &
       !$acc                   thermExpCoeff,                           &
       !$acc                   sfcFlxAttCoeff,                          &
       !$acc                   surfacePressure,                         &
@@ -909,7 +907,8 @@ contains
          !$acc                   GMStreamFuncX,                   &
          !$acc                   GMStreamFuncY,                   &
          !$acc                   GMStreamFuncZ,                   &
-         !$acc                   layerThickEdge,                  &
+         !$acc                   layerThickEdgeFlux,              &
+         !$acc                   layerThickEdgeMean,              &
          !$acc                   slopeTriadDown,                  &
          !$acc                   normRelVortEdge,                 &
          !$acc                   surfaceVelocity,                 &
@@ -1040,9 +1039,7 @@ contains
       !$acc                   indMLD,                                  &
       !$acc                   density,                                 &
       !$acc                   betaEdge,                                &
-      !$acc                   eddyTime,                                &
       !$acc                   pressure,                                &
-      !$acc                   eddyLength,                              &
       !$acc                   thermExpCoeff,                           &
       !$acc                   sfcFlxAttCoeff,                          &
       !$acc                   surfacePressure,                         &
@@ -1107,7 +1104,8 @@ contains
                  GMStreamFuncX,                   &
                  GMStreamFuncY,                   &
                  GMStreamFuncZ,                   &
-                 layerThickEdge,                  &
+                 layerThickEdgeFlux,              &
+                 layerThickEdgeMean,              &
                  slopeTriadDown,                  &
                  normRelVortEdge,                 &
                  surfaceVelocity,                 &
@@ -1226,9 +1224,7 @@ contains
               indMLD,                                  &
               density,                                 &
               betaEdge,                                &
-              eddyTime,                                &
               pressure,                                &
-              eddyLength,                              &
               thermExpCoeff,                           &
               sfcFlxAttCoeff,                          &
               surfacePressure,                         &

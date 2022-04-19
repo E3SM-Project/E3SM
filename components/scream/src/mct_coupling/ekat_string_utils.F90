@@ -28,7 +28,7 @@ contains
     !
     ! Input(s)
     !
-    character(len=256),             intent(in)  :: f_str
+    character(len=*),               intent(in)  :: f_str
     character(kind=C_CHAR,len=256), intent(out) :: c_str
 
     c_str = TRIM(f_str)//C_NULL_CHAR

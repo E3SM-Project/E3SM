@@ -36,7 +36,7 @@ Grids Manager:
 # The name of the file containing the initial conditions for this test.
 Initial Conditions:
   Point Grid:
-    Filename: shoc_cld_p3_rrtmgp_init_ne2np4.nc
+    Filename: ${SCREAM_DATA_DIR}/init/shoc_cld_p3_rrtmgp_init_ne2np4.nc
     Load Latitude:  true
     Load Longitude: true
     surf_latent_flux: 0.0

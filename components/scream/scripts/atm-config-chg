@@ -1,0 +1,116 @@
+#!/usr/bin/env python3
+
+"""
+Change a runtime parameter for SCREAM/atm. Run from your case
+after case.setup.
+"""
+
+import argparse, sys, pathlib, os, re
+import xml.etree.ElementTree as ET
+
+###############################################################################
+def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
+###############################################################################
+    """
+    Similar to assert except doesn't generate an ugly stacktrace. Useful for
+    checking user error, not programming error.
+    """
+    if not condition:
+        msg = error_prefix + " " + error_msg
+        raise exc_type(msg)
+
+###############################################################################
+def change_matches(param_namespace, parent, child_name):
+###############################################################################
+    param_ns_re = re.compile(".*" + param_namespace + "$")
+    m = param_ns_re.match(parent + "::" + child_name)
+    return m is not None
+
+###############################################################################
+def perform_change(element, change, parent, any_change):
+###############################################################################
+    expect(change.count("=") > 0,
+           "Bad change request '{}', expected format is 'param=val'".format(change))
+
+    param_namespace, new_value = change.split("=", maxsplit=1)
+
+    for child in element:
+        child_name = child.tag
+
+        has_children = len(child) > 0
+        if not has_children:
+            if change_matches(param_namespace, parent, child_name):
+                expect(not any_change,
+                       "{} is too ambiguous any matched multiple entries".format(param_namespace))
+
+                child.text = new_value
+                print("Changing {}::{} to {}".format(parent, child_name, new_value))
+                any_change = True
+
+        else:
+            any_change |= perform_change(child, change, parent + "::{}".format(child_name), any_change)
+
+    return any_change
+
+###############################################################################
+def atm_config_chg(changes):
+###############################################################################
+    expect(os.path.exists("namelist_scream.xml"),
+           "No pwd/namelist_scream.xml file is present. Please rum from a case dir that has been setup")
+
+    with open("namelist_scream.xml", "r") as fd:
+        tree = ET.parse(fd)
+        root = tree.getroot()
+
+    for change in changes:
+        any_change = False
+
+        for child in root:
+            expect(child.tag == "file", "Unexpected child.tag {}".format(child.tag))
+            expect("name" in child.attrib, "file element missing required 'name' attribute")
+            expect("format" in child.attrib, "file element missing required 'format' attribute")
+
+            for grandchild in child:
+                any_change |= perform_change(grandchild, change, child.attrib["name"], any_change)
+
+        expect(any_change, "Change '{}' did not match anything in namelist_scream.xml".format(change))
+
+    tree.write("namelist_scream.xml")
+    return True
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <param>=<val> [<param>=<val>] ...
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Change param foo of group bar to 'hi'\033[0m
+    > {0} bar::foo=hi
+
+    \033[1;32m# Change param foo to 'hi' (only works if foo is unambiguous)\033[0m
+    > {0} foo=hi
+
+    \033[1;32m# Change params foo to 'hi' and bar to 'there' (only works if both are unambiguous)\033[0m
+    > {0} foo=hi bar=there
+""".format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("changes", nargs="+", help="Values to change")
+
+    return parser.parse_args(args[1:])
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    success = atm_config_chg(**vars(parse_command_line(sys.argv, description)))
+    sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

@@ -10,21 +10,10 @@ if (NOT SCREAM_BASELINES_ONLY)
 
   CreateUnitTest(
       rrtmgp_standalone_unit rrtmgp_standalone_unit.cpp "${NEED_LIBS}" LABELS ${TEST_LABELS}
-      EXE_ARGS "--ekat-test-params rrtmgp_inputfile=${CMAKE_CURRENT_BINARY_DIR}/data/rrtmgp-allsky.nc,rrtmgp_baseline=${SCREAM_BIN_DIR}/data/rrtmgp-allsky-baseline.nc"
+      EXE_ARGS "--ekat-test-params rrtmgp_inputfile=${SCREAM_DATA_DIR}/init/rrtmgp-allsky.nc,rrtmgp_baseline=${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
   )
   # This test needs the allsky baselines file
   add_dependencies (rrtmgp_standalone_unit rrtmgp_allsky_baseline.nc)
-
-  target_include_directories(rrtmgp_standalone_unit PUBLIC
-        ${SCREAM_BASE_DIR}/src/physics/rrtmgp
-        ${SCREAM_BASE_DIR}/src/physics/rrtmgp/tests
-        ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp
-        ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rrtmgp
-        ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rrtmgp/kernels
-        ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte
-        ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/rte/kernels
-        ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external/cpp/extensions/cloud_optics
-  )
 
   ## Create free running rrtmgp stand alone test that runs from an initial condition file.
   CreateUnitTest(
@@ -37,20 +26,8 @@ if (NOT SCREAM_BASELINES_ONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input_unit.yaml
                  ${CMAKE_CURRENT_BINARY_DIR}/input_unit.yaml COPYONLY)
 
-  # Copy RRTMGP initial condition to local data directory
-  file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
-
-  # Copy RRTMGP absorption coefficient lookup tables to local data directory
-  GetInputFile(init/rrtmgp-data-sw-g224-2018-12-04.nc
-    ${CMAKE_CURRENT_BINARY_DIR}/data)
-  GetInputFile(init/rrtmgp-data-lw-g256-2018-12-04.nc
-    ${CMAKE_CURRENT_BINARY_DIR}/data)
-  GetInputFile(init/rrtmgp-allsky.nc
-    ${CMAKE_CURRENT_BINARY_DIR}/data)
-  GetInputFile(init/rrtmgp-cloud-optics-coeffs-sw.nc
-    ${CMAKE_CURRENT_BINARY_DIR}/data)
-  GetInputFile(init/rrtmgp-cloud-optics-coeffs-lw.nc
-    ${CMAKE_CURRENT_BINARY_DIR}/data)
+  # Ensure test input files are present in the data dir
+  GetInputFile(init/rrtmgp_init_ne2np4.nc)
 
   # The RRTMGP stand-alone test that runs multi-step
   # Set AD configurable options
@@ -61,9 +38,6 @@ if (NOT SCREAM_BASELINES_ONLY)
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                  ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
   configure_file(rrtmgp_standalone_output.yaml rrtmgp_standalone_output.yaml)
-
-  GetInputFile(init/rrtmgp_init_ne2np4.nc
-    ${CMAKE_CURRENT_BINARY_DIR}/rrtmgp_init_ne2np4.nc)
 
   ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
   ## Only if max mpi ranks is >1

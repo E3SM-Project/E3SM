@@ -5,8 +5,6 @@
 #include "ekat/ekat_assert.hpp"
 #include "share/scream_types.hpp"
 
-#include "gptl.h"
-
 #include <string>
 
 using scream::Real;
@@ -20,35 +18,31 @@ extern "C" {
   void grid_read_data_array_c2f(const char*&& filename, const char*&& varname, const Int time_index, void *&hbuf);
 
   void grid_write_data_array_c2f_real(const char*&& filename, const char*&& varname, const Real*& hbuf);
-  void eam_init_pio_subsystem_c2f(const int mpicom, const int compid, const bool local);
+  void eam_init_pio_subsystem_c2f(const int mpicom, const int atm_id);
   void eam_pio_finalize_c2f();
-  void sync_outfile_c2f(const char*&& filename);
   void eam_pio_closefile_c2f(const char*&& filename);
   void pio_update_time_c2f(const char*&& filename,const Real time);
   void register_dimension_c2f(const char*&& filename, const char*&& shortname, const char*&& longname, const int length);
   void register_variable_c2f(const char*&& filename,const char*&& shortname, const char*&& longname, const char*&& units, const int numdims, const char** var_dimensions, const int dtype, const char*&& pio_decomp_tag);
   void get_variable_c2f(const char*&& filename,const char*&& shortname, const char*&& longname, const int numdims, const char** var_dimensions, const int dtype, const char*&& pio_decomp_tag);
   void eam_pio_enddef_c2f(const char*&& filename);
-
-  int count_pio_atm_file_c2f();
 } // extern C
 
 namespace scream {
 namespace scorpio {
 /* ----------------------------------------------------------------- */
-void eam_init_pio_subsystem(const int mpicom) {
+
+void eam_init_pio_subsystem(const int mpicom, const int atm_id) {
   // TODO: Right now the compid has been hardcoded to 0 and the flag
   // to create a init a subsystem in SCREAM is hardcoded to true.
   // When surface coupling is established we will need to refactor this
   // routine to pass the appropriate values depending on if we are running
   // the full model or a unit test.
-  GPTLinitialize();
-  eam_init_pio_subsystem_c2f(mpicom,0,true);
+  eam_init_pio_subsystem_c2f(mpicom,atm_id);
 }
 /* ----------------------------------------------------------------- */
 void eam_pio_finalize() {
   eam_pio_finalize_c2f();
-  GPTLfinalize();
 }
 /* ----------------------------------------------------------------- */
 void register_file(const std::string& filename, const FileMode mode) {
@@ -58,11 +52,6 @@ void register_file(const std::string& filename, const FileMode mode) {
 void eam_pio_closefile(const std::string& filename) {
 
   eam_pio_closefile_c2f(filename.c_str());
-}
-/* ----------------------------------------------------------------- */
-void sync_outfile(const std::string& filename) {
-
-  sync_outfile_c2f(filename.c_str());
 }
 /* ----------------------------------------------------------------- */
 void set_decomp(const std::string& filename) {
@@ -121,12 +110,6 @@ void register_variable(const std::string &filename, const std::string& shortname
 /* ----------------------------------------------------------------- */
 void eam_pio_enddef(const std::string &filename) {
   eam_pio_enddef_c2f(filename.c_str());
-}
-/* ----------------------------------------------------------------- */
-int count_pio_atm_file() {
-
-  return count_pio_atm_file_c2f();
-
 }
 /* ----------------------------------------------------------------- */
 void grid_read_data_array(const std::string &filename, const std::string &varname, const int time_index, void *hbuf) {

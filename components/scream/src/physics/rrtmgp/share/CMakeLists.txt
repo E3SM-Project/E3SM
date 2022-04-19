@@ -9,8 +9,8 @@ endif()
 
 # Set variables needed for processing genf90 templates
 set(CIMEROOT ${SCREAM_BASE_DIR}/../../cime)
-list(APPEND CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
-set(GENF90 ${CIMEROOT}/src/externals/genf90/genf90.pl)
+list(APPEND CMAKE_MODULE_PATH ${CIMEROOT}/CIME/non_py/src/CMake)
+set(GENF90 ${CIMEROOT}/CIME/non_py/externals/genf90/genf90.pl)
 set(ENABLE_GENF90 True)
 include(genf90_utils)
 include(Sourcelist_utils)
@@ -41,8 +41,7 @@ foreach (SRC_FILE ${GENF90_SOURCE})
     set(SRC_FILE_OUT "${CMAKE_CURRENT_BINARY_DIR}/${BASENAME}")
     add_custom_command (
         OUTPUT ${SRC_FILE_OUT}
-        COMMAND ${CIMEROOT}/src/externals/genf90/genf90.pl
-        ${SRC_FILE} > ${SRC_FILE_OUT}
+        COMMAND ${GENF90} ${SRC_FILE} > ${SRC_FILE_OUT}
         DEPENDS ${SRC_FILE} genf90)
     list(APPEND FORTRAN_SOURCE ${SRC_FILE_OUT})
 endforeach ()

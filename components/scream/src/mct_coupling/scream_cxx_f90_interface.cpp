@@ -14,6 +14,7 @@
 #include "share/scream_types.hpp"
 
 #include "ekat/ekat_parse_yaml_file.hpp"
+#include "ekat/logging/ekat_logger.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_assert.hpp"
@@ -71,9 +72,9 @@ extern "C"
 
 /*===============================================================================================*/
 // WARNING: make sure input_yaml_file is a null-terminated string!
-void scream_create_atm_instance (const MPI_Fint& f_comm,
-                                 const char* input_yaml_file) {
-                  // const int& compid) {
+void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
+                                 const char* input_yaml_file,
+                                 const char* atm_log_file) {
   using namespace scream;
   using namespace scream::control;
 
@@ -90,21 +91,15 @@ void scream_create_atm_instance (const MPI_Fint& f_comm,
     scream::initialize_scream_session(atm_comm.am_i_root());
 
     // Create a parameter list for inputs
-    if (atm_comm.am_i_root()) {
-      printf("[scream] reading parameterr from yaml file: %s\n",input_yaml_file);
-    }
     ekat::ParameterList scream_params("Scream Parameters");
     parse_yaml_file (input_yaml_file, scream_params);
-
-    if (atm_comm.am_i_root()) {
-      scream_params.print();
-    }
 
     ekat::error::runtime_check(scream_params.isSublist("Atmosphere Driver"),
          "Error! Sublist 'Atmosphere Driver' not found inside '" +
          std::string(input_yaml_file) + "'.\n");
 
     auto& ad_params = scream_params.sublist("Atmosphere Driver");
+    ad_params.set<std::string>("Atm Log File",atm_log_file);
 
     // Need to register products in the factories *before* we attempt to create any.
     // In particular, register all atm processes, and all grids managers.
@@ -116,6 +111,7 @@ void scream_create_atm_instance (const MPI_Fint& f_comm,
 
     ad.set_comm(atm_comm);
     ad.set_params(ad_params);
+    ad.init_scorpio(atm_id);
     ad.create_atm_processes ();
     ad.create_grids ();
     ad.create_fields ();
@@ -196,7 +192,7 @@ void scream_init_atm (const int& start_ymd,
 }
 
 /*===============================================================================================*/
-void scream_run (const scream::Real& dt) {
+void scream_run (const int dt) {
   // TODO: uncomment once you have valid inputs. I fear AD may crash with no inputs.
   fpe_guard_wrapper([&](){
     // Get the AD, and run it

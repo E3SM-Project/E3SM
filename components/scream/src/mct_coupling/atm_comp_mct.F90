@@ -3,21 +3,19 @@ module atm_comp_mct
   ! Modules used acros atm_xyz_mct routines
 
   ! shr mods
-  use shr_kind_mod,     only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8!, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
+  use shr_kind_mod,     only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CL=>SHR_KIND_CL!, CS=>SHR_KIND_CS
 
   ! seq mods
   use seq_cdata_mod,    only: seq_cdata, seq_cdata_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata, seq_infodata_putdata
   use seq_timemgr_mod,  only: seq_timemgr_EClockGetData
 
-  ! shr mods
-  use shr_file_mod,     only: shr_file_getlogunit, shr_file_setlogunit, shr_file_setio, &
-                              shr_file_getloglevel, shr_file_setloglevel
-  use shr_sys_mod,      only: shr_sys_flush
-
   ! toolkits mods
   use esmf,             only: ESMF_Clock
   use mct_mod,          only: mct_aVect, mct_gsMap, mct_gGrid
+
+  ! MPI
+  use mpi
 
   implicit none
   save
@@ -39,9 +37,7 @@ module atm_comp_mct
   integer                :: inst_index          ! number of current instance (ie. 1)
   character(len=16)      :: inst_name           ! fullname of current instance (ie. "lnd_0001")
   character(len=16)      :: inst_suffix = ""    ! char string associated with instance (ie. "_0001" or "")
-  integer(IN)            :: logunit             ! logging unit number
   integer(IN)            :: ATM_ID              ! mct comp id
-  real(r8) ,  pointer    :: gbuf(:,:)           ! model grid
   integer(IN),parameter  :: master_task=0       ! task number of master task
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -58,11 +54,13 @@ CONTAINS
                                   scr_names_x2a, scr_names_a2x, index_x2a, index_a2x, vec_comp_x2a, vec_comp_a2x, &
                                   can_be_exported_during_init
     use ekat_string_utils,  only: string_f2c
+    use kinds,              only: homme_iulog=>iulog
 
     use mct_mod,        only: mct_aVect_init, mct_gsMap_lsize
     use seq_flds_mod,   only: seq_flds_a2x_fields, seq_flds_x2a_fields
     use seq_comm_mct,   only: seq_comm_inst, seq_comm_name, seq_comm_suffix
-    use shr_file_mod,   only: shr_file_getunit
+    use shr_file_mod,   only: shr_file_getunit, shr_file_setIO
+    use shr_sys_mod,    only: shr_sys_abort
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            , intent(inout) :: EClock
@@ -74,20 +72,29 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap_atm
     type(mct_gGrid)        , pointer :: dom_atm
-    integer(IN)                      :: shrlogunit     ! original log unit
-    integer(IN)                      :: shrloglev      ! original log level
-    integer(IN)                      :: nxg            ! global dim i-direction
-    integer(IN)                      :: nyg            ! global dim j-direction
     integer(IN)                      :: phase          ! initialization phase
     integer(IN)                      :: ierr           ! error code
-    integer (IN)                     :: start_tod, start_ymd
+    integer(IN)                      :: modelio_fid    ! file descriptor for atm_modelio.nml
+    integer(IN)                      :: start_tod, start_ymd
     integer                          :: lsize
+    character(CL)                    :: diri           ! Unused
+    character(CL)                    :: diro           ! directory where ATM log file is
+    character(CL)                    :: logfile        ! name of ATM log file
     type(c_ptr) :: x2a_ptr, a2x_ptr
 
     ! TODO: read this from the namelist?
     character(len=256)                :: yaml_fname = "./data/scream_input.yaml"
-    character(kind=c_char,len=256), target :: yaml_fname_c
+    character(kind=c_char,len=256), target :: yaml_fname_c, atm_log_fname_c, dyn_log_fname
+
+    ! Note: diri is unused, but *is* in the nml file, and the nml read woud return
+    !       a nonzero err code if we don't add diri to the modelio nml
+    namelist / modelio / diri,diro,logfile
+
     !-------------------------------------------------------------------------------
+
+    diri = "."
+    diro = "."
+    logfile = ""
 
     ! Grab some data from the cdata structure (coming from the coupler)
     call seq_cdata_setptrs(cdata, &
@@ -107,35 +114,37 @@ CONTAINS
     inst_index  = seq_comm_inst(ATM_ID)
     inst_suffix = seq_comm_suffix(ATM_ID)
 
-    if (phase == 1) then
-       ! Determine communicator group
-       call mpi_comm_rank(mpicom_atm, my_task, ierr)
+    ! Determine communicator group
+    call mpi_comm_rank(mpicom_atm, my_task, ierr)
 
-       !--- open log file ---
-       if (my_task == master_task) then
-          logUnit = shr_file_getUnit()
-          call shr_file_setIO('atm_modelio.nml'//trim(inst_suffix),logUnit)
-       else
-          logUnit = 6
-       endif
+    !--- Retrieve the name of the atm log file
+    if (my_task == master_task) then
+       modelio_fid = shr_file_getUnit()
+       open (modelio_fid,file='atm_modelio.nml'//trim(inst_suffix),action="READ")
+       read (modelio_fid,nml=modelio,iostat=ierr)
+       close(modelio_fid)
+       if (ierr /= 0) then
+          print *,'[eamxx] ERROR reading ','atm_modelio.nml'//trim(inst_suffix),': iostat=',ierr
+          call shr_sys_abort("[eamxx] ERROR reading 'atm_modelio.nml'"//trim(inst_suffix) )
+       end if
     endif
-
-    !----------------------------------------------------------------------------
-    ! Reset shr logging to my log file
-    !----------------------------------------------------------------------------
-
-    call shr_file_getLogUnit (shrlogunit)
-    call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogUnit (logUnit)
+    call mpi_bcast(diro,CL,MPI_CHARACTER,master_task,mpicom_atm,ierr)
+    call mpi_bcast(logfile,CL,MPI_CHARACTER,master_task,mpicom_atm,ierr)
 
     !----------------------------------------------------------------------------
     ! Initialize atm
     !----------------------------------------------------------------------------
 
+    ! Set Homme Output to ${diro}/${logfile}.dyn
+    dyn_log_fname = trim(diro)//"/homme_"//trim(logfile)
+    open (unit=homme_iulog,file=trim(dyn_log_fname),status='REPLACE', &
+          action='WRITE', access='SEQUENTIAL')
+
     ! Init the AD
     call seq_timemgr_EClockGetData(EClock, start_ymd=start_ymd, start_tod=start_tod)
     call string_f2c(yaml_fname,yaml_fname_c)
-    call scream_create_atm_instance (mpicom_atm, yaml_fname_c)
+    call string_f2c(trim(diro)//"/"//trim(logfile),atm_log_fname_c)
+    call scream_create_atm_instance (mpicom_atm, ATM_ID, yaml_fname_c, atm_log_fname_c)
 
     ! Init MCT gsMap
     call atm_Set_gsMap_mct (mpicom_atm, ATM_ID, gsMap_atm)
@@ -158,14 +167,6 @@ CONTAINS
                                         c_loc(scr_names_a2x), c_loc(index_a2x), c_loc(a2x%rAttr), c_loc(vec_comp_a2x), &
                                         c_loc(can_be_exported_during_init), num_cpl_exports)
 
-    !----------------------------------------------------------------------------
-    ! Reset shr logging to my log file
-    !----------------------------------------------------------------------------
-
-    call shr_file_getLogUnit (shrlogunit)
-    call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogUnit (logunit)
-
   end subroutine atm_init_mct
 
   !===============================================================================
@@ -184,17 +185,10 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer(IN)                      :: shrlogunit     ! original log unit
-    integer(IN)                      :: shrloglev      ! original log level
     real(R8)                         :: nextsw_cday    ! calendar of next atm sw
     integer                          :: dt_scream
-    real(kind=c_double)              :: dt_scream_r
-    !-------------------------------------------------------------------------------
 
-    ! Reset shr logging to my log file
-    call shr_file_getLogUnit (shrlogunit)
-    call shr_file_getLogLevel(shrloglev)
-    call shr_file_setLogUnit (logUnit)
+    !-------------------------------------------------------------------------------
 
     call seq_cdata_setptrs(cdata, &
          gsMap=gsmap, &
@@ -205,21 +199,17 @@ CONTAINS
     call seq_timemgr_EClockGetData (EClock, next_cday=nextsw_cday, dtime=dt_scream)
 
     ! Run scream
-    dt_scream_r = dt_scream
-    call scream_run( dt_scream_r )
+    call scream_run( dt_scream )
 
     ! Set time of next radiadtion computation
     call seq_infodata_PutData(infodata, nextsw_cday=nextsw_cday)
-
-    call shr_file_setLogUnit (shrlogunit)
-    call shr_file_setLogLevel(shrloglev)
-    call shr_sys_flush(logunit)
 
   end subroutine atm_run_mct
 
   !===============================================================================
   subroutine atm_final_mct(EClock, cdata, x2a, a2x)
     use scream_f2c_mod, only: scream_finalize
+    use kinds,          only: homme_iulog=>iulog
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(ESMF_Clock)            ,intent(inout) :: EClock     ! clock
@@ -234,6 +224,9 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     call scream_finalize()
+
+    ! Close homme's log file
+    close (homme_iulog)
 
   end subroutine atm_final_mct
   !===============================================================================
@@ -294,7 +287,6 @@ CONTAINS
     !
     ! Local Variables
     !
-    integer  :: n,i,c,ncols           ! indices	
     real(r8), pointer :: data1(:)
     real(r8), pointer :: data2(:)     ! temporary
     integer , pointer :: idata(:)     ! temporary

@@ -13,13 +13,13 @@ interface
   ! It does *NOT* initialize the fields and the atm processes, nor it initializes
   ! any structure related to the component coupler. Other subroutines
   ! will have to be called *after* this one, to achieve that.
-  subroutine scream_create_atm_instance (f_comm,yaml_fname) bind(c)
+  subroutine scream_create_atm_instance (f_comm,atm_id,yaml_fname,atm_log_fname) bind(c)
     use iso_c_binding, only: c_int, c_char
     !
     ! Input(s)
     !
-    integer (kind=c_int),   intent(in) :: f_comm
-    character(kind=c_char), target, intent(in) :: yaml_fname(*)
+    integer (kind=c_int), value, intent(in) :: f_comm, atm_id
+    character(kind=c_char), target, intent(in) :: yaml_fname(*), atm_log_fname(*)
   end subroutine scream_create_atm_instance
 
   subroutine scream_get_cols_latlon (lat, lon) bind(c)
@@ -70,11 +70,11 @@ interface
 
   ! This subroutine will run the whole atm model for one atm timestep
   subroutine scream_run (dt) bind(c)
-    use iso_c_binding, only: c_double
+    use iso_c_binding, only: c_int
     !
     ! arguments
     !
-    real(kind=c_double), intent(in) :: dt
+    integer(kind=c_int), value, intent(in) :: dt
   end subroutine scream_run
 
   subroutine scream_finalize () bind(c)

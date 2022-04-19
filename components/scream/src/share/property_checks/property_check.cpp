@@ -41,11 +41,12 @@ set_fields (const std::list<Field>& fields,
   auto it_f = m_fields.begin();
   auto it_b = repairable.begin();
   for (; it_b!=repairable.end(); ++it_b, ++it_f) {
-    EKAT_REQUIRE_MSG (not it_f->is_read_only(),
-        "Error! One of the repairable fields is read only.\n"
-        "  - PropertyCheck name: " + name() + "\n"
-        "  - Field name: " + it_f->name() + "\n");
     if (*it_b) {
+      EKAT_REQUIRE_MSG (not it_f->is_read_only(),
+          "Error! One of the repairable fields is read only.\n"
+          "  - PropertyCheck name: " + name() + "\n"
+          "  - Field name: " + it_f->name() + "\n");
+
       m_repairable_fields.push_back(&(*it_f));
     }
   }

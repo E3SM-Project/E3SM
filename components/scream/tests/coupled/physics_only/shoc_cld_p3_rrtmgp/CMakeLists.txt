@@ -12,33 +12,15 @@ CreateUnitTest(shoc_cld_p3_rrtmgp shoc_cld_p3_rrtmgp.cpp "${NEED_LIBS}" LABELS $
 set (ATM_TIME_STEP 1800)
 SetVarDependingOnTestProfile(NUM_STEPS 2 5 48)  # 1h 4h 24h
 
-## Copy input files to run directory
-file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
-set (RRTMGP_EXT_DIR ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external)
+# Ensure test input files are present in the data dir
+GetInputFile(init/shoc_cld_p3_rrtmgp_init_ne2np4.nc)
 
-GetInputFile(init/shoc_cld_p3_rrtmgp_init_ne2np4.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/shoc_cld_p3_rrtmgp_init_ne2np4.nc)
-
-GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(tables/p3_lookup_table_2.dat-v4.1.1
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-
-GetInputFile(init/rrtmgp-data-sw-g224-2018-12-04.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(init/rrtmgp-data-lw-g256-2018-12-04.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(init/rrtmgp-allsky.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(init/rrtmgp-cloud-optics-coeffs-sw.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(init/rrtmgp-cloud-optics-coeffs-lw.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
 ## Copy (and configure) yaml files needed by tests
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/shoc_cld_p3_rrtmgp_output.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/shoc_cld_p3_rrtmgp_output.yaml)
+
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if max mpi ranks is >1
 # This test requires CPRNC

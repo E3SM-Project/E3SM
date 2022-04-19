@@ -11,13 +11,13 @@ Time Stepping:
 
 Initial Conditions:
   Physics GLL:
-    Filename: homme_physics_ne2np4.nc
+    Filename: ${SCREAM_DATA_DIR}/init/homme_physics_ne2np4.nc
 
 Atmosphere Processes:
   Number of Entries: 1
   Process 0:
     Process Name: Dynamics
-    Vertical Coordinate Filename: homme_physics_ne2np4.nc
+    Vertical Coordinate Filename: ${SCREAM_DATA_DIR}/init/homme_physics_ne2np4.nc
     Moisture: moist
 
 Grids Manager:

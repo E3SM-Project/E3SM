@@ -90,15 +90,6 @@ set_comm(const ekat::Comm& atm_comm)
 
   m_atm_comm = atm_comm;
 
-  // Init scorpio right away, in case some class (atm procs, grids,...)
-  // needs to source some data from NC files during construction,
-  // before we start processing IC files.
-  EKAT_REQUIRE_MSG (!scorpio::is_eam_pio_subsystem_inited(),
-      "Error! The PIO subsystem was alreday inited before the driver was constructed.\n"
-      "       This is an unexpected behavior. Please, contact developers.\n");
-  MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
-  scorpio::eam_init_pio_subsystem(fcomm);
-
   m_ad_status |= s_comm_set;
 }
 
@@ -111,7 +102,26 @@ set_params(const ekat::ParameterList& atm_params)
 
   m_atm_params = atm_params;
 
+  create_logger ();
+
   m_ad_status |= s_params_set;
+}
+
+void AtmosphereDriver::
+init_scorpio(const int atm_id)
+{
+  check_ad_status (s_comm_set, true);
+
+  // Init scorpio right away, in case some class (atm procs, grids,...)
+  // needs to source some data from NC files during construction,
+  // before we start processing IC files.
+  EKAT_REQUIRE_MSG (!scorpio::is_eam_pio_subsystem_inited(),
+      "Error! The PIO subsystem was alreday inited before the driver was constructed.\n"
+      "       This is an unexpected behavior. Please, contact developers.\n");
+  MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
+  scorpio::eam_init_pio_subsystem(fcomm,atm_id);
+
+  m_ad_status |= s_scorpio_inited;
 }
 
 void AtmosphereDriver::create_atm_processes()
@@ -122,7 +132,9 @@ void AtmosphereDriver::create_atm_processes()
   // Create the group of processes. This will recursively create the processes
   // tree, storing also the information regarding parallel execution (if needed).
   // See AtmosphereProcessGroup class documentation for more details.
-  m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_comm,m_atm_params.sublist("Atmosphere Processes"));
+  auto& atm_proc_params = m_atm_params.sublist("Atmosphere Processes");
+  atm_proc_params.set("Logger",m_atm_logger);
+  m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_comm,atm_proc_params);
 
   m_ad_status |= s_procs_created;
 }
@@ -191,7 +203,8 @@ void AtmosphereDriver::create_fields()
             "   group to import: " + req.src_name + "\n"
             "   grid name: " + req.grid + "\n");
         // Given request for group A on grid g1 to be an Import of
-        // group B on grid g2, register each field in group B in the 
+        // group B on grid g2, register each field in group B in the
+
         // field manager on grid g1.
         const auto& fm = m_field_mgrs.at(req.grid);
         const auto& rel_fm   = m_field_mgrs.at(req.src_grid);
@@ -495,12 +508,46 @@ void AtmosphereDriver::restart_model ()
   model_restart.finalize();
 }
 
+void AtmosphereDriver::create_logger () {
+  using namespace ekat::logger;
+  using ci_string = ekat::CaseInsensitiveString;
+
+  ci_string log_fname = m_atm_params.get<std::string>("Atm Log File","atm.log");
+  ci_string log_level_str = m_atm_params.get<std::string>("Atm Log Level","info");
+  EKAT_REQUIRE_MSG (log_fname!="",
+      "Invalid string for 'Atm Log File': '" + log_fname + "'.\n");
+
+  LogLevel log_level;
+  if (log_level_str=="trace") {
+    log_level = LogLevel::trace;
+  } else if (log_level_str=="debug") {
+    log_level = LogLevel::debug;
+  } else if (log_level_str=="info") {
+    log_level = LogLevel::info;
+  } else if (log_level_str=="warn") {
+    log_level = LogLevel::warn;
+  } else if (log_level_str=="err") {
+    log_level = LogLevel::err;
+  } else if (log_level_str=="off") {
+    log_level = LogLevel::off;
+  } else {
+    EKAT_ERROR_MSG ("Invalid choice for 'Atm Log Level': " + log_level_str + "\n");
+  }
+
+  using logger_t = Logger<LogBasicFile,LogRootRank>;
+  auto logger = std::make_shared<logger_t>(log_fname,log_level,m_atm_comm,"");
+  logger->set_no_format();
+  logger->set_console_level(LogLevel::off);
+  m_atm_logger = logger;
+}
+
 void AtmosphereDriver::set_initial_conditions ()
 {
   auto& ic_pl = m_atm_params.sublist("Initial Conditions");
 
   // When processing groups and fields separately, we might end up processing the same
-  // field twice. E.g., say we have the required field group G=(f1,f2). If f1 is also 
+  // field twice. E.g., say we have the required field group G=(f1,f2). If f1 is also
+
   // listed as a required field on itself, we might process it twice. To prevent that,
   // we store the processed fields
   // std::set<FieldIdentifier> inited_fields;
@@ -752,7 +799,9 @@ void AtmosphereDriver::initialize_atm_procs ()
 {
   // Initialize memory buffer for all atm processes
   m_memory_buffer = std::make_shared<ATMBufferManager>();
-  m_atm_process_group->initialize_atm_memory_buffer(*m_memory_buffer);
+  m_memory_buffer->request_bytes(m_atm_process_group->requested_buffer_size_in_bytes());
+  m_memory_buffer->allocate();
+  m_atm_process_group->init_buffers(*m_memory_buffer);
 
   const bool restarted_run = m_atm_params.sublist("Initial Conditions").get<bool>("Restart Run",false);
 
@@ -769,6 +818,8 @@ initialize (const ekat::Comm& atm_comm,
 {
   set_comm(atm_comm);
   set_params(params);
+
+  init_scorpio ();
 
   create_atm_processes ();
 
@@ -787,11 +838,11 @@ void AtmosphereDriver::run (const int dt) {
   // Make sure the end of the time step is after the current start_time
   EKAT_REQUIRE_MSG (dt>0, "Error! Input time step must be positive.\n");
 
-    // Print current timestamp information
-  if (m_atm_comm.am_i_root()) {
-    std::cout << "Atmosphere step = " << m_current_ts.get_num_steps() << "; model time = " << m_current_ts.get_date_string() << " " << m_current_ts.get_time_string() << std::endl;
-  }
-  
+  // Print current timestamp information
+  m_atm_logger->log(ekat::logger::LogLevel::info,
+    "Atmosphere step = " + std::to_string(m_current_ts.get_num_steps()) + "\n" +
+    "  model time = " + m_current_ts.get_date_string() + " " + m_current_ts.get_time_string() + "\n");
+
   if (m_surface_coupling) {
     // Import fluxes from the component coupler (if any)
     m_surface_coupling->do_import();
@@ -813,6 +864,12 @@ void AtmosphereDriver::run (const int dt) {
     // Export fluxes from the component coupler (if any)
     m_surface_coupling->do_export();
   }
+
+  // Flush the logger at least once per time step.
+  // Without this flush, depending on how much output we are loggin,
+  // it might be several time steps before the file is updated.
+  // This way, we give the user a chance to follow the log more real-time.
+  m_atm_logger->flush();
 }
 
 void AtmosphereDriver::finalize ( /* inputs? */ ) {

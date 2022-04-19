@@ -30,15 +30,13 @@ namespace scorpio {
     Write = 2
   };
   /* All scorpio usage requires that the pio_subsystem is initialized. Happens only once per simulation */
-  void eam_init_pio_subsystem(const int mpicom);
+  void eam_init_pio_subsystem(const int mpicom, const int atm_id = 0);
   /* Cleanup scorpio with pio_finalize */
   void eam_pio_finalize();
   /* Close a file currently open in scorpio */
   void eam_pio_closefile(const std::string& filename);
   /* Register a new file to be used for input/output with the scorpio module */
   void register_file(const std::string& filename, const FileMode mode);
-  /* Every timestep each output file needs to be synced, call once per timestep, per file */
-  void sync_outfile(const std::string& filename);
   /* Sets the IO decompostion for all variables in a particular filename.  Required after all variables have been registered.  Called once per file. */
   void set_decomp(const std::string& filename);
   /* Sets the degrees-of-freedom for a particular variable in a particular file.  Called once for each variable, for each file. */
@@ -62,13 +60,9 @@ namespace scorpio {
   /* Write data for a specific variable to a specific file. */
   void grid_write_data_array(const std::string &filename, const std::string &varname, const Real* hbuf);
 
-  /* Helper functions */
-  int count_pio_atm_file();
-
 extern "C" {
   /* Query whether the pio subsystem is inited or not */
   bool is_eam_pio_subsystem_inited();
-  int  eam_pio_subsystem_comm ();
   /* Checks if a file is already open, with the given mode */
   bool is_file_open_c2f(const char*&& filename, const int& mode);
   int get_int_attribute_c2f (const char*&& filename, const char*&& attr_name);

@@ -13,6 +13,8 @@ AtmosphereDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
 // Function to retrieve the diagnostic output which is stored in m_diagnostic_output
 Field AtmosphereDiagnostic::get_diagnostic (const Real dt) {
   run(dt);
+  auto ts = timestamp();
+  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
   return m_diagnostic_output.get_const();
 }
 
