@@ -97,6 +97,19 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    use scamMod,          only: single_column
    use cam_pio_utils,    only: init_pio_subsystem
    use cam_instance,     only: inst_suffix
+#if defined(CLDERA_PROFILING)
+use iso_c_binding, only: c_loc
+   use cldera_interface_mod, only: cldera_add_partitioned_field, max_str_len, &
+                                   cldera_get_field_names, &
+                                   cldera_set_field_partition, &
+                                   cldera_commit_all_fields
+   use physics_buffer,   only: physics_buffer_desc, col_type_grid, pbuf_get_index, &
+                               pbuf_get_field_rank, pbuf_get_field_dims, pbuf_get_field, &
+                               pbuf_get_field_name, pbuf_has_field
+   use ppgrid,           only: begchunk, endchunk, pcols, pver
+   use phys_grid,        only: get_ncols_p
+   use constituents,     only: cnst_get_ind
+#endif
 
 #if ( defined SPMD )   
    real(r8) :: mpi_wtime  ! External
@@ -123,6 +136,16 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    integer :: dtime_cam        ! Time-step
    logical :: log_print        ! Flag to print out log information or not
    character(len=cs) :: filein ! Input namelist filename
+#if defined(CLDERA_PROFILING)
+   character(len=max_str_len), allocatable :: cldera_field_names(:)
+   character(len=max_str_len) :: fname
+   integer :: c, nfields, idx, ifield, rank, icmp, nparts, part_dim, ipart, fsize, ncols
+   integer :: nlcols
+   integer, allocatable :: dims(:), dims2(:)
+   logical :: in_pbuf, in_q
+   real(r8), pointer :: field1d(:), field2d(:,:), field3d(:,:,:)
+   type(physics_buffer_desc), pointer :: field_desc
+#endif
    !-----------------------------------------------------------------------
    etamid = nan
    !
@@ -197,6 +220,86 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 
    if (single_column) call scm_intht()
    call intht()
+
+#if defined(CLDERA_PROFILING)
+   cldera_field_names = cldera_get_field_names()
+   nfields = size(cldera_field_names)
+   nparts = endchunk - begchunk + 1
+   ! All fields are partitioned over cols index, which is the first
+   part_dim = 1
+   in_pbuf = .false.
+   in_q = .false.
+   ! do ifield=1,40
+   !    print *, pbuf_get_field_name(ifield)
+   ! enddo
+   allocate(dims2(2))
+   ! print *, "adding cldera fields"
+   ! print *, "pcols,pver:", pcols, pver
+   ! print *, "begchunk, endchunk:", begchunk, endchunk
+   nlcols = 0
+   do c = begchunk,endchunk
+    nlcols = nlcols +  get_ncols_p(c)
+   enddo
+   ! print *, "num my cols:",nlcols
+
+   do ifield=1,nfields
+     fname = cldera_field_names(ifield)
+
+     ! print *, "- adding "//fname
+
+     if (pbuf_has_field(fname)) then
+       ! Use pbuf
+       idx = pbuf_get_index(fname)
+       in_pbuf = .true.
+       field_desc => pbuf2d(idx,begchunk)
+
+       ! Figure out rank
+       rank = pbuf_get_field_rank(idx)
+       dims = pbuf_get_field_dims(idx)
+     else
+       ! Try check constituents list.
+       ! NOTE: for now, if not in pbuf or Q, let's abort.
+       !       Later on, you *may* want to explore other options
+       call cnst_get_ind(fname,ind=idx,abrtf=.true.)
+       if (idx .ge. 1) then
+         in_q = .true.
+
+         ! Rank and dims are given by Q
+         rank = 2
+         dims2(2) = pver
+         dims = dims2
+       endif
+     endif
+     dims(1) = nlcols
+     ! print *, "  rank:", rank
+     ! print *, "  dims:", dims
+
+     call cldera_add_partitioned_field(fname,dims,nparts,part_dim)
+     do ipart = 1,nparts
+       c = begchunk+ipart-1 ! Chunk
+       if (in_pbuf) then
+         ncols = get_ncols_p(c)
+         if (rank .eq. 1) then
+           call pbuf_get_field(pbuf2d, c, idx, field1d)
+           call cldera_set_field_partition(fname,ipart,ncols,field1d)
+         elseif (rank .eq. 2) then
+           call pbuf_get_field(pbuf2d, c, idx, field2d)
+           call cldera_set_field_partition(fname,ipart,ncols,field2d)
+         else 
+           call pbuf_get_field(pbuf2d, c, idx, field3d)
+           call cldera_set_field_partition(fname,ipart,ncols,field3d)
+         endif
+       else
+         ncols = phys_state(c)%ncol
+         field2d=>phys_state(c)%q(:,:,idx)
+         call cldera_set_field_partition(fname,ipart,ncols,field2d)
+       endif
+     enddo
+   enddo
+
+   call cldera_commit_all_fields()
+#endif
+
 
 end subroutine cam_init
 
