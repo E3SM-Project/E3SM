@@ -859,11 +859,14 @@ def buildnml(case, caseroot, compname):
         os.remove(input_data_list_file)
 
     input_file = scream_input["Atmosphere Driver"]["Initial Conditions"]["Physics GLL"]["Filename"]
-    tables     = scream_input["SCREAM"]["Input Files"]
+
+    # Input files are provided one per line. Call 'strip' on each
+    # line, to remove leading/trailing spaces/newline.
+    tables = scream_input["SCREAM"]["Input Files"]
     with open(input_data_list_file, "w") as fd:
         fd.write("ic_file = {}\n".format(input_file))
         for idx, table in enumerate(tables):
-            fd.write("table_{} = {}\n".format(idx, table))
+            fd.write("table_{} = {}\n".format(idx, table.strip()))
 
     # SCREAM is currently hardcoded to expect tables to be in data
     for table in tables:
