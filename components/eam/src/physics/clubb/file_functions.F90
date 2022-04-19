@@ -13,7 +13,8 @@ module file_functions
 
 !===============================================================================
   subroutine file_read_1d( file_unit, path_and_filename,  & 
-                           num_datapts, entries_per_line, variable )
+                           num_datapts, entries_per_line, &
+                           variable )
 
 !     Description:
 !     This subroutine reads in values from a data file with a number of
@@ -40,7 +41,7 @@ module file_functions
 !-----------------------------------------------------------------------
 
     use clubb_precision, only: &
-      core_rknd ! Variable(s)
+        core_rknd ! Variable(s)
 
     use constants_clubb, only: fstderr ! Constant(s)
 
@@ -76,7 +77,7 @@ module file_functions
           iostat=ierr )
     if ( ierr /= 0 ) then
       write(fstderr,*) "CLUBB encountered an error trying to open "//path_and_filename
-      stop "Error opening forcings file"
+      error stop "Error opening forcings file"
     end if
 
     ! Michael Falk wrote this routine to read data files in a particular format for mpace_a.
@@ -122,7 +123,7 @@ module file_functions
 !-------------------------------------------------------------------------------
 
     use clubb_precision, only: &
-      core_rknd ! Variable(s)
+        core_rknd ! Variable(s)
 
     implicit none
 

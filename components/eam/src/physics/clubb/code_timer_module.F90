@@ -36,7 +36,7 @@ module code_timer_module
 
   !-----------------------------------------------------------------------
     !----- Begin Code -----
-    call cpu_time( timer%secstart )
+    call cpu_time( timer%secstart ) ! intent(inout)
     return
   end subroutine timer_start
   !-----------------------------------------------------------------------

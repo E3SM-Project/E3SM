@@ -354,15 +354,15 @@ module corr_varnce_module
     !-----------------------------------------------------------------------------
 
     use input_reader, only: &
-      one_dim_read_var, & ! Variable(s)
-      read_one_dim_file, deallocate_one_dim_vars, count_columns ! Procedure(s)
+        one_dim_read_var, & ! Variable(s)
+        read_one_dim_file, deallocate_one_dim_vars, count_columns ! Procedure(s)
 
     use matrix_operations, only: set_lower_triangular_matrix ! Procedure(s)
 
     use constants_clubb, only: fstderr ! Variable(s)
 
     use clubb_precision, only: &
-      core_rknd ! Variable(s)
+        core_rknd ! Variable(s)
 
     implicit none
 
@@ -405,12 +405,13 @@ module corr_varnce_module
     end do
 
     ! Read the values from the specified file
-    call read_one_dim_file( iunit, nCols, input_file, retVars )
+    call read_one_dim_file( iunit, nCols, input_file, & ! intent(in)
+                            retVars ) ! intent(out)
 
     if( size( retVars(1)%values ) /= nCols ) then
       write(fstderr, *) "Correlation matrix must have an equal number of rows and cols in file ", &
             input_file
-      stop "Bad data in correlation file."
+      error stop "Bad data in correlation file."
     end if
 
     ! Start at 2 because the first index is always just 1.0 in the first row
@@ -422,14 +423,15 @@ module corr_varnce_module
           var_index2 = get_corr_var_index( retVars(j)%name )
           if( var_index2 > -1 ) then
             call set_lower_triangular_matrix &
-                 ( pdf_dim, var_index1, var_index2, retVars(i)%values(j), &
-                   corr_array_n )
+                 ( pdf_dim, var_index1, var_index2, retVars(i)%values(j), & ! intent(in)
+                   corr_array_n ) ! intent(inout)
           end if
         end do
       end if
     end do
 
-    call deallocate_one_dim_vars( nCols, retVars )
+    call deallocate_one_dim_vars( nCols, & ! intent(in)
+                                  retVars ) ! intent(inout)
 
     return
   end subroutine read_correlation_matrix
@@ -716,7 +718,8 @@ module corr_varnce_module
 
 !===============================================================================
   subroutine setup_corr_varnce_array( input_file_cloud, input_file_below, &
-                                      iunit )
+                                      iunit, &
+                                      l_fix_w_chi_eta_correlations )
 
 ! Description:
 !   Setup an array with the x'^2/xm^2 variables on the diagonal and the other
@@ -726,14 +729,11 @@ module corr_varnce_module
 !   None.
 !-------------------------------------------------------------------------------
 
-    use model_flags, only: &
-      l_fix_w_chi_eta_correlations    ! Variable(s)
-
     use matrix_operations, only: mirror_lower_triangular_matrix ! Procedure
 
     use constants_clubb, only: &
-      fstderr, &  ! Constant(s)
-      zero
+        fstderr, &  ! Constant(s)
+        eps
 
     implicit none
 
@@ -747,6 +747,9 @@ module corr_varnce_module
     ! Input Variables
     integer, intent(in) :: &
       iunit ! The file unit
+
+    logical, intent(in) :: &
+      l_fix_w_chi_eta_correlations ! Use a fixed correlation for s and t Mellor(chi/eta)
 
     ! Local variables
     logical :: l_warning, l_corr_file_1_exist, l_corr_file_2_exist
@@ -782,8 +785,10 @@ module corr_varnce_module
     endif
 
     ! Mirror the correlation matrices
-    call mirror_lower_triangular_matrix( pdf_dim, corr_array_n_cloud )
-    call mirror_lower_triangular_matrix( pdf_dim, corr_array_n_below )
+    call mirror_lower_triangular_matrix( pdf_dim, & ! intent(in)
+                                         corr_array_n_cloud ) ! intent(inout)
+    call mirror_lower_triangular_matrix( pdf_dim, & ! intent(in)
+                                         corr_array_n_below ) ! intent(inout)
 
     ! Sanity check to avoid confusing non-convergence results.
     if ( clubb_at_least_debug_level( 2 ) ) then
@@ -791,8 +796,8 @@ module corr_varnce_module
       if ( .not. l_fix_w_chi_eta_correlations .and. iiPDF_Ncn > 0 ) then
         l_warning = .false.
         do i = 1, pdf_dim
-          if ( ( corr_array_n_cloud(i,iiPDF_Ncn) /= zero .or.  &
-                 corr_array_n_below(i,iiPDF_Ncn) /= zero ) .and. &
+          if ( ( (abs(corr_array_n_cloud(i,iiPDF_Ncn)) > eps) .or.  &
+                 (abs(corr_array_n_below(i,iiPDF_Ncn))) > eps) .and. &
                i /= iiPDF_Ncn ) then
             l_warning = .true.
           end if
