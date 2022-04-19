@@ -53,6 +53,8 @@ TEST_CASE("spa_one_to_one_remap","spa")
   Kokkos::parallel_for("", my_ncols, KOKKOS_LAMBDA(const int& ii) {
     dofs_gids(ii) = min_dof + static_cast<gid_type>(comm_rank + ii*comm_size);
   });
+  auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
+  Kokkos::deep_copy(dofs_gids_h,dofs_gids);
   // Make sure that the total set of columns has been completely broken up.
   Int test_total_ncols = 0;
   spa_comm.all_reduce(&my_ncols,&test_total_ncols,1,MPI_SUM);
@@ -62,6 +64,12 @@ TEST_CASE("spa_one_to_one_remap","spa")
   SPAFunc::SPAHorizInterp spa_horiz_interp;
   spa_horiz_interp.m_comm = spa_comm;
   SPAFunc::set_remap_weights_one_to_one(ncols,min_dof,dofs_gids,spa_horiz_interp);
+  // Make sure one_to_one remap has the correct unique columns
+  REQUIRE(spa_horiz_interp.num_unique_cols==my_ncols);
+  for (int ii=0;ii<spa_horiz_interp.num_unique_cols;ii++) {
+    // Also check that each entry is uniquely placed in the vector
+    REQUIRE(std::count(spa_horiz_interp.source_grid_unique_cols.begin(),spa_horiz_interp.source_grid_unique_cols.end(),dofs_gids_h(ii))==1);
+  }
   // Recall, SPA data is padded, so we initialize with 2 more levels than the source data file.
   SPAFunc::SPAInput spa_data(dofs_gids.size(), nlevs+2, nswbands, nlwbands);
 
@@ -87,8 +95,6 @@ TEST_CASE("spa_one_to_one_remap","spa")
   auto aer_ssa_sw_h = Kokkos::create_mirror_view(spa_data.data.AER_SSA_SW);
   auto aer_tau_sw_h = Kokkos::create_mirror_view(spa_data.data.AER_TAU_SW);
   auto aer_tau_lw_h = Kokkos::create_mirror_view(spa_data.data.AER_TAU_LW);
-  auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
-  Kokkos::deep_copy(dofs_gids_h,dofs_gids);
   for (int time_index = 0;time_index<max_time; time_index++) {
     SPAFunc::update_spa_data_from_file(spa_data_file, time_index+1, nswbands, nlwbands,
                                        spa_horiz_interp, spa_data);
