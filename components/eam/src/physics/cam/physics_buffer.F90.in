@@ -124,7 +124,10 @@ module physics_buffer
             pbuf_old_tim_idx,     &! return the index for the oldest time
             pbuf_update_tim_idx,  &! update the index for the oldest time
             pbuf_col_type_index,  &
+            pbuf_has_field,       &
             pbuf_get_field_name,  &
+            pbuf_get_field_rank,  &
+            pbuf_get_field_dims,  &
             pbuf_get_field,       &
             pbuf_add_field,       &
             pbuf_register_subcol, &
@@ -234,6 +237,25 @@ CONTAINS
   ! 
   !  Return a pointer to the current chunks physics_buffer.
   !
+
+  function pbuf_has_field(fname) result(found)
+    character(len=16) :: fname
+    logical :: found
+
+    integer :: i
+    type(physics_buffer_hdr), pointer :: hdr
+
+    found = .false.
+    hdr => hdrbuffertop
+
+    do while (associated(hdr))
+       if (trim(hdr%name) == trim(fname)) then
+         found = .true.
+         exit
+       endif
+       hdr=>hdr%nexthdr
+    end do
+  end function pbuf_has_field
 
   function pbuf_get_field_name(index)
     integer, intent(in) :: index
@@ -762,6 +784,58 @@ CONTAINS
 
 
   end function pbuf_get_index
+
+  function pbuf_get_field_rank (index,col_type) result(rank)
+
+    integer, intent(in) :: index
+    integer, intent(in), optional :: col_type
+
+    type(physics_buffer_hdr), pointer :: hdr
+    integer :: col_type_use, i, rank
+
+    if (present(col_type)) then
+      col_type_use = col_type
+    else
+      col_type_use = col_type_grid
+    endif
+
+    hdr => hdrbuffertop
+    do i=2,index
+       hdr=>hdr%nexthdr
+    enddo
+
+    rank = 6;
+    do i=6,1,-1
+      if (hdr%dimsizes(i,col_type_use) .ne. 1) then
+        exit
+      endif
+      rank = rank-1
+    enddo
+  end function pbuf_get_field_rank
+
+  function pbuf_get_field_dims (index,col_type) result(dims)
+
+    integer, intent(in) :: index
+    integer, intent(in), optional :: col_type
+
+    type(physics_buffer_hdr), pointer :: hdr
+    integer :: col_type_use, i
+    integer, allocatable :: dims(:)
+
+    if (present(col_type)) then
+      col_type_use = col_type
+    else
+      col_type_use = col_type_grid
+    endif
+
+    hdr => hdrbuffertop
+    do i=2,index
+       hdr=>hdr%nexthdr
+    end do
+
+    allocate(dims(pbuf_get_field_rank(index,col_type)))
+    dims = hdr%dimsizes(:,col_type_use)
+  end function pbuf_get_field_dims
 
   !=========================================================================================
 
