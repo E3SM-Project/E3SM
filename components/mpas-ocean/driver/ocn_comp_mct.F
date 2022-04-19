@@ -3026,13 +3026,13 @@ contains
       endif
    !-----------------------------------------------------------------------
    !EOC
-!#ifdef MOABDEBUG
+#ifdef MOABDEBUG
       num_mb_exports = num_mb_exports +1
       write(lnum,"(I0.2)")num_mb_exports
       outfile = 'ocn_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(MPOID, outfile, wopts)
-!#endif
+#endif
    end subroutine ocn_export_moab!}}}
 #endif  
 
