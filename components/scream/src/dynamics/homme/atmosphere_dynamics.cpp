@@ -166,6 +166,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   add_field<Required>("phis",          FL({COL         },{ncols           }),m2/s2, rgn);
   add_field<Computed>("p_int",         FL({COL,    ILEV},{ncols,  nlev_int}),Pa,    rgn,N);
   add_field<Computed>("p_mid",         FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    rgn,N);
+  add_field<Computed>("omega",         FL({COL,     LEV},{ncols,  nlev_mid}),Pa/s,  rgn,N);
   add_group<Updated>("tracers",rgn,N, Bundling::Required);
 
   // Dynamics grid states
@@ -176,6 +177,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   create_helper_field("phi_int_dyn",  {EL,TL,    GP,GP,ILEV},{nelem,NTL,  NP,NP,nlev_int}, dgn);
   create_helper_field("ps_dyn",       {EL,TL,    GP,GP},     {nelem,NTL,  NP,NP         }, dgn);
   create_helper_field("phis_dyn",     {EL,       GP,GP},     {nelem,      NP,NP         }, dgn);
+  create_helper_field("omega_dyn",    {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
   create_helper_field("Qdp_dyn",      {EL,TL,CMP,GP,GP,LEV}, {nelem,QTL,HOMMEXX_QSIZE_D,NP,NP,nlev_mid},dgn);
 
   // For BFB restart, we need to read in the state on the dyn grid. The state above has NTL time slices,
@@ -352,6 +354,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   m_d2p_remapper->register_field(m_helper_fields.at("dp3d_dyn"), get_field_out("pseudo_density"));
   m_d2p_remapper->register_field(m_helper_fields.at("ps_dyn"), get_field_out("ps"));
   m_d2p_remapper->register_field(m_helper_fields.at("Q_dyn"),*get_group_out("Q",rgn).m_bundle);
+  m_d2p_remapper->register_field(m_helper_fields.at("omega_dyn"), get_field_out("omega"));
 
   m_p2d_remapper->registration_ends();
   m_d2p_remapper->registration_ends();
@@ -714,7 +717,8 @@ void HommeDynamics::init_homme_views () {
 
   const auto& c = Homme::Context::singleton();
   auto& params  = c.get<Homme::SimulationParams>();
-  auto& state  = c.get<Homme::ElementsState>();
+  auto& state   = c.get<Homme::ElementsState>();
+  auto& derived = c.get<Homme::ElementsDerivedState>();
   auto& tracers = c.get<Homme::Tracers>();
   auto& forcing = c.get<Homme::ElementsForcing>();
 
@@ -795,6 +799,11 @@ void HommeDynamics::init_homme_views () {
   auto ps_in = m_helper_fields.at("ps_dyn").template get_view<Real*[NTL][NP][NP]>();
   using ps_type = std::remove_reference<decltype(state.m_ps_v)>::type;
   state.m_ps_v = ps_type(ps_in.data(),nelem);
+
+  // Vertical pressure velocity
+  auto omega_in = m_helper_fields.at("omega_dyn").template get_view<Homme::Scalar*[NP][NP][NVL]>();
+  using omega_type = std::remove_reference<decltype(derived.m_omega_p)>::type;
+  derived.m_omega_p = omega_type(omega_in.data(),nelem);
 
   // Tracers mixing ratio
   auto q_in = m_helper_fields.at("Q_dyn").template get_view<Homme::Scalar**[NP][NP][NVL]>();
