@@ -318,6 +318,8 @@ void SPAFunctions<S,D>
     // That way the first global-id will map to the 0th entry in the source grid data.
     spa_horiz_interp.source_grid_loc(ii) = dofs_gids(ii) - min_dof;
   });
+  // Determine the set of unique columns in this remapping
+  spa_horiz_interp.set_unique_cols();
 } // END set_remap_weights_one_to_one
 /*-----------------------------------------------------------------*/
 // Function to read the weights for conducting horizontal remapping
@@ -431,6 +433,8 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(spa_horiz_interp.weights        , weights_h        );
   Kokkos::deep_copy(spa_horiz_interp.source_grid_loc, source_grid_loc_h);
   Kokkos::deep_copy(spa_horiz_interp.target_grid_loc, target_grid_loc_h);
+  // Determine the set of unique columns in this remapping
+  spa_horiz_interp.set_unique_cols();
 }  // END get_remap_weights_from_file
 /*-----------------------------------------------------------------*/
 /* Note: In this routine the SPA source data is padded in the vertical
