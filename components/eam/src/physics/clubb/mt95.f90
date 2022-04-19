@@ -486,7 +486,8 @@ module mt95
 
   end subroutine next_state
 
-  elemental subroutine genrand_encode( chr, val )
+  elemental subroutine genrand_encode( val, &
+                                       chr )
     
     intrinsic :: len
 
@@ -507,7 +508,8 @@ module mt95
 
   end subroutine genrand_encode
 
-  elemental subroutine genrand_decode( val, chr )
+  elemental subroutine genrand_decode( chr, &
+                                       val )
     
     intrinsic :: len, len_trim, trim, adjustl, scan
 
@@ -546,14 +548,16 @@ module mt95
     do
       j = scan( c, sepr )
       if ( j /= 0 ) then
-        call genrand_decode( stt%val(i), c(:j-1) )
+        call genrand_decode( c(:j-1), & ! intent(in)
+                             stt%val(i) ) ! intent(out)
         i = i + 1
         c = c(j+1:)
       else
         exit
       end if
     end do
-    call genrand_decode( stt%cnt, c )
+    call genrand_decode( c, & ! intent(in)
+                         stt%cnt ) ! intent(out)
     stt%ini = .true._wi
     return
 
@@ -571,12 +575,14 @@ module mt95
     j = 1
     rpr%repr = ""
     do i = 1, n, 1
-      call genrand_encode( rpr%repr(j:), stt%val(i) )
+      call genrand_encode( stt%val(i), & ! intent(in)
+                           rpr%repr(j:) ) ! intent(out)
       j = len_trim( rpr%repr ) + 1
       rpr%repr(j:j) = sepr
       j = j + 1
     end do
-    call genrand_encode( rpr%repr(j:), stt%cnt )
+    call genrand_encode( stt%cnt, & ! intent(in)
+                         rpr%repr(j:) ) ! intent(out)
     return
 
   end subroutine genrand_dump_state
@@ -612,7 +618,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( y, 1 ), 1
-      call genrand_int32_0d( y(i) )
+      call genrand_int32_0d( y(i) ) ! intent(out)
     end do
     return
 
@@ -627,7 +633,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( y, 2 ), 1
-      call genrand_int32_1d( y(:,i) )
+      call genrand_int32_1d( y(:,i) ) ! intent(out)
     end do
     return
 
@@ -642,7 +648,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( y, 3 ), 1
-      call genrand_int32_2d( y(:,:,i) )
+      call genrand_int32_2d( y(:,:,i) ) ! intent(out)
     end do
     return
 
@@ -657,7 +663,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( y, 4 ), 1
-      call genrand_int32_3d( y(:,:,:,i) )
+      call genrand_int32_3d( y(:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -672,7 +678,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( y, 5 ), 1
-      call genrand_int32_4d( y(:,:,:,:,i) )
+      call genrand_int32_4d( y(:,:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -687,7 +693,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( y, 6 ), 1
-      call genrand_int32_5d( y(:,:,:,:,:,i) )
+      call genrand_int32_5d( y(:,:,:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -702,7 +708,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( y, 7 ), 1
-      call genrand_int32_6d( y(:,:,:,:,:,:,i) )
+      call genrand_int32_6d( y(:,:,:,:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -715,7 +721,7 @@ module mt95
 
     integer(kind=wi), intent(out) :: y
 
-    call genrand_int32_0d( y )
+    call genrand_int32_0d( y ) ! intent(out)
     y = ishft( y, -1 )
     return
 
@@ -730,7 +736,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( y, 1 ), 1
-      call genrand_int31_0d( y(i) )
+      call genrand_int31_0d( y(i) ) ! intent(out)
     end do
     return
 
@@ -745,7 +751,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( y, 2 ), 1
-      call genrand_int31_1d( y(:,i) )
+      call genrand_int31_1d( y(:,i) ) ! intent(out)
     end do
     return
 
@@ -760,7 +766,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( y, 3 ), 1
-      call genrand_int31_2d( y(:,:,i) )
+      call genrand_int31_2d( y(:,:,i) ) ! intent(out)
     end do
     return
 
@@ -775,7 +781,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( y, 4 ), 1
-      call genrand_int31_3d( y(:,:,:,i) )
+      call genrand_int31_3d( y(:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -790,7 +796,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( y, 5 ), 1
-      call genrand_int31_4d( y(:,:,:,:,i) )
+      call genrand_int31_4d( y(:,:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -805,7 +811,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( y, 6 ), 1
-      call genrand_int31_5d( y(:,:,:,:,:,i) )
+      call genrand_int31_5d( y(:,:,:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -820,7 +826,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( y, 7 ), 1
-      call genrand_int31_6d( y(:,:,:,:,:,:,i) )
+      call genrand_int31_6d( y(:,:,:,:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -835,7 +841,7 @@ module mt95
 
     integer(kind=wi)  :: a
 
-    call genrand_int32_0d( a )
+    call genrand_int32_0d( a ) ! intent(out)
     r = real( a, kind=wr ) * pi232_1 + p231d232_1
     ! divided by 2^32-1
     return
@@ -851,7 +857,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 1 ), 1
-      call genrand_real1_0d( r(i) )
+      call genrand_real1_0d( r(i) ) ! intent(out)
     end do
     return
 
@@ -866,7 +872,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 2 ), 1
-      call genrand_real1_1d( r(:,i) )
+      call genrand_real1_1d( r(:,i) ) ! intent(out)
     end do
     return
 
@@ -881,7 +887,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 3 ), 1
-      call genrand_real1_2d( r(:,:,i) )
+      call genrand_real1_2d( r(:,:,i) ) ! intent(out)
     end do
     return
 
@@ -896,7 +902,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 4 ), 1
-      call genrand_real1_3d( r(:,:,:,i) )
+      call genrand_real1_3d( r(:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -911,7 +917,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 5 ), 1
-      call genrand_real1_4d( r(:,:,:,:,i) )
+      call genrand_real1_4d( r(:,:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -926,7 +932,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 6 ), 1
-      call genrand_real1_5d( r(:,:,:,:,:,i) )
+      call genrand_real1_5d( r(:,:,:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -941,7 +947,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 7 ), 1
-      call genrand_real1_6d( r(:,:,:,:,:,:,i) )
+      call genrand_real1_6d( r(:,:,:,:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -956,7 +962,7 @@ module mt95
 
     integer(kind=wi)  :: a
 
-    call genrand_int32_0d( a )
+    call genrand_int32_0d( a ) ! intent(out)
     r = real( a, kind=wr ) * pi232 + 0.5_wr
     ! divided by 2^32
     return
@@ -972,7 +978,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 1 ), 1
-      call genrand_real2_0d( r(i) )
+      call genrand_real2_0d( r(i) ) ! intent(out)
     end do
     return
 
@@ -987,7 +993,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 2 ), 1
-      call genrand_real2_1d( r(:,i) )
+      call genrand_real2_1d( r(:,i) ) ! intent(out)
     end do
     return
 
@@ -1002,7 +1008,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 3 ), 1
-      call genrand_real2_2d( r(:,:,i) )
+      call genrand_real2_2d( r(:,:,i) ) ! intent(out)
     end do
     return
 
@@ -1017,7 +1023,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 4 ), 1
-      call genrand_real2_3d( r(:,:,:,i) )
+      call genrand_real2_3d( r(:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -1032,7 +1038,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 5 ), 1
-      call genrand_real2_4d( r(:,:,:,:,i) )
+      call genrand_real2_4d( r(:,:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -1047,7 +1053,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 6 ), 1
-      call genrand_real2_5d( r(:,:,:,:,:,i) )
+      call genrand_real2_5d( r(:,:,:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -1062,7 +1068,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 7 ), 1
-      call genrand_real2_6d( r(:,:,:,:,:,:,i) )
+      call genrand_real2_6d( r(:,:,:,:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -1077,7 +1083,7 @@ module mt95
 
     integer(kind=wi)  :: a
 
-    call genrand_int32_0d( a )
+    call genrand_int32_0d( a ) ! intent(out)
     r = real( a, kind=wr ) * pi232 + p231_5d232
     ! divided by 2^32 
     return
@@ -1093,7 +1099,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 1 ), 1
-      call genrand_real3_0d( r(i) )
+      call genrand_real3_0d( r(i) ) ! intent(out)
     end do
     return
 
@@ -1108,7 +1114,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 2 ), 1
-      call genrand_real3_1d( r(:,i) )
+      call genrand_real3_1d( r(:,i) ) ! intent(out)
     end do
     return
 
@@ -1123,7 +1129,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 3 ), 1
-      call genrand_real3_2d( r(:,:,i) )
+      call genrand_real3_2d( r(:,:,i) ) ! intent(out)
     end do
     return
 
@@ -1138,7 +1144,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 4 ), 1
-      call genrand_real3_3d( r(:,:,:,i) )
+      call genrand_real3_3d( r(:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -1153,7 +1159,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 5 ), 1
-      call genrand_real3_4d( r(:,:,:,:,i) )
+      call genrand_real3_4d( r(:,:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -1168,7 +1174,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 6 ), 1
-      call genrand_real3_5d( r(:,:,:,:,:,i) )
+      call genrand_real3_5d( r(:,:,:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -1183,7 +1189,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 7 ), 1
-      call genrand_real3_6d( r(:,:,:,:,:,:,i) )
+      call genrand_real3_6d( r(:,:,:,:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -1198,8 +1204,8 @@ module mt95
 
     integer(kind=wi)  :: a, b
 
-    call genrand_int32_0d( a )
-    call genrand_int32_0d( b )
+    call genrand_int32_0d( a ) ! intent(out)
+    call genrand_int32_0d( b ) ! intent(out)
     a = ishft( a, -5 )
     b = ishft( b, -6 )
     r = real( a, kind=wr ) * pi227 + real( b, kind=wr ) * pi253
@@ -1216,7 +1222,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 1 ), 1
-      call genrand_res53_0d( r(i) )
+      call genrand_res53_0d( r(i) ) ! intent(out)
     end do
     return
 
@@ -1231,7 +1237,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 2 ), 1
-      call genrand_res53_1d( r(:,i) )
+      call genrand_res53_1d( r(:,i) ) ! intent(out)
     end do
     return
 
@@ -1246,7 +1252,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 3 ), 1
-      call genrand_res53_2d( r(:,:,i) )
+      call genrand_res53_2d( r(:,:,i) ) ! intent(out)
     end do
     return
 
@@ -1261,7 +1267,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 4 ), 1
-      call genrand_res53_3d( r(:,:,:,i) )
+      call genrand_res53_3d( r(:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -1276,7 +1282,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 5 ), 1
-      call genrand_res53_4d( r(:,:,:,:,i) )
+      call genrand_res53_4d( r(:,:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -1291,7 +1297,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 6 ), 1
-      call genrand_res53_5d( r(:,:,:,:,:,i) )
+      call genrand_res53_5d( r(:,:,:,:,:,i) ) ! intent(out)
     end do
     return
 
@@ -1306,7 +1312,7 @@ module mt95
     integer(kind=wi)  :: i
 
     do i = 1, size( r, 7 ), 1
-      call genrand_res53_6d( r(:,:,:,:,:,:,i) )
+      call genrand_res53_6d( r(:,:,:,:,:,:,i) ) ! intnet(out)
     end do
     return
 

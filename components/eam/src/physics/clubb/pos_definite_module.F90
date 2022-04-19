@@ -12,8 +12,9 @@ module pos_definite_module
   contains
 !-----------------------------------------------------------------------
   subroutine pos_definite_adj & 
-            ( dt, field_grid, field_np1,  & 
-              flux_np1, field_n, field_pd, flux_pd )
+            ( gr, dt, field_grid, field_np1,  & 
+              flux_np1, field_n, &
+              field_pd, flux_pd )
 ! Description:
 !   Applies a  flux conservative positive definite scheme to a variable
 
@@ -46,21 +47,23 @@ module pos_definite_module
 !-----------------------------------------------------------------------
 
     use grid_class, only: & 
-      gr,   & ! Variable(s)
-      ddzt, & ! Function
-      ddzm    ! Function
+        grid, & ! Type
+        ddzt, & ! Function
+        ddzm    ! Function
 
     use constants_clubb, only :  & 
-      eps, & ! Variable(s)
-      zero_threshold
+        eps, & ! Variable(s)
+        zero_threshold
 
     use clubb_precision, only:  & 
-      core_rknd ! Variable(s)
+        core_rknd ! Variable(s)
 
     use error_code, only: &
         clubb_at_least_debug_level   ! Procedure
 
     implicit none
+
+    type (grid), target, intent(in) :: gr
 
     ! External
     intrinsic :: eoshift, kind, any, min, max
@@ -125,7 +128,7 @@ module pos_definite_module
       kbelow = -1
       ! Joshua Fasching June 2008
 
-      stop "Error in pos_def_adj"
+      error stop "Error in pos_def_adj"
     end if
 
     if ( clubb_at_least_debug_level( 1 ) ) then
@@ -200,11 +203,11 @@ module pos_definite_module
     ! Apply change to field at n+1
     if ( field_grid == "zt" ) then
 
-      field_np1 = -dt * ddzm( flux_lim - flux_np1 ) + field_np1
+      field_np1 = -dt * ddzm( gr, flux_lim - flux_np1 ) + field_np1
 
     else if ( field_grid == "zm" ) then
 
-      field_np1 = -dt * ddzt( flux_lim - flux_np1 ) + field_np1
+      field_np1 = -dt * ddzt( gr, flux_lim - flux_np1 ) + field_np1
 
     end if
 

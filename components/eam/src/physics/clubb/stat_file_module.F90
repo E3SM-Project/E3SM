@@ -15,7 +15,7 @@ module stat_file_module
  
    implicit none
 
-   public :: variable, stat_file
+   public :: grid_avg_variable, samples_of_variable, stat_file
 
    ! These are used in a 2D or 3D host model to output multiple columns
    ! Set clubb_i and clubb_j according to the column within the host model;
@@ -25,22 +25,37 @@ module stat_file_module
 
    private ! Default scope
 
-  ! Structure to hold the description of a variable
+  ! Structures to hold the description of a variable
 
-   type variable
+   type grid_avg_variable
      ! Pointer to the array
      real(kind=stat_rknd), dimension(:,:,:), pointer :: ptr
 
      character(len = 30) :: name        ! Variable name
      character(len = 100) :: description ! Variable description
-     character(len = 20) :: units       ! Variable units
+     character(len = 25) :: units       ! Variable units
 
      integer :: indx ! NetCDF module Id for var / GrADS index
 
      logical :: l_silhs ! If true, we sample this variable once for each SILHS
                         ! sample point per timestep, rather than just once per
                         ! timestep.
-   end type variable
+   end type grid_avg_variable
+
+   type samples_of_variable
+     ! Pointer to the array
+     real(kind=stat_rknd), dimension(:,:,:,:), pointer :: ptr
+
+     character(len = 30) :: name        ! Variable name
+     character(len = 100) :: description ! Variable description
+     character(len = 25) :: units       ! Variable units
+
+     integer :: indx ! NetCDF module Id for var / GrADS index
+
+     logical :: l_silhs ! If true, we sample this variable once for each SILHS
+                        ! sample point per timestep, rather than just once per
+                        ! timestep.
+   end type samples_of_variable
 
   ! Structure to hold the description of a NetCDF output file
   ! This makes the new code as compatible as possible with the
@@ -65,16 +80,20 @@ module stat_file_module
        l_defined,  &  ! Whether nf90_enddef() has been called
        l_byte_swapped ! Is this a file in the opposite byte ordering?
 
-     ! NetCDF datafile dimensions indices
+     ! NetCDF datafile dimensions indices (Samp*Id for SILHS samples)
      integer ::  & 
-       LatDimId, LongDimId, AltDimId, TimeDimId, & 
-       LatVarId, LongVarId, AltVarId, TimeVarId
+       SampDimId, LatDimId, LongDimId, AltDimId, TimeDimId, &
+       SampVarId, LatVarId, LongVarId, AltVarId, TimeVarId
 
      ! Grid information
 
      integer :: ia, iz  ! Vertical extent
 
      integer :: nlat, nlon ! The number of points in the X and Y
+
+     ! Number of SILHS samples (i.e. subcolumns).  Initialized to zero
+     ! to be safe, but will be updated if appropriate
+     integer :: nsamp = 0
 
      real( kind = core_rknd ), dimension(:), allocatable ::  & 
        z ! Height of vertical levels [m]
@@ -84,8 +103,9 @@ module stat_file_module
      integer :: day, month, year ! Date of starting time
 
      real( kind = core_rknd ), dimension(:), allocatable :: & 
-       rlat, & ! Latitude                   [Degrees N]
-       rlon    ! Longitude                  [Degrees E]
+       lat_vals, & ! Latitude                   [Degrees N]
+       lon_vals, & ! Longitude                  [Degrees E]
+       samp_idx   ! SILHS subcolumn index
 
      real( kind = core_rknd ) :: & 
        dtwrite ! Interval between output    [Seconds]
@@ -97,8 +117,11 @@ module stat_file_module
 
      integer :: nvar  ! Number of variables for this file
 
-     type (variable), dimension(:), allocatable ::  &
-       var ! List and variable description
+     type (grid_avg_variable), dimension(:), allocatable ::  &
+       grid_avg_var ! List and variable description
+
+     type (samples_of_variable), dimension(:), allocatable :: &
+       samples_of_var
 
    end type stat_file
 

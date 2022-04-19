@@ -22,16 +22,14 @@ module mean_adv
   private ! Default scope
 
   public :: term_ma_zt_lhs, & 
-            term_ma_zt_lhs_all, &
-            term_ma_zm_lhs, &
-            term_ma_zm_lhs_all
+            term_ma_zm_lhs
 
   contains
 
   !=============================================================================
-  pure function term_ma_zt_lhs( wm_zt, invrs_dzt, level, &
-                                invrs_dzm_k, invrs_dzm_km1 ) & 
-  result( lhs )
+  pure subroutine term_ma_zt_lhs( gr, wm_zt, invrs_dzt, invrs_dzm, & ! Intent(in)
+                                  l_upwind_xm_ma,              & ! Intent(in)
+                                  lhs_ma                       ) ! Intent(out)
 
     ! Description:
     ! Mean advection of var_zt:  implicit portion of the code.
@@ -64,15 +62,15 @@ module mean_adv
     ! thermodynamic level.  The derivative is multiplied by wm_zt at the central
     ! thermodynamic level to get the desired result.
     !
-    ! -----var_zt(kp1)----------------------------------------- t(k+1)
+    ! -----var_zt---------------------------------------------- t(k+1)
     !
     ! =================var_zt(interp)========================== m(k)
     !
-    ! -----var_zt(k)------------------d(var_zt)/dz-----wm_zt--- t(k)
+    ! -----var_zt---------------------d(var_zt)/dz-----wm_zt--- t(k)
     !
     ! =================var_zt(interp)========================== m(k-1)
     !
-    ! -----var_zt(km1)----------------------------------------- t(k-1)
+    ! -----var_zt---------------------------------------------- t(k-1)
     !
     ! The vertical indices t(k+1), m(k), t(k), m(k-1), and t(k-1) correspond
     ! with altitudes zt(k+1), zm(k), zt(k), zm(k-1), and zt(k-1), respectively.
@@ -105,11 +103,11 @@ module mean_adv
     !
     ! =================var_zt(extend)========================== m(k)   Boundary
     !
-    ! -----var_zt(k)------------------d(var_zt)/dz-----wm_zt--- t(k)
+    ! -----var_zt---------------------d(var_zt)/dz-----wm_zt--- t(k)
     !
     ! =================var_zt(interp)========================== m(k-1)
     !
-    ! -----var_zt(km1)----------------------------------------- t(k-1)
+    ! -----var_zt---------------------------------------------- t(k-1)
     !
     !
     ! Method 2:  Zero derivative method:
@@ -144,7 +142,7 @@ module mean_adv
     ! For the following diagram, k = gr%nz, which is the uppermost level of
     ! the model:
     !
-    ! --[var_zt(kp1) = var_zt(k)]----(level outside model)----- t(k+1)
+    ! --[var_zt(k+1) = var_zt(k)]----(level outside model)----- t(k+1)
     !
     ! ==[var_zt(top) = var_zt(k)]===[d(var_zt)/dz|_(top) = 0]== m(k)   Boundary
     !
@@ -152,7 +150,7 @@ module mean_adv
     !
     ! =================var_zt(interp)========================== m(k-1)
     !
-    ! -----var_zt(km1)----------------------------------------- t(k-1)
+    ! -----var_zt(k-1)----------------------------------------- t(k-1)
     !
     ! where (top) stands for the grid index of momentum level k = gr%nz, which
     ! is the upper boundary of the model.
@@ -175,372 +173,171 @@ module mean_adv
     !-----------------------------------------------------------------------
 
     use grid_class, only: & 
-        gr ! Variable(s)
+        grid ! Type
 
     use constants_clubb, only: &
         one,  & ! Constant(s)
         zero
-
-    use model_flags, only: &
-        l_upwind_xm_ma ! Variable(s)
 
     use clubb_precision, only: &
         core_rknd ! Variable(s)
 
     implicit none
 
+    type (grid), target, intent(in) :: gr
+
     ! Constant parameters
     integer, parameter :: & 
-      kp1_tdiag = 1,    & ! Thermodynamic superdiagonal index.
-      k_tdiag   = 2,    & ! Thermodynamic main diagonal index.
-      km1_tdiag = 3       ! Thermodynamic subdiagonal index.
+      kp1_tdiag = 1, & ! Thermodynamic superdiagonal index.
+      k_tdiag   = 2, & ! Thermodynamic main diagonal index.
+      km1_tdiag = 3    ! Thermodynamic subdiagonal index.
 
     integer, parameter :: & 
-      t_above = 1,    & ! Index for upper thermodynamic level grid weight.
-      t_below = 2       ! Index for lower thermodynamic level grid weight.
+      t_above = 1, & ! Index for upper thermodynamic level grid weight.
+      t_below = 2    ! Index for lower thermodynamic level grid weight.
 
     ! Input Variables
-    real( kind = core_rknd ), intent(in) :: & 
-      wm_zt,        &    ! wm_zt(k)                        [m/s]
-      invrs_dzt,    &    ! Inverse of grid spacing (k)     [1/m]
-      invrs_dzm_k,  &    ! Inverse of grid spacing (k)     [1/m]
-      invrs_dzm_km1      ! Inverse of grid spacing (k-1)   [1/m]
+    real( kind = core_rknd ), dimension(gr%nz), intent(in) :: & 
+      wm_zt,     & ! wm_zt                        [m/s]
+      invrs_dzt, & ! Inverse of grid spacing      [1/m]
+      invrs_dzm    ! Inverse of grid spacing      [1/m]
 
-
-    integer, intent(in) :: & 
-      level ! Central thermodynamic level (on which calculation occurs).
+    logical, intent(in) :: &
+      l_upwind_xm_ma    ! This flag determines whether we want to use an upwind
+                        ! differencing approximation rather than a centered
+                        ! differencing for turbulent or mean advection terms.
+                        ! It affects rtm, thlm, sclrm, um and vm.
 
     ! Return Variable
-    real( kind = core_rknd ), dimension(3) :: lhs
+    real( kind = core_rknd ), dimension(3,gr%nz), intent(out) :: &
+      lhs_ma    ! Mean advection contributions to lhs    [1/s]
 
     ! Local Variables
-    logical, parameter ::  &
-      l_ub_const_deriv = .true.  ! Flag to use the "one-sided" upper boundary.
 
-    integer :: & 
-      mk,    & ! Momentum level directly above central thermodynamic level.
-      mkm1     ! Momentum level directly below central thermodynamic level.
+    integer :: k    ! Vertical level index
 
-
-    ! Momentum level (k) is between thermodynamic level (k+1)
-    ! and thermodynamic level (k).
-    mk = level
-
-    ! Momentum level (k-1) is between thermodynamic level (k)
-    ! and thermodynamic level (k-1).
-    mkm1 = level - 1
-
-    if ( level == 1 ) then
-
-       ! k = 1 (bottom level); lower boundary level.
-       ! Thermodynamic level k = 1 is below the model bottom, so all effects
-       ! are shut off.
-
-       ! Thermodynamic superdiagonal: [ x var_zt(k+1,<t+1>) ]
-       lhs(kp1_tdiag) & 
-       = zero
-
-       ! Thermodynamic main diagonal: [ x var_zt(k,<t+1>) ]
-       lhs(k_tdiag) & 
-       = zero
-
-       ! Thermodynamic subdiagonal: [ x var_zt(k-1,<t+1>) ]
-       lhs(km1_tdiag) & 
-       = zero
+    ! Set lower boundary array to 0
+    lhs_ma(:,1) = 0.0_core_rknd
 
 
-    elseif ( level > 1 .and. level < gr%nz ) then
+    if( .not. l_upwind_xm_ma ) then  ! Use centered differencing
 
        ! Most of the interior model; normal conditions.
-
-       if( .not. l_upwind_xm_ma ) then  ! Use centered differencing
+       do k = 2, gr%nz, 1
 
           ! Thermodynamic superdiagonal: [ x var_zt(k+1,<t+1>) ]
-          lhs(kp1_tdiag) & 
-          = + wm_zt * invrs_dzt * gr%weights_zt2zm(t_above,mk)
+          lhs_ma(kp1_tdiag,k) & 
+          = + wm_zt(k) * invrs_dzt(k) * gr%weights_zt2zm(t_above,k)
 
           ! Thermodynamic main diagonal: [ x var_zt(k,<t+1>) ]
-          lhs(k_tdiag) & 
-          = + wm_zt * invrs_dzt * (   gr%weights_zt2zm(t_below,mk) & 
-                                    - gr%weights_zt2zm(t_above,mkm1)   )
+          lhs_ma(k_tdiag,k) & 
+          = + wm_zt(k) * invrs_dzt(k) * ( gr%weights_zt2zm(t_below,k) & 
+                                          - gr%weights_zt2zm(t_above,k-1) )
 
           ! Thermodynamic subdiagonal: [ x var_zt(k-1,<t+1>) ]
-          lhs(km1_tdiag) & 
-          = - wm_zt * invrs_dzt * gr%weights_zt2zm(t_below,mkm1)
+          lhs_ma(km1_tdiag,k) & 
+          = - wm_zt(k) * invrs_dzt(k) * gr%weights_zt2zm(t_below,k-1)
 
-       else ! l_upwind_xm_ma == .true.; use "upwind" differencing
+       enddo ! k = 2, gr%nz, 1
 
-          if ( wm_zt >= zero ) then  ! Mean wind is in upward direction
+       ! Upper Boundary
+
+        ! Special discretization for zero derivative method, where the
+        ! derivative d(var_zt)/dz over the model top is set to 0, in order
+        ! to stay consistent with the zero-flux boundary condition option
+        ! in the eddy diffusion code.
+        ! Thermodynamic superdiagonal: [ x var_zt(k+1,<t+1>) ]
+        lhs_ma(kp1_tdiag,gr%nz) & 
+        = zero
+        ! Thermodynamic main diagonal: [ x var_zt(k,<t+1>) ]
+        lhs_ma(k_tdiag,gr%nz) & 
+        = + wm_zt(gr%nz) &
+            * invrs_dzt(gr%nz) * ( one - gr%weights_zt2zm(t_above,gr%nz-1) )
+
+        ! Thermodynamic subdiagonal: [ x var_zt(k-1,<t+1>) ]
+        lhs_ma(km1_tdiag,gr%nz) & 
+        = - wm_zt(gr%nz) &
+            * invrs_dzt(gr%nz) * gr%weights_zt2zm(t_below,gr%nz-1)
+
+
+    else ! l_upwind_xm_ma == .true.; use "upwind" differencing
+
+       ! Most of the interior model; normal conditions.
+       do k = 2, gr%nz, 1
+
+          if ( wm_zt(k) >= zero ) then  ! Mean wind is in upward direction
 
              ! Thermodynamic superdiagonal: [ x var_zt(k+1,<t+1>) ]
-             lhs(kp1_tdiag) &
+             lhs_ma(kp1_tdiag,k) &
              = zero
 
              ! Thermodynamic main diagonal: [ x var_zt(k,<t+1>) ]
-             lhs(k_tdiag) &
-             = + wm_zt * invrs_dzm_km1
+             lhs_ma(k_tdiag,k) &
+             = + wm_zt(k) * invrs_dzm(k-1)
 
              ! Thermodynamic subdiagonal: [ x var_zt(k-1,<t+1>) ]
-             lhs(km1_tdiag) &
-             = - wm_zt * invrs_dzm_km1
-
+             lhs_ma(km1_tdiag,k) &
+             = - wm_zt(k) * invrs_dzm(k-1)
 
           else  ! wm_zt < 0; Mean wind is in downward direction
 
              ! Thermodynamic superdiagonal: [ x var_zt(k+1,<t+1>) ]
-             lhs(kp1_tdiag) &
-             = + wm_zt * invrs_dzm_k
+             lhs_ma(kp1_tdiag,k) &
+             = + wm_zt(k) * invrs_dzm(k)
 
              ! Thermodynamic main diagonal: [ x var_zt(k,<t+1>) ]
-             lhs(k_tdiag) &
-             = - wm_zt * invrs_dzm_k
+             lhs_ma(k_tdiag,k) &
+             = - wm_zt(k) * invrs_dzm(k)
 
              ! Thermodynamic subdiagonal: [ x var_zt(k-1,<t+1>) ]
-             lhs(km1_tdiag) &
+             lhs_ma(km1_tdiag,k) &
              = zero
 
           endif ! wm_zt > 0
 
+       enddo ! k = 2, gr%nz, 1
 
-       endif ! l_upwind_xm_ma
+       ! Upper Boundary
+       if ( wm_zt(gr%nz) >= zero ) then  ! Mean wind is in upward direction
 
+          ! Thermodynamic superdiagonal: [ x var_zt(k+1,<t+1>) ]
+          lhs_ma(kp1_tdiag,gr%nz) &
+          = zero
 
-    elseif ( level == gr%nz ) then
+          ! Thermodynamic main diagonal: [ x var_zt(k,<t+1>) ]
+          lhs_ma(k_tdiag,gr%nz) &
+          = + wm_zt(gr%nz) * invrs_dzm(gr%nz-1)
 
-       ! k = gr%nz (top level); upper boundary level.
+          ! Thermodynamic subdiagonal: [ x var_zt(k-1,<t+1>) ]
+          lhs_ma(km1_tdiag,gr%nz) &
+          = - wm_zt(gr%nz) * invrs_dzm(gr%nz-1)
 
-       if( .not. l_upwind_xm_ma ) then  ! Use "centered" differencing
+       else  ! wm_zt < 0; Mean wind is in downward direction
 
-          if ( l_ub_const_deriv ) then
+          ! Thermodynamic superdiagonal: [ x var_zt(k+1,<t+1>) ]
+          lhs_ma(kp1_tdiag,gr%nz) &
+          = zero
 
-             ! Special discretization for constant derivative method (or
-             ! "one-sided" derivative method).
+          ! Thermodynamic main diagonal: [ x var_zt(k,<t+1>) ]
+          lhs_ma(k_tdiag,gr%nz) &
+          = zero
 
-             ! Thermodynamic superdiagonal: [ x var_zt(k+1,<t+1>) ]
-             lhs(kp1_tdiag) & 
-             = zero
+          ! Thermodynamic subdiagonal: [ x var_zt(k-1,<t+1>) ]
+          lhs_ma(km1_tdiag,gr%nz) &
+          = zero
 
-             ! Thermodynamic main diagonal: [ x var_zt(k,<t+1>) ]
-             lhs(k_tdiag) & 
-             = + wm_zt * invrs_dzt * (   gr%weights_zt2zm(t_above,mk) &
-                                       - gr%weights_zt2zm(t_above,mkm1)   )
+       endif ! wm_zt > 0
 
-             ! Thermodynamic subdiagonal: [ x var_zt(k-1,<t+1>) ]
-             lhs(km1_tdiag) & 
-             = + wm_zt * invrs_dzt * (   gr%weights_zt2zm(t_below,mk) &
-                                       - gr%weights_zt2zm(t_below,mkm1)   )
-
-          else
-
-             ! Special discretization for zero derivative method, where the
-             ! derivative d(var_zt)/dz over the model top is set to 0, in order
-             ! to stay consistent with the zero-flux boundary condition option
-             ! in the eddy diffusion code.
-
-             ! Thermodynamic superdiagonal: [ x var_zt(k+1,<t+1>) ]
-             lhs(kp1_tdiag) & 
-             = zero
-
-             ! Thermodynamic main diagonal: [ x var_zt(k,<t+1>) ]
-             lhs(k_tdiag) & 
-             = + wm_zt * invrs_dzt * ( one - gr%weights_zt2zm(t_above,mkm1) )
-
-             ! Thermodynamic subdiagonal: [ x var_zt(k-1,<t+1>) ]
-             lhs(km1_tdiag) & 
-             = - wm_zt * invrs_dzt * gr%weights_zt2zm(t_below,mkm1)
-
-          endif ! l_ub_const_deriv
-
-
-       else ! l_upwind_xm_ma == .true.; use "upwind" differencing
-
-          if ( wm_zt >= zero ) then  ! Mean wind is in upward direction
-
-             ! Thermodynamic superdiagonal: [ x var_zt(k+1,<t+1>) ]
-             lhs(kp1_tdiag) &
-             = zero
-
-             ! Thermodynamic main diagonal: [ x var_zt(k,<t+1>) ]
-             lhs(k_tdiag) &
-             = + wm_zt * invrs_dzm_km1
-
-             ! Thermodynamic subdiagonal: [ x var_zt(k-1,<t+1>) ]
-             lhs(km1_tdiag) &
-             = - wm_zt * invrs_dzm_km1
-
-
-          else  ! wm_zt < 0; Mean wind is in downward direction
-
-             ! Thermodynamic superdiagonal: [ x var_zt(k+1,<t+1>) ]
-             lhs(kp1_tdiag) &
-             = zero
-
-             ! Thermodynamic main diagonal: [ x var_zt(k,<t+1>) ]
-             lhs(k_tdiag) &
-             = zero
-
-             ! Thermodynamic subdiagonal: [ x var_zt(k-1,<t+1>) ]
-             lhs(km1_tdiag) &
-             = zero
-
-          endif ! wm_zt > 0
-
-
-       endif ! l_upwind_xm_ma
-
-
-    endif ! level = gr%nz
+    endif ! l_upwind_xm_ma
 
 
     return
 
-  end function term_ma_zt_lhs
-
-
-
-    !=============================================================================================
-    pure subroutine term_ma_zt_lhs_all( wm_zt, invrs_dzt, invrs_dzm, & ! Intent(in)
-                                        lhs_ma                     ) ! Intent(out)
-    ! Description:
-    !   This subroutine is an optimized version of term_ma_zt_lhs. term_ma_zt_lhs
-    !   returns a single 3 dimensional array for any specified grid level. This subroutine returns
-    !   an array of 3 dimensional arrays, one for every grid level not including boundary values.
-    ! 
-    ! Notes:
-    !   This subroutine exists for performance concerns. It returns all lhs arrays at once
-    !   so that it can be properly vectorized, see clubb:ticket:834 for detail.
-    !   
-    !---------------------------------------------------------------------------------------------
-
-        use grid_class, only: & 
-            gr ! Variable(s)
-
-        use clubb_precision, only: &
-            core_rknd ! Variable(s)
-
-        use model_flags, only: &
-            l_upwind_xm_ma ! Variable(s)
-
-        implicit none
-
-        !------------------- Input Variables -------------------
-        real( kind = core_rknd ), dimension(gr%nz), intent(in) :: & 
-          wm_zt,     & ! wm_zt(k)                        [m/s]
-          invrs_dzt, & ! Inverse of grid spacing (k)     [1/m]
-          invrs_dzm
-
-        !------------------- Output Variables -------------------
-        real( kind = core_rknd ), dimension(3,gr%nz), intent(out) :: &
-            lhs_ma
-
-        !---------------- Local Variables -------------------
-        integer :: &
-            k             ! Loop variable for current grid level
-
-        logical, parameter ::  &
-            l_ub_const_deriv = .true.  ! Flag to use the "one-sided" upper boundary.
-
-        !---------------- Begin Code -------------------
-
-        ! Set lower boundary array to 0
-        lhs_ma(:,1) = 0.0_core_rknd
-
-
-        
-        if( .not. l_upwind_xm_ma ) then  ! Use "centered" differencing
-
-
-            ! Most of the interior model; normal conditions.
-            do k = 2, gr%nz-1
-
-                lhs_ma(1,k) = + wm_zt(k) * invrs_dzt(k) * gr%weights_zt2zm(1,k)
-
-                lhs_ma(2,k) = + wm_zt(k) * invrs_dzt(k) * (   gr%weights_zt2zm(2,k) & 
-                                                              - gr%weights_zt2zm(1,k-1)   )
-
-                lhs_ma(3,k) = - wm_zt(k) * invrs_dzt(k) * gr%weights_zt2zm(2,k-1)
-
-            end do
-
-            ! Upper Boundary
-            if ( l_ub_const_deriv ) then
-
-                lhs_ma(1,gr%nz) = 0.0_core_rknd
-
-                lhs_ma(2,gr%nz) = + wm_zt(k) * invrs_dzt(k) * (   gr%weights_zt2zm(1,k) &
-                                                                  - gr%weights_zt2zm(1,k-1)   )
-
-                lhs_ma(3,gr%nz) = + wm_zt(k) * invrs_dzt(k) * (   gr%weights_zt2zm(2,k) &
-                                                                  - gr%weights_zt2zm(2,k-1)   )
-
-            else
-
-                lhs_ma(1,gr%nz) = 0.0_core_rknd
-
-                lhs_ma(2,gr%nz) = + wm_zt(k) * invrs_dzt(k) &
-                                  * ( 1.0_core_rknd - gr%weights_zt2zm(1,k-1) )
-
-                lhs_ma(3,gr%nz) = - wm_zt(k) * invrs_dzt(k) * gr%weights_zt2zm(2,k-1)
-
-            endif ! l_ub_const_deriv
-
-
-        else ! l_upwind_xm_ma == .true.; use "upwind" differencing
-
-            do k = 2, gr%nz-1
-
-                if ( wm_zt(k) >= 0.0_core_rknd ) then  ! Mean wind is in upward direction
-
-                    lhs_ma(1,k) = 0.0_core_rknd
-
-                    lhs_ma(2,k) = + wm_zt(k) * invrs_dzm(k-1)
-
-                    lhs_ma(3,k) = - wm_zt(k) * invrs_dzm(k-1)
-
-
-                else  ! wm_zt < 0; Mean wind is in downward direction
-
-                    lhs_ma(1,k) = + wm_zt(k) * invrs_dzm(k)
-
-                    lhs_ma(2,k) = - wm_zt(k) * invrs_dzm(k)
-
-                    lhs_ma(3,k) = 0.0_core_rknd
-
-                endif ! wm_zt > 0
-
-            end do
-
-            ! Upper Boundary
-            if ( wm_zt(k) >= 0.0_core_rknd ) then  ! Mean wind is in upward direction
-
-                    lhs_ma(1,gr%nz) = 0.0_core_rknd
-
-                    lhs_ma(2,gr%nz) = + wm_zt(k) * invrs_dzm(k-1)
-
-                    lhs_ma(3,gr%nz) = - wm_zt(k) * invrs_dzm(k-1)
-
-
-            else  ! wm_zt < 0; Mean wind is in downward direction
-
-                    lhs_ma(1,gr%nz) = 0.0_core_rknd
-
-                    lhs_ma(2,gr%nz) = 0.0_core_rknd
-
-                    lhs_ma(3,gr%nz) = 0.0_core_rknd
-
-            endif ! wm_zt > 0
-
-        endif ! l_upwind_xm_ma
-
-        return
-
-    end subroutine term_ma_zt_lhs_all
-
-
+  end subroutine term_ma_zt_lhs
 
   !=============================================================================
-  pure function term_ma_zm_lhs( wm_zm, invrs_dzm, level ) & 
-  result( lhs )
+  pure subroutine term_ma_zm_lhs( gr, wm_zm, invrs_dzm, & 
+                                  lhs_ma )
 
     ! Description:
     ! Mean advection of var_zm:  implicit portion of the code.
@@ -573,15 +370,15 @@ module mean_adv
     ! derivative is multiplied by wm_zm at the central momentum level to get the
     ! desired result.
     !
-    ! =====var_zm(kp1)========================================= m(k+1)
+    ! =====var_zm============================================== m(k+1)
     !
     ! -----------------var_zm(interp)-------------------------- t(k+1)
     !
-    ! =====var_zm(k)==================d(var_zm)/dz=====wm_zm=== m(k)
+    ! =====var_zm=====================d(var_zm)/dz=====wm_zm=== m(k)
     !
     ! -----------------var_zm(interp)-------------------------- t(k)
     !
-    ! =====var_zm(km1)========================================= m(k-1)
+    ! =====var_zm============================================== m(k-1)
     !
     ! The vertical indices m(k+1), t(k+1), m(k), t(k), and m(k-1) correspond
     ! with altitudes zm(k+1), zt(k+1), zm(k), zt(k), and zm(k-1), respectively.
@@ -594,7 +391,7 @@ module mean_adv
     !-----------------------------------------------------------------------
 
     use grid_class, only: & 
-        gr ! Variable(s)
+        grid ! Type
 
     use constants_clubb, only: &
         zero ! Constant(s)
@@ -604,161 +401,59 @@ module mean_adv
 
     implicit none
 
+    type (grid), target, intent(in) :: gr
+
     ! Constant parameters
     integer, parameter :: & 
-      kp1_mdiag = 1,    & ! Momentum superdiagonal index.
-      k_mdiag   = 2,    & ! Momentum main diagonal index.
-      km1_mdiag = 3       ! Momentum subdiagonal index.
+      kp1_mdiag = 1, & ! Momentum superdiagonal index.
+      k_mdiag   = 2, & ! Momentum main diagonal index.
+      km1_mdiag = 3    ! Momentum subdiagonal index.
 
     integer, parameter :: & 
-      m_above = 1,    & ! Index for upper momentum level grid weight.
-      m_below = 2       ! Index for lower momentum level grid weight.
+      m_above = 1, & ! Index for upper momentum level grid weight.
+      m_below = 2    ! Index for lower momentum level grid weight.
 
     ! Input Variables
-    real( kind = core_rknd ), intent(in) :: & 
-      wm_zm,     & ! wm_zm(k)                        [m/s]
-      invrs_dzm    ! Inverse of grid spacing (k)     [1/m]
-
-    integer, intent(in) :: & 
-      level ! Central momentum level (on which calculation occurs).
+    real( kind = core_rknd ), dimension(gr%nz), intent(in) :: & 
+      wm_zm,     & ! wm_zm                        [m/s]
+      invrs_dzm    ! Inverse of grid spacing      [1/m]
 
     ! Return Variable
-    real( kind = core_rknd ), dimension(3) :: lhs
+    real( kind = core_rknd ), dimension(3,gr%nz), intent(out) :: &
+      lhs_ma    ! Mean advection contributions to lhs  [1/s]
 
-    ! Local Variables
-    integer :: & 
-      tkp1,  & ! Thermodynamic level directly above central momentum level.
-      tk       ! Thermodynamic level directly below central momentum level.
+    integer :: k    ! Vertical level index
 
 
-    ! Thermodynamic level (k+1) is between momentum level (k+1)
-    ! and momentum level (k).
-    tkp1 = level + 1
+    ! Set lower boundary array to 0
+    lhs_ma(:,1) = zero
 
-    ! Thermodynamic level (k) is between momentum level (k)
-    ! and momentum level (k-1).
-    tk = level
-
-    if ( level == 1 ) then
-
-       ! k = 1; lower boundery level at surface.
+    ! Most of the interior model; normal conditions.
+    do k = 2, gr%nz-1, 1
 
        ! Momentum superdiagonal: [ x var_zm(k+1,<t+1>) ]
-       lhs(kp1_mdiag) & 
-       = zero
+       lhs_ma(kp1_mdiag,k) & 
+       = + wm_zm(k) * invrs_dzm(k) * gr%weights_zm2zt(m_above,k+1)
 
        ! Momentum main diagonal: [ x var_zm(k,<t+1>) ]
-       lhs(k_mdiag) & 
-       = zero
+       lhs_ma(k_mdiag,k) & 
+       = + wm_zm(k) * invrs_dzm(k) * ( gr%weights_zm2zt(m_below,k+1) & 
+                                       - gr%weights_zm2zt(m_above,k) )
 
        ! Momentum subdiagonal: [ x var_zm(k-1,<t+1>) ]
-       lhs(km1_mdiag) & 
-       = zero
+       lhs_ma(km1_mdiag,k) & 
+       = - wm_zm(k) * invrs_dzm(k) * gr%weights_zm2zt(m_below,k)
 
+    enddo ! k = 2, gr%nz-1, 1
 
-    elseif ( level > 1 .and. level < gr%nz ) then
-
-       ! Most of the interior model; normal conditions.
-
-       ! Momentum superdiagonal: [ x var_zm(k+1,<t+1>) ]
-       lhs(kp1_mdiag) & 
-       = + wm_zm * invrs_dzm * gr%weights_zm2zt(m_above,tkp1)
-
-       ! Momentum main diagonal: [ x var_zm(k,<t+1>) ]
-       lhs(k_mdiag) & 
-       = + wm_zm * invrs_dzm * (   gr%weights_zm2zt(m_below,tkp1) & 
-                                 - gr%weights_zm2zt(m_above,tk)  )
-
-       ! Momentum subdiagonal: [ x var_zm(k-1,<t+1>) ]
-       lhs(km1_mdiag) & 
-       = - wm_zm * invrs_dzm * gr%weights_zm2zt(m_below,tk)
-
-
-    elseif ( level == gr%nz ) then
-
-       ! k = gr%nz (top level); upper boundary level.
-
-       ! Momentum superdiagonal: [ x var_zm(k+1,<t+1>) ]
-       lhs(kp1_mdiag) & 
-       = zero
-
-       ! Momentum main diagonal: [ x var_zm(k,<t+1>) ]
-       lhs(k_mdiag) & 
-       = zero
-
-       ! Momentum subdiagonal: [ x var_zm(k-1,<t+1>) ]
-       lhs(km1_mdiag) & 
-       = zero
-
-
-    endif
+    ! Set upper boundary array to 0
+    lhs_ma(:,gr%nz) = zero
 
 
     return
 
-  end function term_ma_zm_lhs
+  end subroutine term_ma_zm_lhs
 
-    !=============================================================================================
-    pure subroutine term_ma_zm_lhs_all( wm_zm, invrs_dzm,     & ! Intent(in)
-                                        lhs_ma              ) ! Intent(out)
-    ! Description:
-    !   This subroutine is an optimized version of term_ma_zm_lhs. term_ma_zm_lhs
-    !   returns a single 3 dimensional array for any specified grid level. This subroutine returns
-    !   an array of 3 dimensional arrays, one for every grid level not including boundary values.
-    ! 
-    ! Notes:
-    !   This subroutine exists for performance concerns. It returns all lhs arrays at once
-    !   so that it can be properly vectorized, see clubb:ticket:834 for detail.
-    !   
-    !   THIS SUBROUTINE DOES NOT HANDLE BOUNDARY CONDITIONS AND SETS THEM TO 0
-    !---------------------------------------------------------------------------------------------
-
-        use grid_class, only: & 
-            gr ! Variable(s)
-
-        use clubb_precision, only: &
-            core_rknd ! Variable(s)
-
-        implicit none
-
-        !------------------- Input Variables -------------------
-        real( kind = core_rknd ), dimension(gr%nz), intent(in) :: & 
-          wm_zm,     & ! wm_zm(k)                        [m/s]
-          invrs_dzm    ! Inverse of grid spacing (k)     [1/m]
-
-        !------------------- Output Variables -------------------
-        real( kind = core_rknd ), dimension(3,gr%nz), intent(out) :: &
-            lhs_ma
-
-        !---------------- Local Variables -------------------
-        integer :: &
-            k             ! Loop variable for current grid level
-
-        !---------------- Begin Code -------------------
-
-        ! Set lower boundary array to 0
-        lhs_ma(:,1) = 0.0_core_rknd
-
-        ! Most of the interior model; normal conditions.
-        do k = 2, gr%nz-1
-
-           ! Momentum superdiagonal: [ x var_zm(k+1,<t+1>) ]
-           lhs_ma(1,k) = + wm_zm(k) * invrs_dzm(k) * gr%weights_zm2zt(1,k+1)
-
-           ! Momentum main diagonal: [ x var_zm(k,<t+1>) ]
-           lhs_ma(2,k) = + wm_zm(k) * invrs_dzm(k) * ( gr%weights_zm2zt(2,k+1) & 
-                                                        - gr%weights_zm2zt(1,k) )
-
-           ! Momentum subdiagonal: [ x var_zm(k-1,<t+1>) ]
-           lhs_ma(3,k) = - wm_zm(k) * invrs_dzm(k) * gr%weights_zm2zt(2,k)
-
-        end do
-
-        ! Set upper boundary array to 0
-        lhs_ma(:,gr%nz) = 0.0_core_rknd
-
-        return
-
-    end subroutine term_ma_zm_lhs_all
+  !=============================================================================
 
 end module mean_adv
