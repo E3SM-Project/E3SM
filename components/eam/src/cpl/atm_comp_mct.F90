@@ -105,14 +105,7 @@ CONTAINS
 
   subroutine atm_init_mct( EClock, cdata_a, x2a_a, a2x_a, NLFilename )
 #if defined(CLDERA_PROFILING)
-   use iso_c_binding, only: c_int
-
-   interface
-     subroutine cldera_profiling_init (comm) bind(C)
-       use iso_c_binding, only: c_int
-       integer (kind=c_int), intent(in) :: comm
-     end subroutine cldera_profiling_init
-   end interface
+    use cldera_interface_mod, only: cldera_init
 #endif
 
     !-----------------------------------------------------------------------
@@ -186,7 +179,7 @@ CONTAINS
     if (first_time) then
 
 #if defined(CLDERA_PROFILING)
-     call cldera_profiling_init(INT(mpicom_atm,kind=c_int))
+       call cldera_init(mpicom_atm)
 #endif
        
        call cam_instance_init(ATMID)
@@ -677,10 +670,7 @@ CONTAINS
 
   subroutine atm_final_mct( EClock, cdata_a, x2a_a, a2x_a)
 #if defined(CLDERA_PROFILING)
-   interface
-     subroutine cldera_profiling_clean_up () bind(C)
-     end subroutine cldera_profiling_clean_up
-   end interface
+    use cldera_interface_mod, only: cldera_clean_up
 #endif
 
     type(ESMF_Clock)            ,intent(inout) :: EClock
@@ -693,7 +683,7 @@ CONTAINS
     call t_stopf('cam_final')
 
 #if defined(CLDERA_PROFILING)
-   call cldera_profiling_clean_up ()
+   call cldera_clean_up ()
 #endif
 
   end subroutine atm_final_mct
