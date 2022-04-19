@@ -885,7 +885,7 @@ contains
          end_totprodc              => grc_cs%end_totprodc          , & ! Output: [real(r8) (:) ] (gC/m2) total column wood product carbon
          end_ctrunc                => grc_cs%end_ctrunc            , & ! Output: [real(r8) (:) ] (gC/m2) total column truncation carbon sink
          end_cropseedc_deficit     => grc_cs%end_cropseedc_deficit , & ! Output: [real(r8) (:) ] (gC/m2) column carbon pool for seeding new growth
-         grc_errcb                 => grc_cs%errcb                 , & ! Output: [real(r8) (:) ] (gC/m^2/s)total SOM C loss by erosion
+         grc_errcb                 => grc_cs%errcb                 , & ! Output: [real(r8) (:) ] carbon balance error for the timestep (gC/m**2)
          grc_dwt_conv_cflux        => grc_cf%dwt_conv_cflux        , & !Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          grc_dwt_seedc_to_leaf     => grc_cf%dwt_seedc_to_leaf     , & !Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          grc_dwt_seedc_to_deadstem => grc_cf%dwt_seedc_to_deadstem , & !Input: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)

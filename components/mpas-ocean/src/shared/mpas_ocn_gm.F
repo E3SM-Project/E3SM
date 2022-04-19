@@ -126,18 +126,18 @@ contains
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
       integer, dimension(:), pointer   :: minLevelEdgeBot, maxLevelEdgeTop, minLevelCell, maxLevelCell, nEdgesOnCell
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOnCell
-      integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter, iCellSelf, maxLocation
-      real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp
-      real(kind=RKIND)                 :: sumN2, countN2, maxN, kappaSum, ltSum
-      real(kind=RKIND)                 :: sumRi, RiTopOfEdge, zEdge, zMLD, sshEdge, sfcTaper
-      real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx, BVFcent
+      integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iCellSelf, maxLocation
+      real(kind=RKIND)                 :: h1, h2, areaEdge, BruntVaisalaFreqTopEdge, rtmp
+      real(kind=RKIND)                 :: sumN2, countN2, maxN, ltSum
+      real(kind=RKIND)                 :: sumRi, RiTopOfEdge, zEdge, zMLD, sfcTaper
+      real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, invAreaCell
-      real(kind=RKIND) :: lt1, lt2, dzdxTopOfEdge, drhodz1, drhodz2, dTdz, dSdz
-      real(kind=RKIND) :: L, sigma, Lr, Length, L_rhines, shearEdgeInv
+      real(kind=RKIND) :: lt1, lt2
+      real(kind=RKIND) :: sigma, Lr, Length, L_rhines, shearEdgeInv
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
       real(kind=RKIND) :: c_Visbeck   ! baroclinic wave speed from Visbeck parameterization
       ! Dimensions
-      integer :: nsmooth, nCells, nEdges
+      integer :: nCells, nEdges
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
@@ -874,7 +874,7 @@ contains
       real(kind=RKIND), pointer :: sphere_radius
       real(kind=RKIND), dimension(:), pointer   :: latEdge, betaEdge, fEdge, &
             gmResolutionTaper, gmBolusKappa
-      integer, dimension(:, :), pointer :: cellsOnEdge, edgesOncell
+      integer, dimension(:, :), pointer :: cellsOnEdge
 
       err = 0
 

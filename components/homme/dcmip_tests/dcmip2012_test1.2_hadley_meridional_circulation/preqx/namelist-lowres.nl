@@ -29,7 +29,6 @@
   tol               = 1.e-7
 /
 &vert_nl
-  vform             = "ccm"                     ! vertical coordinate type "ccm"=hybrid pressure/terrain
   vanalytic         = 1                         ! set vcoords in initialization routine
   vtop              = 0.2549944                 ! vertical coordinate at top of atm 254.9 hPa (12km)
 /

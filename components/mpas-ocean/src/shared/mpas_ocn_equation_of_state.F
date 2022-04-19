@@ -148,7 +148,7 @@ contains
       type (mpas_pool_type), pointer :: tracersPool
 
       integer, dimension(:), pointer :: maxLevelCell
-      integer :: iCell, k, nVertLevels, indexT, indexS
+      integer :: nVertLevels, indexT, indexS
       integer, pointer :: indexTptr, indexSptr
       integer :: timeLevel
 
@@ -297,7 +297,7 @@ contains
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
       integer, dimension(:), pointer :: maxLevelCell
-      integer :: iCell, k, nVertLevels, indexT, indexS
+      integer :: nVertLevels, indexT, indexS
       integer, pointer :: indexTptr, indexSptr
       integer :: timeLevel
 
@@ -536,7 +536,7 @@ contains
       logical, intent(in) :: inLandIceCavity !< Input: flag indicating if the freezing temperature is computed
                                              !         in land ice cavities or in open ocean
 
-      real (kind=RKIND), pointer :: coeff_S, coeff_p, coeff_pS, az1_liq
+      real (kind=RKIND), pointer :: coeff_S, coeff_pS, az1_liq
       real (kind=RKIND) :: coeff_mushy
 
 

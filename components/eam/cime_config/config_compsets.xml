@@ -264,6 +264,13 @@
     <lname>RICO_EAM%MMFXX-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
+  <!-- ********** F compsets with transient SST (AMIP) ********** -->
+
+  <compset>
+    <alias>F20TR-MMFXX</alias>
+    <lname>20TR_EAM%MMFXX-CMIP6_ELM%SP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
   <!-- ******************************* -->
   <!-- ******************************* -->
 
