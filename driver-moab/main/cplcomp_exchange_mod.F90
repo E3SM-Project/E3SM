@@ -1348,45 +1348,12 @@ contains
           call shr_sys_abort(subname//' ERROR in sending sea ice mesh to coupler ')
         endif
 
-
-!        ! define here the tag that will be projected back from atmosphere
-!        !  TODO where do we want to define this?
-!        tagnameProj = 'a2oTbot_proj'//C_NULL_CHAR
-!        tagtype = 1  ! dense, double
-!        numco = 1 !  one value per cell
-!        ierr = iMOAB_DefineTagStorage(mpoid, tagnameProj, tagtype, numco,  tagindex )
-!        ! define more tags
-!        tagnameProj = 'a2oUbot_proj'//C_NULL_CHAR  ! U component of velocity
-!        ierr = iMOAB_DefineTagStorage(mpoid, tagnameProj, tagtype, numco,  tagindex )
-!        tagnameProj = 'a2oVbot_proj'//C_NULL_CHAR  ! V component of velocity
-!        ierr = iMOAB_DefineTagStorage(mpoid, tagnameProj, tagtype, numco,  tagindex )
-!        if (ierr .ne. 0) then
-!          write(logunit,*) subname,' error in defining tags on ocean comp '
-!          call shr_sys_abort(subname//' ERROR in defining tags on ocean comp ')
-!        endif
-
       endif
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
         appname = "COUPLE_MPASSI"//C_NULL_CHAR
         ! migrated mesh gets another app id, moab moab sea ice to coupler (mbox)
         ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbixid)
         ierr = iMOAB_ReceiveMesh(mbixid, mpicom_join, mpigrp_old, id_old)
-
-!        ! define here the tag that will be projected from atmosphere
-!        tagnameProj = 'a2oTbot_proj'//C_NULL_CHAR  ! temperature
-!        tagtype = 1  ! dense, double
-!        numco = 1 !  one value per cell
-!        ierr = iMOAB_DefineTagStorage(mboxid, tagnameProj, tagtype, numco,  tagindex )
-!
-!        ! define more tags
-!        tagnameProj = 'a2oUbot_proj'//C_NULL_CHAR  ! U component of velocity
-!        ierr = iMOAB_DefineTagStorage(mboxid, tagnameProj, tagtype, numco,  tagindex )
-!        tagnameProj = 'a2oVbot_proj'//C_NULL_CHAR  ! V component of velocity
-!        ierr = iMOAB_DefineTagStorage(mboxid, tagnameProj, tagtype, numco,  tagindex )
-!        if (ierr .ne. 0) then
-!          write(logunit,*) subname,' error in defining tags on ocean coupler '
-!          call shr_sys_abort(subname//' ERROR in defining tags on ocean coupler ')
-!        endif
 #ifdef MOABDEBUG
 !      debug test
         outfile = 'recSeaIce.h5m'//C_NULL_CHAR

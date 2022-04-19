@@ -43,6 +43,7 @@ module ice_comp_mct
 #ifdef HAVE_MOAB
    use mpas_moabmesh
    use seq_comm_mct, only: MPSIID
+   use iMOAB, only: iMOAB_DefineTagStorage
 #endif
 
    use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
@@ -87,6 +88,11 @@ module ice_comp_mct
   private :: ice_SetGSMap_mct
   private :: ice_domain_mct
 !
+#ifdef HAVE_MOAB
+  private :: ice_export_moab
+  integer , private :: mblsize, totalmbls
+  real (kind=RKIND) , allocatable, private :: i2x_im(:,:) 
+#endif
 ! !PRIVATE MODULE VARIABLES
 
    integer, private :: my_task
@@ -208,7 +214,10 @@ contains
     character(len=strKIND) :: curdate
     character(len=strKIND) :: curtime
     character(len=strKIND) :: history
-
+#ifdef HAVE_MOAB
+    integer :: ierrmb, numco, tagtype, tagindex
+    character(len=400) :: tagname
+#endif
     logical, pointer :: tempLogicalConfig
     character(len=StrKIND), pointer :: tempCharConfig
     real (kind=RKIND), pointer :: tempRealConfig
@@ -681,6 +690,21 @@ contains
     
     nsend = mct_avect_nRattr(i2x_i)
     nrecv = mct_avect_nRattr(x2i_i)
+#ifdef HAVE_MOAB
+   ! initialize moab tag fields array
+    mblsize = lsize
+    totalmbls = mblsize * nsend ! size of the double array
+    allocate (i2x_im(lsize, nsend) )
+    ! define tags according to the seq_flds_i2x_fields 
+    tagtype = 1  ! dense, double
+    numco = 1 !  one value per cell / entity
+    tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+    ierrmb = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
+    if ( ierrmb == 1 ) then
+      call mpas_log_write('cannot define tags for MOAB i2x fields ' // trim(seq_flds_i2x_fields), MPAS_LOG_ERR)
+    endif
+#endif
+    
 
 !-----------------------------------------------------------------------
 !
@@ -1201,6 +1225,9 @@ contains
       ! Export state to coupler
       if (debugOn) call mpas_log_write('Exporting state', masterOnly=.true.)
       call ice_export_mct(i2x_i, ierr)
+#ifdef HAVE_MOAB
+      call ice_export_moab()
+#endif
       if (debugOn) call mpas_log_write('Finished exporting state', masterOnly=.true.)
 
       ! Check if clocks are in sync
@@ -1395,6 +1422,10 @@ contains
 
     call mpas_framework_finalize(domain % dminfo, domain, io_system)
 
+#ifdef HAVE_MOAB
+   ! deallocate moab fields array
+    deallocate (i2x_im)
+#endif
     ! Reset I/O logs
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
@@ -2862,7 +2893,362 @@ contains
 
    end subroutine datetime!}}}
 
+#ifdef HAVE_MOAB
+   subroutine ice_export_moab()
+!BOP
 
+   ! !DESCRIPTION:
+   !  This routine calls the routines necessary to send MPASSI fields to MOAB coupler
+   !
+     use iMOAB,  only       : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
+   !EOP
+   !BOC
+   !-----------------------------------------------------------------------
+   !
+   !  local variables
+   !
+   !-----------------------------------------------------------------------
+
+      integer ::  &
+         i, n
+
+      real(kind=RKIND) :: &
+         ailohi,          &
+         Tsrf,            &
+         tauxa,           &
+         tauya,           &
+         tauxo,           &
+         tauyo,           &
+         basalPressure
+
+      type (block_type), pointer :: &
+         block_ptr
+
+      type (mpas_pool_type), pointer :: &
+         configs,          &
+         meshPool,         &
+         tracersAggregate, &
+         velocitySolver,   &
+         shortwave,        &
+         atmosCoupling,    &
+         oceanCoupling,    &
+         atmosFluxes,      &
+         oceanFluxes,      &
+         icebergFluxes,    &
+         biogeochemistry
+
+      integer, pointer :: &
+         nCellsSolve
+
+      logical, pointer :: &
+         config_rotate_cartesian_grid,      &
+         config_use_topo_meltponds,         &
+         config_use_column_biogeochemistry, &
+         config_use_column_shortwave,       &
+         config_use_data_icebergs
+
+      real(kind=RKIND), pointer :: &
+         sphere_radius
+
+      real (kind=RKIND), dimension(:), pointer :: &
+         latCell,                     &
+         lonCell,                     &
+         xCell,                       &
+         yCell,                       &
+         zCell,                       &
+         iceAreaCell,                 &
+         iceVolumeCell,               &
+         snowVolumeCell,              &
+         pondDepthCell,               &
+         pondLidThicknessCell,        &
+         pondAreaCell,                &
+         surfaceTemperatureCell,      &
+         airStressCellU,              &
+         airStressCellV,              &
+         oceanStressCellU,            &
+         oceanStressCellV,            &
+         albedoVisibleDirectCell,     &
+         albedoIRDirectCell,          &
+         albedoVisibleDiffuseCell,    &
+         albedoIRDiffuseCell,         &
+         atmosReferenceSpeed10m,      &
+         atmosReferenceTemperature2m, &
+         atmosReferenceHumidity2m,    &
+         latentHeatFlux,              &
+         sensibleHeatFlux,            &
+         longwaveUp,                  &
+         evaporativeWaterFlux,        &
+         absorbedShortwaveFlux,       &
+         oceanHeatFlux,               &
+         oceanShortwaveFlux,          &
+         oceanFreshWaterFlux,         &
+         oceanSaltFlux,               &
+         frazilMassAdjust,            &
+         bergFreshwaterFlux,          &
+         bergLatentHeatFlux,          &
+         oceanNitrateFlux,            &
+         oceanSilicateFlux,           &
+         oceanAmmoniumFlux,           &
+         oceanDMSFlux,                &
+         oceanDMSPpFlux,              &
+         oceanDMSPdFlux,              &
+         oceanHumicsFlux,             &
+         carbonToNitrogenRatioAlgae,  &
+         carbonToNitrogenRatioDON
+
+      real (kind=RKIND), dimension(:,:), pointer :: &
+         oceanAlgaeFlux,              &
+         oceanDOCFlux,                &
+         oceanDICFlux,                &
+         oceanDONFlux,                &
+         oceanParticulateIronFlux,    &
+         oceanDissolvedIronFlux
+
+      integer, save :: num_mb_exports = 0  ! used for debugging
+      integer :: ent_type, ierr
+      character(len=32), parameter :: sub = 'ice_export_moab'
+   
+      character(len=100) :: outfile, wopts, localmeshfile, lnum
+      character(len=400) :: tagname
+   !----------------------------------------------------------------------- 
+      call shr_file_setLogUnit (iceLogUnit)
+      n = 0
+      i2x_im(: ,:) = 0.0_RKIND
+      block_ptr => domain % blocklist
+      do while(associated(block_ptr))
+   
+         configs => block_ptr % configs
+         call MPAS_pool_get_config(configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
+         call MPAS_pool_get_config(configs, "config_use_topo_meltponds", config_use_topo_meltponds)
+         call MPAS_pool_get_config(configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+         call MPAS_pool_get_config(configs, "config_use_column_shortwave", config_use_column_shortwave)
+         call MPAS_pool_get_config(configs, "config_use_data_icebergs", config_use_data_icebergs)
+   
+         call MPAS_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+         call MPAS_pool_get_subpool(block_ptr % structs, "tracers_aggregate", tracersAggregate)
+         call MPAS_pool_get_subpool(block_ptr % structs, "velocity_solver", velocitySolver)
+         call MPAS_pool_get_subpool(block_ptr % structs, "shortwave", shortwave)
+         call MPAS_pool_get_subpool(block_ptr % structs, 'atmos_coupling', atmosCoupling)
+         call MPAS_pool_get_subpool(block_ptr % structs, 'ocean_coupling', oceanCoupling)
+         call MPAS_pool_get_subpool(block_ptr % structs, "atmos_fluxes", atmosFluxes)
+         call MPAS_pool_get_subpool(block_ptr % structs, "ocean_fluxes", oceanFluxes)
+   
+         call MPAS_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+         call MPAS_pool_get_config(meshPool, "sphere_radius", sphere_radius)
+         call MPAS_pool_get_array(meshPool, "latCell", latCell)
+         call MPAS_pool_get_array(meshPool, "lonCell", lonCell)
+         call MPAS_pool_get_array(meshPool, "xCell", xCell)
+         call MPAS_pool_get_array(meshPool, "yCell", yCell)
+         call MPAS_pool_get_array(meshPool, "zCell", zCell)
+   
+         call MPAS_pool_get_array(tracersAggregate, 'iceAreaCell', iceAreaCell)
+         call MPAS_pool_get_array(tracersAggregate, 'iceVolumeCell', iceVolumeCell)
+         call MPAS_pool_get_array(tracersAggregate, 'snowVolumeCell', snowVolumeCell)
+         call MPAS_pool_get_array(tracersAggregate, 'pondDepthCell', pondDepthCell)
+         call MPAS_pool_get_array(tracersAggregate, 'pondLidThicknessCell', pondLidThicknessCell)
+         call MPAS_pool_get_array(tracersAggregate, 'pondAreaCell', pondAreaCell)
+         call MPAS_pool_get_array(tracersAggregate, 'surfaceTemperatureCell', surfaceTemperatureCell)
+   
+         call MPAS_pool_get_array(velocitySolver, 'airStressCellU', airStressCellU)
+         call MPAS_pool_get_array(velocitySolver, 'airStressCellV', airStressCellV)
+         call MPAS_pool_get_array(velocitySolver, 'oceanStressCellU', oceanStressCellU)
+         call MPAS_pool_get_array(velocitySolver, 'oceanStressCellV', oceanStressCellV)
+   
+         call MPAS_pool_get_array(shortwave, 'albedoVisibleDirectCell', albedoVisibleDirectCell)
+         call MPAS_pool_get_array(shortwave, 'albedoIRDirectCell', albedoIRDirectCell)
+         call MPAS_pool_get_array(shortwave, 'albedoVisibleDiffuseCell', albedoVisibleDiffuseCell)
+         call MPAS_pool_get_array(shortwave, 'albedoIRDiffuseCell', albedoIRDiffuseCell)
+         call MPAS_pool_get_array(shortwave, 'absorbedShortwaveFlux', absorbedShortwaveFlux)
+   
+         call MPAS_pool_get_array(atmosCoupling, 'atmosReferenceSpeed10m', atmosReferenceSpeed10m)
+         call MPAS_pool_get_array(atmosCoupling, 'atmosReferenceTemperature2m', atmosReferenceTemperature2m)
+         call MPAS_pool_get_array(atmosCoupling, 'atmosReferenceHumidity2m', atmosReferenceHumidity2m)
+   
+         call MPAS_pool_get_array(oceanCoupling, 'frazilMassAdjust', frazilMassAdjust)
+   
+         call MPAS_pool_get_array(atmosFluxes, 'latentHeatFlux', latentHeatFlux)
+         call MPAS_pool_get_array(atmosFluxes, 'sensibleHeatFlux', sensibleHeatFlux)
+         call MPAS_pool_get_array(atmosFluxes, 'longwaveUp', longwaveUp)
+         call MPAS_pool_get_array(atmosFluxes, 'evaporativeWaterFlux', evaporativeWaterFlux)
+   
+         call MPAS_pool_get_array(oceanFluxes, 'oceanHeatFlux', oceanHeatFlux)
+         call MPAS_pool_get_array(oceanFluxes, 'oceanShortwaveFlux', oceanShortwaveFlux)
+         call MPAS_pool_get_array(oceanFluxes, 'oceanFreshWaterFlux', oceanFreshWaterFlux)
+         call MPAS_pool_get_array(oceanFluxes, 'oceanSaltFlux', oceanSaltFlux)
+   
+         if (config_use_data_icebergs) then
+            call MPAS_pool_get_subpool(block_ptr % structs, "berg_fluxes", icebergFluxes)
+   
+            call MPAS_pool_get_array(icebergFluxes, "bergFreshwaterFlux", bergFreshwaterFlux)
+            call MPAS_pool_get_array(icebergFluxes, "bergLatentHeatFlux", bergLatentHeatFlux)
+         endif
+   
+         if (config_use_column_biogeochemistry) then
+            call mpas_pool_get_subpool(block_ptr % structs, 'biogeochemistry', biogeochemistry)
+   
+            call mpas_pool_get_array(biogeochemistry, 'oceanAlgaeFlux', oceanAlgaeFlux)
+            call mpas_pool_get_array(biogeochemistry, 'oceanDOCFlux', oceanDOCFlux)
+            call mpas_pool_get_array(biogeochemistry, 'oceanDICFlux', oceanDICFlux)
+            call mpas_pool_get_array(biogeochemistry, 'oceanDONFlux', oceanDONFlux)
+            call mpas_pool_get_array(biogeochemistry, 'oceanNitrateFlux', oceanNitrateFlux)
+            call mpas_pool_get_array(biogeochemistry, 'oceanSilicateFlux', oceanSilicateFlux)
+            call mpas_pool_get_array(biogeochemistry, 'oceanAmmoniumFlux', oceanAmmoniumFlux)
+            call mpas_pool_get_array(biogeochemistry, 'oceanDMSFlux', oceanDMSFlux)
+            call mpas_pool_get_array(biogeochemistry, 'oceanDMSPpFlux', oceanDMSPpFlux)
+            call mpas_pool_get_array(biogeochemistry, 'oceanDMSPdFlux', oceanDMSPdFlux)
+            call mpas_pool_get_array(biogeochemistry, 'oceanHumicsFlux', oceanHumicsFlux)
+            call mpas_pool_get_array(biogeochemistry, 'oceanParticulateIronFlux', oceanParticulateIronFlux)
+            call mpas_pool_get_array(biogeochemistry, 'oceanDissolvedIronFlux', oceanDissolvedIronFlux)
+            call mpas_pool_get_array(biogeochemistry, 'carbonToNitrogenRatioAlgae', carbonToNitrogenRatioAlgae)
+            call mpas_pool_get_array(biogeochemistry, 'carbonToNitrogenRatioDON', carbonToNitrogenRatioDON)
+         endif
+   
+         do i = 1, nCellsSolve
+            n = n + 1
+   
+            ! ice fraction
+            ailohi = min(iceAreaCell(i), 1.0_RKIND)
+   
+            !TODO: CICE has a check for ailohi < 0
+   
+            ! surface temperature
+            Tsrf = seaiceFreshWaterFreezingPoint + surfaceTemperatureCell(i)
+   
+            ! basal pressure
+            if ( ailohi > 0.0_RKIND ) then
+               call basal_pressure(&
+                     basalPressure,           &
+                     iceVolumeCell(i),        &
+                     snowVolumeCell(i),       &
+                     pondDepthCell(i),        &
+                     pondLidThicknessCell(i), &
+                     pondAreaCell(i),         &
+                     config_use_topo_meltponds)
+            endif
+   
+            ! wind stress  (on T-grid:  convert to lat-lon)
+            call seaice_latlon_vector_rotation_backward(&
+                  tauxa,             &
+                  tauya,             &
+                  airStressCellU(i), &
+                  airStressCellV(i), &
+                  latCell(i),        &
+                  lonCell(i),        &
+                  xCell(i),          &
+                  yCell(i),          &
+                  zCell(i),          &
+                  sphere_radius,     &
+                  config_rotate_cartesian_grid)
+   
+            ! ice/ocean stress (on POP T-grid:  convert to lat-lon)
+            call seaice_latlon_vector_rotation_backward(&
+                  tauxo,                &
+                  tauyo,                &
+                  -oceanStressCellU(i), &
+                  -oceanStressCellV(i), &
+                  latCell(i),           &
+                  lonCell(i),           &
+                  xCell(i),             &
+                  yCell(i),             &
+                  zCell(i),             &
+                  sphere_radius,        &
+                  config_rotate_cartesian_grid)
+         
+            !-------states-------------------- 
+            i2x_im(n, index_i2x_Si_ifrac)    = ailohi
+   
+            if (config_use_data_icebergs) then
+               i2x_im(n, index_i2x_Fioi_bergw) = bergFreshwaterFlux(i)
+               i2x_im(n, index_i2x_Fioi_bergh) = bergLatentHeatFlux(i)
+            endif
+   
+            if ( ailohi > 0.0_RKIND ) then
+   
+               !-------states-------------------- 
+               i2x_im(n, index_i2x_Si_t)  = Tsrf
+               i2x_im(n, index_i2x_Si_bpress)  = basalPressure
+               i2x_im(n, index_i2x_Si_u10)  = atmosReferenceSpeed10m(i)
+               i2x_im(n, index_i2x_Si_tref)  = atmosReferenceTemperature2m(i)
+               i2x_im(n, index_i2x_Si_qref)  = atmosReferenceHumidity2m(i)
+               i2x_im(n, index_i2x_Si_snowh)  = snowVolumeCell(i) / ailohi
+   
+               !--- a/i fluxes computed by ice
+               i2x_im(n, index_i2x_Faii_taux) = tauxa
+               i2x_im(n, index_i2x_Faii_tauy) = tauya
+               i2x_im(n, index_i2x_Faii_lat ) = latentHeatFlux(i)
+               i2x_im(n, index_i2x_Faii_sen ) = sensibleHeatFlux(i)
+               i2x_im(n, index_i2x_Faii_lwup) = longwaveUp(i)
+               i2x_im(n, index_i2x_Faii_evap) = evaporativeWaterFlux(i)
+               i2x_im(n, index_i2x_Faii_swnet) = absorbedShortwaveFlux(i)
+               i2x_im(n, index_i2x_Faii_evap) = evaporativeWaterFlux(i)
+   
+               if (config_use_column_shortwave) then
+                  i2x_im(n, index_i2x_Si_avsdr)  = albedoVisibleDirectCell(i)
+                  i2x_im(n, index_i2x_Si_anidr)  = albedoIRDirectCell(i)
+                  i2x_im(n, index_i2x_Si_avsdf)  = albedoVisibleDiffuseCell(i)
+                  i2x_im(n, index_i2x_Si_anidf)  = albedoIRDiffuseCell(i)
+   
+                  i2x_im(n, index_i2x_Faii_swnet) = absorbedShortwaveFlux(i)
+               endif
+   
+               ! i/o fluxes computed by ice, as well as additional freshwater and salt calculated at the last 
+               ! coupling import and needed to grow sea ice from frazil passed from the ocean model in the
+               ! field frazilMassAdjust.
+               i2x_im(n, index_i2x_Fioi_melth) = oceanHeatFlux(i)
+               i2x_im(n, index_i2x_Fioi_swpen) = oceanShortwaveFlux(i)
+               i2x_im(n, index_i2x_Fioi_meltw) = oceanFreshWaterFlux(i) + frazilMassAdjust(i)/ailohi
+               i2x_im(n, index_i2x_Fioi_salt ) = oceanSaltFlux(i) + ice_ref_salinity*p001*frazilMassAdjust(i)/ailohi
+               i2x_im(n, index_i2x_Fioi_taux ) = tauxo
+               i2x_im(n, index_i2x_Fioi_tauy ) = tauyo
+   
+               ! export biogeochemistry fields, if configured
+               if (config_use_column_biogeochemistry) then
+                  ! convert from mmol N/m^3 to mmol C/m^3
+                  i2x_im(n, index_i2x_Fioi_algae1) = oceanAlgaeFlux(1,i) * carbonToNitrogenRatioAlgae(1)
+                  i2x_im(n, index_i2x_Fioi_algae2) = oceanAlgaeFlux(2,i) * carbonToNitrogenRatioAlgae(2)
+                  i2x_im(n, index_i2x_Fioi_algae3) = oceanAlgaeFlux(3,i) * carbonToNitrogenRatioAlgae(3)
+                  i2x_im(n, index_i2x_Fioi_doc1  ) = oceanDOCFlux(1,i)
+                  i2x_im(n, index_i2x_Fioi_doc2  ) = oceanDOCFlux(2,i)
+                  i2x_im(n, index_i2x_Fioi_doc3  ) = oceanDOCFlux(3,i) !JW set to 0?
+                  i2x_im(n, index_i2x_Fioi_dic1  ) = oceanDICFlux(1,i)
+                  i2x_im(n, index_i2x_Fioi_don1  ) = oceanDONFlux(1,i)
+                  i2x_im(n, index_i2x_Fioi_no3   ) = oceanNitrateFlux(i)
+                  i2x_im(n, index_i2x_Fioi_sio3  ) = oceanSilicateFlux(i)
+                  i2x_im(n, index_i2x_Fioi_nh4   ) = oceanAmmoniumFlux(i)
+                  i2x_im(n, index_i2x_Fioi_dms   ) = oceanDMSFlux(i)
+                  i2x_im(n, index_i2x_Fioi_dmspp ) = oceanDMSPpFlux(i)
+                  i2x_im(n, index_i2x_Fioi_dmspd ) = oceanDMSPdFlux(i)
+                  i2x_im(n, index_i2x_Fioi_docr  ) = oceanHumicsFlux(i)
+                  ! convert from umol Fe/m^3 to mmol Fe/m^3
+                  i2x_im(n, index_i2x_Fioi_fep1  ) = oceanParticulateIronFlux(1,i) / 1000._RKIND
+                  i2x_im(n, index_i2x_Fioi_fep2  ) = oceanParticulateIronFlux(2,i) / 1000._RKIND
+                  i2x_im(n, index_i2x_Fioi_fed1  ) = oceanDissolvedIronFlux(1,i) / 1000._RKIND
+                  i2x_im(n, index_i2x_Fioi_fed2  ) = oceanDissolvedIronFlux(2,i) / 1000._RKIND
+               endif
+            endif
+         enddo
+   
+         block_ptr => block_ptr % next
+      enddo
+
+      ent_type = 1 ! cells
+      !  set all tags in one method
+      tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+      ierr = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, totalmbls , ent_type, i2x_im(1, 1) )
+      if ( ierr /= 0 ) then
+         write(iceLogUnit,*) 'Fail to set MOAB fields '
+      endif
+      
+
+!#ifdef MOABDEBUG
+      num_mb_exports = num_mb_exports +1
+      write(lnum,"(I0.2)")num_mb_exports
+      outfile = 'ice_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(MPSIID, outfile, wopts)
+!#endif
+   end subroutine ice_export_moab
+#endif
 end module ice_comp_mct
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||

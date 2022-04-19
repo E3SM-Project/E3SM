@@ -40,6 +40,7 @@ module ocn_comp_mct
 #ifdef HAVE_MOAB
    use mpas_moabmesh
    use seq_comm_mct, only: MPOID
+   use iMOAB, only: iMOAB_DefineTagStorage
 #endif
    use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
    use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
@@ -85,6 +86,12 @@ module ocn_comp_mct
   private :: ocn_domain_mct
 !
 ! !PRIVATE MODULE VARIABLES
+#ifdef HAVE_MOAB
+  private :: ocn_export_moab
+  integer , private :: mblsize, totalmbls
+  real (kind=RKIND) , allocatable, private :: o2x_om(:,:) 
+#endif
+
 
   integer, private ::   &
       my_task
@@ -216,6 +223,8 @@ contains
 
 #ifdef HAVE_MOAB
     character*100 outfile, wopts
+    integer :: ierrmb, numco, tagtype, tagindex
+    character(len=400) :: tagname
 #endif
     interface
        subroutine xml_stream_parser(xmlname, mgr_p, comm, ierr) bind(c)
@@ -622,7 +631,20 @@ contains
     
     nsend = mct_avect_nRattr(o2x_o)
     nrecv = mct_avect_nRattr(x2o_o)
-
+#ifdef HAVE_MOAB
+    ! initialize moab tag fields array
+   mblsize = lsize
+   totalmbls = mblsize * nsend ! size of the double array
+   allocate (o2x_om(lsize, nsend) )
+   ! define tags according to the seq_flds_i2x_fields 
+   tagtype = 1  ! dense, double
+   numco = 1 !  one value per cell / entity
+   tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
+   ierrmb = iMOAB_DefineTagStorage(MPOID, tagname, tagtype, numco,  tagindex )
+   if ( ierrmb == 1 ) then
+      call mpas_log_write('cannot define tags for MOAB o2x fields ' // trim(seq_flds_o2x_fields), MPAS_LOG_ERR)
+   endif
+#endif
 !-----------------------------------------------------------------------
 !
 !   initialize necessary  coupling info
@@ -1145,7 +1167,9 @@ contains
       if (debugOn) call mpas_log_write('Exporting ocean state')
       call ocn_export_mct(o2x_o, ierr)
       if (debugOn) call mpas_log_write('Finished exporting ocean state')
-
+#ifdef HAVE_MOAB
+      call ocn_export_moab()
+#endif
       call check_clocks_sync(domain % clock, Eclock, ierr)
 
       ! Reset I/O logs
@@ -1228,7 +1252,10 @@ contains
     end if
 
     call mpas_framework_finalize(domain % dminfo, domain, io_system)
-
+#ifdef HAVE_MOAB
+    ! deallocate moab fields array
+     deallocate (o2x_om)
+#endif
     ! Reset I/O logs
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
@@ -2740,6 +2767,274 @@ contains
       ctime(7:8) = time(5:6)
 
    end subroutine datetime!}}}
+
+#ifdef HAVE_MOAB
+
+   subroutine ocn_export_moab()   !{{{
+
+      ! !DESCRIPTION:
+   !  This routine calls the routines necessary to send mpas ocean fields to MOAB coupler
+   !
+     use iMOAB,  only       : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
+     !EOP
+     !BOC
+     !-----------------------------------------------------------------------
+     !
+     !  local variables
+      !-----------------------------------------------------------------------
+      !
+      !  local variables
+      !
+      !-----------------------------------------------------------------------
+      integer, save :: num_mb_exports = 0  ! used for debugging
+      integer :: ent_type, ierr
+      character(len=100) :: outfile, wopts, localmeshfile, lnum
+      character(len=400) :: tagname
+
+      integer :: i, n
+      integer, pointer :: nCellsSolve, index_temperatureSurfaceValue, index_salinitySurfaceValue, &
+                           index_avgZonalSurfaceVelocity, index_avgMeridionalSurfaceVelocity
+   
+      type (block_type), pointer :: block_ptr
+   
+      type (mpas_pool_type), pointer :: meshPool,             &
+                                          forcingPool,          &
+                                          statePool,            &
+                                          tracersPool,          &
+                                          ecosysAuxiliary,      &
+                                          ecosysSeaIceCoupling, &
+                                          DMSSeaIceCoupling,    &
+                                          MacroMoleculesSeaIceCoupling
+   
+      integer, dimension(:), pointer :: landIceMask
+   
+      real (kind=RKIND), dimension(:), pointer :: seaIceEnergy, accumulatedFrazilIceMass, frazilSurfacePressure, &
+                                                   filteredSSHGradientZonal, filteredSSHGradientMeridional, &
+                                                   avgTotalFreshWaterTemperatureFlux, &
+                                                   avgCO2_gas_flux, DMSFlux, surfaceUpwardCO2Flux, &
+                                                   avgOceanSurfaceDIC, &
+                                                   avgOceanSurfaceDON, &
+                                                   avgOceanSurfaceNO3, &
+                                                   avgOceanSurfaceSiO3, &
+                                                   avgOceanSurfaceNH4, &
+                                                   avgOceanSurfaceDMS, &
+                                                   avgOceanSurfaceDMSP, &
+                                                   avgOceanSurfaceDOCr, &
+                                                   avgOceanSurfaceFeParticulate, &
+                                                   avgOceanSurfaceFeDissolved
+   
+      real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue, avgSurfaceVelocity, &
+                                                      avgOceanSurfacePhytoC, &
+                                                      avgOceanSurfaceDOC, layerThickness
+   
+      real (kind=RKIND) :: surfaceFreezingTemp
+   
+      logical, pointer :: frazilIceActive,          &
+                           config_use_ecosysTracers, &
+                           config_use_DMSTracers,    &
+                           config_use_MacroMoleculesTracers,  &
+                           config_use_ecosysTracers_sea_ice_coupling, &
+                           config_use_DMSTracers_sea_ice_coupling,  &
+                           config_use_MacroMoleculesTracers_sea_ice_coupling
+   
+      character (len=StrKIND), pointer :: config_land_ice_flux_mode
+   
+      logical :: keepFrazil
+   
+      ! get configure options
+      call mpas_pool_get_package(domain % packages, 'frazilIceActive', frazilIceActive)
+      call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
+      call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
+      call mpas_pool_get_config(domain % configs, 'config_use_DMSTracers', config_use_DMSTracers)
+      call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers', config_use_MacroMoleculesTracers)
+      call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers_sea_ice_coupling',  &
+                                                   config_use_ecosysTracers_sea_ice_coupling)
+      call mpas_pool_get_config(domain % configs, 'config_use_DMSTracers_sea_ice_coupling',  &
+                                                   config_use_DMSTracers_sea_ice_coupling)
+      call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers_sea_ice_coupling',  &
+                                                   config_use_MacroMoleculesTracers_sea_ice_coupling)
+   
+      n = 0
+      block_ptr => domain % blocklist
+      do while(associated(block_ptr))
+         call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+         call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+   
+         call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+   
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+   
+         call mpas_pool_get_dimension(forcingPool, 'index_avgTemperatureSurfaceValue', index_temperatureSurfaceValue)
+         call mpas_pool_get_dimension(forcingPool, 'index_avgSalinitySurfaceValue', index_salinitySurfaceValue)
+         call mpas_pool_get_dimension(forcingPool, 'index_avgSurfaceVelocityZonal', index_avgZonalSurfaceVelocity)
+         call mpas_pool_get_dimension(forcingPool, 'index_avgSurfaceVelocityMeridional', index_avgMeridionalSurfaceVelocity)
+   
+         call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+   
+         call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+         call mpas_pool_get_array(forcingPool, 'avgTracersSurfaceValue', avgTracersSurfaceValue)
+         call mpas_pool_get_array(forcingPool, 'avgSurfaceVelocity', avgSurfaceVelocity)
+         call mpas_pool_get_array(forcingPool, 'filteredSSHGradientZonal', filteredSSHGradientZonal)
+         call mpas_pool_get_array(forcingPool, 'filteredSSHGradientMeridional', filteredSSHGradientMeridional)
+         call mpas_pool_get_array(forcingPool, 'avgTotalFreshWaterTemperatureFlux', avgTotalFreshWaterTemperatureFlux)
+         if ( frazilIceActive ) then
+            call mpas_pool_get_array(forcingPool, 'seaIceEnergy', seaIceEnergy)
+            call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
+            call mpas_pool_get_array(statePool, 'accumulatedFrazilIceMass', accumulatedFrazilIceMass, 1)
+         end if
+   
+         ! BGC fields
+         if (config_use_ecosysTracers) then
+   
+            call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
+            call mpas_pool_get_array(ecosysAuxiliary, 'avgCO2_gas_flux', avgCO2_gas_flux)
+   
+         end if
+   
+         if (config_use_ecosysTracers .and. config_use_ecosysTracers_sea_ice_coupling) then
+            call mpas_pool_get_subpool(forcingPool, 'ecosysSeaIceCoupling', ecosysSeaIceCoupling)
+   
+            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfacePhytoC', avgOceanSurfacePhytoC)
+            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDIC', avgOceanSurfaceDIC)
+            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceNO3', avgOceanSurfaceNO3)
+            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceSiO3', avgOceanSurfaceSiO3)
+            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceNH4', avgOceanSurfaceNH4)
+            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCr', avgOceanSurfaceDOCr)
+            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeParticulate', avgOceanSurfaceFeParticulate)
+            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeDissolved', avgOceanSurfaceFeDissolved)
+         endif
+         if (config_use_DMSTracers .and. config_use_DMSTracers_sea_ice_coupling) then
+            call mpas_pool_get_subpool(forcingPool, 'DMSSeaIceCoupling', DMSSeaIceCoupling)
+   
+            call mpas_pool_get_array(DMSSeaIceCoupling, 'avgOceanSurfaceDMS', avgOceanSurfaceDMS)
+            call mpas_pool_get_array(DMSSeaIceCoupling, 'avgOceanSurfaceDMSP', avgOceanSurfaceDMSP)
+         endif
+         if (config_use_MacroMoleculesTracers .and. config_use_MacroMoleculesTracers_sea_ice_coupling) then
+            call mpas_pool_get_subpool(forcingPool, 'MacroMoleculesSeaIceCoupling', MacroMoleculesSeaIceCoupling)
+   
+            call mpas_pool_get_array(MacroMoleculesSeaIceCoupling, 'avgOceanSurfaceDOC', avgOceanSurfaceDOC)
+            call mpas_pool_get_array(MacroMoleculesSeaIceCoupling, 'avgOceanSurfaceDON', avgOceanSurfaceDON)
+         endif
+   !    call mpas_pool_get_array(forcingPool, 'CO2Flux', CO2Flux)
+   !    call mpas_pool_get_array(forcingPool, 'DMSFlux', DMSFlux)
+   !    call mpas_pool_get_array(forcingPool, 'surfaceUpwardCO2Flux', surfaceUpwardCO2Flux)
+   
+         do i = 1, nCellsSolve
+            n = n + 1
+   
+            o2x_om(n, index_o2x_So_t) = avgTracersSurfaceValue(index_temperatureSurfaceValue, i)
+            o2x_om(n, index_o2x_So_s) = avgTracersSurfaceValue(index_salinitySurfaceValue, i)
+            o2x_om(n, index_o2x_So_u) = avgSurfaceVelocity(index_avgZonalSurfaceVelocity, i)
+            o2x_om(n, index_o2x_So_v) = avgSurfaceVelocity(index_avgMeridionalSurfaceVelocity, i)
+   
+            o2x_om(n, index_o2x_So_dhdx) = filteredSSHGradientZonal(i)
+            o2x_om(n, index_o2x_So_dhdy) = filteredSSHGradientMeridional(i)
+   
+            o2x_om(n, index_o2x_Faoo_h2otemp) = avgTotalFreshWaterTemperatureFlux(i) * rho_sw * cp_sw
+   
+            if ( frazilIceActive ) then
+               ! negative when frazil ice can be melted
+               keepFrazil = .true.
+               if ( associated(landIceMask) ) then
+                  if ( landIceMask(i) == 1 ) then
+                     keepFrazil = .false.
+                  end if
+               end if
+   
+               if ( keepFrazil ) then
+   
+                  ! Calculate energy associated with frazil mass transfer to sea ice if frazil has accumulated
+                  if ( accumulatedFrazilIceMass(i) > 0.0_RKIND ) then
+   
+                  seaIceEnergy(i) = accumulatedFrazilIceMass(i) * config_frazil_heat_of_fusion 
+   
+                  ! Otherwise calculate the melt potential where avgTracersSurfaceValue represents only the
+                  ! top layer of the ocean
+                  else
+   
+                  surfaceFreezingTemp = ocn_freezing_temperature(salinity=avgTracersSurfaceValue(index_salinitySurfaceValue, i), &
+                     pressure=0.0_RKIND,  inLandIceCavity=.false.) 
+   
+                  seaIceEnergy(i) = min(rho_sw*cp_sw*layerThickness(1, i)*( surfaceFreezingTemp + T0_Kelvin &
+                                 - avgTracersSurfaceValue(index_temperatureSurfaceValue, i) ), 0.0_RKIND )
+   
+                  end if
+   
+                  o2x_om(n, index_o2x_Fioo_q) = seaIceEnergy(i) / ocn_cpl_dt
+                  o2x_om(n, index_o2x_Fioo_frazil) = accumulatedFrazilIceMass(i) / ocn_cpl_dt
+   
+               else
+   
+                  o2x_om(n, index_o2x_Fioo_q)      = 0.0_RKIND
+                  o2x_om(n, index_o2x_Fioo_frazil) = 0.0_RKIND
+   
+               end if
+   
+               ! Reset SeaIce Energy and Accumulated Frazil Ice
+               seaIceEnergy(i) = 0.0_RKIND
+               accumulatedFrazilIceMass(i) = 0.0_RKIND
+               frazilSurfacePressure(i) = 0.0_RKIND
+            end if
+   
+            ! BGC fields
+            if (config_use_ecosysTracers) then
+               ! convert from mmolC/m2/s to kg CO2/m2/s
+               o2x_om(n, index_o2x_Faoo_fco2_ocn) = avgCO2_gas_flux(i)*44.e-6_RKIND
+            endif
+            if (config_use_ecosysTracers .and. config_use_ecosysTracers_sea_ice_coupling) then
+               o2x_om(n, index_o2x_So_algae1) = max(0.0_RKIND,avgOceanSurfacePhytoC(1,i))
+               o2x_om(n, index_o2x_So_algae2) = max(0.0_RKIND,avgOceanSurfacePhytoC(2,i))
+               o2x_om(n, index_o2x_So_algae3) = max(0.0_RKIND,avgOceanSurfacePhytoC(3,i))
+               o2x_om(n, index_o2x_So_dic1)   = max(0.0_RKIND,avgOceanSurfaceDIC(i))
+               o2x_om(n, index_o2x_So_no3)    = max(0.0_RKIND,avgOceanSurfaceNO3(i))
+               o2x_om(n, index_o2x_So_sio3)   = max(0.0_RKIND,avgOceanSurfaceSiO3(i))
+               o2x_om(n, index_o2x_So_nh4)    = max(0.0_RKIND,avgOceanSurfaceNH4(i))
+               o2x_om(n, index_o2x_So_docr)   = max(0.0_RKIND,avgOceanSurfaceDOCr(i))
+               o2x_om(n, index_o2x_So_fep1)   = max(0.0_RKIND,avgOceanSurfaceFeParticulate(i))
+               o2x_om(n, index_o2x_So_fed1)   = max(0.0_RKIND,avgOceanSurfaceFeDissolved(i))
+            endif
+            if (config_use_DMSTracers .and. config_use_DMSTracers_sea_ice_coupling) then
+               o2x_om(n, index_o2x_So_dms)  = max(0.0_RKIND,avgOceanSurfaceDMS(i))
+               o2x_om(n, index_o2x_So_dmsp) = max(0.0_RKIND,avgOceanSurfaceDMSP(i))
+            endif
+            if (config_use_MacroMoleculesTracers .and. config_use_MacroMoleculesTracers_sea_ice_coupling) then
+               o2x_om(n, index_o2x_So_doc1) = max(0.0_RKIND,avgOceanSurfaceDOC(1,i))
+               o2x_om(n, index_o2x_So_doc2) = max(0.0_RKIND,avgOceanSurfaceDOC(2,i))
+               o2x_om(n, index_o2x_So_don1) = max(0.0_RKIND,avgOceanSurfaceDON(i))
+            endif
+      
+            if ( trim(config_land_ice_flux_mode) .ne. 'pressure_only' ) then
+               o2x_om(n, index_o2x_So_blt) = landIceBoundaryLayerTracers(indexBLT,i)
+               o2x_om(n, index_o2x_So_bls) = landIceBoundaryLayerTracers(indexBLS,i)
+               o2x_om(n, index_o2x_So_htv) = landIceTracerTransferVelocities(indexHeatTrans,i)
+               o2x_om(n, index_o2x_So_stv) = landIceTracerTransferVelocities(indexSaltTrans,i)
+               o2x_om(n, index_o2x_So_rhoeff) = 0.0_RKIND
+            endif
+   
+         end do
+   
+         block_ptr => block_ptr % next
+      end do
+
+      ent_type = 1 ! cells
+      !  set all tags in one method
+      tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
+      ierr = iMOAB_SetDoubleTagStorage ( MPOID, tagname, totalmbls , ent_type, o2x_om(1, 1) )
+      if ( ierr /= 0 ) then
+         write(ocnLogUnit,*) 'Fail to set MOAB fields '
+      endif
+   !-----------------------------------------------------------------------
+   !EOC
+!#ifdef MOABDEBUG
+      num_mb_exports = num_mb_exports +1
+      write(lnum,"(I0.2)")num_mb_exports
+      outfile = 'ocn_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(MPOID, outfile, wopts)
+!#endif
+   end subroutine ocn_export_moab!}}}
+#endif  
 
 end module ocn_comp_mct
 

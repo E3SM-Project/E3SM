@@ -323,40 +323,30 @@ contains
       write(logunit,*) subname,' migrated mesh for map rof 2 ocn '
    endif
    if (mbrxoid .ge. 0) then ! we are on coupler side pes
-      tagname='mbForr_rofl'//C_NULL_CHAR
+      tagname=trim(seq_flds_r2x_fields)//C_NULL_CHAR
       tagtype = 1 ! dense, double
       numco= 1 ! 1  scalar per node
       ierr = iMOAB_DefineTagStorage(mbrxoid, tagname, tagtype, numco,  tagindex )
       if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in defining mbForr_rofl tag  '
-         call shr_sys_abort(subname//' ERROR in defining mbForr_rofl tag ')
+         write(logunit,*) subname,' error in defining ' // trim(seq_flds_r2x_fields) // ' tags on coupler side in MOAB'
+         call shr_sys_abort(subname//' ERROR in defining MOAB tags ')
       endif
-      tagname='mbForr_rofi'//C_NULL_CHAR
-      ierr = iMOAB_DefineTagStorage(mbrxoid, tagname, tagtype, numco,  tagindex )
-      if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in defining mbForr_rofi tag  '
-         call shr_sys_abort(subname//' ERROR in defining mbForr_rofi tag ')
-       endif
+   endif
 
-   endif
-   if (mboxid .ge. 0) then ! we are on coupled side, define the tags for projection on ocea coupler side
-      tagname='mbForr_rofl_proj'//C_NULL_CHAR
+   if (mboxid .ge. 0) then ! we are on coupler side pes, for ocean mesh
+      tagname=trim(seq_flds_r2x_fields)//C_NULL_CHAR
       tagtype = 1 ! dense, double
       numco= 1 ! 1  scalar per node
       ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
       if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in defining mbForr_rofl_proj tag  '
-         call shr_sys_abort(subname//' ERROR in defining mbForr_rofl_proj tag ')
+         write(logunit,*) subname,' error in defining ' // trim(seq_flds_r2x_fields) // ' tags on coupler side in MOAB, for ocean app'
+         call shr_sys_abort(subname//' ERROR in defining MOAB tags ')
       endif
-      tagname='mbForr_rofi_proj'//C_NULL_CHAR
-      ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
-      if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in defining mbForr_rofi_proj tag  '
-         call shr_sys_abort(subname//' ERROR in defining mbForr_rofi_proj tag ')
-       endif
    endif
+
+   
    if (iamroot_CPLID)  then
-      write(logunit,*) subname,' created moab tags for mbForr_rofl, mbForr_rofi '
+      write(logunit,*) subname,' created moab tags for seq_flds_r2x_fields '
    endif
 #ifdef MOABDEBUG
    call seq_comm_getData(CPLID ,mpicom=mpicom_CPLID)
@@ -381,7 +371,7 @@ contains
      iMOAB_ApplyScalarProjectionWeights, iMOAB_WriteMesh
    !---------------------------------------------------------------
    ! Description similar to prep_atm_migrate_moab; will also do the projection on coupler pes
-   ! After mbForr_rofl, mbForr_rofi tags were loaded on rof mesh,
+   ! After seq_flds_r2x_fields tags were loaded on rof mesh,
    !  they need to be migrated to the coupler pes, for weight application ; later, we will send it to ocean pes
    !
    ! Arguments
@@ -399,8 +389,9 @@ contains
    integer                  :: rof_id
    integer                  :: context_id ! we will use ocean context on coupler 
    integer, save            :: num_prof = 0  ! use to count the projections
-   character*32             :: dm1, dm2, tagName, wgtIdef
-   character*50             :: outfile, wopts, tagnameProj, lnum
+   character*32             :: dm1, dm2, wgtIdef
+   character*50             :: outfile, wopts, lnum
+   character*400             :: tagname ! for seq_flds_r2x_fields
    integer                  :: orderROF, orderOCN, volumetric, noConserve, validate
    integer, save            :: num_proj = 0 ! for counting projections
 
@@ -424,8 +415,7 @@ contains
    ! we should do this only if ocn_present
    context_id = ocn(1)%cplcompid
    wgtIdef = 'map-from-file'//C_NULL_CHAR
-   tagName = 'mbForr_rofl;mbForr_rofi;'//C_NULL_CHAR  
-   tagNameProj = 'mbForr_rofl_proj;mbForr_rofi_proj;'//C_NULL_CHAR
+   tagName = trim(seq_flds_r2x_fields)//C_NULL_CHAR  
    num_proj = num_proj + 1
 
    if (rof_present .and. ocn_present) then
@@ -470,7 +460,7 @@ contains
          ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
          !  hard coded now, it should be a runtime option in the future
 
-         ierr = iMOAB_ApplyScalarProjectionWeights ( mbrmapro, wgtIdef, tagName, tagNameProj)
+         ierr = iMOAB_ApplyScalarProjectionWeights ( mbrmapro, wgtIdef, tagName, tagName)
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in applying weights '
             call shr_sys_abort(subname//' ERROR in applying weights')

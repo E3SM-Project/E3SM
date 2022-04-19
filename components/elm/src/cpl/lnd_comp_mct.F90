@@ -13,6 +13,10 @@ module lnd_comp_mct
   use decompmod        , only : bounds_type, ldecomp
   use lnd_import_export
   use iso_c_binding
+
+#ifdef HAVE_MOAB
+  use seq_comm_mct,       only: mlnid, sameg_al! id of moab land app
+#endif
   !
   ! !public member functions:
   implicit none
@@ -30,6 +34,9 @@ module lnd_comp_mct
 
 #ifdef HAVE_MOAB
   private :: init_land_moab   ! create moab mesh (cloud of points)
+  private :: lnd_export_moab ! it should be part of lnd_import_export, but we will keep it here
+  integer , private :: mblsize, totalmbls
+  real (r8) , allocatable, private :: l2x_lm(:,:) ! for tags in MOAB
 #endif
   !---------------------------------------------------------------------------
 
@@ -75,7 +82,6 @@ contains
     use ESMF
 #ifdef HAVE_MOAB
     use iMOAB            , only : iMOAB_RegisterApplication
-    use seq_comm_mct,       only: mlnid ! id of moab land app
 #endif
     !
     ! !ARGUMENTS:
@@ -85,7 +91,7 @@ contains
     character(len=*), optional, intent(in)    :: NLFilename       ! Namelist filename to read
     !
     ! !LOCAL VARIABLES:
-    integer                          :: LNDID	     ! Land identifyer
+    integer                          :: LNDID        ! Land identifier
     integer                          :: mpicom_lnd   ! MPI communicator
     type(mct_gsMap),         pointer :: GSMap_lnd    ! Land model MCT GS map
     type(mct_gGrid),         pointer :: dom_l        ! Land model domain
@@ -126,7 +132,7 @@ contains
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
 
 #ifdef HAVE_MOAB
-    integer :: ierr
+    integer :: ierr, nsend
     character*32  appname
     logical :: samegrid_al !
     character(len=SHR_KIND_CL) :: atm_gnam          ! atm grid
@@ -276,7 +282,7 @@ contains
 
     call get_proc_bounds( bounds )
 
-    call lnd_SetgsMap_mct( bounds, mpicom_lnd, LNDID, gsMap_lnd ) 	
+    call lnd_SetgsMap_mct( bounds, mpicom_lnd, LNDID, gsMap_lnd )
     lsz = mct_gsMap_lsize(gsMap_lnd, mpicom_lnd)
 #ifdef HAVE_MOAB
     appname="LNDMB"//C_NULL_CHAR
@@ -323,6 +329,12 @@ contains
     call mct_aVect_init(l2x_l, rList=seq_flds_l2x_fields, lsize=lsz)
     call mct_aVect_zero(l2x_l)
 
+#ifdef HAVE_MOAB
+    mblsize = lsz
+    nsend = mct_avect_nRattr(l2x_l)
+    totalmbls = mblsize * nsend ! size of the double array
+    allocate (l2x_lm(lsz, nsend) )
+#endif
     ! Finish initializing elm
 
     call initialize2()
@@ -346,6 +358,9 @@ contains
 
     if (atm_present) then 
       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
+#ifdef HAVE_MOAB
+      call lnd_export_moab(bounds, lnd2atm_vars, lnd2glc_vars) ! it is private here
+#endif
     endif
 
     ! Fill in infodata settings
@@ -623,6 +638,10 @@ contains
     !---------------------------------------------------------------------------
 
     ! fill this in
+#ifdef HAVE_MOAB
+    ! deallocate moab fields array
+      deallocate (l2x_lm)
+#endif
     call final()
 
   end subroutine lnd_final_mct
@@ -767,8 +786,7 @@ contains
 
 #ifdef HAVE_MOAB
   subroutine init_land_moab(bounds, samegrid_al)
-    use seq_comm_mct,      only: mlnid  ! id of moab land app
-    use seq_comm_mct,      only: sameg_al ! same grid as atm
+    use seq_flds_mod     , only :  seq_flds_l2x_fields
     use spmdMod     , only: iam  ! rank on the land communicator
     use domainMod   , only: ldomain ! ldomain is coming from module, not even passed
     use elm_varcon  , only: re
@@ -792,7 +810,8 @@ contains
     real(r8)   :: latv, lonv
     integer   dims, i, iv, ilat, ilon, igdx, ierr, tagindex
     integer tagtype, numco, ent_type, mbtype, block_ID
-    character*100 outfile, wopts, localmeshfile, tagname
+    character*100 outfile, wopts, localmeshfile
+    character*400 tagname ! hold all fields
 
     integer, allocatable :: moabconn(:) ! will have the connectivity in terms of local index in verts
 
@@ -996,6 +1015,157 @@ contains
     if (ierr > 0 )  &
       call endrun('Error: fail to write the land mesh file')
 #endif
+  ! define all tags from seq_flds_l2x_fields
+  ! define tags according to the seq_flds_l2x_fields 
+    tagtype = 1  ! dense, double
+    numco = 1 !  one value per cell / entity
+    tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+    if ( ierr > 0) then
+        call endrun('Error: fail to define seq_flds_l2x_fields for land moab mesh')
+    endif
   end subroutine init_land_moab
+
+  subroutine lnd_export_moab( bounds, lnd2atm_vars, lnd2glc_vars)
+
+    !---------------------------------------------------------------------------
+    ! !DESCRIPTION:
+    ! Convert the data to be sent from the elm model to the moab coupler 
+    ! 
+    ! !USES:
+    use shr_kind_mod       , only : r8 => shr_kind_r8
+    use elm_varctl         , only : iulog, create_glacier_mec_landunit
+    use clm_time_manager   , only : get_nstep, get_step_size  
+    use domainMod          , only : ldomain
+    use seq_drydep_mod     , only : n_drydep
+    use shr_megan_mod      , only : shr_megan_mechcomps_n
+    use iMOAB,  only       : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
+    use seq_flds_mod, only : seq_flds_l2x_fields
+    !
+    ! !ARGUMENTS:
+    implicit none
+    type(bounds_type) , intent(in)    :: bounds  ! bounds
+    type(lnd2atm_type), intent(inout) :: lnd2atm_vars ! clm land to atmosphere exchange data type
+    type(lnd2glc_type), intent(inout) :: lnd2glc_vars ! clm land to atmosphere exchange data type
+    !
+    ! !LOCAL VARIABLES:
+    integer  :: g,i   ! indices
+    integer  :: ier   ! error status
+    integer  :: nstep ! time step index
+    integer  :: dtime ! time step   
+    integer  :: num   ! counter
+    character(len=*), parameter :: sub = 'lnd_export_moab'
+    integer, save :: num_mb_exports = 0  ! used for debugging
+    integer :: ent_type, ierr
+    character(len=100) :: outfile, wopts, lnum
+   character(len=400) :: tagname
+    !---------------------------------------------------------------------------
+
+    ! cesm sign convention is that fluxes are positive downward
+
+    l2x_lm(:,:) = 0.0_r8
+
+    do g = bounds%begg,bounds%endg
+       i = 1 + (g-bounds%begg)
+       l2x_lm(i,index_l2x_Sl_t)        =  lnd2atm_vars%t_rad_grc(g)
+       l2x_lm(i,index_l2x_Sl_snowh)    =  lnd2atm_vars%h2osno_grc(g)
+       l2x_lm(i,index_l2x_Sl_avsdr)    =  lnd2atm_vars%albd_grc(g,1)
+       l2x_lm(i,index_l2x_Sl_anidr)    =  lnd2atm_vars%albd_grc(g,2)
+       l2x_lm(i,index_l2x_Sl_avsdf)    =  lnd2atm_vars%albi_grc(g,1)
+       l2x_lm(i,index_l2x_Sl_anidf)    =  lnd2atm_vars%albi_grc(g,2)
+       l2x_lm(i,index_l2x_Sl_tref)     =  lnd2atm_vars%t_ref2m_grc(g)
+       l2x_lm(i,index_l2x_Sl_qref)     =  lnd2atm_vars%q_ref2m_grc(g)
+       l2x_lm(i,index_l2x_Sl_u10)      =  lnd2atm_vars%u_ref10m_grc(g)
+       l2x_lm(i,index_l2x_Fall_taux)   = -lnd2atm_vars%taux_grc(g)
+       l2x_lm(i,index_l2x_Fall_tauy)   = -lnd2atm_vars%tauy_grc(g)
+       l2x_lm(i,index_l2x_Fall_lat)    = -lnd2atm_vars%eflx_lh_tot_grc(g)
+       l2x_lm(i,index_l2x_Fall_sen)    = -lnd2atm_vars%eflx_sh_tot_grc(g)
+       l2x_lm(i,index_l2x_Fall_lwup)   = -lnd2atm_vars%eflx_lwrad_out_grc(g)
+       l2x_lm(i,index_l2x_Fall_evap)   = -lnd2atm_vars%qflx_evap_tot_grc(g)
+       l2x_lm(i,index_l2x_Fall_swnet)  =  lnd2atm_vars%fsa_grc(g)
+       if (index_l2x_Fall_fco2_lnd /= 0) then
+          l2x_lm(i,index_l2x_Fall_fco2_lnd) = -lnd2atm_vars%nee_grc(g)  
+       end if
+
+       ! Additional fields for DUST, PROGSSLT, dry-deposition and VOC
+       ! These are now standard fields, but the check on the index makes sure the driver handles them
+       if (index_l2x_Sl_ram1      /= 0 )  l2x_lm(i,index_l2x_Sl_ram1)     =  lnd2atm_vars%ram1_grc(g)
+       if (index_l2x_Sl_fv        /= 0 )  l2x_lm(i,index_l2x_Sl_fv)       =  lnd2atm_vars%fv_grc(g)
+       if (index_l2x_Sl_soilw     /= 0 )  l2x_lm(i,index_l2x_Sl_soilw)    =  lnd2atm_vars%h2osoi_vol_grc(g,1)
+       if (index_l2x_Fall_flxdst1 /= 0 )  l2x_lm(i,index_l2x_Fall_flxdst1)= -lnd2atm_vars%flxdst_grc(g,1)
+       if (index_l2x_Fall_flxdst2 /= 0 )  l2x_lm(i,index_l2x_Fall_flxdst2)= -lnd2atm_vars%flxdst_grc(g,2)
+       if (index_l2x_Fall_flxdst3 /= 0 )  l2x_lm(i,index_l2x_Fall_flxdst3)= -lnd2atm_vars%flxdst_grc(g,3)
+       if (index_l2x_Fall_flxdst4 /= 0 )  l2x_lm(i,index_l2x_Fall_flxdst4)= -lnd2atm_vars%flxdst_grc(g,4)
+
+
+       ! for dry dep velocities
+       if (index_l2x_Sl_ddvel     /= 0 )  then
+          l2x_lm(i,index_l2x_Sl_ddvel:index_l2x_Sl_ddvel+n_drydep-1) = &
+               lnd2atm_vars%ddvel_grc(g,:n_drydep)
+       end if
+
+       ! for MEGAN VOC emis fluxes
+       if (index_l2x_Fall_flxvoc  /= 0 ) then
+          l2x_lm(i,index_l2x_Fall_flxvoc:index_l2x_Fall_flxvoc+shr_megan_mechcomps_n-1) = &
+               -lnd2atm_vars%flxvoc_grc(g,:shr_megan_mechcomps_n)
+       end if
+
+       if (index_l2x_Fall_methane /= 0) then
+          l2x_lm(i,index_l2x_Fall_methane) = -lnd2atm_vars%flux_ch4_grc(g) 
+       endif
+
+       ! sign convention is positive downward with 
+       ! hierarchy of atm/glc/lnd/rof/ice/ocn.  so water sent from land to rof is positive
+
+       l2x_lm(i,index_l2x_Flrl_rofi) = lnd2atm_vars%qflx_rofice_grc(g)
+       l2x_lm(i,index_l2x_Flrl_rofsur) = lnd2atm_vars%qflx_rofliq_qsur_grc(g) &
+                                    + lnd2atm_vars%qflx_rofliq_qsurp_grc(g)   !  surface ponding
+       l2x_lm(i,index_l2x_Flrl_rofsub) = lnd2atm_vars%qflx_rofliq_qsub_grc(g) &
+                                    + lnd2atm_vars%qflx_rofliq_qsubp_grc(g)   !  perched drainiage
+       l2x_lm(i,index_l2x_Flrl_rofgwl) = lnd2atm_vars%qflx_rofliq_qgwl_grc(g)
+  
+       l2x_lm(i,index_l2x_Flrl_demand) =  lnd2atm_vars%qflx_irr_demand_grc(g)   ! needs to be filled in
+       if (l2x_lm(i,index_l2x_Flrl_demand) > 0.0_r8) then
+           write(iulog,*)'lnd2atm_vars%qflx_irr_demand_grc is',lnd2atm_vars%qflx_irr_demand_grc(g)
+           write(iulog,*)'l2x_lm(i,index_l2x_Flrl_demand) is',l2x_lm(i,index_l2x_Flrl_demand)
+           call endrun( sub//' ERROR: demand must be <= 0.')
+       endif
+       l2x_lm(i,index_l2x_Flrl_Tqsur)  = lnd2atm_vars%Tqsur_grc(g)
+       l2x_lm(i,index_l2x_Flrl_Tqsub)  = lnd2atm_vars%Tqsub_grc(g)
+       l2x_lm(i,index_l2x_coszen_str) = lnd2atm_vars%coszen_str(g)
+       ! glc coupling
+
+       if (create_glacier_mec_landunit) then
+          do num = 0,glc_nec
+             l2x_lm(i,index_l2x_Sl_tsrf(num))   = lnd2glc_vars%tsrf_grc(g,num)
+             l2x_lm(i,index_l2x_Sl_topo(num))   = lnd2glc_vars%topo_grc(g,num)
+             l2x_lm(i,index_l2x_Flgl_qice(num)) = lnd2glc_vars%qice_grc(g,num)
+          end do
+       end if
+
+    end do
+    tagname=trim(seq_flds_l2x_fields)//C_NULL_CHAR
+    if (sameg_al) then
+      ent_type = 0 ! vertices, cells only if sameg_al false
+    else
+      ent_type = 1
+    endif
+    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, totalmbls , ent_type, l2x_lm(1,1) )
+    if (ierr > 0 )  &
+       call shr_sys_abort( sub//' Error: fail to set moab '// trim(seq_flds_l2x_fields) )
+ 
+#ifdef MOABDEBUG
+       num_mb_exports = num_mb_exports +1
+       write(lnum,"(I0.2)")num_mb_exports
+       outfile = 'lnd_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+       ierr = iMOAB_WriteMesh(mlnid, outfile, wopts)
+       if (ierr > 0 )  &
+         call shr_sys_abort( sub//' fail to write the land mesh file with data')
 #endif
+
+  end subroutine lnd_export_moab
+! endif for ifdef HAVE_MOAB
+#endif
+
 end module lnd_comp_mct
