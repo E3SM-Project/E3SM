@@ -200,12 +200,15 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
   // Sanity checks
   EKAT_REQUIRE_MSG (not m_io_grid, "Error! Grid pointer was already set.\n");
   EKAT_REQUIRE_MSG (grid, "Error! Input grid pointer is invalid.\n");
-  EKAT_REQUIRE_MSG (grid->is_unique(),
-      "Error! I/O only supports grids which are 'unique', meaning that the\n"
-      "       map dof_gid->proc_id is well defined.\n");
-  EKAT_REQUIRE_MSG (
-      (grid->get_global_max_dof_gid()-grid->get_global_min_dof_gid()+1)==grid->get_num_global_dofs(),
-      "Error! In order for IO to work, the grid must (globally) have dof gids in interval [gid_0,gid_0+num_global_dofs).\n");
+  const bool skip_grid_chk = m_params.get<bool>("Skip_Grid_Checks",false);
+  if (!skip_grid_chk) {
+    EKAT_REQUIRE_MSG (grid->is_unique(),
+        "Error! I/O only supports grids which are 'unique', meaning that the\n"
+        "       map dof_gid->proc_id is well defined.\n");
+    EKAT_REQUIRE_MSG (
+        (grid->get_global_max_dof_gid()-grid->get_global_min_dof_gid()+1)==grid->get_num_global_dofs(),
+        "Error! In order for IO to work, the grid must (globally) have dof gids in interval [gid_0,gid_0+num_global_dofs).\n");
+  }
 
   EKAT_REQUIRE_MSG(m_comm.size()<=grid->get_num_global_dofs(),
       "Error! PIO interface requires the size of the IO MPI group to be\n"

@@ -68,7 +68,7 @@ TEST_CASE("spa_one_to_one_remap","spa")
   REQUIRE(spa_horiz_interp.num_unique_cols==my_ncols);
   for (int ii=0;ii<spa_horiz_interp.num_unique_cols;ii++) {
     // Also check that each entry is uniquely placed in the vector
-    REQUIRE(std::count(spa_horiz_interp.source_grid_unique_cols.begin(),spa_horiz_interp.source_grid_unique_cols.end(),dofs_gids_h(ii))==1);
+    REQUIRE(spa_horiz_interp.source_local_col_map.count(dofs_gids_h(ii))==1);
   }
   // Recall, SPA data is padded, so we initialize with 2 more levels than the source data file.
   SPAFunc::SPAInput spa_data(dofs_gids.size(), nlevs+2, nswbands, nlwbands);

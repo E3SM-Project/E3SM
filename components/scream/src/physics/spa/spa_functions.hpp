@@ -169,14 +169,14 @@ struct SPAFunctions
     // 1D index of target grid column.
     view_1d<Int> target_grid_loc;
     // Organize unique source grid columns
-    Int              num_unique_cols;
-    std::vector<Int> source_grid_unique_cols; 
+    Int               num_unique_cols;
+    std::map<Int,Int> source_local_col_map;
 
     //  Helper function to organize the set of unique source data columns
     void set_unique_cols()
     {
       auto source_grid_loc_h = Kokkos::create_mirror_view(source_grid_loc);
-      Kokkos::deep_copy(source_grid_loc_h,source_grid_loc);
+      std::vector<Int>  source_grid_unique_cols; 
       for (int ii=0; ii<length; ii++) {
         Int src_col = source_grid_loc_h(ii);
         if (find(source_grid_unique_cols.begin(),source_grid_unique_cols.end(),src_col) == source_grid_unique_cols.end()) {
@@ -184,7 +184,9 @@ struct SPAFunctions
         } // if find
       } // for ii
       num_unique_cols = source_grid_unique_cols.size();
-      // TODO: Not sure if we should also sort the source_grid_unqiue_cols vector.
+      for (int ii=0; ii<num_unique_cols; ii++) {
+        source_local_col_map[source_grid_unique_cols[ii]] = ii;
+      } // for ii
     }
 
   }; // SPAHorizInterp

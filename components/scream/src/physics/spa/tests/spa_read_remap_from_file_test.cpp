@@ -58,7 +58,7 @@ TEST_CASE("spa_read_remap_data","spa")
   REQUIRE(spa_horiz_interp.num_unique_cols==src_grid_ncols);
   for (int ii=0;ii<src_grid_ncols;ii++) {
     // Also check that each entry is uniquely placed in the vector
-    REQUIRE(std::count(spa_horiz_interp.source_grid_unique_cols.begin(),spa_horiz_interp.source_grid_unique_cols.end(),ii)==1);
+    REQUIRE(spa_horiz_interp.source_local_col_map.count(ii)==1);
   }
 
   REQUIRE(spa_horiz_interp.length==tgt_grid_ncols*src_grid_ncols);
