@@ -161,9 +161,6 @@ tweaking their $case/namelist_scream.xml file.
           <w_int>0.0</w_int>
           <w_int_prev>0.0</w_int_prev>
         </Physics__GLL>
-        <Dynamics>
-          <tracers>tracers, Physics GLL</tracers>
-        </Dynamics>
       </Initial__Conditions>
       <Scorpio>
         <Output__YAML__Files>data/scream_output.yaml, </Output__YAML__Files>
@@ -179,7 +176,18 @@ tweaking their $case/namelist_scream.xml file.
     </Atmosphere__Driver>
     <SCREAM>
       <Start__Date>${RUN_STARTDATE}</Start__Date>
-      <Input__Files>${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-sw-g224-2018-12-04.nc, ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-lw-g256-2018-12-04.nc, ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc, ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc, ${DIN_LOC_ROOT}/atm/scream/tables/p3_lookup_table_1.dat-v4.1.1, ${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_scream.nc</Input__Files>
+      <Input__Files>
+        ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-sw-g224-2018-12-04.nc,
+        ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-lw-g256-2018-12-04.nc,
+        ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc,
+        ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc,
+        ${DIN_LOC_ROOT}/atm/scream/tables/p3_lookup_table_1.dat-v4.1.1,
+        ${DIN_LOC_ROOT}/atm/scream/tables/mu_r_table_vals.dat8,
+        ${DIN_LOC_ROOT}/atm/scream/tables/revap_table_vals.dat8,
+        ${DIN_LOC_ROOT}/atm/scream/tables/vn_table_vals.dat8,
+        ${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals.dat8,
+        ${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_scream.nc
+    </Input__Files>
     </SCREAM>
   </file>
 

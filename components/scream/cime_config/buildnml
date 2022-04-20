@@ -523,7 +523,7 @@ def refine_type(entry, force_type=None):
     Try to convert the text entry to the appropriate type based on its contents.
     """
     if "," in entry:
-        result = [refine_type(item, force_type=force_type) for item in entry.split(", ") if item.strip() != ""]
+        result = [refine_type(item.strip(), force_type=force_type) for item in entry.split(",") if item.strip() != ""]
         expected_type = type(result[0])
         for item in result[1:]:
             expect(isinstance(item, expected_type), "List '{}' has inconsistent types inside".format(entry))
@@ -859,11 +859,14 @@ def buildnml(case, caseroot, compname):
         os.remove(input_data_list_file)
 
     input_file = scream_input["Atmosphere Driver"]["Initial Conditions"]["Physics GLL"]["Filename"]
-    tables     = scream_input["SCREAM"]["Input Files"]
+
+    # Input files are provided one per line. Call 'strip' on each
+    # line, to remove leading/trailing spaces/newline.
+    tables = scream_input["SCREAM"]["Input Files"]
     with open(input_data_list_file, "w") as fd:
         fd.write("ic_file = {}\n".format(input_file))
         for idx, table in enumerate(tables):
-            fd.write("table_{} = {}\n".format(idx, table))
+            fd.write("table_{} = {}\n".format(idx, table.strip()))
 
     # SCREAM is currently hardcoded to expect tables to be in data
     for table in tables:

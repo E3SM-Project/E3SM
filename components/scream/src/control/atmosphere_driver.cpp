@@ -692,11 +692,11 @@ void AtmosphereDriver::set_initial_conditions ()
     std::string src_fname, src_gname;
 
     const auto& param_value = ic_pl.sublist(tgt_gname).get<std::string>(tgt_fname);
-    const auto tokens = ekat::split(param_value,',');
+    const auto tokens = ekat::split(param_value,'@');
     EKAT_REQUIRE_MSG (tokens.size()==1 || tokens.size()==2,
         "Error! To copy an initial condition for a field from another, use one of the following ways:\n"
         "    - field_1: field_2\n"
-        "    - field_1: field_2, grid_2\n"
+        "    - field_1: field_2 @ grid_2\n"
         "The first assumes field_2 is on the same grid as field_1, while the second allows\n"
         "cross-grid imports.\n\n"
         "Parameter list entry:\n"
