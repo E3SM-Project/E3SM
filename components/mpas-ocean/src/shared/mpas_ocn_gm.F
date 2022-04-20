@@ -52,6 +52,8 @@ module ocn_gm
    logical :: local_config_GM_lat_variable_c2
    logical :: local_config_GM_kappa_lat_depth_variable
    logical :: local_config_GM_compute_EdenGreatbatch
+   logical :: local_config_GM_compute_Griffies
+
    real(kind=RKIND) :: slopeTaperFactor, sfcTaperFactor, rediGMinitValue
    real(kind=RKIND) :: local_config_GM_constant_bclModeSpeed
    real(kind=RKIND) :: gm_minBclModeSpeed_constant, gm_minBclModeSpeed_compute_on
@@ -130,7 +132,8 @@ contains
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOnCell
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iCellSelf, maxLocation
       real(kind=RKIND)                 :: h1, h2, areaEdge, BruntVaisalaFreqTopEdge, rtmp
-      real(kind=RKIND)                 :: sum_hN, countN2, maxN, ltSum
+      real(kind=RKIND)                 :: sum_hN, countN2, maxN, ltSum,
+      sum_gradDensityH
       real(kind=RKIND)                 :: sumRi, RiTopOfEdge, zEdge, zMLD, sfcTaper
       real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, invAreaCell
@@ -647,6 +650,56 @@ contains
            !$omp end parallel
          end if
 
+         ! When config_GM_closure = 'Griffies' actually modify the value of gmBolusKappa based on
+         ! Griffies et al (2005)
+         if (local_config_GM_compute_Griffies) then
+            !$omp parallel
+            !$omp do schedule(runtime) private(k, cell1, cell2, sum_gradDensityH, ltSum, sumRi, countN2, &
+            !$omp             zEdge, RiTopOfEdge, BruntVaisalaFreqTopEdge, lt1, lt2, c_Visbeck)
+            do iEdge = 1, nEdges
+               k=minLevelEdgeBot(iEdge)
+               sum_gradDensityH = 0.0_RKIND
+               ltSum = 0.0_RKIND
+               sumRi = 0.0_RKIND
+               countN2 = 0
+               cell1 = cellsOnEdge(1, iEdge)
+               cell2 = cellsOnEdge(2, iEdge)
+
+               k = minLevelEdgeBot(iEdge)+1
+               zEdge = -layerThickEdge(k-1,iEdge)
+               do while(zEdge > -config_GM_Griffies_min_depth .and. k < maxLevelEdgeTop(iEdge))
+                  k = k+1
+                  zEdge = zEdge - layerThickEdge(k-1,iEdge)
+               end do
+
+               do while(zEdge > -config_GM_Griffies_max_depth .and. k < maxLevelEdgeTop(iEdge))
+                  lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
+                  lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
+                  sum_gradDensityH = sum_gradDensityH + abs(gradDensityConstZTopOfEdge(k,iEdge))*0.5_RKIND*(lt1+lt2)
+                  ltsum = ltsum + 0.5_RKIND*(lt1+lt2)
+                  countN2 = countN2 + 1
+
+                  k = k + 1
+                  zEdge = zEdge - layerThickEdge(k-1,iEdge)
+               end do
+
+               if (countN2 > 0) then
+                  sum_gradDensityH = sum_gradDensityH / ltsum
+
+                  ! This is Griffies et al. (2005) eqn 15:
+                  ! A_{gm} = alpha |grad_z rho|^2 L^2 g / ( rho_o N_o)
+                  gmBolusKappa(iEdge) = config_GM_Griffies_alpha abs(sum_gradDensityH) * config_gm_griffies_length**2.0_RKIND &
+                                        * gravity *  / (1.0E-15 + config_GM_Griffies_No)
+                  gmBolusKappa(iEdge) = max(config_GM_spatially_variable_min_kappa, min(gmBolusKappa(iEdge),  &
+                                            config_GM_spatially_variable_max_kappa))
+              else !for really shallow columns use min bolus kappa
+                  gmBolusKappa(iEdge) = config_GM_spatially_variable_min_kappa
+              end if
+            end do
+            !$omp end do
+            !$omp end parallel
+          end if
+
          ! When config_GM_closure = 'EdenGreatbatch' actually modify the value of gmBolusKappa based on
          ! Eden and Greatbach (2008), Ocean Model., but assuming quasi-geostrophy to simplify the EKE budget
          if (local_config_GM_compute_EdenGreatbatch) then
@@ -1026,6 +1079,7 @@ contains
             local_config_GM_kappa_lat_depth_variable = .false.
             local_config_GM_compute_Visbeck = .false.
             local_config_GM_compute_EdenGreatbatch = .false.
+            local_config_GM_compute_Griffies = .false.
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
@@ -1039,7 +1093,7 @@ contains
             local_config_GM_kappa_lat_depth_variable = .true.
             local_config_GM_compute_Visbeck = .false.
             local_config_GM_compute_EdenGreatbatch = .false.
-
+            local_config_GM_compute_Griffies = .false.
             RediGMinitValue = 0.0_RKIND
             ! for N2 dependence, we still assign Kappa as a constant to be multiplied by N2 scaling.
             !$omp parallel
@@ -1054,6 +1108,21 @@ contains
             local_config_GM_lat_variable_c2 = .true.
             local_config_GM_kappa_lat_depth_variable = .false.
             local_config_GM_compute_Visbeck = .true.
+            local_config_GM_compute_EdenGreatbatch = .false.
+            local_config_GM_compute_Griffies = .false.
+            !$omp parallel
+            !$omp do schedule(runtime)
+            do iEdge=1,nEdges
+              gmBolusKappa(iEdge) = config_GM_spatially_variable_max_kappa
+            end do
+            !$omp end do
+            !$omp end parallel
+         else if (config_GM_closure == 'Griffies'.or. &
+                  config_GM_closure == 'griffies') then
+            local_config_GM_lat_variable_c2 = .true.
+            local_config_GM_kappa_lat_depth_variable = .false.
+            local_config_GM_compute_Griffies = .true.
+            local_config_GM_compute_Visbeck = .false.
             local_config_GM_compute_EdenGreatbatch = .false.
 
             call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
@@ -1071,9 +1140,7 @@ contains
             local_config_GM_kappa_lat_depth_variable = .false.
             local_config_GM_compute_Visbeck = .false.
             local_config_GM_compute_EdenGreatbatch = .true.
-
-            call mpas_pool_get_array(meshPool, 'latEdge', latEdge)
-            call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
+            local_config_GM_compute_Griffies = .false.
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge=1,nEdges

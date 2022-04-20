@@ -349,8 +349,8 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_GM_closure" type="character" default_value="EdenGreatbatch" units="unitless"
-					description="Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'Visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997. EdenGreatbatch implements a simplified form of the EKE scheme in Eden and Greatbatch (2008) Ocean modeling"
-					possible_values="'constant', 'N2_dependent', 'Visbeck', 'EdenGreatbatch'"
+					description="Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006). 'Visbeck' implements a horizontally varying diffusivity of Visbeck et al 1997. If 'Griffies' then the closure is Griffies et al (2005) eqn 15 (https://www.ocean-sci.net/1/45/2005). EdenGreatbatch implements a simplified form of the EKE scheme in Eden and Greatbatch (2008) Ocean modeling."
+					possible_values="'constant', 'N2_dependent', 'Visbeck', 'Griffies', 'EdenGreatbatch'"
 		/>
 		<nml_option name="config_GM_constant_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Only used when config_GM_closure is set to constant."
@@ -382,6 +382,26 @@
 		<nml_option name="config_GM_Visbeck_max_depth" type="real" default_value="1000.0" units="m"
 					description="minimum depth for calculation of vertical average"
 					possible_values="values between zero and bottom depth"
+		/>
+		<nml_option name="config_GM_Griffies_min_depth" type="real" default_value="100" units="m"
+					description="minimum depth to start integral for the Griffies parameter"
+					possible_values="positive reals"
+		/>
+		<nml_option name="config_GM_Griffies_max_depth" type="real" default_value="2000.0" units="m"
+					description="maximum depth for the integral of the Griffies parameter"
+					possible_values="positive reals greater than min_depth"
+		/>
+		<nml_option name="config_GM_Griffies_alpha" type="real" default_value="0.15" units="NA"
+					description="scaling parameter for the Griffies et al (2005) parameterization"
+					possible_values="small positive reals"
+		/>
+		<nml_option name="config_GM_Griffies_length" type="real" default_value="50000" units="m"
+					description="mixing length for the Griffies et al (2005) parameterization"
+					possible_values="roughly 50000-80000"
+		/>
+		<nml_option name="config_GM_Griffies_No" type="real" default_value="0.004" units="s^{-1}"
+					description="reference Brunt Vaisala Frequency for the Griffies et al (2005) parameterization"
+					possible_values="small positive reals"
 		/>
 		<nml_option name="config_GM_EG_riMin" type="real" default_value="200.0" units="NA"
 					description="minimum Richardson number to prevent overly large bolus Kappa values"
@@ -725,7 +745,7 @@
 		/>
 	</nml_record>
 	<nml_record name="shortwaveRadiation" mode="init;forward">
-		<nml_option name="config_sw_absorption_type" type="character" default_value="none" units="unitless"
+		<nml_option name="config_sw_kbsorption_type" type="character" default_value="none" units="unitless"
 					description="Name of shortwave absorption type used in simulation. "
 					possible_values="'jerlov' or 'ohlmann00' or 'none'"
 		/>
