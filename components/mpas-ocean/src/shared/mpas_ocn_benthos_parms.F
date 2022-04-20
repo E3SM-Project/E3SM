@@ -92,7 +92,7 @@ module ocn_benthos_parms
 
   integer (KIND=benthos_i4), parameter, public :: &
        nPrimaryReactions   = 6,  & ! number of primary reactions
-       nSecondaryReactions = 16, & ! number of secondary reactions
+       nSecondaryReactions = 19, & ! number of secondary reactions
        nCarbonateReactions = 3     ! number of carbonate dissolution reactions
 
   integer (KIND=benthos_i4), dimension(:), allocatable, public :: &
