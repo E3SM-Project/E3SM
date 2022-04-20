@@ -132,8 +132,7 @@ contains
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOnCell
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iCellSelf, maxLocation
       real(kind=RKIND)                 :: h1, h2, areaEdge, BruntVaisalaFreqTopEdge, rtmp
-      real(kind=RKIND)                 :: sum_hN, countN2, maxN, ltSum,
-      sum_gradDensityH
+      real(kind=RKIND)                 :: sum_hN, countN2, maxN, ltSum, sum_gradDensityH
       real(kind=RKIND)                 :: sumRi, RiTopOfEdge, zEdge, zMLD, sfcTaper
       real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, invAreaCell
@@ -666,10 +665,10 @@ contains
                cell2 = cellsOnEdge(2, iEdge)
 
                k = minLevelEdgeBot(iEdge)+1
-               zEdge = -layerThickEdge(k-1,iEdge)
+               zEdge = -layerThickEdgeMean(k-1,iEdge)
                do while(zEdge > -config_GM_Griffies_min_depth .and. k < maxLevelEdgeTop(iEdge))
                   k = k+1
-                  zEdge = zEdge - layerThickEdge(k-1,iEdge)
+                  zEdge = zEdge - layerThickEdgeMean(k-1,iEdge)
                end do
 
                do while(zEdge > -config_GM_Griffies_max_depth .and. k < maxLevelEdgeTop(iEdge))
@@ -680,16 +679,21 @@ contains
                   countN2 = countN2 + 1
 
                   k = k + 1
-                  zEdge = zEdge - layerThickEdge(k-1,iEdge)
+                  zEdge = zEdge - layerThickEdgeMean(k-1,iEdge)
                end do
 
                if (countN2 > 0) then
                   sum_gradDensityH = sum_gradDensityH / ltsum
 
                   ! This is Griffies et al. (2005) eqn 15:
-                  ! A_{gm} = alpha |grad_z rho|^2 L^2 g / ( rho_o N_o)
-                  gmBolusKappa(iEdge) = config_GM_Griffies_alpha abs(sum_gradDensityH) * config_gm_griffies_length**2.0_RKIND &
-                                        * gravity *  / (1.0E-15 + config_GM_Griffies_No)
+                  ! A_{gm} = alpha |grad_z rho|^2 L^2 g / ( rho_0 N_0)
+                  gmBolusKappa(iEdge) = config_GM_Griffies_alpha * abs(sum_gradDensityH) &
+                                        * config_gm_griffies_length**2.0_RKIND * gravity &
+                                        / (config_GM_Griffies_No + 1.0E-15)
+                  ! These were the original lines from Lukes cryo branch:
+                  ! gmBolusKappa(iEdge) = config_GM_Griffies_alpha * config_gm_griffies_length**2.0_RKIND * &
+                  !                      gravity * abs(sumN2) / (1.0E-15 + config_GM_Griffies_No)
+                  ! note that rho_0 is missing frmo the denominator.
                   gmBolusKappa(iEdge) = max(config_GM_spatially_variable_min_kappa, min(gmBolusKappa(iEdge),  &
                                             config_GM_spatially_variable_max_kappa))
               else !for really shallow columns use min bolus kappa
