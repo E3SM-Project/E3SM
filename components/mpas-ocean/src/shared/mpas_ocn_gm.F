@@ -132,11 +132,11 @@ contains
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOnCell
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iCellSelf, maxLocation
       real(kind=RKIND)                 :: h1, h2, areaEdge, BruntVaisalaFreqTopEdge, rtmp
-      real(kind=RKIND)                 :: sum_hN, countN2, maxN, ltSum, sum_gradDensityH, coef
+      real(kind=RKIND)                 :: sum_hN, countN2, maxN, ltSum, sum_gradDensity, coef
       real(kind=RKIND)                 :: sumRi, RiTopOfEdge, zEdge, zMLD, sfcTaper
       real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, invAreaCell
-      real(kind=RKIND) :: lt1, lt2, c_min
+      real(kind=RKIND) :: lt1, lt2, c_min, ltAvg
       real(kind=RKIND) :: sigma, Lr, Length, L_rhines, shearEdgeInv
       real (kind=RKIND) :: eddyLength, eddyTime
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
@@ -654,19 +654,19 @@ contains
          if (local_config_GM_compute_Griffies) then
 
             ! This is Griffies et al. (2005) eqn 15:
-            ! A_{gm} = alpha |grad_z rho|^2 L^2 g / ( rho_0 N_0)
+            ! A_{gm} = alpha |grad_z rho| L^2 g / ( rho_0 N_0 )
             ! here
-            ! coef = alpha L^2 g / ( rho_0 N_0)
-            ! A_{gm} = coef * |grad_z rho|^2
-            coef = config_GM_Griffies_alpha * config_gm_Griffies_length**2.0_RKIND * gravity &
+            ! coef = alpha L^2 g / ( rho_0 N_0 )
+            ! A_{gm} = coef * |grad_z rho|
+            coef = config_GM_Griffies_alpha * config_gm_Griffies_length**2 * gravity &
                    / (config_GM_Griffies_ref_density*config_GM_Griffies_No + 1.0E-15)
 
             !$omp parallel
-            !$omp do schedule(runtime) private(k, cell1, cell2, sum_gradDensityH, ltSum, countN2, &
-            !$omp             zEdge, lt1, lt2)
+            !$omp do schedule(runtime) private(k, cell1, cell2, sum_gradDensity, ltSum, countN2, &
+            !$omp             zEdge, ltAvg)
             do iEdge = 1, nEdges
                k=minLevelEdgeBot(iEdge)
-               sum_gradDensityH = 0.0_RKIND
+               sum_gradDensity = 0.0_RKIND
                ltSum = 0.0_RKIND
                countN2 = 0
                cell1 = cellsOnEdge(1, iEdge)
@@ -680,10 +680,10 @@ contains
                end do
 
                do while(zEdge > -config_GM_Griffies_max_depth .and. k < maxLevelEdgeTop(iEdge))
-                  lt1 = 0.5_RKIND*(layerThickness(k,cell1) + layerThickness(k-1,cell1))
-                  lt2 = 0.5_RKIND*(layerThickness(k,cell2) + layerThickness(k-1,cell2))
-                  sum_gradDensityH = sum_gradDensityH + abs(gradDensityConstZTopOfEdge(k,iEdge))*0.5_RKIND*(lt1+lt2)
-                  ltsum = ltsum + 0.5_RKIND*(lt1+lt2)
+                  ltAvg = 0.25_RKIND*(   layerThickness(k,cell1) + layerThickness(k-1,cell1) &
+                                       + layerThickness(k,cell2) + layerThickness(k-1,cell2))
+                  sum_gradDensity = sum_gradDensity + abs(gradDensityConstZTopOfEdge(k,iEdge))*ltAvg
+                  ltsum = ltsum + ltAvg
                   countN2 = countN2 + 1
 
                   k = k + 1
@@ -691,11 +691,11 @@ contains
                end do
 
                if (countN2 > 0) then
-                  sum_gradDensityH = sum_gradDensityH / ltsum
+                  sum_gradDensity = sum_gradDensity / ltsum
 
                   ! This is Griffies et al. (2005) eqn 15:
-                  ! A_{gm} = alpha |grad_z rho|^2 L^2 g / ( rho_0 N_0)
-                  gmBolusKappa(iEdge) = coef * sum_gradDensityH
+                  ! A_{gm} = alpha |grad_z rho| L^2 g / ( rho_0 N_0)
+                  gmBolusKappa(iEdge) = coef * sum_gradDensity
 
                   ! These were the original lines from Lukes cryo branch:
                   ! gmBolusKappa(iEdge) = config_GM_Griffies_alpha * config_gm_Griffies_length**2.0_RKIND * &
