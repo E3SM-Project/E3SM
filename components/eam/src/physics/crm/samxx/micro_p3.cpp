@@ -8,24 +8,87 @@ using namespace scream;
 using namespace scream::p3;
 using P3F = Functions<Real, DefaultDevice>;
 
-P3F::P3LookupTables lookup_tables_save;
+real4d ice_table_save;      // ice lookup table values
+real5d collect_table_save;  // ice lookup table values for ice-rain collision/collection
+real2d vn_table_save;       // lookup table values for rain number
+real2d vm_table_save;       // lookup table values for mass-weighted fallspeeds
+real2d revap_table_save;    // lookup table values for ventilation parameters
+real1d mu_r_table_save;     // lookup table values for rain shape parameter
+real1d dnu_table_save;      // droplet spectral shape parameter for mass spectra
 
+//--------------------------------------------------------------------------------------------------
 // Load lookup tables
-extern "C" void initialize_p3_lookup() {
-  P3F::init_kokkos_ice_lookup_tables(lookup_tables_save.ice_table_vals,
-                                     lookup_tables_save.collect_table_vals);
-  P3F::init_kokkos_tables(lookup_tables_save.vn_table_vals,
-                          lookup_tables_save.vm_table_vals,
-                          lookup_tables_save.revap_table_vals,
-                          lookup_tables_save.mu_r_table_vals,
-                          lookup_tables_save.dnu_table_vals);
+//--------------------------------------------------------------------------------------------------
+void initialize_p3_lookup() {
+  YAKL_SCOPE( ice_table_save      , :: ice_table_save );
+  YAKL_SCOPE( collect_table_save  , :: collect_table_save );
+  YAKL_SCOPE( vn_table_save       , :: vn_table_save );
+  YAKL_SCOPE( vm_table_save       , :: vm_table_save );
+  YAKL_SCOPE( revap_table_save    , :: revap_table_save );
+  YAKL_SCOPE( mu_r_table_save     , :: mu_r_table_save );
+  YAKL_SCOPE( dnu_table_save      , :: dnu_table_save );
+
+  ice_table_save     = real4d("ice_table_save",     densize,rimsize,isize,ice_table_size);
+  collect_table_save = real5d("collect_table_save", densize,rimsize,isize,rcollsize,collect_table_size);
+  vn_table_save      = real2d("vn_table_save",      VTABLE_DIM0,VTABLE_DIM1);
+  vm_table_save      = real2d("vm_table_save",      VTABLE_DIM0,VTABLE_DIM1);
+  revap_table_save   = real2d("revap_table_save",   VTABLE_DIM0,VTABLE_DIM1);
+  mu_r_table_save    = real1d("mu_r_table_save",    MU_R_TABLE_DIM);
+  dnu_table_save     = real1d("dnu_table_save",     dnusize);
+
+  // initialize table data
+  P3F::P3LookupTables lookup_tables_tmp;
+  P3F::init_kokkos_ice_lookup_tables(lookup_tables_tmp.ice_table_vals,
+                                     lookup_tables_tmp.collect_table_vals);
+  P3F::init_kokkos_tables(           lookup_tables_tmp.vn_table_vals,
+                                     lookup_tables_tmp.vm_table_vals,
+                                     lookup_tables_tmp.revap_table_vals,
+                                     lookup_tables_tmp.mu_r_table_vals,
+                                     lookup_tables_tmp.dnu_table_vals);
+
+  // copy to variables that will persist in memory
+  parallel_for( SimpleBounds<4>(densize,rimsize,isize,ice_table_size) , YAKL_LAMBDA (int i, int j, int k, int l) {
+    ice_table_save(i,j,k,l)       = lookup_tables_tmp.ice_table_vals(i,j,k,l);
+  });
+  parallel_for( SimpleBounds<5>(densize,rimsize,isize,rcollsize,collect_table_size) , YAKL_LAMBDA (int i, int j, int k, int l, int m) {
+    collect_table_save(i,j,k,l,m) = lookup_tables_tmp.collect_table_vals(i,j,k,l,m);
+  });
+  parallel_for( SimpleBounds<2>(VTABLE_DIM0,VTABLE_DIM1) , YAKL_LAMBDA (int i, int j) {
+    vn_table_save(i,j)            = lookup_tables_tmp.vn_table_vals(i,j);
+    vm_table_save(i,j)            = lookup_tables_tmp.vm_table_vals(i,j);
+    revap_table_save(i,j)         = lookup_tables_tmp.revap_table_vals(i,j);
+  });
+  parallel_for( SimpleBounds<1>(MU_R_TABLE_DIM) , YAKL_LAMBDA (int i) {
+    mu_r_table_save(i)            = lookup_tables_tmp.mu_r_table_vals(i);
+  });
+  parallel_for( SimpleBounds<1>(dnusize) , YAKL_LAMBDA (int i) {
+    dnu_table_save(i)             = lookup_tables_tmp.dnu_table_vals(i);
+  });
 }
 
-// can we directly destroy lookup_tables_save here?
-extern "C" void finalize_p3_lookup() {
-  // lookup_tables_save = nullptr;
+//--------------------------------------------------------------------------------------------------
+// ???
+//--------------------------------------------------------------------------------------------------
+void finalize_p3_lookup() {
+  YAKL_SCOPE( ice_table_save      , :: ice_table_save );
+  YAKL_SCOPE( collect_table_save  , :: collect_table_save );
+  YAKL_SCOPE( vn_table_save       , :: vn_table_save );
+  YAKL_SCOPE( vm_table_save       , :: vm_table_save );
+  YAKL_SCOPE( revap_table_save    , :: revap_table_save );
+  YAKL_SCOPE( mu_r_table_save     , :: mu_r_table_save );
+  YAKL_SCOPE( dnu_table_save      , :: dnu_table_save );
+  ice_table_save     = real4d();
+  collect_table_save = real5d();
+  vn_table_save      = real2d();
+  vm_table_save      = real2d();
+  revap_table_save   = real2d();
+  mu_r_table_save    = real1d();
+  dnu_table_save     = real1d();
 }
 
+//--------------------------------------------------------------------------------------------------
+// diagnose microphysics quantities
+//--------------------------------------------------------------------------------------------------
 void micro_p3_diagnose() {
   YAKL_SCOPE( qv          , :: qv);
   YAKL_SCOPE( qcl         , :: qcl);
@@ -85,14 +148,15 @@ void micro_p3_init() {
 
 }
 
-
+//--------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
 void get_cloud_fraction(int its, int ite, int kts, int kte, real2d& cloud_frac,
                        real2d& qc, real2d& qr, real2d& qi, std::string& method,
                        real2d& cld_frac_i, real2d& cld_frac_l, real2d& cld_frac_r)
 {
-  YAKL_SCOPE( dz                 , :: dz);
-  YAKL_SCOPE( adz                , :: adz);
-  YAKL_SCOPE( rho                , :: rho);
+  // YAKL_SCOPE( dz                 , :: dz);
+  // YAKL_SCOPE( adz                , :: adz);
+  // YAKL_SCOPE( rho                , :: rho);
   // Temporary method for initial P3 implementation
 
   // old comment for "cldm" from EAM = "mean cloud fraction over the time step"
@@ -105,7 +169,8 @@ void get_cloud_fraction(int its, int ite, int kts, int kte, real2d& cloud_frac,
   //   cld_frac_r(i,k) = 1.0; //cldm(i,k);
   // });
 
-  real cld_water_threshold = 0.001;
+  // real cld_water_threshold = 0.001;
+
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+icrm*ny);
     cld_frac_l(icol,k) = 1.0;
@@ -161,6 +226,8 @@ void get_cloud_fraction(int its, int ite, int kts, int kte, real2d& cloud_frac,
 
 }
 
+//--------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
 // August-Roche-Magnus formula for saturation vapor pressure 
 // https://en.wikipedia.org/wiki/Clausius%E2%80%93Clapeyron_relation#August%E2%80%93Roche%E2%80%93Magnus_formula
 YAKL_INLINE real saturation_vapor_pressure(real tabs) {
@@ -173,8 +240,9 @@ YAKL_INLINE real saturation_specific_humidity(real tabs, real pressure) {
   real qsat = wsat/(1+wsat);                     // convert sat mixing ratio to sat specific humidity
   return qsat;
 }
-
+//--------------------------------------------------------------------------------------------------
 // Compute an instantaneous adjustment of sub or super saturation
+//--------------------------------------------------------------------------------------------------
 YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qc_in, real &qv_in, real &tabs_in, real &pres_in ) {
   // Define a tolerance and max iterations for convergence
   real tol = 1.e-6;
@@ -262,9 +330,9 @@ YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qc_in, real &qv_in, 
 }
 
 
-//
-// main micro_p3 microproc
-//
+//--------------------------------------------------------------------------------------------------
+// main P3 interface
+//--------------------------------------------------------------------------------------------------
 void micro_p3_proc() {
   using P3F        = Functions<Real, DefaultDevice>;
   using KT         = typename P3F::KT;
@@ -317,6 +385,15 @@ void micro_p3_proc() {
   YAKL_SCOPE( precsfc           , :: precsfc);
   YAKL_SCOPE( precssfc          , :: precssfc);
   YAKL_SCOPE( CF3D              , :: CF3D);
+
+  // P3 lookup table data
+  YAKL_SCOPE( ice_table_save     , :: ice_table_save );
+  YAKL_SCOPE( collect_table_save , :: collect_table_save );
+  YAKL_SCOPE( vn_table_save      , :: vn_table_save );
+  YAKL_SCOPE( vm_table_save      , :: vm_table_save );
+  YAKL_SCOPE( revap_table_save   , :: revap_table_save );
+  YAKL_SCOPE( mu_r_table_save    , :: mu_r_table_save );
+  YAKL_SCOPE( dnu_table_save     , :: dnu_table_save );
 
   const int nlev  = nzm;
   const int ncol  = ncrms*nx*ny;
@@ -566,9 +643,9 @@ void micro_p3_proc() {
   //----------------------------------------------------------------------------
   // Populate P3 history output
   //----------------------------------------------------------------------------
-  view_2d liq_ice_exchange_d("liq_ice_exchange_d", ncol, npack),
-          vap_liq_exchange_d("vap_liq_exchange_d", ncol, npack),
-          vap_ice_exchange_d("vap_ice_exchange_d", ncol, npack);
+  view_2d liq_ice_exchange_d("liq_ice_exchange_d", ncol, npack);
+  view_2d vap_liq_exchange_d("vap_liq_exchange_d", ncol, npack);
+  view_2d vap_ice_exchange_d("vap_ice_exchange_d", ncol, npack);
 
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>>({0, 0}, {ncol, npack}), KOKKOS_LAMBDA(int icol, int ilev) {
      liq_ice_exchange_d(icol,ilev) = 0.;
@@ -582,9 +659,41 @@ void micro_p3_proc() {
   //----------------------------------------------------------------------------
   // Retreive lookup table data
   //----------------------------------------------------------------------------
-  // using P3F = scream::p3::Functions<Real, DefaultDevice>;
-  // P3F::P3LookupTables lookup_tables_tmp = p3_lookup::get_p3_lookup();
-  // auto lookup_tables_tmp = p3_lookup::get_p3_lookup();
+  using DeviceIcetable = typename P3F::view_ice_table::non_const_type;
+  using DeviceColtable = typename P3F::view_collect_table::non_const_type;
+  using DeviceTable1   = typename P3F::view_1d_table::non_const_type;
+  using DeviceTable2   = typename P3F::view_2d_table::non_const_type;
+  using DeviceDnuTable = typename P3F::view_dnu_table::non_const_type;
+
+  auto ice_table_tmp     = DeviceIcetable("ice_table_tmp");
+  auto collect_table_tmp = DeviceColtable("collect_table_tmp");
+  auto vn_table_tmp      = DeviceTable2("vn_table_tmp");
+  auto vm_table_tmp      = DeviceTable2("vm_table_tmp");
+  auto revap_table_tmp   = DeviceTable2("revap_table_tmp");
+  auto mu_r_table_tmp    = DeviceTable1("mu_r_table_tmp");
+  auto dnu_table_tmp     = DeviceDnuTable("dnu_table_tmp");
+
+  parallel_for( SimpleBounds<4>(densize,rimsize,isize,ice_table_size) , YAKL_LAMBDA (int i, int j, int k, int l) {
+    ice_table_tmp(i,j,k,l)       = ice_table_save(i,j,k,l);
+  });
+  parallel_for( SimpleBounds<5>(densize,rimsize,isize,rcollsize,collect_table_size) , YAKL_LAMBDA (int i, int j, int k, int l, int m) {
+    collect_table_tmp(i,j,k,l,m) = collect_table_save(i,j,k,l,m);
+  });
+  parallel_for( SimpleBounds<2>(VTABLE_DIM0,VTABLE_DIM1) , YAKL_LAMBDA (int i, int j) {
+    vn_table_tmp(i,j)            = vn_table_save(i,j);
+    vm_table_tmp(i,j)            = vm_table_save(i,j);
+    revap_table_tmp(i,j)         = revap_table_save(i,j);
+  });
+  parallel_for( SimpleBounds<1>(MU_R_TABLE_DIM) , YAKL_LAMBDA (int i) {
+    mu_r_table_tmp(i)            = mu_r_table_save(i);
+  });
+  parallel_for( SimpleBounds<1>(dnusize) , YAKL_LAMBDA (int i) {
+    dnu_table_tmp(i)             = dnu_table_save(i);
+  });
+
+  P3F::P3LookupTables lookup_tables_tmp{mu_r_table_tmp, vn_table_tmp, vm_table_tmp, revap_table_tmp,
+                                        ice_table_tmp, collect_table_tmp, dnu_table_tmp};
+
   //----------------------------------------------------------------------------
   // Call p3_main
   //----------------------------------------------------------------------------
@@ -593,8 +702,10 @@ void micro_p3_proc() {
   ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr(nlev_pack, 52, policy);
 
   auto elapsed_time = P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
-                                   history_only, lookup_tables_save, workspace_mgr, ncol, nlev);
+                                   history_only, lookup_tables_tmp, workspace_mgr, ncol, nlev);
 
+  //----------------------------------------------------------------------------
+  // update surface precipitation
   //----------------------------------------------------------------------------
   Kokkos::parallel_for("precip", ncol, KOKKOS_LAMBDA (const int& icol) {
     int i    = icol%nx;
@@ -607,7 +718,9 @@ void micro_p3_proc() {
     precssfc(j,i,icrm)= precssfc_tmp+(diag_outputs.precip_ice_surf(icol)) * 1000.0 * dt / dz(icrm);
   });
 
+  //----------------------------------------------------------------------------
   // update microfield
+  //----------------------------------------------------------------------------
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, {ncol, npack, Spack::n}), KOKKOS_LAMBDA(int icol, int ilev, int s) {
     int i    = icol%nx;
     int j    = (icol/nx)%ny;
@@ -628,7 +741,9 @@ void micro_p3_proc() {
 
   micro_p3_diagnose();
 
+  //----------------------------------------------------------------------------
   // update LSE, temperature, and previous t/q
+  //----------------------------------------------------------------------------
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, {ncol, npack, Spack::n}), KOKKOS_LAMBDA(int icol, int ilev, int s) {
     int i    = icol%nx;
     int j    = (icol/nx)%ny;
@@ -658,8 +773,8 @@ void micro_p3_proc() {
   });
 
   Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<3>>({0, 0, 0}, {ncol, npack, Spack::n}), KOKKOS_LAMBDA(int icol, int ilev, int s) {
-    int i    = icol%nx;
-    int j    = (icol/nx)%ny;
+    // int i    = icol%nx;
+    // int j    = (icol/nx)%ny;
     int icrm = (icol/nx)/ny;
     int k    = ilev*Spack::n + s;
     if (k < nlev) {
@@ -670,5 +785,6 @@ void micro_p3_proc() {
   });
 
 }
-
+//--------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
 // #endif

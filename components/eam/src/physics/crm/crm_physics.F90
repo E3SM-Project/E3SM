@@ -411,8 +411,7 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
 
 #if defined(MMF_SAMXX)
    call scream_session_init()
-   ! if ( MMF_microphysics_scheme .eq. 'p3' ) call initialize_p3_lookup()
-   call initialize_p3_lookup()
+   if ( MMF_microphysics_scheme .eq. 'p3' ) call initialize_p3_lookup()
 #endif
 
    ! Register contituent history variables (previously added by micro_mg_cam.F90)
@@ -563,9 +562,7 @@ subroutine crm_physics_final()
 #if defined(MMF_SAMXX)
    use gator_mod,         only: gator_finalize
    use cpp_interface_mod, only: scream_session_finalize
-   use p3_lookup_interface_mod,only: finalize_p3_lookup
    call gator_finalize()
-   call finalize_p3_lookup()
    call scream_session_finalize()
 #endif
 end subroutine crm_physics_final
