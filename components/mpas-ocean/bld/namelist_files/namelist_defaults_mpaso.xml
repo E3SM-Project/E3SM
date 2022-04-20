@@ -184,6 +184,7 @@
 <config_GM_Griffies_alpha>0.15</config_GM_Griffies_alpha>
 <config_GM_Griffies_length>50000</config_GM_Griffies_length>
 <config_GM_Griffies_No>0.004</config_GM_Griffies_No>
+<config_GM_Griffies_ref_density>1035.0</config_GM_Griffies_ref_density>
 <config_GM_EG_riMin>200.0</config_GM_EG_riMin>
 <config_GM_EG_kappa_factor>3.0</config_GM_EG_kappa_factor>
 <config_GM_EG_Rossby_factor>2.0</config_GM_EG_Rossby_factor>

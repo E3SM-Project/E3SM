@@ -403,6 +403,10 @@
 					description="reference Brunt Vaisala Frequency for the Griffies et al (2005) parameterization"
 					possible_values="small positive reals"
 		/>
+		<nml_option name="config_GM_Griffies_ref_density" type="real" default_value="1035" units="kg m^{-3}"
+					description="reference Boussinesq density for the Griffies et al (2005) parameterization"
+					possible_values="1020-1040"
+		/>
 		<nml_option name="config_GM_EG_riMin" type="real" default_value="200.0" units="NA"
 					description="minimum Richardson number to prevent overly large bolus Kappa values"
 					possible_values="numbers greater than zero"
@@ -745,7 +749,7 @@
 		/>
 	</nml_record>
 	<nml_record name="shortwaveRadiation" mode="init;forward">
-		<nml_option name="config_sw_kbsorption_type" type="character" default_value="none" units="unitless"
+		<nml_option name="config_sw_absorption_type" type="character" default_value="none" units="unitless"
 					description="Name of shortwave absorption type used in simulation. "
 					possible_values="'jerlov' or 'ohlmann00' or 'none'"
 		/>

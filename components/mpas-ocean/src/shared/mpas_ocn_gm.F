@@ -132,7 +132,7 @@ contains
       integer, dimension(:, :), pointer :: cellsOnEdge, edgesOnCell
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iCellSelf, maxLocation
       real(kind=RKIND)                 :: h1, h2, areaEdge, BruntVaisalaFreqTopEdge, rtmp
-      real(kind=RKIND)                 :: sum_hN, countN2, maxN, ltSum, sum_gradDensityH
+      real(kind=RKIND)                 :: sum_hN, countN2, maxN, ltSum, sum_gradDensityH, coef
       real(kind=RKIND)                 :: sumRi, RiTopOfEdge, zEdge, zMLD, sfcTaper
       real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx
       real(kind=RKIND) :: slopeTaperUp, slopeTaperDown, sfcTaperUp, sfcTaperDown, invAreaCell
@@ -652,14 +652,22 @@ contains
          ! When config_GM_closure = 'Griffies' actually modify the value of gmBolusKappa based on
          ! Griffies et al (2005)
          if (local_config_GM_compute_Griffies) then
+
+            ! This is Griffies et al. (2005) eqn 15:
+            ! A_{gm} = alpha |grad_z rho|^2 L^2 g / ( rho_0 N_0)
+            ! here
+            ! coef = alpha L^2 g / ( rho_0 N_0)
+            ! A_{gm} = coef * |grad_z rho|^2
+            coef = config_GM_Griffies_alpha * config_gm_Griffies_length**2.0_RKIND * gravity &
+                   / (config_GM_Griffies_ref_density*config_GM_Griffies_No + 1.0E-15)
+
             !$omp parallel
-            !$omp do schedule(runtime) private(k, cell1, cell2, sum_gradDensityH, ltSum, sumRi, countN2, &
-            !$omp             zEdge, RiTopOfEdge, BruntVaisalaFreqTopEdge, lt1, lt2, c_Visbeck)
+            !$omp do schedule(runtime) private(k, cell1, cell2, sum_gradDensityH, ltSum, countN2, &
+            !$omp             zEdge, lt1, lt2)
             do iEdge = 1, nEdges
                k=minLevelEdgeBot(iEdge)
                sum_gradDensityH = 0.0_RKIND
                ltSum = 0.0_RKIND
-               sumRi = 0.0_RKIND
                countN2 = 0
                cell1 = cellsOnEdge(1, iEdge)
                cell2 = cellsOnEdge(2, iEdge)
@@ -687,13 +695,13 @@ contains
 
                   ! This is Griffies et al. (2005) eqn 15:
                   ! A_{gm} = alpha |grad_z rho|^2 L^2 g / ( rho_0 N_0)
-                  gmBolusKappa(iEdge) = config_GM_Griffies_alpha * abs(sum_gradDensityH) &
-                                        * config_gm_griffies_length**2.0_RKIND * gravity &
-                                        / (config_GM_Griffies_No + 1.0E-15)
+                  gmBolusKappa(iEdge) = coef * sum_gradDensityH
+
                   ! These were the original lines from Lukes cryo branch:
-                  ! gmBolusKappa(iEdge) = config_GM_Griffies_alpha * config_gm_griffies_length**2.0_RKIND * &
+                  ! gmBolusKappa(iEdge) = config_GM_Griffies_alpha * config_gm_Griffies_length**2.0_RKIND * &
                   !                      gravity * abs(sumN2) / (1.0E-15 + config_GM_Griffies_No)
-                  ! note that rho_0 is missing frmo the denominator.
+                  ! note that rho_0 is missing from the denominator.
+
                   gmBolusKappa(iEdge) = max(config_GM_spatially_variable_min_kappa, min(gmBolusKappa(iEdge),  &
                                             config_GM_spatially_variable_max_kappa))
               else !for really shallow columns use min bolus kappa

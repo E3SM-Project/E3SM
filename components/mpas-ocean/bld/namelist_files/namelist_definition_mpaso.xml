@@ -621,6 +621,14 @@ Valid values: small positive reals
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_GM_Griffies_ref_density" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+reference density for the Griffies et al (2005) parameterization
+
+Valid values: 1020-1040
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_GM_EG_riMin" type="real"
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
 minimum Richardson number to prevent overly large bolus Kappa values
