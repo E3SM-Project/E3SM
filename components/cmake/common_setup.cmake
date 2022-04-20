@@ -100,6 +100,8 @@ else()
   set(USE_CXX TRUE)
 endif()
 
+set(SUPPORTS_CXX TRUE)
+
 if (USE_CXX AND NOT SUPPORTS_CXX)
   message(FATAL_ERROR "Fatal attempt to include C++ code on a compiler/machine combo that has not been set up to support C++")
 endif()
