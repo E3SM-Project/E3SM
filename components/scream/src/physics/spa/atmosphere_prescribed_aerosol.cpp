@@ -197,10 +197,10 @@ void SPA::initialize_impl (const RunType /* run_type */)
   // upper bound set to 1.01 as max(g_sw)=1.00757 in current ne4 data assumingly due to remapping
   // add an epslon to max possible upper bound of aero_ssa_sw
 
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_g_sw"),0.0,1.01,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_ssa_sw"),0.0,1.0+1e-8,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_tau_sw"),0.0,1.0,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_tau_lw"),0.0,1.0,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_g_sw"),0.0,1.0,true);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_ssa_sw"),0.0,1.0,true);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_tau_sw"),0.0,1.0,true);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_tau_lw"),0.0,1.0,true);
 }
 
 // =========================================================================================
