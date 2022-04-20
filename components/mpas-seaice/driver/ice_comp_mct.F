@@ -452,6 +452,9 @@ contains
         tempLogicalConfig = .true.
         call mpas_pool_get_config(domain % configs, "config_do_restart_zsalinity", tempLogicalConfig)
         tempLogicalConfig = .true.
+        call mpas_pool_get_config(domain % configs, "config_do_restart_bgc", tempLogicalConfig)
+        tempLogicalConfig = .true.
+
 
         ! Set start time to be read from file
         call mpas_pool_get_config(domain % configs, "config_start_time", tempCharConfig)
