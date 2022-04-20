@@ -36,6 +36,9 @@ void initialize_p3_lookup() {
   mu_r_table_save    = real1d("mu_r_table_save",    MU_R_TABLE_DIM);
   dnu_table_save     = real1d("dnu_table_save",     dnusize);
 
+  // initialize p3  
+  p3_init();
+
   // initialize table data
   P3F::P3LookupTables lookup_tables_tmp;
   P3F::init_kokkos_ice_lookup_tables(lookup_tables_tmp.ice_table_vals,
