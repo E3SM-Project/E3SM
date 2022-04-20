@@ -63,9 +63,6 @@
 /* Whether to use OpenMP4 */
 #cmakedefine OMP4
 
-/* commit sha */
-#define HOMME_SHA1 "${LAST_GIT_COMMIT_SHA}"
-
 /* When doing BFB testing, we occasionally must use modified code. */
 /* Use this flag to protect such code. */
 #cmakedefine HOMMEXX_BFB_TESTING

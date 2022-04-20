@@ -10,7 +10,7 @@ IF (NOT DEFINED PROJECT_NAME)
                      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
                      OUTPUT_VARIABLE LAST_GIT_COMMIT_SHA
                      OUTPUT_STRIP_TRAILING_WHITESPACE)
-  SET (LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA} CACHE STRING "The sha of the last git commit.")
+  SET (LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA})
   MESSAGE (STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
 
 ELSE ()
@@ -293,6 +293,8 @@ IF (${HOMME_USE_KOKKOS})
 
 ENDIF ()
 
+CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/cmake/homme_git_sha.h.in ${HOMME_BINARY_DIR}//homme_git_sha.h)
+
 
 ##############################################################################
 # Zoltan partitioning library
@@ -409,7 +411,7 @@ if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
     
     SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc)
     SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
-    ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
+    ADD_SUBDIRECTORY(utils/cime/CIME/non_py/cprnc)
   ENDIF ()
 ENDIF ()
 
