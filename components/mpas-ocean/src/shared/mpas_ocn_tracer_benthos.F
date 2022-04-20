@@ -2679,7 +2679,7 @@ test_flag = .false.
            oceanBenthosMno2Flux(iCell) =  3.6e-13_RKIND ! Arkona Basin
            oceanBenthosFeoh3Flux(iCell) = max(0.0_RKIND,oceanBenthosFeoh3FluxData(iCell))
 
-           oceanBottomBenthosDensity(iCell) = max(0.0_RKIND,oceanBottomBenthosDensityData(iCell))
+           oceanBottomBenthosDensity(iCell) = max(1020.0_RKIND,oceanBottomBenthosDensityData(iCell))
            oceanBottomBenthosTemperature(iCell) = oceanBottomBenthosTemperatureData(iCell)
            oceanBottomBenthosSalinity(iCell) = max(0.0_RKIND,oceanBottomBenthosSalinityData(iCell))
            oceanBottomBenthosPressure(iCell) = max(0.0_RKIND,oceanBottomBenthosPressureData(iCell))
