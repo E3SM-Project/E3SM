@@ -105,6 +105,57 @@ void array_to_view(const typename ViewT::value_type::scalar* const data,
   });
 }
 
+// 4D YAKL to Kokkos views
+template <typename SizeT, typename ViewT>
+void array_to_view(const typename ViewT::value_type::scalar* const data,
+                   const SizeT& dim1_size,
+                   const SizeT& dim2_size,
+                   const SizeT& dim3_size,
+                   const SizeT& dim4_size,
+                   ViewT& view)
+{
+  using PackT = typename ViewT::value_type;
+  EKAT_ASSERT(PackT::n >= 1);
+
+  const int pack_size = static_cast<int>(PackT::n);
+  const int npack     = (dim3_size+pack_size-1)/pack_size;
+
+#if defined(DEBUG)
+  kokkos_impl_cuda_set_serial_execution(true);
+#endif
+  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<5>>({0, 0, 0, 0, 0}, {dim1_size, dim2_size, dim3_size, npack, pack_size}), KOKKOS_LAMBDA(int i, int j, int k, int l, int s) {
+     const int num_scalars = k*pack_size;
+     const int scalar_offset = ((i*dim2_size+j)*dim3_size+l)*dim4_size+num_scalars;
+     if (num_scalars+s<dim4_size) view(i,j,k,l)[s] = data[scalar_offset+s];
+  });
+}
+
+// 5D YAKL to Kokkos views
+template <typename SizeT, typename ViewT>
+void array_to_view(const typename ViewT::value_type::scalar* const data,
+                   const SizeT& dim1_size,
+                   const SizeT& dim2_size,
+                   const SizeT& dim3_size,
+                   const SizeT& dim4_size,
+                   const SizeT& dim5_size,
+                   ViewT& view)
+{
+  using PackT = typename ViewT::value_type;
+  EKAT_ASSERT(PackT::n >= 1);
+
+  const int pack_size = static_cast<int>(PackT::n);
+  const int npack     = (dim3_size+pack_size-1)/pack_size;
+
+#if defined(DEBUG)
+  kokkos_impl_cuda_set_serial_execution(true);
+#endif
+  Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<6>>({0, 0, 0, 0, 0, 0}, {dim1_size, dim2_size, dim3_size, dim4_size, npack, pack_size}), KOKKOS_LAMBDA(int i, int j, int k, int l, int m, int s) {
+     const int num_scalars = k*pack_size;
+     const int scalar_offset = (((i*dim2_size+j)*dim3_size+l)*dim4_size+m)*dim5_size+num_scalars;
+     if (num_scalars+s<dim5_size) view(i,j,k,l,m)[s] = data[scalar_offset+s];
+  });
+}
+
 // 1D Kokkos view to YAKL array
 template <typename SizeT, typename ViewT, typename ArrayT>
 void view_to_array(const ViewT& view,
