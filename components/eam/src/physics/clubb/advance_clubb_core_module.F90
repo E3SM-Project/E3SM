@@ -132,6 +132,7 @@ module advance_clubb_core_module
                rtpthlp_forcing, wm_zm, wm_zt, &                     ! intent(in)
                wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &         ! intent(in)
                wpsclrp_sfc, wpedsclrp_sfc, &                        ! intent(in)
+               upwp_sfc_pert, vpwp_sfc_pert, &                      ! intent(in)
                rtm_ref, thlm_ref, um_ref, vm_ref, ug, vg, &         ! Intent(in)
                p_in_Pa, rho_zm, rho, exner, &                       ! intent(in)
                rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &             ! intent(in)
@@ -160,6 +161,7 @@ module advance_clubb_core_module
                sclrpthvp, &                                         ! intent(inout)
                wp2rtp, wp2thlp, uprcp, vprcp, rc_coef, wp4, &       ! intent(inout)
                wpup2, wpvp2, wp2up2, wp2vp2, ice_supersat_frac, &   ! intent(inout)
+               um_pert, vm_pert, upwp_pert, vpwp_pert, &            ! intent(inout)
                pdf_params, pdf_params_zm, &                         ! intent(inout)
                pdf_implicit_coefs_terms, &                          ! intent(inout)
 #ifdef GFDL
@@ -499,6 +501,10 @@ module advance_clubb_core_module
     real( kind = core_rknd ), intent(in), dimension(ngrdcol,edsclr_dim) ::  &
       wpedsclrp_sfc    ! Eddy-diffusion passive scalar flux at surface    [{units vary} m/s
 
+    real( kind = core_rknd ), intent(in), dimension(ngrdcol) :: &
+      upwp_sfc_pert, & ! pertubed u'w' at surface    [m^2/s^2]
+      vpwp_sfc_pert    ! pertubed v'w' at surface    [m^2/s^2]
+
     ! Reference profiles (used for nudging, sponge damping, and Coriolis effect)
     real( kind = core_rknd ), dimension(ngrdcol,nz), intent(in) ::  &
       rtm_ref,  & ! Initial total water mixing ratio             [kg/kg]
@@ -584,6 +590,13 @@ module advance_clubb_core_module
       wp2up2,            & ! w'^2 u'^2 (momentum levels)          [m^4/s^4]
       wp2vp2,            & ! w'^2 v'^2 (momentum levels)          [m^4/s^4]
       ice_supersat_frac    ! ice cloud fraction (thermo. levels)  [-]
+
+    ! Variables used to track perturbed version of winds.
+    real( kind = core_rknd ), intent(inout), dimension(ngrdcol,nz) :: &
+      um_pert,   & ! perturbed <u>       [m/s]
+      vm_pert,   & ! perturbed <v>       [m/s]
+      upwp_pert, & ! perturbed <u'w'>    [m^2/s^2]
+      vpwp_pert    ! perturbed <v'w'>    [m^2/s^2] 
 
     type(pdf_parameter), intent(inout) :: &
       pdf_params,    & ! Fortran structure of PDF parameters on thermodynamic levels    [units vary]
@@ -982,6 +995,10 @@ module advance_clubb_core_module
         wprtp(i,1)  = wprtp_sfc(i)
         upwp(i,1)   = upwp_sfc(i)
         vpwp(i,1)   = vpwp_sfc(i)
+        if ( clubb_config_flags%l_linearize_pbl_winds ) then
+          upwp_pert(i,1) = upwp_sfc_pert(i)
+          vpwp_pert(i,1) = vpwp_sfc_pert(i)
+        endif ! l_linearize_pbl_winds
       end do
 
         ! Set fluxes for passive scalars (if enabled)
@@ -1699,10 +1716,12 @@ module advance_clubb_core_module
                             clubb_config_flags%l_use_thvm_in_bv_freq,             & ! intent(in)
                             clubb_config_flags%l_lmm_stepping,                    & ! intent(in)
                             clubb_config_flags%l_enable_relaxed_clipping,         & ! intent(in)
+                            clubb_config_flags%l_linearize_pbl_winds,             & ! intent(in)
                             order_xm_wpxp, order_xp2_xpyp, order_wp2_wp3,         & ! intent(in)
                             stats_zt, stats_zm, stats_sfc,                        & ! intent(i/o)
                             rtm, wprtp, thlm, wpthlp,                             & ! intent(i/o)
-                            sclrm, wpsclrp, um, upwp, vm, vpwp )                    ! intent(i/o)
+                            sclrm, wpsclrp, um, upwp, vm, vpwp,                   & ! intent(i/o)
+                            um_pert, vm_pert, upwp_pert, vpwp_pert )                ! intent(i/o)
 
       if ( clubb_at_least_debug_level( 0 ) ) then
          if ( err_code == clubb_fatal_error ) then
@@ -1833,13 +1852,15 @@ module advance_clubb_core_module
       endif
 
       do i = 1, ngrdcol
-        call clip_covars_denom( gr(i), dt, rtp2(i,:), thlp2(i,:), up2(i,:), vp2(i,:), wp2(i,:),       & ! intent(in)
-                                sclrp2(i,:,:), wprtp_cl_num, wpthlp_cl_num,      & ! intent(in)
-                                wpsclrp_cl_num, upwp_cl_num, vpwp_cl_num, & ! intent(in)
-                                clubb_config_flags%l_predict_upwp_vpwp,   & ! intent(in)
-                                clubb_config_flags%l_tke_aniso,           & ! intent(in)
+        call clip_covars_denom( gr(i), dt, rtp2(i,:), thlp2(i,:), up2(i,:), vp2(i,:), wp2(i,:), & ! intent(in)
+                                sclrp2(i,:,:), wprtp_cl_num, wpthlp_cl_num,  & ! intent(in)
+                                wpsclrp_cl_num, upwp_cl_num, vpwp_cl_num,    & ! intent(in)
+                                clubb_config_flags%l_predict_upwp_vpwp,      & ! intent(in)
+                                clubb_config_flags%l_tke_aniso,              & ! intent(in)
+                                clubb_config_flags%l_linearize_pbl_winds,    & ! intent(in)
                                 stats_zm(i),                                 & ! intent(inout)
-                                wprtp(i,:), wpthlp(i,:), upwp(i,:), vpwp(i,:), wpsclrp(i,:,:) )        ! intent(inout)
+                                wprtp(i,:), wpthlp(i,:), upwp(i,:), vpwp(i,:), wpsclrp(i,:,:), & ! intent(inout)
+                                upwp_pert(i,:), vpwp_pert(i,:) )               ! intent(inout)
       end do
       
      elseif ( advance_order_loop_iter == order_wp2_wp3 ) then
@@ -1939,13 +1960,15 @@ module advance_clubb_core_module
       endif
 
       do i = 1, ngrdcol
-        call clip_covars_denom( gr(i), dt, rtp2(i,:), thlp2(i,:), up2(i,:), vp2(i,:), wp2(i,:),       & ! intent(in)
-                                sclrp2(i,:,:), wprtp_cl_num, wpthlp_cl_num,      & ! intent(in)
-                                wpsclrp_cl_num, upwp_cl_num, vpwp_cl_num, & ! intent(in)
-                                clubb_config_flags%l_predict_upwp_vpwp,   & ! intent(in)
-                                clubb_config_flags%l_tke_aniso,           & ! intent(in)
-                                stats_zm(i),                                 & ! intent(inout)
-                                wprtp(i,:), wpthlp(i,:), upwp(i,:), vpwp(i,:), wpsclrp(i,:,:) )        ! intent(inout)
+        call clip_covars_denom( gr(i), dt, rtp2(i,:), thlp2(i,:), up2(i,:), vp2(i,:), wp2(i,:), & ! intent(in)
+                                sclrp2(i,:,:), wprtp_cl_num, wpthlp_cl_num,    & ! intent(in)
+                                wpsclrp_cl_num, upwp_cl_num, vpwp_cl_num,      & ! intent(in)
+                                clubb_config_flags%l_predict_upwp_vpwp,        & ! intent(in)
+                                clubb_config_flags%l_tke_aniso,                & ! intent(in)
+                                clubb_config_flags%l_linearize_pbl_winds,      & ! intent(in)
+                                stats_zm(i),                                   & ! intent(inout)
+                                wprtp(i,:), wpthlp(i,:), upwp(i,:), vpwp(i,:), wpsclrp(i,:,:), & ! intent(inout)
+                                upwp_pert(i,:), vpwp_pert(i,:) )                 ! intent(inout)
 
       end do
 
@@ -1974,22 +1997,24 @@ module advance_clubb_core_module
       end if
 
       do i = 1, ngrdcol
-        call advance_windm_edsclrm( gr(i), dt, wm_zt(i,:), Km_zm(i,:), Kmh_zm(i,:),               & ! intent(in)
-                                    ug(i,:), vg(i,:), um_ref(i,:), vm_ref(i,:),                     & ! intent(in)
-                                    wp2(i,:), up2(i,:), vp2(i,:), um_forcing(i,:), vm_forcing(i,:),      & ! intent(in)
-                                    edsclrm_forcing(i,:,:),                            & ! intent(in)
-                                    rho_ds_zm(i,:), invrs_rho_ds_zt(i,:),                 & ! intent(in)
-                                    fcor(i), l_implemented,                        & ! intent(in)
-                                    nu_vert_res_dep(i),                            & ! intent(in)
-                                    clubb_config_flags%l_predict_upwp_vpwp,     & ! intent(in)
-                                    clubb_config_flags%l_upwind_xm_ma,          & ! intent(in)
-                                    clubb_config_flags%l_uv_nudge,              & ! intent(in)
-                                    clubb_config_flags%l_tke_aniso,             & ! intent(in)
-                                    clubb_config_flags%l_lmm_stepping,          & ! intent(in)
-                                    order_xp2_xpyp, order_wp2_wp3, order_windm, & ! intent(in)
-                                    stats_zt(i), stats_zm(i), stats_sfc(i),              & ! intent(inout)
-                                    um(i,:), vm(i,:), edsclrm(i,:,:),                            & ! intent(inout)
-                                    upwp(i,:), vpwp(i,:), wpedsclrp(i,:,:) )                       ! intent(inout)
+        call advance_windm_edsclrm( gr(i), dt, wm_zt(i,:), Km_zm(i,:), Kmh_zm(i,:), & ! intent(in)
+                                    ug(i,:), vg(i,:), um_ref(i,:), vm_ref(i,:),     & ! intent(in)
+                                    wp2(i,:), up2(i,:), vp2(i,:), um_forcing(i,:), vm_forcing(i,:), & ! intent(in)
+                                    edsclrm_forcing(i,:,:),                         & ! intent(in)
+                                    rho_ds_zm(i,:), invrs_rho_ds_zt(i,:),           & ! intent(in)
+                                    fcor(i), l_implemented,                         & ! intent(in)
+                                    nu_vert_res_dep(i),                             & ! intent(in)
+                                    clubb_config_flags%l_predict_upwp_vpwp,         & ! intent(in)
+                                    clubb_config_flags%l_upwind_xm_ma,              & ! intent(in)
+                                    clubb_config_flags%l_uv_nudge,                  & ! intent(in)
+                                    clubb_config_flags%l_tke_aniso,                 & ! intent(in)
+                                    clubb_config_flags%l_lmm_stepping,              & ! intent(in)
+                                    clubb_config_flags%l_linearize_pbl_winds,       & ! intent(in)
+                                    order_xp2_xpyp, order_wp2_wp3, order_windm,     & ! intent(in)
+                                    stats_zt(i), stats_zm(i), stats_sfc(i),         & ! intent(inout)
+                                    um(i,:), vm(i,:), edsclrm(i,:,:),               & ! intent(inout)
+                                    upwp(i,:), vpwp(i,:), wpedsclrp(i,:,:),         & ! intent(inout)
+                                    um_pert(i,:), vm_pert(i,:), upwp_pert(i,:), vpwp_pert(i,:) ) ! intent(inout)
 
       end do
 
@@ -3568,7 +3593,8 @@ module advance_clubb_core_module
                  l_prescribed_avg_deltaz,                 & ! intent(in)
                  l_damp_wp2_using_em,                     & ! intent(in)
                  l_stability_correct_tau_zm,              & ! intent(in)
-                 l_enable_relaxed_clipping                & ! intent(in)
+                 l_enable_relaxed_clipping,               & ! intent(in)
+                 l_diag_Lscale_from_tau                   & ! intent(in)
 
 #ifdef GFDL
                  , cloud_frac_min                         & ! intent(in)  h1g, 2010-06-16
@@ -3590,6 +3616,14 @@ module advance_clubb_core_module
       use parameter_indices, only:  &
           nparams,      & ! Variable(s)
           iC1,          & ! Constant(s)
+          iC1b,         &
+          iC2rt,        &
+          iC2thl,       &
+          iC2rtthl,     &
+          iC6rt,        &
+          iC6rtb,       &
+          iC6thl,       &
+          iC6thlb,      &
           iC14,         &
           iSkw_max_mag
 
@@ -3602,6 +3636,7 @@ module advance_clubb_core_module
 
       use constants_clubb, only:  &
           fstderr, &  ! Variable(s)
+          one, &
           eps
 
       use error_code, only: &
@@ -3728,8 +3763,11 @@ module advance_clubb_core_module
                                       ! correction
         l_damp_wp2_using_em,        & ! In wp2 equation, use a dissipation formula of
                                       ! -(2/3)*em/tau_zm, as in Bougeault (1981)
-        l_enable_relaxed_clipping     ! Flag to relax clipping on wpxp in
+        l_enable_relaxed_clipping,  & ! Flag to relax clipping on wpxp in
                                       ! xm_wpxp_clipping_and_stats
+        l_diag_Lscale_from_tau        ! First diagnose dissipation time tau, and
+                                      ! then diagnose the mixing length scale as
+                                      ! Lscale = tau * tke
 
 #ifdef GFDL
       logical, intent(in) :: &  ! h1g, 2010-06-16 begin mod
@@ -4043,6 +4081,127 @@ module advance_clubb_core_module
          err_code_out = clubb_fatal_error
          return
       endif
+
+      ! Checking that when the l_diag_Lscale_from_tau is enabled, the
+      ! relevant Cx tunable parameters are all set to a value of 1 (as
+      ! you're supposed to tune the C_invrs_tau_ parameters instead).
+      if ( l_diag_Lscale_from_tau ) then
+
+         ! Note: someday when we can successfully run with all these parameters
+         ! having a value of 1, the "Warning" messages should be removed and the
+         ! "Fatal error" messages should be uncommented.
+
+         ! C1 must have a value of 1
+         if ( params(iC1) > one .or. params(iC1) < one ) then
+            write(fstderr,*) "When the l_diag_Lscale_from_tau flag is " &
+                             // "enabled, C1 must have a value of 1."
+            write(fstderr,*) "C1 = ", params(iC1)
+            write(fstderr,*) "Warning in setup_clubb_core"
+            !write(fstderr,*) "Fatal error in setup_clubb_core"
+            !err_code = clubb_fatal_error
+            !err_code_out = clubb_fatal_error
+         endif ! C1 check
+
+         ! C1b must have a value of 1
+         if ( params(iC1b) > one .or. params(iC1b) < one ) then
+            write(fstderr,*) "When the l_diag_Lscale_from_tau flag is " &
+                             // "enabled, C1b must have a value of 1."
+            write(fstderr,*) "C1b = ", params(iC1b)
+            write(fstderr,*) "Warning in setup_clubb_core"
+            !write(fstderr,*) "Fatal error in setup_clubb_core"
+            !err_code = clubb_fatal_error
+            !err_code_out = clubb_fatal_error
+         endif ! C1b check
+
+         ! C2rt must have a value of 1
+         if ( params(iC2rt) > one .or. params(iC2rt) < one ) then
+            write(fstderr,*) "When the l_diag_Lscale_from_tau flag is " &
+                             // "enabled, C2rt must have a value of 1."
+            write(fstderr,*) "C2rt = ", params(iC2rt)
+            write(fstderr,*) "Warning in setup_clubb_core"
+            !write(fstderr,*) "Fatal error in setup_clubb_core"
+            !err_code = clubb_fatal_error
+            !err_code_out = clubb_fatal_error
+         endif ! C2rt check
+
+         ! C2thl must have a value of 1
+         if ( params(iC2thl) > one .or. params(iC2thl) < one ) then
+            write(fstderr,*) "When the l_diag_Lscale_from_tau flag is " &
+                             // "enabled, C2thl must have a value of 1."
+            write(fstderr,*) "C2thl = ", params(iC2thl)
+            write(fstderr,*) "Warning in setup_clubb_core"
+            !write(fstderr,*) "Fatal error in setup_clubb_core"
+            !err_code = clubb_fatal_error
+            !err_code_out = clubb_fatal_error
+         endif ! C2thl check
+
+         ! C2rtthl must have a value of 1
+         if ( params(iC2rtthl) > one .or. params(iC2rtthl) < one ) then
+            write(fstderr,*) "When the l_diag_Lscale_from_tau flag is " &
+                             // "enabled, C2rtthl must have a value of 1."
+            write(fstderr,*) "C2rtthl = ", params(iC2rtthl)
+            write(fstderr,*) "Warning in setup_clubb_core"
+            !write(fstderr,*) "Fatal error in setup_clubb_core"
+            !err_code = clubb_fatal_error
+            !err_code_out = clubb_fatal_error
+         endif ! C2rtthl check
+
+         ! C6rt must have a value of 1
+         if ( params(iC6rt) > one .or. params(iC6rt) < one ) then
+            write(fstderr,*) "When the l_diag_Lscale_from_tau flag is " &
+                             // "enabled, C6rt must have a value of 1."
+            write(fstderr,*) "C6rt = ", params(iC6rt)
+            write(fstderr,*) "Warning in setup_clubb_core"
+            !write(fstderr,*) "Fatal error in setup_clubb_core"
+            !err_code = clubb_fatal_error
+            !err_code_out = clubb_fatal_error
+         endif ! C6rt check
+
+         ! C6rtb must have a value of 1
+         if ( params(iC6rtb) > one .or. params(iC6rtb) < one ) then
+            write(fstderr,*) "When the l_diag_Lscale_from_tau flag is " &
+                             // "enabled, C6rtb must have a value of 1."
+            write(fstderr,*) "C6rtb = ", params(iC6rtb)
+            write(fstderr,*) "Warning in setup_clubb_core"
+            !write(fstderr,*) "Fatal error in setup_clubb_core"
+            !err_code = clubb_fatal_error
+            !err_code_out = clubb_fatal_error
+         endif ! C6rtb check
+
+         ! C6thl must have a value of 1
+         if ( params(iC6thl) > one .or. params(iC6thl) < one ) then
+            write(fstderr,*) "When the l_diag_Lscale_from_tau flag is " &
+                             // "enabled, C6thl must have a value of 1."
+            write(fstderr,*) "C6thl = ", params(iC6thl)
+            write(fstderr,*) "Warning in setup_clubb_core"
+            !write(fstderr,*) "Fatal error in setup_clubb_core"
+            !err_code = clubb_fatal_error
+            !err_code_out = clubb_fatal_error
+         endif ! C6thl check
+
+         ! C6thlb must have a value of 1
+         if ( params(iC6thlb) > one .or. params(iC6thlb) < one ) then
+            write(fstderr,*) "When the l_diag_Lscale_from_tau flag is " &
+                             // "enabled, C6thlb must have a value of 1."
+            write(fstderr,*) "C6thlb = ", params(iC6thlb)
+            write(fstderr,*) "Warning in setup_clubb_core"
+            !write(fstderr,*) "Fatal error in setup_clubb_core"
+            !err_code = clubb_fatal_error
+            !err_code_out = clubb_fatal_error
+         endif ! C6thlb check
+
+         ! C14 must have a value of 1
+         if ( params(iC14) > one .or. params(iC14) < one ) then
+            write(fstderr,*) "When the l_diag_Lscale_from_tau flag is " &
+                             // "enabled, C14 must have a value of 1."
+            write(fstderr,*) "C14 = ", params(iC14)
+            write(fstderr,*) "Warning in setup_clubb_core"
+            !write(fstderr,*) "Fatal error in setup_clubb_core"
+            !err_code = clubb_fatal_error
+            !err_code_out = clubb_fatal_error
+         endif ! C14 check
+
+      endif ! l_diag_Lscale_from_tau
 
       ! Setup grid
       call setup_grid( nzmax, sfc_elevation, l_implemented,     & ! intent(in)

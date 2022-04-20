@@ -1,3 +1,32 @@
+commit 86d4dab13e697291f9e7d5fa111f2f22334b9cb4
+Author: Vincent Larson <vlarson@users.noreply.github.com>
+Date:   Thu Apr 14 08:31:38 2022 -0500
+
+    Set the Priority of nondimensional moments to False.
+
+commit 9e84a8e6f9f754e0c697de8a3e70718211972648
+Author: Vincent Larson <vlarson@users.noreply.github.com>
+Date:   Thu Apr 14 08:28:24 2022 -0500
+
+    Updates description of generating pyplotgen movies
+
+commit 70e286f86102af741c96a104bc69d0e40dcd66ad
+Author: bmg929 <bmg2@uwm.edu>
+Date:   Tue Apr 12 18:12:09 2022 -0500
+
+    I added the code for the l_linearize_pbl_winds flag that was originally
+    brought to us by Sean Santos
+
+commit d0c9b3461825ae93070b9286d743bb6c260672f5
+Author: bmg929 <bmg2@uwm.edu>
+Date:   Tue Apr 5 17:59:28 2022 -0500
+
+    Added idiot-proofing to print a warning message when l_diag_Lscale_from_tau
+    is being used and C1, C1b, C2rt, C2thl, C2rtthl, C6rt, C6rtb, C6thl, C6thlb,
+    or C14 do not have a value 1.  This can later be upgraded to a fatal error
+    when we can finally run this code with the C2 and C6 families of parameters
+    having a value of 1 (that value is currently 2 right now).
+
 commit 96059a242e69c4e7ed340487ee6b7e4239c33541
 Author: bmg929 <bmg2@uwm.edu>
 Date:   Tue Mar 29 17:04:58 2022 -0500
@@ -36,27 +65,3 @@ Author: huebler <huebler@uwm.edu>
 Date:   Tue Mar 15 17:55:20 2022 -0500
 
     Adding slicing for some lhs arrays being saved in stats. This was causing bit changing in a few lhs terms when run in multicolumn.
-
-commit 81be36dbac0aa39981bed980966bece2baed5ecb
-Author: huebler <huebler@uwm.edu>
-Date:   Tue Mar 15 14:37:32 2022 -0500
-
-    Removing need for stats scratch variables by passing lhs terms to save through agument lists. This makes everything better in every way.
-
-commit eefc4e8b7a13d7eaf2e6ccbc0b2b0f9a677166ef
-Author: huebler <huebler@uwm.edu>
-Date:   Tue Mar 15 13:09:07 2022 -0500
-
-    Moving the lmm_stepping and stats calls to immediately after calls to xp2_xpyp_solve. This is because xp2_xpyp_implicit_stats saves things that are saved by scratch variables, and these scratch variables are set by the lhs and rhs setup calls. So for the multiple lhs routine, we need to save the scratch variables immediately after these calls before overwriting them by calling lhs and rhs again for a different variable. Since the stats also saves the variable were solving for, we also have to move the lmm_stepping to before this call.
-
-commit 3efae613c219a686eeeaf53617e8c24304fb24ab
-Author: huebler <huebler@uwm.edu>
-Date:   Mon Mar 14 19:07:00 2022 -0500
-
-    Moving the lhs_dp1 calculation to outside of xp2_xpyp_lhs. This gives us more flexibility, since we want to pass lhs_dp1 into xp2_xpyp_implicit_stats.
-
-commit 47e9d1e613c2c715ea532edb1d4fb72d0fab5b4c
-Author: huebler <huebler@uwm.edu>
-Date:   Mon Mar 14 15:53:38 2022 -0500
-
-    Pushing loop into advance_xp2_wpxp.

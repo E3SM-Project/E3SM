@@ -537,6 +537,7 @@ contains
     rtpthlp_forcing, wm_zm, wm_zt, &                        ! intent(in)
     wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &            ! intent(in)
     wpsclrp_sfc, wpedsclrp_sfc, &                           ! intent(in)
+    upwp_sfc_pert, vpwp_sfc_pert, &                         ! intent(in)
     rtm_ref, thlm_ref, um_ref, vm_ref, ug, vg, &            ! Intent(in)
     p_in_Pa, rho_zm, rho, exner, &                          ! intent(in)
     rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &                ! intent(in)
@@ -564,6 +565,7 @@ contains
     sclrpthvp, &                                            ! intent(inout)
     wp2rtp, wp2thlp, uprcp, vprcp, rc_coef, wp4, &          ! intent(inout)
     wpup2, wpvp2, wp2up2, wp2vp2, ice_supersat_frac, &      ! intent(inout)
+    um_pert, vm_pert, upwp_pert, vpwp_pert, &               ! intent(inout)
     pdf_params, pdf_params_zm, &                            ! intent(inout)
     pdf_implicit_coefs_terms, &                             ! intent(inout)
 #ifdef GFDL
@@ -673,6 +675,10 @@ contains
     real( kind = core_rknd ), intent(in), dimension(sclr_dim) ::  &
       wpsclrp_sfc      ! Scalar flux at surface         [{units vary} m/s]
 
+    real( kind = core_rknd ), intent(in) :: &
+      upwp_sfc_pert, & ! pertubed u'w' at surface    [m^2/s^2]
+      vpwp_sfc_pert    ! pertubed v'w' at surface    [m^2/s^2]
+
     ! Eddy passive scalar variables
     real( kind = core_rknd ), intent(in), dimension(gr%nz,edsclr_dim) :: &
       edsclrm_forcing  ! Eddy passive scalar forcing    [{units vary}/s]
@@ -766,6 +772,13 @@ contains
       wp2up2,            & ! w'^2 u'^2 (momentum levels)          [m^4/s^4]
       wp2vp2,            & ! w'^2 v'^2 (momentum levels)          [m^4/s^4]
       ice_supersat_frac    ! ice cloud fraction (thermo. levels)  [-]
+
+    ! Variables used to track perturbed version of winds.
+    real( kind = core_rknd ), intent(inout), dimension(gr%nz) :: &
+      um_pert,   & ! perturbed <u>       [m/s]
+      vm_pert,   & ! perturbed <v>       [m/s]
+      upwp_pert, & ! perturbed <u'w'>    [m^2/s^2]
+      vpwp_pert    ! perturbed <v'w'>    [m^2/s^2]
 
     type(pdf_parameter), intent(inout) :: &
       pdf_params,    & ! PDF parameters (thermodynamic levels)    [units vary]
@@ -885,6 +898,10 @@ contains
     real( kind = core_rknd ), dimension(1,gr%nz,edsclr_dim) :: &
       edsclrm_forcing_col  ! Eddy passive scalar forcing    [{units vary}/s]
 
+    real( kind = core_rknd ), dimension(1) :: &
+      upwp_sfc_pert_col, & ! pertubed u'w' at surface    [m^2/s^2]
+      vpwp_sfc_pert_col    ! pertubed v'w' at surface    [m^2/s^2]
+
     real( kind = core_rknd ), dimension(1,edsclr_dim) ::  &
       wpedsclrp_sfc_col    ! Eddy-Scalar flux at surface    [{units vary} m/s]
 
@@ -969,6 +986,13 @@ contains
       wp2vp2_col,            & ! w'^2 v'^2 (momentum levels)          [m^4/s^4]
       ice_supersat_frac_col    ! ice cloud fraction (thermo. levels)  [-]
 
+    ! Variables used to track perturbed version of winds.
+    real( kind = core_rknd ), dimension(1,gr%nz) :: &
+      um_pert_col,   & ! perturbed <u>       [m/s]
+      vm_pert_col,   & ! perturbed <v>       [m/s]
+      upwp_pert_col, & ! perturbed <u'w'>    [m^2/s^2]
+      vpwp_pert_col    ! perturbed <v'w'>    [m^2/s^2]
+
     type(implicit_coefs_terms), dimension(1) :: &
       pdf_implicit_coefs_terms_col    ! Implicit coefs / explicit terms [units vary]
 
@@ -1038,6 +1062,9 @@ contains
     wpsclrp_sfc_col(1,:) = wpsclrp_sfc
     wpedsclrp_sfc_col(1,:) = wpedsclrp_sfc
     
+    upwp_sfc_pert_col(1) = upwp_sfc_pert
+    vpwp_sfc_pert_col(1) = vpwp_sfc_pert
+
     rtm_ref_col(1,:) = rtm_ref
     thlm_ref_col(1,:) = thlm_ref
     um_ref_col(1,:) = um_ref
@@ -1126,6 +1153,10 @@ contains
     wp2up2_col(1,:) = wp2up2
     wp2vp2_col(1,:) = wp2vp2
     ice_supersat_frac_col(1,:) = ice_supersat_frac
+    um_pert_col(1,:) = um_pert
+    vm_pert_col(1,:) = vm_pert
+    upwp_pert_col(1,:) = upwp_pert
+    vpwp_pert_col(1,:) = vpwp_pert
     pdf_implicit_coefs_terms_col(1) = pdf_implicit_coefs_terms
 #ifdef GFDL
     RH_crit_col(1,:,:,:) = RH_crit
@@ -1150,6 +1181,7 @@ contains
       rtpthlp_forcing_col, wm_zm_col, wm_zt_col, &                        ! intent(in)
       wpthlp_sfc_col, wprtp_sfc_col, upwp_sfc_col, vpwp_sfc_col, &            ! intent(in)
       wpsclrp_sfc_col, wpedsclrp_sfc_col, &                           ! intent(in)
+      upwp_sfc_pert_col, vpwp_sfc_pert_col, &                         ! intent(in)
       rtm_ref_col, thlm_ref_col, um_ref_col, vm_ref_col, ug_col, vg_col, &            ! Intent(in)
       p_in_Pa_col, rho_zm_col, rho_col, exner_col, &                          ! intent(in)
       rho_ds_zm_col, rho_ds_zt_col, invrs_rho_ds_zm_col, &                ! intent(in)
@@ -1177,6 +1209,7 @@ contains
       sclrpthvp_col, &                                            ! intent(inout)
       wp2rtp_col, wp2thlp_col, uprcp_col, vprcp_col, rc_coef_col, wp4_col, & ! intent(inout)
       wpup2_col, wpvp2_col, wp2up2_col, wp2vp2_col, ice_supersat_frac_col, & ! intent(inout)
+      um_pert_col, vm_pert_col, upwp_pert_col, vpwp_pert_col, &            ! intent(inout)
       pdf_params, pdf_params_zm, &                            ! intent(inout)
       pdf_implicit_coefs_terms_col, &                             ! intent(inout)
 #ifdef GFDL
@@ -1285,6 +1318,7 @@ contains
     rtpthlp_forcing, wm_zm, wm_zt, &                        ! intent(in)
     wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &            ! intent(in)
     wpsclrp_sfc, wpedsclrp_sfc, &                           ! intent(in)
+    upwp_sfc_pert, vpwp_sfc_pert, &                         ! intent(in)
     rtm_ref, thlm_ref, um_ref, vm_ref, ug, vg, &            ! Intent(in)
     p_in_Pa, rho_zm, rho, exner, &                          ! intent(in)
     rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &                ! intent(in)
@@ -1312,6 +1346,7 @@ contains
     sclrpthvp, &                                            ! intent(inout)
     wp2rtp, wp2thlp, uprcp, vprcp, rc_coef, wp4, &          ! intent(inout)
     wpup2, wpvp2, wp2up2, wp2vp2, ice_supersat_frac, &      ! intent(inout)
+    um_pert, vm_pert, upwp_pert, vpwp_pert, &               ! intent(inout)
     pdf_params, pdf_params_zm, &                            ! intent(inout)
     pdf_implicit_coefs_terms, &                             ! intent(inout)
 #ifdef GFDL
@@ -1418,6 +1453,10 @@ contains
     real( kind = core_rknd ), intent(in), dimension(ngrdcol,sclr_dim) ::  &
       wpsclrp_sfc      ! Scalar flux at surface         [{units vary} m/s]
 
+    real( kind = core_rknd ), intent(in), dimension(ngrdcol) :: &
+      upwp_sfc_pert, & ! pertubed u'w' at surface    [m^2/s^2]
+      vpwp_sfc_pert    ! pertubed v'w' at surface    [m^2/s^2]
+
     ! Eddy passive scalar variables
     real( kind = core_rknd ), intent(in), dimension(ngrdcol,nz,edsclr_dim) :: &
       edsclrm_forcing  ! Eddy passive scalar forcing    [{units vary}/s]
@@ -1512,6 +1551,13 @@ contains
       wp2vp2,            & ! w'^2 v'^2 (momentum levels)          [m^4/s^4]
       ice_supersat_frac    ! ice cloud fraction (thermo. levels)  [-]
 
+    ! Variables used to track perturbed version of winds.
+    real( kind = core_rknd ), intent(inout), dimension(ngrdcol,nz) :: &
+      um_pert,   & ! perturbed <u>       [m/s]
+      vm_pert,   & ! perturbed <v>       [m/s]
+      upwp_pert, & ! perturbed <u'w'>    [m^2/s^2]
+      vpwp_pert    ! perturbed <v'w'>    [m^2/s^2]
+
     type(pdf_parameter), intent(inout) :: &
       pdf_params,    & ! PDF parameters (thermodynamic levels)    [units vary]
       pdf_params_zm    ! PDF parameters on momentum levels        [units vary]
@@ -1567,6 +1613,7 @@ contains
       rtpthlp_forcing, wm_zm, wm_zt, &                        ! intent(in)
       wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &            ! intent(in)
       wpsclrp_sfc, wpedsclrp_sfc, &                           ! intent(in)
+      upwp_sfc_pert, vpwp_sfc_pert, &                         ! intent(in)
       rtm_ref, thlm_ref, um_ref, vm_ref, ug, vg, &            ! Intent(in)
       p_in_Pa, rho_zm, rho, exner, &                          ! intent(in)
       rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &                ! intent(in)
@@ -1594,6 +1641,7 @@ contains
       sclrpthvp, &                                            ! intent(inout)
       wp2rtp, wp2thlp, uprcp, vprcp, rc_coef, wp4, &          ! intent(inout)
       wpup2, wpvp2, wp2up2, wp2vp2, ice_supersat_frac, &      ! intent(inout)
+      um_pert, vm_pert, upwp_pert, vpwp_pert, &               ! intent(inout)
       pdf_params, pdf_params_zm, &                            ! intent(inout)
       pdf_implicit_coefs_terms, &                             ! intent(inout)
 #ifdef GFDL
@@ -1635,6 +1683,7 @@ contains
     l_damp_wp2_using_em,                                & ! intent(in)
     l_stability_correct_tau_zm,                         & ! intent(in)
     l_enable_relaxed_clipping,                          & ! intent(in)
+    l_diag_Lscale_from_tau,                             & ! intent(in)
 #ifdef GFDL
     cloud_frac_min ,                                    & ! intent(in)  h1g, 2010-06-16
 #endif
@@ -1746,8 +1795,11 @@ contains
       l_prescribed_avg_deltaz,    & ! used in adj_low_res_nu. If .true., avg_deltaz = deltaz
       l_damp_wp2_using_em,        &
       l_stability_correct_tau_zm, &
-      l_enable_relaxed_clipping     ! Flag to relax clipping on wpxp in
+      l_enable_relaxed_clipping,  & ! Flag to relax clipping on wpxp in
                                     ! xm_wpxp_clipping_and_stats
+      l_diag_Lscale_from_tau        ! First diagnose dissipation time tau, and
+                                    ! then diagnose the mixing length scale as
+                                    ! Lscale = tau * tke
 
 #ifdef GFDL
       logical, intent(in) :: &  ! h1g, 2010-06-16 begin mod
@@ -1788,6 +1840,7 @@ contains
       l_damp_wp2_using_em,                                  & ! intent(in)
       l_stability_correct_tau_zm,                           & ! intent(in)
       l_enable_relaxed_clipping,                            & ! intent(in)
+      l_diag_Lscale_from_tau,                               & ! intent(in)
 #ifdef GFDL
       cloud_frac_min,                                       & ! intent(in)  h1g, 2010-06-16
 #endif
@@ -4317,7 +4370,8 @@ contains
                                                  l_use_tke_in_wp3_pr_turb_term, & ! Out
                                                  l_use_tke_in_wp2_wp3_K_dfsn, & ! Out
                                                  l_smooth_Heaviside_tau_wpxp, & ! Out
-                                                 l_enable_relaxed_clipping ) ! Out
+                                                 l_enable_relaxed_clipping, & ! Out
+                                                 l_linearize_pbl_winds ) ! Out
 
     use model_flags, only: &
         set_default_clubb_config_flags  ! Procedure
@@ -4434,12 +4488,13 @@ contains
                                       ! More information can be found by
                                       ! Looking at issue #905 on the clubb repo
       l_use_tke_in_wp3_pr_turb_term,& ! Use TKE formulation for wp3 pr_turb term
-      l_use_tke_in_wp2_wp3_K_dfsn, &  ! Use TKE in eddy diffusion for wp2 and wp3
+      l_use_tke_in_wp2_wp3_K_dfsn,  & ! Use TKE in eddy diffusion for wp2 and wp3
       l_smooth_Heaviside_tau_wpxp,  & ! Use smoothed Heaviside 'Peskin' function
                                       ! in the calculation of H_invrs_tau_wpxp_N2
                                       ! in src/CLUBB_core/mixing_length.F90
-      l_enable_relaxed_clipping       ! Flag to relax clipping on wpxp
+      l_enable_relaxed_clipping,    & ! Flag to relax clipping on wpxp
                                       ! in xm_wpxp_clipping_and_stats
+      l_linearize_pbl_winds           ! Code to linearize PBL winds
 
     call set_default_clubb_config_flags( iiPDF_type, & ! Out
                                          ipdf_call_placement, & ! Out
@@ -4488,7 +4543,8 @@ contains
                                          l_use_tke_in_wp3_pr_turb_term, & ! Out
                                          l_use_tke_in_wp2_wp3_K_dfsn, & ! Out
                                          l_smooth_Heaviside_tau_wpxp, & ! Out
-                                         l_enable_relaxed_clipping ) ! Out
+                                         l_enable_relaxed_clipping, & ! Out
+                                         l_linearize_pbl_winds ) ! Out
 
   end subroutine set_default_clubb_config_flags_api
 
@@ -4542,7 +4598,8 @@ contains
                                                      l_use_tke_in_wp3_pr_turb_term, & ! In
                                                      l_use_tke_in_wp2_wp3_K_dfsn, & ! In
                                                      l_smooth_Heaviside_tau_wpxp, & ! In
-                                                     l_enable_relaxed_clipping, & ! In/
+                                                     l_enable_relaxed_clipping, & ! In
+                                                     l_linearize_pbl_winds, & ! In
                                                      clubb_config_flags ) ! Out
 
     use model_flags, only: &
@@ -4661,12 +4718,13 @@ contains
                                       ! More information can be found by
                                       ! Looking at issue #905 on the clubb repo
       l_use_tke_in_wp3_pr_turb_term,& ! Use TKE formulation for wp3 pr_turb term
-      l_use_tke_in_wp2_wp3_K_dfsn, &  ! Use TKE in eddy diffusion for wp2 and wp3
-      l_smooth_Heaviside_tau_wpxp, &  ! Use smoothed Heaviside 'Peskin' function
+      l_use_tke_in_wp2_wp3_K_dfsn,  & ! Use TKE in eddy diffusion for wp2 and wp3
+      l_smooth_Heaviside_tau_wpxp,  & ! Use smoothed Heaviside 'Peskin' function
                                       ! in the calculation of H_invrs_tau_wpxp_N2
                                       ! in src/CLUBB_core/mixing_length.F90
-      l_enable_relaxed_clipping       ! Flag to relax clipping on wpxp
+      l_enable_relaxed_clipping,    & ! Flag to relax clipping on wpxp
                                       ! in xm_wpxp_clipping_and_stats
+      l_linearize_pbl_winds           ! Code to linearize PBL winds
 
     ! Output variables
     type(clubb_config_flags_type), intent(out) :: &
@@ -4720,6 +4778,7 @@ contains
                                              l_use_tke_in_wp2_wp3_K_dfsn, & ! In
                                              l_smooth_Heaviside_tau_wpxp, & ! In
                                              l_enable_relaxed_clipping, & ! In
+                                             l_linearize_pbl_winds, & ! In
                                              clubb_config_flags ) ! Out
 
   end subroutine initialize_clubb_config_flags_type_api

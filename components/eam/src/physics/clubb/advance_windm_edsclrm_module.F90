@@ -43,10 +43,12 @@ module advance_windm_edsclrm_module
                l_uv_nudge, &
                l_tke_aniso, &
                l_lmm_stepping, &
+               l_linearize_pbl_winds, &
                order_xp2_xpyp, order_wp2_wp3, order_windm, &
                stats_zt, stats_zm, stats_sfc, & 
                um, vm, edsclrm, &
-               upwp, vpwp, wpedsclrp )
+               upwp, vpwp, wpedsclrp, &
+               um_pert, vm_pert, upwp_pert, vpwp_pert )
 
     ! Description:
     ! Solves for both mean horizontal wind components, um and vm, and for the
@@ -157,18 +159,19 @@ module advance_windm_edsclrm_module
       nu_vert_res_dep    ! Vertical resolution dependent nu values
 
     logical, intent(in) :: &
-      l_predict_upwp_vpwp, & ! Flag to predict <u'w'> and <v'w'> along with <u> and <v> alongside
-                             ! the advancement of <rt>, <w'rt'>, <thl>, <wpthlp>, <sclr>, and
-                             ! <w'sclr'> in subroutine advance_xm_wpxp.  Otherwise, <u'w'> and
-                             ! <v'w'> are still approximated by eddy diffusivity when <u> and <v>
-                             ! are advanced in subroutine advance_windm_edsclrm.
-      l_upwind_xm_ma,      & ! This flag determines whether we want to use an upwind differencing
-                             ! approximation rather than a centered differencing for turbulent or
-                             ! mean advection terms. It affects rtm, thlm, sclrm, um and vm.
-      l_uv_nudge,          & ! For wind speed nudging
-      l_tke_aniso,         & ! For anisotropic turbulent kinetic energy, i.e. TKE = 1/2
-                             ! (u'^2 + v'^2 + w'^2)
-      l_lmm_stepping         ! Apply Linear Multistep Method (LMM) Stepping
+      l_predict_upwp_vpwp,   & ! Flag to predict <u'w'> and <v'w'> along with <u> and <v> alongside
+                               ! the advancement of <rt>, <w'rt'>, <thl>, <wpthlp>, <sclr>, and
+                               ! <w'sclr'> in subroutine advance_xm_wpxp.  Otherwise, <u'w'> and
+                               ! <v'w'> are still approximated by eddy diffusivity when <u> and <v>
+                               ! are advanced in subroutine advance_windm_edsclrm.
+      l_upwind_xm_ma,        & ! This flag determines whether we want to use an upwind differencing
+                               ! approximation rather than a centered differencing for turbulent or
+                               ! mean advection terms. It affects rtm, thlm, sclrm, um and vm.
+      l_uv_nudge,            & ! For wind speed nudging
+      l_tke_aniso,           & ! For anisotropic turbulent kinetic energy, i.e. TKE = 1/2
+                               ! (u'^2 + v'^2 + w'^2)
+      l_lmm_stepping,        & ! Apply Linear Multistep Method (LMM) Stepping
+      l_linearize_pbl_winds    ! Flag (used by E3SM) to linearize PBL winds
 
     integer, intent(in) :: &
       order_xp2_xpyp, &
@@ -189,6 +192,13 @@ module advance_windm_edsclrm_module
     ! Output Variable for eddy-scalars
     real( kind = core_rknd ), dimension(gr%nz,edsclr_dim), intent(inout) ::  &
       wpedsclrp      ! w'edsclr' (momentum levels)           [m/s {units vary}]
+
+    ! Variables used to track perturbed version of winds.
+    real( kind = core_rknd ), dimension(gr%nz), intent(inout) :: &
+      um_pert,   & ! perturbed <u>    [m/s]
+      vm_pert,   & ! perturbed <v>    [m/s]
+      upwp_pert, & ! perturbed <u'w'> [m^2/s^2]
+      vpwp_pert    ! perturbed <v'w'> [m^2/s^2]
 
     ! Local Variables
     real( kind = core_rknd ), dimension(gr%nz) ::  &
@@ -214,10 +224,12 @@ module advance_windm_edsclrm_module
       solution  ! The solution to the tridiagonal matrix            [units vary]
 
     real( kind = core_rknd ), dimension(gr%nz) :: &
-      wind_speed  ! wind speed; sqrt(u^2 + v^2)                     [m/s]
+      wind_speed,      & ! wind speed; sqrt(u^2 + v^2)              [m/s]
+      wind_speed_pert    ! perturbed wind speed; sprt(u^2 + v^2)    [m/s]
 
     real( kind = core_rknd ) :: &
-      u_star_sqd  ! Surface friction velocity, u_star, squared      [m/s]
+      u_star_sqd,      & ! Surface friction velocity, u_star, squared      [m/s]
+      u_star_sqd_pert    ! perturbed u_star, squared                       [m/s]
 
     logical :: &
       l_imp_sfc_momentum_flux  ! Flag for implicit momentum surface fluxes.
@@ -228,7 +240,12 @@ module advance_windm_edsclrm_module
 
     logical :: l_first_clip_ts, l_last_clip_ts ! flags for clip_covar
 
+    ! Whether perturbed winds are being solved.
+    logical :: l_perturbed_wind
+
     !--------------------------- Begin Code ------------------------------------
+
+    l_perturbed_wind = ( .not. l_predict_upwp_vpwp ) .and. l_linearize_pbl_winds
 
     if ( .not. l_predict_upwp_vpwp ) then
 
@@ -518,6 +535,194 @@ module advance_windm_edsclrm_module
                            l_predict_upwp_vpwp,             & ! intent(in)
                            stats_zm,                        & ! intent(inout)
                            vpwp, vpwp_chnge )                 ! intent(inout)
+
+       endif ! l_tke_aniso
+
+    endif ! .not. l_predict_upwp_vpwp
+
+    if ( l_perturbed_wind ) then
+
+       !----------------------------------------------------------------
+       ! Prepare tridiagonal system for horizontal winds, um and vm
+       !----------------------------------------------------------------
+
+       ! Momentum surface fluxes, u'w'|_sfc and v'w'|_sfc, are applied through
+       ! an implicit method, such that:
+       !    x'w'|_sfc = - ( u_star(t)^2 / wind_speed(t) ) * xm(t+1).
+       l_imp_sfc_momentum_flux = .true.
+       ! Compute wind speed (use threshold "eps" to prevent divide-by-zero
+       ! error).
+       wind_speed_pert = max( sqrt( (um_pert)**2 + (vm_pert)**2 ), eps )
+       ! Compute u_star_sqd according to the definition of u_star.
+       u_star_sqd_pert = sqrt( upwp_pert(1)**2 + vpwp_pert(1)**2 )
+
+       ! Compute the explicit portion of the um equation.
+       ! Build the right-hand side vector.
+       call windm_edsclrm_rhs( gr, windm_edsclrm_um, dt, nu_vert_res_dep%nu10, & ! In
+                               Km_zm, um_pert, um_tndcy,                   & ! In
+                               rho_ds_zm, invrs_rho_ds_zt,                 & ! In
+                               l_imp_sfc_momentum_flux, upwp_pert(1),      & ! In
+                               stats_zt,                                   & ! In/Out
+                               rhs(:,windm_edsclrm_um)                     ) ! Out
+
+       ! Compute the explicit portion of the vm equation.
+       ! Build the right-hand side vector.
+       call windm_edsclrm_rhs( gr, windm_edsclrm_vm, dt, nu_vert_res_dep%nu10, & ! In
+                               Km_zm, vm_pert, vm_tndcy,                   & ! In
+                               rho_ds_zm, invrs_rho_ds_zt,                 & ! In
+                               l_imp_sfc_momentum_flux, vpwp_pert(1),      & ! In
+                               stats_zt,                                   & ! In/Out
+                               rhs(:,windm_edsclrm_vm)                     ) ! Out
+
+
+       ! Store momentum flux (explicit component)
+
+       ! The surface flux, x'w'(1) = x'w'|_sfc, is set elsewhere in the model.
+!      upwp(1) = upwp_sfc
+!      vpwp(1) = vpwp_sfc
+
+       ! Solve for x'w' at all intermediate model levels.
+       ! A Crank-Nicholson timestep is used.
+
+       upwp_pert(2:gr%nz-1) &
+       = -one_half &
+          * xpwp_fnc( Km_zm(2:gr%nz-1) + nu_vert_res_dep%nu10, & ! in
+                      um_pert(2:gr%nz-1), um_pert(3:gr%nz),    & ! in
+                      gr%invrs_dzm(2:gr%nz-1) )
+
+       vpwp_pert(2:gr%nz-1) &
+       = -one_half &
+          * xpwp_fnc( Km_zm(2:gr%nz-1) + nu_vert_res_dep%nu10, & ! in
+                      vm_pert(2:gr%nz-1), vm_pert(3:gr%nz),    & ! in
+                      gr%invrs_dzm(2:gr%nz-1) )
+
+       ! A zero-flux boundary condition at the top of the model, d(xm)/dz = 0,
+       ! means that x'w' at the top model level is 0,
+       ! since x'w' = - K_zm * d(xm)/dz.
+       upwp_pert(gr%nz) = zero
+       vpwp_pert(gr%nz) = zero
+
+
+       ! Compute the implicit portion of the um and vm equations.
+       ! Build the left-hand side matrix.
+       call windm_edsclrm_lhs( gr, dt, nu_vert_res_dep%nu10, wm_zt, Km_zm, & ! In
+                               wind_speed_pert, u_star_sqd_pert,           & ! In
+                               rho_ds_zm, invrs_rho_ds_zt,                 & ! In
+                               l_implemented, l_imp_sfc_momentum_flux,     & ! In
+                               l_upwind_xm_ma,                             & ! In
+                               lhs )                                         ! Out
+
+       ! Decompose and back substitute for um and vm
+       nrhs = 2
+       call windm_edsclrm_solve( gr, nrhs, iwindm_matrix_condt_num, & ! In
+                                 stats_sfc, &                         ! In
+                                 lhs, rhs, &                          ! In/out
+                                 solution )                           ! Out
+
+       ! Check for singular matrices and bad LAPACK arguments
+       if ( clubb_at_least_debug_level( 0 ) ) then
+          if ( err_code == clubb_fatal_error ) then
+             write(fstderr,*) "Fatal error solving for um_pert/vm_pert"
+             return
+          endif
+       endif
+
+       !----------------------------------------------------------------
+       ! Update zonal (west-to-east) component of mean wind, um
+       !----------------------------------------------------------------
+       um_pert(1:gr%nz) = solution(1:gr%nz,windm_edsclrm_um)
+
+       !----------------------------------------------------------------
+       ! Update meridional (south-to-north) component of mean wind, vm
+       !----------------------------------------------------------------
+       vm_pert(1:gr%nz) = solution(1:gr%nz,windm_edsclrm_vm)
+    
+       ! The values of um(1) and vm(1) are located below the model surface and
+       ! do not affect the rest of the model.  The values of um(1) or vm(1) are
+       ! simply set to the values of um(2) and vm(2), respectively, after the
+       ! equation matrices has been solved.  Even though um and vm would sharply
+       ! decrease to a value of 0 at the surface, this is done to avoid
+       ! confusion on plots of the vertical profiles of um and vm.
+       um_pert(1) = um_pert(2)
+       vm_pert(1) = vm_pert(2)
+
+       ! Second part of momentum (implicit component)
+
+       ! Solve for x'w' at all intermediate model levels.
+       ! A Crank-Nicholson timestep is used.
+
+       upwp_pert(2:gr%nz-1) &
+       = upwp_pert(2:gr%nz-1) &
+         - one_half * xpwp_fnc( Km_zm(2:gr%nz-1)+nu_vert_res_dep%nu10, &
+                                um_pert(2:gr%nz-1), um_pert(3:gr%nz),  &
+                                gr%invrs_dzm(2:gr%nz-1) )
+
+       vpwp_pert(2:gr%nz-1) &
+       = vpwp_pert(2:gr%nz-1) &
+         - one_half * xpwp_fnc( Km_zm(2:gr%nz-1)+nu_vert_res_dep%nu10, &
+                                vm_pert(2:gr%nz-1), vm_pert(3:gr%nz),  &
+                                gr%invrs_dzm(2:gr%nz-1) )
+
+       if ( l_tke_aniso ) then
+
+          ! Clipping for u'w'
+          !
+          ! Clipping u'w' at each vertical level, based on the
+          ! correlation of u and w at each vertical level, such that:
+          ! corr_(u,w) = u'w' / [ sqrt(u'^2) * sqrt(w'^2) ];
+          ! -1 <= corr_(u,w) <= 1.
+          !
+          ! Since u'^2, w'^2, and u'w' are each advanced in different
+          ! subroutines from each other in advance_clubb_core, clipping for u'w'
+          ! has to be done three times during each timestep (once after each
+          ! variable has been updated).
+          ! This is the third instance of u'w' clipping.
+          l_first_clip_ts = .false.
+          l_last_clip_ts = .true.
+          call clip_covar( gr, clip_upwp, l_first_clip_ts,  & ! intent(in)
+                           l_last_clip_ts, dt, wp2, up2,    & ! intent(in)
+                           l_predict_upwp_vpwp,             & ! intent(in)
+                           stats_zm,                        & ! intent(inout)
+                           upwp_pert, upwp_chnge )            ! intent(inout)
+
+          ! Clipping for v'w'
+          !
+          ! Clipping v'w' at each vertical level, based on the
+          ! correlation of v and w at each vertical level, such that:
+          ! corr_(v,w) = v'w' / [ sqrt(v'^2) * sqrt(w'^2) ];
+          ! -1 <= corr_(v,w) <= 1.
+          !
+          ! Since v'^2, w'^2, and v'w' are each advanced in different
+          ! subroutines from each other in advance_clubb_core, clipping for v'w'
+          ! has to be done three times during each timestep (once after each
+          ! variable has been updated).
+          ! This is the third instance of v'w' clipping.
+          l_first_clip_ts = .false.
+          l_last_clip_ts = .true.
+          call clip_covar( gr, clip_vpwp, l_first_clip_ts,  & ! intent(in)
+                           l_last_clip_ts, dt, wp2, vp2,    & ! intent(in)
+                           l_predict_upwp_vpwp,             & ! intent(in)
+                           stats_zm,                        & ! intent(inout)
+                           vpwp_pert, vpwp_chnge )            ! intent(inout)
+
+       else
+
+          ! In this case, it is assumed that
+          !   u'^2 == v'^2 == w'^2, and the variables `up2' and `vp2' do not
+          ! interact with any other variables.
+          l_first_clip_ts = .false.
+          l_last_clip_ts = .true.
+          call clip_covar( gr, clip_upwp, l_first_clip_ts,  & ! intent(in)
+                           l_last_clip_ts, dt, wp2, wp2,    & ! intent(in)
+                           l_predict_upwp_vpwp,             & ! intent(in)
+                           stats_zm,                        & ! intent(inout)
+                           upwp_pert, upwp_chnge )            ! intent(inout)
+
+          call clip_covar( gr, clip_vpwp, l_first_clip_ts,  & ! intent(in)
+                           l_last_clip_ts, dt, wp2, wp2,    & ! intent(in)
+                           l_predict_upwp_vpwp,             & ! intent(in)
+                           stats_zm,                        & ! intent(inout)
+                           vpwp_pert, vpwp_chnge )            ! intent(inout)
 
        endif ! l_tke_aniso
 
