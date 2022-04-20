@@ -214,8 +214,6 @@ contains
     call chm_diags_inti()
     call rate_diags_init()
 
-    call addfld( 'CHEM_PDELDRY', (/ 'lev' /), 'A', 'Pa', 'PDELDRY in chem' )
-    call add_default( 'CHEM_PDELDRY', 1, ' ' )
 !-----------------------------------------------------------------------
 ! get pbuf indicies
 !-----------------------------------------------------------------------
@@ -1083,7 +1081,6 @@ contains
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
 
-    call outfld( 'CHEM_PDELDRY', pdeldry(:ncol,:), ncol, lchnk )
     chemmp_prod(:,:,:) = 0._r8
     chemmp_loss(:,:,:) = 0._r8
 
@@ -1198,6 +1195,8 @@ contains
     ! reset vmr to pre-exp_sol values for stratospheric boxes
     if (uci1_ndx > 0) then
        ! exclude E90 from resetting
+       ! NOTE: reaction_rates does not need to reset because of no changes in
+       ! exp_sol
        vmr_old2(:,:,e90_ndx) = vmr(:,:,e90_ndx)
        do i = 1,ncol
           do k = 1,pver

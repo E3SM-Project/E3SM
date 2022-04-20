@@ -27,7 +27,7 @@ module mo_chm_diags
   integer :: id_ccl4,id_cfc11,id_cfc113,id_ch3ccl3,id_cfc12,id_ch3cl,id_hcfc22,id_cf2clbr
   integer :: id_br,id_bro,id_hbr,id_hobr,id_ch4,id_h2o,id_h2
   integer :: id_o,id_o2,id_h
-  integer :: id_o3, id_o3lnz
+  integer :: id_o3, id_o3lnz, id_co
 
   integer, parameter :: NJEUV = neuv
   integer :: rid_jeuv(NJEUV), rid_jno_i, rid_jno
@@ -167,6 +167,7 @@ contains
     id_h2      = get_spc_ndx( 'H2' )
     id_o       = get_spc_ndx( 'O' )
     id_o2      = get_spc_ndx( 'O2' )
+    id_co      = get_spc_ndx( 'CO' )
     id_o3      = get_spc_ndx( 'O3' )
     id_o3lnz   = get_spc_ndx( 'O3LNZ' )
     id_h       = get_spc_ndx( 'H' )
@@ -332,8 +333,6 @@ contains
              call addfld( trim(spc_name)//'_MSL', (/ 'lev' /), 'I', 'kg/m2', trim(attr)//' concentration after Linoz')
              call addfld( trim(spc_name)//'_MSS', (/ 'lev' /), 'I', 'kg/m2', trim(attr)//' concentration after surface emission')
              call addfld( trim(spc_name)//'_MSD', (/ 'lev' /), 'I', 'kg/m2', trim(attr)//' concentration after dry deposition')
-             call addfld( trim(spc_name)//'_CMP', (/ 'lev' /), 'I', 'kg/m2', trim(attr)//' explicit chemisty production')
-             call addfld( trim(spc_name)//'_CML', (/ 'lev' /), 'I', 'kg/m2', trim(attr)//' explicit chemisty loss')
              call addfld( trim(spc_name)//'_TDE', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to explicit solver')
              call addfld( trim(spc_name)//'_TDI', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to implicit solver')
              call addfld( trim(spc_name)//'_TDR', (/ 'lev' /), 'A', 'kg/m2/s', trim(attr)//' tendency due to reset reaction_rates')
@@ -358,14 +357,18 @@ contains
              call addfld( trim(spc_name)//'_2DMSU', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration after setting upper boundary values')
              call addfld( trim(spc_name)//'_2DMSC', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration after setting lower boundary values')
              call addfld( trim(spc_name)//'_2DMSW', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration after wet scaving')
+             if (trim(spc_name) == 'CO') then
              call addfld( trim(spc_name)//'_2DCEP', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated explicit chemistry production rate')
              call addfld( trim(spc_name)//'_2DCEL', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated explicit chemistry loss rate')
+             endif
+             if (trim(spc_name) == 'O3') then
              call addfld( trim(spc_name)//'_2DCIP', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry production rate')
              call addfld( trim(spc_name)//'_2DCIL', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry loss rate')
              call addfld( trim(spc_name)//'_2DTIP', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry production rate')
              call addfld( trim(spc_name)//'_2DTIL', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry loss rate')
              call addfld( trim(spc_name)//'_2DMPP', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated MP implicit chemistry production rate')
              call addfld( trim(spc_name)//'_2DMPL', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated MP implicit chemistry loss rate')
+             endif
              call addfld( trim(spc_name)//'_2DTDE', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to explicit solver')
              call addfld( trim(spc_name)//'_2DTDI', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to implicit solver')
              call addfld( trim(spc_name)//'_2DTDR', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency due to reset reaction_rates')
@@ -383,14 +386,18 @@ contains
              call addfld( trim(spc_name)//'_2DMSL_L1', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration from top-of-model to 100 hPa after Linoz')
              call addfld( trim(spc_name)//'_2DMSS_L1', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration from top-of-model to 100 hPa after surface emission')
              call addfld( trim(spc_name)//'_2DMSD_L1', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration from top-of-model to 100 hPa after dry deposition')
+             if (trim(spc_name) == 'CO') then
              call addfld( trim(spc_name)//'_2DCEP_L1', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated explicit chemistry production rate from top-of-model to 100 hPa')
              call addfld( trim(spc_name)//'_2DCEL_L1', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated explicit chemistry loss rate from top-of-model to 100 hPa')
+             endif
+             if (trim(spc_name) == 'O3') then
              call addfld( trim(spc_name)//'_2DCIP_L1', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry production rate from top-of-model to 100 hPa')
              call addfld( trim(spc_name)//'_2DCIL_L1', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry loss rate from top-of-model to 100 hPa')
              call addfld( trim(spc_name)//'_2DTIP_L1', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry production rate from top-of-model to 100 hPa')
              call addfld( trim(spc_name)//'_2DTIL_L1', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry loss rate from top-of-model to 100 hPa')
              call addfld( trim(spc_name)//'_2DMPP_L1', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated MP implicit chemistry production rate from top-of-model to 100 hPa')
              call addfld( trim(spc_name)//'_2DMPL_L1', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated MP implicit chemistry loss rate from top-of-model to 100 hPa')
+             endif
              call addfld( trim(spc_name)//'_2DTDE_L1', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency from top-of-model to 100 hPa due to explicit solver')
              call addfld( trim(spc_name)//'_2DTDI_L1', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency from top-of-model to 100 hPa due to implicit solver')
              call addfld( trim(spc_name)//'_2DTDR_L1', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency from top-of-model to 100 hPa due to reset reaction_rates')
@@ -407,14 +414,18 @@ contains
              call addfld( trim(spc_name)//'_2DMSL_L2', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration from 100 to 267 hPa after Linoz')
              call addfld( trim(spc_name)//'_2DMSS_L2', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration from 100 to 267 hPa after surface emission')
              call addfld( trim(spc_name)//'_2DMSD_L2', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration from 100 to 267 hPa after dry deposition')
+             if (trim(spc_name) == 'CO') then
              call addfld( trim(spc_name)//'_2DCEP_L2', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated explicit chemistry production rate from 100 to 267 hPa')
              call addfld( trim(spc_name)//'_2DCEL_L2', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated explicit chemistry loss rate from 100 to 267 hPa')
+             endif
+             if (trim(spc_name) == 'O3') then
              call addfld( trim(spc_name)//'_2DCIP_L2', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry production rate from 100 to 267 hPa')
              call addfld( trim(spc_name)//'_2DCIL_L2', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry loss rate from 100 to 267 hPa')
              call addfld( trim(spc_name)//'_2DTIP_L2', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry production rate from 100 to 267 hPa')
              call addfld( trim(spc_name)//'_2DTIL_L2', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry loss rate from 100 to 267 hPa')
              call addfld( trim(spc_name)//'_2DMPP_L2', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated MP implicit chemistry production rate from 100 to 267 hPa')
              call addfld( trim(spc_name)//'_2DMPL_L2', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated MP implicit chemistry loss rate from 100 to 267 hPa')
+             endif
              call addfld( trim(spc_name)//'_2DTDE_L2', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency from 100 to 267 hPa due to explicit solver')
              call addfld( trim(spc_name)//'_2DTDI_L2', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency from 100 to 267 hPa due to implicit solver')
              call addfld( trim(spc_name)//'_2DTDR_L2', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency from 100 to 267 hPa due to reset reaction_rates')
@@ -431,14 +442,18 @@ contains
              call addfld( trim(spc_name)//'_2DMSL_L3', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration from 267 to 856 hPa after Linoz')
              call addfld( trim(spc_name)//'_2DMSS_L3', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration from 267 to 856 hPa after surface emission')
              call addfld( trim(spc_name)//'_2DMSD_L3', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration from 267 to 856 hPa after dry deposition')
+             if (trim(spc_name) == 'CO') then
              call addfld( trim(spc_name)//'_2DCEP_L3', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated explicit chemistry prodction rate from 267 to 856 hPa')
              call addfld( trim(spc_name)//'_2DCEL_L3', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated explicit chemistry loss rate from 267 to 856 hPa')
+             endif
+             if (trim(spc_name) == 'O3') then
              call addfld( trim(spc_name)//'_2DCIP_L3', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry prodction rate from 267 to 856 hPa')
              call addfld( trim(spc_name)//'_2DCIL_L3', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry loss rate from 267 to 856 hPa')
              call addfld( trim(spc_name)//'_2DTIP_L3', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry prodction rate from 267 to 856 hPa')
              call addfld( trim(spc_name)//'_2DTIL_L3', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry loss rate from 267 to 856 hPa')
              call addfld( trim(spc_name)//'_2DMPP_L3', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated MP implicit chemistry prodction rate from 267 to 856 hPa')
              call addfld( trim(spc_name)//'_2DMPL_L3', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated MP implicit chemistry loss rate from 267 to 856 hPa')
+             endif
              call addfld( trim(spc_name)//'_2DTDE_L3', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency from 267 to 856 hPa due to explicit solver')
              call addfld( trim(spc_name)//'_2DTDI_L3', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency from 267 to 856 hPa due to implicit solver')
              call addfld( trim(spc_name)//'_2DTDR_L3', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency from 267 to 856 hPa due to reset reaction_rates')
@@ -455,14 +470,18 @@ contains
              call addfld( trim(spc_name)//'_2DMSL_L4', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration from 856 hPa to surface after Linoz')
              call addfld( trim(spc_name)//'_2DMSS_L4', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration from 856 hPa to surface after surface emission')
              call addfld( trim(spc_name)//'_2DMSD_L4', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration from 856 hPa to surface after dry deposition')
+             if (trim(spc_name) == 'CO') then
              call addfld( trim(spc_name)//'_2DCEP_L4', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated explicit chemistry production rate from 856 hPa to surface')
              call addfld( trim(spc_name)//'_2DCEL_L4', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated explicit chemistry loss rate from 856 hPa to surface')
+             endif
+             if (trim(spc_name) == 'O3') then
              call addfld( trim(spc_name)//'_2DCIP_L4', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry production rate from 856 hPa to surface')
              call addfld( trim(spc_name)//'_2DCIL_L4', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry loss rate from 856 hPa to surface')
              call addfld( trim(spc_name)//'_2DTIP_L4', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry production rate from 856 hPa to surface')
              call addfld( trim(spc_name)//'_2DTIL_L4', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry loss rate from 856 hPa to surface')
              call addfld( trim(spc_name)//'_2DMPP_L4', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated MP implicit chemistry production rate from 856 hPa to surface')
              call addfld( trim(spc_name)//'_2DMPL_L4', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated MP implicit chemistry loss rate from 856 hPa to surface')
+             endif
              call addfld( trim(spc_name)//'_2DTDE_L4', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency from 856 hPa to surface due to explicit solver')
              call addfld( trim(spc_name)//'_2DTDI_L4', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency from 856 hPa to surface due to implicit solver')
              call addfld( trim(spc_name)//'_2DTDR_L4', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency from 856 hPa to surface due to reset reaction_rates')
@@ -479,14 +498,18 @@ contains
              call addfld( trim(spc_name)//'_2DMSL_trop', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration in troposphere after Linoz')
              call addfld( trim(spc_name)//'_2DMSS_trop', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration in troposphere after surface emission')
              call addfld( trim(spc_name)//'_2DMSD_trop', horiz_only, 'I', 'kg/m2', trim(attr)//' vertically integrated concentration in troposphere after dry deposition')
+             if (trim(spc_name) == 'CO') then
              call addfld( trim(spc_name)//'_2DCEP_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated explicit chemistry production rate in troposphere')
              call addfld( trim(spc_name)//'_2DCEL_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated explicit chemistry loss rate in troposphere')
+             endif
+             if (trim(spc_name) == 'O3') then
              call addfld( trim(spc_name)//'_2DCIP_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry production rate in troposphere')
              call addfld( trim(spc_name)//'_2DCIL_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry loss rate in troposphere')
              call addfld( trim(spc_name)//'_2DTIP_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry production rate in troposphere')
              call addfld( trim(spc_name)//'_2DTIL_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated implicit chemistry loss rate in troposphere')
              call addfld( trim(spc_name)//'_2DMPP_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated MP implicit chemistry production rate in troposphere')
              call addfld( trim(spc_name)//'_2DMPL_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated MP implicit chemistry loss rate in troposphere')
+             endif
              call addfld( trim(spc_name)//'_2DTDE_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in troposphere due to explicit solver')
              call addfld( trim(spc_name)//'_2DTDI_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in troposphere due to implicit solver')
              call addfld( trim(spc_name)//'_2DTDR_trop', horiz_only, 'A', 'kg/m2/s', trim(attr)//' vertically integrated tendency in troposphere due to reset reaction_rates')
@@ -517,8 +540,6 @@ contains
                 call add_default( trim(spc_name)//'_MSL', 2, ' ' )
                 call add_default( trim(spc_name)//'_MSS', 2, ' ' )
                 call add_default( trim(spc_name)//'_MSD', 2, ' ' )
-                call add_default( trim(spc_name)//'_CMP', 2, ' ' )
-                call add_default( trim(spc_name)//'_CML', 2, ' ' )
                 call add_default( trim(spc_name)//'_TDE', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDI', 1, ' ' )
                 call add_default( trim(spc_name)//'_TDR', 1, ' ' )
@@ -543,14 +564,18 @@ contains
                 call add_default( trim(spc_name)//'_2DMSU', 2, ' ' )
                 call add_default( trim(spc_name)//'_2DMSC', 2, ' ' )
                 call add_default( trim(spc_name)//'_2DMSW', 2, ' ' )
+                if (trim(spc_name) == 'CO') then
                 call add_default( trim(spc_name)//'_2DCEP', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DCEL', 1, ' ' )
+                endif
+                if (trim(spc_name) == 'O3') then
                 call add_default( trim(spc_name)//'_2DCIP', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DCIL', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTIP', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTIL', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DMPP', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DMPL', 1, ' ' )
+                endif
                 call add_default( trim(spc_name)//'_2DTDE', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDI', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDR', 1, ' ' )
@@ -568,14 +593,18 @@ contains
                 call add_default( trim(spc_name)//'_2DMSL_L1', 2, ' ' )
                 call add_default( trim(spc_name)//'_2DMSS_L1', 2, ' ' )
                 call add_default( trim(spc_name)//'_2DMSD_L1', 2, ' ' )
+                if (trim(spc_name) == 'CO') then
                 call add_default( trim(spc_name)//'_2DCEP_L1', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DCEL_L1', 1, ' ' )
+                endif
+                if (trim(spc_name) == 'O3') then
                 call add_default( trim(spc_name)//'_2DCIP_L1', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DCIL_L1', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTIP_L1', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTIL_L1', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DMPP_L1', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DMPL_L1', 1, ' ' )
+                endif
                 call add_default( trim(spc_name)//'_2DTDE_L1', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDI_L1', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDR_L1', 1, ' ' )
@@ -592,14 +621,18 @@ contains
                 call add_default( trim(spc_name)//'_2DMSL_L2', 2, ' ' )
                 call add_default( trim(spc_name)//'_2DMSS_L2', 2, ' ' )
                 call add_default( trim(spc_name)//'_2DMSD_L2', 2, ' ' )
+                if (trim(spc_name) == 'CO') then
                 call add_default( trim(spc_name)//'_2DCEP_L2', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DCEL_L2', 1, ' ' )
+                endif
+                if (trim(spc_name) == 'O3') then
                 call add_default( trim(spc_name)//'_2DCIP_L2', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DCIL_L2', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTIP_L2', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTIL_L2', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DMPP_L2', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DMPL_L2', 1, ' ' )
+                endif
                 call add_default( trim(spc_name)//'_2DTDE_L2', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDI_L2', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDR_L2', 1, ' ' )
@@ -616,14 +649,18 @@ contains
                 call add_default( trim(spc_name)//'_2DMSL_L3', 2, ' ' )
                 call add_default( trim(spc_name)//'_2DMSS_L3', 2, ' ' )
                 call add_default( trim(spc_name)//'_2DMSD_L3', 2, ' ' )
+                if (trim(spc_name) == 'CO') then
                 call add_default( trim(spc_name)//'_2DCEP_L3', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DCEL_L3', 1, ' ' )
+                endif
+                if (trim(spc_name) == 'O3') then
                 call add_default( trim(spc_name)//'_2DCIP_L3', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DCIL_L3', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTIP_L3', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTIL_L3', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DMPP_L3', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DMPL_L3', 1, ' ' )
+                endif
                 call add_default( trim(spc_name)//'_2DTDE_L3', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDI_L3', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDR_L3', 1, ' ' )
@@ -640,14 +677,18 @@ contains
                 call add_default( trim(spc_name)//'_2DMSL_L4', 2, ' ' )
                 call add_default( trim(spc_name)//'_2DMSS_L4', 2, ' ' )
                 call add_default( trim(spc_name)//'_2DMSD_L4', 2, ' ' )
+                if (trim(spc_name) == 'CO') then
                 call add_default( trim(spc_name)//'_2DCEP_L4', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DCEL_L4', 1, ' ' )
+                endif
+                if (trim(spc_name) == 'O3') then
                 call add_default( trim(spc_name)//'_2DCIP_L4', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DCIL_L4', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTIP_L4', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTIL_L4', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DMPP_L4', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DMPL_L4', 1, ' ' )
+                endif
                 call add_default( trim(spc_name)//'_2DTDE_L4', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDI_L4', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDR_L4', 1, ' ' )
@@ -677,14 +718,14 @@ contains
                 call add_default( trim(spc_name)//'_2DTDS_trop', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDD_trop', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTDO_trop', 1, ' ' )
-                call add_default( trim(spc_name)//'_2DCEP_trop', 1, ' ' )
-                call add_default( trim(spc_name)//'_2DCEL_trop', 1, ' ' )
+                if (trim(spc_name) == 'O3') then
                 call add_default( trim(spc_name)//'_2DCIP_trop', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DCIL_trop', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTIP_trop', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DTIL_trop', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DMPP_trop', 1, ' ' )
                 call add_default( trim(spc_name)//'_2DMPL_trop', 1, ' ' )
+                endif
              endif
              endif
           endif
@@ -1385,7 +1426,7 @@ contains
     integer  :: gaschmbudget_2D_L3_e
     integer  :: gaschmbudget_2D_L4_s
     integer  :: gaschmbudget_2D_L4_e
-
+    integer  :: start_index, end_index
     !-----------------------------------------------------------------------
 
     call phys_getopts( history_gaschmbudget_out = history_gaschmbudget, &
@@ -1402,7 +1443,18 @@ contains
 
     if ( .not. history_gaschmbudget .and. .not. history_gaschmbudget_2D .and. .not. history_gaschmbudget_2D_levels) return
 
-    do m = 1,gas_pcnst
+    if (flag(1:4)=='2DCE') then 
+       start_index = id_co
+       end_index = id_co
+    elseif (flag(1:4)=='2DCI' .or.flag(1:4)=='2DTI' .or. flag(1:4)=='2DMP') then
+       start_index = id_o3
+       end_index = id_o3
+    else
+       start_index = 1
+       end_index = gas_pcnst
+    endif
+
+    do m = start_index,end_index
        
        if ( .not. any( aer_species == m ) .and. adv_mass(m) /= 0._r8 ) then
           if (flag(1:2) .ne. '2D') then
