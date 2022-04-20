@@ -2,6 +2,7 @@
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 #include "physics/rrtmgp/rrtmgp_utils.hpp"
 #include "physics/rrtmgp/share/shr_orb_mod_c2f.hpp"
+#include "share/property_checks/field_within_interval_check.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/util/scream_column_ops.hpp"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
@@ -275,6 +276,15 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   // Initialize GasConcs object to pass to RRTMGP initializer;
   gas_concs.init(gas_names_yakl_offset,m_ncol,m_nlay);
   rrtmgp::rrtmgp_initialize(gas_concs, m_atm_logger);
+
+  // Set property checks for fields in this process
+
+  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140.0, 500.0,false);
+  add_precondition_check<FieldWithinIntervalCheck>(get_field_in("sfc_alb_dir_vis"),0.0,1.0,false);
+  add_precondition_check<FieldWithinIntervalCheck>(get_field_in("sfc_alb_dir_nir"),0.0,1.0,false);
+  add_precondition_check<FieldWithinIntervalCheck>(get_field_in("sfc_alb_dif_vis"),0.0,1.0,false);
+  add_precondition_check<FieldWithinIntervalCheck>(get_field_in("sfc_alb_dif_nir"),0.0,1.0,false);
+
 }
 
 // =========================================================================================

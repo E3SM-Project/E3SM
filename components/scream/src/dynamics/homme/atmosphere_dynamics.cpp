@@ -394,6 +394,9 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   auto lb_check = std::make_shared<FieldLowerBoundCheck>(Q,tol,false);
   auto lb_repair = std::make_shared<FieldPositivityCheck>(Q,true);
   add_postcondition_check<CheckAndRepairWrapper>(lb_check,lb_repair);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140.0, 500.0,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("horiz_winds"),-400.0, 400.0,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("ps"),40000.0, 110000.0,false);
 }
 
 void HommeDynamics::run_impl (const int dt)

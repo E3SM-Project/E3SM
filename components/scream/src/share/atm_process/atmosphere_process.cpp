@@ -215,6 +215,10 @@ void AtmosphereProcess::run_postcondition_checks () const {
     if (pc->can_repair()) {
       // Ok, just fix it
       pc->repair();
+      std::cout << "WARNING: Post-condition property check failed and repaired.\n"
+        "  - Property check name: " + pc->name() + "\n"
+        "  - Atmosphere process name: " + name() + "\n"
+        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n";
     } else if (it.first==CheckFailHandling::Warning) {
       // Still ok, but warn the user
       log (LogLevel::warn,

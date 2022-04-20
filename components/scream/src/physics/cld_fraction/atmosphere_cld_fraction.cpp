@@ -56,8 +56,8 @@ void CldFraction::initialize_impl (const RunType /* run_type */)
 {
   // Set property checks for fields in this process
   using FWIC = FieldWithinIntervalCheck;
-  add_postcondition_check<FWIC>(get_field_out("cldfrac_ice"),0,1);
-  add_postcondition_check<FWIC>(get_field_out("cldfrac_tot"),0,1);
+  add_postcondition_check<FWIC>(get_field_out("cldfrac_ice"),0.0,1.0,false);
+  add_postcondition_check<FWIC>(get_field_out("cldfrac_tot"),0.0,1.0,false);
 }
 
 // =========================================================================================
