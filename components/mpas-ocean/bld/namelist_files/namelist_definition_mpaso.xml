@@ -2623,7 +2623,7 @@ Default: Defined in namelist_defaults.xml
         category="tracer_forcing_benthosTracers" group="tracer_forcing_benthosTracers">
 postive integers set testcases which override remaining flags. If negative, defer to user specified flag options
 
-Valid values: integers less than or equal to 11     
+Valid values: integers less than or equal to 11
 Default: Defined in namelist_defaults.xml
 </entry>
 

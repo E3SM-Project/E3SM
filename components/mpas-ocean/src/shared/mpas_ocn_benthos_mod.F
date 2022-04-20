@@ -2869,7 +2869,7 @@ contains
    ! initialize
    dts_o = 300.0_benthos_r8
    dt_old = dt
-   subN_o = NINT(dt/dts,KIND=benthos_i4) !p1_benthos
+   subN_o = NINT(dt/dts_o,KIND=benthos_i4) !p1_benthos
    tooLarge = .true.
 
    !  make sure there is consistency to start:

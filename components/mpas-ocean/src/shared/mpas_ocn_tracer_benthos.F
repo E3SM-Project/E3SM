@@ -209,8 +209,10 @@ contains
       type (mpas_pool_type), pointer :: oceanBottomBenthosFieldsPool
       type (mpas_pool_type), pointer :: oceanBenthosPrecipitationPool
 
+      integer, pointer :: &
+         config_set_benthos_flags
+
       logical, pointer ::  &
-         config_set_benthos_flags, &
          config_use_carbonate_saturation, &
          config_use_secondary_reactions, &
          config_use_depth_dependent_porosity, &

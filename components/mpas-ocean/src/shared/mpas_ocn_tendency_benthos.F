@@ -317,6 +317,7 @@ contains
       nTracersEcosys = size(ecosysTracers, dim=1)
       nBenthicTracers = size(benthosTracers, dim=1)
 
+      call mpas_timer_start("ocn_tend_tracer")
      !
      ! initialize benthos tracer tendencies to zero.
      !
