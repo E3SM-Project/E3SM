@@ -51,13 +51,13 @@ contains
     enddo
 
     if ( history_gaschmbudget_2D ) then
-       call addfld('r_lch4_2D', horiz_only, 'A', 'kg/m2/s', 'CH4 vertically integrated produciton rate ')
+       call addfld('r_lch4_2D', horiz_only, 'A', 'kg/m2/s', 'CH4 vertically integrated reatction rate ')
     endif
     if ( history_gaschmbudget_2D_levels) then 
-       call addfld('r_lch4_L1', horiz_only, 'A', 'kg/m2/s', 'CH4 vertically integrated produciton rate from top-of-model to 100 hPa')
-       call addfld('r_lch4_L2', horiz_only, 'A', 'kg/m2/s', 'CH4 vertically integrated produciton rate from 100 to 267 hPa')
-       call addfld('r_lch4_L3', horiz_only, 'A', 'kg/m2/s', 'CH4 vertically integrated produciton rate from 267 hPa to 856 hPa')
-       call addfld('r_lch4_L4', horiz_only, 'A', 'kg/m2/s', 'CH4 vertically integrated produciton rate from 856 hPa to surface')
+       call addfld('r_lch4_L1', horiz_only, 'A', 'kg/m2/s', 'CH4 vertically integrated reaction rate from top-of-model to 100 hPa')
+       call addfld('r_lch4_L2', horiz_only, 'A', 'kg/m2/s', 'CH4 vertically integrated reaction rate from 100 to 267 hPa')
+       call addfld('r_lch4_L3', horiz_only, 'A', 'kg/m2/s', 'CH4 vertically integrated reaction rate from 267 hPa to 856 hPa')
+       call addfld('r_lch4_L4', horiz_only, 'A', 'kg/m2/s', 'CH4 vertically integrated reaction rate from 856 hPa to surface')
     endif
     if ( history_gaschmbudget_2D ) then
        call add_default( 'r_lch4_2D', 1, ' ' )
@@ -133,6 +133,7 @@ contains
           wrk(:ncol,:) = adv_mass_ch4*rxt_rates_vmr(:ncol,:,rxt_tag_map(i))/mbar(:ncol,:) &
                                 *pdeldry(:ncol,:)*rgrav
 
+       if (history_gaschmbudget_2D_levels) then
           wrk_sum(:ncol) = 0.0_r8
             do k = gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e
                wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
@@ -153,11 +154,12 @@ contains
                wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
             enddo
             call outfld( 'r_lch4_L4', wrk_sum(:ncol), ncol ,lchnk )
-          
+       elseif (history_gaschmbudget_2D) then          
             do k=2,pver
                wrk(:ncol,1) = wrk(:ncol,1) + wrk(:ncol,k)
             enddo
                call outfld( 'r_lch4_2D', wrk(:ncol,1), ncol ,lchnk )
+       endif
 
        endif
     enddo
