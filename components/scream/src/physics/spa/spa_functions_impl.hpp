@@ -550,30 +550,30 @@ void SPAFunctions<S,D>
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {num_local_cols, source_data_nlevs} };
   FieldLayout scalar3d_swband_layout { {COL,SWBND, LEV}, {num_local_cols, nswbands, source_data_nlevs} }; 
   FieldLayout scalar3d_lwband_layout { {COL,LWBND, LEV}, {num_local_cols, nlwbands, source_data_nlevs} };
-  std::map<std::string,view_1d_host> host_views;
+  std::map<std::string,view_1d_host<Real>> host_views;
   std::map<std::string,FieldLayout>  layouts;
   // Define each input variable we need
-  host_views["hyam"] = view_1d_host(hyam_v_h.data(),hyam_v_h.size());
+  host_views["hyam"] = view_1d_host<Real>(hyam_v_h.data(),hyam_v_h.size());
   layouts.emplace("hyam", scalar1d_layout);
-  host_views["hybm"] = view_1d_host(hybm_v_h.data(),hybm_v_h.size());
+  host_views["hybm"] = view_1d_host<Real>(hybm_v_h.data(),hybm_v_h.size());
   layouts.emplace("hybm", scalar1d_layout);
   //
-  host_views["PS"] = view_1d_host(PS_v_h.data(),PS_v_h.size());
+  host_views["PS"] = view_1d_host<Real>(PS_v_h.data(),PS_v_h.size());
   layouts.emplace("PS", scalar2d_layout_mid);
   //
-  host_views["CCN3"] = view_1d_host(CCN3_v_h.data(),CCN3_v_h.size());
+  host_views["CCN3"] = view_1d_host<Real>(CCN3_v_h.data(),CCN3_v_h.size());
   layouts.emplace("CCN3",scalar3d_layout_mid);
   //
-  host_views["AER_G_SW"] = view_1d_host(AER_G_SW_v_h.data(),AER_G_SW_v_h.size());
+  host_views["AER_G_SW"] = view_1d_host<Real>(AER_G_SW_v_h.data(),AER_G_SW_v_h.size());
   layouts.emplace("AER_G_SW",scalar3d_swband_layout);
   //
-  host_views["AER_SSA_SW"] = view_1d_host(AER_SSA_SW_v_h.data(),AER_SSA_SW_v_h.size());
+  host_views["AER_SSA_SW"] = view_1d_host<Real>(AER_SSA_SW_v_h.data(),AER_SSA_SW_v_h.size());
   layouts.emplace("AER_SSA_SW",scalar3d_swband_layout);
   //
-  host_views["AER_TAU_SW"] = view_1d_host(AER_TAU_SW_v_h.data(),AER_TAU_SW_v_h.size());
+  host_views["AER_TAU_SW"] = view_1d_host<Real>(AER_TAU_SW_v_h.data(),AER_TAU_SW_v_h.size());
   layouts.emplace("AER_TAU_SW",scalar3d_swband_layout);
   //
-  host_views["AER_TAU_LW"] = view_1d_host(AER_TAU_LW_v_h.data(),AER_TAU_LW_v_h.size());
+  host_views["AER_TAU_LW"] = view_1d_host<Real>(AER_TAU_LW_v_h.data(),AER_TAU_LW_v_h.size());
   layouts.emplace("AER_TAU_LW",scalar3d_lwband_layout);
   //
   

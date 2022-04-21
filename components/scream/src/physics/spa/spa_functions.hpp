@@ -52,9 +52,11 @@ struct SPAFunctions
   template <typename S, int N>
   using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
 
-  template <int N>
-  using view_Nd_host = typename KT::template view_ND<Real,N>::HostMirror;
-  using view_1d_host = view_Nd_host<1>;
+  template <typename S, int N>
+  using view_Nd_host = typename KT::template view_ND<S,N>::HostMirror;
+
+  template <typename S>
+  using view_1d_host = view_Nd_host<S,1>;
   /* ------------------------------------------------------------------------------------------- */
   // SPA structures to help manage all of the variables:
   struct SPATimeState {
@@ -175,18 +177,17 @@ struct SPAFunctions
     //  Helper function to organize the set of unique source data columns
     void set_unique_cols()
     {
-      auto source_grid_loc_h = Kokkos::create_mirror_view(source_grid_loc);
-      std::vector<Int>  source_grid_unique_cols; 
-      for (int ii=0; ii<length; ii++) {
-        Int src_col = source_grid_loc_h(ii);
-        if (find(source_grid_unique_cols.begin(),source_grid_unique_cols.end(),src_col) == source_grid_unique_cols.end()) {
-          source_grid_unique_cols.push_back(src_col);
-        } // if find
-      } // for ii
-      num_unique_cols = source_grid_unique_cols.size();
-      for (int ii=0; ii<num_unique_cols; ii++) {
-        source_local_col_map[source_grid_unique_cols[ii]] = ii;
-      } // for ii
+       view_1d_host<Int> source_grid_loc_h("",length);
+       Kokkos::deep_copy(source_grid_loc_h,source_grid_loc);
+       auto start = source_grid_loc_h.data();
+       auto end = start + source_grid_loc.size();
+       std::sort(start,end); // std::unique requires a sorted array
+       auto new_end = std::unique(start,end);
+       for (auto it = start; it!=new_end; ++it) { 
+         auto pos = it - start;
+         source_local_col_map.emplace(*it, pos);
+       }
+       num_unique_cols = source_local_col_map.size();
     }
 
   }; // SPAHorizInterp
