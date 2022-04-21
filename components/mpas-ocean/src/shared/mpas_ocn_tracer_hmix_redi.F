@@ -506,6 +506,7 @@ contains
       real(kind=RKIND), dimension(:), pointer :: RediKappa, RediKappaData
       real(kind=RKIND), dimension(:), pointer :: RediHorizontalTaper
       real(kind=RKIND), dimension(:), pointer :: dcEdge
+      real(kind=RKIND) :: coef
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       integer :: k, iEdge
@@ -533,7 +534,7 @@ contains
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
 
-         ! Resolution taper
+         ! Initialize horizonal taper
          if (config_Redi_horizontal_taper == 'none' .or. &
              config_Redi_horizontal_taper == 'RossbyRadius') then
             ! For 'RossbyRadius', the taper is recomputed at every time step in
@@ -546,6 +547,8 @@ contains
             !$omp end do
             !$omp end parallel
          else if (config_Redi_horizontal_taper == 'ramp') then
+            coef = 1.0_RKIND &
+                    /(config_Redi_horizontal_ramp_max - config_Redi_horizontal_ramp_min)
             !$omp parallel
             !$omp do schedule(runtime) 
             do iEdge=1,nEdges
@@ -554,9 +557,8 @@ contains
                else if (dcEdge(iEdge) >= config_Redi_horizontal_ramp_max) then
                   RediHorizontalTaper(iEdge) = 1.0_RKIND
                else
-                  RediHorizontalTaper(iEdge) = RediHorizontalTaper(iEdge) &
-                     *(dcEdge(iEdge) - config_Redi_horizontal_ramp_min) &
-                     /(config_Redi_horizontal_ramp_max - config_Redi_horizontal_ramp_min)
+                  RediHorizontalTaper(iEdge) = coef &
+                      *(dcEdge(iEdge) - config_Redi_horizontal_ramp_min)
                end if
             end do
             !$omp end do

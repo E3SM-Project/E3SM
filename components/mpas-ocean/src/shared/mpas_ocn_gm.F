@@ -940,7 +940,7 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      real(kind=RKIND) :: sphereRadius
+      real(kind=RKIND) :: sphereRadius, coef
 
       type(block_type), pointer :: block
       type(mpas_pool_type), pointer :: meshPool
@@ -1075,7 +1075,7 @@ contains
             call mpas_dmpar_finalize(domain%dminfo)
          end if
 
-         ! Add horizontal taper
+         ! Initialize horizontal taper
          if (config_GM_horizontal_taper == 'none' .or. &
              config_GM_horizontal_taper == 'RossbyRadius') then
             ! For 'RossbyRadius', the taper is recomputed at every time step.
@@ -1088,6 +1088,8 @@ contains
             !$omp end do
             !$omp end parallel
          else if (config_GM_horizontal_taper == 'ramp') then
+            coef = 1.0_RKIND &
+                    /(config_GM_horizontal_ramp_max - config_GM_horizontal_ramp_min)
             !$omp parallel
             !$omp do schedule(runtime) 
             do iEdge = 1, nEdges
@@ -1096,8 +1098,7 @@ contains
                else if (dcEdge(iEdge) >= config_GM_horizontal_ramp_max) then
                   gmHorizontalTaper(iEdge) = 1.0_RKIND
                else
-                  gmHorizontalTaper(iEdge) = 1.0_RKIND &
-                     /(config_GM_horizontal_ramp_max - config_GM_horizontal_ramp_min) &
+                  gmHorizontalTaper(iEdge) = coef &
                      *(dcEdge(iEdge) - config_GM_horizontal_ramp_min)
                end if
             end do
