@@ -50,7 +50,7 @@ module LakeBGCDynMod
       ! ebullition rate (s-1) 
       real(r8) :: Re 
       ! sediment OC dampening rate (m-1)
-      real(r8) :: dampen
+      real(r8) :: csedDMP
       ! ice bubble flux and dissolution rate (s-1)
       real(r8) :: icebflux
       real(r8) :: icebloss
@@ -112,7 +112,7 @@ contains
       ! !LOCAL VARIABLES:
       integer  :: c, t, g, fc                         ! indices
       integer  :: j, k, r, j0                         ! indices
-      integer  :: it                                  ! time indices
+      integer  :: iter                                ! time indices
       real(r8) :: dtime                               ! timestep size [seconds]
       real(r8) :: temp, por, depth                    ! auxiliary variables
       real(r8) :: solu_avg, biomas_avg                ! auxiliary variables 
@@ -286,7 +286,7 @@ contains
       end do
 
       ! sub-step cycle for solute, bubble, and biomass dynamics
-      do it = 1, nsubstep, 1
+      do iter = 1, nsubstep, 1
 
          do fc = 1, num_lakec
             c = filter_lakec(fc)
@@ -296,13 +296,13 @@ contains
             do j = 1, nlevlak+nlevsoi
                if (j<=nlevlak) then
                   conc_old(c,j,:) = conc_wat(c,j,:)
+                  ! O2 supply from surface & groundwater
+                  if (j==jwat(c) .and. icethick(c)>1.e-8_r8 .and. &
+                        lakedepth(c)>=2._r8) then
+                     conc_old(c,j,wo2lak) = 0.35_r8
+                  end if
                else
                   conc_old(c,j,:) = conc_sed(c,j-nlevlak,:)
-               end if
-               ! O2 supply from surface & groundwater
-               if (j==jwat(c) .and. icethick(c)>1.e-8_r8 .and. &
-                     lakedepth(c)>=2._r8) then
-                  conc_old(c,j,wo2lak) = 0.35_r8
                end if
             end do
             conc_iceb_old(c,:) = conc_iceb(c,:) 
@@ -331,14 +331,12 @@ contains
             end do
             ch4_sed_diff(c) = ch4_sed_diff(c) + df_sed(c,wch4lak)*dtime
 
-            ! phytoplankton settling velocity
-            call PhytoSettleVelocity(lakestate_vars, c, jwat(c), zTopblayer(c), &
-                     zBotblayer(c), conc_old(c,:,wsrplak), vpx(c,:,:))  
-
             ! initialize source and sink terms of solutes 
-            ex(c,:,:)   = 0._r8
-            csrc(c,:,:) = 0._r8
-            csnk(c,:,:) = 0._r8
+            ex(c,:,:)         = 0._r8
+            csrc(c,:,:)       = 0._r8
+            csnk(c,:,:)       = 0._r8
+            gebul(c,:,:)      = 0._r8
+            eb_surf(c,:)      = 0._r8
 
             ! initialize source and sink terms of c pools
             soilc_loss(c,:,:) = 0._r8
@@ -350,6 +348,11 @@ contains
             hr_vr(c,:)        = 0._r8
             pch4_vr(c,:)      = 0._r8
             och4_vr(c,:)      = 0._r8
+            bmotion_vr(c,:,:) = 0._r8
+
+            ! phytoplankton settling velocity
+            call PhytoSettleVelocity(lakestate_vars, c, jwat(c), zTopblayer(c), &
+                     zBotblayer(c), conc_old(c,:,wsrplak), vpx(c,:,:))
 
             ! sediment bubbling
             call SedimentEbullition(soilstate_vars, lakebgc_vars, c, &
@@ -496,15 +499,15 @@ contains
          do fc = 1, num_lakec
             c = filter_lakec(fc)
 
-            ! mixing
-            j0 = jwat(c)
-            solu_avg = sum(conc_new(c,j0:jmix(c),k)*dz_lake(c,j0:jmix(c))) / &
-                  sum(dz_lake(c,j0:jmix(c)))
-            conc_new(c,j0:jmix(c),k) = solu_avg
-
             do k = 1, nsolulak
+               ! mixing
+               j0 = jwat(c)
+               solu_avg = sum(conc_new(c,j0:jmix(c),k)*dz_lake(c,j0:jmix(c))) / &
+                     sum(dz_lake(c,j0:jmix(c)))
+               conc_new(c,j0:jmix(c),k) = solu_avg
+
+               ! correct negative concentration
                do j = 1, nlevlak+nlevsoi
-                  ! correct negative concentration
                   if (conc_new(c,j,k)<0._r8) then
                      deficit = -conc_new(c,j,k) * dzx(c,j)  ! mol/m2
                      if (k==gch4lak) then ! for CH4
@@ -533,28 +536,24 @@ contains
                      end if
                      conc_new(c,j,k) = 0._r8
                   end if
+               end do
 
-                  if (j<=nlevlak) then
-                     ! correct solutes in ice layers
-                     if (conc_new(c,j,k)>0._r8 .and. icefrac(c,j)>=1._r8) then
-                        if (k<=ngaslak) then
-                           conc_iceb(c,k) = conc_iceb(c,k) + conc_new(c,j,k)*dzx(c,j)
-                        end if
-                        conc_new(c,j,k) = 0._r8
+               ! other solute corrections in water column
+               do j = 1, nlevlak
+                  ! correct solutes in ice layers
+                  if (conc_new(c,j,k)>0._r8 .and. icefrac(c,j)>=1._r8) then
+                     if (k<=ngaslak) then
+                        conc_iceb(c,k) = conc_iceb(c,k) + conc_new(c,j,k)*dzx(c,j)
                      end if
-                     ! assume dissolved N2 always replete in water column
-                     if (k==wn2lak) then
-                        conc_new(c,j,k) = conc_eq(c,k)
-                     end if
-                  end if
-
-                  ! set dissolved gas conc for outputs
-                  if (j<=nlevlak) then
-                     conc_wat(c,j,k) = conc_new(c,j,k)
-                  else
-                     conc_sed(c,j-nlevlak,k) = conc_new(c,j,k)
+                     conc_new(c,j,k) = 0._r8
                   end if
                end do
+               ! assume dissolved N2 always replete
+               conc_new(c,1:nlevlak,wn2lak) = conc_eq(c,wn2lak)
+
+               ! set dissolved gas conc for outputs
+               conc_wat(c,1:nlevlak,k) = conc_new(c,1:nlevlak,k)
+               conc_sed(c,1:nlevsoi,k) = conc_new(c,nlevlak+1:nlevlak+nlevsoi,k)
             end do
          end do
 
@@ -605,12 +604,11 @@ contains
          end do
 
          ! solve phytoplankton equations
-         do k = 1, nphytolak
+         do fc = 1, num_lakec
+            c = filter_lakec(fc)
 
-            do j = 1, nlevlak
-               do fc = 1, num_lakec
-                  c = filter_lakec(fc)
-
+            do k = 1, nphytolak
+               do j = 1, nlevlak
                   if (biomas_old(c,j,k)>1.e-9_r8) then
                      blamda = (bloss_vr(c,j,k) - gpp_vr(c,j,k)) / biomas_old(c,j,k)
                      biomas_new(c,j,k) = biomas_old(c,j,k)*exp(-blamda*dtime)
@@ -630,13 +628,12 @@ contains
                   lake_gpp(c,j) = lake_gpp(c,j) + gpp_vr(c,j,k)*dtime
                   lake_npp(c,j) = lake_npp(c,j) + (gpp_vr(c,j,k)-ar_vr(c,j,k))*dtime
 
-                  bmotion_vr(c,j,k) = min(vpx(c,j,k),dzx(c,j)/dtime)*biomas_new(c,j,k)
+                  if (vpx(c,j,k)>=0._r8) then
+                     bmotion_vr(c,j,k) = min(vpx(c,j,k),dzx(c,j)/dtime)*biomas_new(c,j,k)
+                  else
+                     bmotion_vr(c,j,k) = max(vpx(c,j,k),-dzx(c,j)/dtime)*biomas_new(c,j,k)
+                  end if
                end do
-            end do
-
-            ! mixing, move, deposition and resuspension
-            do fc = 1, num_lakec
-               c = filter_lakec(fc)
 
                if (k==small_phyto) then
                   frcResusp = LakeBGCParamsInst%frcResusps
@@ -665,18 +662,22 @@ contains
                   end if
                end do
 
-               ! deposition
-               bphyto_dep_tot(c) = bphyto_dep_tot(c) + max(bmotion_vr(c,nlevlak,k),0._r8) * &
-                     (1._r8 - frcResusp) 
-            
-               ! resuspension
+               ! deposition and resuspension
                if (lakedepth(c)>zBotblayer(c)) then
+                  bphyto_dep_tot(c) = bphyto_dep_tot(c) + (1._r8 - frcResusp) * &
+                        max(bmotion_vr(c,nlevlak,k),0._r8)
                   bsusp = max(bmotion_vr(c,nlevlak,k),0._r8) * frcResusp / &
                         (lakedepth(c) - zBotblayer(c))
                   do j = jwat(c), nlevlak
                      if (z_lake(c,j)>=zBotblayer(c)) then
                         biomas_new(c,j,k) = biomas_new(c,j,k) + bsusp*dtime
                      end if
+                  end do
+               else
+                  zsum = sum(dzx(c,jwat(c):nlevlak)) 
+                  bsusp = max(bmotion_vr(c,nlevlak,k),0._r8) / zsum
+                  do j = jwat(c), nlevlak
+                     biomas_new(c,j,k) = biomas_new(c,j,k) + bsusp*dtime
                   end do
                end if
             end do
@@ -2203,7 +2204,7 @@ contains
       tString='csedDMP'
       call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
       if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-      LakeBGCParamsInst%dampen = tempr
+      LakeBGCParamsInst%csedDMP = tempr
 
       tString='icebflux'
       call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
