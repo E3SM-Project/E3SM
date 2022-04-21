@@ -33,6 +33,7 @@ module scamMod
   public scam_clm_default_opts    ! SCAM default run-time options for CLM
   public scam_default_opts        ! SCAM default run-time options 
   public scam_setopts             ! SCAM run-time options 
+  public setiopupdate_init
   public setiopupdate
   public readiopdata         
 
@@ -48,6 +49,8 @@ module scamMod
 
   integer, parameter :: num_switches = 20
   integer, parameter :: max_path_len = 128
+  
+  integer bdate
 
   logical, public ::  single_column         ! Using IOP file or not
   logical, public ::  use_iop               ! Using IOP file or not
@@ -191,6 +194,8 @@ module scamMod
   logical*4, public ::  have_heat_glob ! dataset contains global energy fixer
 
   character(len=200), public ::  scm_clubb_iop_name   ! IOP name for CLUBB
+  
+  save bdate
 
 !=======================================================================
   contains
@@ -421,15 +426,17 @@ subroutine scam_clm_default_opts( pftfile_out, srffile_out, inifile_out )
    srffile_out = lsmsurffile
 end subroutine scam_clm_default_opts
 
-subroutine setiopupdate
+subroutine setiopupdate_init
 
 !-----------------------------------------------------------------------
 !   
 ! Open and read netCDF file to extract time information
+!   This subroutine should be called at the first SCM time step
 !
 !---------------------------Code history--------------------------------
 !
 ! Written by John Truesdale    August, 1996
+! Modified for E3SM by  Peter Bogenschutz 2017 - onward
 ! 
 !-----------------------------------------------------------------------
   implicit none
@@ -443,7 +450,7 @@ subroutine setiopupdate
    integer tsec_varID, time_dimID
    integer, allocatable :: tsec(:)
    integer  ntime
-   integer bdate, bdate_varID
+   integer bdate_varID
    integer STATUS
    integer next_date, next_sec, last_date, last_sec
    integer next_date_print, next_sec_print
@@ -451,144 +458,176 @@ subroutine setiopupdate
    integer :: yr, mon, day                      ! year, month, and day component
    integer :: start_ymd,start_tod
    logical :: doiter
-   save tsec, ntime, bdate
+   save tsec, ntime
    save last_date, last_sec
 !------------------------------------------------------------------------------
 
-   if ( get_nstep() .eq. 0 ) then
 !     
-!     Open  IOP dataset
-!     
-      STATUS = NF90_OPEN( iopfile, NF90_NOWRITE, NCID )
-!     
-!     Read time (tsec) variable 
-!     
-      STATUS = NF90_INQ_VARID( NCID, 'tsec', tsec_varID )
-      if ( STATUS .NE. NF90_NOERR ) write(iulog,*)'ERROR - setiopupdate.F:', &
-         'Cant get variable ID for tsec'
-
-      STATUS = NF90_INQ_VARID( NCID, 'bdate', bdate_varID )
-      if ( STATUS .NE. NF90_NOERR ) then
-         STATUS = NF90_INQ_VARID( NCID, 'basedate', bdate_varID )
-         if ( STATUS .NE. NF90_NOERR )         &
-            write(iulog,*)'ERROR - setiopupdate.F:Cant get variable ID for bdate'
-      endif
-
-      STATUS = NF90_INQ_DIMID( NCID, 'time', time_dimID )
-      if ( STATUS .NE. NF90_NOERR )  then
-         STATUS = NF90_INQ_DIMID( NCID, 'tsec', time_dimID )
-         if ( STATUS .NE. NF90_NOERR )  then
-            write(iulog,* )'ERROR - setiopupdate.F:Could not find variable dim ID for time'
-            STATUS = NF90_CLOSE ( NCID )
-            return
-         end if
-      end if
-
-      if ( STATUS .NE. NF90_NOERR )  &
-         write(iulog,*)'ERROR - setiopupdate.F:Cant get variable dim ID for time'
-
-      STATUS = NF90_INQUIRE_DIMENSION( NCID, time_dimID, len=ntime )
-      if ( STATUS .NE. NF90_NOERR )then
-         write(iulog,*)'ERROR - setiopupdate.F:Cant get time dimlen'
-      endif
-
-      if (.not.allocated(tsec)) allocate(tsec(ntime))
-
-      STATUS = NF90_GET_VAR( NCID, tsec_varID, tsec )
-      if ( STATUS .NE. NF90_NOERR )then
-         write(iulog,*)'ERROR - setiopupdate.F:Cant get variable tsec'
-      endif
-      STATUS = NF90_GET_VAR( NCID, bdate_varID, bdate )
-      if ( STATUS .NE. NF90_NOERR )then
-         write(iulog,*)'ERROR - setiopupdate.F:Cant get variable bdate'
-      endif
-!     Close the netCDF file
-      STATUS = NF90_CLOSE( NCID )
-!     
-!     determine the last date in the iop dataset
-!     
-      call timemgr_time_inc(bdate, 0, last_date, last_sec, inc_s=tsec(ntime))
-!     
-!     set the iop dataset index
+!   Open  IOP dataset
 !    
-      iopTimeIdx=0
-      do i=1,ntime           ! set the first ioptimeidx
-         call timemgr_time_inc(bdate, 0, next_date, next_sec, inc_s=tsec(i))
-         call get_start_date(yr,mon,day,start_tod)
-         start_ymd = yr*10000 + mon*100 + day
 
-         if ( start_ymd .gt. next_date .or. (start_ymd .eq. next_date &
-            .and. start_tod .ge. next_sec)) then
-            iopTimeIdx = i
-         endif
-      enddo
+    STATUS = NF90_OPEN( iopfile, NF90_NOWRITE, NCID )
+!     
+!   Read time (tsec) variable 
+!     
+    STATUS = NF90_INQ_VARID( NCID, 'tsec', tsec_varID )
+    if ( STATUS .NE. NF90_NOERR ) write(iulog,*)'ERROR - setiopupdate.F:', &
+       'Cant get variable ID for tsec'
 
-      call get_curr_date(yr,mon,day,ncsec)
-      ncdate=yr*10000 + mon*100 + day
+    STATUS = NF90_INQ_VARID( NCID, 'bdate', bdate_varID )
+    if ( STATUS .NE. NF90_NOERR ) then
+       STATUS = NF90_INQ_VARID( NCID, 'basedate', bdate_varID )
+       if ( STATUS .NE. NF90_NOERR )         &
+          write(iulog,*)'ERROR - setiopupdate.F:Cant get variable ID for bdate'
+    endif
 
-      if (iopTimeIdx == 0.or.iopTimeIdx .ge. ntime) then
-         call timemgr_time_inc(bdate, 0, next_date, next_sec, inc_s=tsec(1))
-         write(iulog,*) 'Error::setiopupdate: Current model time does not fall within IOP period'
-         write(iulog,*) ' Current CAM Date is ',ncdate,' and ',ncsec,' seconds'
-         write(iulog,*) ' IOP start is        ',next_date,' and ',next_sec,'seconds'
-         write(iulog,*) ' IOP end is          ',last_date,' and ',last_sec,'seconds'
-         call endrun
-      endif
+    STATUS = NF90_INQ_DIMID( NCID, 'time', time_dimID )
+    if ( STATUS .NE. NF90_NOERR )  then
+       STATUS = NF90_INQ_DIMID( NCID, 'tsec', time_dimID )
+       if ( STATUS .NE. NF90_NOERR )  then
+          write(iulog,* )'ERROR - setiopupdate.F:Could not find variable dim ID for time'
+          STATUS = NF90_CLOSE ( NCID )
+          return
+       end if
+    end if
 
-      doiopupdate = .true.
+    if ( STATUS .NE. NF90_NOERR )  &
+       write(iulog,*)'ERROR - setiopupdate.F:Cant get variable dim ID for time'
+
+    STATUS = NF90_INQUIRE_DIMENSION( NCID, time_dimID, len=ntime )
+    if ( STATUS .NE. NF90_NOERR )then
+       write(iulog,*)'ERROR - setiopupdate.F:Cant get time dimlen'
+    endif
+
+    if (.not.allocated(tsec)) allocate(tsec(ntime))
+
+    STATUS = NF90_GET_VAR( NCID, tsec_varID, tsec )
+    if ( STATUS .NE. NF90_NOERR )then
+       write(iulog,*)'ERROR - setiopupdate.F:Cant get variable tsec'
+    endif
+    STATUS = NF90_GET_VAR( NCID, bdate_varID, bdate )
+    if ( STATUS .NE. NF90_NOERR )then
+       write(iulog,*)'ERROR - setiopupdate.F:Cant get variable bdate'
+    endif
+!   Close the netCDF file
+    STATUS = NF90_CLOSE( NCID )
+!     
+!   determine the last date in the iop dataset
+!     
+    call timemgr_time_inc(bdate, 0, last_date, last_sec, inc_s=tsec(ntime))
+!     
+!   set the iop dataset index
+!    
+    iopTimeIdx=0
+    do i=1,ntime           ! set the first ioptimeidx
+       call timemgr_time_inc(bdate, 0, next_date, next_sec, inc_s=tsec(i))
+       call get_start_date(yr,mon,day,start_tod)
+       start_ymd = yr*10000 + mon*100 + day
+
+       if ( start_ymd .gt. next_date .or. (start_ymd .eq. next_date &
+          .and. start_tod .ge. next_sec)) then
+          iopTimeIdx = i
+       endif
+    enddo
+
+    call get_curr_date(yr,mon,day,ncsec)
+    ncdate=yr*10000 + mon*100 + day
+
+    if (iopTimeIdx == 0.or.iopTimeIdx .ge. ntime) then
+       call timemgr_time_inc(bdate, 0, next_date, next_sec, inc_s=tsec(1))
+       write(iulog,*) 'Error::setiopupdate: Current model time does not fall within IOP period'
+       write(iulog,*) ' Current CAM Date is ',ncdate,' and ',ncsec,' seconds'
+       write(iulog,*) ' IOP start is        ',next_date,' and ',next_sec,'seconds'
+       write(iulog,*) ' IOP end is          ',last_date,' and ',last_sec,'seconds'
+       call endrun
+    endif
+    
+    write(*,*) 'FUCK', bdate
+
+    doiopupdate = .true.
+
+end subroutine setiopupdate_init
+
+subroutine setiopupdate
+
+!-----------------------------------------------------------------------
+!   
+! Read netCDF file to extract time information
+!
+!---------------------------Code history--------------------------------
+!
+! Written by John Truesdale    August, 1996
+! Modified for E3SM by  Peter Bogenschutz 2017 - onward
+! 
+!-----------------------------------------------------------------------
+  implicit none
+#if ( defined RS6000 )
+  implicit automatic (a-z)
+#endif
+
+!------------------------------Locals-----------------------------------
+
+   integer NCID,i
+   integer tsec_varID, time_dimID
+   integer, allocatable :: tsec(:)
+   integer  ntime
+   integer bdate_varID
+   integer STATUS
+   integer next_date, next_sec, last_date, last_sec
+   integer next_date_print, next_sec_print
+   integer :: ncsec,ncdate                      ! current time of day,date
+   integer :: yr, mon, day                      ! year, month, and day component
+   integer :: start_ymd,start_tod
+   logical :: doiter
+   save tsec, ntime
+   save last_date, last_sec
+!------------------------------------------------------------------------------
 
 !------------------------------------------------------------------------------
 !     Check if iop data needs to be updated and set doiopupdate accordingly
 !------------------------------------------------------------------------------
-   else                      ! endstep > 1
 
-!      call timemgr_time_inc(bdate, 0, next_date, next_sec,
-!      inc_s=tsec(iopTimeIdx+1))
+   call get_curr_date(yr, mon, day, ncsec)
+   ncdate = yr*10000 + mon*100 + day
+   
+   write(*,*) 'FUCKSHIT', yr, mon, day, ncsec, bdate
 
-! call a second time
-!      call timemgr_time_inc(bdate, 0, next_date2, next_sec2,
-!      inc_s2=tsec(iopTimeIdx+2))
+   doiopupdate = .false.
+   iopTimeIdx = iopTimeIdx
+   doiter=.true.
+   do while(doiter)
+     call timemgr_time_inc(bdate, 0, next_date, next_sec,inc_s=tsec(iopTimeIdx+1))
+     if (ncdate .gt. next_date .or. (ncdate .eq. next_date &
+       .and. ncsec .ge. next_sec)) then
 
-      call get_curr_date(yr, mon, day, ncsec)
-      ncdate = yr*10000 + mon*100 + day
+       doiopupdate=.true.
+       iopTimeIdx=iopTimeIdx+1
+       next_date_print = next_date
+       next_sec_print = next_sec
+     else
+       doiter=.false.
+     endif
+   enddo
 
-      doiopupdate = .false.
-      iopTimeIdx = iopTimeIdx
-      doiter=.true.
-      do while(doiter)
-        call timemgr_time_inc(bdate, 0, next_date, next_sec,inc_s=tsec(iopTimeIdx+1))
-        if (ncdate .gt. next_date .or. (ncdate .eq. next_date &
-          .and. ncsec .ge. next_sec)) then
+   ! Check to make sure we didn't overshoot at the last 
+   !  IOP timestep.  
+   if (iopTimeIdx .gt. ntime) then
+     iopTimeIdx = ntime
+   endif      
 
-          doiopupdate=.true.
-          iopTimeIdx=iopTimeIdx+1
-	  next_date_print = next_date
-	  next_sec_print = next_sec
-        else
-          doiter=.false.
-        endif
-      enddo
-      
-      ! Check to make sure we didn't overshoot at the last 
-      !  IOP timestep.  
-      if (iopTimeIdx .gt. ntime) then
-        iopTimeIdx = ntime
-      endif      
+   if (doiopupdate) then
 
-      if (doiopupdate) then
+       write(iulog,*) 'iopTimeIdx (IOP index) =', iopTimeIdx
+       write(iulog,*) 'nstep = ',get_nstep()
+       write(iulog,*) 'ncdate (E3SM date) =',ncdate,' ncsec=',ncsec
+       write(iulog,*) 'next_date (IOP file date) =',next_date_print,&
+                      'next_sec=',next_sec_print
+       write(iulog,*)'******* do iop update'
+   endif
 
-          write(iulog,*) 'iopTimeIdx (IOP index) =', iopTimeIdx
-          write(iulog,*) 'nstep = ',get_nstep()
-          write(iulog,*) 'ncdate (E3SM date) =',ncdate,' ncsec=',ncsec
-          write(iulog,*) 'next_date (IOP file date) =',next_date_print,&
-                         'next_sec=',next_sec_print
-          write(iulog,*)'******* do iop update'
-      endif
-
-   endif                     ! if (endstep .eq. 0 )
 !
-!     make sure we're
-!     not going past end of iop data
+!  make sure we're
+!  not going past end of iop data
 !
    if ( ncdate .gt. last_date .or. (ncdate .eq. last_date &
       .and. ncsec .gt. last_sec))  then

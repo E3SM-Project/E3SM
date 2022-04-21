@@ -26,7 +26,7 @@ module stepon
    use edge_mod,       only: edge_g, edgeVpack_nlyr, edgeVunpack_nlyr
    use parallel_mod,   only : par
    use scamMod,        only: use_iop, doiopupdate, single_column, &
-                             setiopupdate, readiopdata
+                             setiopupdate, setiopupdate_init, readiopdata
    use element_mod,    only: element_t
    use shr_const_mod,       only: SHR_CONST_PI
 
@@ -162,7 +162,7 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   
   use dp_coupling, only: d_p_coupling
   use time_mod,    only: tstep      ! dynamics timestep
-  use time_manager, only: is_last_step
+  use time_manager, only: is_last_step, is_first_step
   use control_mod, only: ftype
   use physics_buffer, only : physics_buffer_desc
   use hycoef,      only: hyam, hybm
@@ -198,7 +198,11 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   ! Determine whether it is time for an IOP update;
   ! doiopupdate set to true if model time step > next available IOP 
   if (use_iop .and. .not. is_last_step()) then
-    call setiopupdate
+    if (is_first_step()) then 
+      call setiopupdate_init()
+    else
+      call setiopupdate
+    endif
   end if
   
   if (single_column) then

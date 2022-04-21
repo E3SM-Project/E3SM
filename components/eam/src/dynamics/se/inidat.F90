@@ -54,7 +54,7 @@ contains
     use cam_grid_support,        only: cam_grid_get_local_size, cam_grid_get_gcid
     use cam_map_utils,           only: iMap
     use shr_const_mod,           only: SHR_CONST_PI
-    use scamMod,                 only: setiopupdate, readiopdata
+    use scamMod,                 only: setiopupdate, setiopupdate_init, readiopdata
     use se_single_column_mod,    only: scm_setinitial
     use element_ops,             only: set_thermostate
     use gllfvremap_mod,          only: gfr_fv_phys_to_dyn_topo
@@ -485,7 +485,7 @@ contains
     
     if (single_column) then
       iop_update_surface = .false.
-      call setiopupdate()
+      call setiopupdate_init()
       call readiopdata(iop_update_surface,hyam,hybm)
       call scm_setinitial(elem)
     endif
