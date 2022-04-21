@@ -3316,8 +3316,55 @@ Factor used in calculating the surface values of up2 (variance of the u wind com
 Maximum magnitude of skewness allowed.
 </entry>
 
+<entry id="clubb_C_invrs_tau_bkgnd" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Coefficient of inverse tau term contributed by background constant value
+</entry>
 
+<entry id="clubb_C_invrs_tau_sfc" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Coefficient of inverse tau term contributed by surface log law
+</entry>
 
+<entry id="clubb_C_invrs_tau_shear" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Coefficient of inverse tau term contributed by vertical wind shear
+</entry>
+
+<entry id="clubb_C_invrs_tau_N2" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Coefficient of inverse tau term contributed by Brunt Vaisala frequency
+</entry>
+
+<entry id="clubb_C_invrs_tau_N2_wp2" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Coefficient of inverse tau term contributed by Brunt Vaisala frequency but for wp3_wp2
+</entry>
+
+<entry id="clubb_C_invrs_tau_N2_xp2" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Coefficient of inverse tau term contributed by Brunt Vaisala frequency but for xp2_wpxp
+</entry>
+
+<entry id="clubb_C_invrs_tau_N2_wpxp" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Coefficient of inverse tau term contributed by Brunt Vaisala frequency but for xm_wpxp
+</entry>
+
+<entry id="clubb_C_invrs_tau_N2_clear_wp3" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Coefficient of inverse tau term contributed by Brunt Vaisala frequency but for wp3
+</entry>
+
+<entry id="clubb_C_invrs_tau_wpxp_Ri" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Coefficient of the "Ri_zm term" for invrs_tau_wpxp
+</entry>
+
+<entry id="clubb_C_invrs_tau_wpxp_N2_thresh" type="real" category="pblrad"
+       group="clubb_param_nl" valid_values="" >
+Brunt-Vaisala freq. threshold value for invrs_tau_wpxp "Ri_zm term"
+</entry>
 
 <entry id="clubb_xp3_coef_base"  type="real" category="pblrad"
        group="clubb_param_nl" valid_values="" >
