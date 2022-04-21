@@ -42,8 +42,6 @@ bool views_are_equal(const Field& f1, const Field& f2) {
       break;
     case 2:
       {
-        std::cout << "calling get_view with ST=" << typeid(ST).name() << ", which "
-                  << (std::is_const<ST>::value ? "is" : "is NOT") << " const.\n";
         auto v1 = f1.template get_view<ST**,Host>();
         auto v2 = f2.template get_view<ST**,Host>();
         for (int i=0; i<dims[0]; ++i) {
@@ -406,7 +404,7 @@ ST field_max(const Field& f)
   // TODO: compute directly on device
   f.sync_to_host();
 
-  ST max = std::numeric_limits<ST>::min();
+  ST max = std::numeric_limits<ST>::lowest();
   switch (fl.rank()) {
     case 1:
       {

@@ -55,6 +55,12 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
   HommeContextUser::singleton().add_user();
 }
 
+HommeDynamics::~HommeDynamics ()
+{
+  // This class is done with Homme. Remove from its users list
+  HommeContextUser::singleton().remove_user();
+}
+
 void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 {
   // Grab dynamics and reference grid
@@ -160,6 +166,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   add_field<Required>("phis",          FL({COL         },{ncols           }),m2/s2, rgn);
   add_field<Computed>("p_int",         FL({COL,    ILEV},{ncols,  nlev_int}),Pa,    rgn,N);
   add_field<Computed>("p_mid",         FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    rgn,N);
+  add_field<Computed>("omega",         FL({COL,     LEV},{ncols,  nlev_mid}),Pa/s,  rgn,N);
   add_group<Updated>("tracers",rgn,N, Bundling::Required);
 
   // Dynamics grid states
@@ -170,6 +177,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   create_helper_field("phi_int_dyn",  {EL,TL,    GP,GP,ILEV},{nelem,NTL,  NP,NP,nlev_int}, dgn);
   create_helper_field("ps_dyn",       {EL,TL,    GP,GP},     {nelem,NTL,  NP,NP         }, dgn);
   create_helper_field("phis_dyn",     {EL,       GP,GP},     {nelem,      NP,NP         }, dgn);
+  create_helper_field("omega_dyn",    {EL,       GP,GP,LEV}, {nelem,      NP,NP,nlev_mid}, dgn);
   create_helper_field("Qdp_dyn",      {EL,TL,CMP,GP,GP,LEV}, {nelem,QTL,HOMMEXX_QSIZE_D,NP,NP,nlev_mid},dgn);
 
   // For BFB restart, we need to read in the state on the dyn grid. The state above has NTL time slices,
@@ -212,9 +220,10 @@ size_t HommeDynamics::requested_buffer_size_in_bytes() const
 {
   using namespace Homme;
 
-  auto& c = Context::singleton();
-  const auto num_elems   = c.get<Elements>().num_elems();
+  auto& c       = Context::singleton();
   auto& params  = c.get<SimulationParams>();
+
+  const auto num_elems = c.get<Elements>().num_elems();
 
   auto& caar = c.create_if_not_there<CaarFunctor>(num_elems,params);
   auto& esf  = c.create_if_not_there<EulerStepFunctor>(num_elems);
@@ -223,15 +232,9 @@ size_t HommeDynamics::requested_buffer_size_in_bytes() const
   auto& diag = c.create_if_not_there<Diagnostics> (num_elems,params.theta_hydrostatic_mode);
   auto& vrm  = c.create_if_not_there<VerticalRemapManager>(num_elems);
 
-
   const bool need_dirk = (params.time_step_type==TimeStepType::ttype7_imex ||
                           params.time_step_type==TimeStepType::ttype9_imex ||
                           params.time_step_type==TimeStepType::ttype10_imex  );
-
-  if (need_dirk) {
-    // Create dirk functor only if needed
-    c.create_if_not_there<DirkFunctor>(num_elems);
-  }
 
   // Request buffer sizes in FunctorsBuffersManager and then
   // return the total bytes using the calculated buffer size.
@@ -243,7 +246,8 @@ size_t HommeDynamics::requested_buffer_size_in_bytes() const
   fbm.request_size(ff.requested_buffer_size());
   fbm.request_size(vrm.requested_buffer_size());
   if (need_dirk) {
-    const auto& dirk = c.get<DirkFunctor>();
+    // Create dirk functor only if needed
+    auto& dirk = c.create_if_not_there<DirkFunctor>(num_elems);
     fbm.request_size(dirk.requested_buffer_size());
   }
 
@@ -270,26 +274,29 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   const auto& dgn = m_dyn_grid->name();
   const auto& rgn = m_ref_grid->name();
 
-  const auto& c = Homme::Context::singleton();
-  const auto& params = c.get<Homme::SimulationParams>();
-
   // Use common/shorter names for tracers.
   alias_group_in  ("tracers",rgn,"Q");
   alias_group_out ("tracers",rgn,"Q");
 
+  // Grab handles of some Homme data structure
+  const auto& c       = Homme::Context::singleton();
+  const auto& params  = c.get<Homme::SimulationParams>();
+
+  // Complete Homme prim_init1_xyz sequence
+  prim_complete_init1_phase_f90 ();
+
   // ------ Sanity checks ------- //
 
-  // Nobody should claim to be a provider for dp, w_i.
+  // Nobody should claim to be a provider for dp.
   // WARNING! If the assumption on 'pseudo_density' ceases to be true, you have to revisit
   //          how you restart homme. In particular, p_mid is restarted from pseudo_density,
   //          as it is read from restart file. If other procs update it, the restarted value
   //          might no longer match the end-of-homme-step value, which is what you need
   //          to compute p_mid. Hence, if this assumption goes away, you need to restart
   //          p_mid by first remapping the restarted dp3d_dyn back to ref grid, and using
-  //          that value to compute p_mid.
-  const auto& rho_track = get_field_out("pseudo_density").get_header().get_tracking();
+  //          that value to compute p_mid. Or, perhaps easier, write p_mid to restart file.
   EKAT_REQUIRE_MSG (
-      rho_track.get_providers().size()==1,
+      get_field_out("pseudo_density").get_header().get_tracking().get_providers().size()==1,
       "Error! Someone other than Dynamics is trying to update the pseudo_density.\n");
 
   // The groups 'tracers' and 'tracers_mass_dyn' should contain the same fields
@@ -298,10 +305,10 @@ void HommeDynamics::initialize_impl (const RunType run_type)
 
   // Create remaining internal fields
   constexpr int NGP  = HOMMEXX_NP;
-  const int qsize = params.qsize;
   const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
   const int ncols = m_ref_grid->get_num_local_dofs();
   const int nlevs = m_dyn_grid->get_num_vertical_levels();
+  const int qsize = params.qsize;
 
   using namespace ShortFieldTagsNames;
   create_helper_field("FQ_dyn",{EL,CMP,GP,GP,LEV},{nelem,qsize,NGP,NGP,nlevs},dgn);
@@ -347,6 +354,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   m_d2p_remapper->register_field(m_helper_fields.at("dp3d_dyn"), get_field_out("pseudo_density"));
   m_d2p_remapper->register_field(m_helper_fields.at("ps_dyn"), get_field_out("ps"));
   m_d2p_remapper->register_field(m_helper_fields.at("Q_dyn"),*get_group_out("Q",rgn).m_bundle);
+  m_d2p_remapper->register_field(m_helper_fields.at("omega_dyn"), get_field_out("omega"));
 
   m_p2d_remapper->registration_ends();
   m_d2p_remapper->registration_ends();
@@ -362,7 +370,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   }
 
   // For BFB restarts, set nstep counter in Homme's TimeLevel to match
-  // what's in the timestamp (which, for restarted runs, is
+  // what's in the timestamp (which, for restarted runs, is read from restart file)
   set_homme_param("num_steps",timestamp().get_num_steps());
   Homme::Context::singleton().get<Homme::TimeLevel>().nstep = timestamp().get_num_steps();
 
@@ -386,6 +394,9 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   auto lb_check = std::make_shared<FieldLowerBoundCheck>(Q,tol,false);
   auto lb_repair = std::make_shared<FieldPositivityCheck>(Q,true);
   add_postcondition_check<CheckAndRepairWrapper>(lb_check,lb_repair);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140.0, 500.0,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("horiz_winds"),-400.0, 400.0,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("ps"),40000.0, 110000.0,false);
 }
 
 void HommeDynamics::run_impl (const int dt)
@@ -428,13 +439,15 @@ void HommeDynamics::finalize_impl (/* what inputs? */)
   Homme::Context::singleton().finalize_singleton();
 }
 
+
 void HommeDynamics::set_computed_group_impl (const FieldGroup& group)
 {
+  const auto& c = Homme::Context::singleton();
+        auto& tracers = c.get<Homme::Tracers>();
+
   if (group.m_info->m_group_name=="tracers") {
     // Set runtime number of tracers in Homme
-    const auto& c = Homme::Context::singleton();
     auto& params = c.get<Homme::SimulationParams>();
-    auto& tracers = c.get<Homme::Tracers>();
     const int qsize = group.m_info->size();
     params.qsize = qsize;           // Set in the CXX data structure
     set_homme_param("qsize",qsize); // Set in the F90 module
@@ -706,7 +719,9 @@ create_helper_field (const std::string& name,
 void HommeDynamics::init_homme_views () {
 
   const auto& c = Homme::Context::singleton();
-  auto& state  = c.get<Homme::ElementsState>();
+  auto& params  = c.get<Homme::SimulationParams>();
+  auto& state   = c.get<Homme::ElementsState>();
+  auto& derived = c.get<Homme::ElementsDerivedState>();
   auto& tracers = c.get<Homme::Tracers>();
   auto& forcing = c.get<Homme::ElementsForcing>();
 
@@ -721,7 +736,41 @@ void HommeDynamics::init_homme_views () {
   const int qsize = tracers.num_tracers();
 
   // Print homme's parameters, so user can see whether something wasn't set right.
-  if (get_comm().am_i_root()) c.get<Homme::SimulationParams>().print();
+  // TODO: make Homme::SimulationParams::print accept an ostream.
+  std::stringstream msg;
+  msg << "\n************** CXX SimulationParams **********************\n\n";
+  msg << "   time_step_type: " << Homme::etoi(params.time_step_type) << "\n";
+  msg << "   moisture: " << (params.moisture==Homme::MoistDry::DRY ? "dry" : "moist") << "\n";
+  msg << "   remap_alg: " << Homme::etoi(params.remap_alg) << "\n";
+  msg << "   test case: " << Homme::etoi(params.test_case) << "\n";
+  msg << "   ftype: " << Homme::etoi(params.ftype) << "\n";
+  msg << "   theta_adv_form: " << Homme::etoi(params.theta_adv_form) << "\n";
+  msg << "   rsplit: " << params.rsplit << "\n";
+  msg << "   qsplit: " << params.qsplit << "\n";
+  msg << "   qsize: " << qsize << "\n";
+  msg << "   limiter_option: " << params.limiter_option << "\n";
+  msg << "   state_frequency: " << params.state_frequency << "\n";
+  msg << "   dcmip16_mu: " << params.dcmip16_mu << "\n";
+  msg << "   nu: " << params.nu << "\n";
+  msg << "   nu_p: " << params.nu_p << "\n";
+  msg << "   nu_q: " << params.nu_q << "\n";
+  msg << "   nu_s: " << params.nu_s << "\n";
+  msg << "   nu_top: " << params.nu_top << "\n";
+  msg << "   nu_div: " << params.nu_div << "\n";
+  msg << "   hypervis_order: " << params.hypervis_order << "\n";
+  msg << "   hypervis_subcycle: " << params.hypervis_subcycle << "\n";
+  msg << "   hypervis_subcycle_tom: " << params.hypervis_subcycle_tom << "\n";
+  msg << "   hypervis_scaling: " << params.hypervis_scaling << "\n";
+  msg << "   nu_ratio1: " << params.nu_ratio1 << "\n";
+  msg << "   nu_ratio2: " << params.nu_ratio2 << "\n";
+  msg << "   use_cpstar: " << (params.use_cpstar ? "yes" : "no") << "\n";
+  msg << "   transport_alg: " << params.transport_alg << "\n";
+  msg << "   disable_diagnostics: " << (params.disable_diagnostics ? "yes" : "no") << "\n";
+  msg << "   theta_hydrostatic_mode: " << (params.theta_hydrostatic_mode ? "yes" : "no") << "\n";
+  msg << "   prescribed_wind: " << (params.prescribed_wind ? "yes" : "no") << "\n";
+  msg << "   rearth: " << params.rearth << "\n";
+  msg << "\n**********************************************************\n" << "\n";
+  this->log(LogLevel::info,msg.str());
 
   // ------------ Set views in Homme ------------- //
   // Velocity
@@ -753,6 +802,11 @@ void HommeDynamics::init_homme_views () {
   auto ps_in = m_helper_fields.at("ps_dyn").template get_view<Real*[NTL][NP][NP]>();
   using ps_type = std::remove_reference<decltype(state.m_ps_v)>::type;
   state.m_ps_v = ps_type(ps_in.data(),nelem);
+
+  // Vertical pressure velocity
+  auto omega_in = m_helper_fields.at("omega_dyn").template get_view<Homme::Scalar*[NP][NP][NVL]>();
+  using omega_type = std::remove_reference<decltype(derived.m_omega_p)>::type;
+  derived.m_omega_p = omega_type(omega_in.data(),nelem);
 
   // Tracers mixing ratio
   auto q_in = m_helper_fields.at("Q_dyn").template get_view<Homme::Scalar**[NP][NP][NVL]>();

@@ -90,15 +90,6 @@ set_comm(const ekat::Comm& atm_comm)
 
   m_atm_comm = atm_comm;
 
-  // Init scorpio right away, in case some class (atm procs, grids,...)
-  // needs to source some data from NC files during construction,
-  // before we start processing IC files.
-  EKAT_REQUIRE_MSG (!scorpio::is_eam_pio_subsystem_inited(),
-      "Error! The PIO subsystem was alreday inited before the driver was constructed.\n"
-      "       This is an unexpected behavior. Please, contact developers.\n");
-  MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
-  scorpio::eam_init_pio_subsystem(fcomm);
-
   m_ad_status |= s_comm_set;
 }
 
@@ -111,24 +102,50 @@ set_params(const ekat::ParameterList& atm_params)
 
   m_atm_params = atm_params;
 
+  create_logger ();
+
   m_ad_status |= s_params_set;
+}
+
+void AtmosphereDriver::
+init_scorpio(const int atm_id)
+{
+  check_ad_status (s_comm_set, true);
+
+  // Init scorpio right away, in case some class (atm procs, grids,...)
+  // needs to source some data from NC files during construction,
+  // before we start processing IC files.
+  EKAT_REQUIRE_MSG (!scorpio::is_eam_pio_subsystem_inited(),
+      "Error! The PIO subsystem was alreday inited before the driver was constructed.\n"
+      "       This is an unexpected behavior. Please, contact developers.\n");
+  MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
+  scorpio::eam_init_pio_subsystem(fcomm,atm_id);
+
+  m_ad_status |= s_scorpio_inited;
 }
 
 void AtmosphereDriver::create_atm_processes()
 {
+  m_atm_logger->info("[EAMXX] create_atm_processes  ...");
+
   // At this point, must have comm and params set.
   check_ad_status(s_comm_set | s_params_set);
 
   // Create the group of processes. This will recursively create the processes
   // tree, storing also the information regarding parallel execution (if needed).
   // See AtmosphereProcessGroup class documentation for more details.
-  m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_comm,m_atm_params.sublist("Atmosphere Processes"));
+  auto& atm_proc_params = m_atm_params.sublist("Atmosphere Processes");
+  atm_proc_params.set("Logger",m_atm_logger);
+  m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_comm,atm_proc_params);
 
   m_ad_status |= s_procs_created;
+  m_atm_logger->info("[EAMXX] create_atm_processes  ... done!");
 }
 
 void AtmosphereDriver::create_grids()
 {
+  m_atm_logger->info("[EAMXX] create_grids ...");
+
   // Must have procs created by now (and comm/params set)
   check_ad_status (s_procs_created | s_comm_set | s_params_set);
 
@@ -146,10 +163,13 @@ void AtmosphereDriver::create_grids()
   m_atm_process_group->set_grids(m_grids_manager);
 
   m_ad_status |= s_grids_created;
+
+  m_atm_logger->info("[EAMXX] create_grids ... done!");
 }
 
 void AtmosphereDriver::create_fields()
 {
+  m_atm_logger->info("[EAMXX] create_fields ...");
   // Must have grids and procs at this point
   check_ad_status (s_procs_created | s_grids_created);
 
@@ -191,7 +211,8 @@ void AtmosphereDriver::create_fields()
             "   group to import: " + req.src_name + "\n"
             "   grid name: " + req.grid + "\n");
         // Given request for group A on grid g1 to be an Import of
-        // group B on grid g2, register each field in group B in the 
+        // group B on grid g2, register each field in group B in the
+
         // field manager on grid g1.
         const auto& fm = m_field_mgrs.at(req.grid);
         const auto& rel_fm   = m_field_mgrs.at(req.src_grid);
@@ -298,18 +319,16 @@ void AtmosphereDriver::create_fields()
   }
 
   m_ad_status |= s_fields_created;
+
+  m_atm_logger->info("[EAMXX] create_fields ... done!");
 }
 
 void AtmosphereDriver::initialize_output_managers () {
+  m_atm_logger->info("[EAMXX] initialize_output_managers ...");
+
   check_ad_status (s_comm_set | s_params_set | s_grids_created | s_fields_created);
 
-  const bool restarted_run = m_atm_params.sublist("Initial Conditions").get<bool>("Restart Run",false);
-
   auto& io_params = m_atm_params.sublist("Scorpio");
-
-
-  // Simulation start time. Will be overwritten if this is a restarted run.
-  auto case_t0 = m_current_ts;
 
   // IMPORTANT: create model restart OutputManager first! This OM will be able to
   // retrieve the original simulation start date, which we later pass to the
@@ -321,8 +340,7 @@ void AtmosphereDriver::initialize_output_managers () {
     // Signal that this is not a normal output, but the model restart one
     m_output_managers.emplace_back();
     auto& om = m_output_managers.back();
-    om.setup(m_atm_comm,restart_pl,m_field_mgrs,m_grids_manager,m_current_ts,true,restarted_run);
-    case_t0 = om.get_case_t0();
+    om.setup(m_atm_comm,restart_pl,m_field_mgrs,m_grids_manager,m_run_t0,m_case_t0,true);
   }
 
   // Build one manager per output yaml file
@@ -333,15 +351,23 @@ void AtmosphereDriver::initialize_output_managers () {
     ekat::parse_yaml_file(fname,params);
     m_output_managers.emplace_back();
     auto& om = m_output_managers.back();
-    om.setup(m_atm_comm,params,m_field_mgrs,m_grids_manager,m_current_ts,false,restarted_run,case_t0);
+    om.setup(m_atm_comm,params,m_field_mgrs,m_grids_manager,m_run_t0,m_case_t0,false);
   }
 
   m_ad_status |= s_output_inited;
+
+  m_atm_logger->info("[EAMXX] initialize_output_managers ... done!");
 }
 
 void AtmosphereDriver::
-initialize_fields (const util::TimeStamp& t0)
+initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0)
 {
+  m_atm_logger->info("[EAMXX] initialize_fields ...");
+
+  m_atm_logger->info("  [EAMXX] Run  start time stamp: " + run_t0.to_string());
+  m_atm_logger->info("  [EAMXX] Case start time stamp: " + case_t0.to_string());
+
+
   // See if we need to print a DAG. We do this first, cause if any input
   // field is missing from the initial condition file, an error will be thrown.
   // By printing the DAG first, we give the user the possibility of seeing
@@ -370,10 +396,12 @@ initialize_fields (const util::TimeStamp& t0)
     dag.write_dag("scream_atm_dag.dot",std::max(verb_lvl,0));
   }
 
-  m_current_ts = t0;
+  // Initialize time stamps
+  m_run_t0 = m_current_ts = run_t0;
+  m_case_t0 = case_t0;
 
-  const bool restarted_run = m_atm_params.sublist("Initial Conditions").get<bool>("Restart Run",false);
-  if (restarted_run) {
+  // Initialize fields
+  if (m_case_t0<m_run_t0) {
     restart_model ();
   } else {
     set_initial_conditions ();
@@ -436,14 +464,19 @@ initialize_fields (const util::TimeStamp& t0)
   }
 
   m_ad_status |= s_fields_inited;
+  m_atm_logger->info("[EAMXX] initialize_fields ... done!");
 }
 
 void AtmosphereDriver::restart_model ()
 {
+  m_atm_logger->info("  [EAMXX] restart_model ...");
+
   // First, figure out the name of the netcdf file containing the restart data
   std::string filename, content;
   bool found = false;
-  auto casename = m_atm_params.sublist("Initial Conditions").get<std::string>("Restart Casename");
+  std::string head = m_atm_params.sublist("Initial Conditions").get<std::string>("Restart Casename");
+  std::string tail = m_run_t0.to_string() + ".r.nc";
+
   if (m_atm_comm.am_i_root()) {
     std::ifstream rpointer_file;
     rpointer_file.open("rpointer.atm");
@@ -454,7 +487,7 @@ void AtmosphereDriver::restart_model ()
     //       the last one (which is the last restart file that was written).
     while (rpointer_file >> line) {
       content += line + "\n";
-      if (line.find(casename) != std::string::npos && line.find(".r.nc") != std::string::npos) {
+      if (line.find(head) != std::string::npos && line.find(tail) != std::string::npos) {
         found = true;
         filename = line;
       }
@@ -463,20 +496,22 @@ void AtmosphereDriver::restart_model ()
   m_atm_comm.broadcast(&found,1,0);
 
   // If the model restart file is not found, it's an error
-  EKAT_REQUIRE_MSG (found,
-      "Error! Output restart requested, but the no history restart file found in 'rpointer.atm'.\n"
-      "   restart file name root: " + casename + "\n"
-      "   rpointer content:\n" + content);
+  if (not found) {
+    broadcast_string(content,m_atm_comm,m_atm_comm.root_rank());
+    EKAT_REQUIRE_MSG (found,
+        "Error! Output restart requested, but no model restart file found in 'rpointer.atm'.\n"
+        "   restart file casename: " + head + "\n"
+        "   restart file suffix: " + tail + "\n"
+        "   rpointer content:\n" + content);
+  }
 
   // Have the root rank communicate the nc filename
   broadcast_string(filename,m_atm_comm,m_atm_comm.root_rank());
 
   // Restart the num steps counter in the atm time stamp
-
   ekat::ParameterList rest_pl;
   rest_pl.set<std::string>("Filename",filename);
   AtmosphereInput model_restart(m_atm_comm,rest_pl);
-  m_current_ts.set_num_steps(model_restart.read_int_scalar("nsteps"));
 
   for (auto& it : m_field_mgrs) {
     if (not it.second->has_group("RESTART")) {
@@ -490,17 +525,63 @@ void AtmosphereDriver::restart_model ()
     }
     read_fields_from_file (fnames,it.first,filename,m_current_ts);
   }
-  // Finalize after the above loop, so we don't delete-recreate the pio file struct
-  // in the F90 interface while calling 'read_fields_from_file'.
+
+  // Read number of steps from restart file
+  int nsteps = model_restart.read_int_scalar("nsteps");
+  m_current_ts.set_num_steps(nsteps);
+  m_case_t0.set_num_steps(nsteps);
+  m_run_t0.set_num_steps(nsteps);
+
+  // Close files and finalize all pio data structs
   model_restart.finalize();
+
+  m_atm_logger->info("  [EAMXX] restart_model ... done!");
+}
+
+void AtmosphereDriver::create_logger () {
+  using namespace ekat::logger;
+  using ci_string = ekat::CaseInsensitiveString;
+
+  ci_string log_fname = m_atm_params.get<std::string>("Atm Log File","atm.log");
+  ci_string log_level_str = m_atm_params.get<std::string>("Atm Log Level","info");
+  EKAT_REQUIRE_MSG (log_fname!="",
+      "Invalid string for 'Atm Log File': '" + log_fname + "'.\n");
+
+  LogLevel log_level;
+  if (log_level_str=="trace") {
+    log_level = LogLevel::trace;
+  } else if (log_level_str=="debug") {
+    log_level = LogLevel::debug;
+  } else if (log_level_str=="info") {
+    log_level = LogLevel::info;
+  } else if (log_level_str=="warn") {
+    log_level = LogLevel::warn;
+  } else if (log_level_str=="err") {
+    log_level = LogLevel::err;
+  } else if (log_level_str=="off") {
+    log_level = LogLevel::off;
+  } else {
+    EKAT_ERROR_MSG ("Invalid choice for 'Atm Log Level': " + log_level_str + "\n");
+  }
+
+  using logger_t = Logger<LogBasicFile,LogRootRank>;
+  auto logger = std::make_shared<logger_t>(log_fname,log_level,m_atm_comm,"");
+  logger->set_no_format();
+  if (not m_atm_params.get<bool>("Standalone",true)) {
+    logger->set_console_level(LogLevel::off);
+  }
+  m_atm_logger = logger;
 }
 
 void AtmosphereDriver::set_initial_conditions ()
 {
+  m_atm_logger->info("  [EAMXX] set_initial_conditions ...");
+
   auto& ic_pl = m_atm_params.sublist("Initial Conditions");
 
   // When processing groups and fields separately, we might end up processing the same
-  // field twice. E.g., say we have the required field group G=(f1,f2). If f1 is also 
+  // field twice. E.g., say we have the required field group G=(f1,f2). If f1 is also
+
   // listed as a required field on itself, we might process it twice. To prevent that,
   // we store the processed fields
   // std::set<FieldIdentifier> inited_fields;
@@ -611,11 +692,11 @@ void AtmosphereDriver::set_initial_conditions ()
     std::string src_fname, src_gname;
 
     const auto& param_value = ic_pl.sublist(tgt_gname).get<std::string>(tgt_fname);
-    const auto tokens = ekat::split(param_value,',');
+    const auto tokens = ekat::split(param_value,'@');
     EKAT_REQUIRE_MSG (tokens.size()==1 || tokens.size()==2,
         "Error! To copy an initial condition for a field from another, use one of the following ways:\n"
         "    - field_1: field_2\n"
-        "    - field_1: field_2, grid_2\n"
+        "    - field_1: field_2 @ grid_2\n"
         "The first assumes field_2 is on the same grid as field_1, while the second allows\n"
         "cross-grid imports.\n\n"
         "Parameter list entry:\n"
@@ -680,6 +761,8 @@ void AtmosphereDriver::set_initial_conditions ()
       }
     }
   }
+
+  m_atm_logger->info("  [EAMXX] set_initial_conditions ... done!");
 }
 
 void AtmosphereDriver::
@@ -750,25 +833,34 @@ initialize_constant_field(const FieldIdentifier& fid,
 
 void AtmosphereDriver::initialize_atm_procs ()
 {
+  m_atm_logger->info("[EAMXX] initialize_atm_procs ...");
+
   // Initialize memory buffer for all atm processes
   m_memory_buffer = std::make_shared<ATMBufferManager>();
-  m_atm_process_group->initialize_atm_memory_buffer(*m_memory_buffer);
+  m_memory_buffer->request_bytes(m_atm_process_group->requested_buffer_size_in_bytes());
+  m_memory_buffer->allocate();
+  m_atm_process_group->init_buffers(*m_memory_buffer);
 
-  const bool restarted_run = m_atm_params.sublist("Initial Conditions").get<bool>("Restart Run",false);
+  const bool restarted_run = m_case_t0 < m_run_t0;
 
   // Initialize the processes
   m_atm_process_group->initialize(m_current_ts, restarted_run ? RunType::Restarted : RunType::Initial);
 
   m_ad_status |= s_procs_inited;
+
+  m_atm_logger->info("[EAMXX] initialize_atm_procs ... done!");
 }
 
 void AtmosphereDriver::
 initialize (const ekat::Comm& atm_comm,
             const ekat::ParameterList& params,
-            const util::TimeStamp& t0)
+            const util::TimeStamp& run_t0,
+            const util::TimeStamp& case_t0)
 {
   set_comm(atm_comm);
   set_params(params);
+
+  init_scorpio ();
 
   create_atm_processes ();
 
@@ -776,7 +868,7 @@ initialize (const ekat::Comm& atm_comm,
 
   create_fields ();
 
-  initialize_fields (t0);
+  initialize_fields (run_t0, case_t0);
 
   initialize_output_managers ();
 
@@ -787,11 +879,11 @@ void AtmosphereDriver::run (const int dt) {
   // Make sure the end of the time step is after the current start_time
   EKAT_REQUIRE_MSG (dt>0, "Error! Input time step must be positive.\n");
 
-    // Print current timestamp information
-  if (m_atm_comm.am_i_root()) {
-    std::cout << "Atmosphere step = " << m_current_ts.get_num_steps() << "; model time = " << m_current_ts.get_date_string() << " " << m_current_ts.get_time_string() << std::endl;
-  }
-  
+  // Print current timestamp information
+  m_atm_logger->log(ekat::logger::LogLevel::info,
+    "Atmosphere step = " + std::to_string(m_current_ts.get_num_steps()) + "\n" +
+    "  model time = " + m_current_ts.get_date_string() + " " + m_current_ts.get_time_string() + "\n");
+
   if (m_surface_coupling) {
     // Import fluxes from the component coupler (if any)
     m_surface_coupling->do_import();
@@ -813,9 +905,17 @@ void AtmosphereDriver::run (const int dt) {
     // Export fluxes from the component coupler (if any)
     m_surface_coupling->do_export();
   }
+
+  // Flush the logger at least once per time step.
+  // Without this flush, depending on how much output we are loggin,
+  // it might be several time steps before the file is updated.
+  // This way, we give the user a chance to follow the log more real-time.
+  m_atm_logger->flush();
 }
 
 void AtmosphereDriver::finalize ( /* inputs? */ ) {
+
+  m_atm_logger->info("[EAMXX] Finalize ...");
 
   // Finalize and destroy output streams, make sure files are closed
   for (auto& out_mgr : m_output_managers) {
@@ -845,6 +945,8 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   if (scorpio::is_eam_pio_subsystem_inited()) {
     scorpio::eam_pio_finalize();
   }
+
+  m_atm_logger->info("[EAMXX] Finalize ... done!");
 }
 
 AtmosphereDriver::field_mgr_ptr

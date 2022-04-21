@@ -34,6 +34,8 @@ void PotentialTemperatureDiagnostic::set_grids(const std::shared_ptr<const Grids
   // Construct and allocate the diagnostic field
   FieldIdentifier fid (name(), scalar3d_layout_mid, K, grid_name);
   m_diagnostic_output = Field(fid);
+  auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
+  C_ap.request_allocation(ps);
   m_diagnostic_output.allocate_view();
 
 }
@@ -45,12 +47,15 @@ void PotentialTemperatureDiagnostic::initialize_impl(const RunType /* run_type *
 
   const auto& output         = m_diagnostic_output.get_view<Pack**>();
 
+  auto ts = timestamp(); 
+  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
+
   const auto nk_pack  = ekat::npack<Spack>(m_num_levs);
 
   run_diagnostic.set_variables(m_num_cols,nk_pack,p_mid,T_mid,output);
 }
 // =========================================================================================
-void PotentialTemperatureDiagnostic::run_impl(const int dt)
+void PotentialTemperatureDiagnostic::run_impl(const int /* dt */)
 {
 
   const auto nk_pack  = ekat::npack<Spack>(m_num_levs);

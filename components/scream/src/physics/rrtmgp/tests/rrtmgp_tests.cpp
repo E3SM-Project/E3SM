@@ -10,8 +10,8 @@
 #include "YAKL.h"
 #include "ekat/util/ekat_test_utils.hpp"
 
-#include <iostream>
 #include <cmath>
+#include <mpi.h>
 
 using namespace scream;
 
@@ -19,11 +19,20 @@ void expect_another_arg (int i, int argc) {
   EKAT_REQUIRE_MSG(i != argc-1, "Expected another cmd-line arg.");
 }
 
-int main(int argc, char** argv) {
+int run(int argc, char** argv) {
+    using namespace ekat::logger;
+    using logger_t = Logger<LogNoFile,LogRootRank>;
+
+
+    ekat::Comm comm(MPI_COMM_WORLD);
+    auto logger = std::make_shared<logger_t>("",LogLevel::info,comm);
+
     // Parse command line arguments
     if (argc < 3) {
-        std::cout << "argc: " << argc << std::endl;
-        std::cout << argv[0] << " -i <inputfile> -b <baseline file> [options]\n";
+        std::string msg = "Missing required inputs. Usage:\n";
+        msg += argv[0];
+        msg += " -i <inputfile> -b <baseline file> [options]\n";
+        logger->error(msg);
         return 1;
     }
     std::string inputfile, baseline, device;
@@ -49,20 +58,20 @@ int main(int argc, char** argv) {
 
     // Check to see that inputfiles exist
     if (!rrtmgpTest::file_exists(inputfile.c_str())) {
-        std::cout << "Inputfile " << inputfile << " does not exist." << std::endl;
+        logger->error("Inputfile " + inputfile + " does not exist.\n");
         return -1;
     }
     if (!rrtmgpTest::file_exists(baseline.c_str())) {
-        std::cout << "Baseline " << baseline << " does not exist." << std::endl;
+        logger->error("Baseline " + baseline + " does not exist.\n");
         return -1;
     }
 
     // Initialize yakl
-    std::cout << "Initialize yakl...\n";
+    logger->info("Initialize yakl...\n");
     yakl::init();
 
     // Get reference fluxes from input file; do this here so we can get ncol dimension
-    std::cout << "Read fluxes...\n";
+    logger->info("Read fluxes...\n");
     real2d sw_flux_up_ref;
     real2d sw_flux_dn_ref;
     real2d sw_flux_dir_ref;
@@ -82,7 +91,7 @@ int main(int argc, char** argv) {
     // this will copy the first column of the input data (the first profile) ncol
     // times. We will then fill some fraction of these columns with clouds for
     // the test problem.
-    std::cout << "Read dummy atmos...\n";
+    logger->info("Read dummy atmos...\n");
     real2d p_lay("p_lay", ncol, nlay);
     real2d t_lay("t_lay", ncol, nlay);
     real2d p_lev("p_lev", ncol, nlay+1);
@@ -91,11 +100,11 @@ int main(int argc, char** argv) {
     read_atmos(inputfile, p_lay, t_lay, p_lev, t_lev, gas_concs, ncol);
 
     // Initialize absorption coefficients
-    std::cout << "Initialize RRTMGP...\n";
-    scream::rrtmgp::rrtmgp_initialize(gas_concs);
+    logger->info("Initialize RRTMGP...\n");
+    scream::rrtmgp::rrtmgp_initialize(gas_concs,logger);
 
     // Setup our dummy atmosphere based on the input data we read in
-    std::cout << "Setup dummy atmos...\n";
+    logger->info("Setup dummy atmos...\n");
     real1d sfc_alb_dir_vis("sfc_alb_dir_vis", ncol);
     real1d sfc_alb_dir_nir("sfc_alb_dir_nir", ncol);
     real1d sfc_alb_dif_vis("sfc_alb_dif_vis", ncol);
@@ -118,7 +127,7 @@ int main(int argc, char** argv) {
     // input/outputs into the driver (persisting between calls), and
     // we would just have to setup the pointers to them in the
     // FluxesBroadband object
-    std::cout << "Setup fluxes...\n";
+    logger->info("Setup fluxes...\n");
     const auto nswbands = scream::rrtmgp::k_dist_sw.get_nband();
     const auto nlwbands = scream::rrtmgp::k_dist_lw.get_nband();
     real2d sw_flux_up ("sw_flux_up" , ncol, nlay+1);
@@ -156,7 +165,7 @@ int main(int argc, char** argv) {
     });
 
     // Run RRTMGP code on dummy atmosphere
-    std::cout << "Run RRTMGP...\n";
+    logger->info("Run RRTMGP...\n");
     const Real tsi_scaling = 1;
     scream::rrtmgp::rrtmgp_main(
             ncol, nlay,
@@ -168,10 +177,10 @@ int main(int argc, char** argv) {
             sw_flux_up, sw_flux_dn, sw_flux_dir,
             lw_flux_up, lw_flux_dn,
             sw_bnd_flux_up, sw_bnd_flux_dn, sw_bnd_flux_dir,
-            lw_bnd_flux_up, lw_bnd_flux_dn, tsi_scaling);
+            lw_bnd_flux_up, lw_bnd_flux_dn, tsi_scaling, logger);
 
     // Check values against baseline
-    std::cout << "Check values...\n";
+    logger->info("Check values...\n");
     rrtmgpTest::read_fluxes(
         baseline, 
         sw_flux_up_ref, sw_flux_dn_ref, sw_flux_dir_ref,
@@ -184,6 +193,7 @@ int main(int argc, char** argv) {
     if (!rrtmgpTest::all_close(lw_flux_up_ref , lw_flux_up , 0.001)) nerr++;
     if (!rrtmgpTest::all_close(lw_flux_dn_ref , lw_flux_dn , 0.001)) nerr++;
 
+    logger->info("Cleaning up...\n");
     // Clean up or else YAKL will throw errors
     scream::rrtmgp::rrtmgp_finalize();
     sw_flux_up_ref.deallocate();
@@ -227,4 +237,13 @@ int main(int argc, char** argv) {
     return nerr != 0 ? 1 : 0;
 
 }  // end of main driver code
+
+int main(int argc, char** argv) {
+
+    MPI_Init(&argc,&argv);
+    int ret = run(argc,argv);
+    MPI_Finalize();
+
+    return ret;
+}
 

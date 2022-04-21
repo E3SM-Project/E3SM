@@ -1,7 +1,7 @@
 #include "advect_scalar.h"
 
 void advect_scalar(real4d &f, real2d &fadv, real2d &flux) {
-  auto &ncrms = ::ncrms;
+  YAKL_SCOPE( ncrms  , ::ncrms);
 
   real4d f0("f0", nzm, dimy_s, dimx_s, ncrms);
 
@@ -49,7 +49,7 @@ void advect_scalar(real4d &f, real2d &fadv, real2d &flux) {
 }
 
 void advect_scalar(real5d &f, int ind_f, real2d &fadv, real2d &flux) {
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( ncrms          , :: ncrms);
 
   real4d f0("f0", nzm, dimy_s, dimx_s, ncrms);
 
@@ -97,7 +97,7 @@ void advect_scalar(real5d &f, int ind_f, real2d &fadv, real2d &flux) {
 }
 
 void advect_scalar(real5d &f, int ind_f, real3d &fadv, int ind_fadv, real3d &flux, int ind_flux) {
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( ncrms          , :: ncrms);
 
   real4d f0("f0", nzm, dimy_s, dimx_s, ncrms);
 

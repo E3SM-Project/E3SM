@@ -4,7 +4,7 @@ if (NOT SCREAM_BASELINES_ONLY)
 
   # Get or create the dynamics lib
   #                 HOMME_TARGET   NP PLEV QSIZE_D
-  CreateDynamicsLib("theta-l_kokkos"  4   72   4)
+  CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 
   # Test dynamics-physics fields remapping
   CreateUnitTest(homme_pd_remap

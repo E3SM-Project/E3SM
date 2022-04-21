@@ -2,7 +2,7 @@ include (ScreamUtils)
 
 # Get or create the dynamics lib
 #                 HOMME_TARGET   NP PLEV QSIZE_D
-CreateDynamicsLib("theta-l_kokkos"  4   72   35)
+CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 
 # Create the test
 set (TEST_LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
@@ -55,33 +55,8 @@ set (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
 configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
-# Copy initial conditions files
-GetInputFile(init/homme_shoc_cld_p3_rrtmgp_init_ne2np4.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/homme_shoc_cld_p3_rrtmgp_init_ne2np4.nc COPYONLY)
-
-# Create vcoord directory
-file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vcoord)
-
-# Copy vcoord files to build dir
-configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72i.ascii
-               ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
-configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72m.ascii
-               ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
-
-# P3 data files
-GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1
-  ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_1.dat-v4.1.1 COPYONLY)
-GetInputFile(tables/p3_lookup_table_2.dat-v4.1.1
-  ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_2.dat-v4.1.1 COPYONLY)
-# RRTMGP data files
-GetInputFile(init/rrtmgp-data-sw-g224-2018-12-04.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-GetInputFile(init/rrtmgp-data-lw-g256-2018-12-04.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-GetInputFile(init/rrtmgp-cloud-optics-coeffs-sw.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
-GetInputFile(init/rrtmgp-cloud-optics-coeffs-lw.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+# Ensure test input files are present in the data dir
+GetInputFile(init/homme_shoc_cld_p3_rrtmgp_init_ne2np4.nc)
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if max mpi ranks is >1

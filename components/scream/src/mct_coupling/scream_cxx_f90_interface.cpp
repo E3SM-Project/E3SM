@@ -14,6 +14,7 @@
 #include "share/scream_types.hpp"
 
 #include "ekat/ekat_parse_yaml_file.hpp"
+#include "ekat/logging/ekat_logger.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_assert.hpp"
@@ -71,9 +72,9 @@ extern "C"
 
 /*===============================================================================================*/
 // WARNING: make sure input_yaml_file is a null-terminated string!
-void scream_create_atm_instance (const MPI_Fint& f_comm,
-                                 const char* input_yaml_file) {
-                  // const int& compid) {
+void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
+                                 const char* input_yaml_file,
+                                 const char* atm_log_file) {
   using namespace scream;
   using namespace scream::control;
 
@@ -90,21 +91,16 @@ void scream_create_atm_instance (const MPI_Fint& f_comm,
     scream::initialize_scream_session(atm_comm.am_i_root());
 
     // Create a parameter list for inputs
-    if (atm_comm.am_i_root()) {
-      printf("[scream] reading parameterr from yaml file: %s\n",input_yaml_file);
-    }
     ekat::ParameterList scream_params("Scream Parameters");
     parse_yaml_file (input_yaml_file, scream_params);
-
-    if (atm_comm.am_i_root()) {
-      scream_params.print();
-    }
 
     ekat::error::runtime_check(scream_params.isSublist("Atmosphere Driver"),
          "Error! Sublist 'Atmosphere Driver' not found inside '" +
          std::string(input_yaml_file) + "'.\n");
 
     auto& ad_params = scream_params.sublist("Atmosphere Driver");
+    ad_params.set<std::string>("Atm Log File",atm_log_file);
+    ad_params.set<bool>("Standalone",false);
 
     // Need to register products in the factories *before* we attempt to create any.
     // In particular, register all atm processes, and all grids managers.
@@ -116,6 +112,7 @@ void scream_create_atm_instance (const MPI_Fint& f_comm,
 
     ad.set_comm(atm_comm);
     ad.set_params(ad_params);
+    ad.init_scorpio(atm_id);
     ad.create_atm_processes ();
     ad.create_grids ();
     ad.create_fields ();
@@ -161,8 +158,10 @@ void scream_setup_surface_coupling (
   });
 }
 
-void scream_init_atm (const int& start_ymd,
-                      const int& start_tod)
+void scream_init_atm (const int run_start_ymd,
+                      const int run_start_tod,
+                      const int case_start_ymd,
+                      const int case_start_tod)
 {
   using namespace scream;
   using namespace scream::control;
@@ -171,32 +170,34 @@ void scream_init_atm (const int& start_ymd,
     // Get the ad, then complete initialization
     auto& ad = get_ad_nonconst();
 
-    // Get the ekat comm
-    auto& atm_comm = ad.get_comm();
-
     // Recall that e3sm uses the int YYYYMMDD to store a date
-    if (atm_comm.am_i_root()) {
-      std::cout << "start_ymd: " << start_ymd << "\n";
-      std::cout << "start_tod: " << start_tod << "\n";
-    }
-    const int yy  = start_ymd / 10000;
-    const int mm  = (start_ymd / 100) % 100;
-    const int dd  = start_ymd % 100;
-    const int hr  =  start_tod / 3600;
-    const int min = (start_tod % 3600) / 60;
-    const int sec = (start_tod % 3600) % 60;
-    util::TimeStamp t0 (yy,mm,dd,hr,min,sec);
+    int yy,mm,dd,hr,min,sec;
+    yy  = (run_start_ymd / 100) / 100;
+    mm  = (run_start_ymd / 100) % 100;
+    dd  =  run_start_ymd % 100;
+    hr  = (run_start_tod / 60) / 60;
+    min = (run_start_tod / 60) % 60;
+    sec =  run_start_tod % 60;
+    util::TimeStamp run_t0 (yy,mm,dd,hr,min,sec);
+
+    yy  = (case_start_ymd / 100) / 100;
+    mm  = (case_start_ymd / 100) % 100;
+    dd  =  case_start_ymd % 100;
+    hr  = (case_start_tod / 60) / 60;
+    min = (case_start_tod / 60) % 60;
+    sec =  case_start_tod % 60;
+    util::TimeStamp case_t0 (yy,mm,dd,hr,min,sec);
 
     // Init and run (to finalize, wait till checks are completed,
     // or you'll clear the field managers!)
-    ad.initialize_fields (t0);
+    ad.initialize_fields (run_t0,case_t0);
     ad.initialize_output_managers ();
     ad.initialize_atm_procs ();
   });
 }
 
 /*===============================================================================================*/
-void scream_run (const scream::Real& dt) {
+void scream_run (const int dt) {
   // TODO: uncomment once you have valid inputs. I fear AD may crash with no inputs.
   fpe_guard_wrapper([&](){
     // Get the AD, and run it

@@ -36,8 +36,8 @@ TEST_CASE("spa_read_data","spa")
   using Spack = SPAFunc::Spack;
   using gid_type = SPAFunc::gid_type;
 
-  std::string spa_data_file = "spa_data_for_testing.nc";
-  std::string spa_remap_file = "spa_data_for_testing.nc";
+  std::string spa_data_file  = SCREAM_DATA_DIR "/init/spa_data_for_testing.nc";
+  std::string spa_remap_file = SCREAM_DATA_DIR "/init/spa_data_for_testing.nc";
   Int max_time = 3;
   Int ncols    = 48;
   Int nlevs    = 4;

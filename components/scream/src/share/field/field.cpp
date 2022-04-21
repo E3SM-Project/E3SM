@@ -20,6 +20,30 @@ Field::get_const() const {
   return f;
 }
 
+Field
+Field::clone() const {
+
+  // Create new field
+  Field f(get_header().get_identifier());
+
+  // Ensure alloc props match
+  const auto&  ap = get_header().get_alloc_properties();
+        auto& fap = f.get_header().get_alloc_properties();
+  fap.request_allocation(ap.get_largest_pack_size());
+
+  // Allocate
+  f.allocate_view();
+
+  // Set correct time stamp
+  const auto& ts = get_header().get_tracking().get_time_stamp();
+  f.get_header().get_tracking().update_time_stamp(ts);
+
+  // Deep copy
+  f.deep_copy(*this);
+
+  return f;
+}
+
 void Field::
 sync_to_host () const {
   // Sanity check

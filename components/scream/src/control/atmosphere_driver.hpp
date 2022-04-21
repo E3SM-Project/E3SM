@@ -11,6 +11,7 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
 
+#include "ekat/logging/ekat_logger.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 
@@ -61,6 +62,9 @@ public:
   // Set AD params
   void set_params (const ekat::ParameterList& params);
 
+  // Set AD params
+  void init_scorpio (const int atm_id = 0);
+
   // Create atm processes, without initializing them
   void create_atm_processes ();
 
@@ -74,7 +78,7 @@ public:
   void set_surface_coupling (const std::shared_ptr<SurfaceCoupling>& sc) { m_surface_coupling = sc; }
 
   // Load initial conditions for atm inputs
-  void initialize_fields (const util::TimeStamp& t0);
+  void initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0);
 
   // Initialie I/O structures for output
   void initialize_output_managers ();
@@ -88,10 +92,19 @@ public:
   // which is handy for scream standalone tests.
   //  - atm_comm: the MPI comm containing all ranks assigned to the atmosphere
   //  - params: parameter list with all atm options (organized in sublists)
-  //  - t0: the time stamp where the simulation starts
+  //  - run_t0 : the time stamp where the run starts
+  //  - case_t0: the time stamp where the original simulation started (for restarts)
   void initialize (const ekat::Comm& atm_comm,
                    const ekat::ParameterList& params,
-                   const util::TimeStamp& t0);
+                   const util::TimeStamp& run_t0,
+                   const util::TimeStamp& case_t0);
+
+  // Shortcut for tests not doing restart
+  void initialize (const ekat::Comm& atm_comm,
+                   const ekat::ParameterList& params,
+                   const util::TimeStamp& t0) {
+    initialize(atm_comm,params,t0,t0);
+  }
 
   // The run method is responsible for advancing the atmosphere component by one atm time step
   // Inside here you should find calls to the run method of each subcomponent, including parameterizations
@@ -118,6 +131,7 @@ public:
 
 protected:
 
+  void create_logger ();
   void set_initial_conditions ();
   void restart_model ();
   void initialize_constant_field(const FieldIdentifier& fid, const ekat::ParameterList& ic_pl);
@@ -142,22 +156,32 @@ protected:
   // Surface coupling stuff
   std::shared_ptr<SurfaceCoupling>          m_surface_coupling;
 
-  // This are the time stamps of the start and end of the time step.
+  // This is the time stamp at the beginning of the time step.
   util::TimeStamp                           m_current_ts;
+
+  // These are the time stamps of the beginning of this run and case
+  // respectively. For initial runs, they are the same, but for
+  // restarted runs, the latter is "older" than the former
+  util::TimeStamp                           m_run_t0;
+  util::TimeStamp                           m_case_t0;
 
   // This is the comm containing all (and only) the processes assigned to the atmosphere
   ekat::Comm                                m_atm_comm;
 
+  // The logger to be used throughout the ATM to log message
+  std::shared_ptr<spdlog::logger>           m_atm_logger;
+
   // Some status flags, used to make sure we call the init functions in the right order
   static constexpr int s_comm_set       =   1;
   static constexpr int s_params_set     =   2;
-  static constexpr int s_procs_created  =   4;
-  static constexpr int s_grids_created  =   8;
-  static constexpr int s_fields_created =  16;
-  static constexpr int s_sc_set         =  32;
-  static constexpr int s_output_inited  =  64;
-  static constexpr int s_fields_inited  = 128;
-  static constexpr int s_procs_inited   = 256;
+  static constexpr int s_scorpio_inited =   4;
+  static constexpr int s_procs_created  =   8;
+  static constexpr int s_grids_created  =  16;
+  static constexpr int s_fields_created =  32;
+  static constexpr int s_sc_set         =  64;
+  static constexpr int s_output_inited  = 128;
+  static constexpr int s_fields_inited  = 256;
+  static constexpr int s_procs_inited   = 512;
 
   // Lazy version to ensure s_atm_inited & flag is true for every flag,
   // even if someone adds new flags later on
@@ -165,7 +189,6 @@ protected:
 
   // Utility function to check the ad status
   void check_ad_status (const int flag, const bool must_be_set = true);
-
 
   // Current ad initialization status
   int m_ad_status = 0;

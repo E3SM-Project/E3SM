@@ -69,7 +69,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Required>("pref_mid",         pref_mid_layout,      Pa,      grid_name, ps);
   add_field<Required>("omega",            scalar3d_layout_mid,  Pa/s,    grid_name, ps);
   add_field<Required>("surf_sens_flux",   scalar2d_layout_col,  W/m2, grid_name);
-  add_field<Required>("surf_latent_flux", scalar2d_layout_col,  W/m2, grid_name);
+  add_field<Required>("surf_latent_flux", scalar2d_layout_col,kg/m2/s, grid_name);
   add_field<Required>("surf_mom_flux",    surf_mom_flux_layout, N/m2, grid_name);
 
   add_field<Updated> ("T_mid",            scalar3d_layout_mid, K,       grid_name, ps);
@@ -379,7 +379,12 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
                                  T_mid, dse, z_mid, phis);
 
   // Set field property checks for the fields in this process
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140,500);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140.0,500.0,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qv"),1e-13,0.2,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qc"),0.0,0.1,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("horiz_winds"),-400.0,400.0,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("pbl_height"),0.0,3000.0,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("cldfrac_liq"),0.0,1.0,false);
   add_postcondition_check<FieldPositivityCheck>(get_field_out("tke"));
 
   // Setup WSM for internal local variables

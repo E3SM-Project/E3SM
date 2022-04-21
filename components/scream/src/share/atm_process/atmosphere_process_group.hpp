@@ -30,7 +30,7 @@ public:
   using atm_proc_type     = AtmosphereProcess;
 
   // Constructor(s)
-  explicit AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& params);
+  AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   virtual ~AtmosphereProcessGroup () = default;
 
@@ -46,8 +46,6 @@ public:
   // Grab the proper grid from the grids manager
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
-  void final_setup ();
-
   // --- Methods specific to AtmosphereProcessGroup --- //
   int get_num_processes () const { return m_atm_processes.size(); }
 
@@ -57,8 +55,12 @@ public:
 
   ScheduleType get_schedule_type () const { return m_group_schedule_type; }
 
-  // Initialize memory buffer for each process
-  void initialize_atm_memory_buffer (ATMBufferManager& memory_buffer);
+  // Computes total number of bytes needed for local variables
+  size_t requested_buffer_size_in_bytes () const;
+
+  // Set local variables using memory provided by
+  // the ATMBufferManager
+  void init_buffers(const ATMBufferManager& buffer_manager);
 
   // The APG class needs to perform special checks before establishing whether
   // a required group/field is indeed a required group for this APG

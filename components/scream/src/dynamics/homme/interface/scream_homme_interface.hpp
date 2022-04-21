@@ -44,6 +44,7 @@ void finalize_geometry_f90 ();
 
 // Prim init/run/finalize
 void prim_init_data_structures_f90 ();
+void prim_complete_init1_phase_f90 ();
 void prim_set_hvcoords_f90 (const double& ps0,
                             Homme::CF90Ptr& hyai_ptr,
                             Homme::CF90Ptr& hybi_ptr,

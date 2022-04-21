@@ -1,4 +1,5 @@
 #include "scream_rrtmgp_interface.hpp"
+
 #include "mo_load_coefficients.h"
 #include "mo_load_cloud_coefficients.h"
 #include "cpp/rrtmgp/mo_gas_concentrations.h"
@@ -10,16 +11,16 @@
 namespace scream {
     namespace rrtmgp {
 
-        OpticalProps2str get_cloud_optics_sw(const int ncol, const int nlay, CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, real2d &p_lay, real2d &t_lay, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei);
-        OpticalProps1scl get_cloud_optics_lw(const int ncol, const int nlay, CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, real2d &p_lay, real2d &t_lay, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei);
+        OpticalProps2str get_cloud_optics_sw(const int ncol, const int nlay, CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei);
+        OpticalProps1scl get_cloud_optics_lw(const int ncol, const int nlay, CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei);
 
         /*
          * Names of input files we will need.
          */
-        std::string coefficients_file_sw = "./data/rrtmgp-data-sw-g224-2018-12-04.nc";
-        std::string coefficients_file_lw = "./data/rrtmgp-data-lw-g256-2018-12-04.nc";
-        std::string cloud_optics_file_sw = "./data/rrtmgp-cloud-optics-coeffs-sw.nc";
-        std::string cloud_optics_file_lw = "./data/rrtmgp-cloud-optics-coeffs-lw.nc";
+        std::string coefficients_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-data-sw-g224-2018-12-04.nc";
+        std::string coefficients_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-data-lw-g256-2018-12-04.nc";
+        std::string cloud_optics_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-sw.nc";
+        std::string cloud_optics_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-lw.nc";
 
         /* 
          * Objects containing k-distribution information need to be initialized
@@ -52,11 +53,13 @@ namespace scream {
          * can be used as-is, but are intended to be wrapped by the SCREAM AD
          * interface to radiation.
          */
-        void rrtmgp_initialize(GasConcs &gas_concs) {
+        void rrtmgp_initialize(GasConcs &gas_concs,
+                               const std::shared_ptr<spdlog::logger>& logger) {
 
             // If we've already initialized, just exit
-            if (initialized) { 
-                std::cout << "RRTMGP is already initialized; skipping\n";
+            if (initialized) {
+                if (logger)
+                  logger->info("RRTMGP is already initialized; skipping\n");
                 return; 
             }
 
@@ -201,7 +204,8 @@ namespace scream {
                 real2d &lw_flux_up, real2d &lw_flux_dn,
                 real3d &sw_bnd_flux_up, real3d &sw_bnd_flux_dn, real3d &sw_bnd_flux_dn_dir,
                 real3d &lw_bnd_flux_up, real3d &lw_bnd_flux_dn,
-                const Real tsi_scaling, const bool i_am_root) {
+                const Real tsi_scaling,
+                const std::shared_ptr<spdlog::logger>& logger) {
 
             // Setup pointers to RRTMGP SW fluxes
             FluxesByband fluxes_sw;
@@ -239,15 +243,15 @@ namespace scream {
             });
 
             // Convert cloud physical properties to optical properties for input to RRTMGP
-            OpticalProps2str clouds_sw = get_cloud_optics_sw(ncol, nlay, cloud_optics_sw, k_dist_sw, p_lay, t_lay, lwp, iwp, rel, rei);
-            OpticalProps1scl clouds_lw = get_cloud_optics_lw(ncol, nlay, cloud_optics_lw, k_dist_lw, p_lay, t_lay, lwp, iwp, rel, rei);        
+            OpticalProps2str clouds_sw = get_cloud_optics_sw(ncol, nlay, cloud_optics_sw, k_dist_sw, lwp, iwp, rel, rei);
+            OpticalProps1scl clouds_lw = get_cloud_optics_lw(ncol, nlay, cloud_optics_lw, k_dist_lw, lwp, iwp, rel, rei);        
 
             // Do shortwave
             rrtmgp_sw(
                 ncol, nlay,
                 k_dist_sw, p_lay, t_lay, p_lev, t_lev, gas_concs, 
                 sfc_alb_dir, sfc_alb_dif, mu0, aerosol_sw, clouds_sw, fluxes_sw,
-                tsi_scaling, i_am_root
+                tsi_scaling, logger
             );
 
             // Do longwave
@@ -263,7 +267,7 @@ namespace scream {
         OpticalProps2str get_cloud_optics_sw(
                 const int ncol, const int nlay,
                 CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist,
-                real2d &p_lay, real2d &t_lay, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei) {
+                real2d &lwp, real2d &iwp, real2d &rel, real2d &rei) {
  
             // Initialize optics
             OpticalProps2str clouds;
@@ -290,7 +294,7 @@ namespace scream {
         OpticalProps1scl get_cloud_optics_lw(
                 const int ncol, const int nlay,
                 CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, 
-                real2d &p_lay, real2d &t_lay, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei) {
+                real2d &lwp, real2d &iwp, real2d &rel, real2d &rei) {
 
             // Initialize optics
             OpticalProps1scl clouds;
@@ -322,7 +326,8 @@ namespace scream {
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, 
                 OpticalProps2str &aerosol, OpticalProps2str &clouds,
                 FluxesByband &fluxes,
-                const Real tsi_scaling, const bool i_am_root) {
+                const Real tsi_scaling,
+                const std::shared_ptr<spdlog::logger>& logger) {
 
             // Get problem sizes
             int nbnd = k_dist.get_nband();
@@ -366,7 +371,8 @@ namespace scream {
             // Copy data back to the device
             dayIndices_h.deep_copy_to(dayIndices);
             if (nday == 0) { 
-                if (i_am_root) std::cout << "WARNING: no daytime columns found for this chunk!\n";
+                if (logger)
+                  logger->warn("WARNING: no daytime columns found for this chunk!\n");
                 return;
             }
 

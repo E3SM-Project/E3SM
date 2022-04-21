@@ -19,6 +19,7 @@ Atmosphere Processes:
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
     Orbital Year: 1990
     Can Initialize All Inputs: true
+    rad_frequency: 3
 
 Grids Manager:
   Type: Mesh Free
@@ -30,7 +31,7 @@ Grids Manager:
 # Specifications for setting initial conditions
 Initial Conditions:
   Point Grid:
-    Filename: rrtmgp_init_ne2np4.nc
+    Filename: ${SCREAM_DATA_DIR}/init/rrtmgp_init_ne2np4.nc
     Load Latitude:  true
     Load Longitude: true
     aero_g_sw: 0.0

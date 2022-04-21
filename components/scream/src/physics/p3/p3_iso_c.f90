@@ -16,7 +16,7 @@ module p3_iso_c
 contains
   subroutine append_precision(string, prefix)
 
-    character(kind=c_char, len=128), intent(inout) :: string
+    character(kind=c_char, len=256), intent(inout) :: string
     character(*), intent(in) :: prefix
     real(kind=c_real) :: s
 
@@ -40,7 +40,7 @@ contains
 
   end subroutine init_tables_from_f90_c
 
-  subroutine p3_init_c(lookup_file_dir_c, info) bind(c)
+  subroutine p3_init_c(lookup_file_dir_c, info, write_tables) bind(c)
     use ekat_array_io_mod, only: array_io_file_exists
 #ifdef SCREAM_DOUBLE_PRECISION
     use ekat_array_io_mod, only: array_io_read=>array_io_read_double, array_io_write=>array_io_write_double
@@ -51,12 +51,13 @@ contains
 
     type(c_ptr), intent(in) :: lookup_file_dir_c
     integer(kind=c_int), intent(out) :: info
+    logical(kind=c_bool), intent(in) :: write_tables
 
     real(kind=c_real), dimension(150), target :: mu_r_table_vals
     real(kind=c_real), dimension(300,10), target :: vn_table_vals, vm_table_vals, revap_table_vals
 
     character(len=256), pointer :: lookup_file_dir
-    character(kind=c_char, len=128) :: mu_r_filename, revap_filename, vn_filename, vm_filename
+    character(kind=c_char, len=256) :: mu_r_filename, revap_filename, vn_filename, vm_filename
     integer :: len
     logical :: ok
     character(len=16) :: p3_version="4.1.1"  ! TODO: Change to be dependent on table version and path specified in p3_functions.hpp
@@ -68,28 +69,12 @@ contains
     info = 0
     ok = .false.
 
-    call append_precision(mu_r_filename, c_char_"mu_r_table_vals.dat")
-    call append_precision(revap_filename, c_char_"revap_table_vals.dat")
-    call append_precision(vn_filename, c_char_"vn_table_vals.dat")
-    call append_precision(vm_filename, c_char_"vm_table_vals.dat")
-    ok = array_io_file_exists(mu_r_filename) .and. &
-         array_io_file_exists(revap_filename) .and. &
-         array_io_file_exists(vn_filename) .and. &
-         array_io_file_exists(vm_filename)
-    if (ok) then
-       ok = array_io_read(mu_r_filename, c_loc(mu_r_table_vals), size(mu_r_table_vals)) .and. &
-            array_io_read(revap_filename, c_loc(revap_table_vals), size(revap_table_vals)) .and. &
-            array_io_read(vn_filename, c_loc(vn_table_vals), size(vn_table_vals)) .and. &
-            array_io_read(vm_filename, c_loc(vm_table_vals), size(vm_table_vals))
-       if (.not. ok) then
-          print *, 'p3_iso_c::p3_init: One or more table files exists but gave a read error.'
-          info = -1
-       end if
-    end if
+    call append_precision(mu_r_filename, SCREAM_DATA_DIR//"/tables/mu_r_table_vals.dat")
+    call append_precision(revap_filename, SCREAM_DATA_DIR//"/tables/revap_table_vals.dat")
+    call append_precision(vn_filename, SCREAM_DATA_DIR//"/tables/vn_table_vals.dat")
+    call append_precision(vm_filename, SCREAM_DATA_DIR//"/tables/vm_table_vals.dat")
 
-    if (ok) then
-       call p3_set_tables(mu_r_table_vals, revap_table_vals, vn_table_vals, vm_table_vals)
-    else
+    if (write_tables) then
        call p3_init_b()
        call p3_get_tables(mu_r_table_vals, revap_table_vals, vn_table_vals, vm_table_vals)
        ok = array_io_write(mu_r_filename, c_loc(mu_r_table_vals), size(mu_r_table_vals)) .and. &
@@ -100,6 +85,39 @@ contains
           print *, 'p3_iso_c::p3_init: Error when writing table files.'
           info = -1
        end if
+    else
+      ! Check table files exist
+      ok = array_io_file_exists(mu_r_filename) .and. &
+           array_io_file_exists(revap_filename) .and. &
+           array_io_file_exists(vn_filename) .and. &
+           array_io_file_exists(vm_filename)
+      if (.not. ok) then
+        print *, 'p3_iso_c::p3_init: One or more table files does not exist'
+        info = -2
+        return
+      endif
+
+      ! Read files
+      if (.not. array_io_read(mu_r_filename, c_loc(mu_r_table_vals), size(mu_r_table_vals))) then
+         print *, "p3_iso_c::p3_init: error reading mu_r table from file "//mu_r_filename
+         info = -3
+         return
+      elseif (.not. array_io_read(revap_filename, c_loc(revap_table_vals), size(revap_table_vals))) then
+         print *, "p3_iso_c::p3_init: error reading revap table from file "//revap_filename
+         info = -4
+         return
+
+      elseif (.not. array_io_read(vn_filename, c_loc(vn_table_vals), size(vn_table_vals))) then
+         print *, "p3_iso_c::p3_init: error reading vn table from file "//vn_filename
+         info = -5
+         return
+      elseif (.not. array_io_read(vm_filename, c_loc(vm_table_vals), size(vm_table_vals))) then
+         print *, "p3_iso_c::p3_init: error reading vm table from file "//vm_filename
+         info = -6
+         return
+      endif
+
+      call p3_set_tables(mu_r_table_vals, revap_table_vals, vn_table_vals, vm_table_vals)
     end if
 
   end subroutine p3_init_c

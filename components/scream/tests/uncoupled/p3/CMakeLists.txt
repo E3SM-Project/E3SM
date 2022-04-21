@@ -17,15 +17,8 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
 configure_file(p3_standalone_output.yaml p3_standalone_output.yaml)
 
-# Copy p3 lookup tables to local data directory
-file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1
-               ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(tables/p3_lookup_table_2.dat-v4.1.1
-               ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(init/p3_init_ne2np4.nc p3_init_ne2np4.nc)
-configure_file(${SCREAM_DATA_DIR}/p3_universal_constants.inp
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+# Ensure test input files are present in the data dir
+GetInputFile(init/p3_init_ne2np4.nc)
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if max mpi ranks is >1

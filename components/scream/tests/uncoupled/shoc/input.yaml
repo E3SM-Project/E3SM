@@ -27,7 +27,7 @@ Grids Manager:
 # The name of the file containing the initial conditions for this test.
 Initial Conditions:
   Point Grid:
-    Filename: shoc_init_ne2np4.nc
+    Filename: ${SCREAM_DATA_DIR}/init/shoc_init_ne2np4.nc
     surf_latent_flux: 0.0
     surf_sens_flux: 0.0
 

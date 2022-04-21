@@ -23,8 +23,9 @@ class HommeDynamics : public AtmosphereProcess
 {
 public:
 
-  // Constructor(s)
+  // Constructor(s) and Destructor
   HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList& params);
+  ~HommeDynamics ();
 
   // The type of the subcomponent (dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Dynamics; }
@@ -72,9 +73,12 @@ protected:
   void run_impl        (const int dt);
   void finalize_impl   ();
 
-  // For simplicity, it's best to store the size of the tracers as soon as it is available.
-  // We can do it the first time that the 'tracers' group is set
+  // We need to store the size of the tracers group as soon as it is available.
+  // In particular, we absolutely need to store it *before* the call to
+  // requested_buffer_size_in_bytes, where Homme::ForcingFunctor queries
+  // Homme::Tracers for qsize.
   void set_computed_group_impl (const FieldGroup& group);
+
 
   // Computes total number of bytes needed for local variables
   size_t requested_buffer_size_in_bytes() const;

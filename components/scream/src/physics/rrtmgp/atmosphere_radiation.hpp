@@ -82,6 +82,9 @@ public:
   view_1d_real             m_gas_mol_weights;
   GasConcs gas_concs;
 
+  // Rad frequency in number of steps
+  int m_rad_freq_in_steps;
+
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
     static constexpr int num_1d_ncol        = 10;

@@ -8,7 +8,7 @@ BuildCprnc()
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
 # Get or create the dynamics lib
 #                 HOMME_TARGET   NP PLEV QSIZE_D
-CreateDynamicsLib("theta-l_kokkos"  4   72   35)
+CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 
 set (NEED_LIBS cld_fraction shoc p3 scream_rrtmgp rrtmgp ${NETCDF_C} ${dynLibName} scream_control scream_share physics_share yakl)
 
@@ -97,32 +97,5 @@ set (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
 configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
-# Copy initial conditions files
-GetInputFile(init/homme_physics_ne2np4.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/homme_physics_ne2np4.nc)
-
-# Create vcoord directory
-file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/vcoord)
-
-# Copy vcoord files to build dir
-configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72i.ascii
-               ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
-configure_file(${HOMME_SOURCE_DIR}/test/vcoord/acme-72m.ascii
-               ${CMAKE_CURRENT_BINARY_DIR}/vcoord COPYONLY)
-
-# P3 data files
-GetInputFile(tables/p3_lookup_table_1.dat-v4.1.1
-  ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_1.dat-v4.1.1)
-GetInputFile(tables/p3_lookup_table_2.dat-v4.1.1
-  ${CMAKE_CURRENT_BINARY_DIR}/data/p3_lookup_table_2.dat-v4.1.1)
-
-# RRTMGP data files
-set(RRTMGP_EXTERNAL_DIR ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp/external)
-GetInputFile(init/rrtmgp-data-sw-g224-2018-12-04.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(init/rrtmgp-data-lw-g256-2018-12-04.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(init/rrtmgp-cloud-optics-coeffs-sw.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(init/rrtmgp-cloud-optics-coeffs-lw.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
+# Ensure test input files are present in the data dir
+GetInputFile(init/homme_physics_ne2np4.nc)

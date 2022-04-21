@@ -20,6 +20,7 @@ CreateUnitTest(spa_main_test "spa_main_test.cpp" "${NEED_LIBS}"
 
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/spa_main.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/spa_main.yaml)
-GetInputFile(init/spa_data_for_testing.nc ${CMAKE_CURRENT_BINARY_DIR}/spa_data_for_testing.nc)
-GetInputFile(init/spa_file_unified_and_complete_ne4_scream.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data/spa_file_unified_and_complete_ne4_scream.nc)
+
+# Ensure tests input files are present
+GetInputFile(init/spa_data_for_testing.nc)
+GetInputFile(init/spa_file_unified_and_complete_ne4_scream.nc)

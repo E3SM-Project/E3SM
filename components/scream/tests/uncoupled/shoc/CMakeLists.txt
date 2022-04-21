@@ -12,9 +12,9 @@ CreateUnitTest(shoc_standalone "shoc_standalone.cpp" "${NEED_LIBS}" LABELS ${TES
 SetVarDependingOnTestProfile(NUM_STEPS 2 5 48)
 set (ATM_TIME_STEP 1800)
 
-# Copy input files to run directory
-GetInputFile(init/shoc_init_ne2np4.nc
-               ${CMAKE_CURRENT_BINARY_DIR}/shoc_init_ne2np4.nc)
+# Ensure test input files are present in the data dir
+GetInputFile(init/shoc_init_ne2np4.nc)
+
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
 configure_file(shoc_standalone_output.yaml shoc_standalone_output.yaml)

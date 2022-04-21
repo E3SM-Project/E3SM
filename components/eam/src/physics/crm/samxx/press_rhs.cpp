@@ -1,27 +1,27 @@
 #include "press_rhs.h"
 
 void press_rhs() {
-  auto &dudt          = :: dudt;
-  auto &dvdt          = :: dvdt;
-  auto &dwdt          = :: dwdt;
-  auto &dx            = :: dx; 
-  auto &dy            = :: dy; 
-  auto &at            = :: at;
-  auto &bt            = :: bt;
-  auto &ct            = :: ct;
-  auto &adz           = :: adz; 
-  auto &dz            = :: dz; 
-  auto &rhow          = :: rhow; 
-  auto &rho           = :: rho; 
-  auto &dt3           = :: dt3;
-  auto &na            = :: na;
-  auto &nb            = :: nb;
-  auto &nc            = :: nc;
-  auto &u             = :: u;
-  auto &v             = :: v;
-  auto &w             = :: w;
-  auto &p             = :: p;
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( dudt          , :: dudt );
+  YAKL_SCOPE( dvdt          , :: dvdt );
+  YAKL_SCOPE( dwdt          , :: dwdt );
+  YAKL_SCOPE( dx            , :: dx ); 
+  YAKL_SCOPE( dy            , :: dy ); 
+  YAKL_SCOPE( at            , :: at );
+  YAKL_SCOPE( bt            , :: bt );
+  YAKL_SCOPE( ct            , :: ct );
+  YAKL_SCOPE( adz           , :: adz ); 
+  YAKL_SCOPE( dz            , :: dz ); 
+  YAKL_SCOPE( rhow          , :: rhow ); 
+  YAKL_SCOPE( rho           , :: rho ); 
+  YAKL_SCOPE( dt3           , :: dt3 );
+  YAKL_SCOPE( na            , :: na ); 
+  YAKL_SCOPE( nb            , :: nb );
+  YAKL_SCOPE( nc            , :: nc );
+  YAKL_SCOPE( u             , :: u );
+  YAKL_SCOPE( v             , :: v );
+  YAKL_SCOPE( w             , :: w );
+  YAKL_SCOPE( p             , :: p );
+  YAKL_SCOPE( ncrms         , :: ncrms );
   
   if (dowallx && rank%nsubdomains_x == 0) {
     // for (int k=0; k<nzm; k++) {

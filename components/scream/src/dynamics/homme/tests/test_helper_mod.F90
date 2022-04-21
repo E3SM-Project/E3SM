@@ -28,6 +28,7 @@ contains
     use schedtype_mod,     only: schedule
     use parallel_mod,      only: rrequest, srequest, global_shared_buf, status
     use homme_context_mod, only: is_parallel_inited
+    use prim_driver_base,  only: prim_init1_cleanup
 
     ! Cleanup the schedule structure
     deallocate(Schedule(1)%SendCycle)
@@ -42,6 +43,8 @@ contains
     deallocate(srequest)
     deallocate(status)
     deallocate(global_shared_buf)
+
+    call prim_init1_cleanup()
 
     is_parallel_inited = .false.
   end subroutine cleanup_test_f90

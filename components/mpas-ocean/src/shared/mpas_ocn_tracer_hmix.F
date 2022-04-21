@@ -79,7 +79,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_tend(meshPool, layerThicknessEdge, layerThickness, zMid, tracers, &
+   subroutine ocn_tracer_hmix_tend(meshPool, layerThickEdgeMean, layerThickness, zMid, tracers, &
                                    RediKappa, slopeTriadUp, slopeTriadDown, dt, isActiveTracer,          &
                                    RediKappaSfcTaper, RediKappaScaling, rediLimiterCount, tend, err)!{{{
 
@@ -95,7 +95,7 @@ contains
          RediKappa
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdge, &!< Input: thickness at edge
+         layerThickEdgeMean, &!< Input: mean thickness at edge
          layerThickness,     &!< Input: thickness at centers
          zMid                 !< Input: Z coordinate at the center of a cell
       real (kind=RKIND), dimension(:,:), intent(in), optional :: &
@@ -148,10 +148,10 @@ contains
 
       call mpas_timer_start("tracer hmix")
 
-      call ocn_tracer_hmix_del2_tend(meshPool, layerThicknessEdge, tracers, tend, err1)
-      call ocn_tracer_hmix_del4_tend(meshPool, layerThicknessEdge, tracers, tend, err2)
+      call ocn_tracer_hmix_del2_tend(meshPool, layerThickEdgeMean, tracers, tend, err1)
+      call ocn_tracer_hmix_del4_tend(meshPool, layerThickEdgeMean, tracers, tend, err2)
       if (config_use_Redi) then
-        call ocn_tracer_hmix_Redi_tend(meshPool, layerThickness, layerThicknessEdge, zMid, tracers, &
+        call ocn_tracer_hmix_Redi_tend(meshPool, layerThickness, layerThickEdgeMean, zMid, tracers, &
                                      RediKappa, dt, isActiveTracer,        &
                                      slopeTriadUp, slopeTriadDown, RediKappaSfcTaper, &
                                      RediKappaScaling, rediLimiterCount, tend, err1)

@@ -20,15 +20,15 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/spa_standalone_output.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/spa_standalone_output.yaml)
 
-file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
-
-# SPA data files
-GetInputFile(init/spa_init_ne2np4.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(init/map_ne4np4_to_ne2np4_mono.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
-GetInputFile(init/spa_file_unified_and_complete_ne4_scream.nc
-  ${CMAKE_CURRENT_BINARY_DIR}/data)
+# Ensure test input files are present in the data dir
+set (TEST_INPUT_FILES
+  spa_init_ne2np4.nc
+  map_ne4np4_to_ne2np4_mono.nc
+  spa_file_unified_and_complete_ne4_scream.nc
+)
+foreach (file IN ITEMS ${TEST_INPUT_FILES})
+  GetInputFile(init/${file})
+endforeach()
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if max mpi ranks is >1
