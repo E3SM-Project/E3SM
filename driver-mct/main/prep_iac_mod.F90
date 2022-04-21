@@ -145,8 +145,6 @@ contains
              write(logunit,F00) 'Initializing mapper_Sl2z'
           end if
 
-          write(logunit, *) 'TRS prep_iac_mod esmf_map_flag', esmf_map_flag
-
           call seq_map_init_rcfile(mapper_Sl2z, lnd(1), iac(1), &
                'seq_maps.rc','lnd2iac_smapname:','lnd2iac_smaptype:',samegrid_lz, &
                string='mapper_Sl2z initialization',esmf_map=esmf_map_flag)

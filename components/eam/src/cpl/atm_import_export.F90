@@ -1,11 +1,12 @@
 module atm_import_export
 
   use shr_kind_mod  , only: r8 => shr_kind_r8, cl=>shr_kind_cl
+  use cam_logfile      , only: iulog
   implicit none
 
 contains
 
-  subroutine atm_import( x2a, cam_in, restart_init )
+  subroutine atm_import( x2a, cam_in, restart_init , mon_spec)
 
     !-----------------------------------------------------------------------
     use cam_cpl_indices
@@ -25,6 +26,8 @@ contains
     real(r8)      , intent(in)    :: x2a(:,:)
     type(cam_in_t), intent(inout) :: cam_in(begchunk:endchunk)
     logical, optional, intent(in) :: restart_init
+    ! For iac monthly coupling fields
+    integer, intent(in), optional :: mon_spec        ! Simulation month
     !
     ! Local variables
     !		
@@ -41,7 +44,6 @@ contains
     ! don't overwrite fields if invoked during the initialization phase 
     ! of a 'continue' or 'branch' run type with data from .rs file
     if (present(restart_init)) overwrite_flds = .not. restart_init
-
     ! ccsm sign convention is that fluxes are positive downward
 
     ig=1
@@ -75,11 +77,6 @@ contains
           cam_in(c)%asdif(i)     =  x2a(index_x2a_Sx_avsdf, ig)  
           cam_in(c)%aldif(i)     =  x2a(index_x2a_Sx_anidf, ig)
           cam_in(c)%ts(i)        =  x2a(index_x2a_Sx_t,     ig)  
-
-          if (c == 487) then 
-             write(*,*) "TRS %ts: ", c, i, cam_in(c)%ts(i)
-          endif
-
           cam_in(c)%sst(i)       =  x2a(index_x2a_So_t,     ig)             
           cam_in(c)%snowhland(i) =  x2a(index_x2a_Sl_snowh, ig)  
           cam_in(c)%snowhice(i)  =  x2a(index_x2a_Si_snowh, ig)  
@@ -123,8 +120,17 @@ contains
           if (index_x2a_Fall_fco2_lnd /= 0) then
              cam_in(c)%fco2_lnd(i) = -x2a(index_x2a_Fall_fco2_lnd,ig)
           end if
-          if (index_x2a_Fazz_fco2_iac /= 0) then
-             cam_in(c)%fco2_iac(i) = -x2a(index_x2a_Fazz_fco2_iac,ig)
+
+          ! TRS atm_import is called during init prior to any iac
+          ! coupling, so we look for the optional month argument which
+          ! we only use during atm run
+          if (present(mon_spec)) then 
+             if (index_x2a_Fazz_co2sfc_iac(mon_spec) /= 0) then
+                ! TRS - iac co2 coupling
+                ! For now, just use the monthly value, without any
+                ! interpolation.  This will change with the rebase.
+                cam_in(c)%fco2_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(mon_spec),ig)
+             endif
           endif
           if (index_x2a_Faoo_fco2_ocn /= 0) then
              cam_in(c)%fco2_ocn(i) = -x2a(index_x2a_Faoo_fco2_ocn,ig)
@@ -172,7 +178,7 @@ contains
              
              ! co2 flux from fossil fuel
              ! Use iac component first if coupled, then check for data read
-             if (index_x2a_Fazz_fco2_iac /= 0) then
+             if (index_x2a_Fazz_co2sfc_iac(1) /= 0) then
                 cam_in(c)%cflx(i,c_i(2)) = cam_in(c)%fco2_iac(i)
              elsef (co2_readFlux_fuel) then
 !++BEH  vvv old implementation vvv

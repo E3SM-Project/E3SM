@@ -353,8 +353,9 @@ contains
     !------ namelist -----
     character(len=CSS)  :: fldname, fldflow
     logical :: is_state, is_flux
-    integer :: i,n
+    integer :: i,n,m
     character(len=3) :: pftstr = ''
+    character(len=2) :: monstr = ''
 
     ! use cases namelists
     logical :: flds_co2a
@@ -2219,17 +2220,38 @@ contains
        end if
 
     end do 
-    ! iac->atm flux.  Probably need to switch for correct
-    ! flds_CO2(a,b,c) option
+    ! iac->atm flux.
+    ! Monthly values of surface, low alt, high alt co2 fluxes, so we
+    ! loop over 36 total fields.
+    do m=1,12
+       ! Month index tag
+       write(monstr,'(I0)') m
+       monstr=trim(monstr)
 
-    call seq_flds_add(z2x_fluxes,  "Fazz_fco2_iac")
-    call seq_flds_add(x2a_fluxes,  "Fazz_fco2_iac")
-    longname = 'Surface flux of CO2 from iac'
-    stdname  = 'surface_upward_flux_of_carbon_dioxide_from_iac'
-    units    = 'moles m-2 s-1'
-    attname  = 'Fazz_fco2_iac'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(z2x_fluxes,trim("Fazz_co2sfc_mon" //monstr))
+       call seq_flds_add(x2a_fluxes,trim("Fazz_co2sfc_mon" //monstr))
+       longname = trim('Surface flux of CO2 from iac for month' //monstr)
+       stdname  = trim('surface_upward_flux_of_carbon_dioxide_from_iac_mon' //monstr)
+       units    = 'moles m-2 s-1'
+       attname  = trim('Fazz_co2sfc_mon' //monstr)
+       call metadata_set(attname, longname, stdname, units)
 
+       call seq_flds_add(z2x_fluxes,trim("Fazz_co2airlo_mon" //monstr))
+       call seq_flds_add(x2a_fluxes,trim("Fazz_co2airlo_mon" //monstr))
+       longname = trim('Low altitude flux of CO2 from iac for month' //monstr)
+       stdname  = trim('low_alt_upward_flux_of_carbon_dioxide_from_iac_mon' //monstr)
+       units    = 'moles m-2 s-1'
+       attname  = trim('Fazz_co2airlo_mon' //monstr)
+       call metadata_set(attname, longname, stdname, units)
+
+       call seq_flds_add(z2x_fluxes,trim("Fazz_co2airhi_mon" //monstr))
+       call seq_flds_add(x2a_fluxes,trim("Fazz_co2airhi_mon" //monstr))
+       longname = trim('High altitude flux of CO2 from iac for month' //monstr)
+       stdname  = trim('high_alt_upward_flux_of_carbon_dioxide_from_iac_mon' //monstr)
+       units    = 'moles m-2 s-1'
+       attname  = trim('Fazz_co2airhi_mon' //monstr)
+       call metadata_set(attname, longname, stdname, units)
+    end do
     !-----------------------------
     ! New xao_states diagnostic
     ! fields for history output only

@@ -6556,10 +6556,7 @@ contains
          is_cwd    =>    decomp_cascade_con%is_cwd      & ! Input:  [logical (:) ]  TRUE => pool is a cwd pool   
          )
 
-    write(iulog, *) 'TRS: In col_cf_summary'
     if (use_fates) return
-
-    write(iulog, *) 'TRS: No fates'
 
     ! PET: retaining the following here during migration, but this is science code that should
     ! really be in the NDynamics module. Flag for relocation during ELM v2 code cleanup.
@@ -6593,8 +6590,6 @@ contains
        this%som_c_leached(c)      = 0._r8
     end do
 
-    write(iulog, *) 'TRS: ', is_active_betr_bgc, use_pflotran, pf_cmode
-
     if ( (.not. is_active_betr_bgc           ) .and. &
          (.not. (use_pflotran .and. pf_cmode))) then
 
@@ -6614,7 +6609,6 @@ contains
 
 
        ! total heterotrophic respiration (HR)
-       write(iulog, *) 'TRS: no no no'
        do fc = 1,num_soilc
           c = filter_soilc(fc)
           this%hr(c) = &
@@ -6624,8 +6618,6 @@ contains
 
 
     elseif (is_active_betr_bgc) then
-       write(iulog, *) 'TRS: Is_active_betr_bgc'
-
        do fc = 1, num_soilc
           c = filter_soilc(fc)
           this%hr(c) = dot_sum(this%hr_vr(c,1:nlevdecomp),dzsoi_decomp(1:nlevdecomp)) 
