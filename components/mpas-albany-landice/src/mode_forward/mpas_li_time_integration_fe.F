@@ -283,6 +283,7 @@ module li_time_integration_fe
 
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
       real (kind=RKIND), dimension(:,:), pointer :: layerNormalVelocity
+      real (kind=RKIND), pointer :: calvingCFLdt
       integer, dimension(:), pointer :: edgeMask
 
       logical, pointer :: config_print_thickness_advection_info
@@ -503,7 +504,8 @@ module li_time_integration_fe
 
       ! Set adaptive timestep if needed
       if (config_adaptive_timestep) then
-         call set_timestep(allowableAdvecDtAllProcs, allowableDiffDtAllProcs, domain % clock, dtSeconds, err_tmp)
+         call mpas_pool_get_array(geometryPool, 'calvingCFLdt', calvingCFLdt)
+         call set_timestep(allowableAdvecDtAllProcs, allowableDiffDtAllProcs, calvingCFLdt, domain % clock, dtSeconds, err_tmp)
          err = ior(err,err_tmp)
          ! Set new value on all blocks
          block => domain % blocklist
@@ -831,7 +833,7 @@ module li_time_integration_fe
 !>  This routine sdjusts the time step based on the CFL condition.
 !
 !-----------------------------------------------------------------------
-   subroutine set_timestep(allowableAdvecDt, allowableDiffDt, clock, dtSeconds, err)
+   subroutine set_timestep(allowableAdvecDt, allowableDiffDt, calvingCFLdt, clock, dtSeconds, err)
       use mpas_timekeeping
 
       !-----------------------------------------------------------------
@@ -839,6 +841,7 @@ module li_time_integration_fe
       !-----------------------------------------------------------------
       real (kind=RKIND), intent(in) :: allowableAdvecDt
       real (kind=RKIND), intent(in) :: allowableDiffDt
+      real (kind=RKIND), intent(in) :: calvingCFLdt
       type (MPAS_Clock_type), intent(in) :: clock
 
       !-----------------------------------------------------------------
@@ -852,6 +855,7 @@ module li_time_integration_fe
       !-----------------------------------------------------------------
       logical, pointer :: config_adaptive_timestep_include_DCFL
       real (kind=RKIND), pointer :: config_adaptive_timestep_CFL_fraction
+      real (kind=RKIND), pointer :: config_adaptive_timestep_calvingCFL_fraction
       real (kind=RKIND), pointer :: config_max_adaptive_timestep
       real (kind=RKIND), pointer :: config_min_adaptive_timestep
       type (MPAS_Time_type) :: nextForceTime, currTime
@@ -869,11 +873,18 @@ module li_time_integration_fe
       call mpas_pool_get_config(liConfigs, 'config_max_adaptive_timestep', config_max_adaptive_timestep)
       call mpas_pool_get_config(liConfigs, 'config_min_adaptive_timestep', config_min_adaptive_timestep)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
+      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_calvingCFL_fraction', config_adaptive_timestep_calvingCFL_fraction)
 
       if (config_adaptive_timestep_include_DCFL) then
          allowableDt = min(allowableAdvecDt, allowableDiffDt)
       else
          allowableDt = allowableAdvecDt
+      endif
+
+      call mpas_log_write("CFL dts: advective=$r, diffusive=$r, calving=$r", realArgs=(/allowableAdvecDt, allowableDiffDt, calvingCFLdt/))
+      if (config_adaptive_timestep_calvingCFL_fraction * calvingCFLdt < allowableDt) then
+         call mpas_log_write("NOTE: Calving CFL < min of advective and diffusive CFL.")
+         allowableDt = config_adaptive_timestep_calvingCFL_fraction * calvingCFLDt
       endif
 
       ! Take minimum of the max adaptive timestep setting and the allowable dt from the CFL condition

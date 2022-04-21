@@ -1433,7 +1433,8 @@ module li_iceshelf_melt
          ! Distribute melt among neighbors
          call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, &
                                             faceMeltingThickness, faceMeltSpeedVertAvg, applyToGrounded, &
-                                            applyToFloating, applyToGroundingLine, domain, err)
+                                            applyToFloating, applyToGroundingLine, domain, err=err_tmp)
+         err = ior(err, err_tmp)
 
 
          block => block % next
