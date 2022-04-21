@@ -318,6 +318,8 @@ void SPAFunctions<S,D>
     // That way the first global-id will map to the 0th entry in the source grid data.
     spa_horiz_interp.source_grid_loc(ii) = dofs_gids(ii) - min_dof;
   });
+  // Determine the set of unique columns in this remapping
+  spa_horiz_interp.set_unique_cols();
 } // END set_remap_weights_one_to_one
 /*-----------------------------------------------------------------*/
 // Function to read the weights for conducting horizontal remapping
@@ -431,6 +433,8 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(spa_horiz_interp.weights        , weights_h        );
   Kokkos::deep_copy(spa_horiz_interp.source_grid_loc, source_grid_loc_h);
   Kokkos::deep_copy(spa_horiz_interp.target_grid_loc, target_grid_loc_h);
+  // Determine the set of unique columns in this remapping
+  spa_horiz_interp.set_unique_cols();
 }  // END get_remap_weights_from_file
 /*-----------------------------------------------------------------*/
 /* Note: In this routine the SPA source data is padded in the vertical
@@ -487,14 +491,15 @@ void SPAFunctions<S,D>
           SPAInput&             spa_data)
 {
   // Ensure all ranks are operating independently when reading the file, so there's a copy on all ranks
-  ekat::Comm self_comm(MPI_COMM_SELF);
+  auto comm = spa_horiz_interp.m_comm;
 
   // We have enough info to start opening the file
   std::vector<std::string> fnames = {"hyam","hybm","PS","CCN3","AER_G_SW","AER_SSA_SW","AER_TAU_SW","AER_TAU_LW"};
   ekat::ParameterList spa_data_in_params;
   spa_data_in_params.set("Field Names",fnames);
   spa_data_in_params.set("Filename",spa_data_file_name);
-  AtmosphereInput spa_data_input(self_comm,spa_data_in_params);
+  spa_data_in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
+  AtmosphereInput spa_data_input(comm,spa_data_in_params);
 
   // Note that the SPA data follows a conventional GLL grid format, albeit at a different resolution than
   // the simulation.  For simplicity we can use the scorpio_input object class but we must construct a
@@ -503,12 +508,14 @@ void SPAFunctions<S,D>
   // To construct the grid we need to determine the number of columns and levels in the data file.
   Int ncol = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"ncol");
   const int source_data_nlevs = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lev");
+  Int num_local_cols = spa_horiz_interp.num_unique_cols;
   // Check that padding matches source size:
   EKAT_REQUIRE(source_data_nlevs+2 == spa_data.data.nlevs);
   // while we have the file open, check that the dimensions map the simulation and the horizontal interpolation structure
   EKAT_REQUIRE_MSG(nswbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"swband"),"ERROR update_spa_data_from_file: Number of SW bands in simulation doesn't match the SPA data file");
   EKAT_REQUIRE_MSG(nlwbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lwband"),"ERROR update_spa_data_from_file: Number of LW bands in simulation doesn't match the SPA data file");
-  EKAT_REQUIRE_MSG(ncol==spa_horiz_interp.source_grid_ncols,"ERROR update_spa_data_from_file: Number of columns in remap data doesn't match the SPA data file");
+  EKAT_REQUIRE_MSG(ncol==spa_horiz_interp.source_grid_ncols,"ERROR update_spa_data_from_file: Number of columns in remap data (" 
+                        + std::to_string(ncol) + " doesn't match the SPA data file (" + std::to_string(spa_horiz_interp.source_grid_ncols) + ").");
 
   // Construct local arrays to read data into
   // Note, all of the views being created here are meant to hold the local "coarse" resolution
@@ -520,51 +527,53 @@ void SPAFunctions<S,D>
   //   and so on for the other variables.
   typename view_1d<Real>::HostMirror hyam_v_h("hyam",source_data_nlevs);
   typename view_1d<Real>::HostMirror hybm_v_h("hybm",source_data_nlevs);
-  typename view_1d<Real>::HostMirror PS_v_h("PS",spa_horiz_interp.source_grid_ncols);
-  typename view_2d<Real>::HostMirror CCN3_v_h("CCN3",spa_horiz_interp.source_grid_ncols,source_data_nlevs);
-  typename view_3d<Real>::HostMirror AER_G_SW_v_h("AER_G_SW",spa_horiz_interp.source_grid_ncols,nswbands,source_data_nlevs);
-  typename view_3d<Real>::HostMirror AER_SSA_SW_v_h("AER_SSA_SW",spa_horiz_interp.source_grid_ncols,nswbands,source_data_nlevs);
-  typename view_3d<Real>::HostMirror AER_TAU_SW_v_h("AER_TAU_SW",spa_horiz_interp.source_grid_ncols,nswbands,source_data_nlevs);
-  typename view_3d<Real>::HostMirror AER_TAU_LW_v_h("AER_TAU_LW",spa_horiz_interp.source_grid_ncols,nlwbands,source_data_nlevs);
+  typename view_1d<Real>::HostMirror PS_v_h("PS",num_local_cols);
+  typename view_2d<Real>::HostMirror CCN3_v_h("CCN3",num_local_cols,source_data_nlevs);
+  typename view_3d<Real>::HostMirror AER_G_SW_v_h("AER_G_SW",num_local_cols,nswbands,source_data_nlevs);
+  typename view_3d<Real>::HostMirror AER_SSA_SW_v_h("AER_SSA_SW",num_local_cols,nswbands,source_data_nlevs);
+  typename view_3d<Real>::HostMirror AER_TAU_SW_v_h("AER_TAU_SW",num_local_cols,nswbands,source_data_nlevs);
+  typename view_3d<Real>::HostMirror AER_TAU_LW_v_h("AER_TAU_LW",num_local_cols,nlwbands,source_data_nlevs);
 
   // Construct the grid needed for input:
-  auto grid = std::make_shared<PointGrid>("grid",spa_horiz_interp.source_grid_ncols,source_data_nlevs,self_comm);
-  PointGrid::dofs_list_type dof_gids("",spa_horiz_interp.source_grid_ncols);
-  Kokkos::parallel_for("", spa_horiz_interp.source_grid_ncols, KOKKOS_LAMBDA (const int& ii) {
-    dof_gids(ii) = ii;
-  });
+  auto grid = std::make_shared<PointGrid>("grid",num_local_cols,source_data_nlevs,comm);
+  PointGrid::dofs_list_type dof_gids("",num_local_cols);
+  auto dof_gids_h = Kokkos::create_mirror_view(dof_gids);
+  for (const auto& nn : spa_horiz_interp.source_local_col_map) {
+    dof_gids_h(nn.second) = nn.first;
+  }
+  Kokkos::deep_copy(dof_gids,dof_gids_h);
   grid->set_dofs(dof_gids);
 
   using namespace ShortFieldTagsNames;
   FieldLayout scalar1d_layout { {LEV}, {source_data_nlevs} };
-  FieldLayout scalar2d_layout_mid { {COL}, {spa_horiz_interp.source_grid_ncols} };
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {spa_horiz_interp.source_grid_ncols, source_data_nlevs} };
-  FieldLayout scalar3d_swband_layout { {COL,SWBND, LEV}, {spa_horiz_interp.source_grid_ncols, nswbands, source_data_nlevs} }; 
-  FieldLayout scalar3d_lwband_layout { {COL,LWBND, LEV}, {spa_horiz_interp.source_grid_ncols, nlwbands, source_data_nlevs} };
-  std::map<std::string,view_1d_host> host_views;
+  FieldLayout scalar2d_layout_mid { {COL}, {num_local_cols} };
+  FieldLayout scalar3d_layout_mid { {COL,LEV}, {num_local_cols, source_data_nlevs} };
+  FieldLayout scalar3d_swband_layout { {COL,SWBND, LEV}, {num_local_cols, nswbands, source_data_nlevs} }; 
+  FieldLayout scalar3d_lwband_layout { {COL,LWBND, LEV}, {num_local_cols, nlwbands, source_data_nlevs} };
+  std::map<std::string,view_1d_host<Real>> host_views;
   std::map<std::string,FieldLayout>  layouts;
   // Define each input variable we need
-  host_views["hyam"] = view_1d_host(hyam_v_h.data(),hyam_v_h.size());
+  host_views["hyam"] = view_1d_host<Real>(hyam_v_h.data(),hyam_v_h.size());
   layouts.emplace("hyam", scalar1d_layout);
-  host_views["hybm"] = view_1d_host(hybm_v_h.data(),hybm_v_h.size());
+  host_views["hybm"] = view_1d_host<Real>(hybm_v_h.data(),hybm_v_h.size());
   layouts.emplace("hybm", scalar1d_layout);
   //
-  host_views["PS"] = view_1d_host(PS_v_h.data(),PS_v_h.size());
+  host_views["PS"] = view_1d_host<Real>(PS_v_h.data(),PS_v_h.size());
   layouts.emplace("PS", scalar2d_layout_mid);
   //
-  host_views["CCN3"] = view_1d_host(CCN3_v_h.data(),CCN3_v_h.size());
+  host_views["CCN3"] = view_1d_host<Real>(CCN3_v_h.data(),CCN3_v_h.size());
   layouts.emplace("CCN3",scalar3d_layout_mid);
   //
-  host_views["AER_G_SW"] = view_1d_host(AER_G_SW_v_h.data(),AER_G_SW_v_h.size());
+  host_views["AER_G_SW"] = view_1d_host<Real>(AER_G_SW_v_h.data(),AER_G_SW_v_h.size());
   layouts.emplace("AER_G_SW",scalar3d_swband_layout);
   //
-  host_views["AER_SSA_SW"] = view_1d_host(AER_SSA_SW_v_h.data(),AER_SSA_SW_v_h.size());
+  host_views["AER_SSA_SW"] = view_1d_host<Real>(AER_SSA_SW_v_h.data(),AER_SSA_SW_v_h.size());
   layouts.emplace("AER_SSA_SW",scalar3d_swband_layout);
   //
-  host_views["AER_TAU_SW"] = view_1d_host(AER_TAU_SW_v_h.data(),AER_TAU_SW_v_h.size());
+  host_views["AER_TAU_SW"] = view_1d_host<Real>(AER_TAU_SW_v_h.data(),AER_TAU_SW_v_h.size());
   layouts.emplace("AER_TAU_SW",scalar3d_swband_layout);
   //
-  host_views["AER_TAU_LW"] = view_1d_host(AER_TAU_LW_v_h.data(),AER_TAU_LW_v_h.size());
+  host_views["AER_TAU_LW"] = view_1d_host<Real>(AER_TAU_LW_v_h.data(),AER_TAU_LW_v_h.size());
   layouts.emplace("AER_TAU_LW",scalar3d_lwband_layout);
   //
   
@@ -599,7 +608,7 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(target_grid_loc_h, spa_horiz_interp.target_grid_loc);
   for (int idx=0;idx<spa_horiz_interp.length;idx++) {
     auto src_wgt = weights_h(idx);
-    int  src_col = source_grid_loc_h(idx);
+    int  src_col = spa_horiz_interp.source_local_col_map[source_grid_loc_h(idx)];
     int  tgt_col = target_grid_loc_h(idx);
     // PS is defined only over columns
     ps_h(tgt_col) += PS_v_h(src_col)*src_wgt;
