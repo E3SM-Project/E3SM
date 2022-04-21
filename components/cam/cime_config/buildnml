@@ -26,6 +26,7 @@ def buildnml(case, caseroot, compname):
     # Gather case parameters
     atm_grid		= case.get_value("ATM_GRID")
     atm_ncpl		= case.get_value("ATM_NCPL")
+    base_period         = case.get_value("NCPL_BASE_PERIOD")
     build_complete	= case.get_value("BUILD_COMPLETE")
     cam_config_opts	= case.get_value("CAM_CONFIG_OPTS")
     cam_namelist_opts	= case.get_value("CAM_NAMELIST_OPTS")
@@ -160,7 +161,13 @@ def buildnml(case, caseroot, compname):
                 if inst_string != "":
                     logger.warning("WARNING: {} is being used".format(cam_branch_file))
 
-        dtime = ( 3600 * 24 ) / atm_ncpl
+        # TRS: Coupling with iac uses a yearly base_period, so adjust
+        # dtime accordingly
+        if base_period == 'year':
+            dtime = ( 365 * 3600 * 24 ) / atm_ncpl
+        else:
+            dtime = ( 3600 * 24 ) / atm_ncpl
+        
         start_ymd = run_startdate.replace("-", "")
         ntasks = ntasks_atm / ninst_atm
 

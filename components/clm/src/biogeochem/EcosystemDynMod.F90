@@ -150,8 +150,6 @@ contains
 
     !-----------------------------------------------------------------------
   
-    write(iulog, *) 'TRS: in EcosystemDynLeaching'
-
     ! only do if ed is off
     if( .not. use_fates) then
        !if(.not.(use_pflotran.and.pf_cmode)) then
