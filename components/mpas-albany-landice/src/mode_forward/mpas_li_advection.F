@@ -144,6 +144,9 @@ module li_advection
            basalMassBal,          & ! basal mass balance
            groundedBasalMassBal,  & ! basal mass balance for grounded ice
            floatingBasalMassBal,  & ! basal mass balance for floating ice
+           basalMassBalApplied,          & ! basal mass balance limited by ice thickness
+           groundedBasalMassBalApplied,  & ! basal mass balance for grounded ice limited by ice thickness
+           floatingBasalMassBalApplied,  & ! basal mass balance for floating ice limited by ice thickness
            dynamicThickening,     & ! dynamic thickening rate
            groundedToFloatingThickness, & ! thickness changing from grounded to floating or vice versa
            fluxAcrossGroundingLine        ! magnitude of flux across GL
@@ -255,6 +258,9 @@ module li_advection
       call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
       call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
       call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
+      call mpas_pool_get_array(geometryPool, 'basalMassBalApplied', basalMassBalApplied)
+      call mpas_pool_get_array(geometryPool, 'groundedBasalMassBalApplied', groundedBasalMassBalApplied)
+      call mpas_pool_get_array(geometryPool, 'floatingBasalMassBalApplied', floatingBasalMassBalApplied)
       call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
       call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
@@ -439,21 +445,37 @@ module li_advection
          ! Grounded and floating basal mass balance should come from the thermal solver.
 
          ! TODO: more complicated treatment at GL?
+         ! Limit basal mass balance by ice thickness
+         groundedBasalMassBalApplied(:) = groundedBasalMassBal(:)
+         floatingBasalMassBalApplied(:) = floatingBasalMassBal(:)
+         do iCell = 1, nCells
+            if ( groundedBasalMassBal(iCell) < 0.0_RKIND ) then
+               groundedBasalMassBalApplied(iCell) = -1.0_RKIND * min(abs(groundedBasalMassBal(iCell)), &
+                                                                     thickness(iCell) * config_ice_density / dt)
+            endif
+            if ( floatingBasalMassBal(iCell) < 0.0_RKIND ) then
+               floatingBasalMassBalApplied(iCell) =  -1.0_RKIND * min(abs(floatingBasalMassBal(iCell)), &
+                                                                      thickness(iCell) * config_ice_density / dt)
+            endif
+         enddo
 
          where ( li_mask_is_grounded_ice(cellMask) )
 
             basalMassBal = groundedBasalMassBal
+            basalMassBalApplied = groundedBasalMassBalApplied
 
          elsewhere ( li_mask_is_floating_ice(cellMask) )
 
             ! Currently, floating and grounded ice are mutually exclusive.
             ! This could change if the GL is parameterized, in which case this logic may need adjustment.
             basalMassBal = floatingBasalMassBal
+            basalMassBalApplied = floatingBasalMassBalApplied
 
          elsewhere ( .not. (li_mask_is_ice(cellMask) ) )
 
             ! We don't allow a positive basal mass balance where ice is not already present.
             basalMassBal = 0.0_RKIND
+            basalMassBalApplied = 0.0_RKIND
 
          end where
 
@@ -465,7 +487,7 @@ module li_advection
               sfcMassBal,          &
               sfcMassBalApplied,   &
               groundedSfcMassBalApplied,   &
-              basalMassBal,        &
+              basalMassBalApplied, &
               surfaceTracers,      &
               basalTracers,        &
               layerThickness,      &
@@ -488,8 +510,8 @@ module li_advection
                   call mpas_log_write('cellMask=$i, is ice=$l, is grounded=$l, is floating=$l', &
                        intArgs=(/cellMask(iCell)/), logicArgs=(/li_mask_is_ice(cellMask(iCell)), &
                        li_mask_is_grounded_ice(cellMask(iCell)), li_mask_is_floating_ice(cellMask(iCell)) /) )
-                  call mpas_log_write('basalMassBal=$r, grounded=$r, floating=$r', realArgs=(/ basalMassBal(iCell)*31536000./917.,&
-                          groundedBasalMassBal(iCell)*31536000./917., floatingBasalMassBal(iCell)*31536000./917. /) )
+                  call mpas_log_write('basalMassBalApplied=$r, grounded=$r, floating=$r', realArgs=(/ basalMassBalApplied(iCell)*31536000./917.,&
+                          groundedBasalMassBalApplied(iCell)*31536000./917., floatingBasalMassBalApplied(iCell)*31536000./917. /) )
                endif
             enddo
          endif
@@ -685,7 +707,7 @@ module li_advection
               sfcMassBal,          &
               sfcMassBalApplied,   &
               groundedSfcMassBalApplied,   &
-              basalMassBal,        &
+              basalMassBalApplied,        &
               surfaceTracers,      &
               basalTracers,        &
               layerThickness,      &
@@ -704,7 +726,7 @@ module li_advection
       real (kind=RKIND), dimension(:), intent(in) ::  &
            bedTopography,      & !< Input: bed elevation (m)
            sfcMassBal,         & !< Input: surface mass balance (kg/m^2/s)
-           basalMassBal          !< Input: basal mass balance (kg/m^2/s)
+           basalMassBalApplied          !< Input: basal mass balance (kg/m^2/s)
 
       real(kind=RKIND), dimension(:,:), intent(in) :: &
            surfaceTracers,     & !< Input: tracer values of new ice at upper surface
@@ -756,7 +778,7 @@ module li_advection
 
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
       call mpas_pool_get_config(liConfigs, 'config_zero_sfcMassBalApplied_over_bare_land', &
-		                config_zero_sfcMassBalApplied_over_bare_land)
+                                config_zero_sfcMassBalApplied_over_bare_land)
 
       ! apply surface mass balance
       ! If positive, then add the SMB to the top layer, conserving mass*tracer products
@@ -840,12 +862,12 @@ module li_advection
 
          ! apply basal mass balance
 
-         if (basalMassBal(iCell) > 0.0_RKIND) then
+         if (basalMassBalApplied(iCell) > 0.0_RKIND) then
 
             ! basal freeze-on
             ! modify tracers conservatively in top layer
 
-            basalAccum = basalMassBal(iCell) * dt / rhoi
+            basalAccum = basalMassBalApplied(iCell) * dt / rhoi
 
             ! compute mass-tracer products in bottom layer
             thckTracerProducts(:) = layerThickness(nLayers,iCell)*advectedTracers(:,nLayers,iCell)  &
@@ -857,11 +879,11 @@ module li_advection
             ! new tracers in top layer
             advectedTracers(:,nLayers,iCell) = thckTracerProducts(:) / layerThickness(nLayers,iCell)
 
-         elseif (basalMassBal(iCell) < 0.0_RKIND) then
+         elseif (basalMassBalApplied(iCell) < 0.0_RKIND) then
 
             ! surface ablation from the bottom up
 
-            basalAblat = -basalMassBal(iCell) * dt /rhoi    ! positive for melting
+            basalAblat = -basalMassBalApplied(iCell) * dt /rhoi    ! positive for melting
 
             do iLayer = nLayers, 1, -1
                if (basalAblat > layerThickness(iLayer,iCell)) then   ! melt the entire layer
@@ -877,7 +899,7 @@ module li_advection
 
             !TODO - If remaining basalAblat > 0, then keep track of it to conserve energy
 
-         endif   ! basalMassBal > 0
+         endif   ! basalMassBalApplied > 0
 
       enddo   ! iCell
 
