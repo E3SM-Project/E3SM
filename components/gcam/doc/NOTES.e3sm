@@ -1,3 +1,85 @@
+4/21/2022
+
+* Discovered the reason why zatm ran so slow - the dtime for cam was at 4
+  seconds, because it was dividing one day by 17520, rather than one year.
+
+  We found this for zlnd, but apparently the fix has to happen in each
+  component.  For clm we modified .../clm/bldCMBuildNameList.pm, which was
+  a perl module the namelist script was built upon.  For cam, I had to
+  modify .../cam/cime_config/buildnml (a python script) directly.  We need
+  to grab NCPL_BASE_PERIOD to determine that our base period is one year,
+  and then modify around line 167 to use a full year as the numerator when
+  calculting dtime.
+
+! So, every component that we use in our build will probably have to be
+  modified to use a full year to calculate dtime.
+
+* With dtime at 1800 like it should, it took five hours wallclock to run
+  one year of zatm.  That tracks - zlnd takes five hours to run two years,
+  so adding another component should make it take twice as long.
+
+4/6/2022
+
+* Okay, ran a grep and it appears that yes, we never actually fill
+  iac2atm_var%co2emiss, so I gotta figure out how to extract that from the
+  gcam_run_mod() call.
+
+  Pro tip: when all else fails, look at the *names* of the arrays being
+  passed to a function.  When it has 36 input arrays named like this:
+
+  gcamoco2sfcaug(:,:)
+  gcamoco2airlojun(:,:)
+  gcamoco2airhioct(:,:)
+
+  ...then obviously those are the monthly values for surface, lower level
+  air, and higher level air fluxes from CO2.  So I just need to collapse
+  these down into individual arrays of inputs:
+
+  iac2atm_var%co2emissfc(mon,i,j) 
+  iac2atm_var%co2emisairlo(mon,i,j) 
+  iac2atm_var%co2emisairhi(mon,i,j) 
+
+  Or, I guess I could just have 36 arrays directly, but I feel like we'll
+@ need the integer month index on the back end for how eam will use it.
+  Review how cam deals with monthly input fossil fuel values from a file,
+  as per the notes from 4/5/2022.
+
+4/5/2022
+
+* Getting our ducks in a row for teh rebase:
+
+* Alan is making progress on fractions.  My understanding is taht the GCAM
+  downscaling and upscaling functions will deal with any land-area
+  normalization that has to happen, so for l->z we don't need to weight
+  anything, and thus we don't need landfractions in our mapping.  The
+  gridcell conversions (in both directions) of the GCAM variables already
+  assume a full grid cell, and any further normalization happens in the
+  gcam stuff.
+
+* Co2 - I'm trying to get the co2 variables coupled.  I *think* Kate never
+  got to the part where she took the emissions-on-a-gridcell (downscaled)
+  Co2 output and stuffed it into the actual lnd2atm_var data structure that
+@ gets coupled.  So I need to set up and allocate those variables, and then
+  figure out how to put them correctly into lnd2atm_var.  
+
+  But, the time interpolation of these monthly values should *not* be a
+  problem - Alan remembered, and I did too after some prodding, that the
+  reason we are sending monthly Co2 values is that's the format the cam
+  (eam) code gets them from when reading a data file.  So eam has already
+  implemented whatever interpolation across these monthly values they
+  want.  So we can just send across our monthly values, fill in the data
+  structures with our values instead of the co2emissions file they
+  currently are using, and it should work.
+
+* Trying to get maximum of monthly averages going - the real trick is to
+  set up a monthly alarm to calculate the averages of our accum data, and
+  then a yearly alarm to grab a maximum of those.
+
+  The yearly alarm is just the regular gcam alarm - we'll just add in an
+  average for December of the previous year first, then do the max, and
+  then get on with running gcam.  We won't want to do this for the first
+  year, though...
+
 3/4/2022
 
 * Heh, so here's something funny.  Kate's original ZATM compset string was:
