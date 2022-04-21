@@ -976,6 +976,7 @@ end subroutine clubb_init_cnst
     clubb_config_flags%l_rcm_supersat_adj = clubb_l_rcm_supersat_adj
     clubb_config_flags%l_damp_wp3_Skw_squared = clubb_l_damp_wp3_Skw_squared
     clubb_config_flags%l_enable_relaxed_clipping = clubb_l_enable_relaxed_clipping
+    clubb_config_flags%l_linearize_pbl_winds = linearize_pbl_winds
 
     !  Set up CLUBB core.  Note that some of these inputs are overwrote
     !  when clubb_tend_cam is called.  The reason is that heights can change
@@ -999,6 +1000,7 @@ end subroutine clubb_init_cnst
            clubb_config_flags%l_damp_wp2_using_em, &                  ! In
            clubb_config_flags%l_stability_correct_tau_zm, &           ! In
            clubb_config_flags%l_enable_relaxed_clipping, &            ! In
+           clubb_config_flags%l_diag_Lscale_from_tau, &               ! In
            dummy_gr, dummy_lmin, dummy_nu_vert_res_dep, err_code )    ! Out
            
     if ( err_code == clubb_fatal_error ) then
@@ -1466,6 +1468,10 @@ end subroutine clubb_init_cnst
    real(core_rknd) :: rtpthlp_forcing(pverp)
    real(core_rknd) :: ice_supersat_frac_inout(pverp)
    real(core_rknd) :: w_up_in_cloud_out(pverp)
+   real(core_rknd) :: um_pert_inout(pverp)             ! perturbed meridional wind                     [m/s]
+   real(core_rknd) :: vm_pert_inout(pverp)             ! perturbed zonal wind                          [m/s]
+   real(core_rknd) :: upwp_pert_inout(pverp)           ! perturbed meridional wind flux                [m^2/s^2]
+   real(core_rknd) :: vpwp_pert_inout(pverp)           ! perturbed zonal wind flux                     [m^2/s^2]
    real(core_rknd) :: zt_g(pverp)                      ! Thermodynamic grid of CLUBB                   [m]
    real(core_rknd) :: zi_g(pverp)                      ! Momentum grid of CLUBB                        [m]
    real(core_rknd) :: fcor                             ! Coriolis forcing                              [s^-1]
@@ -1490,6 +1496,8 @@ end subroutine clubb_init_cnst
    real(core_rknd) :: wprtp_sfc                        ! w' r_t' at surface                            [(kg m)/( kg s)]
    real(core_rknd) :: upwp_sfc                         ! u'w' at surface                               [m^2/s^2]
    real(core_rknd) :: vpwp_sfc                         ! v'w' at surface                               [m^2/s^2]
+   real(core_rknd) :: upwp_sfc_pert                    ! perturbed u'w' at surface                     [m^2/s^2]
+   real(core_rknd) :: vpwp_sfc_pert                    ! perturbed v'w' at surface                     [m^2/s^2]
    real(core_rknd) :: sclrpthvp_inout(pverp,sclr_dim)     ! momentum levels (< sclr' th_v' >)             [units vary]
    real(core_rknd) :: sclrm_forcing(pverp,sclr_dim)    ! Passive scalar forcing                        [{units vary}/s]
    real(core_rknd) :: wpsclrp_sfc(sclr_dim)            ! Scalar flux at surface                        [{units vary} m/s]
@@ -1529,14 +1537,6 @@ end subroutine clubb_init_cnst
 
    real(core_rknd) :: dum_core_rknd                    ! dummy variable  [units vary]
    real(core_rknd) :: hdtime_core_rknd                  ! host model time step in core_rknd
-
-   real(core_rknd), pointer :: upwp_sfc_pert    ! u'w' at surface                               [m^2/s^2]
-   real(core_rknd), pointer :: vpwp_sfc_pert    ! v'w' at surface                               [m^2/s^2]
-   ! Pointers to temporary copies of particular columns of um_pert/upwp_pert fields
-   real(core_rknd), pointer, dimension(:) :: um_pert_col ! Pointer to a particular column of um
-   real(core_rknd), pointer, dimension(:) :: vm_pert_col
-   real(core_rknd), pointer, dimension(:) :: upwp_pert_col
-   real(core_rknd), pointer, dimension(:) :: vpwp_pert_col
 
    !===========================================================================================================================
    ! End of defining the variables for the change of precision in the CLUBB calculation
@@ -2426,17 +2426,11 @@ end subroutine clubb_init_cnst
             upwp_pert(i,:) = upwp_in
             vpwp_pert(i,:) = vpwp_in
          end if
-         allocate(um_pert_col(pverp))
-         allocate(vm_pert_col(pverp))
-         allocate(upwp_pert_col(pverp))
-         allocate(vpwp_pert_col(pverp))
-         um_pert_col = um_pert(i,:)
-         vm_pert_col = vm_pert(i,:)
-         upwp_pert_col = upwp_pert(i,:)
-         vpwp_pert_col = vpwp_pert(i,:)
+         um_pert_inout = um_pert(i,:)
+         vm_pert_inout = vm_pert(i,:)
+         upwp_pert_inout = upwp_pert(i,:)
+         vpwp_pert_inout = vpwp_pert(i,:)
 
-         allocate(upwp_sfc_pert)
-         allocate(vpwp_sfc_pert)
          ! Prefer to perturb wind/stress in the direction of the existing stress.
          ! However, if there's no existing surface stress, just perturb zonal
          ! wind/stress.
@@ -2450,12 +2444,12 @@ end subroutine clubb_init_cnst
                  (pert_tau / (rho_ds_zm(1) * hypot(cam_in%wsx(i), cam_in%wsy(i))))
          end if
       else
-         nullify(upwp_sfc_pert)
-         nullify(vpwp_sfc_pert)
-         nullify(um_pert_col)
-         nullify(vm_pert_col)
-         nullify(upwp_pert_col)
-         nullify(vpwp_pert_col)
+         upwp_sfc_pert = 0.0_core_rknd
+         vpwp_sfc_pert = 0.0_core_rknd
+         um_pert_inout = 0.0_core_rknd
+         vm_pert_inout = 0.0_core_rknd
+         upwp_pert_inout = 0.0_core_rknd
+         vpwp_pert_inout = 0.0_core_rknd
       end if
 
       pre_in(1) = pre_in(2)
@@ -2573,6 +2567,7 @@ end subroutine clubb_init_cnst
               rtpthlp_forcing, wm_zm, wm_zt, &                             ! intent(in)
               wpthlp_sfc, wprtp_sfc, upwp_sfc, vpwp_sfc, &                 ! intent(in)
               wpsclrp_sfc, wpedsclrp_sfc, &                                ! intent(in)
+              upwp_sfc_pert, vpwp_sfc_pert, &                              ! intent(in)
               rtm_ref, thlm_ref, um_ref, vm_ref, ug, vg, &                 ! intent(in)
               p_in_Pa, rho_zm, rho_in, exner, &                            ! intent(in)
               rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm, &                     ! intent(in)
@@ -2600,13 +2595,13 @@ end subroutine clubb_init_cnst
               wp2rtp_inout, wp2thlp_inout, uprcp_inout, vprcp_inout, &     ! intent(inout)
               rc_coef_inout, wp4_inout, wpup2_inout, wpvp2_inout, &        ! intent(inout)
               wp2up2_inout, wp2vp2_inout, ice_supersat_frac_inout, &       ! intent(inout)
+              um_pert_inout, vm_pert_inout, &                              ! intent(inout)
+              upwp_pert_inout, vpwp_pert_inout, &                          ! intent(inout)
               pdf_params_single_col, pdf_params_zm_single_col, &           ! intent(inout)
               pdf_implicit_coefs_terms_chnk(i,lchnk), &                    ! intent(inout)
               khzm_out, khzt_out, qclvar_out, thlprcp_out, &               ! intent(out)
               wprcp_out, w_up_in_cloud_out, &                              ! intent(out)
               rcm_in_layer_out, cloud_cover_out, invrs_tau_zm_out )        ! intent(out)
-!              upwp_sfc_pert, vpwp_sfc_pert, &                              ! intent(in)
-!              um_pert_col, vm_pert_col, upwp_pert_col, vpwp_pert_col)      ! intent(inout)
          call t_stopf('advance_clubb_core')
 
          ! Copy single column versiosn of PDF params to multi column versions
@@ -2703,16 +2698,10 @@ end subroutine clubb_init_cnst
 
       if (linearize_pbl_winds) then
          ! Copy column variables back to pbuf arrays.
-         um_pert(i,:) = um_pert_col
-         vm_pert(i,:) = vm_pert_col
-         upwp_pert(i,:) = upwp_pert_col
-         vpwp_pert(i,:) = vpwp_pert_col
-         deallocate(um_pert_col)
-         deallocate(vm_pert_col)
-         deallocate(upwp_pert_col)
-         deallocate(vpwp_pert_col)
-         deallocate(upwp_sfc_pert)
-         deallocate(vpwp_sfc_pert)
+         um_pert(i,:) = um_pert_inout
+         vm_pert(i,:) = vm_pert_inout
+         upwp_pert(i,:) = upwp_pert_inout
+         vpwp_pert(i,:) = vpwp_pert_inout
          if (abs(cam_in%wsx(i)) < 1.e-12 .and. abs(cam_in%wsy(i)) < 1.e-12) then
             sfc_v_diff_tau(i) = um_pert(i,2) - um_in(2)
          else
@@ -4639,7 +4628,9 @@ end function diag_ustar
       l_use_tke_in_wp3_pr_turb_term,& ! Use TKE formulation for wp3 pr_turb term
       l_use_tke_in_wp2_wp3_K_dfsn,  & ! Use TKE in eddy diffusion for wp2 and wp3
       l_smooth_Heaviside_tau_wpxp,  & ! Use smooth 'Peskin' Heaviside function in calculation of invrs_tau
-      l_enable_relaxed_clipping       ! Flag to relax clipping on wpxp in xm_wpxp_clipping_and_stats
+      l_enable_relaxed_clipping,    & ! Flag to relax clipping on wpxp in xm_wpxp_clipping_and_stats
+      l_linearize_pbl_winds           ! Code to linearize pbl winds.  Set to the value of
+                                      ! E3SM's linearize_pbl_winds flag
 
     logical, save :: first_call = .true.
 
@@ -4692,7 +4683,8 @@ end function diag_ustar
                                                l_use_tke_in_wp3_pr_turb_term, & ! Intent(out)
                                                l_use_tke_in_wp2_wp3_K_dfsn, & ! Intent(out)
                                                l_smooth_Heaviside_tau_wpxp, & ! Intent(out)
-                                               l_enable_relaxed_clipping ) ! Intent(out)
+                                               l_enable_relaxed_clipping, & ! Intent(out)
+                                               l_linearize_pbl_winds ) ! Intent(out)
 
       l_e3sm_config = .true. ! Hard-coded .true. for E3SM
 
@@ -4744,6 +4736,7 @@ end function diag_ustar
                                                    l_use_tke_in_wp2_wp3_K_dfsn, & ! Intent(in)
                                                    l_smooth_Heaviside_tau_wpxp, & ! Intent(in)
                                                    l_enable_relaxed_clipping, & ! Intent(in)
+                                                   l_linearize_pbl_winds, & ! Intent(in)
                                                    clubb_config_flags ) ! Intent(out)
 
       first_call = .false.
