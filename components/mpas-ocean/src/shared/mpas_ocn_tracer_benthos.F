@@ -2681,8 +2681,8 @@ test_flag = .false.
 
            oceanBottomBenthosDensity(iCell) = max(1020.0_RKIND,oceanBottomBenthosDensityData(iCell))
            oceanBottomBenthosTemperature(iCell) = oceanBottomBenthosTemperatureData(iCell)
-           oceanBottomBenthosSalinity(iCell) = max(0.0_RKIND,oceanBottomBenthosSalinityData(iCell))
-           oceanBottomBenthosPressure(iCell) = max(0.0_RKIND,oceanBottomBenthosPressureData(iCell))
+           oceanBottomBenthosSalinity(iCell) = max(30.0_RKIND,oceanBottomBenthosSalinityData(iCell))
+           oceanBottomBenthosPressure(iCell) = max(101300.0_RKIND,oceanBottomBenthosPressureData(iCell))
            oceanBottomBenthosMn(iCell) = 4.0e-3_RKIND !Middag 2011 (3-5 nM Barents and Laptev)
            !Colombo 2020 (CAA 3-9 nM; Chukchi Shelf 3-15 nM)
            !(Klunder et al., 2012a; Kondo et al., 2016; Vieira et al., 2019)
