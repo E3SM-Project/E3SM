@@ -39,9 +39,6 @@ tweaking their $case/namelist_scream.xml file.
   </selectors>
 
   <!-- List of scream grids for a given compset. I/O can only happen on these grids -->
-  <valid_grids>
-    <names>Dynamics,Physics_GLL</names>
-  </valid_grids>
 
   <!-- Help buildnml by listing files to generate,
     specifying which sections of the xml go in each file -->
@@ -200,8 +197,8 @@ tweaking their $case/namelist_scream.xml file.
 
   <!-- List of nc files for loading inputs on specified grids -->
   <Initial__Conditions>
-    <Physics_GLL>${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Physics_GLL>
-    <Physics_GLL COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Physics_GLL>
+    <Filename>${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Filename>
+    <Filename COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Filename>
   </Initial__Conditions>
 
   <!-- List of yaml files containing I/O output specs -->

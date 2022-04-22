@@ -434,7 +434,6 @@ def _create_raw_xml_file_impl(case, defaults_xml):
     #    Note: get_valid_selectors also removes the section
     get_child(root,"input_files",remove=True)
     get_child(root,"generated_files",remove=True)
-    compset_grids = get_child(root,"valid_grids",remove=True).text.split(',')
     selectors = get_valid_selectors(root)
 
     # 1. Resolve all inheritances, and evaluate all selectors
@@ -451,12 +450,6 @@ def _create_raw_xml_file_impl(case, defaults_xml):
     atm_procs = gen_atm_procs (atm_procs_list.text, atm_procs_defaults)
     atm_procs.tag = "atmosphere_processes"
     root.append(atm_procs);
-
-    # 5. Check IC list
-    ic = get_child(root,"Initial__Conditions")
-    for grid in ic:
-        if grid.tag not in compset_grids:
-            ic.remove(grid)
 
     return root
 
