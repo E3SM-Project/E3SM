@@ -44,7 +44,7 @@ tweaking their $case/namelist_scream.xml file.
     specifying which sections of the xml go in each file -->
   <generated_files>
     <file name="data/namelist.nl" format="nml">
-      <sections>homme_ctl_nl</sections>
+      <sections>ctl_nl</sections>
     </file>
     <file name="data/scream_input.yaml" format="yaml">
       <sections>atmosphere_processes,Grids__Manager,Initial__Conditions,Time__Stepping,Scorpio</sections>
@@ -223,7 +223,8 @@ tweaking their $case/namelist_scream.xml file.
     ${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_scream.nc
   </input_files>
 
-  <homme_ctl_nl>
+  <!-- Homme control namelist -->
+  <ctl_nl>
     <cubed_sphere_map>0</cubed_sphere_map>
     <disable_diagnostics>False</disable_diagnostics>
     <dt_remap_factor>1</dt_remap_factor>
@@ -247,6 +248,6 @@ tweaking their $case/namelist_scream.xml file.
     <theta_hydrostatic_mode>True</theta_hydrostatic_mode>
     <tstep_type>5</tstep_type>
     <vert_remap_q_alg>10</vert_remap_q_alg>
-  </homme_ctl_nl>
+  </ctl_nl>
 
 </namelist_defaults>
