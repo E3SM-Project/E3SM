@@ -12,9 +12,9 @@ Time Stepping:
   Case Start Date: [2021, 10, 12]    # Year, Month, Day
 
 Initial Conditions:
+  Filename: ${SCREAM_DATA_DIR}/init/homme_physics_ne2np4.nc
   Restart Run: false
   Physics GLL:
-    Filename: ${SCREAM_DATA_DIR}/init/homme_physics_ne2np4.nc
     aero_g_sw: 0.0
     aero_ssa_sw: 0.0
     aero_tau_sw: 0.0

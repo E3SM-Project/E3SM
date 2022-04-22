@@ -10,8 +10,7 @@ Time Stepping:
   Number of Steps: ${NUM_STEPS}
 
 Initial Conditions:
-  Physics GLL:
-    Filename: ${SCREAM_DATA_DIR}/init/homme_physics_ne2np4.nc
+  Filename: ${SCREAM_DATA_DIR}/init/homme_physics_ne2np4.nc
 
 atmosphere_processes:
   atm_procs_list: (Dynamics)

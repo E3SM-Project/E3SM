@@ -22,10 +22,9 @@ Grids Manager:
   Number of Global Columns:   218
   Number of Vertical Levels:  72
 
-# The name of the file containing the initial conditions for this test.
 Initial Conditions:
-  Point Grid:
-    Filename: ${SCREAM_DATA_DIR}/init/spa_init_ne2np4.nc
+  # The name of the file containing the initial conditions for this test.
+  Filename: ${SCREAM_DATA_DIR}/init/spa_init_ne2np4.nc
 
 # The parameters for I/O control
 Scorpio:

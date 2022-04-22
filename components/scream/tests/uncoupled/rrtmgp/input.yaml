@@ -27,8 +27,8 @@ Grids Manager:
 
 # Specifications for setting initial conditions
 Initial Conditions:
+  Filename: ${SCREAM_DATA_DIR}/init/rrtmgp_init_ne2np4.nc
   Point Grid:
-    Filename: ${SCREAM_DATA_DIR}/init/rrtmgp_init_ne2np4.nc
     Load Latitude:  true
     Load Longitude: true
     aero_g_sw: 0.0

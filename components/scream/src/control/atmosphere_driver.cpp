@@ -452,7 +452,7 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
 
       ekat::ParameterList lat_lon_params;
       lat_lon_params.set("Field Names",fnames);
-      lat_lon_params.set("Filename",ic_pl_grid.get<std::string>("Filename"));
+      lat_lon_params.set("Filename",ic_pl.get<std::string>("Filename"));
 
       AtmosphereInput lat_lon_reader(lat_lon_params,grid,host_views,layouts);
       lat_lon_reader.read_variables();
@@ -674,11 +674,14 @@ void AtmosphereDriver::set_initial_conditions ()
     }
   }
 
-  // Now loop over all grids, and load from file the needed fields on each grid (if any).
-  for (const auto& it : m_field_mgrs) {
-    const auto& grid_name = it.first;
-    const auto& file_name = ic_pl.sublist(grid_name).get<std::string>("Filename","");
-    read_fields_from_file (ic_fields_names[grid_name],it.first,file_name,m_current_ts);
+  // If a filename is specified, use it to load inputs on all grids
+  if (ic_pl.isParameter("Filename")) {
+    // Now loop over all grids, and load from file the needed fields on each grid (if any).
+    const auto& file_name = ic_pl.get<std::string>("Filename");
+    for (const auto& it : m_field_mgrs) {
+      const auto& grid_name = it.first;
+      read_fields_from_file (ic_fields_names[grid_name],it.first,file_name,m_current_ts);
+    }
   }
 
   // If there were any fields that needed to be copied per the input yaml file, now we copy them.
