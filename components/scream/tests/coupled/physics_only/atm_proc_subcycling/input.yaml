@@ -9,15 +9,13 @@ Time Stepping:
   Start Date: [2021, 10, 12]    # Year, Month, Day
   Number of Steps: ${NUM_STEPS}
 
-Atmosphere Processes:
-  Number of Entries: 2
+atmosphere_processes:
   Schedule Type: Sequential
+  atm_procs_list: (shoc,p3)
   Number of Subcycles: ${NUM_SUBCYCLES}
-  Process 0:
-    Process Name: SHOC
+  shoc:
     Grid: Point Grid
-  Process 1:
-    Process Name: P3
+  p3:
     Grid: Point Grid
 
 Grids Manager:
@@ -34,7 +32,6 @@ Initial Conditions:
     Load Longitude: true
     surf_latent_flux: 0.0
     surf_sens_flux: 0.0
-
 
 # The parameters for I/O control
 Scorpio:

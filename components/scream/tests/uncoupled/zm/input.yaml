@@ -9,13 +9,10 @@ Time Stepping:
   Start Date: [2021, 10, 12]    # Year, Month, Day
   Number of Steps: ${NUM_STEPS}
 
-Atmosphere Processes:
-  Number of Entries: 1
-
-  Process 0:
-    Process Name: ZM
+atmosphere_processes:
+  atm_procs_list: (zm)
+  zm:
     Grid: Point Grid
-    Can Initialize All Inputs: true
 
 Grids Manager:
   Type: Mesh Free
