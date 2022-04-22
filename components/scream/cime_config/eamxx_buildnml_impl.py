@@ -2,7 +2,7 @@ import os, sys, copy
 import xml.etree.ElementTree as ET
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
-sys.path.append(os.path.join(_CIMEROOT, "scripts", "lib"))
+sys.path.append(_CIMEROOT)
 
 from CIME.utils import expect
 
