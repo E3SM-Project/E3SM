@@ -587,7 +587,6 @@ add_default($nl, 'config_GM_Griffies_max_depth');
 add_default($nl, 'config_GM_Griffies_alpha');
 add_default($nl, 'config_GM_Griffies_length');
 add_default($nl, 'config_GM_Griffies_No');
-add_default($nl, 'config_GM_Griffies_ref_density');
 add_default($nl, 'config_GM_EG_riMin');
 add_default($nl, 'config_GM_EG_kappa_factor');
 add_default($nl, 'config_GM_EG_Rossby_factor');

@@ -659,7 +659,7 @@ contains
             ! coef = alpha L^2 g / ( rho_0 N_0 )
             ! A_{gm} = coef * |grad_z rho|
             coef = config_GM_Griffies_alpha * config_gm_Griffies_length**2 * gravity &
-                   / (config_GM_Griffies_ref_density*config_GM_Griffies_No + 1.0E-15)
+                   / (config_density0 * config_GM_Griffies_No)
 
             !$omp parallel
             !$omp do schedule(runtime) private(k, cell1, cell2, sum_gradDensity, ltSum, countN2, &
@@ -696,11 +696,6 @@ contains
                   ! This is Griffies et al. (2005) eqn 15:
                   ! A_{gm} = alpha |grad_z rho| L^2 g / ( rho_0 N_0)
                   gmBolusKappa(iEdge) = coef * sum_gradDensity
-
-                  ! These were the original lines from Lukes cryo branch:
-                  ! gmBolusKappa(iEdge) = config_GM_Griffies_alpha * config_gm_Griffies_length**2.0_RKIND * &
-                  !                      gravity * abs(sumN2) / (1.0E-15 + config_GM_Griffies_No)
-                  ! note that rho_0 is missing from the denominator.
 
                   gmBolusKappa(iEdge) = max(config_GM_spatially_variable_min_kappa, min(gmBolusKappa(iEdge),  &
                                             config_GM_spatially_variable_max_kappa))
