@@ -42,8 +42,13 @@ public:
   // Name of the property being checked
   virtual std::string name () const = 0;
 
+  struct CheckResult {
+    bool pass;
+    std::string msg;
+  };
+
   // Check if the property is satisfied, and return true if it is
-  virtual bool check () const = 0;
+  virtual CheckResult check () const = 0;
 
   // Set fields, and whether they can be repaired.
   void set_fields (const std::list<Field>& fields,

@@ -30,7 +30,7 @@ FieldWithinIntervalCheck (const Field& f,
 }
 
 template<typename ST>
-bool FieldWithinIntervalCheck::check_impl () const
+PropertyCheck::CheckResult FieldWithinIntervalCheck::check_impl () const
 {
   using const_ST    = typename std::add_const<ST>::type;
   using nonconst_ST = typename std::remove_const<ST>::type;
@@ -113,10 +113,18 @@ bool FieldWithinIntervalCheck::check_impl () const
           "Internal error in FieldWithinIntervalCheck: unsupported field rank.\n"
           "You should not have reached this line. Please, contact developers.\n");
   }
-  return minmax.min_val>=m_lower_bound && minmax.max_val<=m_upper_bound;
+  PropertyCheck::CheckResult check_result;
+  check_result.pass = minmax.min_val>=m_lower_bound && minmax.max_val<=m_upper_bound;
+  check_result.msg = "";
+  if (not check_result.pass) {
+    check_result.msg = std::string("FieldWithinIntervalCheck failed")
+                     + "; min = " + std::to_string(minmax.min_val)
+                     + "; max = " + std::to_string(minmax.max_val) + "\n";
+  }
+  return check_result;
 }
 
-bool FieldWithinIntervalCheck::check() const {
+PropertyCheck::CheckResult FieldWithinIntervalCheck::check() const {
   const auto& f = fields().front();
   switch (f.data_type()) {
     case DataType::IntType:
