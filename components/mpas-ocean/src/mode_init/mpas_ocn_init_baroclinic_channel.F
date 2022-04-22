@@ -163,7 +163,7 @@ contains
         call mpas_pool_get_array(meshPool, 'xEdge', xEdge)!
         call mpas_pool_get_array(meshPool, 'yEdge', yEdge)
 
-        nEdges = nEdgesArray( 4 )
+!!!        nEdges = nEdgesArray( 4 )
         yMin = min( yMin, minval(yCell(1:nCellsSolve)))
         yMax = max( yMax, maxval(yCell(1:nCellsSolve)))
         xMin = min( xMin, minval(xCell(1:nCellsSolve)))
@@ -246,6 +246,9 @@ contains
         if(.not. config_baroclinic_channel_make_periodic) then
            call ocn_mark_north_boundary(meshPool, yMaxGlobal, dcEdgeMinGlobal, iErr)
            call ocn_mark_south_boundary(meshPool, yMinGlobal, dcEdgeMinGlobal, iErr)
+           !print *,yMaxGlobal,yMinGlobal
+           !call ocn_mark_east_boundary(meshPool, xMaxGlobal, dcEdgeMinGlobal, iErr) !FSP
+           !call ocn_mark_west_boundary(meshPool, xMinGlobal, dcEdgeMinGlobal, iErr) !FSP
         end if
         ! Set refBottomDepth and refZMid
         do k = 1, nVertLevels
@@ -263,8 +266,9 @@ contains
            ! Set debug tracer
            if ( associated(debugTracers) ) then
               idx = index_tracer1
-              do k = 1, nVertLevels
-                 debugTracers(idx, k, iCell) = 1.0_RKIND
+              do k = 1,nVertLevels 
+                 debugTracers(idx, k, iCell) = sin(  (yCell(iCell)/3.0_RKIND ) * 3.1415_RKIND)
+                 !debugTracers(idx, k, iCell) = temp
               enddo
            end if
 

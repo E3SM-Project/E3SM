@@ -60,15 +60,15 @@ module ocn_vel_pressure_grad
    integer :: &
       pGradType   ! id for pressure gradient method selected
 
-   integer, parameter ::        &! ids for supported methods
-      pGradTypeNone        = 0, &! none selected
-      pGradTypeSSHgrad     = 1, &! ssh gradient
-      pGradTypePZmid       = 2, &! pressure and zMid
-      pGradTypeMontPot     = 3, &! Montgomery potential
-      pGradTypeMontPotDens = 4, &! Montgomery potential and density
-      pGradTypeJacobDens   = 5, &! Jacobian from density
-      pGradTypeJacobTS     = 6, &! Jacobian from T,S
-      pGradTypeConstForced = 7   ! constant forced
+   integer, parameter ::          &! ids for supported methods
+      pGradTypeNone          = 0, &! none selected
+      pGradTypeSSHgrad       = 1, &! ssh gradient
+      pGradTypePZmid         = 2, &! pressure and zMid
+      pGradTypeMontPot       = 3, &! Montgomery potential
+      pGradTypeMontPotDens   = 4, &! Montgomery potential and density
+      pGradTypeJacobDens     = 5, &! Jacobian from density
+      pGradTypeJacobTS       = 6, &! Jacobian from T,S
+      pGradTypeConstForced   = 7   ! constant forced
 
    real (kind=RKIND) :: &! precomputed constants for efficiency
       density0Inv,      &! 1/density0
@@ -99,6 +99,7 @@ contains
                                   density, potentialDensity, &
                                   indxT, indxS, tracers, &
                                   thermExpCoeff, salineContractCoeff, &
+                                  dynamicViscosity, &
                                   tend, err)!{{{
 
       implicit none
@@ -121,7 +122,8 @@ contains
          zMid,                &!< [in] z-coordinate at layer mid-depth
          density,             &!< [in] density
          potentialDensity,    &!< [in] potentialDensity
-         nonhydrostaticPressure     !< Input: nonhydrostatic pressure correction
+         nonhydrostaticPressure,  &!< Input: nonhydrostatic pressure correction
+         dynamicViscosity      !< [in] dynamicViscosity FSP
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          thermExpCoeff,       &!< [in] in situ thermal expansion coeff
@@ -160,7 +162,8 @@ contains
          zStar, zC, zGamma,&! z coordinate combination for Jacobian
          rhoL, rhoR,       &! density neighbors for Jacobian
          TL, TR,           &! temperature neighbors for Jacobian
-         SL, SR, dqdza      ! salinity neighbors for Jacobian
+         SL, SR, dqdza,    &! salinity neighbors for Jacobian
+         dynViscEdge        ! averaged dynamic viscosity
 
       real (kind=RKIND), dimension(:), allocatable :: dqdz
 
@@ -302,6 +305,18 @@ contains
                enddo
 
            end do
+           !
+!           if (config_use_constant_pgf_cflow) then  !For channel flow
+!             do iEdge=1,nEdgesOwned
+!               cell1 = cellsOnEdge(1,iEdge)
+!               cell2 = cellsOnEdge(2,iEdge)
+!               do k=1,maxLevelEdgeTop(iEdge)
+!                  dynViscEdge = 0.5_RKIND*(dynamicViscosity(k,cell1) + dynamicViscosity(k,cell2))
+!                  tend(k,iEdge) = tend(k,iEdge) + edgeMask(k,iEdge) * (config_reTau**2) * dynViscEdge**2 / ( (config_halfHeightChannel**3)*rho_sw)*cos(angleEdge(iEdge)) / rho_sw
+!               enddo
+!                  print*, 'ola----------->',tend(:,1)
+!             enddo
+!           endif
            !$omp end do
            !$omp end parallel
            deallocate(dqdz)
@@ -702,14 +717,30 @@ contains
          !$omp do schedule(runtime) &
          !$omp    private(pGrad, k)
 #endif
-         do iEdge=1,nEdgesOwned
-            ! compute the pressure gradient to be applied at the edge
-            pGrad = zonalSshGrad * cos(angleEdge(iEdge)) + meridSshGrad * sin(angleEdge(iEdge))
+         !Pressure gradient for channel flow (FSP) 
+         if (config_use_constant_pgf_cflow) then  !For channel flow
+            do iEdge=1,nEdgesOwned
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               do k=1,maxLevelEdgeTop(iEdge)
+                  dynViscEdge = 0.5_RKIND*(dynamicViscosity(k,cell1) + dynamicViscosity(k,cell2))
+                  tend(k,iEdge) = tend(k,iEdge) + edgeMask(k,iEdge) * (config_reTau**2) * dynViscEdge**2 / ( (config_halfHeightChannel**3)*rho_sw)*cos(angleEdge(iEdge)) / rho_sw
+               enddo
+             enddo
+                   !print*,'forcing:',real(tend(:,1))
+         else
+            do iEdge=1,nEdgesOwned
+               ! compute the pressure gradient to be applied at the edge
+               pGrad = zonalSshGrad * cos(angleEdge(iEdge)) + meridSshGrad * sin(angleEdge(iEdge))
 
-            do k=minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
-               tend(k,iEdge) = tend(k,iEdge) - gravity * edgeMask(k,iEdge) * pGrad
+               do k=minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
+                  tend(k,iEdge) = tend(k,iEdge) - gravity * edgeMask(k,iEdge) * pGrad
+               end do
             end do
-         end do
+         endif
+
+
+
 #ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
@@ -733,6 +764,9 @@ contains
          !$omp end do
          !$omp end parallel
       end if
+
+
+
 
 
       call mpas_timer_stop("pressure grad")

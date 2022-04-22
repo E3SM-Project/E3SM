@@ -614,6 +614,8 @@ add_default($nl, 'config_user_c_psi3');
 add_default($nl, 'config_user_c_p');
 add_default($nl, 'config_user_c_m');
 add_default($nl, 'config_user_c_n');
+add_default($nl, 'fkin_value');
+add_default($nl, 'feps_value');
 
 #########################
 # Namelist group: cvmix #
@@ -808,6 +810,8 @@ add_default($nl, 'config_petsc_rtol');
 add_default($nl, 'config_petsc_atol');
 add_default($nl, 'config_petsc_maxit');
 add_default($nl, 'config_use_constant_forced_pgf');
+add_default($nl, 'config_reTau');
+add_default($nl, 'config_halfHeightChannel');
 
 #####################################
 # Namelist group: pressure_gradient #

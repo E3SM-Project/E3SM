@@ -72,7 +72,8 @@ module ocn_two_equation_model
    !--------------------------------------------------------------------
 
    real(kind=RKIND) :: &
-      c_mu, c_psi1, c_psi2, c_psi3, sigma_k, sigma_psi, c_p, c_m, c_n
+      c_mu, c_psi1, c_psi2, c_psi3, sigma_k, sigma_psi, c_p, c_m, c_n, &
+      fkin, feps
 
    logical :: twoEquationMixingOn
 !***********************************************************************
@@ -102,16 +103,25 @@ contains
      real(kind=RKIND), dimension(:,:), intent(inout) :: tkeTend,    & ! Tendency of TKE
                                                         glsPsiTend    ! tendency of Psi variable
 
-     real(kind=RKIND) :: dissipation
+     real(kind=RKIND) :: dissipation, wshear, c2pans
 
      integer :: iCell, k
 
      do iCell = 1, nCellsOwned
         do k = 1, maxLevelCell(iCell)
+           !
+           if ( (abs(shearProduction(k,iCell)) + abs(buoyancyProduction(k,iCell)) ) .ge.  1.0E-10_RKIND) THEN   !FSP_PANS
+              wshear = abs(shearProduction(k,iCell)) / ( abs(shearProduction(k,iCell)) + abs(buoyancyProduction(k,iCell)))
+           else
+              wshear = 0.50_RKIND
+           endif
+           c2pans =  c_psi2 * fkin/feps &
+                  + (c_psi1*wshear + c_psi3*(1.0_RKIND-wshear)) * (1.0_RKIND - fkin/feps)
            dissipation = c_mu**(3.0+c_p/c_n)*tke(k,iCell)**(1.5+c_m/c_n)* &
                          glsPsi(k,iCell)**(-1.0/c_n)
            tkeTend(k,iCell) = tkeTend(k,iCell) - dissipation
-           glsPsiTend(k,iCell) = glsPsiTend(k,iCell) - c_psi2*glsPsi(k,iCell) / &
+           !glsPsiTend(k,iCell) = glsPsiTend(k,iCell) - c_psi2*glsPsi(k,iCell) / &
+           glsPsiTend(k,iCell) = glsPsiTend(k,iCell) - c2pans*glsPsi(k,iCell) / &
                                  (tke(k,iCell) + 1.0E-15_RKIND)*dissipation
         end do
      end do
@@ -179,7 +189,7 @@ contains
                                       nAdvCellsForEdge, advCellsForEdge,&
                                       advMaskHighOrder)
 
-     call ocn_tke_transport_horizontal_compute(tke, tkeTend, sigma_k, err) 
+     call ocn_tke_transport_horizontal_compute(tke, tkeTend, sigma_k, fkin, feps, err)
 
      if (.not. config_LES_mode) then
 
@@ -189,7 +199,7 @@ contains
                                             nAdvCellsForEdge, advCellsForEdge,&
                                             advMaskHighOrder)
 
-         call ocn_glsPsi_transport_horizontal_compute(glsPsi, glsPsiTend, c_psi2, sigma_psi, err)
+         call ocn_glsPsi_transport_horizontal_compute(glsPsi, glsPsiTend, c_psi2, sigma_psi, fkin, feps, err)
 
      endif
 
@@ -227,6 +237,7 @@ contains
 
      real(kind=RKIND), intent(in) :: dt
 
+     real(kind=RKIND) :: tkeAvg, glsPsiAvg !FSP
      real(kind=RKIND) :: length, dissipation, length_grid, length_stable, dcAv
      integer :: j, iCell, k, nCells, nEdges, iEdge, spot(2)
 
@@ -265,19 +276,30 @@ contains
            vertViscTopOfCell(1,iCell) = 0.0_RKIND
            vertViscTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell) = 0.0_RKIND
            do k=2,maxLevelCell(iCell)
-              dissipation = c_mu**(3.0+c_p/c_n)*tke(k,iCell)**(1.5+c_m/c_n)* &
-                            glsPsi(k,iCell)**(-1.0/c_n)
-              length = c_mu**3*tke(k,iCell)**1.5/(1.0E-15_RKIND + dissipation)
-              vertViscTopOfCell(k,iCell) = length*Sm(k,iCell)*sqrt(tke(k,iCell))
+              tkeAvg   =0.5_RKIND*( tke(k,iCell)+tke(k-1,iCell) ) !FSP
+              glsPsiAvg=0.5_RKIND*( glsPsi(k,iCell)+glsPsi(k-1,iCell) ) !FSP
+
+              !!!dissipation = c_mu**(3.0+c_p/c_n)*tke(k,iCell)**(1.5+c_m/c_n)* &
+              !!!              glsPsi(k,iCell)**(-1.0/c_n)
+              !!!length = c_mu**3*tke(k,iCell)**1.5/(1.0E-15_RKIND + dissipation)
+              !!!vertViscTopOfCell(k,iCell) = length*Sm(k,iCell)*sqrt(tke(k,iCell)) + &
+              dissipation = c_mu**(3.0+c_p/c_n)*tkeAvg**(1.5+c_m/c_n)* &
+                            glsPsiAvg**(-1.0/c_n)
+              length = c_mu**3*tkeAvg**1.5/(1.0E-15_RKIND + dissipation)
+              vertViscTopOfCell(k,iCell) = length*Sm(k,iCell)*sqrt(tkeAvg) + &
+                                           dynamicViscosity(k,iCell)/rho_sw
            end do
+           !FSP
+           vertViscTopOfCell(1,iCell) = vertViscTopOfCell(2,icell)
+           vertViscTopOfCell(maxLevelCell(iCell)+1,iCell) = vertViscTopOfCell(maxLevelCell(iCell),icell)
         end do
         !$omp end do 
         !$omp end parallel
      end if
 
-     call ocn_tke_transport_vertical_compute(tke,layerThickness,sigma_k,dt)
+     call ocn_tke_transport_vertical_compute(tke,layerThickness,sigma_k,fkin,feps,dt)
      if(.not. config_LES_mode) then
-        call ocn_glsPsi_transport_vertical_compute(glsPsi,layerThickness,sigma_psi,dt)
+        call ocn_glsPsi_transport_vertical_compute(glsPsi,layerThickness,sigma_psi,fkin,feps,dt)
      end if
 
      if (config_LES_mode) then
@@ -323,12 +345,30 @@ contains
            vertDiffTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell) = 0.0_RKIND
            vertViscTopOfCell(maxLevelCell(iCell)+1:nVertLevels,iCell) = 0.0_RKIND
            do k=2,maxLevelCell(iCell)
-              dissipation = c_mu**(3.0+c_p/c_n)*tke(k,iCell)**(1.5+c_m/c_n)* &
-                            glsPsi(k,iCell)**(-1.0/c_n)
-              length = c_mu**3*tke(k,iCell)**1.5/(1.0E-15_RKIND + dissipation)
-              vertViscTopOfCell(k,iCell) = length*Sm(k,iCell)*sqrt(tke(k,iCell))
-              vertDiffTopOfCell(k,iCell) = length*Sh(k,iCell)*sqrt(tke(k,iCell))
+              tkeAvg   =0.5_RKIND*( tke(k,iCell)+tke(k-1,iCell) ) !FSP
+              glsPsiAvg=0.5_RKIND*( glsPsi(k,iCell)+glsPsi(k-1,iCell) ) !FSP
+              dissipation = c_mu**(3.0+c_p/c_n)*tkeAvg**(1.5+c_m/c_n)* &
+                            glsPsiAvg**(-1.0/c_n)
+              length = c_mu**3*tkeAvg**1.5/(1.0E-15_RKIND + dissipation)
+              !vertViscTopOfCell(k,iCell) = length*Sm(k,iCell)*sqrt(tke(k,iCell)) 
+              vertViscTopOfCell(k,iCell) = length*Sm(k,iCell)*sqrt(tkeAvg) + &
+                                           dynamicViscosity(k,iCell)/rho_sw
+              vertDiffTopOfCell(k,iCell) = length*Sh(k,iCell)*sqrt(tkeAvg)
+
+
+              !!!dissipation = c_mu**(3.0+c_p/c_n)*tke(k,iCell)**(1.5+c_m/c_n)* &
+              !!!              glsPsi(k,iCell)**(-1.0/c_n)
+              !!!length = c_mu**3*tke(k,iCell)**1.5/(1.0E-15_RKIND + dissipation)
+              !!!!vertViscTopOfCell(k,iCell) = length*Sm(k,iCell)*sqrt(tke(k,iCell)) 
+              !!!vertViscTopOfCell(k,iCell) = length*Sm(k,iCell)*sqrt(tke(k,iCell)) + &
+              !!!                             dynamicViscosity(k,iCell)/rho_sw
+              !!!vertDiffTopOfCell(k,iCell) = length*Sh(k,iCell)*sqrt(tke(k,iCell))
            end do
+           !FSP
+           vertViscTopOfCell(1,iCell) = vertViscTopOfCell(2,icell)
+           vertViscTopOfCell(maxLevelCell(iCell)+1,iCell) = vertViscTopOfCell(maxLevelCell(iCell),icell)
+           vertDiffTopOfCell(1,iCell) = vertDiffTopOfCell(2,icell)
+           vertDiffTopOfCell(maxLevelCell(iCell)+1,iCell) = vertDiffTopOfCell(maxLevelCell(iCell),icell)
         end do
         !$omp end do 
         !$omp end parallel
@@ -492,6 +532,10 @@ contains
 
          twoEquationMixingOn = .true.
 
+         !PANS paremeters to set range of resolved scales
+         fkin=min(max(fkin_value,0.05_RKIND),1.0_RKIND)
+         feps=min(max(feps_value,0.05_RKIND),1.0_RKIND)
+
          if (config_two_equation_model_choice == 'kl') then !MY 1982
             c_mu = 0.5544_RKIND
             sigma_k = 1.96_RKIND
@@ -616,7 +660,7 @@ contains
         do k = 1,maxLevelCell(iCell)-1
            tAvg = 0.5_RKIND*(activeTracers(1,k,iCell) + activeTracers(1,k+1,iCell))
            sAvg = 0.5_RKIND*(activeTracers(2,k,iCell) + activeTracers(2,k+1,iCell)) / 1000.0_RKIND
-           viscAvg = 1.0E-15_RKIND + 0.5_RKIND*(dynamicViscosity(k,iCell) + dynamicViscosity(k+1,iCell))
+!!!           viscAvg = 1.0E-15_RKIND + 0.5_RKIND*(dynamicViscosity(k,iCell) + dynamicViscosity(k+1,iCell))
 !           freshwaterMu = A*10.0_RKIND**(B/(tAvg + 273.15_RKIND - C))
            freshwaterMu = 4.2844E-5 + (0.157_RKIND*(tAvg + 64.993_RKIND)**2.0 - 91.296_RKIND)**(-1.0)
            A1 = 1.541_RKIND + 0.01998*tAvg - 9.52E-5_RKIND*tAvg**2.0
@@ -629,24 +673,39 @@ contains
             print *, 'hi',k, tavg,savg, viscavg, freshwaterMu, A1, B1, dynamicViscosity(k+1,iCell)
             stop
           endif
+!!!           boundaryTangentialVel = velocityZonal(k,iCell)*sin(boundaryNormalAngle(k,iCell)) + &
+!!!                                  velocityMeridional(k,iCell)*cos(boundaryNormalAngle(k,iCell))
+!!!           !need to find the edge in question and then use that dcEdge -- maybe just do average for performance reasons?
+!!!
+!!!           uStar(k,iCell) = sqrt(boundaryCellMask(k,iCell)*abs(boundaryTangentialVel/(0.5_RKIND*dcEdgeAverage)) &
+!!!                          * viscAvg/rho_sw)
+!!!           yPlus(k,iCell) = uStar(k,iCell)*distanceToBoundary(k,iCell) / (viscAvg/rho_sw)
+        end do
+        dynamicViscosity(1,iCell) = dynamicViscosity(2,iCell)
+        k=maxLevelCell(iCell)
+        dynamicViscosity(maxLevelCell(iCell)+1:nVertLevels+1,iCell) = dynamicViscosity(maxLevelCell(iCell),iCell)
+!
+        do k = 1,maxLevelCell(iCell)-1
+           viscAvg = 0.5_RKIND*(dynamicViscosity(k,iCell) + dynamicViscosity(k+1,iCell))
            boundaryTangentialVel = velocityZonal(k,iCell)*sin(boundaryNormalAngle(k,iCell)) + &
-                                  velocityMeridional(k,iCell)*cos(boundaryNormalAngle(k,iCell))
+                                   velocityMeridional(k,iCell)*cos(boundaryNormalAngle(k,iCell))
            !need to find the edge in question and then use that dcEdge -- maybe just do average for performance reasons?
 
            uStar(k,iCell) = sqrt(boundaryCellMask(k,iCell)*abs(boundaryTangentialVel/(0.5_RKIND*dcEdgeAverage)) &
                           * viscAvg/rho_sw)
+        print*,'ustar1',boundaryTangentialVel,uStar(k,iCell),boundaryCellMask(k,iCell),dcEdgeAverage,viscAvg
            yPlus(k,iCell) = uStar(k,iCell)*distanceToBoundary(k,iCell) / (viscAvg/rho_sw)
         end do
+!
         k=maxLevelCell(iCell)
-        dynamicViscosity(maxLevelCell(iCell)+1:nVertLevels+1,iCell) = 0.0_RKIND
-
         viscAvg = 0.5_RKIND*(dynamicViscosity(k,iCell) + dynamicViscosity(k+1,iCell))
         boundaryTangentialVel = velocityZonal(k,iCell)*sin(boundaryNormalAngle(k,iCell)) + &
-                                  velocityMeridional(k,iCell)*cos(boundaryNormalAngle(k,iCell))
-           !need to find the edge in question and then use that dcEdge -- maybe just do average for performance reasons?
+                                velocityMeridional(k,iCell)*cos(boundaryNormalAngle(k,iCell))
+        !need to find the edge in question and then use that dcEdge -- maybe just do average for performance reasons?
 
         uStar(k,iCell) = sqrt(boundaryCellMask(k,iCell)*abs(boundaryTangentialVel/(0.5_RKIND*dcEdgeAverage)) &
                           * viscAvg/rho_sw)
+        print*,'ustar2',boundaryTangentialVel,uStar(k,iCell)
         yPlus(k,iCell) = uStar(k,iCell)*distanceToBoundary(k,iCell) / (viscAvg/rho_sw)
 
      end do

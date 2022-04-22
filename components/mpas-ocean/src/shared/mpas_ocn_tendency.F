@@ -532,6 +532,7 @@ end subroutine ocn_tend_vvel!}}}
                                        sfcStress, sfcStressMag, err)
       do iEdge=1,nEdgesOwned
          do k=1,nVertLevels
+            !!PRINT*,tendVel(k,iEdge) !FSP-DEBUG
             velocityCoriolisTend(k,iEdge) = tendVel(k,iEdge)
          end do
       end do
@@ -546,6 +547,7 @@ end subroutine ocn_tend_vvel!}}}
       do iEdge = 1,nEdgesOwned
          do k=1,nVertLevels
             velocityCoriolisTend(k,iEdge) = tendVel(k,iEdge) - velocityCoriolisTend(k,iEdge)
+            !!PRINT*,'Check 1: ',velocityCoriolisTend(k,iEdge) !FSP-DEBUG
             velocityVadvTend(k,iEdge) = tendVel(k,iEdge)
          end do
       end do
@@ -567,6 +569,7 @@ end subroutine ocn_tend_vvel!}}}
                                density, potentialDensity, &
                                indxTemp, indxSalt, activeTracers, &
                                thermExpCoeff, salineContractCoeff, &
+                               dynamicViscosity, &  !FSP
                                tendVel, err)
       do iEdge=1,nEdgesOwned
          do k=1,nVertLevels

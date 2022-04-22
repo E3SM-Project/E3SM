@@ -474,6 +474,15 @@
 		<nml_option name="config_user_c_n" type="real" default_value="-1.0" units="NA"
 					description="choice for the n constant used in determining dissipation, only used if config_two_equation_model_choice = 'user-defined'"
 		/>
+                <nml_option name="fkin_value" type="real" default_value="1.0" units="unitless"
+                                        description="PANS model - choice for ratio modeled-to-resolved of turbulent kinetic energy"
+                                        possible_values="Reals in the interval 0 < fkin <= 1. fkin=0 (DNS) and fkin=1 (RANS). Recommended value = 0.25"
+                />
+                <nml_option name="feps_value" type="real" default_value="1.0" units="unitless"
+                                        description="PANS model - choice for ratio modeled-to-total of turbulent dissipation"
+                                        possible_values="Reals in the interval 0 < feps <= 1. feps=0 (DNS) and feps=1 (RANS). Recommended value = 1.00"
+                />
+
 	</nml_record>
 	<nml_record name="cvmix" mode="forward">
 		<nml_option name="config_use_cvmix" type="logical" default_value=".true." units="NA"
@@ -1135,6 +1144,18 @@
 		<nml_option name="config_use_constant_forced_pgf" type="logical" default_value=".false." units="unitless"
 					description="logical to enable a constant pressure gradient that is added to rest of PGF NOTE: need to remove after rebasing on to master..."
 					possible_values=".true. or .false."
+		/>
+                <nml_option name="config_use_constant_pgf_cflow" type="logical" default_value=".false." units="unitless"
+                                        description="logical to enable a channel flow constant pressure gradient that is added"
+                                        possible_values=".true. or .false."
+                />
+		<nml_option name="config_reTau" type="real" default_value="395.0e0" units="unitless"
+					description="Reynolds number based on the shear velocity, reTau=utau * delta / nu"
+					possible_values="positive reals"
+		/>
+		<nml_option name="config_halfHeightChannel" type="real" default_value="1.0e0" units="m"
+					description="Half-height of the channel"
+					possible_values="positive reals"
 		/>
 	</nml_record>
 	<nml_record name="pressure_gradient" mode="forward">
@@ -2949,18 +2970,26 @@
 			 description="vertical viscosity defined at the cell center (horizontally) and top (vertically)"
 			 packages="forwardMode;analysisMode"
 		/>
-    <var name="dynamicViscosity" type="real" dimensions="nVertLevelsP1 nCells Time" units="Ns/m^2"
-      description="dynamic viscosity of water as a function of temperature and salinity"
-      packages="forwardMode;analysisMode"
-    />
-    <var name="uStar" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-       description="stress velocity for wall bounded flows"
-       packages="forwardMode;analysisMode"
-    />
-    <var name="yPlus" type="real" dimensions="nVertLevels nCells Time" units="m"
-       description="boundary normal coordinate"
-       packages="forwardMode;analysisMode"
-    />
+                <var name="dynamicViscosity" type="real" dimensions="nVertLevelsP1 nCells Time" units="Ns/m^2"
+                         description="dynamic viscosity of water as a function of temperature and salinity"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="uStar" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+                         description="stress velocity for wall bounded flows"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="yPlus" type="real" dimensions="nVertLevels nCells Time" units="m"
+                         description="boundary normal coordinate"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="buoyancyProduction" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-3}"
+                         description="Turbulence kinetic energy production by buoyancy processes"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="shearProduction" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-3}"
+                         description="Turbulence kinetic energy production by shear processes"
+                         packages="forwardMode;analysisMode"
+                />
 		<var name="vertDiffTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
 			 description="vertical diffusion defined at the cell center (horizontally) and top (vertically)"
 			 packages="forwardMode;analysisMode"

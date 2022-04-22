@@ -763,6 +763,21 @@ Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="fkin_value" type="real"
+        category="twoEquationModel" group="twoEquationModel">
+fkin parameter for the PANS-GLS closure
+
+Valid values: Between 0 and 1.0 (code forces fkin>=0.05)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="feps_value" type="real"
+        category="twoEquationModel" group="twoEquationModel">
+feps parameter for the PANS-GLS closure
+
+Valid values: Between 0 and 1.0 (code forces feps>=0.05)
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- cvmix -->
 
@@ -1788,6 +1803,22 @@ Default: Defined in namelist_defaults.xml
 logical to enable a constant pressure gradient that is added to rest of PGF NOTE: need to remove after rebasing on to master...
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_reTau" type="real"
+        category="nonhydrostatic_pressure" group="nonhydrostatic_pressure">
+Reynolds number based on the shear velocity, reTau=utau * delta / nu
+
+Valid values: positive reals
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_halfHeightChannel" type="real"
+        category="nonhydrostatic_pressure" group="nonhydrostatic_pressure">
+Half-height of the channel
+
+Valid values: positive values
 Default: Defined in namelist_defaults.xml
 </entry>
 

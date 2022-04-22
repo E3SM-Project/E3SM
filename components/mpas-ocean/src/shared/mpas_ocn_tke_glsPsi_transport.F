@@ -79,7 +79,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tke_transport_horizontal_compute(tke, tkeTend, sigma_k, err)
+   subroutine ocn_tke_transport_horizontal_compute(tke, tkeTend, sigma_k, fkin, feps, err)
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -88,7 +88,7 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
         tke !< Input: tke at current timestep
-      real (kind=RKIND), intent(in) :: sigma_k
+      real (kind=RKIND), intent(in) :: sigma_k, fkin, feps
 
       !-----------------------------------------------------------------
       !
@@ -144,7 +144,8 @@ contains
              tke_turb_flux = tke(k, cell2) - tke(k, cell1)
 
              eddyDiff2 = 0.25_RKIND*(vertDiffTopOfCell(k,cell1) + vertDiffTopOfCell(k,cell2) + &
-                                     vertDiffTopOfCell(k+1,cell1) + vertDiffTopOfCell(k+1,cell2))/sigma_k
+                                     vertDiffTopOfCell(k+1,cell1) + vertDiffTopOfCell(k+1,cell2))/sigma_k * &
+                                     (feps/fkin**2)
              eddyDiff2 = eddyDiff2 + 0.25_RKIND*(dynamicViscosity(k,cell1) + dynamicViscosity(k,cell2) + &
                                                  dynamicViscosity(k+1,cell1) + dynamicViscosity(k+1,cell2))/rho_sw
 
@@ -178,7 +179,7 @@ contains
                         iCellValid = cell1
                      endif
 
-                     eddyDiff2 = 0.25_RKIND*(vertDiffTopOfCell(k,iCellValid) + vertDiffTopOfCell(k+1,iCellValid))
+                     eddyDiff2 = 0.25_RKIND*(vertDiffTopOfCell(k,iCellValid) + vertDiffTopOfCell(k+1,iCellValid))*(feps/fkin**2)
                      eddyDiff2 = eddyDiff2+0.5_RKIND*(dynamicViscosity(k,iCellValid) + dynamicViscosity(k+1,iCellValid))/rho_sw
                      tke_turb_flux = -tke(k,iCellValid) !Assumes k=0 in boundary condition
                      ! div(h \kappa_2 \nabla \phi) at cell center
@@ -210,14 +211,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tke_transport_vertical_compute(tke,layerThickness,sigma_k,dt)
+   subroutine ocn_tke_transport_vertical_compute(tke,layerThickness,sigma_k,fkin,feps,dt)
 
       real(kind=RKIND), dimension(:,:), intent(inout) :: tke
       real(kind=RKIND), dimension(:,:), intent(in) :: layerThickness
       real(kind=RKIND), intent(in) :: dt
       integer :: iCell, k, N
       real (kind=RKIND), dimension(nVertLevels) :: A,B,C,tkeTmp,rhs
-      real (kind=RKIND), intent(in) :: sigma_k
+      real (kind=RKIND), intent(in) :: sigma_k, fkin, feps
 
       call mpas_timer_start("tke vertical turbulent transport")
 
@@ -227,13 +228,13 @@ contains
          N = maxLevelCell(iCell)
          A(1) = 0.0_RKIND
          do k = 2, N
-            A(k) = -2.0_RKIND*dt*(dynamicViscosity(k,iCell)/rho_sw+vertViscTopOfCell(k,iCell)/sigma_k) &
+            A(k) = -2.0_RKIND*dt*(dynamicViscosity(k,iCell)/rho_sw+vertViscTopOfCell(k,iCell)/sigma_k*(feps/fkin**2)) &
                   / (layerThickness(k-1,iCell) + layerThickness(k,iCell)) &
                   / layerThickness(k,iCell)
          end do
 
          do k = 1, N-1
-            C(k) = -2.0_RKIND*dt*(dynamicViscosity(k+1,iCell)/rho_sw+vertViscTopOfCell(k+1,iCell)/sigma_k) &
+            C(k) = -2.0_RKIND*dt*(dynamicViscosity(k+1,iCell)/rho_sw+vertViscTopOfCell(k+1,iCell)/sigma_k*(feps/fkin**2)) &
                   / (layerThickness(k,iCell) + layerThickness(k+1,iCell)) &
                   / layerThickness(k,iCell)
          end do
@@ -272,7 +273,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_glsPsi_transport_horizontal_compute(glsPsi, glsPsiTend, &
-                    c_psi2, sigma_psi, err)
+                    c_psi2, sigma_psi, fkin, feps, err)
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -281,7 +282,7 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
         glsPsi !< Input: tke at current timestep
-      real (kind=RKIND), intent(in) :: sigma_psi
+      real (kind=RKIND), intent(in) :: sigma_psi , fkin, feps
       real (kind=RKIND) :: c_psi2
 
       !-----------------------------------------------------------------
@@ -338,7 +339,8 @@ contains
              glsPsi_turb_flux = glsPsi(k, cell2) - glsPsi(k, cell1)
 
              eddyDiff2 = 0.25_RKIND*(vertDiffTopOfCell(k,cell1) + vertDiffTopOfCell(k,cell2) + &
-                                     vertDiffTopOfCell(k+1,cell1) + vertDiffTopOfCell(k+1,cell2))/sigma_psi
+                                     vertDiffTopOfCell(k+1,cell1) + vertDiffTopOfCell(k+1,cell2))/sigma_psi * &
+                                     (feps/fkin**2)
              eddyDiff2 = eddyDiff2+0.25_RKIND*(dynamicViscosity(k,cell1)   + dynamicViscosity(k,cell2) + &
                                                dynamicViscosity(k+1,cell1) + dynamicViscosity(k+1,cell2))/rho_sw
 
@@ -372,7 +374,7 @@ contains
                         else
                            iCellValid = cell1
                         endif
-                        eddyDiff2 = 0.25_RKIND*(vertDiffTopOfCell(k,iCellValid) + vertDiffTopOfCell(k+1,iCellValid))
+                        eddyDiff2 = 0.25_RKIND*(vertDiffTopOfCell(k,iCellValid) + vertDiffTopOfCell(k+1,iCellValid))*(feps/fkin**2)
                         eddyDiff2 = eddyDiff2+0.5_RKIND*(dynamicViscosity(k,iCellValid) + dynamicViscosity(k+1,iCellValid))/rho_sw
                         bcValue = 60.0_RKIND*dynamicViscosity(k,iCellValid)/rho_sw/(c_psi2*distanceToBoundary(k,iCellValid))
                         glsPsi_turb_flux = bcValue - glsPsi(k,iCellValid) !Assumes k=0 in boundary condition
@@ -396,12 +398,18 @@ contains
                      cell1 = cellsOnEdge(1,iEdge)
                      cell2 = cellsOnEdge(2,iEdge)
                      if(cell1 < 1 .or. cell2 < 1) then
-                        eddyDiff2 = 0.25_RKIND*(vertDiffTopOfCell(k,iCell) + vertDiffTopOfCell(k+1,iCell))
-                        glsPsi_turb_flux = -glsPsi(k,iCell) !Assumes k=0 in boundary condition
+                        if(cell1 < 1) then
+                           iCellValid = cell2
+                        else
+                           iCellValid = cell1
+                        endif
+                        eddyDiff2 = 0.25_RKIND*(vertDiffTopOfCell(k,iCellValid) + vertDiffTopOfCell(k+1,iCellValid))*(feps/fkin**2)
+                        eddyDiff2 = eddyDiff2+0.5_RKIND*(dynamicViscosity(k,iCellValid) + dynamicViscosity(k+1,iCellValid))/rho_sw
+                        glsPsi_turb_flux = -glsPsi(k,iCellValid) !Assumes k=0 in boundary condition
                         ! div(h \kappa_2 \nabla \phi) at cell center
                         flux = eddyDiff2 * layerThickEdge(k, iEdge) * glsPsi_turb_flux * dvEdge(iEdge)/dcEdge(iEdge)
 
-                        glsPsiTend(k, iCell) = glsPsiTend(k, iCell) - flux * invAreaCell
+                        glsPsiTend(k, iCellValid) = glsPsiTend(k, iCellValid) - flux * invAreaCell
                      end if
                   end do !nEdges loop
                end if !end cell mask if
@@ -428,14 +436,14 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_glsPsi_transport_vertical_compute(glsPsi,layerThickness,sigma_psi,dt)
+   subroutine ocn_glsPsi_transport_vertical_compute(glsPsi,layerThickness,sigma_psi,fkin,feps,dt)
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: glsPsi
       real (kind=RKIND), dimension(:,:), intent(in) :: layerThickness
       real (kind=RKIND), intent(in) :: dt
       integer :: iCell, k, N
       real (kind=RKIND), dimension(nVertLevels) :: A,B,C,dissTmp,rhs
-      real (kind=RKIND),intent(in) :: sigma_psi
+      real (kind=RKIND),intent(in) :: sigma_psi, fkin, feps
 
       call mpas_timer_start("glsPsi vertical turbulent transport")
 
@@ -445,13 +453,13 @@ contains
          N = maxLevelCell(iCell)
          A(1) = 0.0_RKIND
          do k = 2, N
-            A(k) = -2.0_RKIND*dt*(dynamicViscosity(k,iCell)/rho_sw+vertViscTopOfCell(k,iCell)/sigma_psi) &
+            A(k) = -2.0_RKIND*dt*(dynamicViscosity(k,iCell)/rho_sw+vertViscTopOfCell(k,iCell)/sigma_psi*(feps/fkin**2)) &
                   / (layerThickness(k-1,iCell) + layerThickness(k,iCell)) &
                   / layerThickness(k,iCell)
          end do
 
          do k = 1, N-1
-            C(k) = -2.0_RKIND*dt*(dynamicViscosity(k+1,iCell)/rho_sw+vertViscTopOfCell(k+1,iCell)/sigma_psi) &
+            C(k) = -2.0_RKIND*dt*(dynamicViscosity(k+1,iCell)/rho_sw+vertViscTopOfCell(k+1,iCell)/sigma_psi*(feps/fkin**2)) &
                   / (layerThickness(k,iCell) + layerThickness(k+1,iCell)) &
                   / layerThickness(k,iCell)
          end do

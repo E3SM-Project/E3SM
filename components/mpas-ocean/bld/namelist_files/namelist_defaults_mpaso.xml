@@ -371,6 +371,8 @@
 <config_petsc_atol>1.0E-20</config_petsc_atol>
 <config_petsc_maxit>10000</config_petsc_maxit>
 <config_use_constant_forced_pgf>.false.</config_use_constant_forced_pgf>
+<config_reTau>395.0e0</config_reTau>
+<config_halfHeightChannel>1.0e0</config_halfHeightChannel>
 
 <!-- pressure_gradient -->
 <config_pressure_gradient_type>'Jacobian_from_TS'</config_pressure_gradient_type>

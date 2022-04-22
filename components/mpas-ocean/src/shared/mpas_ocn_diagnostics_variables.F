@@ -205,6 +205,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: SIvec_w0,SIvec_w1 ,SIvec_wh0,SIvec_wh1,SIvec_y0
    real (kind=RKIND), dimension(:), pointer :: SIvec_z0,SIvec_z1 ,SIvec_zh0,SIvec_zh1
    real (kind=RKIND), dimension(:,:), pointer :: dynamicViscosity, uStar, yPlus
+   real (kind=RKIND), dimension(:,:), pointer :: buoyancyProduction, shearProduction
 
    real (kind=RKIND), dimension(:,:), pointer :: nhPressureCorrection
 
@@ -608,6 +609,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'yPlus', yPlus)
       call mpas_pool_get_array(diagnosticsPool, 'uStar', uStar)
       call mpas_pool_get_array(diagnosticsPool, 'dynamicViscosity', dynamicViscosity)
+      call mpas_pool_get_array(diagnosticsPool, 'buoyancyProduction', buoyancyProduction)
+      call mpas_pool_get_array(diagnosticsPool, 'shearProduction', shearProduction)
       call mpas_pool_get_array(diagnosticsPool, 'ugrad', ugrad)
       call mpas_pool_get_array(diagnosticsPool, 'vgrad', vgrad)
       call mpas_pool_get_array(diagnosticsPool, 'wgrad', wgrad)
@@ -769,7 +772,9 @@ contains
          !$acc                   velocityCoriolisTend,            &
          !$acc                   yPlus,                           &
          !$acc                   uStar,                           &
-         !$acc                   dynamicViscosity                 &
+         !$acc                   dynamicViscosity,                &
+         !$acc                   buoyancyProduction,              &
+         !$acc                   shearProduction,                 &
          !$acc                   ugrad,                           &
          !$acc                   vgrad,                           &
          !$acc                   wgrad,                           &
@@ -1020,7 +1025,9 @@ contains
          !$acc                   velocityCoriolisTend,            &
          !$acc                   yPlus,                           &
          !$acc                   uStar,                           &
-         !$acc                   dynamicViscosity                 &
+         !$acc                   dynamicViscosity,                &
+         !$acc                   buoyancyProduction,              &
+         !$acc                   shearProduction,                 &
          !$acc                   ugrad,                           &
          !$acc                   vgrad,                           &
          !$acc                   wgrad,                           &
@@ -1234,6 +1241,8 @@ contains
                  Sh,                              &
                  Sm,                              &
                  dynamicViscosity,                &
+                 buoyancyProduction,              &
+                 shearProduction,                 &
                  velocityHmixTend,                &
                  velocityVadvTend,                &
                  velocityPGFtend,                 &

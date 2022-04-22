@@ -145,7 +145,8 @@ contains
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             do k = 1, maxLevelEdgeTop(iEdge)
-               viscosity(k,iEdge) = 0.5_RKIND*(vertDiffTopOfCell(k,cell1) + vertDiffTopOfCell(k,cell2))
+              viscosity(k,iEdge) = 0.25*(vertViscTopOfCell(k,cell1) + vertViscTopOfCell(k,cell2)+vertViscTopOfCell(k+1,cell1) + vertViscTopOfCell(k+1,cell2) )
+              !viscosity(k,iEdge) = 0.5_RKIND*(vertViscTopOfCell(k,cell1) + vertViscTopOfCell(k,cell2)) !FSP Need to fix non-constant thickness 
             end do
          end do
          !$omp end do

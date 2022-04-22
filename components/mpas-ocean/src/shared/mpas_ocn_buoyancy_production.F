@@ -105,7 +105,8 @@ contains
       integer, pointer :: nVertLevels
 
       real (kind=RKIND) :: invAreaCell
-      real (kind=RKIND) :: buoyancyProduction, diffMid 
+      real (kind=RKIND) :: diffMid 
+      !!!real (kind=RKIND) :: buoyancyProduction, diffMid 
 
       err = 0
 
@@ -120,23 +121,23 @@ contains
       do iCell = 1, nCellsOwned
          k = 1
          diffMid = 0.5_RKIND*(vertDiffTopOfCell(k+1,iCell) + vertDiffTopOfCell(k,iCell))
-         buoyancyProduction = 0.5_RKIND*(gravity*thermExpCoeff(k,iCell)*tgrad(3,k,iCell)*diffMid - &
-                              gravity*salineContractCoeff(k,iCell)*sgrad(3,k,iCell)*diffMid - &
-                              surfaceBuoyancyForcing(iCell)) 
+         buoyancyProduction(k,iCell) = gravity*thermExpCoeff(k,iCell)*tgrad(3,k,iCell)*diffMid - &
+                                       gravity*salineContractCoeff(k,iCell)*sgrad(3,k,iCell)*diffMid - &
+                                       surfaceBuoyancyForcing(iCell) 
 
 
-         tkeTend(k,iCell) = tkeTend(k,iCell) + buoyancyProduction
+         tkeTend(k,iCell) = tkeTend(k,iCell) + buoyancyProduction(k,iCell)
          glsPsiTend(k,iCell) = glsPsiTend(k,iCell) + glsPsi(k,iCell)/(tke(k,iCell) + 1.0E-15_RKIND)* &
-                               c_psi3*buoyancyProduction
+                               c_psi3*buoyancyProduction(k,iCell)
 
          do k=2,maxLevelCell(iCell)
             diffMid = 0.5_RKIND*(vertDiffTopOfCell(k+1,iCell) + vertDiffTopOfCell(k,iCell))
-            buoyancyProduction = gravity*thermExpCoeff(k,iCell)*tgrad(3,k,iCell)*diffMid - &
-                                 gravity*salineContractCoeff(k,iCell)*sgrad(3,k,iCell)*diffMid
+            buoyancyProduction(k,iCell) = gravity*thermExpCoeff(k,iCell)*tgrad(3,k,iCell)*diffMid - &
+                                          gravity*salineContractCoeff(k,iCell)*sgrad(3,k,iCell)*diffMid
 
-            tkeTend(k,iCell) = tkeTend(k,iCell) + buoyancyProduction
+            tkeTend(k,iCell) = tkeTend(k,iCell) + buoyancyProduction(k,iCell)
             glsPsiTend(k,iCell) = glsPsiTend(k,iCell) + glsPsi(k,iCell)/(tke(k,iCell) + 1.0E-15_RKIND)* &
-                                                  c_psi3*buoyancyProduction
+                                  c_psi3*buoyancyProduction(k,iCell)
          end do
       end do
       !$omp end do

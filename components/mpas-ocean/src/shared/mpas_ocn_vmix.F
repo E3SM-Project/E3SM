@@ -1239,7 +1239,7 @@ contains
 
       nCells = nCellsArray(1)
       ! if using CVMix, then viscosity has to be averaged from cell centers to cell edges
-      if ( config_use_cvmix ) then
+      if ( config_use_cvmix .or. config_use_two_equation_turbulence_model ) then
 
          nEdges = nEdgesArray( 1 )
          call mpas_timer_start('CVMix avg', .false.)
