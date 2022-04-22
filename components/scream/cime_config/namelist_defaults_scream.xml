@@ -47,7 +47,7 @@ tweaking their $case/namelist_scream.xml file.
       <sections>ctl_nl</sections>
     </file>
     <file name="data/scream_input.yaml" format="yaml">
-      <sections>atmosphere_processes,Grids__Manager,Initial__Conditions,Time__Stepping,Scorpio</sections>
+      <sections>Debug,atmosphere_processes,Grids__Manager,Initial__Conditions,Time__Stepping,Scorpio</sections>
     </file>
   </generated_files>
 
@@ -115,6 +115,7 @@ tweaking their $case/namelist_scream.xml file.
       from atm_proc_group. atm_procs_list itself *must* represent a group,
       so it must be of the form (a,b,...).
     -->
+    <!-- <atm_procs_list>(homme,((shoc,cldFraction,spa,p3),rrtmgp))</atm_procs_list> -->
     <atm_procs_list>(homme,physics)</atm_procs_list>
 
     <!-- Basic options for each atm process -->
@@ -128,7 +129,7 @@ tweaking their $case/namelist_scream.xml file.
     <atm_proc_group inherit="atm_proc_base">
       <atm_procs_list>ERROR_NO_ATM_PROCS</atm_procs_list>
       <Type>Group</Type>
-      <Schedule__Type>sequential</Schedule__Type>
+      <Schedule__Type>Sequential</Schedule__Type>
     </atm_proc_group>
 
     <!-- Basic options for each "physics" atm process -->
@@ -139,8 +140,8 @@ tweaking their $case/namelist_scream.xml file.
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
       <Grid>Dynamics</Grid>
-      <Vertical__Coordinate_Filename>${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Vertical__Coordinate_Filename>
-      <Vertical__Coordinate_Filename COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Vertical__Coordinate_Filename>
+      <Vertical__Coordinate__Filename>${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Vertical__Coordinate__Filename>
+      <Vertical__Coordinate__Filename COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Vertical__Coordinate__Filename>
       <Moisture>moist</Moisture>
     </homme>
 
@@ -151,7 +152,7 @@ tweaking their $case/namelist_scream.xml file.
     <shoc inherit="physics_proc_base"/>
 
     <!-- CLD fraction -->
-    <cld_fraction inherit="physics_proc_base"/>
+    <cldFraction inherit="physics_proc_base"/>
 
     <!-- Simple Prescribed Aerosols (SPA) -->
     <spa inherit="physics_proc_base">
@@ -172,7 +173,7 @@ tweaking their $case/namelist_scream.xml file.
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">
-      <atm_procs_list>(shoc,cld_fraction,spa,p3)</atm_procs_list>
+      <atm_procs_list>(shoc,cldFraction,spa,p3)</atm_procs_list>
     </mac_aero_mic>
 
     <physics inherit="atm_proc_group">
@@ -205,6 +206,12 @@ tweaking their $case/namelist_scream.xml file.
   <Scorpio>
     <Output__YAML__Files>data/scream_output.yaml, </Output__YAML__Files>
   </Scorpio>
+
+  <!-- Debug options for scream -->
+  <Debug>
+    <Atmosphere__DAG__Verbosity__Level>0</Atmosphere__DAG__Verbosity__Level>
+    <Atm__Log__Level>info</Atm__Log__Level>
+  </Debug>
 
   <!--
     List of input files that CIME needs to ensure to be present. If not present,
