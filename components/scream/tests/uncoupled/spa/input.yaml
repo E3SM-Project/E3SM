@@ -19,9 +19,8 @@ atmosphere_processes:
 Grids Manager:
   Type: Mesh Free
   Reference Grid: Point Grid
-  Mesh Free:
-    Number of Global Columns:   218
-    Number of Vertical Levels:  72
+  Number of Global Columns:   218
+  Number of Vertical Levels:  72
 
 # The name of the file containing the initial conditions for this test.
 Initial Conditions:

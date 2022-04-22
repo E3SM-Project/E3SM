@@ -58,10 +58,10 @@ create_gm (const ekat::Comm& comm) {
 
   ekat::ParameterList gm_params;
   gm_params.set<std::string>("Reference Grid", "Point Grid");
-  gm_params.sublist("Mesh Free").set<int>("Number of Global Columns", num_global_cols);
-  gm_params.sublist("Mesh Free").set<int>("Number of Local Elements", num_local_elems);
-  gm_params.sublist("Mesh Free").set<int>("Number of Vertical Levels", nlevs);
-  gm_params.sublist("Mesh Free").set<int>("Number of Gauss Points", np);
+  gm_params.set<int>("Number of Global Columns", num_global_cols);
+  gm_params.set<int>("Number of Local Elements", num_local_elems);
+  gm_params.set<int>("Number of Vertical Levels", nlevs);
+  gm_params.set<int>("Number of Gauss Points", np);
 
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
   gm->build_all_grids();
