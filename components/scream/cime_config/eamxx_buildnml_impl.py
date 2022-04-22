@@ -357,6 +357,7 @@ def gen_atm_proc_group (ap_names_list, atm_procs_defaults, name=None):
     # Set the atm proc list in here
     ap_group_procs_list = get_child(ap_group,"atm_procs_list")
     ap_group_procs_list.text = "(" + ",".join(nested_list) + ")"
+    ap_group_procs_list.attrib["locked"] = "true"
     if ap_group.tag=="__APG__":
         ap_group.tag = "group." + "_".join(names) + "."
 

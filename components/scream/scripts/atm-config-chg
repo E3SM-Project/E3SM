@@ -81,6 +81,12 @@ def atm_config_chg(changes):
             expect (num_nodes_with_name(node,s,recurse=False)==1,"Error! Multiple XML entries with name {} found in section {}".format(s,node.tag))
             node = find_node(node,s,recurse=False)
 
+        expect ("locked" not in node.attrib.keys() or node.attrib["locked"]=="false",
+                "XML entry cannot be changed, since it's intrinsically linked to the compset.\n"
+                "You can create a new compset, and set the new value as default for this entry.\n"
+                "  Entry: {}\n".format(tokens[0]) +
+                "  Current Value: {}\n".format(node.text) +
+                "  New Value: {}\n".format(new_value))
         if node.text != new_value:
             check_value(node,new_value)
             node.text = new_value

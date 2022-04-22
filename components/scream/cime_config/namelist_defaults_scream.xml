@@ -105,6 +105,10 @@ tweaking their $case/namelist_scream.xml file.
            repeating the common entries inside each list. This is particularly useful
            for the atmosphere processes section(s).
 
+       11) The attribute 'locked="true"' is to be used for entries that cannot be changed
+           via atm-config-chg. For instance, the overall list of atm procs cannot be changed,
+           since it would require to re-parse the defaults, to re-generate the correct
+           defaults for the (possibly) new atm procs.
   -->
 
   <atmosphere_processes_defaults>
@@ -114,9 +118,10 @@ tweaking their $case/namelist_scream.xml file.
       or by giving the group a name, and adding a subsection that inherit
       from atm_proc_group. atm_procs_list itself *must* represent a group,
       so it must be of the form (a,b,...).
+      NOTE: *CANNOT* be changed.
     -->
     <!-- <atm_procs_list>(homme,((shoc,cldFraction,spa,p3),rrtmgp))</atm_procs_list> -->
-    <atm_procs_list>(homme,physics)</atm_procs_list>
+    <atm_procs_list locked="true">(homme,physics)</atm_procs_list>
 
     <!-- Basic options for each atm process -->
     <atm_proc_base>
