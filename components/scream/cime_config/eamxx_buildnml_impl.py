@@ -288,7 +288,7 @@ def get_valid_selectors(xml_root):
     return selectors 
 
 ###############################################################################
-def gen_atm_proc_group (ap_names_list, atm_procs_defaults):
+def gen_atm_proc_group (ap_names_list, atm_procs_defaults, name=None):
 ###############################################################################
     """
     Given a (possibly nested) list of atm procs names, and the defaults
@@ -300,11 +300,20 @@ def gen_atm_proc_group (ap_names_list, atm_procs_defaults):
     for child in atm_procs_defaults:
         valid_blocks.append(child.tag)
 
-    # Create empty group, make it inherit from default atm proc group type
-    ap_group = ET.Element("__APG__")
-    ap_group.attrib["inherit"] = "atm_proc_group"
-    resolve_inheritance(atm_procs_defaults,ap_group)
+    if name is None:
+        # This is a group defined on the fly, via (a,b,c) syntax.
+        # Create empty group, make it inherit from default atm proc group type
+        ap_group = ET.Element("__APG__")
+        ap_group.attrib["inherit"] = "atm_proc_group"
+        resolve_inheritance(atm_procs_defaults,ap_group)
+    else:
+        # This is a named group, so we *expect* it to be in the atm_procs_default tree
+        ap_group = copy.deepcopy(get_child(atm_procs_defaults,name))
 
+    # The 'atm_procs_list' child will always be formatted as a nested list,
+    # like (a,((b,c,d),e),f). However, the name of the process needs to be
+    # without parentheses to be a valid XML tag, so we form the tag of
+    # a group as "group.ap1_ap2_..._apN." (with apX possibly itself a group tag)
     names = []
     nested_list = []
     for ap in ap_names_list:
@@ -317,42 +326,37 @@ def gen_atm_proc_group (ap_names_list, atm_procs_defaults):
         #    In this case, the element must have the "atm_procs_list" child,
         #    storing a string "(ap1,ap2,...,apXYZ)", so that we can generate the group
         if isinstance(ap,list):
-            # This is a generic group. Recurse, and append all entries
-            sub_group = gen_atm_procs_group(ap,atm_procs_defaults)
+            # This entry of the group is itself a group, declared via string list syntax.
+            # Recurse, and append all entries
+            sub_group = gen_atm_proc_group(ap,atm_procs_defaults)
             inner_str = get_child(sub_group,"atm_procs_list")
             nested_list.append(inner_str.text)
             names.append(sub_group.tag)
 
-            # Grab all defaults from the base atm_proc_group defaults
-            sub_group.attrib["inherit"] = "atm_proc_group"
-            resolve_inheritance(atm_procs_defaults,sub_group)
-
-            ap_group.append(sub_group)
+            ap_group.insert(len(ap_group),sub_group)
         else:
             expect (ap in valid_blocks, "Unrecognized atm proc name: {}".format(ap))
 
-            # Get this proc defaults
-            proc = copy.deepcopy(get_child(atm_procs_defaults,ap))
+            default = get_child(atm_procs_defaults,ap)
 
-            ap_group.append(proc)
-            names.append(proc.tag)
+            #  ap_group.append(proc)
+            if has_child(default,"Type") and get_child(default,"Type").text=="Group":
+                # This entry of the group is itself a group, with pre-defined
+                # defaults. Let's add its entries to it
+                sub_group_procs_list_str = get_child(default,"atm_procs_list").text
+                sub_group_procs_list = parse_string_as_list(sub_group_procs_list_str)
+                proc = gen_atm_proc_group (sub_group_procs_list, atm_procs_defaults, name=ap)
+            else:
+                # Just use the defaults
+                proc = copy.deepcopy(default)
+
             nested_list.append(proc.tag)
-
-            if has_child(proc,"Type"):
-                # This is itself a group. Grab the atm_procs_list
-                expect (has_child(proc,"atm_procs_list"),
-                        "Atm proc group {} has no 'atm_procs_list' entry.".format(proc.tag))
-                atm_procs_list_str = get_child(proc,"atm_procs_list").text
-                subgroup_ap_names_list = parse_string_as_list(atm_procs_list_str)
-                sub_group = gen_atm_proc_group (subgroup_ap_names_list, atm_procs_defaults)
-                for entry in sub_group:
-                    if not has_child(proc,entry.tag):
-                        proc.append(entry)
+            names.append(proc.tag)
+            ap_group.insert(len(ap_group),proc)
 
     # Set the atm proc list in here
-    ap_group_str = get_child(ap_group,"atm_procs_list")
-    ap_group_str.text = "(" + ",".join(names) + ")"
-
+    ap_group_procs_list = get_child(ap_group,"atm_procs_list")
+    ap_group_procs_list.text = "(" + ",".join(nested_list) + ")"
     if ap_group.tag=="__APG__":
         ap_group.tag = "group." + "_".join(names) + "."
 
