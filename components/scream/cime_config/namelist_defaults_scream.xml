@@ -47,7 +47,7 @@ tweaking their $case/namelist_scream.xml file.
       <sections>ctl_nl</sections>
     </file>
     <file name="data/scream_input.yaml" format="yaml">
-      <sections>Debug,atmosphere_processes,Grids__Manager,Initial__Conditions,Time__Stepping,Scorpio</sections>
+      <sections>Debug,atmosphere_processes,Grids__Manager,Initial__Conditions,Scorpio</sections>
     </file>
   </generated_files>
 
@@ -185,14 +185,6 @@ tweaking their $case/namelist_scream.xml file.
       <atm_procs_list>(mac_aero_mic,rrtmgp)</atm_procs_list>
     </physics>
   </atmosphere_processes_defaults>
-
-  <!-- Time stepping info -->
-  <Time__Stepping>
-    <Time__Step>300</Time__Step>
-    <Start__Time>[12, 30, 0]</Start__Time>
-    <Start__Date>${RUN_STARTDATE}</Start__Date>
-    <Number__of__Steps>288</Number__of__Steps>
-  </Time__Stepping>
 
   <!-- Grids manager specs -->
   <Grids__Manager>
