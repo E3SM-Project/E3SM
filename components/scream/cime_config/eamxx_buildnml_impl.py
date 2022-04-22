@@ -88,7 +88,6 @@ def get_child (root,name,remove=False):
 
     expect (len(root.findall(name))==1,
             "There must be exactly one {} entry inside {}".format(name,root.tag))
-
     child = root.find(name)
     if remove:
         root.remove(child)
@@ -246,7 +245,8 @@ def resolve_inheritance (root,elem):
             # Add the parent's default only if this element does not
             # have a more specialized version
             if not has_child(elem,entry.tag):
-                elem.append(entry)
+                new_entry = copy.deepcopy(entry)
+                elem.append(new_entry)
 
     for child in elem:
         resolve_inheritance(root,child)
