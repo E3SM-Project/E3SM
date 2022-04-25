@@ -583,7 +583,7 @@ contains
 
          ! Check for negative tracers
          if (minval(benthosTracers(:,:,iCell)) .lt. -1.0E-11_RKIND) then
-               call mpas_log_write('benthosTracers < 0 before SourceSink',MPAS_LOG_ERR)  
+               call mpas_log_write('benthosTracers < 0 before SourceSink',MPAS_LOG_ERR)
                call mpas_log_write('iCell: $i',MPAS_LOG_ERR,intArgs=(/iCell/))
                call mpas_log_write('benthos_input%oceanBottomDensity(column): $r',MPAS_LOG_ERR,realArgs=(/benthos_input%oceanBottomDensity(column)/))
                call mpas_log_write('benthos_input%oceanBottomTemperature(column): $r',MPAS_LOG_ERR,realArgs=(/benthos_input%oceanBottomTemperature(column)/))
@@ -1364,7 +1364,7 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'tend', tendPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
-      
+
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
       call mpas_pool_get_subpool(statePool, 'seafloorTracers', seafloorTracersPool)
       call mpas_pool_get_subpool(statePool, 'seafloorStorage', seafloorStoragePool)
@@ -1699,7 +1699,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_use_benthos_monthly_forcing',  config_use_benthos_monthly_forcing)
       call mpas_pool_get_config(ocnConfigs, 'config_use_benthos_monthly_terra_forcing',  config_use_benthos_monthly_terra_forcing)
       call mpas_pool_get_config(ocnConfigs, 'config_use_ocean_bottom_state',  config_use_ocean_bottom_state)
-      
+
       call mpas_pool_get_subpool(forcingPool, 'benthosAuxiliary', benthosAuxiliaryPool)
       call mpas_pool_get_array(benthosAuxiliaryPool,'benthosVertGridPoints', benthosVertGridPoints)
       call mpas_pool_get_array(benthosAuxiliaryPool,'indexToBenthosCells', indexToBenthosCells)
@@ -1714,7 +1714,7 @@ contains
            config_use_benthic_reactions, config_use_flux_correction, config_use_ocean_conc, &
            config_use_deep_source, config_use_constant_diffusivity, config_use_ocean_bottom_state,&
            config_use_benthos_monthly_forcing)
-           
+
 !NJ-TEST: VERIFIED
 test_flag = .false.
       if (test_flag) then
@@ -1807,8 +1807,8 @@ test_flag = .false.
          call mpas_log_write('test benthos_init', MPAS_LOG_ERR)
          call mpas_log_write('nBenthicTracers= $i',MPAS_LOG_ERR,intArgs=(/nBenthicTracers/))
          call mpas_log_write('nElements= $i',MPAS_LOG_ERR,intArgs=(/nElements/))
-         call mpas_log_write('benthos_indices%units(benthos_indices%poca_ind)='//trim(benthos_indices%units(benthos_indices%poca_ind))) 
-         call mpas_log_write('benthos_indices%short_name(benthos_indices%poca_ind)='//trim(benthos_indices%short_name(benthos_indices%poca_ind))) 
+         call mpas_log_write('benthos_indices%units(benthos_indices%poca_ind)='//trim(benthos_indices%units(benthos_indices%poca_ind)))
+         call mpas_log_write('benthos_indices%short_name(benthos_indices%poca_ind)='//trim(benthos_indices%short_name(benthos_indices%poca_ind)))
          call mpas_log_write('benthos_indices%long_name(benthos_indices%poca_ind)='//trim(benthos_indices%long_name(benthos_indices%poca_ind)))
          call mpas_log_write('benthos_element_indices%units(benthos_element_indices%iron_ind)='//trim(benthos_element_indices%units(benthos_element_indices%iron_ind)))
          call mpas_log_write('benthos_element_indices%short_name(benthos_element_indices%iron_ind)='//trim(benthos_element_indices%short_name(benthos_element_indices%iron_ind)))
@@ -1824,7 +1824,7 @@ test_flag = .false.
 !-----------------------------------------------------------------------
 !  allocate input, forcing, diagnostic arrays
 !-----------------------------------------------------------------------
-      
+
       allocate ( benthos_input%benthosTracerBulk(nBenthicVertLevels+1, numBenthicColumnsMax, benthos_tracer_cnt) )
       allocate ( benthos_input%deepStorage(numBenthicColumnsMax, benthos_tracer_cnt))
       allocate ( benthos_input%oceanBottomDepth(numBenthicColumnsMax))
@@ -1864,7 +1864,7 @@ test_flag = .false.
 
       allocate ( benthos_output%PH_PREV_3D(nBenthicVertLevels+1, numBenthicColumnsMax))
       allocate ( benthos_output%deepStorage(numBenthicColumnsMax, benthos_tracer_cnt))
-      
+
       allocate ( benthos_output%oceanBottomTemperature(numBenthicColumnsMax))
       allocate ( benthos_output%oceanBottomSalinity(numBenthicColumnsMax))
       allocate ( benthos_output%oceanBottomSilicate(numBenthicColumnsMax))
@@ -2423,7 +2423,7 @@ test_flag = .false.
                benthosTracers(benthosIndices%co2_ind,iVertLevels,iCell) = 26.5_RKIND  !   mM Krumins
                benthosTracers(benthosIndices%no3_ind,iVertLevels,iCell) = 0.0_RKIND  !   mM Krumins
                benthosTracers(benthosIndices%mno2a_ind,iVertLevels,iCell) = 0.0_RKIND!        mmol/kg  Reed et al
-               benthosTracers(benthosIndices%mno2b_ind,iVertLevels,iCell) = 0.0_RKIND 
+               benthosTracers(benthosIndices%mno2b_ind,iVertLevels,iCell) = 0.0_RKIND
                benthosTracers(benthosIndices%mn_ind,iVertLevels,iCell) = 59.0_RKIND !**  umol/L Reed
                benthosTracers(benthosIndices%feoh3a_ind,iVertLevels,iCell) = 0.0_RKIND !    mmol/kg
                benthosTracers(benthosIndices%feoh3b_ind,iVertLevels,iCell) = 0.0_RKIND !    mmol/kg
@@ -2798,7 +2798,7 @@ test_flag = .false.
 !> \brief   writes restart timestamp for benthos data to be read in on future restart
 !> \author  Nicole Jeffery
 !> \date    04/30/2021
-! 
+!
 !  Copied after Mathew Maltrud, ocn_ecosys_forcing_write_restart
 !-----------------------------------------------------------------------
 
@@ -2817,7 +2817,7 @@ test_flag = .false.
 !> \brief   writes restart timestamp for benthos data to be read in on future restart
 !> \author  Nicole Jeffery
 !> \date    04/30/2021
-! 
+!
 !  Copied after Mathew Maltrud, ocn_ecosys_forcing_write_restart
 !-----------------------------------------------------------------------
 
