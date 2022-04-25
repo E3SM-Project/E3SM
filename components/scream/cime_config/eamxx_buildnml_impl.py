@@ -188,6 +188,10 @@ def refine_type(entry, force_type=None):
     >>> refine_type(e)==[1,'b',True]
     Traceback (most recent call last):
     eamxx_buildnml_impl.refine_type.<locals>.InconsistentListTypes: ERROR: List '1,b' has inconsistent types inside
+    >>> e = '1.0'
+    >>> refine_type(e,force_type='my_type')
+    Traceback (most recent call last):
+    eamxx_buildnml_impl.refine_type.<locals>.BadForceType: Bad force_type: my_type
     """
     # We want to preserve strings representing lists
     if (entry[0]=="(" and entry[-1]==")") or \
