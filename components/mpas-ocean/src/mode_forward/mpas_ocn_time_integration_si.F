@@ -110,6 +110,7 @@ module ocn_time_integration_si
       ncpus,            &! Total number of cores
       nSiLargeIter       ! #iteration for the barotropic system
 
+   integer :: ssh_sal_on
 !***********************************************************************
 
 !***********************************************************************
@@ -253,6 +254,8 @@ module ocn_time_integration_si
       type (field1DReal), pointer :: &
          effectiveDensityField         ! field pointer for halo update
 
+      type (dm_info) :: dminfo
+
       ! State/Tracer arrays, info
       real (kind=RKIND), dimension(:,:,:), pointer ::      &!
          tracersGroupCur,      &! old, new tracer arrays
@@ -344,6 +347,8 @@ module ocn_time_integration_si
       ! End preamble
       !-----------------------------------------------------------------
       ! Begin code
+
+      dminfo = domain % dminfo
 
       call mpas_timer_start("si timestep")
 
@@ -649,8 +654,8 @@ module ocn_time_integration_si
          !$acc update host(vertAleTransportTop)
 #endif
 
-         call ocn_tend_vel(tendPool, statePool, forcingPool, &
-                           stage1_tend_time, dt)
+         call ocn_tend_vel(domain, tendPool, statePool, forcingPool, &
+                           stage1_tend_time, dminfo, dt)
 
          call mpas_timer_stop('si bcl vel tend')
 
@@ -899,8 +904,8 @@ module ocn_time_integration_si
                do iCell = 1, nCellsAll
                  sshSubcycleCurWithTides(iCell) = sshSubcycleCur(iCell) &
                             - tidalPotentialEta(iCell)                  &
-                            - config_self_attraction_and_loading_beta   &
-                            * sshSubcycleCur(iCell)
+                            - ssh_sal_on * ssh_sal(iCell)               &
+                            - (1 - ssh_sal_on) * config_self_attraction_and_loading_beta * sshSubcycleCur(iCell)
                end do
                !$omp end do
                !$omp end parallel
@@ -3743,6 +3748,12 @@ module ocn_time_integration_si
       call mpas_timer_stop("preconditioning matrix build")
 
    !--------------------------------------------------------------------
+      if (config_use_self_attraction_loading) then
+         ! set ssh_sal_on to 1
+         ssh_sal_on = 1
+      else
+         ssh_sal_on = 0
+      endif
 
    end subroutine ocn_time_integration_si_init!}}}
 

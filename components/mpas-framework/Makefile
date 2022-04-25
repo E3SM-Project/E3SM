@@ -47,6 +47,7 @@ xlf:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 xlf-summit-omp-offload:
@@ -78,6 +79,7 @@ xlf-summit-omp-offload:
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
 	"OPENMP_OFFLOAD = $(OPENMP_OFFLOAD)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DFORTRAN_SAME -DCPRIBM -DLINUX" )
 
 ftn:
@@ -101,6 +103,7 @@ ftn:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 pgi:
@@ -129,6 +132,7 @@ pgi:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DCPRPGI" )
 
 pgi-summit:
@@ -160,6 +164,7 @@ pgi-summit:
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
 	"OPENACC = $(OPENACC)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = -DpgiFortran -D_MPI -DUNDERSCORE" )
 
 pgi-nersc:
@@ -183,8 +188,8 @@ pgi-nersc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DCPRPGI" )
-
 ifort:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpif90" \
@@ -211,6 +216,7 @@ ifort:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 ifort-scorep:
@@ -238,6 +244,7 @@ ifort-scorep:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 ifort-gcc:
@@ -265,6 +272,7 @@ ifort-gcc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 intel-mpi:
@@ -277,7 +285,7 @@ intel-mpi:
 	"CXX_SERIAL = icpc" \
 	"FFLAGS_FPIEEE = -fp-model=precise" \
 	"FFLAGS_PROMOTION = -real-size 64" \
-	"FFLAGS_OPT = -O3 -convert big_endian -free -align array64byte" \
+	"FFLAGS_OPT = -O3 -convert big_endian -free -align array64byte -xHost" \
 	"CFLAGS_OPT = -O3" \
 	"CXXFLAGS_OPT = -O3" \
 	"LDFLAGS_OPT = -O3" \
@@ -293,6 +301,7 @@ intel-mpi:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 gfortran:
@@ -327,6 +336,7 @@ gfortran:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 gfortran-clang:
@@ -360,6 +370,7 @@ gfortran-clang:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 g95:
@@ -383,6 +394,7 @@ g95:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 cray-nersc:
@@ -406,6 +418,7 @@ cray-nersc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 gnu-nersc:
@@ -437,6 +450,7 @@ gnu-nersc:
 	"DEBUG = $(DEBUG)" \
 	"SERIAL = $(SERIAL)" \
 	"USE_PAPI = $(USE_PAPI)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI $(FILE_OFFSET) $(ZOLTAN_DEFINE)" )
 
 intel-nersc:
@@ -464,6 +478,7 @@ intel-nersc:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 llvm:
@@ -492,6 +507,7 @@ llvm:
 	"DEBUG = $(DEBUG)" \
 	"USE_PAPI = $(USE_PAPI)" \
 	"OPENMP = $(OPENMP)" \
+	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
 CPPINCLUDES =
@@ -602,6 +618,10 @@ endif
 	LIBS += -llapack
 	LIBS += -lblas
 	override CPPFLAGS += -DUSE_LAPACK
+endif
+
+ifeq "$(USE_SHTNS)" "true"
+	override CPPFLAGS += -DUSE_SHTNS
 endif
 
 RM = rm -f
@@ -787,6 +807,12 @@ ifeq "$(OPENACC)" "true"
 	OPENACC_MESSAGE="MPAS was built with OpenACC accelerator support enabled."
 else
 	OPENACC_MESSAGE="MPAS was built without OpenACC accelerator support."
+endif
+
+ifeq "$(USE_SHTNS)" "true"
+	SHTNS_MESSAGE="MPAS was built with SHTNS library."
+else
+	SHTNS_MESSAGE="MPAS was built without SHTNS library."
 endif
 
 ifneq ($(wildcard .mpas_core_*), ) # CHECK FOR BUILT CORE
@@ -1024,6 +1050,7 @@ endif
 	@echo $(GEN_F90_MESSAGE)
 	@echo $(TIMER_MESSAGE)
 	@echo $(PIO_MESSAGE)
+	@echo $(SHTNS_MESSAGE)
 	@echo "*******************************************************************************"
 clean:
 	cd $(FWPATH); $(MAKE) clean RM="$(RM)" CORE="$(CORE)"
@@ -1095,6 +1122,7 @@ errmsg:
 	@echo "    PRECISION=single - builds with default single-precision real kind. Default is to use double-precision."
 	@echo "    SHAREDLIB=true - generate position-independent code suitable for use in a shared library. Default is false."
 	@echo "    USE_LAPACK=true - builds and links with LAPACK / BLAS libraries.  Default is to not use LAPACK."
+	@echo "    USE_SHTNS=true - builds and links with SHTNS/FFTW.  Default is false."
 	@echo ""
 	@echo "Ensure that NETCDF, PNETCDF, PIO, LAPACK (if USE_LAPACK=true), and PAPI (if USE_PAPI=true) are environment variables"
 	@echo "that point to the absolute paths for the libraries."
