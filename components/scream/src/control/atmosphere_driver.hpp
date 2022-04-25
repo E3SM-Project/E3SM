@@ -190,6 +190,9 @@ protected:
   // Utility function to check the ad status
   void check_ad_status (const int flag, const bool must_be_set = true);
 
+  // Whether GPTL must be finalized by the AD (in certain standalone runs)
+  bool m_gptl_externally_handled;
+
   // Current ad initialization status
   int m_ad_status = 0;
 };
