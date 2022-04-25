@@ -170,7 +170,10 @@ def evaluate_selectors(element, case, ez_selectors):
                         is_first = True
                         child_values[child_name] = child
                         child.text = do_cime_vars(child_val, case)
-                        for k in selectors.keys():
+                        # Make a copy of selectors.keys(), since selectors=child.attrib,
+                        # and we might delete an entry, causing the error
+                        #    RuntimeError: dictionary changed size during iteration
+                        for k in list(selectors.keys()):
                             if k not in METADATA_ATTRIBS:
                                 del child.attrib[k]
 
