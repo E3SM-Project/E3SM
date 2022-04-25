@@ -143,7 +143,7 @@ def evaluate_selectors(element, case, ez_selectors):
                 is_first = False
                 for k, v in selectors.items():
                     # Metadata attributes are used only when it's time to generate the input files
-                    if k in selectors:
+                    if k in METADATA_ATTRIBS:
                         continue
 
                     val_re = re.compile(v)
