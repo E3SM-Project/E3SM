@@ -35,7 +35,7 @@ from CIME.buildnml import parse_input
 
 # SCREAM imports
 from eamxx_buildnml_impl import get_valid_selectors, get_child, refine_type, \
-        resolve_all_inheritances, gen_atm_procs, find_node, check_all_values
+        resolve_all_inheritances, gen_atm_proc_group, find_node, check_all_values
 
 from utils import ensure_yaml
 ensure_yaml()
@@ -447,7 +447,7 @@ def _create_raw_xml_file_impl(case, defaults_xml):
     atm_procs_list = get_child(atm_procs_defaults,"atm_procs_list",remove=True)
 
     # 4. Form the nested list of atm procs needed, append to atmosphere_driver section
-    atm_procs = gen_atm_procs (atm_procs_list.text, atm_procs_defaults)
+    atm_procs = gen_atm_proc_group (atm_procs_list.text, atm_procs_defaults)
     atm_procs.tag = "atmosphere_processes"
     root.append(atm_procs);
 

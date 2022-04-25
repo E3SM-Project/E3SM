@@ -14,49 +14,34 @@ def parse_string_as_list (string):
     a nested list of stirng. For instance, with
         s = "(a,b,(c,d),e)
         l = parse_string_as_list
-    we would have l = ['a', 'b', ['c','d'], 'e']
+    we would have l = ['a', 'b', '(c,d)', 'e']
     """
 
-    sub_open = string.find('(')
-    sub_close = string.rfind(')')
-    last = len(string)-1
 
-    if string[0]==',' or string[-1]==',':
-        print ("malformed: starts or ends with ','")
-        raise
 
-    if sub_open*sub_close<0:
-        print ("malformed: unmatched open/close parentheses")
-        raise
+    class UnmatchedParentheses (Exception):
+        pass
 
-    if sub_open<0:
-        return string.split(',')
+    if string[0]!='(' or string[-1]!=')':
+        raise UnmatchedParentheses
 
-    if sub_open==0 and sub_close==last:
-        return parse_string_as_list(string[1:-1]);
+    sub_open = string.find('(',1)
+    sub_close = string.rfind(')',0,-1)
+    if not (sub_open>=0)==(sub_close>=0):
+        raise UnmatchedParentheses
 
-    # Parse stuff before '(' and after ')'
-    if sub_open==0:
-        pre = []
+    # Prevent empty string to pollute s.split()
+    my_split = lambda str : [s for s in str.split(',') if s.strip() != '']
+
+    if sub_open>=0:
+        l = []
+        l.extend(my_split(string[1:sub_open-1]))
+        l.append(string[sub_open:sub_close+1])
+        l.extend(my_split(string[sub_close+2:-1]))
     else:
-        if string[sub_open-1]!=',':
-            return []
-        pre = string[0:sub_open-1].split(',')
+        l = my_split(string[1:-1])
 
-    if sub_close==last:
-        post = []
-    else:
-        if string[sub_close+1]!=',':
-            return []
-        post = string[sub_close+2:].split(',')
-
-    # Parse middle, then glue together
-    middle = parse_string_as_list(string[sub_open+1:sub_close])
-
-    result = pre
-    result.append(middle)
-    result.extend(post)
-    return result
+    return l
 
 ###############################################################################
 def find_node (root,name):
@@ -86,8 +71,12 @@ def get_child (root,name,remove=False):
     Optionally, the child can be removed from the parent.
     """
 
+    class XmlNodeNotFound (Exception):
+        pass
+
     expect (len(root.findall(name))==1,
-            "There must be exactly one {} entry inside {}".format(name,root.tag))
+            "There must be exactly one {} entry inside {}".format(name,root.tag),
+            XmlNodeNotFound)
     child = root.find(name)
     if remove:
         root.remove(child)
@@ -98,7 +87,7 @@ def get_child (root,name,remove=False):
 def has_child (root,name):
 ###############################################################################
     """
-    Check if root element has child with given name
+    Check if root element has a *direct* child with given name
     """
 
     return False if root.find(name) is None else True
@@ -114,11 +103,20 @@ def refine_type(entry, force_type=None):
        (entry[0]=="[" and entry[-1]=="]") :
         return entry
 
+    class InconsistentListTypes (Exception):
+        pass
+    class BadForceType (Exception):
+        pass
+    class ForceTypeUnmet (Exception):
+        pass
+
     if "," in entry:
         result = [refine_type(item.strip(), force_type=force_type) for item in entry.split(",") if item.strip() != ""]
         expected_type = type(result[0])
         for item in result[1:]:
-            expect(isinstance(item, expected_type), "List '{}' has inconsistent types inside".format(entry))
+            expect(isinstance(item, expected_type),
+                  "List '{}' has inconsistent types inside".format(entry),
+                  InconsistentListTypes)
 
         return result
 
@@ -139,11 +137,11 @@ def refine_type(entry, force_type=None):
             elif force_type == "string":
                 return str(entry)
             else:
-                expect(False, "Bad force_type '{}'".format(force_type))
+                raise BadForceType ("Bad force_type: {}".format(force_type))
                 return None
 
         except ValueError:
-            expect(False, "Could not use '{}' as type '{}'".format(entry, force_type))
+            raise ForceTypeUnmet ("Could not use '{}' as type '{}'".format(entry, force_type))
             return None
 
     if entry.upper() == "TRUE":
@@ -166,6 +164,9 @@ def refine_type(entry, force_type=None):
 ###############################################################################
 def derive_type(entry):
 ###############################################################################
+    class UnrecognizedType (Exception):
+        pass
+
     refined_value = refine_type(entry)
     if isinstance(refined_value, list):
         refined_value = refined_value[0]
@@ -179,7 +180,7 @@ def derive_type(entry):
     elif isinstance(refined_value, str):
         return "string"
     else:
-        expect(False, "Couldn't derive type of '{}'".format(entry))
+        raise(UnrecognizedType, "Couldn't derive type of '{}'".format(entry))
         return None
 
 ###############################################################################
@@ -188,20 +189,29 @@ def check_value(elem, value):
     """
     Check that a parameter's value is in the valid list
     """
+    class TypeConstraintViolated (Exception):
+        pass
+    class ValidValueConstraintViolated (Exception):
+        pass
+
     v = value
     vtype = None
     if "type" in elem.attrib.keys():
         vtype = elem.attrib["type"]
         v = refine_type(v,force_type=vtype)
+
         expect (v is not None,
                 "Error! Value '{}' for element '{}' does not satisfy the constraint type={}"
-                .format(value,elem.tag,vtype))
+                .format(value,elem.tag,vtype) +
+                "  NOTE: this error should have been caught earlier! Please, contact developers.",
+                TypeConstraintViolated)
 
     if "valid_values" in elem.attrib.keys():
         valids_str = elem.attrib["valid_values"]
         valids = [refine_type(item.strip(), force_type=vtype) for item in valids_str.split(",")]
         expect(v in valids,
-                "Invalid value '{}' for element '{}'. Value not in the valid list ('{}')".format(value, elem.tag, valids))
+                "Invalid value '{}' for element '{}'. Value not in the valid list ('{}')".format(value, elem.tag, valids),
+                ValidValueConstraintViolated)
 
 ###############################################################################
 def check_all_values(root):
@@ -269,12 +279,16 @@ def get_valid_selectors(xml_root):
     its integrity, and returning selectors as a dict.
     """
 
+    class BadSelectorTag (Exception):
+        pass
+
     # Get the right XML element, and iterate over its children
     selectors_elem = get_child(xml_root,"selectors",remove=True)
     selectors = {}
     for selector in selectors_elem:
         expect(selector.tag == "selector",
-               "Expected selector tag, not {}".format(selector.tag))
+               "Expected selector tag, not {}".format(selector.tag),
+               BadSelectorTag)
 
         selector_name  = selector.attrib["name"]
         selector_env   = selector.attrib["case_env"]
@@ -288,89 +302,68 @@ def get_valid_selectors(xml_root):
     return selectors 
 
 ###############################################################################
-def gen_atm_proc_group (ap_names_list, atm_procs_defaults, name=None):
+def gen_group_processes (ap_names_str, atm_procs_defaults):
+###############################################################################
+    """
+    Given a (possibly nested) string representation of an atm group,
+    generates the corresponding atm processes as XML nodes.
+    """
+
+    group = ET.Element("__APG__")
+
+    ap_names_list = parse_string_as_list(ap_names_str)
+    for ap in ap_names_list:
+        # The current ap can be itself a group if either:
+        #  - ap = "(ap1,ap2,...,apXYZ)", with each ap possibly itself a group string.
+        #    This group is built on the fly based on the building blocks specs.
+        #  - ap is declared in the XML defaults as an atm proc group (which must store
+        #    the 'atm_procs_list' child, with the string representation of the group.
+
+        if ap[0]=='(':
+            # Create the atm proc group
+            proc = gen_atm_proc_group(ap,atm_procs_defaults)
+        else:
+            # Get defaults
+            proc = copy.deepcopy(get_child(atm_procs_defaults,ap))
+
+            # Check if this pre-defined proc is itself a group, and, if so,
+            # build all its sub-processes
+            if has_child(proc,"Type") and get_child(proc,"Type").text=="Group":
+                # This entry of the group is itself a group, with pre-defined
+                # defaults. Let's add its entries to it
+                sub_group_procs = get_child(proc,"atm_procs_list").text
+                proc.extend(gen_group_processes(sub_group_procs,atm_procs_defaults))
+
+        # Append subproc to group
+        group.append(proc)
+
+    return group
+
+###############################################################################
+def gen_atm_proc_group(atm_procs_list, atm_procs_defaults):
 ###############################################################################
     """
     Given a (possibly nested) list of atm procs names, and the defaults
     section for each atm proc, builds an XML node containing the tree
-    of atm procs to be included in the input file, along with their parameters.
+    representing the atm process group, with nodes including APG parameters
+    as well as one sub-node for each atm proc in the group
     """
 
-    valid_blocks = []
-    for child in atm_procs_defaults:
-        valid_blocks.append(child.tag)
+    # Set defaults from atm_proc_group
+    group = ET.Element("__APG__")
+    group.attrib["inherit"] = "atm_proc_group"
+    resolve_inheritance(atm_procs_defaults,group)
+    get_child(group,"atm_procs_list").text = atm_procs_list
 
-    if name is None:
-        # This is a group defined on the fly, via (a,b,c) syntax.
-        # Create empty group, make it inherit from default atm proc group type
-        ap_group = ET.Element("__APG__")
-        ap_group.attrib["inherit"] = "atm_proc_group"
-        resolve_inheritance(atm_procs_defaults,ap_group)
-    else:
-        # This is a named group, so we *expect* it to be in the atm_procs_default tree
-        ap_group = copy.deepcopy(get_child(atm_procs_defaults,name))
+    # Create processes
+    group_procs = gen_group_processes (atm_procs_list, atm_procs_defaults)
 
-    # The 'atm_procs_list' child will always be formatted as a nested list,
-    # like (a,((b,c,d),e),f). However, the name of the process needs to be
-    # without parentheses to be a valid XML tag, so we form the tag of
-    # a group as "group.ap1_ap2_..._apN." (with apX possibly itself a group tag)
+    # Append procs and generate name for the group.
+    # NOTE: the name of a 'generic' group is 'group.AP1_AP2_..._APN.'
     names = []
-    nested_list = []
-    for ap in ap_names_list:
-        # There are two ways to declare a group:
-        #  - have its string be "(ap1,ap2,...,apXYZ)", with each ap possibly
-        #    itself a group string. This group is built on the fly based
-        #    on the building blocks specs.
-        #  - declare an element block (e.g., "my_awesome_group") in XML defaults,
-        #    and make it inherit from the atm_proc_group default section
-        #    In this case, the element must have the "atm_procs_list" child,
-        #    storing a string "(ap1,ap2,...,apXYZ)", so that we can generate the group
-        if isinstance(ap,list):
-            # This entry of the group is itself a group, declared via string list syntax.
-            # Recurse, and append all entries
-            sub_group = gen_atm_proc_group(ap,atm_procs_defaults)
-            inner_str = get_child(sub_group,"atm_procs_list")
-            nested_list.append(inner_str.text)
-            names.append(sub_group.tag)
-
-            ap_group.insert(len(ap_group),sub_group)
-        else:
-            expect (ap in valid_blocks, "Unrecognized atm proc name: {}".format(ap))
-
-            default = get_child(atm_procs_defaults,ap)
-
-            #  ap_group.append(proc)
-            if has_child(default,"Type") and get_child(default,"Type").text=="Group":
-                # This entry of the group is itself a group, with pre-defined
-                # defaults. Let's add its entries to it
-                sub_group_procs_list_str = get_child(default,"atm_procs_list").text
-                sub_group_procs_list = parse_string_as_list(sub_group_procs_list_str)
-                proc = gen_atm_proc_group (sub_group_procs_list, atm_procs_defaults, name=ap)
-            else:
-                # Just use the defaults
-                proc = copy.deepcopy(default)
-
-            nested_list.append(proc.tag)
-            names.append(proc.tag)
-            ap_group.insert(len(ap_group),proc)
-
-    # Set the atm proc list in here
-    ap_group_procs_list = get_child(ap_group,"atm_procs_list")
-    ap_group_procs_list.text = "(" + ",".join(nested_list) + ")"
-    ap_group_procs_list.attrib["locked"] = "true"
-    if ap_group.tag=="__APG__":
-        ap_group.tag = "group." + "_".join(names) + "."
-
-    return ap_group
-
-###############################################################################
-def gen_atm_procs(atm_procs_list_str, atm_procs_defaults):
-###############################################################################
-    """
-    Generate the atm proc group representing the full atmosphere, given
-    the string representation and the defaults section.
-    """
-
-    ap_names_list = parse_string_as_list(atm_procs_list_str)
-
-    return gen_atm_proc_group (ap_names_list, atm_procs_defaults)
+    for c in group_procs:
+        names.append(c.tag)
+        group.append(c)
+    group.tag = "group." + '_'.join(names) + '.'
+    
+    return group
