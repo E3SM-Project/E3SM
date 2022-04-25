@@ -1517,6 +1517,10 @@ end subroutine clubb_init_cnst
    real(core_rknd) :: wp2hmp(pcols,pverp,hydromet_dim)
    real(core_rknd) :: rtphmp_zt(pcols,pverp,hydromet_dim)
    real(core_rknd) :: thlphmp_zt(pcols,pverp,hydromet_dim)
+   real(core_rknd) :: um_pert_inout(pcols,pverp)              ! perturbed meridional wind flux                         [m^2/s^2]
+   real(core_rknd) :: vm_pert_inout(pcols,pverp)              ! perturbed zonal wind flux                              [m^2/s^2]
+   real(core_rknd) :: upwp_pert_inout(pcols,pverp)            ! perturbed meridional wind flux                         [m^2/s^2]
+   real(core_rknd) :: vpwp_pert_inout(pcols,pverp)            ! perturbed zonal wind flux                              [m^2/s^2]
    real(core_rknd) :: C_10                             ! transfer coefficient                          [-]
    real(core_rknd) :: khzm_out(pcols,pverp)                  ! eddy diffusivity on momentum grids            [m^2/s]
    real(core_rknd) :: khzt_out(pcols,pverp)                  ! eddy diffusivity on thermo grids              [m^2/s]
@@ -2419,6 +2423,10 @@ end subroutine clubb_init_cnst
         vm_pert(:,:) = vm_in(:,:)
         upwp_pert(:,:) = upwp_in(:,:)
         vpwp_pert(:,:) = vpwp_in(:,:)
+        um_pert_inout(:,:) = real(um_pert(:,:), kind=core_rknd)
+        vm_pert_inout(:,:) = real(vm_pert(:,:), kind=core_rknd)
+        upwp_pert_inout(:,:) = real(upwp_pert(:,:), kind=core_rknd)
+        vpwp_pert_inout(:,:) = real(vpwp_pert(:,:), kind=core_rknd)
       end if
        
       ! Prefer to perturb wind/stress in the direction of the existing stress.
@@ -2435,6 +2443,13 @@ end subroutine clubb_init_cnst
                (pert_tau / (rho_ds_zm(i,1) * hypot(cam_in%wsx(i), cam_in%wsy(i))))
         end if
       end do
+    else
+        um_pert_inout(:,:) = 0.0_core_rknd
+        vm_pert_inout(:,:) = 0.0_core_rknd
+        upwp_pert_inout(:,:) = 0.0_core_rknd
+        vpwp_pert_inout(:,:) = 0.0_core_rknd
+        upwp_sfc_pert(:) = 0.0_core_rknd
+        vpwp_sfc_pert(:) = 0.0_core_rknd
     end if
     
     if (clubb_do_adv) then
@@ -2580,8 +2595,8 @@ end subroutine clubb_init_cnst
            wp2rtp_inout(:ncol,:), wp2thlp_inout(:ncol,:), uprcp_inout(:ncol,:), vprcp_inout(:ncol,:),       & ! intent(inout)
            rc_coef_inout(:ncol,:), wp4_inout(:ncol,:), wpup2_inout(:ncol,:), wpvp2_inout(:ncol,:),          & ! intent(inout)
            wp2up2_inout(:ncol,:), wp2vp2_inout(:ncol,:), ice_supersat_frac_inout(:ncol,:),                  & ! intent(inout)
-           um_pert(:ncol,:), vm_pert(:ncol,:),                                                              & ! intent(inout)
-           upwp_pert(:ncol,:), vpwp_pert(:ncol,:),                                                          & ! intent(inout)
+           um_pert_inout(:ncol,:), vm_pert_inout(:ncol,:),                                                  & ! intent(inout)
+           upwp_pert_inout(:ncol,:), vpwp_pert_inout(:ncol,:),                                              & ! intent(inout)
            pdf_params_chnk(lchnk), pdf_params_zm_chnk(lchnk),                                               & ! intent(inout)
            pdf_implicit_coefs_terms_chnk(:ncol,lchnk),                                                      & ! intent(inout)
            khzm_out(:ncol,:), khzt_out(:ncol,:), qclvar_out(:ncol,:), thlprcp_out(:ncol,:),                 & ! intent(out)
@@ -2681,6 +2696,10 @@ end subroutine clubb_init_cnst
     endif
     
     if (linearize_pbl_winds) then
+      um_pert(:,:) = real(um_pert_inout(:,:), kind=r8)
+      vm_pert(:,:) = real(vm_pert_inout(:,:), kind=r8)
+      upwp_pert(:,:) = real(upwp_pert_inout(:,:), kind=r8)
+      vpwp_pert(:,:) = real(vpwp_pert_inout(:,:), kind=r8)
       do i = 1, ncol
         if (abs(cam_in%wsx(i)) < 1.e-12 .and. abs(cam_in%wsy(i)) < 1.e-12) then
           sfc_v_diff_tau(i) = um_pert(i,2) - um_in(i,2)
@@ -2751,7 +2770,7 @@ end subroutine clubb_init_cnst
 
       end do
     end do
-    
+
     do ixind=1,edsclr_dim
       do k=1,pverp
         do i=1, ncol
