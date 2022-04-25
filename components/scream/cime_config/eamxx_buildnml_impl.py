@@ -7,6 +7,22 @@ sys.path.append(_CIMEROOT)
 from CIME.utils import expect
 
 ###############################################################################
+class MockCase(object):
+###############################################################################
+    """
+    Helper function, to generate a cime case to be fed to doctest tests
+    """
+
+    def __init__(self, kv_dict):
+        self._kv_dict = dict(kv_dict)
+
+    def get_value(self, key):
+        if key in self._kv_dict:
+            return self._kv_dict[key]
+        else:
+            return None
+
+###############################################################################
 def parse_string_as_list (string):
 ###############################################################################
     """
@@ -15,9 +31,24 @@ def parse_string_as_list (string):
         s = "(a,b,(c,d),e)
         l = parse_string_as_list
     we would have l = ['a', 'b', '(c,d)', 'e']
+
+    >>> s = '(a,(b,c))'
+    >>> l = parse_string_as_list(s)
+    >>> len(l)
+    2
+    >>> l[0] == 'a'
+    True
+    >>> l[1] == '(b,c)'
+    True
+    >>> s = '(a,b,'
+    >>> l = parse_string_as_list(s)
+    Traceback (most recent call last):
+    eamxx_buildnml_impl.parse_string_as_list.<locals>.UnmatchedParentheses
+    >>> s = '(a,(b)'
+    >>> l = parse_string_as_list(s)
+    Traceback (most recent call last):
+    eamxx_buildnml_impl.parse_string_as_list.<locals>.UnmatchedParentheses
     """
-
-
 
     class UnmatchedParentheses (Exception):
         pass
@@ -51,6 +82,20 @@ def find_node (root,name):
     strategy (i.e., follow children before siblings).
     WARNING: this function does not check for uniqueness. If there are
              multiple matches, the first match is returned.
+    >>> xml = '''
+    ... <my_root>
+    ...   <a>1</a>
+    ...   <b>
+    ...     <c>2</c>
+    ...   </b>
+    ... </my_root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> root = ET.fromstring(xml)
+    >>> find_node(root,'d')==None
+    True
+    >>> find_node(root,'c').text
+    '2'
     """
 
     if root.tag==name:
@@ -69,6 +114,19 @@ def get_child (root,name,remove=False):
     """
     Get children with given name. If not found, throws an exception.
     Optionally, the child can be removed from the parent.
+    >>> xml = '''
+    ... <my_root>
+    ...   <a>1</a>
+    ...   <b>
+    ...     <c>2</c>
+    ...   </b>
+    ... </my_root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> root = ET.fromstring(xml)
+    >>> get_child(root,'c')
+    Traceback (most recent call last):
+    eamxx_buildnml_impl.get_child.<locals>.XmlNodeNotFound: ERROR: There must be exactly one c entry inside my_root
     """
 
     class XmlNodeNotFound (Exception):
@@ -88,6 +146,20 @@ def has_child (root,name):
 ###############################################################################
     """
     Check if root element has a *direct* child with given name
+    >>> xml = '''
+    ... <my_root>
+    ...   <a>1</a>
+    ...   <b>
+    ...     <c>2</c>
+    ...   </b>
+    ... </my_root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> root = ET.fromstring(xml)
+    >>> has_child(root,'c')
+    False
+    >>> has_child(root,'b')
+    True
     """
 
     return False if root.find(name) is None else True
@@ -97,6 +169,25 @@ def refine_type(entry, force_type=None):
 ###############################################################################
     """
     Try to convert the text entry to the appropriate type based on its contents.
+    >>> e = '(a,b)'
+    >>> refine_type(e)==e
+    True
+    >>> e = '[a,b]'
+    >>> refine_type(e)==e
+    True
+    >>> e = 'a,b'
+    >>> refine_type(e)==['a','b']
+    True
+    >>> e = 'true,falsE'
+    >>> refine_type(e)==[True,False]
+    True
+    >>> e = '1'
+    >>> refine_type(e,force_type='real')==1.0
+    True
+    >>> e = '1,b'
+    >>> refine_type(e)==[1,'b',True]
+    Traceback (most recent call last):
+    eamxx_buildnml_impl.refine_type.<locals>.InconsistentListTypes: ERROR: List '1,b' has inconsistent types inside
     """
     # We want to preserve strings representing lists
     if (entry[0]=="(" and entry[-1]==")") or \
@@ -164,6 +255,15 @@ def refine_type(entry, force_type=None):
 ###############################################################################
 def derive_type(entry):
 ###############################################################################
+    """
+    Try to determine the type that the input string is representing
+    >>> derive_type('1')
+    'integer'
+    >>> derive_type('1.0')
+    'real'
+    >>> derive_type('one')
+    'string'
+    """
     class UnrecognizedType (Exception):
         pass
 
@@ -188,6 +288,19 @@ def check_value(elem, value):
 ###############################################################################
     """
     Check that a parameter's value is in the valid list
+
+    >>> xml = '''
+    ... <a type="integer" valid_values="1,2">1</a>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> root = ET.fromstring(xml)
+    >>> check_value(root,'1.0')
+    Traceback (most recent call last):
+    eamxx_buildnml_impl.refine_type.<locals>.ForceTypeUnmet: Could not use '1.0' as type 'integer'
+    >>> check_value(root,'3')
+    Traceback (most recent call last):
+    eamxx_buildnml_impl.check_value.<locals>.ValidValueConstraintViolated: ERROR: Invalid value '3' for element 'a'. Value not in the valid list ('[1, 2]')
+
     """
     class TypeConstraintViolated (Exception):
         pass
@@ -236,6 +349,25 @@ def resolve_inheritance (root,elem):
     If elem inherits from another node within $root, this function adds all
     children of its "parent" to elem. If parent also inherits, first
     resolve parent recursively. If parent is not found, throw an exception
+    >>> xml = '''
+    ... <my_root>
+    ...   <base>
+    ...     <a>2</a>
+    ...   </base>
+    ...   <derived inherit="base">
+    ...   </derived>
+    ... </my_root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> root = ET.fromstring(xml)
+    >>> d = get_child(root,'derived')
+    >>> len(d)
+    0
+    >>> resolve_inheritance(root,d)
+    >>> len(d)
+    1
+    >>> get_child(d,'a').text
+    '2'
     """
 
     if "inherit" in elem.attrib.keys():
@@ -277,6 +409,32 @@ def get_valid_selectors(xml_root):
     """
     Extract the <selector> node from the xml root, verifying
     its integrity, and returning selectors as a dict.
+
+    >>> xml = '''
+    ... <namelist_defaults>
+    ...   <selectors>
+    ...     <selector name="S1" case_env="ENV1"/>
+    ...     <selector name="S2" case_env="ENV2"/>
+    ...   </selectors>
+    ... </namelist_defaults>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> root = ET.fromstring(xml)
+    >>> selectors = get_valid_selectors(root)
+    >>> len(selectors)
+    2
+    >>> xml = '''
+    ... <namelist_defaults>
+    ...   <selectors>
+    ...     <blah name="S1" case_env="ENV1"/>
+    ...   </selectors>
+    ... </namelist_defaults>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> root = ET.fromstring(xml)
+    >>> selectors = get_valid_selectors(root)
+    Traceback (most recent call last):
+    eamxx_buildnml_impl.get_valid_selectors.<locals>.BadSelectorTag: ERROR: Expected selector tag, not blah
     """
 
     class BadSelectorTag (Exception):
@@ -347,6 +505,34 @@ def gen_atm_proc_group(atm_procs_list, atm_procs_defaults):
     section for each atm proc, builds an XML node containing the tree
     representing the atm process group, with nodes including APG parameters
     as well as one sub-node for each atm proc in the group
+    >>> xml = '''
+    ... <ap>
+    ...   <atm_proc_group>
+    ...     <prop1>1</prop1>
+    ...     <atm_procs_list>THE_LIST</atm_procs_list>
+    ...   </atm_proc_group>
+    ...   <ap1>
+    ...   </ap1>
+    ...   <ap2>
+    ...     <prop1>2</prop1>
+    ...     <prop2>3</prop2>
+    ...   </ap2>
+    ...   <my_group inherit="atm_proc_group">
+    ...     <atm_procs_list>(p1,ap2)</atm_procs_list>
+    ...   </my_group>
+    ... </ap>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> defaults = ET.fromstring(xml)
+    >>> ap_list = '(ap1,(ap2,ap1))'
+    >>> apg = gen_atm_proc_group(ap_list,defaults)
+    >>> get_child(apg,'atm_procs_list').text==ap_list
+    True
+    >>>
+    >>> has_child(apg,'group.ap2_ap1.')
+    True
+    >>> has_child(apg,'prop1') and get_child(apg,'prop1').text=="1"
+    True
     """
 
     # Set defaults from atm_proc_group

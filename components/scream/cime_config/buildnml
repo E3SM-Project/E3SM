@@ -47,24 +47,12 @@ CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
 METADATA_ATTRIBS = ("type", "valid_values", "locked")
 
 ###############################################################################
-class MockCase(object):
-###############################################################################
-
-    def __init__(self, kv_dict):
-        self._kv_dict = dict(kv_dict)
-
-    def get_value(self, key):
-        if key in self._kv_dict:
-            return self._kv_dict[key]
-        else:
-            return None
-
-###############################################################################
 def do_cime_vars(entry, case):
 ###############################################################################
     """
     For a parameter value, process any references to case values ("${CASEVAR}")
 
+    >>> from eamxx_buildnml_impl import MockCase
     >>> case = MockCase({'foo':1, 'bar':2, 'baz_bar':'blah', 'baz2_bar2':4})
     >>> do_cime_vars('${foo}', case)
     '1'
@@ -796,7 +784,9 @@ def _main_func():
 ###############################################################################
     if "--test" in sys.argv:
         from doctest import testmod
+        import eamxx_buildnml_impl
         testmod()
+        testmod(m=eamxx_buildnml_impl)
 
     else:
         caseroot = parse_input(sys.argv)
