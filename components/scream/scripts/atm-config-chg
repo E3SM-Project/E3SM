@@ -86,14 +86,8 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         raise exc_type(msg)
 
 ###############################################################################
-def atm_config_chg(changes):
+def atm_config_chg_impl(xml_root,changes):
 ###############################################################################
-    expect(os.path.exists("namelist_scream.xml"),
-           "No pwd/namelist_scream.xml file is present. Please rum from a case dir that has been setup")
-
-    with open("namelist_scream.xml", "r") as fd:
-        tree = ET.parse(fd)
-        root = tree.getroot()
 
     any_change = False
     for change in changes:
@@ -105,9 +99,9 @@ def atm_config_chg(changes):
 
         # Regardless of whether we have namespaces or not, the first selector must be unique through the whole XML tree
         s = selectors[0]
-        expect (num_nodes_with_name(root,s,recurse=True)>0,"Error! XML entry {} not found in section {}".format(s,root.tag))
-        expect (num_nodes_with_name(root,s,recurse=True)==1,"Error! Multiple XML entries with name {} found in section {}".format(s,root.tag))
-        node = find_node(root,s,recurse=True)
+        expect (num_nodes_with_name(xml_root,s,recurse=True)>0,"Error! XML entry {} not found in section {}".format(s,root.tag))
+        expect (num_nodes_with_name(xml_root,s,recurse=True)==1,"Error! Multiple XML entries with name {} found in section {}".format(s,xml_root.tag))
+        node = find_node(xml_root,s,recurse=True)
 
         # If user specified selectors via namespace, recurse over them
         for s in selectors[1:]:
@@ -125,6 +119,20 @@ def atm_config_chg(changes):
             check_value(node,new_value)
             node.text = new_value
             any_change = True
+
+    return any_change
+
+###############################################################################
+def atm_config_chg(changes):
+###############################################################################
+    expect(os.path.exists("namelist_scream.xml"),
+           "No pwd/namelist_scream.xml file is present. Please rum from a case dir that has been setup")
+
+    with open("namelist_scream.xml", "r") as fd:
+        tree = ET.parse(fd)
+        root = tree.getroot()
+
+    any_change = atm_config_chg_impl(root,changes)
 
     if any_change:
         tree.write("namelist_scream.xml")
