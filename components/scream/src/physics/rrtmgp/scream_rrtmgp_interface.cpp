@@ -243,6 +243,11 @@ namespace scream {
                 aerosol_lw.tau(icol,ilay,ibnd) = aer_tau_lw(icol,ilay,ibnd);
             });
 
+            check_range(aerosol_sw.tau,  0,                              1e3, "aerosol_optics_sw.tau");
+            check_range(aerosol_sw.ssa,  0,                                1, "aerosol_optics_sw.ssa"); //, "aerosol_optics_sw.ssa");
+            check_range(aerosol_sw.g  , -1,                                1, "aerosol_optics_sw.g  "); //, "aerosol_optics_sw.g"  );
+            check_range(aerosol_lw.tau,  0,                              1e3, "aerosol_optics_lw.tau");
+
             // Convert cloud physical properties to optical properties for input to RRTMGP
             OpticalProps2str clouds_sw = get_cloud_optics_sw(ncol, nlay, cloud_optics_sw, k_dist_sw, lwp, iwp, rel, rei);
             OpticalProps1scl clouds_lw = get_cloud_optics_lw(ncol, nlay, cloud_optics_lw, k_dist_lw, lwp, iwp, rel, rei);        
