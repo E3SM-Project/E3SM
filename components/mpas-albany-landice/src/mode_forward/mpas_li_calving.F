@@ -1991,7 +1991,7 @@ module li_calving
                iEdge = edgesOnCell(iNeighbor, iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
                ! sum up length of edges adjacent to open ocean or non-dynamic cells
-               if ( (.not. li_mask_is_dynamic_ice(jCell)) &
+               if ( (.not. li_mask_is_dynamic_ice(cellMask(jCell))) &
                        .and. (bedTopography(jCell) < seaLevel) ) then
                   submergedArea(iCell) = submergedArea(iCell) + dvEdge(iEdge) * waterDepth
                endif
