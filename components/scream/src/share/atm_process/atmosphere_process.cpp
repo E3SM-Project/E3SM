@@ -35,11 +35,15 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
 }
 
 void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type) {
-  start_timer (m_timer_prefix + this->name() + "::init");
+  if (this->type()!=AtmosphereProcessType::Group) {
+    start_timer (m_timer_prefix + this->name() + "::init");
+  }
   set_fields_and_groups_pointers();
   m_time_stamp = t0;
   initialize_impl(run_type);
-  stop_timer (m_timer_prefix + this->name() + "::init");
+  if (this->type()!=AtmosphereProcessType::Group) {
+    stop_timer (m_timer_prefix + this->name() + "::init");
+  }
 }
 
 void AtmosphereProcess::run (const int dt) {
