@@ -1915,6 +1915,8 @@ module li_calving
       if ( (config_do_restart) .and. (timestepNumber == 1) ) then
          call mpas_set_time(forcingTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
          err = ior(err, err_tmp)
+
+         forcingTimeOld = forcingTime  ! Initialize in case we don't read the forcing this timestep below
       endif
 
       streamFound = .false. ! Changed to true if ismip6-gis stream is found, otherwise throws error
