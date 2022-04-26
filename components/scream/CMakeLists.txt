@@ -102,6 +102,13 @@ else ()
   set (SCREAM_DEBUG FALSE)
 endif()
 
+# Add RRTMGP debug checks. Note, we might consider also adding RRTMGP_EXPENSIVE_CHECKS
+# to turn on the RRTMGP internal checks here as well, via
+#     option (RRTMGP_EXPENSIVE_CHECKS "Turn on internal RRTMGP error checking" ${SCREAM_DEBUG})
+# and then adding to scream_config.h:
+#     #cmakedefine RRTMGP_EXPENSIVE_CHECKS
+option (SCREAM_RRTMGP_DEBUG "Turn on extra debug checks in RRTMGP" ${SCREAM_DEBUG})
+
 enable_testing()
 include(CTest)
 
