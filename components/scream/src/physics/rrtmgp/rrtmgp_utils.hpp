@@ -50,14 +50,13 @@ namespace scream {
 
         // Verify that array only contains values within valid range, and if not
         // report min and max of array
-        template <class T> bool check_range(T x, Real xmin, Real xmax, std::string msg) {
+        template <class T> bool check_range(T x, Real xmin, Real xmax, std::string msg, std::ostream& out=std::cout) {
             bool pass = true;
             auto _xmin = minval(x);
             auto _xmax = maxval(x);
             if (_xmin < xmin or _xmax > xmax) {
                 pass = false;
-                std::cout 
-                    << msg 
+                out << msg 
                     << ": one or more values outside range "
                     << "[" << xmin << "," << xmax << "]"
                     << "; minval = " << _xmin 
