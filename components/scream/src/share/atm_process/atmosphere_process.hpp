@@ -396,6 +396,9 @@ protected:
   // Parameter list
   ekat::ParameterList m_params;
 
+  // A prefix to add to this atm proc timer
+  std::string m_timer_prefix;
+
   // The logger for the whole atmosphere
   // WARNING: this is non-const, but you should *NOT* modify its
   //          log level and/or its sinks. If you just need to log

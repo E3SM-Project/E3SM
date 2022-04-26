@@ -1,4 +1,5 @@
 #include "share/atm_process/atmosphere_process.hpp"
+#include "share/util/scream_timing.hpp"
 
 #include "ekat/ekat_assert.hpp"
 
@@ -29,15 +30,24 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
   EKAT_REQUIRE_MSG (m_num_subcycles>0,
       "Error! Invalid number of subcycles in param list " + m_params.name() + ".\n"
       "  - Num subcycles: " + std::to_string(m_num_subcycles) + "\n");
+
+  m_timer_prefix = m_params.get<std::string>("Timer Prefix","EAMxx::");
 }
 
 void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type) {
+  if (this->type()!=AtmosphereProcessType::Group) {
+    start_timer (m_timer_prefix + this->name() + "::init");
+  }
   set_fields_and_groups_pointers();
   m_time_stamp = t0;
   initialize_impl(run_type);
+  if (this->type()!=AtmosphereProcessType::Group) {
+    stop_timer (m_timer_prefix + this->name() + "::init");
+  }
 }
 
 void AtmosphereProcess::run (const int dt) {
+  start_timer (m_timer_prefix + this->name() + "::run");
   if (m_params.get("Enable Precondition Checks", true)) {
     // Run 'pre-condition' property checks stored in this AP
     run_precondition_checks();
@@ -65,6 +75,7 @@ void AtmosphereProcess::run (const int dt) {
     // Update all output fields time stamps
     update_time_stamps ();
   }
+  stop_timer (m_timer_prefix + this->name() + "::run");
 }
 
 void AtmosphereProcess::finalize (/* what inputs? */) {
