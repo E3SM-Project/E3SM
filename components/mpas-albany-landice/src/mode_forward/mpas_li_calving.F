@@ -157,6 +157,13 @@ module li_calving
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_array(meshPool, 'deltat', deltat)
 
+      ! Update mask and geometry before calling any calving routines.  May not be necessary, but best be safe.
+      call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+      call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+      err = ior(err, err_tmp)
+      call li_update_geometry(geometryPool)
+
       ! based on the calving timescale, set the fraction of ice that calves
       if (config_calving_timescale > 0.0_RKIND) then
          calvingFraction = min(deltat/config_calving_timescale, 1.0_RKIND)
@@ -1233,10 +1240,6 @@ module li_calving
                     realArgs=(/minval(eigencalvingParameter), maxval(eigencalvingParameter)/))
          endif
 
-         ! update mask
-         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-         err = ior(err, err_tmp)
-
          calvingVelocity(:) = 0.0_RKIND
          ! First calculate the front retreat rate (Levermann eq. 1)
          calvingVelocity(:) = eigencalvingParameter(:) * max(0.0_RKIND, eMax(:)) * max(0.0_RKIND, eMin(:)) ! m/s
@@ -1442,10 +1445,6 @@ module li_calving
             call mpas_log_write("calvingVelocity(m s) value range on this processor: Min=$r, Max=$r", &
                     realArgs=(/minval(calvingVelocity), maxval(calvingVelocity)/))
          endif
-
-         ! update mask
-         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-         err = ior(err, err_tmp)
 
          ! Convert calvingVelocity to calvingThickness
          call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, calvingThickness, calvingVelocity, &
@@ -1670,11 +1669,6 @@ module li_calving
           else
              call li_calculate_flowParamA(meshPool, temperature, thickness,flowParamA,err) ! Get MPAS flowParamA
           endif
-
-
-          ! update mask
-          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
-          err = ior(err, err_tmp)
 
           !Using a depth-averaged ice viscosity parameter B_depthAvg
           !=sum(layerThickness(:,iCell) *
