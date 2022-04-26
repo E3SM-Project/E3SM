@@ -391,6 +391,10 @@
 					description="maximum depth for the integral of the Griffies parameter"
 					possible_values="positive reals greater than min_depth"
 		/>
+		<nml_option name="config_GM_Griffies_compute_levels" type="character" default_value="init" units="unitless"
+					description="Compute the min and max vertical k indices based on config_GM_Griffies_min_depth, config_GM_Griffies_max_depth just one on init (for 'init')  or every time step ('every_timestep'). For z-level and z-star vertical coordinates it is better to compute on init for better performance, to avoid re-computing the min and max level for every edge and every timestep."
+					possible_values="'init', 'every_timestep'"
+		/>
 		<nml_option name="config_GM_Griffies_alpha" type="real" default_value="0.15" units="NA"
 					description="scaling parameter for the Griffies et al (2005) parameterization"
 					possible_values="small positive reals"

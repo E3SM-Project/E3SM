@@ -597,6 +597,14 @@ Valid values: positive reals greater than min_depth
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_GM_Griffies_compute_levels" type="char*1024"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Compute the min and max vertical k indices based on config_GM_Griffies_min_depth, config_GM_Griffies_max_depth just one on init (for 'init')  or every time step ('every_timestep'). For z-level and z-star vertical coordinates it is better to compute on init for better performance, to avoid re-computing the min and max level for every edge and every timestep.
+
+Valid values: 'init', 'every_timestep'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_GM_Griffies_alpha" type="real"
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
 scaling parameter for the Griffies et al (2005) parameterization

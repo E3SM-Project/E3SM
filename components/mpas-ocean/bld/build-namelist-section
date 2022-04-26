@@ -127,6 +127,7 @@ add_default($nl, 'config_GM_Visbeck_alpha');
 add_default($nl, 'config_GM_Visbeck_max_depth');
 add_default($nl, 'config_GM_Griffies_min_depth');
 add_default($nl, 'config_GM_Griffies_max_depth');
+add_default($nl, 'config_GM_Griffies_compute_levels');
 add_default($nl, 'config_GM_Griffies_alpha');
 add_default($nl, 'config_GM_Griffies_length');
 add_default($nl, 'config_GM_Griffies_No');

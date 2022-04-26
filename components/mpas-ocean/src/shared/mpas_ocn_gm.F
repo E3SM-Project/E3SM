@@ -53,10 +53,13 @@ module ocn_gm
    logical :: local_config_GM_kappa_lat_depth_variable
    logical :: local_config_GM_compute_EdenGreatbatch
    logical :: local_config_GM_compute_Griffies
+   logical :: local_config_GM_Griffies_compute_levels_every_timestep
 
    real(kind=RKIND) :: slopeTaperFactor, sfcTaperFactor, rediGMinitValue
    real(kind=RKIND) :: local_config_GM_constant_bclModeSpeed
    real(kind=RKIND) :: gm_minBclModeSpeed_constant, gm_minBclModeSpeed_compute_on
+
+   integer :: Griffies_min_level, Griffies_max_level
 
 !***********************************************************************
 
@@ -661,50 +664,90 @@ contains
             coef = config_GM_Griffies_alpha * config_gm_Griffies_length**2 * gravity &
                    / (config_density0 * config_GM_Griffies_No)
 
-            !$omp parallel
-            !$omp do schedule(runtime) private(k, cell1, cell2, sum_gradDensity, ltSum, countN2, &
-            !$omp             zEdge, ltAvg)
-            do iEdge = 1, nEdges
-               k=minLevelEdgeBot(iEdge)
-               sum_gradDensity = 0.0_RKIND
-               ltSum = 0.0_RKIND
-               countN2 = 0
-               cell1 = cellsOnEdge(1, iEdge)
-               cell2 = cellsOnEdge(2, iEdge)
+            if (local_config_GM_Griffies_compute_levels_every_timestep) then
+               ! config_GM_Griffies_compute_levels = 'every_timestep'
 
-               k = minLevelEdgeBot(iEdge)+1
-               zEdge = -layerThickEdgeMean(k-1,iEdge)
-               do while(zEdge > -config_GM_Griffies_min_depth .and. k < maxLevelEdgeTop(iEdge))
-                  k = k+1
-                  zEdge = zEdge - layerThickEdgeMean(k-1,iEdge)
+               !$omp parallel
+               !$omp do schedule(runtime) private(k, cell1, cell2, sum_gradDensity, ltSum, countN2, &
+               !$omp             zEdge, ltAvg)
+               do iEdge = 1, nEdges
+                  sum_gradDensity = 0.0_RKIND
+                  ltSum = 0.0_RKIND
+                  countN2 = 0
+                  cell1 = cellsOnEdge(1, iEdge)
+                  cell2 = cellsOnEdge(2, iEdge)
+
+                  k = minLevelEdgeBot(iEdge)+1
+                  zEdge = -layerThickEdgeMean(k-1,iEdge)
+                  do while(zEdge > -config_GM_Griffies_min_depth .and. k < maxLevelEdgeTop(iEdge))
+                     k = k+1
+                     zEdge = zEdge - layerThickEdgeMean(k-1,iEdge)
+                  end do
+
+                  do while(zEdge > -config_GM_Griffies_max_depth .and. k < maxLevelEdgeTop(iEdge))
+                     ltAvg = 0.25_RKIND*(   layerThickness(k,cell1) + layerThickness(k-1,cell1) &
+                                          + layerThickness(k,cell2) + layerThickness(k-1,cell2))
+                     sum_gradDensity = sum_gradDensity + abs(gradDensityConstZTopOfEdge(k,iEdge))*ltAvg
+                     ltsum = ltsum + ltAvg
+                     countN2 = countN2 + 1
+
+                     k = k + 1
+                     zEdge = zEdge - layerThickEdgeMean(k-1,iEdge)
+                  end do
+
+                  if (countN2 > 0) then
+                     sum_gradDensity = sum_gradDensity / ltsum
+
+                     ! This is Griffies et al. (2005) eqn 15:
+                     ! A_{gm} = alpha |grad_z rho| L^2 g / ( rho_0 N_0)
+                     gmBolusKappa(iEdge) = coef * sum_gradDensity
+
+                     gmBolusKappa(iEdge) = max(config_GM_spatially_variable_min_kappa, min(gmBolusKappa(iEdge),  &
+                                               config_GM_spatially_variable_max_kappa))
+                 else !for really shallow columns use min bolus kappa
+                     gmBolusKappa(iEdge) = config_GM_spatially_variable_min_kappa
+                 end if
                end do
+               !$omp end do
+               !$omp end parallel
 
-               do while(zEdge > -config_GM_Griffies_max_depth .and. k < maxLevelEdgeTop(iEdge))
-                  ltAvg = 0.25_RKIND*(   layerThickness(k,cell1) + layerThickness(k-1,cell1) &
-                                       + layerThickness(k,cell2) + layerThickness(k-1,cell2))
-                  sum_gradDensity = sum_gradDensity + abs(gradDensityConstZTopOfEdge(k,iEdge))*ltAvg
-                  ltsum = ltsum + ltAvg
-                  countN2 = countN2 + 1
+            else
+               ! config_GM_Griffies_compute_levels = 'init'
 
-                  k = k + 1
-                  zEdge = zEdge - layerThickEdgeMean(k-1,iEdge)
+               !$omp parallel
+               !$omp do schedule(runtime) private(k, cell1, cell2, sum_gradDensity, ltSum, countN2, &
+               !$omp             zEdge, ltAvg)
+               do iEdge = 1, nEdges
+                  sum_gradDensity = 0.0_RKIND
+                  ltSum = 0.0_RKIND
+                  countN2 = 0
+                  cell1 = cellsOnEdge(1, iEdge)
+                  cell2 = cellsOnEdge(2, iEdge)
+
+                  do k = max(Griffies_min_level,minLevelEdgeBot(iEdge)),min(Griffies_max_level,maxLevelEdgeTop(iEdge))
+                     ltAvg = 0.25_RKIND*(   layerThickness(k,cell1) + layerThickness(k-1,cell1) &
+                                          + layerThickness(k,cell2) + layerThickness(k-1,cell2))
+                     sum_gradDensity = sum_gradDensity + abs(gradDensityConstZTopOfEdge(k,iEdge))*ltAvg
+                     ltsum = ltsum + ltAvg
+                     countN2 = countN2 + 1
+                  end do
+
+                  if (countN2 > 0) then
+                     sum_gradDensity = sum_gradDensity / ltsum
+
+                     ! This is Griffies et al. (2005) eqn 15:
+                     ! A_{gm} = alpha |grad_z rho| L^2 g / ( rho_0 N_0)
+                     gmBolusKappa(iEdge) = coef * sum_gradDensity
+
+                     gmBolusKappa(iEdge) = max(config_GM_spatially_variable_min_kappa, min(gmBolusKappa(iEdge),  &
+                                               config_GM_spatially_variable_max_kappa))
+                 else !for really shallow columns use min bolus kappa
+                     gmBolusKappa(iEdge) = config_GM_spatially_variable_min_kappa
+                 end if
                end do
-
-               if (countN2 > 0) then
-                  sum_gradDensity = sum_gradDensity / ltsum
-
-                  ! This is Griffies et al. (2005) eqn 15:
-                  ! A_{gm} = alpha |grad_z rho| L^2 g / ( rho_0 N_0)
-                  gmBolusKappa(iEdge) = coef * sum_gradDensity
-
-                  gmBolusKappa(iEdge) = max(config_GM_spatially_variable_min_kappa, min(gmBolusKappa(iEdge),  &
-                                            config_GM_spatially_variable_max_kappa))
-              else !for really shallow columns use min bolus kappa
-                  gmBolusKappa(iEdge) = config_GM_spatially_variable_min_kappa
-              end if
-            end do
-            !$omp end do
-            !$omp end parallel
+               !$omp end do
+               !$omp end parallel
+             end if
           end if
 
          ! When config_GM_closure = 'EdenGreatbatch' actually modify the value of gmBolusKappa based on
@@ -1012,18 +1055,21 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      real(kind=RKIND) :: sphereRadius
+      real(kind=RKIND) :: sphereRadius, zBot
 
       type(block_type), pointer :: block
       type(mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: verticalMeshPool
       real(kind=RKIND), dimension(:), pointer :: dcEdge 
 
-      integer :: iEdge
+      integer :: iEdge, k
       integer, pointer :: nEdges
       integer, pointer :: nVertLevels
       real(kind=RKIND), pointer :: sphere_radius
       real(kind=RKIND), dimension(:), pointer   :: latEdge, fEdge
       integer, dimension(:, :), pointer :: cellsOnEdge
+      real (kind=RKIND), dimension(:), pointer :: &
+         refLayerThickness          ! reference profile layer thickness
 
       err = 0
 
@@ -1032,11 +1078,14 @@ contains
       block => domain%blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block%structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block%structs, 'verticalMesh', verticalMeshPool)
          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
          call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
+         call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
+
          if (config_Redi_use_slope_taper) then
             slopeTaperFactor = 1.0_RKIND
          else
@@ -1141,6 +1190,16 @@ contains
             end do
             !$omp end do
             !$omp end parallel
+            if (config_GM_Griffies_compute_levels == 'every_timestep') then
+                local_config_GM_Griffies_compute_levels_every_timestep = .true.
+            else if (config_GM_Griffies_compute_levels == 'init') then
+                local_config_GM_Griffies_compute_levels_every_timestep = .false.
+            else
+               call mpas_log_write('Invalid choice of config_GM_Griffies_compute_levels.', MPAS_LOG_CRIT)
+               err = 1
+               call mpas_dmpar_finalize(domain%dminfo)
+            end if
+
          else if (config_GM_closure == 'EdenGreatbatch'.or. &
                   config_GM_closure == 'edenGreatbatch') then
             local_config_GM_lat_variable_c2 = .true.
@@ -1195,8 +1254,37 @@ contains
             call mpas_dmpar_finalize(domain%dminfo)
          end if
 
+         if (config_GM_closure == 'Griffies'.or. &
+                  config_GM_closure == 'griffies') then
+            if (config_GM_Griffies_compute_levels == 'every_timestep') then
+               local_config_GM_Griffies_compute_levels_every_timestep = .true.
+            else if (config_GM_Griffies_compute_levels == 'init') then
+               local_config_GM_Griffies_compute_levels_every_timestep = .false.
+
+               k = 2
+               zBot = -refLayerThickness(k-1)
+               do while(zBot > -config_GM_Griffies_min_depth .and. k < nVertLevels)
+                  k = k+1
+                  zBot = zBot - refLayerThickness(k-1)
+               end do
+               Griffies_min_level = k
+
+               do while(zBot > -config_GM_Griffies_max_depth .and. k < nVertLevels)
+                  k = k + 1
+                  zBot = zBot - refLayerThickness(k-1)
+               end do
+               Griffies_max_level = k
+
+            else
+               call mpas_log_write('Invalid choice of config_GM_Griffies_compute_levels.', MPAS_LOG_CRIT)
+               err = 1
+               call mpas_dmpar_finalize(domain%dminfo)
+            end if
+         end if
+
          block => block%next
       end do
+
    end subroutine ocn_GM_init!}}}
 
 !***********************************************************************
