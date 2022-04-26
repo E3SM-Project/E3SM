@@ -264,7 +264,12 @@ namespace scream {
             // a parameterization of their own, and we might want to swap different choices. These checks go here
             // only because we need to run them on computed optical props, so if the optical props themselves get
             // computed up higher, then perform these checks higher as well
-            //check_range(clouds_sw.tau,  0, std::numeric_limits<Real>::max(), "cloud_optics_sw.tau");
+            // NOTE: We could set the upper bound on tau like the following:
+            //
+            //     check_range(clouds_sw.tau,  0, std::numeric_limits<Real>::max(), "cloud_optics_sw.tau");
+            //
+            // but in practice we probably want to make sure values are not getting too large, as that could maybe
+            // indicate other problems. If this ends up filling up the logs, we should revisit.
             check_range(clouds_sw.tau,  0,                              1e3, "cloud_optics_sw.tau");
             check_range(clouds_sw.ssa,  0,                                1, "cloud_optics_sw.ssa"); //, "cloud_optics_sw.ssa");
             check_range(clouds_sw.g  , -1,                                1, "cloud_optics_sw.g  "); //, "cloud_optics_sw.g"  );
