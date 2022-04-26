@@ -57,7 +57,7 @@ namespace scream {
             if (_xmin < xmin or _xmax > xmax) {
                 pass = false;
                 std::cout 
-                    << std::string(msg) 
+                    << msg 
                     << ": one or more values outside range "
                     << "[" << xmin << "," << xmax << "]"
                     << "; minval = " << _xmin 
