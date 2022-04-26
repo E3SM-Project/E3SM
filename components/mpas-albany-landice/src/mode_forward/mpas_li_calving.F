@@ -1866,7 +1866,7 @@ module li_calving
       real (kind=RKIND), dimension(:), allocatable :: submergedArea
       real (kind=RKIND) :: deltatForcing ! time between forcing updates
       type (MPAS_Time_Type), save :: forcingTime, forcingTimeOld
-      character (len=StrKIND), pointer :: xtime, simulationStartTime, forcingTimeStamp
+      character (len=StrKIND), pointer :: forcingTimeStamp
       character(len=StrKIND) :: forcingTimeOldStamp
       type (MPAS_stream_list_type), pointer :: stream_cursor
       logical :: streamFound ! used to throw an error if required stream is not found
@@ -1888,8 +1888,6 @@ module li_calving
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-      call mpas_pool_get_array(meshPool, 'xtime', xtime)
-      call mpas_pool_get_array(meshPool, 'simulationStartTime', simulationStartTime)
       call mpas_pool_get_array(meshPool, 'forcingTimeStamp', forcingTimeStamp)
       call mpas_pool_get_array(meshPool, 'timestepNumber', timestepNumber)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
@@ -1911,21 +1909,18 @@ module li_calving
       ! submergedArea used in runoff unit conversion 
       allocate(submergedArea(nCells+1))
 
-      ! On a restart, set forcingTime to enable elseif statement below
-      if ( (config_do_restart) .and. (timestepNumber == 1) ) then
-         call mpas_set_time(forcingTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
-         err = ior(err, err_tmp)
-
-         forcingTimeOld = forcingTime  ! Initialize in case we don't read the forcing this timestep below
-      endif
-
       streamFound = .false. ! Changed to true if ismip6-gis stream is found, otherwise throws error
       stream_cursor => domain % streamManager % streams % head
       do while (associated(stream_cursor))
          ! Input stream with forcings must be called 'ismip6-gis', or this will throw an error.
          if ( trim(stream_cursor % name) == 'ismip6-gis' .and. (stream_cursor % valid) ) then
             streamFound = .true.
-            if (xtime == simulationStartTime) then
+            if (timestepNumber == 1) then
+               ! On the first timestep of a cold start OR restart initialize all needed fields by forcing a read of
+               ! the previous forcing data on the first timestep.  This could be potentially be an unnecessary read on the
+               ! initial time of a restart run, but that is a small cost for simplifying logic and making the initial time of both
+               ! cold starts and restarts behave the same.  The potentially extra read does not affect the algorithm.
+
                ! Use forcing fields and time from most recent time in file, which was read on init.
                call mpas_get_time(stream_cursor%mostRecentAccessTime, dateTimeString=forcingTimeStamp, ierr=err_tmp)
                err = ior(err, err_tmp)
