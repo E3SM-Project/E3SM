@@ -140,8 +140,9 @@ void AtmosphereDriver::create_atm_processes()
   // tree, storing also the information regarding parallel execution (if needed).
   // See AtmosphereProcessGroup class documentation for more details.
   auto& atm_proc_params = m_atm_params.sublist("Atmosphere Processes");
-  atm_proc_params.rename("ATM_PROC_GROUP");
+  atm_proc_params.rename("EAMxx");
   atm_proc_params.set("Logger",m_atm_logger);
+  atm_proc_params.set<std::string>("Timer Prefix","");
   m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_comm,atm_proc_params);
 
   m_ad_status |= s_procs_created;
