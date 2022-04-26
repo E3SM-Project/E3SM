@@ -24,6 +24,7 @@ enum MemoryUnits {
   GiB
 };
 
+// Gets current memory (RAM) usage by current process.
 long long get_mem_usage (const MemoryUnits u);
 
 // Micro-utility, that given an enum returns the underlying int.

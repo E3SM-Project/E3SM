@@ -1,14 +1,32 @@
 #include "share/util/scream_utils.hpp"
 
+#if defined(SCREAM_ENABLE_STATM)
+#include <stdio.h>
+#elif defined(SCREAM_ENABLE_GETRUSAGE)
 #include <sys/resource.h>
+#endif
 
 namespace scream {
 
 long long get_mem_usage (const MemoryUnits u) {
+
+  long long mem = -1;
+
+#if defined(SCREAM_ENABLE_STATM)
+  FILE* fh = fopen("/proc/self/statm","r");
+  int size;
+  EKAT_REQUIRE_MSG(fscanf(fh, "%d %lld", &size, &mem)==2,
+      "Error! Something went wrong while probing file '/proc/self/statm'.\n");
+  fclose(fh);
+#elif defined(SCREAM_ENABLE_GETRUSAGE)
   struct rusage r_usage;
   getrusage(RUSAGE_SELF,&r_usage);
-
-  long long mem = r_usage.ru_maxrss;
+  mem = r_usage.ru_maxrss;
+#else
+  // Silence compiler warning
+  (void) u;
+  return mem;
+#endif
 
   switch (u) {
     case B  : mem *= 1000;              break;
