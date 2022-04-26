@@ -304,23 +304,70 @@ def evaluate_selectors(element, case, ez_selectors):
         element.remove(child_to_remove)
 
 ###############################################################################
-def _create_raw_xml_file_impl(case, defaults_xml):
+def _create_raw_xml_file_impl(case, xml):
 ###############################################################################
-    root = defaults_xml.getroot()
+    """
+    On input, xml contains the parsed content of namelist_defaults_scream.xml.
+    On output, it contains the input parameters for this case.
+
+    >>> from eamxx_buildnml_impl import MockCase
+    >>> case = MockCase({'foo':1, 'bar':2, 'baz_bar':'blah', 'baz2_bar2':4})
+    >>> xml = '''
+    ... <namelist_defaults>
+    ...     <selectors/>
+    ...     <input_files/>
+    ...     <generated_files/>
+    ...     <atmosphere_processes_defaults>
+    ...         <atm_procs_list>(P1,P2)</atm_procs_list>
+    ...         <atm_proc_base>
+    ...             <prop1>zero</prop1>
+    ...         </atm_proc_base>
+    ...         <atm_proc_group inherit="atm_proc_base">
+    ...             <atm_procs_list>NONE</atm_procs_list>
+    ...             <prop2>one</prop2>
+    ...         </atm_proc_group>
+    ...         <P1 inherit="atm_proc_base">
+    ...             <prop1>two</prop1>
+    ...         </P1>
+    ...         <P2 inherit="atm_proc_base">
+    ...         </P2>
+    ...     </atmosphere_processes_defaults>
+    ... </namelist_defaults>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> defaults = ET.fromstring(xml)
+    >>> generated = _create_raw_xml_file_impl(case,defaults)
+    >>> aps = get_child(generated,"atmosphere_processes")
+    >>> for c in aps:
+    ...     print(c.tag)
+    atm_procs_list
+    prop2
+    prop1
+    P1
+    P2
+    >>> print (get_child(aps,"atm_procs_list").text)
+    (P1,P2)
+    >>> p1 = get_child(aps,"P1")
+    >>> print(get_child(p1,"prop1").text)
+    two
+    >>> p2 = get_child(aps,"P2")
+    >>> print(get_child(p2,"prop1").text)
+    zero
+    """
 
     # 0. Remove internal sections, that are not to appear in the
     #    processed xml file.
     #    Note: get_valid_selectors also removes the section
-    get_child(root,"input_files",remove=True)
-    get_child(root,"generated_files",remove=True)
-    selectors = get_valid_selectors(root)
+    get_child(xml,"input_files",remove=True)
+    get_child(xml,"generated_files",remove=True)
+    selectors = get_valid_selectors(xml)
 
     # 1. Resolve all inheritances, and evaluate all selectors
-    resolve_all_inheritances(root)
-    evaluate_selectors(root, case, selectors)
+    resolve_all_inheritances(xml)
+    evaluate_selectors(xml, case, selectors)
 
     # 2. Grab the atmosphere_processes macro list, with all the defaults
-    atm_procs_defaults = get_child(root,"atmosphere_processes_defaults",remove=True)
+    atm_procs_defaults = get_child(xml,"atmosphere_processes_defaults",remove=True)
 
     # 3. Get atm procs list
     atm_procs_list = get_child(atm_procs_defaults,"atm_procs_list",remove=True)
@@ -328,9 +375,9 @@ def _create_raw_xml_file_impl(case, defaults_xml):
     # 4. Form the nested list of atm procs needed, append to atmosphere_driver section
     atm_procs = gen_atm_proc_group (atm_procs_list.text, atm_procs_defaults)
     atm_procs.tag = "atmosphere_processes"
-    root.append(atm_procs);
+    xml.append(atm_procs);
 
-    return root
+    return xml
 
 ###############################################################################
 def create_raw_xml_file(case, caseroot):
@@ -345,7 +392,7 @@ def create_raw_xml_file(case, caseroot):
     raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
     with open(src, "r") as fd:
         defaults = ET.parse(fd)
-        raw_xml = _create_raw_xml_file_impl(case,defaults)
+        raw_xml = _create_raw_xml_file_impl(case,defaults.getroot())
 
     if os.path.exists(raw_xml_file):
         print("{} already exists, will not overwrite. Remove to regenerate".format(raw_xml_file))
