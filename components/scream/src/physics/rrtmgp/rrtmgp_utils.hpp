@@ -58,7 +58,8 @@ namespace scream {
                 pass = false;
                 std::cout 
                     << std::string(msg) 
-                    << ": one or more values outside range"
+                    << ": one or more values outside range "
+                    << "[" << xmin << "," << xmax << "]"
                     << "; minval = " << _xmin 
                     << "; maxval = " << _xmax << "\n";
             }
