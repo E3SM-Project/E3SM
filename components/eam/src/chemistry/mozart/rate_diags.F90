@@ -93,25 +93,25 @@ contains
     real(r8)  :: adv_mass_ch4
     logical  :: history_UCIgaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
     logical  :: history_UCIgaschmbudget_2D_levels ! output 2D gas chemistry tracer concentrations and tendencies within certain layers
-    integer  :: UCIgaschmbudget_2D_L1_s ! Start layer of L1 for gas chemistry tracer budget 
-    integer  :: UCIgaschmbudget_2D_L1_e ! End layer of L1 for gas chemistry trracer budget
-    integer  :: UCIgaschmbudget_2D_L2_s
-    integer  :: UCIgaschmbudget_2D_L2_e
-    integer  :: UCIgaschmbudget_2D_L3_s
-    integer  :: UCIgaschmbudget_2D_L3_e
-    integer  :: UCIgaschmbudget_2D_L4_s
-    integer  :: UCIgaschmbudget_2D_L4_e
+    integer  :: gaschmbudget_2D_L1_s ! Start layer of L1 for gas chemistry tracer budget 
+    integer  :: gaschmbudget_2D_L1_e ! End layer of L1 for gas chemistry trracer budget
+    integer  :: gaschmbudget_2D_L2_s
+    integer  :: gaschmbudget_2D_L2_e
+    integer  :: gaschmbudget_2D_L3_s
+    integer  :: gaschmbudget_2D_L3_e
+    integer  :: gaschmbudget_2D_L4_s
+    integer  :: gaschmbudget_2D_L4_e
 
     call phys_getopts( history_UCIgaschmbudget_2D_out = history_UCIgaschmbudget_2D, &
                        history_UCIgaschmbudget_2D_levels_out = history_UCIgaschmbudget_2D_levels, &
-                       UCIgaschmbudget_2D_L1_s_out = UCIgaschmbudget_2D_L1_s, &
-                       UCIgaschmbudget_2D_L1_e_out = UCIgaschmbudget_2D_L1_e, &
-                       UCIgaschmbudget_2D_L2_s_out = UCIgaschmbudget_2D_L2_s, &
-                       UCIgaschmbudget_2D_L2_e_out = UCIgaschmbudget_2D_L2_e, &
-                       UCIgaschmbudget_2D_L3_s_out = UCIgaschmbudget_2D_L3_s, &
-                       UCIgaschmbudget_2D_L3_e_out = UCIgaschmbudget_2D_L3_e, &
-                       UCIgaschmbudget_2D_L4_s_out = UCIgaschmbudget_2D_L4_s, &
-                       UCIgaschmbudget_2D_L4_e_out = UCIgaschmbudget_2D_L4_e )
+                       gaschmbudget_2D_L1_s_out = gaschmbudget_2D_L1_s, &
+                       gaschmbudget_2D_L1_e_out = gaschmbudget_2D_L1_e, &
+                       gaschmbudget_2D_L2_s_out = gaschmbudget_2D_L2_s, &
+                       gaschmbudget_2D_L2_e_out = gaschmbudget_2D_L2_e, &
+                       gaschmbudget_2D_L3_s_out = gaschmbudget_2D_L3_s, &
+                       gaschmbudget_2D_L3_e_out = gaschmbudget_2D_L3_e, &
+                       gaschmbudget_2D_L4_s_out = gaschmbudget_2D_L4_s, &
+                       gaschmbudget_2D_L4_e_out = gaschmbudget_2D_L4_e )
 
 
     rxt_rates_vmr = 0._r8
@@ -135,22 +135,22 @@ contains
 
        if (history_UCIgaschmbudget_2D_levels) then
           wrk_sum(:ncol) = 0.0_r8
-            do k = UCIgaschmbudget_2D_L1_s, UCIgaschmbudget_2D_L1_e
+            do k = gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e
                wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
             enddo
             call outfld( 'r_lch4_L1', wrk_sum(:ncol), ncol ,lchnk )
           wrk_sum(:ncol) = 0.0_r8
-            do k = UCIgaschmbudget_2D_L2_s, UCIgaschmbudget_2D_L2_e
+            do k = gaschmbudget_2D_L2_s, gaschmbudget_2D_L2_e
                wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
             enddo
             call outfld( 'r_lch4_L2', wrk_sum(:ncol), ncol ,lchnk )
           wrk_sum(:ncol) = 0.0_r8
-            do k = UCIgaschmbudget_2D_L3_s, UCIgaschmbudget_2D_L3_e
+            do k = gaschmbudget_2D_L3_s, gaschmbudget_2D_L3_e
                wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
             enddo
             call outfld( 'r_lch4_L3', wrk_sum(:ncol), ncol ,lchnk )
           wrk_sum(:ncol) = 0.0_r8
-            do k = UCIgaschmbudget_2D_L4_s, UCIgaschmbudget_2D_L4_e
+            do k = gaschmbudget_2D_L4_s, gaschmbudget_2D_L4_e
                wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
             enddo
             call outfld( 'r_lch4_L4', wrk_sum(:ncol), ncol ,lchnk )

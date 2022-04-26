@@ -1493,7 +1493,6 @@ contains
             endif
             call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,:), ncol ,lchnk )
           else
-            !if (flag(1:5)=='2DMSL' .or. flag(1:5)=='2DMSS' .or. flag(1:5)=='2DMSD') then
             if (flag(1:4)=='2DMS' .or. flag(1:4)=='2DCE' .or. flag(1:4)=='2DCI' .or. flag(1:4)=='2DTI' .or. flag(1:4)=='2DMP') then
                ! kg/m2
                wrk(:ncol,:) = adv_mass(m)*vmr(:ncol,:,m)/mbar(:ncol,:) &
@@ -1504,66 +1503,33 @@ contains
                                 /mbar(:ncol,:)*pdeldry(:ncol,:)*rgrav*rdelt
             endif
  
-            if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
-            wrk_sum(:ncol) = 0.0_r8
-            if (len(flag) >= 6 .and. flag(6:8) == '_L1') then
+            if (len(flag) >= 6 .and. flag(6:8) == '_LL') then
+               wrk_sum(:ncol) = 0.0_r8
                do k = gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e
                   wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
                enddo
-               call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
-            elseif (len(flag) >= 6 .and. flag(6:8) == '_L2') then
+               call outfld( trim(solsym(m))//'_'//flag(1:5)//'_L1', wrk_sum(:ncol), ncol ,lchnk )
+          
+               wrk_sum(:ncol) = 0.0_r8
                do k = gaschmbudget_2D_L2_s, gaschmbudget_2D_L2_e
                   wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
                enddo
-               call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
-            elseif (len(flag) >= 6 .and. flag(6:8) == '_L3') then
+               call outfld( trim(solsym(m))//'_'//flag(1:5)//'_L2', wrk_sum(:ncol), ncol ,lchnk )
+         
+               wrk_sum(:ncol) = 0.0_r8
                do k = gaschmbudget_2D_L3_s, gaschmbudget_2D_L3_e
                   wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
                enddo
-               call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
-            elseif (len(flag) >= 6 .and. flag(6:8) == '_L4') then
+               call outfld( trim(solsym(m))//'_'//flag(1:5)//'_L3', wrk_sum(:ncol), ncol ,lchnk )
+        
+               wrk_sum(:ncol) = 0.0_r8
                do k = gaschmbudget_2D_L4_s, gaschmbudget_2D_L4_e
                   wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
                enddo
-               call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
-            elseif (len(flag) >= 6 .and. flag(6:10) == '_trop') then
-               if (trim(solsym(m))=='O3' .or. trim(solsym(m))=='O3LNZ' .or. &
-                   trim(solsym(m))=='N2OLNZ' .or. trim(solsym(m))=='CH4LNZ') then
-                  do k = 1, pver
-                     wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k) * tropFlagInt(:ncol,k)
-                  enddo
-                  call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
-               endif
-            else
-               do k=2,pver
-                  wrk(:ncol,1) = wrk(:ncol,1) + wrk(:ncol,k)
-               enddo
-               call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,1), ncol ,lchnk )
-            endif
+               call outfld( trim(solsym(m))//'_'//flag(1:5)//'_L4', wrk_sum(:ncol), ncol ,lchnk )
 
-            elseif (history_UCIgaschmbudget_2D .or. history_UCIgaschmbudget_2D_levels) then
-            wrk_sum(:ncol) = 0.0_r8
-            if (len(flag) >= 6 .and. flag(6:8) == '_L1') then
-               do k = UCIgaschmbudget_2D_L1_s, UCIgaschmbudget_2D_L1_e
-                  wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
-               enddo
-               call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
-            elseif (len(flag) >= 6 .and. flag(6:8) == '_L2') then
-               do k = UCIgaschmbudget_2D_L2_s, UCIgaschmbudget_2D_L2_e
-                  wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
-               enddo
-               call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
-            elseif (len(flag) >= 6 .and. flag(6:8) == '_L3') then
-               do k = UCIgaschmbudget_2D_L3_s, UCIgaschmbudget_2D_L3_e
-                  wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
-               enddo
-               call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
-            elseif (len(flag) >= 6 .and. flag(6:8) == '_L4') then
-               do k = UCIgaschmbudget_2D_L4_s, UCIgaschmbudget_2D_L4_e
-                  wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
-               enddo
-               call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
             elseif (len(flag) >= 6 .and. flag(6:10) == '_trop') then
+               wrk_sum(:ncol) = 0.0_r8
                if (trim(solsym(m))=='O3' .or. trim(solsym(m))=='O3LNZ' .or. &
                    trim(solsym(m))=='N2OLNZ' .or. trim(solsym(m))=='CH4LNZ') then
                   do k = 1, pver
@@ -1577,7 +1543,6 @@ contains
                enddo
                call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,1), ncol ,lchnk )
             endif
-            endif ! end of UCIgaschmbudget
 
           endif
        endif
