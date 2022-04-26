@@ -5,6 +5,9 @@
 #include "cpp/rrtmgp_const.h"
 #include "YAKL.h"
 
+using yakl::intrinsics::maxval;
+using yakl::intrinsics::minval;
+
 namespace scream {
     namespace rrtmgp {
         // Provide a routine to compute heating due to radiative fluxes. This is
@@ -32,7 +35,7 @@ namespace scream {
             });
         }
 
-        bool radiation_do(const int irad, const int nstep) {
+        inline bool radiation_do(const int irad, const int nstep) {
             // If irad == 0, then never do radiation;
             // Otherwise, we always call radiation at the first step,
             // and afterwards we do radiation if the timestep is divisible
@@ -43,6 +46,26 @@ namespace scream {
                 return ( (nstep == 0) || (nstep % irad == 0) );
             }
         }
+
+
+        // Verify that array only contains values within valid range, and if not
+        // report min and max of array
+        template <class T> bool check_range(T x, Real xmin, Real xmax, std::string msg) {
+            bool pass = true;
+            auto _xmin = minval(x);
+            auto _xmax = maxval(x);
+            if (_xmin < xmin or _xmax > xmax) {
+                pass = false;
+                std::cout 
+                    << std::string(msg) 
+                    << ": one or more values outside range"
+                    << "; minval = " << _xmin 
+                    << "; maxval = " << _xmax << "\n";
+            }
+            return pass;
+        }
+
     }
+
 }
 #endif
