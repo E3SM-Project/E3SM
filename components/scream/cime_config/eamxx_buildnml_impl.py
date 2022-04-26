@@ -335,6 +335,27 @@ def check_all_values(root):
 ###############################################################################
     """
     Check that all values in the xml tree do not violate their metadata
+
+    >>> ############### GENERATE TYPE ATTRIB ###############
+    >>> xml_str = '''
+    ... <root>
+    ...     <prop1>1</prop1>
+    ...     <prop2>1.0</prop2>
+    ...     <prop3>one</prop3>
+    ...     <prop4>true</prop4>
+    ... </root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> xml = ET.fromstring(xml_str)
+    >>> check_all_values(xml)
+    >>> print (get_child(xml,"prop1").attrib["type"])
+    integer
+    >>> print (get_child(xml,"prop2").attrib["type"])
+    real
+    >>> print (get_child(xml,"prop3").attrib["type"])
+    string
+    >>> print (get_child(xml,"prop4").attrib["type"])
+    logical
     """
 
     has_children = len(root)>0
