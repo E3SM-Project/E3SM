@@ -88,6 +88,51 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
 ###############################################################################
 def atm_config_chg_impl(xml_root,changes):
 ###############################################################################
+    """
+
+    >>> xml = '''
+    ... <root>
+    ...     <prop1>one</prop1>
+    ...     <sub>
+    ...         <prop1>two</prop1>
+    ...         <prop2 type="integer" valid_values="1,2">2</prop2>
+    ...     </sub>
+    ... </root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> tree = ET.fromstring(xml)
+    >>> ################ INVALID SYNTAX #######################
+    >>> atm_config_chg_impl(tree,['prop1->2'])
+    Traceback (most recent call last):
+    SystemExit: ERROR: Invalid change format. Expected A[::B[...]=value, got' prop1->2'
+    >>> atm_config_chg_impl(tree,['sub::::prop1=2'])
+    Traceback (most recent call last):
+    SystemExit: ERROR: Invalid change format. Expected A[::B[...]=value, got' sub::::prop1=2'
+      Did you put two '::' in a row?
+    >>> ################ INVALID NAMESPACE #######################
+    >>> atm_config_chg_impl(tree,['invalid::prop1=2'])
+    Traceback (most recent call last):
+    SystemExit: ERROR: Error! XML entry invalid not found in section root
+    >>> ################ AMBIGUOUS ENTRY #######################
+    >>> atm_config_chg_impl(tree,['prop1=two'])
+    Traceback (most recent call last):
+    SystemExit: ERROR: Error! Multiple XML entries with name prop1 found in section root
+    >>> ################ INVALID TYPE #######################
+    >>> atm_config_chg_impl(tree,['prop2=two'])
+    Traceback (most recent call last):
+    eamxx_buildnml_impl.refine_type.<locals>.ForceTypeUnmet: Could not use 'two' as type 'integer'
+    >>> ################ INVALID VALUE #######################
+    >>> atm_config_chg_impl(tree,['prop2=3'])
+    Traceback (most recent call last):
+    eamxx_buildnml_impl.check_value.<locals>.ValidValueConstraintViolated: ERROR: Invalid value '3' for element 'prop2'. Value not in the valid list ('[1, 2]')
+    >>> ################ VALID USAGE #######################
+    >>> atm_config_chg_impl(tree,['::prop1=two'])
+    True
+    >>> atm_config_chg_impl(tree,['::prop1=two'])
+    False
+    >>> atm_config_chg_impl(tree,['sub::prop1=one'])
+    True
+    """
 
     any_change = False
     for change in changes:
