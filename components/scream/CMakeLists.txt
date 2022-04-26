@@ -296,8 +296,8 @@ set(SCREAM_TEST_PROFILE MEDIUM CACHE STRING "The kind of testing to perform: SHO
 set(SCREAM_TEST_VALID_PROFILES "SHORT;MEDIUM;LONG" CACHE INTERNAL "List of valid values for SCREAM_TEST_PROFILE")
 
 # Whether to use XYZ as a method to detect memory usage.
-option (SCREAM_ENABLE_GETRUSAGE "Whether getrusage can be used to get memory usage." ON)
-option (SCREAM_ENABLE_STATM "Whether /proc/self/statm can be used to get memory usage." ON)
+option (SCREAM_ENABLE_GETRUSAGE "Whether getrusage can be used to get memory usage." OFF)
+option (SCREAM_ENABLE_STATM "Whether /proc/self/statm can be used to get memory usage." OFF)
 
 # Whether to disable warnings from tpls.
 set (SCREAM_DISABLE_TPL_WARNINGS ON CACHE BOOL "")
