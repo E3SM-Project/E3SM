@@ -15,6 +15,24 @@ from eamxx_buildnml_impl import check_value
 ###############################################################################
 def num_nodes_with_name (root,name,recurse=True):
 ###############################################################################
+    """
+    Count nodes with certain name in an XML tree
+
+    >>> xml = '''
+    ... <root>
+    ...     <a/>
+    ...     <sub>
+    ...         <a/>
+    ...     </sub>
+    ... </root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> tree = ET.fromstring(xml)
+    >>> num_nodes_with_name(tree,'a',recurse=False)
+    1
+    >>> num_nodes_with_name(tree,'a',recurse=True)
+    2
+    """
 
     count = 0
 
@@ -29,6 +47,22 @@ def num_nodes_with_name (root,name,recurse=True):
 ###############################################################################
 def find_node (root,name,recurse=True):
 ###############################################################################
+    """
+    >>> xml = '''
+    ... <root>
+    ...     <sub>
+    ...         <a>2</a>
+    ...     </sub>
+    ... </root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> tree = ET.fromstring(xml)
+    >>> a = find_node(tree,'a',recurse=True)
+    >>> print(a.text)
+    2
+    >>> print(find_node(tree,'a',recurse=False))
+    None
+    """
 
     for elem in root:
         if elem.tag==name:
@@ -126,8 +160,12 @@ OR
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    success = atm_config_chg(**vars(parse_command_line(sys.argv, description)))
-    sys.exit(0 if success else 1)
+    if "--test" in sys.argv:
+        from doctest import testmod
+        testmod()
+    else:
+        success = atm_config_chg(**vars(parse_command_line(sys.argv, description)))
+        sys.exit(0 if success else 1)
 
 ###############################################################################
 
