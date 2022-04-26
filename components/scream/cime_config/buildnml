@@ -378,22 +378,83 @@ def convert_to_dict(element):
 ###############################################################################
 def _dump_to_nml_impl(dict_contents):
 ###############################################################################
+    """
+    Given a dictionary representing namelists, dumps content to a string
+    that can be directly written to file
+
+    >>> ############# NON-NESTED DICT ##############
+    >>> good1 = { 'bool': True, 'int': 1, 'real': 2.0, 'string': 's' }
+    >>> print(_dump_to_nml_impl(good1))
+    bool = .true.
+    int = 1
+    real = 2.0
+    string = 's'
+    <BLANKLINE>
+    >>> ############# NESTED DICT ##############
+    >>> good2 = {
+    ...     'group1': {
+    ...         'bool': True,
+    ...         'int': 1
+    ...     },
+    ...     'group2': {
+    ...         'real': 2.0,
+    ...         'string': 's'
+    ...     }
+    ... }
+    >>> print(_dump_to_nml_impl(good2))
+    &group1
+    bool = .true.
+    int = 1
+    /
+    &group2
+    real = 2.0
+    string = 's'
+    /
+    <BLANKLINE>
+    >>> ######### MIXED NESTED-NONNESTED DICT ##########
+    >>> good2 = {
+    ...     'group1': {
+    ...         'bool': True,
+    ...         'int': 1
+    ...     },
+    ...     'real': 2.0,
+    ...     'string': 's'
+    ... }
+    >>> print(_dump_to_nml_impl(good2))
+    Traceback (most recent call last):
+    _dump_to_nml_impl.<locals>.MixedNestingLevels: ERROR: Error! _dump_to_nml_impl cannot mix nested and non-nested dicts.
+
+    """
+
+    class MixedNestingLevels (Exception):
+        pass
 
     result = ""
+    nested = False
+    not_nested = False
     for k, v in dict_contents.items():
         if isinstance(v, dict):
             result += "&{}\n".format(k)
             result += _dump_to_nml_impl(v)
             result += "/\n"
+            nested = True
 
         elif isinstance(v, list):
             result += "{}(:) = {}\n".format(k, ", ".join([str(item) for item in v]))
+            not_nested = True
         elif isinstance(v, bool):
             result += "{} = {}\n".format(k, ".true." if v else ".false.")
+            not_nested = True
         elif isinstance(v, str):
             result += "{} = '{}'\n".format(k, v)
+            not_nested = True
         else:
             result += "{} = {}\n".format(k, v)
+            not_nested = True
+
+    expect (not (nested and not_nested),
+            "Error! _dump_to_nml_impl cannot mix nested and non-nested dicts.",
+            MixedNestingLevels)
 
     return result
 
