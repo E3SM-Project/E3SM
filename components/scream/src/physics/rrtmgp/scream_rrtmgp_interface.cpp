@@ -1,4 +1,5 @@
 #include "scream_rrtmgp_interface.hpp"
+#include "rrtmgp_utils.hpp"
 
 #include "mo_load_coefficients.h"
 #include "mo_load_cloud_coefficients.h"
@@ -245,6 +246,18 @@ namespace scream {
             // Convert cloud physical properties to optical properties for input to RRTMGP
             OpticalProps2str clouds_sw = get_cloud_optics_sw(ncol, nlay, cloud_optics_sw, k_dist_sw, lwp, iwp, rel, rei);
             OpticalProps1scl clouds_lw = get_cloud_optics_lw(ncol, nlay, cloud_optics_lw, k_dist_lw, lwp, iwp, rel, rei);        
+
+            // Perform checks on optics; these would be caught by RRTMGP_EXPENSIVE_CHECKS in the RRTMGP code,
+            // but we might want to provide additional debug info here. NOTE: we may actually want to move this
+            // up higher in the code, I think optical props should go up higher since optical props are kind of
+            // a parameterization of their own, and we might want to swap different choices. These checks go here
+            // only because we need to run them on computed optical props, so if the optical props themselves get
+            // computed up higher, then perform these checks higher as well
+            //check_range(clouds_sw.tau,  0, std::numeric_limits<Real>::max(), "cloud_optics_sw.tau");
+            check_range(clouds_sw.tau,  0,                              1e3, "cloud_optics_sw.tau");
+            check_range(clouds_sw.ssa,  0,                                1, "cloud_optics_sw.ssa"); //, "cloud_optics_sw.ssa");
+            check_range(clouds_sw.g  , -1,                                1, "cloud_optics_sw.g  "); //, "cloud_optics_sw.g"  );
+            check_range(clouds_lw.tau,  0,                              1e3, "cloud_optics_lw.tau");
 
             // Do shortwave
             rrtmgp_sw(
