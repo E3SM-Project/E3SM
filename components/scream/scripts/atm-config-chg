@@ -97,11 +97,19 @@ def atm_config_chg_impl(xml_root,changes):
         selectors = tokens[0].split("::")
         new_value = tokens[1]
 
+        # Allow :: at the beginning (as in '::A::b=2'), but do not allow multiple :: operators
+        expect('' not in selectors[1:],
+            "Invalid change format. Expected A[::B[...]=value, got' {}'\n".format(change) +
+            "  Did you put two '::' in a row?")
         # Regardless of whether we have namespaces or not, the first selector must be unique through the whole XML tree
         s = selectors[0]
-        expect (num_nodes_with_name(xml_root,s,recurse=True)>0,"Error! XML entry {} not found in section {}".format(s,root.tag))
-        expect (num_nodes_with_name(xml_root,s,recurse=True)==1,"Error! Multiple XML entries with name {} found in section {}".format(s,xml_root.tag))
-        node = find_node(xml_root,s,recurse=True)
+        if s is '':
+            # User started with ::
+            node = xml_root
+        else:
+            expect (num_nodes_with_name(xml_root,s,recurse=True)>0,"Error! XML entry {} not found in section {}".format(s,xml_root.tag))
+            expect (num_nodes_with_name(xml_root,s,recurse=True)==1,"Error! Multiple XML entries with name {} found in section {}".format(s,xml_root.tag))
+            node = find_node(xml_root,s,recurse=True)
 
         # If user specified selectors via namespace, recurse over them
         for s in selectors[1:]:
