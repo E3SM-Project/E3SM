@@ -197,11 +197,20 @@ tweaking their $case/namelist_scream.xml file.
   <Initial__Conditions>
     <Filename>${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Filename>
     <Filename COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Filename>
+    <Restart__Casename>${CASE}</Restart__Casename>
   </Initial__Conditions>
 
   <!-- List of yaml files containing I/O output specs -->
   <Scorpio>
     <Output__YAML__Files type="array(string)">data/scream_output.yaml</Output__YAML__Files>
+    <Model__Restart>
+      <Casename>${CASE}</Casename>
+      <Output__Control>
+        <Frequency>${REST_N}</Frequency>
+        <Frequency__Units>INVALID</Frequency__Units>
+        <Frequency__Units REST_OPTION="nstep*">Steps</Frequency__Units>
+      </Output__Control>
+    </Model__Restart>
   </Scorpio>
 
   <!-- Debug options for scream -->
