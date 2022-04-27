@@ -208,6 +208,21 @@ namespace scream {
                 const Real tsi_scaling,
                 const std::shared_ptr<spdlog::logger>& logger) {
 
+#ifdef SCREAM_RRTMGP_DEBUG
+            // Sanity check inputs, and possibly repair
+            check_range(t_lay      ,  k_dist_sw.get_temp_min(),         k_dist_sw.get_temp_max(), "rrtmgp_main::t_lay");
+            check_range(t_lev      ,  k_dist_sw.get_temp_min(),         k_dist_sw.get_temp_max(), "rrtmgp_main::t_lev");
+            check_range(p_lay      , k_dist_sw.get_press_min(),        k_dist_sw.get_press_max(), "rrtmgp_main::p_lay");
+            check_range(p_lev      , k_dist_sw.get_press_min(),        k_dist_sw.get_press_max(), "rrtmgp_main::p_lev");
+            check_range(sfc_alb_dir,                         0,                                1, "rrtmgp_main::sfc_alb_dir");
+            check_range(sfc_alb_dif,                         0,                                1, "rrtmgp_main::sfc_alb_dif");
+            check_range(mu0        ,                         0,                                1, "rrtmgp_main::mu0");
+            check_range(lwp        ,                         0, std::numeric_limits<Real>::max(), "rrtmgp_main::lwp");
+            check_range(iwp        ,                         0, std::numeric_limits<Real>::max(), "rrtmgp_main::iwp");
+            check_range(rel        ,                         0, std::numeric_limits<Real>::max(), "rrtmgp_main::rel");
+            check_range(rei        ,                         0, std::numeric_limits<Real>::max(), "rrtmgp_main::rei");
+#endif
+
             // Setup pointers to RRTMGP SW fluxes
             FluxesByband fluxes_sw;
             fluxes_sw.flux_up = sw_flux_up;
@@ -245,12 +260,12 @@ namespace scream {
 
 #ifdef SCREAM_RRTMGP_DEBUG
             // Check aerosol optical properties
-            // NOTE: this should already have been checked by precondition checks, but someday we might have
+            // NOTE: these should already have been checked by precondition checks, but someday we might have
             // non-trivial aerosol optics, so this is still good to do here.
-            check_range(aerosol_sw.tau,  0,                              1e3, "aerosol_optics_sw.tau");
-            check_range(aerosol_sw.ssa,  0,                                1, "aerosol_optics_sw.ssa"); //, "aerosol_optics_sw.ssa");
-            check_range(aerosol_sw.g  , -1,                                1, "aerosol_optics_sw.g  "); //, "aerosol_optics_sw.g"  );
-            check_range(aerosol_lw.tau,  0,                              1e3, "aerosol_optics_lw.tau");
+            check_range(aerosol_sw.tau,  0, 1e3, "rrtmgp_main:aerosol_sw.tau");
+            check_range(aerosol_sw.ssa,  0,   1, "rrtmgp_main:aerosol_sw.ssa"); //, "aerosol_optics_sw.ssa");
+            check_range(aerosol_sw.g  , -1,   1, "rrtmgp_main:aerosol_sw.g  "); //, "aerosol_optics_sw.g"  );
+            check_range(aerosol_lw.tau,  0, 1e3, "rrtmgp_main:aerosol_lw.tau");
 #endif
 
             // Convert cloud physical properties to optical properties for input to RRTMGP
@@ -264,16 +279,10 @@ namespace scream {
             // a parameterization of their own, and we might want to swap different choices. These checks go here
             // only because we need to run them on computed optical props, so if the optical props themselves get
             // computed up higher, then perform these checks higher as well
-            // NOTE: We could set the upper bound on tau like the following:
-            //
-            //     check_range(clouds_sw.tau,  0, std::numeric_limits<Real>::max(), "cloud_optics_sw.tau");
-            //
-            // but in practice we probably want to make sure values are not getting too large, as that could maybe
-            // indicate other problems. If this ends up filling up the logs, we should revisit.
-            check_range(clouds_sw.tau,  0,                              1e3, "cloud_optics_sw.tau");
-            check_range(clouds_sw.ssa,  0,                                1, "cloud_optics_sw.ssa"); //, "cloud_optics_sw.ssa");
-            check_range(clouds_sw.g  , -1,                                1, "cloud_optics_sw.g  "); //, "cloud_optics_sw.g"  );
-            check_range(clouds_lw.tau,  0,                              1e3, "cloud_optics_lw.tau");
+            check_range(clouds_sw.tau,  0, std::numeric_limits<Real>::max(), "rrtmgp_main:clouds_sw.tau");
+            check_range(clouds_sw.ssa,  0,                                1, "rrtmgp_main:clouds_sw.ssa");
+            check_range(clouds_sw.g  , -1,                                1, "rrtmgp_main:clouds_sw.g  ");
+            check_range(clouds_sw.tau,  0, std::numeric_limits<Real>::max(), "rrtmgp_main:clouds_sw.tau");
 #endif
 
             // Do shortwave
@@ -481,6 +490,13 @@ namespace scream {
 
             k_dist.gas_optics(nday, nlay, top_at_1, p_lay_day, p_lev_day, t_lay_day, gas_concs_day, optics, toa_flux);
 
+#ifdef SCREAM_RRTMGP_DEBUG
+            // Check gas optics
+            check_range(optics.tau,  0, std::numeric_limits<Real>::max(), "rrtmgp_sw:optics.tau");
+            check_range(optics.ssa,  0,                                1, "rrtmgp_sw:optics.ssa"); //, "optics.ssa");
+            check_range(optics.g  , -1,                                1, "rrtmgp_sw:optics.g  "); //, "optics.g"  );
+#endif
+
             // Apply tsi_scaling
             parallel_for(Bounds<2>(ngpt,nday), YAKL_LAMBDA(int igpt, int iday) {
                 toa_flux(iday,igpt) = tsi_scaling * toa_flux(iday,igpt);
@@ -557,6 +573,11 @@ namespace scream {
 
             // Do gas optics
             k_dist.gas_optics(ncol, nlay, top_at_1, p_lay, p_lev, t_lay, t_sfc, gas_concs, optics, lw_sources, real2d(), t_lev);
+
+#ifdef SCREAM_RRTMGP_DEBUG
+            // Check gas optics
+            check_range(optics.tau,  0, std::numeric_limits<Real>::max(), "rrtmgp_lw:optics.tau");
+#endif
 
             // Combine gas and aerosol optics
             aerosol.increment(optics);
