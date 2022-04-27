@@ -40,26 +40,25 @@ def parse_string_as_list (string):
     True
     >>> l[1] == '(b,c)'
     True
+    >>> ###### NOT STARTING/ENDING WITH PARENTHESES #######
     >>> s = '(a,b,'
     >>> l = parse_string_as_list(s)
     Traceback (most recent call last):
-    eamxx_buildnml_impl.parse_string_as_list.<locals>.UnmatchedParentheses
+    ValueError: Input string must start with '(' and end with ')'.
+    >>> ################ UNMATCHED PARENTHESES ##############
     >>> s = '(a,(b)'
     >>> l = parse_string_as_list(s)
     Traceback (most recent call last):
-    eamxx_buildnml_impl.parse_string_as_list.<locals>.UnmatchedParentheses
+    ValueError: Unmatched parentheses in input string
     """
 
-    class UnmatchedParentheses (Exception):
-        pass
-
     if string[0]!='(' or string[-1]!=')':
-        raise UnmatchedParentheses
+        raise ValueError ("Input string must start with '(' and end with ')'.")
 
     sub_open = string.find('(',1)
     sub_close = string.rfind(')',0,-1)
     if not (sub_open>=0)==(sub_close>=0):
-        raise UnmatchedParentheses
+        raise ValueError ("Unmatched parentheses in input string")
 
     # Prevent empty string to pollute s.split()
     my_split = lambda str : [s for s in str.split(',') if s.strip() != '']
@@ -153,15 +152,11 @@ def get_child (root,name,remove=False):
     >>> root = ET.fromstring(xml)
     >>> get_child(root,'c')
     Traceback (most recent call last):
-    eamxx_buildnml_impl.get_child.<locals>.XmlNodeNotFound: ERROR: There must be exactly one c entry inside my_root
+    CIME.utils.CIMEError: ERROR: There must be exactly one c entry inside my_root
     """
 
-    class XmlNodeNotFound (Exception):
-        pass
-
     expect (len(root.findall(name))==1,
-            "There must be exactly one {} entry inside {}".format(name,root.tag),
-            XmlNodeNotFound)
+            "There must be exactly one {} entry inside {}".format(name,root.tag))
     child = root.find(name)
     if remove:
         root.remove(child)
@@ -214,11 +209,11 @@ def refine_type(entry, force_type=None):
     >>> e = '1,b'
     >>> refine_type(e)==[1,'b',True]
     Traceback (most recent call last):
-    eamxx_buildnml_impl.refine_type.<locals>.InconsistentListTypes: ERROR: List '1,b' has inconsistent types inside
+    CIME.utils.CIMEError: ERROR: List '1,b' has inconsistent types inside
     >>> e = '1.0'
     >>> refine_type(e,force_type='my_type')
     Traceback (most recent call last):
-    eamxx_buildnml_impl.refine_type.<locals>.BadForceType: Bad force_type: my_type
+    NameError: Bad force_type: my_type
     >>> e = 'true,falsE'
     >>> refine_type(e,'logical')
     Traceback (most recent call last):
@@ -234,13 +229,6 @@ def refine_type(entry, force_type=None):
                 .format(force_type))
         return entry
 
-    class InconsistentListTypes (Exception):
-        pass
-    class BadForceType (Exception):
-        pass
-    class ForceTypeUnmet (Exception):
-        pass
-
     if "," in entry:
         expect (force_type is None or is_array_type(force_type),
                 "Error! Invalid type '{}' for an array.".format(force_type))
@@ -250,8 +238,7 @@ def refine_type(entry, force_type=None):
         expected_type = type(result[0])
         for item in result[1:]:
             expect(isinstance(item, expected_type),
-                  "List '{}' has inconsistent types inside".format(entry),
-                  InconsistentListTypes)
+                  "List '{}' has inconsistent types inside".format(entry))
 
         return result
 
@@ -274,8 +261,7 @@ def refine_type(entry, force_type=None):
             elif elem_type == "string":
                 elem = str(entry)
             else:
-                raise BadForceType ("Bad force_type: {}".format(force_type))
-                elem = None
+                raise NameError ("Bad force_type: {}".format(force_type))
 
             if is_array_type(force_type):
                 return [elem]
@@ -283,8 +269,7 @@ def refine_type(entry, force_type=None):
                 return elem
 
         except ValueError:
-            raise ForceTypeUnmet ("Could not use '{}' as type '{}'".format(entry, force_type))
-            return None
+            raise ValueError ("Could not use '{}' as type '{}'".format(entry, force_type))
 
     if entry.upper() == "TRUE":
         return True
@@ -319,8 +304,6 @@ def derive_type(entry):
     >>> derive_type('true,FALSE')
     'array(logical)'
     """
-    class UnrecognizedType (Exception):
-        pass
 
     refined_value = refine_type(entry)
     if isinstance(refined_value, list):
@@ -358,16 +341,11 @@ def check_value(elem, value):
     >>> root = ET.fromstring(xml)
     >>> check_value(root,'1.0')
     Traceback (most recent call last):
-    eamxx_buildnml_impl.refine_type.<locals>.ForceTypeUnmet: Could not use '1.0' as type 'integer'
+    ValueError: Could not use '1.0' as type 'integer'
     >>> check_value(root,'3')
     Traceback (most recent call last):
-    eamxx_buildnml_impl.check_value.<locals>.ValidValueConstraintViolated: ERROR: Invalid value '3' for element 'a'. Value not in the valid list ('[1, 2]')
-
+    CIME.utils.CIMEError: ERROR: Invalid value '3' for element 'a'. Value not in the valid list ('[1, 2]')
     """
-    class TypeConstraintViolated (Exception):
-        pass
-    class ValidValueConstraintViolated (Exception):
-        pass
 
     v = value
     vtype = None
@@ -378,15 +356,13 @@ def check_value(elem, value):
         expect (v is not None,
                 "Error! Value '{}' for element '{}' does not satisfy the constraint type={}"
                 .format(value,elem.tag,vtype) +
-                "  NOTE: this error should have been caught earlier! Please, contact developers.",
-                TypeConstraintViolated)
+                "  NOTE: this error should have been caught earlier! Please, contact developers.")
 
     if "valid_values" in elem.attrib.keys():
         valids_str = elem.attrib["valid_values"]
         valids = [refine_type(item.strip(), force_type=vtype) for item in valids_str.split(",")]
         expect(v in valids,
-                "Invalid value '{}' for element '{}'. Value not in the valid list ('{}')".format(value, elem.tag, valids),
-                ValidValueConstraintViolated)
+                "Invalid value '{}' for element '{}'. Value not in the valid list ('{}')".format(value, elem.tag, valids))
 
 ###############################################################################
 def check_all_values(root):
@@ -517,7 +493,7 @@ def get_valid_selectors(xml_root):
     >>> root = ET.fromstring(xml)
     >>> selectors = get_valid_selectors(root)
     Traceback (most recent call last):
-    eamxx_buildnml_impl.get_valid_selectors.<locals>.BadSelectorTag: ERROR: Expected selector tag, not blah
+    CIME.utils.CIMEError: ERROR: Expected selector tag, not blah
     """
 
     class BadSelectorTag (Exception):
@@ -528,8 +504,7 @@ def get_valid_selectors(xml_root):
     selectors = {}
     for selector in selectors_elem:
         expect(selector.tag == "selector",
-               "Expected selector tag, not {}".format(selector.tag),
-               BadSelectorTag)
+               "Expected selector tag, not {}".format(selector.tag))
 
         selector_name  = selector.attrib["name"]
         selector_env   = selector.attrib["case_env"]

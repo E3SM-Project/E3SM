@@ -162,7 +162,7 @@ def evaluate_selectors(element, case, ez_selectors):
     >>> good = ET.fromstring(xml_good)
     >>> evaluate_selectors(good,case,selectors_bad1)
     Traceback (most recent call last):
-    evaluate_selectors.<locals>.UnknownCaseValue: ERROR: Bad easy selector 'grid' definition. Relies on unknown case value 'BADENV'
+    CIME.utils.CIMEError: ERROR: Bad easy selector 'grid' definition. Relies on unknown case value 'BADENV'
     >>> ############## BAD SELECTOR DEFINITION #####################
     >>> xml_sel_bad2 = '''
     ... <selectors_xml>
@@ -175,7 +175,7 @@ def evaluate_selectors(element, case, ez_selectors):
     >>> good = ET.fromstring(xml_good)
     >>> evaluate_selectors(good,case,selectors_bad2)
     Traceback (most recent call last):
-    evaluate_selectors.<locals>.MultipleMatches: ERROR: Selector 'grid' has invalid custom regex '.*' which does not capture exactly 1 group
+    CIME.utils.CIMEError: ERROR: Selector 'grid' has invalid custom regex '.*' which does not capture exactly 1 group
     >>> ############## BAD SELECTOR NAME #####################
     >>> xml_bad1 = '''
     ... <namelist_defaults>
@@ -186,7 +186,7 @@ def evaluate_selectors(element, case, ez_selectors):
     >>> bad1 = ET.fromstring(xml_bad1)
     >>> evaluate_selectors(bad1,case,selectors_good)
     Traceback (most recent call last):
-    evaluate_selectors.<locals>.BadSelectorName: ERROR: Bad selector 'my_grid' for child 'var1'. 'my_grid' is not a valid case value or easy selector
+    CIME.utils.CIMEError: ERROR: Bad selector 'my_grid' for child 'var1'. 'my_grid' is not a valid case value or easy selector
     >>> ############## BAD DEFAULTS ORDERING #####################
     >>> xml_bad2 = '''
     ... <namelist_defaults>
@@ -197,7 +197,7 @@ def evaluate_selectors(element, case, ez_selectors):
     >>> bad2 = ET.fromstring(xml_bad2)
     >>> evaluate_selectors(bad2,case,selectors_good)
     Traceback (most recent call last):
-    evaluate_selectors.<locals>.BadDefaultsOrdering: ERROR: child 'var1' element without selectors occured after other parameter elements for this parameter
+    CIME.utils.CIMEError: ERROR: child 'var1' element without selectors occured after other parameter elements for this parameter
     >>> ############## MULTIPLE MATCHES #####################
     >>> xml_bad3 = '''
     ... <namelist_defaults>
@@ -208,17 +208,8 @@ def evaluate_selectors(element, case, ez_selectors):
     >>> bad3 = ET.fromstring(xml_bad3)
     >>> evaluate_selectors(bad3,case,selectors_good)
     Traceback (most recent call last):
-    evaluate_selectors.<locals>.BadDefaultsOrdering: ERROR: child 'var1' element without selectors occured after other parameter elements for this parameter
+    CIME.utils.CIMEError: ERROR: child 'var1' element without selectors occured after other parameter elements for this parameter
     """
-
-    class BadSelectorName (Exception):
-        pass
-    class MultipleMatches (Exception):
-        pass
-    class UnknownCaseValue (Exception):
-        pass
-    class BadDefaultsOrdering (Exception):
-        pass
 
     child_values = {} # elem_name -> evaluated XML element
     children_to_remove = []
@@ -247,16 +238,14 @@ def evaluate_selectors(element, case, ez_selectors):
                         ez_env, ez_regex = ez_selectors[k]
                         case_val = case.get_value(ez_env)
                         expect(case_val is not None,
-                              "Bad easy selector '{}' definition. Relies on unknown case value '{}'".format(k, ez_env),
-                              UnknownCaseValue)
+                              "Bad easy selector '{}' definition. Relies on unknown case value '{}'".format(k, ez_env))
 
                         ez_regex_re = re.compile(ez_regex)
                         m = ez_regex_re.match(case_val)
                         if m:
                             groups = m.groups()
                             expect(len(groups) == 1,
-                                    "Selector '{}' has invalid custom regex '{}' which does not capture exactly 1 group".format(k, ez_regex),
-                                   MultipleMatches)
+                                    "Selector '{}' has invalid custom regex '{}' which does not capture exactly 1 group".format(k, ez_regex))
                             val = groups[0]
                         else:
                             # If the regex doesn't even match the case val, then we consider
@@ -266,8 +255,7 @@ def evaluate_selectors(element, case, ez_selectors):
                     else:
                         val = case.get_value(k)
                         expect(val is not None,
-                               "Bad selector '{0}' for child '{1}'. '{0}' is not a valid case value or easy selector".format(k, child_name),
-                               BadSelectorName)
+                               "Bad selector '{0}' for child '{1}'. '{0}' is not a valid case value or easy selector".format(k, child_name))
 
 
                     if val is None or val_re.match(val) is None:
@@ -295,8 +283,7 @@ def evaluate_selectors(element, case, ez_selectors):
 
             else:
                 expect(child_name not in child_values,
-                       "child '{}' element without selectors occured after other parameter elements for this parameter".format(child_name),
-                       BadDefaultsOrdering)
+                       "child '{}' element without selectors occured after other parameter elements for this parameter".format(child_name))
                 child_values[child_name] = child
                 child.text = do_cime_vars(child_val, case)
 
@@ -470,12 +457,8 @@ def _dump_to_nml_impl(dict_contents):
     ... }
     >>> print(_dump_to_nml_impl(good2))
     Traceback (most recent call last):
-    _dump_to_nml_impl.<locals>.MixedNestingLevels: ERROR: Error! _dump_to_nml_impl cannot mix nested and non-nested dicts.
-
+    CIME.utils.CIMEError: ERROR: Error! _dump_to_nml_impl cannot mix nested and non-nested dicts.
     """
-
-    class MixedNestingLevels (Exception):
-        pass
 
     result = ""
     nested = False
@@ -501,8 +484,7 @@ def _dump_to_nml_impl(dict_contents):
             not_nested = True
 
     expect (not (nested and not_nested),
-            "Error! _dump_to_nml_impl cannot mix nested and non-nested dicts.",
-            MixedNestingLevels)
+            "Error! _dump_to_nml_impl cannot mix nested and non-nested dicts.")
 
     return result
 
