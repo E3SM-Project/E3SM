@@ -4,9 +4,12 @@
 #include "physics/share/physics_constants.hpp"
 #include "cpp/rrtmgp_const.h"
 #include "YAKL.h"
+#include "YAKL_Bounds_fortran.h"
 
 using yakl::intrinsics::maxval;
 using yakl::intrinsics::minval;
+using yakl::intrinsics::count;
+using yakl::intrinsics::sum;
 
 namespace scream {
     namespace rrtmgp {
@@ -55,9 +58,18 @@ namespace scream {
             auto _xmin = minval(x);
             auto _xmax = maxval(x);
             if (_xmin < xmin or _xmax > xmax) {
+                // How many outside range?
+                auto bad_mask = x.createDeviceCopy();
+                memset(bad_mask, 0);
+                yakl::c::parallel_for(yakl::c::SimpleBounds<1>(x.totElems()), YAKL_LAMBDA (int i) {
+                  if (x.data()[i] < xmin or x.data()[i] > xmax) {
+                      bad_mask.data()[i] = 1;
+                  }
+                });
+                auto num_bad = sum(bad_mask);
                 pass = false;
-                out << msg 
-                    << ": one or more values outside range "
+                out << msg << ": "
+                    << num_bad << " values outside range "
                     << "[" << xmin << "," << xmax << "]"
                     << "; minval = " << _xmin 
                     << "; maxval = " << _xmax << "\n";
