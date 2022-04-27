@@ -324,22 +324,15 @@ def _create_raw_xml_file_impl(case, xml):
     >>> import xml.etree.ElementTree as ET
     >>> defaults = ET.fromstring(xml)
     >>> generated = _create_raw_xml_file_impl(case,defaults)
-    >>> aps = get_child(generated,"atmosphere_processes")
-    >>> for c in aps:
-    ...     print(c.tag)
-    atm_procs_list
-    prop2
-    prop1
-    P1
-    P2
-    >>> print (get_child(aps,"atm_procs_list").text)
-    (P1,P2)
-    >>> p1 = get_child(aps,"P1")
-    >>> print(get_child(p1,"prop1").text)
-    two
-    >>> p2 = get_child(aps,"P2")
-    >>> print(get_child(p2,"prop1").text)
-    zero
+    >>> d = convert_to_dict(get_child(generated,'atmosphere_processes'))
+    >>> import pprint
+    >>> pp = pprint.PrettyPrinter(indent=4)
+    >>> pp.pprint(d)
+    OrderedDict([   ('atm_procs_list', '(P1,P2)'),
+                    ('prop2', 'one'),
+                    ('prop1', 'zero'),
+                    ('P1', OrderedDict([('prop1', 'two')])),
+                    ('P2', OrderedDict([('prop1', 'zero')]))])
     """
 
     # 0. Remove internal sections, that are not to appear in the
@@ -395,6 +388,25 @@ def convert_to_dict(element):
 ###############################################################################
     """
     Convert an XML element to a dictonary where the tags are the keys
+    >>> xml = '''
+    ... <my_root>
+    ...   <my__int>1</my__int>
+    ...   <my__list>
+    ...     <my_ints>2,3</my_ints>
+    ...     <my_strings>two,three</my_strings>
+    ...   </my__list>
+    ... </my_root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> import pprint
+    >>> pp = pprint.PrettyPrinter(indent=4)
+    >>> root = ET.fromstring(xml)
+    >>> d = convert_to_dict(root)
+    >>> pp.pprint(d)
+    OrderedDict([   ('my int', 1),
+                    (   'my list',
+                        OrderedDict([   ('my_ints', [2, 3]),
+                                        ('my_strings', ['two', 'three'])]))])
     """
     result = OrderedDict()
     for child in element:
