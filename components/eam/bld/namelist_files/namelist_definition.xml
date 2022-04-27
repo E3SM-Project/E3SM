@@ -4497,6 +4497,12 @@ Tuning parameter for dust emissions.
 Default: set by build-namelist.
 </entry>
 
+<!-- stratospheric accumulation to coarse mode renaming flag, hybrown -->
+<entry id="strat_accum_coarse_rename" type="logical" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+Turns on accumulation to coarse mode exchange ("renaming" in MAM) in the stratosphere.
+Default: .false. 
+
 <!-- sea salt tuning flag for polar project -->
 <entry id="ssalt_tuning"  type="logical" category="cam_chem"
        group="phys_ctl_nl" valid_values="" >

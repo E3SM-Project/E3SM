@@ -226,6 +226,9 @@
   real(r8) :: specdens2_amode(ntot_aspectype,ntot_amode)
   real(r8) :: spechygro2(ntot_aspectype,ntot_amode)
 
+!hybrown following is used to turn on stratospheric renaming for accumulation to coarse mode aerosol. 
+! Included to represent rapid growth of sulfate aerosol following volcanic eruption
+  logical :: strat_accum_coarse_rename = .false.
 
 ! !DESCRIPTION: This module implements ...
 !
@@ -1800,7 +1803,9 @@ do_rename_if_block30: &
 
       mtoo_renamexf(:) = 0
       mtoo_renamexf(nait) = nacc
-      mtoo_renamexf(nacc) = ncrs !hybrown
+      if ( strat_accum_coarse_rename ) then
+         mtoo_renamexf(nacc) = ncrs !hybrown
+      end if
 
 ! qaer_delsub_grow4rnam   = change in qaer from cloud chemistry and gas condensation
 ! qaercw_delsub_grow4rnam = change in qaercw from cloud chemistry
@@ -2227,7 +2232,9 @@ do_rename_if_block30: &
 
       mtoo_renamexf(:) = 0
       mtoo_renamexf(nait) = nacc
-      mtoo_renamexf(nacc) = ncrs !hybrown
+      if ( strat_accum_coarse_rename ) then
+         mtoo_renamexf(nacc) = ncrs !hybrown
+      end if
 
       qnum_sv1 = qnum_cur
       qaer_sv1 = qaer_cur
@@ -3771,7 +3778,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
       mfrm = n
       mtoo = mtoo_renamexf(n)
       if (mtoo <= 0) cycle mainloop1_ipair
-      if ( mtoo == ncrs .and. k >= troplev ) cycle mainloop1_ipair !hybrown, only rename accum-coarse in stratosphere
+      if (mtoo == ncrs .and. k >= troplev) cycle mainloop1_ipair !hybrown, only rename accum-coarse in stratosphere. Also only activated if ncrs>0
 
 !   dryvol_t_old is the old total (a+c) dry-volume for the "from" mode 
 !      in m^3-AP/kmol-air
@@ -5111,7 +5118,7 @@ agepair_loop1: &
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
-      subroutine modal_aero_amicphys_init( imozart, species_class,n_so4_monolayers_pcage_in)
+      subroutine modal_aero_amicphys_init( imozart, species_class,n_so4_monolayers_pcage_in, strat_accum_coarse_rename_in) !hybrown
 
 !-----------------------------------------------------------------------
 !
@@ -5169,6 +5176,8 @@ implicit none
    character(len=fieldname_len)   :: tmpnamea, tmpnameb
    character(128)                 :: msg, fmtaa
    character(2)                   :: tmpch2
+
+   logical, optional, intent(in) :: strat_accum_coarse_rename_in !hybrown
    !-----------------------------------------------------------------------
  
 !namelist variables
@@ -5521,7 +5530,17 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       nait = modeptr_aitken
       npca = modeptr_pcarbon
       nufi = modeptr_ufine
-      ncrs = modeptr_coarse !hybrown
+
+!++ hybrown, these lines turn on (ncrs>0) or off (ncrs=0) acc->crs renaming in stratosphere
+      if (present(strat_accum_coarse_rename_in)) then
+         strat_accum_coarse_rename = strat_accum_coarse_rename_in
+      endif
+
+      if (strat_accum_coarse_rename) then
+         ncrs = modeptr_coarse
+      endif
+!-- hybrown
+
 #if ( defined MODAL_AERO_9MODE )
       nmacc = modeptr_maccum
       nmait = modeptr_maitken
@@ -5908,24 +5927,34 @@ implicit none
 ! renaming during gas-->aer condensation or cloud chemistry
       na = modeptr_aitken
       nb = modeptr_accum
-      nc = modeptr_coarse !hybrown, coarse mode renaming
-      if (na > 0 .and. nb > 0 .and. nc > 0) then !hybrown, added nc to include coarse mode renaming
+!++hybrown
+      if (strat_accum_coarse_rename) then 
+         nc = modeptr_coarse !for coarse mode renaming
+      end if
+!--hybrown
+      if (na > 0 .and. nb > 0) then !hybrown
          lmza = lmap_num(na)
          lmzb = lmap_num(nb)
-         lmzc = lmap_num(nc) !hybrown
          do_q_coltendaa(lmza,iqtend_rnam) = .true.
          do_q_coltendaa(lmzb,iqtend_rnam) = .true.
-         do_q_coltendaa(lmzc,iqtend_rnam) = .true. !hybrown
          lmza = lmap_numcw(na)
          lmzb = lmap_numcw(nb)
-         lmzc = lmap_numcw(nc) !hybrown
          do_qqcw_coltendaa(lmza,iqqcwtend_rnam) = .true.
          do_qqcw_coltendaa(lmzb,iqqcwtend_rnam) = .true.
-         do_qqcw_coltendaa(lmzc,iqqcwtend_rnam) = .true. !hybrown
+!++hybrown
+         if (nc > 0) then !hybrown, for coarse mode renaming
+            lmzc = lmap_num(nc) !hybrown
+            do_q_coltendaa(lmzc,iqtend_rnam) = .true.
+            lmzc = lmap_numcw(nc)
+            do_qqcw_coltendaa(lmzc,iqqcwtend_rnam) = .true.
+         end if
          do iaer = 1, naer
             lmza = lmap_aer(iaer,na)
             lmzb = lmap_aer(iaer,nb)
-            lmzc = lmap_aer(iaer,nc) !hybrown
+!++hybrown
+            if (nc > 0) then
+               lmzc = lmap_aer(iaer,nc) !hybrown
+            end if
             if (lmza > 0) then
                do_q_coltendaa(lmza,iqtend_rnam) = .true.
                if (lmzb > 0) do_q_coltendaa(lmzb,iqtend_rnam) = .true.
@@ -5933,7 +5962,11 @@ implicit none
             end if
             lmza = lmap_aercw(iaer,na)
             lmzb = lmap_aercw(iaer,nb)
-            lmzc = lmap_aercw(iaer,nc) !hybrown
+!++hybrown
+            if (nc > 0) then
+               lmzc = lmap_aercw(iaer,nc)
+            end if
+!--hybrown
             if (lmza > 0) then
                do_qqcw_coltendaa(lmza,iqqcwtend_rnam) = .true.
                if (lmzb > 0) do_qqcw_coltendaa(lmzb,iqqcwtend_rnam) = .true.

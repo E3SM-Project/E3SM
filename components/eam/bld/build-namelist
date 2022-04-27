@@ -1110,6 +1110,9 @@ if ($prescribed_aero_model eq 'modal' or $chem =~ /_mam/) {
 
 if ($aer_model eq 'mam' ) {
 
+  #hybrown - setting namelist flag for stratospheric aerosol renaming in mam
+  add_default($nl,'strat_accum_coarse_rename');
+
   my $aero_modes = '3mode';
   if ($chem =~ /_mam4/) {$aero_modes = '4mode';}
   if ($chem =~ /_mam4_mom/) {$aero_modes = '4mode_mom';}

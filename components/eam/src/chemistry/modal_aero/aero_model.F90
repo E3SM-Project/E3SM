@@ -107,6 +107,7 @@ module aero_model
   logical :: drydep_lq(pcnst)
   logical :: wetdep_lq(pcnst)
 
+  logical :: strat_accum_coarse_rename = .false. !hybrown
 
 contains
   
@@ -130,7 +131,7 @@ contains
     character(len=16) :: aer_drydep_list(pcnst) = ' '
 
     namelist /aerosol_nl/ aer_wetdep_list, aer_drydep_list, sol_facti_cloud_borne, seasalt_emis_scale, sscav_tuning, &
-       sol_factb_interstitial, sol_factic_interstitial
+       sol_factb_interstitial, sol_factic_interstitial, strat_accum_coarse_rename !hybrown
 
     !-----------------------------------------------------------------------------
 
@@ -159,6 +160,7 @@ contains
     call mpibcast(sol_factic_interstitial, 1,                       mpir8,   0, mpicom)
     call mpibcast(sscav_tuning,          1,                         mpilog,  0, mpicom)
     call mpibcast(seasalt_emis_scale, 1, mpir8,   0, mpicom)
+    call mpibcast(strat_accum_coarse_rename, 1,                     mpilog,  0, mpicom) !hybrown
 #endif
 
     wetdep_list = aer_wetdep_list
@@ -354,7 +356,7 @@ contains
     endif
     call rad_cnst_get_info(0, nmodes=nmodes)
 
-    call modal_aero_initialize(pbuf2d, imozart, species_class) 
+    call modal_aero_initialize(pbuf2d, imozart, species_class, strat_accum_coarse_rename) !hybrown
     call modal_aero_bcscavcoef_init()
     call mam_prevap_resusp_init( ) ! REASTER 08/04/2015
 

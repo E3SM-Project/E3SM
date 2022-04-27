@@ -338,6 +338,8 @@
 <water_refindex_file rad="rrtmg">atm/cam/physprops/water_refindex_rrtmg_c080910.nc</water_refindex_file>
 <water_refindex_file rad="rrtmgp">atm/cam/physprops/water_refindex_rrtmg_c080910.nc</water_refindex_file>
 
+<!-- turning on stratospheric volcanic aerosol renaming, hybrown -->
+<strat_accum_coarse_rename            >.false.</strat_accum_coarse_rename>
 
 <!-- Cloud optics for RRTMG -->
 <liqcldoptics  rad="rrtmg" microphys="rk">slingo</liqcldoptics>
