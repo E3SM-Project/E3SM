@@ -201,7 +201,7 @@ tweaking their $case/namelist_scream.xml file.
 
   <!-- List of yaml files containing I/O output specs -->
   <Scorpio>
-    <Output__YAML__Files>data/scream_output.yaml, </Output__YAML__Files>
+    <Output__YAML__Files type="array(string)">data/scream_output.yaml</Output__YAML__Files>
   </Scorpio>
 
   <!-- Debug options for scream -->

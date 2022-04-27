@@ -416,7 +416,8 @@ def convert_to_dict(element):
 
         has_children = len(child) > 0
         if not has_children:
-            result[child_name] = refine_type(child_val)
+            force_type = None if "type" not in child.attrib.keys() else child.attrib["type"]
+            result[child_name] = refine_type(child_val,force_type=force_type)
         else:
             result[child_name] = convert_to_dict(child)
 

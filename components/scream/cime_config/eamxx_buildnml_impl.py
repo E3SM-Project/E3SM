@@ -75,6 +75,33 @@ def parse_string_as_list (string):
     return l
 
 ###############################################################################
+def is_array_type (name):
+###############################################################################
+    """
+    >>> is_array_type('array(T)')
+    True
+    >>> is_array_type('array')
+    False
+    >>> is_array_type('array(T)')
+    True
+    """
+    return name[0:6]=="array(" and name[-1]==")"
+
+###############################################################################
+def array_elem_type (name):
+###############################################################################
+    """
+    >>> print(array_elem_type('array(T)'))
+    T
+    >>> print(array_elem_type('array()'))
+    <BLANKLINE>
+    """
+    expect (is_array_type(name),
+            "Error! Type '{}' does not represent an array.".format(name))
+
+    return name[6:-1]
+
+###############################################################################
 def find_node (root,name):
 ###############################################################################
     """
@@ -192,10 +219,19 @@ def refine_type(entry, force_type=None):
     >>> refine_type(e,force_type='my_type')
     Traceback (most recent call last):
     eamxx_buildnml_impl.refine_type.<locals>.BadForceType: Bad force_type: my_type
+    >>> e = 'true,falsE'
+    >>> refine_type(e,'logical')
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: Error! Invalid type 'logical' for an array.
+    >>> refine_type(e,'array(logical)')
+    [True, False]
     """
     # We want to preserve strings representing lists
     if (entry[0]=="(" and entry[-1]==")") or \
        (entry[0]=="[" and entry[-1]=="]") :
+        expect (force_type is None or force_type=="string",
+                "Error! Invalid force type '{}' for a string representing a list"
+                .format(force_type))
         return entry
 
     class InconsistentListTypes (Exception):
@@ -206,7 +242,11 @@ def refine_type(entry, force_type=None):
         pass
 
     if "," in entry:
-        result = [refine_type(item.strip(), force_type=force_type) for item in entry.split(",") if item.strip() != ""]
+        expect (force_type is None or is_array_type(force_type),
+                "Error! Invalid type '{}' for an array.".format(force_type))
+
+        elem_type = force_type if force_type is None else array_elem_type(force_type);
+        result = [refine_type(item.strip(), force_type=elem_type) for item in entry.split(",") if item.strip() != ""]
         expected_type = type(result[0])
         for item in result[1:]:
             expect(isinstance(item, expected_type),
@@ -217,23 +257,30 @@ def refine_type(entry, force_type=None):
 
     if force_type:
         try:
-            if force_type == "logical":
-                if entry.upper() == "TRUE":
-                    return True
-                elif entry.upper() == "FALSE":
-                    return False
-                else:
-                    return bool(int(entry))
+            elem_type = force_type if not is_array_type(force_type) else array_elem_type(force_type)
 
-            elif force_type == "integer":
-                return int(entry)
-            elif force_type == "real":
-                return float(entry)
-            elif force_type == "string":
-                return str(entry)
+            if elem_type == "logical":
+                if entry.upper() == "TRUE":
+                    elem = True
+                elif entry.upper() == "FALSE":
+                    elem = False
+                else:
+                    elem = bool(int(entry))
+
+            elif elem_type == "integer":
+                elem = int(entry)
+            elif elem_type == "real":
+                elem = float(entry)
+            elif elem_type == "string":
+                elem = str(entry)
             else:
                 raise BadForceType ("Bad force_type: {}".format(force_type))
-                return None
+                elem = None
+
+            if is_array_type(force_type):
+                return [elem]
+            else:
+                return elem
 
         except ValueError:
             raise ForceTypeUnmet ("Could not use '{}' as type '{}'".format(entry, force_type))
@@ -267,25 +314,36 @@ def derive_type(entry):
     'real'
     >>> derive_type('one')
     'string'
+    >>> derive_type('one,two')
+    'array(string)'
+    >>> derive_type('true,FALSE')
+    'array(logical)'
     """
     class UnrecognizedType (Exception):
         pass
 
     refined_value = refine_type(entry)
     if isinstance(refined_value, list):
-        refined_value = refined_value[0]
+        elem_value = refined_value[0]
+    else:
+        elem_value = refined_value
 
-    if isinstance(refined_value, bool):
-        return "logical"
-    elif isinstance(refined_value, int):
-        return "integer"
-    elif isinstance(refined_value, float):
-        return "real"
-    elif isinstance(refined_value, str):
-        return "string"
+    if isinstance(elem_value, bool):
+        elem_type = "logical"
+    elif isinstance(elem_value, int):
+        elem_type = "integer"
+    elif isinstance(elem_value, float):
+        elem_type = "real"
+    elif isinstance(elem_value, str):
+        elem_type = "string"
     else:
         raise(UnrecognizedType, "Couldn't derive type of '{}'".format(entry))
         return None
+
+    if isinstance(refined_value,list):
+        return "array(" + elem_type + ")"
+    else:
+        return elem_type
 
 ###############################################################################
 def check_value(elem, value):
