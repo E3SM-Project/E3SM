@@ -1,5 +1,5 @@
-#ifndef SCREAM_VIEW_UTILS_HPP
-#define SCREAM_VIEW_UTILS_HPP
+#ifndef SCREAM_ARRAY_UTILS_HPP
+#define SCREAM_ARRAY_UTILS_HPP
 
 #include "share/scream_types.hpp"
 
@@ -137,4 +137,4 @@ void unflatten_idx (const int idx, const Kokkos::View<int*,Kokkos::LayoutRight,P
 
 } // namespace scream
 
-#endif // SCREAM_VIEW_UTILS_HPP
+#endif // SCREAM_ARRAY_UTILS_HPP
