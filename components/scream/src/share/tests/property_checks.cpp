@@ -42,7 +42,6 @@ TEST_CASE("property_check_base", "") {
     // But ok if no repair is needed
     REQUIRE_NOTHROW (std::make_shared<FieldPositivityCheck>(cf,false));
   }
-
 }
 
 TEST_CASE("property_checks", "") {
@@ -116,11 +115,16 @@ TEST_CASE("property_checks", "") {
     REQUIRE(checkResult.pass);
 
     // Assign a NaN value to the field, make sure it fails the check,
-    Int midpt = num_reals / 2;
-    f_data[midpt] = std::numeric_limits<Real>::quiet_NaN();
+    auto f_view = f.get_view<Real***,Host>();
+    f_view(1,2,3) = std::numeric_limits<Real>::quiet_NaN();
     f.sync_to_dev();
     checkResult = nan_check->check();
     REQUIRE(not checkResult.pass);
+    std::string expected_msg = 
+      "FieldNaNCheck failed.\n"
+      "  Invalid values found at position (1,2,3).\n";
+
+    REQUIRE( checkResult.msg == expected_msg );
   }
 
   // Check that the values of a field lie within an interval.

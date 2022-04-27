@@ -1,4 +1,5 @@
 #include "share/property_checks/field_nan_check.hpp"
+#include "share/field/field_utils.hpp"
 #include "share/util//scream_array_utils.hpp"
 
 #include "ekat/util/ekat_math_utils.hpp"
@@ -33,16 +34,18 @@ PropertyCheck::CheckResult FieldNaNCheck::check_impl() const {
   const auto extents = layout.extents();
   const auto size = layout.size();
 
-  int num_invalid = 0;
+  int invalid_idx = -1;
+  using space_t = Field::device_t::execution_space;
+  using max_t = Kokkos::Max<int,space_t>;
   switch (layout.rank()) {
     case 1:
       {
         auto v = f.template get_view<const_ST*>();
         Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int i, int& result) {
           if (ekat::is_invalid(v(i))) {
-            ++result;
+            result = i;
           }
-        }, Kokkos::Sum<int>(num_invalid));
+        }, max_t(invalid_idx));
       }
       break;
     case 2:
@@ -52,9 +55,9 @@ PropertyCheck::CheckResult FieldNaNCheck::check_impl() const {
           int i,j;
           unflatten_idx(idx,extents,i,j);
           if (ekat::is_invalid(v(i,j))) {
-            ++result;
+            result = idx;
           }
-        }, Kokkos::Sum<int>(num_invalid));
+        }, max_t(invalid_idx));
       }
       break;
     case 3:
@@ -64,9 +67,9 @@ PropertyCheck::CheckResult FieldNaNCheck::check_impl() const {
           int i,j,k;
           unflatten_idx(idx,extents,i,j,k);
           if (ekat::is_invalid(v(i,j,k))) {
-            ++result;
+            result = idx;
           }
-        }, Kokkos::Sum<int>(num_invalid));
+        }, max_t(invalid_idx));
       }
       break;
     case 4:
@@ -76,9 +79,9 @@ PropertyCheck::CheckResult FieldNaNCheck::check_impl() const {
           int i,j,k,l;
           unflatten_idx(idx,extents,i,j,k,l);
           if (ekat::is_invalid(v(i,j,k,l))) {
-            ++result;
+            result = idx;
           }
-        }, Kokkos::Sum<int>(num_invalid));
+        }, max_t(invalid_idx));
       }
       break;
     case 5:
@@ -88,9 +91,9 @@ PropertyCheck::CheckResult FieldNaNCheck::check_impl() const {
           int i,j,k,l,m;
           unflatten_idx(idx,extents,i,j,k,l,m);
           if (ekat::is_invalid(v(i,j,k,l,m))) {
-            ++result;
+            result = idx;
           }
-        }, Kokkos::Sum<int>(num_invalid));
+        }, max_t(invalid_idx));
       }
       break;
     case 6:
@@ -100,9 +103,9 @@ PropertyCheck::CheckResult FieldNaNCheck::check_impl() const {
           int i,j,k,l,m,n;
           unflatten_idx(idx,extents,i,j,k,l,m,n);
           if (ekat::is_invalid(v(i,j,k,l,m,n))) {
-            ++result;
+            result = idx;
           }
-        }, Kokkos::Sum<int>(num_invalid));
+        }, max_t(invalid_idx));
       }
       break;
     default:
@@ -112,10 +115,20 @@ PropertyCheck::CheckResult FieldNaNCheck::check_impl() const {
   }
 
   PropertyCheck::CheckResult check_result;
-  check_result.pass = (num_invalid == 0);
+  check_result.pass = (invalid_idx < 0);
   check_result.msg = "";
   if (not check_result.pass) {
-    check_result.msg = std::string("FieldNaNCheck failed; ") + std::to_string(num_invalid) + " invalid values found\n";
+    auto indices = unflatten_idx(layout.dims(),invalid_idx);
+    check_result.msg  = "FieldNaNCheck failed.\n";
+    check_result.msg += "  Invalid values found at position (";
+    for (int i=0; i<layout.rank(); ++i) {
+      check_result.msg += std::to_string(indices[i]) + ",";
+    }
+    // Remove last ','
+    check_result.msg.pop_back();
+    check_result.msg += ").\n";
+  } else {
+    check_result.msg = "FieldNaNCheck passed.\n";
   }
   return check_result;
 }
