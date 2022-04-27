@@ -73,7 +73,7 @@ def print_all_vars(xml_root,xml_node,curr_namespace,full,dtype,value,valid_value
             print_var(xml_root,curr_namespace+c.tag,full,dtype,value,valid_values)
 
 ###############################################################################
-def atm_query(variables,listall=False,full=False,value=False, \
+def atm_query_impl(xml_root,variables,listall=False,full=False,value=False, \
               dtype=False, valid_values=False):
 ###############################################################################
     """
@@ -110,13 +110,6 @@ def atm_query(variables,listall=False,full=False,value=False, \
     True
     """
 
-    expect(os.path.exists("namelist_scream.xml"),
-           "No pwd/namelist_scream.xml file is present. Please rum from a case dir that has been setup")
-
-    with open("namelist_scream.xml", "r") as fd:
-        tree = ET.parse(fd)
-        xml_root = tree.getroot()
-
     if listall:
         print_all_vars(xml_root,xml_root,"::",full,dtype,value,valid_values)
     else:
@@ -124,6 +117,19 @@ def atm_query(variables,listall=False,full=False,value=False, \
             print_var(xml_root,var,full,dtype,value,valid_values)
 
     return True
+
+###############################################################################
+def atm_query(variables,listall=False,full=False,value=False, \
+              dtype=False, valid_values=False):
+###############################################################################
+    expect(os.path.exists("namelist_scream.xml"),
+           "No pwd/namelist_scream.xml file is present. Please rum from a case dir that has been setup")
+
+    with open("namelist_scream.xml", "r") as fd:
+        tree = ET.parse(fd)
+        xml_root = tree.getroot()
+
+    return atm_query_impl(xml_root,variables,listall,full,value,dtype,valid_values)
 
 ###############################################################################
 def parse_command_line(args, description):
