@@ -18,6 +18,34 @@ from atm_manip import expect, get_xml_node, AmbiguousName
 ###############################################################################
 def print_var(xml_root,var,full,dtype,value,valid_values):
 ###############################################################################
+    """
+    >>> xml = '''
+    ... <root>
+    ...     <prop1>one</prop1>
+    ...     <sub>
+    ...         <prop1>two</prop1>
+    ...         <prop2 type="integer" valid_values="1,2">2</prop2>
+    ...     </sub>
+    ... </root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> tree = ET.fromstring(xml)
+    >>> ################ Missing type data #######################
+    >>> print_var(tree,'::prop1',False,True,False,False)
+    Traceback (most recent call last):
+    SystemExit: ERROR: Error! Missing type information for prop1
+    >>> print_var(tree,'prop2',True,False,False,False)
+    prop2
+        value: 2
+        type: integer
+        valid values: ['1', '2']
+    >>> print_var(tree,'prop2',False,True,False,False)
+        prop2: integer
+    >>> print_var(tree,'prop2',False,False,True,False)
+    2
+    >>> print_var(tree,'prop2',False,False,False,True)
+        prop2: ['1', '2']
+    """
 
     # Get node
     node = get_xml_node(xml_root,var)
@@ -89,25 +117,14 @@ def atm_query_impl(xml_root,variables,listall=False,full=False,value=False, \
     ... '''
     >>> import xml.etree.ElementTree as ET
     >>> tree = ET.fromstring(xml)
-    >>> ################ INVALID SYNTAX #######################
-    >>> atm_query(tree,['prop1->2'])
-    Traceback (most recent call last):
-    SystemExit: ERROR: Invalid change format. Expected A[::B[...]=value, got' prop1->2'
-    >>> ################ INVALID TYPE #######################
-    >>> atm_query(tree,['prop2=two'])
-    Traceback (most recent call last):
-    eamxx_buildnml_impl.refine_type.<locals>.ForceTypeUnmet: Could not use 'two' as type 'integer'
-    >>> ################ INVALID VALUE #######################
-    >>> atm_query(tree,['prop2=3'])
-    Traceback (most recent call last):
-    eamxx_buildnml_impl.check_value.<locals>.ValidValueConstraintViolated: ERROR: Invalid value '3' for element 'prop2'. Value not in the valid list ('[1, 2]')
-    >>> ################ VALID USAGE #######################
-    >>> atm_query(tree,['::prop1=two'])
-    True
-    >>> atm_query(tree,['::prop1=two'])
-    False
-    >>> atm_query(tree,['sub::prop1=one'])
-    True
+    >>> vars = ['prop2','::prop1']
+    >>> success = atm_query_impl(tree, vars, False,False,False,False,False)
+        prop2: 2
+        prop1: one
+    >>> success = atm_query_impl(tree, [], True,False,False,False,True)
+        prop1: []
+        sub::prop1: []
+        prop2: ['1', '2']
     """
 
     if listall:
