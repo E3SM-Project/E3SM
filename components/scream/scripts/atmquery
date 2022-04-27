@@ -38,15 +38,15 @@ def print_var(xml_root,var,full,dtype,value,valid_values):
 
     if full:
         print ("{}".format(name))
-        print ("\tvalue: {}".format(node.text))
-        print ("\ttype: {}".format(node.attrib["type"]))
+        print ("    value: {}".format(node.text))
+        print ("    type: {}".format(node.attrib["type"]))
         if "valid_values" not in node.attrib.keys():
             valid = []
         else:
             valid = node.attrib["valid_values"].split(",")
-        print ("\tvalid values: {}".format(valid))
+        print ("    valid values: {}".format(valid))
     elif dtype:
-        print ("   {}: {}".format(name,node.attrib["type"]))
+        print ("    {}: {}".format(name,node.attrib["type"]))
     elif value:
         print ("{}".format(node.text))
     elif valid_values:
@@ -54,9 +54,9 @@ def print_var(xml_root,var,full,dtype,value,valid_values):
             valid = []
         else:
             valid = node.attrib["valid_values"].split(",")
-        print ("{}: {}".format(name,valid))
+        print ("    {}: {}".format(name,valid))
     else:
-        print ("   {}: {}".format(name,node.text))
+        print ("    {}: {}".format(name,node.text))
 
 ###############################################################################
 def print_all_vars(xml_root,xml_node,curr_namespace,full,dtype,value,valid_values):
