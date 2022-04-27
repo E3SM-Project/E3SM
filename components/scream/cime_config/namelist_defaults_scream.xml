@@ -165,7 +165,7 @@ tweaking their $case/namelist_scream.xml file.
       <SPA__Data__File>${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_scream.nc</SPA__Data__File>
     </spa>
 
-    <!-- Simple Prescribed Aerosols (SPA) -->
+    <!-- Radiation -->
     <rrtmgp inherit="physics_proc_base">
       <active_gases>h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
       <Orbital__Year>-9999</Orbital__Year>
