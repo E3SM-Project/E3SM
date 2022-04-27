@@ -1,5 +1,23 @@
 include (EkatSetCompilerFlags)
 
+# We need to link against GPTL.
+if (SCREAM_CIME_BUILD)
+  # In CIME builds, GPTL is built by CIME, during the sharedlib phase.
+  # So simply wrap the gptl lib in an imported target
+  include (GPTL)
+  CreateGPTLTarget()
+else ()
+  # In standalone builds, GPTL is built by Scorpio. Unfortunately,
+  # as of today (04/2022), there is no way to pre-build GPTL from
+  # scorpio, without scorpio trying to build it again.
+  # The only way scorpio skips GPTL is if there is an *installation*
+  # of GPTL somewhere, while we want to build it on the fly
+  # So simply process Scorpio now, so that we have GPTL available
+  # for scream_share to link against.
+  include (Scorpio)
+  CreateScorpioTargets()
+endif()
+
 set(SHARE_SRC
   scream_config.cpp
   scream_session.cpp
@@ -26,11 +44,12 @@ set(SHARE_SRC
   property_checks/field_within_interval_check.cpp
   util/scream_test_session.cpp
   util/scream_time_stamp.cpp
+  util/scream_timing.cpp
 )
 
 add_library(scream_share ${SHARE_SRC})
 target_include_directories(scream_share PUBLIC ${SCREAM_SRC_DIR} ${SCREAM_BIN_DIR}/src)
-target_link_libraries(scream_share PUBLIC ekat)
+target_link_libraries(scream_share PUBLIC ekat gptl)
 set_target_properties(scream_share PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
 target_compile_options(scream_share PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
 # We have some issues with RDC and repeated libraries in the link line.

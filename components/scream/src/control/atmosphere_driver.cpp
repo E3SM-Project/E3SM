@@ -7,6 +7,7 @@
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/util/scream_time_stamp.hpp"
+#include "share/util/scream_timing.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
@@ -121,12 +122,18 @@ init_scorpio(const int atm_id)
   MPI_Fint fcomm = MPI_Comm_c2f(m_atm_comm.mpi_comm());
   scorpio::eam_init_pio_subsystem(fcomm,atm_id);
 
+  // In CIME runs, gptl is already inited. In standalone runs, it might
+  // not be, depending on what scorpio does.
+  init_gptl(m_gptl_externally_handled);
+
   m_ad_status |= s_scorpio_inited;
 }
 
 void AtmosphereDriver::create_atm_processes()
 {
   m_atm_logger->info("[EAMXX] create_atm_processes  ...");
+  start_timer("EAMxx::init");
+  start_timer("EAMxx::create_atm_processes");
 
   // At this point, must have comm and params set.
   check_ad_status(s_comm_set | s_params_set);
@@ -135,16 +142,21 @@ void AtmosphereDriver::create_atm_processes()
   // tree, storing also the information regarding parallel execution (if needed).
   // See AtmosphereProcessGroup class documentation for more details.
   auto& atm_proc_params = m_atm_params.sublist("atmosphere_processes");
+  atm_proc_params.rename("EAMxx");
   atm_proc_params.set("Logger",m_atm_logger);
   m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_comm,atm_proc_params);
 
   m_ad_status |= s_procs_created;
+  stop_timer("EAMxx::create_atm_processes");
+  stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMXX] create_atm_processes  ... done!");
 }
 
 void AtmosphereDriver::create_grids()
 {
   m_atm_logger->info("[EAMXX] create_grids ...");
+  start_timer("EAMxx::init");
+  start_timer("EAMxx::create_grids");
 
   // Must have procs created by now (and comm/params set)
   check_ad_status (s_procs_created | s_comm_set | s_params_set);
@@ -169,12 +181,17 @@ void AtmosphereDriver::create_grids()
 
   m_ad_status |= s_grids_created;
 
+  stop_timer("EAMxx::create_grids");
+  stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMXX] create_grids ... done!");
 }
 
 void AtmosphereDriver::create_fields()
 {
   m_atm_logger->info("[EAMXX] create_fields ...");
+  start_timer("EAMxx::init");
+  start_timer("EAMxx::create_fields");
+
   // Must have grids and procs at this point
   check_ad_status (s_procs_created | s_grids_created);
 
@@ -325,11 +342,15 @@ void AtmosphereDriver::create_fields()
 
   m_ad_status |= s_fields_created;
 
+  stop_timer("EAMxx::create_fields");
+  stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMXX] create_fields ... done!");
 }
 
 void AtmosphereDriver::initialize_output_managers () {
   m_atm_logger->info("[EAMXX] initialize_output_managers ...");
+  start_timer("EAMxx::init");
+  start_timer("EAMxx::initialize_output_managers");
 
   check_ad_status (s_comm_set | s_params_set | s_grids_created | s_fields_created);
 
@@ -361,6 +382,8 @@ void AtmosphereDriver::initialize_output_managers () {
 
   m_ad_status |= s_output_inited;
 
+  stop_timer("EAMxx::initialize_output_managers");
+  stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMXX] initialize_output_managers ... done!");
 }
 
@@ -368,6 +391,8 @@ void AtmosphereDriver::
 initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0)
 {
   m_atm_logger->info("[EAMXX] initialize_fields ...");
+  start_timer("EAMxx::init");
+  start_timer("EAMxx::initialize_fields");
 
   m_atm_logger->info("  [EAMXX] Run  start time stamp: " + run_t0.to_string());
   m_atm_logger->info("  [EAMXX] Case start time stamp: " + case_t0.to_string());
@@ -468,6 +493,8 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
     }
   }
 
+  stop_timer("EAMxx::initialize_fields");
+  stop_timer("EAMxx::init");
   m_ad_status |= s_fields_inited;
   m_atm_logger->info("[EAMXX] initialize_fields ... done!");
 }
@@ -855,6 +882,8 @@ initialize_constant_field(const FieldIdentifier& fid,
 void AtmosphereDriver::initialize_atm_procs ()
 {
   m_atm_logger->info("[EAMXX] initialize_atm_procs ...");
+  start_timer("EAMxx::init");
+  start_timer("EAMxx::initialize_atm_procs");
 
   // Initialize memory buffer for all atm processes
   m_memory_buffer = std::make_shared<ATMBufferManager>();
@@ -869,6 +898,8 @@ void AtmosphereDriver::initialize_atm_procs ()
 
   m_ad_status |= s_procs_inited;
 
+  stop_timer("EAMxx::initialize_atm_procs");
+  stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMXX] initialize_atm_procs ... done!");
 }
 
@@ -897,6 +928,8 @@ initialize (const ekat::Comm& atm_comm,
 }
 
 void AtmosphereDriver::run (const int dt) {
+  start_timer("EAMxx::run");
+
   // Make sure the end of the time step is after the current start_time
   EKAT_REQUIRE_MSG (dt>0, "Error! Input time step must be positive.\n");
 
@@ -932,9 +965,12 @@ void AtmosphereDriver::run (const int dt) {
   // it might be several time steps before the file is updated.
   // This way, we give the user a chance to follow the log more real-time.
   m_atm_logger->flush();
+
+  stop_timer("EAMxx::run");
 }
 
 void AtmosphereDriver::finalize ( /* inputs? */ ) {
+  start_timer("EAMxx::finalize");
 
   m_atm_logger->info("[EAMXX] Finalize ...");
 
@@ -962,12 +998,20 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
     it.second->clean_up();
   }
 
+  // Write all timers to file, and possibly finalize gptl
+  write_timers_to_file (m_atm_comm,"scream_timing.txt");
+  if (not m_gptl_externally_handled) {
+    finalize_gptl();
+  }
+
   // Finalize scorpio
   if (scorpio::is_eam_pio_subsystem_inited()) {
     scorpio::eam_pio_finalize();
   }
 
   m_atm_logger->info("[EAMXX] Finalize ... done!");
+
+  stop_timer("EAMxx::finalize");
 }
 
 AtmosphereDriver::field_mgr_ptr

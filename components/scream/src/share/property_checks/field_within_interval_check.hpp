@@ -37,7 +37,7 @@ public:
     return ss.str();
   }
 
-  bool check() const override;
+  CheckResult check() const override;
 
 // CUDA requires the parent fcn of a KOKKOS_LAMBDA to have public access
 #ifndef KOKKOS_ENABLE_CUDA
@@ -45,7 +45,7 @@ protected:
 #endif
 
   template<typename ST>
-  bool check_impl () const;
+  CheckResult check_impl () const;
 
   template<typename ST>
   void repair_impl() const;

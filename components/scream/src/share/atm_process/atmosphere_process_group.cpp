@@ -35,9 +35,7 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
   }
 
   // Create the individual atmosphere processes
-  m_group_name = "Group [";
-  m_group_name += m_group_schedule_type==ScheduleType::Sequential
-                ? "Sequential]:" : "Parallel]:";
+  m_group_name = params.name();
 
   auto& apf = AtmosphereProcessFactory::instance();
   // Ensure the "Group" atm proc is registered in the factory,
@@ -129,9 +127,6 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
     for (const auto& name : m_atm_processes.back()->get_required_grids()) {
       m_required_grids.insert(name);
     }
-
-    m_group_name += " ";
-    m_group_name += m_atm_processes.back()->name();
   }
 }
 

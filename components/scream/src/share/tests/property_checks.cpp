@@ -73,12 +73,14 @@ TEST_CASE("property_checks", "") {
 
     auto positivity_check = std::make_shared<FieldPositivityCheck>(f,false);
     REQUIRE(not positivity_check->can_repair());
-    REQUIRE(positivity_check->check());
+    auto checkResult = positivity_check->check();
+    REQUIRE(checkResult.pass);
 
     // Assign non-positive values to the field and make sure it fails the check.
     ekat::genRandArray(f_data,num_reals,engine,neg_pdf);
     f.sync_to_dev();
-    REQUIRE(not positivity_check->check());
+    checkResult = positivity_check->check();
+    REQUIRE(not checkResult.pass);
   }
 
   // Check positivity with repairs.
@@ -93,9 +95,11 @@ TEST_CASE("property_checks", "") {
 
     auto positivity_check = std::make_shared<FieldPositivityCheck>(f,true);
     REQUIRE(positivity_check->can_repair());
-    REQUIRE(not positivity_check->check());
+    auto checkResult = positivity_check->check();
+    REQUIRE(not checkResult.pass);
     positivity_check->repair();
-    REQUIRE(positivity_check->check());
+    checkResult = positivity_check->check();
+    REQUIRE(checkResult.pass);
   }
 
   // Check that values are not NaN
@@ -108,13 +112,15 @@ TEST_CASE("property_checks", "") {
     auto f_data = reinterpret_cast<Real*>(f.get_internal_view_data<Real,Host>());
     ekat::genRandArray(f_data,num_reals,engine,neg_pdf);
     f.sync_to_dev();
-    REQUIRE(nan_check->check());
+    auto checkResult = nan_check->check();
+    REQUIRE(checkResult.pass);
 
     // Assign a NaN value to the field, make sure it fails the check,
     Int midpt = num_reals / 2;
     f_data[midpt] = std::numeric_limits<Real>::quiet_NaN();
     f.sync_to_dev();
-    REQUIRE(not nan_check->check());
+    checkResult = nan_check->check();
+    REQUIRE(not checkResult.pass);
   }
 
   // Check that the values of a field lie within an interval.
@@ -128,7 +134,8 @@ TEST_CASE("property_checks", "") {
     auto f_data = reinterpret_cast<Real*>(f.get_internal_view_data<Real,Host>());
     ekat::genRandArray(f_data,num_reals,engine,pos_pdf);
     f.sync_to_dev();
-    REQUIRE(interval_check->check());
+    auto checkResult = interval_check->check();
+    REQUIRE(checkResult.pass);
 
     // Assign out-of-bounds values to the field, make sure it fails the check,
     // and then repair the field so it passes.
@@ -136,9 +143,11 @@ TEST_CASE("property_checks", "") {
       f_data[i] *= -1;
     }
     f.sync_to_dev();
-    REQUIRE(not interval_check->check());
+    checkResult = interval_check->check();
+    REQUIRE(not checkResult.pass);
     interval_check->repair();
-    REQUIRE(interval_check->check());
+    checkResult = interval_check->check();
+    REQUIRE(checkResult.pass);
   }
 
   // Check that the values of a field are above a lower bound
@@ -154,7 +163,8 @@ TEST_CASE("property_checks", "") {
       f_data[i] = std::numeric_limits<Real>::max() - i*1.0; 
     }
     f.sync_to_dev();
-    REQUIRE(lower_bound_check->check());
+    auto checkResult = lower_bound_check->check();
+    REQUIRE(checkResult.pass);
 
     // Assign out-of-bounds values to the field, make sure it fails the check,
     // and then repair the field so it passes.
@@ -162,9 +172,11 @@ TEST_CASE("property_checks", "") {
       f_data[i] = -2.0*(i+1);
     }
     f.sync_to_dev();
-    REQUIRE(not lower_bound_check->check());
+    checkResult = lower_bound_check->check();
+    REQUIRE(not checkResult.pass);
     lower_bound_check->repair();
-    REQUIRE(lower_bound_check->check());
+    checkResult = lower_bound_check->check();
+    REQUIRE(checkResult.pass);
     // Should have repaired to the lower bound:
     f.sync_to_host();
     for (int i=0; i<num_reals; ++i) {
@@ -184,7 +196,8 @@ TEST_CASE("property_checks", "") {
       f_data[i] = -std::numeric_limits<Real>::max() + i*1.0; 
     }
     f.sync_to_dev();
-    REQUIRE(upper_bound_check->check());
+    auto checkResult = upper_bound_check->check();
+    REQUIRE(checkResult.pass);
 
     // Assign out-of-bounds values to the field, make sure it fails the check,
     // and then repair the field so it passes.
@@ -192,9 +205,11 @@ TEST_CASE("property_checks", "") {
       f_data[i] = 2.0*(i+1);
     }
     f.sync_to_dev();
-    REQUIRE(not upper_bound_check->check());
+    checkResult = upper_bound_check->check();
+    REQUIRE(not checkResult.pass);
     upper_bound_check->repair();
-    REQUIRE(upper_bound_check->check());
+    checkResult = upper_bound_check->check();
+    REQUIRE(checkResult.pass);
     // Should have repaired to the upper bound:
     f.sync_to_host();
     for (int i=0; i<num_reals; ++i) {
@@ -220,8 +235,8 @@ TEST_CASE("property_checks", "") {
       f_data[i] = 2.0;
     }
     f.sync_to_dev();
-    REQUIRE(not check_and_repair->check());
-
+    auto checkResult = check_and_repair->check();
+    REQUIRE(not checkResult.pass);
     // Repair the field, and make sure the field values match ub_repair
     check_and_repair->repair();
     f.sync_to_host();
