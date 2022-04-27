@@ -770,7 +770,7 @@ contains
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge=1, nEdges
-               RediKappa(iEdge) = RediHorizontalTaper(iEdge) * gmBolusKappa(iEdge)
+               RediKappa(iEdge) = gmHorizontalTaper(iEdge) * gmBolusKappa(iEdge)
             end do
             !$omp end do
             !$omp end parallel
