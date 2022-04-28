@@ -172,8 +172,6 @@ logical :: do_nicons
 logical :: use_hetfrz_classnuc
 
 real(r8) :: ncnst ! constant droplet concentration
-real(r8) :: ncnst_land ! XZ:   constant droplet concentration over land
-real(r8) :: ncnst_ocean ! XZ:  constant droplet concentration over ocean
 real(r8) :: ninst ! constant ice concentration
 
 real(r8) :: mincdnc     ! if mincdnc > 0, then impose a minimum droplet number conc.  
@@ -228,7 +226,6 @@ subroutine micro_mg_init( &
      rhmini_in, micro_mg_dcs, micro_mg_dcs_tdep, &
      microp_uniform_in, do_cldice_in, use_hetfrz_classnuc_in, &
      do_nccons_in, do_nicons_in, ncnst_in, ninst_in, mincdnc_in, &
-     ncnst_land_in,ncnst_ocean_in, &! XZ
      micro_mg_precip_frac_method_in, micro_mg_berg_eff_factor_in, &
      allow_sed_supersat_in, ice_sed_ai, prc_coef1_in,prc_exp_in,  &
      prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, alpha_grad_in, &
@@ -279,8 +276,6 @@ subroutine micro_mg_init( &
   real(r8), intent(in) :: beta_grad_in  ! When mass decreases with height.
 
   real(r8), intent(in)  :: ncnst_in
-  real(r8), intent(in)  :: ncnst_land_in  !XZ
-  real(r8), intent(in)  :: ncnst_ocean_in  !XZ
   real(r8), intent(in)  :: ninst_in        
   real(r8), intent(in)  :: mincdnc_in
 
@@ -331,8 +326,6 @@ subroutine micro_mg_init( &
   nccons = do_nccons_in
   nicons = do_nicons_in
   ncnst = ncnst_in
-  ncnst_land = ncnst_land_in  !XZ
-  ncnst_ocean = ncnst_ocean_in  !XZ
   ninst = ninst_in
   mincdnc = mincdnc_in
   use_hetfrz_classnuc = use_hetfrz_classnuc_in
@@ -418,8 +411,7 @@ subroutine micro_mg_tend ( &
      errstring, & ! Below arguments are "optional" (pass null pointers to omit).
      tnd_qsnow,          tnd_nsnow,          re_ice,             &
      prer_evap,                                                      &
-     frzimm,             frzcnt,             frzdep, landfrac & ! constant CDNCs over land and ocean XZ
-     )
+     frzimm,             frzcnt,             frzdep)
 
   ! Constituent properties.
   use micro_mg_utils, only: &
@@ -495,7 +487,6 @@ subroutine micro_mg_tend ( &
   ! (For example, in CAM, the last dimension is always size 4.)
   real(r8), intent(in) :: rndst(:,:,:)  ! radius of each dust bin, for contact freezing (from microp_aero_ts) (m)
   real(r8), intent(in) :: nacon(:,:,:) ! number in each dust bin, for contact freezing  (from microp_aero_ts) (1/m^3)
-  real(r8), intent(in) :: landfrac(:) !landfrac for setting different constant CDNCs over ocean and land XZ 
   
   ! output arguments
 
@@ -1108,17 +1099,6 @@ subroutine micro_mg_tend ( &
         nc = mincdnc/rho*lcldm
      end where 
   end if
-  !! specify droplet concentration  XZ
-  if (nccons) then
-    do i=1,mgncol
-     do k=1,nlev
-      if (qc(i,k) >= qsmall) then
-       nc(i,k)=(ncnst_ocean * (1._r8-landfrac(i)) +   ncnst_land * landfrac(i))/rho(i,k)*lcldm(i,k)  !   XZ
-      end if
-    end do
-   end do  
-  end if
-
 
   where (t < icenuct)
      ncai = naai*rho
@@ -1240,10 +1220,9 @@ subroutine micro_mg_tend ( &
               ncic(i,k)=max(ncic(i,k),mincdnc/rho(i,k))
            end if
 
-           !! specify droplet concentration  XZ
+           ! specify droplet concentration
            if (nccons) then
-              !ncic(i,k)=ncnst/rho(i,k)
-              ncic(i,k)=(ncnst_ocean * (1._r8-landfrac(i)) +   ncnst_land * landfrac(i))/rho(i,k)   
+              ncic(i,k)=ncnst/rho(i,k)
            end if
         else
            qcic(i,k)=0._r8
@@ -2069,15 +2048,6 @@ subroutine micro_mg_tend ( &
      end where
   end if
 
-  !! specify droplet concentration  XZ
-  if (nccons) then
-    do i=1,mgncol
-     do k=1,nlev
-        nctend(i,k)=((ncnst_ocean * (1._r8-landfrac(i)) +   ncnst_land * landfrac(i))/rho(i,k)*lcldm(i,k)-nc(i,k))/deltat 
-     end do
-    end do     
-  end if
-
   ! Re-apply rain freezing and snow melting.
   dum_2D = qs
   qs = qsn
@@ -2131,10 +2101,9 @@ subroutine micro_mg_tend ( &
            dumnc(i,k)=max(dumnc(i,k),mincdnc/rho(i,k))
         end if
 
-        !! specify droplet concentration  XZ
+        ! switch for specification of droplet and crystal number
         if (nccons) then
-           !dumnc(i,k)=ncnst/rho(i,k)
-           dumnc(i,k)=(ncnst_ocean * (1._r8-landfrac(i)) +   ncnst_land * landfrac(i))/rho(i,k)  
+           dumnc(i,k)=ncnst/rho(i,k)
         end if
 
         ! switch for specification of cloud ice number
@@ -2244,12 +2213,6 @@ subroutine micro_mg_tend ( &
         if (mincdnc.gt.0._r8) then
            dumnc(i,k)=max(dumnc(i,k),mincdnc/rho(i,k)*lcldm(i,k))
         end if
-
-        !! specify droplet concentration  XZ
-        if (nccons) then
-           dumnc(i,k)=(ncnst_ocean * (1._r8-landfrac(i)) +   ncnst_land * landfrac(i))/rho(i,k)*lcldm(i,k)  
-        end if
-
 
      end do       !!! vertical loop
 
@@ -2546,10 +2509,9 @@ subroutine micro_mg_tend ( &
            dumnc(i,k) = max(dumnc(i,k),mincdnc/rho(i,k)*lcldm(i,k))
         end if
 
-        !! specify droplet concentration  XZ
+        ! switch for specification of droplet and crystal number
         if (nccons) then
-          ! dumnc(i,k)=ncnst/rho(i,k)*lcldm(i,k)
-           dumnc(i,k)=(ncnst_ocean * (1._r8-landfrac(i)) +   ncnst_land * landfrac(i))/rho(i,k)*lcldm(i,k)  
+           dumnc(i,k)=ncnst/rho(i,k)*lcldm(i,k)
         end if
 
         ! switch for specification of cloud ice number
@@ -2763,10 +2725,9 @@ subroutine micro_mg_tend ( &
            dumnc(i,k) = max(dumnc(i,k),mincdnc/rho(i,k))
         end if
 
-        !! specify droplet concentration  XZ
+        ! switch for specification of droplet and crystal number
         if (nccons) then
-           !dumnc(i,k)=ncnst/rho(i,k)
-           dumnc(i,k)=(ncnst_ocean * (1._r8-landfrac(i)) +   ncnst_land * landfrac(i))/rho(i,k) 
+           dumnc(i,k)=ncnst/rho(i,k)
         end if
 
         ! switch for specification of cloud ice number
@@ -2831,15 +2792,14 @@ subroutine micro_mg_tend ( &
               nctend(i,k)=( max(nc(i,k)+nctend(i,k)*deltat, mincdnc/rho(i,k)*lcldm(i,k)) - nc(i,k))/deltat
            end if
 
-           !! specify droplet concentration  XZ
+           ! switch for specification of droplet and crystal number
            if (nccons) then
               ! make sure nc is consistence with the constant N by adjusting tendency, need
               ! to multiply by cloud fraction
               ! note that nctend may be further adjusted below if mean droplet size is
               ! out of bounds
 
-              !nctend(i,k)=(ncnst/rho(i,k)*lcldm(i,k)-nc(i,k))/deltat
-              nctend(i,k)=((ncnst_ocean * (1._r8-landfrac(i)) +   ncnst_land * landfrac(i))/rho(i,k)*lcldm(i,k)-nc(i,k))/deltat 
+              nctend(i,k)=(ncnst/rho(i,k)*lcldm(i,k)-nc(i,k))/deltat
 
            end if
 

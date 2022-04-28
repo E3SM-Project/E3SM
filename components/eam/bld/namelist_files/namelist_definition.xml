@@ -2139,6 +2139,17 @@ Liquid droplet concentration (in #/cc) when micro_do_nccons=.true.
 Default: set by build-namelist
 </entry>   
 
+<entry id="micro_nccons_land" type="real" category="microphys"
+       group="micro_mg_nl" valid_values="" >
+       Specified continental Liquid droplet concentrations (in #/cc) when micro_do_nccons=.true.,CDNC_land=micro_nccons_land
+Default: set by build-namelist
+</entry>   
+<entry id="micro_nccons_ocean" type="real" category="microphys"
+       group="micro_mg_nl" valid_values="" >
+       Specified marine Liquid droplet concentrations (in #/cc) when micro_do_nccons=.true.,CDNC_ocean=micro_nccons_ocean
+Default: set by build-namelist
+
+
 <entry id="micro_nicons" type="real" category="microphys"
        group="micro_mg_nl" valid_values="" >
 Ice crystal concentration (in #/cc) when micro_do_nicons=.true.
