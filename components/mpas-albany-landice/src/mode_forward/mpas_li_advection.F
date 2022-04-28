@@ -445,37 +445,21 @@ module li_advection
          ! Grounded and floating basal mass balance should come from the thermal solver.
 
          ! TODO: more complicated treatment at GL?
-         ! Limit basal mass balance by ice thickness
-         groundedBasalMassBalApplied(:) = groundedBasalMassBal(:)
-         floatingBasalMassBalApplied(:) = floatingBasalMassBal(:)
-         do iCell = 1, nCells
-            if ( groundedBasalMassBal(iCell) < 0.0_RKIND ) then
-               groundedBasalMassBalApplied(iCell) = -1.0_RKIND * min(abs(groundedBasalMassBal(iCell)), &
-                                                                     thickness(iCell) * config_ice_density / dt)
-            endif
-            if ( floatingBasalMassBal(iCell) < 0.0_RKIND ) then
-               floatingBasalMassBalApplied(iCell) =  -1.0_RKIND * min(abs(floatingBasalMassBal(iCell)), &
-                                                                      thickness(iCell) * config_ice_density / dt)
-            endif
-         enddo
 
          where ( li_mask_is_grounded_ice(cellMask) )
 
             basalMassBal = groundedBasalMassBal
-            basalMassBalApplied = groundedBasalMassBalApplied
 
          elsewhere ( li_mask_is_floating_ice(cellMask) )
 
             ! Currently, floating and grounded ice are mutually exclusive.
             ! This could change if the GL is parameterized, in which case this logic may need adjustment.
             basalMassBal = floatingBasalMassBal
-            basalMassBalApplied = floatingBasalMassBalApplied
 
          elsewhere ( .not. (li_mask_is_ice(cellMask) ) )
 
             ! We don't allow a positive basal mass balance where ice is not already present.
             basalMassBal = 0.0_RKIND
-            basalMassBalApplied = 0.0_RKIND
 
          end where
 
@@ -487,7 +471,10 @@ module li_advection
               sfcMassBal,          &
               sfcMassBalApplied,   &
               groundedSfcMassBalApplied,   &
+              basalMassBal,        &
               basalMassBalApplied, &
+              groundedBasalMassBalApplied, &
+              floatingBasalMassBalApplied, &
               surfaceTracers,      &
               basalTracers,        &
               layerThickness,      &
@@ -707,7 +694,10 @@ module li_advection
               sfcMassBal,          &
               sfcMassBalApplied,   &
               groundedSfcMassBalApplied,   &
-              basalMassBalApplied,        &
+              basalMassBal,        &
+              basalMassBalApplied, &
+              groundedBasalMassBalApplied, &
+              floatingBasalMassBalApplied, &
               surfaceTracers,      &
               basalTracers,        &
               layerThickness,      &
@@ -726,7 +716,7 @@ module li_advection
       real (kind=RKIND), dimension(:), intent(in) ::  &
            bedTopography,      & !< Input: bed elevation (m)
            sfcMassBal,         & !< Input: surface mass balance (kg/m^2/s)
-           basalMassBalApplied          !< Input: basal mass balance (kg/m^2/s)
+           basalMassBal          !< Iinput: basal mass balance (kg/m^2/s)
 
       real(kind=RKIND), dimension(:,:), intent(in) :: &
            surfaceTracers,     & !< Input: tracer values of new ice at upper surface
@@ -752,7 +742,10 @@ module li_advection
       real(kind=RKIND), dimension(:), intent(out) :: &
            groundedSfcMassBalApplied !< Output: surface mass balance actually applied to grounded ice on this time step (kg/m^2/s)
 
-
+      real(kind=RKIND), dimension(:), intent(out) :: &
+           basalMassBalApplied,         & !< Output: basal mass balance actually applied on this time step (kg/m^2/s)
+           groundedBasalMassBalApplied, & !< Output: basal mass balance actually applied to grounded ice on this time step (kg/m^2/s)
+           floatingBasalMassBalApplied    !< Output: basal mass balance actually applied to floating ice on this time step (kg/m^2/s)
       ! local variables
 
       real (kind=RKIND) ::  &
@@ -784,8 +777,9 @@ module li_advection
       ! If positive, then add the SMB to the top layer, conserving mass*tracer products
       ! If negative, then melt from the top down until the melting term is used up or the ice is gone
 
-      ! Initialize applied SMB field
+      ! Initialize applied SMB and BMB fields
       sfcMassBalApplied(:) = sfcMassBal(:)
+      basalMassBalApplied(:) = basalMassBal(:)
 
       do iCell = 1, nCells
 
@@ -855,11 +849,6 @@ module li_advection
 
          endif   ! sfcMassBal > 0
 
-         groundedSfcMassBalApplied(:) = 0.0_RKIND
-         where (li_mask_is_grounded_ice(cellMask) .or. bedTopography > config_sea_level)
-            groundedSfcMassBalApplied = sfcMassBalApplied
-         end where
-
          ! apply basal mass balance
 
          if (basalMassBalApplied(iCell) > 0.0_RKIND) then
@@ -897,11 +886,32 @@ module li_advection
                endif
             enddo
 
-            !TODO - If remaining basalAblat > 0, then keep track of it to conserve energy
+            if (basalAblat > 0.0_RKIND) then
+               basalMassBalApplied(iCell) = basalMassBalApplied(iCell) + basalAblat * rhoi / dt
+               !TODO - If remaining basalAblat > 0, then keep track of it to conserve energy
+            endif
 
          endif   ! basalMassBalApplied > 0
 
       enddo   ! iCell
+
+      ! Separate grounded and floating components, as necessary.
+      where (li_mask_is_grounded_ice(cellMask) .or. bedTopography > config_sea_level)
+            groundedSfcMassBalApplied = sfcMassBalApplied
+      elsewhere
+            groundedSfcMassBalApplied = 0.0_RKIND
+      end where
+
+      where (li_mask_is_grounded_ice(cellMask))
+            groundedBasalMassBalApplied = basalMassBalApplied
+            floatingBasalMassBalApplied = 0.0_RKIND
+      elsewhere (li_mask_is_floating_ice(cellMask))
+            floatingBasalMassBalApplied = basalMassBalApplied
+            groundedBasalMassBalApplied = 0.0_RKIND
+      elsewhere
+            groundedBasalMassBalApplied = 0.0_RKIND
+            floatingBasalMassBalApplied = 0.0_RKIND
+      end where
 
       deallocate(thckTracerProducts)
 
