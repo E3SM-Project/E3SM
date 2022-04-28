@@ -993,8 +993,8 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   }
 
   // Write all timers to file, and possibly finalize gptl
-  write_timers_to_file (m_atm_comm,"scream_timing.txt");
   if (not m_gptl_externally_handled) {
+    write_timers_to_file (m_atm_comm,"scream_timing.txt");
     finalize_gptl();
   }
 

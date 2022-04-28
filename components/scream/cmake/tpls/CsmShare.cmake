@@ -30,12 +30,12 @@ macro (CreateCsmShareTarget)
     # Look for libcsm_share in the complex path we built above
     find_library(CSM_SHARE_LIB csm_share REQUIRED PATHS ${CSM_SHARE})
 
-    # Create the imported target that scream targets can link to
-    add_library(csm_share UNKNOWN IMPORTED GLOBAL)
-    set_target_properties(csm_share PROPERTIES IMPORTED_LOCATION ${CSM_SHARE_LIB})
-    set_target_properties(csm_share PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${CSM_SHARE})
+    # Create the interface library, and set target properties
+    add_library (csm_share INTERFACE)
+    target_link_libraries (csm_share INTERFACE ${CSM_SHARE_LIB})
+    target_include_directories(csm_share INTERFACE ${CSM_SHARE})
 
-    # Create the piof imported target, and link it to csm_share, so that cmake will correctly
+    # Create the piof interface target, and link it to csm_share, so that cmake will correctly
     # attach it to any downstream target linking against csm_share
     include(${SCREAM_TPLS_MODULE_DIR}/Scorpio.cmake)
     CreateScorpioTargets()
