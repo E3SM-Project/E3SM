@@ -36,7 +36,8 @@ module VegetationType
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use clm_varcon     , only : ispval
-  use clm_varctl     , only : use_fates
+  use clm_varctl     , only : use_fates, iac_active
+  use clm_varctl, only :  iulog
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -49,6 +50,8 @@ module VegetationType
      ! indices and weights for higher subgrid levels (column, landunit, topounit, gridcell)
      integer , pointer :: gridcell      (:) => null() ! index into gridcell level quantities
      real(r8), pointer :: wtgcell       (:) => null() ! weight (relative to gridcell) 
+     ! weight (relative to gridcell-land) for passing data from the iac
+     real(r8), pointer :: wtgcell_iac   (:) => null()
      integer , pointer :: topounit      (:) => null() ! index into topounit level quantities
      real(r8), pointer :: wttopounit    (:) => null() ! weight (relative to topounit)
      integer , pointer :: landunit      (:) => null() ! index into landunit level quantities
@@ -117,6 +120,12 @@ contains
        allocate(this%wt_ed      (begp:endp)); this%wt_ed      (:) = nan 
     end if
 
+! avd
+write(iulog,*) 'in veg_pp_init iac_active is ', iac_active
+    if (iac_active) then
+       allocate(this%wtgcell_iac   (begp:endp)); this%wtgcell (:) = nan
+    end if
+
 	end subroutine veg_pp_init
 
   !------------------------------------------------------------------------
@@ -143,6 +152,10 @@ contains
        deallocate(this%is_veg)
        deallocate(this%is_bareground)
        deallocate(this%wt_ed)
+    end if
+
+    if (iac_active) then
+       deallocate(this%wtgcell_iac)
     end if
 
   end subroutine veg_pp_clean
