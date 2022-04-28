@@ -587,9 +587,9 @@ end subroutine shr_scam_getCloseLatLonFile
 !
 ! !INTERFACE: ------------------------------------------------------------------
 
-subroutine shr_scam_checkSurface(scmlon, scmlat, scm_multcols, scm_nx, scm_ny, &
-     ocn_compid, ocn_mpicom, lnd_present, sno_present, ocn_present, ice_present, &
-     rof_present, flood_present, rofice_present)
+subroutine shr_scam_checkSurface(scmlon, scmlat, ocn_compid, ocn_mpicom, &
+     lnd_present, sno_present, ocn_present, ice_present, &
+     rof_present, flood_present, rofice_present, iac_present)
 
 ! !USES:
    use shr_dmodel_mod    ! shr data model stuff
@@ -601,9 +601,6 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, scm_multcols, scm_nx, scm_ny, &
 ! !INPUT/OUTPUT PARAMETERS:
 
    real(R8),                     intent(in)  :: scmlon,scmlat ! single column lat lon
-   logical,                      intent(in)  :: scm_multcols ! SCM over domain logical
-   integer(IN),                  intent(in)  :: scm_nx       ! number points in x direction
-   integer(IN),                  intent(in)  :: scm_ny       ! number points in y direction
    integer(IN),                  intent(in)  :: ocn_compid   ! id for ocean model
    integer(IN),                  intent(in)  :: ocn_mpicom   ! mpi communicator for ocean
    logical,            optional, intent(inout) :: lnd_present  ! land point
@@ -613,6 +610,7 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, scm_multcols, scm_nx, scm_ny, &
    logical,            optional, intent(inout) :: rof_present  ! land point with rof
    logical,            optional, intent(inout) :: flood_present  ! rof doing flood
    logical,            optional, intent(inout) :: rofice_present ! land point with rof
+   logical,            optional, intent(inout) :: iac_present ! iac model 
 
 !EOP
 
@@ -644,13 +642,12 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, scm_multcols, scm_nx, scm_ny, &
    character(*),parameter :: subname = "(shr_scam_checkSurface) "
    character(*),parameter :: F00   = "('(shr_scam_checkSurface) ',8a)"
    character(len=CL)      :: decomp = '1d' ! restart pointer file
-   real(r8)               :: sst_constant_value 
    character(len=CL)      :: restfilm = 'unset'
    character(len=CL)      :: restfils = 'unset'
    integer(IN)   :: nfrac
    logical :: force_prognostic_true = .false.
    namelist /dom_inparm/ sstcyc, nrevsn, rest_pfile, bndtvs, focndomain
-   namelist / docn_nml / decomp, sst_constant_value, force_prognostic_true, &
+   namelist / docn_nml / decomp, force_prognostic_true, &
         restfilm, restfils
 
 !-------------------------------------------------------------------------------
@@ -715,8 +712,7 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, scm_multcols, scm_nx, scm_ny, &
       call shr_strdata_readnml(SCAMSDAT,'docn_in')
       call shr_dmodel_readgrid(SCAMSDAT%grid,SCAMSDAT%gsmap,SCAMSDAT%nxg,SCAMSDAT%nyg,SCAMSDAT%nzg, &
            SCAMSDAT%domainfile, ocn_compid, ocn_mpicom, '2d1d', readfrac=.true., &
-           scmmode=.true.,scm_multcols=scm_multcols,scmlon=scmlon,scmlat=scmlat, &
-           scm_nx=scm_nx,scm_ny=scm_ny)
+           scmmode=.true.,scmlon=scmlon,scmlat=scmlat)
       nfrac = mct_aVect_indexRA(SCAMSDAT%grid%data,'frac')
 
       ocn_point = (SCAMSDAT%grid%data%rAttr(nfrac,1) > 0._r8)
@@ -741,6 +737,9 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, scm_multcols, scm_nx, scm_ny, &
    if (present(rof_present))    rof_present   = .false.
    if (present(flood_present))  flood_present = .false.
    if (present(rofice_present)) rofice_present = .false.
+
+   ! Always turn iac off
+   if (present(iac_present)) iac_present = .false.
 
 end subroutine shr_scam_checkSurface
 

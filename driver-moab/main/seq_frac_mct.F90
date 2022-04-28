@@ -3,12 +3,13 @@
 !  Fraction Notes: tcraig, august 2008
 !  Assumes is running on CPLID pes
 !
-!  the fractions fields are now afrac, ifrac, ofrac, lfrac, and lfrin.
+!  the fractions fields are now afrac, ifrac, ofrac, lfrac, lfrin, zfrac
 !    afrac = fraction of atm on a grid
 !    lfrac = fraction of lnd on a grid
 !    ifrac = fraction of ice on a grid
 !    ofrac = fraction of ocn on a grid
-!    lfrin = land fraction defined by the land model
+!    lfrin = land fraction defined by the land model (atm-lnd domain file)
+!    zfrac = iac-atm fraction is 1 for whole grid cell
 !    ifrad = fraction of ocn on a grid at last radiation time
 !    ofrad = fraction of ice on a grid at last radiation time
 !      afrac, lfrac, ifrac, and ofrac are the self-consistent values in the
@@ -23,10 +24,13 @@
 !    character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
 !    character(*),parameter :: fraclist_g = 'gfrac:lfrac'
 !    character(*),parameter :: fraclist_r = 'lfrac:rfrac'
+!    character(*),parameter :: fraclist_z = 'afrac:zfrac:lfrac:lfrin'
 !
 !  we assume ocean and ice are on the same grids, same masks
 !  we assume ocn2atm and ice2atm are masked maps
 !  we assume lnd2atm is a global map
+!  we assume that iac domain is relative to atm
+!  we assume that iac does not use these lfrac, lfrin
 !  we assume that the ice fraction evolves in time but that
 !    the land model fraction does not.  the ocean fraction then
 !    is just the complement of the ice fraction over the region
@@ -147,6 +151,7 @@ module seq_frac_mct
   use prep_glc_mod, only: prep_glc_get_mapper_Fl2g
   use prep_lnd_mod, only: prep_lnd_get_mapper_Sz2l
   use prep_iac_mod, only: prep_iac_get_mapper_Sl2z
+  use prep_iac_mod, only: prep_iac_get_mapper_Sa2z
 
   use component_type_mod
 
@@ -201,7 +206,7 @@ module seq_frac_mct
   type(seq_map)  , pointer :: mapper_z2l
   type(seq_map)  , pointer :: mapper_z2a
   type(seq_map)  , pointer :: mapper_l2z
-
+  type(seq_map)  , pointer :: mapper_a2z
 
   private seq_frac_check
 
@@ -283,7 +288,7 @@ logical :: iamroot
                  'afrac:ifrac:ofrac:lfrac:lfrin:zfrac'
     character(*),parameter :: fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
     character(*),parameter :: fraclist_i = 'afrac:ifrac:ofrac'
-    character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin:zfrac'
+    character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
     character(*),parameter :: fraclist_g = 'gfrac:lfrac'
     character(*),parameter :: fraclist_r = 'lfrac:rfrac'
     character(*),parameter :: fraclist_w = 'wfrac'
@@ -352,6 +357,7 @@ iamroot = seq_comm_iamroot(CPLID)
        call mct_aVect_init(fractions_l,rList=fraclist_l,lsize=lsize)
        call mct_aVect_zero(fractions_l)
 
+       ! this comes from the atm-lnd domain file, not the land surface files
        kk = mct_aVect_indexRA(fractions_l,"lfrin",perrWith=subName)
        kf = mct_aVect_indexRA(dom_l%data ,"frac" ,perrWith=subName)
 
@@ -397,17 +403,18 @@ iamroot = seq_comm_iamroot(CPLID)
        kz = mct_aVect_indexRA(fractions_z,"zfrac",perrWith=subName)
        kf = mct_aVect_indexRA(dom_z%data ,"frac" ,perrWith=subName)
 
-       ! TRS - I think this 'ky' is a typo, or references something removed
-       ! earlier, but we'll keep it here and commented out as reference
-       ! just in case.
-       ! fractions_z%rAttr(ky,:) = dom_z%data%rAttr(kf,:)
-
+       ! these iac domain fractions are 1, as the z2a data
+       !   represent the whole grid cell
        fractions_z%rAttr(kz,:) = dom_z%data%rAttr(kf,:)
 
        if (atm_present) then
           mapper_z2a => prep_atm_get_mapper_Fz2a()
+          mapper_a2z => prep_iac_get_mapper_Sa2z()
           call seq_map_map(mapper_z2a, fractions_z, fractions_a, &
                            fldlist='zfrac', norm=.false.)
+          ! use the a2z mapper to get the atm fracs into fractions_z
+          call seq_map_map(mapper_a2z, fractions_a, fractions_z, &
+             fldlist='afrac', norm=.false.)
        endif
 
     end if
@@ -464,19 +471,12 @@ iamroot = seq_comm_iamroot(CPLID)
     !     weights.  So we have to settle for a residual calculation that is
     !     truncated to zero to try to preserve "all ocean" cells.
 
-! avd
-! how tied to the land is the iac? what if iac+atm but no land?
-! for no ocean/ice, do we use the iac grid or the land grid?
-!      these should be the same, but different files are read in
-! also, iac2atm may need different mapping file if it is global
-
     if (atm_present) then
        ka = mct_aVect_indexRa(fractions_a,"afrac",perrWith=subName)
        ki = mct_aVect_indexRa(fractions_a,"ifrac",perrWith=subName)
        kl = mct_aVect_indexRa(fractions_a,"lfrac",perrWith=subName)
        ko = mct_aVect_indexRa(fractions_a,"ofrac",perrWith=subName)
        kk = mct_aVect_indexRa(fractions_a,"lfrin",perrWith=subName)
-       kz = mct_aVect_indexRa(fractions_a,"zfrac",perrWith=subName)
        lSize = mct_aVect_lSize(fractions_a)
 
        if (ice_present .or. ocn_present) then
@@ -486,9 +486,6 @@ iamroot = seq_comm_iamroot(CPLID)
                 fractions_a%rAttr(kl,n) = 0.0_r8
                 if (atm_frac_correct) fractions_a%rAttr(ko,n) = 1.0_r8
              endif
-             if (iac_present) then
-                fractions_a%rAttr(kz,n) = fractions_a%rAttr(kl,n)
-             end if
           enddo
        else if (lnd_present) then
           do n = 1,lsize
@@ -500,25 +497,15 @@ iamroot = seq_comm_iamroot(CPLID)
                    fractions_a%rAttr(kl,n) = 1.0_r8
                 end if
              endif
-             if (iac_present) then
-               !avd if (iamroot) write(logunit,*) subName,'set a_zfrac n to 1'
-               fractions_a%rAttr(kz,n) = 1.0_r8
-             end if
           enddo
        endif
-
-       ! avd right now setting the iac frac for the atmosphere
-       ! equal to 1 
-       if (iac_present) then
-          ! avd if (iamroot) write(logunit,*) subName,'set a_zfrac to 1'
-          fractions_a%rAttr(kz,:) = 1.0_r8
-       end if
 
     endif
 
     ! --- finally, set fractions_l(lfrac) from fractions_a(lfrac)
     ! --- and fractions_r(lfrac) from fractions_l(lfrac)
     ! --- and fractions_g(lfrac) from fractions_l(lfrac)
+    ! --- and fractions_z(lfrac, lfrin) from fractions_l(lfrac, lfrin)
 
     if (lnd_present) then
        if (atm_present) then
@@ -531,17 +518,17 @@ iamroot = seq_comm_iamroot(CPLID)
           fractions_l%rAttr(kl,:) = fractions_l%rAttr(kk,:)
        end if
 
-       ! avd want to do land to iac and vice versa transfers on their native grids
+! avd - hold this line in case it is needed for debugging
+! avd if (iamroot) write(logunit,*) subName,'checking fractions_z'
+
+       ! just set the lnd info in fractions_z
+       ! but these are not used
        if (iac_present) then
-          mapper_z2l => prep_lnd_get_mapper_Sz2l()
-          call seq_map_map(mapper_z2l, fractions_z, fractions_l, &
-                           fldlist='zfrac', norm=.false.)
           mapper_l2z => prep_iac_get_mapper_Sl2z()
           call seq_map_map(mapper_l2z, fractions_l, fractions_z, &
                            fldlist='lfrin', norm=.false.)
-          kk = mct_aVect_indexRA(fractions_z,"lfrin",perrWith=subName)
-          kl = mct_aVect_indexRA(fractions_z,"lfrac",perrWith=subName)
-          fractions_z%rAttr(kl,:) = fractions_z%rAttr(kk,:)
+          call seq_map_map(mapper_l2z, fractions_l, fractions_z, &
+                           fldlist='lfrac', norm=.false.)
        end if
        
     end if

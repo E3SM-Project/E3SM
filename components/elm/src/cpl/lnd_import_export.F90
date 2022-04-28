@@ -1163,12 +1163,14 @@ contains
        end if
 
        ! iac coupling
+       ! the passed values are fraction of actual grid cell (not fraction of
+       ! land), even though the coupler pct labels are still present
 
        if (iac_active) then
 
           do num = 0,numpft
-             iac2lnd_vars%pct_pft(g,num) = x2l(index_x2l_Sz_pct_pft(num),i)
-             iac2lnd_vars%pct_pft_prev(g,num) = x2l(index_x2l_Sz_pct_pft_prev(num),i)
+             iac2lnd_vars%frac_pft(g,num) = x2l(index_x2l_Sz_pct_pft(num),i)
+             iac2lnd_vars%frac_pft_prev(g,num) = x2l(index_x2l_Sz_pct_pft_prev(num),i)
              if (num < numharvest) then
                 iac2lnd_vars%harvest_frac(g,num) = x2l(index_x2l_Sz_harvest_frac(num),i)
              end if

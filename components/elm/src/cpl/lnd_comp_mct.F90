@@ -41,14 +41,11 @@ contains
     ! !USES:
     use abortutils       , only : endrun
     use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
-    use elm_initializeMod, only : initialize1, initialize2, initialize3
-    use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars
-    use elm_instance     , only : elm_instance_init
-    use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland
-    use elm_varctl       , only : inst_index, inst_suffix, inst_name, precip_downscaling_method
-    use elm_varorb       , only : eccen, obliqr, lambm0, mvelpp
-    use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars, lnd2iac_vars
-    use elm_varctl , only : clm_varctl_set_iac_active_only
+    use clm_initializeMod, only : initialize1, initialize2, initialize3
+    use clm_instMod      , only : lnd2atm_vars, lnd2glc_vars, lnd2iac_vars
+    use clm_varctl       , only : finidat,single_column, clm_varctl_set, iulog, noland
+    use clm_varctl       , only : inst_index, inst_suffix, inst_name
+    use clm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use controlMod       , only : control_setNL
     use decompMod        , only : get_proc_bounds
     use domainMod        , only : ldomain
@@ -67,6 +64,7 @@ contains
     use spmdMod          , only : masterproc, npes, spmd_init
     use elm_varctl       , only : nsrStartup, nsrContinue, nsrBranch, use_lnd_rof_two_way
     use elm_cpl_indices  , only : elm_cpl_indices_set
+    use elm_varctl       , only : clm_varctl_set_iac_active_only, iac_active
     use perf_mod         , only : t_startf, t_stopf
     use mct_mod
     use ESMF
@@ -92,7 +90,7 @@ contains
     logical  :: verbose_taskmap_output               ! true then use verbose task-to-node mapping format
     logical  :: atm_aero                             ! Flag if aerosol data sent from atm model
     logical  :: atm_present                          ! Flag if atmosphere model present
-!    logical  :: iac_active         ! Flag if iac/gcam is present and prognostic
+    logical  :: iac_present     ! Flag if iac model present
     real(r8) :: scmlat                               ! single-column latitude
     real(r8) :: scmlon                               ! single-column longitude
     real(r8) :: nextsw_cday                          ! calday from clock of next radiation computation
@@ -246,6 +244,15 @@ contains
 
     use_lnd_rof_two_way = lnd_rof_two_way
     
+    ! Determine if iac is active, and set flag
+    call seq_infodata_GetData(infodata, iac_present=iac_present)
+    call clm_varctl_set_iac_active_only(iac_present)
+
+! avd
+write(iulog,*) sub//'iac_present is ',iac_present, &
+                'iac_active is ', iac_active
+
+
     ! Read namelist, grid and surface data
 
     call initialize1( )
@@ -267,12 +274,6 @@ contains
        call endrun( sub//' ERROR: atmosphere model MUST send aerosols to CLM' )
     end if
 
-    ! set elm flag denoting active IAC/GCAM component
-    ! avd this infodata isn't set yet, so do it in the iac init
-    !call seq_infodata_GetData(infodata, iac_prognostic=iac_active)
-    !call clm_varctl_set_iac_active_only(iac_active)
-
-!    write(iulog,*) sub, 'local iac_active ',iac_active
 
     ! Initialize clm gsMap, clm domain and clm attribute vectors
 
@@ -309,8 +310,8 @@ contains
     end if
 
     ! Create land export state 
-    ! note that lnd2iac_vars is not set yet
-    if (atm_present) then 
+    ! avd - note that lnd2iac_vars is not set yet for restart
+    if (atm_present .or. iac_present) then 
       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x_l%rattr)
     endif
 

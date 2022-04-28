@@ -26,9 +26,10 @@ module iac2lndMod
 
   ! iac -> land structure
   ! Dimensioned by (ngrid,numpft)
+  ! these values are fraction of actual grid cell (not fraction of land)
   type, public :: iac2lnd_type
-     real(r8), pointer :: pct_pft(:,:) => null()
-     real(r8), pointer :: pct_pft_prev(:,:) => null()
+     real(r8), pointer :: frac_pft(:,:) => null()
+     real(r8), pointer :: frac_pft_prev(:,:) => null()
      real(r8), pointer :: harvest_frac(:,:) => null()
 
    contains
@@ -62,35 +63,19 @@ contains
 
     begg = bounds%begg; endg = bounds%endg
 
-    ! set the cn harveset flag
-    do_cn_harvest = .true.
-
     ! Add in 0 as bare ground pft
     ! note that indices here start at 0
     ! numpft does not include bare ground
     ! nharvest is the total harvest fields
-    allocate(this%pct_pft(begg:endg,0:numpft))
-    allocate(this%pct_pft_prev(begg:endg,0:numpft))
+    allocate(this%frac_pft(begg:endg,0:numpft))
+    allocate(this%frac_pft_prev(begg:endg,0:numpft))
     allocate(this%harvest_frac(begg:endg,0:(numharvest-1)))
 
-    ! allocate the harvest array; 1d cuz they are added
-    allocate(harvest(bounds%begg:bounds%endg),stat=ier)
-    if (ier /= 0) then
-       call endrun(msg=' allocation error for harvest'// &
-                   errMsg(__FILE__, __LINE__))
-    end if
-
     ! initialize the arrays
-    this%pct_pft(:,:) = 1.0_r8
-    this%pct_pft_prev(:,:) = 1.0_r8
+    this%frac_pft(:,:) = 1.0_r8
+    this%frac_pft_prev(:,:) = 1.0_r8
     this%harvest_frac(:,:) = 1.0_r8
-    harvest(:) = 0.0
-
-    ! check that number of pfts is correct
-    if ( maxpatch_pft /= numpft+1 )then
-       errstr = 'maxpatch_pft does NOT equal numpft+1 - invalid for dyn pft' 
-       call endrun(msg=errstr//errMsg(__FILE__, __LINE__) )
-    end if
+    harvest(:) = 0.0_r8
 
   end subroutine Init
 
@@ -121,8 +106,9 @@ contains
     ! !USES:
     use clm_time_manager, only : get_curr_yearfrac
     use landunit_varcon , only : istsoil
-    use clm_varctl, only: iac_active, iulog
+    use clm_varctl, only : iac_active, iulog
     use netcdf   !avd - this is for a diagnostic file
+    use domainMod,   only : ldomain
     !
     ! !ARGUMENTS:
     class(iac2lnd_type), intent(inout) :: this
@@ -139,7 +125,7 @@ contains
     integer :: harv_varid, cid_varid
     integer :: pdimid(2), hdimid(2)
     integer, allocatable :: cell_ids(:)
-    real(r8) :: sumwtprev, sumwtcurrent
+    real(r8) :: temp, temp_prev
 
     character(len=*), parameter :: subname = 'update_iac2lnd'
 
@@ -163,7 +149,8 @@ contains
           g=veg_pp%gridcell(p)
           pft=veg_pp%itype(p)
           l = veg_pp%landunit(p)
-         
+          c = veg_pp%column(p)        
+ 
           ! Note that we only deal with the istsoil landunit here, NOT the
           ! istcrop landunit
           ! (if there is one)
@@ -177,24 +164,57 @@ contains
              ! single column
              ! iac2lnd indices start at 0 to match pft ids
 
-             ! avd - do not actually set the land values because the mapping is
-             !       incorrect such that the land model fails
+             ! these values are fraction of actual grid cell (not fraction of
+             !    land), so need to be converted
+             ! use the domain landfrac to get veg_pp%wtgcell_iac, which is the
+             !    pft fraction of land (lnd model assumes all land cells have
+             !    landfrac==1)
+             ! since this happens before update_landunit_weights and
+             !    compute_higher_order_weights,
+             !    store this in a special variable and then do the final calcs
+             !    after the comp_h_o_w function and before the checks
+             ! use a new function to calculate 
+             !    the veg_pp fractions, including veg_pp%wtcol, which is the
+             !    pft fraction of the column (i.e., of the veg land unit)
+             !    it will renormalize veg_pp%wtcol sum to 1 because landfracs are
+             !    consistent across components and grids, and then recalc the
+             !    other fractions
 
-             ! TRS - updated mapping code, so let's give it a whirl
-             if (this%pct_pft_prev(g,pft) == 0.0 .AND. &
-                  this%pct_pft(g,pft) > 0.0) then 
-                veg_pp%wtcol(p) = this%pct_pft(g,pft) + &
-                     wt1*(this%pct_pft_prev(g,pft) - this%pct_pft(g&
-                     ,pft))
+             ! ldomain%mask matches ldomain%frac - these are the only land
+             !    cells processed, so land mask should be one if frac != 0
+             ! so can just set pfts to zero outside of the active cells,
+             !    actually, this zero condition shouldn't exist 
+
+             if (ldomain%frac(g) .eq. 0._r8) then
+                   veg_pp%wtgcell_iac(p) = 0._r8
+             else
+                temp = this%frac_pft(g,pft) / (ldomain%frac(g) * ldomain%mask(g))
+                temp_prev = this%frac_pft_prev(g,pft) / &
+                             (ldomain%frac(g) * ldomain%mask(g)) 
+                veg_pp%wtgcell_iac(p) = temp + wt1*(temp_prev - temp)
              end if
           end if
        end do
 
-       ! sum the harvest data into one field
+       ! these are also fractions of actual grid cell
+       !    but are for this year so can use the current/prior col_pp%wtgcell for veg in
+       !    this cell to get the final fractions of col or veg land unit
+       ! land unit type 1 is vegetated land unit
+       ! just need to make sure that the values are <= 1
+
        harvest(begg:endg) = 0._r8
-       do h=0,(numharvest-1)
-          harvest(begg:endg) = harvest(begg:endg) + &
-                               this%harvest_frac(begg:endg,h)
+       do g = begg,endg
+         do c = bounds%begc, bounds%endc
+            if (col_pp%itype(c) .eq. 1 .and. col_pp%gridcell(c) .eq. g) then
+                ! sum the harvest data into one field 
+                do h=0,(numharvest-1)
+                   if (.not.(col_pp%wtgcell(c) .eq. 0._r8)) then
+                      harvest(g) = harvest(g) + &
+                                 this%harvest_frac(g,h) / col_pp%wtgcell(c)
+                   end if
+                end do
+             end if
+          end do
        end do
 
        ! avd - write these values to a file
@@ -208,6 +228,10 @@ contains
           p = p+1
        end do
        write(hfile,'(a)') './iac2lnd_update.nc'
+
+! avd - don't do this to see if it speeds up; besides, it isn't useful in
+! parallel
+if (.false.) then
        ierr = nf90_create(trim(hfile),nf90_clobber,ncid)
        ierr = nf90_def_dim(ncid,'ngcells',ngcells,pdimid(1))
        ierr = nf90_def_dim(ncid,'npfts',17,pdimid(2))
@@ -221,15 +245,16 @@ contains
 
        ierr = nf90_enddef(ncid)
 
-       ierr = nf90_put_var(ncid,pft_varid,this%pct_pft(begg:endg,:))
+       ierr = nf90_put_var(ncid,pft_varid,this%frac_pft(begg:endg,:))
 
-       ierr = nf90_put_var(ncid,pft_prev_varid,this%pct_pft_prev(begg:endg,:))
+       ierr = nf90_put_var(ncid,pft_prev_varid,this%frac_pft_prev(begg:endg,:))
 
        ierr = nf90_put_var(ncid,harv_varid,this%harvest_frac(begg:endg,:))
 
        ierr = nf90_put_var(ncid,cid_varid,cell_ids)
 
        ierr = nf90_close(ncid)
+end if
 
     endif
   end subroutine update_iac2lnd

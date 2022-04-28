@@ -81,7 +81,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_atm)
+  subroutine prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm)
 
     !---------------------------------------------------------------
     ! Description
@@ -92,7 +92,6 @@ contains
     logical                  , intent(in)    :: ocn_c2_atm ! .true.  => ocn to atm coupling on
     logical                  , intent(in)    :: ice_c2_atm ! .true.  => ice to atm coupling on
     logical                  , intent(in)    :: lnd_c2_atm ! .true.  => lnd to atm coupling on
-    logical                  , intent(in)    :: iac_c2_atm ! .true.  => iac to atm coupling on
     !
     ! Local Variables
     integer                          :: lsize_a
@@ -237,6 +236,7 @@ contains
                'mapper_Sl2a initialization',esmf_map_flag)
        end if
 
+       ! needed for domain checking
        if (iac_present) then
           if (iamroot_CPLID) then
              write(logunit,*) ' '

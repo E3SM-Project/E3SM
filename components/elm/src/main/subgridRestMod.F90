@@ -10,19 +10,16 @@ module subgridRestMod
   use decompMod          , only : bounds_type, BOUNDS_LEVEL_PROC, ldecomp
   use domainMod          , only : ldomain
   use clm_time_manager   , only : get_curr_date
-  use elm_varcon         , only : nameg, namet, namel, namec, namep
-  use elm_varpar         , only : nlevsno
+  use clm_varcon         , only : nameg, namel, namec, namep
+  use clm_varpar         , only : nlevsno
   use pio                , only : file_desc_t
   use ncdio_pio          , only : ncd_int, ncd_double
-  use GetGlobalValuesMod , only : GetGlobalIndexArray
-  use GridcellType       , only : grc_pp
-  use TopounitType       , only : top_pp
-  use LandunitType       , only : lun_pp
-  use ColumnType         , only : col_pp
-  use VegetationType     , only : veg_pp
-  use perf_mod           , only : t_startf, t_stopf
+  use GetGlobalValuesMod , only : GetGlobalIndex
+  use GridcellType       , only : grc_pp                
+  use LandunitType       , only : lun_pp                
+  use ColumnType         , only : col_pp                
+  use VegetationType          , only : veg_pp                
   use restUtilMod
-
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -61,14 +58,10 @@ contains
     !------------------------------------------------------------------------
 
     if (flag /= 'read') then
-       call t_startf('subgridRest_write')
        call subgridRest_write_only(bounds, ncid, flag)
-       call t_stopf('subgridRest_write')
     end if
 
-    call t_startf('subgridRest_write-read')
     call subgridRest_write_and_read(bounds, ncid, flag)
-    call t_stopf('subgridRest_write-read')
 
   end subroutine subgridRest
 
@@ -92,15 +85,13 @@ contains
     character(len=*) , intent(in)    :: flag   ! flag to determine if define, write or read data
     !
     ! !LOCAL VARIABLES:
-    integer :: g,l,c,p,i,t             ! indices
+    integer :: g,l,c,p,i             ! indices
     logical :: readvar               ! temporary
     real(r8), pointer :: rgarr(:)    ! temporary
-    real(r8), pointer :: rtarr(:)    ! temporary
     real(r8), pointer :: rlarr(:)    ! temporary
     real(r8), pointer :: rcarr(:)    ! temporary
     real(r8), pointer :: rparr(:)    ! temporary
     integer , pointer :: igarr(:)    ! temporary
-    integer , pointer :: itarr(:)    ! temporary
     integer , pointer :: ilarr(:)    ! temporary
     integer , pointer :: icarr(:)    ! temporary
     integer , pointer :: iparr(:)    ! temporary
@@ -141,52 +132,6 @@ contains
          interpinic_flag='skip', readvar=readvar, data=igarr)
 
     deallocate(rgarr,igarr)
-    
-    !------------------------------------------------------------------
-    ! Write topounit info
-    !------------------------------------------------------------------
-
-    allocate(rtarr(bounds%begt:bounds%endt), itarr(bounds%begt:bounds%endt))
-
-    do t=bounds%begt,bounds%endt
-       rtarr(t) = grc_pp%londeg(top_pp%gridcell(t))
-    enddo
-    call restartvar(ncid=ncid, flag=flag, varname='topo1d_lon', xtype=ncd_double,  &
-         dim1name='topounit',                                                      &
-         long_name='topounit longitude', units='degrees_east',                     &
-         interpinic_flag='skip', readvar=readvar, data=rtarr)
- 
-    do t=bounds%begt,bounds%endt
-       rtarr(t) = grc_pp%latdeg(top_pp%gridcell(t))
-    enddo
-    call restartvar(ncid=ncid, flag=flag, varname='topo1d_lat', xtype=ncd_double,  &
-         dim1name='topounit',                                                      &
-         long_name='topounit latitude', units='degrees_north',                     &
-         interpinic_flag='skip', readvar=readvar, data=rtarr)
-
-    do t=bounds%begt,bounds%endt
-       itarr(t) = mod(ldecomp%gdc2glo(top_pp%gridcell(t))-1,ldomain%ni) + 1
-    enddo
-    call restartvar(ncid=ncid, flag=flag, varname='topo1d_ixy', xtype=ncd_int,     &
-         dim1name='topounit',                                                      &
-         long_name='2d longitude index of corresponding topounit',                 &
-         interpinic_flag='skip', readvar=readvar, data=itarr)
-
-     do t=bounds%begt,bounds%endt
-        itarr(t) = (ldecomp%gdc2glo(top_pp%gridcell(t))-1)/ldomain%ni + 1
-     enddo
-    call restartvar(ncid=ncid, flag=flag, varname='topo1d_jxy', xtype=ncd_int,     &
-         dim1name='topounit',                                                      &
-         long_name='2d latitude index of corresponding topounit',                  &
-         interpinic_flag='skip', readvar=readvar, data=itarr)
-
-    itarr = GetGlobalIndexArray(top_pp%gridcell(bounds%begt:bounds%endt), bounds%begt, bounds%endt, elmlevel=nameg)
-    call restartvar(ncid=ncid, flag=flag, varname='topo1d_gridcell_index', xtype=ncd_int, &
-         dim1name='topounit',                                                             &
-         long_name='gridcell index of corresponding topounit',                            &
-         interpinic_flag='skip', readvar=readvar, data=itarr)
-
-    deallocate(rtarr, itarr)
 
     !------------------------------------------------------------------
     ! Write landunit info
@@ -197,11 +142,12 @@ contains
     do l=bounds%begl,bounds%endl
        rlarr(l) = grc_pp%londeg(lun_pp%gridcell(l))
     enddo
+
     call restartvar(ncid=ncid, flag=flag, varname='land1d_lon', xtype=ncd_double,  &
          dim1name='landunit',                                                      &
          long_name='landunit longitude', units='degrees_east',                     &
          interpinic_flag='skip', readvar=readvar, data=rlarr)
- 
+    
     do l=bounds%begl,bounds%endl
        rlarr(l) = grc_pp%latdeg(lun_pp%gridcell(l))
     enddo
@@ -218,24 +164,20 @@ contains
          long_name='2d longitude index of corresponding landunit',                 &
          interpinic_flag='skip', readvar=readvar, data=ilarr)
 
-     do l=bounds%begl,bounds%endl
-        ilarr(l) = (ldecomp%gdc2glo(lun_pp%gridcell(l))-1)/ldomain%ni + 1
-     enddo
+    do l=bounds%begl,bounds%endl
+       ilarr(l) = (ldecomp%gdc2glo(lun_pp%gridcell(l))-1)/ldomain%ni + 1
+    end do
     call restartvar(ncid=ncid, flag=flag, varname='land1d_jxy', xtype=ncd_int,     &
          dim1name='landunit',                                                      &
          long_name='2d latitude index of corresponding landunit',                  &
          interpinic_flag='skip', readvar=readvar, data=ilarr)
 
-    ilarr = GetGlobalIndexArray(lun_pp%gridcell(bounds%begl:bounds%endl), bounds%begl, bounds%endl, elmlevel=nameg)
+    do l=bounds%begl,bounds%endl
+       ilarr(l) = GetGlobalIndex(decomp_index=lun_pp%gridcell(l), clmlevel=nameg)
+    end do
     call restartvar(ncid=ncid, flag=flag, varname='land1d_gridcell_index', xtype=ncd_int, &
          dim1name='landunit',                                                             &
          long_name='gridcell index of corresponding landunit',                            &
-         interpinic_flag='skip', readvar=readvar, data=ilarr)
-    
-    ilarr = GetGlobalIndexArray(lun_pp%topounit(bounds%begl:bounds%endl), bounds%begl, bounds%endl, elmlevel=namet)
-    call restartvar(ncid=ncid, flag=flag, varname='land1d_topounit_index', xtype=ncd_int, &
-         dim1name='landunit',                                                             &
-         long_name='topounit index of corresponding landunit',                            &
          interpinic_flag='skip', readvar=readvar, data=ilarr)
 
     call restartvar(ncid=ncid, flag=flag, varname='land1d_ityplun', xtype=ncd_int, &
@@ -295,19 +237,17 @@ contains
          long_name='2d latitude index of corresponding column', units=' ',          &
          interpinic_flag='skip', readvar=readvar, data=icarr)
 
-    icarr = GetGlobalIndexArray(col_pp%gridcell(bounds%begc:bounds%endc), bounds%begc, bounds%endc, elmlevel=nameg)
+    do c= bounds%begc, bounds%endc
+       icarr(c) = GetGlobalIndex(decomp_index=col_pp%gridcell(c), clmlevel=nameg)
+    end do
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_gridcell_index', xtype=ncd_int, &
          dim1name='column',                                                               &
          long_name='gridcell index of corresponding column',                              &
          interpinic_flag='skip', readvar=readvar, data=icarr)
-    
-    icarr = GetGlobalIndexArray(col_pp%topounit(bounds%begc:bounds%endc), bounds%begc, bounds%endc, elmlevel=namet)
-    call restartvar(ncid=ncid, flag=flag, varname='cols1d_topounit_index', xtype=ncd_int, &
-         dim1name='column',                                                               &
-         long_name='topounit index of corresponding column',                              &
-         interpinic_flag='skip', readvar=readvar, data=icarr)
 
-    icarr = GetGlobalIndexArray(col_pp%landunit(bounds%begc:bounds%endc), bounds%begc, bounds%endc, elmlevel=namel)
+    do c= bounds%begc, bounds%endc
+       icarr(c) = GetGlobalIndex(decomp_index=col_pp%landunit(c), clmlevel=namel)
+    end do
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_landunit_index', xtype=ncd_int, &
          dim1name='column',                                                               &
          long_name='landunit index of corresponding column',                              &
@@ -332,7 +272,7 @@ contains
        else
           icarr(c) = 0
        end if
-    enddo
+    end do
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_active', xtype=ncd_int,   &
          dim1name='column',                                                         &
          long_name='column active flag (1=active, 0=inactive)', units=' ',          &
@@ -378,25 +318,25 @@ contains
          long_name='2d latitude index of corresponding pft', units='',         &
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
-    iparr = GetGlobalIndexArray(veg_pp%gridcell(bounds%begp:bounds%endp), bounds%begp, bounds%endp, elmlevel=nameg)
+    do p=bounds%begp,bounds%endp
+       iparr(p) = GetGlobalIndex(decomp_index=veg_pp%gridcell(p), clmlevel=nameg)
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_gridcell_index', xtype=ncd_int, &
          dim1name='pft',                                                                  &
          long_name='gridcell index of corresponding pft',                                 &
          interpinic_flag='skip', readvar=readvar, data=iparr)
-    
-    iparr = GetGlobalIndexArray(veg_pp%topounit(bounds%begp:bounds%endp), bounds%begp, bounds%endp, elmlevel=namet)
-    call restartvar(ncid=ncid, flag=flag, varname='pfts1d_topounit_index', xtype=ncd_int, &
-         dim1name='pft',                                                                  &
-         long_name='topounit index of corresponding pft',                                 &
-         interpinic_flag='skip', readvar=readvar, data=iparr)
 
-    iparr = GetGlobalIndexArray(veg_pp%landunit(bounds%begp:bounds%endp), bounds%begp, bounds%endp, elmlevel=namel)
+    do p=bounds%begp,bounds%endp
+       iparr(p) = GetGlobalIndex(decomp_index=veg_pp%landunit(p), clmlevel=namel)
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_landunit_index', xtype=ncd_int, &
          dim1name='pft',                                                                  &
          long_name='landunit index of corresponding pft',                                 &
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
-    iparr = GetGlobalIndexArray(veg_pp%column(bounds%begp:bounds%endp), bounds%begp, bounds%endp, elmlevel=namec)
+    do p=bounds%begp,bounds%endp
+       iparr(p) = GetGlobalIndex(decomp_index=veg_pp%column(p), clmlevel=namec)
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_column_index', xtype=ncd_int,   &
          dim1name='pft',                                                                  &
          long_name='column index of corresponding pft',                                   &
@@ -507,15 +447,11 @@ contains
          long_name='pft weight relative to corresponding column', units='',         &
          interpinic_flag='skip', readvar=readvar, data=veg_pp%wtcol)
 
-    call restartvar(ncid=ncid, flag=flag, varname='pfts1d_wttopounit', xtype=ncd_double, &
-         dim1name='pft',                                                            &
-         long_name='pft weight relative to corresponding topounit', units='',         &
-         interpinic_flag='skip', readvar=readvar, data=veg_pp%wttopounit)
     ! Snow column variables
 
     call restartvar(ncid=ncid, flag=flag, varname='SNLSNO', xtype=ncd_int,  & 
          dim1name='column', &
-         long_name='number of snow layers', units='1', &
+         long_name='number of snow layers', units='unitless', &
          interpinic_flag='interp', readvar=readvar, data=col_pp%snl)
 
     allocate(temp2d(bounds%begc:bounds%endc,-nlevsno+1:0))
@@ -615,6 +551,7 @@ contains
       !
       ! !USES:
       use elm_varctl          , only : nsrest, nsrContinue, use_fates
+      use elm_varctl          , only : iac_active
       use dynSubgridControlMod, only : get_do_transient_pfts
       !
       ! !ARGUMENTS:
@@ -639,6 +576,9 @@ contains
          ! Don't check weights for a ed case, because the weights will almost certainly
          ! differ from the surface dataset in this case
          do_check_weights = .false.
+      else if (iac_active) then
+         ! Don't check weights if iac is active
+         do_check_weights = .false.
       else
          do_check_weights = .true.
       end if
@@ -660,7 +600,7 @@ contains
       !
       ! !USES:
       use landunit_varcon, only : istsoil
-      use elm_varctl, only : iulog
+      use clm_varctl, only : iulog
       !
       ! !ARGUMENTS:
       type(bounds_type), intent(in)    :: bounds ! bounds
@@ -692,10 +632,10 @@ contains
                write(iulog,*) '(3) If you are confident that you are using the correct finidat and fsurdat files,'
                write(iulog,*) '    yet are still experiencing this error, then you can bypass this check by setting:'
                write(iulog,*) '      check_finidat_pct_consistency = .false.'
-               write(iulog,*) '    in user_nl_elm'
-               write(iulog,*) '    In this case, ELM will take the weights from the initial conditions file.'
+               write(iulog,*) '    in user_nl_clm'
+               write(iulog,*) '    In this case, CLM will take the weights from the initial conditions file.'
                write(iulog,*) ' '
-               call endrun(decomp_index=p, elmlevel=namep, msg=errMsg(__FILE__, __LINE__))
+               call endrun(decomp_index=p, clmlevel=namep, msg=errMsg(__FILE__, __LINE__))
             end if
          end if
       end do

@@ -226,7 +226,9 @@ contains
     if (masterproc) then
        call domain_check(ldomain)
     endif
-    ldomain%mask = 1  !!! TODO - is this needed?
+
+    ! avd - this doesn't appear to do anything and probably shouldn't
+    !ldomain%mask = 1  !!! TODO - is this needed?
 
     ! Get topo if appropriate (set ldomain%topo)
 

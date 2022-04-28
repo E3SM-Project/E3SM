@@ -428,7 +428,7 @@ contains
   !===============================================================================
 
   subroutine component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, &
-       samegrid_ro, samegrid_lg, samegrid_zl)
+       samegrid_ro, samegrid_lg, samegrid_az)
 
     !---------------------------------------------------------------
     ! Description
@@ -439,7 +439,7 @@ contains
     use prep_lnd_mod,       only : prep_lnd_get_mapper_Sa2l
     use prep_ice_mod,       only : prep_ice_get_mapper_SFo2i
     use prep_glc_mod,       only : prep_glc_get_mapper_Sl2g
-    use prep_iac_mod,       only : prep_iac_get_mapper_Sl2z
+    use prep_iac_mod,       only : prep_iac_get_mapper_Sa2z
     use component_type_mod, only : atm, lnd, ice, ocn, rof, glc, iac
     !
     ! Arguments
@@ -449,7 +449,8 @@ contains
     logical                  , intent(in)    :: samegrid_al
     logical                  , intent(in)    :: samegrid_ro
     logical                  , intent(in)    :: samegrid_lg  ! lnd & glc on same grid
-    logical                  , intent(in)    :: samegrid_zl  ! iac & lnd on same grid
+    logical                  , intent(in)    :: samegrid_az  ! iac & atm on same grid
+
     !
     ! Local variables
     type(mct_gsmap), pointer :: gsmap_s, gsmap_d
@@ -458,7 +459,7 @@ contains
     type(seq_map)  , pointer :: mapper_Sa2l
     type(seq_map)  , pointer :: mapper_SFo2i
     type(seq_map)  , pointer :: mapper_Sl2g
-    type(seq_map)  , pointer :: mapper_Sl2z
+    type(seq_map)  , pointer :: mapper_Sa2z
     logical                  :: atm_present ! atm present flag
     logical                  :: lnd_present ! lnd present flag
     logical                  :: ocn_present ! ocn present flag
@@ -476,7 +477,7 @@ contains
     mapper_Sa2l  => prep_lnd_get_mapper_Sa2l()
     mapper_SFo2i => prep_ice_get_mapper_SFo2i()
     mapper_Sl2g  => prep_glc_get_mapper_Sl2g()
-    mapper_Sl2z  => prep_iac_get_mapper_Sl2z()
+    mapper_Sa2z  => prep_iac_get_mapper_Sa2z()
 
     call seq_infodata_GetData( infodata, &
          atm_present=atm_present,        &
@@ -577,19 +578,23 @@ contains
        endif
     endif
 
-    if (lnd_present .and. iac_present) then
-       if (samegrid_zl) then
-          dom_s  => component_get_dom_cx(lnd(1))   !dom_lx
+    ! currently lnd and atm must be present and on the same grid
+    !    if iac is present
+    ! this is based on the atm because iac domain is defined
+    !    in relation to the atmosphere, not the land
+    if (atm_present .and. iac_present) then
+       if (samegrid_az) then
+          dom_s  => component_get_dom_cx(atm(1))   !dom_ax
           dom_d  => component_get_dom_cx(iac(1))   !dom_zx
 
-          call seq_map_map(mapper_Sl2z, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
+          call seq_map_map(mapper_Sa2z, av_s=dom_s%data, av_d=dom_d%data, fldlist='aream')
        else
           gsmap_d => component_get_gsmap_cx(iac(1)) ! gsmap_zx
           dom_d   => component_get_dom_cx(iac(1))   ! dom_zx
 
-          call seq_map_readdata('seq_maps.rc','lnd2iac_smapname:',mpicom_CPLID, CPLID, &
+          call seq_map_readdata('seq_maps.rc','atm2iac_smapname:',mpicom_CPLID, CPLID, &
                gsmap_d=gsmap_d, av_d=dom_d%data, avfld_d='aream', filefld_d='area_b', &
-               string='lnd2iac aream initialization')
+               string='atm2iac aream initialization')
        endif
     endif
 

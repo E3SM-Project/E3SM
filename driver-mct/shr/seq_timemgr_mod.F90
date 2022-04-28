@@ -90,6 +90,7 @@ module seq_timemgr_mod
   !      seq_timemgr_clock_ice
   !      seq_timemgr_clock_glc
   !      seq_timemgr_clock_wav
+  !      seq_timemgr_clock_iac
   !      seq_timemgr_clock_esp
 
   !  alarmnames:
@@ -107,6 +108,7 @@ module seq_timemgr_mod
   !      seq_timemgr_alarm_glcrun
   !      seq_timemgr_alarm_glcrun_avg
   !      seq_timemgr_alarm_wavrun
+  !      seq_timemgr_alarm_iacrun
   !      seq_timemgr_alarm_esprun
   !      seq_timemgr_alarm_ocnnext
   !      seq_timemgr_alarm_tprof
@@ -166,6 +168,7 @@ module seq_timemgr_mod
        seq_timemgr_clock_glc  = 'seq_timemgr_clock_glc' , &
        seq_timemgr_clock_wav  = 'seq_timemgr_clock_wav' , &
        seq_timemgr_clock_rof  = 'seq_timemgr_clock_rof' , &
+       seq_timemgr_clock_iac  = 'seq_timemgr_clock_iac' , &
        seq_timemgr_clock_esp  = 'seq_timemgr_clock_esp'
   character(len=8),private,parameter :: seq_timemgr_clocks(max_clocks) = &
        (/'drv     ','atm     ','lnd     ','ocn     ', &
@@ -1430,6 +1433,14 @@ contains
        call ESMF_ClockAdvance(SyncClock%ECP(seq_timemgr_nclock_wav)%EClock, rc=rc )
        call seq_timemgr_ESMFCodeCheck(rc, msg=subname//"Error from wav ESMF_ClockAdvance")
     endif
+
+!    if (ESMF_AlarmIsRinging(SyncClock%EAlarm(seq_timemgr_nclock_drv, &
+!           seq_timemgr_nalarm_iacrun))) then
+!       call ESMF_ClockAdvance(SyncClock%ECP(seq_timemgr_nclock_iac)%EClock, &
+!                                 rc=rc )
+!       call seq_timemgr_ESMFCodeCheck(rc, &
+!               msg=subname//"Error from iac ESMF_ClockAdvance")
+!    endif 
 
     if (ESMF_AlarmIsRinging(SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_esprun))) then
        call ESMF_ClockAdvance(SyncClock%ECP(seq_timemgr_nclock_esp)%EClock, rc=rc )
