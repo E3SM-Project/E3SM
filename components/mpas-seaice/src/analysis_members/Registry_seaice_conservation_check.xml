@@ -27,7 +27,7 @@
 			description="Name of the restart stream the analysis member will use to initialize itself if restart is enabled."
 			possible_values="A restart stream with state of the conservation check."
 		/>
-		<nml_option name="config_AM_conservationCheck_carbon_failure_abort" type="logical" default_value="false" units="unitless"
+		<nml_option name="config_AM_conservationCheck_carbon_failure_abort" type="logical" default_value="true" units="unitless"
 			description="If true, abort if carbon conservation fails bounds check."
 			possible_values="true or false"
 		/>
