@@ -1035,8 +1035,8 @@
 <use_crm_accel    use_MMF="1" MMF_microphysics_scheme="m2005">.false.</use_crm_accel>
 <crm_accel_uv     use_MMF="1" MMF_microphysics_scheme="m2005">.false.</crm_accel_uv>
 <!-- Disable MMF MSA for micro_p3 microphyics -->
-<use_crm_accel    use_MMF="1" MMF_microphysics_scheme="p3">.false.</use_crm_accel>
-<crm_accel_uv     use_MMF="1" MMF_microphysics_scheme="p3">.false.</crm_accel_uv>
+<use_crm_accel    use_MMF="1" MMF_microphysics_scheme="p3">.true.</use_crm_accel>
+<crm_accel_uv     use_MMF="1" MMF_microphysics_scheme="p3">.true.</crm_accel_uv>
 <crm_accel_factor use_MMF="1">2</crm_accel_factor>
 
 <!-- Cloud fraction -->
