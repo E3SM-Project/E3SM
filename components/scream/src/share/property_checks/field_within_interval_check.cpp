@@ -41,71 +41,109 @@ PropertyCheck::CheckResult FieldWithinIntervalCheck::check_impl () const
   const auto extents = layout.extents();
   const auto size = layout.size();
 
-  using minmax_t = typename Kokkos::MinMax<nonconst_ST>::value_type;
-  minmax_t minmax;
+  using space_t = typename Field::device_t::execution_space;
+  using minmaxloc_t = Kokkos::MinMaxLoc<nonconst_ST,int,space_t>;
+  using minmaxloc_value_t = typename minmaxloc_t::value_type;
+  minmaxloc_value_t minmaxloc;
   switch (layout.rank()) {
     case 1:
       {
         auto v = f.template get_view<const_ST*>();
-        Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int i, minmax_t& result) {
-          result.min_val = ekat::impl::min(result.min_val, v(i));
-          result.max_val = ekat::impl::max(result.max_val, v(i));
-        }, Kokkos::MinMax<ST>(minmax));
+        Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int i, minmaxloc_value_t& result) {
+          if (v(i)<result.min_val) {
+            result.min_val = v(i);
+            result.min_loc = i;
+          }
+          if (v(i)>result.max_val) {
+            result.max_val = v(i);
+            result.max_loc = i;
+          }
+        }, minmaxloc_t(minmaxloc));
       }
       break;
     case 2:
       {
         auto v = f.template get_view<const_ST**>();
-        Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmax_t& result) {
+        Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmaxloc_value_t& result) {
           int i,j;
           unflatten_idx(idx,extents,i,j);
-          result.min_val = ekat::impl::min(result.min_val, v(i,j));
-          result.max_val = ekat::impl::max(result.max_val, v(i,j));
-        }, Kokkos::MinMax<ST>(minmax));
+          if (v(i,j)<result.min_val) {
+            result.min_val = v(i,j);
+            result.min_loc = idx;
+          }
+          if (v(i,j)>result.max_val) {
+            result.max_val = v(i,j);
+            result.max_loc = idx;
+          }
+        }, minmaxloc_t(minmaxloc));
       }
       break;
     case 3:
       {
         auto v = f.template get_view<const_ST***>();
-        Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmax_t& result) {
+        Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmaxloc_value_t& result) {
           int i,j,k;
           unflatten_idx(idx,extents,i,j,k);
-          result.min_val = ekat::impl::min(result.min_val, v(i,j,k));
-          result.max_val = ekat::impl::max(result.max_val, v(i,j,k));
-        }, Kokkos::MinMax<ST>(minmax));
+          if (v(i,j,k)<result.min_val) {
+            result.min_val = v(i,j,k);
+            result.min_loc = idx;
+          }
+          if (v(i,j,k)>result.max_val) {
+            result.max_val = v(i,j,k);
+            result.max_loc = idx;
+          }
+        }, minmaxloc_t(minmaxloc));
       }
       break;
     case 4:
       {
         auto v = f.template get_view<const_ST****>();
-        Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmax_t& result) {
+        Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmaxloc_value_t& result) {
           int i,j,k,l;
           unflatten_idx(idx,extents,i,j,k,l);
-          result.min_val = ekat::impl::min(result.min_val, v(i,j,k,l));
-          result.max_val = ekat::impl::max(result.max_val, v(i,j,k,l));
-        }, Kokkos::MinMax<ST>(minmax));
+          if (v(i,j,k,l)<result.min_val) {
+            result.min_val = v(i,j,k,l);
+            result.min_loc = idx;
+          }
+          if (v(i,j,k,l)>result.max_val) {
+            result.max_val = v(i,j,k,l);
+            result.max_loc = idx;
+          }
+        }, minmaxloc_t(minmaxloc));
       }
       break;
     case 5:
       {
         auto v = f.template get_view<const_ST*****>();
-        Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmax_t& result) {
+        Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmaxloc_value_t& result) {
           int i,j,k,l,m;
           unflatten_idx(idx,extents,i,j,k,l,m);
-          result.min_val = ekat::impl::min(result.min_val, v(i,j,k,l,m));
-          result.max_val = ekat::impl::max(result.max_val, v(i,j,k,l,m));
-        }, Kokkos::MinMax<ST>(minmax));
+          if (v(i,j,k,l,m)<result.min_val) {
+            result.min_val = v(i,j,k,l,m);
+            result.min_loc = idx;
+          }
+          if (v(i,j,k,l,m)>result.max_val) {
+            result.max_val = v(i,j,k,l,m);
+            result.max_loc = idx;
+          }
+        }, minmaxloc_t(minmaxloc));
       }
       break;
     case 6:
       {
         auto v = f.template get_view<const_ST******>();
-        Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmax_t& result) {
+        Kokkos::parallel_reduce(size, KOKKOS_LAMBDA(int idx, minmaxloc_value_t& result) {
           int i,j,k,l,m,n;
           unflatten_idx(idx,extents,i,j,k,l,m,n);
-          result.min_val = ekat::impl::min(result.min_val, v(i,j,k,l,m,n));
-          result.max_val = ekat::impl::max(result.max_val, v(i,j,k,l,m,n));
-        }, Kokkos::MinMax<ST>(minmax));
+          if (v(i,j,k,l,m,n)<result.min_val) {
+            result.min_val = v(i,j,k,l,m,n);
+            result.min_loc = idx;
+          }
+          if (v(i,j,k,l,m,n)>result.max_val) {
+            result.max_val = v(i,j,k,l,m,n);
+            result.max_loc = idx;
+          }
+        }, minmaxloc_t(minmaxloc));
       }
       break;
     default:
@@ -114,13 +152,29 @@ PropertyCheck::CheckResult FieldWithinIntervalCheck::check_impl () const
           "You should not have reached this line. Please, contact developers.\n");
   }
   PropertyCheck::CheckResult check_result;
-  check_result.pass = minmax.min_val>=m_lower_bound && minmax.max_val<=m_upper_bound;
-  check_result.msg = "";
+  check_result.pass = minmaxloc.min_val>=m_lower_bound && minmaxloc.max_val<=m_upper_bound;
   if (not check_result.pass) {
-    check_result.msg = std::string("FieldWithinIntervalCheck failed")
-                     + "; min = " + std::to_string(minmax.min_val)
-                     + "; max = " + std::to_string(minmax.max_val) + "\n";
+    check_result.msg  = "Check failed.\n";
+    check_result.msg += "  " + this->name() + "\n";
+  } else {
+    check_result.msg  = "Check passed.\n";
+    check_result.msg += "  " + this->name() + "\n";
   }
+  auto idx_min = unflatten_idx(layout.dims(),minmaxloc.min_loc);
+  auto idx_max = unflatten_idx(layout.dims(),minmaxloc.max_loc);
+  check_result.msg += "  min: " + std::to_string(minmaxloc.min_val) + ", attained at (";
+  for (auto i : idx_min) {
+    check_result.msg += std::to_string(i) + ",";
+  }
+  check_result.msg.pop_back();
+  check_result.msg += ")\n";
+  check_result.msg += "  max: " + std::to_string(minmaxloc.max_val) + ", attained at (";
+  for (auto i : idx_max) {
+    check_result.msg += std::to_string(i) + ",";
+  }
+  check_result.msg.pop_back();
+  check_result.msg += ")\n";
+
   return check_result;
 }
 

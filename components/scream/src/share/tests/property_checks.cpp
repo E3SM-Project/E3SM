@@ -120,7 +120,7 @@ TEST_CASE("property_checks", "") {
     f.sync_to_dev();
     checkResult = nan_check->check();
     REQUIRE(not checkResult.pass);
-    std::string expected_msg = 
+    std::string expected_msg =
       "FieldNaNCheck failed.\n"
       "  Invalid values found at position (1,2,3).\n";
 
@@ -143,12 +143,20 @@ TEST_CASE("property_checks", "") {
 
     // Assign out-of-bounds values to the field, make sure it fails the check,
     // and then repair the field so it passes.
-    for (int i = 0; i<num_reals; ++i) {
-      f_data[i] *= -1;
-    }
+    f.deep_copy(0.5);
+    auto f_view = f.get_view<Real***,Host>();
+    f_view(1,2,3) = 2.0;
+    f_view(0,1,2) = 0.0;
     f.sync_to_dev();
     checkResult = interval_check->check();
     REQUIRE(not checkResult.pass);
+    std::string expected_msg =
+      "Check failed.\n"
+      "  field_1 within interval [0, 1]\n"
+      "  min: 0.000000, attained at (0,1,2)\n"
+      "  max: 2.000000, attained at (1,2,3)\n";
+    REQUIRE(checkResult.msg == expected_msg);
+
     interval_check->repair();
     checkResult = interval_check->check();
     REQUIRE(checkResult.pass);
@@ -164,7 +172,7 @@ TEST_CASE("property_checks", "") {
     // Assign in-bound values to the field and make sure it passes the lower_bound check
     auto f_data = reinterpret_cast<Real*>(f.get_internal_view_data<Real,Host>());
     for (int i = 0; i<num_reals; ++i) {
-      f_data[i] = std::numeric_limits<Real>::max() - i*1.0; 
+      f_data[i] = std::numeric_limits<Real>::max() - i*1.0;
     }
     f.sync_to_dev();
     auto checkResult = lower_bound_check->check();
@@ -197,7 +205,7 @@ TEST_CASE("property_checks", "") {
     // Assign in-bound values to the field and make sure it passes the upper_bound check
     auto f_data = reinterpret_cast<Real*>(f.get_internal_view_data<Real,Host>());
     for (int i = 0; i<num_reals; ++i) {
-      f_data[i] = -std::numeric_limits<Real>::max() + i*1.0; 
+      f_data[i] = -std::numeric_limits<Real>::max() + i*1.0;
     }
     f.sync_to_dev();
     auto checkResult = upper_bound_check->check();
