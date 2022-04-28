@@ -159,7 +159,6 @@ void allocate() {
   q01              = real2d( "q01             "                        , nzm    , ncrms ); 
   qp0              = real2d( "qp0             "                        , nzm    , ncrms ); 
   qn0              = real2d( "qn0             "                        , nzm    , ncrms ); 
-  qc0              = real2d( "qc0             "                        , nzm    , ncrms ); 
   prespot          = real2d( "prespot         "                        , nzm    , ncrms ); 
   rho              = real2d( "rho             "                        , nzm    , ncrms ); 
   rhow             = real2d( "rhow            "                        , nz     , ncrms ); 
@@ -361,7 +360,6 @@ void allocate() {
   yakl::memset(q01               ,0.);
   yakl::memset(qp0               ,0.);
   yakl::memset(qn0               ,0.);
-  yakl::memset(qc0               ,0.);
   yakl::memset(prespot           ,0.);
   yakl::memset(rho               ,0.);
   yakl::memset(rhow              ,0.);
@@ -628,7 +626,6 @@ void finalize() {
   q01              = real2d();
   qp0              = real2d();
   qn0              = real2d();
-  qc0              = real2d();
   prespot          = real2d();
   rho              = real2d();
   rhow             = real2d();
@@ -1606,7 +1603,6 @@ void perturb_arrays() {
     perturb( q01               , mag );
     perturb( qp0               , mag );
     perturb( qn0               , mag );
-    perturb( qc0               , mag );
     perturb( prespot           , mag );
     perturb( rho               , mag );
     perturb( rhow              , mag );
@@ -1749,7 +1745,6 @@ real2d t01             ;
 real2d q01             ;
 real2d qp0             ;
 real2d qn0             ;
-real2d qc0             ;
 real2d prespot         ;
 real2d rho             ;
 real2d rhow            ;

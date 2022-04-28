@@ -272,7 +272,6 @@ extern real2d t01             ;
 extern real2d q01             ;
 extern real2d qp0             ;
 extern real2d qn0             ;
-extern real2d qc0             ;
 extern real2d prespot         ;
 extern real2d rho             ;
 extern real2d rhow            ;

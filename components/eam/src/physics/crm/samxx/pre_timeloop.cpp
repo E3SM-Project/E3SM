@@ -80,7 +80,6 @@ void pre_timeloop() {
   YAKL_SCOPE( tabs0                     , :: tabs0 );
   YAKL_SCOPE( q0                        , :: q0 );
   YAKL_SCOPE( qv0                       , :: qv0 );
-  YAKL_SCOPE( qc0                       , :: qc0 );
   YAKL_SCOPE( qn0                       , :: qn0 );
   YAKL_SCOPE( qp0                       , :: qp0 );
   YAKL_SCOPE( tke0                      , :: tke0 );
@@ -410,7 +409,6 @@ void pre_timeloop() {
     yakl::atomicAdd(tabs0(k,icrm) , tabs(k,j,i,icrm));
 
     yakl::atomicAdd(qv0(k,icrm) , qv(k,j,i,icrm));
-    yakl::atomicAdd(qc0(k,icrm) , qcl(k,j,i,icrm));
     tmp = qv(k,j,i,icrm)+qcl(k,j,i,icrm)+qci(k,j,i,icrm);
     yakl::atomicAdd(q0(k,icrm) , tmp);
     tmp = qcl(k,j,i,icrm) + qci(k,j,i,icrm);
