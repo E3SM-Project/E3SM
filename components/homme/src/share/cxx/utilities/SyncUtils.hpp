@@ -508,7 +508,7 @@ sync_to_device(Source_T source, Dest_T dest)
       }
     }
   }
-  Kokkos::deep_copy(dest_mirror, dest);
+  Kokkos::deep_copy(dest, dest_mirror);
 }
 
 template <typename Source_T, typename Dest_T>

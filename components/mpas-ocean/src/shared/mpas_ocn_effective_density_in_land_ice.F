@@ -112,7 +112,7 @@ contains
       real (kind=RKIND) :: weightSum
 
       integer :: iCell, cell2, i
-      integer, pointer :: nCells, nEdges
+      integer, pointer :: nCells
 
       integer, dimension(:,:), pointer :: cellsOnCell, cellMask
 

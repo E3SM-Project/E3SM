@@ -9,7 +9,7 @@ SET(UTILS_SHARE_DIR   ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR     ${HOMME_SOURCE_DIR}/src/share)
 SET(TEST_SRC_DIR      ${HOMME_SOURCE_DIR}/src/test_src)
-SET(UTILS_TIMING_DIR  ${HOMME_BINARY_DIR}/utils/cime/src/share/timing)
+SET(UTILS_TIMING_DIR  ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
 SET(ARKODE_DIR        ${HOMME_SOURCE_DIR}/src/arkode)
 
 # Make INCLUDE_DIRS global so the tests can access it
@@ -128,4 +128,3 @@ thetal_setup()
 ############################################################################
 createTestExec(theta-l theta-l ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
 
-TARGET_LINK_LIBRARIES(theta-l dl)

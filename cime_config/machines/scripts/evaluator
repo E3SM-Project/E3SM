@@ -1,0 +1,383 @@
+#! /usr/bin/env python3
+
+"""
+Intended to be like pylint except for our cmake macros
+(Evaluate macros for problems or inefficiencies.)
+"""
+
+import argparse, sys, os, re, pathlib
+import xml.etree.ElementTree as ET
+
+UNIVERSALS = ["universal"]
+
+# Regexes for parsing our cmake macros
+SET_RE    = re.compile(r'^\s*set[(](\w+)\s+"([^"]+)"[)]\s*$')
+APPEND_RE = re.compile(r'^\s*string[(]APPEND\s+(\w+)\s+"([^"]+)"[)]\s*$')
+IF_RE     = re.compile(r'^\s*if\s*[(]([^)]+)[)]\s*$')
+ENDIF_RE  = re.compile(r'^\s*endif')
+EXE_RE    = re.compile(r'^\s*execute_process')
+
+WARNING_SET = {
+    "REP" : "Repitition: a redundant setting to same value as parent",
+    "APP" : "Append: a repeated token in an append",
+    "PRO" : "Promotion: all children of a parent do the same thing, so do it in the parent",
+    "SET" : "Suspicious set: probably want append",
+    "UNU" : "Unused: Using OS, COMPILER, or MACH with no matches in config_machines.xml",
+    "MIS" : "Missing: Having a machine/comp in config_machines.xml with no specialization in Macros",
+    "IFS" : "Ifs: Conditionals can be combined"
+}
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    warning_help = ""
+    for k, v in WARNING_SET.items():
+        warning_help += f"  {k} => {v}\n"
+
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} [<path to macros>]
+OR
+{0} --help
+
+Available warnings (CODE => Decription)
+{1}
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Evaluate cwd \033[0m
+    > {0}
+        """.format(os.path.basename(args[0]), warning_help),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("macro_path", default=".", help="The path to the directory with macros")
+
+    parser.add_argument("-m", "--machine", help="Limit evaluation to certain machines")
+
+    parser.add_argument("-c", "--compiler", help="Limit evaluation to certain compilers")
+
+    parser.add_argument("-d", "--disable", default=[], action="append", choices=list(WARNING_SET.keys()),
+                        help="Disable these warning codes. Assumes all other codes are on.")
+
+    parser.add_argument("-e", "--enable", default=[], action="append", choices=list(WARNING_SET.keys()),
+                        help="Enable these warning codes. Assumes all other codes are off.")
+
+    args = parser.parse_args(args[1:])
+
+    assert (args.machine is None) or (args.compiler is None), "Do not set both -m and -c"
+    assert (args.disable == []) or (args.enable == []), "Do not set both -d and -e"
+
+    if args.disable:
+        args.codes_to_check = list(set(WARNING_SET.keys()) - set(args.disable))
+    elif args.enable:
+        args.codes_to_check = list(args.enable)
+    else:
+        args.codes_to_check = list(WARNING_SET.keys())
+
+    delattr(args, "disable")
+    delattr(args, "enable")
+
+    if "UNU" in args.codes_to_check:
+        assert args.machine is None and args.compiler is None, \
+            "Cannot use UNU check with -c or -m options. Please disable"
+
+    return args
+
+###############################################################################
+def find_machs_comps_oss(config_machines, machine=None):
+###############################################################################
+    """
+    Return a dict mapping MACH -> (OS, COMPILERS), compilers, OSs
+
+    Created by parsing the config_machines.xml file. The map describes the relationship
+    between machines and OSes and compilers
+    """
+    with open(config_machines, "r") as fd:
+        tree = ET.parse(fd)
+        root = tree.getroot()
+
+    machs = {}
+    all_comps = set()
+    oss = set()
+
+    for child in root:
+        assert child.tag in ["machine", "default_run_suffix"], f"Unexpected child.tag {child.tag}"
+        if child.tag == "default_run_suffix":
+            continue
+
+        assert "MACH" in child.attrib, f"Missing MACH attribute for child.tag {child.tag}"
+
+        mach = child.attrib["MACH"].strip()
+        assert mach not in machs, f"Repeat of mach {mach}"
+
+        if machine is not None and mach != machine:
+            continue
+
+        found_os = False
+        found_comps = False
+        for subchild in child:
+            if subchild.tag == "OS":
+                the_os = subchild.text.strip()
+                found_os = True
+            elif subchild.tag == "COMPILERS":
+                comps = [item.strip() for item in subchild.text.strip().split(",")]
+                found_comps = True
+
+        assert found_os,    f"No OS in child.tag {child.tag}"
+        assert found_comps, f"No COMPILERS in child.tag {child.tag}"
+
+        machs[mach] = (the_os, comps)
+        all_comps.update(set(comps))
+        oss.add(the_os)
+
+    return machs, list(all_comps), list(oss)
+
+###############################################################################
+def parse_macro(macro_path):
+###############################################################################
+    """
+    Parse one of our cmake macros, return (settings, appends), both lists
+    of (conditional, varname, value) tuples.
+    """
+    settings = []
+    appends  = []
+    active_conditional = None
+    with macro_path.open("r") as fd:
+        for line in fd.readlines():
+            line = line.strip()
+            if line != "":
+                set_m    = SET_RE.match(line)
+                append_m = APPEND_RE.match(line)
+                if_m     = IF_RE.match(line)
+                endif_m  = ENDIF_RE.match(line)
+                exe_m    = EXE_RE.match(line)
+
+                if set_m:
+                    var, val = set_m.groups()
+                    settings.append((active_conditional, var, val))
+                elif append_m:
+                    var, val = append_m.groups()
+                    appends.append((active_conditional, var, val))
+                elif if_m:
+                    assert active_conditional is None, "Nested conditionals not supported at the moment"
+                    active_conditional = if_m.groups()[0]
+                elif endif_m:
+                    assert active_conditional is not None, "Endif with no conditional?"
+                    active_conditional = None
+                elif exe_m:
+                    pass
+                else:
+                    assert False, f"In {macro_path}, Could not parse line: {line}"
+
+    return settings, appends
+
+###############################################################################
+def get_all_macros(macro_path_pl, universal, the_os, mach, comp):
+###############################################################################
+    """
+    Get all existing macro files for this configuration. Returns them in load order
+    as full pathlib.Paths
+    """
+    universal_macro = f"{universal}.cmake"
+    compiler_macro  = f"{comp}.cmake"
+    os_macro        = f"{the_os}.cmake"
+    machine_macro   = f"{mach}.cmake"
+    comp_os_macro   = f"{comp}_{the_os}.cmake"
+    comp_mach_macro = f"{comp}_{mach}.cmake"
+
+    results = []
+    for macro_name in [universal_macro, compiler_macro, os_macro, machine_macro, comp_os_macro, comp_mach_macro]:
+        curr_macro_path_pl = macro_path_pl / macro_name
+        if curr_macro_path_pl.exists():
+            results.append(curr_macro_path_pl)
+
+    return results
+
+###############################################################################
+def find_SET(macro_path_pl, machs):
+###############################################################################
+    warnings = []
+    for universal in UNIVERSALS:
+        for mach, data in machs.items():
+            the_os = data[0]
+            for comp in data[1]:
+                macro_pls = get_all_macros(macro_path_pl, universal, the_os, mach, comp)
+                sets = set()
+                appends = set()
+                for macro_pl in macro_pls:
+                    curr_settings, curr_appends = parse_macro(macro_pl)
+                    sets.update   ([var for _, var, _ in curr_settings])
+                    appends.update([var for _, var, _ in curr_appends])
+
+                    mixes = sets & appends
+                    if mixes:
+                        warnings.append(f"Macro {macro_pl} began to mix sets and appends for vars: {', '.join(mixes)}")
+
+    return warnings
+
+###############################################################################
+def find_UNU(macro_path_pl, machs):
+###############################################################################
+    warnings = []
+    unused_macro_files = set([item for item in macro_path_pl.glob("*.cmake") if item.name != "Macros.cmake"])
+    for universal in UNIVERSALS:
+        for mach, data in machs.items():
+            the_os = data[0]
+            for comp in data[1]:
+                macro_pls = get_all_macros(macro_path_pl, universal, the_os, mach, comp)
+                unused_macro_files = unused_macro_files - set(macro_pls)
+
+    for unused_macro_file in unused_macro_files:
+        warnings.append(f"Macro {unused_macro_file} is unused by anything in config_machines.xml")
+
+    return warnings
+
+###############################################################################
+def find_REP(macro_path_pl, machs):
+###############################################################################
+    warnings = []
+    for universal in UNIVERSALS:
+        for mach, data in machs.items():
+            the_os = data[0]
+            for comp in data[1]:
+                macro_pls = get_all_macros(macro_path_pl, universal, the_os, mach, comp)
+                sets    = {} # var -> {condition -> vals}
+                for macro_pl in macro_pls:
+                    curr_settings = parse_macro(macro_pl)[0]
+                    for cond, var, val in curr_settings:
+                        if var in sets:
+                            cond_dict = sets[var]
+                            conds_to_check = [None] if cond is None else [cond, None]
+                            for cond_to_check in conds_to_check:
+                                if cond_to_check in cond_dict:
+                                    prev_val = cond_dict[cond_to_check]
+                                    if prev_val == val:
+                                        warnings.append(f"Macro {macro_pl} has redundant set of {var} to {val}")
+
+                            cond_dict[cond] = val
+
+                        else:
+                            sets[var] = {cond:val}
+
+    return warnings
+
+###############################################################################
+def find_APP(macro_path_pl, machs):
+###############################################################################
+    warnings = []
+    for universal in UNIVERSALS:
+        for mach, data in machs.items():
+            the_os = data[0]
+            for comp in data[1]:
+                macro_pls = get_all_macros(macro_path_pl, universal, the_os, mach, comp)
+                appends = {} # var -> {condition -> vals}
+                for macro_pl in macro_pls:
+                    curr_appends = parse_macro(macro_pl)[1]
+                    for cond, var, vals in curr_appends:
+                        val_tokens = vals.split()
+                        if var in appends:
+                            cond_dict = appends[var]
+                            conds_to_check = [None] if cond is None else [cond, None]
+                            for cond_to_check in conds_to_check:
+                                if cond_to_check in cond_dict:
+                                    prev_vals = cond_dict[cond_to_check]
+                                    potential_repeats = set(val_tokens) & set(prev_vals)
+                                    if potential_repeats:
+                                        warnings.append(f"Macro {macro_pl} has redundant appends for {var}, repeated items are to {', '.join(potential_repeats)}")
+
+                            if cond in cond_dict:
+                                cond_dict[cond] += val_tokens
+                            else:
+                                cond_dict[cond] = val_tokens
+
+                        else:
+                            appends[var] = {cond:val_tokens}
+
+    return warnings
+
+###############################################################################
+def find_PRO(macro_path_pl, machs):
+###############################################################################
+    warnings = []
+    warnings.append("This warning is not yet implemented")
+    return warnings
+
+###############################################################################
+def find_IFS(macro_path_pl, machs):
+###############################################################################
+    warnings = []
+    for universal in UNIVERSALS:
+        for mach, data in machs.items():
+            the_os = data[0]
+            for comp in data[1]:
+                macro_pls = get_all_macros(macro_path_pl, universal, the_os, mach, comp)
+                for macro_pl in macro_pls:
+                    with macro_pl.open("r") as fd:
+                        last_closed_if = None
+                        active_conditional = None
+                        for line in fd.readlines():
+                            line = line.strip()
+                            if line != "":
+                                if_m     = IF_RE.match(line)
+                                endif_m  = ENDIF_RE.match(line)
+
+                                if if_m:
+                                    if last_closed_if == if_m.groups()[0]:
+                                        warnings.append(f"Could have merged ifs for {last_closed_if} in {macro_pl}")
+
+                                    assert active_conditional is None, "Nested conditionals not supported at the moment"
+                                    active_conditional = if_m.groups()[0]
+                                elif endif_m:
+                                    last_closed_if = active_conditional
+                                    active_conditional = None
+                                else:
+                                    last_closed_if = None
+
+    return warnings
+
+###############################################################################
+def find_MIS(macro_path_pl, machs):
+###############################################################################
+    warnings = []
+    macro_files = set([item for item in macro_path_pl.glob("*.cmake") if item.name != "Macros.cmake"])
+    for mach, data in machs.items():
+        the_os = data[0]
+        for comp in data[1]:
+            compiler_macro  = macro_path_pl / f"{comp}.cmake"
+            comp_mach_macro = macro_path_pl / f"{comp}_{mach}.cmake"
+            if compiler_macro not in macro_files:
+                warnings.append(f"No macro {compiler_macro} for compiler {comp} used by machine {mach}")
+            if comp_mach_macro not in macro_files:
+                warnings.append(f"No macro {comp_mach_macro} for compiler {comp} and machine {mach}")
+
+    return warnings
+
+###############################################################################
+def evaluate(macro_path, codes_to_check, machine=None, compiler=None):
+###############################################################################
+    macro_path_pl = pathlib.Path(macro_path)
+    config_machines_pl = macro_path_pl / ".." / "config_machines.xml"
+
+    machs, all_comps, oss = find_machs_comps_oss(config_machines_pl, machine=machine)
+
+    warnings = []
+    for warning_code in codes_to_check:
+        warnings.extend([f"{warning_code}: {item}"
+                         for item in globals()[f"find_{warning_code}"](macro_path_pl, machs)])
+
+    for warning in warnings:
+        print(warning)
+
+    return warnings == []
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    success = evaluate(**vars(parse_command_line(sys.argv, description)))
+
+    sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

@@ -30,7 +30,6 @@
   dcmip16_pbl_type  = 0                         ! 0=basic pbl,   1= bryan pbl
 /
 &vert_nl
-  vform         = "ccm"
   vfile_mid     = "./vcoord/camm-30.ascii"
   vfile_int     = "./vcoord/cami-30.ascii"
 /

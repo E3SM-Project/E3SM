@@ -1,0 +1,13 @@
+use_cn            = .false. 
+finidat           = ''
+hist_mfilt        = 365
+hist_nhtfrq       = -24
+hist_empty_htapes = .true.
+fates_spitfire_mode = 0
+use_fates_fixed_biogeog = .true.
+use_fates_nocomp = .true.
+use_fates_sp = .true.
+hist_fincl1       = 'NPP','GPP','BTRAN','H2OSOI','TLAI','LITTER_IN_ELEM','LITTER_OUT_ELEM',
+   'FIRE_AREA','SCORCH_HEIGHT','FIRE_INTENSITY','FIRE_TFC_ROS','FIRE_FUEL_MEF',
+   'FIRE_FUEL_BULKD','FIRE_FUEL_SAV','FIRE_NESTEROV_INDEX','PFTbiomass',
+   'PFTleafbiomass','FIRE_ROS','WIND','AREA_TREES','AREA_PLANT','HR','AR','TSAI','HTOP'
