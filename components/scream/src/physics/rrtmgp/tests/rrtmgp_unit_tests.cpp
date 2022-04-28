@@ -440,4 +440,6 @@ TEST_CASE("rrtmgp_test_check_range") {
     // At least one value above upper bound
     parallel_for(1, YAKL_LAMBDA (int i) {dummy(i, 1) = 1.1;});
     REQUIRE(scream::rrtmgp::check_range(dummy, 0.0, 1.0, "dummy") == false);
+    dummy.deallocate();
+    if (yakl::isInitialized()) { yakl::finalize(); }
 }
