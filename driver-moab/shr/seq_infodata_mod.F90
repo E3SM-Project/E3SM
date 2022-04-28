@@ -777,6 +777,7 @@ CONTAINS
 
        infodata%max_cplstep_time = max_cplstep_time
        infodata%model_doi_url = model_doi_url
+
        !---------------------------------------------------------------
        ! check orbital mode, reset unused parameters, validate settings
        !---------------------------------------------------------------

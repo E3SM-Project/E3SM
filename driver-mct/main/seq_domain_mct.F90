@@ -39,6 +39,7 @@ module seq_domain_mct
   !--------------------------------------------------------------------------
 
   private :: seq_domain_check_grid
+  private :: seq_domain_check_fracmask
 
   !================================================================================
 contains
@@ -47,8 +48,8 @@ contains
   !================================================================================
 
   subroutine seq_domain_check( infodata, &
-       atm, ice, lnd, ocn, rof, glc, &
-       samegrid_al, samegrid_ao, samegrid_ro, samegrid_lg)
+       atm, ice, lnd, ocn, rof, glc, iac, &
+       samegrid_al, samegrid_ao, samegrid_ro, samegrid_lg, samegrid_az)
 
     !-----------------------------------------------------------
     ! Uses
@@ -59,6 +60,7 @@ contains
     use prep_lnd_mod, only: prep_lnd_get_mapper_Fa2l
     use prep_ocn_mod, only: prep_ocn_get_mapper_SFi2o
     use prep_glc_mod, only: prep_glc_get_mapper_Fl2g
+    use prep_atm_mod, only: prep_atm_get_mapper_Fz2a
     !
     ! Arguments
     !
@@ -69,10 +71,12 @@ contains
     type(component_type)     , intent(in)    :: ocn
     type(component_type)     , intent(in)    :: rof
     type(component_type)     , intent(in)    :: glc
+    type(component_type)     , intent(in)    :: iac
     logical                  , intent(in)    :: samegrid_al ! atm lnd grid same
     logical                  , intent(in)    :: samegrid_ao ! atm ocn grid same
     logical                  , intent(in)    :: samegrid_ro ! rof ocn grid same
     logical                  , intent(in)    :: samegrid_lg ! lnd glc grid same
+    logical                  , intent(in)    :: samegrid_az ! atm iac grid same
     !
     ! Local variables
     !
@@ -82,12 +86,14 @@ contains
     type(seq_map)   , pointer :: mapper_l2g !
     type(seq_map)   , pointer :: mapper_a2l !
     type(seq_map)   , pointer :: mapper_l2a !
+    type(seq_map)   , pointer :: mapper_z2a !
     !
     type(mct_gGrid) , pointer :: atmdom_a   ! atm domain
     type(mct_gGrid) , pointer :: icedom_i   ! ice domain
     type(mct_gGrid) , pointer :: lnddom_l   ! lnd domain
     type(mct_gGrid) , pointer :: ocndom_o   ! ocn domain
     type(mct_gGrid) , pointer :: glcdom_g   ! glc domain
+    type(mct_gGrid) , pointer :: iacdom_z   ! iac domain
     !
     type(mct_gsMap) , pointer :: gsMap_a    ! atm global seg map
     type(mct_gsMap) , pointer :: gsMap_i    ! ice global seg map
@@ -95,19 +101,23 @@ contains
     type(mct_gsMap) , pointer :: gsMap_o    ! ocn global seg map
     type(mct_gsMap) , pointer :: gsMap_r    ! ocn global seg map
     type(mct_gsMap) , pointer :: gsMap_g    ! glc global seg map
+    type(mct_gsMap) , pointer :: gsMap_z    ! iac global seg map
     !
     type(mct_gGrid) :: lnddom_a              ! lnd domain info on atm decomp
     type(mct_gGrid) :: lnddom_g              ! lnd domain info on glc decomp
     type(mct_gGrid) :: icedom_a              ! ice domain info on atm decomp (all grids same)
     type(mct_gGrid) :: ocndom_a              ! ocn domain info on atm decomp (all grids same)
     type(mct_gGrid) :: icedom_o              ! ocn domain info on ocn decomp (atm/ocn grid different)
+    type(mct_gGrid) :: iacdom_a              ! iac domain info on atm decomp
     !
     real(R8), pointer :: fracl(:)            ! land fraction on atm decomp
     real(R8), pointer :: fraco(:)            ! ocn  fraction on atm decomp
     real(R8), pointer :: fraci(:)            ! ice  fraction on atm decomp
+    real(R8), pointer :: fracz(:)            ! iac  fraction on atm decomp
     real(R8), pointer :: maskl(:)            ! land mask on atm decomp (all grids same)
     real(R8), pointer :: maski(:)            ! ice  mask on atm decomp (all grids same)
     real(R8), pointer :: masko(:)            ! ocn  mask on atm decomp (all grids same)
+    real(R8), pointer :: maskz(:) ! iac  mask on atm decomp (all grids same)
     !
     integer(IN) :: n            ! indicies
     !
@@ -119,6 +129,7 @@ contains
     logical      :: ice_present              ! ice present flag
     logical      :: glc_present              ! glc present flag
     logical      :: rof_present              ! rof present flag
+    logical      :: iac_present              ! iac present flag
     logical      :: ocnrof_prognostic        ! ocn rof prognostic flag
     integer(IN)  :: rcode                    ! error status
     integer(IN)  :: atmsize                  ! local  size of atm  grid
@@ -126,12 +137,14 @@ contains
     integer(IN)  :: ocnsize                  ! local  size of ocn  grid
     integer(IN)  :: icesize                  ! local  size of ice  grid
     integer(IN)  :: glcsize                  ! local  size of glc  grid
+    integer(IN)  :: iacsize                  ! local  size of iac  grid
     integer(IN)  :: gatmsize                 ! global size of atm  grid
     integer(IN)  :: glndsize                 ! global size of land grid
     integer(IN)  :: gocnsize                 ! global size of ocn  grid
     integer(IN)  :: grofsize                 ! global size of ocn  grid
     integer(IN)  :: gicesize                 ! global size of ice  grid
     integer(IN)  :: gglcsize                 ! global size of glc  grid
+    integer(IN)  :: giacsize                 ! global size of iac  grid
     integer(IN)  :: npts                     ! local size temporary
     real(R8)     :: diff,dmaxo,dmaxi         ! difference tracker
     logical      :: iamroot                  ! local masterproc
@@ -159,6 +172,7 @@ contains
     mapper_l2g => prep_glc_get_mapper_Fl2g()
     mapper_a2l => prep_lnd_get_mapper_Fa2l()
     mapper_l2a => prep_atm_get_mapper_Fl2a()
+    mapper_z2a => prep_atm_get_mapper_Fz2a()
 
     call seq_comm_setptrs(CPLID,iamroot=iamroot, mpicom=mpicom_cplid)
 
@@ -169,6 +183,7 @@ contains
          glc_present=glc_present,             &
          atm_present=atm_present,             &
          rof_present=rof_present,             &
+         iac_present=iac_present,             &
          ocnrof_prognostic=ocnrof_prognostic, &
          eps_frac=eps_frac,                   &
          eps_amask=eps_axmask,                &
@@ -267,6 +282,34 @@ contains
        else
           call mct_aVect_exportRattr(icedom_a%data, 'mask', fraci, atmsize)
        endif
+    endif
+
+    ! note that the iac domain info is relative to the atm domain
+    ! currently atm and lnd must be on same grid if iac is present
+    if (atm_present .and. iac_present) then
+       gsmap_z  => component_get_gsmap_cx(iac) ! gsmap_zx
+       iacdom_z => component_get_dom_cx(iac)   ! dom_zx
+       iacsize  = mct_avect_lsize(iacdom_z%data)
+       giacsize = mct_gsMap_gsize(gsMap_z)
+
+       if (samegrid_az .and. gatmsize /= giacsize) then
+          write(logunit,*) subname,' error: global atmsize = ',&
+               gatmsize,' global iacsize= ',giacsize
+          call shr_sys_flush(logunit)
+          call shr_sys_abort(subname//' atm and iac grid '// &
+             'must have the same global size')
+       end if
+       if (iamroot) write(logunit,F00) ' --- checking iac maskfrac ---'
+       call seq_domain_check_fracmask(iacdom_z%data)
+       call mct_gGrid_init(oGGrid=iacdom_a, iGGrid=iacdom_z, lsize=atmsize)
+       call mct_aVect_zero(iacdom_a%data)
+       call seq_map_map(mapper_z2a, iacdom_z%data, iacdom_a%data, norm=.false.)
+       allocate(maskz(atmsize),stat=rcode)
+       if(rcode /= 0) call shr_sys_abort(subname//' allocate maskz')
+       allocate(fracz(atmsize),stat=rcode)
+       if(rcode /= 0) call shr_sys_abort(subname//' allocate fracz')
+       call mct_aVect_exportRAttr(iacdom_a%data, 'mask', maskz, atmsize)
+       call mct_aVect_exportRAttr(iacdom_a%data, 'frac', fracz, atmsize)
     endif
 
     if (lnd_present .and. glc_present) then
@@ -381,6 +424,20 @@ contains
     endif
 
     !------------------------------------------------------------------------------
+    ! Check atm/iac grid consistency
+    !------------------------------------------------------------------------------
+
+    if (atm_present .and. iac_present .and. samegrid_az) then
+       if (iamroot) write(logunit,F00) ' --- checking atm/iac domains ---'
+       call seq_domain_check_grid(atmdom_a%data, iacdom_a%data, 'lat' , &
+          eps=eps_axgrid, mpicom=mpicom_cplid, mask=maskz)
+       call seq_domain_check_grid(atmdom_a%data, iacdom_a%data, 'lon' , &
+          eps=eps_axgrid, mpicom=mpicom_cplid, mask=maskz)
+       call seq_domain_check_grid(atmdom_a%data, iacdom_a%data, 'area', &
+          eps=eps_axarea, mpicom=mpicom_cplid, mask=maskz)
+    endif
+
+    !------------------------------------------------------------------------------
     ! Check atm/ocn and atm/ice grid consistency (if samegrid)
     !------------------------------------------------------------------------------
 
@@ -482,6 +539,15 @@ contains
        if(rcode /= 0) call shr_sys_abort(subname//' deallocate maski')
        call mct_gGrid_clean(icedom_a, rcode)
        if(rcode /= 0) call shr_sys_abort(subname//' clean icedom_o')
+    endif
+
+    if (atm_present .and. iac_present) then
+       deallocate(fracz,stat=rcode)
+       if(rcode /= 0) call shr_sys_abort(subname//' deallocate fracz')
+       deallocate(maskz,stat=rcode)
+       if(rcode /= 0) call shr_sys_abort(subname//' deallocate maskz')
+       call mct_gGrid_clean(iacdom_a, rcode)
+       if(rcode /= 0) call shr_sys_abort(subname//' clean iacdom_a')
     endif
 
     if (ocn_present .and. ice_present) then
