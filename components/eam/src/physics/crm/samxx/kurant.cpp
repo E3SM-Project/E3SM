@@ -14,9 +14,13 @@ void kurant () {
   YAKL_SCOPE( adzw  , ::adzw);
   YAKL_SCOPE( ncrms , ::ncrms);
   YAKL_SCOPE( tabs  , ::tabs);
+  YAKL_SCOPE( qv    , :: qv);
+  YAKL_SCOPE( qcl   , :: qcl);
+  YAKL_SCOPE( qci   , :: qci);
   YAKL_SCOPE( micro_field , ::micro_field);
   YAKL_SCOPE( longitude0 , :: longitude0);
   YAKL_SCOPE( latitude0  , :: latitude0);
+  YAKL_SCOPE( microphysics_scheme, :: microphysics_scheme );
 
   int constexpr max_ncycle = 4;
   real cfl;
@@ -95,22 +99,14 @@ void kurant () {
 
     parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
       real tmp;
-
-      tmp = tabs(k,j,i,icrm);
-      yakl::atomicMax(tamax(k,icrm),tmp);
-
-      tmp = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) 
-          - micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
-      yakl::atomicMax(qvmax(k,icrm),tmp);
-
-      tmp = micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
-      yakl::atomicMax(qcmax(k,icrm),tmp);
-
-      tmp = micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm);
-      yakl::atomicMax(qimax(k,icrm),tmp);
+      tmp = tabs(k,j,i,icrm); yakl::atomicMax(tamax(k,icrm),tmp);
+      tmp = qv(k,j,i,icrm);   yakl::atomicMax(qvmax(k,icrm),tmp);
+      tmp = qcl(k,j,i,icrm);  yakl::atomicMax(qcmax(k,icrm),tmp);
+      tmp = qci(k,j,i,icrm);  yakl::atomicMax(qimax(k,icrm),tmp);
     });
 
     std::cout << "\nkurant() - the number of cycles exceeded max_ncycle = "<< max_ncycle << std::endl;
+
     for (int icrm=0; icrm<ncrms; icrm++) {
       for (int k=0; k<nzm; k++) {
         std::cout<<"  "
@@ -127,6 +123,7 @@ void kurant () {
         << std::endl;
       }
     }
+
     finalize();
     exit(-1);
   }

@@ -216,13 +216,14 @@ subroutine crm_physics_register()
    call pbuf_add_field('CLD',          'global', dtype_r8,dims_gcm_3D,idx)  ! cloud fraction
    call pbuf_add_field('CONCLD',       'global', dtype_r8,dims_gcm_3D,idx)  ! convective cloud fraction
 
+   call pbuf_add_field('CRM_QV',    'global', dtype_r8,dims_crm_3D,idx)
+
    if (MMF_microphysics_scheme .eq. 'm2005') then
       call pbuf_add_field('CRM_NC_RAD','physpkg',dtype_r8,dims_crm_rad,crm_nc_rad_idx)
       call pbuf_add_field('CRM_NI_RAD','physpkg',dtype_r8,dims_crm_rad,crm_ni_rad_idx)
       call pbuf_add_field('CRM_QS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_qs_rad_idx)
       call pbuf_add_field('CRM_NS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_ns_rad_idx)
 
-      call pbuf_add_field('CRM_QT',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_NC',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_QR',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_NR',    'global', dtype_r8,dims_crm_3D,idx)
@@ -240,7 +241,6 @@ subroutine crm_physics_register()
    end if
 
    if (MMF_microphysics_scheme .eq. 'sam1mom') then
-      call pbuf_add_field('CRM_QT',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_QP',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_QN',    'global', dtype_r8,dims_crm_3D,idx)
    end if
@@ -251,13 +251,12 @@ subroutine crm_physics_register()
       ! call pbuf_add_field('CRM_QS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_qs_rad_idx)
       ! call pbuf_add_field('CRM_NS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_ns_rad_idx)
 
-      call pbuf_add_field('CRM_QT',    'global', dtype_r8,dims_crm_3D,idx)
+      call pbuf_add_field('CRM_QC',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_NC',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_QR',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_NR',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_QI',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_NI',    'global', dtype_r8,dims_crm_3D,idx)
-      call pbuf_add_field('CRM_QC',    'global', dtype_r8,dims_crm_3D,idx)
 
       if (prog_modal_aero) then
          call pbuf_add_field('RATE1_CW2PR_ST','physpkg',dtype_r8, dims_gcm_2D, idx)
@@ -739,7 +738,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    real(crm_rknd), pointer :: crm_v (:,:,:,:) ! CRM v-wind component
    real(crm_rknd), pointer :: crm_w (:,:,:,:) ! CRM w-wind component
    real(crm_rknd), pointer :: crm_t (:,:,:,:) ! CRM temperature
-   real(crm_rknd), pointer :: crm_qt(:,:,:,:) ! CRM total water
+   real(crm_rknd), pointer :: crm_qv(:,:,:,:) ! CRM water vapor
 
    real(crm_rknd), pointer :: crm_qp(:,:,:,:) ! 1-mom mass mixing ratio of precipitating condensate
    real(crm_rknd), pointer :: crm_qn(:,:,:,:) ! 1-mom mass mixing ratio of cloud condensate
@@ -814,13 +813,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    call phys_getopts(crm_accel_uv_out     = crm_accel_uv_tmp)
    use_crm_accel = use_crm_accel_tmp
    crm_accel_uv = crm_accel_uv_tmp
-
-   if (masterproc) then
-     if (use_crm_accel .and. trim(MMF_microphysics_scheme)/='sam1mom') then
-       write(0,*) "CRM time step relaxation is only compatible with sam1mom microphysics"
-       call endrun('crm main')
-     endif
-   endif
 
    nstep = get_nstep()
    itim = pbuf_old_tim_idx() ! "Old" pbuf time index (what does all this mean?)
@@ -929,7 +921,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_V'),  crm_v)
          call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_W'),  crm_w)
          call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_T'),  crm_t)
-         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QT'), crm_qt)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QV'), crm_qv)
          if (MMF_microphysics_scheme .eq. 'sam1mom') then
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QP'), crm_qp)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QN'), crm_qn)
@@ -957,8 +949,32 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             call pbuf_get_field(pbuf_chunk, crm_q_prev_idx, crm_q_prev)
          end if
 
-         ! initialize all of total water to zero (needed for ncol < i <= pcols)
-         crm_qt(1:pcols,:,:,:) = 0.0_r8
+         ! initialize all water to zero (needed for ncol < i <= pcols)
+         crm_qv(1:pcols,:,:,:) = 0.0_r8
+         if (MMF_microphysics_scheme .eq. 'sam1mom') then
+            crm_qp(1:pcols,:,:,:) = 0.0_r8
+            crm_qn(1:pcols,:,:,:) = 0.0_r8
+         else if(MMF_microphysics_scheme .eq. 'm2005') then
+            crm_nc(1:pcols,:,:,:) = 0.0_r8
+            crm_qr(1:pcols,:,:,:) = 0.0_r8
+            crm_nr(1:pcols,:,:,:) = 0.0_r8
+            crm_qi(1:pcols,:,:,:) = 0.0_r8
+            crm_ni(1:pcols,:,:,:) = 0.0_r8
+            crm_qs(1:pcols,:,:,:) = 0.0_r8
+            crm_ns(1:pcols,:,:,:) = 0.0_r8
+            crm_qg(1:pcols,:,:,:) = 0.0_r8
+            crm_ng(1:pcols,:,:,:) = 0.0_r8
+            crm_qc(1:pcols,:,:,:) = 0.0_r8
+         else if (MMF_microphysics_scheme .eq. 'p3') then
+            crm_qc(1:pcols,:,:,:) = 0.0_r8
+            crm_nc(1:pcols,:,:,:) = 0.0_r8
+            crm_qr(1:pcols,:,:,:) = 0.0_r8
+            crm_nr(1:pcols,:,:,:) = 0.0_r8
+            crm_qi(1:pcols,:,:,:) = 0.0_r8
+            crm_ni(1:pcols,:,:,:) = 0.0_r8
+            crm_qm(1:pcols,:,:,:) = 0.0_r8
+            crm_bm(1:pcols,:,:,:) = 0.0_r8
+         end if
 
          do i = 1,ncol
             do k = 1,crm_nz
@@ -971,11 +987,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
                ! Initialize microphysics arrays
                if (MMF_microphysics_scheme .eq. 'sam1mom') then
-                  crm_qt(i,:,:,k) = state(c)%q(i,m,1)+state(c)%q(i,m,ixcldliq)+state(c)%q(i,m,ixcldice)
+                  crm_qv(i,:,:,k) = state(c)%q(i,m,1)!+state(c)%q(i,m,ixcldliq)+state(c)%q(i,m,ixcldice)
                   crm_qp(i,:,:,k) = 0.0_r8
                   crm_qn(i,:,:,k) = state(c)%q(i,m,ixcldliq)+state(c)%q(i,m,ixcldice)
                else if (MMF_microphysics_scheme .eq. 'm2005') then
-                  crm_qt(i,:,:,k) = state(c)%q(i,m,1)+state(c)%q(i,m,ixcldliq)
+                  crm_qv(i,:,:,k) = state(c)%q(i,m,1)!+state(c)%q(i,m,ixcldliq)
                   crm_qc(i,:,:,k) = state(c)%q(i,m,ixcldliq)
                   crm_qi(i,:,:,k) = state(c)%q(i,m,ixcldice)
                   crm_nc(i,:,:,k) = 0.0_r8
@@ -987,7 +1003,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                   crm_qg(i,:,:,k) = 0.0_r8
                   crm_ng(i,:,:,k) = 0.0_r8
                else if (MMF_microphysics_scheme .eq. 'p3') then
-                  crm_qt(i,:,:,k) = state(c)%q(i,m,1)+state(c)%q(i,m,ixcldliq)
+                  crm_qv(i,:,:,k) = state(c)%q(i,m,1)!+state(c)%q(i,m,ixcldliq)
                   crm_qc(i,:,:,k) = state(c)%q(i,m,ixcldliq)
                   crm_qi(i,:,:,k) = state(c)%q(i,m,ixcldice)
                   crm_qr(i,:,:,k) = 0.0_r8
@@ -1084,7 +1100,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_V'),  crm_v)
          call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_W'),  crm_w)
          call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_T'),  crm_t)
-         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QT'), crm_qt)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QV'), crm_qv)
          if (MMF_microphysics_scheme .eq. 'sam1mom') then
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QP'), crm_qp)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QN'), crm_qn)
@@ -1121,13 +1137,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             crm_state%v_wind     (icrm,:,:,:) = crm_v (i,:,:,:)
             crm_state%w_wind     (icrm,:,:,:) = crm_w (i,:,:,:)
             crm_state%temperature(icrm,:,:,:) = crm_t (i,:,:,:)
+            crm_state%qv         (icrm,:,:,:) = crm_qv(i,:,:,:)
             if (MMF_microphysics_scheme .eq. 'sam1mom') then
-               crm_state%qt      (icrm,:,:,:) = crm_qt(i,:,:,:)
                crm_state%qp      (icrm,:,:,:) = crm_qp(i,:,:,:)
                crm_state%qn      (icrm,:,:,:) = crm_qn(i,:,:,:)
             end if
             if (MMF_microphysics_scheme .eq. 'm2005') then
-               crm_state%qt      (icrm,:,:,:) = crm_qt(i,:,:,:)
                crm_state%nc      (icrm,:,:,:) = crm_nc(i,:,:,:)
                crm_state%qr      (icrm,:,:,:) = crm_qr(i,:,:,:)
                crm_state%nr      (icrm,:,:,:) = crm_nr(i,:,:,:)
@@ -1140,7 +1155,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_state%qc      (icrm,:,:,:) = crm_qc(i,:,:,:)
             end if
             if (MMF_microphysics_scheme .eq. 'p3') then
-               crm_state%qt      (icrm,:,:,:) = crm_qt(i,:,:,:)
                crm_state%qc      (icrm,:,:,:) = crm_qc(i,:,:,:)
                crm_state%qi      (icrm,:,:,:) = crm_qi(i,:,:,:)
                crm_state%qr      (icrm,:,:,:) = crm_qr(i,:,:,:)
@@ -1411,7 +1425,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_input%t_vt, crm_input%q_vt, &
                crm_input%nccn, crm_input%nc_nuceat_tend, crm_input%ni_activated, &
                crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, &
-               crm_state%temperature, crm_state%qt, crm_state%qp, crm_state%qn, &
+               crm_state%temperature, crm_state%qv, crm_state%qp, crm_state%qn, &
                crm_state%qc, crm_state%nc, crm_state%qr, crm_state%nr, &
                crm_state%qi, crm_state%ni, crm_state%qm, crm_state%bm, &
                crm_state%t_prev, crm_state%q_prev, &
@@ -1761,7 +1775,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_V'),  crm_v)
          call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_W'),  crm_w)
          call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_T'),  crm_t)
-         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QT'), crm_qt)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QV'), crm_qv)
          if (MMF_microphysics_scheme .eq. 'sam1mom') then
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QP'), crm_qp)
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_QN'), crm_qn)
@@ -1797,7 +1811,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             crm_v (i,:,:,:) = crm_state%v_wind     (icrm,:,:,:)
             crm_w (i,:,:,:) = crm_state%w_wind     (icrm,:,:,:)
             crm_t (i,:,:,:) = crm_state%temperature(icrm,:,:,:)
-            crm_qt(i,:,:,:) = crm_state%qt         (icrm,:,:,:)
+            crm_qv(i,:,:,:) = crm_state%qv         (icrm,:,:,:)
             if (MMF_microphysics_scheme .eq. 'sam1mom') then
                crm_qp(i,:,:,:) = crm_state%qp(icrm,:,:,:)
                crm_qn(i,:,:,:) = crm_state%qn(icrm,:,:,:)

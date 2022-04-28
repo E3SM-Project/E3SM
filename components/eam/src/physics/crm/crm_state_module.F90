@@ -25,7 +25,7 @@ module crm_state_module
       real(crm_rknd), allocatable :: v_wind(:,:,:,:)       ! CRM v-wind component
       real(crm_rknd), allocatable :: w_wind(:,:,:,:)       ! CRM w-wind component
       real(crm_rknd), allocatable :: temperature(:,:,:,:)  ! CRM temperature
-      real(crm_rknd), allocatable :: qt(:,:,:,:)           ! CRM total water
+      real(crm_rknd), allocatable :: qv(:,:,:,:)           ! CRM total water
 
       ! 2-moment microphysics variables (both p3 and m2005)
       real(crm_rknd), allocatable :: qc(:,:,:,:)   ! mass mixing ratio of cloud water
@@ -69,13 +69,13 @@ contains
       if (.not. allocated(state%v_wind))      allocate(state%v_wind(ncrms,crm_nx,crm_ny,crm_nz))
       if (.not. allocated(state%w_wind))      allocate(state%w_wind(ncrms,crm_nx,crm_ny,crm_nz))
       if (.not. allocated(state%temperature)) allocate(state%temperature(ncrms,crm_nx,crm_ny,crm_nz))
-      if (.not. allocated(state%qt))          allocate(state%qt(ncrms,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(state%qv))          allocate(state%qv(ncrms,crm_nx,crm_ny,crm_nz))
 
       call prefetch(state%u_wind)
       call prefetch(state%v_wind)
       call prefetch(state%w_wind)
       call prefetch(state%temperature)
-      call prefetch(state%qt)
+      call prefetch(state%qv)
 
       if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          if (.not. allocated(state%qc))          allocate(state%qc(ncrms,crm_nx,crm_ny,crm_nz))
@@ -192,7 +192,7 @@ contains
       if (allocated(state%v_wind))      deallocate(state%v_wind)
       if (allocated(state%w_wind))      deallocate(state%w_wind)
       if (allocated(state%temperature)) deallocate(state%temperature)
-      if (allocated(state%qt))          deallocate(state%qt)
+      if (allocated(state%qv))          deallocate(state%qv)
 
       if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
          if (allocated(state%qc)) deallocate(state%qc)

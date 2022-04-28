@@ -146,8 +146,7 @@ void shoc_proc() {
     // Cloud fraction needs to be initialized for first PBL height calculation
     shoc_cldfrac(icol,ilev) = CF3D(k,j,i,icrm);
 
-    qtracers(icol,shoc_idx_qv,ilev) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm)
-                                    - micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
+    qtracers(icol,shoc_idx_qv,ilev) = micro_field(idx_qv,k,j+offy_s,i+offx_s,icrm);
     qtracers(icol,shoc_idx_nc,ilev) = micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm);
     qtracers(icol,shoc_idx_qr,ilev) = micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm);
     qtracers(icol,shoc_idx_nr,ilev) = micro_field(idx_nr,k,j+offy_s,i+offx_s,icrm);
@@ -312,8 +311,7 @@ void shoc_proc() {
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = nzm-(k+1);
-    micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = qtracers(icol,shoc_idx_qv,ilev)
-                                                 + qtracers(icol,shoc_idx_qc,ilev);
+    micro_field(idx_qv,k,j+offy_s,i+offx_s,icrm) = qtracers(icol,shoc_idx_qv,ilev);
     micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm) = qtracers(icol,shoc_idx_nc,ilev);
     micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm) = qtracers(icol,shoc_idx_qr,ilev);
     micro_field(idx_nr,k,j+offy_s,i+offx_s,icrm) = qtracers(icol,shoc_idx_nr,ilev);

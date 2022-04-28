@@ -101,7 +101,7 @@ void micro_p3_diagnose() {
   YAKL_SCOPE( micro_field , :: micro_field);
 
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-    qv(k,j,i,icrm)  = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
+    qv(k,j,i,icrm)  = micro_field(idx_qv,k,j+offy_s,i+offx_s,icrm);
     qcl(k,j,i,icrm) = micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
     qpl(k,j,i,icrm) = micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm);
     qci(k,j,i,icrm) = micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm);
@@ -246,7 +246,7 @@ YAKL_INLINE real saturation_specific_humidity(real tabs, real pressure) {
 //--------------------------------------------------------------------------------------------------
 // Compute an instantaneous adjustment of sub or super saturation
 //--------------------------------------------------------------------------------------------------
-YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qc_in, real &qv_in, real &tabs_in, real &pres_in ) {
+YAKL_INLINE void compute_adjusted_state( real &qv_in, real &qc_in, real &tabs_in, real &pres_in ) {
   // Define a tolerance and max iterations for convergence
   real tol = 1.e-6;
   real min_qv = 1e-10;
@@ -256,9 +256,6 @@ YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qc_in, real &qv_in, 
 
   // Saturation specific humidity
   real qsat = saturation_specific_humidity(tabs_in,pres_in);
-
-  // set initial vapor from input total water and cloud water
-  qv_in = qt_in - qc_in; 
 
   // local variables for iteration
   real tabs_loc = tabs_in;
@@ -328,8 +325,6 @@ YAKL_INLINE void compute_adjusted_state( real &qt_in, real &qc_in, real &qv_in, 
     }
   }
 
-  // Update total water
-  qt_in = qv_in + qc_in;
 }
 
 
@@ -462,9 +457,9 @@ void micro_p3_proc() {
                       + fac_cond *( qcl(k,j,i,icrm) + qpl(k,j,i,icrm) ) 
                       + fac_sub  *( qci(k,j,i,icrm) + qpi(k,j,i,icrm) );
       real tmp_pres = pres(k,icrm)*100.;
-      compute_adjusted_state( micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm), 
+      compute_adjusted_state( micro_field(idx_qv,k,j+offy_s,i+offx_s,icrm),
                               micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm), 
-                              qv(k,j,i,icrm), tabs(k,j,i,icrm), tmp_pres );
+                              tabs(k,j,i,icrm), tmp_pres );
     });
     // update diagnostic fields
     micro_p3_diagnose();
@@ -491,7 +486,7 @@ void micro_p3_proc() {
   parallel_for( SimpleBounds<4>(nzm, ny, nx, ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int icol = i+nx*(j+ny*icrm);
     int ilev = k;
-    qv_in(icol,ilev) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
+    qv_in(icol,ilev) = micro_field(idx_qv,k,j+offy_s,i+offx_s,icrm);
     qc_in(icol,ilev) = micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm); 
     nc_in(icol,ilev) = micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm);
     qr_in(icol,ilev) = micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm);
@@ -730,7 +725,7 @@ void micro_p3_proc() {
     int icrm = (icol/nx)/ny;
     int k    = ilev*Spack::n + s;
     if (k < nlev) {
-      micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = prog_state.qv(icol,ilev)[s] + prog_state.qc(icol,ilev)[s];
+      micro_field(idx_qv,k,j+offy_s,i+offx_s,icrm) = prog_state.qv(icol,ilev)[s];
       micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm) = prog_state.qc(icol,ilev)[s];
       micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm) = prog_state.nc(icol,ilev)[s];
       micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm) = prog_state.qr(icol,ilev)[s];

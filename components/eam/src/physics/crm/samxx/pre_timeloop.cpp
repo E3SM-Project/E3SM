@@ -57,7 +57,7 @@ void pre_timeloop() {
   YAKL_SCOPE( crm_input_nccn            , :: crm_input_nccn );
   YAKL_SCOPE( crm_input_nc_nuceat_tend  , :: crm_input_nc_nuceat_tend );
   YAKL_SCOPE( crm_input_ni_activated    , :: crm_input_ni_activated );
-  YAKL_SCOPE( crm_state_qt              , :: crm_state_qt );
+  YAKL_SCOPE( crm_state_qv              , :: crm_state_qv );
   YAKL_SCOPE( crm_state_qp              , :: crm_state_qp );
   YAKL_SCOPE( crm_state_qn              , :: crm_state_qn );
   YAKL_SCOPE( crm_state_qc              , :: crm_state_qc );
@@ -80,6 +80,7 @@ void pre_timeloop() {
   YAKL_SCOPE( tabs0                     , :: tabs0 );
   YAKL_SCOPE( q0                        , :: q0 );
   YAKL_SCOPE( qv0                       , :: qv0 );
+  YAKL_SCOPE( qc0                       , :: qc0 );
   YAKL_SCOPE( qn0                       , :: qn0 );
   YAKL_SCOPE( qp0                       , :: qp0 );
   YAKL_SCOPE( tke0                      , :: tke0 );
@@ -348,12 +349,12 @@ void pre_timeloop() {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (is_same_str(microphysics_scheme, "sam1mom") == 0) {
-      micro_field(0,k,j+offy_s,i+offx_s,icrm) = crm_state_qt(k,j,i,icrm);
+      micro_field(0,k,j+offy_s,i+offx_s,icrm) = crm_state_qv(k,j,i,icrm)+crm_state_qn(k,j,i,icrm);
       micro_field(1,k,j+offy_s,i+offx_s,icrm) = crm_state_qp(k,j,i,icrm);
       qn(k,j,i,icrm) = crm_state_qn(k,j,i,icrm);
     }
     if (is_same_str(microphysics_scheme, "p3") == 0) {
-      micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = crm_state_qt(k,j,i,icrm);
+      micro_field(idx_qv,k,j+offy_s,i+offx_s,icrm) = crm_state_qv(k,j,i,icrm);
       micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm) = crm_state_qi(k,j,i,icrm);
       micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm) = crm_state_nc(k,j,i,icrm);
       micro_field(idx_ni,k,j+offy_s,i+offx_s,icrm) = crm_state_ni(k,j,i,icrm);
@@ -408,16 +409,17 @@ void pre_timeloop() {
     yakl::atomicAdd(t00(k,icrm) , tmp);
     yakl::atomicAdd(tabs0(k,icrm) , tabs(k,j,i,icrm));
 
+    yakl::atomicAdd(qv0(k,icrm) , qv(k,j,i,icrm));
+    yakl::atomicAdd(qc0(k,icrm) , qcl(k,j,i,icrm));
     tmp = qv(k,j,i,icrm)+qcl(k,j,i,icrm)+qci(k,j,i,icrm);
     yakl::atomicAdd(q0(k,icrm) , tmp);
-    yakl::atomicAdd(qv0(k,icrm) , qv(k,j,i,icrm));
-
     tmp = qcl(k,j,i,icrm) + qci(k,j,i,icrm);
     yakl::atomicAdd(qn0(k,icrm) , tmp);
-
     tmp = qpl(k,j,i,icrm) + qpi(k,j,i,icrm);
     yakl::atomicAdd(qp0(k,icrm) , tmp);
+
     yakl::atomicAdd(tke0(k,icrm) , sgs_field(0,k,j+offy_s,i+offx_s,icrm));
+
   });
 
   if (use_VT) { VT_diagnose(); }

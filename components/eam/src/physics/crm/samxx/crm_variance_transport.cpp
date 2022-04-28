@@ -1,4 +1,5 @@
 #include "crm_variance_transport.h"
+#include "samxx_utils.h"
 
 //==============================================================================
 //==============================================================================
@@ -106,12 +107,11 @@ void VT_diagnose() {
   YAKL_SCOPE( t_vt         , :: t_vt);
   YAKL_SCOPE( q_vt         , :: q_vt);
   YAKL_SCOPE( ncrms        , :: ncrms);
+  YAKL_SCOPE( microphysics_scheme, :: microphysics_scheme );
 
   // local variables
   real2d t_mean("t_mean", nzm, ncrms);
   real2d q_mean("q_mean", nzm, ncrms);
-
-  int idx_qt = index_water_vapor;
 
   //----------------------------------------------------------------------------
   // calculate horizontal mean
@@ -130,8 +130,17 @@ void VT_diagnose() {
   //    do i = 1,nx
   //      do icrm = 1,ncrms
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+    real tmp_qt; 
+    if (is_same_str(microphysics_scheme, "sam1mom") == 0) {
+      tmp_qt = micro_field(0,k,j+offy_s,i+offx_s,icrm);
+    }
+    if (is_same_str(microphysics_scheme, "p3") == 0) {
+      tmp_qt = micro_field(idx_qv,k,j+offy_s,i+offx_s,icrm)
+              +micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm)
+              +micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm);
+    }
     yakl::atomicAdd( t_mean(k,icrm) , t(k,j+offy_s,i+offx_s,icrm) );
-    yakl::atomicAdd( q_mean(k,icrm) , micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) );
+    yakl::atomicAdd( q_mean(k,icrm) , tmp_qt );
   });
 
   // do k = 1,nzm
@@ -156,7 +165,14 @@ void VT_diagnose() {
     //       do icrm = 1,ncrms
     parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       tmp_t(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm);
-      tmp_q(k,j,i,icrm) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm);
+      if (is_same_str(microphysics_scheme, "sam1mom") == 0) {
+        tmp_q(k,j,i,icrm) = micro_field(0,k,j+offy_s,i+offx_s,icrm);
+      }
+      if (is_same_str(microphysics_scheme, "p3") == 0) {
+        tmp_q(k,j,i,icrm) = micro_field(idx_qv,k,j+offy_s,i+offx_s,icrm)
+                           +micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm)
+                           +micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm);
+      }
       tmp_t(k,j,i,icrm) = tmp_t(k,j,i,icrm) - t_mean(k,icrm);
       tmp_q(k,j,i,icrm) = tmp_q(k,j,i,icrm) - q_mean(k,icrm);
     });
@@ -171,8 +187,17 @@ void VT_diagnose() {
     //     do i = 1,nx
     //       do icrm = 1,ncrms
     parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      real tmp_qt;
+      if (is_same_str(microphysics_scheme, "sam1mom") == 0) {
+        tmp_qt = micro_field(0,k,j+offy_s,i+offx_s,icrm);
+      }
+      if (is_same_str(microphysics_scheme, "p3") == 0) {
+        tmp_qt = micro_field(idx_qv,k,j+offy_s,i+offx_s,icrm)
+                +micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm)
+                +micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm);
+      }
       t_vt_pert(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm) - t_mean(k,icrm);
-      q_vt_pert(k,j,i,icrm) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - q_mean(k,icrm);
+      q_vt_pert(k,j,i,icrm) = tmp_qt - q_mean(k,icrm);
     });
     
   }
@@ -221,8 +246,6 @@ void VT_forcing() {
   real2d t_pert_scale("t_pert_scale", nzm, ncrms);
   real2d q_pert_scale("q_pert_scale", nzm, ncrms);
 
-  int idx_qt = index_water_vapor;
-
   // min and max perturbation scaling values are used to limit the 
   // large-scale forcing from variance transport. This is meant to 
   // protect against creating unstable situations, although 
@@ -266,7 +289,7 @@ void VT_forcing() {
     real ttend_loc = ( t_pert_scale(k,icrm) * t_vt_pert(k,j,i,icrm) - t_vt_pert(k,j,i,icrm) ) / dtn;
     real qtend_loc = ( q_pert_scale(k,icrm) * q_vt_pert(k,j,i,icrm) - q_vt_pert(k,j,i,icrm) ) / dtn;
     t(k,j+offy_s,i+offx_s,icrm)                  = t(k,j+offy_s,i+offx_s,icrm)                  + ttend_loc * dtn;
-    micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) + qtend_loc * dtn;
+    micro_field(idx_qv,k,j+offy_s,i+offx_s,icrm) = micro_field(idx_qv,k,j+offy_s,i+offx_s,icrm) + qtend_loc * dtn;
   });
 
   //----------------------------------------------------------------------------

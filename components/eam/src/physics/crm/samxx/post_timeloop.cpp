@@ -62,7 +62,7 @@ void post_timeloop() {
   YAKL_SCOPE( crm_state_v_wind        , :: crm_state_v_wind );
   YAKL_SCOPE( crm_state_w_wind        , :: crm_state_w_wind );
   YAKL_SCOPE( crm_state_temperature   , :: crm_state_temperature );
-  YAKL_SCOPE( crm_state_qt            , :: crm_state_qt );
+  YAKL_SCOPE( crm_state_qv            , :: crm_state_qv );
   YAKL_SCOPE( crm_state_qp            , :: crm_state_qp );
   YAKL_SCOPE( crm_state_qn            , :: crm_state_qn );
   YAKL_SCOPE( crm_state_qc            , :: crm_state_qc );
@@ -358,12 +358,12 @@ void post_timeloop() {
     crm_state_w_wind(k,j,i,icrm) = w(k,j+offy_w,i+offx_w,icrm);
     crm_state_temperature(k,j,i,icrm) = tabs(k,j,i,icrm);
     if (is_same_str(microphysics_scheme, "sam1mom") == 0) {
-      crm_state_qt(k,j,i,icrm) = micro_field(0,k,j+offy_s,i+offx_s,icrm);
+      crm_state_qv(k,j,i,icrm) = micro_field(0,k,j+offy_s,i+offx_s,icrm) - qn(k,j,i,icrm);
       crm_state_qp(k,j,i,icrm) = micro_field(1,k,j+offy_s,i+offx_s,icrm);
       crm_state_qn(k,j,i,icrm) = qn(k,j,i,icrm);
     }
     if (is_same_str(microphysics_scheme, "p3") == 0) {
-      crm_state_qt(k,j,i,icrm) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm);
+      crm_state_qv(k,j,i,icrm) = micro_field(idx_qv,k,j+offy_s,i+offx_s,icrm);
       crm_state_qc(k,j,i,icrm) = micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
       crm_state_qi(k,j,i,icrm) = micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm);
       crm_state_nc(k,j,i,icrm) = micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm);

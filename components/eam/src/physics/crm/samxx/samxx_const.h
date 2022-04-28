@@ -215,15 +215,15 @@ int constexpr nmicro_fields = 9;
 int constexpr num_shoc_tracers = nmicro_fields+1;
 
 enum {
-  idx_qt = 0,  // total water (qv + qc)
+  idx_qv = 0,  // water vapor
+  idx_qc,      // cloud liq amount
   idx_qi,      // cloud ice amount
   idx_qr,      // rain amount
   idx_nc,      // cloud liq number
   idx_ni,      // cloud ice number
   idx_nr,      // rain number
   idx_qm,      // ice rime amount
-  idx_bm,      // ice rime volume
-  idx_qc       // cloud liq amount (this is also part of total water)
+  idx_bm       // ice rime volume
 };
 
 real constexpr rhor = 1000.; // Density of water, kg/m3

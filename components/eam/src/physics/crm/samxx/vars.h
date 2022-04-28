@@ -66,7 +66,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
                             real *crm_input_t_vt_p, real *crm_input_q_vt_p,
                             real *crm_input_nccn_p, real *crm_input_nc_nuceat_tend_p, real *crm_input_ni_activated_p,
                             real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p,
-                            real *crm_state_temperature_p, real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p,
+                            real *crm_state_temperature_p, real *crm_state_qv_p, real *crm_state_qp_p, real *crm_state_qn_p,
                             real *crm_state_qc_p, real *crm_state_nc_p, real *crm_state_qr_p, real *crm_state_nr_p,
                             real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qm_p, real *crm_state_bm_p,
                             real *crm_state_t_prev_p, real *crm_state_q_prev_p,
@@ -76,7 +76,7 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
                             real *crm_output_clmed_p, real *crm_output_cllow_p);
 
 void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p, real *crm_state_temperature_p, 
-                  real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p,
+                  real *crm_state_qv_p, real *crm_state_qp_p, real *crm_state_qn_p,
                   real *crm_state_qc_p, real *crm_state_nc_p, real *crm_state_qr_p, real *crm_state_nr_p,
                   real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qm_p, real *crm_state_bm_p,
                   real *crm_state_t_prev_p, real *crm_state_q_prev_p,
@@ -113,7 +113,7 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
 
 
 void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p, real *crm_state_temperature_p, 
-                              real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p,
+                              real *crm_state_qv_p, real *crm_state_qp_p, real *crm_state_qn_p,
                               real *crm_state_qc_p, real *crm_state_nc_p, real *crm_state_qr_p, real *crm_state_nr_p,
                               real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qm_p, real *crm_state_bm_p,
                               real *crm_state_t_prev_p, real *crm_state_q_prev_p,
@@ -272,6 +272,7 @@ extern real2d t01             ;
 extern real2d q01             ;
 extern real2d qp0             ;
 extern real2d qn0             ;
+extern real2d qc0             ;
 extern real2d prespot         ;
 extern real2d rho             ;
 extern real2d rhow            ;
@@ -448,7 +449,7 @@ extern real4d crm_state_u_wind;
 extern real4d crm_state_v_wind;
 extern real4d crm_state_w_wind; 
 extern real4d crm_state_temperature;
-extern real4d crm_state_qt;
+extern real4d crm_state_qv;
 extern real4d crm_state_qp;
 extern real4d crm_state_qn;
 
