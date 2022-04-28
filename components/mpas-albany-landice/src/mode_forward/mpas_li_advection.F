@@ -716,7 +716,7 @@ module li_advection
       real (kind=RKIND), dimension(:), intent(in) ::  &
            bedTopography,      & !< Input: bed elevation (m)
            sfcMassBal,         & !< Input: surface mass balance (kg/m^2/s)
-           basalMassBal          !< Iinput: basal mass balance (kg/m^2/s)
+           basalMassBal          !< Input: basal mass balance (kg/m^2/s)
 
       real(kind=RKIND), dimension(:,:), intent(in) :: &
            surfaceTracers,     & !< Input: tracer values of new ice at upper surface
