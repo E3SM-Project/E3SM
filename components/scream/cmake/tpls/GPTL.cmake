@@ -11,9 +11,9 @@ macro (CreateGPTLTarget)
       find_library(GPTL_LIB gptl REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
 
       # Create the imported target that scream targets can link to
-      add_library(gptl UNKNOWN IMPORTED GLOBAL)
-      set_target_properties(gptl PROPERTIES IMPORTED_LOCATION ${GPTL_LIB})
-      set_target_properties(gptl PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_SHAREDPATH}/include)
+      add_library (gptl INTERFACE)
+      target_link_libraries (gptl INTERFACE ${GPTL_LIB})
+      target_include_directories (gptl INTERFACE ${INSTALL_SHAREDPATH}/include)
     endif ()
   endif ()
 endmacro()

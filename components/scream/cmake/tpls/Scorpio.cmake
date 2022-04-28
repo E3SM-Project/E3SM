@@ -24,7 +24,11 @@ macro (CreateScorpioTargets)
       set(SCORPIO_LIB_DIR ${INSTALL_SHAREDPATH}/lib)
       set(SCORPIO_INC_DIR ${INSTALL_SHAREDPATH}/include)
       set(CSM_SHR_INCLUDE ${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/noesmf/${NINST_VALUE}/include)
-      set(INTF_INCL_DIRS ${SCORPIO_INC_DIR} ${CSM_SHR_INCLUDE})
+
+      # Look for pioc deps. We will have to link them to the pioc target, so that cmake will
+      # propagate them to any downstream target linking against pioc
+      CreateGPTLTarget()
+      GetNetcdfLibs()
 
       ######################
       #        PIOc        #
@@ -33,21 +37,10 @@ macro (CreateScorpioTargets)
       # Look for pioc in INSTALL_SHAREDPATH/lib
       find_library(SCORPIO_C_LIB pioc REQUIRED PATHS ${SCORPIO_LIB_DIR})
 
-      # Create imported target
-      add_library(pioc UNKNOWN IMPORTED GLOBAL)
-      set_target_properties(pioc PROPERTIES
-                IMPORTED_LOCATION "${SCORPIO_C_LIB}"
-                INTERFACE_INCLUDE_DIRECTORIES "${INTF_INCL_DIRS}")
-
-      ######################
-      #  PIOc dependencies #
-      ######################
-
-      # Look for pioc deps, and attach them to the pioc target, so that cmake will
-      # propagate them to any downstream target linking against pioc
-      CreateGPTLTarget()
-      GetNetcdfLibs()
-      target_link_libraries(pioc INTERFACE "gptl;${netcdf_c_lib}")
+      # Create the interface library, and set target properties
+      add_library (pioc INTERFACE)
+      target_link_libraries (pioc INTERFACE ${SCORPIO_C_LIB} gptl ${netcdf_c_lib})
+      target_include_directories (pioc INTERFACE ${SCORPIO_INC_DIR} ${CSM_SHR_INCLUDE})
       if (pnetcdf_lib)
         target_link_libraries(pioc INTERFACE "${pnetcdf_lib}")
       endif ()
@@ -59,14 +52,11 @@ macro (CreateScorpioTargets)
       # Look for piof lib in INSTALL_SHAREDPATH/lib
       find_library(SCORPIO_F_LIB piof REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
 
-      # Create the imported library that scream targets can link to
-      add_library(piof UNKNOWN IMPORTED GLOBAL)
-      set_target_properties(piof PROPERTIES
-              IMPORTED_LOCATION "${SCORPIO_F_LIB}"
-              INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_SHAREDPATH}/include)
-      # Link pioc and netcdf-fortran, so cmake will propagate them to any downstream
-      # target linking against piof
-      target_link_libraries(piof INTERFACE "${netcdf_f_lib};pioc")
+      # Create the interface library, and set target properties
+      add_library(piof INTERFACE)
+      target_link_libraries (pioc INTERFACE ${SCORPIO_F_LIB} ${netcdf_f_lib} pioc)
+      target_include_directories (pioc INTERFACE ${SCORPIO_INC_DIR})
+
     else ()
       # Not a CIME build. We'll add scorpio as a subdir
 
