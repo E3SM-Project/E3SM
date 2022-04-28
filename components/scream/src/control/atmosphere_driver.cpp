@@ -8,6 +8,7 @@
 #include "share/field/field_utils.hpp"
 #include "share/util/scream_time_stamp.hpp"
 #include "share/util/scream_timing.hpp"
+#include "share/util/scream_utils.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
@@ -880,6 +881,13 @@ void AtmosphereDriver::initialize_atm_procs ()
   stop_timer("EAMxx::initialize_atm_procs");
   stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMXX] initialize_atm_procs ... done!");
+
+#ifdef SCREAM_HAS_MEMORY_USAGE
+  long long my_mem_usage = get_mem_usage(MB);
+  long long max_mem_usage;
+  m_atm_comm.all_reduce(&my_mem_usage,&max_mem_usage,1,MPI_MAX);
+  m_atm_logger->info("[EAMxx::init] memory usage: " + std::to_string(max_mem_usage) + "MB");
+#endif
 }
 
 void AtmosphereDriver::
@@ -938,6 +946,13 @@ void AtmosphereDriver::run (const int dt) {
     // Export fluxes from the component coupler (if any)
     m_surface_coupling->do_export();
   }
+
+#ifdef SCREAM_HAS_MEMORY_USAGE
+  long long my_mem_usage = get_mem_usage(MB);
+  long long max_mem_usage;
+  m_atm_comm.all_reduce(&my_mem_usage,&max_mem_usage,1,MPI_MAX);
+  m_atm_logger->info("[EAMxx::run] memory usage: " + std::to_string(max_mem_usage) + "MB");
+#endif
 
   // Flush the logger at least once per time step.
   // Without this flush, depending on how much output we are loggin,
