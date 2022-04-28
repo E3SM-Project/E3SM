@@ -31,8 +31,7 @@ DynamicsDrivenGridsManager (const ekat::Comm& comm,
 
   if (!is_params_inited_f90()) {
     // While we're here, we can init homme's parameters
-    const auto& ddgm = p.sublist("Dynamics Driven");
-    auto nlname = ddgm.get<std::string>("Dynamics Namelist File Name").c_str();
+    auto nlname = p.get<std::string>("Dynamics Namelist File Name").c_str();
     init_params_f90 (nlname);
   }
 

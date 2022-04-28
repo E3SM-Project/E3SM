@@ -3,6 +3,7 @@
 #include "ekat/ekat_assert.hpp"
 #include "share/util/scream_universal_constants.hpp"
 
+#include <limits>
 #include <numeric>
 #include <cmath>
 #include <vector>

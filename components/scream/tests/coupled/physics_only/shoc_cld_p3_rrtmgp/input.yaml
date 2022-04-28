@@ -9,34 +9,29 @@ Time Stepping:
   Start Date: [2021, 10, 12]    # Year, Month, Day
   Number of Steps: ${NUM_STEPS}
 
-Atmosphere Processes:
-  Number of Entries: 4
+atmosphere_processes:
+  atm_procs_list: (shoc,CldFraction,p3,rrtmgp)
   Schedule Type: Sequential
-  Process 0:
-    Process Name: SHOC
+  shoc:
     Grid: Point Grid
-  Process 1:
-    Process Name: CldFraction 
+  CldFraction:
     Grid: Point Grid
-  Process 2:
-    Process Name: P3
+  p3:
     Grid: Point Grid
-  Process 3:
-    Process Name: RRTMGP
+  rrtmgp:
     Grid: Point Grid
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
     Orbital Year: 1990
 
 Grids Manager:
   Type: Mesh Free
-  Mesh Free:
-    Number of Global Columns:   218
-    Number of Vertical Levels:  72  # Will want to change to 128 when a valid unit test is available.
+  Number of Global Columns:   218
+  Number of Vertical Levels:  72  # Will want to change to 128 when a valid unit test is available.
 
-# The name of the file containing the initial conditions for this test.
 Initial Conditions:
+  # The name of the file containing the initial conditions for this test.
+  Filename: ${SCREAM_DATA_DIR}/init/shoc_cld_p3_rrtmgp_init_ne2np4.nc
   Point Grid:
-    Filename: ${SCREAM_DATA_DIR}/init/shoc_cld_p3_rrtmgp_init_ne2np4.nc
     Load Latitude:  true
     Load Longitude: true
     surf_latent_flux: 0.0
@@ -45,7 +40,6 @@ Initial Conditions:
     aero_ssa_sw: 0.0
     aero_tau_sw: 0.0
     aero_tau_lw: 0.0
-
 
 # The parameters for I/O control
 Scorpio:

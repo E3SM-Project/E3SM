@@ -58,14 +58,7 @@ TEST_CASE("scream_homme_standalone", "scream_homme_standalone") {
   EKAT_ASSERT_MSG (t0.is_valid(), "Error! Invalid start date.\n");
 
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
-  // which rely on factory for process creation. The initialize method of the AD does that.
-  // While we're at it, check that the case insensitive key of the factory works.
-  auto& proc_factory = AtmosphereProcessFactory::instance();
-  proc_factory.register_product("dynamics",&create_atmosphere_process<HommeDynamics>);
-
-  // Need to register grids managers before we create the driver
-  auto& gm_factory = GridsManagerFactory::instance();
-  gm_factory.register_product("Dynamics Driven",create_dynamics_driven_grids_manager);
+  register_dynamics();
 
   // Create the driver
   AtmosphereDriver ad;

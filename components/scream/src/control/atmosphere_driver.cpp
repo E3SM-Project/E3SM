@@ -142,7 +142,7 @@ void AtmosphereDriver::create_atm_processes()
   // Create the group of processes. This will recursively create the processes
   // tree, storing also the information regarding parallel execution (if needed).
   // See AtmosphereProcessGroup class documentation for more details.
-  auto& atm_proc_params = m_atm_params.sublist("Atmosphere Processes");
+  auto& atm_proc_params = m_atm_params.sublist("atmosphere_processes");
   atm_proc_params.rename("EAMxx");
   atm_proc_params.set("Logger",m_atm_logger);
   m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_comm,atm_proc_params);
@@ -165,11 +165,16 @@ void AtmosphereDriver::create_grids()
   // Create the grids manager
   auto& gm_params = m_atm_params.sublist("Grids Manager");
   const std::string& gm_type = gm_params.get<std::string>("Type");
+  m_atm_logger->debug("  [EAMXX] Creating grid manager '" + gm_type + "' ...");
   m_grids_manager = GridsManagerFactory::instance().create(gm_type,m_atm_comm,gm_params);
+
+  m_atm_logger->debug("  [EAMXX] Creating grid manager '" + gm_type + "' ... done!");
 
   // Tell the grid manager to build all the grids required
   // by the atm processes, as well as the reference grid
   m_grids_manager->build_grids(m_atm_process_group->get_required_grids());
+
+  m_atm_logger->debug("  [EAMXX] Grids created.");
 
   // Set the grids in the processes. Do this by passing the grids manager.
   // Each process will grab what they need
@@ -478,7 +483,7 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
 
       ekat::ParameterList lat_lon_params;
       lat_lon_params.set("Field Names",fnames);
-      lat_lon_params.set("Filename",ic_pl_grid.get<std::string>("Filename"));
+      lat_lon_params.set("Filename",ic_pl.get<std::string>("Filename"));
 
       AtmosphereInput lat_lon_reader(lat_lon_params,grid,host_views,layouts);
       lat_lon_reader.read_variables();
@@ -570,8 +575,10 @@ void AtmosphereDriver::create_logger () {
   using namespace ekat::logger;
   using ci_string = ekat::CaseInsensitiveString;
 
-  ci_string log_fname = m_atm_params.get<std::string>("Atm Log File","atm.log");
-  ci_string log_level_str = m_atm_params.get<std::string>("Atm Log Level","info");
+  auto& deb_pl = m_atm_params.sublist("Debug");
+
+  ci_string log_fname = deb_pl.get<std::string>("Atm Log File","atm.log");
+  ci_string log_level_str = deb_pl.get<std::string>("Atm Log Level","info");
   EKAT_REQUIRE_MSG (log_fname!="",
       "Invalid string for 'Atm Log File': '" + log_fname + "'.\n");
 
@@ -656,10 +663,14 @@ void AtmosphereDriver::set_initial_conditions ()
   };
 
   // First the individual input fields...
+  m_atm_logger->debug("    [EAMXX] Processing input fields ...");
   for (const auto& f : m_atm_process_group->get_fields_in()) {
     process_ic_field (f);
   }
+  m_atm_logger->debug("    [EAMXX] Processing input fields ... done!");
+
   // ...then the input groups
+  m_atm_logger->debug("    [EAMXX] Processing input groups ...");
   for (const auto& g : m_atm_process_group->get_groups_in()) {
     if (g.m_bundle) {
       process_ic_field(*g.m_bundle);
@@ -668,6 +679,7 @@ void AtmosphereDriver::set_initial_conditions ()
       process_ic_field(*it.second);
     }
   }
+  m_atm_logger->debug("    [EAMXX] Processing input groups ... done!");
 
   // Some fields might be the subfield of a group's bundled field. In that case,
   // we only need to init one: either the bundled field, or all the individual subfields.
@@ -702,14 +714,20 @@ void AtmosphereDriver::set_initial_conditions ()
     }
   }
 
-  // Now loop over all grids, and load from file the needed fields on each grid (if any).
-  for (const auto& it : m_field_mgrs) {
-    const auto& grid_name = it.first;
-    const auto& file_name = ic_pl.sublist(grid_name).get<std::string>("Filename","");
-    read_fields_from_file (ic_fields_names[grid_name],it.first,file_name,m_current_ts);
+  // If a filename is specified, use it to load inputs on all grids
+  if (ic_pl.isParameter("Filename")) {
+    // Now loop over all grids, and load from file the needed fields on each grid (if any).
+    m_atm_logger->debug("    [EAMXX] Reading fields from file ...");
+    const auto& file_name = ic_pl.get<std::string>("Filename");
+    for (const auto& it : m_field_mgrs) {
+      const auto& grid_name = it.first;
+      read_fields_from_file (ic_fields_names[grid_name],it.first,file_name,m_current_ts);
+    }
+    m_atm_logger->debug("    [EAMXX] Reading fields from file ... done!");
   }
 
   // If there were any fields that needed to be copied per the input yaml file, now we copy them.
+  m_atm_logger->debug("    [EAMXX] Processing fields to copy ...");
   for (const auto& tgt_fid : ic_fields_to_copy) {
     const auto& tgt_fname = tgt_fid.name();
     const auto& tgt_gname = tgt_fid.get_grid_name();
@@ -763,11 +781,13 @@ void AtmosphereDriver::set_initial_conditions ()
     // Set the initial time stamp
     f_tgt.get_header().get_tracking().update_time_stamp(m_current_ts);
   }
+  m_atm_logger->debug("    [EAMXX] Processing fields to copy ... done!");
 
   // Final step: it is possible to have a bundled group G1=(f1,f2,f3),
   // where the IC are read from file for f1, f2, and f3. In that case,
   // the time stamp for the bundled G1 has not be inited, but the data
   // is valid (all entries have been inited). Let's fix that.
+  m_atm_logger->debug("    [EAMXX] Processing subfields ...");
   for (const auto& g : m_atm_process_group->get_groups_in()) {
     if (g.m_bundle) {
       auto& track = g.m_bundle->get_header().get_tracking();
@@ -789,6 +809,7 @@ void AtmosphereDriver::set_initial_conditions ()
       }
     }
   }
+  m_atm_logger->debug("    [EAMXX] Processing subfields ... done!");
 
   m_atm_logger->info("  [EAMXX] set_initial_conditions ... done!");
 }

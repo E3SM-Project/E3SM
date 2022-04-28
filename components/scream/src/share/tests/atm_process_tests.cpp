@@ -24,24 +24,24 @@ ekat::ParameterList create_test_params ()
   // Create a parameter list for inputs
   ekat::ParameterList params ("Atmosphere Processes");
 
-  params.set("Number of Entries",2);
   params.set<std::string>("Schedule Type","Sequential");
+  params.set<std::string>("atm_procs_list","(Foo,BarBaz)");
 
-  auto& p0 = params.sublist("Process 0");
-  p0.set<std::string>("Process Name", "Foo");
+  auto& p0 = params.sublist("Foo");
+  p0.set<std::string>("Type", "Foo");
   p0.set<std::string>("Grid Name", "Point Grid");
 
-  auto& p1 = params.sublist("Process 1");
-  p1.set<std::string>("Process Name", "Group");
-  p1.set("Number of Entries",2);
+  auto& p1 = params.sublist("BarBaz");
+  p1.set<std::string>("atm_procs_list","(Bar,Baz)");
+  p1.set<std::string>("Type", "Group");
   p1.set<std::string>("Schedule Type","Sequential");
 
-  auto& p1_0 = p1.sublist("Process 0");
-  p1_0.set<std::string>("Process Name", "Bar");
+  auto& p1_0 = p1.sublist("Bar");
+  p1_0.set<std::string>("Type", "Bar");
   p1_0.set<std::string>("Grid Name", "Point Grid");
 
-  auto& p1_1 = p1.sublist("Process 1");
-  p1_1.set<std::string>("Process Name", "Baz");
+  auto& p1_1 = p1.sublist("Baz");
+  p1_1.set<std::string>("Type", "Baz");
   p1_1.set<std::string>("Grid Name", "Point Grid");
 
   return params;
@@ -58,10 +58,10 @@ create_gm (const ekat::Comm& comm) {
 
   ekat::ParameterList gm_params;
   gm_params.set<std::string>("Reference Grid", "Point Grid");
-  gm_params.sublist("Mesh Free").set<int>("Number of Global Columns", num_global_cols);
-  gm_params.sublist("Mesh Free").set<int>("Number of Local Elements", num_local_elems);
-  gm_params.sublist("Mesh Free").set<int>("Number of Vertical Levels", nlevs);
-  gm_params.sublist("Mesh Free").set<int>("Number of Gauss Points", np);
+  gm_params.set<int>("Number of Global Columns", num_global_cols);
+  gm_params.set<int>("Number of Local Elements", num_local_elems);
+  gm_params.set<int>("Number of Vertical Levels", nlevs);
+  gm_params.set<int>("Number of Gauss Points", np);
 
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
   gm->build_all_grids();
@@ -77,7 +77,7 @@ public:
   DummyDiag (const ekat::Comm& comm, const ekat::ParameterList& params)
     : AtmosphereDiagnostic(comm, params)
   {
-    m_name = params.get<std::string> ("Diagnostic Name");
+    m_name = params.name();
     m_grid_name = params.get<std::string> ("Grid Name");
   }
 
@@ -221,7 +221,7 @@ public:
   DummyProcess (const ekat::Comm& comm,const ekat::ParameterList& params)
     : AtmosphereProcess(comm, params)
   {
-    m_name = params.get<std::string> ("Process Name");
+    m_name = params.name();
     m_grid_name = params.get<std::string> ("Grid Name");
   }
 
@@ -367,12 +367,6 @@ TEST_CASE("process_factory", "") {
   std::shared_ptr<logger_t> logger;
   logger = std::make_shared<logger_impl_t>("",LogLevel::info,comm);
 
-  // Load ad parameter list
-  std::string fname = "atm_process_tests.yaml";
-  ekat::ParameterList params ("Atmosphere Processes");
-  REQUIRE_NOTHROW ( parse_yaml_file(fname,params) );
-  params.set("Logger",logger);
-
   // Create then factory, and register constructors
   auto& factory = AtmosphereProcessFactory::instance();
   factory.register_product("Foo",&create_atmosphere_process<Foo>);
@@ -382,25 +376,60 @@ TEST_CASE("process_factory", "") {
   factory.register_product("DiagIdentity",&create_atmosphere_process<DiagIdentity>);
 
   // Create the processes
-  std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
+  SECTION ("parse_list") {
+    // Load ad parameter list
+    std::string fname = "atm_process_tests_parse_list.yaml";
+    ekat::ParameterList params ("Atmosphere Processes");
+    REQUIRE_NOTHROW ( parse_yaml_file(fname,params) );
+    params.set("Logger",logger);
 
-  // CHECKS
-  auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process);
+    std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
 
-  // 1) Must be a group
-  REQUIRE (static_cast<bool>(group));
+    // CHECKS
+    auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process);
 
-  // 2) Must store 2 processes: a Physics and a Group
-  REQUIRE (group->get_num_processes()==2);
-  REQUIRE (group->get_process(0)->type()==AtmosphereProcessType::Dynamics);
-  REQUIRE (group->get_process(1)->type()==AtmosphereProcessType::Group);
+    // 1) Must be a group
+    REQUIRE (static_cast<bool>(group));
 
-  // 3) The group must store two physics
-  auto group_2 = std::dynamic_pointer_cast<const AtmosphereProcessGroup>(group->get_process(1));
-  REQUIRE (static_cast<bool>(group_2));
-  REQUIRE (group_2->get_num_processes()==2);
-  REQUIRE (group_2->get_process(0)->type()==AtmosphereProcessType::Physics);
-  REQUIRE (group_2->get_process(1)->type()==AtmosphereProcessType::Physics);
+    // 2) Must store 2 processes: a Physics and a Group
+    REQUIRE (group->get_num_processes()==2);
+    REQUIRE (group->get_process(0)->type()==AtmosphereProcessType::Dynamics);
+    REQUIRE (group->get_process(1)->type()==AtmosphereProcessType::Group);
+
+    // 3) The group must store two physics
+    auto group_2 = std::dynamic_pointer_cast<const AtmosphereProcessGroup>(group->get_process(1));
+    REQUIRE (static_cast<bool>(group_2));
+    REQUIRE (group_2->get_num_processes()==2);
+    REQUIRE (group_2->get_process(0)->type()==AtmosphereProcessType::Physics);
+    REQUIRE (group_2->get_process(1)->type()==AtmosphereProcessType::Physics);
+  }
+
+  SECTION ("named_procs") {
+    // Load ad parameter list
+    std::string fname = "atm_process_tests_named_procs.yaml";
+    ekat::ParameterList params ("Atmosphere Processes");
+    REQUIRE_NOTHROW ( parse_yaml_file(fname,params) );
+    params.set("Logger",logger);
+    std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
+
+    // CHECKS
+    auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process);
+
+    // 1) Must be a group
+    REQUIRE (static_cast<bool>(group));
+
+    // 2) Must store 2 processes: a Physics and a Group
+    REQUIRE (group->get_num_processes()==2);
+    REQUIRE (group->get_process(0)->type()==AtmosphereProcessType::Dynamics);
+    REQUIRE (group->get_process(1)->type()==AtmosphereProcessType::Group);
+
+    // 3) The group must store two physics
+    auto group_2 = std::dynamic_pointer_cast<const AtmosphereProcessGroup>(group->get_process(1));
+    REQUIRE (static_cast<bool>(group_2));
+    REQUIRE (group_2->get_num_processes()==2);
+    REQUIRE (group_2->get_process(0)->type()==AtmosphereProcessType::Physics);
+    REQUIRE (group_2->get_process(1)->type()==AtmosphereProcessType::Physics);
+  }
 }
 
 TEST_CASE("atm_proc_dag", "") {
@@ -440,11 +469,10 @@ TEST_CASE("atm_proc_dag", "") {
   SECTION ("broken") {
 
     auto params = create_test_params();
-    auto p1 = params.sublist("Process 1");
+    auto p1 = params.sublist("BarBaz");
 
-    // Make it look like we forgot to request MyPhysicsB
-    p1.set("Number of Entries", 1);
-    // p1_0.set<std::string>("Process Name", "MyPhysicsB");
+    // Make sure there's a missing piece (whatever Baz computes);
+    p1.set<std::string>("atm_procs_list","(Bar)");
     std::shared_ptr<AtmosphereProcess> broken_atm_group (factory.create("group",comm,params));
     broken_atm_group->set_grids(gm);
 
@@ -596,22 +624,19 @@ TEST_CASE ("diagnostics") {
   auto gm = create_gm(comm);
 
   // Create the identity diagnostic
-  ekat::ParameterList params_identity;
-  params_identity.set<std::string>("Diagnostic Name", "DiagIdentity");
+  ekat::ParameterList params_identity("DiagIdentity");
   params_identity.set<std::string>("Grid Name", "Point Grid");
   auto diag_identity = std::make_shared<DiagIdentity>(comm,params_identity);
   diag_identity->set_grids(gm);
 
   // Create the sum diagnostic
-  ekat::ParameterList params_sum;
-  params_sum.set<std::string>("Diagnostic Name", "DiagSum");
+  ekat::ParameterList params_sum("DiagSum");
   params_sum.set<std::string>("Grid Name", "Point Grid");
   auto diag_sum = std::make_shared<DiagSum>(comm,params_sum);
   diag_sum->set_grids(gm);
 
   // Create the fail diagnostic
-  ekat::ParameterList params_fail;
-  params_fail.set<std::string>("Diagnostic Name", "DiagFail");
+  ekat::ParameterList params_fail("DiagFail");
   params_fail.set<std::string>("Grid Name", "Point Grid");
   auto diag_fail = std::make_shared<DiagFail>(comm,params_fail);
   diag_fail->set_grids(gm);

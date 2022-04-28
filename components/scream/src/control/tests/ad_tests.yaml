@@ -4,26 +4,26 @@ Debug:
   Atmosphere DAG Verbosity Level: 5
 
 Initial Conditions:
+  Filename: should_not_be_neeeded_and_code_will_throw_if_it_tries_to_open_this_nonexistent_file.nc
   Point Grid:
-    Filename: should_not_be_neeeded_and_code_will_throw_if_it_tries_to_open_this_nonexistent_file.nc
     A: 1.0
     V: [2.0, 3.0]
     Z: "A"
 
-Atmosphere Processes:
-  Number of Entries: 3
+atmosphere_processes:
+  atm_procs_list: (dummy1, dummy2, dummy3)
   Schedule Type: Sequential
 
-  Process 0:
-    Process Name: Dummy
+  dummy1:
+    Type: Dummy
     Sub Name: A to Group
     Grid Name: Point Grid
-  Process 1:
-    Process Name: Dummy
+  dummy2:
+    Type: Dummy
     Sub Name: Group to Group
     Grid Name: Point Grid
-  Process 2:
-    Process Name: Dummy
+  dummy3:
+    Type: Dummy
     Sub Name: Group to A
     Grid Name: Point Grid
 

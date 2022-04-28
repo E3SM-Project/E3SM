@@ -12,8 +12,12 @@ AtmosphereProcessGroup::
 AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
-  // Get number of processes in the group and the scheduling type (Sequential vs Parallel)
-  m_group_size = params.get<int>("Number of Entries");
+
+  // Get the string representation of the group
+  auto group_list_str = m_params.get<std::string>("atm_procs_list");
+  auto group_plist = ekat::parse_nested_list(group_list_str);
+
+  m_group_size = group_plist.get<int>("Num Entries");
   EKAT_REQUIRE_MSG (m_group_size>0, "Error! Invalid group size.\n");
 
   if (m_group_size>1) {
@@ -34,19 +38,22 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
   m_group_name = params.name();
 
   auto& apf = AtmosphereProcessFactory::instance();
+  // Ensure the "Group" atm proc is registered in the factory,
+  // so we can recursively create groups. Groups are an impl detail,
+  // so we don't expect users to register the APG in the factory.
   apf.register_product("group",&create_atmosphere_process<AtmosphereProcessGroup>);
   for (int i=0; i<m_group_size; ++i) {
     // The comm to be passed to the processes construction is
-    //  - the same as the input comm if num_entries=1 or sched_type=Sequential
-    //  - a sub-comm of the input comm otherwise
+    //  - the same as the comm of this APG, if num_entries=1 or sched_type=Sequential
+    //  - a sub-comm of this APG's comm otherwise
     ekat::Comm proc_comm = m_comm;
     if (m_group_schedule_type==ScheduleType::Parallel) {
-      // This is what's going to happen:
+      // This is what's going to happen when we implment this:
       //  - the processes in the group are going to be run in parallel
       //  - each rank is assigned ONE atm process
-      //  - all the atm processes not assigned to this rank are filled with
-      //    an instance of RemoteProcessStub (to be implemented), which is a do-nothing class,
-      //    only responsible to keep track of dependencies
+      //  - all the atm processes not assigned to this rank will be filled with
+      //    an instance of "RemoteProcessStub" (to be implemented),
+      //    which is a do-nothing class, only responsible to keep track of dependencies
       //  - the input parameter list should specify for each atm process the number
       //    of mpi ranks dedicated to it. Obviously, these numbers should add up
       //    to the size of the input communicator.
@@ -56,12 +63,51 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
       ekat::error::runtime_abort("Error! Parallel schedule type not yet implemented.\n");
     }
 
-    // Set the logger in this AP's params
-    auto& params_i = m_params.sublist(ekat::strint("Process",i));
-    params_i.set("Logger",this->m_atm_logger);
-    const std::string& process_name = params_i.get<std::string>("Process Name");
+    // Check if the i-th entry is a "named" atm proc or a group defined on the fly.
+    // In the first case, the i-th entry of the string list is just a string,
+    // like "my_atm_proc", while in the latter it is of the form "(a, b, ...)"
+    const auto& type_i = group_plist.get<std::string>(ekat::strint("Type",i));
+    std::string ap_name, ap_type;
+    if (type_i=="Value") {
+      // This is a "named" atm proc.
+      ap_name = group_plist.get<std::string>(ekat::strint("Entry",i));
+    } else {
+      // This is a group defined "on the fly". Get its string representation
+      ap_name = group_plist.sublist(ekat::strint("Entry",i)).get<std::string>("String");
+      // Due to XML limitations, in CIME runs we need to create a name for atm proc groups
+      // that are defined via nested list string, and we do it by replacing ',' with '_',
+      // '(' with 'group.', and ')' with '.'
+      auto pos = ap_name.find(",");
+      while (pos!=std::string::npos) {
+        ap_name[pos] = '_';
+        pos = ap_name.find(",");
+      }
+      pos = ap_name.find("(");
+      while (pos!=std::string::npos) {
+        ap_name[pos] = '.';
+        ap_name.insert(pos,"group");
+        pos = ap_name.find("(");
+      }
+      pos = ap_name.find(")");
+      while (pos!=std::string::npos) {
+        ap_name[pos] = '.';
+        pos = ap_name.find(")");
+      }
+      ap_type = "Group";
+    }
 
-    m_atm_processes.emplace_back(apf.create(process_name,proc_comm,params_i));
+    // Get the params of this atm proc
+    auto& params_i = m_params.sublist(ap_name);
+
+    // Get type (defaults to name)
+    ap_type = type_i=="List" ? "Group"
+                             : params_i.get<std::string>("Type",ap_name);
+
+    // Set logger in this ap params
+    params_i.set("Logger",this->m_atm_logger);
+
+    // Create the atm proc
+    m_atm_processes.emplace_back(apf.create(ap_type,proc_comm,params_i));
 
     // NOTE: the shared_ptr of the new atmosphere process *MUST* have been created correctly.
     //       Namely, the creation process must have set up enable_shared_from_this's status correctly.

@@ -10,11 +10,9 @@ Time Stepping:
   Start Date: [2021, 10, 12]    # Year, Month, Day
   Number of Steps: ${NUM_STEPS}
 
-Atmosphere Processes:
-  Number of Entries: 1
-
-  Process 0:
-    Process Name: RRTMGP
+atmosphere_processes:
+  atm_procs_list: (rrtmgp)
+  rrtmgp:
     Grid: Point Grid
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
     Orbital Year: 1990
@@ -24,14 +22,13 @@ Atmosphere Processes:
 Grids Manager:
   Type: Mesh Free
   Reference Grid: Point Grid
-  Mesh Free:
-    Number of Global Columns: 218
-    Number of Vertical Levels: 72
+  Number of Global Columns: 218
+  Number of Vertical Levels: 72
 
 # Specifications for setting initial conditions
 Initial Conditions:
+  Filename: ${SCREAM_DATA_DIR}/init/rrtmgp_init_ne2np4.nc
   Point Grid:
-    Filename: ${SCREAM_DATA_DIR}/init/rrtmgp_init_ne2np4.nc
     Load Latitude:  true
     Load Longitude: true
     aero_g_sw: 0.0
