@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<namelist_defaults>
+
+<use_case_desc>Conditions to simulate 1850 land-use with WFM MOSART settings</use_case_desc>
+<wrmflag>.true.</wrmflag>
+<inundflag>.true.</inundflag>
+<opt_elevprof>1</opt_elevprof> 
+<damconstructionflag>1</damconstructionflag>
+</namelist_defaults>

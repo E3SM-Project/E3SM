@@ -50,7 +50,23 @@
     <group>run_component_mosart</group>
     <file>env_run.xml</file>
     <desc>MOSART build-namelist options</desc>
-  </entry>
+ </entry>
+   
+ <entry id="MOSART_NML_USE_CASE">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <values>
+       <value compset="1850.*_*CNPRDCTCBCWFM" >1850_WFM_control</value>
+       <value compset="20TR.*_*CNPRDCTCBCWFM" >20thC_WFM_transient</value>
+       <value compset="20TR.*_*CNPRDCTCBCPHSTGUWFM" >20thC_PHSTGUWFM_transient</value>
+    </values>
+    <group>run_component_mosart</group> 
+    <file>env_run.xml</file>
+    <desc>MOSART namelist use_case. 
+       Determines the use-case that will be sent to the ELM build-namelist utility.
+       This is normally set by the component set. This is an advanced flag and should only be 
+       used by expert users.</desc>
+ </entry>
 
   <entry id="MOSART_NAMELIST_OPTS">
     <type>char</type>
