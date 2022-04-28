@@ -974,6 +974,16 @@
       <mask>WC14to60E2r3</mask>
     </model_grid>
 
+    <model_grid alias="northamericax4v1pg2_EC30to60E2r2" compset="(DOCN|EAM.+ELM.+MPASO)">
+      <grid name="atm">ne0np4_northamericax4v1.pg2</grid>
+      <grid name="lnd">ne0np4_northamericax4v1.pg2</grid>
+      <grid name="ocnice">EC30to60E2r2</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>EC30to60E2r2</mask>
+    </model_grid>
+
     <model_grid alias="arcticx4v1pg2_r0125_oARRM60to10">
       <grid name="atm">ne0np4_arcticx4v1.pg2</grid>
       <grid name="lnd">r0125</grid>
@@ -2765,6 +2775,8 @@
       <file grid="ice|ocn" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.ocn.northamericax4v1pg2_oRRS15to5.200401.nc</file>
       <file grid="atm|lnd" mask="WC14to60E2r3">$DIN_LOC_ROOT/share/domains/domain.lnd.northamericax4v1pg2_WC14to60E2r3.200929.nc</file>
       <file grid="ice|ocn" mask="WC14to60E2r3">$DIN_LOC_ROOT/share/domains/domain.ocn.northamericax4v1pg2_WC14to60E2r3.200929.nc</file>
+      <file grid="atm|lnd" mask="EC30to60E2r2">$DIN_LOC_ROOT/share/domains/domain.lnd.northamericax4v1pg2_EC30to60E2r2.220428.nc</file>
+      <file grid="ice|ocn" mask="EC30to60E2r2">$DIN_LOC_ROOT/share/domains/domain.ocn.northamericax4v1pg2_EC30to60E2r2.220428.nc</file>
       <desc>1-deg with 1/4-deg over North America (version 1) pg2:</desc>
     </domain>
 
@@ -3483,15 +3495,30 @@
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/WC14to60E2r3/map_WC14to60E2r3_to_northamericax4v1pg2_mono.20200929.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/WC14to60E2r3/map_WC14to60E2r3_to_northamericax4v1pg2_mono.20200929.nc</map>
     </gridmap>
+
+    <gridmap atm_grid="ne0np4_northamericax4v1.pg2" ocn_grid="EC30to60E2r2">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_EC30to60E2r2_mono.220428.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_EC30to60E2r2_bilin.220428.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_EC30to60E2r2_bilin.220428.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_northamericax4v1pg2_mono.220428.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/EC30to60E2r2/map_EC30to60E2r2_to_northamericax4v1pg2_mono.220428.nc</map>
+    </gridmap>
+
     <gridmap atm_grid="ne0np4_northamericax4v1.pg2" lnd_grid="r0125">
       <map name="ATM2LND_FMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r0125_mono.20200401.nc</map>
       <map name="ATM2LND_SMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r0125_bilin.20200401.nc</map>
       <map name="LND2ATM_FMAPNAME">cpl/gridmaps/r0125/map_r0125_to_northamericax4v1pg2_mono.20200401.nc</map>
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/r0125/map_r0125_to_northamericax4v1pg2_mono.20200401.nc</map>
     </gridmap>
+
     <gridmap atm_grid="ne0np4_northamericax4v1.pg2" rof_grid="r0125">
       <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r0125_mono.20200401.nc</map>
       <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r0125_bilin.20200401.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_northamericax4v1.pg2" rof_grid="r05">
+      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r05_mono.220428.nc</map>
+      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r05_bilin.220428.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne0np4_arcticx4v1.pg2" ocn_grid="oARRM60to10">
@@ -4008,6 +4035,11 @@
     <gridmap lnd_grid="ne0np4_northamericax4v1.pg2" rof_grid="r0125">
       <map name="LND2ROF_FMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r0125_mono.20200401.nc</map>
       <map name="ROF2LND_FMAPNAME">cpl/gridmaps/r0125/map_r0125_to_northamericax4v1pg2_mono.20200401.nc</map>
+    </gridmap>
+
+    <gridmap lnd_grid="ne0np4_northamericax4v1.pg2" rof_grid="r05">
+      <map name="LND2ROF_FMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1pg2_to_r05_mono.220428.nc</map>
+      <map name="ROF2LND_FMAPNAME">cpl/gridmaps/r05/map_r05_to_northamericax4v1pg2_mono.220428.nc</map>
     </gridmap>
 
     <gridmap lnd_grid="ne0np4_arcticx4v1.pg2" rof_grid="r0125">
