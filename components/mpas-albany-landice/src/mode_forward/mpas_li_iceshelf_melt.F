@@ -1154,7 +1154,7 @@ module li_iceshelf_melt
       real (kind=RKIND), dimension(:), pointer :: areaCell
       real (kind=RKIND), dimension(:), allocatable :: mean_TF, IS_area
       integer, parameter :: maxNumBasins = 32
-      integer, dimension(:), pointer :: cellMask
+      integer, dimension(:), pointer :: cellMask, indexToCellID
       real(kind=RKIND), dimension(maxNumBasins*2) :: localSums, globalSums
       real (kind=RKIND), pointer :: gamma0
       real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
@@ -1177,6 +1177,7 @@ module li_iceshelf_melt
 
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nOceanLayers)
+         call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
 
          ! Get 3d thermal forcing (had to be read-in)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', TFocean)
@@ -1216,8 +1217,8 @@ module li_iceshelf_melt
                kinf = ksup + 1
                if ((zOcean(ksup)-zOcean(kinf)) == 0) then
                   call mpas_log_write("iceshelf_melt_ismip6: Invalid value for zOcean. " // &
-                       "ksup=$i kinf=$i zOcean(ksup)=$r zOcean(kinf)=$r iCell=$i lowerSurface=$r", MPAS_LOG_ERR, &
-                       intArgs=(/ksup, kinf, iCell/), &
+                       "ksup=$i kinf=$i zOcean(ksup)=$r zOcean(kinf)=$r indexToCellID=$i lowerSurface=$r", MPAS_LOG_ERR, &
+                       intArgs=(/ksup, kinf, indexToCellID(iCell)/), &
                        realArgs=(/zOcean(ksup), zOcean(kinf), lowerSurface(iCell) /) )
                   err = ior(err, 1)
                endif

@@ -483,7 +483,7 @@ module li_advection
             do iCell = 1, nCells
                if (indexToCellID(iCell) == config_stats_cell_ID) then
                   call mpas_log_write(' ')
-                  call mpas_log_write('After apply_mass_balance, iCell=$i, thickness=$r', intArgs=(/iCell/), &
+                  call mpas_log_write('After apply_mass_balance, indexToCellID=$i, thickness=$r', intArgs=(/indexToCellID(iCell)/), &
                           realArgs=(/thickness(iCell)/) )
                   call mpas_log_write('cellMask=$i, is ice=$l, is grounded=$l, is floating=$l', &
                        intArgs=(/cellMask(iCell)/), logicArgs=(/li_mask_is_ice(cellMask(iCell)), &
@@ -1761,6 +1761,7 @@ module li_advection
 
       ! pointers to mesh arrays
       real (kind=RKIND), dimension(:), pointer :: layerThicknessFractions, layerInterfaceSigma
+      integer, dimension(:), pointer :: indexToCellID
 
       ! local arrays
       real (kind=RKIND), dimension(:), allocatable :: layerInterfaceSigma_Input
@@ -1787,6 +1788,7 @@ module li_advection
 
       call mpas_pool_get_array(meshPool, 'layerThicknessFractions', layerThicknessFractions)
       call mpas_pool_get_array(meshPool, 'layerInterfaceSigma', layerInterfaceSigma)
+      call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
 
       allocate(layerInterfaceSigma_Input(nVertLevels+1))
       allocate(hTsum(nTracers, nVertLevels))
@@ -1852,8 +1854,8 @@ module li_advection
             difference = abs(finalEnergySum - initEnergySum)
             if (initEnergySum > eps11) then
                if (difference/initEnergySum > eps11) then
-                  call mpas_log_write('vertical_remap, mass*tracer conservation error, iCell = $i', &
-                     MPAS_LOG_WARN, intArgs=(/iCell/))
+                  call mpas_log_write('vertical_remap, mass*tracer conservation error, indexToCellID = $i', &
+                     MPAS_LOG_WARN, intArgs=(/indexToCellID(iCell)/))
                   call mpas_log_write('init energy, final energy, difference: $r $r $r', &
                      realArgs=(/initEnergySum, finalEnergySum, finalEnergySum - initEnergySum/))
                endif
