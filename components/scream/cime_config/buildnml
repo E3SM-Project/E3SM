@@ -46,7 +46,7 @@ import yaml
 logger = logging.getLogger(__name__)
 
 CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
-METADATA_ATTRIBS = ("type", "valid_values", "locked")
+METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints")
 
 ###############################################################################
 def do_cime_vars(entry, case):
