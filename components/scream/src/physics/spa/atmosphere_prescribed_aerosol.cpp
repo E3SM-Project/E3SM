@@ -204,7 +204,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
 }
 
 // =========================================================================================
-void SPA::run_impl (const int /* dt */)
+void SPA::run_impl (const int dt)
 {
   /* Gather time and state information for interpolation */
   auto ts = timestamp();
