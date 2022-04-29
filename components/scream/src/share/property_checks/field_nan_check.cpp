@@ -29,7 +29,7 @@ FieldNaNCheck (const Field& f,
       "  - Field name: " + f.name() << "\n"
       "  - Field rank: " + std::to_string(f.rank()) + "\n");
 
-  EKAT_REQUIRE_MSG (f.get_header().get_identifier().get_grid_name()==grid->name(),
+  EKAT_REQUIRE_MSG (grid==nullptr || f.get_header().get_identifier().get_grid_name()==grid->name(),
       "Error! The name of the input grid does not match the grid name stored in the field identifier.\n"
       "  - Field name: " + f.name() + "\n"
       "  - Field grid name: " + f.get_header().get_identifier().get_grid_name() + "\n"

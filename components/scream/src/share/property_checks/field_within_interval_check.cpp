@@ -38,7 +38,7 @@ FieldWithinIntervalCheck (const Field& f,
   EKAT_ASSERT_MSG(lower_bound <= upper_bound,
                   "lower_bound must be less than or equal to upper_bound.");
 
-  EKAT_REQUIRE_MSG (f.get_header().get_identifier().get_grid_name()==grid->name(),
+  EKAT_REQUIRE_MSG (grid==nullptr || f.get_header().get_identifier().get_grid_name()==grid->name(),
       "Error! The name of the input grid does not match the grid name stored in the field identifier.\n"
       "  - Field name: " + f.name() + "\n"
       "  - Field grid name: " + f.get_header().get_identifier().get_grid_name() + "\n"
