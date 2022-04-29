@@ -45,7 +45,8 @@ module seq_diag_mct
   use component_type_mod, only : COMPONENT_GET_DOM_CX, COMPONENT_GET_C2X_CX, &
        COMPONENT_GET_X2C_CX, COMPONENT_TYPE
   use seq_infodata_mod, only : seq_infodata_type, seq_infodata_getdata
-  use shr_reprosum_mod, only: shr_reprosum_calc
+  use shr_reprosum_mod, only : shr_reprosum_calc
+  use seq_diagBGC_mct,  only : seq_diagBGC_preprint_mct, seq_diagBGC_print_mct
 
   implicit none
   save
@@ -1766,7 +1767,7 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, &
+  SUBROUTINE seq_diag_print_mct(EClock, stop_alarm, do_bgc_budg, &
        budg_print_inst,  budg_print_daily,  budg_print_month,  &
        budg_print_ann,  budg_print_ltann,  budg_print_ltend, infodata)
 
@@ -1776,6 +1777,7 @@ contains
 
     type(ESMF_Clock) , intent(in) :: EClock
     logical          , intent(in) :: stop_alarm
+    logical          , intent(in) :: do_bgc_budg
     integer          , intent(in) :: budg_print_inst
     integer          , intent(in) :: budg_print_daily
     integer          , intent(in) :: budg_print_month
@@ -1848,8 +1850,13 @@ contains
 
        if (plev > 0) then
           ! ---- doprint ---- doprint ---- doprint ----
-
+  
           if (.not.sumdone) then
+
+             if (do_bgc_budg) then
+                call seq_diagBGC_preprint_mct()
+             endif
+
              call seq_diag_sum0_mct()
              dataGpr = budg_dataG
              sumdone = .true.
@@ -2207,8 +2214,12 @@ contains
 
           endif
 
-          write(logunit,*) ' '
           ! ---- doprint ---- doprint ---- doprint ----
+
+          if (do_bgc_budg) then
+             call seq_diagBGC_print_mct(EClock, ip, plev) 
+          endif
+
        endif  ! plev > 0
     enddo  ! ip = 1,p_size
 
