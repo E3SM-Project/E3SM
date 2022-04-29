@@ -6,6 +6,7 @@
 #include "diagnostics/potential_temperature.hpp"
 #include "diagnostics/atm_density.hpp"
 #include "diagnostics/exner.hpp"
+#include "diagnostics/virtual_temperature.hpp"
 
 namespace scream {
 
@@ -14,6 +15,7 @@ inline void register_diagnostics () {
   diag_factory.register_product("PotentialTemperature",&create_atmosphere_diagnostic<PotentialTemperatureDiagnostic>);
   diag_factory.register_product("AtmosphereDensity",&create_atmosphere_diagnostic<AtmDensityDiagnostic>);
   diag_factory.register_product("Exner",&create_atmosphere_diagnostic<ExnerDiagnostic>);
+  diag_factory.register_product("VirtualTemperature",&create_atmosphere_diagnostic<VirtualTemperatureDiagnostic>);
 }
 
 } // namespace scream
