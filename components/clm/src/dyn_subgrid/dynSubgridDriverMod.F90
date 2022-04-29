@@ -274,12 +274,7 @@ use clm_varctl, only :  iulog
     ! avd - the above namelist values are false in this case
     !       may want to ensure this with namelist checks
 
-write(iulog,*) 'Before iac_active check=', iac_active, ' and iac2lnd_vars update' 
-
     if (iac_active) then
-
-write(iulog,*) 'Calling iac2lnd_vars update'
-
        call iac2lnd_vars%update_iac2lnd(bounds_proc)
     end if
 

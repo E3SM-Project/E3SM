@@ -34,6 +34,9 @@ module prep_iac_mod
   public :: prep_iac_accum
   public :: prep_iac_accum_avg
 
+  public :: iac_avect_max
+  public :: prep_iac_zero_max
+
   public :: prep_iac_calc_l2x_zx
 
   public :: prep_iac_get_l2x_zx
@@ -59,6 +62,9 @@ module prep_iac_mod
   ! accumulation variables
   type(mct_aVect), pointer :: l2zacc_lx(:)   ! lnd export, lnd grid, cpl pes
   integer        , target  :: l2zacc_lx_cnt  ! l2zacc_lx: number of time samples accumulated
+
+  ! This holds our max of monthly averages
+  type(mct_aVect), pointer :: l2zmax_lx(:)   ! lnd export, lnd grid, cpl pes
 
   ! other module variables
   integer :: mpicom_CPLID                            ! MPI cpl communicator
@@ -130,10 +136,13 @@ contains
        ! Now create into our accumulator avect (on the land grid,
        ! still), using shared fields in both import and export avects
        allocate(l2zacc_lx(num_inst_lnd))
+       allocate(l2zmax_lx(num_inst_lnd))
 
        do erl = 1,num_inst_lnd
           call mct_aVect_initSharedFields(l2x_lx, x2z_zx, l2zacc_lx(erl), lsize=lsize_l)
           call mct_aVect_zero(l2zacc_lx(erl))       
+          call mct_aVect_initSharedFields(l2x_lx, x2z_zx, l2zmax_lx(erl), lsize=lsize_l)
+          call mct_aVect_zero(l2zmax_lx(erl))       
        end do
 
        samegrid_lz = .true.
@@ -195,7 +204,8 @@ contains
 
     !---------------------------------------------------------------
     ! Description
-    ! Finalize accumulation of land input to iac component
+    ! Finalize accumulation of land input to iac component, and build
+    ! the max of monthly means
     !
     ! Arguments
     character(len=*), intent(in) :: timer
@@ -207,12 +217,78 @@ contains
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     if (l2zacc_lx_cnt > 1 ) then 
        do eli = 1,num_inst_lnd
+          write(logunit,*) 'TRS eli = ', eli, num_inst_lnd
+
           call mct_avect_avg(l2zacc_lx(eli),l2zacc_lx_cnt)
+          call iac_avect_max(l2zacc_lx(eli), l2zmax_lx(eli))
+          
+          call mct_avect_info(4,l2zacc_lx(eli),istr='TRS l2zacc')
+          call mct_avect_info(4,l2zmax_lx(eli),istr='TRS l2zmax')
        end do
     endif
     l2zacc_lx_cnt = 0
     call t_drvstopf (trim(timer))
+    
+
   end subroutine prep_iac_accum_avg
+
+  subroutine iac_avect_max(avect, max_avect)
+    !---------------------------------------------------------------
+    ! Description
+    ! MCT-like function to take the max between two avects at each grid
+    ! point.  Used to build up the max of monthly means - after we
+    ! accum each month, call this to compare with current max
+    !
+    ! Arguments
+    type(mct_aVect),intent(inout) :: avect     ! current avect
+    type(mct_aVect),intent(inout) :: max_avect ! max avect
+    !
+    ! Local Variables
+   !--- local ---
+   integer(IN) :: i,j    ! generic indicies
+   integer(IN) :: npts   ! number of points (local) in an aVect field
+   integer(IN) :: nflds  ! number of aVect fields (real)
+   real(R8)    :: ravg   ! accumulation count
+
+   character(*), parameter :: subname = '(iac_avect_max)'
+   !---------------------------------------------------------------
+   nflds = mct_aVect_nRAttr(aVect)
+   npts  = mct_aVect_lsize (aVect)
+!DIR$ CONCURRENT
+!DIR$ PREFERVECTOR
+   
+   do i=1,npts
+      do j=1,nflds
+         ! Max goes in max_avect, so over multiple calls you build
+         ! the max across all avects
+         if (.not. isnan(avect%rattr(j,i))) then
+            if (avect%rattr(j,i) .gt. max_avect%rattr(j,i)) then 
+               max_avect%rattr(j,i) = avect%rattr(j,i)
+            endif
+         endif
+      end do
+   end do
+ end subroutine iac_avect_max
+
+  !================================================================================================
+
+ subroutine prep_iac_zero_max()
+
+   !---------------------------------------------------------------
+   ! Description
+   ! Sets l2zmax_lx to zero, to be called at the start of the year
+   ! after iac_run
+   !
+   ! Arguments
+   !
+   ! Local Variables
+   integer :: erl
+   character(*), parameter :: subname = '(prep_iac_zero_max)'
+   !---------------------------------------------------------------
+   do erl = 1,num_inst_lnd
+      call mct_aVect_zero(l2zmax_lx(erl))       
+   end do
+ end subroutine prep_iac_zero_max
 
   !================================================================================================
 
@@ -318,16 +394,23 @@ contains
     !
     ! Local Variables
 
-    integer :: eli
+    integer :: eli, ezi
     type(mct_aVect), pointer :: l2x_lx
     character(*), parameter :: subname = '(prep_lnd_calc_l2x_zx)'
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eli = 1,num_inst_lnd
-       l2x_lx => component_get_c2x_cx(lnd(eli))
-       call seq_map_map(mapper_Sl2z, l2x_lx, l2x_zx(eli), fldlist=seq_flds_l2x_states, norm=.true.)
+       ezi = mod((eli-1), num_inst_iac) + 1
+       !l2x_lx => component_get_c2x_cx(lnd(eli))
+       !call seq_map_map(mapper_Sl2z, l2_lx, l2x_zx(eli), fldlist=seq_flds_l2x_states, norm=.true.)
+       !Need to map the max vector l2zmax_lx, which is local
+       call seq_map_map(mapper_Sl2z, l2zmax_lx(eli), l2x_zx(ezi), fldlist=seq_flds_l2x_states, norm=.true.)
     enddo
+
+    ! Now zero out max avects for the next year of lnd runs
+    call prep_iac_zero_max()
+
     call t_drvstopf  (trim(timer))
 
   end subroutine prep_iac_calc_l2x_zx

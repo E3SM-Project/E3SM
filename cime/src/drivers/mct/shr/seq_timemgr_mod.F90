@@ -191,9 +191,10 @@ module seq_timemgr_mod
        seq_timemgr_nalarm_rofrun     =15 , & ! driver only clock alarm
        seq_timemgr_nalarm_wavrun     =16 , & ! driver only clock alarm
        seq_timemgr_nalarm_iacrun     =17 , & ! driver only clock alarm
-       seq_timemgr_nalarm_esprun     =18 , & ! driver only clock alarm
-       seq_timemgr_nalarm_pause      =19 , &
-       seq_timemgr_nalarm_barrier    =20 , & ! driver and component clock alarm
+       seq_timemgr_nalarm_iacrun_avg =18 , & ! driver only clock alarm
+       seq_timemgr_nalarm_esprun     =19 , & ! driver only clock alarm
+       seq_timemgr_nalarm_pause      =20 , &
+       seq_timemgr_nalarm_barrier    =21 , & ! driver and component clock alarm
        max_alarms = seq_timemgr_nalarm_barrier
 
   character(len=*),public,parameter :: &
@@ -214,6 +215,7 @@ module seq_timemgr_mod
        seq_timemgr_alarm_rofrun     = 'seq_timemgr_alarm_rofrun  ', &
        seq_timemgr_alarm_wavrun     = 'seq_timemgr_alarm_wavrun  ', &
        seq_timemgr_alarm_iacrun     = 'seq_timemgr_alarm_iacrun  ', &
+       seq_timemgr_alarm_iacrun_avg = 'seq_timemgr_alarm_iacrun_avg ', &
        seq_timemgr_alarm_esprun     = 'seq_timemgr_alarm_esprun  ', &
        seq_timemgr_alarm_pause      = 'seq_timemgr_alarm_pause   ', &
        seq_timemgr_alarm_barrier    = 'seq_timemgr_alarm_barrier '
@@ -1122,6 +1124,18 @@ contains
        opt_n   = dtime(seq_timemgr_nclock_iac), &
        RefTime = OffsetTime,                    &
        alarmname = trim(seq_timemgr_alarm_iacrun))
+
+    ! Monthly iac averaging alarm
+    ! Try to set Reftime to start of next month - hopefully start in January?
+    ! call ESMF_TimeIntervalSet( TimeStep, s=31*24*3600, rc=rc )
+    ! Okay, I *think* this is a one month interval in ESMF speak
+    call ESMF_TimeIntervalSet( TimeStep, mm=1, rc=rc )
+    OffsetTime = CurrTime + TimeStep
+    call seq_timemgr_alarmInit(SyncClock%ECP(seq_timemgr_nclock_drv)%EClock, &
+         EAlarm  = SyncClock%EAlarm(seq_timemgr_nclock_drv,seq_timemgr_nalarm_iacrun_avg),  &
+         option  = seq_timemgr_optMonthly,         &
+         RefTime = OffsetTime,                    &
+         alarmname = trim(seq_timemgr_alarm_iacrun_avg))
 
     call ESMF_TimeIntervalSet( TimeStep, s=offset(seq_timemgr_nclock_glc), rc=rc )
     OffsetTime = CurrTime + TimeStep
