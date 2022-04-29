@@ -425,3 +425,21 @@ TEST_CASE("rrtmgp_test_radiation_do") {
     REQUIRE(scream::rrtmgp::radiation_do(3, 5) == false);
     REQUIRE(scream::rrtmgp::radiation_do(3, 6) == true);
 }
+
+TEST_CASE("rrtmgp_test_check_range") {
+    // Initialize YAKL
+    if (!yakl::isInitialized()) { yakl::init(); }
+    // Create some dummy data and test with both values inside valid range and outside
+    auto dummy = real2d("dummy", 2, 1);
+    // All values within range
+    memset(dummy, 0.1);
+    REQUIRE(scream::rrtmgp::check_range(dummy, 0.0, 1.0, "dummy") == true);
+    // At least one value below lower bound
+    parallel_for(1, YAKL_LAMBDA (int i) {dummy(i, 1) = -0.1;});
+    REQUIRE(scream::rrtmgp::check_range(dummy, 0.0, 1.0, "dummy") == false);
+    // At least one value above upper bound
+    parallel_for(1, YAKL_LAMBDA (int i) {dummy(i, 1) = 1.1;});
+    REQUIRE(scream::rrtmgp::check_range(dummy, 0.0, 1.0, "dummy") == false);
+    dummy.deallocate();
+    if (yakl::isInitialized()) { yakl::finalize(); }
+}
