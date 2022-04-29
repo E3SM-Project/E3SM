@@ -27,7 +27,7 @@ readonly RESOLUTION="ne30pg2_EC30to60E2r2"
 # TODO: CHANGE the following CASE_NAME to desired values
 readonly CASE_NAME="your_casename"
 # If this is part of a simulation campaign, ask your group lead about using a case_group label
-readonly CASE_GROUP=""
+# readonly CASE_GROUP=""
 
 # Code and compilation
 readonly CHECKOUT="20210806"
@@ -247,18 +247,33 @@ create_newcase() {
 
     echo $'\n----- Starting create_newcase -----\n'
 
-    ${CODE_ROOT}/cime/scripts/create_newcase \
-        --case ${CASE_NAME} \
-        --case-group ${CASE_GROUP} \
-        --output-root ${CASE_ROOT} \
-        --script-root ${CASE_SCRIPTS_DIR} \
-        --handle-preexisting-dirs u \
-        --compset ${COMPSET} \
-        --res ${RESOLUTION} \
-        --machine ${MACHINE} \
-        --project ${PROJECT} \
-        --walltime ${WALLTIME} \
-        --pecount ${PELAYOUT}
+	if [[ -z "$CASE_GROUP" ]]; then
+		${CODE_ROOT}/cime/scripts/create_newcase \
+			--case ${CASE_NAME} \
+			--output-root ${CASE_ROOT} \
+			--script-root ${CASE_SCRIPTS_DIR} \
+			--handle-preexisting-dirs u \
+			--compset ${COMPSET} \
+			--res ${RESOLUTION} \
+			--machine ${MACHINE} \
+			--project ${PROJECT} \
+			--walltime ${WALLTIME} \
+			--pecount ${PELAYOUT}
+	else
+		${CODE_ROOT}/cime/scripts/create_newcase \
+			--case ${CASE_NAME} \
+			--case-group $(CASE_GROUP) \
+			--output-root ${CASE_ROOT} \
+			--script-root ${CASE_SCRIPTS_DIR} \
+			--handle-preexisting-dirs u \
+			--compset ${COMPSET} \
+			--res ${RESOLUTION} \
+			--machine ${MACHINE} \
+			--project ${PROJECT} \
+			--walltime ${WALLTIME} \
+			--pecount ${PELAYOUT}
+	fi
+	
 
     if [ $? != 0 ]; then
       echo $'\nNote: if create_newcase failed because sub-directory already exists:'
