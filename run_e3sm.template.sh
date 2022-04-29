@@ -24,7 +24,7 @@ readonly PROJECT="e3sm"
 # Simulation
 readonly COMPSET="WCYCL1850"
 readonly RESOLUTION="ne30pg2_EC30to60E2r2"
-# TODO: CHANGE the following CASE_NAME to desired values
+# BEFORE RUNNING : CHANGE the following CASE_NAME to desired value
 readonly CASE_NAME="your_casename"
 # If this is part of a simulation campaign, ask your group lead about using a case_group label
 # readonly CASE_GROUP=""
@@ -262,7 +262,7 @@ create_newcase() {
 	else
 		${CODE_ROOT}/cime/scripts/create_newcase \
 			--case ${CASE_NAME} \
-			--case-group $(CASE_GROUP) \
+			--case-group ${CASE_GROUP} \
 			--output-root ${CASE_ROOT} \
 			--script-root ${CASE_SCRIPTS_DIR} \
 			--handle-preexisting-dirs u \
