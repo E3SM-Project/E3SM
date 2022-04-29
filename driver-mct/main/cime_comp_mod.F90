@@ -105,6 +105,7 @@ module cime_comp_mod
   use seq_timemgr_mod, only: seq_timemgr_alarm_wavrun
   use seq_timemgr_mod, only: seq_timemgr_alarm_esprun
   use seq_timemgr_mod, only: seq_timemgr_alarm_iacrun
+  use seq_timemgr_mod, only: seq_timemgr_alarm_iacrun_avg
   use seq_timemgr_mod, only: seq_timemgr_alarm_barrier
   use seq_timemgr_mod, only: seq_timemgr_alarm_pause
   use seq_timemgr_mod, only: seq_timemgr_pause_active
@@ -310,6 +311,7 @@ module cime_comp_mod
   logical  :: wavrun_alarm           ! wav run alarm
   logical  :: esprun_alarm           ! esp run alarm
   logical  :: iacrun_alarm           ! iac run alarm
+  logical  :: iacrun_avg_alarm       ! iac averaging alarm
   logical  :: tprof_alarm            ! timing profile alarm
   logical  :: barrier_alarm          ! barrier alarm
   logical  :: t1hr_alarm             ! alarm every hour
@@ -2401,6 +2403,14 @@ contains
        call seq_timemgr_clockAdvance( seq_SyncClock, force_stop, force_stop_ymd, force_stop_tod)
        call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod)
        call shr_cal_date2ymd(ymd,year,month,day)
+
+       ! TRS IT seems like we should already be outputing this
+       ! somewhere, but I want these exact values to evaluate the new
+       ! iacrun_avg alarm
+       !if (iamroot_CPLID) then
+       !   write(logunit, *) 'TRS ymd=', ymd, 'tod=', tod
+       !end if
+
        stop_alarm    = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_stop)
        atmrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_atmrun)
        lndrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_lndrun)
@@ -2418,6 +2428,15 @@ contains
        tprof_alarm   = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_tprof)
        barrier_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_barrier)
        pause_alarm   = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_pause)
+
+       ! Not sure if this will cause a problem if iac isn't present,
+       ! but whatever
+       iacrun_avg_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_iacrun_avg)
+
+       !if (iamroot_CPLID) then
+       !   write(logunit, *) 'TRS iacrun_avg=', iacrun_avg_alarm, &
+       !        'iac=', iacrun_alarm, 'lnd=', lndrun_alarm
+       !endif 
 
        ! Does the driver need to pause?
        drv_pause = pause_alarm .and. seq_timemgr_pause_component_active(drv_index)
@@ -3795,15 +3814,16 @@ contains
        call t_drvstartf ('CPL:IACPREP', cplrun=.true., barrier=mpicom_CPLID)
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-       ! Average our accumulators
-       call prep_iac_accum_avg(timer='CPL:iacprep_l2xavg')
+       ! Average our accumulators - now handled at very start of
+       ! timestep, so we can do it monthly rather than the yearly glc
+       ! time scale.
+       ! call prep_iac_accum_avg(timer='CPL:iacprep_l2xavg')
 
        ! Setup lnd inputs on iac grid.  Right now I think they will be the same
        ! thing, but I'm trying to code for the general case
        if (lnd_c2_iac) then
           call prep_iac_calc_l2x_zx(timer='CPL:iacprep_lnd2iac')
        endif
-
 
        call prep_iac_mrg(infodata, timer_mrg='CPL:iacprep_mrgx2z')
 
@@ -3862,6 +3882,9 @@ contains
        if (iac_c2_atm) then
           call prep_atm_calc_z2x_ax(fractions_zx, timer='CPL:iacpost_iac2atm')
        endif
+
+       ! Need to reset our max vector to zero for the following year
+       call prep_iac_zero_max()
 
        call t_drvstopf  ('CPL:IACPOST', cplrun=.true.)
     endif
@@ -3999,6 +4022,13 @@ contains
        if (lnd_c2_rof) call prep_rof_accum(timer='CPL:lndpost_accl2r')
        if (lnd_c2_glc) call prep_glc_accum(timer='CPL:lndpost_accl2g')
        if (lnd_c2_iac) call prep_iac_accum(timer='CPL:lndpost_accl2z')
+
+       ! the iacrun_avg alarm is right at tod=0 of the first day of each
+       ! month. So we do it after lnd processing, so iac has it for
+       ! it's yearly 1/1 t0d=1800 run.
+       if (iac_present .and. iacrun_avg_alarm) then
+          call prep_iac_accum_avg(timer='CPL:iacprep_l2xavg')
+       endif
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
        call t_drvstopf  ('CPL:LNDPOST',cplrun=.true.)

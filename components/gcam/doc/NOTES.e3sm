@@ -1,3 +1,107 @@
+4/28/2022 13:46:30 PDT
+
+* Okay, as far as I can tell everything is running fine - the zlnd_v2 case,
+  compiled without debug, now runs really fast, like 50 minutes wall clock
+  for two hours.  I just don't know if I believe that, and I'm worried
+  somewhere in my coding I've short-circuited some calculation we used to
+  be doing, but I'm going to build with debug and see if it takes four
+  hours again or not.
+
+* Otherwise, I'm ready to merge with Alan when he's ready, hopefully today
+  or tomorrow, although he's had some issues running on compy.
+
+* In the meantime, I'm going to review the log files and see if I can see
+  anything else that doesn't seem to work right, or something else I don't
+  understand.  I also should probably dump the coupled avects somehow and
+  check them over manually - maybe find an i index (or a range) where I
+  can check the math (averaging, maxmonmean) as we go along.
+
+4/28/2022
+
+* So, I learned an important thing: The "eli" counters over the
+  num_inst_lnd and num_inst_iac in the prep_foo_mod functions are *not*
+  looping over the number of processors in the component in question -
+  instead, num_inst_xxx refers to the number of *coupler* instances of
+  those avects.
+
+  So it's not looping over teh component decomposition, but the *coupler*
+  decomposition.  And, for our runs at least (and probably for most
+  others), nun_inst_xxx are all 1 - we don't decompose in the coupler, we
+  keep the whole arrays together.
+
+  My guess is only fully coupled, very complicated model runs will
+  decompose in the coupler - or maybe the ocean model, which seems to have
+  some exotic ways to run, has multiple instances of the avects in the
+  coupler.  
+
+  Anyway, so the weird mod behavior in these loops, e.g.
+  
+	do eli=1,num_inst_lnd 
+	   ezi=mod((eli-1), num_inst_iac) +1
+
+  are still weird and I don't understand them, but becuase they are all
+  related to coupler decompositions that we don't user, I don't have to
+  understand.  Apparently it's some kind of way of associating instances of
+  the decompositions when you have a different total number of instances
+  for each coupled component, so the mapping from instance 1 and 3 of
+  component a (with num_inst_a=4) will go into instance 1 of component b
+  (with num_inst=b=2).  In other words, the two instances of component b
+  each cover the merged domain of two instances of component a.
+
+* Whatever, just don't think about it too hard, as none of that mod stuff
+  mattters if all the num_insts are 1.
+
+4/27/2022
+
+* Wrt timing, it looks like the first sample of the year (or of the run) is
+  actually timestamped 1800 seconds into the year - not midnight of the
+  year, but 0030 of the year.  If you look at the alarms for the regular
+  components, they all start at year 1, 1800 seconds, including iac.
+
+  Therefore, this implies January 1, 00:00 is the last sample of the
+  previous year.
+
+* I've double checked this with print statements in zlnd_v2 - the first
+  sample time in the cime_run() while loop has a time of day (tod, in
+  seconds) of tod=1800.  The iacrun_alarm and lndrun_alarm both are set to true
+  for this first sample.
+
+  At the end of the year, the iacrun_avg_alarm is true only for 20160101
+  tod=0, then the iacrun_alarm is true for the next sample, tod=1800.
+
+* Okay, so that means a year is basically from tod=1800 on January 1 year 1
+  to tod=0000 January 1 for year 2.  When you tell it to run for 2015, it
+  starts one time step in.  Theis might make it a little easier to
+  set meaningful restart files; the restart for 20160101 will contain all
+  the info up to midnight on 20151231, but it has the same time stamp as
+  the year you want to restart on.
+
+* Anyway, this is important because I was wondering how the iac monthly
+  averaging would work with restart files, since I current do the monthly
+  (and yearly) average on 0000 of the first day of the following month.  I
+  was assuming that tod=0 was the first sample of the month, so I did the
+  average and maximum at the top of the while loop, which meant it might
+  not be computed at the end of a yearly run if we stopped processing at
+  2xxx1231.233000.  So we would have to do the averaging and final
+  maxmonmean stuff before storing the restart data - but *that* might cause
+  issues with the restart at 0000 of January 1, unless we turn off the
+  iacrun_avg_alarm for the first part on restart.
+
+* But if the run (or restart)  actually starts at tod=1800, then we will
+  have wrapped up the averaging and maxing on 12/31 0000Z, and that will be
+  ready for use by iac when it runs on tod=1800 on the first restart day.
+
+! Anyway, the point of all this exposition is that I should keep the alarms
+  the way they are - iac runs on tod=1800 of the first year, while iac_avg
+  runs on tod=0000 of the first day of the month...but I should run iac_avg
+  *after* everything (or, at least, after the lnd component), rather than
+  before, because the iacrun_avg_alarm is offset by -1800 seconds from the
+  tod iacrun_alarm.  So it wraps up the year a time step before iac runs,
+  so we need to do it after all computations are done.
+
+@ So, the point is: run iac_accum_avg() in the lnd post section, not at the
+  top of the cime_run() loop.
+
 4/21/2022
 
 * Discovered the reason why zatm ran so slow - the dtime for cam was at 4
@@ -17,6 +121,9 @@
 * With dtime at 1800 like it should, it took five hours wallclock to run
   one year of zatm.  That tracks - zlnd takes five hours to run two years,
   so adding another component should make it take twice as long.
+
+@ I should probably run zatm for two years, just to make sure I haven't
+  munged up the land back coupling (l->z) with these mods.
 
 4/6/2022
 
