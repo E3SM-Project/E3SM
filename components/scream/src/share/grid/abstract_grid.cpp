@@ -107,7 +107,27 @@ set_dofs (const dofs_list_type& dofs)
 #ifndef NDEBUG
   EKAT_REQUIRE_MSG(this->valid_dofs_list(dofs), "Error! Invalid list of dofs gids.\n");
 #endif
+
+  m_dofs_gids_host = Kokkos::create_mirror_view(m_dofs_gids);
+  Kokkos::deep_copy(m_dofs_gids_host,m_dofs_gids);
 }
+
+const AbstractGrid::dofs_list_type&
+AbstractGrid::get_dofs_gids () const {
+  // Sanity check
+  EKAT_REQUIRE_MSG (m_dofs_gids.size()>0, "Error! You must call 'set_dofs' first.\n");
+
+  return m_dofs_gids;
+}
+
+const AbstractGrid::dofs_list_h_type&
+AbstractGrid::get_dofs_gids_host () const {
+  // Sanity check
+  EKAT_REQUIRE_MSG (m_dofs_gids_host.size()>0, "Error! You must call 'set_dofs' first.\n");
+
+  return m_dofs_gids_host;
+}
+
 
 void AbstractGrid::
 set_lid_to_idx_map (const lid_to_idx_map_type& lid_to_idx)
@@ -129,6 +149,14 @@ set_lid_to_idx_map (const lid_to_idx_map_type& lid_to_idx)
   m_lid_to_idx_set = true;
 }
 
+const AbstractGrid::lid_to_idx_map_type&
+AbstractGrid::get_lid_to_idx_map () const {
+  // Sanity check
+  EKAT_REQUIRE_MSG (m_dofs_gids.size()>0, "Error! You must call 'set_dofs' first.\n");
+
+  return m_lid_to_idx;
+}
+
 void AbstractGrid::
 set_geometry_data (const std::string& name, const geo_view_type& data) {
   // Sanity checks
@@ -140,6 +168,22 @@ set_geometry_data (const std::string& name, const geo_view_type& data) {
 #endif
 
   m_geo_views[name] = data;
+  m_geo_views_host[name] = Kokkos::create_mirror_view(data);
+  Kokkos::deep_copy(m_geo_views_host[name],data);
+}
+
+const AbstractGrid::geo_view_type&
+AbstractGrid::get_geometry_data (const std::string& name) const {
+  EKAT_REQUIRE_MSG (m_geo_views.find(name)!=m_geo_views.end(),
+                    "Error! Grid '" + m_name + "' does not store geometric data '" + name + "'.\n");
+  return m_geo_views.at(name);
+}
+
+const AbstractGrid::geo_view_h_type&
+AbstractGrid::get_geometry_data_host (const std::string& name) const {
+  EKAT_REQUIRE_MSG (m_geo_views_host.find(name)!=m_geo_views_host.end(),
+                    "Error! Grid '" + m_name + "' does not store geometric data '" + name + "'.\n");
+  return m_geo_views_host.at(name);
 }
 
 AbstractGrid::gid_type

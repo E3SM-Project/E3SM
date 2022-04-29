@@ -39,14 +39,17 @@ namespace scream
 class AbstractGrid : public ekat::enable_shared_from_this<AbstractGrid>
 {
 public:
-  using gid_type          = int;           // TODO: use int64_t? int? template class on gid_type?
-  using device_type       = DefaultDevice; // TODO: template class on device type
-  using kokkos_types      = KokkosTypes<device_type>;
-  using geo_view_type     = kokkos_types::view_1d<Real>;
-  using geo_view_map_type = std::map<std::string,geo_view_type>;
+  using gid_type            = int;           // TODO: use int64_t? int? template class on gid_type?
+  using device_type         = DefaultDevice; // TODO: template class on device type
+  using kokkos_types        = KokkosTypes<device_type>;
+  using geo_view_type       = kokkos_types::view_1d<Real>;
+  using geo_view_h_type     = typename geo_view_type::HostMirror;
+  using geo_view_map_type   = std::map<std::string,geo_view_type>;
+  using geo_view_h_map_type = std::map<std::string,geo_view_h_type>;
 
   // The list of all dofs' gids
   using dofs_list_type = kokkos_types::view_1d<gid_type>;
+  using dofs_list_h_type = typename dofs_list_type::HostMirror;
 
   // Row i of this 2d view gives the indices of the ith local dof
   // in the native 2d layout
@@ -92,6 +95,7 @@ public:
 
   // Get a 1d view containing the dof gids
   const dofs_list_type& get_dofs_gids () const;
+  const dofs_list_h_type& get_dofs_gids_host () const;
 
   // Set the the map dof_lid->dof_indices, where the indices are the ones used
   // to access the dof in the layout returned by get_2d_scalar_layout().
@@ -108,6 +112,11 @@ public:
   //       operations over the stored communicator.
   void set_geometry_data (const std::string& name, const geo_view_type& data);
   const geo_view_type& get_geometry_data (const std::string& name) const;
+  const geo_view_h_type& get_geometry_data_host (const std::string& name) const;
+
+  bool has_geometry_data (const std::string& name) const {
+    return m_geo_views.find(name)!=m_geo_views.end();
+  }
 
 protected:
 
@@ -138,38 +147,17 @@ private:
 
   // The global ID of each dof
   dofs_list_type        m_dofs_gids;
+  dofs_list_h_type      m_dofs_gids_host;
 
   // The map lid->idx
   lid_to_idx_map_type   m_lid_to_idx;
 
   geo_view_map_type     m_geo_views;
+  geo_view_h_map_type   m_geo_views_host;
 
   // The MPI comm containing the ranks across which the global mesh is partitioned
   ekat::Comm            m_comm;
 };
-
-inline const AbstractGrid::geo_view_type&
-AbstractGrid::get_geometry_data (const std::string& name) const {
-  EKAT_REQUIRE_MSG (m_geo_views.find(name)!=m_geo_views.end(),
-                    "Error! Grid '" + m_name + "' does not store geometric data '" + name + "'.\n");
-  return m_geo_views.at(name);
-}
-
-inline const AbstractGrid::dofs_list_type&
-AbstractGrid::get_dofs_gids () const {
-  // Sanity check
-  EKAT_REQUIRE_MSG (m_dofs_gids.size()>0, "Error! You must call 'set_dofs' first.\n");
-
-  return m_dofs_gids;
-}
-
-inline const AbstractGrid::lid_to_idx_map_type&
-AbstractGrid::get_lid_to_idx_map () const {
-  // Sanity check
-  EKAT_REQUIRE_MSG (m_dofs_gids.size()>0, "Error! You must call 'set_dofs' first.\n");
-
-  return m_lid_to_idx;
-}
 
 } // namespace scream
 
