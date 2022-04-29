@@ -11,8 +11,20 @@ FieldWithinIntervalCheck (const Field& f,
                           const double lower_bound,
                           const double upper_bound,
                           const bool can_repair)
+ : FieldWithinIntervalCheck (f,nullptr,lower_bound,upper_bound,can_repair)
+{
+  // Nothing to do here
+}
+
+FieldWithinIntervalCheck::
+FieldWithinIntervalCheck (const Field& f,
+                          const std::shared_ptr<const AbstractGrid>& grid,
+                          const double lower_bound,
+                          const double upper_bound,
+                          const bool can_repair)
  : m_lower_bound(lower_bound)
  , m_upper_bound(upper_bound)
+ , m_grid (grid)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (f.rank()<=6,
@@ -25,6 +37,12 @@ FieldWithinIntervalCheck (const Field& f,
       "  - Field rank: " + std::to_string(f.rank()) + "\n");
   EKAT_ASSERT_MSG(lower_bound <= upper_bound,
                   "lower_bound must be less than or equal to upper_bound.");
+
+  EKAT_REQUIRE_MSG (f.get_header().get_identifier().get_grid_name()==grid->name(),
+      "Error! The name of the input grid does not match the grid name stored in the field identifier.\n"
+      "  - Field name: " + f.name() + "\n"
+      "  - Field grid name: " + f.get_header().get_identifier().get_grid_name() + "\n"
+      "  - Input grid name: " + grid->name() + "\n");
 
   set_fields ({f},{can_repair});
 }
@@ -160,20 +178,56 @@ PropertyCheck::CheckResult FieldWithinIntervalCheck::check_impl () const
     check_result.msg  = "Check passed.\n";
     check_result.msg += "  " + this->name() + "\n";
   }
+
   auto idx_min = unflatten_idx(layout.dims(),minmaxloc.min_loc);
   auto idx_max = unflatten_idx(layout.dims(),minmaxloc.max_loc);
-  check_result.msg += "  min: " + std::to_string(minmaxloc.min_val) + ", attained at (";
-  for (auto i : idx_min) {
-    check_result.msg += std::to_string(i) + ",";
+
+  using namespace ShortFieldTagsNames;
+
+  int min_col_lid, max_col_lid;
+  AbstractGrid::dofs_list_h_type gids;
+  AbstractGrid::geo_view_h_type lat, lon;
+  bool has_latlon;
+  bool has_col_info = m_grid and layout.tag(0)==COL;
+
+  if (has_col_info) {
+    // We are storing grid info, and the field is over columns. Get col id and coords.
+    min_col_lid = idx_min[0];
+    max_col_lid = idx_max[0];
+    gids = m_grid->get_dofs_gids_host();
+    has_latlon = m_grid->has_geometry_data("lat") && m_grid->has_geometry_data("lon");
+    if (has_latlon) {
+      lat = m_grid->get_geometry_data_host("lat");
+      lon = m_grid->get_geometry_data_host("lon");
+    }
   }
-  check_result.msg.pop_back();
-  check_result.msg += ")\n";
-  check_result.msg += "  max: " + std::to_string(minmaxloc.max_val) + ", attained at (";
-  for (auto i : idx_max) {
-    check_result.msg += std::to_string(i) + ",";
+
+
+  check_result.msg += "  minimum:\n";
+  check_result.msg += "    - value: " + std::to_string(minmaxloc.min_val) + "\n";
+  if (has_col_info) {
+    check_result.msg += "    - entry: (" + std::to_string(gids(min_col_lid));
+    for (size_t i=1; i<idx_min.size(); ++i) {
+      check_result.msg += "," + std::to_string(i);
+    }
+    check_result.msg += ")\n";
+    if (has_latlon) {
+      check_result.msg += "    - lat/lon: (" + std::to_string(lat(min_col_lid)) + ", " + std::to_string(lon(min_col_lid)) + ")\n";
+    }
   }
-  check_result.msg.pop_back();
-  check_result.msg += ")\n";
+
+  check_result.msg += "  maximum:\n";
+  check_result.msg += "    - value: " + std::to_string(minmaxloc.max_val) + "\n";
+  if (has_col_info) {
+    check_result.msg += "    - entry: (" + std::to_string(gids(max_col_lid));
+    for (size_t i=1; i<idx_max.size(); ++i) {
+      check_result.msg += "," + std::to_string(i);
+    }
+    check_result.msg += ")\n";
+    if (has_latlon) {
+      check_result.msg += "    - lat/lon: (" + std::to_string(lat(max_col_lid)) + ", " + std::to_string(lon(max_col_lid)) + ")\n";
+    }
+  }
 
   return check_result;
 }

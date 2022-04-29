@@ -8,6 +8,7 @@
 #include "share/property_checks/field_nan_check.hpp"
 #include "share/property_checks/check_and_repair_wrapper.hpp"
 #include "share/util/scream_setup_random_test.hpp"
+#include "share/grid/point_grid.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack_utils.hpp"
@@ -54,8 +55,35 @@ TEST_CASE("property_checks", "") {
   RPDF pos_pdf(0.01,0.99);
   RPDF neg_pdf(-0.99, -0.01);
 
-  std::vector<FieldTag> tags = {EL, GP, LEV};
-  std::vector<int> dims = {2, 3, 12};
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  const int num_lcols = 2;
+  const int nlevs = 12;
+
+  // Create a point grid
+  std::shared_ptr<AbstractGrid> grid;
+  grid = std::make_shared<PointGrid>("some_grid",num_lcols,nlevs,comm);
+  AbstractGrid::dofs_list_type dofs("dogs",grid->get_num_local_dofs());
+  AbstractGrid::geo_view_type lat("lat",grid->get_num_local_dofs());
+  AbstractGrid::geo_view_type lon("lon",grid->get_num_local_dofs());
+  auto lat_h = Kokkos::create_mirror_view(lat);
+  auto lon_h = Kokkos::create_mirror_view(lon);
+  auto dofs_h = Kokkos::create_mirror_view(dofs);
+  for (int i=0; i<grid->get_num_local_dofs(); ++i) {
+    dofs(i) = num_lcols*comm.rank() + i;
+    lat_h(i) = i;
+    lon_h(i) = -i;
+  }
+  Kokkos::deep_copy(dofs,dofs_h);
+  Kokkos::deep_copy(lat,lat_h);
+  Kokkos::deep_copy(lon,lon_h);
+  grid->set_dofs(dofs);
+  grid->set_geometry_data("lat",lat);
+  grid->set_geometry_data("lon",lon);
+
+  // Create a field
+  std::vector<FieldTag> tags = {COL, CMP, LEV};
+  std::vector<int> dims = {num_lcols, 3, nlevs};
   FieldIdentifier fid ("field_1",{tags,dims}, m/s,"some_grid");
   Field f(fid);
   f.allocate_view();
@@ -105,7 +133,7 @@ TEST_CASE("property_checks", "") {
   SECTION("field_not_nan_check") {
     const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
 
-    auto nan_check = std::make_shared<FieldNaNCheck>(f);
+    auto nan_check = std::make_shared<FieldNaNCheck>(f,grid);
 
     // Assign  values to the field and make sure it passes our test for NaNs.
     auto f_data = reinterpret_cast<Real*>(f.get_internal_view_data<Real,Host>());
@@ -122,8 +150,8 @@ TEST_CASE("property_checks", "") {
     REQUIRE(not checkResult.pass);
     std::string expected_msg =
       "FieldNaNCheck failed.\n"
-      "  Invalid values found at position (1,2,3).\n";
-
+      "  - entry (1,1,2)\n"
+      "  - lat/lon: (1.000000, -1.000000)\n";
     REQUIRE( checkResult.msg == expected_msg );
   }
 
@@ -131,7 +159,7 @@ TEST_CASE("property_checks", "") {
   SECTION ("field_within_interval_check") {
     const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
 
-    auto interval_check = std::make_shared<FieldWithinIntervalCheck>(f, 0, 1, true);
+    auto interval_check = std::make_shared<FieldWithinIntervalCheck>(f, grid, 0, 1, true);
     REQUIRE(interval_check->can_repair());
 
     // Assign in-bound values to the field and make sure it passes the within-interval check
@@ -153,8 +181,15 @@ TEST_CASE("property_checks", "") {
     std::string expected_msg =
       "Check failed.\n"
       "  field_1 within interval [0, 1]\n"
-      "  min: 0.000000, attained at (0,1,2)\n"
-      "  max: 2.000000, attained at (1,2,3)\n";
+      "  minimum:\n"
+      "    - value: 0.000000\n"
+      "    - entry: (0,1,2)\n"
+      "    - lat/lon: (0.000000, 0.000000)\n"
+      "  maximum:\n"
+      "    - value: 2.000000\n"
+      "    - entry: (1,1,2)\n"
+      "    - lat/lon: (1.000000, -1.000000)\n";
+
     REQUIRE(checkResult.msg == expected_msg);
 
     interval_check->repair();

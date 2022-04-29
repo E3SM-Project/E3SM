@@ -2,6 +2,7 @@
 #define SCREAM_FIELD_WITHIN_INTERVAL_CHECK_HPP
 
 #include "share/property_checks/property_check.hpp"
+#include "share/grid/abstract_grid.hpp"
 #include "share/field/field.hpp"
 
 #include "ekat/util/ekat_math_utils.hpp"
@@ -24,6 +25,11 @@ public:
   // this class will overwrite values out of bounds with the proper bound
   // (upper if v>upper_bound and lower if v<lower_bound).
   FieldWithinIntervalCheck (const Field& field,
+                            const double lower_bound,
+                            const double upper_bound,
+                            const bool can_repair = false);
+  FieldWithinIntervalCheck (const Field& field,
+                            const std::shared_ptr<const AbstractGrid>& grid,
                             const double lower_bound,
                             const double upper_bound,
                             const bool can_repair = false);
@@ -56,6 +62,8 @@ protected:
 
   // Lower and upper bounds.
   double m_lower_bound, m_upper_bound;
+
+  std::shared_ptr<const AbstractGrid>   m_grid;
 };
 
 } // namespace scream

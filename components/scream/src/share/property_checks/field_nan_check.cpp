@@ -9,6 +9,15 @@ namespace scream
 
 FieldNaNCheck::
 FieldNaNCheck (const Field& f)
+ : FieldNaNCheck (f,nullptr)
+{
+  // Nothing to do here
+}
+
+FieldNaNCheck::
+FieldNaNCheck (const Field& f,
+               const std::shared_ptr<AbstractGrid>& grid)
+ : m_grid (grid)
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (f.rank()<=6,
@@ -19,6 +28,12 @@ FieldNaNCheck (const Field& f)
       "Error in FieldNaNCheck constructor: field data type not supported.\n"
       "  - Field name: " + f.name() << "\n"
       "  - Field rank: " + std::to_string(f.rank()) + "\n");
+
+  EKAT_REQUIRE_MSG (f.get_header().get_identifier().get_grid_name()==grid->name(),
+      "Error! The name of the input grid does not match the grid name stored in the field identifier.\n"
+      "  - Field name: " + f.name() + "\n"
+      "  - Field grid name: " + f.get_header().get_identifier().get_grid_name() + "\n"
+      "  - Input grid name: " + grid->name() + "\n");
 
   // We can't repair NaN's.
   set_fields ({f},{false});
@@ -120,13 +135,33 @@ PropertyCheck::CheckResult FieldNaNCheck::check_impl() const {
   if (not check_result.pass) {
     auto indices = unflatten_idx(layout.dims(),invalid_idx);
     check_result.msg  = "FieldNaNCheck failed.\n";
-    check_result.msg += "  Invalid values found at position (";
-    for (int i=0; i<layout.rank(); ++i) {
-      check_result.msg += std::to_string(indices[i]) + ",";
+    using namespace ShortFieldTagsNames;
+
+    int col_lid;
+    AbstractGrid::dofs_list_h_type gids;
+    AbstractGrid::geo_view_h_type lat, lon;
+    bool has_latlon;
+    bool has_col_info = m_grid and layout.tag(0)==COL;
+
+    if (has_col_info) {
+      // We are storing grid info, and the field is over columns. Get col id and coords.
+      col_lid = indices[0];
+      gids = m_grid->get_dofs_gids_host();
+      has_latlon = m_grid->has_geometry_data("lat") && m_grid->has_geometry_data("lon");
+      if (has_latlon) {
+        lat = m_grid->get_geometry_data_host("lat");
+        lon = m_grid->get_geometry_data_host("lon");
+      }
+
+      check_result.msg += "  - entry (" + std::to_string(gids(col_lid));;
+      for (size_t i=1; i<indices.size(); ++i) {
+        check_result.msg += "," + std::to_string(i);
+      }
+      check_result.msg += ")\n";
+      if (has_latlon) {
+        check_result.msg += "  - lat/lon: (" + std::to_string(lat(col_lid)) + ", " + std::to_string(lon(col_lid)) + ")\n";
+      }
     }
-    // Remove last ','
-    check_result.msg.pop_back();
-    check_result.msg += ").\n";
   } else {
     check_result.msg = "FieldNaNCheck passed.\n";
   }
