@@ -63,6 +63,7 @@ contains
     use seq_flds_mod     , only : seq_flds_x2l_fields, seq_flds_l2x_fields
     use spmdMod          , only : masterproc, npes, spmd_init
     use clm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
+    use clm_varctl       , only : clm_varctl_set_iac_active_only, iac_active
     use clm_cpl_indices  , only : clm_cpl_indices_set
     use perf_mod         , only : t_startf, t_stopf
     use mct_mod
@@ -89,6 +90,7 @@ contains
     logical  :: verbose_taskmap_output               ! true then use verbose task-to-node mapping format
     logical  :: atm_aero                             ! Flag if aerosol data sent from atm model
     logical  :: atm_present                          ! Flag if atmosphere model present
+    logical  :: iac_present     ! Flag if iac model present
     real(r8) :: scmlat                               ! single-column latitude
     real(r8) :: scmlon                               ! single-column longitude
     real(r8) :: nextsw_cday                          ! calday from clock of next radiation computation
@@ -240,6 +242,15 @@ contains
                         scmlon_in=scmlon, nsrest_in=nsrest, version_in=version, &
                         hostname_in=hostname, username_in=username)
 
+    ! Determine if iac is active, and set flag
+    call seq_infodata_GetData(infodata, iac_present=iac_present)
+    call clm_varctl_set_iac_active_only(iac_present)
+
+! avd
+write(iulog,*) sub//'iac_present is ',iac_present, &
+                'iac_active is ', iac_active
+
+
     ! Read namelist, grid and surface data
 
     call initialize1( )
@@ -297,8 +308,8 @@ contains
     end if
 
     ! Create land export state 
-    ! note that lnd2iac_vars is not set yet
-    if (atm_present) then 
+    ! avd - note that lnd2iac_vars is not set yet for restart
+    if (atm_present .or. iac_present) then 
       call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, lnd2iac_vars, l2x_l%rattr)
     endif
 

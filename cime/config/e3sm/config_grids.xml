@@ -1864,6 +1864,7 @@
     <required_gridmap grid1="lnd_grid" grid2="rof_grid">LND2ROF_FMAPNAME</required_gridmap>
     <required_gridmap grid1="lnd_grid" grid2="rof_grid">ROF2LND_FMAPNAME</required_gridmap>
     <required_gridmap grid1="atm_grid" grid2="iac_grid">IAC2ATM_FMAPNAME</required_gridmap>
+    <required_gridmap grid1="atm_grid" grid2="iac_grid">ATM2IAC_SMAPNAME</required_gridmap>
     <required_gridmap grid1="lnd_grid" grid2="iac_grid">IAC2LND_SMAPNAME</required_gridmap>
     <required_gridmap grid1="iac_grid" grid2="lnd_grid">LND2IAC_SMAPNAME</required_gridmap>
   </required_gridmaps>
@@ -1878,6 +1879,7 @@
     <gridmap atm_grid="1.9x2.5" iac_grid="0.9x1.25">
       <map name="IAC2ATM_FMAPNAME">cpl/gridmaps/0.9x1.25/map_0.9x1.25_TO_1.9x2.5_aave.210910.nc</map>
       <map name="IAC2ATM_SMAPNAME">cpl/gridmaps/0.9x1.25/map_0.9x1.25_TO_1.9x2.5_aave.210910.nc</map>
+      <map name="ATM2IAC_SMAPNAME">cpl/gridmaps/1.9x2.5/map_1.9x2.5_TO_0.9x1.25_aave.210910.nc</map>
     </gridmap>
 
     <gridmap lnd_grid="1.9x2.5" iac_grid="0.9x1.25">

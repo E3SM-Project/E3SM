@@ -27,6 +27,7 @@ module lnd2iacMod
 
   ! lnd -> iac variables structure
   ! Fields are dimensioned (ngrid,numpft+1)
+  ! pftwgt is frac of actual grid cell (not frac of land)
   type, public :: lnd2iac_type
      real(r8), pointer :: hr(:,:) => null()
      real(r8), pointer :: npp(:,:) => null()
@@ -103,7 +104,9 @@ contains
        ! Assign values
        this%hr(g,pft) = col_cf%hr(c)   ! Every pft in this column gets this hr value
        this%npp(g,pft) = veg_cf%npp(p)
-       this%pftwgt(g,pft) = veg_pp%wtgcell(p)
+       ! this is the fraction of actual grid cell
+       this%pftwgt(g,pft) = veg_pp%wtgcell(p) * ldomain%frac(g) * &
+                             ldomain%mask(g)
     end do
 
     ! Ta da

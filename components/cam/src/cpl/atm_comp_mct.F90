@@ -93,6 +93,7 @@ module atm_comp_mct
   ! Are all surface types present   
   logical :: lnd_present ! if true => land is present
   logical :: ocn_present ! if true => ocean is present
+  logical :: iac_present ! if true => iac is present
 
   integer,                 pointer :: dof(:) ! needed for pio_init decomp for restarts
   type(seq_infodata_type), pointer :: infodata
@@ -260,8 +261,17 @@ CONTAINS
             brnch_retain_casename=brnch_retain_casename,                              &
             single_column=single_column, scmlat=scmlat, scmlon=scmlon,                &
             orb_eccen=eccen, orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr, &
-            lnd_present=lnd_present, ocn_present=ocn_present,                         & 
+            lnd_present=lnd_present, ocn_present=ocn_present, iac_present=iac_present, & 
             perpetual=perpetual_run, perpetual_ymd=perpetual_ymd)
+
+       ! Don't read in co2 data if iac is present
+       ! Currently, iac is always prognostic if it is present - may need to
+       ! check this if this changes
+       if (iac_present .and. co2_readFlux_fuel) then
+          co2_readFlux_fuel = .false.
+          write(iulog,*)'warning: co2_readFlux_fuel set false as iac is present'
+       end if
+
        !
        ! Get nsrest from startup type methods
        !

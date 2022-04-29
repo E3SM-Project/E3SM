@@ -3832,14 +3832,6 @@ contains
        call component_diag(infodata, iac, flow='c2x', comment= 'recv iac', &
             info_debug=info_debug, timer_diag='CPL:iacpost_diagav')
 
-       if (iac_c2_lnd) then
-          call prep_lnd_calc_z2x_lx(timer='CPL:iacpost_iac2lnd')
-       endif
-
-       if (iac_c2_atm) then
-          call prep_atm_calc_z2x_ax(fractions_zx, timer='CPL:iacpost_iac2atm')
-       endif
-
        ! Need to reset our max vector to zero for the following year
        call prep_iac_zero_max()
 

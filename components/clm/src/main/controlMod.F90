@@ -43,9 +43,9 @@ module controlMod
   use AllocationMod         , only: nu_com_phosphatase,nu_com_nfix 
   use clm_varctl              , only: nu_com, use_var_soil_thick
   use seq_drydep_mod          , only: drydep_method, DD_XLND, n_drydep
-  use clm_varctl              , only: forest_fert_exp
-  use clm_varctl              , only: ECA_Pconst_RGspin
-  use clm_varctl              , only: NFIX_PTASE_plant
+!  use clm_varctl              , only: forest_fert_exp
+!  use clm_varctl              , only: ECA_Pconst_RGspin
+!  use clm_varctl              , only: NFIX_PTASE_plant
   !
   ! !PUBLIC TYPES:
   implicit none

@@ -1,3 +1,77 @@
+4/29/2022
+
+* Merge conflicts for Alan's e3sm main branch for the rebase (the giac
+  branch merged in clean):
+
+===========
+[d3a230@compy01 components]$ git merge aldivi/shippert/gcam/active-gcam-debug-31mar22
+error: refs/heads/master does not point to a valid object!
+error: refs/remotes/origin/HEAD does not point to a valid object!
+error: refs/remotes/origin/aldivi/glm-update does not point to a valid object!
+error: refs/remotes/origin/bishtgautam/add-gcam-core does not point to a valid object!
+error: refs/remotes/origin/bishtgautam/fix-compile-error does not point to a valid object!
+error: refs/remotes/origin/master does not point to a valid object!
+error: refs/remotes/origin/shippert/giac-update does not point to a valid object!
+error: refs/remotes/origin/working does not point to a valid object!
+warning: Failed to merge submodule components/gcam/src (not fast-forward)
+Found a possible merge resolution for the submodule:
+ eddc11d0e13821180176d6cc7ce1e74869a9d157: > Merge branch 'aldivi/shippert/merge' into shippert/merge Merging Alan's mods into my branch to get ready for rebase.
+If this is correct simply add it to the index for example
+by using:
+
+  git update-index --cacheinfo 160000 eddc11d0e13821180176d6cc7ce1e74869a9d157 "components/gcam/src"
+
+which will accept this suggestion.
+Auto-merging components/gcam/src
+CONFLICT (submodule): Merge conflict in components/gcam/src
+Auto-merging components/clm/src/main/lnd2iacMod.F90
+CONFLICT (content): Merge conflict in components/clm/src/main/lnd2iacMod.F90
+Auto-merging components/clm/src/dyn_subgrid/dynSubgridDriverMod.F90
+CONFLICT (content): Merge conflict in components/clm/src/dyn_subgrid/dynSubgridDriverMod.F90
+Auto-merging components/clm/src/biogeochem/EcosystemDynMod.F90
+Auto-merging components/cam/src/cpl/atm_comp_mct.F90
+Auto-merging components/cam/cime_config/buildnml
+CONFLICT (content): Merge conflict in components/cam/cime_config/buildnml
+Auto-merging cime/src/drivers/mct/shr/seq_timemgr_mod.F90
+Auto-merging cime/src/drivers/mct/main/prep_iac_mod.F90
+CONFLICT (content): Merge conflict in cime/src/drivers/mct/main/prep_iac_mod.F90
+Auto-merging cime/src/drivers/mct/main/cime_comp_mod.F90
+CONFLICT (content): Merge conflict in cime/src/drivers/mct/main/cime_comp_mod.F90
+Automatic merge failed; fix conflicts and then commit the result.
+
+===========
+
+@XDid the git update-index thing, which presumably will do all the right
+  bookkeeping cruft for our giac submodule in components/gcam/src.
+
+@Xlnd2iacMod.F90: Looks like the commenting out some writes fubard the
+   merge, otherwise the change is just to add some frac and mask stuff to
+   the pftwgt calculation.  Mostly use Alan's, as he's got the right calc.
+
+@Xcomponents/clm/src/dyn_subgrid/dynSubgridDriverMod.F90: same thing, just
+  a munged merge because of commented out write lines.  Use mine.
+
+@Xcomponents/cam/cime_config/buildnml: again, some comments and some white
+  space, so just use mine.
+
+@Xcime/src/drivers/mct/main/prep_iac_mod.F90: slightly trickier, as Alan
+  has a different declaration of l2x_lx(:), making it an array, and then
+  calling prep_iac_get_l2zacc_lx() to setting it.  Since I've changed it to
+  use l2zmax_lx now, and because all of those are internal private module
+  variables, we don't have to call the accessor functions and can just
+  modify the field directly.  So I'm going to use my version, because we
+@ need to use the max field, but I'll review if my methodology is correct
+  or if I really should make a prep_iac_get_l2zmax_lx() function, for
+  whatever reason.  (Honestly, I think either syntax works, and I probably
+  followed some component who set these things up with the accessor because
+  some other part of the code needed to get at those private variables.)
+
+@Xcime/src/drivers/mct/main/cime_comp_mod.F90: I think Alan is right here -
+  her removes prep_lnd_calc_z2x_lx() and prep_atm_calc_z2x_ax() calls from
+  iac post, because those are both called in the lnd/atm setup functions,
+  so the iac post calls are redundant.  I need to keep my
+  prep_iac_zero_max() call, though.
+
 4/28/2022 13:46:30 PDT
 
 * Okay, as far as I can tell everything is running fine - the zlnd_v2 case,

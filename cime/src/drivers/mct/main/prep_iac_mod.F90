@@ -395,15 +395,13 @@ contains
     ! Local Variables
 
     integer :: eli, ezi
-    type(mct_aVect), pointer :: l2x_lx
+    type(mct_aVect), pointer :: l2x_lx(:)
     character(*), parameter :: subname = '(prep_lnd_calc_l2x_zx)'
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do eli = 1,num_inst_lnd
        ezi = mod((eli-1), num_inst_iac) + 1
-       !l2x_lx => component_get_c2x_cx(lnd(eli))
-       !call seq_map_map(mapper_Sl2z, l2_lx, l2x_zx(eli), fldlist=seq_flds_l2x_states, norm=.true.)
        !Need to map the max vector l2zmax_lx, which is local
        call seq_map_map(mapper_Sl2z, l2zmax_lx(eli), l2x_zx(ezi), fldlist=seq_flds_l2x_states, norm=.true.)
     enddo

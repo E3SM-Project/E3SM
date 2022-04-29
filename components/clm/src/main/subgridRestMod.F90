@@ -551,6 +551,7 @@ contains
       !
       ! !USES:
       use clm_varctl          , only : nsrest, nsrContinue, use_fates
+      use clm_varctl          , only : iac_active
       use dynSubgridControlMod, only : get_do_transient_pfts
       !
       ! !ARGUMENTS:
@@ -574,6 +575,9 @@ contains
       else if (use_fates) then
          ! Don't check weights for a ed case, because the weights will almost certainly
          ! differ from the surface dataset in this case
+         do_check_weights = .false.
+      else if (iac_active) then
+         ! Don't check weights if iac is active
          do_check_weights = .false.
       else
          do_check_weights = .true.
