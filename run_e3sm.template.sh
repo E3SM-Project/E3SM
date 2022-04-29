@@ -24,8 +24,10 @@ readonly PROJECT="e3sm"
 # Simulation
 readonly COMPSET="WCYCL1850"
 readonly RESOLUTION="ne30pg2_EC30to60E2r2"
-readonly CASE_NAME="v2.LR.piControl"
-readonly CASE_GROUP="v2.LR"
+# TODO: CHANGE the following CASE_NAME to desired values
+readonly CASE_NAME="your_casename"
+# If this is part of a simulation campaign, ask your group lead about using a case_group label
+readonly CASE_GROUP=""
 
 # Code and compilation
 readonly CHECKOUT="20210806"
