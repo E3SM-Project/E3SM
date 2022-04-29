@@ -453,11 +453,11 @@ _TESTS = {
             )
     },
 
-    "e3sm_scream_v1_hires" : {
+    "e3sm_scream_v1_medres" : {
         "time"  : "03:00:00",
         "tests" : (
             "SMS_D_Ln2.ne30_ne30.F2000SCREAMv1",
-            "SMS_D_Ln2.ne30_ne30.F2000-SCREAMv1-AQP1",
+            "SMS_Ln2.ne30_ne30.F2000-SCREAMv1-AQP1",
             )
     },
 
