@@ -268,6 +268,10 @@
                             description="Coefficient for ISMIP6 retreat parameterization from Slater et al. (2019)"
                             possible_values="any negative real value"
                 />
+                <nml_option name="config_distribute_unablatedVolumeDynCell" type="logical" default_value=".true." units="unitless"
+                        description="If true, then distribute unablatedVolumeDynCell among dynamic neighbors when converting ablation velocity to ablation thickness. This should only be used as a clean-up measure, while limiting the timestep based on ablation velocity should be used as the primary method of getting accurate ablation thickness from ablation velocity."
+                        possible_values=".true. or .false."
+                />
 	</nml_record>
 
 	<nml_record name="thermal_solver" in_defaults="true">

@@ -2133,6 +2133,7 @@ module li_calving
       integer, dimension(:), pointer :: frontAblationMask
       real (kind=RKIND), dimension(:), pointer :: calvingThickness, faceMeltingThickness
       real (kind=RKIND), pointer :: config_sea_level
+      logical, pointer :: config_distribute_unablatedVolumeDynCell
       real (kind=RKIND), dimension(:), pointer :: dvEdge
       real (kind=RKIND), dimension(:), pointer :: angleEdge
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity, faceMeltSpeed
@@ -2160,12 +2161,13 @@ module li_calving
       real(kind=RKIND), dimension(6) :: localInfo, globalInfo
       real(kind=RKIND) :: edgeLengthScaling
       real(kind=RKIND), parameter :: ablationSmallThk = 1.0e-8_RKIND ! in meters, a small thickness threshold
-      integer :: err_tmp
+      integer :: err_tmp, nDynNeighbors
 
       err = 0
       err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+      call mpas_pool_get_config(liConfigs, 'config_distribute_unablatedVolumeDynCell', config_distribute_unablatedVolumeDynCell)
 
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
@@ -2594,8 +2596,6 @@ module li_calving
             if (iCell <= nCellsSolve) ablationSubtotal2 = ablationSubtotal2 + removeVolumeHere
          endif
       enddo
-      !call mpas_log_write("Done calculating ablation for dynamic floating cells. Removed $r m^3", realArgs=(/calvingSubtotal2/))
-
 
       ! Clean up to account for roundoff level errors that can occur
       do iCell = 1, nCells
@@ -2604,7 +2604,69 @@ module li_calving
          endif
       enddo
 
-      ! Clean up - zap any stranded ice.  This only needs to be considered for floating ice.
+      if ( config_distribute_unablatedVolumeDynCell ) then
+         ! 3. Distribute unablatedVolumeDynCell among neighboring cells. This is
+         ! necesssary when a cell is fully depleted but still has not ablated as
+         ! much ice as required by the ablation parameterization. This still may
+         ! result in large error for very high ablation rates, which should be
+         ! prevented by limiting the timestep based on the ablation velocity.
+
+         ! a. Calculate volume to be distributed evenly among neighboring dynamic cells
+         do iCell = 1, nCells
+            if ( (unablatedVolumeDynCell(iCell) > 0.0_RKIND) ) then
+               nDynNeighbors = 0
+               ! Count neighbors between which to evenly distribute
+               ! unablatedVolumeDynCell
+               do iEdge = 1, nEdgesOnCell(iCell)
+                  iNeighbor = cellsOnCell(iEdge, iCell)
+                  if ((li_mask_is_dynamic_ice(cellMask(iNeighbor))) .and. (bedTopography(iNeighbor) <= config_sea_level) &
+                       .and. ( cellVolume(iNeighbor) > (ablationSmallThk * areaCell(iNeighbor)) ) ) then
+                     nDynNeighbors = nDynNeighbors + 1
+                  endif
+               enddo
+               if ( nDynNeighbors > 0 ) then
+                  ! Now distribute unablatedVolumeDynCell between those neighbors
+                  do iEdge = 1, nEdgesOnCell(iCell)
+                     iNeighbor = cellsOnCell(iEdge, iCell)
+                     if ((li_mask_is_dynamic_ice(cellMask(iNeighbor))) .and. (bedTopography(iNeighbor) <= config_sea_level) &
+                       .and. ( cellVolume(iNeighbor) > (ablationSmallThk * areaCell(iNeighbor)) ) ) then
+                        unablatedVolumeDynCell(iNeighbor) = unablatedVolumeDynCell(iNeighbor) + &
+                                                                unablatedVolumeDynCell(iCell) / nDynNeighbors
+                     endif
+                  enddo
+                  ! This cell now has no more unablatedVolume
+                  unablatedVolumeDynCell(iCell) = 0.0_RKIND
+               endif
+            endif
+         enddo
+
+         ! b. Apply ablation
+         do iCell = 1, nCells
+             if ((li_mask_is_dynamic_ice(cellMask(iCell))) .and. (bedTopography(iCell) <= config_sea_level) &
+                  .and. ( cellVolume(iCell) > (ablationSmallThk * areaCell(iCell)) ) &
+                  .and. (unablatedVolumeDynCell(iCell) > 0.0_RKIND) ) then
+                  removeVolumeHere = min(cellVolume(iCell), unablatedVolumeDynCell(iCell))  ! Don't use more than available
+                  ablationThickness(iCell) = ablationThickness(iCell) + removeVolumeHere / areaCell(iCell) ! add to ablationThickness calculated in 2c
+                  ablatedVolumeDynCell(iCell) = ablatedVolumeDynCell(iCell) + removeVolumeHere
+                  unablatedVolumeDynCell(iCell) = unablatedVolumeDynCell(iCell) - removeVolumeHere
+                  cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere
+                  ! For debugging it may be helpful to add a separate metric for
+                  ! this step.
+                  if (iCell <= nCellsSolve) ablationSubtotal2 = ablationSubtotal2 + removeVolumeHere
+              endif
+         enddo
+         !call mpas_log_write("Done calculating ablation for dynamic floating cells. Removed $r m^3", realArgs=(/calvingSubtotal2/))
+
+         ! c. Clean up to account for roundoff level errors that can occur
+         do iCell = 1, nCells
+            if (abs(ablationThickness(iCell) - thickness(iCell)) < ablationSmallThk) then
+               ablationThickness(iCell) = thickness(iCell)
+            endif
+         enddo
+      endif ! config_distribute_unablatedVolumeDynCell
+
+      ! 4. Clean up after applying ablation velocity from parameterization
+      ! a. Zap any stranded ice.  This only needs to be considered for floating ice.
       ablationSubtotal3 = 0.0_RKIND
       do iCell = 1, nCells
          if (li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell)))) then
@@ -2627,7 +2689,7 @@ module li_calving
          endif
       enddo
 
-      ! Clean up to account for roundoff level errors that can occur
+      ! b. Clean up to account for roundoff level errors that can occur
       do iCell = 1, nCells
          if (abs(ablationThickness(iCell) - thickness(iCell)) < ablationSmallThk) then
             ablationThickness(iCell) = thickness(iCell)
