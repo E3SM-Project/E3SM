@@ -1147,13 +1147,22 @@ is the value of that variable from the *previous* time level!
                      description="applied surface mass balance on grounded ice"
                 />
                 <var name="basalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
-                     description="applied basal mass balance"
+                     description="Potential basal mass balance"
                 />
                 <var name="groundedBasalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
-                     description="Basal mass balance on grounded regions"
+                     description="Potential basal mass balance on grounded regions"
                 />
                 <var name="floatingBasalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
-                     description="Basal mass balance on floating regions"
+                     description="Potential basal mass balance on floating regions"
+                />
+                <var name="basalMassBalApplied" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="applied basal mass balance"
+                />
+                <var name="groundedBasalMassBalApplied" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="Applied basal mass balance on grounded regions"
+                />
+                <var name="floatingBasalMassBalApplied" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="Applied basal mass balance on floating regions"
                 />
                 <var name="calvingMask" type="integer" dimensions="nCells Time" units="m" time_levs="1"
                         description="mask of grid cells that should be calved.  0=no calving, 1=should be calved"
