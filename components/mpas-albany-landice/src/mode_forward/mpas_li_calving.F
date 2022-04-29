@@ -394,7 +394,8 @@ module li_calving
            config_dynamic_thickness
 
       integer, dimension(:), pointer :: &
-           cellMask            ! bit mask describing whether ice is floating, dynamically active, etc.
+           cellMask, &            ! bit mask describing whether ice is floating, dynamically active, etc.
+           indexToCellID
 
       real(kind=RKIND), dimension(:), pointer :: &
            layerCenterSigma    ! vertical sigma coordinate at layer midpoints
@@ -452,6 +453,7 @@ module li_calving
 
          ! get required fields from the mesh pool
          call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
+         call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
 
          ! get required fields from the geometry pool
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
@@ -526,7 +528,7 @@ module li_calving
                   !       Save the difference (restoreThicknessMin - thickness) so as to keep track of energy non-conservation.
 
                   if (config_print_calving_info) then
-                     call mpas_log_write('Restore ice: iCell=$i, thickness=$r', intArgs=(/iCell/), realArgs=(/thickness(iCell)/))
+                     call mpas_log_write('Restore ice: indexToCellID=$i, thickness=$r', intArgs=(/indexToCellID(iCell)/), realArgs=(/thickness(iCell)/))
                   endif
 
                   restoreThickness(iCell) = restoreThicknessMin - thickness(iCell)
@@ -551,7 +553,7 @@ module li_calving
                   ! Remove the ice and add it to calvingThickness.
 
                   if (config_print_calving_info) then
-                     call mpas_log_write('Remove ice:  iCell=$i, thickness=$r', intArgs=(/iCell/), realArgs=(/thickness(iCell)/))
+                     call mpas_log_write('Remove ice:  indexToCellID=$i, thickness=$r', intArgs=(/indexToCellID(iCell)/), realArgs=(/thickness(iCell)/))
                   endif
 
                   calvingThickness(iCell) = thickness(iCell)
