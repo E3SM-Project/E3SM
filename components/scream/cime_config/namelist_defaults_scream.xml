@@ -109,6 +109,14 @@ tweaking their $case/namelist_scream.xml file.
            via atm-config-chg. For instance, the overall list of atm procs cannot be changed,
            since it would require to re-parse the defaults, to re-generate the correct
            defaults for the (possibly) new atm procs.
+
+       12) The attribute 'constraints' allows to specify constraints on values. Valid constraints
+           are lt, le, ne, gt, ge, and mod. Except the latter (which has slightly different syntax,
+           see below), the syntax is "$op value", to enforce '$param $op value'.
+           Multiple constrained are separated by ';'. Examples:
+             - constraints="ge 0; ne 4" means the value V must satisfy V>=0 && V!=4.
+             - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
+             - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
   -->
 
   <atmosphere_processes_defaults>

@@ -46,6 +46,17 @@ import yaml
 logger = logging.getLogger(__name__)
 
 CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
+
+# These are special attributes used by buildnml and other scripts to
+# perform some checks. In particular:
+#  - type: allows to verify compatibility (e.g., can't assing 3.2 to an integer)
+#  - valid_values: allows to specify a set of valid values
+#  - locked: if set to true, the parameter cannot be modified (via atmchange)
+#  - constraints: allows to specify constraints on values. Valid constraints
+#    are lt, le, ne, gt, ge, and mod. Multiple constrained are separated by ';'.
+#    Examples:
+#      - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
+#      - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
 METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints")
 
 ###############################################################################
