@@ -453,6 +453,11 @@ contains
              call endrun( msg=' lnd2atm ERROR: lnd2atm_vars%t_soisno_grc >  400 Kelvin degree.'//errMsg(__FILE__, __LINE__))
        end if
        lnd2atm_vars%Tqsur_grc(g) = avg_tsoil_surf(t_soisno_grc(g,:))
+       ! zwt_grc could be Nan due to error in zwt_col
+       if (zwt_grc(g) /= zwt_grc(g)) then
+             write(iulog,*) ' lnd2atm_vars%zwt_grc(g) is NaN after c2g ', lnd2atm_vars%zwt_grc(g)
+             call endrun( msg=' lnd2atm ERROR: lnd2atm_vars%zwt_grc is NaN after c2g. '//errMsg(__FILE__, __LINE__))
+       end if
        lnd2atm_vars%Tqsub_grc(g) = avg_tsoil(zwt_grc(g),t_soisno_grc(g,:))
 
     end do
