@@ -159,7 +159,7 @@ void run_scalar_valued_fns(std::mt19937_64& engine)
   REQUIRE( Check::equal(PF::calculate_dx_from_area(0.0,1.0),0.0) );
   area = (pi/180.0)*(pi/180.0);
   REQUIRE( Check::equal(PF::calculate_dx_from_area(area,0.0), coeff_1-coeff_2+coeff_3) );
-  REQUIRE( Check::approx_equal(PF::calculate_dx_from_area(area,pi/2.0), coeff_1+coeff_2+coeff_3, test_tol) );
+  REQUIRE( Check::equal(PF::calculate_dx_from_area(area,pi/2.0), coeff_1+coeff_2+coeff_3) );
   
   lat     = pdf_lat(engine);
   area    = pdf_area(engine);
