@@ -125,10 +125,11 @@ contains
          nCells        ! number of cells
 
       real (kind=RKIND) :: &
-         weightSum,    &! sum of weights in vertical
-         thicknessSum, &! total thickness
-         remainder,    &! track remainder in mix/max alteration
-         newThickness   ! temp used during min/max adjustment
+         weightSum,       &! sum of weights in vertical
+         columnThickness, &! total thickness from bottomDepth, SSH
+         thicknessSum,    &! total resting thickness
+         remainder,       &! track remainder in mix/max alteration
+         newThickness      ! temp used during min/max adjustment
 
       real (kind=RKIND), dimension(:), allocatable :: &
          prelim_ALE_thickness,   & ! ALE thickness at new time
@@ -188,15 +189,16 @@ contains
                             + vertCoordMovementWeights(k) &
                             * restingThickness(k,iCell)
             end do
+            columnThickness = bottomDepth(iCell) + SSH(iCell)
    
             ! Note that restingThickness is nonzero, and remaining
             ! terms are perturbations about zero.
             ! This is equation 4 and 6 in Petersen et al 2015,
             ! but with eqn 6
             do k = kMin, kMax
-               ALE_thickness(k,iCell) = restingThickness(k,iCell) &
-                  + (SSH(iCell)*vertCoordMovementWeights(k)* &
-                     restingThickness(k,iCell) )/thicknessSum
+               ALE_thickness(k, iCell) = restingThickness(k, iCell) &
+                  + ( (columnThickness - thicknessSum) * vertCoordMovementWeights(k) * &
+                      restingThickness(k, iCell) ) / thicknessSum
             end do
          enddo
 #ifndef MPAS_OPENACC
