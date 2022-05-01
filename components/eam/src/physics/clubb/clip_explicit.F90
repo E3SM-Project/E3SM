@@ -42,8 +42,10 @@ module clip_explicit
                                 wpsclrp_cl_num, upwp_cl_num, vpwp_cl_num, &
                                 l_predict_upwp_vpwp, &
                                 l_tke_aniso, &
+                                l_linearize_pbl_winds, &
                                 stats_zm, & 
-                                wprtp, wpthlp, upwp, vpwp, wpsclrp )
+                                wprtp, wpthlp, upwp, vpwp, wpsclrp, &
+                                upwp_pert, vpwp_pert )
 
     ! Description:
     ! Some of the covariances found in the CLUBB model code need to be clipped
@@ -104,13 +106,14 @@ module clip_explicit
       vpwp_cl_num
 
     logical, intent(in) :: &
-      l_predict_upwp_vpwp, & ! Flag to predict <u'w'> and <v'w'> along with <u> and <v> alongside
-                             ! the advancement of <rt>, <w'rt'>, <thl>, <wpthlp>, <sclr>, and
-                             ! <w'sclr'> in subroutine advance_xm_wpxp.  Otherwise, <u'w'> and
-                             ! <v'w'> are still approximated by eddy diffusivity when <u> and <v>
-                             ! are advanced in subroutine advance_windm_edsclrm.
-      l_tke_aniso            ! For anisotropic turbulent kinetic energy, i.e. TKE = 1/2
-                             ! (u'^2 + v'^2 + w'^2)
+      l_predict_upwp_vpwp,   & ! Flag to predict <u'w'> and <v'w'> along with <u> and <v> alongside
+                               ! the advancement of <rt>, <w'rt'>, <thl>, <wpthlp>, <sclr>, and
+                               ! <w'sclr'> in subroutine advance_xm_wpxp.  Otherwise, <u'w'> and
+                               ! <v'w'> are still approximated by eddy diffusivity when <u> and <v>
+                               ! are advanced in subroutine advance_windm_edsclrm.
+      l_tke_aniso,           & ! For anisotropic turbulent kinetic energy, i.e. TKE = 1/2
+                               ! (u'^2 + v'^2 + w'^2)
+      l_linearize_pbl_winds    ! Flag (used by E3SM) to linearize PBL winds
 
     ! Input/Output Variables
     real( kind = core_rknd ), dimension(gr%nz), intent(inout) :: &
@@ -121,6 +124,11 @@ module clip_explicit
 
     real( kind = core_rknd ), dimension(gr%nz,sclr_dim), intent(inout) :: &
       wpsclrp ! w'sclr'         [units m/s]
+
+    ! Variables used to track perturbed version of winds.
+    real( kind = core_rknd ), dimension(gr%nz), intent(inout) :: &
+      upwp_pert, & ! perturbed <u'w'> [m^2/s^2]
+      vpwp_pert    ! perturbed <v'w'> [m^2/s^2]
 
     ! Local Variables
     logical :: & 
@@ -292,18 +300,32 @@ module clip_explicit
 
     ! Clip u'w'
     if ( l_tke_aniso ) then
-      call clip_covar( gr, clip_upwp, l_first_clip_ts,   & ! intent(in)
-                       l_last_clip_ts, dt, wp2, up2, & ! intent(in)
-                       l_predict_upwp_vpwp,          & ! intent(in)
-                       stats_zm,                     & ! intent(inout)
-                       upwp, upwp_chnge )              ! intent(inout)
+      call clip_covar( gr, clip_upwp, l_first_clip_ts, & ! intent(in)
+                       l_last_clip_ts, dt, wp2, up2,   & ! intent(in)
+                       l_predict_upwp_vpwp,            & ! intent(in)
+                       stats_zm,                       & ! intent(inout)
+                       upwp, upwp_chnge )                ! intent(inout)
+      if ( l_linearize_pbl_winds ) then
+        call clip_covar( gr, clip_upwp, l_first_clip_ts, & ! intent(in)
+                         l_last_clip_ts, dt, wp2, up2,   & ! intent(in)
+                         l_predict_upwp_vpwp,            & ! intent(in)
+                         stats_zm,                       & ! intent(inout)
+                         upwp_pert, upwp_chnge )           ! intent(inout)
+      endif ! l_linearize_pbl_winds
     else
       ! In this case, up2 = wp2, and the variable `up2' does not interact
-      call clip_covar( gr, clip_upwp, l_first_clip_ts,   & ! intent(in)
-                       l_last_clip_ts, dt, wp2, wp2, & ! intent(in)
-                       l_predict_upwp_vpwp,          & ! intent(in)
-                       stats_zm,                     & ! intent(inout)
-                       upwp, upwp_chnge )              ! intent(inout)
+      call clip_covar( gr, clip_upwp, l_first_clip_ts, & ! intent(in)
+                       l_last_clip_ts, dt, wp2, wp2,   & ! intent(in)
+                       l_predict_upwp_vpwp,            & ! intent(in)
+                       stats_zm,                       & ! intent(inout)
+                       upwp, upwp_chnge )                ! intent(inout)
+      if ( l_linearize_pbl_winds ) then
+        call clip_covar( gr, clip_upwp, l_first_clip_ts, & ! intent(in)
+                         l_last_clip_ts, dt, wp2, wp2,   & ! intent(in)
+                         l_predict_upwp_vpwp,            & ! intent(in)
+                         stats_zm,                       & ! intent(inout)
+                         upwp_pert, upwp_chnge )           ! intent(inout)
+      endif ! l_linearize_pbl_winds
     end if
 
 
@@ -340,18 +362,32 @@ module clip_explicit
     endif
 
     if ( l_tke_aniso ) then
-      call clip_covar( gr, clip_vpwp, l_first_clip_ts,   & ! intent(in)
-                       l_last_clip_ts, dt, wp2, vp2, & ! intent(in)
-                       l_predict_upwp_vpwp,          & ! intent(in)
-                       stats_zm,                     & ! intent(inout)
-                       vpwp, vpwp_chnge )              ! intent(inout)
+      call clip_covar( gr, clip_vpwp, l_first_clip_ts, & ! intent(in)
+                       l_last_clip_ts, dt, wp2, vp2,   & ! intent(in)
+                       l_predict_upwp_vpwp,            & ! intent(in)
+                       stats_zm,                       & ! intent(inout)
+                       vpwp, vpwp_chnge )                ! intent(inout)
+      if ( l_linearize_pbl_winds ) then
+        call clip_covar( gr, clip_vpwp, l_first_clip_ts, & ! intent(in)
+                         l_last_clip_ts, dt, wp2, vp2,   & ! intent(in)
+                         l_predict_upwp_vpwp,            & ! intent(in)
+                         stats_zm,                       & ! intent(inout)
+                         vpwp_pert, vpwp_chnge )           ! intent(inout)
+      endif ! l_linearize_pbl_winds
     else
       ! In this case, vp2 = wp2, and the variable `vp2' does not interact
-      call clip_covar( gr, clip_vpwp, l_first_clip_ts,   & ! intent(in)
-                       l_last_clip_ts, dt, wp2, wp2, & ! intent(in)
-                       l_predict_upwp_vpwp,          & ! intent(in)
-                       stats_zm,                     & ! intent(inout)
-                       vpwp, vpwp_chnge )              ! intent(inout)
+      call clip_covar( gr, clip_vpwp, l_first_clip_ts, & ! intent(in)
+                       l_last_clip_ts, dt, wp2, wp2,   & ! intent(in)
+                       l_predict_upwp_vpwp,            & ! intent(in)
+                       stats_zm,                       & ! intent(inout)
+                       vpwp, vpwp_chnge )                ! intent(inout)
+      if ( l_linearize_pbl_winds ) then
+        call clip_covar( gr, clip_vpwp, l_first_clip_ts, & ! intent(in)
+                         l_last_clip_ts, dt, wp2, wp2,   & ! intent(in)
+                         l_predict_upwp_vpwp,            & ! intent(in)
+                         stats_zm,                       & ! intent(inout)
+                         vpwp_pert, vpwp_chnge )           ! intent(inout)
+      endif ! l_linearize_pbl_winds
     end if
 
 

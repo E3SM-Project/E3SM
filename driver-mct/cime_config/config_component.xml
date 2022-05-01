@@ -103,10 +103,10 @@
 
   <entry id="UTILROOT">
     <type>char</type>
-    <default_value>$CIMEROOT/scripts/Tools</default_value>
+    <default_value>$CIMEROOT/CIME/Tools</default_value>
     <group>case_der</group>
     <file>env_case.xml</file>
-    <desc>Scripts root utils directory location (setup automatically to $CIMEROOT/scripts/Tools - DO NOT EDIT)</desc>
+    <desc>Scripts root utils directory location (setup automatically to $CIMEROOT/CIME/Tools - DO NOT EDIT)</desc>
   </entry>
 
   <!-- ===================================================================== -->

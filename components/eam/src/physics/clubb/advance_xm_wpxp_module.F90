@@ -74,10 +74,12 @@ module advance_xm_wpxp_module
                               l_use_thvm_in_bv_freq, &
                               l_lmm_stepping, &
                               l_enable_relaxed_clipping, &
+                              l_linearize_pbl_winds, &
                               order_xm_wpxp, order_xp2_xpyp, order_wp2_wp3, &
                               stats_zt, stats_zm, stats_sfc, &
                               rtm, wprtp, thlm, wpthlp, &
-                              sclrm, wpsclrp, um, upwp, vm, vpwp )
+                              sclrm, wpsclrp, um, upwp, vm, vpwp, &
+                              um_pert, vm_pert, upwp_pert, vpwp_pert )
 
     ! Description:
     ! Advance the mean and flux terms by one timestep.
@@ -324,7 +326,8 @@ module advance_xm_wpxp_module
                                       ! saturated atmospheres (from Durran and Klemp, 1982)
       l_use_thvm_in_bv_freq,        & ! Use thvm in the calculation of Brunt-Vaisala frequency
       l_lmm_stepping,               & ! Apply Linear Multistep Method (LMM) Stepping
-      l_enable_relaxed_clipping       ! Flag to relax clipping on wpxp in xm_wpxp_clipping_and_stats
+      l_enable_relaxed_clipping,    & ! Flag to relax clipping on wpxp in xm_wpxp_clipping_and_stats
+      l_linearize_pbl_winds           ! Flag (used by E3SM) to linearize PBL winds
 
     integer, intent(in) :: &
       order_xm_wpxp, &
@@ -355,6 +358,13 @@ module advance_xm_wpxp_module
       upwp, & ! <u'w'>:  momentum flux (momentum levels)               [m^2/s^2]
       vm,   & ! <v>:  mean south-north horiz. velocity (thermo. levs.) [m/s]
       vpwp    ! <v'w'>:  momentum flux (momentum levels)               [m^2/s^2]
+
+    ! Variables used to track perturbed version of winds.
+    real( kind = core_rknd ), dimension(ngrdcol,nz), intent(inout) :: &
+      um_pert,   & ! perturbed <u>    [m/s]
+      vm_pert,   & ! perturbed <v>    [m/s]
+      upwp_pert, & ! perturbed <u'w'> [m^2/s^2]
+      vpwp_pert    ! perturbed <v'w'> [m^2/s^2]
  
     ! -------------------- Local Variables --------------------
 
@@ -458,8 +468,13 @@ module advance_xm_wpxp_module
       
     integer :: i, j, k
 
+    ! Whether preturbed winds are being solved.
+    logical :: l_perturbed_wind
+
     ! -------------------- Begin Code --------------------
-    
+
+    l_perturbed_wind = l_predict_upwp_vpwp .and. l_linearize_pbl_winds
+
     ! Check whether the passive scalars are present.
     if ( sclr_dim > 0 ) then
       l_scalar_calc = .true.
@@ -470,12 +485,14 @@ module advance_xm_wpxp_module
     if ( iiPDF_type == iiPDF_new .and. ( .not. l_explicit_turbulent_adv_wpxp ) ) then
        nrhs = 1
     else
-      if ( l_predict_upwp_vpwp ) then
-        nrhs = 4+sclr_dim
-      else
-        nrhs = 2+sclr_dim
-      endif
-    end if
+       nrhs = 2 + sclr_dim
+       if ( l_predict_upwp_vpwp ) then
+          nrhs = nrhs + 2
+          if ( l_perturbed_wind ) then
+             nrhs = nrhs + 2
+          endif ! l_perturbed_wind
+       endif ! l_predict_upwp_vpwp
+    endif
 
     ! Save values of predictive fields to be printed in case of crash.
     if ( l_lmm_stepping ) then
@@ -715,10 +732,12 @@ module advance_xm_wpxp_module
                                           l_upwind_xm_ma,                                  & ! In
                                           l_tke_aniso,                                     & ! In
                                           l_enable_relaxed_clipping,                       & ! In
+                                          l_perturbed_wind,                                & ! In
                                           order_xm_wpxp, order_xp2_xpyp, order_wp2_wp3,    & ! In
                                           stats_zt, stats_zm, stats_sfc,                   & ! In
                                           rtm, wprtp, thlm, wpthlp,                        & ! Out
-                                          sclrm, wpsclrp, um, upwp, vm,vpwp )                ! Out
+                                          sclrm, wpsclrp, um, upwp, vm, vpwp,              & ! Out
+                                          um_pert, vm_pert, upwp_pert, vpwp_pert )           ! Out
     end if ! ( ( iiPDF_type == iiPDF_new ) .and. ( .not. l_explicit_turbulent_adv_wpxp ) )
 
     if ( l_lmm_stepping ) then
@@ -2289,10 +2308,12 @@ module advance_xm_wpxp_module
                                             l_upwind_xm_ma, &
                                             l_tke_aniso, &
                                             l_enable_relaxed_clipping, &
+                                            l_perturbed_wind, &
                                             order_xm_wpxp, order_xp2_xpyp, order_wp2_wp3, &
                                             stats_zt, stats_zm, stats_sfc, & 
                                             rtm, wprtp, thlm, wpthlp, &
-                                            sclrm, wpsclrp, um, upwp, vm, vpwp )
+                                            sclrm, wpsclrp, um, upwp, vm, vpwp, &
+                                            um_pert, vm_pert, upwp_pert, vpwp_pert )
     !            
     ! Description: This subroutine solves all xm_wpxp when all the LHS matrices are equal.
     !              The LHS matrices being equivalent allows for only a single solve, rather
@@ -2476,8 +2497,9 @@ module advance_xm_wpxp_module
                                    ! thlm, sclrm, um and vm.
       l_tke_aniso,               & ! For anisotropic turbulent kinetic energy,
                                    ! i.e. TKE = 1/2 (u'^2 + v'^2 + w'^2)
-      l_enable_relaxed_clipping    ! Flag to relax clipping on wpxp in
+      l_enable_relaxed_clipping, & ! Flag to relax clipping on wpxp in
                                    ! xm_wpxp_clipping_and_stats
+      l_perturbed_wind             ! Whether perturbed winds are being solved
       
     integer, intent(in) :: &
       order_xm_wpxp, &
@@ -2502,6 +2524,13 @@ module advance_xm_wpxp_module
       vm,   & ! <v>:  mean south-north horiz. velocity (thermo. levs.) [m/s]
       vpwp    ! <v'w'>:  momentum flux (momentum levels)               [m^2/s^2]
 
+    ! Variables used to track perturbed version of winds.
+    real( kind = core_rknd ), dimension(ngrdcol,nz), intent(inout) :: &
+      um_pert,   & ! perturbed <u>    [m/s]
+      vm_pert,   & ! perturbed <v>    [m/s]
+      upwp_pert, & ! perturbed <u'w'> [m^2/s^2]
+      vpwp_pert    ! perturbed <v'w'> [m^2/s^2]
+ 
     type (stats), target, dimension(ngrdcol), intent(inout) :: &
       stats_zt, &
       stats_zm, &
@@ -2528,6 +2557,16 @@ module advance_xm_wpxp_module
       uprtp,        & ! eastward horz turb flux of tot water (mom levs)  [m/s kg/kg]
       vprtp,        & ! northward horz turb flux of tot water (mom levs) [m/s kg/kg]
       tau_C6_zm       ! Time-scale tau on momentum levels applied to C6 term [s]
+
+    real( kind = core_rknd ), dimension(ngrdcol,nz) :: &
+      upwp_forcing_pert, & ! perturbed extra RHS term (mom levs)         [m^2/s^3]
+      vpwp_forcing_pert, & ! perturbed extra RHS term (mom levs)         [m^2/s^3]
+      upthvp_pert,       & ! perturbed <u'thv'> (momentum levels)        [m/s K]
+      vpthvp_pert,       & ! perturbed <v'thv'> (momentum levels)        [m/s K]
+      upthlp_pert,       & ! perturbed horz flux of theta_l (mom levs)   [m/s K]
+      vpthlp_pert,       & ! perturbed horz flux of theta_l (mom levs)   [m/s K]
+      uprtp_pert,        & ! perturbed horz flux of tot water (mom levs) [m/s kg/kg]
+      vprtp_pert           ! perturbed horz flux of tot water (mom levs) [m/s kg/kg]
 
     real( kind = core_rknd ), dimension(ngrdcol,2*nz,nrhs) :: & 
       rhs,      & ! Right-hand sides of band diag. matrix. (LAPACK)
@@ -2657,6 +2696,10 @@ module advance_xm_wpxp_module
       ! Add "extra term" and optional Coriolis term for <u'w'> and <v'w'>.
       upwp_forcing(:,:) = C_uu_shr * wp2(:,:) * ddzt( nz, ngrdcol, gr(:), um(:,:) )
       vpwp_forcing(:,:) = C_uu_shr * wp2(:,:) * ddzt( nz, ngrdcol, gr(:), vm(:,:) )
+      if ( l_perturbed_wind ) then
+         upwp_forcing_pert(:,:) = C_uu_shr * wp2(:,:) * ddzt( nz, ngrdcol, gr(:), um_pert(:,:) )
+         vpwp_forcing_pert(:,:) = C_uu_shr * wp2(:,:) * ddzt( nz, ngrdcol, gr(:), vm_pert(:,:) )
+      endif ! l_perturbed_wind
 
       if ( l_stats_samp ) then
         do i = 1, ngrdcol
@@ -2686,6 +2729,26 @@ module advance_xm_wpxp_module
                           C6rt_Skw_fnc, tau_C6_zm, C7_Skw_fnc,    & ! Intent(in)
                           vprtp )                                   ! Intent(out)
 
+      if ( l_perturbed_wind ) then
+
+         call diagnose_upxp( nz, ngrdcol, gr, upwp_pert, thlm, wpthlp, um_pert, & ! Intent(in)
+                             C6thl_Skw_fnc, tau_C6_zm, C7_Skw_fnc,              & ! Intent(in)
+                             upthlp_pert )                                        ! Intent(out)
+
+         call diagnose_upxp( nz, ngrdcol, gr, upwp_pert, rtm, wprtp, um_pert, & ! Intent(in)
+                             C6rt_Skw_fnc, tau_C6_zm, C7_Skw_fnc,             & ! Intent(in)
+                             uprtp_pert )                                       ! Intent(out)
+
+         call diagnose_upxp( nz, ngrdcol, gr, vpwp_pert, thlm, wpthlp, vm_pert, & ! Intent(in)
+                             C6thl_Skw_fnc, tau_C6_zm, C7_Skw_fnc,              & ! Intent(in)
+                             vpthlp_pert )                                        ! Intent(out)
+
+         call diagnose_upxp( nz, ngrdcol, gr, vpwp_pert, rtm, wprtp, vm_pert, & ! Intent(in)
+                             C6rt_Skw_fnc, tau_C6_zm, C7_Skw_fnc,             & ! Intent(in)
+                             vprtp_pert )                                       ! Intent(out)
+
+      endif ! l_perturbed_wind
+
       ! Use a crude approximation for buoyancy terms <u'thv'> and <v'thv'>.
       !upthvp = upwp * wpthvp / max( wp2, w_tol_sqd )
       !vpthvp = vpwp * wpthvp / max( wp2, w_tol_sqd )
@@ -2695,6 +2758,14 @@ module advance_xm_wpxp_module
       !         + 200._core_rknd * sign( one, vpwp ) * sqrt( vp2 * rcm**2 )
       upthvp(:,:) = upthlp(:,:) + ep1 * thv_ds_zm(:,:) * uprtp(:,:) + rc_coef(:,:) * uprcp(:,:)
       vpthvp(:,:) = vpthlp(:,:) + ep1 * thv_ds_zm(:,:) * vprtp(:,:) + rc_coef(:,:) * vprcp(:,:)
+      if ( l_perturbed_wind ) then
+         upthvp_pert(:,:) = upthlp_pert(:,:) &
+                            + ep1 * thv_ds_zm(:,:) * uprtp_pert(:,:) &
+                            + rc_coef(:,:) * uprcp(:,:)
+         vpthvp_pert(:,:) = vpthlp_pert(:,:) &
+                            + ep1 * thv_ds_zm(:,:) * vprtp_pert(:,:) &
+                            + rc_coef(:,:) * vprcp(:,:)
+      endif ! l_perturbed_wind
 
       if ( l_stats_samp ) then
         do i = 1, ngrdcol
@@ -2726,6 +2797,24 @@ module advance_xm_wpxp_module
                         lhs_pr1_wprtp, lhs_ta_wpxp,                         & ! In
                         stats_zt, stats_zm,                                 & ! Inout
                         rhs(:,:,4+sclr_dim) )                                 ! Out
+
+      if ( l_perturbed_wind ) then
+
+        call xm_wpxp_rhs( nz, ngrdcol, gr, xm_wpxp_um, l_iter, dt, um_pert,   & ! In
+                          upwp_pert, um_tndcy, upwp_forcing_pert, C7_Skw_fnc, & ! In
+                          upthvp_pert, rhs_ta_wpup, thv_ds_zm,                & ! In
+                          lhs_pr1_wprtp, lhs_ta_wpxp,                         & ! In
+                          stats_zt, stats_zm,                                 & ! Inout
+                          rhs(:,:,5+sclr_dim) )                                 ! Out
+
+        call xm_wpxp_rhs( nz, ngrdcol, gr, xm_wpxp_vm, l_iter, dt, vm_pert,   & ! In
+                          vpwp_pert, vm_tndcy, vpwp_forcing_pert, C7_Skw_fnc, & ! In
+                          vpthvp_pert, rhs_ta_wpvp, thv_ds_zm,                & ! In
+                          lhs_pr1_wprtp, lhs_ta_wpxp,                         & ! In
+                          stats_zt, stats_zm,                                 & ! Inout
+                          rhs(:,:,6+sclr_dim) )                                 ! Out
+
+      endif ! l_perturbed_wind
 
     endif ! l_predict_upwp_vpwp
 
@@ -2938,6 +3027,62 @@ module advance_xm_wpxp_module
           return
         end if
       end if
+
+      if ( l_perturbed_wind ) then
+
+         call xm_wpxp_clipping_and_stats( nz, ngrdcol,   & ! Intent(in)
+               gr, xm_wpxp_um, dt, wp2, up2, wm_zt,      & ! Intent(in)
+               um_tndcy, rho_ds_zm, rho_ds_zt,           & ! Intent(in)
+               invrs_rho_ds_zm, invrs_rho_ds_zt,         & ! Intent(in)
+               w_tol_sqd, w_tol, rcond,                  & ! Intent(in)
+               low_lev_effect, high_lev_effect,          & ! Intent(in)
+               lhs_ma_zt, lhs_ma_zm, lhs_ta_wpxp,        & ! Intent(in)
+               lhs_diff_zm, C7_Skw_fnc,                  & ! Intent(in)
+               lhs_tp, lhs_ta_xm, lhs_pr1_wprtp,         & ! Intent(in)
+               l_implemented, solution(:,:,5+sclr_dim),  & ! Intent(in)
+               l_predict_upwp_vpwp,                      & ! Intent(in)
+               l_upwind_xm_ma,                           & ! Intent(in)
+               l_tke_aniso,                              & ! Intent(in)
+               l_enable_relaxed_clipping,                & ! Intent(in)
+               order_xm_wpxp, order_xp2_xpyp,            & ! Intent(in)
+               order_wp2_wp3,                            & ! Intent(in)
+               stats_zt, stats_zm, stats_sfc,            & ! intent(inout)
+               um_pert, w_tol, upwp_pert                 ) ! Intent(inout)
+
+         if ( clubb_at_least_debug_level( 0 ) ) then
+           if ( err_code == clubb_fatal_error ) then
+             write(fstderr,*) "um_pert monotonic flux limiter:  tridag failed"
+             return
+           end if
+         end if
+
+         call xm_wpxp_clipping_and_stats( nz, ngrdcol,   & ! Intent(in)
+               gr, xm_wpxp_vm, dt, wp2, vp2, wm_zt,      & ! Intent(in)
+               vm_tndcy, rho_ds_zm, rho_ds_zt,           & ! Intent(in)
+               invrs_rho_ds_zm, invrs_rho_ds_zt,         & ! Intent(in)
+               w_tol_sqd, w_tol, rcond,                  & ! Intent(in)
+               low_lev_effect, high_lev_effect,          & ! Intent(in)
+               lhs_ma_zt, lhs_ma_zm, lhs_ta_wpxp,        & ! Intent(in)
+               lhs_diff_zm, C7_Skw_fnc,                  & ! Intent(in)
+               lhs_tp, lhs_ta_xm, lhs_pr1_wprtp,         & ! Intent(in)
+               l_implemented, solution(:,:,6+sclr_dim),  & ! Intent(in)
+               l_predict_upwp_vpwp,                      & ! Intent(in)
+               l_upwind_xm_ma,                           & ! Intent(in)
+               l_tke_aniso,                              & ! Intent(in)
+               l_enable_relaxed_clipping,                & ! Intent(in)
+               order_xm_wpxp, order_xp2_xpyp,            & ! Intent(in)
+               order_wp2_wp3,                            & ! Intent(in)
+               stats_zt, stats_zm, stats_sfc,            & ! intent(inout)
+               vm_pert, w_tol, vpwp_pert )                 ! Intent(inout)
+
+         if ( clubb_at_least_debug_level( 0 ) ) then
+           if ( err_code == clubb_fatal_error ) then
+             write(fstderr,*) "vm_pert monotonic flux limiter:  tridag failed"
+             return
+           end if
+         end if
+
+      endif ! l_perturbed_wind
 
     end if ! l_predict_upwp_vpwp
     

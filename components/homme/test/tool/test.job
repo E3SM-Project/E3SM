@@ -19,7 +19,7 @@ set exe = $WDIR/src/tool/homme_tool
 cd $WDIR
 if (!  -x $exe ) then
   # configure                                                                                                                                         
-  set output = `$TOOLDIR/../../../../cime/scripts/Tools/get_case_env`
+  set output = `$TOOLDIR/../../../../cime/CIME/Tools/get_case_env`
   eval $output
   cmake -C $MACH -DPREQX_PLEV=26 $TOOLDIR/../..
   # compile the tool                                                                                                                                  
