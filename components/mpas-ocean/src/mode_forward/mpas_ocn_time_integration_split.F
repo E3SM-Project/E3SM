@@ -594,6 +594,18 @@ module ocn_time_integration_split
 
          stage1_tend_time = min(splitExplicitStep,2)
 
+         call mpas_pool_get_array(statePool, 'normalVelocity', &
+                           normalVelocityCur, stage1_tend_time)
+
+#ifdef MPAS_OPENACC
+         !$acc enter data copyin(layerThicknessCur, normalVelocityCur, sshCur)
+         !$acc update device(layerThickEdgeFlux)
+         if (config_use_freq_filtered_thickness .or. associated(highFreqThicknessNew) ) then
+            !$acc enter data create(highFreqThicknessNew)
+            !$acc enter data copyin(highFreqThicknessCur, highFreqThicknessTend)
+         endif
+#endif
+
          ! ---  update halos for diagnostic ocean boundary layer depth
          if (config_use_cvmix_kpp) then
             call mpas_timer_start("se halo diag obd")
@@ -633,9 +645,18 @@ module ocn_time_integration_split
 
             call mpas_timer_stop("se freq-filtered-thick halo update")
 
+#ifdef MPAS_OPENACC
+            !$acc parallel present(minLevelCell, maxLevelCell, &
+            !$acc    highFreqThicknessNew, highFreqThicknessCur, highFreqThicknessTend)
+            !$acc loop gang
+#else
             !$omp parallel
             !$omp do schedule(runtime) private(k)
+#endif
             do iCell = 1, nCellsAll
+#ifdef MPAS_OPENACC
+            !$acc loop vector
+#endif
             do k = minLevelCell(iCell), maxLevelCell(iCell)
                ! this is h^{hf}_{n+1}
                highFreqThicknessNew(k,iCell) = &
@@ -643,8 +664,12 @@ module ocn_time_integration_split
                highFreqThicknessTend(k,iCell)
             end do
             end do
+#ifdef MPAS_OPENACC
+            !$acc end parallel
+#else
             !$omp end do
             !$omp end parallel
+#endif
 
          endif ! freq filtered thickness
 
@@ -652,37 +677,29 @@ module ocn_time_integration_split
          call mpas_timer_start("se bcl vel")
          call mpas_timer_start('se bcl vel tend')
 
-         call mpas_pool_get_array(statePool, 'normalVelocity', &
-                           normalVelocityCur, stage1_tend_time)
-
          ! compute vertAleTransportTop.  Use u (rather than &
          ! normalTransportVelocity) for momentum advection.
          ! Use the most recent time level available.
 
-#ifdef MPAS_OPENACC
-         !$acc enter data copyin(layerThicknessCur, normalVelocityCur, sshCur)
-         !$acc update device(layerThickEdgeFlux)
-#endif
          if (associated(highFreqThicknessNew)) then
-#ifdef MPAS_OPENACC
-            !$acc enter data copyin(highFreqThicknessNew)
-#endif
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
                  layerThickEdgeFlux, normalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, err, highFreqThicknessNew)
-#ifdef MPAS_OPENACC
-            !$acc exit data delete(highFreqThicknessNew)
-#endif
          else
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
                  layerThickEdgeFlux, normalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, err)
          endif
+
 #ifdef MPAS_OPENACC
          !$acc exit data delete(layerThicknessCur, normalVelocityCur, sshCur)
          !$acc update host(vertAleTransportTop)
+         if (config_use_freq_filtered_thickness .or. associated(highFreqThicknessNew) ) then
+            !$acc exit data copyout(highFreqThicknessNew)
+            !$acc exit data delete(highFreqThicknessCur, highFreqThicknessTend)
+         endif
 #endif
 
          call ocn_tend_vel(domain, tendPool, statePool, forcingPool, &
