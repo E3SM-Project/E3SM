@@ -433,7 +433,11 @@ module li_core
             block => block % next
          end do
 
-         call mpas_log_write('Starting timestep number $i', intArgs=(/timestepNumber/), flushNow=.true.)
+         call mpas_log_write('')
+         call mpas_log_write('=============================')
+         call mpas_log_write('Starting timestep number $i', intArgs=(/timestepNumber/))
+         call mpas_log_write('=============================')
+         call mpas_log_write('', flushNow=.true.)
 
          ! ===
          ! === Perform Timestep
