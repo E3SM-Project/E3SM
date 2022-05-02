@@ -685,6 +685,7 @@ module li_core
       use li_setup
       use li_statistics
       use li_advection
+      use li_calving, only: li_calve_ice
       use mpas_io_streams, only: MPAS_STREAM_LATEST_BEFORE
 
       implicit none
@@ -720,6 +721,8 @@ module li_core
       ! Variables needed for printing timestamps
       type (MPAS_Time_Type) :: currTime
       character(len=StrKIND) :: timeStamp
+      real(kind=RKIND), pointer :: deltat
+      real(kind=RKIND) :: deltatTemp
 
       integer :: err, err_tmp, globalErr
       logical :: solveVelo
@@ -778,6 +781,27 @@ module li_core
       ! Initial velocity solve
       call li_velocity_solve(domain, solveVelo=solveVelo, err=err_tmp)
       err = ior(err, err_tmp)
+
+      ! Initial calving solution
+      ! This is required for the calving CFL to work correctly
+      ! For rate-based calving laws, no calving actually occurs because dt=0.
+      ! For threshold calving laws (e.g. thickness-based) calving *will* occur
+      ! Note that during a timestep, calving occurs before velocity, but because
+      ! many calving laws require velocity-related fields, it need to be called
+      ! after velocity here.
+      if (.not. config_do_restart) then
+         ! Temporarily set dt to 0 to avoid actually calving anything for rate-based calving laws
+         call mpas_pool_get_array(meshPool, 'deltat', deltat)
+         deltatTemp = deltat
+         deltat = 0.0_RKIND
+
+         call li_calve_ice(domain, err_tmp)
+         err = ior(err, err_tmp)
+
+         ! Restore appropriate value for dt
+         deltat = deltatTemp
+      endif
+
 
       ! Calculate diagnostic vars
       call li_calculate_diagnostic_vars(domain, err=err_tmp)
