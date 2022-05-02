@@ -175,7 +175,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
 {
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140.0,500.0,false);
-  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("qv"),1e-13,0.2,false);
+  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("qv"),1e-13,0.2,true);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qc"),0.0,0.1,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qi"),0.0,0.1,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qr"),0.0,0.1,false);
