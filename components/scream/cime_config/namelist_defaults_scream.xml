@@ -93,7 +93,7 @@ tweaking their $case/namelist_scream.xml file.
            TODO support numeric checks (<, >, ...)??
         6) You can inline case values into parameter values via this syntax, e.g.:
            <init_file>scream_init_${ATM_GRID}.nc</init_file>
-           This would result in parameter init_file' having the value 'scream_init_ne4ne4.nc'
+           This would result in parameter init_file' having the value 'scream_init_ne4np4.nc'
         7) Any parameter value with a comma will be assumed to be a list.
            TODO allow this behavior to be overridden?
         8) Every value in a list should be of the same type
@@ -146,7 +146,7 @@ tweaking their $case/namelist_scream.xml file.
     <homme inherit="atm_proc_base">
       <Grid>Dynamics</Grid>
       <Vertical__Coordinate__Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Vertical__Coordinate__Filename>
-      <Vertical__Coordinate__Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Vertical__Coordinate__Filename>
+      <Vertical__Coordinate__Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220329.nc</Vertical__Coordinate__Filename>
       <Vertical__Coordinate__Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Vertical__Coordinate__Filename>
       <Moisture>moist</Moisture>
     </homme>
