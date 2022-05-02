@@ -162,7 +162,7 @@ tweaking their $case/namelist_scream.xml file.
 
     <!-- Simple Prescribed Aerosols (SPA) -->
     <spa inherit="physics_proc_base">
-      <SPA__Remap__File hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/map_ne30_to_ne4.nc</SPA__Remap__File>
+      <SPA__Remap__File hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/map_ne30_to_ne4_mono_20220502.nc</SPA__Remap__File>
       <SPA__Remap__File hgrid="ne30np4">none</SPA__Remap__File>
       <SPA__Data__File>${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_20220428.nc</SPA__Data__File>
     </spa>
@@ -238,6 +238,7 @@ tweaking their $case/namelist_scream.xml file.
     ${DIN_LOC_ROOT}/atm/scream/tables/vn_table_vals.dat8,
     ${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals.dat8,
     ${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_20220428.nc
+    ${DIN_LOC_ROOT}/atm/scream/init/map_ne30_to_ne4_mono_20220502.nc
   </input_files>
 
   <!-- Homme control namelist -->
