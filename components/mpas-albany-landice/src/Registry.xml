@@ -477,15 +477,19 @@
 			possible_values="Any non-negative real value."
 		/>
 		<nml_option name="config_adaptive_timestep_CFL_fraction" type="real" default_value="0.25" units="none"
-			description="A multiplier on the minimum allowable time step calculated from the CFL condition. (Setting to 1.0 may be unstable, so smaller values are recommended.)"
+			description="A multiplier on the minimum allowable time step calculated from the advective CFL condition. (Setting to 1.0 may be unstable, so smaller values are recommended.)  Note that 'advective' is not in the name.  This is for backwards compatibility"
 			possible_values="Any positive real value less than 1.0."
 		/>
 		<nml_option name="config_adaptive_timestep_calvingCFL_fraction" type="real" default_value="0.5" units="none"
 			description="A multiplier on the minimum allowable time step calculated from the calving CFL condition. This should be conservative given the calving CFL calculation is lagged"
-			possible_values="Any positive real value less than 1.0."
+			possible_values="Any positive real value.  Note that values greater than 1.0 are allowed and may be desired.  This is because the calving CFL is an approximate calculation."
 		/>
 		<nml_option name="config_adaptive_timestep_include_DCFL" type="logical" default_value=".false." units="none"
 			description="Option of whether to include the diffusive CFL condition in the determination of the maximum allowable timestep. The diffusive CFL condition at any location is estimated based on the local ice flux and surface slope."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_adaptive_timestep_include_calving" type="logical" default_value=".false." units="none"
+			description="Option of whether to include the calving CFL condition in the determination of the maximum allowable timestep. This only is applied if config_calving is set to a method that uses a calvingVelocity.  Note that this is an approximate CFL condition and is lagged a timestep."
 			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_adaptive_timestep_force_interval" type="character" default_value="1000-00-00_00:00:00" units="unitless"

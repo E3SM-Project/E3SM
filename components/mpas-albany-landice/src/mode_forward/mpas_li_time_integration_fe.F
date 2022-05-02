@@ -854,10 +854,13 @@ module li_time_integration_fe
       ! local variables
       !-----------------------------------------------------------------
       logical, pointer :: config_adaptive_timestep_include_DCFL
+      logical, pointer :: config_adaptive_timestep_include_calving
       real (kind=RKIND), pointer :: config_adaptive_timestep_CFL_fraction
       real (kind=RKIND), pointer :: config_adaptive_timestep_calvingCFL_fraction
       real (kind=RKIND), pointer :: config_max_adaptive_timestep
       real (kind=RKIND), pointer :: config_min_adaptive_timestep
+      character (len=StrKIND), pointer :: config_calving
+      character (len=StrKIND), pointer :: config_damage_calving_method
       type (MPAS_Time_type) :: nextForceTime, currTime
       type (MPAS_TimeInterval_type) :: intervalToNextForceTime
       real (kind=RKIND) :: secondsToNextForceTime
@@ -873,26 +876,38 @@ module li_time_integration_fe
       call mpas_pool_get_config(liConfigs, 'config_max_adaptive_timestep', config_max_adaptive_timestep)
       call mpas_pool_get_config(liConfigs, 'config_min_adaptive_timestep', config_min_adaptive_timestep)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
+      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_calving', config_adaptive_timestep_include_calving)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_calvingCFL_fraction', config_adaptive_timestep_calvingCFL_fraction)
+      call mpas_pool_get_config(liConfigs, 'config_calving', config_calving)
+      call mpas_pool_get_config(liConfigs, 'config_damage_calving_method', config_damage_calving_method)
 
       if (config_adaptive_timestep_include_DCFL) then
-         allowableDt = min(allowableAdvecDt, allowableDiffDt)
+         ! todo: We currently do not have a namelist option for the diffusive CFL fraction
+         ! But that's ok - we rarely use it.  Could be added later if needed.
+         allowableDt = min(allowableAdvecDt * config_adaptive_timestep_CFL_fraction, allowableDiffDt)
       else
-         allowableDt = allowableAdvecDt
+         allowableDt = allowableAdvecDt * config_adaptive_timestep_CFL_fraction
       endif
 
-      call mpas_log_write("CFL dts: advective=$r, diffusive=$r, calving=$r", realArgs=(/allowableAdvecDt, allowableDiffDt, calvingCFLdt/))
-      if (config_adaptive_timestep_calvingCFL_fraction * calvingCFLdt < allowableDt) then
-         call mpas_log_write("NOTE: Calving CFL < min of advective and diffusive CFL.")
-         allowableDt = config_adaptive_timestep_calvingCFL_fraction * calvingCFLDt
+      ! Only include calving CFL if requested and we are using a calving option that calculates it
+      if (config_adaptive_timestep_include_calving .and. ( &
+             trim(config_calving) == 'specified_calving_velocity' .or. &
+             trim(config_calving) == 'eigencalving' .or. &
+             trim(config_calving) == 'von_Mises_stress' .or. &
+             trim(config_calving) == 'ismip6_retreat' .or. &
+             (trim(config_calving) == 'damagecalving' .and. &
+              trim(config_damage_calving_method) == 'calving_rate'))) then
+         allowableDt = min(allowableDt, config_adaptive_timestep_calvingCFL_fraction * calvingCFLDt)
       endif
 
-      ! Take minimum of the max adaptive timestep setting and the allowable dt from the CFL condition
-      proposedDt = min(allowableDt * config_adaptive_timestep_CFL_fraction, config_max_adaptive_timestep)
+      call mpas_log_write("CFL dts adjusted for fractions: advective=$r, diffusive=$r, calving=$r", &
+         realArgs=(/allowableAdvecDt*config_adaptive_timestep_CFL_fraction, allowableDiffDt, &
+                    calvingCFLdt*config_adaptive_timestep_calvingCFL_fraction/))
+
       ! Round down the proposed dt to avoid complications with fractional seconds
       ! (some timekeeping-related functionality, like restarts, don't support them)
       ! (need to perform floor with an 8-bit integer to allow up 293 billion years in seconds)
-      proposedDt = real(floor(proposedDt, KIND=8), RKIND)
+      proposedDt = real(floor(allowableDt, KIND=8), RKIND)
 
       ! Check if we need to force a timestep length to hit the target interval
       currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
