@@ -935,6 +935,7 @@ module li_core
       type (mpas_pool_type), pointer :: geometryPool
       integer, dimension(:), pointer :: vertexMask
       real (kind=RKIND), dimension(:), pointer :: thickness, thicknessOld
+      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       character (len=StrKIND), pointer :: config_velocity_solver
       logical, pointer :: config_do_velocity_reconstruction_for_external_dycore
       logical, pointer :: config_adaptive_timestep_include_DCFL
@@ -1008,6 +1009,11 @@ module li_core
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'thicknessOld', thicknessOld)
       thicknessOld = thickness
+
+      ! Initialize layerThickness
+      call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
+      call li_calculate_layerThickness(meshPool, thickness, layerThickness)
+
 
       ! === error check
       if (err > 0) then
