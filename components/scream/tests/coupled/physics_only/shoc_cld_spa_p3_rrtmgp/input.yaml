@@ -21,7 +21,7 @@ atmosphere_processes:
   spa:
     Grid: Point Grid
     SPA Remap File: ${SCREAM_DATA_DIR}/init/map_ne4np4_to_ne2np4_mono.nc
-    SPA Data File: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_scream.nc
+    SPA Data File: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_20220428.nc
   rrtmgp:
     Grid: Point Grid
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]

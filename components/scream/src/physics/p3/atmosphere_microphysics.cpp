@@ -1,5 +1,4 @@
 #include "physics/p3/atmosphere_microphysics.hpp"
-// #include "share/property_checks/field_positivity_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 // Needed for p3_init, the only F90 code still used.
 #include "physics/p3/p3_functions.hpp"
@@ -181,7 +180,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qi"),0.0,0.1,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qr"),0.0,0.1,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qm"),0.0,0.1,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nc"),0.0,1.e9,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nc"),0.0,1.e11,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nr"),0.0,1.e9,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("ni"),0.0,1.e9,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("bm"),0.0,1.0,false);
