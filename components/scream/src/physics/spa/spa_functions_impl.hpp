@@ -685,8 +685,6 @@ void SPAFunctions<S,D>
         SPAInput&        spa_end)
 {
 
-  // We always want to update the current time in the time_state.
-  time_state.t_now = ts.frac_of_year_in_days();
   // Now we check if we have to update the data that changes monthly
   // NOTE:  This means that SPA assumes monthly data to update.  Not
   //        any other frequency.

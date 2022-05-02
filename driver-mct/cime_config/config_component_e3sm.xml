@@ -408,8 +408,6 @@
       <!-- a shorter timestep is needed for stability in MMF  -->
       <!-- Use for all "low res" grids (i.e. ne4, ne30, ne45) -->
       <value compset="_EAM%MMF">72</value>
-      <!-- Shorter timestep needed for SCREAMv1 because we are not substepping SHOC and P3 yet -->
-      <value compset="_SCREAM.*">288</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>

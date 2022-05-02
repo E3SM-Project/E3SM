@@ -93,7 +93,7 @@ tweaking their $case/namelist_scream.xml file.
            TODO support numeric checks (<, >, ...)??
         6) You can inline case values into parameter values via this syntax, e.g.:
            <init_file>scream_init_${ATM_GRID}.nc</init_file>
-           This would result in parameter init_file' having the value 'scream_init_ne4ne4.nc'
+           This would result in parameter init_file' having the value 'scream_init_ne4np4.nc'
         7) Any parameter value with a comma will be assumed to be a list.
            TODO allow this behavior to be overridden?
         8) Every value in a list should be of the same type
@@ -145,8 +145,9 @@ tweaking their $case/namelist_scream.xml file.
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
       <Grid>Dynamics</Grid>
-      <Vertical__Coordinate__Filename>${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Vertical__Coordinate__Filename>
-      <Vertical__Coordinate__Filename COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Vertical__Coordinate__Filename>
+      <Vertical__Coordinate__Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Vertical__Coordinate__Filename>
+      <Vertical__Coordinate__Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220329.nc</Vertical__Coordinate__Filename>
+      <Vertical__Coordinate__Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Vertical__Coordinate__Filename>
       <Moisture>moist</Moisture>
     </homme>
 
@@ -162,7 +163,8 @@ tweaking their $case/namelist_scream.xml file.
     <!-- Simple Prescribed Aerosols (SPA) -->
     <spa inherit="physics_proc_base">
       <SPA__Remap__File>none</SPA__Remap__File>
-      <SPA__Data__File>${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_scream.nc</SPA__Data__File>
+      <SPA__Data__File hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_scream.nc</SPA__Data__File>
+      <SPA__Data__File hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_scream.nc</SPA__Data__File>
     </spa>
 
     <!-- Radiation -->
@@ -179,6 +181,7 @@ tweaking their $case/namelist_scream.xml file.
 
     <mac_aero_mic inherit="atm_proc_group">
       <atm_procs_list>(shoc,cldFraction,spa,p3)</atm_procs_list>
+      <Num__Subcycle__Iterations>6</Num__Subcycle__Iterations>
     </mac_aero_mic>
 
     <physics inherit="atm_proc_group">
@@ -195,7 +198,8 @@ tweaking their $case/namelist_scream.xml file.
 
   <!-- List of nc files for loading inputs on specified grids -->
   <Initial__Conditions>
-    <Filename>${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Filename>
+    <Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Filename>
+    <Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220329.nc</Filename>
     <Filename COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Filename>
     <Restart__Casename>${CASE}</Restart__Casename>
   </Initial__Conditions>
@@ -233,34 +237,39 @@ tweaking their $case/namelist_scream.xml file.
     ${DIN_LOC_ROOT}/atm/scream/tables/revap_table_vals.dat8,
     ${DIN_LOC_ROOT}/atm/scream/tables/vn_table_vals.dat8,
     ${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals.dat8,
-    ${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_scream.nc
+    ${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_scream.nc,
+    ${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_scream.nc
   </input_files>
 
   <!-- Homme control namelist -->
   <ctl_nl>
     <cubed_sphere_map>0</cubed_sphere_map>
     <disable_diagnostics>False</disable_diagnostics>
-    <dt_remap_factor>1</dt_remap_factor>
+    <dt_remap_factor>2</dt_remap_factor>
     <dt_tracer_factor>1</dt_tracer_factor>
     <hypervis_order>2</hypervis_order>
     <hypervis_scaling>3.0</hypervis_scaling>
     <hypervis_subcycle>1</hypervis_subcycle>
     <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
+    <hypervis_subcycle_q>1</hypervis_subcycle_q>
     <nu>3.4e-08</nu>
     <nu_top>250000.0</nu_top>
     <se_ftype valid_values="0,2">0</se_ftype>
     <se_geometry>sphere</se_geometry>
     <se_limiter_option>9</se_limiter_option>
-    <se_ne>4</se_ne>
+    <se_ne hgrid="ne4np4">4</se_ne>
+    <se_ne hgrid="ne30np4">30</se_ne>
     <se_nsplit>-1</se_nsplit>
     <se_partmethod>4</se_partmethod>
     <se_topology>cube</se_topology>
-    <se_tstep>300</se_tstep>
+    <se_tstep hgrid="ne4np4">600</se_tstep>
+    <se_tstep hgrid="ne30np4">300</se_tstep>
     <statefreq>9999</statefreq>
     <theta_advect_form>1</theta_advect_form>
     <theta_hydrostatic_mode>True</theta_hydrostatic_mode>
     <tstep_type>5</tstep_type>
     <vert_remap_q_alg>10</vert_remap_q_alg>
+    <transport_alg>0</transport_alg>
   </ctl_nl>
 
 </namelist_defaults>
