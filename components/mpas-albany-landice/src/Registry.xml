@@ -799,6 +799,8 @@
                         <var name="floatingVonMisesThresholdStress"/>
                         <var name="stiffnessFactor"/>
                         <var name="calvingMask"/>
+                        <!-- calvingCFLdt only needed if calving CFL is being applied, but it is a scalar value so no harm in including it always -->
+                        <var name="calvingCFLdt"/>
                         <var name="upliftRate"/>
 			<!-- normalVelocity is needed for advection on the next timestep -->
 			<var name="normalVelocity"/>
