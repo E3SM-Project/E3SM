@@ -909,6 +909,13 @@ module li_time_integration_fe
       ! (need to perform floor with an 8-bit integer to allow up 293 billion years in seconds)
       proposedDt = real(floor(allowableDt, KIND=8), RKIND)
 
+      ! Check if the proposed timestep is smaller than specified limit.
+      ! Do this prior to limiting the timestep for the force interval
+      if (proposedDt < config_min_adaptive_timestep) then
+         call mpas_log_write('New deltat is less than config_min_adaptive_timestep.', MPAS_LOG_ERR)
+         err = ior(err, 1)
+      endif
+
       ! Check if we need to force a timestep length to hit the target interval
       currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
       !print *, 'curr', currTime % t % YR, currTime % t % basetime % S, currTime % t % basetime % Sn, currTime % t % basetime % Sd
@@ -945,10 +952,6 @@ module li_time_integration_fe
       dtSeconds = min(proposedDt, secondsToNextForceTime)
 
       call mpas_log_write('  Setting time step (days) to: $r', realArgs=(/dtSeconds / (86400.0_RKIND)/))
-      if (dtSeconds < config_min_adaptive_timestep) then
-         call mpas_log_write('New deltat is less than config_min_adaptive_timestep.', MPAS_LOG_ERR)
-         err = ior(err, 1)
-      endif
 
    !--------------------------------------------------------------------
    end subroutine set_timestep
