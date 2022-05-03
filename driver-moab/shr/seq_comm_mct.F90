@@ -220,7 +220,7 @@ module seq_comm_mct
   integer, public :: mphaid   ! iMOAB id for atm phys grid, on atm pes
   integer, public :: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   integer, public :: mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
-  integer, public :: mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere
+  integer, public :: mbintxao ! iMOAB id for intx mesh between ocean and atmosphere
   integer, public :: mblxid   ! iMOAB id for land mesh migrated to coupler pes
   logical, public :: sameg_al ! same grid atm and land; used throughout, initialized in lnd_init
   integer, public :: mbintxla ! iMOAB id for intx mesh between land and atmosphere
@@ -627,7 +627,7 @@ contains
     mphaid = -1   ! iMOAB id for phys grid on atm pes
     mbaxid = -1 ! iMOAB id for atm migrated mesh to coupler pes
     mboxid = -1  ! iMOAB id for mpas ocean migrated mesh to coupler pes
-    mbintxoa = -1 ! iMOAB id for atm intx with mpas ocean
+    mbintxao = -1 ! iMOAB id for atm intx with mpas ocean
     mblxid = -1   ! iMOAB id for land on coupler pes
     mbintxla = -1 ! iMOAB id for land intx with atm on coupler pes
     mpsiid = -1   ! iMOAB for sea-ice

@@ -17,7 +17,7 @@ module prep_ocn_mod
   use seq_comm_mct,     only: mbrxoid ! iMOAB id for rof on coupler in ocean context; 
   use seq_comm_mct,     only : atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
   use seq_comm_mct,     only : mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
-  use seq_comm_mct,     only : mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere; output from this
+  use seq_comm_mct,     only : mbintxao ! iMOAB id for intx mesh between ocean and atmosphere; output from this
   use seq_comm_mct,     only : mhid     ! iMOAB id for atm instance
   use seq_comm_mct,     only : mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   use dimensions_mod,   only : np     ! for atmosphere degree 
@@ -1625,25 +1625,25 @@ contains
         ocn_present=ocn_present)
 
  !  it involves initial atm app; mhid; also migrate atm mesh on coupler pes, mbaxid
- !  intx ocean atm are in mbintxoa ; remapper also has some info about coverage mesh
+ !  intx atm ocean are in mbintxao ; remapper also has some info about coverage mesh
  ! after this, the sending of tags from atm pes to coupler pes will use the new par comm graph, that has more precise info about
  ! how to get mpicomm for joint atm + coupler
    id_join = atm(1)%cplcompid
    atm_id   = atm(1)%compid
-   ! maybe we can use a moab-only id, defined like mbintxoa, mhid, somewhere else (seq_comm_mct)
-   ! we cannot use mbintxoa because it may not exist on atm comp yet;
+   ! maybe we can use a moab-only id, defined like mbintxao, mhid, somewhere else (seq_comm_mct)
+   ! we cannot use mbintxao because it may not exist on atm comp yet;
    context_id = ocn(1)%cplcompid
    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
    ! it happens over joint communicator
 
    if (atm_pg_active ) then ! use mhpgid mesh
-     ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxoa, atm_id, id_join, context_id);
+     ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxao, atm_id, id_join, context_id);
      if (iamroot_CPLID) then
        write(logunit,*) 'iMOAB graph atmpg2-intxao context: ', context_id
      end if
    else
-     ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxoa, atm_id, id_join, context_id);
+     ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxao, atm_id, id_join, context_id);
      if (iamroot_CPLID) then
        write(logunit,*) 'iMOAB graph atmnp4-intxao context: ', context_id
      end if
@@ -1653,7 +1653,7 @@ contains
      call shr_sys_abort(subname//' ERROR in computing coverage graph atm/ocn ')
    endif
 
-   if ( mbintxoa .ge. 0 ) then
+   if ( mbintxao .ge. 0 ) then
      wgtIdef = 'scalar'//C_NULL_CHAR
      if (atm_pg_active) then
        dm1 = "fv"//C_NULL_CHAR
@@ -1675,13 +1675,13 @@ contains
      validate = 1
      fInverseDistanceMap = 0
      if (iamroot_CPLID) then
-       write(logunit,*) 'launch iMOAB weights with args ', mbintxoa, wgtIdef, &
+       write(logunit,*) 'launch iMOAB weights with args ', mbintxao, wgtIdef, &
                                            trim(dm1), orderATM, trim(dm2), orderOCN, &
                                            fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                            noConserve, validate, &
                                            trim(dofnameATM), trim(dofnameOCN)
      end if
-     ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa, wgtIdef, &
+     ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, wgtIdef, &
                                                trim(dm1), orderATM, trim(dm2), orderOCN, &
                                                fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                noConserve, validate, &
@@ -1693,7 +1693,7 @@ contains
      if (iamroot_CPLID) then
        write(logunit,*) 'finish iMOAB weights in atm-ocn'
      endif
-   endif ! only if atm and ocn intersect  mbintxoa >= 0
+   endif ! only if atm and ocn intersect  mbintxao >= 0
    ! compute the comm graph between phys atm and intx-atm-ocn, to be able to send directly from phys atm
    ! towards coverage mesh on atm for intx to ocean
    ! this is similar to imoab_phatm_ocn_coupler.cpp test in moab
@@ -1721,10 +1721,10 @@ contains
    endif
    if (iamroot_CPLID) then
        write(logunit,*) 'launch iMOAB graph with args ',  &
-        mphaid, mbintxoa, mpicom_join, mpigrp_old, mpigrp_CPLID, &
+        mphaid, mbintxao, mpicom_join, mpigrp_old, mpigrp_CPLID, &
          typeA, typeB, atm_id, idintx
    end if
-   ierr = iMOAB_ComputeCommGraph( mphaid, mbintxoa, mpicom_join, mpigrp_old, mpigrp_CPLID, &
+   ierr = iMOAB_ComputeCommGraph( mphaid, mbintxao, mpicom_join, mpigrp_old, mpigrp_CPLID, &
          typeA, typeB, atm_id, idintx)
    if (ierr .ne. 0) then
      write(logunit,*) subname,' error in computing graph phys grid - atm/ocn intx '

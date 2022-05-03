@@ -21,7 +21,7 @@ module prep_atm_mod
   use seq_comm_mct, only : mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   use seq_comm_mct, only : mphaid   ! iMOAB id for phys atm on atm pes
   use seq_comm_mct, only : mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
-  use seq_comm_mct, only : mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere; output from this
+  use seq_comm_mct, only : mbintxao ! iMOAB id for intx mesh between ocean and atmosphere; output from this
   use seq_comm_mct, only : mhid     ! iMOAB id for atm instance
   use seq_comm_mct, only : mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   use seq_comm_mct, only : atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
@@ -196,12 +196,12 @@ contains
             appname = "ATM_OCN_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between ocn and atm mesh
             idintx = 100*atm(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it
-            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxoa)
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxao)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering atm ocn intx'
               call shr_sys_abort(subname//' ERROR in registering atm ocn intx')
             endif
-            ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbaxid, mboxid, mbintxoa)
+            ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbaxid, mboxid, mbintxao)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in computing atm ocn intx'
               call shr_sys_abort(subname//' ERROR in computing atm ocn intx')
@@ -215,7 +215,7 @@ contains
             if (rank .lt. 5) then
               write(lnum,"(I0.2)")rank !
               outfile = 'intx'//trim(lnum)// '.h5m' // C_NULL_CHAR
-              ierr = iMOAB_WriteMesh(mbintxoa, outfile, wopts) ! write local intx file
+              ierr = iMOAB_WriteMesh(mbintxao, outfile, wopts) ! write local intx file
               if (ierr .ne. 0) then
                 write(logunit,*) subname,' error in writing intx file '
                 call shr_sys_abort(subname//' ERROR in writing intx file ')
@@ -372,7 +372,7 @@ contains
     ! how to get mpicomm for joint atm + coupler
     id_join = atm(1)%cplcompid
     atm_id   = atm(1)%compid
-    ! maybe we can use a moab-only id, defined like mbintxoa, mhid, somewhere else (seq_comm_mct)
+    ! maybe we can use a moab-only id, defined like mbintxao, mhid, somewhere else (seq_comm_mct)
     ! we cannot use mbintxla because it may not exist on atm comp yet;
     context_id = lnd(1)%cplcompid
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
@@ -499,7 +499,7 @@ contains
       lnd_present=lnd_present)
 
     !  it involves initial atm app; mhid; also migrate atm mesh on coupler pes, mbaxid
-    !  intx ocean atm are in mbintxoa ; remapper also has some info about coverage mesh
+    !  intx ocean atm are in mbintxao ; remapper also has some info about coverage mesh
     ! after this, the sending of tags from atm pes to coupler pes will use the new par comm graph, that has more precise info about
     ! how to get mpicomm for joint atm + coupler
     id_join = atm(1)%cplcompid
@@ -532,12 +532,12 @@ contains
 
         endif
 
-        if (mbintxoa .ge. 0 ) then ! we are for sure on coupler pes!
+        if (mbintxao .ge. 0 ) then ! we are for sure on coupler pes!
           tagName = 'T_ph16:u_ph16:v_ph16:'//C_NULL_CHAR ! they are defined in cplcomp_exchange mod
           ! context_id = atm(1)%cplcompid == atm_id above (5)
           ! we use the same name as spectral case, even thought in pg2 case, the size of tag is 1, not 16
           ! in imoab_apg2_ol_coupler.cpp we use at this stage, receiver, the same name as sender, T_ph
-          ierr = iMOAB_ReceiveElementTag(mbintxoa, tagName, mpicom_join, atm_id)
+          ierr = iMOAB_ReceiveElementTag(mbintxao, tagName, mpicom_join, atm_id)
           if (ierr .ne. 0) then
             write(logunit,*) subname,' error in receiving tag from phys atm to ocn atm intx '
             call shr_sys_abort(subname//' ERROR  in receiving tag from phys atm to ocn atm intx')
@@ -590,11 +590,11 @@ contains
 
       ! we could do the projection now, on the ocean mesh, because we are on the coupler pes;
       ! the actual migrate could happen later , from coupler pes to the ocean pes
-      if (mbintxoa .ge. 0 ) then !  we are on coupler pes, for sure
+      if (mbintxao .ge. 0 ) then !  we are on coupler pes, for sure
         ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
         !  hard coded now, it should be a runtime option in the future
 
-        ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxoa, wgtIdef, tagName, tagNameProj)
+        ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxao, wgtIdef, tagName, tagNameProj)
         if (ierr .ne. 0) then
           write(logunit,*) subname,' error in applying weights '
           call shr_sys_abort(subname//' ERROR in applying weights')
