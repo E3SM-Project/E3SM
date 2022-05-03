@@ -24,7 +24,7 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/spa_standalone_output.yaml
 set (TEST_INPUT_FILES
   spa_init_ne2np4.nc
   map_ne4np4_to_ne2np4_mono.nc
-  spa_file_unified_and_complete_ne4_scream.nc
+  spa_file_unified_and_complete_ne4_20220428.nc
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
   GetInputFile(init/${file})
