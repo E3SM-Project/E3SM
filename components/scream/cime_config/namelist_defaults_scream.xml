@@ -146,7 +146,7 @@ tweaking their $case/namelist_scream.xml file.
     <homme inherit="atm_proc_base">
       <Grid>Dynamics</Grid>
       <Vertical__Coordinate__Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Vertical__Coordinate__Filename>
-      <Vertical__Coordinate__Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220329.nc</Vertical__Coordinate__Filename>
+      <Vertical__Coordinate__Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220413.nc</Vertical__Coordinate__Filename>
       <Vertical__Coordinate__Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Vertical__Coordinate__Filename>
       <Moisture>moist</Moisture>
     </homme>
@@ -199,7 +199,7 @@ tweaking their $case/namelist_scream.xml file.
   <!-- List of nc files for loading inputs on specified grids -->
   <Initial__Conditions>
     <Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Filename>
-    <Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220329.nc</Filename>
+    <Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220413.nc</Filename>
     <Filename COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Filename>
     <Restart__Casename>${CASE}</Restart__Casename>
   </Initial__Conditions>
