@@ -237,7 +237,7 @@ tweaking their $case/namelist_scream.xml file.
     ${DIN_LOC_ROOT}/atm/scream/tables/revap_table_vals.dat8,
     ${DIN_LOC_ROOT}/atm/scream/tables/vn_table_vals.dat8,
     ${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals.dat8,
-    ${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_20220428.nc
+    ${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_20220428.nc,
     ${DIN_LOC_ROOT}/atm/scream/init/map_ne30_to_ne4_mono_20220502.nc
   </input_files>
 
