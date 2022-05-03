@@ -156,7 +156,7 @@ public:
       // For now, we are considering dy=dx. Here, we
       // will need to compute dx/dy instead of cell_length
       // if we have dy!=dx.
-      cell_length(i) = sqrt(area(i));
+      cell_length(i) = PF::calculate_dx_from_area(area(i),lat(i));
 
       const auto& exner_int = PF::exner_function(p_int(i,nlevi_v)[nlevi_p]);
       const auto& inv_exner_int_surf = 1/exner_int;
@@ -177,6 +177,7 @@ public:
     int ncol, nlev, num_qtracers;
     Real z_surf;
     view_1d_const        area;
+    view_1d_const        lat;
     view_2d_const        T_mid;
     view_2d_const        p_mid;
     view_2d_const        p_int;
@@ -214,7 +215,7 @@ public:
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_, const Real z_surf_,
-                       const view_1d_const& area_,
+                       const view_1d_const& area_, const view_1d_const& lat_,
                        const view_2d_const& T_mid_, const view_2d_const& p_mid_, const view_2d_const& p_int_, const view_2d_const& pseudo_density_,
                        const view_2d_const& omega_,
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_latent_flux_,
@@ -234,6 +235,7 @@ public:
       z_surf = z_surf_;
       // IN
       area = area_;
+      lat  = lat_;
       T_mid = T_mid_;
       p_mid = p_mid_;
       p_int = p_int_;
@@ -432,6 +434,7 @@ protected:
   Int hdtime;
 
   KokkosTypes<DefaultDevice>::view_1d<Real> m_cell_area;
+  KokkosTypes<DefaultDevice>::view_1d<Real> m_cell_lat;
 
   // Struct which contains local variables
   Buffer m_buffer;

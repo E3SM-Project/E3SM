@@ -18,9 +18,12 @@ ScalarT PhysicsFunctions<DeviceT>::calculate_dx_from_area(const ScalarT& area, c
   static constexpr auto coeff_3 = C::earth_ellipsoid3;
   static constexpr auto pi      = C::Pi; 
 
-  auto mpdeglat = coeff_1 - coeff_2 * std::cos(2.0*lat) + coeff_3 * std::cos(4.0*lat);
+  // Now find meters per degree latitude
+  // Below equation finds distance between two points on an ellipsoid, derived from expansion
+  // taking into account ellipsoid using World Geodetic System (WGS84) reference 
+  auto m_per_degree_lat = coeff_1 - coeff_2 * std::cos(2.0*lat) + coeff_3 * std::cos(4.0*lat);
   // Note, for the formula we need to convert area from radians to degrees.
-  return mpdeglat * std::sqrt(area)*(180.0/pi);
+  return m_per_degree_lat * std::sqrt(area)*(180.0/pi);
 
 }
 
