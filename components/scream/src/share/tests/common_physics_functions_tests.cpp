@@ -156,10 +156,12 @@ void run_scalar_valued_fns(std::mt19937_64& engine)
 
   // Get dx from grid cell area property tests:
   RealType area, lat, grid_dx;
-  REQUIRE( Check::equal(PF::calculate_dx_from_area(0.0,1.0),0.0) );
-  area = (pi/180.0)*(pi/180.0);
-  REQUIRE( Check::equal(PF::calculate_dx_from_area(area,0.0), coeff_1-coeff_2+coeff_3) );
-  REQUIRE( Check::equal(PF::calculate_dx_from_area(area,pi/2.0), coeff_1+coeff_2+coeff_3) );
+  area = 0.0; lat = 1.0;
+  REQUIRE( Check::equal(PF::calculate_dx_from_area(area,lat),0.0) );
+  area = (pi/180.0)*(pi/180.0); lat = 0.0;
+  REQUIRE( Check::equal(PF::calculate_dx_from_area(area,lat), coeff_1-coeff_2+coeff_3) );
+  lat = pi/2.0;
+  REQUIRE( Check::equal(PF::calculate_dx_from_area(area,lat), coeff_1+coeff_2+coeff_3) );
   
   lat     = pdf_lat(engine);
   area    = pdf_area(engine);

@@ -26,6 +26,7 @@ Initial Conditions:
   Point Grid:
     surf_latent_flux: 0.0
     surf_sens_flux: 0.0
+    Load Latitude: true
 
 # The parameters for I/O control
 Scorpio:
