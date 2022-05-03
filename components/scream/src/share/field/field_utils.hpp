@@ -7,17 +7,17 @@ namespace scream {
 
 // Check that two fields store the same entries.
 // NOTE: if the field is padded, padding entries are NOT checked.
-inline bool views_are_equal(const Field& f1, const Field& f2) {
+inline bool views_are_equal(const Field& f1, const Field& f2, const ekat::Comm* comm = nullptr) {
   EKAT_REQUIRE_MSG (f1.data_type()==f2.data_type(),
       "Error! Views have different data types.\n");
 
   switch (f1.data_type()) {
     case DataType::IntType:
-      return impl::views_are_equal<const int>(f1,f2);
+      return impl::views_are_equal<const int>(f1,f2,comm);
     case DataType::FloatType:
-      return impl::views_are_equal<const float>(f1,f2);
+      return impl::views_are_equal<const float>(f1,f2,comm);
     case DataType::DoubleType:
-      return impl::views_are_equal<const double>(f1,f2);
+      return impl::views_are_equal<const double>(f1,f2,comm);
     default:
       EKAT_ERROR_MSG ("Error! Unrecognized field data type.\n");
   }
@@ -44,7 +44,7 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
 }
 
 template<typename ST>
-ST frobenius_norm(const Field& f)
+ST frobenius_norm(const Field& f, const ekat::Comm* comm = nullptr)
 {
   // Check compatibility between ST and field data type
   const auto data_type = f.data_type();
@@ -56,11 +56,11 @@ ST frobenius_norm(const Field& f)
       (std::is_same<ST,double>::value && data_type==DataType::DoubleType),
       "Error! Field data type incompatible with template argument.\n");
 
-  return impl::frobenius_norm<ST>(f);
+  return impl::frobenius_norm<ST>(f,comm);
 }
 
 template<typename ST>
-ST field_sum(const Field& f)
+ST field_sum(const Field& f, const ekat::Comm* comm = nullptr)
 {
   // Check compatibility between ST and field data type
   const auto data_type = f.get_header().get_identifier().data_type();
@@ -71,11 +71,11 @@ ST field_sum(const Field& f)
       (std::is_same<ST,double>::value && data_type==DataType::DoubleType),
       "Error! Field data type incompatible with template argument.\n");
 
-  return impl::field_sum<ST>(f);
+  return impl::field_sum<ST>(f,comm);
 }
 
 template<typename ST>
-ST field_max(const Field& f)
+ST field_max(const Field& f, const ekat::Comm* comm = nullptr)
 {
   // Check compatibility between ST and field data type
   const auto data_type = f.data_type();
@@ -86,11 +86,11 @@ ST field_max(const Field& f)
       (std::is_same<ST,double>::value && data_type==DataType::DoubleType),
       "Error! Field data type incompatible with template argument.\n");
 
-  return impl::field_max<ST>(f);
+  return impl::field_max<ST>(f,comm);
 }
 
 template<typename ST>
-ST field_min(const Field& f)
+ST field_min(const Field& f, const ekat::Comm* comm = nullptr)
 {
   // Check compatibility between ST and field data type
   const auto data_type = f.data_type();
@@ -101,7 +101,7 @@ ST field_min(const Field& f)
       (std::is_same<ST,double>::value && data_type==DataType::DoubleType),
       "Error! Field data type incompatible with template argument.\n");
 
-  return impl::field_min<ST>(f);
+  return impl::field_min<ST>(f,comm);
 }
 
 } // namespace scream
