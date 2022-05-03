@@ -30,8 +30,8 @@ module ocn_vertical_remap
 
    use ocn_constants
    use ocn_config
+   use ocn_diagnostics_variables
    use ocn_mesh
-   use ocn_diagnostics
    use ocn_vertical_regrid
 
    use ppr_1d
@@ -82,7 +82,8 @@ module ocn_vertical_remap
 
       integer :: nCells, nEdges
       integer :: nLayers, nLevels, nVars, nDoFs, nTracers
-      integer :: cell1, cell2, iCell, jCell, iEdge, iTrac, k, kTop, kBot
+      integer :: cell1, cell2, iCell, jCell, iEdge, iTrac
+      integer :: k, kmin, kmax, kTop, kBot
 
       type (mpas_pool_type), pointer :: verticalMeshPool
       type (mpas_pool_type), pointer :: statePool
@@ -95,7 +96,6 @@ module ocn_vertical_remap
       real (kind=RKIND), dimension(:, :, :), allocatable :: dataNow, dataNew
       real (kind=RKIND), dimension(:, :), allocatable :: &
          layerThicknessNew,            & ! layerThickness (new target grid)
-         layerThickEdge,               & ! layerThickness at edges (lagrangian grid)
          layerThickEdgeNew,            & ! layerThickness at edges (new target grid)
          heightCellNow, heightEdgeNow, & ! depth at layer interfaces (lagrangian grid)
          heightCellNew, heightEdgeNew    ! depth at layer interfaces (new target grid)
@@ -137,7 +137,6 @@ module ocn_vertical_remap
       allocate(heightEdgeNow(nVertLevels + 1, nEdges))
       allocate(heightEdgeNew(nVertLevels + 1, nEdges))
       allocate(layerThicknessNew(nVertLevels, nCells + 1))
-      allocate(layerThickEdge(nVertLevels, nEdges))
       allocate(layerThickEdgeNew(nVertLevels, nEdges))
 
       ! Compute new layer thicknesses based on vertical coordinate choice
@@ -173,8 +172,36 @@ module ocn_vertical_remap
       !$omp end do
       !$omp end parallel
 
-      call ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, layerThickness, layerThickEdge)
-      call ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, layerThicknessNew, layerThickEdgeNew)
+#ifdef MPAS_OPENACC
+      !$acc parallel loop &
+      !$acc    present(layerThickness, layerThickEdgeMean, &
+      !$acc            minLevelEdgeBot, maxLevelEdgeTop, cellsOnEdge) &
+      !$acc    private(k, kmin, kmax, cell1, cell2)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime) private(k, kmin, kmax, cell1, cell2)
+#endif
+      do iEdge = 1, nEdgesAll
+         kmin = minLevelEdgeBot(iEdge)
+         kmax = maxLevelEdgeTop(iEdge)
+         cell1 = cellsOnEdge(1,iEdge)
+         cell2 = cellsOnEdge(2,iEdge)
+         do k = 1,nVertLevels
+            ! initialize layerThicknessEdgeMean to avoid divide by
+            ! zero and NaN problems.
+            layerThickEdgeNew(k,iEdge) = -1.0e34_RKIND
+         end do
+         do k = kmin,kmax
+            ! central differenced
+            layerThickEdgeNew(k,iEdge) = 0.5_RKIND * &
+                                         (layerThicknessNew(k,cell1) + &
+                                          layerThicknessNew(k,cell2))
+         end do
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
 
       !$omp parallel
       !$omp do schedule(runtime) private(k,kTop,kBot,cell1,cell2)
@@ -201,7 +228,7 @@ module ocn_vertical_remap
          endif
 
          do k = kBot, kTop, -1
-            heightEdgeNow(k, iEdge) = heightEdgeNow(k+1, iEdge) - layerThickEdge(k, iEdge)
+            heightEdgeNow(k, iEdge) = heightEdgeNow(k+1, iEdge) - layerThickEdgeMean(k, iEdge)
             heightEdgeNew(k, iEdge) = heightEdgeNew(k+1, iEdge) - layerThickEdgeNew(k, iEdge)
          end do
 
