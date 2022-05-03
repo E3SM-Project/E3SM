@@ -1,3 +1,120 @@
+4/29/2022 22:08:08 PDT
+
+* Okay, you have to do a whole new create_newcase to get the new .xml files
+  to modify the env_run.xml file with the new variables.  You can't do it
+  with a case.setup or ./case.setup --reset.  You can *probably* modify the
+  env_run.xml in place, which is probably what I'm going to do, since I
+  don't want to setup a whole new case.
+
+  You can't just ./xmlchange
+  ATM2IAC_SMAPNAME='cpl/gridmaps/1.9x2.5/map_1.9x2.5_TO_0.9x1.25_aave.210910.nc'
+
+  ...without first modifying env_run.xml, because you need the variables to
+  exist before you can change them.  So you might as well add them to
+  env_run.xml with the correct values.
+
+  But I did create_newcase the ~/zlnd_v3 case, which has the env_run.xml
+  changes I need for the namelist to understand the atm2iac_smapxxxx xml
+  variables.  So an ediff between that an zlnd_v2 will get me setup, then
+  I'll have to do the prep_iac_mod.F90 and cime_comp_mod.F90 ediffs with
+  E3SM_alan to fully merge everything Alan had in.
+
+* As I've worked through this, I think whenever there's a conflict that git
+  can't figure out how to merge, it does NOT merge the changes it can, it
+  only gives the syntax for a merge conflict with the changes it can't
+  figure out.  So you gotta fix that, and *then* also merge in the other
+  changes, probably by hand.  That's not what I would expect, but it's the
+  only reason I can find for why I didn't see the non-conflicting changes
+  in prep_iac_mod.F90 and cime_comp_mod.F90 to start with.
+
+4/29/2022 18:59:50 PDT
+
+* Man, sometimes I do NOT understand git.  I think the below message has to
+  do with the merge - it appears that not everything from Alan made it into
+  the merge, and ALSO did not show up as a conflict (?).  At least,
+  prep_iac_mod.F90 has some a2z mapping stuff in it in Alan's code that I
+  did not see in the coupling conflict - maybe other files, too.  I might
+  have to hand check them all.
+
+  I'm cloning E3sM_Current into E3SM_alan, so I can check out Alan's branch
+  and see wtf is going on.
+
+  I'm going to have to ediff all the conflict files, just to make sure
+  eveything worked right there.  Then I might need to track down the merge
+  commit message and see what files changed, and ediff *those* by hand,
+  too. 
+
+  Here are all the files changed by the merge commit:
+
+======
+#	modified:   cime/config/e3sm/config_grids.xml
+#	modified:   cime/src/drivers/mct/cime_config/config_component.xml
+#	modified:   cime/src/drivers/mct/cime_config/namelist_definition_drv.xml
+#	modified:   cime/src/drivers/mct/main/cime_comp_mod.F90
+#	modified:   cime/src/drivers/mct/main/component_mod.F90
+#	modified:   cime/src/drivers/mct/main/prep_atm_mod.F90
+#	modified:   cime/src/drivers/mct/main/prep_iac_mod.F90
+#	modified:   cime/src/drivers/mct/main/seq_domain_mct.F90
+#	modified:   cime/src/drivers/mct/main/seq_frac_mct.F90
+#	modified:   cime/src/drivers/mct/shr/seq_infodata_mod.F90
+#	modified:   cime/src/drivers/mct/shr/seq_timemgr_mod.F90
+#	modified:   cime/src/share/util/shr_scam_mod.F90
+#	modified:   components/cam/src/cpl/atm_comp_mct.F90
+#	modified:   components/clm/src/biogeochem/CNEcosystemDynBetrMod.F90
+#	modified:   components/clm/src/biogeochem/EcosystemDynMod.F90
+#	modified:   components/clm/src/cpl/lnd_comp_mct.F90
+#	modified:   components/clm/src/cpl/lnd_import_export.F90
+#	modified:   components/clm/src/data_types/VegetationType.F90
+#	modified:   components/clm/src/main/clm_initializeMod.F90
+#	modified:   components/clm/src/main/controlMod.F90
+#	modified:   components/clm/src/main/iac2lndMod.F90
+#	modified:   components/clm/src/main/initGridCellsMod.F90
+#	modified:   components/clm/src/main/lnd2iacMod.F90
+#	modified:   components/clm/src/main/subgridRestMod.F90
+#	modified:   components/gcam/doc/NOTES.e3sm
+#	modified:   components/gcam/src
+
+======
+
+4/29/2022 15:19:40 PDT
+
+* Okay, stupid config error I can't figure out.  During a ./case.build
+  --clean-all, I get this:
+
+-----
+ ...
+   Calling /qfs/people/d3a230/E3SM_current/cime/src/drivers/mct/cime_config/buildnml
+ERROR: Namelist default for variable atm2iac_smapname refers to unknown XML variable ATM2IAC_SMAPNAME.
+-----
+
+  ... which is weird, because I don't think we need atm2iac coupling or
+  mapping, but maybe that was something Alan did?
+
+  After some grepping, the only place I see reference to these variables is
+  in:
+
+======
+
+[d3a230@compy01 E3SM_current]$ find . -type f -exec egrep -inH atm2iac_smapname {} \;
+./cime/src/drivers/mct/cime_config/namelist_definition_drv.xml:4335:  <entry id="atm2iac_smapname"    modify_via_xml="ATM2IAC_SMAPNAME">
+./cime/src/drivers/mct/cime_config/namelist_definition_drv.xml:4344:      <value>$ATM2IAC_SMAPNAME</value>
+./cime/src/drivers/mct/cime_config/config_component.xml:1390:  <entry id="ATM2IAC_SMAPNAME">
+./cime/src/drivers/mct/main/prep_iac_mod.F90~:187:          'seq_maps.rc','atm2iac_smapname:','atm2iac_smaptype:',samegrid_az, &
+./cime/src/drivers/mct/main/component_mod.F90:581:          call seq_map_readdata('seq_maps.rc','atm2iac_smapname:',mpicom_CPLID, CPLID, &
+./cime/config/e3sm/config_grids.xml:1867:    <required_gridmap grid1="atm_grid" grid2="iac_grid">ATM2IAC_SMAPNAME</required_gridmap>
+./cime/config/e3sm/config_grids.xml:1882:      <map name="ATM2IAC_SMAPNAME">cpl/gridmaps/1.9x2.5/map_1.9x2.5_TO_0.9x1.25_aave.210910.nc</map>
+
+======
+
+  That prep_iac_mod.F90~ is pretty interesting, suggesting the previous
+  version of prep_iac_mod.F90 (i.e. mine, pre-merge) actually did set
+  something up for atm2iac_smapname!
+
+  A git diff HEAD^ HEAD shows that namelist_definition_drv.xml and
+  config_component.xml were changed just to have these atm2iac_smapname.
+  So I've commented these sections out in the cime_config directories, and
+  let's see what happens.
+
 4/29/2022
 
 * Merge conflicts for Alan's e3sm main branch for the rebase (the giac
@@ -67,7 +184,7 @@ Automatic merge failed; fix conflicts and then commit the result.
   some other part of the code needed to get at those private variables.)
 
 @Xcime/src/drivers/mct/main/cime_comp_mod.F90: I think Alan is right here -
-  her removes prep_lnd_calc_z2x_lx() and prep_atm_calc_z2x_ax() calls from
+  he removes prep_lnd_calc_z2x_lx() and prep_atm_calc_z2x_ax() calls from
   iac post, because those are both called in the lnd/atm setup functions,
   so the iac post calls are redundant.  I need to keep my
   prep_iac_zero_max() call, though.
@@ -1419,14 +1536,14 @@ TRS:  33112  15 280 115  348.7500   17.4346    5.8889    5.8889
   cd ~/$build
 
   ./xmlchange --id "RUN_STARTDATE" --val "2015-01-01"
-  ./xmlchange --id STOP_N --val 1
-  ./xmlchange --id DEBUG --val TRUE
+  ./xmlchange --id STOP_N --val 2
+  ./xmlchange --id DEBUG --val FALSE
   ./xmlchange --id NTASKS --val 1
   ./xmlchange -id "NCPL_BASE_PERIOD" -val "year"
   ./xmlchange -id "ATM_NCPL" -val 17520
   ./xmlchange -id "IAC_NCPL" -val 1
   ./xmlchange -id "STOP_OPTION" -val "nyears"
-  ./xmlchange --id "JOB_WALLCLOCK_TIME" --val 4:00:00
+  ./xmlchange --id "JOB_WALLCLOCK_TIME" --val 5:00:00
   ./xmlchange --id "NTASKS_LND" --val 480
   ./xmlchange --id "NTASKS_ATM" --val 480
 

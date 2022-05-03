@@ -18,7 +18,7 @@ module prep_iac_mod
   use mct_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
-  use component_type_mod, only: iac, lnd
+  use component_type_mod, only: iac, lnd, atm
 
   implicit none
   save
@@ -43,6 +43,7 @@ module prep_iac_mod
   public :: prep_iac_get_l2zacc_lx
   public :: prep_iac_get_l2zacc_lx_cnt
   public :: prep_iac_get_mapper_Sl2z
+  public :: prep_iac_get_mapper_Sa2z
 
   !--------------------------------------------------------------------------
   ! Private interfaces
@@ -54,6 +55,7 @@ module prep_iac_mod
 
   ! mappers
   type(seq_map), pointer :: mapper_Sl2z
+  type(seq_map), pointer :: mapper_Sa2z
 
   ! attribute vectors
   type(mct_aVect), pointer :: l2x_zx(:) ! Lnd export, iac grid, cpl pes
@@ -90,12 +92,15 @@ contains
     integer                  :: lsize_z, lsize_l
     integer                  :: eli,erl
     logical                  :: samegrid_lz   ! samegrid land and iac
+    logical                  :: samegrid_az   ! samegrid atm and iac
     logical                  :: lnd_present   ! .true. => land is present
     logical                  :: iac_present   ! .true. => iac is present
+    logical                  :: atm_present   ! .true. => atm is present
     logical                  :: iamroot_CPLID ! .true. => CPLID masterproc
     logical                  :: esmf_map_flag ! .true. => use esmf for mapping
     character(CL)            :: lnd_gnam      ! lnd grid
     character(CL)            :: iac_gnam      ! iac grid
+    character(CL)            :: atm_gnam      ! atm grid
     type(mct_avect), pointer :: z2x_zx, x2z_zx, l2x_lx
     character(*), parameter  :: subname = '(prep_iac_init)'
     character(*), parameter  :: F00 = "('"//subname//" : ', 4A )"
@@ -103,6 +108,7 @@ contains
     call seq_infodata_getData(infodata, &
          lnd_present=lnd_present,       &
          iac_present=iac_present,       &
+         atm_present=atm_present,       &
          lnd_gnam=lnd_gnam,             &
          iac_gnam=iac_gnam,             &
          esmf_map_flag=esmf_map_flag)
@@ -110,6 +116,7 @@ contains
 
     if (iac_present) then
        allocate(mapper_Sl2z)
+       allocate(mapper_Sa2z)
 
        z2x_zx => component_get_c2x_cx(iac(1))
        lsize_z = mct_aVect_lsize(z2x_zx)
@@ -158,6 +165,25 @@ contains
                'seq_maps.rc','lnd2iac_smapname:','lnd2iac_smaptype:',samegrid_lz, &
                string='mapper_Sl2z initialization',esmf_map=esmf_map_flag)
        end if
+       call shr_sys_flush(logunit)
+    end if
+
+    ! currently lnd and atm must be present (and on same grid)
+    !   if iac is present
+    ! the atm2iac mapper is used for the iac domain settings
+    ! there currently are no variables passed from atm2iac
+    if (iac_present .and. atm_present) then
+       samegrid_az = .true.
+       if (trim(atm_gnam) /= trim(iac_gnam)) samegrid_az = .false.
+
+       if (iamroot_CPLID) then
+          write(logunit,*) ' '
+          write(logunit,F00) 'Initializing mapper_Sa2z'
+       end if
+
+       call seq_map_init_rcfile(mapper_Sa2z, atm(1), iac(1), &
+          'seq_maps.rc','atm2iac_smapname:','atm2iac_smaptype:',samegrid_az, &
+           string='mapper_Sa2z initialization',esmf_map=esmf_map_flag)
        call shr_sys_flush(logunit)
     end if
 
@@ -228,8 +254,6 @@ contains
     endif
     l2zacc_lx_cnt = 0
     call t_drvstopf (trim(timer))
-    
-
   end subroutine prep_iac_accum_avg
 
   subroutine iac_avect_max(avect, max_avect)
@@ -303,7 +327,7 @@ contains
     character(len=*)        , intent(in)    :: timer_mrg
     !
     ! Local Variables
-    integer                  :: ezi
+    integer                  :: ezi, eli
     type(mct_aVect), pointer :: x2z_zx
     character(*), parameter  :: subname = '(prep_iac_mrg)'
     !---------------------------------------------------------------
@@ -434,5 +458,10 @@ contains
     type(seq_map), pointer :: prep_iac_get_mapper_Sl2z
     prep_iac_get_mapper_Sl2z => mapper_Sl2z
   end function prep_iac_get_mapper_Sl2z
+
+  function prep_iac_get_mapper_Sa2z()
+    type(seq_map), pointer :: prep_iac_get_mapper_Sa2z
+    prep_iac_get_mapper_Sa2z => mapper_Sa2z
+  end function prep_iac_get_mapper_Sa2z
 
 end module prep_iac_mod

@@ -201,7 +201,6 @@ contains
        !    this cell to get the final fractions of col or veg land unit
        ! land unit type 1 is vegetated land unit
        ! just need to make sure that the values are <= 1
-
        harvest(begg:endg) = 0._r8
        do g = begg,endg
          do c = bounds%begc, bounds%endc

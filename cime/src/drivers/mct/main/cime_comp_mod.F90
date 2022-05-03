@@ -471,7 +471,8 @@ module cime_comp_mod
   logical  :: samegrid_og            ! samegrid glc and ocean
   logical  :: samegrid_ig            ! samegrid glc and ice
   logical  :: samegrid_alo           ! samegrid atm, lnd, ocean
-  logical  :: samegrid_zl            ! samegrid iac and land
+  logical  :: samegrid_lz            ! samegrid iac and land
+  logical  :: samegrid_az            ! samegrid iac and atm
 
   logical       :: read_restart      ! local read restart flag
   character(CL) :: rest_file         ! restart file path + filename
@@ -1266,7 +1267,8 @@ contains
             ice_present=ice_present,              &
             rof_present=rof_present,              &
             flood_present=flood_present,          &
-            rofice_present=rofice_present)
+            rofice_present=rofice_present,        &
+            iac_present=iac_present)
 
        call seq_infodata_putData(infodata,  &
             lnd_present=lnd_present,        &
@@ -1274,7 +1276,8 @@ contains
             ice_present=ice_present,        &
             rof_present=rof_present,        &
             flood_present=flood_present,    &
-            rofice_present=rofice_present)
+            rofice_present=rofice_present,  &
+            iac_present=iac_present)
     endif
     if(PIO_FILE_IS_OPEN(pioid)) then
        call pio_closefile(pioid)
@@ -1312,6 +1315,8 @@ contains
     endif
 
     call t_startf('CPL:comp_init_pre_all')
+    call component_init_pre(iac, IACID, CPLIACID, CPLALLIACID, infodata, &
+       ntype='iac')
     call component_init_pre(atm, ATMID, CPLATMID, CPLALLATMID, infodata, ntype='atm')
     call component_init_pre(lnd, LNDID, CPLLNDID, CPLALLLNDID, infodata, ntype='lnd')
     call component_init_pre(rof, ROFID, CPLROFID, CPLALLROFID, infodata, ntype='rof')
@@ -1320,7 +1325,6 @@ contains
     call component_init_pre(glc, GLCID, CPLGLCID, CPLALLGLCID, infodata, ntype='glc')
     call component_init_pre(wav, WAVID, CPLWAVID, CPLALLWAVID, infodata, ntype='wav')
     call component_init_pre(esp, ESPID, CPLESPID, CPLALLESPID, infodata, ntype='esp')
-    call component_init_pre(iac, IACID, CPLIACID, CPLALLIACID, infodata, ntype='iac')
 
     call t_stopf('CPL:comp_init_pre_all')
 
@@ -1383,6 +1387,7 @@ contains
 
     call t_startf('CPL:comp_init_cx_all')
     call t_adj_detailf(+2)
+    call component_init_cx(iac, infodata)
     call component_init_cx(atm, infodata)
     call component_init_cx(lnd, infodata)
     call component_init_cx(rof, infodata)
@@ -1390,7 +1395,6 @@ contains
     call component_init_cx(ice, infodata)
     call component_init_cx(glc, infodata)
     call component_init_cx(wav, infodata)
-    call component_init_cx(iac, infodata)
 
     call t_adj_detailf(-2)
     call t_stopf('CPL:comp_init_cx_all')
@@ -1533,6 +1537,8 @@ contains
     samegrid_lg  = .true.
     samegrid_og  = .true.
     samegrid_ig  = .true.
+    samegrid_lz  = .true.
+    samegrid_az  = .true.
     samegrid_alo = .true.
 
     ! set samegrid to true for single column
@@ -1547,7 +1553,8 @@ contains
        if (trim(lnd_gnam) /= trim(glc_gnam)) samegrid_lg = .false.
        if (trim(ocn_gnam) /= trim(glc_gnam)) samegrid_og = .false.
        if (trim(ice_gnam) /= trim(glc_gnam)) samegrid_ig = .false.
-       if (trim(iac_gnam) /= trim(lnd_gnam)) samegrid_zl = .false.
+       if (trim(iac_gnam) /= trim(lnd_gnam)) samegrid_lz = .false.
+       if (trim(iac_gnam) /= trim(atm_gnam)) samegrid_az = .false.
        samegrid_alo = (samegrid_al .and. samegrid_ao)
     endif
 
@@ -1588,7 +1595,7 @@ contains
        if (atm_prognostic) lnd_c2_atm = .true.
        if (rof_prognostic) lnd_c2_rof = .true.
        if (glc_prognostic) lnd_c2_glc = .true.
-       if (iac_prognostic) lnd_c2_iac = .true.
+       if (iac_present) lnd_c2_iac = .true.
     endif
     if (ocn_present) then
        if (atm_prognostic) ocn_c2_atm = .true.
@@ -1717,6 +1724,7 @@ contains
        write(logunit,F0L)'samegrid_ro           = ',samegrid_ro
        write(logunit,F0L)'samegrid_aw           = ',samegrid_aw
        write(logunit,F0L)'samegrid_ow           = ',samegrid_ow
+       write(logunit,F0L)'samegrid_az           = ',samegrid_az
        write(logunit,F0L)'skip init ocean run   = ',skip_ocean_run
        write(logunit,F00)'cpl sequence option   = ',trim(cpl_seq_option)
        write(logunit,F0L)'do_histavg            = ',do_histavg
@@ -1785,6 +1793,12 @@ contains
        call shr_sys_abort(subname//' ERROR: samegrid_oi is false')
     endif
 
+    ! if iac is present then lnd and atm must be on same grid
+    if (iac_present .and. .not.(samegrid_al)) then
+       call shr_sys_abort(subname//' ERROR: if iac present must also have '// &
+          'lnd and atm on the same grid')
+    endif
+
     !----------------------------------------------------------
     !| Check instances of prognostic components
     !----------------------------------------------------------
@@ -1817,7 +1831,7 @@ contains
        call t_adj_detailf(+2)
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-       call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_atm)
+       call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm)
 
        call prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd, iac_c2_lnd)
 
@@ -1850,7 +1864,7 @@ contains
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
        call component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, &
-            samegrid_ro, samegrid_lg, samegrid_zl)
+            samegrid_ro, samegrid_lg, samegrid_az)
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
 
@@ -1877,8 +1891,8 @@ contains
           endif
 
           call seq_domain_check( infodata,                                             &
-               atm(ens1), ice(ens1), lnd(ens1), ocn(ens1), rof(ens1), glc(ens1),       &
-               samegrid_al, samegrid_ao, samegrid_ro, samegrid_lg)
+               atm(ens1), ice(ens1), lnd(ens1), ocn(ens1), rof(ens1), glc(ens1), iac(ens1), &
+               samegrid_al, samegrid_ao, samegrid_ro, samegrid_lg, samegrid_az)
 
        endif
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -2246,6 +2260,9 @@ contains
        if (iac_c2_lnd) then
           call prep_lnd_calc_z2x_lx(timer='CPL:init_iac2lnd')
        endif
+       if (lnd_c2_iac) then
+          call prep_iac_calc_l2x_zx(timer='CPL:init_lnd2iac')
+       endif
     endif
 
     !----------------------------------------------------------
@@ -2321,7 +2338,8 @@ contains
 
     hashint = 0
 
-    call seq_infodata_putData(infodata,atm_phase=1,lnd_phase=1,ocn_phase=1,ice_phase=1)
+    call seq_infodata_putData(infodata,atm_phase=1,lnd_phase=1,ocn_phase=1, &
+       ice_phase=1, iac_phase=1)
     call seq_timemgr_EClockGetData( EClock_d, stepno=begstep)
     call seq_timemgr_EClockGetData( EClock_d, dtime=dtime)
     call seq_timemgr_EClockGetData( EClock_d, calendar=calendar)
@@ -2365,13 +2383,6 @@ contains
        call seq_timemgr_EClockGetData( EClock_d, curr_ymd=ymd, curr_tod=tod)
        call shr_cal_date2ymd(ymd,year,month,day)
 
-       ! TRS IT seems like we should already be outputing this
-       ! somewhere, but I want these exact values to evaluate the new
-       ! iacrun_avg alarm
-       !if (iamroot_CPLID) then
-       !   write(logunit, *) 'TRS ymd=', ymd, 'tod=', tod
-       !end if
-
        stop_alarm    = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_stop)
        atmrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_atmrun)
        lndrun_alarm  = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_lndrun)
@@ -2393,11 +2404,6 @@ contains
        ! Not sure if this will cause a problem if iac isn't present,
        ! but whatever
        iacrun_avg_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_iacrun_avg)
-
-       !if (iamroot_CPLID) then
-       !   write(logunit, *) 'TRS iacrun_avg=', iacrun_avg_alarm, &
-       !        'iac=', iacrun_alarm, 'lnd=', lndrun_alarm
-       !endif 
 
        ! Does the driver need to pause?
        drv_pause = pause_alarm .and. seq_timemgr_pause_component_active(drv_index)

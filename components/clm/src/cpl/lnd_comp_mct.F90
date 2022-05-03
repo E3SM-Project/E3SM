@@ -252,7 +252,6 @@ write(iulog,*) sub//'iac_present is ',iac_present, &
 
 
     ! Read namelist, grid and surface data
-
     call initialize1( )
 
     ! If no land then exit out of initialization
@@ -289,7 +288,6 @@ write(iulog,*) sub//'iac_present is ',iac_present, &
     call mct_aVect_zero(l2x_l)
 
     ! Finish initializing clm
-
     call initialize2()
     call initialize3()
 

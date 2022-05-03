@@ -969,7 +969,7 @@ subroutine mct_avect_vecmult(av,vec,avlist,mask_spval)
 
 ! !USES:
 
-! !INPUT/OUTPUT PARAMETERS:
+! !INPUT/OUTPUT PARAMTEERS:
 
    type(mct_aVect)      ,intent(inout) :: av       ! attribute vector output
    real(R8)             ,intent(in)    :: vec(:)
@@ -1003,7 +1003,6 @@ subroutine mct_avect_vecmult(av,vec,avlist,mask_spval)
    nptsx = size(vec,1)
    npts  = mct_aVect_lsize(av)
    if (nptsx /= npts .and. s_loglev > 0) write(s_logunit,*) subName,' ERROR: npts error1 ',npts,nptsx
-
 
    if (present(avlist)) then
 
