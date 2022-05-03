@@ -1955,7 +1955,8 @@ contains
     endif
 
     !  need to finish up the computation of the atm - ocean map (tempest)
-    if (iamin_CPLALLATMID .and. ocn_c2_atm) call prep_atm_ocn_moab(infodata)
+    ! this needs to be in prep_ocn_mod, because it is for projection to ocean!
+    if (iamin_CPLALLATMID .and. atm_c2_ocn) call prep_atm_ocn_moab(infodata)
 
     !  need to finish up the computation of the atm - land map ( point cloud)
     if (iamin_CPLALLATMID .and. atm_c2_lnd) call prep_atm_lnd_moab(infodata)

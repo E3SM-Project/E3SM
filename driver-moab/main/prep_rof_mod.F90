@@ -456,6 +456,7 @@ contains
 
       ! we could do the projection now, on the ocean mesh, because we are on the coupler pes;
       ! the actual migrate could happen later , from coupler pes to the ocean pes
+      ! we should do this for consistency in the file prep_ocn_mode.F90, because this is part of ocean preparation
       if (mbrmapro .ge. 0 ) then !  we are on coupler pes, for sure
          ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
          !  hard coded now, it should be a runtime option in the future
