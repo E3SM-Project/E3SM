@@ -3884,7 +3884,9 @@ contains
        endif
 
        ! Need to reset our max vector to zero for the following year
-       call prep_iac_zero_max()
+       if (lnd_present) then 
+          call prep_iac_zero_max()
+       endif
 
        call t_drvstopf  ('CPL:IACPOST', cplrun=.true.)
     endif
