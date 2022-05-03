@@ -285,10 +285,10 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   // Set property checks for fields in this process
 
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140.0, 500.0,false);
-  add_precondition_check<FieldWithinIntervalCheck>(get_field_in("sfc_alb_dir_vis"),0.0,1.0,true);
-  add_precondition_check<FieldWithinIntervalCheck>(get_field_in("sfc_alb_dir_nir"),0.0,1.0,true);
-  add_precondition_check<FieldWithinIntervalCheck>(get_field_in("sfc_alb_dif_vis"),0.0,1.0,true);
-  add_precondition_check<FieldWithinIntervalCheck>(get_field_in("sfc_alb_dif_nir"),0.0,1.0,true);
+  add_precondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dir_vis"),0.0,1.0,true);
+  add_precondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dir_nir"),0.0,1.0,true);
+  add_precondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_vis"),0.0,1.0,true);
+  add_precondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_nir"),0.0,1.0,true);
 
 }
 
