@@ -284,6 +284,7 @@ module li_time_integration_fe
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
       real (kind=RKIND), dimension(:,:), pointer :: layerNormalVelocity
       real (kind=RKIND), pointer :: calvingCFLdt
+      integer, pointer :: processLimitingTimestep
       integer, dimension(:), pointer :: edgeMask
 
       logical, pointer :: config_print_thickness_advection_info
@@ -505,7 +506,8 @@ module li_time_integration_fe
       ! Set adaptive timestep if needed
       if (config_adaptive_timestep) then
          call mpas_pool_get_array(geometryPool, 'calvingCFLdt', calvingCFLdt)
-         call set_timestep(allowableAdvecDtAllProcs, allowableDiffDtAllProcs, calvingCFLdt, domain % clock, dtSeconds, err_tmp)
+         call mpas_pool_get_array(meshPool, 'processLimitingTimestep', processLimitingTimestep)
+         call set_timestep(allowableAdvecDtAllProcs, allowableDiffDtAllProcs, calvingCFLdt, domain % clock, dtSeconds, processLimitingTimestep, err_tmp)
          err = ior(err,err_tmp)
          ! Set new value on all blocks
          block => domain % blocklist
@@ -833,7 +835,7 @@ module li_time_integration_fe
 !>  This routine sdjusts the time step based on the CFL condition.
 !
 !-----------------------------------------------------------------------
-   subroutine set_timestep(allowableAdvecDt, allowableDiffDt, calvingCFLdt, clock, dtSeconds, err)
+   subroutine set_timestep(allowableAdvecDt, allowableDiffDt, calvingCFLdt, clock, dtSeconds, CFLprocess, err)
       use mpas_timekeeping
 
       !-----------------------------------------------------------------
@@ -848,6 +850,7 @@ module li_time_integration_fe
       ! output variables
       !-----------------------------------------------------------------
       real (kind=RKIND), intent(out) :: dtSeconds  !< Output: time step in seconds determined by this routine
+      integer, intent(out) :: CFLprocess !< Output: flag for which process limits the CFL: 1=advective, 2=diffusive, 3=calving
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
@@ -881,12 +884,16 @@ module li_time_integration_fe
       call mpas_pool_get_config(liConfigs, 'config_calving', config_calving)
       call mpas_pool_get_config(liConfigs, 'config_damage_calving_method', config_damage_calving_method)
 
+
+      allowableDt = allowableAdvecDt * config_adaptive_timestep_CFL_fraction
+      CFLprocess = 1
       if (config_adaptive_timestep_include_DCFL) then
          ! todo: We currently do not have a namelist option for the diffusive CFL fraction
          ! But that's ok - we rarely use it.  Could be added later if needed.
-         allowableDt = min(allowableAdvecDt * config_adaptive_timestep_CFL_fraction, allowableDiffDt)
-      else
-         allowableDt = allowableAdvecDt * config_adaptive_timestep_CFL_fraction
+         if (allowableDiffDt < allowableDt) then
+            allowableDt = allowableDiffDt
+            CFLprocess = 2
+         endif
       endif
 
       ! Only include calving CFL if requested and we are using a calving option that calculates it
@@ -897,12 +904,24 @@ module li_time_integration_fe
              trim(config_calving) == 'ismip6_retreat' .or. &
              (trim(config_calving) == 'damagecalving' .and. &
               trim(config_damage_calving_method) == 'calving_rate'))) then
-         allowableDt = min(allowableDt, config_adaptive_timestep_calvingCFL_fraction * calvingCFLDt)
+         if (config_adaptive_timestep_calvingCFL_fraction * calvingCFLDt < allowableDt) then
+            allowableDt = config_adaptive_timestep_calvingCFL_fraction * calvingCFLDt
+            CFLprocess = 3
+         endif
       endif
 
-      call mpas_log_write("CFL dts adjusted for fractions: advective=$r, diffusive=$r, calving=$r", &
-         realArgs=(/allowableAdvecDt*config_adaptive_timestep_CFL_fraction, allowableDiffDt, &
-                    calvingCFLdt*config_adaptive_timestep_calvingCFL_fraction/))
+      call mpas_log_write("CFL dt adjusted for fractions (days): advective=$r, diffusive=$r, calving=$r", &
+         realArgs=(/allowableAdvecDt*config_adaptive_timestep_CFL_fraction/86400.0_RKIND, &
+                    allowableDiffDt/86400.0_RKIND, &
+                    calvingCFLdt*config_adaptive_timestep_calvingCFL_fraction/86400.0_RKIND/))
+      if (CFLprocess == 1) then
+         call mpas_log_write("Timestep limited by advective CFL condition.")
+      elseif (CFLprocess == 2) then
+         call mpas_log_write("Timestep limited by diffusive CFL condition.")
+      elseif (CFLprocess == 3) then
+         call mpas_log_write("Timestep limited by calving CFL condition.")
+      endif
+
 
       ! Round down the proposed dt to avoid complications with fractional seconds
       ! (some timekeeping-related functionality, like restarts, don't support them)
