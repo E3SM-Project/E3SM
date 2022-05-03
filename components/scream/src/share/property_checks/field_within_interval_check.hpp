@@ -7,8 +7,6 @@
 
 #include "ekat/util/ekat_math_utils.hpp"
 
-#include <sstream>
-
 namespace scream
 {
 
@@ -35,13 +33,7 @@ public:
                             const bool can_repair = false);
 
   // The name of the property check
-  std::string name () const override {
-    // NOTE: std::to_string does not do a good job with small numbers (like 1e-9).
-    std::stringstream ss;
-    ss << fields().front().name()
-       << " within interval [" << m_lower_bound << ", " << m_upper_bound << "]";
-    return ss.str();
-  }
+  std::string name () const override;
 
   CheckResult check() const override;
 

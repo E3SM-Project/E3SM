@@ -3,6 +3,8 @@
 
 #include <ekat/util/ekat_math_utils.hpp>
 
+#include <sstream>
+
 namespace scream
 {
 
@@ -45,6 +47,14 @@ FieldWithinIntervalCheck (const Field& f,
       "  - Input grid name: " + grid->name() + "\n");
 
   set_fields ({f},{can_repair});
+}
+
+std::string FieldWithinIntervalCheck::name () const override {
+  // NOTE: std::to_string does not do a good job with small numbers (like 1e-9).
+  std::stringstream ss;
+  ss << fields().front().name()
+    << " within interval [" << m_lower_bound << ", " << m_upper_bound << "]";
+  return ss.str();
 }
 
 template<typename ST>
@@ -202,32 +212,34 @@ PropertyCheck::CheckResult FieldWithinIntervalCheck::check_impl () const
     }
   }
 
-
-  check_result.msg += "  minimum:\n";
-  check_result.msg += "    - value: " + std::to_string(minmaxloc.min_val) + "\n";
+  std::stringstream msg;
+  ss << "  minimum:\n";
+  ss << "    - value: " << minmaxloc.min_val << "\n";
   if (has_col_info) {
-    check_result.msg += "    - entry: (" + std::to_string(gids(min_col_lid));
+    msg << "    - entry: (" << gids(min_col_lid);
     for (size_t i=1; i<idx_min.size(); ++i) {
-      check_result.msg += "," + std::to_string(i);
+      msg << "," << i;
     }
-    check_result.msg += ")\n";
+    msg << ")\n";
     if (has_latlon) {
-      check_result.msg += "    - lat/lon: (" + std::to_string(lat(min_col_lid)) + ", " + std::to_string(lon(min_col_lid)) + ")\n";
+      msg << "    - lat/lon: (" << lat(min_col_lid) << ", " << lon(min_col_lid) << ")\n";
     }
   }
 
-  check_result.msg += "  maximum:\n";
-  check_result.msg += "    - value: " + std::to_string(minmaxloc.max_val) + "\n";
+  msg << "  maximum:\n";
+  msg << "    - value: " << minmaxloc.max_val << "\n";
   if (has_col_info) {
-    check_result.msg += "    - entry: (" + std::to_string(gids(max_col_lid));
+    msg << "    - entry: (" << gids(max_col_lid);
     for (size_t i=1; i<idx_max.size(); ++i) {
-      check_result.msg += "," + std::to_string(i);
+      msg << "," << i;
     }
-    check_result.msg += ")\n";
+    msg << ")\n";
     if (has_latlon) {
-      check_result.msg += "    - lat/lon: (" + std::to_string(lat(max_col_lid)) + ", " + std::to_string(lon(max_col_lid)) + ")\n";
+      msg << "    - lat/lon: (" << lat(max_col_lid) << ", " << lon(max_col_lid) << ")\n";
     }
   }
+
+  check_result.msg += msg.str();
 
   return check_result;
 }
