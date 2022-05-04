@@ -994,6 +994,25 @@ end subroutine clubb_init_cnst
     clubb_config_flags%l_enable_relaxed_clipping = clubb_l_enable_relaxed_clipping
     clubb_config_flags%l_linearize_pbl_winds = linearize_pbl_winds
 
+    ! Print the list of CLUBB parameters, if multi-threaded, it may print by each thread
+    if (masterproc) then
+       write(iulog,*)'CLUBB tunable parameters: total ',nparams
+       write(iulog,*)'--------------------------------------------------'
+       do i = 1, nparams
+          write(iulog,*) params_list(i), " = ", clubb_params(i)
+       enddo
+    endif
+
+    ! Print configurable CLUBB flags
+    if (masterproc) then
+       write(iulog,'(a,i0,a)') " CLUBB configurable flags set in thread ", iam, ":"
+       call print_clubb_config_flags_api( iulog, clubb_config_flags ) ! Intent(in)
+    endif
+
+    ! *** Don't place any new code between the above write statements and ***
+    ! *** the call to setup_clubb_core_api below, especially not any code ***
+    ! *** that alters clubb_params or clubb_config_flags. Brian; 5/4/2022 ***
+
     !  Set up CLUBB core.  Note that some of these inputs are overwrote
     !  when clubb_tend_cam is called.  The reason is that heights can change
     !  at each time step, which is why dummy arrays are read in here for heights
@@ -1023,21 +1042,6 @@ end subroutine clubb_init_cnst
        call endrun('clubb_ini_cam:  FATAL ERROR CALLING SETUP_CLUBB_CORE')
     end if
 !$OMP END PARALLEL
-
-    ! Print the list of CLUBB parameters, if multi-threaded, it may print by each thread
-    if (masterproc) then
-       write(iulog,*)'CLUBB tunable parameters: total ',nparams
-       write(iulog,*)'--------------------------------------------------'
-       do i = 1, nparams
-          write(iulog,*) params_list(i), " = ", clubb_params(i)
-       enddo
-    endif
-
-    ! Print configurable CLUBB flags
-    if (masterproc) then
-       write(iulog,'(a,i0,a)') " CLUBB configurable flags set in thread ", iam, ":"
-       call print_clubb_config_flags_api( iulog, clubb_config_flags ) ! Intent(in)
-    endif
 
     ! ----------------------------------------------------------------- !
     ! Set-up HB diffusion.  Only initialized to diagnose PBL depth      !
