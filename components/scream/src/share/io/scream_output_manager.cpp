@@ -90,7 +90,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     }
   }
 
-  const auto has_restart_data = (m_avg_type!=OutputAvgType::Instant || m_output_control.frequency>1);
+  const auto has_restart_data = (m_avg_type!=OutputAvgType::Instant && m_output_control.frequency>1);
   if (has_restart_data) {
     if (m_params.isSublist("Checkpoint Control")) {
       // Output control
