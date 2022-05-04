@@ -190,6 +190,7 @@ module seq_comm_mct
      integer :: cmppe           ! a common task in mpicom from the component group for join mpicoms
      ! cmppe is used to broadcast information from the component to the coupler
      logical :: set             ! has this datatype been set
+     integer :: excl_group      ! mpi group of tasks owned exclusively by this component
 
   end type seq_comm_type
 
@@ -237,6 +238,7 @@ contains
     character(*), parameter :: subName =   '(seq_comm_init) '
     integer :: mype,numpes,myncomps,max_threads,gloroot, global_numpes
     integer :: pelist(3,1)       ! start, stop, stride for group
+    integer :: exlist(3), mpigrp_world, exgrp
     integer, pointer :: comps(:) ! array with component ids
     integer, pointer :: comms(:) ! array with mpicoms
     integer :: nu
@@ -248,28 +250,28 @@ contains
     character(len=seq_comm_namelen) :: valid_comps(ncomps)
 
     integer :: &
-         atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, &
-         lnd_ntasks, lnd_rootpe, lnd_pestride, lnd_nthreads, &
-         ice_ntasks, ice_rootpe, ice_pestride, ice_nthreads, &
-         glc_ntasks, glc_rootpe, glc_pestride, glc_nthreads, &
-         wav_ntasks, wav_rootpe, wav_pestride, wav_nthreads, &
-         rof_ntasks, rof_rootpe, rof_pestride, rof_nthreads, &
-         ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, &
-         esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, &
-         iac_ntasks, iac_rootpe, iac_pestride, iac_nthreads, &
-         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads
+         atm_ntasks, atm_rootpe, atm_pestride, atm_excl_stride, atm_nthreads, &
+         lnd_ntasks, lnd_rootpe, lnd_pestride, lnd_excl_stride, lnd_nthreads, &
+         ice_ntasks, ice_rootpe, ice_pestride, ice_excl_stride, ice_nthreads, &
+         glc_ntasks, glc_rootpe, glc_pestride, glc_excl_stride, glc_nthreads, &
+         wav_ntasks, wav_rootpe, wav_pestride, wav_excl_stride, wav_nthreads, &
+         rof_ntasks, rof_rootpe, rof_pestride, rof_excl_stride, rof_nthreads, &
+         ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_excl_stride, ocn_nthreads, &
+         esp_ntasks, esp_rootpe, esp_pestride, esp_excl_stride, esp_nthreads, &
+         iac_ntasks, iac_rootpe, iac_pestride, iac_excl_stride, iac_nthreads, &
+         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_excl_stride, cpl_nthreads
 
     namelist /cime_pes/  &
-         atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, atm_layout, &
-         lnd_ntasks, lnd_rootpe, lnd_pestride, lnd_nthreads, lnd_layout, &
-         ice_ntasks, ice_rootpe, ice_pestride, ice_nthreads, ice_layout, &
-         glc_ntasks, glc_rootpe, glc_pestride, glc_nthreads, glc_layout, &
-         wav_ntasks, wav_rootpe, wav_pestride, wav_nthreads, wav_layout, &
-         rof_ntasks, rof_rootpe, rof_pestride, rof_nthreads, rof_layout, &
-         ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, ocn_layout, &
-         esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, esp_layout, &
-         iac_ntasks, iac_rootpe, iac_pestride, iac_nthreads, iac_layout, &
-         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads,             &
+         atm_ntasks, atm_rootpe, atm_pestride, atm_excl_stride, atm_nthreads, atm_layout, &
+         lnd_ntasks, lnd_rootpe, lnd_pestride, lnd_excl_stride, lnd_nthreads, lnd_layout, &
+         ice_ntasks, ice_rootpe, ice_pestride, ice_excl_stride, ice_nthreads, ice_layout, &
+         glc_ntasks, glc_rootpe, glc_pestride, glc_excl_stride, glc_nthreads, glc_layout, &
+         wav_ntasks, wav_rootpe, wav_pestride, wav_excl_stride, wav_nthreads, wav_layout, &
+         rof_ntasks, rof_rootpe, rof_pestride, rof_excl_stride, rof_nthreads, rof_layout, &
+         ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_excl_stride, ocn_nthreads, ocn_layout, &
+         esp_ntasks, esp_rootpe, esp_pestride, esp_excl_stride, esp_nthreads, esp_layout, &
+         iac_ntasks, iac_rootpe, iac_pestride, iac_excl_stride, iac_nthreads, iac_layout, &
+         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_excl_stride, cpl_nthreads,             &
          info_taskmap_model, info_taskmap_comp, info_mprof, info_mprof_dt
     !----------------------------------------------------------
 
@@ -299,6 +301,7 @@ contains
        seq_comms(n)%pethreads = -1
        seq_comms(n)%cplpe = -1
        seq_comms(n)%cmppe = -1
+       seq_comms(n)%excl_group = -1
     enddo
 
 
@@ -498,28 +501,48 @@ contains
        pelist(1,1) = cpl_rootpe
        pelist(2,1) = cpl_rootpe + (cpl_ntasks -1) * cpl_pestride
        pelist(3,1) = cpl_pestride
+       exlist(1) = pelist(1,1)
+       exlist(2) = pelist(2,1)
+       exlist(3) = cpl_excl_stride
     end if
 
     call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
+    call mpi_bcast(exlist, size(exlist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
+    if (exlist(3) > 0) then
+       call mpi_comm_group(DRIVER_COMM, mpigrp_world, ierr)
+       call shr_mpi_chkerr(ierr,subname//' mpi_comm_group mpigrp_world')
+       call mpi_group_range_incl(mpigrp_world, 1, exlist, exgrp, ierr)
+       call shr_mpi_chkerr(ierr,subname//' mpi_group_range_incl CPLID')
+       seq_comms(CPLID)%excl_group = exgrp
+    endif
     call seq_comm_setcomm(CPLID,pelist,nthreads=cpl_nthreads,iname='CPL')
 
-    call comp_comm_init(driver_comm, atm_rootpe, atm_nthreads, atm_layout, atm_ntasks, atm_pestride, num_inst_atm, &
+    call comp_comm_init(driver_comm, atm_rootpe, atm_nthreads, atm_layout, &
+         atm_ntasks, atm_pestride, atm_excl_stride, num_inst_atm, &
          CPLID, ATMID, CPLATMID, ALLATMID, CPLALLATMID, 'ATM', count, drv_comm_id)
-    call comp_comm_init(driver_comm, lnd_rootpe, lnd_nthreads, lnd_layout, lnd_ntasks, lnd_pestride, num_inst_lnd, &
+    call comp_comm_init(driver_comm, lnd_rootpe, lnd_nthreads, lnd_layout, &
+         lnd_ntasks, lnd_pestride, lnd_excl_stride, num_inst_lnd, &
          CPLID, LNDID, CPLLNDID, ALLLNDID, CPLALLLNDID, 'LND', count, drv_comm_id)
-    call comp_comm_init(driver_comm, ice_rootpe, ice_nthreads, ice_layout, ice_ntasks, ice_pestride, num_inst_ice, &
+    call comp_comm_init(driver_comm, ice_rootpe, ice_nthreads, ice_layout, &
+         ice_ntasks, ice_pestride, ice_excl_stride, num_inst_ice, &
          CPLID, ICEID, CPLICEID, ALLICEID, CPLALLICEID, 'ICE', count, drv_comm_id)
-    call comp_comm_init(driver_comm, ocn_rootpe, ocn_nthreads, ocn_layout, ocn_ntasks, ocn_pestride, num_inst_ocn, &
+    call comp_comm_init(driver_comm, ocn_rootpe, ocn_nthreads, ocn_layout, &
+         ocn_ntasks, ocn_pestride, ocn_excl_stride, num_inst_ocn, &
          CPLID, OCNID, CPLOCNID, ALLOCNID, CPLALLOCNID, 'OCN', count, drv_comm_id)
-    call comp_comm_init(driver_comm, rof_rootpe, rof_nthreads, rof_layout, rof_ntasks, rof_pestride, num_inst_rof, &
+    call comp_comm_init(driver_comm, rof_rootpe, rof_nthreads, rof_layout, &
+         rof_ntasks, rof_pestride, rof_excl_stride, num_inst_rof, &
          CPLID, ROFID, CPLROFID, ALLROFID, CPLALLROFID, 'ROF', count, drv_comm_id)
-    call comp_comm_init(driver_comm, glc_rootpe, glc_nthreads, glc_layout, glc_ntasks, glc_pestride, num_inst_glc, &
+    call comp_comm_init(driver_comm, glc_rootpe, glc_nthreads, glc_layout, &
+         glc_ntasks, glc_pestride, glc_excl_stride, num_inst_glc, &
          CPLID, GLCID, CPLGLCID, ALLGLCID, CPLALLGLCID, 'GLC', count, drv_comm_id)
-    call comp_comm_init(driver_comm, wav_rootpe, wav_nthreads, wav_layout, wav_ntasks, wav_pestride, num_inst_wav, &
+    call comp_comm_init(driver_comm, wav_rootpe, wav_nthreads, wav_layout, &
+         wav_ntasks, wav_pestride, wav_excl_stride, num_inst_wav, &
          CPLID, WAVID, CPLWAVID, ALLWAVID, CPLALLWAVID, 'WAV', count, drv_comm_id)
-    call comp_comm_init(driver_comm, esp_rootpe, esp_nthreads, esp_layout, esp_ntasks, esp_pestride, num_inst_esp, &
+    call comp_comm_init(driver_comm, esp_rootpe, esp_nthreads, esp_layout, &
+         esp_ntasks, esp_pestride, esp_excl_stride, num_inst_esp, &
          CPLID, ESPID, CPLESPID, ALLESPID, CPLALLESPID, 'ESP', count, drv_comm_id)
-    call comp_comm_init(driver_comm, iac_rootpe, iac_nthreads, iac_layout, iac_ntasks, iac_pestride, num_inst_iac, &
+    call comp_comm_init(driver_comm, iac_rootpe, iac_nthreads, iac_layout, &
+         iac_ntasks, iac_pestride, iac_excl_stride, num_inst_iac, &
          CPLID, IACID, CPLIACID, ALLIACID, CPLALLIACID, 'IAC', count, drv_comm_id)
 
     if (count /= ncomps) then
@@ -595,7 +618,7 @@ contains
   end subroutine seq_comm_init
 
   subroutine comp_comm_init(driver_comm, comp_rootpe, comp_nthreads, comp_layout, &
-       comp_ntasks, comp_pestride, num_inst_comp, &
+       comp_ntasks, comp_pestride, comp_exstride, num_inst_comp, &
        CPLID, COMPID, CPLCOMPID, ALLCOMPID, CPLALLCOMPID, name, count, drv_comm_id)
     integer, intent(in) :: driver_comm
     integer, intent(in) :: comp_rootpe
@@ -603,6 +626,7 @@ contains
     character(len=*), intent(in) :: comp_layout
     integer, intent(in) :: comp_ntasks
     integer, intent(in) :: comp_pestride
+    integer, intent(in) :: comp_exstride
     integer, intent(in) :: num_inst_comp
     integer, intent(in) :: CPLID
     integer, intent(out) :: COMPID(num_inst_comp)
@@ -613,13 +637,13 @@ contains
     integer, intent(in), optional :: drv_comm_id
     character(len=*), intent(in) :: name
 
-    character(len=*), parameter :: subname = "comp_comm_init"
+    character(len=*), parameter :: subname = "(comp_comm_init) "
     integer :: comp_inst_tasks
     integer :: droot
     integer :: current_task_rootpe
     integer :: cmin(num_inst_comp), cmax(num_inst_comp), cstr(num_inst_comp)
     integer :: n
-    integer :: pelist (3,1)
+    integer :: pelist(3,1), exlist(3), mpigrp_world, exgrp
     integer :: ierr
     integer :: mype
 
@@ -667,13 +691,25 @@ contains
           current_task_rootpe = current_task_rootpe + droot
        end do
     endif
+
     do n = 1, num_inst_comp
        if (mype==0) then
           pelist(1,1) = cmin(n)
           pelist(2,1) = cmax(n)
           pelist(3,1) = cstr(n)
+          exlist(1)   = cmin(n)
+          exlist(2)   = cmax(n)
+          exlist(3)   = comp_exstride
        endif
        call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
+       call mpi_bcast(exlist, size(exlist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
+       if (exlist(3) > 0) then
+          call mpi_comm_group(DRIVER_COMM, mpigrp_world, ierr)
+          call shr_mpi_chkerr(ierr,subname//' mpi_comm_group mpigrp_world')
+          call mpi_group_range_incl(mpigrp_world, 1, exlist, exgrp, ierr)
+          call shr_mpi_chkerr(ierr,subname//' mpi_group_range_incl COMPID')
+          seq_comms(COMPID(n))%excl_group = exgrp
+       endif
        if (present(drv_comm_id)) then
           call seq_comm_setcomm(COMPID(n),pelist,nthreads=comp_nthreads,iname=name,inst=drv_comm_id)
        else
@@ -734,10 +770,10 @@ contains
     integer,intent(IN),optional :: tinst ! total number of instances for this component
 
     integer :: mpigrp_world
-    integer :: mpigrp
+    integer :: mpigrp, newgrp
     integer :: mpicom
     integer :: ntasks
-    integer :: ierr
+    integer :: ierr, n
     character(len=seq_comm_namelen) :: cname
     logical :: set_suffix
     character(*),parameter :: subName =   '(seq_comm_setcomm) '
@@ -751,8 +787,18 @@ contains
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_group mpigrp_world')
     call mpi_group_range_incl(mpigrp_world, 1, pelist, mpigrp,ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_group_range_incl mpigrp')
-    call mpi_comm_create(DRIVER_COMM, mpigrp, mpicom, ierr)
 
+    ! exclude tasks dedicated to other components
+    do n = 3, ID
+       if (seq_comms(n)%excl_group >= 0) then
+          if (n == ID) cycle ! don't exclude self
+          call mpi_group_difference(mpigrp, seq_comms(n)%excl_group, newgrp, ierr)
+          call shr_mpi_chkerr(ierr,subname//' mpi_group_difference excl_group')
+          mpigrp = newgrp
+       endif
+    enddo
+
+    call mpi_comm_create(DRIVER_COMM, mpigrp, mpicom, ierr)
     call shr_mpi_chkerr(ierr,subname//' mpi_comm_create mpigrp')
 
     ntasks = ((pelist(2,1) - pelist(1,1)) / pelist(3,1)) + 1

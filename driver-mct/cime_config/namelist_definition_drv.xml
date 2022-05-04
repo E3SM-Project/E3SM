@@ -2563,6 +2563,14 @@
     </values>
   </entry>
 
+  <entry id="atm_excl_stride" modify_via_xml="EXCL_STRIDE_ATM">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_ATM</value></values>
+  </entry>
+
   <entry id="lnd_ntasks" modify_via_xml="NTASKS_LND">
     <type>integer</type>
     <category>cime_pes</category>
@@ -2626,6 +2634,14 @@
     <values>
       <value>$NINST_LND_LAYOUT</value>
     </values>
+  </entry>
+
+  <entry id="lnd_excl_stride" modify_via_xml="EXCL_STRIDE_LND">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_LND</value></values>
   </entry>
 
   <entry id="ice_ntasks" modify_via_xml="NTASKS_ICE">
@@ -2693,6 +2709,14 @@
     </values>
   </entry>
 
+  <entry id="ice_excl_stride" modify_via_xml="EXCL_STRIDE_ICE">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_ICE</value></values>
+  </entry>
+
   <entry id="ocn_ntasks" modify_via_xml="NTASKS_OCN">
     <type>integer</type>
     <category>cime_pes</category>
@@ -2756,6 +2780,14 @@
     <values>
       <value>$NINST_OCN_LAYOUT</value>
     </values>
+  </entry>
+
+  <entry id="ocn_excl_stride" modify_via_xml="EXCL_STRIDE_OCN">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_OCN</value></values>
   </entry>
 
   <entry id="glc_ntasks" modify_via_xml="NTASKS_GLC">
@@ -2823,6 +2855,14 @@
     </values>
   </entry>
 
+  <entry id="glc_excl_stride" modify_via_xml="EXCL_STRIDE_GLC">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_GLC</value></values>
+  </entry>
+
   <entry id="wav_ntasks" modify_via_xml="NTASKS_WAV">
     <type>integer</type>
     <category>cime_pes</category>
@@ -2886,6 +2926,14 @@
     <values>
       <value>$NINST_WAV_LAYOUT</value>
     </values>
+  </entry>
+
+  <entry id="wav_excl_stride" modify_via_xml="EXCL_STRIDE_WAV">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_WAV</value></values>
   </entry>
 
   <entry id="iac_ntasks" modify_via_xml="NTASKS_IAC">
@@ -2953,6 +3001,14 @@
     </values>
   </entry>
 
+  <entry id="iac_excl_stride" modify_via_xml="EXCL_STRIDE_IAC">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_IAC</value></values>
+  </entry>
+
   <entry id="rof_ntasks" modify_via_xml="NTASKS_ROF">
     <type>integer</type>
     <category>cime_pes</category>
@@ -3016,6 +3072,14 @@
     <values>
       <value>$NINST_ROF_LAYOUT</value>
     </values>
+  </entry>
+
+  <entry id="rof_excl_stride" modify_via_xml="EXCL_STRIDE_ROF">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_ROF</value></values>
   </entry>
 
   <entry id="esp_ntasks" modify_via_xml="NTASKS_ESP">
@@ -3083,6 +3147,14 @@
     </values>
   </entry>
 
+  <entry id="esp_excl_stride" modify_via_xml="EXCL_STRIDE_ESP">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_ESP</value></values>
+  </entry>
+
   <entry  id="cpl_ntasks" modify_via_xml="NTASKS_CPL">
     <type>integer</type>
     <category>cime_pes</category>
@@ -3133,6 +3205,14 @@
     <values>
       <value>$PSTRID_CPL</value>
     </values>
+  </entry>
+
+  <entry id="cpl_excl_stride" modify_via_xml="EXCL_STRIDE_CPL">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_CPL</value></values>
   </entry>
 
   <entry id="info_taskmap_model">
