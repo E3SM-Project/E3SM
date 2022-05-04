@@ -59,7 +59,7 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
 set (TEST_INPUT_FILES
   init/spa_init_ne2np4.nc
   init/map_ne4np4_to_ne2np4_mono.nc
-  init/spa_file_unified_and_complete_ne4_scream.nc
+  init/spa_file_unified_and_complete_ne4_20220428.nc
   init/homme_shoc_cld_spa_p3_rrtmgp_init_ne2np4.nc
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
