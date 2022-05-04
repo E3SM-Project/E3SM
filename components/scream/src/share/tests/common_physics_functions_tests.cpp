@@ -158,15 +158,19 @@ void run_scalar_valued_fns(std::mt19937_64& engine)
   RealType area, lat, grid_dx;
   area = 0.0; lat = 1.0;
   REQUIRE( Check::equal(PF::calculate_dx_from_area(area,lat),0.0) );
-  area = (pi/180.0)*(pi/180.0); lat = 0.0;
+  area = (pi/180.0)*(pi/180.0);
+  lat = 0.0;
   REQUIRE( Check::equal(PF::calculate_dx_from_area(area,lat), coeff_1-coeff_2+coeff_3) );
   lat = pi/2.0;
   REQUIRE( Check::equal(PF::calculate_dx_from_area(area,lat), coeff_1+coeff_2+coeff_3) );
-  
+  lat = pi/4.0;
+  REQUIRE( Check::approx_equal(PF::calculate_dx_from_area(area,lat), coeff_1-coeff_3, test_tol) );
+  lat = pi/8.0;
+  REQUIRE( Check::approx_equal(PF::calculate_dx_from_area(area,lat), coeff_1-std::sqrt(2)/2*coeff_2, test_tol) );
   lat     = pdf_lat(engine);
   area    = pdf_area(engine);
-  grid_dx = (coeff_1 - coeff_2 * std::cos(2.0*lat) + coeff_3 * std::cos(4.0*lat)) * std::sqrt(area)*(180.0/pi);
-  REQUIRE( Check::equal(PF::calculate_dx_from_area(area,lat),grid_dx) ); 
+  REQUIRE( Check::equal(PF::calculate_dx_from_area(area,lat),PF::calculate_dx_from_area(area,-lat)) );
+
 }
 
 
