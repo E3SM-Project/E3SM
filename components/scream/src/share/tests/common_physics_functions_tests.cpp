@@ -164,16 +164,9 @@ void run_scalar_valued_fns(std::mt19937_64& engine)
   lat = pi/2.0;
   REQUIRE( Check::equal(PF::calculate_dx_from_area(area,lat), coeff_1+coeff_2+coeff_3) );
   lat = pi/4.0;
-  // Note, pi is not defined up to double precision, so in order to compare with output from
-  // calculate_dx_from_area we need to define the following variables to approximate the output
-  // expected from the use of cosine in the function.  In other words this provides finite
-  // precision values to use in the test.
-  auto cos_pi_4 = std::cos(pi/4.0);
-  auto cos_pi_2 = std::cos(pi/2.0);
-  auto cos_pi   = std::cos(pi);
-  REQUIRE( Check::approx_equal(PF::calculate_dx_from_area(area,lat), coeff_1-coeff_2*cos_pi_2 + coeff_3*cos_pi, test_tol) );
+  REQUIRE( Check::approx_equal(PF::calculate_dx_from_area(area,lat), coeff_1 - coeff_3, test_tol) );
   lat = pi/8.0;
-  REQUIRE( Check::approx_equal(PF::calculate_dx_from_area(area,lat), coeff_1-cos_pi_4*coeff_2 + coeff_3*cos_pi_2, test_tol) );
+  REQUIRE( Check::approx_equal(PF::calculate_dx_from_area(area,lat), coeff_1-std::sqrt(2.0)/2.0*coeff_2, test_tol) );
   lat     = pdf_lat(engine);
   area    = pdf_area(engine);
   REQUIRE( Check::equal(PF::calculate_dx_from_area(area,lat),PF::calculate_dx_from_area(area,-lat)) );
