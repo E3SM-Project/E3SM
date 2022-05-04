@@ -55,6 +55,7 @@ character(len=16) :: shallow_scheme       = unset_str  ! shallow convection pack
 character(len=16) :: eddy_scheme          = unset_str  ! vertical diffusion package
 character(len=16) :: microp_scheme        = unset_str  ! microphysics package
 character(len=16) :: macrop_scheme        = unset_str  ! macrophysics package
+character(len=128) :: ideal_phys_option   = unset_str  ! Option for idealized physics
 character(len=16) :: radiation_scheme     = unset_str  ! radiation package
 integer           :: srf_flux_avg         = unset_int  ! 1 => smooth surface fluxes, 0 otherwise
 integer           :: conv_water_in_rad    = unset_int  ! 0==> No; 1==> Yes-Arithmetic average;
@@ -210,7 +211,7 @@ subroutine phys_ctl_readnl(nlfile)
       mam_amicphys_optaa, n_so4_monolayers_pcage,micro_mg_accre_enhan_fac, &
       l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
       l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad, prc_coef1,prc_exp,prc_exp1,cld_sed,mg_prc_coeff_fix, &
-      rrtmg_temp_fix
+      rrtmg_temp_fix, ideal_phys_option
    !-----------------------------------------------------------------------------
 
    if (masterproc) then
@@ -238,6 +239,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(microp_scheme,    len(microp_scheme)    , mpichar, 0, mpicom)
    call mpibcast(radiation_scheme, len(radiation_scheme) , mpichar, 0, mpicom)
    call mpibcast(macrop_scheme,    len(macrop_scheme)    , mpichar, 0, mpicom)
+   call mpibcast(ideal_phys_option,len(ideal_phys_option), mpichar, 0, mpicom)
    call mpibcast(srf_flux_avg,                    1 , mpiint,  0, mpicom)
    call mpibcast(MMF_microphysics_scheme, len(MMF_microphysics_scheme) , mpichar, 0, mpicom)
    call mpibcast(MMF_orientation_angle,           1 , mpir8,   0, mpicom)
@@ -457,7 +459,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         history_aerosol_out, history_aero_optics_out, history_eddy_out, &
                         history_budget_out, history_budget_histfile_num_out, history_waccm_out, &
                         history_clubb_out, ieflx_opt_out, conv_water_in_rad_out, cam_chempkg_out, &
-                        prog_modal_aero_out, macrop_scheme_out, &
+                        prog_modal_aero_out, macrop_scheme_out, ideal_phys_option_out, &
                         use_MMF_out, use_ECPP_out, MMF_microphysics_scheme_out, &
                         MMF_orientation_angle_out, use_MMF_VT_out, MMF_VT_wn_max_out, &
                         use_crm_accel_out, crm_accel_factor_out, crm_accel_uv_out, &
@@ -490,6 +492,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    character(len=16), intent(out), optional :: microp_scheme_out
    character(len=16), intent(out), optional :: radiation_scheme_out
    character(len=16), intent(out), optional :: macrop_scheme_out
+   character(len=128), intent(out), optional :: ideal_phys_option_out 
    character(len=16), intent(out), optional :: MMF_microphysics_scheme_out
    real(r8),          intent(out), optional :: MMF_orientation_angle_out
    logical,           intent(out), optional :: use_MMF_out
@@ -578,6 +581,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
 
    if ( present(use_subcol_microp_out   ) ) use_subcol_microp_out    = use_subcol_microp
    if ( present(macrop_scheme_out       ) ) macrop_scheme_out        = macrop_scheme
+   if ( present(ideal_phys_option_out   ) ) ideal_phys_option_out    = ideal_phys_option
    if ( present(atm_dep_flux_out        ) ) atm_dep_flux_out         = atm_dep_flux
    if ( present(history_aerosol_out     ) ) history_aerosol_out      = history_aerosol
    if ( present(history_aero_optics_out ) ) history_aero_optics_out  = history_aero_optics

@@ -550,8 +550,16 @@ if ($dyn =~ /se/) {add_default($nl, 'vect_map', 'val'=>'cart3d');}
 
 # Adiabatic or Ideal physics
 my $phys = $cfg->get('phys');
+# TODO: I do not think these are used in E3SM anymore, and should be removed.
 if ($phys eq 'adiabatic') { add_default($nl, 'atm_adiabatic',  'val'=>'.true.'); }
 if ($phys eq 'ideal')     { add_default($nl, 'atm_ideal_phys', 'val'=>'.true.'); }
+
+# Ideal physics option
+# TODO: roll this into phys option so that ideal physics is identified not by phys="ideal", but
+# "held-suarez", "held-suarez-williamson", "held-suarez-lin-williamson", etc.
+if ($phys eq 'ideal') {
+    add_default($nl, 'ideal_phys_option', 'val'=>'held-suarez');
+}
 
 # Aqua planet 
 my $aqua_mode = $cfg->get('aquaplanet');
@@ -816,7 +824,7 @@ add_default($nl, 'raytau0');
 
 # these options were added for global RCE and they only work with RRTMGP
 my $rad_pkg = 'none';
-if (!(($phys eq 'ideal') or ($phys eq 'adiabatic'))) {
+if (!$ideal_or_adia_or_aqua) {
     my $rad_pkg = $cfg->get('rad');
     if ($rad_pkg eq 'rrtmgp') {
       add_default($nl,'do_aerosol_rad');
@@ -1582,7 +1590,7 @@ if ($nl->get_value('strat_aero_feedback') =~ /$TRUE/io) {
     $radval .= "," . quote_string("N:H2SO4M:" . $abs_filepath);
 }
 
-if (! (($phys eq 'ideal') or ($phys eq 'adiabatic'))) {
+if (!$ideal_or_adia_or_aqua) {
     add_default($nl, 'rad_climate', 'val'=>$radval);
 }
 
