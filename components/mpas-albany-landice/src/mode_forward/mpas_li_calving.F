@@ -2155,6 +2155,7 @@ module li_calving
       integer, dimension(:), pointer :: frontAblationMask
       real (kind=RKIND), dimension(:), pointer :: calvingThickness, faceMeltingThickness
       real (kind=RKIND), pointer :: config_sea_level
+      real (kind=RKIND), pointer :: config_calving_error_threshold
       logical, pointer :: config_distribute_unablatedVolumeDynCell
       real (kind=RKIND), dimension(:), pointer :: dvEdge, dcEdge
       real (kind=RKIND), dimension(:), pointer :: angleEdge
@@ -2190,6 +2191,7 @@ module li_calving
       err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+      call mpas_pool_get_config(liConfigs, 'config_calving_error_threshold', config_calving_error_threshold)
       call mpas_pool_get_config(liConfigs, 'config_distribute_unablatedVolumeDynCell', config_distribute_unablatedVolumeDynCell)
 
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
@@ -2765,7 +2767,7 @@ module li_calving
                  realArgs=(/globalInfo(5) + globalInfo(6), &
                  100.0_RKIND * (globalInfo(5) + globalInfo(6)) / (globalInfo(4)+1.0e-30_RKIND)/))
       endif
-      if (((globalInfo(5) + globalInfo(6)) / (globalInfo(4) + 1.0e-30_RKIND) > 0.1_RKIND) .and. &
+      if (((globalInfo(5) + globalInfo(6)) / (globalInfo(4) + 1.0e-30_RKIND) > config_calving_error_threshold) .and. &
           (globalInfo(4) > 1000.0_RKIND**2)) then ! Include some small amount of total calving for comparison
          call mpas_log_write("Failed to ablate an amount greater than 10% of the ice ablated.  " // &
                  "Try reducing time step or li_apply_front_ablation_velocity may need improvements.", &
