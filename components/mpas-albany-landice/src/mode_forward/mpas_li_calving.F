@@ -1169,6 +1169,7 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: calvingThickness
       real (kind=RKIND), pointer :: calvingCFLdt
+      real (kind=RKIND), pointer :: dtCalvingCFLratio
       integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
       integer, dimension(:), pointer :: cellMask
@@ -1224,6 +1225,7 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
          call mpas_pool_get_array(geometryPool, 'calvingCFLdt', calvingCFLdt)
+         call mpas_pool_get_array(geometryPool, 'dtCalvingCFLratio', dtCalvingCFLratio)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
          call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
@@ -1252,7 +1254,8 @@ module li_calving
          ! Convert calvingVelocity to calvingThickness
          call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, &
                                               calvingThickness, calvingVelocity, applyToGrounded, &
-                                              applyToFloating, applyToGroundingLine, domain, calvingCFLdt, err=err_tmp)
+                                              applyToFloating, applyToGroundingLine, domain, calvingCFLdt, dtCalvingCFLratio, &
+                                              err=err_tmp)
          err = ior(err, err_tmp)
 
          if ( trim(config_damage_calving_method) == 'none' ) then
@@ -1389,6 +1392,7 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: thickness
       real (kind=RKIND), dimension(:), pointer :: calvingThickness
       real (kind=RKIND), pointer :: calvingCFLdt
+      real (kind=RKIND), pointer :: dtCalvingCFLratio
       integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
       integer, dimension(:), pointer :: cellMask
@@ -1432,6 +1436,7 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
          call mpas_pool_get_array(geometryPool, 'calvingCFLdt', calvingCFLdt)
+         call mpas_pool_get_array(geometryPool, 'dtCalvingCFLratio', dtCalvingCFLratio)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
          call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
@@ -1456,7 +1461,7 @@ module li_calving
          ! Convert calvingVelocity to calvingThickness
          call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, calvingThickness, calvingVelocity, &
                                               applyToGrounded=.true., applyToFloating=.true., applyToGroundingLine=.false., &
-                                              domain=domain, maxDt=calvingCFLdt, err=err_tmp)
+                                              domain=domain, maxDt=calvingCFLdt, CFLratio=dtCalvingCFLratio, err=err_tmp)
          err = ior(err, err_tmp)
 
          ! === apply calving ===
@@ -1576,6 +1581,7 @@ module li_calving
                                         temperature, layerThickness
       real (kind=RKIND), pointer :: config_default_flowParamA
       real (kind=RKIND), pointer :: calvingCFLdt
+      real (kind=RKIND), pointer :: dtCalvingCFLratio
       integer, pointer :: nCells
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), dimension(:), pointer :: vonMisesStress, damage
@@ -1626,6 +1632,7 @@ module li_calving
           call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
           call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
           call mpas_pool_get_array(geometryPool, 'calvingCFLdt', calvingCFLdt)
+          call mpas_pool_get_array(geometryPool, 'dtCalvingCFLratio', dtCalvingCFLratio)
           call mpas_pool_get_array(geometryPool, 'thickness', thickness)
           call mpas_pool_get_array(geometryPool, 'groundedVonMisesThresholdStress', groundedVonMisesThresholdStress)
           call mpas_pool_get_array(geometryPool, 'floatingVonMisesThresholdStress', floatingVonMisesThresholdStress)
@@ -1715,7 +1722,8 @@ module li_calving
          ! Convert calvingVelocity to calvingThickness
           call li_apply_front_ablation_velocity(meshPool, geometryPool,velocityPool, &
                                               calvingThickness, calvingVelocity, applyToGrounded, &
-                                              applyToFloating, applyToGroundingLine, domain, calvingCFLdt, err_tmp)
+                                              applyToFloating, applyToGroundingLine, domain, &
+                                              calvingCFLdt, dtCalvingCFLratio, err_tmp)
           err = ior(err, err_tmp)
          ! Update halos on calvingThickness or faceMeltingThickness before
          ! applying it.
@@ -1859,6 +1867,7 @@ module li_calving
                                         xvelmean, yvelmean, calvingThickness, &
                                         bedTopography
       real (kind=RKIND), pointer :: calvingCFLdt
+      real (kind=RKIND), pointer :: dtCalvingCFLratio
       integer, pointer :: nCells, timestepNumber
       integer, dimension(:,:), pointer :: edgesOnCell
       integer, dimension(:), pointer :: cellMask, nEdgesOnCell
@@ -1901,6 +1910,7 @@ module li_calving
       call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
       call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
       call mpas_pool_get_array(geometryPool, 'calvingCFLdt', calvingCFLdt)
+      call mpas_pool_get_array(geometryPool, 'dtCalvingCFLratio', dtCalvingCFLratio)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(velocityPool, 'xvelmean', xvelmean)
       call mpas_pool_get_array(velocityPool, 'yvelmean', yvelmean)
@@ -2038,7 +2048,7 @@ module li_calving
       call li_apply_front_ablation_velocity(meshPool, geometryPool,velocityPool, &
                                               calvingThickness, calvingVelocity, applyToGrounded=.true., &
                                               applyToFloating=.true., applyToGroundingLine=.false., &
-                                              domain=domain, maxDt=calvingCFLdt, err=err)
+                                              domain=domain, maxDt=calvingCFLdt, CFLratio=dtCalvingCFLratio, err=err)
 
       ! Update halos on calvingThickness before applying it.
       ! NOTE: THIS WILL NOT WORK ON MULTIPLE BLOCKS PER PROCESSOR
@@ -2107,7 +2117,7 @@ module li_calving
 !-----------------------------------------------------------------------
 
    subroutine li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, ablationThickness, ablationVelocity, &
-                   applyToGrounded, applyToFloating, applyToGroundingLine, domain, maxDt, err)
+                   applyToGrounded, applyToFloating, applyToGroundingLine, domain, maxDt, CFLratio, err)
 
       use ieee_arithmetic, only : ieee_is_nan
 
@@ -2129,6 +2139,7 @@ module li_calving
       ! output variables
       !-----------------------------------------------------------------
       real (kind=RKIND), optional :: maxDt !< Output: an approximation of the max allowable dt based on a CFL-like condition
+      real (kind=RKIND), optional :: CFLratio !< Output: the ratio of the actual timestep being applied to what maximum allowable
       integer, intent(out) :: err !< Output: error flag
 
       integer, pointer :: nEdges, nEdgesSolve, nCells, nCellsSolve, maxEdges
@@ -2736,6 +2747,12 @@ module li_calving
       if (present(maxDt)) then
          ! Do this global reduce at the same time as the previous for efficiency
          call mpas_dmpar_min_real(domain % dminfo, minOfMaxAllowableDt, maxDt)
+         if (present(CFLratio)) then
+            CFLratio = deltat / maxDt
+            if (CFLratio > 1.0_RKIND) then
+               call mpas_log_write("Ratio of dt to calving CFL dt exceeds 1: $r", MPAS_LOG_WARN, realArgs = (/CFLratio/))
+            endif
+         endif
       endif
       call mpas_log_write("== Ablation complete. Total calved                    = $r", realArgs = (/globalInfo(4)/))
       call mpas_log_write("==                   Ablated from non-dynamic cells   = $r", realArgs = (/globalInfo(1)/))
@@ -2843,6 +2860,7 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: calvingThickness
       real (kind=RKIND), dimension(:), pointer :: calvingVelocity
       real (kind=RKIND), pointer :: calvingCFLdt
+      real (kind=RKIND), pointer :: dtCalvingCFLratio
       real (kind=RKIND), dimension(:), pointer :: eMax, eMin
       real (kind=RKIND), dimension(:), pointer :: damage
       integer, dimension(:), pointer :: calvingFrontMask
@@ -2898,6 +2916,7 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
          call mpas_pool_get_array(geometryPool, 'calvingFrontMask', calvingFrontMask)
          call mpas_pool_get_array(geometryPool, 'calvingCFLdt', calvingCFLdt)
+         call mpas_pool_get_array(geometryPool, 'dtCalvingCFLratio', dtCalvingCFLratio)
 
 
          call calculate_calving_front_mask(meshPool, geometryPool, calvingFrontMask)
@@ -2914,7 +2933,7 @@ module li_calving
                 * real(li_mask_is_floating_ice_int(cellMask(:)), kind=RKIND) ! calculate only for floating ice
              call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, calvingThickness, calvingVelocity, &
                                               applyToGrounded=.false., applyToFloating=.true., applyToGroundingLine=.false., &
-                                              domain=domain, maxDt=calvingCFLdt, err=err_tmp)
+                                              domain=domain, maxDt=calvingCFLdt, CFLratio=dtCalvingCFLratio, err=err_tmp)
              err = ior(err, err_tmp)
          elseif (trim(config_damage_calving_method) == 'threshold') then
              call apply_calving_damage_threshold(meshPool, geometryPool, scratchPool, domain, err_tmp)
