@@ -38,7 +38,7 @@ void DryStaticEnergyDiagnostic::set_grids(const std::shared_ptr<const GridsManag
   add_field<Required>("phis",           scalar2d_layout_col, m2/s2, grid_name, ps);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar3d_layout_mid, m, grid_name);
+  FieldIdentifier fid (name(), scalar3d_layout_mid, m2/s2, grid_name);
   m_diagnostic_output = Field(fid);
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
   C_ap.request_allocation(ps);
