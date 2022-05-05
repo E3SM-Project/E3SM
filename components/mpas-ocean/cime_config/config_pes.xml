@@ -150,6 +150,21 @@
         </ntasks>
       </pes>
     </mach>
+    <mach name="melvin|mappy">
+      <pes compset="any" pesize="any">
+        <comment>mpas-ocean: melvin|mappy PEs for grid a%TT62</comment>
+        <ntasks>
+          <ntasks_atm>48</ntasks_atm>
+          <ntasks_lnd>48</ntasks_lnd>
+          <ntasks_rof>48</ntasks_rof>
+          <ntasks_ice>48</ntasks_ice>
+          <ntasks_ocn>48</ntasks_ocn>
+          <ntasks_glc>48</ntasks_glc>
+          <ntasks_wav>48</ntasks_wav>
+          <ntasks_cpl>48</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
   </grid>
   <grid name="a%T62.+_oi%oQU120_r%rx1.+">
     <mach name="bebop">
