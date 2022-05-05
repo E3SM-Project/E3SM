@@ -2513,6 +2513,9 @@ module li_calving
             ablationThickness(iCell) = removeVolumeHere / areaCell(iCell)
             ablatedVolumeNonDynCell(iCell) = removeVolumeHere
             unablatedVolumeNonDynCell(iCell) = requiredAblationVolumeNonDynCell(iCell) - removeVolumeHere
+            if (bedTopography(iCell) >= config_sea_level) then
+               unablatedVolumeNonDynCell(iCell) = 0.0_RKIND ! Ignore leftover potential calving when we hit sea level
+            endif
             cellVolume(iCell) = cellVolume(iCell) - removeVolumeHere
             if (iCell <= nCellsSolve) ablationSubtotal1 = ablationSubtotal1 + removeVolumeHere
          endif
@@ -2557,7 +2560,7 @@ module li_calving
             .and. li_mask_is_margin(cellMask(iCell)) ) then                            ! that is at the edge of the ice
             do iNeighbor = 1, nEdgesOnCell(iCell)
                jCell = cellsOnCell(iNeighbor, iCell)
-               if ((.not. li_mask_is_ice(cellMask(jCell))) .and. (bedTopography(jCell) <= config_sea_level)) then
+               if ((.not. li_mask_is_ice(cellMask(jCell))) .and. (bedTopography(jCell) < config_sea_level)) then
                   iEdge = edgesOnCell(iNeighbor, iCell)
                   edgeLengthScaling = scale_edge_length(angleEdge(iEdge), uvelForAblation(iCell), vvelForAblation(iCell))
                   requiredAblationVolumeDynEdge(iEdge) = ablationVelocity(iCell) * &
@@ -2589,7 +2592,7 @@ module li_calving
                endif
             enddo
 
-            ! Now that we know calvLengthCell, pass along the required calving volume relative to the interface length
+            ! Now that we know ablateLengthCell, pass along the required calving volume relative to the interface length
             if ( ablateLengthCell > 0.0_RKIND ) then
                do iNeighbor = 1, nEdgesOnCell(iCell)
                   iEdge = edgesOnCell(iNeighbor, iCell)
@@ -2605,8 +2608,11 @@ module li_calving
                      endif
                      requiredAblationVolumeDynEdge(iEdge) = ablateLengthEdge / ablateLengthCell * volumeAvailableToPass
                      unablatedVolumeNonDynCell(iCell) = unablatedVolumeNonDynCell(iCell) - requiredAblationVolumeDynEdge(iEdge)
-                    !call mpas_log_write("   Passed calving $r from non-dynamic cell $i to dynamic cell $i", &
-                    !        realArgs=(/requiredAblationVolumeDynEdge(iEdge)/), intArgs=(/iCell, jCell/))
+                     !call mpas_log_write("   Passed calving $r from non-dynamic cell $i to dynamic cell $i", &
+                     !        realArgs=(/requiredAblationVolumeDynEdge(iEdge)/), intArgs=(/iCell, jCell/))
+                     if (bedTopography(jCell) >= config_sea_level) then
+                        requiredAblationVolumeDynEdge(iEdge) = 0.0_RKIND ! Don't pass this further if it would go above sea level
+                     endif
                   endif
                enddo
             endif
@@ -2618,7 +2624,7 @@ module li_calving
 
       ! c. Now apply ablation to each cell
       do iCell = 1, nCells
-         if ((li_mask_is_dynamic_ice(cellMask(iCell))) .and. (bedTopography(iCell) <= config_sea_level)) then
+         if ((li_mask_is_dynamic_ice(cellMask(iCell))) .and. (bedTopography(iCell) < config_sea_level)) then
             ! Can loop over all dyn cells - only ones with calving on their edges will have calving applied.
             ! Note, we ignore any leftover calving/melting if it would be applied to cells where the bed is above sea level.
             do iNeighbor = 1, nEdgesOnCell(iCell)
@@ -2659,7 +2665,7 @@ module li_calving
                ! unablatedVolumeDynCell
                do iEdge = 1, nEdgesOnCell(iCell)
                   iNeighbor = cellsOnCell(iEdge, iCell)
-                  if ((li_mask_is_dynamic_ice(cellMask(iNeighbor))) .and. (bedTopography(iNeighbor) <= config_sea_level) &
+                  if ((li_mask_is_dynamic_ice(cellMask(iNeighbor))) .and. (bedTopography(iNeighbor) < config_sea_level) &
                        .and. ( cellVolume(iNeighbor) > (ablationSmallThk * areaCell(iNeighbor)) ) ) then
                      nDynNeighbors = nDynNeighbors + 1
                   endif
@@ -2668,7 +2674,7 @@ module li_calving
                   ! Now distribute unablatedVolumeDynCell between those neighbors
                   do iEdge = 1, nEdgesOnCell(iCell)
                      iNeighbor = cellsOnCell(iEdge, iCell)
-                     if ((li_mask_is_dynamic_ice(cellMask(iNeighbor))) .and. (bedTopography(iNeighbor) <= config_sea_level) &
+                     if ((li_mask_is_dynamic_ice(cellMask(iNeighbor))) .and. (bedTopography(iNeighbor) < config_sea_level) &
                        .and. ( cellVolume(iNeighbor) > (ablationSmallThk * areaCell(iNeighbor)) ) ) then
                         unablatedVolumeDynCell(iNeighbor) = unablatedVolumeDynCell(iNeighbor) + &
                                                                 unablatedVolumeDynCell(iCell) / nDynNeighbors
@@ -2682,7 +2688,7 @@ module li_calving
 
          ! b. Apply ablation
          do iCell = 1, nCells
-             if ((li_mask_is_dynamic_ice(cellMask(iCell))) .and. (bedTopography(iCell) <= config_sea_level) &
+             if ((li_mask_is_dynamic_ice(cellMask(iCell))) .and. (bedTopography(iCell) < config_sea_level) &
                   .and. ( cellVolume(iCell) > (ablationSmallThk * areaCell(iCell)) ) &
                   .and. (unablatedVolumeDynCell(iCell) > 0.0_RKIND) ) then
                   removeVolumeHere = min(cellVolume(iCell), unablatedVolumeDynCell(iCell))  ! Don't use more than available
@@ -2736,6 +2742,21 @@ module li_calving
          endif
       enddo
 
+      ! Clean up to unablated volume arrays before checking for errors
+      do iCell = 1, nCells
+         ! Eliminate leftover potental calving from cells above sea level to avoid erroneous warnings/errors
+         if (bedTopography(iCell) >= config_sea_level) then
+            unablatedVolumeNonDynCell(iCell) = 0.0_RKIND
+            unablatedVolumeDynCell(iCell) = 0.0_RKIND
+         endif
+         ! Clean up round off.  Because this is volume, threshold can be kind of large
+         if (unablatedVolumeNonDynCell(iCell) < 1.0e-5_RKIND) then
+            unablatedVolumeNonDynCell(iCell) = 0.0_RKIND
+         endif
+         if (unablatedVolumeDynCell(iCell) < 1.0e-5_RKIND) then
+            unablatedVolumeDynCell(iCell) = 0.0_RKIND
+         endif
+      enddo
 
       ! End of routine accounting/reporting
       localInfo(1) = ablationSubtotal1
