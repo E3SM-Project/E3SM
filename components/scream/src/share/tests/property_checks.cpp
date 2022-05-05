@@ -70,7 +70,7 @@ TEST_CASE("property_checks", "") {
   auto lon_h = Kokkos::create_mirror_view(lon);
   auto dofs_h = Kokkos::create_mirror_view(dofs);
   for (int i=0; i<grid->get_num_local_dofs(); ++i) {
-    dofs(i) = num_lcols*comm.rank() + i;
+    dofs_h(i) = num_lcols*comm.rank() + i;
     lat_h(i) = i;
     lon_h(i) = -i;
   }
