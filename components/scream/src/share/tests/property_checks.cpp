@@ -182,13 +182,13 @@ TEST_CASE("property_checks", "") {
       "Check failed.\n"
       "  field_1 within interval [0, 1]\n"
       "  minimum:\n"
-      "    - value: 0.000000\n"
+      "    - value: 0\n"
       "    - entry: (0,1,2)\n"
-      "    - lat/lon: (0.000000, 0.000000)\n"
+      "    - lat/lon: (0, 0)\n"
       "  maximum:\n"
-      "    - value: 2.000000\n"
+      "    - value: 2\n"
       "    - entry: (1,1,2)\n"
-      "    - lat/lon: (1.000000, -1.000000)\n";
+      "    - lat/lon: (1, -1)\n";
 
     REQUIRE(checkResult.msg == expected_msg);
 
