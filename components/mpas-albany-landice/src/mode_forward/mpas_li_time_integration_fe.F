@@ -922,11 +922,13 @@ module li_time_integration_fe
          call mpas_log_write("Timestep limited by calving CFL condition.")
       endif
 
+      ! Take minimum of the max adaptive timestep setting and the allowable dt from the CFL condition
+      proposedDt = min(allowableDt, config_max_adaptive_timestep)
 
       ! Round down the proposed dt to avoid complications with fractional seconds
       ! (some timekeeping-related functionality, like restarts, don't support them)
       ! (need to perform floor with an 8-bit integer to allow up 293 billion years in seconds)
-      proposedDt = real(floor(allowableDt, KIND=8), RKIND)
+      proposedDt = real(floor(proposedDt, KIND=8), RKIND)
 
       ! Check if the proposed timestep is smaller than specified limit.
       ! Do this prior to limiting the timestep for the force interval
