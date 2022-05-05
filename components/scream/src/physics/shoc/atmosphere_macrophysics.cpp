@@ -32,9 +32,8 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
-  // TODO: In preprocessing, we assume area is in meters. This may not
-  //       always be the case.
   m_cell_area = grid->get_geometry_data("area"); // area of each cell
+  m_cell_lat  = grid->get_geometry_data("lat"); // area of each cell
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
@@ -291,7 +290,7 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
   // For now, set z_int(i,nlevs) = z_surf = 0
   const Real z_surf = 0.0;
 
-  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,z_surf,m_cell_area,
+  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,z_surf,m_cell_area,m_cell_lat,
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
                                 surf_mom_flux,qv,qc,qc_copy,tke,tke_copy,z_mid,z_int,cell_length,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
