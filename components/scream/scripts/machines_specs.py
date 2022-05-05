@@ -219,7 +219,7 @@ def setup_mach_env(machine, ctest_j=None):
         # But we can return the resulting PATH, and update current env with that
 
         # Get the whole env string after running the env_setup command
-        curr_env = run_cmd_no_fail("{{ {};  }} > /dev/null && env | sort".format(";".join(env_setup)))
+        curr_env = run_cmd_no_fail("{{ {};  }} > /dev/null && env | sort".format(" && ".join(env_setup)),verbose=True)
 
         # Split by line. We are assuming that each env variable is *exactly* on one line
         curr_env_list = curr_env.split("\n")
