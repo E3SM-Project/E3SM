@@ -7,8 +7,9 @@
 #include "diagnostics/atm_density.hpp"
 #include "diagnostics/exner.hpp"
 #include "diagnostics/virtual_temperature.hpp"
-#include "diagnostics/vertical_height_interface.hpp"
+#include "diagnostics/vertical_layer_interface.hpp"
 #include "diagnostics/vertical_layer_thickness.hpp"
+#include "diagnostics/vertical_layer_midpoint.hpp"
 
 namespace scream {
 
@@ -18,8 +19,9 @@ inline void register_diagnostics () {
   diag_factory.register_product("AtmosphereDensity",&create_atmosphere_diagnostic<AtmDensityDiagnostic>);
   diag_factory.register_product("Exner",&create_atmosphere_diagnostic<ExnerDiagnostic>);
   diag_factory.register_product("VirtualTemperature",&create_atmosphere_diagnostic<VirtualTemperatureDiagnostic>);
-  diag_factory.register_product("VerticalInterfaceHeight",&create_atmosphere_diagnostic<VerticalInterfaceHeightDiagnostic>);
-  diag_factory.register_product("VerticalLayerThickness",&create_atmosphere_diagnostic<VerticalLayerThicknessDiagnostictDiagnostic>);
+  diag_factory.register_product("VerticalLayerInterface",&create_atmosphere_diagnostic<VerticalLayerInterfaceDiagnostic>);
+  diag_factory.register_product("VerticalLayerThickness",&create_atmosphere_diagnostic<VerticalLayerThicknessDiagnostic>);
+  diag_factory.register_product("VerticalLayerMidpoint",&create_atmosphere_diagnostic<VerticalLayerMidpointDiagnostic>);
 }
 
 } // namespace scream

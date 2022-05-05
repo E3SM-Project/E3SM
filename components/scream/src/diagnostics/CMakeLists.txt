@@ -3,8 +3,9 @@ set(DIAGNOSTIC_SRCS
   atm_density.cpp
   exner.cpp
   virtual_temperature.cpp
-  vertical_height_interface.cpp
+  vertical_layer_interface.cpp
   vertical_layer_thickness.cpp
+  vertical_layer_midpoint.cpp
 )
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})

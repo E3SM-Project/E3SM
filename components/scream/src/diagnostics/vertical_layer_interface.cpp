@@ -1,17 +1,17 @@
-#include "diagnostics/vertical_height_interface.hpp"
+#include "diagnostics/vertical_layer_interface.hpp"
 
 namespace scream
 {
 
 // =========================================================================================
-VerticalInterfaceHeightDiagnostic::VerticalInterfaceHeightDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
+VerticalLayerInterfaceDiagnostic::VerticalLayerInterfaceDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereDiagnostic(comm,params)
 {
   // Nothing to do here
 }
 
 // =========================================================================================
-void VerticalInterfaceHeightDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void VerticalLayerInterfaceDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
@@ -43,28 +43,31 @@ void VerticalInterfaceHeightDiagnostic::set_grids(const std::shared_ptr<const Gr
 
 }
 // =========================================================================================
-void VerticalInterfaceHeightDiagnostic::initialize_impl(const RunType /* run_type */)
+void VerticalLayerInterfaceDiagnostic::initialize_impl(const RunType /* run_type */)
 {
   const auto& T_mid              = get_field_in("T_mid").get_view<const Pack**>();
   const auto& p_mid              = get_field_in("p_mid").get_view<const Pack**>();
   const auto& qv_mid             = get_field_in("qv").get_view<const Pack**>();
   const auto& pseudo_density_mid = get_field_in("pseudo_density").get_view<const Pack**>();
 
-  const auto& output         = m_diagnostic_output.get_view<Pack**>();
+  const auto& output             = m_diagnostic_output.get_view<Pack**>();
+
+  // Set surface geopotential for this diagnostic
+  const Real surf_geopotential = 0.0;
 
   auto ts = timestamp(); 
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 
-  run_diagnostic.set_variables(m_num_cols,m_num_levs,p_mid,T_mid,qv_mid,pseudo_density_mid,output);
+  run_diagnostic.set_variables(surf_geopotential,m_num_cols,m_num_levs,T_mid,p_mid,pseudo_density_mid,qv_mid,output);
 }
 // =========================================================================================
-void VerticalInterfaceHeightDiagnostic::run_impl(const int /* dt */)
+void VerticalLayerInterfaceDiagnostic::run_impl(const int /* dt */)
 {
 
   const auto nlev_packs     = ekat::npack<Spack>(m_num_levs);
   const auto scan_policy    = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, nlev_packs);
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
-  Kokkos::parallel_for("VerticalInterfaceHeightDiagnostic",
+  Kokkos::parallel_for("VerticalLayerInterfaceDiagnostic",
                        default_policy,
                        run_diagnostic
   );
@@ -72,7 +75,7 @@ void VerticalInterfaceHeightDiagnostic::run_impl(const int /* dt */)
 
 }
 // =========================================================================================
-void VerticalInterfaceHeightDiagnostic::finalize_impl()
+void VerticalLayerInterfaceDiagnostic::finalize_impl()
 {
   // Nothing to do
 }

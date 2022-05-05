@@ -1,5 +1,5 @@
-#ifndef EAMXX_VERTICAL_INT_HGHT_DIAGNOSTIC_HPP
-#define EAMXX_VERTICAL_INT_HGHT_DIAGNOSTIC_HPP
+#ifndef EAMXX_VERTICAL_LAY_MID_DIAGNOSTIC_HPP
+#define EAMXX_VERTICAL_LAY_MID_DIAGNOSTIC_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
@@ -12,13 +12,15 @@ namespace scream
  * This diagnostic will produce the potential temperature.
  */
 
-class VerticalInterfaceHeightDiagnostic : public AtmosphereDiagnostic
+class VerticalLayerMidpointDiagnostic : public AtmosphereDiagnostic
 {
 public:
   template <typename S>
   using SmallPack     = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
+  using IntSmallPack  = SmallPack<Int>;
 
   using Spack         = SmallPack<Real>;
+  using Smask         = ekat::Mask<Spack::n>;
   using Pack          = ekat::Pack<Real,Spack::n>;
   using PF            = scream::PhysicsFunctions<DefaultDevice>;
   using KT            = KokkosTypes<DefaultDevice>;
@@ -33,7 +35,7 @@ public:
   using uview_2d = Unmanaged<typename KT::template view_2d<ScalarT>>;
 
   // Constructors
-  VerticalInterfaceHeightDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
+  VerticalLayerMidpointDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // Set type to diagnostic
   AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
@@ -58,38 +60,52 @@ public:
     KOKKOS_INLINE_FUNCTION
     void operator() (const MemberType& team) const {
       const int icol = team.league_rank();
-      const auto& T_mid_i      = ekat::subview(T_mid,icol);
-      const auto& p_mid_i      = ekat::subview(p_mid,icol);
-      const auto& qv_mid_i     = ekat::subview(qv_mid,icol);
-      const auto& pseudo_mid_i = ekat::subview(pseudo_density_mid,icol);
-      PF::calculate_dz(team,pseudo_mid_i, p_mid_i, T_mid_i, qv_mid_i, dz_i);
-      const Real z_surf    = 0.0; // TODO, add this to cpp instead of in hpp hard-coded.
-      const auto& output_i = ekat::subview(output, icol);
-      PF::calculate_z_int(team,m_nlevs,dz_i,z_surf,output_i);
+      const int nlev_packs = ekat::npack<Spack>(m_nlevs);
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+        const auto range = ekat::range<IntSmallPack>(k*Spack::n);
+        const Smask in_nlev_range = (range < m_nlevs);
+
+        dz(icol,k) = PF::calculate_dz(pseudo_density(icol,k), p_mid(icol,k), T_mid(icol,k), qv(icol,k));
+      });
+      team.team_barrier();
+      const auto& dz_s    = ekat::subview(dz,    icol);
+      const auto& z_int_s = ekat::subview(z_int, icol);
+      const auto& z_mid_s = ekat::subview(z_mid, icol);
+      PF::calculate_z_int(team,m_nlevs,dz_s,surf_geopotential,z_int_s);
+      PF::calculate_z_mid(team,m_nlevs,z_int_s,z_mid_s);
     }
+    Real surf_geopotential;
     int m_ncol, m_nlevs;
-    view_2d_const T_mid;
-    view_2d_const p_mid;
-    view_2d_const qv_mid;
-    view_2d_const pseudo_density_mid;
-    view_2d       output;
-    view_2d       dz_i;
+    view_2d_const        T_mid;
+    view_2d_const        p_mid;
+    view_2d_const        pseudo_density;
+    view_2d_const        qv;
+    view_2d              dz;
+    view_2d              z_int;
+    view_2d              z_mid;
     // assign variables to this structure
-    void set_variables(const int ncol, const int nlevs,
-      const view_2d_const& pmid_, const view_2d_const& tmid_,
-      const view_2d_const& qvmid_, const view_2d_const& pseudo_density_mid_, 
-      const view_2d& output_)
+    void set_variables(const Real surf_geo, const int ncol, const int nlevs,
+                       const view_2d_const& T_mid_, const view_2d_const& p_mid_, const view_2d_const& pseudo_density_,
+                       const view_2d_const& qv_,
+                       const view_2d& z_mid_
+      )
     {
+      surf_geopotential = surf_geo;
       m_ncol   = ncol;
       m_nlevs  = nlevs;
+      const int nlev_packs = ekat::npack<Spack>(nlevs);
+      const int nlev_packsp1 = ekat::npack<Spack>(nlevs+1);
+      dz = view_2d("",ncol,nlev_packs);
+      z_int = view_2d("",ncol,nlev_packsp1);
       // IN
-      T_mid = tmid_;
-      p_mid = pmid_;
-      qv_mid = qvmid_;
-      pseudo_density_mid = pseudo_density_mid_;
+      T_mid = T_mid_;
+      p_mid = p_mid_;
+      pseudo_density = pseudo_density_;
+      qv = qv_;
       // OUT
-      output = output_;
+      z_mid = z_mid_;
     }
+
   }; // struct run_diagnostic_impl
 
 protected:
@@ -106,8 +122,8 @@ protected:
   // Structure to run the diagnostic
   run_diagnostic_impl  run_diagnostic;
 
-}; // class VerticalInterfaceHeightDiagnostic
+}; // class VerticalLayerMidpointDiagnostic
 
 } //namespace scream
 
-#endif // EAMXX_VERTICAL_INT_HGHT_DIAGNOSTIC_HPP
+#endif // EAMXX_VERTICAL_LAY_MID_DIAGNOSTIC_HPP

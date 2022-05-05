@@ -1,5 +1,5 @@
-#ifndef EAMXX_VERTICAL_LAY_THICK_DIAGNOSTIC_HPP
-#define EAMXX_VERTICAL_LAY_THICK_DIAGNOSTIC_HPP
+#ifndef EAMXX_VERTICAL_LAY_INT_DIAGNOSTIC_HPP
+#define EAMXX_VERTICAL_LAY_INT_DIAGNOSTIC_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
@@ -12,7 +12,7 @@ namespace scream
  * This diagnostic will produce the potential temperature.
  */
 
-class VerticalLayerThicknessDiagnostic : public AtmosphereDiagnostic
+class VerticalLayerInterfaceDiagnostic : public AtmosphereDiagnostic
 {
 public:
   template <typename S>
@@ -35,7 +35,7 @@ public:
   using uview_2d = Unmanaged<typename KT::template view_2d<ScalarT>>;
 
   // Constructors
-  VerticalLayerThicknessDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
+  VerticalLayerInterfaceDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // Set type to diagnostic
   AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
@@ -68,30 +68,39 @@ public:
         dz(icol,k) = PF::calculate_dz(pseudo_density(icol,k), p_mid(icol,k), T_mid(icol,k), qv(icol,k));
       });
       team.team_barrier();
+      const auto& dz_s    = ekat::subview(dz,    icol);
+      const auto& z_int_s = ekat::subview(z_int, icol);
+      PF::calculate_z_int(team,m_nlevs,dz_s,surf_geopotential,z_int_s);
     }
+    Real surf_geopotential;
     int m_ncol, m_nlevs;
     view_2d_const        T_mid;
     view_2d_const        p_mid;
     view_2d_const        pseudo_density;
     view_2d_const        qv;
     view_2d              dz;
+    view_2d              z_int;
     // assign variables to this structure
-    void set_variables(const int ncol, const int nlevs,
+    void set_variables(const Real surf_geo, const int ncol, const int nlevs,
                        const view_2d_const& T_mid_, const view_2d_const& p_mid_, const view_2d_const& pseudo_density_,
                        const view_2d_const& qv_,
-                       const view_2d& dz_
+                       const view_2d& z_int_
       )
     {
+      surf_geopotential = surf_geo;
       m_ncol   = ncol;
       m_nlevs  = nlevs;
+      const int nlev_packs = ekat::npack<Spack>(nlevs);
+      dz = view_2d("",ncol,nlev_packs);
       // IN
       T_mid = T_mid_;
       p_mid = p_mid_;
       pseudo_density = pseudo_density_;
       qv = qv_;
       // OUT
-      dz = dz_;
+      z_int = z_int_;
     }
+
   }; // struct run_diagnostic_impl
 
 protected:
@@ -108,8 +117,8 @@ protected:
   // Structure to run the diagnostic
   run_diagnostic_impl  run_diagnostic;
 
-}; // class VerticalLayerThicknessDiagnostic
+}; // class VerticalLayerInterfaceDiagnostic
 
 } //namespace scream
 
-#endif // EAMXX_VERTICAL_LAY_THICK_DIAGNOSTIC_HPP
+#endif // EAMXX_VERTICAL_LAY_INT_DIAGNOSTIC_HPP
