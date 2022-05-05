@@ -272,8 +272,8 @@
                             description="Fraction of total volume intended to be ablated remaining before an error is triggered."
                             possible_values="any positive real value"
                 />
-                <nml_option name="config_distribute_unablatedVolumeDynCell" type="logical" default_value=".true." units="unitless"
-                        description="If true, then distribute unablatedVolumeDynCell among dynamic neighbors when converting ablation velocity to ablation thickness. This should only be used as a clean-up measure, while limiting the timestep based on ablation velocity should be used as the primary method of getting accurate ablation thickness from ablation velocity."
+                <nml_option name="config_distribute_unablatedVolumeDynCell" type="logical" default_value=".false." units="unitless"
+                        description="If true, then distribute unablatedVolumeDynCell among dynamic neighbors when converting ablation velocity to ablation thickness. This should only be used as a clean-up measure, while limiting the timestep based on ablation velocity should be used as the primary method of getting accurate ablation thickness from ablation velocity.  If you choose to set config_adaptive_timestep_calvingCFL_fraction much larger than 1.0 (which is not recommended), setting this option to true usually results in more accurate calving behavior. "
                         possible_values=".true. or .false."
                 />
 	</nml_record>
@@ -484,15 +484,15 @@
 			description="A multiplier on the minimum allowable time step calculated from the advective CFL condition. (Setting to 1.0 may be unstable, so smaller values are recommended.)  Note that 'advective' is not in the name.  This is for backwards compatibility"
 			possible_values="Any positive real value less than 1.0."
 		/>
-		<nml_option name="config_adaptive_timestep_calvingCFL_fraction" type="real" default_value="0.5" units="none"
+		<nml_option name="config_adaptive_timestep_calvingCFL_fraction" type="real" default_value="1.0" units="none"
 			description="A multiplier on the minimum allowable time step calculated from the calving CFL condition. This should be conservative given the calving CFL calculation is lagged"
-			possible_values="Any positive real value.  Note that values greater than 1.0 are allowed and may be desired.  This is because the calving CFL is an approximate calculation."
+			possible_values="Any positive real value.  Note that values greater than 1.0 are allowed and may be desired.  This is because the calving CFL is an approximate calculation.  A value between 0.75 and 1.0, possibly as large as 1.25, was found to maintain converged accuracy for many configurations explored, so it is recommended to use values in this range.  However, much larger values (up to 2 or 3) provide acceptable accuracy for some configurations (but it is not clear what conditions allow it).  If values much greater than 1.0 are used, it is recommended to set config_distribute_unablatedVolumeDynCell to true."
 		/>
 		<nml_option name="config_adaptive_timestep_include_DCFL" type="logical" default_value=".false." units="none"
 			description="Option of whether to include the diffusive CFL condition in the determination of the maximum allowable timestep. The diffusive CFL condition at any location is estimated based on the local ice flux and surface slope."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_adaptive_timestep_include_calving" type="logical" default_value=".false." units="none"
+		<nml_option name="config_adaptive_timestep_include_calving" type="logical" default_value=".true." units="none"
 			description="Option of whether to include the calving CFL condition in the determination of the maximum allowable timestep. This only is applied if config_calving is set to a method that uses a calvingVelocity.  Note that this is an approximate CFL condition and is lagged a timestep."
 			possible_values=".true. or .false."
 		/>
