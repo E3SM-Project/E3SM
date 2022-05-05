@@ -49,7 +49,7 @@ FieldWithinIntervalCheck (const Field& f,
   set_fields ({f},{can_repair});
 }
 
-std::string FieldWithinIntervalCheck::name () const override {
+std::string FieldWithinIntervalCheck::name () const {
   // NOTE: std::to_string does not do a good job with small numbers (like 1e-9).
   std::stringstream ss;
   ss << fields().front().name()
@@ -213,8 +213,8 @@ PropertyCheck::CheckResult FieldWithinIntervalCheck::check_impl () const
   }
 
   std::stringstream msg;
-  ss << "  minimum:\n";
-  ss << "    - value: " << minmaxloc.min_val << "\n";
+  msg << "  minimum:\n";
+  msg << "    - value: " << minmaxloc.min_val << "\n";
   if (has_col_info) {
     msg << "    - entry: (" << gids(min_col_lid);
     for (size_t i=1; i<idx_min.size(); ++i) {
