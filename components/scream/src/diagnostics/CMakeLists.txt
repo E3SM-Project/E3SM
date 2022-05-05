@@ -6,6 +6,8 @@ set(DIAGNOSTIC_SRCS
   vertical_layer_interface.cpp
   vertical_layer_thickness.cpp
   vertical_layer_midpoint.cpp
+  dry_static_energy.cpp
+  sea_level_pressure.cpp
 )
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})

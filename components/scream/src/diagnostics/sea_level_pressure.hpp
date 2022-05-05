@@ -1,8 +1,9 @@
-#ifndef EAMXX_POTENTIAL_TEMP_DIAGNOSTIC_HPP
-#define EAMXX_POTENTIAL_TEMP_DIAGNOSTIC_HPP
+#ifndef EAMXX_SEA_LEVEL_PRESSURE_DIAGNOSTIC_HPP
+#define EAMXX_SEA_LEVEL_PRESSURE_DIAGNOSTIC_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
+#include "ekat/kokkos/ekat_subview_utils.hpp"
 
 namespace scream
 {
@@ -11,27 +12,37 @@ namespace scream
  * This diagnostic will produce the potential temperature.
  */
 
-class PotentialTemperatureDiagnostic : public AtmosphereDiagnostic
+class SeaLevelPressureDiagnostic : public AtmosphereDiagnostic
 {
 public:
   template <typename S>
   using SmallPack     = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
+  using IntSmallPack  = SmallPack<Int>;
 
   using Spack         = SmallPack<Real>;
+  using Smask         = ekat::Mask<Spack::n>;
   using Pack          = ekat::Pack<Real,Spack::n>;
   using PF            = scream::PhysicsFunctions<DefaultDevice>;
   using KT            = KokkosTypes<DefaultDevice>;
+  using MemberType    = typename KT::MemberType;
   using view_2d       = typename KT::template view_2d<Spack>;
-  using view_2d_const = typename KT::template view_2d<const Spack>;
+  using view_2d_const = typename KT::template view_2d<const Real>;
+  using view_1d       = typename KT::template view_1d<Real>;
+  using view_1d_const = typename KT::template view_1d<const Real>;
+
+  template<typename ScalarT>
+  using uview_1d = Unmanaged<typename KT::template view_1d<ScalarT>>;
+  template<typename ScalarT>
+  using uview_2d = Unmanaged<typename KT::template view_2d<ScalarT>>;
 
   // Constructors
-  PotentialTemperatureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
+  SeaLevelPressureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // Set type to diagnostic
   AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
 
   // The name of the diagnostic
-  std::string name () const { return "Potential Temperature"; } 
+  std::string name () const { return "Sea Level Pressure"; } 
 
   // Get the required grid for the diagnostic
   std::set<std::string> get_required_grids () const {
@@ -48,29 +59,33 @@ public:
     run_diagnostic_impl() = default;
     // Functor for Kokkos loop
     KOKKOS_INLINE_FUNCTION
-    void operator() (const int& idx) const {
-      const int icol  = idx / m_npack;
-      const int jpack = idx % m_npack;
-      const Spack& T_mid_ij(T_mid(icol,jpack));
-      const Spack& p_mid_ij(p_mid(icol,jpack));
-      output(icol,jpack) = PF::calculate_theta_from_T(T_mid_ij,p_mid_ij);
+    void operator() (const int icol) const {
+      const Real T_mid_ground = T_mid(icol,m_nlev);
+      const Real p_mid_ground = p_mid(icol,m_nlev);
+      const Real phis_ground  = phis(icol);
+      psl(icol) = PF::calculate_psl(T_mid_ground,p_mid_ground,phis_ground);
     }
-    int m_ncol, m_npack;
-    view_2d_const T_mid;
-    view_2d_const p_mid;
-    view_2d       output;
+    int m_ncol, m_nlev;
+    view_2d_const        T_mid;
+    view_2d_const        p_mid;
+    view_1d_const        phis;
+    view_1d              psl;
     // assign variables to this structure
-    void set_variables(const int ncol, const int npack,
-      const view_2d_const& pmid_, const view_2d_const& tmid_, const view_2d& output_)
+    void set_variables(const int ncol,const int nlev,
+                       const view_2d_const& T_mid_, const view_2d_const& p_mid_, const view_1d_const& phis_,
+                       const view_1d& psl_
+      )
     {
-      m_ncol = ncol;
-      m_npack = npack;
+      m_ncol   = ncol;
+      m_nlev   = nlev;
       // IN
-      T_mid = tmid_;
-      p_mid = pmid_;
+      T_mid = T_mid_;
+      p_mid = p_mid_;
+      phis  = phis_;
       // OUT
-      output = output_;
+      psl = psl_;
     }
+
   }; // struct run_diagnostic_impl
 
 protected:
@@ -87,8 +102,8 @@ protected:
   // Structure to run the diagnostic
   run_diagnostic_impl  run_diagnostic;
 
-}; // class PotentialTemperatureDiagnostic
+}; // class SeaLevelPressureDiagnostic
 
 } //namespace scream
 
-#endif // EAMXX_POTENTIAL_TEMP_DIAGNOSTIC_HPP
+#endif // EAMXX_SEA_LEVEL_PRESSURE_DIAGNOSTIC_HPP

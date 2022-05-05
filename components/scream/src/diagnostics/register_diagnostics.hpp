@@ -10,6 +10,8 @@
 #include "diagnostics/vertical_layer_interface.hpp"
 #include "diagnostics/vertical_layer_thickness.hpp"
 #include "diagnostics/vertical_layer_midpoint.hpp"
+#include "diagnostics/dry_static_energy.hpp"
+#include "diagnostics/sea_level_pressure.hpp"
 
 namespace scream {
 
@@ -22,6 +24,8 @@ inline void register_diagnostics () {
   diag_factory.register_product("VerticalLayerInterface",&create_atmosphere_diagnostic<VerticalLayerInterfaceDiagnostic>);
   diag_factory.register_product("VerticalLayerThickness",&create_atmosphere_diagnostic<VerticalLayerThicknessDiagnostic>);
   diag_factory.register_product("VerticalLayerMidpoint",&create_atmosphere_diagnostic<VerticalLayerMidpointDiagnostic>);
+  diag_factory.register_product("DryStaticEnergy",&create_atmosphere_diagnostic<DryStaticEnergyDiagnostic>);
+  diag_factory.register_product("SeaLevelPressure",&create_atmosphere_diagnostic<DryStaticEnergyDiagnostic>);
 }
 
 } // namespace scream

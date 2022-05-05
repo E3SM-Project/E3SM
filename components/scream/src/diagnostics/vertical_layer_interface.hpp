@@ -41,7 +41,7 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
 
   // The name of the diagnostic
-  std::string name () const { return "Potential Temperature"; } 
+  std::string name () const { return "Vertical Layer Interface"; } 
 
   // Get the required grid for the diagnostic
   std::set<std::string> get_required_grids () const {
