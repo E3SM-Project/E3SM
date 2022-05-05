@@ -909,12 +909,7 @@ void AtmosphereDriver::initialize_atm_procs ()
   stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMXX] initialize_atm_procs ... done!");
 
-#ifdef SCREAM_HAS_MEMORY_USAGE
-  long long my_mem_usage = get_mem_usage(MB);
-  long long max_mem_usage;
-  m_atm_comm.all_reduce(&my_mem_usage,&max_mem_usage,1,MPI_MAX);
-  m_atm_logger->info("[EAMxx::init] memory usage: " + std::to_string(max_mem_usage) + "MB");
-#endif
+  report_res_dep_memory_foorprint ();
 }
 
 void AtmosphereDriver::
@@ -1077,6 +1072,64 @@ check_ad_status (const int flag, const bool must_be_set)
         "        not expected flag:  " + std::to_string(flag) + "\n"
         "        ad status flag: " + std::to_string(m_ad_status) + "\n");
   }
+}
+
+void AtmosphereDriver::report_res_dep_memory_foorprint () {
+  // Log the amount of memory used that is linked to the grid(s) sizes
+  long long my_dev_mem_usage = 0;
+  long long my_host_mem_usage = 0;
+  long long max_dev_mem_usage, max_host_mem_usage;
+
+  // The first report includes memory used by 1) fields (metadata excluded),
+  // 2) grids data (dofs, maps, geo views), 3) atm buff manager, and 4) IO.
+
+  // Fields
+  for (const auto& fm_it : m_fields_mgrs) {
+    for (const auto& it : fm_it.second) {
+      const auto& fap = it.second.get_header().get_alloc_properties();
+      if (fap.is_subview()) {
+        continue;
+      }
+      my_dev_mem_usage += fap.get_alloc_size();
+      my_host_mem_usage += fap.get_alloc_size();
+    }
+  }
+  // Grids
+  for (const auto& it : m_grids_manager) {
+    const auto& grid = it.second;
+    const int nldofs = grid->get_num_local_dofs();
+
+    my_dev_mem_usage += sizeof(AbstractGrid::gid_type)*nldofs;
+
+    my_dev_mem_usage += sizeof(int)*nldofs*grid->get_lid_to_idx_map().extent(1);
+
+    const auto& geo_names = grid->get_geometry_data_names();
+    my_dev_mem_usage += sizeof(Real)*geo_names.size()*nldofs;
+  }
+  // Atm buffer
+  my_dev_mem_usage += m_memory_buffer->allocated_bytes();
+  // Output
+  for (const auto& om : m_output_managers) {
+    const auto om_footprint = om.res_dep_memory_footprint ();
+    my_dev_mem_usage += om_footprint;
+    my_host_mem_usage += om_footprint;
+  }
+
+  m_atm_comm.all_reduce(&my_dev_mem_usage,&max_dev_mem_usage,1,MPI_MAX);
+  m_atm_logger->info("[EAMxx::init] resolution-dependent device memory footprint: " + std::to_string(max_dev_mem_usage/1e6) + "MB");
+
+  if (not std::is_same<HostDevice,DefaultDevice>::value) {
+    m_atm_comm.all_reduce(&my_host_mem_usage,&max_host_mem_usage,1,MPI_MAX);
+    m_atm_logger->info("[EAMxx::init] resolution-dependent host memory footprint: " + std::to_string(max_host_mem_usage/1e6) + "MB");
+  }
+
+  // The following is a memory usage based on probing some OS tools
+#ifdef SCREAM_HAS_MEMORY_USAGE
+  long long my_mem_usage_from_os = get_mem_usage(MB);
+  long long max_mem_usage_from_os;
+  m_atm_comm.all_reduce(&my_mem_usage_from_os,&max_mem_usage_from_os,1,MPI_MAX);
+  m_atm_logger->info("[EAMxx::init] memory usage from OS probing tools: " + std::to_string(max_mem_usage_from_os) + "MB");
+#endif
 }
 
 }  // namespace control

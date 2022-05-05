@@ -273,6 +273,15 @@ void OutputManager::finalize()
   std::swap(*this,other);
 }
 
+long long OutputManager::res_dep_memory_footprint () const {
+  long long mf = 0;
+  for (const auto& os : m_output_streams) {
+    mf += os.res_dep_memory_footprint();
+  }
+
+  return mf;
+}
+
 std::string OutputManager::
 compute_filename_root (const IOControl& control, const IOFileSpecs& file_specs) const
 {

@@ -105,6 +105,8 @@ public:
 
   void run (const util::TimeStamp& current_ts);
   void finalize();
+
+  long long res_dep_memory_footprint () const;
 protected:
 
   std::string compute_filename_root (const IOControl& control, const IOFileSpecs& file_specs) const;

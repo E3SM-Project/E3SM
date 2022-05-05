@@ -125,6 +125,8 @@ public:
     return m_geo_views.find(name)!=m_geo_views.end();
   }
 
+  std::list<std::string> get_geometry_data_names () const;
+
 protected:
 
   // Derived classes can override these methods, which are called inside the

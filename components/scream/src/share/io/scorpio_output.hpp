@@ -145,6 +145,7 @@ public:
   void run (const std::string& filename, const bool write, const int nsteps_since_last_output);
   void finalize() {}
 
+  long long res_dep_memory_footprint () const;
 protected:
 
   // Internal functions
