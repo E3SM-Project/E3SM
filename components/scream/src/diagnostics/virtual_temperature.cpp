@@ -43,7 +43,7 @@ void VirtualTemperatureDiagnostic::set_grids(const std::shared_ptr<const GridsMa
 void VirtualTemperatureDiagnostic::initialize_impl(const RunType /* run_type */)
 {
   const auto& T_mid          = get_field_in("T_mid").get_view<const Pack**>();
-  const auto& qv_mid         = get_field_in("qv_mid").get_view<const Pack**>();
+  const auto& qv_mid         = get_field_in("qv").get_view<const Pack**>();
 
   const auto& output         = m_diagnostic_output.get_view<Pack**>();
 
