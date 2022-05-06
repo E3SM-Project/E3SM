@@ -361,13 +361,15 @@ message("-- NetCDF_C_PATH = ${NetCDF_C_PATH}")
 message("-- PnetCDF_Fortran_PATH = ${PnetCDF_Fortran_PATH}")
 message("-- PnetCDF_C_PATH = ${PnetCDF_C_PATH}")
 # pio needs cime/externals/genf90/genf90.pl
-SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/externals/genf90)
 if (HOMME_USE_SCORPIO)
+  # Need to use scorpio's older genf90 for now
+  SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/utils/externals/scorpio/src/genf90)
   SET(PIO_ENABLE_TOOLS OFF CACHE BOOL "Disabling Scorpio tool build")
   ADD_SUBDIRECTORY(utils/externals/scorpio)
 else ()
   # The default I/O library used in "Scorpio classic"
   ADD_SUBDIRECTORY(utils/externals/scorpio_classic)
+  SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/externals/genf90)
 endif ()
 ENDIF()
 
