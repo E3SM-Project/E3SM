@@ -169,6 +169,7 @@ contains
     real(r8) :: t                     ! temporary
     real(r8) :: secspyr              ! seconds per yr
     logical  :: do_et_bnf = .false.
+    real(r8),parameter  :: test_mult = 1.0_r8          ! Test mutliplier of fixation rate
     !-----------------------------------------------------------------------
 
     associate(&
@@ -184,10 +185,13 @@ contains
 
       if (do_et_bnf .or. use_fates) then
          secspyr = dayspyr * 86400._r8
+
+         test_mult = 1.2_r8
+         
          do fc = 1, num_soilc
             c =filter_soilc(fc)
             !use the cleveland equation
-            t = 0.00102_r8*(qflx_evap_veg(c)+qflx_tran_veg(c))+0.0524_r8/secspyr
+            t = test_mult*(0.00102_r8*(qflx_evap_veg(c)+qflx_tran_veg(c))+0.0524_r8/secspyr)
             nfix_to_sminn(c) = max(0._r8, t)
          enddo
       else
