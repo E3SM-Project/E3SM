@@ -14,7 +14,7 @@ DO NOT RUN THIS SCRIPT MANUALLY
 import os, sys
 os.chdir( '{{ caseroot }}')
 
-_LIBDIR = os.path.join("{{ cimeroot }}", "scripts", "Tools")
+_LIBDIR = os.path.join("{{ cimeroot }}", "CIME", "Tools")
 sys.path.append(_LIBDIR)
 
 from standard_script_setup          import *
