@@ -1373,9 +1373,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
              phys_state(c)%tc_mnst(:ncol) = phys_state(c)%tc_curr(:ncol)
           end if
        end do
-       if ( is_last_step() ) then
-          call co2_diags_store_fields(phys_state, pbuf2d)
-       end if
+       call co2_diags_store_fields(phys_state, pbuf2d)
     end if
 
     call t_startf ('physpkg_st2')
