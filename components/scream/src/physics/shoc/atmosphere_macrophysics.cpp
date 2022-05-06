@@ -348,7 +348,7 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
 
   shoc_postprocess.set_variables(m_num_cols,m_num_levs,
                                  rrho,qv,qw,qc,qc_copy,tke,tke_copy,shoc_ql2,
-                                 cldfrac_liq,sgs_buoy_flux,inv_qc_relvar,
+                                 cldfrac_liq,inv_qc_relvar,
                                  T_mid, dse, z_mid, phis);
 
   // Set field property checks for the fields in this process
