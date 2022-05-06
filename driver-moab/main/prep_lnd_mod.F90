@@ -10,9 +10,17 @@ module prep_lnd_mod
   use seq_comm_mct    , only: CPLID, LNDID, logunit
   use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
-  use seq_comm_mct,     only: mlnid  ! iMOAB pid for ocean mesh on component pes
+  use seq_comm_mct,     only: mlnid  ! iMOAB pid for land mesh on component pes
+  use seq_comm_mct,     only: mhid     ! iMOAB id for atm instance
+  use seq_comm_mct,     only: mphaid   ! iMOAB id for phys atm on atm pes
+  use seq_comm_mct,     only: mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   use seq_comm_mct,     only: mblxid ! iMOAB id for mpas ocean migrated mesh to coupler pes
-  use seq_comm_mct,     only : seq_comm_getinfo => seq_comm_setptrs
+  use seq_comm_mct,     only: mbintxla ! iMOAB id for intx mesh between land and atmosphere
+  use seq_comm_mct,     only: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
+  use seq_comm_mct,     only: sameg_al ! true by default, so land and atm on same mesh
+  use seq_comm_mct,     only: atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
+  use dimensions_mod,   only: np     ! for atmosphere
+  use seq_comm_mct,     only: seq_comm_getinfo => seq_comm_setptrs
   use seq_map_type_mod
   use seq_map_mod
   use seq_flds_mod
@@ -50,6 +58,8 @@ module prep_lnd_mod
   public :: prep_lnd_get_mapper_Fr2l
   public :: prep_lnd_get_mapper_Sg2l
   public :: prep_lnd_get_mapper_Fg2l
+
+  public :: prep_atm_lnd_moab ! it belongs here now
 
   public :: prep_lnd_migrate_moab
   !--------------------------------------------------------------------------
@@ -555,6 +565,173 @@ contains
     type(seq_map), pointer :: prep_lnd_get_mapper_Fg2l
     prep_lnd_get_mapper_Fg2l => mapper_Fg2l
   end function prep_lnd_get_mapper_Fg2l
+
+  ! moved from prep_atm
+  subroutine prep_atm_lnd_moab(infodata)
+
+   use iMOAB, only: iMOAB_CoverageGraph, iMOAB_ComputeScalarProjectionWeights, iMOAB_ComputeCommGraph
+   use iMOAB, only: iMOAB_DefineTagStorage
+   !---------------------------------------------------------------
+   ! Description
+   ! If the land is on the same mesh as atm, we do not need to compute intx
+   !  Just use compute graph between phys atm and lnd on coupler, to be able to send
+   !  data from atm phys to atm on coupler for projection on land
+   ! in the tri-grid case, atm and land use different meshes, so use coverage anyway
+   !
+   ! Arguments
+   type(seq_infodata_type) , intent(in)    :: infodata
+
+   character(*), parameter          :: subname = '(prep_atm_lnd_moab)'
+   integer :: ierr
+
+   logical                          :: atm_present    ! .true.  => atm is present
+   logical                          :: lnd_present    ! .true.  => lnd is present
+   integer                  :: id_join
+   integer                  :: mpicom_join
+   integer                  :: context_id ! used to define context for coverage (this case, land on coupler)
+   integer                  :: atm_id
+   character*32             :: dm1, dm2, dofnameATM, dofnameLND, wgtIdef
+   integer                  :: orderLND, orderATM, volumetric, fInverseDistanceMap, noConserve, validate
+   integer                  :: fNoBubble, monotonicity
+   integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
+   integer                  :: mpigrp_old   !  component group pes (phys grid atm) == atm group
+   integer                  :: typeA, typeB ! type for computing graph;
+   integer                  :: idintx ! in this case, id of moab intersection between atm and lnd, on coupler pes
+                                      ! used only for tri-grid case
+   integer                  :: tagtype, numco, tagindex
+   character*400            :: tagname    ! will store all seq_flds_a2x_fields
+
+   call seq_infodata_getData(infodata, &
+        atm_present=atm_present,       &
+        lnd_present=lnd_present)
+
+   !  it involves initial atm app; mhid; or pg2 mesh , in case atm_pg_active also migrate atm mesh on coupler pes, mbaxid
+   !  intx lnd atm are in mbintxla ; remapper also has some info about coverage mesh
+   ! after this, the sending of tags from atm pes to coupler pes, in land context will use the new par
+   ! comm graph, that has more precise info about
+   ! how to get mpicomm for joint atm + coupler
+   id_join = atm(1)%cplcompid
+   atm_id   = atm(1)%compid
+   ! maybe we can use a moab-only id, defined like mbintxao, mhid, somewhere else (seq_comm_mct)
+   ! we cannot use mbintxla because it may not exist on atm comp yet;
+   context_id = lnd(1)%cplcompid
+   call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
+   if ( .not. sameg_al ) then
+     if (atm_pg_active ) then ! use mhpgid mesh
+       ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxla, atm_id, id_join, context_id);
+     else
+       ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxla, atm_id, id_join, context_id);
+     endif
+   else
+     ! this is the moment we compute the comm graph between phys grid atm and land on coupler pes.
+     ! We do not need to compute intersection in this case, as the DOFs are exactly the same
+     !  see imoab_phatm_ocn_coupler.cpp in MOAB source code, no intx needed, just compute graph
+     typeA = 2 ! point cloud 
+     typeB = 2 ! 
+     call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
+     call seq_comm_getinfo(atm_id, mpigrp=mpigrp_old) 
+     !  context_id = lnd(1)%cplcompid
+     ierr = iMOAB_ComputeCommGraph( mphaid, mblxid, mpicom_join, mpigrp_old, mpigrp_CPLID, &
+       typeA, typeB, atm_id, context_id)
+     if (ierr .ne. 0) then
+       write(logunit,*) subname,' error in computing graph phys grid - lnd on coupler '
+       call shr_sys_abort(subname//' ERROR  in computing graph phys grid - lnd on coupler ')
+     endif
+
+   endif
+   if (ierr .ne. 0) then
+     write(logunit,*) subname,' error in computing coverage graph atm/lnd '
+     call shr_sys_abort(subname//' ERROR in computing coverage graph atm/lnd ')
+   endif
+
+   ! this is true only for tri-grid cases
+   if (mbintxla .ge. 0 ) then ! weights are computed over coupler pes
+     ! copy from atm - ocn  , it is now similar, as land is full mesh, not pc cloud
+     wgtIdef = 'scalar'//C_NULL_CHAR
+     if (atm_pg_active) then
+       dm1 = "fv"//C_NULL_CHAR
+       dofnameATM="GLOBAL_ID"//C_NULL_CHAR
+       orderATM = 1 !  fv-fv
+       volumetric = 1 ! maybe volumetric ?
+     else
+       dm1 = "cgll"//C_NULL_CHAR
+       dofnameATM="GLOBAL_DOFS"//C_NULL_CHAR
+       orderATM = np !  it should be 4
+       volumetric = 0
+     endif
+
+     dofnameLND="GLOBAL_ID"//C_NULL_CHAR
+     orderLND = 1  !  not much arguing
+     ! is the land mesh explicit or point cloud ? based on sameg_al flag:
+     if (sameg_al) then
+       dm2 = "pcloud"//C_NULL_CHAR
+       wgtIdef = 'scalar-pc'//C_NULL_CHAR
+       volumetric = 0 !  TODO: check this , for PC ; for imoab_coupler test, volumetric is 0
+     else
+       dm2 = "fv"//C_NULL_CHAR ! land is FV
+       volumetric = 1
+     endif
+     fNoBubble = 1
+     monotonicity = 0 !
+     noConserve = 0
+     validate = 0
+     fInverseDistanceMap = 0
+
+     ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxla, wgtIdef, &
+                                               trim(dm1), orderATM, trim(dm2), orderLND, &
+                                               fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                               noConserve, validate, &
+                                               trim(dofnameATM), trim(dofnameLND) )
+     if (ierr .ne. 0) then
+       write(logunit,*) subname,' error in computing weights atm land '
+       call shr_sys_abort(subname//' ERROR  in computing weights atm land')
+     endif
+   endif
+   ! we will use intx atm-lnd mesh only when land is explicit
+   if (.not. sameg_al) then
+     ! as with ocn, data is sent from atm ph to the intx atm/lnd, not from pg2 mesh anymore
+     ! for that, we will use the comm graph between atm ph and atm pg2 intersected with land!
+     ! copy from ocn logic, just replace with land
+         ! compute the comm graph between phys atm and intx-atm-lnd, to be able to send directly from phys atm
+     ! towards coverage mesh on atm for intx to land / now that land is full mesh!
+     ! this is similar to imoab_phatm_ocn_coupler.cpp test in moab
+     !    int typeA = 2; // point cloud
+     call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
+     call seq_comm_getinfo(atm_id, mpigrp=mpigrp_old)    !  component group pes, from atm id ( also ATMID(1) )
+
+     typeA = 2 ! point cloud, phys atm in this case
+     ! idintx is a unique number of MOAB app that takes care of intx between lnd and atm mesh
+     idintx = 100*atm(1)%cplcompid + lnd(1)%cplcompid ! something different, to differentiate it; ~ 600+lnd !
+     if (atm_pg_active) then
+       typeB = 3 ! fv on atm side too !! imoab_apg2_ol  coupler example
+                 ! atm cells involved in intersection (pg 2 in this case)
+                 ! this will be used now to send
+                 ! data from phys grid directly to atm-lnd intx , for later projection
+                 ! context is the same, atm - lnd intx id !
+
+     else
+       typeB = 1 ! atm cells involved in intersection (spectral in this case) ! this will be used now to send
+                 ! data from phys grid directly to atm-lnd intx , for later projection
+                 ! context is the same, atm - lnd intx id !
+     endif
+     ierr = iMOAB_ComputeCommGraph( mphaid, mbintxla, mpicom_join, mpigrp_old, mpigrp_CPLID, &
+           typeA, typeB, atm_id, idintx)
+     if (ierr .ne. 0) then
+       write(logunit,*) subname,' error in computing graph phys grid - atm/lnd intx '
+       call shr_sys_abort(subname//' ERROR  in computing graph phys grid - atm/ocn intx ')
+     endif
+   endif ! if (.not. sameg_al)
+
+   ! in any case, we need to define the tags on landx from the phys atm seq_flds_a2x_fields
+   tagtype = 1  ! dense, double
+   numco = 1 !  one value per vertex / entity
+   tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+   ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
+   if ( ierr > 0) then
+      call shr_sys_abort(subname//' fail to define seq_flds_a2x_fields for lnd x moab mesh ')
+   endif
+
+ end subroutine prep_atm_lnd_moab
 
   ! exposed method to migrate projected tag from coupler pes back to land pes
   subroutine prep_lnd_migrate_moab(infodata)

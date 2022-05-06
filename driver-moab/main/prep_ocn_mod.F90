@@ -1606,6 +1606,7 @@ contains
 
    logical                          :: atm_present    ! .true.  => atm is present
    logical                          :: ocn_present    ! .true.  => ocn is present
+   logical                          :: ocn_prognostic    ! .true.  => ocn is present and expects input
    integer                  :: id_join
    integer                  :: mpicom_join
    integer                  :: context_id ! used to define context for coverage (this case, ocean on coupler)
@@ -1622,7 +1623,8 @@ contains
 
    call seq_infodata_getData(infodata, &
         atm_present=atm_present,       &
-        ocn_present=ocn_present)
+        ocn_present=ocn_present,       &
+        ocn_prognostic=ocn_prognostic)
 
  !  it involves initial atm app; mhid; also migrate atm mesh on coupler pes, mbaxid
  !  intx atm ocean are in mbintxao ; remapper also has some info about coverage mesh
@@ -1635,22 +1637,24 @@ contains
    context_id = ocn(1)%cplcompid
    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
-   ! it happens over joint communicator
+   ! it happens over joint communicator, only if ocn_prognostic true
+   if (ocn_prognostic) then
 
-   if (atm_pg_active ) then ! use mhpgid mesh
-     ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxao, atm_id, id_join, context_id);
-     if (iamroot_CPLID) then
-       write(logunit,*) 'iMOAB graph atmpg2-intxao context: ', context_id
-     end if
-   else
-     ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxao, atm_id, id_join, context_id);
-     if (iamroot_CPLID) then
-       write(logunit,*) 'iMOAB graph atmnp4-intxao context: ', context_id
-     end if
-   endif
-   if (ierr .ne. 0) then
-     write(logunit,*) subname,' error in computing coverage graph atm/ocn '
-     call shr_sys_abort(subname//' ERROR in computing coverage graph atm/ocn ')
+      if (atm_pg_active ) then ! use mhpgid mesh
+      ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxao, atm_id, id_join, context_id);
+      if (iamroot_CPLID) then
+         write(logunit,*) 'iMOAB graph atmpg2-intxao context: ', context_id
+      end if
+      else
+      ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxao, atm_id, id_join, context_id);
+      if (iamroot_CPLID) then
+         write(logunit,*) 'iMOAB graph atmnp4-intxao context: ', context_id
+      end if
+      endif
+      if (ierr .ne. 0) then
+      write(logunit,*) subname,' error in computing coverage graph atm/ocn '
+      call shr_sys_abort(subname//' ERROR in computing coverage graph atm/ocn ')
+      endif
    endif
 
    if ( mbintxao .ge. 0 ) then
