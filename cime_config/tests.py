@@ -426,7 +426,17 @@ _TESTS = {
         "time"    : "03:00:00",
     },
 
+    "e3sm_scream" : {
+        "time"    : "03:00:00",
+        "inherit" : ("e3sm_scream_v0"),
+    ),
+
     "e3sm_scream_v0" : {
+        "time"    : "03:00:00",
+        "inherit" : ("e3sm_scream_v0_lowres"),
+    ),
+
+    "e3sm_scream_v0_lowres" : {
         "time"  : "03:00:00",
         "tests" : (
             "SMS_D.ne4pg2_ne4pg2.F2010-SCREAM-HR",
@@ -438,7 +448,13 @@ _TESTS = {
     },
 
     "e3sm_scream_v1" : {
-        "time"  : "03:00:00",
+        "time"    : "03:00:00",
+        "inherit" : ("e3sm_scream_v1_lowres", "e3sm_scream_v1_medres"),
+    ),
+
+
+    "e3sm_scream_v1_lowres" : {
+        "time"  : "01:00:00",
         "tests" : (
             "SMS_D_Ln2_P24x1.ne4_ne4.F2010-SCREAMv1",
             "SMS_D_Ln2_P24x1.ne4_ne4.F2000-SCREAMv1-AQP1",
@@ -446,7 +462,7 @@ _TESTS = {
     },
 
     "e3sm_scream_v1_medres" : {
-        "time"  : "03:00:00",
+        "time"  : "02:00:00",
         "tests" : (
             "SMS_Ln2.ne30_ne30.F2000-SCREAMv1-AQP1",
             "ERS.ne30_ne30.F2000-SCREAMv1-AQP1",

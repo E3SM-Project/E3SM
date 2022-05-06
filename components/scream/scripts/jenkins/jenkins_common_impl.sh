@@ -130,12 +130,12 @@ if [ $skip_testing -eq 0 ]; then
     fi
 
     if [[ $test_v0 == 1 ]]; then
-      ../../cime/scripts/create_test e3sm_scream -c -b master
+      ../../cime/scripts/create_test e3sm_scream_v0 -c -b master
       if [[ $? != 0 ]]; then fails=$fails+1; fi
     fi
 
     if [[ $test_v1 == 1 ]]; then
-      ../../cime/scripts/create_test e3sm_scream_v1 --compiler=gnu9 -c -b master
+      ../../cime/scripts/create_test e3sm_scream_v1_lowres --compiler=gnu9 -c -b master
       if [[ $? != 0 ]]; then fails=$fails+1; fi
     else
       echo "SCREAM v1 tests were skipped, since the Github label 'AT: Skip v1 Testing' was found.\n"
