@@ -41,7 +41,7 @@ struct Constants
   static constexpr Scalar T_zerodegc    = Tmelt;
   static constexpr Scalar T_homogfrz    = Tmelt - 40;
   static constexpr Scalar T_rainfrz     = Tmelt - 4;
-  static constexpr Scalar Pi            = M_PI;  // Use the value of PI defined in cpp math.h
+  static constexpr Scalar Pi            = 3.14159265358979323;
   static constexpr long long int    iulog       = 98;
   static constexpr bool   masterproc    = true;
   static constexpr Scalar RHOW          = RHO_H2O;
