@@ -277,6 +277,8 @@ contains
 
    logical                          :: rof_present    ! .true.  => rof is present
    logical                          :: ocn_present    ! .true.  => ocn is present
+   logical                          :: ocn_prognostic ! if true, component is prognostic
+
    integer                  :: id_join
    integer                  :: rank_on_cpl ! just for debugging
    integer                  :: mpicom_join
@@ -294,7 +296,8 @@ contains
 
    call seq_infodata_getData(infodata, &
         rof_present=rof_present,       &
-        ocn_present=ocn_present)
+        ocn_present=ocn_present,       &
+        ocn_prognostic=ocn_prognostic)
 
  !  it involves initial rof app; mhid; also migrate rof mesh on coupler pes, in ocean context, mbrxoid
  !  map between rof 2 ocn is in  mbrmapro ; 
@@ -383,6 +386,7 @@ contains
 
    logical                          :: rof_present    ! .true.  => rof is present
    logical                          :: ocn_present    ! .true.  => ocn is present
+   logical                          :: ocn_prognostic ! 
    
    integer                  :: id_join
    integer                  :: mpicom_join
@@ -398,7 +402,8 @@ contains
 
    call seq_infodata_getData(infodata, &
       rof_present=rof_present,       &
-      ocn_present=ocn_present)
+      ocn_present=ocn_present,       &
+      ocn_prognostic=ocn_prognostic)
 
    !  it involves initial rof app;  mesh on coupler pes, 
    ! use seq_comm_mct,     only: mrofid ! id for rof comp 
@@ -418,7 +423,7 @@ contains
    tagName = trim(seq_flds_r2x_fields)//C_NULL_CHAR  
    num_proj = num_proj + 1
 
-   if (rof_present .and. ocn_present) then
+   if (rof_present .and. ocn_present .and. ocn_prognostic) then
 
       if (mrofid .ge. 0) then !  send because we are on rof pes
 
