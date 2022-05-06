@@ -29,7 +29,7 @@ public  :: shoc_init, shoc_main
 logical :: use_cxx = .true.
 
 real(rtype), parameter, public :: largeneg = -99999999.99_rtype
-real(rtype), parameter, public :: pi = 3.14159265_rtype ! Pi
+real(rtype), parameter, public :: pi = 3.14159265358979323_rtype
 
 !=========================================================
 ! Physical constants used in SHOC
