@@ -241,9 +241,9 @@
 <config_maximum_growth_rate_diatoms>1.44</config_maximum_growth_rate_diatoms>
 <config_maximum_growth_rate_small_plankton>0.41</config_maximum_growth_rate_small_plankton>
 <config_maximum_growth_rate_phaeocystis>0.63</config_maximum_growth_rate_phaeocystis>
-<config_temperature_growth_diatoms>0.06</config_temperature_growth_diatoms>
-<config_temperature_growth_small_plankton>0.06</config_temperature_growth_small_plankton>
-<config_temperature_growth_phaeocystis>0.06</config_temperature_growth_phaeocystis>
+<config_temperature_growth_diatoms>0.063</config_temperature_growth_diatoms>
+<config_temperature_growth_small_plankton>0.063</config_temperature_growth_small_plankton>
+<config_temperature_growth_phaeocystis>0.063</config_temperature_growth_phaeocystis>
 <config_grazed_fraction_diatoms>0.0</config_grazed_fraction_diatoms>
 <config_grazed_fraction_small_plankton>0.7</config_grazed_fraction_small_plankton>
 <config_grazed_fraction_phaeocystis>0.7</config_grazed_fraction_phaeocystis>
@@ -269,7 +269,7 @@
 <config_iron_saturation_small_plankton>0.2</config_iron_saturation_small_plankton>
 <config_iron_saturation_phaeocystis>0.1</config_iron_saturation_phaeocystis>
 <config_fraction_spilled_to_DON>0.6</config_fraction_spilled_to_DON>
-<config_degredation_of_DON>0.03</config_degredation_of_DON>
+<config_degredation_of_DON>0.2</config_degredation_of_DON>
 <config_fraction_DON_ammonium>1.0</config_fraction_DON_ammonium>
 <config_fraction_loss_to_saccharids>0.5</config_fraction_loss_to_saccharids>
 <config_fraction_loss_to_lipids>0.5</config_fraction_loss_to_lipids>
@@ -284,7 +284,7 @@
 <config_excreted_fraction>0.5</config_excreted_fraction>
 <config_fraction_mortality_to_ammonium>0.9</config_fraction_mortality_to_ammonium>
 <config_fraction_iron_remineralized>1.0</config_fraction_iron_remineralized>
-<config_nitrification_rate>0.0</config_nitrification_rate>
+<config_nitrification_rate>0.046</config_nitrification_rate>
 <config_desorption_loss_particulate_iron>3065.0</config_desorption_loss_particulate_iron>
 <config_maximum_loss_fraction>0.9</config_maximum_loss_fraction>
 <config_maximum_ratio_iron_to_saccharids>0.2</config_maximum_ratio_iron_to_saccharids>
@@ -459,7 +459,7 @@
 <config_AM_conservationCheck_write_on_startup>false</config_AM_conservationCheck_write_on_startup>
 <config_AM_conservationCheck_write_to_logfile>true</config_AM_conservationCheck_write_to_logfile>
 <config_AM_conservationCheck_restart_stream>'conservationCheckRestart'</config_AM_conservationCheck_restart_stream>
-<config_AM_conservationCheck_carbon_failure_abort>false</config_AM_conservationCheck_carbon_failure_abort>
+<config_AM_conservationCheck_carbon_failure_abort>true</config_AM_conservationCheck_carbon_failure_abort>
 
 <!-- AM_geographicalVectors -->
 <config_AM_geographicalVectors_enable>true</config_AM_geographicalVectors_enable>
