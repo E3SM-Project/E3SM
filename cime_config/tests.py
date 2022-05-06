@@ -449,6 +449,7 @@ _TESTS = {
         "time"  : "03:00:00",
         "tests" : (
             "SMS_Ln2.ne30_ne30.F2000-SCREAMv1-AQP1",
+            "ERS.ne30_ne30.F2000-SCREAMv1-AQP1",
             )
     },
 
