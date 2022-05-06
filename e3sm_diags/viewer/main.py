@@ -25,6 +25,7 @@ logger = custom_logger(__name__)
 # that handles creating of the HTML pages.
 SET_TO_VIEWER = {
     "lat_lon": default_viewer.create_viewer,
+    "lat_lon_land": default_viewer.create_viewer,
     "polar": default_viewer.create_viewer,
     "zonal_mean_xy": default_viewer.create_viewer,
     "zonal_mean_2d": mean_2d_viewer.create_viewer,

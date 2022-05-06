@@ -25,7 +25,14 @@ def generate_lat_lon_metrics_table(
     For each season in lat_lon_table_info, create a csv,
     convert it to an html and append that html to the viewer.
     """
-    table_dir = os.path.join(root_dir, "table-data")  # output_dir/viewer/table-data
+    set_name = parameters[0].sets[0]
+    table_name = ""
+    if set_name == "lat_lon_land":
+        table_name = "-land"
+
+    table_dir = os.path.join(
+        root_dir, f"table-data{table_name}"
+    )  # output_dir/viewer/table-data
 
     if not os.path.exists(table_dir):
         os.mkdir(table_dir)

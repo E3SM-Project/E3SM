@@ -28,6 +28,7 @@ class CoreParameter(cdp.cdp_parameter.CDPParameter):
             "arm_diags",
             "tc_analysis",
             "annual_cycle_zonal_mean",
+            "lat_lon_land",
         ]
         self.dataset = ""
         self.run_type = "model_vs_obs"

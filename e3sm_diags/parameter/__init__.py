@@ -4,6 +4,7 @@ from .arm_diags_parameter import ARMDiagsParameter
 from .core_parameter import CoreParameter
 from .diurnal_cycle_parameter import DiurnalCycleParameter
 from .enso_diags_parameter import EnsoDiagsParameter
+from .lat_lon_land_parameter import LatLonLandParameter
 from .meridional_mean_2d_parameter import MeridionalMean2dParameter
 from .qbo_parameter import QboParameter
 from .streamflow_parameter import StreamflowParameter
@@ -27,4 +28,5 @@ SET_TO_PARAMETERS = {
     "arm_diags": ARMDiagsParameter,
     "tc_analysis": TCAnalysisParameter,
     "annual_cycle_zonal_mean": ACzonalmeanParameter,
+    "lat_lon_land": LatLonLandParameter,
 }
