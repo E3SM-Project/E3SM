@@ -47,6 +47,10 @@ module LakeBGCType
   real(r8), parameter, public :: YC2P_DOM = 199.0_r8
   ! Redfield C : DOM mass ratio (C106H175O42N16P) (g/g)
   real(r8), parameter, public :: YC2DOM = 0.5358_r8
+  ! background light absorption coefficient (m^-1)
+  real(r8), parameter, public :: Kbg = 0.09_r8
+  ! C-specific light absorption coefficient (self-shading) (m2/(gC))
+  real(r8), parameter, public :: Kc = 0.4_r8
   !
   ! !PUBLIC TYPES:
   type, public :: lakebgc_type
@@ -61,6 +65,7 @@ module LakeBGCType
      ! Lake BGC intermediate variables
      real(r8), pointer :: cdist_factor(:,:)           ! col active sediment OC distribution factor 
      real(r8), pointer :: soilpor_col(:,:)            ! col sediment porosity (fraction)
+     real(r8), pointer :: fsds_vis_col(:,:)           ! col incident vis radiation for BGC (W/m^2) 
 
      ! Lake BGC state variables
      real(r8), pointer :: conc_wat_col(:,:,:)         ! col water-column depth-resolved dissolved gas conc (mol/m3)
@@ -148,6 +153,7 @@ contains
 
     allocate( this%cdist_factor        (begc:endc,1:nlevgrnd))                       ; this%cdist_factor       (:,:)   = nan
     allocate( this%soilpor_col         (begc:endc,1:nlevgrnd))                       ; this%soilpor_col        (:,:)   = nan
+    allocate( this%fsds_vis_col        (begc:endc,1:nlevlak))                        ; this%fsds_vis_col       (:,:)   = nan 
 
     allocate( this%conc_wat_col        (begc:endc,1:nlevlak,1:nsolulak))             ; this%conc_wat_col       (:,:,:) = nan
     allocate( this%conc_sed_col        (begc:endc,1:nlevgrnd,1:nsolulak))            ; this%conc_sed_col       (:,:,:) = nan
@@ -488,34 +494,6 @@ contains
 
     do c = bounds%begc, bounds%endc
 
-       this%ch4_sed_diff_col(c)                       = 0._r8
-       this%ch4_surf_diff_col(c)                      = 0._r8
-       this%ch4_sed_ebul_col(c)                       = 0._r8
-       this%ch4_surf_ebul_col(c)                      = 0._r8
-       this%ch4_surf_flux_col(c)                      = 0._r8
-       this%gpp_tot_col(c)                            = 0._r8
-       this%npp_tot_col(c)                            = 0._r8
-       this%gpp_vr_col(c,1:nlevlak)                   = 0._r8
-       this%npp_vr_col(c,1:nlevlak)                   = 0._r8
-       this%hr_wat_vr_col(c,1:nlevlak)                = 0._r8
-       this%hr_sed_vr_col(c,1:nlevgrnd)               = 0._r8
-       this%ctot_dep_col(c)                           = 0._r8
-       this%ch4_prod_wat_col(c,1:nlevlak)             = 0._r8
-       this%ch4_oxid_wat_col(c,1:nlevlak)             = 0._r8
-       this%ch4_prod_sed_col(c,1:nlevgrnd)            = 0._r8
-       this%ch4_oxid_sed_col(c,1:nlevgrnd)            = 0._r8
-       this%ch4_prod_tot_col(c)                       = 0._r8
-       this%ch4_oxid_tot_col(c)                       = 0._r8
-       this%nem_col(c)                                = 0._r8
-       this%conc_wat_col(c,1:nlevlak,1:nsolulak)      = 0._r8
-       this%conc_sed_col(c,1:nlevgrnd,1:nsolulak)     = 0._r8
-       this%conc_bubl_col(c,1:nlevlak,1:ngaslak)      = 0._r8
-       this%conc_iceb_col(c,1:ngaslak)                = 0._r8
-       this%biomas_phyto_col(c,1:nlevlak,1:nphytolak) = 0._r8
-       this%chla_col(c,1:nlevlak)                     = 0._r8
-       this%soilc_col(c,1:nlevgrnd,1:nsoilclak)       = 0._r8
-       this%soilpor_col(c,1:nlevgrnd)                 = 0.4_r8
-
        g = col_pp%gridcell(c)
        t = col_pp%topounit(c)
        l = col_pp%landunit(c)
@@ -530,6 +508,7 @@ contains
           this%ltype_col(c)                           = 0
           this%cdist_factor(c,:)                      = spval
           this%soilpor_col(c,:)                       = spval
+          this%fsds_vis_col(c,:)                      = spval
           this%ch4_sed_diff_col(c)                    = spval
           this%ch4_surf_diff_col(c)                   = spval
           this%ch4_sed_ebul_col(c)                    = spval
@@ -556,6 +535,29 @@ contains
           this%chla_col(c,:)                          = spval
           this%soilc_col(c,:,:)                       = spval
        else
+          this%ch4_sed_diff_col(c)                    = 0._r8
+          this%ch4_surf_diff_col(c)                   = 0._r8
+          this%ch4_sed_ebul_col(c)                    = 0._r8
+          this%ch4_surf_ebul_col(c)                   = 0._r8
+          this%ch4_surf_flux_col(c)                   = 0._r8
+          this%gpp_tot_col(c)                         = 0._r8
+          this%npp_tot_col(c)                         = 0._r8
+          this%gpp_vr_col(c,:)                        = 0._r8
+          this%npp_vr_col(c,:)                        = 0._r8
+          this%hr_wat_vr_col(c,:)                     = 0._r8
+          this%hr_sed_vr_col(c,:)                     = 0._r8
+          this%ctot_dep_col(c)                        = 0._r8
+          this%ch4_prod_wat_col(c,:)                  = 0._r8
+          this%ch4_oxid_wat_col(c,:)                  = 0._r8
+          this%ch4_prod_sed_col(c,:)                  = 0._r8
+          this%ch4_oxid_sed_col(c,:)                  = 0._r8
+          this%ch4_prod_tot_col(c)                    = 0._r8
+          this%ch4_oxid_tot_col(c)                    = 0._r8
+          this%nem_col(c)                             = 0._r8
+          this%conc_bubl_col(c,:,:)                   = 0._r8
+          this%conc_iceb_col(c,:)                     = 0._r8
+          this%fsds_vis_col(c,:)                      = 0._r8
+          this%soilpor_col(c,:)                       = 0.4_r8
           this%tp_col(c)                              = tp2d(g,ti)
           this%ph_col(c)                              = ph2d(g,ti)
           this%csed_col(c)                            = csed2d(g,ti)
