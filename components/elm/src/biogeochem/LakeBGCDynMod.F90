@@ -92,7 +92,6 @@ contains
       use elm_varcon         , only : vkc, grav, denh2o, tfrz, cnfac
       use elm_varcon         , only : catomw, patomw
       use elm_varctl         , only : iulog
-      use LakeBGCType        , only : gn2lak, go2lak, gco2lak, gch4lak
       use LakeBGCType        , only : wn2lak, wo2lak, wco2lak, wch4lak, wsrplak
       use LakeBGCType        , only : small_phyto, large_phyto
       use LakeBGCType        , only : actC, pasC, nsubstep
@@ -114,6 +113,7 @@ contains
       integer  :: c, t, g, fc                         ! indices
       integer  :: j, k, r, j0                         ! indices
       integer  :: iter                                ! time indices
+      logical  :: isFullTStep                         ! flag for full time step
       real(r8) :: dtime                               ! timestep size [seconds]
       real(r8) :: temp, por, depth                    ! auxiliary variables
       real(r8) :: solu_avg, biomas_avg                ! auxiliary variables 
@@ -149,7 +149,8 @@ contains
       real(r8) :: vb(bounds%begc:bounds%endc,1:nlevlak+nlevsoi)      ! "b" vector for tridiagonal matrix
       real(r8) :: vc(bounds%begc:bounds%endc,1:nlevlak+nlevsoi)      ! "c" vector for tridiagonal matrix
       real(r8) :: vr(bounds%begc:bounds%endc,1:nlevlak+nlevsoi)      ! "r" vector for tridiagonal solution
-      real(r8) :: ex(bounds%begc:bounds%endc,1:nlevlak,1:ngaslak)    ! bubble dissolution rate (mol/m3/s)
+      real(r8) :: ex(bounds%begc:bounds%endc,1:nlevlak,1:ngaslak)                ! bubble dissolution rate (mol/m3/s)
+      real(r8) :: ex_iceb(bounds%begc:bounds%endc,1:nlevlak,1:ngaslak)           ! ice-trapped bubble dissolution rate (mol/m3/s) 
       real(r8) :: sx(bounds%begc:bounds%endc,1:nlevlak+nlevsoi,1:nsolulak)       ! source (+ below surface) for whole column (mol/m^3/s)
       real(r8) :: csrc(bounds%begc:bounds%endc,1:nlevlak+nlevsoi,1:nsolulak)     ! solute production rate (mol/m3/s)
       real(r8) :: csnk(bounds%begc:bounds%endc,1:nlevlak+nlevsoi,1:nsolulak)     ! solute loss rate (mol/m3/s)
@@ -346,13 +347,10 @@ contains
             ch4_sed_diff(c) = ch4_sed_diff(c) + df_sed(c,wch4lak)*dtime
 
             ! initialize source and sink terms of solutes 
-            if (iter==1) then
-               ex(c,:,:)      = 0._r8
-               eb_surf(c,:)   = 0._r8
-            end if
             csrc(c,:,:)       = 0._r8
             csnk(c,:,:)       = 0._r8
             gebul(c,:,:)      = 0._r8
+            eb_surf(c,:)      = 0._r8
 
             ! initialize source and sink terms of c pools
             soilc_loss(c,:,:) = 0._r8
@@ -377,16 +375,18 @@ contains
                eb_sed(c,k) = sum(gebul(c,:,k)*dz(c,1:nlevsoi))
             end do
             ! CH4 ebullition at the water-sediment interface
-            ch4_sed_ebul(c) = ch4_sed_ebul(c) + eb_sed(c,gch4lak)*dtime
+            ch4_sed_ebul(c) = ch4_sed_ebul(c) + eb_sed(c,wch4lak)*dtime
 
             ! bubble transport in water (11 size bins)
             if (iter==1) then
-               call BubbleDynamics(lakestate_vars, lakebgc_vars, c, jwat(c), &
-                        dtime*nsubstep, conc_old(c,:,1:ngaslak), eb_sed(c,:), &
-                        eb_surf(c,:), ex(c,:,:), conc_bubl(c,:,:), conc_iceb(c,:))
-               ch4_surf_ebul(c) = ch4_surf_ebul(c) + eb_surf(c,gch4lak)* &
-                     dtime*nsubstep
+               isFullTStep = .True.
+            else
+               isFullTStep = .False.
             end if
+            call BubbleDynamics(lakestate_vars, lakebgc_vars, c, jwat(c), isFullTStep, &
+                     dtime, conc_old(c,:,1:ngaslak), eb_sed(c,:), eb_surf(c,:), &
+                     ex(c,:,:), ex_iceb(c,:,:), conc_bubl(c,:,:), conc_iceb(c,:))
+            ch4_surf_ebul(c) = ch4_surf_ebul(c) + eb_surf(c,wch4lak)*dtime
 
             ! photosynthesis
             call Photosynthesis(lakestate_vars, lakebgc_vars, c, conc_old(c,:,:), &
@@ -446,15 +446,16 @@ contains
                do k = 1, nsolulak
                   if (j==1) then
                      if (k<=ngaslak) then
-                        sx(c,j,k) = ex(c,j,k) + csrc(c,j,k) - csnk(c,j,k) - &
-                              df_surf(c,k)/dz_lake(c,j)
+                        sx(c,j,k) = ex(c,j,k) + ex_iceb(c,j,k) + csrc(c,j,k) - &
+                              csnk(c,j,k) - df_surf(c,k)/dz_lake(c,j)
                      else
                         sx(c,j,k) = csrc(c,j,k) - csnk(c,j,k) - &
                               df_surf(c,k)/dz_lake(c,j)
                      end if
                   else if (j<=nlevlak) then
                      if (k<=ngaslak) then
-                        sx(c,j,k) = ex(c,j,k) + csrc(c,j,k) - csnk(c,j,k)
+                        sx(c,j,k) = ex(c,j,k) + ex_iceb(c,j,k) + csrc(c,j,k) - &
+                              csnk(c,j,k)
                      else
                         sx(c,j,k) = csrc(c,j,k) - csnk(c,j,k)
                      end if
@@ -530,7 +531,7 @@ contains
                do j = 1, nlevlak+nlevsoi
                   if (conc_new(c,j,k)<0._r8) then
                      deficit = -conc_new(c,j,k) * dzx(c,j)  ! mol/m2
-                     if (k==gch4lak) then ! for CH4
+                     if (k==wch4lak) then ! for CH4
                         if (deficit > 1.e-3_r8) then
                            if (deficit > 1.e-2_r8) then
                               write(iulog,*)'Note: sink > source in LakeBGCDynamics, sources are changing '// &
@@ -583,7 +584,7 @@ contains
                c = filter_lakec(fc)
             
                if (j==1) then
-                  errch4(c) = conc_iceb(c,gch4lak) - conc_iceb_old(c,gch4lak)
+                  errch4(c) = conc_iceb(c,wch4lak) - conc_iceb_old(c,wch4lak)
                   delta_iceb(c) = errch4(c) 
                   delta_ch4(c) = 0._r8
                end if
@@ -860,7 +861,7 @@ contains
       !
       ! !USES:
       use elm_varcon         , only : tfrz
-      use LakeBGCType        , only : gn2lak, go2lak, gco2lak, gch4lak 
+      use LakeBGCType        , only : wn2lak, wo2lak, wco2lak, wch4lak 
       ! !ARGUMENTS:
       implicit none
       real(r8), intent(in) :: temp     ! temperature (K)
@@ -874,9 +875,9 @@ contains
       integer  :: indx 
       !--------------------------------------------------------------------
 
-      if (gas==gn2lak) then
+      if (gas==wn2lak) then
          HenrySolubility = 6.1e-6_r8*exp(-1300._r8*(1._r8/temp-1._r8/298._r8)) 
-      else if (gas==go2lak) then
+      else if (gas==wo2lak) then
          if (temp>=tfrz .and. temp<=tfrz+50._r8) then 
             indx = min( int((temp-tfrz)/5._r8) + 1, 10 )
             par = (temp - tfrz - 5*indx + 5) / 5._r8
@@ -885,14 +886,14 @@ contains
          else
             HenrySolubility = 1.3e-5_r8*exp(-1500._r8*(1._r8/temp-1._r8/298._r8))
          end if
-      else if (gas==gco2lak) then
+      else if (gas==wco2lak) then
          hi = 10._r8**(-pH)    ! Concentration of hydrogen ion
          ! rate constant of dissolved CO2 for first and second dissolution
          kc1 = 4.3e-7_r8*exp(-921.4_r8*(1._r8/temp-1._r8/298._r8))
          kc2 = 4.7e-11_r8*exp(-1787.4_r8*(1._r8/temp-1._r8/298._r8))
          HenrySolubility = 3.4e-4_r8*exp(-2400._r8*(1._r8/temp-1._r8/298._r8))* &
             (1._r8 + kc1/hi + kc1*kc2/hi**2._r8)
-      else if (gas==gch4lak) then
+      else if (gas==wch4lak) then
          HenrySolubility = 1.3e-5_r8*exp(-1700._r8*(1._r8/temp-1._r8/298._r8))
       else
          call endrun(msg=' ERROR: no gas type index is found.'//&
@@ -908,7 +909,7 @@ contains
       ! Calculate bubble gas diffusivity (m^2/s) 
       !
       ! !USES:
-      use LakeBGCType        , only : gn2lak, go2lak, gco2lak, gch4lak
+      use LakeBGCType        , only : wn2lak, wo2lak, wco2lak, wch4lak
       ! !ARGUMENTS:
       implicit none
       real(r8), intent(in) :: temp     ! temperature (K)
@@ -917,13 +918,13 @@ contains
       ! !LOCAL VARIABLES:
       !--------------------------------------------------------------------
 
-      if (gas==gn2lak) then
+      if (gas==wn2lak) then
          BubbleGasDiffusivity = 2.57e-7_r8 * (temp/273.0_r8)
-      else if (gas==go2lak) then
+      else if (gas==wo2lak) then
          BubbleGasDiffusivity = 2.4e-7_r8 * (temp/298.0_r8)
-      else if (gas==gco2lak) then
+      else if (gas==wco2lak) then
          BubbleGasDiffusivity = 1.81e-3_r8 * exp(-2032.6_r8/temp)
-      else if (gas==gch4lak) then
+      else if (gas==wch4lak) then
          BubbleGasDiffusivity = 1.5e-7_r8 * (temp/298.0_r8)
       else
          call endrun(msg=' ERROR: no gas type index is found.'//&
@@ -940,7 +941,7 @@ contains
       !
       ! !USES:
       use elm_varcon         , only : tfrz
-      use LakeBGCType        , only : gn2lak, go2lak, gco2lak, gch4lak
+      use LakeBGCType        , only : wn2lak, wo2lak, wco2lak, wch4lak
       ! !ARGUMENTS:
       implicit none
       real(r8), intent(in) :: temp     ! temperature (K)
@@ -955,16 +956,16 @@ contains
          SchmidtNumber = 1.e30_r8
          return
       end if
-      if (gas==gn2lak) then
+      if (gas==wn2lak) then
          SchmidtNumber = 1970.7_r8 - 131.45_r8*tw + 4.139_r8*(tw**2._r8) - &
             0.052106_r8*(tw**3.0_r8)
-      else if (gas==go2lak) then
+      else if (gas==wo2lak) then
          SchmidtNumber = 1800.6_r8 - 120.1_r8*tw + 3.7818_r8*(tw**2._r8) - &
             0.047608_r8*(tw**3.0_r8)
-      else if (gas==gco2lak) then
+      else if (gas==wco2lak) then
          SchmidtNumber = 1911.0_r8 - 113.7_r8*tw + 2.967_r8*(tw**2._r8) - &
             0.02943_r8*(tw**3.0_r8)
-      else if (gas==gch4lak) then
+      else if (gas==wch4lak) then
          SchmidtNumber = 1898_r8 - 110.1_r8*tw + 2.834_r8*(tw**2._r8) - &
             0.02791_r8*(tw**3.0_r8)
       else
@@ -1092,7 +1093,6 @@ contains
       ! !USES:
       use elm_varcon         , only : grav, patomw
       use elm_varpar         , only : ngaslak, nsolulak
-      use LakeBGCType        , only : gn2lak, go2lak, gco2lak, gch4lak
       use LakeBGCType        , only : wn2lak, wo2lak, wco2lak, wch4lak, wsrplak
       ! !ARGUMENTS:
       implicit none
@@ -1124,19 +1124,19 @@ contains
       do k = 1, nsolulak
          if (k==wn2lak) then
             pressure = Xn2*forc_pbot(t)
-            henry = HenrySolubility(temp, lake_ph(c), gn2lak)
+            henry = HenrySolubility(temp, lake_ph(c), wn2lak)
             conc_eq(k) = henry * pressure 
          else if (k==wo2lak) then
             pressure = forc_po2(t)
-            henry = HenrySolubility(temp, lake_ph(c), go2lak)
+            henry = HenrySolubility(temp, lake_ph(c), wo2lak)
             conc_eq(k) = henry * pressure
          else if (k==wco2lak) then
             pressure = forc_pco2(t)
-            henry = HenrySolubility(temp, lake_ph(c), gco2lak)
+            henry = HenrySolubility(temp, lake_ph(c), wco2lak)
             conc_eq(k) = henry * pressure
          else if (k==wch4lak) then
             pressure = forc_pch4(t)
-            henry = HenrySolubility(temp, lake_ph(c), gch4lak)
+            henry = HenrySolubility(temp, lake_ph(c), wch4lak)
             conc_eq(k) = henry * pressure
          else if (k==wsrplak) then
             conc_eq(k) = 0.1_r8*lake_tp(c)/patomw
@@ -1380,7 +1380,7 @@ contains
       use elm_varcon         , only : grav, denh2o
       use elm_varpar         , only : nlevlak, nlevsoi
       use elm_varpar         , only : ngaslak
-      use LakeBGCType        , only : gn2lak, go2lak, gco2lak, gch4lak
+      use LakeBGCType        , only : wn2lak, wo2lak, wco2lak, wch4lak
       ! !ARGUMENTS:
       implicit none
       type(soilstate_type)   , intent(in)  :: soilstate_vars
@@ -1418,20 +1418,20 @@ contains
          temp = t_soisno(c,j)
          por = soilpor(c,j)
          depth = lakedepth(c) + z(c,j)
-         c_n2 = conc_gas(j+nlevlak,gn2lak)
-         c_ch4 = conc_gas(j+nlevlak,gch4lak)
-         Hn2 = HenrySolubility(temp, lake_ph(c), gn2lak)
-         Hch4 = HenrySolubility(temp, lake_ph(c), gch4lak)
+         c_n2 = conc_gas(j+nlevlak,wn2lak)
+         c_ch4 = conc_gas(j+nlevlak,wch4lak)
+         Hn2 = HenrySolubility(temp, lake_ph(c), wn2lak)
+         Hch4 = HenrySolubility(temp, lake_ph(c), wch4lak)
          Prn2 = c_n2/Hn2                  ! partial pressure of N2
          Prch4 = c_ch4/Hch4               ! partial pressure of CH4
          Prtot = Prn2 + Prch4
          Psat = Ae * por * (forc_pbot(t) + grav*denh2o*depth)
          Prnet = Prtot - Psat             ! excessive pressure
          if (Prnet>1.e-8_r8) then
-            gebul(j,gn2lak) = LakeBGCParamsInst%Re * (Prn2/Prtot) * Prnet * Hn2
-            gebul(j,gch4lak) = LakeBGCParamsInst%Re * (Prch4/Prtot) * Prnet * Hch4
-            gebul(j,go2lak) = 0.0_r8
-            gebul(j,gco2lak) = 0.0_r8
+            gebul(j,wn2lak) = LakeBGCParamsInst%Re * (Prn2/Prtot) * Prnet * Hn2
+            gebul(j,wch4lak) = LakeBGCParamsInst%Re * (Prch4/Prtot) * Prnet * Hch4
+            gebul(j,wo2lak) = 0.0_r8
+            gebul(j,wco2lak) = 0.0_r8
          else
             gebul(j,1:ngaslak) = 0.0_r8
          end if
@@ -1441,8 +1441,9 @@ contains
    end subroutine SedimentEbullition
 
    !-----------------------------------------------------------------------
-   subroutine BubbleDynamics(lakestate_vars, lakebgc_vars, c, jwat, dtime, &
-                             conc_gas, ebb, ebt, ex, conc_bubl, conc_iceb) 
+   subroutine BubbleDynamics(lakestate_vars, lakebgc_vars, c, jwat, &
+                             isFullTStep, dtime, conc_gas, ebb, ebt, &
+                             ex, ex_iceb, conc_bubl, conc_iceb) 
       !
       ! !DESCRIPTION:
       ! Simulate bubble transport in the water column 
@@ -1451,18 +1452,20 @@ contains
       use elm_varcon         , only : tfrz, denh2o, grav, rgas, rpi
       use elm_varpar         , only : nlevlak, nlevsoi
       use elm_varpar         , only : ngaslak
-      use LakeBGCType        , only : gn2lak, go2lak, gco2lak, gch4lak
+      use LakeBGCType        , only : wn2lak, wo2lak, wco2lak, wch4lak
       ! !ARGUMENTS:
       implicit none
       type(lakestate_type)   , intent(in)    :: lakestate_vars
       type(lakebgc_type)     , intent(in)    :: lakebgc_vars
       integer                , intent(in)    :: c
       integer                , intent(in)    :: jwat                    ! unfrozen water top index
+      logical                , intent(in)    :: isFullTStep             ! flag for full time step
       real(r8)               , intent(in)    :: dtime                   ! timestep size [seconds]
       real(r8)               , intent(in)    :: conc_gas(1:nlevlak+nlevsoi,1:ngaslak)  ! dissolved gas (mol/m3)
       real(r8)               , intent(in)    :: ebb(1:ngaslak)          ! bottom ebullition (mol/m2/s)
       real(r8)               , intent(out)   :: ebt(1:ngaslak)          ! surface ebullition (mol/m2/s)
-      real(r8)               , intent(out)   :: ex(1:nlevlak,1:ngaslak) ! gas dissolution (mol/m3/s)
+      real(r8)               , intent(inout) :: ex(1:nlevlak,1:ngaslak) ! gas dissolution (mol/m3/s)
+      real(r8)               , intent(inout) :: ex_iceb(1:nlevlak,1:ngaslak)     ! gas dissolution (mol/m3/s)
       real(r8)               , intent(inout) :: conc_bubl(1:nlevlak,1:ngaslak)   ! bubble gas concentration (mol/m3)
       real(r8)               , intent(inout) :: conc_iceb(1:ngaslak)    ! gas concentration of ice-trapped bubbles (mol/m2)
       !
@@ -1512,105 +1515,115 @@ contains
 
       t = col_pp%topounit(c)
 
-      ! Calculate bubble release rate at the water-sediment interface
-      do j = 1, nlevlak
-         temp = max(t_lake(c,j),tfrz)
-         gama(j) = SurfaceTension(temp) 
-         vsc(j) = KinematicViscosity(temp)
-         do k = 1, ngaslak
-            gsolu(j,k) = HenrySolubility(temp, lake_ph(c), k)
-            gdiff(j,k) = BubbleGasDiffusivity(temp, k)
-            schmidt(j,k) = SchmidtNumber(temp, k)
+      ! only run the bubble model at the full time step
+      if (isFullTStep) then
+         ! Calculate bubble release rate at the water-sediment interface
+         do j = 1, nlevlak
+            temp = max(t_lake(c,j),tfrz)
+            gama(j) = SurfaceTension(temp) 
+            vsc(j) = KinematicViscosity(temp)
+            do k = 1, ngaslak
+               gsolu(j,k) = HenrySolubility(temp, lake_ph(c), k)
+               gdiff(j,k) = BubbleGasDiffusivity(temp, k)
+               schmidt(j,k) = SchmidtNumber(temp, k)
+            end do
          end do
-      end do
-      pr = forc_pbot(t) + denh2o*grav*lakedepth(c)
-      Atmp = 0._r8
-      do rindx = 1, nrlev
-         rr = 1.e-3_r8 * Rb0(rindx)
-         vrr(nlevlak+1,rindx) = rr
-         vb = BuoyantVelocity(rr, vsc(nlevlak)) 
-         vb_rr(nlevlak+1,rindx) = vb
-         Atmp = Atmp + (pr*rr + 2._r8*gama(nlevlak)) * vb
-         bgas_rr(nlevlak+1,:,rindx) = ebb * (pr*rr+2._r8*gama(nlevlak))
-      end do
-      bgas_rr(nlevlak+1,:,:) = bgas_rr(nlevlak+1,:,:) / Atmp
+         pr = forc_pbot(t) + denh2o*grav*lakedepth(c)
+         Atmp = 0._r8
+         do rindx = 1, nrlev
+            rr = 1.e-3_r8 * Rb0(rindx)
+            vrr(nlevlak+1,rindx) = rr
+            vb = BuoyantVelocity(rr, vsc(nlevlak)) 
+            vb_rr(nlevlak+1,rindx) = vb
+            Atmp = Atmp + (pr*rr + 2._r8*gama(nlevlak)) * vb
+            bgas_rr(nlevlak+1,:,rindx) = ebb * (pr*rr+2._r8*gama(nlevlak))
+         end do
+         bgas_rr(nlevlak+1,:,:) = bgas_rr(nlevlak+1,:,:) / Atmp
 
-      ! time step (s)
-      dt = 4.0_r8 / (0.1418_r8*(10.0*Rb0(1))**2._r8 + &
-         0.05579_r8*(10._r8*Rb0(1)) + 0.7794_r8)
+         ! time step (s)
+         dt = 4.0_r8 / (0.1418_r8*(10.0*Rb0(1))**2._r8 + &
+            0.05579_r8*(10._r8*Rb0(1)) + 0.7794_r8)
 
-      do rindx = 1, nrlev
-         ! no sediment bubbling
-         if (ebb(gch4lak)<1.e-10_r8) then
-            bgas_rr(1:nlevlak,:,rindx) = 0._r8
-            vb_rr(1:nlevlak,rindx) = 0._r8
-            vrr(1:nlevlak,rindx) = 1.e-3_r8 * Rb0(rindx)
-            cycle
-         end if
-         locindx = nlevlak
-         pos = -lakedepth(c) 
-         rr = 1.e-3_r8 * Rb0(rindx)
-         vbg = bgas_rr(nlevlak+1,:,rindx)
-         ! keep bubble number constant (missing some nonlinear effect)
-         temp = t_lake(c,locindx)
-         pr = forc_pbot(t) - denh2o*grav*pos + 2._r8*gama(locindx)/rr
-         numb = 0.75e-3_r8*rgas*temp/(rpi*pr*rr**3.0_r8)*sum(vbg)
-         do while (pos<-icethick(c) .and. rr>1.e-8_r8 .and. &
-                   sum(vbg)>1.e-10_r8)
-            if (pos>=-z_lake(c,locindx)+0.5_r8*dz_lake(c,locindx)) then
-               bgas_rr(locindx,:,rindx) = vbg 
-               vb_rr(locindx,rindx) = vb
-               vrr(locindx,rindx) = rr 
-               locindx = locindx - 1 
+         do rindx = 1, nrlev
+            ! no sediment bubbling
+            if (ebb(wch4lak)<1.e-10_r8) then
+               bgas_rr(1:nlevlak,:,rindx) = 0._r8
+               vb_rr(1:nlevlak,rindx) = 0._r8
+               vrr(1:nlevlak,rindx) = 1.e-3_r8 * Rb0(rindx)
+               cycle
             end if
+            locindx = nlevlak
+            pos = -lakedepth(c) 
+            rr = 1.e-3_r8 * Rb0(rindx)
+            vbg = bgas_rr(nlevlak+1,:,rindx)
+            ! keep bubble number constant (missing some nonlinear effect)
             temp = t_lake(c,locindx)
-            vb = BuoyantVelocity(rr, vsc(locindx))
             pr = forc_pbot(t) - denh2o*grav*pos + 2._r8*gama(locindx)/rr
-            !numb = 0.75e-3_r8*rgas*temp/(rpi*pr*rr**3.0)*sum(vbg)
-            ! gas exchange rate
-            peclet = rr * vb / gdiff(locindx,:)
-            reynold = peclet / schmidt(locindx,:) 
-            where (reynold<=1._r8)
-               nusselt = sqrt(2._r8*rpi*peclet/3.0_r8)
-            elsewhere
-               nusselt = 0.45_r8*(reynold**(1._r8/6._r8))*(peclet**(1._r8/3._r8)) 
-            end where
-            k_ndm = -4._r8 * rpi * rr * gdiff(locindx,:) * nusselt
-            ndm = k_ndm * (gsolu(locindx,:)*pr*vbg/sum(vbg) - conc_gas(locindx,:))
-            ! new bubble gas
-            vbg = vbg + numb * ndm * dt
-            where (vbg<0._r8) vbg = 0._r8    ! remove small negatives
-            pr_tmp = 3._r8*forc_pbot(t) - 3._r8*denh2o*grav*pos + &
-               4._r8*gama(locindx)/rr
-            dr_tmp1 = 0.75e-3_r8*rgas*temp/(rpi*rr**2._r8)/pr_tmp 
-            dr_tmp2 = rr*denh2o*grav*vb/pr_tmp
-            ! new bubble radius
-            rr = rr + (dr_tmp1*sum(ndm)+dr_tmp2)*dt
-            pos = pos + vb * dt     ! new position
-         end do 
-         ! including ice layers
-         do j = 1, locindx, 1
-            bgas_rr(j,:,rindx) = vbg
-            vb_rr(j,rindx) = vb
-            vrr(j,rindx) = max(0._r8,rr)
+            numb = 0.75e-3_r8*rgas*temp/(rpi*pr*rr**3.0_r8)*sum(vbg)
+            do while (pos<-icethick(c) .and. rr>1.e-8_r8 .and. &
+                     sum(vbg)>1.e-10_r8)
+               if (pos>=-z_lake(c,locindx)+0.5_r8*dz_lake(c,locindx)) then
+                  bgas_rr(locindx,:,rindx) = vbg 
+                  vb_rr(locindx,rindx) = vb
+                  vrr(locindx,rindx) = rr 
+                  locindx = locindx - 1 
+               end if
+               temp = t_lake(c,locindx)
+               vb = BuoyantVelocity(rr, vsc(locindx))
+               pr = forc_pbot(t) - denh2o*grav*pos + 2._r8*gama(locindx)/rr
+               !numb = 0.75e-3_r8*rgas*temp/(rpi*pr*rr**3.0)*sum(vbg)
+               ! gas exchange rate
+               peclet = rr * vb / gdiff(locindx,:)
+               reynold = peclet / schmidt(locindx,:) 
+               where (reynold<=1._r8)
+                  nusselt = sqrt(2._r8*rpi*peclet/3.0_r8)
+               elsewhere
+                  nusselt = 0.45_r8*(reynold**(1._r8/6._r8))*(peclet**(1._r8/3._r8)) 
+               end where
+               k_ndm = -4._r8 * rpi * rr * gdiff(locindx,:) * nusselt
+               ndm = k_ndm * (gsolu(locindx,:)*pr*vbg/sum(vbg) - conc_gas(locindx,:))
+               ! new bubble gas
+               vbg = vbg + numb * ndm * dt
+               where (vbg<0._r8) vbg = 0._r8    ! remove small negatives
+               pr_tmp = 3._r8*forc_pbot(t) - 3._r8*denh2o*grav*pos + &
+                     4._r8*gama(locindx)/rr
+               dr_tmp1 = 0.75e-3_r8*rgas*temp/(rpi*rr**2._r8)/pr_tmp 
+               dr_tmp2 = rr*denh2o*grav*vb/pr_tmp
+               ! new bubble radius
+               rr = rr + (dr_tmp1*sum(ndm)+dr_tmp2)*dt
+               pos = pos + vb * dt     ! new position
+            end do 
+            ! including ice layers
+            do j = 1, locindx, 1
+               bgas_rr(j,:,rindx) = vbg
+               vb_rr(j,rindx) = vb
+               vrr(j,rindx) = max(0._r8,rr)
+            end do
          end do
-      end do
 
-      ! update state and flux variables 
-      ebt = ebb
-      conc_bubl(1:nlevlak,:) = 0._r8
-      ex(1:nlevlak,:) = 0._r8
-      do rindx = 1, nrlev
+         ! update state and flux variables 
+         ebt = ebb
+         conc_bubl(1:nlevlak,:) = 0._r8
+         ex(1:nlevlak,:) = 0._r8
+         do rindx = 1, nrlev
+            ! size-integrated bubble gas and gas exchange
+            do j = nlevlak, jwat, -1
+               conc_bubl(j,:) = conc_bubl(j,:) + 0.5_r8 * &
+                     (bgas_rr(j,:,rindx)+bgas_rr(j+1,:,rindx))
+               exlayer = (bgas_rr(j+1,:,rindx) - bgas_rr(j,:,rindx)) * &
+                     vb_rr(nlevlak+1,rindx)
+               ex(j,:) = ex(j,:) + exlayer / dz_lake(c,j)
+               ebt = ebt - exlayer
+            end do
+         end do 
+      else
+         ! update flux variable (assuming unchanged ex and conc_bubl)
+         ebt = ebb
          ! size-integrated bubble gas and gas exchange
          do j = nlevlak, jwat, -1
-            conc_bubl(j,:) = conc_bubl(j,:) + 0.5_r8 * &
-               (bgas_rr(j,:,rindx)+bgas_rr(j+1,:,rindx))
-            exlayer = (bgas_rr(j+1,:,rindx) - bgas_rr(j,:,rindx)) * &
-               vb_rr(nlevlak+1,rindx)
-            ex(j,:) = ex(j,:) + exlayer / dz_lake(c,j)
-            ebt = ebt - exlayer
+            ebt = ebt - ex(j,:) * dz_lake(c,j)
          end do
-      end do 
+      end if
 
       if (icethick(c)>1.e-8_r8) then
          ! bubbles trapped in ice layers
@@ -1621,15 +1634,16 @@ contains
          ebt = ebt + conc_iceb * LakeBGCParamsInst%icebflux
          do k = 1, ngaslak
             conc_iceb(k) = conc_iceb(k) * max(0._r8, &
-               (1._r8 - LakeBGCParamsInst%icebflux*dtime))
+                  (1._r8 - LakeBGCParamsInst%icebflux*dtime))
          end do 
       end if
 
+      ex_iceb(1:nlevlak,:) = 0._r8
       do k = 1, ngaslak
-         ex(jwat,k) = ex(jwat,k) + conc_iceb(k) / &
-            dz_lake(c,jwat) * LakeBGCParamsInst%icebloss
+         ex_iceb(jwat,k) = conc_iceb(k) / dz_lake(c,jwat) * &
+               LakeBGCParamsInst%icebloss
          conc_iceb(k) = conc_iceb(k) * max(0._r8, &
-            (1._r8 - LakeBGCParamsInst%icebloss*dtime)) 
+               (1._r8 - LakeBGCParamsInst%icebloss*dtime))
       end do
 
       end associate

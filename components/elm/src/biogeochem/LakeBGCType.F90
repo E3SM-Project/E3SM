@@ -18,12 +18,7 @@ module LakeBGCType
   implicit none
   save
   private
-  ! gas identifier
-  integer, parameter, public :: gn2lak = 1
-  integer, parameter, public :: go2lak = 2
-  integer, parameter, public :: gco2lak = 3
-  integer, parameter, public :: gch4lak = 4
-  ! solute identifier
+  ! substance identifier
   integer, parameter, public :: wn2lak = 1
   integer, parameter, public :: wo2lak = 2
   integer, parameter, public :: wco2lak = 3
@@ -290,13 +285,13 @@ contains
          ptr_col=data2dptr, l2g_scale_type='lake', default='inactive') 
 
     this%conc_bubl_col(begc:endc,1:nlevlak,1:ngaslak) = spval
-    data2dptr => this%conc_bubl_col(:,:,gch4lak)
+    data2dptr => this%conc_bubl_col(:,:,wch4lak)
     call hist_addfld2d (fname='BUBL_CH4_LAKE',  units='mol/m^3', type2d='levlak', &
          avgflag='A', long_name='Bubble CH4 concentration in the lake water', &
          ptr_col=data2dptr, l2g_scale_type='lake', default='inactive')
 
     this%conc_iceb_col(begc:endc,1:ngaslak) = spval
-    data1dptr => this%conc_iceb_col(:,gch4lak)
+    data1dptr => this%conc_iceb_col(:,wch4lak)
     call hist_addfld1d (fname='BUBL_ICE_CH4',  units='mol/m^2',  & 
          avgflag='A', long_name='lake CH4 trapped in ice layers', &
          ptr_col=data1dptr, l2g_scale_type='lake', default='inactive')
@@ -681,49 +676,49 @@ contains
          long_name='soluble reactive phosphorus lake sediment concentration', units='mol/m^3', &
          readvar=readvar, interpinic_flag='interp', data=data2dptr)
 
-    data2dptr => this%conc_bubl_col(:,:,gn2lak)
+    data2dptr => this%conc_bubl_col(:,:,wn2lak)
     call restartvar(ncid=ncid, flag=flag, varname='BUBL_N2_LAKE', xtype=ncd_double, &
          dim1name='column', dim2name='levlak', switchdim=.true., &
          long_name='bubble nitrogen concentration', units='mol/m^3', &
          readvar=readvar, interpinic_flag='interp', data=data2dptr)           
 
-    data2dptr => this%conc_bubl_col(:,:,go2lak)
+    data2dptr => this%conc_bubl_col(:,:,wo2lak)
     call restartvar(ncid=ncid, flag=flag, varname='BUBL_O2_LAKE', xtype=ncd_double, &
          dim1name='column', dim2name='levlak', switchdim=.true., &
          long_name='bubble oxygen concentration', units='mol/m^3', &
          readvar=readvar, interpinic_flag='interp', data=data2dptr)  
 
-    data2dptr => this%conc_bubl_col(:,:,gco2lak)
+    data2dptr => this%conc_bubl_col(:,:,wco2lak)
     call restartvar(ncid=ncid, flag=flag, varname='BUBL_CO2_LAKE', xtype=ncd_double, &
          dim1name='column', dim2name='levlak', switchdim=.true., &
          long_name='bubble carbon dioxide concentration', units='mol/m^3', &
          readvar=readvar, interpinic_flag='interp', data=data2dptr)  
 
-    data2dptr => this%conc_bubl_col(:,:,gch4lak)
+    data2dptr => this%conc_bubl_col(:,:,wch4lak)
     call restartvar(ncid=ncid, flag=flag, varname='BUBL_CH4_LAKE', xtype=ncd_double, &
          dim1name='column', dim2name='levlak', switchdim=.true., &
          long_name='bubble methane concentration', units='mol/m^3', &
          readvar=readvar, interpinic_flag='interp', data=data2dptr)  
  
-    data1dptr => this%conc_iceb_col(:,gn2lak)
+    data1dptr => this%conc_iceb_col(:,wn2lak)
     call restartvar(ncid=ncid, flag=flag, varname='BUBL_ICE_N2', xtype=ncd_double,  &
          dim1name='column', &
          long_name='ice-trapped bubble nitrogen concentration', units='mol/m^2', &
          interpinic_flag='interp', readvar=readvar, data=data1dptr)
 
-    data1dptr => this%conc_iceb_col(:,go2lak)
+    data1dptr => this%conc_iceb_col(:,wo2lak)
     call restartvar(ncid=ncid, flag=flag, varname='BUBL_ICE_O2', xtype=ncd_double,  &
          dim1name='column', &
          long_name='ice-trapped bubble oxygen concentration', units='mol/m^2', &
          interpinic_flag='interp', readvar=readvar, data=data1dptr)
 
-    data1dptr => this%conc_iceb_col(:,gco2lak)
+    data1dptr => this%conc_iceb_col(:,wco2lak)
     call restartvar(ncid=ncid, flag=flag, varname='BUBL_ICE_CO2', xtype=ncd_double,  &
          dim1name='column', &
          long_name='ice-trapped bubble carbon dioxide concentration', units='mol/m^2', &
          interpinic_flag='interp', readvar=readvar, data=data1dptr)
 
-    data1dptr => this%conc_iceb_col(:,gch4lak)
+    data1dptr => this%conc_iceb_col(:,wch4lak)
     call restartvar(ncid=ncid, flag=flag, varname='BUBL_ICE_CH4', xtype=ncd_double,  &
          dim1name='column', &
          long_name='ice-trapped bubble methane concentration', units='mol/m^2', &
