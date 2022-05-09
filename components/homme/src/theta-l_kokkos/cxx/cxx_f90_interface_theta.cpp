@@ -467,7 +467,7 @@ void compute_gradphis_c ()
 
 void init_elements_states_c (CF90Ptr& elem_state_v_ptr,       CF90Ptr& elem_state_w_i_ptr, CF90Ptr& elem_state_vtheta_dp_ptr,
                              CF90Ptr& elem_state_phinh_i_ptr, CF90Ptr& elem_state_dp3d_ptr,
-                             CF90Ptr& elem_state_ps_v_ptr,    CF90Ptr& elem_state_Qdp_ptr)
+                             CF90Ptr& elem_state_ps_v_ptr,    CF90Ptr& elem_state_Qdp_ptr, CF90Ptr& elem_state_Q_ptr)
 {
   const auto& c = Context::singleton();
   ElementsState& state = c.get<ElementsState> ();
@@ -475,6 +475,9 @@ void init_elements_states_c (CF90Ptr& elem_state_v_ptr,       CF90Ptr& elem_stat
                                elem_state_phinh_i_ptr,elem_state_dp3d_ptr,elem_state_ps_v_ptr);
   Tracers &tracers = c.get<Tracers>();
   tracers.pull_qdp(elem_state_Qdp_ptr);
+  tracers.pull_Q(elem_state_Q_ptr);
+
+#if 0
   const auto  qdp = tracers.qdp;
   const auto  q = tracers.Q;
   const auto  dp = state.m_dp3d;
@@ -483,6 +486,7 @@ void init_elements_states_c (CF90Ptr& elem_state_v_ptr,       CF90Ptr& elem_stat
   const auto n0_qdp = tl.n0_qdp;
   const auto qsize = tracers.num_tracers();
   const auto size = tracers.num_elems()*tracers.num_tracers()*NP*NP*NUM_LEV;
+
   Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,size),
                        KOKKOS_LAMBDA(const int idx) {
     const int ie  =  idx / (qsize*NP*NP*NUM_LEV);
@@ -493,6 +497,8 @@ void init_elements_states_c (CF90Ptr& elem_state_v_ptr,       CF90Ptr& elem_stat
 
     q (ie,iq,igp,jgp,k) = qdp (ie,n0_qdp,iq,igp,jgp,k) / dp(ie,n0,igp,jgp,k);
   });
+#endif
+
 }
 
 void init_reference_states_c (CF90Ptr& elem_theta_ref_ptr, 

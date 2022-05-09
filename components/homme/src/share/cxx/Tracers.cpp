@@ -62,6 +62,14 @@ void Tracers::pull_qdp(CF90Ptr &state_qdp) {
   sync_to_device(state_qdp_f90, qdp);
 }
 
+void Tracers::pull_Q(CF90Ptr &state_q) {
+  HostViewUnmanaged<
+      const Real * [QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]>
+  state_q_f90(state_q, Q.extent_int(0));
+  sync_to_device(state_q_f90, Q);
+}
+
+
 void Tracers::push_qdp(F90Ptr &state_qdp) const {
   HostViewUnmanaged<
       Real * [Q_NUM_TIME_LEVELS][QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]>

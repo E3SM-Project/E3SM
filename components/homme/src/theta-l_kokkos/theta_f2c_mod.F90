@@ -105,15 +105,15 @@ interface
 
   ! Copies states from f90 arrays into C++ views
   subroutine init_elements_states_c (elem_state_v_ptr, elem_state_w_i, elem_state_vtheta_dp_ptr, &
-                                     elem_state_phinh_i, elem_state_dp3d_ptr,                    &
-                                     elem_state_Qdp_ptr, elem_state_ps_v_ptr) bind(c)
+                                     elem_state_phinh_i, elem_state_dp3d_ptr, elem_state_ps_v_ptr, &
+                                     elem_state_Qdp_ptr, elem_state_Q_ptr) bind(c)
     use iso_c_binding, only: c_ptr
     !
     ! Inputs
     !
     type (c_ptr) :: elem_state_v_ptr, elem_state_w_i, elem_state_vtheta_dp_ptr
     type (c_ptr) :: elem_state_phinh_i, elem_state_dp3d_ptr
-    type (c_ptr) :: elem_state_Qdp_ptr, elem_state_ps_v_ptr
+    type (c_ptr) :: elem_state_Qdp_ptr, elem_state_Q_ptr, elem_state_ps_v_ptr
   end subroutine init_elements_states_c
 
   ! Copies reference states from f90 arrays into C++ views

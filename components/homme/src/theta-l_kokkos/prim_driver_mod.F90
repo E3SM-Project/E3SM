@@ -223,7 +223,7 @@ contains
     use iso_c_binding, only : c_ptr, c_loc
     use element_mod,   only : element_t
     use element_state, onlY : elem_state_dp3d, elem_state_phinh_i, elem_state_ps_v, &
-                              elem_state_qdp, elem_state_v,                         &
+                              elem_state_qdp, elem_state_q, elem_state_v,                         &
                               elem_state_vtheta_dp, elem_state_w_i
     use theta_f2c_mod, only : init_elements_states_c
     !
@@ -236,7 +236,7 @@ contains
 
     type (c_ptr) :: elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr
     type (c_ptr) :: elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr
-    type (c_ptr) :: elem_state_Qdp_ptr
+    type (c_ptr) :: elem_state_Qdp_ptr, elem_state_Q_ptr
 
     elem_state_v_ptr         = c_loc(elem_state_v)
     elem_state_w_i_ptr       = c_loc(elem_state_w_i)
@@ -244,10 +244,11 @@ contains
     elem_state_phinh_i_ptr   = c_loc(elem_state_phinh_i)
     elem_state_dp3d_ptr      = c_loc(elem_state_dp3d)
     elem_state_Qdp_ptr       = c_loc(elem_state_Qdp)
+    elem_state_Q_ptr         = c_loc(elem_state_Q)
     elem_state_ps_v_ptr      = c_loc(elem_state_ps_v)
     call init_elements_states_c (elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr,   &
                                  elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr, &
-                                 elem_state_Qdp_ptr)
+                                 elem_state_Qdp_ptr, elem_state_Q_ptr)
   end subroutine prim_init_state_views
 
   subroutine prim_init_ref_states_views (elem)
