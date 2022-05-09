@@ -140,7 +140,7 @@ contains
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
       real(kind=RKIND), dimension(:), allocatable :: RossbyRadiusTaper
       real(kind=RKIND) :: c_Visbeck   ! baroclinic wave speed from Visbeck parameterization
-      real(kind=RKIND) :: c_mode1, resolution
+      real(kind=RKIND) :: c_mode1, resolution, dc_Lr
       ! Dimensions
       integer :: nCells, nEdges
       integer, pointer :: nVertLevels
@@ -690,7 +690,7 @@ contains
             call mpas_pool_get_array(meshPool, 'fEdge', fEdge)
 
             !$omp parallel
-            !$omp do schedule(runtime) private(k, cell1, cell2, sum_hN, lt1, lt2, c_mode1, resolution)
+            !$omp do schedule(runtime) private(k, cell1, cell2, sum_hN, lt1, lt2, c_mode1, resolution, dc_Lr)
             do iEdge = 1, nEdges
                cell1 = cellsOnEdge(1, iEdge)
                cell2 = cellsOnEdge(2, iEdge)
@@ -723,13 +723,18 @@ contains
                RossbyRadius(iEdge) = c_mode1*sqrt( 1.0_RKIND / &
                   (fEdge(iEdge)*fEdge(iEdge) + 2.0_RKIND*betaEdge(iEdge)*c_mode1 + 1.0E-15_RKIND))
 
-               ! If the RossbyRadius is larger than two cell widths, then this
-               ! edge is sufficiently well-resolved, and turn off the
-               ! parameterization.
-               if (RossbyRadius(iEdge).ge.2.0_RKIND*dcEdge(iEdge) .or. c_mode1.lt.0.1_RKIND) then
+               dc_Lr = dcEdge(iEdge)/RossbyRadius(iEdge)
+
+               ! Ramp the parameterization between the given min and max values
+               ! of the ratio of the cell width to the Rossby radius
+               if (dc_Lr <= config_GM_Rossby_ramp_min .or. c_mode1.lt.0.1_RKIND) then
                   RossbyRadiusTaper(iEdge) = 0.0_RKIND
-               else
+               else if (dc_Lr >= config_GM_Rossby_ramp_max) then
                   RossbyRadiusTaper(iEdge) = 1.0_RKIND
+               else
+                  ! a linear ramp between the min and max of dc_Lr
+                  RossbyRadiusTaper(iEdge) = (dc_Lr - config_GM_Rossby_ramp_min) / &
+                     (config_GM_Rossby_ramp_max - config_GM_Rossby_ramp_min)
                end if
             end do
             !$omp end do
