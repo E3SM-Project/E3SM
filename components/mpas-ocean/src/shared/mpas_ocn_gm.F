@@ -46,7 +46,7 @@ module ocn_gm
    ! Config options
    real(kind=RKIND), parameter :: epsGM = 1.0e-12_RKIND
 
-   ! The following logical variables are used to configure the three 
+   ! The following logical variables are used to configure the three
    ! available GM closures (constant, N2_dependent, Visbeck, EdenGreatbatch)
    logical :: local_config_GM_compute_Visbeck
    logical :: local_config_GM_lat_variable_c2
@@ -240,7 +240,7 @@ contains
          allocate(k33Norm(nVertLevels + 1))
 
          if ( config_Redi_N2_based_taper_enable ) then
-   
+
             !$omp parallel
             !$omp do schedule(runtime) private(maxLocation, k, BruntVaisalaFreqTopEdge, maxN)
             do iCell = 1, nCells
@@ -250,7 +250,7 @@ contains
                  k = k + 1
                  maxN = max(maxN,max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND))
                enddo
-   
+
                maxLocation = k
                do k = maxLocation, maxLevelCell(iCell)
                   BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTop(k, iCell), 0.0_RKIND)
@@ -262,14 +262,14 @@ contains
             !$omp end do
             !$omp end parallel
          end if
-   
+
          if (config_Redi_use_surface_taper) then
             !$omp parallel
             !$omp do schedule (runtime) private(zMLD, k)
             do iCell = 1, nCells
                k = max(minLevelCell(iCell), indMLD(iCell))
                zMLD = ssh(iCell) - zMid(k, iCell)
-   
+
                do k = minLevelCell(iCell), indMLD(iCell)
                   RediKappaSfcTaper(k, iCell) = abs((ssh(iCell) - zMid(k, iCell))/(zMLD))
                end do
@@ -277,7 +277,7 @@ contains
             !$omp end do
             !$omp end parallel
          end if
-   
+
          nCells = nCellsArray(3)
          !$omp parallel
          !$omp do schedule(runtime)  &
@@ -304,7 +304,7 @@ contains
             dzTop(maxLevelCell(iCell) + 1) = -1e-15_RKIND
             dTdzTop(maxLevelCell(iCell) + 1) = -1e-15_RKIND
             dSdzTop(maxLevelCell(iCell) + 1) = -1e-15_RKIND
-   
+
             do i = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i, iCell)
                cell1 = cellsOnEdge(1, iEdge)
@@ -316,7 +316,7 @@ contains
                end if
                dcEdgeInv = 1.0_RKIND/dcEdge(iEdge)
                areaEdge = dcEdge(iEdge)*dvEdge(iEdge)
-   
+
                do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                   drhoDT = -thermExpCoeff(k, iCell)
                   drhoDS = salineContractCoeff(k, iCell)
@@ -327,7 +327,7 @@ contains
                           - activeTracers(indexSalinity, k, cell1)) &
                          *dcEdgeInv
                   drhoDx = drhoDT*dTdx + drhoDS*dSdx
-   
+
                   ! Always compute *Up on the top cell and *Down on the bottom
                   ! cell, even though they are never used. This avoids an if
                   ! statement or separate computation for top and bottom.
@@ -339,7 +339,7 @@ contains
                      -drhoDx/ &
                      (drhoDT*dTdzTop(k + 1) &
                       + drhoDS*dSdzTop(k + 1) + 1E-15_RKIND)
-   
+
                   ! set taper of slope ('F' function from Danabasoglu and McWilliams 95)
                   if (abs(slopeTriadDown(k, iCellSelf, iEdge)) > 0.6_RKIND*config_redi_maximum_slope) then
                      slopeTaperDown = 0.0_RKIND
@@ -359,35 +359,35 @@ contains
                                     config_Redi_maximum_slope - 1.0_RKIND)*(4.0_RKIND - abs(10.0_RKIND* &
                                     abs(slopeTriadUp(k, iCellSelf, iEdge))/config_Redi_maximum_slope - 4.0_RKIND)))
                   end if
-   
+
                   slopeTaperUp = 1.0_RKIND + slopeTaperFactor*(slopeTaperUp - 1.0_RKIND)
                   slopeTaperDown = 1.0_RKIND + slopeTaperFactor*(slopeTaperDown - 1.0_RKIND)
-   
+
                   sfcTaper = min(RediKappaSfcTaper(k, cell1), RediKappaSfcTaper(k, cell2))
                   sfcTaperUp = 1.0_RKIND + sfcTaperFactor*(sfcTaper - 1.0_RKIND)
                   sfcTaperDown = 1.0_RKIND + sfcTaperFactor*(sfcTaper - 1.0_RKIND)
-   
+
                   slopeTriadUp(k, iCellSelf, iEdge) = &
                      slopeTaperUp*sfcTaperUp*slopeTriadUp(k, iCellSelf, iEdge)
                   slopeTriadDown(k, iCellSelf, iEdge) = &
                      slopeTaperDown*sfcTaperDown*slopeTriadDown(k, iCellSelf, iEdge)
-   
+
                   ! Griffies 1998 eqn 34
                   if (k > minLevelCell(iCell)) then
                      k33(k, iCell) = k33(k, iCell) +  &
                                      areaEdge*dzTop(k)*slopeTriadUp(k, iCellSelf, iEdge)**2
                      k33Norm(k) = k33Norm(k) + areaEdge*dzTop(k)
                   end if
-   
+
                   !Taper Redi by tapering the slopes
                   k33(k + 1, iCell) = k33(k + 1, iCell) +  &
                                       areaEdge*dzTop(k + 1)*slopeTriadDown(k, iCellSelf, iEdge)**2
                   k33Norm(k + 1) = k33Norm(k + 1) + areaEdge*dzTop(k + 1)
-   
-   
+
+
                end do ! maxLevelEdgeTop(iEdge)
             end do ! nEdgesOnCell(iCell)
-   
+
             ! Normalize k33
             do k = minLevelCell(iCell)+1, maxLevelCell(iCell)
                k33(k, iCell) = k33(k, iCell)/k33Norm(k)*RediKappaScaling(k, iCell)
@@ -456,7 +456,7 @@ contains
          end do
          !$omp end do
          !$omp end parallel
- 
+
          ! Compute density gradient (gradDensityEdge) and gradient of zMid (gradZMidEdge)
          ! along the constant coordinate surface.
          ! The computed variables lives at edge and mid-layer depth
@@ -487,7 +487,7 @@ contains
                                 gradZMidEdge(k,iEdge)) / (h1 + h2)
                end do
 
-               ! Approximation of values on the top and bottom interfaces through the idea of having ghost cells 
+               ! Approximation of values on the top and bottom interfaces through the idea of having ghost cells
                ! above the top and below the bottom layers of the same depths and density.
                gradDensityTopOfEdge(minLevelEdgeBot(iEdge),iEdge) = gradDensityEdge(minLevelEdgeBot(iEdge),iEdge)
                gradDensityTopOfEdge(maxLevelEdgeTop(iEdge)+1,iEdge) = gradDensityEdge(maxLevelEdgeTop(iEdge),iEdge)
@@ -566,7 +566,7 @@ contains
                   ltSum = ltSum + 0.5*(lt1+lt2)
                end do
 
-               ! Compute the minimum allowed speed of the first baroclinic mode. 
+               ! Compute the minimum allowed speed of the first baroclinic mode.
                ! If config_GM_minBclModeSpeed_method='constant' use local_config_GM_constant_bclModeSpeed.
                ! If config_GM_minBclModeSpeed_method='computed' use Brunt-Vaisala frequency on this edge.
                ! See initialization of these variables in this modules init routine.
@@ -944,7 +944,7 @@ contains
 
       type(block_type), pointer :: block
       type(mpas_pool_type), pointer :: meshPool
-      real(kind=RKIND), dimension(:), pointer :: dcEdge 
+      real(kind=RKIND), dimension(:), pointer :: dcEdge
 
       integer :: iEdge
       integer, pointer :: nEdges
@@ -1091,7 +1091,7 @@ contains
             coef = 1.0_RKIND &
                     /(config_GM_horizontal_ramp_max - config_GM_horizontal_ramp_min)
             !$omp parallel
-            !$omp do schedule(runtime) 
+            !$omp do schedule(runtime)
             do iEdge = 1, nEdges
                if (dcEdge(iEdge) <= config_GM_horizontal_ramp_min) then
                   gmHorizontalTaper(iEdge) = 0.0_RKIND
