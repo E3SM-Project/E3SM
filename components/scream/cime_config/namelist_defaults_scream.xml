@@ -256,7 +256,12 @@ tweaking their $case/namelist_scream.xml file.
     ${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals.dat8,
     ${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_20220428.nc,
     ${DIN_LOC_ROOT}/atm/scream/init/map_ne30_to_ne4_mono_20220502.nc,
-    ${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne120np4_mono_20220502.nc
+    <!-- ${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne120np4_mono_20220502.nc -->
+    <!-- ${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne512np4_mono_20220506.nc -->
+    ${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc
+    ${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220503.nc
+    <!-- ${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220503.nc -->
+    <!-- ${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220505.nc -->
   </input_files>
 
   <!-- Homme control namelist -->
