@@ -456,8 +456,8 @@ _TESTS = {
     "e3sm_scream_v1_lowres" : {
         "time"  : "01:00:00",
         "tests" : (
-            "SMS_D_Ln2_P24x1.ne4_ne4.F2010-SCREAMv1",
-            "SMS_D_Ln2_P24x1.ne4_ne4.F2000-SCREAMv1-AQP1",
+            "ERP_D_Ln9.ne4_ne4.F2010-SCREAMv1",
+            "ERS_D_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1",
             )
     },
 
