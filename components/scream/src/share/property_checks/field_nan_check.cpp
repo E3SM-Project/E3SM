@@ -8,15 +8,8 @@ namespace scream
 {
 
 FieldNaNCheck::
-FieldNaNCheck (const Field& f)
- : FieldNaNCheck (f,nullptr)
-{
-  // Nothing to do here
-}
-
-FieldNaNCheck::
 FieldNaNCheck (const Field& f,
-               const std::shared_ptr<AbstractGrid>& grid)
+               const std::shared_ptr<const AbstractGrid>& grid)
  : m_grid (grid)
 {
   // Sanity checks

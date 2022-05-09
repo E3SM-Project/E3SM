@@ -10,16 +10,6 @@ namespace scream
 
 FieldWithinIntervalCheck::
 FieldWithinIntervalCheck (const Field& f,
-                          const double lower_bound,
-                          const double upper_bound,
-                          const bool can_repair)
- : FieldWithinIntervalCheck (f,nullptr,lower_bound,upper_bound,can_repair)
-{
-  // Nothing to do here
-}
-
-FieldWithinIntervalCheck::
-FieldWithinIntervalCheck (const Field& f,
                           const std::shared_ptr<const AbstractGrid>& grid,
                           const double lower_bound,
                           const double upper_bound,

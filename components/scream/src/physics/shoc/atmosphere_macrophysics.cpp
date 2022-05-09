@@ -27,13 +27,13 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   Units nondim(0,0,0,0,0,0,0);
 
   const auto& grid_name = m_params.get<std::string>("Grid");
-  auto grid = grids_manager->get_grid(grid_name);
+  m_grid = grids_manager->get_grid(grid_name);
 
-  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
-  m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
+  m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
+  m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
 
-  m_cell_area = grid->get_geometry_data("area"); // area of each cell
-  m_cell_lat  = grid->get_geometry_data("lat"); // area of each cell
+  m_cell_area = m_grid->get_geometry_data("area"); // area of each cell
+  m_cell_lat  = m_grid->get_geometry_data("lat"); // area of each cell
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
@@ -93,7 +93,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_field<Computed>("inv_qc_relvar", scalar3d_layout_mid, Qunit*Qunit, grid_name, ps);
 
   // Tracer group
-  add_group<Updated>("tracers",grid->name(),ps,Bundling::Required);
+  add_group<Updated>("tracers",grid_name,ps,Bundling::Required);
 }
 
 // =========================================================================================
@@ -352,13 +352,13 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
                                  T_mid, dse, z_mid, phis);
 
   // Set field property checks for the fields in this process
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140.0,500.0,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qv"),1e-13,0.2,true);  // This is a quick fix to make sure qv doesn't go negative.  TODO item is to take care of this in a more clever way.
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qc"),0.0,0.1,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("horiz_winds"),-400.0,400.0,false);
-  add_postcondition_check<FieldPositivityCheck>(get_field_out("pbl_height"));
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("cldfrac_liq"),0.0,1.0,false);
-  add_postcondition_check<FieldPositivityCheck>(get_field_out("tke"));
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,140.0,500.0,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qv"),m_grid,1e-13,0.2,true);  // This is a quick fix to make sure qv doesn't go negative.  TODO item is to take care of this in a more clever way.
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qc"),m_grid,0.0,0.1,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("horiz_winds"),m_grid,-400.0,400.0,false);
+  add_postcondition_check<FieldPositivityCheck>(get_field_out("pbl_height"),m_grid);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("cldfrac_liq"),m_grid,0.0,1.0,false);
+  add_postcondition_check<FieldPositivityCheck>(get_field_out("tke"),m_grid);
 
   // Setup WSM for internal local variables
   const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);

@@ -23,10 +23,6 @@ public:
   // this class will overwrite values out of bounds with the proper bound
   // (upper if v>upper_bound and lower if v<lower_bound).
   FieldWithinIntervalCheck (const Field& field,
-                            const double lower_bound,
-                            const double upper_bound,
-                            const bool can_repair = false);
-  FieldWithinIntervalCheck (const Field& field,
                             const std::shared_ptr<const AbstractGrid>& grid,
                             const double lower_bound,
                             const double upper_bound,

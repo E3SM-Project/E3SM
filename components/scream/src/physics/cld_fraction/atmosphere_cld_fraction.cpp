@@ -29,9 +29,9 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
   Units nondim(0,0,0,0,0,0,0);
 
   const auto& grid_name = m_params.get<std::string>("Grid");
-  auto grid  = grids_manager->get_grid(grid_name);
-  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
-  m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
+  m_grid  = grids_manager->get_grid(grid_name);
+  m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
+  m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
 
   // Define the different field layouts that will be used for this process
 
@@ -56,8 +56,8 @@ void CldFraction::initialize_impl (const RunType /* run_type */)
 {
   // Set property checks for fields in this process
   using FWIC = FieldWithinIntervalCheck;
-  add_postcondition_check<FWIC>(get_field_out("cldfrac_ice"),0.0,1.0,false);
-  add_postcondition_check<FWIC>(get_field_out("cldfrac_tot"),0.0,1.0,false);
+  add_postcondition_check<FWIC>(get_field_out("cldfrac_ice"),m_grid,0.0,1.0,false);
+  add_postcondition_check<FWIC>(get_field_out("cldfrac_tot"),m_grid,0.0,1.0,false);
 }
 
 // =========================================================================================

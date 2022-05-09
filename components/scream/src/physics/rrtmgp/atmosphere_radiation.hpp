@@ -163,6 +163,8 @@ protected:
   // the ATMBufferManager
   void init_buffers(const ATMBufferManager &buffer_manager);
 
+  std::shared_ptr<const AbstractGrid>   m_grid;
+
   // Struct which contains local variables
   Buffer m_buffer;
 };  // class RRTMGPRadiation

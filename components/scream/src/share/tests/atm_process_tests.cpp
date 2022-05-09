@@ -512,8 +512,8 @@ TEST_CASE("field_checks", "") {
 
   constexpr auto Warning = CheckFailHandling::Warning;
   constexpr auto Fatal   = CheckFailHandling::Fatal;
-  auto pos_check_pre = std::make_shared<FieldPositivityCheck>(T_tend,false);
-  auto pos_check_post = std::make_shared<FieldPositivityCheck>(T,false);
+  auto pos_check_pre = std::make_shared<FieldPositivityCheck>(T_tend,grid,false);
+  auto pos_check_post = std::make_shared<FieldPositivityCheck>(T,grid,false);
   for (bool allow_failure : {true,false}) {
     for (bool check_pre : {true, false}) {
       for (bool check_post : {true, false}) {

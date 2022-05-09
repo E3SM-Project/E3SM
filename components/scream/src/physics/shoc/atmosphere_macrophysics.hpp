@@ -448,6 +448,8 @@ protected:
 
   // WSM for internal local variables
   ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr;
+
+  std::shared_ptr<const AbstractGrid>   m_grid;
 }; // class SHOCMacrophysics
 
 } // namespace scream
