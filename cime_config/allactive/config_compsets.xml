@@ -75,6 +75,11 @@
   <lname>SSP585SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
+<compset>
+  <alias>WCYCLSSP370</alias>
+  <lname>SSP370SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
 <!-- E3SM v1 science compsets -->
 
 <compset>
@@ -356,7 +361,8 @@
   <entry id="RUN_STARTDATE">
     <values>
       <value  compset="20TR_EAM">1850-01-01</value>
-      <value  compset="SSP585_EAM">2015-01-01</value>
+      <value  compset="SSP585.*_EAM">2015-01-01</value>
+      <value  compset="SSP370.*_EAM">2015-01-01</value>
     </values>
   </entry>
 

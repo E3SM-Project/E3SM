@@ -10,7 +10,7 @@
 cd {{ caseroot }}
 
 # Set PYTHONPATH so we can make cime calls if needed
-LIBDIR={{ cimeroot }}/scripts/lib
+LIBDIR={{ cimeroot }}
 export PYTHONPATH=$LIBDIR:$PYTHONPATH
 
 # setup environment

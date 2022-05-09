@@ -75,7 +75,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_del4_tend(meshPool, layerThicknessEdge, tracers, tend, err)!{{{
+   subroutine ocn_tracer_hmix_del4_tend(meshPool, layerThickEdgeMean, tracers, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -84,7 +84,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdge    !< Input: thickness at edge
+         layerThickEdgeMean    !< Input: mean thickness at edge
 
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
@@ -186,8 +186,8 @@ contains
           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
             do iTracer = 1, num_tracers * edgeMask(k, iEdge)
 
-              r_tmp1 = invdcEdge * layerThicknessEdge(k, iEdge) * tracers(iTracer, k, cell1)
-              r_tmp2 = invdcEdge * layerThicknessEdge(k, iEdge) * tracers(iTracer, k, cell2)
+              r_tmp1 = invdcEdge * layerThickEdgeMean(k, iEdge) * tracers(iTracer, k, cell1)
+              r_tmp2 = invdcEdge * layerThickEdgeMean(k, iEdge) * tracers(iTracer, k, cell2)
 
               delsq_tracer(iTracer, k, iCell) = delsq_tracer(iTracer, k, iCell) - edgeSignOnCell(i, iCell) &
                                               * (r_tmp2 - r_tmp1) * invAreaCell1

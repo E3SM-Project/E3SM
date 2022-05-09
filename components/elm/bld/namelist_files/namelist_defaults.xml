@@ -225,6 +225,16 @@ lnd/clm2/surfdata_map/surfdata_ne0np4_northamericax4v1.pg2_simyr1850_c210112.nc<
 <fsurdat hgrid="ne0np4_northamericax4v1.pg2"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne0np4_northamericax4v1.pg2_simyr2010_c210112.nc</fsurdat>
 
+<!-- ne0np4_arcticx4v1.pg2 -->
+<finidat hgrid="ne0np4_arcticx4v1.pg2">lnd/clm2/initdata/arcticx4v1pg2_oARRM60to10.ICRUELM.spinup-from-interp.elm.r.0051-01-01-00000.nc</finidat>
+<fsurdat hgrid="ne0np4_arcticx4v1.pg2"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_arcticx4v1pg2_simyr2010_c210805.nc</fsurdat>
+<fsurdat hgrid="ne0np4_arcticx4v1.pg2"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_arcticx4v1pg2_simyr2000_c210707.nc</fsurdat>
+<fsurdat hgrid="ne0np4_arcticx4v1.pg2"   sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_arcticx4v1pg2_simyr1850_c210707.nc</fsurdat>
+
+
 <!-- f10 resolution -->
 
 <finidat hgrid="10x15"    maxpft="25"  mask="USGS" use_cn=".true." use_cndv=".false." ic_ymd="00010101" more_vertlayers=".false." use_vertsoilc=".true."
@@ -255,6 +265,8 @@ lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr2010_c191025.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr2010_c191025.nc</fsurdat>
 <fsurdat hgrid="ne30np4.pg2"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr2010_c210402.nc</fsurdat>
+<fsurdat hgrid="ne120np4"     sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne120np4_simyr2010_c20181023.nc</fsurdat>
 <fsurdat hgrid="ne1024np4.pg2"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne1024pg2_simyr2010_c210902.nc</fsurdat>
 
@@ -552,7 +564,6 @@ this mask will have smb calculated over the entire global land surface
 <flndtopo hgrid="48x96"     >lnd/clm2/griddata/topodata_48x96_USGS_070110.nc</flndtopo>
 <flndtopo hgrid="r05"       >lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c200609.nc</flndtopo>
 <flndtopo hgrid="r0125"     >lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</flndtopo>
-<!--flndtopo hgrid="ne30np4.pg2"      >lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_simyr1850_c201210.nc</flndtopo-->
 <flndtopo hgrid="ne30np4.pg2"      >lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1850_c210402.nc</flndtopo>
 
 <!-- datasets for TOP solar radiation parameterization -->

@@ -88,9 +88,12 @@ module ocn_time_integration_split
       numTSIterations, &! number of outer timestep iterations
       nBtrSubcycles     ! number of barotropic subcycles
 
+   integer :: ssh_sal_on
+
    real (kind=RKIND) :: &
       useVelocityCorrection,&! mask for velocity correction
-      splitFact          ! mask for terms in split or unsplit cases
+      splitFact, &! mask for terms in split or unsplit cases
+      self_attraction_and_loading_beta
 
 !***********************************************************************
 
@@ -264,7 +267,8 @@ module ocn_time_integration_split
       ! indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
       ! indexSSHGradientZonal, indexSSHGradientMeridional
       ! barotropicForcing, barotropicThicknessFlux
-      ! layerThickEdge, normalTransportVelocity, normalGMBolusVelocity
+      ! layerThickEdgeFlux, layerThickEdgeMean,
+      ! normalTransportVelocity, normalGMBolusVelocity
       ! vertAleTransportTop
       ! velocityX, velocityY, velocityZ
       ! velocityZonal, velocityMeridional
@@ -563,7 +567,7 @@ module ocn_time_integration_split
 
 #ifdef MPAS_OPENACC
          !$acc enter data copyin(layerThicknessCur, normalVelocityCur, sshCur)
-         !$acc update device(layerThickEdge)
+         !$acc update device(layerThickEdgeFlux)
 #endif
          if (associated(highFreqThicknessNew)) then
 #ifdef MPAS_OPENACC
@@ -571,7 +575,7 @@ module ocn_time_integration_split
 #endif
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdge, normalVelocityCur, sshCur, dt, &
+                 layerThickEdgeFlux, normalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, err, highFreqThicknessNew)
 #ifdef MPAS_OPENACC
             !$acc exit data delete(highFreqThicknessNew)
@@ -579,7 +583,7 @@ module ocn_time_integration_split
          else
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdge, normalVelocityCur, sshCur, dt, &
+                 layerThickEdgeFlux, normalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, err)
          endif
 #ifdef MPAS_OPENACC
@@ -587,8 +591,8 @@ module ocn_time_integration_split
          !$acc update host(vertAleTransportTop)
 #endif
 
-         call ocn_tend_vel(tendPool, statePool, forcingPool, &
-                           stage1_tend_time, dt)
+         call ocn_tend_vel(domain, tendPool, statePool, forcingPool, &
+                           stage1_tend_time, domain % dminfo, dt)
 
          call mpas_timer_stop('se bcl vel tend')
 
@@ -639,15 +643,15 @@ module ocn_time_integration_split
                ! on land boundaries maxLevelEdgeTop=0, but we want to
                ! initialize thicknessSum with a nonzero value to avoid
                ! a NaN.
-               normalThicknessFluxSum = layerThickEdge(minLevelEdgeBot(iEdge),iEdge)* &
+               normalThicknessFluxSum = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)* &
                                         uTemp(minLevelEdgeBot(iEdge))
-               thicknessSum = layerThickEdge(minLevelEdgeBot(iEdge),iEdge)
+               thicknessSum = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)
 
                do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                   normalThicknessFluxSum = normalThicknessFluxSum + &
-                                 layerThickEdge(k,iEdge)*uTemp(k)
+                                 layerThickEdgeFlux(k,iEdge)*uTemp(k)
                   thicknessSum = thicknessSum + &
-                                 layerThickEdge(k,iEdge)
+                                 layerThickEdgeFlux(k,iEdge)
                enddo
                barotropicForcing(iEdge) = splitFact* &
                               normalThicknessFluxSum/thicknessSum/dt
@@ -844,13 +848,18 @@ module ocn_time_integration_split
                                              'tidalPotentialEta', &
                                               tidalPotentialEta)
 
+                     !$omp parallel
+                     !$omp do schedule(runtime)
                      do iCell = 1, nCellsAll
                         sshSubcycleCurWithTides(iCell) = &
                                  sshSubcycleCur(iCell) - &
                               tidalPotentialEta(iCell) - &
-                              config_self_attraction_and_loading_beta* &
+                           ssh_sal_on * ssh_sal(iCell) - &
+                           (1 - ssh_sal_on) * self_attraction_and_loading_beta* &
                                  sshSubcycleCur(iCell)
                      end do
+                     !$omp end do
+                     !$omp end parallel
 
                      call mpas_pool_get_array(forcingPool, &
                                           'sshSubcycleCurWithTides', &
@@ -1079,19 +1088,25 @@ module ocn_time_integration_split
                                              'tidalPotentialEta',  &
                                               tidalPotentialEta)
 
+                     !$omp parallel
+                     !$omp do schedule(runtime)
                      do iCell = 1, nCellsAll
                         sshSubcycleCurWithTides(iCell) = &
                                  sshSubcycleCur(iCell) - &
                               tidalPotentialEta(iCell) - &
-                           config_self_attraction_and_loading_beta* &
+                           ssh_sal_on * ssh_sal(iCell) - &
+                           (1 - ssh_sal_on) * self_attraction_and_loading_beta* &
                                  sshSubcycleCur(iCell)
 
                         sshSubcycleNewWithTides(iCell) = &
                                  sshSubcycleNew(iCell) - &
                               tidalPotentialEta(iCell) - &
-                           config_self_attraction_and_loading_beta* &
+                           ssh_sal_on * ssh_sal(iCell) - &
+                           (1 - ssh_sal_on) * self_attraction_and_loading_beta* &
                                  sshSubcycleNew(iCell)
                      end do
+                     !$omp end do
+                     !$omp end parallel
 
                      call mpas_pool_get_array(forcingPool, &
                                     'sshSubcycleCurWithTides',  &
@@ -1441,16 +1456,16 @@ module ocn_time_integration_split
                ! on land boundaries maxLevelEdgeTop=0, but I want to
                ! initialize thicknessSum with a nonzero value to avoid
                ! a NaN.
-               normalThicknessFluxSum = layerThickEdge(minLevelEdgeBot(iEdge),iEdge)* &
+               normalThicknessFluxSum = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)* &
                                         uTemp(minLevelEdgeBot(iEdge))
-               thicknessSum  = layerThickEdge(minLevelEdgeBot(iEdge),iEdge)
+               thicknessSum  = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)
 
                do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                   normalThicknessFluxSum = normalThicknessFluxSum + &
-                                           layerThickEdge(k,iEdge)*&
+                                           layerThickEdgeFlux(k,iEdge)*&
                                            uTemp(k)
                   thicknessSum = thicknessSum + &
-                                 layerThickEdge(k,iEdge)
+                                 layerThickEdgeFlux(k,iEdge)
                enddo
 
                normalVelocityCorrection = useVelocityCorrection* &
@@ -1508,12 +1523,12 @@ module ocn_time_integration_split
          ! compute vertAleTransportTop.  Use normalTransportVelocity
          ! for advection of layerThickness and tracers.
          ! Use time level 1 values of layerThickness and
-         ! layerThickEdge because layerThickness has not yet
+         ! layerThickEdgeFlux because layerThickness has not yet
          ! been computed for time level 2.
          call mpas_timer_start('thick vert trans vel top')
 #ifdef MPAS_OPENACC
          !$acc enter data copyin(layerThicknessCur, sshCur)
-         !$acc update device(layerThickEdge, normalTransportVelocity)
+         !$acc update device(layerThickEdgeFlux, normalTransportVelocity)
 #endif
          if (associated(highFreqThicknessNew)) then
 #ifdef MPAS_OPENACC
@@ -1521,7 +1536,7 @@ module ocn_time_integration_split
 #endif
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdge, normalTransportVelocity, sshCur, &
+                 layerThickEdgeFlux, normalTransportVelocity, sshCur, &
                  dt, vertAleTransportTop, err, highFreqThicknessNew)
 #ifdef MPAS_OPENACC
             !$acc exit data delete(highFreqThicknessNew)
@@ -1529,7 +1544,7 @@ module ocn_time_integration_split
          else
             call ocn_vert_transport_velocity_top(meshPool, &
                  verticalMeshPool, layerThicknessCur, &
-                 layerThickEdge, normalTransportVelocity, sshCur, &
+                 layerThickEdgeFlux, normalTransportVelocity, sshCur, &
                  dt, vertAleTransportTop, err)
          endif
 #ifdef MPAS_OPENACC
@@ -1717,13 +1732,13 @@ module ocn_time_integration_split
 #endif
 
             ! Efficiency note: We really only need this to compute
-            ! layerThickEdge, density, pressure, and SSH
+            ! layerThickEdgeFlux, density, pressure, and SSH
             ! in this diagnostics solve.
             call ocn_diagnostic_solve(dt, statePool, forcingPool, &
                                       meshPool, scratchPool, &
                                       tracersPool, 2, full=.false.)
 #ifdef MPAS_OPENACC
-            !$acc update host(layerThickEdge)
+            !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
             !$acc update host(relativeVorticity, circulation)
             !$acc update host(vertTransportVelocityTop, &
             !$acc             vertGMBolusVelocityTop, &
@@ -1795,7 +1810,7 @@ module ocn_time_integration_split
                do k= minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                   activeTracerHorizontalAdvectionEdgeFlux(:,k,iEdge) = &
                   activeTracerHorizontalAdvectionEdgeFlux(:,k,iEdge) / &
-                       layerThickEdge(k,iEdge)
+                       layerThickEdgeFlux(k,iEdge)
                enddo
                enddo
                !$omp end do
@@ -2020,7 +2035,7 @@ module ocn_time_integration_split
       ! Call ocean diagnostic solve in preparation for vertical mixing.
       ! Note it is called again after vertical mixing, because u and
       ! tracers change. For Richardson vertical mixing, only density,
-      ! layerThickEdge, and kineticEnergyCell need to be computed.
+      ! layerThickEdgeFlux, and kineticEnergyCell need to be computed.
       ! For kpp, more variables may be needed.  Either way, this could
       ! be made more efficient by only computing what is needed for the
       ! implicit vmix routine that follows.
@@ -2043,7 +2058,7 @@ module ocn_time_integration_split
       call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, &
                                 scratchPool, tracersPool, 2)
 #ifdef MPAS_OPENACC
-      !$acc update host(layerThickEdge)
+      !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
       !$acc update host(relativeVorticity, circulation)
       !$acc update host(vertTransportVelocityTop, &
       !$acc             vertGMBolusVelocityTop, &
@@ -2262,7 +2277,7 @@ module ocn_time_integration_split
 #endif
 
 #ifdef MPAS_OPENACC
-      !$acc update host(layerThickEdge)
+      !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
       !$acc update host(relativeVorticity, circulation)
       !$acc update host(vertTransportVelocityTop, &
       !$acc             vertGMBolusVelocityTop, &
@@ -2592,6 +2607,14 @@ module ocn_time_integration_split
                                                      subcycleGroupName)
 
       !-----------------------------------------------------------------
+      if (config_use_self_attraction_loading) then
+         ! set ssh_sal_on to 1
+         ssh_sal_on = 1
+      else
+         ssh_sal_on = 0
+      endif
+
+      self_attraction_and_loading_beta = config_self_attraction_and_loading_beta
 
    end subroutine ocn_time_integration_split_init!}}}
 

@@ -4094,7 +4094,25 @@
 		<var name="verticalShortwaveGrid"		type="real"	dimensions="nIceLayersP1"				name_in_code="verticalShortwaveGrid"		packages="pkgColumnBiogeochemistry;pkgColumnPackage"/>
 		<var name="carbonToNitrogenRatioAlgae"		type="real"	dimensions="maxAlgaeType"				name_in_code="carbonToNitrogenRatioAlgae"/>
 		<var name="carbonToNitrogenRatioDON"		type="real"	dimensions="maxDONType"				name_in_code="carbonToNitrogenRatioDON"/>
-		<var name="DOCPoolFractions"		type="real"	dimensions="maxDOCType"				name_in_code="DOCPoolFractions"/>
+		<var name="DOCPoolFractions"			type="real"	dimensions="maxDOCType"	  			name_in_code="DOCPoolFractions"/>
+	</var_struct>
+	<!-- Diagnostics Biogeochemistry -->
+	<var_struct name="diagnostics_biogeochemistry" time_levs="1">
+		<var name="bgridPorosityIceCell"			type="real"	dimensions="nBioLayersP1 nCells Time"			name_in_code="bgridPorosityIceCell"
+			units=""
+			description="Cell ice volume weighted average brine porosity on ice interface biological grid"
+			packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
+		<var name="bgridSalinityIceCell"			type="real"	dimensions="nBioLayersP1 nCells Time"			name_in_code="bgridSalinityIceCell"
+			units="ppt"
+			description="Cell ice volume weighted average salinity on ice interface biological grid"
+			packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
+		<var name="bgridTemperatureIceCell"		type="real"	dimensions="nBioLayersP1 nCells Time"			name_in_code="bgridTemperatureIceCell"
+			units="oC"
+			description="Cell ice volume weighted average temperature on ice interface biological grid"
+			packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
 	</var_struct>
 
 	<!-- prescribed ice mode -->

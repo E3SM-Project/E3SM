@@ -1,7 +1,7 @@
 #include "bound_exchange.h"
 
 void bound_exchange(real4d &f, int dimz, int i_1, int i_2, int j_1, int j_2, int id) {
-  auto &ncrms = ::ncrms;
+  YAKL_SCOPE( ncrms  , ::ncrms);
 
   real1d buffer("buffer", (nx+ny)*3*nz*ncrms);
   int i1  = i_1-1;
@@ -281,7 +281,7 @@ void bound_exchange(real4d &f, int dimz, int i_1, int i_2, int j_1, int j_2, int
 }
 
 void bound_exchange(real5d &f, int offL,int dimz, int i_1, int i_2, int j_1, int j_2, int id) {
-  auto &ncrms = ::ncrms;
+  YAKL_SCOPE( ncrms  , ::ncrms);
 
   real1d buffer("buffer", (nx+ny)*3*nz*ncrms);
   int i1  = i_1-1;

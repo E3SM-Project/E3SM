@@ -1,22 +1,22 @@
 #include "buoyancy.h"
 
 void buoyancy() {
-  auto &adz   = :: adz;
-  auto &dwdt  = :: dwdt;
-  auto &na    = :: na;
-  auto &bet   = :: bet;
-  auto &tabs0 = :: tabs0;
-  auto &epsv  = :: epsv;
-  auto &qv    = :: qv;
-  auto &qv0   = :: qv0;
-  auto &qcl   = :: qcl;
-  auto &qci   = :: qci;
-  auto &qn0   = :: qn0;
-  auto &qpl   = :: qpl;
-  auto &qpi   = :: qpi;
-  auto &qp0   = :: qp0;
-  auto &tabs  = :: tabs;
-  auto &ncrms = :: ncrms;
+  YAKL_SCOPE( adz    , :: adz);
+  YAKL_SCOPE( dwdt   , :: dwdt);
+  YAKL_SCOPE( na     , :: na);
+  YAKL_SCOPE( bet    , :: bet);
+  YAKL_SCOPE( tabs0  , :: tabs0);
+  YAKL_SCOPE( epsv   , :: epsv);
+  YAKL_SCOPE( qv     , :: qv);
+  YAKL_SCOPE( qv0    , :: qv0);
+  YAKL_SCOPE( qcl    , :: qcl);
+  YAKL_SCOPE( qci    , :: qci);
+  YAKL_SCOPE( qn0    , :: qn0);
+  YAKL_SCOPE( qpl    , :: qpl);
+  YAKL_SCOPE( qpi    , :: qpi);
+  YAKL_SCOPE( qp0    , :: qp0);
+  YAKL_SCOPE( tabs   , :: tabs);
+  YAKL_SCOPE( ncrms  , :: ncrms);
 
   if (!docolumn) {
     // for (int k=0; k<nzm-1; k++) {

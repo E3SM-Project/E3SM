@@ -63,9 +63,6 @@
 /* Whether to use OpenMP4 */
 #cmakedefine OMP4
 
-/* commit sha */
-#define HOMME_SHA1 "${LAST_GIT_COMMIT_SHA}"
-
 /* Whether this is a build for CUDA (used mostly for f90-vs-cxx bfb math functions impl) */
 #cmakedefine CUDA_BUILD
 

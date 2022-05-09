@@ -2,20 +2,20 @@
 #include "damping.h"
 
 void damping() {
-  auto &z             = :: z;
-  auto &u             = :: u;
-  auto &v             = :: v;
-  auto &t             = :: t;
-  auto &na            = :: na;
-  auto &dudt          = :: dudt;
-  auto &dvdt          = :: dvdt;
-  auto &dwdt          = :: dwdt;
-  auto &w             = :: w;
-  auto &dtn           = :: dtn;
-  auto &micro_field   = :: micro_field;
-  auto &qv            = :: qv;
-  auto &qv0           = :: qv0;
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( z              , ::z );
+  YAKL_SCOPE( u              , ::u );
+  YAKL_SCOPE( v              , ::v );
+  YAKL_SCOPE( t              , ::t );
+  YAKL_SCOPE( na             , ::na );
+  YAKL_SCOPE( dudt           , ::dudt );
+  YAKL_SCOPE( dvdt           , ::dvdt );
+  YAKL_SCOPE( dwdt           , ::dwdt );
+  YAKL_SCOPE( w              , ::w );
+  YAKL_SCOPE( dtn            , ::dtn );
+  YAKL_SCOPE( micro_field    , ::micro_field );
+  YAKL_SCOPE( qv             , ::qv );
+  YAKL_SCOPE( qv0            , ::qv0 );
+  YAKL_SCOPE( ncrms          , ::ncrms );
 
   real constexpr tau_min    = 60.0;
   real constexpr tau_max    = 450.0;
