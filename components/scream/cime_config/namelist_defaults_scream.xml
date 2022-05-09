@@ -109,6 +109,14 @@ tweaking their $case/namelist_scream.xml file.
            via atm-config-chg. For instance, the overall list of atm procs cannot be changed,
            since it would require to re-parse the defaults, to re-generate the correct
            defaults for the (possibly) new atm procs.
+
+       12) The attribute 'constraints' allows to specify constraints on values. Valid constraints
+           are lt, le, ne, gt, ge, and mod. Except the latter (which has slightly different syntax,
+           see below), the syntax is "$op value", to enforce '$param $op value'.
+           Multiple constrained are separated by ';'. Examples:
+             - constraints="ge 0; ne 4" means the value V must satisfy V>=0 && V!=4.
+             - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
+             - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
   -->
 
   <atmosphere_processes_defaults>
@@ -125,7 +133,7 @@ tweaking their $case/namelist_scream.xml file.
 
     <!-- Basic options for each atm process -->
     <atm_proc_base>
-      <Num__Subcycle__Iterations>1</Num__Subcycle__Iterations>
+      <Num__Subcycle__Iterations constraints="gt 0">1</Num__Subcycle__Iterations>
       <Enable__Precondition__Checks type="logical">true</Enable__Precondition__Checks>
       <Enable__Postcondition__Checks type="logical">true</Enable__Postcondition__Checks>
     </atm_proc_base>
@@ -245,8 +253,8 @@ tweaking their $case/namelist_scream.xml file.
   <ctl_nl>
     <cubed_sphere_map>0</cubed_sphere_map>
     <disable_diagnostics>False</disable_diagnostics>
-    <dt_remap_factor>2</dt_remap_factor>
-    <dt_tracer_factor>1</dt_tracer_factor>
+    <dt_remap_factor constraints="ge 1">2</dt_remap_factor>
+    <dt_tracer_factor constraints="ge 1">1</dt_tracer_factor>
     <hypervis_order>2</hypervis_order>
     <hypervis_scaling>3.0</hypervis_scaling>
     <hypervis_subcycle>1</hypervis_subcycle>
@@ -257,8 +265,8 @@ tweaking their $case/namelist_scream.xml file.
     <se_ftype valid_values="0,2">0</se_ftype>
     <se_geometry>sphere</se_geometry>
     <se_limiter_option>9</se_limiter_option>
-    <se_ne hgrid="ne4np4">4</se_ne>
-    <se_ne hgrid="ne30np4">30</se_ne>
+    <se_ne hgrid="ne4np4" constraints="ge 2">4</se_ne>
+    <se_ne hgrid="ne30np4" constraints="ge 2">30</se_ne>
     <se_nsplit>-1</se_nsplit>
     <se_partmethod>4</se_partmethod>
     <se_topology>cube</se_topology>

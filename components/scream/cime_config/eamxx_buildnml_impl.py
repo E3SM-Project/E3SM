@@ -1,4 +1,4 @@
-import os, sys, copy
+import os, sys, copy, re
 import xml.etree.ElementTree as ET
 
 _CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","cime")
@@ -334,10 +334,10 @@ def check_value(elem, value):
     """
     Check that a parameter's value is in the valid list
 
+    >>> import xml.etree.ElementTree as ET
     >>> xml = '''
     ... <a type="integer" valid_values="1,2">1</a>
     ... '''
-    >>> import xml.etree.ElementTree as ET
     >>> root = ET.fromstring(xml)
     >>> check_value(root,'1.0')
     Traceback (most recent call last):
@@ -345,10 +345,32 @@ def check_value(elem, value):
     >>> check_value(root,'3')
     Traceback (most recent call last):
     CIME.utils.CIMEError: ERROR: Invalid value '3' for element 'a'. Value not in the valid list ('[1, 2]')
+    >>> xml = '''
+    ... <a type="real" constraints="ge 0">1</a>
+    ... '''
+    >>> root = ET.fromstring(xml)
+    >>> check_value(root,'-1')
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: Value '-1.0' for entry 'a' violates constraint '-1.0 >= 0.0'
+    >>> xml = '''
+    ... <a type="real" constraints="mod 2 eq 0">1</a>
+    ... '''
+    >>> root = ET.fromstring(xml)
+    >>> check_value(root,'2')
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: Cannot evaluate constraint '2.0 mod 2 eq 0' for entry 'a'
+    Modulo constraint only makes sense for integer parameters.
+    >>> xml = '''
+    ... <a constraints="gt 0; le 5">1</a>
+    ... '''
+    >>> root = ET.fromstring(xml)
+    >>> check_value(root,'2')
+    >>> check_value(root,'6')
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: Value '6' for entry 'a' violates constraint '6 <= 5'
     """
 
     v = value
-    vtype = None
     if "type" in elem.attrib.keys():
         vtype = elem.attrib["type"]
         v = refine_type(v,force_type=vtype)
@@ -357,12 +379,87 @@ def check_value(elem, value):
                 "Error! Value '{}' for element '{}' does not satisfy the constraint type={}"
                 .format(value,elem.tag,vtype) +
                 "  NOTE: this error should have been caught earlier! Please, contact developers.")
+    else:
+        # If no 'type' attribute present, deduce the type and refine
+        vtype = derive_type(v)
+        v = refine_type(v,force_type=vtype)
 
     if "valid_values" in elem.attrib.keys():
         valids_str = elem.attrib["valid_values"]
         valids = [refine_type(item.strip(), force_type=vtype) for item in valids_str.split(",")]
         expect(v in valids,
                 "Invalid value '{}' for element '{}'. Value not in the valid list ('{}')".format(value, elem.tag, valids))
+
+    if "constraints" in elem.attrib.keys():
+        expect ("type" not in elem.attrib.keys() or not is_array_type(elem.attrib["type"]),
+                "Attribute 'constraints' only available for non-array parameters.")
+        constraints = elem.attrib["constraints"].split(";")
+        for c in constraints:
+            # The split should return a list [ '', s1, s2, ..., sN, rhs ],
+            # where sK is 'None' if opK is not found, and s=opK if opK is found.
+            # NOTE: we don't use math symbols, since XML doesn't like < or > inside
+            #       strings. For consistency, we use worded ops for all operators:
+            #     'lt': <       'gt': >     'ne': !=        'mod': %
+            #     'le': <=      'ge': >=    'eq': ==
+            # We use list comprehension to filter out 'None' and empty strings
+            pattern = "(ge)|(gt)|(lt)|(le)|(eq)|(ne)|(mod)"
+            tokens = [i.strip() for i in re.split(pattern,c,maxsplit=1) if i and i.strip()]
+            expect(len(tokens)==2,
+                "Invalid constraint syntax for entry '{}'.\n".format(elem.tag) +
+                "  Correct syntax: 'op val', to be interpreted as '$param $op val'.\n"
+                "  Constraint found: '{}'".format(c))
+
+            lhs = v
+            op = tokens[0]
+
+            if op=="ne":
+                rhs = refine_type(tokens[1],force_type=vtype)
+                expect (v!=rhs,
+                    "Value '{}' for entry '{}' violates constraint '{} != {}'"
+                    .format(v,elem.tag,v,rhs))
+            elif op=="le":
+                rhs = refine_type(tokens[1],force_type=vtype)
+                expect (v<=rhs,
+                    "Value '{}' for entry '{}' violates constraint '{} <= {}'"
+                    .format(v,elem.tag,v,rhs))
+            elif op=="lt":
+                rhs = refine_type(tokens[1],force_type=vtype)
+                expect (v<rhs,
+                    "Value '{}' for entry '{}' violates constraint '{} < {}'"
+                    .format(v,elem.tag,v,rhs))
+            elif op=="ge":
+                rhs = refine_type(tokens[1],force_type=vtype)
+                expect (v>=rhs,
+                    "Value '{}' for entry '{}' violates constraint '{} >= {}'"
+                    .format(v,elem.tag,v,rhs))
+            elif op=="gt":
+                rhs = refine_type(tokens[1],force_type=vtype)
+                expect (v>rhs,
+                    "Value '{}' for entry '{}' violates constraint '{} > {}'"
+                    .format(v,elem.tag,v,rhs))
+            elif op=="mod":
+                expect (vtype=="integer",
+                    "Cannot evaluate constraint '{} mod {}' for entry '{}'\n"
+                    .format(lhs,tokens[1],elem.tag) +
+                    "Modulo constraint only makes sense for integer parameters.")
+
+                # Use list comprehension to filter out None (for the cmp op not found)
+                rhs_tokens = [i for i in re.split("(eq)|(ne)",tokens[1]) if i]
+                expect (len(rhs_tokens)==3,
+                        "Modular arithmetic constraint syntax is '% M op rhs', with op being 'eq' or 'ne'"
+                        "  String found: {}".format(tokens[1]))
+                mod = int(rhs_tokens[0])
+                cmp = rhs_tokens[1]
+                expect (cmp=="eq" or cmp=="ne",
+                        "Modular arithmetic constraint syntax is '% M op rhs', with op being 'eq' or 'ne'"
+                        "  String found: {}".format(tokens[1]))
+                rhs = int(rhs_tokens[2])
+
+                if cmp=="eq":
+                    expect ( (v % mod)==rhs, "Value '{}' for entry '{}' violates constraint {}{}".format(v,elem.tag,v,c))
+                else:
+                    expect ( (v % mod)!=rhs, "Value '{}' for entry '{}' violates constraint {}{}".format(v,elem.tag,v,c))
+
 
 ###############################################################################
 def check_all_values(root):
