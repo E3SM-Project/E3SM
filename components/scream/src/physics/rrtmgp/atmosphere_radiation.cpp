@@ -263,6 +263,10 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   // Determine whether or not we are using a fixed solar zenith angle (positive value)
   m_fixed_solar_zenith_angle = m_params.get<Real>("Fixed Solar Zenith Angle", -9999);
 
+  // Whether or not to do MCICA subcolumn sampling
+  m_do_subcol_sampling = m_params.get<bool>("do_subcol_sampling",false);
+  EKAT_REQUIRE_MSG(not m_do_subcol_sampling, "Error! RRTMGP does not yet support do_subcol_sampling = true");
+
   // Initialize yakl
   if(!yakl::isInitialized()) { yakl::init(); }
 
@@ -483,7 +487,6 @@ void RRTMGPRadiation::run_impl (const int dt) {
         p_del(i+1,k+1)       = d_pdel(i,k);
         qc(i+1,k+1)          = d_qc(i,k);
         qi(i+1,k+1)          = d_qi(i,k);
-        cldfrac_tot(i+1,k+1) = d_cldfrac_tot(i,k);
         rel(i+1,k+1)         = d_rel(i,k);
         rei(i+1,k+1)         = d_rei(i,k);
         p_lev(i+1,k+1)       = d_pint(i,k);
@@ -529,6 +532,40 @@ void RRTMGPRadiation::run_impl (const int dt) {
 
     gas_concs.set_vmr(name, tmp2d);
   }
+
+  // Set layer cloud fraction.
+  //
+  // If not doing subcolumn sampling for mcica, we want to make sure we use grid-mean
+  // condensate for computing cloud optical properties, because we are assuming the
+  // entire column is completely clear or cloudy. Thus, in this case we want to set
+  // cloud fraction to 0 or 1. Note that we could choose an alternative threshold
+  // criteria here, like qc + qi > 1e-5 or something.
+  //
+  // If we *are* doing subcolumn sampling for MCICA, then keep cloud fraction as input
+  // from cloud fraction parameterization, wherever that is computed.
+  auto do_subcol_sampling = m_do_subcol_sampling;
+  if (not do_subcol_sampling) {
+    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
+    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const int i = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+        if (d_cldfrac_tot(i,k) > 0) {
+          cldfrac_tot(i+1,k+1) = 1;
+        } else {
+          cldfrac_tot(i+1,k+1) = 0;
+        }
+      });
+    });
+  } else {
+    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
+    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const int i = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+        cldfrac_tot(i+1,k+1) = d_cldfrac_tot(i,k);
+      });
+    });
+  }
+  Kokkos::fence();
 
   // Compute layer cloud mass (per unit area)
   auto lwp = m_buffer.lwp;
