@@ -1197,8 +1197,8 @@ is the value of that variable from the *previous* time level!
                 <var name="calvingCFLdt" type="real" dimensions="Time" units="s" time_levs="1" default_value="1.0e16"
                         description="approximation of maximum allowable timestep based on calvingVelocity"
                 />
-                <var name="dtCalvingCFLratio" type="real" dimensions="Time" units="s" time_levs="1" default_value="0.0"
-                        description="ratio of timestep being used to the maximum timestep calculated for the calving CFL condition"
+                <var name="dtCalvingCFLratio" type="real" dimensions="Time" units="none" time_levs="1" default_value="0.0"
+                        description="ratio of timestep being used to the maximum timestep calculated for the calving CFL condition.  This metric can be used to assess the accuracy of the calving CFL calculation being lagged by a timestep."
                 />
                 <var name="eigencalvingParameter" type="real" dimensions="nCells Time" units="m s" time_levs="1"
                      description="proportionality constant K2+- used in eigencalving formulation"
@@ -1465,7 +1465,7 @@ is the value of that variable from the *previous* time level!
                 <var name="tauMin" type="real" dimensions="nCells Time" units="Pa"
                      description="minimum deviatoric principal stress"
                 />
-	        <var name="principalStrainRateRatio" type="real" dimensions="nCells" units="none"
+	        <var name="principalStrainRateRatio" type="real" dimensions="nCells Time" units="none"
 	             description="the ratio of the minimum and maximum principal horizontal strain rates"
 	        />
                 <var name="fluxAcrossGroundingLine" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
