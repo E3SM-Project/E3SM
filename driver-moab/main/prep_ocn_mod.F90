@@ -88,7 +88,7 @@ module prep_ocn_mod
   public :: prep_ocn_get_mapper_Fg2o
   public :: prep_ocn_get_mapper_Sw2o
 
-  public :: prep_atm_ocn_moab, prep_ocn_migrate_moab
+  public :: prep_atm_ocn_moab, prep_ice_ocn_moab, prep_ocn_migrate_moab
   !--------------------------------------------------------------------------
   ! Private interfaces
   !--------------------------------------------------------------------------
@@ -150,7 +150,7 @@ contains
   subroutine prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, &
        wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn)
 
-    use iMOAB, only: iMOAB_RegisterApplication, iMOAB_ComputeCommGraph, iMOAB_DefineTagStorage
+    use iMOAB, only: iMOAB_RegisterApplication
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -193,14 +193,7 @@ contains
     character*32             :: appname ! to register moab app
     integer                  :: rmapid  ! external id to identify the moab app
     integer                  :: ierr, type_grid ! 
-
-    integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
-    integer                  :: mpigrp_old   !  component group pes (phys grid atm) == atm group
-    integer                  :: typeA, typeB ! type for computing graph;
-    integer                  :: ocn_id_x, ice_id, id_join
-    integer                  :: mpicom_join ! join comm between ice and coupler
-    character(CXX)           :: tagname 
-    integer                  ::  tagtype, numco,  tagindex  ! used to define tags
+    
     !---------------------------------------------------------------
 
     call seq_infodata_getData(infodata , &
@@ -344,40 +337,7 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_SFi2o'
           end if
-          iamin_CPLALLICEID = seq_comm_iamin(CPLALLICEID)
           call seq_map_init_rearrolap(mapper_SFi2o, ice(1), ocn(1), 'mapper_SFi2o')
-
-          ocn_id_x = ocn(1)%cplcompid
-          ice_id   = ice(1)%compid
-
-          id_join = ice(1)%cplcompid
-          call seq_comm_getinfo(ID_join,mpicom=mpicom_join)  ! joint comm over ice and coupler
-          call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
-          call seq_comm_getinfo(ice_id, mpigrp=mpigrp_old)
-          typeA = 3
-          typeB = 3 ! fv-fv graph  
-
-          ! imoab compute comm graph ice-ocn, based on the same global id
-          ! it will be a simple migrate from ice mesh directly to ocean, using the comm graph computed here
-          if (iamin_CPLALLICEID) then
-            ierr = iMOAB_ComputeCommGraph( mpsiid, mboxid, mpicom_join, mpigrp_old, mpigrp_CPLID, &
-               typeA, typeB, ice_id, ocn_id_x)
-            if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error in computing graph ice - ocn x '
-                  call shr_sys_abort(subname//' ERROR  in computing graph ice - ocn x ')
-            endif
-         endif
-         if (mboxid .ge. 0) then ! we are on coupler pes, ocean app on coupler
-             ! define tags according to the seq_flds_i2x_fields 
-            tagtype = 1  ! dense, double
-            numco = 1 !  one value per cell / entity
-            tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
-            ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
-            if ( ierr == 1 ) then
-               call shr_sys_abort( subname//' ERROR: cannot define tags in moab' )
-            end if
-         endif
-
        endif
        call shr_sys_flush(logunit)
 
@@ -1849,5 +1809,61 @@ contains
       write(logunit,*) 'finish iMOAB graph in atm-land prep  '
    end if
  end subroutine prep_atm_ocn_moab
+
+ subroutine prep_ice_ocn_moab(infodata)
+
+   use iMOAB, only:  iMOAB_ComputeCommGraph, iMOAB_DefineTagStorage
+   type(seq_infodata_type) , intent(in)    :: infodata
+
+   character(*), parameter          :: subname = '(prep_ice_ocn_moab)'
+
+   integer                  :: typeA, typeB ! type for computing graph;
+   integer                  :: ocn_id_x, ice_id, id_join, ierr
+   integer                  :: mpicom_join ! join comm between ice and coupler
+   character(CXX)           :: tagname 
+   integer                  ::  tagtype, numco,  tagindex  ! used to define tags
+   integer                  :: mpigrp_CPLID ! coupler pes group 
+   integer                  :: mpigrp_old   !  component group pes (ice here)
+   logical                  :: ice_present, ocn_present, ocn_prognostic
+
+   call seq_infodata_getData(infodata, &
+        ice_present=ice_present,       &
+        ocn_present=ocn_present,       &
+        ocn_prognostic=ocn_prognostic)
+
+   if ( ice_present .and. ocn_present .and.  ocn_prognostic  ) then
+
+      ocn_id_x = ocn(1)%cplcompid
+      ice_id   = ice(1)%compid
+
+      id_join = ice(1)%cplcompid
+      call seq_comm_getinfo(ID_join,mpicom=mpicom_join)  ! joint comm over ice and coupler
+      call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
+      call seq_comm_getinfo(ice_id, mpigrp=mpigrp_old)
+      typeA = 3
+      typeB = 3 ! fv-fv graph  
+
+      ! imoab compute comm graph ice-ocn, based on the same global id
+      ! it will be a simple migrate from ice mesh directly to ocean, using the comm graph computed here
+
+      ierr = iMOAB_ComputeCommGraph( mpsiid, mboxid, mpicom_join, mpigrp_old, mpigrp_CPLID, &
+         typeA, typeB, ice_id, ocn_id_x)
+      if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in computing graph ice - ocn x '
+            call shr_sys_abort(subname//' ERROR  in computing graph ice - ocn x ')
+      endif
+
+      if (mboxid .ge. 0) then ! we are on coupler pes, ocean app on coupler
+            ! define tags according to the seq_flds_i2x_fields 
+         tagtype = 1  ! dense, double
+         numco = 1 !  one value per cell / entity
+         tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+         ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
+         if ( ierr == 1 ) then
+            call shr_sys_abort( subname//' ERROR: cannot define tags in moab' )
+         end if
+      endif
+   endif
+ end subroutine prep_ice_ocn_moab
 
 end module prep_ocn_mod
