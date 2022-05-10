@@ -111,7 +111,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   // require it, we need to restart the output history.
   // E.g., we might save 30-day avg value for field F, but due to job size
   // break the run into three 10-day runs. We then need to save the state of
-  // our averaging in a "restart" file (e.g., the current avg and avg_count).
+  // our averaging in a "restart" file (e.g., the current avg).
   // Note: the user might decide *not* to restart the output, so give the option
   //       of disabling the restart. Also, the user might want to change the
   //       casename, so allow to specify a different casename for the restart file.
@@ -123,6 +123,11 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     auto hist_restart_casename = restart_pl.get("Casename",m_casename);
 
     if (perform_history_restart) {
+      // We can use the step counter in run_t0 to check at what point within an output interval
+      // the previous simulation was stopped at.
+      // NOTE: if you change the output frequency when you restart, this could lead to wonky behavior
+      m_output_control.nsteps_since_last_write = m_run_t0.get_num_steps() % m_output_control.frequency;
+
       // If the type/freq of output needs restart data, we need to read in an output.
       if (has_restart_data) {
         auto output_restart_filename = find_filename_in_rpointer(hist_restart_casename,".rhist.nc");
@@ -136,14 +141,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
           stream->restart(output_restart_filename);
         }
 
-        // And restart the avg count.
-        m_output_control.nsteps_since_last_write = output_restart.read_int_scalar("avg_count");
         output_restart.finalize();
-      } else {
-        // If we don't have restart data, then we either do avg/max/min at every timestep (silly),
-        // or (more likely) we do instant output every N steps. To figure out when the first output
-        // will be, check the nsteps in the current timestamp (run_t0) against the out frequency.
-        m_output_control.nsteps_since_last_write = m_run_t0.get_num_steps() % m_output_control.frequency;
       }
     }
   }
@@ -215,9 +213,6 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
       // Finish the definition phase for this file.
       eam_pio_enddef (filename); 
-      if (is_checkpoint_step) { 
-        set_int_attribute_c2f (filename.c_str(),"avg_count",m_output_control.nsteps_since_last_write);
-      }
       auto t0_date = m_case_t0.get_date()[0]*10000 + m_case_t0.get_date()[1]*100 + m_case_t0.get_date()[2];
       auto t0_time = m_case_t0.get_time()[0]*10000 + m_case_t0.get_time()[1]*100 + m_case_t0.get_time()[2];
       set_int_attribute_c2f(filename.c_str(),"start_date",t0_date);
