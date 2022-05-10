@@ -14,6 +14,13 @@ namespace scream
 class ExnerDiagnostic : public AtmosphereDiagnostic
 {
 public:
+  template <typename S>
+  using SmallPack     = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
+
+  using Spack         = SmallPack<Real>;
+  using Pack          = ekat::Pack<Real,Spack::n>;
+  using PF            = scream::PhysicsFunctions<DefaultDevice>;
+
   // Constructors
   ExnerDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
 

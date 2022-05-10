@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "diagnostics/tests/diagnostic_test_util.hpp"
-#include "diagnostics/atm_density.hpp"
+#include "diagnostics/vertical_layer_thickness.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
 #include "physics/share/physics_constants.hpp"
@@ -81,11 +81,11 @@ void run(std::mt19937_64& engine)
 
   // Construct the Diagnostic
   ekat::ParameterList params;
-  params.set<std::string>("Diagnostic Name", "Atmosphere Density");
+  params.set<std::string>("Diagnostic Name", "Vertical Layer Thickness");
   params.set<std::string>("Grid", "Point Grid");
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
-  auto diag = diag_factory.create("AtmosphereDensity",comm,params);
+  auto diag = diag_factory.create("VerticalLayerThickness",comm,params);
   diag->set_grids(gm);
 
 
@@ -115,7 +115,7 @@ void run(std::mt19937_64& engine)
   const auto& qv_mid_f      = input_fields["qv"];
   const auto& qv_mid_v      = qv_mid_f.get_view<ScalarT**>();
 
-  // The output from the diagnostic should match what would happen if we called "calculate_density" directly
+  // The output from the diagnostic should match what would happen if we called "calculate_dz" directly
   {
   for (int icol = 0; icol<ncols;++icol) {
     const auto& T_sub      = ekat::subview(T_mid_v,icol);
@@ -131,20 +131,19 @@ void run(std::mt19937_64& engine)
     Kokkos::deep_copy(p_sub,pressure);
     Kokkos::deep_copy(qv_sub,watervapor);
   } 
-  Field atm_density_f = T_mid_f.clone();
-  atm_density_f.deep_copy<double,Host>(0.0);
-  const auto& atm_density_v = atm_density_f.get_view<ScalarT**>();
+  Field dz_f = T_mid_f.clone();
+  dz_f.deep_copy<double,Host>(0.0);
+  const auto& dz_v = dz_f.get_view<ScalarT**>();
   Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
     const int i = team.league_rank();
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
-      auto dz = PF::calculate_dz(pseudo_dens_v(i,k),p_mid_v(i,k),T_mid_v(i,k),qv_mid_v(i,k));
-      atm_density_v(i,k) = PF::calculate_density(pseudo_dens_v(i,k),dz);
+      dz_v(i,k) = PF::calculate_dz(pseudo_dens_v(i,k),p_mid_v(i,k),T_mid_v(i,k),qv_mid_v(i,k));
     });
     team.team_barrier();
   });
   Kokkos::fence();
   const auto& diag_out = diag->get_diagnostic(100.0);
-  REQUIRE(views_are_equal(diag_out,atm_density_f));
+  REQUIRE(views_are_equal(diag_out,dz_f));
   }
  
   // Finalize the diagnostic
@@ -152,7 +151,7 @@ void run(std::mt19937_64& engine)
 
 } // run()
 
-TEST_CASE("atm_density_test", "diagnostics"){
+TEST_CASE("vertical_layer_thickness_test", "diagnostics"){
   // Run tests for both Real and Pack, and for (potentially) different pack sizes
   using scream::Real;
   using Device = scream::DefaultDevice;

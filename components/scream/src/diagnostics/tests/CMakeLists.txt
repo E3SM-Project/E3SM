@@ -12,5 +12,7 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(virtual_temperature "virtual_temperature_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test atmosphere density
   CreateUnitTest(atmosphere_density "atm_density_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test vertical layer thickness (dz) 
+  CreateUnitTest(vertical_layer_thickness "vertical_layer_thickness_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 
 endif()
