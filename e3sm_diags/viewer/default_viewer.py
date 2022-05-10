@@ -184,7 +184,6 @@ def create_viewer(root_dir, parameters):
         table_tuple = lat_lon_viewer.generate_lat_lon_metrics_table(
             LAT_LON_TABLE_INFO, SEASONS, viewer, root_dir, parameters
         )
-
         return [(name, url), table_tuple]
 
     return (name, url)

@@ -236,6 +236,9 @@ def plot(reference, test, diff, metrics_dict, parameter):
     fig = plt.figure(figsize=parameter.figsize, dpi=parameter.dpi)
     proj = ccrs.PlateCarree()
 
+    # Figure title
+    fig.suptitle(parameter.main_title, x=0.5, y=0.96, fontsize=18)
+
     # First two panels
     min1 = metrics_dict["test"]["min"]
     mean1 = metrics_dict["test"]["mean"]
@@ -253,41 +256,40 @@ def plot(reference, test, diff, metrics_dict, parameter):
         stats=(max1, mean1, min1),
     )
 
-    min2 = metrics_dict["ref"]["min"]
-    mean2 = metrics_dict["ref"]["mean"]
-    max2 = metrics_dict["ref"]["max"]
-    plot_panel(
-        1,
-        fig,
-        proj,
-        reference,
-        parameter.contour_levels,
-        parameter.reference_colormap,
-        (parameter.ref_name_yrs, parameter.reference_title, reference.units),
-        parameter,
-        stats=(max2, mean2, min2),
-    )
+    if parameter.ref_name != "":
+        min2 = metrics_dict["ref"]["min"]
+        mean2 = metrics_dict["ref"]["mean"]
+        max2 = metrics_dict["ref"]["max"]
 
-    # Third panel
-    min3 = metrics_dict["diff"]["min"]
-    mean3 = metrics_dict["diff"]["mean"]
-    max3 = metrics_dict["diff"]["max"]
-    r = metrics_dict["misc"]["rmse"]
-    c = metrics_dict["misc"]["corr"]
-    plot_panel(
-        2,
-        fig,
-        proj,
-        diff,
-        parameter.diff_levels,
-        parameter.diff_colormap,
-        (None, parameter.diff_title, test.units),
-        parameter,
-        stats=(max3, mean3, min3, r, c),
-    )
+        plot_panel(
+            1,
+            fig,
+            proj,
+            reference,
+            parameter.contour_levels,
+            parameter.reference_colormap,
+            (parameter.ref_name_yrs, parameter.reference_title, reference.units),
+            parameter,
+            stats=(max2, mean2, min2),
+        )
 
-    # Figure title
-    fig.suptitle(parameter.main_title, x=0.5, y=0.96, fontsize=18)
+        # Third panel
+        min3 = metrics_dict["diff"]["min"]
+        mean3 = metrics_dict["diff"]["mean"]
+        max3 = metrics_dict["diff"]["max"]
+        r = metrics_dict["misc"]["rmse"]
+        c = metrics_dict["misc"]["corr"]
+        plot_panel(
+            2,
+            fig,
+            proj,
+            diff,
+            parameter.diff_levels,
+            parameter.diff_colormap,
+            (None, parameter.diff_title, test.units),
+            parameter,
+            stats=(max3, mean3, min3, r, c),
+        )
 
     # Save figure
     for f in parameter.output_format:
@@ -297,14 +299,14 @@ def plot(reference, test, diff, metrics_dict, parameter):
             parameter.output_file + "." + f,
         )
         plt.savefig(fnm)
-        # Get the filename that the user has passed in and display that.
-        fnm = os.path.join(
-            get_output_dir(parameter.current_set, parameter),
-            parameter.output_file + "." + f,
-        )
         logger.info(f"Plot saved in: {fnm}")
 
     # Save individual subplots
+    if parameter.ref_name == "":
+        panels = [panel[0]]
+    else:
+        panels = panel
+
     for f in parameter.output_format_subplot:
         fnm = os.path.join(
             get_output_dir(parameter.current_set, parameter),
@@ -312,7 +314,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
         )
         page = fig.get_size_inches()
         i = 0
-        for p in panel:
+        for p in panels:
             # Extent of subplot
             subpage = np.array(p).reshape(2, 2)
             subpage[1, :] = subpage[0, :] + subpage[1, :]

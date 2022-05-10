@@ -347,20 +347,21 @@ def save_ncfiles(set_num, test, ref, diff, parameter):
         with cdms2.open(test_pth, cdms_arg) as file_test:
             file_test.write(test)
 
-        # Save reference file
-        if ref.id.startswith("variable_"):
-            ref.id = parameter.var_id
-        ref_pth = os.path.join(pth, parameter.output_file + "_ref.nc")
-        with cdms2.open(ref_pth, cdms_arg) as file_ref:
-            file_ref.write(ref)
+        if parameter.ref_name != "":
+            # Save reference file
+            if ref.id.startswith("variable_"):
+                ref.id = parameter.var_id
+            ref_pth = os.path.join(pth, parameter.output_file + "_ref.nc")
+            with cdms2.open(ref_pth, cdms_arg) as file_ref:
+                file_ref.write(ref)
 
-        # Save difference file
-        if diff is not None:
-            if diff.id.startswith("variable_"):
-                diff.id = parameter.var_id + "_diff"
-            diff_pth = os.path.join(pth, parameter.output_file + "_diff.nc")
-            with cdms2.open(diff_pth, cdms_arg) as file_diff:
-                file_diff.write(diff)
+            # Save difference file
+            if diff is not None:
+                if diff.id.startswith("variable_"):
+                    diff.id = parameter.var_id + "_diff"
+                diff_pth = os.path.join(pth, parameter.output_file + "_diff.nc")
+                with cdms2.open(diff_pth, cdms_arg) as file_diff:
+                    file_diff.write(diff)
 
 
 def get_output_dir(set_num, parameter):

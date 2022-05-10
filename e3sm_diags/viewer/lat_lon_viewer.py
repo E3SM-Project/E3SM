@@ -66,11 +66,13 @@ def generate_lat_lon_metrics_table(
 
         lat_lon_table_info[season]["html_path"] = html_path
 
-    url = _create_lat_lon_table_index(lat_lon_table_info, seasons, viewer, root_dir)
+    url = _create_lat_lon_table_index(
+        lat_lon_table_info, seasons, viewer, root_dir, table_name
+    )
     utils.add_header(root_dir, os.path.join(root_dir, url), parameters)
-    _edit_table_html(lat_lon_table_info, seasons, root_dir)
+    _edit_table_html(lat_lon_table_info, seasons, root_dir, table_name)
 
-    return "Table", url
+    return f"Table{table_name}", url
 
 
 def _create_csv_from_dict(lat_lon_table_info, output_dir, season, test_name, run_type):
@@ -161,12 +163,14 @@ def _cvs_to_html(csv_path, season, test_name, ref_name):
     return html_path
 
 
-def _create_lat_lon_table_index(lat_lon_table_info, seasons, viewer, root_dir):
+def _create_lat_lon_table_index(
+    lat_lon_table_info, seasons, viewer, root_dir, table_name
+):
     """
     Create an index in the viewer that links the
     individual htmls for the lat-lon table.
     """
-    viewer.add_page("Table", seasons)
+    viewer.add_page(f"Table{table_name}", seasons)
     viewer.add_group("Summary Table")
     viewer.add_row("All variables")
 
@@ -432,7 +436,7 @@ def _create_taylor_index(seasons, viewer, root_dir, season_to_png):
     return url
 
 
-def _edit_table_html(lat_lon_table_info, seasons, root_dir):
+def _edit_table_html(lat_lon_table_info, seasons, root_dir, table_name):
     """
     After the viewer is created, edit the table html to
     insert the custom htmls.
@@ -486,5 +490,5 @@ def _edit_table_html(lat_lon_table_info, seasons, root_dir):
             _add_html_to_col(
                 s,
                 lat_lon_table_info[s]["html_path"],
-                os.path.join(root_dir, "table", "index.html"),
+                os.path.join(root_dir, f"table{table_name}", "index.html"),
             )
