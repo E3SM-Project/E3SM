@@ -576,6 +576,9 @@ this mask will have smb calculated over the entire global land surface
 <fsnowoptics >lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</fsnowoptics>
 <fsnowaging  >lnd/clm2/snicardata/snicar_drdt_bst_fit_60_c070416.nc</fsnowaging>
 <use_snicar_ad>.true.</use_snicar_ad>
+<snow_shape>sphere</snow_shape>
+<snicar_atm_type>default</snicar_atm_type>
+<use_dust_snow_internal_mixing>.false.</use_dust_snow_internal_mixing>
 
 <!-- Nitrogen deposition streams namelist defaults -->
 <stream_year_first_ndep use_cn=".true."   sim_year="2000" >2000</stream_year_first_ndep>
