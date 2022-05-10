@@ -791,7 +791,7 @@ module li_core
       ! For rate-based calving laws, no calving actually occurs because dt=0.
       ! For threshold calving laws (e.g. thickness-based) calving *will* occur
       ! Note that during a timestep, calving occurs before velocity, but because
-      ! many calving laws require velocity-related fields, it need to be called
+      ! many calving laws require velocity-related fields, it needs to be called
       ! after velocity here.
       if (.not. config_do_restart) then
          ! Temporarily set dt to 0 to avoid actually calving anything for rate-based calving laws

@@ -2138,8 +2138,10 @@ module li_calving
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
-      real (kind=RKIND), optional :: maxDt !< Output: an approximation of the max allowable dt based on a CFL-like condition
-      real (kind=RKIND), optional :: CFLratio !< Output: the ratio of the actual timestep being applied to what maximum allowable
+      real (kind=RKIND), optional :: maxDt
+          !< Output: an approximation of the max allowable dt based on a CFL-like condition calculated from ablation velocity
+      real (kind=RKIND), optional :: CFLratio
+          !< Output: the ratio of the actual timestep being applied to the maximum allowable timestep from the CFL-like condition
       integer, intent(out) :: err !< Output: error flag
 
       integer, pointer :: nEdges, nEdgesSolve, nCells, nCellsSolve, maxEdges
@@ -2609,7 +2611,7 @@ module li_calving
                      requiredAblationVolumeDynEdge(iEdge) = ablateLengthEdge / ablateLengthCell * volumeAvailableToPass
                      unablatedVolumeNonDynCell(iCell) = unablatedVolumeNonDynCell(iCell) - requiredAblationVolumeDynEdge(iEdge)
                      !call mpas_log_write("   Passed calving $r from non-dynamic cell $i to dynamic cell $i", &
-                     !        realArgs=(/requiredAblationVolumeDynEdge(iEdge)/), intArgs=(/iCell, jCell/))
+                     !   realArgs=(/requiredAblationVolumeDynEdge(iEdge)/), intArgs=(/iCell, jCell/)) ! Note: change to global IDs
                      if (bedTopography(jCell) >= config_sea_level) then
                         requiredAblationVolumeDynEdge(iEdge) = 0.0_RKIND ! Don't pass this further if it would go above sea level
                      endif
@@ -2750,10 +2752,10 @@ module li_calving
             unablatedVolumeDynCell(iCell) = 0.0_RKIND
          endif
          ! Clean up round off.  Because this is volume, threshold can be kind of large
-         if (unablatedVolumeNonDynCell(iCell) < 1.0e-5_RKIND) then
+         if (unablatedVolumeNonDynCell(iCell) < (ablationSmallThk * areaCell(iCell))) then
             unablatedVolumeNonDynCell(iCell) = 0.0_RKIND
          endif
-         if (unablatedVolumeDynCell(iCell) < 1.0e-5_RKIND) then
+         if (unablatedVolumeDynCell(iCell) < (ablationSmallThk * areaCell(iCell))) then
             unablatedVolumeDynCell(iCell) = 0.0_RKIND
          endif
       enddo
