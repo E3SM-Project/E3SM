@@ -128,6 +128,7 @@ PropertyCheck::CheckResult FieldNaNCheck::check_impl() const {
   if (not check_result.pass) {
     auto indices = unflatten_idx(layout.dims(),invalid_idx);
     check_result.msg  = "FieldNaNCheck failed.\n";
+    check_result.msg += "  - field id: " + f.get_header().get_identifier().get_id_string() + "\n";
     using namespace ShortFieldTagsNames;
 
     int col_lid;

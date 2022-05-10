@@ -173,10 +173,12 @@ PropertyCheck::CheckResult FieldWithinIntervalCheck::check_impl () const
   check_result.pass = minmaxloc.min_val>=m_lower_bound && minmaxloc.max_val<=m_upper_bound;
   if (not check_result.pass) {
     check_result.msg  = "Check failed.\n";
-    check_result.msg += "  " + this->name() + "\n";
+    check_result.msg += "  - check name: " + this->name() + "\n";
+    check_result.msg += "  - field id: " + f.get_header().get_identifier().get_id_string() + "\n";
   } else {
     check_result.msg  = "Check passed.\n";
-    check_result.msg += "  " + this->name() + "\n";
+    check_result.msg += "  - check name:" + this->name() + "\n";
+    check_result.msg += "  - field id: " + f.get_header().get_identifier().get_id_string() + "\n";
   }
 
   auto idx_min = unflatten_idx(layout.dims(),minmaxloc.min_loc);
@@ -203,7 +205,7 @@ PropertyCheck::CheckResult FieldWithinIntervalCheck::check_impl () const
   }
 
   std::stringstream msg;
-  msg << "  minimum:\n";
+  msg << "  - minimum:\n";
   msg << "    - value: " << minmaxloc.min_val << "\n";
   if (has_col_info) {
     msg << "    - entry: (" << gids(min_col_lid);
@@ -216,7 +218,7 @@ PropertyCheck::CheckResult FieldWithinIntervalCheck::check_impl () const
     }
   }
 
-  msg << "  maximum:\n";
+  msg << "  - maximum:\n";
   msg << "    - value: " << minmaxloc.max_val << "\n";
   if (has_col_info) {
     msg << "    - entry: (" << gids(max_col_lid);
