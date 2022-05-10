@@ -7,8 +7,8 @@ Fields:
   Physics GLL:
     Field Names:
       - T_mid
+      - PotentialTemperature
       - qv
-      - T_prev_micro_step
       - qc
       - qr
       - qi
@@ -19,15 +19,15 @@ Fields:
       - bm
       - precip_liq_surf
       - precip_ice_surf
-      - qv_prev_micro_step
       - eff_radius_qc
       - eff_radius_qi
-      - micro_liq_ice_exchange
-      - micro_vap_liq_exchange
-      - micro_vap_ice_exchange
-      - tke
+      - nc_activated
+      - ni_activated
+      - nc_nuceat_tend
       - cldfrac_liq
+      - cldfrac_ice
       - cldfrac_tot
+      - tke
       - eddy_diff_mom
       - sgs_buoy_flux
       - inv_qc_relvar
@@ -36,35 +36,15 @@ Fields:
       - LW_flux_dn
       - SW_flux_up
       - SW_flux_dn
-      - SW_flux_dn_dir
+      - sfc_alb_dir_vis
+      - surf_lw_flux_up
       - ps
-      - omega
-      - p_int
       - p_mid
-      - phis
+      - omega
       - pseudo_density
       - surf_latent_flux
-      - surf_mom_flux
       - surf_sens_flux
-      - cldfrac_ice
-      - nc_activated
-      - ni_activated
-      - nc_nuceat_tend
-      - eff_radius_qc
-      - eff_radius_qi
-      - sfc_alb_dir_nir
-      - sfc_alb_dir_vis
-      - sfc_alb_dif_nir
-      - sfc_alb_dif_vis
-      - surf_lw_flux_up
-      - aero_g_sw
-      - aero_ssa_sw
-      - aero_tau_lw
-      - aero_tau_sw
-      - nc_activated
-      - p_mid
-      - PotentialTemperature
-
+      - surf_mom_flux
 Output Control:
   Frequency: 2
   Frequency Units: Steps
