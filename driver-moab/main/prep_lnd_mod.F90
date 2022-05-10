@@ -722,13 +722,15 @@ contains
      endif
    endif ! if (.not. sameg_al)
 
-   ! in any case, we need to define the tags on landx from the phys atm seq_flds_a2x_fields
-   tagtype = 1  ! dense, double
-   numco = 1 !  one value per vertex / entity
-   tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
-   ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
-   if ( ierr > 0) then
-      call shr_sys_abort(subname//' fail to define seq_flds_a2x_fields for lnd x moab mesh ')
+   if (mblxid .ge. 0) then
+      ! in any case, we need to define the tags on landx from the phys atm seq_flds_a2x_fields
+      tagtype = 1  ! dense, double
+      numco = 1 !  one value per vertex / entity
+      tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+      ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
+      if ( ierr > 0) then
+         call shr_sys_abort(subname//' fail to define seq_flds_a2x_fields for lnd x moab mesh ')
+      endif
    endif
 
  end subroutine prep_atm_lnd_moab
