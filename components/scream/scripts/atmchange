@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+
+"""
+Change a runtime parameter for SCREAM/atm. Run from your case
+after case.setup.
+"""
+
+import argparse, sys, pathlib, os
+import xml.etree.ElementTree as ET
+
+# Add path to cime_config folder
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "cime_config"))
+sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+
+from eamxx_buildnml_impl import check_value
+from atm_manip import expect, get_xml_node
+
+###############################################################################
+def atm_config_chg_impl(xml_root,changes):
+###############################################################################
+    """
+
+    >>> xml = '''
+    ... <root>
+    ...     <prop1>one</prop1>
+    ...     <sub>
+    ...         <prop1>two</prop1>
+    ...         <prop2 type="integer" valid_values="1,2">2</prop2>
+    ...     </sub>
+    ... </root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> tree = ET.fromstring(xml)
+    >>> ################ INVALID SYNTAX #######################
+    >>> atm_config_chg_impl(tree,['prop1->2'])
+    Traceback (most recent call last):
+    SystemExit: ERROR: Invalid change format. Expected A[::B[...]=value, got' prop1->2'
+    >>> ################ INVALID TYPE #######################
+    >>> atm_config_chg_impl(tree,['prop2=two'])
+    Traceback (most recent call last):
+    eamxx_buildnml_impl.refine_type.<locals>.ForceTypeUnmet: Could not use 'two' as type 'integer'
+    >>> ################ INVALID VALUE #######################
+    >>> atm_config_chg_impl(tree,['prop2=3'])
+    Traceback (most recent call last):
+    eamxx_buildnml_impl.check_value.<locals>.ValidValueConstraintViolated: ERROR: Invalid value '3' for element 'prop2'. Value not in the valid list ('[1, 2]')
+    >>> ################ VALID USAGE #######################
+    >>> atm_config_chg_impl(tree,['::prop1=two'])
+    True
+    >>> atm_config_chg_impl(tree,['::prop1=two'])
+    False
+    >>> atm_config_chg_impl(tree,['sub::prop1=one'])
+    True
+    """
+
+    any_change = False
+    for change in changes:
+
+        tokens = change.split('=')
+        expect (len(tokens)==2, "Invalid change format. Expected A[::B[...]=value, got' {}'".format(change))
+        node = get_xml_node(xml_root,tokens[0])
+        new_value = tokens[1]
+
+        if node.text != new_value:
+            check_value(node,new_value)
+            node.text = new_value
+            any_change = True
+
+    return any_change
+
+###############################################################################
+def atm_config_chg(changes):
+###############################################################################
+    expect(os.path.exists("namelist_scream.xml"),
+           "No pwd/namelist_scream.xml file is present. Please rum from a case dir that has been setup")
+
+    with open("namelist_scream.xml", "r") as fd:
+        tree = ET.parse(fd)
+        root = tree.getroot()
+
+    any_change = atm_config_chg_impl(root,changes)
+
+    if any_change:
+        tree.write("namelist_scream.xml")
+
+    return True
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <param>=<val> [<param>=<val>] ...
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Change param foo of group bar to 'hi'\033[0m
+    > {0} bar::foo=hi
+
+    \033[1;32m# Change param foo to 'hi' (only works if foo is unambiguous)\033[0m
+    > {0} foo=hi
+
+    \033[1;32m# Change params foo to 'hi' and bar to 'there' (only works if both are unambiguous)\033[0m
+    > {0} foo=hi bar=there
+""".format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("changes", nargs="+", help="Values to change")
+
+    return parser.parse_args(args[1:])
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if "--test" in sys.argv:
+        from doctest import testmod
+        import atm_manip
+        testmod()
+        testmod(m=atm_manip)
+    else:
+        success = atm_config_chg(**vars(parse_command_line(sys.argv, description)))
+        sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

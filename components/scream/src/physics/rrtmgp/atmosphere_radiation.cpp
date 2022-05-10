@@ -67,10 +67,15 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("p_mid" , scalar3d_layout_mid, Pa, grid->name(), ps);
   add_field<Required>("p_int", scalar3d_layout_int, Pa, grid->name(), ps);
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid->name(), ps);
-  add_field<Required>("sfc_alb_dir_vis", scalar2d_layout, nondim, grid->name());
-  add_field<Required>("sfc_alb_dir_nir", scalar2d_layout, nondim, grid->name());
-  add_field<Required>("sfc_alb_dif_vis", scalar2d_layout, nondim, grid->name());
-  add_field<Required>("sfc_alb_dif_nir", scalar2d_layout, nondim, grid->name());
+  // WARNING! We are switch surface albedo variables to "Updated" to allow rrtmgp
+  // property checks to repair them as a precondition check.  TODO: Change back
+  // to "Required" when surface coupling is it's own process and can handle repair
+  // locally.
+  add_field<Updated>("sfc_alb_dir_vis", scalar2d_layout, nondim, grid->name());
+  add_field<Updated>("sfc_alb_dir_nir", scalar2d_layout, nondim, grid->name());
+  add_field<Updated>("sfc_alb_dif_vis", scalar2d_layout, nondim, grid->name());
+  add_field<Updated>("sfc_alb_dif_nir", scalar2d_layout, nondim, grid->name());
+  // End WARNING Message
   add_field<Required>("qc", scalar3d_layout_mid, kgkg, grid->name(), ps);
   add_field<Required>("qi", scalar3d_layout_mid, kgkg, grid->name(), ps);
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid->name(), ps);
@@ -280,10 +285,10 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   // Set property checks for fields in this process
 
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140.0, 500.0,false);
-  add_precondition_check<FieldWithinIntervalCheck>(get_field_in("sfc_alb_dir_vis"),0.0,1.0,false);
-  add_precondition_check<FieldWithinIntervalCheck>(get_field_in("sfc_alb_dir_nir"),0.0,1.0,false);
-  add_precondition_check<FieldWithinIntervalCheck>(get_field_in("sfc_alb_dif_vis"),0.0,1.0,false);
-  add_precondition_check<FieldWithinIntervalCheck>(get_field_in("sfc_alb_dif_nir"),0.0,1.0,false);
+  add_precondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dir_vis"),0.0,1.0,true);
+  add_precondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dir_nir"),0.0,1.0,true);
+  add_precondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_vis"),0.0,1.0,true);
+  add_precondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_nir"),0.0,1.0,true);
 
 }
 

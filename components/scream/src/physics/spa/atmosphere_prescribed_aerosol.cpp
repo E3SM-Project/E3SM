@@ -193,7 +193,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
   m_buffer.spa_temp.hybm = SPAData_start.hybm;
 
   // Set property checks for fields in this process
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nc_activated"),0.0,1.0e6,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nc_activated"),0.0,1.0e11,false);
   // upper bound set to 1.01 as max(g_sw)=1.00757 in current ne4 data assumingly due to remapping
   // add an epslon to max possible upper bound of aero_ssa_sw
 

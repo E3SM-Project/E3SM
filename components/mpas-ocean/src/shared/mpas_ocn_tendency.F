@@ -24,7 +24,9 @@ module ocn_tendency
    use mpas_pool_routines
    use mpas_constants
    use mpas_timer
+   use mpas_timekeeping
    use mpas_threading
+   use mpas_dmpar
    use ocn_diagnostics
    use ocn_diagnostics_variables
    use ocn_constants
@@ -64,6 +66,7 @@ module ocn_tendency
    use ocn_vmix
    use ocn_wetting_drying
    use ocn_vel_tidal_potential
+   use ocn_vel_self_attraction_loading
 
    implicit none
    private
@@ -243,13 +246,14 @@ contains
 !>  This routine computes the velocity tendency for the ocean
 !
 !-----------------------------------------------------------------------
-
-   subroutine ocn_tend_vel(tendPool, statePool, forcingPool, &
-                           timeLevelIn, dt)!{{{
+    ! NOTE: Domain being passed in for halo update on SAL
+   subroutine ocn_tend_vel(domain, tendPool, statePool, forcingPool, &
+                           timeLevelIn, dminfo, dt)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: domain !< Input/Output: domain information
 
       real (kind=RKIND), intent(in) :: &
          dt             !< [in] time step
@@ -292,6 +296,7 @@ contains
 
       integer, pointer :: indexTemperature, indexSalinity
       type (mpas_pool_type), pointer :: tracersPool
+      type (dm_info), intent(in) :: dminfo
 
       real (kind=RKIND), dimension(:), pointer, contiguous :: &
          ssh               ! sea surface height
@@ -416,6 +421,16 @@ contains
                                indxTemp, indxSalt, activeTracers, &
                                thermExpCoeff, salineContractCoeff, &
                                tendVel, err)
+
+      ! Compute ssh additions due to self-attraction and loading
+      if(mpas_is_alarm_ringing(domain % clock, 'salComputeAlarm', ierr=err)) then 
+#ifdef MPAS_DEBUG
+          call mpas_log_write('       Computing SAL')
+#endif
+          call ocn_compute_self_attraction_loading(domain, forcingPool, dminfo, ssh, err)
+          call mpas_reset_clock_alarm(domain % clock, 'salComputeAlarm', ierr=err)
+      endif
+      !$acc update device(ssh_sal)
 
       ! Add tidal potential (if needed) 
       call ocn_compute_tidal_potential_forcing(err)
