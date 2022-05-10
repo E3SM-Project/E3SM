@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "diagnostics/tests/diagnostic_test_util.hpp"
-#include "diagnostics/potential_temperature.hpp"
+#include "diagnostics/exner.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
 #include "physics/share/physics_constants.hpp"
@@ -30,6 +30,7 @@ void run(std::mt19937_64& engine)
 
   using KT         = ekat::KokkosTypes<DeviceT>;
   using ExecSpace  = typename KT::ExeSpace;
+  using TeamPolicy = typename KT::TeamPolicy;
   using MemberType = typename KT::MemberType;
   using view_1d    = typename KT::template view_1d<ScalarT>;
   using rview_1d   = typename KT::template view_1d<RealType>;
@@ -40,6 +41,9 @@ void run(std::mt19937_64& engine)
 
   constexpr int num_levs = 32; // Number of levels to use for tests.
   const     int num_mid_packs = pack_info::num_packs(num_levs);
+
+  using Check = ChecksHelpers<ScalarT,num_levs>;
+
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -52,8 +56,7 @@ void run(std::mt19937_64& engine)
   auto policy = ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(ncols, num_mid_packs);
 
   // Input (randomized) views
-  view_1d temperature("temperature",num_mid_packs),
-          pressure("pressure",num_mid_packs);
+  view_1d pressure("pressure",num_mid_packs);
 
   auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
     return rview_1d(reinterpret_cast<RealType*>(v.data()),v.size()*pack_size);
@@ -61,26 +64,24 @@ void run(std::mt19937_64& engine)
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<RealType>;
-  RPDF pdf_pres(0.0,PC::P0),
-       pdf_temp(200.0,400.0);
+  RPDF pdf_pres(0.0,PC::P0);
 
   //contruct random integers
   using IPDF = std::uniform_int_distribution<int>;
   IPDF pdf_rand_int(1,100);
 
-  ekat::genRandArray(dview_as_real(temperature),     engine,pdf_temp);
-  ekat::genRandArray(dview_as_real(pressure),        engine,pdf_pres);
+  ekat::genRandArray(dview_as_real(pressure),  engine,pdf_pres);
 
   // A time stamp
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
   // Construct the Diagnostic
   ekat::ParameterList params;
-  params.set<std::string>("Diagnostic Name", "Potential Temperature");
+  params.set<std::string>("Diagnostic Name", "Exner");
   params.set<std::string>("Grid", "Point Grid");
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
-  auto diag = diag_factory.create("PotentialTemperature",comm,params);
+  auto diag = diag_factory.create("Exner",comm,params);
   diag->set_grids(gm);
 
 
@@ -104,59 +105,52 @@ void run(std::mt19937_64& engine)
   const ScalarT zero = 0.0;
 
   // Get views of input data and set to random values
-  const auto& T_mid_f = input_fields["T_mid"];
-  const auto& T_mid_v = T_mid_f.get_view<ScalarT**>();
   const auto& p_mid_f = input_fields["p_mid"];
   const auto& p_mid_v = p_mid_f.get_view<ScalarT**>();
 
   // Test 1 - property tests 
-  //  - theta(T=0) = 0
+  //  - exner(pmid=0) = 0
   {
-  Field zero_f = T_mid_f.clone();  // Field with only zeros
+  Field zero_f = p_mid_f.clone();  // Field with only zeros
   zero_f.deep_copy(0.0);
   for (int icol = 0; icol<ncols;++icol) {
-    const auto& T_sub = ekat::subview(T_mid_v,icol);
     const auto& p_sub = ekat::subview(p_mid_v,icol);
-    Kokkos::deep_copy(T_sub,zero);
-    Kokkos::deep_copy(p_sub,p0);
+    Kokkos::deep_copy(p_sub,zero);
   }
   const auto& diag_out = diag->get_diagnostic(100.0);
   REQUIRE(views_are_equal(diag_out,zero_f));
   }
-  //  - theta=T when p=p0
+  //  - exner=1 when p=p0
   {
-    for (int icol = 0; icol<ncols;++icol) {
-      const auto& T_sub = ekat::subview(T_mid_v,icol);
-      const auto& p_sub = ekat::subview(p_mid_v,icol);
-      Kokkos::deep_copy(T_sub,temperature);
-      Kokkos::deep_copy(p_sub,p0);
-    } 
-    diag->run();
-    const auto& diag_out = diag->get_diagnostic();
-    REQUIRE(views_are_equal(diag_out,T_mid_f));
+  Field one_f = p_mid_f.clone();  // Field with only ones
+  one_f.deep_copy(1.0);
+  for (int icol = 0; icol<ncols;++icol) {
+    const auto& p_sub = ekat::subview(p_mid_v,icol);
+    Kokkos::deep_copy(p_sub,p0);
+  } 
+  const auto& diag_out = diag->get_diagnostic(100.0);
+  REQUIRE(views_are_equal(diag_out,one_f));
   }
-  // The output from the diagnostic should match what would happen if we called "calculate_theta_from_T" directly
+  // The output from the diagnostic should match what would happen if we called "exner" directly
   {
   for (int icol = 0; icol<ncols;++icol) {
-    const auto& T_sub = ekat::subview(T_mid_v,icol);
     const auto& p_sub = ekat::subview(p_mid_v,icol);
-    ekat::genRandArray(dview_as_real(temperature), engine, pdf_temp);
-    ekat::genRandArray(dview_as_real(pressure),    engine, pdf_pres);
-    Kokkos::deep_copy(T_sub,temperature);
+    ekat::genRandArray(dview_as_real(pressure), engine, pdf_pres);
     Kokkos::deep_copy(p_sub,pressure);
   } 
-  Field theta_f = T_mid_f.clone();
-  theta_f.deep_copy<double,Host>(0.0);
-  const auto& theta_v = theta_f.get_view<ScalarT**>();
+  Field exner_f = p_mid_f;
+  exner_f.deep_copy<double,Host>(0.0);
+  const auto& exner_v = exner_f.get_view<ScalarT**>();
   Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
     const int i = team.league_rank();
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
-      theta_v(i,k) = PF::calculate_theta_from_T(T_mid_v(i,k),p_mid_v(i,k));
+      exner_v(i,k) = PF::exner_function(p_mid_v(i,k));
     });
-    Kokkos::fence();
-    diag->run();
-    const auto& diag_out = diag->get_diagnostic();
-    REQUIRE(views_are_equal(diag_out,theta_f));
+    team.team_barrier();
+  });
+  Kokkos::fence();
+  const auto& diag_out = diag->get_diagnostic(100.0);
+  REQUIRE(views_are_equal(diag_out,exner_f));
   }
  
   // Finalize the diagnostic
@@ -164,7 +158,7 @@ void run(std::mt19937_64& engine)
 
 } // run()
 
-TEST_CASE("potential_temp_diagnostic_test", "diagnostics"){
+TEST_CASE("exner_diagnostic_test", "diagnostics"){
   // Run tests for both Real and Pack, and for (potentially) different pack sizes
   using scream::Real;
   using Device = scream::DefaultDevice;

@@ -6,5 +6,7 @@ if (NOT SCREAM_BASELINES_ONLY)
 
   # Test potential temperature diagnostic
   CreateUnitTest(potential_temperature "potential_temperature_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test exner diagnostic
+  CreateUnitTest(exner_function "exner_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 
 endif()
