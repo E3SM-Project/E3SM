@@ -138,7 +138,7 @@ void run(std::mt19937_64& engine)
     ekat::genRandArray(dview_as_real(pressure), engine, pdf_pres);
     Kokkos::deep_copy(p_sub,pressure);
   } 
-  Field exner_f = p_mid_f;
+  Field exner_f = p_mid_f.clone();
   exner_f.deep_copy<double,Host>(0.0);
   const auto& exner_v = exner_f.get_view<ScalarT**>();
   Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
