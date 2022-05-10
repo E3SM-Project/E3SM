@@ -42,13 +42,13 @@
                          n_don,                     &
                          n_fed,        n_fep,       &
                          n_zaero,      first_ice,   &
-                         hice_old,     ocean_bio,   & 
+                         hice_old,     ocean_bio,   &
                          bphin,        iphin,       &
                          iDin,         sss,         &
                          fswthrul,                  &
                          dh_top,       dh_bot,      &
                          dh_top_chl,   dh_bot_chl,  &
-                         zfswin,                    & 
+                         zfswin,                    &
                          hbri,         hbri_old,    &
                          darcy_V,      darcy_V_chl, &
                          bgrid,        cgrid,       &
@@ -62,7 +62,10 @@
                          PP_net,       ice_bio_net, &
                          snow_bio_net, grow_net,    &
                          totalChla,                 &
-                         flux_bion,                 &
+                         flux_bion,    iSin,        &
+                         bioPorosityIceCell,        &
+                         bioSalinityIceCell,        &
+                         bioTemperatureIceCell,     &
                          l_stop,       stop_label)
 
       use ice_aerosol, only: update_snow_bgc
@@ -127,9 +130,10 @@
 
       real (kind=dbl_kind), dimension (nblyr+1), intent(in) :: &
          igrid      , & ! biology vertical interface points
-         iTin       , & ! salinity vertical interface points
+         iTin       , & ! Temperature vertical interface points
          iphin      , & ! Porosity on the igrid
-         iDin           ! Diffusivity/h on the igrid (1/s)
+         iDin       , & ! Diffusivity/h on the igrid (1/s)
+         iSin           ! Salinity on vertical interface points (ppt)
 
       real (kind=dbl_kind), dimension (nilyr+1), intent(in) :: &
          cgrid            , &  ! CICE vertical coordinate
@@ -164,6 +168,11 @@
          upNO       , & ! tot nitrate uptake rate (mmol/m^2/d) times aice
          upNH       , & ! tot ammonium uptake rate (mmol/m^2/d) times aice
          totalChla      ! total chla (mg chla/m^2)
+
+      real (kind=dbl_kind), dimension (nblyr+1), intent(inout):: &  ! diagnostics
+          bioPorosityIceCell , & ! porosity on vertical interface points
+          bioSalinityIceCell , & ! salinity on vertical interface points (ppt)
+          bioTemperatureIceCell  ! temperature on vertical interface points (oC)
 
       logical (kind=log_kind), intent(in) :: &
          first_ice      ! initialized values should be used
@@ -351,7 +360,7 @@
                                nbtrcr,       aicen,      &
                                vicen,        vsnon,      &
                                ntrcr,        iphin,      &
-                               trcrn,                    &
+                               trcrn,        aice_old,   &
                                flux_bion,    flux_bio,   &
                                upNOn,        upNHn,      &
                                upNO,         upNH,       &
@@ -360,7 +369,11 @@
                                PP_net,       ice_bio_net,&
                                snow_bio_net, grow_alg,   &
                                grow_net,     totalChla,  &
-                               nslyr)
+                               nslyr,        iTin,       &
+                               iSin,                     &
+                               bioPorosityIceCell,       &
+                               bioSalinityIceCell,       &
+                               bioTemperatureIceCell)
 
       if (write_flux_diag) then
          if (aicen > c0) then

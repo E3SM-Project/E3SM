@@ -1147,6 +1147,97 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- self_attraction_loading -->
+
+<entry id="config_use_self_attraction_loading" type="logical"
+	category="self_attraction_loading" group="self_attraction_loading">
+Controls if self-attraction and loading is applied to ssh
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_self_attraction_loading_smoothing_width" type="real"
+	category="self_attraction_loading" group="self_attraction_loading">
+Defines region over which ssh is smoothed to zero at coasts for SAL calculation.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_mpas_to_grid_weights_file" type="char*1024"
+	category="self_attraction_loading" group="self_attraction_loading">
+Location of the file containing the interpolation weights for transformation from the MPAS mesh to a Gaussian Grid.
+
+Valid values: Any file name string
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_grid_to_mpas_weights_file" type="char*1024"
+	category="self_attraction_loading" group="self_attraction_loading">
+Location of the file containing the interpolation weights for transformation from a Gaussian Grid to the MPAS mesh.
+
+Valid values: Any file name string
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_self_attraction_loading_compute_interval" type="char*1024"
+	category="self_attraction_loading" group="self_attraction_loading">
+Interval for computing full SAL.
+
+Valid values: 'YYYY-MM-DD_HH:MM:SS'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_nLatitude" type="integer"
+	category="self_attraction_loading" group="self_attraction_loading">
+Numer of latitude points in the Gaussian Grid.
+
+Valid values: Any positive integer value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_nLongitude" type="integer"
+	category="self_attraction_loading" group="self_attraction_loading">
+Numer of longitude points in the Gaussian Grid.
+
+Valid values: Any positive integer value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_parallel_self_attraction_loading" type="logical"
+	category="self_attraction_loading" group="self_attraction_loading">
+Controls if self-attraction and loading is computed with parallel or serial algorithm
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_parallel_self_attraction_loading_order" type="integer"
+	category="self_attraction_loading" group="self_attraction_loading">
+Controls the order of the sperical harmonic expansion used in the parallel self attraction and loading algorithm
+
+Valid values: Any positive integer value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_parallel_self_attraction_loading_n_cells_per_block" type="integer"
+	category="self_attraction_loading" group="self_attraction_loading">
+Controls the number of blocks used for spherical harmonics calculation
+
+Valid values: Any positive integer value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_parallel_self_attraction_loading_bfb" type="logical"
+	category="self_attraction_loading" group="self_attraction_loading">
+Controls whether a reproducible sum is used for the parallel spherical harmonics calculations
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- tidal_potential_forcing -->
 
 <entry id="config_use_tidal_potential_forcing" type="logical"

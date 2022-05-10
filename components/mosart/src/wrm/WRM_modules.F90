@@ -604,7 +604,9 @@ MODULE WRM_modules
      !--- return and do nothing under certain conditions
      !---------------------------------------------
 
-     if (damID > ctlSubwWRM%LocalNumDam .OR. damID <= 0 .or. WRMUnit%MeanMthFlow(damID,13) <= 0.01_r8) then
+     if (damID > ctlSubwWRM%LocalNumDam .OR. damID <= 0) then
+        return
+     elseif (WRMUnit%MeanMthFlow(damID,13) <= 0.01_r8) then
         return
      end if
 

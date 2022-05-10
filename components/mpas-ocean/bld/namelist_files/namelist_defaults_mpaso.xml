@@ -262,6 +262,19 @@
 <config_surface_buoyancy_depth>1</config_surface_buoyancy_depth>
 <config_enable_shortwave_energy_fixer>.true.</config_enable_shortwave_energy_fixer>
 
+<!-- self_attraction_loading -->
+<config_use_self_attraction_loading>.false.</config_use_self_attraction_loading>
+<config_self_attraction_loading_smoothing_width>1.0</config_self_attraction_loading_smoothing_width>
+<config_mpas_to_grid_weights_file>'mpas_to_grid.nc'</config_mpas_to_grid_weights_file>
+<config_grid_to_mpas_weights_file>'grid_to_mpas.nc'</config_grid_to_mpas_weights_file>
+<config_self_attraction_loading_compute_interval>'0000-00-00_00:30:00'</config_self_attraction_loading_compute_interval>
+<config_nLatitude>128</config_nLatitude>
+<config_nLongitude>256</config_nLongitude>
+<config_use_parallel_self_attraction_loading>.false.</config_use_parallel_self_attraction_loading>
+<config_parallel_self_attraction_loading_order>10</config_parallel_self_attraction_loading_order>
+<config_parallel_self_attraction_loading_n_cells_per_block>600</config_parallel_self_attraction_loading_n_cells_per_block>
+<config_parallel_self_attraction_loading_bfb>.true.</config_parallel_self_attraction_loading_bfb>
+
 <!-- tidal_potential_forcing -->
 <config_use_tidal_potential_forcing>.false.</config_use_tidal_potential_forcing>
 <config_tidal_potential_reference_time>'0001-01-01_00:00:00'</config_tidal_potential_reference_time>

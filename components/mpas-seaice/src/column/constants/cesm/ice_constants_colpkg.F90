@@ -90,7 +90,8 @@
 !tcx note cice snowpatch = 0.02
 
          ! biogeochemistry
-         sk_l = 0.03_dbl_kind      ! (m) skeletal layer thickness
+         R_gC2molC = SHR_CONST_MOL_MASS_C, & ! molar mass of carbon
+         sk_l = 0.03_dbl_kind                ! (m) skeletal layer thickness
 
       integer (kind=int_kind), parameter, public :: &
          nspint = 3             ,& ! number of solar spectral intervals
