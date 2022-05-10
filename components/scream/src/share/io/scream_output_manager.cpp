@@ -119,22 +119,32 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     // Allow to skip history restart, or to specify a casename for the restart file
     // that is different from the casename of the current output.
     auto& restart_pl = m_params.sublist("Restart");
-    bool perform_history_restart = has_restart_data && restart_pl.get("Perform Restart",true);
+    bool perform_history_restart = restart_pl.get("Perform Restart",true);
     auto hist_restart_casename = restart_pl.get("Casename",m_casename);
 
     if (perform_history_restart) {
-      auto output_restart_filename = find_filename_in_rpointer(hist_restart_casename,".rhist.nc");
+      // If the type/freq of output needs restart data, we need to read in an output.
+      if (has_restart_data) {
+        auto output_restart_filename = find_filename_in_rpointer(hist_restart_casename,".rhist.nc");
 
-      ekat::ParameterList res_params("Input Parameters");
-      res_params.set<std::string>("Filename",output_restart_filename);
-      AtmosphereInput output_restart (m_io_comm,res_params);
-      // Also restart each stream
-      for (auto stream : m_output_streams) {
-        stream->restart(output_restart_filename);
+        ekat::ParameterList res_params("Input Parameters");
+        res_params.set<std::string>("Filename",output_restart_filename);
+        AtmosphereInput output_restart (m_io_comm,res_params);
+
+        // Also restart each stream
+        for (auto stream : m_output_streams) {
+          stream->restart(output_restart_filename);
+        }
+
+        // And restart the avg count.
+        m_output_control.nsteps_since_last_write = output_restart.read_int_scalar("avg_count");
+        output_restart.finalize();
+      } else {
+        // If we don't have restart data, then we either do avg/max/min at every timestep (silly),
+        // or (more likely) we do instant output every N steps. To figure out when the first output
+        // will be, check the nsteps in the current timestamp (run_t0) against the out frequency.
+        m_output_control.nsteps_since_last_write = m_run_t0.get_num_steps() % m_output_control.frequency;
       }
-      // And restart the avg count.
-      m_output_control.nsteps_since_last_write = output_restart.read_int_scalar("avg_count");
-      output_restart.finalize();
     }
   }
 
