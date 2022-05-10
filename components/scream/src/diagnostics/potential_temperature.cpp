@@ -54,7 +54,7 @@ void PotentialTemperatureDiagnostic::run_impl(const int /* dt */)
   auto p_mid = get_field_in("p_mid").get_view<const Pack**>();
   auto T_mid = get_field_in("T_mid").get_view<const Pack**>();
   auto output = m_diagnostic_output.get_view<Pack**>();
-  Kokkos::parallel_for("ExnerDiagnostic",
+  Kokkos::parallel_for("PotentialTemperatureDiagnostic",
                        Kokkos::RangePolicy<>(0,m_num_cols*nk_pack),
                        KOKKOS_LAMBDA(int idx) {
       const int icol  = idx / nk_pack;

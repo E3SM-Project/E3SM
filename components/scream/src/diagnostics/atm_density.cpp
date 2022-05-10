@@ -46,29 +46,30 @@ void AtmDensityDiagnostic::set_grids(const std::shared_ptr<const GridsManager> g
 // =========================================================================================
 void AtmDensityDiagnostic::initialize_impl(const RunType /* run_type */)
 {
+
+  auto ts = timestamp(); 
+  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
+
+}
+// =========================================================================================
+void AtmDensityDiagnostic::run_impl(const int /* dt */)
+{
+
   const auto& T_mid              = get_field_in("T_mid").get_view<const Pack**>();
   const auto& p_mid              = get_field_in("p_mid").get_view<const Pack**>();
   const auto& qv_mid             = get_field_in("qv").get_view<const Pack**>();
   const auto& pseudo_density_mid = get_field_in("pseudo_density").get_view<const Pack**>();
 
   const auto& output             = m_diagnostic_output.get_view<Pack**>();
-
-  auto ts = timestamp(); 
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-
   const auto nk_pack  = ekat::npack<Spack>(m_num_levs);
-
-  run_diagnostic.set_variables(m_num_cols,nk_pack,p_mid,T_mid,qv_mid,pseudo_density_mid,output);
-}
-// =========================================================================================
-void AtmDensityDiagnostic::run_impl(const int /* dt */)
-{
-
-  const auto nk_pack  = ekat::npack<Spack>(m_num_levs);
-  Kokkos::parallel_for("AtmDensity_Diagnostic",
+  Kokkos::parallel_for("PotentialTemperatureDiagnostic",
                        Kokkos::RangePolicy<>(0,m_num_cols*nk_pack),
-                       run_diagnostic
-  );
+                       KOKKOS_LAMBDA(int idx) {
+      const int icol  = idx / nk_pack;
+      const int jpack = idx % nk_pack;
+      auto dz = PF::calculate_dz(pseudo_density_mid(icol,jpack),p_mid(icol,jpack),T_mid(icol,jpack),qv_mid(icol,jpack));
+      output(icol,jpack) = PF::calculate_density(pseudo_density_mid(icol,jpack),dz);
+  });
   Kokkos::fence();
 
 }

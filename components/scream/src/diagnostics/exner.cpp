@@ -40,26 +40,24 @@ void ExnerDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_
 // =========================================================================================
 void ExnerDiagnostic::initialize_impl(const RunType /* run_type */)
 {
-  const auto& p_mid          = get_field_in("p_mid").get_view<const Pack**>();
-
-  const auto& output         = m_diagnostic_output.get_view<Pack**>();
-
   auto ts = timestamp(); 
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-
-  const auto nk_pack  = ekat::npack<Spack>(m_num_levs);
-
-  run_diagnostic.set_variables(m_num_cols,nk_pack,p_mid,output);
 }
 // =========================================================================================
 void ExnerDiagnostic::run_impl(const int /* dt */)
 {
 
+  const auto& p_mid          = get_field_in("p_mid").get_view<const Pack**>();
+  const auto& output         = m_diagnostic_output.get_view<Pack**>();
+
   const auto nk_pack  = ekat::npack<Spack>(m_num_levs);
   Kokkos::parallel_for("ExnerDiagnostic",
                        Kokkos::RangePolicy<>(0,m_num_cols*nk_pack),
-                       run_diagnostic
-  );
+                       KOKKOS_LAMBDA(int idx) {
+      const int icol  = idx / nk_pack;
+      const int jpack = idx % nk_pack;
+      output(icol,jpack) = PF::exner_function(p_mid(icol,jpack));
+  });
   Kokkos::fence();
 
 }

@@ -14,16 +14,6 @@ namespace scream
 class PotentialTemperatureDiagnostic : public AtmosphereDiagnostic
 {
 public:
-  template <typename S>
-  using SmallPack     = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
-
-  using Spack         = SmallPack<Real>;
-  using Pack          = ekat::Pack<Real,Spack::n>;
-  using PF            = scream::PhysicsFunctions<DefaultDevice>;
-  using KT            = KokkosTypes<DefaultDevice>;
-  using view_2d       = typename KT::template view_2d<Spack>;
-  using view_2d_const = typename KT::template view_2d<const Spack>;
-
   // Constructors
   PotentialTemperatureDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
 
