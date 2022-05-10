@@ -2,7 +2,9 @@
 if (NOT SCREAM_BASELINES_ONLY)
   include(ScreamUtils)
 
+  set( NEED_LIBS scream_share diagnostics )
+
   # Test potential temperature diagnostic
-  CreateUnitTest(potential_temperature "potential_temperature_test.cpp" "scream_share;diagnostics" LABELS "diagnostics" )
+  CreateUnitTest(potential_temperature "potential_temperature_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 
 endif()

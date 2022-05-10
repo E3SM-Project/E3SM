@@ -42,27 +42,25 @@ void PotentialTemperatureDiagnostic::set_grids(const std::shared_ptr<const Grids
 // =========================================================================================
 void PotentialTemperatureDiagnostic::initialize_impl(const RunType /* run_type */)
 {
-  const auto& T_mid          = get_field_in("T_mid").get_view<const Pack**>();
-  const auto& p_mid          = get_field_in("p_mid").get_view<const Pack**>();
-
-  const auto& output         = m_diagnostic_output.get_view<Pack**>();
 
   auto ts = timestamp(); 
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-
-  const auto nk_pack  = ekat::npack<Spack>(m_num_levs);
-
-  run_diagnostic.set_variables(m_num_cols,nk_pack,p_mid,T_mid,output);
 }
 // =========================================================================================
 void PotentialTemperatureDiagnostic::run_impl(const int /* dt */)
 {
 
   const auto nk_pack  = ekat::npack<Spack>(m_num_levs);
-  Kokkos::parallel_for("PotentialTemperatureDiagnostic",
+  auto p_mid = get_field_in("p_mid").get_view<const Pack**>();
+  auto T_mid = get_field_in("T_mid").get_view<const Pack**>();
+  auto output = m_diagnostic_output.get_view<Pack**>();
+  Kokkos::parallel_for("ExnerDiagnostic",
                        Kokkos::RangePolicy<>(0,m_num_cols*nk_pack),
-                       run_diagnostic
-  );
+                       KOKKOS_LAMBDA(int idx) {
+      const int icol  = idx / nk_pack;
+      const int jpack = idx % nk_pack;
+      output(icol,jpack) = PF::calculate_theta_from_T(T_mid(icol,jpack),p_mid(icol,jpack));
+  });
   Kokkos::fence();
 
 }
