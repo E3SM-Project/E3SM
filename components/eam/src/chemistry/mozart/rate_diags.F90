@@ -154,6 +154,10 @@ contains
                wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
             enddo
             call outfld( 'r_lch4_L4', wrk_sum(:ncol), ncol ,lchnk )
+            do k=2,pver
+               wrk(:ncol,1) = wrk(:ncol,1) + wrk(:ncol,k)
+            enddo
+            call outfld( 'r_lch4_2D', wrk(:ncol,1), ncol ,lchnk )
        elseif (history_UCIgaschmbudget_2D) then          
             do k=2,pver
                wrk(:ncol,1) = wrk(:ncol,1) + wrk(:ncol,k)
