@@ -27,10 +27,10 @@ Fields:
       - cldfrac_liq
       - cldfrac_ice
       - cldfrac_tot
+      - horiz_winds
       - tke
       - eddy_diff_mom
       - sgs_buoy_flux
-      - inv_qc_relvar
       - pbl_height
       - LW_flux_up
       - LW_flux_dn
