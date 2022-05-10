@@ -4260,7 +4260,11 @@ contains
 
        if (ocn_prognostic) then
           ! Map to ocn
-          if (ice_c2_ocn) call prep_ocn_calc_i2x_ox(timer='CPL:atmocnp_ice2ocn')
+          if (ice_c2_ocn) then
+            call prep_ocn_calc_i2x_ox(timer='CPL:atmocnp_ice2ocn')
+            ! also call moab ice-ocn projection, which is just a migrate
+            call prep_ocn_calc_i2x_ox_moab()
+          endif
           if (wav_c2_ocn) call prep_ocn_calc_w2x_ox(timer='CPL:atmocnp_wav2ocn')
           if (trim(cpl_seq_option(1:5)) == 'NUOPC') then
              if (rof_c2_ocn) call prep_ocn_calc_r2x_ox(timer='CPL:atmocnp_rof2ocn')

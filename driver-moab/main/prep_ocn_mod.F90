@@ -3,6 +3,7 @@ module prep_ocn_mod
   use shr_kind_mod,     only: r8 => SHR_KIND_R8
   use shr_kind_mod,     only: cs => SHR_KIND_CS
   use shr_kind_mod,     only: cl => SHR_KIND_CL
+  use shr_kind_mod,     only: CX => shr_kind_CX, CXX => shr_kind_CXX
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct,     only: num_inst_atm, num_inst_rof, num_inst_ice
   use seq_comm_mct,     only: num_inst_glc, num_inst_wav, num_inst_ocn
@@ -22,6 +23,9 @@ module prep_ocn_mod
   use seq_comm_mct,     only : mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   use dimensions_mod,   only : np     ! for atmosphere degree 
   use seq_comm_mct,     only : mphaid   ! iMOAB id for phys atm on atm pes
+  use seq_comm_mct,     only : mpsiid   ! iMOAB id for sea-ice, mpas model
+  use seq_comm_mct,     only : CPLALLICEID
+  use seq_comm_mct,     only : seq_comm_iamin
 
   use seq_comm_mct,     only : seq_comm_getinfo => seq_comm_setptrs
 
@@ -52,6 +56,7 @@ module prep_ocn_mod
 
   public :: prep_ocn_calc_a2x_ox
   public :: prep_ocn_calc_i2x_ox
+  public :: prep_ocn_calc_i2x_ox_moab
   public :: prep_ocn_calc_r2x_ox
   public :: prep_ocn_calc_g2x_ox
   public :: prep_ocn_shelf_calc_g2x_ox
@@ -137,6 +142,7 @@ module prep_ocn_mod
   integer :: number_proj ! it is a static variable, used to count the number of projections
 #endif
 
+  logical                  :: iamin_CPLALLICEID     ! pe associated with CPLALLICEID
 contains
 
   !================================================================================================
@@ -144,7 +150,7 @@ contains
   subroutine prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, &
        wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn)
 
-    use iMOAB, only: iMOAB_RegisterApplication
+    use iMOAB, only: iMOAB_RegisterApplication, iMOAB_ComputeCommGraph, iMOAB_DefineTagStorage
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -187,6 +193,14 @@ contains
     character*32             :: appname ! to register moab app
     integer                  :: rmapid  ! external id to identify the moab app
     integer                  :: ierr, type_grid ! 
+
+    integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
+    integer                  :: mpigrp_old   !  component group pes (phys grid atm) == atm group
+    integer                  :: typeA, typeB ! type for computing graph;
+    integer                  :: ocn_id_x, ice_id, id_join
+    integer                  :: mpicom_join ! join comm between ice and coupler
+    character(CXX)           :: tagname 
+    integer                  ::  tagtype, numco,  tagindex  ! used to define tags
     !---------------------------------------------------------------
 
     call seq_infodata_getData(infodata , &
@@ -330,7 +344,40 @@ contains
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_SFi2o'
           end if
+          iamin_CPLALLICEID = seq_comm_iamin(CPLALLICEID)
           call seq_map_init_rearrolap(mapper_SFi2o, ice(1), ocn(1), 'mapper_SFi2o')
+
+          ocn_id_x = ocn(1)%cplcompid
+          ice_id   = ice(1)%compid
+
+          id_join = ice(1)%cplcompid
+          call seq_comm_getinfo(ID_join,mpicom=mpicom_join)  ! joint comm over ice and coupler
+          call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
+          call seq_comm_getinfo(ice_id, mpigrp=mpigrp_old)
+          typeA = 3
+          typeB = 3 ! fv-fv graph  
+
+          ! imoab compute comm graph ice-ocn, based on the same global id
+          ! it will be a simple migrate from ice mesh directly to ocean, using the comm graph computed here
+          if (iamin_CPLALLICEID) then
+            ierr = iMOAB_ComputeCommGraph( mpsiid, mboxid, mpicom_join, mpigrp_old, mpigrp_CPLID, &
+               typeA, typeB, ice_id, ocn_id_x)
+            if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing graph ice - ocn x '
+                  call shr_sys_abort(subname//' ERROR  in computing graph ice - ocn x ')
+            endif
+         endif
+         if (mboxid .ge. 0) then ! we are on coupler pes, ocean app on coupler
+             ! define tags according to the seq_flds_i2x_fields 
+            tagtype = 1  ! dense, double
+            numco = 1 !  one value per cell / entity
+            tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+            ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
+            if ( ierr == 1 ) then
+               call shr_sys_abort( subname//' ERROR: cannot define tags in moab' )
+            end if
+         endif
+
        endif
        call shr_sys_flush(logunit)
 
@@ -1298,6 +1345,70 @@ contains
     call t_drvstopf  (trim(timer))
 
   end subroutine prep_ocn_calc_i2x_ox
+
+  subroutine prep_ocn_calc_i2x_ox_moab()
+   !---------------------------------------------------------------
+   ! Description
+   ! simply migrate tags to ocean, from ice model, using comm graph computed at prep_ocn_init 
+   !    ierr = iMOAB_ComputeCommGraph( mpsiid, mboxid,...
+   !
+   ! Local Variables
+   use iMOAB , only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers, iMOAB_WriteMesh
+   character(*), parameter  :: subname = '(prep_ocn_calc_i2x_ox_moab)'
+   character(CXX)           :: tagname
+   character*32             :: outfile, wopts, lnum
+   integer                  :: ocn_id_x, ice_id, id_join, mpicom_join, ierr, context_id
+   !---------------------------------------------------------------
+   ocn_id_x = ocn(1)%cplcompid
+   ice_id   = ice(1)%compid
+
+   id_join = ice(1)%cplcompid
+   call seq_comm_getinfo(ID_join,mpicom=mpicom_join) 
+
+   ! send from sea ice to ocean 
+   ! if we are on sea ice pes:
+   
+   tagName=trim(seq_flds_i2x_fields)//C_NULL_CHAR
+   if (mpsiid .ge. 0) then !  send because we are on ice pes
+
+      context_id = ocn(1)%cplcompid
+      ierr = iMOAB_SendElementTag(mpsiid, tagName, mpicom_join, context_id)
+      if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in sending tag for ice proj to ocean'
+         call shr_sys_abort(subname//' ERROR in sending tag for ice proj to ocean')
+      endif
+   endif
+   if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure; no need to project anything
+      ! receive on ocn on coupler pes, from ice
+      context_id=ice(1)%compid
+      ierr = iMOAB_ReceiveElementTag(mboxid, tagName, mpicom_join, context_id)
+      if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in receiving tag for ice-ocn proj'
+         call shr_sys_abort(subname//' ERROR in receiving tag for ice-ocn proj')
+      endif
+   endif
+
+
+    ! we can now free the sender buffers
+   if (mpsiid .ge. 0) then
+      context_id = ocn(1)%cplcompid
+      ierr = iMOAB_FreeSenderBuffers(mpsiid, context_id)
+      if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in freeing buffers ice-ocn'
+         call shr_sys_abort(subname//' ERROR in freeing buffers ice-ocn')
+      endif
+   endif
+
+#ifdef MOABDEBUG
+   if (mboxid .ge. 0 ) then !  we are on ocean pes, for sure
+     write(lnum,"(I0.2)") number_proj
+     outfile = 'OcnCplAftIce'//trim(lnum)//'.h5m'//C_NULL_CHAR
+     wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+     ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+   endif
+#endif
+
+   end subroutine prep_ocn_calc_i2x_ox_moab
 
   !================================================================================================
 
