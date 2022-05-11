@@ -637,6 +637,22 @@ Valid values: Any positive real value.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_GM_Rossby_ramp_min" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Minimum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM $\kappa$ ramp function.  Used when config_GM_horizontal_taper is set to RossbyRadius.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_Rossby_ramp_max" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Maximum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM $\kappa$ ramp function.  Used when config_GM_horizontal_taper is set to RossbyRadius.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- Rayleigh_damping -->
 
