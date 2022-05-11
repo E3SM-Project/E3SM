@@ -2,6 +2,7 @@
 #define SCREAM_FIELD_NAN_CHECK_HPP
 
 #include "share/property_checks/property_check.hpp"
+#include "share/grid/abstract_grid.hpp"
 
 namespace scream
 {
@@ -10,7 +11,8 @@ namespace scream
 // No repair allowed. If we find NaN's, we should crash.
 class FieldNaNCheck: public PropertyCheck {
 public:
-  FieldNaNCheck (const Field& f);
+  FieldNaNCheck (const Field& f,
+                 const std::shared_ptr<const AbstractGrid>& grid);
 
   // The name of the field check
   std::string name () const override {
@@ -25,6 +27,10 @@ protected:
 #endif
   template<typename ST>
   CheckResult check_impl() const;
+
+private:
+
+  std::shared_ptr<const AbstractGrid> m_grid;
 };
 
 } // namespace scream

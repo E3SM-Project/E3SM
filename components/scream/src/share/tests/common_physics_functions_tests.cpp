@@ -155,7 +155,7 @@ void run_scalar_valued_fns(std::mt19937_64& engine)
   REQUIRE( psl<p_ground );
 
   // Get dx from grid cell area property tests:
-  RealType area, lat, grid_dx;
+  RealType area, lat;
   area = 0.0; lat = 1.0;
   REQUIRE( Check::equal(PF::calculate_dx_from_area(area,lat),0.0) );
   area = (pi/180.0)*(pi/180.0);
@@ -280,7 +280,7 @@ void run(std::mt19937_64& engine)
   const ScalarT zero = 0.0;
   const ScalarT one  = 1.0;
 
-  ScalarT p, T0, theta0, tmp, qv0, dp0, mmr0, vmr0, dz0, Tv0, rho0, rand_int0, z0, dse0;
+  ScalarT p, T0, theta0, tmp, qv0, dp0, mmr0, vmr0, dz0, Tv0, rho0, z0, dse0;
   ScalarT wetmmr0, drymmr0, qv_dry0, qv_wet0;
   RealType surf_height;
 
@@ -295,7 +295,6 @@ void run(std::mt19937_64& engine)
   Tv0  = PF::calculate_virtual_temperature(T0,qv0);
   dz0  = PF::calculate_dz(dp0,p,T0,qv0);
   rho0 = p / Tv0 / Rd;  // Ideal gas law
-  rand_int0 = pdf_rand_int(engine);//random integers
 
   REQUIRE( Check::equal(PF::calculate_density(zero,dz0),zero) );
   REQUIRE( Check::approx_equal(PF::calculate_density(dp0,dz0),rho0,test_tol) );

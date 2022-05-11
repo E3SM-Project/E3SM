@@ -1,6 +1,6 @@
 #include "share/io/scorpio_output.hpp"
 #include "share/io/scorpio_input.hpp"
-#include "share/util/scream_view_utils.hpp"
+#include "share/util/scream_array_utils.hpp"
 
 #include "ekat/util/ekat_units.hpp"
 #include "ekat/util/ekat_string_utils.hpp"

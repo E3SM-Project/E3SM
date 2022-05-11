@@ -1,5 +1,5 @@
-#ifndef SCREAM_VIEW_UTILS_HPP
-#define SCREAM_VIEW_UTILS_HPP
+#ifndef SCREAM_ARRAY_UTILS_HPP
+#define SCREAM_ARRAY_UTILS_HPP
 
 #include "share/scream_types.hpp"
 
@@ -7,6 +7,44 @@
 
 namespace scream {
 
+// Given array dims, and a 1d index of flattened array,
+// return vector<int> of the indices of idx in the original Nd array.
+// NOTE: right-most dims are assumed to stride faster.
+inline std::vector<int> unflatten_idx (const std::vector<int>& dims, const int idx) {
+  const int r = dims.size();
+
+  // Get dims from the back fastest to slowest
+  const auto rbeg = dims.rbegin();
+  const int dr0 = *rbeg;
+  const int dr1 = *(rbeg+1);
+  const int dr2 = *(rbeg+2);
+  const int dr3 = *(rbeg+3);
+  const int dr4 = *(rbeg+4);
+
+  std::vector<int> indices(r);
+
+  // Access the indices array backwards, so that ind(0) is the fastest
+  // striding index, and ind(r-1) is the slowest
+  auto ind = [&] (const int i) -> int& {
+    return *(indices.rbegin()+i);
+  };
+
+  switch (r) {
+    case 6: ind(5) = ((((idx/dr0)/dr1)/dr2)/dr3)/dr4; // Fallthrough
+    case 5: ind(4) = ((((idx/dr0)/dr1)/dr2)/dr3)%dr4; // Fallthrough
+    case 4: ind(3) =  (((idx/dr0)/dr1)/dr2)%dr3;      // Fallthrough
+    case 3: ind(2) =   ((idx/dr0)/dr1)%dr2;           // Fallthrough
+    case 2: ind(1) =    (idx/dr0)%dr1;                // Fallthrough
+    case 1: ind(0) =     idx%dr0; break;
+    default:
+      EKAT_ERROR_MSG ("Error! Unsupported field rank (" + std::to_string(r) + ").\n");
+  }
+
+  return indices;
+}
+
+// Kokkos-friendly versions of the above function, taking a Kokkos::View
+// for the array dimensions, and unpacking directly into N integers.
 template<typename... Props>
 KOKKOS_INLINE_FUNCTION
 void unflatten_idx (const int idx, const Kokkos::View<int*,Kokkos::LayoutRight,Props...>& dims,
@@ -137,4 +175,4 @@ void unflatten_idx (const int idx, const Kokkos::View<int*,Kokkos::LayoutRight,P
 
 } // namespace scream
 
-#endif // SCREAM_VIEW_UTILS_HPP
+#endif // SCREAM_ARRAY_UTILS_HPP

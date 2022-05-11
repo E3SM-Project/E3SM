@@ -13,9 +13,10 @@ class FieldPositivityCheck: public FieldLowerBoundCheck {
 public:
 
   // Default constructor -- cannot repair fields that fail the check.
-  explicit FieldPositivityCheck (const Field& f,
-                                 const bool can_repair = false)
-   : FieldLowerBoundCheck (f,
+  FieldPositivityCheck (const Field& f,
+                        const std::shared_ptr<const AbstractGrid>& grid,
+                        const bool can_repair = false)
+   : FieldLowerBoundCheck (f,grid,
                            std::numeric_limits<double>::epsilon(),
                            can_repair)
   {

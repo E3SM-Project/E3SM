@@ -32,12 +32,12 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   auto nondim = Units::nondimensional();
 
   const auto& grid_name = m_params.get<std::string>("Grid");
-  auto grid  = grids_manager->get_grid(grid_name);
-  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
-  m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
-  m_dofs_gids = grid->get_dofs_gids();
-  m_total_global_dofs = grid->get_num_global_dofs();
-  m_min_global_dof    = grid->get_global_min_dof_gid();
+  m_grid  = grids_manager->get_grid(grid_name);
+  m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
+  m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
+  m_dofs_gids = m_grid->get_dofs_gids();
+  m_total_global_dofs = m_grid->get_num_global_dofs();
+  m_min_global_dof    = m_grid->get_global_min_dof_gid();
 
   // Define the different field layouts that will be used for this process
 
@@ -193,14 +193,14 @@ void SPA::initialize_impl (const RunType /* run_type */)
   m_buffer.spa_temp.hybm = SPAData_start.hybm;
 
   // Set property checks for fields in this process
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nc_activated"),0.0,1.0e11,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nc_activated"),m_grid,0.0,1.0e11,false);
   // upper bound set to 1.01 as max(g_sw)=1.00757 in current ne4 data assumingly due to remapping
   // add an epslon to max possible upper bound of aero_ssa_sw
 
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_g_sw"),0.0,1.0,true);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_ssa_sw"),0.0,1.0,true);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_tau_sw"),0.0,1.0,true);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_tau_lw"),0.0,1.0,true);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_g_sw"),m_grid,0.0,1.0,true);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_ssa_sw"),m_grid,0.0,1.0,true);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_tau_sw"),m_grid,0.0,1.0,true);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_tau_lw"),m_grid,0.0,1.0,true);
 }
 
 // =========================================================================================
