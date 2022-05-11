@@ -172,10 +172,13 @@ TEST_CASE("utils") {
   }
 
   SECTION ("wrong_st") {
+    using wrong_real =
+      typename std::conditional<std::is_same<Real,double>::value,
+                                float,double>::type;
     REQUIRE_THROWS(field_min<int>(f1));
     REQUIRE_THROWS(field_max<int>(f1));
-    REQUIRE_THROWS(field_sum<float>(f1));
-    REQUIRE_THROWS(frobenius_norm<float>(f1));
+    REQUIRE_THROWS(field_sum<wrong_real>(f1));
+    REQUIRE_THROWS(frobenius_norm<wrong_real>(f1));
   }
 }
 
