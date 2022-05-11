@@ -333,7 +333,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   input_output.qtracers     = get_group_out("tracers").m_bundle->get_view<Spack***>();
   input_output.tk           = tk;
   input_output.shoc_cldfrac = cldfrac_liq;
-  input_output.shoc_ql      = qc_copy;  
+  input_output.shoc_ql      = qc_copy;
 
   // Output Variables
   output.pblh     = get_field_out("pbl_height").get_view<Real*>();
