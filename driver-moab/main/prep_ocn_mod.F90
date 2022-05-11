@@ -1360,7 +1360,7 @@ contains
    endif
 
 #ifdef MOABDEBUG
-   if (mboxid .ge. 0 ) then !  we are on ocean pes, for sure
+   if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
      write(lnum,"(I0.2)") number_proj
      outfile = 'OcnCplAftIce'//trim(lnum)//'.h5m'//C_NULL_CHAR
      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
