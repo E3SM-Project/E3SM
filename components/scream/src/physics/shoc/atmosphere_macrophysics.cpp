@@ -260,6 +260,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto& tke              = get_field_out("tke").get_view<Spack**>();
   const auto& cldfrac_liq      = get_field_out("cldfrac_liq").get_view<Spack**>();
   const auto& sgs_buoy_flux    = get_field_out("sgs_buoy_flux").get_view<Spack**>();
+  const auto& tk               = get_field_out("eddy_diff_mom").get_view<Spack**>();
   const auto& inv_qc_relvar    = get_field_out("inv_qc_relvar").get_view<Spack**>();
   const auto& phis             = get_field_in("phis").get_view<const Real*>();
 
@@ -290,18 +291,19 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   // For now, set z_int(i,nlevs) = z_surf = 0
   const Real z_surf = 0.0;
 
+  // Some SHOC variables should be initialized uniformly if an Initial run
+  if (run_type==RunType::Initial){
+    Kokkos::deep_copy(sgs_buoy_flux,0.0);
+    Kokkos::deep_copy(tk,0.0);
+    Kokkos::deep_copy(tke,0.0004);
+    Kokkos::deep_copy(tke_copy,0.0004);
+  }
+
   shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,z_surf,m_cell_area,m_cell_lat,
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
                                 surf_mom_flux,qv,qc,qc_copy,tke,tke_copy,z_mid,z_int,cell_length,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
                                 wtracer_sfc,wm_zt,inv_exner,thlm,qw);
-
-  // Some SHOC variables should be initialized uniformly if an Initial run
-  if (run_type==RunType::Initial){
-    Kokkos::deep_copy(sgs_buoy_flux,0.0);
-//    Kokkos::deep_copy(eddy_diff_mom,0.0); not sure what to do here, should be set to 0.0
-//    Kokkos::deep_copy(tke_copy,0.0); not sure what to do here, should be set to 0.0004
-  }
 
   // Input Variables:
   input.dx          = shoc_preprocess.cell_length;
@@ -329,16 +331,9 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   input_output.horiz_wind   = get_field_out("horiz_winds").get_view<Spack***>();
   input_output.wthv_sec     = sgs_buoy_flux;
   input_output.qtracers     = get_group_out("tracers").m_bundle->get_view<Spack***>();
-  input_output.tk           = get_field_out("eddy_diff_mom").get_view<Spack**>();
+  input_output.tk           = tk;
   input_output.shoc_cldfrac = cldfrac_liq;
-  input_output.shoc_ql      = qc_copy;
-  
-  // Some SHOC variables should be initialized uniformly if an Initial run
-  if (run_type==RunType::Initial){
-//    Kokkos::deep_copy(input_output.wthv_sec,0.0); // or could do it like this to be consistent with below?
-    Kokkos::deep_copy(input_output.tke,0.0004); //not sure what to do here, should be set to 0.0004
-    Kokkos::deep_copy(input_output.tk,0.0); //not sure what to do here, should be set to 0.0
-  }  
+  input_output.shoc_ql      = qc_copy;  
 
   // Output Variables
   output.pblh     = get_field_out("pbl_height").get_view<Real*>();
