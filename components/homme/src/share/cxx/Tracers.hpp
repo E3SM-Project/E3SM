@@ -20,8 +20,6 @@ struct Tracers {
   void randomize (const int seed, const Real min = -1.0, const Real max = 1.0);
 
   void pull_qdp(CF90Ptr &state_qdp);
-  void pull_Q(CF90Ptr &state_q);
-
   void push_qdp(F90Ptr &state_qdp) const;
 
   KOKKOS_INLINE_FUNCTION
