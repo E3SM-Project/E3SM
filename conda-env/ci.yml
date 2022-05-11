@@ -22,7 +22,8 @@ dependencies:
   - genutil
   - lxml
   - netcdf4
+  - xarray
+  - mache
   # Required in test suite
-  - dask
   - scipy
 prefix: /opt/miniconda3/envs/e3sm_diags_ci

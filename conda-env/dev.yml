@@ -20,8 +20,9 @@ dependencies:
   - genutil=8.2.1
   - lxml=4.8.0
   - netcdf4=1.5.8
+  - xarray=2022.3.0
+  - mache=1.3.2
   # Required in test suite
-  - dask=2022.2.0
   - scipy=1.8.0
   # Quality Assurance
   # =================
