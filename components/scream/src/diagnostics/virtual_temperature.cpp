@@ -42,17 +42,10 @@ void VirtualTemperatureDiagnostic::set_grids(const std::shared_ptr<const GridsMa
 // =========================================================================================
 void VirtualTemperatureDiagnostic::initialize_impl(const RunType /* run_type */)
 {
-//ASD  const auto& T_mid          = get_field_in("T_mid").get_view<const Pack**>();
-//ASD  const auto& qv_mid         = get_field_in("qv").get_view<const Pack**>();
-//ASD
-//ASD  const auto& output         = m_diagnostic_output.get_view<Pack**>();
 
   auto ts = timestamp(); 
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 
-//ASD  const auto nk_pack  = ekat::npack<Spack>(m_num_levs);
-//ASD
-//ASD  run_diagnostic.set_variables(m_num_cols,nk_pack,qv_mid,T_mid,output);
 }
 // =========================================================================================
 void VirtualTemperatureDiagnostic::run_impl(const int /* dt */)
@@ -71,11 +64,6 @@ void VirtualTemperatureDiagnostic::run_impl(const int /* dt */)
       output(icol,jpack) = PF::calculate_virtual_temperature(T_mid(icol,jpack),qv_mid(icol,jpack));
   });
   Kokkos::fence();
-//ASD  Kokkos::parallel_for("VirtualTemperatureDiagnostic",
-//ASD                       Kokkos::RangePolicy<>(0,m_num_cols*nk_pack),
-//ASD                       run_diagnostic
-//ASD  );
-//ASD  Kokkos::fence();
 
 }
 // =========================================================================================

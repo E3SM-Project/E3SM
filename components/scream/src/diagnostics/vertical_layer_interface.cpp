@@ -45,6 +45,14 @@ void VerticalLayerInterfaceDiagnostic::set_grids(const std::shared_ptr<const Gri
 // =========================================================================================
 void VerticalLayerInterfaceDiagnostic::initialize_impl(const RunType /* run_type */)
 {
+
+  auto ts = timestamp(); 
+  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
+
+}
+// =========================================================================================
+void VerticalLayerInterfaceDiagnostic::run_impl(const int /* dt */)
+{
   const auto& T_mid              = get_field_in("T_mid").get_view<const Pack**>();
   const auto& p_mid              = get_field_in("p_mid").get_view<const Pack**>();
   const auto& qv_mid             = get_field_in("qv").get_view<const Pack**>();
@@ -55,23 +63,19 @@ void VerticalLayerInterfaceDiagnostic::initialize_impl(const RunType /* run_type
   // Set surface geopotential for this diagnostic
   const Real surf_geopotential = 0.0;
 
-  auto ts = timestamp(); 
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-
-  run_diagnostic.set_variables(surf_geopotential,m_num_cols,m_num_levs,T_mid,p_mid,pseudo_density_mid,qv_mid,output);
-}
-// =========================================================================================
-void VerticalLayerInterfaceDiagnostic::run_impl(const int /* dt */)
-{
-
   const auto nlev_packs     = ekat::npack<Spack>(m_num_levs);
-  const auto scan_policy    = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, nlev_packs);
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  view_1d dz("",nlev_packs);
   Kokkos::parallel_for("VerticalLayerInterfaceDiagnostic",
                        default_policy,
-                       run_diagnostic
-  );
-  Kokkos::fence();
+                       KOKKOS_LAMBDA(const MemberType& team) {
+    const int i = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+      dz(k) = PF::calculate_dz(pseudo_density_mid(i,k), p_mid(i,k), T_mid(i,k), qv_mid(i,k));
+    });
+    const auto& output_s = ekat::subview(output, i);
+    PF::calculate_z_int(team,m_num_levs,dz,surf_geopotential,output_s);
+  });
 
 }
 // =========================================================================================
