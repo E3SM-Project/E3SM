@@ -153,7 +153,7 @@ TEST_CASE("property_checks", "") {
     REQUIRE(not checkResult.pass);
     std::string expected_msg =
       "FieldNaNCheck failed.\n"
-      "  - field id: field_1[some_grid] <double:COL,CMP,LEV>(2,3,12) [m s^-1]\n"
+      "  - field id: " + fid.get_id_string() + "\n"
       "  - entry (1,1,2)\n"
       "  - lat/lon: (1.000000, -1.000000)\n";
     REQUIRE( checkResult.msg == expected_msg );
@@ -185,7 +185,7 @@ TEST_CASE("property_checks", "") {
     std::string expected_msg =
       "Check failed.\n"
       "  - check name: field_1 within interval [0, 1]\n"
-      "  - field id: field_1[some_grid] <double:COL,CMP,LEV>(2,3,12) [m s^-1]\n"
+      "  - field id: " + fid.get_id_string() + "\n"
       "  - minimum:\n"
       "    - value: 0\n"
       "    - entry: (0,1,2)\n"
