@@ -68,7 +68,7 @@ module control_mod
   ! Default values make qsplit and rsplit control the time steps.
   integer, public :: dt_remap_factor = -1, dt_tracer_factor = -1
 
-  integer, public :: which_prim_step = -1 ! 1 = old code for EUL, 2 = prim_run_flexible for SL
+  integer, public :: prim_step_type = -1 ! 1 = old code for EUL, 2 = prim_run_flexible for SL
                                           ! -1 means it wasn't set, error
 
   integer, public :: LFTfreq=0            ! leapfrog-trapazoidal frequency (shallow water only)

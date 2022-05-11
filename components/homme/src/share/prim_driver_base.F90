@@ -743,7 +743,7 @@ contains
                                     topology, dt_remap_factor, dt_tracer_factor,&
                                     sub_case, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
                                     hypervis_subcycle_q, hypervis_subcycle_tom, &
-                                    transport_alg, which_prim_step
+                                    transport_alg, prim_step_type
     use global_norms_mod,     only: test_global_integral, print_cfl
     use hybvcoord_mod,        only: hvcoord_t
     use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
@@ -991,9 +991,9 @@ contains
     ! Use the flexible time stepper if dt_remap_factor == 0 (vertically Eulerian
     ! dynamics) or dt_remap < dt_tracer. This applies to SL transport only.
     if( transport_alg > 1 .and. dt_remap_factor < dt_tracer_factor ) then
-       which_prim_step = 2
+       prim_step_type = 2
     else
-       which_prim_step = 1
+       prim_step_type = 1
     endif
 
     if (hybrid%masterthread) then
@@ -1020,9 +1020,9 @@ contains
           write(iulog,'(a,2f9.2)') "dt_vis_TOM:  ",tstep/hypervis_subcycle_tom               
        endif                                                                 
 
-       if (which_prim_step == 2) then
+       if (prim_step_type == 2) then
           write(iulog,*) "Running with prim_step_flexible"
-       elseif(which_prim_step == 1) then
+       elseif(prim_step_type == 1) then
           write(iulog,*) "Running with old code for prim_run_subcycle, not _flexible"
        endif
 
@@ -1059,7 +1059,7 @@ contains
     !       tl%n0    time t + dt_q
 
     use control_mod,        only: statefreq, qsplit, rsplit, disable_diagnostics, &
-         dt_remap_factor, dt_tracer_factor, transport_alg, which_prim_step
+         dt_remap_factor, dt_tracer_factor, transport_alg, prim_step_type
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_state_mod,     only: prim_printstate
@@ -1110,7 +1110,7 @@ contains
     ! compute scalar diagnostics if currently active
     if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,3,.true.,nets,nete)
 
-    if (which_prim_step == 1) then
+    if (prim_step_type == 1) then
        call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
 
 #ifndef CAM
@@ -1180,12 +1180,12 @@ contains
       endif
 
       call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets_in,nete_in)
-    elseif(which_prim_step == 2) then
+    elseif(prim_step_type == 2) then
       ! This time stepping routine permits the vertical remap time
       ! step to be shorter than the tracer transport time step.
       call prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, compute_diagnostics)
     else
-      call abortmp('which_prim_step is not set')
+      call abortmp('prim_step_type is not set')
     end if ! independent_time_steps
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
