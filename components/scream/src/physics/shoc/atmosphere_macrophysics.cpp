@@ -335,7 +335,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   
   // Some SHOC variables should be initialized uniformly if an Initial run
   if (run_type==RunType::Initial){
-//    Kokkos::deep_copy(sgs_buoy_flux,0.0);
+//    Kokkos::deep_copy(input_output.wthv_sec,0.0); // or could do it like this to be consistent with below?
     Kokkos::deep_copy(input_output.tke,0.0004); //not sure what to do here, should be set to 0.0004
     Kokkos::deep_copy(input_output.tk,0.0); //not sure what to do here, should be set to 0.0
   }  
