@@ -1541,6 +1541,7 @@
 		<package name="tidalPotentialForcingPKG" description="This package controls variables required for tidal potential forcing"/>
 		<package name="topographicWaveDragPKG" description="This package controls variables required for topographic wave drag"/>
 		<package name="gotmPKG" description="This package is for GOTM variables, which are only needed when using GOTM for the vertical turbulence closure."/>
+                <package name="nonHydrostaticMode" description="This package is for variables needed for the nonHydrostatic capabilities"/>
 	</packages>
 
 	<streams>
