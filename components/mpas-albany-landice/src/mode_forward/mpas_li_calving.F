@@ -2246,8 +2246,10 @@ module li_calving
          ! margin, (2) have at least one neighboring cell without ice, (3) contain
          ! grounded ice, and (4) have bed topography below sea level.
          ! OR is adjacent to an inactive floating margin cell
-            if (li_mask_is_grounding_line(cellMask(iCell)) &
-               !< GL here means cell is grounded but has a neighbor that is floating or ocean
+            if (li_mask_is_grounded_ice(cellMask(iCell)) &
+               ! GL here means cell is grounded but has a neighbor that is floating or ocean.
+               ! Note that as of May 2022, this is no longer the general
+               ! definition of the grounding line throughout the code.
                .and. bedTopography(iCell) < config_sea_level &
                .and. li_mask_is_dynamic_ice(cellMask(iCell)) ) then
 
