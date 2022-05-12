@@ -13,8 +13,8 @@ namespace scream {
 namespace impl {
 
 template<typename ST>
-bool views_are_equal(const Field& f1, const Field& f2) {
-
+bool views_are_equal(const Field& f1, const Field& f2, const ekat::Comm* comm)
+{
   // Get physical layout (shoudl be the same for both fields)
   const auto& l1 = f1.get_header().get_identifier().get_layout();
   const auto& l2 = f2.get_header().get_identifier().get_layout();
@@ -27,6 +27,7 @@ bool views_are_equal(const Field& f1, const Field& f2) {
   f2.sync_to_host();
 
   // Reshape based on the rank, then loop over all entries.
+  bool same_locally = true;
   const auto& dims = l1.dims();
   switch (l1.rank()) {
     case 1:
@@ -35,7 +36,8 @@ bool views_are_equal(const Field& f1, const Field& f2) {
         auto v2 = f2.template get_view<ST*,Host>();
         for (int i=0; i<dims[0]; ++i) {
           if (v1(i) != v2(i)) {
-            return false;
+            same_locally = false;
+            break;
           }
         }
       }
@@ -44,10 +46,11 @@ bool views_are_equal(const Field& f1, const Field& f2) {
       {
         auto v1 = f1.template get_view<ST**,Host>();
         auto v2 = f2.template get_view<ST**,Host>();
-        for (int i=0; i<dims[0]; ++i) {
+        for (int i=0; same_locally && i<dims[0]; ++i) {
           for (int j=0; j<dims[1]; ++j) {
             if (v1(i,j) != v2(i,j)) {
-              return false;
+              same_locally = false;
+              break;
             }
         }}
       }
@@ -56,11 +59,12 @@ bool views_are_equal(const Field& f1, const Field& f2) {
       {
         auto v1 = f1.template get_view<ST***,Host>();
         auto v2 = f2.template get_view<ST***,Host>();
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
+        for (int i=0; same_locally && i<dims[0]; ++i) {
+          for (int j=0; same_locally && j<dims[1]; ++j) {
             for (int k=0; k<dims[2]; ++k) {
               if (v1(i,j,k) != v2(i,j,k)) {
-                return false;
+                same_locally = false;
+                break;
               }
         }}}
       }
@@ -69,12 +73,13 @@ bool views_are_equal(const Field& f1, const Field& f2) {
       {
         auto v1 = f1.template get_view<ST****,Host>();
         auto v2 = f2.template get_view<ST****,Host>();
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
-            for (int k=0; k<dims[2]; ++k) {
+        for (int i=0; same_locally && i<dims[0]; ++i) {
+          for (int j=0; same_locally && j<dims[1]; ++j) {
+            for (int k=0; same_locally && k<dims[2]; ++k) {
               for (int l=0; l<dims[3]; ++l) {
                 if (v1(i,j,k,l) != v2(i,j,k,l)) {
-                  return false;
+                  same_locally = false;
+                  break;
                 }
         }}}}
       }
@@ -83,13 +88,14 @@ bool views_are_equal(const Field& f1, const Field& f2) {
       {
         auto v1 = f1.template get_view<ST*****,Host>();
         auto v2 = f2.template get_view<ST*****,Host>();
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
-            for (int k=0; k<dims[2]; ++k) {
-              for (int l=0; l<dims[3]; ++l) {
+        for (int i=0; same_locally && i<dims[0]; ++i) {
+          for (int j=0; same_locally && j<dims[1]; ++j) {
+            for (int k=0; same_locally && k<dims[2]; ++k) {
+              for (int l=0; same_locally && l<dims[3]; ++l) {
                 for (int m=0; m<dims[4]; ++m) {
                   if (v1(i,j,k,l,m) != v2(i,j,k,l,m)) {
-                    return false;
+                    same_locally = false;
+                    break;
                   }
         }}}}}
       }
@@ -98,14 +104,15 @@ bool views_are_equal(const Field& f1, const Field& f2) {
       {
         auto v1 = f1.template get_view<ST******,Host>();
         auto v2 = f2.template get_view<ST******,Host>();
-        for (int i=0; i<dims[0]; ++i) {
-          for (int j=0; j<dims[1]; ++j) {
-            for (int k=0; k<dims[2]; ++k) {
-              for (int l=0; l<dims[3]; ++l) {
-                for (int m=0; m<dims[4]; ++m) {
+        for (int i=0; same_locally && i<dims[0]; ++i) {
+          for (int j=0; same_locally && j<dims[1]; ++j) {
+            for (int k=0; same_locally && k<dims[2]; ++k) {
+              for (int l=0; same_locally && l<dims[3]; ++l) {
+                for (int m=0; same_locally && m<dims[4]; ++m) {
                   for (int n=0; n<dims[5]; ++n) {
                     if (v1(i,j,k,l,m,n) != v2(i,j,k,l,m,n)) {
-                      return false;
+                      same_locally = false;
+                      break;
                     }
         }}}}}}
       }
@@ -114,8 +121,13 @@ bool views_are_equal(const Field& f1, const Field& f2) {
       EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
   }
 
-  // If we get here, then all entries matched.
-  return true;
+  if (comm) {
+    bool same_globally;
+    comm->all_reduce(&same_locally,&same_globally,1,MPI_LAND);
+    return same_globally;
+  } else {
+    return same_locally;
+  }
 }
 
 template<typename ST, typename Engine, typename PDF>
@@ -195,7 +207,7 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
 }
 
 template<typename ST>
-ST frobenius_norm(const Field& f)
+ST frobenius_norm(const Field& f, const ekat::Comm* comm)
 {
   const auto& fl = f.get_header().get_identifier().get_layout();
 
@@ -292,11 +304,17 @@ ST frobenius_norm(const Field& f)
       EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
   }
 
-  return std::sqrt(norm);
+  if (comm) {
+    ST global_norm;
+    comm->all_reduce(&norm,&global_norm,1,MPI_SUM);
+    return std::sqrt(global_norm);
+  } else {
+    return std::sqrt(norm);
+  }
 }
 
 template<typename ST>
-ST field_sum(const Field& f)
+ST field_sum(const Field& f, const ekat::Comm* comm)
 {
   const auto& fl = f.get_header().get_identifier().get_layout();
 
@@ -393,11 +411,17 @@ ST field_sum(const Field& f)
       EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
   }
 
-  return sum;
+  if (comm) {
+    ST global_sum;
+    comm->all_reduce(&sum,&global_sum,1,MPI_SUM);
+    return global_sum;
+  } else {
+    return sum;
+  }
 }
 
 template<typename ST>
-ST field_max(const Field& f)
+ST field_max(const Field& f, const ekat::Comm* comm)
 {
   const auto& fl = f.get_header().get_identifier().get_layout();
 
@@ -473,11 +497,17 @@ ST field_max(const Field& f)
       EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
   }
 
-  return max;
+  if (comm) {
+    ST global_max;
+    comm->all_reduce(&max,&global_max,1,MPI_MAX);
+    return global_max;
+  } else {
+    return max;
+  }
 }
 
 template<typename ST>
-ST field_min(const Field& f)
+ST field_min(const Field& f, const ekat::Comm* comm)
 {
   const auto& fl = f.get_header().get_identifier().get_layout();
 
@@ -553,7 +583,13 @@ ST field_min(const Field& f)
       EKAT_ERROR_MSG ("Error! Unsupported field rank.\n");
   }
 
-  return min;
+  if (comm) {
+    ST global_min;
+    comm->all_reduce(&min,&global_min,1,MPI_MIN);
+    return global_min;
+  } else {
+    return min;
+  }
 }
 
 } // namespace impl
