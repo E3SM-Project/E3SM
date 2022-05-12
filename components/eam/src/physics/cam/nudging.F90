@@ -393,6 +393,9 @@ module nudging
 
   public:: Nudge_Model,Nudge_ON
   public:: Nudge_Allow_Missing_File
+  public:: Nudge_Pdep_Weight_On
+  public:: Nudge_PS_Adjust_On
+  public:: Nudge_PS_On
   public:: nudging_readnl
   public:: nudging_init
   public:: nudging_timestep_init
@@ -417,6 +420,9 @@ module nudging
   logical::         Nudge_File_Present=.false.
   logical::         Nudge_Initialized =.false.
   logical::         Nudge_Allow_Missing_File = .false.  
+  logical::         Nudge_Pdep_Weight_On =.false.
+  logical::         Nudge_PS_Adjust_On = .false.
+  logical::         Nudge_PS_On     = .false.
   character(len=cl) Nudge_Path
   character(len=cl) Nudge_File,Nudge_File_Template
   integer           Nudge_Times_Per_Day
@@ -507,19 +513,23 @@ module nudging
   real(r8), allocatable, dimension(:,:,:)   :: INTP_PS      ! (pcols,begchunk:endchunk,:)
   real(r8), allocatable, dimension(:,:,:)   :: INTP_PHIS    ! (pcols,begchunk:endchunk,:)
 
- !Parameters required to test some of nudging appications used in GFDL model 
- !Reference: https://github.com/NOAA-GFDL/GFDL_atmos_cubed_sphere/blob/main/tools/fv_nudge.F90
- !(/ 'P0  ', 'hyai', 'hybi', 'PHI ', 'PS  ', 'T   ', 'Q   ', 'U   ', 'V   ' /)
-  real(r8) :: p_wvp = 100.E2  ! cutoff level for specific humidity nudging
-  real(r8) :: p_trop = 950.E2 ! in Pa
-  real(r8) :: dps_min = 50.   ! maximum PS increment (pa; each step) due to inline breeding
-  real(r8) :: del2_cd = 0.16
-  
-  logical  :: Nudge_Conserve_MOM = .false. 
-  logical  :: Nudge_Conserve_HGT = .false.
-  logical  :: Nudge_Conserve_TE  = .false.
-  logical  :: Nudge_T_OPTION     = 0 ! option for the temperature nudging 
-  logical  :: Nudge_Q_OPTION     = 0 ! option for the humidity nudging 
+ !Parameters required to test some of nudging appications used in GFDL model and references 
+ !Reference: https://github.com/NOAA-GFDL/GFDL_atmos_cubed_sphere/blob/main/tools/fv_clim_nudge.F90
+  real(r8) :: dtdz            = -0.0065_r8 ! Lapse rate for adjustment of PS
+  real(r8) :: z_min           = 150.0_r8   ! Lowest height level for adjustment of PS
+  real(r8) :: t_ref1          = 290.5_r8   ! reference temperature for adjustment of PS
+  real(r8) :: t_ref2          = 255.0_r8   ! reference temperature for adjustment of PS
+  real(r8) :: dz_thres        = 0.001_r8   ! threshold of topography difference for adjustment of PS 
+
+  integer  :: Nudge_PS_OPT    ! option for the surface pressure nudging 
+  integer  :: Nudge_UV_OPT    ! option for the zonal wind nudging 
+  integer  :: Nudge_T_OPT     ! option for the temperature nudging 
+  integer  :: Nudge_Q_OPT     ! option for the humidity nudging 
+
+  integer  :: Nudge_NO_PBL_UV ! option for excluding UV nudging within PBL 
+  integer  :: Nudge_NO_PBL_T  ! option for excluding T nudging within PBL 
+  integer  :: Nudge_NO_PBL_Q  ! option for excluding Q nudging within PBL 
+
  ! Local arrays:
  ! real(r8) :: ps_dt(is:ie,js:je)
  ! real(r8) :: cvm(is:ie), qc(is:ie)
@@ -546,7 +556,8 @@ contains
    integer ierr,unitn
 
    namelist /nudging_nl/ Nudge_Model,Nudge_Path,                       &
-                         Nudge_Allow_Missing_File,                     &
+                         Nudge_Allow_Missing_File,                     & 
+                         Nudge_Pdep_Weight_On,                         & 
                          Nudge_File_Template,Nudge_Times_Per_Day,      &
                          Model_Times_Per_Day,                          &
                          Nudge_Ucoef ,Nudge_Uprof,                     &
@@ -564,13 +575,17 @@ contains
                          Nudge_Vwin_Lindex,Nudge_Vwin_Hindex,          &
                          Nudge_Vwin_Ldelta,Nudge_Vwin_Hdelta,          &
                          Nudge_Method, Nudge_Tau, Nudge_Loc_PhysOut,   &
-                         Nudge_CurrentStep, Nudge_File_Ntime
+                         Nudge_CurrentStep, Nudge_File_Ntime,          & 
+                         Nudge_NO_PBL_UV, Nudge_NO_PBL_T,              &
+                         Nudge_NO_PBL_Q, Nudge_PS_OPT, Nudge_UV_OPT,   &
+                         Nudge_T_OPT, Nudge_Q_OPT, Nudge_PS_Adjust_On
 
    ! Nudging is NOT initialized yet, For now
    ! Nudging will always begin/end at midnight.
    !--------------------------------------------
    Nudge_Initialized =.false.
    Nudge_ON          =.false.
+   Nudge_PS_On       =.false.
    Nudge_File_Present=.false.
    Nudge_Beg_Sec=0
    Nudge_End_Sec=0
@@ -579,6 +594,8 @@ contains
    !-----------------------------
    Nudge_Model        =.false.
    Nudge_Allow_Missing_File = .false.
+   Nudge_Pdep_Weight_On = .false.
+   Nudge_PS_Adjust_On   = .false.
    Nudge_Path         ='./Data/YOTC_ne30np4_001/'
    Nudge_File_Template='YOTC_ne30np4_L30.cam2.i.%y-%m-%d-%s.nc'
    Nudge_Times_Per_Day=4
@@ -618,6 +635,15 @@ contains
    Nudge_Tau          = -999._r8
    Nudge_CurrentStep  = .false.
    Nudge_File_Ntime   = 0
+
+   Nudge_UV_OPT       = 0 
+   Nudge_T_OPT        = 0
+   Nudge_Q_OPT        = 0
+
+   Nudge_NO_PBL_UV    = 0 
+   Nudge_NO_PBL_T     = 0 
+   Nudge_NO_PBL_Q     = 0
+   
    ! Read in namelist values
    !------------------------
    if(masterproc) then
@@ -687,11 +713,11 @@ contains
      call endrun('nudging_readnl:: ERROR in namelist')
    endif
 
-   if ( Nudge_PSprof .ne. 0 ) then
-     write(iulog,*) 'NUDGING: PS nudging scheme is not implemented yet'
-     write(iulog,*) 'NUDGING: Nudge_PSprof must be set to zero at this moment'
-     call endrun('nudging_readnl:: ERROR in namelist')
-   end if
+   !if ( Nudge_PSprof .ne. 0 ) then
+   !  write(iulog,*) 'NUDGING: PS nudging scheme is not implemented yet'
+   !  write(iulog,*) 'NUDGING: Nudge_PSprof must be set to zero at this moment'
+   !  call endrun('nudging_readnl:: ERROR in namelist')
+   !end if
 
    ! Broadcast namelist variables
    !------------------------------
@@ -703,6 +729,9 @@ contains
    call mpibcast(Nudge_ON           , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_File_Present , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_Allow_Missing_File,1, mpilog, 0, mpicom)
+   call mpibcast(Nudge_Pdep_Weight_On,1, mpilog, 0, mpicom)
+   call mpibcast(Nudge_PS_Adjust_On,  1, mpilog, 0, mpicom)
+   call mpibcast(Nudge_PS_On       ,  1, mpilog, 0, mpicom)
    call mpibcast(Nudge_Times_Per_Day, 1, mpiint, 0, mpicom)
    call mpibcast(Model_Times_Per_Day, 1, mpiint, 0, mpicom)
    call mpibcast(Nudge_Ucoef    , 1, mpir8 , 0, mpicom)
@@ -742,6 +771,16 @@ contains
    call mpibcast(Nudge_Tau,1,mpir8,0,mpicom)
    call mpibcast(Nudge_CurrentStep,1,mpilog,0,mpicom)
    call mpibcast(Nudge_File_Ntime,1,mpiint,0,mpicom)
+
+   call mpibcast(Nudge_PS_OPT    , 1, mpiint, 0, mpicom)
+   call mpibcast(Nudge_UV_OPT    , 1, mpiint, 0, mpicom)
+   call mpibcast(Nudge_T_OPT     , 1, mpiint, 0, mpicom)
+   call mpibcast(Nudge_Q_OPT     , 1, mpiint, 0, mpicom)
+
+   call mpibcast(Nudge_NO_PBL_UV , 1, mpiint, 0, mpicom)
+   call mpibcast(Nudge_NO_PBL_T  , 1, mpiint, 0, mpicom)
+   call mpibcast(Nudge_NO_PBL_Q  , 1, mpiint, 0, mpicom)
+
 #endif
 
    if ( Nudge_ON .and. (Nudge_File_Ntime .ne. Nudge_Times_Per_Day) .and. (Nudge_File_Ntime .ne. 1) ) then
@@ -758,7 +797,7 @@ contains
 
 
   !================================================================
-  subroutine nudging_init
+  subroutine nudging_init()
    !
    ! NUDGING_INIT: Allocate space and initialize Nudging values
    !===============================================================
@@ -1021,6 +1060,9 @@ contains
      write(iulog,*) '---------------------------------------------------------'
      write(iulog,*) 'NUDGING: Nudge_Model=',Nudge_Model
      write(iulog,*) 'NUDGING: Nudge_Allow_Missing_File=',Nudge_Allow_Missing_File
+     write(iulog,*) 'NUDGING: Nudge_Pdep_Weight_On=',Nudge_Pdep_Weight_On
+     write(iulog,*) 'NUDGING: Nudge_PS_On=',Nudge_PS_On
+     write(iulog,*) 'NUDGING: Nudge_PS_Adjust_On=',Nudge_PS_Adjust_On
      write(iulog,*) 'NUDGING: Nudge_Path=',Nudge_Path
      write(iulog,*) 'NUDGING: Nudge_File_Template=',Nudge_File_Template
      write(iulog,*) 'NUDGING: Nudge_Times_Per_Day=',Nudge_Times_Per_Day
@@ -1087,6 +1129,7 @@ contains
    call mpibcast(Nudge_Next_Sec      , 1, mpiint, 0, mpicom)
    call mpibcast(Nudge_Model         , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_Allow_Missing_File, 1, mpilog, 0, mpicom)
+   call mpibcast(Nudge_Pdep_Weight_On, 1, mpilog, 0, mpicom) 
    call mpibcast(Nudge_ON            , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_Initialized   , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_ncol          , 1, mpiint, 0, mpicom)
@@ -1111,16 +1154,16 @@ contains
        rlat=get_rlat_p(lchnk,icol)*180._r8/SHR_CONST_PI
        rlon=get_rlon_p(lchnk,icol)*180._r8/SHR_CONST_PI
 
-       call nudging_set_profile(rlat,rlon,Nudge_Uprof,Wprof,pver)
+       call nudging_set_profile(rlat,rlon,Nudge_Uprof, Wprof,pver)
        Nudge_Utau(icol,:,lchnk)=Wprof(:)
 
-       call nudging_set_profile(rlat,rlon,Nudge_Vprof,Wprof,pver)
+       call nudging_set_profile(rlat,rlon,Nudge_Vprof, Wprof,pver)
        Nudge_Vtau(icol,:,lchnk)=Wprof(:)
 
-       call nudging_set_profile(rlat,rlon,Nudge_Tprof,Wprof,pver)
+       call nudging_set_profile(rlat,rlon,Nudge_Tprof, Wprof,pver)
        Nudge_Ttau(icol,:,lchnk)=Wprof(:)
 
-       call nudging_set_profile(rlat,rlon,Nudge_Qprof,Wprof,pver)
+       call nudging_set_profile(rlat,rlon,Nudge_Qprof, Wprof,pver)
        Nudge_Qtau(icol,:,lchnk)=Wprof(:)
 
        Nudge_PStau(icol,lchnk)=nudging_set_PSprofile(rlat,rlon,Nudge_PSprof)
@@ -1560,24 +1603,39 @@ contains
   !                  the model state variables are written out.
   !                  This subroutine is called by tphysbc and works on a chunk 
   !===========================================================================
-  subroutine nudging_calc_tend(state)
+  subroutine nudging_calc_tend(state,pbuf)
    use physics_types,only: physics_state
    use constituents ,only: cnst_get_ind
    use ppgrid       ,only: pver,pcols
    use cam_history  ,only: outfld
    use physconst    ,only: cpair, gravit
+   use physics_buffer, only: pbuf_get_index, pbuf_old_tim_idx, pbuf_get_field, &
+                             pbuf_set_field, physics_buffer_desc
 
    ! Arguments
    !-----------
    type(physics_state),intent(in):: state
+   type(physics_buffer_desc), pointer :: pbuf(:)
 
    ! Local values
    !----------------
+   integer :: pblh_idx        ! PBL pbuf
    integer :: lchnk,ncol,indw
-   real(r8) ftem(pcols,pver), ftem2(pcols) ! temporary workspace
+   real(r8):: ftem(pcols,pver), ftem2(pcols) ! temporary workspace
+
+   real(r8):: U_tend(pcols,pver)
+   real(r8):: V_tend(pcols,pver)
+   real(r8):: T_tend(pcols,pver)
+   real(r8):: Q_tend(pcols,pver)
+   real(r8):: PS_tend(pcols)
+
+   real(r8), pointer :: pblh(:)                ! Planetary boundary layer height
 
    lchnk = state%lchnk
    ncol  = state%ncol
+
+   pblh_idx  = pbuf_get_index('pblh')
+   call pbuf_get_field(pbuf, pblh_idx,  pblh)
 
    ! Load values at Current into the Model arrays
    !-----------------------------------------------
@@ -1590,23 +1648,25 @@ contains
    Model_PS(:ncol,lchnk)=state%ps(:ncol)
 
    if ((l_Before_End).and.((l_Update_Nudge).or.(l_Update_Model))) then
-      !call update_nudging_tend (Target_U(:ncol,:pver,lchnk), Model_U(:ncol,:pver,lchnk),Nudge_Utau(:ncol,:pver,lchnk), &
-      !                          Nudge_U_OPT, ) 
-      Nudge_Ustep(:ncol,:pver,lchnk)=(  Target_U(:ncol,:pver,lchnk)  &
-                                        -Model_U(:ncol,:pver,lchnk)) &
-                                     *Nudge_Utau(:ncol,:pver,lchnk)
-      Nudge_Vstep(:ncol,:pver,lchnk)=(  Target_V(:ncol,:pver,lchnk)  &
-                                        -Model_V(:ncol,:pver,lchnk)) &
-                                     *Nudge_Vtau(:ncol,:pver,lchnk)
-      Nudge_Tstep(:ncol,:pver,lchnk)=(  Target_T(:ncol,:pver,lchnk)  &
-                                        -Model_T(:ncol,:pver,lchnk)) &
-                                     *Nudge_Ttau(:ncol,:pver,lchnk)
-      Nudge_Qstep(:ncol,:pver,lchnk)=(  Target_Q(:ncol,:pver,lchnk)  &
-                                        -Model_Q(:ncol,:pver,lchnk)) &
-                                     *Nudge_Qtau(:ncol,:pver,lchnk)
-      Nudge_PSstep(:ncol,     lchnk)=(  Target_PS(:ncol,lchnk)  &
-                                        -Model_PS(:ncol,lchnk)) &
-                                     *Nudge_PStau(:ncol,lchnk)
+
+      ! Update the nudging tendency
+      call update_nudging_tend (ncol, Model_PS(:,lchnk), Target_PS(:,lchnk), Nudge_PStau(:,lchnk),          & !In 
+                                Model_U(:,:,lchnk), Target_U(:,:,lchnk), Nudge_Utau(:,:,lchnk),             & !In 
+                                Model_V(:,:,lchnk), Target_V(:,:,lchnk), Nudge_Vtau(:,:,lchnk),             & !In 
+                                Model_T(:,:,lchnk), Target_T(:,:,lchnk), Nudge_Ttau(:,:,lchnk),             & !In  
+                                Model_Q(:,:,lchnk), Target_Q(:,:,lchnk), Nudge_Qtau(:,:,lchnk),             & !In 
+                                Model_PHIS(:,lchnk), Target_PHIS(:,lchnk), pblh, state%zi,                  & !In
+                                Nudge_Pdep_Weight_On, Nudge_NO_PBL_UV, Nudge_NO_PBL_T, Nudge_NO_PBL_Q,      & !In   
+                                Nudge_PSprof, Nudge_PS_OPT, Nudge_Uprof, Nudge_Vprof, Nudge_UV_OPT,         & !In 
+                                Nudge_Tprof,  Nudge_T_OPT,  Nudge_Qprof, Nudge_Q_OPT,                       & !In 
+                                PS_tend, U_tend, V_tend, T_tend, Q_tend )                                     !Out
+
+      Nudge_PSstep(:ncol,lchnk)      = PS_tend(:ncol)
+      Nudge_Ustep(:ncol,:pver,lchnk) = U_tend(:ncol,:pver)
+      Nudge_Vstep(:ncol,:pver,lchnk) = V_tend(:ncol,:pver)
+      Nudge_Tstep(:ncol,:pver,lchnk) = T_tend(:ncol,:pver)
+      Nudge_Qstep(:ncol,:pver,lchnk) = Q_tend(:ncol,:pver)
+
    else
       ! The following lines are used to reset the nudging tendency
       ! to zero in order to perform an intermittent simulation
@@ -1638,6 +1698,8 @@ contains
    call outfld('Q_ref',  ftem,  pcols,lchnk)
    ftem2(:ncol) = Target_PS(:ncol,lchnk)
    call outfld('PS_ref', ftem2, pcols,lchnk)
+   ftem2(:ncol) = Target_PHIS(:ncol,lchnk)
+   call outfld('PHIS_ref', ftem2, pcols,lchnk)
 
    ftem(:ncol,:pver) = Nudge_Ustep(:ncol,:pver,lchnk)
    call outfld('Nudge_U',ftem,pcols,lchnk)
@@ -1681,7 +1743,7 @@ contains
   end subroutine  ! nudging_calc_tend
 
   !================================================================
-  subroutine nudging_timestep_tend(phys_state,phys_tend)
+  subroutine nudging_timestep_tend(phys_state,phys_tend,ps_tend)
    !
    ! NUDGING_TIMESTEP_TEND:
    !                If Nudging is ON, return the Nudging contributions
@@ -1697,7 +1759,8 @@ contains
    !-------------
    type(physics_state), intent(in) :: phys_state
    type(physics_ptend), intent(out):: phys_tend
-
+ 
+   real(r8), intent(out) :: ps_tend(pcols)  
    ! Local values
    !--------------------
    integer indw,ncol,lchnk
@@ -1720,19 +1783,32 @@ contains
          Nudge_Vstep(:ncol,:pver,lchnk) =0._r8
          Nudge_Tstep(:ncol,:pver,lchnk) =0._r8
          Nudge_Qstep(:ncol,:pver,lchnk) =0._r8
+         Nudge_PSstep(:ncol,lchnk)      =0._r8
      end if
 
      if (Nudge_Uprof .ne. 0) then
         phys_tend%u(:ncol,:pver) = Nudge_Ustep(:ncol,:pver,lchnk)
      end if
+
      if (Nudge_Vprof .ne. 0) then
         phys_tend%v(:ncol,:pver) = Nudge_Vstep(:ncol,:pver,lchnk)
      end if
+
      if (Nudge_Tprof .ne. 0) then
         phys_tend%s(:ncol,:pver) = Nudge_Tstep(:ncol,:pver,lchnk)*cpair
      end if
+
      if (Nudge_Qprof .ne. 0) then
         phys_tend%q(:ncol,:pver,indw) = Nudge_Qstep(:ncol,:pver,lchnk)
+     else if ((Nudge_Tprof .ne. 0) .and. (Nudge_T_OPT .gt. 0)) then 
+        phys_tend%q(:ncol,:pver,indw) = Nudge_Qstep(:ncol,:pver,lchnk)
+     end if
+
+     if (Nudge_PSprof .ne. 0) then
+        Nudge_PS_On    = .true. 
+        ps_tend(:ncol) = Nudge_PSstep(:ncol,lchnk)
+     else
+        Nudge_PS_On    = .false. 
      end if
 
    endif
@@ -3357,6 +3433,396 @@ contains
   else
      output = ( input(:,:,2) - input(:,:,1) ) * &
               factor + input(:,:,1)
+  end if
+
+  end subroutine
+
+  !------------------------------------
+  ! Update nudging tendency for 3d field SE 
+  !------------------------------------
+  subroutine update_nudging_tend (ncol, psmod, psobs, psfac0,           & !In
+                                  umod, uobs, ufac0, vmod, vobs, vfac0, & !In 
+                                  tmod, tobs, tfac0, qmod, qobs, qfac0, & !In 
+                                  phis_mod, phis_obs, pblh, zi,         & !In
+                                  use_pdep_nudge, no_pbl_uv, no_pbl_t,  & !In 
+                                  no_pbl_q, ndg_ps_flg, ndg_ps_opt,     & !In
+                                  ndg_u_flg, ndg_v_flg, ndg_uv_opt,     & !In
+                                  ndg_t_flg, ndg_t_opt,                 & !In 
+                                  ndg_q_flg, ndg_q_opt,                 & !In 
+                                  psdt, udt, vdt, tdt, qdt)               !Out 
+
+  use hycoef,        only  : hycoef_init, hyam, hybm, hyai, hybi, ps0
+  use ppgrid,        only  : pver,pverp,pcols
+  use shr_vmath_mod, only  : shr_vmath_log
+  use physconst,     only  : rga, cpair, gravit, rair, zvir, cappa, rairv
+  use constituents,  only  : qmin
+  use cam_abortutils,only  : endrun
+  use wv_saturation, only  : qsat, qsat_water, svp_ice
+
+  logical, intent(in)  :: use_pdep_nudge
+
+  integer, intent(in)  :: ncol    ! number of columns
+  integer, intent(in)  :: ndg_ps_opt
+  integer, intent(in)  :: ndg_uv_opt
+  integer, intent(in)  :: ndg_t_opt
+  integer, intent(in)  :: ndg_q_opt
+
+  integer, intent(in)  :: ndg_ps_flg
+  integer, intent(in)  :: ndg_u_flg
+  integer, intent(in)  :: ndg_v_flg
+  integer, intent(in)  :: ndg_t_flg
+  integer, intent(in)  :: ndg_q_flg
+
+  integer, intent(in)  :: no_pbl_uv
+  integer, intent(in)  :: no_pbl_t
+  integer, intent(in)  :: no_pbl_q
+
+  real(r8), intent(in) :: pblh(pcols)
+  real(r8), intent(in) :: psmod(pcols)
+  real(r8), intent(in) :: phis_mod(pcols)
+  real(r8), intent(in) :: phis_obs(pcols)
+  real(r8), intent(in) :: zi(pcols,pverp)
+
+  real(r8), intent(in) :: umod(pcols,pver)
+  real(r8), intent(in) :: vmod(pcols,pver)
+  real(r8), intent(in) :: tmod(pcols,pver)
+  real(r8), intent(in) :: qmod(pcols,pver)
+
+  real(r8), intent(in) :: psobs(pcols)
+  real(r8), intent(in) :: uobs(pcols,pver)
+  real(r8), intent(in) :: vobs(pcols,pver)
+  real(r8), intent(in) :: tobs(pcols,pver)
+  real(r8), intent(in) :: qobs(pcols,pver)
+
+  real(r8), intent(in) :: psfac0(pcols)
+  real(r8), intent(in) :: ufac0(pcols,pver)
+  real(r8), intent(in) :: vfac0(pcols,pver)
+  real(r8), intent(in) :: tfac0(pcols,pver)
+  real(r8), intent(in) :: qfac0(pcols,pver)
+
+  real(r8), intent(out) :: psdt(pcols)
+  real(r8), intent(out) :: udt(pcols,pver)
+  real(r8), intent(out) :: vdt(pcols,pver)
+  real(r8), intent(out) :: tdt(pcols,pver)
+  real(r8), intent(out) :: qdt(pcols,pver)
+
+  ! local variables 
+  real(r8) :: psfac(pcols)
+  real(r8) :: ufac(pcols,pver)
+  real(r8) :: vfac(pcols,pver)
+  real(r8) :: tfac(pcols,pver)
+  real(r8) :: qfac(pcols,pver)
+
+  real(r8) :: pint_obs(pcols,pver)
+  real(r8) :: pmid_obs(pcols,pver)
+  real(r8) :: pdel_obs(pcols,pver)
+  real(r8) :: rpdel_obs(pcols,pver)
+  real(r8) :: lnpint_obs(pcols,pver)
+  real(r8) :: lnpmid_obs(pcols,pver)
+  real(r8) :: exner_obs(pcols,pver)
+
+  real(r8) :: pint_mod(pcols,pver)
+  real(r8) :: pmid_mod(pcols,pver)
+  real(r8) :: pdel_mod(pcols,pver)
+  real(r8) :: rpdel_mod(pcols,pver)
+  real(r8) :: lnpint_mod(pcols,pver)
+  real(r8) :: lnpmid_mod(pcols,pver)
+  real(r8) :: exner_mod(pcols,pver)
+
+  real(r8) :: ftem1(pcols,pver)
+  real(r8) :: ftem2(pcols,pver)
+  real(r8) :: dum1(pcols,pver)
+  real(r8) :: dum2(pcols,pver)
+
+  real(r8) :: dqsdT_mod(pcols,pver)
+  real(r8) :: dqsdT_obs(pcols,pver)
+  real(r8) :: qsmod(pcols,pver)
+  real(r8) :: qsobs(pcols,pver)
+  real(r8) :: rh_mod(pcols,pver)
+  real(r8) :: rh_obs(pcols,pver)
+
+  real(r8) :: psref(pcols)
+  real(r8) :: zagl_bot, zagl_top
+  real(r8) :: x, z, z_incr, hkk
+  real(r8) :: del_phis, tbot, pbot, tmp
+  real(r8) :: tsurf, lapse, t0, fpbl, ftop
+  integer  :: i, j, k, kk, kpbl, ktop 
+
+  ! initialize all tendency to zero 
+  udt(:,:)  = 0.0_r8
+  vdt(:,:)  = 0.0_r8
+  tdt(:,:)  = 0.0_r8
+  qdt(:,:)  = 0.0_r8
+  psdt(:)   = 0.0_r8
+
+  !compute pressure and ln pres at layer interfaces
+  do k = 1, pver
+     do i = 1, ncol 
+       pint_obs(i,k) = hyai(k)*ps0 + hybi(k)* psobs(i)
+       pmid_obs(i,k) = hyam(k)*ps0 + hybi(k)* psobs(i)
+       pint_mod(i,k) = hyai(k)*ps0 + hybi(k)* psmod(i)
+       pmid_mod(i,k) = hyam(k)*ps0 + hybi(k)* psmod(i)
+     end do 
+     !logrithm of pressure 
+     call shr_vmath_log(pint_obs(1:ncol,k),lnpint_obs(1:ncol,k),ncol)
+     call shr_vmath_log(pmid_obs(1:ncol,k),lnpmid_obs(1:ncol,k),ncol)
+     call shr_vmath_log(pint_mod(1:ncol,k),lnpint_mod(1:ncol,k),ncol)
+     call shr_vmath_log(pmid_mod(1:ncol,k),lnpmid_mod(1:ncol,k),ncol)
+  end do 
+
+  !top interface level pver+1 
+  do i=1,ncol
+     pint_obs(i,pverp)=hyai(pverp)*ps0+hybi(pverp)*psobs(i)
+     pint_mod(i,pverp)=hyai(pverp)*ps0+hybi(pverp)*psmod(i)
+  end do
+  !logrithm of pressure 
+  call shr_vmath_log(pint_obs(1:ncol,pverp),lnpint_obs(1:ncol,pverp),ncol)
+  call shr_vmath_log(pmid_obs(1:ncol,pverp),lnpmid_obs(1:ncol,pverp),ncol)
+  call shr_vmath_log(pint_mod(1:ncol,pverp),lnpint_mod(1:ncol,pverp),ncol)
+  call shr_vmath_log(pmid_mod(1:ncol,pverp),lnpmid_mod(1:ncol,pverp),ncol)
+
+  !derive the layer thickness and exner
+  do k = 1, pver
+     do i = 1, ncol
+        pdel_obs(i,k)  = pint_obs(i,k+1) - pint_obs(i,k)
+        pdel_mod(i,k)  = pint_mod(i,k+1) - pint_mod(i,k)
+        rpdel_obs(i,k) = 1._r8/pdel_obs(i,k)
+        rpdel_mod(i,k) = 1._r8/pdel_mod(i,k)
+        exner_mod(i,k) = (pint_mod(i,pver+1)/pmid_mod(i,k))**cappa
+        exner_obs(i,k) = (pint_obs(i,pver+1)/pmid_obs(i,k))**cappa 
+     end do
+  end do
+
+  !Exclude the nudging tendency in boundary layer 
+  kpbl = 1
+  do i = 1, ncol
+    loop_kt: do k = 1, pver
+      zagl_bot = zi(i,k)   + phis_mod(i)*rga
+      zagl_top = zi(i,k+1) + phis_mod(i)*rga
+      if( pblh(i) >= zagl_bot .and. pblh(i) < zagl_top ) then 
+        kpbl = k
+        exit loop_kt
+      end if 
+    enddo loop_kt
+    !------------------------------
+    ! Use tanh to construct vertical window
+    !------------------------------
+    do k = 1, pver
+      fpbl = 0.5_r8 * (1.0_r8 + tanh((float(k)-float(kpbl))/0.1_r8))
+     !ftop = 0.5_r8 * (1.0_r8 + tanh((float(ktop)-float(k))/0.1_r8))
+      select case (no_pbl_uv)
+         case (0)
+           ufac(i,k) = ufac0(i,k) * 1.0_r8
+           vfac(i,k) = vfac0(i,k) * 1.0_r8
+         case (1)
+           ufac(i,k) = ufac0(i,k) * fpbl
+           vfac(i,k) = vfac0(i,k) * fpbl
+         case default
+         call endrun('nudging_tend error: invalid option for no_pbl_uv nudging')
+      end select
+
+      select case (no_pbl_t)
+         case (0)
+           tfac(i,k) = tfac0(i,k) * 1.0_r8
+         case (1)
+           tfac(i,k) = tfac0(i,k) * fpbl
+         case default
+         call endrun('nudging_tend error: invalid option for no_pbl_t nudging')
+      end select
+
+      select case (no_pbl_q)
+         case (0)
+           qfac(i,k) = qfac0(i,k) * 1.0_r8
+         case (1)
+           qfac(i,k) = qfac0(i,k) * fpbl
+         case default
+           call endrun('nudging_tend error: invalid option for no_pbl_q nudging')
+      end select
+
+    end do
+  end do
+
+  !Apply scaling such that nudging strength falls off with pressure.
+  do k = 1, pver
+    do i = 1, ncol
+      if (use_pdep_nudge) then 
+        ufac(i,k) = ufac(i,k) * (pmid_mod(i,k) / pmid_mod(i,pver))
+        vfac(i,k) = vfac(i,k) * (pmid_mod(i,k) / pmid_mod(i,pver))
+        tfac(i,k) = tfac(i,k) * (pmid_mod(i,k) / pmid_mod(i,pver))
+        qfac(i,k) = qfac(i,k) * (pmid_mod(i,k) / pmid_mod(i,pver))
+       else 
+        ufac(i,k) = ufac(i,k) * 1.0_r8 
+        vfac(i,k) = vfac(i,k) * 1.0_r8
+        tfac(i,k) = tfac(i,k) * 1.0_r8
+        qfac(i,k) = qfac(i,k) * 1.0_r8
+      end if 
+    end do
+  end do 
+
+  ! zonal wind component
+  if ( ndg_u_flg > 0 ) then 
+    select case (ndg_uv_opt)
+       case (0)
+         ! direct nudging 
+         udt(:,:) = udt(:,:) + (uobs(:,:) - umod(:,:))*ufac(:,:)  
+       case default
+       call endrun('nudging_tend error: invalid option for U nudging')
+    end select
+  end if 
+
+  ! meridional wind component
+  if ( ndg_v_flg > 0 ) then
+    select case (ndg_uv_opt)
+       case (0)
+         ! direct nudging 
+         vdt(:,:) = vdt(:,:) + (vobs(:,:) - vmod(:,:))*vfac(:,:)
+       case default
+       call endrun('nudging_tend error: invalid option for V nudging')
+    end select
+  end if
+
+  ! temperature 
+  if ( ndg_t_flg > 0 ) then
+    select case (ndg_t_opt)
+       case (0)
+         ! direct nudging 
+         tdt(:,:) = tdt(:,:) + (tobs(:,:) - tmod(:,:))*tfac(:,:) 
+       case (1)
+         ! nudge virtual temperature (Tv) 
+         ! Tangent linear of Tv with respect to T and q 
+         ! dTv/dT = (1.0_r8 + zvir * q); dTv/dq = T*zvir 
+         do k = 1, pver
+          do i = 1, ncol
+            ftem1(i,k) = tobs(i,k) * (1.0_r8 + zvir * qobs(i,k))
+            ftem2(i,k) = tmod(i,k) * (1.0_r8 + zvir * qmod(i,k))
+            tdt(i,k)   = tdt(i,k) + (ftem1(i,k) - ftem2(i,k))*tfac(i,k) &
+                                  /(1.0_r8 + zvir * qmod(i,k))
+            qdt(i,k)   = qdt(i,k) + (ftem1(i,k) - ftem2(i,k))*tfac(i,k) & 
+                                  /(zvir * tmod(i,k))
+          end do            
+         end do 
+       case default
+         call endrun('nudging_tend error: invalid option for T nudging')
+    end select
+  end if 
+
+  ! humidity
+  if ( ndg_q_flg > 0 ) then
+    select case (ndg_q_opt)
+       case (0)
+         ! direct nudging 
+         qdt(:,:) = (qobs(:,:) - qmod(:,:))*qfac(:,:) 
+       case (1)
+         ! nudge relative humidity (RH)
+         ! simultaneously adjust the moisture and temperature fields. 
+         ! Tangent linear of RH with respect to T and q 
+         ! Reference: Yang et. al. (2021, JMR), Fan and Tilley (2005, MWR)
+         ! dRH/dT = d(q/qs)/dT = - q/qs^2 * dqs/dT = -RH/qs * dqs/dT 
+         ! dRH/dq = d(q/qs)/dq = 1/qs = RH / q 
+         call qsat(tobs, pmid_obs, dum1, qsobs, dum2, dqsdT_obs)
+         call qsat(tmod, pmid_mod, dum1, qsmod, dum2, dqsdT_mod)
+         ftem1(:,:) = qobs(:,:) / qsobs(:,:)
+         ftem2(:,:) = qmod(:,:) / qsmod(:,:)
+         do k = 1, pver
+          do i = 1, ncol
+            tdt(i,k) = tdt(i,k) - qsmod(i,k)*(ftem1(i,k)-ftem2(i,k))*qfac(i,k) &
+                                 /(min(ftem2(i,k)*dqsdT_mod(i,k),0.001_r8))
+            qdt(i,k) = qdt(i,k) + qsmod(i,k)*(ftem1(i,k)-ftem2(i,k))*qfac(i,k)
+          !print*, 'SZ: k,pfull(k),psurf, factor = ', k, pmid_mod(i,k), pmid_mod(i,pver), pmid_mod(i,k)/pmid_mod(i,pver)
+          end do
+         end do
+       case (11)
+         ! nudge relative humidity (RH)
+         ! simultaneously adjust the moisture and temperature fields. 
+         ! Tangent linear of RH with respect to T and q 
+         ! Reference: Yang et. al. (2021, JMR), Fan and Tilley (2005, MWR)
+         ! dRH/dT = d(q/qs)/dT = - q/qs^2 * dqs/dT = -RH/qs * dqs/dT 
+         ! dRH/dq = d(q/qs)/dq = 1/qs = RH / q 
+         call qsat(tobs, pmid_obs, dum1, qsobs, dum2, dqsdT_obs)
+         call qsat(tmod, pmid_mod, dum1, qsmod, dum2, dqsdT_mod)
+         ftem1(:,:) = qobs(:,:) / qsobs(:,:)
+         ftem2(:,:) = qmod(:,:) / qsmod(:,:)
+         do k = 1, pver
+          do i = 1, ncol
+            tdt(i,k) = tdt(i,k) - qsmod(i,k)*(ftem1(i,k)-ftem2(i,k))*qfac(i,k) &
+                                 /(min(ftem2(i,k)*dqsdT_mod(i,k),0.001_r8))
+            qdt(i,k) = qdt(i,k) + qmod(i,k)*(ftem1(i,k)-ftem2(i,k))*qfac(i,k) & 
+                                 / min(ftem2(i,k),0.001_r8)
+          !print*, 'SZ: k,pfull(k),psurf, factor = ', k, pmid_mod(i,k), pmid_mod(i,pver), pmid_mod(i,k)/pmid_mod(i,pver)
+          end do
+         end do
+       case default
+         call endrun('nudging_tend error: invalid option for Q nudging')
+    end select
+  end if 
+
+  ! surface pressure 
+
+  if (Nudge_PS_Adjust_On) then 
+    ! adjust topography (in case the pre-processing does not appy it)
+    ! following the method developed by ECMWF  
+    !dtdz    = -0.0065           ! -6.5 deg/km
+    !gravit  = 9.80616           ! acceleration of gravity ~ m/s^2
+    do i = 1,ncol
+
+     del_phis = phis_mod(i) - phis_obs(i)
+
+     if (abs(del_phis) .le. dz_thres) then
+       psref(i) = psmod(i)
+     else
+       ! Tbot and Pbot are determined from the first model level that is at
+       ! least 150m above the surface
+       z     = 0._r8
+       loop_kz: do k = pver, 1, -1
+         kk     = k
+         hkk    = 0.5*( pint_obs(i,k+1) - pint_obs(i,k)) / pmid_obs(i,k)
+         z_incr = (rair/gravit)*tobs(i,k)*hkk
+         z      = z + z_incr 
+         if( z .gt. z_min ) then
+           exit loop_kz
+         end if  
+         z  = z + z_incr
+       end do loop_kz
+       lapse = -dtdz
+       k     = kk
+       ! Define Tbot & Pbot
+       tbot  = tobs(i,k)
+       pbot  = pmid_obs(i,k)
+       tmp   = lapse*(rair/gravit)*(psobs(i)/pbot - 1.0_r8)
+       tsurf = tbot*(1.0_r8 + tmp)
+       t0    = tsurf + lapse*phis_obs(i)/gravit
+
+       if (t0 .gt. t_ref1 .and. tsurf .le. t_ref1) then
+         lapse = (t_ref1 - tsurf)*gravit/phis_obs(i)
+       else if (t0 .gt. t_ref1 .and. tsurf .gt. t_ref1) then
+         lapse = 0.0_r8
+         tsurf = (t_ref1 + tsurf)*0.5_r8
+       end if
+
+       if (tsurf .lt. t_ref2) then
+         lapse = -dtdz
+         tsurf = (t_ref2 + tsurf)*0.5_r8
+       end if
+
+       x   = lapse*del_phis/(gravit*tsurf)
+       tmp = 1. - x/2. + x**2./3.
+       tmp = del_phis/(rair*tsurf)*tmp
+       psref(i) = psobs(i)*exp(tmp)
+
+      end if 
+    end do
+  else
+     psref(:ncol) = psobs(:ncol) 
+  end if 
+
+  if ( ndg_ps_flg > 0 ) then
+    select case (ndg_ps_opt)
+       case (0)
+         ! direct nudging 
+         psdt(:) = psdt(:) + (psref(:) - psmod(:))*psfac(:)
+       case default
+         call endrun('nudging_tend error: invalid option for PS nudging')
+    end select
   end if
 
   end subroutine

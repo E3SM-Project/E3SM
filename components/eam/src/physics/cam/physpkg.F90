@@ -928,7 +928,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     ! Initialize Nudging Parameters
     !--------------------------------
-    if(Nudge_Model) call nudging_init
+    if(Nudge_Model) call nudging_init()
 
     
    !BSINGH -  addfld and adddefault calls for perturb growth testing    
@@ -1445,9 +1445,11 @@ subroutine tphysac (ztodt,   cam_in,               &
     use clubb_intr,         only: clubb_surface
     use perf_mod
     use flux_avg,           only: flux_avg_run
-    use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
+    use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend, &
+                                  Nudge_PS_On
     use phys_control,       only: use_qqflx_fixer
     use co2_cycle,          only: co2_cycle_set_ptend
+    use hycoef,             only: hycoef_init, hyam, hybm, hyai, hybi, ps0
 
     implicit none
 
@@ -1495,6 +1497,9 @@ subroutine tphysac (ztodt,   cam_in,               &
     real(r8) :: ftem      (pcols,pver) ! tmp space
     real(r8), pointer, dimension(:) :: static_ener_ac_2d ! Vertically integrated static energy
     real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
+
+    real(r8) :: ps_tend(pcols) ! nudging tendency for PS 
+    real(r8) :: dbk           ! factor for updating layer thickness
 
     ! physics buffer fields for total energy and mass adjustment
     integer itim_old, ifld
@@ -1790,7 +1795,24 @@ end if ! l_gw_drag
     ! Update Nudging values, if needed
     !===================================================
     if((Nudge_Model).and.(Nudge_ON)) then
-      call nudging_timestep_tend(state,ptend)
+      call nudging_timestep_tend(state,ptend,ps_tend)
+      !-----------------------
+      ! Update layer thickness
+      !-----------------------
+      if (Nudge_PS_On) then
+        !Update the PS with nudging here 
+        do i=1,ncol
+          state%ps(i)  = state%ps(i) + ztodt * ps_tend(i)
+        end do 
+        !update the layer thickness 
+        do k=1,pver
+          dbk = ztodt * (hybi(k+1) - hybi(k))
+           do i=1,ncol
+             state%pdel(i,k)  = state%pdel(i,k) + dbk*ps_tend(i)
+             state%rpdel(i,k) = 1.0_r8 / state%pdel(i,k)
+           enddo
+        enddo
+      end if 
       call physics_update(state,ptend,ztodt,tend)
       call outfld('U_af_ndg' ,state%u,        pcols,lchnk)
       call outfld('V_af_ndg' ,state%v,        pcols,lchnk)
@@ -2739,7 +2761,7 @@ end if
     ! Update Nudging tendency if needed
     !===================================
     if (Nudge_Model .and. Nudge_Loc_PhysOut) then
-       call nudging_calc_tend(state)
+       call nudging_calc_tend(state, pbuf)
     endif
 
     !===================================================
