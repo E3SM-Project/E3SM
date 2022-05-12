@@ -129,7 +129,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       m_output_control.nsteps_since_last_write = m_run_t0.get_num_steps() % m_output_control.frequency;
 
       // If the type/freq of output needs restart data, we need to read in an output.
-      if (has_restart_data) {
+      if (has_restart_data && m_output_control.nsteps_since_last_write>0) {
         auto output_restart_filename = find_filename_in_rpointer(hist_restart_casename,".rhist.nc");
 
         ekat::ParameterList res_params("Input Parameters");
