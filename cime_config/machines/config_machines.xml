@@ -3433,7 +3433,7 @@
         <command name="load">cuda/10.1.243</command>
       </modules>
       <modules compiler="gnugpu">
-        <command name="load">cuda/10.1.168</command>
+        <command name="load">cuda/11.5.2</command>
       </modules>
       <modules compiler="ibm.*">
         <command name="load">xl/16.1.1-10</command>
@@ -3442,7 +3442,7 @@
         <command name="load">cuda/10.1.243</command>
       </modules>
       <modules compiler="gnu.*">
-        <command name="load">gcc/7.5.0</command>
+        <command name="load">gcc/9.3.0</command>
       </modules>
       <modules>
         <command name="load">spectrum-mpi/10.4.0.3-20210112</command>
