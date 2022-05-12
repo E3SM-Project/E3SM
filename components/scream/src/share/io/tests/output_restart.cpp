@@ -132,7 +132,7 @@ TEST_CASE("output_restart","io")
   // NOTE: we use fm_res (the copy of field_manager at t=15), since we don't want
   //       to have to do a state restart, which would/could mix issues related to
   //       model restart with the testing of output history restart.
-  util::TimeStamp time_res ({2000,1,1},{0,0,15});
+  util::TimeStamp time_res ({2000,1,1},{0,0,15},5);
   std::string param_filename_res = "io_test_restart_check.yaml";
 
   ekat::ParameterList output_params_res;
