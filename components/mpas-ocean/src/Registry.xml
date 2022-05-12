@@ -1693,6 +1693,7 @@
 		<package name="gotmPKG" description="This package is for GOTM variables, which are only needed when using GOTM for the vertical turbulence closure."/>
 		<package name="verticalRemapPKG" description="This package is for variables required for vertical Lagrangian remapping."/>
 		<package name="activeWavePKG" description="This package controls variables required for wave coupling"/>
+                <package name="nonHydrostaticMode" description="This package is for variables needed for the nonHydrostatic capabilities"/>
 	</packages>
 
 	<streams>

@@ -1802,6 +1802,88 @@ Valid values: any positive real, but typically 1000-1035
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<!-- nonhydrostatic_pressure -->
+
+<entry id="config_enable_nonhydrostatic_mode" type="logical"
+        category="nonhydrostatic_pressure" group="nonhydrostatic_pressure">
+Flag to enable the nonhydrostatic pressure calculation
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_nonhydrostatic_solve_surface_boundary_condition" type="char*1024"
+        category="nonhydrostatic_pressure" group="nonhydrostatic_pressure">
+setting for surface boundary condition for the pressure correction solve
+
+Valid values: noGradient or no pressure
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_enable_vertMomentum_disable_nonHydro" type="logical"
+        category="nonhydrostatic_pressure" group="nonhydrostatic_pressure">
+flag to enable hydrostatic pressure with vertical momentum tendencies
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_nonhydrostatic_remove_rhs_mean" type="logical"
+        category="nonhydrostatic_pressure" group="nonhydrostatic_pressure">
+flag to enabling mean from the right hand side of the nonhydro solve
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_nonhydrostatic_preconditioner" type="char*1024"
+        category="nonhydrostatic_pressure" group="nonhydrostatic_pressure">
+String describing preconditioner to use, recommended options -- jacobi, bjacobi, ilu
+
+Valid values: jacobi, bjacobi, ilu
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_nonhydrostatic_solver_type" type="char*1024"
+        category="nonhydrostatic_pressure" group="nonhydrostatic_pressure">
+String describing the solver context, recommended types -- pipecgrr, pipecg, cg, bcgs, gmres
+
+Valid values: pipecgrr, pipecg, cg, bcgs, gmres
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_petsc_rtol" type="real"
+        category="nonhydrostatic_pressure" group="nonhydrostatic_pressure">
+relative tolerance for the norm in petsc convergence
+
+Valid values: very small positive reals
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_petsc_atol" type="real"
+        category="nonhydrostatic_pressure" group="nonhydrostatic_pressure">
+absolute tolerance for the norm in petsc convergence
+
+Valid values: very small positive reals
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_petsc_maxit" type="integer"
+        category="nonhydrostatic_pressure" group="nonhydrostatic_pressure">
+maximum number of iterations in petsc solve
+
+Valid values: positive integers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_constant_forced_pgf" type="logical"
+        category="nonhydrostatic_pressure" group="nonhydrostatic_pressure">
+logical to enable a constant pressure gradient that is added to rest of PGF NOTE: need to remove after rebasing on to master...
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- pressure_gradient -->
 
