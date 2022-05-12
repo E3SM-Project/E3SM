@@ -186,8 +186,8 @@ def buildnml(case, caseroot, compname):
         grid_date = '180715'
         grid_prefix = 'seaice.ARRM60to10'
         if ice_ic_mode == 'spunup':
-            grid_date = '200422'
-            grid_prefix = 'seaice.ARRM60to10.restart_grizzly'
+            grid_date = '210204'
+            grid_prefix = 'mpassi.oARRM60to10.rstFromG-cori'
 
     elif ice_grid == 'oARRM60to6':
         decomp_date = '180820'

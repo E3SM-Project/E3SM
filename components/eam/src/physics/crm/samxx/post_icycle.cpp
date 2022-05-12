@@ -1,50 +1,50 @@
 #include "post_icycle.h"
 
 void post_icycle() {
-  auto &cwp                 = :: cwp;
-  auto &cwph                = :: cwph;
-  auto &cwpm                = :: cwpm;
-  auto &cwpl                = :: cwpl;
-  auto &flag_top            = :: flag_top;
-  auto &cltemp              = :: cltemp;
-  auto &cmtemp              = :: cmtemp;
-  auto &chtemp              = :: chtemp;
-  auto &cttemp              = :: cttemp;
-  auto &rho                 = :: rho;
-  auto &adz                 = :: adz;
-  auto &dz                  = :: dz;
-  auto &qcl                 = :: qcl;
-  auto &qci                 = :: qci;
-  auto &CF3D                = :: CF3D;
-  auto &crm_output_cldtop   = :: crm_output_cldtop;
-  auto &w                   = :: w;
-  auto &crm_output_mcup     = :: crm_output_mcup;
-  auto &crm_output_mcuup    = :: crm_output_mcuup;
-  auto &crm_output_mcdn     = :: crm_output_mcdn;
-  auto &crm_output_mcudn    = :: crm_output_mcudn;
-  auto &crm_output_gliqwp   = :: crm_output_gliqwp;
-  auto &crm_output_gicewp   = :: crm_output_gicewp;
-  auto &crm_output_cld      = :: crm_output_cld;
-  auto &crm_rad_temperature = :: crm_rad_temperature;
-  auto &crm_rad_qv          = :: crm_rad_qv;
-  auto &crm_rad_qc          = :: crm_rad_qc;
-  auto &crm_rad_qi          = :: crm_rad_qi;
-  auto &tabs                = :: tabs;
-  auto &crm_rad_cld         = :: crm_rad_cld;
-  auto &crm_clear_rh        = :: crm_clear_rh;
-  auto &crm_clear_rh_cnt    = :: crm_clear_rh_cnt;
-  auto &pres                = :: pres;
-  auto &rhow                = :: rhow;
-  auto &mui_crm             = :: mui_crm;
-  auto &mdi_crm             = :: mdi_crm;
-  auto &crm_output_cltot    = :: crm_output_cltot;
-  auto &crm_output_clhgh    = :: crm_output_clhgh;
-  auto &crm_output_clmed    = :: crm_output_clmed;
-  auto &crm_output_cllow    = :: crm_output_cllow;
-  auto &qv                  = :: qv;
-  auto &qpi                 = :: qpi;
-  auto &qpl                 = :: qpl;
-  auto &ncrms               = :: ncrms;
+  YAKL_SCOPE( cwp                 , :: cwp );
+  YAKL_SCOPE( cwph                , :: cwph );
+  YAKL_SCOPE( cwpm                , :: cwpm );
+  YAKL_SCOPE( cwpl                , :: cwpl );
+  YAKL_SCOPE( flag_top            , :: flag_top );
+  YAKL_SCOPE( cltemp              , :: cltemp );
+  YAKL_SCOPE( cmtemp              , :: cmtemp );
+  YAKL_SCOPE( chtemp              , :: chtemp );
+  YAKL_SCOPE( cttemp              , :: cttemp );
+  YAKL_SCOPE( rho                 , :: rho );
+  YAKL_SCOPE( adz                 , :: adz );
+  YAKL_SCOPE( dz                  , :: dz );
+  YAKL_SCOPE( qcl                 , :: qcl );
+  YAKL_SCOPE( qci                 , :: qci );
+  YAKL_SCOPE( CF3D                , :: CF3D );
+  YAKL_SCOPE( crm_output_cldtop   , :: crm_output_cldtop );
+  YAKL_SCOPE( w                   , :: w );
+  YAKL_SCOPE( crm_output_mcup     , :: crm_output_mcup );
+  YAKL_SCOPE( crm_output_mcuup    , :: crm_output_mcuup );
+  YAKL_SCOPE( crm_output_mcdn     , :: crm_output_mcdn );
+  YAKL_SCOPE( crm_output_mcudn    , :: crm_output_mcudn );
+  YAKL_SCOPE( crm_output_gliqwp   , :: crm_output_gliqwp );
+  YAKL_SCOPE( crm_output_gicewp   , :: crm_output_gicewp );
+  YAKL_SCOPE( crm_output_cld      , :: crm_output_cld );
+  YAKL_SCOPE( crm_rad_temperature , :: crm_rad_temperature );
+  YAKL_SCOPE( crm_rad_qv          , :: crm_rad_qv );
+  YAKL_SCOPE( crm_rad_qc          , :: crm_rad_qc );
+  YAKL_SCOPE( crm_rad_qi          , :: crm_rad_qi );
+  YAKL_SCOPE( tabs                , :: tabs );
+  YAKL_SCOPE( crm_rad_cld         , :: crm_rad_cld );
+  YAKL_SCOPE( crm_clear_rh        , :: crm_clear_rh );
+  YAKL_SCOPE( crm_clear_rh_cnt    , :: crm_clear_rh_cnt );
+  YAKL_SCOPE( pres                , :: pres );
+  YAKL_SCOPE( rhow                , :: rhow );
+  YAKL_SCOPE( mui_crm             , :: mui_crm );
+  YAKL_SCOPE( mdi_crm             , :: mdi_crm );
+  YAKL_SCOPE( crm_output_cltot    , :: crm_output_cltot );
+  YAKL_SCOPE( crm_output_clhgh    , :: crm_output_clhgh );
+  YAKL_SCOPE( crm_output_clmed    , :: crm_output_clmed );
+  YAKL_SCOPE( crm_output_cllow    , :: crm_output_cllow );
+  YAKL_SCOPE( qv                  , :: qv );
+  YAKL_SCOPE( qpi                 , :: qpi );
+  YAKL_SCOPE( qpl                 , :: qpl );
+  YAKL_SCOPE( ncrms               , :: ncrms );
 
   // for (int j=0; j<ny; j++) {
   //  for (int i=0; i<nx; i++) {
@@ -64,7 +64,7 @@ void post_icycle() {
   // for (int j=0; j<ny; j++) {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int j, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     for (int k=0; k<nzm; k++) {
       int l = plev-(k+1);
       real tmp1 = rho(nz-(k+1)-1,icrm)*adz(nz-(k+1)-1,icrm)*dz(icrm)*(qcl(nz-(k+1)-1,j,i,icrm)+qci(nz-(k+1)-1,j,i,icrm));
@@ -119,7 +119,7 @@ void post_icycle() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     // Reduced radiation method allows for fewer radiation calculations
     // by collecting statistics and doing radiation over column groups
     int i_rad = i / (nx/crm_nx_rad);
@@ -149,7 +149,7 @@ void post_icycle() {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
   //      for (int k=0; k<nzm+1; k++) {
-  parallel_for( SimpleBounds<4>(nzm+1,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm+1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int l=plev+1-(k+1);
     int kx;
     real qsat;
@@ -177,7 +177,7 @@ void post_icycle() {
   // for (int j=0; j<ny; j++) {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int j, int i, int icrm) {
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     if(cwp(j,i,icrm) > cwp_threshold) {
       yakl::atomicAdd(crm_output_cltot(icrm) , cttemp(j,i,icrm));
     }

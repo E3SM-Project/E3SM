@@ -442,6 +442,8 @@ contains
         ! Turn on restarts
         call mpas_pool_get_config(domain % configs, "config_do_restart", tempLogicalConfig)
         tempLogicalConfig = .true.
+        call mpas_pool_get_config(domain % configs, "config_do_restart_bgc", tempLogicalConfig)
+        tempLogicalConfig = .true.
         call mpas_pool_get_config(domain % configs, "config_do_restart_hbrine", tempLogicalConfig)
         tempLogicalConfig = .true.
         call mpas_pool_get_config(domain % configs, "config_do_restart_snow_density", tempLogicalConfig)
@@ -450,6 +452,9 @@ contains
         tempLogicalConfig = .true.
         call mpas_pool_get_config(domain % configs, "config_do_restart_zsalinity", tempLogicalConfig)
         tempLogicalConfig = .true.
+        call mpas_pool_get_config(domain % configs, "config_do_restart_bgc", tempLogicalConfig)
+        tempLogicalConfig = .true.
+
 
         ! Set start time to be read from file
         call mpas_pool_get_config(domain % configs, "config_start_time", tempCharConfig)
@@ -2577,7 +2582,7 @@ contains
                i2x_i % rAttr(index_i2x_Fioi_algae3,n) = oceanAlgaeFlux(3,i) * carbonToNitrogenRatioAlgae(3)
                i2x_i % rAttr(index_i2x_Fioi_doc1  ,n) = oceanDOCFlux(1,i)
                i2x_i % rAttr(index_i2x_Fioi_doc2  ,n) = oceanDOCFlux(2,i)
-               i2x_i % rAttr(index_i2x_Fioi_doc3  ,n) = oceanDONFlux(3,i) * carbonToNitrogenRatioDON(1)
+               i2x_i % rAttr(index_i2x_Fioi_doc3  ,n) = oceanDONFlux(1,i) * carbonToNitrogenRatioDON(1)
                i2x_i % rAttr(index_i2x_Fioi_dic1  ,n) = oceanDICFlux(1,i)
                i2x_i % rAttr(index_i2x_Fioi_don1  ,n) = oceanDONFlux(1,i)
                i2x_i % rAttr(index_i2x_Fioi_no3   ,n) = oceanNitrateFlux(i)

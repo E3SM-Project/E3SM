@@ -724,6 +724,7 @@
       <value compset="^1950.+CMIP6"                             >312.821</value>
       <value compset="^2010.+CMIP6"                             >388.717</value>
       <value compset="^SSP585.+CMIP6"				>0.000001</value>
+      <value compset="^SSP370.+CMIP6"                           >0.000001</value>
       <value compset="^20TR.*BGC%BCRC"                          >284.317</value>
       <value compset="^20TR.*BGC%BCRD"                          >284.317</value>
       <value compset="^20TR.*BGC%BDRC"                          >284.317</value>
@@ -834,6 +835,7 @@
     <desc compset="20TR_">Historical 1850 to 2000 transient:</desc>
     <desc compset="AMIP_">AMIP for stand-alone cam:</desc>
     <desc compset="SSP585_">Future transient using CMIP6 SSP5_8.5 scenario:</desc>
+    <desc compset="SSP370_">Future transient using CMIP6 SSP3_7.0 scenario:</desc>
     <desc compset="C2R[68]_">CCMI REFC2 1950 to 2100 transient:</desc>
     <desc compset="C2R4_">CCMI REFC2 2004 to 2100 transient:</desc>
     <desc compset="4804_">1948 to 2004 transient:</desc>

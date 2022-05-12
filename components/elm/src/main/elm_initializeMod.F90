@@ -64,7 +64,7 @@ contains
     use soilorder_varcon          , only: soilorder_conrd
     use decompInitMod             , only: decompInit_lnd, decompInit_clumps, decompInit_gtlcp
     use domainMod                 , only: domain_check, ldomain, domain_init
-    use surfrdMod                 , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data
+    use surfrdMod                 , only: surfrd_get_globmask, surfrd_get_grid, surfrd_get_topo, surfrd_get_data,surfrd_get_topo_for_solar_rad
     use controlMod                , only: control_init, control_print, NLFilename
     use ncdio_pio                 , only: ncd_pio_init
     use initGridCellsMod          , only: initGridCells, initGhostGridCells
@@ -82,6 +82,7 @@ contains
     use reweightMod               , only: reweight_wrapup
     use ELMFatesInterfaceMod      , only: ELMFatesGlobals
     use topounit_varcon           , only: max_topounits, has_topounit, topounit_varcon_init    
+    use elm_varctl                , only: use_top_solar_rad
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -220,7 +221,17 @@ contains
           write(iulog,*) 'Attempting to read atm topo from ',trim(flndtopo)
           call shr_sys_flush(iulog)
        endif
-       call surfrd_get_topo(ldomain, flndtopo)
+
+       call surfrd_get_topo(ldomain, flndtopo)  
+    endif    
+    
+    if (fsurdat /= " " .and. use_top_solar_rad) then
+       if (masterproc) then
+          write(iulog,*) 'Attempting to read topo parameters for TOP solar radiation parameterization from ',trim(fsurdat)
+          call shr_sys_flush(iulog)
+       endif
+       call surfrd_get_topo_for_solar_rad(ldomain, fsurdat)  
+
     endif
     
     !-------------------------------------------------------------------------
@@ -429,7 +440,7 @@ contains
     use elm_varcon            , only : h2osno_max, bdsno, spval
     use landunit_varcon       , only : istice, istice_mec, istsoil
     use elm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
-    use elm_varctl            , only : use_century_decomp, single_column, scmlat, scmlon, use_cn, use_fates
+    use elm_varctl            , only : use_century_decomp, single_column, scmlat, scmlon, use_cn
     use elm_varorb            , only : eccen, mvelpp, lambm0, obliqr
     use clm_time_manager      , only : get_step_size, get_curr_calday
     use clm_time_manager      , only : get_curr_date, get_nstep, advance_timestep
@@ -471,6 +482,7 @@ contains
     use tracer_varcon         , only : is_active_betr_bgc
     use clm_time_manager      , only : is_restart
     use ALMbetrNLMod          , only : betr_namelist_buffer
+    use ELMFatesInterfaceMod  , only: ELMFatesTimesteps
     !
     ! !ARGUMENTS
     implicit none
@@ -538,7 +550,14 @@ contains
        call restFile_close( ncid=ncid )
        call timemgr_restart()
     end if
-
+    
+    ! ------------------------------------------------------------------------
+    ! Pass model timestep info to FATES
+    ! ------------------------------------------------------------------------
+    if(use_fates) then
+       call ELMFatesTimesteps()
+    end if
+    
     ! ------------------------------------------------------------------------
     ! Initialize daylength from the previous time step (needed so prev_dayl can be set correctly)
     ! ------------------------------------------------------------------------

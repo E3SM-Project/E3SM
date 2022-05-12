@@ -2,20 +2,20 @@
 #include "damping.h"
 
 void damping() {
-  auto &z             = :: z;
-  auto &u             = :: u;
-  auto &v             = :: v;
-  auto &t             = :: t;
-  auto &na            = :: na;
-  auto &dudt          = :: dudt;
-  auto &dvdt          = :: dvdt;
-  auto &dwdt          = :: dwdt;
-  auto &w             = :: w;
-  auto &dtn           = :: dtn;
-  auto &micro_field   = :: micro_field;
-  auto &qv            = :: qv;
-  auto &qv0           = :: qv0;
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( z              , ::z );
+  YAKL_SCOPE( u              , ::u );
+  YAKL_SCOPE( v              , ::v );
+  YAKL_SCOPE( t              , ::t );
+  YAKL_SCOPE( na             , ::na );
+  YAKL_SCOPE( dudt           , ::dudt );
+  YAKL_SCOPE( dvdt           , ::dvdt );
+  YAKL_SCOPE( dwdt           , ::dwdt );
+  YAKL_SCOPE( w              , ::w );
+  YAKL_SCOPE( dtn            , ::dtn );
+  YAKL_SCOPE( micro_field    , ::micro_field );
+  YAKL_SCOPE( qv             , ::qv );
+  YAKL_SCOPE( qv0            , ::qv0 );
+  YAKL_SCOPE( ncrms          , ::ncrms );
 
   real constexpr tau_min    = 60.0;
   real constexpr tau_max    = 450.0;
@@ -39,7 +39,7 @@ void damping() {
   });
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_DEVICE_LAMBDA (int k, int icrm) {
+  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     if(z(nzm-1,icrm)-z(k,icrm) < fractional_damp_depth*z(nzm-1,icrm)) {
       do_damping(k,icrm)=1;
     } else {
@@ -75,7 +75,7 @@ void damping() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real tmp;
 
     tmp = u(k,offy_u+j,offx_u+i,icrm)/( (real) nx * (real) ny );

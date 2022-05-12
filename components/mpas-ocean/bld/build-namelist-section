@@ -114,6 +114,7 @@ add_default($nl, 'config_Redi_use_surface_taper');
 add_default($nl, 'config_Redi_N2_based_taper_enable');
 add_default($nl, 'config_Redi_N2_based_taper_min');
 add_default($nl, 'config_Redi_N2_based_taper_limit_term1');
+add_default($nl, 'config_Redi_min_layers_diag_terms');
 
 ############################################
 # Namelist group: GM_eddy_parameterization #
@@ -122,7 +123,8 @@ add_default($nl, 'config_Redi_N2_based_taper_limit_term1');
 add_default($nl, 'config_use_GM');
 add_default($nl, 'config_GM_closure');
 add_default($nl, 'config_GM_constant_kappa');
-add_default($nl, 'config_GM_constant_gravWaveSpeed');
+add_default($nl, 'config_GM_constant_bclModeSpeed');
+add_default($nl, 'config_GM_minBclModeSpeed_method');
 add_default($nl, 'config_GM_spatially_variable_min_kappa');
 add_default($nl, 'config_GM_spatially_variable_max_kappa');
 add_default($nl, 'config_GM_spatially_variable_baroclinic_mode');
@@ -226,6 +228,22 @@ add_default($nl, 'config_sw_absorption_type');
 add_default($nl, 'config_jerlov_water_type');
 add_default($nl, 'config_surface_buoyancy_depth');
 add_default($nl, 'config_enable_shortwave_energy_fixer');
+
+###########################################
+# Namelist group: self_attraction_loading #
+###########################################
+
+add_default($nl, 'config_use_self_attraction_loading');
+add_default($nl, 'config_self_attraction_loading_smoothing_width');
+add_default($nl, 'config_mpas_to_grid_weights_file');
+add_default($nl, 'config_grid_to_mpas_weights_file');
+add_default($nl, 'config_self_attraction_loading_compute_interval');
+add_default($nl, 'config_nLatitude');
+add_default($nl, 'config_nLongitude');
+add_default($nl, 'config_use_parallel_self_attraction_loading');
+add_default($nl, 'config_parallel_self_attraction_loading_order');
+add_default($nl, 'config_parallel_self_attraction_loading_n_cells_per_block');
+add_default($nl, 'config_parallel_self_attraction_loading_bfb');
 
 ###########################################
 # Namelist group: tidal_potential_forcing #

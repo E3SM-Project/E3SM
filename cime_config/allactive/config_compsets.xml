@@ -75,6 +75,11 @@
   <lname>SSP585SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
+<compset>
+  <alias>WCYCLSSP370</alias>
+  <lname>SSP370SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
 <!-- E3SM v1 science compsets -->
 
 <compset>
@@ -190,7 +195,7 @@
 </compset>
 
 <compset>
-  <alias>BGCEXP_LNDATM_CNORDCTC_1850</alias>
+  <alias>BGCEXP_LNDATM_CNPRDCTC_1850</alias>
   <lname>1850_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_BGC%LNDATM</lname>
 </compset>
 
@@ -275,12 +280,7 @@
 </compset>
 
 <compset>
-  <alias>BGCEXP_LNDATM_CNORDCTC_20TR</alias>
-  <lname>20TR_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_BGC%LNDATM</lname>
-</compset>
-
-<compset>
-  <alias>BGCEXP_LNDATM_CNORDCTC_20TR</alias>
+  <alias>BGCEXP_LNDATM_CNPRDCTC_20TR</alias>
   <lname>20TR_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_BGC%LNDATM</lname>
 </compset>
 
@@ -361,7 +361,8 @@
   <entry id="RUN_STARTDATE">
     <values>
       <value  compset="20TR_EAM">1850-01-01</value>
-      <value  compset="SSP585_EAM">2015-01-01</value>
+      <value  compset="SSP585.*_EAM">2015-01-01</value>
+      <value  compset="SSP370.*_EAM">2015-01-01</value>
     </values>
   </entry>
 

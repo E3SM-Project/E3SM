@@ -10,7 +10,7 @@ IF (NOT DEFINED PROJECT_NAME)
                      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
                      OUTPUT_VARIABLE LAST_GIT_COMMIT_SHA
                      OUTPUT_STRIP_TRAILING_WHITESPACE)
-  SET (LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA} CACHE STRING "The sha of the last git commit.")
+  SET (LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA})
   MESSAGE (STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
 
 ELSE ()
@@ -135,6 +135,7 @@ ENDIF()
 #if kokkos is needed, then so is cxx
 SET (HOMME_USE_KOKKOS FALSE)
 SET (HOMME_BUILD_KOKKOS_DYCORE FALSE)
+
 IF (BUILD_HOMME_PREQX_KOKKOS OR BUILD_HOMME_THETA_KOKKOS)
   SET (HOMME_BUILD_KOKKOS_DYCORE TRUE)
 ENDIF ()
@@ -166,6 +167,10 @@ IF (HOMME_BUILD_KOKKOS_DYCORE)
     SET (BUILD_HOMME_THETA TRUE)
   ENDIF ()
 ENDIF ()
+
+IF (BUILD_HOMME_PREQX OR BUILD_HOMME_THETA OR BUILD_HOMME_PREQX_ACC)
+  SET (HOMME_BUILD_FORTRAN_DYCORE TRUE)
+ENDIF()
 
 IF (HOMME_ENABLE_COMPOSE)
   SET (HOMME_USE_CXX TRUE)
@@ -288,6 +293,8 @@ IF (${HOMME_USE_KOKKOS})
 
 ENDIF ()
 
+CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/cmake/homme_git_sha.h.in ${HOMME_BINARY_DIR}//homme_git_sha.h)
+
 
 ##############################################################################
 # Zoltan partitioning library
@@ -323,7 +330,7 @@ IF (${ENABLE_NANOTIMERS})
     ADD_DEFINITIONS(-DBIT64)
   ENDIF ()
 ENDIF ()
-ADD_SUBDIRECTORY(utils/cime/src/share/timing)
+ADD_SUBDIRECTORY(utils/cime/CIME/non_py/src/timing)
 
 
 # CMAKE_CURRENT_SOURCE_DIR == homme
@@ -354,13 +361,15 @@ message("-- NetCDF_C_PATH = ${NetCDF_C_PATH}")
 message("-- PnetCDF_Fortran_PATH = ${PnetCDF_Fortran_PATH}")
 message("-- PnetCDF_C_PATH = ${PnetCDF_C_PATH}")
 # pio needs cime/externals/genf90/genf90.pl
-SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/genf90)
 if (HOMME_USE_SCORPIO)
+  # Need to use scorpio's older genf90 for now
+  SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/utils/externals/scorpio/src/genf90)
   SET(PIO_ENABLE_TOOLS OFF CACHE BOOL "Disabling Scorpio tool build")
   ADD_SUBDIRECTORY(utils/externals/scorpio)
 else ()
   # The default I/O library used in "Scorpio classic"
   ADD_SUBDIRECTORY(utils/externals/scorpio_classic)
+  SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/externals/genf90)
 endif ()
 ENDIF()
 
@@ -404,7 +413,7 @@ if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
     
     SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc)
     SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
-    ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
+    ADD_SUBDIRECTORY(utils/cime/CIME/non_py/cprnc)
   ENDIF ()
 ENDIF ()
 
@@ -419,19 +428,31 @@ ADD_SUBDIRECTORY(test/unit_tests)
 # Add libcompose, consisting of just C++ files, so we can build it just once for
 # all exes. It does not depend on compile-time sizes.
 if (HOMME_ENABLE_COMPOSE)
+  message (STATUS "COMPOSE semi-Lagrangian transport enabled")
+  if (HOMME_BUILD_KOKKOS_DYCORE)
+    set (HOMME_BUILD_COMPOSE_CPP TRUE)
+  endif()
+  if (HOMME_BUILD_FORTRAN_DYCORE OR BUILD_HOMME_TOOL)
+    # Fortran dycore(s) and the homme_tool exec do need composef90
+    set (HOMME_BUILD_COMPOSE_F90 TRUE)
+  endif()
   add_definitions(-DHOMME_ENABLE_COMPOSE)
+else ()
+  message (STATUS "COMPOSE semi-Lagrangian transport was explicitly disabled")
+endif()
+
+if (HOMME_BUILD_COMPOSE_F90)
   set (COMPOSE_LIBRARY_F90 "composef90")
   set (COMPOSE_LIBRARY ${COMPOSE_LIBRARY_F90})
   set (COMPOSE_PORT FALSE)
   add_subdirectory(src/share/compose ${COMPOSE_LIBRARY_F90})
-  if (HOMME_BUILD_KOKKOS_DYCORE)
-    set (COMPOSE_LIBRARY_CPP "composec++")
-    set (COMPOSE_LIBRARY ${COMPOSE_LIBRARY_CPP})
-    set (COMPOSE_PORT TRUE)
-    add_subdirectory(src/share/compose ${COMPOSE_LIBRARY_CPP})
-  endif ()
-else ()
-  message ("-- COMPOSE semi-Lagrangian transport was explicitly disabled")
+endif()
+
+if (HOMME_BUILD_COMPOSE_CPP)
+  set (COMPOSE_LIBRARY_CPP "composec++")
+  set (COMPOSE_LIBRARY ${COMPOSE_LIBRARY_CPP})
+  set (COMPOSE_PORT TRUE)
+  add_subdirectory(src/share/compose ${COMPOSE_LIBRARY_CPP})
 endif ()
 
 SET(EXEC_LIST ""  CACHE INTERNAL "List of configured executables")

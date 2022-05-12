@@ -41,7 +41,7 @@ module prim_driver_base
   public :: prim_init1, prim_init2 , prim_run_subcycle, prim_finalize
   public :: prim_init1_geometry, prim_init1_elem_arrays, prim_init1_buffers, prim_init1_cleanup
   public :: prim_init1_compose
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
   public :: prim_init1_no_cam
 #endif
 
@@ -96,7 +96,7 @@ contains
     !       as well as to inject code in between pieces that is needed to
     !       properly setup the C++ structures.
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     ! Initialize a few things that CAM would take care of (e.g., parsing namelist)
     call prim_init1_no_cam (par)
 #endif
@@ -142,7 +142,7 @@ contains
   end subroutine prim_init1
 
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
   subroutine prim_init1_no_cam(par)
     use mesh_mod,       only : MeshUseMeshFile, MeshCubeElemCount
     use cube_mod,       only : CubeElemCount
@@ -739,7 +739,7 @@ contains
   subroutine prim_init2(elem, hybrid, nets, nete, tl, hvcoord)
 
     use control_mod,          only: runtype, test_case, &
-                                    debug_level, vfile_int, vform, vfile_mid, &
+                                    debug_level, vfile_int, vfile_mid, &
                                     topology, dt_remap_factor, dt_tracer_factor,&
                                     sub_case, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
                                     hypervis_subcycle_q, hypervis_subcycle_tom

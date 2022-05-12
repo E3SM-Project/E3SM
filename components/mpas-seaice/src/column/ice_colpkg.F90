@@ -5403,7 +5403,8 @@
                            aicen_init, vicen_init, aicen, vicen, vsnon, &
                            aice0, trcrn, vsnon_init, skl_bgc, &
                            max_algae, max_nbtrcr, &
-                           flux_bion, &
+                           flux_bion, bioPorosityIceCell, &
+                           bioSalinityIceCell, bioTemperatureIceCell, &
                            l_stop, stop_label)
 
       use ice_algae, only: zbio, sklbio
@@ -5455,6 +5456,11 @@
 
       real (kind=dbl_kind), dimension (:,:), intent(out) :: &
          flux_bion      ! per categeory ice to ocean biogeochemistry flux (mmol/m2/s)
+
+      real (kind=dbl_kind), dimension (:), intent(inout) :: &
+         bioPorosityIceCell, & ! category average porosity on the interface bio grid
+         bioSalinityIceCell, & ! (ppt) category average porosity on the interface bio grid
+         bioTemperatureIceCell ! (oC) category average porosity on the interface bio grid
 
       real (kind=dbl_kind), dimension (:,:), intent(inout) :: &
          Zoo            , & ! N losses accumulated in timestep (ie. zooplankton/bacteria)
@@ -5542,10 +5548,11 @@
          iphin       , & ! porosity
          ibrine_sal  , & ! brine salinity  (ppt)
          ibrine_rho  , & ! brine_density (kg/m^3)
+         iSin        , & ! Salinity on the interface grid (ppt)
          iTin            ! Temperature on the interface grid (oC)
 
       real (kind=dbl_kind) :: &
-         sloss            ! brine flux contribution from surface runoff (g/m^2)
+         sloss           ! brine flux contribution from surface runoff (g/m^2)
 
       real (kind=dbl_kind), dimension (ncat) :: &
          hbrnInitial, & ! inital brine height
@@ -5565,6 +5572,9 @@
       zspace(nblyr+1) = p5*zspace(nblyr+1)
 
       l_stop = .false.
+      bioPorosityIceCell(:) = c0
+      bioSalinityIceCell(:) = c0
+      bioTemperatureIceCell(:) = c0
 
       do n = 1, ncat
 
@@ -5639,7 +5649,7 @@
                                 first_ice(n),     bSin,        brine_sal,         &
                                 brine_rho,        iphin,       ibrine_rho,        &
                                 ibrine_sal,       sice_rho(n), sloss,             &
-                                salinz(1:nilyr),  l_stop,      stop_label)
+                                salinz(1:nilyr),  iSin(:),     l_stop,      stop_label)
 
                   if (l_stop) return
                else
@@ -5658,7 +5668,8 @@
                                    bphi_o,        phi_snow,      bSin(:),     &
                                    brine_sal(:),  brine_rho(:),  iphin(:),    &
                                    ibrine_rho(:), ibrine_sal(:), sice_rho(n), &
-                                   iDi(:,n),      l_stop,        stop_label)
+                                   iDi(:,n),      iSin(:),       l_stop,      &
+                                   stop_label)
 
                endif ! solve_zsal
 
@@ -5756,7 +5767,9 @@
                           PP_net,                ice_bio_net (:),        &
                           snow_bio_net(:),       grow_net,               &
                           totalChla,                                     &
-                          flux_bion(:,n),                                &
+                          flux_bion(:,n),        iSin,                   &
+                          bioPorosityIceCell(:), bioSalinityIceCell(:),  &
+                          bioTemperatureIceCell(:),                      &
                           l_stop,                stop_label)
 
                if (l_stop) return

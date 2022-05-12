@@ -56,7 +56,8 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: salineContractCoeff
    real (kind=RKIND), dimension(:,:), pointer :: BruntVaisalaFreqTop
    real (kind=RKIND), dimension(:,:), pointer :: tangentialVelocity
-   real (kind=RKIND), dimension(:,:), pointer :: layerThickEdge
+   real (kind=RKIND), dimension(:,:), pointer :: layerThickEdgeFlux
+   real (kind=RKIND), dimension(:,:), pointer :: layerThickEdgeMean
    real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell
    real (kind=RKIND), dimension(:,:), pointer :: vertVelocityTop
    real (kind=RKIND), dimension(:,:), pointer :: vertTransportVelocityTop
@@ -68,6 +69,7 @@ module ocn_diagnostics_variables
 
    real (kind=RKIND), dimension(:), pointer :: gradSSH
    real (kind=RKIND), dimension(:), pointer :: pressureAdjustedSSH
+   real (kind=RKIND), dimension(:), pointer :: ssh_sal
 
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceLayerValue
@@ -183,8 +185,6 @@ module ocn_diagnostics_variables
 
    real (kind=RKIND), pointer :: globalVerticalStretchMax, globalVerticalStretchMin
    real (kind=RKIND), dimension(:), pointer :: betaEdge
-   real (kind=RKIND), dimension(:), pointer :: eddyLength
-   real (kind=RKIND), dimension(:), pointer :: eddyTime
    real (kind=RKIND), dimension(:), pointer :: gmResolutionTaper
 
    ! Semi-implicit Array Pointers
@@ -341,6 +341,12 @@ contains
                    topographic_wave_drag)
       end if
 
+      if (config_use_tidal_potential_forcing) then
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'ssh_sal', &
+                   ssh_sal)
+      end if
+
       if ( trim(config_ocean_run_mode) == 'init' .or. &
                 config_AM_debugDiagnostics_enable ) then
          call mpas_pool_get_array(diagnosticsPool, 'rx1MaxCell', &
@@ -415,8 +421,10 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'vertGMBolusVelocityTop', &
                    vertGMBolusVelocityTop)
 
-         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', &
-                   layerThickEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdgeFlux', &
+                   layerThickEdgeFlux)
+         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdgeMean', &
+                   layerThickEdgeMean)
 
          call mpas_pool_get_array(diagnosticsPool, &
                   'normalizedRelativeVorticityEdge', &
@@ -569,8 +577,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'barotropicCoriolisTerm', &
                 barotropicCoriolisTerm)
       call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'eddyLength', eddyLength)
-      call mpas_pool_get_array(diagnosticsPool, 'eddyTime', eddyTime)
       call mpas_pool_get_array(diagnosticsPool, &
                'bottomLayerShortwaveTemperatureFlux', &
                 bottomLayerShortwaveTemperatureFlux)
@@ -617,7 +623,7 @@ contains
 
       ! Copy diagnostic variables to accelerator
       if ( trim(config_land_ice_flux_mode) /= 'off' ) then
-         !$acc enter data copyin(                                 &
+         !$acc enter data create(                                 &
          !$acc                   topDrag,                         &
          !$acc                   topDragMag,                      &
          !$acc                   indexBLT,                        &
@@ -629,10 +635,13 @@ contains
          !$acc                   landIceFrictionVelocity)
       end if
       if (config_use_topographic_wave_drag) then
-         !$acc enter data copyin(topographic_wave_drag)
+         !$acc enter data create(topographic_wave_drag)
+      end if
+      if (config_use_self_attraction_loading) then
+         !$acc enter data copyin(ssh_sal)
       end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
-         !$acc enter data copyin(                          &
+         !$acc enter data create(                          &
          !$acc                   rx1Edge,                  &
          !$acc                   rx1Cell,                  &
          !$acc                   rx1MaxEdge,               &
@@ -644,13 +653,13 @@ contains
       end if
       if ( trim(config_ocean_run_mode) == 'init' .or. &
                 config_AM_debugDiagnostics_enable ) then
-         !$acc enter data copyin(                          &
+         !$acc enter data create(                          &
          !$acc                   rx1MaxCell,               &
          !$acc                   globalRx1Max)
       end if
       if ( trim(config_ocean_run_mode) == 'forward' .or. &
            trim(config_ocean_run_mode) == 'analysis' ) then
-         !$acc enter data copyin(                                 &
+         !$acc enter data create(                                 &
          !$acc                   k33,                             &
          !$acc                   gradSSH,                         &
          !$acc                   gradSSHX,                        &
@@ -672,7 +681,8 @@ contains
          !$acc                   GMStreamFuncX,                   &
          !$acc                   GMStreamFuncY,                   &
          !$acc                   GMStreamFuncZ,                   &
-         !$acc                   layerThickEdge,                  &
+         !$acc                   layerThickEdgeFlux,              &
+         !$acc                   layerThickEdgeMean,              &
          !$acc                   slopeTriadDown,                  &
          !$acc                   normRelVortEdge,                 &
          !$acc                   surfaceVelocity,                 &
@@ -730,12 +740,12 @@ contains
          !$acc                   )
       end if
       if ( trim(config_ocean_run_mode) == 'forward' ) then
-         !$acc enter data copyin( &
+         !$acc enter data create( &
          !$acc                   wettingVelocity              &
          !$acc                   )
       end if
       if ( config_use_GM ) then
-         !$acc enter data copyin(                   &
+         !$acc enter data create(                   &
          !$acc                   RediKappa,         &
          !$acc                   gmBolusKappa,      &
          !$acc                   gmKappaScaling,    &
@@ -746,7 +756,7 @@ contains
          !$acc                   )
       end if
       if ( config_compute_active_tracer_budgets ) then
-         !$acc enter data copyin(                                         &
+         !$acc enter data create(                                         &
          !$acc                   activeTracerHorMixTendency,              &
          !$acc                   activeTracerVertMixTendency,             &
          !$acc                   temperatureShortWaveTendency,            &
@@ -759,12 +769,12 @@ contains
          !$acc                   )
       end if
       if ( config_use_activeTracers_surface_restoring ) then
-         !$acc enter data copyin(                                  &
+         !$acc enter data create(                                  &
          !$acc                   salinitySurfaceRestoringTendency  &
          !$acc                   )
       end if
       if ( trim(config_time_integrator) == 'split_implicit' ) then
-         !$acc enter data copyin(                       &
+         !$acc enter data create(                       &
          !$acc                   SIvec_r0,              &
          !$acc                   SIvec_r00,             &
          !$acc                   SIvec_r1,              &
@@ -796,16 +806,14 @@ contains
          !$acc                   )
       end if
 
-      !$acc enter data copyin(                                         &
+      !$acc enter data create(                                         &
       !$acc                   zMid,                                    &
       !$acc                   zTop,                                    &
       !$acc                   xtime,                                   &
       !$acc                   indMLD,                                  &
       !$acc                   density,                                 &
       !$acc                   betaEdge,                                &
-      !$acc                   eddyTime,                                &
       !$acc                   pressure,                                &
-      !$acc                   eddyLength,                              &
       !$acc                   thermExpCoeff,                           &
       !$acc                   sfcFlxAttCoeff,                          &
       !$acc                   surfacePressure,                         &
@@ -868,6 +876,9 @@ contains
       if (config_use_topographic_wave_drag) then
          !$acc exit data delete(topographic_wave_drag)
       end if
+      if (config_use_self_attraction_loading) then
+         !$acc exit data delete(ssh_sal)
+      end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
          !$acc exit data delete(                           &
          !$acc                   rx1Edge,                  &
@@ -909,7 +920,8 @@ contains
          !$acc                   GMStreamFuncX,                   &
          !$acc                   GMStreamFuncY,                   &
          !$acc                   GMStreamFuncZ,                   &
-         !$acc                   layerThickEdge,                  &
+         !$acc                   layerThickEdgeFlux,              &
+         !$acc                   layerThickEdgeMean,              &
          !$acc                   slopeTriadDown,                  &
          !$acc                   normRelVortEdge,                 &
          !$acc                   surfaceVelocity,                 &
@@ -1040,9 +1052,7 @@ contains
       !$acc                   indMLD,                                  &
       !$acc                   density,                                 &
       !$acc                   betaEdge,                                &
-      !$acc                   eddyTime,                                &
       !$acc                   pressure,                                &
-      !$acc                   eddyLength,                              &
       !$acc                   thermExpCoeff,                           &
       !$acc                   sfcFlxAttCoeff,                          &
       !$acc                   surfacePressure,                         &
@@ -1107,7 +1117,8 @@ contains
                  GMStreamFuncX,                   &
                  GMStreamFuncY,                   &
                  GMStreamFuncZ,                   &
-                 layerThickEdge,                  &
+                 layerThickEdgeFlux,              &
+                 layerThickEdgeMean,              &
                  slopeTriadDown,                  &
                  normRelVortEdge,                 &
                  surfaceVelocity,                 &
@@ -1189,6 +1200,9 @@ contains
       if ( config_use_activeTracers_surface_restoring ) then
          nullify(salinitySurfaceRestoringTendency)
       end if
+      if ( config_use_self_attraction_loading ) then
+         nullify(ssh_sal)
+      end if
       if ( trim(config_time_integrator) == 'split_implicit' ) then
          nullify(SIvec_r0,              &
                  SIvec_r00,             &
@@ -1226,9 +1240,7 @@ contains
               indMLD,                                  &
               density,                                 &
               betaEdge,                                &
-              eddyTime,                                &
               pressure,                                &
-              eddyLength,                              &
               thermExpCoeff,                           &
               sfcFlxAttCoeff,                          &
               surfacePressure,                         &

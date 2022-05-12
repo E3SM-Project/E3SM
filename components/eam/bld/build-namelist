@@ -911,6 +911,11 @@ if ($co2_cycle) {
     # co2_flag turns on the co2_cycle code in CAM
     add_default($nl, 'co2_flag', 'val'=>'.true.');
 
+    add_default($nl, 'co2_print_diags_timestep', 'val'=>'.false.');
+    add_default($nl, 'co2_print_diags_monthly', 'val'=>'.true.');
+    add_default($nl, 'co2_print_diags_total', 'val'=>'.true.');
+    add_default($nl, 'co2_conserv_error_tol_per_year', 'val'=>'5.e-13');
+
 
     # Supply a fossil fuel dataset if the co2_cycle is active and it's a
     # transient run ...
@@ -923,8 +928,7 @@ if ($co2_cycle) {
 	if ($nl->get_value('co2_readflux_fuel') =~ /$TRUE/io) {
 	    add_default($nl, 'co2flux_fuel_file', 'sim_year'=>$sim_year);
 	}
- 	
-	#change the default value from '.true.' to '.false.'
+
         add_default($nl, 'co2_readflux_aircraft', 'val'=>'.false.');
 
         # Check whether user has explicitly turned off reading the aircraft CO2 dataset.
@@ -936,7 +940,7 @@ if ($co2_cycle) {
             add_default($nl, 'aircraft_specifier', 'val'=>$emisval);
 
             add_default($nl, 'aircraft_datapath');
-            add_default($nl, 'aircraft_type');
+            add_default($nl, 'aircraft_type', 'val'=>'SERIAL');
 	}		   
     }
 }

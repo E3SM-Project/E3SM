@@ -10,41 +10,64 @@
 
 _TESTS = {
 
-    "e3sm_land_developer" : {
+    "e3sm_mosart_developer" : {
+        "share" : True,
         "time"  : "0:45:00",
+        "tests" : (
+            "ERS.r05_r05.RMOSGPCC.mosart-gpcc_1972",
+            "ERS.MOS_USRDAT.RMOSGPCC.mosart-mos_usrdat",
+            "SMS.MOS_USRDAT.RMOSGPCC.mosart-unstructure",
+            )
+        },
+
+    "e3sm_land_exeshare" : {
+        "share" : True,
+        "time"  : "0:45:00",
+        "tests" : (
+            "ERS.f09_g16.IELMBC",
+            "ERS.f19_g16.I1850CNECACNTBC.elm-eca",
+            "ERS.f19_g16.I1850CNECACTCBC.elm-eca",
+            "ERS.f19_g16.I1850CNRDCTCBC.elm-rd",
+            "ERS.f09_g16.I1850GSWCNPRDCTCBC.elm-vstrd",
+            "ERS.f19_g16.I1850GSWCNPECACNTBC.elm-eca_f19_g16_I1850GSWCNPECACNTBC",
+            "ERS.f19_g16.I20TRGSWCNPECACNTBC.elm-eca_f19_g16_I20TRGSWCNPECACNTBC",
+            "ERS.f19_g16.I1850GSWCNPRDCTCBC.elm-ctc_f19_g16_I1850GSWCNPRDCTCBC",
+            "ERS.f19_g16.I20TRGSWCNPRDCTCBC.elm-ctc_f19_g16_I20TRGSWCNPRDCTCBC",
+            )
+        },
+
+    "e3sm_land_exenoshare" : {
+        "time"  : "0:45:00",
+        "tests" : (
+            "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
+            )
+        },
+
+    "e3sm_land_developer" : {
+        "share" : True,
+        "time"  : "0:45:00",
+        "inherit" : ("e3sm_mosart_developer", "e3sm_land_exeshare", "e3sm_land_exenoshare"),
         "tests" : (
             "ERS.f19_f19.IELM",
             "ERS.f19_f19.I1850ELMCN",
             "ERS.f09_g16.I1850ELMCN",
             "ERS.f19_f19.I20TRELMCN",
             "SMS_Ld1.hcru_hcru.I1850CRUELMCN",
-            "ERS.f19_g16.I1850CNECACNTBC.elm-eca",
-            "ERS.f19_g16.I1850CNECACTCBC.elm-eca",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-force_netcdf_pio",
-            "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
             "SMS_Ld20.f45_f45.IELMFATES.elm-fates_rd",
             "SMS_Ld20.f45_f45.IELMFATES.elm-fates_eca",
             "SMS_Ld30.f45_f45.IELMFATES.elm-fates_satphen",
             "ERS.f19_g16.I1850ELM.elm-betr",
             "ERS.f19_g16.I1850ELM.elm-vst",
-            "ERS.f09_g16.I1850GSWCNPRDCTCBC.elm-vstrd",
             "ERS.f09_g16.I1850ELMCN.elm-bgcinterface",
             "ERS.ne11_oQU240.I20TRELM",
-            "ERS.f19_g16.I1850CNRDCTCBC.elm-rd",
-            "ERS.f19_g16.I1850GSWCNPECACNTBC.elm-eca_f19_g16_I1850GSWCNPECACNTBC",
-            "ERS.f19_g16.I20TRGSWCNPECACNTBC.elm-eca_f19_g16_I20TRGSWCNPECACNTBC",
-            "ERS.f19_g16.I1850GSWCNPRDCTCBC.elm-ctc_f19_g16_I1850GSWCNPRDCTCBC",
-            "ERS.f19_g16.I20TRGSWCNPRDCTCBC.elm-ctc_f19_g16_I20TRGSWCNPRDCTCBC",
-            "ERS.f09_g16.IELMBC",
             "SMS.r05_r05.I1850ELMCN.elm-qian_1948",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-lulcc_sville",
             "SMS_Ly2_P1x1.1x1_smallvilleIA.IELMCNCROP.elm-per_crop",
-            "ERS.r05_r05.RMOSGPCC.mosart-gpcc_1972",
-            "ERS.MOS_USRDAT.RMOSGPCC.mosart-mos_usrdat",
-            "SMS.MOS_USRDAT.RMOSGPCC.mosart-unstructure",
             "SMS.r05_r05.IELM.elm-topounit",
             "ERS.ELM_USRDAT.I1850ELM.elm-usrdat",
-            "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features"
+            "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features",
+            "ERS.f09_f09.IELM.elm-solar_rad"
             )
         },
 
@@ -71,8 +94,8 @@ _TESTS = {
             "PEM_Ln5.ne4_oQU240.F2010",
             "SMS_D_Ln5.ne4_oQU240.F2010.eam-cosplite_nhtfrq5",
             "SMS_Ln1.ne4_oQU240.F2010.eam-chem_pp",
-            "SMS_Ln5.ne30pg2_EC30to60E2r2.BGCEXP_LNDATM_CNORDCTC_20TR",
-            "SMS_Ln5.ne30pg2_EC30to60E2r2.BGCEXP_LNDATM_CNORDCTC_1850",
+            "SMS_Ln5.ne30pg2_r05_EC30to60E2r2.BGCEXP_LNDATM_CNPRDCTC_20TR",
+            "SMS_Ln5.ne30pg2_r05_EC30to60E2r2.BGCEXP_LNDATM_CNPRDCTC_1850",
             "SMS_D_Ln5.ne4_oQU240.F2010.eam-clubb_sp",
             "ERS_Ld5.ne4_oQU240.F2010.eam-rrtmgp",
             "ERS_Ld5.ne4_oQU240.F2010.eam-rrtmgpxx",
@@ -155,7 +178,7 @@ _TESTS = {
         },
 
     "e3sm_integration" : {
-        "inherit" : ("e3sm_developer", "e3sm_atm_integration"),
+        "inherit" : ("e3sm_developer", "e3sm_atm_integration", "e3sm_mmf_integration"),
         "time"    : "03:00:00",
         "tests"   : (
             "ERS.ne11_oQU240.WCYCL1850NS",
@@ -174,12 +197,6 @@ _TESTS = {
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             "SMS_D_Ld3.T62_oQU120.CMPASO-IAF",
             "SMS_D_Ld1.ne30pg2_r05_EC30to60E2r2.WCYCL1850",
-            "ERP_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_fixed_subcycle",
-            "ERS_Ln9.ne4pg2_oQU480.F20TR-MMFXX.eam-mmf_use_VT",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFOMP.eam-single_thread",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
-            "SMS_Ln5.ne4_ne4.F-MMFXX-SCM-ARM97",
             )
         },
 
@@ -211,21 +228,14 @@ _TESTS = {
         },
 
     #e3sm MMF tests for development
-    "e3sm_mmf" : {
-        "time" : "02:00:00",
+    "e3sm_mmf_integration" : {
         "tests" : (
-            # MMF tests
-            "SMS_D_Ln3.ne4pg2_ne4pg2.F-MMF1",
-            "SMS_Ln3.ne4pg2_ne4pg2.F-MMFXX-AQP1",
-            "SMS_Ln3.ne4pg2_ne4pg2.F-MMFXX-RCEMIP",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1.eam-mmf_crmout",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_crmout",
-            "SMS_Ln9.ne4pg2_ne4pg2.F-MMF2-ECPP",
-            # MMF-SCM tests
-            "SMS_Ln5.ne4_ne4.F-MMF1-SCM-ARM97",
+            "ERP_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_fixed_subcycle",
+            "ERS_Ln9.ne4pg2_oQU480.F20TR-MMFXX.eam-mmf_use_VT",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFOMP.eam-single_thread",
+            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
             "SMS_Ln5.ne4_ne4.F-MMFXX-SCM-ARM97",
-            # non-MMF tests with RRTMGP
-            "ERP_Ln9.ne4pg2_oQU480.F2010.eam-rrtmgp",
             )
         },
 
@@ -426,7 +436,6 @@ _TESTS = {
 
     "e3sm_gpuomp" : {
         "tests"    : (
-                 "SMS_Ln9.ne4pg2_ne4pg2.F-MMFOMP.eam-single_thread",
                  "SMS_Ld1.T62_oEC60to30v3.DTESTM",
                  )
     },

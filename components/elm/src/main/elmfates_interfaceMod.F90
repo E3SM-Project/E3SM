@@ -68,7 +68,7 @@ module ELMFatesInterfaceMod
    use elm_varpar        , only : numrad
    use elm_varpar        , only : ivis
    use elm_varpar        , only : inir
-   use elm_varpar        , only : nlevgrnd
+   use elm_varpar        , only : nlevsoi
    use elm_varpar        , only : nlevdecomp
    use elm_varpar        , only : nlevdecomp_full
    use elm_varpar        , only : i_met_lit, i_cel_lit, i_lig_lit
@@ -99,7 +99,7 @@ module ELMFatesInterfaceMod
    use ColumnType        , only : col_pp
    use ColumnDataType    , only : col_es, col_ws, col_wf, col_cs, col_cf
    use ColumnDataType    , only : col_nf, col_pf
-   use VegetationDataType, only : veg_es, veg_wf
+   use VegetationDataType, only : veg_es, veg_wf, veg_ws
    use LandunitType      , only : lun_pp
 
    use landunit_varcon   , only : istsoil
@@ -121,13 +121,15 @@ module ELMFatesInterfaceMod
    use FatesInterfaceMod     , only : set_fates_ctrlparms
    use FatesInterfaceMod     , only : zero_bcs
    use FatesInterfaceMod     , only : FatesInterfaceInit
-
+   use FatesInterfaceMod     , only : UpdateFatesRMeansTStep
+   use FatesInterfaceMod     , only : InitTimeAveragingGlobals
+   
    use FatesHistoryInterfaceMod, only : fates_hist
    use FatesRestartInterfaceMod, only : fates_restart_interface_type
 
    use PRTGenericMod         , only : num_elements
    use EDTypesMod            , only : ed_patch_type
-   use FatesInterfaceTypesMod, only : hlm_numlevgrnd
+   use FatesInterfaceTypesMod, only : hlm_stepsize
    use EDMainMod             , only : ed_ecosystem_dynamics
    use EDMainMod             , only : ed_update_site
    use EDInitMod             , only : zero_site
@@ -217,7 +219,8 @@ module ELMFatesInterfaceMod
       procedure, private :: init_soil_depths
       procedure, public  :: ComputeRootSoilFlux
       procedure, public  :: wrap_hydraulics_drive
-
+      procedure, public  :: WrapUpdateFatesRmean
+      
    end type hlm_fates_interface_type
 
    ! hlm_bounds_to_fates_bounds is not currently called outside the interface.
@@ -237,7 +240,8 @@ module ELMFatesInterfaceMod
         __FILE__
 
    public  :: ELMFatesGlobals
-
+   public  :: ELMFatesTimesteps
+   
 contains
 
 
@@ -305,7 +309,7 @@ verbose_output = .false.
         call set_fates_ctrlparms('vis_sw_index',ival=ivis)
         call set_fates_ctrlparms('nir_sw_index',ival=inir)
 
-        call set_fates_ctrlparms('num_lev_ground',ival=nlevgrnd)
+        call set_fates_ctrlparms('num_lev_soil',ival=nlevsoi)
         call set_fates_ctrlparms('hlm_name',cval='ELM')
         call set_fates_ctrlparms('hio_ignore_val',rval=spval)
         call set_fates_ctrlparms('soilwater_ipedof',ival=get_ipedof(0))
@@ -480,7 +484,18 @@ verbose_output = .false.
 
      return
    end subroutine ELMFatesGlobals
-
+   
+   ! ====================================================================================
+   
+   subroutine ELMFatesTimesteps()
+     
+     hlm_stepsize = real(get_step_size(),r8)
+     
+     call InitTimeAveragingGlobals()
+     
+     return
+   end subroutine ELMFatesTimesteps
+   
    ! ====================================================================================
 
    subroutine init(this, bounds_proc )
@@ -827,8 +842,6 @@ verbose_output = .false.
 
          do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
             p = ifp+col_pp%pfti(c)
-            this%fates(nc)%bc_in(s)%t_veg24_pa(ifp) = &
-                 veg_es%t_veg24(p)
 
             this%fates(nc)%bc_in(s)%precip24_pa(ifp) = &
                   top_af_inst%prec24h(t)
@@ -1550,6 +1563,11 @@ verbose_output = .false.
                ! ------------------------------------------------------------------------
                ! Update history IO fields that depend on ecosystem dynamics
                ! ------------------------------------------------------------------------
+               call fates_hist%flush_hvars(nc,upfreq_in=1)
+               do s = 1,this%fates(nc)%nsites
+                  call fates_hist%zero_site_hvars(this%fates(nc)%sites(s),     &
+                       upfreq_in=1)
+               end do
                call fates_hist%update_history_dyn( nc, &
                     this%fates(nc)%nsites,                 &
                     this%fates(nc)%sites)
@@ -1701,6 +1719,12 @@ verbose_output = .false.
            ! ------------------------------------------------------------------------
            ! Update history IO fields that depend on ecosystem dynamics
            ! ------------------------------------------------------------------------
+
+           call fates_hist%flush_hvars(nc,upfreq_in=1)
+           do s = 1,this%fates(nc)%nsites
+              call fates_hist%zero_site_hvars(this%fates(nc)%sites(s),     &
+                   upfreq_in=1)
+           end do
            call fates_hist%update_history_dyn( nc, &
                 this%fates(nc)%nsites,                 &
                 this%fates(nc)%sites)
@@ -2030,7 +2054,6 @@ verbose_output = .false.
     use elm_varctl        , only : iulog
     use perf_mod          , only : t_startf, t_stopf
     use quadraticMod      , only : quadratic
-    use EDTypesMod        , only : dinc_ed
     use EDtypesMod        , only : ed_patch_type, ed_cohort_type, ed_site_type
 
     !
@@ -2234,6 +2257,12 @@ verbose_output = .false.
              this%fates(nc)%bc_in(s)%albgr_dir_rb(:) = albgrd_col(c,:)
              this%fates(nc)%bc_in(s)%albgr_dif_rb(:) = albgri_col(c,:)
 
+             if (veg_es%t_veg(p) <= tfrz) then
+                this%fates(nc)%bc_in(s)%fcansno_pa(ifp) = veg_ws%fwet(p)
+             else
+                this%fates(nc)%bc_in(s)%fcansno_pa(ifp) = 0._r8
+             end if
+             
           else
 
              this%fates(nc)%bc_in(s)%filter_vegzen_pa(ifp) = .false.
@@ -2357,13 +2386,35 @@ end subroutine wrap_update_hifrq_hist
 
  ! ======================================================================================
 
+ subroutine WrapUpdateFatesRmean(this, nc)
+   
+   class(hlm_fates_interface_type), intent(inout) :: this
+   integer,intent(in) :: nc
+   
+   ! !LOCAL VARIABLES:
+   integer                     :: s,c,p,ifp  ! indices and loop counters
+   
+   do s = 1, this%fates(nc)%nsites
+      c = this%f2hmap(nc)%fcolumn(s)
+      do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
+         p = ifp+col_pp%pfti(c)
+         this%fates(nc)%bc_in(s)%t_veg_pa(ifp) = veg_es%t_veg(p)
+      end do
+   end do
+
+   call UpdateFatesRMeansTStep(this%fates(nc)%sites,this%fates(nc)%bc_in)
+   
+  end subroutine WrapUpdateFatesRmean
+
+ 
+ ! ======================================================================================
+ 
  subroutine init_history_io(this,bounds_proc)
 
    use histFileMod, only : hist_addfld1d, hist_addfld2d, hist_addfld_decomp
 
    use FatesConstantsMod, only : fates_short_string_length, fates_long_string_length
-   use FatesIOVariableKindMod, only : patch_r8, patch_ground_r8, patch_size_pft_r8
-   use FatesIOVariableKindMod, only : site_r8, site_ground_r8, site_size_pft_r8
+   use FatesIOVariableKindMod, only : site_r8, site_soil_r8, site_size_pft_r8
    use FatesIOVariableKindMod, only : site_size_r8, site_pft_r8, site_age_r8
    use FatesIOVariableKindMod, only : site_fuel_r8, site_cwdsc_r8, site_scag_r8
    use FatesIOVariableKindMod, only : site_scagpft_r8, site_agepft_r8, site_agefuel_r8
@@ -2458,28 +2509,13 @@ end subroutine wrap_update_hifrq_hist
         ioname = trim(fates_hist%dim_kinds(dk_index)%name)
 
         select case(trim(ioname))
-        case(patch_r8)
-           call hist_addfld1d(fname=trim(vname),units=trim(vunits),         &
-                              avgflag=trim(vavgflag),long_name=trim(vlong), &
-                              ptr_patch=fates_hist%hvars(ivar)%r81d,    &
-                              default=trim(vdefault))
-
         case(site_r8)
            call hist_addfld1d(fname=trim(vname),units=trim(vunits),         &
                               avgflag=trim(vavgflag),long_name=trim(vlong), &
                               ptr_col=fates_hist%hvars(ivar)%r81d,      &
                               default=trim(vdefault))
 
-        case(patch_ground_r8,patch_size_pft_r8)
-           d_index = fates_hist%dim_kinds(dk_index)%dim2_index
-           dim2name = fates_hist%dim_bounds(d_index)%name
-           call hist_addfld2d(fname=trim(vname),units=trim(vunits),         & ! <--- addfld2d
-                              type2d=trim(dim2name),                        & ! <--- type2d
-                              avgflag=trim(vavgflag),long_name=trim(vlong), &
-                              ptr_patch=fates_hist%hvars(ivar)%r82d,    &
-                              default=trim(vdefault))
-
-       case(site_ground_r8, site_size_pft_r8, site_size_r8, site_pft_r8, &
+       case(site_soil_r8, site_size_pft_r8, site_size_r8, site_pft_r8, &
              site_age_r8, site_height_r8, site_fuel_r8, site_cwdsc_r8, &
              site_can_r8,site_cnlf_r8, site_cnlfpft_r8, site_scag_r8, &
              site_scagpft_r8, site_agepft_r8, site_elem_r8, site_elpft_r8, &
@@ -2748,7 +2784,6 @@ end subroutine wrap_update_hifrq_hist
    use FatesLitterMod,    only : ncwd_fates       => ncwd
    use EDtypesMod,        only : nlevleaf_fates   => nlevleaf
    use EDtypesMod,        only : nclmax_fates     => nclmax
-   use elm_varpar,        only : nlevgrnd
    use FatesInterfaceTypesMod, only : numpft_fates     => numpft
    use FatesInterfaceTypesMod, only : nlevcoage
 
@@ -2760,14 +2795,11 @@ end subroutine wrap_update_hifrq_hist
    fates%cohort_begin = hlm%begcohort
    fates%cohort_end = hlm%endcohort
 
-   fates%patch_begin = hlm%begp
-   fates%patch_end = hlm%endp
-
    fates%column_begin = hlm%begc
    fates%column_end = hlm%endc
 
-   fates%ground_begin = 1
-   fates%ground_end = nlevgrnd
+   fates%soil_begin = 1
+   fates%soil_end = nlevsoi
 
    fates%sizepft_class_begin = 1
    fates%sizepft_class_end = nlevsclass_fates * numpft_fates

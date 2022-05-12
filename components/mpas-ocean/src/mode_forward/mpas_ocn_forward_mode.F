@@ -59,6 +59,7 @@ module ocn_forward_mode
    use ocn_frazil_forcing
    use ocn_tidal_forcing
    use ocn_vel_tidal_potential
+   use ocn_vel_self_attraction_loading
 
    use ocn_tracer_hmix
    use ocn_tracer_hmix_redi
@@ -350,6 +351,10 @@ module ocn_forward_mode
       call mpas_reset_clock_alarm(domain % clock, 'salinityDataReadAlarm', ierr=err_tmp)
 
       endif
+
+      ! Initialize self-attraction and loading
+      call ocn_vel_self_attraction_loading_init(domain,err_tmp)
+      ierr = ior(ierr, err_tmp)
 
       !-----------------------------------------------------------------
       ! Complete all remaining module initializations.
