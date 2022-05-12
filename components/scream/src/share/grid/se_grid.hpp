@@ -25,6 +25,16 @@ public:
   FieldLayout get_3d_scalar_layout (const bool midpoints) const override;
   FieldLayout get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, const int vector_dim) const override;
 
+  FieldTag get_partitioned_dim_tag () const override {
+    return FieldTag::Element;
+  }
+  int get_partitioned_dim_local_size  () const override {
+    return m_num_local_elem;
+  }
+  int get_partitioned_dim_global_size () const override {
+    return m_num_global_elem;
+  }
+
   // Set/retrieve the CG grid dofs
   void set_cg_dofs (const dofs_list_type& cg_dofs);
   const dofs_list_type& get_cg_dofs_gids () const;
@@ -36,6 +46,7 @@ protected:
 
   // SE dims
   int       m_num_local_elem;
+  int       m_num_global_elem;
   int       m_num_gp;
 
   // The dofs gids for a CG version of this grid
