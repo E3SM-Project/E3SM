@@ -33,9 +33,11 @@ Fields:
       - vtheta_dp_dyn
       - dp3d_dyn
 Output Control:
+  MPI Ranks in Filename: true
   Frequency: 2
   Frequency Units: Steps
 Checkpoint Control:
+  MPI Ranks in Filename: true
   Frequency: 1
   Frequency Units: Steps
 ...
