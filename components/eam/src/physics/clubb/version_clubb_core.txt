@@ -1,67 +1,65 @@
-commit 86d4dab13e697291f9e7d5fa111f2f22334b9cb4
-Author: Vincent Larson <vlarson@users.noreply.github.com>
-Date:   Thu Apr 14 08:31:38 2022 -0500
+commit b518f7f0bbb4edc5825b926c8dcfa4ca54a4a3ce
+Author: pbroels <pbroels@uwm.edu>
+Date:   Wed May 11 15:37:50 2022 -0500
 
-    Set the Priority of nondimensional moments to False.
+    Adding comments to explain confusing or complicated portions of the Jenkinsfiles.
 
-commit 9e84a8e6f9f754e0c697de8a3e70718211972648
-Author: Vincent Larson <vlarson@users.noreply.github.com>
-Date:   Thu Apr 14 08:28:24 2022 -0500
+commit 3e2c65368a75545b887c4bd29875345ff56bee7a
+Author: JanGrn <jan.gruenenwald@gmail.com>
+Date:   Thu May 5 12:34:10 2022 -0500
 
-    Updates description of generating pyplotgen movies
+    Bugfix for merge #1000. stderr was not imported in stat_clubb_utilities.F90, causing compilation to fail.
 
-commit 70e286f86102af741c96a104bc69d0e40dcd66ad
-Author: bmg929 <bmg2@uwm.edu>
-Date:   Tue Apr 12 18:12:09 2022 -0500
+commit ff0b28e5052ca104fd67313e5e9759d6f7f80238
+Author: huebleruwm <37674341+huebleruwm@users.noreply.github.com>
+Date:   Thu May 5 15:20:38 2022 -0500
 
-    I added the code for the l_linearize_pbl_winds flag that was originally
-    brought to us by Sean Santos
-
-commit d0c9b3461825ae93070b9286d743bb6c260672f5
-Author: bmg929 <bmg2@uwm.edu>
-Date:   Tue Apr 5 17:59:28 2022 -0500
-
-    Added idiot-proofing to print a warning message when l_diag_Lscale_from_tau
-    is being used and C1, C1b, C2rt, C2thl, C2rtthl, C6rt, C6rtb, C6thl, C6thlb,
-    or C14 do not have a value 1.  This can later be upgraded to a fatal error
-    when we can finally run this code with the C2 and C6 families of parameters
-    having a value of 1 (that value is currently 2 right now).
-
-commit 96059a242e69c4e7ed340487ee6b7e4239c33541
-Author: bmg929 <bmg2@uwm.edu>
-Date:   Tue Mar 29 17:04:58 2022 -0500
-
-    Added a3_coef_min to the list of CLUBB's tunable parameter and then
-    commented-in the a3_coef clipping line found in advance_clubb_core.F90.
+    Gunthers branch 2 (#1002)
     
-    The results of this revision are bit-for-bit.
+    * Pushing loop down through advance_windm. Other files needed to be touched because they were using a simple function, xpwp_func, which has been replaced in relevenant places by the few lines of code it takes to do.
+    
+    * Cleaned up intents
+    
+    * Moving xpwp calcuations back to procedure, but making procedure a 1/2D interface in advance helper. Other various small tweaks as well.
 
-commit e63d361593282937950c000aa56281fe1331f04b
-Author: bmg929 <bmg2@uwm.edu>
-Date:   Fri Mar 25 17:43:41 2022 -0500
+commit e33520905201193174b52f9316fa5ac2ca799af1
+Author: JanGrn <jan.gruenenwald@gmail.com>
+Date:   Thu May 5 09:47:58 2022 -0500
 
-    I added l_relax_clipping to CLUBB's config flags.
+    Renamed pdf_output_filename. Added grid_level constant to avoid magic numbers in stats_update_var_pt calls.
 
-commit 29c1bb840079d4030b27a37631bfe3cbbf380d04
-Author: Peter Roels <56004443+pbroels@users.noreply.github.com>
-Date:   Wed Mar 23 13:43:41 2022 -0500
+commit f0dff4bcf48e5bf267edb8e706e9455f503400f9
+Author: JanGrn <jan.gruenenwald@gmail.com>
+Date:   Tue May 3 16:34:14 2022 -0500
 
-    Adding a line to the README to trigger the nightly tests.
+    Removed duplicate VariableGroupNormalizedVariations.py
 
-commit afafe6ff1798e19d664aa0153d148814cd53c172
-Author: Peter Roels <56004443+pbroels@users.noreply.github.com>
-Date:   Mon Mar 21 15:35:46 2022 -0500
+commit 8ab8776d665a945b4be75d9e2cc00a2223217b0e
+Author: JanGrn <jan.gruenenwald@gmail.com>
+Date:   Tue May 3 16:03:39 2022 -0500
 
-    Removing a line at the top of the README to trigger the nightly tests.
+    Changed priorities of total normalized variation stats, included error handling in total normalized variation stats.
 
-commit e92c73005948d5698d3a2eada6c8a2881bb41414
-Author: huebler <huebler@uwm.edu>
-Date:   Tue Mar 15 18:27:41 2022 -0500
+commit 748152eb582f6e4543edc8e975e6be8eaba48b43
+Author: JanGrn <jan.gruenenwald@gmail.com>
+Date:   Tue May 3 14:52:18 2022 -0500
 
-    Changing names of dp1 variables for up2 and vp2. Surrounding where they're set to be within a l_stats_samp.
+    Dealt with issue https://github.com/larson-group/clubb/issues/985
 
-commit 757d6ea41b756a86b891b30e5d7de3d0e4067428
-Author: huebler <huebler@uwm.edu>
-Date:   Tue Mar 15 17:55:20 2022 -0500
+commit fde70b39d01dd19b96d21b2a0adef57a8ac80af1
+Author: JanGrn <jan.gruenenwald@gmail.com>
+Date:   Tue May 3 13:49:10 2022 -0500
 
-    Adding slicing for some lhs arrays being saved in stats. This was causing bit changing in a few lhs terms when run in multicolumn.
+    Fixed typo in pyplotgen and fixed display of plotted time (previously displayed on the wrong line).
+
+commit b80c7ffecbf3e77a22642095f8389c1ecd33948d
+Author: JanGrn <jan.gruenenwald@gmail.com>
+Date:   Tue May 3 09:45:27 2022 -0500
+
+    Implemented three further normalized variation stats. Included a (most likely temporary) check because in a few cases, denominator for normalization would be 0.
+
+commit 092e54d2d3f09a31a6abf3676d3c2b55800746d8
+Author: JanGrn <jan.gruenenwald@gmail.com>
+Date:   Fri Apr 29 12:23:43 2022 -0500
+
+    Added tot_vartn_normlzd statistics. Renamed sclr in advance_helper_module to scalar to be more consistent with clubb naming schemes.

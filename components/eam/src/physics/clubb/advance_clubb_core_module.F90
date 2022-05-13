@@ -1557,15 +1557,15 @@ module advance_clubb_core_module
     end if
 
     ! Determine stability correction factor
-    do i = 1, ngrdcol
-      stability_correction(i,:) = calc_stability_correction( gr(i), thlm(i,:), Lscale(i,:), em(i,:), &
-                                              exner(i,:), rtm(i,:), rcm(i,:), & ! In
-                                              p_in_Pa(i,:),thvm(i,:), ice_supersat_frac(i,:), & ! In
-                                              clubb_params(ilambda0_stability_coef), &
-                                              clubb_config_flags%l_brunt_vaisala_freq_moist, & ! In
-                                              clubb_config_flags%l_use_thvm_in_bv_freq ) ! In
-    end do
-    
+    call calc_stability_correction( nz, ngrdcol, gr, & ! In
+                                    thlm, Lscale, em, & ! In
+                                    exner, rtm, rcm, & ! In
+                                    p_in_Pa, thvm, ice_supersat_frac, & ! In
+                                    clubb_params(ilambda0_stability_coef), & ! In
+                                    clubb_config_flags%l_brunt_vaisala_freq_moist, & ! In
+                                    clubb_config_flags%l_use_thvm_in_bv_freq, &
+                                    stability_correction ) ! In
+        
     if ( l_stats_samp ) then
       do i = 1, ngrdcol
         call stat_update_var( istability_correction, stability_correction(i,:), & ! In
@@ -1871,36 +1871,34 @@ module advance_clubb_core_module
       !----------------------------------------------------------------
 
       ! advance_wp2_wp3_bad_wp2 ! Test error comment, DO NOT modify or move
-      do i = 1, ngrdcol
-        call advance_wp2_wp3 &
-             ( gr(i), dt_advance, sfc_elevation(i), sigma_sqd_w(i,:), wm_zm(i,:),         & ! intent(in)
-               wm_zt(i,:), a3_coef(i,:), a3_coef_zt(i,:), wp3_on_wp2(i,:),                    & ! intent(in)
-               wpup2(i,:), wpvp2(i,:), wp2up2(i,:), wp2vp2(i,:), wp4(i,:),                         & ! intent(in)
-               wpthvp(i,:), wp2thvp(i,:), um(i,:), vm(i,:), upwp(i,:), vpwp(i,:),                       & ! intent(in)
-               up2(i,:), vp2(i,:), em(i,:), Kh_zm(i,:), Kh_zt(i,:), invrs_tau_C4_zm(i,:),               & ! intent(in)
-               invrs_tau_wp3_zt(i,:), invrs_tau_C1_zm(i,:), Skw_zm(i,:),                 & ! intent(in)
-               Skw_zt(i,:), rho_ds_zm(i,:), rho_ds_zt(i,:), invrs_rho_ds_zm(i,:),             & ! intent(in)
-               invrs_rho_ds_zt(i,:), radf(i,:), thv_ds_zm(i,:),                          & ! intent(in)
-               thv_ds_zt(i,:), pdf_params%mixt_frac(i,:), Cx_fnc_Richardson(i,:),   & ! intent(in)
-               wp2_splat(i,:), wp3_splat(i,:),                                      & ! intent(in)
-               pdf_implicit_coefs_terms(i),                                  & ! intent(in)
-               wprtp(i,:), wpthlp(i,:), rtp2(i,:), thlp2(i,:),                                & ! intent(in)
-               clubb_params, nu_vert_res_dep(i),                             & ! intent(in)
-               clubb_config_flags%iiPDF_type,                             & ! intent(in)
-               clubb_config_flags%l_min_wp2_from_corr_wx,                 & ! intent(in)
-               clubb_config_flags%l_upwind_xm_ma,                         & ! intent(in)
-               clubb_config_flags%l_tke_aniso,                            & ! intent(in)
-               clubb_config_flags%l_standard_term_ta,                     & ! intent(in)
-               clubb_config_flags%l_partial_upwind_wp3,                   & ! intent(in)
-               clubb_config_flags%l_damp_wp2_using_em,                    & ! intent(in)
-               clubb_config_flags%l_use_C11_Richardson,                   & ! intent(in)
-               clubb_config_flags%l_damp_wp3_Skw_squared,                 & ! intent(in)
-               clubb_config_flags%l_lmm_stepping,                         & ! intent(in)
-               clubb_config_flags%l_use_tke_in_wp3_pr_turb_term,          & ! intent(in)
-               clubb_config_flags%l_use_tke_in_wp2_wp3_K_dfsn,            & ! intent(in)
-               stats_zt(i), stats_zm(i), stats_sfc(i),                             & ! intent(inout)
-               wp2(i,:), wp3(i,:), wp3_zm(i,:), wp2_zt(i,:) )                                   ! intent(inout)
-      end do
+      call advance_wp2_wp3( nz, ngrdcol, gr, dt_advance,                          & ! intent(in)
+                            sfc_elevation, sigma_sqd_w, wm_zm,                    & ! intent(in)
+                            wm_zt, a3_coef, a3_coef_zt, wp3_on_wp2,               & ! intent(in)
+                            wpup2, wpvp2, wp2up2, wp2vp2, wp4,                    & ! intent(in)
+                            wpthvp, wp2thvp, um, vm, upwp, vpwp,                  & ! intent(in)
+                            up2, vp2, em, Kh_zm, Kh_zt, invrs_tau_C4_zm,          & ! intent(in)
+                            invrs_tau_wp3_zt, invrs_tau_C1_zm, Skw_zm,            & ! intent(in)
+                            Skw_zt, rho_ds_zm, rho_ds_zt, invrs_rho_ds_zm,        & ! intent(in)
+                            invrs_rho_ds_zt, radf, thv_ds_zm,                     & ! intent(in)
+                            thv_ds_zt, pdf_params%mixt_frac, Cx_fnc_Richardson,   & ! intent(in)
+                            wp2_splat, wp3_splat,                                 & ! intent(in)
+                            pdf_implicit_coefs_terms,                             & ! intent(in)
+                            wprtp, wpthlp, rtp2, thlp2,                           & ! intent(in)
+                            clubb_params, nu_vert_res_dep,                        & ! intent(in)
+                            clubb_config_flags%iiPDF_type,                        & ! intent(in)
+                            clubb_config_flags%l_min_wp2_from_corr_wx,            & ! intent(in)
+                            clubb_config_flags%l_upwind_xm_ma,                    & ! intent(in)
+                            clubb_config_flags%l_tke_aniso,                       & ! intent(in)
+                            clubb_config_flags%l_standard_term_ta,                & ! intent(in)
+                            clubb_config_flags%l_partial_upwind_wp3,              & ! intent(in)
+                            clubb_config_flags%l_damp_wp2_using_em,               & ! intent(in)
+                            clubb_config_flags%l_use_C11_Richardson,              & ! intent(in)
+                            clubb_config_flags%l_damp_wp3_Skw_squared,            & ! intent(in)
+                            clubb_config_flags%l_lmm_stepping,                    & ! intent(in)
+                            clubb_config_flags%l_use_tke_in_wp3_pr_turb_term,     & ! intent(in)
+                            clubb_config_flags%l_use_tke_in_wp2_wp3_K_dfsn,       & ! intent(in)
+                            stats_zt, stats_zm, stats_sfc,                        & ! intent(inout)
+                            wp2, wp3, wp3_zm, wp2_zt )                              ! intent(inout)
 
       if ( clubb_at_least_debug_level( 0 ) ) then
          if ( err_code == clubb_fatal_error ) then
@@ -1995,28 +1993,26 @@ module advance_clubb_core_module
           end do
         end do
       end if
-
-      do i = 1, ngrdcol
-        call advance_windm_edsclrm( gr(i), dt, wm_zt(i,:), Km_zm(i,:), Kmh_zm(i,:), & ! intent(in)
-                                    ug(i,:), vg(i,:), um_ref(i,:), vm_ref(i,:),     & ! intent(in)
-                                    wp2(i,:), up2(i,:), vp2(i,:), um_forcing(i,:), vm_forcing(i,:), & ! intent(in)
-                                    edsclrm_forcing(i,:,:),                         & ! intent(in)
-                                    rho_ds_zm(i,:), invrs_rho_ds_zt(i,:),           & ! intent(in)
-                                    fcor(i), l_implemented,                         & ! intent(in)
-                                    nu_vert_res_dep(i),                             & ! intent(in)
-                                    clubb_config_flags%l_predict_upwp_vpwp,         & ! intent(in)
-                                    clubb_config_flags%l_upwind_xm_ma,              & ! intent(in)
-                                    clubb_config_flags%l_uv_nudge,                  & ! intent(in)
-                                    clubb_config_flags%l_tke_aniso,                 & ! intent(in)
-                                    clubb_config_flags%l_lmm_stepping,              & ! intent(in)
-                                    clubb_config_flags%l_linearize_pbl_winds,       & ! intent(in)
-                                    order_xp2_xpyp, order_wp2_wp3, order_windm,     & ! intent(in)
-                                    stats_zt(i), stats_zm(i), stats_sfc(i),         & ! intent(inout)
-                                    um(i,:), vm(i,:), edsclrm(i,:,:),               & ! intent(inout)
-                                    upwp(i,:), vpwp(i,:), wpedsclrp(i,:,:),         & ! intent(inout)
-                                    um_pert(i,:), vm_pert(i,:), upwp_pert(i,:), vpwp_pert(i,:) ) ! intent(inout)
-
-      end do
+      
+      call advance_windm_edsclrm( nz, ngrdcol, gr, dt,                        & ! intent(in)
+                                  wm_zt, Km_zm, Kmh_zm,                       & ! intent(in)
+                                  ug, vg, um_ref, vm_ref,                     & ! intent(in)
+                                  wp2, up2, vp2, um_forcing, vm_forcing,      & ! intent(in)
+                                  edsclrm_forcing,                            & ! intent(in)
+                                  rho_ds_zm, invrs_rho_ds_zt,                 & ! intent(in)
+                                  fcor, l_implemented,                        & ! intent(in)
+                                  nu_vert_res_dep,                            & ! intent(in)
+                                  clubb_config_flags%l_predict_upwp_vpwp,     & ! intent(in)
+                                  clubb_config_flags%l_upwind_xm_ma,          & ! intent(in)
+                                  clubb_config_flags%l_uv_nudge,              & ! intent(in)
+                                  clubb_config_flags%l_tke_aniso,             & ! intent(in)
+                                  clubb_config_flags%l_lmm_stepping,          & ! intent(in)
+                                  clubb_config_flags%l_linearize_pbl_winds,   & ! intent(in)
+                                  order_xp2_xpyp, order_wp2_wp3, order_windm, & ! intent(in)
+                                  stats_zt, stats_zm, stats_sfc,              & ! intent(inout)
+                                  um, vm, edsclrm,                            & ! intent(inout)
+                                  upwp, vpwp, wpedsclrp,                      & ! intent(inout)
+                                  um_pert, vm_pert, upwp_pert, vpwp_pert )      ! intent(inout)
 
       if ( clubb_config_flags%l_do_expldiff_rtm_thlm ) then
         do i = 1, ngrdcol
@@ -2372,73 +2368,72 @@ module advance_clubb_core_module
         call stat_end_update( gr(i), iwp3_bt, wp3(i,:) / dt, & ! intent(in)
                               stats_zt(i) )           ! intent(inout)
       end do
+
+      if ( iwpthlp_zt > 0 ) then
+        wpthlp_zt(:,:)  = zm2zt( nz, ngrdcol, gr, wpthlp(:,:) )
+      end if
+
+      if ( iwprtp_zt > 0 ) then
+        wprtp_zt(:,:)   = zm2zt( nz, ngrdcol, gr, wprtp(:,:) )
+      end if
+
+      if ( iup2_zt > 0 ) then
+        up2_zt(:,:) = max( zm2zt( nz, ngrdcol, gr, up2(:,:) ), w_tol_sqd )
+      end if
+
+      if (ivp2_zt > 0 ) then
+        vp2_zt(:,:) = max( zm2zt( nz, ngrdcol, gr, vp2(:,:) ), w_tol_sqd )
+      end if
+
+      if ( iupwp_zt > 0 ) then
+        upwp_zt(:,:) = zm2zt( nz, ngrdcol, gr, upwp(:,:) )
+      end if
+
+      if ( ivpwp_zt > 0 ) then
+        vpwp_zt(:,:) = zm2zt( nz, ngrdcol, gr, vpwp(:,:) )
+      end if
+      
+      do i = 1, ngrdcol
+        
+        ! Allocate arrays in single column versions of pdf_params
+        call init_pdf_params( nz, 1, pdf_params_single_col(i) )
+        call init_pdf_params( nz, 1, pdf_params_zm_single_col(i) )
+        
+        ! Copy multicolumn pdf_params to single column version  
+        call copy_multi_pdf_params_to_single( pdf_params, i, &
+                                              pdf_params_single_col(i) )
+                                              
+        call copy_multi_pdf_params_to_single( pdf_params_zm, i, &
+                                              pdf_params_zm_single_col(i) )
+        
+        call stats_accumulate( &
+               gr(i), um(i,:), vm(i,:), upwp(i,:), vpwp(i,:), up2(i,:), vp2(i,:),                      & ! intent(in)
+               thlm(i,:), rtm(i,:), wprtp(i,:), wpthlp(i,:),                              & ! intent(in)
+               wp2(i,:), wp3(i,:), rtp2(i,:), rtp3(i,:), thlp2(i,:), thlp3(i,:), rtpthlp(i,:),           & ! intent(in)
+               wpthvp(i,:), wp2thvp(i,:), rtpthvp(i,:), thlpthvp(i,:),                    & ! intent(in)
+               p_in_Pa(i,:), exner(i,:), rho(i,:), rho_zm(i,:),                           & ! intent(in)
+               rho_ds_zm(i,:), rho_ds_zt(i,:), thv_ds_zm(i,:), thv_ds_zt(i,:),            & ! intent(in)
+               wm_zt(i,:), wm_zm(i,:), rcm(i,:), wprcp(i,:), rc_coef(i,:), rc_coef_zm(i,:),         & ! intent(in)
+               rcm_zm(i,:), rtm_zm(i,:), thlm_zm(i,:), cloud_frac(i,:), ice_supersat_frac(i,:),& ! intent(in)
+               cloud_frac_zm(i,:), ice_supersat_frac_zm(i,:), rcm_in_layer(i,:),     & ! intent(in)
+               cloud_cover(i,:), rcm_supersat_adj(i,:), sigma_sqd_w(i,:),            & ! intent(in)
+               thvm(i,:), ug(i,:), vg(i,:), Lscale(i,:), wpthlp2(i,:), wp2thlp(i,:), wprtp2(i,:), wp2rtp(i,:),& ! intent(in)
+               Lscale_up(i,:), Lscale_down(i,:), tau_zt(i,:), Kh_zt(i,:), wp2rcp(i,:),         & ! intent(in)
+               wprtpthlp(i,:), sigma_sqd_w_zt(i,:), rsat(i,:), wp2_zt(i,:), thlp2_zt(i,:),     & ! intent(in)
+               wpthlp_zt(i,:), wprtp_zt(i,:), rtp2_zt(i,:), rtpthlp_zt(i,:), up2_zt(i,:),      & ! intent(in)
+               vp2_zt(i,:), upwp_zt(i,:), vpwp_zt(i,:), wpup2(i,:), wpvp2(i,:),                & ! intent(in)
+               wp2up2(i,:), wp2vp2(i,:), wp4(i,:),                                   & ! intent(in)
+               tau_zm(i,:), Kh_zm(i,:), thlprcp(i,:),                                & ! intent(in)
+               rtprcp(i,:), rcp2(i,:), em(i,:), a3_coef(i,:), a3_coef_zt(i,:),                 & ! intent(in)
+               wp3_zm(i,:), wp3_on_wp2(i,:), wp3_on_wp2_zt(i,:), Skw_velocity(i,:),       & ! intent(in)
+               w_up_in_cloud(i,:),                                         & ! intent(in)
+               pdf_params_single_col(i), pdf_params_zm_single_col(i), sclrm(i,:,:), sclrp2(i,:,:),              & ! intent(in)
+               sclrprtp(i,:,:), sclrpthlp(i,:,:), sclrm_forcing(i,:,:), sclrpthvp(i,:,:),         & ! intent(in)
+               wpsclrp(i,:,:), sclrprcp(i,:,:), wp2sclrp(i,:,:), wpsclrp2(i,:,:), wpsclrprtp(i,:,:),     & ! intent(in)
+               wpsclrpthlp(i,:,:), wpedsclrp(i,:,:), edsclrm(i,:,:), edsclrm_forcing(i,:,:),      & ! intent(in)
+               stats_zt(i), stats_zm(i), stats_sfc(i) )                          ! intent(inout)
+      end do
     endif ! l_stats_samp
-
-
-    if ( iwpthlp_zt > 0 ) then
-      wpthlp_zt(:,:)  = zm2zt( nz, ngrdcol, gr, wpthlp(:,:) )
-    end if
-
-    if ( iwprtp_zt > 0 ) then
-      wprtp_zt(:,:)   = zm2zt( nz, ngrdcol, gr, wprtp(:,:) )
-    end if
-
-    if ( iup2_zt > 0 ) then
-      up2_zt(:,:) = max( zm2zt( nz, ngrdcol, gr, up2(:,:) ), w_tol_sqd )
-    end if
-
-    if (ivp2_zt > 0 ) then
-      vp2_zt(:,:) = max( zm2zt( nz, ngrdcol, gr, vp2(:,:) ), w_tol_sqd )
-    end if
-
-    if ( iupwp_zt > 0 ) then
-      upwp_zt(:,:) = zm2zt( nz, ngrdcol, gr, upwp(:,:) )
-    end if
-
-    if ( ivpwp_zt > 0 ) then
-      vpwp_zt(:,:) = zm2zt( nz, ngrdcol, gr, vpwp(:,:) )
-    end if
-    
-    do i = 1, ngrdcol
-      
-      ! Allocate arrays in single column versions of pdf_params
-      call init_pdf_params( nz, 1, pdf_params_single_col(i) )
-      call init_pdf_params( nz, 1, pdf_params_zm_single_col(i) )
-      
-      ! Copy multicolumn pdf_params to single column version  
-      call copy_multi_pdf_params_to_single( pdf_params, i, &
-                                            pdf_params_single_col(i) )
-                                            
-      call copy_multi_pdf_params_to_single( pdf_params_zm, i, &
-                                            pdf_params_zm_single_col(i) )
-      
-      call stats_accumulate( &
-             gr(i), um(i,:), vm(i,:), upwp(i,:), vpwp(i,:), up2(i,:), vp2(i,:),                      & ! intent(in)
-             thlm(i,:), rtm(i,:), wprtp(i,:), wpthlp(i,:),                              & ! intent(in)
-             wp2(i,:), wp3(i,:), rtp2(i,:), rtp3(i,:), thlp2(i,:), thlp3(i,:), rtpthlp(i,:),           & ! intent(in)
-             wpthvp(i,:), wp2thvp(i,:), rtpthvp(i,:), thlpthvp(i,:),                    & ! intent(in)
-             p_in_Pa(i,:), exner(i,:), rho(i,:), rho_zm(i,:),                           & ! intent(in)
-             rho_ds_zm(i,:), rho_ds_zt(i,:), thv_ds_zm(i,:), thv_ds_zt(i,:),            & ! intent(in)
-             wm_zt(i,:), wm_zm(i,:), rcm(i,:), wprcp(i,:), rc_coef(i,:), rc_coef_zm(i,:),         & ! intent(in)
-             rcm_zm(i,:), rtm_zm(i,:), thlm_zm(i,:), cloud_frac(i,:), ice_supersat_frac(i,:),& ! intent(in)
-             cloud_frac_zm(i,:), ice_supersat_frac_zm(i,:), rcm_in_layer(i,:),     & ! intent(in)
-             cloud_cover(i,:), rcm_supersat_adj(i,:), sigma_sqd_w(i,:),            & ! intent(in)
-             thvm(i,:), ug(i,:), vg(i,:), Lscale(i,:), wpthlp2(i,:), wp2thlp(i,:), wprtp2(i,:), wp2rtp(i,:),& ! intent(in)
-             Lscale_up(i,:), Lscale_down(i,:), tau_zt(i,:), Kh_zt(i,:), wp2rcp(i,:),         & ! intent(in)
-             wprtpthlp(i,:), sigma_sqd_w_zt(i,:), rsat(i,:), wp2_zt(i,:), thlp2_zt(i,:),     & ! intent(in)
-             wpthlp_zt(i,:), wprtp_zt(i,:), rtp2_zt(i,:), rtpthlp_zt(i,:), up2_zt(i,:),      & ! intent(in)
-             vp2_zt(i,:), upwp_zt(i,:), vpwp_zt(i,:), wpup2(i,:), wpvp2(i,:),                & ! intent(in)
-             wp2up2(i,:), wp2vp2(i,:), wp4(i,:),                                   & ! intent(in)
-             tau_zm(i,:), Kh_zm(i,:), thlprcp(i,:),                                & ! intent(in)
-             rtprcp(i,:), rcp2(i,:), em(i,:), a3_coef(i,:), a3_coef_zt(i,:),                 & ! intent(in)
-             wp3_zm(i,:), wp3_on_wp2(i,:), wp3_on_wp2_zt(i,:), Skw_velocity(i,:),       & ! intent(in)
-             w_up_in_cloud(i,:),                                         & ! intent(in)
-             pdf_params_single_col(i), pdf_params_zm_single_col(i), sclrm(i,:,:), sclrp2(i,:,:),              & ! intent(in)
-             sclrprtp(i,:,:), sclrpthlp(i,:,:), sclrm_forcing(i,:,:), sclrpthvp(i,:,:),         & ! intent(in)
-             wpsclrp(i,:,:), sclrprcp(i,:,:), wp2sclrp(i,:,:), wpsclrp2(i,:,:), wpsclrprtp(i,:,:),     & ! intent(in)
-             wpsclrpthlp(i,:,:), wpedsclrp(i,:,:), edsclrm(i,:,:), edsclrm_forcing(i,:,:),      & ! intent(in)
-             stats_zt(i), stats_zm(i), stats_sfc(i) )                          ! intent(inout)
-    end do
 
     if ( clubb_at_least_debug_level( 2 ) ) then
       do i = 1, ngrdcol
@@ -3521,18 +3516,20 @@ module advance_clubb_core_module
     ! Use cloud_cover and rcm_in_layer to help boost cloud_frac and rcm to help
     ! increase cloudiness at coarser grid resolutions.
     if ( l_use_cloud_cover ) then
-      do i = 1, ngrdcol
-        cloud_frac(i,:) = cloud_cover(i,:)
-        rcm(i,:) = rcm_in_layer(i,:)
+      do k = 1, nz
+        do i = 1, ngrdcol
+          cloud_frac(i,k) = cloud_cover(i,k)
+          rcm(i,k) = rcm_in_layer(i,k)
+        end do
       end do
     end if
 
     do k = 1, nz
       do i = 1, ngrdcol
         ! Clip cloud fraction here if it still exceeds 1.0 due to round off
-        cloud_frac(i,:) = min( 1.0_core_rknd, cloud_frac(i,:) )
+        cloud_frac(i,k) = min( 1.0_core_rknd, cloud_frac(i,k) )
         ! Ditto with ice cloud fraction
-        ice_supersat_frac(i,:) = min( 1.0_core_rknd, ice_supersat_frac(i,:) )
+        ice_supersat_frac(i,k) = min( 1.0_core_rknd, ice_supersat_frac(i,k) )
       end do
     end do
 

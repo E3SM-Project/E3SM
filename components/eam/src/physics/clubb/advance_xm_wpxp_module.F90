@@ -1382,14 +1382,18 @@ module advance_xm_wpxp_module
     if ( l_diffuse_rtm_and_thlm ) then
         
         if ( l_stability_correct_Kh_N2_zm ) then
-          do i = 1, ngrdcol
-            Kh_N2_zm(i,:) = Kh_zm(i,:) / &
-              calc_stability_correction( gr(i), thlm(i,:), Lscale(i,:), em(i,:), exner(i,:), rtm(i,:), rcm(i,:), &
-                                         p_in_Pa(i,:), thvm(i,:), ice_supersat_frac(i,:), &
-                                         clubb_params(ilambda0_stability_coef), &
-                                         l_brunt_vaisala_freq_moist, &
-                                         l_use_thvm_in_bv_freq )
-          end do
+          
+          call calc_stability_correction( nz, ngrdcol, gr, &
+                                          thlm, Lscale, em, &
+                                          exner, rtm, rcm, &
+                                          p_in_Pa, thvm, ice_supersat_frac, &
+                                          clubb_params(ilambda0_stability_coef), &
+                                          l_brunt_vaisala_freq_moist, &
+                                          l_use_thvm_in_bv_freq,&
+                                          Kh_N2_zm )
+                                         
+          Kh_N2_zm(:,:) = Kh_zm(:,:) / Kh_N2_zm(:,:)
+          
         else
           Kh_N2_zm(:,:) = Kh_zm(:,:)
         end if

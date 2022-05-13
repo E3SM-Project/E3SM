@@ -1429,6 +1429,12 @@ module stats_variables
 !$omp   ithlm_vert_avg, irtm_vert_avg, ium_vert_avg, ivm_vert_avg, &
 !$omp   iwp2_vert_avg, iup2_vert_avg, ivp2_vert_avg, irtp2_vert_avg, ithlp2_vert_avg, iT_sfc)
 
+  integer, public :: &
+    itot_vartn_normlzd_rtm = 0, &
+    itot_vartn_normlzd_thlm = 0, &
+    itot_vartn_normlzd_wprtp = 0
+!$omp threadprivate(itot_vartn_normlzd_rtm, itot_vartn_normlzd_thlm, itot_vartn_normlzd_wprtp)
+
   integer, public :: & 
     iwp23_matrix_condt_num = 0, & 
     irtm_matrix_condt_num = 0, & 

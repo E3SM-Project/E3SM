@@ -670,14 +670,14 @@ module pdf_closure_module
     end if ! iiPDF_type
     
     ! Calculate the PDF component correlations of rt and thl.
-    call calc_comp_corrs_binormal( &
-                         rtpthlp, rtm, thlm,                                    & ! In
-                         pdf_params%rt_1, pdf_params%rt_2,                      & ! In
-                         pdf_params%thl_1, pdf_params%thl_2,                    & ! In
-                         pdf_params%varnce_rt_1, pdf_params%varnce_rt_2,        & ! In
-                         pdf_params%varnce_thl_1, pdf_params%varnce_thl_2,      & ! In
-                         pdf_params%mixt_frac,                                  & ! In
-                         pdf_params%corr_rt_thl_1, pdf_params%corr_rt_thl_2 )     ! Out
+    call calc_comp_corrs_binormal( nz, ngrdcol,                                           & ! In
+                                   rtpthlp, rtm, thlm,                                    & ! In
+                                   pdf_params%rt_1, pdf_params%rt_2,                      & ! In
+                                   pdf_params%thl_1, pdf_params%thl_2,                    & ! In
+                                   pdf_params%varnce_rt_1, pdf_params%varnce_rt_2,        & ! In
+                                   pdf_params%varnce_thl_1, pdf_params%varnce_thl_2,      & ! In
+                                   pdf_params%mixt_frac,                                  & ! In
+                                   pdf_params%corr_rt_thl_1, pdf_params%corr_rt_thl_2 )     ! Out
 
     if ( iiPDF_type == iiPDF_ADG1 .or. iiPDF_type == iiPDF_ADG2 &
          .or. iiPDF_type == iiPDF_new_hybrid ) then
@@ -702,50 +702,50 @@ module pdf_closure_module
     else
 
       ! Calculate the PDF component correlations of w and rt.
-      call calc_comp_corrs_binormal( & 
-                              wprtp, wm, rtm,                                   & ! In
-                              pdf_params%w_1, pdf_params%w_2,                   & ! In
-                              pdf_params%rt_1, pdf_params%rt_2,                 & ! In
-                              pdf_params%varnce_w_1, pdf_params%varnce_w_2,     & ! In
-                              pdf_params%varnce_rt_1, pdf_params%varnce_rt_2,   & ! In
-                              pdf_params%mixt_frac,                             & ! In
-                              pdf_params%corr_w_rt_1, pdf_params%corr_w_rt_2 )    ! Out
-    
+      call calc_comp_corrs_binormal( nz, ngrdcol,                                      & ! In
+                                     wprtp, wm, rtm,                                   & ! In
+                                     pdf_params%w_1, pdf_params%w_2,                   & ! In
+                                     pdf_params%rt_1, pdf_params%rt_2,                 & ! In
+                                     pdf_params%varnce_w_1, pdf_params%varnce_w_2,     & ! In
+                                     pdf_params%varnce_rt_1, pdf_params%varnce_rt_2,   & ! In
+                                     pdf_params%mixt_frac,                             & ! In
+                                     pdf_params%corr_w_rt_1, pdf_params%corr_w_rt_2 )    ! Out
+            
       ! Calculate the PDF component correlations of w and thl.
-      call calc_comp_corrs_binormal( &
-                        wpthlp, wm, thlm,                                     & ! In
-                        pdf_params%w_1, pdf_params%w_2,                       & ! In
-                        pdf_params%thl_1, pdf_params%thl_2,                   & ! In
-                        pdf_params%varnce_w_1, pdf_params%varnce_w_2,         & ! In
-                        pdf_params%varnce_thl_1, pdf_params%varnce_thl_2,     & ! In
-                        pdf_params%mixt_frac,                                 & ! In
-                        pdf_params%corr_w_thl_1, pdf_params%corr_w_thl_2 )      ! Out
+      call calc_comp_corrs_binormal( nz, ngrdcol,                                          & ! In
+                                     wpthlp, wm, thlm,                                     & ! In
+                                     pdf_params%w_1, pdf_params%w_2,                       & ! In
+                                     pdf_params%thl_1, pdf_params%thl_2,                   & ! In
+                                     pdf_params%varnce_w_1, pdf_params%varnce_w_2,         & ! In
+                                     pdf_params%varnce_thl_1, pdf_params%varnce_thl_2,     & ! In
+                                     pdf_params%mixt_frac,                                 & ! In
+                                     pdf_params%corr_w_thl_1, pdf_params%corr_w_thl_2 )      ! Out
     end if
       
     if ( l_scalar_calc ) then
 
       ! Calculate the PDF component correlations of a passive scalar and thl.
       do j = 1, sclr_dim
-        call calc_comp_corrs_binormal( &
-                            sclrpthlp(:,:,j), sclrm(:,:,j), thlm,               & ! In
-                             sclr1(:,:,j), sclr2(:,:,j),                        & ! In
-                             pdf_params%thl_1, pdf_params%thl_2,                & ! In
-                             varnce_sclr1(:,:,j), varnce_sclr2(:,:,j),          & ! In
-                             pdf_params%varnce_thl_1, pdf_params%varnce_thl_2,  & ! In
-                             pdf_params%mixt_frac,                              & ! In
-                             corr_sclr_thl_1(:,:,j), corr_sclr_thl_2(:,:,j) )     ! Out
+        call calc_comp_corrs_binormal( nz, ngrdcol,                                       & ! In
+                                       sclrpthlp(:,:,j), sclrm(:,:,j), thlm,              & ! In
+                                       sclr1(:,:,j), sclr2(:,:,j),                        & ! In
+                                       pdf_params%thl_1, pdf_params%thl_2,                & ! In
+                                       varnce_sclr1(:,:,j), varnce_sclr2(:,:,j),          & ! In
+                                       pdf_params%varnce_thl_1, pdf_params%varnce_thl_2,  & ! In
+                                       pdf_params%mixt_frac,                              & ! In
+                                       corr_sclr_thl_1(:,:,j), corr_sclr_thl_2(:,:,j) )     ! Out
       end do
 
       ! Calculate the PDF component correlations of a passive scalar and rt.
       do j = 1, sclr_dim
-        call calc_comp_corrs_binormal( &
-                             sclrprtp(:,:,j), sclrm(:,:,j), rtm,                & ! In
-                             sclr1(:,:,j), sclr2(:,:,j),                        & ! In
-                             pdf_params%rt_1, pdf_params%rt_2,                  & ! In
-                             varnce_sclr1(:,:,j), varnce_sclr2(:,:,j),          & ! In
-                             pdf_params%varnce_rt_1, pdf_params%varnce_rt_2,    & ! In
-                             pdf_params%mixt_frac,                              & ! In
-                             corr_sclr_rt_1(:,:,j), corr_sclr_rt_2(:,:,j) )       ! Out
+        call calc_comp_corrs_binormal( nz, ngrdcol,                                       & ! In
+                                       sclrprtp(:,:,j), sclrm(:,:,j), rtm,                & ! In
+                                       sclr1(:,:,j), sclr2(:,:,j),                        & ! In
+                                       pdf_params%rt_1, pdf_params%rt_2,                  & ! In
+                                       varnce_sclr1(:,:,j), varnce_sclr2(:,:,j),          & ! In
+                                       pdf_params%varnce_rt_1, pdf_params%varnce_rt_2,    & ! In
+                                       pdf_params%mixt_frac,                              & ! In
+                                       corr_sclr_rt_1(:,:,j), corr_sclr_rt_2(:,:,j) )       ! Out
       end do
 
       if ( iiPDF_type == iiPDF_ADG1 .or. iiPDF_type == iiPDF_ADG2 &
@@ -766,14 +766,14 @@ module pdf_closure_module
 
         ! Calculate the PDF component correlations of w and a passive scalar.
         do j = 1, sclr_dim
-          call calc_comp_corrs_binormal( &
-                                 wpsclrp(:,:,j), wm, sclrm(:,:,j),              & ! In
-                                 pdf_params%w_1, pdf_params%w_2,                & ! In
-                                 sclr1(:,:,j), sclr2(:,:,j),                    & ! In
-                                 pdf_params%varnce_w_1, pdf_params%varnce_w_2,  & ! In
-                                 varnce_sclr1(:,:,j), varnce_sclr2(:,:,j),      & ! In
-                                 pdf_params%mixt_frac,                          & ! In
-                                 corr_w_sclr_1(:,:,j), corr_w_sclr_2(:,:,j) )     ! Out
+          call calc_comp_corrs_binormal( nz, ngrdcol,                                   & ! In
+                                         wpsclrp(:,:,j), wm, sclrm(:,:,j),              & ! In
+                                         pdf_params%w_1, pdf_params%w_2,                & ! In
+                                         sclr1(:,:,j), sclr2(:,:,j),                    & ! In
+                                         pdf_params%varnce_w_1, pdf_params%varnce_w_2,  & ! In
+                                         varnce_sclr1(:,:,j), varnce_sclr2(:,:,j),      & ! In
+                                         pdf_params%mixt_frac,                          & ! In
+                                         corr_w_sclr_1(:,:,j), corr_w_sclr_2(:,:,j) )     ! Out
 
         end do
         

@@ -759,16 +759,17 @@ module pdf_utilities
   end function compute_variance_binormal
 
   !=============================================================================
-  elemental subroutine calc_comp_corrs_binormal( xpyp, xm, ym,   & ! In
-                                                 mu_x_1, mu_x_2, & ! In
-                                                 mu_y_1, mu_y_2, & ! In
-                                                 sigma_x_1_sqd,  & ! In
-                                                 sigma_x_2_sqd,  & ! In
-                                                 sigma_y_1_sqd,  & ! In
-                                                 sigma_y_2_sqd,  & ! In
-                                                 mixt_frac,      & ! In
-                                                 corr_x_y_1,     & ! Out
-                                                 corr_x_y_2      ) ! Out
+  subroutine calc_comp_corrs_binormal( nz, ngrdcol,    & ! In
+                                       xpyp, xm, ym,   & ! In
+                                       mu_x_1, mu_x_2, & ! In
+                                       mu_y_1, mu_y_2, & ! In
+                                       sigma_x_1_sqd,  & ! In
+                                       sigma_x_2_sqd,  & ! In
+                                       sigma_y_1_sqd,  & ! In
+                                       sigma_y_2_sqd,  & ! In
+                                       mixt_frac,      & ! In
+                                       corr_x_y_1,     & ! Out
+                                       corr_x_y_2      ) ! Out
 
     ! Description:
     ! Calculates the PDF component correlations of variables x and y, where
@@ -837,8 +838,12 @@ module pdf_utilities
 
     implicit none
 
-    ! Input Variables
-    real ( kind = core_rknd ), intent(in) :: &
+    ! ---------------- Input Variables ----------------
+    integer, intent(in) :: &
+      nz,      & ! Number of vertical levels
+      ngrdcol    ! Number of grid columns
+    
+    real ( kind = core_rknd ), dimension(ngrdcol,nz), intent(in) :: &
       xpyp,          & ! Covariance of x and y (overall)    [(x units)(y units)]
       xm,            & ! Mean of x (overall)                [x units]
       ym,            & ! Mean of y (overall)                [y units]
@@ -852,38 +857,43 @@ module pdf_utilities
       sigma_y_2_sqd, & ! Variance of y (2nd PDF component)  [(y units)^2]
       mixt_frac        ! Mixture fraction                   [-]
 
-    ! Output Variables
-    real ( kind = core_rknd ), intent(out) :: &
+    ! ---------------- Output Variables ----------------
+    real ( kind = core_rknd ), dimension(ngrdcol,nz), intent(out) :: &
       corr_x_y_1, & ! Correlation of x and y (1st PDF component)    [-]
       corr_x_y_2    ! Correlation of x and y (2nd PDF component)    [-]
 
+    ! ---------------- Local Variables ----------------
+    integer :: i, k 
 
-    if ( sigma_x_1_sqd * sigma_y_1_sqd > zero &
-         .or. sigma_x_2_sqd * sigma_y_2_sqd > zero ) then
+    do k = 1, nz
+      do i = 1, ngrdcol 
+        if ( sigma_x_1_sqd(i,k) * sigma_y_1_sqd(i,k) > zero &
+             .or. sigma_x_2_sqd(i,k) * sigma_y_2_sqd(i,k) > zero ) then
 
-       ! Calculate corr_x_y_1 (which also equals corr_x_y_2).
-       corr_x_y_1 &
-       = ( xpyp &
-           - mixt_frac * ( mu_x_1 - xm ) * ( mu_y_1 - ym ) &
-           - ( one - mixt_frac ) * ( mu_x_2 - xm ) * ( mu_y_2 - ym ) ) &
-         / ( mixt_frac * sqrt( sigma_x_1_sqd * sigma_y_1_sqd ) &
-             + ( one - mixt_frac ) * sqrt( sigma_x_2_sqd * sigma_y_2_sqd ) )
+           ! Calculate corr_x_y_1 (which also equals corr_x_y_2).
+           corr_x_y_1(i,k) &
+           = ( xpyp(i,k) &
+               - mixt_frac(i,k) * ( mu_x_1(i,k) - xm(i,k) ) * ( mu_y_1(i,k) - ym(i,k) ) &
+               - ( one - mixt_frac(i,k) ) * ( mu_x_2(i,k) - xm(i,k) ) * ( mu_y_2(i,k) - ym(i,k))) &
+             / ( mixt_frac(i,k) * sqrt( sigma_x_1_sqd(i,k) * sigma_y_1_sqd(i,k) ) &
+                 + ( one - mixt_frac(i,k) ) * sqrt( sigma_x_2_sqd(i,k) * sigma_y_2_sqd(i,k) ) )
 
-       ! The correlation must fall within the bounds of
-       ! -max_mag_correlation < corr_x_y_1 (= corr_x_y_2) < max_mag_correlation
-       corr_x_y_1 = max( -max_mag_correlation, &
-                         min( max_mag_correlation, corr_x_y_1 ) )
+           ! The correlation must fall within the bounds of
+           ! -max_mag_correlation < corr_x_y_1 (= corr_x_y_2) < max_mag_correlation
+           corr_x_y_1(i,k) = max( -max_mag_correlation, &
+                             min( max_mag_correlation, corr_x_y_1(i,k) ) )
 
-    else ! sigma_x_1^2 * sigma_y_1^2 = 0 and sigma_x_2^2 * sigma_y_2^2 = 0.
+        else ! sigma_x_1^2 * sigma_y_1^2 = 0 and sigma_x_2^2 * sigma_y_2^2 = 0.
 
-       ! The correlation is undefined (output as 0).
-       corr_x_y_1 = zero
+           ! The correlation is undefined (output as 0).
+           corr_x_y_1(i,k) = zero
 
-    endif
+        endif
+      end do
+    end do
 
     ! Set corr_x_y_2 equal to corr_x_y_1.
-    corr_x_y_2 = corr_x_y_1
-
+    corr_x_y_2(:,:) = corr_x_y_1(:,:)
 
     return
 

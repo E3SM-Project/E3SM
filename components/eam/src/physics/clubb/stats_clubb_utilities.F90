@@ -1893,7 +1893,8 @@ module stats_clubb_utilities
     !----------------------------------------------------------------------
 
     use constants_clubb, only: &
-        cloud_frac_min  ! Constant
+        cloud_frac_min, &  ! Constant
+        eps
 
 
     use pdf_utilities, only: &
@@ -2097,6 +2098,11 @@ module stats_clubb_utilities
         ia3_coef, & ! Variables
         ia3_coef_zt, &
         ircm_in_cloud
+        
+    use stats_variables, only: &
+        itot_vartn_normlzd_rtm, &
+        itot_vartn_normlzd_thlm, &
+        itot_vartn_normlzd_wprtp
 
     use grid_class, only: & 
         grid ! Type
@@ -2111,7 +2117,7 @@ module stats_clubb_utilities
         thlm2T_in_K ! Procedure
 
     use constants_clubb, only: & 
-        rc_tol    ! Constant(s)
+        rc_tol, fstderr    ! Constant(s)
 
     use parameters_model, only: & 
         sclr_dim,  &        ! Variable(s)
@@ -2276,6 +2282,7 @@ module stats_clubb_utilities
     ! Local Variables
 
     integer :: isclr, k
+    integer :: grid_level = 1  ! grid level for stats where there is only one sensible level (eg timeseries)
 
     real( kind = core_rknd ), dimension(gr%nz) :: &
       T_in_K,      &  ! Absolute temperature         [K]
@@ -2684,7 +2691,7 @@ module stats_clubb_utilities
       ! stats_sfc variables
 
       ! Cloud cover
-      call stat_update_var_pt( icc, 1, maxval( cloud_frac(1:gr%nz) ), & ! intent(in)
+      call stat_update_var_pt( icc, grid_level, maxval( cloud_frac(1:gr%nz) ), & ! intent(in)
                                stats_sfc ) ! intent(inout)
 
       ! Cloud base
@@ -2699,7 +2706,7 @@ module stats_clubb_utilities
 
           ! Use linear interpolation to find the exact height of the
           ! rc_tol kg/kg level.  Brian.
-          call stat_update_var_pt( iz_cloud_base, 1, & ! intent(in)
+          call stat_update_var_pt( iz_cloud_base, grid_level, & ! intent(in)
                                    lin_interpolate_two_points( rc_tol, rcm(k), & ! intent(in)
                                    rcm(k-1), gr%zt(k), gr%zt(k-1) ), & ! intent(in)
                                    stats_sfc ) ! intent(inout)
@@ -2708,7 +2715,7 @@ module stats_clubb_utilities
 
           ! Set the cloud base output to -10m, if it's clear. 
           ! Known magic number
-          call stat_update_var_pt( iz_cloud_base, 1, -10.0_core_rknd , & ! intent(in)
+          call stat_update_var_pt( iz_cloud_base, grid_level, -10.0_core_rknd , & ! intent(in)
                                    stats_sfc ) ! intent(inout)
  
         end if ! k > 1 and k < gr%nz
@@ -2723,7 +2730,7 @@ module stats_clubb_utilities
                ( (gr%nz - 2 + 1), rho_ds_zt(2:gr%nz), &
                  rcm(2:gr%nz), gr%dzt(2:gr%nz) )
 
-        call stat_update_var_pt( ilwp, 1, xtmp, & ! intent(in)
+        call stat_update_var_pt( ilwp, grid_level, xtmp, & ! intent(in)
                                  stats_sfc ) ! intent(inout)
 
       end if
@@ -2736,7 +2743,7 @@ module stats_clubb_utilities
                ( (gr%nz - 2 + 1), rho_ds_zt(2:gr%nz), &
                  ( rtm(2:gr%nz) - rcm(2:gr%nz) ), gr%dzt(2:gr%nz) )
 
-        call stat_update_var_pt( ivwp, 1, xtmp, & ! intent(in)
+        call stat_update_var_pt( ivwp, grid_level, xtmp, & ! intent(in)
                                  stats_sfc ) ! intent(inout)
 
       end if
@@ -2750,25 +2757,25 @@ module stats_clubb_utilities
       ! found in fill_holes.F90.
 
       ! Vertical average of thlm.
-      call stat_update_var_pt( ithlm_vert_avg, 1,  & ! intent(in)
+      call stat_update_var_pt( ithlm_vert_avg, grid_level,  & ! intent(in)
            vertical_avg( (gr%nz-2+1), rho_ds_zt(2:gr%nz), & ! intent(in)
                          thlm(2:gr%nz), gr%dzt(2:gr%nz) ), & ! intent(in)
                                stats_sfc ) ! intent(inout)
 
       ! Vertical average of rtm.
-      call stat_update_var_pt( irtm_vert_avg, 1,  & ! intent(in)
+      call stat_update_var_pt( irtm_vert_avg, grid_level,  & ! intent(in)
            vertical_avg( (gr%nz-2+1), rho_ds_zt(2:gr%nz), & ! intent(in)
                          rtm(2:gr%nz), gr%dzt(2:gr%nz) ), & ! intent(in)
                                stats_sfc ) ! intent(inout)
 
       ! Vertical average of um.
-      call stat_update_var_pt( ium_vert_avg, 1,  & ! intent(in)
+      call stat_update_var_pt( ium_vert_avg, grid_level,  & ! intent(in)
            vertical_avg( (gr%nz-2+1), rho_ds_zt(2:gr%nz), & ! intent(in)
                          um(2:gr%nz), gr%dzt(2:gr%nz) ), & ! intent(in)
                                stats_sfc ) ! intent(inout)
 
       ! Vertical average of vm.
-      call stat_update_var_pt( ivm_vert_avg, 1,  & ! intent(in)
+      call stat_update_var_pt( ivm_vert_avg, grid_level,  & ! intent(in)
            vertical_avg( (gr%nz-2+1), rho_ds_zt(2:gr%nz), & ! intent(in)
                          vm(2:gr%nz), gr%dzt(2:gr%nz) ), & ! intent(in)
                                stats_sfc ) ! intent(inout)
@@ -2780,36 +2787,74 @@ module stats_clubb_utilities
       ! averaging function found in fill_holes.F90.
 
       ! Vertical average of wp2.
-      call stat_update_var_pt( iwp2_vert_avg, 1,  & ! intent(in)
+      call stat_update_var_pt( iwp2_vert_avg, grid_level,  & ! intent(in)
            vertical_avg( (gr%nz-1+1), rho_ds_zm(1:gr%nz), & ! intent(in)
                          wp2(1:gr%nz), gr%dzm(1:gr%nz) ), & ! intent(in)
                                stats_sfc ) ! intent(inout)
 
       ! Vertical average of up2.
-      call stat_update_var_pt( iup2_vert_avg, 1,  & ! intent(in)
+      call stat_update_var_pt( iup2_vert_avg, grid_level,  & ! intent(in)
            vertical_avg( (gr%nz-1+1), rho_ds_zm(1:gr%nz), & ! intent(in)
                          up2(1:gr%nz), gr%dzm(1:gr%nz) ), & ! intent(in)
                                stats_sfc ) ! intent(inout)
 
       ! Vertical average of vp2.
-      call stat_update_var_pt( ivp2_vert_avg, 1,  & ! intent(in)
+      call stat_update_var_pt( ivp2_vert_avg, grid_level,  & ! intent(in)
            vertical_avg( (gr%nz-1+1), rho_ds_zm(1:gr%nz), & ! intent(in)
                          vp2(1:gr%nz), gr%dzm(1:gr%nz) ), & ! intent(in)
                                stats_sfc ) ! intent(inout)
 
       ! Vertical average of rtp2.
-      call stat_update_var_pt( irtp2_vert_avg, 1,  & ! intent(in)
+      call stat_update_var_pt( irtp2_vert_avg, grid_level,  & ! intent(in)
            vertical_avg( (gr%nz-1+1), rho_ds_zm(1:gr%nz), & ! intent(in)
                          rtp2(1:gr%nz), gr%dzm(1:gr%nz) ), & ! intent(in)
                                stats_sfc ) ! intent(inout)
 
       ! Vertical average of thlp2.
-      call stat_update_var_pt( ithlp2_vert_avg, 1,  & ! intent(in)
+      call stat_update_var_pt( ithlp2_vert_avg, grid_level,  & ! intent(in)
            vertical_avg( (gr%nz-1+1), rho_ds_zm(1:gr%nz), & ! intent(in)
                          thlp2(1:gr%nz), gr%dzm(1:gr%nz) ), & ! intent(in)
                                stats_sfc ) ! intent(inout)
-
-
+      
+      
+      if (itot_vartn_normlzd_rtm > 0) then
+        if (abs(rtm(gr%nz) - rtm(1)) < eps) then
+          write(fstderr, *) "Warning: tot_vartn_normlzd_rtm tried to divide by zero denominator ", &
+                            "(surface level value was equal to top level value)"
+          xtmp = -999_core_rknd  ! workaround to signify zero denominator 
+        else
+          xtmp = sum(abs(rtm(2 : gr%nz) - rtm(1 : gr%nz-1)) / abs(rtm(gr%nz) - rtm(1)))
+        end if
+        
+        call stat_update_var_pt( itot_vartn_normlzd_rtm, grid_level, xtmp, & ! intent(in)
+                                 stats_sfc ) ! intent(inout)
+      end if
+     
+      if (itot_vartn_normlzd_thlm > 0) then
+        if (abs(thlm(gr%nz) - thlm(1)) < eps) then
+          write(fstderr, *) "Warning: tot_vartn_normlzd_thlm tried to divide by zero denominator ", &
+                            "(surface level value was equal to top level value)"
+          xtmp = -999_core_rknd  ! workaround to signify zero denominator 
+        else
+          xtmp = sum(abs(thlm(2 : gr%nz) - thlm(1 : gr%nz-1)) / abs(thlm(gr%nz) - thlm(1)))
+        end if
+        
+        call stat_update_var_pt( itot_vartn_normlzd_thlm, grid_level, xtmp, & ! intent(in)
+                                 stats_sfc ) ! intent(inout)
+      end if
+     
+      if (itot_vartn_normlzd_wprtp > 0) then
+        if (abs(wprtp(gr%nz) - wprtp(1)) < eps) then
+          write(fstderr, *) "Warning: tot_vartn_normlzd_wprtp tried to divide by zero denominator ", &
+                            "(surface level value was equal to top level value)"
+          xtmp = -999_core_rknd  ! workaround to signify zero denominator 
+        else
+          xtmp = sum(abs(wprtp(2 : gr%nz) - wprtp(1 : gr%nz-1)) / abs(wprtp(gr%nz) - wprtp(1)))
+        end if
+        
+        call stat_update_var_pt( itot_vartn_normlzd_wprtp, grid_level, xtmp, & ! intent(in)
+                                 stats_sfc ) ! intent(inout)
+      end if
     end if ! l_stats_samp
 
 
@@ -2879,6 +2924,8 @@ module stats_clubb_utilities
 
     ! Local Variables
     real(kind=core_rknd) :: xtmp
+    
+    integer :: grid_level = 1
 
     ! ---- Begin Code ----
 
@@ -2934,7 +2981,7 @@ module stats_clubb_utilities
                ( (gr%nz - 2 + 1), rho_ds_zt(2:gr%nz), &
                  hydromet(2:gr%nz,iirs), gr%dzt(2:gr%nz) )
 
-        call stat_update_var_pt( iswp, 1, xtmp, & ! intent(in)
+        call stat_update_var_pt( iswp, grid_level, xtmp, & ! intent(in)
                                  stats_sfc ) ! intent(inout)
 
       end if ! iswp > 0 .and. iirs > 0
@@ -2947,7 +2994,7 @@ module stats_clubb_utilities
                ( (gr%nz - 2 + 1), rho_ds_zt(2:gr%nz), &
                  hydromet(2:gr%nz,iiri), gr%dzt(2:gr%nz) )
 
-        call stat_update_var_pt( iiwp, 1, xtmp, & ! intent(in)
+        call stat_update_var_pt( iiwp, grid_level, xtmp, & ! intent(in)
                                  stats_sfc ) ! intent(inout)
 
       end if
@@ -2960,7 +3007,7 @@ module stats_clubb_utilities
                ( (gr%nz - 2 + 1), rho_ds_zt(2:gr%nz), &
                  hydromet(2:gr%nz,iirr), gr%dzt(2:gr%nz) )
 
-        call stat_update_var_pt( irwp, 1, xtmp, & ! intent(in)
+        call stat_update_var_pt( irwp, grid_level, xtmp, & ! intent(in)
                                  stats_sfc ) ! intent(inout)
  
       end if ! irwp > 0 .and. irrm > 0

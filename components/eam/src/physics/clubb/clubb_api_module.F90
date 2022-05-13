@@ -2926,9 +2926,6 @@ contains
 
     use setup_clubb_pdf_params, only : setup_pdf_parameters
 
-    use advance_windm_edsclrm_module, only: &
-        xpwp_fnc
-
     use parameter_indices, only: &
         nparams    ! Variable(s)
 
@@ -3169,11 +3166,6 @@ contains
     hydromet_pdf_params )                       ! Intent(out)
 
     use setup_clubb_pdf_params, only : setup_pdf_parameters
-
-    
-
-    use advance_windm_edsclrm_module, only: &
-        xpwp_fnc
 
     use parameter_indices, only: &
         nparams    ! Variable(s)

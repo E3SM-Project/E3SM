@@ -1288,7 +1288,7 @@ module mixing_length
       C_invrs_tau_N2_clear_wp3,   &
       C_invrs_tau_wpxp_Ri,        &
       altitude_threshold,         &
-      smth_range
+      heaviside_smth_range
 
     real( kind = core_rknd ), dimension(ngrdcol,nz) :: &
       smooth_thlm,           & 
@@ -1417,10 +1417,10 @@ module mixing_length
       bvf_thresh = brunt_vaisala_freq_sqd_smth/C_invrs_tau_wpxp_N2_thresh
       bvf_thresh = bvf_thresh - one
 
-      smth_range = 0.1_core_rknd
+      heaviside_smth_range = 0.1_core_rknd
       
       do i = 1, ngrdcol
-        H_invrs_tau_wpxp_N2(i,:) = smooth_heaviside_peskin(bvf_thresh(i,:), smth_range)
+        H_invrs_tau_wpxp_N2(i,:) = smooth_heaviside_peskin(bvf_thresh(i,:), heaviside_smth_range)
       end do
 
     else ! l_smooth_Heaviside_tau_wpxp = .false.

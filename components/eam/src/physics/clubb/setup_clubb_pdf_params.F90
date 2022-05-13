@@ -117,9 +117,6 @@ module setup_clubb_pdf_params
     use Nc_Ncn_eqns, only: &
         Nc_in_cloud_to_Ncnm  ! Procedure(s)
 
-    use advance_windm_edsclrm_module, only: &
-        xpwp_fnc
-
     use parameter_indices, only: &
         nparams,         & ! Variable(s)
         ic_K_hm,         &
@@ -170,6 +167,9 @@ module setup_clubb_pdf_params
         clubb_fatal_error               ! Constant
 
     use stats_type, only: stats ! Type
+    
+    use advance_helper_module, only : &
+        calc_xpwp  ! Procedure(s)
 
     implicit none
 
@@ -264,6 +264,9 @@ module setup_clubb_pdf_params
       hydromet_pdf_params    ! Hydrometeor PDF parameters        [units vary]
 
     ! Local Variables
+    
+    real( kind = core_rknd ), dimension(ngrdcol,nz) :: &
+      Kh_zm_c_K_hm    ! Eddy diffusivity coef. on momentum levels [m^2/s]
 
     real( kind = core_rknd ), dimension(ngrdcol,nz) :: &
       sigma_w_1,    & ! Standard deviation of w (1st PDF component)      [m/s]
@@ -540,15 +543,14 @@ module setup_clubb_pdf_params
         end do ! i = 1, hydromet_dim, 1
       end do
       
-      do i = 1, ngrdcol
+      Kh_zm_c_K_hm(:,:) = -clubb_params(ic_K_hm) * Kh_zm(:,:)
+      
+      call calc_xpwp( nz, ngrdcol, gr, &
+                      Kh_zm_c_K_hm, Ncnm, &
+                      wpNcnp_zm )
 
-        wpNcnp_zm(i,1:nz-1) &
-        = xpwp_fnc( -clubb_params(ic_K_hm) * Kh_zm(i,1:nz-1), Ncnm(i,1:nz-1), &
-                    Ncnm(i,2:nz), gr(i)%invrs_dzm(1:nz-1) )
-
-        ! Boundary conditions; We are assuming zero flux at the top.
-        wpNcnp_zm(i,nz) = zero
-      end do
+      ! Boundary conditions; We are assuming zero flux at the top.
+      wpNcnp_zm(:,nz) = zero
 
       ! Interpolate the covariances to thermodynamic grid levels.
       wpNcnp_zt(:,:) = zm2zt( nz, ngrdcol, gr, wpNcnp_zm(:,:) )
