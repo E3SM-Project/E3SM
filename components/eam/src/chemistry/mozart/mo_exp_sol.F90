@@ -28,7 +28,7 @@ contains
   end subroutine exp_sol_inti
 
 
-  subroutine exp_sol( base_sol, reaction_rates, het_rates, extfrc, delt, xhnm, ncol, lchnk, ltrop, chem_prod, chem_loss )
+  subroutine exp_sol( base_sol, reaction_rates, het_rates, extfrc, delt, xhnm, ncol, lchnk, ltrop, diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss )
     !-----------------------------------------------------------------------
     !      	... Exp_sol advances the volumetric mixing ratio
     !           forward one time step via the fully explicit
@@ -56,8 +56,11 @@ contains
     real(r8), intent(in)    ::  xhnm(ncol,pver)
     integer,  intent(in)    ::  ltrop(pcols)                        ! chemistry troposphere boundary (index)
     real(r8), intent(inout) ::  base_sol(ncol,pver,gas_pcnst)       ! working mixing ratios (vmr)
+    real(r8), intent(in)    ::  diags_reaction_rates(ncol,pver,rxntot)    ! rxt rates (1/cm^3/s)
     real(r8), intent(out)   ::  chem_prod(ncol,pver,gas_pcnst)      ! production rate (vmr/delt)
     real(r8), intent(out)   ::  chem_loss(ncol,pver,gas_pcnst)      ! loss rate (vmr/delt)
+    real(r8), intent(out)   ::  chemmp_prod(ncol,pver,gas_pcnst)      ! production rate (vmr/delt)
+    real(r8), intent(out)   ::  chemmp_loss(ncol,pver,gas_pcnst)      ! loss rate (vmr/delt)
 
     !-----------------------------------------------------------------------
     !     	... Local variables
@@ -69,10 +72,16 @@ contains
          ind_prd
 
     real(r8), dimension(ncol,pver) :: wrk
+    real(r8), dimension(ncol,pver,gas_pcnst) :: base_sol_reset
 
+    chem_prod(:,:,:) = 0._r8
+    chem_loss(:,:,:) = 0._r8
+    chemmp_prod(:,:,:) = 0._r8
+    chemmp_loss(:,:,:) = 0._r8
     !-----------------------------------------------------------------------      
     !        ... Put "independent" production in the forcing
     !-----------------------------------------------------------------------      
+    base_sol_reset = base_sol
     call indprd( 1, ind_prd, clscnt1, base_sol, extfrc, &
          reaction_rates, ncol )
 
@@ -84,8 +93,6 @@ contains
     !-----------------------------------------------------------------------      
     !    	... Solve for the mixing ratio at t(n+1)
     !-----------------------------------------------------------------------      
-    chem_prod(:,:,:) = 0._r8
-    chem_loss(:,:,:) = 0._r8
 
     do m = 1,clscnt1
        l = clsmap(m,1)
@@ -117,6 +124,19 @@ contains
        wrk(:,:) = (loss(:,:,m))*xhnm
        call outfld( trim(solsym(l))//'_CHML', wrk(:,:), ncol, lchnk )
        
+    end do
+!----------- for UCIchem diagnostics ------------
+    call indprd( 1, ind_prd, clscnt1, base_sol_reset, extfrc, &
+         diags_reaction_rates, ncol )
+    call exp_prod_loss( prod, loss, base_sol_reset, diags_reaction_rates, het_rates )
+    do m = 1,clscnt1
+       l = clsmap(m,1)
+        do i = 1,ncol
+           do k = ltrop(i)+1,pver
+              chemmp_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
+              chemmp_loss(i,k,l) = (base_sol_reset(i,k,l)*exp(-delt*loss(i,k,m)/base_sol_reset(i,k,l)) - base_sol_reset(i,k,l))/delt
+           end do
+        end do
     end do
 
   end subroutine exp_sol
