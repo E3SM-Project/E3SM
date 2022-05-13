@@ -465,8 +465,8 @@ _TESTS = {
     "e3sm_scream_v1_hires" : {
         "time"  : "03:00:00",
         "tests" : (
-            "SMS_D_Ln2.ne120_ne120.F2000SCREAMv1",
-            "SMS_Ln2.ne120_ne120.F2000-SCREAMv1-AQP1",
+            "SMS_D_Ln12.ne120_ne120.F2000SCREAMv1",
+            "SMS_Ln12.ne120_ne120.F2000-SCREAMv1-AQP1",
             )
     },
 
