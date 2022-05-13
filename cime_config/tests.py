@@ -77,7 +77,7 @@ _TESTS = {
             "ERP_Ln18.ne4_oQU240.F2010",
             "SMS_Ln9.ne4_oQU240.F2010.eam-outfrq9s",
             "SMS.ne4_oQU240.F2010.eam-cosplite",
-            "SMS_R_Ld5.ne4_ne4.FSCM5A97.eam-scm",
+            "SMS_R_Ld5.ne4_ne4.FSCM-ARM97.eam-scm",
             "SMS_D_Ln5.ne4_oQU240.F2010",
             "SMS_Ln5.ne4pg2_oQU480.F2010",
             "ERS.ne4_oQU240.F2010.eam-hommexx"
@@ -87,9 +87,9 @@ _TESTS = {
     "e3sm_atm_integration" : {
         "inherit" : ("eam_preqx", "eam_theta"),
         "tests" : (
-            "ERP_Ln9.ne4_ne4.F-EAM-AQP1",
-            "SMS_Ld1.ne4_ne4.F-EAM-AQP1.eam-clubb_only",
-            "ERP_Ln9.ne4_ne4.F-EAM-RCEMIP",
+            "ERP_Ln9.ne4_ne4.FAQP",
+            "SMS_Ld1.ne4_ne4.FAQP.eam-clubb_only",
+            "ERP_Ln9.ne4_ne4.FRCE",
             "PET_Ln5.ne4_oQU240.F2010.allactive-mach-pet",
             "PEM_Ln5.ne4_oQU240.F2010",
             "SMS_D_Ln5.ne4_oQU240.F2010.eam-cosplite_nhtfrq5",
@@ -113,7 +113,7 @@ _TESTS = {
             "SMS_D_Ln5.ne30_oECv3.F2010",
             "ERP_Ld3.ne30_oECv3.F2010.allactive-pioroot1",
             "SMS_Ly1.ne4_oQU240.F2010",
-	    "SMS_D_Ln5.ne45pg2_ne45pg2.F-EAM-AQP1",
+	    "SMS_D_Ln5.ne45pg2_ne45pg2.FAQP",
             "SMS_D_Ln5.ne4_oQU240.F2010.eam-implicit_stress",
             "ERS_Ld5.ne30_oECv3.F2010.eam-implicit_stress",
             )
@@ -165,7 +165,7 @@ _TESTS = {
             "SMS.T62_oQU120_ais20.MPAS_LISIO_TEST",
             "SMS.f09_g16_a.IGELM_MLI",
             "SMS_P12x2.ne4_oQU240.WCYCL1850NS.allactive-mach_mods",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1.eam-mmf_crmout",
+            "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_crmout",
             )
         },
 
@@ -230,12 +230,11 @@ _TESTS = {
     #e3sm MMF tests for development
     "e3sm_mmf_integration" : {
         "tests" : (
-            "ERP_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_fixed_subcycle",
-            "ERS_Ln9.ne4pg2_oQU480.F20TR-MMFXX.eam-mmf_use_VT",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMFOMP.eam-single_thread",
-            "ERS_Ln9.ne4pg2_ne4pg2.F-MMF1-RCEMIP",
-            "SMS_Ln5.ne4_ne4.F-MMFXX-SCM-ARM97",
+            "ERP_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_fixed_subcycle",
+            "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_use_ESMT",
+            "ERS_Ln9.ne4pg2_oQU480.F20TR-MMF1.eam-mmf_use_VT",
+            "ERS_Ln9.ne4pg2_ne4pg2.FRCE-MMF1",
+            "SMS_Ln5.ne4_ne4.FSCM-ARM97-MMF1",
             )
         },
 
@@ -442,9 +441,9 @@ _TESTS = {
 
     "e3sm_gpucxx" : {
         "tests"    : (
-                 "SMS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_fixed_subcycle",
-                 "SMS_Ln9.ne4pg2_oQU480.F20TR-MMFXX.eam-mmf_use_VT",
-                 "SMS_Ln9.ne4pg2_ne4pg2.F-MMFXX.eam-mmf_use_ESMT",
+                 "SMS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_fixed_subcycle",
+                 "SMS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_use_ESMT",
+                 "SMS_Ln9.ne4pg2_oQU480.F20TR-MMF1.eam-mmf_use_VT",
                  )
     },
 

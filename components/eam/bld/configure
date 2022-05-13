@@ -1235,8 +1235,8 @@ if (defined $opts{'use_MMF'}) {
     $cfg_ref->set('crm_dt', $opts{'crm_dt'});
     if (defined $opts{'crm_nx_rad'}) { $cfg_ref->set('crm_nx_rad', $opts{'crm_nx_rad'}); }
     if (defined $opts{'crm_ny_rad'}) { $cfg_ref->set('crm_ny_rad', $opts{'crm_ny_rad'}); }
+    if (defined $opts{'crm_adv'}) { $cfg_ref->set('crm_adv', $opts{'crm_adv'}); }
     $cfg_ref->set('MMF_microphysics_scheme', $opts{'MMF_microphysics_scheme'});
-    $cfg_ref->set('crm_adv', $opts{'crm_adv'});
     $cfg_ref->set('crm', $opts{'crm'});
     # Check that model is not using threading for the MMF
     if ($nthreads > 1) {
@@ -1737,7 +1737,8 @@ if (defined $opts{'use_MMF'}) {
     my $crm_adv = $cfg_ref->get('crm_adv');
     my $yes3Dval = 1;
     if ($crm_ny eq 1) {$yes3Dval = 0;}
-    $cfg_cppdefs .= " -D_$crm_adv -D$MMF_microphysics_scheme -DYES3DVAL=$yes3Dval";
+    if (defined $opts{'crm_adv'}) { $cfg_cppdefs .= " -D_$crm_adv "; }
+    $cfg_cppdefs .= " -D$MMF_microphysics_scheme -DYES3DVAL=$yes3Dval";
     $cfg_cppdefs .= " -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz ";
     $cfg_cppdefs .= " -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
     if (defined $opts{'use_ECPP'}) { $cfg_cppdefs .= " -DECPP " }
@@ -2537,11 +2538,14 @@ sub write_filepath
           print $fh "$camsrcdir/eam/src/physics/crm/sam/SGS_TKE\n";
 
           # advection scheme
-          my $crm_adv = $cfg_ref->get('crm_adv');
-          if ($crm_adv eq 'UM5') {
-              print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_UM5\n";
+          my $crm_adv = 'MPDATA';
+          if (defined $opts{'crm_adv'}) { $crm_adv = $cfg_ref->get('crm_adv'); }
+          if ($crm_adv eq 'MPDATA') {
+            print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_MPDATA\n";
+          } elsif ($crm_adv eq 'UM5') {
+            print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_UM5\n";
           } else {
-              print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_MPDATA\n";
+            die "configure ERROR: invalid option - crm_adv: $crm_adv.\n";
           }
 
         } elsif ($crm eq 'samomp') {
@@ -2562,11 +2566,14 @@ sub write_filepath
           print $fh "$camsrcdir/eam/src/physics/crm/samomp/SGS_TKE\n";
 
           # advection scheme
-          my $crm_adv = $cfg_ref->get('crm_adv');
-          if ($crm_adv eq 'UM5') {
-              print $fh "$camsrcdir/eam/src/physics/crm/samomp/ADV_UM5\n";
+          my $crm_adv = 'MPDATA';
+          if (defined $opts{'crm_adv'}) { $crm_adv = $cfg_ref->get('crm_adv'); }
+          if ($crm_adv eq 'MPDATA') {
+            print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_MPDATA\n";
+          } elsif ($crm_adv eq 'UM5') {
+            print $fh "$camsrcdir/eam/src/physics/crm/sam/ADV_UM5\n";
           } else {
-              print $fh "$camsrcdir/eam/src/physics/crm/samomp/ADV_MPDATA\n";
+            die "configure ERROR: invalid option - crm_adv: $crm_adv.\n";
           }
                               
         } elsif ($crm eq 'samxx') {
