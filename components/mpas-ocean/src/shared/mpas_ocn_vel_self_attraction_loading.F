@@ -33,6 +33,7 @@ module ocn_vel_self_attraction_loading
     use ocn_diagnostics
     use ocn_diagnostics_variables
     use ocn_config
+    use ocn_mesh
     use netcdf
     use mpas_global_sum_mod
 #ifdef _MPI
@@ -611,7 +612,7 @@ contains
 
         ! Config variables
         type (block_type), pointer :: block_ptr
-        type (mpas_pool_type), pointer :: forcingPool, meshPool
+        type (mpas_pool_type), pointer :: forcingPool
 
         ! NetCDF and weights file variables
         integer :: toNcId, toNsDimId, toRowId, toColId, toSId
@@ -624,7 +625,7 @@ contains
         ! SHTns routine variables
         character(len=StrKIND) :: loadLoveFile
         integer :: mmax, mres, layout, norm
-        integer, pointer :: nphi, nlat
+        integer :: nphi, nlat
         real(dp),parameter :: pi=acos(-1.0_dp)
         real(dp), pointer :: cosTheta(:), sinTheta(:)
         real(dp) :: eps_polar
@@ -665,29 +666,14 @@ contains
           call mpas_log_write('config_use_self_attraction_loading = .true. requires config_use_tidal_potential_forcing = .true.' , MPAS_LOG_CRIT)
         endif
 
-        call mpas_pool_get_config(ocnConfigs, 'config_mpas_to_grid_weights_file', config_mpas_to_grid_weights_file)
-        call mpas_pool_get_config(ocnConfigs, 'config_grid_to_mpas_weights_file', config_grid_to_mpas_weights_file)
-        call mpas_pool_get_config(ocnConfigs, 'config_self_attraction_loading_compute_interval', config_self_attraction_loading_compute_interval)
-        call mpas_pool_get_config(ocnConfigs, 'config_nLatitude', nlat)
-        call mpas_pool_get_config(ocnConfigs, 'config_nLongitude', nphi)
-        call mpas_pool_get_config(ocnConfigs, 'config_ocean_run_mode', config_ocean_run_mode)
+        nlat = config_nLatitude
+        nphi = config_nLongitude
 
         block_ptr => domain % blocklist
-        do while(associated(block_ptr))
-          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+        call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
 
-          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsOwned)
-          call mpas_pool_get_dimension(meshPool, 'nCells', nCellsAll)
-          call mpas_pool_get_array(meshPool, 'latCell', latCell)
-          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
-          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-          call mpas_pool_get_array(meshPool, 'distanceToCoast', distanceToCoast)
-          call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
-          call mpas_pool_get_array(forcingPool, 'coastalSmoothingFactor', coastalSmoothingFactor)
-
-          block_ptr => block_ptr % next
-        end do
+        call mpas_pool_get_array(forcingPool, 'coastalSmoothingFactor', &
+                                               coastalSmoothingFactor)
 
         ! Set up coastal ssh smoothing
         allocate(sshSmoothed(nCellsAll))
@@ -720,8 +706,6 @@ contains
 #ifndef USE_SHTNS
             call mpas_log_write('MPAS-Ocean must be compiled with USE_SHTNS=true for serial SAL option.', MPAS_LOG_CRIT)
 #endif
-
-            call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
 
             ! Begin MPI portion
             call MPI_COMM_RANK( domain % dminfo % comm, curProc, err_tmp)
