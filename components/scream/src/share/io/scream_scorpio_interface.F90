@@ -124,6 +124,7 @@ module scream_scorpio_interface
     integer, allocatable :: dimid(:)          ! array of PIO dimension id's for this variable
     integer, allocatable :: dimlen(:)         ! array of PIO dimension lengths for this variable
     logical              :: has_t_dim         ! true, if variable has a time dimension
+    logical              :: is_set = .false.  ! Safety measure to ensure a deallocated hist_var_t is never used
   end type hist_var_t
 
   ! The iodesc_list allows us to cache existing PIO decompositions
@@ -360,7 +361,7 @@ contains
 
     do while (associated(curr))
       if (associated(curr%var)) then
-        if (trim(curr%var%name)==trim(shortname)) then
+        if (trim(curr%var%name)==trim(shortname) .and. curr%var%is_set) then
           var_found = .true.
           exit
         endif
@@ -396,6 +397,9 @@ contains
       ! check to see if variable already is defined with file (for use with input)
       ierr = PIO_inq_varid(pio_atm_file%pioFileDesc,trim(shortname),hist_var%piovar)
       call errorHandle("PIO ERROR: could not find variable "//trim(shortname)//" in file "//trim(filename),ierr)
+
+      ! Set that the new variable has been set
+      hist_var%is_set = .true.
     else
       ! The var was already registered by another input/output instance. Check that everything matches
       hist_var => curr%var
@@ -482,7 +486,7 @@ contains
 
     do while (associated(curr))
       if (associated(curr%var)) then
-        if (trim(curr%var%name)==trim(shortname)) then
+        if (trim(curr%var%name)==trim(shortname) .and. curr%var%is_set) then
           var_found = .true.
           exit
         endif
@@ -524,6 +528,9 @@ contains
       !PMC
       ierr=PIO_put_att(pio_atm_file%pioFileDesc, hist_var%piovar, 'units', hist_var%units )
       ierr=PIO_put_att(pio_atm_file%pioFileDesc, hist_var%piovar, 'long_name', hist_var%long_name )
+
+      ! Set that new variable has been created
+      hist_var%is_set = .true.
     else
       ! The var was already registered by another input/output instance. Check that everything matches
       hist_var => curr%var
@@ -743,6 +750,10 @@ contains
           if (associated(var)) then
             ! Remove this variable as a customer of the associated iodesc
             var%iodesc_list%num_customers = var%iodesc_list%num_customers - 1
+            ! Dellocate select memory from this variable.  Note we can't just
+            ! deallocate the whole var structure because this would also
+            ! deallocate the iodesc_list.
+            call deallocate_hist_var_t(var)
           end if ! associated(var)
           curr_var_list => curr_var_list%next  ! Move on to the next variable
         end do ! associated(curr_var_list)
@@ -812,6 +823,17 @@ contains
 
   end subroutine print_decomp
 !=====================================================================!
+  ! Free the memory stored in a hist_var_t derived type
+  subroutine deallocate_hist_var_t(var)
+
+    type(hist_var_t), pointer        :: var
+    
+    deallocate(var%compdof)
+    deallocate(var%dimid)
+    deallocate(var%dimlen)
+    var%is_set = .false.
+
+  end subroutine deallocate_hist_var_t
 !=====================================================================!
   ! Free pio decomposition memory in PIO for any decompositions that are no
   ! longer needed.  This is an important memory management step that should be
@@ -1073,7 +1095,7 @@ contains
     do while (associated(curr))
       var => curr%var
       if (associated(var)) then
-        if (trim(varname) == trim(var%name)) return
+        if (trim(varname) == trim(var%name) .and. var%is_set) return
       end if
       curr => curr%next
     end do
