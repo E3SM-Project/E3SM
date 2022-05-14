@@ -1098,19 +1098,6 @@
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>
-      <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+SGLC_SWAV_SIAC_SESP_BGC.*" pesize="M">
-        <comment>anvil pelayout for tri-grid BGC tests with EAM+DOCN</comment>
-        <ntasks>
-          <ntasks_atm>-8</ntasks_atm>
-          <ntasks_lnd>-8</ntasks_lnd>
-          <ntasks_rof>-8</ntasks_rof>
-          <ntasks_ice>-8</ntasks_ice>
-          <ntasks_ocn>-8</ntasks_ocn>
-          <ntasks_glc>-8</ntasks_glc>
-          <ntasks_wav>-8</ntasks_wav>
-          <ntasks_cpl>-8</ntasks_cpl>
-        </ntasks>
-      </pes>
     </mach>
     <mach name="miller">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="M">
