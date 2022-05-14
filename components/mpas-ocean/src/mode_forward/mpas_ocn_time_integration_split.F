@@ -1569,6 +1569,50 @@ module ocn_time_integration_split
                               meshPool, swForcingPool, &
                               dt, activeTracersOnly, 2)
 
+#ifdef MPAS_OPENACC
+         !$acc enter data copyin(layerThicknessNew, normalVelocityNew)
+         !$acc enter data copyin(normalBarotropicVelocityNew, &
+         !$acc                   normalBaroclinicVelocityNew)
+         !$acc enter data copyin(activeTracersNew)
+         !$acc update device(layerThickEdgeFlux)
+         if (config_use_freq_filtered_thickness) then
+            !$acc enter data copyin(lowFreqDivergenceNew)
+            !$acc enter data copyin(lowFreqDivergenceCur)
+            !$acc enter data copyin(lowFreqDivergenceTend)
+         endif
+         if (splitExplicitStep < numTSIterations) then
+            !$acc update device (normalTransportVelocity, &
+            !$acc                normalGMBolusVelocity)
+            !$acc enter data copyin(atmosphericPressure, seaIcePressure)
+            !$acc enter data copyin(sshNew)
+            !$acc update device(tracersSurfaceValue)
+            if ( associated(frazilSurfacePressure) ) then
+               !$acc enter data copyin(frazilSurfacePressure)
+            endif
+            if (landIcePressureOn) then
+               !$acc enter data copyin(landIcePressure)
+               !$acc enter data copyin(landIceDraft)
+            endif
+            if (config_use_freq_filtered_thickness) then
+               !$acc enter data copyin(highFreqThicknessNew)
+               !$acc enter data copyin(highFreqThicknessCur)
+            endif
+         elseif (splitExplicitStep == numTSIterations) then
+            !$acc enter data copyin(layerThicknessCur)
+            !$acc enter data copyin(layerThicknessTend)
+            !$acc enter data copyin(normalBaroclinicVelocityCur)
+            if (varinp_compute_active_tracer_budgets) then
+               !$acc update device(activeTracerHorizontalAdvectionEdgeFlux)
+               !$acc update device(activeTracerHorizontalAdvectionTendency)
+               !$acc update device(activeTracerVerticalAdvectionTendency)
+               !$acc update device(activeTracerHorMixTendency)
+               !$acc update device(activeTracerSurfaceFluxTendency)
+               !$acc update device(temperatureShortWaveTendency)
+               !$acc update device(activeTracerNonLocalTendency)
+            endif
+         endif
+#endif
+
          call mpas_timer_stop('se tracer tend')
 
          ! update halo for tracer tendencies
@@ -1614,8 +1658,15 @@ module ocn_time_integration_split
             ! Only need T & S for earlier iterations,
             ! then all the tracers needed the last time through.
 
+!! Keeping this calc on the CPU for now
+#ifdef MPAS_OPENACC
+            !$acc update host(layerThicknessNew)
+            !$acc update host(activeTracersNew)
+            !$acc update host(tracersSurfaceValue)
+#else
             !$omp parallel
             !$omp do schedule(runtime) private(i, k, temp_h, temp)
+#endif
             do iCell = 1, nCellsAll
             do k = minLevelCell(iCell), maxLevelCell(iCell)
 
@@ -1639,33 +1690,14 @@ module ocn_time_integration_split
                end do ! tracer index
             end do ! vertical
             end do ! iCell
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
 
 #ifdef MPAS_OPENACC
-            !$acc enter data copyin(layerThicknessNew, normalVelocityNew)
-            !$acc update device (normalTransportVelocity, &
-            !$acc                normalGMBolusVelocity)
-            !$acc enter data copyin(atmosphericPressure, seaIcePressure)
-            !$acc enter data copyin(sshNew)
-            !$acc enter data copyin(activeTracersNew)
-            !$acc update device(tracersSurfaceValue)
-            if ( associated(frazilSurfacePressure) ) then
-               !$acc enter data copyin(frazilSurfacePressure)
-            endif
-            if (landIcePressureOn) then
-               !$acc enter data copyin(landIcePressure)
-               !$acc enter data copyin(landIceDraft)
-            endif
-            !$acc enter data copyin(normalBarotropicVelocityNew, &
-            !$acc                   normalBaroclinicVelocityNew)
-            if (config_use_freq_filtered_thickness) then
-               !$acc enter data copyin(highFreqThicknessNew)
-               !$acc enter data copyin(highFreqThicknessCur)
-               !$acc enter data copyin(lowFreqDivergenceNew)
-               !$acc enter data copyin(lowFreqDivergenceCur)
-               !$acc enter data copyin(lowFreqDivergenceTend)
-            endif
+            !$acc update device(layerThicknessNew)
+            !$acc update device(activeTracersNew)
 #endif
 
             if (config_use_freq_filtered_thickness) then
@@ -1737,48 +1769,6 @@ module ocn_time_integration_split
             call ocn_diagnostic_solve(dt, statePool, forcingPool, &
                                       meshPool, scratchPool, &
                                       tracersPool, 2, full=.false.)
-#ifdef MPAS_OPENACC
-            !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
-            !$acc update host(relativeVorticity, circulation)
-            !$acc update host(vertTransportVelocityTop, &
-            !$acc             vertGMBolusVelocityTop, &
-            !$acc             relativeVorticityCell, &
-            !$acc             divergence, &
-            !$acc             kineticEnergyCell, &
-            !$acc             tangentialVelocity, &
-            !$acc             vertVelocityTop)
-            !$acc update host(normRelVortEdge, normPlanetVortEdge, &
-            !$acc             normalizedRelativeVorticityCell)
-            !$acc update host (surfacePressure)
-            !$acc update host(zMid, zTop)
-            !$acc exit data copyout(sshNew)
-            !$acc exit data delete(activeTracersNew)
-            !$acc update host(tracersSurfaceValue)
-            !$acc update host(normalVelocitySurfaceLayer)
-            !$acc exit data delete (atmosphericPressure, seaIcePressure)
-            if ( associated(frazilSurfacePressure) ) then
-               !$acc exit data delete(frazilSurfacePressure)
-            endif
-            if (landIcePressureOn) then
-               !$acc exit data delete(landIcePressure)
-               !$acc exit data delete(landIceDraft)
-            endif
-            !$acc exit data delete(layerThicknessNew)
-            !$acc exit data delete(normalBarotropicVelocityNew, &
-            !$acc                  normalBaroclinicVelocityNew)
-            !$acc exit data copyout(normalVelocityNew)
-            !$acc update host(density, potentialDensity, displacedDensity)
-            !$acc update host(thermExpCoeff,  &
-            !$acc&            salineContractCoeff)
-            !$acc update host(montgomeryPotential, pressure)
-            if (config_use_freq_filtered_thickness) then
-               !$acc exit data copyout(highFreqThicknessNew)
-               !$acc exit data delete(highFreqThicknessCur)
-               !$acc exit data copyout(lowFreqDivergenceNew)
-               !$acc exit data delete(lowFreqDivergenceCur)
-               !$acc exit data delete(lowFreqDivergenceTend)
-            endif
-#endif
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          ! If large iteration complete, compute all variables at
@@ -1786,24 +1776,6 @@ module ocn_time_integration_split
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
          elseif (splitExplicitStep == numTSIterations) then
-
-#ifdef MPAS_OPENACC
-            !$acc enter data copyin(layerThicknessTend, layerThicknessNew, layerThicknessCur)
-            !$acc enter data copyin(activeTracersNew)
-            !$acc enter data copyin(normalVelocityNew)
-            !$acc enter data copyin(normalBarotropicVelocityNew)
-            !$acc enter data copyin(normalBaroclinicVelocityNew)
-            !$acc enter data copyin(normalBaroclinicVelocityCur)
-            if (varinp_compute_active_tracer_budgets) then
-               !$acc enter data copyin(layerThickEdgeFlux, activetracerhorizontaladvectionedgeflux)
-               !$acc enter data copyin(activeTracerHorizontalAdvectionTendency, activeTracerHorMixTendency, activeTracerVerticalAdvectionTendency, &
-               !$acc   activeTracerSurfaceFluxTendency, activeTracerNonLocalTendency, temperatureShortWaveTendency)
-            endif
-            if (config_use_freq_filtered_thickness) then
-               !$acc enter data copyin(lowFreqDivergenceNew, lowFreqDivergenceCur, lowFreqDivergenceTend)
-            endif
-#endif
-
 
 #ifdef MPAS_OPENACC
             !$acc parallel present(minLevelCell, maxLevelCell) &
@@ -2154,31 +2126,67 @@ module ocn_time_integration_split
             !$acc end parallel
 #endif
 
+         endif ! splitExplicitStep
+
 #ifdef MPAS_OPENACC
-            !$acc exit data copyout(layerThicknessNew)
-            !$acc exit data copyout(activeTracersNew)
-            !$acc exit data delete(layerThicknessTend, layerThicknessCur)
-            !$acc exit data copyout(normalVelocityNew)
-            !$acc exit data delete(normalBarotropicVelocityNew)
-            !$acc exit data delete(normalBaroclinicVelocityNew)
-            !$acc exit data delete(normalBaroclinicVelocityCur)
-            if (varinp_compute_active_tracer_budgets) then
-               !$acc exit data copyout(activeTracerHorizontalAdvectionTendency)
-               !$acc exit data copyout(activeTracerHorMixTendency)
-               !$acc exit data copyout(activeTracerVerticalAdvectionTendency)
-               !$acc exit data copyout(activeTracerSurfaceFluxTendency)
-               !$acc exit data copyout(activeTracerNonLocalTendency)
-               !$acc exit data copyout(temperatureShortWaveTendency)
-               !$acc exit data delete(layerThickEdgeFlux)
-               !$acc exit data copyout(activetracerhorizontaladvectionedgeflux)
+         !$acc exit data copyout(layerThicknessNew)
+         !$acc exit data copyout(normalVelocityNew)
+         !$acc exit data delete(normalBarotropicVelocityNew, &
+         !$acc                  normalBaroclinicVelocityNew)
+         !$acc exit data copyout(activeTracersNew)
+         !$acc update host(layerThickEdgeFlux)
+         if (config_use_freq_filtered_thickness) then
+            !$acc exit data copyout(lowFreqDivergenceNew)
+            !$acc exit data delete(lowFreqDivergenceCur)
+            !$acc exit data delete(lowFreqDivergenceTend)
+         endif
+         if (splitExplicitStep < numTSIterations) then
+            !$acc exit data delete (atmosphericPressure, seaIcePressure)
+            !$acc exit data copyout(sshNew)
+            !$acc update host(layerThickEdgeMean)
+            !$acc update host(relativeVorticity, circulation)
+            !$acc update host(vertTransportVelocityTop, &
+            !$acc             vertGMBolusVelocityTop, &
+            !$acc             relativeVorticityCell, &
+            !$acc             divergence, &
+            !$acc             kineticEnergyCell, &
+            !$acc             tangentialVelocity, &
+            !$acc             vertVelocityTop)
+            !$acc update host(normRelVortEdge, normPlanetVortEdge, &
+            !$acc             normalizedRelativeVorticityCell)
+            !$acc update host (surfacePressure)
+            !$acc update host(zMid, zTop)
+            !$acc update host(tracersSurfaceValue)
+            !$acc update host(normalVelocitySurfaceLayer)
+            !$acc update host(density, potentialDensity, displacedDensity)
+            !$acc update host(thermExpCoeff,  &
+            !$acc&            salineContractCoeff)
+            !$acc update host(montgomeryPotential, pressure)
+            if (landIcePressureOn) then
+               !$acc exit data delete(landIcePressure)
+               !$acc exit data delete(landIceDraft)
             endif
             if (config_use_freq_filtered_thickness) then
-               !$acc exit data copyout(lowFreqDivergenceNew)
-               !$acc exit data delete(lowFreqDivergenceCur, lowFreqDivergenceTend)
+               !$acc exit data copyout(highFreqThicknessNew)
+               !$acc exit data delete(highFreqThicknessCur)
             endif
+            if ( associated(frazilSurfacePressure) ) then
+               !$acc exit data delete(frazilSurfacePressure)
+            endif
+         elseif (splitExplicitStep == numTSIterations) then
+            !$acc exit data delete(layerThicknessCur, layerThicknessTend)
+            !$acc exit data delete(normalBaroclinicVelocityCur)
+            if (varinp_compute_active_tracer_budgets) then
+               !$acc update host(activeTracerHorizontalAdvectionEdgeFlux)
+               !$acc update host(activeTracerHorizontalAdvectionTendency)
+               !$acc update host(activeTracerVerticalAdvectionTendency)
+               !$acc update host(activeTracerHorMixTendency)
+               !$acc update host(activeTracerSurfaceFluxTendency)
+               !$acc update host(temperatureShortWaveTendency)
+               !$acc update host(activeTracerNonLocalTendency)
+            endif
+         endif
 #endif
-
-         endif ! splitExplicitStep
 
          call mpas_timer_stop('se loop fini')
          call mpas_timer_stop('se loop')
