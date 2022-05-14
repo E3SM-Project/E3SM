@@ -103,7 +103,7 @@ contains
   subroutine prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_atm)
 
     use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
-      iMOAB_WriteMesh, iMOAB_ComputePointDoFIntersection ! use computedofintx if land is point cloud
+      iMOAB_WriteMesh 
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and  mappers
@@ -371,19 +371,14 @@ contains
 
     context_id = ocn(1)%cplcompid
     wgtIdef = 'scalar'//C_NULL_CHAR
-    tagNameProj = 'a2oTbot_proj:a2oUbot_proj:a2oVbot_proj:'//C_NULL_CHAR
     num_proj = num_proj + 1
 
     if (atm_present .and. ocn_present .and. ocn_prognostic) then
       if (atm_pg_active ) then ! use data from AtmPhys mesh, but mesh from pg
         ! in this case, we will send from phys grid directly to intx atm ocn context!
+        tagname=trim(seq_flds_a2x_fields)//C_NULL_CHAR
         if (mphaid .ge. 0) then !  send because we are on atm pes, also mphaid >= 0
-
-          ! basically, adjust the migration of the tag we want to project; it was sent initially with
-          ! trivial partitioning, now we need to adjust it for "coverage" mesh
-          ! as always, use nonblocking sends
-          tagName = 'T_ph:u_ph:v_ph:'//C_NULL_CHAR ! they are defined in initialize_moab_atm_phys in atm_comp_mct
-          context_id = 100*atm(1)%cplcompid + ocn(1)%cplcompid !send to atm/ocn intx !
+          context_id = 100*atm(1)%cplcompid + ocn(1)%cplcompid !send to atm/ocn intx ! ~ 618
           ierr = iMOAB_SendElementTag(mphaid, tagName, mpicom_join, context_id)
           if (ierr .ne. 0) then
             write(logunit,*) subname,' error in sending tag from phys atm to ocn atm intx '
@@ -391,9 +386,7 @@ contains
           endif
 
         endif
-
         if (mbintxao .ge. 0 ) then ! we are for sure on coupler pes!
-          tagName = 'T_ph16:u_ph16:v_ph16:'//C_NULL_CHAR ! they are defined in cplcomp_exchange mod
           ! context_id = atm(1)%cplcompid == atm_id above (5)
           ! we use the same name as spectral case, even thought in pg2 case, the size of tag is 1, not 16
           ! in imoab_apg2_ol_coupler.cpp we use at this stage, receiver, the same name as sender, T_ph
@@ -412,8 +405,35 @@ contains
             call shr_sys_abort(subname//' ERROR  in freeing buffers')
           endif
         endif
+
+        if (mbintxao .ge. 0 ) then !  we are on coupler pes, for sure
+          ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
+          !  hard coded now, it should be a runtime option in the future
+  
+          ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxao, wgtIdef, tagName, tagName)
+          if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in applying weights '
+            call shr_sys_abort(subname//' ERROR in applying weights')
+          endif
+#ifdef MOABDEBUG
+          ! we can also write the ocean mesh to file, just to see the projectd tag
+          !      write out the mesh file to disk
+          write(lnum,"(I0.2)")num_proj
+          outfile = 'ocnCplProj'//trim(lnum)//'.h5m'//C_NULL_CHAR
+          wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+          ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+          if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing ocn mesh after projection '
+            call shr_sys_abort(subname//' ERROR in writing ocn mesh after projection')
+          endif
+#endif
+        !CHECKRC(ierr, "cannot receive tag values")
+        endif
+
       else  ! original send from spectral elements
+        ! this will be reworked for all fields
         tagName = 'a2oTbot:a2oUbot:a2oVbot:'//C_NULL_CHAR ! they are defined in semoab_mod.F90!!!
+        tagNameProj = 'a2oTbot_proj:a2oUbot_proj:a2oVbot_proj'//C_NULL_CHAR
         !  the separator will be ';' semicolon
 
         if (mhid .ge. 0) then !  send because we are on atm pes
@@ -446,36 +466,36 @@ contains
           endif
         endif
 
-      endif
 
-      ! we could do the projection now, on the ocean mesh, because we are on the coupler pes;
-      ! the actual migrate could happen later , from coupler pes to the ocean pes
-      if (mbintxao .ge. 0 ) then !  we are on coupler pes, for sure
-        ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
-        !  hard coded now, it should be a runtime option in the future
+        ! we could do the projection now, on the ocean mesh, because we are on the coupler pes;
+        ! the actual migrate could happen later , from coupler pes to the ocean pes
+        if (mbintxao .ge. 0 ) then !  we are on coupler pes, for sure
+          ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
+          !  hard coded now, it should be a runtime option in the future
 
-        ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxao, wgtIdef, tagName, tagNameProj)
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in applying weights '
-          call shr_sys_abort(subname//' ERROR in applying weights')
-        endif
+          ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxao, wgtIdef, tagName, tagNameProj)
+          if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in applying weights '
+            call shr_sys_abort(subname//' ERROR in applying weights')
+          endif
 #ifdef MOABDEBUG
-        ! we can also write the ocean mesh to file, just to see the projectd tag
-        !      write out the mesh file to disk
-        write(lnum,"(I0.2)")num_proj
-        outfile = 'ocnCplProj'//trim(lnum)//'.h5m'//C_NULL_CHAR
-        wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-        ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in writing ocn mesh after projection '
-          call shr_sys_abort(subname//' ERROR in writing ocn mesh after projection')
-        endif
+          ! we can also write the ocean mesh to file, just to see the projectd tag
+          !      write out the mesh file to disk
+          write(lnum,"(I0.2)")num_proj
+          outfile = 'ocnCplProj'//trim(lnum)//'.h5m'//C_NULL_CHAR
+          wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+          ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+          if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing ocn mesh after projection '
+            call shr_sys_abort(subname//' ERROR in writing ocn mesh after projection')
+          endif
 #endif
-
-      !CHECKRC(ierr, "cannot receive tag values")
-      endif
+        endif ! if  (mbintxao .ge. 0 ) 
+        !CHECKRC(ierr, "cannot receive tag values")
+      endif ! if (atp_pg_active)
 
     endif  ! if atm and ocn
+
     ! repeat this for land data, that is already on atm tag
     tagNameProj = 'a2lTbot_proj:a2lUbot_proj:a2lVbot_proj:'//C_NULL_CHAR
 

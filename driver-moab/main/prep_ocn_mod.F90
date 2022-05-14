@@ -1661,7 +1661,7 @@ contains
   subroutine prep_atm_ocn_moab(infodata)
 
    use iMOAB, only: iMOAB_CoverageGraph, iMOAB_ComputeScalarProjectionWeights, &
-     iMOAB_ComputeCommGraph
+     iMOAB_ComputeCommGraph, iMOAB_DefineTagStorage
    !---------------------------------------------------------------
    ! Description
    ! After intersection of atm and ocean mesh, correct the communication graph
@@ -1690,6 +1690,9 @@ contains
    integer                  :: mpigrp_old   !  component group pes (phys grid atm) == atm group
    integer                  :: typeA, typeB ! type for computing graph;
    integer                  :: idintx ! in this case, id of moab intersection between atm and ocn, on coupler pes
+   
+   character(CXX)           :: tagname 
+   integer                  ::  tagtype, numco,  tagindex  ! used to define tags
 
 
    call seq_infodata_getData(infodata, &
@@ -1712,15 +1715,15 @@ contains
    if (ocn_prognostic) then
 
       if (atm_pg_active ) then ! use mhpgid mesh
-      ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxao, atm_id, id_join, context_id);
-      if (iamroot_CPLID) then
-         write(logunit,*) 'iMOAB graph atmpg2-intxao context: ', context_id
-      end if
+         ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxao, atm_id, id_join, context_id);
+         if (iamroot_CPLID) then
+            write(logunit,*) 'iMOAB graph atmpg2-intxao context: ', context_id
+         end if
       else
-      ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxao, atm_id, id_join, context_id);
-      if (iamroot_CPLID) then
-         write(logunit,*) 'iMOAB graph atmnp4-intxao context: ', context_id
-      end if
+         ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxao, atm_id, id_join, context_id);
+         if (iamroot_CPLID) then
+            write(logunit,*) 'iMOAB graph atmnp4-intxao context: ', context_id
+         end if
       endif
       if (ierr .ne. 0) then
       write(logunit,*) subname,' error in computing coverage graph atm/ocn '
@@ -1734,12 +1737,12 @@ contains
        dm1 = "fv"//C_NULL_CHAR
        dofnameATM="GLOBAL_ID"//C_NULL_CHAR
        orderATM = 1 !  fv-fv
-       volumetric = 1 ! maybe volumetric ?
+       volumetric = 0 ! maybe volumetric ?
      else
        dm1 = "cgll"//C_NULL_CHAR
        dofnameATM="GLOBAL_DOFS"//C_NULL_CHAR
        orderATM = np !  it should be 4
-       volumetric = 0
+       volumetric = 1
      endif
      dm2 = "fv"//C_NULL_CHAR
      dofnameOCN="GLOBAL_ID"//C_NULL_CHAR
@@ -1768,6 +1771,16 @@ contains
      if (iamroot_CPLID) then
        write(logunit,*) 'finish iMOAB weights in atm-ocn'
      endif
+     ! define here the tags atm-ocn projection 
+      ! define tags according to the seq_flds_a2x_fields 
+     tagtype = 1  ! dense, double
+     numco = 1 !  one value per cell / entity
+     tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+     ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
+     if ( ierr == 1 ) then
+         call shr_sys_abort( subname//' ERROR: cannot define tags in moab' )
+     end if
+
    endif ! only if atm and ocn intersect  mbintxao >= 0
    ! compute the comm graph between phys atm and intx-atm-ocn, to be able to send directly from phys atm
    ! towards coverage mesh on atm for intx to ocean
@@ -1860,7 +1873,7 @@ contains
          tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
          ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
          if ( ierr == 1 ) then
-            call shr_sys_abort( subname//' ERROR: cannot define tags in moab' )
+            call shr_sys_abort( subname//' ERROR: cannot define tags for ice proj to ocn' )
          end if
       endif
    endif

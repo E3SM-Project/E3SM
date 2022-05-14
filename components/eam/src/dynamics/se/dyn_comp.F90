@@ -163,7 +163,11 @@ CONTAINS
 
 #ifdef HAVE_MOAB
        appname="HM_COARSE"//C_NULL_CHAR
-       ATM_ID1 = ATMID(1) ! first atmosphere instance; it should be 5
+       if (fv_nphys > 0 ) then ! in this case HM_COARSE will not be used for transfers ...
+        ATM_ID1 = 120 ! 
+       else
+        ATM_ID1 = ATMID(1) ! first atmosphere instance; it should be 5
+       endif
        ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, MHID)
        if (ierr > 0 )  &
            call endrun('Error: cannot register moab app')
@@ -184,7 +188,10 @@ CONTAINS
        endif
        if ( fv_nphys > 0 ) then
          appname="HM_PGX"//C_NULL_CHAR
-         ATM_ID1 = 120 ! this number should not conflict with other components IDs; how do we know?
+         ATM_ID1 =  ATMID(1) ! this number should not conflict with other components IDs; how do we know?
+         !  
+         ! in this case, we reuse the main atm id, mhid will not be used for intersection anymore
+         ! still, need to be careful
          ierr = iMOAB_RegisterApplication(appname, par%comm, ATM_ID1, mhpgid)
          if (ierr > 0 )  &
              call endrun('Error: cannot register moab app for fine mesh')

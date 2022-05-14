@@ -4710,7 +4710,7 @@ contains
        ! also call moab ice-ocn projection, which is just a migrate
        ! this needs to happen between ice comp and ocn coupler directly
        ! it needs to be called on the joint comm between ice and coupler
-       ! if we do a proper component_exch, then would another hop, just on coupler pes
+       ! if we do a proper component_exch, then would need another hop, just on coupler pes
        !  TODO when do we need to send from ice to ocn? Usually after ice run ? 
        if (ice_c2_ocn ) then
          call prep_ocn_calc_i2x_ox_moab()
