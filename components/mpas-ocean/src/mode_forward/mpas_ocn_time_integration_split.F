@@ -1787,9 +1787,51 @@ module ocn_time_integration_split
 
          elseif (splitExplicitStep == numTSIterations) then
 
+#ifdef MPAS_OPENACC
+            !$acc enter data copyin(layerThicknessTend, layerThicknessNew, layerThicknessCur)
+            !$acc enter data copyin(activeTracersNew)
+            !$acc enter data copyin(normalVelocityNew)
+            !$acc enter data copyin(normalBarotropicVelocityNew)
+            !$acc enter data copyin(normalBaroclinicVelocityNew)
+            !$acc enter data copyin(normalBaroclinicVelocityCur)
+            if (varinp_compute_active_tracer_budgets) then
+               !$acc enter data copyin(layerThickEdgeFlux, activetracerhorizontaladvectionedgeflux)
+               !$acc enter data copyin(activeTracerHorizontalAdvectionTendency, activeTracerHorMixTendency, activeTracerVerticalAdvectionTendency, &
+               !$acc   activeTracerSurfaceFluxTendency, activeTracerNonLocalTendency, temperatureShortWaveTendency)
+            endif
+            if (config_use_freq_filtered_thickness) then
+               !$acc enter data copyin(lowFreqDivergenceNew, lowFreqDivergenceCur, lowFreqDivergenceTend)
+            endif
+#endif
+
+
+#ifdef MPAS_OPENACC
+            !$acc parallel present(minLevelCell, maxLevelCell) &
+            !$acc   present(layerThicknessTend) &
+            !$acc   present(layerThicknessCur) &
+            !$acc   present(minLevelEdgeBot, maxLevelEdgeTop) &
+            !$acc   present(layerThickEdgeFlux) &
+            !$acc   present(activeTracerHorizontalAdvectionEdgeFlux) &
+            !$acc   present(layerThicknessNew) &
+            !$acc   present(activeTracerHorizontalAdvectionTendency) &
+            !$acc   present(activeTracerVerticalAdvectionTendency) &
+            !$acc   present(activeTracerHorMixTendency) &
+            !$acc   present(activeTracerSurfaceFluxTendency) &
+            !$acc   present(temperatureShortWaveTendency) &
+            !$acc   present(activeTracerNonLocalTendency)
+#endif
+
+
+#ifdef MPAS_OPENACC
+            !$acc loop gang
+#else
             !$omp parallel
             !$omp do schedule(runtime) private(k)
+#endif
             do iCell = 1, nCellsAll
+#ifdef MPAS_OPENACC
+            !$acc loop vector
+#endif
             do k = minLevelCell(iCell), maxLevelCell(iCell)
                ! this is h_{n+1}
                layerThicknessNew(k,iCell) = &
@@ -1802,22 +1844,64 @@ module ocn_time_integration_split
             !$omp end parallel
 #endif
 
-            if (config_compute_active_tracer_budgets) then
+            if (varinp_compute_active_tracer_budgets) then
 
+#ifdef MPAS_OPENACC
+               !$acc loop gang
+#else
                !$omp parallel
                !$omp do schedule(runtime) private(k)
+#endif
                do iEdge = 1, nEdgesAll
+#ifdef MPAS_OPENACC
+               !$acc loop seq
+#endif
                do k= minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-                  activeTracerHorizontalAdvectionEdgeFlux(:,k,iEdge) = &
-                  activeTracerHorizontalAdvectionEdgeFlux(:,k,iEdge) / &
-                       layerThickEdgeFlux(k,iEdge)
+#ifdef MPAS_OPENACC
+               !$acc loop vector
+#endif
+                  do iTracer = 1, size(activeTracerHorizontalAdvectionEdgeFlux,1)
+                     activeTracerHorizontalAdvectionEdgeFlux(iTracer,k,iEdge) = &
+                     activeTracerHorizontalAdvectionEdgeFlux(iTracer,k,iEdge) / &
+                          layerThickEdgeFlux(k,iEdge)
+                  enddo
                enddo
                enddo
+#ifndef MPAS_OPENACC
                !$omp end do
+#endif
 
+#ifdef MPAS_OPENACC
+               !$acc loop gang
+#else
                !$omp do schedule(runtime) private(k)
+#endif
                do iCell = 1, nCellsAll
                do k= minLevelCell(iCell), maxLevelCell(iCell)
+#ifdef MPAS_OPENACC
+               !$acc loop vector
+                  do iTracer = 1, size(activeTracerHorizontalAdvectionTendency,1)
+                     activeTracerHorizontalAdvectionTendency(iTracer,k,iCell) = &
+                     activeTracerHorizontalAdvectionTendency(iTracer,k,iCell) / &
+                               layerThicknessNew(k,iCell)
+
+                     activeTracerVerticalAdvectionTendency(iTracer,k,iCell) = &
+                     activeTracerVerticalAdvectionTendency(iTracer,k,iCell) / &
+                               layerThicknessNew(k,iCell)
+
+                     activeTracerHorMixTendency(iTracer,k,iCell) = &
+                     activeTracerHorMixTendency(iTracer,k,iCell) / &
+                                layerThicknessNew(k,iCell)
+
+                     activeTracerSurfaceFluxTendency(iTracer,k,iCell) = &
+                     activeTracerSurfaceFluxTendency(iTracer,k,iCell) / &
+                                layerThicknessNew(k,iCell)
+
+                     activeTracerNonLocalTendency(iTracer,k,iCell) = &
+                     activeTracerNonLocalTendency(iTracer,k,iCell) / &
+                                layerThicknessNew(k,iCell)
+                  end do
+#else
                   activeTracerHorizontalAdvectionTendency(:,k,iCell) = &
                   activeTracerHorizontalAdvectionTendency(:,k,iCell) / &
                             layerThicknessNew(k,iCell)
@@ -1834,12 +1918,13 @@ module ocn_time_integration_split
                   activeTracerSurfaceFluxTendency(:,k,iCell) / &
                              layerThicknessNew(k,iCell)
 
-                  temperatureShortWaveTendency(k,iCell) = &
-                  temperatureShortWaveTendency(k,iCell) / &
-                             layerThicknessNew(k,iCell)
-
                   activeTracerNonLocalTendency(:,k,iCell) = &
                   activeTracerNonLocalTendency(:,k,iCell) / &
+                             layerThicknessNew(k,iCell)
+#endif
+
+                  temperatureShortWaveTendency(k,iCell) = &
+                  temperatureShortWaveTendency(k,iCell) / &
                              layerThicknessNew(k,iCell)
                end do
                end do
@@ -1848,6 +1933,18 @@ module ocn_time_integration_split
                !$omp end parallel
 #endif
             endif
+
+#ifdef MPAS_OPENACC
+            !$acc end parallel
+#endif
+
+! This tracer block is still computed on the CPU
+#ifdef MPAS_OPENACC
+            !$acc update host(layerThicknessNew)
+            !$acc update host(layerThicknessCur, layerThicknessTend)
+            !$acc update host(activeTracersNew)
+            !$acc update host(tracersSurfaceValue)
+#endif
 
             call mpas_pool_begin_iteration(tracersPool)
             do while (mpas_pool_get_next_member(tracersPool, &
@@ -1963,10 +2060,29 @@ module ocn_time_integration_split
                end if ! tracer
             end do ! tracer group
 
+#ifdef MPAS_OPENACC
+            !$acc update device(layerThicknessNew)
+            !$acc update device(activeTracersNew)
+#endif
+
             if (config_use_freq_filtered_thickness) then
+#ifdef MPAS_OPENACC
+               !$acc parallel present(minLevelCell, maxLevelCell) &
+               !$acc   present(lowFreqDivergenceNew) &
+               !$acc   present(lowFreqDivergenceCur) &
+               !$acc   present(lowFreqDivergenceTend)
+#endif
+
+#ifdef MPAS_OPENACC
+               !$acc loop gang
+#else
                !$omp parallel
                !$omp do schedule(runtime) private(k)
+#endif
                do iCell = 1, nCellsAll
+#ifdef MPAS_OPENACC
+               !$acc loop vector
+#endif
                do k = minLevelCell(iCell), maxLevelCell(iCell)
 
                   ! h^{hf}_{n+1} was computed in Stage 1
@@ -1980,6 +2096,10 @@ module ocn_time_integration_split
 #ifndef MPAS_OPENACC
                !$omp end do
                !$omp end parallel
+#endif
+
+#ifdef MPAS_OPENACC
+               !$acc end parallel
 #endif
 
             end if
@@ -2000,9 +2120,24 @@ module ocn_time_integration_split
             ! so normalBaroclinicVelocity does not have to be
             ! recomputed here.
 
+#ifdef MPAS_OPENACC
+            !$acc parallel present(minLevelEdgeBot, maxLevelEdgeTop) &
+            !$acc   present(normalVelocityNew) &
+            !$acc   present(normalBarotropicVelocityNew) &
+            !$acc   present(normalBaroclinicVelocityNew) &
+            !$acc   present(normalBaroclinicVelocityCur)
+#endif
+
+#ifdef MPAS_OPENACC
+            !$acc loop gang
+#else
             !$omp parallel
             !$omp do schedule(runtime) private(k)
+#endif
             do iEdge = 1, nEdgesAll
+#ifdef MPAS_OPENACC
+            !$acc loop vector
+#endif
             do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                normalVelocityNew(k,iEdge) = &
                                normalBarotropicVelocityNew(iEdge) + &
@@ -2013,6 +2148,34 @@ module ocn_time_integration_split
 #ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
+#endif
+
+#ifdef MPAS_OPENACC
+            !$acc end parallel
+#endif
+
+#ifdef MPAS_OPENACC
+            !$acc exit data copyout(layerThicknessNew)
+            !$acc exit data copyout(activeTracersNew)
+            !$acc exit data delete(layerThicknessTend, layerThicknessCur)
+            !$acc exit data copyout(normalVelocityNew)
+            !$acc exit data delete(normalBarotropicVelocityNew)
+            !$acc exit data delete(normalBaroclinicVelocityNew)
+            !$acc exit data delete(normalBaroclinicVelocityCur)
+            if (varinp_compute_active_tracer_budgets) then
+               !$acc exit data copyout(activeTracerHorizontalAdvectionTendency)
+               !$acc exit data copyout(activeTracerHorMixTendency)
+               !$acc exit data copyout(activeTracerVerticalAdvectionTendency)
+               !$acc exit data copyout(activeTracerSurfaceFluxTendency)
+               !$acc exit data copyout(activeTracerNonLocalTendency)
+               !$acc exit data copyout(temperatureShortWaveTendency)
+               !$acc exit data delete(layerThickEdgeFlux)
+               !$acc exit data copyout(activetracerhorizontaladvectionedgeflux)
+            endif
+            if (config_use_freq_filtered_thickness) then
+               !$acc exit data copyout(lowFreqDivergenceNew)
+               !$acc exit data delete(lowFreqDivergenceCur, lowFreqDivergenceTend)
+            endif
 #endif
 
          endif ! splitExplicitStep
