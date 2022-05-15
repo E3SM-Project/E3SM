@@ -1732,17 +1732,16 @@ contains
    endif
 
    if ( mbintxao .ge. 0 ) then
+     volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL; 
      wgtIdef = 'scalar'//C_NULL_CHAR
      if (atm_pg_active) then
        dm1 = "fv"//C_NULL_CHAR
        dofnameATM="GLOBAL_ID"//C_NULL_CHAR
        orderATM = 1 !  fv-fv
-       volumetric = 0 ! maybe volumetric ?
      else
        dm1 = "cgll"//C_NULL_CHAR
        dofnameATM="GLOBAL_DOFS"//C_NULL_CHAR
        orderATM = np !  it should be 4
-       volumetric = 1
      endif
      dm2 = "fv"//C_NULL_CHAR
      dofnameOCN="GLOBAL_ID"//C_NULL_CHAR
