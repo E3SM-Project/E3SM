@@ -499,7 +499,7 @@ get_var_dof_offsets(const FieldLayout& layout)
   if (layout.has_tag(ShortFieldTagsNames::COL)) {
     const int num_cols = m_io_grid->get_num_local_dofs();
 
-    // Note: col_size might be *larger* than the number of vertical levels, or even smalle.
+    // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
     int col_size = layout.size() / num_cols;
 
@@ -527,7 +527,7 @@ get_var_dof_offsets(const FieldLayout& layout)
     const int ngp = layout2d.dim(1);
     const int num_cols = num_my_elems*ngp*ngp;
 
-    // Note: col_size might be *larger* than the number of vertical levels, or even smalle.
+    // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
     int col_size = layout.size() / num_cols;
 
