@@ -242,7 +242,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
 }
 
 // =========================================================================================
-void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
+void SHOCMacrophysics::initialize_impl (const RunType run_type)
 {
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
@@ -260,6 +260,7 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
   const auto& tke              = get_field_out("tke").get_view<Spack**>();
   const auto& cldfrac_liq      = get_field_out("cldfrac_liq").get_view<Spack**>();
   const auto& sgs_buoy_flux    = get_field_out("sgs_buoy_flux").get_view<Spack**>();
+  const auto& tk               = get_field_out("eddy_diff_mom").get_view<Spack**>();
   const auto& inv_qc_relvar    = get_field_out("inv_qc_relvar").get_view<Spack**>();
   const auto& phis             = get_field_in("phis").get_view<const Real*>();
 
@@ -289,6 +290,14 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
 
   // For now, set z_int(i,nlevs) = z_surf = 0
   const Real z_surf = 0.0;
+
+  // Some SHOC variables should be initialized uniformly if an Initial run
+  if (run_type==RunType::Initial){
+    Kokkos::deep_copy(sgs_buoy_flux,0.0);
+    Kokkos::deep_copy(tk,0.0);
+    Kokkos::deep_copy(tke,0.0004);
+    Kokkos::deep_copy(tke_copy,0.0004);
+  }
 
   shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,z_surf,m_cell_area,m_cell_lat,
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
@@ -322,7 +331,7 @@ void SHOCMacrophysics::initialize_impl (const RunType /* run_type */)
   input_output.horiz_wind   = get_field_out("horiz_winds").get_view<Spack***>();
   input_output.wthv_sec     = sgs_buoy_flux;
   input_output.qtracers     = get_group_out("tracers").m_bundle->get_view<Spack***>();
-  input_output.tk           = get_field_out("eddy_diff_mom").get_view<Spack**>();
+  input_output.tk           = tk;
   input_output.shoc_cldfrac = cldfrac_liq;
   input_output.shoc_ql      = qc_copy;
 
