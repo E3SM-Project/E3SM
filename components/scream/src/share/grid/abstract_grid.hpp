@@ -82,6 +82,13 @@ public:
   // Whether this grid contains unique dof GIDs
   bool is_unique () const;
 
+  // When running with multiple ranks, fields are partitioned across ranks along this FieldTag
+  virtual FieldTag get_partitioned_dim_tag () const = 0;
+
+  // The extent of the partitioned dimension, locally and globally
+  virtual int get_partitioned_dim_local_size () const = 0;
+  virtual int get_partitioned_dim_global_size () const = 0;
+
   // The number of dofs on this MPI rank
   int get_num_local_dofs  () const { return m_num_local_dofs;  }
   gid_type get_num_global_dofs () const { return m_num_global_dofs; }

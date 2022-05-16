@@ -19,6 +19,7 @@ SEGrid (const std::string& grid_name,
 
   m_num_local_elem = num_my_elements;
   m_num_gp         = num_gauss_pts;
+  get_comm().all_reduce(&m_num_local_elem,&m_num_global_elem,1,MPI_SUM);
 }
 
 FieldLayout

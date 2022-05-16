@@ -499,7 +499,7 @@ get_var_dof_offsets(const FieldLayout& layout)
   if (layout.has_tag(ShortFieldTagsNames::COL)) {
     const int num_cols = m_io_grid->get_num_local_dofs();
 
-    // Note: col_size might be *larger* than the number of vertical levels, or even smalle.
+    // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
     int col_size = layout.size() / num_cols;
 
@@ -521,6 +521,36 @@ get_var_dof_offsets(const FieldLayout& layout)
       auto offset = (gid-min_gid)*col_size;
       std::iota(start,end,offset);
     }
+  } else if (layout.has_tag(ShortFieldTagsNames::EL)) {
+    auto layout2d = m_io_grid->get_2d_scalar_layout();
+    const int num_my_elems = layout2d.dim(0);
+    const int ngp = layout2d.dim(1);
+    const int num_cols = num_my_elems*ngp*ngp;
+
+    // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
+    //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
+    int col_size = layout.size() / num_cols;
+
+    auto dofs = m_io_grid->get_dofs_gids();
+    auto dofs_h = Kokkos::create_mirror_view(dofs);
+    Kokkos::deep_copy(dofs_h,dofs);
+
+    // Precompute this *before* the loop, since it involves expensive collectives.
+    // Besides, the loop might have different length on different ranks, so
+    // computing it inside might cause deadlocks.
+    auto min_gid = m_io_grid->get_global_min_dof_gid();
+    for (int ie=0,icol=0; ie<num_my_elems; ++ie) {
+      for (int igp=0; igp<ngp; ++igp) {
+        for (int jgp=0; jgp<ngp; ++jgp,++icol) {
+          // Get chunk of var_dof to fill
+          auto start = var_dof.begin()+icol*col_size;
+          auto end   = start+col_size;
+
+          // Compute start of the column offset, then fill column adding 1 to each entry
+          auto gid = dofs_h(icol);
+          auto offset = (gid-min_gid)*col_size;
+          std::iota(start,end,offset);
+    }}}
   } else {
     // This field is *not* defined over columns, so it is not partitioned.
     std::iota(var_dof.begin(),var_dof.end(),0);
