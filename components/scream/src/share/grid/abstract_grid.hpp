@@ -9,6 +9,7 @@
 #include "ekat/mpi//ekat_comm.hpp"
 
 #include <map>
+#include <list>
 #include <memory>
 
 namespace scream

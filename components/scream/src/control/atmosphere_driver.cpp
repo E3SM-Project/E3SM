@@ -1074,7 +1074,7 @@ check_ad_status (const int flag, const bool must_be_set)
   }
 }
 
-void AtmosphereDriver::report_res_dep_memory_foorprint () {
+void AtmosphereDriver::report_res_dep_memory_foorprint () const {
   // Log the amount of memory used that is linked to the grid(s) sizes
   long long my_dev_mem_usage = 0;
   long long my_host_mem_usage = 0;
@@ -1084,10 +1084,10 @@ void AtmosphereDriver::report_res_dep_memory_foorprint () {
   // 2) grids data (dofs, maps, geo views), 3) atm buff manager, and 4) IO.
 
   // Fields
-  for (const auto& fm_it : m_fields_mgrs) {
-    for (const auto& it : fm_it.second) {
-      const auto& fap = it.second.get_header().get_alloc_properties();
-      if (fap.is_subview()) {
+  for (const auto& fm_it : m_field_mgrs) {
+    for (const auto& it : *fm_it.second) {
+      const auto& fap = it.second->get_header().get_alloc_properties();
+      if (fap.is_subfield()) {
         continue;
       }
       my_dev_mem_usage += fap.get_alloc_size();
@@ -1095,7 +1095,7 @@ void AtmosphereDriver::report_res_dep_memory_foorprint () {
     }
   }
   // Grids
-  for (const auto& it : m_grids_manager) {
+  for (const auto& it : m_grids_manager->get_repo()) {
     const auto& grid = it.second;
     const int nldofs = grid->get_num_local_dofs();
 

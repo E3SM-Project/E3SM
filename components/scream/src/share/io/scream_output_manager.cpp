@@ -276,7 +276,7 @@ void OutputManager::finalize()
 long long OutputManager::res_dep_memory_footprint () const {
   long long mf = 0;
   for (const auto& os : m_output_streams) {
-    mf += os.res_dep_memory_footprint();
+    mf += os->res_dep_memory_footprint();
   }
 
   return mf;
