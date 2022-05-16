@@ -85,6 +85,9 @@ public:
   // Rad frequency in number of steps
   int m_rad_freq_in_steps;
 
+  // Whether or not to do subcolumn sampling of cloud state for MCICA
+  bool m_do_subcol_sampling;
+
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
     static constexpr int num_1d_ncol        = 10;
