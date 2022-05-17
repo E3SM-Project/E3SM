@@ -24,7 +24,8 @@ module physpkg
   use phys_grid,        only: get_ncols_p, print_cost_p, update_cost_p, phys_proc_cost
   use phys_gmean,       only: gmean_mass
   use ppgrid,           only: begchunk, endchunk, pcols, pver, pverp, psubcols
-  use constituents,     only: pcnst, cnst_name, cnst_get_ind
+  use constituents,     only: pcnst, cnst_name, cnst_get_ind, &
+                              setup_moist_indices, icldice, icldliq, irain, isnow
   use camsrfexch,       only: cam_out_t, cam_in_t
 
   use cam_control_mod,  only: ideal_phys, adiabatic
@@ -367,7 +368,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
     logical :: found=.false., found2=.false.
     integer :: ierr
     character(len=8) :: dim1name, dim2name
-    integer :: ixcldice, ixcldliq
     integer                   :: grid_id  ! grid ID for data mapping
     nullify(tptr,tptr3d,tptr3d_2,cldptr,convptr_3d)
 
@@ -527,7 +527,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
              call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
           end do
        else
-          call cnst_get_ind('CLDICE', ixcldice)
           call infld('CLDICE',fh_ini,dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
              tptr3d, found, gridname='physgrid')
           if(found) then
@@ -558,8 +557,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
           end do
        else
           allocate(tptr3d_2(pcols,pver,begchunk:endchunk))     
-          call cnst_get_ind('CLDICE', ixcldice)
-          call cnst_get_ind('CLDLIQ', ixcldliq)
           call infld('CLDICE',fh_ini,dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
                tptr3d, found, gridname='physgrid')
           call infld('CLDLIQ',fh_ini,dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
@@ -766,8 +763,11 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     !initialize physics update interface routine
     call physics_update_init()
+
     ! Initialize subcol scheme
     call subcol_init(pbuf2d)
+
+    call setup_moist_indices()
 
     ! diag_init makes addfld calls for dynamics fields that are output from
     ! the physics decomposition
@@ -1458,7 +1458,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     use gw_drag,            only: gw_tend
     use vertical_diffusion, only: vertical_diffusion_tend
     use rayleigh_friction,  only: rayleigh_friction_tend
-    use constituents,       only: cnst_get_ind
     use physics_types,      only: physics_state, physics_tend, physics_ptend,    &
          physics_dme_adjust, set_dry_to_wet, physics_state_check
     use majorsp_diffusion,  only: mspd_intr  ! WACCM-X major diffusion
@@ -1517,7 +1516,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     integer :: ncol                                 ! number of atmospheric columns
     integer i,k,m                 ! Longitude, level indices
     integer :: yr, mon, day, tod       ! components of a date
-    integer :: ixcldice, ixcldliq      ! constituent indices for cloud liquid and ice water.
 
     logical :: labort                            ! abort flag
 
@@ -1833,11 +1831,9 @@ if (l_ac_energy_chk) then
 
 
     ! Scale dry mass and energy (does nothing if dycore is EUL or SLD)
-    call cnst_get_ind('CLDLIQ', ixcldliq)
-    call cnst_get_ind('CLDICE', ixcldice)
     tmp_q     (:ncol,:pver) = state%q(:ncol,:pver,1)
-    tmp_cldliq(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
-    tmp_cldice(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
+    tmp_cldliq(:ncol,:pver) = state%q(:ncol,:pver,icldliq)
+    tmp_cldice(:ncol,:pver) = state%q(:ncol,:pver,icldice)
     call physics_dme_adjust(state, tend, qini, ztodt)
 !!!   REMOVE THIS CALL, SINCE ONLY Q IS BEING ADJUSTED. WON'T BALANCE ENERGY. TE IS SAVED BEFORE THIS
 !!!   call check_energy_chng(state, tend, "drymass", nstep, ztodt, zero, zero, zero, zero)
@@ -2021,7 +2017,6 @@ subroutine tphysbc (ztodt,               &
     integer ierr
 
     integer  i,k,m,ihist                       ! Longitude, level, constituent indices
-    integer :: ixcldice, ixcldliq              ! constituent indices for cloud liquid and ice water.
     ! for macro/micro co-substepping
     integer :: macmic_it                       ! iteration variables
     real(r8) :: cld_macmic_ztodt               ! modified timestep
@@ -2315,11 +2310,9 @@ if (l_bc_energy_fix) then
     ! Save state for convective tendency calculations.
     call diag_conv_tend_ini(state, pbuf)
 
-    call cnst_get_ind('CLDLIQ', ixcldliq)
-    call cnst_get_ind('CLDICE', ixcldice)
     qini     (:ncol,:pver) = state%q(:ncol,:pver,       1)
-    cldliqini(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
-    cldiceini(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
+    cldliqini(:ncol,:pver) = state%q(:ncol,:pver,icldliq)
+    cldiceini(:ncol,:pver) = state%q(:ncol,:pver,icldice)
 
 
     call outfld('TEOUT', teout       , pcols, lchnk   )

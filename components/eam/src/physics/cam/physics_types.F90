@@ -7,7 +7,7 @@ module physics_types
 
   use shr_kind_mod, only: r8 => shr_kind_r8
   use ppgrid,       only: pcols, pver, psubcols
-  use constituents, only: pcnst, qmin, cnst_name
+  use constituents, only: pcnst, qmin, cnst_name, icldliq, icldice
   use geopotential, only: geopotential_t
   use physconst,    only: zvir, gravit, cpair, rair, cpairv, rairv
   use dycore,       only: dycore_is
@@ -242,7 +242,6 @@ contains
 !
 !---------------------------Local storage-------------------------------
     integer :: i,k,m                               ! column,level,constituent indices
-    integer :: ixcldice, ixcldliq                  ! indices for CLDICE and CLDLIQ
     integer :: ixnumice, ixnumliq
     integer :: ixnumsnow, ixnumrain
     integer :: ncol                                ! number of columns
@@ -252,8 +251,7 @@ contains
 
     real(r8) :: zvirv(state%psetcols,pver)  ! Local zvir array pointer
 
-    real(r8),allocatable :: cpairv_loc(:,:,:)
-    real(r8),allocatable :: rairv_loc(:,:,:)
+    real(r8) :: rairv_loc(state%psetcols,pver)
 
     ! PERGRO limits cldliq/ice for macro/microphysics:
     character(len=24), parameter :: pergro_cldlim_names(4) = &
@@ -295,28 +293,6 @@ contains
     end if
 
     call t_startf ('physics_update_main')
-    !-----------------------------------------------------------------------
-    ! cpairv_loc and rairv_loc need to be allocated to a size which matches state and ptend
-    ! If psetcols == pcols, the cpairv is the correct size and just copy
-    ! If psetcols > pcols and all cpairv match cpair, then assign the constant cpair
-    if (state%psetcols == pcols) then
-       allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
-       cpairv_loc(:,:,:) = cpairv(:,:,:)
-    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
-       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
-       cpairv_loc(:,:,:) = cpair
-    else
-       call endrun('physics_update_main: cpairv is not allowed to vary when subcolumns are turned on')
-    end if
-    if (state%psetcols == pcols) then
-       allocate (rairv_loc(state%psetcols,pver,begchunk:endchunk))
-       rairv_loc(:,:,:) = rairv(:,:,:)
-    else if (state%psetcols > pcols .and. all(rairv(:,:,:) == rair)) then
-       allocate(rairv_loc(state%psetcols,pver,begchunk:endchunk))
-       rairv_loc(:,:,:) = rair
-    else
-       call endrun('physics_update_main: rairv_loc is not allowed to vary when subcolumns are turned on')
-    end if
 
     !-----------------------------------------------------------------------
     call phys_getopts(state_debug_checks_out=state_debug_checks)
@@ -341,8 +317,6 @@ contains
     end if
 
    ! Update constituents, all schemes use time split q: no tendency kept
-    call cnst_get_ind('CLDICE', ixcldice, abrtf=.false.)
-    call cnst_get_ind('CLDLIQ', ixcldliq, abrtf=.false.)
     ! Check for number concentration of cloud liquid and cloud ice (if not present
     ! the indices will be set to -1)
     call cnst_get_ind('NUMICE', ixnumice, abrtf=.false.)
@@ -381,65 +355,32 @@ contains
 
     end do
 
-    !------------------------------------------------------------------------
-    ! This is a temporary fix for the large H, H2 in WACCM-X
-    ! Well, it was supposed to be temporary, but it has been here
-    ! for a while now.
-    !------------------------------------------------------------------------
-    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then
-       call cnst_get_ind('H', ixh)
-       do k = ptend%top_level, ptend%bot_level
-          state%q(:ncol,k,ixh) = min(state%q(:ncol,k,ixh), 0.01_r8)
-       end do
-
-       call cnst_get_ind('H2', ixh2)
-       do k = ptend%top_level, ptend%bot_level
-          state%q(:ncol,k,ixh2) = min(state%q(:ncol,k,ixh2), 6.e-5_r8)
-       end do
-    endif
-
     ! Special tests for cloud liquid and ice:
     ! Enforce a minimum non-zero value.
-    if (ixcldliq > 1) then
-       if(ptend%lq(ixcldliq)) then
+    if (icldliq > 1) then
+       if(ptend%lq(icldliq)) then
 #ifdef PERGRO
           if ( any(ptend%name == pergro_cldlim_names) ) &
-               call state_cnst_min_nz(1.e-12_r8, ixcldliq, ixnumliq)
+               call state_cnst_min_nz(1.e-12_r8, icldliq, ixnumliq)
 #endif
           if ( any(ptend%name == cldlim_names) ) &
-               call state_cnst_min_nz(1.e-36_r8, ixcldliq, ixnumliq)
+               call state_cnst_min_nz(1.e-36_r8, icldliq, ixnumliq)
        end if
     end if
 
-    if (ixcldice > 1) then
-       if(ptend%lq(ixcldice)) then
+    if (icldice > 1) then
+       if(ptend%lq(icldice)) then
 #ifdef PERGRO
           if ( any(ptend%name == pergro_cldlim_names) ) &
-               call state_cnst_min_nz(1.e-12_r8, ixcldice, ixnumice)
+               call state_cnst_min_nz(1.e-12_r8, icldice, ixnumice)
 #endif
           if ( any(ptend%name == cldlim_names) ) &
-               call state_cnst_min_nz(1.e-36_r8, ixcldice, ixnumice)
+               call state_cnst_min_nz(1.e-36_r8, icldice, ixnumice)
        end if
     end if
 
-    !------------------------------------------------------------------------
-    ! Get indices for molecular weights and call WACCM-X physconst_update
-    !------------------------------------------------------------------------
-    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
-      call cnst_get_ind('O', ixo)
-      call cnst_get_ind('O2', ixo2)
-      call cnst_get_ind('N', ixn)             
-
-      call physconst_update(state%q, state%t, &
-              cnst_mw(ixo), cnst_mw(ixo2), cnst_mw(ixh), cnst_mw(ixn), &
-              ixo, ixo2, ixh, pcnst, state%lchnk, ncol)
-    endif
-   
-    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
-      zvirv(:,:) = shr_const_rwv / rairv_loc(:,:,state%lchnk) - 1._r8
-    else
-      zvirv(:,:) = zvir    
-    endif
+    zvirv(:,:) = zvir    
+    rairv_loc(:,:) = rair
 
     !-------------------------------------------------------------------------------------------
     ! Update dry static energy(moved from above for WACCM-X so updating after cpairv_loc update)
@@ -447,24 +388,24 @@ contains
     if(ptend%ls) then
        do k = ptend%top_level, ptend%bot_level
           if (present(tend)) &
-               tend%dtdt(:ncol,k) = tend%dtdt(:ncol,k) + ptend%s(:ncol,k)/cpairv_loc(:ncol,k,state%lchnk)
+               tend%dtdt(:ncol,k) = tend%dtdt(:ncol,k) + ptend%s(:ncol,k)/cpair
 ! we first assume that dS is really dEn, En=enthalpy=c_p*T, then 
 ! dT = dEn/c_p, so, state%t += ds/c_p.
-          state%t(:ncol,k) = state%t(:ncol,k) + ptend%s(:ncol,k)/cpairv_loc(:ncol,k,state%lchnk) * dt
+          state%t(:ncol,k) = state%t(:ncol,k) + ptend%s(:ncol,k)/cpair * dt
        end do
     end if
 
-    ! Derive new zi,zm,s if heating or water tendency not 0.
     if (ptend%ls .or. ptend%lq(1)) then
       call geopotential_t(state%lnpint, state%lnpmid  ,&
                           state%pint  , state%pmid    ,&
                           state%pdel  , state%rpdel   ,&
                           state%t     , state%q(:,:,1),&
-                          rairv_loc(:,:,state%lchnk)  , gravit, zvirv,&
+                          rairv_loc(:,:)  , gravit, zvirv,&
                           state%zi    , state%zm      ,&
                           ncol)
+
        do k = ptend%top_level, ptend%bot_level
-          state%s(:ncol,k) = state%t(:ncol,k  )*cpairv_loc(:ncol,k,state%lchnk)&
+          state%s(:ncol,k) = state%t(:ncol,k  )*cpair &
                            + gravit*state%zm(:ncol,k) + state%phis(:ncol)
        end do
     end if
@@ -474,8 +415,6 @@ contains
     ! call shr_sys_flush(iulog)
 
     if (state_debug_checks) call physics_state_check(state, ptend%name)
-
-    deallocate(cpairv_loc, rairv_loc)
 
     ! Deallocate ptend
     call physics_ptend_dealloc(ptend)
@@ -1338,24 +1277,6 @@ end subroutine physics_ptend_copy
        state%lnpint(:ncol,k+1) = log(state%pint(:ncol,k+1))
        state%rpdel (:ncol,k  ) = 1._r8/ state%pdel(:ncol,k  )
     end do
-
-    if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
-      zvirv(:,:) = shr_const_rwv / rairv(:,:,state%lchnk) - 1._r8
-    else
-      zvirv(:,:) = zvir    
-    endif
-
-! compute new T,z from new s,q,dp
-    if (adjust_te) then
-!!! OG with fix to total energy (removed geopotential term)
-!!! this call needs to be replaced. This code in not active, so, fixes are not
-!!! implemented.
-!       call geopotential_dse(state%lnpint, state%lnpmid, state%pint,  &
-!            state%pmid  , state%pdel    , state%rpdel,  &
-!            state%s     , state%q(:,:,1), state%phis , rairv(:,:,state%lchnk), &
-!            gravit, cpairv(:,:,state%lchnk), zvirv, &
-!            state%t     , state%zi      , state%zm   , ncol)
-    end if
 
   end subroutine physics_dme_adjust
 !-----------------------------------------------------------------------
