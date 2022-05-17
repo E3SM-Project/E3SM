@@ -70,6 +70,8 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_output_file_specs.num_snapshots_in_file = 0;
   m_output_file_specs.filename_with_time_string = out_control_pl.get("Timestamp in Filename",true);
   m_output_file_specs.filename_with_mpiranks    = out_control_pl.get("MPI Ranks in Filename",false);
+  m_output_file_specs.filename_with_avg_type    = out_control_pl.get("AVG Type in Filename",true);
+  m_output_file_specs.filename_with_frequency   = out_control_pl.get("Frequency in Filename",true);
 
   // For each grid, create a separate output stream.
   if (field_mgrs.size()==1) {
@@ -104,6 +106,8 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       m_checkpoint_file_specs.num_snapshots_in_file = 0;
       m_checkpoint_file_specs.filename_with_time_string = pl.get("Timestamp in Filename",true);
       m_checkpoint_file_specs.filename_with_mpiranks    = pl.get("MPI Ranks in Filename",false);
+      m_checkpoint_file_specs.filename_with_avg_type    = pl.get("AVG Type in Filename",true);
+      m_checkpoint_file_specs.filename_with_frequency   = pl.get("Frequency in Filename",true);
     }
   }
 
@@ -276,11 +280,18 @@ void OutputManager::finalize()
 std::string OutputManager::
 compute_filename_root (const IOControl& control, const IOFileSpecs& file_specs) const
 {
-  return m_casename + "." +
-         e2str(m_avg_type) + "." +
-         control.frequency_units+ "_x" +
-         std::to_string(control.frequency) +
-         (file_specs.filename_with_mpiranks ? ".np" + std::to_string(m_io_comm.size()) : "");
+  auto str = m_casename;
+  if (file_specs.filename_with_avg_type) {
+    str += "." + e2str(m_avg_type);
+  }
+  if (file_specs.filename_with_frequency) {
+    str += "." + control.frequency_units+ "_x" + std::to_string(control.frequency);
+  }
+  if (file_specs.filename_with_mpiranks) {
+    str += ".np" + std::to_string(m_io_comm.size());
+  }
+
+  return str;
 }
 
 std::string OutputManager::
@@ -288,9 +299,10 @@ find_filename_in_rpointer (const std::string& casename, const std::string& suffi
 {
   std::string filename;
   bool found = false;
-  std::string content, line;
+  std::string content;
   if (m_io_comm.am_i_root()) {
     std::ifstream rpointer_file;
+    std::string line;
     rpointer_file.open("rpointer.atm");
 
     auto extract_ts = [&] (const std::string& line) -> util::TimeStamp {
@@ -322,6 +334,7 @@ find_filename_in_rpointer (const std::string& casename, const std::string& suffi
     }
   }
   m_io_comm.broadcast(&found,1,0);
+  broadcast_string(content,m_io_comm,m_io_comm.root_rank());
 
   // If the history restart file is not found, it must be because the last
   // model restart step coincided with a model output step, in which case

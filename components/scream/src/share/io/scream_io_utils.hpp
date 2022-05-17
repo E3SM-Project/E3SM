@@ -67,6 +67,8 @@ struct IOFileSpecs {
   // of the same test, so they run concurrently, writing on different files.
   bool filename_with_time_string = true;
   bool filename_with_mpiranks    = false;
+  bool filename_with_avg_type    = true;
+  bool filename_with_frequency   = true;
 };
 
 } // namespace scream
