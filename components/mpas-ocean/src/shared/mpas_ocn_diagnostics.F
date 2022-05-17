@@ -110,7 +110,7 @@ contains
       integer, intent(in), optional :: timeLevelIn !< Input: Time level in state
       logical, intent(in), optional :: full   !< Input: Run all computations?
 
-      integer :: iEdge, iCell
+      integer :: iEdge, iCell, iTracer
       integer :: err, nCells, nEdges, nVertices
 
       real (kind=RKIND) :: coef_3rd_order
@@ -331,16 +331,21 @@ contains
       ! tracersSurfaceValue calc
       ! inputs: activeTracers, minLevelCell
       ! outputs: tracersSurfaceValue
-!     !$acc parallel loop !!!present(tracersSurfaceValue, activeTracers, minLevelCell)
+      !$acc kernels present(tracersSurfaceValue, activeTracers, minLevelCell)
 #else
       !$omp parallel
       !$omp do schedule(runtime)
 #endif
+#ifdef MPAS_OPENACC
+      !$acc loop independent
+#endif
       do iCell = 1, nCells
-         tracersSurfaceValue(:, iCell) = activeTracers(:, minLevelCell(iCell), iCell)
+         do iTracer = 1,size(tracersSurfaceValue,1)
+            tracersSurfaceValue(iTracer, iCell) = activeTracers(iTracer, minLevelCell(iCell), iCell)
+         enddo
       end do
 #ifdef MPAS_OPENACC
-      !$acc update device(tracersSurfaceValue)
+      !$acc end kernels
 #else
       !$omp end do
 #endif
