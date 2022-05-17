@@ -20,6 +20,10 @@
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(5) :: dimNames
       integer, dimension(5) :: dimSizes
+      !type (field1DInteger), pointer :: missingValueMask1D => null()
+      !type (field2DInteger), pointer :: missingValueMask2D => null()
+      !type (field3DInteger), pointer :: missingValueMask3D => null()
+      !type (field4DInteger), pointer :: missingValueMask4D => null()
       real (kind=RKIND) :: defaultValue
       real (kind=RKIND) :: missingValue
       logical :: isDecomposed
@@ -54,6 +58,10 @@
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(4) :: dimNames
       integer, dimension(4) :: dimSizes
+      !type (field1DInteger), pointer :: missingValueMask1D => null()
+      !type (field2DInteger), pointer :: missingValueMask2D => null()
+      !type (field3DInteger), pointer :: missingValueMask3D => null()
+      !type (field4DInteger), pointer :: missingValueMask4D => null()
       real (kind=RKIND) :: defaultValue
       real (kind=RKIND) :: missingValue
       logical :: isDecomposed
@@ -89,6 +97,9 @@
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(3) :: dimNames
       integer, dimension(3) :: dimSizes
+      !type (field1DInteger), pointer :: missingValueMask1D => null()
+      !type (field2DInteger), pointer :: missingValueMask2D => null()
+      !type (field3DInteger), pointer :: missingValueMask3D => null()
       real (kind=RKIND) :: defaultValue
       real (kind=RKIND) :: missingValue
       logical :: isDecomposed
@@ -123,6 +134,8 @@
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(2) :: dimNames
       integer, dimension(2) :: dimSizes
+      type (field1DInteger), pointer :: missingValueMask1D => null()
+      type (field2DInteger), pointer :: missingValueMask2D => null()
       real (kind=RKIND) :: defaultValue
       real (kind=RKIND) :: missingValue
       logical :: isDecomposed
@@ -157,6 +170,7 @@
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(1) :: dimNames
       integer, dimension(1) :: dimSizes
+      !type (field1DInteger), pointer :: missingValueMask1D => null()
       real (kind=RKIND) :: defaultValue
       real (kind=RKIND) :: missingValue
       logical :: isDecomposed
@@ -206,6 +220,40 @@
       type (mpas_multihalo_exchange_list), pointer :: recvList => null()
       type (mpas_multihalo_exchange_list), pointer :: copyList => null()
    end type field0DReal
+
+
+   ! Derived type for storing fields
+   !type field4DInteger
+
+   !   ! Back-pointer to the containing block
+   !   type (block_type), pointer :: block => null()
+
+   !   ! Raw array holding field data on this block
+   !   integer, dimension(:,:,:,:), pointer :: array => null()
+
+   !   ! Information used by the I/O layer
+   !   character (len=StrKIND) :: fieldName
+   !   character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+   !   character (len=StrKIND), dimension(4) :: dimNames
+   !   integer :: defaultValue
+   !   integer :: missingValue
+   !   integer, dimension(4) :: dimSizes
+   !   logical :: isDecomposed
+   !   logical :: hasTimeDimension
+   !   logical :: isActive
+   !   logical :: isVarArray
+   !   logical :: isPersistent
+   !   type (att_lists_type), dimension(:), pointer :: attLists => null()
+
+   !   ! Pointers to the prev and next blocks for this field on this task
+   !   type (field4DInteger), pointer :: prev => null()
+   !   type (field4DInteger), pointer :: next => null()
+
+   !   ! Halo communication lists
+   !   type (mpas_multihalo_exchange_list), pointer :: sendList => null()
+   !   type (mpas_multihalo_exchange_list), pointer :: recvList => null()
+   !   type (mpas_multihalo_exchange_list), pointer :: copyList => null()
+   !end type field4DInteger
 
 
    ! Derived type for storing fields
