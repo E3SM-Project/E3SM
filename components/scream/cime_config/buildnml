@@ -60,7 +60,7 @@ CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
 METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints")
 
 ###############################################################################
-def do_cime_vars(entry, case):
+def do_cime_vars(entry, case, refine=False):
 ###############################################################################
     """
     For a parameter value, process any references to case values ("${CASEVAR}")
@@ -88,7 +88,7 @@ def do_cime_vars(entry, case):
     """
     if type(entry) is dict:
         for k,v in entry.items():
-            entry[k] = do_cime_vars(v,case)
+            entry[k] = do_cime_vars(v,case,refine)
     elif type(entry) is str:
         m = CIME_VAR_RE.search(entry)
         while m:
@@ -98,6 +98,9 @@ def do_cime_vars(entry, case):
                    "Cannot resolve XML entry '{}', CIME has no value for '{}'".format(entry, cime_var))
             entry = entry.replace("${{{}}}".format(cime_var), str(value))
             m = CIME_VAR_RE.search(entry)
+
+        if refine:
+            entry = refine_type(entry)
 
     return entry
 
@@ -692,7 +695,7 @@ def do_cime_vars_on_yaml_output_files(case,caseroot):
         content = yaml.safe_load(open(fn_full,"r"))
 
         # Replace possible CIME vars
-        do_cime_vars(content,case)
+        do_cime_vars(content,case,refine=True)
 
         # Save YAML file
         ordered_dump(content, open(fn_full, "w"))
