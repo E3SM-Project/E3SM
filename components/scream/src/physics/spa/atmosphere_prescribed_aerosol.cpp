@@ -64,6 +64,15 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   // Init output data structure
   SPAData_out.init(m_num_cols,m_num_levs,m_nswbands,m_nlwbands,false);
+
+  // Note: only the number of levels associated with this data haven't been set.  We can
+  //       take this information directly from the spa data file.
+  m_spa_data_file = m_params.get<std::string>("SPA Data File");
+  scorpio::register_file(m_spa_data_file,scorpio::Read);
+  m_num_src_levs = scorpio::get_dimlen_c2f(m_spa_data_file.c_str(),"lev");
+  scorpio::eam_pio_closefile(m_spa_data_file);
+  SPAHorizInterp.m_comm = m_comm;
+
 }
 // =========================================================================================
 size_t SPA::requested_buffer_size_in_bytes() const
@@ -73,7 +82,7 @@ size_t SPA::requested_buffer_size_in_bytes() const
   // Recall: the quantities in spa_temp defined over vlevs have 1 Real of
   //         padding in each column (at beginning and end).
   //         That's why we have m_num_levs+2
-  const int nlevs = m_num_levs+2;
+  const int nlevs = m_num_src_levs+2;
   const int num_mid_packs = PackInfo::num_packs(nlevs);
   const int nlevs_alloc = num_mid_packs*Spack::n;
 
@@ -100,7 +109,7 @@ void SPA::init_buffers(const ATMBufferManager &buffer_manager)
   // Recall: the quantities in spa_temp defined over vlevs have 1 Real of
   //         padding in each column (at beginning and end).
   //         That's why we have m_num_levs+2
-  const int nlevs  = m_num_levs+2;
+  const int nlevs  = m_num_src_levs+2;
   const int npacks = PackInfo::num_packs(nlevs);
   const int ncols  = m_num_cols;
   const int nswb   = m_nswbands;
@@ -155,7 +164,6 @@ void SPA::initialize_impl (const RunType /* run_type */)
   EKAT_REQUIRE_MSG(m_params.isParameter("SPA Remap File"),"ERROR: SPA Remap File is missing from SPA parameter list.");
   EKAT_REQUIRE_MSG(m_params.isParameter("SPA Data File"),"ERROR: SPA Data File is missing from SPA parameter list.");
   m_spa_remap_file = m_params.get<std::string>("SPA Remap File");
-  m_spa_data_file = m_params.get<std::string>("SPA Data File");
 
   // Set the SPA remap weights.  
   // TODO: We may want to provide an option to calculate weights on-the-fly. 
@@ -169,16 +177,10 @@ void SPA::initialize_impl (const RunType /* run_type */)
   } else {
     SPAFunc::get_remap_weights_from_file(m_spa_remap_file,m_total_global_dofs,m_min_global_dof,m_dofs_gids,SPAHorizInterp);
   }
-  // Note: only the number of levels associated with this data haven't been set.  We can
-  //       take this information directly from the spa data file.
-  scorpio::register_file(m_spa_data_file,scorpio::Read);
-  const int source_data_nlevs = scorpio::get_dimlen_c2f(m_spa_data_file.c_str(),"lev")+2; // Add 2 for padding
-  scorpio::eam_pio_closefile(m_spa_data_file);
-  SPAHorizInterp.m_comm = m_comm;
 
-  // Initialize the size of the SPAData structures:
-  SPAData_start = SPAFunc::SPAInput(m_dofs_gids.size(), source_data_nlevs, m_nswbands, m_nlwbands);
-  SPAData_end   = SPAFunc::SPAInput(m_dofs_gids.size(), source_data_nlevs, m_nswbands, m_nlwbands);
+  // Initialize the size of the SPAData structures:  add 2 to number of levels for padding
+  SPAData_start = SPAFunc::SPAInput(m_dofs_gids.size(), m_num_src_levs+2, m_nswbands, m_nlwbands);
+  SPAData_end   = SPAFunc::SPAInput(m_dofs_gids.size(), m_num_src_levs+2, m_nswbands, m_nlwbands);
 
   // Update the local time state information and load the first set of SPA data for interpolation:
   auto ts = timestamp();
