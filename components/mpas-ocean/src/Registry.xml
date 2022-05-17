@@ -137,6 +137,10 @@
 					description="Selection of the type of calendar that should be used in the simulation."
 					possible_values="'gregorian', 'gregorian_noleap'"
 		/>
+		<nml_option name="config_output_reference_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
+					description="Reference time used in the units attribute of Time in output files."
+					possible_values="'YYYY-MM-DD_HH:MM:SS'"
+		/>
 	</nml_record>
 	<nml_record name="io" mode="forward;analysis">
 		<nml_option name="config_write_output_on_startup" type="logical" default_value=".true." units="unitless"
@@ -2431,6 +2435,9 @@
 	<var_struct name="diagnostics" time_levs="1">
 		<var name="xtime" type="text" dimensions="Time" units="unitless"
 			 description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
+		/>
+		<var name="Time" type="real" dimensions="Time"
+			 description="time"
 		/>
 		<var name="simulationStartTime" type="text" dimensions="" units="unitless" default_value="'no_date_available'"
 			 description="start time of first simulation, with format 'YYYY-MM-DD_HH:MM:SS'"
