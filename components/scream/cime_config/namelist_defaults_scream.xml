@@ -225,7 +225,7 @@ tweaking their $case/namelist_scream.xml file.
   <Scorpio>
     <Output__YAML__Files type="array(string)">data/scream_default_output.yaml</Output__YAML__Files>
     <Model__Restart>
-      <Casename>./${CASE}</Casename>
+      <Casename>./${CASE}.scream</Casename>
       <Output__Control>
         <Frequency>${REST_N}</Frequency>
         <Frequency REST_OPTION="none">0</Frequency>

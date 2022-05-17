@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-Casename: ${CASE}.atm.hi
+Casename: ${CASE}.scream.hi
 Averaging Type: Instant
 Max Snapshots Per File: 744 # One output every 31 days
 Fields:
