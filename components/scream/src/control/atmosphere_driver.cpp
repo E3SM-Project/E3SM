@@ -1,17 +1,18 @@
 #include "control/atmosphere_driver.hpp"
 
-#include "ekat/ekat_parameter_list.hpp"
-#include "ekat/ekat_parse_yaml_file.hpp"
-#include "ekat/std_meta/ekat_std_utils.hpp"
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/field/field_utils.hpp"
 #include "share/util/scream_time_stamp.hpp"
 #include "share/util/scream_timing.hpp"
 #include "share/util/scream_utils.hpp"
+#include "share/io/scream_io_utils.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
+#include "ekat/ekat_parameter_list.hpp"
+#include "ekat/ekat_parse_yaml_file.hpp"
+#include "ekat/std_meta/ekat_std_utils.hpp"
 
 #include <fstream>
 
@@ -505,41 +506,8 @@ void AtmosphereDriver::restart_model ()
   m_atm_logger->info("  [EAMXX] restart_model ...");
 
   // First, figure out the name of the netcdf file containing the restart data
-  std::string filename, content;
-  bool found = false;
-  std::string head = m_atm_params.sublist("Initial Conditions").get<std::string>("Restart Casename");
-  std::string tail = m_run_t0.to_string() + ".r.nc";
-
-  if (m_atm_comm.am_i_root()) {
-    std::ifstream rpointer_file;
-    rpointer_file.open("rpointer.atm");
-
-    std::string line;
-    // Note: keep swallowing line, even after the first match, since we never wipe
-    //       rpointer.atm, so it might contain multiple matches, and we want to pick
-    //       the last one (which is the last restart file that was written).
-    while (rpointer_file >> line) {
-      content += line + "\n";
-      if (line.find(head) != std::string::npos && line.find(tail) != std::string::npos) {
-        found = true;
-        filename = line;
-      }
-    }
-  }
-  m_atm_comm.broadcast(&found,1,0);
-
-  // If the model restart file is not found, it's an error
-  if (not found) {
-    broadcast_string(content,m_atm_comm,m_atm_comm.root_rank());
-    EKAT_REQUIRE_MSG (found,
-        "Error! Output restart requested, but no model restart file found in 'rpointer.atm'.\n"
-        "   restart file casename: " + head + "\n"
-        "   restart file suffix: " + tail + "\n"
-        "   rpointer content:\n" + content);
-  }
-
-  // Have the root rank communicate the nc filename
-  broadcast_string(filename,m_atm_comm,m_atm_comm.root_rank());
+  const auto& casename = m_atm_params.sublist("Initial Conditions").get<std::string>("Restart Casename");
+  auto filename = find_filename_in_rpointer (casename,true,m_atm_comm,m_run_t0);
 
   // Restart the num steps counter in the atm time stamp
   ekat::ParameterList rest_pl;

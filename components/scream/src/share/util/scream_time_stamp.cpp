@@ -299,8 +299,9 @@ TimeStamp str_to_time_stamp (const std::string& s)
     }
     return true;
   };
-  // A time stamp is a string of the form "YYYY-MM-DD.hhmmss"
-  if (s.size()!=17 || s[4]!='-' || s[7]!='-' || s[10]!='.') {
+  // A time stamp is a string of the form "YYYY-MM-DD-XXXXX"
+  // with XXXXX being the time of day in seconds
+  if (s.size()!=16 || s[4]!='-' || s[7]!='-' || s[10]!='-') {
     return util::TimeStamp();
   }
   // Check subtokens are valid ints
