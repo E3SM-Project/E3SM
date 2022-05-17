@@ -155,17 +155,22 @@ module ocn_forward_mode
          block              ! structure with all data for a given block
 
       type (mpas_pool_type), pointer :: &
-         meshPool           ! structure containing mesh data
+         diagnosticsPool    ! structure containing diagnostics data
 
       type (MPAS_Time_type) :: &
          xtime_timeType,               &! current time
          simulationStartTime_timeType, &! start time whole simulation
+         referenceTime_timeType,       &! reference time for Time coordinate
          startTime,                    &! start time this run
          alarmTime                      ! alarm for salinity restoring
+
+      type (field0DReal), pointer :: TimeField    ! to add units
 
       type (MPAS_TimeInterval_type) :: &
          timeStep,      &! time step in time manager form
          alarmTimeStep   ! alarm interval in time manager form
+
+      character (len=StrKIND) :: units
 
       ! End preamble
       !-------------
@@ -320,8 +325,24 @@ module ocn_forward_mode
       ! compute time since start of simulation, in days
       call mpas_set_time(xtime_timeType, dateTimeString=xtime)
       call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
-      call mpas_get_timeInterval(xtime_timeType - simulationStartTime_timeType,dt=daysSinceStartOfSim)
+      call mpas_get_timeInterval(xtime_timeType - simulationStartTime_timeType, dt=daysSinceStartOfSim)
       daysSinceStartOfSim = daysSinceStartOfSim*days_per_second
+
+      call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+
+      ! add units of "days since <ref_date>" to Time
+      write(units, '(a10,a20)') 'days since', &
+           config_output_reference_time(1:10)//" "//config_output_reference_time(12:19)
+      call mpas_pool_get_Field(diagnosticsPool, 'Time', TimeField)
+      call mpas_add_att(TimeField % attLists(1) % attList, 'units', units)
+
+      ! Add calendar attribute to Time
+      call mpas_add_att(TimeField % attLists(1) % attList, 'calendar', config_calendar_type)
+
+      ! compute Time as days since config_output_reference_time
+      call mpas_set_time(referenceTime_timeType, dateTimeString=config_output_reference_time)
+      call mpas_get_timeInterval(xtime_timeType - referenceTime_timeType, dt=Time)
+      Time = Time*days_per_second
 
       ! Update any mesh fields that may have been modified during init
       call ocn_meshUpdateFields(domain)

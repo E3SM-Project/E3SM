@@ -157,6 +157,7 @@ module ocn_diagnostics_variables
       activeTracerVertMixTendency
 
    real (kind=RKIND), pointer :: daysSinceStartOfSim
+   real (kind=RKIND), pointer :: Time
    character (len=StrKIND), pointer :: xtime, simulationStartTime
 
    real (kind=RKIND), dimension(:,:), pointer :: bulkRichardsonNumber
@@ -557,6 +558,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, &
                "daysSinceStartOfSim", &
                 daysSinceStartOfSim)
+      call mpas_pool_get_array(diagnosticsPool, 'Time', Time)
       call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
       call mpas_pool_get_array(diagnosticsPool, 'simulationStartTime', &
                 simulationStartTime)
@@ -853,6 +855,7 @@ contains
       !$acc                   pressureAdjustedSSH,                     &
       !$acc                   tracersSurfaceValue,                     &
       !$acc                   daysSinceStartOfSim,                     &
+      !$acc                   Time,                                    &
       !$acc                   simulationStartTime,                     &
       !$acc                   boundaryLayerDepthSmooth,                &
       !$acc                   surfaceFluxAttenuationCoefficientRunoff  &
@@ -1101,6 +1104,7 @@ contains
       !$acc                   pressureAdjustedSSH,                     &
       !$acc                   tracersSurfaceValue,                     &
       !$acc                   daysSinceStartOfSim,                     &
+      !$acc                   Time,                                    &
       !$acc                   simulationStartTime,                     &
       !$acc                   boundaryLayerDepthSmooth,                &
       !$acc                   surfaceFluxAttenuationCoefficientRunoff  &
@@ -1298,6 +1302,7 @@ contains
               pressureAdjustedSSH,                     &
               tracersSurfaceValue,                     &
               daysSinceStartOfSim,                     &
+              Time,                                    &
               simulationStartTime,                     &
               boundaryLayerDepthSmooth,                &
               surfaceFluxAttenuationCoefficientRunoff)
