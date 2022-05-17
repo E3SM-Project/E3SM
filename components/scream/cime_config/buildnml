@@ -656,18 +656,17 @@ def create_input_data_list_file(case,caseroot,screamroot,ic_section):
         tables = get_child(root,"input_files").text.split(',')
 
     with open(input_data_list_file, "w") as fd:
-        for idx,grid in enumerate(ic_section.keys()):
-            ic_file = ic_section[grid]
-            fd.write("ic_file_{} = {}\n".format(idx,ic_file))
+        fd.write("ic_file_0 = {}\n".format(ic_section["Filename"]))
         for idx, table in enumerate(tables):
             fd.write("table_{} = {}\n".format(idx, table.strip()))
 
-    # SCREAM is currently hardcoded to expect tables to be in data
+    # SCREAM is currently hardcoded to expect tables to be in $rundir/data
     for table in tables:
-        table_name = os.path.basename(table)
+        src_table = do_cime_vars(table.strip(),case)
+        table_name = os.path.basename(src_table)
         tgt_table = os.path.join(target, table_name)
         if not os.path.exists(tgt_table) and not os.path.islink(tgt_table):
-            os.symlink(table, os.path.join(target, table_name))
+            os.symlink(src_table, tgt_table)
 
 
 ###############################################################################
