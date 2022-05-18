@@ -104,14 +104,7 @@ module ocn_vel_self_attraction_loading
     real(kind=RKIND), dimension(:),   allocatable :: Snm_local, SnmRe_local, SnmIm_local
     real(kind=RKIND), dimension(:,:), allocatable :: Snm_local_reproSum, SnmRe_local_reproSum, SnmIm_local_reproSum
     real(kind=RKIND), dimension(:),   allocatable :: sshSmoothed
-    integer, pointer :: nCellsOwned
-    integer, pointer :: nCellsAll
-    real(kind=RKIND), dimension(:), pointer :: latCell
-    real(kind=RKIND), dimension(:), pointer :: lonCell
-    real(kind=RKIND), dimension(:), pointer :: areaCell
-    real(kind=RKIND), dimension(:), pointer :: distanceToCoast
     real(kind=RKIND), dimension(:), pointer :: coastalSmoothingFactor
-    real(kind=RKIND), pointer :: sphere_radius
     integer, dimension(:,:), allocatable :: blockIdxForward
     integer, dimension(:,:), allocatable :: blockIdxInverse
     integer :: nBlocks
@@ -848,8 +841,8 @@ contains
                 do iCell = 1,nCellsAll
                     complexExpRe(iCell,m+1)    = cos(real(m,RKIND)*lonCell(iCell))
                     complexExpIm(iCell,m+1)    = sin(real(m,RKIND)*lonCell(iCell))
-                    complexFactorRe(iCell,m+1) = complexExpRe(iCell,m+1) * areaCell(iCell)/sphere_radius**2
-                    complexFactorIm(iCell,m+1) = complexExpIm(iCell,m+1) * areaCell(iCell)/sphere_radius**2
+                    complexFactorRe(iCell,m+1) = complexExpRe(iCell,m+1) * areaCell(iCell)/sphereRadius**2
+                    complexFactorIm(iCell,m+1) = complexExpIm(iCell,m+1) * areaCell(iCell)/sphereRadius**2
                 enddo
             enddo
 
