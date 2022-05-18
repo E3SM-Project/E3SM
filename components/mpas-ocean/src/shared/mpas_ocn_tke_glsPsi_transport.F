@@ -222,7 +222,8 @@ contains
       call mpas_timer_start("tke vertical turbulent transport")
 
       !$omp parallel
-      !$omp schedule(runtime) private(N, A, B, C, rhs, tkeTmp, k)
+      !$omp do schedule(runtime) &
+      !$omp private(N, A, B, C, rhs, tkeTmp, k)
       do iCell=1,nCellsOwned
          N = maxLevelCell(iCell)
          A(1) = 0.0_RKIND
@@ -440,7 +441,8 @@ contains
       call mpas_timer_start("glsPsi vertical turbulent transport")
 
       !$omp parallel
-      !$omp schedule(runtime) private(N, A, B, C, rhs, dissTmp, k)
+      !$omp do schedule(runtime) &
+      !$omp private(N, A, B, C, rhs, dissTmp, k)
       do iCell=1,nCellsOwned
          N = maxLevelCell(iCell)
          A(1) = 0.0_RKIND

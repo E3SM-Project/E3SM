@@ -259,7 +259,7 @@ contains
         !Add in the tendency for coriolis from vertical velocity
         !$omp parallel
         !$omp do schedule(runtime) &
-        !$omp private(cell1, cell2, wav)
+        !$omp private(cell1, cell2)
         do iEdge = 1, nEdgesAll
            cell1 = cellsOnEdge(1,iEdge)
            cell2 = cellsOnEdge(2,iEdge)
