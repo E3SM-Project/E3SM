@@ -9,6 +9,7 @@ module cplcomp_exchange_mod
   use seq_map_type_mod
   use component_type_mod
   use seq_flds_mod, only: seq_flds_dom_coord, seq_flds_dom_other
+  use seq_flds_mod, only: seq_flds_a2x_ext_fields ! 
   use seq_comm_mct, only: cplid, logunit
   use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs, seq_comm_iamin
   use seq_diag_mct
@@ -1010,7 +1011,7 @@ contains
     integer                  :: rank, ent_type
     integer                  :: typeA, typeB, ATM_PHYS_CID ! used to compute par graph between atm phys
                                                            ! and atm spectral on coupler
-    character*32             :: tagname
+    character(CXX)             :: tagname
 #ifdef MOABDEBUG
     integer , dimension(1:3) :: nverts, nelem, nblocks, nsbc, ndbc
     integer, dimension(:), allocatable ::  vgids
@@ -1114,7 +1115,7 @@ contains
       ! now we have the spectral atm on coupler pes, and we want to send some data from
       ! atm physics mesh to atm spectral on coupler side; compute a par comm graph between
       ! atm phys and spectral atm mesh on coupler PEs
-      ! ierr = iMOAB_ComputeCommGraphFort(cmpAtmPID, physAtmPID, &joinComm, &atmPEGroup, &atmPhysGroup,
+      ! ierr = iMOAB_ComputeCommGraph(cmpAtmPID, physAtmPID, &joinComm, &atmPEGroup, &atmPhysGroup,
       !    &typeA, &typeB, &cmpatm, &physatm);
       ! graph between atm phys, mphaid, and atm dyn on coupler, mbaxid
       ! phys atm group is mpigrp_old, coupler group is mpigrp_cplid
@@ -1122,7 +1123,7 @@ contains
       !!typeB = 1 ! spectral elements
       !!ATM_PHYS_CID = 200 + id_old ! 200 + 5 for atm, see line  969   ATM_PHYS = 200 + ATMID ! in
                                   ! components/cam/src/cpl/atm_comp_mct.F90
-      !!ierr = iMOAB_ComputeCommGraphFort( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+      !!ierr = iMOAB_ComputeCommGraph( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
       !!    typeA, typeB, ATM_PHYS_CID, id_join)
 !  comment out this above part
 
@@ -1130,19 +1131,10 @@ contains
       ! corresponding to 'T_ph;u_ph;v_ph';
       ! we can receive those tags only on coupler pes, when mbaxid exists
       ! we have to check that before we can define the tag
-      if (mbaxid .ge. 0 ) then
-        tagname = 'T_ph16'//C_NULL_CHAR
+      if (mbaxid .ge. 0 .and. .not. (atm_pg_active) ) then
+        tagname = trim(seq_flds_a2x_ext_fields)//C_NULL_CHAR
         tagtype = 1  ! dense, double
-        if (atm_pg_active) then
-          numco = 1 ! just one value per cell !
-        else
-          numco = np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
-        endif
-        ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-        ! define more tags
-        tagname = 'u_ph16'//C_NULL_CHAR  ! U component of velocity
-        ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-        tagname = 'v_ph16'//C_NULL_CHAR  ! V component of velocity
+        numco = np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
         ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
         if (ierr .ne. 0) then
           write(logunit,*) subname,' error in defining tags '
