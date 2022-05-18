@@ -534,7 +534,27 @@ contains
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
 
-         ! Initialize horizonal taper
+
+         ! initialize Redi kappa array
+         if (config_Redi_closure == 'constant') then
+            !$omp parallel
+            !$omp do schedule(runtime)
+            do iEdge = 1, nEdges
+               RediKappa(iEdge) = config_Redi_constant_kappa
+            end do
+            !$omp end do
+            !$omp end parallel
+         else if (config_Redi_closure == 'data') then
+            ! read RediKappa in from input
+            call mpas_log_write("config_Redi_closure = 'data'. "// &
+                                "Make sure that the variable RediKappa is read in from an input file.")
+         else
+            call mpas_log_write('Invalid choice of config_Redi_closure.', MPAS_LOG_CRIT)
+            err = 1
+            call mpas_dmpar_finalize(domain%dminfo)
+         end if
+
+         ! Initialize horizontal taper
          if (config_Redi_horizontal_taper == 'none' .or. &
              config_Redi_horizontal_taper == 'RossbyRadius') then
             ! For 'RossbyRadius', the taper is recomputed at every time step in
@@ -553,44 +573,23 @@ contains
             !$omp do schedule(runtime) 
             do iEdge=1,nEdges
                if (dcEdge(iEdge) <= config_Redi_horizontal_ramp_min) then
+                  RediKappa(iEdge) = 0.0_RKIND
                   RediHorizontalTaper(iEdge) = 0.0_RKIND
                else if (dcEdge(iEdge) >= config_Redi_horizontal_ramp_max) then
+                  ! nothing to do, i.e. RediKappa(iCell) = RediKappa(iCell)
                   RediHorizontalTaper(iEdge) = 1.0_RKIND
                else
+                  RediKappa(iEdge) = RediKappa(iEdge) &
+                                     *(dcEdge(iEdge) - config_Redi_horizontal_ramp_min) &
+                                     /(config_Redi_horizontal_ramp_max - config_Redi_horizontal_ramp_min)
                   RediHorizontalTaper(iEdge) = coef &
                       *(dcEdge(iEdge) - config_Redi_horizontal_ramp_min)
                end if
-            end do
+            end do ! iEdge
             !$omp end do
             !$omp end parallel
          else
             call mpas_log_write('Invalid choice of config_Redi_horizontal_taper.', MPAS_LOG_CRIT)
-            err = 1
-            call mpas_dmpar_finalize(domain%dminfo)
-         end if
-
-         ! initialize Redi kappa array
-         if (config_Redi_closure == 'constant') then
-            !$omp parallel
-            !$omp do schedule(runtime)
-            do iEdge = 1, nEdges
-               RediKappa(iEdge) = RediHorizontalTaper(iEdge) * config_Redi_constant_kappa
-            end do
-            !$omp end do
-            !$omp end parallel
-         else if (config_Redi_closure == 'data') then
-            ! read RediKappa in from input
-            call mpas_log_write("config_Redi_closure = 'data'. "// &
-                                "Make sure that the variable RediKappa is read in from an input file.")
-            !$omp parallel
-            !$omp do schedule(runtime)
-            do iEdge = 1, nEdges
-               RediKappa(iEdge) = RediHorizontalTaper(iEdge) * RediKappa(iEdge)
-            end do
-            !$omp end do
-            !$omp end parallel
-         else
-            call mpas_log_write('Invalid choice of config_Redi_closure.', MPAS_LOG_CRIT)
             err = 1
             call mpas_dmpar_finalize(domain%dminfo)
          end if
