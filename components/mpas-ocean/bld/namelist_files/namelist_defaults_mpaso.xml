@@ -188,8 +188,8 @@
 <config_GM_horizontal_ramp_min ocn_grid="WCAtl12to45E2r4">30e3</config_GM_horizontal_ramp_min>
 <config_GM_horizontal_ramp_max>30e3</config_GM_horizontal_ramp_max>
 <config_GM_horizontal_ramp_max ocn_grid="WCAtl12to45E2r4">40e3</config_GM_horizontal_ramp_max>
-<config_GM_Rossby_ramp_min>0.5</config_GM_Rossby_ramp_min>
-<config_GM_Rossby_ramp_max>3.0</config_GM_Rossby_ramp_max>
+<config_GMRedi_Rossby_ramp_min>0.5</config_GMRedi_Rossby_ramp_min>
+<config_GMRedi_Rossby_ramp_max>3.0</config_GMRedi_Rossby_ramp_max>
 
 <!-- Rayleigh_damping -->
 <config_Rayleigh_friction>.false.</config_Rayleigh_friction>

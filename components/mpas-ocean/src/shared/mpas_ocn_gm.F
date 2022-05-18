@@ -726,14 +726,14 @@ contains
 
                ! Ramp the parameterization between the given min and max values
                ! of the ratio of the cell width to the Rossby radius
-               if (dc_Lr <= config_GM_Rossby_ramp_min) then
+               if (dc_Lr <= config_GMRedi_Rossby_ramp_min) then
                   RossbyRadiusTaper(iEdge) = 0.0_RKIND
-               else if (dc_Lr >= config_GM_Rossby_ramp_max) then
+               else if (dc_Lr >= config_GMRedi_Rossby_ramp_max) then
                   RossbyRadiusTaper(iEdge) = 1.0_RKIND
                else
                   ! a linear ramp between the min and max of dc_Lr
-                  RossbyRadiusTaper(iEdge) = (dc_Lr - config_GM_Rossby_ramp_min) / &
-                     (config_GM_Rossby_ramp_max - config_GM_Rossby_ramp_min)
+                  RossbyRadiusTaper(iEdge) = (dc_Lr - config_GMRedi_Rossby_ramp_min) / &
+                     (config_GMRedi_Rossby_ramp_max - config_GMRedi_Rossby_ramp_min)
                end if
             end do
             !$omp end do

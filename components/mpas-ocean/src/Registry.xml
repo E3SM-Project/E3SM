@@ -411,12 +411,12 @@
 					description="Maximum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_horizontal_taper is set to ramp."
 					possible_values="Any positive real value."
 		/>
-		<nml_option name="config_GM_Rossby_ramp_min" type="real" default_value="0.5" units="unitless"
-					description="Minimum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM $\kappa$ ramp function.  Used when config_GM_horizontal_taper is set to RossbyRadius."
+		<nml_option name="config_GMRedi_Rossby_ramp_min" type="real" default_value="0.5" units="unitless"
+					description="Minimum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM and Redi $\kappa$ ramp functions. Used when config_GM_horizontal_taper and/or config_Redi_horizontal_taper are set to RossbyRadius."
 					possible_values="Any positive real value."
 		/>
-		<nml_option name="config_GM_Rossby_ramp_max" type="real" default_value="3.0" units="unitless"
-					description="Maximum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM $\kappa$ ramp function.  Used when config_GM_horizontal_taper is set to RossbyRadius."
+		<nml_option name="config_GMRedi_Rossby_ramp_max" type="real" default_value="3.0" units="unitless"
+					description="Maximum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM and Redi $\kappa$ ramp functions. Used when config_GM_horizontal_taper and/or config_Redi_horizontal_taper are set to RossbyRadius."
 					possible_values="Any positive real value."
 		/>
 	</nml_record>

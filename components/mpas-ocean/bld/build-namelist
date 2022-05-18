@@ -589,8 +589,8 @@ add_default($nl, 'config_GM_EG_Rhines_factor');
 add_default($nl, 'config_GM_horizontal_taper');
 add_default($nl, 'config_GM_horizontal_ramp_min');
 add_default($nl, 'config_GM_horizontal_ramp_max');
-add_default($nl, 'config_GM_Rossby_ramp_min');
-add_default($nl, 'config_GM_Rossby_ramp_max');
+add_default($nl, 'config_GMRedi_Rossby_ramp_min');
+add_default($nl, 'config_GMRedi_Rossby_ramp_max');
 
 ####################################
 # Namelist group: Rayleigh_damping #
