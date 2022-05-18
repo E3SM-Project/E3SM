@@ -9,6 +9,27 @@ namespace scream {
 template<typename DeviceT>
 template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::calculate_dx_from_area(const ScalarT& area, const ScalarT& lat)
+{
+  using C = scream::physics::Constants<Real>;
+
+  static constexpr auto coeff_1 = C::earth_ellipsoid1;
+  static constexpr auto coeff_2 = C::earth_ellipsoid2;
+  static constexpr auto coeff_3 = C::earth_ellipsoid3;
+  static constexpr auto pi      = C::Pi; 
+
+  // Now find meters per degree latitude
+  // Below equation finds distance between two points on an ellipsoid, derived from expansion
+  // taking into account ellipsoid using World Geodetic System (WGS84) reference 
+  auto m_per_degree_lat = coeff_1 - coeff_2 * std::cos(2.0*lat) + coeff_3 * std::cos(4.0*lat);
+  // Note, for the formula we need to convert area from radians to degrees.
+  return m_per_degree_lat * std::sqrt(area)*(180.0/pi);
+
+}
+
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_INLINE_FUNCTION
 ScalarT PhysicsFunctions<DeviceT>::calculate_density(const ScalarT& pseudo_density, const ScalarT& dz)
 {
   using C = scream::physics::Constants<Real>;

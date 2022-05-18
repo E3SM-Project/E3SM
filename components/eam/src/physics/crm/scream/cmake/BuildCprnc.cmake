@@ -28,7 +28,7 @@ macro(BuildCprnc)
       "
     )
     set(SRC_ROOT ${SCREAM_BASE_DIR}/../..)
-    add_subdirectory(${SRC_ROOT}/cime/tools/cprnc ${BLDROOT})
+    add_subdirectory(${SRC_ROOT}/cime/CIME/non_py/cprnc ${BLDROOT})
     EkatDisableAllWarning(cprnc)
 
     set(CPRNC_BINARY ${BLDROOT}/cprnc CACHE INTERNAL "")

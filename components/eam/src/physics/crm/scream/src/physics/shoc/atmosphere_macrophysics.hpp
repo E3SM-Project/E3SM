@@ -156,7 +156,7 @@ public:
       // For now, we are considering dy=dx. Here, we
       // will need to compute dx/dy instead of cell_length
       // if we have dy!=dx.
-      cell_length(i) = sqrt(area(i));
+      cell_length(i) = PF::calculate_dx_from_area(area(i),lat(i));
 
       const auto& exner_int = PF::exner_function(p_int(i,nlevi_v)[nlevi_p]);
       const auto& inv_exner_int_surf = 1/exner_int;
@@ -177,6 +177,7 @@ public:
     int ncol, nlev, num_qtracers;
     Real z_surf;
     view_1d_const        area;
+    view_1d_const        lat;
     view_2d_const        T_mid;
     view_2d_const        p_mid;
     view_2d_const        p_int;
@@ -214,7 +215,7 @@ public:
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_, const Real z_surf_,
-                       const view_1d_const& area_,
+                       const view_1d_const& area_, const view_1d_const& lat_,
                        const view_2d_const& T_mid_, const view_2d_const& p_mid_, const view_2d_const& p_int_, const view_2d_const& pseudo_density_,
                        const view_2d_const& omega_,
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_latent_flux_,
@@ -234,6 +235,7 @@ public:
       z_surf = z_surf_;
       // IN
       area = area_;
+      lat  = lat_;
       T_mid = T_mid_;
       p_mid = p_mid_;
       p_int = p_int_;
@@ -295,7 +297,6 @@ public:
         qv(i,k) = qw(i,k) - qc(i,k);
 
         cldfrac_liq(i,k) = ekat::min(cldfrac_liq(i,k), 1);
-        sgs_buoy_flux(i,k) = sgs_buoy_flux(i,k)*rrho(i,k)*cpair;
 
         inv_qc_relvar(i,k) = 1;
         const auto condition = (qc(i,k) != 0 && qc2(i,k) != 0);
@@ -321,7 +322,6 @@ public:
     view_2d_const tke_copy, qc_copy, qw;
     view_2d_const qc2;
     view_2d cldfrac_liq;
-    view_2d sgs_buoy_flux;
     view_2d inv_qc_relvar;
     view_2d T_mid;
     view_2d_const dse,z_mid;
@@ -332,7 +332,7 @@ public:
                        const view_2d_const& rrho_,
                        const view_2d& qv_, const view_2d_const& qw_, const view_2d& qc_, const view_2d_const& qc_copy_,
                        const view_2d& tke_, const view_2d_const& tke_copy_, const view_2d_const& qc2_,
-                       const view_2d& cldfrac_liq_, const view_2d& sgs_buoy_flux_, const view_2d& inv_qc_relvar_,
+                       const view_2d& cldfrac_liq_, const view_2d& inv_qc_relvar_,
                        const view_2d& T_mid_, const view_2d_const& dse_, const view_2d_const& z_mid_, const view_1d_const phis_)
     {
       ncol = ncol_;
@@ -346,7 +346,6 @@ public:
       tke_copy = tke_copy_;
       qc2 = qc2_;
       cldfrac_liq = cldfrac_liq_;
-      sgs_buoy_flux = sgs_buoy_flux_;
       inv_qc_relvar = inv_qc_relvar_;
       T_mid = T_mid_;
       dse = dse_;
@@ -432,6 +431,7 @@ protected:
   Int hdtime;
 
   KokkosTypes<DefaultDevice>::view_1d<Real> m_cell_area;
+  KokkosTypes<DefaultDevice>::view_1d<Real> m_cell_lat;
 
   // Struct which contains local variables
   Buffer m_buffer;
@@ -448,6 +448,8 @@ protected:
 
   // WSM for internal local variables
   ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr;
+
+  std::shared_ptr<const AbstractGrid>   m_grid;
 }; // class SHOCMacrophysics
 
 } // namespace scream

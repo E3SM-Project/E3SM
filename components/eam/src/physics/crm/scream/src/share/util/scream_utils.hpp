@@ -14,6 +14,19 @@
 
 namespace scream {
 
+enum MemoryUnits {
+  B = 1,
+  KB,
+  MB,
+  GB,
+  KiB,
+  MiB,
+  GiB
+};
+
+// Gets current memory (RAM) usage by current process.
+long long get_mem_usage (const MemoryUnits u);
+
 // Micro-utility, that given an enum returns the underlying int.
 // The only use of this is if you need to sort scoped enums.
 template<typename EnumT>

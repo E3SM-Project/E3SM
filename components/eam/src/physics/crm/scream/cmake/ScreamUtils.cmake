@@ -161,9 +161,10 @@ function(CreateUnitTest test_name test_srcs scream_libs)
 endfunction(CreateUnitTest)
 
 ###############################################################################
-function(GetInputFile src_path tgt_path)
+function(GetInputFile src_path)
 ###############################################################################
   # We rely on CIME to download for us if this is a CIME case
+  # In standalone, we simply do what CIME would have done
   if (NOT SCREAM_CIME_BUILD)
     if (NOT SCREAM_INPUT_ROOT)
       message(FATAL_ERROR "No SCREAM_INPUT_ROOT set, cannot try to locate input file ${src_path}")
@@ -179,7 +180,5 @@ function(GetInputFile src_path tgt_path)
         message(FATAL_ERROR "Could not download ${src_path}, output was: ${check_input_output}")
       endif()
     endif()
-    configure_file(${full_src_path} ${tgt_path} COPYONLY)
   endif()
-
 endfunction(GetInputFile)

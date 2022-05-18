@@ -69,10 +69,10 @@ contains
     info = 0
     ok = .false.
 
-    call append_precision(mu_r_filename, SCREAM_DATA_DIR//"/mu_r_table_vals.dat")
-    call append_precision(revap_filename, SCREAM_DATA_DIR//"/revap_table_vals.dat")
-    call append_precision(vn_filename, SCREAM_DATA_DIR//"/vn_table_vals.dat")
-    call append_precision(vm_filename, SCREAM_DATA_DIR//"/vm_table_vals.dat")
+    call append_precision(mu_r_filename, SCREAM_DATA_DIR//"/tables/mu_r_table_vals.dat")
+    call append_precision(revap_filename, SCREAM_DATA_DIR//"/tables/revap_table_vals.dat")
+    call append_precision(vn_filename, SCREAM_DATA_DIR//"/tables/vn_table_vals.dat")
+    call append_precision(vm_filename, SCREAM_DATA_DIR//"/tables/vm_table_vals.dat")
 
     if (write_tables) then
        call p3_init_b()
@@ -98,15 +98,24 @@ contains
       endif
 
       ! Read files
-      ok = array_io_read(mu_r_filename, c_loc(mu_r_table_vals), size(mu_r_table_vals)) .and. &
-           array_io_read(revap_filename, c_loc(revap_table_vals), size(revap_table_vals)) .and. &
-           array_io_read(vn_filename, c_loc(vn_table_vals), size(vn_table_vals)) .and. &
-           array_io_read(vm_filename, c_loc(vm_table_vals), size(vm_table_vals))
-      if (.not. ok) then
-         print *, 'p3_iso_c::p3_init: One or more table files exists but gave a read error.'
-         info = -1
+      if (.not. array_io_read(mu_r_filename, c_loc(mu_r_table_vals), size(mu_r_table_vals))) then
+         print *, "p3_iso_c::p3_init: error reading mu_r table from file "//mu_r_filename
+         info = -3
          return
-      end if
+      elseif (.not. array_io_read(revap_filename, c_loc(revap_table_vals), size(revap_table_vals))) then
+         print *, "p3_iso_c::p3_init: error reading revap table from file "//revap_filename
+         info = -4
+         return
+
+      elseif (.not. array_io_read(vn_filename, c_loc(vn_table_vals), size(vn_table_vals))) then
+         print *, "p3_iso_c::p3_init: error reading vn table from file "//vn_filename
+         info = -5
+         return
+      elseif (.not. array_io_read(vm_filename, c_loc(vm_table_vals), size(vm_table_vals))) then
+         print *, "p3_iso_c::p3_init: error reading vm table from file "//vm_filename
+         info = -6
+         return
+      endif
 
       call p3_set_tables(mu_r_table_vals, revap_table_vals, vn_table_vals, vm_table_vals)
     end if
