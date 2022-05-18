@@ -81,6 +81,9 @@
 <zmconv_cape_cin         > 1      </zmconv_cape_cin>
 <zmconv_mx_bot_lyr_adj   > 2      </zmconv_mx_bot_lyr_adj>
 
+<!-- Use all or nothing ice cloud fraction scheme -->
+<cldfrc_iceopt> 7 </cldfrc_iceopt>
+
 <!-- Macrophysics/microphysics coupling -->
 <cld_macmic_num_steps hgrid="ne4np4"   > 6 </cld_macmic_num_steps>
 <cld_macmic_num_steps hgrid="ne30np4"  > 6 </cld_macmic_num_steps>
