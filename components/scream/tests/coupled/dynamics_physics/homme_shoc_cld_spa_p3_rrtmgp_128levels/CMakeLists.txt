@@ -25,7 +25,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_shoc_cld_spa_p3_rrtmgp_128level
 
 # Set homme's test options, so that we can configure the namelist correctly
 # Discretization/algorithm settings
-set (HOMME_TEST_NE 42)
+set (HOMME_TEST_NE 4)
 set (HOMME_TEST_LIM 9)
 set (HOMME_TEST_REMAP_FACTOR 3)
 set (HOMME_TEST_TRACERS_FACTOR 1)
