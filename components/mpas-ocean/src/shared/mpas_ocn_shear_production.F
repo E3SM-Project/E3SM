@@ -118,7 +118,7 @@ contains
 
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp private(k, c_psi2, viscMid, shearProduction)
+      !$omp private(k, viscMid, shearProduction)
       do iCell = 1, nCellsOwned
         do k=1,maxLevelCell(iCell)
             viscMid = 0.5_RKIND*(vertViscTopOfCell(k,iCell) + vertViscTopOfCell(k+1,iCell))

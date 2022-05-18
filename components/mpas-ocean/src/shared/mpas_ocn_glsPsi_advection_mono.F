@@ -341,7 +341,7 @@ module ocn_glsPsi_advection_mono
         !$omp parallel
         !$omp do schedule(runtime) &
         !$omp private(invAreaCell1, i, iEdge, cell1, cell2, signedFactor, k, &
-        !$omp         tkeUpwindNew, tkeMinNew, tkeMaxNew, scaleFactor)
+        !$omp         scaleFactor)
         do iCell = 1, nCells
           invAreaCell1 = 1.0_RKIND / areaCell(iCell)
 
@@ -668,7 +668,7 @@ module ocn_glsPsi_advection_mono
         nCells = nCellsHalo( 1 )
         !$omp parallel
         !$omp do schedule(runtime) &
-        !$omp private(k, tkeMinNew, tkeMaxNew, tkeUpwindNew, scaleFactor)
+        !$omp private(k, scaleFactor)
         do iCell = 1, nCells
 
           ! Build the scale factors to limit flux for FCT
@@ -756,7 +756,7 @@ module ocn_glsPsi_advection_mono
           nCells = nCellsOwned
           ! Check for monotonicity of new tke value
           !$omp parallel
-          !$omp do schedule(runtime) private(k, tkeNew)
+          !$omp do schedule(runtime) private(k)
           do iCell = 1, nCells
           do k = 1, maxLevelCell(iCell)
              ! workTend on the RHS is the total vertical advection tendency
