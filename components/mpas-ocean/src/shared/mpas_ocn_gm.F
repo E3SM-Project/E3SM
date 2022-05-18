@@ -711,7 +711,6 @@ contains
                ! c_m = 1/pi integral(N dz )
 
                c_mode1 = max(1.0E-5_RKIND, sum_hN/3.141592_RKIND)
-               cGMphaseSpeed(iEdge) = c_mode1
 
                ! See Hallberg (2013) https://doi.org/10.1016/j.ocemod.2013.08.007
                ! just after eqn 4 the defines the deformation
@@ -727,7 +726,7 @@ contains
 
                ! Ramp the parameterization between the given min and max values
                ! of the ratio of the cell width to the Rossby radius
-               if (dc_Lr <= config_GM_Rossby_ramp_min .or. c_mode1.lt.0.1_RKIND) then
+               if (dc_Lr <= config_GM_Rossby_ramp_min) then
                   RossbyRadiusTaper(iEdge) = 0.0_RKIND
                else if (dc_Lr >= config_GM_Rossby_ramp_max) then
                   RossbyRadiusTaper(iEdge) = 1.0_RKIND
@@ -994,7 +993,7 @@ contains
          if (config_GM_minBclModeSpeed_method=='constant') then
             gm_minBclModeSpeed_compute_on = 0.0_RKIND
             gm_minBclModeSpeed_constant = config_GM_constant_bclModeSpeed
-         elseif (config_GM_minBclModeSpeed_method=='computed') then
+         else if (config_GM_minBclModeSpeed_method=='computed') then
             gm_minBclModeSpeed_compute_on = 1.0_RKIND
             gm_minBclModeSpeed_constant = 0.0_RKIND
          else
