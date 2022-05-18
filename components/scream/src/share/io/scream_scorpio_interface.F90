@@ -889,7 +889,6 @@ contains
       call eam_pio_closefile(curr_file_ptr%pio_file%filename)
       prev_file_ptr => curr_file_ptr
       curr_file_ptr => curr_file_ptr%next
-      deallocate(prev_file_ptr%pio_file)
       deallocate(prev_file_ptr)
     end do
     ! Free all decompositions from PIO
