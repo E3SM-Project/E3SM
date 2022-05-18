@@ -4058,17 +4058,17 @@ contains
        call t_drvstopf  ('CPL:ATMPOST',cplrun=.true.)
     endif
 
-    ! send projected data from atm to ocean mesh, after projection in coupler
-    if (iamin_CPLALLOCNID .and. ocn_c2_atm) then
-       ! migrate that tag from coupler pes to ocean pes
-       call prep_ocn_migrate_moab(infodata)
-    endif
+   !  ! send projected data from atm to ocean mesh, after projection in coupler
+   !  if (iamin_CPLALLOCNID .and. ocn_c2_atm) then
+   !     ! migrate that tag from coupler pes to ocean pes
+   !     call prep_ocn_migrate_moab(infodata)
+   !  endif
 
-    ! send projected data from atm to land mesh, after projection in coupler
-    if (iamin_CPLALLLNDID .and. atm_c2_lnd) then
-       ! migrate that tag from coupler pes to ocean pes
-       call prep_lnd_migrate_moab(infodata)
-    endif
+   !  ! send projected data from atm to land mesh, after projection in coupler
+   !  if (iamin_CPLALLLNDID .and. atm_c2_lnd) then
+   !     ! migrate that tag from coupler pes to ocean pes
+   !     call prep_lnd_migrate_moab(infodata)
+   !  endif
     
 
   end subroutine cime_run_atm_recv_post
