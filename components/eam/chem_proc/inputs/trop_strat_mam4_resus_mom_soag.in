@@ -81,7 +81,11 @@
        CH4, N2O, CH3CL, CH3BR, CFC11, CFC12, CFC113
        CFC114, CFC115, HCFC22, HCFC141B, HCFC142B, CCL4
        CH3CCL3, CF3BR, CF2CLBR, H1202, H2402, CHBR3, CH2BR2
+<<<<<<< HEAD
        CO2, CLY, BRY, Rn, Pb, E90
+=======
+       CO2, CLY, BRY, E90
+>>>>>>> add trop_strat_mam4_resus_mom_soag.in with E90, remove Pb and Rn
       End explicit
       Implicit
        O3, O, O1D, H2, CO
@@ -601,10 +605,13 @@
  [TERPO2_HO2]     TERPO2 + HO2 -> TERPOOH                                    ; 7.5e-13,       700.
  [TERPOOH_OH]     TERPOOH + OH -> TERPO2                                     ; 3.8e-12,       200.
 
+<<<<<<< HEAD
 * --------------------------------------------------------------
 *     Radon/Lead
 * --------------------------------------------------------------
             Rn -> Pb                                                         ; 2.10e-6
+=======
+>>>>>>> add trop_strat_mam4_resus_mom_soag.in with E90, remove Pb and Rn
 
 * --------------------------------------------------------------
 *     Tropospheric Heterogeneous Reactions
@@ -652,10 +659,16 @@
    End Reactions
 
    Ext Forcing
+<<<<<<< HEAD
       NO  <-dataset
       NO2 <-dataset
       CO  <-dataset
       SO2 <- dataset
+=======
+      NO2 <-dataset
+      SO2 <- dataset
+      SOAG <- dataset
+>>>>>>> add trop_strat_mam4_resus_mom_soag.in with E90, remove Pb and Rn
       so4_a1 <- dataset
       so4_a2 <- dataset
       pom_a4 <- dataset
@@ -663,7 +676,10 @@
       num_a1 <- dataset
       num_a2 <- dataset
       num_a4 <- dataset
+<<<<<<< HEAD
       SOAG <- dataset
+=======
+>>>>>>> add trop_strat_mam4_resus_mom_soag.in with E90, remove Pb and Rn
    End Ext Forcing
 
    END Chemistry
