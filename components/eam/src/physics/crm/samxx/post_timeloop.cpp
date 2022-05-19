@@ -13,20 +13,16 @@ void post_timeloop() {
   YAKL_SCOPE( qiiln                   , :: qiiln );
   YAKL_SCOPE( uln                     , :: uln );
   YAKL_SCOPE( vln                     , :: vln );
-#ifdef MMF_ESMT
   YAKL_SCOPE( uln_esmt                , :: uln_esmt );
-  YAKL_SCOPE( vln_esmt                , :: vln_esmt );                      
-#endif
+  YAKL_SCOPE( vln_esmt                , :: vln_esmt );
   YAKL_SCOPE( crm_input_tl            , :: crm_input_tl );
   YAKL_SCOPE( crm_input_ql            , :: crm_input_ql );
   YAKL_SCOPE( crm_input_qccl          , :: crm_input_qccl );
   YAKL_SCOPE( crm_input_qiil          , :: crm_input_qiil );
   YAKL_SCOPE( crm_input_ul            , :: crm_input_ul );
   YAKL_SCOPE( crm_input_vl            , :: crm_input_vl );
-#ifdef MMF_ESMT
   YAKL_SCOPE( crm_input_ul_esmt       , :: crm_input_ul_esmt );
   YAKL_SCOPE( crm_input_vl_esmt       , :: crm_input_vl_esmt );
-#endif
   YAKL_SCOPE( colprec                 , :: colprec );
   YAKL_SCOPE( colprecs                , :: colprecs );
   YAKL_SCOPE( qpl                     , :: qpl );
@@ -36,10 +32,8 @@ void post_timeloop() {
   YAKL_SCOPE( qv                      , :: qv );
   YAKL_SCOPE( u                       , :: u );
   YAKL_SCOPE( v                       , :: v );
-#ifdef MMF_ESMT
   YAKL_SCOPE( u_esmt                  , :: u_esmt );
   YAKL_SCOPE( v_esmt                  , :: v_esmt );
-#endif
   YAKL_SCOPE( qcl                     , :: qcl );
   YAKL_SCOPE( qci                     , :: qci );
   YAKL_SCOPE( factor_xyt              , :: factor_xyt );
@@ -49,14 +43,8 @@ void post_timeloop() {
   YAKL_SCOPE( crm_output_qltend       , :: crm_output_qltend );
   YAKL_SCOPE( crm_output_qcltend      , :: crm_output_qcltend );
   YAKL_SCOPE( crm_output_qiltend      , :: crm_output_qiltend );
-#ifdef MMF_MOMENTUM_FEEDBACK
   YAKL_SCOPE( crm_output_ultend       , :: crm_output_ultend );
   YAKL_SCOPE( crm_output_vltend       , :: crm_output_vltend );
-#endif
-#ifdef MMF_ESMT
-  YAKL_SCOPE( crm_output_u_tend_esmt  , :: crm_output_u_tend_esmt );
-  YAKL_SCOPE( crm_output_v_tend_esmt  , :: crm_output_v_tend_esmt );
-#endif
   YAKL_SCOPE( icrm_run_time           , :: icrm_run_time );
   YAKL_SCOPE( crm_output_prectend     , :: crm_output_prectend );
   YAKL_SCOPE( crm_output_precstend    , :: crm_output_precstend );
@@ -235,22 +223,23 @@ void post_timeloop() {
     colprecs(icrm)=0;
   });
 
-#ifdef MMF_ESMT
- // do k = 1,ptop-1
- //   do icrm = 1 , ncrms
- parallel_for( SimpleBounds<2>(ptop-1,ncrms), YAKL_LAMBDA (int k, int icrm) {
-    uln_esmt(k, icrm)  = crm_input_ul_esmt(k, icrm);
-    vln_esmt(k, icrm)  = crm_input_vl_esmt(k, icrm);
- });
 
- // do k = ptop,plev
- //   do icrm = 1 , ncrms
- parallel_for( SimpleBounds<2>(plev-ptop+1, ncrms), YAKL_LAMBDA (int k, int icrm) {
-    k = ptop+k-1;
-    uln_esmt(k, icrm) = 0.0;
-    vln_esmt(k, icrm) = 0.0;
- });
-#endif
+  if (use_ESMT) {
+    // do k = 1,ptop-1
+    //   do icrm = 1 , ncrms
+    parallel_for( SimpleBounds<2>(ptop-1,ncrms), YAKL_LAMBDA (int k, int icrm) {
+       uln_esmt(k, icrm)  = crm_input_ul_esmt(k, icrm);
+       vln_esmt(k, icrm)  = crm_input_vl_esmt(k, icrm);
+    });
+
+    // do k = ptop,plev
+    //   do icrm = 1 , ncrms
+    parallel_for( SimpleBounds<2>(plev-ptop+1, ncrms), YAKL_LAMBDA (int k, int icrm) {
+       k = ptop+k-1;
+       uln_esmt(k, icrm) = 0.0;
+       vln_esmt(k, icrm) = 0.0;
+    });
+  }
 
   // for (int k=0; k<nzm; k++) {
   //  for (int i=0; i<nx; i++) {
@@ -270,10 +259,10 @@ void post_timeloop() {
     yakl::atomicAdd(qiiln(l,icrm) , qci(k,j,i,icrm));
     yakl::atomicAdd(uln(l,icrm) , u(k,j+offy_u,i+offx_u,icrm));
     yakl::atomicAdd(vln(l,icrm) , v(k,j+offy_v,i+offx_v,icrm));
-#ifdef MMF_ESMT
-    yakl::atomicAdd(uln_esmt(l,icrm), u_esmt(k,j+offy_u,i+offx_u,icrm));
-    yakl::atomicAdd(vln_esmt(l,icrm), v_esmt(k,j+offy_u,i+offx_u,icrm));
-#endif
+    if (use_ESMT) {
+      yakl::atomicAdd(uln_esmt(l,icrm), u_esmt(k,j+offy_u,i+offx_u,icrm));
+      yakl::atomicAdd(vln_esmt(l,icrm), v_esmt(k,j+offy_u,i+offx_u,icrm));
+    }
   });
 
   // for (int k=0; k<plev-ptop+1; k++) {
@@ -287,10 +276,10 @@ void post_timeloop() {
     qiiln(k,icrm)    = qiiln(k,icrm) * factor_xy;
     uln  (k,icrm)    = uln  (k,icrm) * factor_xy;
     vln  (k,icrm)    = vln  (k,icrm) * factor_xy;
-#ifdef MMF_ESMT
-    uln_esmt(k,icrm) = uln_esmt(k,icrm) * factor_xy;
-    vln_esmt(k,icrm) = vln_esmt(k,icrm) * factor_xy;
-#endif
+    if (use_ESMT) {
+      uln_esmt(k,icrm) = uln_esmt(k,icrm) * factor_xy;
+      vln_esmt(k,icrm) = vln_esmt(k,icrm) * factor_xy;
+    }
   });
 
   // extra diagnostic step here for output tendencies
@@ -303,14 +292,14 @@ void post_timeloop() {
     crm_output_qltend (k,icrm) =      (qln  (k,icrm) - crm_input_ql  (k,icrm)) * icrm_run_time;
     crm_output_qcltend(k,icrm) =      (qccln(k,icrm) - crm_input_qccl(k,icrm)) * icrm_run_time;
     crm_output_qiltend(k,icrm) =      (qiiln(k,icrm) - crm_input_qiil(k,icrm)) * icrm_run_time;
+    if (use_ESMT) {
+      crm_output_ultend (k,icrm) =    (uln_esmt(k,icrm) - crm_input_ul_esmt(k,icrm))*icrm_run_time;
+      crm_output_vltend (k,icrm) =    (vln_esmt(k,icrm) - crm_input_vl_esmt(k,icrm))*icrm_run_time;
+    }
 #ifdef MMF_MOMENTUM_FEEDBACK
     crm_output_ultend (k,icrm) =      (uln  (k,icrm) - crm_input_ul  (k,icrm)) * icrm_run_time;
     crm_output_vltend (k,icrm) =      (vln  (k,icrm) - crm_input_vl  (k,icrm)) * icrm_run_time;
 #endif
-#ifdef MMF_ESMT
-    crm_output_u_tend_esmt(k,icrm) = (uln_esmt(k,icrm) - crm_input_ul_esmt(k,icrm))*icrm_run_time;
-    crm_output_v_tend_esmt(k,icrm) = (vln_esmt(k,icrm) - crm_input_vl_esmt(k,icrm))*icrm_run_time;
-#endif    
     if (use_VT) {
       if ( k > (plev-nzm-1) ) {
         int l = plev-(k+1);
@@ -343,13 +332,13 @@ void post_timeloop() {
     crm_output_qltend (k,icrm) = 0.0;
     crm_output_qcltend(k,icrm) = 0.0;
     crm_output_qiltend(k,icrm) = 0.0;
+    if (use_ESMT) {
+      crm_output_ultend (k,icrm) = 0.0;
+      crm_output_vltend (k,icrm) = 0.0;
+    }
 #ifdef MMF_MOMENTUM_FEEDBACK
     crm_output_ultend (k,icrm) = 0.0;
     crm_output_vltend (k,icrm) = 0.0;
-#endif
-#ifdef MMF_ESMT
-    crm_output_u_tend_esmt(k,icrm) = 0.0;
-    crm_output_v_tend_esmt(k,icrm) = 0.0;
 #endif
     if (use_VT) {
       crm_output_t_vt_tend(k,icrm) = 0.;
