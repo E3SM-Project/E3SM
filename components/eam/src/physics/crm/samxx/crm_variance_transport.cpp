@@ -260,25 +260,24 @@ void VT_forcing() {
     // initialize scaling factors to 1.0
     t_pert_scale(k,icrm) = 1.0;
     q_pert_scale(k,icrm) = 1.0;
+    u_pert_scale(k,icrm) = 1.0;
     real tmp_t_scale = -1.0;
     real tmp_q_scale = -1.0;
+    real tmp_u_scale = -1.0;
     // set scaling factors as long as there are perturbations to scale
     if (t_vt(k,icrm)>0.0) { tmp_t_scale = 1.0 + dtn * t_vt_tend(k,icrm) / t_vt(k,icrm); }
     if (q_vt(k,icrm)>0.0) { tmp_q_scale = 1.0 + dtn * q_vt_tend(k,icrm) / q_vt(k,icrm); }
+    if (u_vt(k,icrm)>0.0) { tmp_u_scale = 1.0 + dtn * u_vt_tend(k,icrm) / u_vt(k,icrm); }
     if (tmp_t_scale>0.0) { t_pert_scale(k,icrm) = sqrt( tmp_t_scale ); }
     if (tmp_q_scale>0.0) { q_pert_scale(k,icrm) = sqrt( tmp_q_scale ); }
+    if (tmp_u_scale>0.0) { u_pert_scale(k,icrm) = sqrt( tmp_u_scale ); }
     // enforce minimum scaling
     t_pert_scale(k,icrm) = max( t_pert_scale(k,icrm), pert_scale_min );
     q_pert_scale(k,icrm) = max( q_pert_scale(k,icrm), pert_scale_min );
+    u_pert_scale(k,icrm) = max( u_pert_scale(k,icrm), pert_scale_min );
     // enforce maximum scaling
     t_pert_scale(k,icrm) = min( t_pert_scale(k,icrm), pert_scale_max );
     q_pert_scale(k,icrm) = min( q_pert_scale(k,icrm), pert_scale_max );
-
-    u_pert_scale(k,icrm) = 1.0;
-    real tmp_u_scale = -1.0;
-    if (u_vt(k,icrm)>0.0) { tmp_u_scale = 1.0 + dtn * u_vt_tend(k,icrm) / u_vt(k,icrm); }
-    if (tmp_u_scale>0.0) { u_pert_scale(k,icrm) = sqrt( tmp_u_scale ); }
-    u_pert_scale(k,icrm) = max( u_pert_scale(k,icrm), pert_scale_min );
     u_pert_scale(k,icrm) = min( u_pert_scale(k,icrm), pert_scale_max );
   });
 
