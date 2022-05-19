@@ -1361,6 +1361,7 @@ contains
 
 #ifdef MOABDEBUG
    if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
+     number_proj = number_proj +1 ! because it was commented out above
      write(lnum,"(I0.2)") number_proj
      outfile = 'OcnCplAftIce'//trim(lnum)//'.h5m'//C_NULL_CHAR
      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
@@ -1618,43 +1619,43 @@ contains
   ! how to get mpicomm for joint ocn + coupler
     id_join = ocn(1)%cplcompid
     ocnid1   = ocn(1)%compid
-    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
-    context_id = -1
-    ! now send the tag a2oTbot_proj, a2oUbot_proj, a2oVbot_proj from ocn on coupler pes towards original ocean mesh
-    tagName = 'a2oTbot_proj:a2oUbot_proj:a2oVbot_proj:'//C_NULL_CHAR !  defined in prep_atm_mod.F90!!!
+!     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
+!     context_id = -1
+!     ! now send the tag a2oTbot_proj, a2oUbot_proj, a2oVbot_proj from ocn on coupler pes towards original ocean mesh
+!     tagName = 'a2oTbot_proj:a2oUbot_proj:a2oVbot_proj:'//C_NULL_CHAR !  defined in prep_atm_mod.F90!!!
 
-    if (mboxid .ge. 0) then !  send because we are on coupler pes
+!     if (mboxid .ge. 0) then !  send because we are on coupler pes
 
-      ! basically, use the initial partitioning
-      context_id = ocnid1
-      ierr = iMOAB_SendElementTag(mboxid, tagName, mpicom_join, context_id)
+!       ! basically, use the initial partitioning
+!       context_id = ocnid1
+!       ierr = iMOAB_SendElementTag(mboxid, tagName, mpicom_join, context_id)
 
-    endif
-    if (mpoid .ge. 0 ) then !  we are on ocean pes, for sure
-      ! receive on ocean pes, a tag that was computed on coupler pes
-       context_id = id_join
-       ierr = iMOAB_ReceiveElementTag(mpoid, tagName, mpicom_join, context_id)
-    !CHECKRC(ierr, "cannot receive tag values")
-    endif
+!     endif
+!     if (mpoid .ge. 0 ) then !  we are on ocean pes, for sure
+!       ! receive on ocean pes, a tag that was computed on coupler pes
+!        context_id = id_join
+!        ierr = iMOAB_ReceiveElementTag(mpoid, tagName, mpicom_join, context_id)
+!     !CHECKRC(ierr, "cannot receive tag values")
+!     endif
 
-    ! we can now free the sender buffers
-    if (mboxid .ge. 0) then
-       context_id = ocnid1
-       ierr = iMOAB_FreeSenderBuffers(mboxid, context_id)
-       ! CHECKRC(ierr, "cannot free buffers used to send projected tag towards the ocean mesh")
-    endif
+!     ! we can now free the sender buffers
+!     if (mboxid .ge. 0) then
+!        context_id = ocnid1
+!        ierr = iMOAB_FreeSenderBuffers(mboxid, context_id)
+!        ! CHECKRC(ierr, "cannot free buffers used to send projected tag towards the ocean mesh")
+!     endif
 
-#ifdef MOABDEBUG
-    if (mpoid .ge. 0 ) then !  we are on ocean pes, for sure
-      number_proj = number_proj+1 ! count the number of projections
-      write(lnum,"(I0.2)") number_proj
-      outfile = 'wholeMPAS_proj'//trim(lnum)//'.h5m'//C_NULL_CHAR
-      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-      ierr = iMOAB_WriteMesh(mpoid, trim(outfile), trim(wopts))
+! #ifdef MOABDEBUG
+!     if (mpoid .ge. 0 ) then !  we are on ocean pes, for sure
+!       number_proj = number_proj+1 ! count the number of projections
+!       write(lnum,"(I0.2)") number_proj
+!       outfile = 'wholeMPAS_proj'//trim(lnum)//'.h5m'//C_NULL_CHAR
+!       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+!       ierr = iMOAB_WriteMesh(mpoid, trim(outfile), trim(wopts))
 
-    !CHECKRC(ierr, "cannot receive tag values")
-    endif
-#endif
+!     !CHECKRC(ierr, "cannot receive tag values")
+!     endif
+! #endif
 
   end subroutine prep_ocn_migrate_moab
 
@@ -1811,6 +1812,8 @@ contains
         mphaid, mbintxao, mpicom_join, mpigrp_old, mpigrp_CPLID, &
          typeA, typeB, atm_id, idintx
    end if
+   ! for these to work, we need to define the tags of size 16 (np x np) on coupler atm, 
+   !   corresponding to this phys grid graph
    ierr = iMOAB_ComputeCommGraph( mphaid, mbintxao, mpicom_join, mpigrp_old, mpigrp_CPLID, &
          typeA, typeB, atm_id, idintx)
    if (ierr .ne. 0) then
@@ -1818,7 +1821,7 @@ contains
      call shr_sys_abort(subname//' ERROR  in computing graph phys grid - atm/ocn intx ')
    endif
    if (iamroot_CPLID) then
-      write(logunit,*) 'finish iMOAB graph in atm-land prep  '
+      write(logunit,*) 'finish iMOAB graph in atm-ocn prep  '
    end if
  end subroutine prep_atm_ocn_moab
 

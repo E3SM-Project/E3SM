@@ -3,6 +3,7 @@ module prep_atm_mod
   use shr_kind_mod,     only: r8 => SHR_KIND_R8
   use shr_kind_mod,     only: cs => SHR_KIND_CS
   use shr_kind_mod,     only: cl => SHR_KIND_CL
+  use shr_kind_mod,     only: CX => shr_kind_CX, CXX => shr_kind_CXX
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct,     only: num_inst_atm, num_inst_ocn, num_inst_ice, num_inst_lnd, num_inst_xao, &
        num_inst_frc, num_inst_max, CPLID, logunit
@@ -349,7 +350,7 @@ contains
     character*32             :: dm1, dm2, wgtIdef
     character*50             :: outfile, wopts, lnum
     integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
-    character*400            :: tagName, tagnameProj
+    character(CXX)            :: tagName, tagnameProj, tagNameExt
 
 
     call seq_infodata_getData(infodata, &
@@ -430,19 +431,16 @@ contains
         !CHECKRC(ierr, "cannot receive tag values")
         endif
 
-      else  ! original send from spectral elements
-        ! this will be reworked for all fields
-        tagName = 'a2oTbot:a2oUbot:a2oVbot:'//C_NULL_CHAR ! they are defined in semoab_mod.F90!!!
-        tagNameProj = 'a2oTbot_proj:a2oUbot_proj:a2oVbot_proj'//C_NULL_CHAR
-        !  the separator will be ';' semicolon
+      else  ! original send from spectral elements is replaced by send from phys grid
+        ! this will be reworked for all fields, send from phys grid atm:
+        tagName = trim(seq_flds_a2x_fields)//C_NULL_CHAR ! they are exported on phys grid directly
+        tagNameExt = trim(seq_flds_a2x_ext_fields)//C_NULL_CHAR ! these are special moab tags
+        !  the separator will be ':' as in mct
 
-        if (mhid .ge. 0) then !  send because we are on atm pes
-
-          ! basically, adjust the migration of the tag we want to project; it was sent initially with
-          ! trivial partitioning, now we need to adjust it for "coverage" mesh
-          ! as always, use nonblocking sends
-
-          ierr = iMOAB_SendElementTag(mhid, tagName, mpicom_join, context_id)
+        if (mphaid .ge. 0) then !  send because we are on atm pes
+          !
+          context_id = 100*atm(1)%cplcompid + ocn(1)%cplcompid !send to atm/ocn intx ! ~ 618
+          ierr = iMOAB_SendElementTag(mphaid, tagName, mpicom_join, context_id)
           if (ierr .ne. 0) then
             write(logunit,*) subname,' error in sending tag from atm spectral to ocn atm intx '
             call shr_sys_abort(subname//' ERROR  in sending tag from atm spectral to ocn atm intx')
@@ -450,30 +448,30 @@ contains
         endif
         if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
           ! receive on atm on coupler pes, that was redistributed according to coverage
-          ierr = iMOAB_ReceiveElementTag(mbaxid, tagName, mpicom_join, context_id)
+          context_id =  atm(1)%compid ! atm_id
+          ierr = iMOAB_ReceiveElementTag(mbintxao, tagNameExt, mpicom_join, context_id)
           if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in receiving tag from atm spectral to ocn atm intx '
-            call shr_sys_abort(subname//' ERROR  in receiving tag from atm spectral to ocn atm intx')
+            write(logunit,*) subname,' error in receiving tag from atm phys grid to ocn atm intx spectral '
+            call shr_sys_abort(subname//' ERROR  in receiving tag from atm phys grid to ocn atm intx spectral')
           endif
         endif
 
         ! we can now free the sender buffers
         if (mhid .ge. 0) then
-          ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
+          context_id = 100*atm(1)%cplcompid + ocn(1)%cplcompid !send to atm/ocn intx ! ~ 618
+          ierr = iMOAB_FreeSenderBuffers(mphaid, context_id)
           if (ierr .ne. 0) then
             write(logunit,*) subname,' error in freeing buffers '
             call shr_sys_abort(subname//' ERROR  in freeing buffers')
           endif
         endif
-
-
         ! we could do the projection now, on the ocean mesh, because we are on the coupler pes;
         ! the actual migrate could happen later , from coupler pes to the ocean pes
         if (mbintxao .ge. 0 ) then !  we are on coupler pes, for sure
           ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
           !  hard coded now, it should be a runtime option in the future
 
-          ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxao, wgtIdef, tagName, tagNameProj)
+          ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxao, wgtIdef, tagNameExt, tagName)
           if (ierr .ne. 0) then
             write(logunit,*) subname,' error in applying weights '
             call shr_sys_abort(subname//' ERROR in applying weights')
