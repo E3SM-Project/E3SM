@@ -125,9 +125,9 @@ void VT_diagnose() {
   parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
       t_mean(k,icrm) = 0.0;
       q_mean(k,icrm) = 0.0;
+      u_mean(k,icrm) = 0.0;
       t_vt(k,icrm) = 0.0;
       q_vt(k,icrm) = 0.0;
-      u_mean(k,icrm) = 0.0;
       u_vt(k,icrm) = 0.0;
   });
 
