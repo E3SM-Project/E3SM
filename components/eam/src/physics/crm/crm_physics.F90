@@ -142,11 +142,14 @@ subroutine crm_physics_register()
    if (use_MMF_VT) then
       ! add variance tracers
       call cnst_add('VT_T', real(0,r8), real(0,r8), real(0,r8), idx_vt_t, &
-                    longname='VT_T', readiv=.false., mixtype='dry',cam_outfld=.false.)
+                    longname='CRM variance transport tracer for T', &
+                    readiv=.false., mixtype='dry',cam_outfld=.false.)
       call cnst_add('VT_Q', real(0,r8), real(0,r8), real(0,r8), idx_vt_q, &
-                    longname='VT_Q', readiv=.false., mixtype='dry',cam_outfld=.false.)
+                    longname='CRM variance transport tracer for Q', &
+                    readiv=.false., mixtype='dry',cam_outfld=.false.)
       call cnst_add('VT_U', real(0,r8), real(0,r8), real(0,r8), idx_vt_u, &
-                    longname='VT_U', readiv=.false., mixtype='dry',cam_outfld=.false.)
+                    longname='CRM variance transport tracer for U', &
+                    readiv=.false., mixtype='dry',cam_outfld=.false.)
    end if
 
    !----------------------------------------------------------------------------
