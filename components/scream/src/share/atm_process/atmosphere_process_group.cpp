@@ -188,7 +188,7 @@ void AtmosphereProcessGroup::initialize_impl (const RunType run_type) {
     long long my_mem_usage = get_mem_usage(MB);
     long long max_mem_usage;
     m_comm.all_reduce(&my_mem_usage,&max_mem_usage,1,MPI_MAX);
-    m_atm_logger->info("[EAMxx::initialize::"+atm_proc->name()+"] memory usage: " + std::to_string(max_mem_usage) + "MB");
+    m_atm_logger->debug("[EAMxx::initialize::"+atm_proc->name()+"] memory usage: " + std::to_string(max_mem_usage) + "MB");
 #endif
   }
 }
@@ -219,7 +219,7 @@ void AtmosphereProcessGroup::run_sequential (const Real dt) {
     long long my_mem_usage = get_mem_usage(MB);
     long long max_mem_usage;
     m_comm.all_reduce(&my_mem_usage,&max_mem_usage,1,MPI_MAX);
-    m_atm_logger->info("[EAMxx::run_sequential::"+atm_proc->name()+"] memory usage: " + std::to_string(max_mem_usage) + "MB");
+    m_atm_logger->debug("[EAMxx::run_sequential::"+atm_proc->name()+"] memory usage: " + std::to_string(max_mem_usage) + "MB");
 #endif
   }
 }
@@ -235,7 +235,7 @@ void AtmosphereProcessGroup::finalize_impl (/* what inputs? */) {
     long long my_mem_usage = get_mem_usage(MB);
     long long max_mem_usage;
     m_comm.all_reduce(&my_mem_usage,&max_mem_usage,1,MPI_MAX);
-    m_atm_logger->info("[EAMxx::finalize::"+atm_proc->name()+"] memory usage: " + std::to_string(max_mem_usage) + "MB");
+    m_atm_logger->debug("[EAMxx::finalize::"+atm_proc->name()+"] memory usage: " + std::to_string(max_mem_usage) + "MB");
 #endif
   }
 }

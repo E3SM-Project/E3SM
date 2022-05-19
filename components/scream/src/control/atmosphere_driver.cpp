@@ -498,7 +498,7 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
   long long my_mem_usage = get_mem_usage(MB);
   long long max_mem_usage;
   m_atm_comm.all_reduce(&my_mem_usage,&max_mem_usage,1,MPI_MAX);
-  m_atm_logger->info("[EAMxx::init::initialize_fields] memory usage: " + std::to_string(max_mem_usage) + "MB");
+  m_atm_logger->debug("[EAMxx::init::initialize_fields] memory usage: " + std::to_string(max_mem_usage) + "MB");
 #endif
   stop_timer("EAMxx::initialize_fields");
   stop_timer("EAMxx::init");
@@ -1036,7 +1036,7 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   long long my_mem_usage = get_mem_usage(MB);
   long long max_mem_usage;
   m_atm_comm.all_reduce(&my_mem_usage,&max_mem_usage,1,MPI_MAX);
-  m_atm_logger->info("[EAMxx::finalize] memory usage: " + std::to_string(max_mem_usage) + "MB");
+  m_atm_logger->debug("[EAMxx::finalize] memory usage: " + std::to_string(max_mem_usage) + "MB");
 #endif
 
   stop_timer("EAMxx::finalize");
