@@ -76,7 +76,7 @@
       <value compset="_EAM%SCREAM.*-AQUA">-aquaplanet</value>
 
       <!-- Doubly Periodic SCREAM -->
-      <value compset="AR97_EAM%DPSCREAM">-phys default -scam -dpcrm_mode -nlev 72 -shoc_sgs -microphys p3 -rad rrtmgp -chem spa -cppdefs '-DSCREAM'</value>
+      <value compset="ARM97_EAM%DPSCREAM">-phys default -scam -dpcrm_mode -nlev 72 -shoc_sgs -microphys p3 -rad rrtmgp -chem spa -cppdefs '-DSCREAM'</value>
     </values>
     <group>build_component_cam</group>
     <file>env_build.xml</file>
@@ -121,7 +121,7 @@
       <value compset="_EAM%RCE_"                        >RCEMIP_EAMv1</value>
       <value compset="2010_EAM%SCREAM-LR"               >2010_scream_lr</value>
       <value compset="2010_EAM%SCREAM-HR"               >2010_scream_hr</value>
-      <value compset="AR97_EAM%DPSCREAM"                >dpscream_arm97</value>
+      <value compset="ARM97_EAM%DPSCREAM"                >dpscream_arm97</value>
       <value compset="2010_EAM%SCREAM-LR-DYAMOND2"      >2010_scream_lr_dyamond2</value>
       <value compset="2010_EAM%SCREAM-HR-DYAMOND2"      >2010_scream_hr_dyamond2</value>
       <value compset="_EAM%SCREAM-LR-AQUA"              >aquaplanet_SCREAM-LR</value>
