@@ -134,6 +134,7 @@
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
       character (len=StrKIND), dimension(2) :: dimNames
       integer, dimension(2) :: dimSizes
+      character (len=StrKIND) :: maskName
       type (field1DInteger), pointer :: missingValueMask1D => null()
       type (field2DInteger), pointer :: missingValueMask2D => null()
       real (kind=RKIND) :: defaultValue

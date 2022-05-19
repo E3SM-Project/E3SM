@@ -450,11 +450,19 @@ module mpas_bootstrapping
       type (mpas_pool_type), pointer :: streamDimensions
 
       character (len=StrKIND) :: streamName, streamFilenameTemplate, streamFilenameInterval, streamReferenceTime, streamFilename
-      character (len=StrKIND) :: fieldName
+      character (len=StrKIND) :: fieldName, maskName
       integer :: streamDirection
       logical :: streamActive
       logical :: fieldActive
       integer :: ioType
+
+      type (mpas_pool_field_info_type) :: fieldInfo, maskInfo
+      type (field2DInteger), pointer :: int2DMask
+      type (field1DReal), pointer :: real1DField
+      type (field2DReal), pointer :: real2DField
+      type (field3DReal), pointer :: real3DField
+      type (field4DReal), pointer :: real4DField
+      type (field5DReal), pointer :: real5DField
 
       type (mpas_pool_iterator_type) :: poolItr
 
@@ -574,6 +582,53 @@ module mpas_bootstrapping
       call mpas_log_write(' ')
       call mpas_log_write(' ')
 
+      ! TODO Point missingValueMask to the requested field for each field variable
+      call mpas_stream_mgr_begin_iteration(domain % streamManager)
+      do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID = streamName, directionProperty = streamDirection, &
+                                                 activeProperty = streamActive) )
+
+         if ( streamActive .and. ( streamDirection == MPAS_STREAM_OUTPUT .or. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) ) then
+
+            call mpas_stream_mgr_begin_iteration(domain % streamManager, streamID=streamName)
+
+            do while ( mpas_stream_mgr_get_next_field(domain % streamManager, streamName, fieldName, isActive=fieldActive) )
+
+               if (fieldActive) then
+                  call mpas_pool_get_field_info(domain % blocklist % allFields, fieldName, fieldInfo)
+                  if ( fieldInfo % fieldType == MPAS_POOL_REAL ) then
+
+                     !if ( fieldInfo % nDims == 1 ) then
+                     !   call mpas_pool_get_field(allFields, fieldName, real1DField)
+                     if ( fieldInfo % nDims == 2 ) then
+                        call mpas_log_write('looking for mask for 2d field '//TRIM(fieldName))
+                        call mpas_pool_get_field(domain % blocklist % allFields, fieldName, real2DField)
+                        !call MPAS_io_get_att(handle, trim(att_cursor % attName), field % attLists(1) % attList % attValueInt, fieldName)
+                        maskName = real2dField % maskName
+                        call mpas_log_write('retrieved mask '//trim(maskName)//' for 2d field '//TRIM(fieldName))
+                        call mpas_pool_get_field_info(domain % blocklist % allFields, maskName, maskInfo)
+                        if ( maskInfo % fieldType == MPAS_POOL_INTEGER ) then
+                           if ( maskInfo % nDims == 2 ) then
+                              call mpas_pool_get_field(domain % blocklist % allFields, maskName, int2DMask)
+                              ! get mask field from pool
+                              call mpas_mask_assign_pointer(real2DField, int2DMask)
+                           else
+                              call mpas_log_write(TRIM(fieldName)//' does not have 2d mask type '//TRIM(maskName))
+                           endif
+                        else
+                           call mpas_log_write(TRIM(fieldName)//' does not have an integer mask type '//TRIM(maskName))
+                        endif
+                     !else if ( fieldInfo % nDims == 3 ) then
+                     !   call mpas_pool_get_field(allFields, fieldName, real3DField)
+                     !else if ( fieldInfo % nDims == 4 ) then
+                     !   call mpas_pool_get_field(allFields, fieldName, real4DField)
+                     !else if ( fieldInfo % nDims == 5 ) then
+                     !   call mpas_pool_get_field(allFields, fieldName, real5DField)
+                     end if
+                  endif
+               endif
+            enddo
+         endif
+      enddo
       call mpas_pool_set_error_level(err_level)
 
       ! Allocate blocks, and copy indexTo arrays into blocks

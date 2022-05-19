@@ -1666,6 +1666,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 
 			free(tofree);
 
+		        fortprintf(fd, "      %s %% maskName = '%s'\n", pointer_name_arr , temp_str);
 			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'missing_value_mask', '%s')\n", pointer_name_arr, temp_str);
 		}
 
