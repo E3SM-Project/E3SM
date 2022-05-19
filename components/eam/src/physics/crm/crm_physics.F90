@@ -40,6 +40,7 @@ module crm_physics
    integer :: ixnumsnow = -1   ! snow number index
    integer :: idx_vt_t  = -1   ! CRM variance transport - liquid static energy
    integer :: idx_vt_q  = -1   ! CRM variance transport - total water
+   integer :: idx_vt_u  = -1   ! CRM variance transport - horizontal momentum
 
    ! Physics buffer indices  
    integer :: ttend_dp_idx     = -1
@@ -144,6 +145,8 @@ subroutine crm_physics_register()
                     longname='VT_T', readiv=.false., mixtype='dry',cam_outfld=.false.)
       call cnst_add('VT_Q', real(0,r8), real(0,r8), real(0,r8), idx_vt_q, &
                     longname='VT_Q', readiv=.false., mixtype='dry',cam_outfld=.false.)
+      call cnst_add('VT_U', real(0,r8), real(0,r8), real(0,r8), idx_vt_u, &
+                    longname='VT_U', readiv=.false., mixtype='dry',cam_outfld=.false.)
    end if
 
    !----------------------------------------------------------------------------
@@ -367,6 +370,7 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
          ncol = state(c)%ncol
          state(c)%q(:ncol,:pver,idx_vt_t) = 0
          state(c)%q(:ncol,:pver,idx_vt_q) = 0
+         state(c)%q(:ncol,:pver,idx_vt_u) = 0
       end do
    end if
 
@@ -999,6 +1003,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             if (use_MMF_VT) then
                crm_input%t_vt(icrm,:pver) = state(c)%q(i,:pver,idx_vt_t)
                crm_input%q_vt(icrm,:pver) = state(c)%q(i,:pver,idx_vt_q)
+               crm_input%u_vt(icrm,:pver) = state(c)%q(i,:pver,idx_vt_u)
             end if
             ! Set the input wind (also sets CRM orientation)
             do k = 1,pver
@@ -1124,6 +1129,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_output%clhgh, crm_output%clmed, crm_output%cllow, &
                crm_output%sltend, crm_output%qltend, crm_output%qcltend, crm_output%qiltend, &
                crm_output%t_vt_tend, crm_output%q_vt_tend, crm_output%t_vt_ls, crm_output%q_vt_ls, &
+               crm_input%u_vt, crm_output%u_vt_tend, crm_output%u_vt_ls, &
 #if defined(MMF_MOMENTUM_FEEDBACK)
                crm_output%ultend, crm_output%vltend, &
 #endif /* MMF_MOMENTUM_FEEDBACK */
@@ -1178,6 +1184,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          if (use_MMF_VT) then
             ptend(c)%lq(idx_vt_t) = .TRUE.
             ptend(c)%lq(idx_vt_q) = .TRUE.
+            ptend(c)%lq(idx_vt_u) = .TRUE.
          end if
          !------------------------------------------------------------------------------------------
          ! Populate output tendencies from CRM
@@ -1192,6 +1199,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             if (use_MMF_VT) then
                ptend(c)%q(i,1:pver,idx_vt_t) = crm_output%t_vt_tend(icrm,1:pver)
                ptend(c)%q(i,1:pver,idx_vt_q) = crm_output%q_vt_tend(icrm,1:pver)
+               ptend(c)%q(i,1:pver,idx_vt_u) = crm_output%u_vt_tend(icrm,1:pver)
             end if
          end do ! i = 1,ncol
 

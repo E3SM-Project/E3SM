@@ -1455,8 +1455,8 @@ else {
 
         # MMF variance transport tracers
         if (defined $opts{'use_MMF_VT'}) {
-            $nadv += 2; # add tracers for CRM t and q variance transport
-            if ($print>=2) { print "Advected variance constituent added for MMF: 2$eol"; }
+            $nadv += 3; # add tracers for CRM variance transport if t, q, and u
+            if ($print>=2) { print "Advected variance constituent added for MMF: 3$eol"; }
         }
 
     }

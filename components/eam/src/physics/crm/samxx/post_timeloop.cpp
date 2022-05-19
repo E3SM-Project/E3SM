@@ -174,7 +174,11 @@ void post_timeloop() {
   YAKL_SCOPE( t_vt_tend               , :: t_vt_tend );
   YAKL_SCOPE( q_vt_tend               , :: q_vt_tend );
   YAKL_SCOPE( use_VT                  , :: use_VT );
- 
+  YAKL_SCOPE( crm_output_u_vt_tend    , :: crm_output_u_vt_tend);
+  YAKL_SCOPE( crm_input_u_vt          , :: crm_input_u_vt);
+  YAKL_SCOPE( u_vt                    , :: u_vt);
+  YAKL_SCOPE( crm_output_u_vt_ls      , :: crm_output_u_vt_ls);
+  YAKL_SCOPE( u_vt_tend               , :: u_vt_tend);
 
   factor_xyt = factor_xy/((real) nstop);
   real tmp1 = crm_nx_rad_fac*crm_ny_rad_fac/((real) nstop);
@@ -312,9 +316,11 @@ void post_timeloop() {
         int l = plev-(k+1);
         crm_output_t_vt_tend(k,icrm) = ( t_vt(l,icrm) - crm_input_t_vt(k,icrm) ) * icrm_run_time;
         crm_output_q_vt_tend(k,icrm) = ( q_vt(l,icrm) - crm_input_q_vt(k,icrm) ) * icrm_run_time;
+        crm_output_u_vt_tend(k,icrm) = ( u_vt(l,icrm) - crm_input_u_vt(k,icrm) ) * icrm_run_time;
       } else {
         crm_output_t_vt_tend(k,icrm) = 0.0;
         crm_output_q_vt_tend(k,icrm) = 0.0;
+        crm_output_u_vt_tend(k,icrm) = 0.0;
       }
     }
   });
@@ -348,6 +354,7 @@ void post_timeloop() {
     if (use_VT) {
       crm_output_t_vt_tend(k,icrm) = 0.;
       crm_output_q_vt_tend(k,icrm) = 0.;
+      crm_output_u_vt_tend(k,icrm) = 0.;
     }
   });
 
@@ -566,6 +573,7 @@ void post_timeloop() {
     if (use_VT) {
       crm_output_t_vt_ls   (l,icrm) = t_vt_tend(k,icrm);
       crm_output_q_vt_ls   (l,icrm) = q_vt_tend(k,icrm);
+      crm_output_u_vt_ls   (l,icrm) = u_vt_tend(k,icrm);
     }
   });
 
