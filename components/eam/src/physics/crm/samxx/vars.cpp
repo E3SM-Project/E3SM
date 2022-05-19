@@ -1945,6 +1945,8 @@ real a_gr;
 bool use_VT;
 int  VT_wn_max;
 
+bool use_ESMT;
+
 bool crm_accel_uv;
 bool use_crm_accel;
 real crm_accel_factor;

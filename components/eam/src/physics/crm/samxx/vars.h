@@ -236,6 +236,8 @@ extern real a_gr;
 extern bool use_VT;
 extern int  VT_wn_max;
 
+extern bool use_ESMT;
+
 extern bool crm_accel_uv;
 extern bool use_crm_accel;
 extern real crm_accel_factor;
