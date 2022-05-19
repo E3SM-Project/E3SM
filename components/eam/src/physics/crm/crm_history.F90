@@ -276,9 +276,9 @@ subroutine crm_history_init(species_class)
    call addfld('MMF_VT_TEND_T',(/'lev'/), 'A',' ','CRM T Variance Tendency')
    call addfld('MMF_VT_TEND_Q',(/'lev'/), 'A',' ','CRM Q Variance Tendency')
    call addfld('MMF_VT_TEND_U',(/'lev'/), 'A',' ','CRM U Variance Tendency')
-   call addfld('MMF_VT_TLS',    (/'lev'/), 'A','kg/kg/s','L.S. VT Forcing for LSE' )
-   call addfld('MMF_VT_QLS',    (/'lev'/), 'A','kg/kg/s','L.S. VT Forcing for QT' )
-   call addfld('MMF_VT_ULS',    (/'lev'/), 'A','kg/kg/s','L.S. VT Forcing for U' )
+   call addfld('MMF_VT_TLS',   (/'lev'/), 'A','kg/kg/s','L.S. VT Forcing for LSE' )
+   call addfld('MMF_VT_QLS',   (/'lev'/), 'A','kg/kg/s','L.S. VT Forcing for QT' )
+   call addfld('MMF_VT_ULS',   (/'lev'/), 'A','kg/kg/s','L.S. VT Forcing for U' )
 
    !----------------------------------------------------------------------------
    ! mixing diagnostics for dropmixnuc in the GCM grid
