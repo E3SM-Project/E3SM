@@ -173,6 +173,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
   //       take this information directly from the spa data file.
   scorpio::register_file(m_spa_data_file,scorpio::Read);
   const int source_data_nlevs = scorpio::get_dimlen_c2f(m_spa_data_file.c_str(),"lev")+2; // Add 2 for padding
+  scorpio::eam_pio_closefile(m_spa_data_file);
   SPAHorizInterp.m_comm = m_comm;
 
   // Initialize the size of the SPAData structures:

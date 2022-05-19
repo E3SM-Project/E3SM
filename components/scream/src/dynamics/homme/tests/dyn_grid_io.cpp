@@ -184,6 +184,7 @@ TEST_CASE("dyn_grid_io")
   io_params.set<std::string>("Grid",dyn_grid->name());
   AtmosphereInput input (io_params,fm_dyn, gm);
   input.read_variables();
+  input.finalize();
 
   // Remap dyn->phys, and compare against ctrl
   dyn2phys->remap(true);

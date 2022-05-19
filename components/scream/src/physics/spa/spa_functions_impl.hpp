@@ -506,6 +506,7 @@ void SPAFunctions<S,D>
   // local grid to match the size of the SPA data file.
 
   // To construct the grid we need to determine the number of columns and levels in the data file.
+  scorpio::register_file(spa_data_file_name,scorpio::Read);
   Int ncol = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"ncol");
   const int source_data_nlevs = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lev");
   Int num_local_cols = spa_horiz_interp.num_unique_cols;
@@ -516,6 +517,7 @@ void SPAFunctions<S,D>
   EKAT_REQUIRE_MSG(nlwbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lwband"),"ERROR update_spa_data_from_file: Number of LW bands in simulation doesn't match the SPA data file");
   EKAT_REQUIRE_MSG(ncol==spa_horiz_interp.source_grid_ncols,"ERROR update_spa_data_from_file: Number of columns in remap data (" 
                         + std::to_string(ncol) + " doesn't match the SPA data file (" + std::to_string(spa_horiz_interp.source_grid_ncols) + ").");
+  scorpio::eam_pio_closefile(spa_data_file_name);
 
   // Construct local arrays to read data into
   // Note, all of the views being created here are meant to hold the local "coarse" resolution
@@ -581,7 +583,7 @@ void SPAFunctions<S,D>
   spa_data_input.init(grid,host_views,layouts);
   spa_data_input.read_variables(time_index);
   spa_data_input.finalize();
- 
+
   // Now that we have the data we can map the data onto the target data.
   auto hyam_h       = Kokkos::create_mirror_view(spa_data.hyam);
   auto hybm_h       = Kokkos::create_mirror_view(spa_data.hybm);
