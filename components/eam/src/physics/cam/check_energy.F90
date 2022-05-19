@@ -73,6 +73,7 @@ module check_energy
 ! Private module data
 
   logical  :: print_energy_errors = .false.
+  character(len=16) :: microp_scheme 
 
   real(r8) :: teout_glob           ! global mean energy of output state
   real(r8) :: teinp_glob           ! global mean energy of input state
@@ -196,6 +197,7 @@ end subroutine check_energy_get_integrals
 !-----------------------------------------------------------------------
 
     call phys_getopts( history_budget_out = history_budget, &
+                       microp_scheme_out  = microp_scheme,   &
                        history_budget_histfile_num_out = history_budget_histfile_num)
 
 ! register history variables
@@ -1150,6 +1152,19 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
                                    ps(i),pdel(i,:),phis(i), &
                                    ke(i),se(i),wv(i),wl(i),wi(i),wr(i),ws(i),te(i),tw(i) )                             
        enddo
+    elseif (icldliq > 1  .and.  icldice > 1 .and. irain > 1 .and. microp_scheme == 'P3') then
+       ! In the case where the micro-physics scheme is P3 there is no snow
+       ! constituent and isnow = -1.  So we still calculate the rest of the
+       ! consituents and ensure that ws = 0.0.  NOTE! This change will likely
+       ! lead to conflicts with upstream E3SM any time check_energy is
+       ! changed...  The most important thing is to avoid any SNOW calculations
+       ! when P3 is the microphysics scheme.
+       do i = 1, ncol
+          call energy_helper_eam_def_column(u(i,:),v(i,:),T(i,:),q(i,1:pver,1:pcnst),&
+                                   ps(i),pdel(i,:),phis(i), &
+                                   ke(i),se(i),wv(i),wl(i),wi(i),wr(i),ws(i),te(i),tw(i) )                             
+       enddo
+       ws(i) = 0.0_r8
     else
        call endrun('energy_helper...column is not implemented if water forms do not exist')
     endif
@@ -1220,7 +1235,10 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 
     do k = 1, pver
        wr = wr + q(k,irain)*pdel(k)/gravit
-       ws = ws + q(k,isnow)*pdel(k)/gravit
+       ! Recall, P3 does not have a snow constituent.
+       if (.not.microp_scheme == 'P3') then
+         ws = ws + q(k,isnow)*pdel(k)/gravit
+       end if
     end do
 
     ! Compute vertical integrals of frozen static energy and total water.
