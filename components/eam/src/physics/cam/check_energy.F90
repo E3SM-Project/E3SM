@@ -1163,8 +1163,8 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
           call energy_helper_eam_def_column(u(i,:),v(i,:),T(i,:),q(i,1:pver,1:pcnst),&
                                    ps(i),pdel(i,:),phis(i), &
                                    ke(i),se(i),wv(i),wl(i),wi(i),wr(i),ws(i),te(i),tw(i) )                             
+          ws(i) = 0.0_r8
        enddo
-       ws(i) = 0.0_r8
     else
        call endrun('energy_helper...column is not implemented if water forms do not exist')
     endif
