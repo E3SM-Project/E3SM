@@ -16,10 +16,10 @@ inline std::vector<int> unflatten_idx (const std::vector<int>& dims, const int i
   // Get dims from the back fastest to slowest
   const auto rbeg = dims.rbegin();
   const int dr0 = *rbeg;
-  const int dr1 = *(rbeg+1);
-  const int dr2 = *(rbeg+2);
-  const int dr3 = *(rbeg+3);
-  const int dr4 = *(rbeg+4);
+  const int dr1 = r>1 ? *(rbeg+1) : 0;
+  const int dr2 = r>2 ? *(rbeg+2) : 0;
+  const int dr3 = r>3 ? *(rbeg+3) : 0;
+  const int dr4 = r>4 ? *(rbeg+4) : 0;
 
   std::vector<int> indices(r);
 
