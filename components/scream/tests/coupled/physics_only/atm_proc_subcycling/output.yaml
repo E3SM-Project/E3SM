@@ -27,7 +27,7 @@ Field Names:
   - surf_latent_flux
   - surf_mom_flux
   - surf_sens_flux
-  - nc_activated
+  - nccn
   - ni_activated
   - nc_nuceat_tend
   - eff_radius_qc

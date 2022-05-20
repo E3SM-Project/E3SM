@@ -76,7 +76,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 
   // Diagnostic Inputs: (only the X_prev fields are both input and output, all others are just inputs)
   add_field<Required>("nc_nuceat_tend",     scalar3d_layout_mid, 1/(kg*s), grid_name, ps);
-  add_field<Required>("nc_activated",       scalar3d_layout_mid, 1/kg,     grid_name, ps);
+  add_field<Required>("nccn",               scalar3d_layout_mid, 1/kg,     grid_name, ps);
   add_field<Required>("ni_activated",       scalar3d_layout_mid, 1/kg,     grid_name, ps);
   add_field<Required>("inv_qc_relvar",      scalar3d_layout_mid, Q*Q,      grid_name, ps);
   add_field<Required>("pseudo_density",     scalar3d_layout_mid, Pa,       grid_name, ps);
@@ -237,7 +237,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   prog_state.qv     = p3_preproc.qv;
   // --Diagnostic Input Variables:
   diag_inputs.nc_nuceat_tend  = get_field_in("nc_nuceat_tend").get_view<const Pack**>();
-  diag_inputs.nccn            = get_field_in("nc_activated").get_view<const Pack**>();
+  diag_inputs.nccn            = get_field_in("nccn").get_view<const Pack**>();
   diag_inputs.ni_activated    = get_field_in("ni_activated").get_view<const Pack**>();
   diag_inputs.inv_qc_relvar   = get_field_in("inv_qc_relvar").get_view<const Pack**>();
   diag_inputs.pres            = get_field_in("p_mid").get_view<const Pack**>();

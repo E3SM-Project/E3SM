@@ -21,7 +21,7 @@ Fields:
       - precip_ice_surf
       - eff_radius_qc
       - eff_radius_qi
-      - nc_activated
+      - nccn
       - ni_activated
       - nc_nuceat_tend
       - cldfrac_liq
