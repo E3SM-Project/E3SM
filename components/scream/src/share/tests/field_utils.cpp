@@ -45,6 +45,7 @@ TEST_CASE("utils") {
     auto v2 = f2.get_view<Real**>();
     auto dim0 = fid.get_layout().dim(0);
     auto dim1 = fid.get_layout().dim(1);
+    auto am_i_root = comm.am_i_root();
     Kokkos::parallel_for(kt::RangePolicy(0,dim0*dim1),
                          KOKKOS_LAMBDA(int idx) {
       int i = idx / dim1;
@@ -54,7 +55,7 @@ TEST_CASE("utils") {
       int jpack = j / P8::n;
       int jvec = j % P8::n;
       v1(i,jpack)[jvec] = i*dim1+j;
-      if (parallel_test and not comm.am_i_root()) {
+      if (parallel_test and not am_i_root) {
         v1(i,jpack)[jvec] *= -1;
       }
     });
