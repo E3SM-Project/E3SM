@@ -131,7 +131,7 @@ public:
 
 protected:
 
-  void report_res_dep_memory_foorprint () const;
+  void report_res_dep_memory_footprint () const;
 
   void create_logger ();
   void set_initial_conditions ();

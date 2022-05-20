@@ -909,7 +909,7 @@ void AtmosphereDriver::initialize_atm_procs ()
   stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMXX] initialize_atm_procs ... done!");
 
-  report_res_dep_memory_foorprint ();
+  report_res_dep_memory_footprint ();
 }
 
 void AtmosphereDriver::
@@ -1074,7 +1074,7 @@ check_ad_status (const int flag, const bool must_be_set)
   }
 }
 
-void AtmosphereDriver::report_res_dep_memory_foorprint () const {
+void AtmosphereDriver::report_res_dep_memory_footprint () const {
   // Log the amount of memory used that is linked to the grid(s) sizes
   long long my_dev_mem_usage = 0;
   long long my_host_mem_usage = 0;
