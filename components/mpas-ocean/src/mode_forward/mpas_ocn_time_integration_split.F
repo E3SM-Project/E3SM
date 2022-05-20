@@ -382,8 +382,10 @@ module ocn_time_integration_split
       endif
 
 #ifdef MPAS_OPENACC
-      !$acc enter data copyin(normalVelocityCur, normalBarotropicVelocityCur, sshCur, layerThicknessCur)
-      !$acc enter data create(normalBaroClinicVelocityCur, normalVelocityNew, normalBaroclinicVelocityNew, sshNew, layerThicknessNew)
+      !$acc enter data copyin(normalVelocityCur, normalBarotropicVelocityCur, &
+      !$acc   sshCur, layerThicknessCur)
+      !$acc enter data create(normalBaroClinicVelocityCur, normalVelocityNew, &
+      !$acc   normalBaroclinicVelocityNew, sshNew, layerThicknessNew)
       if (associated(highFreqThicknessNew)) then
          !$acc enter data copyin(highFreqThicknessCur)
          !$acc enter data create(highFreqThicknessNew)
@@ -408,9 +410,10 @@ module ocn_time_integration_split
       ! baroclinic.
 
 #ifdef MPAS_OPENACC
-      !$acc parallel present(normalVelocityCur, normalBarotropicVelocityCur, sshCur, layerThicknessCur, &
-      !$acc    normalBaroClinicVelocityCur, normalVelocityNew, normalBaroclinicVelocityNew, sshNew, layerThicknessNew, &
-      !$acc    minLevelCell, maxLevelCell)
+      !$acc parallel present(normalVelocityCur, normalBarotropicVelocityCur, &
+      !$acc    sshCur, layerThicknessCur, normalBaroClinicVelocityCur, &
+      !$acc    normalVelocityNew, normalBaroclinicVelocityNew, sshNew, &
+      !$acc    layerThicknessNew, minLevelCell, maxLevelCell)
 #endif
 
 #ifdef MPAS_OPENACC
@@ -446,17 +449,15 @@ module ocn_time_integration_split
 #ifdef MPAS_OPENACC
          !$acc loop vector
 #endif
-         do k = minLevelCell(iCell), maxLevelCell(iCell)
+         do k = 1,nVertLevels
             layerThicknessNew(k,iCell) = layerThicknessCur(k,iCell)
          end do
       end do
-#ifndef MPAS_OPENACC
-      !$omp end do
-      !$omp end parallel
-#endif
-
 #ifdef MPAS_OPENACC
       !$acc end parallel
+#else
+      !$omp end do
+      !$omp end parallel
 #endif
 
       call mpas_pool_begin_iteration(tracersPool)
@@ -473,9 +474,8 @@ module ocn_time_integration_split
 #ifdef MPAS_OPENACC
                !$acc enter data create(tracersGroupNew)
                !$acc enter data copyin(tracersGroupCur)
-               !$acc parallel present(minLevelCell, maxLevelCell, &
+               !$acc parallel loop gang present(minLevelCell, maxLevelCell, &
                !$acc    tracersGroupNew, tracersGroupCur)
-               !$acc loop gang
 #else
                !$omp parallel
                !$omp do schedule(runtime) private(k)
@@ -492,7 +492,6 @@ module ocn_time_integration_split
                end do
                end do
 #ifdef MPAS_OPENACC
-               !$acc end parallel
                !$acc exit data copyout(tracersGroupNew)
                !$acc exit data delete(tracersGroupCur)
 #else
@@ -505,8 +504,8 @@ module ocn_time_integration_split
 
       if (associated(highFreqThicknessNew)) then
 #ifdef MPAS_OPENACC
-         !$acc parallel present(highFreqThicknessCur, highFreqThicknessNew)
-         !$acc loop gang
+         !$acc parallel loop gang &
+         !$acc    present(highFreqThicknessCur, highFreqThicknessNew)
 #else
          !$omp parallel
          !$omp do schedule(runtime) private(k)
@@ -520,9 +519,7 @@ module ocn_time_integration_split
             highFreqThicknessCur(k,iCell)
          end do
          end do
-#ifdef MPAS_OPENACC
-         !$acc end parallel
-#else
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
 #endif
@@ -530,8 +527,8 @@ module ocn_time_integration_split
 
       if (associated(lowFreqDivergenceNew)) then
 #ifdef MPAS_OPENACC
-         !$acc parallel present(lowFreqDivergenceCur, lowFreqDivergenceNew)
-         !$acc loop gang
+         !$acc parallel loop gang &
+         !$acc    present(lowFreqDivergenceCur, lowFreqDivergenceNew)
 #else
          !$omp parallel
          !$omp do schedule(runtime) private(k)
@@ -545,9 +542,7 @@ module ocn_time_integration_split
             lowFreqDivergenceCur(k,iCell)
          end do
          end do
-#ifdef MPAS_OPENACC
-         !$acc end parallel
-#else
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
 #endif
@@ -565,8 +560,10 @@ module ocn_time_integration_split
       endif
 
 #ifdef MPAS_OPENACC
-      !$acc exit data delete(normalVelocityCur, normalBarotropicVelocityCur, sshCur, layerThicknessCur)
-      !$acc exit data copyout(normalBaroClinicVelocityCur, normalVelocityNew, normalBaroclinicVelocityNew, sshNew, layerThicknessNew)
+      !$acc exit data delete(normalVelocityCur, normalBarotropicVelocityCur, &
+      !$acc    sshCur, layerThicknessCur)
+      !$acc exit data copyout(normalBaroClinicVelocityCur, normalVelocityNew, &
+      !$acc    normalBaroclinicVelocityNew, sshNew, layerThicknessNew)
       if (associated(highFreqThicknessNew)) then
          !$acc exit data delete(highFreqThicknessCur)
          !$acc exit data copyout(highFreqThicknessNew)
@@ -646,9 +643,8 @@ module ocn_time_integration_split
             call mpas_timer_stop("se freq-filtered-thick halo update")
 
 #ifdef MPAS_OPENACC
-            !$acc parallel present(minLevelCell, maxLevelCell, &
+            !$acc parallel loop gang present(minLevelCell, maxLevelCell, &
             !$acc    highFreqThicknessNew, highFreqThicknessCur, highFreqThicknessTend)
-            !$acc loop gang
 #else
             !$omp parallel
             !$omp do schedule(runtime) private(k)
@@ -664,9 +660,7 @@ module ocn_time_integration_split
                highFreqThicknessTend(k,iCell)
             end do
             end do
-#ifdef MPAS_OPENACC
-            !$acc end parallel
-#else
+#ifndef MPAS_OPENACC
             !$omp end do
             !$omp end parallel
 #endif
