@@ -132,7 +132,7 @@ TEST_CASE("output_restart","io")
   // NOTE: we use fm_res (the copy of field_manager at t=15), since we don't want
   //       to have to do a state restart, which would/could mix issues related to
   //       model restart with the testing of output history restart.
-  util::TimeStamp time_res ({2000,1,1},{0,0,15});
+  util::TimeStamp time_res ({2000,1,1},{0,0,15},5);
   std::string param_filename_res = "io_test_restart_check.yaml";
 
   ekat::ParameterList output_params_res;
@@ -230,8 +230,8 @@ std::shared_ptr<GridsManager>
 get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
 {
   ekat::ParameterList gm_params;
-  gm_params.sublist("Mesh Free").set("Number of Global Columns",num_gcols);
-  gm_params.sublist("Mesh Free").set("Number of Vertical Levels",num_levs);
+  gm_params.set("Number of Global Columns",num_gcols);
+  gm_params.set("Number of Vertical Levels",num_levs);
   auto gm = create_mesh_free_grids_manager(io_comm,gm_params);
   gm->build_grids(std::set<std::string>{"Point Grid"});
   return gm;

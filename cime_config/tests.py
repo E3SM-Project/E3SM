@@ -449,7 +449,25 @@ _TESTS = {
         "time"  : "03:00:00",
         "tests" : (
             "SMS_D_Ln2_P24x1.ne4_ne4.F2000SCREAMv1",
+            "SMS_D_Ln2_P24x1.ne4_ne4.F2010-SCREAMv1",
             "SMS_D_Ln2_P24x1.ne4_ne4.F2000-SCREAMv1-AQP1",
+            )
+    },
+
+    "e3sm_scream_v1_medres" : {
+        "time"  : "03:00:00",
+        "tests" : (
+            "SMS_D_Ln2.ne30_ne30.F2000SCREAMv1",
+            "SMS_Ln2.ne30_ne30.F2000-SCREAMv1-AQP1",
+            )
+    },
+
+    "e3sm_scream_v1_hires" : {
+        "time"  : "03:00:00",
+        "tests" : (
+            "SMS_D_Ln12.ne120_r0125_oRRS18to6v3.F2010-SCREAMv1",
+            "SMS_Ln12.ne120_ne120.F2010-SCREAMv1",
+#            "SMS_Ln12.ne120_r0125_oRRS18to6v3.F2000-SCREAMv1-AQP1", add when aquap 120 inputs available
             )
     },
 

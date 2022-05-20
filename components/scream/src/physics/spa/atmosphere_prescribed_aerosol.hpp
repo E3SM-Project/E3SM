@@ -106,6 +106,7 @@ protected:
   SPAFunc::SPAInput         SPAData_end;
   SPAFunc::SPAOutput        SPAData_out;
 
+  std::shared_ptr<const AbstractGrid>   m_grid;
 }; // class SPA 
 
 } // namespace scream

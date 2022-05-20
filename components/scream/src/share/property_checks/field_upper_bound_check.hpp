@@ -16,9 +16,10 @@ public:
   // can *NOT* repair fields that fail the check. If can_repair is true,
   // this class will overwrite values out of bounds with the stored upper bound
   FieldUpperBoundCheck (const Field& field,
+                        const std::shared_ptr<const AbstractGrid>& grid,
                         const double upper_bound,
                         const bool can_repair = false)
-   : FieldWithinIntervalCheck(field,
+   : FieldWithinIntervalCheck(field, grid,
                               -std::numeric_limits<double>::max(),
                               upper_bound,
                               can_repair)

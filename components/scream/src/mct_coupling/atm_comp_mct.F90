@@ -126,9 +126,7 @@ CONTAINS
       read (modelio_fid,nml=modelio,iostat=ierr)
       close(modelio_fid)
     endif
-    print *, "bcasting ierr..."
     call mpi_bcast(ierr,1,MPI_INTEGER,master_task,mpicom_atm,mpi_ierr)
-    print *, "bcasting ierr...done!"
     if (ierr /= 0) then
       print *,'[eamxx] ERROR reading ','atm_modelio.nml'//trim(inst_suffix),': iostat=',ierr
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)

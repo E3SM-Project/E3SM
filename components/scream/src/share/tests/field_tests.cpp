@@ -80,7 +80,6 @@ TEST_CASE("field", "") {
   using namespace scream;
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
-  using kt = KokkosTypes<DefaultDevice>;
 
   using P4 = ekat::Pack<Real,4>;
   using P8 = ekat::Pack<Real,8>;
@@ -137,32 +136,10 @@ TEST_CASE("field", "") {
     REQUIRE_THROWS (f1.get_view<P16***>());
   }
 
-  SECTION ("compare") {
-
-    Field f1(fid), f2(fid);
-    f2.get_header().get_alloc_properties().request_allocation(P16::n);
+  SECTION ("equivalent") {
+    Field f1 (fid), f2(fid);
     f1.allocate_view();
     f2.allocate_view();
-
-    auto v1 = f1.get_view<Real**>();
-    auto v2 = f2.get_view<P8**>();
-    auto dim0 = fid.get_layout().dim(0);
-    auto dim1 = fid.get_layout().dim(1);
-    Kokkos::parallel_for(kt::RangePolicy(0,dim0*dim1),
-                         KOKKOS_LAMBDA(int idx) {
-      int i = idx / dim1;
-      int j = idx % dim1;
-      v1(i,j) = i*dim1+j;
-
-      int jpack = j / P8::n;
-      int jvec = j % P8::n;
-      v2(i,jpack)[jvec] = i*dim1+j;
-    });
-    Kokkos::fence();
-
-    // The views were filled the same way, so they should test equal
-    // NOTE: this cmp function only test the "actual" field, discarding padding.
-    REQUIRE(views_are_equal(f1,f2));
 
     // Check self equivalence
     // get_const returns a copy of self, so equivalent (if already allocated)
@@ -326,7 +303,6 @@ TEST_CASE("field", "") {
       }
     }
   }
-
 
   SECTION ("host_view") {
     Field f(fid);

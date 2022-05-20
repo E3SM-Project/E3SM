@@ -52,7 +52,7 @@ MACHINE_METADATA = {
                  ["mpicxx","mpifort","mpicc"],
                   "salloc --partition=pbatch --time=60",
                   ""),
-    "summit" : (["module purge", "module load cmake/3.18.4 gcc/7.5.0 spectrum-mpi/10.4.0.3-20210112 cuda/10.1.168 python/3.7-anaconda3 netcdf-c/4.8.0 netcdf-fortran/4.4.5 openblas/0.3.5","unset OMPI_CXX", "export OMPI_COMM_WORLD_RANK=0"],
+    "summit" : (["module purge", "module load cmake/3.18.4 gcc/9.3.0 spectrum-mpi/10.4.0.3-20210112 cuda/11.5.2 python/3.7-anaconda3 netcdf-c/4.8.0 netcdf-fortran/4.4.5 openblas/0.3.5","unset OMPI_CXX", "export OMPI_COMM_WORLD_RANK=0"],
                 ["mpicxx","mpifort","mpicc"],
                 "bsub -I -q batch -W 0:30 -P cli115 -nnodes 1",
                 "/gpfs/alpine/cli115/proj-shared/scream/master-baselines"),
@@ -219,7 +219,7 @@ def setup_mach_env(machine, ctest_j=None):
         # But we can return the resulting PATH, and update current env with that
 
         # Get the whole env string after running the env_setup command
-        curr_env = run_cmd_no_fail("{{ {};  }} > /dev/null && env | sort".format(";".join(env_setup)))
+        curr_env = run_cmd_no_fail("{{ {};  }} > /dev/null && env | sort".format(" && ".join(env_setup)),verbose=True)
 
         # Split by line. We are assuming that each env variable is *exactly* on one line
         curr_env_list = curr_env.split("\n")

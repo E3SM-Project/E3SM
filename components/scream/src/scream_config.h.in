@@ -34,7 +34,20 @@
 // Whether experimental code should be enabled
 #cmakedefine SCREAM_ENABLE_EXPERIMENTAL
 
+// Whether getrusage can be used to get memory usage
+#cmakedefine SCREAM_ENABLE_GETRUSAGE
+// Whether /proc/self/statm can be used to get memory usage
+#cmakedefine SCREAM_ENABLE_STATM
+
+#if defined(SCREAM_ENABLE_STATM) || defined(SCREAM_ENABLE_GETRUSAGE)
+#define SCREAM_HAS_MEMORY_USAGE
+#endif
+
+
 // Data directory for the scream project
 #define SCREAM_DATA_DIR "${SCREAM_DATA_DIR}"
+
+// Whether or not to run RRTMGP debug checks
+#cmakedefine SCREAM_RRTMGP_DEBUG
 
 #endif

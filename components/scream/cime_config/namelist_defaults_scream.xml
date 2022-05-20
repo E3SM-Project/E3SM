@@ -38,6 +38,19 @@ tweaking their $case/namelist_scream.xml file.
     <selector name="nlev" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_VERTICAL_LEV ([0-9]+).*"/>
   </selectors>
 
+  <!-- List of scream grids for a given compset. I/O can only happen on these grids -->
+
+  <!-- Help buildnml by listing files to generate,
+    specifying which sections of the xml go in each file -->
+  <generated_files>
+    <file name="data/namelist.nl" format="nml">
+      <sections>ctl_nl</sections>
+    </file>
+    <file name="data/scream_input.yaml" format="yaml">
+      <sections>Debug,atmosphere_processes,Grids__Manager,Initial__Conditions,Scorpio</sections>
+    </file>
+  </generated_files>
+
   <!--
       The following blocks define the input files for the model.
       There are some rules that must be followed.
@@ -80,143 +93,223 @@ tweaking their $case/namelist_scream.xml file.
            TODO support numeric checks (<, >, ...)??
         6) You can inline case values into parameter values via this syntax, e.g.:
            <init_file>scream_init_${ATM_GRID}.nc</init_file>
-           This would result in parameter init_file' having the value 'scream_init_ne4ne4.nc'
+           This would result in parameter init_file' having the value 'scream_init_ne4np4.nc'
         7) Any parameter value with a comma will be assumed to be a list.
            TODO allow this behavior to be overridden?
         8) Every value in a list should be of the same type
         9) All local changes made to $case/namelist_scream.xml must conform
            to the structure and metadata derived from this file.
 
+       10) Outer elements can "inherit" from other outer elements. This allows to declare
+           basic/common defaults for a whole group of lists, wihtout the need of
+           repeating the common entries inside each list. This is particularly useful
+           for the atmosphere processes section(s).
+
+       11) The attribute 'locked="true"' is to be used for entries that cannot be changed
+           via atm-config-chg. For instance, the overall list of atm procs cannot be changed,
+           since it would require to re-parse the defaults, to re-generate the correct
+           defaults for the (possibly) new atm procs.
+
+       12) The attribute 'constraints' allows to specify constraints on values. Valid constraints
+           are lt, le, ne, gt, ge, and mod. Except the latter (which has slightly different syntax,
+           see below), the syntax is "$op value", to enforce '$param $op value'.
+           Multiple constrained are separated by ';'. Examples:
+             - constraints="ge 0; ne 4" means the value V must satisfy V>=0 && V!=4.
+             - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
+             - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
   -->
 
-  <file name="data/scream_input.yaml" format="yaml">
-    <Atmosphere__Driver>
-      <Atmosphere__Processes>
-        <Number__of__Entries>6</Number__of__Entries>
-        <Schedule__Type>Sequential</Schedule__Type>
-        <Process__0>
-          <Process__Name>Homme</Process__Name>
-          <Enable__Postcondition__Checks>True</Enable__Postcondition__Checks>
-          <Enable__Precondition__Checks>True</Enable__Precondition__Checks>
-          <Grid>Dynamics</Grid>
-          <Vertical__Coordinate__Filename>${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Vertical__Coordinate__Filename>
-          <Vertical__Coordinate__Filename COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Vertical__Coordinate__Filename>
-          <Moisture>moist</Moisture>
-        </Process__0>
-        <Process__1>
-          <Process__Name>SHOC</Process__Name>
-          <Enable__Postcondition__Checks>True</Enable__Postcondition__Checks>
-          <Enable__Precondition__Checks>True</Enable__Precondition__Checks>
-          <Grid>Physics GLL</Grid>
-        </Process__1>
-        <Process__2>
-          <Process__Name>CldFraction</Process__Name>
-          <Enable__Postcondition__Checks>True</Enable__Postcondition__Checks>
-          <Enable__Precondition__Checks>True</Enable__Precondition__Checks>
-          <Grid>Physics GLL</Grid>
-        </Process__2>
-        <Process__3>
-          <Process__Name>SPA</Process__Name>
-          <Enable__Postcondition__Checks>True</Enable__Postcondition__Checks>
-          <Enable__Precondition__Checks>True</Enable__Precondition__Checks>
-          <Grid>Physics GLL</Grid>
-          <SPA__Remap__File>none</SPA__Remap__File>
-          <SPA__Data__File>${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_scream.nc</SPA__Data__File>
-        </Process__3>
-        <Process__4>
-          <Process__Name>P3</Process__Name>
-          <Enable__Postcondition__Checks>True</Enable__Postcondition__Checks>
-          <Enable__Precondition__Checks>True</Enable__Precondition__Checks>
-          <Grid>Physics GLL</Grid>
-        </Process__4>
-        <Process__5>
-          <Process__Name>RRTMGP</Process__Name>
-          <Enable__Postcondition__Checks>True</Enable__Postcondition__Checks>
-          <Enable__Precondition__Checks>True</Enable__Precondition__Checks>
-          <Grid>Physics GLL</Grid>
-          <active_gases>h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
-          <Orbital__Year>-9999</Orbital__Year>
-          <Orbital__Eccentricity>-9999</Orbital__Eccentricity>
-          <Orbital__Eccentricity COMPSET=".*SCREAM%AQUA.*">0</Orbital__Eccentricity>
-          <Orbital__Obliquity>-9999</Orbital__Obliquity>
-          <Orbital__Obliquity COMPSET=".*SCREAM%AQUA.*">0</Orbital__Obliquity>
-          <Orbital__MVELP>-9999</Orbital__MVELP>
-          <Orbital__MVELP COMPSET=".*SCREAM%AQUA.*">0</Orbital__MVELP>
-        </Process__5>
-      </Atmosphere__Processes>
-      <Grids__Manager>
-        <Type>Dynamics Driven</Type>
-        <Reference__Grid>Physics GLL</Reference__Grid>
-        <Dynamics__Driven>
-          <Dynamics__Namelist__File__Name>./data/namelist.nl</Dynamics__Namelist__File__Name>
-        </Dynamics__Driven>
-      </Grids__Manager>
-      <Initial__Conditions>
-        <Restart__Casename>${CASE}</Restart__Casename>
-        <Physics__GLL>
-          <Filename>${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Filename>
-          <Filename COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Filename>
-          <T_mid_prev>T_mid</T_mid_prev>
-          <horiz_winds_prev>horiz_winds</horiz_winds_prev>
-          <w_int>0.0</w_int>
-          <w_int_prev>0.0</w_int_prev>
-        </Physics__GLL>
-      </Initial__Conditions>
-      <Scorpio>
-        <Output__YAML__Files>data/scream_output.yaml, </Output__YAML__Files>
-        <Model__Restart>
-          <Casename>${CASE}</Casename>
-          <Output__Control>
-            <Frequency>${REST_N}</Frequency>
-            <Frequency__Units>INVALID</Frequency__Units>
-            <Frequency__Units REST_OPTION="nstep*">Steps</Frequency__Units>
-          </Output__Control>
-        </Model__Restart>
-      </Scorpio>
-    </Atmosphere__Driver>
-    <SCREAM>
-      <Start__Date>${RUN_STARTDATE}</Start__Date>
-      <Input__Files>
-        ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-sw-g224-2018-12-04.nc,
-        ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-lw-g256-2018-12-04.nc,
-        ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc,
-        ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc,
-        ${DIN_LOC_ROOT}/atm/scream/tables/p3_lookup_table_1.dat-v4.1.1,
-        ${DIN_LOC_ROOT}/atm/scream/tables/mu_r_table_vals.dat8,
-        ${DIN_LOC_ROOT}/atm/scream/tables/revap_table_vals.dat8,
-        ${DIN_LOC_ROOT}/atm/scream/tables/vn_table_vals.dat8,
-        ${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals.dat8,
-        ${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne4_scream.nc
-    </Input__Files>
-    </SCREAM>
-  </file>
+  <atmosphere_processes_defaults>
 
-  <file name="data/namelist.nl" format="nml">
-    <ctl_nl>
-      <cubed_sphere_map>0</cubed_sphere_map>
-      <disable_diagnostics>False</disable_diagnostics>
-      <dt_remap_factor>1</dt_remap_factor>
-      <dt_tracer_factor>1</dt_tracer_factor>
-      <hypervis_order>2</hypervis_order>
-      <hypervis_scaling>3.0</hypervis_scaling>
-      <hypervis_subcycle>1</hypervis_subcycle>
-      <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
-      <nu>3.4e-08</nu>
-      <nu_top>250000.0</nu_top>
-      <se_ftype>0</se_ftype>
-      <se_geometry>sphere</se_geometry>
-      <se_limiter_option>9</se_limiter_option>
-      <se_ne>4</se_ne>
-      <se_nsplit>-1</se_nsplit>
-      <se_partmethod>4</se_partmethod>
-      <se_topology>cube</se_topology>
-      <se_tstep>300</se_tstep>
-      <statefreq>9999</statefreq>
-      <theta_advect_form>1</theta_advect_form>
-      <theta_hydrostatic_mode>True</theta_hydrostatic_mode>
-      <tstep_type>5</tstep_type>
-      <vert_remap_q_alg>10</vert_remap_q_alg>
-    </ctl_nl>
-  </file>
+    <!--
+      List of atm procs. You can form processes groups by using parentheses,
+      or by giving the group a name, and adding a subsection that inherit
+      from atm_proc_group. atm_procs_list itself *must* represent a group,
+      so it must be of the form (a,b,...).
+      NOTE: *CANNOT* be changed.
+    -->
+    <!-- <atm_procs_list>(homme,((shoc,cldFraction,spa,p3),rrtmgp))</atm_procs_list> -->
+    <atm_procs_list locked="true">(homme,physics)</atm_procs_list>
+
+    <!-- Basic options for each atm process -->
+    <atm_proc_base>
+      <Num__Subcycle__Iterations constraints="gt 0">1</Num__Subcycle__Iterations>
+      <Enable__Precondition__Checks type="logical">true</Enable__Precondition__Checks>
+      <Enable__Postcondition__Checks type="logical">true</Enable__Postcondition__Checks>
+    </atm_proc_base>
+
+    <!-- Basic options for each atm process group -->
+    <atm_proc_group inherit="atm_proc_base">
+      <atm_procs_list>ERROR_NO_ATM_PROCS</atm_procs_list>
+      <Type>Group</Type>
+      <Schedule__Type>Sequential</Schedule__Type>
+    </atm_proc_group>
+
+    <!-- Basic options for each "physics" atm process -->
+    <physics_proc_base inherit="atm_proc_base">
+      <Grid>Physics GLL</Grid>
+    </physics_proc_base>
+
+    <!-- Homme dynamics -->
+    <homme inherit="atm_proc_base">
+      <Grid>Dynamics</Grid>
+      <Vertical__Coordinate__Filename>UNSET</Vertical__Coordinate__Filename>
+      <Vertical__Coordinate__Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Vertical__Coordinate__Filename>
+      <Vertical__Coordinate__Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220503.nc</Vertical__Coordinate__Filename>
+      <Vertical__Coordinate__Filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220503.nc</Vertical__Coordinate__Filename>
+      <Vertical__Coordinate__Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220505.nc</Vertical__Coordinate__Filename>
+      <Vertical__Coordinate__Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Vertical__Coordinate__Filename>
+      <Moisture>moist</Moisture>
+    </homme>
+
+    <!-- P3 microphysics -->
+    <p3 inherit="physics_proc_base"/>
+
+    <!-- SHOC macrophysics -->
+    <shoc inherit="physics_proc_base"/>
+
+    <!-- CLD fraction -->
+    <cldFraction inherit="physics_proc_base"/>
+
+    <!-- Simple Prescribed Aerosols (SPA) -->
+    <spa inherit="physics_proc_base">
+      <SPA__Remap__File>UNSET</SPA__Remap__File>
+      <SPA__Remap__File hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/map_ne30_to_ne4_mono_20220502.nc</SPA__Remap__File>
+      <SPA__Remap__File hgrid="ne30np4">none</SPA__Remap__File>
+      <SPA__Remap__File hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne120np4_mono_20220502.nc</SPA__Remap__File>
+      <SPA__Remap__File hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne512np4_mono_20220506.nc</SPA__Remap__File>
+      <SPA__Data__File>${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_20220428.nc</SPA__Data__File>
+    </spa>
+
+    <!-- Radiation -->
+    <rrtmgp inherit="physics_proc_base">
+      <active_gases>h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
+      <Orbital__Year>-9999</Orbital__Year>
+      <Orbital__Eccentricity>-9999</Orbital__Eccentricity>
+      <Orbital__Eccentricity COMPSET=".*SCREAM%AQUA.*">0</Orbital__Eccentricity>
+      <Orbital__Obliquity>-9999</Orbital__Obliquity>
+      <Orbital__Obliquity COMPSET=".*SCREAM%AQUA.*">0</Orbital__Obliquity>
+      <Orbital__MVELP>-9999</Orbital__MVELP>
+      <Orbital__MVELP COMPSET=".*SCREAM%AQUA.*">0</Orbital__MVELP>
+    </rrtmgp>
+
+    <mac_aero_mic inherit="atm_proc_group">
+      <atm_procs_list>(shoc,cldFraction,spa,p3)</atm_procs_list>
+      <Num__Subcycle__Iterations>6</Num__Subcycle__Iterations>
+    </mac_aero_mic>
+
+    <physics inherit="atm_proc_group">
+      <atm_procs_list>(mac_aero_mic,rrtmgp)</atm_procs_list>
+    </physics>
+  </atmosphere_processes_defaults>
+
+  <!-- Grids manager specs -->
+  <Grids__Manager>
+    <Type>Dynamics Driven</Type>
+    <Reference__Grid>Physics GLL</Reference__Grid>
+    <Dynamics__Namelist__File__Name>./data/namelist.nl</Dynamics__Namelist__File__Name>
+  </Grids__Manager>
+
+  <!-- List of nc files for loading inputs on specified grids -->
+  <Initial__Conditions>
+    <Filename>UNSET</Filename>
+    <Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc</Filename>
+    <Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220503.nc</Filename>
+    <Filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220503.nc</Filename>
+    <Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220505.nc</Filename>
+    <Filename COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Filename>
+    <Restart__Casename>${CASE}</Restart__Casename>
+  </Initial__Conditions>
+
+  <!-- List of yaml files containing I/O output specs -->
+  <Scorpio>
+    <Output__YAML__Files type="array(string)">data/scream_output.yaml</Output__YAML__Files>
+    <Model__Restart>
+      <Casename>${CASE}</Casename>
+      <Output__Control>
+        <Frequency>${REST_N}</Frequency>
+        <Frequency REST_OPTION="none">0</Frequency>
+        <Frequency__Units>INVALID</Frequency__Units>
+        <Frequency__Units REST_OPTION="nstep*">Steps</Frequency__Units>
+      </Output__Control>
+    </Model__Restart>
+  </Scorpio>
+
+  <!-- Debug options for scream -->
+  <Debug>
+    <Atmosphere__DAG__Verbosity__Level>0</Atmosphere__DAG__Verbosity__Level>
+    <Atm__Log__Level valid_values="trace,debug,info,warn,error">info</Atm__Log__Level>
+  </Debug>
+
+  <!--
+    List of input files that CIME needs to ensure to be present. If not present,
+    CIME will automatically download them from the E3SM data server.
+  -->
+  <input_files>
+    ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-sw-g224-2018-12-04.nc,
+    ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-lw-g256-2018-12-04.nc,
+    ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc,
+    ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc,
+    ${DIN_LOC_ROOT}/atm/scream/tables/p3_lookup_table_1.dat-v4.1.1,
+    ${DIN_LOC_ROOT}/atm/scream/tables/mu_r_table_vals.dat8,
+    ${DIN_LOC_ROOT}/atm/scream/tables/revap_table_vals.dat8,
+    ${DIN_LOC_ROOT}/atm/scream/tables/vn_table_vals.dat8,
+    ${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals.dat8,
+    ${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_20220428.nc,
+    ${DIN_LOC_ROOT}/atm/scream/init/map_ne30_to_ne4_mono_20220502.nc,
+    <!-- ${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne120np4_mono_20220502.nc, -->
+    <!-- ${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne512np4_mono_20220506.nc, -->
+    <!-- ${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220505.nc, -->
+    <!-- ${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220503.nc, -->
+    ${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220503.nc,
+    ${DIN_LOC_ROOT}/atm/scream/init/init_ne4np4.nc
+  </input_files>
+
+  <!-- Homme control namelist -->
+  <ctl_nl>
+    <cubed_sphere_map>0</cubed_sphere_map>
+    <disable_diagnostics>False</disable_diagnostics>
+    <dt_remap_factor constraints="ge 1">2</dt_remap_factor>
+    <dt_tracer_factor constraints="ge 1">1</dt_tracer_factor>
+    <hypervis_order>2</hypervis_order>
+    <hypervis_scaling>3.0</hypervis_scaling>
+    <hypervis_subcycle>1</hypervis_subcycle>
+    <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
+    <hypervis_subcycle_q>1</hypervis_subcycle_q>
+    <nu>3.4e-08</nu>
+    <nu_top>UNSET</nu_top>
+    <nu_top hgrid="ne4np4">250000.0</nu_top>
+    <nu_top hgrid="ne30np4">250000.0</nu_top>
+    <nu_top hgrid="ne120np4">100000.0</nu_top>
+    <nu_top hgrid="ne256np4">4.0e4</nu_top>
+    <nu_top hgrid="ne512np4">2.0e4</nu_top>
+    <nu_top hgrid="ne1024np4">1.0e4</nu_top>
+    <se_ftype valid_values="0,2">0</se_ftype>
+    <se_geometry>sphere</se_geometry>
+    <se_limiter_option>9</se_limiter_option>
+    <se_ne>UNSET</se_ne>
+    <se_ne hgrid="ne4np4" constraints="ge 2">4</se_ne>
+    <se_ne hgrid="ne30np4" constraints="ge 2">30</se_ne>
+    <se_ne hgrid="ne120np4" constraints="ge 2">120</se_ne>
+    <se_ne hgrid="ne256np4" constraints="ge 2">256</se_ne>
+    <se_ne hgrid="ne512np4" constraints="ge 2">512</se_ne>
+    <se_ne hgrid="ne1024np4" constraints="ge 2">1024</se_ne>
+    <se_nsplit>-1</se_nsplit>
+    <se_partmethod>4</se_partmethod>
+    <se_topology>cube</se_topology>
+    <se_tstep>UNSET</se_tstep>
+    <se_tstep hgrid="ne4np4" constraints="gt 0">600</se_tstep>
+    <se_tstep hgrid="ne30np4" constraints="gt 0">300</se_tstep>
+    <se_tstep hgrid="ne120np4" constraints="gt 0">75</se_tstep>
+    <se_tstep hgrid="ne256np4" constraints="gt 0">33.33333333333</se_tstep>
+    <se_tstep hgrid="ne512np4" constraints="gt 0">16.6666666666666</se_tstep>
+    <se_tstep hgrid="ne1024np4" constraints="gt 0">8.3333333333333</se_tstep>
+    <statefreq>9999</statefreq>
+    <theta_advect_form>1</theta_advect_form>
+    <theta_hydrostatic_mode>True</theta_hydrostatic_mode>
+    <tstep_type>5</tstep_type>
+    <vert_remap_q_alg>10</vert_remap_q_alg>
+    <transport_alg>0</transport_alg>
+  </ctl_nl>
 
 </namelist_defaults>

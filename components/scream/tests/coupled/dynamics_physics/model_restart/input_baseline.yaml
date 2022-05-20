@@ -12,41 +12,36 @@ Time Stepping:
   Case Start Date: [2021, 10, 12]    # Year, Month, Day
 
 Initial Conditions:
+  Filename: ${SCREAM_DATA_DIR}/init/homme_physics_ne2np4.nc
   Restart Run: false
   Physics GLL:
-    Filename: ${SCREAM_DATA_DIR}/init/homme_physics_ne2np4.nc
     aero_g_sw: 0.0
     aero_ssa_sw: 0.0
     aero_tau_sw: 0.0
     aero_tau_lw: 0.0
 
-Atmosphere Processes:
-  Number of Entries: 5
+atmosphere_processes:
+  atm_procs_list: (homme,shoc,CldFraction,p3,rrtmgp)
   Schedule Type: Sequential
-  Process 0:
+  homme:
     Process Name: Homme
     Enable Precondition Checks: false
     Vertical Coordinate Filename: ${SCREAM_DATA_DIR}/init/homme_physics_ne2np4.nc
     Moisture: moist
-  Process 1:
-    Process Name: SHOC
+  shoc:
     Grid: Physics GLL
-  Process 2:
-    Process Name: CldFraction
+  CldFraction:
     Grid: Physics GLL
-  Process 3:
-    Process Name: P3
+  p3:
     Grid: Physics GLL
-  Process 4:
-    Process Name: RRTMGP
+  rrtmgp:
     Grid: Physics GLL
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
 
 Grids Manager:
   Type: Dynamics Driven
   Reference Grid: Physics GLL
-  Dynamics Driven:
-    Dynamics Namelist File Name: namelist.nl
+  Dynamics Namelist File Name: namelist.nl
 
 # List all the yaml files with the output parameters
 Scorpio:

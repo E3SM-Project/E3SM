@@ -94,13 +94,8 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
     ekat::ParameterList scream_params("Scream Parameters");
     parse_yaml_file (input_yaml_file, scream_params);
 
-    ekat::error::runtime_check(scream_params.isSublist("Atmosphere Driver"),
-         "Error! Sublist 'Atmosphere Driver' not found inside '" +
-         std::string(input_yaml_file) + "'.\n");
-
-    auto& ad_params = scream_params.sublist("Atmosphere Driver");
-    ad_params.set<std::string>("Atm Log File",atm_log_file);
-    ad_params.set<bool>("Standalone",false);
+    scream_params.sublist("Debug").set<std::string>("Atm Log File",atm_log_file);
+    scream_params.sublist("Debug").set<bool>("Standalone",false);
 
     // Need to register products in the factories *before* we attempt to create any.
     // In particular, register all atm processes, and all grids managers.
@@ -111,7 +106,7 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
     auto& ad = c.create<AtmosphereDriver>();
 
     ad.set_comm(atm_comm);
-    ad.set_params(ad_params);
+    ad.set_params(scream_params);
     ad.init_scorpio(atm_id);
     ad.create_atm_processes ();
     ad.create_grids ();

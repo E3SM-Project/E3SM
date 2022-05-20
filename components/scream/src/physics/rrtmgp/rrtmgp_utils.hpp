@@ -4,6 +4,12 @@
 #include "physics/share/physics_constants.hpp"
 #include "cpp/rrtmgp_const.h"
 #include "YAKL.h"
+#include "YAKL_Bounds_fortran.h"
+
+using yakl::intrinsics::maxval;
+using yakl::intrinsics::minval;
+using yakl::intrinsics::count;
+using yakl::intrinsics::sum;
 
 namespace scream {
     namespace rrtmgp {
@@ -32,7 +38,7 @@ namespace scream {
             });
         }
 
-        bool radiation_do(const int irad, const int nstep) {
+        inline bool radiation_do(const int irad, const int nstep) {
             // If irad == 0, then never do radiation;
             // Otherwise, we always call radiation at the first step,
             // and afterwards we do radiation if the timestep is divisible
@@ -43,6 +49,35 @@ namespace scream {
                 return ( (nstep == 0) || (nstep % irad == 0) );
             }
         }
+
+
+        // Verify that array only contains values within valid range, and if not
+        // report min and max of array
+        template <class T> bool check_range(T x, Real xmin, Real xmax, std::string msg, std::ostream& out=std::cout) {
+            bool pass = true;
+            auto _xmin = minval(x);
+            auto _xmax = maxval(x);
+            if (_xmin < xmin or _xmax > xmax) {
+                // How many outside range?
+                auto bad_mask = x.createDeviceCopy();
+                memset(bad_mask, 0);
+                yakl::c::parallel_for(yakl::c::SimpleBounds<1>(x.totElems()), YAKL_LAMBDA (int i) {
+                  if (x.data()[i] < xmin or x.data()[i] > xmax) {
+                      bad_mask.data()[i] = 1;
+                  }
+                });
+                auto num_bad = sum(bad_mask);
+                pass = false;
+                out << msg << ": "
+                    << num_bad << " values outside range "
+                    << "[" << xmin << "," << xmax << "]"
+                    << "; minval = " << _xmin 
+                    << "; maxval = " << _xmax << "\n";
+            }
+            return pass;
+        }
+
     }
+
 }
 #endif

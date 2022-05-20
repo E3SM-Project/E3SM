@@ -391,12 +391,12 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   //       check, which has one LB for check and one LB for repair.
   const Real tol = -1e-17;
   const auto& Q = *get_group_out("Q",rgn).m_bundle;
-  auto lb_check = std::make_shared<FieldLowerBoundCheck>(Q,tol,false);
-  auto lb_repair = std::make_shared<FieldPositivityCheck>(Q,true);
+  auto lb_check = std::make_shared<FieldLowerBoundCheck>(Q,m_ref_grid,tol,false);
+  auto lb_repair = std::make_shared<FieldPositivityCheck>(Q,m_ref_grid,true);
   add_postcondition_check<CheckAndRepairWrapper>(lb_check,lb_repair);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140.0, 500.0,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("horiz_winds"),-400.0, 400.0,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("ps"),40000.0, 110000.0,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_ref_grid,140.0, 500.0,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("horiz_winds"),m_ref_grid,-400.0, 400.0,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("ps"),m_ref_grid,40000.0, 110000.0,false);
 }
 
 void HommeDynamics::run_impl (const int dt)
@@ -1016,6 +1016,7 @@ void HommeDynamics::initialize_homme_state () {
   using PF = PhysicsFunctions<DefaultDevice>;
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
   using EOS = Homme::EquationOfState;
+  using WS = ekat::WorkspaceManager<Pack,DefaultDevice>;
 
   // Extents
   constexpr int NGP  = HOMMEXX_NP;
@@ -1043,7 +1044,7 @@ void HommeDynamics::initialize_homme_state () {
   const auto phi_int_view = m_helper_fields.at("phi_int_dyn").get_view<Pack*****>();
 
   // Need two temporaries, for pi_mid and pi_int
-  ekat::WorkspaceManager<Pack,DefaultDevice> wsm(npacks_int,2,policy);
+  WS wsm(npacks_int,2,policy);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int ie  =  team.league_rank() / (NGP*NGP);
     const int igp = (team.league_rank() / NGP) % NGP;
@@ -1051,8 +1052,8 @@ void HommeDynamics::initialize_homme_state () {
 
     // Compute p_mid
     auto ws = wsm.get_workspace(team);
-    auto p_int = ws.take("p_int");
-    auto p_mid = ws.take("p_mid");
+    ekat::Unmanaged<WS::view_1d<Pack> > p_int, p_mid;
+    ws.template take_many_and_reset<2>({"p_int", "p_mid"}, {&p_int, &p_mid});
 
     auto dp = ekat::subview(dp_view,ie,n0,igp,jgp);
 
@@ -1078,10 +1079,6 @@ void HommeDynamics::initialize_homme_state () {
     };
     auto phi_int = ekat::subview(phi_int_view,ie,n0,igp,jgp);
     ColOps::column_scan<false>(team,nlevs,dphi,phi_int,phis_dyn_view(ie,igp,jgp));
-
-    // Release the scratch mem
-    ws.release(p_int);
-    ws.release(p_mid);
   });
 
   // Update internal fields time stamp

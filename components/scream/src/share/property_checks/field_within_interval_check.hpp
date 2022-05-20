@@ -2,11 +2,10 @@
 #define SCREAM_FIELD_WITHIN_INTERVAL_CHECK_HPP
 
 #include "share/property_checks/property_check.hpp"
+#include "share/grid/abstract_grid.hpp"
 #include "share/field/field.hpp"
 
 #include "ekat/util/ekat_math_utils.hpp"
-
-#include <sstream>
 
 namespace scream
 {
@@ -24,20 +23,15 @@ public:
   // this class will overwrite values out of bounds with the proper bound
   // (upper if v>upper_bound and lower if v<lower_bound).
   FieldWithinIntervalCheck (const Field& field,
+                            const std::shared_ptr<const AbstractGrid>& grid,
                             const double lower_bound,
                             const double upper_bound,
                             const bool can_repair = false);
 
   // The name of the property check
-  std::string name () const override {
-    // NOTE: std::to_string does not do a good job with small numbers (like 1e-9).
-    std::stringstream ss;
-    ss << fields().front().name()
-       << " within interval [" << m_lower_bound << ", " << m_upper_bound << "]";
-    return ss.str();
-  }
+  std::string name () const override;
 
-  bool check() const override;
+  CheckResult check() const override;
 
 // CUDA requires the parent fcn of a KOKKOS_LAMBDA to have public access
 #ifndef KOKKOS_ENABLE_CUDA
@@ -45,7 +39,7 @@ protected:
 #endif
 
   template<typename ST>
-  bool check_impl () const;
+  CheckResult check_impl () const;
 
   template<typename ST>
   void repair_impl() const;
@@ -56,6 +50,8 @@ protected:
 
   // Lower and upper bounds.
   double m_lower_bound, m_upper_bound;
+
+  std::shared_ptr<const AbstractGrid>   m_grid;
 };
 
 } // namespace scream

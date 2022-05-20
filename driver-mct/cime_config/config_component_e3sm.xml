@@ -379,14 +379,16 @@
       <value compset=".+" grid="a%0.23x0.31">96</value>
       <value compset=".+" grid="a%ne4np4">12</value>
       <value compset=".+" grid="a%ne4np4.pg2">24</value>
+      <value compset="_SCREAM.*" grid="a%ne4np4">24</value>
       <value compset=".+" grid="a%ne11np4">12</value>
+      <value compset="_SCREAM.*" grid="a%ne11np4">24</value>
       <value compset=".+" grid="a%ne45np4">72</value>
       <value compset=".+" grid="a%ne60np4">96</value>
       <value compset=".+" grid="a%ne120np4">96</value>
       <value compset=".+" grid="a%ne240np4">144</value>
-      <value compset=".+" grid="a%ne256np4">288</value>
-      <value compset=".+" grid="a%ne512np4">576</value>
-      <value compset=".+" grid="a%ne1024np4">1152</value>
+      <value compset=".+" grid="a%ne256np4">144</value>
+      <value compset=".+" grid="a%ne512np4">432</value>
+      <value compset=".+" grid="a%ne1024np4">864</value>
       <value compset=".+" grid="a%ne0np4_arm_x8v3" >144</value>
       <value compset=".+" grid="a%ne0np4_conus_x4v1" >96</value>
       <value compset=".+" grid="a%ne0np4_northamericax4v1" >48</value>
@@ -408,8 +410,6 @@
       <!-- a shorter timestep is needed for stability in MMF  -->
       <!-- Use for all "low res" grids (i.e. ne4, ne30, ne45) -->
       <value compset="_EAM%MMF">72</value>
-      <!-- Shorter timestep needed for SCREAMv1 because we are not substepping SHOC and P3 yet -->
-      <value compset="_SCREAM.*">288</value>
     </values>
     <group>run_coupling</group>
     <file>env_run.xml</file>

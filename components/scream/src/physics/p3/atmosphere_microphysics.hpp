@@ -363,6 +363,7 @@ protected:
   // WSM for internal local variables
   ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr;
 
+  std::shared_ptr<const AbstractGrid>   m_grid;
   // Iteration count is internal to P3 and keeps track of the number of times p3_main has been called.
   // infrastructure.it is passed as an arguement to p3_main and is used for identifying which iteration an error occurs.
 

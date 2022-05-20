@@ -75,6 +75,9 @@
 <se_lx>50000</se_lx>
 <se_ly>50000</se_ly>
 
+<!-- Use all or nothing ice cloud fraction scheme -->
+<cldfrc_iceopt> 7 </cldfrc_iceopt>
+
 <!-- Prescribed aerosol options -->
 <use_hetfrz_classnuc>.false.</use_hetfrz_classnuc>
 <aerodep_flx_type>'CYCLICAL'</aerodep_flx_type>

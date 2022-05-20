@@ -49,11 +49,11 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   using namespace ShortFieldTagsNames;
 
   const auto& grid_name = m_params.get<std::string>("Grid");
-  auto grid = grids_manager->get_grid(grid_name);
-  m_ncol = grid->get_num_local_dofs();
-  m_nlay = grid->get_num_vertical_levels();
-  m_lat  = grid->get_geometry_data("lat");
-  m_lon  = grid->get_geometry_data("lon");
+  m_grid = grids_manager->get_grid(grid_name);
+  m_ncol = m_grid->get_num_local_dofs();
+  m_nlay = m_grid->get_num_vertical_levels();
+  m_lat  = m_grid->get_geometry_data("lat");
+  m_lon  = m_grid->get_geometry_data("lon");
 
   // Set up dimension layouts
   FieldLayout scalar2d_layout     { {COL   }, {m_ncol    } };
@@ -64,42 +64,47 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
 
   constexpr int ps = SCREAM_SMALL_PACK_SIZE;
   // Set required (input) fields here
-  add_field<Required>("p_mid" , scalar3d_layout_mid, Pa, grid->name(), ps);
-  add_field<Required>("p_int", scalar3d_layout_int, Pa, grid->name(), ps);
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid->name(), ps);
-  add_field<Required>("sfc_alb_dir_vis", scalar2d_layout, nondim, grid->name());
-  add_field<Required>("sfc_alb_dir_nir", scalar2d_layout, nondim, grid->name());
-  add_field<Required>("sfc_alb_dif_vis", scalar2d_layout, nondim, grid->name());
-  add_field<Required>("sfc_alb_dif_nir", scalar2d_layout, nondim, grid->name());
-  add_field<Required>("qc", scalar3d_layout_mid, kgkg, grid->name(), ps);
-  add_field<Required>("qi", scalar3d_layout_mid, kgkg, grid->name(), ps);
-  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid->name(), ps);
-  add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid->name(), ps);
-  add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid->name(), ps);
-  add_field<Required>("qv",scalar3d_layout_mid,kgkg,grid->name(), ps);
-  add_field<Required>("surf_lw_flux_up",scalar2d_layout,W/(m*m),grid->name());
+  add_field<Required>("p_mid" , scalar3d_layout_mid, Pa, grid_name, ps);
+  add_field<Required>("p_int", scalar3d_layout_int, Pa, grid_name, ps);
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name, ps);
+  // WARNING! We are switch surface albedo variables to "Updated" to allow rrtmgp
+  // property checks to repair them as a precondition check.  TODO: Change back
+  // to "Required" when surface coupling is it's own process and can handle repair
+  // locally.
+  add_field<Updated>("sfc_alb_dir_vis", scalar2d_layout, nondim, grid_name);
+  add_field<Updated>("sfc_alb_dir_nir", scalar2d_layout, nondim, grid_name);
+  add_field<Updated>("sfc_alb_dif_vis", scalar2d_layout, nondim, grid_name);
+  add_field<Updated>("sfc_alb_dif_nir", scalar2d_layout, nondim, grid_name);
+  // End WARNING Message
+  add_field<Required>("qc", scalar3d_layout_mid, kgkg, grid_name, ps);
+  add_field<Required>("qi", scalar3d_layout_mid, kgkg, grid_name, ps);
+  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name, ps);
+  add_field<Required>("eff_radius_qc", scalar3d_layout_mid, micron, grid_name, ps);
+  add_field<Required>("eff_radius_qi", scalar3d_layout_mid, micron, grid_name, ps);
+  add_field<Required>("qv",scalar3d_layout_mid,kgkg,grid_name, ps);
+  add_field<Required>("surf_lw_flux_up",scalar2d_layout,W/(m*m),grid_name);
   // Set of required gas concentration fields
   for (auto& it : m_gas_names) {
     if (it == "h2o") { /* Special case where water vapor is called h2o in radiation */
       // do nothing, qv has already been added.
     } else {
-      add_field<Required>(it,scalar3d_layout_mid,kgkg,grid->name(), ps);
+      add_field<Required>(it,scalar3d_layout_mid,kgkg,grid_name, ps);
     }
   }
   // Required aerosol optical properties from SPA
-  add_field<Required>("aero_tau_sw", scalar3d_swband_layout, nondim, grid->name(), ps);
-  add_field<Required>("aero_ssa_sw", scalar3d_swband_layout, nondim, grid->name(), ps);
-  add_field<Required>("aero_g_sw"  , scalar3d_swband_layout, nondim, grid->name(), ps);
-  add_field<Required>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid->name(), ps);
+  add_field<Required>("aero_tau_sw", scalar3d_swband_layout, nondim, grid_name, ps);
+  add_field<Required>("aero_ssa_sw", scalar3d_swband_layout, nondim, grid_name, ps);
+  add_field<Required>("aero_g_sw"  , scalar3d_swband_layout, nondim, grid_name, ps);
+  add_field<Required>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name, ps);
 
   // Set computed (output) fields
-  add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid->name(), ps);
-  add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid->name(), ps);
-  add_field<Computed>("SW_flux_up", scalar3d_layout_int, Wm2, grid->name(), ps);
-  add_field<Computed>("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid->name(), ps);
-  add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid->name(), ps);
-  add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid->name(), ps);
-  add_field<Computed>("rad_heating_pdel", scalar3d_layout_mid, Pa*K/s, grid->name(), ps);
+  add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid_name, ps);
+  add_field<Computed>("SW_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
+  add_field<Computed>("SW_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
+  add_field<Computed>("SW_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name, ps);
+  add_field<Computed>("LW_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
+  add_field<Computed>("LW_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
+  add_field<Computed>("rad_heating_pdel", scalar3d_layout_mid, Pa*K/s, grid_name, ps);
 
   // Translation of variables from EAM
   // --------------------------------------------------------------
@@ -112,12 +117,12 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // netsw      sfc_flux_sw_net    net (down - up) SW flux at surface
   // flwds      sfc_flux_lw_dn     downwelling LW flux at surface
   // --------------------------------------------------------------
-  add_field<Computed>("sfc_flux_dir_nir", scalar2d_layout, Wm2, grid->name());
-  add_field<Computed>("sfc_flux_dir_vis", scalar2d_layout, Wm2, grid->name());
-  add_field<Computed>("sfc_flux_dif_nir", scalar2d_layout, Wm2, grid->name());
-  add_field<Computed>("sfc_flux_dif_vis", scalar2d_layout, Wm2, grid->name());
-  add_field<Computed>("sfc_flux_sw_net" , scalar2d_layout, Wm2, grid->name());
-  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d_layout, Wm2, grid->name());
+  add_field<Computed>("sfc_flux_dir_nir", scalar2d_layout, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_dir_vis", scalar2d_layout, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_dif_nir", scalar2d_layout, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_dif_vis", scalar2d_layout, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_sw_net" , scalar2d_layout, Wm2, grid_name);
+  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d_layout, Wm2, grid_name);
 }  // RRTMGPRadiation::set_grids
 
 size_t RRTMGPRadiation::requested_buffer_size_in_bytes() const
@@ -258,6 +263,10 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   // Determine whether or not we are using a fixed solar zenith angle (positive value)
   m_fixed_solar_zenith_angle = m_params.get<Real>("Fixed Solar Zenith Angle", -9999);
 
+  // Whether or not to do MCICA subcolumn sampling
+  m_do_subcol_sampling = m_params.get<bool>("do_subcol_sampling",false);
+  EKAT_REQUIRE_MSG(not m_do_subcol_sampling, "Error! RRTMGP does not yet support do_subcol_sampling = true");
+
   // Initialize yakl
   if(!yakl::isInitialized()) { yakl::init(); }
 
@@ -279,12 +288,11 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
 
   // Set property checks for fields in this process
 
-  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140.0, 500.0,false);
-  add_precondition_check<FieldWithinIntervalCheck>(get_field_in("sfc_alb_dir_vis"),0.0,1.0,false);
-  add_precondition_check<FieldWithinIntervalCheck>(get_field_in("sfc_alb_dir_nir"),0.0,1.0,false);
-  add_precondition_check<FieldWithinIntervalCheck>(get_field_in("sfc_alb_dif_vis"),0.0,1.0,false);
-  add_precondition_check<FieldWithinIntervalCheck>(get_field_in("sfc_alb_dif_nir"),0.0,1.0,false);
-
+  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,140.0, 500.0,false);
+  add_precondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dir_vis"),m_grid,0.0,1.0,true);
+  add_precondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dir_nir"),m_grid,0.0,1.0,true);
+  add_precondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_vis"),m_grid,0.0,1.0,true);
+  add_precondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_nir"),m_grid,0.0,1.0,true);
 }
 
 // =========================================================================================
@@ -479,7 +487,6 @@ void RRTMGPRadiation::run_impl (const int dt) {
         p_del(i+1,k+1)       = d_pdel(i,k);
         qc(i+1,k+1)          = d_qc(i,k);
         qi(i+1,k+1)          = d_qi(i,k);
-        cldfrac_tot(i+1,k+1) = d_cldfrac_tot(i,k);
         rel(i+1,k+1)         = d_rel(i,k);
         rei(i+1,k+1)         = d_rei(i,k);
         p_lev(i+1,k+1)       = d_pint(i,k);
@@ -525,6 +532,40 @@ void RRTMGPRadiation::run_impl (const int dt) {
 
     gas_concs.set_vmr(name, tmp2d);
   }
+
+  // Set layer cloud fraction.
+  //
+  // If not doing subcolumn sampling for mcica, we want to make sure we use grid-mean
+  // condensate for computing cloud optical properties, because we are assuming the
+  // entire column is completely clear or cloudy. Thus, in this case we want to set
+  // cloud fraction to 0 or 1. Note that we could choose an alternative threshold
+  // criteria here, like qc + qi > 1e-5 or something.
+  //
+  // If we *are* doing subcolumn sampling for MCICA, then keep cloud fraction as input
+  // from cloud fraction parameterization, wherever that is computed.
+  auto do_subcol_sampling = m_do_subcol_sampling;
+  if (not do_subcol_sampling) {
+    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
+    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const int i = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+        if (d_cldfrac_tot(i,k) > 0) {
+          cldfrac_tot(i+1,k+1) = 1;
+        } else {
+          cldfrac_tot(i+1,k+1) = 0;
+        }
+      });
+    });
+  } else {
+    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
+    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const int i = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+        cldfrac_tot(i+1,k+1) = d_cldfrac_tot(i,k);
+      });
+    });
+  }
+  Kokkos::fence();
 
   // Compute layer cloud mass (per unit area)
   auto lwp = m_buffer.lwp;

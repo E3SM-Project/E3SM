@@ -29,14 +29,11 @@ namespace {
 
 using namespace scream;
 using namespace ekat::units;
-using input_type = AtmosphereInput;
 // Make sure packsize isn't bigger than the packsize for this machine, but not so big that we end up with only 1 pack.
 const int packsize = SCREAM_SMALL_PACK_SIZE;
 using Pack         = ekat::Pack<Real,packsize>;
 
 using KT = KokkosTypes<DefaultDevice>;
-template <typename S>
-using view_1d = typename KT::template view_1d<S>;
 template <typename S>
 using view_2d = typename KT::template view_2d<S>;
 
@@ -51,7 +48,9 @@ ekat::ParameterList get_in_params(const std::string& type,
                                   const util::TimeStamp& t0,
                                   const int dt, const int max_steps);
 
-view_2d<Real>::HostMirror get_diagnostic_input(const ekat::Comm& comm, const std::shared_ptr<GridsManager>& gm, const int time_index, const std::string& filename);
+view_2d<Real>::HostMirror
+get_diagnostic_input(const ekat::Comm& comm, const std::shared_ptr<GridsManager>& gm,
+                     const int time_index, const std::string& filename);
 
 class DiagTest : public AtmosphereDiagnostic
 {
@@ -250,7 +249,7 @@ TEST_CASE("input_output_basic","io")
 
 
   // Check instant output
-  input_type ins_input(ins_params,field_manager);
+  AtmosphereInput ins_input(ins_params,field_manager);
   ins_input.read_variables();
   f1.sync_to_host();
   f2.sync_to_host();
@@ -276,7 +275,7 @@ TEST_CASE("input_output_basic","io")
   reset_fields();
 
   // Check average output
-  input_type avg_input(avg_params,field_manager);
+  AtmosphereInput avg_input(avg_params,field_manager);
   avg_input.read_variables();
   f1.sync_to_host();
   f2.sync_to_host();
@@ -299,7 +298,7 @@ TEST_CASE("input_output_basic","io")
 
   // Check max output
   // The max should be equivalent to the instantaneous because this function is monotonically increasing.
-  input_type max_input(max_params,field_manager);
+  AtmosphereInput max_input(max_params,field_manager);
   max_input.read_variables();
   f1.sync_to_host();
   f2.sync_to_host();
@@ -316,7 +315,7 @@ TEST_CASE("input_output_basic","io")
   max_input.finalize();
   // Check min output
   // The min should be equivalent to the first step because this function is monotonically increasing.
-  input_type min_input(min_params,field_manager);
+  AtmosphereInput min_input(min_params,field_manager);
   min_input.read_variables();
   f1.sync_to_host();
   f2.sync_to_host();
@@ -334,7 +333,7 @@ TEST_CASE("input_output_basic","io")
   reset_fields();
 
   // Check multisnap output; note, tt starts at 1 instead of 0 to follow netcdf time dimension indexing.
-  input_type multi_input(multi_params,field_manager);
+  AtmosphereInput multi_input(multi_params,field_manager);
   for (int tt = 1; tt<=std::min(max_steps,10); tt++) {
     multi_input.read_variables(tt);
     f1.sync_to_host();
@@ -357,10 +356,9 @@ TEST_CASE("input_output_basic","io")
 
   // All Done 
   scorpio::eam_pio_finalize();
-} // TEST_CASE output_instance
-/* ----------------------------------*/
+}
 
-/*===================================================================================================================*/
+/*===================================================================================================*/
 std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> grid)
 {
   using namespace ShortFieldTagsNames;
@@ -436,17 +434,17 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
 
   return fm;
 }
-/*===================================================================================================================*/
+/*==========================================================================================================*/
 std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
 {
   ekat::ParameterList gm_params;
-  gm_params.sublist("Mesh Free").set("Number of Global Columns",num_gcols);
-  gm_params.sublist("Mesh Free").set("Number of Vertical Levels",num_levs);
+  gm_params.set("Number of Global Columns",num_gcols);
+  gm_params.set("Number of Vertical Levels",num_levs);
   auto gm = create_mesh_free_grids_manager(io_comm,gm_params);
   gm->build_grids(std::set<std::string>{"Point Grid"});
   return gm;
 }
-/*===================================================================================================================*/
+/*==================================================================================================*/
 ekat::ParameterList get_in_params(const std::string& type,
                                   const ekat::Comm& comm,
                                   const util::TimeStamp& t0,
@@ -469,10 +467,13 @@ ekat::ParameterList get_in_params(const std::string& type,
   in_params.set<vos_type>("Field Names",{"field_1", "field_2", "field_3", "field_packed"});
   return in_params;
 }
-/*===================================================================================================================*/
-view_2d<Real>::HostMirror get_diagnostic_input(const ekat::Comm& comm, const std::shared_ptr<GridsManager>& gm, const int time_index, const std::string& filename) {
-
+/*========================================================================================================*/
+view_2d<Real>::HostMirror
+get_diagnostic_input(const ekat::Comm& comm, const std::shared_ptr<GridsManager>& gm,
+                     const int time_index, const std::string& filename)
+{
   using namespace ShortFieldTagsNames;
+  using view_1d = typename KT::template view_1d<Real>;
 
   auto grid = gm->get_grid("Point Grid");
   int ncols = grid->get_num_local_dofs();
@@ -482,9 +483,9 @@ view_2d<Real>::HostMirror get_diagnostic_input(const ekat::Comm& comm, const std
   auto f_diag_h = Kokkos::create_mirror_view(f_diag);
 
   std::vector<std::string> fnames = {"DummyDiagnostic"};
-  std::map<std::string,view_1d<Real>::HostMirror> host_views;
+  std::map<std::string,view_1d::HostMirror> host_views;
   std::map<std::string,FieldLayout>  layouts;
-  host_views["DummyDiagnostic"] = view_1d<Real>::HostMirror(f_diag_h.data(),f_diag_h.size());
+  host_views["DummyDiagnostic"] = view_1d::HostMirror(f_diag_h.data(),f_diag_h.size());
   layouts.emplace("DummyDiagnostic",FieldLayout( {COL,LEV}, {ncols,nlevs} ) );
 
   ekat::ParameterList in_params;
@@ -496,7 +497,6 @@ view_2d<Real>::HostMirror get_diagnostic_input(const ekat::Comm& comm, const std
   input.finalize();
 
   return f_diag_h;
-  
 }
-/*===================================================================================================================*/
-} // undefined namespace
+
+} // anonymous namespace

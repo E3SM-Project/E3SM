@@ -102,6 +102,13 @@ else ()
   set (SCREAM_DEBUG FALSE)
 endif()
 
+# Add RRTMGP debug checks. Note, we might consider also adding RRTMGP_EXPENSIVE_CHECKS
+# to turn on the RRTMGP internal checks here as well, via
+#     option (RRTMGP_EXPENSIVE_CHECKS "Turn on internal RRTMGP error checking" ${SCREAM_DEBUG})
+# and then adding to scream_config.h:
+#     #cmakedefine RRTMGP_EXPENSIVE_CHECKS
+option (SCREAM_RRTMGP_DEBUG "Turn on extra debug checks in RRTMGP" ${SCREAM_DEBUG})
+
 enable_testing()
 include(CTest)
 
@@ -294,6 +301,10 @@ endif()
 # for LONG use 100. It is *completely* up to the test to decide what short, medium, and long mean.
 set(SCREAM_TEST_PROFILE MEDIUM CACHE STRING "The kind of testing to perform: SHORT, MEDIUM, LONG")
 set(SCREAM_TEST_VALID_PROFILES "SHORT;MEDIUM;LONG" CACHE INTERNAL "List of valid values for SCREAM_TEST_PROFILE")
+
+# Whether to use XYZ as a method to detect memory usage.
+option (SCREAM_ENABLE_GETRUSAGE "Whether getrusage can be used to get memory usage." OFF)
+option (SCREAM_ENABLE_STATM "Whether /proc/self/statm can be used to get memory usage." OFF)
 
 # Whether to disable warnings from tpls.
 set (SCREAM_DISABLE_TPL_WARNINGS ON CACHE BOOL "")

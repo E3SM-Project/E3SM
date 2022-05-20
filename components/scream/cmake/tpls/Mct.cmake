@@ -15,12 +15,12 @@ macro (CreateMctTarget)
     # Look for libmct in INSTALL_SHAREDPATH/lib
     find_library(MCT_LIB mct REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
 
-    # Create the imported library that scream targets can link to
-    add_library(mct UNKNOWN IMPORTED GLOBAL)
-    set_target_properties(mct PROPERTIES IMPORTED_LOCATION ${MCT_LIB})
-    set_target_properties(mct PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${INSTALL_SHAREDPATH}/include)
+    # Create the interface library, and set target properties
+    add_library(mct INTERFACE)
+    target_link_libraries(mct INTERFACE ${MCT_LIB})
+    target_include_directories(mct INTERFACE ${INSTALL_SHAREDPATH}/include)
 
-    # Create the csm_share imported target, and link it to mct, so that cmake will correctly
+    # Create the csm_share interface target, and link it to mct, so that cmake will correctly
     # attach it to any downstream target linking against mct
     include(${SCREAM_TPLS_MODULE_DIR}/CsmShare.cmake)
     CreateCsmShareTarget()

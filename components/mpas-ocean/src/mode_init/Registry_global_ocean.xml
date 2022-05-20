@@ -135,6 +135,10 @@
 			description="Parameter controlling rate to which interior temperature and salinity are restored."
 			possible_values="Any real positive number."
 		/>
+		<nml_option name="config_global_ocean_topography_source" type="character" default_value="latlon_file" units="unitless"
+			description="If 'latlon_file', reads in topography from file specified in config_global_ocean_topography_file. If 'mpas_variable', reads in topography from mpas variable bed_elevation"
+			possible_values="'latlon_file' or 'mpas_variable'"
+		/>
 		<nml_option name="config_global_ocean_topography_file" type="character" default_value="none" units="unitless"
 			description="Path to the topography initial condition file."
 			possible_values="path/to/topography/file.nc"

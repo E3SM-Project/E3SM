@@ -766,7 +766,53 @@
 					possible_values="Any positive real number."
 		/>
 	</nml_record>
-	<nml_record name="tidal_potential_forcing" mode="forward">
+	<nml_record name="self_attraction_loading" mode="init;forward">
+		<nml_option name="config_use_self_attraction_loading" type="logical" default_value=".false." units="unitless"
+					description="Controls if self-attraction and loading is applied to ssh"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_self_attraction_loading_smoothing_width" type="real" default_value="1.0" units="km"
+					description="Defines region over which ssh is smoothed to zero at coasts for SAL calculation."
+					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_mpas_to_grid_weights_file" type="character" default_value="mpas_to_grid.nc" units="unitless"
+					description="Location of the file containing the interpolation weights for transformation from the MPAS mesh to a Gaussian Grid."
+					possible_values="Any file name string"
+		/>
+		<nml_option name="config_grid_to_mpas_weights_file" type="character" default_value="grid_to_mpas.nc" units="unitless"
+					description="Location of the file containing the interpolation weights for transformation from a Gaussian Grid to the MPAS mesh."
+					possible_values="Any file name string"
+		/>
+		<nml_option name="config_self_attraction_loading_compute_interval" type="character" default_value="0000-00-00_00:30:00" units="unitless"
+					description="Interval for computing full SAL."
+					possible_values="'YYYY-MM-DD_HH:MM:SS'"
+		/>
+		<nml_option name="config_nLatitude" type="integer" default_value="128" units="unitless"
+					description="Numer of latitude points in the Gaussian Grid."
+					possible_values="Any positive integer value."
+		/>
+		<nml_option name="config_nLongitude" type="integer" default_value="256" units="unitless"
+					description="Numer of longitude points in the Gaussian Grid."
+					possible_values="Any positive integer value."
+		/>
+		<nml_option name="config_use_parallel_self_attraction_loading" type="logical" default_value=".false." units="unitless"
+					description="Controls if self-attraction and loading is computed with parallel or serial algorithm"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_parallel_self_attraction_loading_order" type="integer" default_value="10" units="unitless"
+					description="Controls the order of the sperical harmonic expansion used in the parallel self attraction and loading algorithm"
+					possible_values="Any positive integer value."
+		/>
+		<nml_option name="config_parallel_self_attraction_loading_n_cells_per_block" type="integer" default_value="600" units="unitless"
+					description="Controls the number of blocks used for spherical harmonics calculation"
+					possible_values="Any positive integer value."
+		/>
+		<nml_option name="config_parallel_self_attraction_loading_bfb" type="logical" default_value=".false." units="unitless"
+					description="Controls whether a reproducible sum is used for the parallel spherical harmonics calculations"
+					possible_values=".true. or .false."
+		/>
+	</nml_record>
+	<nml_record name="tidal_potential_forcing" mode="init;forward">
 		<nml_option name="config_use_tidal_potential_forcing" type="logical" default_value=".false." units="unitless"
 					description="Controls if tidal potential forcing is used."
 					possible_values=".true. or .false."
@@ -1464,6 +1510,7 @@
 			<var name="fEdge"/>
 			<var name="fVertex"/>
 			<var name="fCell"/>
+			<var name="bed_elevation"/>
 		</stream>
 
 		<stream name="output_init"
@@ -1709,6 +1756,7 @@
             <var name="gotmEpsbTopOfCell"/>
             <var name="gotmDissTopOfCell"/>
             <var name="gotmLengthTopOfCell"/>
+            <var name="ssh_sal"/>
 		</stream>
 
 		<stream name="output"
@@ -2248,6 +2296,9 @@
 		<var name="fCell" type="real" dimensions="nCells" units="s^{-1}"
 			 description="Coriolis parameter at cell centers."
 		/>
+		<var name="bed_elevation" type="real" dimensions="nCells" units="m"
+			 description="Depth of the bottom of the ocean. Given as negative distance from sea level. Used as input to replace topography input file."
+		/>
 		<var name="bottomDepth" type="real" dimensions="nCells" units="m"
 			 description="Depth of the bottom of the ocean. Given as a positive distance from sea level."
 		/>
@@ -2339,6 +2390,9 @@
 		<var name="cullCell" type="integer" dimensions="nCells" units="unitless"
 			 description="Array to hold integers that represent logicals determining if a cell should be culled or not by the MpasCellCuller tool."
 			 packages="cullCells"
+		/>
+		<var name="distanceToCoast" type="real" dimensions="nCells" units="m"
+			 description="Distance of each cell to nearest coastline cell."
 		/>
 	</var_struct>
 	<var_struct name="verticalMesh" time_levs="1">
@@ -3057,6 +3111,14 @@
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
+		<var name="ssh_sal" type="real" dimensions="nCells Time" units="m"
+			description="sea surface height perturbation from self-attraction and loading"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="ssh_sal_grad" type="real" dimensions="nEdges Time" units=""
+			description="gradient of sea surface height perturbation from self-attraction and loading"
+			packages="tidalPotentialForcingPKG"
+		/>
 	</var_struct>
 	<var_struct name="shortwave" time_levs="1">
 		<!-- **********************************************************************
@@ -3467,6 +3529,10 @@
 		<var name="sshSubcycleNewWithTides" type="real" dimensions="nCells Time" units="m"
 			description="SSH - tidal potential in split explicit "
 			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="coastalSmoothingFactor" type="real" dimensions="nCells" units="unitless"
+			 description="Multiplication factors to smooth ssh at coastlines for SAL caculation"
+			 packages="tidalPotentialForcingPKG"
 		/>
 		<var name="RediKappaData" type="real" dimensions="nCells" units="m^2 s^{-1}"
 			 description="Redi isopycnal mixing Kappa value. This is the data field specified at init."

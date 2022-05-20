@@ -65,7 +65,7 @@ auto cmvdc (const ViewT& v_d) -> typename ViewT::HostMirror {
 }
 
 template<typename DeviceT>
-void run_scalar_valued_fns()
+void run_scalar_valued_fns(std::mt19937_64& engine)
 {
   /*
   Most of the common physics functions are templated to operate on scalars or on packs of vertical indices. 
@@ -79,9 +79,18 @@ void run_scalar_valued_fns()
   using PC         = scream::physics::Constants<RealType>;
   using Check = ChecksHelpers<RealType,1>; //1 is for number of levels.
 
+  static constexpr auto pi       = PC::Pi;
   static constexpr auto Rd       = PC::RD;
   static constexpr auto g        = PC::gravit;
   static constexpr auto test_tol = PC::macheps*1e3;
+  static constexpr auto coeff_1  = PC::earth_ellipsoid1;
+  static constexpr auto coeff_2  = PC::earth_ellipsoid2;
+  static constexpr auto coeff_3  = PC::earth_ellipsoid3;
+
+  // Construct random input data
+  using RPDF = std::uniform_real_distribution<RealType>;
+  RPDF pdf_lat(-pi/2.0,pi/2.0),
+       pdf_area(1e-8,pi*pi);
 
   //calculate_surface_air_T property tests:
   // If z_mid_bot==0, output should equal T_mid_bot
@@ -144,7 +153,26 @@ void run_scalar_valued_fns()
   psl=PF::calculate_psl( T_ground , p_ground, phi_ground );
   REQUIRE( Check::approx_equal( psl_exact, psl, test_tol) );
   REQUIRE( psl<p_ground );
-} 
+
+  // Get dx from grid cell area property tests:
+  RealType area, lat;
+  area = 0.0; lat = 1.0;
+  REQUIRE( Check::equal(PF::calculate_dx_from_area(area,lat),0.0) );
+  area = (pi/180.0)*(pi/180.0);
+  lat = 0.0;
+  REQUIRE( Check::equal(PF::calculate_dx_from_area(area,lat), coeff_1-coeff_2+coeff_3) );
+  lat = pi/2.0;
+  REQUIRE( Check::equal(PF::calculate_dx_from_area(area,lat), coeff_1+coeff_2+coeff_3) );
+  lat = pi/4.0;
+  REQUIRE( Check::approx_equal(PF::calculate_dx_from_area(area,lat), coeff_1 - coeff_3, test_tol) );
+  lat = pi/8.0;
+  REQUIRE( Check::approx_equal(PF::calculate_dx_from_area(area,lat), coeff_1-std::sqrt(2.0)/2.0*coeff_2, test_tol) );
+  lat     = pdf_lat(engine);
+  area    = pdf_area(engine);
+  REQUIRE( Check::equal(PF::calculate_dx_from_area(area,lat),PF::calculate_dx_from_area(area,-lat)) );
+
+}
+
 
 //-----------------------------------------------------------------------------------------------//
 template<typename ScalarT, typename DeviceT>
@@ -252,7 +280,7 @@ void run(std::mt19937_64& engine)
   const ScalarT zero = 0.0;
   const ScalarT one  = 1.0;
 
-  ScalarT p, T0, theta0, tmp, qv0, dp0, mmr0, vmr0, dz0, Tv0, rho0, rand_int0, z0, dse0;
+  ScalarT p, T0, theta0, tmp, qv0, dp0, mmr0, vmr0, dz0, Tv0, rho0, z0, dse0;
   ScalarT wetmmr0, drymmr0, qv_dry0, qv_wet0;
   RealType surf_height;
 
@@ -267,7 +295,6 @@ void run(std::mt19937_64& engine)
   Tv0  = PF::calculate_virtual_temperature(T0,qv0);
   dz0  = PF::calculate_dz(dp0,p,T0,qv0);
   rho0 = p / Tv0 / Rd;  // Ideal gas law
-  rand_int0 = pdf_rand_int(engine);//random integers
 
   REQUIRE( Check::equal(PF::calculate_density(zero,dz0),zero) );
   REQUIRE( Check::approx_equal(PF::calculate_density(dp0,dz0),rho0,test_tol) );
@@ -500,15 +527,6 @@ void run(std::mt19937_64& engine)
 //===============================================================================
 TEST_CASE("common_physics_functions_test", "[common_physics_functions_test]"){
 
-// Run tests of functions only defined for a scalar (e.g. a particular column
-//of a variable only defined at the surface)
-   using Device = scream::DefaultDevice;
-   printf("\n -> Testing scalar-valued functions...");
-   run_scalar_valued_fns<Device>();
-   printf("ok!\n\n");
-
-// Run tests of vertically dimensioned-functions for both Real and Pack,
-// and for (potentially) different pack sizes
   using scream::Real;
   using Device = scream::DefaultDevice;
 
@@ -516,11 +534,15 @@ TEST_CASE("common_physics_functions_test", "[common_physics_functions_test]"){
 
   auto engine = scream::setup_random_test();
 
+// Run tests of vertically dimensioned-functions for both Real and Pack,
+// and for (potentially) different pack sizes
+
   printf(" -> Number of randomized runs: %d\n\n", num_runs);
 
   printf(" -> Testing Real scalar type...");
   for (int irun=0; irun<num_runs; ++irun) {
     run<Real,Device>(engine);
+    run_scalar_valued_fns<Device>(engine);
   }
   printf("ok!\n");
 

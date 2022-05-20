@@ -1,5 +1,4 @@
 #include "physics/p3/atmosphere_microphysics.hpp"
-// #include "share/property_checks/field_positivity_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 // Needed for p3_init, the only F90 code still used.
 #include "physics/p3/p3_functions.hpp"
@@ -39,9 +38,9 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   auto micron = m / 1000000;
 
   const auto& grid_name = m_params.get<std::string>("Grid");
-  auto grid = grids_manager->get_grid(grid_name);
-  m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
-  m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
+  m_grid = grids_manager->get_grid(grid_name);
+  m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
+  m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
@@ -175,20 +174,20 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
 void P3Microphysics::initialize_impl (const RunType /* run_type */)
 {
   // Set property checks for fields in this process
-  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),140.0,500.0,false);
-  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("qv"),1e-13,0.2,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qc"),0.0,0.1,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qi"),0.0,0.1,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qr"),0.0,0.1,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qm"),0.0,0.1,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nc"),0.0,1.e9,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nr"),0.0,1.e9,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("ni"),0.0,1.e9,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("bm"),0.0,1.0,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("precip_liq_surf"),0.0,0.001,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("precip_ice_surf"),0.0,0.001,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qc"),0.0,1.0e2,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qi"),0.0,5.0e3,false);
+  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,140.0,500.0,false);
+  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("qv"),m_grid,1e-13,0.2,true);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qc"),m_grid,0.0,0.1,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qi"),m_grid,0.0,0.1,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qr"),m_grid,0.0,0.1,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qm"),m_grid,0.0,0.1,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nc"),m_grid,0.0,1.e11,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nr"),m_grid,0.0,1.e9,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("ni"),m_grid,0.0,1.e9,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("bm"),m_grid,0.0,1.0,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("precip_liq_surf"),m_grid,0.0,0.001,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("precip_ice_surf"),m_grid,0.0,0.001,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qc"),m_grid,0.0,1.0e2,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qi"),m_grid,0.0,5.0e3,false);
 
   // Initialize p3
   p3_init();

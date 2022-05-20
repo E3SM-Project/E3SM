@@ -51,13 +51,12 @@ build_grids (const std::set<std::string>& grid_names)
   const bool build_pt = ekat::contains(grid_names,"Point Grid") || ref_grid=="Point Grid";
   const bool build_se = ekat::contains(grid_names,"SE Grid") || ref_grid=="SE Grid";
 
-  const auto& gm_params         = m_params.sublist("Mesh Free");
-  const int num_vertical_levels = gm_params.get<int>("Number of Vertical Levels");
+  const int num_vertical_levels = m_params.get<int>("Number of Vertical Levels");
 
   if (build_se) {
     // Build a set of completely disconnected spectral elements.
-    const int num_local_elems  = gm_params.get<int>("Number of Local Elements");
-    const int num_gp           = gm_params.get<int>("Number of Gauss Points");
+    const int num_local_elems  = m_params.get<int>("Number of Local Elements");
+    const int num_gp           = m_params.get<int>("Number of Gauss Points");
 
     // Set up the degrees of freedom.
     SEGrid::dofs_list_type dofs("", num_local_elems*num_gp*num_gp);
@@ -99,7 +98,7 @@ build_grids (const std::set<std::string>& grid_names)
     m_grids["SE Grid"]    = se_grid;
   }
   if (build_pt) {
-    const int num_global_cols  = gm_params.get<int>("Number of Global Columns");
+    const int num_global_cols  = m_params.get<int>("Number of Global Columns");
     auto pt_grid = create_point_grid("Point Grid",num_global_cols,num_vertical_levels,m_comm);
     m_grids["Point Grid"] = pt_grid;
   }
@@ -111,10 +110,10 @@ create_mesh_free_grids_manager (const ekat::Comm& comm, const int num_local_elem
                                 const int num_global_cols)
 {
   ekat::ParameterList gm_params;
-  gm_params.sublist("Mesh Free").set("Number of Global Columns",num_global_cols);
-  gm_params.sublist("Mesh Free").set("Number of Local Elements",num_local_elems);
-  gm_params.sublist("Mesh Free").set("Number of Gauss Points",num_gp);
-  gm_params.sublist("Mesh Free").set("Number of Vertical Levels",num_vertical_levels);
+  gm_params.set("Number of Global Columns",num_global_cols);
+  gm_params.set("Number of Local Elements",num_local_elems);
+  gm_params.set("Number of Gauss Points",num_gp);
+  gm_params.set("Number of Vertical Levels",num_vertical_levels);
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
   return gm;
 }

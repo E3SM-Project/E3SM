@@ -1,4 +1,5 @@
 #include "share/atm_process/atmosphere_process.hpp"
+#include "share/util/scream_timing.hpp"
 
 #include "ekat/ekat_assert.hpp"
 
@@ -29,15 +30,24 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
   EKAT_REQUIRE_MSG (m_num_subcycles>0,
       "Error! Invalid number of subcycles in param list " + m_params.name() + ".\n"
       "  - Num subcycles: " + std::to_string(m_num_subcycles) + "\n");
+
+  m_timer_prefix = m_params.get<std::string>("Timer Prefix","EAMxx::");
 }
 
 void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type) {
+  if (this->type()!=AtmosphereProcessType::Group) {
+    start_timer (m_timer_prefix + this->name() + "::init");
+  }
   set_fields_and_groups_pointers();
   m_time_stamp = t0;
   initialize_impl(run_type);
+  if (this->type()!=AtmosphereProcessType::Group) {
+    stop_timer (m_timer_prefix + this->name() + "::init");
+  }
 }
 
 void AtmosphereProcess::run (const int dt) {
+  start_timer (m_timer_prefix + this->name() + "::run");
   if (m_params.get("Enable Precondition Checks", true)) {
     // Run 'pre-condition' property checks stored in this AP
     run_precondition_checks();
@@ -65,6 +75,7 @@ void AtmosphereProcess::run (const int dt) {
     // Update all output fields time stamps
     update_time_stamps ();
   }
+  stop_timer (m_timer_prefix + this->name() + "::run");
 }
 
 void AtmosphereProcess::finalize (/* what inputs? */) {
@@ -174,8 +185,8 @@ void AtmosphereProcess::run_precondition_checks () const {
   for (const auto& it : m_precondition_checks) {
     const auto& pc = it.second;
 
-    auto check = pc->check();
-    if (check) {
+    auto check_result = pc->check();
+    if (check_result.pass) {
       continue;
     }
 
@@ -189,14 +200,16 @@ void AtmosphereProcess::run_precondition_checks () const {
         "WARNING: Pre-condition property check failed.\n"
         "  - Property check name: " + pc->name() + "\n"
         "  - Atmosphere process name: " + name() + "\n"
-        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
+        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
+        "  - Message: " + check_result.msg);
     } else {
       // No hope. Crash.
       EKAT_ERROR_MSG(
           "Error! Failed pre-condition check (cannot be repaired).\n"
           "  - Atm process name: " + name() + "\n"
           "  - Property check name: " + pc->name() + "\n"
-          "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
+          "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
+          "  - Message: " + check_result.msg);
     }
   }
 }
@@ -206,8 +219,8 @@ void AtmosphereProcess::run_postcondition_checks () const {
   for (const auto& it : m_postcondition_checks) {
     const auto& pc = it.second;
 
-    auto check = pc->check();
-    if (check) {
+    auto check_result = pc->check();
+    if (check_result.pass) {
       continue;
     }
 
@@ -225,14 +238,16 @@ void AtmosphereProcess::run_postcondition_checks () const {
         "WARNING: Post-condition property check failed.\n"
         "  - Property check name: " + pc->name() + "\n"
         "  - Atmosphere process name: " + name() + "\n"
-        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
+        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
+        "  - Error message: " + check_result.msg);
     } else {
       // No hope. Crash.
       EKAT_ERROR_MSG(
           "Error! Failed post-condition check (cannot be repaired).\n"
           "  - Atm process name: " + name() + "\n"
           "  - Property check name: " + pc->name() + "\n"
-          "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
+          "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
+          "  - Error message: " + check_result.msg);
     }
   }
 }

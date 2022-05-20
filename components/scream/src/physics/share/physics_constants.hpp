@@ -41,7 +41,7 @@ struct Constants
   static constexpr Scalar T_zerodegc    = Tmelt;
   static constexpr Scalar T_homogfrz    = Tmelt - 40;
   static constexpr Scalar T_rainfrz     = Tmelt - 4;
-  static constexpr Scalar Pi            = 3.14159265;
+  static constexpr Scalar Pi            = 3.14159265358979323;
   static constexpr long long int    iulog       = 98;
   static constexpr bool   masterproc    = true;
   static constexpr Scalar RHOW          = RHO_H2O;
@@ -116,6 +116,12 @@ struct Constants
 
   // Gases
   static Scalar get_gas_mol_weight(ci_string gas_name);
+
+  // For use in converting area to length for a column cell
+  // World Geodetic System 1984 (WGS84) 
+  static constexpr Scalar earth_ellipsoid1 = 111132.92; // first coefficient, meters per degree longitude at equator 
+  static constexpr Scalar earth_ellipsoid2 = 559.82;    // second expansion coefficient for WGS84 ellipsoid 
+  static constexpr Scalar earth_ellipsoid3 = 1.175;     // third expansion coefficient for WGS84 ellipsoid 
 };
 
 // Gases

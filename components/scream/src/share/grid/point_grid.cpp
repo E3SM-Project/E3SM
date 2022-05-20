@@ -112,10 +112,10 @@ create_point_grid (const std::string& grid_name,
   geo_view_type lat ("lat",  num_my_cols);
 
   // Estimate cell area for a uniform grid by taking the surface area
-  // of the earth divided by the number of columns
-  const Real rearth    = C::r_earth;
+  // of the earth divided by the number of columns.  Note we do this in
+  // units of radians-squared.
   const Real pi        = C::Pi;
-  const Real cell_area = 4*pi*rearth*rearth/num_my_cols;
+  const Real cell_area = 4.0*pi/num_my_cols;
 
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_my_cols, num_vertical_lev);
   Kokkos::parallel_for("area_loop", policy, KOKKOS_LAMBDA (const KT::MemberType& team) {

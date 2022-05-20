@@ -25,6 +25,20 @@ struct PhysicsFunctions
   // ---------------------------------------------------------------- //
 
   //-----------------------------------------------------------------------------------------------//
+  // Determine the length of a square column cell at a specifc latitude given the area in radians
+  //   grid_dx = mpdeglat * area
+  // where,
+  //   mpdeglat is the distance between two points on an ellipsoid
+  //   area     is the area of the column cell in radians. 
+  //   lat      is the latitude of the grid column in radians.
+  // NOTE - Here we assume that the column area is a SQUARE so dx=dy.  We will need a different
+  //        routine for a rectangular (or other shape) area.
+  //-----------------------------------------------------------------------------------------------//
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_dx_from_area(const ScalarT& area, const ScalarT& lat);
+
+  //-----------------------------------------------------------------------------------------------//
   // Determines the density given the definition of pseudo_density passed by the dycore
   //   rho = pseudo_density/dz/g
   // where,

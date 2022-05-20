@@ -42,6 +42,16 @@ public:
   FieldLayout get_3d_scalar_layout (const bool midpoints) const override;
   FieldLayout get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag, const int vector_dim) const override;
 
+  FieldTag get_partitioned_dim_tag () const override {
+    return FieldTag::Column;
+  }
+  int get_partitioned_dim_local_size  () const override {
+    return get_num_local_dofs();
+  }
+  int get_partitioned_dim_global_size () const override {
+    return get_num_global_dofs();
+  }
+
 protected:
   bool valid_geo_data (const std::string& name, const geo_view_type& data) const override;
 };
