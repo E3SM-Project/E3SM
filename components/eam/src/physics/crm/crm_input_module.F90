@@ -120,9 +120,9 @@ contains
 
       if (.not. allocated(input%t_vt)) allocate(input%t_vt(ncrms,nlev))
       if (.not. allocated(input%q_vt)) allocate(input%q_vt(ncrms,nlev))
+      if (.not. allocated(input%u_vt)) allocate(input%u_vt(ncrms,nlev))
       call prefetch(input%t_vt)
       call prefetch(input%q_vt)
-      if (.not. allocated(input%u_vt)) allocate(input%u_vt(ncrms,nlev))
       call prefetch(input%u_vt)
 
       ! Initialize
