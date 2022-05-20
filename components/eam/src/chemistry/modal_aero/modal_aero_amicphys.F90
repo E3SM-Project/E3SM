@@ -3706,6 +3706,11 @@ time_loop: &
       real(r8) :: xferfrac_vol, xferfrac_num, xferfrac_max
       real(r8) :: yn_tail, yv_tail
 
+      !++hybrown, added to emulate CESM2 WACCM renaming code, which hardcodes
+      !coarse mode upper and lower bounds for renaming transfer 
+      real(r8) :: dp_xferall_thresh(ntot_amode)
+      real(r8) :: dp_xfernone_thresh(ntot_amode)
+      !--hybrown
 
       xferfrac_max = 1.0_r8 - 10.0_r8*epsilon(1.0_r8)   ! 1-eps
 
@@ -3736,6 +3741,16 @@ time_loop: &
          dp_cut(mfrm) = sqrt(   &
             dgnum_aer(mfrm)*exp(1.5*(alnsg_aer(mfrm)**2)) *   &
             dgnum_aer(mtoo)*exp(1.5*(alnsg_aer(mtoo)**2)) )
+         !++hybrown
+         dp_xferall_thresh(mfrm) = dgnum_aer(mtoo)
+         dp_xfernone_thresh(mfrm) = dgnum_aer(mfrm)
+
+         if ((mfrm==nacc) .and. (mtoo==ncrs)) then
+            dp_cut(mfrm)             = 4.4e-7_r8
+            dp_xfernone_thresh(mfrm) = 1.6e-7_r8
+            dp_xferall_thresh(mfrm)  = 4.7e-7_r8
+         end if
+         !--hybrown
          lndp_cut(mfrm) = log( dp_cut(mfrm) )
          dp_belowcut(mfrm) = 0.99*dp_cut(mfrm)
       end do
@@ -3810,7 +3825,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
 
 !   no renaming if dgnum < "base" dgnum, 
       dgn_t_new = (dryvol_t_new/(num_t_oldbnd*factoraa(mfrm)))**onethird
-      if (dgn_t_new .le. dgnum_aer(mfrm)) cycle mainloop1_ipair
+      if (dgn_t_new .le. dp_xfernone_thresh(mfrm)) cycle mainloop1_ipair  !hybrown
 
 !   compute new fraction of number and mass in the tail (dp > dp_cut)
       lndgn_new = log( dgn_t_new )
@@ -3832,7 +3847,11 @@ mainloop1_ipair:  do n = 1, ntot_amode
             dryvol_t_old = dryvol_t_old * (dp_belowcut(mfrm)/dgn_t_old)**3
             dgn_t_old = dp_belowcut(mfrm)
          end if
-         if ((dryvol_t_new-dryvol_t_old) .le. 1.0e-6_r8*dryvol_t_oldbnd) cycle mainloop1_ipair
+!++hybrown, insert xferall_thresh variable condional for acc->crs and ait->acc
+            if ( dgn_t_new .lt. dp_xferall_thresh(mfrm) ) then
+               if ((dryvol_t_new-dryvol_t_old) .le. 1.0e-6_r8*dryvol_t_oldbnd) cycle mainloop1_ipair
+            end if
+!--hybrown
       else if (dgn_t_new .ge. dp_cut(mfrm)) then
 !         if dgn_t_new exceeds dp_cut, use the minimum of dgn_t_old and 
 !         dp_belowcut to guarantee some transfer
@@ -3847,7 +3866,13 @@ mainloop1_ipair:  do n = 1, ntot_amode
 
 !   transfer fraction is difference between new and old tail-fractions
 !   transfer fraction for number cannot exceed that of mass
-      tmpa = tailfr_volnew*dryvol_t_new - tailfr_volold*dryvol_t_old
+!++hybrown, use xferall specification for acc->crs and ait->acc to emulate WACCM treatment
+         if (dgn_t_new .ge. dp_xferall_thresh(mfrm)) then
+            tmpa = dryvol_t_new
+         else
+            tmpa = tailfr_volnew*dryvol_t_new - tailfr_volold*dryvol_t_old
+         end if
+!--hybrown
       if (tmpa .le. 0.0_r8) cycle mainloop1_ipair
 
       xferfrac_vol = min( tmpa, dryvol_t_new )/dryvol_t_new
@@ -5535,7 +5560,6 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       if (present(strat_accum_coarse_rename_in)) then
          strat_accum_coarse_rename = strat_accum_coarse_rename_in
       endif
-
       if (strat_accum_coarse_rename) then
          ncrs = modeptr_coarse
       endif
