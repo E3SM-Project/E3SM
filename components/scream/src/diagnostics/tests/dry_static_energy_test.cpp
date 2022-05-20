@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "diagnostics/tests/diagnostic_test_util.hpp"
-#include "diagnostics/vertical_layer_midpoint.hpp"
+#include "diagnostics/dry_static_energy.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
 #include "physics/share/physics_constants.hpp"
@@ -70,7 +70,8 @@ void run(std::mt19937_64& engine)
   RPDF pdf_qv(1e-6,1e-3),
        pdf_pseudodens(1.0,100.0),
        pdf_pres(0.0,PC::P0),
-       pdf_temp(200.0,400.0);
+       pdf_temp(200.0,400.0),
+       pdf_surface(100.0,400.0);
 
   ekat::genRandArray(dview_as_real(temperature),     engine, pdf_temp);
   ekat::genRandArray(dview_as_real(pseudodensity),   engine, pdf_pseudodens);
@@ -82,11 +83,11 @@ void run(std::mt19937_64& engine)
 
   // Construct the Diagnostic
   ekat::ParameterList params;
-  params.set<std::string>("Diagnostic Name", "Vertical Layer Midpoint");
+  params.set<std::string>("Diagnostic Name", "Dry Static Energy");
   params.set<std::string>("Grid", "Point Grid");
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
-  auto diag = diag_factory.create("VerticalLayerMidpoint",comm,params);
+  auto diag = diag_factory.create("DryStaticEnergy",comm,params);
   diag->set_grids(gm);
 
 
@@ -115,8 +116,10 @@ void run(std::mt19937_64& engine)
   const auto& p_mid_v       = p_mid_f.get_view<ScalarT**>();
   const auto& qv_mid_f      = input_fields["qv"];
   const auto& qv_mid_v      = qv_mid_f.get_view<ScalarT**>();
+  const auto& phis_f        = input_fields["phis"];
+  const auto& phis_v        = phis_f.get_view<Real*>();
 
-  // The output from the diagnostic should match what would happen if we called "calculate_z_mid" directly
+  // The output from the diagnostic should match what would happen if we called "calculate_dse" directly
   {
   for (int icol = 0; icol<ncols;++icol) {
     const auto& T_sub      = ekat::subview(T_mid_v,icol);
@@ -132,24 +135,30 @@ void run(std::mt19937_64& engine)
     Kokkos::deep_copy(p_sub,pressure);
     Kokkos::deep_copy(qv_sub,watervapor);
   } 
+  ekat::genRandArray(phis_v, engine, pdf_surface);
+
   const auto& diag_out = diag->get_diagnostic(100.0);
-  Field z_mid_f = diag_out.clone();
-  const auto& z_mid_v = z_mid_f.get_view<ScalarT**>();
+  Field dse_f = diag_out.clone();
+  const auto& dse_v = dse_f.get_view<ScalarT**>();
 
   const auto& z_int_v = view_1d("",num_mid_packs_p1);
-  const auto& dz_v = view_1d("",num_mid_packs);
+  const auto& dz_v    = view_1d("",num_mid_packs);
+  const auto& z_mid_v = view_1d("",num_mid_packs);
   Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
     const int i = team.league_rank();
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
       dz_v(k) = PF::calculate_dz(pseudo_dens_v(i,k),p_mid_v(i,k),T_mid_v(i,k),qv_mid_v(i,k));
     });
     team.team_barrier();
-    const auto& z_mid_sub = ekat::subview(z_mid_v,i);
+    const auto& dse_sub = ekat::subview(dse_v,i);
     PF::calculate_z_int(team,num_levs,dz_v,0.0,z_int_v);
-    PF::calculate_z_mid(team,num_levs,z_int_v,z_mid_sub);
+    PF::calculate_z_mid(team,num_levs,z_int_v,z_mid_v);
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
+      dse_v(i,k) = PF::calculate_dse(T_mid_v(i,k),z_mid_v(k),phis_v(i));
+    });
   });
   Kokkos::fence();
-  REQUIRE(views_are_equal(diag_out,z_mid_f));
+  REQUIRE(views_are_equal(diag_out,dse_f));
   }
  
   // Finalize the diagnostic
@@ -157,7 +166,7 @@ void run(std::mt19937_64& engine)
 
 } // run()
 
-TEST_CASE("vertical_layer_midpoint_test", "diagnostics"){
+TEST_CASE("dry_static_energy_test", "diagnostics"){
   // Run tests for both Real and Pack, and for (potentially) different pack sizes
   using scream::Real;
   using Device = scream::DefaultDevice;

@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "diagnostics/tests/diagnostic_test_util.hpp"
-#include "diagnostics/vertical_layer_midpoint.hpp"
+#include "diagnostics/sea_level_pressure.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
 #include "physics/share/physics_constants.hpp"
@@ -32,61 +32,37 @@ void run(std::mt19937_64& engine)
   using ExecSpace  = typename KT::ExeSpace;
   using TeamPolicy = typename KT::TeamPolicy;
   using MemberType = typename KT::MemberType;
-  using view_1d    = typename KT::template view_1d<ScalarT>;
   using rview_1d   = typename KT::template view_1d<RealType>;
 
-
-  constexpr int pack_size = sizeof(ScalarT) / sizeof(RealType);
-  using pack_info = ekat::PackInfo<pack_size>;
-
   constexpr int num_levs = 32; // Number of levels to use for tests.
-  const     int num_mid_packs = pack_info::num_packs(num_levs);
-  const     int num_mid_packs_p1 = pack_info::num_packs(num_levs+1);
-
-  using Check = ChecksHelpers<ScalarT,num_levs>;
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
   // Create a grids manager - single column for these tests
-  const int ncols = 1;
+  const int ncols = 128;
   auto gm = create_gm(comm,ncols,num_levs);
 
-  // Kokkos Policy
-  auto policy = ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(ncols, num_mid_packs);
-
   // Input (randomized) views
-  view_1d temperature("temperature",num_mid_packs),
-          pseudodensity("pseudodensity",num_mid_packs),
-          pressure("pressure",num_mid_packs),
-          watervapor("watervapor",num_mid_packs);
-
-  auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
-    return rview_1d(reinterpret_cast<RealType*>(v.data()),v.size()*pack_size);
-  };
+  rview_1d temperature("temperature",num_levs),
+           pressure("pressure",num_levs);
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<RealType>;
-  RPDF pdf_qv(1e-6,1e-3),
-       pdf_pseudodens(1.0,100.0),
-       pdf_pres(0.0,PC::P0),
-       pdf_temp(200.0,400.0);
-
-  ekat::genRandArray(dview_as_real(temperature),     engine, pdf_temp);
-  ekat::genRandArray(dview_as_real(pseudodensity),   engine, pdf_pseudodens);
-  ekat::genRandArray(dview_as_real(pressure),        engine, pdf_pres);
-  ekat::genRandArray(dview_as_real(watervapor),      engine, pdf_qv);
+  RPDF pdf_pres(0.0,PC::P0),
+       pdf_temp(200.0,400.0),
+       pdf_surface(100.0,400.0);
 
   // A time stamp
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
   // Construct the Diagnostic
   ekat::ParameterList params;
-  params.set<std::string>("Diagnostic Name", "Vertical Layer Midpoint");
+  params.set<std::string>("Diagnostic Name", "Sea Level Pressure");
   params.set<std::string>("Grid", "Point Grid");
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
-  auto diag = diag_factory.create("VerticalLayerMidpoint",comm,params);
+  auto diag = diag_factory.create("SeaLevelPressure",comm,params);
   diag->set_grids(gm);
 
 
@@ -108,48 +84,33 @@ void run(std::mt19937_64& engine)
   // Run tests
   // Get views of input data and set to random values
   const auto& T_mid_f       = input_fields["T_mid"];
-  const auto& T_mid_v       = T_mid_f.get_view<ScalarT**>();
-  const auto& pseudo_dens_f = input_fields["pseudo_density"];
-  const auto& pseudo_dens_v = pseudo_dens_f.get_view<ScalarT**>();
+  const auto& T_mid_v       = T_mid_f.get_view<Real**>();
   const auto& p_mid_f       = input_fields["p_mid"];
-  const auto& p_mid_v       = p_mid_f.get_view<ScalarT**>();
-  const auto& qv_mid_f      = input_fields["qv"];
-  const auto& qv_mid_v      = qv_mid_f.get_view<ScalarT**>();
+  const auto& p_mid_v       = p_mid_f.get_view<Real**>();
+  const auto& phis_f        = input_fields["phis"];
+  const auto& phis_v        = phis_f.get_view<Real*>();
 
-  // The output from the diagnostic should match what would happen if we called "calculate_z_mid" directly
+  // The output from the diagnostic should match what would happen if we called "calculate_psl" directly
   {
   for (int icol = 0; icol<ncols;++icol) {
     const auto& T_sub      = ekat::subview(T_mid_v,icol);
-    const auto& pseudo_sub = ekat::subview(pseudo_dens_v,icol);
     const auto& p_sub      = ekat::subview(p_mid_v,icol);
-    const auto& qv_sub     = ekat::subview(qv_mid_v,icol);
-    ekat::genRandArray(dview_as_real(temperature),   engine, pdf_temp);
-    ekat::genRandArray(dview_as_real(pseudodensity), engine, pdf_pseudodens);
-    ekat::genRandArray(dview_as_real(pressure),      engine, pdf_pres);
-    ekat::genRandArray(dview_as_real(watervapor),    engine, pdf_qv);
+    ekat::genRandArray(temperature,   engine, pdf_temp);
+    ekat::genRandArray(pressure,      engine, pdf_pres);
     Kokkos::deep_copy(T_sub,temperature);
-    Kokkos::deep_copy(pseudo_sub,pseudodensity);
     Kokkos::deep_copy(p_sub,pressure);
-    Kokkos::deep_copy(qv_sub,watervapor);
   } 
-  const auto& diag_out = diag->get_diagnostic(100.0);
-  Field z_mid_f = diag_out.clone();
-  const auto& z_mid_v = z_mid_f.get_view<ScalarT**>();
+  ekat::genRandArray(phis_v, engine, pdf_surface);
 
-  const auto& z_int_v = view_1d("",num_mid_packs_p1);
-  const auto& dz_v = view_1d("",num_mid_packs);
-  Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
-    const int i = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
-      dz_v(k) = PF::calculate_dz(pseudo_dens_v(i,k),p_mid_v(i,k),T_mid_v(i,k),qv_mid_v(i,k));
-    });
-    team.team_barrier();
-    const auto& z_mid_sub = ekat::subview(z_mid_v,i);
-    PF::calculate_z_int(team,num_levs,dz_v,0.0,z_int_v);
-    PF::calculate_z_mid(team,num_levs,z_int_v,z_mid_sub);
+  const auto& diag_out = diag->get_diagnostic(100.0);
+  Field psl_f = phis_f.clone(); //diag_out.clone();
+  const auto& psl_v = psl_f.get_view<Real*>();
+
+  Kokkos::parallel_for("", ncols, KOKKOS_LAMBDA(const int i) {
+    psl_v(i) = PF::calculate_psl(T_mid_v(i,num_levs-1),p_mid_v(i,num_levs-1),phis_v(i));
   });
   Kokkos::fence();
-  REQUIRE(views_are_equal(diag_out,z_mid_f));
+  REQUIRE(views_are_equal(diag_out,psl_f));
   }
  
   // Finalize the diagnostic
@@ -157,7 +118,7 @@ void run(std::mt19937_64& engine)
 
 } // run()
 
-TEST_CASE("vertical_layer_midpoint_test", "diagnostics"){
+TEST_CASE("sea_level_pressure_test", "diagnostics"){
   // Run tests for both Real and Pack, and for (potentially) different pack sizes
   using scream::Real;
   using Device = scream::DefaultDevice;

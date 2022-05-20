@@ -562,10 +562,12 @@ void FieldManager::registration_ends ()
       for (const auto& fn : cluster_ordered_fields) {
         const auto& f = m_fields.at(fn);
         C_ap.request_allocation(f->get_header().get_alloc_properties());
+        printf("ASD - cluster_ord_fields: %s\n",c_fid.name().c_str());
       }
       for (const auto& gn : cluster) {
         for (const auto& req : m_group_requests.at(gn)) {
           C_ap.request_allocation(req.pack_size);
+          printf("ASD - clusters: %s, %d\n",c_fid.name().c_str(), req.pack_size);
         }
       }
 

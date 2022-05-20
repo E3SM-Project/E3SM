@@ -60,8 +60,8 @@ public:
     // Functor for Kokkos loop
     KOKKOS_INLINE_FUNCTION
     void operator() (const int icol) const {
-      const Real T_mid_ground = T_mid(icol,m_nlev);
-      const Real p_mid_ground = p_mid(icol,m_nlev);
+      const Real T_mid_ground = T_mid(icol,m_nlev-1);
+      const Real p_mid_ground = p_mid(icol,m_nlev-1);
       const Real phis_ground  = phis(icol);
       psl(icol) = PF::calculate_psl(T_mid_ground,p_mid_ground,phis_ground);
     }

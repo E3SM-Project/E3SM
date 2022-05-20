@@ -37,7 +37,7 @@ void SeaLevelPressureDiagnostic::set_grids(const std::shared_ptr<const GridsMana
   FieldIdentifier fid (name(), scalar2d_layout_col, Pa, grid_name);
   m_diagnostic_output = Field(fid);
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
-  C_ap.request_allocation(ps);
+//  C_ap.request_allocation(ps);
   m_diagnostic_output.allocate_view();
 
 }
@@ -49,9 +49,6 @@ void SeaLevelPressureDiagnostic::initialize_impl(const RunType /* run_type */)
   const auto& phis               = get_field_in("phis").get_view<const Real*>();
 
   const auto& output             = m_diagnostic_output.get_view<Real*>();
-
-  // Set surface geopotential for this diagnostic
-  const Real surf_geopotential = 0.0;
 
   auto ts = timestamp(); 
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);

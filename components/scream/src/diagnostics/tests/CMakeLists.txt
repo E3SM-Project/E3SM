@@ -18,5 +18,9 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(vertical_layer_interface "vertical_layer_interface_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test vertical layer interface (z_mid) 
   CreateUnitTest(vertical_layer_midpoint "vertical_layer_midpoint_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test dry static energy 
+  CreateUnitTest(dry_static_energy "dry_static_energy_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test sea level pressure 
+  CreateUnitTest(sea_level_pressure "sea_level_pressure_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 
 endif()

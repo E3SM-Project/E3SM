@@ -68,7 +68,7 @@ void VerticalLayerMidpointDiagnostic::run_impl(const int /* dt */)
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
   view_1d dz("",nlev_packs);
   view_1d z_int("",nlev_packs_p1);
-  Kokkos::parallel_for("VerticalLayerInterfaceDiagnostic",
+  Kokkos::parallel_for("VerticalLayerMidpointDiagnostic",
                        default_policy,
                        KOKKOS_LAMBDA(const MemberType& team) {
     const int i = team.league_rank();
