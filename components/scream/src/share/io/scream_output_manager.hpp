@@ -107,8 +107,10 @@ public:
   void finalize();
 protected:
 
-  std::string compute_filename_root (const IOControl& control, const IOFileSpecs& file_specs) const;
-  std::string find_filename_in_rpointer (const std::string& casename, const std::string& suffix) const;
+  std::string compute_filename (const IOControl& control,
+                                const IOFileSpecs& file_specs,
+                                const std::string suffix,
+                                const util::TimeStamp& timestamp) const;
 
   // Craft the restart parameter list
   void set_params (const ekat::ParameterList& params,

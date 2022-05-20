@@ -63,7 +63,7 @@ TEST_CASE ("time_stamp") {
 
   REQUIRE (ts1.get_date_string()=="2021-10-12");
   REQUIRE (ts1.get_time_string()=="17:08:30");
-  REQUIRE (ts1.to_string()=="2021-10-12.170830");
+  REQUIRE (ts1.to_string()=="2021-10-12-61710");
 
   // Comparisons
   TS ts2 = ts1;

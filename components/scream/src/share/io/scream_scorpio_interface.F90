@@ -119,10 +119,12 @@ module scream_scorpio_interface
     integer          :: dtype                 ! data type
     integer          :: numdims               ! Number of dimensions in out field
     type(io_desc_t), pointer  :: iodesc       ! PIO decomp associated with this variable
+    type(iodesc_list_t), pointer  :: iodesc_list ! PIO decomp list with metadata about PIO decomp
     integer, allocatable :: compdof(:)        ! Global locations in output array for this process
     integer, allocatable :: dimid(:)          ! array of PIO dimension id's for this variable
     integer, allocatable :: dimlen(:)         ! array of PIO dimension lengths for this variable
     logical              :: has_t_dim         ! true, if variable has a time dimension
+    logical              :: is_set = .false.  ! Safety measure to ensure a deallocated hist_var_t is never used
   end type hist_var_t
 
   ! The iodesc_list allows us to cache existing PIO decompositions
@@ -133,12 +135,15 @@ module scream_scorpio_interface
   type iodesc_list_t
     character(tag_len)           :: tag              ! Unique tag associated with this decomposition
     type(io_desc_t),     pointer :: iodesc => NULL() ! PIO - decomposition
-    type(iodesc_list_t), pointer :: next => NULL()   ! Needed for recursive definition
+    type(iodesc_list_t), pointer :: next => NULL()   ! Needed for recursive definition, the next list
+    type(iodesc_list_t), pointer :: prev => NULL()   ! Needed for recursive definition, the list that points to this one
     logical                      :: iodesc_set = .false.
+    integer                      :: num_customers = 0 ! Track the number of currently active variables that use this pio decomposition
+    integer                      :: location = 0      ! where am in the recursive list
   end type iodesc_list_t
 
   ! Define the first iodesc_list_t
-  type(iodesc_list_t), target :: iodesc_list_top
+  type(iodesc_list_t), pointer :: iodesc_list_top
 !----------------------------------------------------------------------
   type hist_coord_list_t
     type(hist_coord_t),      pointer :: coord => NULL() ! Pointer to a history dimension structure
@@ -356,7 +361,7 @@ contains
 
     do while (associated(curr))
       if (associated(curr%var)) then
-        if (trim(curr%var%name)==trim(shortname)) then
+        if (trim(curr%var%name)==trim(shortname) .and. curr%var%is_set) then
           var_found = .true.
           exit
         endif
@@ -392,6 +397,9 @@ contains
       ! check to see if variable already is defined with file (for use with input)
       ierr = PIO_inq_varid(pio_atm_file%pioFileDesc,trim(shortname),hist_var%piovar)
       call errorHandle("PIO ERROR: could not find variable "//trim(shortname)//" in file "//trim(filename),ierr)
+
+      ! Set that the new variable has been set
+      hist_var%is_set = .true.
     else
       ! The var was already registered by another input/output instance. Check that everything matches
       hist_var => curr%var
@@ -478,7 +486,7 @@ contains
 
     do while (associated(curr))
       if (associated(curr%var)) then
-        if (trim(curr%var%name)==trim(shortname)) then
+        if (trim(curr%var%name)==trim(shortname) .and. curr%var%is_set) then
           var_found = .true.
           exit
         endif
@@ -520,6 +528,9 @@ contains
       !PMC
       ierr=PIO_put_att(pio_atm_file%pioFileDesc, hist_var%piovar, 'units', hist_var%units )
       ierr=PIO_put_att(pio_atm_file%pioFileDesc, hist_var%piovar, 'long_name', hist_var%long_name )
+
+      ! Set that new variable has been created
+      hist_var%is_set = .true.
     else
       ! The var was already registered by another input/output instance. Check that everything matches
       hist_var => curr%var
@@ -656,6 +667,9 @@ contains
     pio_file_list_back   => null()
     pio_file_list_front => null()
 
+    ! Init the iodecomp 
+    iodesc_list_top => null()
+
   end subroutine eam_init_pio_subsystem
 !=====================================================================!
   ! Query whether the pio subsystem is inited already
@@ -715,6 +729,8 @@ contains
     type(pio_atm_file_t),pointer     :: pio_atm_file
     type(pio_file_list_t), pointer   :: pio_file_list_ptr
     logical                          :: found
+    type(hist_var_list_t), pointer   :: curr_var_list
+    type(hist_var_t), pointer        :: var
 
     ! Find the pointer for this file
     call lookup_pio_atm_file(trim(fname),pio_atm_file,found,pio_file_list_ptr)
@@ -724,6 +740,23 @@ contains
           call PIO_syncfile(pio_atm_file%pioFileDesc)
         endif
         call PIO_closefile(pio_atm_file%pioFileDesc)
+        pio_atm_file%num_customers = pio_atm_file%num_customers - 1
+
+        ! Remove all variables from this file as customers for the stored pio
+        ! decompostions
+        curr_var_list => pio_atm_file%var_list_top  ! Start with the first variable in the file
+        do while (associated(curr_var_list))
+          var => curr_var_list%var  ! The actual variable pointer
+          if (associated(var)) then
+            ! Remove this variable as a customer of the associated iodesc
+            var%iodesc_list%num_customers = var%iodesc_list%num_customers - 1
+            ! Dellocate select memory from this variable.  Note we can't just
+            ! deallocate the whole var structure because this would also
+            ! deallocate the iodesc_list.
+            call deallocate_hist_var_t(var)
+          end if ! associated(var)
+          curr_var_list => curr_var_list%next  ! Move on to the next variable
+        end do ! associated(curr_var_list)
 
         ! Adjust pointers in the pio file list
         if (associated(pio_file_list_ptr%prev)) then
@@ -738,6 +771,10 @@ contains
           ! We're deleting the last item in the lists. Update pio_file_list_back
           pio_file_list_back => pio_file_list_ptr%prev
         endif
+
+        ! Now that we have closed this pio file and purged it from the list we
+        ! can deallocate the structure.
+        deallocate(pio_atm_file)
       else if (pio_atm_file%num_customers .gt. 1) then
         pio_atm_file%num_customers = pio_atm_file%num_customers - 1
       else
@@ -747,7 +784,92 @@ contains
       call errorHandle("PIO ERROR: unable to close file: "//trim(fname)//", was not found",-999)
     end if
 
+    ! Final step, free any pio decompostion memory that is no longer needed.
+    call free_decomp()
+
   end subroutine eam_pio_closefile
+!=====================================================================!
+  ! Helper function to debug list of decomps 
+  subroutine print_decomp()
+    type(iodesc_list_t),   pointer :: iodesc_ptr, next, prev
+
+    integer :: total
+    integer :: cnt 
+    logical :: assoc
+
+    if (associated(iodesc_list_top)) then
+      total = 0
+      cnt   = 0
+      write(*,*) "            PRINT DECOMP            "
+      write(*,*) "            ------------            "
+      write(*,'(8X,A10,A15,A50,A15)') "Location", "Associated?", "IODESC TAG", "# Customers"
+    else
+      write(*,*) "No DECOMP List to print"
+      return
+    end if
+    iodesc_ptr => iodesc_list_top
+    do while(associated(iodesc_ptr))
+      total = total + 1
+      assoc = .false.
+      if (associated(iodesc_ptr%iodesc).and.iodesc_ptr%iodesc_set) then
+        cnt = cnt + 1
+        assoc = .true.
+      end if
+      write(*,'(I3,A5,I10,L15,A50,I15)') total, ": ", iodesc_ptr%location, assoc , trim(iodesc_ptr%tag), iodesc_ptr%num_customers
+      iodesc_ptr => iodesc_ptr%next
+    end do
+    write(*,*) "            total: ", total, ", cnt: ",cnt
+    write(*,*) "            ------------            "
+
+  end subroutine print_decomp
+!=====================================================================!
+  ! Free the memory stored in a hist_var_t derived type
+  subroutine deallocate_hist_var_t(var)
+
+    type(hist_var_t), pointer        :: var
+    
+    deallocate(var%compdof)
+    deallocate(var%dimid)
+    deallocate(var%dimlen)
+    var%is_set = .false.
+
+  end subroutine deallocate_hist_var_t
+!=====================================================================!
+  ! Free pio decomposition memory in PIO for any decompositions that are no
+  ! longer needed.  This is an important memory management step that should be
+  ! taken whenever a file is closed.
+  subroutine free_decomp()
+    use piolib_mod, only: PIO_freedecomp
+    type(iodesc_list_t),   pointer :: iodesc_ptr, next, prev
+
+    ! Free all decompositions from PIO
+    iodesc_ptr => iodesc_list_top
+    do while(associated(iodesc_ptr))
+      next => iodesc_ptr%next
+      if (associated(iodesc_ptr%iodesc).and.iodesc_ptr%iodesc_set) then
+        if (iodesc_ptr%num_customers .eq. 0) then
+          ! Free decomp
+          call pio_freedecomp(pio_subsystem,iodesc_ptr%iodesc)
+          ! Nullify this decomp
+          ! If we are at iodesc_list_top we need to make iodesc_ptr%next the new
+          ! iodesc_list_top:
+          if (associated(iodesc_ptr%prev)) then
+            iodesc_ptr%prev%next => iodesc_ptr%next
+          else
+            ! We are deleting the first item in the list, update
+            ! iodesc_list_front
+            iodesc_list_top => iodesc_ptr%next
+          end if
+          if (associated(iodesc_ptr%next)) then
+            iodesc_ptr%next%prev => iodesc_ptr%prev
+          end if
+          deallocate(iodesc_ptr)
+        end if
+      end if
+      iodesc_ptr => next
+    end do
+
+  end subroutine free_decomp
 !=====================================================================!
   ! Finalize a PIO session within scream.  Close all open files and deallocate
   ! the pio_subsystem session.
@@ -767,7 +889,6 @@ contains
       call eam_pio_closefile(curr_file_ptr%pio_file%filename)
       prev_file_ptr => curr_file_ptr
       curr_file_ptr => curr_file_ptr%next
-      deallocate(prev_file_ptr%pio_file)
       deallocate(prev_file_ptr)
     end do
     ! Free all decompositions from PIO
@@ -815,7 +936,7 @@ contains
 !=====================================================================!
  ! Determine the unique pio_decomposition for this output grid, if it hasn't
  ! been defined create a new one.
-  subroutine get_decomp(tag,dtype,dimension_len,compdof,iodesc)
+  subroutine get_decomp(tag,dtype,dimension_len,compdof,iodesc_list)
     use piolib_mod, only: pio_initdecomp
     ! TODO: CAM code creates the decomp tag for the user.  Theoretically it is
     ! unique because it is based on dimensions and datatype.  But the tag ends
@@ -826,7 +947,7 @@ contains
     integer, intent(in)       :: dtype            ! Datatype associated with the output
     integer, intent(in)       :: dimension_len(:) ! Array of the dimension lengths for this decomp
     integer, intent(in)       :: compdof(:)       ! The degrees of freedom this rank is responsible for
-    type(io_desc_t), pointer  :: iodesc           ! The pio decomposition that has been found or created
+    type(iodesc_list_t), pointer :: iodesc_list   ! The pio decomposition list that holds this iodesc 
 
     logical                     :: found            ! Whether a decomp has been found among the previously defined decompositions
     type(iodesc_list_t),pointer :: curr, prev       ! Used to toggle through the recursive list of decompositions
@@ -835,12 +956,12 @@ contains
     ! Assign a PIO decomposition to variable, if none exists, create a new one:
     found = .false.
     curr => iodesc_list_top
+    prev => iodesc_list_top
     ! Cycle through all current iodesc to see if the decomp has already been
     ! created
     do while(associated(curr) .and. (.not.found))
       if (trim(tag) == trim(curr%tag)) then
         found = .true.
-        iodesc => curr%iodesc
       else
         prev => curr
         curr => curr%next
@@ -849,14 +970,25 @@ contains
     ! If we didn't find an iodesc then we need to create one
     if (.not.found) then
       curr => prev ! Go back and allocate the new iodesc in curr%next
+      ! We may have no iodesc to begin with, so we need to associate the
+      ! beginning of the list.
+      if(.not.associated(curr)) then
+        allocate(curr)
+        curr%location = 1
+        iodesc_list_top => curr
+      end if
       if(associated(curr%iodesc)) then
         allocate(curr%next)
+        curr%next%prev => curr
         curr => curr%next
         nullify(curr%iodesc)  ! Extra step to ensure clean iodesc
         nullify(curr%next)  ! Extra step to ensure clean iodesc
       end if
       allocate(curr%iodesc)
       curr%tag = trim(tag)
+      if (associated(curr%prev)) then
+        curr%location = prev%location+1
+      end if
       loc_len = size(dimension_len)
       if ( loc_len.eq.1 .and. dimension_len(loc_len).eq.0 ) then
         allocate(curr%iodesc)
@@ -864,8 +996,8 @@ contains
         call pio_initdecomp(pio_subsystem, dtype, dimension_len, compdof, curr%iodesc, rearr=pio_rearranger)
         curr%iodesc_set = .true.
       end if
-      iodesc => curr%iodesc
     end if
+    iodesc_list => curr
 
   end subroutine get_decomp
 !=====================================================================!
@@ -937,10 +1069,12 @@ contains
         ! Assign decomp
         if (hist_var%has_t_dim) then
           loc_len = max(1,hist_var%numdims-1)
-          call get_decomp(hist_var%pio_decomp_tag,hist_var%dtype,hist_var%dimlen(:loc_len),hist_var%compdof,hist_var%iodesc)
+          call get_decomp(hist_var%pio_decomp_tag,hist_var%dtype,hist_var%dimlen(:loc_len),hist_var%compdof,hist_var%iodesc_list)
         else
-          call get_decomp(hist_var%pio_decomp_tag,hist_var%dtype,hist_var%dimlen,hist_var%compdof,hist_var%iodesc)
+          call get_decomp(hist_var%pio_decomp_tag,hist_var%dtype,hist_var%dimlen,hist_var%compdof,hist_var%iodesc_list)
         end if
+        hist_var%iodesc => hist_var%iodesc_list%iodesc
+        hist_var%iodesc_list%num_customers = hist_var%iodesc_list%num_customers + 1  ! Add this variable as a customer of this pio decomposition
       end if
       curr => curr%next
     end do
@@ -960,7 +1094,7 @@ contains
     do while (associated(curr))
       var => curr%var
       if (associated(var)) then
-        if (trim(varname) == trim(var%name)) return
+        if (trim(varname) == trim(var%name) .and. var%is_set) return
       end if
       curr => curr%next
     end do

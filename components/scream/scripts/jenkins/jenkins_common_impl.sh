@@ -12,6 +12,7 @@ test_SA=1
 skip_mappy=0
 skip_weaver=0
 skip_blake=0
+is_at_run=0
 if [ ${#labels[@]} -gt 0 ]; then
   # We do have some labels. Look for some supported ones.
   for label in "${labels[@]}"
@@ -72,6 +73,7 @@ if [ $skip_testing -eq 0 ]; then
   # later tests from running.
   set +e
   if [ -n "$PULLREQUESTNUM" ]; then
+      is_at_run=1
       SUBMIT="" # We don't submit AT runs
       AUTOTESTER_CMAKE="-c SCREAM_AUTOTESTER=ON"
   fi
@@ -130,12 +132,18 @@ if [ $skip_testing -eq 0 ]; then
     fi
 
     if [[ $test_v0 == 1 ]]; then
-      ../../cime/scripts/create_test e3sm_scream -c -b master
+      ../../cime/scripts/create_test e3sm_scream_v0 -c -b master
       if [[ $? != 0 ]]; then fails=$fails+1; fi
     fi
 
     if [[ $test_v1 == 1 ]]; then
-      ../../cime/scripts/create_test e3sm_scream_v1 --compiler=gnu9 -c -b master
+      if [[ $is_at_run == 1 ]]; then
+        # AT runs should be fast. => run only low resolution
+        ../../cime/scripts/create_test e3sm_scream_v1_lowres --compiler=gnu9 -c -b master
+      else
+        # For nightlies, run both lowres and midres
+        ../../cime/scripts/create_test e3sm_scream_v1 --compiler=gnu9 -c -b master
+      fi
       if [[ $? != 0 ]]; then fails=$fails+1; fi
     else
       echo "SCREAM v1 tests were skipped, since the Github label 'AT: Skip v1 Testing' was found.\n"
