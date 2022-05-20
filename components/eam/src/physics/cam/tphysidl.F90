@@ -121,6 +121,7 @@ subroutine tphysidl(ztodt, state, tend, ideal_phys_option)
    ! initialize individual parameterization tendencies
    call physics_ptend_init(ptend, state%psetcols, 'tphysidl', ls=.true., lu=.true., lv=.true.)
 
+
    if (trim(ideal_phys_option) == 'held-suarez') then
 !
 !-----------------------------------------------------------------------
@@ -418,6 +419,10 @@ subroutine tphysidl(ztodt, state, tend, ideal_phys_option)
       write(iulog,*) 'idlflag is currently set to: ', trim(ideal_phys_option)
       call endrun('ideal_phys_option: invalid option')
    endif
+
+   ! write heating rate to history file
+   call outfld('HS_HEAT', ptend%s(:,:), ncol, lchnk)
+
 
    ! update the state and total physics tendency
    call physics_update(state, ptend, ztodt, tend)
