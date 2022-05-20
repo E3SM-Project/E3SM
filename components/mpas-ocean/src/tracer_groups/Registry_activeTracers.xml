@@ -65,8 +65,8 @@
 				<var name="temperature" array_group="activeGRP" units="degrees Celsius"
 			 description="potential temperature"
 				/>
-				<var name="salinity" array_group="activeGRP" units="grams salt per kilogram seawater"
-			 description="salinity"
+				<var name="salinity" array_group="activeGRP" units="1.e-3"
+			 description="salinity grams salt per kilogram seawater"
 				/>
 			</var_array>
 		</var_struct>
@@ -75,10 +75,10 @@
 	<var_struct name="tend" time_levs="1">
 		<var_struct name="tracersTend" time_levs="1">
 			<var_array name="activeTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="activeTracersPKG">
-				<var name="temperatureTend" array_group="activeGRP" units="^\circ C s^{-1}"
+				<var name="temperatureTend" array_group="activeGRP" units="^\circ C s^-1"
 			 description="time tendency of potential temperature"
 				/>
-				<var name="salinityTend" array_group="activeGRP" units="PSU s^{-1}"
+				<var name="salinityTend" array_group="activeGRP" units="PSU s^-1"
 			 description="time tendency of salinity measured as change in practical salinity units per second"
 				/>
 			</var_array>
@@ -88,44 +88,44 @@
 	<var_struct name="forcing" time_levs="1">
 		<var_struct name="tracersSurfaceFlux" time_levs="1">
 			<var_array name="activeTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="activeTracersPKG">
-				<var name="temperatureSurfaceFlux" array_group="activeTracerFluxGRP" units="^\circ C m s^{-1}"
+				<var name="temperatureSurfaceFlux" array_group="activeTracerFluxGRP" units="^\circ C m s^-1"
 			 description="Flux of temperature through the ocean surface. Positive into ocean."
 				/>
-				<var name="salinitySurfaceFlux" array_group="activeTracerFluxGRP" units="PSU m s^{-1}"
+				<var name="salinitySurfaceFlux" array_group="activeTracerFluxGRP" units="PSU m s^-1"
 			 description="Flux of salinity through the ocean surface. Positive into ocean."
 				/>
 			</var_array>
 			<var_array name="activeTracersSurfaceFluxRunoff" type="real" dimensions="nCells Time" packages="activeTracersPKG">
-				<var name="temperatureSurfaceFluxRunoff" array_group="activeRunoffFluxGRP" units="^\circ C m s^{-1}"
+				<var name="temperatureSurfaceFluxRunoff" array_group="activeRunoffFluxGRP" units="^\circ C m s^-1"
 			 description="Flux of temperature through the ocean surface due to river runoff. Positive into ocean."
 				/>
-				<var name="salinitySurfaceFluxRunoff" array_group="activeRunoffFluxGRP" units="PSU m s^{-1}"
+				<var name="salinitySurfaceFluxRunoff" array_group="activeRunoffFluxGRP" units="PSU m s^-1"
 			 description="Flux of salinity through the ocean surface due to river runoff. Positive into ocean."
 				/>
 			</var_array>
 			<var_array name="activeTracersSurfaceFluxRemoved" type="real" dimensions="nCells Time" packages="activeTracersPKG">
-				<var name="temperatureSurfaceFluxRemoved" array_group="activeRemovedFluxGRP" units="^\circ C m s^{-1}"
+				<var name="temperatureSurfaceFluxRemoved" array_group="activeRemovedFluxGRP" units="^\circ C m s^-1"
 			 description="Flux of temperature that is ignored coming into the ocean. Positive into ocean."
 				/>
-				<var name="salinitySurfaceFluxRemoved" array_group="activeRemovedFluxGRP" units="PSU m s^{-1}"
+				<var name="salinitySurfaceFluxRemoved" array_group="activeRemovedFluxGRP" units="PSU m s^-1"
 			 description="Flux of salinity that is ignored coming into the ocean. Positive into ocean."
 				/>
 			</var_array>
 			<var_array name="nonLocalSurfaceTracerFlux" type="real" dimensions="nCells Time" packages="activeTracersPKG">
-				<var name="nonLocalTemperatureSurfaceFlux" array_group="activeNonLocalGRP" units="^\circ C m s^{-1}"
+				<var name="nonLocalTemperatureSurfaceFlux" array_group="activeNonLocalGRP" units="^\circ C m s^-1"
 			description="total flux of temperature (including thickness contributions) through ocean surface"
 				/>
-				<var name="nonLocalSalinitySurfaceFlux" array_group="activeNonLocalGRP" units="PSU m s^{-1}"
+				<var name="nonLocalSalinitySurfaceFlux" array_group="activeNonLocalGRP" units="PSU m s^-1"
 			description="total flux of salinity (including thickness contributions) through ocean surface"
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersSurfaceRestoringFields" time_levs="1">
 			<var_array name="activeTracersPistonVelocity" type="real" dimensions="nCells Time" packages="activeTracersSurfaceRestoringPKG">
-				<var name="temperaturePistonVelocity" array_group="activeGRP" units="m s^{-1}"
+				<var name="temperaturePistonVelocity" array_group="activeGRP" units="m s^-1"
 			 description="A non-negative field controlling the rate at which temperature is restored to temperatureSurfaceRestoringValue"
 				/>
-				<var name="salinityPistonVelocity" array_group="activeGRP" units="m s^{-1}"
+				<var name="salinityPistonVelocity" array_group="activeGRP" units="m s^-1"
 			 description="A non-negative field controlling the rate at which salinity is restored to salinitySurfaceRestoringValue"
 				/>
 			</var_array>
@@ -158,7 +158,7 @@
 		</var_struct>
 		<var_struct name="tracersExponentialDecayFields" time_levs="1">
 			<var_array name="activeTracersExponentialDecayRate" type="real" dimensions="Time" packages="activeTracersExponentialDecayPKG">
-				<var name="temperatureExponentialDecayRate" array_group="activeGRP" units="s^{-1}"
+				<var name="temperatureExponentialDecayRate" array_group="activeGRP" units="s^-1"
 			 description="A non-negative field controlling the exponential decay of temperature"
 				/>
 				<var name="salinityExponentialDecayRate" array_group="activeGRP" units="s"
