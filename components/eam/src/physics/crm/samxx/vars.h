@@ -82,9 +82,8 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
                   real *crm_output_qp_src_p, real *crm_output_qt_ls_p, real *crm_output_t_ls_p, real *crm_output_jt_crm_p, real *crm_output_mx_crm_p, real *crm_output_cltot_p, 
                   real *crm_output_clhgh_p, real *crm_output_clmed_p, real *crm_output_cllow_p, 
                   real *crm_output_sltend_p, real *crm_output_qltend_p, real *crm_output_qcltend_p, real *crm_output_qiltend_p, 
-                  real *crm_output_t_vt_tend_p, real *crm_output_q_vt_tend_p,
-                  real *crm_output_t_vt_ls_p, real *crm_output_q_vt_ls_p,
-                  real *crm_output_u_vt_tend_p, real *crm_output_u_vt_ls_p,
+                  real *crm_output_t_vt_tend_p, real *crm_output_q_vt_tend_p, real *crm_output_u_vt_tend_p,
+                  real *crm_output_t_vt_ls_p, real *crm_output_q_vt_ls_p, real *crm_output_u_vt_ls_p,
 #ifdef MMF_MOMENTUM_FEEDBACK
                   real *crm_output_ultend_p, real *crm_output_vltend_p,
 #endif
@@ -111,9 +110,8 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
                               real *crm_output_qp_src_p, real *crm_output_qt_ls_p, real *crm_output_t_ls_p, real *crm_output_jt_crm_p, real *crm_output_mx_crm_p, real *crm_output_cltot_p, 
                               real *crm_output_clhgh_p, real *crm_output_clmed_p, real *crm_output_cllow_p, 
                               real *crm_output_sltend_p, real *crm_output_qltend_p, real *crm_output_qcltend_p, real *crm_output_qiltend_p, 
-                              real *crm_output_t_vt_tend_p, real *crm_output_q_vt_tend_p,
-                              real *crm_output_t_vt_ls_p, real *crm_output_q_vt_ls_p,
-                              real *crm_output_u_vt_tend_p, real *crm_output_u_vt_ls_p,
+                              real *crm_output_t_vt_tend_p, real *crm_output_q_vt_tend_p, real *crm_output_u_vt_tend_p,
+                              real *crm_output_t_vt_ls_p, real *crm_output_q_vt_ls_p, real *crm_output_u_vt_ls_p,
 #ifdef MMF_MOMENTUM_FEEDBACK
                               real *crm_output_ultend_p, real *crm_output_vltend_p, 
 #endif
@@ -342,12 +340,12 @@ extern real3d cloudtoptemp    ;
 
 extern real2d t_vt           ;
 extern real2d q_vt           ;
+extern real2d u_vt           ;
 extern real2d t_vt_tend      ;
 extern real2d q_vt_tend      ;
+extern real2d u_vt_tend      ;
 extern real4d t_vt_pert      ;
 extern real4d q_vt_pert      ;
-extern real2d u_vt           ;
-extern real2d u_vt_tend      ;
 extern real4d u_vt_pert      ;
 
 extern real1d fcorz           ;
@@ -526,9 +524,9 @@ extern real2d crm_output_qcltend;
 extern real2d crm_output_qiltend;
 extern real2d crm_output_t_vt_tend;
 extern real2d crm_output_q_vt_tend;
+extern real2d crm_output_u_vt_tend;
 extern real2d crm_output_t_vt_ls;
 extern real2d crm_output_q_vt_ls;
-extern real2d crm_output_u_vt_tend;
 extern real2d crm_output_u_vt_ls;
 #ifdef MMF_MOMENTUM_FEEDBACK
 extern real2d crm_output_ultend; 
