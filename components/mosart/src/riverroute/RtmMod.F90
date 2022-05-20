@@ -415,6 +415,9 @@ contains
     Tctl%RoutingMethod = RoutingMethod
     Tctl%DLevelH2R     = DLevelH2R
     Tctl%DLevelR       = DLevelR
+    if(Tctl%RoutingMethod > 2) then 
+	   call shr_sys_abort('Error in routing method setup! There are only 2 options available: 1==KW, 2==DW.')
+    end if
 
     if (inundflag) then
        Tctl%OPT_inund = OPT_inund     !
