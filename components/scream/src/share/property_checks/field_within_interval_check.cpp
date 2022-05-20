@@ -59,8 +59,7 @@ PropertyCheck::CheckResult FieldWithinIntervalCheck::check_impl () const
   const auto extents = layout.extents();
   const auto size = layout.size();
 
-  using space_t = typename Field::device_t::execution_space;
-  using minmaxloc_t = Kokkos::MinMaxLoc<nonconst_ST,int,space_t>;
+  using minmaxloc_t = Kokkos::MinMaxLoc<nonconst_ST,int>;
   using minmaxloc_value_t = typename minmaxloc_t::value_type;
   minmaxloc_value_t minmaxloc;
   switch (layout.rank()) {
