@@ -36,8 +36,8 @@ CreateUnitTest(output_restart_test "output_restart.cpp" scream_io LABELS "io"
 )
 
 foreach (MPI_RANKS RANGE 1 ${SCREAM_TEST_MAX_RANKS})
-  set (SRC_FILE io_output_restart.AVERAGE.Steps_x10.np${MPI_RANKS}.2000-01-01.000020.nc)
-  set (TGT_FILE io_output_restart_check.AVERAGE.Steps_x10.np${MPI_RANKS}.2000-01-01.000020.nc)
+  set (SRC_FILE io_output_restart.AVERAGE.Steps_x10.np${MPI_RANKS}.2000-01-01-00020.nc)
+  set (TGT_FILE io_output_restart_check.AVERAGE.Steps_x10.np${MPI_RANKS}.2000-01-01-00020.nc)
   add_test (NAME io_test_restart_check_np${MPI_RANKS}
             COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})

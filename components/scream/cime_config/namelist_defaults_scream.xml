@@ -218,19 +218,21 @@ tweaking their $case/namelist_scream.xml file.
     <Filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220503.nc</Filename>
     <Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220505.nc</Filename>
     <Filename COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20211202.nc</Filename>
-    <Restart__Casename>${CASE}</Restart__Casename>
+    <Restart__Casename>${CASE}.scream</Restart__Casename>
   </Initial__Conditions>
 
   <!-- List of yaml files containing I/O output specs -->
   <Scorpio>
-    <Output__YAML__Files type="array(string)">data/scream_output.yaml</Output__YAML__Files>
+    <Output__YAML__Files type="array(string)">data/scream_default_output.yaml</Output__YAML__Files>
     <Model__Restart>
-      <Casename>${CASE}</Casename>
+      <Casename>./${CASE}.scream</Casename>
       <Output__Control>
         <Frequency>${REST_N}</Frequency>
         <Frequency REST_OPTION="none">0</Frequency>
         <Frequency__Units>INVALID</Frequency__Units>
         <Frequency__Units REST_OPTION="nstep*">Steps</Frequency__Units>
+        <AVG__Type__in__Filename>false</AVG__Type__in__Filename>
+        <Frequency__in__Filename>false</Frequency__in__Filename>
       </Output__Control>
     </Model__Restart>
   </Scorpio>

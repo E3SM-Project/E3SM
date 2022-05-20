@@ -101,10 +101,10 @@ double TimeStamp::days_from (const TimeStamp& ts) const {
 
 std::string TimeStamp::to_string () const {
 
-  auto time = get_time_string ();
-  time.erase(std::remove( time.begin(), time.end(), ':'), time.end());
+  std::ostringstream tod;
+  tod << std::setw(5) << std::setfill('0') << sec_of_day();
 
-  return get_date_string() + "." + time;
+  return get_date_string() + "-" + tod.str();
 }
 
 std::string TimeStamp::get_date_string () const {
@@ -299,8 +299,9 @@ TimeStamp str_to_time_stamp (const std::string& s)
     }
     return true;
   };
-  // A time stamp is a string of the form "YYYY-MM-DD.hhmmss"
-  if (s.size()!=17 || s[4]!='-' || s[7]!='-' || s[10]!='.') {
+  // A time stamp is a string of the form "YYYY-MM-DD-XXXXX"
+  // with XXXXX being the time of day in seconds
+  if (s.size()!=16 || s[4]!='-' || s[7]!='-' || s[10]!='-') {
     return util::TimeStamp();
   }
   // Check subtokens are valid ints

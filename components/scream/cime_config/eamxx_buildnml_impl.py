@@ -135,7 +135,7 @@ def find_node (root,name):
     return None
 
 ###############################################################################
-def get_child (root,name,remove=False):
+def get_child (root,name,remove=False,must_exist=True):
 ###############################################################################
     """
     Get children with given name. If not found, throws an exception.
@@ -153,12 +153,13 @@ def get_child (root,name,remove=False):
     >>> get_child(root,'c')
     Traceback (most recent call last):
     CIME.utils.CIMEError: ERROR: There must be exactly one c entry inside my_root
+    >>> get_child(root,'c',must_exist=False)
     """
 
-    expect (len(root.findall(name))==1,
+    expect (len(root.findall(name))==1 or must_exist==False,
             "There must be exactly one {} entry inside {}".format(name,root.tag))
     child = root.find(name)
-    if remove:
+    if remove and child is not None:
         root.remove(child)
 
     return child
@@ -641,7 +642,8 @@ def gen_group_processes (ap_names_str, atm_procs_defaults):
 
             # Check if this pre-defined proc is itself a group, and, if so,
             # build all its sub-processes
-            if has_child(proc,"Type") and get_child(proc,"Type").text=="Group":
+            ptype = get_child(proc,"Type",must_exist=False)
+            if ptype is not None and ptype.text=="Group":
                 # This entry of the group is itself a group, with pre-defined
                 # defaults. Let's add its entries to it
                 sub_group_procs = get_child(proc,"atm_procs_list").text
@@ -686,7 +688,7 @@ def gen_atm_proc_group(atm_procs_list, atm_procs_defaults):
     >>>
     >>> has_child(apg,'group.ap2_ap1.')
     True
-    >>> has_child(apg,'prop1') and get_child(apg,'prop1').text=="1"
+    >>> get_child(apg,'prop1').text=="1"
     True
     """
 
