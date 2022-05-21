@@ -343,6 +343,9 @@ module ocn_forward_mode
       call mpas_set_time(referenceTime_timeType, dateTimeString=config_output_reference_time)
       call mpas_get_timeInterval(xtime_timeType - referenceTime_timeType, dt=Time)
       Time = Time*days_per_second
+      ! bounds on instantaneous time are just the time itself
+      Time_bnds(1) = Time
+      Time_bnds(2) = Time
 
       ! Update any mesh fields that may have been modified during init
       call ocn_meshUpdateFields(domain)

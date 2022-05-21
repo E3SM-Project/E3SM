@@ -151,6 +151,9 @@ module ocn_time_integration
            dt=Time)
 
       Time = Time*days_per_second
+      ! bounds on instantaneous time are just the time itself
+      Time_bnds(1) = Time
+      Time_bnds(2) = Time
 
    !--------------------------------------------------------------------
 

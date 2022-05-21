@@ -158,6 +158,7 @@ module ocn_diagnostics_variables
 
    real (kind=RKIND), pointer :: daysSinceStartOfSim
    real (kind=RKIND), pointer :: Time
+   real (kind=RKIND), dimension(:), pointer :: Time_bnds
    character (len=StrKIND), pointer :: xtime, simulationStartTime
 
    real (kind=RKIND), dimension(:,:), pointer :: bulkRichardsonNumber
@@ -559,6 +560,7 @@ contains
                "daysSinceStartOfSim", &
                 daysSinceStartOfSim)
       call mpas_pool_get_array(diagnosticsPool, 'Time', Time)
+      call mpas_pool_get_array(diagnosticsPool, 'Time_bnds', Time_bnds)
       call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
       call mpas_pool_get_array(diagnosticsPool, 'simulationStartTime', &
                 simulationStartTime)
@@ -856,6 +858,7 @@ contains
       !$acc                   tracersSurfaceValue,                     &
       !$acc                   daysSinceStartOfSim,                     &
       !$acc                   Time,                                    &
+      !$acc                   Time_bnds,                               &
       !$acc                   simulationStartTime,                     &
       !$acc                   boundaryLayerDepthSmooth,                &
       !$acc                   surfaceFluxAttenuationCoefficientRunoff  &
@@ -1105,6 +1108,7 @@ contains
       !$acc                   tracersSurfaceValue,                     &
       !$acc                   daysSinceStartOfSim,                     &
       !$acc                   Time,                                    &
+      !$acc                   Time_bnds,                               &
       !$acc                   simulationStartTime,                     &
       !$acc                   boundaryLayerDepthSmooth,                &
       !$acc                   surfaceFluxAttenuationCoefficientRunoff  &
@@ -1303,6 +1307,7 @@ contains
               tracersSurfaceValue,                     &
               daysSinceStartOfSim,                     &
               Time,                                    &
+              Time_bnds,                               &
               simulationStartTime,                     &
               boundaryLayerDepthSmooth,                &
               surfaceFluxAttenuationCoefficientRunoff)

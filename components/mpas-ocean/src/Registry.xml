@@ -26,6 +26,9 @@
 		<dim name="nVerticesP1" definition="nVertices+1"
 			 description="The total number of cells in the dual grid. Also the number of corners in the primary grid."
 		/>
+		<dim name="bnds" definition="2"
+			 description="The number of coordinate bound"
+		/>
 		<dim name="TWO" definition="2"
 			 description="The number two as a dimension."
 		/>
@@ -2534,8 +2537,11 @@
 		<var name="xtime" type="text" dimensions="Time"
 			 description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
 		/>
-		<var name="Time" type="real" dimensions="Time"
+		<var name="Time" type="real" dimensions="Time" bounds="Time_bnds"
 			 description="time"
+		/>
+		<var name="Time_bnds" type="real" dimensions="Time bnds"
+			 description="time bounds"
 		/>
 		<var name="simulationStartTime" type="text" dimensions="" default_value="'no_date_available'"
 			 description="start time of first simulation, with format 'YYYY-MM-DD_HH:MM:SS'"
