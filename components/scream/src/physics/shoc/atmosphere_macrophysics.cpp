@@ -310,9 +310,11 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   //computing conversion for all other tracers] from qtracers view
   using view_1d    = typename KT::template view_1d<Int>;
 
-  //host view containing indices of tracers participating in wet<->dry conversion (2 tracers, qv and tke, are excluded)
-  view_1d convert_wet_dry_idx_h("convert_wet_dry_idx_h",m_num_tracers-2);
+  //device view containing indices of tracers participating in wet<->dry conversion (2 tracers, qv and tke, are excluded)
+  view_1d convert_wet_dry_idx_d("convert_wet_dry_idx_d",m_num_tracers-2);
 
+  //mirror view on host
+  auto convert_wet_dry_idx_h = Kokkos::create_mirror_view(convert_wet_dry_idx_d);
   //loop over all tracers to store of all tracer indices except for tke and qv
   for (int it=0,iq=0; it<m_num_tracers; ++it) {
     if (it!=qv_index && it!= tke_index) { //skip if "it" is a tke or qv index
@@ -321,12 +323,11 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
     }
   }
 
+  // copy to device
+  Kokkos::deep_copy(convert_wet_dry_idx_d,convert_wet_dry_idx_h);
 
-  auto convert_wet_dry_idx = Kokkos::create_mirror_view(convert_wet_dry_idx_h);//mirror view on device
-  Kokkos::deep_copy(convert_wet_dry_idx_h,convert_wet_dry_idx);// copy to device
 
-
-  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,convert_wet_dry_idx_h,z_surf,m_cell_area,m_cell_lat,
+  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,convert_wet_dry_idx_d,z_surf,m_cell_area,m_cell_lat,
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
                                 surf_mom_flux,qtracers,qv,qc,qc_copy,tke,tke_copy,z_mid,z_int,cell_length,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
@@ -382,7 +383,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   history_output.wqls_sec  = m_buffer.wqls_sec;
   history_output.brunt     = m_buffer.brunt;
 
-  shoc_postprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,convert_wet_dry_idx_h,
+  shoc_postprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,convert_wet_dry_idx_d,
                                  rrho,qv,qw,qc,qc_copy,tke,tke_copy,qtracers,shoc_ql2,
                                  cldfrac_liq,inv_qc_relvar,
                                  T_mid, dse, z_mid, phis);

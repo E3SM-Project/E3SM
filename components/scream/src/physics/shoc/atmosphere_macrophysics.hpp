@@ -110,7 +110,7 @@ public:
           //Units of all tracers (except TKE and qv) will become [kg/kg(dry-air)] for mass and
           //[#/kg(dry-air)] for number after the following conversion. qv will be converted
           //to dry mmr in the next parallel for
-          PF::calculate_drymmr_from_wetmmr(qtracers(i,convert_wet_dry_idx_h(iq),ilev), qv(i,ilev));
+          PF::calculate_drymmr_from_wetmmr(qtracers(i,convert_wet_dry_idx_d(iq),ilev), qv(i,ilev));
         });
       team.team_barrier();
 
@@ -207,7 +207,7 @@ public:
     // Local variables
     int ncol, nlev, num_qtracers;
     Real z_surf;
-    view_1d_int_const convert_wet_dry_idx_h;
+    view_1d_int_const convert_wet_dry_idx_d;
     view_1d_const        area;
     view_1d_const        lat;
     view_2d_const        T_mid;
@@ -248,7 +248,7 @@ public:
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
-                       const view_1d_int_const& convert_wet_dry_idx_h_,
+                       const view_1d_int_const& convert_wet_dry_idx_d_,
                         const Real z_surf_,
                        const view_1d_const& area_, const view_1d_const& lat_,
                        const view_2d_const& T_mid_, const view_2d_const& p_mid_, const view_2d_const& p_int_, const view_2d_const& pseudo_density_,
@@ -268,7 +268,7 @@ public:
       ncol = ncol_;
       nlev = nlev_;
       num_qtracers = num_qtracers_;
-      convert_wet_dry_idx_h = convert_wet_dry_idx_h_;
+      convert_wet_dry_idx_d = convert_wet_dry_idx_d_;
       z_surf = z_surf_;
       // IN
       area = area_;
@@ -374,7 +374,7 @@ public:
           //Units of all tracers (except TKE and qv) will become [kg/kg(wet-air)] for mass and
           //[#/kg(wet-air)] for number after the following conversion. qv will be converted
           //to wet mmr in the next parallel for
-          PF::calculate_wetmmr_from_drymmr(qtracers(i,convert_wet_dry_idx_h(iq),ilev), qv(i,ilev));
+          PF::calculate_wetmmr_from_drymmr(qtracers(i,convert_wet_dry_idx_d(iq),ilev), qv(i,ilev));
         });
       team.team_barrier();
 
@@ -388,7 +388,7 @@ public:
 
     // Local variables
     int ncol, nlev, num_qtracers;
-    view_1d_int_const convert_wet_dry_idx_h;
+    view_1d_int_const convert_wet_dry_idx_d;
     view_2d_const rrho;
     view_2d qv, qc, tke;
     view_2d_const tke_copy, qc_copy, qw;
@@ -402,7 +402,7 @@ public:
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
-                       const view_1d_int_const& convert_wet_dry_idx_h_,
+                       const view_1d_int_const& convert_wet_dry_idx_d_,
                        const view_2d_const& rrho_,
                        const view_2d& qv_, const view_2d_const& qw_, const view_2d& qc_, const view_2d_const& qc_copy_,
                        const view_2d& tke_, const view_2d_const& tke_copy_, const view_3d& qtracers_, const view_2d_const& qc2_,
@@ -412,7 +412,7 @@ public:
       ncol = ncol_;
       nlev = nlev_;
       num_qtracers = num_qtracers_;
-      convert_wet_dry_idx_h = convert_wet_dry_idx_h_;
+      convert_wet_dry_idx_d = convert_wet_dry_idx_d_;
       rrho = rrho_;
       qv = qv_;
       qw = qw_;
