@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-Casename: SCREAMv1_output_hydrostatic
+Casename: ${CASE}.scream.hi
 Averaging Type: Instant
 Max Snapshots Per File: 744 # One output every 31 days
 Fields:
@@ -46,7 +46,10 @@ Fields:
       - surf_sens_flux
       - surf_mom_flux
 Output Control:
-  Frequency: 2
-  Frequency Units: Steps
-  MPI Ranks in Filename: true
+  Frequency: ${HIST_N}
+  Frequency Units: ${HIST_OPTION}
+  MPI Ranks in Filename: false
+  Timestamp in Filename: true
+  AVG Type in Filename: false
+  Frequency in Filename: false
 ...

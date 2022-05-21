@@ -43,8 +43,7 @@ PropertyCheck::CheckResult FieldNaNCheck::check_impl() const {
   const auto size = layout.size();
 
   int invalid_idx = -1;
-  using space_t = Field::device_t::execution_space;
-  using max_t = Kokkos::Max<int,space_t>;
+  using max_t = Kokkos::Max<int>;
   switch (layout.rank()) {
     case 1:
       {
