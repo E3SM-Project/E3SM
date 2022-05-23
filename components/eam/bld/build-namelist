@@ -3794,6 +3794,7 @@ add_default($nl, 'zmconv_microp');
 add_default($nl, 'zmconv_auto_fac');
 add_default($nl, 'zmconv_accr_fac');
 add_default($nl, 'zmconv_micro_dcs');
+add_default($nl, 'zmconv_clos_dyn_adj');
 #++ MCSP
 add_default($nl, 'zmconv_MCSP_heat_coeff');
 add_default($nl, 'zmconv_MCSP_moisture_coeff');
@@ -3801,6 +3802,7 @@ add_default($nl, 'zmconv_MCSP_uwind_coeff');
 add_default($nl, 'zmconv_MCSP_vwind_coeff');
 #-- MCSP
 #
+
 # moist convection rainwater coefficients
 # These no more needed for EAM, including uwshcu_rpen. No need to reset for 'cam5'
 #add_default($nl, 'hkconv_cmftau');

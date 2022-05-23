@@ -67,6 +67,7 @@ module zm_conv
 
 !<songxl 2014-11-20-----------
    logical  :: zmconv_microp         = .false.   ! switch for ZM microphysics
+   logical  :: zmconv_clos_dyn_adj   = .false.   ! switch for closure dynamics adjustment
 !>songxl 2014-11-20-----------
    integer  :: zmconv_cape_cin       = unset_int
    integer  :: zmconv_mx_bot_lyr_adj = unset_int
@@ -103,6 +104,7 @@ module zm_conv
    real(r8) ::  tiedke_add    = unset_r8
 !<songxl 2014-11-20-----------
    logical  :: zm_microp    ! switch for ZM microphysics
+   logical  :: clos_dyn_adj = .false.   ! true if apply dynamics adjustment to CAPE closure   
 !>songxl 2014-11-20-----------  
    integer  :: num_cin        = unset_int !number of negative buoyancy regions that are allowed before the conv. top and CAPE calc are completed
    integer  :: mx_bot_lyr_adj = unset_int !bottom layer adjustment for setting "launching" level(mx) (to be at maximum moist static energy).
@@ -162,6 +164,7 @@ subroutine zmconv_readnl(nlfile)
            zmconv_MCSP_heat_coeff, zmconv_MCSP_moisture_coeff, &
            zmconv_MCSP_uwind_coeff, zmconv_MCSP_vwind_coeff   
 !-- MCSP
+
    !-----------------------------------------------------------------------------
 
    zmconv_tau = 3600._r8
@@ -188,6 +191,7 @@ subroutine zmconv_readnl(nlfile)
       trig_ull_only  = zmconv_trig_ull_only
 !<songxl----------
       zm_microp      = zmconv_microp
+      clos_dyn_adj   = zmconv_clos_dyn_adj
 !>songxl----------
       tiedke_add     = zmconv_tiedke_add
       num_cin        = zmconv_cape_cin
@@ -239,6 +243,7 @@ subroutine zmconv_readnl(nlfile)
    call mpibcast(trig_ull_only,     1, mpilog, 0, mpicom)
 !<sognxl--------
    call mpibcast(zm_microp,         1, mpilog, 0, mpicom)
+   call mpibcast(clos_dyn_adj,      1, mpilog, 0, mpicom)
 !>songxl--------
    call mpibcast(tiedke_add,        1, mpir8,  0, mpicom)
    call mpibcast(num_cin,           1, mpiint, 0, mpicom)
@@ -309,7 +314,7 @@ end subroutine zm_convi
 subroutine zm_convr(lchnk   ,ncol    , &
                     t       ,qh      ,prec    ,jctop   ,jcbot   , &
                     pblh    ,zm      ,geos    ,zi      ,qtnd    , &
-                    heat    ,pap     ,paph    ,dpp     , &
+                    heat    ,pap     ,paph    ,dpp     ,omega   , &
                     delt    ,mcon    ,cme     ,cape    , &
                     tpert   ,dlf     ,pflx    ,zdu     ,rprd    , &
                     mu      ,md      ,du      ,eu      ,ed      , &
@@ -446,6 +451,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
    real(r8), intent(in) :: pap(pcols,pver)     
    real(r8), intent(in) :: paph(pcols,pver+1)
    real(r8), intent(in) :: dpp(pcols,pver)        ! local sigma half-level thickness (i.e. dshj).
+   real(r8), intent(in) :: omega(pcols,pver)      ! Vertical velocity Pa/s
    real(r8), intent(in) :: zm(pcols,pver)
    real(r8), intent(in) :: geos(pcols)
    real(r8), intent(in) :: zi(pcols,pver+1)
@@ -524,7 +530,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
    real(r8) ql(pcols,pver)                    ! wg grid slice of cloud liquid water.
 
    real(r8) pblt(pcols)           ! i row of pbl top indices.
-
+   real(r8) pbltg(pcols)          ! i row of pbl top indices.
 
 
 
@@ -578,7 +584,8 @@ subroutine zm_convr(lchnk   ,ncol    , &
    real(r8) ug(pcols,pver)             ! wg grid slice of gathered values of u.
    real(r8) vg(pcols,pver)             ! wg grid slice of gathered values of v.
    real(r8) cmeg(pcols,pver)
-
+   real(r8) omegag(pcols,pver)         ! wg grid slice of gathered values of omega.
+   
    real(r8) rprdg(pcols,pver)          ! wg gathered rain production rate
    real(r8) capeg(pcols)               ! wg gathered convective available potential energy.
    real(r8) tlg(pcols)                 ! wg grid slice of gathered values of tl.
@@ -1154,6 +1161,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
          tpg(i,k) = tp(ideep(i),k)
          zfg(i,k) = zf(ideep(i),k)
          qstpg(i,k) = qstp(ideep(i),k)
+         omegag(i,k) = omega(ideep(i),k)
          ug(i,k) = 0._r8
          vg(i,k) = 0._r8
       end do
@@ -1209,6 +1217,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
       maxg(i) = maxi(ideep(i))
       tlg(i) = tl(ideep(i))
       landfracg(i) = landfrac(ideep(i))
+      pbltg(i) = pblt(ideep(i))
       tpertg(i) = tpert(ideep(i))
       if (maxg(i)<nint(pblt(ideep(i)))) tpertg(i)=0._r8  !songxl 2021-04-25
    end do
@@ -1317,6 +1326,13 @@ subroutine zm_convr(lchnk   ,ncol    , &
          mb(i) = 0._r8
       endif
    end do
+
+   if (clos_dyn_adj) then 
+      do i = 1,lengath
+         mb(i) = max(mb(i) - omegag(i,pbltg(i))*0.01_r8, 0._r8)
+      end do
+   end if
+
    ! If no_deep_pbl = .true., don't allow convection entirely 
    ! within PBL (suggestion of Bjorn Stevens, 8-2000)
 
