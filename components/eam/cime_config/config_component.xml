@@ -137,6 +137,7 @@
       <value compset="1850(?:SOI)?_EAM.*CMIP6.*_BGC%B"  >1850_cam5_CMIP6_bgc</value>
       <value compset="2010S_EAM.*CMIP6"  >2010S_cam5_CMIP6</value>
       <value compset="2010(?:SOI)?_EAM.*CMIP6"  >2010_eam_CMIP6</value>
+      <value compset="2010(?:SOI)?_EAM.*CHEMMZT"  >2010_eam_chemMZT</value>
       <value compset="1850(?:SOI)?_EAM.*AR5sf"   >1850_E3SMv1_superfast_ar5-emis</value>
       <value compset="1850S_EAM.*AR5sf"  >1850S_E3SMv1_superfast_ar5-emis</value>
       <value compset="2000(?:SOI)?_EAM.*AV1C-L" >2000_cam5_av1c-04p2</value>
