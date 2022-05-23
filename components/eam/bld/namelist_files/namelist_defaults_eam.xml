@@ -1125,6 +1125,7 @@
 <zmconv_dmpdz                                                         >-1.0E-3 </zmconv_dmpdz>
 <zmconv_tp_fac                                                        >0.D0 </zmconv_tp_fac>
 <zmconv_microp                                                        >.false. </zmconv_microp>
+<zmconv_clos_dyn_adj                                                  >.false. </zmconv_clos_dyn_adj>
 
 <!-- Cloud sedimentation -->
 

@@ -939,7 +939,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    call zm_convr(   lchnk   ,ncol    , &
                     state%t       ,state%q(:,:,1)     ,prec    ,jctop   ,jcbot   , &
                     pblh    ,state%zm      ,state%phis    ,state%zi      ,ptend_loc%q(:,:,1)    , &
-                    ptend_loc%s    ,state%pmid     ,state%pint    ,state%pdel     , &
+                    ptend_loc%s    ,state%pmid     ,state%pint    ,state%pdel     ,state%omega  , &
                     .5_r8*ztodt    ,mcon    ,cme     , cape,      &
                     tpert   ,dlf     ,pflx    ,zdu     ,rprd    , &
                     mu,md,du,eu,ed      , &
