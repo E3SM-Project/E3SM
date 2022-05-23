@@ -284,6 +284,10 @@
   <lname>20TR_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_BGC%LNDATM</lname>
 </compset>
 
+<compset>
+  <alias>BGCEXP_BCRC_CNPRDCTC_20TR_GCAM</alias>
+  <lname>20TR_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BCRC_GCAM</lname>
+</compset>
 
 <!-- E3SM cryosphere compsets -->
 
@@ -322,6 +326,11 @@
 <compset>
   <alias>BGWCYCL1850</alias>
   <lname>1850_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_MALI%STATIC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>G_BG1850CN</alias>
+  <lname>1850_EAM_ELM%CN_MPASSI_MPASO_MOSART_MALI%SIA_SWAV_GCAM</lname>
 </compset>
 
 <!-- OCN + CICE + GLC Only Compsets -->
