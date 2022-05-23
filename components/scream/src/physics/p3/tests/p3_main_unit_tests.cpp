@@ -358,7 +358,7 @@ static void run_bfb_p3_main()
         {d.nccn_prescribed, {0              , 0}},
         {d.ni_activated   , {0              , 0}},
         {d.dpres          , {1.37888889E+03, 1.39888889E+03}},
-        {d.inv_exner          , {1.00371345E+00, 3.19721007E+00}},
+        {d.inv_exner      , {1.00371345E+00, 3.19721007E+00}},
         {d.cld_frac_i     , {1              , 1}},
         {d.cld_frac_l     , {1              , 1}},
         {d.cld_frac_r     , {1              , 1}},
