@@ -297,6 +297,36 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
   }
 } // run
 
+long long AtmosphereOutput::
+res_dep_memory_footprint () const {
+  long long rdmf = 0;
+  if (m_remapper) {
+    // The IO is done on a different grid. The FM stored here is
+    // not shared with anyone else, so we can safely add its footprint
+    for (const auto& it : *m_field_mgr) {
+      const auto& fap = it.second->get_header().get_alloc_properties();
+      if (fap.is_subfield()) {
+        continue;
+      }
+      rdmf += fap.get_alloc_size();
+    }
+  }
+
+  for (const auto& fn : m_fields_names) {
+    bool is_diagnostic = (m_diagnostics.find(fn) != m_diagnostics.end());
+    bool can_alias_field_view =
+        m_avg_type==OutputAvgType::Instant && not is_diagnostic &&
+        m_field_mgr->get_field(fn).get_header().get_alloc_properties().get_padding()==0 &&
+        m_field_mgr->get_field(fn).get_header().get_parent().expired();
+
+    if (not can_alias_field_view) {
+      rdmf += m_dev_views_1d.size()*sizeof(Real);
+    }
+  }
+
+  return rdmf;
+}
+
 /* ---------------------------------------------------------- */
 
 void AtmosphereOutput::

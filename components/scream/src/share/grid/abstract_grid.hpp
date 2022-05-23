@@ -9,6 +9,7 @@
 #include "ekat/mpi//ekat_comm.hpp"
 
 #include <map>
+#include <list>
 #include <memory>
 
 namespace scream
@@ -124,6 +125,8 @@ public:
   bool has_geometry_data (const std::string& name) const {
     return m_geo_views.find(name)!=m_geo_views.end();
   }
+
+  std::list<std::string> get_geometry_data_names () const;
 
 protected:
 
