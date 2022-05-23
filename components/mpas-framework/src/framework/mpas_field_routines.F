@@ -42,10 +42,11 @@ module mpas_field_routines
       ! TODO module procedure mpas_mask_assign_pointer_field3d_mask2d_real
       !module procedure mpas_mask_assign_pointer_field3d_mask3d_real
    end interface
-   !interface mpas_mask_field
-   !   ! TODO module procedure mpas_mask_field3d_mask2d_real
-   !   module procedure mpas_mask_field3d_mask3d_real
-   !end interface
+   interface mpas_mask_field
+      module procedure mpas_mask_field2d_mask2d_real
+      !module procedure mpas_mask_field3d_mask3d_real
+      ! TODO module procedure mpas_mask_field3d_mask2d_real
+   end interface
 
    interface mpas_duplicate_field
       module procedure mpas_duplicate_field0d_real
@@ -2975,28 +2976,27 @@ module mpas_field_routines
 
       type (field2DInteger), intent(in), pointer :: mask
 
-      real (kind=RKIND), dimension(:,:), intent(out) :: maskedField !< Input/Output: Field to be masked
-      ! TODO consider whether this should be of field type or 3d real array
-      !type (field3DReal), intent(out) :: maskedField !< Input/Output: Field to be masked
+      real (kind=RKIND), dimension(:,:), intent(inout), pointer :: maskedField !< Input/Output: Field to be masked
 
       real (kind=RKIND), dimension(:,:), pointer :: fieldArray
+      integer :: dim2Length
       character (len=100) :: log_string
       integer, dimension(:,:), pointer :: maskArray
 
+      dim2Length = SIZE(maskedField, dim=2)
+      fieldArray => field % array(:,1:dim2Length)
+      maskArray => mask % array(:,1:dim2Length)
+
       call mpas_log_write('Masking array '//trim(field % fieldName))
-      fieldArray = field % array
       write(log_string,*) 'fieldArray shape=', SHAPE(fieldArray)
       call mpas_log_write(log_string)
-      maskArray = mask % array
       write(log_string,*) 'maskedField shape=', SHAPE(maskedField)
       call mpas_log_write(log_string)
-      ! real3d_temp is already allocated in mpas_io_streams
-      !allocate(maskedField(fieldDims(1),fieldDims(2),fieldDims(3)))
 
       maskedField = fieldArray ! consider putting in elsewhere
-      !where (maskArray == 0)
-      !   maskedField = field % missingValue
-      !endwhere
+      where (maskArray == 0)
+         maskedField = field % missingValue
+      endwhere
 
    end subroutine mpas_mask_field2d_mask2d_real !}}}
 

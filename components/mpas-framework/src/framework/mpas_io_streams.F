@@ -3255,6 +3255,7 @@ module mpas_io_streams
       integer, intent(out), optional :: ierr
 
       character (len=StrKIND) :: dimensionSuffix
+      character (len=100) :: log_string
       integer :: io_err
       integer :: i, j
       integer :: ncons
@@ -3275,10 +3276,12 @@ module mpas_io_streams
       integer                            :: int0d_temp
       integer, dimension(:),     pointer :: int1d_temp
       integer, dimension(:,:),   pointer :: int2d_temp
+      integer, dimension(:,:),   pointer :: maskArray
       integer, dimension(:,:,:), pointer :: int3d_temp
       real (kind=RKIND)                                :: real0d_temp
       real (kind=RKIND), dimension(:),         pointer :: real1d_temp
       real (kind=RKIND), dimension(:,:),       pointer :: real2d_temp
+      real (kind=RKIND), dimension(:,:),       pointer :: real2d_temp_small
       real (kind=RKIND), dimension(:,:,:),     pointer :: real3d_temp
       real (kind=RKIND), dimension(:,:,:,:),   pointer :: real4d_temp
       real (kind=RKIND), dimension(:,:,:,:,:), pointer :: real5d_temp
@@ -3629,6 +3632,7 @@ module mpas_io_streams
                   field_2dreal_ptr => field_cursor % real2dField
                   i = 1
                   do while (associated(field_2dreal_ptr))
+                     call mpas_log_write('field_2dreal_ptr is '//TRIM(field_2dreal_ptr % fieldName))
                      if (trim(field_2dreal_ptr % dimNames(2)) == 'nCells') then
                         call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, trim(field_2dreal_ptr % dimNames(2)) &
                                                      // trim(dimensionSuffix), ownedSize)
@@ -3641,16 +3645,30 @@ module mpas_io_streams
                      else
                         call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, field_2dreal_ptr % dimNames(2), ownedSize)
                      end if
+                     write(log_string,*) 'i,OwnedSize,dimName = ',i, ownedSize, trim(field_2dreal_ptr % dimNames(2))
+                     call mpas_log_write(log_string)
 
                      if (field_cursor % real2dField % isVarArray) then
                         real1d_temp(i:i+ownedSize-1) = field_2dreal_ptr % array(j,1:ownedSize)
                      else
-                        real2d_temp(:,i:i+ownedSize-1) = field_2dreal_ptr % array(:,1:ownedSize)
+                        if (ASSOCIATED( field_2dreal_ptr % missingValueMask2D )) then
+                           allocate(real2d_temp_small(field_cursor % real2dField % dimSizes(1), &
+                                                ownedSize))
+                           call mpas_mask_field2d_mask2d_real(field_2dreal_ptr, &
+                               field_2dreal_ptr % missingValueMask2D, real2d_temp_small)
+                           real2d_temp(:,i:i+ownedSize-1) = real2d_temp_small
+                           deallocate(real2d_temp_small)
+                        else
+                           real2d_temp(:,i:i+ownedSize-1) = field_2dreal_ptr % array(:,1:ownedSize)
+                        end if
+
                      end if
                      i = i + ownedSize
                      if ( .not. stream % blockWrite ) then
+                        call mpas_log_write('Go to next')
                         field_2dreal_ptr => field_2dreal_ptr % next
                      else
+                        call mpas_log_write('Nullify ptr')
                         nullify(field_2dreal_ptr)
                      end if
                   end do
