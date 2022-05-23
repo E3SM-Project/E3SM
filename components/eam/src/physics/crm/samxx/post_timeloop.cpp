@@ -165,20 +165,20 @@ void post_timeloop() {
   YAKL_SCOPE( ncrms                   , :: ncrms );
   YAKL_SCOPE( crm_output_t_vt_tend    , :: crm_output_t_vt_tend );
   YAKL_SCOPE( crm_output_q_vt_tend    , :: crm_output_q_vt_tend );
+  YAKL_SCOPE( crm_output_u_vt_tend    , :: crm_output_u_vt_tend );
   YAKL_SCOPE( crm_input_t_vt          , :: crm_input_t_vt );
   YAKL_SCOPE( crm_input_q_vt          , :: crm_input_q_vt );
+  YAKL_SCOPE( crm_input_u_vt          , :: crm_input_u_vt );
   YAKL_SCOPE( t_vt                    , :: t_vt );
   YAKL_SCOPE( q_vt                    , :: q_vt );
+  YAKL_SCOPE( u_vt                    , :: u_vt );
   YAKL_SCOPE( crm_output_t_vt_ls      , :: crm_output_t_vt_ls );
   YAKL_SCOPE( crm_output_q_vt_ls      , :: crm_output_q_vt_ls );
+  YAKL_SCOPE( crm_output_u_vt_ls      , :: crm_output_u_vt_ls );
   YAKL_SCOPE( t_vt_tend               , :: t_vt_tend );
   YAKL_SCOPE( q_vt_tend               , :: q_vt_tend );
+  YAKL_SCOPE( u_vt_tend               , :: u_vt_tend );
   YAKL_SCOPE( use_VT                  , :: use_VT );
-  YAKL_SCOPE( crm_output_u_vt_tend    , :: crm_output_u_vt_tend);
-  YAKL_SCOPE( crm_input_u_vt          , :: crm_input_u_vt);
-  YAKL_SCOPE( u_vt                    , :: u_vt);
-  YAKL_SCOPE( crm_output_u_vt_ls      , :: crm_output_u_vt_ls);
-  YAKL_SCOPE( u_vt_tend               , :: u_vt_tend);
 
   factor_xyt = factor_xy/((real) nstop);
   real tmp1 = crm_nx_rad_fac*crm_ny_rad_fac/((real) nstop);
