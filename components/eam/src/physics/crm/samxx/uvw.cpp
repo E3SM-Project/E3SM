@@ -1,14 +1,14 @@
 #include "uvw.h"
 
 void uvw() {
-  auto &u             = :: u;
-  auto &v             = :: v;
-  auto &w             = :: w;
-  auto &dudt          = :: dudt;
-  auto &dvdt          = :: dvdt;
-  auto &dwdt          = :: dwdt;
-  auto &nc            = :: nc;
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( u             , :: u );
+  YAKL_SCOPE( v             , :: v );
+  YAKL_SCOPE( w             , :: w );
+  YAKL_SCOPE( dudt          , :: dudt );
+  YAKL_SCOPE( dvdt          , :: dvdt );
+  YAKL_SCOPE( dwdt          , :: dwdt );
+  YAKL_SCOPE( nc            , :: nc );
+  YAKL_SCOPE( ncrms         , :: ncrms );
 
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     u(k,j+offy_u,i+offx_u,icrm) = dudt(nc-1,k,j,i,icrm);

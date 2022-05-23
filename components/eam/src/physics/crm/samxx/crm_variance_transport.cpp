@@ -98,14 +98,14 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
 //==============================================================================
 
 void VT_diagnose() {
-  auto &t            = :: t;
-  auto &micro_field  = :: micro_field;
-  auto &factor_xy    = :: factor_xy;
-  auto &t_vt_pert    = :: t_vt_pert;
-  auto &q_vt_pert    = :: q_vt_pert;
-  auto &t_vt         = :: t_vt;
-  auto &q_vt         = :: q_vt;
-  auto &ncrms        = :: ncrms;
+  YAKL_SCOPE( t             , :: t);
+  YAKL_SCOPE( micro_field   , :: micro_field);
+  YAKL_SCOPE( factor_xy     , :: factor_xy);
+  YAKL_SCOPE( t_vt_pert     , :: t_vt_pert);
+  YAKL_SCOPE( q_vt_pert     , :: q_vt_pert);
+  YAKL_SCOPE( t_vt          , :: t_vt);
+  YAKL_SCOPE( q_vt          , :: q_vt);
+  YAKL_SCOPE( ncrms         , :: ncrms);
 
   // local variables
   real2d t_mean("t_mean", nzm, ncrms);
@@ -206,16 +206,16 @@ void VT_diagnose() {
 //==============================================================================
 
 void VT_forcing() {
-  auto &t           = :: t;
-  auto &micro_field = :: micro_field;
-  auto &t_vt_tend   = :: t_vt_tend;
-  auto &q_vt_tend   = :: q_vt_tend;
-  auto &t_vt_pert   = :: t_vt_pert;
-  auto &q_vt_pert   = :: q_vt_pert;
-  auto &t_vt        = :: t_vt;
-  auto &q_vt        = :: q_vt;
-  auto &ncrms       = :: ncrms;
-  auto &dtn         = :: dtn;
+  YAKL_SCOPE( t            , :: t);
+  YAKL_SCOPE( micro_field  , :: micro_field);
+  YAKL_SCOPE( t_vt_tend    , :: t_vt_tend);
+  YAKL_SCOPE( q_vt_tend    , :: q_vt_tend);
+  YAKL_SCOPE( t_vt_pert    , :: t_vt_pert);
+  YAKL_SCOPE( q_vt_pert    , :: q_vt_pert);
+  YAKL_SCOPE( t_vt         , :: t_vt);
+  YAKL_SCOPE( q_vt         , :: q_vt);
+  YAKL_SCOPE( ncrms        , :: ncrms);
+  YAKL_SCOPE( dtn          , :: dtn);
 
   // local variables
   real2d t_pert_scale("t_pert_scale", nzm, ncrms);

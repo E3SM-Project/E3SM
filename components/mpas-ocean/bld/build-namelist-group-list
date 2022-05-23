@@ -17,6 +17,7 @@ my @groups = qw(run_modes
                 forcing
                 coupling
                 shortwaveradiation
+                self_attraction_loading
                 tidal_potential_forcing
                 frazil_ice
                 land_ice_fluxes

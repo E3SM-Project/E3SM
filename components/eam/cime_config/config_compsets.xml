@@ -61,16 +61,37 @@
     <lname>2010_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
+  <!-- *********************************** -->
+  <!-- Single column model -->
+  <!-- *********************************** -->
+
   <compset>
-    <alias>FSCM5A97</alias>
-    <lname>AR97_EAM%SCAM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <alias>FSCM</alias>
+    <lname>SCM_EAM%SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
-  <!-- *********************************** -->
-  <!-- aqua-planet -->
-  <!-- *********************************** -->
-  <!-- The analytic SST patterns coincide with the       -->
-  <!-- from the aqua-planet experiment (APE) protocol.   -->
+  <compset>
+    <alias>FSCM-ARM97</alias>
+    <lname>ARM97_EAM%SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FSCM-ARM97-MMF1</alias>
+    <lname>ARM97_EAM%SCM-MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FSCM-RICO-MMF1</alias>
+    <lname>RICO_EAM%SCM-MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <!-- ************************************************* -->
+  <!--                    Aquaplanet                     -->
+  <!-- ************************************************* -->
+  <!-- The analytic aquaplanet SST patterns are          -->
+  <!-- specified through the data ocean component        -->
+  <!-- modifer (i.e. DOCN%AQP1) and correspond to the    -->
+  <!-- aqua-planet experiment (APE) protocol.            -->
   <!-- AQP1    = control symmetric SST pattern           -->
   <!-- AQP2    = Flat                                    -->
   <!-- AQP3    = Qobs = average of AQP1 and AQP2         -->
@@ -84,117 +105,26 @@
   <!-- AQPFILE = SST file set by 'aquapfile' in namelist -->
 
   <compset>
-    <alias>F-EAM-AQP1</alias>
-    <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+    <alias>FAQP</alias>
+    <lname>2000_EAM%AQP_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
   </compset>
+  
   <compset>
-    <alias>F-EAM-AQP2</alias>
-    <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP2_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-EAM-AQP3</alias>
-    <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP3_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-EAM-AQP4</alias>
-    <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP4_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-EAM-AQP5</alias>
-    <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP5_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-EAM-AQP6</alias>
-    <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP6_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-EAM-AQP7</alias>
-    <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP7_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-EAM-AQP8</alias>
-    <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP8_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-EAM-AQP9</alias>
-    <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP9_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-EAM-AQP10</alias>
-    <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQP10_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-EAM-AQPFILE</alias>
-    <lname>2000_EAM%AQUA_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <!-- MMF aquaplanet compsets -->
-  <compset>
-    <alias>F-MMF1-AQP1</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQP2</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP2_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQP3</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP3_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQP4</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP4_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQP5</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP5_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQP6</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP6_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQP7</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP7_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQP8</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP8_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQP9</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP9_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQP10</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQP10_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF1-AQPFILE</alias>
-    <lname>2000_EAM%MMF1-AQUA_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F-MMFXX-AQP1</alias>
-    <lname>2000_EAM%MMFXX-AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+    <alias>FAQP-MMF1</alias>
+    <lname>2000_EAM%AQP-MMF1_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- *********************************** -->
   <!-- Radiative-Convective Equilibrium (RCE) -->
   <!-- *********************************** -->
   <compset>
-    <alias>F-EAM-RCEMIP</alias>
+    <alias>FRCE</alias>
     <lname>2000_EAM%RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
-    <alias>F-MMF1-RCEMIP</alias>
-    <lname>2000_EAM%MMF1-RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F-MMFXX-RCEMIP</alias>
-    <lname>2000_EAM%MMFXX-RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
+    <alias>FRCE-MMF1</alias>
+    <lname>2000_EAM%RCE-MMF1_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- *********************************** -->
@@ -210,65 +140,22 @@
     <alias>FADIAB</alias>
     <lname>2000_EAM%ADIAB_SLND_SICE_SOCN_SROF_SGLC_SWAV</lname>
   </compset>
-
-  <!-- FG compsets -->
-
-  <compset>
-    <alias>F_ARM97_SCAM</alias>
-    <lname>AR97_EAM%SCAM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-
-  <compset>
-    <alias>F_SCAM</alias>
-    <lname>SCAM_EAM%SCAM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
+  
 
   <!-- ****************************************** -->
   <!-- MMF compsets (i.e. super-parameterization) -->
   <!-- ****************************************** -->
 
-  <!-- ********** F compsets ********** -->
+  <!-- F compsets with climatological SST -->
   <compset>
-    <alias>F-MMF1</alias>
+    <alias>F2010-MMF1</alias>
     <lname>2010_EAM%MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
-  <compset>
-    <alias>F-MMFXX</alias>
-    <lname>2010_EAM%MMFXX_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMFOMP</alias>
-    <lname>2010_EAM%MMFOMP_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMF2-ECPP</alias>
-    <lname>2010_EAM%MMF2-ECPP_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-  
-  <!-- MMF compsets for stand-alone single column mode of EAM -->
-  <compset>
-    <alias>F-MMF1-SCM-ARM97</alias>
-    <lname>AR97_EAM%MMF1-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMFXX-SCM-ARM97</alias>
-    <lname>AR97_EAM%MMFXX-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-  
-  <compset>
-    <alias>F-MMF1-SCM-RICO</alias>
-    <lname>RICO_EAM%MMF1-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
-  <compset>
-    <alias>F-MMFXX-SCM-RICO</alias>
-    <lname>RICO_EAM%MMFXX-SCM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
-  </compset>
 
-  <!-- ********** F compsets with transient SST (AMIP) ********** -->
-
+  <!-- F compsets with transient SST (AMIP) -->
   <compset>
-    <alias>F20TR-MMFXX</alias>
-    <lname>20TR_EAM%MMFXX-CMIP6_ELM%SP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+    <alias>F20TR-MMF1</alias>
+    <lname>20TR_EAM%CMIP6-MMF1_ELM%SP_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
   </compset>
 
   <!-- ******************************* -->
@@ -278,90 +165,79 @@
 
     <entry id="RUN_STARTDATE">
       <values>
-	<value  compset="20TR_EAM">1850-01-01</value>
-	<value  compset="AMIP_EAM">1979-01-01</value>
-	<value  compset="HIST_EAM">1850-01-01</value>
-	<value  compset="PIPD_EAM">1850-01-01</value>
-	<value  compset="7905_EAM">1979-01-01</value>
-	<value  compset="5505_EAM">1955-01-01</value>
-	<value  compset="1996_EAM\d+%WCMX">1996-01-01</value>
-	<value  compset="2000_EAM\d+%WCMX">2000-01-01</value>
-	<value  compset="2000_EAM\d+%WCXI">2000-01-01</value>
-	<value  compset="GEOS_EAM\d+%WCCM">2005-01-01</value>
-	<value  compset="GEOS_EAM\d+%WTSM">1990-01-01</value>
-	<value  compset="GEOS_EAM\d+%TMOZ">2008-01-01</value>
-	<value  compset="GEOS_EAM\d+%TBAM">2008-01-01</value>
-	<value  compset="GEOS_EAM\d+%S">2005-01-01</value>
-	<value  compset="RCP[2468]_EAM\d+">2005-01-01</value>
-	<value  compset="C2R[68]_EAM">1950-01-01</value>
-	<value  compset="C2R4_EAM">2004-01-01</value>
-	<value  compset="AR95_EAM">1995-07-18</value>
-	<value  compset="AR97_EAM">1997-06-19</value>
-	<value  compset="RICO_EAM">2004-12-16</value>
+        <value  compset="20TR_EAM">1850-01-01</value>
+        <value  compset="AMIP_EAM">1979-01-01</value>
+        <value  compset="HIST_EAM">1850-01-01</value>
+        <value  compset="7905_EAM">1979-01-01</value>
+        <value  compset="5505_EAM">1955-01-01</value>
+        <value  compset="RCP[2468]_EAM\d+">2005-01-01</value>
+        <value  compset="C2R[68]_EAM">1950-01-01</value>
+        <value  compset="C2R4_EAM">2004-01-01</value>
+        <value  compset="ARM95_EAM">1995-07-18</value>
+        <value  compset="ARM97_EAM">1997-06-19</value>
+        <value  compset="RICO_EAM">2004-12-16</value>
       </values>
     </entry>
 
     <entry id="CALENDAR">
       <values>
-	<value  compset="GEOS_">GREGORIAN</value>
-	<value  compset="EAM%SCAM">GREGORIAN</value>
-	<value  compset="EAM%MMF.*-SCM">GREGORIAN</value>
+        <value  compset="EAM%SCM">GREGORIAN</value>
       </values>
     </entry>
 
     <entry id="START_TOD">
       <values>
-	<value  compset="AR95_EAM">19800</value>
-	<value  compset="AR97_EAM">84585</value>
-	<value  compset="RICO_EAM">0</value>
+        <value  compset="ARM95_EAM">19800</value>
+        <value  compset="ARM97_EAM">84585</value>
+        <value  compset="RICO_EAM">0</value>
       </values>
     </entry>
 
     <entry id="STOP_OPTION">
       <values>
-	<value compset="AR95_EAM">ndays</value>
-	<value compset="AR97_EAM">ndays</value>
-	<value compset="RICO_EAM">ndays</value>
+        <value compset="ARM95_EAM">ndays</value>
+        <value compset="ARM97_EAM">ndays</value>
+        <value compset="RICO_EAM">ndays</value>
       </values>
     </entry>
 
     <entry id="STOP_N">
       <values>
-	<value compset="AR95_EAM">2</value>
-	<value compset="AR97_EAM">29</value>
-	<value compset="RICO_EAM">1</value>
+        <value compset="ARM95_EAM">2</value>
+        <value compset="ARM97_EAM">29</value>
+        <value compset="RICO_EAM">1</value>
       </values>
     </entry>
 
     <entry id="MASK_GRID">
       <values>
-	<value compset="AR97_EAM">USGS</value>
-	<value compset="RICO_EAM">USGS</value>
+        <value compset="ARM97_EAM">USGS</value>
+        <value compset="RICO_EAM">USGS</value>
       </values>
     </entry>
 
     <entry id="GET_REFCASE">
       <values>
-	<value compset="AMIP_EAM">TRUE</value>
+        <value compset="AMIP_EAM">TRUE</value>
       </values>
     </entry>
 
     <entry id="PTS_MODE">
       <values>
-        <value compset="EAM%MMF.*-SCM">TRUE</value>
+        <value compset="EAM%SCM">TRUE</value>
       </values>
     </entry>
     
     <entry id="PTS_LAT">
       <values>
-        <value compset="AR9[57]_EAM">36.6</value>
+        <value compset="ARM9[57]_EAM">36.6</value>
         <value compset="RICO_EAM">17.97</value>
       </values>
     </entry>
 
     <entry id="PTS_LON">
       <values>
-        <value compset="AR9[57]_EAM">262.5</value>
+        <value compset="ARM9[57]_EAM">262.5</value>
         <value compset="RICO_EAM">298.54</value>
       </values>
     </entry>

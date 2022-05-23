@@ -55,3 +55,9 @@
 [submodule "externals/mct"]
 	path = externals/mct
 	url = git@github.com:MCSclimate/MCT.git
+[submodule "components/mpas-ocean/src/SHTNS"]
+	path = components/mpas-ocean/src/SHTNS
+	url = https://bitbucket.org/nschaeff/shtns.git
+[submodule "components/mpas-ocean/src/FFTW"]
+	path = components/mpas-ocean/src/FFTW
+	url = https://github.com/knbarton/fftw-3.3.8.git

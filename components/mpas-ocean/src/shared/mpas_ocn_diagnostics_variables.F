@@ -69,6 +69,7 @@ module ocn_diagnostics_variables
 
    real (kind=RKIND), dimension(:), pointer :: gradSSH
    real (kind=RKIND), dimension(:), pointer :: pressureAdjustedSSH
+   real (kind=RKIND), dimension(:), pointer :: ssh_sal
 
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceLayerValue
@@ -184,8 +185,6 @@ module ocn_diagnostics_variables
 
    real (kind=RKIND), pointer :: globalVerticalStretchMax, globalVerticalStretchMin
    real (kind=RKIND), dimension(:), pointer :: betaEdge
-   real (kind=RKIND), dimension(:), pointer :: eddyLength
-   real (kind=RKIND), dimension(:), pointer :: eddyTime
    real (kind=RKIND), dimension(:), pointer :: gmResolutionTaper
 
    ! Semi-implicit Array Pointers
@@ -340,6 +339,12 @@ contains
          call mpas_pool_get_array(diagnosticsPool, &
                   'topographic_wave_drag', &
                    topographic_wave_drag)
+      end if
+
+      if (config_use_tidal_potential_forcing) then
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'ssh_sal', &
+                   ssh_sal)
       end if
 
       if ( trim(config_ocean_run_mode) == 'init' .or. &
@@ -572,8 +577,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'barotropicCoriolisTerm', &
                 barotropicCoriolisTerm)
       call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'eddyLength', eddyLength)
-      call mpas_pool_get_array(diagnosticsPool, 'eddyTime', eddyTime)
       call mpas_pool_get_array(diagnosticsPool, &
                'bottomLayerShortwaveTemperatureFlux', &
                 bottomLayerShortwaveTemperatureFlux)
@@ -633,6 +636,9 @@ contains
       end if
       if (config_use_topographic_wave_drag) then
          !$acc enter data create(topographic_wave_drag)
+      end if
+      if (config_use_self_attraction_loading) then
+         !$acc enter data copyin(ssh_sal)
       end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
          !$acc enter data create(                          &
@@ -807,9 +813,7 @@ contains
       !$acc                   indMLD,                                  &
       !$acc                   density,                                 &
       !$acc                   betaEdge,                                &
-      !$acc                   eddyTime,                                &
       !$acc                   pressure,                                &
-      !$acc                   eddyLength,                              &
       !$acc                   thermExpCoeff,                           &
       !$acc                   sfcFlxAttCoeff,                          &
       !$acc                   surfacePressure,                         &
@@ -871,6 +875,9 @@ contains
       end if
       if (config_use_topographic_wave_drag) then
          !$acc exit data delete(topographic_wave_drag)
+      end if
+      if (config_use_self_attraction_loading) then
+         !$acc exit data delete(ssh_sal)
       end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
          !$acc exit data delete(                           &
@@ -1045,9 +1052,7 @@ contains
       !$acc                   indMLD,                                  &
       !$acc                   density,                                 &
       !$acc                   betaEdge,                                &
-      !$acc                   eddyTime,                                &
       !$acc                   pressure,                                &
-      !$acc                   eddyLength,                              &
       !$acc                   thermExpCoeff,                           &
       !$acc                   sfcFlxAttCoeff,                          &
       !$acc                   surfacePressure,                         &
@@ -1195,6 +1200,9 @@ contains
       if ( config_use_activeTracers_surface_restoring ) then
          nullify(salinitySurfaceRestoringTendency)
       end if
+      if ( config_use_self_attraction_loading ) then
+         nullify(ssh_sal)
+      end if
       if ( trim(config_time_integrator) == 'split_implicit' ) then
          nullify(SIvec_r0,              &
                  SIvec_r00,             &
@@ -1232,9 +1240,7 @@ contains
               indMLD,                                  &
               density,                                 &
               betaEdge,                                &
-              eddyTime,                                &
               pressure,                                &
-              eddyLength,                              &
               thermExpCoeff,                           &
               sfcFlxAttCoeff,                          &
               surfacePressure,                         &

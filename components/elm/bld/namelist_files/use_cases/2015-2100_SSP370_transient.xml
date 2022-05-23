@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<use_case_desc                 >Simulate transient land-use, and aerosol deposition changes from 2015 to 2100</use_case_desc>
+<use_case_desc bgc="cn"        >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 2015 to 2100</use_case_desc>
+<use_case_desc bgc="cndv"      >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 2015 to 2100</use_case_desc>
+<use_case_desc use_cn=".true." >Simulate transient land-use, aerosol deposition, and Nitrogen deposition changes from 2015 to 2100</use_case_desc>
+
+<!-- <sim_year>1850</sim_year> -->
+
+<sim_year_range>2015-2100</sim_year_range>
+
+<clm_start_type>arb_ic</clm_start_type>
+
+<clm_demand >flanduse_timeseries</clm_demand>
+
+<!-- *** NOT USED FOR SATELLITE PHENOLOGY ***
+<stream_year_first_ndep phys="elm" use_cn=".true."   >1850</stream_year_first_ndep>
+<stream_year_last_ndep  phys="elm" use_cn=".true."   >2005</stream_year_last_ndep>
+<model_year_align_ndep  phys="elm" use_cn=".true."   >1850</model_year_align_ndep>
+
+<stream_year_first_pdep phys="elm" use_cn=".true."   >2000</stream_year_first_pdep>
+<stream_year_last_pdep  phys="elm" use_cn=".true."   >2000</stream_year_last_pdep>
+<model_year_align_pdep  phys="elm" use_cn=".true."   >2000</model_year_align_pdep>
+
+<stream_year_first_popdens phys="elm" use_cn=".true."   >1850</stream_year_first_popdens>
+<stream_year_last_popdens  phys="elm" use_cn=".true."   >2010</stream_year_last_popdens>
+<model_year_align_popdens  phys="elm" use_cn=".true."   >1850</model_year_align_popdens>
+-->
+
+
+<!-- CMIP6 DECK compsets -->
+
+<fsurdat>lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_simyr1850_2015_c211105.nc </fsurdat>
+<flanduse_timeseries>lnd/clm2/surfdata_map/landuse.timeseries_ne30pg2_SSP3_RCP70_simyr2015-2100_c211015.nc</flanduse_timeseries>
+<check_dynpft_consistency>.false.</check_dynpft_consistency>
+
+</namelist_defaults>

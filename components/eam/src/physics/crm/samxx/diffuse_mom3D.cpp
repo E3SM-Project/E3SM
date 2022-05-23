@@ -1,30 +1,30 @@
 #include "diffuse_mom3D.h"
 
 void diffuse_mom3D(real5d &tk) {
-  auto &dx            = :: dx;
-  auto &dy            = :: dy;
-  auto &dz            = :: dz;
-  auto &adzw          = :: adzw;
-  auto &grdf_x        = :: grdf_x;
-  auto &grdf_y        = :: grdf_y;
-  auto &grdf_z        = :: grdf_z;
-  auto &u             = :: u;
-  auto &v             = :: v;
-  auto &w             = :: w;
-  auto &na            = :: na;
-  auto &dudt          = :: dudt;
-  auto &dvdt          = :: dvdt;
-  auto &dwdt          = :: dwdt;
-  auto &uwsb          = :: uwsb;
-  auto &vwsb          = :: vwsb;
-  auto &rho           = :: rho;
-  auto &rhow          = :: rhow;
-  auto &fluxbu        = :: fluxbu;
-  auto &fluxbv        = :: fluxbv;
-  auto &fluxtu        = :: fluxtu;
-  auto &fluxtv        = :: fluxtv;
-  auto &adz           = :: adz;
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( dx            , :: dx );
+  YAKL_SCOPE( dy            , :: dy );
+  YAKL_SCOPE( dz            , :: dz );
+  YAKL_SCOPE( adzw          , :: adzw );
+  YAKL_SCOPE( grdf_x        , :: grdf_x );
+  YAKL_SCOPE( grdf_y        , :: grdf_y );
+  YAKL_SCOPE( grdf_z        , :: grdf_z );
+  YAKL_SCOPE( u             , :: u );
+  YAKL_SCOPE( v             , :: v );
+  YAKL_SCOPE( w             , :: w );
+  YAKL_SCOPE( na            , :: na );
+  YAKL_SCOPE( dudt          , :: dudt );
+  YAKL_SCOPE( dvdt          , :: dvdt );
+  YAKL_SCOPE( dwdt          , :: dwdt );
+  YAKL_SCOPE( uwsb          , :: uwsb );
+  YAKL_SCOPE( vwsb          , :: vwsb );
+  YAKL_SCOPE( rho           , :: rho );
+  YAKL_SCOPE( rhow          , :: rhow );
+  YAKL_SCOPE( fluxbu        , :: fluxbu );
+  YAKL_SCOPE( fluxbv        , :: fluxbv );
+  YAKL_SCOPE( fluxtu        , :: fluxtu );
+  YAKL_SCOPE( fluxtv        , :: fluxtv );
+  YAKL_SCOPE( adz           , :: adz );
+  YAKL_SCOPE( ncrms         , :: ncrms );
 
   real4d fu("fu",nz,ny+1,nx+1,ncrms);
   real4d fv("fv",nz,ny+1,nx+1,ncrms);

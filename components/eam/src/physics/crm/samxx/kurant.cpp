@@ -3,15 +3,15 @@
 #include "vars.h"
 
 void kurant () {
-  auto &w     = ::w;
-  auto &u     = ::u;
-  auto &v     = ::v;
-  auto &dt    = ::dt;
-  auto &dx    = ::dx;
-  auto &dy    = ::dy;
-  auto &dz    = ::dz;
-  auto &adzw  = ::adzw;
-  auto &ncrms = ::ncrms;
+  YAKL_SCOPE( w     , ::w );
+  YAKL_SCOPE( u     , ::u );
+  YAKL_SCOPE( v     , ::v );
+  YAKL_SCOPE( dt    , ::dt );
+  YAKL_SCOPE( dx    , ::dx );
+  YAKL_SCOPE( dy    , ::dy );
+  YAKL_SCOPE( dz    , ::dz );
+  YAKL_SCOPE( adzw  , ::adzw );
+  YAKL_SCOPE( ncrms , ::ncrms );
 
   int constexpr max_ncycle = 4;
   real cfl;
