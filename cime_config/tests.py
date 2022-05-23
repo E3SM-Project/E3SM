@@ -442,7 +442,7 @@ _TESTS = {
             "SMS_D.ne4pg2_ne4pg2.F2010-SCREAM-LR",
             "ERP.ne4pg2_ne4pg2.F2010-SCREAM-HR.eam-double_memleak_tol",
             "ERP.ne4pg2_ne4pg2.F2010-SCREAM-LR.eam-double_memleak_tol",
-            "ERP_R_Ln10.ne4_ne4.FDPSCREAMA97",
+            "ERP_R_Ln10.ne4_ne4.FDPSCREAM-ARM97",
             )
     },
 
