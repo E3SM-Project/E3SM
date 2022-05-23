@@ -195,7 +195,7 @@ tweaking their $case/namelist_scream.xml file.
 
     <mac_aero_mic inherit="atm_proc_group">
       <atm_procs_list>(shoc,cldFraction,spa,p3)</atm_procs_list>
-      <Number__of__Subcycles hgrid="ne4np4">6</Number__of__Subcycles>
+      <Number__of__Subcycles hgrid="ne4np4">24</Number__of__Subcycles>
       <Number__of__Subcycles hgrid="ne30np4">6</Number__of__Subcycles>
       <Number__of__Subcycles hgrid="ne120np4">3</Number__of__Subcycles>
       <Number__of__Subcycles hgrid="ne256np4">3</Number__of__Subcycles>
