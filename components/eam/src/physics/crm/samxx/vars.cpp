@@ -1678,12 +1678,12 @@ real3d cloudtoptemp    ;
 
 real2d t_vt           ;
 real2d q_vt           ;
+real2d u_vt           ;
 real2d t_vt_tend      ;
 real2d q_vt_tend      ;
+real2d u_vt_tend      ;
 real4d t_vt_pert      ;
 real4d q_vt_pert      ;
-real2d u_vt           ;
-real2d u_vt_tend      ;
 real4d u_vt_pert      ;
 
 real1d fcorz           ;
@@ -1867,9 +1867,9 @@ real2d crm_output_qcltend;
 real2d crm_output_qiltend;
 real2d crm_output_t_vt_tend;
 real2d crm_output_q_vt_tend;
+real2d crm_output_u_vt_tend;
 real2d crm_output_t_vt_ls;
 real2d crm_output_q_vt_ls;
-real2d crm_output_u_vt_tend;
 real2d crm_output_u_vt_ls;
 #ifdef MMF_MOMENTUM_FEEDBACK
 real2d crm_output_ultend;
