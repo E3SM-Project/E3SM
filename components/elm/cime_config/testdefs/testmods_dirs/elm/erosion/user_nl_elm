@@ -1,0 +1,7 @@
+ fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_360x720cru_50pfts_simyr2000_c210422.nc'
+ paramfile = '$DIN_LOC_ROOT/lnd/clm2/paramdata/clm_params.ctc.erosion.c220120.nc'
+ use_crop = .true.
+ irrigate = .true.
+ use_erosion = .true.
+ ero_ccycle = .false.
+ hist_fincl1   += 'SED_YLD', 'SED_P_ERO', 'SED_Q_ERO', 'SED_ERO', 'SED_CROP_ERO'

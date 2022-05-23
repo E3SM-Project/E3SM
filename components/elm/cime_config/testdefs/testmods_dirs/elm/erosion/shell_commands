@@ -1,0 +1,2 @@
+#!/bin/bash
+./xmlchange ELM_BLDNML_OPTS="-crop -irrig .true." -append
