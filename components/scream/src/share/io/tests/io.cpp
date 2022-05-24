@@ -97,7 +97,9 @@ public:
 
 protected:
 
-  void initialize_impl (const RunType /* run_type */ ) {}
+  void initialize_impl (const RunType /* run_type */ ) {
+    m_diagnostic_output.get_header().get_tracking().update_time_stamp(timestamp());
+  }
 
   void run_impl (const int /* dt */) {
     const auto& v_A  = get_field_in("field_packed").get_view<const Real**,Host>();
