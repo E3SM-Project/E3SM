@@ -4654,19 +4654,18 @@ contains
        call t_drvstartf ('CPL:BUDGET1',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        if (lnd_present) then
           call seq_diag_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, do_l2x=.true., do_x2l=.true.)
-          if (do_bgc_budgets) then
-             call seq_diagBGC_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, do_l2x=.true., do_x2l=.true.)
-          endif
        endif
        if (rof_present) then
           call seq_diag_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
-          if (do_bgc_budgets) then
-             call seq_diagBGC_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
-          endif
        endif
        if (ice_present) then
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_x2i=.true.)
-          if (do_bgc_budgets) then
+       endif
+       if (do_bgc_budgets) then
+          if (rof_present) then
+             call seq_diagBGC_rof_mct(rof(ens1), fractions_rx(ens1), infodata)
+          endif
+          if (ice_present) then
              call seq_diagBGC_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_x2i=.true.)
           endif
        endif
@@ -4700,14 +4699,23 @@ contains
        call t_drvstartf ('CPL:BUDGET2',cplrun=lcplrun,budget=.true.,barrier=mpicom_CPLID)
        if (atm_present) then
           call seq_diag_atm_mct(atm(ens1), fractions_ax(ens1), infodata, do_a2x=.true., do_x2a=.true.)
-          if (do_bgc_budgets) then
-             call seq_diagBGC_atm_mct(atm(ens1), fractions_ax(ens1), infodata, do_a2x=.true., do_x2a=.true.)
-          endif
        endif
        if (ice_present) then
           call seq_diag_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true.)
-          if (do_bgc_budgets) then
+       endif
+       if (do_bgc_budgets) then
+          if (atm_present) then
+             call seq_diagBGC_atm_mct(atm(ens1), fractions_ax(ens1), infodata, do_a2x=.true., do_x2a=.true.)
+          endif
+          if (ice_present) then
              call seq_diagBGC_ice_mct(ice(ens1), fractions_ix(ens1), infodata, do_i2x=.true.)
+          endif
+          if (lnd_present) then
+             call seq_diagBGC_lnd_mct(lnd(ens1), fractions_lx(ens1), infodata, do_l2x=.true., do_x2l=.true.)
+          endif
+          if (ocn_present) then
+             call seq_diagBGC_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
+                  do_o2x=.true., do_x2o=.true., do_xao=.true.)
           endif
        endif
        call t_drvstopf  ('CPL:BUDGET2',cplrun=lcplrun,budget=.true.)
@@ -4760,10 +4768,6 @@ contains
        xao_ox => prep_aoflux_get_xao_ox() ! array over all instances
        call seq_diag_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
             do_o2x=.true., do_x2o=.true., do_xao=.true.)
-       if (do_bgc_budgets) then
-          call seq_diagBGC_ocn_mct(ocn(ens1), xao_ox(1), fractions_ox(ens1), infodata, &
-               do_o2x=.true., do_x2o=.true., do_xao=.true.)
-       endif
        call t_drvstopf ('CPL:BUDGET0',cplrun=lcplrun,budget=.true.)
     end if
   end subroutine cime_run_calc_budgets3

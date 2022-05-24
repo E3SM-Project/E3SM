@@ -32,7 +32,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 # Cime imports
 from standard_script_setup import *
 from CIME.case import Case
-from CIME.utils import expect, safe_copy, SharedArea, symlink_force
+from CIME.utils import expect, safe_copy, SharedArea
 from CIME.buildnml import parse_input
 
 # SCREAM imports
@@ -60,7 +60,7 @@ CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
 METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints")
 
 ###############################################################################
-def do_cime_vars(entry, case):
+def do_cime_vars(entry, case, refine=False):
 ###############################################################################
     """
     For a parameter value, process any references to case values ("${CASEVAR}")
@@ -81,14 +81,26 @@ def do_cime_vars(entry, case):
     Traceback (most recent call last):
       ...
     CIME.utils.CIMEError: ERROR: Cannot resolve XML entry 'hi ${invalid} there', CIME has no value for 'invalid'
+    >>> d = { 'foo' : '${foo}',
+    ...      'subdict' : { 'bar' : 'foo', 'baz' : '${foo}' } }
+    >>> do_cime_vars(d, case)
+    {'foo': '1', 'subdict': {'bar': 'foo', 'baz': '1'}}
     """
-    m = CIME_VAR_RE.search(entry)
-    while m:
-        cime_var = m.groups()[0]
-        value = case.get_value(cime_var)
-        expect(value is not None, "Cannot resolve XML entry '{}', CIME has no value for '{}'".format(entry, cime_var))
-        entry = entry.replace("${{{}}}".format(cime_var), str(value))
+    if type(entry) is dict:
+        for k,v in entry.items():
+            entry[k] = do_cime_vars(v,case,refine)
+    elif type(entry) is str:
         m = CIME_VAR_RE.search(entry)
+        while m:
+            cime_var = m.groups()[0]
+            value = case.get_value(cime_var)
+            expect(value is not None,
+                   "Cannot resolve XML entry '{}', CIME has no value for '{}'".format(entry, cime_var))
+            entry = entry.replace("${{{}}}".format(cime_var), str(value))
+            m = CIME_VAR_RE.search(entry)
+
+        if refine:
+            entry = refine_type(entry)
 
     return entry
 
@@ -586,23 +598,26 @@ def buildnml(case, caseroot, compname):
 ###############################################################################
     expect(compname == "scream", compname)
 
-    rundir   = case.get_value("RUNDIR")
-    target   = os.path.join(rundir, "data")
+    rundir     = case.get_value("RUNDIR")
     screamroot = os.path.join(case.get_value("SRCROOT"), "components/scream")
     srcdata    = os.path.join(screamroot,"data")
+    rundata    = os.path.join(rundir, "data")
 
     #
     # Copy scream/data to rundir/data
     #
     with SharedArea():
-        if not os.path.isdir(target):
-            os.mkdir(target)
+        if not os.path.isdir(rundata):
+            os.mkdir(rundata)
 
-        for item in os.listdir(srcdata):
-            # Do not overwrite existing files because that would remove any
-            # local mods made by the user.
-            if not os.path.exists(os.path.join(target, item)):
-                safe_copy(os.path.join(srcdata, item), target)
+        # Copy scream default output. Remove if present, since user may
+        # have issued XML change commands
+        default_output_yaml = 'scream_default_output.yaml'
+        src_yaml = os.path.join(srcdata,default_output_yaml)
+        dst_yaml = os.path.join(rundata,default_output_yaml)
+        if os.path.exists(dst_yaml):
+            os.remove(dst_yaml)
+        safe_copy(src_yaml,dst_yaml)
 
         # Create link to atmchange and atmquery scripts
         for script in ['atmchange', 'atmquery']:
@@ -626,6 +641,9 @@ def buildnml(case, caseroot, compname):
     ic_section = scream_input["Initial Conditions"]
     create_input_data_list_file(case,caseroot,screamroot,ic_section)
 
+    # For all YAML files listed in the XML for model output, expand CIME vars (if any)
+    do_cime_vars_on_yaml_output_files(case,caseroot)
+
 ###############################################################################
 def create_input_data_list_file(case,caseroot,screamroot,ic_section):
 ###############################################################################
@@ -644,19 +662,43 @@ def create_input_data_list_file(case,caseroot,screamroot,ic_section):
         tables = get_child(root,"input_files").text.split(',')
 
     with open(input_data_list_file, "w") as fd:
-        for idx,grid in enumerate(ic_section.keys()):
-            ic_file = ic_section[grid]
-            fd.write("ic_file_{} = {}\n".format(idx,ic_file))
+        fd.write("ic_file_0 = {}\n".format(ic_section["Filename"]))
         for idx, table in enumerate(tables):
             fd.write("table_{} = {}\n".format(idx, table.strip()))
 
-    # SCREAM is currently hardcoded to expect tables to be in data
+    # SCREAM is currently hardcoded to expect tables to be in $rundir/data
     for table in tables:
-        table_name = os.path.basename(table)
+        src_table = do_cime_vars(table.strip(),case)
+        table_name = os.path.basename(src_table)
         tgt_table = os.path.join(target, table_name)
         if not os.path.exists(tgt_table) and not os.path.islink(tgt_table):
-            os.symlink(table, os.path.join(target, table_name))
+            os.symlink(src_table, tgt_table)
 
+
+###############################################################################
+def do_cime_vars_on_yaml_output_files(case,caseroot):
+###############################################################################
+    rundir   = case.get_value("RUNDIR")
+    eamxx_xml_file = os.path.join(caseroot, "namelist_scream.xml")
+
+    with open(eamxx_xml_file, "r") as fd:
+        eamxx_xml = ET.parse(fd).getroot()
+
+    scorpio = get_child(eamxx_xml,'Scorpio')
+    out_files_xml = get_child(scorpio,"Output__YAML__Files",must_exist=False)
+    out_files = out_files_xml.text.split(",") if out_files_xml is not None else []
+    for fn in out_files:
+        # Get full name
+        fn_full = os.path.join(rundir,fn.strip())
+
+        # Load yaml file
+        content = yaml.safe_load(open(fn_full,"r"))
+
+        # Replace possible CIME vars
+        do_cime_vars(content,case,refine=True)
+
+        # Save YAML file
+        ordered_dump(content, open(fn_full, "w"))
 
 ###############################################################################
 def _main_func():

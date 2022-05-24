@@ -94,6 +94,9 @@ public:
 
   FieldGroup get_field_group (const std::string& name) const;
 
+  repo_type::const_iterator begin () const { return m_fields.cbegin(); }
+  repo_type::const_iterator end   () const { return m_fields.cend();   }
+
   // Set the time stamp of all fields
   // TODO: I think I want to remove this. We don't want to blanket-init
   //       the time stamp. IC reader can init the ts of IC fields, then

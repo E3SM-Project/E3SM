@@ -70,6 +70,8 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_output_file_specs.num_snapshots_in_file = 0;
   m_output_file_specs.filename_with_time_string = out_control_pl.get("Timestamp in Filename",true);
   m_output_file_specs.filename_with_mpiranks    = out_control_pl.get("MPI Ranks in Filename",false);
+  m_output_file_specs.filename_with_avg_type    = out_control_pl.get("AVG Type in Filename",true);
+  m_output_file_specs.filename_with_frequency   = out_control_pl.get("Frequency in Filename",true);
 
   // For each grid, create a separate output stream.
   if (field_mgrs.size()==1) {
@@ -104,6 +106,8 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       m_checkpoint_file_specs.num_snapshots_in_file = 0;
       m_checkpoint_file_specs.filename_with_time_string = pl.get("Timestamp in Filename",true);
       m_checkpoint_file_specs.filename_with_mpiranks    = pl.get("MPI Ranks in Filename",false);
+      m_checkpoint_file_specs.filename_with_avg_type    = pl.get("AVG Type in Filename",true);
+      m_checkpoint_file_specs.filename_with_frequency   = pl.get("Frequency in Filename",true);
     }
   }
 
@@ -130,7 +134,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
       // If the type/freq of output needs restart data, we need to read in an output.
       if (has_restart_data && m_output_control.nsteps_since_last_write>0) {
-        auto output_restart_filename = find_filename_in_rpointer(hist_restart_casename,".rhist.nc");
+        auto output_restart_filename = find_filename_in_rpointer(hist_restart_casename,false,m_io_comm,m_run_t0);
 
         ekat::ParameterList res_params("Input Parameters");
         res_params.set<std::string>("Filename",output_restart_filename);
@@ -175,17 +179,10 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     // Check if we need to open a new file
     if (not filespecs.is_open) {
       // Compute new file name
-      filename = compute_filename_root(control,filespecs);
-      if (filespecs.filename_with_time_string) {
-        filename += "." + timestamp.to_string();
-      }
-      if (is_output_step) {
-        filename += m_is_model_restart_output ? ".r.nc" : ".nc";
-      } else if (is_checkpoint_step) {
-        filename += ".rhist.nc";
-      } else {
-        filename += ".nc";
-      }
+      std::string suffix =
+        is_checkpoint_step ? ".rhist"
+                           : (m_is_model_restart_output ? ".r" : "");
+      filename = compute_filename (control,filespecs,suffix,timestamp);
 
       // Register new netCDF file for output. First, check no other output managers
       // are trying to write on the same file
@@ -273,71 +270,36 @@ void OutputManager::finalize()
   std::swap(*this,other);
 }
 
-std::string OutputManager::
-compute_filename_root (const IOControl& control, const IOFileSpecs& file_specs) const
-{
-  return m_casename + "." +
-         e2str(m_avg_type) + "." +
-         control.frequency_units+ "_x" +
-         std::to_string(control.frequency) +
-         (file_specs.filename_with_mpiranks ? ".np" + std::to_string(m_io_comm.size()) : "");
+long long OutputManager::res_dep_memory_footprint () const {
+  long long mf = 0;
+  for (const auto& os : m_output_streams) {
+    mf += os->res_dep_memory_footprint();
+  }
+
+  return mf;
 }
 
 std::string OutputManager::
-find_filename_in_rpointer (const std::string& casename, const std::string& suffix) const
+compute_filename (const IOControl& control,
+                  const IOFileSpecs& file_specs,
+                  const std::string suffix,
+                  const util::TimeStamp& timestamp) const
 {
-  std::string filename;
-  bool found = false;
-  std::string content, line;
-  if (m_io_comm.am_i_root()) {
-    std::ifstream rpointer_file;
-    rpointer_file.open("rpointer.atm");
-
-    auto extract_ts = [&] (const std::string& line) -> util::TimeStamp {
-      auto ts_len = m_run_t0.to_string().size();
-      if (line.find(suffix)<=ts_len) {
-        auto ts_str = line.substr(line.find(suffix)-ts_len,ts_len);
-        auto ts = util::str_to_time_stamp(ts_str);
-        return ts;
-      } else {
-        return util::TimeStamp();
-      }
-    };
-
-    // Note: keep swallowing line, even after the first match, since we never wipe
-    //       rpointer.atm, so it might contain multiple matches, and we want to pick
-    //       the last one (which is the last restart file that was written).
-    while (rpointer_file >> line) {
-      content += line + "\n";
-      if (line.find(casename) != std::string::npos && line.find(suffix) != std::string::npos) {
-        // Extra check: make sure the date in the filename (if present) precedes this->t0.
-        // If there's no time stamp in one of the filenames, we assume this is some sort of
-        // unit test, with no time stamp in the filename, and we accept the filename.
-        auto ts = extract_ts(line);
-        if (not ts.is_valid() || !(ts<=m_run_t0) ) {
-          found = true;
-          filename = line;
-        }
-      }
-    }
+  auto filename = m_casename + suffix;
+  if (file_specs.filename_with_avg_type) {
+    filename += "." + e2str(m_avg_type);
   }
-  m_io_comm.broadcast(&found,1,0);
+  if (file_specs.filename_with_frequency) {
+    filename += "." + control.frequency_units+ "_x" + std::to_string(control.frequency);
+  }
+  if (file_specs.filename_with_mpiranks) {
+    filename += ".np" + std::to_string(m_io_comm.size());
+  }
+  if (file_specs.filename_with_time_string) {
+    filename += "." + timestamp.to_string();
+  }
 
-  // If the history restart file is not found, it must be because the last
-  // model restart step coincided with a model output step, in which case
-  // a restart history file is not written.
-  // If that's the case, *disable* output restart, by setting
-  //   'Restart'->'Perform Restart' = false
-  // in the input parameter list
-  EKAT_REQUIRE_MSG (found,
-      "Error! Output restart requested, but no history restart file found in 'rpointer.atm'.\n"
-      "   restart file name root: " + casename + "\n"
-      "   rpointer content:\n" + content);
-
-  // Have the root rank communicate the nc filename
-  broadcast_string(filename,m_io_comm,m_io_comm.root_rank());
-
-  return filename;
+  return filename + ".nc";
 }
 
 void OutputManager::

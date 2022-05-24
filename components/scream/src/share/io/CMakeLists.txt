@@ -5,6 +5,7 @@ set(SCREAM_SCORPIO_SRCS
   scream_output_manager.cpp
   scorpio_input.cpp
   scorpio_output.cpp
+  scream_io_utils.cpp
 )
 
 # Create or import scorpio targets

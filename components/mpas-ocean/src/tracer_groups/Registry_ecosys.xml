@@ -762,32 +762,17 @@
 			<var name="ecosys_diag_Jint_Ctot" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
 				description="Vertical Integral of Conservative Subterms of Source Sink Term for Ctot"
 			/>
-			<var name="ecosys_diag_Jint_100m_Ctot" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
-				description="Vertical Integral of Conservative Subterms of Source Sink Term for Ctot, 0-100m"
-			/>
 			<var name="ecosys_diag_Jint_Ntot" type="real" dimensions="nCells Time" units="mmol N m^{-3} m s^{-1}"
 				description="Vertical Integral of Conservative Subterms of Source Sink Term for Ntot"
-			/>
-			<var name="ecosys_diag_Jint_100m_Ntot" type="real" dimensions="nCells Time" units="mmol N m^{-3} m s^{-1}"
-				description="Vertical Integral of Conservative Subterms of Source Sink Term for Ntot, 0-100m"
 			/>
 			<var name="ecosys_diag_Jint_Ptot" type="real" dimensions="nCells Time" units="mmol P m^{-3} m s^{-1}"
 				description="Vertical Integral of Conservative Subterms of Source Sink Term for Ptot"
 			/>
-			<var name="ecosys_diag_Jint_100m_Ptot" type="real" dimensions="nCells Time" units="mmol P m^{-3} m s^{-1}"
-				description="Vertical Integral of Conservative Subterms of Source Sink Term for Ptot, 0-100m"
-			/>
 			<var name="ecosys_diag_Jint_Sitot" type="real" dimensions="nCells Time" units="mmol Si m^{-3} m s^{-1}"
 				description="Vertical Integral of Conservative Subterms of Source Sink Term for Sitot"
 			/>
-			<var name="ecosys_diag_Jint_100m_Sitot" type="real" dimensions="nCells Time" units="mmol Si m^{-3} m s^{-1}"
-				description="Vertical Integral of Conservative Subterms of Source Sink Term for Sitot, 0-100m"
-			/>
 			<var name="ecosys_diag_Jint_Fetot" type="real" dimensions="nCells Time" units="mmol Fe m^{-3} m s^{-1}"
 				description="Vertical Integral of Conservative Subterms of Source Sink Term for Fetot"
-			/>
-			<var name="ecosys_diag_Jint_100m_Fetot" type="real" dimensions="nCells Time" units="mmol Fe m^{-3} m s^{-1}"
-				description="Vertical Integral of Conservative Subterms of Source Sink Term for Fetot, 0-100m"
 			/>
 			<var name="ecosys_diag_photoC_zint" type="real" dimensions="FOUR nCells Time" units="mmol C m^{-3} m s^{-1}"
 				description="C Fixation Vertical Integral for sp, diat, diaz, phaeo"
@@ -849,19 +834,19 @@
 			<var name="ecosys_diag_DENITRIF" type="real" dimensions="nVertLevels nCells Time" units="mmol N m^{-3} s^{-1}"
 				description="Denitrification"
 			/>
-			<var name="ecosys_diag_calcToSed" type="real" dimensions="nVertLevels nCells Time" units="mmol C m^{-3} m s^{-1}"
+			<var name="ecosys_diag_calcToSed" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
 				description="CaCO3 Flux to Sediments"
 			/>
-			<var name="ecosys_diag_calcToSed_ALT_CO2" type="real" dimensions="nVertLevels nCells Time" units="mmol C m^{-3} m s^{-1}"
+			<var name="ecosys_diag_calcToSed_ALT_CO2" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
 				description="CaCO3 Flux to Sediments for Alternate CO2"
 			/>
-			<var name="ecosys_diag_pocToSed" type="real" dimensions="nVertLevels nCells Time" units="mmol C m^{-3} m s^{-1}"
+			<var name="ecosys_diag_pocToSed" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
 				description="POC Flux to Sediments"
 			/>
-			<var name="ecosys_diag_pfeToSed" type="real" dimensions="nVertLevels nCells Time" units="mmol Fe m^{-3} m s^{-1}"
+			<var name="ecosys_diag_pfeToSed" type="real" dimensions="nCells Time" units="mmol Fe m^{-3} m s^{-1}"
 				description="Fe Flux to Sediments"
 			/>
-			<var name="ecosys_diag_SedDenitrif" type="real" dimensions="nVertLevels nCells Time" units="mmol N m^{-3} m s^{-1}"
+			<var name="ecosys_diag_SedDenitrif" type="real" dimensions="nCells Time" units="mmol N m^{-3} m s^{-1}"
 				description="Nitrogen Loss in Sediments"
 			/>
 			<var name="ecosys_diag_tot_Nfix" type="real" dimensions="nVertLevels nCells Time" units="mmol N m^{-3} s^{-1}"
@@ -885,8 +870,8 @@
 			<var name="ecosys_diag_POC_PROD" type="real" dimensions="nVertLevels nCells Time" units="mmol C m^{-3} s^{-1}"
 				description="POC Production"
 			/>
-			<var name="ecosys_diag_POC_REMIN" type="real" dimensions="nVertLevels nCells Time" units="mmol C m^{-3} s^{-1}"
-				description="POC Remineralization"
+			<var name="ecosys_diag_POC_REMIN_DOCr" type="real" dimensions="nVertLevels nCells Time" units="mmol C m^{-3} s^{-1}"
+				description="POC Remineralization to DOCr"
 			/>
 			<var name="ecosys_diag_POC_REMIN_DIC" type="real" dimensions="nVertLevels nCells Time" units="mmol C m^{-3} s^{-1}"
 				description="POC Remineralization to DIC"
@@ -900,11 +885,14 @@
 			<var name="ecosys_diag_POP_PROD" type="real" dimensions="nVertLevels nCells Time" units="mmol P m^{-3} s^{-1}"
 				description="POP Production"
 			/>
-			<var name="ecosys_diag_POP_REMIN" type="real" dimensions="nVertLevels nCells Time" units="mmol P m^{-3} s^{-1}"
-				description="POP Remineralization"
+			<var name="ecosys_diag_POP_REMIN_DOPr" type="real" dimensions="nVertLevels nCells Time" units="mmol P m^{-3} s^{-1}"
+				description="POP Remineralization to DOPr"
 			/>
 			<var name="ecosys_diag_POP_REMIN_PO4" type="real" dimensions="nVertLevels nCells Time" units="mmol P m^{-3} s^{-1}"
 				description="POP Remineralization to PO4"
+			/>
+			<var name="ecosys_diag_PON_REMIN_DONr" type="real" dimensions="nVertLevels nCells Time" units="mmol N m^{-3} s^{-1}"
+				description="PON Remineralization to DONr"
 			/>
 			<var name="ecosys_diag_PON_REMIN_NH4" type="real" dimensions="nVertLevels nCells Time" units="mmol N m^{-3} s^{-1}"
 				description="PON Remineralization to NH4"
@@ -912,20 +900,20 @@
 			<var name="ecosys_diag_Qp" type="real" dimensions="R3 nVertLevels nCells Time" units="none"
 				description="P/C Ratio"
 			/>
-			<var name="ecosys_diag_N_lim" type="real" dimensions="FOUR nVertLevels nCells Time" units="unitless"
-				description="N Limitation for sp, diat, diaz, phaeo"
+			<var name="ecosys_diag_N_lim_surf" type="real" dimensions="FOUR nCells Time" units="unitless"
+				description="N Surface Limitation for sp, diat, diaz, phaeo"
 			/>
-			<var name="ecosys_diag_P_lim" type="real" dimensions="FOUR nVertLevels nCells Time" units="unitless"
-				description="P Limitation for sp, diat, diaz, phaeo"
+			<var name="ecosys_diag_P_lim_surf" type="real" dimensions="FOUR nCells Time" units="unitless"
+				description="P Surface Limitation for sp, diat, diaz, phaeo"
 			/>
-			<var name="ecosys_diag_Fe_lim" type="real" dimensions="FOUR nVertLevels nCells Time" units="unitless"
-				description="Fe Limitation for sp, diat, diaz, phaeo"
+			<var name="ecosys_diag_Fe_lim_surf" type="real" dimensions="FOUR nCells Time" units="unitless"
+				description="Fe Surface Limitation for sp, diat, diaz, phaeo"
 			/>
-			<var name="ecosys_diag_SiO3_lim" type="real" dimensions="FOUR nVertLevels nCells Time" units="unitless"
-				description="SiO3 Limitation for sp, diat, diaz, phaeo"
+			<var name="ecosys_diag_SiO3_lim_surf" type="real" dimensions="FOUR nCells Time" units="unitless"
+				description="SiO3 Surface Limitation for sp, diat, diaz, phaeo"
 			/>
-			<var name="ecosys_diag_light_lim" type="real" dimensions="FOUR nVertLevels nCells Time" units="unitless"
-				description="Light Limitation for sp, diat, diaz, phaeo"
+			<var name="ecosys_diag_light_lim_surf" type="real" dimensions="FOUR nCells Time" units="unitless"
+				description="Light Surface Limitation for sp, diat, diaz, phaeo"
 			/>
 			<var name="ecosys_diag_photoC" type="real" dimensions="FOUR nVertLevels nCells Time" units="mmol C m^{-3} s^{-1}"
 				description="C Fixation for sp, diat, diaz, phaeo"
@@ -1029,7 +1017,7 @@
 		</var_struct>
 
 		<var_struct name="ecosysDiagFieldsLevel3" time_levs="1" packages="ecosysTracersPKG">
-			<var name="ecosys_diag_tot_bSi_form" type="real" dimensions="nCells Time" units="mmol Si m^{-3} s^{-1}"
+			<var name="ecosys_diag_tot_bSi_form" type="real" dimensions="nVertLevels nCells Time" units="mmol Si m^{-3} s^{-1}"
 				description="Si Uptake"
 			/>
 			<var name="ecosys_diag_SiO2_FLUX_IN" type="real" dimensions="nVertLevels nCells Time" units="mmol Si m^{-3} m s^{-1}"
@@ -1107,19 +1095,19 @@
 			<var name="ecosys_diag_DOPr_remin" type="real" dimensions="nVertLevels nCells Time" units="mmol P m^{-3} s^{-1}"
 				description="DOPr Remineralization"
 			/>
-			<var name="ecosys_diag_ponToSed" type="real" dimensions="nVertLevels nCells Time" units="mmol N m^{-3} m s^{-1}"
+			<var name="ecosys_diag_ponToSed" type="real" dimensions="nCells Time" units="mmol N m^{-3} m s^{-1}"
 				description="N Burial Flux to Sediments"
 			/>
-			<var name="ecosys_diag_popToSed" type="real" dimensions="nVertLevels nCells Time" units="mmol P m^{-3} m s^{-1}"
+			<var name="ecosys_diag_popToSed" type="real" dimensions="nCells Time" units="mmol P m^{-3} m s^{-1}"
 				description="P Flux to Sediments"
 			/>
-			<var name="ecosys_diag_bsiToSed" type="real" dimensions="nVertLevels nCells Time" units="mmol Si m^{-3} m s^{-1}"
+			<var name="ecosys_diag_bsiToSed" type="real" dimensions="nCells Time" units="mmol Si m^{-3} m s^{-1}"
 				description="Biogenic Si Flux to Sediments"
 			/>
-			<var name="ecosys_diag_dustToSed" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-2} s^{-1}"
+			<var name="ecosys_diag_dustToSed" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 				description="Dust Flux to Sediments"
 			/>
-			<var name="ecosys_diag_OtherRemin" type="real" dimensions="nVertLevels nCells Time" units="mmol C m^{-3} m s^{-1}"
+			<var name="ecosys_diag_OtherRemin" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
 				description="Non-Oxic, Non-Dentr Remineralization in Sediments"
 			/>
 			<var name="ecosys_diag_bSi_form" type="real" dimensions="FOUR nVertLevels nCells Time" units="mmol Si m^{-3} s^{-1}"

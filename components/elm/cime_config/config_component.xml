@@ -71,7 +71,7 @@
       <value compset="1850S_EAM%CMIP6_ELM">1850_SCMIP6_control</value>
       <value compset="1850(?:SOI)?_EAM%CMIP6_ELM*_BGC%BCRC">1850_CMIP6bgc_control</value>
       <value compset="1850S_EAM%CMIP6_ELM">1850_SCMIP6_control</value>
-      <value compset="20TR.*_EAM%.*CMIP6_ELM">20thC_CMIP6_transient</value>
+      <value compset="20TR.*_EAM%.*CMIP6.*_ELM">20thC_CMIP6_transient</value>
       <value compset="20TR(?:SOI)?_EAM%CMIP6_ELM*_BGC%B">20thC_CMIP6bgc_transient</value> 
       <value compset="20TR.*_ELM%[^_]*BGC">20thC_bgc_transient</value>
       <value compset="1950(?:SOI)?_EAM%CMIP6_ELM">1950_CMIP6_control</value>

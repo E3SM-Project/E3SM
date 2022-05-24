@@ -14,6 +14,12 @@ add_subdirectory(${SCREAM_BASE_DIR}/../../externals/YAKL ${CMAKE_BINARY_DIR}/ext
 target_compile_options(yakl PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${YAKL_CXX_FLAGS}>)
 EkatDisableAllWarning(yakl)
 
+# For debug builds, set -DYAKL_DEBUG                                                                                       
+string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)                                                                
+if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")                                                                                  
+  target_compile_definitions(yakl PUBLIC YAKL_DEBUG)                                                                   
+endif()                                                                                                             
+
 # We will need the shr_orb_mod source too; this builds library share_util
 add_subdirectory(share ${CMAKE_CURRENT_BINARY_DIR}/share_util)
 

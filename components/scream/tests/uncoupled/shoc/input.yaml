@@ -12,6 +12,7 @@ Time Stepping:
 atmosphere_processes:
   atm_procs_list: (shoc)
   shoc:
+    Number of Subcycles: ${NUM_SUBCYCLES}
     Grid: Point Grid
 
 Grids Manager:

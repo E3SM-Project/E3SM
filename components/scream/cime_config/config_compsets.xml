@@ -22,12 +22,6 @@
   </compset>
 
   <compset>
-      <alias>F2000SCREAMv1</alias> <!-- Coupled land-atm compset (using SCREAMv1), 2000 initial conditions -->
-      <lname>2000_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
-      <support_level>Experimental, under development</support_level>
-  </compset>
-
-  <compset>
       <alias>F2010-SCREAMv1</alias> <!-- Coupled land-atm compset (using SCREAMv1), 2010 initial conditions -->
       <lname>2010_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
       <support_level>Experimental, under development</support_level>

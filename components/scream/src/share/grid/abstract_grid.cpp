@@ -230,4 +230,14 @@ AbstractGrid::get_global_max_dof_gid () const
   return global_max;
 }
 
+std::list<std::string>
+AbstractGrid::get_geometry_data_names () const
+{
+  std::list<std::string> names;
+  for (const auto& it : m_geo_views) {
+    names.push_back(it.first);
+  }
+  return names;
+}
+
 } // namespace scream

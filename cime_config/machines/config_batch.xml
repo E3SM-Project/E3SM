@@ -361,26 +361,23 @@
     </queues>
   </batch_system>
 
-
-
   <batch_system MACH="miller" type="miller_slurm">
     <queues>
       <queue walltimemax="06:00:00" nodemax="800" default="true">collaboration</queue>
     </queues>
   </batch_system>
 
-
-  <batch_system MACH="perlmutter" type="nersc_slurm">
+  <batch_system MACH="pm-gpu" type="nersc_slurm">
     <directives>
       <directive> --constraint=gpu</directive>
     </directives>
     <directives compiler="gnugpu">
       <directive> --gpus-per-task=1</directive>
     </directives>
-    <directives COMPSET="!.*%MMF.*" compiler="gnugpu">
+    <directives COMPSET="!.*MMF.*" compiler="gnugpu">
       <directive> --gpu-bind=none</directive>
     </directives>
-    <directives COMPSET=".*%MMF.*" compiler="gnugpu">
+    <directives COMPSET=".*MMF.*" compiler="gnugpu">
       <directive> --gpu-bind=map_gpu:0,1,2,3</directive>
     </directives>
     <directives compiler="nvidiagpu">
@@ -395,6 +392,17 @@
     </directives>
     <queues>
       <queue walltimemax="00:45:00" nodemax="1500" default="true">regular</queue>
+      <queue walltimemax="00:15:00" nodemax="4" strict="true">debug</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="pm-cpu" type="nersc_slurm">
+    <directives>
+      <directive> --constraint=cpu</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" nodemax="1500" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="4" strict="true">debug</queue>
     </queues>
   </batch_system>
 
@@ -553,7 +561,9 @@
        <directive>-alloc_flags "gpumps smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}"</directive>
      </directives>
      <queues>
-       <queue walltimemax="02:00" strict="true" default="true">batch</queue>
+       <queue walltimemax="24:00" nodemin="1" nodemax="4608" strict="true" default="true">batch</queue>
+       <queue walltimemax="24:00" nodemin="1" nodemax="54" strict="true" default="false">batch-hm</queue>
+       <queue walltimemax="02:00" nodemin="1" nodemax="4608" strict="true" default="false">debug</queue>
      </queues>
    </batch_system>
 

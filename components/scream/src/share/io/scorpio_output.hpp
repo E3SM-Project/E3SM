@@ -145,6 +145,7 @@ public:
   void run (const std::string& filename, const bool write, const int nsteps_since_last_output);
   void finalize() {}
 
+  long long res_dep_memory_footprint () const;
 protected:
 
   // Internal functions
@@ -156,7 +157,7 @@ protected:
   void set_degrees_of_freedom(const std::string& filename);
   std::vector<int> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
-  Field get_field(const std::string& name);
+  Field get_field(const std::string& name, const bool eval_diagnostic = false);
   void set_diagnostics();
 
   // --- Internal variables --- //

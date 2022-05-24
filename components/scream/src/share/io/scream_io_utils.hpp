@@ -1,8 +1,10 @@
 #ifndef SCREAM_IO_UTILS_HPP
 #define SCREAM_IO_UTILS_HPP
 
-#include <string>
+#include "share/util/scream_time_stamp.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
+#include "ekat/mpi/ekat_comm.hpp"
+#include <string>
 
 namespace scream
 {
@@ -67,7 +69,15 @@ struct IOFileSpecs {
   // of the same test, so they run concurrently, writing on different files.
   bool filename_with_time_string = true;
   bool filename_with_mpiranks    = false;
+  bool filename_with_avg_type    = true;
+  bool filename_with_frequency   = true;
 };
+
+std::string find_filename_in_rpointer (
+    const std::string& casename,
+    const bool model_restart,
+    const ekat::Comm& comm,
+    const util::TimeStamp& run_t0);
 
 } // namespace scream
 #endif // SCREAM_IO_UTILS_HPP
