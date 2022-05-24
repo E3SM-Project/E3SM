@@ -211,17 +211,38 @@ endif()
 
 set(SCREAM_INPUT_ROOT ${DEFAULT_SCREAM_INPUT_ROOT} CACHE PATH "Root of downloaded input files. Should match DIN_LOC_ROOT on CIME machines")
 if (NOT SCREAM_INPUT_ROOT)
-  message (FATAL_ERROR "Value not found for SCREAM_INPUT_ROOT")
+  string (CONCAT msg
+    "  -> Value not found for SCREAM_INPUT_ROOT.\n"
+    "     You have three ways for setting this folder. In order of precedence:\n"
+    "      - define an env var SCREAM_MACHINE (must be a CIME-supported machine)\n"
+    "      - define a cmake cache entry SCREAM_MACHINE (must be a CIME-supported machine)\n"
+    "      - define a cmake cache entry SCREAM_INPUT_ROOT.\n"
+    "     Ultimately, SCREAM_INPUT_ROOT is the folder where input data will be downloaded.\n")
+  message ("${msg}")
+  message (FATAL_ERROR "ERROR! Aborting...")
 elseif(NOT IS_DIRECTORY ${SCREAM_INPUT_ROOT})
-  message (FATAL_ERROR "SCREAM_INPUT_ROOT=${SCREAM_INPUT_ROOT} is not a directory.")
+  string (CONCAT msg
+    "  -> SCREAM_INPUT_ROOT=${SCREAM_INPUT_ROOT} is not a directory."
+    "     You have three ways for setting this folder. In order of precedence:\n"
+    "      - define an env var SCREAM_MACHINE (must be a CIME-supported machine)\n"
+    "      - define a cmake cache entry SCREAM_MACHINE (must be a CIME-supported machine)\n"
+    "      - define a cmake cache entry SCREAM_INPUT_ROOT.\n"
+    "     Ultimately, SCREAM_INPUT_ROOT is the folder where input data will be downloaded.\n")
+  message ("${msg}")
+  message (FATAL_ERROR "ERROR! Aborting...")
 else()
   execute_process(COMMAND test -w ${SCREAM_INPUT_ROOT}
     RESULT_VARIABLE res)
   if (NOT res EQUAL 0)
-    string(CONCAT msg
-      "No write permissions on ${SCREAM_INPUT_ROOT}\n"
-      "If some input files need to be downloaded, this may result in an error.")
-    message(WARNING "${msg}")
+    string (CONCAT msg
+      "  -> No write permissions on ${SCREAM_INPUT_ROOT}\n"
+      "     If some input files need to be downloaded, this may result in an error."
+      "     NOTE: You have three ways for setting this folder. In order of precedence:\n"
+      "      - define an env var SCREAM_MACHINE (must be a CIME-supported machine)\n"
+      "      - define a cmake cache entry SCREAM_MACHINE (must be a CIME-supported machine)\n"
+      "      - define a cmake cache entry SCREAM_INPUT_ROOT.\n"
+      "     Ultimately, SCREAM_INPUT_ROOT is the folder where input data will be downloaded.\n")
+    message ("${msg}")
   endif()
 endif()
 
