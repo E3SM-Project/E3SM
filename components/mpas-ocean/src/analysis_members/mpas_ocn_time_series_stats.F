@@ -1007,7 +1007,7 @@ end subroutine start_state
 !> \date    September 1, 2015
 !> \details
 !>  Given a stream name, this will remove the existing variables
-!>  in a stream and replace them with similiarly named ones for
+!>  in a stream and replace them with similarly named ones for
 !>  their accumulation. It will also add xtime and optionally the mesh.
 !-----------------------------------------------------------------------
 subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
@@ -1213,7 +1213,7 @@ end subroutine modify_stream!}}}
 !***********************************************************************
 ! function output_naming
 !
-!> \brief Given an input name, create a cooresponding output name
+!> \brief Given an input name, create a corresponding output name
 !> \author  Jon Woodring
 !> \date    September 1, 2015
 !> \details
