@@ -39,8 +39,8 @@
 			description="When config_use_surface_salinity_monthly_restoring is true, this flag provides a run-time override of the salinityPistonVelocity variable in the input files.  It is uniform over the domain, and controls the rate at which salinity is restored to salinitySurfaceRestoringValue"
 			possible_values="any non-negative number"
 		/>
-		<nml_option name="config_salinity_restoring_max_difference" type="real" default_value="100.0" units="psu"
-			description="Maximum allowable difference between surface salinity and climatology."
+		<nml_option name="config_salinity_restoring_max_difference" type="real" default_value="100.0" units="1.e-3"
+			description="Maximum allowable difference between surface salinity and climatology, in grams salt per kilogram seawater."
 			possible_values="any non-negative number"
 		/>
 		<nml_option name="config_salinity_restoring_under_sea_ice" type="logical" default_value=".false." units="NA"
@@ -78,7 +78,7 @@
 				<var name="temperatureTend" array_group="activeGRP" units="C s^-1"
 			 description="time tendency of potential temperature"
 				/>
-				<var name="salinityTend" array_group="activeGRP" units="PSU s^-1"
+				<var name="salinityTend" array_group="activeGRP" units="1.e-3 s^-1"
 			 description="time tendency of salinity measured as change in practical salinity units per second"
 				/>
 			</var_array>
@@ -91,7 +91,7 @@
 				<var name="temperatureSurfaceFlux" array_group="activeTracerFluxGRP" units="C m s^-1"
 			 description="Flux of temperature through the ocean surface. Positive into ocean."
 				/>
-				<var name="salinitySurfaceFlux" array_group="activeTracerFluxGRP" units="PSU m s^-1"
+				<var name="salinitySurfaceFlux" array_group="activeTracerFluxGRP" units="1.e-3 m s^-1"
 			 description="Flux of salinity through the ocean surface. Positive into ocean."
 				/>
 			</var_array>
@@ -99,7 +99,7 @@
 				<var name="temperatureSurfaceFluxRunoff" array_group="activeRunoffFluxGRP" units="C m s^-1"
 			 description="Flux of temperature through the ocean surface due to river runoff. Positive into ocean."
 				/>
-				<var name="salinitySurfaceFluxRunoff" array_group="activeRunoffFluxGRP" units="PSU m s^-1"
+				<var name="salinitySurfaceFluxRunoff" array_group="activeRunoffFluxGRP" units="1.e-3 m s^-1"
 			 description="Flux of salinity through the ocean surface due to river runoff. Positive into ocean."
 				/>
 			</var_array>
@@ -107,7 +107,7 @@
 				<var name="temperatureSurfaceFluxRemoved" array_group="activeRemovedFluxGRP" units="C m s^-1"
 			 description="Flux of temperature that is ignored coming into the ocean. Positive into ocean."
 				/>
-				<var name="salinitySurfaceFluxRemoved" array_group="activeRemovedFluxGRP" units="PSU m s^-1"
+				<var name="salinitySurfaceFluxRemoved" array_group="activeRemovedFluxGRP" units="1.e-3 m s^-1"
 			 description="Flux of salinity that is ignored coming into the ocean. Positive into ocean."
 				/>
 			</var_array>
@@ -115,7 +115,7 @@
 				<var name="nonLocalTemperatureSurfaceFlux" array_group="activeNonLocalGRP" units="C m s^-1"
 			description="total flux of temperature (including thickness contributions) through ocean surface"
 				/>
-				<var name="nonLocalSalinitySurfaceFlux" array_group="activeNonLocalGRP" units="PSU m s^-1"
+				<var name="nonLocalSalinitySurfaceFlux" array_group="activeNonLocalGRP" units="1.e-3 m s^-1"
 			description="total flux of salinity (including thickness contributions) through ocean surface"
 				/>
 			</var_array>
@@ -133,7 +133,7 @@
 				<var name="temperatureSurfaceRestoringValue" array_group="activeGRP" units="C"
 			 description="Temperature is restored toward this field at a rate controlled by temperaturePistonVelocity."
 				/>
-				<var name="salinitySurfaceRestoringValue" array_group="activeGRP" units="PSU"
+				<var name="salinitySurfaceRestoringValue" array_group="activeGRP" units="1.e-3"
 			 description="Salinity is restored toward this field at a rate controlled by salinityPistonVelocity."
 				/>
 			</var_array>
@@ -151,7 +151,7 @@
 				<var name="temperatureInteriorRestoringValue" array_group="activeGRP" units="C"
 			 description="Temperature is restored toward this field at a rate controlled by temperatureInteriorRestoringRate."
 				/>
-				<var name="salinityInteriorRestoringValue" array_group="activeGRP" units="PSU"
+				<var name="salinityInteriorRestoringValue" array_group="activeGRP" units="1.e-3"
 			 description="Salinity is restored toward this field at a rate controlled by salinityInteriorRestoringRate."
 				/>
 			</var_array>
@@ -189,7 +189,7 @@
 	</var_struct>
 
 	<var_struct name="surfaceSalinityMonthlyForcing" time_levs="1">
-		<var name="surfaceSalinityMonthlyClimatologyValue" type="real" dimensions="nCells Time" array_group="activeGRP" units="psu"
+		<var name="surfaceSalinityMonthlyClimatologyValue" type="real" dimensions="nCells Time" array_group="activeGRP" units="1.e-3"
 			 description="monthly surface salinity climatology interpolated to current timestep"
 		/>
 	</var_struct>
