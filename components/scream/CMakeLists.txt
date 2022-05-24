@@ -210,6 +210,21 @@ if (SCREAM_MACHINE)
 endif()
 
 set(SCREAM_INPUT_ROOT ${DEFAULT_SCREAM_INPUT_ROOT} CACHE PATH "Root of downloaded input files. Should match DIN_LOC_ROOT on CIME machines")
+if (NOT SCREAM_INPUT_ROOT)
+  message (FATAL_ERROR "Value not found for SCREAM_INPUT_ROOT")
+elseif(NOT IS_DIRECTORY ${SCREAM_INPUT_ROOT})
+  message (FATAL_ERROR "SCREAM_INPUT_ROOT=${SCREAM_INPUT_ROOT} is not a directory.")
+else()
+  execute_process(COMMAND test -w ${SCREAM_INPUT_ROOT}
+    RESULT_VARIABLE res)
+  if (NOT res EQUAL 0)
+    string(CONCAT msg
+      "No write permissions on ${SCREAM_INPUT_ROOT}\n"
+      "If some input files need to be downloaded, this may result in an error.")
+    message(WARNING "${msg}")
+  endif()
+endif()
+
 set (SCREAM_DATA_DIR ${SCREAM_INPUT_ROOT}/atm/scream CACHE PATH "" FORCE)
 
 # Assuming SCREAM_LIB_ONLY is FALSE (else, no exec is built at all), we provide the option
