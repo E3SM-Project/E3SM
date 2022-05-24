@@ -38,6 +38,8 @@ module zm_conv
   public trigdcape_ull            ! true if to use dcape-ULL trigger
   public trig_dcape_only          ! true if to use dcape only trigger
   public trig_ull_only            ! true if to ULL along with default CAPE-based trigger
+  public buoyan_dilute            ! subroutine that calculates CAPE
+  public limcnv                   ! top interface level limit for convection
 
 !
 ! Private data
