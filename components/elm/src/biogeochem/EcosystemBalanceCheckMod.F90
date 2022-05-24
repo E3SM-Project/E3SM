@@ -22,7 +22,7 @@ module EcosystemBalanceCheckMod
   use elm_varpar          , only: ndecomp_cascade_transitions
   use subgridAveMod       , only : p2c, c2g, unity
   ! soil erosion
-  use elm_varctl          , only : use_erosion, ero_ccycle
+  use elm_varctl          , only : ero_ccycle
   ! bgc interface & pflotran:
   use elm_varctl          , only : use_pflotran, pf_cmode, pf_hmode
   ! forest fertilization experiment

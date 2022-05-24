@@ -11,7 +11,7 @@ module PhosphorusStateUpdate3Mod
   use elm_varpar          , only: nlevdecomp,ndecomp_pools,ndecomp_cascade_transitions
   use elm_varctl          , only : iulog
   use elm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
-  use elm_varctl          , only : use_erosion, ero_ccycle, use_fates
+  use elm_varctl          , only : ero_ccycle, use_fates
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType         , only : cnstate_type
   use PhosphorusStateType , only : phosphorusstate_type

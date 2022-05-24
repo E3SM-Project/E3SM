@@ -9,7 +9,7 @@ module CarbonStateUpdate3Mod
   use shr_log_mod      , only : errMsg => shr_log_errMsg
   use abortutils       , only : endrun
   use elm_varpar       , only : nlevdecomp, ndecomp_pools, i_cwd, i_met_lit, i_cel_lit, i_lig_lit
-  use elm_varctl       , only : use_erosion, ero_ccycle
+  use elm_varctl       , only : ero_ccycle
   use CNCarbonStateType, only : carbonstate_type
   use CNCarbonFluxType , only : carbonflux_type
   use CNDecompCascadeConType , only : decomp_cascade_con

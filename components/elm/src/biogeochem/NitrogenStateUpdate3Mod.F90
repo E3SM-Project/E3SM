@@ -10,7 +10,7 @@ module NitrogenStateUpdate3Mod
   use elm_varpar          , only: nlevdecomp, ndecomp_pools
   use elm_varctl          , only : iulog
   use elm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
-  use elm_varctl          , only : use_erosion, ero_ccycle
+  use elm_varctl          , only : ero_ccycle
   use CNDecompCascadeConType , only : decomp_cascade_con
   use ColumnDataType      , only : col_ns, col_nf
   use VegetationDataType  , only : veg_ns, veg_nf
