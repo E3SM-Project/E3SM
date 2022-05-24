@@ -25,7 +25,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_shoc_cld_spa_p3_rrtmgp_128level
 
 # Set homme's test options, so that we can configure the namelist correctly
 # Discretization/algorithm settings
-set (HOMME_TEST_NE 4)
+set (HOMME_TEST_NE 2)
 set (HOMME_TEST_LIM 9)
 set (HOMME_TEST_REMAP_FACTOR 3)
 set (HOMME_TEST_TRACERS_FACTOR 1)
@@ -58,7 +58,7 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
 # Ensure test input files are present in the data dir
 set (TEST_INPUT_FILES
   init/spa_file_unified_and_complete_ne4_20220428.nc
-  init/screami_ne4np4L128_20220512.nc
+  init/screami_ne2np4L128_20220524.nc
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
   GetInputFile(${file})
