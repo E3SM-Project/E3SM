@@ -27,7 +27,7 @@ Grids Manager:
 
 # Specifications for setting initial conditions
 Initial Conditions:
-  Filename: ${SCREAM_DATA_DIR}/init/homme_shoc_cld_spa_p3_rrtmgp_init_ne2np4_20220524.nc
+  Filename: ${SCREAM_DATA_DIR}/init/screami_ne2np4L72_20220524.nc
   Point Grid:
     Load Latitude:  true
     Load Longitude: true

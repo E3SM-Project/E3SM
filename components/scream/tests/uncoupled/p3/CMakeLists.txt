@@ -18,7 +18,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
 configure_file(p3_standalone_output.yaml p3_standalone_output.yaml)
 
 # Ensure test input files are present in the data dir
-GetInputFile(init/homme_shoc_cld_spa_p3_rrtmgp_init_ne2np4_20220524.nc)
+GetInputFile(init/screami_ne2np4L72_20220524.nc)
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if max mpi ranks is >1
