@@ -101,7 +101,6 @@ void run(std::mt19937_64& engine)
 
   using KT         = ekat::KokkosTypes<DeviceT>;
   using ExecSpace  = typename KT::ExeSpace;
-  using TeamPolicy = typename KT::TeamPolicy;
   using MemberType = typename KT::MemberType;
   using view_1d    = typename KT::template view_1d<ScalarT>;
   using rview_1d   = typename KT::template view_1d<RealType>;
@@ -112,9 +111,6 @@ void run(std::mt19937_64& engine)
 
   constexpr int num_levs = 32; // Number of levels to use for tests.
   const     int num_mid_packs = pack_info::num_packs(num_levs);
-
-  using Check = ChecksHelpers<ScalarT,num_levs>;
-
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -187,43 +183,46 @@ void run(std::mt19937_64& engine)
   // Test 1 - property tests 
   //  - theta(T=0) = 0
   {
-  Field zero_f = T_mid_f;  // Field with only zeros
-  zero_f.deep_copy(0.0);
-  for (int icol = 0; icol<ncols;++icol) {
-    const auto& T_sub = ekat::subview(T_mid_v,icol);
-    const auto& p_sub = ekat::subview(p_mid_v,icol);
-    Kokkos::deep_copy(T_sub,zero);
-    Kokkos::deep_copy(p_sub,p0);
-  }
-  const auto& diag_out = diag->get_diagnostic(100.0);
-  REQUIRE(views_are_equal(diag_out,zero_f));
+    Field zero_f = T_mid_f;  // Field with only zeros
+    zero_f.deep_copy(0.0);
+    for (int icol = 0; icol<ncols;++icol) {
+      const auto& T_sub = ekat::subview(T_mid_v,icol);
+      const auto& p_sub = ekat::subview(p_mid_v,icol);
+      Kokkos::deep_copy(T_sub,zero);
+      Kokkos::deep_copy(p_sub,p0);
+    }
+    diag->run();
+    const auto& diag_out = diag->get_diagnostic();
+    REQUIRE(views_are_equal(diag_out,zero_f));
   }
   //  - theta=T when p=p0
   {
-  for (int icol = 0; icol<ncols;++icol) {
-    const auto& T_sub = ekat::subview(T_mid_v,icol);
-    const auto& p_sub = ekat::subview(p_mid_v,icol);
-    Kokkos::deep_copy(T_sub,temperature);
-    Kokkos::deep_copy(p_sub,p0);
-  } 
-  const auto& diag_out = diag->get_diagnostic(100.0);
-  REQUIRE(views_are_equal(diag_out,T_mid_f));
+    for (int icol = 0; icol<ncols;++icol) {
+      const auto& T_sub = ekat::subview(T_mid_v,icol);
+      const auto& p_sub = ekat::subview(p_mid_v,icol);
+      Kokkos::deep_copy(T_sub,temperature);
+      Kokkos::deep_copy(p_sub,p0);
+    } 
+    diag->run();
+    const auto& diag_out = diag->get_diagnostic();
+    REQUIRE(views_are_equal(diag_out,T_mid_f));
   }
   // The output from the diagnostic should match what would happen if we called "calculate_theta_from_T" directly
   {
-  Field theta_f = T_mid_f;
-  theta_f.deep_copy<double,Host>(0.0);
-  const auto& theta_v = theta_f.get_view<ScalarT**>();
-  Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
-    const int i = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
-      theta_v(i,k) = PF::calculate_theta_from_T(T_mid_v(i,k),p_mid_v(i,k));
+    Field theta_f = T_mid_f;
+    theta_f.deep_copy<double,Host>(0.0);
+    const auto& theta_v = theta_f.get_view<ScalarT**>();
+    Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const int i = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
+        theta_v(i,k) = PF::calculate_theta_from_T(T_mid_v(i,k),p_mid_v(i,k));
+      });
+      team.team_barrier();
     });
-    team.team_barrier();
-  });
-  Kokkos::fence();
-  const auto& diag_out = diag->get_diagnostic(100.0);
-  REQUIRE(views_are_equal(diag_out,theta_f));
+    Kokkos::fence();
+    diag->run();
+    const auto& diag_out = diag->get_diagnostic();
+    REQUIRE(views_are_equal(diag_out,theta_f));
   }
  
   // Finalize the diagnostic

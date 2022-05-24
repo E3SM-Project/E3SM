@@ -665,12 +665,13 @@ TEST_CASE ("diagnostics") {
   diag_identity->initialize(t0,RunType::Initial);
   diag_sum->initialize(t0,RunType::Initial);
 
-  // Run the AddOne process for one timestep
-  const int dt = 5;  // Note, none of the diagnostics actually use dt so really can be any value.
-
   // Run the diagnostics
-  const auto& f_identity = diag_identity->get_diagnostic(dt);
-  const auto& f_sum      = diag_sum->get_diagnostic(dt);
+  diag_identity->run();
+  diag_sum->run();
+
+  // Get diagnostics outputs
+  const auto& f_identity = diag_identity->get_diagnostic();
+  const auto& f_sum      = diag_sum->get_diagnostic();
 
   // For the identity diagnostic check that the fields match
   auto v_identity = f_identity.get_view<const Real*,Host>();

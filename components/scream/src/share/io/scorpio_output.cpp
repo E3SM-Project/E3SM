@@ -184,7 +184,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
   // Take care of updating and possibly writing fields.
   for (auto const& name : m_fields_names) {
     // Get all the info for this field.
-    const auto  field = get_field(name);
+    const auto  field = get_field(name,true); // If diagnostic, must evaluate it
     const auto& layout = m_layouts.at(name);
     const auto& dims = layout.dims();
     const auto  rank = layout.rank();
@@ -615,13 +615,16 @@ void AtmosphereOutput::setup_output_file(const std::string& filename)
 // manager.  If not it will next check to see if it is in the list
 // of available diagnostics.  If neither of these two options it
 // will throw an error.
-Field AtmosphereOutput::get_field(const std::string& name)
+Field AtmosphereOutput::get_field(const std::string& name, const bool eval_diagnostic)
 {
   if (m_field_mgr->has_field(name)) {
     return m_field_mgr->get_field(name);
   } else if (m_diagnostics.find(name) != m_diagnostics.end()) {
     const auto& diag = m_diagnostics[name];
-    return diag->get_diagnostic(100.0);
+    if (eval_diagnostic) {
+      diag->run();
+    }
+    return diag->get_diagnostic();
   } else {
     EKAT_ERROR_MSG ("Field " + name + " not found in output field manager or diagnostics list");
   }
