@@ -12,6 +12,10 @@ CreateUnitTest(shoc_standalone "shoc_standalone.cpp" "${NEED_LIBS}" LABELS ${TES
 SetVarDependingOnTestProfile(NUM_STEPS 2 5 48)
 set (ATM_TIME_STEP 1800)
 
+# Determine num subcycles needed to keep shoc dt<=300s
+set (SHOC_MAX_DT 300)
+math (EXPR NUM_SUBCYCLES "(${ATM_TIME_STEP} + ${SHOC_MAX_DT} - 1) / ${SHOC_MAX_DT}")
+
 # Ensure test input files are present in the data dir
 GetInputFile(init/shoc_init_ne2np4.nc)
 

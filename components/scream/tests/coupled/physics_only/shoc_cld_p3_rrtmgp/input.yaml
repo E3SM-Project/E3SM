@@ -10,14 +10,19 @@ Time Stepping:
   Number of Steps: ${NUM_STEPS}
 
 atmosphere_processes:
-  atm_procs_list: (shoc,CldFraction,p3,rrtmgp)
+  atm_procs_list: (mac_mic,rrtmgp)
   Schedule Type: Sequential
-  shoc:
-    Grid: Point Grid
-  CldFraction:
-    Grid: Point Grid
-  p3:
-    Grid: Point Grid
+  mac_mic:
+    atm_procs_list: (shoc,CldFraction,p3)
+    Type: Group
+    Schedule Type: Sequential
+    Number of Subcycles: ${MAC_MIC_SUBCYCLES}
+    shoc:
+      Grid: Point Grid
+    CldFraction:
+      Grid: Point Grid
+    p3:
+      Grid: Point Grid
   rrtmgp:
     Grid: Point Grid
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
