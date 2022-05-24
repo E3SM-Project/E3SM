@@ -67,6 +67,10 @@ endforeach()
 # Set AD configurable options
 set (ATM_TIME_STEP 300)
 
+# Determine num subcycles needed to keep shoc dt<=300s
+set (SHOC_MAX_DT 300)
+math (EXPR MAC_MIC_SUBCYCLES "(${ATM_TIME_STEP} + ${SHOC_MAX_DT} - 1) / ${SHOC_MAX_DT}")
+
 # Configure yaml input file to run directory
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input_baseline.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input_baseline.yaml)
