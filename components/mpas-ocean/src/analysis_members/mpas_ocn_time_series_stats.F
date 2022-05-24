@@ -1026,8 +1026,7 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
   integer :: v, b
   logical :: emptyRestartStream, restartStreamEnabled
   character (len=StrKIND), pointer :: output_stream_name, restart_stream_name
-  character (len=StrKIND) :: fieldName
-  character (len=StrKIND) :: field_name, config, op_name
+  character (len=StrKIND) :: in_field_name, out_field_name, config, op_name
   character (len=StrKIND) :: namelist_prefix, &
     storage_prefix, buf_identifier, buf_prefix
   type (mpas_pool_field_info_type) :: info
@@ -1062,15 +1061,15 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
   b = 1
   v = 1
   do while (mpas_stream_mgr_get_next_field(domain % streamManager, &
-    output_stream_name, field_name))
+    output_stream_name, in_field_name))
 
     ! check if we can handle it
     if (valid_input(b)) then
-      series % variables(v) % input_name = field_name
+      series % variables(v) % input_name = in_field_name
 
       ! remove the old one
       call mpas_stream_mgr_remove_field(domain % streamManager, &
-        output_stream_name, series % variables(v) % input_name)
+        output_stream_name, in_field_name)
 
       v = v + 1
     end if
@@ -1091,7 +1090,7 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
      call mpas_stream_mgr_begin_iteration(domain % streamManager, &
        streamID=restart_stream_name, ierr=err)
      do while (mpas_stream_mgr_get_next_field(domain % streamManager, &
-       streamID=restart_stream_name, fieldName=fieldName) .and. emptyRestartStream)
+       streamID=restart_stream_name, fieldName=in_field_name) .and. emptyRestartStream)
        emptyRestartStream = .false.
      end do
 
@@ -1114,55 +1113,55 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
 
     ! allocate counter memory
     if (series % number_of_buffers > 1) then
-      field_name = counter_naming(storage_prefix, buf_identifier)
+      out_field_name = counter_naming(storage_prefix, buf_identifier)
     else
-      field_name = counter_naming(storage_prefix)
+      out_field_name = counter_naming(storage_prefix)
     end if
     call add_new_integer(domain % blocklist % allFields, amPool, amPool, &
-      field_name, series % buffers(b) % counter)
+      out_field_name, series % buffers(b) % counter)
 
     ! put it in the output and restart
     call mpas_stream_mgr_add_field(domain % streamManager, &
-      output_stream_name, field_name, ierr=err)
+      output_stream_name, out_field_name, ierr=err)
     if (restartStreamEnabled) then
       call mpas_stream_mgr_add_field(domain % streamManager, &
-        restart_stream_name, field_name, ierr=err)
+        restart_stream_name, out_field_name, ierr=err)
     end if
 
     ! xtime start
     if (series % number_of_buffers > 1) then
-      field_name = trim(TIME_START_PREFIX) // trim(instance) // &
+      out_field_name = trim(TIME_START_PREFIX) // trim(instance) // &
         '_' // buf_identifier
     else
-      field_name = trim(TIME_START_PREFIX) // trim(instance)
+      out_field_name = trim(TIME_START_PREFIX) // trim(instance)
     end if
     call add_new_string(domain % blocklist % allFields, amPool, amPool, &
-      field_name, series % buffers(b) % xtime_start)
+      out_field_name, series % buffers(b) % xtime_start)
 
     ! put it in the output and restart
     call mpas_stream_mgr_add_field(domain % streamManager, &
-      output_stream_name, field_name, ierr=err)
+      output_stream_name, out_field_name, ierr=err)
     if (restartStreamEnabled) then
       call mpas_stream_mgr_add_field(domain % streamManager, &
-       restart_stream_name, field_name, ierr=err)
+       restart_stream_name, out_field_name, ierr=err)
     end if
 
     ! xtime end
     if (series % number_of_buffers > 1) then
-      field_name = trim(TIME_END_PREFIX) // trim(instance) // &
+      out_field_name = trim(TIME_END_PREFIX) // trim(instance) // &
         '_' // buf_identifier
     else
-      field_name = trim(TIME_END_PREFIX) // trim(instance)
+      out_field_name = trim(TIME_END_PREFIX) // trim(instance)
     end if
     call add_new_string(domain % blocklist % allFields, amPool, amPool, &
-      field_name, series % buffers(b) % xtime_end)
+      out_field_name, series % buffers(b) % xtime_end)
 
     ! put it in the output and restart
     call mpas_stream_mgr_add_field(domain % streamManager, &
-      output_stream_name, field_name, ierr=err)
+      output_stream_name, out_field_name, ierr=err)
     if (restartStreamEnabled) then
       call mpas_stream_mgr_add_field(domain % streamManager, &
-        restart_stream_name, field_name, ierr=err)
+        restart_stream_name, out_field_name, ierr=err)
     end if
   end do
 
@@ -1170,39 +1169,40 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
   call mpas_stream_mgr_begin_iteration(domain % streamManager, &
     output_stream_name, err)
   do v = 1, series % number_of_variables
+    in_field_name = series % variables(v) % input_name
     ! get the info of the field
     call mpas_pool_get_field_info(domain % blocklist % allFields, &
-      series % variables(v) % input_name, info)
+      in_field_name, info)
 
     ! allocate a number of fields and add field
     do b = 1, series % number_of_buffers
       write(buf_identifier, '(I0)') b
 
       if (series % number_of_buffers > 1) then
-        field_name = output_naming(storage_prefix, op_name, &
-          series % variables(v) % input_name, buf_identifier)
+        out_field_name = output_naming(storage_prefix, op_name, &
+          in_field_name, buf_identifier)
       else
-        field_name = output_naming(storage_prefix, op_name, &
-          series % variables(v) % input_name)
+        out_field_name = output_naming(storage_prefix, op_name, &
+          in_field_name)
       end if
 
       ! create the name of the output var
-      series % variables(v) % output_names(b) = field_name
+      series % variables(v) % output_names(b) = out_field_name
 
       ! create the field and add to pool
       call add_new_field(info, &
-        series % variables(v) % input_name, &
-        series % variables(v) % output_names(b), &
+        in_field_name, &
+        out_field_name, &
         domain % blocklist % allFields, amPool)
 
       ! add the field to the output stream
       call mpas_stream_mgr_add_field(domain % streamManager, &
-        output_stream_name, series % variables(v) % output_names(b), ierr=err)
+        output_stream_name, out_field_name, ierr=err)
 
       ! put it in the restart stream
       if (restartStreamEnabled) then
          call mpas_stream_mgr_add_field(domain % streamManager, &
-           restart_stream_name, series % variables(v) % output_names(b), ierr=err)
+           restart_stream_name, out_field_name, ierr=err)
       end if
     end do
   end do ! number_of_variables
