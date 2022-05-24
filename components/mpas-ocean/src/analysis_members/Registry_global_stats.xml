@@ -106,7 +106,7 @@
 			<var name="temperatureMin" units="C" array_group="mins"
 				 description="Minimum global value of temperature in ocean cells."
 			/>
-			<var name="salinityMin" units="PSU" array_group="mins"
+			<var name="salinityMin" units="1.e-3" array_group="mins"
 				 description="Minimum global value of salinity in ocean cells."
 			/>
 			<var name="layerThicknessPreviousTimestepMin" array_group="mins" units="m"
@@ -205,7 +205,7 @@
 			<var name="temperatureMax" units="C" array_group="maxes"
 				 description="Maximum global value of temperature in ocean cells."
 			/>
-			<var name="salinityMax" units="PSU" array_group="maxes"
+			<var name="salinityMax" units="1.e-3" array_group="maxes"
 				 description="Maximum global value of salinity in ocean cells."
 			/>
 			<var name="layerThicknessPreviousTimestepMax" array_group="maxes" units="m"
@@ -304,7 +304,7 @@
 			<var name="temperatureSum" units="m^3 C" array_group="sums"
 				 description="Accumulated global value of temperature in ocean cells."
 			/>
-			<var name="salinitySum" units="m^3 PSU" array_group="sums"
+			<var name="salinitySum" units="m^3 1.e-3" array_group="sums"
 				 description="Accumulated global value of salinity in ocean cells."
 			/>
 			<var name="layerThicknessPreviousTimestepSum" array_group="sums" units="m^3"
@@ -403,7 +403,7 @@
 			<var name="temperatureRms" units="C" array_group="rms"
 				 description="Global root mean square value of temperature in ocean cells."
 			/>
-			<var name="salinityRms" units="PSU" array_group="rms"
+			<var name="salinityRms" units="1.e-3" array_group="rms"
 				 description="Global root mean square value of salinity in ocean cells."
 			/>
 			<var name="layerThicknessPreviousTimestepRms" array_group="rms" units="m"
@@ -502,7 +502,7 @@
 			<var name="temperatureAvg" units="C" array_group="avg"
 				 description="Average value of temperature in ocean cells."
 			/>
-			<var name="salinityAvg" units="PSU" array_group="avg"
+			<var name="salinityAvg" units="1.e-3" array_group="avg"
 				 description="Average value of salinity in ocean cells."
 			/>
 			<var name="layerThicknessPreviousTimestepAvg" array_group="avg" units="m"
@@ -601,7 +601,7 @@
 			<var name="temperatureMinVertSum" units="m C" array_group="vertSumMin"
 				 description="Minimum vertical sum of temperature in ocean cells."
 			/>
-			<var name="salinityMinVertSum" units="m PSU" array_group="vertSumMin"
+			<var name="salinityMinVertSum" units="m 1.e-3" array_group="vertSumMin"
 				 description="Minimum vertical sum of salinity in ocean cells."
 			/>
 			<var name="layerThicknessPreviousTimestepMinVertSum" array_group="vertSumMin" units="m"
@@ -700,7 +700,7 @@
 			<var name="temperatureMaxVertSum" units="m C" array_group="vertSumMax"
 				 description="Maximum vertical sum of temperature in ocean cells."
 			/>
-			<var name="salinityMaxVertSum" units="m PSU" array_group="vertSumMax"
+			<var name="salinityMaxVertSum" units="m 1.e-3" array_group="vertSumMax"
 				 description="Maximum vertical sum of salinity in ocean cells."
 			/>
 			<var name="layerThicknessPreviousTimestepMaxVertSum" array_group="vertSumMax" units="m"
