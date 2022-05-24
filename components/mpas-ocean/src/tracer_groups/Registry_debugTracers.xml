@@ -50,13 +50,13 @@
 	<var_struct name="state" time_levs="2">
 		<var_struct name="tracers" time_levs="2">
 			<var_array name="debugTracers" dimensions="nVertLevels nCells Time" type="real" packages="debugTracersPKG" default_value="1.0">
-				<var name="tracer1" array_group="debugGRP" units="tracer1"
+				<var name="tracer1" array_group="debugGRP"
 			 description="tracer for debugging purposes"
 				/>
-				<var name="tracer2" array_group="debugGRP" units="tracer2"
+				<var name="tracer2" array_group="debugGRP"
 			 description="tracer for debugging purposes"
 				/>
-				<var name="tracer3" array_group="debugGRP" units="tracer3"
+				<var name="tracer3" array_group="debugGRP"
 			 description="tracer for debugging purposes"
 				/>
 			</var_array>
@@ -66,13 +66,13 @@
 	<var_struct name="tend" time_levs="1">
 		<var_struct name="tracersTend" time_levs="1">
 			<var_array name="debugTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="debugTracersPKG">
-				<var name="tracer1Tend" array_group="debugGRP" units="tracer1"
+				<var name="tracer1Tend" array_group="debugGRP"
 			 description="Tendency for tracer1"
 				/>
-				<var name="tracer2Tend" array_group="debugGRP" units="tracer2"
+				<var name="tracer2Tend" array_group="debugGRP"
 			 description="Tendency for tracer2"
 				/>
-				<var name="tracer3Tend" array_group="debugGRP" units="tracer3"
+				<var name="tracer3Tend" array_group="debugGRP"
 			 description="Tendency for tracer3"
 				/>
 			</var_array>
@@ -82,35 +82,35 @@
    	<var_struct name="forcing" time_levs="1">
 		<var_struct name="tracersSurfaceFlux" time_levs="1">
 			<var_array name="debugTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="debugTracersPKG">
-				<var name="tracer1SurfaceFlux" array_group="debugTracerFluxGRP" units="tracer1 m s^-1"
+				<var name="tracer1SurfaceFlux" array_group="debugTracerFluxGRP" units="m s^-1"
 			 description="Flux of tracer1 through the ocean surface. Positive into ocean."
 				/>
-				<var name="tracer2SurfaceFlux" array_group="debugTracerFluxGRP" units="tracer2 m s^-1"
+				<var name="tracer2SurfaceFlux" array_group="debugTracerFluxGRP" units="m s^-1"
 			 description="Flux of tracer2 through the ocean surface. Positive into ocean."
 				/>
-				<var name="tracer3SurfaceFlux" array_group="debugTracerFluxGRP" units="tracer3 m s^-1"
+				<var name="tracer3SurfaceFlux" array_group="debugTracerFluxGRP" units="m s^-1"
 			 description="Flux of tracer3 through the ocean surface. Positive into ocean."
 				/>
 			</var_array>
 			<var_array name="debugTracersSurfaceFluxRunoff" type="real" dimensions="nCells Time" packages="debugTracersPKG">
-				<var name="tracer1SurfaceFluxRunoff" array_group="debugRunoffFluxGRP" units="tracer1 m s^-1"
+				<var name="tracer1SurfaceFluxRunoff" array_group="debugRunoffFluxGRP" units="m s^-1"
 			 description="Flux of tracer1 through the ocean surface due to river runoff. Positive into ocean."
 				/>
-				<var name="tracer2SurfaceFluxRunoff" array_group="debugRunoffFluxGRP" units="tracer2 m s^-1"
+				<var name="tracer2SurfaceFluxRunoff" array_group="debugRunoffFluxGRP" units="m s^-1"
 			 description="Flux of tracer2 through the ocean surface due to river runoff. Positive into ocean."
 				/>
-				<var name="tracer3SurfaceFluxRunoff" array_group="debugRunoffFluxGRP" units="tracer3 m s^-1"
+				<var name="tracer3SurfaceFluxRunoff" array_group="debugRunoffFluxGRP" units="m s^-1"
 			 description="Flux of tracer3 through the ocean surface due to river runoff. Positive into ocean."
 				/>
 			</var_array>
 			<var_array name="debugTracersSurfaceFluxRemoved" type="real" dimensions="nCells Time" packages="debugTracersPKG">
-				<var name="tracer1SurfaceFluxRemoved" array_group="debugRemovedFluxGRP" units="tracer1 m s^-1"
+				<var name="tracer1SurfaceFluxRemoved" array_group="debugRemovedFluxGRP" units="m s^-1"
 			 description="Flux of tracer1 that is ignored coming into the ocean. Positive into ocean."
 				/>
-				<var name="tracer2SurfaceFluxRemoved" array_group="debugRemovedFluxGRP" units="tracer2 m s^-1"
+				<var name="tracer2SurfaceFluxRemoved" array_group="debugRemovedFluxGRP" units="m s^-1"
 			 description="Flux of tracer2 that is ignored coming into the ocean. Positive into ocean."
 				/>
-				<var name="tracer3SurfaceFluxRemoved" array_group="debugRemovedFluxGRP" units="tracer3 m s^-1"
+				<var name="tracer3SurfaceFluxRemoved" array_group="debugRemovedFluxGRP" units="m s^-1"
 			 description="Flux of tracer3 that is ignored coming into the ocean. Positive into ocean."
 				/>
 			</var_array>
