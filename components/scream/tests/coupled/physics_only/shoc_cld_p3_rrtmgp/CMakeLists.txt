@@ -1,7 +1,7 @@
 INCLUDE (ScreamUtils)
 
 # Create the test
-set (TEST_LABELS "shoc;cld;p3;rrtmgp;physics")
+set (TEST_LABELS "shoc;cld;p3;rrtmgp;physics;driver")
 set (NEED_LIBS shoc cld_fraction p3 scream_rrtmgp scream_control scream_share physics_share)
 CreateUnitTest(shoc_cld_p3_rrtmgp shoc_cld_p3_rrtmgp.cpp "${NEED_LIBS}" LABELS ${TEST_LABELS}
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
@@ -17,7 +17,7 @@ set (SHOC_MAX_DT 300)
 math (EXPR MAC_MIC_SUBCYCLES "(${ATM_TIME_STEP} + ${SHOC_MAX_DT} - 1) / ${SHOC_MAX_DT}")
 
 # Ensure test input files are present in the data dir
-GetInputFile(init/shoc_cld_p3_rrtmgp_init_ne2np4.nc)
+GetInputFile(init/homme_shoc_cld_spa_p3_rrtmgp_init_ne2np4_20220524.nc)
 
 ## Copy (and configure) yaml files needed by tests
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml

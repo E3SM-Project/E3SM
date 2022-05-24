@@ -1,7 +1,7 @@
 include (ScreamUtils)
 
 # Create the test
-SET (TEST_LABELS "shoc;physics")
+SET (TEST_LABELS "shoc;physics;driver")
 set (NEED_LIBS shoc scream_control scream_share)
 CreateUnitTest(shoc_standalone "shoc_standalone.cpp" "${NEED_LIBS}" LABELS ${TEST_LABELS}
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
@@ -17,7 +17,7 @@ set (SHOC_MAX_DT 300)
 math (EXPR NUM_SUBCYCLES "(${ATM_TIME_STEP} + ${SHOC_MAX_DT} - 1) / ${SHOC_MAX_DT}")
 
 # Ensure test input files are present in the data dir
-GetInputFile(init/shoc_init_ne2np4.nc)
+GetInputFile(init/homme_shoc_cld_spa_p3_rrtmgp_init_ne2np4_20220524.nc)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)

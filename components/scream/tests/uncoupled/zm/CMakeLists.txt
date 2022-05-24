@@ -2,7 +2,7 @@ include (ScreamUtils)
 
 # Create the test
 set (NEED_LIBS zm scream_control scream_share)
-CreateUnitTest(zm_standalone "zm_standalone.cpp" "${NEED_LIBS}" LABELS "zm;physics")
+CreateUnitTest(zm_standalone "zm_standalone.cpp" "${NEED_LIBS}" LABELS "zm;physics;driver")
 
 # Set AD configurable options
 SetVarDependingOnTestProfile(NUM_STEPS 2 24 48)

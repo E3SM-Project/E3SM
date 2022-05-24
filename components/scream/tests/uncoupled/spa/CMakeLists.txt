@@ -1,7 +1,7 @@
 include (ScreamUtils)
 
 # Create the test
-SET (TEST_LABELS "spa;physics")
+SET (TEST_LABELS "spa;physics;driver")
 set (NEED_LIBS spa scream_control scream_share)
 
 # Test atmosphere processes
@@ -22,7 +22,7 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/spa_standalone_output.yaml
 
 # Ensure test input files are present in the data dir
 set (TEST_INPUT_FILES
-  spa_init_ne2np4.nc
+  homme_shoc_cld_spa_p3_rrtmgp_init_ne2np4_20220524.nc
   map_ne4np4_to_ne2np4_mono.nc
   spa_file_unified_and_complete_ne4_20220428.nc
 )
