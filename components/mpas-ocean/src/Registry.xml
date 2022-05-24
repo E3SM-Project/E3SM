@@ -2906,7 +2906,7 @@
 			 description="CVMix/KPP: diagnosed surface friction velocity defined as square root of (mag(wind stress) / reference density)"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="penetrativeTemperatureFluxOBL" type="real" dimensions="nCells Time" units="^\circ C m s^-1"
+		<var name="penetrativeTemperatureFluxOBL" type="real" dimensions="nCells Time" units="C m s^-1"
 			 description="CVMix/KPP: Penetrative temperature flux at the bottom of boundary layer due to solar radiation. Positive is into the ocean."
 			 packages="forwardMode;analysisMode"
 		/>
@@ -3256,7 +3256,7 @@
 			 description="Energy per unit area trapped in frazil ice formation. Always $\ge$ 0.0."
 			 packages="frazilIce"
 		/>
-		<var name="penetrativeTemperatureFlux" type="real" dimensions="nCells Time" units="^\circ C m s^-1"
+		<var name="penetrativeTemperatureFlux" type="real" dimensions="nCells Time" units="C m s^-1"
 			 description="Penetrative temperature flux at the surface due to solar radiation. Positive is into the ocean."
 			 packages="forwardMode;analysisMode"
 			 />

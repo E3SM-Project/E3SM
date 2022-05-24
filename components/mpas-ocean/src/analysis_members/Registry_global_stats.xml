@@ -103,7 +103,7 @@
 			<var name="highFreqThicknessMin" array_group="mins" units="m"
 				 description="Minimum global value of highFreqThickness in ocean cells."
 			/>
-			<var name="temperatureMin" units="^\circ C" array_group="mins"
+			<var name="temperatureMin" units="C" array_group="mins"
 				 description="Minimum global value of temperature in ocean cells."
 			/>
 			<var name="salinityMin" units="PSU" array_group="mins"
@@ -202,7 +202,7 @@
 			<var name="highFreqThicknessMax" array_group="maxes" units="m"
 				 description="Maximum global value of highFreqThickness in ocean cells."
 			/>
-			<var name="temperatureMax" units="^\circ C" array_group="maxes"
+			<var name="temperatureMax" units="C" array_group="maxes"
 				 description="Maximum global value of temperature in ocean cells."
 			/>
 			<var name="salinityMax" units="PSU" array_group="maxes"
@@ -301,7 +301,7 @@
 			<var name="highFreqThicknessSum" array_group="sums" units="m^4"
 				 description="Accumulated global value of highFreqThickness in ocean cells."
 			/>
-			<var name="temperatureSum" units="m^3 ^\circ C" array_group="sums"
+			<var name="temperatureSum" units="m^3 C" array_group="sums"
 				 description="Accumulated global value of temperature in ocean cells."
 			/>
 			<var name="salinitySum" units="m^3 PSU" array_group="sums"
@@ -400,7 +400,7 @@
 			<var name="highFreqThicknessRms" array_group="rms" units="m"
 				 description="Global root mean square value of highFreqThickness in ocean cells."
 			/>
-			<var name="temperatureRms" units="^\circ C" array_group="rms"
+			<var name="temperatureRms" units="C" array_group="rms"
 				 description="Global root mean square value of temperature in ocean cells."
 			/>
 			<var name="salinityRms" units="PSU" array_group="rms"
@@ -499,7 +499,7 @@
 			<var name="highFreqThicknessAvg" array_group="avg" units="m"
 				 description="Average value of highFreqThickness in ocean cells."
 			/>
-			<var name="temperatureAvg" units="^\circ C" array_group="avg"
+			<var name="temperatureAvg" units="C" array_group="avg"
 				 description="Average value of temperature in ocean cells."
 			/>
 			<var name="salinityAvg" units="PSU" array_group="avg"
@@ -598,7 +598,7 @@
 			<var name="highFreqThicknessMinVertSum" array_group="vertSumMin" units="m^2"
 				 description="Minimum vertical sum of highFreqThickness in ocean cells."
 			/>
-			<var name="temperatureMinVertSum" units="m ^\circ C" array_group="vertSumMin"
+			<var name="temperatureMinVertSum" units="m C" array_group="vertSumMin"
 				 description="Minimum vertical sum of temperature in ocean cells."
 			/>
 			<var name="salinityMinVertSum" units="m PSU" array_group="vertSumMin"
@@ -697,7 +697,7 @@
 			<var name="highFreqThicknessMaxVertSum" array_group="vertSumMax" units="m^2"
 				 description="Maximum vertical sum of highFreqThickness in ocean cells."
 			/>
-			<var name="temperatureMaxVertSum" units="m ^\circ C" array_group="vertSumMax"
+			<var name="temperatureMaxVertSum" units="m C" array_group="vertSumMax"
 				 description="Maximum vertical sum of temperature in ocean cells."
 			/>
 			<var name="salinityMaxVertSum" units="m PSU" array_group="vertSumMax"
