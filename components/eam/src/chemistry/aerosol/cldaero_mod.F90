@@ -20,6 +20,12 @@ module cldaero_mod
      real(r8), pointer :: so4c(:,:)
      real(r8), pointer :: nh4c(:,:)
      real(r8), pointer :: no3c(:,:)
+#if ( defined MOSAIC_SPECIES )
+     real(r8), pointer :: nac(:,:)
+     real(r8), pointer :: clc(:,:)
+     real(r8), pointer :: cac(:,:)
+     real(r8), pointer :: co3c(:,:)
+#endif
      real(r8), pointer :: xlwc(:,:)
      real(r8) :: so4_fact
   end type cldaero_conc_t
@@ -35,11 +41,23 @@ contains
     allocate( cldconc%so4c(pcols,pver) )
     allocate( cldconc%nh4c(pcols,pver) )
     allocate( cldconc%no3c(pcols,pver) )
+#if ( defined MOSAIC_SPECIES )
+    allocate( cldconc%nac(pcols,pver) )
+    allocate( cldconc%clc(pcols,pver) )
+    allocate( cldconc%cac(pcols,pver) )
+    allocate( cldconc%co3c(pcols,pver) )
+#endif
     allocate( cldconc%xlwc(pcols,pver) )
 
     cldconc%so4c(:,:) = 0._r8
     cldconc%nh4c(:,:) = 0._r8
     cldconc%no3c(:,:) = 0._r8
+#if ( defined MOSAIC_SPECIES )
+    cldconc%nac(:,:) = 0._r8
+    cldconc%clc(:,:) = 0._r8
+    cldconc%cac(:,:) = 0._r8
+    cldconc%co3c(:,:) = 0._r8
+#endif
     cldconc%xlwc(:,:) = 0._r8
     cldconc%so4_fact  = 2._r8
 
@@ -65,6 +83,28 @@ contains
        nullify(cldconc%no3c)
     endif
 
+#if ( defined MOSAIC_SPECIES )
+    if ( associated(cldconc%nac) ) then
+       deallocate(cldconc%nac)
+       nullify(cldconc%nac)
+    endif
+
+    if ( associated(cldconc%clc) ) then
+       deallocate(cldconc%clc)
+       nullify(cldconc%clc)
+    endif
+
+    if ( associated(cldconc%cac) ) then
+       deallocate(cldconc%cac)
+       nullify(cldconc%cac)
+    endif
+
+    if ( associated(cldconc%co3c) ) then
+       deallocate(cldconc%co3c)
+       nullify(cldconc%co3c)
+    endif
+
+#endif
     if ( associated(cldconc%xlwc) ) then
        deallocate(cldconc%xlwc)
        nullify(cldconc%xlwc)

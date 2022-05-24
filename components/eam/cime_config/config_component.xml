@@ -49,6 +49,7 @@
       <value compset="_EAM%AR5sf"    >-clubb_sgs -microphys mg2 -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_EAM%CHEMUCI-LINOZV2"  >-clubb_sgs -microphys mg2 -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -usr_mech_infile $SRCROOT/components/eam/chem_proc/inputs/pp_chemUCI_mam4_resus_mom_soag_tag.in</value>
       <value compset="_EAM%CHEMUCI-LINOZV3"  >-clubb_sgs -microphys mg2 -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -usr_mech_infile $SRCROOT/components/eam/chem_proc/inputs/pp_chemUCI_linozv3_mam4_resus_mom_soag_tag.in</value>
+      <value compset="_EAM%CHEMMZT"  >-clubb_sgs -microphys mg2 -chem trop_strat_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72</value>
       <value compset="_EAM%MOZM"     >-chem trop_mozart_mam3 -age_of_air_trcs</value>
       <value compset="_EAM%PM"       >-chem none</value>
       <value compset="_EAM%SMA3"     >-chem trop_strat_mam3 -age_of_air_trcs</value>
@@ -150,6 +151,7 @@
       <value compset="20TR(?:SOI)?_EAM.*AR5sf" >20TR_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TRS_EAM.*AR5sf">20TRS_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TR(?:SOI)?_EAM.*CHEMUCI.*LINOZ"  >20TR_eam_chemUCI-Linoz</value>
+      <value compset="20TR(?:SOI)?_EAM.*CHEMMZT"  >20TR_eam_chemMZT</value>
       <value compset="1850(?:SOI)?_EAM%WCCM"   >waccm_1850_cam5</value>
       <value compset="2000(?:SOI)?_EAM%WCCM"   >waccm_2000_cam5</value>
       <value compset="_EAM%SMA3"       >2000_cam5_trop_strat_mam3</value>

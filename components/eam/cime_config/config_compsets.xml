@@ -37,6 +37,11 @@
   </compset>
 
   <compset>
+    <alias>F20TR_chemMZT</alias>
+    <lname>20TR_EAM%CHEMMZT_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>F1950</alias>
     <lname>1950_EAM%CMIP6_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
