@@ -3570,10 +3570,10 @@
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/CAx32v1pg2/map_oEC60to30v3_to_CAne1024pg2_mono.200110.nc</map>
     </gridmap>
     <gridmap atm_grid="ne0np4_CAx32v1.pg2" lnd_grid="ne30np4">
-      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne1024pg2_to_ne30np4_mono.200110.nc</map>
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne1024pg2_to_ne30np4_bilin.200110.nc</map>
       <map name="ATM2LND_SMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne1024pg2_to_ne30np4_bilin.200110.nc</map>
-      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_ne30np4_to_CAne1024pg2_mono.200110.nc</map>
-      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/CAx32v1pg2/map_ne30np4_to_CAne1024pg2_mono.200110.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_ne30np4_to_CAne1024pg2_bilin.200110.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/CAx32v1pg2/map_ne30np4_to_CAne1024pg2_bilin.200110.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne0np4_conus_x4v1_lowcon" ocn_grid="oEC60to30v3">
