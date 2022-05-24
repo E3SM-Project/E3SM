@@ -9,7 +9,7 @@
 ! HAVE_ERF_EXTERNALS: erf and erfc
 
 ! These compilers have the intrinsics.
-#if defined CPRIBM || defined CPRINTEL || defined __GFORTRAN__ || defined CPRCRAY || defined CPRNVIDIA
+#if defined CPRIBM || defined CPRINTEL || defined __GFORTRAN__ || defined CPRCRAY || defined CPRNVIDIA || defined CPRAMD
 #define HAVE_GAMMA_INTRINSICS
 #define HAVE_ERF_INTRINSICS
 #endif
