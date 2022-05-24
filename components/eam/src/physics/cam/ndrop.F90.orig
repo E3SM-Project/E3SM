@@ -1,5 +1,4 @@
 
-
 module ndrop
 
 !---------------------------------------------------------------------------------
@@ -37,7 +36,7 @@ implicit none
 private
 save
 
-public ndrop_init, dropmixnuc, activate_modal, so4_cdnc, lnd_ocean_cdnc  ! XZ
+public ndrop_init, dropmixnuc, activate_modal
 
 real(r8), allocatable :: alogsig(:)     ! natl log of geometric standard dev of aerosol
 real(r8), allocatable :: exp45logsig(:)
@@ -272,7 +271,6 @@ subroutine ndrop_init
    call addfld('NDROPSRC', (/ 'lev' /), 'A', '1/kg/s', 'Droplet number source')
    call addfld('NDROPSNK', (/ 'lev' /), 'A', '1/kg/s', 'Droplet number loss by microphysics')
    call addfld('NDROPCOL', horiz_only,    'A', '1/m2', 'Column droplet number')
-   call addfld('SO4_cdncst', (/ 'lev' /),   'A', 'kg/m3','so4 mass for cdnc so4_a1+so4_a2+so4_a3')  !XZ
 
    ! set the add_default fields  
    if (history_amwg) then
@@ -1903,47 +1901,6 @@ subroutine loadaer( &
    end do
 
 end subroutine loadaer
-
-!!!XZ: add the subroutine to prescribe in-cloud CDNC here for now 05/06/2022
-subroutine so4_cdnc(state,rho,cdncst)
-        type(physics_state), target, intent(in)    :: state
-        real(r8), intent(in) :: rho(pcols,pver)     ! air density (kg m-3)
-
-        real(r8), intent(out) :: cdncst(pcols,pver) ! prescribed droplet number concentration 
-
-        real(r8) :: ftem(pcols,pver) ! temporary workspace for so4 mass
-
-        real(r8) :: a1,b1,coeff1 ! coefficients in log-log regression function (  Boucher & Lohmann, 1995 Eq. D)  !coeff1 is a scaling factor
-        integer i, k, m, lchnk, ncol
-          coeff1 = 0.3 
-          a1 = 2.21
-          b1 = 0.41
-          a1 = a1
-          b1 = b1
-          lchnk = state%lchnk
-          ncol  = state%ncol
-
-          !!get so4_a1+so4_a2+so4_a3 (kg/kg) based on cam_diagnostics.F90 
-          ftem(:ncol,:) = state%q(:ncol,:,11)+state%q(:ncol,:,18)+state%q(:ncol,:,24)
-          call outfld('SO4_cdncst',ftem , pcols, lchnk) 
-          ftem = 1.e9_r8*ftem*rho  !kg/kg -> mu-g/m3
-          cdncst = coeff1*10.**(a1+b1*log10(ftem))  !#/cc
-          cdncst = 1.e6_r8*cdncst/rho   !#/cc -> #/kg  
-
-end subroutine so4_cdnc
-
-subroutine lnd_ocean_cdnc(landfrac,ncnst_land,ncnst_ocean,cdncst)
-        real(r8), intent(in)  :: ncnst_land,ncnst_ocean  ! prescribed CDNC XZ
-        real(r8), intent(in)  :: landfrac(pcols) ! Land fraction  !XZ
-        real(r8), intent(out) :: cdncst(pcols,pver) ! prescribed droplet number concentration
-        integer i
-    
-        cdncst = 0._r8
-        do i=1,pcols
-          cdncst(i,:)= (ncnst_ocean * (1._r8-landfrac(i)) +   ncnst_land * landfrac(i))
-        enddo
-
-end subroutine lnd_ocean_cdnc 
 
 !===============================================================================
 

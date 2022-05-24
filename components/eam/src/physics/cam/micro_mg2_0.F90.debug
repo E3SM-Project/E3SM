@@ -112,6 +112,8 @@ use micro_mg_utils, only: &
      as, bs, &
      mi0, &
      rising_factorial
+use spmd_utils,       only: masterproc  !XZ
+use cam_logfile,      only: iulog   !XZ
 implicit none
 private
 save
@@ -2027,6 +2029,8 @@ subroutine micro_mg_tend ( &
      ! End of "administration" loop
 
   end do micro_vert_loop ! end k loop
+  !!XZ 
+  if(masterproc)write(iulog,*) "!XZ max lcldm,qcic, ncic, pratot and pra are :",maxval(lcldm),maxval(qcic),maxval(ncic),maxval(pratot),maxval(pra)
   !-----------------------------------------------------
   ! convert rain/snow q and N for output to history, note,
   ! output is for gridbox average

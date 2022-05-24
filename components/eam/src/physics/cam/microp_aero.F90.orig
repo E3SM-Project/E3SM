@@ -37,8 +37,7 @@ use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_mmr, rad_cnst_ge
 use nucleate_ice_cam, only: use_preexisting_ice, nucleate_ice_cam_readnl, nucleate_ice_cam_register, &
                             nucleate_ice_cam_init, nucleate_ice_cam_calc
 
-use ndrop,            only: ndrop_init, dropmixnuc,&
-                            lnd_ocean_cdnc,so4_cdnc   !XZ prescribed CDNC
+use ndrop,            only: ndrop_init, dropmixnuc
 use ndrop_bam,        only: ndrop_bam_init, ndrop_bam_run, ndrop_bam_ccn
 
 use hetfrz_classnuc_cam, only: hetfrz_classnuc_cam_readnl, hetfrz_classnuc_cam_register, hetfrz_classnuc_cam_init, &
@@ -119,14 +118,10 @@ integer :: mode_pcarbon_idx  = -1  ! index of dust in accum mode
 integer :: accum_dust_idx    = -1  ! index of dust in accum mode
 logical :: dem_in            = .false.           ! use DeMott IN
 
-integer :: npccn_idx, rndst_idx, nacon_idx 
-integer :: cdncst_idx !prescribed CDNC XZ
-integer :: micro_prescribed_cdnc_opt !prescribed CDNC XZ
+integer :: npccn_idx, rndst_idx, nacon_idx
 
 logical  :: separate_dust = .false.
 logical  :: liqcf_fix
-logical  :: micro_do_nccons  !XZ
-real(r8) :: micro_nccons_land, micro_nccons_ocean  !XZ 
 real(r8), parameter :: unset_r8   = huge(1.0_r8)
 real(r8) :: wsubmin = unset_r8 !PMA sets a much lower lower bound
 
@@ -147,7 +142,6 @@ subroutine microp_aero_register
    use physics_buffer, only: pbuf_add_field, dtype_r8
 
    call pbuf_add_field('NPCCN',      'physpkg',dtype_r8,(/pcols,pver/), npccn_idx)
-   call pbuf_add_field('CDNC_PRESC', 'physpkg',dtype_r8,(/pcols,pver/), cdncst_idx)  !prescribed cdnc XZ
 
    call pbuf_add_field('RNDST',      'physpkg',dtype_r8,(/pcols,pver,4/), rndst_idx)
    call pbuf_add_field('NACON',      'physpkg',dtype_r8,(/pcols,pver,4/), nacon_idx)
@@ -184,28 +178,8 @@ subroutine microp_aero_init
         history_amwg_out = history_amwg, &
         micro_do_icesupersat_out = micro_do_icesupersat, &
         liqcf_fix_out    = liqcf_fix,    & 
-        demott_ice_nuc_out = dem_in, &
-        micro_do_nccons_out = micro_do_nccons, &   !XZ
-        micro_prescribed_cdnc_opt_out = micro_prescribed_cdnc_opt, &   !XZ
-        micro_nccons_land_out = micro_nccons_land, &  !XZ
-        micro_nccons_ocean_out = micro_nccons_ocean )  !XZ
-        !!!check namelist for the prescribed CDNC XZ
-        if(micro_do_nccons) then
-            if(micro_prescribed_cdnc_opt .le. 0) then
-                write(iulog,*) 'The prescribed in-cloud CDNC setting is wrong: ',&
-                        micro_prescribed_cdnc_opt, micro_do_nccons     
-                call endrun('double check micro_mg_nl')
-            elseif( micro_prescribed_cdnc_opt.eq. 1 .and. (micro_nccons_land .le. 0.0_r8 .or. micro_nccons_ocean .le. 0.0_r8)) then
-                write(iulog,*) 'Errors in constant in-cloud CDNCs over land and ocean: ',&
-                         micro_nccons_land, micro_nccons_ocean
-                call endrun('double check micro_mg_nl')    
-            endif    
-        elseif (micro_prescribed_cdnc_opt .gt. 0) then
-                 write(iulog,*) 'Errors in the prescribed in-cloud CDNC setting:', &
-                        micro_prescribed_cdnc_opt, micro_do_nccons
-                 call endrun('double check micro_mg_nl')
-        endif         
-   if(masterproc)write(iulog,*)'!XZ micro_prescribed_cdnc_opt is:', micro_prescribed_cdnc_opt 
+        demott_ice_nuc_out = dem_in      ) 
+   
    if(masterproc)write(iulog,*)'DEMOTT is:', dem_in 
 
    ! Access the physical properties of the aerosols that are affecting the climate
@@ -420,16 +394,13 @@ end subroutine microp_aero_readnl
 !=========================================================================================
 
 subroutine microp_aero_run ( &
-   state, ptend, deltatin, pbuf, liqcldfo ,&
-   landfrac) !XZ
-
+   state, ptend, deltatin, pbuf, liqcldfo )
 
    ! input arguments
    type(physics_state), target, intent(in)    :: state
    type(physics_ptend),         intent(out)   :: ptend
    real(r8),                    intent(in)    :: deltatin     ! time step (s)
    real(r8),                    intent(in)    :: liqcldfo(pcols,pver)  ! old liquid cloud fraction
-   real(r8),                    intent(in)  :: landfrac(pcols) ! Land fraction  !XZ
    type(physics_buffer_desc),   pointer       :: pbuf(:)
 
    ! local workspace
@@ -445,7 +416,6 @@ subroutine microp_aero_run ( &
    real(r8), pointer :: aist(:,:)        
 
    real(r8), pointer :: npccn(:,:)      ! number of CCN (liquid activated)
-   real(r8), pointer :: cdncst(:,:)      ! prescribed liquid in-cloud NC !XZ
 
    real(r8), pointer :: rndst(:,:,:)    ! radius of 4 dust bins for contact freezing
    real(r8), pointer :: nacon(:,:,:)    ! number in 4 dust bins for contact freezing
@@ -540,7 +510,6 @@ subroutine microp_aero_run ( &
    endif
 
    call pbuf_get_field(pbuf, npccn_idx, npccn)
-   call pbuf_get_field(pbuf, cdncst_idx, cdncst)  !XZ
 
    call pbuf_get_field(pbuf, nacon_idx, nacon)
    call pbuf_get_field(pbuf, rndst_idx, rndst)
@@ -567,7 +536,6 @@ subroutine microp_aero_run ( &
 
    ! initialize output
    npccn(1:ncol,1:pver)    = 0._r8  
-   cdncst(1:ncol,1:pver)    = 0._r8   !XZ 
 
    nacon(1:ncol,1:pver,:)  = 0._r8
 
@@ -780,16 +748,6 @@ subroutine microp_aero_run ( &
       call t_stopf('dropmixnuc')
 
       npccn(:ncol,:) = nctend_mixnuc(:ncol,:)
-      
-      if(micro_prescribed_cdnc_opt .eq. 1) then  !XZ land-ocean CDNC
-        call t_startf('lnd_ocean_cdnc')
-        call lnd_ocean_cdnc(landfrac,micro_nccons_land,micro_nccons_ocean,cdncst)
-        call t_stopf('lnd_ocean_cdnc')
-      elseif (micro_prescribed_cdnc_opt .eq. 2) then !XZ so4-cdnc
-        call t_startf('so4_cdnc')
-        call so4_cdnc(state,rho,cdncst)
-        call t_stopf('so4_cdnc')
-      end if        
 
    else
 

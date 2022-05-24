@@ -2122,7 +2122,7 @@ Default: .true.
 
 <!-- micro_mg -->
 <entry id="micro_do_nccons" type="logical" category="microphys"
-       group="micro_mg_nl" valid_values="" >
+       group="phys_ctl_nl" valid_values="" >
 Specify in-stratus cloud droplet number concentration for stratiform microphysics and radiation.
 Default: FALSE
 </entry>
@@ -2140,15 +2140,21 @@ Default: set by build-namelist
 </entry>   
 
 <entry id="micro_nccons_land" type="real" category="microphys"
-       group="micro_mg_nl" valid_values="" >
+       group="phys_ctl_nl" valid_values="" >
        Specified continental Liquid droplet concentrations (in #/cc) when micro_do_nccons=.true.,CDNC_land=micro_nccons_land
 Default: set by build-namelist
 </entry>   
 <entry id="micro_nccons_ocean" type="real" category="microphys"
-       group="micro_mg_nl" valid_values="" >
+       group="phys_ctl_nl" valid_values="" >
        Specified marine Liquid droplet concentrations (in #/cc) when micro_do_nccons=.true.,CDNC_ocean=micro_nccons_ocean
 Default: set by build-namelist
+</entry>
 
+<entry id="micro_prescribed_cdnc_opt" type="integer" category="microphys"
+       group="phys_ctl_nl" valid_values="" >
+	Options to specify the prescribed CDNC simulations: 0 progronostic cloud droplet number concentration; 1. land-ocean cdnc working with micro_nccons_land and micro_nccons_ocean; 2. so4-cdnc relationship
+Default: 0
+</entry>
 
 <entry id="micro_nicons" type="real" category="microphys"
        group="micro_mg_nl" valid_values="" >

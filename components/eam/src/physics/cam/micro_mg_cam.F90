@@ -134,6 +134,7 @@ logical, public :: do_cldice ! Prognose cldice flag
 logical, public :: do_nccons ! Set NC to a constant
 logical, public :: do_nicons ! Set NI to a constant
 
+
 integer :: num_steps ! Number of MG substeps
 
 integer :: ncnst = 4       ! Number of constituents
@@ -217,6 +218,7 @@ integer :: &
    naai_idx = -1,           &
    naai_hom_idx = -1,       &
    npccn_idx = -1,          &
+   cdncst_idx = -1,          &   !XZ
    rndst_idx = -1,          &
    nacon_idx = -1,          &
    prec_str_idx = -1,       &
@@ -245,7 +247,7 @@ integer :: &
    real(r8) :: mincdnc                  = huge(1.0_r8)
    logical  :: mg_prc_coeff_fix_in      = .false. !temporary variable to maintain BFB, MUST be removed
    logical  :: rrtmg_temp_fix           = .false. !temporary variable to maintain BFB, MUST be removed
-
+   
 interface p
    module procedure p1
    module procedure p2
@@ -267,13 +269,12 @@ subroutine micro_mg_cam_readnl(nlfile)
   ! Namelist variables
   logical :: micro_mg_do_cldice = .true. ! do_cldice = .true., MG microphysics is prognosing cldice
   logical :: micro_mg_do_cldliq = .true. ! do_cldliq = .true., MG microphysics is prognosing cldliq
-  logical :: micro_do_nccons    = .false.! micro_do_nccons = .true, MG does NOT predict numliq 
+!XZ  logical :: micro_do_nccons    = .false.! micro_do_nccons = .true, MG does NOT predict numliq 
   logical :: micro_do_nicons    = .false.! micro_do_nicons = .true.,MG does NOT predict numice
   integer :: micro_mg_num_steps = 1      ! Number of substepping iterations done by MG (1.5 only for now).
   real(r8) :: micro_nccons, micro_nicons
   real(r8) :: micro_mincdnc     = -999.  ! namelist for mincdnc 
   real(r8) :: micro_nccons_land, micro_nccons_ocean    ! XZ namelist for constant nc over land  and ocean
-
   ! Local variables
   integer :: unitn, ierr
   character(len=*), parameter :: subname = 'micro_mg_cam_readnl'
@@ -283,8 +284,8 @@ subroutine micro_mg_cam_readnl(nlfile)
        micro_mg_dcs_tdep, & 
        microp_uniform, micro_mg_dcs, micro_mg_precip_frac_method, &
        micro_mg_mass_gradient_alpha, micro_mg_mass_gradient_beta, &
-       micro_mg_berg_eff_factor, micro_do_nccons, micro_do_nicons, &
-       micro_nccons_land,  micro_nccons_ocean, & !XZ
+       !micro_mg_berg_eff_factor, micro_do_nccons, micro_do_nicons, &
+       micro_mg_berg_eff_factor, micro_do_nicons, &   !XZ micro_do_nccons has been moved to ctl_nl for the prescribed cdnc  
        micro_nccons, micro_nicons, micro_mincdnc 
 
   !-----------------------------------------------------------------------------
@@ -305,7 +306,7 @@ subroutine micro_mg_cam_readnl(nlfile)
      ! set local variables
      do_cldice = micro_mg_do_cldice
      do_cldliq = micro_mg_do_cldliq
-     do_nccons = micro_do_nccons
+!     do_nccons = micro_do_nccons
      do_nicons = micro_do_nicons
      nccons = micro_nccons
      nicons = micro_nicons
@@ -361,7 +362,7 @@ subroutine micro_mg_cam_readnl(nlfile)
   call mpibcast(micro_mg_sub_version,        1, mpiint, 0, mpicom)
   call mpibcast(do_cldice,                   1, mpilog, 0, mpicom)
   call mpibcast(do_cldliq,                   1, mpilog, 0, mpicom)
-  call mpibcast(do_nccons,                   1, mpilog, 0, mpicom)
+  !XZ call mpibcast(do_nccons,                   1, mpilog, 0, mpicom)
   call mpibcast(do_nicons,                   1, mpilog, 0, mpicom)
   call mpibcast(micro_mg_dcs_tdep,           1, mpilog, 0, mpicom)
   call mpibcast(num_steps,                   1, mpiint, 0, mpicom)
@@ -370,8 +371,6 @@ subroutine micro_mg_cam_readnl(nlfile)
   call mpibcast(micro_mg_berg_eff_factor,    1, mpir8,  0, mpicom)
   call mpibcast(ice_sed_ai,                  1, mpir8,  0, mpicom)
   call mpibcast(nccons,                      1, mpir8,  0, mpicom)
-  call mpibcast(nccons_land,           1, mpir8,  0, mpicom)  !XZ
-  call mpibcast(nccons_ocean,           1, mpir8,  0, mpicom)  !XZ
   call mpibcast(nicons,                      1, mpir8,  0, mpicom)
   call mpibcast(mincdnc,                     1, mpir8,  0, mpicom)
   call mpibcast(micro_mg_precip_frac_method, 16, mpichar,0, mpicom)
@@ -402,10 +401,10 @@ subroutine micro_mg_cam_register
   logical :: prog_modal_aero
   logical :: use_subcol_microp  ! If true, then are using subcolumns in microphysics
   logical :: save_subcol_microp ! If true, then need to store sub-columnized fields in pbuf
-
   call phys_getopts(use_subcol_microp_out = use_subcol_microp, &
                     prog_modal_aero_out   = prog_modal_aero, &
                     micro_mg_accre_enhan_fac_out = micro_mg_accre_enhan_fac)
+
 
   ! Register microphysics constituents and save indices.
 
@@ -644,6 +643,7 @@ subroutine micro_mg_cam_init(pbuf2d)
                                    ! liquid budgets.
    logical :: use_subcol_microp
    logical :: do_clubb_sgs
+   logical :: do_nccons   !XZ
    integer :: budget_histfile      ! output history file number for budget fields
    integer :: ierr
    character(128) :: errstring     ! return status (non-blank for error return)
@@ -657,7 +657,8 @@ subroutine micro_mg_cam_init(pbuf2d)
                      prc_exp1_out         = prc_exp1_in,       &
                      cld_sed_out          = cld_sed_in,        &
                      mg_prc_coeff_fix_out = mg_prc_coeff_fix_in, &
-                     rrtmg_temp_fix_out   = rrtmg_temp_fix       )
+                     rrtmg_temp_fix_out   = rrtmg_temp_fix       ,&
+                     micro_do_nccons_out  = do_nccons)   !XZ
 
    if (do_clubb_sgs) then
      allow_sed_supersat = .false.
@@ -805,8 +806,9 @@ subroutine micro_mg_cam_init(pbuf2d)
    call addfld ('MPDT', (/ 'lev' /), 'A', 'W/kg', 'Heating tendency - Morrison microphysics'                )
    call addfld ('MPDQ', (/ 'lev' /), 'A', 'kg/kg/s', 'Q tendency - Morrison microphysics'                      )
    call addfld ('MPDLIQ', (/ 'lev' /), 'A', 'kg/kg/s', 'CLDLIQ tendency - Morrison microphysics'                 )
-   call addfld ('MPDNC', (/ 'lev' /), 'A', '#/kg/s', 'NUMLIQ tendency - Morrison microphysics'                 )  !XZ
+   call addfld ('MPDNC', (/ 'lev' /), 'A', '#/kg/s', 'NUMLIQ tendency - Morrison microphysics'                   )  !XZ
    call addfld ('NPCCN', (/ 'lev' /), 'A', '#/kg/s', 'NUMLIQ activation tendency - (from microp_aero)'           )  !XZ
+   call addfld ('CDNC_PRESC', (/ 'lev' /), 'A', '#/m3', 'PRESCRIBED in-cloud water number conc (from ndrop)'     )  !XZ
    call addfld ('RHO_MG', (/ 'lev' /), 'A', 'kg/m3', 'Grid Air density used in MG'                 )  !XZ
    call addfld ('MPDICE', (/ 'lev' /), 'A', 'kg/kg/s', 'CLDICE tendency - Morrison microphysics'                 )
    call addfld ('MPDW2V', (/ 'lev' /), 'A', 'kg/kg/s', 'Water <--> Vapor tendency - Morrison microphysics'       )
@@ -1015,6 +1017,7 @@ subroutine micro_mg_cam_init(pbuf2d)
    npccn_idx    = pbuf_get_index('NPCCN')
    rndst_idx    = pbuf_get_index('RNDST')
    nacon_idx    = pbuf_get_index('NACON')
+   cdncst_idx    = pbuf_get_index('CDNC_PRESC')  !prescribed cdnc XZ
 
    prec_str_idx = pbuf_get_index('PREC_STR')
    snow_str_idx = pbuf_get_index('SNOW_STR')
@@ -1110,6 +1113,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf,landfrac)   !XZ
    real(r8), pointer :: naai(:,:)      ! ice nucleation number
    real(r8), pointer :: naai_hom(:,:)  ! ice nucleation number (homogeneous)
    real(r8), pointer :: npccn(:,:)     ! liquid activation number tendency
+   real(r8), pointer :: cdncst(:,:)     ! prescribed cdnc XZ 
    real(r8), pointer :: rndst(:,:,:)
    real(r8), pointer :: nacon(:,:,:)
 
@@ -1247,6 +1251,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf,landfrac)   !XZ
 
    real(r8), allocatable :: packed_naai(:,:)
    real(r8), allocatable :: packed_npccn(:,:)
+   real(r8), allocatable :: packed_cdncst(:,:)  !XZ
 
    real(r8), allocatable :: packed_rndst(:,:,:)
    real(r8), allocatable :: packed_nacon(:,:,:)
@@ -1607,6 +1612,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf,landfrac)   !XZ
    call pbuf_get_field(pbuf, naai_idx,        naai,        col_type=col_type, copy_if_needed=use_subcol_microp)
    call pbuf_get_field(pbuf, naai_hom_idx,    naai_hom,    col_type=col_type, copy_if_needed=use_subcol_microp)
    call pbuf_get_field(pbuf, npccn_idx,       npccn,       col_type=col_type, copy_if_needed=use_subcol_microp)
+   call pbuf_get_field(pbuf, cdncst_idx,      cdncst,      col_type=col_type, copy_if_needed=use_subcol_microp)  !prescribed CDNC XZ
    call pbuf_get_field(pbuf, rndst_idx,       rndst,       col_type=col_type, copy_if_needed=use_subcol_microp)
    call pbuf_get_field(pbuf, nacon_idx,       nacon,       col_type=col_type, copy_if_needed=use_subcol_microp)
    call pbuf_get_field(pbuf, relvar_idx,      relvar,      col_type=col_type, copy_if_needed=use_subcol_microp)
@@ -2037,6 +2043,8 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf,landfrac)   !XZ
    packed_naai = packer%pack(naai)
    allocate(packed_npccn(mgncol,nlev))
    packed_npccn = packer%pack(npccn)
+   allocate(packed_cdncst(mgncol,nlev))
+   packed_cdncst = packer%pack(cdncst)
 
    allocate(packed_rndst(mgncol,nlev,size(rndst, 3)))
    packed_rndst = packer%pack(rndst)
@@ -2183,6 +2191,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf,landfrac)   !XZ
                  packed_cldn,    packed_liqcldf, packed_icecldf, &
                  packed_rate1ord_cw2pr_st,                       &
                  packed_naai,            packed_npccn,           &
+                 packed_cdncst,                                  &  !XZ
                  packed_rndst,           packed_nacon,           &
                  packed_tlat,            packed_qvlat,           &
                  packed_qctend,          packed_qitend,          &
@@ -2224,7 +2233,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf,landfrac)   !XZ
                  errstring, &
                  packed_tnd_qsnow,packed_tnd_nsnow,packed_re_ice,&
 		 packed_prer_evap,                                     &
-                 packed_frzimm,  packed_frzcnt,  packed_frzdep, packed_landfrac&  !XZ
+                 packed_frzimm,  packed_frzcnt,  packed_frzdep&  
    )
             call t_stopf('micro_mg_tend2')
          end select
@@ -2997,6 +3006,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf,landfrac)   !XZ
    call outfld('MPDLIQ',      qcten,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('MPDNC',       ncten,       psetcols, lchnk, avg_subcol_field=use_subcol_microp) !XZ
    call outfld('NPCCN',       npccn,       psetcols, lchnk, avg_subcol_field=use_subcol_microp) !XZ
+   call outfld('CDNC_PRESC',  cdncst,      psetcols, lchnk, avg_subcol_field=use_subcol_microp) !XZ
    call outfld('MPDICE',      qiten,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('EVAPSNOW',    evapsnow,    psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('QCSEVAP',     qcsevap,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)

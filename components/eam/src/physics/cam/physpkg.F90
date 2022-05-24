@@ -2437,7 +2437,8 @@ end if
             ! Aerosol Activation
             !===================================================
             call t_startf('microp_aero_run')
-            call microp_aero_run(state, ptend, cld_macmic_ztodt, pbuf, lcldo)
+            call microp_aero_run(state, ptend, cld_macmic_ztodt, pbuf, lcldo,&
+                     cam_in%landfrac) !XZ
             call t_stopf('microp_aero_run')
 
             call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
@@ -2548,7 +2549,8 @@ end if
           if (.not. micro_do_icesupersat) then 
 
             call t_startf('microp_aero_run')
-            call microp_aero_run(state, ptend_aero, cld_macmic_ztodt, pbuf, lcldo)
+            call microp_aero_run(state, ptend_aero, cld_macmic_ztodt, pbuf, lcldo, &
+                    cam_in%landfrac) !XZ
             call t_stopf('microp_aero_run')
 
           endif
@@ -2557,7 +2559,8 @@ end if
 
 
           if (use_subcol_microp) then
-             call microp_driver_tend(state_sc, ptend_sc, cld_macmic_ztodt, pbuf, cam_in%landfrac) !XZ
+             call microp_driver_tend(state_sc, ptend_sc, cld_macmic_ztodt, pbuf, &
+                     cam_in%landfrac) !XZ
 
              ! Average the sub-column ptend for use in gridded update - will not contain ptend_aero
              call subcol_ptend_avg(ptend_sc, state_sc%ngrdcol, lchnk, ptend)
@@ -2580,7 +2583,8 @@ end if
              call physics_tend_dealloc(tend_sc)
              call physics_ptend_dealloc(ptend_sc)
           else
-             call microp_driver_tend(state, ptend, cld_macmic_ztodt, pbuf, cam_in%landfrac) !XZ
+             call microp_driver_tend(state, ptend, cld_macmic_ztodt, pbuf, &
+                     cam_in%landfrac) !XZ
           end if
           ! combine aero and micro tendencies for the grid
           if (.not. micro_do_icesupersat) then
