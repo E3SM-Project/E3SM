@@ -15,7 +15,7 @@
 
 <!-- Stratospheric aerosols from CMIP6 input4MIPS -->
 <prescribed_volcaero_datapath>atm/cam/volc</prescribed_volcaero_datapath>
-<prescribed_volcaero_file>CMIP_DOE-ACME_radiation_1850-2014_v3_c20171204.nc</prescribed_volcaero_file>
+<prescribed_volcaero_file>CMIP_DOE-ACME_radiation_average_1850-2014_v3_c20171204.nc</prescribed_volcaero_file>
 <prescribed_volcaero_filetype>VOLC_CMIP6</prescribed_volcaero_filetype>
 <prescribed_volcaero_type>CYCLICAL</prescribed_volcaero_type>
 <prescribed_volcaero_cycle_yr>1</prescribed_volcaero_cycle_yr>
