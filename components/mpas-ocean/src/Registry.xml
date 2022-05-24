@@ -2500,7 +2500,7 @@
 			<var name="temperatureSurfaceFluxTendency" array_group="activeTracerSfcFluxTendGroup" units="degrees Celsius per second" name_in_code="temperatureSurfaceFluxTendency"
 				description="potential temperature tendency due to surface fluxes"
 			/>
-			<var name="salinitySurfaceFluxTendency" array_group="activeTracerSfcFluxTendGroup" units="PSU per second" name_in_code="salinitySurfaceFluxTendency"
+			<var name="salinitySurfaceFluxTendency" array_group="activeTracerSfcFluxTendGroup" units="1.e-3 s^-1" name_in_code="salinitySurfaceFluxTendency"
 				description="salinity tendency due to surface fluxes"
 			/>
 		</var_array>
@@ -2519,7 +2519,7 @@
 			<var name="temperatureNonLocalTendency" array_group="activeTracerNLTendGroup" units="degrees Celsius per second" name_in_code="temperatureNonLocalTendency"
 				 description="potential temperature tendency due to kpp non-local flux"
 			/>
-			<var name="salinityNonLocalTendency" array_group="activeTracerNLTendGroup" units="PSU per second" name_in_code="salinityNonLocalTendency"
+			<var name="salinityNonLocalTendency" array_group="activeTracerNLTendGroup" units="1.e-3 s^-1" name_in_code="salinityNonLocalTendency"
 				 description="salinity tendency due to kpp non-local flux"
 			/>
 		</var_array>
@@ -2527,7 +2527,7 @@
 			<var name="temperatureVerticalAdvectionTopFlux" array_group="activeTracerVertTopFluxGroup" units="C m s^-1" name_in_code="temperatureVerticalAdvectionTopFlux"
 				description="potential temperature vertical advective flux through top of cell"
 			/>
-			<var name="salinityVerticalAdvectionTopFlux" array_group="activeTracerVertTopFluxGroup" units="PSU m s^-1" name_in_code="salinityVerticalAdvectionTopFlux"
+			<var name="salinityVerticalAdvectionTopFlux" array_group="activeTracerVertTopFluxGroup" units="1.e-3 m s^-1" name_in_code="salinityVerticalAdvectionTopFlux"
 				description="salinity advective vertical advective flux through top of cell"
 			/>
 		</var_array>
@@ -2535,7 +2535,7 @@
 			<var name="temperatureHorizontalAdvectionEdgeFlux" array_group="activeTracerHorAdvEdgeFluxGroup" units="C m s^-1" name_in_code="temperatureHorizontalAdvectionEdgeFlux"
 				description="potential temperature advective flux due to horizontal advection through edges"
 			/>
-			<var name="salinityHorizontalAdvectionEdgeFlux" array_group="activeTracerHorAdvEdgeFluxGroup" units="PSU m s^-1" name_in_code="salinityHorizontalAdvectionEdgeFlux"
+			<var name="salinityHorizontalAdvectionEdgeFlux" array_group="activeTracerHorAdvEdgeFluxGroup" units="1.e-3 m s^-1" name_in_code="salinityHorizontalAdvectionEdgeFlux"
 				description="salinity advective flux due to horizontal advection through edges"
 			/>
 		</var_array>
@@ -2543,7 +2543,7 @@
 			<var name="temperatureHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureHorizontaldvectionTendency"
 				description="potential temperature tendency due to horizontal advection"
 			/>
-			<var name="salinityHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="PSU per second" name_in_code="salinityHorizontalAdvectionTendency"
+			<var name="salinityHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="1.e-3 s^-1" name_in_code="salinityHorizontalAdvectionTendency"
 				description="salinity tendency due to horizontal advection"
 			/>
 		</var_array>
@@ -2551,7 +2551,7 @@
 			<var name="temperatureVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureVerticalAdvectionTendency"
 				description="potential temperature tendency due to vertical advection"
 			/>
-			<var name="salinityVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="PSU per second" name_in_code="salinityVerticalAdvectionTendency"
+			<var name="salinityVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="1.e-3 s^-1" name_in_code="salinityVerticalAdvectionTendency"
 				description="salinity tendency due to vertical advection"
 			/>
 		</var_array>
@@ -2559,7 +2559,7 @@
 			<var name="temperatureVertMixTendency" array_group="activeTracerVertMixTendGroup" units="degrees Celsius per second" name_in_code="temperatureVertMixTendency"
 				 description="potential temperature tendency due to vertical mixing"
 			/>
-			<var name="salinityVertMixTendency" array_group="activeTracerVertMixTendGroup" units="PSU per second" name_in_code="salinityVertMixTendency"
+			<var name="salinityVertMixTendency" array_group="activeTracerVertMixTendGroup" units="1.e-3 s^-1" name_in_code="salinityVertMixTendency"
 				 description="salinity tendency due to vertical mixing"
 			/>
 		</var_array>
