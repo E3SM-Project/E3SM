@@ -130,9 +130,19 @@ subroutine crm_history_init(species_class)
    call addfld('CRM_AODVISZ',dims_crm_3D,'A', 'unitless', 'Aerosol optical depth at 500nm in CRM grids', flag_xyfill=.true.)
    call addfld('AOD400', horiz_only,'A', 'unitless', 'Aerosol optical depth at 400nm', flag_xyfill=.true.)
    call addfld('AOD700', horiz_only,'A', 'unitless', 'Aerosol optical depth at 700nm', flag_xyfill=.true.)
-
    !----------------------------------------------------------------------------
-   ! 2-moment microphysics variables
+   ! P3 2-moment microphysics variables
+   if (MMF_microphysics_scheme .eq. 'p3') then
+      call addfld('MMF_NC    ',(/'lev'/), 'A', '/kg',    'Cloud water dropet number from CRM')
+      call addfld('MMF_NI    ',(/'lev'/), 'A', '/kg',    'Cloud ice crystal number from CRM')
+      call addfld('MMF_NR    ',(/'lev'/), 'A', '/kg',    'Rain particle number from CRM')
+      call addfld('CRM_QR  ',dims_crm_3D, 'A', 'kg/kg','Rain mixing ratio from CRM' )
+      call addfld('CRM_NC  ',dims_crm_3D, 'A', '/kg',  'Cloud water dropet number from CRM' )
+      call addfld('CRM_NI  ',dims_crm_3D, 'A', '/kg',  'Cloud ice crystal number from CRM' )
+      call addfld('CRM_NR  ',dims_crm_3D, 'A', '/kg',  'Rain particle number from CRM' )
+   endif
+   !----------------------------------------------------------------------------
+   ! M2005 2-moment microphysics variables
    if (MMF_microphysics_scheme .eq. 'm2005') then
       call addfld('MMF_NC    ',(/'lev'/), 'A', '/kg',    'Cloud water dropet number from CRM')
       call addfld('MMF_NI    ',(/'lev'/), 'A', '/kg',    'Cloud ice crystal number from CRM')
@@ -350,6 +360,12 @@ subroutine crm_history_init(species_class)
    call add_default('MMF_TLS   ', 1, ' ')
    call add_default('MMF_SUBCYCLE_FAC', 1, ' ')
 
+   if (MMF_microphysics_scheme .eq. 'p3') then
+      call add_default('MMF_NC    ', 1, ' ')
+      call add_default('MMF_NI    ', 1, ' ')
+      call add_default('MMF_NR    ', 1, ' ')
+   end if
+
    if (MMF_microphysics_scheme .eq. 'm2005') then
       call add_default('MMF_NC    ', 1, ' ')
       call add_default('MMF_NI    ', 1, ' ')
@@ -465,33 +481,47 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    call outfld('CRM_V   ',crm_state%v_wind     (icol_beg:icol_end,:,:,:), ncol, lchnk )
    call outfld('CRM_W   ',crm_state%w_wind     (icol_beg:icol_end,:,:,:), ncol, lchnk )
    call outfld('CRM_T   ',crm_state%temperature(icol_beg:icol_end,:,:,:), ncol, lchnk )
+   call outfld('CRM_QV  ',crm_state%qv         (icol_beg:icol_end,:,:,:), ncol, lchnk )
 
-   if (MMF_microphysics_scheme .eq. 'sam1mom') then
-      call outfld('CRM_QV  ',(crm_state%qt(icol_beg:icol_end,:,:,:)    &
-                              -crm_output%qcl(icol_beg:icol_end,:,:,:) &
-                              -crm_output%qci(icol_beg:icol_end,:,:,:)), ncol, lchnk )
-   else if (MMF_microphysics_scheme .eq. 'm2005') then 
-      call outfld('CRM_QV  ', crm_state%qt(icol_beg:icol_end,:,:,:)    &
-                              -crm_output%qcl(icol_beg:icol_end,:,:,:), ncol, lchnk )
-   endif
+   !----------------------------------------------------------------------------
+   ! Turbulence parameter on CRM grid
+   call outfld('CRM_TK ', crm_output%tk (icol_beg:icol_end,:,:,:),ncol, lchnk )
+   call outfld('CRM_TKH', crm_output%tkh(icol_beg:icol_end,:,:,:),ncol, lchnk )
 
    !----------------------------------------------------------------------------
    ! CRM condensate and precipitation on CRM grid
    call outfld('CRM_QC  ',crm_output%qcl     (icol_beg:icol_end,:,:,:),ncol, lchnk )
    call outfld('CRM_QI  ',crm_output%qci     (icol_beg:icol_end,:,:,:),ncol, lchnk )
-   call outfld('CRM_QPC ',crm_output%qpl     (icol_beg:icol_end,:,:,:),ncol, lchnk )
-   call outfld('CRM_QPI ',crm_output%qpi     (icol_beg:icol_end,:,:,:),ncol, lchnk )
    call outfld('CRM_PREC',crm_output%prec_crm(icol_beg:icol_end,:,:),  ncol, lchnk )
-   call outfld('CRM_TK ', crm_output%tk      (icol_beg:icol_end,:,:,:),ncol, lchnk )  
-   call outfld('CRM_TKH', crm_output%tkh     (icol_beg:icol_end,:,:,:),ncol, lchnk ) 
+
+   if (MMF_microphysics_scheme .eq. 'sam1mom') then
+      call outfld('CRM_QPC ',crm_output%qpl(icol_beg:icol_end,:,:,:),ncol, lchnk )
+      call outfld('CRM_QPI ',crm_output%qpi(icol_beg:icol_end,:,:,:),ncol, lchnk )
+   end if
+
+   if (MMF_microphysics_scheme .eq. 'p3') then
+      call outfld('CRM_NC ',crm_state%nc(icol_beg:icol_end,:,:,:), ncol, lchnk )
+      call outfld('CRM_NI ',crm_state%ni(icol_beg:icol_end,:,:,:), ncol, lchnk )
+      call outfld('CRM_NR ',crm_state%nr(icol_beg:icol_end,:,:,:), ncol, lchnk )
+      call outfld('CRM_QR ',crm_state%qr(icol_beg:icol_end,:,:,:), ncol, lchnk )
+   endif
 
    !----------------------------------------------------------------------------
    ! CRM domain average condensate and precipitation
    call outfld('MMF_QC    ',crm_output%qc_mean(icol_beg:icol_end,:), ncol ,lchnk )
    call outfld('MMF_QI    ',crm_output%qi_mean(icol_beg:icol_end,:), ncol ,lchnk )
-   call outfld('MMF_QS    ',crm_output%qs_mean(icol_beg:icol_end,:), ncol ,lchnk )
-   call outfld('MMF_QG    ',crm_output%qg_mean(icol_beg:icol_end,:), ncol ,lchnk )
    call outfld('MMF_QR    ',crm_output%qr_mean(icol_beg:icol_end,:), ncol ,lchnk )
+
+   if (MMF_microphysics_scheme .eq. 'sam1mom') then
+      call outfld('MMF_QS    ',crm_output%qs_mean(icol_beg:icol_end,:), ncol ,lchnk )
+      call outfld('MMF_QG    ',crm_output%qg_mean(icol_beg:icol_end,:), ncol ,lchnk )   
+   end if
+
+   if (MMF_microphysics_scheme .eq. 'p3') then
+      call outfld('MMF_NC    ',crm_output%nc_mean(icol_beg:icol_end,:), ncol, lchnk )
+      call outfld('MMF_NI    ',crm_output%ni_mean(icol_beg:icol_end,:), ncol, lchnk )
+      call outfld('MMF_NR    ',crm_output%nr_mean(icol_beg:icol_end,:), ncol, lchnk )
+   endif
 
    !----------------------------------------------------------------------------
    ! CRM domain average fluxes
