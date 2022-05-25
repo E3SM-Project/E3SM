@@ -42,6 +42,8 @@ def convert_units(var, target_units):
         var.units = target_units
     elif var.id == "AOD_550_ann":
         var.units = target_units
+    elif var.id == "AOD_550":
+        var.units = target_units
     elif var.units == "C" and target_units == "DegC":
         var.units = target_units
     elif var.units == "N/m2" and target_units == "N/m^2":
@@ -1324,6 +1326,10 @@ derived_variables = {
             (("od550aer",), rename),
             (
                 ("AODVIS",),
+                lambda aod: convert_units(rename(aod), target_units="dimensionless"),
+            ),
+            (
+                ("AOD_550",),
                 lambda aod: convert_units(rename(aod), target_units="dimensionless"),
             ),
             (
