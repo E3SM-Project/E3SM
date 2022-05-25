@@ -67,6 +67,8 @@ module ocn_time_series_stats
     integer, pointer :: counter
     character (len=StrKIND), pointer :: xtime_start
     character (len=StrKIND), pointer :: xtime_end
+    real (kind=RKIND), pointer :: Time
+    real (kind=RKIND), dimension(:), pointer :: Time_bnds
   end type time_series_buffer_type
 
   type time_series_type
@@ -236,8 +238,12 @@ subroutine ocn_init_time_series_stats(domain, instance, err)!{{{
   integer :: v, b
   type (time_series_type) :: series
   type (time_series_alarms_type), allocatable, dimension(:) :: alarms
-  type (MPAS_Time_type) :: start_intv
+  type (MPAS_Time_type) :: start_intv, start_time, reference_time
   character (len=StrKIND) :: start_xtime
+  real (kind=RKIND) :: Time
+  character (len=StrKIND), pointer :: config_output_reference_time
+
+  integer :: err_tmp    ! local error codes from subroutine calls
 
   ! start procedure
   err = 0
@@ -259,9 +265,23 @@ subroutine ocn_init_time_series_stats(domain, instance, err)!{{{
   start_intv = mpas_get_clock_time(domain % clock, MPAS_NOW, err)
   call mpas_get_time(start_intv, dateTimeString=start_xtime, ierr=err)
 
+  start_time = mpas_get_clock_time(domain%clock, MPAS_START_TIME, err_tmp)
+  if (err_tmp /= 0) then
+     call mpas_log_write('Error getting start time in init', &
+          MPAS_LOG_ERR, masterOnly=.true., flushNow=.true.)
+     err = ior(err, err_tmp)
+  endif
+
+  call mpas_pool_get_config(domain % configs, 'config_output_reference_time', &
+    config_output_reference_time)
+  call mpas_set_time(reference_time, dateTimeString=config_output_reference_time)
+  call mpas_get_timeInterval(start_time - reference_time, dt=Time)
+  Time = Time*days_per_second
+
   do b = 1, series % number_of_buffers
     if (trim(series % buffers(b) % xtime_start) == '') then
       series % buffers(b) % xtime_start = start_xtime
+      series % buffers(b) % Time_bnds(1) = Time
     end if
   end do
 
@@ -299,15 +319,20 @@ subroutine ocn_compute_time_series_stats(domain, timeLevel, instance, err)!{{{
   integer :: v, b
   type (time_series_type) :: series
   type (MPAS_TimeInterval_type) :: dt
-  type (MPAS_Time_type) :: start_intv, end_intv
+  type (MPAS_Time_type) :: start_intv, end_intv, reference_time
   character (len=StrKIND) :: start_xtime, end_xtime
+  real (kind=RKIND), dimension(2) :: Time_bnds
   logical :: unset_xtime
+  character (len=StrKIND), pointer :: config_output_reference_time
 
   ! start procedure
   err = 0
 
   ! get all of the state for this instance to be able to compute
   call get_state(domain, instance, series)
+
+  call mpas_pool_get_config(domain % configs, 'config_output_reference_time', &
+    config_output_reference_time)
 
   ! get the strings for the date
   unset_xtime = .true.
@@ -320,16 +345,25 @@ subroutine ocn_compute_time_series_stats(domain, timeLevel, instance, err)!{{{
         call mpas_get_time(end_intv, dateTimeString=end_xtime, ierr=err)
         start_intv = end_intv - mpas_get_clock_timestep(domain % clock, err)
         call mpas_get_time(start_intv, dateTimeString=start_xtime, ierr=err)
+        call mpas_set_time(reference_time, dateTimeString=config_output_reference_time)
+        call mpas_get_timeInterval(start_intv - reference_time, dt=Time_bnds(1))
+        call mpas_get_timeInterval(end_intv - reference_time, dt=Time_bnds(2))
+        Time_bnds = Time_bnds*days_per_second
         unset_xtime = .false.
       end if
 
       if (series % buffers(b) % reset_flag == 1) then
         series % buffers(b) % xtime_start = start_xtime
+        series % buffers(b) % Time_bnds(1) = Time_bnds(1)
         series % buffers(b) % counter = 1
       else
         series % buffers(b) % xtime_end = end_xtime
         series % buffers(b) % counter = series % buffers(b) % counter + 1
       end if
+      series % buffers(b) % Time_bnds(2) = Time_bnds(2)
+      series % buffers(b) % Time = 0.5_RKIND * &
+        (series % buffers(b) % Time_bnds(1) + series % buffers(b) % Time_bnds(2))
+
     end if
   end do
 
@@ -796,6 +830,26 @@ subroutine get_state(domain, instance, series)
     call mpas_pool_get_array(amPool, &
       field_name, series % buffers(b) % xtime_end, 1)
 
+    ! Time
+    field_name = 'Time'
+    if (series % number_of_buffers > 1) then
+      field_name = output_naming(storage_prefix, op_name, field_name, buf_identifier)
+    else
+      field_name = output_naming(storage_prefix, op_name, field_name)
+    end if
+    call mpas_pool_get_array(amPool, &
+      field_name, series % buffers(b) % Time, 1)
+
+    ! Time_bnds
+    field_name = 'Time_bnds'
+    if (series % number_of_buffers > 1) then
+      field_name = output_naming(storage_prefix, op_name, field_name, buf_identifier)
+    else
+      field_name = output_naming(storage_prefix, op_name, field_name)
+    end if
+    call mpas_pool_get_array(amPool, &
+      field_name, series % buffers(b) % Time_bnds, 1)
+
   end do
 
 end subroutine get_state
@@ -1036,6 +1090,11 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
     storage_prefix, buf_identifier, buf_prefix
   type (mpas_pool_field_info_type) :: info
   type (mpas_pool_type), pointer :: amPool
+  type (field0DReal), pointer :: TimeField
+  type (field1DReal), pointer :: TimeBndsField
+  character (len=StrKIND), pointer :: config_output_reference_time, &
+    config_calendar_type
+  character (len=StrKIND) :: units
 
   ! start procedure
   err = 0
@@ -1189,6 +1248,21 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
     call mpas_stream_mgr_add_field(domain % streamManager, &
       output_stream_name, out_field_name, ierr=err)
 
+    ! add units of "days since <ref_date>" to Time
+    call mpas_pool_get_config(domain % configs, 'config_output_reference_time', &
+      config_output_reference_time)
+    write(units, '(a10,a20)') 'days since', &
+      config_output_reference_time(1:10)//" "//config_output_reference_time(12:19)
+    call mpas_pool_get_Field(domain % blocklist % allFields, out_field_name, TimeField)
+    call mpas_add_att(TimeField % attLists(1) % attList, 'units', units)
+
+    ! Add calendar attribute to Time
+    call mpas_pool_get_config(domain % configs, 'config_calendar_type', config_calendar_type)
+    call mpas_add_att(TimeField % attLists(1) % attList, 'calendar', config_calendar_type)
+
+    ! For CF compliance, output field name is the original field name, not the mangled one
+    TimeField % outputFieldName = in_field_name
+
     ! put it in the restart stream
     if (restartStreamEnabled) then
        call mpas_stream_mgr_add_field(domain % streamManager, &
@@ -1220,6 +1294,10 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
        call mpas_stream_mgr_add_field(domain % streamManager, &
          restart_stream_name, out_field_name, ierr=err)
     end if
+
+    ! For CF compliance, output field name is the original field name, not the mangled one
+    call mpas_pool_get_Field(domain % blocklist % allFields, out_field_name, TimeBndsField)
+    TimeBndsField % outputFieldName = in_field_name
 
   end do
 
