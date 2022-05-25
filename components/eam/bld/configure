@@ -275,7 +275,8 @@ OPTIONS
      -crm_dt <n>        CRM's timestep.
      -crm_nx_rad <n>    number of averaged columns for CRM radiation calculation in x direction
      -crm_ny_rad <n>    number of averaged columns for CRM radiation calculation in y direction
-     -MMF_microphysics_scheme <string>   CRM microphysics package name [sam1mom | m2005 ].
+     -MMF_microphysics_scheme <string>   CRM microphysics package name [ sam1mom | m2005 | p3 ]
+     -MMF_turbulence_scheme   <string>   CRM turbulence package name [ smag | shoc ].
      -use_ECPP          use CRM clouds for vertical transport, aqueous chemistry and wet removable of aerosols
      -crm_adv           CRM advection scheme [MPDATA | UM5]
      -crm <model>       CRM model [sam | samomp | samxx]
@@ -349,7 +350,8 @@ GetOptions(
     "crm_dt=s"                  => \$opts{'crm_dt'},
     "crm_nx_rad=s"              => \$opts{'crm_nx_rad'},
     "crm_ny_rad=s"              => \$opts{'crm_ny_rad'},
-    "MMF_microphysics_scheme=s"     => \$opts{'MMF_microphysics_scheme'},
+    "MMF_microphysics_scheme=s" => \$opts{'MMF_microphysics_scheme'},
+    "MMF_turbulence_scheme=s"   => \$opts{'MMF_turbulence_scheme'},
     "crm_adv=s"                 => \$opts{'crm_adv'},
     "crm=s"                     => \$opts{'crm'},
     "rrtmgpxx"                  => \$opts{'rrtmgpxx'},
@@ -1237,15 +1239,8 @@ if (defined $opts{'use_MMF'}) {
     if (defined $opts{'crm_ny_rad'}) { $cfg_ref->set('crm_ny_rad', $opts{'crm_ny_rad'}); }
     if (defined $opts{'crm_adv'}) { $cfg_ref->set('crm_adv', $opts{'crm_adv'}); }
     $cfg_ref->set('MMF_microphysics_scheme', $opts{'MMF_microphysics_scheme'});
+    $cfg_ref->set('MMF_turbulence_scheme', $opts{'MMF_turbulence_scheme'});
     $cfg_ref->set('crm', $opts{'crm'});
-    # Check that model is not using threading for the MMF
-    if ($nthreads > 1) {
-     die <<"EOF";
-**  ERROR: MMF mode may only use single thread
-**         nthreads set to $nthreads
-**
-EOF
-    }
 }
 
 #-----------------------------------------------------------------------------------------------
@@ -1440,16 +1435,11 @@ else {
         if ($print>=2) { print "Advected constituents added by chemistry $chem_pkg: $chem_nadv$eol"; }
 
         # Advected tracers for MMF - same for 1-mom and 2-mom (1-mom ignores number concentration)
-        # - cloud liquid amount
-        # - cloud ice amount
-        # - cloud liquid number
-        # - cloud ice number
-        # - precipitating rain amount
-        # - precipitating snow amount
-        # - precipitating rain number
-        # - precipitating snow number
         if (defined $opts{'use_MMF'}) {
-            $nadv += 8;
+            my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
+            if ($MMF_microphysics_scheme eq 'sam1mom') { $nadv += 8; }
+            if ($MMF_microphysics_scheme eq 'm2005')   { $nadv += 8; }
+            if ($MMF_microphysics_scheme eq 'p3')      { $nadv += 8; }
             if ($print>=2) { print "Advected constituents added for MMF physics package: 8$eol"; }
         }
 
@@ -1738,7 +1728,10 @@ if (defined $opts{'use_MMF'}) {
     my $yes3Dval = 1;
     if ($crm_ny eq 1) {$yes3Dval = 0;}
     if (defined $opts{'crm_adv'}) { $cfg_cppdefs .= " -D_$crm_adv "; }
-    $cfg_cppdefs .= " -D$MMF_microphysics_scheme -DYES3DVAL=$yes3Dval";
+    $cfg_cppdefs .= " -D_$crm_adv -DYES3DVAL=$yes3Dval";
+    if ( $MMF_microphysics_scheme ne 'p3' ) {
+      $cfg_cppdefs .= " -D$MMF_microphysics_scheme ";
+    }
     $cfg_cppdefs .= " -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz ";
     $cfg_cppdefs .= " -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
     if (defined $opts{'use_ECPP'}) { $cfg_cppdefs .= " -DECPP " }
