@@ -271,7 +271,7 @@ tweaking their $case/namelist_scream.xml file.
     ${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220524.nc,
     ${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220524.nc,
     ${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220525.nc,
-    scream-aquaplanet_init_ne4np4_L72_20220524.nc
+    ${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20220524.nc
   </input_files>
 
   <!-- Homme control namelist -->
