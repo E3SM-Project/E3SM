@@ -989,6 +989,7 @@ subroutine phys_final( phys_state, phys_tend, pbuf2d )
   use wv_saturation,  only : wv_sat_final
   use crm_physics,    only : crm_physics_final
   use radiation,      only : radiation_final
+  use p3_lookup_interface_mod,only: finalize_p3_lookup
   !----------------------------------------------------------------------- 
   ! Purpose: Finalization of physics package
   !-----------------------------------------------------------------------
@@ -998,6 +999,9 @@ subroutine phys_final( phys_state, phys_tend, pbuf2d )
   type(physics_buffer_desc), pointer :: pbuf2d(:,:)
   !---------------------------------------------------------------------------
   !---------------------------------------------------------------------------
+  character(len=16) :: MMF_microphysics_scheme ! CRM microphysics scheme
+
+  call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
   if(associated(pbuf2d)) then
      call pbuf_deallocate(pbuf2d,'global')
@@ -1013,6 +1017,12 @@ subroutine phys_final( phys_state, phys_tend, pbuf2d )
   call t_startf ('wv_sat_final')
   call wv_sat_final
   call t_stopf ('wv_sat_final')
+
+#if defined(MMF_SAMXX)
+  ! when using P3 we need to deallocate lookup table data before 
+  ! yakl::finalize() is called from radiation_final()
+  if (MMF_microphysics_scheme .eq. 'p3') call finalize_p3_lookup()
+#endif
 
   call t_startf ('radiation_final')
   call radiation_final()
