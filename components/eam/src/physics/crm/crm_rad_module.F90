@@ -80,6 +80,17 @@ contains
          rad%ns = 0
       end if
 
+      if ( trim(MMF_microphysics_scheme).eq.'p3' .or. trim(MMF_microphysics_scheme).eq.'sam1mom' ) then
+         if (.not. allocated(rad%nc)) allocate(rad%nc(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+         if (.not. allocated(rad%ni)) allocate(rad%ni(ncrms, crm_nx_rad, crm_ny_rad, crm_nz))
+
+         call prefetch(rad%nc)
+         call prefetch(rad%ni)
+
+         rad%nc = 0
+         rad%ni = 0
+      end if
+
    end subroutine crm_rad_initialize
    !------------------------------------------------------------------------------------------------
    subroutine crm_rad_finalize(rad, MMF_microphysics_scheme)
@@ -98,6 +109,11 @@ contains
          if (allocated(rad%ni))       deallocate(rad%ni)
          if (allocated(rad%qs))       deallocate(rad%qs)
          if (allocated(rad%ns))       deallocate(rad%ns)
+      end if
+
+      if ( trim(MMF_microphysics_scheme).eq.'p3' .or. trim(MMF_microphysics_scheme).eq.'sam1mom' ) then
+         if (allocated(rad%nc))       deallocate(rad%nc)
+         if (allocated(rad%ni))       deallocate(rad%ni)
       end if
 
    end subroutine crm_rad_finalize

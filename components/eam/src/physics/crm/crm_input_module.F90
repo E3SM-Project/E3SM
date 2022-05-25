@@ -48,6 +48,11 @@ module crm_input_module
       real(crm_rknd), allocatable :: t_vt(:,:)           ! CRM input of variance used for forcing tendency
       real(crm_rknd), allocatable :: q_vt(:,:)           ! CRM input of variance used for forcing tendency
 
+      ! inputs for P3
+      real(crm_rknd), allocatable :: nccn(:,:)           ! CCN number concentration           [kg-1]
+      real(crm_rknd), allocatable :: nc_nuceat_tend(:,:) ! activated CCN number tendency      [kg-1 s-1]
+      real(crm_rknd), allocatable :: ni_activated(:,:)   ! activated ice nuclei concentration [kg-1]
+
    end type crm_input_type
    !------------------------------------------------------------------------------------------------
 
@@ -122,6 +127,15 @@ contains
       call prefetch(input%t_vt)
       call prefetch(input%q_vt)
 
+      ! if (trim(MMF_microphysics_scheme) .eq. 'p3') then
+         if (.not. allocated(input%nccn          ))  allocate(input%nccn(ncrms,nlev))
+         if (.not. allocated(input%nc_nuceat_tend))  allocate(input%nc_nuceat_tend(ncrms,nlev))
+         if (.not. allocated(input%ni_activated  ))  allocate(input%ni_activated(ncrms,nlev))
+         call prefetch(input%nccn)
+         call prefetch(input%nc_nuceat_tend)
+         call prefetch(input%ni_activated)
+      ! end if
+
       ! Initialize
       input%zmid    = 0
       input%zint    = 0
@@ -159,6 +173,12 @@ contains
 
       input%t_vt = 0
       input%q_vt = 0
+
+      ! if (trim(MMF_microphysics_scheme) .eq. 'p3') then
+         input%nccn           = 0
+         input%nc_nuceat_tend = 0
+         input%ni_activated   = 0
+      ! end if
 
    end subroutine crm_input_initialize
    !------------------------------------------------------------------------------------------------
@@ -203,6 +223,10 @@ contains
       if (allocated(input%t_vt)) deallocate(input%t_vt)
       if (allocated(input%q_vt)) deallocate(input%q_vt)
 
-   end subroutine crm_input_finalize 
+      if (allocated(input%nccn          ))  deallocate(input%nccn)
+      if (allocated(input%nc_nuceat_tend))  deallocate(input%nc_nuceat_tend)
+      if (allocated(input%ni_activated  ))  deallocate(input%ni_activated)
 
+   end subroutine crm_input_finalize
+   !------------------------------------------------------------------------------------------------
 end module crm_input_module
