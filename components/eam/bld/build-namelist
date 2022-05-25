@@ -3651,7 +3651,47 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_ice_sh');
    add_default($nl, 'clubb_tk1');
    add_default($nl, 'clubb_tk2');
+   add_default($nl, 'clubb_C2rtthl');
+   add_default($nl, 'clubb_C4');
+   add_default($nl, 'clubb_C_uu_shr');
+   add_default($nl, 'clubb_C_uu_buoy');
+   add_default($nl, 'clubb_C6rt');
+   add_default($nl, 'clubb_C6thl');
+   add_default($nl, 'clubb_C8b');
+   add_default($nl, 'clubb_C_wp3_pr_turb');
+   add_default($nl, 'clubb_C_wp2_splat');
+   add_default($nl, 'clubb_beta');
+   add_default($nl, 'clubb_c_K1');
+   add_default($nl, 'clubb_c_K2');
+   add_default($nl, 'clubb_nu2');
+   add_default($nl, 'clubb_c_K8');
+   add_default($nl, 'clubb_c_K9');
+   add_default($nl, 'clubb_nu9');
    add_default($nl, 'clubb_wpxp_L_thresh');
+   add_default($nl, 'clubb_lmin_coef');
+   add_default($nl, 'clubb_mult_coef');
+   add_default($nl, 'clubb_Skw_denom_coef');
+   add_default($nl, 'clubb_up2_sfc_coef');
+   add_default($nl, 'clubb_Skw_max_mag');
+   add_default($nl, 'clubb_altitude_threshold');
+   add_default($nl, 'clubb_a3_coef_min');
+   add_default($nl, 'clubb_iiPDF_type');
+   add_default($nl, 'clubb_ipdf_call_placement');
+   add_default($nl, 'clubb_l_predict_upwp_vpwp');
+   add_default($nl, 'clubb_l_min_wp2_from_corr_wx');
+   add_default($nl, 'clubb_l_min_xp2_from_corr_wx');
+   add_default($nl, 'clubb_l_vert_avg_closure');
+   add_default($nl, 'clubb_l_trapezoidal_rule_zt');
+   add_default($nl, 'clubb_l_trapezoidal_rule_zm');
+   add_default($nl, 'clubb_l_call_pdf_closure_twice');
+   add_default($nl, 'clubb_l_use_cloud_cover');
+   add_default($nl, 'clubb_l_stability_correct_tau_zm');
+   add_default($nl, 'clubb_l_damp_wp2_using_em');
+   add_default($nl, 'clubb_l_diag_Lscale_from_tau');
+   add_default($nl, 'clubb_l_use_C7_Richardson');
+   add_default($nl, 'clubb_l_rcm_supersat_adj');
+   add_default($nl, 'clubb_l_damp_wp3_Skw_squared');
+   add_default($nl, 'clubb_l_enable_relaxed_clipping');
    add_default($nl, 'relvar_fix');
    add_default($nl, 'clubb_use_sgv');
 
@@ -3675,7 +3715,6 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_gamma_coefb');
    add_default($nl, 'clubb_gamma_coefc');
    add_default($nl, 'clubb_mu');
-   add_default($nl, 'clubb_ipdf_call_placement');
 
 }
 

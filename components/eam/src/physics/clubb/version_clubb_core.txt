@@ -1,69 +1,65 @@
-commit 5d29760c18d2ac2209dae94af7bba6439a9b6dd3
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Wed Jul 10 14:23:09 2019 -0500
+commit b518f7f0bbb4edc5825b926c8dcfa4ca54a4a3ce
+Author: pbroels <pbroels@uwm.edu>
+Date:   Wed May 11 15:37:50 2022 -0500
 
-    Rensure plots match plotgen output. lba plots should now be consistent with plotgen. Added a few missing SAM plots for some panels.
-    https://github.com/larson-group/sys_admin/issues/542
+    Adding comments to explain confusing or complicated portions of the Jenkinsfiles.
 
-commit 1204d043849de0e5c3dc790f0ef7108a319bc890
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Tue Jul 9 14:10:59 2019 -0500
+commit 3e2c65368a75545b887c4bd29875345ff56bee7a
+Author: JanGrn <jan.gruenenwald@gmail.com>
+Date:   Thu May 5 12:34:10 2022 -0500
 
-    Rename Lineplot to Line
-    https://github.com/larson-group/sys_admin/issues/542
+    Bugfix for merge #1000. stderr was not imported in stat_clubb_utilities.F90, causing compilation to fail.
 
-commit 44946b9a02aaaa6fa7a4318c4a876d01462b6635
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Tue Jul 9 11:14:48 2019 -0500
+commit ff0b28e5052ca104fd67313e5e9759d6f7f80238
+Author: huebleruwm <37674341+huebleruwm@users.noreply.github.com>
+Date:   Thu May 5 15:20:38 2022 -0500
 
-    Add initial version lba case, though the output is not yet identical to plotgen's.
-    https://github.com/larson-group/sys_admin/issues/542
+    Gunthers branch 2 (#1002)
+    
+    * Pushing loop down through advance_windm. Other files needed to be touched because they were using a simple function, xpwp_func, which has been replaced in relevenant places by the few lines of code it takes to do.
+    
+    * Cleaned up intents
+    
+    * Moving xpwp calcuations back to procedure, but making procedure a 1/2D interface in advance helper. Other various small tweaks as well.
 
-commit 36f0c546d0978cffbee001320e63fc3453f639d6
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Tue Jul 9 10:04:52 2019 -0500
+commit e33520905201193174b52f9316fa5ac2ca799af1
+Author: JanGrn <jan.gruenenwald@gmail.com>
+Date:   Thu May 5 09:47:58 2022 -0500
 
-    Add initial versions of multiple variable groups
-    https://github.com/larson-group/sys_admin/issues/542
+    Renamed pdf_output_filename. Added grid_level constant to avoid magic numbers in stats_update_var_pt calls.
 
-commit 15f62b1155b133f79af128b8bdcf891dd97a08bb
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Tue Jul 9 07:55:47 2019 -0500
+commit f0dff4bcf48e5bf267edb8e706e9455f503400f9
+Author: JanGrn <jan.gruenenwald@gmail.com>
+Date:   Tue May 3 16:34:14 2022 -0500
 
-    Fix time averaging bug that prevented many LES plots from appearing as expected/like their plotgen counterparts.
-    https://github.com/larson-group/sys_admin/issues/542
+    Removed duplicate VariableGroupNormalizedVariations.py
 
-commit 93326ab89ca144e1bc00cd33e6199a0571b9ea4c
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Mon Jul 8 15:08:32 2019 -0500
+commit 8ab8776d665a945b4be75d9e2cc00a2223217b0e
+Author: JanGrn <jan.gruenenwald@gmail.com>
+Date:   Tue May 3 16:03:39 2022 -0500
 
-    Fix bug where timeseries were being plotted as profile panels.
-    https://github.com/larson-group/sys_admin/issues/542
+    Changed priorities of total normalized variation stats, included error handling in total normalized variation stats.
 
-commit 6a7474e714a3b47f57d542d7aba8ddf31838f805
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Mon Jul 8 14:31:19 2019 -0500
+commit 748152eb582f6e4543edc8e975e6be8eaba48b43
+Author: JanGrn <jan.gruenenwald@gmail.com>
+Date:   Tue May 3 14:52:18 2022 -0500
 
-    Resolve sam output wasn't being time averaged. Some code cleanup, indluding moving VariableGroupTest.py to VariableGroupBase.py. Removed some old/commented code, cleaned up print statements.
-    https://github.com/larson-group/sys_admin/issues/542
+    Dealt with issue https://github.com/larson-group/clubb/issues/985
 
-commit f31e1654ea4d2f359a1040674f9d4839dea59bd2
-Merge: aed6ab0 e9dad98
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Mon Jul 8 12:57:14 2019 -0500
+commit fde70b39d01dd19b96d21b2a0adef57a8ac80af1
+Author: JanGrn <jan.gruenenwald@gmail.com>
+Date:   Tue May 3 13:49:10 2022 -0500
 
-    Merge remote-tracking branch 'origin/master'
+    Fixed typo in pyplotgen and fixed display of plotted time (previously displayed on the wrong line).
 
-commit aed6ab0b3e36c41772bb1ba36e84a662c8442dbd
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Mon Jul 8 10:16:55 2019 -0500
+commit b80c7ffecbf3e77a22642095f8389c1ecd33948d
+Author: JanGrn <jan.gruenenwald@gmail.com>
+Date:   Tue May 3 09:45:27 2022 -0500
 
-    Implement output folder command line parameter and general code cleanup. Passing an output folder into the launch parameters will now result in pyplotgen creating that folder (if not exists) and placing output in there.
-    https://github.com/larson-group/sys_admin/issues/542
+    Implemented three further normalized variation stats. Included a (most likely temporary) check because in a few cases, denominator for normalization would be 0.
 
-commit e01ea3f6f6dbffe24c8a7b3f230cbf9b3d0fd2df
-Author: Nicolas Strike <strike@uwm.edu>
-Date:   Mon Jul 8 08:51:44 2019 -0500
+commit 092e54d2d3f09a31a6abf3676d3c2b55800746d8
+Author: JanGrn <jan.gruenenwald@gmail.com>
+Date:   Fri Apr 29 12:23:43 2022 -0500
 
-    Further generalized variable group creation to make variable groups easier to create. Improved console output to provide useful information during plotting.
-    https://github.com/larson-group/sys_admin/issues/542
+    Added tot_vartn_normlzd statistics. Renamed sclr in advance_helper_module to scalar to be more consistent with clubb naming schemes.

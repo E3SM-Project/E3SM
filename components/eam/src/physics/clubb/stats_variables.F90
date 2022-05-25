@@ -105,22 +105,41 @@ module stats_variables
      iLscale_down = 0, & 
      iLscale_pert_1 = 0, & 
      iLscale_pert_2 = 0, & 
-     itau_zt = 0, & 
+     itau_zt = 0, &
+     iinvrs_tau_zt = 0, & 
      iKh_zt = 0, & 
      iwp2thvp = 0, & 
      iwp2rcp = 0, & 
+     iw_up_in_cloud = 0, &
      iwprtpthlp = 0, &
      irc_coef = 0, &
      isigma_sqd_w_zt = 0, & 
      irho = 0
 !$omp threadprivate( iLscale_up, iLscale_down, &
 !$omp   iLscale_pert_1, iLscale_pert_2, &
-!$omp   itau_zt, iKh_zt, iwp2thvp, iwp2rcp, iwprtpthlp, irc_coef, &
-!$omp   isigma_sqd_w_zt, irho )
+!$omp   itau_zt, iinvrs_tau_zt, iKh_zt, iwp2thvp, iwp2rcp, iw_up_in_cloud, &
+!$omp   iwprtpthlp, irc_coef, isigma_sqd_w_zt, irho )
 
   integer, public :: &
-     itau_zm_simp = 0
-!$omp threadprivate( itau_zm_simp )
+     iinvrs_tau_zm       = 0, &
+     iinvrs_tau_xp2_zm   = 0, &
+     iinvrs_tau_wp2_zm   = 0, &
+     iinvrs_tau_wpxp_zm  = 0, &
+     iinvrs_tau_wp3_zm   = 0, &
+     iinvrs_tau_no_N2_zm = 0, &
+     iinvrs_tau_bkgnd = 0,  &
+     iinvrs_tau_sfc   = 0,  &
+     iinvrs_tau_shear = 0,  &
+     itau_no_N2_zm = 0,     & 
+     itau_xp2_zm   = 0,     &
+     itau_wp2_zm   = 0,     &
+     itau_wp3_zm   = 0,     &
+     itau_wpxp_zm  = 0
+!$omp threadprivate( iinvrs_tau_zm, iinvrs_tau_xp2_zm, iinvrs_tau_wp2_zm, &
+!$omp                iinvrs_tau_wpxp_zm, iinvrs_tau_wp3_zm, iinvrs_tau_no_N2_zm, &
+!$omp                iinvrs_tau_bkgnd, iinvrs_tau_sfc, iinvrs_tau_shear, &
+!$omp                itau_no_N2_zm, itau_xp2_zm, itau_wp2_zm, itau_wp3_zm, &
+!$omp                itau_wpxp_zm )
 
 
   integer, dimension(:), allocatable, public :: & 
@@ -391,8 +410,10 @@ module stats_variables
      iwp3_ta  = 0, & 
      iwp3_tp  = 0, & 
      iwp3_ac  = 0, & 
-     iwp3_bp1 = 0, & 
-     iwp3_bp2 = 0, & 
+     iwp3_bp1 = 0, &
+     iwp3_pr_tp = 0, & 
+     iwp3_pr_turb = 0, &
+     iwp3_pr_dfsn = 0, & 
      iwp3_pr1 = 0, & 
      iwp3_pr2 = 0, & 
      iwp3_pr3 = 0, &
@@ -401,8 +422,8 @@ module stats_variables
      iwp3_cl  = 0, &
      iwp3_splat = 0
 
-!$omp   threadprivate(iwp3_bt, iwp3_ma, iwp3_ta, iwp3_tp, iwp3_ac, iwp3_bp1)
-!$omp   threadprivate(iwp3_bp2, iwp3_pr1, iwp3_pr2, iwp3_pr3, iwp3_dp1)
+!$omp   threadprivate(iwp3_bt, iwp3_ma, iwp3_ta, iwp3_tp, iwp3_ac, iwp3_bp1, iwp3_pr_tp)
+!$omp   threadprivate(iwp3_pr_turb, iwp3_pr_dfsn, iwp3_pr1, iwp3_pr2, iwp3_pr3, iwp3_dp1)
 !$omp   threadprivate(iwp3_sdmp, iwp3_cl, iwp3_splat)
 
   integer, public :: &
@@ -426,10 +447,10 @@ module stats_variables
      irrm_sd = 0, &
      irrm_ts = 0, &
      irrm_sd_morr = 0, &
-     irrm_cond = 0, &
+     irrm_evap = 0, &
      irrm_auto = 0, &
      irrm_accr = 0, &
-     irrm_cond_adj = 0, &
+     irrm_evap_adj = 0, &
      irrm_src_adj = 0, &
      irrm_mc_nonadj = 0, &
      irrm_mc = 0, &
@@ -439,8 +460,8 @@ module stats_variables
 
 !$omp   threadprivate(irrm_bt, irrm_ma, irrm_ta, irrm_sd)
 !$omp   threadprivate(irrm_ts, irrm_sd_morr)
-!$omp   threadprivate(irrm_cond, irrm_auto, irrm_accr)
-!$omp   threadprivate(irrm_cond_adj, irrm_src_adj, irrm_mc_nonadj)
+!$omp   threadprivate(irrm_evap, irrm_auto, irrm_accr)
+!$omp   threadprivate(irrm_evap_adj, irrm_src_adj, irrm_mc_nonadj)
 !$omp   threadprivate(irrm_mc, irrm_hf, irrm_wvhf, irrm_cl)
 
   integer, public :: &
@@ -449,15 +470,15 @@ module stats_variables
      iNrm_ta = 0, &
      iNrm_sd = 0, &
      iNrm_ts = 0, &
-     iNrm_cond = 0, &
+     iNrm_evap = 0, &
      iNrm_auto = 0, &
-     iNrm_cond_adj = 0, &
+     iNrm_evap_adj = 0, &
      iNrm_src_adj = 0, &
      iNrm_mc = 0, &
      iNrm_cl = 0
 
-!$omp   threadprivate(iNrm_bt, iNrm_ma, iNrm_ta, iNrm_sd, iNrm_ts, iNrm_cond)
-!$omp   threadprivate(iNrm_auto, iNrm_cond_adj, iNrm_src_adj )
+!$omp   threadprivate(iNrm_bt, iNrm_ma, iNrm_ta, iNrm_sd, iNrm_ts, iNrm_evap)
+!$omp   threadprivate(iNrm_auto, iNrm_evap_adj, iNrm_src_adj )
 !$omp   threadprivate(iNrm_mc, iNrm_cl)
 
 
@@ -774,21 +795,21 @@ module stats_variables
     ilh_rrm_accr = 0, & ! Latin hypercube estimate of accretion
     ilh_rrm_evap = 0, & ! Latin hypercube estimate of evaporation
     ilh_Nrm_auto    = 0, & ! Latin hypercube estimate of Nrm autoconversion
-    ilh_Nrm_cond    = 0, & ! Latin hypercube estimate of Nrm evaporation
+    ilh_Nrm_evap    = 0, & ! Latin hypercube estimate of Nrm evaporation
     ilh_m_vol_rad_rain = 0, &
     ilh_rrm_mc_nonadj = 0
 
 !$omp   threadprivate( ilh_rrm_auto, ilh_rrm_accr, ilh_rrm_evap, &
-!$omp                  ilh_Nrm_auto, ilh_Nrm_cond, ilh_m_vol_rad_rain, &
+!$omp                  ilh_Nrm_auto, ilh_Nrm_evap, ilh_m_vol_rad_rain, &
 !$omp                  ilh_rrm_mc_nonadj )
 
   integer, public :: &
     ilh_rrm_src_adj  = 0, & ! Latin hypercube estimate of source adjustment (KK only!)
-    ilh_rrm_cond_adj = 0, & ! Latin hypercube estimate of evap adjustment (KK only!)
+    ilh_rrm_evap_adj = 0, & ! Latin hypercube estimate of evap adjustment (KK only!)
     ilh_Nrm_src_adj     = 0, & ! Latin hypercube estimate of Nrm source adjustmet (KK only!)
-    ilh_Nrm_cond_adj    = 0    ! Latin hypercube estimate of Nrm evap adjustment (KK only!)
-!$omp   threadprivate( ilh_rrm_src_adj, ilh_rrm_cond_adj, ilh_Nrm_src_adj, &
-!$omp                  ilh_Nrm_cond_adj     )
+    ilh_Nrm_evap_adj    = 0    ! Latin hypercube estimate of Nrm evap adjustment (KK only!)
+!$omp   threadprivate( ilh_rrm_src_adj, ilh_rrm_evap_adj, ilh_Nrm_src_adj, &
+!$omp                  ilh_Nrm_evap_adj     )
 
   integer, public :: &
     ilh_Vrr = 0, & ! Latin hypercube estimate of rrm sedimentation velocity
@@ -982,7 +1003,11 @@ module stats_variables
      ithlp2 = 0, & 
      irtpthlp = 0, & 
      iwprtp = 0, & 
-     iwpthlp = 0, & 
+     iwpthlp = 0, &
+     iwpup2 = 0, &
+     iwpvp2 = 0, &
+     iwp2up2 = 0, &
+     iwp2vp2 = 0, & 
      iwp4 = 0, & 
      iwpthvp = 0, & 
      irtpthvp = 0, & 
@@ -1033,7 +1058,8 @@ module stats_variables
 
 !$omp   threadprivate(istability_correction)
 !$omp   threadprivate(iwp2, irtp2, ithlp2, irtpthlp, iwprtp, iwpthlp)
-!$omp   threadprivate(iwp4, iwpthvp, irtpthvp, ithlpthvp, itau_zm, iKh_zm)
+!$omp   threadprivate(iwpup2, iwpvp2, iwp2up2, iwp2vp2, iwp4)
+!$omp   threadprivate(iwpthvp, irtpthvp, ithlpthvp, itau_zm, iKh_zm)
 !$omp   threadprivate(iwprcp, irc_coef_zm, ithlprcp, irtprcp, ircp2)
 !$omp   threadprivate(iupwp, ivpwp)
 !$omp   threadprivate(iupthlp, iuprtp, ivpthlp, ivprtp)
@@ -1056,11 +1082,13 @@ module stats_variables
     iC7_Skw_fnc = 0,     &
     iC1_Skw_fnc = 0,     &
     ibrunt_vaisala_freq_sqd = 0, &
+    isqrt_Ri_zm = 0, &
     iRichardson_num = 0, &
-    ishear_sqd = 0
+    ishear_sqd = 0,      &
+    iC6_term
 
-!$omp   threadprivate(igamma_Skw_fnc, iC6rt_Skw_fnc, iC6thl_Skw_fnc)
-!$omp   threadprivate(iC7_Skw_fnc, iC1_Skw_fnc)
+!$omp   threadprivate(igamma_Skw_fnc, iC6rt_Skw_fnc, iC6thl_Skw_fnc, iC6_term)
+!$omp   threadprivate(iC7_Skw_fnc, iC1_Skw_fnc, isqrt_Ri_zm)
 !$omp   threadprivate(ibrunt_vaisala_freq_sqd, iRichardson_num, ishear_sqd)
 
   integer, public :: &
@@ -1105,7 +1133,8 @@ module stats_variables
      iwp2_bp = 0, & 
      iwp2_pr1 = 0, & 
      iwp2_pr2 = 0, & 
-     iwp2_pr3 = 0, & 
+     iwp2_pr3 = 0, &
+     iwp2_pr_dfsn = 0, &  
      iwp2_dp1 = 0, & 
      iwp2_dp2 = 0, &
      iwp2_sdmp = 0, &
@@ -1115,7 +1144,7 @@ module stats_variables
      iwp2_splat = 0
 
 !$omp   threadprivate(iwp2_bt, iwp2_ma, iwp2_ta, iwp2_ac, iwp2_bp)
-!$omp   threadprivate(iwp2_pr1, iwp2_pr2, iwp2_pr3)
+!$omp   threadprivate(iwp2_pr1, iwp2_pr2, iwp2_pr3, iwp2_pr_dfsn)
 !$omp   threadprivate(iwp2_dp1, iwp2_dp2)
 !$omp   threadprivate(iwp2_sdmp, iwp2_pd, iwp2_cl, iwp2_sf, iwp2_splat)
 
@@ -1400,6 +1429,12 @@ module stats_variables
 !$omp   ithlm_vert_avg, irtm_vert_avg, ium_vert_avg, ivm_vert_avg, &
 !$omp   iwp2_vert_avg, iup2_vert_avg, ivp2_vert_avg, irtp2_vert_avg, ithlp2_vert_avg, iT_sfc)
 
+  integer, public :: &
+    itot_vartn_normlzd_rtm = 0, &
+    itot_vartn_normlzd_thlm = 0, &
+    itot_vartn_normlzd_wprtp = 0
+!$omp threadprivate(itot_vartn_normlzd_rtm, itot_vartn_normlzd_thlm, itot_vartn_normlzd_wprtp)
+
   integer, public :: & 
     iwp23_matrix_condt_num = 0, & 
     irtm_matrix_condt_num = 0, & 
@@ -1459,19 +1494,6 @@ module stats_variables
     irtp2_from_chi = 0
 
 !$omp threadprivate( irtp2_from_chi )
-
-  ! Variables that contains all the statistics
-
-  type (stats), target, public :: stats_zt,   &    ! stats_zt grid
-                                  stats_zm,   &    ! stats_zm grid
-                                  stats_lh_zt,  &  ! stats_lh_zt grid
-                                  stats_lh_sfc,  & ! stats_lh_sfc grid
-                                  stats_rad_zt,  & ! stats_rad_zt grid
-                                  stats_rad_zm,  & ! stats_rad_zm grid
-                                  stats_sfc        ! stats_sfc
-
-!$omp threadprivate(stats_zt, stats_zm, stats_lh_zt, stats_lh_sfc)
-!$omp threadprivate(stats_rad_zt, stats_rad_zm, stats_sfc)
 
   ! Scratch space
 

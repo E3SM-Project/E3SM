@@ -75,8 +75,15 @@ module error_code
         integer :: omp_get_thread_num
         write(err_header,'(A7,I7,A20)') "Thread ", omp_get_thread_num(), " -- CLUBB -- ERROR: "
 #else
+#ifndef CLUBB_CAM
+        ! This code cannot be used for CAM because
+        ! it causes issues when tested with the
+        ! NAG compiler.
         integer :: getpid
         write(err_header,'(A7,I7,A20)') "Process ", getpid(), " -- CLUBB -- ERROR: "
+#else
+        write(err_header,'(A20)') " -- CLUBB -- ERROR: "
+#endif /* CLUBB_CAM */
 #endif               
         
 

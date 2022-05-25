@@ -63,8 +63,7 @@ module calc_roots
         three,     & ! Constant(s)
         two,       &
         one_half,  &
-        one_third, &
-        zero
+        one_third
 
     use clubb_precision, only: &
         core_rknd    ! Variable(s)
@@ -205,8 +204,7 @@ module calc_roots
 
     use constants_clubb, only: &
         four, & ! Constant(s)
-        two,  &
-        zero
+        two
 
     use clubb_precision, only: &
         core_rknd    ! Variable(s)
