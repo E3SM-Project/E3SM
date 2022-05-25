@@ -628,8 +628,7 @@ MODULE MOSART_physics_mod
     else if(Tctl%RoutingMethod == 2) then
        call Routing_DW(iunit, nt, theDeltaT)
     else
-       print*, "Please check the routing method! There are only 2 methods available. 1==KW, 2==DW."
-	   call shr_sys_abort('Error in selecting routing method!')
+	   call shr_sys_abort('Wrong routing method! There are only 2 methods available. 1==KW, 2==DW.')
     end if
 
   end subroutine mainchannelRouting
