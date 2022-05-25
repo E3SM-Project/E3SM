@@ -1,0 +1,52 @@
+%YAML 1.1
+---
+Casename: SCREAMv1_output_hydrostatic
+Averaging Type: Instant
+Max Snapshots Per File: 744 # One output every 31 days
+Fields:
+  Physics GLL:
+    Field Names:
+      - T_mid
+      - PotentialTemperature
+      - qv
+      - qc
+      - qr
+      - qi
+      - qm
+      - nc
+      - nr
+      - ni
+      - bm
+      - precip_liq_surf
+      - precip_ice_surf
+      - eff_radius_qc
+      - eff_radius_qi
+      - nc_activated
+      - ni_activated
+      - nc_nuceat_tend
+      - cldfrac_liq
+      - cldfrac_ice
+      - cldfrac_tot
+      - horiz_winds
+      - tke
+      - eddy_diff_mom
+      - sgs_buoy_flux
+      - pbl_height
+      - LW_flux_up
+      - LW_flux_dn
+      - SW_flux_up
+      - SW_flux_dn
+      - sfc_alb_dir_vis
+      - surf_lw_flux_up
+      - ps
+      - p_mid
+      - omega
+      - pseudo_density
+      - surf_latent_flux
+      - surf_sens_flux
+      - surf_mom_flux
+Output Control:
+  Frequency: 2
+  Frequency Units: Steps
+  MPI Ranks in Filename: true
+...
