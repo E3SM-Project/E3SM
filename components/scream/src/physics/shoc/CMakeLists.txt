@@ -62,6 +62,13 @@ if (NOT CUDA_BUILD OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
   ) # SHOC ETI SRCS
 endif()
 
+if ("${SCREAM_MACHINE}" STREQUAL "cori-knl")
+  set_source_files_properties (
+    shoc_assumed_pdf.cpp shoc_calc_shoc_varorcovar.cpp
+    PROPERTIES COMPILE_FLAGS "-O1"
+  )
+endif()
+
 add_library(shoc ${SHOC_SRCS})
 target_include_directories(shoc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../share)
 set_target_properties(shoc PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
