@@ -40,6 +40,7 @@ SET_TO_VIEWER = {
     "arm_diags": arm_diags_viewer.create_viewer,
     "tc_analysis": tc_analysis_viewer.create_viewer,
     "annual_cycle_zonal_mean": annual_cycle_zonal_mean_viewer.create_viewer,
+    "aerosol_aeronet": default_viewer.create_viewer,
 }
 
 

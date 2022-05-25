@@ -27,4 +27,5 @@ SET_TO_PARSER = {
     "tc_analysis": TCAnalysisParser,
     "annual_cycle_zonal_mean": CoreParser,
     "lat_lon_land": CoreParser,
+    "aerosol_aeronet": CoreParser,
 }

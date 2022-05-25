@@ -70,6 +70,14 @@ tc_analysis_files = get_all_files_in_dir(
 annual_cycle_zonal_mean_files = get_all_files_in_dir(
     "e3sm_diags/driver/default_diags", "annual_cycle_zonal_mean_*"
 )
+aerosol_aeronet_files = get_all_files_in_dir(
+    "e3sm_diags/driver/default_diags", "aerosol_aeronet*cfg"
+)
+aerosol_aeronet_files += get_all_files_in_dir(
+    "e3sm_diags/driver/default_diags/aerosol_aeronet_data", "*.txt"
+)
+
+
 rgb_files = get_all_files_in_dir("e3sm_diags/plot/colormaps", "*.rgb")
 control_runs_files = get_all_files_in_dir("e3sm_diags/driver/control_runs", "*.csv")
 
@@ -112,6 +120,7 @@ data_files = [
             "misc/e3sm_logo.png",
         ],
     ),
+    (os.path.join(INSTALL_PATH, "aerosol_aeronet"), aerosol_aeronet_files),
     (os.path.join(INSTALL_PATH, "colormaps"), rgb_files),
     (os.path.join(INSTALL_PATH, "control_runs"), control_runs_files),
     (

@@ -29,6 +29,7 @@ SET_TO_NAME = {
     "cosp_histogram": "CloudTopHeight-Tau joint histograms",
     "diurnal_cycle": "Diurnal cycle phase maps",
     "arm_diags": "Diagnostics at ARM stations",
+    "aerosol_aeronet": "Aerosol Diags at AERONET sites",
 }
 
 # The ordering of the columns in the viewer.

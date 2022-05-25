@@ -170,7 +170,10 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, parameters, stats=None):
 
     else:
         maxval = np.amax(np.absolute(levels[1:-1]))
-        if maxval < 10.0:
+        if maxval < 0.5:
+            fmt = "%5.3f"
+            pad = 28
+        elif maxval < 10.0:
             fmt = "%5.2f"
             pad = 25
         elif maxval < 100.0:
@@ -179,6 +182,7 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, parameters, stats=None):
         else:
             fmt = "%6.1f"
             pad = 30
+
         cbar.set_ticks(levels[1:-1])
         labels = [fmt % level for level in levels[1:-1]]
         cbar.ax.set_yticklabels(labels, ha="right")
