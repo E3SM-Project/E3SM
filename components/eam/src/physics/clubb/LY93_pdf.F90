@@ -21,13 +21,15 @@ module LY93_pdf
   contains
 
   !=============================================================================
-  subroutine LY93_driver( wm, rtm, thlm, wp2, rtp2,          & ! In
-                          thlp2, Skw, Skrt, Skthl,           & ! In
-                          mu_w_1, mu_w_2, mu_rt_1, mu_rt_2,  & ! Out
-                          mu_thl_1, mu_thl_2, sigma_w_1_sqd, & ! Out
-                          sigma_w_2_sqd, sigma_rt_1_sqd,     & ! Out
-                          sigma_rt_2_sqd, sigma_thl_1_sqd,   & ! Out
-                          sigma_thl_2_sqd, mixt_frac         ) ! Out
+  subroutine LY93_driver( gr, wm, rtm, thlm, wp2, rtp2,         & ! In
+                          thlp2, Skw, Skrt, Skthl,          & ! In
+                          mu_w_1, mu_w_2,                   & ! Out
+                          mu_rt_1, mu_rt_2,                 & ! Out
+                          mu_thl_1, mu_thl_2,               & ! Out
+                          sigma_w_1_sqd, sigma_w_2_sqd,     & ! Out
+                          sigma_rt_1_sqd, sigma_rt_2_sqd,   & ! Out
+                          sigma_thl_1_sqd, sigma_thl_2_sqd, & ! Out
+                          mixt_frac )                         ! Out
 
     ! Description:
     ! Calculates the mixture fraction and the PDF component means and PDF
@@ -39,12 +41,14 @@ module LY93_pdf
     !-----------------------------------------------------------------------
 
     use grid_class, only: &
-        gr    ! Type(s)
+        grid ! Type
 
     use clubb_precision, only: &
         core_rknd    ! Variable(s)
 
     implicit none
+
+    type (grid), target, intent(in) :: gr
 
     ! Input Variables
     real( kind = core_rknd), dimension(gr%nz), intent(in) :: &
@@ -83,20 +87,20 @@ module LY93_pdf
     Sk_max = max( abs( Skw ), abs( Skrt ), abs( Skthl ) )
 
     ! Calculate mixture fraction.
-    mixt_frac = calc_mixt_frac_LY93( Sk_max )
+    mixt_frac = calc_mixt_frac_LY93( gr, Sk_max )
 
     ! Calculate the PDF parameters for w.
-    call calc_params_LY93( wm, wp2, Skw, mixt_frac,     & ! In
+    call calc_params_LY93( gr, wm, wp2, Skw, mixt_frac,     & ! In
                            mu_w_1, mu_w_2,              & ! Out
                            sigma_w_1_sqd, sigma_w_2_sqd ) ! Out
 
     ! Calculate the PDF parameters for rt.
-    call calc_params_LY93( rtm, rtp2, Skrt, mixt_frac,    & ! In
+    call calc_params_LY93( gr, rtm, rtp2, Skrt, mixt_frac,    & ! In
                            mu_rt_1, mu_rt_2,              & ! Out
                            sigma_rt_1_sqd, sigma_rt_2_sqd ) ! Out
 
     ! Calculate the PDF parameters for thl.
-    call calc_params_LY93( thlm, thlp2, Skthl, mixt_frac,   & ! In
+    call calc_params_LY93( gr, thlm, thlp2, Skthl, mixt_frac,   & ! In
                            mu_thl_1, mu_thl_2,              & ! Out
                            sigma_thl_1_sqd, sigma_thl_2_sqd ) ! Out
 
@@ -106,7 +110,7 @@ module LY93_pdf
   end subroutine LY93_driver
 
   !=============================================================================
-  function calc_mixt_frac_LY93( Sk_max ) &
+  function calc_mixt_frac_LY93( gr, Sk_max ) &
   result( mixt_frac )
 
     ! Description:
@@ -118,7 +122,7 @@ module LY93_pdf
     !-----------------------------------------------------------------------
 
     use grid_class, only: &
-        gr    ! Type(s)
+        grid ! Type
 
     use constants_clubb, only: &
         one,           & ! Constant(s)
@@ -130,6 +134,8 @@ module LY93_pdf
         core_rknd    ! Variable(s)
 
     implicit none
+
+    type (grid), target, intent(in) :: gr
 
     ! Input Variable
     real( kind = core_rknd), dimension(gr%nz), intent(in) :: &
@@ -194,7 +200,7 @@ module LY93_pdf
   end function calc_mixt_frac_LY93
 
   !=============================================================================
-  subroutine calc_params_LY93( xm, xp2, Skx, mixt_frac,     & ! In
+  subroutine calc_params_LY93( gr, xm, xp2, Skx, mixt_frac,     & ! In
                                mu_x_1, mu_x_2,              & ! Out
                                sigma_x_1_sqd, sigma_x_2_sqd ) ! Out
 
@@ -209,7 +215,7 @@ module LY93_pdf
     !-----------------------------------------------------------------------
 
     use grid_class, only: &
-        gr    ! Type(s)
+        grid ! Type
 
     use constants_clubb, only: &
         three,     & ! Constant(s)
@@ -221,6 +227,8 @@ module LY93_pdf
         core_rknd    ! Variable(s)
 
     implicit none
+
+    type (grid), target, intent(in) :: gr
 
     ! Input Variables
     real( kind = core_rknd), dimension(gr%nz), intent(in) :: &

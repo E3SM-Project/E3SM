@@ -24,11 +24,11 @@ module T_in_K_module
 !-------------------------------------------------------------------------------
     use constants_clubb, only: & 
       ! Variable(s) 
-      Cp,  & ! Dry air specific heat at constant p [J/kg/K]
-      Lv     ! Latent heat of vaporization         [J/kg]
+        Cp,  & ! Dry air specific heat at constant p [J/kg/K]
+        Lv     ! Latent heat of vaporization         [J/kg]
 
     use clubb_precision, only: &
-      core_rknd ! Variable(s)
+        core_rknd ! Variable(s)
 
     implicit none
 
@@ -59,11 +59,11 @@ module T_in_K_module
 !-------------------------------------------------------------------------------
     use constants_clubb, only: & 
       ! Variable(s) 
-      Cp,  & ! Dry air specific heat at constant p [J/kg/K]
-      Lv     ! Latent heat of vaporization         [J/kg]
+        Cp,  & ! Dry air specific heat at constant p [J/kg/K]
+        Lv     ! Latent heat of vaporization         [J/kg]
 
     use clubb_precision, only: &
-      core_rknd ! Variable(s)
+        core_rknd ! Variable(s)
 
     implicit none
 

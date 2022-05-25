@@ -75,7 +75,7 @@ module sponge_layer_damping
   contains
 
   !=============================================================================
-  function sponge_damp_xm( dt, z, xm_ref, xm, damping_profile ) result( xm_p )
+  function sponge_damp_xm( gr, dt, z, xm_ref, xm, damping_profile ) result( xm_p )
 
     ! Description:
     ! Damps specified mean field toward a reference profile.  The module must be
@@ -88,12 +88,14 @@ module sponge_layer_damping
     !  "Sponge"-layer damping at the domain top region
 
     use grid_class, only: &
-        gr    ! Variable(s)
+        grid ! Type
 
     use clubb_precision, only: &
         core_rknd    ! Variable(s)
 
     implicit none
+
+    type (grid), target, intent(in) :: gr
 
     ! External
     intrinsic :: allocated
@@ -155,7 +157,7 @@ module sponge_layer_damping
 
     else
 
-       stop "tau_sponge_damp in sponge_damp_xm used before initialization"
+       error stop "tau_sponge_damp in sponge_damp_xm used before initialization"
 
     endif
 
@@ -165,7 +167,7 @@ module sponge_layer_damping
   end function sponge_damp_xm
 
   !=============================================================================
-  function sponge_damp_xp2( dt, z, xp2, x_tol_sqd, damping_profile ) &
+  function sponge_damp_xp2( gr, dt, z, xp2, x_tol_sqd, damping_profile ) &
   result( xp2_damped )
 
     ! Description:
@@ -207,7 +209,7 @@ module sponge_layer_damping
     !-----------------------------------------------------------------------
 
     use grid_class, only: &
-        gr    ! Variable(s)
+        grid ! Type
 
     use constants_clubb, only: &
         one    ! Constant(s)
@@ -216,6 +218,8 @@ module sponge_layer_damping
         core_rknd    ! Variable(s)
 
     implicit none
+
+    type (grid), target, intent(in) :: gr
 
     ! Input Variable(s)
     real( kind = core_rknd ), intent(in) :: &
@@ -277,7 +281,7 @@ module sponge_layer_damping
 
     else
 
-       stop "tau_sponge_damp in sponge_damp_xp2 used before initialization"
+       error stop "tau_sponge_damp in sponge_damp_xp2 used before initialization"
 
     endif
 
@@ -287,7 +291,7 @@ module sponge_layer_damping
   end function sponge_damp_xp2
 
   !=============================================================================
-  function sponge_damp_xp3( dt, z, xp3, damping_profile ) &
+  function sponge_damp_xp3( gr, dt, z, xp3, damping_profile ) &
   result( xp3_damped )
 
     ! Description:
@@ -327,7 +331,7 @@ module sponge_layer_damping
     !-----------------------------------------------------------------------
 
     use grid_class, only: &
-        gr    ! Variable(s)
+        grid ! Type
 
     use constants_clubb, only: &
         one    ! Constant(s)
@@ -336,6 +340,8 @@ module sponge_layer_damping
         core_rknd    ! Variable(s)
 
     implicit none
+
+    type (grid), target, intent(in) :: gr
 
     ! Input Variable(s)
     real( kind = core_rknd ), intent(in) :: &
@@ -390,7 +396,7 @@ module sponge_layer_damping
 
     else
 
-       stop "tau_sponge_damp in sponge_damp_xp3 used before initialization"
+       error stop "tau_sponge_damp in sponge_damp_xp3 used before initialization"
 
     endif
 
@@ -400,7 +406,8 @@ module sponge_layer_damping
   end function sponge_damp_xp3
 
   !=============================================================================
-  subroutine initialize_tau_sponge_damp( dt, z, settings, damping_profile )
+  subroutine initialize_tau_sponge_damp( gr, dt, z, settings, &
+                                         damping_profile )
 
     ! Description:
     ! Initialize time scale, tau_sponge_damp, used for damping.  The time scale
@@ -424,12 +431,14 @@ module sponge_layer_damping
         fstderr
 
     use grid_class, only: &
-        gr    ! Variable(s)
+        grid ! Type
 
 !    use interpolation, only: &
 !        lin_interpolate_two_points    ! Procedure(s)
 
     implicit none
+
+    type (grid), target, intent(in) :: gr
 
     ! Input Variable(s)
     real( kind = core_rknd ), intent(in) :: &
@@ -466,7 +475,7 @@ module sponge_layer_damping
     if ( settings%tau_sponge_damp_min < two * dt ) then
        write(fstderr,*) "Error:  tau_sponge_damp_min is too small!"
        write(fstderr,*) "It must be at least 2.0 * dt"
-       stop
+       error stop
     endif
 
     ! Calculate the value of the damping time scale, tau_sponge_damp, at levels

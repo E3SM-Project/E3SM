@@ -39,9 +39,10 @@ module output_grads
 !-------------------------------------------------------------------------------
   subroutine open_grads( iunit, fdir, fname,  & 
                          ia, iz, nlat, nlon, z, & 
-                         day, month, year, rlat, rlon, & 
+                         day, month, year, lat_vals, lon_vals, & 
                          time, dtwrite, & 
-                         nvar, grads_file )
+                         nvar, &
+                         grads_file )
 ! Description:
 !   Opens and initialize variable components for derived type 'grads_file'
 !   If the GrADS file already exists, open_grads will overwrite it.
@@ -87,10 +88,10 @@ module output_grads
       year             ! Year at Model Start            [yyyy]
 
     real( kind = core_rknd ), dimension(nlat), intent(in) :: &
-      rlat ! Latitude [Degrees E]
+      lat_vals ! Latitude [Degrees E]
 
     real( kind = core_rknd ), dimension(nlon), intent(in) :: &
-      rlon ! Longitude [Degrees N]
+      lon_vals ! Longitude [Degrees N]
 
     real( kind = time_precision ), intent(in) ::  & 
       time        ! Time since Model start          [s]
@@ -138,10 +139,10 @@ module output_grads
     grads_file%nlat  = nlat
     grads_file%nlon  = nlon
 
-    allocate( grads_file%rlat(nlat), grads_file%rlon(nlon) )
+    allocate( grads_file%lat_vals(nlat), grads_file%lon_vals(nlon) )
 
-    grads_file%rlat  = rlat
-    grads_file%rlon  = rlon
+    grads_file%lat_vals  = lat_vals
+    grads_file%lon_vals  = lon_vals
 
     grads_file%dtwrite = dtwrite
 
@@ -157,7 +158,7 @@ module output_grads
         write(fstderr,*) "To override this warning, set l_allow_small_stats_tout = &
                          &.true. in the stats_setting namelist in the &
                          &appropriate *_model.in file."
-        stop "Fatal error in open_grads"
+        error stop "Fatal error in open_grads"
       end if
     end if
 
@@ -190,19 +191,19 @@ module output_grads
 
       !  Check existing ctl file
 
-      call check_grads( iunit, fdir, fname,  & 
-                        ia, iz, & 
-                        day, month, year, time, dtwrite, & 
-                        nvar,  & 
-                        l_error, grads_file%ntimes, grads_file%nrecord, &
-                        grads_file%time )
+      call check_grads( iunit, fdir, fname,  & ! intent(in)
+                        ia, iz, &  ! intent(in)
+                        day, month, year, time, dtwrite, & ! intent(in) 
+                        nvar,  &  ! intent(in)
+                        l_error, grads_file%ntimes, grads_file%nrecord, & ! intent(out)
+                        grads_file%time ) ! intnet(out)
 
       if ( l_error ) then
         write(unit=fstderr,fmt=*) "Error in open_grads:"
         write(unit=fstderr,fmt=*)  & 
         "Attempt to append to existing files failed"
 !              call stopcode('open_grads')
-        stop 'open_grads'
+        error stop 'open_grads'
       end if
 
       return
@@ -214,7 +215,7 @@ module output_grads
       write(unit=fstderr,fmt=*)  & 
         "Attempt to append to existing files failed,"//  & 
         " because only one of the two GrADS files was found."
-      stop "open_grads"
+      error stop "open_grads"
 
     end if
 
@@ -234,7 +235,7 @@ module output_grads
 !   None
 !-------------------------------------------------------------------------------
     use stat_file_module, only: & 
-        variable ! Type
+        grid_avg_variable ! Type
 
     use clubb_precision, only: & 
         time_precision ! Variable
@@ -287,7 +288,7 @@ module output_grads
 
     real( kind = core_rknd ), dimension(:), allocatable :: z_in
 
-    type (variable), dimension(:), allocatable :: var_in
+    type (grid_avg_variable), dimension(:), allocatable :: var_in
 
 !-------------------------------------------------------------------------------
 
@@ -482,17 +483,17 @@ module output_grads
 !-------------------------------------------------------------------------------
 
     use constants_clubb, only: & 
-      fstderr ! Variable(s)
+        fstderr ! Variable(s)
 
     use model_flags, only: &
-      l_byteswap_io ! Variable
+        l_byteswap_io ! Variable
 
     use endian, only: & 
-      big_endian, & ! Variable
-      little_endian
+        big_endian, & ! Variable
+        little_endian
 
     use stat_file_module, only: & 
-      stat_file ! Type
+        stat_file ! Type
 
 !   use stat_file_module, only: &
 !     clubb_i, clubb_j ! Variable(s)
@@ -537,13 +538,13 @@ module output_grads
       write(unit=fstderr,fmt=*)  & 
         "write_grads: error opening binary file"
       write(unit=fstderr,fmt=*) "iostat = ", ios
-      stop
+      error stop
     end if
 
     if ( grads_file%ia <= grads_file%iz ) then
       do ivar=1,grads_file%nvar
         write(grads_file%iounit,rec=grads_file%nrecord)  &
-          real( grads_file%var(ivar)%ptr(1:grads_file%nlon, &
+          real( grads_file%grid_avg_var(ivar)%ptr(1:grads_file%nlon, &
                                          1:grads_file%nlat,grads_file%ia:grads_file%iz), kind=r4)
         grads_file%nrecord = grads_file%nrecord + 1
       end do
@@ -551,7 +552,7 @@ module output_grads
     else
       do ivar=1, grads_file%nvar
         write(grads_file%iounit,rec=grads_file%nrecord) & 
-          real( grads_file%var(ivar)%ptr(1:grads_file%nlon, &
+          real( grads_file%grid_avg_var(ivar)%ptr(1:grads_file%nlon, &
                                          1:grads_file%nlat,grads_file%ia:grads_file%iz:-1), kind=r4)
         grads_file%nrecord = grads_file%nrecord + 1
       end do
@@ -564,7 +565,7 @@ module output_grads
       write(unit=fstderr,fmt=*)  & 
         "write_grads: error closing binary file"
       write(unit=fstderr,fmt=*) "iostat = ", ios
-      stop
+      error stop
     end if
 
     grads_file%ntimes = grads_file%ntimes + 1
@@ -578,7 +579,7 @@ module output_grads
       write(unit=fstderr,fmt=*)  & 
         "write_grads: error opening control file"
       write(unit=fstderr,fmt=*) "iostat = ", ios
-      stop
+      error stop
     end if
 
     ! Write file header
@@ -595,17 +596,17 @@ module output_grads
     write(unit=grads_file%iounit,fmt='(a,e12.5)') 'UNDEF ',undef
 
     if ( grads_file%nlon == 1 ) then ! Use linear for a singleton X dimesion
-      write(unit=grads_file%iounit,fmt='(a,f8.3,a)') 'XDEF    1 LINEAR ', grads_file%rlon, ' 1.'
+      write(unit=grads_file%iounit,fmt='(a,f8.3,a)') 'XDEF    1 LINEAR ', grads_file%lon_vals, ' 1.'
     else
       write(unit=grads_file%iounit,fmt='(a,i5,a)') 'XDEF', grads_file%nlon,' LEVELS '
-      write(unit=grads_file%iounit,fmt='(6f13.4)') grads_file%rlon
+      write(unit=grads_file%iounit,fmt='(6f13.4)') grads_file%lon_vals
     end if
 
     if ( grads_file%nlat == 1 ) then ! Use linear for a singleton Y dimension
-      write(unit=grads_file%iounit,fmt='(a,f8.3,a)') 'YDEF    1 LINEAR ', grads_file%rlat, ' 1.'
+      write(unit=grads_file%iounit,fmt='(a,f8.3,a)') 'YDEF    1 LINEAR ', grads_file%lat_vals, ' 1.'
     else
       write(unit=grads_file%iounit,fmt='(a,i5,a)') 'YDEF', grads_file%nlat,' LEVELS '
-      write(unit=grads_file%iounit,fmt='(6f13.4)') grads_file%rlat
+      write(unit=grads_file%iounit,fmt='(6f13.4)') grads_file%lat_vals
     end if
 
     if ( grads_file%ia == grads_file%iz ) then ! If ia == iz, then Z is also singleton
@@ -636,9 +637,10 @@ module output_grads
 
     do ivar=1, grads_file%nvar, 1
       write(unit=grads_file%iounit,fmt='(a,i5,a,a)') & 
-        grads_file%var(ivar)%name(1:len_trim(grads_file%var(ivar)%name)), & 
+        grads_file%grid_avg_var(ivar)%name(1:len_trim(grads_file%grid_avg_var(ivar)%name)), &
         abs(grads_file%iz-grads_file%ia)+1,' 99 ', & 
-        grads_file%var(ivar)%description(1:len_trim(grads_file%var(ivar)%description))
+        grads_file%grid_avg_var(ivar)%description( &
+                                   1:len_trim(grads_file%grid_avg_var(ivar)%description))
     end do
 
     write(unit=grads_file%iounit,fmt='(a)') 'ENDVARS'
@@ -648,7 +650,7 @@ module output_grads
       write(unit=fstderr,fmt=*)  & 
         "write_grads: error closing control file"
       write(unit=fstderr,fmt=*) "iostat = ",ios
-      stop
+      error stop
     end if
 
     return
@@ -665,17 +667,17 @@ module output_grads
 !   None
 !---------------------------------------------------------
     use clubb_precision, only:  & 
-      time_precision    ! Variable(s)
+        time_precision    ! Variable(s)
 
     use calendar, only:  & 
-      compute_current_date ! Procedure(s)
+        compute_current_date ! Procedure(s)
 
     use calendar, only: & 
-      month_names ! Variable(s)
+        month_names ! Variable(s)
 
     use constants_clubb, only: &
-      sec_per_hr, & ! Variable(s)
-      min_per_hr
+        sec_per_hr, & ! Variable(s)
+        min_per_hr
 
     implicit none
 
@@ -733,9 +735,9 @@ module output_grads
 !   None
 !-------------------------------------------------------------------------------
     use constants_clubb, only: &
-      sec_per_day, & ! Constants
-      sec_per_hr, &
-      sec_per_min
+        sec_per_day, & ! Constants
+        sec_per_hr, &
+        sec_per_min
 
 
     implicit none
@@ -780,7 +782,7 @@ module output_grads
           dtwrite_ctl = int( dtwrite_days )
           units = 'dy'
         else
-          stop "Fatal error in determine_time_inc"
+          error stop "Fatal error in determine_time_inc"
         end if ! dwrite_days <= 99.
       end if ! dtwrite_hrs <= 99.
     end if ! dtwrite_min <= 99.
