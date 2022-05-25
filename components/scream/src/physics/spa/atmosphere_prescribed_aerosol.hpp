@@ -83,6 +83,7 @@ protected:
   // Keep track of field dimensions and the iteration count
   Int m_num_cols; 
   Int m_num_levs;
+  Int m_num_src_levs;
   Int m_nk_pack;
   Int m_nswbands = 14;
   Int m_nlwbands = 16;
