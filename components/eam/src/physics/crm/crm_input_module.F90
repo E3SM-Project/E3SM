@@ -47,6 +47,7 @@ module crm_input_module
 
       real(crm_rknd), allocatable :: t_vt(:,:)           ! CRM input of variance used for forcing tendency
       real(crm_rknd), allocatable :: q_vt(:,:)           ! CRM input of variance used for forcing tendency
+      real(crm_rknd), allocatable :: u_vt(:,:)           ! CRM input of variance used for forcing tendency
 
       ! inputs for P3
       real(crm_rknd), allocatable :: nccn(:,:)           ! CCN number concentration           [kg-1]
@@ -124,8 +125,10 @@ contains
 
       if (.not. allocated(input%t_vt)) allocate(input%t_vt(ncrms,nlev))
       if (.not. allocated(input%q_vt)) allocate(input%q_vt(ncrms,nlev))
+      if (.not. allocated(input%u_vt)) allocate(input%u_vt(ncrms,nlev))
       call prefetch(input%t_vt)
       call prefetch(input%q_vt)
+      call prefetch(input%u_vt)
 
       ! if (trim(MMF_microphysics_scheme) .eq. 'p3') then
          if (.not. allocated(input%nccn          ))  allocate(input%nccn(ncrms,nlev))
@@ -173,6 +176,7 @@ contains
 
       input%t_vt = 0
       input%q_vt = 0
+      input%u_vt = 0
 
       ! if (trim(MMF_microphysics_scheme) .eq. 'p3') then
          input%nccn           = 0
@@ -222,6 +226,7 @@ contains
 
       if (allocated(input%t_vt)) deallocate(input%t_vt)
       if (allocated(input%q_vt)) deallocate(input%q_vt)
+      if (allocated(input%u_vt)) deallocate(input%u_vt)
 
       if (allocated(input%nccn          ))  deallocate(input%nccn)
       if (allocated(input%nc_nuceat_tend))  deallocate(input%nc_nuceat_tend)
