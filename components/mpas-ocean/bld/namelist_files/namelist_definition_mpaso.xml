@@ -392,33 +392,6 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- mesoscale_eddy_parameterizations -->
-
-<entry id="config_eddying_resolution_taper" type="char*1024"
-	category="mesoscale_eddy_parameterizations" group="mesoscale_eddy_parameterizations">
-Control how the Redi and GM Bolus $\kappa$ value varies as a function of horizontal resolution
-
-Valid values: 'none' and 'ramp'
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_eddying_resolution_ramp_min" type="real"
-	category="mesoscale_eddy_parameterizations" group="mesoscale_eddy_parameterizations">
-Minimum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp.
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_eddying_resolution_ramp_max" type="real"
-	category="mesoscale_eddy_parameterizations" group="mesoscale_eddy_parameterizations">
-Maximum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp.
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
 <!-- Redi_isopycnal_mixing -->
 
 <entry id="config_use_Redi" type="logical"
@@ -498,6 +471,30 @@ Default: Defined in namelist_defaults.xml
 Redi diagonal terms (2 and 3) are turned off from layer 1 through config_Redi_min_layers_diag_terms-1, and on from config_Redi_min_layers_diag_terms to nVertLevels. The Redi diagonal terms are not guaranteed to produce bounded tracer fields, and in practice produce growing temperatures in a few columns with fewer than 5 vertical cells. Redi is meant for isopycnal mixing in the deep ocean, so not applying Redi diagonal terms in very shallow regions is an acceptable solution.
 
 Valid values: any integer between 0 (all layers on) and nVertLevels (all layers off)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_horizontal_taper" type="char*1024"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+Control how the Redi $\kappa$ value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007
+
+Valid values: 'none', 'ramp', 'RossbyRadius'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_horizontal_ramp_min" type="real"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+Minimum value in grid cell size for Redi $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_Redi_horizontal_taper is set to ramp.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_horizontal_ramp_max" type="real"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+Maximum value in grid cell size for Redi $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_Redi_horizontal_taper is set to ramp.
+
+Valid values: Any positive real value.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -613,6 +610,46 @@ Default: Defined in namelist_defaults.xml
 factor multiplying the Rhines length in the scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)
 
 Valid values: small positive values less than equal to one
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_horizontal_taper" type="char*1024"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Control how the GM Bolus value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007
+
+Valid values: 'none', 'ramp', 'RossbyRadius'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_horizontal_ramp_min" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Minimum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_horizontal_taper is set to ramp.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_horizontal_ramp_max" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Maximum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_horizontal_taper is set to ramp.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GMRedi_Rossby_ramp_min" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Minimum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM and Redi $\kappa$ ramp functions. Used when config_GM_horizontal_taper and/or config_Redi_horizontal_taper are set to RossbyRadius.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GMRedi_Rossby_ramp_max" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Maximum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM and Redi $\kappa$ ramp functions. Used when config_GM_horizontal_taper and/or config_Redi_horizontal_taper are set to RossbyRadius.
+
+Valid values: Any positive real value.
 Default: Defined in namelist_defaults.xml
 </entry>
 

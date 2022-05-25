@@ -178,6 +178,12 @@ contains
       allocate (redi_term2_edge(nTracers, nVertLevels, nEdges))
       allocate (redi_term3_topOfCell(nTracers, nVertLevels + 1, nCells))
 
+      ! RediKappa changes every time step if either:
+      !   config_Redi_horizontal_taper == 'RossbyRadius'  
+      !   config_Redi_closure == 'equalGM'
+      ! in that case, RediKappa is updated every time step in mpas_ocn_gm.F
+      ! For static RediKappa, it is set on init and remains unchanged.
+
       nCells = nCellsArray(2)
       !$omp parallel
       !$omp do schedule(runtime) private(i, iEdge)
@@ -498,7 +504,9 @@ contains
       type(mpas_pool_type), pointer :: forcingPool
 
       real(kind=RKIND), dimension(:), pointer :: RediKappa, RediKappaData
+      real(kind=RKIND), dimension(:), pointer :: RediHorizontalTaper
       real(kind=RKIND), dimension(:), pointer :: dcEdge
+      real(kind=RKIND) :: coef
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       integer :: k, iEdge
@@ -521,9 +529,12 @@ contains
          call mpas_pool_get_subpool(block%structs, 'forcing', forcingPool)
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
          call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
+         call mpas_pool_get_array(diagnosticsPool, 'RediHorizontalTaper', RediHorizontalTaper)
          call mpas_pool_get_array(forcingPool, 'RediKappaData', RediKappaData)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
+
+
          ! initialize Redi kappa array
          if (config_Redi_closure == 'constant') then
             !$omp parallel
@@ -533,7 +544,7 @@ contains
             end do
             !$omp end do
             !$omp end parallel
-          else if (config_Redi_closure == 'data') then
+         else if (config_Redi_closure == 'data') then
             ! read RediKappa in from input
             call mpas_log_write("config_Redi_closure = 'data'. "// &
                                 "Make sure that the variable RediKappa is read in from an input file.")
@@ -543,27 +554,42 @@ contains
             call mpas_dmpar_finalize(domain%dminfo)
          end if
 
-         ! Add resolution taper
-         if (config_eddying_resolution_taper == 'none') then
-            ! Nothing to do, as we just keep the same assignment as above.
-         else if (config_eddying_resolution_taper == 'ramp') then
+         ! Initialize horizontal taper
+         if (config_Redi_horizontal_taper == 'none' .or. &
+             config_Redi_horizontal_taper == 'RossbyRadius') then
+            ! For 'RossbyRadius', the taper is recomputed at every time step in
+            ! the ocn_GM_compute_Bolus_velocity subroutine
+            !$omp parallel
+            !$omp do schedule(runtime)
+            do iEdge = 1,nEdges
+               RediHorizontalTaper(iEdge) = 1.0_RKIND
+            end do
+            !$omp end do
+            !$omp end parallel
+         else if (config_Redi_horizontal_taper == 'ramp') then
+            coef = 1.0_RKIND &
+                    /(config_Redi_horizontal_ramp_max - config_Redi_horizontal_ramp_min)
             !$omp parallel
             !$omp do schedule(runtime) 
             do iEdge=1,nEdges
-               if (dcEdge(iEdge) <= config_eddying_resolution_ramp_min) then
+               if (dcEdge(iEdge) <= config_Redi_horizontal_ramp_min) then
                   RediKappa(iEdge) = 0.0_RKIND
-               else if (dcEdge(iEdge) >= config_eddying_resolution_ramp_max) then
+                  RediHorizontalTaper(iEdge) = 0.0_RKIND
+               else if (dcEdge(iEdge) >= config_Redi_horizontal_ramp_max) then
                   ! nothing to do, i.e. RediKappa(iCell) = RediKappa(iCell)
+                  RediHorizontalTaper(iEdge) = 1.0_RKIND
                else
                   RediKappa(iEdge) = RediKappa(iEdge) &
-                                     *(dcEdge(iEdge) - config_eddying_resolution_ramp_min) &
-                                     /(config_eddying_resolution_ramp_max - config_eddying_resolution_ramp_min)
+                                     *(dcEdge(iEdge) - config_Redi_horizontal_ramp_min) &
+                                     /(config_Redi_horizontal_ramp_max - config_Redi_horizontal_ramp_min)
+                  RediHorizontalTaper(iEdge) = coef &
+                      *(dcEdge(iEdge) - config_Redi_horizontal_ramp_min)
                end if
-            end do ! iCell
+            end do ! iEdge
             !$omp end do
             !$omp end parallel
          else
-            call mpas_log_write('Invalid choice of config_eddying_resolution_taper.', MPAS_LOG_CRIT)
+            call mpas_log_write('Invalid choice of config_Redi_horizontal_taper.', MPAS_LOG_CRIT)
             err = 1
             call mpas_dmpar_finalize(domain%dminfo)
          end if

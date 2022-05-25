@@ -289,20 +289,6 @@
 					possible_values="any positive real"
 		/>
 	</nml_record>
-	<nml_record name="mesoscale_eddy_parameterizations" mode="forward">
-		<nml_option name="config_eddying_resolution_taper" type="character" default_value="ramp" units="unitless"
-					description="Control how the Redi and GM Bolus $\kappa$ value varies as a function of horizontal resolution"
-					possible_values="'none' and 'ramp'"
-		/>
-		<nml_option name="config_eddying_resolution_ramp_min" type="real" default_value="20e3" units="m"
-					description="Minimum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp."
-					possible_values="Any positive real value."
-		/>
-		<nml_option name="config_eddying_resolution_ramp_max" type="real" default_value="30e3" units="m"
-					description="Maximum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp."
-					possible_values="Any positive real value."
-		/>
-	</nml_record>
 	<nml_record name="Redi_isopycnal_mixing" mode="forward">
 		<nml_option name="config_use_Redi" type="logical" default_value=".false." units="unitless"
 					description="If true, Redi isopycnal mixing is turned on"
@@ -343,6 +329,18 @@
 		<nml_option name="config_Redi_min_layers_diag_terms" type="integer" default_value="6" units="NA"
 					description="Redi diagonal terms (2 and 3) are turned off from layer 1 through config_Redi_min_layers_diag_terms-1, and on from config_Redi_min_layers_diag_terms to nVertLevels. The Redi diagonal terms are not guaranteed to produce bounded tracer fields, and in practice produce growing temperatures in a few columns with fewer than 5 vertical cells. Redi is meant for isopycnal mixing in the deep ocean, so not applying Redi diagonal terms in very shallow regions is an acceptable solution."
 					possible_values="any integer between 0 (all layers on) and nVertLevels (all layers off)"
+		/>
+		<nml_option name="config_Redi_horizontal_taper" type="character" default_value="ramp" units="unitless"
+					description="Control how the Redi $\kappa$ value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
+					possible_values="'none', 'ramp', 'RossbyRadius'"
+		/>
+		<nml_option name="config_Redi_horizontal_ramp_min" type="real" default_value="20e3" units="m"
+					description="Minimum value in grid cell size for Redi $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_Redi_horizontal_taper is set to ramp."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_Redi_horizontal_ramp_max" type="real" default_value="30e3" units="m"
+					description="Maximum value in grid cell size for Redi $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_Redi_horizontal_taper is set to ramp."
+					possible_values="Any positive real value."
 		/>
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
@@ -400,6 +398,26 @@
 		<nml_option name="config_GM_EG_Rhines_factor" type="real" default_value="0.3" units="NA"
 					description="factor multiplying the Rhines length in the scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)"
 					possible_values="small positive values less than equal to one"
+		/>
+		<nml_option name="config_GM_horizontal_taper" type="character" default_value="ramp" units="unitless"
+					description="Control how the GM Bolus value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
+					possible_values="'none', 'ramp', 'RossbyRadius'"
+		/>
+		<nml_option name="config_GM_horizontal_ramp_min" type="real" default_value="20e3" units="m"
+					description="Minimum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_horizontal_taper is set to ramp."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_GM_horizontal_ramp_max" type="real" default_value="30e3" units="m"
+					description="Maximum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_horizontal_taper is set to ramp."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_GMRedi_Rossby_ramp_min" type="real" default_value="0.5" units="unitless"
+					description="Minimum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM and Redi $\kappa$ ramp functions. Used when config_GM_horizontal_taper and/or config_Redi_horizontal_taper are set to RossbyRadius."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_GMRedi_Rossby_ramp_max" type="real" default_value="3.0" units="unitless"
+					description="Maximum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM and Redi $\kappa$ ramp functions. Used when config_GM_horizontal_taper and/or config_Redi_horizontal_taper are set to RossbyRadius."
+					possible_values="Any positive real value."
 		/>
 	</nml_record>
 	<nml_record name="Rayleigh_damping" mode="forward">
@@ -2287,13 +2305,13 @@
 		<var name="kiteAreasOnVertex" type="real" dimensions="vertexDegree nVertices" units="m^2"
 			 description="Area of the portions of each dual cell that are part of each cellsOnVertex."
 		/>
-		<var name="fEdge" type="real" dimensions="nEdges" units="s^{-1}"
+		<var name="fEdge" type="real" dimensions="nEdges" units="radians s^{-1}"
 			 description="Coriolis parameter at edges."
 		/>
-		<var name="fVertex" type="real" dimensions="nVertices" units="s^{-1}"
+		<var name="fVertex" type="real" dimensions="nVertices" units="radians s^{-1}"
 			 description="Coriolis parameter at vertices."
 		/>
-		<var name="fCell" type="real" dimensions="nCells" units="s^{-1}"
+		<var name="fCell" type="real" dimensions="nCells" units="radians s^{-1}"
 			 description="Coriolis parameter at cell centers."
 		/>
 		<var name="bed_elevation" type="real" dimensions="nCells" units="m"
@@ -2752,7 +2770,7 @@
 			packages="forwardMode;analysisMode"
 		/>
 		<var name="betaEdge" type="real" dimensions="nEdges Time" units="m^{-1} s^{-1}"
-			description="meridional gradient of the coriolis parameter"
+			description="meridional gradient of the coriolis parameter, used in the mesoscale eddy parameterization schemes"
 		/>
 		<var name="gmKappaScaling" type="real" dimensions="nVertLevelsP1 nEdges Time" units="NA" default_value="1.0"
 			description="spatially and depth varying GM kappa.  The scaling is based on the Brunt Vaisala Frequency relative to a maximum value below the mixed layer, follows from Danabasoglu and Marshall 2007.  If config_GM_closure is not set to N2_dependent the scaling value is set to 1 everywhere."
@@ -2883,10 +2901,6 @@
 			 description="GM stream function"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="gmStreamFuncTopOfCell" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-1}"
-			 description="GM stream function reconstructed to the cell centers"
-			 packages="forwardMode;analysisMode"
-		/>
 		<var name="GMStreamFuncX" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
 			 description="GM stream function"
 			 packages="forwardMode;analysisMode"
@@ -2908,15 +2922,23 @@
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="gmBolusKappa" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
-			 description="GM Bolus Kappa value.  This is constant in time, and set at init based on the constant or ramp fuction."
+			 description="GM Bolus Kappa value.  On output, it has NOT been multiplied by the horizontal taper array gmHorizontalTaper, because that is applied at the end to the normalGMBolusVelocity variable, not to the gmBolusKappa."
 			 packages="gm"
 		/>
 		<var name="RediKappa" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
-			 description="Redi Kappa value.  This is constant in time, and set at init based on the constant or ramp fuction."
+			 description="Redi Kappa value.  On output, it has already been multiplied by the horizontal taper array RediHorizontalTaper (as opposed to gmBolusKappa, which has not been multiplied by the horizontal taper)."
 			 packages="gm"
 		/>
-		<var name="gmResolutionTaper" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
-			 description="resolution tapering for GM and Redi"
+		<var name="RediHorizontalTaper" type="real" dimensions="nEdges Time" units="unitless"
+			 description="Horizontal tapering for Redi. Varies between 0 and 1."
+			 packages="gm"
+		/>
+		<var name="gmHorizontalTaper" type="real" dimensions="nEdges Time" units="unitless"
+			 description="Horizontal tapering for GM. Varies between 0 and 1."
+			 packages="gm"
+		/>
+		<var name="RossbyRadius" type="real" dimensions="nEdges Time" units="m"
+			 description="Rossby Radius, computed in GM routine for some settings"
 			 packages="gm"
 		/>
 		<var name="surfaceFluxAttenuationCoefficient" type="real" dimensions="nCells Time" units="m"
