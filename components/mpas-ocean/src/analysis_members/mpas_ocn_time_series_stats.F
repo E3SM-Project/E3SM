@@ -891,6 +891,11 @@ subroutine start_state(domain, instance, series, valid_input, err)
     valid_input(b) = check_real_time(domain % blocklist % allFields, &
       field_name)
 
+    ! We'll make sure that Time and Time_bnds get included in a way separate
+    ! from this list
+    if ((trim(field_name) == 'Time') .or. (trim(field_name) == 'Time_bnds')) &
+       valid_input(b) = .false.
+
     if (valid_input(b)) then
       series % number_of_variables = series % number_of_variables + 1
     end if
@@ -988,11 +993,11 @@ subroutine start_state(domain, instance, series, valid_input, err)
       field_name, series % buffers(b) % reset_alarm_ID)
 
     !
-    ! counter, xtime_start, and xtime_end is not allocated here,
-    ! because it is part of the restart stream and output_stream,
+    ! counter, xtime_start, xtime_end, Time and Time_bnds are not allocated here,
+    ! because they are part of the restart stream and output_stream,
     ! and not just the internal AM state
     !
-    ! it is allocated in modify_stream
+    ! they are allocated in modify_stream
     !
   end do
 end subroutine start_state
@@ -1163,6 +1168,59 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
       call mpas_stream_mgr_add_field(domain % streamManager, &
         restart_stream_name, out_field_name, ierr=err)
     end if
+
+    ! Time
+    in_field_name = 'Time'
+    ! get the info of the field
+    call mpas_pool_get_field_info(domain % blocklist % allFields, &
+      in_field_name, info)
+
+    if (series % number_of_buffers > 1) then
+      out_field_name = output_naming(storage_prefix, op_name, in_field_name, buf_identifier)
+    else
+      out_field_name = output_naming(storage_prefix, op_name, in_field_name)
+    end if
+
+    ! create the field and add to pool
+    call add_new_field(info, in_field_name, out_field_name, &
+      domain % blocklist % allFields, amPool)
+
+    ! add the field to the output stream
+    call mpas_stream_mgr_add_field(domain % streamManager, &
+      output_stream_name, out_field_name, ierr=err)
+
+    ! put it in the restart stream
+    if (restartStreamEnabled) then
+       call mpas_stream_mgr_add_field(domain % streamManager, &
+         restart_stream_name, out_field_name, ierr=err)
+    end if
+
+    ! Time_bnds
+    in_field_name = 'Time_bnds'
+    ! get the info of the field
+    call mpas_pool_get_field_info(domain % blocklist % allFields, &
+      in_field_name, info)
+
+    if (series % number_of_buffers > 1) then
+      out_field_name = output_naming(storage_prefix, op_name, in_field_name, buf_identifier)
+    else
+      out_field_name = output_naming(storage_prefix, op_name, in_field_name)
+    end if
+
+    ! create the field and add to pool
+    call add_new_field(info, in_field_name, out_field_name, &
+      domain % blocklist % allFields, amPool)
+
+    ! add the field to the output stream
+    call mpas_stream_mgr_add_field(domain % streamManager, &
+      output_stream_name, out_field_name, ierr=err)
+
+    ! put it in the restart stream
+    if (restartStreamEnabled) then
+       call mpas_stream_mgr_add_field(domain % streamManager, &
+         restart_stream_name, out_field_name, ierr=err)
+    end if
+
   end do
 
   ! set up the variables
