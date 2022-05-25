@@ -4075,9 +4075,15 @@ Default: false
 </entry>
 
 <entry id="MMF_microphysics_scheme" type="char*16" category="conv"
-       group="phys_ctl_nl" valid_values="m2005, sam1mom" >
+       group="phys_ctl_nl" valid_values="m2005, sam1mom, p3" >
 Type of E3SM-MMF microphysics scheme employed.
 Default: sam1mom
+</entry>
+
+<entry id="MMF_turbulence_scheme" type="char*16" category="conv"
+       group="phys_ctl_nl" valid_values="smag, shoc" >
+Type of E3SM-MMF turbulence scheme employed.
+Default: smag
 </entry>
 
 <entry id="MMF_orientation_angle" type="real" category="conv"

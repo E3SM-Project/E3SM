@@ -810,6 +810,9 @@
 <!-- MMF -->
 <MMF_microphysics_scheme MMF_microphysics_scheme="sam1mom">sam1mom</MMF_microphysics_scheme>
 <MMF_microphysics_scheme MMF_microphysics_scheme="m2005">m2005</MMF_microphysics_scheme>
+<MMF_microphysics_scheme MMF_microphysics_scheme="p3">p3</MMF_microphysics_scheme>
+<MMF_turbulence_scheme MMF_turbulence_scheme="smag">smag</MMF_turbulence_scheme>
+<MMF_turbulence_scheme MMF_turbulence_scheme="shoc">shoc</MMF_turbulence_scheme>
 <use_MMF                  > .false.</use_MMF>
 <use_MMF    use_MMF="1"   > .true. </use_MMF>
 <use_ECPP                 > .false.</use_ECPP>
@@ -1035,12 +1038,14 @@
 <use_crm_accel    use_MMF="0">.false.</use_crm_accel>
 <crm_accel_uv     use_MMF="0">.false.</crm_accel_uv>
 <crm_accel_factor use_MMF="0">0</crm_accel_factor>
-<use_crm_accel    use_MMF="1" MMF_microphysics_scheme="sam1mom">.true.</use_crm_accel>
-<crm_accel_uv     use_MMF="1" MMF_microphysics_scheme="sam1mom">.true.</crm_accel_uv>
-<!-- Disable MMF MSA for 2-mom microphyics -->
+<!-- Enable MSA by default -->
+<use_crm_accel    use_MMF="1">.true.</use_crm_accel>
+<crm_accel_uv     use_MMF="1">.true.</crm_accel_uv>
+<crm_accel_factor use_MMF="1">2</crm_accel_factor>
+<!-- Disable MSA for old 2-mom micro scheme (fortran CRM only) -->
 <use_crm_accel    use_MMF="1" MMF_microphysics_scheme="m2005">.false.</use_crm_accel>
 <crm_accel_uv     use_MMF="1" MMF_microphysics_scheme="m2005">.false.</crm_accel_uv>
-<crm_accel_factor use_MMF="1">2</crm_accel_factor>
+
 
 <!-- Cloud fraction -->
 <cldfrc_freeze_dry             >.true.</cldfrc_freeze_dry>
@@ -1353,6 +1358,11 @@
 <dt_tracer_factor    use_MMF="1" dyn_target="theta-l" hgrid="ne30np4"> 4 </dt_tracer_factor>
 <hypervis_subcycle_q use_MMF="1" dyn_target="theta-l" hgrid="ne30np4"> 4 </hypervis_subcycle_q>
 
+<!-- For now, the P3/SHOC build still tries to build Kokkos,  -->
+<!-- so just disable COMPOSE and use Eulerian tracer transport -->
+<transport_alg       use_MMF="1" dyn_target="theta-l">0</transport_alg>
+<hypervis_subcycle_q use_MMF="1" dyn_target="theta-l">1</hypervis_subcycle_q>
+<dt_tracer_factor    use_MMF="1" dyn_target="theta-l">1</dt_tracer_factor>
 
 <!-- ================================================================== -->
 <!-- 
@@ -1643,6 +1653,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <!-- Ice nucleation mods-->
 <use_hetfrz_classnuc phys="default">.true.</use_hetfrz_classnuc>
 <use_hetfrz_classnuc MMF_microphysics_scheme="sam1mom">.false.</use_hetfrz_classnuc>
+<use_hetfrz_classnuc MMF_microphysics_scheme="p3">.false.</use_hetfrz_classnuc>
 <use_preexisting_ice phys="default">.false.</use_preexisting_ice>
 <hist_hetfrz_classnuc phys="default">.false.</hist_hetfrz_classnuc>
 <micro_mg_dcs_tdep phys="default">.true.</micro_mg_dcs_tdep>

@@ -1597,6 +1597,12 @@ if ($rad_pkg eq 'rrtmg' or $rad_pkg eq 'rrtmgp') {
             add_default($nl, 'liqcldoptics', 'val' => 'gammadist');
             add_default($nl, 'icecldoptics', 'val' => 'mitchell');
         }
+        if ($cfg->get('MMF_microphysics_scheme') eq 'p3') {
+            add_default($nl, 'liqcldoptics', 'val' => 'slingo');
+            add_default($nl, 'icecldoptics', 'val' => 'ebertcurry');
+            # add_default($nl, 'liqcldoptics', 'val' => 'gammadist');
+            # add_default($nl, 'icecldoptics', 'val' => 'mitchell');
+        }
     } else {
         add_default($nl, 'liqcldoptics');
         add_default($nl, 'icecldoptics');
