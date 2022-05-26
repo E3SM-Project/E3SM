@@ -21,8 +21,6 @@ module HydrologyDrainageMod
   use VegetationType    , only : veg_pp
 
   use elm_instMod   , only : ep_betr
-  use WaterStateType, only : waterstate_vars
-  use WaterFluxType , only : waterflux_vars
 
   use timeinfoMod
   !

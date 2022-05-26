@@ -22,8 +22,6 @@ Module HydrologyNoDrainageMod
   use TopounitDataType  , only : top_as, top_af ! Atmospheric state and flux variables
   use elm_instMod       , only : alm_fates , ep_betr
 
-  use WaterFluxType  ,only  : waterflux_vars
-  use WaterStateType ,only  : waterstate_vars
 
   use timeinfoMod
   !
