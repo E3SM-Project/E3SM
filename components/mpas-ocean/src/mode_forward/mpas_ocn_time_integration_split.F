@@ -1817,7 +1817,7 @@ module ocn_time_integration_split
             !$omp end parallel
 #endif
 
-            if (varinp_compute_active_tracer_budgets) then
+            if (config_compute_active_tracer_budgets) then
 
 #ifdef MPAS_OPENACC
                !$acc loop gang
