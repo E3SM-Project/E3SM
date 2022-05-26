@@ -1610,7 +1610,7 @@ module ocn_time_integration_split
             !$acc enter data copyin(layerThicknessCur)
             !$acc enter data copyin(layerThicknessTend)
             !$acc enter data copyin(normalBaroclinicVelocityCur)
-            if (varinp_compute_active_tracer_budgets) then
+            if (config_compute_active_tracer_budgets) then
                !$acc update device(activeTracerHorizontalAdvectionEdgeFlux)
                !$acc update device(activeTracerHorizontalAdvectionTendency)
                !$acc update device(activeTracerVerticalAdvectionTendency)
@@ -2177,7 +2177,7 @@ module ocn_time_integration_split
          elseif (splitExplicitStep == numTSIterations) then
             !$acc exit data delete(layerThicknessCur, layerThicknessTend)
             !$acc exit data delete(normalBaroclinicVelocityCur)
-            if (varinp_compute_active_tracer_budgets) then
+            if (config_compute_active_tracer_budgets) then
                !$acc update host(activeTracerHorizontalAdvectionEdgeFlux)
                !$acc update host(activeTracerHorizontalAdvectionTendency)
                !$acc update host(activeTracerVerticalAdvectionTendency)
