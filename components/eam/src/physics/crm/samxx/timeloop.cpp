@@ -1,5 +1,6 @@
 
 #include "timeloop.h"
+#include "samxx_utils.h"
 
 void timeloop() {
   YAKL_SCOPE( crm_output_subcycle_factor , :: crm_output_subcycle_factor );
@@ -75,7 +76,7 @@ void timeloop() {
 
       //---------------------------------------------------------
       //   Ice fall-out
-      if (docloud) { 
+      if (is_same_str(microphysics_scheme, "sam1mom") == 0) {
         ice_fall();
       }
 
@@ -96,7 +97,7 @@ void timeloop() {
       //-----------------------------------------------------------
       //  SGS physics:
       if (dosgs) {
-        sgs_proc();
+        if (is_same_str(turbulence_scheme, "smag") == 0) { sgs_proc(); }
       }
 
       //----------------------------------------------------------
@@ -109,8 +110,8 @@ void timeloop() {
 
       //----------------------------------------------------------
       //  SGS effects on momentum:
-      if (dosgs) { 
-        sgs_mom();
+      if (dosgs) {
+        if (is_same_str(turbulence_scheme, "smag") == 0) { sgs_mom(); }
       }
 
 #ifdef MMF_ESMT
@@ -150,8 +151,8 @@ void timeloop() {
 
       //---------------------------------------------------------
       //      SGS effects on scalars :
-      if (dosgs) { 
-        sgs_scalars();
+      if (dosgs) {
+        if (is_same_str(turbulence_scheme, "smag") == 0) { sgs_scalars(); }
       }
 
       //-----------------------------------------------------------
@@ -160,7 +161,7 @@ void timeloop() {
       //-----------------------------------------------------------
       //       Cloud condensation/evaporation and precipitation processes:
       if (docloud || dosmoke) {
-        micro_proc();
+        if (is_same_str(microphysics_scheme, "sam1mom") == 0) { micro_proc(); }
       }
 
       //-----------------------------------------------------------
