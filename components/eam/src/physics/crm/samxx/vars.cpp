@@ -28,8 +28,6 @@ void allocate() {
   ustar            = real1d( "ustar              "           , ncrms);
   wnd              = real1d( "wnd                "           , ncrms);
   qtot             = real2d( "qtot               "    ,    20, ncrms);
-  colprec          = real1d( "colprec            "           , ncrms);
-  colprecs         = real1d( "colprecs           "           , ncrms);
   bflx             = real1d( "bflx               "           , ncrms);
   flag_top         = int3d ( "flag_top        " ,   ny  , nx , ncrms);  
   accrsc           = real2d( "accrsc          " , nzm, ncrms);
@@ -52,9 +50,32 @@ void allocate() {
   mkadv            = real3d( "mkadv           " , nmicro_fields, nz, ncrms);
   mkdiff           = real3d( "mkdiff          " , nmicro_fields, nz, ncrms);
   qn               = real4d( "qn              " , nzm, ny, nx, ncrms);
+  qc               = real4d( "qc              " , nzm, ny, nx, ncrms);
   qpsrc            = real2d( "qpsrc           " , nz, ncrms);
   qpevp            = real2d( "qpevp           " , nz, ncrms);
   flag_precip      = intHost1d( "flag_precip     " , nmicro_fields);
+
+  nccn               = real2d( "nccn            " , nzm, ncrms);
+  nc_nuceat_tend     = real2d( "nc_nuceat_tend  " , nzm, ncrms);
+  ni_activated       = real2d( "ni_activated    " , nzm, ncrms);
+  diag_eff_radius_qc = real2d( "diag_eff_radius_qc", nzm, ncrms);
+  diag_eff_radius_qi = real2d( "diag_eff_radius_qi", nzm, ncrms);
+  precip_total_tend  = real2d( "precip_total_tend" , nzm, ncrms);
+  qr_evap_tend       = real2d( "qr_evap_tend     " , nzm, ncrms);
+  t_prev             = real4d( "t_prev           " , nzm, ny, nx, ncrms);
+  q_prev             = real4d( "q_prev           " , nzm, ny, nx, ncrms);
+
+  qv2qi_depos_tend   = real2d( "qv2qi_depos_tend", nzm, ncrms);
+  precip_liq_surf    = real2d( "precip_liq_surf", nzm, ncrms);
+  precip_ice_surf    = real2d( "precip_ice_surf", nzm, ncrms);
+  rho_qi             = real2d( "rho_qi", nzm, ncrms);
+  precip_liq_flux    = real2d( "precip_liq_flux", nzm, ncrms);
+  precip_ice_flux    = real2d( "precip_ice_flux", nzm, ncrms);
+
+  liq_ice_exchange  = real2d( "liq_ice_exchange", nzm, ncrms);
+  vap_liq_exchange  = real2d( "vap_liq_exchange", nzm, ncrms);
+  vap_ice_exchange  = real2d( "vap_ice_exchange", nzm, ncrms);
+
 #ifdef MMF_ESMT
   u_esmt           = real4d( "u_esmt          ", nzm, dimy_s, dimx_s, ncrms);
   v_esmt           = real4d( "v_esmt          ", nzm, dimy_s, dimx_s, ncrms);
@@ -74,8 +95,8 @@ void allocate() {
   z0               = real1d( "z0              " , ncrms ); 
   uhl              = real1d( "uhl             " , ncrms ); 
   vhl              = real1d( "vhl             " , ncrms ); 
-  taux0            = real1d( "taux0           " , ncrms ); 
-  tauy0            = real1d( "tauy0           " , ncrms ); 
+  phis             = real1d( "phis            " , ncrms ); 
+  psfc             = real1d( "psfc            " , ncrms ); 
   sgs_field        = real5d( "sgs_field       " , nsgs_fields      , nzm , dimy_s , dimx_s , ncrms );
   sgs_field_diag   = real5d( "sgs_field_diag  " , nsgs_fields_diag , nzm , dimy_d , dimx_d , ncrms );
   grdf_x           = real2d( "grdf_x          "                    , nzm                   , ncrms );
@@ -88,6 +109,7 @@ void allocate() {
   pres             = real2d( "pres            "                        , nzm    , ncrms ); 
   zi               = real2d( "zi              "                        , nz     , ncrms ); 
   presi            = real2d( "presi           "                        , nz     , ncrms ); 
+  pdel             = real2d( "pdel            "                        , nzm    , ncrms );
   adz              = real2d( "adz             "                        , nzm    , ncrms ); 
   adzw             = real2d( "adzw            "                        , nz     , ncrms ); 
   dz               = real1d( "dz              "                                 , ncrms ); 
@@ -188,15 +210,15 @@ void allocate() {
   cloudtoptemp     = real3d( "cloudtoptemp    "           , ny         , nx     , ncrms ); 
   crm_clear_rh_cnt = int2d(  "crm_clear_rh_cnt"                        , nzm    , ncrms );
 
-  t_vt             = real2d( "t_vt           "                        , nzm    , ncrms ); 
-  q_vt             = real2d( "q_vt           "                        , nzm    , ncrms ); 
-  u_vt             = real2d( "u_vt           "                        , nzm    , ncrms ); 
-  t_vt_tend        = real2d( "t_vt_tend      "                        , nzm    , ncrms ); 
-  q_vt_tend        = real2d( "q_vt_tend      "                        , nzm    , ncrms ); 
-  u_vt_tend        = real2d( "u_vt_tend      "                        , nzm    , ncrms ); 
-  t_vt_pert        = real4d( "t_vt_pert      "     , nzm , ny         , nx     , ncrms ); 
-  q_vt_pert        = real4d( "q_vt_pert      "     , nzm , ny         , nx     , ncrms ); 
-  u_vt_pert        = real4d( "u_vt_pert      "     , nzm , ny         , nx     , ncrms ); 
+  t_vt             = real2d( "t_vt            "                        , nzm    , ncrms ); 
+  q_vt             = real2d( "q_vt            "                        , nzm    , ncrms ); 
+  u_vt             = real2d( "u_vt            "                        , nzm    , ncrms ); 
+  t_vt_tend        = real2d( "t_vt_tend       "                        , nzm    , ncrms ); 
+  q_vt_tend        = real2d( "q_vt_tend       "                        , nzm    , ncrms ); 
+  u_vt_tend        = real2d( "u_vt_tend       "                        , nzm    , ncrms ); 
+  t_vt_pert        = real4d( "t_vt_pert       "     , nzm , ny         , nx     , ncrms ); 
+  q_vt_pert        = real4d( "q_vt_pert       "     , nzm , ny         , nx     , ncrms ); 
+  u_vt_pert        = real4d( "u_vt_pert       "     , nzm , ny         , nx     , ncrms ); 
 
   yakl::memset(t00               ,0.);
   yakl::memset(tln               ,0.);
@@ -223,8 +245,6 @@ void allocate() {
   yakl::memset(ustar             ,0.);
   yakl::memset(wnd               ,0.);
   yakl::memset(qtot              ,0.);
-  yakl::memset(colprec           ,0.);
-  yakl::memset(colprecs          ,0.);
   yakl::memset(bflx              ,0.);
   yakl::memset(flag_top          ,0 );
   yakl::memset(accrsc            ,0.);
@@ -250,6 +270,28 @@ void allocate() {
   yakl::memset(qpsrc             ,0.);
   yakl::memset(qpevp             ,0.);
   yakl::memset(flag_precip       ,0 );
+
+  yakl::memset(nccn              ,0 );
+  yakl::memset(nc_nuceat_tend    ,0 );
+  yakl::memset(ni_activated      ,0 );
+  yakl::memset(diag_eff_radius_qc,0 );
+  yakl::memset(diag_eff_radius_qi,0 );
+  yakl::memset(precip_total_tend, 0 );
+  yakl::memset(qr_evap_tend     , 0 );
+  yakl::memset(t_prev           , 0 );
+  yakl::memset(q_prev           , 0 );
+
+  yakl::memset(qv2qi_depos_tend  , 0);
+  yakl::memset(precip_liq_surf   , 0);
+  yakl::memset(precip_ice_surf   , 0);
+  yakl::memset(rho_qi            , 0);
+  yakl::memset(precip_liq_flux   , 0);
+  yakl::memset(precip_ice_flux   , 0);
+
+  yakl::memset(liq_ice_exchange  , 0);
+  yakl::memset(vap_liq_exchange  , 0);
+  yakl::memset(vap_ice_exchange  , 0);
+
   yakl::memset(fcorz             ,0.);
   yakl::memset(fcor              ,0.);
   yakl::memset(longitude0        ,0.);
@@ -257,8 +299,8 @@ void allocate() {
   yakl::memset(z0                ,0.);
   yakl::memset(uhl               ,0.);
   yakl::memset(vhl               ,0.);
-  yakl::memset(taux0             ,0.);
-  yakl::memset(tauy0             ,0.);
+  yakl::memset(phis              ,0.);
+  yakl::memset(psfc              ,0.);
   yakl::memset(sgs_field         ,0.);
   yakl::memset(sgs_field_diag    ,0.);
   yakl::memset(grdf_x            ,0.);
@@ -271,6 +313,7 @@ void allocate() {
   yakl::memset(pres              ,0.);
   yakl::memset(zi                ,0.);
   yakl::memset(presi             ,0.);
+  yakl::memset(pdel              ,0.);
   yakl::memset(adz               ,0.);
   yakl::memset(adzw              ,0.);
   yakl::memset(dz                ,0.);
@@ -395,13 +438,12 @@ void allocate() {
 
 
 void init_values() {
-  YAKL_SCOPE( z0   , ::z0  );
-  YAKL_SCOPE( CF3D , ::CF3D );
+  YAKL_SCOPE( z0  , ::z0  );
+  YAKL_SCOPE( CF3D, ::CF3D);
 
-  flag_precip(0) = 0;
-  flag_precip(1) = 1;
+  // flag_precip(0) = 0;
+  // flag_precip(1) = 1;
 
-  dosubsidence = false    ;
   ug = 0.                 ;
   vg = 0.                 ;
   les = false             ;
@@ -428,6 +470,7 @@ void init_values() {
   nb=2;
   nc=3;
 
+  // Need a different initialization for SHOC!
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     CF3D(k,j,i,icrm) = 1.;
   });
@@ -437,50 +480,8 @@ void init_values() {
   compute_reffi = false                 ;
   dx = 0.                               ;
   dy = 0.                               ;
-  doconstdz = false                     ;
   nstop =0                              ;
-  nelapse =999999999                    ;
   dt=0.                                 ;
-  day0=0.                               ;
-  nrad =1                               ;
-  nrestart =0                           ;
-  nstat =1000                           ;
-  nstatfrq =50                          ;
-  restart_sep =false                    ;
-  nrestart_skip =0                      ;
-  output_sep =false                     ;
-  doisccp = false                       ;
-  domodis = false                       ;
-  domisr = false                        ;
-  dosimfilesout = false                 ;
-  doSAMconditionals = false             ;
-  dosatupdnconditionals = false         ;
-  doscamiopdata = false                 ;
-  dozero_out_day0 = false               ;
-  nsave3Dstart =99999999                ;
-  nsave3Dend  =99999999                 ;
-  save3Dbin =false                      ;
-  save3Dsep =false                      ;
-  qnsave3D =0.                          ;
-  dogzip3D =false                       ;
-  rad3Dout = false                      ;
-  nsave2D =1000                         ;
-  nsave2Dstart =99999999                ;
-  nsave2Dend =99999999                  ;
-  save2Dbin =false                      ;
-  save2Dsep =false                      ;
-  save2Davg =false                      ;
-  dogzip2D =false                       ;
-  nstatmom =1000                        ;
-  nstatmomstart =99999999               ;
-  nstatmomend =99999999                 ;
-  savemomsep =false                     ;
-  savemombin =false                     ;
-  nmovie =1000                          ;
-  nmoviestart =99999999                 ;
-  nmovieend =99999999                   ;
-  isInitialized_scamiopdata = false     ;
-  wgls_holds_omega = false              ;
   advect_sgs = false                    ;
 }
 
@@ -511,8 +512,6 @@ void finalize() {
   ustar            = real1d();
   wnd              = real1d();
   qtot             = real2d();
-  colprec          = real1d();
-  colprecs         = real1d();
   bflx             = real1d();
   flag_top         = int3d ();  
   accrsc           = real2d();
@@ -535,9 +534,33 @@ void finalize() {
   mkadv            = real3d();
   mkdiff           = real3d();
   qn               = real4d();
+  qc               = real4d();
   qpsrc            = real2d();
   qpevp            = real2d();
   flag_precip      = intHost1d();
+
+  
+  nccn               = real2d();
+  nc_nuceat_tend     = real2d();
+  ni_activated       = real2d();
+  diag_eff_radius_qc = real2d();
+  diag_eff_radius_qi = real2d();
+  precip_total_tend  = real2d();
+  qr_evap_tend       = real2d();
+  t_prev             = real4d();
+  q_prev             = real4d();
+
+  qv2qi_depos_tend   = real2d();
+  precip_liq_surf    = real2d();
+  precip_ice_surf    = real2d();
+  rho_qi             = real2d();
+  precip_liq_flux    = real2d();
+  precip_ice_flux    = real2d();
+
+  liq_ice_exchange  = real2d();
+  vap_liq_exchange  = real2d();
+  vap_ice_exchange  = real2d();
+
   fcorz            = real1d(); 
   fcor             = real1d(); 
   longitude0       = real1d(); 
@@ -545,8 +568,8 @@ void finalize() {
   z0               = real1d(); 
   uhl              = real1d(); 
   vhl              = real1d(); 
-  taux0            = real1d(); 
-  tauy0            = real1d(); 
+  phis             = real1d();
+  psfc             = real1d();
   sgs_field        = real5d();
   sgs_field_diag   = real5d();
   grdf_x           = real2d();
@@ -558,7 +581,8 @@ void finalize() {
   z                = real2d(); 
   pres             = real2d(); 
   zi               = real2d(); 
-  presi            = real2d(); 
+  presi            = real2d();
+  pdel             = real2d();
   adz              = real2d(); 
   adzw             = real2d(); 
   dz               = real1d(); 
@@ -684,49 +708,75 @@ void finalize() {
 
 
 
-void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, real *crm_input_zmid_p, real *crm_input_zint_p, 
-                            real *crm_input_pmid_p, real *crm_input_pint_p, real *crm_input_pdel_p, real *crm_input_ul_p, real *crm_input_vl_p, 
-                            real *crm_input_tl_p, real *crm_input_qccl_p, real *crm_input_qiil_p, real *crm_input_ql_p, real *crm_input_tau00_p, 
+void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p,
+                            real *crm_input_zmid_p, real *crm_input_zint_p,
+                            real *crm_input_pmid_p, real *crm_input_pint_p, real *crm_input_pdel_p,
+                            real *crm_input_ul_p, real *crm_input_vl_p, real *crm_input_tl_p,
+                            real *crm_input_qccl_p, real *crm_input_qiil_p, real *crm_input_ql_p,
+                            real *crm_input_tau00_p, real *crm_input_phis_p, real *crm_input_ps_p,
 #ifdef MMF_ESMT
                             real *crm_input_ul_esmt_p, real *crm_input_vl_esmt_p,
 #endif
                             real *crm_input_t_vt_p, real *crm_input_q_vt_p, real *crm_input_u_vt_p,
-                            real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p, real *crm_state_temperature_p, 
-                            real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p, real *crm_rad_qrad_p, real *crm_output_subcycle_factor_p, 
-                            real *lat0_p, real *long0_p, int *gcolp_p, real *crm_output_cltot_p, real *crm_output_clhgh_p, real *crm_output_clmed_p,
-                            real *crm_output_cllow_p) {
+                            real *crm_input_nccn_p, real *crm_input_nc_nuceat_tend_p, real *crm_input_ni_activated_p,
+                            real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p,
+                            real *crm_state_temperature_p, real *crm_state_qv_p, real *crm_state_qp_p, real *crm_state_qn_p,
+                            real *crm_state_qc_p, real *crm_state_nc_p, real *crm_state_qr_p, real *crm_state_nr_p,
+                            real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qm_p, real *crm_state_bm_p,
+                            real *crm_state_t_prev_p, real *crm_state_q_prev_p,
+                            real *crm_rad_qrad_p, real *crm_output_subcycle_factor_p,
+                            real *lat0_p, real *long0_p, int *gcolp_p,
+                            real *crm_output_cltot_p, real *crm_output_clhgh_p,
+                            real *crm_output_clmed_p, real *crm_output_cllow_p) {
 
   // Wrap the pointers we're going to copy to device Arrays
-  realHost1d crm_input_bflxls          = realHost1d( "crm_input_bflxls        ",crm_input_bflxls_p                                         , pcols);
-  realHost1d crm_input_wndls           = realHost1d( "crm_input_wndls         ",crm_input_wndls_p                                          , pcols);
-  realHost2d crm_input_zmid            = realHost2d( "crm_input_zmid          ",crm_input_zmid_p                              , plev       , pcols); 
-  realHost2d crm_input_zint            = realHost2d( "crm_input_zint          ",crm_input_zint_p                              , plev+1     , pcols); 
-  realHost2d crm_input_pmid            = realHost2d( "crm_input_pmid          ",crm_input_pmid_p                              , plev       , pcols); 
-  realHost2d crm_input_pint            = realHost2d( "crm_input_pint          ",crm_input_pint_p                              , plev+1     , pcols); 
-  realHost2d crm_input_pdel            = realHost2d( "crm_input_pdel          ",crm_input_pdel_p                              , plev       , pcols); 
-  realHost2d crm_input_ul              = realHost2d( "crm_input_ul            ",crm_input_ul_p                                , plev       , pcols); 
-  realHost2d crm_input_vl              = realHost2d( "crm_input_vl            ",crm_input_vl_p                                , plev       , pcols); 
-  realHost2d crm_input_tl              = realHost2d( "crm_input_tl            ",crm_input_tl_p                                , plev       , pcols); 
-  realHost2d crm_input_qccl            = realHost2d( "crm_input_qccl          ",crm_input_qccl_p                              , plev       , pcols); 
-  realHost2d crm_input_qiil            = realHost2d( "crm_input_qiil          ",crm_input_qiil_p                              , plev       , pcols); 
-  realHost2d crm_input_ql              = realHost2d( "crm_input_ql            ",crm_input_ql_p                                , plev       , pcols); 
-  realHost1d crm_input_tau00           = realHost1d( "crm_input_tau00         ",crm_input_tau00_p                                          , pcols); 
+  realHost1d crm_input_bflxls          = realHost1d( "crm_input_bflxls         ",crm_input_bflxls_p                                         , pcols);
+  realHost1d crm_input_wndls           = realHost1d( "crm_input_wndls          ",crm_input_wndls_p                                          , pcols);
+  realHost2d crm_input_zmid            = realHost2d( "crm_input_zmid           ",crm_input_zmid_p                              , plev       , pcols); 
+  realHost2d crm_input_zint            = realHost2d( "crm_input_zint           ",crm_input_zint_p                              , plev+1     , pcols); 
+  realHost2d crm_input_pmid            = realHost2d( "crm_input_pmid           ",crm_input_pmid_p                              , plev       , pcols); 
+  realHost2d crm_input_pint            = realHost2d( "crm_input_pint           ",crm_input_pint_p                              , plev+1     , pcols); 
+  realHost2d crm_input_pdel            = realHost2d( "crm_input_pdel           ",crm_input_pdel_p                              , plev       , pcols); 
+  realHost2d crm_input_ul              = realHost2d( "crm_input_ul             ",crm_input_ul_p                                , plev       , pcols); 
+  realHost2d crm_input_vl              = realHost2d( "crm_input_vl             ",crm_input_vl_p                                , plev       , pcols); 
+  realHost2d crm_input_tl              = realHost2d( "crm_input_tl             ",crm_input_tl_p                                , plev       , pcols); 
+  realHost2d crm_input_qccl            = realHost2d( "crm_input_qccl           ",crm_input_qccl_p                              , plev       , pcols); 
+  realHost2d crm_input_qiil            = realHost2d( "crm_input_qiil           ",crm_input_qiil_p                              , plev       , pcols); 
+  realHost2d crm_input_ql              = realHost2d( "crm_input_ql             ",crm_input_ql_p                                , plev       , pcols); 
+  realHost1d crm_input_tau00           = realHost1d( "crm_input_tau00          ",crm_input_tau00_p                                          , pcols); 
+  realHost1d crm_input_phis            = realHost1d( "crm_input_phis           ",crm_input_phis_p                                           , pcols);
+  realHost1d crm_input_ps              = realHost1d( "crm_input_ps             ",crm_input_ps_p                                             , pcols);
 #ifdef MMF_ESMT
-  realHost2d crm_input_ul_esmt         = realHost2d( "crm_input_ul_esmt       ",crm_input_ul_esmt_p                            , plev       , pcols);
-  realHost2d crm_input_vl_esmt         = realHost2d( "crm_input_vl_esmt       ",crm_input_vl_esmt_p                            , plev       , pcols);
+  realHost2d crm_input_ul_esmt         = realHost2d( "crm_input_ul_esmt        ",crm_input_ul_esmt_p                           , plev       , pcols);
+  realHost2d crm_input_vl_esmt         = realHost2d( "crm_input_vl_esmt        ",crm_input_vl_esmt_p                           , plev       , pcols);
 #endif
-  realHost2d crm_input_t_vt           = realHost2d( "crm_input_t_vt         ",crm_input_t_vt_p                             , plev       , pcols);  
-  realHost2d crm_input_q_vt           = realHost2d( "crm_input_q_vt         ",crm_input_q_vt_p                             , plev       , pcols); 
-  realHost2d crm_input_u_vt           = realHost2d( "crm_input_u_vt         ",crm_input_u_vt_p                             , plev       , pcols); 
+  realHost2d crm_input_t_vt            = realHost2d( "crm_input_t_vt           ",crm_input_t_vt_p                              , plev      , pcols);  
+  realHost2d crm_input_q_vt            = realHost2d( "crm_input_q_vt           ",crm_input_q_vt_p                              , plev      , pcols); 
+  realHost2d crm_input_u_vt            = realHost2d( "crm_input_u_vt           ",crm_input_u_vt_p                              , plev      , pcols); 
+  realHost2d crm_input_nccn            = realHost2d( "crm_input_nccn           ",crm_input_nccn_p                              , plev      , pcols);
+  realHost2d crm_input_nc_nuceat_tend  = realHost2d( "crm_input_nc_nuceat_tend ",crm_input_nc_nuceat_tend_p                    , plev      , pcols);
+  realHost2d crm_input_ni_activated    = realHost2d( "crm_input_ni_activated   ",crm_input_ni_activated_p                      , plev      , pcols);
+  
   realHost4d crm_state_u_wind          = realHost4d( "crm_state_u_wind        ",crm_state_u_wind_p         , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_v_wind          = realHost4d( "crm_state_v_wind        ",crm_state_v_wind_p         , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_w_wind          = realHost4d( "crm_state_w_wind        ",crm_state_w_wind_p         , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_temperature     = realHost4d( "crm_state_temperature   ",crm_state_temperature_p    , crm_nz, crm_ny    , crm_nx    , pcols);
-  realHost4d crm_state_qt              = realHost4d( "crm_state_qt            ",crm_state_qt_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_qv              = realHost4d( "crm_state_qv            ",crm_state_qv_p             , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_qp              = realHost4d( "crm_state_qp            ",crm_state_qp_p             , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_qn              = realHost4d( "crm_state_qn            ",crm_state_qn_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_qc              = realHost4d( "crm_state_qc            ",crm_state_qc_p             , crm_nz, crm_ny    , crm_nx    , pcols); 
+  realHost4d crm_state_nc              = realHost4d( "crm_state_nc            ",crm_state_nc_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_qr              = realHost4d( "crm_state_qr            ",crm_state_qr_p             , crm_nz, crm_ny    , crm_nx    , pcols); 
+  realHost4d crm_state_nr              = realHost4d( "crm_state_nr            ",crm_state_nr_p             , crm_nz, crm_ny    , crm_nx    , pcols); 
+  realHost4d crm_state_qi              = realHost4d( "crm_state_qi            ",crm_state_qi_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_ni              = realHost4d( "crm_state_ni            ",crm_state_ni_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_qm              = realHost4d( "crm_state_qm            ",crm_state_qm_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_bm              = realHost4d( "crm_state_bm            ",crm_state_bm_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_t_prev          = realHost4d( "crm_state_t_prev        ",crm_state_t_prev_p         , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_q_prev          = realHost4d( "crm_state_q_prev        ",crm_state_q_prev_p         , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_rad_qrad              = realHost4d( "crm_rad_qrad            ",crm_rad_qrad_p             , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
-  realHost1d crm_output_subcycle_factor  = realHost1d( "crm_output_subcycle_factor",crm_output_subcycle_factor_p                                 , pcols); 
+
+  realHost1d crm_output_subcycle_factor  = realHost1d( "crm_output_subcycle_factor",crm_output_subcycle_factor_p                           , pcols); 
   realHost1d lat0                      = realHost1d( "lat0                    ",lat0_p                                                     , ncrms); 
   realHost1d long0                     = realHost1d( "long0                   ",long0_p                                                    , ncrms); 
   intHost1d  gcolp                     = intHost1d ( "gcolp                   ",gcolp_p                                                    , ncrms); 
@@ -750,29 +800,46 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, r
   ::crm_input_qiil            = real2d( "crm_input_qiil          "                   , plev       , pcols); 
   ::crm_input_ql              = real2d( "crm_input_ql            "                   , plev       , pcols); 
   ::crm_input_tau00           = real1d( "crm_input_tau00         "                                , pcols);
+  ::crm_input_phis            = real1d( "crm_input_phis          "                                , pcols);
+  ::crm_input_ps              = real1d( "crm_input_ps            "                                , pcols);
 #ifdef MMF_ESMT
   ::crm_input_ul_esmt         = real2d( "crm_input_ul_esmt       "                   , plev       , pcols);
   ::crm_input_vl_esmt         = real2d( "crm_input_vl_esmt       "                   , plev       , pcols);
 #endif 
-  ::crm_input_t_vt           = real2d( "crm_input_t_vt         "                   , plev       , pcols); 
-  ::crm_input_q_vt           = real2d( "crm_input_q_vt         "                   , plev       , pcols); 
-  ::crm_input_u_vt           = real2d( "crm_input_u_vt         "                   , plev       , pcols); 
+  ::crm_input_t_vt            = real2d( "crm_input_t_vt          "                   , plev       , pcols); 
+  ::crm_input_q_vt            = real2d( "crm_input_q_vt          "                   , plev       , pcols); 
+  ::crm_input_u_vt            = real2d( "crm_input_u_vt          "                   , plev       , pcols); 
+  ::crm_input_nccn            = real2d( "crm_input_nccn          "                   , plev       , pcols);
+  ::crm_input_nc_nuceat_tend  = real2d( "crm_input_nc_nuceat_tend"                   , plev       , pcols);
+  ::crm_input_ni_activated    = real2d( "crm_input_ni_activated  "                   , plev       , pcols);
+
   ::crm_state_u_wind          = real4d( "crm_state_u_wind        ", crm_nz, crm_ny    , crm_nx    , pcols);
   ::crm_state_v_wind          = real4d( "crm_state_v_wind        ", crm_nz, crm_ny    , crm_nx    , pcols);
   ::crm_state_w_wind          = real4d( "crm_state_w_wind        ", crm_nz, crm_ny    , crm_nx    , pcols);
   ::crm_state_temperature     = real4d( "crm_state_temperature   ", crm_nz, crm_ny    , crm_nx    , pcols);
-  ::crm_state_qt              = real4d( "crm_state_qt            ", crm_nz, crm_ny    , crm_nx    , pcols);
+  ::crm_state_qv              = real4d( "crm_state_qv            ", crm_nz, crm_ny    , crm_nx    , pcols);
   ::crm_state_qp              = real4d( "crm_state_qp            ", crm_nz, crm_ny    , crm_nx    , pcols);
   ::crm_state_qn              = real4d( "crm_state_qn            ", crm_nz, crm_ny    , crm_nx    , pcols);
+  ::crm_state_qc              = real4d( "crm_state_qc            ", crm_nz, crm_ny    , crm_nx    , pcols);
+  ::crm_state_nc              = real4d( "crm_state_nc            ", crm_nz, crm_ny    , crm_nx    , pcols);
+  ::crm_state_qr              = real4d( "crm_state_qr            ", crm_nz, crm_ny    , crm_nx    , pcols);
+  ::crm_state_nr              = real4d( "crm_state_nr            ", crm_nz, crm_ny    , crm_nx    , pcols);
+  ::crm_state_qi              = real4d( "crm_state_qi            ", crm_nz, crm_ny    , crm_nx    , pcols);
+  ::crm_state_ni              = real4d( "crm_state_ni            ", crm_nz, crm_ny    , crm_nx    , pcols);
+  ::crm_state_qm              = real4d( "crm_state_qm            ", crm_nz, crm_ny    , crm_nx    , pcols);
+  ::crm_state_bm              = real4d( "crm_state_bm            ", crm_nz, crm_ny    , crm_nx    , pcols);
+  ::crm_state_t_prev          = real4d( "crm_state_t_prev        ", crm_nz, crm_ny    , crm_nx    , pcols);
+  ::crm_state_q_prev          = real4d( "crm_state_q_prev        ", crm_nz, crm_ny    , crm_nx    , pcols);
+
   ::crm_rad_qrad              = real4d( "crm_rad_qrad            ", crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   ::crm_rad_temperature       = real4d( "crm_rad_temperature     ", crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   ::crm_rad_qv                = real4d( "crm_rad_qv              ", crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   ::crm_rad_qc                = real4d( "crm_rad_qc              ", crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   ::crm_rad_qi                = real4d( "crm_rad_qi              ", crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   ::crm_rad_cld               = real4d( "crm_rad_cld             ", crm_nz, crm_ny_rad, crm_nx_rad, pcols);
-  ::crm_output_subcycle_factor  = real1d( "crm_output_subcycle_factor"                                , pcols); 
-  ::crm_output_prectend       = real1d( "crm_output_prectend     "                                , pcols); 
-  ::crm_output_precstend      = real1d( "crm_output_precstend    "                                , pcols); 
+  ::crm_rad_nc                = real4d( "crm_rad_nc              ", crm_nz, crm_ny_rad, crm_nx_rad, pcols);
+  ::crm_rad_ni                = real4d( "crm_rad_ni              ", crm_nz, crm_ny_rad, crm_nx_rad, pcols);
+  ::crm_output_subcycle_factor= real1d( "crm_output_subcycle_factor"                              , pcols); 
   ::crm_output_cld            = real2d( "crm_output_cld          "                   , plev       , pcols); 
   ::crm_output_cldtop         = real2d( "crm_output_cldtop       "                   , plev       , pcols); 
   ::crm_output_gicewp         = real2d( "crm_output_gicewp       "                   , plev       , pcols); 
@@ -787,6 +854,8 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, r
   ::crm_output_qs_mean        = real2d( "crm_output_qs_mean      "                   , plev       , pcols); 
   ::crm_output_qg_mean        = real2d( "crm_output_qg_mean      "                   , plev       , pcols); 
   ::crm_output_qr_mean        = real2d( "crm_output_qr_mean      "                   , plev       , pcols); 
+  ::crm_output_nc_mean        = real2d( "crm_output_nc_mean      "                   , plev       , pcols); 
+  ::crm_output_ni_mean        = real2d( "crm_output_ni_mean      "                   , plev       , pcols); 
   ::crm_output_mu_crm         = real2d( "crm_output_mu_crm       "                   , plev       , pcols); 
   ::crm_output_md_crm         = real2d( "crm_output_md_crm       "                   , plev       , pcols); 
   ::crm_output_eu_crm         = real2d( "crm_output_eu_crm       "                   , plev       , pcols); 
@@ -835,9 +904,6 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, r
   ::crm_output_qci            = real4d( "crm_output_qci          ",   crm_nz, crm_ny    , crm_nx  , pcols);
   ::crm_output_qpl            = real4d( "crm_output_qpl          ",   crm_nz, crm_ny    , crm_nx  , pcols);
   ::crm_output_qpi            = real4d( "crm_output_qpi          ",   crm_nz, crm_ny    , crm_nx  , pcols);
-  ::crm_output_z0m            = real1d( "crm_output_z0m          "                                , pcols); 
-  ::crm_output_taux           = real1d( "crm_output_taux         "                                , pcols); 
-  ::crm_output_tauy           = real1d( "crm_output_tauy         "                                , pcols); 
   ::crm_output_precc          = real1d( "crm_output_precc        "                                , pcols); 
   ::crm_output_precl          = real1d( "crm_output_precl        "                                , pcols); 
   ::crm_output_precsc         = real1d( "crm_output_precsc       "                                , pcols); 
@@ -867,20 +933,37 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, r
   crm_input_qiil          .deep_copy_to(::crm_input_qiil          );
   crm_input_ql            .deep_copy_to(::crm_input_ql            );
   crm_input_tau00         .deep_copy_to(::crm_input_tau00         );
+  crm_input_phis          .deep_copy_to(::crm_input_phis          );
+  crm_input_ps            .deep_copy_to(::crm_input_ps            );
 #ifdef MMF_ESMT
   crm_input_ul_esmt       .deep_copy_to(::crm_input_ul_esmt       );
   crm_input_vl_esmt       .deep_copy_to(::crm_input_vl_esmt       );
 #endif
-  crm_input_t_vt         .deep_copy_to(::crm_input_t_vt         );
-  crm_input_q_vt         .deep_copy_to(::crm_input_q_vt         );
-  crm_input_u_vt         .deep_copy_to(::crm_input_u_vt         );
+  crm_input_t_vt           .deep_copy_to(::crm_input_t_vt         );
+  crm_input_q_vt           .deep_copy_to(::crm_input_q_vt         );
+  crm_input_u_vt           .deep_copy_to(::crm_input_u_vt         );
+  crm_input_nccn           .deep_copy_to(::crm_input_nccn         );
+  crm_input_nc_nuceat_tend .deep_copy_to(::crm_input_nc_nuceat_tend);
+  crm_input_ni_activated   .deep_copy_to(::crm_input_ni_activated );
+
   crm_state_u_wind        .deep_copy_to(::crm_state_u_wind        );
   crm_state_v_wind        .deep_copy_to(::crm_state_v_wind        );
   crm_state_w_wind        .deep_copy_to(::crm_state_w_wind        );
   crm_state_temperature   .deep_copy_to(::crm_state_temperature   );
-  crm_state_qt            .deep_copy_to(::crm_state_qt            );
+  crm_state_qv            .deep_copy_to(::crm_state_qv            );
   crm_state_qp            .deep_copy_to(::crm_state_qp            );
   crm_state_qn            .deep_copy_to(::crm_state_qn            );
+  crm_state_qc            .deep_copy_to(::crm_state_qc            );
+  crm_state_nc            .deep_copy_to(::crm_state_nc            );
+  crm_state_qr            .deep_copy_to(::crm_state_qr            );
+  crm_state_nr            .deep_copy_to(::crm_state_nr            );
+  crm_state_qi            .deep_copy_to(::crm_state_qi            );
+  crm_state_ni            .deep_copy_to(::crm_state_ni            );
+  crm_state_qm            .deep_copy_to(::crm_state_qm            );
+  crm_state_bm            .deep_copy_to(::crm_state_bm            );
+  crm_state_t_prev        .deep_copy_to(::crm_state_t_prev);
+  crm_state_q_prev        .deep_copy_to(::crm_state_q_prev);
+
   crm_rad_qrad            .deep_copy_to(::crm_rad_qrad            );
   crm_output_subcycle_factor.deep_copy_to(::crm_output_subcycle_factor);
   lat0                    .deep_copy_to(::lat0                    );
@@ -895,12 +978,20 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, r
 
 
 void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p, real *crm_state_temperature_p, 
-                  real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p, real *crm_rad_temperature_p, 
-                  real *crm_rad_qv_p, real *crm_rad_qc_p, real *crm_rad_qi_p, real *crm_rad_cld_p, real *crm_output_subcycle_factor_p, 
-                  real *crm_output_prectend_p, real *crm_output_precstend_p, real *crm_output_cld_p, real *crm_output_cldtop_p, 
+                  real *crm_state_qv_p, real *crm_state_qp_p, real *crm_state_qn_p,
+                  real *crm_state_qc_p, real *crm_state_nc_p, real *crm_state_qr_p, real *crm_state_nr_p,
+                  real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qm_p, real *crm_state_bm_p, 
+                  real *crm_state_t_prev_p, real *crm_state_q_prev_p,
+                  real *crm_rad_temperature_p, real *crm_rad_qv_p, real *crm_rad_qc_p,
+                  real *crm_rad_qi_p, real *crm_rad_cld_p, real *crm_rad_nc_p, real *crm_rad_ni_p, 
+                  real *crm_output_subcycle_factor_p, 
+                  real *crm_output_cld_p, real *crm_output_cldtop_p,
                   real *crm_output_gicewp_p, real *crm_output_gliqwp_p, real *crm_output_mctot_p, real *crm_output_mcup_p, real *crm_output_mcdn_p, 
-                  real *crm_output_mcuup_p, real *crm_output_mcudn_p, real *crm_output_qc_mean_p, real *crm_output_qi_mean_p, real *crm_output_qs_mean_p, 
-                  real *crm_output_qg_mean_p, real *crm_output_qr_mean_p, real *crm_output_mu_crm_p, real *crm_output_md_crm_p, real *crm_output_eu_crm_p, 
+                  real *crm_output_mcuup_p, real *crm_output_mcudn_p, 
+                  real *crm_output_qc_mean_p, real *crm_output_qi_mean_p, 
+                  real *crm_output_qs_mean_p, real *crm_output_qg_mean_p, real *crm_output_qr_mean_p, 
+                  real *crm_output_nc_mean_p, real *crm_output_ni_mean_p, 
+                  real *crm_output_mu_crm_p, real *crm_output_md_crm_p, real *crm_output_eu_crm_p, 
                   real *crm_output_du_crm_p, real *crm_output_ed_crm_p, real *crm_output_flux_qt_p, real *crm_output_flux_u_p, real *crm_output_flux_v_p, 
                   real *crm_output_fluxsgs_qt_p, real *crm_output_tkez_p, real *crm_output_tkew_p, real *crm_output_tkesgsz_p, real *crm_output_tkz_p, real *crm_output_flux_qp_p, 
                   real *crm_output_precflux_p, real *crm_output_qt_trans_p, real *crm_output_qp_trans_p, real *crm_output_qp_fall_p, real *crm_output_qp_evp_p, 
@@ -913,28 +1004,37 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
                   real *crm_output_ultend_p, real *crm_output_vltend_p,
 #endif
                   real *crm_output_tk_p, real *crm_output_tkh_p, real *crm_output_qcl_p, real *crm_output_qci_p, real *crm_output_qpl_p, real *crm_output_qpi_p, 
-                  real *crm_output_z0m_p, real *crm_output_taux_p, real *crm_output_tauy_p, real *crm_output_precc_p, real *crm_output_precl_p, real *crm_output_precsc_p, 
+                  real *crm_output_precc_p, real *crm_output_precl_p, real *crm_output_precsc_p, 
                   real *crm_output_precsl_p, real *crm_output_prec_crm_p, 
 #ifdef MMF_ESMT
                   real *crm_output_u_tend_esmt_p, real *crm_output_v_tend_esmt_p,
 #endif
-	          real *crm_clear_rh_p) {
+            real *crm_clear_rh_p) {
 
   realHost4d crm_state_u_wind          = realHost4d( "crm_state_u_wind        ",crm_state_u_wind_p         , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_v_wind          = realHost4d( "crm_state_v_wind        ",crm_state_v_wind_p         , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_w_wind          = realHost4d( "crm_state_w_wind        ",crm_state_w_wind_p         , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_temperature     = realHost4d( "crm_state_temperature   ",crm_state_temperature_p    , crm_nz, crm_ny    , crm_nx    , pcols);
-  realHost4d crm_state_qt              = realHost4d( "crm_state_qt            ",crm_state_qt_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_qv              = realHost4d( "crm_state_qv            ",crm_state_qv_p             , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_qp              = realHost4d( "crm_state_qp            ",crm_state_qp_p             , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_qn              = realHost4d( "crm_state_qn            ",crm_state_qn_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_qc              = realHost4d( "crm_state_qc            ",crm_state_qc_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_nc              = realHost4d( "crm_state_nc            ",crm_state_nc_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_qr              = realHost4d( "crm_state_qr            ",crm_state_qr_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_nr              = realHost4d( "crm_state_nr            ",crm_state_nr_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_qi              = realHost4d( "crm_state_qi            ",crm_state_qi_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_ni              = realHost4d( "crm_state_ni            ",crm_state_ni_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_qm              = realHost4d( "crm_state_qm            ",crm_state_qm_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_bm              = realHost4d( "crm_state_bm            ",crm_state_bm_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+
   realHost4d crm_rad_temperature       = realHost4d( "crm_rad_temperature     ",crm_rad_temperature_p      , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   realHost4d crm_rad_qv                = realHost4d( "crm_rad_qv              ",crm_rad_qv_p               , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   realHost4d crm_rad_qc                = realHost4d( "crm_rad_qc              ",crm_rad_qc_p               , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   realHost4d crm_rad_qi                = realHost4d( "crm_rad_qi              ",crm_rad_qi_p               , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   realHost4d crm_rad_cld               = realHost4d( "crm_rad_cld             ",crm_rad_cld_p              , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
-  realHost1d crm_output_subcycle_factor  = realHost1d( "crm_output_subcycle_factor",crm_output_subcycle_factor_p                                 , pcols); 
-  realHost1d crm_output_prectend       = realHost1d( "crm_output_prectend     ",crm_output_prectend_p                                      , pcols); 
-  realHost1d crm_output_precstend      = realHost1d( "crm_output_precstend    ",crm_output_precstend_p                                     , pcols); 
+  realHost4d crm_rad_nc                = realHost4d( "crm_rad_nc              ",crm_rad_nc_p               , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
+  realHost4d crm_rad_ni                = realHost4d( "crm_rad_ni              ",crm_rad_ni_p               , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
+  realHost1d crm_output_subcycle_factor= realHost1d( "crm_output_subcycle_factor",crm_output_subcycle_factor_p                             , pcols); 
   realHost2d crm_output_cld            = realHost2d( "crm_output_cld          ",crm_output_cld_p                              , plev       , pcols); 
   realHost2d crm_output_cldtop         = realHost2d( "crm_output_cldtop       ",crm_output_cldtop_p                           , plev       , pcols); 
   realHost2d crm_output_gicewp         = realHost2d( "crm_output_gicewp       ",crm_output_gicewp_p                           , plev       , pcols); 
@@ -949,6 +1049,8 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
   realHost2d crm_output_qs_mean        = realHost2d( "crm_output_qs_mean      ",crm_output_qs_mean_p                          , plev       , pcols); 
   realHost2d crm_output_qg_mean        = realHost2d( "crm_output_qg_mean      ",crm_output_qg_mean_p                          , plev       , pcols); 
   realHost2d crm_output_qr_mean        = realHost2d( "crm_output_qr_mean      ",crm_output_qr_mean_p                          , plev       , pcols); 
+  realHost2d crm_output_nc_mean        = realHost2d( "crm_output_nc_mean      ",crm_output_nc_mean_p                          , plev       , pcols); 
+  realHost2d crm_output_ni_mean        = realHost2d( "crm_output_ni_mean      ",crm_output_ni_mean_p                          , plev       , pcols); 
   realHost2d crm_output_mu_crm         = realHost2d( "crm_output_mu_crm       ",crm_output_mu_crm_p                           , plev       , pcols); 
   realHost2d crm_output_md_crm         = realHost2d( "crm_output_md_crm       ",crm_output_md_crm_p                           , plev       , pcols); 
   realHost2d crm_output_eu_crm         = realHost2d( "crm_output_eu_crm       ",crm_output_eu_crm_p                           , plev       , pcols); 
@@ -982,11 +1084,11 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
   realHost2d crm_output_qcltend        = realHost2d( "crm_output_qcltend      ",crm_output_qcltend_p                          , plev       , pcols); 
   realHost2d crm_output_qiltend        = realHost2d( "crm_output_qiltend      ",crm_output_qiltend_p                          , plev       , pcols); 
   realHost2d crm_output_t_vt_tend      = realHost2d( "crm_output_t_vt_tend    ",crm_output_t_vt_tend_p                        , plev       , pcols); 
-  realHost2d crm_output_q_vt_tend      = realHost2d( "crm_output_q_vt_tend    ",crm_output_q_vt_tend_p                        , plev       , pcols); 
-  realHost2d crm_output_u_vt_tend      = realHost2d( "crm_output_u_vt_tend    ",crm_output_u_vt_tend_p                        , plev       , pcols); 
-  realHost2d crm_output_t_vt_ls        = realHost2d( "crm_output_t_vt_ls      ",crm_output_t_vt_ls_p                          , plev       , pcols); 
-  realHost2d crm_output_q_vt_ls        = realHost2d( "crm_output_q_vt_ls      ",crm_output_q_vt_ls_p                          , plev       , pcols); 
-  realHost2d crm_output_u_vt_ls        = realHost2d( "crm_output_u_vt_ls      ",crm_output_u_vt_ls_p                          , plev       , pcols); 
+  realHost2d crm_output_q_vt_tend      = realHost2d( "crm_output_q_vt_tend    ",crm_output_q_vt_tend_p                        , plev       , pcols);
+  realHost2d crm_output_u_vt_tend      = realHost2d( "crm_output_u_vt_tend    ",crm_output_u_vt_tend_p                        , plev       , pcols);
+  realHost2d crm_output_t_vt_ls        = realHost2d( "crm_output_t_vt_ls      ",crm_output_t_vt_ls_p                          , plev       , pcols);
+  realHost2d crm_output_q_vt_ls        = realHost2d( "crm_output_q_vt_ls      ",crm_output_q_vt_ls_p                          , plev       , pcols);
+  realHost2d crm_output_u_vt_ls        = realHost2d( "crm_output_u_vt_ls      ",crm_output_u_vt_ls_p                          , plev       , pcols);
 #ifdef MMF_MOMENTUM_FEEDBACK
   realHost2d crm_output_ultend         = realHost2d( "crm_output_ultend       ",crm_output_ultend_p                           , plev       , pcols); 
   realHost2d crm_output_vltend         = realHost2d( "crm_output_vltend       ",crm_output_vltend_p                           , plev       , pcols); 
@@ -997,9 +1099,6 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
   realHost4d crm_output_qci            = realHost4d( "crm_output_qci          ",crm_output_qci_p           ,   crm_nz, crm_ny    , crm_nx  , pcols);
   realHost4d crm_output_qpl            = realHost4d( "crm_output_qpl          ",crm_output_qpl_p           ,   crm_nz, crm_ny    , crm_nx  , pcols);
   realHost4d crm_output_qpi            = realHost4d( "crm_output_qpi          ",crm_output_qpi_p           ,   crm_nz, crm_ny    , crm_nx  , pcols);
-  realHost1d crm_output_z0m            = realHost1d( "crm_output_z0m          ",crm_output_z0m_p                                           , pcols); 
-  realHost1d crm_output_taux           = realHost1d( "crm_output_taux         ",crm_output_taux_p                                          , pcols); 
-  realHost1d crm_output_tauy           = realHost1d( "crm_output_tauy         ",crm_output_tauy_p                                          , pcols); 
   realHost1d crm_output_precc          = realHost1d( "crm_output_precc        ",crm_output_precc_p                                         , pcols); 
   realHost1d crm_output_precl          = realHost1d( "crm_output_precl        ",crm_output_precl_p                                         , pcols); 
   realHost1d crm_output_precsc         = realHost1d( "crm_output_precsc       ",crm_output_precsc_p                                        , pcols); 
@@ -1015,17 +1114,26 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
   crm_state_v_wind          .deep_copy_to( ::crm_state_v_wind           );
   crm_state_w_wind          .deep_copy_to( ::crm_state_w_wind           );
   crm_state_temperature     .deep_copy_to( ::crm_state_temperature      );
-  crm_state_qt              .deep_copy_to( ::crm_state_qt               );
+  crm_state_qv              .deep_copy_to( ::crm_state_qv               );
   crm_state_qp              .deep_copy_to( ::crm_state_qp               );
   crm_state_qn              .deep_copy_to( ::crm_state_qn               );
+  crm_state_qc              .deep_copy_to( ::crm_state_qc            );
+  crm_state_nc              .deep_copy_to( ::crm_state_nc            );
+  crm_state_qr              .deep_copy_to( ::crm_state_qr            );
+  crm_state_nr              .deep_copy_to( ::crm_state_nr            );
+  crm_state_qi              .deep_copy_to( ::crm_state_qi            );
+  crm_state_ni              .deep_copy_to( ::crm_state_ni            );
+  crm_state_qm              .deep_copy_to( ::crm_state_qm            );
+  crm_state_bm              .deep_copy_to( ::crm_state_bm            );
+
   crm_rad_temperature       .deep_copy_to( ::crm_rad_temperature        );
   crm_rad_qv                .deep_copy_to( ::crm_rad_qv                 );
   crm_rad_qc                .deep_copy_to( ::crm_rad_qc                 );
   crm_rad_qi                .deep_copy_to( ::crm_rad_qi                 );
   crm_rad_cld               .deep_copy_to( ::crm_rad_cld                );
-  crm_output_subcycle_factor  .deep_copy_to( ::crm_output_subcycle_factor   ); 
-  crm_output_prectend       .deep_copy_to( ::crm_output_prectend        ); 
-  crm_output_precstend      .deep_copy_to( ::crm_output_precstend       ); 
+  crm_rad_nc                .deep_copy_to( ::crm_rad_nc                 );
+  crm_rad_ni                .deep_copy_to( ::crm_rad_ni                 );
+  crm_output_subcycle_factor.deep_copy_to( ::crm_output_subcycle_factor ); 
   crm_output_cld            .deep_copy_to( ::crm_output_cld             ); 
   crm_output_cldtop         .deep_copy_to( ::crm_output_cldtop          ); 
   crm_output_gicewp         .deep_copy_to( ::crm_output_gicewp          ); 
@@ -1040,6 +1148,8 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
   crm_output_qs_mean        .deep_copy_to( ::crm_output_qs_mean         ); 
   crm_output_qg_mean        .deep_copy_to( ::crm_output_qg_mean         ); 
   crm_output_qr_mean        .deep_copy_to( ::crm_output_qr_mean         ); 
+  crm_output_nc_mean        .deep_copy_to( ::crm_output_nc_mean         ); 
+  crm_output_ni_mean        .deep_copy_to( ::crm_output_ni_mean         ); 
   crm_output_mu_crm         .deep_copy_to( ::crm_output_mu_crm          ); 
   crm_output_md_crm         .deep_copy_to( ::crm_output_md_crm          ); 
   crm_output_eu_crm         .deep_copy_to( ::crm_output_eu_crm          ); 
@@ -1088,9 +1198,6 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
   crm_output_qci            .deep_copy_to( ::crm_output_qci             );
   crm_output_qpl            .deep_copy_to( ::crm_output_qpl             );
   crm_output_qpi            .deep_copy_to( ::crm_output_qpi             );
-  crm_output_z0m            .deep_copy_to( ::crm_output_z0m             ); 
-  crm_output_taux           .deep_copy_to( ::crm_output_taux            ); 
-  crm_output_tauy           .deep_copy_to( ::crm_output_tauy            ); 
   crm_output_precc          .deep_copy_to( ::crm_output_precc           ); 
   crm_output_precl          .deep_copy_to( ::crm_output_precl           ); 
   crm_output_precsc         .deep_copy_to( ::crm_output_precsc          ); 
@@ -1104,14 +1211,21 @@ void copy_outputs(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_
 }
 
 
-
 void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p, real *crm_state_w_wind_p, real *crm_state_temperature_p, 
-                              real *crm_state_qt_p, real *crm_state_qp_p, real *crm_state_qn_p, real *crm_rad_temperature_p, 
-                              real *crm_rad_qv_p, real *crm_rad_qc_p, real *crm_rad_qi_p, real *crm_rad_cld_p, real *crm_output_subcycle_factor_p, 
-                              real *crm_output_prectend_p, real *crm_output_precstend_p, real *crm_output_cld_p, real *crm_output_cldtop_p, 
+                              real *crm_state_qv_p, real *crm_state_qp_p, real *crm_state_qn_p,
+                              real *crm_state_qc_p, real *crm_state_nc_p, real *crm_state_qr_p, real *crm_state_nr_p,
+                              real *crm_state_qi_p, real *crm_state_ni_p, real *crm_state_qm_p, real *crm_state_bm_p,
+                              real *crm_state_t_prev_p, real *crm_state_q_prev_p,
+                              real *crm_rad_temperature_p, real *crm_rad_qv_p, real *crm_rad_qc_p,
+                              real *crm_rad_qi_p, real *crm_rad_cld_p, real *crm_rad_nc_p, real *crm_rad_ni_p, 
+                              real *crm_output_subcycle_factor_p, 
+                              real *crm_output_cld_p, real *crm_output_cldtop_p,
                               real *crm_output_gicewp_p, real *crm_output_gliqwp_p, real *crm_output_mctot_p, real *crm_output_mcup_p, real *crm_output_mcdn_p, 
-                              real *crm_output_mcuup_p, real *crm_output_mcudn_p, real *crm_output_qc_mean_p, real *crm_output_qi_mean_p, real *crm_output_qs_mean_p, 
-                              real *crm_output_qg_mean_p, real *crm_output_qr_mean_p, real *crm_output_mu_crm_p, real *crm_output_md_crm_p, real *crm_output_eu_crm_p, 
+                              real *crm_output_mcuup_p, real *crm_output_mcudn_p, 
+                              real *crm_output_qc_mean_p, real *crm_output_qi_mean_p, 
+                              real *crm_output_qs_mean_p, real *crm_output_qg_mean_p, real *crm_output_qr_mean_p, 
+                              real *crm_output_nc_mean_p, real *crm_output_ni_mean_p, 
+                              real *crm_output_mu_crm_p, real *crm_output_md_crm_p, real *crm_output_eu_crm_p, 
                               real *crm_output_du_crm_p, real *crm_output_ed_crm_p, real *crm_output_flux_qt_p, real *crm_output_flux_u_p, real *crm_output_flux_v_p, 
                               real *crm_output_fluxsgs_qt_p, real *crm_output_tkez_p, real *crm_output_tkew_p, real *crm_output_tkesgsz_p, real *crm_output_tkz_p, real *crm_output_flux_qp_p, 
                               real *crm_output_precflux_p, real *crm_output_qt_trans_p, real *crm_output_qp_trans_p, real *crm_output_qp_fall_p, real *crm_output_qp_evp_p, 
@@ -1123,30 +1237,40 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
 #ifdef MMF_MOMENTUM_FEEDBACK
                               real *crm_output_ultend_p, real *crm_output_vltend_p,
 #endif
-                              real *crm_output_tk_p, real *crm_output_tkh_p, real *crm_output_qcl_p, real *crm_output_qci_p, real *crm_output_qpl_p, real *crm_output_qpi_p, 
-                              real *crm_output_z0m_p, real *crm_output_taux_p, real *crm_output_tauy_p, real *crm_output_precc_p, real *crm_output_precl_p, real *crm_output_precsc_p, 
+                              real *crm_output_tk_p, real *crm_output_tkh_p,
+                              real *crm_output_qcl_p, real *crm_output_qci_p, real *crm_output_qpl_p, real *crm_output_qpi_p, 
+                              real *crm_output_precc_p, real *crm_output_precl_p, real *crm_output_precsc_p, 
                               real *crm_output_precsl_p, real *crm_output_prec_crm_p, 
 #ifdef MMF_ESMT
                               real *crm_output_u_tend_esmt_p, real *crm_output_v_tend_esmt_p,
 #endif
-		                          real *crm_clear_rh_p) {
+                              real *crm_clear_rh_p) {
   
   // Wrap arrays we'll be copying out
   realHost4d crm_state_u_wind          = realHost4d( "crm_state_u_wind        ",crm_state_u_wind_p         , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_v_wind          = realHost4d( "crm_state_v_wind        ",crm_state_v_wind_p         , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_w_wind          = realHost4d( "crm_state_w_wind        ",crm_state_w_wind_p         , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_temperature     = realHost4d( "crm_state_temperature   ",crm_state_temperature_p    , crm_nz, crm_ny    , crm_nx    , pcols);
-  realHost4d crm_state_qt              = realHost4d( "crm_state_qt            ",crm_state_qt_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_qv              = realHost4d( "crm_state_qv            ",crm_state_qv_p             , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_qp              = realHost4d( "crm_state_qp            ",crm_state_qp_p             , crm_nz, crm_ny    , crm_nx    , pcols);
   realHost4d crm_state_qn              = realHost4d( "crm_state_qn            ",crm_state_qn_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_qc              = realHost4d( "crm_state_qc            ",crm_state_qc_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_nc              = realHost4d( "crm_state_nc            ",crm_state_nc_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_qr              = realHost4d( "crm_state_qr            ",crm_state_qr_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_nr              = realHost4d( "crm_state_nr            ",crm_state_nr_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_qi              = realHost4d( "crm_state_qi            ",crm_state_qi_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_ni              = realHost4d( "crm_state_ni            ",crm_state_ni_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_qm              = realHost4d( "crm_state_qm            ",crm_state_qm_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+  realHost4d crm_state_bm              = realHost4d( "crm_state_bm            ",crm_state_bm_p             , crm_nz, crm_ny    , crm_nx    , pcols);
+
   realHost4d crm_rad_temperature       = realHost4d( "crm_rad_temperature     ",crm_rad_temperature_p      , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   realHost4d crm_rad_qv                = realHost4d( "crm_rad_qv              ",crm_rad_qv_p               , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   realHost4d crm_rad_qc                = realHost4d( "crm_rad_qc              ",crm_rad_qc_p               , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   realHost4d crm_rad_qi                = realHost4d( "crm_rad_qi              ",crm_rad_qi_p               , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
   realHost4d crm_rad_cld               = realHost4d( "crm_rad_cld             ",crm_rad_cld_p              , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
-  realHost1d crm_output_subcycle_factor  = realHost1d( "crm_output_subcycle_factor",crm_output_subcycle_factor_p                                 , pcols); 
-  realHost1d crm_output_prectend       = realHost1d( "crm_output_prectend     ",crm_output_prectend_p                                      , pcols); 
-  realHost1d crm_output_precstend      = realHost1d( "crm_output_precstend    ",crm_output_precstend_p                                     , pcols); 
+  realHost4d crm_rad_nc                = realHost4d( "crm_rad_nc              ",crm_rad_nc_p               , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
+  realHost4d crm_rad_ni                = realHost4d( "crm_rad_ni              ",crm_rad_ni_p               , crm_nz, crm_ny_rad, crm_nx_rad, pcols);
+  realHost1d crm_output_subcycle_factor= realHost1d( "crm_output_subcycle_factor",crm_output_subcycle_factor_p                             , pcols); 
   realHost2d crm_output_cld            = realHost2d( "crm_output_cld          ",crm_output_cld_p                              , plev       , pcols); 
   realHost2d crm_output_cldtop         = realHost2d( "crm_output_cldtop       ",crm_output_cldtop_p                           , plev       , pcols); 
   realHost2d crm_output_gicewp         = realHost2d( "crm_output_gicewp       ",crm_output_gicewp_p                           , plev       , pcols); 
@@ -1161,6 +1285,8 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   realHost2d crm_output_qs_mean        = realHost2d( "crm_output_qs_mean      ",crm_output_qs_mean_p                          , plev       , pcols); 
   realHost2d crm_output_qg_mean        = realHost2d( "crm_output_qg_mean      ",crm_output_qg_mean_p                          , plev       , pcols); 
   realHost2d crm_output_qr_mean        = realHost2d( "crm_output_qr_mean      ",crm_output_qr_mean_p                          , plev       , pcols); 
+  realHost2d crm_output_nc_mean        = realHost2d( "crm_output_nc_mean      ",crm_output_nc_mean_p                          , plev       , pcols); 
+  realHost2d crm_output_ni_mean        = realHost2d( "crm_output_ni_mean      ",crm_output_ni_mean_p                          , plev       , pcols); 
   realHost2d crm_output_mu_crm         = realHost2d( "crm_output_mu_crm       ",crm_output_mu_crm_p                           , plev       , pcols); 
   realHost2d crm_output_md_crm         = realHost2d( "crm_output_md_crm       ",crm_output_md_crm_p                           , plev       , pcols); 
   realHost2d crm_output_eu_crm         = realHost2d( "crm_output_eu_crm       ",crm_output_eu_crm_p                           , plev       , pcols); 
@@ -1193,12 +1319,12 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   realHost2d crm_output_qltend         = realHost2d( "crm_output_qltend       ",crm_output_qltend_p                           , plev       , pcols); 
   realHost2d crm_output_qcltend        = realHost2d( "crm_output_qcltend      ",crm_output_qcltend_p                          , plev       , pcols); 
   realHost2d crm_output_qiltend        = realHost2d( "crm_output_qiltend      ",crm_output_qiltend_p                          , plev       , pcols); 
-  realHost2d crm_output_t_vt_tend      = realHost2d( "crm_output_t_vt_tend    ",crm_output_t_vt_tend_p                        , plev       , pcols); 
-  realHost2d crm_output_q_vt_tend      = realHost2d( "crm_output_q_vt_tend    ",crm_output_q_vt_tend_p                        , plev       , pcols); 
-  realHost2d crm_output_u_vt_tend      = realHost2d( "crm_output_u_vt_tend    ",crm_output_u_vt_tend_p                        , plev       , pcols); 
-  realHost2d crm_output_t_vt_ls        = realHost2d( "crm_output_t_vt_ls      ",crm_output_t_vt_ls_p                          , plev       , pcols); 
-  realHost2d crm_output_q_vt_ls        = realHost2d( "crm_output_q_vt_ls      ",crm_output_q_vt_ls_p                          , plev       , pcols); 
-  realHost2d crm_output_u_vt_ls        = realHost2d( "crm_output_u_vt_ls      ",crm_output_u_vt_ls_p                          , plev       , pcols); 
+  realHost2d crm_output_t_vt_tend      = realHost2d( "crm_output_t_vt_tend    ",crm_output_t_vt_tend_p                        , plev       , pcols);
+  realHost2d crm_output_q_vt_tend      = realHost2d( "crm_output_q_vt_tend    ",crm_output_q_vt_tend_p                        , plev       , pcols);
+  realHost2d crm_output_u_vt_tend      = realHost2d( "crm_output_u_vt_tend    ",crm_output_u_vt_tend_p                        , plev       , pcols);
+  realHost2d crm_output_t_vt_ls        = realHost2d( "crm_output_t_vt_ls      ",crm_output_t_vt_ls_p                          , plev       , pcols);
+  realHost2d crm_output_q_vt_ls        = realHost2d( "crm_output_q_vt_ls      ",crm_output_q_vt_ls_p                          , plev       , pcols);
+  realHost2d crm_output_u_vt_ls        = realHost2d( "crm_output_u_vt_ls      ",crm_output_u_vt_ls_p                          , plev       , pcols);
 #ifdef MMF_MOMENTUM_FEEDBACK
   realHost2d crm_output_ultend         = realHost2d( "crm_output_ultend       ",crm_output_ultend_p                           , plev       , pcols); 
   realHost2d crm_output_vltend         = realHost2d( "crm_output_vltend       ",crm_output_vltend_p                           , plev       , pcols); 
@@ -1209,9 +1335,6 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   realHost4d crm_output_qci            = realHost4d( "crm_output_qci          ",crm_output_qci_p           ,   crm_nz, crm_ny    , crm_nx  , pcols);
   realHost4d crm_output_qpl            = realHost4d( "crm_output_qpl          ",crm_output_qpl_p           ,   crm_nz, crm_ny    , crm_nx  , pcols);
   realHost4d crm_output_qpi            = realHost4d( "crm_output_qpi          ",crm_output_qpi_p           ,   crm_nz, crm_ny    , crm_nx  , pcols);
-  realHost1d crm_output_z0m            = realHost1d( "crm_output_z0m          ",crm_output_z0m_p                                           , pcols); 
-  realHost1d crm_output_taux           = realHost1d( "crm_output_taux         ",crm_output_taux_p                                          , pcols); 
-  realHost1d crm_output_tauy           = realHost1d( "crm_output_tauy         ",crm_output_tauy_p                                          , pcols); 
   realHost1d crm_output_precc          = realHost1d( "crm_output_precc        ",crm_output_precc_p                                         , pcols); 
   realHost1d crm_output_precl          = realHost1d( "crm_output_precl        ",crm_output_precl_p                                         , pcols); 
   realHost1d crm_output_precsc         = realHost1d( "crm_output_precsc       ",crm_output_precsc_p                                        , pcols); 
@@ -1228,17 +1351,26 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_state_v_wind        .deep_copy_to(crm_state_v_wind        );
   ::crm_state_w_wind        .deep_copy_to(crm_state_w_wind        );
   ::crm_state_temperature   .deep_copy_to(crm_state_temperature   );
-  ::crm_state_qt            .deep_copy_to(crm_state_qt            );
+  ::crm_state_qv            .deep_copy_to(crm_state_qv            );
   ::crm_state_qp            .deep_copy_to(crm_state_qp            );
   ::crm_state_qn            .deep_copy_to(crm_state_qn            );
+  ::crm_state_qc            .deep_copy_to(crm_state_qc            );
+  ::crm_state_nc            .deep_copy_to(crm_state_nc            );
+  ::crm_state_qr            .deep_copy_to(crm_state_qr            );
+  ::crm_state_nr            .deep_copy_to(crm_state_nr            );
+  ::crm_state_qi            .deep_copy_to(crm_state_qi            );
+  ::crm_state_ni            .deep_copy_to(crm_state_ni            );
+  ::crm_state_qm            .deep_copy_to(crm_state_qm            );
+  ::crm_state_bm            .deep_copy_to(crm_state_bm            );
+
   ::crm_rad_temperature     .deep_copy_to(crm_rad_temperature     );
   ::crm_rad_qv              .deep_copy_to(crm_rad_qv              );
   ::crm_rad_qc              .deep_copy_to(crm_rad_qc              );
   ::crm_rad_qi              .deep_copy_to(crm_rad_qi              );
   ::crm_rad_cld             .deep_copy_to(crm_rad_cld             );
+  ::crm_rad_nc              .deep_copy_to(crm_rad_nc              );
+  ::crm_rad_ni              .deep_copy_to(crm_rad_ni              );
   ::crm_output_subcycle_factor.deep_copy_to(crm_output_subcycle_factor);
-  ::crm_output_prectend     .deep_copy_to(crm_output_prectend     );
-  ::crm_output_precstend    .deep_copy_to(crm_output_precstend    );
   ::crm_output_cld          .deep_copy_to(crm_output_cld          );
   ::crm_output_cldtop       .deep_copy_to(crm_output_cldtop       );
   ::crm_output_gicewp       .deep_copy_to(crm_output_gicewp       );
@@ -1253,6 +1385,8 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_output_qs_mean      .deep_copy_to(crm_output_qs_mean      );
   ::crm_output_qg_mean      .deep_copy_to(crm_output_qg_mean      );
   ::crm_output_qr_mean      .deep_copy_to(crm_output_qr_mean      );
+  ::crm_output_nc_mean      .deep_copy_to(crm_output_nc_mean      );
+  ::crm_output_ni_mean      .deep_copy_to(crm_output_ni_mean      );
   ::crm_output_mu_crm       .deep_copy_to(crm_output_mu_crm       );
   ::crm_output_md_crm       .deep_copy_to(crm_output_md_crm       );
   ::crm_output_eu_crm       .deep_copy_to(crm_output_eu_crm       );
@@ -1301,9 +1435,6 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_output_qci          .deep_copy_to(crm_output_qci          );
   ::crm_output_qpl          .deep_copy_to(crm_output_qpl          );
   ::crm_output_qpi          .deep_copy_to(crm_output_qpi          );
-  ::crm_output_z0m          .deep_copy_to(crm_output_z0m          );
-  ::crm_output_taux         .deep_copy_to(crm_output_taux         );
-  ::crm_output_tauy         .deep_copy_to(crm_output_tauy         );
   ::crm_output_precc        .deep_copy_to(crm_output_precc        );
   ::crm_output_precl        .deep_copy_to(crm_output_precl        );
   ::crm_output_precsc       .deep_copy_to(crm_output_precsc       );
@@ -1330,6 +1461,8 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_input_qiil            = real2d();
   ::crm_input_ql              = real2d();
   ::crm_input_tau00           = real1d();
+  ::crm_input_phis            = real1d();
+  ::crm_input_ps              = real1d();
 #ifdef MMF_ESMT
   ::crm_input_ul_esmt         = real2d();
   ::crm_input_vl_esmt         = real2d();
@@ -1337,22 +1470,37 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_input_t_vt            = real2d();
   ::crm_input_q_vt            = real2d();
   ::crm_input_u_vt            = real2d();
+  ::crm_input_nccn            = real2d();
+  ::crm_input_nc_nuceat_tend  = real2d();
+  ::crm_input_ni_activated    = real2d();
+
   ::crm_state_u_wind          = real4d();
   ::crm_state_v_wind          = real4d();
   ::crm_state_w_wind          = real4d();
   ::crm_state_temperature     = real4d();
-  ::crm_state_qt              = real4d();
+  ::crm_state_qv              = real4d();
   ::crm_state_qp              = real4d();
   ::crm_state_qn              = real4d();
+  ::crm_state_qc              = real4d(); 
+  ::crm_state_nc              = real4d();
+  ::crm_state_qr              = real4d();
+  ::crm_state_nr              = real4d();
+  ::crm_state_qi              = real4d();
+  ::crm_state_ni              = real4d();
+  ::crm_state_qm              = real4d();
+  ::crm_state_bm              = real4d();
+  ::crm_state_t_prev          = real4d();
+  ::crm_state_q_prev          = real4d();
+
   ::crm_rad_qrad              = real4d();
   ::crm_rad_temperature       = real4d();
   ::crm_rad_qv                = real4d();
   ::crm_rad_qc                = real4d();
   ::crm_rad_qi                = real4d();
   ::crm_rad_cld               = real4d();
-  ::crm_output_subcycle_factor  = real1d();
-  ::crm_output_prectend       = real1d();
-  ::crm_output_precstend      = real1d();
+  ::crm_rad_nc                = real4d();
+  ::crm_rad_ni                = real4d();
+  ::crm_output_subcycle_factor= real1d();
   ::crm_output_cld            = real2d();
   ::crm_output_cldtop         = real2d();
   ::crm_output_gicewp         = real2d();
@@ -1367,6 +1515,8 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_output_qs_mean        = real2d();
   ::crm_output_qg_mean        = real2d();
   ::crm_output_qr_mean        = real2d();
+  ::crm_output_nc_mean        = real2d();
+  ::crm_output_ni_mean        = real2d();
   ::crm_output_mu_crm         = real2d();
   ::crm_output_md_crm         = real2d();
   ::crm_output_eu_crm         = real2d();
@@ -1415,9 +1565,6 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_output_qci            = real4d();
   ::crm_output_qpl            = real4d();
   ::crm_output_qpi            = real4d();
-  ::crm_output_z0m            = real1d();
-  ::crm_output_taux           = real1d();
-  ::crm_output_tauy           = real1d();
   ::crm_output_precc          = real1d();
   ::crm_output_precl          = real1d();
   ::crm_output_precsc         = real1d();
@@ -1539,12 +1686,13 @@ void perturb_arrays() {
     perturb( z0                , mag );
     perturb( uhl               , mag );
     perturb( vhl               , mag );
-    perturb( taux0             , mag );
-    perturb( tauy0             , mag );
+    perturb( phis              , mag );
+    perturb( ps                , mag );
     perturb( z                 , mag );
     perturb( pres              , mag );
     perturb( zi                , mag );
     perturb( presi             , mag );
+    perturb( pdel              , mag );
     perturb( adz               , mag );
     perturb( adzw              , mag );
     perturb( dz                , mag );
@@ -1565,17 +1713,18 @@ void perturb_arrays() {
     perturb( mkadv             , mag );
     perturb( mkdiff            , mag );
     perturb( qn                , mag );
+    perturb( qc                , mag );
     perturb( qpsrc             , mag );
     perturb( qpevp             , mag );
-    perturb( t_vt             , mag );
-    perturb( q_vt             , mag );
-    perturb( u_vt             , mag );
-    perturb( t_vt_tend        , mag );
-    perturb( q_vt_tend        , mag );
-    perturb( u_vt_tend        , mag );
-    perturb( t_vt_pert        , mag );
-    perturb( q_vt_pert        , mag );
-    perturb( u_vt_pert        , mag );
+    perturb( t_vt              , mag );
+    perturb( q_vt              , mag );
+    perturb( u_vt              , mag );
+    perturb( t_vt_tend         , mag );
+    perturb( q_vt_tend         , mag );
+    perturb( u_vt_tend         , mag );
+    perturb( t_vt_pert         , mag );
+    perturb( q_vt_pert         , mag );
+    perturb( u_vt_pert         , mag );
   #endif
 }
 
@@ -1676,15 +1825,15 @@ real3d cloudtopheight  ;
 real3d echotopheight   ;
 real3d cloudtoptemp    ;
 
-real2d t_vt           ;
-real2d q_vt           ;
-real2d u_vt           ;
-real2d t_vt_tend      ;
-real2d q_vt_tend      ;
-real2d u_vt_tend      ;
-real4d t_vt_pert      ;
-real4d q_vt_pert      ;
-real4d u_vt_pert      ;
+real2d t_vt            ;
+real2d q_vt            ;
+real2d u_vt            ;
+real2d t_vt_tend       ;
+real2d q_vt_tend       ;
+real2d u_vt_tend       ;
+real4d t_vt_pert       ;
+real4d q_vt_pert       ;
+real4d u_vt_pert       ;
 
 real1d fcorz           ;
 real1d fcor            ;
@@ -1693,13 +1842,14 @@ real1d latitude0       ;
 real1d z0              ;
 real1d uhl             ;
 real1d vhl             ;
-real1d taux0           ;
-real1d tauy0           ;
+real1d phis            ;
+real1d psfc            ;
 
 real2d z               ;
 real2d pres            ;
 real2d zi              ;
 real2d presi           ;
+real2d pdel            ;
 real2d adz             ;
 real2d adzw            ;
 real1d dt3             ;
@@ -1722,10 +1872,32 @@ real3d mkwsb           ;
 real3d mkadv           ;
 real3d mkdiff          ;
 real4d qn              ;
+real4d qc              ;
 real2d qpsrc           ;
 real2d qpevp           ;
-intHost1d flag_precip      ;
+intHost1d flag_precip  ;
 int3d flag_top         ;
+
+real2d  nccn              ;
+real2d  nc_nuceat_tend    ;
+real2d  ni_activated      ;
+real2d  diag_eff_radius_qc;
+real2d  diag_eff_radius_qi;
+real2d  precip_total_tend ;
+real2d  qr_evap_tend      ;
+real4d  t_prev            ;
+real4d  q_prev            ;
+
+real2d  qv2qi_depos_tend   ;
+real2d  precip_liq_surf    ;
+real2d  precip_ice_surf    ;
+real2d  rho_qi             ;
+real2d  precip_liq_flux    ;
+real2d  precip_ice_flux    ;
+
+real2d  liq_ice_exchange ;
+real2d  vap_liq_exchange ;
+real2d  vap_ice_exchange ;
 
 #ifdef MMF_ESMT
 real4d u_esmt          ;
@@ -1778,8 +1950,6 @@ real2d mdi_crm         ;
 real1d ustar           ;
 real1d wnd             ;
 real2d qtot            ;
-real1d colprec         ;
-real1d colprecs        ;
 real1d bflx            ;
 
 real1d crm_input_bflxls; 
@@ -1796,29 +1966,46 @@ real2d crm_input_qccl  ;
 real2d crm_input_qiil  ;
 real2d crm_input_ql    ;
 real1d crm_input_tau00 ;
+real1d crm_input_phis  ;
+real1d crm_input_ps    ;
 #ifdef MMF_ESMT
 real2d crm_input_ul_esmt;
 real2d crm_input_vl_esmt;
 #endif
-real2d crm_input_t_vt ;
-real2d crm_input_q_vt ;
-real2d crm_input_u_vt ;
+real2d crm_input_t_vt;
+real2d crm_input_q_vt;
+real2d crm_input_u_vt;
+real2d crm_input_nccn;
+real2d crm_input_nc_nuceat_tend;
+real2d crm_input_ni_activated;
+
 real4d crm_state_u_wind;
 real4d crm_state_v_wind;
 real4d crm_state_w_wind; 
 real4d crm_state_temperature;
-real4d crm_state_qt;
+real4d crm_state_qv;
 real4d crm_state_qp;
 real4d crm_state_qn;
+real4d crm_state_qc;
+real4d crm_state_nc;
+real4d crm_state_qr;
+real4d crm_state_nr;
+real4d crm_state_qi;
+real4d crm_state_ni;
+real4d crm_state_qm;
+real4d crm_state_bm;
+real4d crm_state_t_prev;
+real4d crm_state_q_prev;
+
 real4d crm_rad_qrad;
 real4d crm_rad_temperature;
 real4d crm_rad_qv; 
 real4d crm_rad_qc; 
 real4d crm_rad_qi; 
-real4d crm_rad_cld; 
+real4d crm_rad_cld;
+real4d crm_rad_nc; 
+real4d crm_rad_ni;  
 real1d crm_output_subcycle_factor;
-real1d crm_output_prectend;
-real1d crm_output_precstend; 
 real2d crm_output_cld; 
 real2d crm_output_cldtop; 
 real2d crm_output_gicewp;
@@ -1833,6 +2020,8 @@ real2d crm_output_qi_mean;
 real2d crm_output_qs_mean;
 real2d crm_output_qg_mean;
 real2d crm_output_qr_mean;
+real2d crm_output_nc_mean;
+real2d crm_output_ni_mean;
 real2d crm_output_mu_crm;
 real2d crm_output_md_crm;
 real2d crm_output_eu_crm;
@@ -1881,9 +2070,6 @@ real4d crm_output_qcl;
 real4d crm_output_qci; 
 real4d crm_output_qpl; 
 real4d crm_output_qpi; 
-real1d crm_output_z0m; 
-real1d crm_output_taux; 
-real1d crm_output_tauy;
 real1d crm_output_precc; 
 real1d crm_output_precl;
 real1d crm_output_precsc; 
@@ -1921,62 +2107,13 @@ int  rankse                   ;
 int  ranksw                   ;
 bool dompi                    ;
 bool masterproc               ;
-bool dostatis                 ;
-bool dostatisrad              ;
-int  nstatis                  ;
 bool compute_reffc            ;
 bool compute_reffi            ;
-bool notopened2D              ;
-bool notopened3D              ;
-bool notopenedmom             ;
 real dx                       ;
 real dy                       ;
-bool doconstdz                ;
 int  nstop                    ;
-int  nelapse                  ;
 real dt                       ;
-real day0                     ;
-int  nrad                     ;
-int  nrestart                 ;
-int  nstat                    ;
-int  nstatfrq                 ;
-bool restart_sep              ;
-int  nrestart_skip            ;
-bool output_sep               ;
-bool doisccp                  ;
-bool domodis                  ;
-bool domisr                   ;
-bool dosimfilesout            ;
-bool doSAMconditionals        ;
-bool dosatupdnconditionals    ;
-bool doscamiopdata            ;
-bool dozero_out_day0          ;
-int  nsave3Dstart             ;
-int  nsave3Dend               ;
-bool save3Dbin                ;
-bool save3Dsep                ;
-real qnsave3D                 ;
-bool dogzip3D                 ;
-bool rad3Dout                 ;
-int  nsave2D                  ;
-int  nsave2Dstart             ;
-int  nsave2Dend               ;
-bool save2Dbin                ;
-bool save2Dsep                ;
-bool save2Davg                ;
-bool dogzip2D                 ;
-int  nstatmom                 ;
-int  nstatmomstart            ;
-int  nstatmomend              ;
-bool savemomsep               ;
-bool savemombin               ;
-int  nmovie                   ;
-int  nmoviestart              ;
-int  nmovieend                ;
-bool isInitialized_scamiopdata;
-bool wgls_holds_omega         ;
 
-bool dosubsidence    ;
 real ug              ;
 real vg              ;
 bool les             ;
@@ -2027,6 +2164,9 @@ bool crm_accel_uv;
 bool use_crm_accel;
 real crm_accel_factor;
 
+char* microphysics_scheme;
+char* turbulence_scheme;
+
 real factor_xy;
 real factor_xyt;
 real idt_gl;
@@ -2037,12 +2177,7 @@ real crm_run_time;
 real icrm_run_time;
 real dt_glob;
 
-
 bool crm_accel_ceaseflag;
 
 int igstep;
-
-
-
-
 
