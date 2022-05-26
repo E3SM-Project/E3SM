@@ -777,7 +777,7 @@ module VegetationDataType
     real(r8), pointer :: retransn_to_npool                   (:)   => null()  ! deployment of retranslocated N (gN/m2/s)
     real(r8), pointer :: sminn_to_npool                      (:)   => null()  ! deployment of soil mineral N uptake (gN/m2/s)
     real(r8), pointer :: smin_no3_to_plant_vr                (:,:) => null()
-    real(r8), pointer  :: smin_nh4_to_plant_vr               (:,:) => null()
+    real(r8), pointer :: smin_nh4_to_plant_vr               (:,:) => null()
     real(r8), pointer :: npool_to_grainn                     (:)   => null()  ! allocation to grain N for prognostic crop (gN/m2/s)
     real(r8), pointer :: npool_to_grainn_storage             (:)   => null()  ! allocation to grain N storage for prognostic crop (gN/m2/s)
     real(r8), pointer :: npool_to_leafn                      (:)   => null()  ! allocation to leaf N (gN/m2/s)
