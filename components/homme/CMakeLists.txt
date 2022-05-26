@@ -436,7 +436,6 @@ if (HOMME_ENABLE_COMPOSE)
     # Fortran dycore(s) and the homme_tool exec do need composef90
     set (HOMME_BUILD_COMPOSE_F90 TRUE)
   endif()
-  add_definitions(-DHOMME_ENABLE_COMPOSE)
 else ()
   message (STATUS "COMPOSE semi-Lagrangian transport was explicitly disabled")
 endif()
