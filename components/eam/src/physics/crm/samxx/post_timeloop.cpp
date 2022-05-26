@@ -1,5 +1,6 @@
 
 #include "post_timeloop.h"
+#include "samxx_utils.h"
 
 void post_timeloop() {
   YAKL_SCOPE( crm_rad_temperature     , :: crm_rad_temperature );
@@ -7,6 +8,8 @@ void post_timeloop() {
   YAKL_SCOPE( crm_rad_qc              , :: crm_rad_qc );
   YAKL_SCOPE( crm_rad_qi              , :: crm_rad_qi );
   YAKL_SCOPE( crm_rad_cld             , :: crm_rad_cld );
+  YAKL_SCOPE( crm_rad_nc              , :: crm_rad_nc );
+  YAKL_SCOPE( crm_rad_ni              , :: crm_rad_ni );
   YAKL_SCOPE( tln                     , :: tln );
   YAKL_SCOPE( qln                     , :: qln );
   YAKL_SCOPE( qccln                   , :: qccln );
@@ -15,7 +18,7 @@ void post_timeloop() {
   YAKL_SCOPE( vln                     , :: vln );
 #ifdef MMF_ESMT
   YAKL_SCOPE( uln_esmt                , :: uln_esmt );
-  YAKL_SCOPE( vln_esmt                , :: vln_esmt );                      
+  YAKL_SCOPE( vln_esmt                , :: vln_esmt );
 #endif
   YAKL_SCOPE( crm_input_tl            , :: crm_input_tl );
   YAKL_SCOPE( crm_input_ql            , :: crm_input_ql );
@@ -27,8 +30,6 @@ void post_timeloop() {
   YAKL_SCOPE( crm_input_ul_esmt       , :: crm_input_ul_esmt );
   YAKL_SCOPE( crm_input_vl_esmt       , :: crm_input_vl_esmt );
 #endif
-  YAKL_SCOPE( colprec                 , :: colprec );
-  YAKL_SCOPE( colprecs                , :: colprecs );
   YAKL_SCOPE( qpl                     , :: qpl );
   YAKL_SCOPE( qpi                     , :: qpi );
   YAKL_SCOPE( crm_input_pdel          , :: crm_input_pdel );
@@ -42,6 +43,8 @@ void post_timeloop() {
 #endif
   YAKL_SCOPE( qcl                     , :: qcl );
   YAKL_SCOPE( qci                     , :: qci );
+  YAKL_SCOPE( q_prev                  , :: q_prev );
+  YAKL_SCOPE( t_prev                  , :: t_prev );
   YAKL_SCOPE( factor_xyt              , :: factor_xyt );
   YAKL_SCOPE( factor_xy               , :: factor_xy );
   YAKL_SCOPE( nstop                   , :: nstop );
@@ -58,16 +61,24 @@ void post_timeloop() {
   YAKL_SCOPE( crm_output_v_tend_esmt  , :: crm_output_v_tend_esmt );
 #endif
   YAKL_SCOPE( icrm_run_time           , :: icrm_run_time );
-  YAKL_SCOPE( crm_output_prectend     , :: crm_output_prectend );
-  YAKL_SCOPE( crm_output_precstend    , :: crm_output_precstend );
   YAKL_SCOPE( w                       , :: w );
   YAKL_SCOPE( crm_state_u_wind        , :: crm_state_u_wind );
   YAKL_SCOPE( crm_state_v_wind        , :: crm_state_v_wind );
   YAKL_SCOPE( crm_state_w_wind        , :: crm_state_w_wind );
   YAKL_SCOPE( crm_state_temperature   , :: crm_state_temperature );
-  YAKL_SCOPE( crm_state_qt            , :: crm_state_qt );
+  YAKL_SCOPE( crm_state_qv            , :: crm_state_qv );
   YAKL_SCOPE( crm_state_qp            , :: crm_state_qp );
   YAKL_SCOPE( crm_state_qn            , :: crm_state_qn );
+  YAKL_SCOPE( crm_state_qc            , :: crm_state_qc );
+  YAKL_SCOPE( crm_state_nc            , :: crm_state_nc );
+  YAKL_SCOPE( crm_state_qr            , :: crm_state_qr );
+  YAKL_SCOPE( crm_state_nr            , :: crm_state_nr );
+  YAKL_SCOPE( crm_state_qi            , :: crm_state_qi );
+  YAKL_SCOPE( crm_state_ni            , :: crm_state_ni );
+  YAKL_SCOPE( crm_state_qm            , :: crm_state_qm );
+  YAKL_SCOPE( crm_state_bm            , :: crm_state_bm );
+  YAKL_SCOPE( crm_state_t_prev        , :: crm_state_t_prev );
+  YAKL_SCOPE( crm_state_q_prev        , :: crm_state_q_prev );
   YAKL_SCOPE( micro_field             , :: micro_field );
   YAKL_SCOPE( sgs_field_diag          , :: sgs_field_diag );
   YAKL_SCOPE( qn                      , :: qn );
@@ -77,17 +88,14 @@ void post_timeloop() {
   YAKL_SCOPE( crm_output_qpi          , :: crm_output_qpi );
   YAKL_SCOPE( crm_output_tk           , :: crm_output_tk );
   YAKL_SCOPE( crm_output_tkh          , :: crm_output_tkh );
-  YAKL_SCOPE( crm_output_z0m          , :: crm_output_z0m );
-  YAKL_SCOPE( crm_output_taux         , :: crm_output_taux );
-  YAKL_SCOPE( crm_output_tauy         , :: crm_output_tauy );
   YAKL_SCOPE( z0                      , :: z0 );
-  YAKL_SCOPE( taux0                   , :: taux0 );
-  YAKL_SCOPE( tauy0                   , :: tauy0 );
   YAKL_SCOPE( crm_output_qc_mean      , :: crm_output_qc_mean );
   YAKL_SCOPE( crm_output_qi_mean      , :: crm_output_qi_mean );
   YAKL_SCOPE( crm_output_qr_mean      , :: crm_output_qr_mean );
   YAKL_SCOPE( crm_output_qg_mean      , :: crm_output_qg_mean );
   YAKL_SCOPE( crm_output_qs_mean      , :: crm_output_qs_mean );
+  YAKL_SCOPE( crm_output_nc_mean      , :: crm_output_nc_mean );
+  YAKL_SCOPE( crm_output_ni_mean      , :: crm_output_ni_mean );
   YAKL_SCOPE( crm_output_cld          , :: crm_output_cld );
   YAKL_SCOPE( crm_output_cldtop       , :: crm_output_cldtop );
   YAKL_SCOPE( crm_output_gicewp       , :: crm_output_gicewp );
@@ -179,6 +187,8 @@ void post_timeloop() {
   YAKL_SCOPE( q_vt_tend               , :: q_vt_tend );
   YAKL_SCOPE( u_vt_tend               , :: u_vt_tend );
   YAKL_SCOPE( use_VT                  , :: use_VT );
+  YAKL_SCOPE( microphysics_scheme     , :: microphysics_scheme );
+  YAKL_SCOPE( turbulence_scheme       , :: turbulence_scheme );
 
   factor_xyt = factor_xy/((real) nstop);
   real tmp1 = crm_nx_rad_fac*crm_ny_rad_fac/((real) nstop);
@@ -193,6 +203,10 @@ void post_timeloop() {
     crm_rad_qc         (k,j,i,icrm) = crm_rad_qc         (k,j,i,icrm) * tmp1;
     crm_rad_qi         (k,j,i,icrm) = crm_rad_qi         (k,j,i,icrm) * tmp1;
     crm_rad_cld        (k,j,i,icrm) = crm_rad_cld        (k,j,i,icrm) * tmp1;
+    if (is_same_str(microphysics_scheme, "p3") == 0) {
+      crm_rad_nc       (k,j,i,icrm) = crm_rad_nc         (k,j,i,icrm) * tmp1;
+      crm_rad_ni       (k,j,i,icrm) = crm_rad_ni         (k,j,i,icrm) * tmp1;
+    }
   });
 
   // Convert clear RH sum to average
@@ -228,12 +242,6 @@ void post_timeloop() {
     uln  (k,icrm) = 0.0;
     vln  (k,icrm) = 0.0;
   });
-  
-  // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
-    colprec (icrm)=0;
-    colprecs(icrm)=0;
-  });
 
 #ifdef MMF_ESMT
  // do k = 1,ptop-1
@@ -258,12 +266,6 @@ void post_timeloop() {
   //      for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int l = plev-(k+1);
-
-    real tmp = (qpl(k,j,i,icrm)+qpi(k,j,i,icrm))*crm_input_pdel(l,icrm);
-    yakl::atomicAdd(colprec (icrm) , tmp);
-
-    tmp = qpi(k,j,i,icrm)*crm_input_pdel(l,icrm);
-    yakl::atomicAdd(colprecs(icrm) , tmp);
     yakl::atomicAdd(tln(l,icrm) , tabs(k,j,i,icrm));
     yakl::atomicAdd(qln(l,icrm) , qv(k,j,i,icrm));
     yakl::atomicAdd(qccln(l,icrm) , qcl(k,j,i,icrm));
@@ -325,12 +327,6 @@ void post_timeloop() {
     }
   });
 
-  // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
-    crm_output_prectend (icrm) = (colprec (icrm)-crm_output_prectend (icrm))/ggr*factor_xy * icrm_run_time;
-    crm_output_precstend(icrm) = (colprecs(icrm)-crm_output_precstend(icrm))/ggr*factor_xy * icrm_run_time;
-  });
-
   // don't use CRM tendencies from two crm top levels
   // radiation tendencies are added back after the CRM call (see crm_physics_tend)
 
@@ -369,22 +365,35 @@ void post_timeloop() {
     crm_state_v_wind(k,j,i,icrm) = v(k,j+offy_v,i+offx_v,icrm);
     crm_state_w_wind(k,j,i,icrm) = w(k,j+offy_w,i+offx_w,icrm);
     crm_state_temperature(k,j,i,icrm) = tabs(k,j,i,icrm);
-    crm_state_qt(k,j,i,icrm) = micro_field(0,k,j+offy_s,i+offx_s,icrm);
-    crm_state_qp(k,j,i,icrm) = micro_field(1,k,j+offy_s,i+offx_s,icrm);
-    crm_state_qn(k,j,i,icrm) = qn(k,j,i,icrm);
-    crm_output_tk(k,j,i,icrm) = sgs_field_diag(0,k,j+offy_d,i+offx_d,icrm);
-    crm_output_tkh(k,j,i,icrm) = sgs_field_diag(1,k,j+offy_d,i+offx_d,icrm);
+    if (is_same_str(microphysics_scheme, "sam1mom") == 0) {
+      crm_state_qv(k,j,i,icrm) = micro_field(0,k,j+offy_s,i+offx_s,icrm) - qn(k,j,i,icrm);
+      crm_state_qp(k,j,i,icrm) = micro_field(1,k,j+offy_s,i+offx_s,icrm);
+      crm_state_qn(k,j,i,icrm) = qn(k,j,i,icrm);
+    }
+    if (is_same_str(microphysics_scheme, "p3") == 0) {
+      crm_state_qv(k,j,i,icrm) = micro_field(idx_qv,k,j+offy_s,i+offx_s,icrm);
+      crm_state_qc(k,j,i,icrm) = micro_field(idx_qc,k,j+offy_s,i+offx_s,icrm);
+      crm_state_qi(k,j,i,icrm) = micro_field(idx_qi,k,j+offy_s,i+offx_s,icrm);
+      crm_state_nc(k,j,i,icrm) = micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm);
+      crm_state_ni(k,j,i,icrm) = micro_field(idx_ni,k,j+offy_s,i+offx_s,icrm);
+      crm_state_qr(k,j,i,icrm) = micro_field(idx_qr,k,j+offy_s,i+offx_s,icrm);
+      crm_state_nr(k,j,i,icrm) = micro_field(idx_nr,k,j+offy_s,i+offx_s,icrm);
+      crm_state_qm(k,j,i,icrm) = micro_field(idx_qm,k,j+offy_s,i+offx_s,icrm);
+      crm_state_bm(k,j,i,icrm) = micro_field(idx_bm,k,j+offy_s,i+offx_s,icrm);
+      crm_state_t_prev(k,j,i,icrm) = t_prev(k,j,i,icrm);
+      crm_state_q_prev(k,j,i,icrm) = q_prev(k,j,i,icrm);
+    }
+
     crm_output_qcl(k,j,i,icrm) = qcl(k,j,i,icrm);
     crm_output_qci(k,j,i,icrm) = qci(k,j,i,icrm);
     crm_output_qpl(k,j,i,icrm) = qpl(k,j,i,icrm);
     crm_output_qpi(k,j,i,icrm) = qpi(k,j,i,icrm);
-  });
 
-  // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
-    crm_output_z0m (icrm) = z0(icrm);
-    crm_output_taux(icrm) = taux0(icrm) / nstop;
-    crm_output_tauy(icrm) = tauy0(icrm) / nstop;
+    if (is_same_str(turbulence_scheme, "smag") == 0) {
+      crm_output_tk(k,j,i,icrm)   = sgs_field_diag(0,k,j+offy_d,i+offx_d,icrm);
+      crm_output_tkh(k,j,i,icrm)  = sgs_field_diag(1,k,j+offy_d,i+offx_d,icrm);
+    }
+
   });
 
   // for (int k=0; k<nzm; k++) {
@@ -393,16 +402,28 @@ void post_timeloop() {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int l = plev-(k+1);
-    yakl::atomicAdd(crm_output_qc_mean(l,icrm) , qcl(k,j,i,icrm));
-    yakl::atomicAdd(crm_output_qi_mean(l,icrm) , qci(k,j,i,icrm));
-    yakl::atomicAdd(crm_output_qr_mean(l,icrm) , qpl(k,j,i,icrm));
-    real omg = max(0.0,min(1.0,(tabs(k,j,i,icrm)-tgrmin)*a_gr));
+    real tmp;
+    if (is_same_str(microphysics_scheme, "sam1mom") == 0) {
+      yakl::atomicAdd(crm_output_qc_mean(l,icrm) , qcl(k,j,i,icrm));
+      yakl::atomicAdd(crm_output_qi_mean(l,icrm) , qci(k,j,i,icrm));
+      yakl::atomicAdd(crm_output_qr_mean(l,icrm) , qpl(k,j,i,icrm));
+      real omg = max(0.0,min(1.0,(tabs(k,j,i,icrm)-tgrmin)*a_gr));
 
-    real tmp = qpi(k,j,i,icrm)*omg;
-    yakl::atomicAdd(crm_output_qg_mean(l,icrm) , tmp);
+      tmp = qpi(k,j,i,icrm)*omg;
+      yakl::atomicAdd(crm_output_qg_mean(l,icrm) , tmp);
 
-    tmp = qpi(k,j,i,icrm)*(1.0-omg);
-    yakl::atomicAdd(crm_output_qs_mean(l,icrm) , tmp);
+      tmp = qpi(k,j,i,icrm)*(1.0-omg);
+      yakl::atomicAdd(crm_output_qs_mean(l,icrm) , tmp);
+    }
+    if (is_same_str(microphysics_scheme, "p3") == 0) {
+      yakl::atomicAdd(crm_output_qc_mean(l,icrm) , qcl(k,j,i,icrm));
+      yakl::atomicAdd(crm_output_qi_mean(l,icrm) , qci(k,j,i,icrm));
+      yakl::atomicAdd(crm_output_qr_mean(l,icrm) , qpl(k,j,i,icrm));
+      tmp = micro_field(idx_nc,k,j+offy_s,i+offx_s,icrm);
+      yakl::atomicAdd(crm_output_nc_mean(l,icrm) , tmp);
+      tmp = micro_field(idx_ni,k,j+offy_s,i+offx_s,icrm);
+      yakl::atomicAdd(crm_output_ni_mean(l,icrm) , tmp);
+    }
   });
 
   // for (int k=0; k<plev; k++) {
@@ -419,11 +440,20 @@ void post_timeloop() {
     crm_output_mctot (k,icrm) = crm_output_mcup(k,icrm) + crm_output_mcdn(k,icrm) + 
                                 crm_output_mcuup(k,icrm) + crm_output_mcudn(k,icrm);
 
-    crm_output_qc_mean(k,icrm) = crm_output_qc_mean(k,icrm) * factor_xy;
-    crm_output_qi_mean(k,icrm) = crm_output_qi_mean(k,icrm) * factor_xy;
-    crm_output_qs_mean(k,icrm) = crm_output_qs_mean(k,icrm) * factor_xy;
-    crm_output_qg_mean(k,icrm) = crm_output_qg_mean(k,icrm) * factor_xy;
-    crm_output_qr_mean(k,icrm) = crm_output_qr_mean(k,icrm) * factor_xy;
+    if (is_same_str(microphysics_scheme, "sam1mom") == 0) {
+      crm_output_qc_mean(k,icrm) = crm_output_qc_mean(k,icrm) * factor_xy;
+      crm_output_qi_mean(k,icrm) = crm_output_qi_mean(k,icrm) * factor_xy;
+      crm_output_qs_mean(k,icrm) = crm_output_qs_mean(k,icrm) * factor_xy;
+      crm_output_qg_mean(k,icrm) = crm_output_qg_mean(k,icrm) * factor_xy;
+      crm_output_qr_mean(k,icrm) = crm_output_qr_mean(k,icrm) * factor_xy;
+    }
+    if (is_same_str(microphysics_scheme, "p3") == 0) {
+      crm_output_qc_mean(k,icrm) = crm_output_qc_mean(k,icrm) * factor_xy;
+      crm_output_qi_mean(k,icrm) = crm_output_qi_mean(k,icrm) * factor_xy;
+      crm_output_qr_mean(k,icrm) = crm_output_qr_mean(k,icrm) * factor_xy;
+      crm_output_nc_mean(k,icrm) = crm_output_nc_mean(k,icrm) * factor_xy;
+      crm_output_ni_mean(k,icrm) = crm_output_ni_mean(k,icrm) * factor_xy;
+    }
   });
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
