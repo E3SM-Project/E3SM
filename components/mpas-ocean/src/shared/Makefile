@@ -120,20 +120,6 @@ mpas_ocn_submesoscale_eddies.o:  mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn
 
 mpas_ocn_eddy_parameterization_helpers.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o mpas_ocn_mesh.o
 
-mpas_ocn_two_equation_model_driver.o: mpas_ocn_tracer_advection_shared.o mpas_ocn_mesh.o mpas_ocn_tke_advection_mono.o mpas_ocn_glsPsi_advection_mono.o mpas_ocn_tke_glsPsi_transport.o mpas_ocn_shear_production.o mpas_ocn_buoyancy_production.o mpas_ocn_diagnostics_variables.o mpas_ocn_two_equation_structure_functions.o mpas_ocn_config.o
-
-mpas_ocn_two_equation_structure_functions.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_diagnostics_variables.o
-
-mpas_ocn_tke_advection_mono.o: mpas_ocn_constants.o mpas_ocn_mesh.o
-
-mpas_ocn_glsPsi_advection.o: mpas_ocn_constants.o mpas_ocn_mesh.o
-
-mpas_ocn_tke_glsPsi_transport.o: mpas_ocn_diagnostics_variables.o mpas_ocn_mesh.o mpas_ocn_constants.o mpas_ocn_config.o
-
-mpas_ocn_shear_production.o: mpas_ocn_constants.o mpas_ocn_diagnostics_variables.o mpas_ocn_config.o mpas_ocn_mesh.o
-
-mpas_ocn_buoyancy_production.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o mpas_ocn_diagnostics_variables.o
-
 mpas_ocn_vel_pressure_grad.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
 mpas_ocn_vel_vadv.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o

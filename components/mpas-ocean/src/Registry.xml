@@ -483,75 +483,6 @@
 					possible_values="Any positive real value."
 		/>
 	</nml_record>
-        <nml_record name="twoEquationModel" mode="forward">
-                <nml_option name="config_use_two_equation_turbulence_model" type="logical" default_value=".false." units="NA"
-                                        description="If true, use the GLS model extended to three dimensions"
-                                        possible_values=".true. or .false."
-                />
-                <nml_option name="config_two_equation_hor_adv_order" type="integer" default_value="3" units="NA"
-                                        description="order for horizontal advection of TKE and glsPsi"
-                                        possible_values="2, 3, 4"
-                />
-                <nml_option name="config_two_equation_coef_3rd_order" type="real" default_value="0.25" units="NA"
-                                        description="Reconstruction of 3rd-order reconstruction to blend with 4th-order reconstuction"
-                                        possible_values="any real between 0 and 1"
-                />
-                <nml_option name="config_two_equation_vert_adv_order" type="integer" default_value="3" units="NA"
-                                        description="order for vertical advection of TKE and glsPsi"
-                                        possible_values="2, 3, 4"
-                />
-                <nml_option name="config_two_equation_check_monotonicity" type="logical" default_value=".false." units="NA"
-                                        description="flag to determine whether or not to check for monotonicity in advection"
-                                        possible_values=".true. or .false."
-                />
-                <nml_option name="config_LES_mode" type="logical" default_value=".false." units="unitless"
-                                        description="logical to enable LES mode, requires config_use_two_equation_model='.true.'"
-                                        possible_values=".true. or .false."
-                />
-                <nml_option name="smagorinsky_coefficient" type="real" default_value="0.18" units="unitless"
-                                        description="Smagorinsky coefficient for the LES closure"
-                                        possible_values="usually between 0.1 and 0.2"
-                />
-                <nml_option name="config_two_equation_model_choice" type="character" default_value="epsilon" units="NA"
-                                        description="choice for psi equation in the two equation model"
-                                        possible_values="'epsilon', 'omega', 'kl', 'ktau', user-defined"
-                                        />
-                <nml_option name="config_user_c_mu" type="real" default_value="0.5477" units="NA"
-                                        description="choice for the c_mu constant if user wishes to define the model. only used if config_two_equation_model_choice = 'user-defined'"
-                                        possible_values="small positive reals near 0.5"
-                />
-                <nml_option name="config_user_sigma_k" type="real" default_value="1.0" units="NA"
-                                        description="choice for the sigma_k constant if user wishes to define the model. only used if config_two_equation_model_choice = 'user-defined'"
-                                        possible_values="values around 1-2"
-                />
-                <nml_option name="config_user_sigma_psi" type="real" default_value="1.3" units="NA"
-                                        description="choice for the sigma_psi constant if user wishes to define the model. only used if config_two_equation_model_choice = 'user-defined'"
-                                        possible_values="Positive reals"
-                />
-                <nml_option name="config_user_c_psi1" type="real" default_value="1.44" units="NA"
-                                        description="choice for the c_psi1 constant if user wishes to define the model. only used if config_two_equation_model_choice = 'user-defined'"
-                                        possible_values="small positive reals around 0-2"
-                />
-                <nml_option name="config_user_c_psi2" type="real" default_value="1.92" units="NA"
-                                        description="choice for the c_psi2 constant if user wishes to define the model. only used if config_two_equation_model_choice = 'user-defined'"
-                                        possible_values="positive reals around 0-2"
-                />
-                <nml_option name="config_user_c_psi3" type="real" default_value="-0.692" units="NA"
-                                        description="choice for the c_psi3 constant if user wishes to define the model. only used if config_two_equation_model_choice = 'user-defined'"
-                                        possible_values="positive reals"
-                />
-                <nml_option name="config_user_c_p" type="real" default_value="3.0" units="NA"
-                                        description="choice for the p constant used in determining dissipation, only used if config_two_equation_model_choice = 'user-defined'"
-                                        possible_values="positive reals"
-                />
-                <nml_option name="config_user_c_m" type="real" default_value="1.5" units="NA"
-                                        description="choice for the m constant used in determining dissipation, only used if config_two_equation_model_choice= 'user-defined'"
-                                        possible_values="reals"
-                />
-                <nml_option name="config_user_c_n" type="real" default_value="-1.0" units="NA"
-                                        description="choice for the n constant used in determining dissipation, only used if config_two_equation_model_choice = 'user-defined'"
-                />
-        </nml_record>
 	<nml_record name="cvmix" mode="forward">
 		<nml_option name="config_use_cvmix" type="logical" default_value=".true."
 					description="If true, use the Community Vertical MIXing routines to compute vertical diffusivity and viscosity"
@@ -2330,12 +2261,6 @@
                 <var name="nonhydrostaticPressure" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
        	                 description="nonHydrostatic pressure , set to zero if config_enable_nonhydrostatic_mode = .false."
                 />
-                <var name="tke" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-2}"
-                         description="Turbulence Kinetic Energy for the two equation turbulence closure"
-                />
-                <var name="glsPsi" type="real" dimensions="nVertLevels nCells Time" units="variable"
-                         description="psi variable for the two equation turbulence closure (see Umlauf and Burchard 2003).  The units here depend on the choice of variables in the GLS scheme"
-                />
 
 		<!-- FIELDS FOR FREQUENCY FILTERED THICKNESS -->
 		<var name="highFreqThickness" type="real" dimensions="nVertLevels nCells Time" units="m"
@@ -2574,15 +2499,6 @@
 		<var name="bed_elevation" type="real" dimensions="nCells" units="m"
 			 description="Depth of the bottom of the ocean. Given as negative distance from sea level. Used as input to replace topography input file."
 		/>
-                <var name="boundaryCellMask" type="integer" dimensions="nVertLevels nCells" units="unitless"
-                         description="cell mask for boundary cells"
-                />
-    		<var name="boundaryNormalAngle" type="real" dimensions="nVertLevels nCells" units="radians"
-       			 description="angle of the boundary normal relative to east/west"
-    		/>
-                <var name="distanceToBoundary" type="real" dimensions="nVertLevels nCells" units="m"
-                         description="distance to solid boundary, only used for idealized case"
-                />
 		<var name="bottomDepth" type="real" dimensions="nCells" units="m"
 			 description="Depth of the bottom of the ocean. Given as a positive distance from sea level."
 		/>
