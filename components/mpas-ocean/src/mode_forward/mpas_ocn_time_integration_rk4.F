@@ -525,18 +525,15 @@ module ocn_time_integration_rk4
              call mpas_timer_stop("RK4-prevent drying")
         end if
 
-        !FIXME - LVR - ALE is not working with non hydrostatic, for now implement switch to disable
         ! Compute tendencies for velocity, thickness, and tracers.
         ! In RK4 notation, we are computing the right hand side f(t,y),
         ! which is the same as k_j / h.
         call mpas_timer_start("RK4 vel/thick tendency computations")
+
         block => domain % blocklist
         do while (associated(block))
            call ocn_time_integrator_rk4_compute_vel_tends(domain, block, dt, rk_substep_weights(rk_step), domain % dminfo, err )
-
-           if(.not. config_disable_ALE) then
            call ocn_time_integrator_rk4_compute_thick_tends( block, dt, rk_substep_weights(rk_step), err )
-         endif
            block => block % next
         end do
         call mpas_timer_stop("RK4 vel/thick tendency computations")
@@ -641,6 +638,7 @@ module ocn_time_integration_rk4
       !  A little clean up at the end: rescale tracer fields and compute diagnostics for new state
       !
       call mpas_timer_start("RK4-cleanup phase")
+
       ! Rescale tracers
       block => domain % blocklist
       do while(associated(block))
