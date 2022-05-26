@@ -1,5 +1,6 @@
 
 #include "setparm.h"
+#include "samxx_utils.h"
 
 extern "C" void setparm() {
   doprecip  = true;
@@ -34,15 +35,16 @@ extern "C" void setparm() {
 
   dtn = dt;
 
-  //Instead of writing function I just inline what sgs_setparm does
-  dosmagor = true;
-  advect_sgs = !dosmagor;
-
-  if (navgmom_x < 0 || navgmom_y < 0) {
-    nstatmom        = 1;
-    nstatmomstart    = 99999999;
-    nstatmomend      = 999999999;
+  // Turbulence scheme options
+  if (is_same_str(turbulence_scheme, "smag") == 0) {
+    dosmagor   = true;
+    advect_sgs = false;
   }
+  if (is_same_str(turbulence_scheme, "shoc") == 0) {
+    dosmagor   = false;
+    advect_sgs = true;
+  }
+
 
   if (rank==0) {
     masterproc = true;
