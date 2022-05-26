@@ -3,6 +3,7 @@
 
 #include "YAKL.h"
 #include <iomanip>
+#include "scream_types.hpp"
 
 using yakl::c::Bounds;
 using yakl::c::SimpleBounds;
@@ -180,14 +181,15 @@ real constexpr SHR_CONST_VSMOW_T   = 1.85e-6                  ; // 3H/1H in VMSO
 real constexpr SHR_CONST_VSMOW_H   = 0.99984426               ; // 1H/Tot in VMSOW
 real constexpr SHR_CONST_RSTD_H2ODEV   = 1.0                  ; // Rstd Dev Use
 
-real constexpr cp    = SHR_CONST_CPDAIR ;
-real constexpr ggr   = SHR_CONST_G      ;
-real constexpr lcond = SHR_CONST_LATVAP ;
-real constexpr lfus  = SHR_CONST_LATICE ;
-real constexpr lsub  = lcond + lfus     ;
-real constexpr rgas  = SHR_CONST_RDAIR  ;
-real constexpr rv    = SHR_CONST_RGAS/SHR_CONST_MWWV ;
-
+real constexpr cp     = SHR_CONST_CPDAIR ;
+real constexpr ggr    = SHR_CONST_G      ;
+real constexpr lcond  = SHR_CONST_LATVAP ;
+real constexpr lfus   = SHR_CONST_LATICE ;
+real constexpr lsub   = lcond + lfus     ;
+real constexpr rgas   = SHR_CONST_RDAIR  ;
+real constexpr rv     = SHR_CONST_RGAS/SHR_CONST_MWWV ;
+real constexpr latvap = SHR_CONST_LATVAP;  // Latent heat of vaporization (J/kg)
+real constexpr zvir   = (SHR_CONST_RWV/SHR_CONST_RDAIR)-1.0; // (rh2o/rair) - 1
 
 real constexpr diffelq = 2.21e-05 ;    // Diffusivity of water vapor, m2/s
 real constexpr therco  = 2.40e-02 ;    // Thermal conductivity of air, J/m/s/K
@@ -198,13 +200,25 @@ real constexpr fac_sub  = lsub/cp ;
 real constexpr epsv = 0.61e0;     // = (1-eps)/eps, where eps= Rv/Ra
 real constexpr pi = 3.141592653589793 ;  // sine, cosine, cosine, sine, 3.14159 !
 
-
 int  constexpr nsgs_fields = 1;         // total number of prognostic sgs vars
 int  constexpr nsgs_fields_diag = 2;    // total number of diagnostic sgs vars
 bool constexpr do_sgsdiag_bound = true; // exchange boundaries for diagnostics fields
-int  constexpr nmicro_fields = 2;
-int  constexpr index_water_vapor = 0;
-int  constexpr index_cloud_ice = 0;
+
+int constexpr index_water_vapor = 0;
+int constexpr nmicro_fields = 9;
+
+// water species index for P3
+enum {
+  idx_qv = 0,  // water vapor
+  idx_qc,      // cloud liq amount
+  idx_qi,      // cloud ice amount
+  idx_qr,      // rain amount
+  idx_nc,      // cloud liq number
+  idx_ni,      // cloud ice number
+  idx_nr,      // rain number
+  idx_qm,      // ice rime amount
+  idx_bm       // ice rime volume
+};
 
 real constexpr rhor = 1000.; // Density of water, kg/m3
 real constexpr rhos = 100.;  // Density of snow, kg/m3
@@ -235,6 +249,9 @@ real constexpr qcw0 = 1.e-3;
 real constexpr qci0 = 1.e-4;
 real constexpr alphaelq = 1.e-3;
 real constexpr betaelq = 1.e-3;
+
+real constexpr p3_mincld = 0.0001; // same as mincld in SCREAM
+real constexpr p3_qsmall = 1.e-14;
 
 real constexpr crm_accel_coef = 1.0/( (real) nx * (real) ny );
 
