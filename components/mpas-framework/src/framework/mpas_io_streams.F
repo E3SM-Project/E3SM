@@ -99,7 +99,7 @@ module mpas_io_streams
 
 
       stream % fileHandle = MPAS_io_open(fileName, ioDirection, ioFormat, ioContext, clobber_file=clobberFiles, truncate_file=truncateFiles, &
-                                         ierr=io_err) 
+                                         ierr=io_err)
       !
       ! Catch a few special errors
       !
@@ -144,7 +144,7 @@ module mpas_io_streams
       character (len=*), intent(out) :: actualTime
       integer, intent(out), optional :: maxRecords
       integer, intent(out), optional :: ierr
-      
+
       integer :: io_err
       integer :: i
       integer :: timeDim
@@ -342,7 +342,7 @@ module mpas_io_streams
       integer, intent(in) :: frame
       character (len=*), intent(out) :: frameValidTime
       integer, intent(out), optional :: ierr
-      
+
       integer :: io_err
       integer :: timeDim
 
@@ -416,10 +416,10 @@ module mpas_io_streams
 
 !call mpas_log_write('... field has $i dimensions', intArgs=(/ndims/))
 
-      ! 
+      !
       ! Determine whether the field is decomposed, the indices that are owned by this task's blocks,
       !    and the total number of outer-indices owned by this task
-      ! 
+      !
       idim = ndims
       allocate(indices(0))
       allocate(dimSizes(0))
@@ -506,13 +506,13 @@ module mpas_io_streams
 
 !call mpas_log_write('... field has $i dimensions', intArgs=(/ndims/))
 
-      ! 
+      !
       ! Determine whether the field is decomposed, the indices that are owned by this task's blocks,
       !    and the total number of outer-indices owned by this task
-      ! 
+      !
 #include "add_field_indices.inc"
 
-      
+
       any_success = .false.
       if (field % isVarArray) then
          allocate(isAvailable(size(field % constituentNames)))
@@ -615,13 +615,13 @@ module mpas_io_streams
 
 !call mpas_log_write('... field has $i dimensions', intArgs=(/ndims/))
 
-      ! 
+      !
       ! Determine whether the field is decomposed, the indices that are owned by this task's blocks,
       !    and the total number of outer-indices owned by this task
-      ! 
+      !
 #include "add_field_indices.inc"
 
-      
+
       any_success = .false.
       if (field % isVarArray) then
          allocate(isAvailable(size(field % constituentNames)))
@@ -724,12 +724,12 @@ module mpas_io_streams
 
 !call mpas_log_write('... field has $i dimensions', intArgs=(/ndims/))
 
-      ! 
+      !
       ! Determine whether the field is decomposed, the indices that are owned by this task's blocks,
       !    and the total number of outer-indices owned by this task
-      ! 
+      !
 #include "add_field_indices.inc"
-      
+
       any_success = .false.
       if (field % isVarArray) then
          allocate(isAvailable(size(field % constituentNames)))
@@ -815,7 +815,7 @@ module mpas_io_streams
          return
       end if
 
-     
+
       if (present(precision)) then
          local_precision = precision
       else
@@ -828,10 +828,10 @@ module mpas_io_streams
 
 !call mpas_log_write('... field has $i dimensions', intArgs=(/ndims/))
 
-      ! 
+      !
       ! Determine whether the field is decomposed, the indices that are owned by this task's blocks,
       !    and the total number of outer-indices owned by this task
-      ! 
+      !
       idim = ndims
       allocate(indices(0))
       allocate(dimSizes(0))
@@ -911,7 +911,7 @@ module mpas_io_streams
          return
       end if
 
-     
+
       if (present(precision)) then
          local_precision = precision
       else
@@ -928,13 +928,13 @@ module mpas_io_streams
 
 !call mpas_log_write('... field has $i dimensions', intArgs=(/ndims/))
 
-      ! 
+      !
       ! Determine whether the field is decomposed, the indices that are owned by this task's blocks,
       !    and the total number of outer-indices owned by this task
-      ! 
+      !
 #include "add_field_indices.inc"
 
-      
+
       any_success = .false.
       if (field % isVarArray) then
          allocate(isAvailable(size(field % constituentNames)))
@@ -1029,7 +1029,7 @@ module mpas_io_streams
          return
       end if
 
-     
+
       if (present(precision)) then
          local_precision = precision
       else
@@ -1046,13 +1046,13 @@ module mpas_io_streams
 
 !call mpas_log_write('... field has $i dimensions', intArgs=(/ndims/))
 
-      ! 
+      !
       ! Determine whether the field is decomposed, the indices that are owned by this task's blocks,
       !    and the total number of outer-indices owned by this task
-      ! 
+      !
 #include "add_field_indices.inc"
 
-      
+
       any_success = .false.
       if (field % isVarArray) then
          allocate(isAvailable(size(field % constituentNames)))
@@ -1147,7 +1147,7 @@ module mpas_io_streams
          return
       end if
 
-     
+
       if (present(precision)) then
          local_precision = precision
       else
@@ -1164,13 +1164,13 @@ module mpas_io_streams
 
 !call mpas_log_write('... field has $i dimensions', intArgs=(/ndims/))
 
-      ! 
+      !
       ! Determine whether the field is decomposed, the indices that are owned by this task's blocks,
       !    and the total number of outer-indices owned by this task
-      ! 
+      !
 #include "add_field_indices.inc"
 
-      
+
       any_success = .false.
       if (field % isVarArray) then
 !call mpas_log_write('^^^^^^^^^^^^^^^^^^^^^^^^^^^ we are adding a var-array')
@@ -1267,7 +1267,7 @@ module mpas_io_streams
          return
       end if
 
-     
+
       if (present(precision)) then
          local_precision = precision
       else
@@ -1284,13 +1284,13 @@ module mpas_io_streams
 
 !call mpas_log_write('... field has $i dimensions', intArgs=(/ndims/))
 
-      ! 
+      !
       ! Determine whether the field is decomposed, the indices that are owned by this task's blocks,
       !    and the total number of outer-indices owned by this task
-      ! 
+      !
 #include "add_field_indices.inc"
 
-      
+
       any_success = .false.
       if (field % isVarArray) then
 !call mpas_log_write('^^^^^^^^^^^^^^^^^^^^^^^^^^^ we are adding a var-array')
@@ -1387,7 +1387,7 @@ module mpas_io_streams
          return
       end if
 
-     
+
       if (present(precision)) then
          local_precision = precision
       else
@@ -1404,13 +1404,13 @@ module mpas_io_streams
 
 !call mpas_log_write('... field has $i dimensions', intArgs=(/ndims/))
 
-      ! 
+      !
       ! Determine whether the field is decomposed, the indices that are owned by this task's blocks,
       !    and the total number of outer-indices owned by this task
-      ! 
+      !
 #include "add_field_indices.inc"
 
-      
+
       any_success = .false.
       if (field % isVarArray) then
 !call mpas_log_write('^^^^^^^^^^^^^^^^^^^^^^^^^^^ we are adding a var-array')
@@ -1503,10 +1503,10 @@ module mpas_io_streams
 
 !call mpas_log_write('... field has $i dimensions', intArgs=(/ndims/))
 
-      ! 
+      !
       ! Determine whether the field is decomposed, the indices that are owned by this task's blocks,
       !    and the total number of outer-indices owned by this task
-      ! 
+      !
       idim = ndims
       allocate(indices(0))
       allocate(dimSizes(1))
@@ -1515,7 +1515,7 @@ module mpas_io_streams
       globalDimSize = ShortStrKIND
       totalDimSize = ShortStrKIND
 
-      
+
       if (field % isVarArray) then
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_CHAR, dimNames(1:1), &
@@ -1595,10 +1595,10 @@ module mpas_io_streams
 
 !call mpas_log_write('... field has $i dimensions', intArgs=(/ndims/))
 
-      ! 
+      !
       ! Determine whether the field is decomposed, the indices that are owned by this task's blocks,
       !    and the total number of outer-indices owned by this task
-      ! 
+      !
       idim = ndims
       allocate(indices(1))
       allocate(dimSizes(2))
@@ -1608,7 +1608,7 @@ module mpas_io_streams
       dimNames(2) = field % dimNames(1)
       globalDimSize = dimSizes(2)
       totalDimSize = dimSizes(2)
-      
+
       if (field % isVarArray) then
          do i=1,size(field % constituentNames)
             call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_CHAR, dimNames, &
@@ -1720,7 +1720,7 @@ module mpas_io_streams
          end if
 
          new_field_list_node % isDecomposed = isDecomposed
-  
+
          if (ndims > 0) then
 !call mpas_log_write('... defining dimension '// trim(dimNames(idim))//" $i", intArgs=(/ globalDimSize/))
             call MPAS_io_def_dim(stream % fileHandle, trim(dimNames(idim)), globalDimSize, io_err)
@@ -1760,7 +1760,7 @@ module mpas_io_streams
             deallocate(new_field_list_node)
             return
          end if
-        
+
       else if (stream % ioDirection == MPAS_IO_READ) then
 !call mpas_log_write('... inquiring about')
 
@@ -1803,7 +1803,7 @@ module mpas_io_streams
                deallocate(dimSizesInq)
                return
             end if
-         end do 
+         end do
 
          ! Set outer dimension sizes depending on whether the field is decomposed
          if (isDecomposed) then
@@ -1819,7 +1819,7 @@ module mpas_io_streams
 
       end if
 
-      
+
       !
       ! Set variable indices
       !
@@ -2473,7 +2473,7 @@ module mpas_io_streams
       !
       ! Set time frame to real
       !
-      call MPAS_io_set_frame(stream % fileHandle, frame, io_err) 
+      call MPAS_io_set_frame(stream % fileHandle, frame, io_err)
       call MPAS_io_err_mesg(io_err, .false.)
       if (io_err /= MPAS_IO_NOERR) then
          if (present(ierr)) ierr = MPAS_IO_ERR
@@ -2535,7 +2535,7 @@ module mpas_io_streams
                    end if
                    return
                end if
-   
+
                if (field_cursor % isDecomposed) then
                   ! Distribute field to multiple blocks
                   field_1dint_ptr => field_cursor % int1dField
@@ -2561,7 +2561,7 @@ module mpas_io_streams
                   end do
 
                else
-   
+
                   if (field_cursor % int1dField % isVarArray) then
                      call mpas_dmpar_bcast_int( mpas_io_handle_dminfo(stream % fileHandle), int0d_temp)
                      field_1dint_ptr => field_cursor % int1dField
@@ -2613,7 +2613,7 @@ module mpas_io_streams
                    end if
                    return
                end if
-   
+
                if (field_cursor % isDecomposed) then
                   ! Distribute field to multiple blocks
                   field_2dint_ptr => field_cursor % int2dField
@@ -2639,7 +2639,7 @@ module mpas_io_streams
                   end do
 
                else
-   
+
                   if (field_cursor % int2dField % isVarArray) then
                      call mpas_dmpar_bcast_ints( mpas_io_handle_dminfo(stream % fileHandle), size(int1d_temp), int1d_temp(:))
                      field_2dint_ptr => field_cursor % int2dField
@@ -2695,7 +2695,7 @@ module mpas_io_streams
                    end if
                    return
                end if
-   
+
                if (field_cursor % isDecomposed) then
                   ! Distribute field to multiple blocks
                   field_3dint_ptr => field_cursor % int3dField
@@ -2721,7 +2721,7 @@ module mpas_io_streams
                   end do
 
                else
-   
+
                   if (field_cursor % int3dField % isVarArray) then
                      call mpas_dmpar_bcast_ints( mpas_io_handle_dminfo(stream % fileHandle), size(int2d_temp), int2d_temp(:,1))
                      field_3dint_ptr => field_cursor % int3dField
@@ -2795,7 +2795,7 @@ module mpas_io_streams
                    end if
                    return
                end if
-   
+
                if (field_cursor % isDecomposed) then
                   ! Distribute field to multiple blocks
                   field_1dreal_ptr => field_cursor % real1dField
@@ -2822,7 +2822,7 @@ module mpas_io_streams
                   end do
 
                else
-   
+
                   if (field_cursor % real1dField % isVarArray) then
                      call mpas_dmpar_bcast_real( mpas_io_handle_dminfo(stream % fileHandle), real0d_temp)
                      field_1dreal_ptr => field_cursor % real1dField
@@ -2874,7 +2874,7 @@ module mpas_io_streams
                    end if
                    return
                end if
-   
+
                if (field_cursor % isDecomposed) then
                   ! Distribute field to multiple blocks
                   field_2dreal_ptr => field_cursor % real2dField
@@ -2900,7 +2900,7 @@ module mpas_io_streams
                   end do
 
                else
-   
+
                   if (field_cursor % real2dField % isVarArray) then
                      call mpas_dmpar_bcast_reals( mpas_io_handle_dminfo(stream % fileHandle), size(real1d_temp), real1d_temp(:))
                      field_2dreal_ptr => field_cursor % real2dField
@@ -2959,7 +2959,7 @@ module mpas_io_streams
                    end if
                    return
                end if
-   
+
                if (field_cursor % isDecomposed) then
                   ! Distribute field to multiple blocks
                   field_3dreal_ptr => field_cursor % real3dField
@@ -2986,7 +2986,7 @@ module mpas_io_streams
                   end do
 
                else
-   
+
                   if (field_cursor % real3dField % isVarArray) then
                      call mpas_dmpar_bcast_reals( mpas_io_handle_dminfo(stream % fileHandle), size(real2d_temp), real2d_temp(:,1))
                      field_3dreal_ptr => field_cursor % real3dField
@@ -3046,7 +3046,7 @@ module mpas_io_streams
                    end if
                    return
                end if
-   
+
                if (field_cursor % isDecomposed) then
                   ! Distribute field to multiple blocks
                   field_4dreal_ptr => field_cursor % real4dField
@@ -3073,7 +3073,7 @@ module mpas_io_streams
                   end do
 
                else
-   
+
                   if (field_cursor % real4dField % isVarArray) then
                      call mpas_dmpar_bcast_reals( mpas_io_handle_dminfo(stream % fileHandle), size(real3d_temp), real3d_temp(:,1,1))
                      field_4dreal_ptr => field_cursor % real4dField
@@ -3136,7 +3136,7 @@ module mpas_io_streams
                    end if
                    return
                end if
-   
+
                if (field_cursor % isDecomposed) then
                   ! Distribute field to multiple blocks
                   field_5dreal_ptr => field_cursor % real5dField
@@ -3163,7 +3163,7 @@ module mpas_io_streams
                   end do
 
                else
-   
+
                   if (field_cursor % real5dField % isVarArray) then
                      call mpas_dmpar_bcast_reals( mpas_io_handle_dminfo(stream % fileHandle), size(real4d_temp), real4d_temp(:,1,1,1))
                      field_5dreal_ptr => field_cursor % real5dField
@@ -3296,7 +3296,7 @@ module mpas_io_streams
       !
       ! Set time frame to write
       !
-      call MPAS_io_set_frame(stream % fileHandle, frame, io_err) 
+      call MPAS_io_set_frame(stream % fileHandle, frame, io_err)
       call MPAS_io_err_mesg(io_err, .false.)
       if (io_err /= MPAS_IO_NOERR) then
          if (present(ierr)) ierr = MPAS_IO_ERR
@@ -3943,7 +3943,7 @@ module mpas_io_streams
          return
       end if
 
-      call MPAS_io_get_att(stream % fileHandle, attName, attValue, ierr=io_err) 
+      call MPAS_io_get_att(stream % fileHandle, attName, attValue, ierr=io_err)
       call MPAS_io_err_mesg(io_err, .false.)
       if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
 
@@ -3971,7 +3971,7 @@ module mpas_io_streams
          return
       end if
 
-      call MPAS_io_get_att(stream % fileHandle, attName, attValue, ierr=io_err) 
+      call MPAS_io_get_att(stream % fileHandle, attName, attValue, ierr=io_err)
       call MPAS_io_err_mesg(io_err, .false.)
       if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
 
@@ -4071,7 +4071,7 @@ module mpas_io_streams
          return
       end if
 
-      call MPAS_io_get_att(stream % fileHandle, attName, attValue, ierr=io_err) 
+      call MPAS_io_get_att(stream % fileHandle, attName, attValue, ierr=io_err)
       call MPAS_io_err_mesg(io_err, .false.)
       if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
 
@@ -4100,7 +4100,7 @@ module mpas_io_streams
          return
       end if
 
-      call MPAS_io_put_att(stream % fileHandle, attName, attValue, syncVal=syncVal, ierr=io_err) 
+      call MPAS_io_put_att(stream % fileHandle, attName, attValue, syncVal=syncVal, ierr=io_err)
       call MPAS_io_err_mesg(io_err, .false.)
       if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
 
@@ -4129,7 +4129,7 @@ module mpas_io_streams
          return
       end if
 
-      call MPAS_io_put_att(stream % fileHandle, attName, attValue, syncVal=syncVal, ierr=io_err) 
+      call MPAS_io_put_att(stream % fileHandle, attName, attValue, syncVal=syncVal, ierr=io_err)
       call MPAS_io_err_mesg(io_err, .false.)
       if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
 
@@ -4232,7 +4232,7 @@ module mpas_io_streams
          return
       end if
 
-      call MPAS_io_put_att(stream % fileHandle, attName, attValue, syncVal=syncVal, ierr=io_err) 
+      call MPAS_io_put_att(stream % fileHandle, attName, attValue, syncVal=syncVal, ierr=io_err)
       call MPAS_io_err_mesg(io_err, .false.)
       if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
 
@@ -4334,7 +4334,7 @@ module mpas_io_streams
                   call MPAS_io_put_att(handle, trim(att_cursor % attName), att_cursor % attValueRealA, fieldname)
                case (MPAS_ATT_TEXT)
                   call MPAS_io_put_att(handle, trim(att_cursor % attName), att_cursor % attValueText, fieldname)
-            end select 
+            end select
             att_cursor => att_cursor % next
          end do
       ! For MPAS_IO_READ the commented out code would overwrite any attributes, such as "units", defined in the
