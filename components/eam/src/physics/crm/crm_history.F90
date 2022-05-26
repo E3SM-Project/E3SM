@@ -517,7 +517,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
 
    if (MMF_microphysics_scheme .eq. 'sam1mom') then
       call outfld('MMF_QS    ',crm_output%qs_mean(icol_beg:icol_end,:), ncol ,lchnk )
-      call outfld('MMF_QG    ',crm_output%qg_mean(icol_beg:icol_end,:), ncol ,lchnk )   
+      call outfld('MMF_QG    ',crm_output%qg_mean(icol_beg:icol_end,:), ncol ,lchnk )
    end if
 
    if (MMF_microphysics_scheme .eq. 'p3') then
