@@ -1,4 +1,4 @@
-#include "crmsurface.h"
+git#include "crmsurface.h"
 
 void crmsurface(real1d &bflx) {
   YAKL_SCOPE( uhl      , ::uhl);
@@ -6,8 +6,6 @@ void crmsurface(real1d &bflx) {
   YAKL_SCOPE( dtn      , ::dtn);
   YAKL_SCOPE( utend    , ::utend);
   YAKL_SCOPE( vtend    , ::vtend);
-  YAKL_SCOPE( taux0    , ::taux0);
-  YAKL_SCOPE( tauy0    , ::tauy0);
   YAKL_SCOPE( u        , ::u);
   YAKL_SCOPE( v        , ::v);
   YAKL_SCOPE( rho      , ::rho);
@@ -23,8 +21,6 @@ void crmsurface(real1d &bflx) {
   parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
     uhl(icrm) = uhl(icrm) + dtn*utend(0,icrm);
     vhl(icrm) = vhl(icrm) + dtn*vtend(0,icrm);
-    taux0(icrm) = 0.0;
-    tauy0(icrm) = 0.0;
   });
 
   //  for (int j=0; j<ny; j++) {
@@ -42,8 +38,6 @@ void crmsurface(real1d &bflx) {
 
     fluxbv(j,i,icrm) = -(0.5*(v(0,j+YES3D+offy_v,i+offx_v,icrm)+v(0,j+offy_v,i+offx_v,icrm))+vg-vhl(icrm))/u_h0*tau00;
 
-    yakl::atomicAdd( taux0(icrm) , fluxbu(j,i,icrm)/( (real) nx * (real) ny ) );
-    yakl::atomicAdd( tauy0(icrm) , fluxbv(j,i,icrm)/( (real) nx * (real) ny ) );
   });
 }
 
