@@ -315,7 +315,7 @@ subroutine ocn_tend_vvel(tendPool, statePool, forcingPool, meshPool, &
    !$omp private(k)
    do iEdge = 1, nEdges
       do k = 1, nVertLevels
-         normalThicknessFlux(k, iEdge) = normalTransportVelocity(k, iEdge) * layerThickEdge(k, iEdge)
+         normalThicknessFlux(k, iEdge) = normalTransportVelocity(k, iEdge) * layerThickEdgeFlux(k, iEdge)
       end do
    end do
    !$omp end do
@@ -359,7 +359,7 @@ subroutine ocn_tend_vvel(tendPool, statePool, forcingPool, meshPool, &
    !   computed as \nu( \nabla divergence + k \times \nabla relativeVorticity )
    !   strictly only valid for config_mom_del2 == constant
    !
-   call ocn_vvel_hmix_del2_tend(layerThickEdge, verticalVelocity, &
+   call ocn_vvel_hmix_del2_tend(layerThickEdgeFlux, verticalVelocity, &
         tend_verticalVelocity, err)
 
 
