@@ -3430,6 +3430,8 @@
     <MAX_TASKS_PER_NODE compiler="pgigpu">18</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="gnugpu">42</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="ibmgpu">42</MAX_TASKS_PER_NODE>
+	<!-- Need to activate following attribute after CIME update from upstream -->
+    <!-- <MAX_GPUS_PER_NODE>6</MAX_GPUS_PER_NODE> -->
     <MAX_MPITASKS_PER_NODE>84</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="pgigpu">18</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="gnugpu">42</MAX_MPITASKS_PER_NODE>
@@ -3512,7 +3514,23 @@
     <environment_variables SMP_PRESENT="TRUE">
       <env name="JSRUN_THREAD_VARS">-E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -E OMP_PROC_BIND=spread -E OMP_PLACES=threads -E OMP_STACKSIZE=256M</env>
     </environment_variables>
-    <environment_variables>
+    <environment_variables compiler="ibm">
+      <env name="RS_PER_NODE">2</env>
+      <env name="CPU_PER_RS">21</env>
+      <env name="GPU_PER_RS">0</env>
+      <env name="LTC_PRT">cpu-cpu</env>
+      <env name="NUM_RS">$SHELL{echo "2*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
+      <env name="SMT_MODE">$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</env>
+    </environment_variables>
+    <environment_variables compiler="gnu">
+      <env name="RS_PER_NODE">2</env>
+      <env name="CPU_PER_RS">21</env>
+      <env name="GPU_PER_RS">0</env>
+      <env name="LTC_PRT">cpu-cpu</env>
+      <env name="NUM_RS">$SHELL{echo "2*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
+      <env name="SMT_MODE">$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</env>
+    </environment_variables>
+    <environment_variables compiler="pgi">
       <env name="RS_PER_NODE">2</env>
       <env name="CPU_PER_RS">21</env>
       <env name="GPU_PER_RS">0</env>
