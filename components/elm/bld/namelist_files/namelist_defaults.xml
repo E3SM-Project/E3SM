@@ -277,6 +277,8 @@ lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr2010_c210402.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne120np4_simyr2010_c20181023.nc</fsurdat>
 <fsurdat hgrid="ne1024np4.pg2"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne1024pg2_simyr2010_c211021.nc</fsurdat>
+<fsurdat hgrid="ne1024np4"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne1024np4_simyr2010_c220523.nc</fsurdat>
 
 <!-- for present day simulations - year 2000 -->
 <fsurdat hgrid="360x720cru"   sim_year="2000" use_crop=".false." >
