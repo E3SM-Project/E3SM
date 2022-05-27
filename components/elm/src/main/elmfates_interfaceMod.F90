@@ -323,6 +323,13 @@ verbose_output = .false.
         else
            call set_fates_ctrlparms('nu_com',cval='RD')
         end if
+        
+        ! Tell fates which decomposition method is being used by the host land model
+        if (use_century_decomp) then 
+           call set_fates_ctrlparms('decomp_method',cval='CENTURY')
+        else
+           call set_fates_ctrlparms('decomp_method',cval='NONE')
+        end if
 
         ! ELM ALWAYS has nitrogen and phosphorus "on"
         ! These may be in a non-limiting status (ie when supplements)
