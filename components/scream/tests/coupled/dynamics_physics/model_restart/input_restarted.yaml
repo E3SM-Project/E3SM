@@ -50,9 +50,4 @@ Grids Manager:
 # List all the yaml files with the output parameters
 Scorpio:
   Output YAML Files: ["model_restart_output.yaml"]
-  Model Restart:
-    Casename: model_restart
-    Output Control:
-      Frequency:       1
-      Frequency Units: Steps
 ...
