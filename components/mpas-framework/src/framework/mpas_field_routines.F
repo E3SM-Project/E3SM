@@ -39,7 +39,7 @@ module mpas_field_routines
 
    interface mpas_mask_assign_pointer
       module procedure mpas_mask_assign_pointer_field2d_mask2d_real
-      ! TODO module procedure mpas_mask_assign_pointer_field3d_mask2d_real
+      module procedure mpas_mask_assign_pointer_field3d_mask2d_real
       !module procedure mpas_mask_assign_pointer_field3d_mask3d_real
    end interface
    interface mpas_mask_field
@@ -2914,6 +2914,42 @@ module mpas_field_routines
       field % missingValueMask2d => mask
 
    end subroutine mpas_mask_assign_pointer_field2d_mask2d_real
+
+!***********************************************************************
+!
+!  routine mpas_mask_assign_pointer_field3d_mask2d_real
+!
+!> \brief   MPAS 3D real field mask routine.
+!> \author  Carolyn Begeman, Adrian Turner
+!> \date    05/17/22
+!> \details 
+!> 
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_mask_assign_pointer_field3d_mask2d_real(field, mask) !{{{
+
+      implicit none
+
+      type (field3DReal), intent(inout), pointer :: field
+      type (field2DInteger), intent(in), pointer :: mask
+
+      integer :: i
+      integer, dimension(3) :: fieldDims
+      integer, dimension(2) :: maskDims
+
+      character (len=StrKIND), dimension(3) :: fieldDimNames
+      character (len=StrKIND), dimension(2) :: maskDimNames
+
+      fieldDims = field % dimSizes
+      fieldDimNames = field % dimNames
+      maskDims = mask % dimSizes
+      maskDimNames = mask % dimNames
+
+      call mpas_log_write('Assign pointer from '//trim(field % fieldName)//' to '//trim(mask % fieldName))
+      field % missingValueMask2d => mask
+
+   end subroutine mpas_mask_assign_pointer_field3d_mask2d_real
+
 
 !***********************************************************************
 !

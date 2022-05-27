@@ -1423,6 +1423,8 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 
 		                fortprintf(fd, "         %s %% maskName = '%s'\n", pointer_name_arr , temp_str);
 				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'missing_value_mask', '%s')\n", pointer_name_arr, temp_str);
+                        } else {
+                                fortprintf(fd, "         %s %% maskName = 'none'\n", pointer_name_arr , temp_str);
 		        }
 
 			if ( vararrmissingval ) {
@@ -1668,6 +1670,8 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 
 		        fortprintf(fd, "      %s %% maskName = '%s'\n", pointer_name_arr , temp_str);
 			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'missing_value_mask', '%s')\n", pointer_name_arr, temp_str);
+                } else {
+                        fortprintf(fd, "      %s %% maskName = 'none'\n", pointer_name_arr , temp_str);
 		}
 
 		if ( varmissingval != NULL ) {
