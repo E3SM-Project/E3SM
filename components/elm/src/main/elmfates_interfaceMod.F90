@@ -59,6 +59,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : nsrest, nsrBranch
    use elm_varctl        , only : fates_inventory_ctrl_filename
    use elm_varctl        , only : use_lch4
+   use elm_varctl        , only : use_century_decomp
    use elm_varcon        , only : tfrz
    use elm_varcon        , only : spval
    use elm_varcon        , only : denice
