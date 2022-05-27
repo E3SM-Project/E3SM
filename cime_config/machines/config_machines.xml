@@ -3510,7 +3510,6 @@
         <arg name="latency_priority">--latency_priority $ENV{LTC_PRT}</arg>
         <arg name="stdio_mode">--stdio_mode prepended</arg>
         <arg name="thread_vars">$ENV{JSRUN_THREAD_VARS}</arg>
-        <arg name="smpiargs">--smpiargs="-gpu"</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
