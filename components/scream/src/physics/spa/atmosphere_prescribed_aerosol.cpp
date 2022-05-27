@@ -56,7 +56,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Required>("hybm"       , scalar1d_layout_mid, nondim, grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
 
   // Set of fields used strictly as output
-  add_field<Computed>("nc_activated",   scalar3d_layout_mid,    1/kg,   grid_name,ps);
+  add_field<Computed>("nccn",   scalar3d_layout_mid,    1/kg,   grid_name,ps);
   add_field<Computed>("aero_g_sw",      scalar3d_swband_layout, nondim, grid_name,ps);
   add_field<Computed>("aero_ssa_sw",    scalar3d_swband_layout, nondim, grid_name,ps);
   add_field<Computed>("aero_tau_sw",    scalar3d_swband_layout, nondim, grid_name,ps);
@@ -154,7 +154,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
 {
   // Initialize SPA pressure state stucture and set pointers for the SPA output data to
   // field managed variables.
-  SPAData_out.CCN3               = get_field_out("nc_activated").get_view<Pack**>();
+  SPAData_out.CCN3               = get_field_out("nccn").get_view<Pack**>();
   SPAData_out.AER_G_SW           = get_field_out("aero_g_sw").get_view<Pack***>();
   SPAData_out.AER_SSA_SW         = get_field_out("aero_ssa_sw").get_view<Pack***>();
   SPAData_out.AER_TAU_SW         = get_field_out("aero_tau_sw").get_view<Pack***>();
@@ -196,7 +196,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
   m_buffer.spa_temp.hybm = SPAData_start.hybm;
 
   // Set property checks for fields in this process
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nc_activated"),m_grid,0.0,1.0e11,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nccn"),m_grid,0.0,1.0e11,false);
   // upper bound set to 1.01 as max(g_sw)=1.00757 in current ne4 data assumingly due to remapping
   // add an epslon to max possible upper bound of aero_ssa_sw
 

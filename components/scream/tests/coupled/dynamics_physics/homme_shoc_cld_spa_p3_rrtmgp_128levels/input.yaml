@@ -10,7 +10,7 @@ Time Stepping:
   Number of Steps: ${NUM_STEPS}
 
 Initial Conditions:
-  Filename: ${SCREAM_DATA_DIR}/init/screami_ne2np4L128_20220524.nc
+  Filename: ${SCREAM_DATA_DIR}/init/screami_ne2np4L128_20220525.nc
   Physics GLL:
     surf_latent_flux: 0.0
     surf_sens_flux: 0.0
@@ -21,7 +21,7 @@ atmosphere_processes:
   homme:
     Process Name: Homme
     Enable Precondition Checks: false
-    Vertical Coordinate Filename: ${SCREAM_DATA_DIR}/init/screami_ne2np4L128_20220524.nc
+    Vertical Coordinate Filename: ${SCREAM_DATA_DIR}/init/screami_ne2np4L128_20220525.nc
     Moisture: moist
   physics:
     atm_procs_list: (mac_aero_mic,rrtmgp)

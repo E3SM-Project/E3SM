@@ -3,7 +3,7 @@ INCLUDE (ScreamUtils)
 # Test atmosphere processes
 if (NOT SCREAM_BASELINES_ONLY)
 
-  SET (TEST_LABELS "rrtmgp;physics")
+  SET (TEST_LABELS "rrtmgp;physics;driver")
   # Required libraries
   find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
   set (NEED_LIBS scream_rrtmgp rrtmgp ${NETCDF_C} scream_control scream_share physics_share yakl)
@@ -27,7 +27,7 @@ if (NOT SCREAM_BASELINES_ONLY)
                  ${CMAKE_CURRENT_BINARY_DIR}/input_unit.yaml COPYONLY)
 
   # Ensure test input files are present in the data dir
-  GetInputFile(init/rrtmgp_init_ne2np4.nc)
+  GetInputFile(init/screami_ne2np4L72_20220524.nc)
 
   # The RRTMGP stand-alone test that runs multi-step
   # Set AD configurable options

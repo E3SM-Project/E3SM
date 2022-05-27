@@ -411,7 +411,7 @@ contains
 
           if (do_prescribed_CCN) then
              !nccn_prescribed is an in-cloud value so make it grid average in this assignment
-             nc(k) = max(nc(k),nccn_prescribed(k))
+             nc(k) = max(nc(k),nccn_prescribed(k)/inv_cld_frac_l(k))
           else if (do_predict_nc) then
              nc(k) = max(nc(k) + nc_nuceat_tend(k) * dt,0.0_rtype)
           else

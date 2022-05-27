@@ -10,13 +10,13 @@ Time Stepping:
   Number of Steps: ${NUM_STEPS}
 
 Initial Conditions:
-  Filename: ${SCREAM_DATA_DIR}/init/homme_physics_ne2np4.nc
+  Filename: ${SCREAM_DATA_DIR}/init/screami_ne2np4L72_20220524.nc
 
 atmosphere_processes:
   atm_procs_list: (Dynamics)
   Dynamics:
     Type: Homme
-    Vertical Coordinate Filename: ${SCREAM_DATA_DIR}/init/homme_physics_ne2np4.nc
+    Vertical Coordinate Filename: ${SCREAM_DATA_DIR}/init/screami_ne2np4L72_20220524.nc
     Moisture: moist
 
 Grids Manager:

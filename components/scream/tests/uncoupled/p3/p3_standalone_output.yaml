@@ -23,7 +23,7 @@ Field Names:
   - micro_vap_ice_exchange
   - cldfrac_tot
   - inv_qc_relvar
-  - nc_activated
+  - nccn
   - nc_nuceat_tend
   - ni_activated
   - p_mid
