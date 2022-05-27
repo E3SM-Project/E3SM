@@ -119,11 +119,6 @@
 <se_tstep hgrid="ne256np4"> 37.5 </se_tstep>
 <dt_tracer_factor hgrid="ne256np4"> 8 </dt_tracer_factor>
 <hypervis_subcycle_q hgrid="ne256np4"> 8 </hypervis_subcycle_q>
-<!-- Settings specific for ne1024 configuration -->
-<se_tstep hgrid="ne1024np4"> 8.333333333333333d0 </se_tstep>
-<dt_remap_factor hgrid="ne1024np4"> 6 </dt_remap_factor>
-<dt_tracer_factor hgrid="ne1024np4"> 6 </dt_tracer_factor>
-<hypervis_subcycle_q hgrid="ne1024np4"> 6 </hypervis_subcycle_q>
 
 <!-- Use the less sensitive advection scheme -->
 <semi_lagrange_cdr_alg>3</semi_lagrange_cdr_alg>
