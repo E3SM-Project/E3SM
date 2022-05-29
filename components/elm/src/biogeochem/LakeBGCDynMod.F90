@@ -111,7 +111,7 @@ contains
       !
       ! !LOCAL VARIABLES:
       integer  :: c, t, g, fc                         ! indices
-      integer  :: j, k, r, j0                         ! indices
+      integer  :: j, k, r, j0, js                     ! indices
       integer  :: iter                                ! time indices
       logical  :: isFullTStep                         ! flag for full time step
       real(r8) :: dtime                               ! timestep size [seconds]
@@ -120,7 +120,7 @@ contains
       real(r8) :: zsum, dzm, dzp, dzb                 ! auxiliary variables
       real(r8) :: deficit, biomas_tot
       real(r8) :: blamda, bsusp, frcResusp
-      real(r8) :: ctot_act, cdep, cdep_tmp
+      real(r8) :: ztot_act, cdep, cdep_tmp
       integer  :: jtop(bounds%begc:bounds%endc)                      ! top level for each column
       integer  :: jwat(bounds%begc:bounds%endc)                      ! top water layer index
       integer  :: jmix(bounds%begc:bounds%endc)                      ! mixing layer index
@@ -190,7 +190,7 @@ contains
 
             lake_csed            => lakebgc_vars%csed_col               , & ! Input: [real(r8) (:)] lake sediment OC density [kgC/m3]
             lake_cdep            => lakebgc_vars%cdep_col               , & ! Input: [real(r8) (:)] allocthonous OC deposition [gC/m2/yr]
-            cdist_factor         => lakebgc_vars%cdist_factor           , & ! Input: [real(r8) (:,:)] active sediment OC distribution factor
+            lake_soilc_old       => lakebgc_vars%soilc_old_col          , & ! Input: [real(r8) (:,:,:)] lake sediment Pleistocene carbon [gC/m3]
 
             nem_lake_grc         => lnd2atm_vars%nem_lake_grc           , & ! Output: [real(r8) (:)] gridcell average net methane correction to CO2 flux [gC/m^2/s]
 
@@ -278,6 +278,9 @@ contains
                soilpor(c,j) = watsat(c,j)
             end if
          end do
+
+         ! update Pleistocene-age C
+         call SetYedomaLakeOldC(lakebgc_vars, c)
 
          ! diffusivity
          call CalcSoluteDiffusivity(lakestate_vars, c, dx(c,:))
@@ -409,8 +412,8 @@ contains
 
             ! methanogenesis 
             call Methanogenesis(lakestate_vars, lakebgc_vars, c, conc_old(c,:,:), &
-                     lake_soilc(c,:,:), csrc(c,:,:), csnk(c,:,:), soilc_loss(c,:,:), &
-                     pch4_vr(c,:)) 
+                     lake_soilc(c,:,:), lake_soilc_old(c,:), csrc(c,:,:), &
+                     csnk(c,:,:), soilc_loss(c,:,:), pch4_vr(c,:)) 
             ch4_prod_wat(c,1:nlevlak) = ch4_prod_wat(c,1:nlevlak) + &
                   pch4_vr(c,1:nlevlak)*dtime
             ch4_prod_sed(c,1:nlevsoi) = ch4_prod_sed(c,1:nlevsoi) + &
@@ -569,8 +572,6 @@ contains
                      conc_new(c,j,k) = 0._r8
                   end if
                end do
-               ! assume dissolved N2 always replete
-               conc_new(c,1:nlevlak,wn2lak) = conc_eq(c,wn2lak)
 
                ! set dissolved gas conc for outputs
                conc_wat(c,1:nlevlak,k) = conc_new(c,1:nlevlak,k)
@@ -792,15 +793,21 @@ contains
             soilc_act_tot(c) = max(0._r8, soilc_act_tot(c))
 
             ! active C redistribution
-            ctot_act = 0._r8
+            ztot_act = 0._r8
             do j = 1, nlevsoi
-               lake_soilc(c,j,actC) = soilc_act_tot(c) * cdist_factor(c,j)
-               ctot_act = ctot_act + lake_soilc(c,j,actC)*dz(c,j)
+               if (ztot_act>=0.2_r8) then
+                  exit
+               end if
+               ztot_act = ztot_act + dz(c,j)
+               js = j
             end do
-            if (ctot_act>1.e-8_r8) then
-               lake_soilc(c,1:nlevsoi,actC) = lake_soilc(c,1:nlevsoi,actC) * &
-                     soilc_act_tot(c) / ctot_act
-            end if
+            do j = 1, nlevsoi
+               if (j<=js) then
+                  lake_soilc(c,j,actC) = soilc_act_tot(c) / ztot_act
+               else
+                  lake_soilc(c,j,actC) = 0._r8
+               end if
+            end do
 
             totsoilc(c) = 0._r8
             do j = 1, nlevsoi
@@ -1260,9 +1267,9 @@ contains
 
       do j = 1, nlevlak+nlevsoi
          if (j<nlevlak) then
-            kmg(j) = 1.25_r8 * kme(c,j) + 1.5e-6_r8
+            kmg(j) = 1.25_r8 * kme(c,j)
          else if (j==nlevlak) then
-            kmg(j) = 1.5e-6_r8
+            kmg(j) = max(1.25_r8*kme(c,j), 1.5e-6_r8)
          else
             kmg(j) = 2.57e-7_r8
          end if
@@ -1955,7 +1962,7 @@ contains
    end subroutine HeterotrophicR
 
    subroutine Methanogenesis(lakestate_vars, lakebgc_vars, c, conc_solu, &
-                             soilc, csrc, csnk, soilc_loss, pch4_vr)
+                             soilc, soilc_old, csrc, csnk, soilc_loss, pch4_vr)
       !
       ! !DESCRIPTION:
       ! Simulate methane production 
@@ -1975,6 +1982,7 @@ contains
       integer                , intent(in)    :: c
       real(r8)               , intent(in)    :: conc_solu(1:nlevlak+nlevsoi,1:nsolulak)   ! solute (mol/m3)
       real(r8)               , intent(in)    :: soilc(1:nlevsoi,1:nsoilclak)              ! soil C (gC/m3)
+      real(r8)               , intent(in)    :: soilc_old(1:nlevsoi)                      ! soil C (gC/m3)
       real(r8)               , intent(inout) :: csrc(1:nlevlak+nlevsoi,1:nsolulak)        ! mol/m3/s 
       real(r8)               , intent(inout) :: csnk(1:nlevlak+nlevsoi,1:nsolulak)        ! mol/m3/s
       real(r8)               , intent(inout) :: soilc_loss(1:nlevsoi,1:nsoilclak)         ! gC/m3/s
@@ -1985,13 +1993,9 @@ contains
       real(r8), parameter :: Tpr(nsoilclak) = (/273.15_r8,276.65_r8/)   ! CH4 production reference temperature (K)
       real(r8), parameter :: pHmin = 2.2_r8  ! minimum allowable pH for CH4 production
       real(r8), parameter :: pHmax = 9.0_r8  ! maximum allowable pH for CH4 production
-      real(r8), parameter :: oldcarb0 = 29.3e3_r8  ! yedoma permafrost C (gC/m3)
-      real(r8), parameter :: Ct = 0.77_r8    ! permafrost thawing rate (m/(yr^0.5))
-      real(r8), parameter :: Rco = 4.2983e-10_r8   ! yedoma C reference loss rate (s-1)
       !
       ! !LOCAL VARIABLES:
       real(r8) :: tw, ts
-      real(r8) :: talik, tthaw, oldcarb
       real(r8) :: Rc, PQ10
       real(r8) :: c_o2, fo2, ftemp, fph
       real(r8) :: pch4_soilc, pch4_soilc_yedoma
@@ -1999,12 +2003,6 @@ contains
       !-------------------------------------------------------------------- 
 
       associate(                                            &
-            dz_lake        => col_pp%dz_lake                   , & ! Input: [real(r8) (:,:)] layer thickness for lake (m)
-            z_lake         => col_pp%z_lake                    , & ! Input: [real(r8) (:,:)] layer depth for lake (m) 
-            dz             => col_pp%dz                        , & ! Input: [real(r8) (:,:)] layer thickness (m)                   
-            z              => col_pp%z                         , & ! Input: [real(r8) (:,:)] layer depth (m)
-            lakedepth      => col_pp%lakedepth                 , & ! Input: [real(r8) (:)] column lake depth (m)
-
             t_lake         => col_es%t_lake                    , & ! Input: [real(r8) (:,:)] col lake temperature (Kelvin) 
             t_soisno       => col_es%t_soisno                  , & ! Input: [real(r8) (:,:)] soil (or snow) temperature (Kelvin)
 
@@ -2036,8 +2034,6 @@ contains
          fph = 0._r8
       end if
 
-      talik = (lakedepth(c) - 2._r8) / 0.75_r8  ! talik thickness
-
       ! CH4 production in sediment
       do j = 1, nlevsoi
          ! sediment temperature
@@ -2052,16 +2048,7 @@ contains
          if (lake_type(c)==yedoma_lake) then
             Rc = LakeBGCParamsInst%Rcold
 
-            if (j<nlevsoi .and. talik>=z(c,j) .and. talik<z(c,j+1)) then
-               tthaw = 3.1536e7_r8 * (talik**2._r8 - z(c,j)**2._r8) / Ct**2._r8
-               oldcarb = oldcarb0 * exp(-Rco*tthaw)
-            else if (j==nlevsoi .and. talik>=z(c,j)) then
-               tthaw = 3.1536e7_r8 * (talik**2._r8 - z(c,j)**2._r8) / Ct**2._r8
-               oldcarb = oldcarb0 * exp(-Rco*tthaw)
-            else
-               oldcarb = 0._r8
-            end if
-            pch4_soilc_yedoma = 0.5_r8 * Rc * (oldcarb/3._r8) / catomw 
+            pch4_soilc_yedoma = 0.5_r8 * Rc * soilc_old(j) / catomw 
             pch4_vr(j+nlevlak) = pch4_vr(j+nlevlak) + pch4_soilc_yedoma
 
             csrc(j+nlevlak,wch4lak) = csrc(j+nlevlak,wch4lak) + pch4_soilc_yedoma
@@ -2106,6 +2093,59 @@ contains
 
       end associate
    end subroutine Methanogenesis 
+
+   subroutine SetYedomaLakeOldC(lakebgc_vars, c)
+      !
+      ! !DESCRIPTION:
+      ! Set Pleistocene-age C pool for yedoma lake 
+      !
+      ! !USES:
+      use elm_varpar         , only : nlevsoi, nlevgrnd
+      use LakeBGCType        , only : yedoma_lake, thaw_lake
+      ! !ARGUMENTS:
+      implicit none
+      type(lakebgc_type)     , intent(in)    :: lakebgc_vars
+      integer                , intent(in)    :: c
+      !
+      ! !CONSTANTS
+      real(r8), parameter :: oldcarb0 = 29.3e3_r8  ! yedoma permafrost C (gC/m3)
+      real(r8), parameter :: Ct = 0.77_r8    ! permafrost thawing rate (m/(yr^0.5))
+      real(r8), parameter :: Rco = 4.2983e-10_r8   ! yedoma C reference loss rate (s-1)
+      !
+      ! !LOCAL VARIABLES:
+      real(r8) :: talik, Rc, tthaw 
+      integer  :: j
+      !-------------------------------------------------------------------- 
+
+      associate(                                            &
+            z                    => col_pp%z                   , & ! Input: [real(r8) (:,:)] layer depth (m)
+            lakedepth            => col_pp%lakedepth           , & ! Input: [real(r8) (:)] column lake depth [m] 
+
+            lake_type            => lakebgc_vars%ltype_col     , & ! Input: [integer  (:)] lake type identifier
+
+            lake_soilc_old       => lakebgc_vars%soilc_old_col   & ! Output: [real(r8) (:,:)] column lake Pleistocene-age C (gC/m3) 
+            )
+
+      talik = (lakedepth(c) - 2._r8) / 0.75_r8  ! talik thickness 
+      do j = 1, nlevgrnd
+         ! yedoma thermokarst lakes
+         if (lake_type(c)==yedoma_lake) then
+            if (j<nlevsoi .and. talik>=z(c,j) .and. talik<z(c,j+1)) then
+               tthaw = 3.1536e7_r8 * (talik**2._r8 - z(c,j)**2._r8) / Ct**2._r8
+               lake_soilc_old(c,j) = oldcarb0 * exp(-Rco*tthaw) / 3._r8
+            else if (j==nlevsoi .and. talik>=z(c,j)) then
+               tthaw = 3.1536e7_r8 * (talik**2._r8 - z(c,j)**2._r8) / Ct**2._r8
+               lake_soilc_old(c,j) = oldcarb0 * exp(-Rco*tthaw) / 3._r8
+            else
+               lake_soilc_old(c,j) = 0._r8
+            end if
+         else
+            lake_soilc_old(c,j) = 0._r8
+         end if
+      end do 
+
+      end associate
+   end subroutine
 
    subroutine Methanotrophy(lakestate_vars, c, conc_solu, csrc, csnk, och4_vr)
       !

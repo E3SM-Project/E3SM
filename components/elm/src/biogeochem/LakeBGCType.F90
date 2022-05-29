@@ -58,7 +58,6 @@ module LakeBGCType
      integer,  pointer :: ltype_col(:)                ! col lake type (regular lake = 0) 
 
      ! Lake BGC intermediate variables
-     real(r8), pointer :: cdist_factor(:,:)           ! col active sediment OC distribution factor 
      real(r8), pointer :: soilpor_col(:,:)            ! col sediment porosity (fraction)
      real(r8), pointer :: fsds_vis_col(:,:)           ! col incident vis radiation for BGC (W/m^2) 
 
@@ -69,8 +68,9 @@ module LakeBGCType
      real(r8), pointer :: conc_iceb_col(:,:)          ! col total bubble gas trapped in ice layers (mol/m2)
      real(r8), pointer :: biomas_phyto_col(:,:,:)     ! col phytoplankton biomass (gC/m3)
      real(r8), pointer :: chla_col(:,:)               ! col chlorophyll-a conc (g/m3)
-     real(r8), pointer :: soilc_col(:,:,:)            ! col sediment C pools (gC/m3)
-     real(r8), pointer :: totsoilc_col(:)             ! col total sediment C (gC/m2)
+     real(r8), pointer :: soilc_col(:,:,:)            ! col sediment OC pools (gC/m3)
+     real(r8), pointer :: soilc_old_col(:,:)          ! col Pleistocene-age OC pool (gC/m3)
+     real(r8), pointer :: totsoilc_col(:)             ! col total sediment OC (gC/m2)
      real(r8), pointer :: totphytoc_col(:)            ! col total phytoplankton biomass (gC/m2)
 
      ! Lake BGC flux variables
@@ -146,7 +146,6 @@ contains
     allocate( this%cdep_col            (begc:endc))                                  ; this%cdep_col           (:)     = nan
     allocate( this%ltype_col           (begc:endc))                                  ; this%ltype_col          (:)     = 0
 
-    allocate( this%cdist_factor        (begc:endc,1:nlevgrnd))                       ; this%cdist_factor       (:,:)   = nan
     allocate( this%soilpor_col         (begc:endc,1:nlevgrnd))                       ; this%soilpor_col        (:,:)   = nan
     allocate( this%fsds_vis_col        (begc:endc,1:nlevlak))                        ; this%fsds_vis_col       (:,:)   = nan 
 
@@ -155,6 +154,7 @@ contains
     allocate( this%conc_bubl_col       (begc:endc,1:nlevlak,1:ngaslak))              ; this%conc_bubl_col      (:,:,:) = nan 
     allocate( this%biomas_phyto_col    (begc:endc,1:nlevlak,1:nphytolak))            ; this%biomas_phyto_col   (:,:,:) = nan
     allocate( this%soilc_col           (begc:endc,1:nlevgrnd,1:nsoilclak))           ; this%soilc_col          (:,:,:) = nan
+    allocate( this%soilc_old_col       (begc:endc,1:nlevgrnd))                       ; this%soilc_old_col      (:,:)   = nan
     allocate( this%chla_col            (begc:endc,1:nlevlak))                        ; this%chla_col           (:,:)   = nan
     allocate( this%conc_iceb_col       (begc:endc,1:ngaslak))                        ; this%conc_iceb_col      (:,:)   = nan
     allocate( this%totsoilc_col        (begc:endc))                                  ; this%totsoilc_col       (:)     = nan
@@ -337,7 +337,7 @@ contains
          ptr_col=this%hr_sed_vr_col, l2g_scale_type='lake', default='inactive')
 
     this%ctot_dep_col(begc:endc) = spval
-    call hist_addfld1d (fname='CDEP_LAK',  units='gC/m^2/s',  &
+    call hist_addfld1d (fname='CDEP_LAKE',  units='gC/m^2/s',  &
          avgflag='A', long_name='lake OC deposition rate', &
          ptr_col=this%ctot_dep_col, l2g_scale_type='lake', default='inactive')
 
@@ -345,11 +345,20 @@ contains
     do k = 1, nsoilclak
        data2dptr => this%soilc_col(:,:,k)
        write(fieldname, "(A,I0,A)") 'SED', k, 'C_LAKE'
-       write(longname, "(A,I0,A)") 'lake sediment ', k, ' C'
+       if (k==actC) then
+          write(longname, "(A)") 'lake sediment active OC'
+       else if (k==pasC) then
+          write(longname, "(A)") 'lake sediment passive OC'
+       end if
        call hist_addfld2d (fname=fieldname,  units='gC/m^3', type2d='levgrnd', &
             avgflag='A', long_name=longname, ptr_col=data2dptr, &
             l2g_scale_type='lake', default='inactive')
     end do 
+
+    this%soilc_old_col(begc:endc,1:nlevgrnd) = spval
+    call hist_addfld2d (fname='SED3C_LAKE',  units='gC/m^3', type2d='levgrnd', &
+         avgflag='A', long_name='lake sediment Pleistocene-age OC', & 
+         ptr_col=this%soilc_old_col, l2g_scale_type='lake', default='inactive')
 
     this%biomas_phyto_col(begc:endc,1:nlevlak,1:nphytolak) = spval
     do k = 1, nphytolak
@@ -403,8 +412,8 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer            :: c, g, l, t, ti, topi
-    integer            :: j, js 
-    integer            :: dimid                         ! dimension id
+    integer            :: j
+    integer            :: dimid               ! dimension id
     logical            :: readvar
     type(file_desc_t)  :: ncid
     character(len=256) :: locfn
@@ -416,7 +425,7 @@ contains
     real(r8) ,pointer  :: csed2d     (:,:)    ! read in - sediment OC density
     real(r8) ,pointer  :: cdep2d     (:,:)    ! read in - OC deposition
     integer  ,pointer  :: type2d     (:,:)    ! read in - lake type 
-    real(r8)           :: carbon, dampen, ztot
+    real(r8)           :: carbon, dampen
     character(len=100) :: tString ! temp. var for reading
     character(len=100) :: errCode = '-Error reading in parameters file:'
     !-----------------------------------------------------------------------
@@ -484,9 +493,6 @@ contains
     enddo
     zisoifl(nlevsoifl+1) = zsoifl(nlevsoifl) + 0.5_r8*dzsoifl(nlevsoifl)
 
-    js = COUNT(zisoifl<=0.5_r8)
-    ztot = zisoifl(js)
-
     do c = bounds%begc, bounds%endc
 
        g = col_pp%gridcell(c)
@@ -501,7 +507,6 @@ contains
           this%csed_col(c)                            = spval
           this%cdep_col(c)                            = spval
           this%ltype_col(c)                           = 0
-          this%cdist_factor(c,:)                      = spval
           this%soilpor_col(c,:)                       = spval
           this%fsds_vis_col(c,:)                      = spval
           this%ch4_sed_diff_col(c)                    = spval
@@ -529,6 +534,7 @@ contains
           this%biomas_phyto_col(c,:,:)                = spval
           this%chla_col(c,:)                          = spval
           this%soilc_col(c,:,:)                       = spval
+          this%soilc_old_col(c,:)                     = spval
        else
           this%ch4_sed_diff_col(c)                    = 0._r8
           this%ch4_surf_diff_col(c)                   = 0._r8
@@ -571,21 +577,16 @@ contains
           this%conc_sed_col(c,:,wco2lak)              = 0.013_r8
           this%conc_sed_col(c,:,wch4lak)              = 0.617e-6_r8
           this%conc_sed_col(c,:,wsrplak)              = 0.04_r8*tp2d(g,ti)/patomw
+          this%soilc_old_col(c,:)                     = 0._r8
           
           carbon = 1.e3_r8 * csed2d(g,ti) * dampen / (1._r8 - exp(-dampen))
           do j = 1, nlevgrnd
              if (j<=nlevsoi) then
                 this%soilc_col(c,j,actC)              = 0._r8 
                 this%soilc_col(c,j,pasC)              = carbon * exp(-dampen*zisoifl(j)) 
-                if (j<js) then
-                   this%cdist_factor(c,j)             = dampen / (1._r8-exp(-dampen*ztot)) * exp(-dampen*zisoifl(j))
-                else
-                   this%cdist_factor(c,j)             = 0._r8
-                end if
              else
                 this%soilc_col(c,j,actC)              = 0._r8
                 this%soilc_col(c,j,pasC)              = 0._r8
-                this%cdist_factor(c,j)                = 0._r8
              end if
           end do
        end if
@@ -744,14 +745,19 @@ contains
     data2dptr => this%soilc_col(:,:,actC)
     call restartvar(ncid=ncid, flag=flag, varname='SED1C_LAKE', xtype=ncd_double, &
          dim1name='column', dim2name='levgrnd', switchdim=.true., &
-         long_name='active sediment C', units='gC/m^3', &
+         long_name='sediment active OC', units='gC/m^3', &
          readvar=readvar, interpinic_flag='interp', data=data2dptr)
 
     data2dptr => this%soilc_col(:,:,pasC)
     call restartvar(ncid=ncid, flag=flag, varname='SED2C_LAKE', xtype=ncd_double, &
          dim1name='column', dim2name='levgrnd', switchdim=.true., &
-         long_name='passive sediment C', units='gC/m^3', &
+         long_name='sediment passive OC', units='gC/m^3', &
          readvar=readvar, interpinic_flag='interp', data=data2dptr)
+
+    call restartvar(ncid=ncid, flag=flag, varname='SED3C_LAKE', xtype=ncd_double, &
+         dim1name='column', dim2name='levgrnd', switchdim=.true., &
+         long_name='sediment Pleistocene-age OC', units='gC/m^3', &
+         readvar=readvar, interpinic_flag='interp', data=this%soilc_old_col)
 
   end subroutine Restart
 
