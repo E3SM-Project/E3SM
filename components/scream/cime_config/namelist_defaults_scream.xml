@@ -191,6 +191,12 @@ tweaking their $case/namelist_scream.xml file.
       <Orbital__Obliquity COMPSET=".*SCREAM%AQUA.*">0</Orbital__Obliquity>
       <Orbital__MVELP>-9999</Orbital__MVELP>
       <Orbital__MVELP COMPSET=".*SCREAM%AQUA.*">0</Orbital__MVELP>
+      <rad_frequency hgrid="ne4np4">1</rad_frequency>
+      <rad_frequency hgrid="ne30np4">2</rad_frequency>
+      <rad_frequency hgrid="ne120np4">4</rad_frequency>
+      <rad_frequency hgrid="ne256np4">3</rad_frequency>
+      <rad_frequency hgrid="ne512np4">3</rad_frequency>
+      <rad_frequency hgrid="ne1024np4">3</rad_frequency>
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">

@@ -382,6 +382,14 @@
 <radiation_scheme rad="rrtmg">rrtmg</radiation_scheme>
 <radiation_scheme rad="rrtmgp">rrtmgp</radiation_scheme>
 
+<!-- Higher radiation frequency with higher resolution simulations-->
+<iradlw hgrid="ne256np4"  >3</iradlw>
+<iradsw hgrid="ne256np4"  >3</iradsw>
+<iradlw hgrid="ne512np4"  >3</iradlw>
+<iradsw hgrid="ne512np4"  >3</iradsw>
+<iradlw hgrid="ne1024np4" >3</iradlw>
+<iradsw hgrid="ne1024np4" >3</iradsw>
+
 <!-- CAM-Chem ozone (2000 climatology) -->
 <prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
 <prescribed_ozone_file>ozone_1.9x2.5_L26_2000clim_c091112.nc</prescribed_ozone_file>
