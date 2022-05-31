@@ -12,7 +12,7 @@ Time Stepping:
   Case Start Date: [2021, 10, 12]    # Year, Month, Day
 
 Initial Conditions:
-  Filename: ${SCREAM_DATA_DIR}/init/homme_physics_ne2np4.nc
+  Filename: ${SCREAM_DATA_DIR}/init/screami_ne2np4L72_20220524.nc
   Restart Run: false
   Physics GLL:
     aero_g_sw: 0.0
@@ -26,7 +26,7 @@ atmosphere_processes:
   homme:
     Process Name: Homme
     Enable Precondition Checks: false
-    Vertical Coordinate Filename: ${SCREAM_DATA_DIR}/init/homme_physics_ne2np4.nc
+    Vertical Coordinate Filename: ${SCREAM_DATA_DIR}/init/screami_ne2np4L72_20220524.nc
     Moisture: moist
   physics:
     atm_procs_list: (mac_aero_mic,rrtmgp)

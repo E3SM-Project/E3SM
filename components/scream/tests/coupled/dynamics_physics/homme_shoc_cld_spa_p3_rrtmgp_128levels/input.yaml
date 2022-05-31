@@ -4,16 +4,16 @@ Debug:
   Atmosphere DAG Verbosity Level: 5
 
 Time Stepping:
-  # IMPORTANT: make sure Start Time equals to the initial run start time PLUS one time step
-  Time Step: 300
-  Number of Steps: 1
-  Run Start Time: [12, 05, 00]      # Hours, Minutes, Seconds
-  Run Start Date: [2021, 10, 12]    # Year, Month, Day
-  Case Start Time: [12, 00, 00]      # Hours, Minutes, Seconds
-  Case Start Date: [2021, 10, 12]    # Year, Month, Day
+  Time Step: ${ATM_TIME_STEP}
+  Start Time: [12, 30, 00]      # Hours, Minutes, Seconds
+  Start Date: [2021, 10, 12]    # Year, Month, Day
+  Number of Steps: ${NUM_STEPS}
 
 Initial Conditions:
-  Restart Casename: model_restart
+  Filename: ${SCREAM_DATA_DIR}/init/screami_ne2np4L128_20220525.nc
+  Physics GLL:
+    surf_latent_flux: 0.0
+    surf_sens_flux: 0.0
 
 atmosphere_processes:
   atm_procs_list: (homme,physics)
@@ -21,14 +21,14 @@ atmosphere_processes:
   homme:
     Process Name: Homme
     Enable Precondition Checks: false
-    Vertical Coordinate Filename: ${SCREAM_DATA_DIR}/init/screami_ne2np4L72_20220524.nc
+    Vertical Coordinate Filename: ${SCREAM_DATA_DIR}/init/screami_ne2np4L128_20220525.nc
     Moisture: moist
   physics:
     atm_procs_list: (mac_aero_mic,rrtmgp)
-    Type: Group
     Schedule Type: Sequential
+    Type: Group
     mac_aero_mic:
-      atm_procs_list: (shoc,CldFraction,p3)
+      atm_procs_list: (shoc,CldFraction,spa,p3)
       Type: Group
       Schedule Type: Sequential
       Number of Subcycles: ${MAC_MIC_SUBCYCLES}
@@ -36,6 +36,10 @@ atmosphere_processes:
         Grid: Physics GLL
       CldFraction:
         Grid: Physics GLL
+      spa:
+        Grid: Physics GLL
+        SPA Remap File: ${SCREAM_DATA_DIR}/init/map_ne4np4_to_ne2np4_mono.nc
+        SPA Data File: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_20220428.nc
       p3:
         Grid: Physics GLL
     rrtmgp:
@@ -47,7 +51,7 @@ Grids Manager:
   Reference Grid: Physics GLL
   Dynamics Namelist File Name: namelist.nl
 
-# List all the yaml files with the output parameters
+# The parameters for I/O control
 Scorpio:
-  Output YAML Files: ["model_restart_output.yaml"]
+  Output YAML Files: ["homme_shoc_cld_spa_p3_rrtmgp_128levels_output.yaml"]
 ...

@@ -1062,7 +1062,7 @@ end subroutine micro_p3_readnl
        call pbuf_get_field(pbuf, ccn3_idx, ccn_trcdat) ! now you can use ccn_trcdat anywhere in this code
        ! ccn is uniformly distributed throughout the cell, but P3 computes in-cloud values assuming cell-averages are comprised
        ! of zero values outside cloud. Preemptively multiplying by cldfrac here is needed to get the correct in-cloud ccn value in P3
-       nccn_prescribed = ccn_trcdat*cld_frac_l
+       nccn_prescribed = ccn_trcdat
     end if
 
     ! CALL P3

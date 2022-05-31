@@ -1,7 +1,7 @@
 include (ScreamUtils)
 
 # Create the test
-SET (TEST_LABELS "p3;physics")
+SET (TEST_LABELS "p3;physics;driver")
 set (NEED_LIBS p3 scream_control scream_share)
 CreateUnitTest(p3_standalone "p3_standalone.cpp" "${NEED_LIBS}" LABELS ${TEST_LABELS}
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
@@ -18,7 +18,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
 configure_file(p3_standalone_output.yaml p3_standalone_output.yaml)
 
 # Ensure test input files are present in the data dir
-GetInputFile(init/p3_init_ne2np4.nc)
+GetInputFile(init/screami_ne2np4L72_20220524.nc)
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if max mpi ranks is >1

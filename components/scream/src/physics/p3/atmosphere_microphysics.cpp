@@ -76,7 +76,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 
   // Diagnostic Inputs: (only the X_prev fields are both input and output, all others are just inputs)
   add_field<Required>("nc_nuceat_tend",     scalar3d_layout_mid, 1/(kg*s), grid_name, ps);
-  add_field<Required>("nc_activated",       scalar3d_layout_mid, 1/kg,     grid_name, ps);
+  add_field<Required>("nccn",               scalar3d_layout_mid, 1/kg,     grid_name, ps);
   add_field<Required>("ni_activated",       scalar3d_layout_mid, 1/kg,     grid_name, ps);
   add_field<Required>("inv_qc_relvar",      scalar3d_layout_mid, Q*Q,      grid_name, ps);
   add_field<Required>("pseudo_density",     scalar3d_layout_mid, Pa,       grid_name, ps);
@@ -114,7 +114,7 @@ size_t P3Microphysics::requested_buffer_size_in_bytes() const
 
   // Number of Reals needed by the WorkspaceManager passed to p3_main
   const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
-  const size_t wsm_request   = WSM::get_total_bytes_needed(nk_pack, 52, policy);
+  const size_t wsm_request   = WSM::get_total_bytes_needed(nk_pack_p1, 52, policy);
 
   return interface_request + wsm_request;
 }
@@ -163,7 +163,7 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   // Compute workspace manager size to check used memory
   // vs. requested memory
   const auto policy  = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
-  const int wsm_size = WSM::get_total_bytes_needed(nk_pack, 52, policy)/sizeof(Spack);
+  const int wsm_size = WSM::get_total_bytes_needed(nk_pack_p1, 52, policy)/sizeof(Spack);
   s_mem += wsm_size;
 
   size_t used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
@@ -196,6 +196,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
   const Int nk_pack = ekat::npack<Spack>(m_num_levs);
+  const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
   const  auto& pmid           = get_field_in("p_mid").get_view<const Pack**>();
   const  auto& pseudo_density = get_field_in("pseudo_density").get_view<const Pack**>();
   const  auto& T_atm          = get_field_out("T_mid").get_view<Pack**>();
@@ -236,7 +237,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   prog_state.qv     = p3_preproc.qv;
   // --Diagnostic Input Variables:
   diag_inputs.nc_nuceat_tend  = get_field_in("nc_nuceat_tend").get_view<const Pack**>();
-  diag_inputs.nccn            = get_field_in("nc_activated").get_view<const Pack**>();
+  diag_inputs.nccn            = get_field_in("nccn").get_view<const Pack**>();
   diag_inputs.ni_activated    = get_field_in("ni_activated").get_view<const Pack**>();
   diag_inputs.inv_qc_relvar   = get_field_in("inv_qc_relvar").get_view<const Pack**>();
   diag_inputs.pres            = get_field_in("p_mid").get_view<const Pack**>();
@@ -287,7 +288,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
 
   // Setup WSM for internal local variables
   const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nk_pack);
-  workspace_mgr.setup(m_buffer.wsm_data, nk_pack, 52, policy);
+  workspace_mgr.setup(m_buffer.wsm_data, nk_pack_p1, 52, policy);
 }
 
 // =========================================================================================

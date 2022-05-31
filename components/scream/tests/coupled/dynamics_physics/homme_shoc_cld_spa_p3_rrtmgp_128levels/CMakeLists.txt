@@ -2,29 +2,32 @@ include (ScreamUtils)
 
 # Get or create the dynamics lib
 #                 HOMME_TARGET   NP PLEV QSIZE_D
-CreateDynamicsLib("theta-l_kokkos"  4   72   10)
+CreateDynamicsLib("theta-l_kokkos"  4   128   10)
 
 # Create the test
-set (TEST_LABELS "dynamics;driver")
-set (NEED_LIBS ${dynLibName} scream_control scream_share)
-
-CreateUnitTest(homme_standalone "homme_standalone.cpp" "${NEED_LIBS}"
-               LABELS ${TEST_LABELS} 
-               MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
-               PROPERTIES FIXTURES_SETUP homme_generate_output_nc_files
+set (TEST_LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
+set (NEED_LIBS cld_fraction shoc spa p3 scream_rrtmgp ${dynLibName} scream_control scream_share physics_share)
+CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp_128levels "homme_shoc_cld_spa_p3_rrtmgp_128levels.cpp" "${NEED_LIBS}"
+    LABELS ${TEST_LABELS}
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+    PROPERTIES FIXTURES_SETUP homme_shoc_cld_spa_p3_rrtmgp_128levels_generate_output_nc_files
 )
 
 # Set AD configurable options
 set (ATM_TIME_STEP 1800)
 SetVarDependingOnTestProfile(NUM_STEPS 2 4 48)  # 1h 2h 24h
 
+# Determine num subcycles needed to keep shoc dt<=300s
+set (SHOC_MAX_DT 300)
+math (EXPR MAC_MIC_SUBCYCLES "(${ATM_TIME_STEP} + ${SHOC_MAX_DT} - 1) / ${SHOC_MAX_DT}")
+
+## Copy (and configure) yaml files needed by tests
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_standalone_output.yaml
-               ${CMAKE_CURRENT_BINARY_DIR}/homme_standalone_output.yaml)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_shoc_cld_spa_p3_rrtmgp_128levels_output.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/homme_shoc_cld_spa_p3_rrtmgp_128levels_output.yaml)
 
 # Set homme's test options, so that we can configure the namelist correctly
-
 # Discretization/algorithm settings
 set (HOMME_TEST_NE 2)
 set (HOMME_TEST_LIM 9)
@@ -46,18 +49,25 @@ set (HOMME_TEST_NUTOP 2.5e5)
 
 # Testcase settings
 set (HOMME_TEST_MOISTURE notdry)
-set (HOMME_THETA_HY_MODE .true.)
+set (HOMME_THETA_HY_MODE true)
 
 # Vert coord settings
-set (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)
-set (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
+set (HOMME_TEST_VCOORD_INT_FILE acme-128i.ascii)
+set (HOMME_TEST_VCOORD_MID_FILE acme-128m.ascii)
 
 # Configure the namelist into the test directory
-configure_file(${SCREAM_BASE_DIR}/src/dynamics/homme/tests/theta.nl
+configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
 # Ensure test input files are present in the data dir
-GetInputFile(init/screami_ne2np4L72_20220524.nc)
+set (TEST_INPUT_FILES
+  init/spa_file_unified_and_complete_ne4_20220428.nc
+  init/screami_ne2np4L128_20220525.nc
+)
+foreach (file IN ITEMS ${TEST_INPUT_FILES})
+  GetInputFile(${file})
+endforeach()
+
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if max mpi ranks is >1
@@ -65,16 +75,17 @@ GetInputFile(init/screami_ne2np4L72_20220524.nc)
 if (SCREAM_TEST_MAX_RANKS GREATER 1)
   include (BuildCprnc)
   BuildCprnc()
-  set (BASE_TEST_NAME "homme")
+
+  set (BASE_TEST_NAME "homme_shoc_cld_spa_p3_rrtmgp_128levels")
   foreach (MPI_RANKS RANGE 2 ${SCREAM_TEST_MAX_RANKS})
-    set (SRC_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.Steps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
-    set (TGT_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.Steps_x${NUM_STEPS}.np1.nc")
+    set (SRC_FILE "${BASE_TEST_NAME}_output.INSTANT.Steps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
+    set (TGT_FILE "${BASE_TEST_NAME}_output.INSTANT.Steps_x${NUM_STEPS}.np1.nc")
     set (TEST_NAME "${BASE_TEST_NAME}_np1_vs_np${MPI_RANKS}_bfb")
     add_test (NAME ${TEST_NAME} 
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
               RESOURCE_LOCK ${BASE_TEST_NAME}
-              FIXTURES_REQUIRED homme_generate_output_nc_files)
+              FIXTURES_REQUIRED homme_shoc_cld_spa_p3_rrtmgp_128levels_generate_output_nc_files)
   endforeach()
 endif()

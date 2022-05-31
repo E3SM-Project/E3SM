@@ -131,7 +131,7 @@ void Functions<S,D>
       // prescribe that value
 
       if (do_prescribed_CCN) {
-         nc(k).set(not_drymass, max(nc(k), nccn_prescribed(k)));
+         nc(k).set(not_drymass, max(nc(k), nccn_prescribed(k)/inv_cld_frac_l(k)));
       } else if (predictNc) {
          nc(k).set(not_drymass, max(nc(k) + nc_nuceat_tend(k) * dt, 0.0));
       } else {

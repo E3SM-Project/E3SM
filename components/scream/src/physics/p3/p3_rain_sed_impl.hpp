@@ -157,8 +157,9 @@ void Functions<S,D>
       });
   }
 
+  const Int nk_pack = ekat::npack<Spack>(nk);
   Kokkos::parallel_for(
-   Kokkos::TeamThreadRange(team, qr_tend.extent(0)), [&] (int pk) {
+   Kokkos::TeamThreadRange(team, nk_pack), [&] (int pk) {
     qr_tend(pk) = (qr(pk) - qr_tend(pk)) * inv_dt; // Rain sedimentation tendency, measure
     nr_tend(pk) = (nr(pk) - nr_tend(pk)) * inv_dt; // Rain # sedimentation tendency, measure
   });

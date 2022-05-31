@@ -124,10 +124,6 @@
 <prescribed_aero_file nlev="128">mam4_0.9x1.2_L128_2000clim_c191106.nc</prescribed_aero_file>
 <prescribed_aero_cycle_yr>01</prescribed_aero_cycle_yr>
 
-<!-- Do radiation every five minutes for ne1024 -->
-<iradsw hgrid="ne1024np4"> 4 </iradsw>
-<iradlw hgrid="ne1024np4"> 4 </iradlw>
-
 <!-- Use the less sensitive advection scheme -->
 <semi_lagrange_cdr_alg>3</semi_lagrange_cdr_alg>
 
