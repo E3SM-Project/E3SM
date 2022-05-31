@@ -60,15 +60,16 @@ integer           :: srf_flux_avg         = unset_int  ! 1 => smooth surface flu
 integer           :: conv_water_in_rad    = unset_int  ! 0==> No; 1==> Yes-Arithmetic average;
                                                        ! 2==> Yes-Average in emissivity.
 
-character(len=16) :: MMF_microphysics_scheme  = unset_str  ! MMF microphysics package
-real(r8)          :: MMF_orientation_angle= 0.D0       ! CRM orientation angle [deg]
-logical           :: use_MMF              = .false.    ! true => use MMF / super-parameterization
-logical           :: use_ECPP             = .false.    ! true => use explicit-cloud parameterized-pollutants
-logical           :: use_MMF_VT           = .false.    ! true => use MMF variance transport
-integer           :: MMF_VT_wn_max        = 0          ! if >0 then use filtered MMF variance transport
-logical           :: use_crm_accel        = .false.    ! true => use MMF CRM mean-state acceleration (MSA)
-real(r8)          :: crm_accel_factor     = 2.D0       ! CRM acceleration factor
-logical           :: crm_accel_uv         = .true.     ! true => apply MMF CRM MSA to momentum fields
+logical           :: use_MMF                 = .false.   ! true => use MMF / super-parameterization
+logical           :: use_ECPP                = .false.   ! true => use explicit-cloud parameterized-pollutants
+real(r8)          :: MMF_orientation_angle   = 0.D0      ! MMF CRM orientation angle [deg]
+character(len=16) :: MMF_microphysics_scheme = unset_str ! MMF microphysics package
+character(len=16) :: MMF_turbulence_scheme   = unset_str ! MMF turbulence package
+logical           :: use_MMF_VT              = .false.   ! true => use MMF variance transport
+integer           :: MMF_VT_wn_max           = 0         ! if >0 then use filtered MMF variance transport
+logical           :: use_crm_accel           = .false.   ! true => use MMF CRM mean-state acceleration (MSA)
+real(r8)          :: crm_accel_factor        = 2.D0      ! CRM acceleration factor
+logical           :: crm_accel_uv            = .true.    ! true => apply MMF CRM MSA to momentum fields
 
 logical           :: use_subcol_microp    = .false.    ! if .true. then use sub-columns in microphysics
 
@@ -190,7 +191,8 @@ subroutine phys_ctl_readnl(nlfile)
 
    namelist /phys_ctl_nl/ cam_physpkg, cam_chempkg, waccmx_opt, deep_scheme, shallow_scheme, &
       eddy_scheme, microp_scheme,  macrop_scheme, radiation_scheme, srf_flux_avg, &
-      MMF_microphysics_scheme, MMF_orientation_angle, use_MMF, use_ECPP, &
+      use_MMF, use_ECPP, MMF_orientation_angle, &
+      MMF_microphysics_scheme, MMF_turbulence_scheme, &
       use_MMF_VT, MMF_VT_wn_max, &
       use_crm_accel, crm_accel_factor, crm_accel_uv, &
       use_subcol_microp, atm_dep_flux, history_amwg, history_verbose, history_vdiag, &
@@ -239,10 +241,11 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(radiation_scheme, len(radiation_scheme) , mpichar, 0, mpicom)
    call mpibcast(macrop_scheme,    len(macrop_scheme)    , mpichar, 0, mpicom)
    call mpibcast(srf_flux_avg,                    1 , mpiint,  0, mpicom)
-   call mpibcast(MMF_microphysics_scheme, len(MMF_microphysics_scheme) , mpichar, 0, mpicom)
-   call mpibcast(MMF_orientation_angle,           1 , mpir8,   0, mpicom)
    call mpibcast(use_MMF,                         1 , mpilog,  0, mpicom)
    call mpibcast(use_ECPP,                        1 , mpilog,  0, mpicom)
+   call mpibcast(MMF_orientation_angle,           1 , mpir8,   0, mpicom)
+   call mpibcast(MMF_microphysics_scheme, len(MMF_microphysics_scheme) , mpichar, 0, mpicom)
+   call mpibcast(MMF_turbulence_scheme,   len(MMF_turbulence_scheme)   , mpichar, 0, mpicom)   
    call mpibcast(use_MMF_VT,                      1 , mpilog,  0, mpicom)
    call mpibcast(MMF_VT_wn_max,                   1 , mpiint,  0, mpicom)
    call mpibcast(use_crm_accel,                   1 , mpilog,  0, mpicom)
@@ -384,6 +387,12 @@ subroutine phys_ctl_readnl(nlfile)
          write(iulog,*)'phys_setopts: illegal value of MMF_microphysics_scheme:', MMF_microphysics_scheme
          call endrun('phys_setopts: illegal value of MMF_microphysics_scheme')
       end if
+      ! Check settings for MMF_turbulence_scheme
+      if ( .not.(MMF_turbulence_scheme .eq. 'smag' .or. &
+                 MMF_turbulence_scheme .eq. 'shoc' )) then
+         write(iulog,*)'phys_setopts: illegal value of MMF_turbulence_scheme:', MMF_turbulence_scheme
+         call endrun('phys_setopts: illegal value of MMF_turbulence_scheme')
+      end if
       ! check value of MMF_orientation_angle
       if ( MMF_orientation_angle<0 .or. MMF_orientation_angle>(360) ) then
          if ( MMF_orientation_angle/=-1) then
@@ -458,8 +467,9 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         history_budget_out, history_budget_histfile_num_out, history_waccm_out, &
                         history_clubb_out, ieflx_opt_out, conv_water_in_rad_out, cam_chempkg_out, &
                         prog_modal_aero_out, macrop_scheme_out, &
-                        use_MMF_out, use_ECPP_out, MMF_microphysics_scheme_out, &
-                        MMF_orientation_angle_out, use_MMF_VT_out, MMF_VT_wn_max_out, &
+                        use_MMF_out, use_ECPP_out, MMF_orientation_angle_out, &
+                        MMF_microphysics_scheme_out, MMF_turbulence_scheme_out, &
+                        use_MMF_VT_out, MMF_VT_wn_max_out, &
                         use_crm_accel_out, crm_accel_factor_out, crm_accel_uv_out, &
                         do_clubb_sgs_out, do_tms_out, state_debug_checks_out, &
                         linearize_pbl_winds_out, export_gustiness_out, &
@@ -490,10 +500,11 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    character(len=16), intent(out), optional :: microp_scheme_out
    character(len=16), intent(out), optional :: radiation_scheme_out
    character(len=16), intent(out), optional :: macrop_scheme_out
-   character(len=16), intent(out), optional :: MMF_microphysics_scheme_out
-   real(r8),          intent(out), optional :: MMF_orientation_angle_out
    logical,           intent(out), optional :: use_MMF_out
    logical,           intent(out), optional :: use_ECPP_out
+   real(r8),          intent(out), optional :: MMF_orientation_angle_out
+   character(len=16), intent(out), optional :: MMF_microphysics_scheme_out
+   character(len=16), intent(out), optional :: MMF_turbulence_scheme_out
    logical,           intent(out), optional :: use_MMF_VT_out
    integer,           intent(out), optional :: MMF_VT_wn_max_out
    logical,           intent(out), optional :: use_crm_accel_out
@@ -565,12 +576,13 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(microp_scheme_out       ) ) microp_scheme_out        = microp_scheme
    if ( present(radiation_scheme_out    ) ) radiation_scheme_out     = radiation_scheme
 
-   if ( present(MMF_microphysics_scheme_out ) ) MMF_microphysics_scheme_out  = MMF_microphysics_scheme
-   if ( present(MMF_orientation_angle_out   ) ) MMF_orientation_angle_out    = MMF_orientation_angle
-   if ( present(use_MMF_out             ) ) use_MMF_out              = use_MMF
-   if ( present(use_ECPP_out            ) ) use_ECPP_out             = use_ECPP
-   if ( present(use_MMF_VT_out          ) ) use_MMF_VT_out           = use_MMF_VT
-   if ( present(MMF_VT_wn_max_out       ) ) MMF_VT_wn_max_out        = MMF_VT_wn_max
+   if ( present(use_MMF_out                 ) ) use_MMF_out                 = use_MMF
+   if ( present(use_ECPP_out                ) ) use_ECPP_out                = use_ECPP
+   if ( present(MMF_orientation_angle_out   ) ) MMF_orientation_angle_out   = MMF_orientation_angle
+   if ( present(MMF_microphysics_scheme_out ) ) MMF_microphysics_scheme_out = MMF_microphysics_scheme
+   if ( present(MMF_turbulence_scheme_out   ) ) MMF_turbulence_scheme_out   = MMF_turbulence_scheme
+   if ( present(use_MMF_VT_out              ) ) use_MMF_VT_out              = use_MMF_VT
+   if ( present(MMF_VT_wn_max_out           ) ) MMF_VT_wn_max_out           = MMF_VT_wn_max
    
    if ( present(use_crm_accel_out       ) ) use_crm_accel_out        = use_crm_accel
    if ( present(crm_accel_factor_out    ) ) crm_accel_factor_out     = crm_accel_factor
