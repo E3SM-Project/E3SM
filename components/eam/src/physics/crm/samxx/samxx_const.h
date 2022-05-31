@@ -3,7 +3,7 @@
 
 #include "YAKL.h"
 #include <iomanip>
-#include "scream_types.hpp"
+// #include "scream_types.hpp"
 
 using yakl::c::Bounds;
 using yakl::c::SimpleBounds;

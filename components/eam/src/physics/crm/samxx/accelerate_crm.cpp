@@ -8,8 +8,6 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
   YAKL_SCOPE( qcl              , :: qcl);
   YAKL_SCOPE( qci              , :: qci);
   YAKL_SCOPE( qv               , :: qv);
-  YAKL_SCOPE( qpl              , :: qpl);
-  YAKL_SCOPE( qpi              , :: qpi);
   YAKL_SCOPE( u                , :: u);
   YAKL_SCOPE( v                , :: v);
   YAKL_SCOPE( t0               , :: t0);
@@ -128,7 +126,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
     // Because we set nstop = crm_run_time / dt_a in crm_accel_nstop, subbing
     // crm_run_time = nstop * dt_a and working through algebra yields 
     //     updated nstop = nstop + (nstop - nstep + 1) * crm_accel_factor.
-    new_nstop = nstop + (nstop - nstep + 1)*crm_accel_factor;
+    int new_nstop = nstop + (nstop - nstep + 1)*crm_accel_factor;
     std::cout << "accelerate_crm: mean-state acceleration not applied this step"<<std::endl;;
     std::cout << "accelerate_crm: nstop increased from "<<nstop<<" to "<<round(new_nstop)<<std::endl;;
     nstop = new_nstop; // only can happen once

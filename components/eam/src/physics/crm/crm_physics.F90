@@ -327,7 +327,7 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
    use constituents,          only: apcnst, bpcnst, cnst_name, cnst_get_ind, cnst_longname
 #if defined(MMF_SAMXX)
   use cpp_interface_mod,      only: scream_session_init
-  use p3_lookup_interface_mod,only: initialize_p3_lookup
+  ! use p3_lookup_interface_mod,only: initialize_p3_lookup
 #endif
 #ifdef ECPP
    use module_ecpp_ppdriver2, only: papampollu_init
@@ -366,7 +366,7 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
 #if defined(MMF_SAMXX)
    if ( MMF_microphysics_scheme .eq. 'p3' ) then
       call scream_session_init()
-      call initialize_p3_lookup()
+      ! call initialize_p3_lookup()
    end if
 #endif
 
@@ -1302,7 +1302,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_output%jt_crm, crm_output%mx_crm, crm_output%cltot, &
                crm_output%clhgh, crm_output%clmed, crm_output%cllow, &
                crm_output%sltend, crm_output%qltend, crm_output%qcltend, crm_output%qiltend, &
-               crm_output%t_vt_tend, crm_output%q_vt_tend, crm_output%u_vt_tend, 
+               crm_output%t_vt_tend, crm_output%q_vt_tend, crm_output%u_vt_tend, &
                crm_output%t_vt_ls, crm_output%q_vt_ls, crm_output%u_vt_ls, &
 #if defined(MMF_MOMENTUM_FEEDBACK)
                crm_output%ultend, crm_output%vltend, &

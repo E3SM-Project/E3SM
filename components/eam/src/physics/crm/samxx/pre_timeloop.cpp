@@ -27,6 +27,7 @@ void pre_timeloop() {
   YAKL_SCOPE( crm_input_zint             , :: crm_input_zint );
   YAKL_SCOPE( presi                      , :: presi );
   YAKL_SCOPE( crm_input_pint             , :: crm_input_pint );
+  YAKL_SCOPE( pdel                       , :: pdel );
   YAKL_SCOPE( adzw                       , :: adzw );
   YAKL_SCOPE( crm_input_phis             , :: crm_input_phis );
   YAKL_SCOPE( crm_input_ps               , :: crm_input_ps );
@@ -153,7 +154,7 @@ void pre_timeloop() {
   YAKL_SCOPE( crm_output_flux_qt         , :: crm_output_flux_qt );
   YAKL_SCOPE( crm_output_flux_u          , :: crm_output_flux_u );
   YAKL_SCOPE( crm_output_flux_v          , :: crm_output_flux_v );
-  YAKL_SCOPE( crm_output_fluxsgs_qt      , :: crm_output_fluxsgs_qt )
+  YAKL_SCOPE( crm_output_fluxsgs_qt      , :: crm_output_fluxsgs_qt );
   YAKL_SCOPE( crm_output_tkez            , :: crm_output_tkez );
   YAKL_SCOPE( crm_output_tkew            , :: crm_output_tkew );
   YAKL_SCOPE( crm_output_tkesgsz         , :: crm_output_tkesgsz );
@@ -232,7 +233,6 @@ void pre_timeloop() {
     fcor(icrm)= 4.0*pi/86400.0*sin(latitude0(icrm)*pi/180.0);
     fcorz(icrm) = sqrt(4.0*pow((2*pi/(3600.*24.)),2)-pow(fcor(icrm),2));
     zi(nz-1,icrm) = crm_input_zint(plev-nz+1,icrm)-crm_input_zint(plev,icrm); //+++mhwang, 2012-02-04
-    pdel(k,icrm) = crm_input_pdel(plev-(k+1), icrm)/100.0;
     presi(nz-1,icrm) = crm_input_pint(plev-nz+1,icrm)/100.0;
     phis(icrm) = crm_input_phis(icrm);
     psfc(icrm) = crm_input_ps(icrm);
@@ -264,7 +264,9 @@ void pre_timeloop() {
     z(k,icrm) = crm_input_zmid(plev-(k+1),icrm) - crm_input_zint(plev,icrm);
     zi(k,icrm) = crm_input_zint(plev-(k+1)+1,icrm)- crm_input_zint(plev,icrm);
     pres(k,icrm) = crm_input_pmid(plev-(k+1),icrm)/100.0;
+    pdel(k,icrm) = crm_input_pdel(plev-(k+1), icrm)/100.0;
     presi(k,icrm) = crm_input_pint(plev-(k+1)+1,icrm)/100.0;
+    pdel(k,icrm) = crm_input_pdel(plev-(k+1), icrm)/100.0;
     prespot(k,icrm)=pow((1000.0/pres(k,icrm)),(rgas/cp));
     bet(k,icrm) = ggr/crm_input_tl(plev-(k+1),icrm);
     gamaz(k,icrm)=ggr/cp*z(k,icrm);
