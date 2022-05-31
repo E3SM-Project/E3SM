@@ -629,9 +629,9 @@ contains
 
           ! metric terms
           stressDivergenceU(iVertex) = stressDivergenceU(iVertex) - &
-               (tan(latVertexRotated(iVertex)) * stress12Vertex * 2.0_RKIND) / sphereRadius
+               (tan(latVertexRotated(iVertex)) * stress12Vertex) / sphereRadius
           stressDivergenceV(iVertex) = stressDivergenceV(iVertex) + &
-               (tan(latVertexRotated(iVertex)) * (stress11Vertex - stress22Vertex)) / sphereRadius
+               (tan(latVertexRotated(iVertex)) * stress11Vertex) / sphereRadius
 
        endif ! solveVelocity
 
