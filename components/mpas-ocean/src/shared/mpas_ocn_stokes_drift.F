@@ -98,67 +98,25 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell, k
-      real(kind=RKIND), dimension(:,:), pointer  :: stokesDriftZonal, stokesDriftMeridional
-      real (kind=RKIND), dimension(6) :: zonalWavenumberCoeff 
-      real (kind=RKIND), dimension(6) :: meridionalWavenumberCoeff
-
-      real(kind=RKIND), dimension(:), pointer :: stokesDriftZonalWavenumber1, &
-                                                 stokesDriftZonalWavenumber2, &
-                                                 stokesDriftZonalWavenumber3, &
-                                                 stokesDriftZonalWavenumber4, &
-                                                 stokesDriftZonalWavenumber5, &
-                                                 stokesDriftZonalWavenumber6
-      real(kind=RKIND), dimension(:), pointer :: stokesDriftMeridionalWavenumber1, &
-                                                 stokesDriftMeridionalWavenumber2, &
-                                                 stokesDriftMeridionalWavenumber3, &
-                                                 stokesDriftMeridionalWavenumber4, &
-                                                 stokesDriftMeridionalWavenumber5, &
-                                                 stokesDriftMeridionalWavenumber6
+      real(kind=RKIND), dimension(:,:), pointer :: stokesDriftZonal, stokesDriftMeridional
+      real(kind=RKIND), dimension(:,:), pointer :: stokesDriftZonalWavenumber, stokesDriftMeridionalWavenumber
 
       !-----------------------------------------------------------------
 
       call mpas_pool_get_array(forcingPool, 'stokesDriftZonal', stokesDriftZonal)
       call mpas_pool_get_array(forcingPool, 'stokesDriftMeridional', stokesDriftMeridional)
 
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber1', stokesDriftZonalWavenumber1)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber1', stokesDriftMeridionalWavenumber1)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber2', stokesDriftZonalWavenumber2)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber2', stokesDriftMeridionalWavenumber2)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber3', stokesDriftZonalWavenumber3)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber3', stokesDriftMeridionalWavenumber3)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber4', stokesDriftZonalWavenumber4)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber4', stokesDriftMeridionalWavenumber4)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber5', stokesDriftZonalWavenumber5)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber5', stokesDriftMeridionalWavenumber5)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber6', stokesDriftZonalWavenumber6)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber6', stokesDriftMeridionalWavenumber6)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber', stokesDriftZonalWavenumber)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber', stokesDriftMeridionalWavenumber)
 
       do iCell = 1,nCellsAll
-
-         zonalWavenumberCoeff(1) = stokesDriftZonalWavenumber1(iCell)
-         zonalWavenumberCoeff(2) = stokesDriftZonalWavenumber2(iCell)
-         zonalWavenumberCoeff(3) = stokesDriftZonalWavenumber3(iCell)
-         zonalWavenumberCoeff(4) = stokesDriftZonalWavenumber4(iCell)
-         zonalWavenumberCoeff(5) = stokesDriftZonalWavenumber5(iCell)
-         zonalWavenumberCoeff(6) = stokesDriftZonalWavenumber6(iCell)
-
-         meridionalWavenumberCoeff(1) = stokesDriftMeridionalWavenumber1(iCell)
-         meridionalWavenumberCoeff(2) = stokesDriftMeridionalWavenumber2(iCell)
-         meridionalWavenumberCoeff(3) = stokesDriftMeridionalWavenumber3(iCell)
-         meridionalWavenumberCoeff(4) = stokesDriftMeridionalWavenumber4(iCell)
-         meridionalWavenumberCoeff(5) = stokesDriftMeridionalWavenumber5(iCell)
-         meridionalWavenumberCoeff(6) = stokesDriftMeridionalWavenumber6(iCell)
 
          do k = minLevelCell(iCell), maxLevelCell(iCell)
  
 
-            call ocn_stokes_drift_evaluate(zMid(k,iCell), zonalWavenumberCoeff, meridionalWavenumberCoeff, &
+            call ocn_stokes_drift_evaluate(zMid(k,iCell), &
+                                           stokesDriftZonalWavenumber(:,iCell), stokesDriftMeridionalWavenumber(:,iCell), &
                                            stokesDriftZonal(k,iCell), stokesDriftMeridional(k,iCell))
-
-            !! test surface Stokes drift reconstruction
-            !call ocn_stokes_drift_evaluate(0.0_RKIND, zonalWavenumberCoeff, meridionalWavenumberCoeff, &
-            !                               stokesDriftZonal(k,iCell), stokesDriftMeridional(k,iCell))
-
          end do
 
       end do 
@@ -200,58 +158,22 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell
-      real(kind=RKIND), dimension(:), pointer  :: stokesDriftSurfaceZonal, stokesDriftSurfaceMeridional
-      real (kind=RKIND), dimension(6) :: zonalWavenumberCoeff 
-      real (kind=RKIND), dimension(6) :: meridionalWavenumberCoeff
-
-      real(kind=RKIND), dimension(:), pointer :: stokesDriftZonalWavenumber1, &
-                                                 stokesDriftZonalWavenumber2, &
-                                                 stokesDriftZonalWavenumber3, &
-                                                 stokesDriftZonalWavenumber4, &
-                                                 stokesDriftZonalWavenumber5, &
-                                                 stokesDriftZonalWavenumber6
-      real(kind=RKIND), dimension(:), pointer :: stokesDriftMeridionalWavenumber1, &
-                                                 stokesDriftMeridionalWavenumber2, &
-                                                 stokesDriftMeridionalWavenumber3, &
-                                                 stokesDriftMeridionalWavenumber4, &
-                                                 stokesDriftMeridionalWavenumber5, &
-                                                 stokesDriftMeridionalWavenumber6
+      real(kind=RKIND), dimension(:), pointer :: stokesDriftSurfaceZonal, stokesDriftSurfaceMeridional
+      real(kind=RKIND), dimension(:,:), pointer :: stokesDriftZonalWavenumber
+      real(kind=RKIND), dimension(:,:), pointer :: stokesDriftMeridionalWavenumber
 
       !-----------------------------------------------------------------
 
       call mpas_pool_get_array(forcingPool, 'stokesDriftSurfaceZonal', stokesDriftSurfaceZonal)
       call mpas_pool_get_array(forcingPool, 'stokesDriftSurfaceMeridional', stokesDriftSurfaceMeridional)
 
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber1', stokesDriftZonalWavenumber1)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber1', stokesDriftMeridionalWavenumber1)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber2', stokesDriftZonalWavenumber2)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber2', stokesDriftMeridionalWavenumber2)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber3', stokesDriftZonalWavenumber3)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber3', stokesDriftMeridionalWavenumber3)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber4', stokesDriftZonalWavenumber4)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber4', stokesDriftMeridionalWavenumber4)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber5', stokesDriftZonalWavenumber5)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber5', stokesDriftMeridionalWavenumber5)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber6', stokesDriftZonalWavenumber6)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber6', stokesDriftMeridionalWavenumber6)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber', stokesDriftZonalWavenumber)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber', stokesDriftMeridionalWavenumber)
 
       do iCell = 1,nCellsAll
 
-         zonalWavenumberCoeff(1) = stokesDriftZonalWavenumber1(iCell)
-         zonalWavenumberCoeff(2) = stokesDriftZonalWavenumber2(iCell)
-         zonalWavenumberCoeff(3) = stokesDriftZonalWavenumber3(iCell)
-         zonalWavenumberCoeff(4) = stokesDriftZonalWavenumber4(iCell)
-         zonalWavenumberCoeff(5) = stokesDriftZonalWavenumber5(iCell)
-         zonalWavenumberCoeff(6) = stokesDriftZonalWavenumber6(iCell)
-
-         meridionalWavenumberCoeff(1) = stokesDriftMeridionalWavenumber1(iCell)
-         meridionalWavenumberCoeff(2) = stokesDriftMeridionalWavenumber2(iCell)
-         meridionalWavenumberCoeff(3) = stokesDriftMeridionalWavenumber3(iCell)
-         meridionalWavenumberCoeff(4) = stokesDriftMeridionalWavenumber4(iCell)
-         meridionalWavenumberCoeff(5) = stokesDriftMeridionalWavenumber5(iCell)
-         meridionalWavenumberCoeff(6) = stokesDriftMeridionalWavenumber6(iCell)
-
-         call ocn_stokes_drift_evaluate(0.0_RKIND, zonalWavenumberCoeff, meridionalWavenumberCoeff, &
+         call ocn_stokes_drift_evaluate(0.0_RKIND, &
+                                        stokesDriftZonalWavenumber(:,iCell), stokesDriftMeridionalWavenumber(:,iCell), &
                                         stokesDriftSurfaceZonal(iCell), stokesDriftSurfaceMeridional(iCell))
 
       end do 
@@ -292,8 +214,8 @@ contains
       real(kind=RKIND), intent(in) :: surfaceFrictionVelocity
       real(kind=RKIND), intent(in) :: significantWaveHeight 
       real(kind=RKIND), intent(in) :: boundaryLayerDepth
-      real(kind=RKIND), dimension(6), intent(in) :: zonalWavenumberCoeff
-      real(kind=RKIND), dimension(6), intent(in) :: meridionalWavenumberCoeff
+      real(kind=RKIND), dimension(:), intent(in) :: zonalWavenumberCoeff
+      real(kind=RKIND), dimension(:), intent(in) :: meridionalWavenumberCoeff
 
       !-----------------------------------------------------------------
       ! Output variables
@@ -428,8 +350,8 @@ contains
       !-----------------------------------------------------------------
       
       real(kind=RKIND), intent(in) :: zDepth
-      real (kind=RKIND), dimension(6), intent(in) :: zonalWavenumberCoeff 
-      real (kind=RKIND), dimension(6), intent(in) :: meridionalWavenumberCoeff
+      real (kind=RKIND), dimension(:), intent(in) :: zonalWavenumberCoeff 
+      real (kind=RKIND), dimension(:), intent(in) :: meridionalWavenumberCoeff
 
       !-----------------------------------------------------------------
       ! Output variables
@@ -485,8 +407,8 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), intent(in) :: zMLD
-      real (kind=RKIND), dimension(6), intent(in) :: zonalWavenumberCoeff 
-      real (kind=RKIND), dimension(6), intent(in) :: meridionalWavenumberCoeff
+      real (kind=RKIND), dimension(:), intent(in) :: zonalWavenumberCoeff 
+      real (kind=RKIND), dimension(:), intent(in) :: meridionalWavenumberCoeff
 
       !-----------------------------------------------------------------
       ! Output variables

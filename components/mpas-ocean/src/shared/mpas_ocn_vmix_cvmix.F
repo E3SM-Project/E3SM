@@ -169,21 +169,9 @@ contains
       logical :: bulkRichardsonFlag
 
       real (kind=RKIND) :: langmuirEnhancementFactor, alphaAngle
-      real (kind=RKIND), dimension(6) :: zonalWavenumberCoeff 
-      real (kind=RKIND), dimension(6) :: meridionalWavenumberCoeff
 
-      real(kind=RKIND), dimension(:), pointer :: stokesDriftZonalWavenumber1, &
-                                                 stokesDriftZonalWavenumber2, &
-                                                 stokesDriftZonalWavenumber3, &
-                                                 stokesDriftZonalWavenumber4, &
-                                                 stokesDriftZonalWavenumber5, &
-                                                 stokesDriftZonalWavenumber6
-      real(kind=RKIND), dimension(:), pointer :: stokesDriftMeridionalWavenumber1, &
-                                                 stokesDriftMeridionalWavenumber2, &
-                                                 stokesDriftMeridionalWavenumber3, &
-                                                 stokesDriftMeridionalWavenumber4, &
-                                                 stokesDriftMeridionalWavenumber5, &
-                                                 stokesDriftMeridionalWavenumber6
+      real(kind=RKIND), dimension(:,:), pointer :: stokesDriftZonalWavenumber
+      real(kind=RKIND), dimension(:,:), pointer :: stokesDriftMeridionalWavenumber
       real(kind=RKIND), dimension(:), pointer :: significantWaveHeight
       real(kind=RKIND), dimension(:), pointer :: windStressZonal, windStressMeridional
 
@@ -258,18 +246,8 @@ contains
       call mpas_pool_get_array(forcingPool, 'langmuirNumber', langmuirNumber)
 
       call mpas_pool_get_array(forcingPool, 'significantWaveHeight', significantWaveHeight)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber1', stokesDriftZonalWavenumber1)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber1', stokesDriftMeridionalWavenumber1)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber2', stokesDriftZonalWavenumber2)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber2', stokesDriftMeridionalWavenumber2)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber3', stokesDriftZonalWavenumber3)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber3', stokesDriftMeridionalWavenumber3)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber4', stokesDriftZonalWavenumber4)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber4', stokesDriftMeridionalWavenumber4)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber5', stokesDriftZonalWavenumber5)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber5', stokesDriftMeridionalWavenumber5)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber6', stokesDriftZonalWavenumber6)
-      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber6', stokesDriftMeridionalWavenumber6)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber', stokesDriftZonalWavenumber)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber', stokesDriftMeridionalWavenumber)
 
       nCells = nCellsArray( size(nCellsArray) )
 
@@ -400,23 +378,6 @@ contains
          cvmix_variables % WaterDensity_cntr => density(1:maxLevelCell(iCell), iCell)
          cvmix_variables % AdiabWaterDensity_cntr => displacedDensity(1:maxLevelCell(iCell), iCell)
 
-         ! Get wavenumber-partitioned Stokes drift coefficents used to reconstruct depth-dependent profile 
-         if (config_cvmix_kpp_use_active_wave) then
-            zonalWavenumberCoeff(1) = stokesDriftZonalWavenumber1(iCell)
-            zonalWavenumberCoeff(2) = stokesDriftZonalWavenumber2(iCell)
-            zonalWavenumberCoeff(3) = stokesDriftZonalWavenumber3(iCell)
-            zonalWavenumberCoeff(4) = stokesDriftZonalWavenumber4(iCell)
-            zonalWavenumberCoeff(5) = stokesDriftZonalWavenumber5(iCell)
-            zonalWavenumberCoeff(6) = stokesDriftZonalWavenumber6(iCell)
-
-            meridionalWavenumberCoeff(1) = stokesDriftMeridionalWavenumber1(iCell)
-            meridionalWavenumberCoeff(2) = stokesDriftMeridionalWavenumber2(iCell)
-            meridionalWavenumberCoeff(3) = stokesDriftMeridionalWavenumber3(iCell)
-            meridionalWavenumberCoeff(4) = stokesDriftMeridionalWavenumber4(iCell)
-            meridionalWavenumberCoeff(5) = stokesDriftMeridionalWavenumber5(iCell)
-            meridionalWavenumberCoeff(6) = stokesDriftMeridionalWavenumber6(iCell)
-         end if
-
          if (kpp_stage == 2) then
          if (cvmixBackgroundChoice == cvmixBackgroundTypeBryanLewis) then
             ! See equation 9 in Bryan, K., and Lewis, L. J. (1979), A water mass
@@ -531,8 +492,8 @@ contains
                                                        surfaceFrictionVelocity(iCell), &
                                                        significantWaveHeight(iCell), &
                                                        boundaryLayerDepth(iCell), &
-                                                       zonalWavenumberCoeff, &
-                                                       meridionalWavenumberCoeff, &
+                                                       stokesDriftZonalWavenumber(:,iCell), &
+                                                       stokesDriftMeridionalWavenumber(:,iCell), &
                                                        alphaAngle, &
                                                        langmuirNumber(iCell))
                  call ocn_stokes_drift_kpp_enhancement_factor(alphaAngle, &
@@ -719,8 +680,8 @@ contains
                                                        surfaceFrictionVelocity(iCell), &
                                                        significantWaveHeight(iCell), &
                                                        boundaryLayerDepth(iCell), &
-                                                       zonalWavenumberCoeff, &
-                                                       meridionalWavenumberCoeff, &
+                                                       stokesDriftZonalWavenumber(:,iCell), &
+                                                       stokesDriftMeridionalWavenumber(:,iCell), &
                                                        alphaAngle, &
                                                        langmuirNumber(iCell))
                  call ocn_stokes_drift_kpp_enhancement_factor(alphaAngle, &
