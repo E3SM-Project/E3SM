@@ -6,13 +6,15 @@
 #include "YAKL.h"
 #include "YAKL_Bounds_fortran.h"
 
-using yakl::intrinsics::maxval;
-using yakl::intrinsics::minval;
-using yakl::intrinsics::count;
-using yakl::intrinsics::sum;
-
 namespace scream {
     namespace rrtmgp {
+
+        // Things we need from YAKL
+        using yakl::intrinsics::maxval;
+        using yakl::intrinsics::minval;
+        using yakl::intrinsics::count;
+        using yakl::intrinsics::sum;
+
         // Provide a routine to compute heating due to radiative fluxes. This is
         // computed as net flux into a layer, converted to a heating rate. It is
         // the responsibility of the user to ensure fields are passed with the
@@ -30,7 +32,7 @@ namespace scream {
             using physconst = scream::physics::Constants<Real>;
             auto ncol = flux_up.dimension[0];
             auto nlay = flux_up.dimension[1]-1;
-            parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
+            yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
                 heating_rate(icol,ilay) = (
                     flux_up(icol,ilay+1) - flux_up(icol,ilay) - 
                     flux_dn(icol,ilay+1) + flux_dn(icol,ilay)
@@ -61,7 +63,7 @@ namespace scream {
                 // How many outside range?
                 auto bad_mask = x.createDeviceCopy();
                 memset(bad_mask, 0);
-                yakl::c::parallel_for(yakl::c::SimpleBounds<1>(x.totElems()), YAKL_LAMBDA (int i) {
+                yakl::c::parallel_for(yakl::c::Bounds<1>(x.totElems()), YAKL_LAMBDA (int i) {
                   if (x.data()[i] < xmin or x.data()[i] > xmax) {
                       bad_mask.data()[i] = 1;
                   }

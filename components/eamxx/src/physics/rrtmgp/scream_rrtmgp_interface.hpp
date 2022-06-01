@@ -127,7 +127,7 @@ namespace scream {
             int ncol = mixing_ratio.dimension[0];
             int nlay = mixing_ratio.dimension[1];
             using physconst = scream::physics::Constants<Real>;
-            parallel_for(Bounds<2>(nlay, ncol), YAKL_LAMBDA(int ilay, int icol) {
+            yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<2>(nlay, ncol), YAKL_LAMBDA(int ilay, int icol) {
                 // Compute in-cloud mixing ratio (mixing ratio of the cloudy part of the layer)
                 // NOTE: these thresholds (from E3SM) seem arbitrary, but included here for consistency
                 // This limits in-cloud mixing ratio to 0.005 kg/kg. According to note in cloud_diagnostics
