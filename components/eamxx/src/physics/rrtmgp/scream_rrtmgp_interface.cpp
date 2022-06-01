@@ -110,9 +110,9 @@ namespace scream {
             EKAT_ASSERT_MSG(initialized, "Error! rrtmgp_initialize must be called before GasOpticsRRTMGP object can be used.");
             auto wavenumber_limits = k_dist_sw.get_band_lims_wavenumber();
 
-            EKAT_ASSERT_MSG(size(wavenumber_limits, 1) == 2,
+            EKAT_ASSERT_MSG(yakl::intrinsics::size(wavenumber_limits, 1) == 2,
                             "Error! 1st dimension for wavenumber_limits should be 2.");
-            EKAT_ASSERT_MSG(size(wavenumber_limits, 2) == nswbands,
+            EKAT_ASSERT_MSG(yakl::intrinsics::size(wavenumber_limits, 2) == nswbands,
                             "Error! 2nd dimension for wavenumber_limits should be " + std::to_string(nswbands) + " (nswbands).");
 
             // Loop over bands, and determine for each band whether it is broadly in the
