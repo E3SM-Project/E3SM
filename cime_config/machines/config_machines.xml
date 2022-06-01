@@ -3490,11 +3490,11 @@
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="pgigpu">18</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="gnugpu">42</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="gnugpu">6</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="ibmgpu">42</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>84</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="pgigpu">18</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="gnugpu">42</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="gnugpu">6</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="ibmgpu">42</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="spectrum-mpi">
@@ -3539,7 +3539,7 @@
         <command name="load">cuda/10.1.243</command>
       </modules>
       <modules compiler="gnugpu">
-        <command name="load">cuda/11.5.2</command>
+	   <command name="load">cuda/10.1.168</command>
       </modules>
       <modules compiler="ibm.*">
         <command name="load">xl/16.1.1-10</command>
@@ -3548,7 +3548,7 @@
         <command name="load">cuda/10.1.243</command>
       </modules>
       <modules compiler="gnu.*">
-        <command name="load">gcc/9.3.0</command>
+        <command name="load">gcc/7.5.0</command>
       </modules>
       <modules>
         <command name="load">spectrum-mpi/10.4.0.3-20210112</command>
@@ -3614,11 +3614,11 @@
       <env name="NUM_RS">$SHELL{echo "6*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
     </environment_variables>
     <environment_variables compiler="gnugpu">
-      <env name="RS_PER_NODE">6</env>
-      <env name="CPU_PER_RS">7</env>
+      <env name="RS_PER_NODE">$SHELL{if [  `./xmlquery --value TOTAL_TASKS` -le 6 ];then echo  `./xmlquery --value  TOTAL_TASKS`; else echo 6; fi} </env>
+      <env name="CPU_PER_RS">1</env>
       <env name="GPU_PER_RS">1</env>
       <env name="LTC_PRT">gpu-cpu</env>
-      <env name="NUM_RS">$SHELL{echo "6*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
+	  <env name="NUM_RS">$SHELL{ if [ `./xmlquery --value TOTAL_TASKS` -le 6 ];then echo `./xmlquery --value TOTAL_TASKS`; else echo "6*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc; fi}</env>
     </environment_variables>
   </machine>
 
