@@ -31,7 +31,7 @@
 [submodule "cime"]
 	path = cime
 	url = git@github.com:ESMCI/cime.git
-	branch = master
+	branch = sarich/testing/add_grid_tests
 [submodule "externals/YAKL"]
 	path = externals/YAKL
 	url = git@github.com:mrnorman/YAKL.git
