@@ -762,7 +762,19 @@ contains
             deallocate (RossbyRadiusTaper)
          end if
 
-         if (config_Redi_closure == 'constant'.and. &
+         if (config_Redi_closure == 'equalGM') then
+            ! Set Redi closure to be the same as the GM closure, i.e. if
+            ! config_GM_closure is EdenGreatbatch or Visbeck, you will see those
+            ! same closure fields in RediKappa. The horizontal tapering still
+            ! comes from the config_Redi_horizontal_taper flag, not GM.
+            !$omp parallel
+            !$omp do schedule(runtime)
+            do iEdge=1, nEdges
+               RediKappa(iEdge) = gmHorizontalTaper(iEdge) * gmBolusKappa(iEdge)
+            end do
+            !$omp end do
+            !$omp end parallel
+         else if (config_Redi_closure == 'constant'.and. &
                    config_Redi_horizontal_taper == 'RossbyRadius') then
             !$omp parallel
             !$omp do schedule(runtime)

@@ -536,7 +536,10 @@ contains
 
 
          ! initialize Redi kappa array
-         if (config_Redi_closure == 'constant') then
+         if (config_Redi_closure == 'constant'.or. &
+             config_Redi_closure == 'equalGM') then
+             ! For 'equalGM' RediKappa is updated every step. Just
+             ! initialize here.
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges

@@ -295,8 +295,8 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_Redi_closure" type="character" default_value="constant" units="unitless"
-					description="Control what type of function is used for Redi $\kappa$."
-					possible_values="'constant', 'data'"
+					description="Control what type of function is used for Redi $\kappa$. For 'equalGM', RediKappa is set to gmBolusKappa, so picks up the closure used by GM. Note that equalGM should only be used with 2D GM schemes (e.g. config_GM_closure=constant or Visbeck), not with EdenGreatbatch."
+					possible_values="'constant', 'equalGM', 'data'"
 		/>
 		<nml_option name="config_Redi_constant_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="The Redi diffusion coefficient. Only used when config_Redi_closure = 'constant'."

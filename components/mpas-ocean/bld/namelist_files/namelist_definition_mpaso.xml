@@ -404,9 +404,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_Redi_closure" type="char*1024"
 	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-Control what type of function is used for Redi $\kappa$.
+Control what type of function is used for Redi $\kappa$. For 'equalGM', RediKappa is set to gmBolusKappa, so picks up the closure used by GM. Note that equalGM should only be used with 2D GM schemes (e.g. config_GM_closure=constant or Visbeck), not with EdenGreatbatch.
 
-Valid values: 'constant', 'data'
+Valid values: 'constant', 'equalGM', 'data'
 Default: Defined in namelist_defaults.xml
 </entry>
 
