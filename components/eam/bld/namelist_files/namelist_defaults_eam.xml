@@ -795,12 +795,15 @@
 <clubb_C_uu_buoy                                  > 0.3 </clubb_C_uu_buoy>
 <clubb_C6rt                                       > 4.0 </clubb_C6rt>
 <clubb_C6thl                                      > 4.0 </clubb_C6thl>
+<clubb_C7                                         > 0.5 </clubb_C7>
+<clubb_C7b                                        > 0.5 </clubb_C7b>
 <clubb_C8b                                        > 0.0 </clubb_C8b>
 <clubb_C_wp3_pr_turb                              > 0.4 </clubb_C_wp3_pr_turb>
 <clubb_C_wp2_splat                                > 0.0 </clubb_C_wp2_splat>
 <clubb_wpxp_L_thresh                              > 60.0D0   </clubb_wpxp_L_thresh>
 <clubb_beta                                       > 2.4 </clubb_beta>
 <clubb_c_K1                                       > 0.75 </clubb_c_K1>
+<clubb_nu1                                        > 20.0 </clubb_nu1>
 <clubb_c_K2                                       > 0.125 </clubb_c_K2>
 <clubb_nu2                                        > 5.0 </clubb_nu2>
 <clubb_c_K8                                       > 1.25 </clubb_c_K8>
@@ -813,6 +816,16 @@
 <clubb_Skw_max_mag                                > 4.5 </clubb_Skw_max_mag>
 <clubb_altitude_threshold                         > 100.0 </clubb_altitude_threshold>
 <clubb_a3_coef_min                                > 1.6 </clubb_a3_coef_min>
+<clubb_C_invrs_tau_bkgnd                          > 1.1 </clubb_C_invrs_tau_bkgnd>
+<clubb_C_invrs_tau_sfc                            > 0.1 </clubb_C_invrs_tau_sfc>
+<clubb_C_invrs_tau_shear                          > 0.15 </clubb_C_invrs_tau_shear>
+<clubb_C_invrs_tau_N2                             > 0.4 </clubb_C_invrs_tau_N2>
+<clubb_C_invrs_tau_N2_wp2                         > 0.2 </clubb_C_invrs_tau_N2_wp2>
+<clubb_C_invrs_tau_N2_xp2                         > 0.05 </clubb_C_invrs_tau_N2_xp2>
+<clubb_C_invrs_tau_N2_wpxp                        > 0.0 </clubb_C_invrs_tau_N2_wpxp>
+<clubb_C_invrs_tau_N2_clear_wp3                   > 1.0 </clubb_C_invrs_tau_N2_clear_wp3>
+<clubb_C_invrs_tau_wpxp_Ri                        > 0.35 </clubb_C_invrs_tau_wpxp_Ri>
+<clubb_C_invrs_tau_wpxp_N2_thresh                 > 3.3e-4 </clubb_C_invrs_tau_wpxp_N2_thresh>
 <clubb_iiPDF_type                                 > 1 </clubb_iiPDF_type>
 <clubb_ipdf_call_placement                        > 1 </clubb_ipdf_call_placement>
 <clubb_l_predict_upwp_vpwp                        > .false. </clubb_l_predict_upwp_vpwp>
@@ -1722,6 +1735,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <clubb_liq_deep phys="default"> 8.e-6     </clubb_liq_deep>  
 <clubb_liq_sh phys="default"> 10.e-6    </clubb_liq_sh>
 <clubb_C2rt phys="default"> 1.75D0    </clubb_C2rt>
+<clubb_C2thl phys="default"> 1.75D0    </clubb_C2thl>
 <zmconv_dmpdz phys="default">-0.7e-3    </zmconv_dmpdz>
 <zmconv_ke phys="default" dyn="se"> 5.0E-6      </zmconv_ke>
 <cldfrc2m_rhmaxi phys="default" clubb_sgs="1" clubb_do_deep="0"> 1.05D0    </cldfrc2m_rhmaxi>

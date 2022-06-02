@@ -3348,11 +3348,6 @@ High Skw. gamma coef. Skw. Fnct.
 Default: 5.0
 </entry>
 
-<entry id="clubb_pdf_component_stdev_factor_w" type="real" category="pblrad"
-       group="clubb_param_nl" valid_values="" >
-Parameter to adjust the PDF component standard deviations of w (new hybrid PDF only)
-</entry>
-
 <entry id="clubb_mu" type="real" category="pblrad"
        group="clubb_param_nl" valid_values="" >
 Fractional parcel entrainment rate per unit height (1/m)
@@ -3486,16 +3481,6 @@ Coefficient of the "Ri_zm term" for invrs_tau_wpxp
 <entry id="clubb_C_invrs_tau_wpxp_N2_thresh" type="real" category="pblrad"
        group="clubb_param_nl" valid_values="" >
 Brunt-Vaisala freq. threshold value for invrs_tau_wpxp "Ri_zm term"
-</entry>
-
-<entry id="clubb_xp3_coef_base"  type="real" category="pblrad"
-       group="clubb_param_nl" valid_values="" >
-"Base" value of xp3_coef in simple equation for xp3 (rtp3, thlp3, etc.)
-</entry>
-
-<entry id="clubb_xp3_coef_slope"  type="real" category="pblrad"
-       group="clubb_param_nl" valid_values="" >
-Slope in regards to Brunt-Vaisla freq. in simple equation for xp3 (rtp3, thlp3, etc.)
 </entry>
 
 <entry id="clubb_altitude_threshold" type="real" category="pblrad"
