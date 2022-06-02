@@ -49,6 +49,8 @@ module LakeBGCDynMod
       real(r8) :: frcResuspl
       ! ebullition rate (s-1) 
       real(r8) :: Re 
+      ! relative concentration at which ebullition begins
+      real(r8) :: Ae
       ! sediment OC dampening rate (m-1)
       real(r8) :: csedDMP
       ! ice bubble flux and dissolution rate (s-1)
@@ -1397,7 +1399,6 @@ contains
       real(r8)               , intent(out) :: gebul(1:nlevsoi,1:ngaslak)   ! ebullition rate (mol/m3/s)
       !
       ! !CONSTANTS
-      real(r8), parameter :: Ae = 0.4_r8     ! relative concentration at which ebullition begins
       !
       ! !LOCAL VARIABLES:
       real(r8) :: temp, por, depth
@@ -1432,7 +1433,7 @@ contains
          Prn2 = c_n2/Hn2                  ! partial pressure of N2
          Prch4 = c_ch4/Hch4               ! partial pressure of CH4
          Prtot = Prn2 + Prch4
-         Psat = Ae * por * (forc_pbot(t) + grav*denh2o*depth)
+         Psat = LakeBGCParamsInst%Ae * por * (forc_pbot(t) + grav*denh2o*depth)
          Prnet = Prtot - Psat             ! excessive pressure
          if (Prnet>1.e-8_r8) then
             gebul(j,wn2lak) = LakeBGCParamsInst%Re * (Prn2/Prtot) * Prnet * Hn2
@@ -2280,6 +2281,11 @@ contains
       call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
       if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
       LakeBGCParamsInst%Re = tempr
+
+      tString='Ae'
+      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+      LakeBGCParamsInst%Ae = tempr
 
       tString='csedDMP'
       call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
