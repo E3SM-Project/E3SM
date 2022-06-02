@@ -321,8 +321,8 @@ tweaking their $case/namelist_scream.xml file.
     <se_tstep hgrid="ne1024np4" constraints="gt 0">8.3333333333333</se_tstep>
     <statefreq>9999</statefreq>
     <theta_advect_form>1</theta_advect_form>
-    <theta_hydrostatic_mode>True</theta_hydrostatic_mode>
-    <tstep_type>5</tstep_type>
+    <theta_hydrostatic_mode>False</theta_hydrostatic_mode>
+    <tstep_type>9</tstep_type>
     <vert_remap_q_alg>10</vert_remap_q_alg>
     <transport_alg>0</transport_alg>
   </ctl_nl>
