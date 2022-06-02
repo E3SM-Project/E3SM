@@ -1803,6 +1803,16 @@
       <mask>oQU120</mask>
     </model_grid>
 
+    <model_grid alias="TL319_EC30to60E2r2_wQU225EC30to60E2r2">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">TL319</grid>
+      <grid name="ocnice">EC30to60E2r2</grid>
+      <grid name="rof">JRA025</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">wQU225EC30to60E2r2</grid>
+      <mask>EC30to60E2r2</mask>
+    </model_grid>
+
     <model_grid alias="ne16_oQU240">
       <grid name="atm">ne16np4</grid>
       <grid name="lnd">ne16np4</grid>
@@ -4067,6 +4077,10 @@
 
     <gridmap atm_grid="ne30np4.pg2" wav_grid="wQU225EC30to60E2r2">
       <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC30to60E2r2/map_ne30pg2_TO_wQU225EC30to60E2r2_blin.20220222.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="TL319" wav_grid="wQU225EC30to60E2r2">
+      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC30to60E2r2/map_TL319_TO_wQU225EC30to60E2r2_blin.20220602.nc</map>
     </gridmap>
 
     <gridmap ocn_grid="oEC60to30v3" wav_grid="wQU225EC60to30">
