@@ -309,7 +309,7 @@ public:
     // 1d view scalar, size (ncol)
     static constexpr int num_1d_scalar = 0; //no 2d vars now, but keeping 1d struct for future expansion
     // 2d view packed, size (ncol, nlev_packs)
-    static constexpr int num_2d_vector = 8;
+    static constexpr int num_2d_vector = 9;
     static constexpr int num_2dp1_vector = 2;
 
     uview_2d inv_exner;
@@ -322,6 +322,7 @@ public:
     uview_2d rho_qi;
     uview_2d precip_liq_flux; //nlev+1
     uview_2d precip_ice_flux; //nlev+1
+    uview_2d unused;
 
     suview_2d col_location;
 

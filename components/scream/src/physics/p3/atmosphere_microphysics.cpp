@@ -42,6 +42,16 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
 
+  // --Infrastructure
+  // dt is passed as an argument to run_impl
+  infrastructure.it  = 0;
+  infrastructure.its = 0;
+  infrastructure.ite = m_num_cols-1;
+  infrastructure.kts = 0;
+  infrastructure.kte = m_num_levs-1;
+  infrastructure.predictNc = m_params.get<bool>("do_predict_nc",true); 
+  infrastructure.prescribedCCN = m_params.get<bool>("do_prescribed_ccn",true); 
+
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
 
@@ -76,7 +86,9 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 
   // Diagnostic Inputs: (only the X_prev fields are both input and output, all others are just inputs)
   add_field<Required>("nc_nuceat_tend",     scalar3d_layout_mid, 1/(kg*s), grid_name, ps);
-  add_field<Required>("nccn",               scalar3d_layout_mid, 1/kg,     grid_name, ps);
+  if (infrastructure.prescribedCCN) {
+    add_field<Required>("nccn",               scalar3d_layout_mid, 1/kg,     grid_name, ps);
+  }
   add_field<Required>("ni_activated",       scalar3d_layout_mid, 1/kg,     grid_name, ps);
   add_field<Required>("inv_qc_relvar",      scalar3d_layout_mid, Q*Q,      grid_name, ps);
   add_field<Required>("pseudo_density",     scalar3d_layout_mid, Pa,       grid_name, ps);
@@ -156,6 +168,8 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   s_mem += m_buffer.precip_liq_flux.size();
   m_buffer.precip_ice_flux = decltype(m_buffer.precip_ice_flux)(s_mem, m_num_cols, nk_pack_p1);
   s_mem += m_buffer.precip_ice_flux.size();
+  m_buffer.unused = decltype(m_buffer.unused)(s_mem, m_num_cols, nk_pack);
+  s_mem += m_buffer.unused.size();
 
   // WSM data
   m_buffer.wsm_data = s_mem;
@@ -237,7 +251,11 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   prog_state.qv     = p3_preproc.qv;
   // --Diagnostic Input Variables:
   diag_inputs.nc_nuceat_tend  = get_field_in("nc_nuceat_tend").get_view<const Pack**>();
-  diag_inputs.nccn            = get_field_in("nccn").get_view<const Pack**>();
+  if (infrastructure.prescribedCCN) {
+    diag_inputs.nccn          = get_field_in("nccn").get_view<const Pack**>();
+  } else {
+    diag_inputs.nccn          = m_buffer.unused; //TODO set value of unused to something like 0.0 or nan as a layer of protection that it isn't being used.
+  }
   diag_inputs.ni_activated    = get_field_in("ni_activated").get_view<const Pack**>();
   diag_inputs.inv_qc_relvar   = get_field_in("inv_qc_relvar").get_view<const Pack**>();
   diag_inputs.pres            = get_field_in("p_mid").get_view<const Pack**>();
@@ -260,15 +278,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   diag_outputs.rho_qi           = m_buffer.rho_qi;
   diag_outputs.precip_liq_flux  = m_buffer.precip_liq_flux;
   diag_outputs.precip_ice_flux  = m_buffer.precip_ice_flux;
-  // --Infrastructure
-  // dt is passed as an argument to run_impl
-  infrastructure.it  = 0;
-  infrastructure.its = 0;
-  infrastructure.ite = m_num_cols-1;
-  infrastructure.kts = 0;
-  infrastructure.kte = m_num_levs-1;
-  infrastructure.predictNc = true;     // Hard-coded for now, TODO: make this a runtime option 
-  infrastructure.prescribedCCN = true; // Hard-coded for now, TODO: make this a runtime option
+  // -- Infrastructure, what is left to assign
   infrastructure.col_location = m_buffer.col_location; // TODO: Initialize this here and now when P3 has access to lat/lon for each column.
   // --History Only
   history_only.liq_ice_exchange = get_field_out("micro_liq_ice_exchange").get_view<Pack**>();
