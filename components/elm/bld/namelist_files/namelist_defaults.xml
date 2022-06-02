@@ -1989,6 +1989,7 @@ this mask will have smb calculated over the entire global land surface
 <!-- =========================================  -->
 <fates_spitfire_mode           use_fates=".true.">0</fates_spitfire_mode>
 <use_fates_fixed_biogeog       use_fates=".true.">.false.</use_fates_fixed_biogeog>
+<use_fates_nocomp              use_fates=".true.">.false.</use_fates_nocomp>
 <use_fates_planthydro          use_fates=".true.">.false.</use_fates_planthydro>
 <use_fates_ed_st3              use_fates=".true.">.false.</use_fates_ed_st3>
 <use_fates_ed_prescribed_phys  use_fates=".true.">.false.</use_fates_ed_prescribed_phys>
