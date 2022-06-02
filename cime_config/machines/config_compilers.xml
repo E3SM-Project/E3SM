@@ -1846,7 +1846,7 @@ flags should be captured within MPAS CMake files.
   </SLIBS>
 </compiler>
 
-<compiler MACH="summit" COMPILER="gnu">
+<compiler MACH="summit-cpu" COMPILER="gnu">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
@@ -1879,7 +1879,7 @@ flags should be captured within MPAS CMake files.
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
-<compiler MACH="summit" COMPILER="gnugpu">
+<compiler MACH="summit-gpu" COMPILER="gnugpu">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
@@ -1917,7 +1917,7 @@ flags should be captured within MPAS CMake files.
   <USE_CUDA>TRUE</USE_CUDA>
 </compiler>
 
-<compiler MACH="summit" COMPILER="ibm">
+<compiler MACH="summit-cpu" COMPILER="ibm">
   <CPPDEFS>
     <append> -DLINUX  </append>
     <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
@@ -1951,7 +1951,7 @@ flags should be captured within MPAS CMake files.
   <KOKKOS_OPTIONS> --arch=Power9 --with-serial </KOKKOS_OPTIONS>
 </compiler>
 
-<compiler MACH="summit" COMPILER="ibmgpu">
+<compiler MACH="summit-gpu" COMPILER="ibmgpu">
   <CFLAGS>
     <base> -g -qfullpath -qmaxmem=-1 -qphsinfo </base>
     <append DEBUG="FALSE"> -O3  </append>
@@ -2018,7 +2018,7 @@ flags should be captured within MPAS CMake files.
   <KOKKOS_OPTIONS> --arch=Power9 --with-serial </KOKKOS_OPTIONS>
 </compiler>
 
-<compiler MACH="summit" COMPILER="pgi">
+<compiler MACH="summit-cpu" COMPILER="pgi">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
   </CFLAGS>
@@ -2048,7 +2048,7 @@ flags should be captured within MPAS CMake files.
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
-<compiler MACH="summit" COMPILER="pgigpu">
+<compiler MACH="summit-gpu" COMPILER="pgigpu">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 -Mvect=nosimd </append>
   </CFLAGS>
