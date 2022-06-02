@@ -550,14 +550,6 @@ add_default($nl, 'config_Leith_parameter');
 add_default($nl, 'config_Leith_dx');
 add_default($nl, 'config_Leith_visc2_max');
 
-####################################################
-# Namelist group: mesoscale_eddy_parameterizations #
-####################################################
-
-add_default($nl, 'config_eddying_resolution_taper');
-add_default($nl, 'config_eddying_resolution_ramp_min');
-add_default($nl, 'config_eddying_resolution_ramp_max');
-
 #########################################
 # Namelist group: Redi_isopycnal_mixing #
 #########################################
@@ -572,6 +564,9 @@ add_default($nl, 'config_Redi_N2_based_taper_enable');
 add_default($nl, 'config_Redi_N2_based_taper_min');
 add_default($nl, 'config_Redi_N2_based_taper_limit_term1');
 add_default($nl, 'config_Redi_min_layers_diag_terms');
+add_default($nl, 'config_Redi_horizontal_taper');
+add_default($nl, 'config_Redi_horizontal_ramp_min');
+add_default($nl, 'config_Redi_horizontal_ramp_max');
 
 ############################################
 # Namelist group: GM_eddy_parameterization #
@@ -591,6 +586,11 @@ add_default($nl, 'config_GM_EG_riMin');
 add_default($nl, 'config_GM_EG_kappa_factor');
 add_default($nl, 'config_GM_EG_Rossby_factor');
 add_default($nl, 'config_GM_EG_Rhines_factor');
+add_default($nl, 'config_GM_horizontal_taper');
+add_default($nl, 'config_GM_horizontal_ramp_min');
+add_default($nl, 'config_GM_horizontal_ramp_max');
+add_default($nl, 'config_GMRedi_Rossby_ramp_min');
+add_default($nl, 'config_GMRedi_Rossby_ramp_max');
 
 ####################################
 # Namelist group: Rayleigh_damping #
@@ -1679,7 +1679,6 @@ my @groups = qw(run_modes
                 hmix_leith
                 redi_isopycnal_mixing
                 gm_eddy_parameterization
-                mesoscale_eddy_parameterizations
                 rayleigh_damping
                 cvmix
                 gotm
