@@ -63,7 +63,7 @@ namespace scream {
                 // How many outside range?
                 auto bad_mask = x.createDeviceCopy();
                 memset(bad_mask, 0);
-                yakl::c::parallel_for(yakl::c::Bounds<1>(x.totElems()), YAKL_LAMBDA (int i) {
+                yakl::c::parallel_for(yakl::c::SimpleBounds<1>(x.totElems()), YAKL_LAMBDA (int i) {
                   if (x.data()[i] < xmin or x.data()[i] > xmax) {
                       bad_mask.data()[i] = 1;
                   }
