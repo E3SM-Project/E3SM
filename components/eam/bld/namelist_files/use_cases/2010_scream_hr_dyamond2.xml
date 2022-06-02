@@ -118,17 +118,9 @@
 <prescribed_aero_file nlev="128">mam4_0.9x1.2_L128_2000clim_c191106.nc</prescribed_aero_file>
 <prescribed_aero_cycle_yr>01</prescribed_aero_cycle_yr>
 
-<!-- Do radiation every five minutes for ne1024 -->
-<iradsw hgrid="ne1024np4"> 4 </iradsw>
-<iradlw hgrid="ne1024np4"> 4 </iradlw>
-
 <!-- Settings related to the SCREAM NH dycore -->
 <theta_hydrostatic_mode>.false.</theta_hydrostatic_mode>
 <tstep_type> 9 </tstep_type>
-<!-- Settings specific for ne256 configuration -->
-<se_tstep hgrid="ne256np4"> 37.5 </se_tstep>
-<dt_tracer_factor hgrid="ne256np4"> 8 </dt_tracer_factor>
-<hypervis_subcycle_q hgrid="ne256np4"> 8 </hypervis_subcycle_q>
 
 <!-- Use the less sensitive advection scheme -->
 <semi_lagrange_cdr_alg>3</semi_lagrange_cdr_alg>

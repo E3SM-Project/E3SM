@@ -600,24 +600,14 @@ def buildnml(case, caseroot, compname):
 
     rundir     = case.get_value("RUNDIR")
     screamroot = os.path.join(case.get_value("SRCROOT"), "components/scream")
-    srcdata    = os.path.join(screamroot,"data")
     rundata    = os.path.join(rundir, "data")
 
     #
-    # Copy scream/data to rundir/data
+    # Copy default output YAML file, and atmchange/query scripts to rundir
     #
     with SharedArea():
         if not os.path.isdir(rundata):
             os.mkdir(rundata)
-
-        # Copy scream default output. Remove if present, since user may
-        # have issued XML change commands
-        default_output_yaml = 'scream_default_output.yaml'
-        src_yaml = os.path.join(srcdata,default_output_yaml)
-        dst_yaml = os.path.join(rundata,default_output_yaml)
-        if os.path.exists(dst_yaml):
-            os.remove(dst_yaml)
-        safe_copy(src_yaml,dst_yaml)
 
         # Create link to atmchange and atmquery scripts
         for script in ['atmchange', 'atmquery']:
@@ -687,6 +677,19 @@ def do_cime_vars_on_yaml_output_files(case,caseroot):
     scorpio = get_child(eamxx_xml,'Scorpio')
     out_files_xml = get_child(scorpio,"Output__YAML__Files",must_exist=False)
     out_files = out_files_xml.text.split(",") if out_files_xml is not None else []
+
+    # First, if default output file was requested, and a copy is not yet
+    # present in rundir/data, then copy from srcdir/data
+    default_output_yaml = 'data/scream_default_output.yaml'
+    if default_output_yaml in out_files:
+        with SharedArea():
+            screamroot = os.path.join(case.get_value("SRCROOT"), "components/scream")
+            src_yaml   = os.path.join(screamroot,default_output_yaml)
+            dst_yaml   = os.path.join(rundir,default_output_yaml)
+            if not os.path.exists(dst_yaml):
+                safe_copy(src_yaml,dst_yaml)
+
+    # Now loop over all output yaml files, and process any CIME var present (if any)
     for fn in out_files:
         # Get full name
         fn_full = os.path.join(rundir,fn.strip())

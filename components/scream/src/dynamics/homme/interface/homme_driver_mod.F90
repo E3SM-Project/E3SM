@@ -7,7 +7,6 @@ module homme_driver_mod
   use iso_c_binding, only: c_ptr, c_int, c_double, c_bool, C_NULL_CHAR
 
   use parallel_mod,  only: abortmp
-  use perf_mod,      only: t_initf, t_finalizef, t_prf, t_startf, t_stopf
 
   implicit none
   private 
@@ -251,15 +250,6 @@ contains
     ! Deallocate the pointers
     deallocate (elem)
     deallocate (dom_mt)
-
-    call t_stopf('Total')
-
-    ! Finalize and write the timings
-    if(par%masterproc) print *,"writing timing data"
-    call t_prf('HommeTime', par%comm)
-
-    if(par%masterproc) print *,"calling t_finalizef"
-    call t_finalizef()
 
     is_model_inited = .false.
 

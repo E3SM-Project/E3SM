@@ -3490,11 +3490,11 @@
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="pgigpu">18</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="gnugpu">42</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="gnugpu">6</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="ibmgpu">42</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>84</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="pgigpu">18</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="gnugpu">42</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="gnugpu">6</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="ibmgpu">42</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="spectrum-mpi">
@@ -3537,7 +3537,7 @@
       </modules>
       <modules compiler="gnugpu">
         <command name="load">gcc/9.3.0</command>
-        <command name="load">cuda/11.5.2</command>
+        <command name="load">cuda/10.1.168</command>
       </modules>
       <modules compiler="ibmgpu">
         <command name="load">xl/16.1.1-10</command>
@@ -3658,7 +3658,7 @@
         <command name="load">xl/16.1.1-10</command>
       </modules>
       <modules compiler="gnu.*">
-        <command name="load">gcc/9.3.0</command>
+        <command name="load">gcc/7.5.0</command>
       </modules>
       <modules>
         <command name="load">spectrum-mpi/10.4.0.3-20210112</command>

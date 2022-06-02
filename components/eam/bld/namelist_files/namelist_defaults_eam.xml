@@ -152,6 +152,7 @@
 <bnd_topo hgrid="ne240np4" npg="0">atm/cam/topo/USGS-gtopo30_ne240np4_16xconsistentSGH.c20130724.nc</bnd_topo>
 <bnd_topo hgrid="ne512np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne512np4_16xconsistentSGH_20190212.nc</bnd_topo>
 <bnd_topo hgrid="ne1024np4" npg="0">atm/cam/topo/USGS-gtopo30_ne1024np4_16xconsistentSGH_20190528.nc</bnd_topo>
+<bnd_topo hgrid="ne256np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne256np4_16xdel2_consistentSGH_20220429.nc</bnd_topo>
 <bnd_topo hgrid="ne256np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne256np4pg2_16xdel2_20200213.nc</bnd_topo>
 <bnd_topo hgrid="ne512np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne512np4pg2_16xconsistentSGH_20190212_converted.nc</bnd_topo>
 <bnd_topo hgrid="ne1024np4" npg="2">atm/cam/topo/USGS-gtopo30_ne1024np4pg2_16xconsistentSGH_20190528_converted.nc</bnd_topo>
@@ -381,6 +382,14 @@
 
 <radiation_scheme rad="rrtmg">rrtmg</radiation_scheme>
 <radiation_scheme rad="rrtmgp">rrtmgp</radiation_scheme>
+
+<!-- Higher radiation frequency with higher resolution simulations-->
+<iradlw hgrid="ne256np4"  >3</iradlw>
+<iradsw hgrid="ne256np4"  >3</iradsw>
+<iradlw hgrid="ne512np4"  >3</iradlw>
+<iradsw hgrid="ne512np4"  >3</iradsw>
+<iradlw hgrid="ne1024np4" >3</iradlw>
+<iradsw hgrid="ne1024np4" >3</iradsw>
 
 <!-- CAM-Chem ozone (2000 climatology) -->
 <prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
@@ -1321,8 +1330,8 @@
 <cubed_sphere_map npg="0"> 0 </cubed_sphere_map>
 
 <!-- scream -->
+<cubed_sphere_map hgrid="ne256np4"  npg="0"> 2 </cubed_sphere_map>
 <cubed_sphere_map hgrid="ne512np4"  npg="0"> 2 </cubed_sphere_map>
-<!-- scream -->
 <cubed_sphere_map hgrid="ne1024np4" npg="0"> 2 </cubed_sphere_map>
 
 
