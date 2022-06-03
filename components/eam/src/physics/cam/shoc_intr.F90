@@ -20,7 +20,7 @@ module shoc_intr
   use phys_control,  only: phys_getopts
   use physconst,     only: rair, cpair, gravit, latvap, latice, zvir, &
                            rh2o, karman, tms_orocnst, tms_z0fac  
-  use constituents,  only: pcnst, cnst_add, stateq_names=>cnst_name
+  use constituents,  only: pcnst, cnst_add
   use pbl_utils,     only: calc_ustar, calc_obklen
   use perf_mod,      only: t_startf, t_stopf
   use spmd_utils,    only: masterproc
