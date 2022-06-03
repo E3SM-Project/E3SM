@@ -2792,10 +2792,9 @@ module li_calving
       endif
       if (((globalInfo(5) + globalInfo(6)) / (globalInfo(4) + 1.0e-30_RKIND) > config_calving_error_threshold) .and. &
           (globalInfo(4) > 1000.0_RKIND**2)) then ! Include some small amount of total calving for comparison
-         call mpas_log_write("Failed to ablate an amount greater than 10% of the ice ablated.  " // &
+         call mpas_log_write("Failed to ablate an amount greater than $r% of the ice ablated.  " // &
                  "Try reducing time step or li_apply_front_ablation_velocity may need improvements.", &
-                 MPAS_LOG_ERR, realArgs=(/globalInfo(5) + globalInfo(6), &
-                 100.0_RKIND * (globalInfo(5) + globalInfo(6)) / (globalInfo(4)+1.0e-30_RKIND)/))
+                 MPAS_LOG_ERR, realArgs=(/config_calving_error_threshold * 100.0_RKIND/))
          err_tmp = 1
          err = ior(err, err_tmp)
       endif
