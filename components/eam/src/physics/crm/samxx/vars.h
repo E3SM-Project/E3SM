@@ -344,7 +344,6 @@ extern real2d z               ;
 extern real2d pres            ;
 extern real2d zi              ;
 extern real2d presi           ;
-extern real2d pdel            ;
 extern real2d adz             ;
 extern real2d adzw            ;
 extern real1d dt3             ;

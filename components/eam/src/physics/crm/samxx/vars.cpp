@@ -109,7 +109,6 @@ void allocate() {
   pres             = real2d( "pres            "                        , nzm    , ncrms ); 
   zi               = real2d( "zi              "                        , nz     , ncrms ); 
   presi            = real2d( "presi           "                        , nz     , ncrms ); 
-  pdel             = real2d( "pdel            "                        , nzm    , ncrms );
   adz              = real2d( "adz             "                        , nzm    , ncrms ); 
   adzw             = real2d( "adzw            "                        , nz     , ncrms ); 
   dz               = real1d( "dz              "                                 , ncrms ); 
@@ -313,7 +312,6 @@ void allocate() {
   yakl::memset(pres              ,0.);
   yakl::memset(zi                ,0.);
   yakl::memset(presi             ,0.);
-  yakl::memset(pdel              ,0.);
   yakl::memset(adz               ,0.);
   yakl::memset(adzw              ,0.);
   yakl::memset(dz                ,0.);
@@ -441,8 +439,10 @@ void init_values() {
   YAKL_SCOPE( z0  , ::z0  );
   YAKL_SCOPE( CF3D, ::CF3D);
 
-  // flag_precip(0) = 0;
-  // flag_precip(1) = 1;
+  if (is_same_str(microphysics_scheme, "sam1mom") == 0) {
+    flag_precip(0) = 0;
+    flag_precip(1) = 1;
+  }
 
   ug = 0.                 ;
   vg = 0.                 ;
@@ -582,7 +582,6 @@ void finalize() {
   pres             = real2d(); 
   zi               = real2d(); 
   presi            = real2d();
-  pdel             = real2d();
   adz              = real2d(); 
   adzw             = real2d(); 
   dz               = real1d(); 
@@ -1692,7 +1691,6 @@ void perturb_arrays() {
     perturb( pres              , mag );
     perturb( zi                , mag );
     perturb( presi             , mag );
-    perturb( pdel              , mag );
     perturb( adz               , mag );
     perturb( adzw              , mag );
     perturb( dz                , mag );
@@ -1849,7 +1847,6 @@ real2d z               ;
 real2d pres            ;
 real2d zi              ;
 real2d presi           ;
-real2d pdel            ;
 real2d adz             ;
 real2d adzw            ;
 real1d dt3             ;
