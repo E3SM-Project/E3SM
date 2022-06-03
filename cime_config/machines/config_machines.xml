@@ -3537,7 +3537,7 @@
         <command name="load">cuda/10.1.243</command>
       </modules>
       <modules compiler="gnugpu">
-        <command name="load">gcc/9.3.0</command>
+        <command name="load">gcc/7.5.0</command>
         <command name="load">cuda/10.1.168</command>
       </modules>
       <modules compiler="ibmgpu">
