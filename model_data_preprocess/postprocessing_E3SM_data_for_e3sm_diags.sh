@@ -13,7 +13,7 @@ atm_name="eam"       # Use "cam" for v1 or "eam" for v2 production simulations
 
 start='0051'
 end='0060'
-input_path=/global/cscratch1/sd/forsyth/e3sm_unified_test_zppy/${caseid}
+input_path=/global/cfs/cdirs/e3smdata/zppy_complete_run_nersc_output/${caseid}
 result_dir=/global/cfs/cdirs/e3sm/e3sm_diags/postprocessed_e3sm_v2_data_for_e3sm_diags/${caseid}
 map_file=/global/homes/z/zender/data/maps/map_ne30pg2_to_cmip6_180x360_aave.20200201.nc
 
@@ -59,17 +59,17 @@ drc_rgr=${dir_out_diurnal_climo}/rgr
 drc_out=${dir_out_diurnal_climo}/native
 echo ${drc_in}
 
-cd ${drc_in};eval ls ${caseid}.${atm_name}.h4.*{${start}..${end}}*.nc | ncclimo -P ${atm_name} --clm_md=hfc --caseid=${caseid}.${atm_name}.h4 -v PRECT --ypf=1 --yr_srt=${start} --yr_end=${end} --drc_out=${drc_out} -O $drc_rgr --map=${map_file}
+cd ${drc_in};eval ls ${caseid}.${atm_name}.h4.*{${start}..${end}}*.nc | ncclimo -P ${atm_name} --clm_md=hfc --caseid=${caseid}.${atm_name}.h4 -v PRECT --yr_srt=${start} --yr_end=${end} --drc_out=${drc_out} -O $drc_rgr --map=${map_file}
 ##
 echo "Generating per-variable monthly time-series."
 drc_rgr=${dir_out_ts}/rgr
 drc_out=${dir_out_ts}/native
 
 echo "Variables for Streamflow"
-cd ${drc_in_river};eval ls ${caseid}*mosart.h0.*{${start}..${end}}*.nc | ncclimo --caseid=${caseid} --var_xtr=areatotal2 -v RIVER_DISCHARGE_OVER_LAND_LIQ --yr_srt=$start --yr_end=$end --drc_out=${drc_rgr}
+cd ${drc_in_river};eval ls ${caseid}*mosart.h0.*{${start}..${end}}*.nc | ncclimo --caseid=${caseid} --var_xtr=areatotal2 -v RIVER_DISCHARGE_OVER_LAND_LIQ --yr_srt=$start --yr_end=$end --drc_out=${drc_rgr} --split
 #
 echo "Variables for supporting diags using monthly time series as input(ENSO, QBO, etc.)"
-cd ${drc_in};eval ls ${caseid}.${atm_name}.h0.*{${start}..${end}}*.nc | ncclimo -P ${atm_name} --caseid=${caseid} --var=U,CLDHGH,CLDLOW,CLDMED,CLDTOT,FLNS,FLUT,FSNS,FSNT,FSNTOA,LANDFRAC,LHFLX,LWCF,OCNFRAC,PRECC,PRECL,PSL,QFLX,SHFLX,SWCF,T,TAUX,TAUY,TREFHT,TS --yr_srt=$start --yr_end=$end --drc_out=${drc_out} -O $drc_rgr --map=${map_file}
+cd ${drc_in};eval ls ${caseid}.${atm_name}.h0.*{${start}..${end}}*.nc | ncclimo -P ${atm_name} --caseid=${caseid} --var=U,CLDHGH,CLDLOW,CLDMED,CLDTOT,FLNS,FLUT,FSNS,FSNT,FSNTOA,LANDFRAC,LHFLX,LWCF,OCNFRAC,PRECC,PRECL,PSL,QFLX,SHFLX,SWCF,T,TAUX,TAUY,TREFHT,TS --yr_srt=$start --yr_end=$end --drc_out=${drc_out} -O $drc_rgr --map=${map_file} --split
 #done
 
 exit

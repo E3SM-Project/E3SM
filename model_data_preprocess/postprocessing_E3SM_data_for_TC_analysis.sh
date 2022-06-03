@@ -10,7 +10,7 @@ source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_cori-
 start="0051"
 end="0060"
 caseid="20210528.v2rc3e.piControl.ne30pg2_EC30to60E2r2.chrysalis"
-drc_in=/global/cscratch1/sd/forsyth/e3sm_unified_test_zppy/${caseid}/archive/atm/hist
+drc_in=/global/cfs/cdirs/e3smdata/zppy_complete_run_nersc_output/${caseid}/archive/atm/hist
 # Warning: because somehow tempest-remap only can writes grid file on SCRATCH space. The resulted files will be moved to another path at the end.
 result_dir_fin=/global/cfs/cdirs/e3sm/e3sm_diags/postprocessed_e3sm_v2_data_for_e3sm_diags/${caseid}/
 mkdir -p $result_dir_fin

@@ -21,10 +21,8 @@ import cdms2
 
 # E3SM v2 output with ne30gp2
 case_name = "20210528.v2rc3e.piControl.ne30pg2_EC30to60E2r2.chrysalis"
-data_path = (
-    "/global/cscratch1/sd/forsyth/e3sm_unified_test_zppy/{}/archive/atm/hist/".format(
-        case_name
-    )
+data_path = "/global/cfs/cdirs/e3smdata/zppy_complete_run_nersc_output/{}/archive/atm/hist/".format(
+    case_name
 )
 time_range = "005101_005212"
 file_list = glob.glob(
