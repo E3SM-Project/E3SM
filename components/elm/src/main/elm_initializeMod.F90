@@ -85,7 +85,7 @@ contains
     use dynSubgridControlMod      , only: dynSubgridControl_init
     use filterMod                 , only: allocFilters
     use reweightMod               , only: reweight_wrapup
-    use topounit_varcon           , only: max_topounits, has_topounit, topounit_varcon_init    
+    use topounit_varcon           , only: max_topounits, has_topounit, topounit_varcon_init
     use elm_varctl                , only: use_top_solar_rad
     !
     ! !LOCAL VARIABLES:

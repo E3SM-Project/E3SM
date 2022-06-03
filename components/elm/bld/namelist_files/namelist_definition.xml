@@ -314,6 +314,17 @@ Allowed values are:
 Switch deciding which nutrient model to use in FATES.
 </entry>
 
+<entry id="fates_seeddisp_cadence" type="integer" category="physics"
+       group="elm_inparm" valid_values="0,1,2,3">
+Switch defining the cadence at which seeds are dispersed across
+gridcells.  Setting the switch value to zero turns off dispersal.
+Setting the switch to 1, 2, or 3 sets the dispersal cadence to
+daily, monthly or yearly.  The daily cadence is primarily
+recommended for test and debug only. Note that turning this
+feature on will result in more memory usage.
+(Only relevant if FATES is being used).
+</entry>
+
 <entry id="use_fates_fixed_biogeog" type="logical" category="physics"
         group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on FATES fixed biogeography mode (only relevant if FATES is being used).
