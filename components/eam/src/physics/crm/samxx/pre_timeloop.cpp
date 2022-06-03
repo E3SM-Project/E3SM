@@ -352,7 +352,7 @@ void pre_timeloop() {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (is_same_str(microphysics_scheme, "sam1mom") == 0) {
-      micro_field(0,k,j+offy_s,i+offx_s,icrm) = crm_state_qv(k,j,i,icrm)+crm_state_qn(k,j,i,icrm);
+      micro_field(0,k,j+offy_s,i+offx_s,icrm) = crm_state_qv(k,j,i,icrm);//+crm_state_qn(k,j,i,icrm);
       micro_field(1,k,j+offy_s,i+offx_s,icrm) = crm_state_qp(k,j,i,icrm);
       qn(k,j,i,icrm) = crm_state_qn(k,j,i,icrm);
     }

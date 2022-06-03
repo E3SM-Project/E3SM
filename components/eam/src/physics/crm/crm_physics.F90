@@ -895,14 +895,13 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_v(i,:,:,k) = state(c)%v(i,m) * cos( crm_angle(i) ) - state(c)%u(i,m) * sin( crm_angle(i) )
                crm_w(i,:,:,k) = 0.
                crm_t(i,:,:,k) = state(c)%t(i,m)
+               crm_qv(i,:,:,k) = state(c)%q(i,m,1) + state(c)%q(i,m,ixcldliq) + state(c)%q(i,m,ixcldice)
 
                ! Initialize microphysics arrays
                if (MMF_microphysics_scheme .eq. 'sam1mom') then
-                  crm_qv(i,:,:,k) = state(c)%q(i,m,1)!+state(c)%q(i,m,ixcldliq)+state(c)%q(i,m,ixcldice)
                   crm_qp(i,:,:,k) = 0.0_r8
                   crm_qn(i,:,:,k) = state(c)%q(i,m,ixcldliq)+state(c)%q(i,m,ixcldice)
                else if (MMF_microphysics_scheme .eq. 'm2005') then
-                  crm_qv(i,:,:,k) = state(c)%q(i,m,1)!+state(c)%q(i,m,ixcldliq)
                   crm_qc(i,:,:,k) = state(c)%q(i,m,ixcldliq)
                   crm_qi(i,:,:,k) = state(c)%q(i,m,ixcldice)
                   crm_nc(i,:,:,k) = 0.0_r8
@@ -914,7 +913,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                   crm_qg(i,:,:,k) = 0.0_r8
                   crm_ng(i,:,:,k) = 0.0_r8
                else if (MMF_microphysics_scheme .eq. 'p3') then
-                  crm_qv(i,:,:,k) = state(c)%q(i,m,1)!+state(c)%q(i,m,ixcldliq)
                   crm_qc(i,:,:,k) = state(c)%q(i,m,ixcldliq)
                   crm_qi(i,:,:,k) = state(c)%q(i,m,ixcldice)
                   crm_qr(i,:,:,k) = 0.0_r8
