@@ -10,11 +10,6 @@
   <!-- Waves compsets -->
 
   <compset>
-    <alias>AWAV-IAF</alias>
-    <lname>2000_DATM%IAF_SLND_SICE_SOCN_SROF_SGLC_WW3</lname>
-  </compset>
-
-  <compset>
     <alias>UWAV-IAF</alias>
     <lname>2000_DATM%IAF_SLND_SICE_SOCN_SROF_SGLC_WW3</lname>
   </compset>
@@ -35,13 +30,18 @@
   </compset>
 
   <compset>
+    <alias>GWAV-JRA</alias>
+    <lname>2000_DATM%JRA_SLND_MPASSI_MPASO%DATMFORCED_DROF%JRA_SGLC_WW3</lname>
+  </compset>
+
+  <compset>
     <alias>AWAV_WCYCLSSP585_CMIP6</alias>
     <lname>SSP585SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_WW3</lname>
   </compset>
 
-<compset>
-  <alias>WAV_WCYCL1850</alias>
-  <lname>1850SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_WW3</lname>
-</compset>
+  <compset>
+    <alias>WAV_WCYCL1850</alias>
+    <lname>1850SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_WW3</lname>
+  </compset>
 
 </compsets>
