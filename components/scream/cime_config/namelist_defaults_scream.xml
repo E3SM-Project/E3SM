@@ -200,6 +200,7 @@ tweaking their $case/namelist_scream.xml file.
       <rad_frequency hgrid="ne256np4">3</rad_frequency>
       <rad_frequency hgrid="ne512np4">3</rad_frequency>
       <rad_frequency hgrid="ne1024np4">3</rad_frequency>
+      <do__aerosol__rad>true</do__aerosol__rad>
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">

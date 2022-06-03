@@ -92,10 +92,13 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
     }
   }
   // Required aerosol optical properties from SPA
-  add_field<Required>("aero_tau_sw", scalar3d_swband_layout, nondim, grid_name, ps);
-  add_field<Required>("aero_ssa_sw", scalar3d_swband_layout, nondim, grid_name, ps);
-  add_field<Required>("aero_g_sw"  , scalar3d_swband_layout, nondim, grid_name, ps);
-  add_field<Required>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name, ps);
+  m_do_aerosol_rad = m_params.get<bool>("do_aerosol_rad",true);
+  if (m_do_aerosol_rad) {
+    add_field<Required>("aero_tau_sw", scalar3d_swband_layout, nondim, grid_name, ps);
+    add_field<Required>("aero_ssa_sw", scalar3d_swband_layout, nondim, grid_name, ps);
+    add_field<Required>("aero_g_sw"  , scalar3d_swband_layout, nondim, grid_name, ps);
+    add_field<Required>("aero_tau_lw", scalar3d_lwband_layout, nondim, grid_name, ps);
+  }
 
   // Set computed (output) fields
   add_field<Updated >("T_mid"     , scalar3d_layout_mid, K  , grid_name, ps);
@@ -325,10 +328,24 @@ void RRTMGPRadiation::run_impl (const int dt) {
   auto d_surf_lw_flux_up = get_field_in("surf_lw_flux_up").get_view<const Real*>();
   // Output fields
   auto d_tmid = get_field_out("T_mid").get_view<Real**>();
-  auto d_aero_tau_sw = get_field_in("aero_tau_sw").get_view<const Real***>();
-  auto d_aero_ssa_sw = get_field_in("aero_ssa_sw").get_view<const Real***>();
-  auto d_aero_g_sw   = get_field_in("aero_g_sw"  ).get_view<const Real***>();
-  auto d_aero_tau_lw = get_field_in("aero_tau_lw").get_view<const Real***>();
+  using SmallPack = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>;
+  const int n_lay_w_pack = SCREAM_SMALL_PACK_SIZE*ekat::npack<SmallPack>(m_nlay);
+  view_3d_real d_aero_tau_sw("aero_tau_sw",m_ncol,m_nswbands,n_lay_w_pack);
+  view_3d_real d_aero_ssa_sw("aero_ssa_sw",m_ncol,m_nswbands,n_lay_w_pack);
+  view_3d_real d_aero_g_sw  ("aero_g_sw"  ,m_ncol,m_nswbands,n_lay_w_pack);
+  view_3d_real d_aero_tau_lw("aero_tau_lw",m_ncol,m_nlwbands,n_lay_w_pack);
+  if (m_do_aerosol_rad) {
+    Kokkos::deep_copy(d_aero_tau_sw,get_field_in("aero_tau_sw").get_view<const Real***>());
+    Kokkos::deep_copy(d_aero_ssa_sw,get_field_in("aero_ssa_sw").get_view<const Real***>());
+    Kokkos::deep_copy(d_aero_g_sw  ,get_field_in("aero_g_sw"  ).get_view<const Real***>());
+    Kokkos::deep_copy(d_aero_tau_lw,get_field_in("aero_tau_lw").get_view<const Real***>());
+  } else {
+    Kokkos::deep_copy(d_aero_tau_sw,0.0);
+    Kokkos::deep_copy(d_aero_ssa_sw,0.0);
+    Kokkos::deep_copy(d_aero_g_sw  ,0.0);
+    Kokkos::deep_copy(d_aero_tau_lw,0.0);
+    
+  } 
   auto d_sw_flux_up = get_field_out("SW_flux_up").get_view<Real**>();
   auto d_sw_flux_dn = get_field_out("SW_flux_dn").get_view<Real**>();
   auto d_sw_flux_dn_dir = get_field_out("SW_flux_dn_dir").get_view<Real**>();
@@ -500,9 +517,9 @@ void RRTMGPRadiation::run_impl (const int dt) {
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nswbands*nlay), [&] (const int&idx) {
           auto b = idx / nlay;
           auto k = idx % nlay;
-            aero_tau_sw(i+1,k+1,b+1) = d_aero_tau_sw(i,b,k);
-            aero_ssa_sw(i+1,k+1,b+1) = d_aero_ssa_sw(i,b,k);
-            aero_g_sw  (i+1,k+1,b+1) = d_aero_g_sw  (i,b,k);
+          aero_tau_sw(i+1,k+1,b+1) = d_aero_tau_sw(i,b,k);
+          aero_ssa_sw(i+1,k+1,b+1) = d_aero_ssa_sw(i,b,k);
+          aero_g_sw  (i+1,k+1,b+1) = d_aero_g_sw  (i,b,k);
       });
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlwbands*nlay), [&] (const int&idx) {
           auto b = idx / nlay;
