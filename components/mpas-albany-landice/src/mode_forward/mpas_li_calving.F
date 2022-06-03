@@ -1585,6 +1585,7 @@ module li_calving
       integer, pointer :: nCells
       integer, dimension(:), pointer :: cellMask
       real (kind=RKIND), dimension(:), pointer :: vonMisesStress, damage
+      real (kind=RKIND), pointer :: totalRatebasedCalvedVolume, totalRatebasedUncalvedVolume
       logical :: applyToGrounded, applyToFloating, applyToGroundingLine
 
       err = 0
@@ -1636,6 +1637,8 @@ module li_calving
           call mpas_pool_get_array(geometryPool, 'thickness', thickness)
           call mpas_pool_get_array(geometryPool, 'groundedVonMisesThresholdStress', groundedVonMisesThresholdStress)
           call mpas_pool_get_array(geometryPool, 'floatingVonMisesThresholdStress', floatingVonMisesThresholdStress)
+          call mpas_pool_get_array(geometryPool, 'totalRatebasedCalvedVolume', totalRatebasedCalvedVolume)
+          call mpas_pool_get_array(geometryPool, 'totalRatebasedUncalvedVolume', totalRatebasedUncalvedVolume)
           call mpas_pool_get_array(thermalPool, 'temperature', temperature)
 
           ! get parameter value and check that values are valid
@@ -1723,7 +1726,8 @@ module li_calving
           call li_apply_front_ablation_velocity(meshPool, geometryPool,velocityPool, &
                                               calvingThickness, calvingVelocity, applyToGrounded, &
                                               applyToFloating, applyToGroundingLine, domain, &
-                                              calvingCFLdt, dtCalvingCFLratio, err_tmp)
+                                              calvingCFLdt, dtCalvingCFLratio, &
+                                              totalRatebasedCalvedVolume, totalRatebasedUncalvedVolume, err_tmp)
           err = ior(err, err_tmp)
          ! Update halos on calvingThickness or faceMeltingThickness before
          ! applying it.
@@ -2117,7 +2121,8 @@ module li_calving
 !-----------------------------------------------------------------------
 
    subroutine li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, ablationThickness, ablationVelocity, &
-                   applyToGrounded, applyToFloating, applyToGroundingLine, domain, maxDt, CFLratio, err)
+                   applyToGrounded, applyToFloating, applyToGroundingLine, domain, maxDt, CFLratio, &
+                   totalAblatedVolume, totalUnablatedVolume, err)
 
       use ieee_arithmetic, only : ieee_is_nan
 
@@ -2142,6 +2147,10 @@ module li_calving
           !< Output: an approximation of the max allowable dt based on a CFL-like condition calculated from ablation velocity
       real (kind=RKIND), optional :: CFLratio
           !< Output: the ratio of the actual timestep being applied to the maximum allowable timestep from the CFL-like condition
+      real (kind=RKIND), optional :: totalAblatedVolume
+          !< Output: the total ablated volume
+      real (kind=RKIND), optional :: totalUnablatedVolume
+          !< Output: the total unablated volume
       integer, intent(out) :: err !< Output: error flag
 
       integer, pointer :: nEdges, nEdgesSolve, nCells, nCellsSolve, maxEdges
@@ -2805,6 +2814,13 @@ module li_calving
                  "  Try using a smaller timestep or li_apply_front_ablation_velocity may need improvements for this simulation.")
          err_tmp = 1
          err = ior(err, err_tmp)
+      endif
+
+      if (present(totalAblatedVolume)) then
+         totalAblatedVolume = globalInfo(4)
+      endif
+      if (present(totalUnablatedVolume)) then
+         totalUnablatedVolume = globalInfo(5) + globalInfo(6)
       endif
 
       deallocate(cellVolume)
