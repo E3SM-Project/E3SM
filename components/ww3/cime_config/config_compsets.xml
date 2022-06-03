@@ -10,17 +10,17 @@
   <!-- Waves compsets -->
 
   <compset>
-    <alias>UWAV-IAF</alias>
+    <alias>VWAV-IAF</alias>
     <lname>2000_DATM%IAF_SLND_SICE_SOCN_SROF_SGLC_WW3</lname>
   </compset>
 
   <compset>
-    <alias>UWAV-CFSv2</alias>
+    <alias>VWAV-CFSv2</alias>
     <lname>2000_DATM%CFSv2_SLND_SICE_SOCN_SROF_SGLC_WW3</lname>
   </compset>
 
   <compset>
-    <alias>UWAV-CFSR</alias>
+    <alias>VWAV-CFSR</alias>
     <lname>2000_DATM%CFSR_SLND_SICE_SOCN_SROF_SGLC_WW3</lname>
   </compset>
 
