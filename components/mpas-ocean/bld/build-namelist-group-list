@@ -8,7 +8,6 @@ my @groups = qw(run_modes
                 hmix_del2
                 hmix_del4
                 hmix_leith
-                mesoscale_eddy_parameterizations
                 redi_isopycnal_mixing
                 gm_eddy_parameterization
                 rayleigh_damping

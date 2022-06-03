@@ -484,7 +484,7 @@ contains
              gfr%qmin(k,qi,ie) = min(minval(elem(ie)%state%Q(:,:,k,qi)), gfr%qmin(k,qi,ie))
              gfr%qmax(k,qi,ie) = max(maxval(elem(ie)%state%Q(:,:,k,qi)), gfr%qmax(k,qi,ie))
              ! Final GLL Q1, except for DSS, which is not done in this routine.
-             call limiter_clip_and_sum(np, elem(ie)%spheremp, gfr%qmin(k,qi,ie), &
+             call limiter_clip_and_sum(elem(ie)%spheremp, gfr%qmin(k,qi,ie), &
                   gfr%qmax(k,qi,ie), dp(:,:,k), elem(ie)%derived%FQ(:,:,k,qi))
           end do
           if (gfr%check > 1) then
@@ -640,7 +640,7 @@ contains
     if (nf > 1 .or. .not. gfr%boost_pg1) then
        do ie = nets,nete
           if (gfr%check > 1) wg(:,:,1) = elem(ie)%state%phis
-          call limiter_clip_and_sum(np, elem(ie)%spheremp, gfr%qmin(1,1,ie), &
+          call limiter_clip_and_sum(elem(ie)%spheremp, gfr%qmin(1,1,ie), &
                gfr%qmax(1,1,ie), ones(:,:,1), elem(ie)%state%phis)
           if (gfr%check > 1) then
              if (gfr%qmin(1,1,ie) < zero) then
@@ -1411,7 +1411,7 @@ contains
        call gfr_g2f_remapd(gfr, gll_metdet, gfr%fv_metdet(:,ie), wg, wf1)
        wf1(:nf2) = wf1(:nf2)/dp_f(:nf2,k)
        wf2(:nf2) = gfr%w_ff(:nf2)*gfr%fv_metdet(:nf2,ie)
-       call limiter1_clip_and_sum(nf, wf2, qmin, qmax, dp_f(:,k), wf1)
+       call limiter1_clip_and_sum(nf2, wf2, qmin, qmax, dp_f(:,k), wf1)
        q_f(:nf2,k) = wf1(:nf2)
     end do
   end subroutine gfr_g2f_mixing_ratio
@@ -1437,7 +1437,7 @@ contains
     call gfr_g2f_scalar(ie, gll_metdet, wg(:,:,:1), wf(:,:1))
     f(:nf2) = wf(:nf2,1)
     wf(:nf2,1) = gfr%w_ff(:nf2)*gfr%fv_metdet(:nf2,ie)
-    call limiter1_clip_and_sum(gfr%nphys, wf(:,1), qmin, qmax, ones, f)
+    call limiter1_clip_and_sum(nf2, wf(:,1), qmin, qmax, ones, f)
   end subroutine gfr_g2f_scalar_and_limit
 
   ! FV -> GLL (f2g)
@@ -1751,7 +1751,7 @@ contains
        wr(:,:,1) = elem(ie)%state%phis
        call gfr_pg1_g_reconstruct_scalar(gfr, ie, elem(ie)%metdet, wr(:,:,:1))
        elem(ie)%state%phis = wr(:,:,1)
-       call limiter_clip_and_sum(np, elem(ie)%spheremp, gfr%qmin(1,1,ie), &
+       call limiter_clip_and_sum(elem(ie)%spheremp, gfr%qmin(1,1,ie), &
             gfr%qmax(1,1,ie), ones(:,:,1), elem(ie)%state%phis)
        if (gfr%check > 1) then
           if (gfr%qmin(1,1,ie) < zero) then
@@ -1823,7 +1823,7 @@ contains
              ! Augment bounds with GLL Q0 bounds.
              gfr%qmin(k,qi,ie) = min(minval(elem(ie)%state%Q(:,:,k,qi)), gfr%qmin(k,qi,ie))
              gfr%qmax(k,qi,ie) = max(maxval(elem(ie)%state%Q(:,:,k,qi)), gfr%qmax(k,qi,ie))
-             call limiter_clip_and_sum(np, gfr%w_gg*elem(ie)%metdet, gfr%qmin(k,qi,ie), &
+             call limiter_clip_and_sum(elem(ie)%spheremp, gfr%qmin(k,qi,ie), &
                   gfr%qmax(k,qi,ie), dp(:,:,k), elem(ie)%derived%FQ(:,:,k,qi))
           end do
           if (gfr%check > 1) then
@@ -2119,17 +2119,16 @@ contains
     !           qmin < q* < qmax
 
     integer, intent(in) :: n
-    real (kind=real_kind), intent(in) :: spheremp(:), dp(:)
-    real (kind=real_kind), intent(inout) :: qmin, qmax, q(:)
+    real (kind=real_kind), intent(in) :: spheremp(n), dp(n)
+    real (kind=real_kind), intent(inout) :: qmin, qmax, q(n)
 
     integer :: n2, k1, i, j
     logical :: modified
     real(kind=real_kind) :: addmass, mass, sumc, den
-    real(kind=real_kind) :: x(n*n), c(n*n), v(n*n)
+    real(kind=real_kind) :: x(n), c(n), v(n)
 
-    n2 = n*n
-    x = q(:n2)
-    c = spheremp(:n2)*dp(:n2)
+    x = q(:n)
+    c = spheremp(:n)*dp(:n)
 
     sumc = sum(c)
     mass = sum(c*x)
@@ -2142,7 +2141,7 @@ contains
 
     ! Clip.
     modified = .false.
-    do k1 = 1, n*n
+    do k1 = 1, n
        if (x(k1) > qmax) then
           modified = .true.
           addmass = addmass + (x(k1) - qmax)*c(k1)
@@ -2166,23 +2165,14 @@ contains
        if (den > zero) x = x + addmass*(v/den)
     end if
 
-    q(:n2) = x
+    q(:n) = x
   end subroutine limiter1_clip_and_sum
 
-  subroutine limiter_clip_and_sum(n, spheremp, qmin, qmax, dp, q)
-    integer, intent(in) :: n
-    real (kind=real_kind), intent(in) :: spheremp(:,:), dp(:,:)
-    real (kind=real_kind), intent(inout) :: qmin, qmax, q(:,:)
+  subroutine limiter_clip_and_sum(spheremp, qmin, qmax, dp, q)
+    real (kind=real_kind), intent(in) :: spheremp(np,np), dp(np,np)
+    real (kind=real_kind), intent(inout) :: qmin, qmax, q(np,np)
 
-    integer :: n2
-    real(kind=real_kind) :: spheremp1(n*n), dp1(n*n), q1(n*n)
-
-    n2 = n*n
-    spheremp1 = reshape(spheremp(:n,:n), (/n2/))
-    dp1 = reshape(dp(:n,:n), (/n2/))
-    q1 = reshape(q(:n,:n), (/n2/))
-    call limiter1_clip_and_sum(n, spheremp1, qmin, qmax, dp1, q1)
-    q(:n,:n) = reshape(q1(:n2), (/n,n/))
+    call limiter1_clip_and_sum(np*np, spheremp, qmin, qmax, dp, q)
   end subroutine limiter_clip_and_sum
 
   subroutine ref2spherea_deriv(c, a, b, s_ab, s)
@@ -2664,7 +2654,7 @@ contains
                 qmax = maxval(elem(ie)%state%Q(:,:,1,1))
                 wf(:nf2) = Qdp_fv(:nf2,ie)/ps_v_fv(:nf2,ie)
                 f0(:nf2) = gfr%w_ff(:nf2)*gfr%fv_metdet(:nf2,ie)
-                call limiter1_clip_and_sum(nf, f0, qmin, qmax, ps_v_fv(:,ie), wf)
+                call limiter1_clip_and_sum(nf2, f0, qmin, qmax, ps_v_fv(:,ie), wf)
                 Qdp_fv(:nf2,ie) = wf(:nf2)*ps_v_fv(:nf2,ie)
              end if
           end do
@@ -2696,7 +2686,7 @@ contains
                      Qdp_fv(:,ie), elem(ie)%state%Q(:,:,1,1))
                 elem(ie)%state%Q(:,:,1,1) = elem(ie)%state%Q(:,:,1,1)/elem(ie)%state%ps_v(:,:,1)
                 if (limit) then
-                   call limiter_clip_and_sum(np, elem(ie)%spheremp, & ! same as w_gg*gll_metdet
+                   call limiter_clip_and_sum(elem(ie)%spheremp, & ! same as w_gg*gll_metdet
                         qmins(1,1,ie), qmaxs(1,1,ie), elem(ie)%state%ps_v(:,:,1), &
                         elem(ie)%state%Q(:,:,1,1))
                 end if
@@ -2726,7 +2716,7 @@ contains
                    call gfr_pg1_g_reconstruct_scalar_dp(gfr, ie, elem(ie)%metdet, &
                         elem(ie)%state%ps_v(:,:,:1), elem(ie)%state%Q(:,:,:1,1))
                    if (limit) then
-                      call limiter_clip_and_sum(np, gfr%w_gg*elem(ie)%metdet, qmins(1,1,ie), &
+                      call limiter_clip_and_sum(gfr%w_gg*elem(ie)%metdet, qmins(1,1,ie), &
                            qmaxs(1,1,ie), elem(ie)%state%ps_v(:,:,1), elem(ie)%state%Q(:,:,1,1))
                    end if
                 end do

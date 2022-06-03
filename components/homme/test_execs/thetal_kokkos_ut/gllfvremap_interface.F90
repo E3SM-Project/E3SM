@@ -108,7 +108,7 @@ contains
     real (c_double), intent(in) :: spheremp(n*n), dp(n*n)
     real (c_double), intent(inout) :: qmin, qmax, q(n*n)
 
-    call limiter1_clip_and_sum(n, spheremp, qmin, qmax, dp, q)
+    call limiter1_clip_and_sum(n*n, spheremp, qmin, qmax, dp, q)
   end subroutine limiter1_clip_and_sum_f90
 
   subroutine calc_dp_fv_f90(nf, ps, dp_fv) bind(c)

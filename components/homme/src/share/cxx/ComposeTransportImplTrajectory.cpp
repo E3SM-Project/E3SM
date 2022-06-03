@@ -310,6 +310,16 @@ KOKKOS_FUNCTION static void calc_vertically_lagrangian_levels (
 #endif
     };
     cti::loop_ijk<cti::num_lev_pack>(kv, f_v);
+    if (cti::num_lev_pack == cti::max_num_lev_pack) {
+      // Re-zero eta_dot_dpdn at bottom.
+      RNlevp edds(cti::pack2real(edd));
+      const auto f = [&] (const int idx) {
+        const int i = idx / NP, j = idx % NP;
+        const int bottom = cti::num_phys_lev;
+        edds(i,j,bottom) = 0;
+      };
+      parallel_for(ttr, f);
+    }
   }
 
   reconstruct_and_limit_dp(kv, dp3d, dt, dp_tol, *eta_dot_dpdn[0], dprecon);
