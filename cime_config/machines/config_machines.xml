@@ -3490,7 +3490,7 @@
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="pgigpu">18</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="gnugpu">6</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="gnugpu">42</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="ibmgpu">42</MAX_TASKS_PER_NODE>
 	<!-- Need to activate following attribute after CIME update from upstream -->
     <!-- <MAX_GPUS_PER_NODE>6</MAX_GPUS_PER_NODE> -->
