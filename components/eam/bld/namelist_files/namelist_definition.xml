@@ -359,30 +359,42 @@
        Default: FALSE
        </entry>
 
+<entry id="Nudge_Q_Adjust_On" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       If TRUE, apply the adjustment on constitutes when Q is nudged 
+       Default: FALSE
+       </entry>
+
 <entry id="Nudge_Pdep_Weight_On" type="logical" category="nudging"
        group="nudging_nl" valid_values="" >
        If TRUE, scale the nudging strength coefficient by pressure 
        Default: FALSE
        </entry>
 
+<entry id="Nudge_Lin_Relax_On" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       If TRUE, Linear relex the nudging strength coefficient to zero by pressure
+       above the 30hPa layer
+       Default: FALSE
+       </entry>
+
 <entry id="Nudge_NO_PBL_UV" type="integer" category="nudging"
        group="nudging_nl" valid_values="" >
-       Option of method for PS nudging.
+       Option to exclude UV nudging tendency below PBL 
        Default: 0
        </entry>
 
 <entry id="Nudge_NO_PBL_T" type="integer" category="nudging"
        group="nudging_nl" valid_values="" >
-       Option of method for PS nudging.
+       Option to exclude T nudging tendency below PBL 
        Default: 0
        </entry>
 
 <entry id="Nudge_NO_PBL_Q" type="integer" category="nudging"
        group="nudging_nl" valid_values="" >
-       Option of method for PS nudging.
+       Option to exclude Q nudging tendency below PBL 
        Default: 0
        </entry>
-
 
 <!-- Aerosols: Data (CAM version) -->
 

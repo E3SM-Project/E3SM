@@ -1420,14 +1420,14 @@ subroutine tphysac (ztodt,   cam_in,               &
     use gw_drag,            only: gw_tend
     use vertical_diffusion, only: vertical_diffusion_tend
     use rayleigh_friction,  only: rayleigh_friction_tend
-    use constituents,       only: cnst_get_ind
+    use constituents,       only: cnst_get_ind, pcnst
     use physics_types,      only: physics_state, physics_tend, physics_ptend,    &
          physics_dme_adjust, set_dry_to_wet, physics_state_check
     use majorsp_diffusion,  only: mspd_intr  ! WACCM-X major diffusion
     use ionosphere,         only: ionos_intr ! WACCM-X ionosphere
     use tracers,            only: tracers_timestep_tend
     use aoa_tracers,        only: aoa_tracers_timestep_tend
-    use physconst,          only: rhoh2o, latvap,latice, rga
+    use physconst,          only: rhoh2o, latvap,latice, rga, cappa
     use aero_model,         only: aero_model_drydep
     use check_energy,       only: check_energy_chng, check_water, & 
                                   check_prect, check_qflx , &
@@ -1445,11 +1445,11 @@ subroutine tphysac (ztodt,   cam_in,               &
     use clubb_intr,         only: clubb_surface
     use perf_mod
     use flux_avg,           only: flux_avg_run
-    use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend, &
-                                  Nudge_PS_On
+    use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
     use co2_cycle,          only: co2_cycle_set_ptend
     use hycoef,             only: hycoef_init, hyam, hybm, hyai, hybi, ps0
+    use shr_vmath_mod,      only: shr_vmath_log
 
     implicit none
 
@@ -1497,9 +1497,6 @@ subroutine tphysac (ztodt,   cam_in,               &
     real(r8) :: ftem      (pcols,pver) ! tmp space
     real(r8), pointer, dimension(:) :: static_ener_ac_2d ! Vertically integrated static energy
     real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
-
-    real(r8) :: ps_tend(pcols) ! nudging tendency for PS 
-    real(r8) :: dbk           ! factor for updating layer thickness
 
     ! physics buffer fields for total energy and mass adjustment
     integer itim_old, ifld
@@ -1795,30 +1792,17 @@ end if ! l_gw_drag
     ! Update Nudging values, if needed
     !===================================================
     if((Nudge_Model).and.(Nudge_ON)) then
-      call nudging_timestep_tend(state,ptend,ps_tend)
-      !-----------------------
-      ! Update layer thickness
-      !-----------------------
-      if (Nudge_PS_On) then
-        !Update the PS with nudging here 
-        do i=1,ncol
-          state%ps(i)  = state%ps(i) + ztodt * ps_tend(i)
-        end do 
-        !update the layer thickness 
-        do k=1,pver
-          dbk = ztodt * (hybi(k+1) - hybi(k))
-           do i=1,ncol
-             state%pdel(i,k)  = state%pdel(i,k) + dbk*ps_tend(i)
-             state%rpdel(i,k) = 1.0_r8 / state%pdel(i,k)
-           enddo
-        enddo
-      end if 
+      call nudging_timestep_tend(state,ptend,ztodt)
       call physics_update(state,ptend,ztodt,tend)
       call outfld('U_af_ndg' ,state%u,        pcols,lchnk)
       call outfld('V_af_ndg' ,state%v,        pcols,lchnk)
       call outfld('T_af_ndg' ,state%t,        pcols,lchnk)
       call outfld('Q_af_ndg' ,state%q(1,1,1), pcols,lchnk)
       call outfld('PS_af_ndg',state%ps,       pcols,lchnk)
+      do k = 1, pver
+        ftem(:ncol,k) = state%zm(:ncol,k) + state%phis(:ncol)*rga
+      end do
+      call outfld('Z3_af_ndg', ftem,  pcols,lchnk)
     endif
 
     call cnd_diag_checkpoint( diag, 'NDG', state, pbuf, cam_in, cam_out )
@@ -2761,7 +2745,7 @@ end if
     ! Update Nudging tendency if needed
     !===================================
     if (Nudge_Model .and. Nudge_Loc_PhysOut) then
-       call nudging_calc_tend(state, pbuf)
+       call nudging_calc_tend(state, pbuf, ztodt)
     endif
 
     !===================================================
