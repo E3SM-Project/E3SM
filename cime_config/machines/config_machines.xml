@@ -3490,7 +3490,7 @@
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="pgigpu">18</MAX_TASKS_PER_NODE>
-    <MAX_TASKS_PER_NODE compiler="gnugpu">6</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="gnugpu">42</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="ibmgpu">42</MAX_TASKS_PER_NODE>
 	<!-- Need to activate following attribute after CIME update from upstream -->
     <!-- <MAX_GPUS_PER_NODE>6</MAX_GPUS_PER_NODE> -->
@@ -3617,7 +3617,7 @@
     </environment_variables>
     <environment_variables compiler="gnugpu">
       <env name="RS_PER_NODE">$SHELL{if [  `./xmlquery --value TOTAL_TASKS` -le 6 ];then echo  `./xmlquery --value  TOTAL_TASKS`; else echo 6; fi} </env>
-      <env name="CPU_PER_RS">1</env>
+      <env name="CPU_PER_RS">7</env>
       <env name="GPU_PER_RS">1</env>
       <env name="LTC_PRT">gpu-cpu</env>
 	  <env name="NUM_RS">$SHELL{ if [ `./xmlquery --value TOTAL_TASKS` -le 6 ];then echo `./xmlquery --value TOTAL_TASKS`; else echo "6*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc; fi}</env>
