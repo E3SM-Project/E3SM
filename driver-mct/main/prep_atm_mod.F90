@@ -280,8 +280,8 @@ contains
     type(mct_aVect), intent(inout) :: x2a_a
     !
     ! Local workspace
-    real(r8) :: fracl, fraci, fraco
-    integer  :: n,ka,ki,kl,ko,kx,kof,kif,klf,i,i1,o1
+    real(r8) :: fracl, fraci, fraco, fracl_st
+    integer  :: n,ka,ki,kl,ko,kx,kof,kif,klf,klf_st,i,i1,o1
     integer  :: lsize
     integer  :: index_x2a_Sf_lfrac
     integer  :: index_x2a_Sf_ifrac
@@ -298,13 +298,13 @@ contains
     character(CL),allocatable :: itemc_ocn(:)   ! string converted to char
     logical :: iamroot
     character(CL),allocatable :: mrgstr(:)   ! temporary string
-    character(CL) :: fracstr
+    character(CL) :: fracstr, fracstr_st
     logical, save :: first_time = .true.
     type(mct_aVect_sharedindices),save :: l2x_sharedindices
     type(mct_aVect_sharedindices),save :: o2x_sharedindices
     type(mct_aVect_sharedindices),save :: i2x_sharedindices
     type(mct_aVect_sharedindices),save :: xao_sharedindices
-    logical, pointer, save :: lmerge(:),imerge(:),xmerge(:),omerge(:)
+    logical, pointer, save :: lmerge(:),imerge(:),xmerge(:),omerge(:),lstate(:)
     integer, pointer, save :: lindx(:), iindx(:), oindx(:),xindx(:)
     integer, save          :: naflds, nlflds,niflds,noflds,nxflds
     character(*), parameter   :: subname = '(prep_atm_merge) '
@@ -324,6 +324,7 @@ contains
        allocate(iindx(naflds), imerge(naflds))
        allocate(xindx(naflds), xmerge(naflds))
        allocate(oindx(naflds), omerge(naflds))
+       allocate(lindx(naflds), lstate(naflds))
        allocate(field_atm(naflds), itemc_atm(naflds))
        allocate(field_lnd(nlflds), itemc_lnd(nlflds))
        allocate(field_ice(niflds), itemc_ice(niflds))
@@ -339,6 +340,7 @@ contains
        imerge(:)  = .true.
        xmerge(:)  = .true.
        omerge(:)  = .true.
+       lstate(:)  = .false.
 
        do ka = 1,naflds
           field_atm(ka) = mct_aVect_getRList2c(ka, x2a_a)
@@ -379,6 +381,9 @@ contains
           end if
           if (field_atm(ka)(1:1) == 'S' .and. field_atm(ka)(2:2) /= 'x') then
              cycle ! any state fields that are not Sx_ will just be copied
+          end if
+          if (field_atm(ka)(1:1) == 'S') then
+             lstate(ka) = .true.
           end if
 
           do kl = 1,nlflds
@@ -482,6 +487,8 @@ contains
 
     kif=mct_aVect_indexRA(fractions_a,"ifrac")
     kof=mct_aVect_indexRA(fractions_a,"ofrac")
+    klf_st = mct_aVect_indexRA(fractions_a,"lfrac")
+    fracstr_st = 'lfrac'
     if (samegrid_al) then
        klf = mct_aVect_indexRA(fractions_a,"lfrac")
        fracstr = 'lfrac'
@@ -556,10 +563,18 @@ contains
        !--- document merge ---
        if (first_time) then
           if (lindx(ka) > 0) then
-             if (lmerge(ka)) then
-                mrgstr(ka) = trim(mrgstr(ka))//' + '//trim(fracstr)//'*l2x%'//trim(field_lnd(lindx(ka)))
+             if (lstate(ka)) then
+                if (lmerge(ka)) then
+                   mrgstr(ka) = trim(mrgstr(ka))//' + '//trim(fracstr_st)//'*l2x%'//trim(field_lnd(lindx(ka)))
+                else
+                   mrgstr(ka) = trim(mrgstr(ka))//' = '//trim(fracstr_st)//'*l2x%'//trim(field_lnd(lindx(ka)))
+                end if
              else
-                mrgstr(ka) = trim(mrgstr(ka))//' = '//trim(fracstr)//'*l2x%'//trim(field_lnd(lindx(ka)))
+                if (lmerge(ka)) then
+                   mrgstr(ka) = trim(mrgstr(ka))//' + '//trim(fracstr)//'*l2x%'//trim(field_lnd(lindx(ka)))
+                else
+                   mrgstr(ka) = trim(mrgstr(ka))//' = '//trim(fracstr)//'*l2x%'//trim(field_lnd(lindx(ka)))
+                end if
              end if
           end if
           if (iindx(ka) > 0) then
@@ -588,13 +603,22 @@ contains
 
        do n = 1,lsize
           fracl = fractions_a%Rattr(klf,n)
+          fracl_st = fractions_a%Rattr(klf_st,n)
           fraci = fractions_a%Rattr(kif,n)
           fraco = fractions_a%Rattr(kof,n)
           if (lindx(ka) > 0 .and. fracl > 0._r8) then
-             if (lmerge(ka)) then
-                x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + l2x_a%rAttr(lindx(ka),n) * fracl
+             if (lstate(ka)) then
+                if (lmerge(ka)) then
+                   x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + l2x_a%rAttr(lindx(ka),n) * fracl_st
+                else
+                   x2a_a%rAttr(ka,n) = l2x_a%rAttr(lindx(ka),n) * fracl_st
+                end if
              else
-                x2a_a%rAttr(ka,n) = l2x_a%rAttr(lindx(ka),n) * fracl
+                if (lmerge(ka)) then
+                   x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + l2x_a%rAttr(lindx(ka),n) * fracl
+                else
+                   x2a_a%rAttr(ka,n) = l2x_a%rAttr(lindx(ka),n) * fracl
+                end if
              end if
           end if
           if (iindx(ka) > 0 .and. fraci > 0._r8) then

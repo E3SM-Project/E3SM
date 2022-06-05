@@ -464,7 +464,7 @@ _TESTS = {
         "time"  : "02:00:00",
         "tests" : (
             #  "SMS_D_Ln2.ne30_ne30.F2000-SCREAMv1-AQP1", # Uncomment once IC file for ne30 is ready
-            "ERS_Ln9.ne30_ne30.F2010-SCREAMv1",
+            "ERS_Ln22.ne30_ne30.F2010-SCREAMv1",
             )
     },
 

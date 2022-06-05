@@ -614,21 +614,12 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 
 			if(strncmp(nmlopttype, "real", 1024) == 0){
 				fortprintf(fd, "      real (kind=RKIND) :: %s = %lf\n", nmloptname, (double)atof(nmloptval));
-				fortprintf(fcd, "      real (kind=RKIND), pointer :: %s\n", nmloptname);
-				if (strstr(nmloptname, "config_") == nmloptname ) {
-                   fortprintf(fcd, "      real (kind=RKIND) :: varinp_%s\n", nmloptname+7);
-                }
+				fortprintf(fcd, "      real (kind=RKIND) :: %s\n", nmloptname);
 			} else if(strncmp(nmlopttype, "integer", 1024) == 0){
 				fortprintf(fd, "      integer :: %s = %d\n", nmloptname, atoi(nmloptval));
-				fortprintf(fcd, "      integer, pointer :: %s\n", nmloptname);
-				if (strstr(nmloptname, "config_") == nmloptname ) {
-				   fortprintf(fcd, "      integer :: varinp_%s\n", nmloptname+7);
-                }
+				fortprintf(fcd, "      integer :: %s\n", nmloptname);
 			} else if(strncmp(nmlopttype, "logical", 1024) == 0){
-				fortprintf(fcd, "      logical, pointer :: %s\n", nmloptname);
-				if (strstr(nmloptname, "config_") == nmloptname ) {
-				   fortprintf(fcd, "      logical :: varinp_%s\n", nmloptname+7);
-                }
+				fortprintf(fcd, "      logical :: %s\n", nmloptname);
 				if(strncmp(nmloptval, "true", 1024) == 0 || strncmp(nmloptval, ".true.", 1024) == 0){
 					fortprintf(fd, "      logical :: %s = .true.\n", nmloptname);
 				} else {
@@ -636,10 +627,7 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 				}
 			} else if(strncmp(nmlopttype, "character", 1024) == 0){
 					fortprintf(fd, "      character (len=StrKIND) :: %s = '%s'\n", nmloptname, nmloptval);
-					fortprintf(fcd, "      character (len=StrKIND), pointer :: %s\n", nmloptname);
-				    if (strstr(nmloptname, "config_") == nmloptname ) {
-				    	fortprintf(fcd, "      character (len=StrKIND) :: varinp_%s\n", nmloptname+7);
-                    }
+					fortprintf(fcd, "      character (len=StrKIND) :: %s\n", nmloptname);
 			}
 		}
 		fortprintf(fd, "\n");
@@ -728,10 +716,7 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 			nmloptname = ezxml_attr(nmlopt_xml, "name");
 
 			fortprintf(fd, "      call mpas_pool_add_config(%s, '%s', %s)\n", pool_name, nmloptname, nmloptname);
-			fortprintf(fcg, "      call mpas_pool_get_config(configPool, '%s', %s)\n", nmloptname, nmloptname);
-		    if (strstr(nmloptname, "config_") == nmloptname ) {
-			   fortprintf(fcg, "      call mpas_pool_get_config_scalar(configPool, '%s', varinp_%s)\n", nmloptname, nmloptname+7);
-            }
+			fortprintf(fcg, "      call mpas_pool_get_config_scalar(configPool, '%s', %s)\n", nmloptname, nmloptname);
 		}
 		fortprintf(fd, "\n");
 		fortprintf(fcg, "\n");

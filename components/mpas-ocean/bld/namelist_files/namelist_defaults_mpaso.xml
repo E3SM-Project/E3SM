@@ -130,13 +130,6 @@
 <config_Leith_dx>15000.0</config_Leith_dx>
 <config_Leith_visc2_max>2.5e3</config_Leith_visc2_max>
 
-<!-- mesoscale_eddy_parameterizations -->
-<config_eddying_resolution_taper>'ramp'</config_eddying_resolution_taper>
-<config_eddying_resolution_ramp_min>20e3</config_eddying_resolution_ramp_min>
-<config_eddying_resolution_ramp_min ocn_grid="WCAtl12to45E2r4">30e3</config_eddying_resolution_ramp_min>
-<config_eddying_resolution_ramp_max>30e3</config_eddying_resolution_ramp_max>
-<config_eddying_resolution_ramp_max ocn_grid="WCAtl12to45E2r4">40e3</config_eddying_resolution_ramp_max>
-
 <!-- Redi_isopycnal_mixing -->
 <config_use_Redi>.true.</config_use_Redi>
 <config_use_Redi ocn_grid="oRRS30to10v3">.false.</config_use_Redi>
@@ -153,6 +146,11 @@
 <config_Redi_N2_based_taper_min>0.1</config_Redi_N2_based_taper_min>
 <config_Redi_N2_based_taper_limit_term1>.true.</config_Redi_N2_based_taper_limit_term1>
 <config_Redi_min_layers_diag_terms>6</config_Redi_min_layers_diag_terms>
+<config_Redi_horizontal_taper>'ramp'</config_Redi_horizontal_taper>
+<config_Redi_horizontal_ramp_min>20e3</config_Redi_horizontal_ramp_min>
+<config_Redi_horizontal_ramp_min ocn_grid="WCAtl12to45E2r4">30e3</config_Redi_horizontal_ramp_min>
+<config_Redi_horizontal_ramp_max>30e3</config_Redi_horizontal_ramp_max>
+<config_Redi_horizontal_ramp_max ocn_grid="WCAtl12to45E2r4">40e3</config_Redi_horizontal_ramp_max>
 
 <!-- GM_eddy_parameterization -->
 <config_use_GM>.true.</config_use_GM>
@@ -185,6 +183,13 @@
 <config_GM_EG_kappa_factor>3.0</config_GM_EG_kappa_factor>
 <config_GM_EG_Rossby_factor>2.0</config_GM_EG_Rossby_factor>
 <config_GM_EG_Rhines_factor>0.3</config_GM_EG_Rhines_factor>
+<config_GM_horizontal_taper>'ramp'</config_GM_horizontal_taper>
+<config_GM_horizontal_ramp_min>20e3</config_GM_horizontal_ramp_min>
+<config_GM_horizontal_ramp_min ocn_grid="WCAtl12to45E2r4">30e3</config_GM_horizontal_ramp_min>
+<config_GM_horizontal_ramp_max>30e3</config_GM_horizontal_ramp_max>
+<config_GM_horizontal_ramp_max ocn_grid="WCAtl12to45E2r4">40e3</config_GM_horizontal_ramp_max>
+<config_GMRedi_Rossby_ramp_min>0.5</config_GMRedi_Rossby_ramp_min>
+<config_GMRedi_Rossby_ramp_max>3.0</config_GMRedi_Rossby_ramp_max>
 
 <!-- Rayleigh_damping -->
 <config_Rayleigh_friction>.false.</config_Rayleigh_friction>
