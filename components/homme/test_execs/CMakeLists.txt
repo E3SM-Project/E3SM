@@ -226,11 +226,12 @@ IF (${BUILD_HOMME_THETA_KOKKOS})
   if (${HOMME_MACHINE} MATCHES "summit-gpu")
 
     ADD_SUBDIRECTORY(theta-nlev128-kokkos)
+    ADD_SUBDIRECTORY(theta-nlev72-kokkos)
 
   else()
 
     ADD_SUBDIRECTORY(theta-l-nlev30-kokkos)
-    ADD_SUBDIRECTORY(theta-l-nlev72-kokkos)
+    ADD_SUBDIRECTORY(theta-nlev72-kokkos)
 
     ADD_SUBDIRECTORY(theta-nlev128-kokkos)
 
@@ -238,6 +239,7 @@ IF (${BUILD_HOMME_THETA_KOKKOS})
     # since it's just needed for perf/correctness comparisons
     IF (BUILD_HOMME_THETA)
       ADD_SUBDIRECTORY(theta-nlev128)
+      ADD_SUBDIRECTORY(theta-nlev72)
     ENDIF()
 
     ADD_SUBDIRECTORY(thetal_kokkos_ut)
