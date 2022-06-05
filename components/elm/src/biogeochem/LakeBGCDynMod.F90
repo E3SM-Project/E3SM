@@ -70,6 +70,8 @@ module LakeBGCDynMod
       real(r8) :: Qch4
       ! CH4 oxidation Q10
       real(r8) :: OQ10
+      ! critical CH4 concentration for O2-inhibitation of methanotrophy (mol/m3)
+      real(r8) :: Och4_cr
       ! oxic CH4 production rate to photosynthesis (mol CH4/m3/s (mol O2/m3/s)-1)
       real(r8) :: Rcoxic
 
@@ -2169,11 +2171,10 @@ contains
       !
       ! !CONSTANTS
       real(r8), parameter :: Tor = 267.65_r8 ! CH4 oxidation reference temperature (K)
-      real(r8), parameter :: CH4_cr = 1.7e-3_r8 ! critical CH4 concentration for O2-inhibitation (mol/m3)
       !
       ! !LOCAL VARIABLES:
       real(r8) :: tw, ts, fch4
-      real(r8) :: Qch4, OQ10
+      real(r8) :: Qch4, OQ10, Och4_cr
       real(r8) :: c_ch4, c_o2, och4_oxic
       integer  :: j, k
       !-------------------------------------------------------------------- 
@@ -2200,8 +2201,9 @@ contains
 
          Qch4 = LakeBGCParamsInst%Qch4
          OQ10 = LakeBGCParamsInst%OQ10
+         Och4_cr = LakeBGCParamsInst%Och4_cr
 
-         fch4 = CH4_cr / (CH4_cr + c_ch4)
+         fch4 = 1._r8 / (1._r8 + c_ch4/Och4_cr)
 
          och4_oxic = (1._r8-icefrac(c,j)) * Qch4 * (OQ10**(0.1_r8*(tw-Tor))) * &
             (c_ch4**0.79_r8) * exp(-10._r8*fch4*c_o2) * (1._r8 - exp(-180._r8*c_o2))
@@ -2346,6 +2348,11 @@ contains
       call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
       if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
       LakeBGCParamsInst%OQ10 = tempr
+
+      tString = 'Och4_cr'
+      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+      LakeBGCParamsInst%Och4_cr = tempr
 
       tString='Rcoxic'
       call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
