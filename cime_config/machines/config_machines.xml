@@ -3620,8 +3620,17 @@
       <env name="CPU_PER_RS">7</env>
       <env name="GPU_PER_RS">1</env>
       <env name="LTC_PRT">gpu-cpu</env>
-	  <env name="NUM_RS">$SHELL{ if [ `./xmlquery --value TOTAL_TASKS` -le 6 ];then echo `./xmlquery --value TOTAL_TASKS`; else echo "6*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc; fi}</env>
-    </environment_variables>
+      <env name="NUM_RS">$SHELL{ if [ `./xmlquery --value TOTAL_TASKS` -le 6 ];then echo `./xmlquery --value TOTAL_TASKS`; else echo "6*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc; fi}</env>
+      <env name="PAMI_ENABLE_STRIPING">1</env>
+      <env name="PAMI_ENABLE_STRIPING">1</env>
+      <env name="PAMI_IBV_ADAPTER_AFFINITY">1</env>
+      <env name="PAMI_IBV_QP_SERVICE_LEVEL">8</env>
+      <env name="PAMI_IBV_DEVICE_NAME_1">mlx5_3:1,mlx5_0:1</env>
+      <env name="PAMI_IBV_ENABLE_DCT">1</env>
+      <env name="PAMI_IBV_DEVICE_NAME">mlx5_0:1,mlx5_3:1</env>
+      <env name="PAMI_IBV_ENABLE_OOO_AR">1</env>
+  </environment_variables>
+
   </machine>
 
   <machine MACH="ascent">
