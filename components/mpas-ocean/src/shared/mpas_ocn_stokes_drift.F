@@ -74,8 +74,8 @@ contains
 !> \date    June 2021 
 !> \details
 !>   This routine reconstructs the depth-dependent Stokes drift profile 
-!>   using partitioned surface Stokes drift in 6 wavenumber bins from 
-!>   an active wave model. 
+!>   using partitioned surface Stokes drift in 3, 4, or 6 wavenumber bins
+!>   from an active wave model. 
 !
 !-----------------------------------------------------------------------
 
@@ -134,8 +134,8 @@ contains
 !> \date    December 2021 
 !> \details
 !>   This routine reconstructs the surface Stokes drift velocity
-!>   using partitioned surface Stokes drift in 6 wavenumber bins from 
-!>   an active wave model. 
+!>   using partitioned surface Stokes drift in 3, 4, or 6 wavenumber bins
+!>   from an active wave model. 
 !
 !-----------------------------------------------------------------------
 
@@ -337,8 +337,8 @@ contains
 !> \date    June 2021 
 !> \details
 !>   This routine evaluates the depth-dependent Stokes drift profile at 
-!>   a given depth using partitioned surface Stokes drift in 6 wavenumber
-!>   bins from an active wave model. 
+!>   a given depth using partitioned surface Stokes drift in 3, 4, or 6
+!>   wavenumber bins from an active wave model. 
 !
 !-----------------------------------------------------------------------
 
@@ -394,8 +394,8 @@ contains
 !> \date    June 2021 
 !> \details
 !>   This routine averages the Stokes drift profile over a specified 
-!>   depth using partitioned surface Stokes drift in 6 wavenumber bins
-!>   from an active wave model. 
+!>   depth using partitioned surface Stokes drift in 3, 4, or 6 wavenumber
+!>   bins from an active wave model. 
 !
 !-----------------------------------------------------------------------
 
@@ -452,7 +452,10 @@ contains
 !> \date    June 2021
 !> \details
 !>  This routine initializes quantities related to Stokes drift-related
-!>  computations
+!>  computations. The wavenumber values are from a personal communication
+!>  with Brandon Reichl at GFDL. This approach is used in Li et al. 2019,
+!>  (https://doi.org/10.1029/2019MS001810) but these values are not
+!>  documented there.
 !
 !----------------------------------------------------------------------
 
