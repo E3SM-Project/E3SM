@@ -1098,7 +1098,9 @@ contains
              if (iam == owner_d) then
                 if (.not. associated(btofc_blk_offset(blockids(jb))%pter)) then
                    blksiz = get_block_gcol_cnt_d(blockids(jb))
+!DIR$ NOINLINE
                    numlvl = get_block_lvl_cnt_d(blockids(jb),bcids(jb))
+!DIR$ INLINE
                    btofc_blk_offset(blockids(jb))%ncols = blksiz
                    btofc_blk_offset(blockids(jb))%nlvls = numlvl
                    allocate( btofc_blk_offset(blockids(jb))%pter(blksiz,numlvl) )
