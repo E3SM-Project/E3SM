@@ -29,6 +29,8 @@ if (SCREAM_CIME_BUILD)
        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cime)
 endif ()
 
+message("Kokkos_ENABLE_CUDA ${Kokkos_ENABLE_CUDA}")
+
 if (Kokkos_ENABLE_CUDA)
   if (Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
     if (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK)
