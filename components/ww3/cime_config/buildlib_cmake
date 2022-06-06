@@ -58,7 +58,6 @@ def buildlib(bldroot, installpath, case):
         os.remove(env_file)
 
     comp = compiler.capitalize()
-    safe_copy(os.path.join(repodir, "switch_E3SM"), bindir)
 
     # Get serial fortran and C compilers from Macros
     make_args = get_standard_makefile_args(case, shared_lib=True)
@@ -80,7 +79,6 @@ y
 
     run_bld_cmd_ensure_logging("./w3_setup {} -s E3SM < w3_setup.inp".format(modeldir), logger, from_dir=bindir)
     os.remove(inp_file)
-    os.remove(os.path.join(bindir, "switch_E3SM"))
 
     # Generate pre-processed WW3 source code
     ww3_exe = ['ww3_shel','ww3_grid']
