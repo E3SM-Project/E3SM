@@ -667,7 +667,9 @@ CONTAINS
     endif
 #endif
 
+#if defined(CLDERA_PROFILING)
     call cldera_compute_stats(ymd,tod)
+#endif
 
   end subroutine atm_run_mct
 
