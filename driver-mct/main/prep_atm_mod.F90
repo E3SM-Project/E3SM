@@ -75,6 +75,7 @@ module prep_atm_mod
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
   logical :: iamroot_CPLID ! .true. => CPLID masterproc
+  logical :: samegrid_al   ! samegrid atm and land
   !================================================================================================
 
 contains
@@ -97,8 +98,7 @@ contains
     integer                          :: lsize_a
     integer                          :: eli, eii, emi, ezi
     logical                          :: samegrid_ao    ! samegrid atm and ocean
-    logical                          :: samegrid_al    ! samegrid atm and land
-    logical                          :: samegrid_az    ! samegrid atm and iac
+    logical                          :: samegrid_az ! samegrid atm and iac
     logical                          :: esmf_map_flag  ! .true. => use esmf for mapping
     logical                          :: atm_present    ! .true.  => atm is present
     logical                          :: ocn_present    ! .true.  => ocn is present
@@ -545,13 +545,12 @@ contains
     ! Update surface fractions
 
     kif=mct_aVect_indexRA(fractions_a,"ifrac")
-    klf=mct_aVect_indexRA(fractions_a,"lfrac")
-    kzf=mct_aVect_indexRA(fractions_a,"zfrac")
     kof=mct_aVect_indexRA(fractions_a,"ofrac")
     klf_st = mct_aVect_indexRA(fractions_a,"lfrac")
     fracstr_st = 'lfrac'
     if (samegrid_al) then
        klf = mct_aVect_indexRA(fractions_a,"lfrac")
+    kzf=mct_aVect_indexRA(fractions_a,"zfrac")
        fracstr = 'lfrac'
     else
        klf = mct_aVect_indexRA(fractions_a,"lfrin")
@@ -573,7 +572,7 @@ contains
 
     !--- document fraction operations ---
     if (first_time) then
-       mrgstr(index_x2a_sf_lfrac) = trim(mrgstr(index_x2a_sf_lfrac))//' = fractions_a%lfrac'
+       mrgstr(index_x2a_sf_lfrac) = trim(mrgstr(index_x2a_sf_lfrac))//' = fractions_a%'//trim(fracstr)
        mrgstr(index_x2a_sf_ifrac) = trim(mrgstr(index_x2a_sf_ifrac))//' = fractions_a%ifrac'
        mrgstr(index_x2a_sf_ofrac) = trim(mrgstr(index_x2a_sf_ofrac))//' = fractions_a%ofrac'
        mrgstr(index_x2a_sf_zfrac) = trim(mrgstr(index_x2a_sf_zfrac))//' = fractions_a%zfrac'
