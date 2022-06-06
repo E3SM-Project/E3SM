@@ -164,8 +164,8 @@ tweaking their $case/namelist_scream.xml file.
 
     <!-- P3 microphysics -->
     <p3 inherit="physics_proc_base">
-      <do_prescribed_ccn>true</do_prescribed__ccn>
-      <do_predic__nc>true</do_predict__nc>
+      <do_prescribed_ccn>true</do_prescribed_ccn>
+      <do_predict_nc>true</do_predict_nc>
     </p3>
 
     <!-- SHOC macrophysics -->
