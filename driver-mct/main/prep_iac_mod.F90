@@ -18,7 +18,7 @@ module prep_iac_mod
   use mct_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
-  use component_type_mod, only: iac, lnd
+  use component_type_mod, only: iac, lnd, atm
 
   implicit none
   save
@@ -43,6 +43,7 @@ module prep_iac_mod
   public :: prep_iac_get_l2zacc_lx
   public :: prep_iac_get_l2zacc_lx_cnt
   public :: prep_iac_get_mapper_Sl2z
+  public :: prep_iac_get_mapper_Sa2z
 
   !--------------------------------------------------------------------------
   ! Private interfaces
@@ -54,6 +55,7 @@ module prep_iac_mod
 
   ! mappers
   type(seq_map), pointer :: mapper_Sl2z
+  type(seq_map), pointer :: mapper_Sa2z
 
   ! attribute vectors
   type(mct_aVect), pointer :: l2x_zx(:) ! Lnd export, iac grid, cpl pes
@@ -271,9 +273,7 @@ contains
  end subroutine iac_avect_max
 
   !================================================================================================
-
  subroutine prep_iac_zero_max()
-
    !---------------------------------------------------------------
    ! Description
    ! Sets l2zmax_lx to zero, to be called at the start of the year
@@ -437,4 +437,8 @@ contains
     prep_iac_get_mapper_Sl2z => mapper_Sl2z
   end function prep_iac_get_mapper_Sl2z
 
+  function prep_iac_get_mapper_Sa2z()
+    type(seq_map), pointer :: prep_iac_get_mapper_Sa2z
+    prep_iac_get_mapper_Sa2z => mapper_Sa2z
+  end function prep_iac_get_mapper_Sa2z
 end module prep_iac_mod
