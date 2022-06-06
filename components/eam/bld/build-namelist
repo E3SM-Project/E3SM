@@ -550,7 +550,6 @@ if ($dyn =~ /se/) {add_default($nl, 'vect_map', 'val'=>'cart3d');}
 
 # Adiabatic or Ideal physics
 my $phys = $cfg->get('phys');
-# TODO: I do not think these are used in E3SM anymore, and should be removed.
 if ($phys eq 'adiabatic') { add_default($nl, 'atm_adiabatic',  'val'=>'.true.'); }
 if ($phys eq 'ideal')     { add_default($nl, 'atm_ideal_phys', 'val'=>'.true.'); }
 
