@@ -65,6 +65,6 @@
 	path = components/mpas-ocean/src/ppr
 	url = https://github.com/dengwirda/PPR.git
 [submodule "components/ww3/src/source/WW3"]
-	path = components/ww3/src/source/WW3
+	path = components/ww3/src/WW3
 	url = git@github.com:E3SM-Project/WW3.git
         branch = e3sm

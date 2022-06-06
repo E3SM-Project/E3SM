@@ -41,7 +41,7 @@ def buildlib(bldroot, installpath, case):
     rundir         = case.get_value("RUNDIR")
 
     # Define WW3 repository directories
-    repodir  = "{}/components/ww3/src/source".format(srcroot)
+    repodir  = "{}/components/ww3/src".format(srcroot)
     modeldir = "{}/WW3/model".format(repodir)
 
     # TODO: these work dirs will have to be changed to live in the binary/build area.
