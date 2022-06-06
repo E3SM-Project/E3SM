@@ -18,6 +18,7 @@ atmosphere_processes:
     Orbital Year: 1990
     Can Initialize All Inputs: true
     rad_frequency: 3
+    do_aerosol_rad: false
 
 Grids Manager:
   Type: Mesh Free
@@ -31,10 +32,6 @@ Initial Conditions:
   Point Grid:
     Load Latitude:  true
     Load Longitude: true
-    aero_g_sw: 0.0
-    aero_ssa_sw: 0.0
-    aero_tau_sw: 0.0
-    aero_tau_lw: 0.0
 
 # The parameters for I/O control
 Scorpio:

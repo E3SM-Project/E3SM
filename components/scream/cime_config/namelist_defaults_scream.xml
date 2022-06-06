@@ -164,8 +164,8 @@ tweaking their $case/namelist_scream.xml file.
 
     <!-- P3 microphysics -->
     <p3 inherit="physics_proc_base">
-      <do__prescribed__ccn>true</do__prescribed__ccn>
-      <do__predict__nc>true</do__predict__nc>
+      <do_prescribed_ccn>true</do_prescribed__ccn>
+      <do_predic__nc>true</do_predict__nc>
     </p3>
 
     <!-- SHOC macrophysics -->
@@ -200,7 +200,7 @@ tweaking their $case/namelist_scream.xml file.
       <rad_frequency hgrid="ne256np4">3</rad_frequency>
       <rad_frequency hgrid="ne512np4">3</rad_frequency>
       <rad_frequency hgrid="ne1024np4">3</rad_frequency>
-      <do__aerosol__rad>true</do__aerosol__rad>
+      <do_aerosol_rad>true</do_aerosol_rad>
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">

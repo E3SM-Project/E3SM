@@ -21,13 +21,6 @@ Field Names:
   - micro_liq_ice_exchange
   - micro_vap_liq_exchange
   - micro_vap_ice_exchange
-  - cldfrac_tot
-  - inv_qc_relvar
-  - nccn
-  - nc_nuceat_tend
-  - ni_activated
-  - p_mid
-  - pseudo_density
 Output Control:
   Frequency: ${NUM_STEPS}
   Frequency Units: Steps
