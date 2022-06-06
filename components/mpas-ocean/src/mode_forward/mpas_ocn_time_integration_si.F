@@ -129,6 +129,8 @@ module ocn_time_integration_si
       nSiLargeIter       ! #iteration for the barotropic system
    character(len=5) :: si_algorithm ! Name of the iterative solver algorithm
 
+   integer :: ssh_sal_on
+
 !***********************************************************************
 
 !***********************************************************************
@@ -272,6 +274,8 @@ module ocn_time_integration_si
       type (field1DReal), pointer :: &
          effectiveDensityField         ! field pointer for halo update
 
+      type (dm_info) :: dminfo
+
       ! State/Tracer arrays, info
       real (kind=RKIND), dimension(:,:,:), pointer ::      &!
          tracersGroupCur,      &! old, new tracer arrays
@@ -352,6 +356,8 @@ module ocn_time_integration_si
       ! End preamble
       !-----------------------------------------------------------------
       ! Begin code
+
+      dminfo = domain % dminfo
 
       call mpas_timer_start("si timestep")
 
@@ -1040,7 +1046,9 @@ module ocn_time_integration_si
                do iCell = 1, nCellsAll
                  sshSubcycleCurWithTides(iCell) = sshSubcycleCur(iCell) &
                             - tidalPotentialEta(iCell)                  &
-                            - config_self_attraction_and_loading_beta   &
+                            - ssh_sal_on * ssh_sal(iCell)               &
+                            - (1 - ssh_sal_on)                          &
+                            * config_self_attraction_and_loading_beta   &
                             * sshSubcycleCur(iCell)
                end do
                !$omp end do
@@ -1973,7 +1981,7 @@ module ocn_time_integration_si
             !$acc update host (surfacePressure)
             !$acc update host(zMid, zTop)
             !$acc exit data copyout(sshNew)
-            !$acc exit data delete(tracersGroupNew)
+            !$acc exit data delete(activeTracersNew)
             !$acc update host(tracersSurfaceValue)
             !$acc update host(normalVelocitySurfaceLayer)
             !$acc exit data delete (atmosphericPressure, seaIcePressure)
