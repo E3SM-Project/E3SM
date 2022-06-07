@@ -822,13 +822,10 @@ add_default($nl,'use_rad_dt_cosz');
 add_default($nl, 'raytau0');
 
 # these options were added for global RCE and they only work with RRTMGP
-my $rad_pkg = 'none';
-if (!$ideal_or_adia_or_aqua) {
-    my $rad_pkg = $cfg->get('rad');
-    if ($rad_pkg eq 'rrtmgp') {
-      add_default($nl,'do_aerosol_rad');
-      add_default($nl,'fixed_total_solar_irradiance');
-    }
+my $rad_pkg = $cfg->get('rad');
+if ($rad_pkg eq 'rrtmgp') {
+  add_default($nl,'do_aerosol_rad');
+  add_default($nl,'fixed_total_solar_irradiance');
 }
 
 #

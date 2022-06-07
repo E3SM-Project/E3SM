@@ -367,6 +367,7 @@
 
 <radiation_scheme rad="rrtmg">rrtmg</radiation_scheme>
 <radiation_scheme rad="rrtmgp">rrtmgp</radiation_scheme>
+<radiation_scheme rad="none">none</radiation_scheme>
 
 <!-- CAM-Chem ozone (2000 climatology) -->
 <prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
