@@ -3221,11 +3221,11 @@ module ocn_time_integration_si
 
    subroutine si_matvec_mul(SIvec_in,SIvec_out,ssh)
 
-      real(kind=RKIND),dimension(:),pointer,intent(in)  :: &
+      real(kind=RKIND),dimension(:),intent(in)  :: &
           SIvec_in, &! Input SI vector
           ssh        ! Intermediate ssh
 
-      real(kind=RKIND),dimension(:),pointer,intent(out) :: &
+      real(kind=RKIND),dimension(:),intent(out) :: &
           SIvec_out  ! Output SI vector
 
       real(kind=RKIND) :: sshTendAx, sshEdge, thicknessSum, sshDiff
@@ -3292,10 +3292,10 @@ module ocn_time_integration_si
 
    subroutine si_precond(SIvec_in,SIvec_out)
 
-      real(kind=RKIND), dimension(:), pointer, intent(in)  :: SIvec_in
+      real(kind=RKIND), dimension(:), intent(in)  :: SIvec_in
                                         ! Input SI vector
 
-      real(kind=RKIND), dimension(:), pointer, intent(out) :: SIvec_out
+      real(kind=RKIND), dimension(:), intent(out) :: SIvec_out
                                         ! SI vector to be preconditioned
 
       ! Preconditioning --------------------------------------------!
@@ -3353,9 +3353,9 @@ module ocn_time_integration_si
       type (domain_type), intent(in) :: &
          domain  !< [inout] model state to advance forward
 
-      real(kind=RKIND), dimension(:), pointer, intent(in) :: &
+      real(kind=RKIND), dimension(:), intent(in) :: &
          SIvec_1,SIvec_2 ! SI vectors
-      real(kind=RKIND), dimension(:), pointer, intent(in), optional :: &
+      real(kind=RKIND), dimension(:), intent(in), optional :: &
          SIvec_3,SIvec_4,SIvec_5,SIvec_6,SIvec_7,SIvec_8 ! SI vectors
 
       character(*), intent(in) :: si_algorithm ! Solver algorithm
