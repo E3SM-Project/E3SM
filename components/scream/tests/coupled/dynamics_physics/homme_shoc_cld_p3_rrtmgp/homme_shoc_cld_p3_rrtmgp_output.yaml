@@ -57,10 +57,6 @@ Fields:
       - SW_flux_dn_dir
       - SW_flux_up
       - rad_heating_pdel
-      - sfc_flux_dif_nir
-      - sfc_flux_dif_vis
-      - sfc_flux_dir_nir
-      - sfc_flux_dir_vis
       - sfc_flux_lw_dn
       - sfc_flux_sw_net
  
