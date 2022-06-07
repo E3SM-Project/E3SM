@@ -1586,7 +1586,7 @@ if ($nl->get_value('strat_aero_feedback') =~ /$TRUE/io) {
     $radval .= "," . quote_string("N:H2SO4M:" . $abs_filepath);
 }
 
-if (!$ideal_or_adia_or_aqua) {
+if ( !($phys eq 'ideal' or $phys eq 'adiabatic') ) {
     add_default($nl, 'rad_climate', 'val'=>$radval);
 }
 
