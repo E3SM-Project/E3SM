@@ -205,7 +205,7 @@ int  constexpr nsgs_fields_diag = 2;    // total number of diagnostic sgs vars
 bool constexpr do_sgsdiag_bound = true; // exchange boundaries for diagnostics fields
 
 int constexpr index_water_vapor = 0;
-int constexpr nmicro_fields = 9;
+int constexpr nmicro_fields = 2;
 
 // water species index for P3
 enum {
