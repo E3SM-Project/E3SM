@@ -45,7 +45,6 @@ extern "C" void setparm() {
     advect_sgs = true;
   }
 
-
   if (rank==0) {
     masterproc = true;
   } else {
