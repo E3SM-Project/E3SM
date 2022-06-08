@@ -60,6 +60,8 @@ module ocn_comp_mct
    use ocn_tracer_surface_restoring
    use ocn_gm
    use ocn_config
+   use ocn_submesoscale_eddies
+   use ocn_eddy_parameterization_helpers
 !
 ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -970,6 +972,11 @@ contains
             call mpas_timer_stop("land_ice_build_arrays")
 
             call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
+
+            call ocn_eddy_compute_mixed_layer_depth(forcingPool)
+            if (config_use_GM.or.config_submesoscale_enable) then
+                call ocn_eddy_compute_buoyancy_gradient()
+            end if
 
             ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
             if (config_use_Redi.or.config_use_GM) then

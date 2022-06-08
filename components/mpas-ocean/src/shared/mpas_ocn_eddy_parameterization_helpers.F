@@ -70,6 +70,8 @@ module ocn_eddy_parameterization_helpers
      real(kind=RKIND) :: rtmp, h1, h2
      real(kind=RKIND), parameter :: epsGM = 1.0E-12_RKIND
 
+     nCells = nCellsAll
+     nEdges = nEdgesAll
      allocate(gradDensityEdge(nVertLevels, nEdges), &
               dDensityDzTopOfCell(nVertLevels+1, nCells+1), &
               gradDensityTopOfEdge(nVertLevels+1, nEdges), &
