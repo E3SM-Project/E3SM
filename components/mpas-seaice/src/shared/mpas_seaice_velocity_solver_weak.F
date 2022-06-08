@@ -656,6 +656,11 @@ contains
     use seaice_velocity_solver_constitutive_relation, only: &
          eccentricitySquared
 
+    use seaice_mesh_pool, only: &
+         nCells, &
+         solveStress, &
+         nEdgesOnCell
+
     type(block_type), intent(inout) :: &
          block
 
@@ -664,12 +669,6 @@ contains
          velocityWeakPool, &
          velocitySolverPool, &
          ridgingPool
-
-    integer, pointer :: &
-         nCellsSolve
-
-    integer, dimension(:), pointer :: &
-         nEdgesOnCell
 
     real(kind=RKIND), dimension(:), pointer :: &
          strain11, &
@@ -698,10 +697,6 @@ contains
     call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocityWeakPool)
     call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
 
-    call MPAS_pool_get_dimension(meshPool, "nCellsSolve", nCellsSolve)
-
-    call MPAS_pool_get_array(meshPool, "nEdgesOnCell", nEdgesOnCell)
-
     call MPAS_pool_get_array(velocityWeakPool, "strain11", strain11)
     call MPAS_pool_get_array(velocityWeakPool, "strain22", strain22)
     call MPAS_pool_get_array(velocityWeakPool, "strain12", strain12)
@@ -709,18 +704,27 @@ contains
     call MPAS_pool_get_array(velocitySolverPool, "divergence", divergence)
     call MPAS_pool_get_array(velocitySolverPool, "shear", shear)
 
-    allocate(Delta(nCellsSolve))
+    allocate(Delta(nCells))
 
-    do iCell = 1, nCellsSolve
+    do iCell = 1, nCells
 
-       strainDivergence = strain11(iCell) + strain22(iCell)
-       strainTension    = strain11(iCell) - strain22(iCell)
-       strainShearing   = strain12(iCell) * 2.0_RKIND
+       if (solveStress(iCell) == 1) then
 
-       Delta = sqrt(strainDivergence**2 + (strainTension**2 + strainShearing**2) / eccentricitySquared)
+          strainDivergence = strain11(iCell) + strain22(iCell)
+          strainTension    = strain11(iCell) - strain22(iCell)
+          strainShearing   = strain12(iCell) * 2.0_RKIND
 
-       divergence(iCell) = strainDivergence
-       shear(iCell)      = sqrt(strainTension**2 + strainShearing**2)
+          Delta(iCell) = sqrt(strainDivergence**2 + (strainTension**2 + strainShearing**2) / eccentricitySquared)
+
+          divergence(iCell) = strainDivergence
+          shear(iCell)      = sqrt(strainTension**2 + strainShearing**2)
+
+       else
+
+          divergence(iCell)   = 0.0_RKIND
+          shear(iCell)        = 0.0_RKIND
+
+       endif
 
     enddo ! iCell
 
@@ -734,10 +738,19 @@ contains
        call MPAS_pool_get_array(ridgingPool, "ridgeConvergence", ridgeConvergence)
        call MPAS_pool_get_array(ridgingPool, "ridgeShear", ridgeShear)
 
-       do iCell = 1, nCellsSolve
+       do iCell = 1, nCells
 
-          ridgeConvergence(iCell) = -min(divergence(iCell),0.0_RKIND)
-          ridgeShear(iCell)       = 0.5_RKIND * (Delta(iCell) - abs(divergence(iCell)))
+          if (solveStress(iCell) == 1) then
+
+             ridgeConvergence(iCell) = -min(divergence(iCell),0.0_RKIND)
+             ridgeShear(iCell)       = 0.5_RKIND * (Delta(iCell) - abs(divergence(iCell)))
+
+          else
+
+             ridgeConvergence(iCell) = 0.0_RKIND
+             ridgeShear(iCell)       = 0.0_RKIND
+
+          endif
 
        enddo ! iCell
 
