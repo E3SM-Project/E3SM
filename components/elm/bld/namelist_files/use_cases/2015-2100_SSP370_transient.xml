@@ -32,8 +32,14 @@
 
 <!-- CMIP6 DECK compsets -->
 
-<fsurdat>lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_simyr1850_2015_c211105.nc </fsurdat>
+<fsurdat>lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_SSP3_RCP70_simyr2015_c220420.nc </fsurdat>
 <flanduse_timeseries>lnd/clm2/surfdata_map/landuse.timeseries_ne30pg2_SSP3_RCP70_simyr2015-2100_c211015.nc</flanduse_timeseries>
+
+<!-- Add following for hybrid run of SSP370 continuing from a historical simulation -->
+
+<check_finidat_fsurdat_consistency>.false.</check_finidat_fsurdat_consistency>
+<check_finidat_year_consistency>.true.</check_finidat_year_consistency>
+<check_finidat_pct_consistency>.true.</check_finidat_pct_consistency>
 <check_dynpft_consistency>.false.</check_dynpft_consistency>
 
 </namelist_defaults>
