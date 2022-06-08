@@ -1555,19 +1555,17 @@ if ( $prescribed_aero_model ne 'none' ) {
 
 # Construct the aerosol part of the rad_climate string array by looping over
 # the aerosol names and getting the default properties file for each:
-if ($aer_model != 'none') {
-    foreach my $name (@aero_names) {
-        my $source = shift(@aerosources);
-        my $file;
-        if ($source =~ 'M') {
+foreach my $name (@aero_names) {
+    my $source = shift(@aerosources);
+    my $file;
+    if ($source =~ 'M') {
         $file = "${name}_file";
-        } else {
-            $file = "${aer_model}_$name";
-        }
-        my $rel_filepath = get_default_value($file);
-        my $abs_filepath = set_abs_filepath($rel_filepath, $inputdata_rootdir);
-        $radval .= "," . quote_string($source . $name . ":" . $abs_filepath);
+    } else {
+        $file = "${aer_model}_$name";
     }
+    my $rel_filepath = get_default_value($file);
+    my $abs_filepath = set_abs_filepath($rel_filepath, $inputdata_rootdir);
+    $radval .= "," . quote_string($source . $name . ":" . $abs_filepath);
 }
 
 # Eruptive volcanic aerosols can be run with either BAM or MAM.
