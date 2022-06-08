@@ -15,6 +15,7 @@ module mpas_stream_manager
     use mpas_stream_list
     use mpas_sort
     use mpas_threading
+    use mpas_error_codes
 
 
     public :: MPAS_stream_mgr_init, &
@@ -2826,7 +2827,7 @@ module mpas_stream_manager
                        stream_cursor % blockWrite = .false.
                        call write_stream(manager, stream_cursor, blockID, local_timeLevel, local_mgLevel, local_forceWrite, local_writeTime, temp_ierr)
                        stream_cursor % mostRecentAccessTime = local_writeTime
-                       if (temp_ierr /= MPAS_STREAM_MGR_NOERR) then
+                       if (mpas_primary_error_code(temp_ierr) /= MPAS_STREAM_MGR_NOERR) then
                            local_ierr = temp_ierr
                        end if
 
@@ -3206,6 +3207,10 @@ module mpas_stream_manager
                    ! This also gets the number of records in the file.
                    stream % nRecords = MPAS_seekStream(stream % stream, now_string, MPAS_STREAM_EXACT_TIME, actualWhen, maxRecords, local_ierr)
                    STREAM_DEBUG_WRITE(' -- Seeked record is: $i with current records equal to $i and an error of $i' COMMA intArgs=(/stream % nRecords COMMA maxRecords COMMA local_ierr/))
+                   if (mpas_primary_error_code(local_ierr) /= MPAS_STREAM_NOERR) then
+                      ierr = mpas_combine_error_codes(MPAS_STREAM_MGR_ERROR, mpas_secondary_error_code(local_ierr))
+                      return
+                   endif
     
                    if ( stream % nRecords == 0 ) then
                        ! If we didn't find an exact time, set record to point to the end of the file.

@@ -35,7 +35,8 @@ OBJS = mpas_kind_types.o \
        xml_stream_parser.o \
        regex_matching.o \
        mpas_field_accessor.o \
-       mpas_log.o
+       mpas_log.o \
+       mpas_error_codes.o
 
 all: framework $(DEPS)
 
@@ -54,6 +55,8 @@ mpas_framework.o: mpas_dmpar.o \
                   mpas_block_decomp.o \
                   mpas_stream_manager.o \
                   mpas_c_interfacing.o
+
+mpas_error_codes.o:
 
 mpas_abort.o: mpas_kind_types.o mpas_io_units.o mpas_threading.o
 
@@ -92,9 +95,9 @@ mpas_block_decomp.o: mpas_derived_types.o mpas_hash.o mpas_io_units.o mpas_dmpar
 
 mpas_block_creator.o: mpas_dmpar.o mpas_hash.o mpas_sort.o mpas_io_units.o mpas_block_decomp.o mpas_stream_manager.o mpas_decomp.o mpas_abort.o $(DEPS)
 
-mpas_io.o: mpas_dmpar.o mpas_attlist.o mpas_log.o
+mpas_io.o: mpas_dmpar.o mpas_attlist.o mpas_log.o mpas_error_codes.o
 
-mpas_io_streams.o: mpas_attlist.o mpas_derived_types.o mpas_timekeeping.o mpas_io.o mpas_pool_routines.o add_field_indices.inc mpas_log.o $(DEPS)
+mpas_io_streams.o: mpas_attlist.o mpas_derived_types.o mpas_timekeeping.o mpas_io.o mpas_pool_routines.o add_field_indices.inc mpas_log.o mpas_error_codes.o $(DEPS)
 
 mpas_bootstrapping.o: mpas_derived_types.o mpas_dmpar.o mpas_block_decomp.o mpas_block_creator.o mpas_sort.o mpas_timekeeping.o mpas_io_streams.o mpas_stream_manager.o random_id.o mpas_log.o $(DEPS)
 
@@ -104,7 +107,7 @@ mpas_threading.o: mpas_kind_types.o
 
 mpas_stream_list.o: mpas_derived_types.o mpas_kind_types.o mpas_io_streams.o mpas_timekeeping.o regex_matching.o mpas_log.o
 
-mpas_stream_manager.o: mpas_io_streams.o mpas_timekeeping.o mpas_derived_types.o mpas_kind_types.o mpas_c_interfacing.o mpas_stream_list.o mpas_dmpar.o mpas_io.o mpas_threading.o mpas_log.o
+mpas_stream_manager.o: mpas_io_streams.o mpas_timekeeping.o mpas_derived_types.o mpas_kind_types.o mpas_c_interfacing.o mpas_stream_list.o mpas_dmpar.o mpas_io.o mpas_threading.o mpas_log.o mpas_error_codes.o
 
 mpas_forcing.o: mpas_derived_types.o mpas_timekeeping.o mpas_stream_manager.o mpas_log.o mpas_io_units.o
 

@@ -7,6 +7,7 @@ module seaice_core
    use mpas_threading
    use mpas_timer, only: mpas_timer_start, mpas_timer_stop
    use mpas_log, only: mpas_log_write
+   use mpas_error_codes
 
    private
    public :: &
@@ -299,6 +300,11 @@ module seaice_core
       call mpas_pool_get_config(domain % configs, 'config_write_output_on_startup', config_write_output_on_startup)
       if (config_write_output_on_startup) then
          call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
+         if (mpas_primary_error_code(ierr) /= MPAS_STREAM_MGR_NOERR) then
+            call mpas_log_write("Stream manager error: MPAS error: $i, PIO error: $i", &
+                 messageType=MPAS_LOG_CRIT, &
+                 intArgs=(/mpas_primary_error_code(ierr), mpas_secondary_error_code(ierr)/))
+         endif
       endif
       call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
 
@@ -336,6 +342,11 @@ module seaice_core
          endif
 
          call mpas_stream_mgr_write(domain % streamManager, ierr=ierr)
+         if (mpas_primary_error_code(ierr) /= MPAS_STREAM_MGR_NOERR) then
+            call mpas_log_write("Stream manager error: MPAS error: $i, PIO error: $i", &
+                 messageType=MPAS_LOG_CRIT, &
+                 intArgs=(/mpas_primary_error_code(ierr), mpas_secondary_error_code(ierr)/))
+         endif
 
          ! update the restart_timestamp file with the new time if needed
          if ( mpas_stream_mgr_ringing_alarms(domain % streamManager, &

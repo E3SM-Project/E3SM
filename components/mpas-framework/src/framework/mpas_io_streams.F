@@ -23,6 +23,7 @@ module mpas_io_streams
    use mpas_timekeeping
    use mpas_io
    use mpas_log
+   use mpas_error_codes
 
    interface MPAS_streamAddField
       module procedure MPAS_streamAddField_0dInteger
@@ -176,8 +177,8 @@ module mpas_io_streams
       end if
 
       call MPAS_io_inq_dim(stream % fileHandle, 'Time', timeDim, io_err)
-      if (timeDim <= 0 .or. io_err /= MPAS_IO_NOERR) then
-         if (present(ierr)) ierr = MPAS_IO_ERR
+      if (timeDim <= 0 .or. mpas_primary_error_code(io_err) /= MPAS_IO_NOERR) then
+         if (present(ierr)) ierr = mpas_change_primary_error_code(io_err, MPAS_IO_ERR)
          return
       end if
 

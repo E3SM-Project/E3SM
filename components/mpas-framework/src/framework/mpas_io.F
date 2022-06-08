@@ -11,6 +11,7 @@ module mpas_io
    use mpas_attlist
    use mpas_dmpar
    use mpas_log
+   use mpas_error_codes
 
    use pio
    use piolib_mod
@@ -440,7 +441,7 @@ module mpas_io
 
       pio_ierr = PIO_inq_dimid(handle % pio_file, trim(dimname), new_dimlist_node % dimhandle % dimid)
       if (pio_ierr /= PIO_noerr) then
-         if (present(ierr)) ierr = MPAS_IO_ERR_MISSING_DIM
+         if (present(ierr)) ierr = mpas_combine_error_codes(MPAS_IO_ERR_MISSING_DIM, pio_ierr)
          deallocate(new_dimlist_node % dimhandle)
          deallocate(new_dimlist_node)
          dimsize = -1
@@ -451,7 +452,7 @@ module mpas_io
 
       pio_ierr = PIO_inq_dimlen(handle % pio_file, new_dimlist_node % dimhandle % dimid, new_dimlist_node % dimhandle % dimsize)
       if (pio_ierr /= PIO_noerr) then
-         if (present(ierr)) ierr = MPAS_IO_ERR_PIO
+         if (present(ierr)) ierr = mpas_combine_error_codes(MPAS_IO_ERR_PIO, pio_ierr)
          deallocate(new_dimlist_node % dimhandle)
          deallocate(new_dimlist_node)
          dimsize = -1
