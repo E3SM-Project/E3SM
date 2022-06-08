@@ -450,7 +450,7 @@
         <nml_option name="config_mld_reference_pressure" type="real" default_value="5E-8" units="Pa"
                     description="reference pressure for threshold computation"
                     possible_values="any positive real, suggested range .25E5 less than or equal to value less than or equal to 2E5"
-       ./>
+        />
     </nml_record>
 	<nml_record name="Rayleigh_damping" mode="forward">
 		<nml_option name="config_Rayleigh_friction" type="logical" default_value=".false." units="unitless"
