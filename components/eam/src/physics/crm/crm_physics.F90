@@ -87,12 +87,14 @@ subroutine crm_physics_register()
    use crm_history,         only: crm_history_register
 #if defined(MMF_SAMXX)
    use gator_mod,           only: gator_init
+   use cpp_interface_mod,   only: setparm
 #endif
    !----------------------------------------------------------------------------
    ! local variables
    integer :: idx, c
    logical           :: use_ECPP
    logical           :: use_MMF_VT
+   logical           :: use_crm_accel
    logical           :: prog_modal_aero
    integer, dimension(1) :: dims_gcm_1D
    integer, dimension(2) :: dims_gcm_2D
@@ -113,6 +115,7 @@ subroutine crm_physics_register()
 
    call phys_getopts( use_ECPP_out = use_ECPP )
    call phys_getopts( use_MMF_VT_out = use_MMF_VT )
+   call phys_getopts( use_crm_accel_out = use_crm_accel)
    call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme )
    call phys_getopts( MMF_turbulence_scheme_out = MMF_turbulence_scheme )
    call phys_getopts( prog_modal_aero_out = prog_modal_aero )
@@ -129,6 +132,8 @@ subroutine crm_physics_register()
       print*,'crm_nx_rad       = ',crm_nx_rad
       print*,'crm_ny_rad       = ',crm_ny_rad
       print*,'use_ECPP         = ',use_ECPP
+      print*,'use_MMF_VT       = ',use_MMF_VT
+      print*,'use_crm_accel    = ',use_crm_accel
       print*,'CRM Microphysics = ',MMF_microphysics_scheme
       print*,'CRM Turbulence   = ',MMF_turbulence_scheme
       print*,'_____________________________________________________________'
@@ -149,6 +154,11 @@ subroutine crm_physics_register()
                     longname='CRM variance transport tracer for U', &
                     readiv=.false., mixtype='dry',cam_outfld=.false.)
    end if
+
+   !----------------------------------------------------------------------------
+   ! Setup CRM internal parameters
+   !----------------------------------------------------------------------------
+   ! call setparm()
 
    !----------------------------------------------------------------------------
    ! constituents
@@ -217,7 +227,6 @@ subroutine crm_physics_register()
       call pbuf_add_field('CRM_NI_RAD','physpkg',dtype_r8,dims_crm_rad,crm_ni_rad_idx)
       call pbuf_add_field('CRM_QS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_qs_rad_idx)
       call pbuf_add_field('CRM_NS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_ns_rad_idx)
-      call pbuf_add_field('CRM_QT',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_NC',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_QR',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_NR',    'global', dtype_r8,dims_crm_3D,idx)
@@ -238,8 +247,8 @@ subroutine crm_physics_register()
    if (MMF_microphysics_scheme .eq. 'p3') then
       call pbuf_add_field('CRM_NC_RAD','physpkg',dtype_r8,dims_crm_rad,crm_nc_rad_idx)
       call pbuf_add_field('CRM_NI_RAD','physpkg',dtype_r8,dims_crm_rad,crm_ni_rad_idx)
-      ! call pbuf_add_field('CRM_QS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_qs_rad_idx)
-      ! call pbuf_add_field('CRM_NS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_ns_rad_idx)
+      ! call pbuf_add_field('CRM_QS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_qs_rad_idx) ! do we need these for rad?
+      ! call pbuf_add_field('CRM_NS_RAD','physpkg',dtype_r8,dims_crm_rad,crm_ns_rad_idx) ! do we need these for rad?
       call pbuf_add_field('CRM_QC',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_NC',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_QR',    'global', dtype_r8,dims_crm_3D,idx)
@@ -895,10 +904,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_v(i,:,:,k) = state(c)%v(i,m) * cos( crm_angle(i) ) - state(c)%u(i,m) * sin( crm_angle(i) )
                crm_w(i,:,:,k) = 0.
                crm_t(i,:,:,k) = state(c)%t(i,m)
-               crm_qv(i,:,:,k) = state(c)%q(i,m,1) + state(c)%q(i,m,ixcldliq) + state(c)%q(i,m,ixcldice)
+               crm_qv(i,:,:,k) = state(c)%q(i,m,1)
 
                ! Initialize microphysics arrays
                if (MMF_microphysics_scheme .eq. 'sam1mom') then
+                  crm_qv(i,:,:,k) = state(c)%q(i,m,1) + state(c)%q(i,m,ixcldliq) + state(c)%q(i,m,ixcldice)
                   crm_qp(i,:,:,k) = 0.0_r8
                   crm_qn(i,:,:,k) = state(c)%q(i,m,ixcldliq)+state(c)%q(i,m,ixcldice)
                else if (MMF_microphysics_scheme .eq. 'm2005') then
@@ -1295,9 +1305,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_output%flux_qt, crm_output%flux_u, crm_output%flux_v, crm_output%fluxsgs_qt, &
                crm_output%tkez, crm_output%tkew, crm_output%tkesgsz, crm_output%tkz, &
                crm_output%flux_qp, crm_output%precflux, crm_output%qt_trans, crm_output%qp_trans, &
-               crm_output%qp_fall, crm_output%qp_evp, crm_output%qp_src, &
-               crm_output%qt_ls, crm_output%t_ls, &
-               crm_output%jt_crm, crm_output%mx_crm, crm_output%cltot, &
+               crm_output%qp_fall, crm_output%qp_evp, crm_output%qp_src, crm_output%qt_ls, &
+               crm_output%t_ls, crm_output%jt_crm, crm_output%mx_crm, crm_output%cltot, &
                crm_output%clhgh, crm_output%clmed, crm_output%cllow, &
                crm_output%sltend, crm_output%qltend, crm_output%qcltend, crm_output%qiltend, &
                crm_output%t_vt_tend, crm_output%q_vt_tend, crm_output%u_vt_tend, &
