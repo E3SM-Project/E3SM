@@ -112,6 +112,16 @@ add_default($nl, 'config_Redi_horizontal_ramp_min');
 add_default($nl, 'config_Redi_horizontal_ramp_max');
 
 ############################################
+# Namelist group: submesoscale_parameterization #
+############################################
+
+add_default($nl, 'config_submesoscale_enable');
+add_default($nl, 'config_submesoscale_tau');
+add_default($nl, 'config_submesoscale_Ce');
+add_default($nl, 'config_submesoscale_Lfmin');
+add_default($nl, 'config_submesoscale_ds_max');
+
+############################################
 # Namelist group: GM_eddy_parameterization #
 ############################################
 

@@ -43,6 +43,7 @@ module ocn_forward_mode
    use ocn_test
    use ocn_mesh
 
+   use ocn_eddy_parameterization_helpers
    use ocn_thick_hadv
    use ocn_thick_vadv
    use ocn_thick_ale
@@ -75,6 +76,7 @@ module ocn_forward_mode
    use ocn_tracer_CFC
    use ocn_tracer_surface_restoring
    use ocn_gm
+   use ocn_submesoscale_eddies
 
    use ocn_high_freq_thickness_hmix_del2
 
@@ -438,6 +440,8 @@ module ocn_forward_mode
       ierr = ior(ierr,err_tmp)
       call ocn_gm_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
+      call ocn_submesoscale_init(err_tmp)
+      ierr = ior(ierr,err_tmp)
       call ocn_tracer_nonlocalflux_init(err_tmp)
       ierr = ior(ierr,err_tmp)
       call ocn_tracer_ecosys_init(domain, err_tmp)
@@ -668,6 +672,12 @@ module ocn_forward_mode
            call ocn_tidal_forcing_build_array(domain, meshPool, forcingPool, statePool, err)
 
            ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
+
+           call ocn_eddy_compute_mixed_layer_depth(forcingPool)
+           if (config_use_GM.or.config_submesoscale_enable) then
+               call ocn_eddy_compute_buoyancy_gradient()
+           end if
+
            if (config_use_Redi.or.config_use_GM) then
                call ocn_gm_compute_Bolus_velocity(statePool, meshPool, scratchPool, timeLevelIn=1)
            end if

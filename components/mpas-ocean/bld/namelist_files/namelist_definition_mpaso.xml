@@ -498,6 +498,47 @@ Valid values: Any positive real value.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<!-- submesoscale parameterization -->
+
+<entry id="config_submesoscale_enable" type="logical"
+  category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+If true, enables fox-kemper 2011 submesoscale eddy parameterization
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_submesoscale_tau" type="real"
+  category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+  Timescale for frontogenesis
+
+Valid vales: 1-10km
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_submesoscale_Ce" type="real"
+  category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+  Efficiency of submeso parameterization
+
+Valid values: 0.06 - 0.08
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_submesoscale_Lfmin" type="real"
+  category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+  minimum allowed frontal width of submeso parameterization
+
+Valid values: 500 - 2000m
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_submesoscale_ds_max" type="real"
+  category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+  maximum buoyancy gradient scaling of submeso parameterization
+
+Valid values: ~100km
+Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- GM_eddy_parameterization -->
 

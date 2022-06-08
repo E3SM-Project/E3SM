@@ -63,6 +63,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: vertTransportVelocityTop
    real (kind=RKIND), dimension(:,:), pointer :: vertGMBolusVelocityTop
    real (kind=RKIND), dimension(:,:), pointer :: normalGMBolusVelocity
+   real (kind=RKIND), dimension(:,:), pointer :: normalMLEvelocity
    real (kind=RKIND), dimension(:,:), pointer :: normalTransportVelocity
    real (kind=RKIND), dimension(:,:), pointer :: RiTopOfCell
    real (kind=RKIND), dimension(:,:), pointer :: RiTopOfEdge
@@ -99,7 +100,8 @@ module ocn_diagnostics_variables
       transportVelocityX, transportVelocityY, transportVelocityZ, transportVelocityZonal, &
       transportVelocityMeridional, GMBolusVelocityX, GMBolusVelocityY, &
       GMBolusVelocityZ, GMBolusVelocityZonal, GMBolusVelocityMeridional, gmStreamFuncTopOfEdge, &
-      GMStreamFuncX, GMStreamFuncY, GMStreamFuncZ, GMStreamFuncZonal, GMStreamFuncMeridional
+      GMStreamFuncX, GMStreamFuncY, GMStreamFuncZ, GMStreamFuncZonal, GMStreamFuncMeridional, &
+      mleVelocityX, mleVelocityY, mleVelocityZ, mleVelocityZonal, mleVelocityMeridional
 
    real (kind=RKIND), dimension(:,:), pointer :: rx1Edge
    real (kind=RKIND), dimension(:,:), pointer :: rx1Cell
@@ -119,11 +121,13 @@ module ocn_diagnostics_variables
    real(kind=RKIND), dimension(:,:), pointer :: RediKappaScaling
    real(kind=RKIND), dimension(:,:), pointer :: RediKappaSfcTaper
    real(kind=RKIND), dimension(:,:), pointer :: k33
+   real(kind=RKIND), dimension(:,:), pointer :: gradBuoyEddy
    real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa
    real(kind=RKIND), dimension(:), pointer   :: cGMphaseSpeed
    real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown
 
    integer, dimension(:), pointer :: indMLD
+   real(kind=RKIND), dimension(:), pointer :: dThreshMLD
    real (kind=RKIND), dimension(:,:), pointer :: velocityX, velocityY, velocityZ
 
    real (kind=RKIND), dimension(:,:), pointer :: vertAleTransportTop
@@ -263,6 +267,11 @@ contains
                    gmHorizontalTaper)
          call mpas_pool_get_array(diagnosticsPool, 'RossbyRadius', &
                    RossbyRadius)
+      end if
+
+      if (config_use_GM .or. config_submesoscale_enable) then
+         call mpas_pool_get_array(diagnosticsPool, 'gradBuoyEddy', &
+                   gradBuoyEddy)
       end if
 
       if ( config_compute_active_tracer_budgets ) then
@@ -407,7 +416,27 @@ contains
                    GMStreamFuncZonal)
          call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncMeridional', &
                    GMStreamFuncMeridional)
-         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityX', &
+         call mpas_pool_get_array(diagnosticsPool, 'mleVelocityX', &
+                   mleVelocityX)
+         call mpas_pool_get_array(diagnosticsPool, 'mleVelocityY', &
+                   mleVelocityY)
+         call mpas_pool_get_array(diagnosticsPool, 'mleVelocityZ', &
+                   mleVelocityZ)
+         call mpas_pool_get_array(diagnosticsPool, 'mleVelocityZonal', &
+                   mleVelocityZonal)
+         call mpas_pool_get_array(diagnosticsPool, 'mleVelocityMeridional', &
+                   mleVelocityMeridional)
+         call mpas_pool_get_array(diagnosticsPool, 'mleVelocityX', &
+                   mleVelocityX)
+         call mpas_pool_get_array(diagnosticsPool, 'mleVelocityY', &
+                   mleVelocityY)
+         call mpas_pool_get_array(diagnosticsPool, 'mleVelocityZ', &
+                   mleVelocityZ)
+         call mpas_pool_get_array(diagnosticsPool, 'mleVelocityZonal', &
+                   mleVelocityZonal)
+         call mpas_pool_get_array(diagnosticsPool, 'mleVelocityMeridional', &
+                   mleVelocityMeridional)
+       call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityX', &
                    GMBolusVelocityX)
          call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityY', &
                    GMBolusVelocityY)
@@ -419,6 +448,8 @@ contains
                    GMBolusVelocityMeridional)
          call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', &
                    normalGMBolusVelocity)
+         call mpas_pool_get_array(diagnosticsPool, 'normalMLEvelocity', &
+                   normalMLEvelocity)
          call mpas_pool_get_array(diagnosticsPool, 'vertGMBolusVelocityTop', &
                    vertGMBolusVelocityTop)
 
@@ -589,6 +620,7 @@ contains
                'modifyLandIcePressureMask', &
                 modifyLandIcePressureMask)
       call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
+      call mpas_pool_get_array(diagnosticsPool, 'dThreshMLD', dThreshMLD)
       call mpas_pool_get_array(diagnosticsPool, 'surfacePressure', &
                 surfacePressure)
 
@@ -688,6 +720,9 @@ contains
          !$acc                   normRelVortEdge,                 &
          !$acc                   surfaceVelocity,                 &
          !$acc                   vertVelocityTop,                 &
+         !$acc                   mleVelocityX,                &
+         !$acc                   mleVelocityY,                &
+         !$acc                   mleVelocityZ,                &
          !$acc                   GMBolusVelocityX,                &
          !$acc                   GMBolusVelocityY,                &
          !$acc                   GMBolusVelocityZ,                &
@@ -710,11 +745,13 @@ contains
          !$acc                   BruntVaisalaFreqTop,             &
          !$acc                   vertAleTransportTop,             &
          !$acc                   GMBolusVelocityZonal,            &
+         !$acc                   mleVelocityZonal,            &
          !$acc                   bulkRichardsonNumber,            &
          !$acc                   gmStreamFuncTopOfEdge,           &
          !$acc                   indexSSHGradientZonal,           &
          !$acc                   relativeVorticityCell,           &
          !$acc                   normalGMBolusVelocity,           &
+         !$acc                   normalMLEvelocity,               &
          !$acc                   vertGMBolusVelocityTop,          &
          !$acc                   transportVelocityZonal,          &
          !$acc                   GMStreamFuncMeridional,          &
@@ -728,6 +765,7 @@ contains
          !$acc                   bulkRichardsonNumberBuoy,        &
          !$acc                   tracersSurfaceLayerValue,        &
          !$acc                   GMBolusVelocityMeridional,       &
+         !$acc                   mleVelocityMeridional,       &
          !$acc                   bulkRichardsonNumberShear,       &
          !$acc                   indexSurfaceVelocityZonal,       &
          !$acc                   normalVelocitySurfaceLayer,      &
@@ -756,6 +794,9 @@ contains
          !$acc                   gmHorizontalTaper,  &
          !$acc                   RossbyRadius  &
          !$acc                   )
+      end if
+      if (config_use_GM.or.config_submesoscale_enable) then
+         !$acc enter data create(gradBuoyEddy)
       end if
       if ( config_compute_active_tracer_budgets ) then
          !$acc enter data create(                                         &
@@ -813,6 +854,7 @@ contains
       !$acc                   zTop,                                    &
       !$acc                   xtime,                                   &
       !$acc                   indMLD,                                  &
+      !$acc                   dThreshMLD,                              &
       !$acc                   density,                                 &
       !$acc                   betaEdge,                                &
       !$acc                   pressure,                                &
@@ -928,6 +970,9 @@ contains
          !$acc                   normRelVortEdge,                 &
          !$acc                   surfaceVelocity,                 &
          !$acc                   vertVelocityTop,                 &
+         !$acc                   mleVelocityX,                &
+         !$acc                   mleVelocityY,                &
+         !$acc                   mleVelocityZ,                &
          !$acc                   GMBolusVelocityX,                &
          !$acc                   GMBolusVelocityY,                &
          !$acc                   GMBolusVelocityZ,                &
@@ -950,11 +995,13 @@ contains
          !$acc                   BruntVaisalaFreqTop,             &
          !$acc                   vertAleTransportTop,             &
          !$acc                   GMBolusVelocityZonal,            &
+         !$acc                   mleVelocityZonal,            &
          !$acc                   bulkRichardsonNumber,            &
          !$acc                   gmStreamFuncTopOfEdge,           &
          !$acc                   indexSSHGradientZonal,           &
          !$acc                   relativeVorticityCell,           &
          !$acc                   normalGMBolusVelocity,           &
+         !$acc                   normalMLEvelocity,               &
          !$acc                   vertGMBolusVelocityTop,          &
          !$acc                   transportVelocityZonal,          &
          !$acc                   GMStreamFuncMeridional,          &
@@ -967,6 +1014,7 @@ contains
          !$acc                   vertTransportVelocityTop,        &
          !$acc                   bulkRichardsonNumberBuoy,        &
          !$acc                   tracersSurfaceLayerValue,        &
+         !$acc                   mleVelocityMeridional,       &
          !$acc                   GMBolusVelocityMeridional,       &
          !$acc                   bulkRichardsonNumberShear,       &
          !$acc                   indexSurfaceVelocityZonal,       &
@@ -996,6 +1044,9 @@ contains
          !$acc                   gmHorizontalTaper,  &
          !$acc                   RossbyRadius  &
          !$acc                   )
+      end if
+      if (config_use_GM.or.config_submesoscale_enable) then
+         !$acc exit data delete(gradBuoyEddy)
       end if
       if ( config_compute_active_tracer_budgets ) then
          !$acc exit data delete(                                          &
@@ -1053,6 +1104,7 @@ contains
       !$acc                   zTop,                                    &
       !$acc                   xtime,                                   &
       !$acc                   indMLD,                                  &
+      !$acc                   dThreshMLD,                              &
       !$acc                   density,                                 &
       !$acc                   betaEdge,                                &
       !$acc                   pressure,                                &
@@ -1129,6 +1181,9 @@ contains
                  GMBolusVelocityX,                &
                  GMBolusVelocityY,                &
                  GMBolusVelocityZ,                &
+                 mleVelocityX,                &
+                 mleVelocityY,                &
+                 mleVelocityZ,                &
                  vertNonLocalFlux,                &
                  vertViscTopOfEdge,               &
                  gradSSHMeridional,               &
@@ -1148,11 +1203,13 @@ contains
                  BruntVaisalaFreqTop,             &
                  vertAleTransportTop,             &
                  GMBolusVelocityZonal,            &
+                 mleVelocityZonal,            &
                  bulkRichardsonNumber,            &
                  gmStreamFuncTopOfEdge,           &
                  indexSSHGradientZonal,           &
                  relativeVorticityCell,           &
                  normalGMBolusVelocity,           &
+                 normalMLEvelocity,               &
                  vertGMBolusVelocityTop,          &
                  transportVelocityZonal,          &
                  GMStreamFuncMeridional,          &
@@ -1165,6 +1222,7 @@ contains
                  vertTransportVelocityTop,        &
                  bulkRichardsonNumberBuoy,        &
                  tracersSurfaceLayerValue,        &
+                 mleVelocityMeridional,       &
                  GMBolusVelocityMeridional,       &
                  bulkRichardsonNumberShear,       &
                  indexSurfaceVelocityZonal,       &
@@ -1189,6 +1247,9 @@ contains
                  RediHorizontalTaper, &
                  gmHorizontalTaper, &
                  RossbyRadius)
+      end if
+      if (config_use_GM.or.config_submesoscale_enable) then
+         nullify(gradBuoyEddy)
       end if
       if ( config_compute_active_tracer_budgets ) then
          nullify(activeTracerHorMixTendency,              &
@@ -1242,6 +1303,7 @@ contains
               zTop,                                    &
               xtime,                                   &
               indMLD,                                  &
+              dThreshMLD,                              &
               density,                                 &
               betaEdge,                                &
               pressure,                                &

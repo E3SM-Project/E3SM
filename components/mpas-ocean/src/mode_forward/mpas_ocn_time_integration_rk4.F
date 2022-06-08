@@ -711,7 +711,7 @@ module ocn_time_integration_rk4
 #ifdef MPAS_OPENACC
          !$acc enter data copyin(layerThicknessNew, normalVelocityNew)
          !$acc update device (normalTransportVelocity, &
-         !$acc                normalGMBolusVelocity)
+         !$acc                normalGMBolusVelocity, normalMLEvelocity)
          !$acc enter data copyin(atmosphericPressure, seaIcePressure)
          !$acc enter data copyin(sshNew)
          !$acc enter data copyin(activeTracersNew)
@@ -784,7 +784,9 @@ module ocn_time_integration_rk4
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
-               normalTransportVelocity(:, iEdge) = normalTransportVelocity(:, iEdge) + normalGMBolusVelocity(:, iEdge)
+               normalTransportVelocity(:, iEdge) = normalTransportVelocity(:, iEdge) + &
+                                                   normalGMBolusVelocity(:, iEdge)   + &
+                                                   normalMLEvelocity(:, iEdge)
             end do
             !$omp end do
             !$omp end parallel
@@ -950,7 +952,9 @@ module ocn_time_integration_rk4
             !$omp parallel
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
-               normalTransportVelocity(:, iEdge) = normalVelocityProvis(:, iEdge) + normalGMBolusVelocity(:, iEdge)
+               normalTransportVelocity(:, iEdge) = normalVelocityProvis(:, iEdge)  + &
+                                                   normalGMBolusVelocity(:, iEdge) + &
+                                                   normalMLEvelocity(:, iEdge)
             end do
             !$omp end do
             !$omp end parallel
@@ -1020,7 +1024,9 @@ module ocn_time_integration_rk4
          !$omp parallel
          !$omp do schedule(runtime)
          do iEdge = 1, nEdges
-            normalTransportVelocity(:, iEdge) = normalVelocityProvis(:, iEdge) + normalGMBolusVelocity(:,iEdge)
+            normalTransportVelocity(:, iEdge) = normalVelocityProvis(:, iEdge) + &
+                                                normalGMBolusVelocity(:,iEdge) + &
+                                                normalMLEvelocity(:,iEdge)
          end do
          !$omp end do
          !$omp end parallel
@@ -1299,7 +1305,7 @@ module ocn_time_integration_rk4
 #ifdef MPAS_OPENACC
       !$acc enter data copyin(layerThicknessCur, normalVelocityCur)
       !$acc update device (normalTransportVelocity, &
-      !$acc                normalGMBolusVelocity)
+      !$acc                normalGMBolusVelocity,normalMLEvelocity)
       !$acc enter data copyin(atmosphericPressure, seaIcePressure)
       !$acc enter data copyin(sshCur)
       !$acc enter data copyin(activeTracersCur)
@@ -1368,7 +1374,9 @@ module ocn_time_integration_rk4
          !$omp parallel
          !$omp do schedule(runtime)
          do iEdge = 1, nEdges
-            normalTransportVelocity(:, iEdge) = normalTransportVelocity(:, iEdge) + normalGMBolusVelocity(:,iEdge)
+            normalTransportVelocity(:, iEdge) = normalTransportVelocity(:, iEdge) + &
+                                                   normalGMBolusVelocity(:,iEdge) + &
+                                                   normalMLEvelocity(:,iEdge)
          end do
          !$omp end do
          !$omp end parallel
@@ -1589,7 +1597,7 @@ module ocn_time_integration_rk4
 #ifdef MPAS_OPENACC
       !$acc enter data copyin(layerThicknessNew, normalVelocityNew)
       !$acc update device (normalTransportVelocity, &
-      !$acc                normalGMBolusVelocity)
+      !$acc                normalGMBolusVelocity,normalMLEvelocity)
       !$acc enter data copyin(atmosphericPressure, seaIcePressure)
       !$acc enter data copyin(sshNew)
       !$acc enter data copyin(activeTracersNew)

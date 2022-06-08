@@ -2952,6 +2952,14 @@ contains
                        GMBolusVelocityMeridional    &
                       )
 
+      call mpas_reconstruct(meshPool, normalMLEvelocity,          &
+                       mleVelocityX,            &
+                       mleVelocityY,            &
+                       mleVelocityZ,            &
+                       mleVelocityZonal,        &
+                       mleVelocityMeridional    &
+                      )
+
       call mpas_reconstruct(meshPool, gmStreamFuncTopOfEdge,          &
                       GMStreamFuncX,            &
                       GMStreamFuncY,            &
