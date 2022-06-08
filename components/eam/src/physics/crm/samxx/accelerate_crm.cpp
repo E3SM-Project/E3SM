@@ -21,9 +21,18 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
   YAKL_SCOPE( crm_accel_factor , :: crm_accel_factor);
   YAKL_SCOPE( microphysics_scheme, :: microphysics_scheme );
 
-  real ttend_threshold = 2.0; // reduced from 5 to 2 after P3 implementation
   real tmin = 50.0;  // should never get below 50K in crm, following UP-CAM implementation
   int idx_qv = index_water_vapor;
+
+  real ttend_threshold = -1;
+  if (is_same_str(microphysics_scheme,"sam1mom")==0){ ttend_threshold = 5.0; }
+  if (is_same_str(microphysics_scheme,"p3"     )==0){ ttend_threshold = 2.0; }
+  if (ttend_threshold==-1) {
+    std::cout<<"\naccelerate_crm() - ttend_threshold not set correctly "
+    <<"for microphysics_scheme="<<microphysics_scheme<< std::endl;
+    finalize();
+    exit(-1);
+  }
 
   real2d ubaccel("ubaccel", nzm, ncrms);
   real2d vbaccel("vbaccel", nzm, ncrms);
