@@ -87,7 +87,6 @@ subroutine crm_physics_register()
    use crm_history,         only: crm_history_register
 #if defined(MMF_SAMXX)
    use gator_mod,           only: gator_init
-   use cpp_interface_mod,   only: setparm
 #endif
    !----------------------------------------------------------------------------
    ! local variables
@@ -154,11 +153,6 @@ subroutine crm_physics_register()
                     longname='CRM variance transport tracer for U', &
                     readiv=.false., mixtype='dry',cam_outfld=.false.)
    end if
-
-   !----------------------------------------------------------------------------
-   ! Setup CRM internal parameters
-   !----------------------------------------------------------------------------
-   ! call setparm()
 
    !----------------------------------------------------------------------------
    ! constituents
