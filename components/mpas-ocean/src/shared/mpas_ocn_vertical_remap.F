@@ -283,13 +283,11 @@ module ocn_vertical_remap
             dataNow(1, 2, 1:nLayers) = highFreqThickness(kTop:kBot, iEdge)
             dataNow(1, 3, 1:nLayers) = lowFreqDivergence(kTop:kBot, iEdge)
 
-            call mpas_timer_start("ppr")
             call rmap1d(nLevels, nLevels, nVars ,nDoFs, &
                heightEdgeNow(kTop:kBot+1, iEdge), &
                heightEdgeNew(kTop:kBot+1, iEdge), &
                dataNow, dataNew, &
                bcUpper, bcLower, work, opts)
-            call mpas_timer_stop("ppr")
 
             normalVelocity   (kTop:kBot, iEdge) = dataNew(1, 1, 1:nLayers)
             highFreqThickness(kTop:kBot, iEdge) = dataNew(1, 2, 1:nLayers)
@@ -312,13 +310,11 @@ module ocn_vertical_remap
 
             dataNow(1, 1, 1:nLayers) = normalVelocity(kTop:kBot, iEdge)
 
-            call mpas_timer_start("ppr")
             call rmap1d(nLevels, nLevels, nVars, nDoFs, &
                heightEdgeNow(kTop:kBot+1, iEdge), &
                heightEdgeNew(kTop:kBot+1, iEdge), &
                dataNow, dataNew, &
                bcUpper, bcLower, work, opts)
-            call mpas_timer_stop("ppr")
 
             normalVelocity   (kTop:kBot, iEdge) = dataNew(1, 1, 1:nLayers)
 
@@ -367,13 +363,11 @@ module ocn_vertical_remap
                      dataNow(1, iTrac, 1:nLayers) = tracersGroup(iTrac, kTop:kBot, iCell)
 
                   end do
-                  call mpas_timer_start("ppr")
                   call rmap1d(nLevels, nLevels, nTracers,nDoFs, &
                      heightCellNow(kTop:kBot+1, iCell), &
                      heightCellNew(kTop:kBot+1, iCell), &
                      dataNow, dataNew, &
                      bcUpper, bcLower, work, opts)
-                  call mpas_timer_stop("ppr")
 
                   do iTrac = 1, nTracers
                      tracersGroup(iTrac, kTop:kBot, iCell) = dataNew(1, iTrac, 1:nLayers)
