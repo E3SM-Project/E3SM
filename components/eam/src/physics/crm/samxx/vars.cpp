@@ -1,6 +1,6 @@
 
 #include "vars.h"
-
+#include "samxx_utils.h"
 
 void allocate() {
   t00              = real2d( "t00                "      , nzm, ncrms);

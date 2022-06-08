@@ -4,7 +4,6 @@
 #include <type_traits>
 
 #include "samxx_const.h"
-#include "vars.h"
 
 extern "C" {
  void scream_session_init();
