@@ -268,7 +268,7 @@ module ocn_vertical_remap
       ! Remap all edge-centred variables from heightEdgeNow to heightEdgeNew
       if (config_use_freq_filtered_thickness) then
          !$omp parallel
-         !$omp do schedule(runtime) private(iEdge, kTop, kBot, nLayers, nLevels, dataNow, dataNew)
+         !$omp do schedule(runtime) private(kTop, kBot, nLayers, nLevels, dataNow, dataNew, work)
          do iEdge = 1, nEdges
 
             kTop = minLevelEdgeBot(iEdge)
@@ -299,7 +299,7 @@ module ocn_vertical_remap
          !$omp end parallel
       else
          !$omp parallel
-         !$omp do schedule(runtime) private(iEdge, kTop, kBot, nLayers, nLevels, dataNow, dataNew)
+         !$omp do schedule(runtime) private(kTop, kBot, nLayers, nLevels, dataNow, dataNew, work)
          do iEdge = 1, nEdges
 
             kTop = minLevelEdgeBot(iEdge)
@@ -313,7 +313,7 @@ module ocn_vertical_remap
             dataNow(1, 1, 1:nLayers) = normalVelocity(kTop:kBot, iEdge)
 
             call mpas_timer_start("ppr")
-            call rmap1d(nLevels, nLevels, nVars ,nDoFs, &
+            call rmap1d(nLevels, nLevels, nVars, nDoFs, &
                heightEdgeNow(kTop:kBot+1, iEdge), &
                heightEdgeNew(kTop:kBot+1, iEdge), &
                dataNow, dataNew, &
@@ -351,7 +351,7 @@ module ocn_vertical_remap
                bcLower%bcopt = bc_lower
 
                !$omp parallel
-               !$omp do schedule(runtime) private(iCell, iTrac, kTop, kBot, nLayers, nLevels, dataNow, dataNew)
+               !$omp do schedule(runtime) private(iTrac, kTop, kBot, nLayers, nLevels, dataNow, dataNew, work)
                do iCell = 1, nCells
 
                   kTop = minLevelCell(iCell)
