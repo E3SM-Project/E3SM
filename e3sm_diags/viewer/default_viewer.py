@@ -179,6 +179,13 @@ def create_viewer(root_dir, parameters):
         taylor_diag_tuple = lat_lon_viewer.generate_lat_lon_taylor_diag(
             LAT_LON_TABLE_INFO, SEASONS, viewer, root_dir, parameters
         )
+        if parameter.run_type == "model_vs_obs":
+            cmip6_comparison_tuple = lat_lon_viewer.generate_lat_lon_cmip6_comparison(
+                LAT_LON_TABLE_INFO, SEASONS, viewer, root_dir, parameters
+            )
+            return [(name, url), table_tuple, taylor_diag_tuple, cmip6_comparison_tuple]
+
+        print((name, url), table_tuple, taylor_diag_tuple)
         return [(name, url), table_tuple, taylor_diag_tuple]
 
     if set_name == "lat_lon_land":

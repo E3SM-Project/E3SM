@@ -20,3 +20,10 @@ python generate_page.py
 
 An example output can be viewed here: https://acme-viewer.llnl.gov/e3sm_diags_for_cmip/ or https://portal.nersc.gov/project/e3sm/e3sm_diags_for_cmip/
 
+4. Generate summary plot comparing RMSE (average of 1985 to 2014) of an ensemble of about 50 CMIP6 models (
+first historical members r1i1p1f1) with the first historical members of E3SMv1 and
+E3SMv2.
+
+python cmip6_comparison.py 
+
+Result plot can be find in Golaz et al. 2022 E3SMv2 paper.

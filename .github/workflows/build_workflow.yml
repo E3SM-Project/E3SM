@@ -93,7 +93,7 @@ jobs:
       - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
         name: Run Tests
         env:
-          CHECK_IMAGES: True
+          CHECK_IMAGES: False
         run: bash tests/test.sh
 
   publish-docs:

@@ -35,7 +35,8 @@ class TestAllSets(unittest.TestCase):
 
         if backend == "mpl":
             backend_option = ""
-            expected_num_diags = 9
+            # Note: remember to increase expected_num_diags as adding new images.
+            expected_num_diags = 10
         else:
             raise RuntimeError("Invalid backend: {}".format(backend))
         # *_data_path needs to be added b/c the tests runs the diags from a different location
