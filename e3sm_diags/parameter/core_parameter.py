@@ -29,6 +29,7 @@ class CoreParameter(cdp.cdp_parameter.CDPParameter):
             "tc_analysis",
             "annual_cycle_zonal_mean",
             "lat_lon_land",
+            "lat_lon_river",
             "aerosol_aeronet",
         ]
         self.dataset = ""

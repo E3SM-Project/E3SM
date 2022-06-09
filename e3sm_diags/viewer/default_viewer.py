@@ -25,6 +25,7 @@ SET_TO_NAME = {
     "zonal_mean_xy": "Zonal mean line plots",
     "lat_lon": "Latitude-Longitude contour maps",
     "lat_lon_land": "Latitude-Longitude contour maps (land variables)",
+    "lat_lon_river": "Latitude-Longitude contour maps (river variables)",
     "polar": "Polar contour maps",
     "cosp_histogram": "CloudTopHeight-Tau joint histograms",
     "diurnal_cycle": "Diurnal cycle phase maps",
@@ -111,7 +112,7 @@ def create_viewer(root_dir, parameters):
                             )
                             row_name_and_filename.append((row_name, fnm))
 
-                    if set_name == "lat_lon" or set_name == "lat_lon_land":
+                    if set_name in ["lat_lon", "lat_lon_land", "lat_lon_river"]:
                         metrics_path = os.path.join(
                             results_dir,
                             "{}".format(set_name),
@@ -188,7 +189,7 @@ def create_viewer(root_dir, parameters):
         print((name, url), table_tuple, taylor_diag_tuple)
         return [(name, url), table_tuple, taylor_diag_tuple]
 
-    if set_name == "lat_lon_land":
+    if set_name == "lat_lon_land" or set_name == "lat_lon_river":
         table_tuple = lat_lon_viewer.generate_lat_lon_metrics_table(
             LAT_LON_TABLE_INFO, SEASONS, viewer, root_dir, parameters
         )

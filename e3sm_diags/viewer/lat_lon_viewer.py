@@ -37,6 +37,9 @@ def generate_lat_lon_metrics_table(
     if set_name == "lat_lon_land":
         table_name = "-land"
 
+    if set_name == "lat_lon_river":
+        table_name = "-river"
+
     table_dir = os.path.join(
         root_dir, f"table-data{table_name}"
     )  # output_dir/viewer/table-data

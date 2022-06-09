@@ -41,6 +41,9 @@ lat_lon_vector_files = get_all_files_in_dir(
 lat_lon_land_files = get_all_files_in_dir(
     "e3sm_diags/driver/default_diags", "lat_lon_land*"
 )
+lat_lon_river_files = get_all_files_in_dir(
+    "e3sm_diags/driver/default_diags", "lat_lon_river*"
+)
 
 polar_files = get_all_files_in_dir("e3sm_diags/driver/default_diags", "polar*")
 polar_files += get_all_files_in_dir(
@@ -98,6 +101,7 @@ data_files = [
     (os.path.join(INSTALL_PATH, "polar"), polar_files),
     (os.path.join(INSTALL_PATH, "lat_lon_vector"), lat_lon_vector_files),
     (os.path.join(INSTALL_PATH, "lat_lon_land"), lat_lon_land_files),
+    (os.path.join(INSTALL_PATH, "lat_lon_river"), lat_lon_river_files),
     (os.path.join(INSTALL_PATH, "cosp_histogram"), cosp_histogram_files),
     (
         os.path.join(INSTALL_PATH, "area_mean_time_series"),
