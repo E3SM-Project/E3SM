@@ -211,11 +211,9 @@ module ocn_eddy_parameterization_helpers
 
     !$omp parallel
     !$omp do schedule(runtime) &
-    !$omp private(depth, refIndex, found_den_mld, k, den_ref_lev, dVp1, dV, mldTemp)
+    !$omp private(depth, refIndex, coeffs, found_den_mld, k, den_ref_lev, dVp1, dV, mldTemp)
     do iCell = 1,nCells
 
-       !Initialize RefIndex for cases of very shallow columns
-       refIndex = maxLevelCell(iCell)
        found_den_mld = .false.
 
        depth(1) = 0.5_RKIND*layerThickness(1,iCell)
