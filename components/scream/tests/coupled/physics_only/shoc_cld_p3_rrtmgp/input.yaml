@@ -23,10 +23,12 @@ atmosphere_processes:
       Grid: Point Grid
     p3:
       Grid: Point Grid
+      do_prescribed_ccn: false
   rrtmgp:
     Grid: Point Grid
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
     Orbital Year: 1990
+    do_aerosol_rad: false
 
 Grids Manager:
   Type: Mesh Free
@@ -41,10 +43,6 @@ Initial Conditions:
     Load Longitude: true
     surf_latent_flux: 0.0
     surf_sens_flux: 0.0
-    aero_g_sw: 0.0
-    aero_ssa_sw: 0.0
-    aero_tau_sw: 0.0
-    aero_tau_lw: 0.0
 
 # The parameters for I/O control
 Scorpio:

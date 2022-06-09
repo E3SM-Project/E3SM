@@ -18,6 +18,7 @@ class RRTMGPRadiation : public AtmosphereProcess {
 public:
   using view_1d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_1d<Real>;
   using view_2d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_2d<Real>;
+  using view_3d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_3d<Real>;
   using ci_string        = ekat::CaseInsensitiveString;
 
   using KT               = ekat::KokkosTypes<DefaultDevice>;
@@ -55,6 +56,9 @@ public:
   int m_nlay;
   view_1d_real m_lat;
   view_1d_real m_lon;
+
+  // Whether we use aerosol forcing in radiation
+  bool m_do_aerosol_rad;
 
   // The orbital year, used for zenith angle calculations:
   // If > 0, use constant orbital year for duration of simulation

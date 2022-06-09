@@ -14,10 +14,6 @@ Initial Conditions:
   Physics GLL:
     surf_latent_flux: 0.0
     surf_sens_flux: 0.0
-    aero_g_sw: 0.0
-    aero_ssa_sw: 0.0
-    aero_tau_sw: 0.0
-    aero_tau_lw: 0.0
 
 atmosphere_processes:
   atm_procs_list: (homme,physics)
@@ -41,9 +37,11 @@ atmosphere_processes:
         Grid: Physics GLL
       p3:
         Grid: Physics GLL
+        do_prescribed_ccn: false
     rrtmgp:
       Grid: Physics GLL
       active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
+      do_aerosol_rad: false
 
 Grids Manager:
   Type: Dynamics Driven

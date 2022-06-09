@@ -10,20 +10,13 @@ Field Names:
   - SW_flux_up
   - SW_flux_dn
   - SW_flux_dn_dir
-  - cldfrac_tot
-  - p_int
-  - p_mid
-  - pseudo_density
-  - qc
-  - qi
-  - qv
-  - eff_radius_qc
-  - eff_radius_qi
   - sfc_alb_dir_nir
   - sfc_alb_dir_vis
   - sfc_alb_dif_nir
   - sfc_alb_dif_vis
-  - surf_lw_flux_up
+  - sfc_flux_lw_dn
+  - sfc_flux_sw_net
+  - rad_heating_pdel
  
 Output Control:
   Frequency: ${NUM_STEPS}

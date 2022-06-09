@@ -14,6 +14,7 @@ atmosphere_processes:
     Orbital Obliquity: 0
     Orbital MVELP: 0
     Fixed Solar Zenith Angle: 0.86
+    do_aerosol_rad: false
 
 Grids Manager:
   Type: Mesh Free
@@ -47,8 +48,4 @@ Initial Conditions:
     ch4: 0.0
     o2: 0.0
     n2: 0.0
-    aero_g_sw: 0.0
-    aero_ssa_sw: 0.0
-    aero_tau_sw: 0.0
-    aero_tau_lw: 0.0
 ...

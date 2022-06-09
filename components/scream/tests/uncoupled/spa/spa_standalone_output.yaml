@@ -9,7 +9,6 @@ Field Names:
   - aero_tau_lw
   - aero_tau_sw
   - nccn
-  - p_mid
 Output Control:
   Frequency: ${NUM_STEPS}
   Frequency Units: Steps

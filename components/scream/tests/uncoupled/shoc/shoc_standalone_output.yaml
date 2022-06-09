@@ -14,11 +14,6 @@ Fields:
   - tke
   - inv_qc_relvar
   - pbl_height
-  - omega
-  - p_int
-  - p_mid
-  - phis
-  - pseudo_density
 Output Control:
   Frequency: ${NUM_STEPS}
   Frequency Units: Steps
