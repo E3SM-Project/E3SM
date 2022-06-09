@@ -146,7 +146,7 @@ module elm_driver
   use ColumnDataType         , only : col_ns, col_nf
   use ColumnDataType         , only : col_ps, col_pf
   use VegetationType         , only : veg_pp
-  use VegetationDataType     , only : veg_es, veg_ws, veg_wf
+  use VegetationDataType     , only : veg_es, veg_ws, veg_wf, veg_cf
   use VegetationDataType     , only : veg_cs, c13_veg_cs, c14_veg_cs
   use VegetationDataType     , only : veg_ns, veg_nf
   use VegetationDataType     , only : veg_ps, veg_pf
@@ -800,7 +800,7 @@ contains
        ! Determine temperatures
        ! ============================================================================
        if(use_betr)then
-         call ep_betr%BeTRSetBiophysForcing(bounds_clump, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
+         call ep_betr%BeTRSetBiophysForcing(bounds_clump, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws)
          call ep_betr%PreDiagSoilColWaterFlux(filter(nc)%num_nolakec , filter(nc)%nolakec)
        endif
        ! Set lake temperature
@@ -824,7 +824,7 @@ contains
 
 
        if(use_betr)then
-         call ep_betr%BeTRSetBiophysForcing(bounds_clump, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
+         call ep_betr%BeTRSetBiophysForcing(bounds_clump, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws)
          call ep_betr%DiagnoseDtracerFreezeThaw(bounds_clump, filter(nc)%num_nolakec , filter(nc)%nolakec, col_pp, lun_pp)
        endif
        ! ============================================================================
@@ -1129,21 +1129,22 @@ contains
        if (use_betr)then
           call ep_betr%CalcSmpL(bounds_clump, 1, nlevsoi, filter(nc)%num_soilc, filter(nc)%soilc, &
                col_es%t_soisno(bounds_clump%begc:bounds_clump%endc,1:nlevsoi), &
-               soilstate_vars, waterstate_vars, soil_water_retention_curve)
+               soilstate_vars, col_ws, soil_water_retention_curve)
 
           call ep_betr%SetBiophysForcing(bounds_clump, col_pp, veg_pp,                         &
-               carbonflux_vars=carbonflux_vars,                                                &
-               waterstate_vars=waterstate_vars,         waterflux_vars=waterflux_vars,         &
-               temperature_vars=temperature_vars,       soilhydrology_vars=soilhydrology_vars, &
-               atm2lnd_vars=atm2lnd_vars,               canopystate_vars=canopystate_vars,     &
-               chemstate_vars=chemstate_vars,           soilstate_vars=soilstate_vars, &
-               cnstate_vars = cnstate_vars, carbonstate_vars=carbonstate_vars)
+             carbonflux_vars=col_cf,     pf_carbonflux_vars=veg_cf,                          &
+             waterstate_vars=col_ws,         waterflux_vars=col_wf, pf_waterflux_vars=veg_wf,        &
+             temperature_vars=col_es, pf_temperature_vars=veg_es,  soilhydrology_vars=soilhydrology_vars, &
+             atm2lnd_vars=atm2lnd_vars,               canopystate_vars=canopystate_vars,     &
+             chemstate_vars=chemstate_vars,           soilstate_vars=soilstate_vars, &
+             cnstate_vars = cnstate_vars, carbonstate_vars=col_cs)
 
           if(is_active_betr_bgc)then
              call ep_betr%PlantSoilBGCSend(bounds_clump, col_pp, veg_pp, &
                   filter(nc)%num_soilc,  filter(nc)%soilc, cnstate_vars, &
-                  carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars, phosphorusflux_vars,&
-                  PlantMicKinetics_vars)
+               col_cs, col_cf, c13_col_cs, c13_col_cf, c14_col_cs, c14_col_cf, &
+               col_ns, col_nf, col_ps, col_pf,&
+               PlantMicKinetics_vars)                  
           endif
           call ep_betr%StepWithoutDrainage(bounds_clump, col_pp, veg_pp)
        endif  !end use_betr
@@ -1207,15 +1208,15 @@ contains
           call t_startf('betr balchk')
           call ep_betr%MassBalanceCheck(bounds_clump)
           call t_stopf('betr balchk')
-          call ep_betr%HistRetrieval(bounds_clump, filter(nc)%num_nolakec, filter(nc)%nolakec)
+          call ep_betr%HistRetrieval(filter(nc)%num_nolakec, filter(nc)%nolakec)
 
           if(is_active_betr_bgc)then
 
             !extract nitrogen pool and flux from betr
             call ep_betr%PlantSoilBGCRecv(bounds_clump, col_pp, veg_pp, filter(nc)%num_soilc, filter(nc)%soilc,&
-               carbonstate_vars, carbonflux_vars, c13_carbonstate_vars, c13_carbonflux_vars, &
-               c14_carbonstate_vars, c14_carbonflux_vars, &
-               nitrogenstate_vars, nitrogenflux_vars, phosphorusstate_vars, phosphorusflux_vars)
+               col_cs, col_cf, veg_cf, c13_col_cs, c13_col_cf, &
+               c14_col_cs, c14_col_cf, &
+               col_ns, veg_ns, col_nf, veg_nf, col_ps, col_pf, veg_pf)
             !summarize total column nitrogen and carbon
             call CNFluxStateBetrSummary(bounds_clump, col_pp, veg_pp, &
                  filter(nc)%num_soilc, filter(nc)%soilc,                       &
