@@ -221,7 +221,8 @@ contains
 
           do iCell = 1, nCells
 
-             if (tracerBoundaryType(iCell) /= TRACER_BOUNDARY_NONE) then
+             if (tracerBoundaryType(iCell) /= TRACER_BOUNDARY_NONE .and. &
+                 tracerBoundaryType(iCell) /= TRACER_BOUNDARY_ZERO) then
 
                 tracerBoundarySourceLocal(iCell) = globalToLocalID(tracerBoundarySource(iCell))
 
