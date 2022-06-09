@@ -709,9 +709,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_mld_reference_depth" type="real"
 	category="eddy_parameterization" group="eddy_parameterization">
-reference pressure for threshold computation
+reference depth for threshold computation
 
-Valid values: any positive real, suggested range .25E5 less than or equal to value less than or equal to 2E5
+Valid values: any positive real, near 10
 Default: Defined in namelist_defaults.xml
 </entry>
 
