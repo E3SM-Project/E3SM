@@ -67,6 +67,11 @@ def convert_units(var, target_units):
     elif var.id == "prw" and var.units == "cm":
         var = var * 10.0  # convert from 'cm' to 'kg/m2' or 'mm'
         var.units = target_units
+    elif var.units in ["gN/m^2/s", "gP/m^2/s", "gC/m^2/s"] and target_units == "*/day":
+        var = var * 24 * 3600
+        var.units = var.units[0:7] + "day"
+    elif var.units in ["gN/m^2/day", "gP/m^2/day", "gC/m^2/day"]:
+        pass
     else:
         temp = udunits(1.0, var.units)
         coeff, offset = temp.how(target_units)
@@ -1408,11 +1413,47 @@ derived_variables = {
         ]
     ),
     "QINTR": OrderedDict([(("prveg",), rename)]),
-    "QVEGE": OrderedDict([(("evspsblveg",), rename)]),
-    "QSOIL": OrderedDict([(("evspsblsoi",), rename)]),
+    "QVEGE": OrderedDict(
+        [
+            (("QVEGE",), lambda qevge: qflxconvert_units(rename(qevge))),
+            (("evspsblveg",), rename),
+        ]
+    ),
+    "QVEGT": OrderedDict(
+        [
+            (("QVEGT",), lambda qevgt: qflxconvert_units(rename(qevgt))),
+        ]
+    ),
+    "QSOIL": OrderedDict(
+        [
+            (("QSOIL",), lambda qsoil: qflxconvert_units(rename(qsoil))),
+            (("evspsblsoi",), rename),
+        ]
+    ),
+    "RAIN": OrderedDict(
+        [
+            (("RAIN",), lambda rain: qflxconvert_units(rename(rain))),
+        ]
+    ),
     "TRAN": OrderedDict([(("tran",), rename)]),
     "TSOI": OrderedDict([(("tsl",), rename)]),
     "LAI": OrderedDict([(("lai",), rename)]),
+    # Additional land variables requested by BGC evaluation
+    "TLAI": OrderedDict([(("TLAI",), rename)]),
+    "EFLX_LH_TOT": OrderedDict([(("EFLX_LH_TOT",), rename)]),
+    "GPP": OrderedDict([(("GPP",), lambda v: convert_units(v, target_units="*/day"))]),
+    "NBP": OrderedDict([(("NBP",), lambda v: convert_units(v, target_units="*/day"))]),
+    "NPP": OrderedDict([(("NPP",), lambda v: convert_units(v, target_units="*/day"))]),
+    "TOTVEGC": OrderedDict([(("TOTVEGC",), rename)]),
+    "TOTSOMC": OrderedDict([(("TOTSOMC",), rename)]),
+    "TOTSOMN": OrderedDict([(("TOTSOMN",), rename)]),
+    "TOTSOMP": OrderedDict([(("TOTSOMP",), rename)]),
+    "FPG": OrderedDict([(("FPG",), rename)]),
+    "FPG_P": OrderedDict([(("FPG_P",), rename)]),
+    "TBOT": OrderedDict([(("TBOT",), rename)]),
+    "CPOOL": OrderedDict([(("CPOOL",), rename)]),
+    "SR": OrderedDict([(("SR",), rename)]),
+    "RH2M": OrderedDict([(("RH2M",), rename)]),
     # Ocean variables
     "tauuo": OrderedDict([(("tauuo",), rename)]),
     "tos": OrderedDict([(("tos",), rename)]),

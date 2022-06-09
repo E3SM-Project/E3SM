@@ -83,10 +83,12 @@ def get_name(parameters, dataset):
     else:
         if parameters.short_ref_name:
             name = parameters.short_ref_name
-        else:
+        elif parameters.reference_name != "":
             # parameter.ref_name is used to search though the reference data directories.
             # parameter.reference_name is printed above ref plots.
             name = parameters.reference_name
+        else:
+            name = parameters.ref_name
     return name
 
 
