@@ -137,7 +137,12 @@ contains
       cropseedc_deficit  => veg_cs%cropseedc_deficit(p) &
       )
 
-    patch_grew   = (patch_state_updater%dwt(p) > 0._r8)
+    !patch_grew   = (patch_state_updater%dwt(p) > 0._r8)
+    ! May 12, 2022 - modified by Eva Sinha to prevent leafc from turning positive at
+    ! the start of the year. Positive leafc was eventually cascading to positive GPP even
+    ! before crops emerged. This was only happening for crops in years where PCT_CROP was
+    ! increasing compared to prior year.
+    patch_grew   = (patch_state_updater%dwt(p) > 0._r8 .and. leafc > 0._r8)
     old_weight_was_zero = (patch_state_updater%pwtgcell_old(p) == 0._r8)
 
     call ComputeSeedAmounts(p                  , &
@@ -570,7 +575,12 @@ contains
       cropseedn_deficit  => veg_ns%cropseedn_deficit(p) &
       )
 
-    patch_grew   = (patch_state_updater%dwt(p) > 0._r8)
+    !patch_grew   = (patch_state_updater%dwt(p) > 0._r8)
+    ! May 12, 2022 - modified by Eva Sinha to prevent leafc from turning positive at
+    ! the start of the year. Positive leafc was eventually cascading to positive GPP even
+    ! before crops emerged. This was only happening for crops in years where PCT_CROP was
+    ! increasing compared to prior year.
+    patch_grew   = (patch_state_updater%dwt(p) > 0._r8 .and. leafn > 0._r8)
     old_weight_was_zero = (patch_state_updater%pwtgcell_old(p) == 0._r8)
 
     call ComputeSeedAmounts(p           , &
@@ -1015,7 +1025,12 @@ contains
       grainp_xfer        => veg_ps%grainp_xfer(p)   , &
       cropseedp_deficit  => veg_ps%cropseedp_deficit(p) &
       )
-      patch_grew   = (patch_state_updater%dwt(p) > 0._r8)
+      !patch_grew   = (patch_state_updater%dwt(p) > 0._r8)
+      ! May 12, 2022 - modified by Eva Sinha to prevent leafc from turning positive at
+      ! the start of the year. Positive leafc was eventually cascading to positive GPP even
+      ! before crops emerged. This was only happening for crops in years where PCT_CROP was
+      ! increasing compared to prior year.
+      patch_grew   = (patch_state_updater%dwt(p) > 0._r8 .and. leafp > 0._r8)
       old_weight_was_zero = (patch_state_updater%pwtgcell_old(p) == 0._r8)
 
     call ComputeSeedAmounts(p           , &
