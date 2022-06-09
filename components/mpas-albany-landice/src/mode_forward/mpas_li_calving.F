@@ -3853,10 +3853,7 @@ module li_calving
       where ( seedMask == 0 .and. li_mask_is_floating_ice(cellMask(:)) )
              growMask = 1
       endwhere
-
-      ! Call flood fill.  We also want to exclude hinged peninsulas, because they will also be
-      ! ill-defined for the velocity solver.
-      call flood_fill(seedMask, growMask, domain, detectHinges=.false.)
+      call flood_fill(seedMask, growMask, domain)
       
       ! Now remove any ice that was not flood-filled - these are icebergs
       block => domain % blocklist
@@ -3913,14 +3910,13 @@ module li_calving
 !> \date   March 2021
 !> \details 
 !-----------------------------------------------------------------------
-   subroutine flood_fill(seedMask, growMask, domain, detectHinges)
+   subroutine flood_fill(seedMask, growMask, domain)
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
       type (domain_type), intent(inout) :: domain !< Input/Output: domain object
       integer, dimension(:), intent(inout) :: seedMask
       integer, dimension(:), intent(in) :: growMask
-      logical, intent(in), optional :: detectHinges
       ! Local variables
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
@@ -3936,15 +3932,8 @@ module li_calving
       integer :: newMaskCountLocal, newMaskCountLocalAccum, newMaskCountGlobal
       integer :: err_tmp, err
       integer :: globalLoopCount, localLoopCount
-      logical :: detectHingesLoc
 
       err = 0
-
-      if (present(detectHinges)) then
-         detectHingesLoc = detectHinges
-      else
-         detectHingesLoc = .false.
-      endif
 
       block => domain % blocklist
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
@@ -4022,61 +4011,19 @@ module li_calving
                newMaskCountLocal = 0
                seedMaskOld(:) = seedMask(:)
 
-               if (detectHingesLoc) then
-
-                  ! Note: As written the with-hinge version will stop whenever it finds a hinge.  Thus a region that is attached
-                  ! by two or more hinges will not be included in the flood fill, even though it is probably desireable to
-                  ! include such regions.  The algorithm would need additional work to detect such regions and flood them.
-                  do iCell = 1, nCellsSolve ! this gives owned cells only
-                     if ((growMask(iCell) == 1) .and. (seedMask(iCell) == 0)) then
-                        ! This cell is a valid grow zone and hasn't been flooeded yet
-                        ! Check that this cell has TWO adjacent neighbors in the seed mask
-                        ! to also eliminate hinged peninsulas
-                        do n = 1, nEdgesOnCell(iCell)
-                           jCell = cellsOnCell(n, iCell)
-                           if (seedMaskOld(jCell) == 1) then ! First valid neighbor
-                              ! Now check adjacent neighbor in forward-index direction
-                              if (n < nEdgesOnCell(iCell)) then
-                                 if (seedMaskOld(cellsOnCell(n+1, iCell)) == 1) then
-                                    ! We found two adjacent neigbhors in the seed mask.  No need to look further
-                                    seedMask(iCell) = 1
-                                    newMaskCountLocal = newMaskCountLocal + 1
-                                    exit ! skip the rest of this do-loop - no need to check additional neighbors
-                                 endif
-                              else if (n == nEdgesOnCell(iCell)) then
-                                 if (seedMaskOld(cellsOnCell(1, iCell)) == 1) then ! ring around the rosie
-                                    ! We found two adjacent neigbhors in the seed mask.  No need to look further
-                                    seedMask(iCell) = 1
-                                    newMaskCountLocal = newMaskCountLocal + 1
-                                    exit ! skip the rest of this do-loop - no need to check additional neighbors
-                                 endif
-                              else
-                                 ! This should never happen but check
-                                 call mpas_log_write("Unexpected index in mpas_li_calving.F:flood_fill!", MPAS_LOG_ERR)
-                                 err = ior(err, 1)
-                              endif ! if final neighbor
-                           endif ! if there was a first valid neighbor
-                        enddo ! Loop over neighbors
-                     endif ! if not already marked
-                  enddo ! loop over cells
-
-               else ! don't detect hinges
-
-                  do iCell = 1, nCellsSolve ! this gives owned cells only
-                     if ( growMask(iCell)>0 ) then
-                        ! If it has a marked neighbor, then add it to the mask
-                        do n = 1, nEdgesOnCell(iCell)
-                           jCell = cellsOnCell(n, iCell)
-                           if ( (seedMaskOld(jCell) == 1) .and. (seedMask(iCell) .ne. 1) ) then
-                              seedMask(iCell) = 1
-                              newMaskCountLocal = newMaskCountLocal + 1
-                              exit ! skip the rest of this do-loop - no need to check additional neighbors
-                           endif
-                        enddo
-                     endif ! if not already marked
-                  enddo ! loop over cells
-
-               endif ! if detect hinges
+               do iCell = 1, nCellsSolve ! this gives owned cells only
+                  if ( growMask(iCell)>0 ) then
+                     ! If it has a marked neighbor, then add it to the mask
+                     do n = 1, nEdgesOnCell(iCell)
+                        jCell = cellsOnCell(n, iCell)
+                        if ( (seedMaskOld(jCell) == 1) .and. (seedMask(iCell) .ne. 1) ) then
+                           seedMask(iCell) = 1
+                           newMaskCountLocal = newMaskCountLocal + 1
+                           exit ! skip the rest of this do-loop - no need to check additional neighbors
+                        endif
+                     enddo
+                  endif ! if not already marked
+               enddo ! loop over cells
 
                ! Accumulate cells added locally until we do the next global
                ! reduce
