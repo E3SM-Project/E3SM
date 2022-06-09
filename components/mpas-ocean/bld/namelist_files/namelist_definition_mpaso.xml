@@ -707,7 +707,7 @@ Valid values: suggested range 0.01 less than or equal to thresh less than or equ
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_mld_reference_pressure" type="real"
+<entry id="config_mld_reference_depth" type="real"
 	category="eddy_parameterization" group="eddy_parameterization">
 reference pressure for threshold computation
 

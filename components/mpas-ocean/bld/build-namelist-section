@@ -150,7 +150,7 @@ add_default($nl, 'config_GMRedi_Rossby_ramp_max');
 #########################################
 
 add_default($nl, 'config_mixedLayerDepths_crit_dens_threshold');
-add_default($nl, 'config_mld_reference_pressure');
+add_default($nl, 'config_mld_reference_depth');
 
 ####################################
 # Namelist group: Rayleigh_damping #

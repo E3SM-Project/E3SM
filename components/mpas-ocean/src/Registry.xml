@@ -447,9 +447,9 @@
        			    description="potential density change relative to surface for mixed layer depth threshold method.  This calculation is used for the Redi tapering, GM N2_dependent bolus kappa, and the submesoscale eddy parameterization"
               		possible_values="suggested range 0.01 less than or equal to thresh less than or equal to 0.5"
         />
-        <nml_option name="config_mld_reference_pressure" type="real" default_value="5E-8" units="Pa"
-                    description="reference pressure for threshold computation"
-                    possible_values="any positive real, suggested range .25E5 less than or equal to value less than or equal to 2E5"
+        <nml_option name="config_mld_reference_depth" type="real" default_value="10" units="m"
+                    description="reference depth for threshold computation"
+                    possible_values="any positive real, near 10" 
         />
     </nml_record>
 	<nml_record name="Rayleigh_damping" mode="forward">

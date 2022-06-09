@@ -200,7 +200,7 @@
 
 <!-- eddy_parameterization -->
 <config_mixedLayerDepths_crit_dens_threshold>0.03</config_mixedLayerDepths_crit_dens_threshold>
-<config_mld_reference_pressure>5E-8</config_mld_reference_pressure>
+<config_mld_reference_depth>10</config_mld_reference_depth>
 
 <!-- Rayleigh_damping -->
 <config_Rayleigh_friction>.false.</config_Rayleigh_friction>
