@@ -90,7 +90,7 @@ module ocn_vertical_remap
       type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_iterator_type) :: groupItr
 
-      type(rmap_work) :: work
+      type(rmap_work) :: work ! Internal workspace for PPR
       type(rcon_ends), dimension(:), allocatable :: bcUpper, bcLower
 
       real (kind=RKIND), dimension(:, :, :), allocatable :: dataNow, dataNew
@@ -144,11 +144,8 @@ module ocn_vertical_remap
       call ocn_vert_regrid(restingThickness, layerThickness, &
                            layerThicknessNew, err)
 
-      ! There's currently a silly issue in PPR: it assumes the "coordinates" for
-      ! the data being remapped increases with index. Here, we have the opposite
-      ! (z becomes more -ve with k)...
-      ! I'll make some updates to PPR to handle this, but for now, just flip the
-      ! signs to make PPR happy. This shouldn't have any actual impact.
+      ! Compute the layer interface locations between bottomDepth and -ssh
+      ! (rather than between -bottomDepth and ssh due to PPR limitations)
 
       !$omp parallel
       !$omp do schedule(runtime) private(k)
@@ -186,12 +183,12 @@ module ocn_vertical_remap
          kmax = maxLevelEdgeTop(iEdge)
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
-         do k = 1,nVertLevels
+         do k = 1, nVertLevels
             ! initialize layerThicknessEdgeMean to avoid divide by
             ! zero and NaN problems.
             layerThickEdgeNew(k,iEdge) = -1.0e34_RKIND
          end do
-         do k = kmin,kmax
+         do k = kmin, kmax
             ! central differenced
             layerThickEdgeNew(k,iEdge) = 0.5_RKIND * &
                                          (layerThicknessNew(k,cell1) + &
@@ -204,7 +201,7 @@ module ocn_vertical_remap
 #endif
 
       !$omp parallel
-      !$omp do schedule(runtime) private(k,kTop,kBot,cell1,cell2)
+      !$omp do schedule(runtime) private(k, kTop, kBot, cell1, cell2)
       do iEdge = 1, nEdges
 
          cell1 = cellsOnEdge(1,iEdge)
@@ -263,12 +260,13 @@ module ocn_vertical_remap
       dataNow = 0.0_RKIND
       dataNew = 0.0_RKIND
 
-      call work%init(nVertLevels + 1, nVars, opts) ! this is internal workspace for PPR
+      call work%init(nVertLevels + 1, nVars, opts)
 
       ! Remap all edge-centred variables from heightEdgeNow to heightEdgeNew
       if (config_use_freq_filtered_thickness) then
          !$omp parallel
-         !$omp do schedule(runtime) private(kTop, kBot, nLayers, nLevels, dataNow, dataNew, work)
+         !$omp do schedule(runtime) &
+         !$omp private(kTop, kBot, nLayers, nLevels, dataNow, dataNew, work)
          do iEdge = 1, nEdges
 
             kTop = minLevelEdgeBot(iEdge)
@@ -297,7 +295,8 @@ module ocn_vertical_remap
          !$omp end parallel
       else
          !$omp parallel
-         !$omp do schedule(runtime) private(kTop, kBot, nLayers, nLevels, dataNow, dataNew, work)
+         !$omp do schedule(runtime) &
+         !$omp private(kTop, kBot, nLayers, nLevels, dataNow, dataNew, work)
          do iEdge = 1, nEdges
 
             kTop = minLevelEdgeBot(iEdge)
@@ -339,7 +338,7 @@ module ocn_vertical_remap
                allocate(dataNow(nDoFs, nTracers, nVertLevels))
                allocate(dataNew(nDoFs, nTracers, nVertLevels))
 
-               call work%init(nVertLevels + 1, nTracers, opts) ! this is internal workspace for PPR
+               call work%init(nVertLevels + 1, nTracers, opts)
 
                allocate(bcUpper(nTracers))
                allocate(bcLower(nTracers))
@@ -347,7 +346,8 @@ module ocn_vertical_remap
                bcLower%bcopt = bc_lower
 
                !$omp parallel
-               !$omp do schedule(runtime) private(iTrac, kTop, kBot, nLayers, nLevels, dataNow, dataNew, work)
+               !$omp do schedule(runtime) &
+               !$omp private(iTrac, kTop, kBot, nLayers, nLevels, dataNow, dataNew, work)
                do iCell = 1, nCells
 
                   kTop = minLevelCell(iCell)
@@ -438,7 +438,7 @@ module ocn_vertical_remap
          opts%cell_lims = mono_limit ! monotone slope limits
       elseif ( config_remap_limiter == 'weno' ) then
          opts%cell_lims = weno_limit ! WENO slope limits
-         opts%wall_lims = mono_limit ! WENO slope limits
+         opts%wall_lims = mono_limit ! monotone slope limits
       elseif ( config_remap_limiter == 'none' ) then
          opts%cell_lims = null_limit ! no slope limits
       else
