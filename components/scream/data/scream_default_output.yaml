@@ -42,9 +42,6 @@ Fields:
       - qv_prev_micro_step
       - eff_radius_qc
       - eff_radius_qi
-      - micro_liq_ice_exchange
-      - micro_vap_ice_exchange
-      - micro_vap_liq_exchange
       - precip_ice_surf
       - precip_liq_surf
       # SHOC + P3
