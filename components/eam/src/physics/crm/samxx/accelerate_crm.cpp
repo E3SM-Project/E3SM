@@ -64,17 +64,17 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     // calculate tendency * dtn
     real q_tmp;
     real t_tmp;
     if (is_same_str(microphysics_scheme, "sam1mom")==0){
       t_tmp = t(k,j+offy_s,i+offx_s,icrm);
-      q_tmp = qv(k,j,i,icrm)+qcl(k,j,i,icrm)+qci(k,j,i,icrm);
+      q_tmp = qcl(k,j,i,icrm) + qci(k,j,i,icrm) + qv(k,j,i,icrm);
     }
     if (is_same_str(microphysics_scheme, "p3"     )==0){
       t_tmp = tabs(k,j,i,icrm);
-      q_tmp = qv(k,j,i,icrm)+qcl(k,j,i,icrm)+qci(k,j,i,icrm);
+      q_tmp = qv(k,j,i,icrm) + qcl(k,j,i,icrm) + qci(k,j,i,icrm);
     }
     yakl::atomicAdd( tbaccel(k,icrm) , t_tmp * crm_accel_coef );
     yakl::atomicAdd( qbaccel(k,icrm) , q_tmp * crm_accel_coef );
@@ -162,7 +162,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
   });
 
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  //!! Fix negative micro and re-adjust among separate water species
+  //!! Fix negative micro and readjust among separate water species
   //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   // for (int k=0; k<nzm; k++) {
@@ -177,7 +177,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real tmp_q;
     if (is_same_str(microphysics_scheme, "sam1mom") == 0) {
       tmp_q = micro_field(0,k,j+offy_s,i+offx_s,icrm);
@@ -268,6 +268,7 @@ void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
     } 
 
   });
+
 }
 
 

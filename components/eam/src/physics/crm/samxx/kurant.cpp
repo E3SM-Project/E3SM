@@ -38,11 +38,11 @@ void kurant () {
     umax(k,icrm) = 0.0;
   });
 
-  parallel_for( SimpleBounds<4>(nz,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nz,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real tmp = fabs(w(k,j+offy_w,i+offx_w,icrm));
     yakl::atomicMax(wmax(k,icrm),tmp);
   });
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real utmp = u(k,j+offy_u,i+offx_u,icrm);
     real vtmp = v(k,j+offy_v,i+offx_v,icrm);
     real tmp = sqrt(utmp*utmp +YES3D*vtmp*vtmp);
@@ -97,7 +97,7 @@ void kurant () {
       qimax(k,icrm) = 0.0;
     });
 
-    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       real tmp;
       tmp = tabs(k,j,i,icrm); yakl::atomicMax(tamax(k,icrm),tmp);
       tmp = qv(k,j,i,icrm);   yakl::atomicMax(qvmax(k,icrm),tmp);
