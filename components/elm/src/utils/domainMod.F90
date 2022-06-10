@@ -132,7 +132,6 @@ contains
              domain%xCell(nb:ne),domain%yCell(nb:ne), &
              domain%stdev_elev(nb:ne),domain%sky_view(nb:ne),domain%terrain_config(nb:ne), &
              domain%sinsl_cosas(nb:ne),domain%sinsl_sinas(nb:ne),stat=ier)
-
     if (ier /= 0) then
        call shr_sys_abort('domain_init ERROR: allocate mask, frac, lat, lon, area ')
     endif

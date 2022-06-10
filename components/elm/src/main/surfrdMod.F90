@@ -956,9 +956,9 @@ contains
      if (.not. readvar) call endrun( trim(subname)//' ERROR: FGRD NOT on surfdata file' )
     
     else
-      firrig(:,:) = 0.7_r8
-      f_surf(:,:) = 1.0_r8
-      f_grd(:,:) = 0.0_r8
+       firrig(:,:) = 0.7_r8
+       f_surf(:,:) = 1.0_r8
+       f_grd(:,:) = 0.0_r8
     end if
     
     call CheckUrban(begg, endg, pcturb(begg:endg,:,:), subname,ntpu)
