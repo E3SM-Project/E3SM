@@ -24,12 +24,6 @@ Fields:
       # CLD
       - cldfrac_ice
       - cldfrac_tot
-      # SPA
-      - aero_g_sw
-      - aero_ssa_sw
-      - aero_tau_lw
-      - aero_tau_sw
-      - nccn
       # P3
       - bm
       - nc
@@ -38,8 +32,6 @@ Fields:
       - qi
       - qm
       - qr
-      - T_prev_micro_step
-      - qv_prev_micro_step
       - eff_radius_qc
       - eff_radius_qi
       - precip_ice_surf
