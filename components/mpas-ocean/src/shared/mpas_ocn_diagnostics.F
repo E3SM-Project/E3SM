@@ -2283,7 +2283,7 @@ contains
 !
 !-----------------------------------------------------------------------
    subroutine ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, oldLayerThickness, layerThicknessEdgeFlux, &
-     normalVelocity, verticalVelocity, oldSSH, dt, vertAleTransportTop, nhPressureCorrection, err, &
+     normalVelocity, verticalVelocity, oldSSH, dt, vertAleTransportTop, err, &
      newHighFreqThickness)!{{{
 
       !-----------------------------------------------------------------
@@ -2317,9 +2317,6 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(in), optional :: &
          newHighFreqThickness   !< Input: high frequency thickness.  Alters ALE thickness.
-
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         nhPressureCorrection
 
       real (kind=RKIND), intent(in) :: &
          dt     !< Input: time step
