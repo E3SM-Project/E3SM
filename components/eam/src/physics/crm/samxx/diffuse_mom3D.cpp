@@ -189,27 +189,24 @@ void diffuse_mom3D(real5d &tk) {
     dwdt(na-1,k+1,j,i,icrm)=dwdt(na-1,k+1,j,i,icrm)-(fw(k+2,j+1,i+1,icrm)-fw(k+1,j+1,i+1,icrm))*rhoi;
   });
 
-  // Add hyperdiffusive terms to the momentum
+  // Add hyperviscosity terms to the momentum
 #ifdef MMF_HYPERVISCOSITY
-  // if (doMomentumHyperviscosity) {
-    // do k=1,nzm
-    //   do i=1,nx
-    //     do icrm = 1 , ncrms
-    parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-      real uhvx = u(k,j+offy_u,i-2+offx_u,icrm) - 4*u(k,j+offy_u,i-1+offx_u,icrm) + 6*u(k,j+offy_u,i+offx_u,icrm) - 4*u(k,j+offy_u,i+1+offx_u,icrm) + u(k,j+offy_u,i+2+offx_u,icrm);
-      real vhvx = v(k,j+offy_v,i-2+offx_v,icrm) - 4*v(k,j+offy_v,i-1+offx_v,icrm) + 6*v(k,j+offy_v,i+offx_v,icrm) - 4*v(k,j+offy_v,i+1+offx_v,icrm) + v(k,j+offy_v,i+2+offx_v,icrm);
-      real whvx = w(k,j+offy_w,i-2+offx_w,icrm) - 4*w(k,j+offy_w,i-1+offx_w,icrm) + 6*w(k,j+offy_w,i+offx_w,icrm) - 4*w(k,j+offy_w,i+1+offx_w,icrm) + w(k,j+offy_w,i+2+offx_w,icrm);
-      real uhvy = u(k,j-2+offy_u,i+offx_u,icrm) - 4*u(k,j-1+offy_u,i+offx_u,icrm) + 6*u(k,j+offy_u,i+offx_u,icrm) - 4*u(k,j+1+offy_u,i+offx_u,icrm) + u(k,j+2+offy_u,i+offx_u,icrm);
-      real vhvy = v(k,j-2+offy_v,i+offx_v,icrm) - 4*v(k,j-1+offy_v,i+offx_v,icrm) + 6*v(k,j+offy_v,i+offx_v,icrm) - 4*v(k,j+1+offy_v,i+offx_v,icrm) + v(k,j+2+offy_v,i+offx_v,icrm);
-      real whvy = w(k,j-2+offy_w,i+offx_w,icrm) - 4*w(k,j-1+offy_w,i+offx_w,icrm) + 6*w(k,j+offy_w,i+offx_w,icrm) - 4*w(k,j+1+offy_w,i+offx_w,icrm) + w(k,j+2+offy_w,i+offx_w,icrm);
-      dudt(na-1,k,j,i,icrm) = dudt(na-1,k,j,i,icrm) - khyp * ( rdx16 * uhvx + rdy16 * uhvy );
-      dvdt(na-1,k,j,i,icrm) = dvdt(na-1,k,j,i,icrm) - khyp * ( rdx16 * vhvx + rdy16 * uhvy );
-      if (k>0) {
-      dwdt(na-1,k,j,i,icrm) = dwdt(na-1,k,j,i,icrm) - khyp * ( rdx16 * whvx + rdy16 * whvy );
-      }
-    });
-
-  // }
+  // do k=1,nzm
+  //   do i=1,nx
+  //     do icrm = 1 , ncrms
+  parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    real uhvx = u(k,j+offy_u,i-2+offx_u,icrm) - 4*u(k,j+offy_u,i-1+offx_u,icrm) + 6*u(k,j+offy_u,i+offx_u,icrm) - 4*u(k,j+offy_u,i+1+offx_u,icrm) + u(k,j+offy_u,i+2+offx_u,icrm);
+    real vhvx = v(k,j+offy_v,i-2+offx_v,icrm) - 4*v(k,j+offy_v,i-1+offx_v,icrm) + 6*v(k,j+offy_v,i+offx_v,icrm) - 4*v(k,j+offy_v,i+1+offx_v,icrm) + v(k,j+offy_v,i+2+offx_v,icrm);
+    real whvx = w(k,j+offy_w,i-2+offx_w,icrm) - 4*w(k,j+offy_w,i-1+offx_w,icrm) + 6*w(k,j+offy_w,i+offx_w,icrm) - 4*w(k,j+offy_w,i+1+offx_w,icrm) + w(k,j+offy_w,i+2+offx_w,icrm);
+    real uhvy = u(k,j-2+offy_u,i+offx_u,icrm) - 4*u(k,j-1+offy_u,i+offx_u,icrm) + 6*u(k,j+offy_u,i+offx_u,icrm) - 4*u(k,j+1+offy_u,i+offx_u,icrm) + u(k,j+2+offy_u,i+offx_u,icrm);
+    real vhvy = v(k,j-2+offy_v,i+offx_v,icrm) - 4*v(k,j-1+offy_v,i+offx_v,icrm) + 6*v(k,j+offy_v,i+offx_v,icrm) - 4*v(k,j+1+offy_v,i+offx_v,icrm) + v(k,j+2+offy_v,i+offx_v,icrm);
+    real whvy = w(k,j-2+offy_w,i+offx_w,icrm) - 4*w(k,j-1+offy_w,i+offx_w,icrm) + 6*w(k,j+offy_w,i+offx_w,icrm) - 4*w(k,j+1+offy_w,i+offx_w,icrm) + w(k,j+2+offy_w,i+offx_w,icrm);
+    dudt(na-1,k,j,i,icrm) = dudt(na-1,k,j,i,icrm) - khyp * ( rdx16 * uhvx + rdy16 * uhvy );
+    dvdt(na-1,k,j,i,icrm) = dvdt(na-1,k,j,i,icrm) - khyp * ( rdx16 * vhvx + rdy16 * uhvy );
+    if (k>0) {
+    dwdt(na-1,k,j,i,icrm) = dwdt(na-1,k,j,i,icrm) - khyp * ( rdx16 * whvx + rdy16 * whvy );
+    }
+  });
 #endif
 
 
