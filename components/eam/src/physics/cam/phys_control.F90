@@ -170,6 +170,19 @@ logical :: l_st_mic        = .true.
 logical :: l_rad           = .true.
 
 
+!-------------------------------------
+! Options for cloud process coupling
+!-------------------------------------
+! Method for coupling the mac-mic subcycles and the rest of EAM.
+!  1: default (isolated sequential splitting)
+! 21: dribble the out-of-mac-mic tendencies of T, Q and cloud condensate into the mac-mic subcycles
+
+integer :: cld_cpl_opt = 1   
+
+! Method for coupling with radiation
+
+integer :: rad_cpl_opt = 1
+
 !======================================================================= 
 contains
 !======================================================================= 
@@ -210,6 +223,7 @@ subroutine phys_ctl_readnl(nlfile)
       mam_amicphys_optaa, n_so4_monolayers_pcage,micro_mg_accre_enhan_fac, &
       l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
       l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad, prc_coef1,prc_exp,prc_exp1,cld_sed,mg_prc_coeff_fix, &
+      cld_cpl_opt, rad_cpl_opt, &
       rrtmg_temp_fix
    !-----------------------------------------------------------------------------
 
@@ -302,6 +316,8 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(l_st_mic,                        1 , mpilog,  0, mpicom)
    call mpibcast(l_rad,                           1 , mpilog,  0, mpicom)
    call mpibcast(cld_macmic_num_steps,            1 , mpiint,  0, mpicom)
+   call mpibcast(cld_cpl_opt,                     1 , mpiint,  0, mpicom)
+   call mpibcast(rad_cpl_opt,                     1 , mpiint,  0, mpicom)
    call mpibcast(prc_coef1,                       1 , mpir8,   0, mpicom)
    call mpibcast(prc_exp,                         1 , mpir8,   0, mpicom)
    call mpibcast(prc_exp1,                        1 , mpir8,   0, mpicom)
@@ -393,6 +409,13 @@ subroutine phys_ctl_readnl(nlfile)
       end if
    end if
 
+   ! Check process coupling
+
+   write(iulog,*) '**** phys_ctl_readnl: cld_cpl_opt = ', cld_cpl_opt
+   if (cld_cpl_opt < 1) then 
+      call endrun('phys_ctl_readnl: unsupported value of cld_cpl_opt')
+   end if
+
    ! prog_modal_aero determines whether prognostic modal aerosols are present in the run.
    prog_modal_aero = (     cam_chempkg_is('trop_mam3') &
                       .or. cam_chempkg_is('trop_mam4') &
@@ -473,6 +496,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         micro_mg_accre_enhan_fac_out, liqcf_fix_out, regen_fix_out,demott_ice_nuc_out, pergro_mods_out, pergro_test_active_out &
                        ,l_tracer_aero_out, l_vdiff_out, l_rayleigh_out, l_gw_drag_out, l_ac_energy_chk_out  &
                        ,l_bc_energy_fix_out, l_dry_adj_out, l_st_mac_out, l_st_mic_out, l_rad_out  &
+                       ,cld_cpl_opt_out, rad_cpl_opt_out &
                        ,prc_coef1_out,prc_exp_out,prc_exp1_out, cld_sed_out,mg_prc_coeff_fix_out,rrtmg_temp_fix_out)
 
 !-----------------------------------------------------------------------
@@ -554,6 +578,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: mg_prc_coeff_fix_out
    logical,           intent(out), optional :: rrtmg_temp_fix_out
    integer,           intent(out), optional :: cld_macmic_num_steps_out
+   integer,           intent(out), optional :: cld_cpl_opt_out
+   integer,           intent(out), optional :: rad_cpl_opt_out
    real(r8),          intent(out), optional :: prc_coef1_out
    real(r8),          intent(out), optional :: prc_exp_out
    real(r8),          intent(out), optional :: prc_exp1_out
@@ -629,6 +655,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(l_st_mic_out            ) ) l_st_mic_out          = l_st_mic
    if ( present(l_rad_out               ) ) l_rad_out             = l_rad
    if ( present(cld_macmic_num_steps_out) ) cld_macmic_num_steps_out = cld_macmic_num_steps
+   if ( present(cld_cpl_opt_out         ) ) cld_cpl_opt_out          = cld_cpl_opt
+   if ( present(rad_cpl_opt_out         ) ) rad_cpl_opt_out          = rad_cpl_opt
    if ( present(prc_coef1_out           ) ) prc_coef1_out            = prc_coef1
    if ( present(prc_exp_out             ) ) prc_exp_out              = prc_exp
    if ( present(prc_exp1_out            ) ) prc_exp1_out             = prc_exp1 
