@@ -118,9 +118,9 @@ contains
      use landunit_varcon    , only : istcrop, istice, istwet, istsoil, istice_mec, istdlak
      use elm_varctl         , only : subgridflag
      use elm_varpar         , only : nlevsoi,nlevsno
-     use elm_varsur         , only : wt_lunit
+     use elm_varsur         , only : wt_lunit, f_grd, f_surf
      use atm2lndType        , only : atm2lnd_type
-     use domainMod          , only : ldomain
+     !use domainMod          , only : ldomain
      use TopounitType       , only : top_pp
      use clm_time_manager   , only : get_step_size
      use subgridAveMod      , only : p2c,p2g
@@ -395,16 +395,16 @@ contains
                if (qflx_irrig(p) > 0._r8 .or. qflx_supply(p) > 0._r8) then	!this pft needs water or have supply             
                   if  (irrigated(veg_pp%itype(p)) == 1._r8) then ! this pft is irrigated
                      qflx_surf_irrig(p) = qflx_supply(p)/irrigated_ppg(g)  ! surface water irrgation from MOSART, with time step shift                   
-                     qflx_grnd_irrig(p) = ldomain%f_grd(g)*qflx_irrig(p) ! groundwater irrigation based on demand in ELM, same time step
+                     qflx_grnd_irrig(p) = f_grd(g,tpu_ind)*qflx_irrig(p) ! groundwater irrigation based on demand in ELM, same time step
                      
                      if (extra_gw_irr) then ! if always met by additional extra gw pumping
                         if (qflx_supply(p) > 0._r8) then				
                            if (pgwgt(p) > 0._r8) then	 
-                              qflx_grnd_irrig(p) = atm2lnd_vars%deficit_grc(g)/pgwgt(p)/irrigated_ppg(g) + ldomain%f_grd(g)*qflx_irrig(p)
+                              qflx_grnd_irrig(p) = atm2lnd_vars%deficit_grc(g)/pgwgt(p)/irrigated_ppg(g) + f_grd(g,tpu_ind)*qflx_irrig(p)
                               !groundwater irrigation based on deficit from MOSART (with time step shift), not demand from ELM
                            end if
                         else if (qflx_irrig(p) > 0._r8) then
-                           qflx_grnd_irrig(p) = ldomain%f_grd(g)*qflx_irrig(p)
+                           qflx_grnd_irrig(p) = f_grd(g,tpu_ind)*qflx_irrig(p)
                         else
                            qflx_grnd_irrig(p) = 0._r8
                         endif	
@@ -414,8 +414,8 @@ contains
                   end if		
                end if       
             else  ! one way coupling
-               qflx_surf_irrig(p) = ldomain%f_surf(g)*qflx_irrig(p)
-               qflx_grnd_irrig(p) = ldomain%f_grd(g)*qflx_irrig(p)
+               qflx_surf_irrig(p) = f_surf(g,tpu_ind)*qflx_irrig(p)
+               qflx_grnd_irrig(p) = f_grd(g,tpu_ind)*qflx_irrig(p)
                qflx_real_irrig(p) = qflx_surf_irrig(p) + qflx_grnd_irrig(p)
                qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p) 
                qflx_over_supply(p) = 0._r8
