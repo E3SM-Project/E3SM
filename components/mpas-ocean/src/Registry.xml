@@ -1624,7 +1624,7 @@
 		<package name="gotmPKG" description="This package is for GOTM variables, which are only needed when using GOTM for the vertical turbulence closure."/>
 		<package name="verticalRemapPKG" description="This package is for variables required for vertical Lagrangian remapping."/>
 		<package name="activeWavePKG" description="This package controls variables required for wave coupling"/>
-                <package name="nonHydrostaticMode" description="This package is for variables needed for the nonHydrostatic capabilities"/>
+                <package name="nonhydrostaticPKG" description="This package is for variables needed for the nonhydrostatic capabilities"/>
 	</packages>
 
 	<streams>
@@ -2256,10 +2256,10 @@
 			 description="sea surface height"
 		/>
                 <var name="verticalVelocity" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
-       		         description="prognostic vertical velocity, only used when config_enable_nonhydrostatic_mode = .true."
+			 description="prognostic vertical velocity, only used when config_enable_nonhydrostatic_mode = .true."
     		/>
                 <var name="nonhydrostaticPressure" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
-       	                 description="nonHydrostatic pressure , set to zero if config_enable_nonhydrostatic_mode = .false."
+			 description="nonhydrostatic pressure, set to zero if config_enable_nonhydrostatic_mode = .false."
                 />
 
 		<!-- FIELDS FOR FREQUENCY FILTERED THICKNESS -->
@@ -2660,6 +2660,7 @@
 	 	/>
                 <var name="nhPressureCorrection" type="real" dimensions="nVertLevels nCells Time" units="unitless"
                          description="the pressure correction coming from the poisson pressure equation"
+			 packages="nonhydrostaticPKG"
                 />
 		<var name="salinitySurfaceRestoringTendency" type="real" dimensions="nCells Time" units="m 1.e-3 s^-1" packages="activeTracersSurfaceRestoringPKG"
 			 description="salinity tendency due to surface restoring"

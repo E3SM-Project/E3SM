@@ -110,7 +110,7 @@ module ocn_core_interface
       integer :: err_tmp
 
       logical, pointer :: forwardModeActive
-      logical, pointer :: nonHydrostaticModeActive
+      logical, pointer :: nonhydrostaticPKGActive
       logical, pointer :: analysisModeActive
       logical, pointer :: initModeActive
       logical, pointer :: thicknessFilterActive
@@ -354,10 +354,10 @@ module ocn_core_interface
       !
       ! test for nonHydrostatic pressure
       !
-      call mpas_pool_get_package(packagePool, 'nonHydrostaticModeActive', nonHydrostaticModeActive)
+      call mpas_pool_get_package(packagePool, 'nonhydrostaticPKGActive', nonhydrostaticPKGActive)
       call mpas_pool_get_config(configPool, 'config_enable_nonhydrostatic_mode', config_enable_nonhydrostatic_mode)
       if (config_enable_nonhydrostatic_mode) then
-         nonHydrostaticModeActive = .true.
+         nonhydrostaticPKGActive = .true.
       end if
 
       !
