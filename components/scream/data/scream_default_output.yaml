@@ -42,14 +42,10 @@ Fields:
       # SHOC + P3 + RRTMGP + HOMME
       - T_mid
       # RRTMGP
-      - sfc_alb_dif_nir
-      - sfc_alb_dif_vis
-      - sfc_alb_dir_nir
       - sfc_alb_dir_vis
       - LW_flux_dn
       - LW_flux_up
       - SW_flux_dn
-      - SW_flux_dn_dir
       - SW_flux_up
       - rad_heating_pdel
       - sfc_flux_lw_dn
