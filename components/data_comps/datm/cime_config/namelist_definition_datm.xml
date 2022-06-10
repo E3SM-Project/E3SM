@@ -381,7 +381,7 @@
       <value stream="CORE_IAF_JRA.*">domain.atm.TL319.151007.nc</value>
       <value stream="IAF_JRA_1p5.*">domain.atm.TL319.151007.nc</value>
       <value stream="CORE_RYF*">domain.atm.TL319.151007.nc</value>
-      <value stream="co2tseries.20tr" cime_model="e3sm">fco2_datm_1765-2007_c100614.nc</value>
+      <value stream="co2tseries.20tr" cime_model="e3sm">fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc</value>
       <value stream="co2tseries.20tr" cime_model="cesm">fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc</value>
       <value stream="co2tseries.20tr.latbnd">fco2_datm_lat-bands_simyr_1750-2015_CMIP6_c180929.nc</value>
       <value stream="co2tseries.omip">fco2_datm_global_ssp585_simyr_1750-2020_CMIP6_c200324.nc</value>
@@ -427,7 +427,7 @@
       <value stream="presaero.SSP5-8.5" atm_grid="ELM_USRDAT">aerosoldep_SSP5-8.5_monthly_1849-2101_${ELM_USRDAT_NAME}.nc</value>
       <value stream="presaero.clim_1850" cime_model="e3sm">aerosoldep_monthly_1850_mean_1.9x2.5_c090421.nc</value>
       <value stream="presaero.clim_2000" cime_model="e3sm">aerosoldep_monthly_2000_mean_1.9x2.5_c090421.nc</value>
-      <value stream="presaero.trans_1850-2000" cime_model="e3sm">aerosoldep_monthly_1849-2006_1.9x2.5_c090803.nc</value>
+      <value stream="presaero.trans_1850-2000" cime_model="e3sm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
       <value stream="presaero.clim_1850" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
       <value stream="presaero.clim_2000" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
       <value stream="presaero.clim_2010" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
@@ -1412,7 +1412,7 @@
       <value stream="CORE_RYF0304_JRA.NCEP">RAF_0304.JRA.v1.3.states.TL319.180404.nc</value>
       <value stream="co2tseries.20tr.latbnd">fco2_datm_lat-bands_simyr_1750-2015_CMIP6_c180929.nc</value>
       <value stream="co2tseries.20tr" cime_model="cesm">fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc</value>
-      <value stream="co2tseries.20tr" cime_model="e3sm">fco2_datm_1765-2007_c100614.nc</value>
+      <value stream="co2tseries.20tr" cime_model="e3sm">fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc</value>
       <value stream="co2tseries.omip">fco2_datm_global_ssp585_simyr_1750-2020_CMIP6_c200324.nc</value>
       <value stream="co2tseries.SSP1-1.9.latbnd">fco2_datm_lat-bandsSSP1-1.9_simyr_2014-2500_CMIP6_c190514.nc</value>
       <value stream="co2tseries.SSP1-2.6.latbnd">fco2_datm_lat-bandsSSP1-2.6__simyr_2014-2500_CMIP6_c190506.nc</value>
@@ -1444,7 +1444,7 @@
 
       <value stream="presaero.clim_1850" cime_model="e3sm">aerosoldep_monthly_1850_mean_1.9x2.5_c090421.nc</value>
       <value stream="presaero.clim_2000" cime_model="e3sm">aerosoldep_monthly_2000_mean_1.9x2.5_c090421.nc</value>
-      <value stream="presaero.trans_1850-2000" cime_model="e3sm">aerosoldep_monthly_1849-2006_1.9x2.5_c090803.nc</value>
+      <value stream="presaero.trans_1850-2000" cime_model="e3sm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
       <value stream="presaero.clim_1850" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
       <value stream="presaero.clim_2000" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
       <value stream="presaero.clim_2010" cime_model="cesm">aerosoldep_WACCM.ensmean_monthly_hist_1849-2015_0.9x1.25_CMIP6_c180926.nc</value>
@@ -2163,7 +2163,7 @@
       <value stream="CORE2_IAF.NCEP.U_10">2009</value>
       <value stream="CORE2_IAF.NCEP.V_10">2009</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">2009</value>
-      <value stream="co2tseries.20tr" cime_model="e3sm">2007</value>
+      <value stream="co2tseries.20tr" cime_model="e3sm">2014</value>
       <value stream="co2tseries.20tr" cime_model="cesm">2014</value>
       <value stream="CORE_IAF_JRA.*2018">$DATM_CLMNCEP_YR_END</value>
       <value stream="CORE_IAF_JRA.*">$DATM_CLMNCEP_YR_END</value>
@@ -2180,7 +2180,7 @@
       <value stream="presaero.cplhist">$DATM_CPLHIST_YR_END</value>
       <value stream="presaero.e3smwcv2">1850</value>
       <value stream="presaero.clim" cime_model="e3sm">1</value>
-      <value stream="presaero.trans_1850-2000" cime_model="e3sm">2006</value>
+      <value stream="presaero.trans_1850-2000" cime_model="e3sm">2014</value>
       <value stream="presaero.clim_1850" cime_model="cesm">1850</value>
       <value stream="presaero.clim_2000" cime_model="cesm">2000</value>
       <value stream="presaero.clim_2010" cime_model="cesm">2010</value>
