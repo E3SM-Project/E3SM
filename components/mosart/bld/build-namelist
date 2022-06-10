@@ -312,6 +312,7 @@ else {
     add_default($nl, 'smat_option');
     add_default($nl, 'wrmflag');
     add_default($nl, 'inundflag');
+    add_default($nl, 'use_lnd_rof_two_way');
     add_default($nl, 'sediflag');
     add_default($nl, 'heatflag');
     add_default($nl, 'data_bgc_fluxes_to_ocean_flag');

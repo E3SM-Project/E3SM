@@ -800,8 +800,8 @@ contains
      real(r8):: min_h2osfc
      !-----------------------------------------------------------------------
 
-     associate(                                              & 
-          micro_sigma  => col_pp%micro_sigma                  , & ! Input:  [real(r8) (:)   ] microtopography pdf sigma (m)                     
+     associate(                                 & 
+          micro_sigma  => col_pp%micro_sigma  , & ! Input:  [real(r8) (:)   ] microtopography pdf sigma (m)                     
 
           h2osno       => col_ws%h2osno       , & ! Input:  [real(r8) (:)   ] snow water (mm H2O)                               
           

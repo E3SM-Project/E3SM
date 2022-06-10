@@ -2227,6 +2227,32 @@ contains
     attname  = 'Flrr_deficit'
     call metadata_set(attname, longname, stdname, units)
 
+    ! land river two way coupling
+    call seq_flds_add(r2x_fluxes, 'Sr_h2orof')
+    call seq_flds_add(x2l_fluxes, 'Sr_h2orof')
+    longname = 'Inundation floodplain water volume'
+    stdname  = 'rtm_inundwf'
+    units    = 'mm'
+    attname  = 'inundwf'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(r2x_fluxes, 'Sr_frac_h2orof')
+    call seq_flds_add(x2l_fluxes, 'Sr_frac_h2orof')
+    longname = 'Inundation floodplain water area fraction'
+    stdname  = 'rtm_inundff'
+    units    = '1'
+    attname  = 'inundff'
+    call metadata_set(attname, longname, stdname, units)
+
+    call seq_flds_add(l2x_fluxes, 'Flrl_inundinf')
+    call seq_flds_add(x2r_fluxes, 'Flrl_inundinf')
+    call seq_flds_add(l2x_fluxes_to_rof,'Flrl_inundinf')
+    longname = 'Infiltration from floodplain inundation volume'
+    stdname  = 'floodplain_inundation_infiltration'
+    units    = 'mm/s'
+    attname  = 'inundinf'
+    call metadata_set(attname, longname, stdname, units)
+
     if (rof2ocn_nutrients) then
        call seq_flds_add(r2x_fluxes,'Forr_rofDIN')
        call seq_flds_add(x2o_fluxes,'Foxx_rofDIN')

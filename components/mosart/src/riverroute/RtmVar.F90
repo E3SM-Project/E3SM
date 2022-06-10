@@ -29,12 +29,13 @@ module RtmVar
                                                        ! by default this is not allowed
   logical, public :: wrmflag = .false.                 ! water management model flag
   logical, public :: inundflag = .false.               ! inundation model flag
+  logical, public :: use_lnd_rof_two_way = .false.     ! land river two way coupling flag
   logical, public :: sediflag = .false.                ! sediment model flag
   logical, public :: heatflag = .false.                ! heat model flag
   logical, public :: rstraflag = .false.               ! reservoir stratification module flag
   real,    public :: rinittemp = 283.15_r8             ! initial reservoir temperature
-  integer, public :: ngeom   = 50        			   ! Reservoir depth layers to calculate depth-area-storage relationship
-  integer, public :: nlayers = 30        			   ! Maximum number of reservoir layers for stratification
+  integer, public :: ngeom   = 50                      ! Reservoir depth layers to calculate depth-area-storage relationship
+  integer, public :: nlayers = 30                      ! Maximum number of reservoir layers for stratification
   logical, public :: noland = .false.                  ! true => no valid land points -- do NOT run
   logical, public :: data_bgc_fluxes_to_ocean_flag = .false.! read in and send BGC fluxes to ocean flag
   character(len=32) , public :: decomp_option          ! decomp option

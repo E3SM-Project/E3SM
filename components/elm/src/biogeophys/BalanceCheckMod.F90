@@ -248,6 +248,7 @@ contains
           snow_sources               =>    col_wf%snow_sources            , & ! Output: [real(r8) (:)   ]  snow sources (mm H2O /s)
           snow_sinks                 =>    col_wf%snow_sinks              , & ! Output: [real(r8) (:)   ]  snow sinks (mm H2O /s)
           qflx_lateral               =>    col_wf%qflx_lateral            , & ! Input:  [real(r8) (:)   ]  lateral flux of water to neighboring column (mm H2O /s)
+          qflx_h2orof_drain          =>    col_wf%qflx_h2orof_drain       , & ! Input:  [real(r8) (:)   ] drainange from floodplain inundation volume (mm H2O/s) 
 
           eflx_lwrad_out             =>    veg_ef%eflx_lwrad_out       , & ! Input:  [real(r8) (:)   ]  emitted infrared (longwave) radiation (W/m**2)
           eflx_lwrad_net             =>    veg_ef%eflx_lwrad_net       , & ! Input:  [real(r8) (:)   ]  net infrared (longwave) rad (W/m**2) [+ = to atm]
@@ -319,7 +320,7 @@ contains
                   - (forc_rain_col(c) + forc_snow_col(c)  + qflx_floodc(c) + qflx_surf_irrig_col(c) + qflx_over_supply_col(c) &
                   - qflx_evap_tot(c) - qflx_surf(c)  - qflx_h2osfc_surf(c) &
                   - qflx_qrgwl(c) - qflx_drain(c) - qflx_drain_perched(c) - qflx_snwcp_ice(c) &
-                  - qflx_lateral(c)) * dtime
+                  - qflx_lateral(c) + qflx_h2orof_drain(c)) * dtime
              dwb(c) = (endwb(c)-begwb(c))/dtime
 
           else
@@ -390,6 +391,7 @@ contains
              write(iulog,*)'qflx_snwcp_ice             = ',qflx_snwcp_ice(indexc)
              write(iulog,*)'qflx_lateral               = ',qflx_lateral(indexc)
              write(iulog,*)'total_plant_stored_h2o_col = ',total_plant_stored_h2o_col(indexc)
+             write(iulog,*)'qflx_h2orof_drain          = ',qflx_h2orof_drain(indexc)
              write(iulog,*)'elm model is stopping'
              call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
 
@@ -420,6 +422,7 @@ contains
              write(iulog,*)'qflx_glcice_frz            = ',qflx_glcice_frz(indexc)
              write(iulog,*)'qflx_lateral               = ',qflx_lateral(indexc)
              write(iulog,*)'total_plant_stored_h2o_col = ',total_plant_stored_h2o_col(indexc)
+             write(iulog,*)'qflx_h2orof_drain          = ',qflx_h2orof_drain(indexc)
              write(iulog,*)'elm model is stopping'
              call endrun(decomp_index=indexc, elmlevel=namec, msg=errmsg(__FILE__, __LINE__))
           end if

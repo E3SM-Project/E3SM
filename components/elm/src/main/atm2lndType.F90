@@ -113,7 +113,9 @@ module atm2lndType
      real(r8), pointer :: volrmch_grc                   (:)   => null() ! rof volr main channel (m3)
      real(r8), pointer :: supply_grc                    (:)   => null() ! rof volr supply (mm/s)
      real(r8), pointer :: deficit_grc                   (:)   => null() ! rof volr deficit (mm/s)
-	 
+     real(r8), pointer :: h2orof_grc                    (:)   => null() ! rof floodplain inundation volume [m3]
+     real(r8), pointer :: frac_h2orof_grc               (:)   => null() ! rof floodplain inundation fraction [-]
+ 
      ! anomaly forcing
      real(r8), pointer :: af_precip_grc                 (:)   => null() ! anomaly forcing 
      real(r8), pointer :: af_uwind_grc                  (:)   => null() ! anomaly forcing 
@@ -268,6 +270,8 @@ contains
     allocate(this%volrmch_grc                   (begg:endg))        ; this%volrmch_grc                   (:)   = ival
     allocate(this%supply_grc                    (begg:endg))        ; this%supply_grc                    (:)   = ival
     allocate(this%deficit_grc                   (begg:endg))        ; this%deficit_grc                   (:)   = ival
+    allocate(this%h2orof_grc                    (begg:endg))        ; this%h2orof_grc                    (:)   = ival
+    allocate(this%frac_h2orof_grc               (begg:endg))        ; this%frac_h2orof_grc               (:)   = ival
 
     ! anomaly forcing
     allocate(this%bc_precip_grc                 (begg:endg))        ; this%bc_precip_grc                 (:)   = ival
@@ -329,7 +333,7 @@ contains
     call hist_addfld1d (fname='VOLRMCH',  units='m3',  &
          avgflag='A', long_name='river channel main channel water storage', &
          ptr_lnd=this%volrmch_grc)
-		 
+
     this%supply_grc(begg:endg) = spval
     call hist_addfld1d (fname='SUPPLY',  units='mm/s',  &
          avgflag='A', long_name='runoff supply for land use', &
@@ -339,6 +343,17 @@ contains
     call hist_addfld1d (fname='DEFICIT',  units='mm/s',  &
          avgflag='A', long_name='runoff supply deficit', &
          ptr_lnd=this%deficit_grc)
+
+    this%h2orof_grc(begg:endg) = spval
+    call hist_addfld1d(fname='H2OROF',  units='mm',             &
+         avgflag='A', long_name='floodplain inundation volume', &
+         ptr_lnd=this%h2orof_grc, default='inactive')
+
+    this%frac_h2orof_grc(begg:endg) = spval
+    call hist_addfld1d(fname='FRAC_H2OROF',  units='1',           &
+         avgflag='A', long_name='floodplain inundation fraction', &
+         ptr_lnd=this%frac_h2orof_grc, default='inactive')
+
 
 !    this%forc_wind_grc(begg:endg) = spval
 !    call hist_addfld1d (fname='WIND', units='m/s',  &
