@@ -37,12 +37,13 @@ module VegetationType
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use elm_varcon     , only : ispval
   use elm_varctl     , only : use_fates, iac_active
-  use elm_varctl, only :  iulog
+  use elm_varctl     , only :  iulog
   !
   ! !PUBLIC TYPES:
   implicit none
   save
   private
+
   !-----------------------------------------------------------------------
   ! Define the data structure that holds physical property information at the vegetation level.
   !-----------------------------------------------------------------------
@@ -68,6 +69,7 @@ module VegetationType
      logical , pointer :: is_veg        (:) => null() ! This is an ACTIVE fates patch
      logical , pointer :: is_bareground (:) => null() ! ?
      real(r8), pointer :: wt_ed         (:) => null() ! TODO mv ? can this be removed
+     real(r8), pointer :: sp_pftorder_index (:) => null() ! index to map 'p' onto the order of FATES patches in SP mode.
      logical , pointer :: is_fates      (:) => null() ! true for patch vector space reserved
                                                       ! for FATES.
                                                       ! this is static and is true for all 
@@ -79,6 +81,7 @@ module VegetationType
      procedure, public :: Init => veg_pp_init
      procedure, public :: Clean => veg_pp_clean
      
+
   end type vegetation_physical_properties
 
   !-----------------------------------------------------------------------
@@ -86,6 +89,7 @@ module VegetationType
   !-----------------------------------------------------------------------
   type(vegetation_physical_properties)   , public, target :: veg_pp    ! vegetation physical properties
 
+  !$acc declare create(veg_pp)
   !------------------------------------------------------------------------
 
 contains
@@ -118,14 +122,14 @@ contains
        allocate(this%is_veg  (begp:endp)); this%is_veg  (:) = .false.
        allocate(this%is_bareground (begp:endp)); this%is_bareground (:) = .false.
        allocate(this%wt_ed      (begp:endp)); this%wt_ed      (:) = nan 
+       allocate(this%sp_pftorder_index      (begp:endp)); this%sp_pftorder_index      (:) = nan
     end if
 
-! avd
-write(iulog,*) 'in veg_pp_init iac_active is ', iac_active
+    ! avd
+    write(iulog,*) 'in veg_pp_init iac_active is ', iac_active
     if (iac_active) then
        allocate(this%wtgcell_iac   (begp:endp)); this%wtgcell (:) = nan
     end if
-
 	end subroutine veg_pp_init
 
   !------------------------------------------------------------------------
@@ -152,11 +156,12 @@ write(iulog,*) 'in veg_pp_init iac_active is ', iac_active
        deallocate(this%is_veg)
        deallocate(this%is_bareground)
        deallocate(this%wt_ed)
+       deallocate(this%sp_pftorder_index)
     end if
-
     if (iac_active) then
        deallocate(this%wtgcell_iac)
     end if
+
 
   end subroutine veg_pp_clean
 

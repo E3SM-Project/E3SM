@@ -9,6 +9,7 @@ module dynSubgridDriverMod
   ! dynamic landunits).
   !
   ! !USES:
+  use shr_kind_mod           , only : r8 => shr_kind_r8
   use dynSubgridControlMod, only : get_flanduse_timeseries
   use dynSubgridControlMod, only : get_do_transient_pfts, get_do_transient_crops
   use dynSubgridControlMod, only : get_do_harvest
@@ -17,25 +18,16 @@ module dynSubgridDriverMod
   use dynColumnStateUpdaterMod     , only : column_state_updater_type
   use UrbanParamsType     , only : urbanparams_type
   use CanopyStateType     , only : canopystate_type
-  use CNCarbonFluxType    , only : carbonflux_type
-  use CNCarbonStateType   , only : carbonstate_type
   use CNStateType         , only : cnstate_type
-  use CNNitrogenFluxType  , only : nitrogenflux_type
-  use CNNitrogenStateType , only : nitrogenstate_type
   use EnergyFluxType      , only : energyflux_type
   use LakeStateType       , only : lakestate_type
   use PhotosynthesisType  , only : photosyns_type
   use SoilHydrologyType   , only : soilhydrology_type  
   use SoilStateType       , only : soilstate_type
-  use WaterfluxType       , only : waterflux_type
-  use WaterstateType      , only : waterstate_type
-  use TemperatureType     , only : temperature_type
   use glc2lndMod          , only : glc2lnd_type
   use iac2lndMod          , only : iac2lnd_type
   use dynLandunitAreaMod  , only : update_landunit_weights
   use CropType            , only : crop_type
-  use PhosphorusStateType , only : phosphorusstate_type
-  use PhosphorusFluxType  , only : phosphorusflux_type
   use dyncropFileMod      , only : dyncrop_init, dyncrop_interp
   use filterMod           , only : filter, filter_inactive_and_active
 
@@ -44,6 +36,13 @@ module dynSubgridDriverMod
   use ColumnDataType      , only : col_ns, col_ps
   use VegetationDataType  , only : vegetation_carbon_state, veg_ns, veg_ps
 
+  use elm_varctl          , only : iac_active
+  use shr_log_mod         , only : errMsg => shr_log_errMsg
+  use decompMod           , only : bounds_type, BOUNDS_LEVEL_PROC
+  use shr_kind_mod        , only : r8 => shr_kind_r8
+  use ColumnType          , only : col_pp
+  use VegetationType      , only : veg_pp
+  use elm_varctl          , only : iulog
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -53,6 +52,11 @@ module dynSubgridDriverMod
   public :: dynSubgrid_init             ! initialize transient land cover
   public :: dynSubgrid_driver           ! top-level driver for transient land cover
   public :: dynSubgrid_wrapup_weight_changes ! reconcile various variables after subgrid weights change
+
+  ! !PRIVATE MEMBER FUNCTIONS:
+  private :: dyn_iac_init          ! init for iac instead of files
+  private :: set_iac_veg_weights   ! calc veg_pp weights with iac
+
   !
   ! !PRIVATE TYPES:
   ! saved weights from before the subgrid weight updates
@@ -121,6 +125,11 @@ contains
        call dyncrop_init(bounds, dyncrop_filename=get_flanduse_timeseries())
     end if
 
+    ! Initialize for iac instead of files
+    if (iac_active) then
+       call dyn_iac_init(bounds)
+    end if
+
     ! ------------------------------------------------------------------------
     ! Set initial subgrid weights for aspects that are read from file. This is relevant
     ! for cold start and use_init_interp-based initialization.
@@ -146,14 +155,10 @@ contains
   !-----------------------------------------------------------------------
   subroutine dynSubgrid_driver(bounds_proc, &
        urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
-       waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars, &
-       canopystate_vars, photosyns_vars, cnstate_vars, &
+       energyflux_vars, canopystate_vars, photosyns_vars, cnstate_vars, &
        veg_cs, c13_veg_cs, c14_veg_cs, &
        col_cs, c13_col_cs, c14_col_cs, col_cf, &
-       grc_cs, grc_cf, &
-       carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
-       nitrogenstate_vars, nitrogenflux_vars, glc2lnd_vars,&
-       phosphorusstate_vars,phosphorusflux_vars, crop_vars, iac2lnd_vars)
+       grc_cs, grc_cf, glc2lnd_vars, crop_vars, iac2lnd_vars)
     !
     ! !DESCRIPTION:
     ! Update subgrid weights for prescribed transient Patches and/or dynamic
@@ -166,24 +171,26 @@ contains
     ! OUTSIDE any loops over clumps in the driver.
     !
     ! !USES:
-    use clm_varctl           , only : use_cn, create_glacier_mec_landunit, use_fates, iac_active
+    use elm_varctl           , only : use_cn, create_glacier_mec_landunit, use_fates, iac_active
     use decompMod            , only : bounds_type, get_proc_clumps, get_clump_bounds
     use decompMod            , only : BOUNDS_LEVEL_PROC
     use dynInitColumnsMod    , only : initialize_new_columns
     use dynConsBiogeophysMod , only : dyn_hwcontent_init, dyn_hwcontent_final
     use dynConsBiogeochemMod , only : dyn_cnbal_patch, dyn_cnbal_column
     use dynpftFileMod        , only : dynpft_interp
-    use dynHarvestMod        , only : dynHarvest_interp
+    use dynHarvestMod        , only : dynHarvest_interp_harvest_types
     use dynEDMod             , only : dyn_ED
     use reweightMod          , only : reweight_wrapup
     use subgridWeightsMod    , only : compute_higher_order_weights, set_subgrid_diagnostic_fields
     use CarbonStateUpdate1Mod   , only : CarbonStateUpdateDynPatch
     use NitrogenStateUpdate1Mod   , only : NitrogenStateUpdateDynPatch
     use PhosphorusStateUpdate1Mod     , only : PhosphorusStateUpdateDynPatch
-
-! avd
-use clm_varctl, only :  iulog
-!use shr_sys_mod            , only : shr_sys_flush
+    use dynPatchStateUpdaterMod   , only : set_old_patch_weights, set_new_patch_weights
+    use dynColumnStateUpdaterMod  , only : set_old_column_weights, set_new_column_weights
+    use dynPriorWeightsMod        , only : set_prior_weights
+    use clm_time_manager , only : get_step_size
+    ! avd
+    use clm_varctl, only :  iulog
 
     !
     ! !ARGUMENTS:
@@ -192,9 +199,6 @@ use clm_varctl, only :  iulog
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
     type(lakestate_type)     , intent(in)    :: lakestate_vars
-    type(waterstate_type)    , intent(inout) :: waterstate_vars
-    type(waterflux_type)     , intent(inout) :: waterflux_vars
-    type(temperature_type)   , intent(inout) :: temperature_vars
     type(energyflux_type)    , intent(inout) :: energyflux_vars
     type(canopystate_type)   , intent(inout) :: canopystate_vars
     type(photosyns_type)     , intent(inout) :: photosyns_vars
@@ -208,15 +212,8 @@ use clm_varctl, only :  iulog
     type(column_carbon_flux)     , intent(inout) :: col_cf
     type(gridcell_carbon_state)  , intent(inout) :: grc_cs
     type(gridcell_carbon_flux)   , intent(inout) :: grc_cf
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(carbonflux_type)    , intent(inout) :: c13_carbonflux_vars
-    type(carbonflux_type)    , intent(inout) :: c14_carbonflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
     type(glc2lnd_type)       , intent(inout) :: glc2lnd_vars
 
-    type(phosphorusstate_type) , intent(inout)    :: phosphorusstate_vars
-    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     type(crop_type)          , intent(inout) :: crop_vars
 
     type(iac2lnd_type)       , intent(inout) :: iac2lnd_vars
@@ -226,14 +223,14 @@ use clm_varctl, only :  iulog
     integer           :: nclumps      ! number of clumps on this processor
     integer           :: nc           ! clump index
     type(bounds_type) :: bounds_clump ! clump-level bounds
-
+    real(r8)          :: dt
     character(len=*), parameter :: subname = 'dynSubgrid_driver'
     !-----------------------------------------------------------------------
 
     SHR_ASSERT(bounds_proc%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
     nclumps = get_proc_clumps()
-    
+    dt = real(get_step_size(), r8)
     ! ==========================================================================
     ! Do initialization, prior to land cover change
     ! ==========================================================================
@@ -246,11 +243,11 @@ use clm_varctl, only :  iulog
             filter(nc)%num_nolakec, filter(nc)%nolakec, &
             filter(nc)%num_lakec, filter(nc)%lakec, &
             urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
-            waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars)
+            energyflux_vars)
 
-       call prior_weights%set_prior_weights(bounds_clump)
-       call patch_state_updater%set_old_weights(bounds_clump)
-       call column_state_updater%set_old_weights(bounds_clump)
+       call set_prior_weights(prior_weights, bounds_clump)
+       call set_old_patch_weights  (patch_state_updater,bounds_clump)
+       call set_old_column_weights (column_state_updater,bounds_clump)
     end do
     !$OMP END PARALLEL DO
 
@@ -267,7 +264,7 @@ use clm_varctl, only :  iulog
     end if
 
     if (get_do_harvest()) then
-       call dynHarvest_interp(bounds_proc)
+       call dynHarvest_interp_harvest_types(bounds_proc)
     end if
 
     ! pft and harvest come from iac when active
@@ -294,6 +291,9 @@ use clm_varctl, only :  iulog
        if (create_glacier_mec_landunit) then
           call glc2lnd_vars%update_glc2lnd(bounds_clump)
        end if
+       !if (create_glacier_mec_landunit) then
+      !    call glc2lnd_vars_update_glc2lnd_acc(glc2lnd_vars ,bounds_clump)
+       !end if
 
        ! Everything following this point in this loop only needs to be called if we have
        ! actually changed some weights in this time step. This is also required in the
@@ -301,20 +301,21 @@ use clm_varctl, only :  iulog
        ! (particularly mask that is past through coupler).
 
        call dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
-       call patch_state_updater%set_new_weights(bounds_clump)
-       call column_state_updater%set_new_weights(bounds_clump, nc)
+       call set_new_patch_weights (patch_state_updater ,bounds_clump)
+       call set_new_column_weights(column_state_updater,bounds_clump, nc)
+
 
        call set_subgrid_diagnostic_fields(bounds_clump)
 
        call initialize_new_columns(bounds_clump, &
-            prior_weights%cactive(bounds_clump%begc:bounds_clump%endc), &
-            temperature_vars, waterstate_vars, soilhydrology_vars)
+            prior_weights%cactive(bounds_clump%begc:bounds_clump%endc), soilhydrology_vars )
+
 
        call dyn_hwcontent_final(bounds_clump, &
             filter(nc)%num_nolakec, filter(nc)%nolakec, &
             filter(nc)%num_lakec, filter(nc)%lakec, &
             urbanparams_vars, soilstate_vars, soilhydrology_vars, lakestate_vars, &
-            waterstate_vars, waterflux_vars, temperature_vars, energyflux_vars)
+            energyflux_vars, dt)
 
        if (use_cn) then
           call dyn_cnbal_patch(bounds_clump, &
@@ -324,26 +325,24 @@ use clm_varctl, only :  iulog
                patch_state_updater, &
                canopystate_vars, photosyns_vars, cnstate_vars, &
                veg_cs, c13_veg_cs, c14_veg_cs, &
-               carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, &
-               nitrogenstate_vars, nitrogenflux_vars, &
-               veg_ns, &
-               phosphorusstate_vars,phosphorusflux_vars, veg_ps)
+               veg_ns, veg_ps, dt)
 
+          ! Transfer root/seed litter C/N/P to decomposer pools
           call CarbonStateUpdateDynPatch(bounds_clump, &
-               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
-               grc_cs, grc_cf, col_cs, col_cf)
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc,dt)
 
           call NitrogenStateUpdateDynPatch(bounds_clump, &
-               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
-               nitrogenflux_vars, nitrogenstate_vars)
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc,dt)
 
           call PhosphorusStateUpdateDynPatch(bounds_clump, &
-               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc, &
-               phosphorusflux_vars, phosphorusstate_vars)
+               filter_inactive_and_active(nc)%num_soilc, filter_inactive_and_active(nc)%soilc,dt)
 
+       end if
+
+       if(use_cn .or. use_fates)then
           call dyn_cnbal_column(bounds_clump, nc, column_state_updater, &
                col_cs, c13_col_cs, c14_col_cs, &
-               phosphorusstate_vars, col_ns, col_ps )
+               col_ns, col_ps )
        end if
 
     end do
@@ -356,7 +355,7 @@ use clm_varctl, only :  iulog
     !
     ! !DESCRIPTION:
     ! Reconcile various variables after subgrid weights change
-    !
+    !$acc routine seq
     ! !USES:
     use decompMod         , only : bounds_type
     use subgridWeightsMod , only : compute_higher_order_weights
@@ -371,19 +370,189 @@ use clm_varctl, only :  iulog
 
     character(len=*), parameter :: subname = 'dynSubgrid_wrapup_weight_changes'
     !-----------------------------------------------------------------------
-
-    SHR_ASSERT(bounds_clump%level == BOUNDS_LEVEL_CLUMP, subname // ': argument must be CLUMP-level bounds')
+    associate( &
+      icemask_grc => glc2lnd_vars%icemask_grc &
+      )
+    !SHR_ASSERT(bounds_clump%level == BOUNDS_LEVEL_CLUMP, subname // ': argument must be CLUMP-level bounds')
 
     call update_landunit_weights(bounds_clump)
 
     call compute_higher_order_weights(bounds_clump)
 
+    if (iac_active) then
+       ! make sure weights are all in order before applying the new pft wts
+       ! this is because the active elements need to be correct
+       call reweight_wrapup(bounds_clump, &
+            glc2lnd_vars%icemask_grc(bounds_clump%begg:bounds_clump%endg))
+       call set_iac_veg_weights(bounds_clump)
+    end if
+
     ! Here: filters are re-made
     !
     ! This call requires clump-level bounds, which is why we need to ensure that the
     ! argument to this routine is clump-level bounds
-    call reweight_wrapup(bounds_clump, glc2lnd_vars%icemask_grc(bounds_clump%begg:bounds_clump%endg))
+    call reweight_wrapup(bounds_clump, icemask_grc(bounds_clump%begg:bounds_clump%endg))
 
+    end associate
   end subroutine dynSubgrid_wrapup_weight_changes
+
+ !-----------------------------------------------------------------------
+  subroutine dyn_iac_init(bounds)
+    !
+    ! !DESCRIPTION:
+    ! Initialize data structures for harvest information and check pft #s
+    ! Copies initial weights into iac weight array
+    ! This should be called once, during model initialization.
+    ! !USES:
+    use dynHarvestMod   , only : harvest, do_cn_harvest
+    use clm_varpar     , only : numpft, maxpatch_pft
+    use abortutils          , only : endrun
+    !
+    ! !ARGUMENTS:
+    type(bounds_type), intent(in) :: bounds           ! proc-level bounds
+    !
+    ! !LOCAL VARIABLES:
+    integer :: ier        ! error code
+    integer :: p
+
+    character(len=*), parameter :: subname = 'dyn_iac_init'
+  !-----------------------------------------------------------------------
+
+    SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // &
+                     ': argument must be PROC-level bounds')
+
+    allocate(harvest(bounds%begg:bounds%endg),stat=ier)
+    if (ier /= 0) then
+       call endrun(msg=' allocation error for harvest'//errMsg(__FILE__, &
+                          __LINE__))
+    end if
+
+    harvest(:) = 0._r8
+
+    if ( maxpatch_pft /= numpft+1 ) then
+       call endrun(msg=' maxpatch_pft does NOT equal numpft+1'// &
+                   ' -- this is invalid for dynamic PFT case'// &
+                   'for dynamic PFT case'// &
+                   errMsg(__FILE__, __LINE__) )
+    end if
+
+    ! set the cn harveset flag
+    do_cn_harvest = .true.
+
+    ! fill the iac weights with initial values
+    ! so that dynsubgrid_wrapup_weight_changes works in init
+    do p = bounds%begp, bounds%endp
+       veg_pp%wtgcell_iac(p) = veg_pp%wtgcell(p)
+    end do
+
+  end subroutine dyn_iac_init
+
+  !-----------------------------------------------------------------------
+  subroutine set_iac_veg_weights(bounds)
+    !
+    ! !DESCRIPTION:
+    ! Set veg_pp weights from veg_pp%wtgcell_iac
+    ! The wtcol value sums need to be normalized to 1
+    ! This is called after all other weights have been updated,
+    !    and before checks, if the iac is active
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    implicit none
+    type(bounds_type), intent(in) :: bounds  ! clump bounds
+    !
+    ! !LOCAL VARIABLES:
+    integer :: p, c, l, t, g      ! indices for pft, col, lu, topo, gcell
+    real(r8), allocatable :: sumwtcol(:), sumwtlunit(:), sumwttopounit(:), &
+                             sumwtgcell(:)
+    character(len=*), parameter :: subname = 'set_iac_veg_weights'
+    logical :: weights_equal_1
+    real(r8), parameter :: tolerance = 1.e-12_r8  ! tolerance for weight sums
+  !-----------------------------------------------------------------------
+
+    allocate(sumwtcol(bounds%begc:bounds%endc))
+    sumwtcol(bounds%begc : bounds%endc) = 0._r8
+    allocate(sumwtlunit(bounds%begl:bounds%endl))
+    sumwtlunit(bounds%begl : bounds%endl) = 0._r8
+    allocate(sumwttopounit(bounds%begt:bounds%endt))
+    sumwttopounit(bounds%begt : bounds%endt) = 0._r8
+    allocate(sumwtgcell(bounds%begg:bounds%endg))
+    sumwtgcell(bounds%begg : bounds%endg) = 0._r8
+
+    ! First calc the wtcol and sum the values
+    ! fill bare pft value if col wtgcell is zero
+    ! calculate the higher order wts
+    do p = bounds%begp, bounds%endp
+       c = veg_pp%column(p)
+       l = veg_pp%landunit(p)
+       t = veg_pp%topounit(p)
+       g = veg_pp%gridcell(p)
+       if (col_pp%wtgcell(c) .eq. 0._r8) then
+          !write(iulog,*) subname//'setting wtcol to zero' // &
+           !              'for p, c, l, g ', p,c,l,g
+          if (veg_pp%itype(p) .eq. 0) then
+             veg_pp%wtcol(p) = 1._r8
+          else
+             veg_pp%wtcol(p) = 0._r8
+          end if
+       else
+          veg_pp%wtcol(p) = veg_pp%wtgcell_iac(p) / col_pp%wtgcell(c)
+       end if
+       veg_pp%wtlunit(p)    = veg_pp%wtcol(p) * col_pp%wtlunit(c)
+       veg_pp%wttopounit(p) = veg_pp%wtcol(p) * col_pp%wttopounit(c)
+       veg_pp%wtgcell(p)    = veg_pp%wtcol(p) * col_pp%wtgcell(c)
+       ! get the sums for normalizing below
+       sumwtcol(c) = sumwtcol(c) + veg_pp%wtcol(p)
+       !sumwtlunit(l) = sumwtlunit(l) + veg_pp%wtlunit(p)
+       !sumwttopounit(t) = sumwttopounit(t) + veg_pp%wttopounit(p)
+       !sumwtgcell(g) = sumwtgcell(g) + veg_pp%wtgcell(p)
+    end do
+
+    ! Normalize the wtcol if necessary and recalc higher order weights
+    do c = bounds%begc,bounds%endc
+       weights_equal_1 = (abs(sumwtcol(c) - 1._r8) <= tolerance)
+       if (.not.weights_equal_1) then
+          !write(iulog,*) subname//'weights not equal 1, sumwtcol = ', &
+                !           sumwtcol(c), 'c= ', c
+          do p = bounds%begp, bounds%endp
+             if (veg_pp%column(p) .eq. c) then
+                if (sumwtcol(c) .eq. 0._r8) then
+                   write(iulog,*) subname//'setting wtcol to zero'// &
+                                  'for p, c, l, g ', p,c,l,g
+                   veg_pp%wtcol(p) = 0._r8
+                else
+                   veg_pp%wtcol(p) = veg_pp%wtcol(p) / sumwtcol(c)
+                end if
+                veg_pp%wtlunit(p)    = veg_pp%wtcol(p) * col_pp%wtlunit(c)
+                veg_pp%wttopounit(p) = veg_pp%wtcol(p) * col_pp%wttopounit(c)
+                veg_pp%wtgcell(p)    = veg_pp%wtcol(p) * col_pp%wtgcell(c)
+
+
+                ! get the higher order sums
+                !l = veg_pp%landunit(p)
+                !t = veg_pp%topounit(p)
+                !g = veg_pp%gridcell(p)
+                !sumwtlunit(l) = sumwtlunit(l) + veg_pp%wtlunit(p)
+                !sumwttopounit(t) = sumwttopounit(t) + veg_pp%wttopounit(p)
+                !sumwtgcell(g) = sumwtgcell(g) + veg_pp%wtgcell(p)
+
+             end if
+          end do
+       end if
+    end do
+
+    ! Normalize the wtlunit if necessary and recalc higher order weights
+
+    ! Normalize the wttopounit if necessary and recalc higher order weights
+
+    ! Normalize the wtgcell if necessary and recalc higher order weights
+
+    deallocate(sumwtcol)
+    deallocate(sumwtlunit)
+    deallocate(sumwttopounit)
+    deallocate(sumwtgcell)
+
+  endsubroutine set_iac_veg_weights
 
 end module dynSubgridDriverMod
