@@ -6,11 +6,11 @@ module dynHarvestMod
   ! !DESCRIPTION:
   ! Handle reading of the harvest data, as well as the state updates that happen as a
   ! result of harvest.
-  !
+  
   ! Currently, it is assumed that the harvest data are on the flanduse_timeseries file. However, this
   ! could theoretically be changed so that the harvest data were separated from the
   ! pftdyn data, allowing them to differ in the years over which they apply.
-  !
+  
   ! !USES:
   use shr_kind_mod          , only : r8 => shr_kind_r8
   use shr_log_mod           , only : errMsg => shr_log_errMsg
@@ -19,19 +19,18 @@ module dynHarvestMod
   use dynFileMod            , only : dyn_file_type
   use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
   use CNStateType           , only : cnstate_type
-  use CNCarbonStateType     , only : carbonstate_type
-  use CNNitrogenStateType   , only : nitrogenstate_type
-  use CNCarbonFluxType      , only : carbonflux_type
-  use CNNitrogenFluxType    , only : nitrogenflux_type
    use VegetationPropertiesType        , only : veg_vp
-  use clm_varcon            , only : grlnd
-  use PhosphorusStateType   , only : phosphorusstate_type
-  use PhosphorusFluxType    , only : phosphorusflux_type
+  use elm_varcon            , only : grlnd
   use ColumnType            , only : col_pp
   use ColumnDataType        , only : col_cf, col_nf, col_pf  
   use VegetationType        , only : veg_pp                
   use VegetationDataType    , only : veg_cs, veg_cf, veg_ns, veg_nf  
+  use topounit_varcon      , only : max_topounits
   use VegetationDataType    , only : veg_ps, veg_pf  
+  use VegetationDataType    , only : veg_ps, veg_pf
+  use elm_varctl            , only : use_cn, use_fates, iulog
+  use FatesConstantsMod      , only : hlm_harvest_area_fraction
+  use FatesConstantsMod      , only : hlm_harvest_carbon
 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
@@ -39,12 +38,12 @@ module dynHarvestMod
   private
   save
   public :: dynHarvest_init    ! initialize data structures for harvest information
-  public :: dynHarvest_interp  ! get harvest data for current time step, if needed
-  public :: CNHarvest          ! harvest mortality routine for CN code
+  public :: dynHarvest_interp_harvest_types  ! get harvest data for each harvest type, if needed
+  public :: CNHarvest          ! harvest mortality routine for CN code (non-FATES)
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: CNHarvestPftToColumn   ! gather pft-level harvest fluxes to the column level
-  !
+  
   ! !PRIVATE TYPES:
 
   ! Note that, since we have our own dynHarvest_file object (distinct from dynpft_file),
@@ -52,10 +51,31 @@ module dynHarvestMod
   ! the pftdyn data
   type(dyn_file_type), target :: dynHarvest_file ! information for the file containing harvest data
 
-  ! Define the underlying harvest variables
-  integer, parameter :: num_harvest_vars = 5
-  character(len=64), parameter :: harvest_varnames(num_harvest_vars) = &
+  ! Define the underlying input harvest variables
+  ! these are hardcoded to match the LUH input data
+  ! these are fraction of vegetated area harvested, split into five harvest type variables
+  ! in next iteration (v3) change these to fraction of grid cell
+  ! HARVEST_VH1 = harvest from primary forest
+  ! HARVEST_VH2 = harvest from primary non-forest
+  ! HARVEST_SH1 = harvest from secondary mature forest
+  ! HARVEST_SH2 = harvest from secondary young forest
+  ! HARVEST_SH3 = harvest from secondary non-forest
+  ! note that these are summed for CNHarvest in harvest(:) and applied to total forest area only
+  ! the individual category rates are passed to fates in harvest_rates(:,:)
+
+  ! for FATES: capacity for passing harvest data in units of carbon harvested per year (per grid cell) has been added
+  ! but these data are not yet included in the input file
+  ! the code here can be changed to wood_harvest_units = harvest_carbon to pass carbon data to FATES if:
+  !  the carbon data are in the same input variables as listed below
+  !  and the carbon units in the input file match that expected by FATES
+
+  integer, public, parameter :: num_harvest_vars = 5
+  character(len=64), public, parameter :: harvest_varnames(num_harvest_vars) = &
        [character(len=64) :: 'HARVEST_VH1', 'HARVEST_VH2', 'HARVEST_SH1', 'HARVEST_SH2', 'HARVEST_SH3']
+  ! the units flag must match the units of harvest_varnames
+  ! set this here because dynHarvest_init is called after alm_fates%init
+  ! this flag is accessed only if namelist do_harvest is TRUE
+  integer, public          :: wood_harvest_units = hlm_harvest_area_fraction
   
   type(dyn_var_time_uninterp_type) :: harvest_vars(num_harvest_vars)   ! value of each harvest variable
 
@@ -68,25 +88,23 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine dynHarvest_init(bounds, harvest_filename)
-    !
+    
     ! !DESCRIPTION:
     ! Initialize data structures for harvest information.
     ! This should be called once, during model initialization.
     ! 
-    ! This also calls dynHarvest_interp for the initial time
-    !
-    ! !USES:
-    use clm_varctl            , only : use_cn
+    use elm_varctl            , only : use_cn
     use dynVarTimeUninterpMod , only : dyn_var_time_uninterp_type
     use dynTimeInfoMod        , only : YEAR_POSITION_START_OF_TIMESTEP
     use dynTimeInfoMod        , only : YEAR_POSITION_END_OF_TIMESTEP
-    !
+    
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds           ! proc-level bounds
     character(len=*) , intent(in) :: harvest_filename ! name of file containing harvest information
-    !
+    
     ! !LOCAL VARIABLES:
     integer :: varnum     ! counter for harvest variables
+    integer :: harvest_shape(1)  ! harvest shape 
     integer :: num_points ! number of spatial points
     integer :: ier        ! error code
     
@@ -95,34 +113,36 @@ contains
 
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
-    allocate(harvest(bounds%begg:bounds%endg),stat=ier)
+    allocate(harvest_rates(num_harvest_vars,bounds%begg:bounds%endg),stat=ier)
+    harvest_rates(:,bounds%begg:bounds%endg) = 0._r8
     if (ier /= 0) then
-       call endrun(msg=' allocation error for harvest'//errMsg(__FILE__, __LINE__))
+       call endrun(msg=' allocation error for harvest_rates'//errMsg(__FILE__, __LINE__))
     end if
 
     !dynHarvest_file = dyn_file_type(harvest_filename, YEAR_POSITION_START_OF_TIMESTEP)
     dynHarvest_file = dyn_file_type(harvest_filename, YEAR_POSITION_END_OF_TIMESTEP)
     
     ! Get initial harvest data
-    if (use_cn) then
+    if (use_cn .or. use_fates) then
        num_points = (bounds%endg - bounds%begg + 1)
+       harvest_shape(1) = num_points
        do varnum = 1, num_harvest_vars
           harvest_vars(varnum) = dyn_var_time_uninterp_type( &
                dyn_file=dynHarvest_file, varname=harvest_varnames(varnum), &
                dim1name=grlnd, conversion_factor=1.0_r8, &
-               do_check_sums_equal_1=.false., data_shape=[num_points])
+               do_check_sums_equal_1=.false., data_shape=harvest_shape)
        end do
-       call dynHarvest_interp(bounds)
+
     end if
     
   end subroutine dynHarvest_init
 
-
   !-----------------------------------------------------------------------
-  subroutine dynHarvest_interp(bounds)
+  subroutine dynHarvest_interp_harvest_types(bounds)
     !
     ! !DESCRIPTION:
-    ! Get harvest data for model time, when needed.
+    ! Get harvest data for model time, by land category, when needed.
+    ! this function called only for CN (non-FATES) or FATES
     !
     ! Note that harvest data are stored as rates (not weights) and so time interpolation
     ! is not necessary - the harvest rate is held constant through the year.  This is
@@ -130,29 +150,28 @@ contains
     ! annual endpoint weights leads to a constant rate of change in PFT weight through the
     ! year, with abrupt changes in the rate at annual boundaries.
     !
+    ! Note the difference between this and the old dynHarvest_interp is that here, we keep the different
+    ! forcing sets distinct (e.g., for passing to FATES which has distinct primary and secondary lands)
+    ! and thus store it in harvest_rates
+    !
     ! !USES:
-    use clm_varctl     , only : use_cn
     use dynTimeInfoMod , only : time_info_type
+    use elm_varctl            , only : use_cn, use_fates
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds  ! proc-level bounds
-    !
+    
     ! !LOCAL VARIABLES:
     integer               :: varnum       ! counter for harvest variables
     real(r8), allocatable :: this_data(:) ! data for a single harvest variable
-
-    character(len=*), parameter :: subname = 'dynHarvest_interp'
+    character(len=*), parameter :: subname = 'dynHarvest_interp_harvest_types'
     !-----------------------------------------------------------------------
-
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
-    ! As a workaround for an internal compiler error with ifort 13.1.2 on goldbach, call
-    ! the specific name of this procedure rather than using its generic name
-    call dynHarvest_file%time_info%set_current_year_get_year()
-
-    ! Get total harvest for this time step
-    if (use_cn) then
-       harvest(bounds%begg:bounds%endg) = 0._r8
+    ! input harvest data for current year are stored in year+1 in the file
+    call dynHarvest_file%time_info%set_current_year_get_year(1)
+    if (use_cn .or. use_fates) then
+       harvest_rates(1:num_harvest_vars,bounds%begg:bounds%endg) = 0._r8
 
        if (dynHarvest_file%time_info%is_before_time_series()) then
           ! Turn off harvest before the start of the harvest time series
@@ -165,50 +184,41 @@ contains
           allocate(this_data(bounds%begg:bounds%endg))
           do varnum = 1, num_harvest_vars
              call harvest_vars(varnum)%get_current_data(this_data)
-             harvest(bounds%begg:bounds%endg) = harvest(bounds%begg:bounds%endg) + &
-                                                this_data(bounds%begg:bounds%endg)
+             harvest_rates(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
           end do
           deallocate(this_data)
        end if
     end if
-
-  end subroutine dynHarvest_interp
+  end subroutine dynHarvest_interp_harvest_types
 
 
   !-----------------------------------------------------------------------
-  subroutine CNHarvest (num_soilc, filter_soilc, num_soilp, filter_soilp, &
-       cnstate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
-       phosphorusstate_vars,phosphorusflux_vars)
+  subroutine CNHarvest (num_soilc, filter_soilc, num_soilp, filter_soilp, cnstate_vars)
     !
     ! !DESCRIPTION:
     ! Harvest mortality routine for coupled carbon-nitrogen code (CN)
-    !
+    
     ! !USES:
     use pftvarcon       , only : noveg, nbrdlf_evr_shrub, pprodharv10
-    use clm_varcon      , only : secspday
+    use elm_varcon      , only : secspday
     use clm_time_manager, only : get_days_per_year
-    !
+    use GridcellType   , only : grc_pp
+    
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                  , intent(in)    :: filter_soilc(:) ! column filter for soil points
     integer                  , intent(in)    :: num_soilp       ! number of soil patches in filter
     integer                  , intent(in)    :: filter_soilp(:) ! patch filter for soil points
     type(cnstate_type)       , intent(in)    :: cnstate_vars
-    type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-    type(nitrogenstate_type) , intent(in)    :: nitrogenstate_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-
-    type(phosphorusstate_type) , intent(in)    :: phosphorusstate_vars
-    type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
-    !
     ! !LOCAL VARIABLES:
     integer :: p                         ! patch index
+    integer :: t,ti,topi                 ! topounit indices TKT
     integer :: g                         ! gridcell index
     integer :: fp                        ! patch filter index
     real(r8):: am                        ! rate for fractional harvest mortality (1/yr)
     real(r8):: m                         ! rate for fractional harvest mortality (1/s)
     real(r8):: days_per_year             ! days per year
+    integer :: varnum                    ! counter for harvest variables
     !-----------------------------------------------------------------------
 
    associate(& 
@@ -357,6 +367,9 @@ contains
    do fp = 1,num_soilp
       p = filter_soilp(fp)
       g = pgridcell(p)
+      t = veg_pp%topounit(p)
+      topi = grc_pp%topi(g)
+      ti = t - topi + 1
       
       ! If this is a tree pft, then
       ! get the annual harvest "mortality" rate (am) from harvest array
@@ -364,7 +377,10 @@ contains
       if (ivt(p) > noveg .and. ivt(p) < nbrdlf_evr_shrub) then
 
          if (do_cn_harvest) then
-            am = harvest(g)
+            am = 0._r8
+            do varnum = 1, num_harvest_vars
+               am = am + harvest_rates(varnum,g)
+            end do
             m  = am/(days_per_year * secspday)
          else
             m = 0._r8
@@ -471,35 +487,26 @@ contains
    ! and litter P inputs
 
    call CNHarvestPftToColumn(num_soilc, filter_soilc, &
-      cnstate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
-      phosphorusstate_vars,phosphorusflux_vars)
+      cnstate_vars)
 
     end associate 
  end subroutine CNHarvest
 
  !-----------------------------------------------------------------------
  subroutine CNHarvestPftToColumn (num_soilc, filter_soilc, &
-      cnstate_vars, carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
-      phosphorusstate_vars,phosphorusflux_vars)
+      cnstate_vars)
    !
    ! !DESCRIPTION:
    ! called at the end of CNHarvest to gather all pft-level harvest litterfall fluxes
    ! to the column level and assign them to the three litter pools
-   !
+   
    ! !USES:
-   use clm_varpar , only : maxpatch_pft, nlevdecomp
+   use elm_varpar , only : maxpatch_pft, nlevdecomp
    !
    ! !ARGUMENTS:
    integer                   , intent(in)    :: num_soilc       ! number of soil columns in filter
    integer                   , intent(in)    :: filter_soilc(:) ! soil column filter
    type(cnstate_type)        , intent(in)    :: cnstate_vars
-   type(carbonstate_type)    , intent(in)    :: carbonstate_vars
-   type(nitrogenstate_type)  , intent(in)    :: nitrogenstate_vars
-   type(carbonflux_type)     , intent(inout) :: carbonflux_vars
-   type(nitrogenflux_type)   , intent(inout) :: nitrogenflux_vars
-   type(phosphorusstate_type), intent(in)    :: phosphorusstate_vars
-   type(phosphorusflux_type) , intent(inout) :: phosphorusflux_vars
-   !
    ! !LOCAL VARIABLES:
    integer :: fc,c,pi,p,j               ! indices
    !-----------------------------------------------------------------------

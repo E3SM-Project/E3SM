@@ -14,6 +14,7 @@ module atm_comp_mct
   use seq_timemgr_mod
 
   use shr_kind_mod     , only: r8 => shr_kind_r8, cl=>shr_kind_cl
+  use shr_kind_mod     , only: cs => shr_kind_cs
   use shr_file_mod     , only: shr_file_getunit, shr_file_freeunit, &
                                shr_file_setLogUnit, shr_file_setLogLevel, &
                                shr_file_getLogUnit, shr_file_getLogLevel, &
@@ -35,7 +36,8 @@ module atm_comp_mct
   use cam_restart      , only: get_restcase, get_restartdir
   use cam_history      , only: outfld, ctitle
   use cam_abortutils       , only: endrun
-  use filenames        , only: interpret_filename_spec, caseid, brnch_retain_casename
+  use filenames        , only: interpret_filename_spec, caseid, brnch_retain_casename, &
+                               hostname, username, version
 #ifdef SPMD
   use spmd_utils       , only: spmdinit, masterproc, iam, npes, nsmps, &
                                proc_smp_map
@@ -51,8 +53,8 @@ module atm_comp_mct
   use cam_logfile      , only: iulog
   use co2_cycle        , only: co2_readFlux_ocn, co2_readFlux_fuel
   use runtime_opts     , only: read_namelist
-  use scamMod          , only: use_camiop,single_column,scmlat,scmlon
-
+  use scamMod          , only: single_column,scmlat,scmlon
+  use lnd_infodata     , only: precip_downscaling_method !Precipitation downscaling method used in the land model
 !
 ! !PUBLIC TYPES:
   implicit none
@@ -149,8 +151,8 @@ CONTAINS
     integer :: perpetual_ymd    ! Perpetual date (YYYYMMDD)
     integer :: shrlogunit,shrloglev ! old values
     logical :: first_time = .true.
-    character(len=SHR_KIND_CS) :: calendar      ! Calendar type
-    character(len=SHR_KIND_CS) :: starttype     ! infodata start type
+    character(len=cs) :: calendar      ! Calendar type
+    character(len=cs) :: starttype     ! infodata start type
     character(len=8)           :: c_inst_index  ! instance number
     character(len=8)           :: c_npes        ! number of pes
     integer :: lbnum
@@ -178,7 +180,7 @@ CONTAINS
 
        ! Set filename specifier for restart surface file
        ! (%c=caseid, $y=year, $m=month, $d=day, $s=seconds in day)
-       rsfilename_spec_cam = '%c.cam' // trim(inst_suffix) // '.rs.%y-%m-%d-%s.nc' 
+       rsfilename_spec_cam = '%c.eam' // trim(inst_suffix) // '.rs.%y-%m-%d-%s.nc'
 
        ! Determine attribute vector indices
 
@@ -234,7 +236,7 @@ CONTAINS
 
        endif
 
-       call t_startf("shr_taskmap_write")
+       call t_startf('shr_taskmap_write')
        call shr_taskmap_write(iulog, mpicom_atm,                    &
                               'ATM #'//trim(adjustl(c_inst_index)), &
                               verbose=verbose_taskmap_output,       &
@@ -242,7 +244,7 @@ CONTAINS
                               save_nnodes=nsmps,                    &
                               save_task_node_map=proc_smp_map       )
        call shr_sys_flush(iulog)
-       call t_stopf("shr_taskmap_write")
+       call t_stopf('shr_taskmap_write')
 
        ! 
        ! Consistency check                              
@@ -259,6 +261,7 @@ CONTAINS
             start_type=starttype,                                                     &
             aqua_planet=aqua_planet,                                                  &
             brnch_retain_casename=brnch_retain_casename,                              &
+            hostname=hostname, username=username, model_version=version,              &
             single_column=single_column, scmlat=scmlat, scmlon=scmlon,                &
             orb_eccen=eccen, orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr, &
             lnd_present=lnd_present, ocn_present=ocn_present, iac_present=iac_present, & 
@@ -296,9 +299,11 @@ CONTAINS
        !
        ! Read namelist
        !
+       call t_startf('read_namelist')
        filein = "atm_in" // trim(inst_suffix)
        call read_namelist(single_column_in=single_column, scmlat_in=scmlat, &
             scmlon_in=scmlon, nlfilename_in=filein)
+       call t_stopf('read_namelist')
        !
        ! Initialize cam time manager
        !
@@ -319,9 +324,11 @@ CONTAINS
        ! Set defaults then override with user-specified input and initialize time manager
        ! Note that the following arguments are needed to cam_init for timemgr_restart only
        !
+       call t_startf('cam_init')
        call cam_init( cam_out, cam_in, mpicom_atm, &
             start_ymd, start_tod, ref_ymd, ref_tod, stop_ymd, stop_tod, &
             perpetual_run, perpetual_ymd, calendar)
+       call t_stopf('cam_init')
        !
        ! Check consistency of restart time information with input clock
        !
@@ -391,6 +398,11 @@ CONTAINS
        ! Note - cam_run1 is called on restart only to have cam internal state consistent with the 
        ! a2x_a state sent to the coupler
 
+       !Obtain the precipitation downscaling method from the land model
+       call seq_infodata_GetData( infodata,                                           &
+            precip_downscaling_method=precip_downscaling_method )
+
+
        ! Redirect share output to cam log
 
        call shr_file_getLogUnit (shrlogunit)
@@ -400,17 +412,25 @@ CONTAINS
        call seq_timemgr_EClockGetData(EClock,curr_ymd=CurrentYMD, StepNo=StepNo, dtime=DTime_Sync )
        if (StepNo == 0) then
           call atm_import( x2a_a%rattr, cam_in )
-	  if (single_column .and. use_camiop) then
-	    call scam_use_iop_srf( cam_in )
-	  endif
+
+          call t_startf('CAM_run1')
           call cam_run1 ( cam_in, cam_out ) 
+          call t_stopf('CAM_run1')
+          
           call atm_export( cam_out, a2x_a%rattr )
        else
+
+          call t_startf('atm_read_srfrest_mct')
           call atm_read_srfrest_mct( EClock, x2a_a, a2x_a )
+          call t_stopf('atm_read_srfrest_mct')
+
           ! Sent .true. as an optional argument so that restart_init is set to .true.  in atm_import
 	      ! This will ensure BFB restarts whenever qneg4 updates fluxes on the restart time step
           call atm_import( x2a_a%rattr, cam_in, .true. )
+
+          call t_startf('cam_run1')
           call cam_run1 ( cam_in, cam_out ) 
+          call t_stopf('cam_run1')
        end if
 
        ! Compute time of next radiation computation, like in run method for exact restart
@@ -530,7 +550,7 @@ CONTAINS
     ! Map input from mct to cam data structure
 
     call t_startf ('CAM_import')
-    call atm_import( x2a_a%rattr, cam_in )
+    call atm_import( x2a_a%rattr, cam_in, mon_spec=mon_sync )
     call t_stopf  ('CAM_import')
     
     ! Cycle over all time steps in the atm coupling interval
@@ -615,8 +635,10 @@ CONTAINS
     ! Write merged surface data restart file if appropriate
     
     if (rstwr_sync) then
+       call t_startf('atm_write_srfrest_mct')
        call atm_write_srfrest_mct( x2a_a, a2x_a, &
             yr_spec=yr_sync, mon_spec=mon_sync, day_spec=day_sync, sec_spec=tod_sync)
+       call t_stopf('atm_write_srfrest_mct')
     end if
     
     ! Check for consistency of internal cam clock with master sync clock 
@@ -656,7 +678,9 @@ CONTAINS
     type(mct_aVect)             ,intent(inout) :: x2a_a
     type(mct_aVect)             ,intent(inout) :: a2x_a
 
+    call t_startf('cam_final')
     call cam_final( cam_out, cam_in )
+    call t_stopf('cam_final')
 
   end subroutine atm_final_mct
 
@@ -743,10 +767,12 @@ CONTAINS
     !
     allocate(data(lsize))
     !
-    ! Initialize attribute vector with special value
+    ! Initialize attribute vector with special value,
+    ! then deallocate storage pointed to by idata
     !
     call mct_gsMap_orderedPoints(gsMap_a, iam, idata)
     call mct_gGrid_importIAttr(dom_a,'GlobGridNum',idata,lsize)
+    if (associated(idata)) deallocate(idata)
     !
     ! Determine domain (numbering scheme is: West to East and South to North to South pole)
     ! Initialize attribute vector with special value
@@ -923,7 +949,7 @@ CONTAINS
     fname_srf_cam = interpret_filename_spec( rsfilename_spec_cam, &
          yr_spec=yr_spec, mon_spec=mon_spec, day_spec=day_spec, sec_spec= sec_spec )
 
-    call cam_pio_createfile(File, fname_srf_cam, 0)
+    call cam_pio_createfile(File, fname_srf_cam)
     call pio_initdecomp(pio_subsystem, pio_double, (/ngcols/), dof, iodesc)
 
     nf_x2a = mct_aVect_nRattr(x2a_a)

@@ -26,6 +26,7 @@ module elm_cpl_indices
   integer , parameter, private :: iac_npft_max = 30  ! just for allocation
   integer, public :: iac_nharvest ! Number of harvest variables
   integer , parameter, private :: iac_nharvest_max = 5  ! just for allocation
+  integer , parameter, private :: glc_nec_max = 100
 
   ! lnd -> drv (required)
 
@@ -33,7 +34,10 @@ module elm_cpl_indices
   integer, public ::index_l2x_Flrl_rofgwl     ! lnd->rtm input liquid gwl fluxes
   integer, public ::index_l2x_Flrl_rofsub     ! lnd->rtm input liquid subsurface fluxes
   integer, public ::index_l2x_Flrl_rofi       ! lnd->rtm input frozen fluxes
-
+  integer, public ::index_l2x_Flrl_demand     ! lnd->rtm input total fluxes (<= 0)
+  integer, public ::index_l2x_Flrl_Tqsur      ! lnd->rtm input surface runoff temperature
+  integer, public ::index_l2x_Flrl_Tqsub      ! lnd->rtm input subsurface runoff temperature
+  integer, public ::index_l2x_coszen_str      ! lnd->rtm cosine of zenith  
   integer, public ::index_l2x_Sl_t            ! temperature
   integer, public ::index_l2x_Sl_tref         ! 2m reference temperature
   integer, public ::index_l2x_Sl_qref         ! 2m reference specific humidity
@@ -47,6 +51,7 @@ module elm_cpl_indices
   integer, public ::index_l2x_Sl_fv           ! friction velocity  
   integer, public ::index_l2x_Sl_ram1         ! aerodynamical resistance
   integer, public ::index_l2x_Sl_soilw        ! volumetric soil water
+  integer, public ::index_l2x_Flrl_wslake       ! lake water storage
   integer, public ::index_l2x_Fall_taux       ! wind stress, zonal
   integer, public ::index_l2x_Fall_tauy       ! wind stress, meridional
   integer, public ::index_l2x_Fall_lat        ! latent          heat flux
@@ -81,10 +86,14 @@ module elm_cpl_indices
   integer, public ::index_x2l_Sa_z            ! bottom atm level height
   integer, public ::index_x2l_Sa_u            ! bottom atm level zon wind
   integer, public ::index_x2l_Sa_v            ! bottom atm level mer wind
+  integer, public ::index_x2l_Sa_wsresp       ! first order response of wind to stress
+  integer, public ::index_x2l_Sa_tau_est      ! estimate of stress in equilibrium with wind
+  integer, public ::index_x2l_Sa_ugust        ! gustiness from atm
   integer, public ::index_x2l_Sa_ptem         ! bottom atm level pot temp
   integer, public ::index_x2l_Sa_shum         ! bottom atm level spec hum
   integer, public ::index_x2l_Sa_pbot         ! bottom atm level pressure
   integer, public ::index_x2l_Sa_tbot         ! bottom atm level temp
+  integer, public ::index_x2l_Sa_uovern      ! ratio of wind speed/brunt vaisalla frequency for precipitation downscaling
   integer, public ::index_x2l_Faxa_lwdn       ! downward lw heat flux
   integer, public ::index_x2l_Faxa_rainc      ! prec: liquid "convective"
   integer, public ::index_x2l_Faxa_rainl      ! prec: liquid "large scale"
@@ -114,6 +123,8 @@ module elm_cpl_indices
   integer, public ::index_x2l_Flrr_flood      ! rtm->lnd rof (flood) flux
   integer, public ::index_x2l_Flrr_volr       ! rtm->lnd rof volr total volume
   integer, public ::index_x2l_Flrr_volrmch    ! rtm->lnd rof volr main channel volume
+  integer, public ::index_x2l_Flrr_supply     ! rtm->lnd rof supply for land use
+  integer, public ::index_x2l_Flrr_deficit    ! rtm->lnd supply deficit
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
   integer, public ::index_x2l_Sg_frac(0:glc_nec_max)   = 0   ! Fraction of glacier from glc model
@@ -183,7 +194,10 @@ contains
     index_l2x_Flrl_rofgwl   = mct_avect_indexra(l2x,'Flrl_rofgwl')
     index_l2x_Flrl_rofsub   = mct_avect_indexra(l2x,'Flrl_rofsub')
     index_l2x_Flrl_rofi     = mct_avect_indexra(l2x,'Flrl_rofi')
-
+    index_l2x_Flrl_demand   = mct_avect_indexra(l2x,'Flrl_demand')
+    index_l2x_Flrl_Tqsur    = mct_avect_indexra(l2x,'Flrl_Tqsur')
+    index_l2x_Flrl_Tqsub    = mct_avect_indexra(l2x,'Flrl_Tqsub')
+    index_l2x_coszen_str	= mct_avect_indexra(l2x,'coszen_str')	
     index_l2x_Sl_t          = mct_avect_indexra(l2x,'Sl_t')
     index_l2x_Sl_snowh      = mct_avect_indexra(l2x,'Sl_snowh')
     index_l2x_Sl_avsdr      = mct_avect_indexra(l2x,'Sl_avsdr')
@@ -196,6 +210,7 @@ contains
     index_l2x_Sl_ram1       = mct_avect_indexra(l2x,'Sl_ram1')
     index_l2x_Sl_fv         = mct_avect_indexra(l2x,'Sl_fv')
     index_l2x_Sl_soilw      = mct_avect_indexra(l2x,'Sl_soilw',perrwith='quiet')
+    index_l2x_Flrl_wslake     = mct_avect_indexra(l2x,'Flrl_wslake')
     if ( lnd_drydep )then
        index_l2x_Sl_ddvel = mct_avect_indexra(l2x, trim(drydep_fields_token))
     else
@@ -234,9 +249,13 @@ contains
     index_x2l_Sa_z          = mct_avect_indexra(x2l,'Sa_z')
     index_x2l_Sa_u          = mct_avect_indexra(x2l,'Sa_u')
     index_x2l_Sa_v          = mct_avect_indexra(x2l,'Sa_v')
+    index_x2l_Sa_wsresp     = mct_avect_indexra(x2l,'Sa_wsresp',perrwith='quiet')
+    index_x2l_Sa_tau_est    = mct_avect_indexra(x2l,'Sa_tau_est',perrwith='quiet')
+    index_x2l_Sa_ugust      = mct_avect_indexra(x2l,'Sa_ugust',perrwith='quiet')
     index_x2l_Sa_ptem       = mct_avect_indexra(x2l,'Sa_ptem')
     index_x2l_Sa_pbot       = mct_avect_indexra(x2l,'Sa_pbot')
     index_x2l_Sa_tbot       = mct_avect_indexra(x2l,'Sa_tbot')
+    index_x2l_Sa_uovern     = mct_avect_indexra(x2l,'Sa_uovern')
     index_x2l_Sa_shum       = mct_avect_indexra(x2l,'Sa_shum')
     index_x2l_Sa_co2prog    = mct_avect_indexra(x2l,'Sa_co2prog',perrwith='quiet')
     index_x2l_Sa_co2diag    = mct_avect_indexra(x2l,'Sa_co2diag',perrwith='quiet')
@@ -245,6 +264,8 @@ contains
 
     index_x2l_Flrr_volr     = mct_avect_indexra(x2l,'Flrr_volr')
     index_x2l_Flrr_volrmch  = mct_avect_indexra(x2l,'Flrr_volrmch')
+    index_x2l_Flrr_supply   = mct_avect_indexra(x2l,'Flrr_supply')
+    index_x2l_Flrr_deficit  = mct_avect_indexra(x2l,'Flrr_deficit')
 
     index_x2l_Faxa_lwdn     = mct_avect_indexra(x2l,'Faxa_lwdn')
     index_x2l_Faxa_rainc    = mct_avect_indexra(x2l,'Faxa_rainc')
