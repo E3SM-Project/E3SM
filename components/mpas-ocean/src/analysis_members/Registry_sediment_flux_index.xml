@@ -58,25 +58,25 @@
 		<var name="sedimentFluxIndexVAX"
 			 type="real"
 			 dimensions="nCells Time"
-			 units="m^3 s^{-3}"
+			 units="m^3 s^-3"
 			 description="Index of Vertically-Averaged sediment flux in X-direction"
 		/>
 		<var name="sedimentFluxIndexVAY"
 			 type="real"
 			 dimensions="nCells Time"
-			 units="m^3 s^{-3}"
+			 units="m^3 s^-3"
 			 description="Index of Vertically-Averaged sediment flux in Y-direction"
 		/>
 		<var name="sedimentFluxIndexBX"
 			 type="real"
 			 dimensions="nCells Time"
-			 units="m^3 s^{-3}"
+			 units="m^3 s^-3"
 			 description="Index of Bottom sediment flux in X-direction"
 		/>
 		<var name="sedimentFluxIndexBY"
 			 type="real"
 			 dimensions="nCells Time"
-			 units="m^3 s^{-3}"
+			 units="m^3 s^-3"
 			 description="Index of Bottom sediment flux in Y-direction"
 		/>
 	</var_struct>

@@ -44,7 +44,7 @@
 		<nml_option name="config_AM_okuboWeiss_threshold_value"
 			type="real"
 			default_value="-0.2"
-			units="s^{-2}"
+			units="s^-2"
 			description="Threshold below which normalized OW values are counted as eddies, typically -0.2"
 			possible_values="any negative real value"
 		/>
@@ -102,35 +102,35 @@
 			 persistence="scratch"
 			 type="real"
 			 dimensions="R3 R3 nVertLevels nCells Time"
-			 units="s^{-1}"
+			 units="s^-1"
 			 description="Gradient of velocity field"
 		/>
 		<var name="shearAndStrain"
 			 persistence="scratch"
 			 type="real"
 			 dimensions="nVertLevels nCells Time"
-			 units="s^{-1}"
+			 units="s^-1"
 			 description="Shear and strain"
 		/>
 		<var name="lambda1"
 			 persistence="scratch"
 			 type="real"
 			 dimensions="nVertLevels nCells Time"
-			 units="s^{-2}"
+			 units="s^-2"
 			 description="Lambda 1, first eigenvalue of 2d strain rate tensor"
 		/>
 		<var name="lambda2"
 			 persistence="scratch"
 			 type="real"
 			 dimensions="nVertLevels nCells Time"
-			 units="s^{-2}"
+			 units="s^-2"
 			 description="Lambda 2, second eigenvalue of 2d strain rate tensor"
 		/>
 		<var name="lambda2R3"
 			 persistence="scratch"
 			 type="real"
 			 dimensions="nVertLevels nCells Time"
-			 units="s^{-2}"
+			 units="s^-2"
 			 description="Lambda 2, second eigenvalue of full 3d strain rate tensor"
 		/>
 	</var_struct>
@@ -139,7 +139,7 @@
 		<var name="okuboWeiss"
 			 type="real"
 			 dimensions="nVertLevels nCells Time"
-			 units="s^{-2}"
+			 units="s^-2"
 			 description="The Okubo-Weiss value"
 		/>
 		<var name="eddyID"
@@ -151,7 +151,7 @@
 		<var name="vorticity"
 			 type="real"
 			 dimensions="nVertLevels nCells Time"
-			 units="s^{-1}"
+			 units="s^-1"
 			 description="Vorticity"
 		/>
 	</var_struct>

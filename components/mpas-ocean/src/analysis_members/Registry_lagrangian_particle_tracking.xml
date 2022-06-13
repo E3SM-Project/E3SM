@@ -245,16 +245,16 @@
 		/>
 	</var_struct>
 	<var_struct name="lagrPartTrackFields" time_levs="2" packages="lagrPartTrackAMPKG">
-		<var name="uVertexVelocity" type="real" dimensions="nVertLevels nVertices Time" units="m s^{-1}"
+		<var name="uVertexVelocity" type="real" dimensions="nVertLevels nVertices Time" units="m s^-1"
 			 description="recostructed u horizontal velocity at vertices"
 		/>
-		<var name="vVertexVelocity" type="real" dimensions="nVertLevels nVertices Time" units="m s^{-1}"
+		<var name="vVertexVelocity" type="real" dimensions="nVertLevels nVertices Time" units="m s^-1"
 			 description="recostructed v horizontal velocity at vertices"
 		/>
-		<var name="wVertexVelocity" type="real" dimensions="nVertLevels nVertices Time" units="m s^{-1}"
+		<var name="wVertexVelocity" type="real" dimensions="nVertLevels nVertices Time" units="m s^-1"
 			 description="recostructed w horizontal velocity at vertices"
 		/>
-		<var name="buoyancy" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3}"
+		<var name="buoyancy" type="real" dimensions="nVertLevels nCells Time" units="kg m^-3"
 			 description="buoyancy values at cell mid points, currently proxy for density"
 		/>
 	</var_struct>
@@ -262,25 +262,25 @@
 		<var name="cellOwnerBlock" type="integer" dimensions="nCells" units="unitless"
 			 description="designates ownership of cell in terms of computational block"
 		/>
-		<var name="filteredVelocityW" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="filteredVelocityW" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="filtered u horizontal velocity at cells"
 		/>
-		<var name="filteredVelocityV" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="filteredVelocityV" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="filtered v horizontal velocity at cells"
 		/>
-		<var name="filteredVelocityU" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="filteredVelocityU" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="filtered w horizontal velocity at cells"
 		/>
-		<var name="buoyancySurfaceVelocityZonal" type="real" dimensions="nBuoyancySurfaces nCells Time" units="m s^{-1}"
+		<var name="buoyancySurfaceVelocityZonal" type="real" dimensions="nBuoyancySurfaces nCells Time" units="m s^-1"
 			 description="horizontal zonal velocity on buoyancy surface"
 		/>
-		<var name="buoyancySurfaceVelocityMeridional" type="real" dimensions="nBuoyancySurfaces nCells Time" units="m s^{-1}"
+		<var name="buoyancySurfaceVelocityMeridional" type="real" dimensions="nBuoyancySurfaces nCells Time" units="m s^-1"
 			 description="horizontal meridional velocity on buoyancy surface"
 		/>
-		<var name="buoyancySurfaceDepth" type="real" dimensions="nBuoyancySurfaces nCells Time" units="m s^{-1}"
+		<var name="buoyancySurfaceDepth" type="real" dimensions="nBuoyancySurfaces nCells Time" units="m s^-1"
 			 description="depth of buoyancy surface"
 		/>
-		<var name="buoyancySurfaceValues" type="real" dimensions="nBuoyancySurfaces" units="kg m^{-3}"
+		<var name="buoyancySurfaceValues" type="real" dimensions="nBuoyancySurfaces" units="kg m^-3"
 			 description="definition of buoyancy surfaces in terms of potential density"
 		/>
 		<var name="wachspressAreaB" type="real" dimensions="nCells maxEdges" units="m^2"
@@ -357,7 +357,7 @@
 		<var name="dtParticle" type="real" dimensions="nParticles Time" units="s"
 			 description="Any positive real value, but limited by CFL condition."
 		/>
-		<var name="buoyancyParticle" type="real" dimensions="nParticles Time" units="kg m^{-3}"
+		<var name="buoyancyParticle" type="real" dimensions="nParticles Time" units="kg m^-3"
 			 description="buoyancy values for particle, currently proxy for density"
 		/>
 		<var name="transfered" type ="integer" dimensions="nParticles Time" units="unitless"
@@ -370,28 +370,28 @@
 		<var name="particleSalinity" type="real" dimensions="nParticles Time" units="grams salt per kilogram seawater"
 			 description="sampled salinity for particle"
 		/>
-		<var name="particleDIC" type="real" dimensions="nParticles Time" units="mmol m^{-3}"
+		<var name="particleDIC" type="real" dimensions="nParticles Time" units="mmol m^-3"
 			 description="sampled dissolved inorganic carbon for particle"
 		/>
-		<var name="particleALK" type="real" dimensions="nParticles Time" units="meq m^{-3}"
+		<var name="particleALK" type="real" dimensions="nParticles Time" units="meq m^-3"
 			 description="sampled alkalinity for particle"
 		/>
-		<var name="particlePO4" type="real" dimensions="nParticles Time" units="mmol m^{-3}"
+		<var name="particlePO4" type="real" dimensions="nParticles Time" units="mmol m^-3"
 			 description="sampled dissolved inorganic phosphate for particle"
 		/>
-		<var name="particleNO3" type="real" dimensions="nParticles Time" units="meq m^{-3}"
+		<var name="particleNO3" type="real" dimensions="nParticles Time" units="meq m^-3"
 			 description="sampled dissolved inorganic nitrate for particle"
 		/>
-		<var name="particleSiO3" type="real" dimensions="nParticles Time" units="mmol m^{-3}"
+		<var name="particleSiO3" type="real" dimensions="nParticles Time" units="mmol m^-3"
 			 description="sampled dissolved inorganic silicate for particle"
 		/>
-		<var name="particleNH4" type="real" dimensions="nParticles Time" units="meq m^{-3}"
+		<var name="particleNH4" type="real" dimensions="nParticles Time" units="meq m^-3"
 			 description="sampled dissolved inorganic ammonia for particle"
 		/>
-		<var name="particleFe" type="real" dimensions="nParticles Time" units="mmol m^{-3}"
+		<var name="particleFe" type="real" dimensions="nParticles Time" units="mmol m^-3"
 			 description="sampled dissolved inorganic iron for particle"
 		/>
-		<var name="particleO2" type="real" dimensions="nParticles Time" units="meq m^{-3}"
+		<var name="particleO2" type="real" dimensions="nParticles Time" units="meq m^-3"
 			 description="sampled dissolved oxygen for particle"
 		/>
 	</var_struct>
@@ -400,40 +400,40 @@
 	</var_struct>
 -->
 	<var_struct name="lagrPartTrackScratch" time_levs="1" packages="lagrPartTrackAMPKG">
-		<var name="ucReconstructX" type="real" dimensions="nVertLevels nCells" units="m s^{-1}"
+		<var name="ucReconstructX" type="real" dimensions="nVertLevels nCells" units="m s^-1"
 			 description="reconstructed cell center velocity- x component"
 		/>
-		<var name="ucReconstructY" type="real" dimensions="nVertLevels nCells" units="m s^{-1}"
+		<var name="ucReconstructY" type="real" dimensions="nVertLevels nCells" units="m s^-1"
 			 description="reconstructed cell center velocity- y component"
 		/>
-		<var name="ucReconstructZ" type="real" dimensions="nVertLevels nCells" units="m s^{-1}"
+		<var name="ucReconstructZ" type="real" dimensions="nVertLevels nCells" units="m s^-1"
 			 description="reconstructed cell center velocity- z component"
 		/>
-		<var name="ucTemp" type="real" dimensions="nVertLevels nCells" units="m s^{-1}"
+		<var name="ucTemp" type="real" dimensions="nVertLevels nCells" units="m s^-1"
 			 description="cell velocity"
 		/>
-		<var name="ucX" type="real" dimensions="nVertLevels nCells" units="m s^{-1}"
+		<var name="ucX" type="real" dimensions="nVertLevels nCells" units="m s^-1"
 			 description="cell velocity- x component"
 		/>
-		<var name="ucY" type="real" dimensions="nVertLevels nCells" units="m s^{-1}"
+		<var name="ucY" type="real" dimensions="nVertLevels nCells" units="m s^-1"
 			 description="cell velocity- y component"
 		/>
-		<var name="ucZ" type="real" dimensions="nVertLevels nCells" units="m s^{-1}"
+		<var name="ucZ" type="real" dimensions="nVertLevels nCells" units="m s^-1"
 			 description="cell velocity- z component"
 		/>
-		<var name="uvX" type="real" dimensions="nVertLevels nVertices" units="m s^{-1}"
+		<var name="uvX" type="real" dimensions="nVertLevels nVertices" units="m s^-1"
 			 description="vertex velocity- x component"
 		/>
-		<var name="uvY" type="real" dimensions="nVertLevels nVertices" units="m s^{-1}"
+		<var name="uvY" type="real" dimensions="nVertLevels nVertices" units="m s^-1"
 			 description="vertex velocity- y component"
 		/>
-		<var name="uvZ" type="real" dimensions="nVertLevels nVertices" units="m s^{-1}"
+		<var name="uvZ" type="real" dimensions="nVertLevels nVertices" units="m s^-1"
 			 description="vertex velocity- z component"
 		/>
-		<var name="ucReconstructMeridional" type="real" dimensions="nVertLevels nCells" units="m s^{-1}"
+		<var name="ucReconstructMeridional" type="real" dimensions="nVertLevels nCells" units="m s^-1"
 			 description="reconstructed cell center velocity- meridional component"
 		/>
-		<var name="ucReconstructZonal" type="real" dimensions="nVertLevels nCells" units="m s^{-1}"
+		<var name="ucReconstructZonal" type="real" dimensions="nVertLevels nCells" units="m s^-1"
 			 description="reconstructed cell center velocity- zonal component"
 		/>
 		<var name="boundaryVertexGlobal" type="integer" dimensions="nVertLevels nVertices" units="unitless"

@@ -86,13 +86,13 @@
 		<var name="potentialDensityOfTSDiagram"
 			 type="real"
 			 dimensions="nTemperatureBins nSalinityBins nOceanRegionsTmpCensus Time"
-			 units="kg m^{-3}"
+			 units="kg m^-3"
 			 description="volume-weighted potential density of each (T,S) bin"
 		/>
 		<var name="zPositionOfTSDiagram"
 			 type="real"
 			 dimensions="nTemperatureBins nSalinityBins nOceanRegionsTmpCensus Time"
-			 units="kg m^{-3}"
+			 units="kg m^-3"
 			 description="volume-weighted vertical position of each (T,S) bin"
 		/>
 		<var name="waterMassCensusTemperatureValuesRegion"
@@ -116,13 +116,13 @@
 		<var name="potentialDensityOfTSDiagramRegion"
 			 type="real"
 			 dimensions="nTemperatureBins nSalinityBins maxRegionsInGroup Time"
-			 units="kg m^{-3}"
+			 units="kg m^-3"
 			 description="volume-weighted potential density of each (T,S) bin"
 		/>
 		<var name="zPositionOfTSDiagramRegion"
 			 type="real"
 			 dimensions="nTemperatureBins nSalinityBins maxRegionsInGroup Time"
-			 units="kg m^{-3}"
+			 units="kg m^-3"
 			 description="volume-weighted vertical position of each (T,S) bin"
 		/>
 	</var_struct>

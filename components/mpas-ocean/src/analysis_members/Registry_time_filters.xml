@@ -40,48 +40,48 @@
 		<package name="timeFiltersAMPKG" description="This package includes variables required for the timeFilters analysis member."/>
 	</packages>
 	<var_struct name="timeFiltersAM" time_levs="1" packages="timeFiltersAMPKG">
-		<var name="normalVelocityLowPass" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		<var name="normalVelocityLowPass" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			 description="Low-pass filtered normal velocity."
 		/>
-		<var name="normalVelocityHighPass" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		<var name="normalVelocityHighPass" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			 description="High-pass filtered normal velocity."
 		/>
-		<var name="normalVelocityFilterTest" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+		<var name="normalVelocityFilterTest" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			 description="normalVelocityTest (for testing purposes)."
 		/>
-		<var name="velocityZonalLowPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityZonalLowPass" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="Low-pass time filtered component of horizontal velocity in the eastward direction"
 		/>
-		<var name="velocityMeridionalLowPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityMeridionalLowPass" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="Low-pass time filtered component of horizontal velocity in the northward direction"
 		/>
-		<var name="velocityZonalHighPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityZonalHighPass" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="High-pass time filtered component of horizontal velocity in the eastward direction"
 		/>
-		<var name="velocityMeridionalHighPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityMeridionalHighPass" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="High-pass time filtered component of horizontal velocity in the northward direction"
 		/>
-		<var name="velocityXLowPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityXLowPass" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="Low-pass time filtered component of horizontal velocity in the x-direction (cartesian)"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="velocityYLowPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityYLowPass" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="Low-pass time filtered component of horizontal velocity in the x-direction (cartesian)"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="velocityZLowPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityZLowPass" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="Low-pass time filtered component of horizontal velocity in the x-direction (cartesian)"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="velocityXHighPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityXHighPass" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="High-pass time filtered component of horizontal velocity in the x-direction (cartesian)"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="velocityYHighPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityYHighPass" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="High-pass time filtered component of horizontal velocity in the x-direction (cartesian)"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="velocityZHighPass" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="velocityZHighPass" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="High-pass time filtered component of horizontal velocity in the x-direction (cartesian)"
 			 packages="forwardMode;analysisMode"
 		/>
