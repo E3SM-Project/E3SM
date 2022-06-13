@@ -41,7 +41,7 @@
 
   <compset>
       <alias>F2000-SCREAMv1-AQP1-noAero</alias> <!-- atm aquaplanet compset (using SCREAMv1), 2000 initial conditions, turn of Aerosol forcing -->
-      <lname>2000_SCREAM%no_Aero%AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+      <lname>2000_SCREAM%noAero%AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
       <support_level>Experimental, under development</support_level>
   </compset>
 
