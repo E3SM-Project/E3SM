@@ -43,7 +43,6 @@
       <grid name="glc"    compset="XGLC">gland4</grid>
       <grid name="wav"    compset="SWAV">null</grid>
       <grid name="wav"    compset="DWAV">null</grid>
-      <grid name="wav"    compset="WW3">null</grid>
       <grid name="wav"    compset="XWAV">null</grid>
       <grid name="iac"    compset="SIAC">null</grid>
     </model_grid_defaults>
@@ -1633,16 +1632,6 @@
 
     <!-- ww3 grids -->
 
-    <model_grid alias="T62_wQU100" compset="_WW3">
-      <grid name="atm">T62</grid>
-      <grid name="lnd">null</grid>
-      <grid name="ocnice">null</grid>
-      <grid name="rof">null</grid>
-      <grid name="glc">null</grid>
-      <grid name="wav">wQU100</grid>
-      <mask>wQU100</mask>
-    </model_grid>
-
     <model_grid alias="CFSv2_wQU225EC60to30" compset="_WW3">
       <grid name="atm">CFSv2</grid>
       <grid name="lnd">null</grid>
@@ -2688,14 +2677,6 @@
     </domain>
 
     <!-- WW3 domains-->
-
-    <domain name="wQU100">
-      <nx>18048</nx>
-      <ny>1</ny>
-      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_wQU100.210204.nc</file>
-      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.T62_wQU100.210204.nc</file>
-      <desc>WW3 unstructured QU 100km global grid</desc>
-    </domain>
 
     <domain name="wQU225EC60to30">
       <nx>56131</nx>
@@ -3939,10 +3920,6 @@
     </gridmap>
 
     <!--  QL, 150525, wav to ocn, atm, ice mapping files  -->
-
-    <gridmap atm_grid="T62" wav_grid="wQU100">
-      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/T62/map_T62_TO_wQU100_bilin.20210202.nc</map>
-    </gridmap>
 
     <gridmap atm_grid="T62" wav_grid="wQU225EC60to30">
       <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_T62_TO_wQU225EC60to30_blin.20210428.nc</map>
