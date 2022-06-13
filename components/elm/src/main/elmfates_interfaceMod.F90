@@ -299,7 +299,7 @@ contains
 
      if (use_fates) then
 
-verbose_output = .false.
+        verbose_output = .false.
         call FatesInterfaceInit(iulog, verbose_output)
 
         ! Force FATES parameters that are recieve type, to the unset value
@@ -329,7 +329,7 @@ verbose_output = .false.
         if (use_century_decomp) then 
            call set_fates_ctrlparms('decomp_method',cval='CENTURY')
         else
-           call set_fates_ctrlparms('decomp_method',cval='NONE')
+           call set_fates_ctrlparms('decomp_method',cval='CTC')
         end if
 
         ! ELM ALWAYS has nitrogen and phosphorus "on"
