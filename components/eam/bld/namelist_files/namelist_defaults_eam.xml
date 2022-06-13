@@ -1261,6 +1261,7 @@
 <nu_top dyn_target="theta-l" hgrid="ne256np4"> 4e4 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne512np4"> 2e4 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne1024np4"> 1e4 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne0np4_CAx32v1"> 1e4 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne0np4_northamericax4v1"> 1e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"> 1e5 </nu_top>
 <nu_top dyn_target="theta-l" hgrid="ne0np4_conus_x4v1_lowcon"> 1e5 </nu_top>
