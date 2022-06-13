@@ -3219,7 +3219,7 @@ module ocn_time_integration_si
 !
 !-----------------------------------------------------------------------
 
-   subroutine si_matvec_mul(SIvec_in,SIvec_out,ssh)
+   subroutine si_matvec_mul(SIvec_in,SIvec_out,ssh) !{{{
 
       real(kind=RKIND),dimension(:),intent(in)  :: &
           SIvec_in, &! Input SI vector
@@ -3327,7 +3327,7 @@ module ocn_time_integration_si
          ! No preconditioning
          SIvec_out(1:nPrecVec) = SIvec_in(1:nPrecVec)
       end if
-   end subroutine si_precond
+   end subroutine si_precond !}}}
 
 !***********************************************************************
 !
@@ -3344,7 +3344,7 @@ module ocn_time_integration_si
 !
 !-----------------------------------------------------------------------
 
-   subroutine si_global_reduction(localProd,globalProd,       &
+   subroutine si_global_reduction(localProd,globalProd,       & !{{{
                              reprodSum1,reprodSum2,           &
                              si_algorithm,nfld,domain,        &
                              SIvec_1,SIvec_2,SIvec_3,SIvec_4, &
@@ -3379,6 +3379,8 @@ module ocn_time_integration_si
    
          if ( config_btr_si_partition_match_mode ) then
     
+            !$omp parallel
+            !$omp do schedule(runtime)
             ! Reproducible sum of multiple fields over products
             do iCell = 1,nCellsOwned
                reprodSum1(iCell,1) = SIvec_1(iCell) !r0
@@ -3387,6 +3389,8 @@ module ocn_time_integration_si
                reprodSum2(iCell,1) = SIvec_3(iCell) !rh0
                reprodSum2(iCell,2) = SIvec_3(iCell) !rh0
             end do
+            !$omp end do
+            !$omp end parallel
         
             globalProd(:) = 0.0_RKIND
             globalProd(:) =                   &
@@ -3419,6 +3423,8 @@ module ocn_time_integration_si
          if ( config_btr_si_partition_match_mode ) then
    
             ! Reproducible sum of multiple fields over products
+            !$omp parallel
+            !$omp do schedule(runtime)
             do iCell = 1,nCellsOwned
                reprodSum1(iCell,1) = SIvec_1(iCell) !r1
                reprodSum1(iCell,2) = SIvec_2(iCell) !w1
@@ -3428,6 +3434,8 @@ module ocn_time_integration_si
                reprodSum2(iCell,2) = SIvec_3(iCell) !rh1
                reprodSum2(iCell,3) = SIvec_1(iCell)  !r1
             end do
+            !$omp end do
+            !$omp end parallel
       
             globalProd(:) = 0.0_RKIND
             globalProd(:) =                   &
@@ -3468,6 +3476,8 @@ module ocn_time_integration_si
 
             ! Reproducible sum of multiple fields over products
  
+            !$omp parallel
+            !$omp do schedule(runtime)
             do iCell = 1,nCellsOwned
                globalReprodSum2fld1(iCell,1) = SIvec_1(iCell) !r00
                globalReprodSum2fld1(iCell,2) = SIvec_1(iCell) !r00
@@ -3475,6 +3485,8 @@ module ocn_time_integration_si
                globalReprodSum2fld2(iCell,1) = SIvec_2(iCell) !r0
                globalReprodSum2fld2(iCell,2) = SIvec_3(iCell) !w0
             end do
+            !$omp end do
+            !$omp end parallel
 
             SIcst_allreduce_global2(:) =                   &
                mpas_global_sum_nfld(globalReprodSum2fld1, &
@@ -3509,6 +3521,8 @@ module ocn_time_integration_si
  
             ! Reproducible sum of multiple fields over products
              
+            !$omp parallel
+            !$omp do schedule(runtime)
             do iCell = 1,nCellsOwned
                globalReprodSum9fld1(iCell,1) = SIvec_1(iCell) !r00
                globalReprodSum9fld1(iCell,2) = SIvec_1(iCell) !r00
@@ -3530,6 +3544,8 @@ module ocn_time_integration_si
                globalReprodSum9fld2(iCell,8) = SIvec_7(iCell) !v0
                globalReprodSum9fld2(iCell,9) = SIvec_2(iCell) !q0
             end do
+            !$omp end do
+            !$omp end parallel
     
             SIcst_allreduce_global9(:) =                   &
                mpas_global_sum_nfld(globalReprodSum9fld1, &
@@ -3598,7 +3614,7 @@ module ocn_time_integration_si
 
       endif !!!
    
-   end subroutine si_global_reduction
+   end subroutine si_global_reduction !}}}
 
 !***********************************************************************
 !
@@ -3615,7 +3631,7 @@ module ocn_time_integration_si
 !
 !-----------------------------------------------------------------------
 
-   subroutine si_solver_scg(domain,sshSolved,ssh,tolerance,       &
+   subroutine si_solver_scg(domain,sshSolved,ssh,tolerance,       & !{{{
                             SIcst_alpha0,SIcst_beta0,SIcst_gamma0)
 
       type (domain_type), intent(inout) :: &
@@ -3734,7 +3750,7 @@ module ocn_time_integration_si
       end do ! do iter
       !-------------------------------------------------------------!
      
-   end subroutine si_solver_scg
+   end subroutine si_solver_scg !}}}
 
 !***********************************************************************
 !
@@ -3752,7 +3768,7 @@ module ocn_time_integration_si
 !
 !-----------------------------------------------------------------------
 
-   subroutine si_solver_sbicg(domain,sshSolved,ssh,tolerance,       &
+   subroutine si_solver_sbicg(domain,sshSolved,ssh,tolerance,       & !{{{
                  SIcst_alpha0,SIcst_beta0,SIcst_gamma0,SIcst_rho0)
 
       type (domain_type), intent(inout) :: &
@@ -3947,7 +3963,7 @@ module ocn_time_integration_si
      end do ! do iter
      !-------------------------------------------------------------!
 
-   end subroutine si_solver_sbicg
+   end subroutine si_solver_sbicg !}}}
 
 !***********************************************************************
 
