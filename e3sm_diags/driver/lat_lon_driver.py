@@ -15,7 +15,7 @@ logger = custom_logger(__name__)
 
 
 def create_and_save_data_and_metrics(parameter, mv1_domain, mv2_domain):
-    if parameter.ref_name != "":
+    if not parameter.model_only:
         # Regrid towards the lower resolution of the two
         # variables for calculating the difference.
         mv1_reg, mv2_reg = utils.general.regrid_to_lower_res(
@@ -137,6 +137,7 @@ def run_diag(parameter):  # noqa: C901
                 land_frac = f("LANDFRAC")
                 ocean_frac = f("OCNFRAC")
 
+        parameter.model_only = False
         for var in variables:
             logger.info("Variable: {}".format(var))
             parameter.var_id = var
@@ -147,8 +148,8 @@ def run_diag(parameter):  # noqa: C901
             except (RuntimeError, IOError):
                 mv2 = mv1
                 logger.info("Can not process reference data, analyse test data only")
-                parameter.ref_name = ""
-                parameter.case_id = "Model_only"
+
+                parameter.model_only = True
 
             parameter.viewer_descr[var] = (
                 mv1.long_name

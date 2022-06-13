@@ -116,15 +116,22 @@ def _create_csv_from_dict(lat_lon_table_info, output_dir, season, test_name, run
             metrics = metrics_dic["metrics"]
             if run_type == "model_vs_model":
                 key = key.split()[0] + " " + key.split()[1]
+
+            if (
+                metrics["test_regrid"]["mean"] == 999.999
+                or metrics["ref_regrid"]["mean"] == 999.999
+            ):
+                mean_bias = 999.999
+            else:
+                mean_bias = (
+                    metrics["test_regrid"]["mean"] - metrics["ref_regrid"]["mean"]
+                )
             row = [
                 key,
                 metrics["unit"],
                 round(metrics["test_regrid"]["mean"], 3),
                 round(metrics["ref_regrid"]["mean"], 3),
-                round(
-                    metrics["test_regrid"]["mean"] - metrics["ref_regrid"]["mean"],
-                    3,
-                ),
+                round(mean_bias, 3),
                 round(metrics["test_regrid"]["std"], 3),
                 round(metrics["ref_regrid"]["std"], 3),
                 round(metrics["misc"]["rmse"], 3),

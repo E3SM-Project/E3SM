@@ -260,7 +260,7 @@ def plot(reference, test, diff, metrics_dict, parameter):
         stats=(max1, mean1, min1),
     )
 
-    if parameter.ref_name != "":
+    if not parameter.model_only:
         min2 = metrics_dict["ref"]["min"]
         mean2 = metrics_dict["ref"]["mean"]
         max2 = metrics_dict["ref"]["max"]
