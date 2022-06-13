@@ -1,29 +1,29 @@
 	<nml_record name="AM_conservationCheck">
-		<nml_option name="config_AM_conservationCheck_enable" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_conservationCheck_enable" type="logical" default_value=".false."
 			description="If true, ocean analysis member conservationCheck is called."
 			possible_values="true or false"
 		/>
-		<nml_option name="config_AM_conservationCheck_compute_interval" type="character" default_value="dt" units="unitless"
+		<nml_option name="config_AM_conservationCheck_compute_interval" type="character" default_value="dt"
 			description="Timestamp determining how often analysis member computation should be performed."
 			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
 		/>
-		<nml_option name="config_AM_conservationCheck_output_stream" type="character" default_value="conservationCheckOutput" units="unitless"
+		<nml_option name="config_AM_conservationCheck_output_stream" type="character" default_value="conservationCheckOutput"
 			description="Name of the stream that the conservationCheck analysis member should be tied to."
 			possible_values="Any existing stream name or 'none'"
 		/>
-		<nml_option name="config_AM_conservationCheck_compute_on_startup" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_conservationCheck_compute_on_startup" type="logical" default_value=".false."
 			description="Logical flag determining if an analysis member computation occurs on start-up."
 			possible_values="true or false"
 		/>
-		<nml_option name="config_AM_conservationCheck_write_on_startup" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_conservationCheck_write_on_startup" type="logical" default_value=".false."
 			description="Logical flag determining if an analysis member write occurs on start-up."
 			possible_values="true or false"
 		/>
-		<nml_option name="config_AM_conservationCheck_write_to_logfile" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_conservationCheck_write_to_logfile" type="logical" default_value=".true."
 			description="Logical flag determining if the conservation check is written to the log file."
 			possible_values="true or false"
 		/>
-		<nml_option name="config_AM_conservationCheck_restart_stream" type="character" default_value="conservationCheckRestart" units="unitless"
+		<nml_option name="config_AM_conservationCheck_restart_stream" type="character" default_value="conservationCheckRestart"
 			description="Name of the restart stream the analysis member will use to initialize itself if restart is enabled."
 			possible_values="A restart stream with state of the conservation check."
 		/>

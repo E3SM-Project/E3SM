@@ -1,21 +1,21 @@
 	<nml_record name="AM_mocStreamfunction" mode="forward;analysis">
-		<nml_option name="config_AM_mocStreamfunction_enable" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_mocStreamfunction_enable" type="logical" default_value=".false."
 			description="If true, ocean analysis member MOC streamfunction is called."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_mocStreamfunction_compute_interval" type="character" default_value="output_interval" units="unitless"
+		<nml_option name="config_AM_mocStreamfunction_compute_interval" type="character" default_value="output_interval"
 			description="Timestamp determining how often analysis member computation should be performed."
 			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
 		/>
-		<nml_option name="config_AM_mocStreamfunction_output_stream" type="character" default_value="mocStreamfunctionOutput" units="unitless"
+		<nml_option name="config_AM_mocStreamfunction_output_stream" type="character" default_value="mocStreamfunctionOutput"
 			description="Name of the stream that the mocStreamfunction analysis member should be tied to."
 			possible_values="Any existing stream name or 'none'"
 		/>
-		<nml_option name="config_AM_mocStreamfunction_compute_on_startup" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_mocStreamfunction_compute_on_startup" type="logical" default_value=".true."
 			description="Logical flag determining if an analysis member computation occurs on start-up."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_mocStreamfunction_write_on_startup" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_mocStreamfunction_write_on_startup" type="logical" default_value=".true."
 			description="Logical flag determining if an analysis member write occurs on start-up."
 			possible_values=".true. or .false."
 		/>
@@ -27,24 +27,24 @@
 			description="maximum bin boundary value.  If set to -1.0e34, the maximum value in the domain is found."
 			possible_values="Any real number."
 		/>
-		<nml_option name="config_AM_mocStreamfunction_num_bins" type="integer" default_value="180" units="unitless"
+		<nml_option name="config_AM_mocStreamfunction_num_bins" type="integer" default_value="180"
 			description="Number of bins in South-to-North direction used for moc streamfunction calculation."
 			possible_values="Any positive integer value less than or equal to nMocStreamfunctionBins."
 		/>
-		<nml_option name="config_AM_mocStreamfunction_region_group" type="character" default_value="all" units="unitless"
+		<nml_option name="config_AM_mocStreamfunction_region_group" type="character" default_value="all"
 			description="The name of the region group, for which the moc should be computed in addition to the global MOC."
 			possible_values="Either of '', 'all' or any valid region group name."
 		/>
-		<nml_option name="config_AM_mocStreamfunction_transect_group" type="character" default_value="all" units="unitless"
+		<nml_option name="config_AM_mocStreamfunction_transect_group" type="character" default_value="all"
 			description="The name of the transect group that holds the boundaries for the regions in the region group, configured in 'config_AM_mocStreamfunction_region_group'. Please note, that these two should have the same amount of entries."
 			possible_values="Any valid transect group name."
 		/>
 	</nml_record>
 	<dims>
-		<dim name="nMocStreamfunctionBins" definition="namelist:config_AM_mocStreamfunction_num_bins" units="unitless"
+		<dim name="nMocStreamfunctionBins" definition="namelist:config_AM_mocStreamfunction_num_bins"
 			 description="Maximum number of bins in South-to-North direction for moc streamfunction."
 		/>
-		<dim name="nMocStreamfunctionBinsP1" definition="nMocStreamfunctionBins+1" units="unitless"
+		<dim name="nMocStreamfunctionBinsP1" definition="nMocStreamfunctionBins+1"
 			 description="Maximum number of Lat bins for moc streamfunction, plus one."
 		/>
 	</dims>
