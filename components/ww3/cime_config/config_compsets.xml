@@ -10,37 +10,37 @@
   <!-- Waves compsets -->
 
   <compset>
-    <alias>VWAV-IAF</alias>
+    <alias>VWW3-IAF</alias>
     <lname>2000_DATM%IAF_SLND_SICE_SOCN_SROF_SGLC_WW3</lname>
   </compset>
 
   <compset>
-    <alias>VWAV-CFSv2</alias>
+    <alias>VWW3-CFSv2</alias>
     <lname>2000_DATM%CFSv2_SLND_SICE_SOCN_SROF_SGLC_WW3</lname>
   </compset>
 
   <compset>
-    <alias>VWAV-CFSR</alias>
+    <alias>VWW3-CFSR</alias>
     <lname>2000_DATM%CFSR_SLND_SICE_SOCN_SROF_SGLC_WW3</lname>
   </compset>
 
   <compset>
-    <alias>GWAV-IAF</alias>
+    <alias>GMPAS-IAF-WW3</alias>
     <lname>2000_DATM%IAF_SLND_MPASSI_MPASO%DATMFORCED_DROF%IAF_SGLC_WW3</lname>
   </compset>
 
   <compset>
-    <alias>GWAV-JRA</alias>
+    <alias>GMPAS-JRA-WW3</alias>
     <lname>2000_DATM%JRA_SLND_MPASSI_MPASO%DATMFORCED_DROF%JRA_SGLC_WW3</lname>
   </compset>
 
   <compset>
-    <alias>AWAV_WCYCLSSP585_CMIP6</alias>
+    <alias>WCYCLSSP585-WW3</alias>
     <lname>SSP585SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_WW3</lname>
   </compset>
 
   <compset>
-    <alias>WAV_WCYCL1850</alias>
+    <alias>WCYCL1850-WW3</alias>
     <lname>1850SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_WW3</lname>
   </compset>
 
