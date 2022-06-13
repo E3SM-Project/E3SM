@@ -162,6 +162,14 @@ module seq_frac_mct
 
   use component_type_mod
 
+  use iMOAB, only: iMOAB_DefineTagStorage
+  use seq_comm_mct, only : mphaxid !            iMOAB app id for phys atm, on cpl pes
+  use seq_comm_mct, only : mblxid !            iMOAB app id for lnd on cpl pes
+  use seq_comm_mct, only : mboxid !            iMOAB app id for ocn on cpl pes
+  use seq_comm_mct, only : mbixid !            iMOAB for sea-ice migrated to coupler
+  
+  use shr_kind_mod, only: CL => SHR_KIND_CL, CX => SHR_KIND_CX, CXX => SHR_KIND_CXX
+  use iso_c_binding ! C_NULL_CHAR 
   implicit none
   private
   save
@@ -292,6 +300,9 @@ contains
     character(*),parameter :: fraclist_w = 'wfrac'
     character(*),parameter :: fraclist_z = 'afrac:lfrac'
 
+    ! moab
+    integer                  :: tagtype, numco,  tagindex, ierr
+    character(CXX)           :: tagname
     !----- formats -----
     character(*),parameter :: subName = '(seq_frac_init) '
 
@@ -331,6 +342,19 @@ contains
 
        ka = mct_aVect_indexRa(fractions_a,"afrac",perrWith=subName)
        fractions_a%rAttr(ka,:) = 1.0_r8
+
+       ! Initialize fractions on atm coupler mesh; on migrated ph atm to coupler
+       if (mphaxid .ge. 0  ) then ! // 
+         tagname = trim(fraclist_a)//C_NULL_CHAR
+         tagtype = 1  ! dense, double
+         numco = 1 !   
+         ierr = iMOAB_DefineTagStorage(mphaxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags on atm phys mesh on cpl '
+            call shr_sys_abort(subname//' ERROR in defining tags on atm phys mesh on cpl')
+         endif
+         ! we should set to 1 the 'afrac' tag
+       endif
     endif
 
     ! Initialize fractions on glc grid decomp, just an initial "guess", updated later
@@ -351,11 +375,20 @@ contains
        lSize = mct_aVect_lSize(dom_l%data)
        call mct_aVect_init(fractions_l,rList=fraclist_l,lsize=lsize)
        call mct_aVect_zero(fractions_l)
-
+       if (mphaxid .ge. 0  ) then ! // 
+         tagname = trim(fraclist_l)//C_NULL_CHAR
+         tagtype = 1  ! dense, double
+         numco = 1 !   
+         ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags on lnd phys mesh on cpl '
+            call shr_sys_abort(subname//' ERROR in defining tags on lnd phys mesh on cpl')
+         endif
+       endif
        kk = mct_aVect_indexRA(fractions_l,"lfrin",perrWith=subName)
        kf = mct_aVect_indexRA(dom_l%data ,"frac" ,perrWith=subName)
        fractions_l%rAttr(kk,:) = dom_l%data%rAttr(kf,:)
-
+!    we should set the lfrin tag to fractions_l%rAttr(kk,:) (from input ?)
        if (atm_present) then
           mapper_l2a => prep_atm_get_mapper_Fl2a()
           mapper_a2l => prep_lnd_get_mapper_Fa2l()
@@ -402,6 +435,18 @@ contains
        call mct_aVect_init(fractions_i,rList=fraclist_i,lsize=lsize)
        call mct_aVect_zero(fractions_i)
 
+       if (mphaxid .ge. 0  ) then ! // 
+         tagname = trim(fraclist_i)//C_NULL_CHAR
+         tagtype = 1  ! dense, double
+         numco = 1 !   
+         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags on ice phys mesh on cpl '
+            call shr_sys_abort(subname//' ERROR in defining tags on ice phys mesh on cpl')
+         endif
+         
+       endif
+
        ko = mct_aVect_indexRa(fractions_i,"ofrac",perrWith=subName)
        kf = mct_aVect_indexRA(dom_i%data ,"frac" ,perrWith=subName)
        fractions_i%rAttr(ko,:) = dom_i%data%rAttr(kf,:)
@@ -419,7 +464,17 @@ contains
        lSize = mct_aVect_lSize(dom_o%data)
        call mct_aVect_init(fractions_o,rList=fraclist_o,lsize=lsize)
        call mct_aVect_zero(fractions_o)
-
+       if (mboxid .ge. 0  ) then ! // 
+         tagname = trim(fraclist_o)//C_NULL_CHAR
+         tagtype = 1  ! dense, double
+         numco = 1 !   
+         ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags on ocn phys mesh on cpl '
+            call shr_sys_abort(subname//' ERROR in defining tags on ocn phys mesh on cpl')
+         endif
+         
+       endif
        if (ice_present) then
           mapper_i2o => prep_ocn_get_mapper_SFi2o()
           call seq_map_map(mapper_i2o,fractions_i,fractions_o,fldlist='ofrac',norm=.false.)
