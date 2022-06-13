@@ -165,9 +165,9 @@ tweaking their $case/namelist_scream.xml file.
     <!-- P3 microphysics -->
     <p3 inherit="physics_proc_base">
       <do_prescribed_ccn>true</do_prescribed_ccn>
-      <do_prescribed_ccn COMPSET=".*noAero*">false</do_prescribed_ccn>
+      <do_prescribed_ccn COMPSET=".*SCREAM.*noAero">false</do_prescribed_ccn>
       <do_predict_nc>true</do_predict_nc>
-      <do_predict_nc COMPSET=".*noAero*">false</do_predict_nc>
+      <do_predict_nc COMPSET=".*SCREAM.*noAero">false</do_predict_nc>
     </p3>
 
     <!-- SHOC macrophysics -->
@@ -203,12 +203,12 @@ tweaking their $case/namelist_scream.xml file.
       <rad_frequency hgrid="ne512np4">3</rad_frequency>
       <rad_frequency hgrid="ne1024np4">3</rad_frequency>
       <do_aerosol_rad>true</do_aerosol_rad>
-      <do_aerosol_rad COMPSET="*noAero*">false</do_aerosol_rad>
+      <do_aerosol_rad COMPSET=".*SCREAM.*noAero">false</do_aerosol_rad>
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">
       <atm_procs_list>(shoc,cldFraction,spa,p3)</atm_procs_list>
-      <atm_procs_list COMPSET="*noAero*">(shoc,cldFraction,p3)</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM.*noAero">(shoc,cldFraction,p3)</atm_procs_list>
       <Number__of__Subcycles hgrid="ne4np4">24</Number__of__Subcycles>
       <Number__of__Subcycles hgrid="ne30np4">6</Number__of__Subcycles>
       <Number__of__Subcycles hgrid="ne120np4">3</Number__of__Subcycles>
