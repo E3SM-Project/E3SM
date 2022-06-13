@@ -213,6 +213,13 @@ add_default($nl, 'config_cvmix_kpp_langmuir_mixing_opt');
 add_default($nl, 'config_cvmix_kpp_langmuir_entrainment_opt');
 add_default($nl, 'config_cvmix_kpp_use_active_wave');
 
+#################################
+# Namelist group: wave_coupling #
+#################################
+
+add_default($nl, 'config_n_stokes_drift_wavenumber_partitions');
+add_default($nl, 'config_use_active_wave');
+
 ########################
 # Namelist group: gotm #
 ########################
