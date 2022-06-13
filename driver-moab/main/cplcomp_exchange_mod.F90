@@ -19,6 +19,7 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : atm_pg_active  ! flag if PG mesh instanced
   use seq_comm_mct, only : mlnid , mblxid !    iMOAB app id for land , on land pes and coupler pes
   use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
+  use seq_comm_mct, only : mphaxid !            iMOAB app id for phys atm, on cpl pes
   use seq_comm_mct, only : sameg_al ! same grid atm lnd, and land is point cloud
   use seq_comm_mct, only : MPSIID, mbixid  !  sea-ice on comp pes and on coupler pes
   use shr_mpi_mod,  only: shr_mpi_max
@@ -1010,6 +1011,8 @@ contains
     integer                  :: tagtype, numco,  tagindex, partMethod
     integer                  :: rank, ent_type
     integer                  :: typeA, typeB, ATM_PHYS_CID ! used to compute par graph between atm phys
+    integer                  :: ID_JOIN_ATMPHYS ! 200 + 6
+    integer                  :: ID_OLD_ATMPHYS  ! 200 + 5
                                                            ! and atm spectral on coupler
     character(CXX)             :: tagname
 #ifdef MOABDEBUG
@@ -1109,6 +1112,64 @@ contains
           call shr_sys_abort(subname//' ERROR in freeing send buffers')
         endif
       endif
+      
+      ! send also the phys grid to coupler, because it will be used for fractions
+      ! start copy for mphaid->mphaxid 
+      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
+        !  send mesh to coupler
+        if (atm_pg_active) then !  do not send again, mbaxid will be the same as mphaxid
+          mphaxid = mbaxid ! we already have pg mesh on coupler, as an FV mesh
+        else
+          ! still use the mhid, original coarse mesh
+          ID_JOIN_ATMPHYS = id_join + 200 ! somewhat arbitrary, just a different comp id
+          ierr = iMOAB_SendMesh(mphaid, mpicom_join, mpigrp_cplid, ID_JOIN_ATMPHYS, partMethod)
+          if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in sending mesh from atm comp '
+            call shr_sys_abort(subname//' ERROR in sending mesh from atm comp')
+          endif
+        endif
+        
+      endif
+      if (MPI_COMM_NULL /= mpicom_new  .and.  .not. atm_pg_active ) then !  we are on the coupler pes
+
+        appname = "COUPLE_ATMPH"//C_NULL_CHAR
+        ! migrated mesh gets another app id, moab atm to coupler (mbax)
+        ID_JOIN_ATMPHYS = id_join + 200 ! somewhat arbitrary, just a different comp id
+        ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, ID_JOIN_ATMPHYS, mphaxid)
+        if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in registering ', appname
+          call shr_sys_abort(subname//' ERROR registering '// appname)
+        endif
+        ID_OLD_ATMPHYS = id_old + 200 ! kind of arbitrary
+        ierr = iMOAB_ReceiveMesh(mphaxid, mpicom_join, mpigrp_old, ID_OLD_ATMPHYS)
+        if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in receiving mesh on atm coupler '
+          call shr_sys_abort(subname//' ERROR in receiving mesh on atm coupler ')
+        endif
+#ifdef MOABDEBUG
+        ! debug test
+        
+        outfile = 'recPhysAtm.h5m'//C_NULL_CHAR
+        wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+ !      write out the mesh file to disk
+        ierr = iMOAB_WriteMesh(mphaxid, trim(outfile), trim(wopts))
+        if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing mesh '
+          call shr_sys_abort(subname//' ERROR in writing mesh ')
+        endif
+#endif
+      endif
+      !  iMOAB_FreeSenderBuffers needs to be called after receiving the mesh
+      if (MPI_COMM_NULL /= mpicom_old  .and. .not. atm_pg_active) then ! it means we are on the component pes (atmosphere)
+         context_id = ID_JOIN_ATMPHYS
+         ierr = iMOAB_FreeSenderBuffers(mphaid, context_id)
+         
+         if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in freeing send buffers '
+          call shr_sys_abort(subname//' ERROR in freeing send buffers')
+        endif
+      endif
+     
 
 !  comment out now; we will not send directly to atm spectral on coupler; we need to send in the
 !  context of ocean intx;; or directly to land on coupler, for projection to land
