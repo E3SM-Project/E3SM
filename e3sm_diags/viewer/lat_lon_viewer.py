@@ -248,10 +248,12 @@ def read_e3sm_diags_metrics(path, variables, seasons, names=None):
     paths = []
     dirs = sorted(glob.glob(path + os.path.sep))
     for d in dirs:
-        tmp = d.split(os.path.sep)
-        model = tmp[-6]
+        if not names:
+            tmp = d.split(os.path.sep)
+            # Note using tmp[-6] for model name only applys to specific e3sm_diags for CMIP6 metrics data structure: i.e.:/global/cfs/cdirs/e3sm/www/CMIP6_comparison_1985-2014_E3SMv2_golaz_etal_2022/*/historical/r1i1p1f1/viewer/table-data on Cori
+            model = tmp[-6]
+            models.append(model)
         paths.append(d)
-        models.append(model)
     if names:
         models = names
 
@@ -328,11 +330,7 @@ def generate_lat_lon_cmip6_comparison(
     if not os.path.exists(cmip6_comparison_dir):
         os.mkdir(cmip6_comparison_dir)
 
-    test_name = (
-        parameters[0].short_test_name
-        if parameters[0].short_test_name
-        else parameters[0].test_name
-    )
+    test_name = parameters[0].test_name_yrs
 
     # Create CMIP6 comparison figure
     # Variables
