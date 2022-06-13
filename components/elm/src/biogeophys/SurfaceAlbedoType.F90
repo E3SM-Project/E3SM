@@ -10,7 +10,8 @@ module SurfaceAlbedoType
   use abortutils     , only : endrun
   use elm_varctl     , only : fsurdat, iulog
   use elm_varcon     , only : grlnd
-  use ColumnType        , only : col_pp
+  use ColumnType     , only : col_pp
+   
 
   !
   ! !PUBLIC TYPES:
@@ -75,6 +76,13 @@ module SurfaceAlbedoType
      real(r8), pointer :: albsnd_hst_col       (:,:) => null() ! col snow albedo, direct , for history files (col,bnd) [frc]
      real(r8), pointer :: albsni_hst_col       (:,:) => null() ! col snow albedo, diffuse, for history files (col,bnd) [frc]
 
+     real(r8), pointer :: fd_top_adjust        (:,:) => null() !adjustment factor for direct flux (numrad)
+     real(r8), pointer :: fi_top_adjust        (:,:) => null() !adjustment factor for diffuse flux (numrad)
+     real(r8), pointer :: f_dir                (:,:) => null() !adjustment factor for direct flux (numrad)
+     real(r8), pointer :: f_rdir               (:,:) => null() !adjustment factor for reflected-direct flux (numrad)
+     real(r8), pointer :: f_dif                (:,:) => null() !adjustment factor for diffuse flux (numrad)
+     real(r8), pointer :: f_rdif               (:,:) => null() !adjustment factor for reflected-diffuse flux (numrad)
+     
      real(r8), pointer :: ftdd_patch           (:,:) => null() ! patch down direct flux below canopy per unit direct flx    (numrad)
      real(r8), pointer :: ftid_patch           (:,:) => null() ! patch down diffuse flux below canopy per unit direct flx   (numrad)
      real(r8), pointer :: ftii_patch           (:,:) => null() ! patch down diffuse flux below canopy per unit diffuse flx  (numrad)
@@ -124,23 +132,25 @@ contains
     ! Initialize module time constant variables
     !
     ! !USES:
-      use shr_log_mod, only : errMsg => shr_log_errMsg
-      use fileutils  , only : getfil
-      use abortutils , only : endrun
-      use ncdio_pio  , only : file_desc_t, ncd_defvar, ncd_io, ncd_pio_openfile, ncd_pio_closefile
-      use spmdMod    , only : masterproc
+    use shr_log_mod, only : errMsg => shr_log_errMsg
+    use fileutils  , only : getfil
+    use abortutils , only : endrun
+    use ncdio_pio  , only : file_desc_t, ncd_defvar, ncd_io, ncd_pio_openfile, ncd_pio_closefile
+    use spmdMod    , only : masterproc
+    use topounit_varcon, only : max_topounits
+    use GridcellType , only : grc_pp
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds
     !
     ! !LOCAL VARIABLES:
-    integer            :: c,g          ! indices
+    integer            :: c,g,t,ti,topi          ! indices
     integer            :: mxsoil_color ! maximum number of soil color classes
     type(file_desc_t)  :: ncid         ! netcdf id
     character(len=256) :: locfn        ! local filename
     integer            :: ier          ! error status
     logical            :: readvar
-    integer  ,pointer  :: soic2d (:)   ! read in - soil color
+    integer  ,pointer  :: soic2d (:,:)   ! read in - soil color
     !---------------------------------------------------------------------
 
     ! Allocate module variable for soil color
@@ -150,37 +160,41 @@ contains
     ! Determine soil color and number of soil color classes
     ! if number of soil color classes is not on input dataset set it to 8
 
-      call getfil (fsurdat, locfn, 0)
-      call ncd_pio_openfile (ncid, locfn, 0)
+    call getfil (fsurdat, locfn, 0)
+    call ncd_pio_openfile (ncid, locfn, 0)
 
-      call ncd_io(ncid=ncid, varname='mxsoil_color', flag='read', data=mxsoil_color, readvar=readvar)
+    call ncd_io(ncid=ncid, varname='mxsoil_color', flag='read', data=mxsoil_color, readvar=readvar)
     if ( .not. readvar ) mxsoil_color = 8
 
-    allocate(soic2d(bounds%begg:bounds%endg))
-      call ncd_io(ncid=ncid, varname='SOIL_COLOR', flag='read', data=soic2d, dim1name=grlnd, readvar=readvar)
-      if (.not. readvar) then
-         call endrun(msg=' ERROR: SOIL_COLOR NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-      end if
+    allocate(soic2d(bounds%begg:bounds%endg,max_topounits))
+    call ncd_io(ncid=ncid, varname='SOIL_COLOR', flag='read', data=soic2d, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: SOIL_COLOR NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+    end if
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
-       isoicol(c) = soic2d(g)
+       t = col_pp%topounit(c)
+       topi = grc_pp%topi(g)
+       ti = t - topi + 1
+       isoicol(c) = soic2d(g,ti)
+       
     end do
     deallocate(soic2d)
 
-      call ncd_pio_closefile(ncid)
+    call ncd_pio_closefile(ncid)
 
     ! Determine saturated and dry soil albedos for n color classes and
     ! numrad wavebands (1=vis, 2=nir)
 
     allocate(albsat(mxsoil_color,numrad), albdry(mxsoil_color,numrad), stat=ier)
-      if (ier /= 0) then
-         write(iulog,*)'allocation error for albsat, albdry'
-         call endrun(msg=errMsg(__FILE__, __LINE__))
-      end if
+    if (ier /= 0) then
+       write(iulog,*)'allocation error for albsat, albdry'
+       call endrun(msg=errMsg(__FILE__, __LINE__))
+    end if
 
-      if (masterproc) then
-         write(iulog,*) 'Attempting to read soil colo data .....'
-      end if
+    if (masterproc) then
+       write(iulog,*) 'Attempting to read soil colo data .....'
+    end if
 
     if (mxsoil_color == 8) then
        albsat(1:8,1) = (/0.12_r8,0.11_r8,0.10_r8,0.09_r8,0.08_r8,0.07_r8,0.06_r8,0.05_r8/)
@@ -197,8 +211,8 @@ contains
        albdry(1:20,2) = (/0.61_r8,0.57_r8,0.53_r8,0.51_r8,0.49_r8,0.48_r8,0.45_r8,0.43_r8,&
             0.41_r8,0.39_r8,0.37_r8,0.35_r8,0.33_r8,0.31_r8,0.29_r8,0.27_r8,0.25_r8,0.23_r8,0.21_r8,0.16_r8/)
     else
-        write(iulog,*)'maximum color class = ',mxsoil_color,' is not supported'
-        call endrun(msg=errMsg(__FILE__, __LINE__))
+      write(iulog,*)'maximum color class = ',mxsoil_color,' is not supported'
+      call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
     ! Set alblakwi
@@ -258,6 +272,13 @@ contains
     allocate(this%albd_patch         (begp:endp,numrad))       ; this%albd_patch         (:,:) =spval
     allocate(this%albi_patch         (begp:endp,numrad))       ; this%albi_patch         (:,:) =spval
 
+    allocate(this%fd_top_adjust      (begp:endp,numrad))       ; this%fd_top_adjust      (:,:) =1._r8
+    allocate(this%fi_top_adjust      (begp:endp,numrad))       ; this%fi_top_adjust      (:,:) =1._r8
+    allocate(this%f_dir              (begp:endp,numrad))       ; this%f_dir              (:,:) =0._r8
+    allocate(this%f_rdir             (begp:endp,numrad))       ; this%f_rdir             (:,:) =0._r8
+    allocate(this%f_dif              (begp:endp,numrad))       ; this%f_dif              (:,:) =0._r8
+    allocate(this%f_rdif             (begp:endp,numrad))       ; this%f_rdif             (:,:) =0._r8
+    
     allocate(this%ftdd_patch         (begp:endp,numrad))       ; this%ftdd_patch         (:,:) =spval
     allocate(this%ftid_patch         (begp:endp,numrad))       ; this%ftid_patch         (:,:) =spval
     allocate(this%ftii_patch         (begp:endp,numrad))       ; this%ftii_patch         (:,:) =spval
@@ -332,7 +353,7 @@ contains
     call hist_addfld2d (fname='ALBI', units='proportion', type2d='numrad', &
          avgflag='A', long_name='surface albedo (indirect)', &
          ptr_patch=this%albi_patch, default='inactive', c2l_scale_type='urbanf')
-
+    
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
@@ -380,6 +401,12 @@ contains
     this%ftid_patch     (begp:endp, :) = 0.0_r8
     this%ftii_patch     (begp:endp, :) = 1.0_r8
 
+    this%fd_top_adjust  (begp:endp, :) = 1.0_r8
+    this%fi_top_adjust  (begp:endp, :) = 1.0_r8
+    this%f_dir          (begp:endp, :) = 0.0_r8
+    this%f_rdir         (begp:endp, :) = 0.0_r8
+    this%f_dif          (begp:endp, :) = 0.0_r8
+    this%f_rdif         (begp:endp, :) = 0.0_r8
   end subroutine InitCold
 
   !---------------------------------------------------------------------
@@ -737,6 +764,36 @@ contains
          dim1name='pft', dim2name='numrad', switchdim=.true., &
          long_name='down diffuse flux below veg per unit diffuse flux', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%ftii_patch)
+
+    call restartvar(ncid=ncid, flag=flag, varname='fd_top_adjust', xtype=ncd_double,  &
+         dim1name='pft', dim2name='numrad', switchdim=.true., &
+         long_name='sub-grid topographic factor for direct radiation', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%fd_top_adjust)
+         
+    call restartvar(ncid=ncid, flag=flag, varname='fi_top_adjust', xtype=ncd_double,  &
+         dim1name='pft', dim2name='numrad', switchdim=.true., &
+         long_name='sub-grid topographic factor for diffuse radiation', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%fi_top_adjust)
+
+    call restartvar(ncid=ncid, flag=flag, varname='f_dir', xtype=ncd_double,  &
+         dim1name='pft', dim2name='numrad', switchdim=.true., &
+         long_name='sub-grid topographic factor for direct radiation', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%f_dir)
+         
+    call restartvar(ncid=ncid, flag=flag, varname='f_rdir', xtype=ncd_double,  &
+         dim1name='pft', dim2name='numrad', switchdim=.true., &
+         long_name='sub-grid topographic factor for reflected-direct radiation', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%f_rdir)
+
+    call restartvar(ncid=ncid, flag=flag, varname='f_dif', xtype=ncd_double,  &
+         dim1name='pft', dim2name='numrad', switchdim=.true., &
+         long_name='sub-grid topographic factor for diffuse radiation', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%f_dif)
+         
+    call restartvar(ncid=ncid, flag=flag, varname='f_rdif', xtype=ncd_double,  &
+         dim1name='pft', dim2name='numrad', switchdim=.true., &
+         long_name='sub-grid topographic factor for reflected-diffuse radiation', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%f_rdif)
 
     !--------------------------------
     ! variables needed for SNICAR

@@ -18,7 +18,9 @@ namespace Homme
  */
 struct SimulationParams
 {
-  SimulationParams() : ftype(ForcingAlg::FORCING_OFF), params_set(false) {}
+  SimulationParams() : ftype(ForcingAlg::FORCING_OFF), params_set(false), nsplit(0) {}
+
+  void print();
 
   TimeStepType  time_step_type;
   MoistDry      moisture;
@@ -27,8 +29,8 @@ struct SimulationParams
   ForcingAlg    ftype;
   AdvectionForm theta_adv_form; // Only for theta model
 
-  int           rsplit;
-  int           qsplit;
+  int           rsplit, dt_remap_factor;
+  int           qsplit, dt_tracer_factor;
   int           qsize;
 
 
@@ -38,7 +40,7 @@ struct SimulationParams
 
   int       state_frequency;
   bool      disable_diagnostics;
-  bool      use_semi_lagrangian_transport;
+  int       transport_alg;
   bool      use_cpstar;
   bool      theta_hydrostatic_mode;   // Only for theta model
 
@@ -51,12 +53,53 @@ struct SimulationParams
   double    nu_div;
   int       hypervis_order;
   int       hypervis_subcycle;
+  int       hypervis_subcycle_tom;
   double    hypervis_scaling;
   double    nu_ratio1, nu_ratio2; //control balance between div and vort components in vector laplace
+  int       nsplit;
+  int       nsplit_iteration;
+  double    rearth; //propagated then to Geometry and SphereOps
 
   // Use this member to check whether the struct has been initialized
   bool      params_set;
 };
+
+inline void SimulationParams::print () {
+
+  printf ("\n************** CXX SimulationParams **********************\n\n");
+  printf ("   time_step_type: %d\n", etoi(time_step_type));
+  printf ("   moisture: %s\n", moisture==MoistDry::DRY ? "dry" : "moist");
+  printf ("   remap_alg: %d\n", etoi(remap_alg));
+  printf ("   test case: %d\n", etoi(test_case));
+  printf ("   ftype: %d\n", etoi(ftype));
+  printf ("   theta_adv_form: %d\n", etoi(theta_adv_form));
+  printf ("   rsplit: %d\n", rsplit);
+  printf ("   qsplit: %d\n", qsplit);
+  printf ("   qsize: %d\n", qsize);
+  printf ("   limiter_option: %d\n", limiter_option);
+  printf ("   state_frequency: %d\n", state_frequency);
+  printf ("   dcmip16_mu: %f\n", dcmip16_mu);
+  printf ("   nu: %f\n", nu);
+  printf ("   nu_p: %f\n", nu_p);
+  printf ("   nu_q: %f\n", nu_q);
+  printf ("   nu_s: %f\n", nu_s);
+  printf ("   nu_top: %f\n", nu_top);
+  printf ("   nu_div: %f\n", nu_div);
+  printf ("   hypervis_order: %d\n", hypervis_order);
+  printf ("   hypervis_subcycle: %d\n", hypervis_subcycle);
+  printf ("   hypervis_subcycle_tom: %d\n", hypervis_subcycle_tom);
+  printf ("   hypervis_scaling: %f\n", hypervis_scaling);
+  printf ("   nu_ratio1: %f\n", nu_ratio1);
+  printf ("   nu_ratio2: %f\n", nu_ratio2);
+  printf ("   use_cpstar: %s\n", (use_cpstar ? "yes" : "no"));
+  printf ("   transport_alg: %d\n", transport_alg);
+  printf ("   disable_diagnostics: %s\n", (disable_diagnostics ? "yes" : "no"));
+  printf ("   theta_hydrostatic_mode: %s\n", (theta_hydrostatic_mode ? "yes" : "no"));
+  printf ("   prescribed_wind: %s\n", (prescribed_wind ? "yes" : "no"));
+  printf ("   nsplit: %d\n", nsplit);
+  printf ("   rearth: %f\n", rearth);
+  printf ("\n**********************************************************\n");
+}
 
 } // namespace Homme
 

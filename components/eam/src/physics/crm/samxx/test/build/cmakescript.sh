@@ -129,6 +129,7 @@ cd ..
 ## GET THE NETCDF LINKING FLAGS
 ############################################################################
 NCFLAGS="`$NFHOME/bin/nf-config --flibs` `$NCHOME/bin/nc-config --libs`"
+NCFLAGS=`echo "$NCFLAGS" | xargs`
 printf "NetCDF Flags: $NCFLAGS\n\n"
 
 
@@ -140,15 +141,17 @@ unset CUDAFLAGS
 
 printf "FFLAGS: $FFLAGS\n\n"
 
-cmake                                    \
-  -DCMAKE_Fortran_FLAGS="${FFLAGS} -I$NCHOME/include -I$NFHOME/include"    \
-  -DYAKL_CXX_FLAGS="${YAKL_CXX_FLAGS} -I$NCHOME/include -I$NFHOME/include" \
-  -DNCFLAGS="$NCFLAGS"                   \
-  -DDEFS2D="$DEFS2D"                     \
-  -DDEFS3D="$DEFS3D"                     \
-  -DYAKL_CUDA_FLAGS="${YAKL_CUDA_FLAGS}" \
-  -DYAKL_HOME=${YAKL_HOME}               \
-  -DYAKL_ARCH="${YAKL_ARCH}"             \
+cmake                                      \
+  -DCMAKE_Fortran_FLAGS="$FFLAGS"          \
+  -DNCFLAGS="$NCFLAGS"                     \
+  -DDEFS2D="$DEFS2D"                       \
+  -DDEFS3D="$DEFS3D"                       \
+  -DYAKL_HOME=${YAKL_HOME}                 \
+  -DYAKL_CXX_FLAGS="${YAKL_CXX_FLAGS}"     \
+  -DYAKL_CUDA_FLAGS="${YAKL_CUDA_FLAGS}"   \
+  -DYAKL_C_FLAGS="${YAKL_C_FLAGS}"         \
+  -DYAKL_F90_FLAGS="${YAKL_F90_FLAGS}"     \
+  -DYAKL_ARCH="${YAKL_ARCH}"               \
   ..
 
 

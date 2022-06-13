@@ -99,6 +99,8 @@ VECTOR_SIMD_LOOP
     return *this;
   }
 
+  type& operator= (const type& src) = default;
+
   KOKKOS_FORCEINLINE_FUNCTION
   type &loadUnaligned(value_type const *p) {
 VECTOR_SIMD_LOOP
@@ -138,9 +140,10 @@ VECTOR_SIMD_LOOP
 #else
   KOKKOS_FORCEINLINE_FUNCTION
   void debug_set_invalid(int left, int right) {
-    for(int i = left; i <= right; i++) {
-      _data[i] = 0.0 / 0.0;
-    }
+// removing this for now as this causes crash in DEBUG mode
+//    for(int i = left; i <= right; i++) {
+//      _data[i] = 0.0 / 0.0;
+//    }
   }
 #endif
 

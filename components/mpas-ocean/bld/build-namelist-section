@@ -39,6 +39,15 @@ add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
 
+###################################
+# Namelist group: transport_tests #
+###################################
+
+add_default($nl, 'config_transport_tests_vert_levels');
+add_default($nl, 'config_transport_tests_temperature');
+add_default($nl, 'config_transport_tests_salinity');
+add_default($nl, 'config_transport_tests_flow_id');
+
 ####################################
 # Namelist group: time_integration #
 ####################################
@@ -84,14 +93,6 @@ add_default($nl, 'config_Leith_parameter');
 add_default($nl, 'config_Leith_dx');
 add_default($nl, 'config_Leith_visc2_max');
 
-####################################################
-# Namelist group: mesoscale_eddy_parameterizations #
-####################################################
-
-add_default($nl, 'config_eddying_resolution_taper');
-add_default($nl, 'config_eddying_resolution_ramp_min');
-add_default($nl, 'config_eddying_resolution_ramp_max');
-
 #########################################
 # Namelist group: Redi_isopycnal_mixing #
 #########################################
@@ -105,6 +106,10 @@ add_default($nl, 'config_Redi_use_surface_taper');
 add_default($nl, 'config_Redi_N2_based_taper_enable');
 add_default($nl, 'config_Redi_N2_based_taper_min');
 add_default($nl, 'config_Redi_N2_based_taper_limit_term1');
+add_default($nl, 'config_Redi_min_layers_diag_terms');
+add_default($nl, 'config_Redi_horizontal_taper');
+add_default($nl, 'config_Redi_horizontal_ramp_min');
+add_default($nl, 'config_Redi_horizontal_ramp_max');
 
 ############################################
 # Namelist group: GM_eddy_parameterization #
@@ -113,7 +118,8 @@ add_default($nl, 'config_Redi_N2_based_taper_limit_term1');
 add_default($nl, 'config_use_GM');
 add_default($nl, 'config_GM_closure');
 add_default($nl, 'config_GM_constant_kappa');
-add_default($nl, 'config_GM_constant_gravWaveSpeed');
+add_default($nl, 'config_GM_constant_bclModeSpeed');
+add_default($nl, 'config_GM_minBclModeSpeed_method');
 add_default($nl, 'config_GM_spatially_variable_min_kappa');
 add_default($nl, 'config_GM_spatially_variable_max_kappa');
 add_default($nl, 'config_GM_spatially_variable_baroclinic_mode');
@@ -123,6 +129,11 @@ add_default($nl, 'config_GM_EG_riMin');
 add_default($nl, 'config_GM_EG_kappa_factor');
 add_default($nl, 'config_GM_EG_Rossby_factor');
 add_default($nl, 'config_GM_EG_Rhines_factor');
+add_default($nl, 'config_GM_horizontal_taper');
+add_default($nl, 'config_GM_horizontal_ramp_min');
+add_default($nl, 'config_GM_horizontal_ramp_max');
+add_default($nl, 'config_GMRedi_Rossby_ramp_min');
+add_default($nl, 'config_GMRedi_Rossby_ramp_max');
 
 ####################################
 # Namelist group: Rayleigh_damping #
@@ -217,6 +228,22 @@ add_default($nl, 'config_sw_absorption_type');
 add_default($nl, 'config_jerlov_water_type');
 add_default($nl, 'config_surface_buoyancy_depth');
 add_default($nl, 'config_enable_shortwave_energy_fixer');
+
+###########################################
+# Namelist group: self_attraction_loading #
+###########################################
+
+add_default($nl, 'config_use_self_attraction_loading');
+add_default($nl, 'config_self_attraction_loading_smoothing_width');
+add_default($nl, 'config_mpas_to_grid_weights_file');
+add_default($nl, 'config_grid_to_mpas_weights_file');
+add_default($nl, 'config_self_attraction_loading_compute_interval');
+add_default($nl, 'config_nLatitude');
+add_default($nl, 'config_nLongitude');
+add_default($nl, 'config_use_parallel_self_attraction_loading');
+add_default($nl, 'config_parallel_self_attraction_loading_order');
+add_default($nl, 'config_parallel_self_attraction_loading_n_cells_per_block');
+add_default($nl, 'config_parallel_self_attraction_loading_bfb');
 
 ###########################################
 # Namelist group: tidal_potential_forcing #
@@ -362,13 +389,13 @@ add_default($nl, 'config_btr_gam2_SSHWt1');
 add_default($nl, 'config_btr_gam3_velWt2');
 add_default($nl, 'config_btr_solve_SSH2');
 
-####################################
-# Namelist group: semi_implicit_ts #
-####################################
+#####################################
+# Namelist group: split_implicit_ts #
+#####################################
 
 add_default($nl, 'config_btr_si_preconditioner');
 add_default($nl, 'config_btr_si_tolerance');
-add_default($nl, 'config_n_btr_si_outer_iter');
+add_default($nl, 'config_n_btr_si_large_iter');
 add_default($nl, 'config_btr_si_partition_match_mode');
 
 #####################################
@@ -490,6 +517,7 @@ add_default($nl, 'config_use_ecosysTracers_exponential_decay');
 add_default($nl, 'config_use_ecosysTracers_idealAge_forcing');
 add_default($nl, 'config_use_ecosysTracers_ttd_forcing');
 add_default($nl, 'config_use_ecosysTracers_surface_value');
+add_default($nl, 'config_use_ecosysTracers_river_inputs_from_coupler');
 add_default($nl, 'config_use_ecosysTracers_sea_ice_coupling');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level1');
 add_default($nl, 'config_ecosysTracers_diagnostic_fields_level2');
@@ -524,6 +552,32 @@ add_default($nl, 'config_use_MacroMoleculesTracers_idealAge_forcing');
 add_default($nl, 'config_use_MacroMoleculesTracers_ttd_forcing');
 add_default($nl, 'config_use_MacroMoleculesTracers_surface_value');
 add_default($nl, 'config_use_MacroMoleculesTracers_sea_ice_coupling');
+
+##################################################
+# Namelist group: tracer_forcing_idealAgeTracers #
+##################################################
+
+add_default($nl, 'config_use_idealAgeTracers');
+add_default($nl, 'config_use_idealAgeTracers_surface_bulk_forcing');
+add_default($nl, 'config_use_idealAgeTracers_surface_restoring');
+add_default($nl, 'config_use_idealAgeTracers_interior_restoring');
+add_default($nl, 'config_use_idealAgeTracers_exponential_decay');
+add_default($nl, 'config_use_idealAgeTracers_idealAge_forcing');
+add_default($nl, 'config_use_idealAgeTracers_ttd_forcing');
+
+#############################################
+# Namelist group: tracer_forcing_CFCTracers #
+#############################################
+
+add_default($nl, 'config_use_CFCTracers');
+add_default($nl, 'config_use_CFCTracers_surface_bulk_forcing');
+add_default($nl, 'config_use_CFCTracers_surface_restoring');
+add_default($nl, 'config_use_CFCTracers_interior_restoring');
+add_default($nl, 'config_use_CFCTracers_exponential_decay');
+add_default($nl, 'config_use_CFCTracers_idealAge_forcing');
+add_default($nl, 'config_use_CFCTracers_ttd_forcing');
+add_default($nl, 'config_use_CFC11');
+add_default($nl, 'config_use_CFC12');
 
 ##################################
 # Namelist group: AM_globalStats #
@@ -1052,8 +1106,8 @@ add_default($nl, 'config_AM_sedimentTransport_use_lat_lon_coords');
 
 add_default($nl, 'config_AM_harmonicAnalysis_enable');
 add_default($nl, 'config_AM_harmonicAnalysis_compute_interval');
-add_default($nl, 'config_AM_harmonicAnalysis_start');
-add_default($nl, 'config_AM_harmonicAnalysis_end');
+add_default($nl, 'config_AM_harmonicAnalysis_start_delay');
+add_default($nl, 'config_AM_harmonicAnalysis_duration');
 add_default($nl, 'config_AM_harmonicAnalysis_output_stream');
 add_default($nl, 'config_AM_harmonicAnalysis_restart_stream');
 add_default($nl, 'config_AM_harmonicAnalysis_compute_on_startup');
@@ -1066,4 +1120,16 @@ add_default($nl, 'config_AM_harmonicAnalysis_use_K1');
 add_default($nl, 'config_AM_harmonicAnalysis_use_O1');
 add_default($nl, 'config_AM_harmonicAnalysis_use_Q1');
 add_default($nl, 'config_AM_harmonicAnalysis_use_P1');
+
+########################################
+# Namelist group: AM_conservationCheck #
+########################################
+
+add_default($nl, 'config_AM_conservationCheck_enable');
+add_default($nl, 'config_AM_conservationCheck_compute_interval');
+add_default($nl, 'config_AM_conservationCheck_output_stream');
+add_default($nl, 'config_AM_conservationCheck_compute_on_startup');
+add_default($nl, 'config_AM_conservationCheck_write_on_startup');
+add_default($nl, 'config_AM_conservationCheck_write_to_logfile');
+add_default($nl, 'config_AM_conservationCheck_restart_stream');
 

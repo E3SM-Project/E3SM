@@ -161,7 +161,7 @@
 			description="Specifies the third dimension of the modal aerosol optical parameter matrix"
 		/>
 		<dim name="nAlgae"
-			definition="3"
+			definition="2"
 			description="Number of algal species in use"
 		/>
 		<dim name="nDOC"
@@ -743,8 +743,8 @@
 			possible_values="true or false"
 			icepack_name="tr_rsnw"
 		/>
-		<nml_option name="config_use_special_boundaries_zero_tracers" type="logical" default_value="false" units="unitless"
-			description="Zero out tracers in given boundary cells."
+		<nml_option name="config_use_special_boundaries_tracers" type="logical" default_value="false" units="unitless"
+			description="Modify tracers in given boundary cells."
 			possible_values="true or false"
 		/>
 	</nml_record>
@@ -794,6 +794,11 @@
 			description="Use the chlorophyll tracer (currently not implemented!)"
 			possible_values="false"
 			icepack_name="tr_bgc_chl"
+		/>
+		<nml_option name="config_use_macromolecules" type="logical" default_value="false" units="unitless"
+			description="Use ocean macromolecule to determine DOC fractions in ice-ocean coupling"
+			possible_values="true or false"
+			icepack_name="use_macromolecules"
 		/>
 		<nml_option name="config_use_ammonium" type="logical" default_value="false" units="unitless"
 			description="Use the ammonium tracer"
@@ -4089,6 +4094,25 @@
 		<var name="verticalShortwaveGrid"		type="real"	dimensions="nIceLayersP1"				name_in_code="verticalShortwaveGrid"		packages="pkgColumnBiogeochemistry;pkgColumnPackage"/>
 		<var name="carbonToNitrogenRatioAlgae"		type="real"	dimensions="maxAlgaeType"				name_in_code="carbonToNitrogenRatioAlgae"/>
 		<var name="carbonToNitrogenRatioDON"		type="real"	dimensions="maxDONType"				name_in_code="carbonToNitrogenRatioDON"/>
+		<var name="DOCPoolFractions"			type="real"	dimensions="maxDOCType"	  			name_in_code="DOCPoolFractions"/>
+	</var_struct>
+	<!-- Diagnostics Biogeochemistry -->
+	<var_struct name="diagnostics_biogeochemistry" time_levs="1">
+		<var name="bgridPorosityIceCell"			type="real"	dimensions="nBioLayersP1 nCells Time"			name_in_code="bgridPorosityIceCell"
+			units=""
+			description="Cell ice volume weighted average brine porosity on ice interface biological grid"
+			packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
+		<var name="bgridSalinityIceCell"			type="real"	dimensions="nBioLayersP1 nCells Time"			name_in_code="bgridSalinityIceCell"
+			units="ppt"
+			description="Cell ice volume weighted average salinity on ice interface biological grid"
+			packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
+		<var name="bgridTemperatureIceCell"		type="real"	dimensions="nBioLayersP1 nCells Time"			name_in_code="bgridTemperatureIceCell"
+			units="oC"
+			description="Cell ice volume weighted average temperature on ice interface biological grid"
+			packages="pkgColumnBiogeochemistry;pkgColumnPackage"
+		/>
 	</var_struct>
 
 	<!-- prescribed ice mode -->
@@ -4202,12 +4226,14 @@
 
 	<!-- Special boundaries -->
 	<var_struct name="special_boundaries" time_levs="1" packages="pkgSpecialBoundaries">
-	        <var name="vertexBoundaryType" type="integer" dimensions="nVertices"/>
-	        <var name="vertexBoundarySource" type="integer" dimensions="nVertices"/>
-	        <var name="vertexBoundarySourceLocal" type="integer" dimensions="nVertices"/>
+		<var name="vertexBoundaryType" type="integer" dimensions="nVertices"/>
+		<var name="vertexBoundarySource" type="integer" dimensions="nVertices"/>
+		<var name="vertexBoundarySourceLocal" type="integer" dimensions="nVertices"/>
 		<var name="solveVelocitySpecialBoundaries" type="integer" dimensions="nVertices"/>
 		<var name="solveStressSpecialBoundaries" type="integer" dimensions="nCells"/>
 		<var name="tracerBoundaryType" type="integer" dimensions="nCells"/>
+		<var name="tracerBoundarySource" type="integer" dimensions="nCells"/>
+		<var name="tracerBoundarySourceLocal" type="integer" dimensions="nCells"/>
 	</var_struct>
 
 #include "analysis_members/Registry_seaice_analysis_members.xml"

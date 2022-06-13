@@ -39,6 +39,7 @@ contains
     ! !USES:
     use pftvarcon        , only : noveg, nc3crop, nc3irrig, nbrdlf_evr_shrub, nbrdlf_dcd_brl_shrub
     use pftvarcon        , only : ncorn, ncornirrig, npcropmin, ztopmx, laimx
+    use pftvarcon        , only : nmiscanthus, nmiscanthusirrig, nswitchgrass, nswitchgrassirrig
     use clm_time_manager , only : get_rad_step_size
     use elm_varctl       , only : spinup_state, spinup_mortality_factor
     !
@@ -197,7 +198,9 @@ contains
 
                if (tlai(p) >= laimx(ivt(p))) peaklai(p) = 1 ! used in CNAllocation
 
-               if (ivt(p) == ncorn .or. ivt(p) == ncornirrig) then
+               if (ivt(p) == ncorn .or. ivt(p) == ncornirrig .or. &
+                    ivt(p) == nmiscanthus .or. ivt(p) == nmiscanthusirrig .or. &
+                    ivt(p) == nswitchgrass .or. ivt(p) == nswitchgrassirrig) then
                   tsai(p) = 0.1_r8 * tlai(p)
                else
                   tsai(p) = 0.2_r8 * tlai(p)

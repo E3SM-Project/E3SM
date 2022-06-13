@@ -77,7 +77,7 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_vel_forcing_surface_stress_tend(sfcFlxAttCoeff, &
-                               sfcStress, layerThickEdge, tend, err)!{{{
+                               sfcStress, layerThickEdgeMean, tend, err)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -88,7 +88,7 @@ contains
          sfcFlxAttCoeff  !< [in] attenuation coefficient for sfc fluxes
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThickEdge  !< [in] thickness at edge
+         layerThickEdgeMean  !< [in] mean thickness at edge
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -135,7 +135,7 @@ contains
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, edgeMask, &
-      !$acc            sfcFlxAttCoeff, sfcStress, layerThickEdge, &
+      !$acc            sfcFlxAttCoeff, sfcStress, layerThickEdgeMean, &
       !$acc            tend) &
       !$acc    private(k, kmax, cell1, cell2, zBot, zTop, &
       !$acc            attCoeff, attDepth, remainingStress, &
@@ -158,7 +158,7 @@ contains
         remainingStress = 1.0_RKIND
         kmax = maxLevelEdgeTop(iEdge)
         do k = minLevelEdgeBot(iEdge), kmax
-           zBot = zTop - layerThickEdge(k,iEdge)
+           zBot = zTop - layerThickEdgeMean(k,iEdge)
            attDepth = max(zBot/attCoeff, maxAttDepth)
 
            transCoeffBot = exp(attDepth)
@@ -168,7 +168,7 @@ contains
 
            tend(k,iEdge) =  tend(k,iEdge) + &
                             edgeMask(k,iEdge)*sfcStress(iEdge) * &
-                            absorb/rho_sw/layerThickEdge(k,iEdge)
+                            absorb/rho_sw/layerThickEdgeMean(k,iEdge)
 
            zTop = zBot
            transCoeffTop = transCoeffBot
@@ -181,7 +181,7 @@ contains
            tend(kmax,iEdge) = tend(kmax,iEdge) &
                             + edgeMask(kmax,iEdge)*sfcStress(iEdge)* &
                               remainingStress/rho_sw/ &
-                              layerThickEdge(kmax,iEdge)
+                              layerThickEdgeMean(kmax,iEdge)
         end if
       enddo
 #ifndef MPAS_OPENACC

@@ -41,6 +41,13 @@ module ocn_surface_land_ice_fluxes
    !
    !--------------------------------------------------------------------
 
+   logical, public :: &
+      landIceFluxesOn,   &! on/off switch for land ice fluxes
+      landIcePressureOn, &! on/off switch for land ice pressure
+      isomipOn,          &! use ISOMIP flux formulation
+      jenkinsOn,         &! use Jenkins flux formulation
+      hollandJenkinsOn    ! use Holland-Jenkins flux formulation
+
    !--------------------------------------------------------------------
    !
    ! Public member functions
@@ -60,11 +67,7 @@ module ocn_surface_land_ice_fluxes
    !--------------------------------------------------------------------
 
    logical :: &
-      landIceFluxesOff, &! on/off switch for land ice fluxes
-      standaloneOff,    &! flag to determine coupled or standalone
-      isomipOn,         &! use ISOMIP flux formulation
-      jenkinsOn,        &! use Jenkins flux formulation
-      hollandJenkinsOn, &! use Holland-Jenkins flux formulation
+      landIceStandaloneOn,    &! flag to determine coupled or standalone
       useHollandJenkinsAdvDiff ! use Holland-Jenkins advection-diffusion
 
    real (kind=RKIND) :: &
@@ -123,7 +126,7 @@ contains
 
       err = 0
 
-      if (landIceFluxesOff) return
+      if (.not.landIceFluxesOn) return
 
       call mpas_timer_start("land_ice_" // trim(groupName))
 
@@ -184,7 +187,7 @@ contains
       !*** otherwise, start timer
 
       err = 0
-      if (landIceFluxesOff) return
+      if (.not.landIceFluxesOn) return
 
       call mpas_timer_start("top_drag", .false.)
 
@@ -242,14 +245,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_surface_land_ice_fluxes_thick(meshPool, forcingPool, surfaceThicknessFlux, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+   subroutine ocn_surface_land_ice_fluxes_thick(forcingPool, surfaceThicknessFlux, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -274,29 +270,37 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell
-      integer, pointer :: nCells
 
       real (kind=RKIND), dimension(:), pointer :: landIceFreshwaterFlux
 
       err = 0
 
-      if (landIceFluxesOff) return
+      if (.not.landIceFluxesOn) return
 
       call mpas_timer_start("land_ice_thick")
-
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
 
       ! Build surface fluxes at cell centers
+#ifdef MPAS_OPENACC
+      !$acc enter data copyin(landIceFreshwaterFlux)
+
+      !$acc parallel loop present(surfaceThicknessFlux, landIceFreshwaterFlux)
+#else
       !$omp parallel
       !$omp do schedule(runtime)
-      do iCell = 1, nCells
+#endif
+      do iCell = 1, nCellsAll
         surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + landIceFreshwaterFlux(iCell) / rho_sw
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
 
+#ifdef MPAS_OPENACC
+      !$acc exit data delete(landIceFreshwaterFlux)
+#endif
       call mpas_timer_stop("land_ice_thick")
 
    end subroutine ocn_surface_land_ice_fluxes_thick!}}}
@@ -352,7 +356,7 @@ contains
 
       err = 0
 
-      if (landIceFluxesOff) return
+      if (.not.landIceFluxesOn) return
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
@@ -420,8 +424,6 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: tracersPool
-
       integer :: iCell, nCells
       integer, dimension(:), pointer :: nCellsArray
 
@@ -457,7 +459,7 @@ contains
 
       err = 0
 
-      if (standaloneOff) return
+      if (.not.landIceStandaloneOn) return
 
       call mpas_timer_start("land_ice_build_arrays")
 
@@ -664,8 +666,6 @@ contains
 
       err = 0
 
-      landIceFluxesOff = .true.
-      standaloneOff    = .true.
       isomipOn         = .false.
       jenkinsOn        = .false.
       hollandJenkinsOn = .false.
@@ -677,14 +677,24 @@ contains
 
       select case (trim(config_land_ice_flux_mode))
       case ('standalone','Standalone','STANDALONE')
-         landIceFluxesOff = .false.
-         standaloneOff    = .false.
+         landIcePressureOn = .true.
+         landIceFluxesOn = .true.
+         landIceStandaloneOn = .true.
       case ('coupled','Coupled','COUPLED')
-         landIceFluxesOff = .false.
-         standaloneOff    = .true.
+         landIcePressureOn = .true.
+         landIceFluxesOn = .true.
+         landIceStandaloneOn = .false.
+      case ('pressure_only','Pressure_Only','PRESSURE_ONLY')
+         landIcePressureOn = .true.
+         landIceFluxesOn = .false.
+         landIceStandaloneOn = .false.
+      case ('off','Off','OFF')
+         landIcePressureOn = .false.
+         landIceFluxesOn = .false.
+         landIceStandaloneOn = .false.
       case default
-         landIceFluxesOff = .true.
-         standaloneOff    = .true.
+         call mpas_log_write( ' Error: Incorrect choice of config_land_ice_flux_mode: '// config_land_ice_flux_mode)
+         err = 1
          return
       end select
 
@@ -800,11 +810,9 @@ contains
     !
     !-----------------------------------------------------------------
 
-    real (kind=RKIND) :: T0, transferVelocityRatio, Tlatent, a, b, c, eta, &
+    real (kind=RKIND) :: T0, transferVelocityRatio, Tlatent, a, b, c, &
                          dTf_dS
     integer :: iCell
-
-    logical :: coupled
 
     real (kind=RKIND), parameter :: minInterfaceSalinity = 0.001_RKIND
 

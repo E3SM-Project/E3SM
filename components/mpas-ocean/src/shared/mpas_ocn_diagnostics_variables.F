@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_diagnostics
+!  ocn_diagnostics_variables
 !
 !> \brief MPAS ocean diagnostics variable definitions
 !> \author Matt Turner
@@ -56,7 +56,8 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: salineContractCoeff
    real (kind=RKIND), dimension(:,:), pointer :: BruntVaisalaFreqTop
    real (kind=RKIND), dimension(:,:), pointer :: tangentialVelocity
-   real (kind=RKIND), dimension(:,:), pointer :: layerThickEdge
+   real (kind=RKIND), dimension(:,:), pointer :: layerThickEdgeFlux
+   real (kind=RKIND), dimension(:,:), pointer :: layerThickEdgeMean
    real (kind=RKIND), dimension(:,:), pointer :: kineticEnergyCell
    real (kind=RKIND), dimension(:,:), pointer :: vertVelocityTop
    real (kind=RKIND), dimension(:,:), pointer :: vertTransportVelocityTop
@@ -68,6 +69,7 @@ module ocn_diagnostics_variables
 
    real (kind=RKIND), dimension(:), pointer :: gradSSH
    real (kind=RKIND), dimension(:), pointer :: pressureAdjustedSSH
+   real (kind=RKIND), dimension(:), pointer :: ssh_sal
 
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceLayerValue
@@ -97,8 +99,7 @@ module ocn_diagnostics_variables
       transportVelocityX, transportVelocityY, transportVelocityZ, transportVelocityZonal, &
       transportVelocityMeridional, GMBolusVelocityX, GMBolusVelocityY, &
       GMBolusVelocityZ, GMBolusVelocityZonal, GMBolusVelocityMeridional, gmStreamFuncTopOfEdge, &
-      GMStreamFuncX, GMStreamFuncY, GMStreamFuncZ, GMStreamFuncZonal, GMStreamFuncMeridional, &
-      gmStreamFuncTopOfCell
+      GMStreamFuncX, GMStreamFuncY, GMStreamFuncZ, GMStreamFuncZonal, GMStreamFuncMeridional
 
    real (kind=RKIND), dimension(:,:), pointer :: rx1Edge
    real (kind=RKIND), dimension(:,:), pointer :: rx1Cell
@@ -183,16 +184,14 @@ module ocn_diagnostics_variables
 
    real (kind=RKIND), pointer :: globalVerticalStretchMax, globalVerticalStretchMin
    real (kind=RKIND), dimension(:), pointer :: betaEdge
-   real (kind=RKIND), dimension(:), pointer :: eddyLength
-   real (kind=RKIND), dimension(:), pointer :: eddyTime
-   real (kind=RKIND), dimension(:), pointer :: gmResolutionTaper
+   real (kind=RKIND), dimension(:), pointer :: RediHorizontalTaper, gmHorizontalTaper, RossbyRadius
 
    ! Semi-implicit Array Pointers
-   real (kind=RKIND), dimension(:), pointer :: CGvec_r0,CGvec_r00,CGvec_r1 ,CGvec_rh0,CGvec_rh1,CGvec_ph0,CGvec_ph1
-   real (kind=RKIND), dimension(:), pointer :: CGvec_v0,CGvec_v1 ,CGvec_s0 ,CGvec_s1 ,CGvec_sh0,CGvec_sh1
-   real (kind=RKIND), dimension(:), pointer :: CGvec_t0,CGvec_t1 ,CGvec_q0 ,CGvec_q1 ,CGvec_qh0
-   real (kind=RKIND), dimension(:), pointer :: CGvec_w0,CGvec_w1 ,CGvec_wh0,CGvec_wh1,CGvec_y0
-   real (kind=RKIND), dimension(:), pointer :: CGvec_z0,CGvec_z1 ,CGvec_zh0,CGvec_zh1
+   real (kind=RKIND), dimension(:), pointer :: SIvec_r0,SIvec_r00,SIvec_r1 ,SIvec_rh0,SIvec_rh1,SIvec_ph0,SIvec_ph1
+   real (kind=RKIND), dimension(:), pointer :: SIvec_v0,SIvec_s0 ,SIvec_s1 ,SIvec_sh0,SIvec_sh1
+   real (kind=RKIND), dimension(:), pointer :: SIvec_t0,SIvec_t1 ,SIvec_q0 ,SIvec_q1 ,SIvec_qh0
+   real (kind=RKIND), dimension(:), pointer :: SIvec_w0,SIvec_w1 ,SIvec_wh0,SIvec_wh1,SIvec_y0
+   real (kind=RKIND), dimension(:), pointer :: SIvec_z0,SIvec_z1 ,SIvec_zh0,SIvec_zh1
 
    !--------------------------------------------------------------------
    !
@@ -244,7 +243,7 @@ contains
                    wettingVelocityField)
       end if
 
-      if ( config_use_GM ) then
+      if (config_use_GM.or.config_use_Redi) then
          call mpas_pool_get_array(diagnosticsPool, 'RediKappa', &
                    RediKappa)
          call mpas_pool_get_array(diagnosticsPool, 'RediKappaScaling', &
@@ -258,8 +257,12 @@ contains
                    gmBolusKappa)
          call mpas_pool_get_array(diagnosticsPool, 'gmKappaScaling', &
                    gmKappaScaling)
-         call mpas_pool_get_array(diagnosticsPool, 'gmResolutionTaper', &
-                   gmResolutionTaper)
+         call mpas_pool_get_array(diagnosticsPool, 'RediHorizontalTaper', &
+                   RediHorizontalTaper)
+         call mpas_pool_get_array(diagnosticsPool, 'gmHorizontalTaper', &
+                   gmHorizontalTaper)
+         call mpas_pool_get_array(diagnosticsPool, 'RossbyRadius', &
+                   RossbyRadius)
       end if
 
       if ( config_compute_active_tracer_budgets ) then
@@ -341,6 +344,12 @@ contains
                    topographic_wave_drag)
       end if
 
+      if (config_use_tidal_potential_forcing) then
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'ssh_sal', &
+                   ssh_sal)
+      end if
+
       if ( trim(config_ocean_run_mode) == 'init' .or. &
                 config_AM_debugDiagnostics_enable ) then
          call mpas_pool_get_array(diagnosticsPool, 'rx1MaxCell', &
@@ -386,8 +395,6 @@ contains
          ! GM-related fields
          call mpas_pool_get_array(diagnosticsPool, 'cGMphaseSpeed', &
                    cGMphaseSpeed)
-         call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfCell', &
-                   gmStreamFuncTopOfCell)
          call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfEdge', &
                    gmStreamFuncTopOfEdge)
          call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncX', &
@@ -415,8 +422,10 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'vertGMBolusVelocityTop', &
                    vertGMBolusVelocityTop)
 
-         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', &
-                   layerThickEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdgeFlux', &
+                   layerThickEdgeFlux)
+         call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdgeMean', &
+                   layerThickEdgeMean)
 
          call mpas_pool_get_array(diagnosticsPool, &
                   'normalizedRelativeVorticityEdge', &
@@ -569,8 +578,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'barotropicCoriolisTerm', &
                 barotropicCoriolisTerm)
       call mpas_pool_get_array(diagnosticsPool, 'betaEdge', betaEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'eddyLength', eddyLength)
-      call mpas_pool_get_array(diagnosticsPool, 'eddyTime', eddyTime)
       call mpas_pool_get_array(diagnosticsPool, &
                'bottomLayerShortwaveTemperatureFlux', &
                 bottomLayerShortwaveTemperatureFlux)
@@ -586,39 +593,38 @@ contains
                 surfacePressure)
 
       ! Semi-implicit Array Pointer retrievals
-      if (trim(config_time_integrator) == 'semi_implicit') then
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_r0', CGvec_r0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_r1', CGvec_r1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_v0', CGvec_v0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_v1', CGvec_v1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_w0', CGvec_w0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_w1', CGvec_w1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_t0', CGvec_t0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_q0', CGvec_q0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_s0', CGvec_s0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_s1', CGvec_s1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_t0', CGvec_t0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_t1', CGvec_t1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_y0', CGvec_y0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_z0', CGvec_z0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_z1', CGvec_z1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_r00', CGvec_r00)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_rh0', CGvec_rh0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_rh1', CGvec_rh1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_wh0', CGvec_wh0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_wh1', CGvec_wh1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_ph0', CGvec_ph0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_ph1', CGvec_ph1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_qh0', CGvec_qh0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_sh0', CGvec_sh0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_sh1', CGvec_sh1)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_zh0', CGvec_zh0)
-         call mpas_pool_get_array(diagnosticsPool, 'CGvec_zh1', CGvec_zh1)
+      if (trim(config_time_integrator) == 'split_implicit') then
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_r0', SIvec_r0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_r1', SIvec_r1)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_v0', SIvec_v0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_w0', SIvec_w0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_w1', SIvec_w1)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_t0', SIvec_t0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_q0', SIvec_q0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_s0', SIvec_s0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_s1', SIvec_s1)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_t0', SIvec_t0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_t1', SIvec_t1)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_y0', SIvec_y0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_z0', SIvec_z0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_z1', SIvec_z1)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_r00', SIvec_r00)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_rh0', SIvec_rh0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_rh1', SIvec_rh1)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_wh0', SIvec_wh0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_wh1', SIvec_wh1)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_ph0', SIvec_ph0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_ph1', SIvec_ph1)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_qh0', SIvec_qh0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_sh0', SIvec_sh0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_sh1', SIvec_sh1)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_zh0', SIvec_zh0)
+         call mpas_pool_get_array(diagnosticsPool, 'SIvec_zh1', SIvec_zh1)
       end if
 
       ! Copy diagnostic variables to accelerator
       if ( trim(config_land_ice_flux_mode) /= 'off' ) then
-         !$acc enter data copyin(                                 &
+         !$acc enter data create(                                 &
          !$acc                   topDrag,                         &
          !$acc                   topDragMag,                      &
          !$acc                   indexBLT,                        &
@@ -630,10 +636,13 @@ contains
          !$acc                   landIceFrictionVelocity)
       end if
       if (config_use_topographic_wave_drag) then
-         !$acc enter data copyin(topographic_wave_drag)
+         !$acc enter data create(topographic_wave_drag)
+      end if
+      if (config_use_self_attraction_loading) then
+         !$acc enter data copyin(ssh_sal)
       end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
-         !$acc enter data copyin(                          &
+         !$acc enter data create(                          &
          !$acc                   rx1Edge,                  &
          !$acc                   rx1Cell,                  &
          !$acc                   rx1MaxEdge,               &
@@ -645,13 +654,13 @@ contains
       end if
       if ( trim(config_ocean_run_mode) == 'init' .or. &
                 config_AM_debugDiagnostics_enable ) then
-         !$acc enter data copyin(                          &
+         !$acc enter data create(                          &
          !$acc                   rx1MaxCell,               &
          !$acc                   globalRx1Max)
       end if
       if ( trim(config_ocean_run_mode) == 'forward' .or. &
            trim(config_ocean_run_mode) == 'analysis' ) then
-         !$acc enter data copyin(                                 &
+         !$acc enter data create(                                 &
          !$acc                   k33,                             &
          !$acc                   gradSSH,                         &
          !$acc                   gradSSHX,                        &
@@ -673,7 +682,8 @@ contains
          !$acc                   GMStreamFuncX,                   &
          !$acc                   GMStreamFuncY,                   &
          !$acc                   GMStreamFuncZ,                   &
-         !$acc                   layerThickEdge,                  &
+         !$acc                   layerThickEdgeFlux,              &
+         !$acc                   layerThickEdgeMean,              &
          !$acc                   slopeTriadDown,                  &
          !$acc                   normRelVortEdge,                 &
          !$acc                   surfaceVelocity,                 &
@@ -701,7 +711,6 @@ contains
          !$acc                   vertAleTransportTop,             &
          !$acc                   GMBolusVelocityZonal,            &
          !$acc                   bulkRichardsonNumber,            &
-         !$acc                   gmStreamFuncTopOfCell,           &
          !$acc                   gmStreamFuncTopOfEdge,           &
          !$acc                   indexSSHGradientZonal,           &
          !$acc                   relativeVorticityCell,           &
@@ -731,23 +740,25 @@ contains
          !$acc                   )
       end if
       if ( trim(config_ocean_run_mode) == 'forward' ) then
-         !$acc enter data copyin( &
+         !$acc enter data create( &
          !$acc                   wettingVelocity              &
          !$acc                   )
       end if
-      if ( config_use_GM ) then
-         !$acc enter data copyin(                   &
+      if (config_use_GM.or.config_use_Redi) then
+         !$acc enter data create(                   &
          !$acc                   RediKappa,         &
          !$acc                   gmBolusKappa,      &
          !$acc                   gmKappaScaling,    &
          !$acc                   RediKappaScaling,  &
          !$acc                   rediLimiterCount,  &
          !$acc                   RediKappaSfcTaper, &
-         !$acc                   gmResolutionTaper  &
+         !$acc                   RediHorizontalTaper,  &
+         !$acc                   gmHorizontalTaper,  &
+         !$acc                   RossbyRadius  &
          !$acc                   )
       end if
       if ( config_compute_active_tracer_budgets ) then
-         !$acc enter data copyin(                                         &
+         !$acc enter data create(                                         &
          !$acc                   activeTracerHorMixTendency,              &
          !$acc                   activeTracerVertMixTendency,             &
          !$acc                   temperatureShortWaveTendency,            &
@@ -760,53 +771,51 @@ contains
          !$acc                   )
       end if
       if ( config_use_activeTracers_surface_restoring ) then
-         !$acc enter data copyin(                                  &
+         !$acc enter data create(                                  &
          !$acc                   salinitySurfaceRestoringTendency  &
          !$acc                   )
       end if
-      if ( trim(config_time_integrator) == 'semi_implicit' ) then
-         !$acc enter data copyin(                       &
-         !$acc                   CGvec_r0,              &
-         !$acc                   CGvec_r00,             &
-         !$acc                   CGvec_r1,              &
-         !$acc                   CGvec_rh0,             &
-         !$acc                   CGvec_rh1,             &
-         !$acc                   CGvec_ph0,             &
-         !$acc                   CGvec_ph1,             &
-         !$acc                   CGvec_v0,              &
-         !$acc                   CGvec_v1,              &
-         !$acc                   CGvec_s0,              &
-         !$acc                   CGvec_s1,              &
-         !$acc                   CGvec_sh0,             &
-         !$acc                   CGvec_sh1,             &
-         !$acc                   CGvec_t0,              &
-         !$acc                   CGvec_t1,              &
-         !$acc                   CGvec_q0,              &
-         !$acc                   CGvec_q1,              &
-         !$acc                   CGvec_qh0,             &
-         !$acc                   CGvec_w0,              &
-         !$acc                   CGvec_w1,              &
-         !$acc                   CGvec_wh0,             &
-         !$acc                   CGvec_wh1,             &
-         !$acc                   CGvec_y0,              &
-         !$acc                   CGvec_z0,              &
-         !$acc                   CGvec_z1,              &
-         !$acc                   CGvec_zh0,             &
-         !$acc                   CGvec_zh1,             &
+      if ( trim(config_time_integrator) == 'split_implicit' ) then
+         !$acc enter data create(                       &
+         !$acc                   SIvec_r0,              &
+         !$acc                   SIvec_r00,             &
+         !$acc                   SIvec_r1,              &
+         !$acc                   SIvec_rh0,             &
+         !$acc                   SIvec_rh1,             &
+         !$acc                   SIvec_ph0,             &
+         !$acc                   SIvec_ph1,             &
+         !$acc                   SIvec_v0,              &
+         !$acc                   SIvec_v0,              &
+         !$acc                   SIvec_s0,              &
+         !$acc                   SIvec_s1,              &
+         !$acc                   SIvec_sh0,             &
+         !$acc                   SIvec_sh1,             &
+         !$acc                   SIvec_t0,              &
+         !$acc                   SIvec_t1,              &
+         !$acc                   SIvec_q0,              &
+         !$acc                   SIvec_q1,              &
+         !$acc                   SIvec_qh0,             &
+         !$acc                   SIvec_w0,              &
+         !$acc                   SIvec_w1,              &
+         !$acc                   SIvec_wh0,             &
+         !$acc                   SIvec_wh1,             &
+         !$acc                   SIvec_y0,              &
+         !$acc                   SIvec_z0,              &
+         !$acc                   SIvec_z1,              &
+         !$acc                   SIvec_zh0,             &
+         !$acc                   SIvec_zh1,             &
          !$acc                   barotropicCoriolisTerm &
          !$acc                   )
       end if
 
-      !$acc enter data copyin(                                         &
+      !$acc enter data create(                                         &
       !$acc                   zMid,                                    &
       !$acc                   zTop,                                    &
       !$acc                   xtime,                                   &
       !$acc                   indMLD,                                  &
       !$acc                   density,                                 &
       !$acc                   betaEdge,                                &
-      !$acc                   eddyTime,                                &
       !$acc                   pressure,                                &
-      !$acc                   eddyLength,                              &
       !$acc                   thermExpCoeff,                           &
       !$acc                   sfcFlxAttCoeff,                          &
       !$acc                   surfacePressure,                         &
@@ -869,6 +878,9 @@ contains
       if (config_use_topographic_wave_drag) then
          !$acc exit data delete(topographic_wave_drag)
       end if
+      if (config_use_self_attraction_loading) then
+         !$acc exit data delete(ssh_sal)
+      end if
       if ( trim(config_ocean_run_mode) == 'init' ) then
          !$acc exit data delete(                           &
          !$acc                   rx1Edge,                  &
@@ -910,7 +922,8 @@ contains
          !$acc                   GMStreamFuncX,                   &
          !$acc                   GMStreamFuncY,                   &
          !$acc                   GMStreamFuncZ,                   &
-         !$acc                   layerThickEdge,                  &
+         !$acc                   layerThickEdgeFlux,              &
+         !$acc                   layerThickEdgeMean,              &
          !$acc                   slopeTriadDown,                  &
          !$acc                   normRelVortEdge,                 &
          !$acc                   surfaceVelocity,                 &
@@ -938,7 +951,6 @@ contains
          !$acc                   vertAleTransportTop,             &
          !$acc                   GMBolusVelocityZonal,            &
          !$acc                   bulkRichardsonNumber,            &
-         !$acc                   gmStreamFuncTopOfCell,           &
          !$acc                   gmStreamFuncTopOfEdge,           &
          !$acc                   indexSSHGradientZonal,           &
          !$acc                   relativeVorticityCell,           &
@@ -972,7 +984,7 @@ contains
          !$acc                   wettingVelocity              &
          !$acc                   )
       end if
-      if ( config_use_GM ) then
+      if (config_use_GM.or.config_use_Redi) then
          !$acc exit data delete(                    &
          !$acc                   RediKappa,         &
          !$acc                   gmBolusKappa,      &
@@ -980,7 +992,9 @@ contains
          !$acc                   RediKappaScaling,  &
          !$acc                   rediLimiterCount,  &
          !$acc                   RediKappaSfcTaper, &
-         !$acc                   gmResolutionTaper  &
+         !$acc                   RediHorizontalTaper,  &
+         !$acc                   gmHorizontalTaper,  &
+         !$acc                   RossbyRadius  &
          !$acc                   )
       end if
       if ( config_compute_active_tracer_budgets ) then
@@ -1001,35 +1015,35 @@ contains
          !$acc                   salinitySurfaceRestoringTendency  &
          !$acc                   )
       end if
-      if ( trim(config_time_integrator) == 'semi_implicit' ) then
+      if ( trim(config_time_integrator) == 'split_implicit' ) then
          !$acc exit data delete(                        &
-         !$acc                   CGvec_r0,              &
-         !$acc                   CGvec_r00,             &
-         !$acc                   CGvec_r1,              &
-         !$acc                   CGvec_rh0,             &
-         !$acc                   CGvec_rh1,             &
-         !$acc                   CGvec_ph0,             &
-         !$acc                   CGvec_ph1,             &
-         !$acc                   CGvec_v0,              &
-         !$acc                   CGvec_v1,              &
-         !$acc                   CGvec_s0,              &
-         !$acc                   CGvec_s1,              &
-         !$acc                   CGvec_sh0,             &
-         !$acc                   CGvec_sh1,             &
-         !$acc                   CGvec_t0,              &
-         !$acc                   CGvec_t1,              &
-         !$acc                   CGvec_q0,              &
-         !$acc                   CGvec_q1,              &
-         !$acc                   CGvec_qh0,             &
-         !$acc                   CGvec_w0,              &
-         !$acc                   CGvec_w1,              &
-         !$acc                   CGvec_wh0,             &
-         !$acc                   CGvec_wh1,             &
-         !$acc                   CGvec_y0,              &
-         !$acc                   CGvec_z0,              &
-         !$acc                   CGvec_z1,              &
-         !$acc                   CGvec_zh0,             &
-         !$acc                   CGvec_zh1,             &
+         !$acc                   SIvec_r0,              &
+         !$acc                   SIvec_r00,             &
+         !$acc                   SIvec_r1,              &
+         !$acc                   SIvec_rh0,             &
+         !$acc                   SIvec_rh1,             &
+         !$acc                   SIvec_ph0,             &
+         !$acc                   SIvec_ph1,             &
+         !$acc                   SIvec_v0,              &
+         !$acc                   SIvec_v0,              &
+         !$acc                   SIvec_s0,              &
+         !$acc                   SIvec_s1,              &
+         !$acc                   SIvec_sh0,             &
+         !$acc                   SIvec_sh1,             &
+         !$acc                   SIvec_t0,              &
+         !$acc                   SIvec_t1,              &
+         !$acc                   SIvec_q0,              &
+         !$acc                   SIvec_q1,              &
+         !$acc                   SIvec_qh0,             &
+         !$acc                   SIvec_w0,              &
+         !$acc                   SIvec_w1,              &
+         !$acc                   SIvec_wh0,             &
+         !$acc                   SIvec_wh1,             &
+         !$acc                   SIvec_y0,              &
+         !$acc                   SIvec_z0,              &
+         !$acc                   SIvec_z1,              &
+         !$acc                   SIvec_zh0,             &
+         !$acc                   SIvec_zh1,             &
          !$acc                   barotropicCoriolisTerm &
          !$acc                   )
       end if
@@ -1041,9 +1055,7 @@ contains
       !$acc                   indMLD,                                  &
       !$acc                   density,                                 &
       !$acc                   betaEdge,                                &
-      !$acc                   eddyTime,                                &
       !$acc                   pressure,                                &
-      !$acc                   eddyLength,                              &
       !$acc                   thermExpCoeff,                           &
       !$acc                   sfcFlxAttCoeff,                          &
       !$acc                   surfacePressure,                         &
@@ -1108,7 +1120,8 @@ contains
                  GMStreamFuncX,                   &
                  GMStreamFuncY,                   &
                  GMStreamFuncZ,                   &
-                 layerThickEdge,                  &
+                 layerThickEdgeFlux,              &
+                 layerThickEdgeMean,              &
                  slopeTriadDown,                  &
                  normRelVortEdge,                 &
                  surfaceVelocity,                 &
@@ -1136,7 +1149,6 @@ contains
                  vertAleTransportTop,             &
                  GMBolusVelocityZonal,            &
                  bulkRichardsonNumber,            &
-                 gmStreamFuncTopOfCell,           &
                  gmStreamFuncTopOfEdge,           &
                  indexSSHGradientZonal,           &
                  relativeVorticityCell,           &
@@ -1167,14 +1179,16 @@ contains
       if ( trim(config_ocean_run_mode) == 'forward' ) then
          nullify(wettingVelocity)
       end if
-      if ( config_use_GM ) then
+      if (config_use_GM.or.config_use_Redi) then
          nullify(RediKappa,         &
                  gmBolusKappa,      &
                  gmKappaScaling,    &
                  RediKappaScaling,  &
                  rediLimiterCount,  &
                  RediKappaSfcTaper, &
-                 gmResolutionTaper)
+                 RediHorizontalTaper, &
+                 gmHorizontalTaper, &
+                 RossbyRadius)
       end if
       if ( config_compute_active_tracer_budgets ) then
          nullify(activeTracerHorMixTendency,              &
@@ -1190,34 +1204,37 @@ contains
       if ( config_use_activeTracers_surface_restoring ) then
          nullify(salinitySurfaceRestoringTendency)
       end if
-      if ( trim(config_time_integrator) == 'semi_implicit' ) then
-         nullify(CGvec_r0,              &
-                 CGvec_r00,             &
-                 CGvec_r1,              &
-                 CGvec_rh0,             &
-                 CGvec_rh1,             &
-                 CGvec_ph0,             &
-                 CGvec_ph1,             &
-                 CGvec_v0,              &
-                 CGvec_v1,              &
-                 CGvec_s0,              &
-                 CGvec_s1,              &
-                 CGvec_sh0,             &
-                 CGvec_sh1,             &
-                 CGvec_t0,              &
-                 CGvec_t1,              &
-                 CGvec_q0,              &
-                 CGvec_q1,              &
-                 CGvec_qh0,             &
-                 CGvec_w0,              &
-                 CGvec_w1,              &
-                 CGvec_wh0,             &
-                 CGvec_wh1,             &
-                 CGvec_y0,              &
-                 CGvec_z0,              &
-                 CGvec_z1,              &
-                 CGvec_zh0,             &
-                 CGvec_zh1,             &
+      if ( config_use_self_attraction_loading ) then
+         nullify(ssh_sal)
+      end if
+      if ( trim(config_time_integrator) == 'split_implicit' ) then
+         nullify(SIvec_r0,              &
+                 SIvec_r00,             &
+                 SIvec_r1,              &
+                 SIvec_rh0,             &
+                 SIvec_rh1,             &
+                 SIvec_ph0,             &
+                 SIvec_ph1,             &
+                 SIvec_v0,              &
+                 SIvec_v0,              &
+                 SIvec_s0,              &
+                 SIvec_s1,              &
+                 SIvec_sh0,             &
+                 SIvec_sh1,             &
+                 SIvec_t0,              &
+                 SIvec_t1,              &
+                 SIvec_q0,              &
+                 SIvec_q1,              &
+                 SIvec_qh0,             &
+                 SIvec_w0,              &
+                 SIvec_w1,              &
+                 SIvec_wh0,             &
+                 SIvec_wh1,             &
+                 SIvec_y0,              &
+                 SIvec_z0,              &
+                 SIvec_z1,              &
+                 SIvec_zh0,             &
+                 SIvec_zh1,             &
                  barotropicCoriolisTerm)
       end if
 
@@ -1227,9 +1244,7 @@ contains
               indMLD,                                  &
               density,                                 &
               betaEdge,                                &
-              eddyTime,                                &
               pressure,                                &
-              eddyLength,                              &
               thermExpCoeff,                           &
               sfcFlxAttCoeff,                          &
               surfacePressure,                         &

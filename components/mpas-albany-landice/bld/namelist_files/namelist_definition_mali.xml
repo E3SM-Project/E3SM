@@ -151,6 +151,14 @@ Valid values: 'fo', 'none'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_restore_thickness_after_advection" type="logical"
+	category="advection" group="advection">
+If true, reset thickness to values at previous timestep after advection occurs. This is used for spinning up tracer fields such as damage.  When this is true, geometry changes from surface and basal mass balance (grounded or floating) and facemelting are not retained, but changes from calving are.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- solidearth -->
 
@@ -266,6 +274,14 @@ Default: Defined in namelist_defaults.xml
 If true, then ice from small grounded islands is removed.  Specifically, this finds one- and two-cell masses of ice that are surrounded by open ocean and eliminates them by sending them to the calving flux.  Grounded such ice masses would be islands, floating would be icebergs.  The ice removed is added to the calvingThickness field.
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_calving_speed_limit" type="real"
+	category="calving" group="calving">
+Limit calvingVelocity to this value. Currently only supported for von Mises calving.
+
+Valid values: Any positive real value
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1061,6 +1077,14 @@ Default: Defined in namelist_defaults.xml
 conductivity coefficient for subglacial water flux
 
 Valid values: positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_SGH_conduc_coeff_drowned" type="real"
+	category="subglacial_hydro" group="subglacial_hydro">
+conductivity coefficient for subglacial water flux for fraction of water thickness that exceeds bump height.  Use 0.0 or negative value to disable.
+
+Valid values: positive real number or 0.0
 Default: Defined in namelist_defaults.xml
 </entry>
 

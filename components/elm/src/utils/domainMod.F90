@@ -1,22 +1,22 @@
 module domainMod
 !-----------------------------------------------------------------------
 !BOP
-!
+
 ! !MODULE: domainMod
-!
+
 ! !DESCRIPTION:
 ! Module containing 2-d global surface boundary data information
-!
+
 ! !USES:
   use shr_kind_mod, only : r8 => shr_kind_r8
   use shr_sys_mod , only : shr_sys_abort
   use spmdMod     , only : masterproc
   use elm_varctl  , only : iulog
-!
+
 ! !PUBLIC TYPES:
   implicit none
   private
-!
+
   public :: domain_type
 
   !--- this typically contains local domain info with arrays dim begg:endg ---
@@ -28,7 +28,8 @@ module domainMod
      character(len=8) :: elmlevel   ! grid type
      integer ,pointer :: mask(:)    ! land mask: 1 = land, 0 = ocean
      real(r8),pointer :: frac(:)    ! fractional land
-     real(r8),pointer :: topo(:)    ! topography
+     real(r8),pointer :: topo(:)    ! topography 
+     integer ,pointer :: num_tunits_per_grd(:)    ! Number of topountis per grid to be used in subgrid decomposition
      real(r8),pointer :: latc(:)    ! latitude of grid cell (deg)
      real(r8),pointer :: lonc(:)    ! longitude of grid cell (deg)
      real(r8),pointer :: firrig(:)
@@ -44,6 +45,12 @@ module domainMod
      logical          :: set        ! flag to check if domain is set
      logical          :: decomped   ! decomposed locally or global copy
 
+     real(r8),pointer :: stdev_elev(:)     ! standard deviation of elevation within a gridcell
+     real(r8),pointer :: sky_view(:)       ! mean of (sky view factor / cos(slope))
+     real(r8),pointer :: terrain_config(:) ! mean of (terrain configuration factor / cos(slope))
+     real(r8),pointer :: sinsl_cosas(:)    ! sin(slope)*cos(aspect) / cos(slope)
+     real(r8),pointer :: sinsl_sinas(:)    ! sin(slope)*sin(aspect) / cos(slope)
+     
      ! pflotran:beg-----------------------------------------------------
      integer          :: nv           ! number of vertices
      real(r8),pointer :: latv(:,:)    ! latitude of grid cell's vertices (deg)
@@ -56,17 +63,16 @@ module domainMod
 
   type(domain_type)    , public :: ldomain
   real(r8), allocatable, public :: lon1d(:), lat1d(:) ! 1d lat/lons for 2d grids
-!
+
 ! !PUBLIC MEMBER FUNCTIONS:
   public domain_init          ! allocates/nans domain types
   public domain_clean         ! deallocates domain types
   public domain_check         ! write out domain info
-!
+
 ! !REVISION HISTORY:
 ! Originally elm_varsur by Mariana Vertenstein
 ! Migrated from elm_varsur to domainMod by T Craig
-!
-!
+
 !EOP
 !------------------------------------------------------------------------------
 
@@ -74,18 +80,18 @@ contains
 
 !------------------------------------------------------------------------------
 !BOP
-!
+
 ! !IROUTINE: domain_init
-!
+
 ! !INTERFACE:
   subroutine domain_init(domain,isgrid2d,ni,nj,nbeg,nend,elmlevel)
     use shr_infnan_mod, only : nan => shr_infnan_nan, assignment(=)
-!
+
 ! !DESCRIPTION:
 ! This subroutine allocates and nans the domain type
-!
+
 ! !USES:
-!
+
 ! !ARGUMENTS:
     implicit none
     type(domain_type)   :: domain        ! domain datatype
@@ -93,16 +99,15 @@ contains
     integer, intent(in) :: ni,nj         ! grid size, 2d
     integer         , intent(in), optional  :: nbeg,nend  ! beg/end indices
     character(len=*), intent(in), optional  :: elmlevel   ! grid type
-!
+
 ! !REVISION HISTORY:
 !   Created by T Craig
-!
-!
+
 ! !LOCAL VARIABLES:
 !EOP
     integer ier
     integer nb,ne
-!
+
 !------------------------------------------------------------------------------
 
     nb = 1
@@ -122,8 +127,11 @@ contains
     endif
     allocate(domain%mask(nb:ne),domain%frac(nb:ne),domain%latc(nb:ne), &
              domain%pftm(nb:ne),domain%area(nb:ne),domain%firrig(nb:ne),domain%lonc(nb:ne), &
-             domain%topo(nb:ne),domain%f_surf(nb:ne),domain%f_grd(nb:ne),domain%glcmask(nb:ne), &
-             domain%xCell(nb:ne),domain%yCell(nb:ne),stat=ier)
+             domain%topo(nb:ne),domain%f_surf(nb:ne),domain%f_grd(nb:ne),domain%num_tunits_per_grd(nb:ne),domain%glcmask(nb:ne), &
+             domain%xCell(nb:ne),domain%yCell(nb:ne), &
+             domain%stdev_elev(nb:ne),domain%sky_view(nb:ne),domain%terrain_config(nb:ne), &
+             domain%sinsl_cosas(nb:ne),domain%sinsl_sinas(nb:ne),stat=ier)
+
     if (ier /= 0) then
        call shr_sys_abort('domain_init ERROR: allocate mask, frac, lat, lon, area ')
     endif
@@ -159,6 +167,7 @@ contains
     domain%mask     = -9999
     domain%frac     = -1.0e36
     domain%topo     = 0._r8
+    domain%num_tunits_per_grd = -9999
     domain%latc     = nan
     domain%lonc     = nan
     domain%xCell    = nan
@@ -167,6 +176,12 @@ contains
     domain%firrig   = 0.7_r8    
     domain%f_surf   = 1.0_r8
     domain%f_grd    = 0.0_r8
+    
+    domain%stdev_elev        = 0.0_r8
+    domain%sky_view          = 1.0_r8
+    domain%terrain_config    = 0.0_r8
+    domain%sinsl_cosas       = 0.0_r8
+    domain%sinsl_sinas       = 0.0_r8
 
     domain%set      = .true.
     if (domain%nbeg == 1 .and. domain%nend == domain%ns) then
@@ -181,23 +196,22 @@ contains
 end subroutine domain_init
 !------------------------------------------------------------------------------
 !BOP
-!
+
 ! !IROUTINE: domain_clean
-!
+
 ! !INTERFACE:
   subroutine domain_clean(domain)
-!
+
 ! !DESCRIPTION:
 ! This subroutine deallocates the domain type
-!
+
 ! !ARGUMENTS:
     implicit none
     type(domain_type) :: domain        ! domain datatype
-!
+
 ! !REVISION HISTORY:
 !   Created by T Craig
-!
-!
+
 ! !LOCAL VARIABLES:
 !EOP
     integer ier
@@ -208,9 +222,11 @@ end subroutine domain_init
           write(iulog,*) 'domain_clean: cleaning ',domain%ni,domain%nj
        endif
        deallocate(domain%mask,domain%frac,domain%latc, &
-                  domain%lonc,domain%area,domain%firrig,domain%pftm, &
-                  domain%topo,domain%f_surf,domain%f_grd,domain%glcmask, &
-                  domain%xCell,domain%yCell,stat=ier)
+            domain%pftm,domain%area,domain%firrig,domain%lonc, &
+            domain%topo,domain%f_surf,domain%f_grd,domain%num_tunits_per_grd,domain%glcmask, &
+            domain%xCell,domain%yCell, &
+            domain%stdev_elev,domain%sky_view,domain%terrain_config, &
+            domain%sinsl_cosas,domain%sinsl_sinas,stat=ier)
        if (ier /= 0) then
           call shr_sys_abort('domain_clean ERROR: deallocate mask, frac, lat, lon, area ')
        endif
@@ -252,25 +268,24 @@ end subroutine domain_init
 end subroutine domain_clean
 !------------------------------------------------------------------------------
 !BOP
-!
+
 ! !IROUTINE: domain_check
-!
+
 ! !INTERFACE:
   subroutine domain_check(domain)
-!
+
 ! !DESCRIPTION:
 ! This subroutine write domain info
-!
+
 ! !USES:
-!
+
 ! !ARGUMENTS:
     implicit none
     type(domain_type),intent(in)  :: domain        ! domain datatype
-!
+
 ! !REVISION HISTORY:
 !   Created by T Craig
-!
-!
+
 ! !LOCAL VARIABLES:
 !
 !EOP
@@ -288,12 +303,18 @@ end subroutine domain_clean
     write(iulog,*) '  domain_check mask      = ',minval(domain%mask),maxval(domain%mask)
     write(iulog,*) '  domain_check frac      = ',minval(domain%frac),maxval(domain%frac)
     write(iulog,*) '  domain_check topo      = ',minval(domain%topo),maxval(domain%topo)
+    write(iulog,*) '  domain_check num_tunits_per_grd      = ',minval(domain%num_tunits_per_grd),maxval(domain%num_tunits_per_grd)
     write(iulog,*) '  domain_check firrig    = ',minval(domain%firrig),maxval(domain%firrig)
     write(iulog,*) '  domain_check f_surf    = ',minval(domain%f_surf),maxval(domain%f_surf)
     write(iulog,*) '  domain_check f_grd     = ',minval(domain%f_grd),maxval(domain%f_grd)
     write(iulog,*) '  domain_check area      = ',minval(domain%area),maxval(domain%area)
     write(iulog,*) '  domain_check pftm      = ',minval(domain%pftm),maxval(domain%pftm)
     write(iulog,*) '  domain_check glcmask   = ',minval(domain%glcmask),maxval(domain%glcmask)
+    write(iulog,*) '  domain_check stdev_elev     = ',minval(domain%stdev_elev),maxval(domain%stdev_elev)
+    write(iulog,*) '  domain_check sky_view       = ',minval(domain%sky_view),maxval(domain%sky_view)
+    write(iulog,*) '  domain_check terrain_config = ',minval(domain%terrain_config),maxval(domain%terrain_config)
+    write(iulog,*) '  domain_check sinsl_cosas    = ',minval(domain%sinsl_cosas),maxval(domain%sinsl_cosas)
+    write(iulog,*) '  domain_check sinsl_sinas    = ',minval(domain%sinsl_sinas),maxval(domain%sinsl_sinas)
     write(iulog,*) ' '
   endif
 

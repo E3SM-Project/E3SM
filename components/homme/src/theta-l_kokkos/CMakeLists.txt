@@ -12,8 +12,8 @@ MACRO(THETAL_KOKKOS_SETUP)
   SET(TEST_SRC_DIR      ${HOMME_SOURCE_DIR}/src/test_src)
   SET(ARKODE_DIR        ${HOMME_SOURCE_DIR}/src/arkode)
 
-  SET(UTILS_TIMING_SRC_DIR  ${CMAKE_SOURCE_DIR}/utils/cime/src/share/timing)
-  SET(UTILS_TIMING_DIR      ${CMAKE_BINARY_DIR}/utils/cime/src/share/timing)
+  SET(UTILS_TIMING_SRC_DIR  ${CMAKE_SOURCE_DIR}/utils/cime/CIME/non_py/src/timing)
+  SET(UTILS_TIMING_DIR      ${CMAKE_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
 
   # Make INCLUDE_DIRS global so the tests can access it
   SET (EXEC_LIB_INCLUDE_DIRS
@@ -21,6 +21,7 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${UTILS_TIMING_SRC_DIR}
     ${UTILS_TIMING_DIR}
     ${SRC_SHARE_DIR}/cxx
+    ${SRC_SHARE_DIR}/compose
     ${CMAKE_BINARY_DIR}/src/share/cxx
   )
 
@@ -167,6 +168,14 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/cxx/ElementsGeometry.cpp
     ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
     ${SRC_SHARE_DIR}/cxx/EulerStepFunctor.cpp
+    ${SRC_SHARE_DIR}/cxx/ComposeTransport.cpp
+    ${SRC_SHARE_DIR}/cxx/ComposeTransportImplGeneral.cpp
+    ${SRC_SHARE_DIR}/cxx/ComposeTransportImplTrajectory.cpp
+    ${SRC_SHARE_DIR}/cxx/ComposeTransportImplVerticalRemap.cpp
+    ${SRC_SHARE_DIR}/cxx/ComposeTransportImplHypervis.cpp
+    ${SRC_SHARE_DIR}/cxx/ComposeTransportImplTest2D.cpp
+    ${SRC_SHARE_DIR}/cxx/GllFvRemap.cpp
+    ${SRC_SHARE_DIR}/cxx/GllFvRemapImpl.cpp
     ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
     ${SRC_SHARE_DIR}/cxx/FunctorsBuffersManager.cpp
     ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
@@ -254,21 +263,3 @@ MACRO(THETAL_KOKKOS_SETUP)
   SET(USE_OPENACC FALSE)
 
 ENDMACRO(THETAL_KOKKOS_SETUP)
-
-# Build exec only if HOMME_BUILD_EXECS is true
-IF (HOMME_BUILD_EXECS)
-  THETAL_KOKKOS_SETUP()
-
-  ############################################################################
-  # createTestExec(exec_name exec_type NP NC PLEV USE_PIO USE_ENERGY QSIZE_D)
-  ############################################################################
-  createTestExec(theta-l_kokkos theta-l_kokkos ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
-ENDIF ()
-
-IF (HOMME_BUILD_LIBS)
-  THETAL_KOKKOS_SETUP()
-
-  createExecLib(theta-l_kokkos_lib theta-l_kokkos "${THETAL_DEPS}" "${EXEC_LIB_INCLUDE_DIRS}"
-      ${PREQX_NP} ${PREQX_PLEV} ${PREQX_USE_ENERGY} ${QSIZE_D})
-ENDIF ()
-

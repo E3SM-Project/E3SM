@@ -11,6 +11,7 @@
 #include "SimulationParams.hpp"
 #include "KernelVariables.hpp"
 #include "SphereOperators.hpp"
+#include "PhysicalConstants.hpp"
 
 #include <memory>
 
@@ -86,6 +87,15 @@ public:
                              const ElementsGeometry&     geometry,
                              const ElementsState&        state,
                              const ElementsDerivedState& elements);
+
+  HyperviscosityFunctorImpl (const int num_elems, const SimulationParams& params);
+
+  void init_params(const SimulationParams& params);
+
+  void setup(const ElementsGeometry&     geometry,
+             const ElementsState&        state,
+             const ElementsDerivedState& derived);
+
 
   int requested_buffer_size () const;
   void init_buffers    (const FunctorsBuffersManager& fbm);
@@ -277,6 +287,7 @@ public:
   }
 
 private:
+  const int             m_num_elems;
 
   HyperviscosityData    m_data;
   ElementsState         m_state;
@@ -286,9 +297,16 @@ private:
   SphereOperators       m_sphere_ops;
 
   // Policies
+#ifndef NDEBUG
+  template<typename Tag>
+  using TeamPolicyType = Kokkos::TeamPolicy<ExecSpace,Kokkos::LaunchBounds<512,1>,Tag>;
+#else
+  template<typename Tag>
+  using TeamPolicyType = Kokkos::TeamPolicy<ExecSpace,Tag>;
+#endif
   Kokkos::RangePolicy<ExecSpace,TagUpdateStates>    m_policy_update_states;
-  Kokkos::TeamPolicy<ExecSpace,TagFirstLaplaceHV>   m_policy_first_laplace;
-  Kokkos::TeamPolicy<ExecSpace,TagHyperPreExchange> m_policy_pre_exchange;
+  TeamPolicyType<TagFirstLaplaceHV>                 m_policy_first_laplace;
+  TeamPolicyType<TagHyperPreExchange>               m_policy_pre_exchange;
 
   std::shared_ptr<BoundaryExchange> m_be;
 

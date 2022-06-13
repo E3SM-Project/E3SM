@@ -13,8 +13,8 @@
 #
 # The simplest use of build-namelist is to execute it from the build directory where configure
 # was run.  By default it will use the config_cache.xml file that was written by configure to
-# determine the build time properties of the executable, and will write the files that contain 
-# the output namelists in that same directory.  
+# determine the build time properties of the executable, and will write the files that contain
+# the output namelists in that same directory.
 #
 #
 # Date        Contributor      Modification
@@ -35,18 +35,18 @@ SYNOPSIS
      build-namelist [options]
 OPTIONS
      -infile "filepath"    Specify a file containing namelists to read values from.
-     -namelist "namelist"  Specify namelist settings directly on the commandline by supplying 
+     -namelist "namelist"  Specify namelist settings directly on the commandline by supplying
                            a string containing FORTRAN namelist syntax, e.g.,
                               -namelist "&mpaso_nml dt=1800 /"
      -help [or -h]         Print usage to STDOUT.
      -test                 Enable checking that input datasets exist on local filesystem.
      -verbose              Turn on verbose echoing of informational messages.
      -caseroot             CASEROOT directory variable
-     -casebuild            CASEBUILD directory variable          
+     -casebuild            CASEBUILD directory variable
      -cimeroot             CIMEROOT directory variable
      -ocn_grid             OCN_GRID variable
      -ocn_forcing          variable for defining if the ocn model is forced with an active atm
-                           or using CORE forcing.  
+                           or using CORE forcing.
                            Options are: active_atm, datm_forced, datm_forced_restoring
      -ocn_iceberg          variable for defining if the ocn model is expecting coupling fields
                            for icebergs from the seaice model
@@ -71,7 +71,7 @@ NOTE: The precedence for setting the values of namelist variables is (highest to
       1. namelist values set by specific command-line options, i.e. (none right now)
       2. values set on the command-line using the -namelist option,
       3. values read from the file specified by -infile,
-      4. values from the namelist defaults file - or values specifically set in build-namelist 
+      4. values from the namelist defaults file - or values specifically set in build-namelist
 EOF
 }
 
@@ -86,7 +86,7 @@ my $ProgDir = $1;                      # name of directory containing this scrip
                                        # the user's PATH
 my $cwd = getcwd();                    # current working directory
 my $cfgdir;                            # absolute pathname of directory that contains this script
-if ($ProgDir) { 
+if ($ProgDir) {
     $cfgdir = abs_path($ProgDir);
 } else {
     $cfgdir = $cwd;
@@ -127,7 +127,7 @@ GetOptions(
     "caseroot=s"      => \$opts{'caseroot'},
     "casebuild=s"     => \$opts{'casebuild'},
     "cimeroot=s"      => \$opts{'cimeroot'},
-    "inst_string=s"   => \$opts{'inst_string'},	   
+    "inst_string=s"   => \$opts{'inst_string'},
     "ocn_grid=s"      => \$opts{'ocn_grid'},
     "ocn_forcing=s"   => \$opts{'ocn_forcing'},
     "ocn_iceberg=s"   => \$opts{'ocn_iceberg'},
@@ -257,7 +257,7 @@ EOF
 # The namelist definition file contains entries for all namelist variables that
 # can be output by build-namelist.  The version of the file that is associate with a
 # fixed MPASO tag is $cfgdir/namelist_files/namelist_definition.xml.  To aid developers
-# who make use of the SourceMods/src.mpaso directory - we allow the definition file 
+# who make use of the SourceMods/src.mpaso directory - we allow the definition file
 # to come from that directory
 my $nl_definition_file;
 if (-f "${CASEROOT}/SourceMods/src.mpaso/namelist_definition_mpaso.xml") {
@@ -296,7 +296,7 @@ require Build::Namelist;
 require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
-# Create a configuration object from the MPASO config_cache.xml file-  created by 
+# Create a configuration object from the MPASO config_cache.xml file-  created by
 # mpaso.cpl7.template in $CASEBUILD/mpasoconf
 my $cfg = Build::Config->new('config_cache.xml');
 
@@ -436,13 +436,13 @@ if ($inst_string) {
     $output_r = "./${CASE}.mpaso${inst_string}.r";
     $output_h = "./${CASE}.mpaso${inst_string}.h";
     $output_d = "./${CASE}.mpaso${inst_string}.d";
-} 
+}
 
 # Environment variables set in mpaso.buildnml.csh that are not xml variables
-my $RESTART_INPUT_TS_FMT = "$ENV{'RESTART_INPUT_TS_FMT'}"; 
+my $RESTART_INPUT_TS_FMT = "$ENV{'RESTART_INPUT_TS_FMT'}";
 my $LID = $ENV{'LID'};
 
-my $ntasks = $NTASKS_OCN / $NINST_OCN; 
+my $ntasks = $NTASKS_OCN / $NINST_OCN;
 
 print "MPASO build-namelist: ocn_grid is $OCN_GRID \n";
 print "MPASO build-namelist: ocn_forcing is $OCN_FORCING \n";
@@ -451,7 +451,7 @@ print "MPASO build-namelist: ocn_forcing is $OCN_FORCING \n";
 if ($print>=2) { print "CIME inputdata root directory: $DIN_LOC_ROOT$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-# Determine namelist 
+# Determine namelist
 #-----------------------------------------------------------------------------------------------
 
 
@@ -495,6 +495,15 @@ add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/ocn
 add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
+
+###################################
+# Namelist group: transport_tests #
+###################################
+
+add_default($nl, 'config_transport_tests_vert_levels');
+add_default($nl, 'config_transport_tests_temperature');
+add_default($nl, 'config_transport_tests_salinity');
+add_default($nl, 'config_transport_tests_flow_id');
 
 ####################################
 # Namelist group: time_integration #
@@ -541,14 +550,6 @@ add_default($nl, 'config_Leith_parameter');
 add_default($nl, 'config_Leith_dx');
 add_default($nl, 'config_Leith_visc2_max');
 
-####################################################
-# Namelist group: mesoscale_eddy_parameterizations #
-####################################################
-
-add_default($nl, 'config_eddying_resolution_taper');
-add_default($nl, 'config_eddying_resolution_ramp_min');
-add_default($nl, 'config_eddying_resolution_ramp_max');
-
 #########################################
 # Namelist group: Redi_isopycnal_mixing #
 #########################################
@@ -562,6 +563,10 @@ add_default($nl, 'config_Redi_use_surface_taper');
 add_default($nl, 'config_Redi_N2_based_taper_enable');
 add_default($nl, 'config_Redi_N2_based_taper_min');
 add_default($nl, 'config_Redi_N2_based_taper_limit_term1');
+add_default($nl, 'config_Redi_min_layers_diag_terms');
+add_default($nl, 'config_Redi_horizontal_taper');
+add_default($nl, 'config_Redi_horizontal_ramp_min');
+add_default($nl, 'config_Redi_horizontal_ramp_max');
 
 ############################################
 # Namelist group: GM_eddy_parameterization #
@@ -570,7 +575,8 @@ add_default($nl, 'config_Redi_N2_based_taper_limit_term1');
 add_default($nl, 'config_use_GM');
 add_default($nl, 'config_GM_closure');
 add_default($nl, 'config_GM_constant_kappa');
-add_default($nl, 'config_GM_constant_gravWaveSpeed');
+add_default($nl, 'config_GM_constant_bclModeSpeed');
+add_default($nl, 'config_GM_minBclModeSpeed_method');
 add_default($nl, 'config_GM_spatially_variable_min_kappa');
 add_default($nl, 'config_GM_spatially_variable_max_kappa');
 add_default($nl, 'config_GM_spatially_variable_baroclinic_mode');
@@ -580,6 +586,11 @@ add_default($nl, 'config_GM_EG_riMin');
 add_default($nl, 'config_GM_EG_kappa_factor');
 add_default($nl, 'config_GM_EG_Rossby_factor');
 add_default($nl, 'config_GM_EG_Rhines_factor');
+add_default($nl, 'config_GM_horizontal_taper');
+add_default($nl, 'config_GM_horizontal_ramp_min');
+add_default($nl, 'config_GM_horizontal_ramp_max');
+add_default($nl, 'config_GMRedi_Rossby_ramp_min');
+add_default($nl, 'config_GMRedi_Rossby_ramp_max');
 
 ####################################
 # Namelist group: Rayleigh_damping #
@@ -678,6 +689,22 @@ add_default($nl, 'config_sw_absorption_type');
 add_default($nl, 'config_jerlov_water_type');
 add_default($nl, 'config_surface_buoyancy_depth');
 add_default($nl, 'config_enable_shortwave_energy_fixer');
+
+###########################################
+# Namelist group: self_attraction_loading #
+###########################################
+
+add_default($nl, 'config_use_self_attraction_loading');
+add_default($nl, 'config_self_attraction_loading_smoothing_width');
+add_default($nl, 'config_mpas_to_grid_weights_file');
+add_default($nl, 'config_grid_to_mpas_weights_file');
+add_default($nl, 'config_self_attraction_loading_compute_interval');
+add_default($nl, 'config_nLatitude');
+add_default($nl, 'config_nLongitude');
+add_default($nl, 'config_use_parallel_self_attraction_loading');
+add_default($nl, 'config_parallel_self_attraction_loading_order');
+add_default($nl, 'config_parallel_self_attraction_loading_n_cells_per_block');
+add_default($nl, 'config_parallel_self_attraction_loading_bfb');
 
 ###########################################
 # Namelist group: tidal_potential_forcing #
@@ -829,13 +856,13 @@ add_default($nl, 'config_btr_gam2_SSHWt1');
 add_default($nl, 'config_btr_gam3_velWt2');
 add_default($nl, 'config_btr_solve_SSH2');
 
-####################################
-# Namelist group: semi_implicit_ts #
-####################################
+#####################################
+# Namelist group: split_implicit_ts #
+#####################################
 
 add_default($nl, 'config_btr_si_preconditioner');
 add_default($nl, 'config_btr_si_tolerance');
-add_default($nl, 'config_n_btr_si_outer_iter');
+add_default($nl, 'config_n_btr_si_large_iter');
 add_default($nl, 'config_btr_si_partition_match_mode');
 
 #####################################
@@ -993,6 +1020,11 @@ if ($ocn_co2_type eq 'constant' ) {
         add_default($nl, 'config_ecosys_atm_alt_co2_option', 'val'=>"diagnostic");
         add_default($nl, 'config_ecosys_atm_alt_co2_use_eco', 'val'=>".false.");
         add_default($nl, 'config_ecosys_atm_co2_constant_value', 'val'=>$atm_co2_const_val);
+} elsif ($ocn_co2_type eq 'prognostic' ) {
+        add_default($nl, 'config_ecosys_atm_co2_option', 'val'=>"prognostic");
+        add_default($nl, 'config_ecosys_atm_alt_co2_option', 'val'=>"prognostic");
+        add_default($nl, 'config_ecosys_atm_alt_co2_use_eco', 'val'=>".false.");
+        add_default($nl, 'config_ecosys_atm_co2_constant_value', 'val'=>$atm_co2_const_val);
 } else {
         add_default($nl, 'config_ecosys_atm_co2_option', 'val'=>"diagnostic");
         add_default($nl, 'config_ecosys_atm_alt_co2_option', 'val'=>"diagnostic");
@@ -1011,6 +1043,7 @@ if ($ice_bgc eq 'ice_bgc' ) {
 } else {
         add_default($nl, 'config_use_ecosysTracers_sea_ice_coupling', 'val'=>".false.");
 }
+add_default($nl, 'config_use_ecosysTracers_river_inputs_from_coupler');
 
 #############################################
 # Namelist group: tracer_forcing_DMSTracers #
@@ -1047,6 +1080,32 @@ add_default($nl, 'config_use_MacroMoleculesTracers_idealAge_forcing');
 add_default($nl, 'config_use_MacroMoleculesTracers_ttd_forcing');
 add_default($nl, 'config_use_MacroMoleculesTracers_surface_value');
 add_default($nl, 'config_use_MacroMoleculesTracers_sea_ice_coupling');
+
+##################################################
+# Namelist group: tracer_forcing_idealAgeTracers #
+##################################################
+
+add_default($nl, 'config_use_idealAgeTracers');
+add_default($nl, 'config_use_idealAgeTracers_surface_bulk_forcing');
+add_default($nl, 'config_use_idealAgeTracers_surface_restoring');
+add_default($nl, 'config_use_idealAgeTracers_interior_restoring');
+add_default($nl, 'config_use_idealAgeTracers_exponential_decay');
+add_default($nl, 'config_use_idealAgeTracers_idealAge_forcing');
+add_default($nl, 'config_use_idealAgeTracers_ttd_forcing');
+
+#############################################
+# Namelist group: tracer_forcing_CFCTracers #
+#############################################
+
+add_default($nl, 'config_use_CFCTracers');
+add_default($nl, 'config_use_CFCTracers_surface_bulk_forcing');
+add_default($nl, 'config_use_CFCTracers_surface_restoring');
+add_default($nl, 'config_use_CFCTracers_interior_restoring');
+add_default($nl, 'config_use_CFCTracers_exponential_decay');
+add_default($nl, 'config_use_CFCTracers_idealAge_forcing');
+add_default($nl, 'config_use_CFCTracers_ttd_forcing');
+add_default($nl, 'config_use_CFC11');
+add_default($nl, 'config_use_CFC12');
 
 ##################################
 # Namelist group: AM_globalStats #
@@ -1575,8 +1634,8 @@ add_default($nl, 'config_AM_sedimentTransport_use_lat_lon_coords');
 
 add_default($nl, 'config_AM_harmonicAnalysis_enable');
 add_default($nl, 'config_AM_harmonicAnalysis_compute_interval');
-add_default($nl, 'config_AM_harmonicAnalysis_start');
-add_default($nl, 'config_AM_harmonicAnalysis_end');
+add_default($nl, 'config_AM_harmonicAnalysis_start_delay');
+add_default($nl, 'config_AM_harmonicAnalysis_duration');
 add_default($nl, 'config_AM_harmonicAnalysis_output_stream');
 add_default($nl, 'config_AM_harmonicAnalysis_restart_stream');
 add_default($nl, 'config_AM_harmonicAnalysis_compute_on_startup');
@@ -1590,6 +1649,18 @@ add_default($nl, 'config_AM_harmonicAnalysis_use_O1');
 add_default($nl, 'config_AM_harmonicAnalysis_use_Q1');
 add_default($nl, 'config_AM_harmonicAnalysis_use_P1');
 
+########################################
+# Namelist group: AM_conservationCheck #
+########################################
+
+add_default($nl, 'config_AM_conservationCheck_enable');
+add_default($nl, 'config_AM_conservationCheck_compute_interval');
+add_default($nl, 'config_AM_conservationCheck_output_stream');
+add_default($nl, 'config_AM_conservationCheck_compute_on_startup');
+add_default($nl, 'config_AM_conservationCheck_write_on_startup');
+add_default($nl, 'config_AM_conservationCheck_write_to_logfile');
+add_default($nl, 'config_AM_conservationCheck_restart_stream');
+
 #-----------------------------------------------------------------------------------------------
 # *** Write output namelist file (mpaso_in) and input dataset list (mpaso.input_data_list) ***
 #-----------------------------------------------------------------------------------------------
@@ -1600,6 +1671,7 @@ my @groups = qw(run_modes
                 time_management
                 io
                 decomposition
+                transport_tests
                 time_integration
                 hmix
                 hmix_del2
@@ -1607,13 +1679,13 @@ my @groups = qw(run_modes
                 hmix_leith
                 redi_isopycnal_mixing
                 gm_eddy_parameterization
-                mesoscale_eddy_parameterizations
                 rayleigh_damping
                 cvmix
                 gotm
                 forcing
                 coupling
                 shortwaveradiation
+                self_attraction_loading
                 tidal_potential_forcing
                 frazil_ice
                 land_ice_fluxes
@@ -1626,7 +1698,7 @@ my @groups = qw(run_modes
                 eos_wright
                 split_timestep_share
                 split_explicit_ts
-                semi_implicit_ts
+                split_implicit_ts
                 ale_vertical_grid
                 ale_frequency_filtered_thickness
                 debug
@@ -1637,6 +1709,8 @@ my @groups = qw(run_modes
                 tracer_forcing_ecosystracers
                 tracer_forcing_dmstracers
                 tracer_forcing_macromoleculestracers
+                tracer_forcing_idealagetracers
+                tracer_forcing_cfctracers
                 am_globalstats
                 am_surfaceareaweightedaverages
                 am_watermasscensus
@@ -1671,6 +1745,7 @@ my @groups = qw(run_modes
                 am_sedimentfluxindex
                 am_sedimenttransport
                 am_harmonicanalysis
+                am_conservationcheck
                 );
 
 # Check for variables in the "derived" group, add them to appropriate group
@@ -1792,7 +1867,7 @@ sub add_default {
     # The default values for input pathnames are relative.  If the namelist
     # variable is defined to be an absolute pathname, then prepend
     # the CCSM inputdata root directory.
-    # TODO: unless ignore_abs is passed as argument 
+    # TODO: unless ignore_abs is passed as argument
     if ($is_input_pathname eq 'abs') {
       unless ($opts{'noprepend'}){
         $val = set_abs_filepath($val, $DIN_LOC_ROOT);
@@ -2000,8 +2075,8 @@ sub expand_env_xml {
 	my $subst = $xmlvars{$1};
 	$value =~ s/\$${1}/$subst/g;
     }
-    return $value; 
-}	 
+    return $value;
+}
 
 #-------------------------------------------------------------------------------
 
@@ -2030,7 +2105,7 @@ sub print_nl_to_screen {
 sub valid_date {
 # return 1 if given date ($$month/$$day/$$year) exists in calendar $cal
 # otherwise subtract number of days in $$month from $$day, and increment
-# $$month by 1 (also incrementing $$year if going from Dec to Jan) and 
+# $$month by 1 (also incrementing $$year if going from Dec to Jan) and
 # then return 0.
 
   use Switch;

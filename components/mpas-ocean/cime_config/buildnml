@@ -43,7 +43,7 @@ def buildnml(case, caseroot, compname):
     ninst_ocn         = 1 # Change if you want multiple instances... though this isn't coded yet.
     ninst_ocn_real    = case.get_value("NINST_OCN")
     nthrds_ocn        = case.get_value("NTHRDS_OCN")
-    ntasks_ocn        = case.get_value("NTASKS_OCN")
+    ntasks_ocn        = case.get_value("NTASKS_PER_INST_OCN")
     rundir            = case.get_value("RUNDIR")
     run_type          = case.get_value("RUN_TYPE")
     run_refcase       = case.get_value("RUN_REFCASE")
@@ -74,16 +74,7 @@ def buildnml(case, caseroot, compname):
     analysis_mask_file = ''
     eco_forcing_file = ''
 
-    if ocn_grid == 'oEC60to30':
-        decomp_date = '151031'
-        decomp_prefix = 'mpas-o.graph.info.'
-        ic_date = '151031'
-        ic_prefix = 'oEC60to30'
-        if ocn_ic_mode == 'spunup':
-            ic_date = '160827'
-            ic_prefix = 'oEC60to30.restartFrom_eos1b'
-
-    elif ocn_grid == 'oEC60to30v3':
+    if ocn_grid == 'oEC60to30v3':
         decomp_date = '161222'
         decomp_prefix = 'mpas-o.graph.info.'
         restoring_file = 'sss.monthlyClimatology.PHC2_salx_040803.oEC60to30v3.nc'
@@ -93,20 +84,6 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '200927'
             ic_prefix = 'oEC60to30v3.restartFrom_anvilG'
-        #  modify initial condition file if ocean BGC is turned on
-        if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
-            ic_date = '180418'
-            ic_prefix = 'mpaso.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime'
-            eco_forcing_file = 'oEC60to30v3.monthlySurfaceForcingBGC.171120.nc'
-
-    elif ocn_grid == 'oEC60to30wLI':
-        decomp_date = '160830'
-        decomp_prefix = 'mpas-o.graph.info.'
-        ic_date = '160830'
-        ic_prefix = 'oEC60to30wLI'
-        if ocn_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
 
     elif ocn_grid == 'oEC60to30v3wLI':
         decomp_date = '170328'
@@ -166,24 +143,6 @@ def buildnml(case, caseroot, compname):
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
 
-    elif ocn_grid == 'mpas120':
-        decomp_date = '151031'
-        decomp_prefix = 'mpas-o.graph.info.'
-        ic_date = '151031'
-        ic_prefix = 'ocean120km'
-        if ocn_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
-
-    elif ocn_grid == 'oRRS30to10':
-        decomp_date = '151031'
-        decomp_prefix = 'mpas-o.graph.info.'
-        ic_date = '151031'
-        ic_prefix = 'ocean.RRS.30-10km'
-        if ocn_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
-
     elif ocn_grid == 'oRRS30to10v3':
         decomp_date = '171128'
         decomp_prefix = 'mpas-o.graph.info.'
@@ -202,15 +161,6 @@ def buildnml(case, caseroot, compname):
         analysis_mask_file = 'masks_SingleRegionAtlanticWTransportTransects_RRS30to10v3wLI.nc'
         ic_date = '171109'
         ic_prefix = 'oRRS30to10v3wLI'
-        if ocn_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
-
-    elif ocn_grid == 'oRRS18to6':
-        decomp_date = '160830'
-        decomp_prefix = 'mpas-o.graph.info.'
-        ic_date = '160830'
-        ic_prefix = 'ocean.RRS.18-6km'
         if ocn_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
@@ -239,12 +189,12 @@ def buildnml(case, caseroot, compname):
         decomp_date = '180723'
         decomp_prefix = 'mpas-o.graph.info.'
         restoring_file = 'sss.monthlyClimatology.PHC2_salx.2004_08_03.ARRM60to10.190129.nc'
-        analysis_mask_file = 'ARRM60to10_SingleRegionAtlanticWTransportTransects_masks.nc'
+        analysis_mask_file = 'ARRM60to10_mocBasinsAndTransects20210623.nc'
         ic_date = '180715'
         ic_prefix = 'ocean.ARRM60to10'
         if ocn_ic_mode == 'spunup':
-            ic_date = '200422'
-            ic_prefix = 'ocean.ARRM60to10.restart_grizzly'
+            ic_date = '210204'
+            ic_prefix = 'mpaso.oARRM60to10.rstFromG-cori'
 
     elif ocn_grid == 'oARRM60to6':
         decomp_date = '180820'
@@ -267,6 +217,11 @@ def buildnml(case, caseroot, compname):
         if ocn_ic_mode == 'spunup':
             ic_date = '201001'
             ic_prefix = 'mpaso.EC30to60E2r2.rstFromG-anvil'
+        #  modify initial condition file if ocean BGC is turned on
+        if ocn_bgc in ['eco_only', 'eco_and_dms', 'eco_and_macromolecules', 'eco_and_dms_and_macromolecules']:
+            ic_date = '211030'
+            ic_prefix = 'ocean.EC30to60E2r2.210210+MARBL_ICfromOMIP+ecoAux+5xFESED'
+            eco_forcing_file = 'ecoForcingSurfaceMonthly.EC30to60E2r2.20201221.nc'
 
     elif ocn_grid == 'WC14to60E2r3':
         decomp_date = '200714'
@@ -984,6 +939,80 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="leastSquaresRHSVector"/>')
         lines.append('</stream>')
         lines.append('')
+        lines.append('<stream name="conservationCheckOutput"')
+        lines.append('        type="output"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="{}.mpaso.hist.am.conservationCheck.$Y-$M-$D.nc"'.format(casename))
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="00-01-00_00:00:00"')
+        lines.append('        clobber_mode="append"')
+        lines.append('        packages="conservationCheckAMPKG">')
+        lines.append('')
+        lines.append('<var name="xtime"/>')
+        lines.append('<var name="initialEnergy"/>')
+        lines.append('<var name="finalEnergy"/>')
+        lines.append('<var name="energyChange"/>')
+        lines.append('<var name="netEnergyFlux"/>')
+        lines.append('<var name="absoluteEnergyError"/>')
+        lines.append('<var name="relativeEnergyError"/>')
+        lines.append('<var name="initialMass"/>')
+        lines.append('<var name="finalMass"/>')
+        lines.append('<var name="massChange"/>')
+        lines.append('<var name="netMassFlux"/>')
+        lines.append('<var name="absoluteMassError"/>')
+        lines.append('<var name="relativeMassError"/>')
+        lines.append('<var name="initialSalt"/>')
+        lines.append('<var name="finalSalt"/>')
+        lines.append('<var name="saltChange"/>')
+        lines.append('<var name="netSaltFlux"/>')
+        lines.append('<var name="absoluteSaltError"/>')
+        lines.append('<var name="relativeSaltError"/>')
+        lines.append('<var name="accumulatedLatentHeatFlux"/>')
+        lines.append('<var name="accumulatedSensibleHeatFlux"/>')
+        lines.append('<var name="accumulatedLongWaveHeatFluxUp"/>')
+        lines.append('<var name="accumulatedLongWaveHeatFluxDown"/>')
+        lines.append('<var name="accumulatedShortWaveHeatFlux"/>')
+        lines.append('<var name="accumulatedSeaIceHeatFlux"/>')
+        lines.append('<var name="accumulatedMeltingSnowHeatFlux"/>')
+        lines.append('<var name="accumulatedMeltingIceRunoffHeatFlux"/>')
+        lines.append('<var name="accumulatedRemovedIceRunoffHeatFlux"/>')
+        lines.append('<var name="accumulatedIcebergHeatFlux"/>')
+        lines.append('<var name="accumulatedFrazilHeatFlux"/>')
+        lines.append('<var name="accumulatedLandIceHeatFlux"/>')
+        lines.append('<var name="accumulatedLandIceFrazilHeatFlux"/>')
+        lines.append('<var name="accumulatedRainTemperatureFlux"/>')
+        lines.append('<var name="accumulatedEvapTemperatureFlux"/>')
+        lines.append('<var name="accumulatedSeaIceTemperatureFlux"/>')
+        lines.append('<var name="accumulatedRiverRunoffTemperatureFlux"/>')
+        lines.append('<var name="accumulatedIcebergTemperatureFlux"/>')
+        lines.append('<var name="accumulatedRainFlux"/>')
+        lines.append('<var name="accumulatedSnowFlux"/>')
+        lines.append('<var name="accumulatedEvaporationFlux"/>')
+        lines.append('<var name="accumulatedSeaIceFlux"/>')
+        lines.append('<var name="accumulatedRiverRunoffFlux"/>')
+        lines.append('<var name="accumulatedIceRunoffFlux"/>')
+        lines.append('<var name="accumulatedRemovedRiverRunoffFlux"/>')
+        lines.append('<var name="accumulatedRemovedIceRunoffFlux"/>')
+        lines.append('<var name="accumulatedIcebergFlux"/>')
+        lines.append('<var name="accumulatedFrazilFlux"/>')
+        lines.append('<var name="accumulatedLandIceFlux"/>')
+        lines.append('<var name="accumulatedLandIceFrazilFlux"/>')
+        lines.append('<var name="accumulatedSeaIceSalinityFlux"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<immutable_stream name="conservationCheckRestart"')
+        lines.append('        type="input;output"')
+        lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        filename_template="{}.mpaso.rst.am.conservationCheck.$Y-$M-$D_$S.nc"'.format(casename))
+        lines.append('        filename_interval="output_interval"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="conservationCheckAMPKG"')
+        lines.append('        input_interval="none"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none">')
+        lines.append('</immutable_stream>')
+        lines.append('')
         lines.append('<stream name="timeSeriesStatsDailyOutput"')
         lines.append('        type="output"')
         lines.append('        precision="single"')
@@ -1192,19 +1221,14 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="ecosys_diag_O2_ZMIN"/>')
             lines.append('    <var name="ecosys_diag_O2_ZMIN_DEPTH"/>')
             lines.append('    <var name="ecosys_diag_Jint_Ctot"/>')
-            lines.append('    <var name="ecosys_diag_Jint_100m_Ctot"/>')
             lines.append('    <var name="ecosys_diag_Jint_Ntot"/>')
-            lines.append('    <var name="ecosys_diag_Jint_100m_Ntot"/>')
             lines.append('    <var name="ecosys_diag_Jint_Ptot"/>')
-            lines.append('    <var name="ecosys_diag_Jint_100m_Ptot"/>')
             lines.append('    <var name="ecosys_diag_Jint_Sitot"/>')
-            lines.append('    <var name="ecosys_diag_Jint_100m_Sitot"/>')
             lines.append('    <var name="ecosys_diag_photoC_zint"/>')
             lines.append('    <var name="ecosys_diag_photoC_NO3_zint"/>')
             lines.append('    <var name="ecosys_diag_PAR_avg"/>')
             lines.append('    <var name="ecosys_diag_POC_FLUX_IN"/>')
             lines.append('    <var name="ecosys_diag_CaCO3_FLUX_IN"/>')
-            lines.append('    <var name="ecosys_diag_auto_graze_TOT"/>')
             lines.append('    <var name="ecosys_diag_zoo_loss"/>')
             lines.append('    <var name="ecosys_diag_photoC_TOT"/>')
             lines.append('    <var name="ecosys_diag_photoC_NO3_TOT"/>')
@@ -1218,13 +1242,13 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="ecosys_diag_O2_CONSUMPTION"/>')
             lines.append('    <var name="ecosys_diag_pH_3D"/>')
             lines.append('    <var name="ecosys_diag_POC_PROD"/>')
-            lines.append('    <var name="ecosys_diag_POC_REMIN"/>')
+            lines.append('    <var name="ecosys_diag_POC_REMIN_DOCr"/>')
             lines.append('    <var name="ecosys_diag_POC_ACCUM"/>')
-            lines.append('    <var name="ecosys_diag_N_lim"/>')
-            lines.append('    <var name="ecosys_diag_P_lim"/>')
-            lines.append('    <var name="ecosys_diag_Fe_lim"/>')
-            lines.append('    <var name="ecosys_diag_SiO3_lim"/>')
-            lines.append('    <var name="ecosys_diag_light_lim"/>')
+            lines.append('    <var name="ecosys_diag_N_lim_surf"/>')
+            lines.append('    <var name="ecosys_diag_P_lim_surf"/>')
+            lines.append('    <var name="ecosys_diag_Fe_lim_surf"/>')
+            lines.append('    <var name="ecosys_diag_SiO3_lim_surf"/>')
+            lines.append('    <var name="ecosys_diag_light_lim_surf"/>')
             lines.append('    <var name="ecosys_diag_photoC"/>')
             lines.append('    <var name="ecosys_diag_photoC_NO3"/>')
             lines.append('    <var name="ecosys_diag_photoFe"/>')

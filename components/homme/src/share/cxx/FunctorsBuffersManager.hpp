@@ -25,6 +25,11 @@ struct FunctorsBuffersManager {
 
   void allocate ();
 
+  // Reset m_size and allocate using input data.
+  // This is useful if the user wants to allocate
+  // buffer data outside of Homme.
+  void allocate (Real* data, const int new_size);
+
   bool allocated () const { return m_allocated; }
 
 protected:
@@ -32,6 +37,10 @@ protected:
   ExecViewManaged<Real*> m_buffer;
   int   m_size;
   bool  m_allocated;
+
+private:
+
+  void generate_random_data();
 };
 
 } // Homme

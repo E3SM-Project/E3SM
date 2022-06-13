@@ -20,9 +20,6 @@
 		<dim name="maxEdges2" units="unitless"
 			 description="Two times the largest number of edges any polygon within the grid has."
 		/>
-		<dim name="nAdvectionCells" definition="maxEdges2+0" units="unitless"
-			 description="The largest number of advection cells for any edge."
-		/>
 		<dim name="nVertices" units="unitless"
 			 description="The total number of cells in the dual grid. Also the number of corners in the primary grid."
 		/>
@@ -179,6 +176,24 @@
 					possible_values="Any path/prefix to a processor decomposition file."
 		/>
 	</nml_record>
+  <nml_record name="transport_tests" mode="init;forward" configuration="transport_tests">
+    <nml_option name="config_transport_tests_vert_levels" type="integer" default_value="3" units="unitless"
+      description="Number of vertical levels in transport_tests. Typical value is 3 for 2D tests."
+      possible_values="Any positive integer number greater than 0."
+    />
+    <nml_option name="config_transport_tests_temperature" type="real" default_value="15.0" units="deg C"
+      description="Temperature of the ocean."
+      possible_values="Any real number"
+    />
+    <nml_option name="config_transport_tests_salinity" type="real" default_value="35.0" units="PSU"
+      description="Salinity of the ocean."
+      possible_values="Any real number"
+    />
+    <nml_option name="config_transport_tests_flow_id" type="integer" default_value="0" units="unitless"
+     description="integer id of transport test."
+     possible_values="1 = rotation, 2 = nondivergent2D, 3 = divergent2D, 4 = correlatedTracers2D"
+    />
+  </nml_record>
 
 
 	<!--*************************************-->
@@ -191,7 +206,7 @@
 		/>
 		<nml_option name="config_time_integrator" type="character" default_value="split_explicit" units="unitless"
 					description="Time integration method."
-					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'semi_implicit'"
+					possible_values="'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit'"
 		/>
 	</nml_record>
 	<nml_record name="hmix" mode="forward">
@@ -274,28 +289,14 @@
 					possible_values="any positive real"
 		/>
 	</nml_record>
-	<nml_record name="mesoscale_eddy_parameterizations" mode="forward">
-		<nml_option name="config_eddying_resolution_taper" type="character" default_value="ramp" units="unitless"
-					description="Control how the Redi and GM Bolus $\kappa$ value varies as a function of horizontal resolution"
-					possible_values="'none' and 'ramp'"
-		/>
-		<nml_option name="config_eddying_resolution_ramp_min" type="real" default_value="20e3" units="m"
-					description="Minimum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp."
-					possible_values="Any positive real value."
-		/>
-		<nml_option name="config_eddying_resolution_ramp_max" type="real" default_value="30e3" units="m"
-					description="Maximum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp."
-					possible_values="Any positive real value."
-		/>
-	</nml_record>
 	<nml_record name="Redi_isopycnal_mixing" mode="forward">
 		<nml_option name="config_use_Redi" type="logical" default_value=".false." units="unitless"
 					description="If true, Redi isopycnal mixing is turned on"
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_Redi_closure" type="character" default_value="constant" units="unitless"
-					description="Control what type of function is used for Redi $\kappa$."
-					possible_values="'constant', 'data'"
+					description="Control what type of function is used for Redi $\kappa$. For 'equalGM', RediKappa is set to gmBolusKappa, so picks up the closure used by GM. Note that equalGM should only be used with 2D GM schemes (e.g. config_GM_closure=constant or Visbeck), not with EdenGreatbatch."
+					possible_values="'constant', 'equalGM', 'data'"
 		/>
 		<nml_option name="config_Redi_constant_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="The Redi diffusion coefficient. Only used when config_Redi_closure = 'constant'."
@@ -322,8 +323,24 @@
 					possible_values="greater than zero and less than 1"
 		/>
 		<nml_option name="config_Redi_N2_based_taper_limit_term1" type="logical" default_value=".true." units="unitless"
-					description="If true, the N2 lim iting is applied to the horizontal diffusion term"
+					description="If true, the N2 limiting is applied to the horizontal diffusion term"
 					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Redi_min_layers_diag_terms" type="integer" default_value="6" units="NA"
+					description="Redi diagonal terms (2 and 3) are turned off from layer 1 through config_Redi_min_layers_diag_terms-1, and on from config_Redi_min_layers_diag_terms to nVertLevels. The Redi diagonal terms are not guaranteed to produce bounded tracer fields, and in practice produce growing temperatures in a few columns with fewer than 5 vertical cells. Redi is meant for isopycnal mixing in the deep ocean, so not applying Redi diagonal terms in very shallow regions is an acceptable solution."
+					possible_values="any integer between 0 (all layers on) and nVertLevels (all layers off)"
+		/>
+		<nml_option name="config_Redi_horizontal_taper" type="character" default_value="ramp" units="unitless"
+					description="Control how the Redi $\kappa$ value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
+					possible_values="'none', 'ramp', 'RossbyRadius'"
+		/>
+		<nml_option name="config_Redi_horizontal_ramp_min" type="real" default_value="20e3" units="m"
+					description="Minimum value in grid cell size for Redi $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_Redi_horizontal_taper is set to ramp."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_Redi_horizontal_ramp_max" type="real" default_value="30e3" units="m"
+					description="Maximum value in grid cell size for Redi $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_Redi_horizontal_taper is set to ramp."
+					possible_values="Any positive real value."
 		/>
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
@@ -338,9 +355,13 @@
 		<nml_option name="config_GM_constant_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Only used when config_GM_closure is set to constant."
 		/>
-		<nml_option name="config_GM_constant_gravWaveSpeed" type="real" default_value="0.3" units="m/s"
-					description="Gravity wave speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004)."
+		<nml_option name="config_GM_constant_bclModeSpeed" type="real" default_value="0.3" units="m/s"
+					description="The parameter setting for the first baroclinic mode speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004)."
 					possible_values="Positive real numbers"
+		/>
+		<nml_option name="config_GM_minBclModeSpeed_method" type="character" default_value="constant" units="NA"
+					description="Determines how the GM setting for the minimum of the first baroclinic mode speed is computed. If 'constant' then use config_GM_constant_bclModeSpeed. If 'computed' then compute at every edge at every time step using the Brunt-Vaisala frequency"
+					possible_values="'constant' and 'computed'"
 		/>
 		<nml_option name="config_GM_spatially_variable_min_kappa" type="real" default_value="300.0" units="m^2 s^{-1}"
 					description="minimum value of bolus diffusivity for spatially variable GM schemes. Used for all choices of config_GM_closure other than 'constant'."
@@ -377,6 +398,26 @@
 		<nml_option name="config_GM_EG_Rhines_factor" type="real" default_value="0.3" units="NA"
 					description="factor multiplying the Rhines length in the scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)"
 					possible_values="small positive values less than equal to one"
+		/>
+		<nml_option name="config_GM_horizontal_taper" type="character" default_value="ramp" units="unitless"
+					description="Control how the GM Bolus value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
+					possible_values="'none', 'ramp', 'RossbyRadius'"
+		/>
+		<nml_option name="config_GM_horizontal_ramp_min" type="real" default_value="20e3" units="m"
+					description="Minimum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_horizontal_taper is set to ramp."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_GM_horizontal_ramp_max" type="real" default_value="30e3" units="m"
+					description="Maximum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_horizontal_taper is set to ramp."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_GMRedi_Rossby_ramp_min" type="real" default_value="0.5" units="unitless"
+					description="Minimum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM and Redi $\kappa$ ramp functions. Used when config_GM_horizontal_taper and/or config_Redi_horizontal_taper are set to RossbyRadius."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_GMRedi_Rossby_ramp_max" type="real" default_value="3.0" units="unitless"
+					description="Maximum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM and Redi $\kappa$ ramp functions. Used when config_GM_horizontal_taper and/or config_Redi_horizontal_taper are set to RossbyRadius."
+					possible_values="Any positive real value."
 		/>
 	</nml_record>
 	<nml_record name="Rayleigh_damping" mode="forward">
@@ -743,7 +784,53 @@
 					possible_values="Any positive real number."
 		/>
 	</nml_record>
-	<nml_record name="tidal_potential_forcing" mode="forward">
+	<nml_record name="self_attraction_loading" mode="init;forward">
+		<nml_option name="config_use_self_attraction_loading" type="logical" default_value=".false." units="unitless"
+					description="Controls if self-attraction and loading is applied to ssh"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_self_attraction_loading_smoothing_width" type="real" default_value="1.0" units="km"
+					description="Defines region over which ssh is smoothed to zero at coasts for SAL calculation."
+					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_mpas_to_grid_weights_file" type="character" default_value="mpas_to_grid.nc" units="unitless"
+					description="Location of the file containing the interpolation weights for transformation from the MPAS mesh to a Gaussian Grid."
+					possible_values="Any file name string"
+		/>
+		<nml_option name="config_grid_to_mpas_weights_file" type="character" default_value="grid_to_mpas.nc" units="unitless"
+					description="Location of the file containing the interpolation weights for transformation from a Gaussian Grid to the MPAS mesh."
+					possible_values="Any file name string"
+		/>
+		<nml_option name="config_self_attraction_loading_compute_interval" type="character" default_value="0000-00-00_00:30:00" units="unitless"
+					description="Interval for computing full SAL."
+					possible_values="'YYYY-MM-DD_HH:MM:SS'"
+		/>
+		<nml_option name="config_nLatitude" type="integer" default_value="128" units="unitless"
+					description="Numer of latitude points in the Gaussian Grid."
+					possible_values="Any positive integer value."
+		/>
+		<nml_option name="config_nLongitude" type="integer" default_value="256" units="unitless"
+					description="Numer of longitude points in the Gaussian Grid."
+					possible_values="Any positive integer value."
+		/>
+		<nml_option name="config_use_parallel_self_attraction_loading" type="logical" default_value=".false." units="unitless"
+					description="Controls if self-attraction and loading is computed with parallel or serial algorithm"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_parallel_self_attraction_loading_order" type="integer" default_value="10" units="unitless"
+					description="Controls the order of the sperical harmonic expansion used in the parallel self attraction and loading algorithm"
+					possible_values="Any positive integer value."
+		/>
+		<nml_option name="config_parallel_self_attraction_loading_n_cells_per_block" type="integer" default_value="600" units="unitless"
+					description="Controls the number of blocks used for spherical harmonics calculation"
+					possible_values="Any positive integer value."
+		/>
+		<nml_option name="config_parallel_self_attraction_loading_bfb" type="logical" default_value=".false." units="unitless"
+					description="Controls whether a reproducible sum is used for the parallel spherical harmonics calculations"
+					possible_values=".true. or .false."
+		/>
+	</nml_record>
+	<nml_record name="tidal_potential_forcing" mode="init;forward">
 		<nml_option name="config_use_tidal_potential_forcing" type="logical" default_value=".false." units="unitless"
 					description="Controls if tidal potential forcing is used."
 					possible_values=".true. or .false."
@@ -995,7 +1082,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_thickness_flux_type" type="character" default_value="centered" units="unitless"
-					description="If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThicknessEdge.  The standard MPAS-O approach is 'centered'."
+					description="If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThickEdgeFlux.  The standard MPAS-O approach is 'centered'."
 					possible_values="'upwind', 'centered'"
 		/>
 		<nml_option name="config_drying_safety_height" type="real" default_value="1.0e-10" units="m"
@@ -1149,7 +1236,7 @@
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
-	<nml_record name="semi_implicit_ts" mode="forward">
+	<nml_record name="split_implicit_ts" mode="forward">
 		<nml_option name="config_btr_si_preconditioner" type="character" default_value="ras" units="unitless"
 					description="Type of preconditioner for the barotropic mode solver"
 					possible_values="ras, block_jacobi, jacobi, none"
@@ -1158,12 +1245,12 @@
 					description="Tolerance for the barotropic mode solver"
 					possible_values="any positive real, but typically less than 1.0e-9"
 		/>
-		<nml_option name="config_n_btr_si_outer_iter" type="integer" default_value="2" units="unitless"
-					description="number of outer iterations"
-					possible_values="any positive integer, but typically 2"
-		/>
+                <nml_option name="config_n_btr_si_large_iter" type="integer" default_value="1" units="unitless"
+                                        description="number of large barotropic system iterations"
+                                        possible_values="any positive integer, but typically 1 and less than 2"
+                />
 		<nml_option name="config_btr_si_partition_match_mode" type="logical" default_value=".false." units="unitless"
-					description="If true, the semi-implicit method uses the Jacobi preconditioner with the bit-for-bit all-reduce. This is less performant, so should only be used for testing."
+					description="If true, the split-implicit method uses the Jacobi preconditioner with the bit-for-bit all-reduce. This is less performant, so should only be used for testing."
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
@@ -1281,7 +1368,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_disable_vel_coriolis" type="logical" default_value=".false." units="unitless"
-					description="Diables tendencies on the velocity field from the Coriolis force and momentum advection."
+					description="Disables tendencies on the velocity field from the Coriolis force and momentum advection."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_disable_vel_pgrad" type="logical" default_value=".false." units="unitless"
@@ -1371,7 +1458,7 @@
 		<package name="variableShortwave" description="This package includes variables required to compute spatially variable shortwave extinction coefficients"/>
 
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
-		<package name="semiImplicitTimePKG" description="This package includes variables required for semi-implicit time integrators."/>
+		<package name="semiImplicitTimePKG" description="This package includes variables required for split-implicit time integrators."/>
 		<package name="thicknessFilter" description="This package includes variables required for frequency filtered thickness."/>
 		<package name="windStressBulkPKG" description="This package includes varibles required for bulk wind stress forcing."/>
 		<package name="variableBottomDragPKG" description="This package includes varibles required for variable bottom drag."/>
@@ -1441,6 +1528,7 @@
 			<var name="fEdge"/>
 			<var name="fVertex"/>
 			<var name="fCell"/>
+			<var name="bed_elevation"/>
 		</stream>
 
 		<stream name="output_init"
@@ -1686,6 +1774,7 @@
             <var name="gotmEpsbTopOfCell"/>
             <var name="gotmDissTopOfCell"/>
             <var name="gotmLengthTopOfCell"/>
+            <var name="ssh_sal"/>
 		</stream>
 
 		<stream name="output"
@@ -2013,8 +2102,11 @@
 			 description="Mass per unit area of frazil ice produced. Reset to zero at each coupling interval"
 			 packages="frazilIce"
 		/>
-
 		<var name="accumulatedFrazilIceSalinity" type="real" dimensions="nCells Time" units="kg m^{-2}"
+			 description="Salinity associated with accumulatedFrazilIceMass. Reset to zero at each coupling interval"
+			 packages="frazilIce"
+		/>
+		<var name="accumulatedLandIceFrazilSalinity" type="real" dimensions="nCells Time" units="kg m^{-2}"
 			 description="Salinity associated with accumulatedFrazilIceMass. Reset to zero at each coupling interval"
 			 packages="frazilIce"
 		/>
@@ -2213,14 +2305,17 @@
 		<var name="kiteAreasOnVertex" type="real" dimensions="vertexDegree nVertices" units="m^2"
 			 description="Area of the portions of each dual cell that are part of each cellsOnVertex."
 		/>
-		<var name="fEdge" type="real" dimensions="nEdges" units="s^{-1}"
+		<var name="fEdge" type="real" dimensions="nEdges" units="radians s^{-1}"
 			 description="Coriolis parameter at edges."
 		/>
-		<var name="fVertex" type="real" dimensions="nVertices" units="s^{-1}"
+		<var name="fVertex" type="real" dimensions="nVertices" units="radians s^{-1}"
 			 description="Coriolis parameter at vertices."
 		/>
-		<var name="fCell" type="real" dimensions="nCells" units="s^{-1}"
+		<var name="fCell" type="real" dimensions="nCells" units="radians s^{-1}"
 			 description="Coriolis parameter at cell centers."
+		/>
+		<var name="bed_elevation" type="real" dimensions="nCells" units="m"
+			 description="Depth of the bottom of the ocean. Given as negative distance from sea level. Used as input to replace topography input file."
 		/>
 		<var name="bottomDepth" type="real" dimensions="nCells" units="m"
 			 description="Depth of the bottom of the ocean. Given as a positive distance from sea level."
@@ -2232,30 +2327,6 @@
 		<var name="oceanFracObserved" type="real" dimensions="nCells" units="unitless"
 			 description="fraction of each cell containing ocean, used to determine which cells are culled as land."
 			 packages="initMode"
-		/>
-		<var name="derivTwo" type="real" dimensions="maxEdges2 TWO nEdges" units="m^{-2}"
-			 description="Value of the second derivative of the polynomial used for reconstruction of cell center quantities at edges."
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="advCoefs" type="real" dimensions="nAdvectionCells nEdges" units="m"
-			 description="Weighting coefficients used for reconstruction of cell center quantities at edges. Used in advection routines."
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="advCoefs3rd" type="real" dimensions="nAdvectionCells nEdges" units="m"
-			 description="Wegihting coefficients used for reconstruction of cell center quantities at edges. Used in advection routines."
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="advCellsForEdge" type="integer" dimensions="nAdvectionCells nEdges" units="unitless"
-			 description="List of cells used to reconstruct a cell quantity at an edge. Used in advection routines."
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="nAdvCellsForEdge" type="integer" dimensions="nEdges" units="unitless"
-			 description="Number of cells used in reconstruction of cell center quantities at an edge. Used in advection routines."
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="highOrderAdvectionMask" type="integer" dimensions="nVertLevels nEdges" units="unitless"
-			 description="Mask for high order advection. Values are 1 if high order is used, and 0 if not."
-			 packages="forwardMode;analysisMode"
 		/>
 		<var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
 			 description="Coefficients to reconstruct velocity vectors at cells centers."
@@ -2337,6 +2408,9 @@
 		<var name="cullCell" type="integer" dimensions="nCells" units="unitless"
 			 description="Array to hold integers that represent logicals determining if a cell should be culled or not by the MpasCellCuller tool."
 			 packages="cullCells"
+		/>
+		<var name="distanceToCoast" type="real" dimensions="nCells" units="m"
+			 description="Distance of each cell to nearest coastline cell."
 		/>
 	</var_struct>
 	<var_struct name="verticalMesh" time_levs="1">
@@ -2565,8 +2639,12 @@
 			 description="horizontal velocity, tangential to an edge"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" units="m"
+		<var name="layerThicknessEdgeMean" type="real" dimensions="nVertLevels nEdges Time" units="m"
 			 description="layer thickness averaged from cell center to edges"
+			 packages="forwardMode;analysisMode"
+		/>
+		<var name="layerThicknessEdgeFlux" type="real" dimensions="nVertLevels nEdges Time" units="m"
+			 description="layer thickness used for fluxes through edges. May be centered, upwinded, or a combination of the two."
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="layerThicknessVertex" type="real" dimensions="nVertLevels nVertices Time" units="m"
@@ -2692,13 +2770,7 @@
 			packages="forwardMode;analysisMode"
 		/>
 		<var name="betaEdge" type="real" dimensions="nEdges Time" units="m^{-1} s^{-1}"
-			description="meridional gradient of the coriolis parameter"
-		/>
-		<var name="eddyLength" type="real" dimensions="nEdges Time" units="m"
-			description="eddy length scale in Visbeck 1997 closure"
-		/>
-		<var name="eddyTime" type="real" dimensions="nEdges Time" units="s^{-1}"
-			description="inverse eddy time scale in Visbeck 1997 closure"
+			description="meridional gradient of the coriolis parameter, used in the mesoscale eddy parameterization schemes"
 		/>
 		<var name="gmKappaScaling" type="real" dimensions="nVertLevelsP1 nEdges Time" units="NA" default_value="1.0"
 			description="spatially and depth varying GM kappa.  The scaling is based on the Brunt Vaisala Frequency relative to a maximum value below the mixed layer, follows from Danabasoglu and Marshall 2007.  If config_GM_closure is not set to N2_dependent the scaling value is set to 1 everywhere."
@@ -2829,10 +2901,6 @@
 			 description="GM stream function"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="gmStreamFuncTopOfCell" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-1}"
-			 description="GM stream function reconstructed to the cell centers"
-			 packages="forwardMode;analysisMode"
-		/>
 		<var name="GMStreamFuncX" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
 			 description="GM stream function"
 			 packages="forwardMode;analysisMode"
@@ -2854,15 +2922,23 @@
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="gmBolusKappa" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
-			 description="GM Bolus Kappa value.  This is constant in time, and set at init based on the constant or ramp fuction."
+			 description="GM Bolus Kappa value.  On output, it has NOT been multiplied by the horizontal taper array gmHorizontalTaper, because that is applied at the end to the normalGMBolusVelocity variable, not to the gmBolusKappa."
 			 packages="gm"
 		/>
 		<var name="RediKappa" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
-			 description="Redi Kappa value.  This is constant in time, and set at init based on the constant or ramp fuction."
+			 description="Redi Kappa value.  On output, it has already been multiplied by the horizontal taper array RediHorizontalTaper (as opposed to gmBolusKappa, which has not been multiplied by the horizontal taper)."
 			 packages="gm"
 		/>
-		<var name="gmResolutionTaper" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
-			 description="resolution tapering for GM and Redi"
+		<var name="RediHorizontalTaper" type="real" dimensions="nEdges Time" units="unitless"
+			 description="Horizontal tapering for Redi. Varies between 0 and 1."
+			 packages="gm"
+		/>
+		<var name="gmHorizontalTaper" type="real" dimensions="nEdges Time" units="unitless"
+			 description="Horizontal tapering for GM. Varies between 0 and 1."
+			 packages="gm"
+		/>
+		<var name="RossbyRadius" type="real" dimensions="nEdges Time" units="m"
+			 description="Rossby Radius, computed in GM routine for some settings"
 			 packages="gm"
 		/>
 		<var name="surfaceFluxAttenuationCoefficient" type="real" dimensions="nCells Time" units="m"
@@ -2944,122 +3020,126 @@
 		<var name="pressureAdjustedSSH" type="real" dimensions="nCells Time" units="m"
 			 description="sea surface height adjusted by sea surface pressure"
 		/>
-		<!-- FIELD semi_implicit time stepping -->
+		<!-- FIELD split_implicit time stepping -->
 		<var name="barotropicCoriolisTerm" type="real" dimensions="nEdges Time" units="m s^{-2}"
-			description="f * uPerp for the semi-implicit time stepping"
+			description="f * uPerp for the split-implicit time stepping"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_r0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_r0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_r1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_r1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_rh0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_rh0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_rh1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_rh1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_r00" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_r00" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_ph0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_ph0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_ph1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_ph1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_v0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_v0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_v1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_s0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_s0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_s1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_s1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_sh0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_sh0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_sh1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_sh1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_w0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_w0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_w1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_w1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_wh0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_wh0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_wh1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_wh1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_q0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_q0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_q1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_q1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_qh0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_qh0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_qh1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_qh1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_z0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_z0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_z1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_z1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_zh0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_zh0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_zh1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_zh1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_t0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_t0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_t1" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_t1" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
+		<var name="SIvec_y0" type="real" dimensions="nCells Time" units="unitless"
+			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="CGvec_y0" type="real" dimensions="nCells Time" units="unitless"
-			description="A vector used in the semi-implicit barotropic mode solver"
-			packages="semiImplicitTimePKG"
+		<var name="ssh_sal" type="real" dimensions="nCells Time" units="m"
+			description="sea surface height perturbation from self-attraction and loading"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="ssh_sal_grad" type="real" dimensions="nEdges Time" units=""
+			description="gradient of sea surface height perturbation from self-attraction and loading"
+			packages="tidalPotentialForcingPKG"
 		/>
 	</var_struct>
 	<var_struct name="shortwave" time_levs="1">
@@ -3189,10 +3269,10 @@
 		<var name="evapTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
 			 description="Heat flux associated with Evaporation at cell centers sent to coupler. Positive into the ocean."
 		/>
-		<var name="seaIceFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
+		<var name="seaIceTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
 			 description="Heat flux associated with sea ice melt water at cell centers sent to coupler. Positive into the ocean."
 		/>
-		<var name="icebergFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
+		<var name="icebergTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^{-1}"
 			 description="Heat flux associated with iceberg melt at cell centers sent to coupler. Positive into the ocean."
 		/>
 
@@ -3472,6 +3552,10 @@
 			description="SSH - tidal potential in split explicit "
 			packages="tidalPotentialForcingPKG"
 		/>
+		<var name="coastalSmoothingFactor" type="real" dimensions="nCells" units="unitless"
+			 description="Multiplication factors to smooth ssh at coastlines for SAL caculation"
+			 packages="tidalPotentialForcingPKG"
+		/>
 		<var name="RediKappaData" type="real" dimensions="nCells" units="m^2 s^{-1}"
 			 description="Redi isopycnal mixing Kappa value. This is the data field specified at init."
 			 packages="gm"
@@ -3739,4 +3823,5 @@
 #ifndef EXCLUDE_INIT_MODE
 #include "mode_init/Registry.xml"
 #endif
+
 </registry>

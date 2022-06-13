@@ -59,6 +59,7 @@ module ocn_forward_mode
    use ocn_frazil_forcing
    use ocn_tidal_forcing
    use ocn_vel_tidal_potential
+   use ocn_vel_self_attraction_loading
 
    use ocn_tracer_hmix
    use ocn_tracer_hmix_redi
@@ -70,6 +71,8 @@ module ocn_forward_mode
    use ocn_tracer_ecosys
    use ocn_tracer_DMS
    use ocn_tracer_MacroMolecules
+   use ocn_tracer_ideal_age
+   use ocn_tracer_CFC
    use ocn_tracer_surface_restoring
    use ocn_gm
 
@@ -349,6 +352,10 @@ module ocn_forward_mode
 
       endif
 
+      ! Initialize self-attraction and loading
+      call ocn_vel_self_attraction_loading_init(domain,err_tmp)
+      ierr = ior(ierr, err_tmp)
+
       !-----------------------------------------------------------------
       ! Complete all remaining module initializations.
       !-----------------------------------------------------------------
@@ -438,6 +445,10 @@ module ocn_forward_mode
       call ocn_tracer_DMS_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
       call ocn_tracer_MacroMolecules_init(domain, err_tmp)
+      ierr = ior(ierr,err_tmp)
+      call ocn_tracer_ideal_age_init(domain, err_tmp)
+      ierr = ior(ierr,err_tmp)
+      call ocn_tracer_CFC_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
       if (ierr /= 0) then
          call mpas_log_write( &
@@ -592,6 +603,13 @@ module ocn_forward_mode
         call mpas_timer_stop('io_ecosys')
       endif
 
+      ! read initial data required for CFC forcing
+      if (config_use_CFCTracers) then
+        call mpas_timer_start('io_CFC',.false.)
+        call ocn_get_CFCData(domain % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_CFC')
+      endif
+
       ! read initial data required for monthly surface salinity restoring
       ! always execute this call as initial data needed regardless of alarm
       if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
@@ -627,6 +645,9 @@ module ocn_forward_mode
          currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
          call mpas_log_write('Doing timestep ' // trim(timeStamp))
+
+         ! pre-timestep analysis computation
+         call ocn_analysis_precompute(domain, ierr)
 
 #ifdef MPAS_DEBUG
          call mpas_log_write( '   Computing surface flux arrays')
@@ -737,6 +758,13 @@ module ocn_forward_mode
            call mpas_timer_stop('io_ecosys')
          endif
 
+         ! read next time level data required for CFC forcing
+         if (config_use_CFCTracers) then
+           call mpas_timer_start('io_CFC',.false.)
+           call ocn_get_CFCData(domain % streamManager, domain, domain % clock, .false.)
+           call mpas_timer_stop('io_CFC')
+         endif
+
          ! read next time level data required for monthly surface salinity restoring
          if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
            if ( mpas_is_alarm_ringing(domain % clock, 'salinityDataReadAlarm', ierr=err_tmp) ) then
@@ -778,7 +806,9 @@ module ocn_forward_mode
       ! destroy the ocean mesh structure
       call ocn_meshDestroy(ierr)
 
-      call mpas_dmpar_exch_group_destroy_reusable_buffers(domain, 'subcycleFields')
+      if ( config_time_integrator == 'split_explicit') then
+         call mpas_dmpar_exch_group_destroy_reusable_buffers(domain, 'subcycleFields')
+      end if
 
       call ocn_analysis_finalize(domain, ierr)
 

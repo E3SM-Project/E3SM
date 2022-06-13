@@ -72,13 +72,13 @@ module control_mod
                                           ! interspace a lf-trapazoidal step every LFTfreq leapfrogs    
                                           ! 0 = disabled
 
-! vert_remap_q_alg:   -1  remap without monotone filter, used for some test cases
-!                      0  default value, Zerroukat monotonic splines
-!                      1  PPM vertical remap with mirroring at the boundaries
-!                         (solid wall bc's, high-order throughout)
-!                      2  PPM vertical remap without mirroring at the boundaries
-!                         (no bc's enforced, first-order at two cells bordering top and bottom boundaries)
- integer, public :: vert_remap_q_alg = 0
+! vert_remap_q_alg:   -1  PPM remap without monotone filter, used for some test cases
+!                      0  Zerroukat monotonic splines
+!                      1  PPM vertical remap with constant extension at the boundaries
+!                     10  PPM with linear extrapolation at boundaries, with column limiter
+!                     11  PPM with unlimited linear extrapolation at boundaries
+ integer, public :: vert_remap_q_alg = 0    ! tracers
+ integer, public :: vert_remap_u_alg = -2   ! remap for dynamics. default -2 means inherit vert_remap_q_alg
 
 ! advect theta 0: conservation form 
 !              1: expanded divergence form (less noisy, non-conservative)
@@ -117,14 +117,14 @@ module control_mod
   integer              , public :: partmethod     ! partition methods
   character(len=MAX_STRING_LEN)    , public :: topology = "cube"       ! options: "cube", "plane"
   character(len=MAX_STRING_LEN)    , public :: geometry = "sphere"      ! options: "sphere", "plane"
-  character(len=MAX_STRING_LEN)    , public :: test_case      
-  integer              , public :: tasknum
+  character(len=MAX_STRING_LEN)    , public :: test_case
+  !most tests don't have forcing
+  logical                          , public :: test_with_forcing = .false. 
   integer              , public :: statefreq      ! output frequency of synopsis of system state (steps)
   integer              , public :: restartfreq
   integer              , public :: runtype 
   integer              , public :: timerdetail 
   integer              , public :: numnodes 
-  logical              , public :: uselapi
   character(len=MAX_STRING_LEN)    , public :: restartfile 
   character(len=MAX_STRING_LEN)    , public :: restartdir
 
@@ -146,19 +146,16 @@ module control_mod
 
   character(len=MAX_STRING_LEN)    ,public  :: vfile_int=""   ! vertical formulation (ecmwf,ccm1)
   character(len=MAX_STRING_LEN)    ,public  :: vfile_mid=""   ! vertical grid spacing (equal,unequal)
-  character(len=MAX_STRING_LEN)    ,public  :: vform = ""     ! vertical coordinate system (sigma,hybrid)
   integer,                          public  :: vanalytic = 0  ! if 1, test initializes vertical coords
   real (kind=real_kind),            public  :: vtop = 0.1     ! top coordinate level for analytic vcoords
 
-  integer              , public :: fine_ne = -1               ! set for refined exodus meshes (variable viscosity)
-  real (kind=real_kind), public :: max_hypervis_courant = 1d99! upper bound for Courant number
-                                                              ! (only used for variable viscosity, recommend 1.9 in namelist)
   real (kind=real_kind), public :: nu      = 7.0D5            ! viscosity (momentum equ)
   real (kind=real_kind), public :: nu_div  = -1               ! viscsoity (momentum equ, div component)
   real (kind=real_kind), public :: nu_s    = -1               ! default = nu   T equ. viscosity
   real (kind=real_kind), public :: nu_q    = -1               ! default = nu   tracer viscosity
   real (kind=real_kind), public :: nu_p    = -1               ! default = nu   ps equ. viscosity
   real (kind=real_kind), public :: nu_top  = 0.0D5            ! top-of-the-model viscosity
+  real (kind=real_kind), public :: tom_sponge_start=0         ! start of sponge layer, in hPa
 
   integer, public :: hypervis_subcycle=1                      ! number of subcycles for hyper viscsosity timestep
   integer, public :: hypervis_subcycle_tom=0                  ! number of subcycles for TOM diffusion
@@ -166,26 +163,17 @@ module control_mod
                                                               !   >1  apply timesplit from hyperviscosity
   integer, public :: hypervis_subcycle_q=1                    ! number of subcycles for hyper viscsosity timestep on TRACERS
   integer, public :: hypervis_order=0                         ! laplace**hypervis_order.  0=not used  1=regular viscosity, 2=grad**4
-  integer, public :: psurf_vis = 0                            ! 0 = use laplace on eta surfaces
-                                                              ! 1 = use (approx.) laplace on p surfaces
 
-  real (kind=real_kind), public :: hypervis_power=0           ! if not 0, use variable hyperviscosity based on element area
   real (kind=real_kind), public :: hypervis_scaling=0         ! use tensor hyperviscosity
 
   !three types of hyper viscosity are supported right now:
   ! (1) const hv:    nu * del^2 del^2
-  ! (2) scalar hv:   nu(lat,lon) * del^2 del^2
-  ! (3) tensor hv,   nu * ( \div * tensor * \grad ) * del^2
+  ! (2) tensor hv,   nu * ( \div * tensor * \grad ) * del^2
   !
-  ! (1) default:  hypervis_power=0, hypervis_scaling=0
-  ! (2) Original version for var-res grids. (M. Levy)
-  !            scalar coefficient within each element
-  !            hypervisc_scaling=0
-  !            set hypervis_power>0 and set fine_ne, max_hypervis_courant
-  ! (3) tensor HV var-res grids 
+  ! (1) hypervis_scaling=0
+  ! (2) tensor HV var-res grids  
   !            tensor within each element:
-  !            set hypervis_scaling > 0 (typical values would be 3.2 or 4.0)
-  !            hypervis_power=0
+  !            set hypervis_scaling > 0 (typical values would be 3.0)
   !            (\div * tensor * \grad) operator uses cartesian laplace
   !
 
@@ -257,6 +245,25 @@ module control_mod
   real (kind=real_kind), public :: dcmip16_mu_s    = 0        ! additional uniform viscosity (scalar dynamical variables)
   real (kind=real_kind), public :: dcmip16_mu_q    = -1       ! additional uniform viscosity (scalar tracers); -1 implies it defaults to dcmip16_mu_s value
   real (kind=real_kind), public :: interp_lon0     = 0.0d0
+
+!PLANAR
+  real (kind=real_kind), private, parameter :: tol_zero=1e-10 !tolerance to determine if lx,ly,sx,sy are set
+
+  real (kind=real_kind), public :: bubble_T0 = 270.0       !bubble ref state
+  real (kind=real_kind), public :: bubble_dT = 0.5         !bubble dTheta
+  real (kind=real_kind), public :: bubble_xycenter = 0.0   !bubble xy position
+  real (kind=real_kind), public :: bubble_zcenter = 3000.0 !bubble z position
+  real (kind=real_kind), public :: bubble_ztop = 10000.0   !bubble z top
+  real (kind=real_kind), public :: bubble_xyradius = 2000.0!bubble radius along x or y axis
+  real (kind=real_kind), public :: bubble_zradius = 1500.0 !bubble radius along z axis
+  logical,               public :: bubble_cosine  = .TRUE. !bubble uniform or cosine
+  logical,               public :: bubble_moist  = .FALSE.    ! 
+  real (kind=real_kind), public :: bubble_moist_drh = 0.0     !bubble dRH parameter
+  real (kind=real_kind), public :: bubble_rh_background = 0.0 !bubble RH parameter
+  integer,               public :: bubble_prec_type = 0       !0 kessler, 1 rj
+  logical,               protected :: case_planar_bubble = .FALSE.
+
+  public :: set_planar_defaults
 
 contains
 
@@ -621,5 +628,80 @@ contains
     if (par%masterproc .and. nerr > 0) &
          write(iulog,'(a,i2)') 'test_timestep_make_parameters_consistent nerr', nerr
   end subroutine test_timestep_make_parameters_consistent
+
+
+subroutine set_planar_defaults()
+
+use physical_constants, only: Lx, Ly, Sx, Sy
+ 
+!since defaults here depend on test, they cannot be set before ctl_nl is read, unlike some other parameters, bubble_*, etc.        
+!if true, most likely lx,ly,sx,sy weren't set in ctl_nl
+    if (      abs(lx).le.tol_zero .and. abs(ly).le.tol_zero &
+        .and. abs(sx).le.tol_zero .and. abs(sy).le.tol_zero )then
+    if (test_case == "planar_dbl_vrtx") then
+      Lx = 5000.0D0 * 1000.0D0
+      Ly = 5000.0D0 * 1000.0D0
+      Sx = 0.0D0
+      Sy = 0.0D0
+    else if (test_case == "planar_hydro_gravity_wave") then
+       Lx = 6000.0D0 * 1000.0D0
+       Ly = 6000.0D0 * 1000.0D0
+       Sx = -3000.0D0 * 1000.0D0
+       Sy = -3000.0D0 * 1000.0D0
+    else if (test_case == "planar_nonhydro_gravity_wave") then
+       Lx = 300.0D0 * 1000.0D0
+       Ly = 300.0D0 * 1000.0D0
+       Sx = -150.0D0 * 1000.0D0
+       Sy = -150.0D0 * 1000.0D0
+    else if (test_case == "planar_hydro_mtn_wave") then
+       Lx = 240.0D0 * 1000.0D0
+       Ly = 240.0D0 * 1000.0D0
+       Sx = 0.0D0 * 1000.0D0
+       Sy = 0.0D0 * 1000.0D0
+    else if (test_case == "planar_nonhydro_mtn_wave") then
+       Lx = 144.0D0 * 1000.0D0
+       Ly = 144.0D0 * 1000.0D0
+       Sx = 0.0D0 * 1000.0D0
+       Sy = 0.0D0 * 1000.0D0
+    else if (test_case == "planar_schar_mtn_wave") then
+       Lx = 100.0D0 * 1000.0D0
+       Ly = 100.0D0 * 1000.0D0
+       Sx = 0.0D0 * 1000.0D0
+       Sy = 0.0D0 * 1000.0D0
+    else if (test_case == "planar_density_current" .OR. test_case == "planar_moist_density_current") then
+       Lx = 51.2D0 * 1000.0D0
+       Ly = 51.2D0 * 1000.0D0
+       Sx = -25.6D0 * 1000.0D0
+       Sy = -25.6D0 * 1000.0D0
+    else if (test_case == "planar_rising_bubble" ) then
+       Lx = 2.0D0 * 10000.0D0
+       Ly = 2.0D0 * 10000.0D0
+       Sx = -10000.0D0
+       Sy = -10000.0D0
+! THESE ARE WRONG AND NEED TO BE FIXED WHEN THESE CASES ARE ACTUALLY IMPLEMENTED....
+!else if (test_case == "planar_baroclinic_instab" .OR. test_case == "planar_moist_baroclinic_instab") then
+!       Lx = 5000.0D0 * 1000.0D0
+!       Ly = 5000.0D0 * 1000.0D0
+!       Sx = 0.0D0
+!       Sy = 0.0D0
+!    else if (test_case == "planar_tropical_cyclone") then
+!       Lx = 5000.0D0 * 1000.0D0
+!       Ly = 5000.0D0 * 1000.0D0
+!       Sx = 0.0D0
+!       Sy = 0.0D0
+!    else if (test_case == "planar_supercell") then
+!       Lx = 5000.0D0 * 1000.0D0
+!       Ly = 5000.0D0 * 1000.0D0
+!       Sx = 0.0D0
+!       Sy = 0.0D0
+
+    endif
+    endif !if lx,ly,sx,sy are not set in nl
+
+    if (test_case == "planar_rising_bubble" ) then
+       case_planar_bubble = .TRUE.
+    end if
+
+end subroutine set_planar_defaults
 
 end module control_mod

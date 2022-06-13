@@ -37,7 +37,7 @@ double zeroulpn (double a, const int n, double replace) {
   x <<= n;
   { // Replace the n least significant bits with those from the fraction part of
     // 'replace'.
-    const long long int ones = 0xffffffffffffffff;
+    const unsigned long long int ones = 0xffffffffffffffff;
     auto mask = ones;
     mask >>= n;
     mask <<= n;
@@ -118,7 +118,6 @@ bfb_pow_impl (ScalarType val, ExpType e) {
     Kokkos::abort("Cannot take powers of negative numbers.\n");
   }
   if (e<-1.0 || e>1.5) {
-    printf("Bad exponent: %3.15f\n",1);
     Kokkos::abort("bfb_pow x^a impl-ed with only -1.0<a<1.5 in mind.\n");
   }
   if (val==ScalarType(0)) {

@@ -57,9 +57,10 @@ module restFileMod
   use ncdio_pio            , only : file_desc_t, ncd_pio_createfile, ncd_pio_openfile, ncd_global
   use ncdio_pio            , only : ncd_pio_closefile, ncd_defdim, ncd_putatt, ncd_enddef, check_dim
   use ncdio_pio            , only : check_att, ncd_getatt
-  use BeTRSimulationALM    , only : betr_simulation_alm_type
+  use BeTRSimulationELM    , only : betr_simulation_elm_type
   use CropType             , only : crop_type
   use GridcellDataType     , only : grc_wf
+  use TopounitDataType     , only : top_es
   use LandunitDataType     , only : lun_es, lun_ws
   use ColumnDataType       , only : col_es, col_ef, col_ws, col_wf
   use ColumnDataType       , only : col_cs, c13_col_cs, c14_col_cs
@@ -157,7 +158,7 @@ contains
     type(waterflux_type)           , intent(in)    :: waterflux_vars
     type(phosphorusstate_type)     , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)      , intent(in)    :: phosphorusflux_vars
-    class(betr_simulation_alm_type), intent(inout):: ep_betr
+    class(betr_simulation_elm_type), intent(inout):: ep_betr
     type(hlm_fates_interface_type) , intent(inout) :: alm_fates
     type(crop_type)                , intent(inout) :: crop_vars
     character(len=*)               , intent(in), optional :: rdate     ! restart file time stamp for name
@@ -224,6 +225,8 @@ contains
     call col_wf%Restart (bounds, ncid, flag='define')
     
     call veg_wf%Restart (bounds, ncid, flag='define')
+
+    call top_es%Restart (bounds, ncid, flag='define')
     
     call lun_es%Restart (bounds, ncid, flag='define')
 
@@ -359,6 +362,8 @@ contains
     call col_wf%Restart (bounds, ncid, flag='write')
 
     call veg_wf%Restart (bounds, ncid, flag='write')
+
+    call top_es%Restart (bounds, ncid, flag='write')
 
     call lun_es%Restart (bounds, ncid, flag='write')
 
@@ -528,7 +533,7 @@ contains
     type(waterflux_type)           , intent(inout) :: waterflux_vars
     type(phosphorusstate_type)     , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)      , intent(inout) :: phosphorusflux_vars
-    class(betr_simulation_alm_type), intent(inout) :: ep_betr
+    class(betr_simulation_elm_type), intent(inout) :: ep_betr
     type(hlm_fates_interface_type) , intent(inout) :: alm_fates
     type(glc2lnd_type)             , intent(inout) :: glc2lnd_vars
     type(crop_type)                , intent(inout) :: crop_vars
@@ -597,6 +602,8 @@ contains
     call col_wf%Restart (bounds, ncid, flag='read')
 
     call veg_wf%Restart (bounds, ncid, flag='read')
+
+    call top_es%Restart (bounds, ncid, flag='read')
 
     call lun_es%Restart (bounds, ncid, flag='read')
 
@@ -1116,8 +1123,9 @@ contains
     ! Add global metadata defining pft types
     !
     ! !USES:
-    use elm_varpar, only : natpft_lb, mxpft, cft_lb, cft_ub
+    use elm_varpar, only : natpft_lb, mxpft, cft_lb, cft_ub, mxpft_nc
     use pftvarcon , only : pftname_len, pftname
+    use elm_varctl,  only : use_crop
     !
     ! !ARGUMENTS:
     type(file_desc_t), intent(inout) :: ncid ! local file id
@@ -1131,6 +1139,7 @@ contains
     !-----------------------------------------------------------------------
     
     do ptype = natpft_lb, mxpft
+       if(.not. use_crop .and. ptype > mxpft_nc) EXIT ! exit the do loop
        attname = att_prefix // pftname(ptype)
        call ncd_putatt(ncid, ncd_global, attname, ptype)
     end do

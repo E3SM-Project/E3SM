@@ -56,6 +56,7 @@ module ocn_comp_mct
    use ocn_tracer_short_wave_absorption
    use ocn_tracer_short_wave_absorption_variable
    use ocn_tracer_ecosys
+   use ocn_tracer_CFC
    use ocn_tracer_surface_restoring
    use ocn_gm
    use ocn_config
@@ -199,6 +200,7 @@ contains
     character(len=StrKIND), pointer :: tempCharConfig
 
     logical, pointer :: config_use_ecosysTracers
+    logical, pointer :: config_use_CFCTracers
     logical, pointer :: config_use_activeTracers_surface_restoring
     logical, pointer :: config_use_surface_salinity_monthly_restoring
     character (len=StrKIND), pointer :: config_land_ice_flux_mode
@@ -699,6 +701,14 @@ contains
         call mpas_timer_stop('io_ecosys')
     endif
 
+    ! read initial data required for CFC forcing
+    call mpas_pool_get_config(domain % configs, 'config_use_CFCTracers', config_use_CFCTracers)
+    if (config_use_CFCTracers) then
+        call mpas_timer_start('io_CFC',.false.)
+        call ocn_get_CFCData(domain_ptr % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_CFC')
+    endif
+
     ! read initial data required for monthly surface salinity restoring
     call mpas_pool_get_config(domain % configs, 'config_use_activeTracers_surface_restoring',  &
                                                  config_use_activeTracers_surface_restoring)
@@ -875,6 +885,7 @@ contains
       logical :: streamActive, debugOn
       logical, pointer :: config_write_output_on_startup
       logical, pointer :: config_use_ecosysTracers
+      logical, pointer :: config_use_CFCTracers
       logical, pointer :: config_use_activeTracers_surface_restoring
       logical, pointer :: config_use_surface_salinity_monthly_restoring
       character (len=StrKIND), pointer :: config_restart_timestamp_name
@@ -987,6 +998,14 @@ contains
            call mpas_timer_stop('io_ecosys')
          endif
 
+         ! read next time level data required for CFC forcing
+         call mpas_pool_get_config(domain % configs, 'config_use_CFCTracers', config_use_CFCTracers)
+         if (config_use_CFCTracers) then
+           call mpas_timer_start('io_CFC',.false.)
+           call ocn_get_CFCData(domain % streamManager, domain, domain_ptr % clock, .false.)
+           call mpas_timer_stop('io_CFC')
+         endif
+
          ! read next time level data required for monthly surface salinity restoring
          call mpas_pool_get_config(domain % configs, 'config_use_activeTracers_surface_restoring',  &
                                                       config_use_activeTracers_surface_restoring)
@@ -1013,6 +1032,11 @@ contains
          call mpas_dmpar_get_time(current_wallclock_time)
          write (WCstring,'(F18.3)') current_wallclock_time
          call mpas_log_write(trim(timeStamp) // '  WC time:' // WCstring)
+
+        ! pre-timestep analysis computation
+        if (debugOn) call mpas_log_write('   Starting analysis precompute', masterOnly=.true.)
+        call ocn_analysis_precompute(domain, ierr)
+        if (debugOn) call mpas_log_write('   Finished analysis precompute', masterOnly=.true.)
 
          if (debugOn) call mpas_log_write('   Performing forward update')
          call mpas_timer_start("time integration", .false.)
@@ -1104,6 +1128,8 @@ contains
          if(trim(config_sw_absorption_type)=='ohlmann00') call ocn_shortwave_forcing_write_restart(domain_ptr)
 
          if (config_use_ecosysTracers) call ocn_ecosys_forcing_write_restart(domain_ptr)
+
+         if (config_use_CFCTracers) call ocn_CFC_forcing_write_restart(domain_ptr)
 
          if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring)  &
              call ocn_salinity_restoring_forcing_write_restart(domain_ptr)
@@ -1515,6 +1541,17 @@ contains
 !    o  ifrac  -- ice fraction                             (%)
 !    o  rofl   -- river runoff flux                        (kg/m2/s)
 !    o  rofi   -- ice runoff flux                          (kg/m2/s)
+!    o  rofDIN -- DIN runoff flux                          (kg/m2/s)
+!    o  rofDIP -- DIP runoff flux                          (kg/m2/s)
+!    o  rofDON -- DON runoff flux                          (kg/m2/s)
+!    o  rofDOP -- DOP runoff flux                          (kg/m2/s)
+!    o  rofDOC -- DOC runoff flux                          (kg/m2/s)
+!    o  rofPP  -- PP  runoff flux                          (kg/m2/s)
+!    o  rofDSi -- DSi runoff flux                          (kg/m2/s)
+!    o  rofPOC -- POC runoff flux                          (kg/m2/s)
+!    o  rofPN  -- PN  runoff flux                          (kg/m2/s)
+!    o  rofDIC -- DIC runoff flux                          (kg/m2/s)
+!    o  rofFe  -- Fe  runoff flux                          (kg/m2/s)
 ! 
 !    The following fields are sometimes received from the coupler,
 !      depending on model options:
@@ -1561,6 +1598,7 @@ contains
                        config_use_DMSTracers_sea_ice_coupling,  &
                        config_use_MacroMoleculesTracers,  &
                        config_use_MacroMoleculesTracers_sea_ice_coupling, &
+                       config_use_CFCTracers,  &
                        config_remove_AIS_coupler_runoff, &
                        config_cvmix_kpp_use_theory_wave
 
@@ -1580,7 +1618,8 @@ contains
                                      ecosysAuxiliary,      &
                                      ecosysSeaIceCoupling, &
                                      DMSSeaIceCoupling,    &
-                                     MacroMoleculesSeaIceCoupling
+                                     MacroMoleculesSeaIceCoupling,      &
+                                     CFCAuxiliary
 
    integer, pointer :: nCellsSolve
 
@@ -1608,6 +1647,15 @@ contains
                                   iceFluxFeParticulateField, &
                                   iceFluxFeDissolvedField, &
                                   iceFluxDustField, &
+                                  riverFluxNO3Field,  &
+                                  riverFluxPO4Field,  &
+                                  riverFluxSiO3Field, &
+                                  riverFluxDOCField,  &
+                                  riverFluxDONField,  &
+                                  riverFluxDOPField,  &
+                                  riverFluxDICField,  &
+                                  riverFluxALKField,  &
+                                  riverFluxFeField,   &
                                   landIceFreshwaterFluxField, &
                                   landIceHeatFluxField, &
                                   landIceFractionField, &
@@ -1632,6 +1680,7 @@ contains
                                                atmosphericPressure, iceFraction, &
                                                seaIcePressure, windSpeedSquared10m, &
                                                atmosphericCO2, atmosphericCO2_ALT_CO2,  &
+                                               windSpeedSquared10mCFC, &
                                                iceFluxDIC,       &
                                                iceFluxDON, &
                                                iceFluxNO3, &
@@ -1643,9 +1692,19 @@ contains
                                                iceFluxFeParticulate, &
                                                iceFluxFeDissolved, &
                                                iceFluxDust, &
+                                               riverFluxNO3,  &
+                                               riverFluxPO4,  &
+                                               riverFluxSiO3, &
+                                               riverFluxDOC,  &
+                                               riverFluxDON,  &
+                                               riverFluxDOP,  &
+                                               riverFluxDIC,  &
+                                               riverFluxALK,  &
+                                               riverFluxFe,   &
                                                landIceFreshwaterFlux, &
                                                landIceHeatFlux, &
                                                landIceFraction, &
+                                               areaCell, &
                                                windSpeed10m
                                                !landIcePressure
 
@@ -1658,6 +1717,8 @@ contains
    real (kind=RKIND) :: removedRiverRunoffFluxReduced, removedIceRunoffFluxReduced
 
    real (kind=RKIND), dimension(:,:), pointer :: landIceInterfaceTracers
+
+   real (kind=RKIND) :: riverFactor
 
 !-----------------------------------------------------------------------
 !
@@ -1685,6 +1746,7 @@ contains
                                                 config_use_DMSTracers_sea_ice_coupling)
    call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers_sea_ice_coupling',  &
                                                 config_use_MacroMoleculesTracers_sea_ice_coupling)
+   call mpas_pool_get_config(domain % configs, 'config_use_CFCTracers', config_use_CFCTracers)
    call mpas_pool_get_config(domain % configs, 'config_remove_AIS_coupler_runoff', config_remove_AIS_coupler_runoff)
    call mpas_pool_get_config(domain % configs, 'config_cvmix_kpp_use_theory_wave', config_cvmix_kpp_use_theory_wave)
 
@@ -1766,6 +1828,7 @@ contains
       !landIcePressure => landIcePressureField % array
 
       call mpas_pool_get_array(meshPool, 'latCell', latCell)
+      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
       ! BGC fields
       if (config_use_ecosysTracers) then
@@ -1777,6 +1840,27 @@ contains
          atmosphericCO2 => atmosphericCO2Field % array
          call mpas_pool_get_field(ecosysAuxiliary, 'atmosphericCO2_ALT_CO2', atmosphericCO2_ALT_CO2Field)
          atmosphericCO2_ALT_CO2 => atmosphericCO2_ALT_CO2Field % array
+
+         if (config_use_ecosysTracers_river_inputs_from_coupler) then
+           call mpas_pool_get_field(ecosysAuxiliary, 'riverFluxNO3' , riverFluxNO3Field)
+           call mpas_pool_get_field(ecosysAuxiliary, 'riverFluxPO4' , riverFluxPO4Field)
+           call mpas_pool_get_field(ecosysAuxiliary, 'riverFluxDON' , riverFluxDONField)
+           call mpas_pool_get_field(ecosysAuxiliary, 'riverFluxDOP' , riverFluxDOPField)
+           call mpas_pool_get_field(ecosysAuxiliary, 'riverFluxSiO3', riverFluxSiO3Field)
+           call mpas_pool_get_field(ecosysAuxiliary, 'riverFluxDOC' , riverFluxDOCField)
+           call mpas_pool_get_field(ecosysAuxiliary, 'riverFluxDIC' , riverFluxDICField)
+           call mpas_pool_get_field(ecosysAuxiliary, 'riverFluxALK' , riverFluxALKField)
+           call mpas_pool_get_field(ecosysAuxiliary, 'riverFluxFe'  , riverFluxFeField)
+           riverFluxNO3  => riverFluxNO3Field  % array
+           riverFluxPO4  => riverFluxPO4Field  % array
+           riverFluxDON  => riverFluxDONField  % array
+           riverFluxDOP  => riverFluxDOPField  % array
+           riverFluxSiO3 => riverFluxSiO3Field % array
+           riverFluxDOC  => riverFluxDOCField  % array
+           riverFluxDIC  => riverFluxDICField  % array
+           riverFluxALK  => riverFluxALKField  % array
+           riverFluxFe   => riverFluxFeField   % array
+         endif
 
          call mpas_pool_get_config(domain % configs, 'config_ecosys_atm_co2_option',   &
             config_ecosys_atm_co2_option)
@@ -1821,6 +1905,13 @@ contains
 
          iceFluxDMS => iceFluxDMSField % array
          iceFluxDMSP => iceFluxDMSPField % array
+      endif
+
+      ! CFC fields
+      if (config_use_CFCTracers) then
+         call mpas_pool_get_subpool(forcingPool, 'CFCAuxiliary', CFCAuxiliary)
+         call mpas_pool_get_field(CFCAuxiliary, 'windSpeedSquared10mCFC', windSpeedSquared10mField)
+         windSpeedSquared10mCFC => windSpeedSquared10mField % array
       endif
 
       if (config_remove_AIS_coupler_runoff) then
@@ -1980,6 +2071,30 @@ contains
               end if
            end if
 
+           if (config_use_ecosysTracers_river_inputs_from_coupler) then
+             riverFluxNO3(i)  = x2o_o % rAttr(index_x2o_Foxx_rofDIN, n)
+             riverFluxPO4(i)  = x2o_o % rAttr(index_x2o_Foxx_rofDIP, n)
+             riverFluxDON(i)  = x2o_o % rAttr(index_x2o_Foxx_rofDON, n)
+             riverFluxDOP(i)  = x2o_o % rAttr(index_x2o_Foxx_rofDOP, n)
+             riverFluxSiO3(i) = x2o_o % rAttr(index_x2o_Foxx_rofDSi, n)
+             riverFluxDOC(i)  = x2o_o % rAttr(index_x2o_Foxx_rofDOC, n)
+             riverFluxDIC(i)  = x2o_o % rAttr(index_x2o_Foxx_rofDIC, n)
+             riverFluxFe(i)   = x2o_o % rAttr(index_x2o_Foxx_rofFe , n)
+
+! convert from kgNutrient/(m2-s) to mmol/m3 m/s
+             riverFactor = 1.e6_RKIND
+             riverFluxNO3(i)  = riverFluxNO3(i)*riverFactor/14.007_RKIND
+             riverFluxPO4(i)  = riverFluxPO4(i)*riverFactor/30.974_RKIND
+             riverFluxDON(i)  = riverFluxDON(i)*riverFactor/14.007_RKIND
+             riverFluxDOP(i)  = riverFluxDOP(i)*riverFactor/30.974_RKIND
+             riverFluxSiO3(i) = riverFluxSiO3(i)*riverFactor/28.085_RKIND
+             riverFluxDOC(i)  = riverFluxDOC(i)*riverFactor/12.001_RKIND
+             riverFluxDIC(i)  = riverFluxDIC(i)*riverFactor/12.001_RKIND
+             riverFluxFe(i)   = riverFluxFe(i)*riverFactor/55.845_RKIND
+
+             riverFluxALK(i)  = riverFluxDIC(i)
+           endif
+
            if (config_use_ecosysTracers_sea_ice_coupling) then
               if ( iceFluxPhytoCField % isActive ) then
                  iceFluxPhytoC(1,i) = x2o_o % rAttr(index_x2o_Fioi_algae1, n)
@@ -2013,6 +2128,7 @@ contains
               if ( iceFluxDOCField % isActive ) then
                  iceFluxDOC(1,i) = x2o_o % rAttr(index_x2o_Fioi_doc1, n)
                  iceFluxDOC(2,i) = x2o_o % rAttr(index_x2o_Fioi_doc2, n)
+                 iceFluxDOC(3,i) = x2o_o % rAttr(index_x2o_Fioi_doc3, n)
               endif
               if ( iceFluxDONField % isActive ) then
                  iceFluxDON(i) = x2o_o % rAttr(index_x2o_Fioi_don1, n)
@@ -2028,6 +2144,13 @@ contains
               iceFluxDMSP(i) = x2o_o % rAttr(index_x2o_Fioi_dmspp, n)
            endif
          endif
+
+        ! CFC fields
+        if (config_use_CFCTracers) then
+           if ( windSpeedSquared10mField % isActive ) then
+              windSpeedSquared10mCFC(i) = x2o_o % rAttr(index_x2o_So_duu10n, n)
+           end if
+        end if
 
       end do
 
@@ -2076,6 +2199,18 @@ contains
       call mpas_pool_get_field(ecosysAuxiliary, 'atmosphericCO2', atmosphericCO2Field)
       call mpas_pool_get_field(ecosysAuxiliary, 'atmosphericCO2_ALT_CO2', atmosphericCO2_ALT_CO2Field)
 
+      if (config_use_ecosysTracers_river_inputs_from_coupler) then
+        call mpas_pool_get_field(ecosysAuxiliary, 'riverFluxNO3' , riverFluxNO3Field)
+        call mpas_pool_get_field(ecosysAuxiliary, 'riverFluxPO4' , riverFluxPO4Field)
+        call mpas_pool_get_field(ecosysAuxiliary, 'riverFluxDON' , riverFluxDONField)
+        call mpas_pool_get_field(ecosysAuxiliary, 'riverFluxDOP' , riverFluxDOPField)
+        call mpas_pool_get_field(ecosysAuxiliary, 'riverFluxSiO3', riverFluxSiO3Field)
+        call mpas_pool_get_field(ecosysAuxiliary, 'riverFluxDOC' , riverFluxDOCField)
+        call mpas_pool_get_field(ecosysAuxiliary, 'riverFluxDIC' , riverFluxDICField)
+        call mpas_pool_get_field(ecosysAuxiliary, 'riverFluxALK' , riverFluxALKField)
+        call mpas_pool_get_field(ecosysAuxiliary, 'riverFluxFe'  , riverFluxFeField)
+      endif
+
       if (config_use_ecosysTracers_sea_ice_coupling) then
          call mpas_pool_get_subpool(forcingPool, 'ecosysSeaIceCoupling', ecosysSeaIceCoupling)
 
@@ -2097,6 +2232,12 @@ contains
 
       call mpas_pool_get_field(DMSSeaIceCoupling, 'iceFluxDMS', iceFluxDMSField)
       call mpas_pool_get_field(DMSSeaIceCoupling, 'iceFluxDMSP', iceFluxDMSPField)
+   endif
+
+   ! CFC fields
+   if (config_use_CFCTracers) then
+      call mpas_pool_get_subpool(forcingPool, 'CFCAuxiliary', CFCAuxiliary)
+      call mpas_pool_get_field(CFCAuxiliary, 'windSpeedSquared10mCFC', windSpeedSquared10mField)
    endif
 
    if ( windStressMeridionalField % isActive ) then
@@ -2193,6 +2334,36 @@ contains
          call mpas_dmpar_exch_halo_field(atmosphericCO2_ALT_CO2Field)
       end if
 
+      if (config_use_ecosysTracers_river_inputs_from_coupler) then
+        if ( riverFluxNO3Field % isActive ) then
+           call mpas_dmpar_exch_halo_field(riverFluxNO3Field)
+        end if
+        if ( riverFluxPO4Field % isActive ) then
+           call mpas_dmpar_exch_halo_field(riverFluxPO4Field)
+        end if
+        if ( riverFluxDONField % isActive ) then
+           call mpas_dmpar_exch_halo_field(riverFluxDONField)
+        end if
+        if ( riverFluxDOPField % isActive ) then
+           call mpas_dmpar_exch_halo_field(riverFluxDOPField)
+        end if
+        if ( riverFluxSiO3Field % isActive ) then
+           call mpas_dmpar_exch_halo_field(riverFluxSiO3Field)
+        end if
+        if ( riverFluxDOCField % isActive ) then
+           call mpas_dmpar_exch_halo_field(riverFluxDOCField)
+        end if
+        if ( riverFluxDICField % isActive ) then
+           call mpas_dmpar_exch_halo_field(riverFluxDICField)
+        end if
+        if ( riverFluxALKField % isActive ) then
+           call mpas_dmpar_exch_halo_field(riverFluxALKField)
+        end if
+        if ( riverFluxFeField % isActive ) then
+           call mpas_dmpar_exch_halo_field(riverFluxFeField)
+        end if
+      endif
+
       if (config_use_ecosysTracers_sea_ice_coupling) then
          if ( iceFluxPhytoCField % isActive ) then
             call mpas_dmpar_exch_halo_field(iceFluxPhytoCField)
@@ -2236,6 +2407,13 @@ contains
       if ( iceFluxDMSPField % isActive ) then
          call mpas_dmpar_exch_halo_field(iceFluxDMSPField)
       endif
+   endif
+
+   ! CFC fields
+   if (config_use_CFCTracers .and. .not. config_use_ecosysTracers) then
+      if ( windSpeedSquared10mField % isActive ) then
+         call mpas_dmpar_exch_halo_field(windSpeedSquared10mField)
+      end if
    endif
 
    ! global sum of removed runoff
@@ -2319,6 +2497,7 @@ contains
                                                avgOceanSurfaceDMS, &
                                                avgOceanSurfaceDMSP, &
                                                avgOceanSurfaceDOCr, &
+                                               avgOceanSurfaceDOCSemiLabile, &
                                                avgOceanSurfaceFeParticulate, &
                                                avgOceanSurfaceFeDissolved
 
@@ -2402,6 +2581,7 @@ contains
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceSiO3', avgOceanSurfaceSiO3)
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceNH4', avgOceanSurfaceNH4)
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCr', avgOceanSurfaceDOCr)
+        call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCSemiLabile', avgOceanSurfaceDOCSemiLabile)
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeParticulate', avgOceanSurfaceFeParticulate)
         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeDissolved', avgOceanSurfaceFeDissolved)
      endif
@@ -2488,6 +2668,10 @@ contains
           o2x_o % rAttr(index_o2x_So_algae2, n) = max(0.0_RKIND,avgOceanSurfacePhytoC(2,i))
           o2x_o % rAttr(index_o2x_So_algae3, n) = max(0.0_RKIND,avgOceanSurfacePhytoC(3,i))
           o2x_o % rAttr(index_o2x_So_dic1,   n) = max(0.0_RKIND,avgOceanSurfaceDIC(i))
+          o2x_o % rAttr(index_o2x_So_doc1,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
+          o2x_o % rAttr(index_o2x_So_doc2,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
+          o2x_o % rAttr(index_o2x_So_doc3,   n) = max(0.0_RKIND,avgOceanSurfaceDOCSemiLabile(i))
+          o2x_o % rAttr(index_o2x_So_don1,   n) = 0.0_RKIND
           o2x_o % rAttr(index_o2x_So_no3,    n) = max(0.0_RKIND,avgOceanSurfaceNO3(i))
           o2x_o % rAttr(index_o2x_So_sio3,   n) = max(0.0_RKIND,avgOceanSurfaceSiO3(i))
           o2x_o % rAttr(index_o2x_So_nh4,    n) = max(0.0_RKIND,avgOceanSurfaceNH4(i))
@@ -2502,7 +2686,8 @@ contains
        if (config_use_MacroMoleculesTracers .and. config_use_MacroMoleculesTracers_sea_ice_coupling) then
           o2x_o % rAttr(index_o2x_So_doc1, n) = max(0.0_RKIND,avgOceanSurfaceDOC(1,i))
           o2x_o % rAttr(index_o2x_So_doc2, n) = max(0.0_RKIND,avgOceanSurfaceDOC(2,i))
-          o2x_o % rAttr(index_o2x_So_don1, n) = max(0.0_RKIND,avgOceanSurfaceDON(i))
+          o2x_o % rAttr(index_o2x_So_doc3, n) = max(0.0_RKIND,avgOceanSurfaceDOC(3,i))
+          o2x_o % rAttr(index_o2x_So_don1, n) = 0.0_RKIND
        endif
 !      o2x_o % rAttr(index_o2x_Faoo_fco2_ocn, n) = CO2Flux(i)
 !      o2x_o % rAttr(index_o2x_Faoo_fdms_ocn, n) = DMSFlux(i)

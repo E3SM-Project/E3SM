@@ -2,12 +2,12 @@ my @groups = qw(run_modes
                 time_management
                 io
                 decomposition
+                transport_tests
                 time_integration
                 hmix
                 hmix_del2
                 hmix_del4
                 hmix_leith
-                mesoscale_eddy_parameterizations
                 redi_isopycnal_mixing
                 gm_eddy_parameterization
                 rayleigh_damping
@@ -16,6 +16,7 @@ my @groups = qw(run_modes
                 forcing
                 coupling
                 shortwaveradiation
+                self_attraction_loading
                 tidal_potential_forcing
                 frazil_ice
                 land_ice_fluxes
@@ -28,7 +29,7 @@ my @groups = qw(run_modes
                 eos_wright
                 split_timestep_share
                 split_explicit_ts
-                semi_implicit_ts
+                split_implicit_ts
                 ale_vertical_grid
                 ale_frequency_filtered_thickness
                 debug
@@ -39,6 +40,8 @@ my @groups = qw(run_modes
                 tracer_forcing_ecosystracers
                 tracer_forcing_dmstracers
                 tracer_forcing_macromoleculestracers
+                tracer_forcing_idealagetracers
+                tracer_forcing_cfctracers
                 am_globalstats
                 am_surfaceareaweightedaverages
                 am_watermasscensus
@@ -73,4 +76,5 @@ my @groups = qw(run_modes
                 am_sedimentfluxindex
                 am_sedimenttransport
                 am_harmonicanalysis
+                am_conservationcheck
                 );

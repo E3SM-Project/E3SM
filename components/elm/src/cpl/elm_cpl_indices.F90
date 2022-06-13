@@ -45,6 +45,7 @@ module elm_cpl_indices
   integer, public ::index_l2x_Sl_fv           ! friction velocity  
   integer, public ::index_l2x_Sl_ram1         ! aerodynamical resistance
   integer, public ::index_l2x_Sl_soilw        ! volumetric soil water
+  integer, public ::index_l2x_Flrl_wslake       ! lake water storage
   integer, public ::index_l2x_Fall_taux       ! wind stress, zonal
   integer, public ::index_l2x_Fall_tauy       ! wind stress, meridional
   integer, public ::index_l2x_Fall_lat        ! latent          heat flux
@@ -57,7 +58,7 @@ module elm_cpl_indices
   integer, public ::index_l2x_Fall_flxdst2    ! dust flux size bin 2    
   integer, public ::index_l2x_Fall_flxdst3    ! dust flux size bin 3    
   integer, public ::index_l2x_Fall_flxdst4    ! dust flux size bin 4
-  integer, public ::index_l2x_Fall_flxvoc     ! MEGAN fluxes
+  integer, public ::index_l2x_Fall_flxvoc     ! MEGAN fluxes  
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
   integer, public ::index_l2x_Sl_tsrf(0:glc_nec_max)   = 0 ! glc MEC temperature
@@ -81,6 +82,7 @@ module elm_cpl_indices
   integer, public ::index_x2l_Sa_shum         ! bottom atm level spec hum
   integer, public ::index_x2l_Sa_pbot         ! bottom atm level pressure
   integer, public ::index_x2l_Sa_tbot         ! bottom atm level temp
+  integer, public ::index_x2l_Sa_uovern      ! ratio of wind speed/brunt vaisalla frequency for precipitation downscaling
   integer, public ::index_x2l_Faxa_lwdn       ! downward lw heat flux
   integer, public ::index_x2l_Faxa_rainc      ! prec: liquid "convective"
   integer, public ::index_x2l_Faxa_rainl      ! prec: liquid "large scale"
@@ -191,6 +193,7 @@ contains
     index_l2x_Sl_ram1       = mct_avect_indexra(l2x,'Sl_ram1')
     index_l2x_Sl_fv         = mct_avect_indexra(l2x,'Sl_fv')
     index_l2x_Sl_soilw      = mct_avect_indexra(l2x,'Sl_soilw',perrwith='quiet')
+    index_l2x_Flrl_wslake     = mct_avect_indexra(l2x,'Flrl_wslake')
     if ( lnd_drydep )then
        index_l2x_Sl_ddvel = mct_avect_indexra(l2x, trim(drydep_fields_token))
     else
@@ -235,6 +238,7 @@ contains
     index_x2l_Sa_ptem       = mct_avect_indexra(x2l,'Sa_ptem')
     index_x2l_Sa_pbot       = mct_avect_indexra(x2l,'Sa_pbot')
     index_x2l_Sa_tbot       = mct_avect_indexra(x2l,'Sa_tbot')
+    index_x2l_Sa_uovern     = mct_avect_indexra(x2l,'Sa_uovern')
     index_x2l_Sa_shum       = mct_avect_indexra(x2l,'Sa_shum')
     index_x2l_Sa_co2prog    = mct_avect_indexra(x2l,'Sa_co2prog',perrwith='quiet')
     index_x2l_Sa_co2diag    = mct_avect_indexra(x2l,'Sa_co2diag',perrwith='quiet')

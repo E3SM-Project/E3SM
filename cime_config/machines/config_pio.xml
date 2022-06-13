@@ -5,7 +5,6 @@
   <entry id="PIO_VERSION">
     <values>
       <value>2</value>
-      <value mach="sooty">1</value>
     </values>
   </entry>
 
@@ -66,6 +65,7 @@
       <value mach="grizzly">netcdf</value>
       <value mach="badger">netcdf</value>
       <value mach="bebop" mpilib="impi" compset=".*CAM5.+MPAS.*">netcdf</value>
+      <value mach="fugaku" compiler="gnu">netcdf</value>
     </values>
   </entry>
 

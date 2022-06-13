@@ -55,7 +55,6 @@
          cprho    = cp_ocn*rhow       ,&! for ocean mixed layer (J kg / K m^3)
 
          ! for ice strength
-         Cf       = 17._dbl_kind      ,&! ratio of ridging work to PE change in ridging 
          Cp       = 0.5_dbl_kind*gravit*(rhow-rhoi)*rhoi/rhow ,&! proport const for PE 
          Pstar    = 2.75e4_dbl_kind   ,&! constant in Hibler strength formula 
                                         ! (kstrength = 0) 
@@ -77,6 +76,7 @@
          snowpatch = 0.02_dbl_kind, & ! parameter for fractional snow area (m)
 
          ! biogeochemistry
+         R_gC2molC = 12.0107   , & ! molar mass of carbon
          sk_l = 0.03_dbl_kind      ! (m) skeletal layer thickness
 
       integer (kind=int_kind), parameter, public :: & 

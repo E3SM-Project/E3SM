@@ -34,7 +34,8 @@ module seaice_constants
        vonkar, &
        iceruf, &
        zref, &
-       sk_l
+       sk_l, &
+       R_gC2molC
 
   private
   save
@@ -93,7 +94,8 @@ module seaice_constants
 
    ! biogeochemistry constants
    real(kind=RKIND), parameter, public :: &
-        skeletalLayerThickness = sk_l
+        skeletalLayerThickness = sk_l      , &
+        gramsCarbonPerMolCarbon = R_gC2molC    ! g carbon per mol carbon
 
 
 end module seaice_constants

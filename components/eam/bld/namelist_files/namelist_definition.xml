@@ -1308,6 +1308,30 @@ Filepath for dataset containing CO2 flux from fossil fuel.
 Default: none
 </entry>
 
+<entry id="co2_print_diags_timestep" type="logical"  category="co2_cycle"
+       group="co2_cycle_nl" valid_values="" >
+If TRUE print out CO2 conservation checks every timestep.
+Default: FALSE
+</entry>
+
+<entry id="co2_print_diags_monthly" type="logical"  category="co2_cycle"
+       group="co2_cycle_nl" valid_values="" >
+If TRUE print out CO2 conservation checks monthly.
+Default: FALSE
+</entry>
+
+<entry id="co2_print_diags_total" type="logical"  category="co2_cycle"
+       group="co2_cycle_nl" valid_values="" >
+If TRUE print out a CO2 conservation for the lenght of the run.
+Default: FALSE
+</entry>
+
+<entry id="co2_conserv_error_tol_per_year" type="real" category="co2_cycle"
+       group="co2_cycle_nl" valid_values="" >
+error tolerance for CO2 conservation
+Default: 5.e-13
+</entry>
+
 <!-- History and Initial Conditions Output -->
 
 <entry id="avgflag_pertape" type="char*1(10)"  category="history"
@@ -3981,18 +4005,6 @@ Initialize with observed aerosols from IOP file.
 Default: FALSE
 </entry>
 
-<entry id="swrad_off" type="logical" category="scam"
-       group="cam_inparm" valid_values="">
-Assume night time (turn off SW rad).
-Default: FALSE
-</entry>
-
-<entry id="lwrad_off" type="logical" category="scam"
-       group="cam_inparm" valid_values="">
-Turn off LW radiation computation.
-Default: FALSE
-</entry>
-
 <entry id="precip_off" type="logical" category="scm"
        group="cam_inparm" valid_values="">
 Turn off microphysics computation.
@@ -4066,6 +4078,18 @@ Default: false
        group="phys_ctl_nl" valid_values="m2005, sam1mom" >
 Type of E3SM-MMF microphysics scheme employed.
 Default: sam1mom
+</entry>
+
+<entry id="MMF_orientation_angle" type="real" category="conv"
+       group="phys_ctl_nl" valid_values="">
+Angle of CRM domain in degrees used to apply large scale wind forcing.
+Default value depends on whether CRM domain is 2D or 3D. For 2D runs a value 
+of 90deg used for a south-north orientation to reduce precipitation biases
+that tend to occur when the CRM aligns with the prevailing wind.
+A value of -1 enables an experimental randomly rotating CRM orientation.
+Defaults: 
+  2D CRM: 90 (i.e. north-south)
+  3D CRM: 0
 </entry>
 
 <entry id="MMF_VT_wn_max" type="real" category="conv"
@@ -5784,10 +5808,10 @@ Second-order viscosity applied only near the model top [m^2/s].
 Default: Set by build-namelist.
 </entry>
 
-<entry id="fine_ne" type="integer" category="se"
+<entry id="tom_sponge_start" type="real" category="se"
        group="ctl_nl" valid_values="" >
-baseline ne for scalar hypervis tuning
-Default: Set by build-namelist.
+Bottom of sponge layer in hPa.
+Default: 0 (use default value based on reference pressure at model top).
 </entry>
 
 <entry id="hypervis_scaling" type="real" category="se"
@@ -5796,11 +5820,6 @@ Default: Set by build-namelist.
 </entry>
 
 <entry id="hypervis_power" type="real" category="se"
-       group="ctl_nl" valid_values="" >
-Default: Set by build-namelist.
-</entry>
-
-<entry id="max_hypervis_courant" type="real" category="se"
        group="ctl_nl" valid_values="" >
 Default: Set by build-namelist.
 </entry>
@@ -5855,15 +5874,6 @@ Remap algorithm to use to map between FV physics grid and GLL dynamics
 grid. 0, default, provides the original algorithms; 1 provides
 high-order algorithms implemented in gllfvremap_mod.
 Default: (set by dycore).  
-</entry>
-
-<entry id="se_fv_nphys" type="integer" category="se"
-       group="dyn_se_inparm" valid_values="" >
-Number of equally-spaced horizontal physics points per spectral
-element. A number greater than zero will define [se_fv_nphys] equally
-spaced physics points in each direction (e.g., se_fv_nphys = 2 will
-result in 4 equally-spaced physics points per element).
-Default: set based on atmosphere grid
 </entry>
 
 <!-- CAM I/O  -->

@@ -4,8 +4,8 @@ SET(SRC_THETA_DIR    ${HOMME_SOURCE_DIR}/src/theta-l_kokkos)
 SET(SHARE_UT_DIR     ${CMAKE_CURRENT_SOURCE_DIR}/../share_kokkos_ut)
 SET(THETA_UT_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 SET(UTILS_SHARE_DIR  ${HOMME_SOURCE_DIR}/utils/csm_share)
-SET(UTILS_TIMING_SRC_DIR ${HOMME_SOURCE_DIR}/utils/cime/src/share/timing)
-SET(UTILS_TIMING_BIN_DIR ${HOMME_BINARY_DIR}/utils/cime/src/share/timing)
+SET(UTILS_TIMING_SRC_DIR ${HOMME_SOURCE_DIR}/utils/cime/CIME/non_py/src/timing)
+SET(UTILS_TIMING_BIN_DIR ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
 
 ### Build a 'theta-l_kokkos' library ###
 # We do this once, and link against it for all unit tests. This reduces compilation times
@@ -26,8 +26,13 @@ TARGET_INCLUDE_DIRECTORIES(thetal_kokkos_ut_lib PUBLIC ${EXEC_INCLUDE_DIRS})
 TARGET_INCLUDE_DIRECTORIES(thetal_kokkos_ut_lib PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 TARGET_COMPILE_DEFINITIONS(thetal_kokkos_ut_lib PUBLIC "HAVE_CONFIG_H")
 TARGET_LINK_LIBRARIES(thetal_kokkos_ut_lib kokkos)
-TARGET_LINK_LIBRARIES(thetal_kokkos_ut_lib timing ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-IF(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
+TARGET_LINK_LIBRARIES(thetal_kokkos_ut_lib timing ${COMPOSE_LIBRARY_CPP} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+IF (HOMME_USE_MKL)
+  TARGET_LINK_LIBRARIES (thetal_kokkos_ut_lib -mkl)
+ENDIF()
+IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
+  TARGET_COMPILE_DEFINITIONS(thetal_kokkos_ut_lib PUBLIC HOMME_WITHOUT_PIOLIBRARY)
+ELSE ()
   IF(HOMME_USE_SCORPIO)
     TARGET_LINK_LIBRARIES(thetal_kokkos_ut_lib piof pioc)
   ELSE ()
@@ -266,3 +271,65 @@ ELSE()
 ENDIF()
 cxx_unit_test (dirk_ut "${DIRK_UT_F90_SRCS}" "${DIRK_UT_CXX_SRCS}" "${DIRK_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
 TARGET_LINK_LIBRARIES(dirk_ut thetal_kokkos_ut_lib)
+
+# ### Compose semi-Lagrangian transport unit tests
+
+SET (COMPOSE_UT_CXX_SRCS
+  ${THETA_UT_DIR}/compose_ut.cpp
+)
+
+SET (COMPOSE_UT_F90_SRCS
+  ${THETA_UT_DIR}/compose_interface.F90
+  ${THETA_UT_DIR}/thetal_test_interface.F90
+  ${SHARE_UT_DIR}/geometry_interface.F90
+)
+
+SET (COMPOSE_UT_INCLUDE_DIRS
+  ${SRC_THETA_DIR}/cxx
+  ${SRC_SHARE_DIR}
+  ${SRC_SHARE_DIR}/compose
+  ${SRC_SHARE_DIR}/cxx
+  ${THETA_UT_DIR}
+  ${THETA_LIB_MODULE_DIR}
+  ${UTILS_TIMING_SRC_DIR}
+  ${UTILS_TIMING_BIN_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}
+  ${CMAKE_BINARY_DIR}/src/share/cxx
+)
+
+SET (NUM_CPUS 1)
+cxx_unit_test (compose_ut "${COMPOSE_UT_F90_SRCS}" "${COMPOSE_UT_CXX_SRCS}" "${COMPOSE_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+TARGET_LINK_LIBRARIES(compose_ut thetal_kokkos_ut_lib)
+
+# ### GllFvRemap unit tests
+
+SET (GLLFVREMAP_UT_CXX_SRCS
+  ${THETA_UT_DIR}/gllfvremap_ut.cpp
+)
+
+SET (GLLFVREMAP_UT_F90_SRCS
+  ${THETA_UT_DIR}/gllfvremap_interface.F90
+  ${THETA_UT_DIR}/compose_interface.F90
+  ${THETA_UT_DIR}/thetal_test_interface.F90
+  ${SHARE_UT_DIR}/geometry_interface.F90
+)
+
+SET (GLLFVREMAP_UT_INCLUDE_DIRS
+  ${SRC_THETA_DIR}/cxx
+  ${SRC_SHARE_DIR}
+  ${SRC_SHARE_DIR}/cxx
+  ${THETA_UT_DIR}
+  ${THETA_LIB_MODULE_DIR}
+  ${UTILS_TIMING_SRC_DIR}
+  ${UTILS_TIMING_BIN_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}
+  ${CMAKE_BINARY_DIR}/src/share/cxx
+)
+
+IF (USE_NUM_PROCS)
+  SET (NUM_CPUS ${USE_NUM_PROCS})
+ELSE()
+  SET (NUM_CPUS 1)
+ENDIF()
+cxx_unit_test (gllfvremap_ut "${GLLFVREMAP_UT_F90_SRCS}" "${GLLFVREMAP_UT_CXX_SRCS}" "${GLLFVREMAP_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+TARGET_LINK_LIBRARIES(gllfvremap_ut thetal_kokkos_ut_lib)

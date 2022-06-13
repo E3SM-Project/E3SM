@@ -15,8 +15,8 @@ MACRO(PREQX_KOKKOS_SETUP)
   SET(TRILINOS_ZOLTAN_DIR   ${HOMME_SOURCE_DIR}/src/zoltan)
   SET(TEST_SRC_DIR          ${HOMME_SOURCE_DIR}/src/test_src)
 
-  SET(UTILS_TIMING_SRC_DIR  ${HOMME_SOURCE_DIR}/utils/cime/src/share/timing)
-  SET(UTILS_TIMING_DIR      ${HOMME_BINARY_DIR}/utils/cime/src/share/timing)
+  SET(UTILS_TIMING_SRC_DIR  ${HOMME_SOURCE_DIR}/utils/cime/CIME/non_py/src/timing)
+  SET(UTILS_TIMING_DIR      ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
 
   # Make INCLUDE_DIRS global so the tests can access it
   SET (EXEC_LIB_INCLUDE_DIRS
@@ -242,20 +242,3 @@ MACRO(PREQX_KOKKOS_SETUP)
   SET(USE_OPENACC FALSE)
 
 ENDMACRO(PREQX_KOKKOS_SETUP)
-
-# Build exec only if HOMME_BUILD_EXECS is true
-IF (HOMME_BUILD_EXECS)
-  PREQX_KOKKOS_SETUP()
-
-  ############################################################################
-  # createTestExec(exec_name exec_type NP NC PLEV USE_PIO USE_ENERGY QSIZE_D)
-  ############################################################################
-  createTestExec(preqx_kokkos preqx_kokkos ${PREQX_NP} ${PREQX_NC} ${PREQX_PLEV} ${PREQX_USE_PIO}  ${PREQX_USE_ENERGY} ${QSIZE_D})
-ENDIF ()
-
-IF (HOMME_BUILD_LIBS)
-  PREQX_KOKKOS_SETUP()
-
-  createExecLib(preqx_kokkos_lib preqx_kokkos "${PREQX_DEPS}" "${EXEC_LIB_INCLUDE_DIRS}"
-      ${PREQX_NP} ${PREQX_PLEV} ${PREQX_USE_ENERGY} ${QSIZE_D})
-ENDIF ()

@@ -533,10 +533,11 @@
          doc, don, dic, fed, fep, zaeros, hum,  &
          ocean_bio_all, &
          max_algae, max_doc, max_dic, max_don,  max_fe, max_nbtrcr, max_aero, &
-         l_stop, stop_label)
+         DOCPoolFractions, use_macromolecules, l_stop, stop_label)
 
       use ice_constants_colpkg, only: c0, c1, c2, p1, p15, p5
-      use ice_zbgc_shared, only: R_S2N, zbgc_frac_init, zbgc_init_frac, remap_zbgc
+      use ice_zbgc_shared, only: R_S2N, zbgc_frac_init, zbgc_init_frac, remap_zbgc, &
+           doc_pool_fractions
 
       ! column package includes
       use ice_colpkg_tracers, only: nt_fbri, nt_bgc_S, nt_sice, nt_zbgc_frac, &
@@ -562,21 +563,23 @@
          max_fe, &
          max_nbtrcr, &
          max_aero
- 
+
       real (kind=dbl_kind), dimension (nblyr+1), intent(inout) :: &
          igrid     ! biology vertical interface points
- 
-      real (kind=dbl_kind), dimension (nilyr+1), intent(inout) :: &
-         cgrid     ! CICE vertical coordinate   
 
-      logical (kind=log_kind), intent(in) :: & 
-         restart_bgc ! if .true., read bgc restart file
+      real (kind=dbl_kind), dimension (nilyr+1), intent(inout) :: &
+         cgrid     ! CICE vertical coordinate
+
+      logical (kind=log_kind), intent(in) :: &
+         restart_bgc, & ! if .true., read bgc restart file
+         use_macromolecules ! if .true., doc ocean fractions are determined &
+                            ! by the ocean macromolecules subroutine
 
       real (kind=dbl_kind), dimension(nilyr, ncat), intent(in) :: &
          sicen     ! salinity on the cice grid
 
       real (kind=dbl_kind), dimension (:,:), intent(inout) :: &
-         trcrn     ! subset of tracer array (only bgc) 
+         trcrn     ! subset of tracer array (only bgc)
 
       real (kind=dbl_kind), intent(in) :: &
          sss       ! sea surface salinity (ppt)
@@ -610,6 +613,9 @@
       real (kind=dbl_kind), dimension (:), intent(inout) :: &
          ocean_bio_all   ! fixed order, all values even for tracers false
 
+      real (kind=dbl_kind), dimension (:), intent(out) :: &
+         DOCPoolFractions   ! Fraction of DOC in polysacharids, lipids, and proteins
+
       logical (kind=log_kind), intent(inout) :: &
          l_stop            ! if true, print diagnostics and abort on return
 
@@ -641,6 +647,13 @@
       zspace(1)       = p5*zspace(1)
       zspace(nblyr+1) = p5*zspace(nblyr+1)
       ntrcr_bgc       = ntrcr-ntrcr_o
+
+      DOCPoolFractions(:) = c1
+      if (.not. use_macromolecules) then
+        do mm = 1,max_doc
+           DOCPoolFractions(mm) = doc_pool_fractions(mm)
+        end do
+      end if
 
       call colpkg_init_OceanConcArray(max_nbtrcr,                &
                                  max_algae, max_don,  max_doc,   &
@@ -3501,8 +3514,9 @@
                                       vicen,    &
                                       strength)
 
-      use ice_constants_colpkg, only: p333, c0, c1, c2, Cf, Cp, Pstar, Cstar, &
+      use ice_constants_colpkg, only: p333, c0, c1, c2, Cp, Pstar, Cstar, &
           rhoi, puny
+      use ice_colpkg_shared, only: Cf
       use ice_mechred, only: asum_ridging, ridge_itd
 
       integer (kind=int_kind), intent(in) :: & 
@@ -5389,7 +5403,8 @@
                            aicen_init, vicen_init, aicen, vicen, vsnon, &
                            aice0, trcrn, vsnon_init, skl_bgc, &
                            max_algae, max_nbtrcr, &
-                           flux_bion, &
+                           flux_bion, bioPorosityIceCell, &
+                           bioSalinityIceCell, bioTemperatureIceCell, &
                            l_stop, stop_label)
 
       use ice_algae, only: zbio, sklbio
@@ -5441,6 +5456,11 @@
 
       real (kind=dbl_kind), dimension (:,:), intent(out) :: &
          flux_bion      ! per categeory ice to ocean biogeochemistry flux (mmol/m2/s)
+
+      real (kind=dbl_kind), dimension (:), intent(inout) :: &
+         bioPorosityIceCell, & ! category average porosity on the interface bio grid
+         bioSalinityIceCell, & ! (ppt) category average porosity on the interface bio grid
+         bioTemperatureIceCell ! (oC) category average porosity on the interface bio grid
 
       real (kind=dbl_kind), dimension (:,:), intent(inout) :: &
          Zoo            , & ! N losses accumulated in timestep (ie. zooplankton/bacteria)
@@ -5528,10 +5548,11 @@
          iphin       , & ! porosity
          ibrine_sal  , & ! brine salinity  (ppt)
          ibrine_rho  , & ! brine_density (kg/m^3)
+         iSin        , & ! Salinity on the interface grid (ppt)
          iTin            ! Temperature on the interface grid (oC)
 
       real (kind=dbl_kind) :: &
-         sloss            ! brine flux contribution from surface runoff (g/m^2)
+         sloss           ! brine flux contribution from surface runoff (g/m^2)
 
       real (kind=dbl_kind), dimension (ncat) :: &
          hbrnInitial, & ! inital brine height
@@ -5551,6 +5572,9 @@
       zspace(nblyr+1) = p5*zspace(nblyr+1)
 
       l_stop = .false.
+      bioPorosityIceCell(:) = c0
+      bioSalinityIceCell(:) = c0
+      bioTemperatureIceCell(:) = c0
 
       do n = 1, ncat
 
@@ -5625,7 +5649,7 @@
                                 first_ice(n),     bSin,        brine_sal,         &
                                 brine_rho,        iphin,       ibrine_rho,        &
                                 ibrine_sal,       sice_rho(n), sloss,             &
-                                salinz(1:nilyr),  l_stop,      stop_label)
+                                salinz(1:nilyr),  iSin(:),     l_stop,      stop_label)
 
                   if (l_stop) return
                else
@@ -5644,7 +5668,8 @@
                                    bphi_o,        phi_snow,      bSin(:),     &
                                    brine_sal(:),  brine_rho(:),  iphin(:),    &
                                    ibrine_rho(:), ibrine_sal(:), sice_rho(n), &
-                                   iDi(:,n),      l_stop,        stop_label)
+                                   iDi(:,n),      iSin(:),       l_stop,      &
+                                   stop_label)
 
                endif ! solve_zsal
 
@@ -5742,7 +5767,9 @@
                           PP_net,                ice_bio_net (:),        &
                           snow_bio_net(:),       grow_net,               &
                           totalChla,                                     &
-                          flux_bion(:,n),                                &
+                          flux_bion(:,n),        iSin,                   &
+                          bioPorosityIceCell(:), bioSalinityIceCell(:),  &
+                          bioTemperatureIceCell(:),                      &
                           l_stop,                stop_label)
 
                if (l_stop) return

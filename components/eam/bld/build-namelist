@@ -548,15 +548,6 @@ add_default($nl, 'start_type');
 my $dyn = $cfg->get('dyn');
 if ($dyn =~ /se/) {add_default($nl, 'vect_map', 'val'=>'cart3d');}
 
-if ($dyn =~ /se/) {
-  my $npg = $cfg->get('npg');
-  my $se_fv_nphys = $nl->get_value('se_fv_nphys');
-  if (defined($se_fv_nphys) and $se_fv_nphys != $npg) {
-    die "$ProgName - ERROR: se_fv_nphys should not be set by the user\n";
-  }
-  add_default($nl, 'se_fv_nphys', 'val'=>$npg);
-}
-
 # Adiabatic or Ideal physics
 my $phys = $cfg->get('phys');
 if ($phys eq 'adiabatic') { add_default($nl, 'atm_adiabatic',  'val'=>'.true.'); }
@@ -920,6 +911,11 @@ if ($co2_cycle) {
     # co2_flag turns on the co2_cycle code in CAM
     add_default($nl, 'co2_flag', 'val'=>'.true.');
 
+    add_default($nl, 'co2_print_diags_timestep', 'val'=>'.false.');
+    add_default($nl, 'co2_print_diags_monthly', 'val'=>'.true.');
+    add_default($nl, 'co2_print_diags_total', 'val'=>'.true.');
+    add_default($nl, 'co2_conserv_error_tol_per_year', 'val'=>'5.e-13');
+
 
     # Supply a fossil fuel dataset if the co2_cycle is active and it's a
     # transient run ...
@@ -931,10 +927,9 @@ if ($co2_cycle) {
 	# (user specification has higher precedence than the true value set above)
 	if ($nl->get_value('co2_readflux_fuel') =~ /$TRUE/io) {
 	    add_default($nl, 'co2flux_fuel_file', 'sim_year'=>$sim_year);
-	    add_default($nl, 'co2flux_fuel_vrt_emis_file', 'sim_year'=>$sim_year);
 	}
 
-        add_default($nl, 'co2_readflux_aircraft', 'val'=>'.true.');
+        add_default($nl, 'co2_readflux_aircraft', 'val'=>'.false.');
 
         # Check whether user has explicitly turned off reading the aircraft CO2 dataset.
         # (user specification has higher precedence than the true value set above)
@@ -945,11 +940,7 @@ if ($co2_cycle) {
             add_default($nl, 'aircraft_specifier', 'val'=>$emisval);
 
             add_default($nl, 'aircraft_datapath');
-            add_default($nl, 'aircraft_type');
-            # This should be the same file as the one in the aircraft_specifier file.
-            # This is a workaround to get this filepath into the cam.input_data_list file
-            # to allow the CESM scripts to obtain all required data for a run.
-            add_default($nl, 'aircraft_co2_file');
+            add_default($nl, 'aircraft_type', 'val'=>'SERIAL');
 	}		   
     }
 }
@@ -3693,6 +3684,9 @@ add_default($nl, 'use_crm_accel');
 add_default($nl, 'crm_accel_uv');
 add_default($nl, 'crm_accel_factor');
 
+# MMF CRM domain orientation
+add_default($nl, 'MMF_orientation_angle');
+
 add_default($nl, 'do_aerocom_ind3');
 my $aerocom_ind3 = $nl->get_value('do_aerocom_ind3');
 
@@ -4778,7 +4772,7 @@ sub check_input_files {
 
     my $fh;
     if (defined $inputdata_rootdir) {
-	open $fh, '>', $outfile or die "check_input_files: error opening $outfile: $!";
+	open $fh, '>>', $outfile or die "check_input_files: error opening $outfile: $!";
     }
 
     # Look through all namelist groups

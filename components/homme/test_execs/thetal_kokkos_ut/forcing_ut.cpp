@@ -9,6 +9,7 @@
 #include "ElementsForcing.hpp"
 #include "HybridVCoord.hpp"
 #include "ForcingFunctor.hpp"
+#include "PhysicalConstants.hpp"
 #include "SimulationParams.hpp"
 #include "Tracers.hpp"
 #include "Types.hpp"
@@ -39,7 +40,7 @@ void set_forcing_pointers_f90 (Real*& q_ptr, Real*& fq_ptr, Real*& qdp_ptr,
                                Real*& dp_ptr, Real*& phinh_ptr, Real*& ps_ptr,
                                Real*& fm_ptr, Real*& ft_ptr,
                                Real*& fvtheta_ptr, Real*& fphi_ptr);
-void tracers_forcing_f90 (const Real& dt, const int& np1, const int& np1_qdp, const bool& hydrostatic, const bool& moist);
+void tracers_forcing_f90 (const Real& dt, const int& np1, const int& np1_qdp, const bool& hydrostatic, const bool& moist, const bool& adjustment);
 void dynamics_forcing_f90 (const Real& dt, const int& np1);
 void cleanup_f90();
 } // extern "C"
@@ -64,7 +65,7 @@ TEST_CASE("forcing", "forcing") {
   hv.random_init(seed);
 
   auto& geo     = c.create<ElementsGeometry>();
-  geo.init(num_elems,true, /* alloc_gradphis = */ true);
+  geo.init(num_elems,true, /* alloc_gradphis = */ true, PhysicalConstants::rearth0);
   geo.randomize(seed);
 
   auto& state   = c.create<ElementsState>();
@@ -156,68 +157,111 @@ TEST_CASE("forcing", "forcing") {
   SECTION("tracers") {
     std::cout << "Testing tracers forcing.\n";
     for (const bool hydrostatic : {true,false}) {
-      std::cout << " -> " << (hydrostatic ? "hydrostatic" : "non-hydrostatic") << "\n";
+      std::cout << " -> hydrostatic mode: " << (hydrostatic ? "true" : "false") << "\n";
       for (const MoistDry moisture : {MoistDry::DRY,MoistDry::MOIST}) {
-        std::cout << "   -> " << (moisture==MoistDry::MOIST ? "moist" : "dry") << "\n";
+        std::cout << "   -> moisture: " << (moisture==MoistDry::MOIST ? "moist" : "dry") << "\n";
+        for (const bool adjustment : {true,false}) {
+          std::cout << "     -> adjustment: " << (adjustment ? "true" : "false") << "\n";
 
-        // Reset state, tracers, and forcing to the original random values
-        state.randomize(seed, 10*hv.ps0, hv.ps0, hv.hybrid_ai0);
-        tracers.randomize(seed);
-        forcing.randomize(seed);
+          // Reset state, tracers, and forcing to the original random values
+          state.randomize(seed, 10*hv.ps0, hv.ps0, hv.hybrid_ai0);
+          tracers.randomize(seed,-1e-3,1e-3);
+          forcing.randomize(seed);
 
-        // Sync views
-        sync_to_host(tracers.Q,q_f90);
-        sync_to_host(tracers.fq,fq_f90);
-        sync_to_host(tracers.qdp,qdp_f90);
+          // Sync views
+          sync_to_host(tracers.Q,q_f90);
+          sync_to_host(tracers.fq,fq_f90);
+          sync_to_host(tracers.qdp,qdp_f90);
 
-        sync_to_host(state.m_v,v_f90);
-        sync_to_host(state.m_w_i,w_f90);
-        sync_to_host(state.m_vtheta_dp,vtheta_f90);
-        sync_to_host(state.m_dp3d,dp_f90);
-        sync_to_host(state.m_phinh_i,phinh_f90);
-        // ps has same layout in cxx and f90
-        Kokkos::deep_copy(ps_f90,state.m_ps_v);
+          sync_to_host(state.m_v,v_f90);
+          sync_to_host(state.m_w_i,w_f90);
+          sync_to_host(state.m_vtheta_dp,vtheta_f90);
+          sync_to_host(state.m_dp3d,dp_f90);
+          sync_to_host(state.m_phinh_i,phinh_f90);
+          // ps has same layout in cxx and f90
+          Kokkos::deep_copy(ps_f90,state.m_ps_v);
 
-        sync_to_host<3>(forcing.m_fm,fm_f90);
-        sync_to_host(forcing.m_ft,ft_f90);
-        sync_to_host(forcing.m_fvtheta,fvtheta_f90);
-        sync_to_host(forcing.m_fphi,fphi_f90);
+          sync_to_host<3>(forcing.m_fm,fm_f90);
+          sync_to_host(forcing.m_ft,ft_f90);
+          sync_to_host(forcing.m_fvtheta,fvtheta_f90);
+          sync_to_host(forcing.m_fphi,fphi_f90);
 
-        p.theta_hydrostatic_mode = hydrostatic;
+          p.theta_hydrostatic_mode = hydrostatic;
 
-        // Create the functor
-        FunctorsBuffersManager fbm;
-        ForcingFunctor ff;
+          // Create the functor
+          FunctorsBuffersManager fbm;
+          ForcingFunctor ff;
 
-        // Create and set buffers in the forcing functor
-        fbm.request_size(ff.requested_buffer_size());
-        fbm.allocate();
-        ff.init_buffers(fbm);
+          // Create and set buffers in the forcing functor
+          fbm.request_size(ff.requested_buffer_size());
+          fbm.allocate();
+          ff.init_buffers(fbm);
 
-        // Run tracers forcing (cxx and f90)
-        ff.tracers_forcing(dt,np1,np1_qdp,false,moisture);
-        tracers_forcing_f90(dt,np1+1,np1_qdp+1,hydrostatic,moisture==MoistDry::MOIST);
+          // Run tracers forcing (cxx and f90)
+          ff.tracers_forcing(dt,np1,np1_qdp,adjustment,moisture);
+          tracers_forcing_f90(dt,np1+1,np1_qdp+1,hydrostatic,moisture==MoistDry::MOIST,adjustment);
 
-        // Compare answers
-        Kokkos::deep_copy(h_dp,state.m_dp3d);
-        Kokkos::deep_copy(h_fphi,forcing.m_fphi);
-        Kokkos::deep_copy(h_fvtheta,forcing.m_fvtheta);
-        Kokkos::deep_copy(h_fq,tracers.fq);
-        Kokkos::deep_copy(h_qdp,tracers.qdp);
-        Kokkos::deep_copy(h_q,tracers.Q);
-        for (int ie=0; ie<num_elems; ++ie) {
-          for (int igp=0; igp<NP; ++igp) {
-            for (int jgp=0; jgp<NP; ++jgp) {
-              for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+          // Compare answers
+          Kokkos::deep_copy(h_dp,state.m_dp3d);
+          Kokkos::deep_copy(h_fphi,forcing.m_fphi);
+          Kokkos::deep_copy(h_fvtheta,forcing.m_fvtheta);
+          Kokkos::deep_copy(h_fq,tracers.fq);
+          Kokkos::deep_copy(h_qdp,tracers.qdp);
+          Kokkos::deep_copy(h_q,tracers.Q);
+          for (int ie=0; ie<num_elems; ++ie) {
+            for (int igp=0; igp<NP; ++igp) {
+              for (int jgp=0; jgp<NP; ++jgp) {
+                for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+                  const int ilev = k / VECTOR_SIZE;
+                  const int ivec = k % VECTOR_SIZE;
+
+                  if(h_dp(ie,np1,igp,jgp,ilev)[ivec]!=dp_f90(ie,np1,k,igp,jgp)) {
+                    printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
+                    printf ("dp_cxx: %3.16f\n",h_dp(ie,np1,igp,jgp,ilev)[ivec]);
+                    printf ("dp_f90: %3.16f\n",dp_f90(ie,np1,k,igp,jgp));
+                  }
+                  REQUIRE(h_dp(ie,np1,igp,jgp,ilev)[ivec]==dp_f90(ie,np1,k,igp,jgp));
+
+                  if(h_fphi(ie,igp,jgp,ilev)[ivec]!=fphi_f90(ie,k,igp,jgp)) {
+                    printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
+                    printf ("fphi_cxx: %3.16f\n",h_fphi(ie,igp,jgp,ilev)[ivec]);
+                    printf ("fphi_f90: %3.16f\n",fphi_f90(ie,k,igp,jgp));
+                  }
+                  REQUIRE(h_fphi(ie,igp,jgp,ilev)[ivec]==fphi_f90(ie,k,igp,jgp));
+
+                  if(h_fvtheta(ie,igp,jgp,ilev)[ivec]!=fvtheta_f90(ie,k,igp,jgp)) {
+                    printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
+                    printf ("fvtheta_cxx: %3.16f\n",h_fvtheta(ie,igp,jgp,ilev)[ivec]);
+                    printf ("fvtheta_f90: %3.16f\n",fvtheta_f90(ie,k,igp,jgp));
+                  }
+                  REQUIRE(h_fvtheta(ie,igp,jgp,ilev)[ivec]==fvtheta_f90(ie,k,igp,jgp));
+
+                  for (int iq=0; iq<p.qsize; ++iq) {
+                    if(h_fq(ie,iq,igp,jgp,ilev)[ivec]!=fq_f90(ie,iq,k,igp,jgp)) {
+                      printf ("ie,iq,k,igp,jgp: %d, %d, %d, %d, %d\n",ie,iq,k,igp,jgp);
+                      printf ("fq_cxx: %3.16f\n",h_fq(ie,iq,igp,jgp,ilev)[ivec]);
+                      printf ("fq_f90: %3.16f\n",fq_f90(ie,iq,k,igp,jgp));
+                    }
+                    REQUIRE(h_fq(ie,iq,igp,jgp,ilev)[ivec]==fq_f90(ie,iq,k,igp,jgp));
+
+                    if(h_qdp(ie,np1_qdp,iq,igp,jgp,ilev)[ivec]!=qdp_f90(ie,np1_qdp,iq,k,igp,jgp)) {
+                      printf ("ie,iq,k,igp,jgp: %d, %d, %d, %d, %d\n",ie,iq,k,igp,jgp);
+                      printf ("qdp_cxx: %3.16f\n",h_qdp(ie,np1_qdp,iq,igp,jgp,ilev)[ivec]);
+                      printf ("qdp_f90: %3.16f\n",qdp_f90(ie,np1_qdp,iq,k,igp,jgp));
+                    }
+                    REQUIRE(h_qdp(ie,np1_qdp,iq,igp,jgp,ilev)[ivec]==qdp_f90(ie,np1_qdp,iq,k,igp,jgp));
+
+                    if(h_q(ie,iq,igp,jgp,ilev)[ivec]!=q_f90(ie,iq,k,igp,jgp)) {
+                      printf ("ie,iq,k,igp,jgp: %d, %d, %d, %d, %d\n",ie,iq,k,igp,jgp);
+                      printf ("q_cxx: %3.16f\n",h_q(ie,iq,igp,jgp,ilev)[ivec]);
+                      printf ("q_f90: %3.16f\n",q_f90(ie,iq,k,igp,jgp));
+                    }
+                    REQUIRE(h_q(ie,iq,igp,jgp,ilev)[ivec]==q_f90(ie,iq,k,igp,jgp));
+                  }
+                }
+                int k = NUM_INTERFACE_LEV-1;
                 const int ilev = k / VECTOR_SIZE;
                 const int ivec = k % VECTOR_SIZE;
-
-                if(h_dp(ie,np1,igp,jgp,ilev)[ivec]!=dp_f90(ie,np1,k,igp,jgp)) {
-                  printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf ("dp_cxx: %3.16f\n",h_dp(ie,np1,igp,jgp,ilev)[ivec]);
-                  printf ("dp_f90: %3.16f\n",dp_f90(ie,np1,k,igp,jgp));
-                }
-                REQUIRE(h_dp(ie,np1,igp,jgp,ilev)[ivec]==dp_f90(ie,np1,k,igp,jgp));
 
                 if(h_fphi(ie,igp,jgp,ilev)[ivec]!=fphi_f90(ie,k,igp,jgp)) {
                   printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
@@ -225,47 +269,7 @@ TEST_CASE("forcing", "forcing") {
                   printf ("fphi_f90: %3.16f\n",fphi_f90(ie,k,igp,jgp));
                 }
                 REQUIRE(h_fphi(ie,igp,jgp,ilev)[ivec]==fphi_f90(ie,k,igp,jgp));
-
-                if(h_fvtheta(ie,igp,jgp,ilev)[ivec]!=fvtheta_f90(ie,k,igp,jgp)) {
-                  printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf ("fvtheta_cxx: %3.16f\n",h_fvtheta(ie,igp,jgp,ilev)[ivec]);
-                  printf ("fvtheta_f90: %3.16f\n",fvtheta_f90(ie,k,igp,jgp));
-                }
-                REQUIRE(h_fvtheta(ie,igp,jgp,ilev)[ivec]==fvtheta_f90(ie,k,igp,jgp));
-
-                for (int iq=0; iq<p.qsize; ++iq) {
-                  if(h_fq(ie,iq,igp,jgp,ilev)[ivec]!=fq_f90(ie,iq,k,igp,jgp)) {
-                    printf ("ie,iq,k,igp,jgp: %d, %d, %d, %d, %d\n",ie,iq,k,igp,jgp);
-                    printf ("fq_cxx: %3.16f\n",h_fq(ie,iq,igp,jgp,ilev)[ivec]);
-                    printf ("fq_f90: %3.16f\n",fq_f90(ie,iq,k,igp,jgp));
-                  }
-                  REQUIRE(h_fq(ie,iq,igp,jgp,ilev)[ivec]==fq_f90(ie,iq,k,igp,jgp));
-
-                  if(h_qdp(ie,np1_qdp,iq,igp,jgp,ilev)[ivec]!=qdp_f90(ie,np1_qdp,iq,k,igp,jgp)) {
-                    printf ("ie,iq,k,igp,jgp: %d, %d, %d, %d, %d\n",ie,iq,k,igp,jgp);
-                    printf ("fq_cxx: %3.16f\n",h_qdp(ie,np1_qdp,iq,igp,jgp,ilev)[ivec]);
-                    printf ("fq_f90: %3.16f\n",qdp_f90(ie,np1_qdp,iq,k,igp,jgp));
-                  }
-                  REQUIRE(h_qdp(ie,np1_qdp,iq,igp,jgp,ilev)[ivec]==qdp_f90(ie,np1_qdp,iq,k,igp,jgp));
-
-                  if(h_q(ie,iq,igp,jgp,ilev)[ivec]!=q_f90(ie,iq,k,igp,jgp)) {
-                    printf ("ie,iq,k,igp,jgp: %d, %d, %d, %d, %d\n",ie,iq,k,igp,jgp);
-                    printf ("q_cxx: %3.16f\n",h_q(ie,iq,igp,jgp,ilev)[ivec]);
-                    printf ("q_f90: %3.16f\n",q_f90(ie,iq,k,igp,jgp));
-                  }
-                  REQUIRE(h_q(ie,iq,igp,jgp,ilev)[ivec]==q_f90(ie,iq,k,igp,jgp));
-                }
               }
-              int k = NUM_INTERFACE_LEV-1;
-              const int ilev = k / VECTOR_SIZE;
-              const int ivec = k % VECTOR_SIZE;
-
-              if(h_fphi(ie,igp,jgp,ilev)[ivec]!=fphi_f90(ie,k,igp,jgp)) {
-                printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                printf ("fphi_cxx: %3.16f\n",h_fphi(ie,igp,jgp,ilev)[ivec]);
-                printf ("fphi_f90: %3.16f\n",fphi_f90(ie,k,igp,jgp));
-              }
-              REQUIRE(h_fphi(ie,igp,jgp,ilev)[ivec]==fphi_f90(ie,k,igp,jgp));
             }
           }
         }
@@ -274,6 +278,12 @@ TEST_CASE("forcing", "forcing") {
   }
 
   SECTION ("states") {
+
+    // Set theta_hydrostatic_mode in simulation parameters, since it is
+    // used later in the ForcingFunctor setup. If you don't set it, the FF
+    // will have conditional jumps depending on uninited memory
+    auto& p = Context::singleton().get<SimulationParams>();
+    p.theta_hydrostatic_mode = false;
 
     // Reset state and forcing to the original random values
     std::cout << "Testing dynamics forcing.\n";
