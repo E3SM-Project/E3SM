@@ -621,7 +621,14 @@ void AtmosphereDriver::set_initial_conditions ()
     const auto& grid_name = fid.get_grid_name();
     const auto& fname = fid.name();
 
-    const auto& ic_pl_grid = ic_pl.sublist(grid_name);
+    // TODO: initially, this used
+    //
+    //   const auto& ic_pl_grid = ic_pl.sublist(grid_name);
+    //
+    // but we appear to have done away with the grid_name heading, so the above code no longer
+    // works and we need to set ic_pl_grid to ic_pl. In the future, we should either just use
+    // ic_pl directly, or re-enable support for the sublist under the grid name heading.
+    const auto& ic_pl_grid = ic_pl;
 
     // First, check if the input file contains constant values for some of the fields
     if (ic_pl_grid.isParameter(fname)) {
