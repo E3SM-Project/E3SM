@@ -53,7 +53,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    // Calculate layer thickness
    //do k = 1,nzm
    //  for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<2>(nzm+1,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+   parallel_for( "scalar_momentum 1" , SimpleBounds<2>(nzm+1,ncrms) , YAKL_LAMBDA (int k, int icrm) {
       if (k < nzm) {
          dz_loc(k,icrm) = zi(k+1,icrm)-zi(k,icrm);
       } else{
@@ -67,7 +67,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    //-----------------------------------------
    //do k=1,nzm
    //  for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
+   parallel_for( "scalar_momentum 2" , SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
       scalar_wind_avg(k,j,icrm) = 0.0;
       shear(k,j,icrm) = 0.0;
    });
@@ -81,7 +81,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    //  for (int j=0; j<ny; j++) {
    //    for (int i=0; i<nx; i++) {
    //      for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+   parallel_for( "scalar_momentum 3" , SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       // real tmp = scalar_wind(k,j,i,icrm) / real(nx);
       yakl::atomicAdd( scalar_wind_avg(k,j,icrm) , scalar_wind(k,j,i,icrm) / real(nx) );
       // note that w is on interface levels - need to interpolate to mid-levels
@@ -90,7 +90,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
 
    //do k = 1,nzm
    //  for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<3>(nzm-1,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
+   parallel_for( "scalar_momentum 4" , SimpleBounds<3>(nzm-1,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
       if ( k>0) {
         shear(k,j,icrm) = ( scalar_wind_avg(k+1,j,icrm) - scalar_wind_avg(k-1,j,icrm) )/(z(k+1,icrm)-z(k-1,icrm));
       }
@@ -112,7 +112,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    // for (int k=0; k<nzm; k++) {
    //   for (int j=0; j<ny; j++) {
    //     for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
+   parallel_for( "scalar_momentum 5" , SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
       SArray<real,1,nx+2> ftmp;
       for (int i=0; i<nx ; i++) { ftmp(i) = w_i(k,j,i,icrm); }
       fftx.forward(ftmp, fftx.trig, yakl::FFT_SCALE_ECMWF);
@@ -126,7 +126,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    if((nx%2) == 0) nh = nx/2 - 1;
    if((nx%2) != 0) nh = (nx-1)/2;
 
-   parallel_for( nh, YAKL_LAMBDA (int j) {
+   parallel_for( "scalar_momentum 14" , nh, YAKL_LAMBDA (int j) {
       k_arr(2*j+1) = 2.*pi*real(j+1)/(real(nx)*dx);   //cos
       k_arr(2*j+2) = 2.*pi*real(j+1)/(real(nx)*dx);   //sin
       if (j==0) {
@@ -147,7 +147,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    //  for (int j=0; j<ny; j++) {
    //    for (int i=0; i<nx; i++) {
    //      for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<4>(nzm,ny,nx2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+   parallel_for( "scalar_momentum 6" , SimpleBounds<4>(nzm,ny,nx2,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       pgf_hat(k,j,i,icrm) = 0.;
    });
 
@@ -158,7 +158,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    //  for (int j=0; j<ny; j++) {
    //    for (int i=0; i<nx; i++) {
    //      for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+   parallel_for( "scalar_momentum 7" , SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       if (i>0) {
          a(k,j,i,icrm) = dz_loc(k+1,icrm) / ( dz_loc(k+1,icrm) + dz_loc(k,icrm) );
          // the factor of 1.25 crudely accounts for difference between 2D and 3D updraft geometry
@@ -187,7 +187,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    //  for (int j=0; j<ny; j++) {
    //    for (int i=0; i<nx; i++) {
    //      for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+   parallel_for( "scalar_momentum 8" , SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       if (i>0) {
          b(k+1,j,i,icrm) = b(k+1,j,i,icrm) - a(k+1,j,i,icrm) / b(k,j,i,icrm) * c(k,j,i,icrm);
          pgf_hat(k+1,j,i,icrm) = pgf_hat(k+1,j,i,icrm) - a(k+1,j,i,icrm) / b(k,j,i,icrm) * pgf_hat(k,j,i,icrm);
@@ -201,7 +201,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    //  for (int j=0; j<ny; j++) {
    //    for (int i=0; i<nx; i++) {
    //      for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+   parallel_for( "scalar_momentum 9" , SimpleBounds<4>(nzm-1,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       if (i>0) {
          // f90: do k=nzm-1,1,-1
          // cpp: for (auto k = nzm-2; k > -1; --k) {
@@ -221,7 +221,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
       //  for (int j=0; j<ny; j++) {
       //    for (int i=0; i<nx; i++) {
       //      for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( "scalar_momentum 10" , SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
          pgf_hat(k,j,nx-1,icrm) = pgf_hat(k,j,nx-1,icrm) / 2.0;
       });
    }
@@ -232,7 +232,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    // for (int k=0; k<nzm; k++) {
    //   for (int j=0; j<ny; j++) {
    //     for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
+   parallel_for( "scalar_momentum 11" , SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
       SArray<real,1,nx+2> ftmp;
       for (int i=0; i<nx2; i++) { ftmp(i) = pgf_hat(k,j,i,icrm); }
       fftx.inverse(ftmp, fftx.trig, yakl::FFT_SCALE_ECMWF);
@@ -246,7 +246,7 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    //  for (int j=0; j<ny; j++) {
    //    for (int i=0; i<nx; i++) {t
    //      for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+   parallel_for( "scalar_momentum 12" , SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       if (k == 0) {
          tend(k,j,i,icrm) = 0.0;
       } else {
@@ -278,7 +278,7 @@ void scalar_momentum_tend() {
    //  for (int j=0; j<ny; j++) {
    //    for (int i=0; i<nx; i++) {
    //      for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+   parallel_for( "scalar_momentum 13" , SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
      u_esmt(k,j+offy_s,i+offx_s,icrm) = u_esmt(k,j+offy_s,i+offx_s,icrm) + u_esmt_pgf_3D(k,j,i,icrm)*dtn;
      v_esmt(k,j+offy_s,i+offx_s,icrm) = v_esmt(k,j+offy_s,i+offx_s,icrm) + v_esmt_pgf_3D(k,j,i,icrm)*dtn;
    });

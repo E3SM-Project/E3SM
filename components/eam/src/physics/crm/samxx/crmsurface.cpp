@@ -20,7 +20,7 @@ void crmsurface(real1d &bflx) {
   YAKL_SCOPE( ncrms    , ::ncrms);
 
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
+  parallel_for( "crmsurface 1" , ncrms , YAKL_LAMBDA (int icrm) {
     uhl(icrm) = uhl(icrm) + dtn*utend(0,icrm);
     vhl(icrm) = vhl(icrm) + dtn*vtend(0,icrm);
     taux0(icrm) = 0.0;
@@ -30,7 +30,7 @@ void crmsurface(real1d &bflx) {
   //  for (int j=0; j<ny; j++) {
   //   for (int i=0; i<nx; i++) {
   //     for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+  parallel_for( "crmsurface 2" , SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     real tmp2 = (0.5*(u(0,j+offy_u,i+1+offx_u,icrm)+u(0,j+offy_u,i+offx_u,icrm))+ug);
     real tmp3 = (0.5*(v(0,j+YES3D+offy_v,i+offx_v,icrm)+v(0,j+offy_v,i+offx_v,icrm))+vg);
     real u_h0 = max(1.0,sqrt(tmp2*tmp2+tmp3*tmp3));

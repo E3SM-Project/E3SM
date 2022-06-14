@@ -17,7 +17,7 @@ void kurant_sgs(real &cfl) {
 
   // for (int k=0; k<nzm; k++) {
   //   for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( "sgs 1" , SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     tkhmax(k,icrm) = 0.;
   });
 
@@ -25,13 +25,13 @@ void kurant_sgs(real &cfl) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "sgs 2" , SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     yakl::atomicMax( tkhmax(k,icrm) , sgs_field_diag(1,k,offy_d+j,offx_d+i,icrm) );
   });
 
   // for (int k=0; k<nzm; k++) {
   //   for (int icrm=0; icrm < ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( "sgs 3" , SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     real dztmp = dz(icrm)*adzw(k,icrm);
     real xdir = 0.5*tkhmax(k,icrm)*grdf_x(k,icrm)*dt/(dx*dx);
     real ydir = 0.5*tkhmax(k,icrm)*grdf_y(k,icrm)*dt/(dy*dy)*YES3D;
@@ -61,14 +61,14 @@ void sgs_proc() {
   //   for (int j=0; j<dimy_s; j++) {
   //     for (int i=0; i<dimx_s; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,dimy_s,dimx_s,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "sgs 4" , SimpleBounds<4>(nzm,dimy_s,dimx_s,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     tke2(k,j,i,icrm) = sgs_field(0,k,j,i,icrm);
   });
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; j<dimy_d; j++) {
   //     for (int i=0; i<dimx_d; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,dimy_d,dimx_d,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "sgs 5" , SimpleBounds<4>(nzm,dimy_d,dimx_d,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     tk2(k,j,i,icrm) = sgs_field_diag(0,k,j,i,icrm);
   });
 }
@@ -121,7 +121,7 @@ void sgs_init() {
     //    for (int j=0; j<dimy_s; j++) {
     //      for (int i=0; i<dimx_s; i++) {
     //        for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<5>(nsgs_fields,nzm,dimy_s,dimx_s,ncrms) , YAKL_LAMBDA (int l, int k, int j, int i, int icrm) {
+    parallel_for( "sgs 6" , SimpleBounds<5>(nsgs_fields,nzm,dimy_s,dimx_s,ncrms) , YAKL_LAMBDA (int l, int k, int j, int i, int icrm) {
       sgs_field(l,k,j,i,icrm) = 0.0;
     });
 
@@ -130,7 +130,7 @@ void sgs_init() {
     //    for (int j=0; j<dimy_d; j++) {
     //      for (int i=0; i<dimx_d; i++) {
     //        for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<5>(nsgs_fields_diag,nzm,dimy_d,dimx_d,ncrms) , 
+    parallel_for( "sgs 7" , SimpleBounds<5>(nsgs_fields_diag,nzm,dimy_d,dimx_d,ncrms) , 
                   YAKL_LAMBDA (int l, int k, int j, int i, int icrm) {
       sgs_field_diag(l,k,j,i,icrm) = 0.0;
     });
@@ -139,7 +139,7 @@ void sgs_init() {
   if (les) {
     // for (int k=0; k<nzm; k++) {
     //  for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+    parallel_for( "sgs 8" , SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
       real tmp1 = (adz(k,icrm)*dz(icrm));
       real tmp2 = (adz(k,icrm)*dz(icrm));
       grdf_x(k,icrm) = dx*dx/(tmp1*tmp1);
@@ -149,7 +149,7 @@ void sgs_init() {
   } else {
     // for (int k=0; k<nzm; k++) {
     //  for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+    parallel_for( "sgs 9" , SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
       real tmp1 = (adz(k,icrm)*dz(icrm));
       real tmp2 = (adz(k,icrm)*dz(icrm));
       grdf_x(k,icrm) = min( 16.0, dx*dx/(tmp1*tmp1));

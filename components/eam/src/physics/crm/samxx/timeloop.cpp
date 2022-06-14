@@ -24,12 +24,12 @@ void timeloop() {
     for(int icyc=1; icyc<=ncycle; icyc++) {
       icycle = icyc;
       dtn = dt/ncycle;
-      parallel_for( 1 , YAKL_LAMBDA ( int i ) {
+      parallel_for( "timeloop 1" , 1 , YAKL_LAMBDA ( int i ) {
         dt3(na-1) = dtn;
       });
       dtfactor = dtn/dt;
 
-      parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
+      parallel_for( "timeloop 2" , ncrms , YAKL_LAMBDA (int icrm) {
         crm_output_subcycle_factor(icrm) = crm_output_subcycle_factor(icrm)+1;
       });
 
@@ -61,7 +61,7 @@ void timeloop() {
       //   for (int j=0; j<ny; j++) {
       //     for (int i=0; i<nx; i++) {
       //       for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      parallel_for( "timeloop 3" , SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
         int i_rad = i / (nx/crm_nx_rad);
         int j_rad = j / (ny/crm_ny_rad);
         t(k,j+offy_s,i+offx_s,icrm) = t(k,j+offy_s,i+offx_s,icrm) + crm_rad_qrad(k,j_rad,i_rad,icrm)*dtn;

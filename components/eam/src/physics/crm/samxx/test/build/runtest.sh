@@ -22,7 +22,7 @@ printf "\n\nRunning 2-D tests\n\n"
 printf "\nRunning C++ code\n\n"
 cd cpp2d
 rm -f cpp_output_000001.nc
-mpirun -n $ntasks ./cpp2d 200 || exit -1
+./cpp2d 200 || exit -1
 cd ..
 
 # printf "\nComparing results\n\n"
@@ -42,7 +42,7 @@ printf "\n\nRunning 3-D tests\n\n"
 printf "\nRunning C++ code\n\n"
 cd cpp3d
 rm -f cpp_output_000001.nc
-mpirun -n $ntasks ./cpp3d 200 || exit -1
+./cpp3d 200 || exit -1
 cd ..
 
 # printf "\nComparing results\n\n"

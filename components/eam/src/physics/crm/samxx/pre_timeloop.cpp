@@ -162,7 +162,7 @@ void pre_timeloop() {
 
   //Loop over "vector columns"
   // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
+  parallel_for( "pre_timeloop.cpp 1 " , ncrms , YAKL_LAMBDA (int icrm) {
     // latitude0 (icrm) = get_rlat_p(lchnk, icol(icrm)) * 57.296_r8
     // longitude0(icrm) = get_rlon_p(lchnk, icol(icrm)) * 57.296_r8
     latitude0 (icrm) = lat0 (icrm);
@@ -180,7 +180,7 @@ void pre_timeloop() {
   //   for (int j=0; j<crm_ny_rad; j++) {
   //     for (int i=0; i<crm_nx_rad; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,crm_ny_rad,crm_nx_rad,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "pre_timeloop.cpp 2 " , SimpleBounds<4>(nzm,crm_ny_rad,crm_nx_rad,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     crm_rad_temperature(k,j,i,icrm) = 0.0;
     crm_rad_qv(k,j,i,icrm)  = 0.0;
     crm_rad_qc(k,j,i,icrm)  = 0.0;
@@ -188,7 +188,7 @@ void pre_timeloop() {
     crm_rad_cld(k,j,i,icrm) = 0.0;
   });
   // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
+  parallel_for( "pre_timeloop 22" , ncrms , YAKL_LAMBDA (int icrm) {
     bflx(icrm) = crm_input_bflxls(icrm);
     wnd (icrm) = crm_input_wndls (icrm);
   });
@@ -199,7 +199,7 @@ void pre_timeloop() {
   setparm();
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
+  parallel_for( "pre_timeloop.cpp 3 " , ncrms , YAKL_LAMBDA (int icrm) {
     fcor(icrm)= 4.0*pi/86400.0*sin(latitude0(icrm)*pi/180.0);
     fcorz(icrm) = sqrt(4.0*pow((2*pi/(3600.*24.)),2)-pow(fcor(icrm),2));
     zi(nz-1,icrm) = crm_input_zint(plev-nz+1,icrm)-crm_input_zint(plev,icrm); //+++mhwang, 2012-02-04
@@ -208,19 +208,19 @@ void pre_timeloop() {
   });
   // for (int j=0; j<ny+1; j++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(ny+1,ncrms) , YAKL_LAMBDA (int j, int icrm) {
+  parallel_for( "pre_timeloop.cpp 4 " , SimpleBounds<2>(ny+1,ncrms) , YAKL_LAMBDA (int j, int icrm) {
     fcory(j,icrm) = fcor(icrm);
   });
   // for (int j=0; j<ny; j++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(ny,ncrms) , YAKL_LAMBDA (int j, int icrm) {
+  parallel_for( "pre_timeloop.cpp 5 " , SimpleBounds<2>(ny,ncrms) , YAKL_LAMBDA (int j, int icrm) {
     fcorzy(j,icrm) = fcorz(icrm);
   });
 
   // for (int j=0; j<ny; j++) {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+  parallel_for( "pre_timeloop.cpp 6 " , SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     latitude(j,i,icrm) = latitude0(icrm);
     longitude(j,i,icrm) = longitude0(icrm);
   });
@@ -228,7 +228,7 @@ void pre_timeloop() {
   // Create CRM vertical grid and initialize some vertical reference arrays:
   // for (int k=0; k<nzm; k++) {
   //  for(int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( "pre_timeloop.cpp 7 " , SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     z(k,icrm) = crm_input_zmid(plev-(k+1),icrm) - crm_input_zint(plev,icrm);
     zi(k,icrm) = crm_input_zint(plev-(k+1)+1,icrm)- crm_input_zint(plev,icrm);
     pres(k,icrm) = crm_input_pmid(plev-(k+1),icrm)/100.0;
@@ -239,38 +239,38 @@ void pre_timeloop() {
   });
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
+  parallel_for( "pre_timeloop.cpp 8 " , ncrms , YAKL_LAMBDA (int icrm) {
     dz(icrm) = 0.5*(z(0,icrm)+z(1,icrm));
   });
 
   // for (int k=0; k<nzm-1; k++) {
   //  for(int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(nzm-1,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( "pre_timeloop.cpp 9 " , SimpleBounds<2>(nzm-1,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     k=k+1;
     adzw(k,icrm) = (z(k,icrm)-z(k-1,icrm))/dz(icrm);
   });
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
+  parallel_for( "pre_timeloop.cpp 10 " , ncrms , YAKL_LAMBDA (int icrm) {
     adzw(nz-1,icrm) = adzw(nzm-1,icrm);
   });
   
   // for (int k=0; k<nzm-1; k++) {
   //  for(int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( "pre_timeloop.cpp 11 " , SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     adz(k,icrm)=(zi(k+1,icrm)-zi(k,icrm))/dz(icrm);
     rho(k,icrm) = crm_input_pdel(plev-(k+1),icrm)/ggr/(adz(k,icrm)*dz(icrm));
   });
 
   // for (int k=0; k<nzm-1; k++) {
   //  for(int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(nzm-1,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( "pre_timeloop.cpp 12 " , SimpleBounds<2>(nzm-1,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     int kInd = k+1;
     rhow(kInd,icrm) = (crm_input_pmid(plev-(k+1),icrm)-crm_input_pmid(plev-(k+1)-1,icrm))/ggr/(adzw(kInd,icrm)*dz(icrm));
   });
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
+  parallel_for( "pre_timeloop.cpp 13 " , ncrms , YAKL_LAMBDA (int icrm) {
     rhow(0,icrm) = 2.0*rhow(1,icrm) - rhow(2,icrm);
     rhow(nz-1,icrm)= 2.0*rhow(nzm-1,icrm) - rhow(nzm-2,icrm);
   });
@@ -278,7 +278,7 @@ void pre_timeloop() {
   // Initialize clear air relative humidity for aerosol water uptake
   // for (int icrm=0; icrm<ncrms; icrm++) {
   //   for (int k=0; k<nzm; k++) {
-  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( "pre_timeloop.cpp 14 " , SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     crm_clear_rh(k,icrm)     = 0.0 ;
     crm_clear_rh_cnt(k,icrm) = 0 ;
   });
@@ -288,7 +288,7 @@ void pre_timeloop() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "pre_timeloop.cpp 15 " , SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     u(k,j+offy_u,i+offx_u,icrm) = crm_state_u_wind(k,j,i,icrm);
     v(k,j+offy_v,i+offx_v,icrm) = crm_state_v_wind(k,j,i,icrm)*YES3D;
     w(k,j+offy_w,i+offx_w,icrm) = crm_state_w_wind(k,j,i,icrm);
@@ -304,7 +304,7 @@ void pre_timeloop() {
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "pre_timeloop.cpp 16 " , SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (u(0,offy_u,offx_u,0) == u(0,offy_u,1+offx_u,0) && u(1,offy_u,2+offx_u,0) == u(1,offy_u,3+offx_u,0)) {
       u(k,j+offy_u,i+offx_u,icrm) = min( UMAX, max(-UMAX,u(k,j+offy_u,i+offx_u,icrm)) );
       v(k,j+offy_v,i+offx_v,icrm) = min( UMAX, max(-UMAX,v(k,j+offy_v,i+offx_v,icrm)) )*YES3D;
@@ -316,7 +316,7 @@ void pre_timeloop() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "pre_timeloop.cpp 17 " , SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     micro_field(0,k,j+offy_s,i+offx_s,icrm) = crm_state_qt(k,j,i,icrm);
     micro_field(1,k,j+offy_s,i+offx_s,icrm) = crm_state_qp(k,j,i,icrm);
     qn(k,j,i,icrm) = crm_state_qn(k,j,i,icrm);
@@ -325,14 +325,14 @@ void pre_timeloop() {
   micro_init();
   sgs_init();
   // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
+  parallel_for( "pre_timeloop 23" , ncrms , YAKL_LAMBDA (int icrm) {
     colprec (icrm)=0.0;
     colprecs(icrm)=0.0;
   });
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( "pre_timeloop.cpp 18 " , SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     u0   (k,icrm)=0.0;
     v0   (k,icrm)=0.0;
     t0   (k,icrm)=0.0;
@@ -349,7 +349,7 @@ void pre_timeloop() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "pre_timeloop.cpp 19 " , SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     t(k,j+offy_s,i+offx_s,icrm) = tabs(k,j,i,icrm)+gamaz(k,icrm)-fac_cond*qcl(k,j,i,icrm)-fac_sub*qci(k,j,i,icrm) -
                                                                  fac_cond*qpl(k,j,i,icrm)-fac_sub*qpi(k,j,i,icrm);
 
@@ -382,7 +382,7 @@ void pre_timeloop() {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( "pre_timeloop.cpp 20 " , SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     u0   (k,icrm) = u0   (k,icrm) * factor_xy;
     v0   (k,icrm) = v0   (k,icrm) * factor_xy;
     t0   (k,icrm) = t0   (k,icrm) * factor_xy;
@@ -412,7 +412,7 @@ void pre_timeloop() {
     }
   });
 
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
+  parallel_for( "pre_timeloop 24" , ncrms , YAKL_LAMBDA (int icrm) {
     uhl(icrm) = u0(0,icrm);
     vhl(icrm) = v0(0,icrm);
     // estimate roughness length assuming logarithmic profile of velocity near the surface:
@@ -426,7 +426,7 @@ void pre_timeloop() {
   });
 
 //---------------------------------------------------
-  parallel_for( SimpleBounds<2>(plev+1,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( "pre_timeloop.cpp 21 " , SimpleBounds<2>(plev+1,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     if (k < plev) {
       crm_output_cld       (k,icrm) = 0.0;
       crm_output_cldtop    (k,icrm) = 0.0;
@@ -470,7 +470,7 @@ void pre_timeloop() {
     mdi_crm(k,icrm) = 0.0;
   });
 
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
+  parallel_for( "pre_timeloop 25" , ncrms , YAKL_LAMBDA (int icrm) {
     crm_output_jt_crm(icrm) = 0.0;
     crm_output_mx_crm(icrm) = 0.0;
   });

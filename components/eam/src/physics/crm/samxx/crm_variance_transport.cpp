@@ -25,7 +25,7 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; j<ny; j++) {
   //     for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
+  parallel_for( "crm_variance_transport 1" , SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
     SArray<real,1,nx+2> ftmp;
     for (int i=0; i<nx ; i++) { ftmp(i) = f_in(k,j,i,icrm); }
     fftx.forward(ftmp, fftx.trig, yakl::FFT_SCALE_ECMWF);
@@ -36,7 +36,7 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
     // for (int k=0; k<nzm; k++) {
     //   for (int i=0; j<nx+1; i++) {
     //     for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( "crm_variance_transport 2" , SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       SArray<real,1,ny+2> ftmp;
       for (int j=0; j<ny ; j++) { ftmp(j) = fft_out(k,j,i,icrm); }
       ffty.forward(ftmp, ffty.trig, yakl::FFT_SCALE_ECMWF);
@@ -52,7 +52,7 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
     //   for (int j=0; j<nwy; j++) {
     //     for (int i=0; i<nwx+1; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(nzm,nwy,nwx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "crm_variance_transport 3" , SimpleBounds<4>(nzm,nwy,nwx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int ii = i + 2*(filter_wn_max+1) ;
       int jj = j + 2*(filter_wn_max+1) ;
       fft_out(k,jj,ii,icrm) = 0.0;
@@ -61,7 +61,7 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
     // for (int k=0; k<nzm; k++) {
     //   for (int i=0; i<nwx+1; i++) {
     //     for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<3>(nzm,nwx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( "crm_variance_transport 4" , SimpleBounds<3>(nzm,nwx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       int ii = i + 2*(filter_wn_max+1) ;
       fft_out(k,0,ii,icrm) = 0.0;
     });
@@ -74,7 +74,7 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
     // for (int k=0; k<nzm; k++) {
     //   for (int i=0; i<nx+1; i++) {
     //     for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
+    parallel_for( "crm_variance_transport 5" , SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       SArray<real,1,ny+2> ftmp;
       for(int j=0; j<ny+2; j++) { ftmp(j) = fft_out(k,j,i,icrm); }
       ffty.inverse(ftmp, ffty.trig, yakl::FFT_SCALE_ECMWF);
@@ -85,7 +85,7 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; i<ny; i++) {
   //     for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
+  parallel_for( "crm_variance_transport 6" , SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
     SArray<real,1,nx+2> ftmp;
     for(int i=0; i<nx+2; i++) { ftmp(i) = fft_out(k,j,i,icrm); }
     fftx.inverse(ftmp, fftx.trig, yakl::FFT_SCALE_ECMWF);
@@ -118,7 +118,7 @@ void VT_diagnose() {
   //----------------------------------------------------------------------------
   // do k = 1,nzm
   //   do icrm = 1,ncrms
-  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( "crm_variance_transport 7" , SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
       t_mean(k,icrm) = 0.0;
       q_mean(k,icrm) = 0.0;
       t_vt(k,icrm) = 0.0;
@@ -129,14 +129,14 @@ void VT_diagnose() {
   //  do j = 1,ny
   //    do i = 1,nx
   //      do icrm = 1,ncrms
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "crm_variance_transport 8" , SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     yakl::atomicAdd( t_mean(k,icrm) , t(k,j+offy_s,i+offx_s,icrm) );
     yakl::atomicAdd( q_mean(k,icrm) , micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) );
   });
 
   // do k = 1,nzm
   //   do icrm = 1,ncrms
-  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( "crm_variance_transport 9" , SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
       t_mean(k,icrm) = t_mean(k,icrm) * factor_xy ;
       q_mean(k,icrm) = q_mean(k,icrm) * factor_xy ;
   });
@@ -154,7 +154,7 @@ void VT_diagnose() {
     //   do j = 1,ny
     //     do i = 1,nx
     //       do icrm = 1,ncrms
-    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "crm_variance_transport 10" , SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       tmp_t(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm);
       tmp_q(k,j,i,icrm) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm);
       tmp_t(k,j,i,icrm) = tmp_t(k,j,i,icrm) - t_mean(k,icrm);
@@ -170,7 +170,7 @@ void VT_diagnose() {
     //   do j = 1,ny
     //     do i = 1,nx
     //       do icrm = 1,ncrms
-    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "crm_variance_transport 11" , SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       t_vt_pert(k,j,i,icrm) = t(k,j+offy_s,i+offx_s,icrm) - t_mean(k,icrm);
       q_vt_pert(k,j,i,icrm) = micro_field(idx_qt,k,j+offy_s,i+offx_s,icrm) - q_mean(k,icrm);
     });
@@ -185,7 +185,7 @@ void VT_diagnose() {
   //   do j = 1,ny
   //     do i = 1,nx
   //       do icrm = 1,ncrms
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "crm_variance_transport 12" , SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     yakl::atomicAdd( t_vt(k,icrm) , t_vt_pert(k,j,i,icrm) * t_vt_pert(k,j,i,icrm) );
     yakl::atomicAdd( q_vt(k,icrm) , q_vt_pert(k,j,i,icrm) * q_vt_pert(k,j,i,icrm) );
   });
@@ -193,7 +193,7 @@ void VT_diagnose() {
 
   // do k = 1,nzm
   //   do icrm = 1,ncrms
-  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( "crm_variance_transport 13" , SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     t_vt(k,icrm) = t_vt(k,icrm) * factor_xy ;
     q_vt(k,icrm) = q_vt(k,icrm) * factor_xy ;
   });
@@ -236,7 +236,7 @@ void VT_forcing() {
   //----------------------------------------------------------------------------
   // do k = 1,nzm
   //   do icrm = 1,ncrms
-  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( "crm_variance_transport 14" , SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     // initialize scaling factors to 1.0
     t_pert_scale(k,icrm) = 1.0;
     q_pert_scale(k,icrm) = 1.0;
@@ -262,7 +262,7 @@ void VT_forcing() {
   //   do j = 1,ny
   //     do i = 1,nx
   //       do icrm = 1,ncrms
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "crm_variance_transport 15" , SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real ttend_loc = ( t_pert_scale(k,icrm) * t_vt_pert(k,j,i,icrm) - t_vt_pert(k,j,i,icrm) ) / dtn;
     real qtend_loc = ( q_pert_scale(k,icrm) * q_vt_pert(k,j,i,icrm) - q_vt_pert(k,j,i,icrm) ) / dtn;
     t(k,j+offy_s,i+offx_s,icrm)                  = t(k,j+offy_s,i+offx_s,icrm)                  + ttend_loc * dtn;

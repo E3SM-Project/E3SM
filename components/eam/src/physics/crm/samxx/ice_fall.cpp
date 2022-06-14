@@ -22,7 +22,7 @@ void ice_fall() {
   real4d fz  ("fz"  ,nz,ny,nx,ncrms);
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
+  parallel_for( "ice_fall 1" , ncrms , YAKL_LAMBDA (int icrm) {
     kmax(icrm) = -1;
     kmin(icrm) = nzm;
   });
@@ -30,7 +30,7 @@ void ice_fall() {
   // for (int j=0; j<ny; j++) {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+  parallel_for( "ice_fall 2" , SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     for(int k=0; k < nzm; k++) {
       if(qcl(k,j,i,icrm)+qci(k,j,i,icrm) > 0.0 && tabs(k,j,i,icrm) < 273.15) {
         yakl::atomicMin(kmin(icrm),k);
@@ -41,7 +41,7 @@ void ice_fall() {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(nz,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( "ice_fall 3" , SimpleBounds<2>(nz,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     qifall(k,icrm) = 0.0;
     tlatqi(k,icrm) = 0.0;
   });
@@ -52,7 +52,7 @@ void ice_fall() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nz,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "ice_fall 4" , SimpleBounds<4>(nz,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     fz(k,j,i,icrm) = 0.0;
   });
 
@@ -61,7 +61,7 @@ void ice_fall() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nz,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "ice_fall 5" , SimpleBounds<4>(nz,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if (k >= max(0,kmin(icrm)-1) && k <= kmax(icrm) ) {
       // Set up indices for x-y planes above and below current plane.
       int kc = min(k+1,nzm-1);
@@ -103,7 +103,7 @@ void ice_fall() {
   // for (int j=0; j<ny; j++) {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+  parallel_for( "ice_fall 6" , SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     fz(nz-1,j,i,icrm) = 0.0;
   });
 
@@ -113,7 +113,7 @@ void ice_fall() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nz,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "ice_fall 7" , SimpleBounds<4>(nz,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     if ( k >= max(0,kmin(icrm)-2) && k <= kmax(icrm) ) {
       real coef = dtn/(dz(icrm)*adz(k,icrm)*rho(k,icrm));
       // The cloud ice increment is the difference of the fluxes.
@@ -138,7 +138,7 @@ void ice_fall() {
   // for (int j=0; j<ny; j++) {
   //    for (int i=0; i<nx; i++) {
   //      for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+  parallel_for( "ice_fall 8" , SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
     real coef = dtn/dz(icrm);
     real dqi = -coef*fz(0,j,i,icrm);
     precsfc (j,i,icrm) = precsfc (j,i,icrm)+dqi;

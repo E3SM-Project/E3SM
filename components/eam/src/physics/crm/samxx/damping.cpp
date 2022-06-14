@@ -34,12 +34,12 @@ void damping() {
   }
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( ncrms , YAKL_LAMBDA (int icrm) {
+  parallel_for( "damping 1" , ncrms , YAKL_LAMBDA (int icrm) {
     n_damp(icrm) = 0;
   });
 
   // for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( "damping 2" , SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     if(z(nzm-1,icrm)-z(k,icrm) < fractional_damp_depth*z(nzm-1,icrm)) {
       do_damping(k,icrm)=1;
     } else {
@@ -50,7 +50,7 @@ void damping() {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( "damping 3" , SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     tau(k,icrm) = 0;
     if ( (k <= nzm-1) && (k >= nzm-1-n_damp(icrm)) ) {
       tau(k,icrm) = tau_min * pow( (tau_max/tau_min) ,
@@ -65,7 +65,7 @@ void damping() {
 
   // for (int k=0; k<nzm; k++) {
   //  for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
+  parallel_for( "damping 4" , SimpleBounds<2>(nzm,ncrms) , YAKL_LAMBDA (int k, int icrm) {
     u0loc(k,icrm)=0.0;
     v0loc(k,icrm)=0.0;
     t0loc(k,icrm)=0.0;
@@ -75,7 +75,7 @@ void damping() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "damping 5" , SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     real tmp;
 
     tmp = u(k,offy_u+j,offx_u+i,icrm)/( (real) nx * (real) ny );
@@ -92,7 +92,7 @@ void damping() {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "damping 6" , SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int idwv = index_water_vapor;
     if ( k <= nzm-1 && k >= nzm-1-n_damp(icrm) ) {
       dudt       (na-1,k,       j,       i,icrm) -=     (u (k,offy_u+j,offx_u+i,icrm)-u0loc(k,icrm)) * tau(k,icrm);

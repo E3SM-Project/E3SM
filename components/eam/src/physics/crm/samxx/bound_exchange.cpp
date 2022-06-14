@@ -41,7 +41,7 @@ void bound_exchange(real4d &f, int dimz, int i_1, int i_2, int j_1, int j_2, int
     //   for (int j=ny-j1-1; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j1p,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 1" , SimpleBounds<4>(dimz,j1p,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = ny-j1-1;
       int jInd = ny-j1-1+j;
       int jEnd = ny-1;
@@ -54,7 +54,7 @@ void bound_exchange(real4d &f, int dimz, int i_1, int i_2, int j_1, int j_2, int
     //   for (int j=-j1-1; j<0; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j1p,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 2" , SimpleBounds<4>(dimz,j1p,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = -j1-1;
       int jInd = -j1-1+j;
       int jEnd = 0-1;
@@ -68,7 +68,7 @@ void bound_exchange(real4d &f, int dimz, int i_1, int i_2, int j_1, int j_2, int
     //   for (int j=ny-j1-1; j<ny; j++) {
     //     for (int i=nx-i1-1; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j1p,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 3" , SimpleBounds<4>(dimz,j1p,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = ny-j1-1;
       int jInd = ny-j1-1+j;
       int jEnd = ny-1;
@@ -84,7 +84,7 @@ void bound_exchange(real4d &f, int dimz, int i_1, int i_2, int j_1, int j_2, int
     //   for (int j=-j1-1; j<0; j++) {
     //     for (int i=-i1-1; i<0; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j1p,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 4" , SimpleBounds<4>(dimz,j1p,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = -j1-1;
       int jInd = -j1-1+j;
       int jEnd = 0-1;
@@ -101,7 +101,7 @@ void bound_exchange(real4d &f, int dimz, int i_1, int i_2, int j_1, int j_2, int
     //   for (int j=1-1; j<i+j2; j++) {
     //     for (int i=nx-i1-1; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j2p,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 5" , SimpleBounds<4>(dimz,j2p,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = 1-1;
       int jInd = 1-1+j;
       int jEnd = 1+j2-1;
@@ -117,7 +117,7 @@ void bound_exchange(real4d &f, int dimz, int i_1, int i_2, int j_1, int j_2, int
     //   for (int j=nyp1-1; j<nyp1+j2; j++) {
     //     for (int i=-i1-1; i<0; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j2p,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 6" , SimpleBounds<4>(dimz,j2p,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = nyp1-1;
       int jInd = nyp1-1+j;
       int jEnd = nyp1+j2-1;
@@ -134,7 +134,7 @@ void bound_exchange(real4d &f, int dimz, int i_1, int i_2, int j_1, int j_2, int
     //   for (int j=0; j<1+j2; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j2p,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 7" , SimpleBounds<4>(dimz,j2p,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = 1-1;
       int jInd = 1-1+j;
       int jEnd = 1+j2-1;
@@ -147,7 +147,7 @@ void bound_exchange(real4d &f, int dimz, int i_1, int i_2, int j_1, int j_2, int
     //   for (int j=nyp1-1; j<nyp1+j2; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j2p,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 8" , SimpleBounds<4>(dimz,j2p,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = nyp1-1;
       int jInd = nyp1-1+j;
       int jEnd = nyp1+j2-1;
@@ -161,7 +161,7 @@ void bound_exchange(real4d &f, int dimz, int i_1, int i_2, int j_1, int j_2, int
     //   for (int j=0; j<1+j2; j++) {
     //     for (int i=0; i<1+i2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j2p,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 9" , SimpleBounds<4>(dimz,j2p,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = 1-1;
       int jInd = 1-1+j;
       int jEnd = 1+j2-1;
@@ -177,7 +177,7 @@ void bound_exchange(real4d &f, int dimz, int i_1, int i_2, int j_1, int j_2, int
     //   for (int j=nyp1-1; j<nyp1+j2; j++) {
     //     for (int i=nxp1-1; i<nxp1+i2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j2p,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 10" , SimpleBounds<4>(dimz,j2p,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = nyp1-1;
       int jInd = nyp1-1+j;
       int jEnd = nyp1+j2-1;
@@ -194,7 +194,7 @@ void bound_exchange(real4d &f, int dimz, int i_1, int i_2, int j_1, int j_2, int
     //   for (int j=ny-j1-1; j<ny; j++) {
     //     for (int i=0; i<1+i2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j1p,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 11" , SimpleBounds<4>(dimz,j1p,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = ny-j1-1;
       int jInd = ny-j1-1+j;
       int jEnd = ny-1;
@@ -210,7 +210,7 @@ void bound_exchange(real4d &f, int dimz, int i_1, int i_2, int j_1, int j_2, int
     //   for (int j=-j1-1; j<0; j++) {
     //     for (int i=nxp1-1; i<nxp1+i2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j1p,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 12" , SimpleBounds<4>(dimz,j1p,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = -j1-1;
       int jInd = -j1-1+j;
       int jEnd = 0-1;
@@ -229,7 +229,7 @@ void bound_exchange(real4d &f, int dimz, int i_1, int i_2, int j_1, int j_2, int
     //   for (int j=0; j<ny; j++) {
     //     for (int i=nx-i1-1; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(dimz,ny,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "bound_exchange 13" , SimpleBounds<4>(dimz,ny,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int iStart = nx-i1-1;
     int iInd = nx-i1-1+i;
     int iEnd = nx-1;
@@ -242,7 +242,7 @@ void bound_exchange(real4d &f, int dimz, int i_1, int i_2, int j_1, int j_2, int
     //   for (int j=0; j<ny; j++) {
     //     for (int i=-i1-1; i<0; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(dimz,ny,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "bound_exchange 14" , SimpleBounds<4>(dimz,ny,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int iStart = -i1-1;
     int iInd = -i1-1+i;
     int iEnd = 0-1;
@@ -256,7 +256,7 @@ void bound_exchange(real4d &f, int dimz, int i_1, int i_2, int j_1, int j_2, int
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<1+i2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(dimz,ny,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "bound_exchange 15" , SimpleBounds<4>(dimz,ny,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int iStart = 1-1;
     int iInd = 1-1+i;
     int iEnd = 1+i2-1;
@@ -269,7 +269,7 @@ void bound_exchange(real4d &f, int dimz, int i_1, int i_2, int j_1, int j_2, int
     //   for (int j=0; j<ny; j++) {
     //     for (int i=nxp1-1; i<nxp1+i2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(dimz,ny,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "bound_exchange 16" , SimpleBounds<4>(dimz,ny,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int iStart = nxp1-1;
     int iInd = nxp1-1+i;
     int iEnd = nxp1+i2-1;
@@ -321,7 +321,7 @@ void bound_exchange(real5d &f, int offL,int dimz, int i_1, int i_2, int j_1, int
     //   for (int j=ny-j1-1; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j1p,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 17" , SimpleBounds<4>(dimz,j1p,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = ny-j1-1;
       int jInd = ny-j1-1+j;
       int jEnd = ny-1;
@@ -334,7 +334,7 @@ void bound_exchange(real5d &f, int offL,int dimz, int i_1, int i_2, int j_1, int
     //   for (int j=-j1-1; j<0; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j1p,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 18" , SimpleBounds<4>(dimz,j1p,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = -j1-1;
       int jInd = -j1-1+j;
       int jEnd = 0-1;
@@ -348,7 +348,7 @@ void bound_exchange(real5d &f, int offL,int dimz, int i_1, int i_2, int j_1, int
     //   for (int j=ny-j1-1; j<ny; j++) {
     //     for (int i=nx-i1-1; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j1p,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 19" , SimpleBounds<4>(dimz,j1p,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = ny-j1-1;
       int jInd = ny-j1-1+j;
       int jEnd = ny-1;
@@ -364,7 +364,7 @@ void bound_exchange(real5d &f, int offL,int dimz, int i_1, int i_2, int j_1, int
     //   for (int j=-j1-1; j<0; j++) {
     //     for (int i=-i1-1; i<0; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j1p,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 20" , SimpleBounds<4>(dimz,j1p,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = -j1-1;
       int jInd = -j1-1+j;
       int jEnd = 0-1;
@@ -381,7 +381,7 @@ void bound_exchange(real5d &f, int offL,int dimz, int i_1, int i_2, int j_1, int
     //   for (int j=1-1; j<i+j2; j++) {
     //     for (int i=nx-i1-1; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j2p,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 21" , SimpleBounds<4>(dimz,j2p,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = 1-1;
       int jInd = 1-1+j;
       int jEnd = 1+j2-1;
@@ -397,7 +397,7 @@ void bound_exchange(real5d &f, int offL,int dimz, int i_1, int i_2, int j_1, int
     //   for (int j=nyp1-1; j<nyp1+j2; j++) {
     //     for (int i=-i1-1; i<0; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j2p,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 22" , SimpleBounds<4>(dimz,j2p,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = nyp1-1;
       int jInd = nyp1-1+j;
       int jEnd = nyp1+j2-1;
@@ -414,7 +414,7 @@ void bound_exchange(real5d &f, int offL,int dimz, int i_1, int i_2, int j_1, int
     //   for (int j=0; j<1+j2; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j2p,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 23" , SimpleBounds<4>(dimz,j2p,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = 1-1;
       int jInd = 1-1+j;
       int jEnd = 1+j2-1;
@@ -427,7 +427,7 @@ void bound_exchange(real5d &f, int offL,int dimz, int i_1, int i_2, int j_1, int
     //   for (int j=nyp1-1; j<nyp1+j2; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j2p,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 24" , SimpleBounds<4>(dimz,j2p,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = nyp1-1;
       int jInd = nyp1-1+j;
       int jEnd = nyp1+j2-1;
@@ -441,7 +441,7 @@ void bound_exchange(real5d &f, int offL,int dimz, int i_1, int i_2, int j_1, int
     //   for (int j=0; j<1+j2; j++) {
     //     for (int i=0; i<1+i2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j2p,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 25" , SimpleBounds<4>(dimz,j2p,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = 1-1;
       int jInd = 1-1+j;
       int jEnd = 1+j2-1;
@@ -457,7 +457,7 @@ void bound_exchange(real5d &f, int offL,int dimz, int i_1, int i_2, int j_1, int
     //   for (int j=nyp1-1; j<nyp1+j2; j++) {
     //     for (int i=nxp1-1; i<nxp1+i2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j2p,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 26" , SimpleBounds<4>(dimz,j2p,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = nyp1-1;
       int jInd = nyp1-1+j;
       int jEnd = nyp1+j2-1;
@@ -474,7 +474,7 @@ void bound_exchange(real5d &f, int offL,int dimz, int i_1, int i_2, int j_1, int
     //   for (int j=ny-j1-1; j<ny; j++) {
     //     for (int i=0; i<1+i2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j1p,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 27" , SimpleBounds<4>(dimz,j1p,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = ny-j1-1;
       int jInd = ny-j1-1+j;
       int jEnd = ny-1;
@@ -490,7 +490,7 @@ void bound_exchange(real5d &f, int offL,int dimz, int i_1, int i_2, int j_1, int
     //   for (int j=-j1-1; j<0; j++) {
     //     for (int i=nxp1-1; i<nxp1+i2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(dimz,j1p,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( "bound_exchange 28" , SimpleBounds<4>(dimz,j1p,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       int jStart = -j1-1;
       int jInd = -j1-1+j;
       int jEnd = 0-1;
@@ -509,7 +509,7 @@ void bound_exchange(real5d &f, int offL,int dimz, int i_1, int i_2, int j_1, int
     //   for (int j=0; j<ny; j++) {
     //     for (int i=nx-i1-1; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(dimz,ny,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "bound_exchange 29" , SimpleBounds<4>(dimz,ny,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int iStart = nx-i1-1;
     int iInd = nx-i1-1+i;
     int iEnd = nx-1;
@@ -522,7 +522,7 @@ void bound_exchange(real5d &f, int offL,int dimz, int i_1, int i_2, int j_1, int
     //   for (int j=0; j<ny; j++) {
     //     for (int i=-i1-1; i<0; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(dimz,ny,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "bound_exchange 30" , SimpleBounds<4>(dimz,ny,i1p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int iStart = -i1-1;
     int iInd = -i1-1+i;
     int iEnd = 0-1;
@@ -536,7 +536,7 @@ void bound_exchange(real5d &f, int offL,int dimz, int i_1, int i_2, int j_1, int
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<1+i2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(dimz,ny,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "bound_exchange 31" , SimpleBounds<4>(dimz,ny,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int iStart = 1-1;
     int iInd = 1-1+i;
     int iEnd = 1+i2-1;
@@ -549,7 +549,7 @@ void bound_exchange(real5d &f, int offL,int dimz, int i_1, int i_2, int j_1, int
     //   for (int j=0; j<ny; j++) {
     //     for (int i=nxp1-1; i<nxp1+i2; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(dimz,ny,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( "bound_exchange 32" , SimpleBounds<4>(dimz,ny,i2p,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     int iStart = nxp1-1;
     int iInd = nxp1-1+i;
     int iEnd = nxp1+i2-1;
