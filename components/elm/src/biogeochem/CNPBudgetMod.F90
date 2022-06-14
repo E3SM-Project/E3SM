@@ -415,6 +415,8 @@ contains
              budg_fluxL(:,ip)  = 0.0_r8
              budg_fluxG(:,ip)  = 0.0_r8
              budg_fluxN(:,ip)  = 0.0_r8
+             budg_stateL(:,ip) = 0.0_r8
+             budg_stateG(:,ip) = 0.0_r8
           endif
        enddo
 
@@ -497,7 +499,7 @@ contains
        call Restart_Read(bounds, ncid, flag, 'N', n_f_size, n_s_size, &
             n_budg_fluxG, n_budg_fluxN, n_budg_stateL)
        call Restart_Read(bounds, ncid, flag, 'P', p_f_size, p_s_size, &
-            p_budg_fluxG, p_budg_fluxN, n_budg_stateL)
+            p_budg_fluxG, p_budg_fluxN, p_budg_stateL)
 
     case default
        write(iulog,*) trim(subname),' ERROR: unknown flag = ',flag
