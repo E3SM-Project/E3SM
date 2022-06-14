@@ -199,5 +199,37 @@
                         <var name="velocityMeridionalTimesTemperature_GM"/>
                         <var name="GMBolusVelocityZonal"/>
                         <var name="GMBolusVelocityMeridional"/>
+            <var name="activeTracerForcingMLTend"/>
+            <var name="activeTracerHorAdvectionMLTend"/>
+            <var name="activeTracerHorMixMLTend"/>
+            <var name="activeTracerNonLocalMLTend"/>
+            <var name="activeTracersML"/>
+            <var name="activeTracersTendML"/>
+            <var name="activeTracerVertAdvectionMLTend"/>
+            <var name="activeTracerVertMixMLTend"/>
+            <var name="atmosphericPressure"/>
+            <var name="binBoundaryZonalMean"/>
+            <var name="bottomLayerShortwaveTemperatureFlux"/>
+            <var name="bruntVaisalaFreqML"/>
+            <var name="BruntVaisalaFreqTop"/>
+            <var name="cGMphaseSpeed"/>
+            <var name="frazilTemperatureTendency"/>
+            <var name="gmBolusKappa"/>
+            <var name="gmKappaScaling"/>
+            <var name="mocStreamvalLatAndDepthGM"/>
+            <var name="mocStreamvalLatAndDepthRegionGM"/>
+            <var name="normalGMBolusVelocitySquared"/>
+            <var name="normalGMBolusVelocityTimesTemperature"/>
+            <var name="normalVelocitySquared"/>
+            <var name="normalVelocityTimesTemperature"/>
+            <var name="oceanHeatContent2000mToBot"/>
+            <var name="oceanHeatContent700mTo2000m"/>
+            <var name="oceanHeatContentSfcTo700m"/>
+            <var name="oceanHeatContentSfcToBot"/>
+            <var name="zMid"/>
+            <var_array name="activeTracerHorizontalAdvectionEdgeFlux"/>
+            <var_array name="activeTracerHorMixTendency"/>
+            <var_array name="activeTracerVerticalAdvectionTopFlux"/>
+            <var_array name="totalFreshWaterTemperatureFlux"/>
 		</stream>
 	</streams>
