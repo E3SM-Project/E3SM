@@ -45,7 +45,7 @@ contains
     !
     ! !USES:
       !$acc routine seq
-    !# use subgridWeightsMod, only : get_landunit_weight, set_landunit_weight
+    use subgridWeightsMod, only : get_landunit_weight, set_landunit_weight
     !
     ! !ARGUMENTS:
     type(bounds_type), intent(in) :: bounds
@@ -58,36 +58,23 @@ contains
     !-----------------------------------------------------------------------
 
     do t = bounds%begt, bounds%endt
-       ! Determine current landunit weights. Landunits that don't exist on this topounit
+       ! Determine current landunit weights. Landunits that don't exist on this grid cell
        ! get a weight of 0
        do ltype = 1, max_lunit
-         l = top_pp%landunit_indices(ltype, t)
-         if (l == ispval) then
-            landunit_weights(ltype) = 0._r8
-         else
-            landunit_weights(ltype) = lun_pp%wttopounit(l)
-         end if
+          landunit_weights(ltype) = get_landunit_weight(t, ltype)
        end do
-
+       
        ! Adjust weights so they sum to 100%
        call update_landunit_weights_one_topounit(landunit_weights)
 
-       ! Put the new landunit weights back into lun_pp%wttopounit
+       ! Put the new landunit weights back into lun_pp%wtgcell
        do ltype = 1, max_lunit
-         l = top_pp%landunit_indices(ltype, t)
-         if (l /= ispval) then
-            lun_pp%wttopounit(l) = landunit_weights(ltype)
-         else if ( landunit_weights(ltype) > 0._r8) then
-            print *, ' ERROR: Attempt to assign non-zero weight to a non-existent landunit'
-         end if
-
+          call set_landunit_weight(t, ltype, landunit_weights(ltype))
        end do
-
     end do
 
   end subroutine update_landunit_weights
-
-
+ 
   !-----------------------------------------------------------------------
   subroutine update_landunit_weights_one_topounit(landunit_weights)
     !
