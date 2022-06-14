@@ -450,7 +450,7 @@ def generate_lat_lon_cmip6_comparison(
             cmip6["data"][iE3SMv1, ivariable, :],
             color="b",
             marker=">",
-            label="E3SMv1 (0101)",
+            label="E3SMv1 (0101), historical (1985-2014)",
             s=60,
         )
 
@@ -462,7 +462,7 @@ def generate_lat_lon_cmip6_comparison(
             cmip6["data"][iE3SMv2, ivariable, :],
             color="r",
             marker="<",
-            label="E3SMv2 (0101)",
+            label="E3SMv2 (0101), historical (1985-2014)",
             s=60,
         )
 
