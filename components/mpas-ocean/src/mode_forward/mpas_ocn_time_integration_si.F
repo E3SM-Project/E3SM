@@ -90,7 +90,8 @@ module ocn_time_integration_si
       numTSIterations ! number of outer timestep iterations
 
    real (kind=RKIND) :: &
-      useVelocityCorrection ! mask for velocity correction
+      useVelocityCorrection, & ! mask for velocity correction
+      self_attraction_and_loading_beta
 
    ! Global variables for the split-implicit time stepper ---------------
    real (kind=RKIND), allocatable,dimension(:)   :: &
@@ -2912,7 +2913,16 @@ module ocn_time_integration_si
       call ocn_time_integrator_si_preconditioner(domain, dt)
       call mpas_timer_stop("preconditioning matrix build")
 
-   !--------------------------------------------------------------------
+      !--------------------------------------------------------------------
+
+      if (config_use_self_attraction_loading) then
+         ! set ssh_sal_on to 1
+         ssh_sal_on = 1
+      else
+         ssh_sal_on = 0
+      endif
+
+      self_attraction_and_loading_beta = config_self_attraction_and_loading_beta
 
    end subroutine ocn_time_integration_si_init!}}}
 
