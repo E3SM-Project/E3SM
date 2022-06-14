@@ -27,7 +27,7 @@ module mo_gas_phase_chemdr
 
   integer :: o3_ndx, synoz_ndx, so4_ndx, h2o_ndx, o2_ndx, o_ndx, hno3_ndx, dst_ndx, cldice_ndx, e90_ndx
   !integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx
-  integer :: o3lnz_ndx
+  integer :: o3lnz_ndx, ch4lnz_ndx
   integer :: uci1_ndx
   integer :: het1_ndx
   integer :: ndx_cldfr, ndx_cmfdqr, ndx_nevapr, ndx_cldtop, ndx_prain, ndx_sadsulf
@@ -94,7 +94,7 @@ contains
     o3lnz_ndx =   get_spc_ndx('O3LNZ')
 !    n2olnz_ndx =  get_spc_ndx('N2OLNZ')
 !    noylnz_ndx =  get_spc_ndx('NOYLNZ')
-!    ch4lnz_ndx =  get_spc_ndx('CH4LNZ')
+    ch4lnz_ndx =  get_spc_ndx('CH4LNZ')
     ! for ozone budget 
     jo2_b_ndx      = get_rxt_ndx('jo2_b')
     lch3o2_no_ndx  = get_rxt_ndx('lch3o2_no')
@@ -1001,7 +1001,7 @@ contains
 
       chem_loss(i,k,o3_ndx) = (reaction_rates(i,k,uci1_ndx) &
          + reaction_rates(i,k,uci2_ndx) &
-         + reaction_rates(i,k,uci3_ndx) &
+         + reaction_rates(i,k,uci3_ndx) * vmr(i,k,ch4lnz_ndx) &
          + reaction_rates(i,k,lc2h4_o3_ndx)*vmr(i,k,c2h4_ndx) &
          + reaction_rates(i,k,lisop_o3_ndx)*vmr(i,k,isop_ndx)  &
          + reaction_rates(i,k,lo3_oh_ndx)*vmr(i,k,oh_ndx)  &
@@ -1085,7 +1085,7 @@ contains
  
       chemmp_loss(i,k,o3_ndx) = (diags_reaction_rates(i,k,uci1_ndx) &
          + diags_reaction_rates(i,k,uci2_ndx) &
-         + diags_reaction_rates(i,k,uci3_ndx) &
+         + diags_reaction_rates(i,k,uci3_ndx) * vmr(i,k,ch4lnz_ndx) &
          + diags_reaction_rates(i,k,lc2h4_o3_ndx)*vmr(i,k,c2h4_ndx) &
          + diags_reaction_rates(i,k,lisop_o3_ndx)*vmr(i,k,isop_ndx)  &
          + diags_reaction_rates(i,k,lo3_oh_ndx)*vmr(i,k,oh_ndx)  &
@@ -1100,7 +1100,7 @@ contains
 
       chem_loss(i,k,o3_ndx) = (diags_reaction_rates(i,k,uci1_ndx) &
          + diags_reaction_rates(i,k,uci2_ndx) &
-         + diags_reaction_rates(i,k,uci3_ndx) &
+         + diags_reaction_rates(i,k,uci3_ndx) * vmr(i,k,ch4lnz_ndx) &
          + diags_reaction_rates(i,k,lc2h4_o3_ndx)*vmr(i,k,c2h4_ndx) &
          + diags_reaction_rates(i,k,lisop_o3_ndx)*vmr(i,k,isop_ndx)  &
          + diags_reaction_rates(i,k,lo3_oh_ndx)*vmr(i,k,oh_ndx)  &
