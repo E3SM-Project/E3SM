@@ -55,6 +55,8 @@ program driver
   character(len=64) :: fprefix = 'fortran_output'
   integer(8) :: t1, t2, tr
   integer :: ierr
+  integer :: ncrms_actual
+  character(len=128) :: num_crms_text
 
   logical :: use_MMF_VT                    ! flag for MMF variance transport
   integer :: MMF_VT_wn_max                 ! wavenumber cutoff for filtered variance transport
@@ -68,7 +70,13 @@ program driver
   nranks = 1
   rank = 0
 #endif
-  call distr_indices(NCRMS,nranks,rank,myTasks_beg,myTasks_end)
+  if (command_argument_count() > 0) then
+    call get_command_argument(1,num_crms_text)
+    read(num_crms_text,*) ncrms_actual
+  else
+    ncrms_actual = NCRMS
+  endif
+  call distr_indices(ncrms_actual,nranks,rank,myTasks_beg,myTasks_end)
   ncrms = myTasks_end - myTasks_beg + 1
   masterTask = rank == 0
 
@@ -216,11 +224,10 @@ program driver
   MMF_VT_wn_max = 0
 
   ! Run the code
-  call crm(1 , ncrms, dt_gl(1), plev, crm_input, crm_state, crm_rad, crm_ecpp_output, crm_output, crm_clear_rh, &
+  call crm(ncrms, dt_gl(1), plev, crm_input, crm_state, crm_rad, crm_ecpp_output, crm_output, crm_clear_rh, &
            lat0, long0, gcolp, 2, &
            use_MMF_VT, MMF_VT_wn_max, &
            .true., 2.D0, .true.)
-
 
 #if HAVE_MPI
   call mpi_barrier(mpi_comm_world,ierr)
@@ -230,106 +237,106 @@ program driver
     write(*,*) "Elapsed Time: " , real(t2-t1,8) / real(tr,8)
   endif
 
-  if (masterTask) then
-    write(*,*) 'Writing output data'
-  endif
-  ! dmdf_write(dat,rank,fprefix,vname       ,first,last) !For scalar values
-  ! dmdf_write(dat,rank,fprefix,vname,dnames,first,last) !For array values
-
-  do irank = 0 , nranks-1
-    if (irank == rank) then
-      do icrm = 1 , ncrms
-        call dmdf_write( crm_state%u_wind         (icrm,:,:,:) , 1 , fprefix , trim('state_u_wind        ') , (/'crm_nx','crm_ny','crm_nz'/)             , .true.  , .false. )
-        call dmdf_write( crm_state%v_wind         (icrm,:,:,:) , 1 , fprefix , trim('state_v_wind        ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_state%w_wind         (icrm,:,:,:) , 1 , fprefix , trim('state_w_wind        ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_state%temperature    (icrm,:,:,:) , 1 , fprefix , trim('state_temperature   ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_state%qt             (icrm,:,:,:) , 1 , fprefix , trim('state_qt            ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_state%qp             (icrm,:,:,:) , 1 , fprefix , trim('state_qp            ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_state%qn             (icrm,:,:,:) , 1 , fprefix , trim('state_qn            ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_output%qcl           (icrm,:,:,:) , 1 , fprefix , trim('output_qcl          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_output%qci           (icrm,:,:,:) , 1 , fprefix , trim('output_qci          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_output%qpl           (icrm,:,:,:) , 1 , fprefix , trim('output_qpl          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_output%qpi           (icrm,:,:,:) , 1 , fprefix , trim('output_qpi          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_output%tk            (icrm,:,:,:) , 1 , fprefix , trim('output_tk           ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_output%tkh           (icrm,:,:,:) , 1 , fprefix , trim('output_tkh          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_output%prec_crm      (icrm,:,:)   , 1 , fprefix , trim('output_prec_crm     ') , (/'crm_nx','crm_ny'/)                      , .false. , .false. )
-        call dmdf_write( crm_output%wvar          (icrm,:,:,:) , 1 , fprefix , trim('output_wvar         ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_output%aut           (icrm,:,:,:) , 1 , fprefix , trim('output_aut          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_output%acc           (icrm,:,:,:) , 1 , fprefix , trim('output_acc          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_output%evpc          (icrm,:,:,:) , 1 , fprefix , trim('output_evpc         ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_output%evpr          (icrm,:,:,:) , 1 , fprefix , trim('output_evpr         ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_output%mlt           (icrm,:,:,:) , 1 , fprefix , trim('output_mlt          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_output%sub           (icrm,:,:,:) , 1 , fprefix , trim('output_sub          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_output%dep           (icrm,:,:,:) , 1 , fprefix , trim('output_dep          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_output%con           (icrm,:,:,:) , 1 , fprefix , trim('output_con          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
-        call dmdf_write( crm_output%cltot         (icrm)       , 1 , fprefix , trim('output_cltot        ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%cllow         (icrm)       , 1 , fprefix , trim('output_cllow        ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%clmed         (icrm)       , 1 , fprefix , trim('output_clmed        ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%clhgh         (icrm)       , 1 , fprefix , trim('output_clhgh        ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%precc         (icrm)       , 1 , fprefix , trim('output_precc        ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%precl         (icrm)       , 1 , fprefix , trim('output_precl        ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%precsc        (icrm)       , 1 , fprefix , trim('output_precsc       ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%precsl        (icrm)       , 1 , fprefix , trim('output_precsl       ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%cldtop        (icrm,:)     , 1 , fprefix , trim('output_cldtop       ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%qc_mean       (icrm,:)     , 1 , fprefix , trim('output_qc_mean      ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%qi_mean       (icrm,:)     , 1 , fprefix , trim('output_qi_mean      ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%qs_mean       (icrm,:)     , 1 , fprefix , trim('output_qs_mean      ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%qg_mean       (icrm,:)     , 1 , fprefix , trim('output_qg_mean      ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%qr_mean       (icrm,:)     , 1 , fprefix , trim('output_qr_mean      ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%sltend        (icrm,:)     , 1 , fprefix , trim('output_sltend       ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%qltend        (icrm,:)     , 1 , fprefix , trim('output_qltend       ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%qcltend       (icrm,:)     , 1 , fprefix , trim('output_qcltend      ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%qiltend       (icrm,:)     , 1 , fprefix , trim('output_qiltend      ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%cld           (icrm,:)     , 1 , fprefix , trim('output_cld          ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%gicewp        (icrm,:)     , 1 , fprefix , trim('output_gicewp       ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%gliqwp        (icrm,:)     , 1 , fprefix , trim('output_gliqwp       ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%mctot         (icrm,:)     , 1 , fprefix , trim('output_mctot        ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%mcup          (icrm,:)     , 1 , fprefix , trim('output_mcup         ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%mcdn          (icrm,:)     , 1 , fprefix , trim('output_mcdn         ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%mcuup         (icrm,:)     , 1 , fprefix , trim('output_mcuup        ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%mcudn         (icrm,:)     , 1 , fprefix , trim('output_mcudn        ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%mu_crm        (icrm,:)     , 1 , fprefix , trim('output_mu_crm       ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%md_crm        (icrm,:)     , 1 , fprefix , trim('output_md_crm       ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%du_crm        (icrm,:)     , 1 , fprefix , trim('output_du_crm       ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%eu_crm        (icrm,:)     , 1 , fprefix , trim('output_eu_crm       ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%ed_crm        (icrm,:)     , 1 , fprefix , trim('output_ed_crm       ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%jt_crm        (icrm)       , 1 , fprefix , trim('output_jt_crm       ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%mx_crm        (icrm)       , 1 , fprefix , trim('output_mx_crm       ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%flux_qt       (icrm,:)     , 1 , fprefix , trim('output_flux_qt      ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%fluxsgs_qt    (icrm,:)     , 1 , fprefix , trim('output_fluxsgs_qt   ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%tkez          (icrm,:)     , 1 , fprefix , trim('output_tkez         ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%tkesgsz       (icrm,:)     , 1 , fprefix , trim('output_tkesgsz      ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%tkz           (icrm,:)     , 1 , fprefix , trim('output_tkz          ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%flux_u        (icrm,:)     , 1 , fprefix , trim('output_flux_u       ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%flux_v        (icrm,:)     , 1 , fprefix , trim('output_flux_v       ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%flux_qp       (icrm,:)     , 1 , fprefix , trim('output_flux_qp      ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%precflux      (icrm,:)     , 1 , fprefix , trim('output_precflux     ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%qt_ls         (icrm,:)     , 1 , fprefix , trim('output_qt_ls        ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%qt_trans      (icrm,:)     , 1 , fprefix , trim('output_qt_trans     ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%qp_trans      (icrm,:)     , 1 , fprefix , trim('output_qp_trans     ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%qp_fall       (icrm,:)     , 1 , fprefix , trim('output_qp_fall      ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%qp_src        (icrm,:)     , 1 , fprefix , trim('output_qp_src       ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%qp_evp        (icrm,:)     , 1 , fprefix , trim('output_qp_evp       ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%t_ls          (icrm,:)     , 1 , fprefix , trim('output_t_ls         ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%prectend      (icrm)       , 1 , fprefix , trim('output_prectend     ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%precstend     (icrm)       , 1 , fprefix , trim('output_precstend    ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%taux          (icrm)       , 1 , fprefix , trim('output_taux         ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%tauy          (icrm)       , 1 , fprefix , trim('output_tauy         ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%z0m           (icrm)       , 1 , fprefix , trim('output_z0m          ')                                              , .false. , .false. )
-        call dmdf_write( crm_output%subcycle_factor (icrm)       , 1 , fprefix , trim('output_subcycle_factor')                                              , .false. , .false. )
-        call dmdf_write( crm_rad%qrad             (icrm,:,:,:) , 1 , fprefix , trim('rad_qrad            ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
-        call dmdf_write( crm_rad%temperature      (icrm,:,:,:) , 1 , fprefix , trim('rad_temperature     ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
-        call dmdf_write( crm_rad%qv               (icrm,:,:,:) , 1 , fprefix , trim('rad_qv              ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
-        call dmdf_write( crm_rad%qc               (icrm,:,:,:) , 1 , fprefix , trim('rad_qc              ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
-        call dmdf_write( crm_rad%qi               (icrm,:,:,:) , 1 , fprefix , trim('rad_qi              ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
-        call dmdf_write( crm_rad%cld              (icrm,:,:,:) , 1 , fprefix , trim('rad_cld             ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
-        call dmdf_write( crm_clear_rh             (icrm,:)     , 1 , fprefix , trim('crm_clear_rh        ') , (/'crm_nz'/)                               , .false. , .true.  )
-      enddo
-    endif
-#if HAVE_MPI
-    call mpi_barrier(mpi_comm_world,ierr)
-#endif
-  enddo
+!   if (masterTask) then
+!     write(*,*) 'Writing output data'
+!   endif
+!   ! dmdf_write(dat,rank,fprefix,vname       ,first,last) !For scalar values
+!   ! dmdf_write(dat,rank,fprefix,vname,dnames,first,last) !For array values
+! 
+!   do irank = 0 , nranks-1
+!     if (irank == rank) then
+!       do icrm = 1 , ncrms
+!         call dmdf_write( crm_state%u_wind         (icrm,:,:,:) , 1 , fprefix , trim('state_u_wind        ') , (/'crm_nx','crm_ny','crm_nz'/)             , .true.  , .false. )
+!         call dmdf_write( crm_state%v_wind         (icrm,:,:,:) , 1 , fprefix , trim('state_v_wind        ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_state%w_wind         (icrm,:,:,:) , 1 , fprefix , trim('state_w_wind        ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_state%temperature    (icrm,:,:,:) , 1 , fprefix , trim('state_temperature   ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_state%qt             (icrm,:,:,:) , 1 , fprefix , trim('state_qt            ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_state%qp             (icrm,:,:,:) , 1 , fprefix , trim('state_qp            ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_state%qn             (icrm,:,:,:) , 1 , fprefix , trim('state_qn            ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_output%qcl           (icrm,:,:,:) , 1 , fprefix , trim('output_qcl          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_output%qci           (icrm,:,:,:) , 1 , fprefix , trim('output_qci          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_output%qpl           (icrm,:,:,:) , 1 , fprefix , trim('output_qpl          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_output%qpi           (icrm,:,:,:) , 1 , fprefix , trim('output_qpi          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_output%tk            (icrm,:,:,:) , 1 , fprefix , trim('output_tk           ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_output%tkh           (icrm,:,:,:) , 1 , fprefix , trim('output_tkh          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_output%prec_crm      (icrm,:,:)   , 1 , fprefix , trim('output_prec_crm     ') , (/'crm_nx','crm_ny'/)                      , .false. , .false. )
+!         call dmdf_write( crm_output%wvar          (icrm,:,:,:) , 1 , fprefix , trim('output_wvar         ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_output%aut           (icrm,:,:,:) , 1 , fprefix , trim('output_aut          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_output%acc           (icrm,:,:,:) , 1 , fprefix , trim('output_acc          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_output%evpc          (icrm,:,:,:) , 1 , fprefix , trim('output_evpc         ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_output%evpr          (icrm,:,:,:) , 1 , fprefix , trim('output_evpr         ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_output%mlt           (icrm,:,:,:) , 1 , fprefix , trim('output_mlt          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_output%sub           (icrm,:,:,:) , 1 , fprefix , trim('output_sub          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_output%dep           (icrm,:,:,:) , 1 , fprefix , trim('output_dep          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_output%con           (icrm,:,:,:) , 1 , fprefix , trim('output_con          ') , (/'crm_nx','crm_ny','crm_nz'/)             , .false. , .false. )
+!         call dmdf_write( crm_output%cltot         (icrm)       , 1 , fprefix , trim('output_cltot        ')                                              , .false. , .false. )
+!         call dmdf_write( crm_output%cllow         (icrm)       , 1 , fprefix , trim('output_cllow        ')                                              , .false. , .false. )
+!         call dmdf_write( crm_output%clmed         (icrm)       , 1 , fprefix , trim('output_clmed        ')                                              , .false. , .false. )
+!         call dmdf_write( crm_output%clhgh         (icrm)       , 1 , fprefix , trim('output_clhgh        ')                                              , .false. , .false. )
+!         call dmdf_write( crm_output%precc         (icrm)       , 1 , fprefix , trim('output_precc        ')                                              , .false. , .false. )
+!         call dmdf_write( crm_output%precl         (icrm)       , 1 , fprefix , trim('output_precl        ')                                              , .false. , .false. )
+!         call dmdf_write( crm_output%precsc        (icrm)       , 1 , fprefix , trim('output_precsc       ')                                              , .false. , .false. )
+!         call dmdf_write( crm_output%precsl        (icrm)       , 1 , fprefix , trim('output_precsl       ')                                              , .false. , .false. )
+!         call dmdf_write( crm_output%cldtop        (icrm,:)     , 1 , fprefix , trim('output_cldtop       ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%qc_mean       (icrm,:)     , 1 , fprefix , trim('output_qc_mean      ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%qi_mean       (icrm,:)     , 1 , fprefix , trim('output_qi_mean      ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%qs_mean       (icrm,:)     , 1 , fprefix , trim('output_qs_mean      ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%qg_mean       (icrm,:)     , 1 , fprefix , trim('output_qg_mean      ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%qr_mean       (icrm,:)     , 1 , fprefix , trim('output_qr_mean      ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%sltend        (icrm,:)     , 1 , fprefix , trim('output_sltend       ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%qltend        (icrm,:)     , 1 , fprefix , trim('output_qltend       ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%qcltend       (icrm,:)     , 1 , fprefix , trim('output_qcltend      ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%qiltend       (icrm,:)     , 1 , fprefix , trim('output_qiltend      ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%cld           (icrm,:)     , 1 , fprefix , trim('output_cld          ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%gicewp        (icrm,:)     , 1 , fprefix , trim('output_gicewp       ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%gliqwp        (icrm,:)     , 1 , fprefix , trim('output_gliqwp       ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%mctot         (icrm,:)     , 1 , fprefix , trim('output_mctot        ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%mcup          (icrm,:)     , 1 , fprefix , trim('output_mcup         ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%mcdn          (icrm,:)     , 1 , fprefix , trim('output_mcdn         ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%mcuup         (icrm,:)     , 1 , fprefix , trim('output_mcuup        ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%mcudn         (icrm,:)     , 1 , fprefix , trim('output_mcudn        ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%mu_crm        (icrm,:)     , 1 , fprefix , trim('output_mu_crm       ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%md_crm        (icrm,:)     , 1 , fprefix , trim('output_md_crm       ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%du_crm        (icrm,:)     , 1 , fprefix , trim('output_du_crm       ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%eu_crm        (icrm,:)     , 1 , fprefix , trim('output_eu_crm       ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%ed_crm        (icrm,:)     , 1 , fprefix , trim('output_ed_crm       ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%jt_crm        (icrm)       , 1 , fprefix , trim('output_jt_crm       ')                                              , .false. , .false. )
+!         call dmdf_write( crm_output%mx_crm        (icrm)       , 1 , fprefix , trim('output_mx_crm       ')                                              , .false. , .false. )
+!         call dmdf_write( crm_output%flux_qt       (icrm,:)     , 1 , fprefix , trim('output_flux_qt      ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%fluxsgs_qt    (icrm,:)     , 1 , fprefix , trim('output_fluxsgs_qt   ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%tkez          (icrm,:)     , 1 , fprefix , trim('output_tkez         ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%tkesgsz       (icrm,:)     , 1 , fprefix , trim('output_tkesgsz      ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%tkz           (icrm,:)     , 1 , fprefix , trim('output_tkz          ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%flux_u        (icrm,:)     , 1 , fprefix , trim('output_flux_u       ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%flux_v        (icrm,:)     , 1 , fprefix , trim('output_flux_v       ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%flux_qp       (icrm,:)     , 1 , fprefix , trim('output_flux_qp      ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%precflux      (icrm,:)     , 1 , fprefix , trim('output_precflux     ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%qt_ls         (icrm,:)     , 1 , fprefix , trim('output_qt_ls        ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%qt_trans      (icrm,:)     , 1 , fprefix , trim('output_qt_trans     ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%qp_trans      (icrm,:)     , 1 , fprefix , trim('output_qp_trans     ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%qp_fall       (icrm,:)     , 1 , fprefix , trim('output_qp_fall      ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%qp_src        (icrm,:)     , 1 , fprefix , trim('output_qp_src       ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%qp_evp        (icrm,:)     , 1 , fprefix , trim('output_qp_evp       ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%t_ls          (icrm,:)     , 1 , fprefix , trim('output_t_ls         ') , (/'nlev'/)                                 , .false. , .false. )
+!         call dmdf_write( crm_output%prectend      (icrm)       , 1 , fprefix , trim('output_prectend     ')                                              , .false. , .false. )
+!         call dmdf_write( crm_output%precstend     (icrm)       , 1 , fprefix , trim('output_precstend    ')                                              , .false. , .false. )
+!         call dmdf_write( crm_output%taux          (icrm)       , 1 , fprefix , trim('output_taux         ')                                              , .false. , .false. )
+!         call dmdf_write( crm_output%tauy          (icrm)       , 1 , fprefix , trim('output_tauy         ')                                              , .false. , .false. )
+!         call dmdf_write( crm_output%z0m           (icrm)       , 1 , fprefix , trim('output_z0m          ')                                              , .false. , .false. )
+!         call dmdf_write( crm_output%subcycle_factor (icrm)       , 1 , fprefix , trim('output_subcycle_factor')                                              , .false. , .false. )
+!         call dmdf_write( crm_rad%qrad             (icrm,:,:,:) , 1 , fprefix , trim('rad_qrad            ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
+!         call dmdf_write( crm_rad%temperature      (icrm,:,:,:) , 1 , fprefix , trim('rad_temperature     ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
+!         call dmdf_write( crm_rad%qv               (icrm,:,:,:) , 1 , fprefix , trim('rad_qv              ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
+!         call dmdf_write( crm_rad%qc               (icrm,:,:,:) , 1 , fprefix , trim('rad_qc              ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
+!         call dmdf_write( crm_rad%qi               (icrm,:,:,:) , 1 , fprefix , trim('rad_qi              ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
+!         call dmdf_write( crm_rad%cld              (icrm,:,:,:) , 1 , fprefix , trim('rad_cld             ') , (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
+!         call dmdf_write( crm_clear_rh             (icrm,:)     , 1 , fprefix , trim('crm_clear_rh        ') , (/'crm_nz'/)                               , .false. , .true.  )
+!       enddo
+!     endif
+! #if HAVE_MPI
+!     call mpi_barrier(mpi_comm_world,ierr)
+! #endif
+!   enddo
 
 #if HAVE_MPI
   call mpi_finalize(ierr)
