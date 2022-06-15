@@ -24,6 +24,54 @@ logger = custom_logger(__name__)
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # isort:skip  # noqa: E402
 
+# Variables
+VAR_DICT = [
+    {
+        "name": "Net TOA",
+        "units": "W m$^{-2}$",
+        "id": "RESTOM global ceres_ebaf_toa_v4.1",
+        "exclude": (),
+    },
+    {
+        "name": "SW CRE",
+        "units": "W m$^{-2}$",
+        "id": "SWCF global ceres_ebaf_toa_v4.1",
+        "exclude": (),
+    },
+    {
+        "name": "LW CRE",
+        "units": "W m$^{-2}$",
+        "id": "LWCF global ceres_ebaf_toa_v4.1",
+        "exclude": (),
+    },
+    {
+        "name": "prec",
+        "units": "mm day$^{-1}$",
+        "id": "PRECT global GPCP_v2.3",
+        "exclude": ("CIESM",),
+    },
+    {"name": "tas land", "units": "K", "id": "TREFHT land ERA5", "exclude": ()},
+    {"name": "SLP", "units": "hPa", "id": "PSL global ERA5", "exclude": ()},
+    {
+        "name": "u-200",
+        "units": "m s$^{-1}$",
+        "id": "U-200mb global ERA5",
+        "exclude": (),
+    },
+    {
+        "name": "u-850",
+        "units": "m s$^{-1}$",
+        "id": "U-850mb global ERA5",
+        "exclude": (),
+    },
+    {
+        "name": "Zg-500",
+        "units": "hm",
+        "id": "Z3-500mb global ERA5",
+        "exclude": ("KIOST-ESM",),
+    },
+]
+
 
 def generate_lat_lon_metrics_table(
     lat_lon_table_info, seasons, viewer, root_dir, parameters
@@ -298,7 +346,7 @@ def read_e3sm_diags_metrics(path, variables, seasons, names=None):
                             else:
                                 data[imodel, ivariable, iseason] = float(rmse)
                         else:
-                            logger.info(
+                            logger.debug(
                                 "Missing: %s, %s, %s"
                                 % (
                                     models[imodel],
@@ -333,53 +381,6 @@ def generate_lat_lon_cmip6_comparison(
     test_name = parameters[0].test_name_yrs
 
     # Create CMIP6 comparison figure
-    # Variables
-    variables = [
-        {
-            "name": "Net TOA",
-            "units": "W m$^{-2}$",
-            "id": "RESTOM global ceres_ebaf_toa_v4.1",
-            "exclude": (),
-        },
-        {
-            "name": "SW CRE",
-            "units": "W m$^{-2}$",
-            "id": "SWCF global ceres_ebaf_toa_v4.1",
-            "exclude": (),
-        },
-        {
-            "name": "LW CRE",
-            "units": "W m$^{-2}$",
-            "id": "LWCF global ceres_ebaf_toa_v4.1",
-            "exclude": (),
-        },
-        {
-            "name": "prec",
-            "units": "mm day$^{-1}$",
-            "id": "PRECT global GPCP_v2.3",
-            "exclude": ("CIESM",),
-        },
-        {"name": "tas land", "units": "K", "id": "TREFHT land ERA5", "exclude": ()},
-        {"name": "SLP", "units": "hPa", "id": "PSL global ERA5", "exclude": ()},
-        {
-            "name": "u-200",
-            "units": "m s$^{-1}$",
-            "id": "U-200mb global ERA5",
-            "exclude": (),
-        },
-        {
-            "name": "u-850",
-            "units": "m s$^{-1}$",
-            "id": "U-850mb global ERA5",
-            "exclude": (),
-        },
-        {
-            "name": "Zg-500",
-            "units": "hm",
-            "id": "Z3-500mb global ERA5",
-            "exclude": ("KIOST-ESM",),
-        },
-    ]
 
     # Seasons
     seasons = ["ANN", "DJF", "MAM", "JJA", "SON"]
@@ -395,12 +396,12 @@ def generate_lat_lon_cmip6_comparison(
     cmip6_csv_path = sorted(glob.glob(control_runs_path))[-1]
     cmip6_data_access = cmip6_csv_path.split("_")[-1][:6]
 
-    cmip6 = read_cmip6_metrics_from_csv(cmip6_csv_path, variables, seasons)
+    cmip6 = read_cmip6_metrics_from_csv(cmip6_csv_path, VAR_DICT, seasons)
     # example root_dir = "/Users/zhang40/Downloads/lat_lon_cmip6_test/viewer"
     test_path = root_dir + "/table-data"
     test_model = read_e3sm_diags_metrics(
         test_path,
-        variables,
+        VAR_DICT,
         seasons,
         names=[
             test_name,
@@ -411,7 +412,7 @@ def generate_lat_lon_cmip6_comparison(
     fig = plt.figure(figsize=[24, 18])
     nsx = 4
     nsy = 3
-    for ivariable in range(len(variables)):
+    for ivariable in range(len(VAR_DICT)):
         # CMIP6 data for box and whiskers
         data = []
         labels = []
@@ -469,7 +470,7 @@ def generate_lat_lon_cmip6_comparison(
         # Customize plot
         ax.set_title("(" + chr(97 + ivariable) + ")", loc="left")
         ax.set_title(
-            f"{variables[ivariable]['name']} ( {variables[ivariable]['units']} )",
+            f"{VAR_DICT[ivariable]['name']} ( {VAR_DICT[ivariable]['units']} )",
             loc="right",
         )
         ax.set_xlim([0.4, nseasons + 0.9])
@@ -577,8 +578,9 @@ def _create_csv_from_dict_taylor_diag(
     control_runs_path = os.path.join(
         e3sm_diags.INSTALL_PATH,
         "control_runs",
-        "{}_metrics_taylor_diag_B1850_v0.csv".format(season),
+        "{}_metrics_table_taylor_diag_historical_1985-2014_E3SMv*.csv".format(season),
     )
+    base_line_csv_paths = sorted(glob.glob(control_runs_path))
 
     col_names = ["Variables", "Test_STD", "Ref._STD", "Correlation"]
 
@@ -593,20 +595,15 @@ def _create_csv_from_dict_taylor_diag(
 
         for key, metrics_dic in list(lat_lon_table_info[season].items()):
             # Only include variables from a certain list in the Taylor diagram.
-            var_list_1 = ["PRECT", "PSL", "SWCF", "LWCF", "TREFHT"]
-            var_list_2 = [
-                "PRECT_GPCP",
-                "PSL_ERA-Interim",
-                "SWCF_ceres",
-                "LWCF_ceres",
-                "TREFHT_CRU",
-            ]
+            # An example of the VAR_DICT[ivariable]["id"]: 'RESTOM global ceres_ebaf_toa_v4.1'
+            var_ids = []
+            var_list = []
+            for ivariable in range(len(VAR_DICT)):
+                var_ids.append(VAR_DICT[ivariable]["id"].split(" ")[0])  # type: ignore
+                var_list.append(VAR_DICT[ivariable]["id"])
+
             if run_type == "model_vs_obs":
-                if (
-                    key.split()[0] in var_list_1
-                    and "_".join((key.split()[0], key.split()[2].split("_")[0]))
-                    in var_list_2
-                ):
+                if key in var_list:
                     metrics = metrics_dic["metrics"]
                     row = [
                         key,
@@ -616,7 +613,7 @@ def _create_csv_from_dict_taylor_diag(
                     ]
                     writer.writerow(row)
             else:
-                if key.split()[0] in var_list_1:
+                if key.split()[0] in var_ids:
                     metrics = metrics_dic["metrics"]
                     row = [
                         key,
@@ -631,19 +628,10 @@ def _create_csv_from_dict_taylor_diag(
         data = list(reader)
         row_count = len(data)
 
-    # Read the control run data.
-    with open(control_runs_path, "r") as control_runs_taylor_csv:
-        reader = csv.reader(control_runs_taylor_csv, delimiter=",")
-        control_runs_data = list(reader)
-
-    keys_control_runs = []
-    for i in range(0, len(control_runs_data)):
-        keys_control_runs.append(control_runs_data[i][0])
-
     # Generate Taylor diagram plot if there is metrics
     # saved for any variable within the list.
     marker = ["o", "d", "+", "s", ">", "<", "v", "^", "x", "h", "X", "H"]
-    color = ["k", "r", "g", "y", "m"]
+    color = ["k", "b", "r", "y", "m"]
 
     if row_count > 0:
         matplotlib.rcParams.update({"font.size": 20})
@@ -681,42 +669,59 @@ def _create_csv_from_dict_taylor_diag(
         )
 
         # Add samples for baseline simulation.
-        if run_type == "model_vs_obs":
-            for irow in range(1, row_count):
-                if data[irow][0] in keys_control_runs:
-                    control_irow = keys_control_runs.index(data[irow][0])
-                    std_norm = float(control_runs_data[control_irow][1]) / float(
-                        control_runs_data[control_irow][2]
-                    )
-                    correlation = float(control_runs_data[control_irow][3])
-                    taylordiag.add_sample(
-                        std_norm,
-                        correlation,
-                        marker=marker[irow],
-                        c=color[1],
-                        ms=10,
-                        label=data[irow][0] + "E3sm_v0 B1850",
-                        markerfacecolor="None",
-                        markeredgecolor=color[1],
-                        linestyle="None",
-                    )
 
-                baseline_text = "E3SMv0_B1850"
-                ax.text(
-                    0.6,
-                    0.95,
-                    baseline_text,
-                    ha="left",
-                    va="center",
-                    transform=ax.transAxes,
-                    color=color[1],
-                    fontsize=12,
-                )
+        if run_type == "model_vs_obs":
+
+            # Read the control run data.
+            # Example base line csv file name: JJA_metrics_table_taylor_diag_historical_1985-2014_E3SMv1.csv
+            for ibase, base_line_csv_path in enumerate(base_line_csv_paths):
+                base_name = base_line_csv_path.split(".")[-2][-6:]  # ex E3SMv2
+                long_base_name = f"{base_name} historical (1985-2014)"
+                with open(base_line_csv_path, "r") as control_runs_taylor_csv:
+                    reader = csv.reader(control_runs_taylor_csv, delimiter=",")
+                    control_runs_data = list(reader)
+
+                keys_control_runs = []
+                for i in range(0, len(control_runs_data)):
+                    keys_control_runs.append(control_runs_data[i][0])
+
+                for irow in range(1, row_count):
+                    if data[irow][0] in keys_control_runs:
+                        control_irow = keys_control_runs.index(data[irow][0])
+                        # std_norm = Test_STD/Ref._STD in the following order
+                        # Variables,Unit,Test_mean,Ref._mean,Mean_Bias,Test_STD,Ref._STD,RMSE,Correlation
+                        std_norm = float(control_runs_data[control_irow][5]) / float(
+                            control_runs_data[control_irow][6]
+                        )
+                        correlation = float(control_runs_data[control_irow][8])
+                        taylordiag.add_sample(
+                            std_norm,
+                            correlation,
+                            marker=marker[irow],
+                            c=color[1 + ibase],
+                            ms=10,
+                            label=data[irow][0] + long_base_name,
+                            markerfacecolor="None",
+                            markeredgecolor=color[1 + ibase],
+                            linestyle="None",
+                        )
+
+                    baseline_text = long_base_name
+                    ax.text(
+                        0.7,
+                        0.96 - ibase * 0.05,
+                        baseline_text,
+                        ha="left",
+                        va="center",
+                        transform=ax.transAxes,
+                        color=color[1 + ibase],
+                        fontsize=12,
+                    )
 
         model_text = "Test Model: " + test_name
         ax.text(
-            0.6,
-            1,
+            0.7,
+            1.01,
             model_text,
             ha="left",
             va="center",
