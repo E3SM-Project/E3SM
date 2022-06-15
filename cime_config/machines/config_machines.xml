@@ -3630,7 +3630,7 @@
         <arg name="tasks_per_rs">--tasks_per_rs $SHELL{echo "({{ tasks_per_node }} + $RS_PER_NODE - 1)/$RS_PER_NODE"|bc}</arg>
         <arg name="distribute">-d plane:$SHELL{echo "({{ tasks_per_node }} + $RS_PER_NODE - 1)/$RS_PER_NODE"|bc}</arg>
         <arg name="cpu_per_rs">--cpu_per_rs $ENV{CPU_PER_RS}</arg>
-        <arg name="task_bind">--bind packed:smt:1</arg>
+        <arg name="task_bind">--bind packed:smt:2</arg>
         <arg name="latency_priority">--latency_priority $ENV{LTC_PRT}</arg>
         <arg name="stdio_mode">--stdio_mode prepended</arg>
         <arg name="thread_vars">$ENV{JSRUN_THREAD_VARS}</arg>
