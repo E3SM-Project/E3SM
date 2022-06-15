@@ -183,6 +183,9 @@
 			<var name="landIceFreshwaterFlux"/>
 			<var name="landIceHeatFlux"/>
 			<var name="heatFluxToLandIce"/>
+			<var name="landIceFrictionVelocity"/>
+			<var_array name="landIceBoundaryLayerTracers"/>
+			<var_array name="landIceInterfaceTracers"/>
 			<var name="mocStreamvalLatAndDepth"/>
 			<var name="mocStreamvalLatAndDepthRegion"/>
 			<var name="binBoundaryMocStreamfunction"/>
