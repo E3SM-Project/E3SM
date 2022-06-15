@@ -1,7 +1,7 @@
 #!/bin/bash
 
 source $MODULESHOME/init/bash
-module load PrgEnv-amd craype-accel-amd-gfx90a rocm cray-hdf5 netcdf-c
+module load PrgEnv-amd craype-accel-amd-gfx90a rocm cray-hdf5 netcdf-c cray-netcdf
 
 unset YAKL_ARCH
 unset NCRMS

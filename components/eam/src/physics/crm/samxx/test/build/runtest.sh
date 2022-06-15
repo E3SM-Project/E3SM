@@ -22,7 +22,7 @@ printf "\n\nRunning 2-D tests\n\n"
 printf "\nRunning C++ code\n\n"
 cd cpp2d
 rm -f cpp_output_000001.nc
-./cpp2d 200 || exit -1
+rocprof --roctx-trace --hip-trace ./cpp2d 200 || exit -1
 cd ..
 
 # printf "\nComparing results\n\n"
