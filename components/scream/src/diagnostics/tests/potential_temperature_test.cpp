@@ -120,7 +120,7 @@ void run(std::mt19937_64& engine)
     Kokkos::deep_copy(T_sub,zero);
     Kokkos::deep_copy(p_sub,p0);
   }
-  const auto& diag_out = diag->get_diagnostic(100.0);
+  const auto& diag_out = diag->get_diagnostic();
   REQUIRE(views_are_equal(diag_out,zero_f));
   }
   //  - theta=T when p=p0
@@ -137,21 +137,22 @@ void run(std::mt19937_64& engine)
   }
   // The output from the diagnostic should match what would happen if we called "calculate_theta_from_T" directly
   {
-  for (int icol = 0; icol<ncols;++icol) {
-    const auto& T_sub = ekat::subview(T_mid_v,icol);
-    const auto& p_sub = ekat::subview(p_mid_v,icol);
-    ekat::genRandArray(dview_as_real(temperature), engine, pdf_temp);
-    ekat::genRandArray(dview_as_real(pressure),    engine, pdf_pres);
-    Kokkos::deep_copy(T_sub,temperature);
-    Kokkos::deep_copy(p_sub,pressure);
-  } 
-  Field theta_f = T_mid_f.clone();
-  theta_f.deep_copy<double,Host>(0.0);
-  const auto& theta_v = theta_f.get_view<ScalarT**>();
-  Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
-    const int i = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
-      theta_v(i,k) = PF::calculate_theta_from_T(T_mid_v(i,k),p_mid_v(i,k));
+    for (int icol = 0; icol<ncols;++icol) {
+      const auto& T_sub = ekat::subview(T_mid_v,icol);
+      const auto& p_sub = ekat::subview(p_mid_v,icol);
+      ekat::genRandArray(dview_as_real(temperature), engine, pdf_temp);
+      ekat::genRandArray(dview_as_real(pressure),    engine, pdf_pres);
+      Kokkos::deep_copy(T_sub,temperature);
+      Kokkos::deep_copy(p_sub,pressure);
+    } 
+    Field theta_f = T_mid_f.clone();
+    theta_f.deep_copy<double,Host>(0.0);
+    const auto& theta_v = theta_f.get_view<ScalarT**>();
+    Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const int i = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
+        theta_v(i,k) = PF::calculate_theta_from_T(T_mid_v(i,k),p_mid_v(i,k));
+      });
     });
     Kokkos::fence();
     diag->run();

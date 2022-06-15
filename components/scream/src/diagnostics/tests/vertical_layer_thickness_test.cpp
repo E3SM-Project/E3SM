@@ -117,33 +117,34 @@ void run(std::mt19937_64& engine)
 
   // The output from the diagnostic should match what would happen if we called "calculate_dz" directly
   {
-  for (int icol = 0; icol<ncols;++icol) {
-    const auto& T_sub      = ekat::subview(T_mid_v,icol);
-    const auto& pseudo_sub = ekat::subview(pseudo_dens_v,icol);
-    const auto& p_sub      = ekat::subview(p_mid_v,icol);
-    const auto& qv_sub     = ekat::subview(qv_mid_v,icol);
-    ekat::genRandArray(dview_as_real(temperature),   engine, pdf_temp);
-    ekat::genRandArray(dview_as_real(pseudodensity), engine, pdf_pseudodens);
-    ekat::genRandArray(dview_as_real(pressure),      engine, pdf_pres);
-    ekat::genRandArray(dview_as_real(watervapor),    engine, pdf_qv);
-    Kokkos::deep_copy(T_sub,temperature);
-    Kokkos::deep_copy(pseudo_sub,pseudodensity);
-    Kokkos::deep_copy(p_sub,pressure);
-    Kokkos::deep_copy(qv_sub,watervapor);
-  } 
-  Field dz_f = T_mid_f.clone();
-  dz_f.deep_copy<double,Host>(0.0);
-  const auto& dz_v = dz_f.get_view<ScalarT**>();
-  Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
-    const int i = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
-      dz_v(i,k) = PF::calculate_dz(pseudo_dens_v(i,k),p_mid_v(i,k),T_mid_v(i,k),qv_mid_v(i,k));
+    for (int icol = 0; icol<ncols;++icol) {
+      const auto& T_sub      = ekat::subview(T_mid_v,icol);
+      const auto& pseudo_sub = ekat::subview(pseudo_dens_v,icol);
+      const auto& p_sub      = ekat::subview(p_mid_v,icol);
+      const auto& qv_sub     = ekat::subview(qv_mid_v,icol);
+      ekat::genRandArray(dview_as_real(temperature),   engine, pdf_temp);
+      ekat::genRandArray(dview_as_real(pseudodensity), engine, pdf_pseudodens);
+      ekat::genRandArray(dview_as_real(pressure),      engine, pdf_pres);
+      ekat::genRandArray(dview_as_real(watervapor),    engine, pdf_qv);
+      Kokkos::deep_copy(T_sub,temperature);
+      Kokkos::deep_copy(pseudo_sub,pseudodensity);
+      Kokkos::deep_copy(p_sub,pressure);
+      Kokkos::deep_copy(qv_sub,watervapor);
+    } 
+    Field dz_f = T_mid_f.clone();
+    dz_f.deep_copy<double,Host>(0.0);
+    const auto& dz_v = dz_f.get_view<ScalarT**>();
+    Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const int i = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
+        dz_v(i,k) = PF::calculate_dz(pseudo_dens_v(i,k),p_mid_v(i,k),T_mid_v(i,k),qv_mid_v(i,k));
+      });
+      team.team_barrier();
     });
-    team.team_barrier();
-  });
-  Kokkos::fence();
-  const auto& diag_out = diag->get_diagnostic(100.0);
-  REQUIRE(views_are_equal(diag_out,dz_f));
+    Kokkos::fence();
+    diag->run();
+    const auto& diag_out = diag->get_diagnostic();
+    REQUIRE(views_are_equal(diag_out,dz_f));
   }
  
   // Finalize the diagnostic

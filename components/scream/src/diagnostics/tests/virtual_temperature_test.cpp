@@ -107,27 +107,28 @@ void run(std::mt19937_64& engine)
 
   // The output from the diagnostic should match what would happen if we called "calculate_virtual_temperature" directly
   {
-  for (int icol = 0; icol<ncols;++icol) {
-    const auto& T_sub = ekat::subview(T_mid_v,icol);
-    const auto& qv_sub = ekat::subview(qv_mid_v,icol);
-    ekat::genRandArray(dview_as_real(temperature), engine, pdf_temp);
-    ekat::genRandArray(dview_as_real(watervapor),  engine, pdf_qv);
-    Kokkos::deep_copy(T_sub,temperature);
-    Kokkos::deep_copy(qv_sub,watervapor);
-  } 
-  Field virtualT_f = T_mid_f.clone();
-  virtualT_f.deep_copy<double,Host>(0.0);
-  const auto& virtualT_v = virtualT_f.get_view<ScalarT**>();
-  Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
-    const int i = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
-      virtualT_v(i,k) = PF::calculate_virtual_temperature(T_mid_v(i,k),qv_mid_v(i,k));
+    for (int icol = 0; icol<ncols;++icol) {
+      const auto& T_sub = ekat::subview(T_mid_v,icol);
+      const auto& qv_sub = ekat::subview(qv_mid_v,icol);
+      ekat::genRandArray(dview_as_real(temperature), engine, pdf_temp);
+      ekat::genRandArray(dview_as_real(watervapor),  engine, pdf_qv);
+      Kokkos::deep_copy(T_sub,temperature);
+      Kokkos::deep_copy(qv_sub,watervapor);
+    } 
+    Field virtualT_f = T_mid_f.clone();
+    virtualT_f.deep_copy<double,Host>(0.0);
+    const auto& virtualT_v = virtualT_f.get_view<ScalarT**>();
+    Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const int i = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
+        virtualT_v(i,k) = PF::calculate_virtual_temperature(T_mid_v(i,k),qv_mid_v(i,k));
+      });
+      team.team_barrier();
     });
-    team.team_barrier();
-  });
-  Kokkos::fence();
-  const auto& diag_out = diag->get_diagnostic(100.0);
-  REQUIRE(views_are_equal(diag_out,virtualT_f));
+    Kokkos::fence();
+    diag->run();
+    const auto& diag_out = diag->get_diagnostic();
+    REQUIRE(views_are_equal(diag_out,virtualT_f));
   }
  
   // Finalize the diagnostic

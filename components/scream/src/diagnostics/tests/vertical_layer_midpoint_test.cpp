@@ -118,38 +118,44 @@ void run(std::mt19937_64& engine)
 
   // The output from the diagnostic should match what would happen if we called "calculate_z_mid" directly
   {
-  for (int icol = 0; icol<ncols;++icol) {
-    const auto& T_sub      = ekat::subview(T_mid_v,icol);
-    const auto& pseudo_sub = ekat::subview(pseudo_dens_v,icol);
-    const auto& p_sub      = ekat::subview(p_mid_v,icol);
-    const auto& qv_sub     = ekat::subview(qv_mid_v,icol);
-    ekat::genRandArray(dview_as_real(temperature),   engine, pdf_temp);
-    ekat::genRandArray(dview_as_real(pseudodensity), engine, pdf_pseudodens);
-    ekat::genRandArray(dview_as_real(pressure),      engine, pdf_pres);
-    ekat::genRandArray(dview_as_real(watervapor),    engine, pdf_qv);
-    Kokkos::deep_copy(T_sub,temperature);
-    Kokkos::deep_copy(pseudo_sub,pseudodensity);
-    Kokkos::deep_copy(p_sub,pressure);
-    Kokkos::deep_copy(qv_sub,watervapor);
-  } 
-  const auto& diag_out = diag->get_diagnostic(100.0);
-  Field z_mid_f = diag_out.clone();
-  const auto& z_mid_v = z_mid_f.get_view<ScalarT**>();
-
-  const auto& z_int_v = view_1d("",num_mid_packs_p1);
-  const auto& dz_v = view_1d("",num_mid_packs);
-  Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
-    const int i = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
-      dz_v(k) = PF::calculate_dz(pseudo_dens_v(i,k),p_mid_v(i,k),T_mid_v(i,k),qv_mid_v(i,k));
+    for (int icol = 0; icol<ncols;++icol) {
+      const auto& T_sub      = ekat::subview(T_mid_v,icol);
+      const auto& pseudo_sub = ekat::subview(pseudo_dens_v,icol);
+      const auto& p_sub      = ekat::subview(p_mid_v,icol);
+      const auto& qv_sub     = ekat::subview(qv_mid_v,icol);
+      ekat::genRandArray(dview_as_real(temperature),   engine, pdf_temp);
+      ekat::genRandArray(dview_as_real(pseudodensity), engine, pdf_pseudodens);
+      ekat::genRandArray(dview_as_real(pressure),      engine, pdf_pres);
+      ekat::genRandArray(dview_as_real(watervapor),    engine, pdf_qv);
+      Kokkos::deep_copy(T_sub,temperature);
+      Kokkos::deep_copy(pseudo_sub,pseudodensity);
+      Kokkos::deep_copy(p_sub,pressure);
+      Kokkos::deep_copy(qv_sub,watervapor);
+    } 
+    diag->run();
+    const auto& diag_out = diag->get_diagnostic();
+    const auto& diag_v = diag_out.get_view<const ScalarT**>();
+    Field z_mid_f = diag_out.clone();
+    z_mid_f.deep_copy<double,Host>(0.0);
+    const auto& z_mid_v = z_mid_f.get_view<ScalarT**>();
+  
+    const auto& z_int_v = view_1d("",num_mid_packs_p1);
+    const auto& dz_v = view_1d("",num_mid_packs);
+    Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const int i = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
+        dz_v(k) = PF::calculate_dz(pseudo_dens_v(i,k),p_mid_v(i,k),T_mid_v(i,k),qv_mid_v(i,k));
+      });
+      Kokkos::fence();
+      const auto& z_mid_sub = ekat::subview(z_mid_v,i);
+      PF::calculate_z_int(team,num_levs,dz_v,0.0,z_int_v);
+      PF::calculate_z_mid(team,num_levs,z_int_v,z_mid_sub);
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
+        printf("ASD %e %e %e\n", diag_v(i,k), z_mid_sub(k), diag_v(i,k)-z_mid_sub(k));
+      });
     });
-    team.team_barrier();
-    const auto& z_mid_sub = ekat::subview(z_mid_v,i);
-    PF::calculate_z_int(team,num_levs,dz_v,0.0,z_int_v);
-    PF::calculate_z_mid(team,num_levs,z_int_v,z_mid_sub);
-  });
-  Kokkos::fence();
-  REQUIRE(views_are_equal(diag_out,z_mid_f));
+    Kokkos::fence();
+    REQUIRE(views_are_equal(diag_out,z_mid_f));
   }
  
   // Finalize the diagnostic

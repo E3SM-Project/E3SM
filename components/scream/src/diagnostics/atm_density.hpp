@@ -14,11 +14,7 @@ namespace scream
 class AtmDensityDiagnostic : public AtmosphereDiagnostic
 {
 public:
-  template <typename S>
-  using SmallPack     = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
-
-  using Spack         = SmallPack<Real>;
-  using Pack          = ekat::Pack<Real,Spack::n>;
+  using Pack          = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using PF            = scream::PhysicsFunctions<DefaultDevice>;
 
   // Constructors

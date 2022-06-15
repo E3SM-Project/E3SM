@@ -60,11 +60,11 @@ void AtmDensityDiagnostic::run_impl(const int /* dt */)
   const auto& qv_mid             = get_field_in("qv").get_view<const Pack**>();
   const auto& pseudo_density_mid = get_field_in("pseudo_density").get_view<const Pack**>();
 
-  const auto& output             = m_diagnostic_output.get_view<Pack**>();
-  const auto nk_pack  = ekat::npack<Spack>(m_num_levs);
+  const auto& output  = m_diagnostic_output.get_view<Pack**>();
+  const auto nk_pack  = ekat::npack<Pack>(m_num_levs);
   Kokkos::parallel_for("PotentialTemperatureDiagnostic",
                        Kokkos::RangePolicy<>(0,m_num_cols*nk_pack),
-                       KOKKOS_LAMBDA(int idx) {
+                       KOKKOS_LAMBDA(const int& idx) {
       const int icol  = idx / nk_pack;
       const int jpack = idx % nk_pack;
       auto dz = PF::calculate_dz(pseudo_density_mid(icol,jpack),p_mid(icol,jpack),T_mid(icol,jpack),qv_mid(icol,jpack));

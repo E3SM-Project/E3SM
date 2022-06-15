@@ -111,46 +111,49 @@ void run(std::mt19937_64& engine)
   // Test 1 - property tests 
   //  - exner(pmid=0) = 0
   {
-  Field zero_f = p_mid_f.clone();  // Field with only zeros
-  zero_f.deep_copy(0.0);
-  for (int icol = 0; icol<ncols;++icol) {
-    const auto& p_sub = ekat::subview(p_mid_v,icol);
-    Kokkos::deep_copy(p_sub,zero);
-  }
-  const auto& diag_out = diag->get_diagnostic(100.0);
-  REQUIRE(views_are_equal(diag_out,zero_f));
+    Field zero_f = p_mid_f.clone();  // Field with only zeros
+    zero_f.deep_copy(0.0);
+    for (int icol = 0; icol<ncols;++icol) {
+      const auto& p_sub = ekat::subview(p_mid_v,icol);
+      Kokkos::deep_copy(p_sub,zero);
+    }
+    diag->run();
+    const auto& diag_out = diag->get_diagnostic();
+    REQUIRE(views_are_equal(diag_out,zero_f));
   }
   //  - exner=1 when p=p0
   {
-  Field one_f = p_mid_f.clone();  // Field with only ones
-  one_f.deep_copy(1.0);
-  for (int icol = 0; icol<ncols;++icol) {
-    const auto& p_sub = ekat::subview(p_mid_v,icol);
-    Kokkos::deep_copy(p_sub,p0);
-  } 
-  const auto& diag_out = diag->get_diagnostic(100.0);
-  REQUIRE(views_are_equal(diag_out,one_f));
+    Field one_f = p_mid_f.clone();  // Field with only ones
+    one_f.deep_copy(1.0);
+    for (int icol = 0; icol<ncols;++icol) {
+      const auto& p_sub = ekat::subview(p_mid_v,icol);
+      Kokkos::deep_copy(p_sub,p0);
+    } 
+    diag->run();
+    const auto& diag_out = diag->get_diagnostic();
+    REQUIRE(views_are_equal(diag_out,one_f));
   }
   // The output from the diagnostic should match what would happen if we called "exner" directly
   {
-  for (int icol = 0; icol<ncols;++icol) {
-    const auto& p_sub = ekat::subview(p_mid_v,icol);
-    ekat::genRandArray(dview_as_real(pressure), engine, pdf_pres);
-    Kokkos::deep_copy(p_sub,pressure);
-  } 
-  Field exner_f = p_mid_f.clone();
-  exner_f.deep_copy<double,Host>(0.0);
-  const auto& exner_v = exner_f.get_view<ScalarT**>();
-  Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
-    const int i = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
-      exner_v(i,k) = PF::exner_function(p_mid_v(i,k));
+    for (int icol = 0; icol<ncols;++icol) {
+      const auto& p_sub = ekat::subview(p_mid_v,icol);
+      ekat::genRandArray(dview_as_real(pressure), engine, pdf_pres);
+      Kokkos::deep_copy(p_sub,pressure);
+    } 
+    Field exner_f = p_mid_f.clone();
+    exner_f.deep_copy<double,Host>(0.0);
+    const auto& exner_v = exner_f.get_view<ScalarT**>();
+    Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const int i = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
+        exner_v(i,k) = PF::exner_function(p_mid_v(i,k));
+      });
+      team.team_barrier();
     });
-    team.team_barrier();
-  });
-  Kokkos::fence();
-  const auto& diag_out = diag->get_diagnostic(100.0);
-  REQUIRE(views_are_equal(diag_out,exner_f));
+    Kokkos::fence();
+    diag->run();
+    const auto& diag_out = diag->get_diagnostic();
+    REQUIRE(views_are_equal(diag_out,exner_f));
   }
  
   // Finalize the diagnostic

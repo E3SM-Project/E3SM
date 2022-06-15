@@ -92,25 +92,26 @@ void run(std::mt19937_64& engine)
 
   // The output from the diagnostic should match what would happen if we called "calculate_psl" directly
   {
-  for (int icol = 0; icol<ncols;++icol) {
-    const auto& T_sub      = ekat::subview(T_mid_v,icol);
-    const auto& p_sub      = ekat::subview(p_mid_v,icol);
-    ekat::genRandArray(temperature,   engine, pdf_temp);
-    ekat::genRandArray(pressure,      engine, pdf_pres);
-    Kokkos::deep_copy(T_sub,temperature);
-    Kokkos::deep_copy(p_sub,pressure);
-  } 
-  ekat::genRandArray(phis_v, engine, pdf_surface);
-
-  const auto& diag_out = diag->get_diagnostic(100.0);
-  Field psl_f = phis_f.clone(); //diag_out.clone();
-  const auto& psl_v = psl_f.get_view<Real*>();
-
-  Kokkos::parallel_for("", ncols, KOKKOS_LAMBDA(const int i) {
-    psl_v(i) = PF::calculate_psl(T_mid_v(i,num_levs-1),p_mid_v(i,num_levs-1),phis_v(i));
-  });
-  Kokkos::fence();
-  REQUIRE(views_are_equal(diag_out,psl_f));
+    for (int icol = 0; icol<ncols;++icol) {
+      const auto& T_sub      = ekat::subview(T_mid_v,icol);
+      const auto& p_sub      = ekat::subview(p_mid_v,icol);
+      ekat::genRandArray(temperature,   engine, pdf_temp);
+      ekat::genRandArray(pressure,      engine, pdf_pres);
+      Kokkos::deep_copy(T_sub,temperature);
+      Kokkos::deep_copy(p_sub,pressure);
+    } 
+    ekat::genRandArray(phis_v, engine, pdf_surface);
+  
+    diag->run();
+    const auto& diag_out = diag->get_diagnostic();
+    Field psl_f = diag_out.clone();
+    const auto& psl_v = psl_f.get_view<Real*>();
+  
+    Kokkos::parallel_for("", ncols, KOKKOS_LAMBDA(const int i) {
+      psl_v(i) = PF::calculate_psl(T_mid_v(i,num_levs-1),p_mid_v(i,num_levs-1),phis_v(i));
+    });
+    Kokkos::fence();
+    REQUIRE(views_are_equal(diag_out,psl_f));
   }
  
   // Finalize the diagnostic
