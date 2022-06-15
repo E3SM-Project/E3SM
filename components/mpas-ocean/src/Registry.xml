@@ -325,7 +325,7 @@
 					description="If true, the N2 limiting is applied to the horizontal diffusion term"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_Redi_min_layers_diag_terms" type="integer" default_value="6" units="NA"
+		<nml_option name="config_Redi_min_layers_diag_terms" type="integer" default_value="6"
 					description="Redi diagonal terms (2 and 3) are turned off from layer 1 through config_Redi_min_layers_diag_terms-1, and on from config_Redi_min_layers_diag_terms to nVertLevels. The Redi diagonal terms are not guaranteed to produce bounded tracer fields, and in practice produce growing temperatures in a few columns with fewer than 5 vertical cells. Redi is meant for isopycnal mixing in the deep ocean, so not applying Redi diagonal terms in very shallow regions is an acceptable solution."
 					possible_values="any integer between 0 (all layers on) and nVertLevels (all layers off)"
 		/>
@@ -343,7 +343,7 @@
 		/>
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
-		<nml_option name="config_use_GM" type="logical" default_value=".false." units="NA"
+		<nml_option name="config_use_GM" type="logical" default_value=".false."
 					description="If true, the standard GM for the tracer advection and mixing is turned on."
 					possible_values=".true. or .false."
 		/>
@@ -358,7 +358,7 @@
 					description="The parameter setting for the first baroclinic mode speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004)."
 					possible_values="Positive real numbers"
 		/>
-		<nml_option name="config_GM_minBclModeSpeed_method" type="character" default_value="constant" units="NA"
+		<nml_option name="config_GM_minBclModeSpeed_method" type="character" default_value="constant"
 					description="Determines how the GM setting for the minimum of the first baroclinic mode speed is computed. If 'constant' then use config_GM_constant_bclModeSpeed. If 'computed' then compute at every edge at every time step using the Brunt-Vaisala frequency"
 					possible_values="'constant' and 'computed'"
 		/>
@@ -370,11 +370,11 @@
 					description="minimum value of bolus diffusivity for spatially variable GM schemes. Used for all choices of config_GM_closure other than 'constant'."
 					possible_values="values around 100s"
 		/>
-		<nml_option name="config_GM_spatially_variable_baroclinic_mode" type="real" default_value="1.0" units="NA"
+		<nml_option name="config_GM_spatially_variable_baroclinic_mode" type="real" default_value="1.0"
 					description="baroclinic wave mode chosen for the Ferrari et al 2010 calculation. Used for all choices of config_GM_closure other than 'constant'."
 					possible_values="small positive numbers"
 		/>
-		<nml_option name="config_GM_Visbeck_alpha" type="real" default_value="0.005" units="NA"
+		<nml_option name="config_GM_Visbeck_alpha" type="real" default_value="0.005"
 					description="scaling factor on the Visbeck diffusivity parameterization"
 					possible_values="small positive numbers"
 		/>
@@ -382,19 +382,19 @@
 					description="minimum depth for calculation of vertical average"
 					possible_values="values between zero and bottom depth"
 		/>
-		<nml_option name="config_GM_EG_riMin" type="real" default_value="200.0" units="NA"
+		<nml_option name="config_GM_EG_riMin" type="real" default_value="200.0"
 					description="minimum Richardson number to prevent overly large bolus Kappa values"
 					possible_values="numbers greater than zero"
 		/>
-		<nml_option name="config_GM_EG_kappa_factor" type="real" default_value="3.0" units="NA"
+		<nml_option name="config_GM_EG_kappa_factor" type="real" default_value="3.0"
 					description="factor to scale diffusivity for Eden Greatbach scheme"
 					possible_values="small positive reals"
 		/>
-		<nml_option name="config_GM_EG_Rossby_factor" type="real" default_value="2.0" units="NA"
+		<nml_option name="config_GM_EG_Rossby_factor" type="real" default_value="2.0"
 					description="factor multiplying the Rossby length in the scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)"
 					possible_values="small values greater than or equal to one"
 		/>
-		<nml_option name="config_GM_EG_Rhines_factor" type="real" default_value="0.3" units="NA"
+		<nml_option name="config_GM_EG_Rhines_factor" type="real" default_value="0.3"
 					description="factor multiplying the Rhines length in the scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)"
 					possible_values="small positive values less than equal to one"
 		/>
@@ -442,7 +442,7 @@
 		/>
 	</nml_record>
 	<nml_record name="cvmix" mode="forward">
-		<nml_option name="config_use_cvmix" type="logical" default_value=".true." units="NA"
+		<nml_option name="config_use_cvmix" type="logical" default_value=".true."
 					description="If true, use the Community Vertical MIXing routines to compute vertical diffusivity and viscosity"
 					possible_values="True or False"
 		/>
@@ -450,7 +450,7 @@
 					description="Prandtl number to be used within the CVMix parameterization suite"
 					possible_values="Any non-negative real value."
 		/>
-		<nml_option name="config_cvmix_background_scheme" type="character" default_value="constant" units="NA"
+		<nml_option name="config_cvmix_background_scheme" type="character" default_value="constant"
 					description="Scheme for background diffusivity, 'constant' for constant with depth and space, 'BryanLewis' for vertically variable, 'none' for no background diffusivity"
 					possible_values="'constant', 'BryanLewis', and 'none'"
 		/>
@@ -478,7 +478,7 @@
 		  			description="width of transition in Bryan Lewis (1979) scheme"
 					possible_values="positive real numbers"
 		/>
-		<nml_option name="config_use_cvmix_convection" type="logical" default_value=".false." units="NA"
+		<nml_option name="config_use_cvmix_convection" type="logical" default_value=".false."
 					description="If true, convective diffusivity and viscosity is computed using CVMix"
 					possible_values="True or False"
 		/>
@@ -490,7 +490,7 @@
 					description="Convective vertical viscosity applied to horizontal velocity components"
 					possible_values="Any positive real value."
 		/>
-		<nml_option name="config_cvmix_convective_basedOnBVF" type="logical" default_value=".true." units="NA"
+		<nml_option name="config_cvmix_convective_basedOnBVF" type="logical" default_value=".true."
 					description="If true, convection is triggered based on value of config_cvmix_convective_triggerBVF"
 					possible_values="True or False"
 		/>
@@ -498,19 +498,19 @@
 					description="Value of Brunt Viasala frequency squared below which convective mixing is triggered"
 					possible_values="Any real value"
 		/>
-		<nml_option name="config_use_cvmix_shear" type="logical" default_value=".false." units="NA"
+		<nml_option name="config_use_cvmix_shear" type="logical" default_value=".false."
 					description="If true, shear-based mixing is computed using CVMix"
 					possible_values="True or False"
 		/>
-		<nml_option name="config_cvmix_num_ri_smooth_loops" type="integer" default_value="2" units="NA"
+		<nml_option name="config_cvmix_num_ri_smooth_loops" type="integer" default_value="2"
 					description="Number of smoothing passes over RiTopOfCell for LMD94 shear instability mixing"
 					possible_values="any integer"
 		/>
-		<nml_option name="config_cvmix_use_BLD_smoothing" type="logical" default_value=".true." units="NA"
+		<nml_option name="config_cvmix_use_BLD_smoothing" type="logical" default_value=".true."
 					description="If true KPP bld is smoothed with a laplacian filter"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_cvmix_shear_mixing_scheme" type="character" default_value="PP" units="NA"
+		<nml_option name="config_cvmix_shear_mixing_scheme" type="character" default_value="PP"
 					description="Choose between Pacanowski/Philander or Large et al. shear mixing"
 					possible_values="PP or KPP"
 		/>
@@ -534,23 +534,23 @@
 					description="Theshold gradient Richardson number to produced enhanced diffusivities, See Large et al. (1994) Eq (28a,b,c)"
 					possible_values="Any positive real value"
 		/>
-		<nml_option name="config_cvmix_shear_KPP_exp" type="real" default_value="3" units="NA"
+		<nml_option name="config_cvmix_shear_KPP_exp" type="real" default_value="3"
 					description="Exponent relating diffusivities to $Ri_g$. Referred to as $p_1$ in Large et al. (1994) Eq (28b)"
 					possible_values="Any positive real value"
 		/>
-		<nml_option name="config_use_cvmix_tidal_mixing" type="logical" default_value=".false." units="NA"
+		<nml_option name="config_use_cvmix_tidal_mixing" type="logical" default_value=".false."
 					description="If true, diffusivity and viscosity is computed using CVMix tidal mixing"
 					possible_values="True or False"
 		/>
-		<nml_option name="config_use_cvmix_double_diffusion" type="logical" default_value=".false." units="NA"
+		<nml_option name="config_use_cvmix_double_diffusion" type="logical" default_value=".false."
 					description="If true, diffusivity and viscosity is computed using CVMix double diffusion"
 					possible_values="True or False"
 		/>
-		<nml_option name="config_use_cvmix_kpp" type="logical" default_value=".false." units="NA"
+		<nml_option name="config_use_cvmix_kpp" type="logical" default_value=".false."
 					description="If true, diffusivity and viscosity is computed using CVMix KPP"
 					possible_values="True or False"
 		/>
-		<nml_option name="config_use_cvmix_fixed_boundary_layer" type="logical" default_value=".false." units="NA"
+		<nml_option name="config_use_cvmix_fixed_boundary_layer" type="logical" default_value=".false."
 					description="If true, boundary layer depth is specified as config_cvmix_kpp_boundary_layer_depth"
 					possible_values="True or False"
 		/>
@@ -562,19 +562,19 @@
 					description="Critical bulk Richardson number used to determine bottom of ocean mixed layer"
 					possible_values="Any positive real value."
 		/>
-		<nml_option name="config_cvmix_kpp_matching" type="character" default_value="SimpleShapes" units="NA"
+		<nml_option name="config_cvmix_kpp_matching" type="character" default_value="SimpleShapes"
 					description="Determines how the KPP diffusivities are matched to values at base of boundary layer"
 					possible_values="MatchBoth, MatchGradient, SimpleShapes"
 		/>
-		<nml_option name="config_cvmix_kpp_EkmanOBL" type="logical" default_value=".false." units="NA"
+		<nml_option name="config_cvmix_kpp_EkmanOBL" type="logical" default_value=".false."
 					description="If true, boundary layer depth is limited by Ekman layer depth"
 					possible_values="True or False"
 		/>
-		<nml_option name="config_cvmix_kpp_MonObOBL" type="logical" default_value=".false." units="NA"
+		<nml_option name="config_cvmix_kpp_MonObOBL" type="logical" default_value=".false."
 					description="If true, boundary layer depth is limited by Monin-Obukhov layer depth"
 					possible_values="True or False"
 		/>
-		<nml_option name="config_cvmix_kpp_interpolationOMLType" type="character" default_value="quadratic" units="NA"
+		<nml_option name="config_cvmix_kpp_interpolationOMLType" type="character" default_value="quadratic"
 					description="Determine bottom of ocean mixed layer using linear, quadratic or cubic interpolation"
 					possible_values="linear, quadratic, cubic"
 		/>
@@ -602,25 +602,25 @@
 					description="flag that moves the non-local computation and application of tendency to after main timestep loop"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_cvmix_kpp_use_theory_wave" type="logical" default_value=".false." units="NA"
+		<nml_option name="config_cvmix_kpp_use_theory_wave" type="logical" default_value=".false."
 					description="Flag for use of theory-wave in Li et al. (2017) to approximate the Langmuir number and enhancement factor"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_cvmix_kpp_langmuir_mixing_opt" type="character" default_value="NONE" units="NA"
+		<nml_option name="config_cvmix_kpp_langmuir_mixing_opt" type="character" default_value="NONE"
 					description="Option of Langmuir enhanced mixing parameterization"
 					possible_values="NONE, LWF16, RWHGK16"
 		/>
-		<nml_option name="config_cvmix_kpp_langmuir_entrainment_opt" type="character" default_value="NONE" units="NA"
+		<nml_option name="config_cvmix_kpp_langmuir_entrainment_opt" type="character" default_value="NONE"
 					description="Option of Langmuir enhanced entrainment parameterization"
 					possible_values="NONE, LWF16, LF17, RWHGK16"
 		/>
 	</nml_record>
 	<nml_record name="gotm" mode="forward">
-		<nml_option name="config_use_gotm" type="logical" default_value=".false." units="NA"
+		<nml_option name="config_use_gotm" type="logical" default_value=".false."
 					description="If true, use the General Ocean Turbulence Model routines to compute vertical diffusivity and viscosity"
 					possible_values="True or False"
 		/>
-		<nml_option name="config_gotm_namelist_file" type="character" default_value="gotmturb.nml" units="NA"
+		<nml_option name="config_gotm_namelist_file" type="character" default_value="gotmturb.nml"
 					description="File name of GOTM turbulence namelist"
 					possible_values="gotmturb.nml"
 		/>
@@ -2808,19 +2808,19 @@
 		<var name="betaEdge" type="real" dimensions="nEdges Time" units="m^-1 s^-1"
 			description="meridional gradient of the coriolis parameter, used in the mesoscale eddy parameterization schemes"
 		/>
-		<var name="gmKappaScaling" type="real" dimensions="nVertLevelsP1 nEdges Time" units="NA" default_value="1.0"
+		<var name="gmKappaScaling" type="real" dimensions="nVertLevelsP1 nEdges Time" units="1" default_value="1.0"
 			description="spatially and depth varying GM kappa.  The scaling is based on the Brunt Vaisala Frequency relative to a maximum value below the mixed layer, follows from Danabasoglu and Marshall 2007.  If config_GM_closure is not set to N2_dependent the scaling value is set to 1 everywhere."
 			packages="gm"
 		/>
-		<var name="RediKappaScaling" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
+		<var name="RediKappaScaling" type="real" dimensions="nVertLevelsP1 nCells Time" units="1"
 			description="Scaling coefficient for GM kappa. Varies from 0 to 1.  The scaling is based on the Brunt Vaisala Frequency relative to a maximum value below the mixed layer, follows from Danabasoglu and Marshall 2007.  If config_Redi_N2_based_taper_enable = .false. the scaling is set to 1 everywhere."
 			packages="gm"
 		/>
-		<var name="RediKappaSfcTaper" type="real" dimensions="nVertLevelsP1 nCells Time" units="NA"
+		<var name="RediKappaSfcTaper" type="real" dimensions="nVertLevelsP1 nCells Time" units="1"
 			description="Scaling coefficient for Redi kappa. Varies from 0 to 1."
 			packages="gm"
 		/>
-		<var name="rediLimiterCount" type="integer" dimensions="nVertLevels nCells Time" units="NA"
+		<var name="rediLimiterCount" type="integer" dimensions="nVertLevels nCells Time" units="1"
 			description="count of times redi limiter is invoked on a timestep"
 			packages="gm"
 		/>
@@ -2844,11 +2844,11 @@
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, meridional-direction"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="RiTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="nondimensional"
+		<var name="RiTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="1"
 			 description="gradient Richardson number defined at the center (horizontally) and top (vertically)"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="RiTopOfEdge" type="real" dimensions="nVertLevelsP1 nEdges Time" units="nondimensional"
+		<var name="RiTopOfEdge" type="real" dimensions="nVertLevelsP1 nEdges Time" units="1"
 			 description="gradient Richardson number defined at the edge (horizontally) and top (vertically)"
 			 packages="forwardMode;analysisMode"
 		/>
@@ -2864,15 +2864,15 @@
 			 description="vertical diffusion defined at the cell center (horizontally) and top (vertically)"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="bulkRichardsonNumber" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
+		<var name="bulkRichardsonNumber" type="real" dimensions="nVertLevels nCells Time" units="1"
 			 description="CVMix/KPP: bulk Richardson number"
 			 packages="forwardMode;analysisMode"
 			 />
-		<var name="bulkRichardsonNumberBuoy" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
+		<var name="bulkRichardsonNumberBuoy" type="real" dimensions="nVertLevels nCells Time" units="1"
 			 description="CVMix/KPP: contribution of buoyancy to bulk Richardson number"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="bulkRichardsonNumberShear" type="real" dimensions="nVertLevels nCells Time" units="nondimensional"
+		<var name="bulkRichardsonNumberShear" type="real" dimensions="nVertLevels nCells Time" units="1"
 			 description="CVMix/KPP: contribution of shear to bulk Richardson number"
 			 packages="forwardMode;analysisMode"
 		/>
@@ -2890,7 +2890,7 @@
 			 packages="forwardMode;analysisMode"
 		/>
 		<var_array name="vertNonLocalFlux" type="real" dimensions="nVertLevelsP1 nCells Time" packages="forwardMode;analysisMode">
-			<var name="vertNonLocalFluxTemp" array_group="vertNonLocalFlux" units="nondimensional" name_in_code="vertNonLocalFluxTemp"
+			<var name="vertNonLocalFluxTemp" array_group="vertNonLocalFlux" units="1" name_in_code="vertNonLocalFluxTemp"
 				 description="CVMix/KPP: nonlocal boundary layer mixing term for temperature"
 		/>
 		</var_array>
@@ -3812,13 +3812,11 @@
 		<var name="transectEdgeMasks"
 			type="integer"
 			dimensions="nTransects nEdges"
-			units="NA"
 			 description="Mask of edges for measuring transport across transects"
 			/>
 		<var name="transectEdgeMaskSigns"
 			type="integer"
 			dimensions="nTransects nEdges"
-			units="NA"
 			description="Sign of normalVelocity on edge for this transect"
 			/>
 		<var name="transectsInGroup"
