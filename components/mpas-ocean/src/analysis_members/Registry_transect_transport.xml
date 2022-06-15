@@ -28,7 +28,7 @@
 		<package name="transectTransportAMPKG" description="This package includes variables required for the transectTransport analysis member."/>
 	</packages>
 	<var_struct name="transectTransportAM" time_levs="1" packages="transectTransportAMPKG">
-		<var name="transectEdgeMasksMax" type="integer" dimensions="nTransects" units="NA"
+		<var name="transectEdgeMasksMax" type="integer" dimensions="nTransects"
 			 description="max of transectEdgeMasks for this processor."
 		/>
 		<var name="transectVolumeTransport" type="real" dimensions="nTransects Time" units="Sv"
