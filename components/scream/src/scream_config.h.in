@@ -31,8 +31,8 @@
 // Whether scream uses leap years or not
 #cmakedefine SCREAM_HAS_LEAP_YEAR
 
-// Whether experimental code should be enabled
-#cmakedefine SCREAM_ENABLE_EXPERIMENTAL
+// What level of testing we are doing. 0=autotesting, 1=nightly, 2=experimental
+#define SCREAM_TEST_LEVEL ${SCREAM_TEST_LEVEL}
 
 // Whether getrusage can be used to get memory usage
 #cmakedefine SCREAM_ENABLE_GETRUSAGE

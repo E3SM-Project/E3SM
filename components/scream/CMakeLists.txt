@@ -75,9 +75,6 @@ endif()
 
 set(SCREAM_DOUBLE_PRECISION TRUE CACHE BOOL "Set to double precision (default True)")
 
-# Note: experimental code might cause compilation errors and/or tests failures.
-option (SCREAM_ENABLE_EXPERIMENTAL "Whether to enable experimental code in scream." OFF)
-
 # Set the scream base and src directory, to be used across subfolders
 set(SCREAM_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SCREAM_SRC_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -249,6 +246,28 @@ else()
 endif()
 
 set (SCREAM_DATA_DIR ${SCREAM_INPUT_ROOT}/atm/scream CACHE PATH "" FORCE)
+
+#
+# Handle test level
+#
+
+# Constants
+set(SCREAM_TEST_LEVEL_AT "0")
+set(SCREAM_TEST_LEVEL_NIGHTLY "1")
+set(SCREAM_TEST_LEVEL_EXPERIMENTAL "2")
+
+set(SCREAM_TEST_LEVEL "AT" CACHE STRING "The test level to run. Default is AT. NIGHTLY will run additional tests but is not guaranteed to PASS. EXPERIMENTAL will run even more tests with failures being more likely")
+
+if (SCREAM_TEST_LEVEL STREQUAL "AT")
+  set(SCREAM_TEST_LEVEL ${SCREAM_TEST_LEVEL_AT})
+elseif (SCREAM_TEST_LEVEL STREQUAL "NIGHTLY")
+  set(SCREAM_TEST_LEVEL ${SCREAM_TEST_LEVEL_NIGHTLY})
+elseif (SCREAM_TEST_LEVEL STREQUAL "EXPERIMENTAL")
+  set(SCREAM_TEST_LEVEL ${SCREAM_TEST_LEVEL_EXPERIMENTAL})
+else()
+  message(FATAL_ERROR "Unknown SCREAM_TEST_LEVEL '${SCREAM_TEST_LEVEL}'")
+endif()
+
 
 # Assuming SCREAM_LIB_ONLY is FALSE (else, no exec is built at all), we provide the option
 # of building only baseline-related execs. By default, this option is off (menaing "build everything").

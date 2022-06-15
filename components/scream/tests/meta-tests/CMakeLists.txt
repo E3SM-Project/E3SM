@@ -33,3 +33,5 @@ if (SCREAM_TEST_MAX_TOTAL_THREADS GREATER_EQUAL 16)
     THREADS 4
     MPI_RANKS 1 4 1)
 endif()
+
+add_subdirectory(test_level_check)

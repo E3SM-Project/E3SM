@@ -151,6 +151,20 @@ def test_omp_spread(test_obj, output, num_places, begin=0):
         test_obj.assertEqual(idx + begin, place, msg=f"Idx {idx} was not in sequential order in {all_places}")
 
 ###############################################################################
+def test_test_levels_were_run(test_obj, output, test_levels_run, test_levels_not_run):
+###############################################################################
+    for test_level in test_levels_run:
+        expect_output = f"{test_level} unit test running"
+        test_obj.assertTrue(expect_output in output,
+                            msg=f"Failed to find test level {test_level} in test output:\n{output}")
+
+    for test_level in test_levels_not_run:
+        expect_no_output = f"{test_level} unit test running"
+        test_obj.assertTrue(expect_no_output not in output,
+                            msg=f"Failed to find test level {test_level} in test output:\n{output}")
+
+
+###############################################################################
 class TestBaseOuter: # Hides the TestBase class from test scanner
     class TestBase(unittest.TestCase):
 ###############################################################################
@@ -409,6 +423,39 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         if self._full:
             cmd = self.get_cmd("./test-all-scream -e SCREAM_FORCE_RUN_FAIL=True -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR, expect_works=False)
+        else:
+            self.skipTest("Skipping full run")
+
+    def test_at_test_level(self):
+        """
+        Test that the at test level works
+        """
+        if self._full:
+            cmd = self.get_cmd("./test-all-scream -x -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
+            output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+            test_test_levels_were_run(self, output, ["AT"], ["NIGHTLY", "EXPERIMENTAL"])
+        else:
+            self.skipTest("Skipping full run")
+
+    def test_nightly_test_level(self):
+        """
+        Test that the nightly test level works
+        """
+        if self._full:
+            cmd = self.get_cmd("./test-all-scream -x --test-level=nightly -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
+            output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+            test_test_levels_were_run(self, output, ["AT", "NIGHTLY"], ["EXPERIMENTAL"])
+        else:
+            self.skipTest("Skipping full run")
+
+    def test_experimental_test_level(self):
+        """
+        Test that the experimental test level works
+        """
+        if self._full:
+            cmd = self.get_cmd("./test-all-scream -x --test-level=experimental -m $machine -b HEAD -k -t dbg", self._machine, dry_run=False)
+            output = run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+            test_test_levels_were_run(self, output, ["AT", "NIGHTLY", "EXPERIMENTAL"], [])
         else:
             self.skipTest("Skipping full run")
 

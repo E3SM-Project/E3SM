@@ -130,6 +130,9 @@ OR
     parser.add_argument("--limit-test-regex",
                         help="Limit ctest to running only tests that match this regex")
 
+    parser.add_argument("--test-level", action="store", choices=("at", "nightly", "experimental"), default="at",
+                        help="Set the testing level.")
+
     return parser.parse_args(args[1:])
 
 ###############################################################################
