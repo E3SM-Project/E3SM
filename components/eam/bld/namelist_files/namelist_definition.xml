@@ -371,6 +371,78 @@
        Default: FALSE
        </entry>
 
+<entry id="Nudge_SRF_File_Template" type="char*80" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Template for Nudging analyses file names (land surface).
+       Default: none
+       </entry>
+
+<entry id="Nudge_SRF_Times_Per_Day" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Number of analyses files per day (land surface).
+       Default: none
+       </entry>
+
+<entry id="Nudge_Srfprof" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Profile index for surface nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_Srfcoef" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Coeffcient for surface nudging.
+       Default: none
+       </entry>
+
+<entry id="Nudge_SRF_PSWgt_On" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       If TRUE, scale the nudging strength coefficient by surface pressure
+       This is for the land surface nudging  
+       Default: FALSE
+       </entry>
+
+<entry id="Nudge_SRF_Prec_On" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       If TRUE, nudge the precipitation fluxes at surface 
+       This is for the land surface nudging
+       Default: FALSE
+       </entry>
+
+<entry id="Nudge_SRF_RadFlux_On" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       If TRUE, nudge the radiative fluxes at surface 
+       This is for the land surface nudging
+       Default: FALSE
+       </entry>
+
+<entry id="Nudge_SRF_State_On" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       If TRUE, nudge the model state at surface 
+       This is for the land surface nudging
+       Default: FALSE
+       </entry>
+
+<entry id="Nudge_SRF_On" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       If TRUE, turn on nudging for land surface variable 
+       Default: FALSE
+       </entry>
+
+<entry id="Nudge_SRF_Flux_On" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       If TRUE, turn on nudging for land surface flux (SHFLX, LHFLX, QFLX) variable
+       Default: FALSE
+       </entry>
+
+<entry id="Nudge_SRF_File_Ntime" type="integer" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Number of time slices per nudging data file for land surface quantities 
+       Nudge_SRF_File_Ntime has to be equal to 1 or Nudge_Times_Per_Day.
+       Set default Nudge_SRF_File_Ntime to 0 to force the user to set its value correctly.
+       Default: 0
+       </entry>
+
 <entry id="Nudge_Lin_Relax_On" type="logical" category="nudging"
        group="nudging_nl" valid_values="" >
        If TRUE, Linear relex the nudging strength coefficient to zero by pressure
