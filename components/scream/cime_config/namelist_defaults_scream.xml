@@ -244,6 +244,13 @@ tweaking their $case/namelist_scream.xml file.
       <precip_ice_surf_mass>0.0</precip_ice_surf_mass>
     </Physics__GLL>
     <Restart__Casename>${CASE}.scream</Restart__Casename>
+    <!-- Fields that we need to initialize, but are not in an initial condition file need to be inited here -->
+    <cldfrac_liq>0.0</cldfrac_liq>
+    <sgs_buoy_flux>0.0</sgs_buoy_flux>
+    <eddy_diff_mom>0.0</eddy_diff_mom>
+    <T_prev_micro_step>0.0</T_prev_micro_step>
+    <qv_prev_micro_step>0.0</qv_prev_micro_step>
+
   </Initial__Conditions>
 
   <!-- List of yaml files containing I/O output specs -->
