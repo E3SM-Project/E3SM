@@ -3595,10 +3595,6 @@
       <env name="PAMI_IBV_ADAPTER_AFFINITY">1</env>
       <env name="PAMI_IBV_DEVICE_NAME_1">mlx5_3:1,mlx5_0:1</env>
       <env name="PAMI_IBV_DEVICE_NAME">mlx5_0:1,mlx5_3:1</env>
-      <env name="PAMI_CUDA_AWARE_THRESH">320000</env>
-      <env name="PAMI_IBV_QP_SERVICE_LEVEL">8</env>
-      <env name="PAMI_IBV_ENABLE_DCT">1</env>
-      <env name="PAMI_IBV_ENABLE_OOO_AR">1</env>
     </environment_variables>
   </machine>
 
@@ -3712,9 +3708,6 @@
       <env name="PAMI_IBV_ADAPTER_AFFINITY">1</env>
       <env name="PAMI_IBV_DEVICE_NAME_1">mlx5_3:1,mlx5_0:1</env>
       <env name="PAMI_IBV_DEVICE_NAME">mlx5_0:1,mlx5_3:1</env>
-      <env name="PAMI_IBV_QP_SERVICE_LEVEL">8</env>
-      <env name="PAMI_IBV_ENABLE_DCT">1</env>
-      <env name="PAMI_IBV_ENABLE_OOO_AR">1</env>
     </environment_variables>
     <environment_variables compiler="pgi">
       <env name="RS_PER_NODE">2</env>
