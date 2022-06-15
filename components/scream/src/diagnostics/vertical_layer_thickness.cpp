@@ -61,7 +61,7 @@ void VerticalLayerThicknessDiagnostic::run_impl(const int /* dt */)
   const auto& output         = m_diagnostic_output.get_view<Pack**>();
 
   const auto nk_pack  = ekat::npack<Spack>(m_num_levs);
-  Kokkos::parallel_for("PotentialTemperatureDiagnostic",
+  Kokkos::parallel_for("VerticalLayerThicknessDiagnostic",
                        Kokkos::RangePolicy<>(0,m_num_cols*nk_pack),
                        KOKKOS_LAMBDA(int idx) {
       const int icol  = idx / nk_pack;
