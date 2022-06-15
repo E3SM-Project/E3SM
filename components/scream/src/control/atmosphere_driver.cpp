@@ -374,9 +374,16 @@ void AtmosphereDriver::initialize_output_managers () {
   // Build one manager per output yaml file
   using vos_t = std::vector<std::string>;
   const auto& output_yaml_files = io_params.get<vos_t>("Output YAML Files",vos_t{});
+  int om_tally = 0;
   for (const auto& fname : output_yaml_files) {
     ekat::ParameterList params;
     ekat::parse_yaml_file(fname,params);
+    // Check if the filename prefix for this file has already been set.  If not, use the simulation casename.
+    if (not params.isParameter("Casename")) {
+      params.set<std::string>("Casename",m_casename+".scream.h"+std::to_string(om_tally));
+      om_tally++;
+    }
+    // Add a new output manager
     m_output_managers.emplace_back();
     auto& om = m_output_managers.back();
     om.setup(m_atm_comm,params,m_field_mgrs,m_grids_manager,m_run_t0,m_case_t0,false);
@@ -582,7 +589,12 @@ void AtmosphereDriver::create_logger () {
   m_atm_logger = logger;
 
   // Record the CASENAME for this run, set default to EAMxx
-  m_casename = m_atm_params.get<std::string>("Casename","EAMxx");
+  if (m_atm_params.isSublist("E3SM Parameters")) {
+    auto e3sm_params = m_atm_params.sublist("E3SM Parameters");
+    m_casename = e3sm_params.get<std::string>("E3SM Casename","EAMxx");
+  } else {
+    m_casename = "EAMxx";
+  }
 }
 
 void AtmosphereDriver::set_initial_conditions ()
