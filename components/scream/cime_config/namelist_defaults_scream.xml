@@ -263,6 +263,9 @@ tweaking their $case/namelist_scream.xml file.
     <Atm__Log__Level valid_values="trace,debug,info,warn,error">info</Atm__Log__Level>
   </Debug>
 
+  <!-- Casename options -->
+  <Casename>${CASE}</Casename> 
+
   <!--
     List of input files that CIME needs to ensure to be present. If not present,
     CIME will automatically download them from the E3SM data server.

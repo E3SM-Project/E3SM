@@ -580,6 +580,9 @@ void AtmosphereDriver::create_logger () {
     logger->set_console_level(LogLevel::off);
   }
   m_atm_logger = logger;
+
+  // Record the CASENAME for this run, set default to EAMxx
+  m_casename = m_atm_params.get<std::string>("Casename","EAMxx");
 }
 
 void AtmosphereDriver::set_initial_conditions ()

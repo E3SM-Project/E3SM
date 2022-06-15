@@ -197,6 +197,9 @@ protected:
 
   // Current ad initialization status
   int m_ad_status = 0;
+
+  // Current simulation casename
+  std::string m_casename;
 };
 
 }  // namespace control
