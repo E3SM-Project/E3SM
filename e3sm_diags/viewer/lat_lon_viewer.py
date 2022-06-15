@@ -527,11 +527,12 @@ def generate_lat_lon_taylor_diag(
 
     season_to_png = {}
     for season in lat_lon_table_info:
-        test_name = (
-            parameters[0].short_test_name
-            if parameters[0].short_test_name
-            else parameters[0].test_name
-        )
+        # test_name = (
+        #    parameters[0].short_test_name
+        #    if parameters[0].short_test_name
+        #    else parameters[0].test_name
+        # )
+        test_name = parameters[0].test_name_yrs
         if parameters[0].run_type == "model_vs_obs":
             ref_name = "Observation and Reanalysis"
         else:
@@ -718,11 +719,10 @@ def _create_csv_from_dict_taylor_diag(
                         fontsize=12,
                     )
 
-        model_text = "Test Model: " + test_name
         ax.text(
             0.7,
             1.01,
-            model_text,
+            test_name,
             ha="left",
             va="center",
             transform=ax.transAxes,
