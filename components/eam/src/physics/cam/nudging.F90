@@ -400,6 +400,7 @@ module nudging
   public:: Nudge_Q_Adjust_On
   public:: Nudge_SRF_On
   public:: Nudge_SRF_Flux_On
+  public:: Nudge_SRF_Q_On
   public:: Nudge_SRF_PSWgt_On
   public:: Nudge_SRF_Prec_On
   public:: Nudge_SRF_RadFlux_On
@@ -443,6 +444,7 @@ module nudging
   logical::         Nudge_Q_Adjust_On    = .false.
   logical::         Nudge_SRF_On         = .false.
   logical::         Nudge_SRF_Flux_On    = .false. 
+  logical::         Nudge_SRF_Q_On       = .false.
   character(len=cl) Nudge_Path
   character(len=cl) Nudge_File,Nudge_File_Template
   character(len=cl) Nudge_SRF_File,Nudge_SRF_File_Template
@@ -531,6 +533,7 @@ module nudging
   integer            :: Nudge_File_Ntime                    ! number of time slices per nudging data file 
   integer            :: Nudge_SRF_File_Ntime                ! number of time slices per nudging data file for surface 
   logical :: first_file                                     ! the flag for first nudge data
+  logical :: first_srf_file                                 ! the flag for first surface nudge data 
   real(r8), allocatable, dimension(:,:,:,:) :: INTP_U       ! (pcols,pver,begchunk:endchunk,:)
   real(r8), allocatable, dimension(:,:,:,:) :: INTP_V       ! (pcols,pver,begchunk:endchunk,:)
   real(r8), allocatable, dimension(:,:,:,:) :: INTP_T       ! (pcols,pver,begchunk:endchunk,:)
@@ -603,8 +606,6 @@ module nudging
   integer  :: prec_pcw_idx = 0
   integer  :: snow_pcw_idx = 0
   integer  :: vmag_gust_idx= 0
-  logical  :: l_ndg_srf_q  = .false. 
-  logical  :: l_q2_from_td = .true.  
 
 contains
   !================================================================
@@ -655,7 +656,8 @@ contains
                          Nudge_SRF_File_Template,Nudge_SRF_File_Ntime, &
                          Nudge_SRF_On, Nudge_SRF_Flux_On,              & 
                          Nudge_SRF_PSWgt_On, Nudge_SRF_Prec_On,        & 
-                         Nudge_SRF_RadFlux_On, Nudge_SRF_State_On 
+                         Nudge_SRF_RadFlux_On, Nudge_SRF_State_On,     & 
+                         Nudge_SRF_Q_On     
 
    ! Nudging is NOT initialized yet, For now
    ! Nudging will always begin/end at midnight.
@@ -665,6 +667,7 @@ contains
    Nudge_PS_On       =.false.
    Nudge_SRF_On      =.false.
    Nudge_SRF_Flux_On =.false.
+   Nudge_SRF_Q_On    =.false. 
    Nudge_File_Present=.false.
    Nudge_Beg_Sec=0
    Nudge_End_Sec=0
@@ -826,6 +829,7 @@ contains
    call mpibcast(Nudge_Q_Adjust_On       , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_SRF_On            , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_SRF_Flux_On       , 1, mpilog, 0, mpicom)
+   call mpibcast(Nudge_SRF_Q_On          , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_SRF_PSWgt_On      , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_SRF_Prec_On       , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_SRF_RadFlux_On    , 1, mpilog, 0, mpicom)
@@ -1232,6 +1236,7 @@ contains
      write(iulog,*) 'NUDGING: Nudge_PS_Adjust_On=',Nudge_PS_Adjust_On
      write(iulog,*) 'NUDGING: Nudge_SRF_On=',Nudge_SRF_On
      write(iulog,*) 'NUDGING: Nudge_SRF_Flux_On=',Nudge_SRF_Flux_On
+     write(iulog,*) 'NUDGING: Nudge_SRF_Q_On=',Nudge_SRF_Q_On
      write(iulog,*) 'NUDGING: Nudge_SRF_PSWgt_On=',Nudge_SRF_PSWgt_On
      write(iulog,*) 'NUDGING: Nudge_SRF_Prec_On=',Nudge_SRF_Prec_On
      write(iulog,*) 'NUDGING: Nudge_SRF_RadFlux_On=',Nudge_SRF_RadFlux_On
@@ -1319,6 +1324,7 @@ contains
    call mpibcast(Nudge_Q_Adjust_On   , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_SRF_On        , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_SRF_Flux_On   , 1, mpilog, 0, mpicom)
+   call mpibcast(Nudge_SRF_Q_On      , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_SRF_PSWgt_On  , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_SRF_Prec_On   , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_SRF_RadFlux_On, 1, mpilog, 0, mpicom)
@@ -1368,7 +1374,9 @@ contains
 
        Nudge_PStau(icol,lchnk)=nudging_set_PSprofile(rlat,rlon,Nudge_PSprof)
 
-       Nudge_SRFtau(icol,lchnk)=nudging_set_SRFprofile(rlat,rlon,Nudge_SRFprof)
+       if (Nudge_SRF_On) then 
+         Nudge_SRFtau(icol,lchnk)=nudging_set_SRFprofile(rlat,rlon,Nudge_SRFprof)
+       end if 
 
      end do
 
@@ -1389,8 +1397,10 @@ contains
          Nudge_PStau(:ncol,lchnk)=                              &
          Nudge_PStau(:ncol,lchnk)* Nudge_PScoef/float(Nudge_Step)
 
-         Nudge_SRFtau(:ncol,lchnk)=                              &
-         Nudge_SRFtau(:ncol,lchnk)* Nudge_SRFcoef/float(Nudge_Step)
+         if (Nudge_SRF_On) then
+           Nudge_SRFtau(:ncol,lchnk)=                              &
+           Nudge_SRFtau(:ncol,lchnk)* Nudge_SRFcoef/float(Nudge_Step)
+         end if
 
      else          ! use Nudge_Tau directy as relaxation timescale
 
@@ -1406,11 +1416,13 @@ contains
          Nudge_Qtau(:ncol,:pver,lchnk) =                        &
          Nudge_Qtau(:ncol,:pver,lchnk) * Nudge_Qcoef / Nudge_Tau / sec_per_hour 
 
-         Nudge_PStau(:ncol,:pver) =                        &
-         Nudge_PStau(:ncol,:pver) * Nudge_PScoef / Nudge_Tau / sec_per_hour 
+         Nudge_PStau(:ncol,lchnk) =                        &
+         Nudge_PStau(:ncol,lchnk) * Nudge_PScoef / Nudge_Tau / sec_per_hour 
 
-         Nudge_SRFtau(:ncol,:pver) =                        &
-         Nudge_SRFtau(:ncol,:pver) * Nudge_SRFcoef / Nudge_Tau / sec_per_hour
+       if (Nudge_SRF_On) then
+           Nudge_SRFtau(:ncol,lchnk) =                        &
+           Nudge_SRFtau(:ncol,lchnk) * Nudge_SRFcoef / Nudge_Tau / sec_per_hour
+       end if 
 
      end if
 
@@ -1464,7 +1476,8 @@ contains
 
    end do  ! lchnk loop 
 
-   first_file = .true.
+   first_file     = .true.
+   first_srf_file = .true.
    select case (Nudge_Method)
       case ('Step')
            ! use Xanal directly, no interpolation is needed
@@ -1801,8 +1814,8 @@ contains
                                 Model_T(:,:,lchnk), Target_T(:,:,lchnk), Nudge_Ttau(:,:,lchnk),             & !In  
                                 Model_Q(:,:,lchnk), Target_Q(:,:,lchnk), Nudge_Qtau(:,:,lchnk),             & !In 
                                 Target_U10(:,lchnk),Target_V10(:,lchnk), Target_T2(:,lchnk),                & !In 
-                                Target_TD2(:,lchnk),Target_Q2(:,lchnk),                                     & !In  
-                                Nudge_SRFtau(:,lchnk), Nudge_SRF_On, Nudge_SRF_State_On,                    & !In
+                                Target_TD2(:,lchnk),Target_Q2(:,lchnk), Nudge_SRFtau(:,lchnk),              & !In  
+                                Nudge_SRF_On, Nudge_SRF_State_On, Nudge_SRF_Q_On,                           & !In
                                 Model_PHIS(:,lchnk), Target_PHIS(:,lchnk), PBLH,                            & !In
                                 Nudge_PS_Adjust_On, Nudge_Q_Adjust_On, Nudge_Pdep_Weight_On,                & !In
                                 Nudge_Lin_Relax_On, Nudge_NO_PBL_UV, Nudge_NO_PBL_T, Nudge_NO_PBL_Q,        & !In 
@@ -2017,7 +2030,7 @@ contains
      !extract the bottom model level values required by land model 
      do i=1,ncol
        ubmod(i)  = umod(i,pver)
-       ubmod(i)  = vmod(i,pver)
+       vbmod(i)  = vmod(i,pver)
        tbmod(i)  = tmod(i,pver)
        qbmod(i)  = qmod(i,pver)
        zbmod(i)  = zm_mod(i,pver)
@@ -2489,7 +2502,7 @@ contains
            if (mod(Sec,Nudge_Step) .ne. 0) return  ! ensure that intermittent simulations work for restart run
            if (masterproc) then
               call t_startf ('read_nudging_data')
-              call open_netcdf (ncid1, -Nudge_Step)
+              call open_netcdf (ncid1, -Nudge_Step, Nudge_File_Template)
               call t_stopf ('read_nudging_data')
               n_cnt = Sec/Nudge_Step + 1
               if (n_cnt .gt. Nudge_File_Ntime) then       ! account for one time slice per file
@@ -2524,7 +2537,7 @@ contains
                   first_file = .false.
                   if (masterproc) then
                      call t_startf ('read_nudging_data')
-                     call open_netcdf (ncid1, -Nudge_Step)
+                     call open_netcdf (ncid1, -Nudge_Step, Nudge_File_Template)
                      call t_stopf ('read_nudging_data')
                      strt3(1) = 1
                      strt3(2) = 1
@@ -2611,7 +2624,7 @@ contains
                   if (n_cnt .eq. Nudge_File_Ntime) then
                      if (masterproc) then
                         call t_startf ('read_nudging_data')
-                        call open_netcdf (ncid1, -Nudge_Step)
+                        call open_netcdf (ncid1, -Nudge_Step, Nudge_File_Template)
                         call t_stopf ('read_nudging_data')
                         strt3(1) = 1
                         strt3(2) = 1
@@ -2853,7 +2866,7 @@ contains
               call get_curr_date(Year,Month,Day,Sec)
               n_cnt = Sec/Nudge_Step + 1
               n_cnt = n_cnt + 1                      ! nudge to future model time step
-              if (n_cnt .gt. Nudge_File_Ntime) then
+              if (n_cnt .gt. Nudge_SRF_File_Ntime) then
                   n_cnt = 1
               end if
               strt2(1) = 1
@@ -2872,10 +2885,10 @@ contains
            if (mod(Sec,Nudge_Step) .ne. 0) return  ! ensure that intermittent simulations work for restart run
            if (masterproc) then
               call t_startf ('read_nudging_data')
-              call open_netcdf (ncid1, -Nudge_Step)
+              call open_netcdf (ncid1, -Nudge_Step, Nudge_SRF_File_Template)
               call t_stopf ('read_nudging_data')
               n_cnt = Sec/Nudge_Step + 1
-              if (n_cnt .gt. Nudge_File_Ntime) then       ! account for one time slice per file
+              if (n_cnt .gt. Nudge_SRF_File_Ntime) then       ! account for one time slice per file
                  n_cnt = 1
               end if
               strt2(1) = 1
@@ -2895,12 +2908,12 @@ contains
       case ('Linear')
            ! Single time slice per file
            ! Need to open a new netcdf file to get the CURR time slice
-           if (Nudge_File_Ntime .eq. 1) then
-              if (first_file) then
-                  first_file = .false.
+           if (Nudge_SRF_File_Ntime .eq. 1) then
+              if (first_srf_file) then
+                  first_srf_file = .false.
                   if (masterproc) then
                      call t_startf ('read_nudging_data')
-                     call open_netcdf (ncid1, -Nudge_Step)
+                     call open_netcdf (ncid1, -Nudge_Step, Nudge_SRF_File_Template)
                      call t_stopf ('read_nudging_data')
                      strt2(1) = 1
                      strt2(2) = 1
@@ -2965,14 +2978,14 @@ contains
               ! The start point uses the CURR time slice
               ! The end point uses the NEXT time slice
               !-----------------------------------------
-              if (first_file) then
-                  first_file = .false.
+              if (first_srf_file) then
+                  first_srf_file = .false.
                   call get_curr_date(Year,Month,Day,Sec)
                   n_cnt = Sec/Nudge_Step + 1
-                  if (n_cnt .eq. Nudge_File_Ntime) then
+                  if (n_cnt .eq. Nudge_SRF_File_Ntime) then
                      if (masterproc) then
                         call t_startf ('read_nudging_data')
-                        call open_netcdf (ncid1, -Nudge_Step)
+                        call open_netcdf (ncid1, -Nudge_Step, Nudge_SRF_File_Template)
                         call t_stopf ('read_nudging_data')
                         strt2(1) = 1
                         strt2(2) = n_cnt
@@ -3034,7 +3047,7 @@ contains
                   call get_curr_date(Year,Month,Day,Sec)
                   n_cnt = Sec/Nudge_Step + 1
                   n_cnt = n_cnt + 1                ! open the nudging data at future model time step
-                  if (n_cnt .gt. Nudge_File_Ntime) then
+                  if (n_cnt .gt. Nudge_SRF_File_Ntime) then
                       n_cnt = 1
                   end if
                   ! The previous end point becomes the start point
@@ -3058,7 +3071,7 @@ contains
                   call read_and_scatter_se_2d(ncid, 'TD2',    strt2, cnt2, INTP_TD2(:,:,2))
                   call read_and_scatter_se_2d(ncid, 'TS',     strt2, cnt2, INTP_TS(:,:,2))
 
-              end if ! first_file for multiple time slices
+              end if ! first_srf_file for multiple time slices
 
            end if     ! single vs. multiple time slices per file
 
@@ -3516,7 +3529,7 @@ contains
            if (mod(Sec,Nudge_Step) .ne. 0) return  ! ensure that intermittent simulations work for restart run
            if (masterproc) then
               call t_startf ('read_nudging_data')
-              call open_netcdf (ncid1, -Nudge_Step)
+              call open_netcdf (ncid1, -Nudge_Step, Nudge_File_Template)
               call t_stopf ('read_nudging_data')
               n_cnt = Sec/Nudge_Step + 1
               if (n_cnt .gt. Nudge_File_Ntime) then       ! account for one time slice per file
@@ -3546,7 +3559,7 @@ contains
                   first_file = .false.
                   if (masterproc) then
                      call t_startf ('read_nudging_data')
-                     call open_netcdf (ncid1, -Nudge_Step)
+                     call open_netcdf (ncid1, -Nudge_Step, Nudge_File_Template)
                      call t_stopf ('read_nudging_data')
                      strt4(1) = 1
                      strt4(2) = 1
@@ -3622,7 +3635,7 @@ contains
                   if (n_cnt .eq. Nudge_File_Ntime) then
                      if (masterproc) then
                         call t_startf ('read_nudging_data')
-                        call open_netcdf (ncid1, -Nudge_Step)
+                        call open_netcdf (ncid1, -Nudge_Step, Nudge_File_Template)
                         call t_stopf ('read_nudging_data')
                         strt4(1) = 1
                         strt4(2) = 1
@@ -4059,7 +4072,7 @@ contains
   !-----------------------
   ! open a new netcdf file
   !-----------------------
-  subroutine open_netcdf (ncid, incre_step)
+  subroutine open_netcdf (ncid, incre_step, Nudge_File_Template)
   use cam_abortutils, only : endrun
   use perf_mod
   use netcdf
@@ -4067,6 +4080,8 @@ contains
 
   integer, intent(out)    :: ncid
   integer, intent(in)     :: incre_step
+
+  character(len=cl), intent(in) :: Nudge_File_Template
 
   ! local variable  
   integer :: YMD3, YMD4, Nudge_Next1_Sec, Nudge_Next1_Year, &
@@ -4335,7 +4350,7 @@ contains
                                   tmod, tobs, tfac, qmod, qobs, qfac,   & !In 
                                   ubobs, vbobs, tbobs, tdbobs, qbobs,   & !In 
                                   sfac, ndg_srf_on, ndg_srf_state_on,   & !In
-                                  phis_mod, phis_obs, pblh,             & !In
+                                  ndg_srf_q, phis_mod, phis_obs, pblh,  & !In
                                   use_ps_adj, use_q_adj, use_pdep_nudge,& !In 
                                   use_upp_lrelx, no_pbl_uv, no_pbl_t,   & !In 
                                   no_pbl_q, ndg_ps_flg, ndg_ps_opt,     & !In
@@ -4360,6 +4375,7 @@ contains
   logical, intent(in)  :: use_q_adj
   logical, intent(in)  :: ndg_srf_on
   logical, intent(in)  :: ndg_srf_state_on
+  logical, intent(in)  :: ndg_srf_q
 
   integer, intent(in)  :: ncol    ! number of columns
   integer, intent(in)  :: ndg_ps_opt
@@ -4470,6 +4486,17 @@ contains
   real(r8) :: fpbl, ftop
   integer  :: i, k, m
   logical  :: l_adj_super_saturation 
+  logical  :: l_q2_from_td 
+
+  ! 2-m humidity is derived from dewpoint temperature 
+  l_q2_from_td = .true.
+
+  ! initialize the flag for supersaturation adjustment 
+  if(ndg_t_opt > 0 .or. ndg_q_opt > 0 ) then
+    l_adj_super_saturation = .true.
+  else
+    l_adj_super_saturation = .false.
+  end if
 
   ! initialize all
   do i = 1, ncol
@@ -4485,13 +4512,6 @@ contains
       zvirv(i,k) = zvir
     end do
   end do
-
-  ! initialize the flag for supersaturation adjustment 
-  if(ndg_t_opt > 0 .or. ndg_q_opt > 0 ) then 
-    l_adj_super_saturation = .true. 
-  else
-    l_adj_super_saturation = .false. 
-  end if 
 
   !compute pressure and ln(pres) at layer interfaces
   do k = 1, pver
@@ -4794,23 +4814,23 @@ contains
     !specify the vertical weighting 
     do i = 1, ncol
       do k = 1, pver
-       if( k == pver ) then
-         wuprof(i,k) = 1.0
-         wvprof(i,k) = 1.0  
-         wtprof(i,k) = 1.0
-         wqprof(i,k) = 1.0
+       if( k < pver ) then
+         wuprof(i,k) = 0.0_r8
+         wvprof(i,k) = 0.0_r8  
+         wtprof(i,k) = 0.0_r8
+         wqprof(i,k) = 0.0_r8
        else
-         wuprof(i,k) = 0.0
-         wvprof(i,k) = 0.0
-         wtprof(i,k) = 0.0
-         wqprof(i,k) = 0.0
+         wuprof(i,k) = 1.0_r8
+         wvprof(i,k) = 1.0_r8
+         wtprof(i,k) = 1.0_r8
+         wqprof(i,k) = 1.0_r8
        end if 
       end do 
     end do 
 
     if ( l_q2_from_td ) then 
       !derive the specific humidity from dewpoint temperature 
-      !see Eq(11) in LAWRENCE(2015,MWR)
+      !see Eq(11) in LAWRENCE(2005,MWR)
       do i = 1, ncol
         call qsat(tbobs(i), pmid_obs(i,pver), esbobs(i), qsbobs(i))
         qbref(i) = qsbobs(i) * exp((1.0_r8 - tbobs(i)/tdbobs(i))*latvap/rh2o/tbobs(i)) 
@@ -4833,13 +4853,14 @@ contains
     end do 
 
     !calcualte the nudging tendency 
+
     do k = 1, pver
       do i = 1, ncol
-        udt(i,k) = vdt(i,k) + (ubobs(i) - umod(i,pver))*wuprof(i,k)*sfac(i) 
+        udt(i,k) = udt(i,k) + (ubobs(i) - umod(i,pver))*wuprof(i,k)*sfac(i) 
         vdt(i,k) = vdt(i,k) + (vbobs(i) - vmod(i,pver))*wvprof(i,k)*sfac(i) 
         tdt(i,k) = tdt(i,k) + (tvbobs(i) - tvmod(i,pver))*wtprof(i,k)*sfac(i) &
                               /(1.0_r8 + zvir * qmod(i,pver))
-        if (l_ndg_srf_q) then 
+        if (ndg_srf_q) then 
           qdt(i,k) = qdt(i,k) + (qbref(i) - qmod(i,pver))*wqprof(i,k)*sfac(i)
         end if 
       end do

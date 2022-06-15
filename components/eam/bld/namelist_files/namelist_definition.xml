@@ -423,6 +423,13 @@
        Default: FALSE
        </entry>
 
+<entry id="Nudge_SRF_Q_On" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       If TRUE, nudge the humidity at surface
+       This is for the land surface nudging
+       Default: FALSE
+       </entry>
+
 <entry id="Nudge_SRF_On" type="logical" category="nudging"
        group="nudging_nl" valid_values="" >
        If TRUE, turn on nudging for land surface variable 
