@@ -409,7 +409,6 @@ contains
                 endif
                 ! TODO: add inundfrac from ocean 
                 if ( frac_h2orof(c) > 1 - fsno - frac_h2osfc(c) ) then
-                  !h2orof(c) = h2orof(c) * frac_h2orof(c) / ( 1 - frac_sno(c) - frac_h2osfc(c) )
                   frac_h2orof(c) = 1 - fsno - frac_h2osfc(c)
                 endif
              endif
@@ -528,8 +527,13 @@ contains
              !8. add drainage from river inundation to qflx_infl (land river two way coupling)
              if (use_lnd_rof_two_way) then
 
-               h2osoi_left_vol1 = max(max(0._r8,(pondmx+watsat(c,1)*dz(c,1)*1.e3_r8-h2osoi_ice(c,1)-watmin)) - &
-                                      max(h2osoi_liq(c,1)-watmin,0._r8), 0._r8)
+               ! estimate the available space in the first soil layer for floodplain infiltration
+               h2osoi_left_vol1 = max(0._r8,(pondmx+watsat(c,1)*dz(c,1)*1.e3_r8-h2osoi_ice(c,1)-watmin)) - &
+                                  max(0._r8,h2osoi_liq(c,1)-watmin)
+               if (h2osoi_left_vol1 < 0._r8) then
+                   h2osoi_left_vol1 = 0._r8
+               endif
+
                if (frac_h2orof(c) > 0._r8) then
                   h2osoi_left_vol1 = frac_h2orof(c) * h2osoi_left_vol1
                   qflx_h2orof_drain(c)=min(frac_h2orof(c)*qinmax,h2orof(c)/dtime)
