@@ -22,7 +22,7 @@ export FC=gfortran
 export YAKL_F90_FLAGS="-O3 -ffree-line-length-none"
 export FFLAGS="-O3 -ffree-line-length-none -I${NFHOME}/include"
 export YAKL_C_FLAGS="-O3"
-export YAKL_HIP_FLAGS="-O3 -munsafe-fp-atomics -Wno-tautological-pointer-compare -Wno-unused-result -D__HIP_ROCclr__ -D__HIP_ARCH_GFX90A__=1 --rocm-path=${ROCM_PATH} --offload-arch=gfx90a -x hip"
+export YAKL_HIP_FLAGS="-O3 -munsafe-fp-atomics -ffast-math -Wno-tautological-pointer-compare -Wno-unused-result -D__HIP_ROCclr__ -D__HIP_ARCH_GFX90A__=1 --rocm-path=${ROCM_PATH} --offload-arch=gfx90a -x hip"
 export YAKL_ARCH="HIP"
 export YAKL_HOME="`pwd`/../../../../../../../../externals/YAKL"
 
