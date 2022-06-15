@@ -36,13 +36,16 @@ public:
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
-  // run_impl needs to be public so we can use a Kokkos LAMBDA in it.
-  void run_impl        (const int dt);
 protected:
 
   // The three main overrides for the subcomponent
   void initialize_impl (const RunType run_type);
-  void finalize_impl   ();
+#ifdef KOKKOS_ENABLE_CUDA
+public:
+#endif
+  void run_impl        (const int dt);
+protected:
+  void finalize_impl   () { /* Nothing to do */ }
 
   // Keep track of field dimensions
   Int m_num_cols; 

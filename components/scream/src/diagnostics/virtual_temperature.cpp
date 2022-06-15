@@ -37,39 +37,31 @@ void VirtualTemperatureDiagnostic::set_grids(const std::shared_ptr<const GridsMa
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
   C_ap.request_allocation(ps);
   m_diagnostic_output.allocate_view();
-
 }
 // =========================================================================================
 void VirtualTemperatureDiagnostic::initialize_impl(const RunType /* run_type */)
 {
-
   auto ts = timestamp(); 
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-
 }
 // =========================================================================================
 void VirtualTemperatureDiagnostic::run_impl(const int /* dt */)
 {
 
-  const auto& T_mid          = get_field_in("T_mid").get_view<const Pack**>();
-  const auto& qv_mid         = get_field_in("qv").get_view<const Pack**>();
+  const auto npacks  = ekat::npack<Pack>(m_num_levs);
+  const auto& virtualT = m_diagnostic_output.get_view<Pack**>();
+  const auto& T_mid    = get_field_in("T_mid").get_view<const Pack**>();
+  const auto& qv_mid   = get_field_in("qv").get_view<const Pack**>();
 
-  const auto& output         = m_diagnostic_output.get_view<Pack**>();
-  const auto nk_pack  = ekat::npack<Spack>(m_num_levs);
   Kokkos::parallel_for("VirtualTemperatureDiagnostic",
-                       Kokkos::RangePolicy<>(0,m_num_cols*nk_pack),
-                       KOKKOS_LAMBDA(int idx) {
-      const int icol  = idx / nk_pack;
-      const int jpack = idx % nk_pack;
-      output(icol,jpack) = PF::calculate_virtual_temperature(T_mid(icol,jpack),qv_mid(icol,jpack));
+                       Kokkos::RangePolicy<>(0,m_num_cols*npacks),
+                       KOKKOS_LAMBDA(const int& idx) {
+      const int icol  = idx / npacks;
+      const int jpack = idx % npacks;
+      virtualT(icol,jpack) = PF::calculate_virtual_temperature(T_mid(icol,jpack),qv_mid(icol,jpack));
   });
   Kokkos::fence();
 
-}
-// =========================================================================================
-void VirtualTemperatureDiagnostic::finalize_impl()
-{
-  // Nothing to do
 }
 // =========================================================================================
 } //namespace scream

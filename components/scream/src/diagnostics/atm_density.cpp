@@ -41,42 +41,34 @@ void AtmDensityDiagnostic::set_grids(const std::shared_ptr<const GridsManager> g
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
   C_ap.request_allocation(ps);
   m_diagnostic_output.allocate_view();
-
 }
 // =========================================================================================
 void AtmDensityDiagnostic::initialize_impl(const RunType /* run_type */)
 {
-
   auto ts = timestamp(); 
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-
 }
 // =========================================================================================
 void AtmDensityDiagnostic::run_impl(const int /* dt */)
 {
 
+  const auto npacks  = ekat::npack<Pack>(m_num_levs);
+  const auto& atm_dens           = m_diagnostic_output.get_view<Pack**>();
   const auto& T_mid              = get_field_in("T_mid").get_view<const Pack**>();
   const auto& p_mid              = get_field_in("p_mid").get_view<const Pack**>();
   const auto& qv_mid             = get_field_in("qv").get_view<const Pack**>();
   const auto& pseudo_density_mid = get_field_in("pseudo_density").get_view<const Pack**>();
 
-  const auto& output  = m_diagnostic_output.get_view<Pack**>();
-  const auto nk_pack  = ekat::npack<Pack>(m_num_levs);
   Kokkos::parallel_for("AtmosphereDensityDiagnostic",
-                       Kokkos::RangePolicy<>(0,m_num_cols*nk_pack),
+                       Kokkos::RangePolicy<>(0,m_num_cols*npacks),
                        KOKKOS_LAMBDA(const int& idx) {
-      const int icol  = idx / nk_pack;
-      const int jpack = idx % nk_pack;
+      const int icol  = idx / npacks;
+      const int jpack = idx % npacks;
       auto dz = PF::calculate_dz(pseudo_density_mid(icol,jpack),p_mid(icol,jpack),T_mid(icol,jpack),qv_mid(icol,jpack));
-      output(icol,jpack) = PF::calculate_density(pseudo_density_mid(icol,jpack),dz);
+      atm_dens(icol,jpack) = PF::calculate_density(pseudo_density_mid(icol,jpack),dz);
   });
   Kokkos::fence();
 
-}
-// =========================================================================================
-void AtmDensityDiagnostic::finalize_impl()
-{
-  // Nothing to do
 }
 // =========================================================================================
 } //namespace scream

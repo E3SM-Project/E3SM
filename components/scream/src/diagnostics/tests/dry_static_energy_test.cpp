@@ -145,6 +145,9 @@ void run(std::mt19937_64& engine)
     const auto& z_int_v = view_1d("",num_mid_packs_p1);
     const auto& dz_v    = view_1d("",num_mid_packs);
     const auto& z_mid_v = view_1d("",num_mid_packs);
+    Kokkos::deep_copy(z_int_v,0.0);
+    Kokkos::deep_copy(z_mid_v,0.0);
+    Kokkos::deep_copy(dz_v,0.0);
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int i = team.league_rank();
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {

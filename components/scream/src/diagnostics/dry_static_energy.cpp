@@ -43,7 +43,6 @@ void DryStaticEnergyDiagnostic::set_grids(const std::shared_ptr<const GridsManag
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
   C_ap.request_allocation(ps);
   m_diagnostic_output.allocate_view();
-
 }
 // =========================================================================================
 void DryStaticEnergyDiagnostic::initialize_impl(const RunType /* run_type */)
@@ -57,6 +56,11 @@ void DryStaticEnergyDiagnostic::initialize_impl(const RunType /* run_type */)
 void DryStaticEnergyDiagnostic::run_impl(const int /* dt */)
 {
 
+  const auto npacks     = ekat::npack<Pack>(m_num_levs);
+  const auto npacks_p1  = ekat::npack<Pack>(m_num_levs+1);
+  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, npacks);
+
+  const auto& dse                = m_diagnostic_output.get_view<Pack**>();
   const auto& T_mid              = get_field_in("T_mid").get_view<const Pack**>();
   const auto& p_mid              = get_field_in("p_mid").get_view<const Pack**>();
   const auto& qv_mid             = get_field_in("qv").get_view<const Pack**>();
@@ -66,34 +70,27 @@ void DryStaticEnergyDiagnostic::run_impl(const int /* dt */)
   // Set surface geopotential for this diagnostic
   const Real surf_geopotential = 0.0;
 
-
-  const auto& output             = m_diagnostic_output.get_view<Pack**>();
-
-  const auto nlev_packs     = ekat::npack<Spack>(m_num_levs);
-  const auto nlev_packs_p1  = ekat::npack<Spack>(m_num_levs+1);
-  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
-  view_1d dz("",nlev_packs);
-  view_1d z_int("",nlev_packs_p1);
-  view_1d z_mid("",nlev_packs);
+  view_1d dz("",npacks);
+  view_1d z_int("",npacks_p1);
+  view_1d z_mid("",npacks);
+  Kokkos::deep_copy(dz,0.0);
+  Kokkos::deep_copy(z_int,0.0);
+  Kokkos::deep_copy(z_mid,0.0);
   Kokkos::parallel_for("DryStaticEnergyDiagnostic",
                        default_policy,
                        KOKKOS_LAMBDA(const MemberType& team) {
-    const int i = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-      dz(k) = PF::calculate_dz(pseudo_density_mid(i,k), p_mid(i,k), T_mid(i,k), qv_mid(i,k));
+    const int icol = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npacks), [&] (const Int& jpack) {
+      dz(jpack) = PF::calculate_dz(pseudo_density_mid(icol,jpack), p_mid(icol,jpack), T_mid(icol,jpack), qv_mid(icol,jpack));
     });
     PF::calculate_z_int(team,m_num_levs,dz,surf_geopotential,z_int);
     PF::calculate_z_mid(team,m_num_levs,z_int,z_mid);
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-      output(i,k) = PF::calculate_dse(T_mid(i,k),z_mid(k),phis(i));
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npacks), [&] (const Int& jpack) {
+      dse(icol,jpack) = PF::calculate_dse(T_mid(icol,jpack),z_mid(jpack),phis(icol));
     });
   });
+  Kokkos::fence();
 
-}
-// =========================================================================================
-void DryStaticEnergyDiagnostic::finalize_impl()
-{
-  // Nothing to do
 }
 // =========================================================================================
 } //namespace scream

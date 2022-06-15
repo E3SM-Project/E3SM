@@ -35,7 +35,6 @@ void ExnerDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
   C_ap.request_allocation(ps);
   m_diagnostic_output.allocate_view();
-
 }
 // =========================================================================================
 void ExnerDiagnostic::initialize_impl(const RunType /* run_type */)
@@ -47,24 +46,19 @@ void ExnerDiagnostic::initialize_impl(const RunType /* run_type */)
 void ExnerDiagnostic::run_impl(const int /* dt */)
 {
 
-  const auto& p_mid          = get_field_in("p_mid").get_view<const Pack**>();
-  const auto& output         = m_diagnostic_output.get_view<Pack**>();
+  const auto npacks  = ekat::npack<Pack>(m_num_levs);
+  const auto& exner = m_diagnostic_output.get_view<Pack**>();
+  const auto& p_mid = get_field_in("p_mid").get_view<const Pack**>();
 
-  const auto nk_pack  = ekat::npack<Spack>(m_num_levs);
   Kokkos::parallel_for("ExnerDiagnostic",
-                       Kokkos::RangePolicy<>(0,m_num_cols*nk_pack),
-                       KOKKOS_LAMBDA(int idx) {
-      const int icol  = idx / nk_pack;
-      const int jpack = idx % nk_pack;
-      output(icol,jpack) = PF::exner_function(p_mid(icol,jpack));
+                       Kokkos::RangePolicy<>(0,m_num_cols*npacks),
+                       KOKKOS_LAMBDA(const int& idx) {
+      const int icol  = idx / npacks;
+      const int jpack = idx % npacks;
+      exner(icol,jpack) = PF::exner_function(p_mid(icol,jpack));
   });
   Kokkos::fence();
 
-}
-// =========================================================================================
-void ExnerDiagnostic::finalize_impl()
-{
-  // Nothing to do
 }
 // =========================================================================================
 } //namespace scream
