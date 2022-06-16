@@ -33,7 +33,7 @@
 	</packages>
 	<var_struct name="layerVolumeWeightedAverageAM" time_levs="1" packages="layerVolumeWeightedAverageAMPKG">
 		<var_array name="minValueWithinOceanLayerRegion" type="real" dimensions="nVertLevels nOceanRegionsTmp Time">
-			<var name="minLayerMaskValue" array_group="layerMins" units="none"
+			<var name="minLayerMaskValue" array_group="layerMins"
 				 description="Minimum value of mask within region layer (should always be 1 for valid layers)"
 			/>
 			<var name="minLayerArea" array_group="layerMins" units="m^2"
@@ -113,7 +113,7 @@
 			/>
 		</var_array>
 		<var_array name="minValueWithinOceanVolumeRegion" type="real" dimensions="nOceanRegionsTmp Time">
-			<var name="minVolumeMaskValue" array_group="volumeMins" units="none"
+			<var name="minVolumeMaskValue" array_group="volumeMins"
 				 description="Minimum value of mask within region volume (should always be 1 for valid volumes)"
 			/>
 			<var name="minVolumeArea" array_group="volumeMins" units="m^2"
@@ -193,7 +193,7 @@
 			/>
 		</var_array>
 		<var_array name="maxValueWithinOceanLayerRegion" type="real" dimensions="nVertLevels nOceanRegionsTmp Time">
-			<var name="maxLayerMaskValue" array_group="layerMaxs" units="none"
+			<var name="maxLayerMaskValue" array_group="layerMaxs"
 				 description="Maximum value of mask within region layer (should always be 1 for valid layers)"
 			/>
 			<var name="maxLayerArea" array_group="layerMaxs" units="m^2"
@@ -273,7 +273,7 @@
 			/>
 		</var_array>
 		<var_array name="maxValueWithinOceanVolumeRegion" type="real" dimensions="nOceanRegionsTmp Time">
-			<var name="maxVolumeMaskValue" array_group="volumeMaxs" units="none"
+			<var name="maxVolumeMaskValue" array_group="volumeMaxs"
 				 description="Maximum value of mask within region volume (should always be 1 for valid volumes)"
 			/>
 			<var name="maxVolumeArea" array_group="volumeMaxs" units="m^2"
@@ -353,7 +353,7 @@
 			/>
 		</var_array>
 		<var_array name="avgValueWithinOceanLayerRegion" type="real" dimensions="nVertLevels nOceanRegionsTmp Time">
-			<var name="sumLayerMaskValue" array_group="layerAvgs" units="none"
+			<var name="sumLayerMaskValue" array_group="layerAvgs"
 				 description="Sum value of mask within region volume (should always be greater than 0 for valid layer)"
 			/>
 			<var name="avgLayerArea" array_group="layerAvgs" units="m^2"
@@ -433,7 +433,7 @@
 			/>
 		</var_array>
 		<var_array name="avgValueWithinOceanVolumeRegion" type="real" dimensions="nOceanRegionsTmp Time">
-			<var name="sumVolumeMaskValue" array_group="volumeAvgs" units="none"
+			<var name="sumVolumeMaskValue" array_group="volumeAvgs"
 				 description="Sum value of mask within region volume (should always be greater than 0 for valid volumes)"
 			/>
 			<var name="avgVolumeArea" array_group="volumeAvgs" units="m^2"
@@ -518,7 +518,6 @@
 			 persistence="scratch"
 			 type="real"
 			 dimensions="nCells Time"
-			 units="none"
 			 description="temporary array of 0 or 1 to mask data via multiplication"
 		/>
 		<var name="workArrayLayerVolume"

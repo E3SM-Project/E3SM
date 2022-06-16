@@ -52,7 +52,7 @@
 		<var name="absoluteEnergyError" type="real" dimensions="Time" units="J"
 			description="Absolute energy conservation error"
 		/>
-		<var name="relativeEnergyError" type="real" dimensions="Time" units="None"
+		<var name="relativeEnergyError" type="real" dimensions="Time" units="1"
 			description="Relative energy conservation error"
 		/>
 		<var name="accumulatedLatentHeatFlux" type="real" dimensions="Time" units="W m^-2"
@@ -126,7 +126,7 @@
 		<var name="absoluteMassError" type="real" dimensions="Time" units="kg"
 			description="Absolute mass conservation error"
 		/>
-		<var name="relativeMassError" type="real" dimensions="Time" units="None"
+		<var name="relativeMassError" type="real" dimensions="Time" units="1"
 			description="Relative mass conservation error"
 		/>
 		<var name="accumulatedRainFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
@@ -185,7 +185,7 @@
 		<var name="absoluteSaltError" type="real" dimensions="Time" units="kg"
 			description="Absolute salt conservation error"
 		/>
-		<var name="relativeSaltError" type="real" dimensions="Time" units="None"
+		<var name="relativeSaltError" type="real" dimensions="Time" units="1"
 			description="Relative salt conservation error"
 		/>
 		<var name="accumulatedSeaIceSalinityFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"

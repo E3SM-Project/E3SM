@@ -24,7 +24,7 @@
 		<package name="testComputeIntervalAMPKG" description="This package includes variables required for the testComputeIntervalAM analysis member."/>
 	</packages>
 	<var_struct name="testComputeIntervalAM" time_levs="1" packages="testComputeIntervalAMPKG">
-		<var name="testComputeIntervalCounter" type="real" dimensions="Time" units="none"
+		<var name="testComputeIntervalCounter" type="real" dimensions="Time"
 			description="number of times test_compute_interval has been called"
 		/>
 	</var_struct>

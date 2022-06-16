@@ -594,11 +594,11 @@
 					description="The search for boundary layer depth is terminated when bulk Richardson number is greater than config_cvmix_kpp_stop_OBL_search*config_cvmix_kpp_criticalBulkRichardsonNumber"
 					possible_values="Any positive value"
 		/>
-		<nml_option name="config_cvmix_kpp_use_enhanced_diff" type="logical" default_value=".true." units="none"
+		<nml_option name="config_cvmix_kpp_use_enhanced_diff" type="logical" default_value=".true."
 					description="Flag for use of enhanced diffusion at boundary layer base as in Large et al (1994)"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_cvmix_kpp_nonlocal_with_implicit_mix" type="logical" default_value=".false." units="none"
+		<nml_option name="config_cvmix_kpp_nonlocal_with_implicit_mix" type="logical" default_value=".false."
 					description="flag that moves the non-local computation and application of tendency to after main timestep loop"
 					possible_values=".true. or .false."
 		/>
@@ -2894,11 +2894,11 @@
 				 description="CVMix/KPP: nonlocal boundary layer mixing term for temperature"
 		/>
 		</var_array>
-		<var name="indexBoundaryLayerDepth" type="real" dimensions="nCells Time"  units="none"
+		<var name="indexBoundaryLayerDepth" type="real" dimensions="nCells Time"
 			 description="CVMix/KPP: int(indexBoundaryLayerDepth) is vertical layer within which boundaryLayerDepth resides. mod(indexBoundaryLayerDepth) indicates whether boundaryLayerDepth resides above layer center (value = 0.25) or below layer center (value=0.75)"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="indexSurfaceLayerDepth" type="real" dimensions="nCells Time" units="none"
+		<var name="indexSurfaceLayerDepth" type="real" dimensions="nCells Time"
 			 description="CVMix/KPP: surface layer entirely encompasses int(indexSurfaceLayerDepth) vertical layers and fraction(indexSurfaceLayerDepth) of the int(indexSurfaceLayerDepth)+1 layer."
 			 packages="forwardMode;analysisMode"
 		/>
@@ -3189,7 +3189,7 @@
 			 description="concentration of chlorophyll data"
 			 packages="variableShortwave"
 		/>
-		<var name="zenithAngle" type="real" dimensions="nCells Time"  units="none"
+		<var name="zenithAngle" type="real" dimensions="nCells Time"
 			description="the cos of the solar zenith angle"
 			packages="variableShortwave"
 		/>

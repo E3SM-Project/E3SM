@@ -95,7 +95,6 @@
 			 persistence="scratch"
 			 type="integer"
 			 dimensions="nVertLevels nCells Time"
-			 units="none"
 			 description="Thresholded Okubo-Weiss value"
 		/>
 		<var name="velocityGradient"
@@ -145,7 +144,6 @@
 		<var name="eddyID"
 			 type="integer"
 			 dimensions="nVertLevels nCells Time"
-			 units="none"
 			 description="ID of eddy connected component"
 		/>
 		<var name="vorticity"
