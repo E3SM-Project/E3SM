@@ -32,7 +32,7 @@
 		<package name="conservationCheckAMPKG" description="This package includes variables required for the conservationCheck analysis member."/>
 	</packages>
 	<var_struct name="conservationCheckAM" time_levs="1" packages="conservationCheckAMPKG">
-		<var name="performConservationPrecompute" type="integer" dimensions="" units=""
+		<var name="performConservationPrecompute" type="integer" dimensions=""
 			description="" default_value="1"
 		/>
 	</var_struct>

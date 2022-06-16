@@ -774,7 +774,7 @@
 					description="Value of period of monochromatic tide."
 					possible_values="Any positive real number."
 		/>
-		<nml_option name="config_tidal_forcing_monochromatic_phaseLag" type="real" default_value="0.0" units=""
+		<nml_option name="config_tidal_forcing_monochromatic_phaseLag" type="real" default_value="0.0"
 					description="Value of phase of monochromatic tide."
 					possible_values="Any real number between."
 		/>
@@ -2773,27 +2773,27 @@
 			 description="component of horizontal velocity used to transport mass and tracers in the northward direction"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="gradSSH" type="real" dimensions="nEdges Time" units=""
+		<var name="gradSSH" type="real" dimensions="nEdges Time" units="1"
 			 description="Gradient of sea surface height at edges."
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="gradSSHX" type="real" dimensions="nCells Time" units=""
+		<var name="gradSSHX" type="real" dimensions="nCells Time" units="1"
 			 description="X Component of the gradient of sea surface height at cell centers."
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="gradSSHY" type="real" dimensions="nCells Time" units=""
+		<var name="gradSSHY" type="real" dimensions="nCells Time" units="1"
 			 description="Y Component of the gradient of sea surface height at cell centers."
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="gradSSHZ" type="real" dimensions="nCells Time" units=""
+		<var name="gradSSHZ" type="real" dimensions="nCells Time" units="1"
 			 description="Z Component of the gradient of sea surface height at cell centers."
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="gradSSHZonal" type="real" dimensions="nCells Time" units=""
+		<var name="gradSSHZonal" type="real" dimensions="nCells Time" units="1"
 			 description="Zonal Component of the gradient of sea surface height at cell centers."
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="gradSSHMeridional" type="real" dimensions="nCells Time" units=""
+		<var name="gradSSHMeridional" type="real" dimensions="nCells Time" units="1"
 			 description="Meridional Component of the gradient of sea surface height at cell centers."
 			 packages="forwardMode;analysisMode"
 		/>
