@@ -873,7 +873,7 @@ end function shoc_implements_cnst
    enddo               
 
    !obtain wet mmr from the state vector
-   qv_wet = state%q(:,:,1)
+   qv_wet(:,:) = state%q(:,:,1)
    
    !  Do the same for tracers 
    !Track which scalars need a conversion to wetmmr after SHOC main call
@@ -930,7 +930,7 @@ end function shoc_implements_cnst
    ! Transfer back to pbuf variables
    
    !obtain water vapor mmr which is a "dry" mmr at this point from the SHOC output
-   qv_dry = edsclr_out(:,:,1)
+   qv_dry(:,:) = edsclr_in(:,:,1)
 
    do k=1,pver
      do i=1,ncol 
