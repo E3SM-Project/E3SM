@@ -173,7 +173,7 @@
 			<var name="iceRunoffFlux"/>
 			<var name="rainFlux"/>
 			<var name="snowFlux"/>
-			<var name="vertNonLocalFlux"/>
+			<var_array name="vertNonLocalFlux"/>
 			<var name="bottomLayerShortwaveTemperatureFlux"/>
 			<var_array name="activeTracersTend"/>
 			<var name="salinitySurfaceRestoringTendency"/>
