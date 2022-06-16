@@ -83,11 +83,16 @@ void DryStaticEnergyDiagnostic::run_impl(const int /* dt */)
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npacks), [&] (const Int& jpack) {
       dz(jpack) = PF::calculate_dz(pseudo_density_mid(icol,jpack), p_mid(icol,jpack), T_mid(icol,jpack), qv_mid(icol,jpack));
     });
+    team.team_barrier();
     PF::calculate_z_int(team,m_num_levs,dz,surf_geopotential,z_int);
+    team.team_barrier();
     PF::calculate_z_mid(team,m_num_levs,z_int,z_mid);
+    team.team_barrier();
+    const auto& dse_s = ekat::subview(dse,icol);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npacks), [&] (const Int& jpack) {
-      dse(icol,jpack) = PF::calculate_dse(T_mid(icol,jpack),z_mid(jpack),phis(icol));
+      dse_s(jpack) = PF::calculate_dse(T_mid(icol,jpack),z_mid(jpack),phis(icol));
     });
+    team.team_barrier();
   });
   Kokkos::fence();
 

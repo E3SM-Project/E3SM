@@ -69,6 +69,7 @@ void VerticalLayerInterfaceDiagnostic::run_impl(const int /* dt */)
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npacks), [&] (const Int& jpack) {
       dz(jpack) = PF::calculate_dz(pseudo_density_mid(icol,jpack), p_mid(icol,jpack), T_mid(icol,jpack), qv_mid(icol,jpack));
     });
+    team.team_barrier();
     const auto& z_int_s = ekat::subview(z_int, icol);
     PF::calculate_z_int(team,m_num_levs,dz,surf_geopotential,z_int_s);
   });

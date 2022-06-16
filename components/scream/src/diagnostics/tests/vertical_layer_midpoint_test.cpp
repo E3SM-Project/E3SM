@@ -151,7 +151,7 @@ void run(std::mt19937_64& engine)
     zmid_f.deep_copy<double,Host>(0.0);
     const auto& zmid_v = zmid_f.get_view<Pack**>();
     // Need to generate temporary values for calculation
-    const auto& z_int_v = view_1d("",num_mid_packs_p1);
+    const auto& zint_v = view_1d("",num_mid_packs_p1);
     const auto& dz_v = view_1d("",num_mid_packs);
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
@@ -160,8 +160,8 @@ void run(std::mt19937_64& engine)
       });
       team.team_barrier();
       const auto& zmid_sub = ekat::subview(zmid_v,icol);
-      PF::calculate_z_int(team,num_levs,dz_v,0.0,z_int_v);
-      PF::calculate_z_mid(team,num_levs,z_int_v,zmid_sub);
+      PF::calculate_z_int(team,num_levs,dz_v,0.0,zint_v);
+      PF::calculate_z_mid(team,num_levs,zint_v,zmid_sub);
     });
     Kokkos::fence();
     REQUIRE(views_are_equal(diag_out,zmid_f));

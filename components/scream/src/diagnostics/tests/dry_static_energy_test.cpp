@@ -168,9 +168,11 @@ void run(std::mt19937_64& engine)
       team.team_barrier();
       const auto& dse_sub = ekat::subview(dse_v,icol);
       PF::calculate_z_int(team,num_levs,dz_v,0.0,z_int_v);
+      team.team_barrier();
       PF::calculate_z_mid(team,num_levs,z_int_v,z_mid_v);
+      team.team_barrier();
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& jpack) {
-        dse_v(icol,jpack) = PF::calculate_dse(T_mid_v(icol,jpack),z_mid_v(jpack),phis_v(icol));
+        dse_sub(jpack) = PF::calculate_dse(T_mid_v(icol,jpack),z_mid_v(jpack),phis_v(icol));
       });
       team.team_barrier();
     });
