@@ -321,7 +321,7 @@ contains
         call set_fates_ctrlparms('hlm_name',cval='ELM')
         call set_fates_ctrlparms('hio_ignore_val',rval=spval)
         call set_fates_ctrlparms('soilwater_ipedof',ival=get_ipedof(0))
-        call set_fates_ctrlparms('max_patch_per_site',ival=2*(natpft_size-1))
+        call set_fates_ctrlparms('max_patch_per_site',ival=natpft_size-1)
 
 
         call set_fates_ctrlparms('parteh_mode',ival=fates_parteh_mode)
@@ -1458,9 +1458,7 @@ contains
                     data=this%fates_restart%rvars(ivar)%int1d,readvar=readvar)
 
            case(site_int)
-               if(masterproc) then
-                  write(iulog,*) 'See which variable?', trim(vname)
-               endif
+
               call restartvar(ncid=ncid, flag=flag, varname=trim(vname), &
                     xtype=ncd_int,dim1name=trim('column'),long_name=trim(vlong), &
                     units=trim(vunits),interpinic_flag='interp', &

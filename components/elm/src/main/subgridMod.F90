@@ -139,7 +139,7 @@ contains
        ! allocate space for ALL PFTs on this landunit.
 
        if (use_fates) then
-          npfts_per_lunit = 20
+          npfts_per_lunit = natpft_size
        else
           npfts_per_lunit = natpft_size
        endif
@@ -407,7 +407,7 @@ contains
     ! allocate space for ALL PFTs on this landunit.
 
     if (use_fates) then
-       npfts_per_lunit = 20
+       npfts_per_lunit = natpft_size
     else
        npfts_per_lunit = natpft_size
     endif
