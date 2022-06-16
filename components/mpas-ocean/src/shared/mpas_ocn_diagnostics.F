@@ -111,8 +111,9 @@ contains
       integer, intent(in), optional :: timeLevelIn !< Input: Time level in state
       logical, intent(in), optional :: full   !< Input: Run all computations?
 
-      integer :: iEdge, iCell, iTracer
-      integer :: err, nCells, nEdges, nVertices
+      integer :: iEdge, iCell, iTracer, k, kmin, kmax
+      integer :: err, nCells, nEdges, nVertices, numTracers
+      integer :: timeLevel
 
       real (kind=RKIND) :: coef_3rd_order
 
@@ -123,7 +124,6 @@ contains
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
-      integer :: timeLevel
       integer, pointer :: indexTemperature, indexSalinity
 
       logical :: full_compute = .true.
@@ -240,11 +240,46 @@ contains
              kineticEnergyCell, tangentialVelocity)
 
       if ( config_vert_advection_method == 'remap' ) then
+
          ! Overwrite vertVelocityTop with exact Eulerian solution from remapping
          call mpas_pool_get_array(statePool, 'layerThicknessLag', &
              layerThicknessLag, timeLevel)
          call ocn_diagnostic_solve_vertVel_remap(layerThickness, &
              layerThicknessLag, dt, vertVelocityTop)
+
+         ! Overwrite vertical tracer budget terms with new vertVelocityTop
+         if ( config_compute_active_tracer_budgets ) then
+            numTracers = size(activeTracers, dim=1)
+            do iTracer = 1, numTracers
+               !$omp parallel
+               !$omp do schedule(runtime) private(k,kmin,kmax)
+               do iCell = 1, nCells
+                  kmin = minLevelCell(iCell)
+                  kmax = maxLevelCell(iCell)
+
+                  activeTracerVerticalAdvectionTopFlux(iTracer, :, iCell) = 0.0_RKIND
+                  do k = kmin+1, kmax
+                     activeTracerVerticalAdvectionTopFlux(iTracer, k, iCell) = &
+                           min(0.0_RKIND,vertVelocityTop(k, iCell))* &
+                                         activeTracers(iTracer, k-1, iCell) &
+                         + max(0.0_RKIND,vertVelocityTop(k,iCell))* &
+                                         activeTracers(iTracer, k, iCell)
+                  enddo
+
+                  do k = kmin, kmax-1
+                     activeTracerVerticalAdvectionTendency(iTracer, k, iCell) = ( &
+                          activeTracerVerticalAdvectionTopFlux(iTracer, k+1, iCell) &
+                        - activeTracerVerticalAdvectionTopFlux(iTracer, k, iCell) &
+                        ) / layerThickness(k, iCell)
+                  enddo
+                  activeTracerVerticalAdvectionTendency(iTracer, kmax, iCell) = &
+                     - activeTracerVerticalAdvectionTopFlux(iTracer, kmax, iCell) &
+                     / layerThickness(kmax, iCell)
+               enddo
+               !$omp end do
+               !$omp end parallel
+            enddo
+         endif
       endif
 
       !
