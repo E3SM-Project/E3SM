@@ -31,10 +31,10 @@
 		<var name="transectEdgeMasksMax" type="integer" dimensions="nTransects"
 			 description="max of transectEdgeMasks for this processor."
 		/>
-		<var name="transectVolumeTransport" type="real" dimensions="nTransects Time" units="Sv"
+		<var name="transectVolumeTransport" type="real" dimensions="nTransects Time" units="Sverdrup"
 			description="Transport through transect of edges."
 		/>
-		<var name="transectVolumeTransportZ" type="real" dimensions="nVertLevels nTransects Time" units="Sv"
+		<var name="transectVolumeTransportZ" type="real" dimensions="nVertLevels nTransects Time" units="Sverdrup"
 			description="Transport through transect of edges, with depth coordinate."
 		/>
 	</var_struct>
