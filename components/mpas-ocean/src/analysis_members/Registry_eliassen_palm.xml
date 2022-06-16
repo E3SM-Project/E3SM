@@ -26,7 +26,6 @@
 		<nml_option name="config_AM_eliassenPalm_debug"
 			type="logical"
 			default_value=".false."
-			units="unitless"
 			description="If true, debugging code is turned on."
 			possible_values=".true. or .false."
 		/>
@@ -471,19 +470,16 @@
 		<var name="wrk3DnVertLevelsP1"
 			type="real"
 			dimensions="nVertLevelsP1 nCells"
-			units="unitless"
 			description="work array"
 			/>
 		<var name="wrk3DnVertLevels"
 			type="real"
 			dimensions="nVertLevels nCells"
-			units="unitless"
 			description="work array"
 			/>
 		<var name="wrk3DBuoyCoor"
 			type="real"
 			dimensions="nBuoyancyLayers nCells"
-			units="unitless"
 			description="work array"
 			/>
 		<var name="ErtelPVNormalGradOnEdge"
@@ -513,13 +509,11 @@
 		<var name="wrkVector"
 			type="real"
 			dimensions="R3 nBuoyancyLayers nCells"
-			units="unitless"
 			description="Work vector array"
 			/>
 		<var name="wrkTensor"
 			type="real"
 			dimensions="R3 R3 nBuoyancyLayers nCells"
-			units="unitless"
 			description="Work tensor array"
 			/>
 		<!--
