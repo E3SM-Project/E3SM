@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 
-#include "diagnostics/tests/diagnostic_test_util.hpp"
+#include "share/grid/mesh_free_grids_manager.hpp"
 #include "diagnostics/exner.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
@@ -18,32 +18,42 @@
 
 namespace scream {
 
+std::shared_ptr<GridsManager>
+create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
+
+  const int num_local_elems = 4;
+  const int np = 4;
+  const int num_global_cols = ncols*comm.size();
+
+  ekat::ParameterList gm_params;
+  gm_params.set<std::string>("Reference Grid", "Point Grid");
+  gm_params.set<int>("Number of Global Columns", num_global_cols);
+  gm_params.set<int>("Number of Local Elements", num_local_elems);
+  gm_params.set<int>("Number of Vertical Levels", nlevs);
+  gm_params.set<int>("Number of Gauss Points", np);
+
+  auto gm = create_mesh_free_grids_manager(comm,gm_params);
+  gm->build_all_grids();
+
+  return gm;
+}
+
 //-----------------------------------------------------------------------------------------------//
-template<typename ScalarT, typename DeviceT>
+template<typename DeviceT>
 void run(std::mt19937_64& engine)
 {
-  using STraits    = ekat::ScalarTraits<ScalarT>;
-  using RealType   = typename STraits::scalar_type;
-
   using PF         = scream::PhysicsFunctions<DeviceT>;
-  using PC         = scream::physics::Constants<RealType>;
-
+  using PC         = scream::physics::Constants<Real>;
+  using Pack       = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using KT         = ekat::KokkosTypes<DeviceT>;
   using ExecSpace  = typename KT::ExeSpace;
-  using TeamPolicy = typename KT::TeamPolicy;
   using MemberType = typename KT::MemberType;
-  using view_1d    = typename KT::template view_1d<ScalarT>;
-  using rview_1d   = typename KT::template view_1d<RealType>;
+  using view_1d    = typename KT::template view_1d<Pack>;
+  using rview_1d   = typename KT::template view_1d<Real>;
 
-
-  constexpr int pack_size = sizeof(ScalarT) / sizeof(RealType);
-  using pack_info = ekat::PackInfo<pack_size>;
-
-  constexpr int num_levs = 32; // Number of levels to use for tests.
-  const     int num_mid_packs = pack_info::num_packs(num_levs);
-
-  using Check = ChecksHelpers<ScalarT,num_levs>;
-
+  const     int packsize = SCREAM_PACK_SIZE;
+  constexpr int num_levs = packsize*2 + 1; // Number of levels to use for tests, make sure the last pack can also have some empty slots (packsize>1).
+  const     int num_mid_packs = ekat::npack<Pack>(num_levs);
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -56,21 +66,16 @@ void run(std::mt19937_64& engine)
   auto policy = ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(ncols, num_mid_packs);
 
   // Input (randomized) views
-  view_1d pressure("pressure",num_mid_packs);
+  view_1d temperature("temperature",num_mid_packs),
+          pressure("pressure",num_mid_packs);
 
   auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
-    return rview_1d(reinterpret_cast<RealType*>(v.data()),v.size()*pack_size);
+    return rview_1d(reinterpret_cast<Real*>(v.data()),v.size()*packsize);
   };
 
   // Construct random input data
-  using RPDF = std::uniform_real_distribution<RealType>;
+  using RPDF = std::uniform_real_distribution<Real>;
   RPDF pdf_pres(0.0,PC::P0);
-
-  //contruct random integers
-  using IPDF = std::uniform_int_distribution<int>;
-  IPDF pdf_rand_int(1,100);
-
-  ekat::genRandArray(dview_as_real(pressure),  engine,pdf_pres);
 
   // A time stamp
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
@@ -89,6 +94,8 @@ void run(std::mt19937_64& engine)
   std::map<std::string,Field> input_fields;
   for (const auto& req : diag->get_required_field_requests()) {
     Field f(req.fid);
+    auto & f_ap = f.get_header().get_alloc_properties();
+    f_ap.request_allocation(packsize);
     f.allocate_view();
     const auto name = f.name();
     f.get_header().get_tracking().update_time_stamp(t0);
@@ -101,58 +108,33 @@ void run(std::mt19937_64& engine)
   diag->initialize(t0,RunType::Initial);
 
   // Run tests
-  const ScalarT p0   = PC::P0;
-  const ScalarT zero = 0.0;
-
-  // Get views of input data and set to random values
-  const auto& p_mid_f = input_fields["p_mid"];
-  const auto& p_mid_v = p_mid_f.get_view<ScalarT**>();
-
-  // Test 1 - property tests 
-  //  - exner(pmid=0) = 0
   {
-    Field zero_f = p_mid_f.clone();  // Field with only zeros
-    zero_f.deep_copy(0.0);
-    for (int icol = 0; icol<ncols;++icol) {
+    // Construct random data to use for test
+    // Get views of input data and set to random values
+    const auto& p_mid_f = input_fields["p_mid"];
+    const auto& p_mid_v = p_mid_f.get_view<Pack**>();
+    for (int icol=0;icol<ncols;icol++) {
       const auto& p_sub = ekat::subview(p_mid_v,icol);
-      Kokkos::deep_copy(p_sub,zero);
-    }
-    diag->run();
-    const auto& diag_out = diag->get_diagnostic();
-    REQUIRE(views_are_equal(diag_out,zero_f));
-  }
-  //  - exner=1 when p=p0
-  {
-    Field one_f = p_mid_f.clone();  // Field with only ones
-    one_f.deep_copy(1.0);
-    for (int icol = 0; icol<ncols;++icol) {
-      const auto& p_sub = ekat::subview(p_mid_v,icol);
-      Kokkos::deep_copy(p_sub,p0);
-    } 
-    diag->run();
-    const auto& diag_out = diag->get_diagnostic();
-    REQUIRE(views_are_equal(diag_out,one_f));
-  }
-  // The output from the diagnostic should match what would happen if we called "exner" directly
-  {
-    for (int icol = 0; icol<ncols;++icol) {
-      const auto& p_sub = ekat::subview(p_mid_v,icol);
-      ekat::genRandArray(dview_as_real(pressure), engine, pdf_pres);
+      ekat::genRandArray(dview_as_real(pressure),    engine, pdf_pres);
       Kokkos::deep_copy(p_sub,pressure);
-    } 
-    Field exner_f = p_mid_f.clone();
+    }
+    p_mid_f.sync_to_dev();
+
+    // Run diagnostic and compare with manual calculation
+    diag->run();
+    const auto& diag_out = diag->get_diagnostic();
+    Field exner_f = diag_out.clone();
     exner_f.deep_copy<double,Host>(0.0);
-    const auto& exner_v = exner_f.get_view<ScalarT**>();
+    exner_f.sync_to_dev();
+    const auto& exner_v = exner_f.get_view<Pack**>();
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
-      const int i = team.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& k) {
-        exner_v(i,k) = PF::exner_function(p_mid_v(i,k));
+      const int icol = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& jpack) {
+        exner_v(icol,jpack) = PF::exner_function(p_mid_v(icol,jpack));
       });
       team.team_barrier();
     });
     Kokkos::fence();
-    diag->run();
-    const auto& diag_out = diag->get_diagnostic();
     REQUIRE(views_are_equal(diag_out,exner_f));
   }
  
@@ -161,7 +143,7 @@ void run(std::mt19937_64& engine)
 
 } // run()
 
-TEST_CASE("exner_diagnostic_test", "diagnostics"){
+TEST_CASE("potential_temp_test", "potential_temp_test]"){
   // Run tests for both Real and Pack, and for (potentially) different pack sizes
   using scream::Real;
   using Device = scream::DefaultDevice;
@@ -172,25 +154,11 @@ TEST_CASE("exner_diagnostic_test", "diagnostics"){
 
   printf(" -> Number of randomized runs: %d\n\n", num_runs);
 
-  printf(" -> Testing Real scalar type...");
-  for (int irun=0; irun<num_runs; ++irun) {
-    run<Real,Device>(engine);
-  }
-  printf("ok!\n");
-
   printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_SMALL_PACK_SIZE);
   for (int irun=0; irun<num_runs; ++irun) {
-    run<ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>,Device>(engine);
+    run<Device>(engine);
   }
   printf("ok!\n");
-
-  if (SCREAM_PACK_SIZE!=SCREAM_SMALL_PACK_SIZE) {
-    printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_PACK_SIZE);
-    for (int irun=0; irun<num_runs; ++irun) {
-      run<ekat::Pack<Real,SCREAM_PACK_SIZE>,Device>(engine);
-    }
-    printf("ok!\n");
-  }
 
   printf("\n");
 

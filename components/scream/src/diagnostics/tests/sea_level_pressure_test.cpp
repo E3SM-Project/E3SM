@@ -1,6 +1,6 @@
 #include "catch2/catch.hpp"
 
-#include "diagnostics/tests/diagnostic_test_util.hpp"
+#include "share/grid/mesh_free_grids_manager.hpp"
 #include "diagnostics/sea_level_pressure.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
@@ -18,37 +18,63 @@
 
 namespace scream {
 
+std::shared_ptr<GridsManager>
+create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
+
+  const int num_local_elems = 4;
+  const int np = 4;
+  const int num_global_cols = ncols*comm.size();
+
+  ekat::ParameterList gm_params;
+  gm_params.set<std::string>("Reference Grid", "Point Grid");
+  gm_params.set<int>("Number of Global Columns", num_global_cols);
+  gm_params.set<int>("Number of Local Elements", num_local_elems);
+  gm_params.set<int>("Number of Vertical Levels", nlevs);
+  gm_params.set<int>("Number of Gauss Points", np);
+
+  auto gm = create_mesh_free_grids_manager(comm,gm_params);
+  gm->build_all_grids();
+
+  return gm;
+}
+
 //-----------------------------------------------------------------------------------------------//
-template<typename ScalarT, typename DeviceT>
+template<typename DeviceT>
 void run(std::mt19937_64& engine)
 {
-  using STraits    = ekat::ScalarTraits<ScalarT>;
-  using RealType   = typename STraits::scalar_type;
-
   using PF         = scream::PhysicsFunctions<DeviceT>;
-  using PC         = scream::physics::Constants<RealType>;
-
+  using PC         = scream::physics::Constants<Real>;
+  using Pack       = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using KT         = ekat::KokkosTypes<DeviceT>;
   using ExecSpace  = typename KT::ExeSpace;
-  using TeamPolicy = typename KT::TeamPolicy;
   using MemberType = typename KT::MemberType;
-  using rview_1d   = typename KT::template view_1d<RealType>;
+  using view_1d    = typename KT::template view_1d<Pack>;
+  using rview_1d   = typename KT::template view_1d<Real>;
 
-  constexpr int num_levs = 32; // Number of levels to use for tests.
+  const     int packsize = SCREAM_PACK_SIZE;
+  constexpr int num_levs = packsize*2 + 1; // Number of levels to use for tests, make sure the last pack can also have some empty slots (packsize>1).
+  const     int num_mid_packs = ekat::npack<Pack>(num_levs);
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
 
   // Create a grids manager - single column for these tests
-  const int ncols = 128;
+  const int ncols = 1;
   auto gm = create_gm(comm,ncols,num_levs);
 
+  // Kokkos Policy
+  auto policy = ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(ncols, num_mid_packs);
+
   // Input (randomized) views
-  rview_1d temperature("temperature",num_levs),
-           pressure("pressure",num_levs);
+  view_1d temperature("temperature",num_mid_packs),
+          pressure("pressure",num_mid_packs);
+
+  auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
+    return rview_1d(reinterpret_cast<Real*>(v.data()),v.size()*packsize);
+  };
 
   // Construct random input data
-  using RPDF = std::uniform_real_distribution<RealType>;
+  using RPDF = std::uniform_real_distribution<Real>;
   RPDF pdf_pres(0.0,PC::P0),
        pdf_temp(200.0,400.0),
        pdf_surface(100.0,400.0);
@@ -70,6 +96,8 @@ void run(std::mt19937_64& engine)
   std::map<std::string,Field> input_fields;
   for (const auto& req : diag->get_required_field_requests()) {
     Field f(req.fid);
+    auto & f_ap = f.get_header().get_alloc_properties();
+    f_ap.request_allocation(packsize);
     f.allocate_view();
     const auto name = f.name();
     f.get_header().get_tracking().update_time_stamp(t0);
@@ -82,33 +110,42 @@ void run(std::mt19937_64& engine)
   diag->initialize(t0,RunType::Initial);
 
   // Run tests
-  // Get views of input data and set to random values
-  const auto& T_mid_f       = input_fields["T_mid"];
-  const auto& T_mid_v       = T_mid_f.get_view<Real**>();
-  const auto& p_mid_f       = input_fields["p_mid"];
-  const auto& p_mid_v       = p_mid_f.get_view<Real**>();
-  const auto& phis_f        = input_fields["phis"];
-  const auto& phis_v        = phis_f.get_view<Real*>();
-
-  // The output from the diagnostic should match what would happen if we called "calculate_psl" directly
   {
-    for (int icol = 0; icol<ncols;++icol) {
-      const auto& T_sub      = ekat::subview(T_mid_v,icol);
-      const auto& p_sub      = ekat::subview(p_mid_v,icol);
-      ekat::genRandArray(temperature,   engine, pdf_temp);
-      ekat::genRandArray(pressure,      engine, pdf_pres);
+    // Construct random data to use for test
+    // Get views of input data and set to random values
+    const auto& T_mid_f = input_fields["T_mid"];
+    const auto& T_mid_v = T_mid_f.get_view<Pack**>();
+    const auto& p_mid_f = input_fields["p_mid"];
+    const auto& p_mid_v = p_mid_f.get_view<Pack**>();
+    const auto& phis_f  = input_fields["phis"];
+    const auto& phis_v  = phis_f.get_view<Real*>();
+    for (int icol=0;icol<ncols;icol++) {
+      const auto& T_sub = ekat::subview(T_mid_v,icol);
+      const auto& p_sub = ekat::subview(p_mid_v,icol);
+      ekat::genRandArray(dview_as_real(temperature), engine, pdf_temp);
+      ekat::genRandArray(dview_as_real(pressure),    engine, pdf_pres);
       Kokkos::deep_copy(T_sub,temperature);
       Kokkos::deep_copy(p_sub,pressure);
-    } 
+    }
     ekat::genRandArray(phis_v, engine, pdf_surface);
-  
+    T_mid_f.sync_to_dev();
+    p_mid_f.sync_to_dev();
+    phis_f.sync_to_dev();
+
+    // Run diagnostic and compare with manual calculation
     diag->run();
     const auto& diag_out = diag->get_diagnostic();
     Field psl_f = diag_out.clone();
+    psl_f.deep_copy<double,Host>(0.0);
+    psl_f.sync_to_dev();
     const auto& psl_v = psl_f.get_view<Real*>();
-  
-    Kokkos::parallel_for("", ncols, KOKKOS_LAMBDA(const int i) {
-      psl_v(i) = PF::calculate_psl(T_mid_v(i,num_levs-1),p_mid_v(i,num_levs-1),phis_v(i));
+    Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const int icol = team.league_rank();
+      const int jpack = num_mid_packs;
+      const int surf_lev = (num_levs - 1) % packsize;
+      const Real T_surf = T_mid_v(icol,jpack)[surf_lev];
+      const Real p_surf = p_mid_v(icol,jpack)[surf_lev];
+      psl_v(icol) = PF::calculate_psl(T_surf,p_surf,phis_v(icol));
     });
     Kokkos::fence();
     REQUIRE(views_are_equal(diag_out,psl_f));
@@ -119,7 +156,7 @@ void run(std::mt19937_64& engine)
 
 } // run()
 
-TEST_CASE("sea_level_pressure_test", "diagnostics"){
+TEST_CASE("potential_temp_test", "potential_temp_test]"){
   // Run tests for both Real and Pack, and for (potentially) different pack sizes
   using scream::Real;
   using Device = scream::DefaultDevice;
@@ -130,25 +167,11 @@ TEST_CASE("sea_level_pressure_test", "diagnostics"){
 
   printf(" -> Number of randomized runs: %d\n\n", num_runs);
 
-  printf(" -> Testing Real scalar type...");
-  for (int irun=0; irun<num_runs; ++irun) {
-    run<Real,Device>(engine);
-  }
-  printf("ok!\n");
-
   printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_SMALL_PACK_SIZE);
   for (int irun=0; irun<num_runs; ++irun) {
-    run<ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>,Device>(engine);
+    run<Device>(engine);
   }
   printf("ok!\n");
-
-  if (SCREAM_PACK_SIZE!=SCREAM_SMALL_PACK_SIZE) {
-    printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_PACK_SIZE);
-    for (int irun=0; irun<num_runs; ++irun) {
-      run<ekat::Pack<Real,SCREAM_PACK_SIZE>,Device>(engine);
-    }
-    printf("ok!\n");
-  }
 
   printf("\n");
 
