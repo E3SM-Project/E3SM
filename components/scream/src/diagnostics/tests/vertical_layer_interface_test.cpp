@@ -169,7 +169,7 @@ void run(std::mt19937_64& engine)
 
 } // run()
 
-TEST_CASE("potential_temp_test", "potential_temp_test]"){
+TEST_CASE("vertical_layer_interface_test", "vertical_layer_interface_test]"){
   // Run tests for both Real and Pack, and for (potentially) different pack sizes
   using scream::Real;
   using Device = scream::DefaultDevice;
@@ -180,7 +180,7 @@ TEST_CASE("potential_temp_test", "potential_temp_test]"){
 
   printf(" -> Number of randomized runs: %d\n\n", num_runs);
 
-  printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_SMALL_PACK_SIZE);
+  printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_PACK_SIZE);
   for (int irun=0; irun<num_runs; ++irun) {
     run<Device>(engine);
   }

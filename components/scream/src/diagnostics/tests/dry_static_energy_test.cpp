@@ -185,7 +185,7 @@ void run(std::mt19937_64& engine)
 
 } // run()
 
-TEST_CASE("potential_temp_test", "potential_temp_test]"){
+TEST_CASE("dry_static_energy_test", "dry_static_energy_test]"){
   // Run tests for both Real and Pack, and for (potentially) different pack sizes
   using scream::Real;
   using Device = scream::DefaultDevice;

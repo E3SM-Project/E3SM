@@ -16,6 +16,8 @@ void SeaLevelPressureDiagnostic::set_grids(const std::shared_ptr<const GridsMana
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
+  auto Q = kg/kg;
+  Q.set_string("kg/kg");
   const auto m2 = m*m;
   const auto s2 = s*s;
 
@@ -24,7 +26,7 @@ void SeaLevelPressureDiagnostic::set_grids(const std::shared_ptr<const GridsMana
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
-  FieldLayout scalar2d_layout_col { {COL}, {m_num_cols} };
+  FieldLayout scalar2d_layout_col{ {COL}, {m_num_cols} };
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
   constexpr int ps = Pack::n;
 
@@ -37,39 +39,39 @@ void SeaLevelPressureDiagnostic::set_grids(const std::shared_ptr<const GridsMana
   FieldIdentifier fid (name(), scalar2d_layout_col, Pa, grid_name);
   m_diagnostic_output = Field(fid);
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
-//  C_ap.request_allocation(ps);
+  C_ap.request_allocation();
   m_diagnostic_output.allocate_view();
-
 }
 // =========================================================================================
 void SeaLevelPressureDiagnostic::initialize_impl(const RunType /* run_type */)
 {
-  const auto& T_mid              = get_field_in("T_mid").get_view<const Real**>();
-  const auto& p_mid              = get_field_in("p_mid").get_view<const Real**>();
-  const auto& phis               = get_field_in("phis").get_view<const Real*>();
-
-  const auto& output             = m_diagnostic_output.get_view<Real*>();
 
   auto ts = timestamp(); 
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 
-  run_diagnostic.set_variables(m_num_cols,m_num_levs,T_mid,p_mid,phis,output);
 }
 // =========================================================================================
 void SeaLevelPressureDiagnostic::run_impl(const int /* dt */)
 {
 
+  const auto npacks     = ekat::npack<Pack>(m_num_levs);
+  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols,1);
+
+  const auto& p_sealevel         = m_diagnostic_output.get_view<Real*>();
+  const auto& T_mid              = get_field_in("T_mid").get_view<const Pack**>();
+  const auto& p_mid              = get_field_in("p_mid").get_view<const Pack**>();
+  const auto& phis               = get_field_in("phis").get_view<const Real*>();
+
+  const int pack_surf = m_num_levs / Pack::n;
+  const int idx_surf  = m_num_levs % Pack::n;
   Kokkos::parallel_for("SeaLevelPressureDiagnostic",
-                       m_num_cols,
-                       run_diagnostic
-  );
+                       default_policy,
+                       KOKKOS_LAMBDA(const MemberType& team) {
+    const int icol = team.league_rank();
+    p_sealevel(icol) = PF::calculate_psl(T_mid(icol,pack_surf)[idx_surf],p_mid(icol,pack_surf)[idx_surf],phis(icol));
+  });
   Kokkos::fence();
 
-}
-// =========================================================================================
-void SeaLevelPressureDiagnostic::finalize_impl()
-{
-  // Nothing to do
 }
 // =========================================================================================
 } //namespace scream

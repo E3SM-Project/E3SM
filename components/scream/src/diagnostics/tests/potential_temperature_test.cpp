@@ -161,7 +161,7 @@ TEST_CASE("potential_temp_test", "potential_temp_test]"){
 
   printf(" -> Number of randomized runs: %d\n\n", num_runs);
 
-  printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_SMALL_PACK_SIZE);
+  printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_PACK_SIZE);
   for (int irun=0; irun<num_runs; ++irun) {
     run<Device>(engine);
   }

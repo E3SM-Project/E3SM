@@ -53,7 +53,7 @@ void run(std::mt19937_64& engine)
 
   const     int packsize = SCREAM_PACK_SIZE;
   constexpr int num_levs = packsize*2 + 1; // Number of levels to use for tests, make sure the last pack can also have some empty slots (packsize>1).
-  const     int num_mid_packs = ekat::npack<Pack>(num_levs);
+  const     int num_mid_packs    = ekat::npack<Pack>(num_levs);
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
@@ -113,17 +113,17 @@ void run(std::mt19937_64& engine)
   {
     // Construct random data to use for test
     // Get views of input data and set to random values
-    const auto& T_mid_f = input_fields["T_mid"];
-    const auto& T_mid_v = T_mid_f.get_view<Pack**>();
-    const auto& p_mid_f = input_fields["p_mid"];
-    const auto& p_mid_v = p_mid_f.get_view<Pack**>();
-    const auto& phis_f  = input_fields["phis"];
-    const auto& phis_v  = phis_f.get_view<Real*>();
+    const auto& T_mid_f       = input_fields["T_mid"];
+    const auto& T_mid_v       = T_mid_f.get_view<Pack**>();
+    const auto& p_mid_f       = input_fields["p_mid"];
+    const auto& p_mid_v       = p_mid_f.get_view<Pack**>();
+    const auto& phis_f        = input_fields["phis"];
+    const auto& phis_v        = phis_f.get_view<Real*>();
     for (int icol=0;icol<ncols;icol++) {
-      const auto& T_sub = ekat::subview(T_mid_v,icol);
-      const auto& p_sub = ekat::subview(p_mid_v,icol);
-      ekat::genRandArray(dview_as_real(temperature), engine, pdf_temp);
-      ekat::genRandArray(dview_as_real(pressure),    engine, pdf_pres);
+      const auto& T_sub      = ekat::subview(T_mid_v,icol);
+      const auto& p_sub      = ekat::subview(p_mid_v,icol);
+      ekat::genRandArray(dview_as_real(temperature),   engine, pdf_temp);
+      ekat::genRandArray(dview_as_real(pressure),      engine, pdf_pres);
       Kokkos::deep_copy(T_sub,temperature);
       Kokkos::deep_copy(p_sub,pressure);
     }
@@ -135,20 +135,18 @@ void run(std::mt19937_64& engine)
     // Run diagnostic and compare with manual calculation
     diag->run();
     const auto& diag_out = diag->get_diagnostic();
-    Field psl_f = diag_out.clone();
-    psl_f.deep_copy<double,Host>(0.0);
-    psl_f.sync_to_dev();
-    const auto& psl_v = psl_f.get_view<Real*>();
+    Field p_sealevel_f = diag_out.clone();
+    p_sealevel_f.deep_copy<double,Host>(0.0);
+    p_sealevel_f.sync_to_dev();
+    const auto& p_sealevel_v = p_sealevel_f.get_view<Real*>();
+    const int pack_surf = num_levs / Pack::n;
+    const int idx_surf  = num_levs % Pack::n;
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
-      const int jpack = num_mid_packs;
-      const int surf_lev = (num_levs - 1) % packsize;
-      const Real T_surf = T_mid_v(icol,jpack)[surf_lev];
-      const Real p_surf = p_mid_v(icol,jpack)[surf_lev];
-      psl_v(icol) = PF::calculate_psl(T_surf,p_surf,phis_v(icol));
+      p_sealevel_v(icol) = PF::calculate_psl(T_mid_v(icol,pack_surf)[idx_surf],p_mid_v(icol,pack_surf)[idx_surf],phis_v(icol));
     });
     Kokkos::fence();
-    REQUIRE(views_are_equal(diag_out,psl_f));
+    REQUIRE(views_are_equal(diag_out,p_sealevel_f));
   }
  
   // Finalize the diagnostic
@@ -156,7 +154,7 @@ void run(std::mt19937_64& engine)
 
 } // run()
 
-TEST_CASE("potential_temp_test", "potential_temp_test]"){
+TEST_CASE("sea_level_pressure_test", "sea_level_pressure_test]"){
   // Run tests for both Real and Pack, and for (potentially) different pack sizes
   using scream::Real;
   using Device = scream::DefaultDevice;
@@ -167,7 +165,7 @@ TEST_CASE("potential_temp_test", "potential_temp_test]"){
 
   printf(" -> Number of randomized runs: %d\n\n", num_runs);
 
-  printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_SMALL_PACK_SIZE);
+  printf(" -> Testing Pack<Real,%d> scalar type...",SCREAM_PACK_SIZE);
   for (int irun=0; irun<num_runs; ++irun) {
     run<Device>(engine);
   }

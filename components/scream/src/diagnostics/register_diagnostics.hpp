@@ -25,7 +25,7 @@ inline void register_diagnostics () {
   diag_factory.register_product("VerticalLayerThickness",&create_atmosphere_diagnostic<VerticalLayerThicknessDiagnostic>);
   diag_factory.register_product("VerticalLayerMidpoint",&create_atmosphere_diagnostic<VerticalLayerMidpointDiagnostic>);
   diag_factory.register_product("DryStaticEnergy",&create_atmosphere_diagnostic<DryStaticEnergyDiagnostic>);
-  diag_factory.register_product("SeaLevelPressure",&create_atmosphere_diagnostic<DryStaticEnergyDiagnostic>);
+  diag_factory.register_product("SeaLevelPressure",&create_atmosphere_diagnostic<SeaLevelPressureDiagnostic>);
 }
 
 } // namespace scream
