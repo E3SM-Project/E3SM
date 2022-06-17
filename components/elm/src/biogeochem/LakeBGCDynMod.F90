@@ -144,6 +144,7 @@ contains
       real(r8) :: bphyto_dead(bounds%begc:bounds%endc,1:nphytolak)   ! vertically-integrated dead phytoplankton (gC/m2/s)
       real(r8) :: conc_eq(bounds%begc:bounds%endc,1:nsolulak)        ! equilibrium concentration (mol/m^3)
       real(r8) :: conc_iceb_old(bounds%begc:bounds%endc,1:ngaslak)   ! ice-trapped bubble gases at the last time step (mol/m2)
+      real(r8) :: ex_iceb(bounds%begc:bounds%endc,1:ngaslak)         ! ice-trapped bubble oxidation rate (mol/m2/s)
       real(r8) :: kg(bounds%begc:bounds%endc,1:nsolulak)             ! transfer velocity (m/s)
       real(r8) :: zx(bounds%begc:bounds%endc,1:nlevlak+nlevsoi)      ! interface depth (+ below surface) for whole column (m)
       real(r8) :: dzx(bounds%begc:bounds%endc,1:nlevlak+nlevsoi)     ! cell thickness (+ below surface) for whole column (m)
@@ -154,7 +155,6 @@ contains
       real(r8) :: vc(bounds%begc:bounds%endc,1:nlevlak+nlevsoi)      ! "c" vector for tridiagonal matrix
       real(r8) :: vr(bounds%begc:bounds%endc,1:nlevlak+nlevsoi)      ! "r" vector for tridiagonal solution
       real(r8) :: ex(bounds%begc:bounds%endc,1:nlevlak,1:ngaslak)                ! bubble dissolution rate (mol/m3/s)
-      real(r8) :: ex_iceb(bounds%begc:bounds%endc,1:nlevlak,1:ngaslak)           ! ice-trapped bubble dissolution rate (mol/m3/s) 
       real(r8) :: sx(bounds%begc:bounds%endc,1:nlevlak+nlevsoi,1:nsolulak)       ! source (+ below surface) for whole column (mol/m^3/s)
       real(r8) :: csrc(bounds%begc:bounds%endc,1:nlevlak+nlevsoi,1:nsolulak)     ! solute production rate (mol/m3/s)
       real(r8) :: csnk(bounds%begc:bounds%endc,1:nlevlak+nlevsoi,1:nsolulak)     ! solute loss rate (mol/m3/s)
@@ -392,7 +392,7 @@ contains
             end if
             call BubbleDynamics(lakestate_vars, lakebgc_vars, c, jwat(c), isFullTStep, &
                      dtime, conc_old(c,:,1:ngaslak), eb_sed(c,:), eb_surf(c,:), &
-                     ex(c,:,:), ex_iceb(c,:,:), conc_bubl(c,:,:), conc_iceb(c,:))
+                     ex(c,:,:), ex_iceb(c,:), conc_bubl(c,:,:), conc_iceb(c,:))
             ch4_surf_ebul(c) = ch4_surf_ebul(c) + eb_surf(c,wch4lak)*dtime
 
             ! photosynthesis
@@ -453,16 +453,15 @@ contains
                do k = 1, nsolulak
                   if (j==1) then
                      if (k<=ngaslak) then
-                        sx(c,j,k) = ex(c,j,k) + ex_iceb(c,j,k) + csrc(c,j,k) - &
-                              csnk(c,j,k) - df_surf(c,k)/dz_lake(c,j)
+                        sx(c,j,k) = ex(c,j,k) + csrc(c,j,k) - csnk(c,j,k) - &
+                              df_surf(c,k)/dz_lake(c,j)
                      else
                         sx(c,j,k) = csrc(c,j,k) - csnk(c,j,k) - &
                               df_surf(c,k)/dz_lake(c,j)
                      end if
                   else if (j<=nlevlak) then
                      if (k<=ngaslak) then
-                        sx(c,j,k) = ex(c,j,k) + ex_iceb(c,j,k) + csrc(c,j,k) - &
-                              csnk(c,j,k)
+                        sx(c,j,k) = ex(c,j,k) + csrc(c,j,k) - csnk(c,j,k)
                      else
                         sx(c,j,k) = csrc(c,j,k) - csnk(c,j,k)
                      end if
@@ -576,6 +575,8 @@ contains
                      conc_new(c,j,k) = 0._r8
                   end if
                end do
+               ! assume dissolved N2 always replete
+               conc_new(c,1:nlevlak,wn2lak) = conc_eq(c,wn2lak)
 
                ! set dissolved gas conc for outputs
                conc_wat(c,1:nlevlak,k) = conc_new(c,1:nlevlak,k)
@@ -589,7 +590,8 @@ contains
                c = filter_lakec(fc)
             
                if (j==1) then
-                  errch4(c) = conc_iceb(c,wch4lak) - conc_iceb_old(c,wch4lak)
+                  errch4(c) = conc_iceb(c,wch4lak) - conc_iceb_old(c,wch4lak) + &
+                        ex_iceb(c,wch4lak)*dtime
                   delta_iceb(c) = errch4(c) 
                   delta_ch4(c) = 0._r8
                end if
@@ -1474,8 +1476,8 @@ contains
       real(r8)               , intent(in)    :: conc_gas(1:nlevlak+nlevsoi,1:ngaslak)  ! dissolved gas (mol/m3)
       real(r8)               , intent(in)    :: ebb(1:ngaslak)          ! bottom ebullition (mol/m2/s)
       real(r8)               , intent(out)   :: ebt(1:ngaslak)          ! surface ebullition (mol/m2/s)
-      real(r8)               , intent(inout) :: ex(1:nlevlak,1:ngaslak) ! gas dissolution (mol/m3/s)
-      real(r8)               , intent(inout) :: ex_iceb(1:nlevlak,1:ngaslak)     ! gas dissolution (mol/m3/s)
+      real(r8)               , intent(inout) :: ex(1:nlevlak,1:ngaslak) ! bubble gas dissolution (mol/m3/s)
+      real(r8)               , intent(inout) :: ex_iceb(1:ngaslak)      ! bubble gas oxidation (mol/m2/s)
       real(r8)               , intent(inout) :: conc_bubl(1:nlevlak,1:ngaslak)   ! bubble gas concentration (mol/m3)
       real(r8)               , intent(inout) :: conc_iceb(1:ngaslak)    ! gas concentration of ice-trapped bubbles (mol/m2)
       !
@@ -1648,12 +1650,15 @@ contains
          end do 
       end if
 
-      ex_iceb(1:nlevlak,:) = 0._r8
+      ! CH4 loss in ice-trapped bubbles
       do k = 1, ngaslak
-         ex_iceb(jwat,k) = conc_iceb(k) / dz_lake(c,jwat) * &
-               LakeBGCParamsInst%icebloss
-         conc_iceb(k) = conc_iceb(k) * max(0._r8, &
-               (1._r8 - LakeBGCParamsInst%icebloss*dtime))
+         if (k==wch4lak) then
+            ex_iceb(k) = conc_iceb(k) * LakeBGCParamsInst%icebloss
+            conc_iceb(k) = conc_iceb(k) * max(0._r8, &
+                  (1._r8 - LakeBGCParamsInst%icebloss*dtime))
+         else
+            conc_iceb(k) = 0._r8
+         end if
       end do
 
       end associate
@@ -2171,6 +2176,7 @@ contains
       !
       ! !CONSTANTS
       real(r8), parameter :: Tor = 267.65_r8 ! CH4 oxidation reference temperature (K)
+      real(r8), parameter :: Och4_cr = 1.7e-3_r8 ! critical CH4 concentration for O2-inhibitation (mol/m3)
       !
       ! !LOCAL VARIABLES:
       real(r8) :: tw, ts, fch4
@@ -2201,7 +2207,6 @@ contains
 
          Qch4 = LakeBGCParamsInst%Qch4
          OQ10 = LakeBGCParamsInst%OQ10
-         Och4_cr = LakeBGCParamsInst%Och4_cr
 
          fch4 = 1._r8 / (1._r8 + c_ch4/Och4_cr)
 
