@@ -2559,8 +2559,7 @@ end if
 
 
           if (use_subcol_microp) then
-             call microp_driver_tend(state_sc, ptend_sc, cld_macmic_ztodt, pbuf, &
-                     cam_in%landfrac) !XZ
+             call microp_driver_tend(state_sc, ptend_sc, cld_macmic_ztodt, pbuf)
 
              ! Average the sub-column ptend for use in gridded update - will not contain ptend_aero
              call subcol_ptend_avg(ptend_sc, state_sc%ngrdcol, lchnk, ptend)
@@ -2583,8 +2582,7 @@ end if
              call physics_tend_dealloc(tend_sc)
              call physics_ptend_dealloc(ptend_sc)
           else
-             call microp_driver_tend(state, ptend, cld_macmic_ztodt, pbuf, &
-                     cam_in%landfrac) !XZ
+             call microp_driver_tend(state, ptend, cld_macmic_ztodt, pbuf)
           end if
           ! combine aero and micro tendencies for the grid
           if (.not. micro_do_icesupersat) then

@@ -171,8 +171,6 @@ logical :: do_nicons
 logical :: use_hetfrz_classnuc
 
 real(r8) :: ncnst ! constant droplet concentration
-real(r8) :: ncnst_land ! XZ:   constant droplet concentration over land
-real(r8) :: ncnst_ocean ! XZ:  constant droplet concentration over ocean
 real(r8) :: ninst ! constant ice concentration
 
 real(r8) :: mincdnc     ! if mincdnc > 0, then impose a minimum droplet number conc.  
@@ -227,7 +225,6 @@ subroutine micro_mg_init( &
      rhmini_in, micro_mg_dcs, micro_mg_dcs_tdep, &
      microp_uniform_in, do_cldice_in, use_hetfrz_classnuc_in, &
      do_nccons_in, do_nicons_in, ncnst_in, ninst_in, mincdnc_in, &
-     ncnst_land_in,ncnst_ocean_in, &! XZ
      micro_mg_precip_frac_method_in, micro_mg_berg_eff_factor_in, &
      allow_sed_supersat_in, ice_sed_ai, prc_coef1_in,prc_exp_in,  &
      prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, alpha_grad_in, &
@@ -278,8 +275,6 @@ subroutine micro_mg_init( &
   real(r8), intent(in) :: beta_grad_in  ! When mass decreases with height.
 
   real(r8), intent(in)  :: ncnst_in
-  real(r8), intent(in)  :: ncnst_land_in  !XZ
-  real(r8), intent(in)  :: ncnst_ocean_in  !XZ
   real(r8), intent(in)  :: ninst_in        
   real(r8), intent(in)  :: mincdnc_in
 
@@ -330,8 +325,6 @@ subroutine micro_mg_init( &
   nccons = do_nccons_in
   nicons = do_nicons_in
   ncnst = ncnst_in
-  ncnst_land = ncnst_land_in  !XZ
-  ncnst_ocean = ncnst_ocean_in  !XZ
   ninst = ninst_in
   mincdnc = mincdnc_in
   use_hetfrz_classnuc = use_hetfrz_classnuc_in
@@ -2249,16 +2242,16 @@ subroutine micro_mg_tend ( &
         if (nccons) then
           dumnc(i,k) = max(cdncst(i,k)/rho(i,k)*lcldm(i,k),0._r8)  
         else !default 
-
           dumnc(i,k) = max((nc(i,k)+nctend(i,k)*deltat),0._r8)
         end if  !!end prescribed CDNC XZ
+
+        if (dumc(i,k).lt.qsmall) dumnc(i,k)=0._r8    !XZ
 
         ! impose minimum droplet number conc (in-cloud); dumnc here is grid-box mean  
         if (mincdnc.gt.0._r8) then
            dumnc(i,k)=max(dumnc(i,k),mincdnc/rho(i,k)*lcldm(i,k))
         end if
 
-        if (dumc(i,k).lt.qsmall) dumnc(i,k)=0._r8    !XZ
 
 
      end do       !!! vertical loop

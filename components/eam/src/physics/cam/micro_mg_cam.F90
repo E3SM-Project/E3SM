@@ -241,8 +241,6 @@ integer :: &
    real(r8) :: prc_exp1_in              = huge(1.0_r8)
    real(r8) :: cld_sed_in               = huge(1.0_r8) !scale fac for cloud sedimentation velocity
    real(r8) :: nccons                   = huge(1.0_r8)
-   real(r8) :: nccons_land              = huge(1.0_r8)   !XZ
-   real(r8) :: nccons_ocean             = huge(1.0_r8)   !XZ
    real(r8) :: nicons                   = huge(1.0_r8)
    real(r8) :: mincdnc                  = huge(1.0_r8)
    logical  :: mg_prc_coeff_fix_in      = .false. !temporary variable to maintain BFB, MUST be removed
@@ -274,7 +272,6 @@ subroutine micro_mg_cam_readnl(nlfile)
   integer :: micro_mg_num_steps = 1      ! Number of substepping iterations done by MG (1.5 only for now).
   real(r8) :: micro_nccons, micro_nicons
   real(r8) :: micro_mincdnc     = -999.  ! namelist for mincdnc 
-  real(r8) :: micro_nccons_land, micro_nccons_ocean    ! XZ namelist for constant nc over land  and ocean
   ! Local variables
   integer :: unitn, ierr
   character(len=*), parameter :: subname = 'micro_mg_cam_readnl'
@@ -310,8 +307,6 @@ subroutine micro_mg_cam_readnl(nlfile)
      do_nicons = micro_do_nicons
      nccons = micro_nccons
      nicons = micro_nicons
-     nccons_land = micro_nccons_land  !XZ
-     nccons_ocean = micro_nccons_ocean  !XZ
      mincdnc = micro_mincdnc
      
      num_steps = micro_mg_num_steps
@@ -719,7 +714,6 @@ subroutine micro_mg_cam_init(pbuf2d)
               micro_mg_dcs_tdep,             &
               microp_uniform, do_cldice, use_hetfrz_classnuc, &
 	      do_nccons, do_nicons, nccons, nicons, mincdnc, &
-              nccons_land, nccons_ocean, & !XZ
               micro_mg_precip_frac_method, micro_mg_berg_eff_factor, &
               allow_sed_supersat, ice_sed_ai, prc_coef1_in,prc_exp_in, &
               prc_exp1_in, cld_sed_in, mg_prc_coeff_fix_in, &
@@ -1079,7 +1073,7 @@ end subroutine micro_mg_cam_init
 
 !===============================================================================
 
-subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf,landfrac)   !XZ
+subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)  
 
    use micro_mg_utils, only: size_dist_param_basic, size_dist_param_liq, &
         mg_liq_props, mg_ice_props, avg_diameter, rhoi, rhosn, rhow, rhows, &
@@ -1103,7 +1097,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf,landfrac)   !XZ
    type(physics_ptend),         intent(out)   :: ptend
    real(r8),                    intent(in)    :: dtime
    type(physics_buffer_desc),   pointer       :: pbuf(:)
-   real(r8),            intent(in)  :: landfrac(pcols) ! Land fraction  !XZ
 
    ! Local variables
    integer :: lchnk, ncol, psetcols, ngrdcol
@@ -1223,7 +1216,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf,landfrac)   !XZ
    type(MGPacker) :: packer
 
    ! Packed versions of inputs.
-   real(r8), allocatable :: packed_landfrac(:)  !XZ added landfrac
    real(r8), allocatable :: packed_t(:,:)
    real(r8), allocatable :: packed_q(:,:)
    real(r8), allocatable :: packed_qc(:,:)
@@ -2017,8 +2009,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf,landfrac)   !XZ
    allocate(reff_snow_dum(mgncol,nlev))
 
    ! Pack input variables that are not updated during substeps.
-   allocate(packed_landfrac(mgncol))   !XZ
-   packed_landfrac = packer%pack(landfrac)    !XZ
    allocate(packed_relvar(mgncol,nlev))
    packed_relvar = packer%pack(relvar)
    allocate(packed_accre_enhan(mgncol,nlev))
@@ -2043,8 +2033,8 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf,landfrac)   !XZ
    packed_naai = packer%pack(naai)
    allocate(packed_npccn(mgncol,nlev))
    packed_npccn = packer%pack(npccn)
-   allocate(packed_cdncst(mgncol,nlev))
-   packed_cdncst = packer%pack(cdncst)
+   allocate(packed_cdncst(mgncol,nlev))  !XZ
+   packed_cdncst = packer%pack(cdncst)   !XZ
 
    allocate(packed_rndst(mgncol,nlev,size(rndst, 3)))
    packed_rndst = packer%pack(rndst)

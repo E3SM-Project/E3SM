@@ -1928,7 +1928,7 @@ subroutine so4_cdnc(state,rho,cdncst)
           call outfld('SO4_cdncst',ftem , pcols, lchnk) 
           ftem = 1.e9_r8*ftem*rho  !kg/kg -> mu-g/m3
           cdncst = coeff1*10.**(a1+b1*log10(ftem))  !#/cc
-          cdncst = 1.e6_r8*cdncst/rho   !#/cc -> #/kg  
+          !!cdncst = 1.e6_r8*cdncst/rho   !#/cc -> #/kg  
 
 end subroutine so4_cdnc
 

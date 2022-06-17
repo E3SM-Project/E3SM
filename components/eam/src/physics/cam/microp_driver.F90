@@ -7,7 +7,7 @@ module microp_driver
 !-------------------------------------------------------------------------------------------------------
 
 use shr_kind_mod,   only: r8 => shr_kind_r8
-use ppgrid,         only: pcols,pver   !XZ
+use ppgrid,         only: pver
 use physics_types,  only: physics_state, physics_ptend, physics_tend,  &
                           physics_ptend_copy, physics_ptend_sum
 use physics_buffer, only: pbuf_get_index, pbuf_get_field, physics_buffer_desc
@@ -163,7 +163,7 @@ end subroutine microp_driver_init
 
 !===============================================================================
 
-subroutine microp_driver_tend(state, ptend, dtime, pbuf, landfrac)  !XZ
+subroutine microp_driver_tend(state, ptend, dtime, pbuf)
 
    ! Call the microphysics parameterization run methods.
 
@@ -174,7 +174,6 @@ subroutine microp_driver_tend(state, ptend, dtime, pbuf, landfrac)  !XZ
    type(physics_buffer_desc), pointer :: pbuf(:)
 
    real(r8), intent(in)  :: dtime                    ! Timestep
-   real(r8),            intent(in)  :: landfrac(pcols) ! Land fraction  !XZ
 
    ! Local variables
 
@@ -191,7 +190,7 @@ subroutine microp_driver_tend(state, ptend, dtime, pbuf, landfrac)  !XZ
    select case (microp_scheme)
    case ('MG')
       call t_startf('microp_mg_cam_tend')
-      call micro_mg_cam_tend(state, ptend, dtime, pbuf, landfrac)  !XZ
+      call micro_mg_cam_tend(state, ptend, dtime, pbuf)
       call t_stopf('microp_mg_cam_tend')
    ! microp_driver doesn't handle these other options
    case ('RK')
