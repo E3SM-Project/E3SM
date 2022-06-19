@@ -60,6 +60,7 @@ character(len=8) :: ccn_name(psat)= &
 ! indices in state and pbuf structures
 integer :: numliq_idx = -1
 integer :: kvh_idx    = -1
+integer :: ccn_pjr_idx = -1
 
 ! description of modal aerosols
 integer               :: ntot_amode     ! number of aerosol modes
@@ -117,6 +118,7 @@ subroutine ndrop_init
    call cnst_get_ind('NUMLIQ', numliq_idx)
 
    kvh_idx      = pbuf_get_index('kvh')
+   ccn_pjr_idx = pbuf_get_index('ccn_pjr')
 
    zero     = 0._r8
    third    = 1._r8/3._r8
@@ -307,6 +309,7 @@ subroutine dropmixnuc( &
    ! doesn't distinguish between warm, cold clouds
 
    use output_aerocom_aie , only: do_aerocom_ind3
+   use phys_debug_util, only: phys_debug_col
 
    ! arguments
    type(physics_state), target, intent(in)    :: state
@@ -325,6 +328,7 @@ subroutine dropmixnuc( &
    real(r8), intent(out) :: factnum(:,:,:)     ! activation fraction for aerosol number
    !--------------------Local storage-------------------------------------
 
+   integer icol
    integer  :: lchnk               ! chunk identifier
    integer  :: ncol                ! number of columns
    integer  :: loop_up_bnd         
@@ -338,6 +342,7 @@ subroutine dropmixnuc( &
    real(r8), pointer :: zm(:,:)      ! geopotential height of level (m)
 
    real(r8), pointer :: kvh(:,:)     ! vertical diffusivity (m2/s)
+   real(r8), pointer :: ccn_pjr(:,:)     ! ccn estimate (#/cm3)
 
    type(ptr2d_t), allocatable :: raer(:)     ! aerosol mass, number mixing ratios
    type(ptr2d_t), allocatable :: qqcw(:)
@@ -455,6 +460,7 @@ subroutine dropmixnuc( &
    zm       => state%zm
 
    call pbuf_get_field(pbuf, kvh_idx, kvh)
+   call pbuf_get_field(pbuf, ccn_pjr_idx, ccn_pjr)
 
    if(do_aerocom_ind3) then 
        ccn3d_idx = pbuf_get_index('ccn3d')
@@ -1101,6 +1107,15 @@ subroutine dropmixnuc( &
       call outfld(ccn_name(l), ccn(1,1,l), pcols, lchnk)
    enddo
 
+   ccn_pjr(:ncol,:) = ccn(:ncol,:,3)
+   icol = phys_debug_col(state%lchnk)
+   if (icol > 0) then
+      write (iulog,*) 'PJR: ndrop.F90, dropmixnuc: ccncalc '
+      do k =50, pver
+         write(iulog,*) k, ccn_pjr(icol,k)
+      end do
+   end if
+   
    if(do_aerocom_ind3) then 
       ccn3d(:ncol, :) = ccn(:ncol, :, 4)
       ccn3col = 0.0_r8; ccn4col = 0.0_r8

@@ -1083,6 +1083,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    use subcol,          only: subcol_field_avg
 
    use output_aerocom_aie, only: do_aerocom_ind3
+   use phys_debug_util, only: phys_debug_col
 
 
    type(physics_state),         intent(in)    :: state
@@ -1563,6 +1564,9 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), parameter :: deicon = 50._r8            ! Convective ice effective diameter (meters)
 
    real(r8), pointer :: pckdptr(:,:)
+
+   integer icol
+   real(r8) pjr_re
 
    integer :: autocl_idx, accretl_idx  ! Aerocom IND3
    integer :: cldliqbf_idx, cldicebf_idx, numliqbf_idx, numicebf_idx
@@ -2430,6 +2434,14 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       end do
    end do
 
+   icol = phys_debug_col(state%lchnk)
+   if (icol > 0) then
+      write (iulog,*) 'PJR: ast, cldliq '
+      do k = top_lev, pver
+         write (iulog,*) k, ast(icol,k), state%q(icol,k,ixcldliq)
+      end do
+   end if
+
    ! Calculate cloud fraction for prognostic precip sizes.
    if (micro_mg_version > 1) then
       ! Cloud fraction for purposes of precipitation is maximum cloud
@@ -2652,6 +2664,21 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       ! wherever there is no cloud.
       mu_grid(:ngrdcol,top_lev:) = 0._r8
    end where
+
+   icol = phys_debug_col(state%lchnk)
+   if (icol > 0) then
+      write (iulog,*) 'PJR: microp_mg_cam_tend: micro_mg_cam, '
+      do k = top_lev, pver
+         !if (liqcldf_grid(icol,k) > 0.01_r8) then
+            write (iulog,*) 'k, liqcldf_grid, rho_grid, rhoh2o, pmid ', &
+                 k, liqcldf_grid(icol,k), rho_grid(icol,k), rhoh2o, state%pmid(icol,k)/100.
+            pjr_re = ((icwmrst_grid(icol,k)*rho_grid(icol,k)/ &
+                     (4./3.*3.14159*ncic_grid(icol,k)*rhoh2o))**(1./3.))*1.e6
+            write (iulog,*) 'k, rel_fn_grid, rel_grid, pjr_re, ', &
+                 k, rel_fn_grid(icol,k), rel_grid(icol,k), pjr_re
+         !endif
+      end do
+   end if
 
    ! Rain/Snow effective diameter.
    drout2_grid = 0._r8

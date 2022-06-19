@@ -1094,6 +1094,8 @@ end subroutine clubb_init_cnst
    use cam_abortutils, only: endrun
    use wv_saturation,  only: qsat
    use micro_mg_cam,   only: micro_mg_version
+   use phys_debug_util, only: phys_debug_col
+
 
 #ifdef CLUBB_SGS
    use hb_diff,                   only: pblintd
@@ -1170,6 +1172,8 @@ end subroutine clubb_init_cnst
    ! Local Variables !
    ! --------------- !
 
+   integer icol
+   
 #ifdef CLUBB_SGS
 
    type(physics_state) :: state1                ! Local copy of state variable
@@ -2858,6 +2862,13 @@ end subroutine clubb_init_cnst
          qist(i,k) = state1%q(i,k,ixcldice)/max(0.01_r8,aist(i,k))
       enddo
    enddo
+   icol = phys_debug_col(state%lchnk)
+   if (icol > 0) then
+      write (iulog,*) 'PJR:clubb_intr:clubb_tend_cam'
+      do k = 1, pver
+         write (iulog,*) 'alst, ast ', k, ast(icol,k), alst(icol,k)
+      enddo
+   endif
 
    !  Probably need to add deepcu cloud fraction to the cloud fraction array, else would just
    !  be outputting the shallow convective cloud fraction

@@ -21,6 +21,7 @@ module zm_conv
                              cpwv, cpliq, rh2o
   use cam_abortutils,      only: endrun
   use cam_logfile,     only: iulog
+  
 
   implicit none
 
@@ -40,7 +41,7 @@ module zm_conv
   public trig_ull_only            ! true if to ULL along with default CAPE-based trigger
 
 !
-! Private data
+  ! Private data
 !
    real(r8), parameter :: unset_r8   = huge(1.0_r8)
    integer , parameter :: unset_int  = huge(1)
@@ -245,7 +246,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
                     mu      ,md      ,du      ,eu      ,ed      , &
                     dp      ,dsubcld ,jt      ,maxg    ,ideep   , &
                     lengath ,ql      ,rliq    ,landfrac, &
-                    t_star  ,q_star, dcape)
+                    t_star  ,q_star, dcape    ,ccn_pjr ,ideb)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -382,7 +383,8 @@ subroutine zm_convr(lchnk   ,ncol    , &
    real(r8), intent(in), pointer, dimension(:,:) :: t_star ! intermediate T between n and n-1 time step
    real(r8), intent(in), pointer, dimension(:,:) :: q_star ! intermediate q between n and n-1 time step
 
-
+   real(r8), intent(in) :: ccn_pjr(pcols,pver)   ! estimate of ccn for use with precip production
+   integer, intent(in) :: ideb  ! column to debug (zero means no debug)
 !
 ! output arguments
 !
@@ -416,6 +418,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
    real(r8) cug(pcols,pver)    ! gathered condensation rate
    real(r8) evpg(pcols,pver)   ! gathered evap rate of rain in downdraft
    real(r8) mumax(pcols)
+   real(r8) ccn_pjrg (pcols,pver)   ! gathered estimate of ccn for use with precip production
    integer jt(pcols)                          ! wg top  level index of deep cumulus convection.
    integer maxg(pcols)                        ! wg gathered values of maxi.
    integer ideep(pcols)                       ! w holds position of gathered points vs longitude index.
@@ -425,6 +428,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
 !
    real(r8) pblt(pcols)           ! i row of pbl top indices.
 
+   integer idebg  ! column to debug as a gathered array (zero means no debug)
 
 
 
@@ -722,8 +726,25 @@ subroutine zm_convr(lchnk   ,ncol    , &
          qstpg(i,k) = qstp(ideep(i),k)
          ug(i,k) = 0._r8
          vg(i,k) = 0._r8
+         ccn_pjrg(i,k) = ccn_pjr(ideep(i),k)   
       end do
    end do
+
+   if (ideb > 0) then
+      do i = 1,lengath
+         write (iulog,*) i, index(i), ideep(i)
+      end do
+   endif
+   idebg = 0
+   do i = 1,lengath
+      if (ideep(i) == ideb) then  ! a convective column is to be debugged
+         idebg = i
+      endif
+   end do
+   if (ideb > 0) then
+      write (iulog,*) 'lengath, idebg, ideb ', lengath, idebg, ideb
+   endif
+
 !
    do i = 1,lengath
       zfg(i,pver+1) = zf(ideep(i),pver+1)
@@ -788,7 +809,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
                maxg    ,j0      ,jd      ,rl      ,lengath , &
                rgas    ,grav    ,cpres   ,msg     , &
                pflxg   ,evpg    ,cug     ,rprdg   ,limcnv  , &
-               landfracg, tpertg) !PMA adds tpert to the calculation
+               landfracg, tpertg, ccn_pjrg, idebg ) !PMA adds tpert to the calculation
 !
 ! convert detrainment from units of "1/m" to "1/mb".
 !
@@ -923,6 +944,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
    end do
    rliq(:ncol) = rliq(:ncol) /1000._r8
 
+   
    return
 end subroutine zm_convr
 
@@ -2142,7 +2164,7 @@ subroutine cldprp(lchnk   , &
                   mx      ,j0      ,jd      ,rl      ,il2g    , &
                   rd      ,grav    ,cp      ,msg     , &
                   pflx    ,evp     ,cu      ,rprd    ,limcnv  , &
-                  landfrac,  tpertg )
+                  landfrac,  tpertg,ccn_pjrg ,idebg)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -2163,6 +2185,8 @@ subroutine cldprp(lchnk   , &
 ! the documentation has been enhanced to the degree that we are able
 !
 !-----------------------------------------------------------------------
+
+use physconst,      only: gravit, rair, rhoh2o, pi
 
    implicit none
 
@@ -2216,6 +2240,9 @@ subroutine cldprp(lchnk   , &
    real(r8), intent(out) :: sd(pcols,pver)       ! normalized dry stat energy of downdraft
    real(r8), intent(out) :: su(pcols,pver)       ! normalized dry stat energy of updraft
 
+   real(r8), intent(in) :: ccn_pjrg(pcols,pver)  ! estimate of ccn for use with precip production (gathered)
+   integer, intent(in) :: idebg                  ! column index for debug gathered
+
    real(r8) rd                   ! gas constant for dry air
    real(r8) grav                 ! gravity
    real(r8) cp                   ! heat capacity of dry air
@@ -2267,6 +2294,7 @@ subroutine cldprp(lchnk   , &
 
    real(r8) small
    real(r8) mdt
+   real(r8) pjrswitch, pjr_re, rhoa, ccnbl(pcols)
 
    integer khighest
    integer klowest
@@ -2691,6 +2719,7 @@ subroutine cldprp(lchnk   , &
    end do
 
 ! compute condensation in updraft
+   ccnbl(:) = ccn_pjrg(:,pver)
    do k = pver,msg + 2,-1
       do i = 1,il2g
          if (k >= jt(i) .and. k < jb(i) .and. eps0(i) > 0._r8) then
@@ -2699,9 +2728,13 @@ subroutine cldprp(lchnk   , &
             if (k == jt(i)) cu(i,k) = 0._r8
             cu(i,k) = max(0._r8,cu(i,k))
          end if
+         ! could calculate mean ccn below jb(i)
+         !if (k >= jb(i) .and. k < pver) then
+            !ccnbl(i) = ccnbl(i) + ccn_pjr(i,k)*dp(i,k)
+            !dpbl(i) = dpbl(i) + dp(i,k)
+         !endif
       end do
    end do
-
 ! compute condensed liquid, rain production rate
 ! accumulate total precipitation (condensation - detrainment of liquid)
 ! Note ql1 = ql(k) + rprd(k)*dz(k)/mu(k)
@@ -2709,6 +2742,9 @@ subroutine cldprp(lchnk   , &
 ! consistently applied.
 !    mu, ql are interface quantities
 !    cu, du, eu, rprd are midpoint quantites
+   if (idebg > 0) then
+      write (iulog,*) ' cldprp: idebg, ccnbl, ps, jt, jb, rhoh2o ', idebg, ccnbl(idebg), p(idebg,pver), jt(idebg), jb(idebg), rhoh2o
+   endif
    do k = pver,msg + 2,-1
       do i = 1,il2g
          rprd(i,k) = 0._r8
@@ -2716,12 +2752,21 @@ subroutine cldprp(lchnk   , &
             if (mu(i,k) > 0._r8) then
                ql1 = 1._r8/mu(i,k)* (mu(i,k+1)*ql(i,k+1)- &
                      dz(i,k)*du(i,k)*ql(i,k+1)+dz(i,k)*cu(i,k))
-               ql(i,k) = ql1/ (1._r8+dz(i,k)*c0mask(i))
+               pjrswitch = 1._r8
+               ! estimate volume drop radius from ccn below cloud base
+               rhoa = (p(i,k)*100.)/(rgas*t(i,k))
+               pjr_re = ((ql1*rhoa/ &
+                    (4./3.*pi*ccnbl(i)*rhoh2o))**(1./3.))*1.e6
+               if (i == idebg) then
+                  write (iulog,*) 'k, pjr_re ', k, pjr_re
+                  write (iulog,*) 'p, t, ql, rhoa, ccnbl ', ql1, p(i,k), t(i,k), rhoa
+               endif
+               ql(i,k) = ql1/ (1._r8+dz(i,k)*c0mask(i)*pjrswitch)
             else
                ql(i,k) = 0._r8
             end if
             totpcp(i) = totpcp(i) + dz(i,k)*(cu(i,k)-du(i,k)*ql(i,k+1))
-            rprd(i,k) = c0mask(i)*mu(i,k)*ql(i,k)
+            rprd(i,k) = c0mask(i)*mu(i,k)*ql(i,k)*pjrswitch
          end if
       end do
    end do

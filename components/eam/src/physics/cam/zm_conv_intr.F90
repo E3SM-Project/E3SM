@@ -45,6 +45,7 @@ module zm_conv_intr
    integer :: q_star_idx       !q_star index in physics buffer
 
 !  indices for fields in the physics buffer
+   integer  ::    ccn_pjr_idx      = 0
    integer  ::    cld_idx          = 0    
    integer  ::    icwmrdp_idx      = 0     
    integer  ::    rprddp_idx       = 0    
@@ -81,6 +82,9 @@ subroutine zm_conv_register
 
 ! deep gbm cloud liquid water (kg/kg)    
    call pbuf_add_field('DP_CLDICE','global',dtype_r8,(/pcols,pver/), dp_cldice_idx)  
+
+! ccn available for controlling precip
+   call pbuf_add_field('ccn_pjr','global',dtype_r8,(/pcols,pver/), ccn_pjr_idx)  
 
 
 ! DCAPE-UPL
@@ -219,6 +223,14 @@ subroutine zm_conv_init(pref_edge)
     end if
         
     no_deep_pbl = phys_deepconv_pbl()
+    ! PJR
+    no_deep_pbl = .true.
+    if (masterproc) then
+       write(iulog,*)'PJR: Override no_deep_pbl'
+    end if
+    ccn_pjr_idx = pbuf_get_index('ccn_pjr')
+
+    ! PJR
     call zm_convi(limcnv,no_deep_pbl_in = no_deep_pbl)
 
     cld_idx         = pbuf_get_index('CLD')
@@ -254,6 +266,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    use constituents,  only: pcnst, cnst_get_ind, cnst_is_convtran1
    use physconst,     only: gravit
    use phys_control,  only: cam_physpkg_is
+   use phys_debug_util, only: phys_debug_col
 
    ! Arguments
 
@@ -318,6 +331,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    type(physics_ptend) :: ptend_loc     ! package tendencies
 
    ! physics buffer fields
+   real(r8), pointer, dimension(:,:) :: ccn_pjr      ! ccn estimate from dropmixnuc
    real(r8), pointer, dimension(:)   :: prec         ! total precipitation
    real(r8), pointer, dimension(:)   :: snow         ! snow from ZM convection 
    real(r8), pointer, dimension(:,:) :: cld
@@ -361,6 +375,10 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
    logical  :: lq(pcnst)
 
+   
+   integer icol
+   real(r8) :: pjr1, pjr2, pjr3
+
    !----------------------------------------------------------------------
 
    ! initialize
@@ -382,6 +400,9 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 !
 ! Associate pointers with physics buffer fields
 !
+! PJR+
+   call pbuf_get_field(pbuf, ccn_pjr_idx, ccn_pjr)
+! PJR-
    itim_old = pbuf_old_tim_idx()
    call pbuf_get_field(pbuf, cld_idx,         cld,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
@@ -405,6 +426,20 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 !
 ! Begin with Zhang-McFarlane (1996) convection parameterization
 !
+
+   ! PJRX
+   if (nstep == 0) then
+      ccn_pjr(:,:) = 100.
+   endif
+   icol = phys_debug_col(state%lchnk)
+   if (icol > 0) then
+      write (iulog,*) 'above zmconvr: ccn_pjr, nstep, icol(aka ideb), pmid(botlayer) ', &
+           nstep, icol, state%pmid(icol,pver)
+      do k = 50, 72
+         !write (iulog,*) k, ccn_pjr(icol,k)
+      end do
+   endif
+   
    call t_startf ('zm_convr')
    call zm_convr(   lchnk   ,ncol    , &
                     state%t       ,state%q(:,:,1)     ,prec    ,jctop   ,jcbot   , &
@@ -415,8 +450,21 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
                     mu,md,du,eu,ed      , &
                     dp ,dsubcld ,jt,maxg,ideep   , &
                     lengath ,ql      ,rliq  ,landfrac,  &
-                    t_star, q_star, dcape)  
+                    t_star, q_star, dcape, ccn_pjr, icol)  
    call t_stopf ('zm_convr')
+
+   if (icol > 0) then
+      write (iulog,*) 'PJR: zm_conv_intr.F90: rprd d1', nstep, &
+           icol, prec(icol)*8.64e7, jctop(icol), jcbot(icol)
+      pjr1 = 0.
+      do k = jctop(icol), jcbot(icol)
+         !write(iulog,*) ' k, rprd, pwt_rprd ', k, rprd(icol,k),state%pmid(icol,k)/100., &
+         !                  rprd(icol,k)*state%pdel(icol,k)/gravit
+         pjr1 = pjr1 + rprd(icol,k)*state%pdel(icol,k)/gravit
+      end do
+      write(iulog,*) ' cum rprd ', pjr1*8.64e4
+   endif
+
 
    call outfld('CAPE', cape, pcols, lchnk)        ! RBN - CAPE output
 !
@@ -509,6 +557,12 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 !
 ! Write out variables from zm_conv_evap
 !
+   icol = phys_debug_col(state%lchnk)
+   if (icol > 0) then
+      write (iulog,*) 'PJR: zm_conv_intr.F90: d2', nstep, &
+           icol, prec(icol)*8.64e7
+   endif
+
    ftem(:ncol,:pver) = ptend_loc%s(:ncol,:pver)/cpair
    call outfld('EVAPTZM ',ftem           ,pcols   ,lchnk   )
    ftem(:ncol,:pver) = tend_s_snwprd  (:ncol,:pver)/cpair
