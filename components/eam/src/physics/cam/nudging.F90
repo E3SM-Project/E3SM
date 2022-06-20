@@ -2325,8 +2325,8 @@ contains
    call outfld('SOLS_bf_ndg'  ,dswfvs_mod(:ncol),pcols,lchnk)
    call outfld('SOLLD_bf_ndg' ,dswfird_mod(:ncol),pcols,lchnk)
    call outfld('SOLSD_bf_ndg' ,dswfvsd_mod(:ncol),pcols,lchnk)
-   call outfld('NETSW_bf_ndg'  ,dnetsw_mod(:ncol),pcols,lchnk)
-   call outfld('FLWDS_bf_ndg'  ,dflwds_mod(:ncol),pcols,lchnk)
+   call outfld('NETSW_bf_ndg' ,dnetsw_mod(:ncol),pcols,lchnk)
+   call outfld('FLWDS_bf_ndg' ,dflwds_mod(:ncol),pcols,lchnk)
 
    call outfld('PRECC_af_ndg' ,cam_out%precc(:ncol),pcols,lchnk)
    call outfld('PRECL_af_ndg' ,cam_out%precl(:ncol),pcols,lchnk)
@@ -2336,8 +2336,8 @@ contains
    call outfld('SOLS_af_ndg'  ,cam_out%sols(:ncol),pcols,lchnk)
    call outfld('SOLLD_af_ndg' ,cam_out%solld(:ncol),pcols,lchnk)
    call outfld('SOLSD_af_ndg' ,cam_out%solsd(:ncol),pcols,lchnk)
-   call outfld('NETSW_af_ndg'  ,cam_out%netsw(:ncol),pcols,lchnk)
-   call outfld('FLWDS_af_ndg'  ,cam_out%flwds(:ncol),pcols,lchnk)
+   call outfld('NETSW_af_ndg' ,cam_out%netsw(:ncol),pcols,lchnk)
+   call outfld('FLWDS_af_ndg' ,cam_out%flwds(:ncol),pcols,lchnk)
 
    call outfld('PRECC_ref' ,Target_PRECC(:ncol,lchnk),pcols,lchnk)
    call outfld('PRECL_ref' ,Target_PRECL(:ncol,lchnk),pcols,lchnk)
@@ -2347,8 +2347,8 @@ contains
    call outfld('SOLS_ref'  ,Target_SOLS(:ncol,lchnk),pcols,lchnk)
    call outfld('SOLLD_ref' ,Target_SOLLD(:ncol,lchnk),pcols,lchnk)
    call outfld('SOLSD_ref' ,Target_SOLSD(:ncol,lchnk),pcols,lchnk)
-   call outfld('NETSW_ref'  ,Target_NETSW(:ncol,lchnk),pcols,lchnk)
-   call outfld('FLWDS_ref'  ,Target_FLWDS(:ncol,lchnk),pcols,lchnk)
+   call outfld('NETSW_ref' ,Target_NETSW(:ncol,lchnk),pcols,lchnk)
+   call outfld('FLWDS_ref' ,Target_FLWDS(:ncol,lchnk),pcols,lchnk)
 
    call outfld('Nudge_PRECC' ,precc_tend(:ncol),pcols,lchnk)
    call outfld('Nudge_PRECL' ,precl_tend(:ncol),pcols,lchnk)
@@ -2358,8 +2358,8 @@ contains
    call outfld('Nudge_SOLS'  ,sols_tend(:ncol),pcols,lchnk)
    call outfld('Nudge_SOLLD' ,solld_tend(:ncol),pcols,lchnk)
    call outfld('Nudge_SOLSD' ,solsd_tend(:ncol),pcols,lchnk)
-   call outfld('Nudge_NETSW'  ,netsw_tend(:ncol),pcols,lchnk)
-   call outfld('Nudge_FLWDS'  ,flwds_tend(:ncol),pcols,lchnk)
+   call outfld('Nudge_NETSW' ,netsw_tend(:ncol),pcols,lchnk)
+   call outfld('Nudge_FLWDS' ,flwds_tend(:ncol),pcols,lchnk)
 
   end subroutine  !nudging_update_land_surface 
 
