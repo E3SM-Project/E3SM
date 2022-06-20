@@ -398,7 +398,7 @@ module nudging
   public:: Nudge_PS_Adjust_On
   public:: Nudge_PS_On
   public:: Nudge_Q_Adjust_On
-  public:: Nudge_SRF_On
+  public:: Nudge_Land,Nudge_SRF_On
   public:: Nudge_SRF_Flux_On
   public:: Nudge_SRF_Q_On
   public:: Nudge_SRF_PSWgt_On
@@ -443,6 +443,7 @@ module nudging
   logical::         Nudge_PS_Adjust_On   = .false.
   logical::         Nudge_PS_On          = .false.
   logical::         Nudge_Q_Adjust_On    = .false.
+  logical::         Nudge_Land           = .false.
   logical::         Nudge_SRF_On         = .false.
   logical::         Nudge_SRF_Flux_On    = .false. 
   logical::         Nudge_SRF_Q_On       = .false.
@@ -656,7 +657,7 @@ contains
                          Nudge_UV_OPT, Nudge_T_OPT, Nudge_Q_OPT,       &
                          Nudge_PS_Adjust_On, Nudge_Q_Adjust_On,        & 
                          Nudge_SRF_File_Template,Nudge_SRF_File_Ntime, &
-                         Nudge_SRF_On, Nudge_SRF_Flux_On,              & 
+                         Nudge_Land, Nudge_SRF_Flux_On,                & 
                          Nudge_SRF_PSWgt_On, Nudge_SRF_Prec_On,        & 
                          Nudge_SRF_RadFlux_On, Nudge_SRF_State_On,     & 
                          Nudge_SRF_Q_On, Nudge_SRF_Tau     
@@ -683,6 +684,7 @@ contains
    Nudge_Lin_Relax_On   = .false.
    Nudge_PS_Adjust_On   = .false.
    Nudge_Q_Adjust_On    = .false.
+   Nudge_Land           = .false.
    Nudge_SRF_PSWgt_On   = .false. 
    Nudge_SRF_Prec_On    = .false.
    Nudge_SRF_RadFlux_On = .false.
@@ -831,6 +833,7 @@ contains
    call mpibcast(Nudge_PS_Adjust_On      , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_PS_On             , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_Q_Adjust_On       , 1, mpilog, 0, mpicom)
+   call mpibcast(Nudge_Land              , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_SRF_On            , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_SRF_Flux_On       , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_SRF_Q_On          , 1, mpilog, 0, mpicom)
@@ -1007,7 +1010,7 @@ contains
    !-------------------------------------------
    ! Allocate Space for surface nudging 
    !-------------------------------------------
-   if (Nudge_SRF_On) then 
+   if (Nudge_Land) then 
      allocate(Target_U10(pcols,begchunk:endchunk),stat=istat)
      call alloc_err(istat,'nudging_init','Target_U10',pcols*((endchunk-begchunk)+1))
      allocate(Target_V10(pcols,begchunk:endchunk),stat=istat)
@@ -1230,9 +1233,10 @@ contains
      elseif(.not.Before_End) then
        ! Nudging will never occur, so switch it off
        !--------------------------------------------
-       Nudge_Model=.false.
-       Nudge_ON   =.false.
-       Nudge_SRF_On = .false. 
+       Nudge_Model =.false.
+       Nudge_ON    =.false.
+       Nudge_Land  =.false.
+       Nudge_SRF_On=.false. 
        write(iulog,*) ' '
        write(iulog,*) 'NUDGING: WARNING - Nudging has been requested by it will'
        write(iulog,*) 'NUDGING:           never occur for the given time values'
@@ -1297,7 +1301,7 @@ contains
      write(iulog,*) 'NUDGING: Nudge_PS_On=',Nudge_PS_On
      write(iulog,*) 'NUDGING: Nudge_Q_Adjust_On=',Nudge_Q_Adjust_On
      write(iulog,*) 'NUDGING: Nudge_PS_Adjust_On=',Nudge_PS_Adjust_On
-     write(iulog,*) 'NUDGING: Nudge_SRF_On=',Nudge_SRF_On
+     write(iulog,*) 'NUDGING: Nudge_Land=',Nudge_Land
      write(iulog,*) 'NUDGING: Nudge_SRF_Flux_On=',Nudge_SRF_Flux_On
      write(iulog,*) 'NUDGING: Nudge_SRF_Q_On=',Nudge_SRF_Q_On
      write(iulog,*) 'NUDGING: Nudge_SRF_PSWgt_On=',Nudge_SRF_PSWgt_On
@@ -1386,6 +1390,7 @@ contains
    call mpibcast(Nudge_PS_Adjust_On  , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_PS_On         , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_Q_Adjust_On   , 1, mpilog, 0, mpicom)
+   call mpibcast(Nudge_Land          , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_SRF_On        , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_SRF_Flux_On   , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_SRF_Q_On      , 1, mpilog, 0, mpicom)
@@ -1499,7 +1504,7 @@ contains
 
      Target_PHIS(:pcols,lchnk)=0._r8
 
-     if (Nudge_SRF_On) then
+     if (Nudge_Land) then
 
        do icol=1,ncol
          Nudge_SRFtau(icol,lchnk)=nudging_set_SRFprofile(rlat,rlon,Nudge_SRFprof)
@@ -1563,7 +1568,7 @@ contains
            allocate(INTP_PHIS(pcols,begchunk:endchunk,2),stat=istat)
            call alloc_err(istat,'nudging_init','INTP_PHIS',2*pcols*((endchunk-begchunk)+1))
 
-           if (Nudge_SRF_On) then
+           if (Nudge_Land) then
               allocate(INTP_U10(pcols,begchunk:endchunk,2),stat=istat)
               call alloc_err(istat,'nudging_init','INTP_U10',2*pcols*((endchunk-begchunk)+1))
               allocate(INTP_V10(pcols,begchunk:endchunk,2),stat=istat)
@@ -1727,9 +1732,9 @@ contains
                                             sec_spec=Nudge_Next_Sec    )  
      if(masterproc) then
       write(iulog,*) 'NUDGING: Reading analyses:',trim(Nudge_Path)//trim(Nudge_File)
-      if(Nudge_SRF_On) then
+      if(Nudge_Land) then 
         write(iulog,*) 'NUDGING: Reading surface analyses:',trim(Nudge_Path)//trim(Nudge_SRF_File)
-      end if
+      end if 
      endif
 
      ! How to manage MISSING values when there are 'Gaps' in the analyses data?
@@ -1739,7 +1744,7 @@ contains
      !------------------------------------------------------------------------
      if(dycore_is('UNSTRUCTURED')) then 
        call nudging_update_analyses_se(trim(Nudge_Path)//trim(Nudge_File))
-       if(Nudge_SRF_On) then 
+       if(Nudge_Land) then 
          call nudging_update_srf_analyses_se(trim(Nudge_Path)//trim(Nudge_SRF_File))
        end if 
      elseif(dycore_is('EUL')) then
@@ -1761,7 +1766,7 @@ contains
                  call linear_interpolation   (INTP_T, Target_T)
                  call linear_interpolation_2d(INTP_PS, Target_PS)
                  call linear_interpolation_2d(INTP_PHIS, Target_PHIS)
-                 if (Nudge_SRF_On) then
+                 if (Nudge_Land) then
                    call linear_interpolation_2d(INTP_U10,    Target_U10)
                    call linear_interpolation_2d(INTP_V10,    Target_V10)
                    call linear_interpolation_2d(INTP_T2,     Target_T2)
@@ -1796,7 +1801,7 @@ contains
      endif
      !For land surfac nudging file 
      if(Nudge_SRF_File_Present) then
-       Nudge_SRF_ON=.true.
+       Nudge_SRF_On=.true.
      else
        Nudge_SRF_On=.false.
        if(Nudge_Allow_Missing_File) then
