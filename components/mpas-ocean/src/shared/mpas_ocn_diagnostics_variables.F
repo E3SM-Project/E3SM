@@ -126,8 +126,8 @@ module ocn_diagnostics_variables
    real(kind=RKIND), dimension(:), pointer   :: cGMphaseSpeed
    real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown
 
-   integer, dimension(:), pointer :: indMLD
-   real(kind=RKIND), dimension(:), pointer :: dThreshMLD
+   integer, dimension(:), pointer :: indMLD, indMLDedge
+   real(kind=RKIND), dimension(:), pointer :: bGradMLD,dThreshMLD
    real (kind=RKIND), dimension(:,:), pointer :: velocityX, velocityY, velocityZ
 
    real (kind=RKIND), dimension(:,:), pointer :: vertAleTransportTop
@@ -620,7 +620,9 @@ contains
                'modifyLandIcePressureMask', &
                 modifyLandIcePressureMask)
       call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
+      call mpas_pool_get_array(diagnosticsPool, 'indMLDedge', indMLDedge)
       call mpas_pool_get_array(diagnosticsPool, 'dThreshMLD', dThreshMLD)
+      call mpas_pool_get_array(diagnosticsPool, 'bGradMLD', bGradMLD)
       call mpas_pool_get_array(diagnosticsPool, 'surfacePressure', &
                 surfacePressure)
 
@@ -854,7 +856,9 @@ contains
       !$acc                   zTop,                                    &
       !$acc                   xtime,                                   &
       !$acc                   indMLD,                                  &
+      !$acc                   indMLDedge,                              &
       !$acc                   dThreshMLD,                              &
+      !$acc                   bGradMLD,                                &
       !$acc                   density,                                 &
       !$acc                   betaEdge,                                &
       !$acc                   pressure,                                &
@@ -1104,7 +1108,9 @@ contains
       !$acc                   zTop,                                    &
       !$acc                   xtime,                                   &
       !$acc                   indMLD,                                  &
+      !$acc                   indMLDedge,                              &
       !$acc                   dThreshMLD,                              &
+      !$acc                   bGradMLD,                                &
       !$acc                   density,                                 &
       !$acc                   betaEdge,                                &
       !$acc                   pressure,                                &
@@ -1303,7 +1309,9 @@ contains
               zTop,                                    &
               xtime,                                   &
               indMLD,                                  &
+              indMLDedge,                              &
               dThreshMLD,                              &
+              bGradMLD,                                &
               density,                                 &
               betaEdge,                                &
               pressure,                                &

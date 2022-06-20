@@ -2942,12 +2942,18 @@
 			 description="CVMix/KPP: diagnosed surface buoyancy flux due to heat, salt and freshwater fluxes. Positive flux increases buoyancy."
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="indMLD" type="integer" dimensions="nCells Time" units="unitless"
+	    <var name="indMLD" type="integer" dimensions="nCells Time" units="unitless"
 			description="index of model where mixed layer depth occurs (always one past)"
+		/>
+	     <var name="indMLDedge" type="integer" dimensions="nEdges Time" units="unitless"
+			description="index of model where mixed layer depth occurs on edges"
 		/>
 	    <var name="dThreshMLD" type="real" dimensions="nCells Time" units="m"
              description="mixed layer depth based on density threshold"
         />
+	    <var name="bGradMLD" type="real" dimensions="nEdges Time" units="m"
+		     description="mixed layer depth based on max buoyancy gradient"
+		/>
 		<var name="slopeTriadUp" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional" default_value="0.0"
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
 			 packages="forwardMode;analysisMode"

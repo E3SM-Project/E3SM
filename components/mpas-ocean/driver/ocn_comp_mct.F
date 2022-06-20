@@ -974,10 +974,14 @@ contains
             call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
 
             call ocn_eddy_compute_mixed_layer_depth(statePool)
+            call ocn_eddy_compute_mixed_layer_depth_bg(statePool)
             if (config_use_GM.or.config_submesoscale_enable) then
                 call ocn_eddy_compute_buoyancy_gradient()
             end if
 
+            if (config_submesoscale_enable) then
+                call ocn_submesoscale_compute_velocity()
+            end if
             ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
             if (config_use_Redi.or.config_use_GM) then
               call ocn_gm_compute_Bolus_velocity(statePool, meshPool, scratchPool, timeLevelIn=1)

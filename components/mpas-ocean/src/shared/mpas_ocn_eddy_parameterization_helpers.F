@@ -36,7 +36,8 @@ module ocn_eddy_parameterization_helpers
    !--------------------------------------------------------------------
 
    public :: ocn_eddy_compute_buoyancy_gradient, &
-             ocn_eddy_compute_mixed_layer_depth
+             ocn_eddy_compute_mixed_layer_depth, &
+             ocn_eddy_compute_mixed_layer_depth_bg
 
 
   !***********************************************************************
@@ -180,6 +181,64 @@ module ocn_eddy_parameterization_helpers
                 gradZMidTopOfEdge)
 
   end subroutine ocn_eddy_compute_buoyancy_gradient
+
+  !***********************************************************************
+  !
+  !  routine ocn_eddy_compute_mixed_layer_depth_bg
+  !
+  !> \brief   Computes mixed layer depth based on maximum buoyancy gradient
+  !> \details
+  !>  implements the FK2011 parameterization
+  !>  fill in more details later
+  !***********************************************************************
+
+  subroutine ocn_eddy_compute_mixed_layer_depth_bg(statePool)
+
+     type (mpas_pool_type), pointer, intent(in) :: statePool
+     integer :: iEdge, nEdges, cell1, cell2, k
+     real(kind=RKIND) :: maxbuoy, maxbuoy2
+     real(kind=RKIND),dimension(:),pointer :: ssh
+     logical :: found
+
+     call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
+
+     nEdges = nEdgesHalo(2)
+
+     !$omp parallel
+     !$omp do schedule(runtime) private(cell1, cell2, maxbuoy, maxbuoy2, k, found)
+     do iEdge=1,nEdges
+        cell1 = cellsOnEdge(1,iEdge)
+        cell2 = cellsOnEdge(2,iEdge)
+
+        found = .false.
+        k = minLevelEdgeTop(iEdge)
+        if(k>0) then
+           maxbuoy = 0.5_RKIND*(max(BruntVaisalaFreqTop(k+1,cell1),0.0_RKIND) + &
+                                max(BruntVaisalaFreqTop(k+1,cell2),0.0_RKIND))
+           do k=minLevelEdgeTop(iEdge)+1,maxLevelEdgeTop(iEdge)
+              maxbuoy2 = 0.5_RKIND*(max(BruntVaisalaFreqTop(k,cell1),0.0_RKIND) + &
+                                    max(BruntVaisalaFreqTop(k,cell2),0.0_RKIND))
+              if(maxbuoy2 > maxbuoy) then
+                 maxbuoy = maxbuoy2
+                 found = .false.
+              else
+                 if(.not. found) then
+                    bGradMLD(iEdge) = 0.5_RKIND*(ssh(cell1) + ssh(cell2)) - 0.5_RKIND* &
+                                      (zTop(k-1,cell1) + zTop(k-1,cell2))
+                    indMLDedge(iEdge) = k-1
+                    found = .true.
+                 endif
+              end if
+           end do
+        end if
+        indMLDEdge(iEdge) = max(indMLDedge(iEdge),minLevelEdgeTop(iEdge)+1)
+        k = minLevelEdgeTop(iEdge)+1
+        bGradMLD(iEdge) = max(bGradMLD(iEdge),-0.5_RKIND*(zTop(k,cell1)+zTop(k,cell2)))
+     end do
+     !$omp end do
+     !$omp end parallel
+
+  end subroutine ocn_eddy_compute_mixed_layer_depth_bg
 
   !***********************************************************************
   !
