@@ -529,6 +529,7 @@ module nudging
   logical            :: Nudge_Loc_PhysOut                   ! whether nudging tendency is calculated at the same 
                                                             ! location where the model state variables are written out
   real(r8)           :: Nudge_Tau                           ! nudge relaxation timescale
+  real(r8)           :: Nudge_SRF_Tau                       ! nudge relaxation timescale for land surface 
   logical            :: Nudge_CurrentStep                   ! .true. if linearly interpolated to current model time step
   integer            :: Nudge_File_Ntime                    ! number of time slices per nudging data file 
   integer            :: Nudge_SRF_File_Ntime                ! number of time slices per nudging data file for surface 
@@ -657,7 +658,7 @@ contains
                          Nudge_SRF_On, Nudge_SRF_Flux_On,              & 
                          Nudge_SRF_PSWgt_On, Nudge_SRF_Prec_On,        & 
                          Nudge_SRF_RadFlux_On, Nudge_SRF_State_On,     & 
-                         Nudge_SRF_Q_On     
+                         Nudge_SRF_Q_On, Nudge_SRF_Tau     
 
    ! Nudging is NOT initialized yet, For now
    ! Nudging will always begin/end at midnight.
@@ -728,7 +729,8 @@ contains
 
    Nudge_SRF_File_Template = 'YOTC_sfc_ne30np4_L30.cam2.i.%y-%m-%d-%s.nc'
    Nudge_SRF_File_Ntime    = 0 
- 
+   Nudge_SRF_Tau           = -999._r8
+
    Nudge_UV_OPT       = 0 
    Nudge_T_OPT        = 0
    Nudge_Q_OPT        = 0
@@ -878,6 +880,7 @@ contains
 
    call mpibcast(Nudge_SRF_File_Template ,len(Nudge_SRF_File_Template),mpichar,0,mpicom)
    call mpibcast(Nudge_SRF_File_Ntime,1,mpiint,0,mpicom)
+   call mpibcast(Nudge_SRF_Tau,1,mpir8,0,mpicom)
 
    call mpibcast(Nudge_PS_OPT    , 1, mpiint, 0, mpicom)
    call mpibcast(Nudge_UV_OPT    , 1, mpiint, 0, mpicom)
@@ -1087,6 +1090,62 @@ contains
    call addfld('Nudge_T_vint',horiz_only,'A','W/m2'   ,'Vertical integral of T Nudging Tendency')
    call addfld('Nudge_Q_vint',horiz_only,'A','kg/m2/s','Vertical integral of Q Nudging Tendency')
 
+   call addfld('Nudge_PRECC', horiz_only, 'A','m/s/s'    ,'PRECC Nudging Tendency')
+   call addfld('Nudge_PRECL', horiz_only, 'A','m/s/s'    ,'PRECL Nudging Tendency')
+   call addfld('Nudge_PRECSC',horiz_only, 'A','m/s/s'    ,'PRECSC Nudging Tendency')
+   call addfld('Nudge_PRECSL',horiz_only, 'A','m/s/s'    ,'PRECSL Nudging Tendency')
+   call addfld('Nudge_LHFLX', horiz_only, 'A','W/m2/s'   ,'LHFLX Nudging Tendency')
+   call addfld('Nudge_SHFLX', horiz_only, 'A','W/m2/s'   ,'SHFLX Nudging Tendency')
+   call addfld('Nudge_QFLX',  horiz_only, 'A','kg/m2/s2' ,'QFLX Nudging Tendency')
+   call addfld('Nudge_SOLL',  horiz_only, 'A','W/m2/s'   ,'SOLL Nudging Tendency')
+   call addfld('Nudge_SOLS',  horiz_only, 'A','W/m2/s'   ,'SOLS Nudging Tendency')
+   call addfld('Nudge_SOLLD', horiz_only, 'A','W/m2/s'   ,'SOLLD Nudging Tendency')
+   call addfld('Nudge_SOLSD', horiz_only, 'A','W/m2/s'   ,'SOLSD Nudging Tendency')
+   call addfld('Nudge_NETSW', horiz_only, 'A','W/m2/s'   ,'NETSW Nudging Tendency')
+   call addfld('Nudge_FLWDS', horiz_only, 'A','W/m2/s'   ,'FLWDS Nudging Tendency')
+
+   call addfld('PRECC_bf_ndg',  horiz_only, 'A','m/s'     ,'Convective rain rate  Before Nudging')
+   call addfld('PRECL_bf_ndg',  horiz_only, 'A','m/s'     ,'Large-scale rain rate Before Nudging')
+   call addfld('PRECSC_bf_ndg', horiz_only, 'A','m/s'     ,'Convective snow rate  Before Nudging')
+   call addfld('PRECSL_bf_ndg', horiz_only, 'A','m/s'     ,'Large-scale snow rate Before Nudging')
+   call addfld('LHFLX_bf_ndg',  horiz_only, 'A','W/m2'    ,'Surface latent heat flux Before Nudging')
+   call addfld('SHFLX_bf_ndg',  horiz_only, 'A','W/m2'    ,'Surface sensible heat flux Before Nudging')
+   call addfld('QFLX_bf_ndg',   horiz_only, 'A','kg/m2/s' ,'Surface water flux Before Nudging')
+   call addfld('SOLL_bf_ndg',   horiz_only, 'A','W/m2'    ,'Near IR direct solar radiation Before Nudging')
+   call addfld('SOLS_bf_ndg',   horiz_only, 'A','W/m2'    ,'Visible direct solar radiation Before Nudging')
+   call addfld('SOLLD_bf_ndg',  horiz_only, 'A','W/m2'    ,'Near IR diffuse solar radiation Before Nudging')
+   call addfld('SOLSD_bf_ndg',  horiz_only, 'A','W/m2'    ,'Visible diffuse solar radiation Before Nudging')
+   call addfld('NETSW_bf_ndg',  horiz_only, 'A','W/m2'    ,'Net solar radiation Before Nudging')
+   call addfld('FLWDS_bf_ndg',  horiz_only, 'A','W/m2'    ,'Downward longwave radiation Before Nudging')
+
+   call addfld('PRECC_af_ndg',  horiz_only, 'A','m/s'     ,'Convective rain rate After Nudging')
+   call addfld('PRECL_af_ndg',  horiz_only, 'A','m/s'     ,'Large-scale rain rate After Nudging')
+   call addfld('PRECSC_af_ndg', horiz_only, 'A','m/s'     ,'Convective snow rate After Nudging')
+   call addfld('PRECSL_af_ndg', horiz_only, 'A','m/s'     ,'Large-scale snow rate After Nudging')
+   call addfld('LHFLX_af_ndg',  horiz_only, 'A','W/m2'    ,'Surface latent heat flux After Nudging')
+   call addfld('SHFLX_af_ndg',  horiz_only, 'A','W/m2'    ,'Surface sensible heat flux After Nudging')
+   call addfld('QFLX_af_ndg',   horiz_only, 'A','kg/m2/s' ,'Surface water flux After Nudging')
+   call addfld('SOLL_af_ndg',   horiz_only, 'A','W/m2'    ,'Near IR direct solar radiation After Nudging')
+   call addfld('SOLS_af_ndg',   horiz_only, 'A','W/m2'    ,'Visible direct solar radiation After Nudging')
+   call addfld('SOLLD_af_ndg',  horiz_only, 'A','W/m2'    ,'Near IR diffuse solar radiation After Nudging')
+   call addfld('SOLSD_af_ndg',  horiz_only, 'A','W/m2'    ,'Visible diffuse solar radiation After Nudging')
+   call addfld('NETSW_af_ndg',  horiz_only, 'A','W/m2'    ,'Net solar radiation After Nudging')
+   call addfld('FLWDS_af_ndg',  horiz_only, 'A','W/m2'    ,'Downward longwave radiation After Nudging')
+
+   call addfld('PRECC_ref',  horiz_only, 'A','m/s'     ,'Reference convective rain rate')
+   call addfld('PRECL_ref',  horiz_only, 'A','m/s'     ,'Reference large-scale rain rate')
+   call addfld('PRECSC_ref', horiz_only, 'A','m/s'     ,'Reference convective snow rate')
+   call addfld('PRECSL_ref', horiz_only, 'A','m/s'     ,'Reference large-scale snow rate')
+   call addfld('LHFLX_ref',  horiz_only, 'A','W/m2'    ,'Reference surface latent heat flux')
+   call addfld('SHFLX_ref',  horiz_only, 'A','W/m2'    ,'Reference surface sensible heat flux')
+   call addfld('QFLX_ref',   horiz_only, 'A','kg/m2/s' ,'Reference surface water flux')
+   call addfld('SOLL_ref',   horiz_only, 'A','W/m2'    ,'Reference near IR direct solar radiation')
+   call addfld('SOLS_ref',   horiz_only, 'A','W/m2'    ,'Reference visible direct solar radiation')
+   call addfld('SOLLD_ref',  horiz_only, 'A','W/m2'    ,'Reference near IR diffuse solar radiation')
+   call addfld('SOLSD_ref',  horiz_only, 'A','W/m2'    ,'Reference visible diffuse solar radiation')
+   call addfld('NETSW_ref',  horiz_only, 'A','W/m2'    ,'Reference net solar radiation')
+   call addfld('FLWDS_ref',  horiz_only, 'A','W/m2'    ,'Reference downward longwave radiation')
+
    !-----------------------------------------
    ! Values initialized only by masterproc
    !-----------------------------------------
@@ -1288,6 +1347,7 @@ contains
      write(iulog,*) 'NUDGING: Nudge_Method        =',Nudge_Method
      write(iulog,*) 'NUDGING: Nudge_Loc_PhysOut   =',Nudge_Loc_PhysOut
      write(iulog,*) 'NUDGING: Nudge_Tau           =',Nudge_Tau
+     write(iulog,*) 'NUDGING: Nudge_SRF_Tau       =',Nudge_SRF_Tau
      write(iulog,*) 'NUDGING: Nudge_CurrentStep   =',Nudge_CurrentStep
      write(iulog,*) 'NUDGING: Nudge_File_Ntime    =',Nudge_File_Ntime
      write(iulog,*) 'NUDGING: Nudge_PS_OPT        =',Nudge_PS_OPT
@@ -1374,10 +1434,6 @@ contains
 
        Nudge_PStau(icol,lchnk)=nudging_set_PSprofile(rlat,rlon,Nudge_PSprof)
 
-       if (Nudge_SRF_On) then 
-         Nudge_SRFtau(icol,lchnk)=nudging_set_SRFprofile(rlat,rlon,Nudge_SRFprof)
-       end if 
-
      end do
 
      if  (Nudge_Tau .le. 0._r8) then
@@ -1397,11 +1453,6 @@ contains
          Nudge_PStau(:ncol,lchnk)=                              &
          Nudge_PStau(:ncol,lchnk)* Nudge_PScoef/float(Nudge_Step)
 
-         if (Nudge_SRF_On) then
-           Nudge_SRFtau(:ncol,lchnk)=                              &
-           Nudge_SRFtau(:ncol,lchnk)* Nudge_SRFcoef/float(Nudge_Step)
-         end if
-
      else          ! use Nudge_Tau directy as relaxation timescale
 
          Nudge_Utau(:ncol,:pver,lchnk) =                        &
@@ -1418,11 +1469,6 @@ contains
 
          Nudge_PStau(:ncol,lchnk) =                        &
          Nudge_PStau(:ncol,lchnk) * Nudge_PScoef / Nudge_Tau / sec_per_hour 
-
-       if (Nudge_SRF_On) then
-           Nudge_SRFtau(:ncol,lchnk) =                        &
-           Nudge_SRFtau(:ncol,lchnk) * Nudge_SRFcoef / Nudge_Tau / sec_per_hour
-       end if 
 
      end if
 
@@ -1450,6 +1496,14 @@ contains
      Target_PHIS(:pcols,lchnk)=0._r8
 
      if (Nudge_SRF_On) then
+
+       do icol=1,ncol
+         Nudge_SRFtau(icol,lchnk)=nudging_set_SRFprofile(rlat,rlon,Nudge_SRFprof)
+       end do
+
+       Nudge_SRFtau(:ncol,lchnk) =  &
+       Nudge_SRFtau(:ncol,lchnk) * Nudge_SRFcoef / Nudge_SRF_Tau / sec_per_hour
+
        Target_U10(:pcols,lchnk)=0._r8
        Target_V10(:pcols,lchnk)=0._r8
        Target_T2(:pcols,lchnk)=0._r8
@@ -1472,6 +1526,7 @@ contains
        Target_SOLS(:pcols,lchnk)=0._r8
        Target_SOLLD(:pcols,lchnk)=0._r8
        Target_SOLSD(:pcols,lchnk)=0._r8
+
      end if 
 
    end do  ! lchnk loop 
@@ -1945,7 +2000,8 @@ contains
    real(r8), pointer :: vmag_gust(:)
 
    !Local variables 
-   integer :: i, k, m, lchnk, ncol
+   integer  :: i, k, m, lchnk, ncol
+   real(r8) :: frac1, frac2 
 
    real(r8) :: dswfvs_mod(pcols)      ! Direct downward shortwave flux, UV/vis
    real(r8) :: dswfir_mod(pcols)      ! Direct downward shortwave flux, near-IR
@@ -1959,6 +2015,7 @@ contains
    real(r8) :: snowc_mod(pcols)       ! convective snow rate
    real(r8) :: snowl_mod(pcols)       ! stratiform snow rate
 
+   real(r8) :: radmask(pcols)
    real(r8) :: factor(pcols)       
    real(r8) :: psmod(pcols) 
    real(r8) :: zsmod(pcols)  
@@ -1984,8 +2041,30 @@ contains
    real(r8) :: rairv(pcols,pver)
    real(r8) :: zvirv(pcols,pver)
 
+   real(r8) :: precc_tend(pcols)
+   real(r8) :: precl_tend(pcols)
+   real(r8) :: snowc_tend(pcols)
+   real(r8) :: snowl_tend(pcols)
+   real(r8) :: soll_tend(pcols)
+   real(r8) :: sols_tend(pcols)
+   real(r8) :: solld_tend(pcols)
+   real(r8) :: solsd_tend(pcols)
+   real(r8) :: netsw_tend(pcols)
+   real(r8) :: flwds_tend(pcols)
+
    lchnk = state%lchnk
    ncol  = state%ncol
+
+   precc_tend(:ncol) = 0._r8 
+   precl_tend(:ncol) = 0._r8
+   snowc_tend(:ncol) = 0._r8
+   snowl_tend(:ncol) = 0._r8
+   soll_tend(:ncol)  = 0._r8
+   sols_tend(:ncol)  = 0._r8
+   solld_tend(:ncol) = 0._r8
+   solsd_tend(:ncol) = 0._r8
+   netsw_tend(:ncol) = 0._r8
+   flwds_tend(:ncol) = 0._r8
 
    psmod(:ncol)  = state%ps(:ncol)
    zsmod(:ncol)  = state%phis(:ncol)
@@ -2000,8 +2079,8 @@ contains
        end if
      enddo
    end if 
-
-   ! surface state variables 
+  
+   !surface state variables 
    if (Nudge_SRF_State_On) then
      !updated the state due to nudging 
      do k=1,pver
@@ -2072,19 +2151,124 @@ contains
      precl_mod(:ncol) = prec_sed(:ncol) + prec_pcw(:ncol)
      snowc_mod(:ncol) = snow_dp(:ncol)  + snow_sh(:ncol)
      snowl_mod(:ncol) = snow_sed(:ncol) + snow_pcw(:ncol)
+
+     !Sanity check for ERA5 precipation rate 
+     !convert kg/m2/s (default unit in ERA5) to m/s to be consistent with model 
+     do i = 1, ncol
+       if (Target_PRECC(i,lchnk).le.1e-12_r8 ) then
+         Target_PRECC(i,lchnk) = 0.0_r8
+       end if
+       if (Target_PRECL(i,lchnk).le.1e-12_r8) then
+         Target_PRECL(i,lchnk)  = 0.0_r8
+       end if
+       if (Target_PRECSC(i,lchnk).le.1e-12_r8) then
+         Target_PRECSC(i,lchnk) = 0.0_r8
+       end if
+       if (Target_PRECSL(i,lchnk).le.1e-12_r8) then
+         Target_PRECSL(i,lchnk) = 0.0_r8
+       end if
+       !Note: this conversion depends on the unit in the reanalysis data
+       Target_PRECC(i,lchnk)  = Target_PRECC(i,lchnk)  * 1e-3_r8
+       Target_PRECL(i,lchnk)  = Target_PRECL(i,lchnk)  * 1e-3_r8
+       Target_PRECSC(i,lchnk) = Target_PRECSC(i,lchnk) * 1e-3_r8
+       Target_PRECSL(i,lchnk) = Target_PRECSL(i,lchnk) * 1e-3_r8
+     end do
+
+     !Derive the nudging tendency
+     do i = 1, ncol
+       precc_tend(i) = (Target_PRECC(i,lchnk) - precc_mod(i)) & 
+                       * Nudge_SRFtau(i,lchnk)
+       precl_tend(i) = (Target_PRECL(i,lchnk) - precl_mod(i)) &
+                       * Nudge_SRFtau(i,lchnk)
+       snowc_tend(i) = (Target_PRECSC(i,lchnk) - snowc_mod(i)) &
+                       * Nudge_SRFtau(i,lchnk)
+       snowl_tend(i) = (Target_PRECSL(i,lchnk) - snowl_mod(i)) &
+                       * Nudge_SRFtau(i,lchnk)
+     end do 
+
    end if 
 
    if (Nudge_SRF_RadFlux_On) then
+
      dswfvs_mod(:ncol)  = cam_out%sols(:ncol)   ! Direct downward shortwave flux, UV/vis
      dswfir_mod(:ncol)  = cam_out%soll(:ncol)   ! Direct downward shortwave flux, near-IR
      dswfvsd_mod(:ncol) = cam_out%solsd(:ncol)  ! Diffuse downward shortwave flux, UV/vis
      dswfird_mod(:ncol) = cam_out%solld(:ncol)  ! Diffuse downward shortwave flux, near-IR 
      dflwds_mod(:ncol)  = cam_out%flwds(:ncol)  ! Downward longwave flux at surface
      dnetsw_mod(:ncol)  = cam_out%netsw(:ncol)  ! Surface solar absorbed flux (Total sky; downward - upward)
+
+     !Mask out the ocean region
+     radmask(:ncol)=1.0_r8
+     !do i = 1, ncol
+     !  if (cam_in%landfrac(i).ge.0.001) then
+     !    radmask(i)=1.0_r8
+     !  else
+     !    radmask(i)=0.0_r8
+     !  endif
+     !end do
+
+     !Sanity check for radiative fluxes from the nudging target 
+     do i = 1,ncol
+       if (Target_FSDSD(i,lchnk).le.1e-12_r8) then
+         Target_FSDSD(i,lchnk) = 0.0_r8
+       end if
+       if (Target_FSDS(i,lchnk).le.1e-12_r8) then
+         Target_FSDS(i,lchnk)  = 0.0_r8
+       end if
+       if (Target_NETSW(i,lchnk).le.1e-12_r8) then
+         Target_NETSW(i,lchnk) = 0.0_r8
+       end if
+     end do 
+
+     !Derived the SOLS, SOLL, SOLSD and SOLLD. Assume that the ratio of 
+     !SOLL/(SOLL+SOLS), SOLS/(SOLL+SOLS), SOLLD/(SOLLD+SOLSD), SOLSD/(SOLLD+SOLSD) 
+     !are the same in model and observations 
+     do i = 1,ncol
+       frac1 = cam_out%sols(i)/(cam_out%sols(i)+cam_out%soll(i))
+       frac2 = (cam_out%sols(i)+cam_out%solsd(i)) & 
+               /(cam_out%solsd(i)+cam_out%solld(i)+ cam_out%sols(i)+cam_out%soll(i))
+       Target_SOLS(i,lchnk)  = Target_FSDSD(i,lchnk)*frac1  ! direct UV/vis 
+       Target_SOLL(i,lchnk)  = Target_FSDSD(i,lchnk)*(1.0_r8 - frac1) ! direct near-IR 
+       Target_SOLSD(i,lchnk) = Target_FSDS(i,lchnk)*frac2 & ! diffuse UV/vis
+                              - Target_FSDSD(i,lchnk)*frac1 
+       Target_SOLLD(i,lchnk) = Target_FSDS(i,lchnk)*(1.0_r8 - frac2) & ! diffuse near-IR
+                              - Target_FSDSD(i,lchnk)*(1.0_r8 - frac1) 
+
+       !Sanity check
+       if (Target_SOLS(i,lchnk).le.1e-12_r8) then
+         Target_SOLS(i,lchnk) = 0.0_r8
+       end if
+       if (Target_SOLL(i,lchnk).le.1e-12_r8) then
+         Target_SOLL(i,lchnk)  = 0.0_r8
+       end if
+       if (Target_SOLSD(i,lchnk).le.1e-12_r8) then
+         Target_SOLSD(i,lchnk) = 0.0_r8
+       end if
+       if (Target_SOLLD(i,lchnk).le.1e-12_r8) then
+         Target_SOLLD(i,lchnk) = 0.0_r8
+       end if
+     end do
+
+     !Derive the nudging tendency
+     do i = 1, ncol
+       sols_tend(i)  = (Target_SOLS(i,lchnk)  - dswfvs_mod(i)) &
+                       * radmask(i) * Nudge_SRFtau(i,lchnk)
+       soll_tend(i)  = (Target_SOLL(i,lchnk)  - dswfir_mod(i)) &
+                       * radmask(i) * Nudge_SRFtau(i,lchnk)
+       solsd_tend(i) = (Target_SOLSD(i,lchnk) - dswfvsd_mod(i)) &
+                       * radmask(i) * Nudge_SRFtau(i,lchnk)
+       solld_tend(i) = (Target_SOLLD(i,lchnk) - dswfird_mod(i)) &
+                       * radmask(i) * Nudge_SRFtau(i,lchnk)
+       netsw_tend(i) = (Target_NETSW(i,lchnk) - dnetsw_mod(i)) &
+                       * radmask(i) * Nudge_SRFtau(i,lchnk)
+       flwds_tend(i) = (Target_FLWDS(i,lchnk) - dflwds_mod(i)) &
+                       * radmask(i) * Nudge_SRFtau(i,lchnk)
+     end do
+
    end if
 
    !Start to update the variables for land surface model
-   ! surface state variables 
+   !surface state variables 
    if (Nudge_SRF_State_On) then
      do i=1,ncol
         cam_out%ubot(i)  = ubmod(i)*((vmag_gust(i)+vmag(i))/vmag(i))
@@ -2100,35 +2284,14 @@ contains
 
    !Set the UV/vis and near-IR direct and dirruse downward shortwave flux at surface
    if (Nudge_SRF_RadFlux_On) then
-
-     !Derived the SOLS, SOLL, SOLSD and SOLLD. Assume that the ratio of 
-     !SOLL/(SOLL+SOLS), SOLS/(SOLL+SOLS), SOLLD/(SOLLD+SOLSD), SOLSD/(SOLLD+SOLSD) 
-     !are the same in model and observations 
-     do i = 1,ncol
-        Target_SOLS(i,lchnk)  = Target_FSDSD(i,lchnk) & 
-                               *(cam_out%sols(i)/(cam_out%sols(i)+cam_out%soll(i)))  ! UV/vis 
-        Target_SOLL(i,lchnk)  = Target_FSDSD(i,lchnk) & 
-                               *(cam_out%soll(i)/(cam_out%sols(i)+cam_out%soll(i)))  ! near-IR 
-        Target_SOLSD(i,lchnk) = (Target_FSDS(i,lchnk) - Target_FSDSD(i,lchnk)) & 
-                               *(cam_out%solsd(i)/(cam_out%solsd(i)+cam_out%solld(i)))  ! UV/vis  diffuse
-        Target_SOLLD(i,lchnk) = (Target_FSDS(i,lchnk) - Target_FSDSD(i,lchnk)) &   
-                               *(cam_out%solld(i)/(cam_out%solsd(i)+cam_out%solld(i)))  ! near-IR diffuse  
-     end do   
-
      !Update the quantity in cam_out
      do i = 1,ncol
-       cam_out%sols(i)  =  dswfvs_mod(i)  + (Target_SOLS(i,lchnk)  - dswfvs_mod(i))  & 
-                                             * factor(i) * Nudge_SRFtau(i,lchnk)
-       cam_out%soll(i)  =  dswfir_mod(i)  + (Target_SOLL(i,lchnk) - dswfir_mod(i))  &
-                                             * factor(i) * Nudge_SRFtau(i,lchnk)
-       cam_out%solsd(i) =  dswfvsd_mod(i) + (Target_SOLSD(i,lchnk) - dswfvsd_mod(i)) &
-                                             * factor(i) * Nudge_SRFtau(i,lchnk)
-       cam_out%solld(i) =  dswfird_mod(i) + (Target_SOLLD(i,lchnk) - dswfird_mod(i)) &
-                                             * factor(i) * Nudge_SRFtau(i,lchnk)
-       cam_out%flwds(i) =  dflwds_mod(i)  + (Target_FLWDS(i,lchnk)  - dflwds_mod(i))  &
-                                             * factor(i) * Nudge_SRFtau(i,lchnk)
-       cam_out%netsw(i) =  dnetsw_mod(i)  + (Target_NETSW(i,lchnk)  - dnetsw_mod(i))  &
-                                             * factor(i) * Nudge_SRFtau(i,lchnk)
+       cam_out%sols(i)  = dswfvs_mod(i)  + sols_tend(i)  * factor(i) * dtime 
+       cam_out%soll(i)  = dswfir_mod(i)  + soll_tend(i)  * factor(i) * dtime 
+       cam_out%solsd(i) = dswfvsd_mod(i) + solsd_tend(i) * factor(i) * dtime 
+       cam_out%solld(i) = dswfird_mod(i) + solld_tend(i) * factor(i) * dtime 
+       cam_out%netsw(i) = dnetsw_mod(i)  + netsw_tend(i) * factor(i) * dtime 
+       cam_out%flwds(i) = dflwds_mod(i)  + flwds_tend(i) * factor(i) * dtime 
      end do
    end if
 
@@ -2136,14 +2299,10 @@ contains
    ! Compute total convective and stratiform precipitation and snow rates
    if (Nudge_SRF_Prec_On) then 
      do i=1,ncol
-       cam_out%precc (i) = precc_mod(i)  + (Target_PRECC(i,lchnk) - precc_mod(i)) &
-                                            * factor(i) * Nudge_SRFtau(i,lchnk)
-       cam_out%precl (i) = precl_mod(i)  + (Target_PRECL(i,lchnk) - precl_mod(i)) &
-                                            * factor(i) * Nudge_SRFtau(i,lchnk)
-       cam_out%precsc(i) = snowc_mod(i)  + (Target_PRECSC(i,lchnk) - snowc_mod(i)) &
-                                            * factor(i) * Nudge_SRFtau(i,lchnk)
-       cam_out%precsl(i) = snowl_mod(i)  + (Target_PRECSL(i,lchnk) - snowl_mod(i)) &
-                                            * factor(i) * Nudge_SRFtau(i,lchnk)
+       cam_out%precc (i) = precc_mod(i) + precc_tend(i) * factor(i) * dtime
+       cam_out%precl (i) = precl_mod(i) + precl_tend(i) * factor(i) * dtime
+       cam_out%precsc(i) = snowc_mod(i) + snowc_tend(i) * factor(i) * dtime
+       cam_out%precsl(i) = snowl_mod(i) + snowl_tend(i) * factor(i) * dtime
        ! Safeguard check to ensure precipitation rate > 0
        if (cam_out%precc(i) .lt.0._r8) cam_out%precc(i)=0._r8
        if (cam_out%precl(i) .lt.0._r8) cam_out%precl(i)=0._r8
@@ -2156,6 +2315,51 @@ contains
 
    ! total snowfall rate: needed by slab ocean model
    prcsnw(:ncol,lchnk) = cam_out%precsc(:ncol) + cam_out%precsl(:ncol)
+
+   !Output the diagnostics 
+   call outfld('PRECC_bf_ndg' ,precc_mod(:ncol),pcols,lchnk)
+   call outfld('PRECL_bf_ndg' ,precl_mod(:ncol),pcols,lchnk)
+   call outfld('PRECSC_bf_ndg',snowc_mod(:ncol),pcols,lchnk)
+   call outfld('PRECSL_bf_ndg',snowl_mod(:ncol),pcols,lchnk)
+   call outfld('SOLL_bf_ndg'  ,dswfir_mod(:ncol),pcols,lchnk)
+   call outfld('SOLS_bf_ndg'  ,dswfvs_mod(:ncol),pcols,lchnk)
+   call outfld('SOLLD_bf_ndg' ,dswfird_mod(:ncol),pcols,lchnk)
+   call outfld('SOLSD_bf_ndg' ,dswfvsd_mod(:ncol),pcols,lchnk)
+   call outfld('NETSW_bf_ndg'  ,dnetsw_mod(:ncol),pcols,lchnk)
+   call outfld('FLWDS_bf_ndg'  ,dflwds_mod(:ncol),pcols,lchnk)
+
+   call outfld('PRECC_af_ndg' ,cam_out%precc(:ncol),pcols,lchnk)
+   call outfld('PRECL_af_ndg' ,cam_out%precl(:ncol),pcols,lchnk)
+   call outfld('PRECSC_af_ndg',cam_out%precsc(:ncol),pcols,lchnk)
+   call outfld('PRECSL_af_ndg',cam_out%precsl(:ncol),pcols,lchnk)
+   call outfld('SOLL_af_ndg'  ,cam_out%soll(:ncol),pcols,lchnk)
+   call outfld('SOLS_af_ndg'  ,cam_out%sols(:ncol),pcols,lchnk)
+   call outfld('SOLLD_af_ndg' ,cam_out%solld(:ncol),pcols,lchnk)
+   call outfld('SOLSD_af_ndg' ,cam_out%solsd(:ncol),pcols,lchnk)
+   call outfld('NETSW_af_ndg'  ,cam_out%netsw(:ncol),pcols,lchnk)
+   call outfld('FLWDS_af_ndg'  ,cam_out%flwds(:ncol),pcols,lchnk)
+
+   call outfld('PRECC_ref' ,Target_PRECC(:ncol,lchnk),pcols,lchnk)
+   call outfld('PRECL_ref' ,Target_PRECL(:ncol,lchnk),pcols,lchnk)
+   call outfld('PRECSC_ref',Target_PRECSC(:ncol,lchnk),pcols,lchnk)
+   call outfld('PRECSL_ref',Target_PRECSL(:ncol,lchnk),pcols,lchnk)
+   call outfld('SOLL_ref'  ,Target_SOLL(:ncol,lchnk),pcols,lchnk)
+   call outfld('SOLS_ref'  ,Target_SOLS(:ncol,lchnk),pcols,lchnk)
+   call outfld('SOLLD_ref' ,Target_SOLLD(:ncol,lchnk),pcols,lchnk)
+   call outfld('SOLSD_ref' ,Target_SOLSD(:ncol,lchnk),pcols,lchnk)
+   call outfld('NETSW_ref'  ,Target_NETSW(:ncol,lchnk),pcols,lchnk)
+   call outfld('FLWDS_ref'  ,Target_FLWDS(:ncol,lchnk),pcols,lchnk)
+
+   call outfld('Nudge_PRECC' ,precc_tend(:ncol),pcols,lchnk)
+   call outfld('Nudge_PRECL' ,precl_tend(:ncol),pcols,lchnk)
+   call outfld('Nudge_PRECSC',snowc_tend(:ncol),pcols,lchnk)
+   call outfld('Nudge_PRECSL',snowl_tend(:ncol),pcols,lchnk)
+   call outfld('Nudge_SOLL'  ,soll_tend(:ncol),pcols,lchnk)
+   call outfld('Nudge_SOLS'  ,sols_tend(:ncol),pcols,lchnk)
+   call outfld('Nudge_SOLLD' ,solld_tend(:ncol),pcols,lchnk)
+   call outfld('Nudge_SOLSD' ,solsd_tend(:ncol),pcols,lchnk)
+   call outfld('Nudge_NETSW'  ,netsw_tend(:ncol),pcols,lchnk)
+   call outfld('Nudge_FLWDS'  ,flwds_tend(:ncol),pcols,lchnk)
 
   end subroutine  !nudging_update_land_surface 
 
@@ -2194,8 +2398,16 @@ contains
    real(r8) :: psobs(pcols)
    real(r8) :: zsobs(pcols)
 
+   real(r8) :: lhf_tend(pcols)
+   real(r8) :: shf_tend(pcols)
+   real(r8) :: qflx_tend(pcols)
+
    lchnk = state%lchnk
    ncol  = state%ncol
+
+   lhf_tend(:ncol)  = 0.0_r8
+   shf_tend(:ncol)  = 0.0_r8
+   qflx_tend(:ncol) = 0.0_r8
 
    psmod(:ncol)  = state%ps(:ncol)
    zsmod(:ncol)  = state%phis(:ncol)
@@ -2215,15 +2427,35 @@ contains
      enddo
    end if
 
+   !Derive the nudging tendency 
+   do i = 1,ncol
+     lhf_tend(i)  = (-Target_LHFLX(i,lchnk) - lhf_mod(i)) * Nudge_SRFtau(i,lchnk)
+     shf_tend(i)  = (-Target_SHFLX(i,lchnk) - shf_mod(i)) * Nudge_SRFtau(i,lchnk)    
+     qflx_tend(i) = (-Target_EVAP(i,lchnk) - qflx_mod(i)) * Nudge_SRFtau(i,lchnk)
+   end do 
+   
    !Update the quantity in cam_out
    do i = 1,ncol
-     cam_in%cflx(i,1) = qflx_mod(i) + (-Target_EVAP(i,lchnk)  - qflx_mod(i)) &
-                                     * factor(i) * Nudge_SRFtau(i,lchnk)
-     cam_in%shf(i)    = shf_mod(i)  + (-Target_SHFLX(i,lchnk) - shf_mod(i)) &
-                                     * factor(i) * Nudge_SRFtau(i,lchnk)
-     cam_in%lhf(i)    = lhf_mod(i)  + (-Target_LHFLX(i,lchnk) - lhf_mod(i)) &
-                                     * factor(i) * Nudge_SRFtau(i,lchnk)
+     cam_in%cflx(i,1) = qflx_mod(i) + qflx_tend(i) * factor(i) * dtime
+     cam_in%shf(i)    = shf_mod(i)  + shf_tend(i)  * factor(i) * dtime 
+     cam_in%lhf(i)    = lhf_mod(i)  + lhf_tend(i)  * factor(i) * dtime
    end do
+
+   call outfld('LHFLX_bf_ndg' ,lhf_mod(:ncol),pcols,lchnk)
+   call outfld('SHFLX_bf_ndg' ,shf_mod(:ncol),pcols,lchnk)
+   call outfld('QFLX_bf_ndg'  ,qflx_mod(:ncol),pcols,lchnk)
+
+   call outfld('LHFLX_af_ndg' ,cam_in%lhf(:ncol),pcols,lchnk)
+   call outfld('SHFLX_af_ndg' ,cam_in%shf(:ncol),pcols,lchnk)
+   call outfld('QFLX_af_ndg'  ,cam_in%cflx(:ncol,1),pcols,lchnk)
+
+   call outfld('LHFLX_ref' ,-Target_SHFLX(:ncol,lchnk),pcols,lchnk)
+   call outfld('SHFLX_ref' ,-Target_LHFLX(:ncol,lchnk),pcols,lchnk)
+   call outfld('QFLX_ref'  ,-Target_EVAP(:ncol,lchnk),pcols,lchnk)
+
+   call outfld('Nudge_LHFLX' ,lhf_mod(:ncol),pcols,lchnk)
+   call outfld('Nudge_SHFLX' ,shf_mod(:ncol),pcols,lchnk)
+   call outfld('Nudge_QFLX'  ,qflx_mod(:ncol),pcols,lchnk)
 
   end subroutine  !nudging_update_srf_flux
 
@@ -2296,6 +2528,21 @@ contains
         phys_tend%q(:ncol,:pver,indw) = Nudge_Qstep(:ncol,:pver,lchnk)
      end if
 
+     if (Nudge_PS_On) then
+       !update ps 
+       do i = 1,ncol
+          phys_state%ps(i) = phys_state%ps(i) + Nudge_PSstep(i,lchnk)*dtime
+       end do
+       !Pdel etc.
+       do k = 1, pver
+         do i = 1, ncol
+           phys_state%pdel(i,k)  = phys_state%pdel(i,k)  &
+                                  + (hybi(k+1) -hybi(k))*Nudge_PSstep(i,lchnk)*dtime
+           phys_state%rpdel(i,k) = 1._r8/phys_state%pdel(i,k)
+         end do
+       end do
+     end if
+
      !adjust constitutes 
      if (Nudge_Q_Adjust_On) then
        do i = 1, ncol
@@ -2309,32 +2556,10 @@ contains
              nudge_q               = nudge_q + Nudge_Qstep(i,k,lchnk) * dtime
              phys_state%pdel(i,k)  = phys_state%pdel(i,k)/(1.0_r8 - nudge_q)
              phys_state%rpdel(i,k) = 1.0_r8/phys_state%pdel(i,k)
-             phys_state%pint(i,k+1)= phys_state%pint(i,k) + phys_state%pdel(i,k)
-             phys_state%lnpint(i,k+1)= log(phys_state%pint(i,k+1))
              do m = 2, pcnst
                phys_state%q(i,k,m) = phys_state%q(i,k,m)/phys_state%pdel(i,k)
              end do
            end if
-         end do
-       end do
-     end if
-
-     if (Nudge_PS_On) then
-       !update ps 
-       do i = 1,ncol
-          phys_state%ps(i) = phys_state%ps(i) + Nudge_PSstep(i,lchnk)*dtime
-       end do
-       !Pdel etc.
-       do i = 1,ncol
-         do k = 1,pver
-           phys_state%pdel(i,k)     = phys_state%pdel(i,k) + Nudge_PSstep(i,lchnk)*dtime
-           phys_state%pint(i,k+1)   = phys_state%pint(i,k) + phys_state%pdel(i,k)
-           phys_state%lnpint(i,k+1) = log(phys_state%pint(i,k+1))
-           phys_state%pmid(i,k)     = hyam(k)*ps0+hybm(k)*phys_state%ps(i)
-           phys_state%lnpmid(i,k)   = log(phys_state%pmid(i,k))
-           phys_state%rpdel(i,k)    = 1._r8/phys_state%pdel(i,k)
-           phys_state%exner (i,k)   = (phys_state%pint(i,pver+1) &
-                                        /phys_state%pmid(i,k))**cappa
          end do
        end do
      end if
