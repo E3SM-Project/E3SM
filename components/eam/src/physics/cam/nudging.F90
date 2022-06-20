@@ -431,6 +431,7 @@ module nudging
   logical::         Nudge_Model       =.false.
   logical::         Nudge_ON          =.false.
   logical::         Nudge_File_Present=.false.
+  logical::         Nudge_SRF_File_Present=.false. 
   logical::         Nudge_Initialized =.false.
   logical::         Nudge_Allow_Missing_File = .false.  
   logical::         Nudge_Pdep_Weight_On = .false.
@@ -670,6 +671,7 @@ contains
    Nudge_SRF_Flux_On =.false.
    Nudge_SRF_Q_On    =.false. 
    Nudge_File_Present=.false.
+   Nudge_SRF_File_Present=.false.
    Nudge_Beg_Sec=0
    Nudge_End_Sec=0
 
@@ -836,6 +838,7 @@ contains
    call mpibcast(Nudge_SRF_Prec_On       , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_SRF_RadFlux_On    , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_SRF_State_On      , 1, mpilog, 0, mpicom)
+   call mpibcast(Nudge_SRF_File_Present  , 1, mpilog, 0, mpicom)
    call mpibcast(Nudge_Times_Per_Day     , 1, mpiint, 0, mpicom)
    call mpibcast(Model_Times_Per_Day     , 1, mpiint, 0, mpicom)
    call mpibcast(Nudge_Ucoef    , 1, mpir8 , 0, mpicom)
@@ -1229,6 +1232,7 @@ contains
        !--------------------------------------------
        Nudge_Model=.false.
        Nudge_ON   =.false.
+       Nudge_SRF_On = .false. 
        write(iulog,*) ' '
        write(iulog,*) 'NUDGING: WARNING - Nudging has been requested by it will'
        write(iulog,*) 'NUDGING:           never occur for the given time values'
@@ -1790,8 +1794,24 @@ contains
          call endrun(err_str)
        endif 
      endif
+     !For land surfac nudging file 
+     if(Nudge_SRF_File_Present) then
+       Nudge_SRF_ON=.true.
+     else
+       Nudge_SRF_On=.false.
+       if(Nudge_Allow_Missing_File) then
+         if(masterproc) then
+           write(iulog,*) 'NUDGING: WARNING - Nudging data file NOT FOUND. Switching '
+           write(iulog,*) 'NUDGING:           nudging OFF to coast thru the gap. '
+         endif
+       else
+         write(err_str,*) 'NUDGING: Nudging data file (',trim(adjustl(Nudge_SRF_File)),') NOT FOUND; ', errmsg(__FILE__, __LINE__)
+         call endrun(err_str)
+       endif
+     endif
    else
      Nudge_ON=.false.
+     Nudge_SRF_On=.false.
    endif
 
    ! End Routine
@@ -3034,12 +3054,12 @@ contains
    ! all the other MPI nodes. If the file is not there, then just return.
    !------------------------------------------------------------------------
    if(masterproc) then
-     inquire(FILE=trim(anal_srf_file),EXIST=Nudge_File_Present)
+     inquire(FILE=trim(anal_srf_file),EXIST=Nudge_SRF_File_Present)
    endif
 #ifdef SPMD
-   call mpibcast(Nudge_File_Present, 1, mpilog, 0, mpicom)
+   call mpibcast(Nudge_SRF_File_Present, 1, mpilog, 0, mpicom)
 #endif
-   if(.not.Nudge_File_Present) return
+   if(.not.Nudge_SRF_File_Present) return
 
    ! masterporc does all of the work here
    !-----------------------------------------
