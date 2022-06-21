@@ -49,6 +49,10 @@ module component_type_mod
   public :: component_get_suffix
   public :: component_get_iamin_compid
 
+! this is to replicate mct grid of a cx   
+  public :: expose_mct_grid_moab
+
+
   !--------------------------------------------------------------------------
   ! Public data
   !--------------------------------------------------------------------------
@@ -261,5 +265,143 @@ contains
        endif
     endif
   end subroutine check_fields
+
+  subroutine expose_mct_grid_moab (comp, imoabAPI)
+    use shr_mpi_mod,       only: shr_mpi_commrank, shr_mpi_commsize
+    use shr_sys_mod
+    use shr_const_mod, only: SHR_CONST_PI
+    use seq_comm_mct, only: cplid
+    use seq_comm_mct, only: seq_comm_iamin
+    use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs
+    use iMOAB, only :  iMOAB_RegisterApplication, iMOAB_CreateVertices, iMOAB_WriteMesh, &
+         iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
+         iMOAB_ResolveSharedEntities
+
+    type(component_type), intent(in) :: comp
+    integer , intent(out) :: imoabAPI
+
+    integer                :: lsz
+    type(mct_gGrid), pointer :: dom
+    integer  :: mpicom_CPLID          ! MPI cpl communicator
+    integer  :: iamcomp , iamcpl
+    integer  :: ext_id
+
+    ! local variables to fill in data
+    integer, dimension(:), allocatable :: vgids
+    !  retrieve everything we need from mct
+    ! number of vertices is the size of mct grid
+    real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
+    real(r8)   :: latv, lonv
+    integer   dims, i, ilat, ilon, igdx, ierr, tagindex, ixarea, ixfrac
+    integer tagtype, numco, ent_type
+    character*100 outfile, wopts, localmeshfile, tagname
+    character*32 appname
+
+!----- formats -----
+    character(*),parameter :: subName = '(expose_mct_grid_moab) '
+
+    dims  = 3 ! store as 3d mesh
+
+    call seq_comm_getinfo(CPLID, mpicom=mpicom_CPLID)
+    
+    if (seq_comm_iamin(CPLID)) then
+      call shr_mpi_commrank(mpicom_CPLID, iamcpl  , 'expose_mct_grid_moab')
+      dom => component_get_dom_cx(comp)
+      lsz = mct_gGrid_lsize(dom)
+      !print *, 'lsize: cx', lsz, ' iamcpl ' , iamcpl
+      appname=comp%ntype//"CPMOAB"//CHAR(0)
+      ! component instance
+      ext_id = comp%compid + 200 ! avoid reuse
+      ierr = iMOAB_RegisterApplication(appname, mpicom_CPLID, ext_id, imoabAPI)
+      if (ierr > 0 )  &
+         call shr_sys_abort(subname//'Error: cannot register moab app')
+      allocate(moab_vert_coords(lsz*dims))
+      allocate(vgids(lsz))
+      ilat = MCT_GGrid_indexRA(dom,'lat')
+      ilon = MCT_GGrid_indexRA(dom,'lon')
+      igdx = MCT_GGrid_indexIA(dom,'GlobGridNum')
+      do i = 1, lsz
+        latv = dom%data%rAttr(ilat, i) *SHR_CONST_PI/180.
+        lonv = dom%data%rAttr(ilon, i) *SHR_CONST_PI/180.
+        moab_vert_coords(3*i-2)=COS(latv)*COS(lonv)
+        moab_vert_coords(3*i-1)=COS(latv)*SIN(lonv)
+        moab_vert_coords(3*i  )=SIN(latv)
+        vgids(i) = dom%data%iAttr(igdx, i)
+      enddo
+
+      ierr = iMOAB_CreateVertices(imoabAPI, lsz*3, dims, moab_vert_coords)
+      if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to create MOAB vertices in land model')
+
+      tagtype = 0  ! dense, integer
+      numco = 1
+      tagname='GLOBAL_ID'//CHAR(0)
+      ierr = iMOAB_DefineTagStorage(imoabAPI, tagname, tagtype, numco,  tagindex )
+      if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to retrieve GLOBAL_ID tag ')
+
+      ent_type = 0 ! vertex type
+      ierr = iMOAB_SetIntTagStorage ( imoabAPI, tagname, lsz , ent_type, vgids)
+      if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to set GLOBAL_ID tag ')
+
+      ierr = iMOAB_ResolveSharedEntities( imoabAPI, lsz, vgids );
+      if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to resolve shared entities')
+
+      !there are no shared entities, but we will set a special partition tag, in order to see the
+      ! partitions ; it will be visible with a Pseudocolor plot in VisIt
+      tagname='partition'//CHAR(0)
+      ierr = iMOAB_DefineTagStorage(imoabAPI, tagname, tagtype, numco,  tagindex )
+      if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to create new partition tag ')
+
+      vgids = iamcpl
+      ierr = iMOAB_SetIntTagStorage ( imoabAPI, tagname, lsz , ent_type, vgids)
+      if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to set partition tag ')
+
+      ! use moab_vert_coords as a data holder for a frac tag and area tag that we will create
+      !   on the vertices; do not allocate other data array
+      !  do not be confused by this !
+      ixfrac = MCT_GGrid_indexRA(dom,'frac')
+      ixarea = MCT_GGrid_indexRA(dom,'area')
+      tagname='frac'//CHAR(0)
+      tagtype = 1 ! dense, double
+      ierr = iMOAB_DefineTagStorage(imoabAPI, tagname, tagtype, numco,  tagindex )
+      if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to create frac tag ')
+
+      do i = 1, lsz
+        moab_vert_coords(i) = dom%data%rAttr(ixfrac, i)
+      enddo
+      ierr = iMOAB_SetDoubleTagStorage ( imoabAPI, tagname, lsz , ent_type, moab_vert_coords)
+      if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to set frac tag ')
+
+      tagname='area'//CHAR(0)
+      ierr = iMOAB_DefineTagStorage(imoabAPI, tagname, tagtype, numco,  tagindex )
+      if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to create area tag ')
+      do i = 1, lsz
+        moab_vert_coords(i) = dom%data%rAttr(ixarea, i) ! use the same doubles for second tag :)
+      enddo
+
+      ierr = iMOAB_SetDoubleTagStorage ( imoabAPI, tagname, lsz , ent_type, moab_vert_coords )
+      if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to set area tag ')
+
+      deallocate(moab_vert_coords)
+      deallocate(vgids)
+      !     write out the mesh file to disk, in parallel
+      outfile = 'WHOLE_cx_'//comp%ntype//'.h5m'//CHAR(0)
+      wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+      ierr = iMOAB_WriteMesh(imoabAPI, outfile, wopts)
+      if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to write the land mesh file')
+    endif
+
+  end subroutine expose_mct_grid_moab
+
 
 end module component_type_mod

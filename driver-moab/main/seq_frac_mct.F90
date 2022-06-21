@@ -165,8 +165,14 @@ module seq_frac_mct
   use iMOAB, only: iMOAB_DefineTagStorage
   use seq_comm_mct, only : mphaxid !            iMOAB app id for phys atm, on cpl pes
   use seq_comm_mct, only : mblxid !            iMOAB app id for lnd on cpl pes
+  use seq_comm_mct, only : mblx2id !           iMOAB id for land mesh instanced from MCT on coupler pes
   use seq_comm_mct, only : mboxid !            iMOAB app id for ocn on cpl pes
   use seq_comm_mct, only : mbixid !            iMOAB for sea-ice migrated to coupler
+  use seq_comm_mct, only : atm_pg_active !     flag if PG mesh instanced
+  ! for tri grid, sameg_al would be false 
+  use seq_comm_mct, only : sameg_al !          same grid atm and land; used throughout, initialized in lnd_init
+  use iMOAB, only : iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, &
+        iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorageWithGid
   
   use shr_kind_mod, only: CL => SHR_KIND_CL, CX => SHR_KIND_CX, CXX => SHR_KIND_CXX
   use iso_c_binding ! C_NULL_CHAR 
@@ -301,8 +307,13 @@ contains
     character(*),parameter :: fraclist_z = 'afrac:lfrac'
 
     ! moab
-    integer                  :: tagtype, numco,  tagindex, ierr
+    integer                  :: tagtype, numco,  tagindex, ent_type, ierr, arrSize
     character(CXX)           :: tagname
+    real(r8),    allocatable :: tagValues(:) ! used for setting some default tags
+    integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+    integer kgg  ! index in global number attribute, used for global id in MOAB 
+
     !----- formats -----
     character(*),parameter :: subName = '(seq_frac_init) '
 
@@ -345,7 +356,7 @@ contains
 
        ! Initialize fractions on atm coupler mesh; on migrated ph atm to coupler
        if (mphaxid .ge. 0  ) then ! // 
-         tagname = trim(fraclist_a)//C_NULL_CHAR
+         tagname = trim(fraclist_a)//C_NULL_CHAR ! 'afrac:ifrac:ofrac:lfrac:lfrin'
          tagtype = 1  ! dense, double
          numco = 1 !   
          ierr = iMOAB_DefineTagStorage(mphaxid, tagname, tagtype, numco,  tagindex )
@@ -353,7 +364,29 @@ contains
             write(logunit,*) subname,' error in defining tags on atm phys mesh on cpl '
             call shr_sys_abort(subname//' ERROR in defining tags on atm phys mesh on cpl')
          endif
+         ! find out the number of local elements in moab mesh
+         ierr  = iMOAB_GetMeshInfo ( mphaxid, nvert, nvise, nbl, nsurf, nvisBC );
+         
          ! we should set to 1 the 'afrac' tag
+         arrSize = nvert(1) * 5 ! there are 5 tags that need to be zeroed out
+         allocate(tagValues(arrSize) )
+         ent_type = 0 ! vertex type
+         if (atm_pg_active) ent_type = 1 ! cells type then
+         tagValues = 0 
+         ierr = iMOAB_SetDoubleTagStorage ( mphaxid, tagname, arrSize , ent_type, tagValues)
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in zeroing out fracs  '
+            call shr_sys_abort(subname//' ERROR in zeroing out fracs on phys atm')
+         endif
+
+         tagname = 'afrac'//C_NULL_CHAR
+         tagValues = 1 
+         ierr = iMOAB_SetDoubleTagStorage ( mphaxid, tagname, nvert(1) , ent_type, tagValues)
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in setting afrac tag on phys atm  '
+            call shr_sys_abort(subname//' ERROR in setting afrac tag on phys atm')
+         endif
+         deallocate(tagValues)
        endif
     endif
 
@@ -375,8 +408,8 @@ contains
        lSize = mct_aVect_lSize(dom_l%data)
        call mct_aVect_init(fractions_l,rList=fraclist_l,lsize=lsize)
        call mct_aVect_zero(fractions_l)
-       if (mphaxid .ge. 0  ) then ! // 
-         tagname = trim(fraclist_l)//C_NULL_CHAR
+       if (mblxid .ge. 0  ) then ! // 
+         tagname = trim(fraclist_l)//C_NULL_CHAR ! 'afrac:lfrac:lfrin'
          tagtype = 1  ! dense, double
          numco = 1 !   
          ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
@@ -384,11 +417,43 @@ contains
             write(logunit,*) subname,' error in defining tags on lnd phys mesh on cpl '
             call shr_sys_abort(subname//' ERROR in defining tags on lnd phys mesh on cpl')
          endif
+         ierr  = iMOAB_GetMeshInfo ( mblxid, nvert, nvise, nbl, nsurf, nvisBC );
+         arrSize = 3 * nVert(1)
+         allocate(tagValues(arrSize) )
+         ent_type = 1 ! cell type, tri-grid case
+         tagValues = 0 
+         if (sameg_al) ent_type = 0  ! vertex type, land on atm grid
+         ierr = iMOAB_SetDoubleTagStorage ( mblxid, tagname, arrSize , ent_type, tagValues)
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in setting fractions tags on lnd   '
+            call shr_sys_abort(subname//' ERROR in setting fractions tags on lnd')
+         endif
+         deallocate(tagValues)
        endif
+       ! mblx2id is the id for moab app exposing land cpl 
+       call expose_mct_grid_moab(lnd, mblx2id)
+
+
        kk = mct_aVect_indexRA(fractions_l,"lfrin",perrWith=subName)
        kf = mct_aVect_indexRA(dom_l%data ,"frac" ,perrWith=subName)
        fractions_l%rAttr(kk,:) = dom_l%data%rAttr(kf,:)
-!    we should set the lfrin tag to fractions_l%rAttr(kk,:) (from input ?)
+       if (mblxid .ge. 0  ) then ! // 
+         tagname = 'lfrin'//C_NULL_CHAR ! 'lfrin'
+         allocate(tagValues(lSize) )
+         tagValues = dom_l%data%rAttr(kf,:)
+         kgg = mct_aVect_indexIA(dom_l%data ,"GlobGridNum" ,perrWith=subName)
+         allocate(GlobalIds(lSize))
+         GlobalIds = dom_l%data%iAttr(kgg,:)
+
+         ierr = iMOAB_SetDoubleTagStorageWithGid ( mblxid, tagname, lSize , ent_type, tagValues, GlobalIds )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in setting lfrin on lnd   '
+            call shr_sys_abort(subname//' ERROR in setting lfrin on lnd')
+         endif
+         deallocate(GlobalIds)
+         deallocate(tagValues)
+       endif
+
        if (atm_present) then
           mapper_l2a => prep_atm_get_mapper_Fl2a()
           mapper_a2l => prep_lnd_get_mapper_Fa2l()
