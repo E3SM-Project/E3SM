@@ -354,7 +354,7 @@
 		<nml_option name="config_GM_constant_kappa" type="real" default_value="600.0" units="m^2 s^-1"
 					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Only used when config_GM_closure is set to constant."
 		/>
-		<nml_option name="config_GM_constant_bclModeSpeed" type="real" default_value="0.3" units="m/s"
+		<nml_option name="config_GM_constant_bclModeSpeed" type="real" default_value="0.3" units="m s^-1"
 					description="The parameter setting for the first baroclinic mode speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004)."
 					possible_values="Positive real numbers"
 		/>
@@ -2492,31 +2492,31 @@
 		<var name="daysSinceStartOfSim" type="real" dimensions="Time" units="days"
 			 description="Time since simulationStartTime, for plotting"
 	 	/>
-		<var name="salinitySurfaceRestoringTendency" type="real" dimensions="nCells Time" units="m 1.e-3/s" packages="activeTracersSurfaceRestoringPKG"
+		<var name="salinitySurfaceRestoringTendency" type="real" dimensions="nCells Time" units="m 1.e-3 s^-1" packages="activeTracersSurfaceRestoringPKG"
 			 description="salinity tendency due to surface restoring"
 		/>
 		<var_array name="activeTracerSurfaceFluxTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
 
-			<var name="temperatureSurfaceFluxTendency" array_group="activeTracerSfcFluxTendGroup" units="degrees Celsius per second" name_in_code="temperatureSurfaceFluxTendency"
+			<var name="temperatureSurfaceFluxTendency" array_group="activeTracerSfcFluxTendGroup" units="degrees Celsius s^-1" name_in_code="temperatureSurfaceFluxTendency"
 				description="potential temperature tendency due to surface fluxes"
 			/>
 			<var name="salinitySurfaceFluxTendency" array_group="activeTracerSfcFluxTendGroup" units="1.e-3 s^-1" name_in_code="salinitySurfaceFluxTendency"
 				description="salinity tendency due to surface fluxes"
 			/>
 		</var_array>
-		<var name="temperatureShortWaveTendency" dimensions="nVertLevels nCells Time" units="degrees Celsius per second" packages="tracerBudget" name_in_code="temperatureShortWaveTendency" type="real"
+		<var name="temperatureShortWaveTendency" dimensions="nVertLevels nCells Time" units="degrees Celsius s^-1" packages="tracerBudget" name_in_code="temperatureShortWaveTendency" type="real"
 				 description="potential temperature tendency due to penetrating shortwave"
 		/>
 		<var_array name="activeTracerHorMixTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-			<var name="temperatureHorMixTendency" array_group="activeTracerHmixTendGroup" units="degrees Celsius per second" name_in_code="temperatureHorMixTendency"
+			<var name="temperatureHorMixTendency" array_group="activeTracerHmixTendGroup" units="degrees Celsius s^-1" name_in_code="temperatureHorMixTendency"
 				description="potential temperature tendency due to horizontal mixing (including Redi)"
 			/>
-			<var name="salinityHorMixTendency" array_group="activeTracerHmixTendGroup" units="1.e-3 per second" name_in_code="salinityHorMixTendency"
+			<var name="salinityHorMixTendency" array_group="activeTracerHmixTendGroup" units="1.e-3 s^-1" name_in_code="salinityHorMixTendency"
 				description="salinity tendency due to horizontal mixing (including Redi)"
 			/>
 		</var_array>
 		<var_array name="activeTracerNonLocalTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-			<var name="temperatureNonLocalTendency" array_group="activeTracerNLTendGroup" units="degrees Celsius per second" name_in_code="temperatureNonLocalTendency"
+			<var name="temperatureNonLocalTendency" array_group="activeTracerNLTendGroup" units="degrees Celsius s^-1" name_in_code="temperatureNonLocalTendency"
 				 description="potential temperature tendency due to kpp non-local flux"
 			/>
 			<var name="salinityNonLocalTendency" array_group="activeTracerNLTendGroup" units="1.e-3 s^-1" name_in_code="salinityNonLocalTendency"
@@ -2540,7 +2540,7 @@
 			/>
 		</var_array>
 		<var_array name="activeTracerHorizontalAdvectionTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-			<var name="temperatureHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureHorizontaldvectionTendency"
+			<var name="temperatureHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="degrees Celsius s^-1" name_in_code="temperatureHorizontaldvectionTendency"
 				description="potential temperature tendency due to horizontal advection"
 			/>
 			<var name="salinityHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="1.e-3 s^-1" name_in_code="salinityHorizontalAdvectionTendency"
@@ -2548,7 +2548,7 @@
 			/>
 		</var_array>
 		<var_array name="activeTracerVerticalAdvectionTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-			<var name="temperatureVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureVerticalAdvectionTendency"
+			<var name="temperatureVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="degrees Celsius s^-1" name_in_code="temperatureVerticalAdvectionTendency"
 				description="potential temperature tendency due to vertical advection"
 			/>
 			<var name="salinityVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="1.e-3 s^-1" name_in_code="salinityVerticalAdvectionTendency"
@@ -2556,7 +2556,7 @@
 			/>
 		</var_array>
 		<var_array name="activeTracerVertMixTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-			<var name="temperatureVertMixTendency" array_group="activeTracerVertMixTendGroup" units="degrees Celsius per second" name_in_code="temperatureVertMixTendency"
+			<var name="temperatureVertMixTendency" array_group="activeTracerVertMixTendGroup" units="degrees Celsius s^-1" name_in_code="temperatureVertMixTendency"
 				 description="potential temperature tendency due to vertical mixing"
 			/>
 			<var name="salinityVertMixTendency" array_group="activeTracerVertMixTendGroup" units="1.e-3 s^-1" name_in_code="salinityVertMixTendency"
@@ -3598,15 +3598,15 @@
 		/>
 	</var_struct>
 	<var_struct name="timeVaryingForcing" time_levs="1">
-		<var name="windSpeedU" type="real" dimensions="nCells Time" units="m/s"
+		<var name="windSpeedU" type="real" dimensions="nCells Time" units="m s^-1"
 			description="Zonal (eastward) component of wind speed at cell centers from coupler. Positive easthward."
 			packages="timeVaryingAtmosphericForcingPKG"
 		/>
-		<var name="windSpeedV" type="real" dimensions="nCells Time" units="m/s"
+		<var name="windSpeedV" type="real" dimensions="nCells Time" units="m s^-1"
 			description="Meridional (northward) component of wind speed at cell centers from coupler. Positive northward."
 			packages="timeVaryingAtmosphericForcingPKG"
 		/>
-		<var name="windSpeedMagnitude" type="real" dimensions="nCells Time" units="m/s"
+		<var name="windSpeedMagnitude" type="real" dimensions="nCells Time" units="m s^-1"
 			description="Magnitude of wind speed at cell centers from coupler."
 			packages="timeVaryingAtmosphericForcingPKG"
 		/>
