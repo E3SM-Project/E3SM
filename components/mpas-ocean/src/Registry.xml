@@ -2221,13 +2221,13 @@
 		<var name="lonCell" type="real" dimensions="nCells" units="radians"
 			 description="Longitude location of cell centers in radians."
 		/>
-		<var name="xCell" type="real" dimensions="nCells"
+		<var name="xCell" type="real" dimensions="nCells" units="m"
 			 description="X Coordinate in cartesian space of cell centers."
 		/>
-		<var name="yCell" type="real" dimensions="nCells"
+		<var name="yCell" type="real" dimensions="nCells" units="m"
 			 description="Y Coordinate in cartesian space of cell centers."
 		/>
-		<var name="zCell" type="real" dimensions="nCells"
+		<var name="zCell" type="real" dimensions="nCells" units="m"
 			 description="Z Coordinate in cartesian space of cell centers."
 		/>
 		<var name="indexToCellID" type="integer" dimensions="nCells"
@@ -2239,13 +2239,13 @@
 		<var name="lonEdge" type="real" dimensions="nEdges" units="radians"
 			 description="Longitude location of edge midpoints in radians."
 		/>
-		<var name="xEdge" type="real" dimensions="nEdges"
+		<var name="xEdge" type="real" dimensions="nEdges" units="m"
 			 description="X Coordinate in cartesian space of edge midpoints."
 		/>
-		<var name="yEdge" type="real" dimensions="nEdges"
+		<var name="yEdge" type="real" dimensions="nEdges" units="m"
 			 description="Y Coordinate in cartesian space of edge midpoints."
 		/>
-		<var name="zEdge" type="real" dimensions="nEdges"
+		<var name="zEdge" type="real" dimensions="nEdges" units="m"
 			 description="Z Coordinate in cartesian space of edge midpoints."
 		/>
 		<var name="indexToEdgeID" type="integer" dimensions="nEdges"
@@ -2257,25 +2257,25 @@
 		<var name="lonVertex" type="real" dimensions="nVertices" units="radians"
 			 description="Longitude location of vertices in radians."
 		/>
-		<var name="xVertex" type="real" dimensions="nVertices"
+		<var name="xVertex" type="real" dimensions="nVertices" units="m"
 			 description="X Coordinate in cartesian space of vertices."
 		/>
-		<var name="yVertex" type="real" dimensions="nVertices"
+		<var name="yVertex" type="real" dimensions="nVertices" units="m"
 			 description="Y Coordinate in cartesian space of vertices."
 		/>
-		<var name="zVertex" type="real" dimensions="nVertices"
+		<var name="zVertex" type="real" dimensions="nVertices" units="m"
 			 description="Z Coordinate in cartesian space of vertices."
 		/>
 		<var name="indexToVertexID" type="integer" dimensions="nVertices"
 			 description="List of global vertex IDs."
 		/>
-		<var name="meshDensity" type="real" dimensions="nCells"
+		<var name="meshDensity" type="real" dimensions="nCells" units="1"
 			 description="Value of density function used to generate a particular mesh at cell centers."
 		/>
-		<var name="meshScalingDel2" type="real" dimensions="nEdges"
+		<var name="meshScalingDel2" type="real" dimensions="nEdges" units="1"
 			 description="Coefficient to Laplacian mixing terms in momentum and tracer equations, so that viscosity and diffusion scale with mesh."
 		/>
-		<var name="meshScalingDel4" type="real" dimensions="nEdges"
+		<var name="meshScalingDel4" type="real" dimensions="nEdges" units="1"
 			 description="Coefficient to biharmonic mixing terms in momentum and tracer equations, so that biharmonic viscosity and diffusion coefficients scale with mesh."
 		/>
 		<var name="cellsOnEdge" type="integer" dimensions="TWO nEdges"
@@ -2293,7 +2293,7 @@
 		<var name="edgesOnEdge" type="integer" dimensions="maxEdges2 nEdges"
 			 description="List of edges that border each of the cells that straddle each edge."
 		/>
-		<var name="weightsOnEdge" type="real" dimensions="maxEdges2 nEdges"
+		<var name="weightsOnEdge" type="real" dimensions="maxEdges2 nEdges" units="1"
 			 description="Reconstruction weights associated with each of the edgesOnEdge, used to reconstruct the tangentialVelocity from normalVelocities on neighboring edges."
 		/>
 		<var name="dvEdge" type="real" dimensions="nEdges" units="m"
@@ -2311,16 +2311,16 @@
 		<var name="areaTriangle" type="real" dimensions="nVertices" units="m^2"
 			 description="Area of each cell (triangle) in the dual grid."
 		/>
-		<var name="edgeNormalVectors" type="real" dimensions="R3 nEdges"
+		<var name="edgeNormalVectors" type="real" dimensions="R3 nEdges" units="1"
 			 description="Normal unit vector defined at an edge."
 		/>
-		<var name="edgeTangentVectors" type="real" dimensions="R3 nEdges"
+		<var name="edgeTangentVectors" type="real" dimensions="R3 nEdges" units="1"
 			 description="Tangent unit vector defined at an edge."
 		/>
-		<var name="localVerticalUnitVectors" type="real" dimensions="R3 nCells"
+		<var name="localVerticalUnitVectors" type="real" dimensions="R3 nCells" units="1"
 			 description="Unit surface normal vectors defined at cell centers."
 		/>
-		<var name="cellTangentPlane" type="real" dimensions="R3 TWO nCells"
+		<var name="cellTangentPlane" type="real" dimensions="R3 TWO nCells" units="1"
 			 description="The two vectors that define a tangent plane at a cell center."
 		/>
 		<var name="cellsOnCell" type="integer" dimensions="maxEdges nCells"
@@ -2360,11 +2360,11 @@
 			 description="Depth of the bottom of the ocean, before any alterations for modeling purposes. Given as a positive distance from sea level."
 			 packages="initMode"
 		/>
-		<var name="oceanFracObserved" type="real" dimensions="nCells"
+		<var name="oceanFracObserved" type="real" dimensions="nCells" units="1"
 			 description="fraction of each cell containing ocean, used to determine which cells are culled as land."
 			 packages="initMode"
 		/>
-		<var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells"
+		<var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="1"
 			 description="Coefficients to reconstruct velocity vectors at cells centers."
 		/>
 		<var name="minLevelCell" type="integer" dimensions="nCells" default_value="1"
@@ -2411,7 +2411,7 @@
 		<var name="refBottomDepthTopOfCell" type="real" dimensions="nVertLevelsP1" units="m"
 			 description="Reference depth of ocean for each vertical interface. Used in 'z-level' type runs."
 		/>
-		<var name="vertCoordMovementWeights" type="real" dimensions="nVertLevels"
+		<var name="vertCoordMovementWeights" type="real" dimensions="nVertLevels" units="1"
 			 description="Weights used for distribution of sea surface height perturbations through multiple vertical levels."
 		/>
 		<var name="boundaryEdge" type="integer" dimensions="nVertLevels nEdges"
