@@ -62,7 +62,7 @@
 	<var_struct name="state" time_levs="2">
 		<var_struct name="tracers" time_levs="2">
 			<var_array name="activeTracers" dimensions="nVertLevels nCells Time" type="real" packages="activeTracersPKG" >
-				<var name="temperature" array_group="activeGRP" units="degrees Celsius"
+				<var name="temperature" array_group="activeGRP" units="C"
 			 description="potential temperature"
 				/>
 				<var name="salinity" array_group="activeGRP" units="1.e-3"

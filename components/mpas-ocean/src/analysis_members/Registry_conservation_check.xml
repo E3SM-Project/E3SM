@@ -94,19 +94,19 @@
 		<var name="accumulatedLandIceFrazilHeatFlux" type="real" dimensions="Time" units="W m^-2"
 			description="Land ice heat flux from frazil, integrated in space and time, given to couipler. Positive into the ocean."
 		/>
-		<var name="accumulatedRainTemperatureFlux" type="real" dimensions="Time" units="degC m s^-1"
+		<var name="accumulatedRainTemperatureFlux" type="real" dimensions="Time" units="C m s^-1"
 			 description="Heat flux associated with rain. Positive into the ocean."
 		/>
-		<var name="accumulatedEvapTemperatureFlux" type="real" dimensions="Time" units="degC m s^-1"
+		<var name="accumulatedEvapTemperatureFlux" type="real" dimensions="Time" units="C m s^-1"
 			 description="Heat flux associated with Evaporation. Positive into the ocean."
 		/>
-		<var name="accumulatedSeaIceTemperatureFlux" type="real" dimensions="Time" units="degC m s^-1"
+		<var name="accumulatedSeaIceTemperatureFlux" type="real" dimensions="Time" units="C m s^-1"
 			 description="Heat flux associated with sea ice melt water. Positive into the ocean."
 		/>
-		<var name="accumulatedRiverRunoffTemperatureFlux" type="real" dimensions="Time" units="degC m s^-1"
+		<var name="accumulatedRiverRunoffTemperatureFlux" type="real" dimensions="Time" units="C m s^-1"
 			 description="Heat flux associated with river runoff. Positive into the ocean."
 		/>
-		<var name="accumulatedIcebergTemperatureFlux" type="real" dimensions="Time" units="degC m s^-1"
+		<var name="accumulatedIcebergTemperatureFlux" type="real" dimensions="Time" units="C m s^-1"
 			 description="Heat flux associated with iceberg melt. Positive into the ocean."
 		/>
 	</var_struct>

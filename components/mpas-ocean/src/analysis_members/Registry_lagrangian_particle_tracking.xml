@@ -364,7 +364,7 @@
 			 description="flag to monitor if the particle was transfered"
 		/>
 <!-- TEMP FIELDS THAT NEED MOVED TO NonHalo below after verifying interpolation is correct -->
-		<var name="particleTemperature" type="real" dimensions="nParticles Time" units="degrees Celsius"
+		<var name="particleTemperature" type="real" dimensions="nParticles Time" units="C"
 			 description="sampled temperature for particle"
 		/>
 		<var name="particleSalinity" type="real" dimensions="nParticles Time" units="grams salt per kilogram seawater"

@@ -2497,18 +2497,18 @@
 		/>
 		<var_array name="activeTracerSurfaceFluxTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
 
-			<var name="temperatureSurfaceFluxTendency" array_group="activeTracerSfcFluxTendGroup" units="degrees Celsius s^-1" name_in_code="temperatureSurfaceFluxTendency"
+			<var name="temperatureSurfaceFluxTendency" array_group="activeTracerSfcFluxTendGroup" units="C s^-1" name_in_code="temperatureSurfaceFluxTendency"
 				description="potential temperature tendency due to surface fluxes"
 			/>
 			<var name="salinitySurfaceFluxTendency" array_group="activeTracerSfcFluxTendGroup" units="1.e-3 s^-1" name_in_code="salinitySurfaceFluxTendency"
 				description="salinity tendency due to surface fluxes"
 			/>
 		</var_array>
-		<var name="temperatureShortWaveTendency" dimensions="nVertLevels nCells Time" units="degrees Celsius s^-1" packages="tracerBudget" name_in_code="temperatureShortWaveTendency" type="real"
+		<var name="temperatureShortWaveTendency" dimensions="nVertLevels nCells Time" units="C s^-1" packages="tracerBudget" name_in_code="temperatureShortWaveTendency" type="real"
 				 description="potential temperature tendency due to penetrating shortwave"
 		/>
 		<var_array name="activeTracerHorMixTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-			<var name="temperatureHorMixTendency" array_group="activeTracerHmixTendGroup" units="degrees Celsius s^-1" name_in_code="temperatureHorMixTendency"
+			<var name="temperatureHorMixTendency" array_group="activeTracerHmixTendGroup" units="C s^-1" name_in_code="temperatureHorMixTendency"
 				description="potential temperature tendency due to horizontal mixing (including Redi)"
 			/>
 			<var name="salinityHorMixTendency" array_group="activeTracerHmixTendGroup" units="1.e-3 s^-1" name_in_code="salinityHorMixTendency"
@@ -2516,7 +2516,7 @@
 			/>
 		</var_array>
 		<var_array name="activeTracerNonLocalTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-			<var name="temperatureNonLocalTendency" array_group="activeTracerNLTendGroup" units="degrees Celsius s^-1" name_in_code="temperatureNonLocalTendency"
+			<var name="temperatureNonLocalTendency" array_group="activeTracerNLTendGroup" units="C s^-1" name_in_code="temperatureNonLocalTendency"
 				 description="potential temperature tendency due to kpp non-local flux"
 			/>
 			<var name="salinityNonLocalTendency" array_group="activeTracerNLTendGroup" units="1.e-3 s^-1" name_in_code="salinityNonLocalTendency"
@@ -2540,7 +2540,7 @@
 			/>
 		</var_array>
 		<var_array name="activeTracerHorizontalAdvectionTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-			<var name="temperatureHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="degrees Celsius s^-1" name_in_code="temperatureHorizontaldvectionTendency"
+			<var name="temperatureHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="C s^-1" name_in_code="temperatureHorizontaldvectionTendency"
 				description="potential temperature tendency due to horizontal advection"
 			/>
 			<var name="salinityHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="1.e-3 s^-1" name_in_code="salinityHorizontalAdvectionTendency"
@@ -2548,7 +2548,7 @@
 			/>
 		</var_array>
 		<var_array name="activeTracerVerticalAdvectionTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-			<var name="temperatureVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="degrees Celsius s^-1" name_in_code="temperatureVerticalAdvectionTendency"
+			<var name="temperatureVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="C s^-1" name_in_code="temperatureVerticalAdvectionTendency"
 				description="potential temperature tendency due to vertical advection"
 			/>
 			<var name="salinityVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="1.e-3 s^-1" name_in_code="salinityVerticalAdvectionTendency"
@@ -2556,7 +2556,7 @@
 			/>
 		</var_array>
 		<var_array name="activeTracerVertMixTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-			<var name="temperatureVertMixTendency" array_group="activeTracerVertMixTendGroup" units="degrees Celsius s^-1" name_in_code="temperatureVertMixTendency"
+			<var name="temperatureVertMixTendency" array_group="activeTracerVertMixTendGroup" units="C s^-1" name_in_code="temperatureVertMixTendency"
 				 description="potential temperature tendency due to vertical mixing"
 			/>
 			<var name="salinityVertMixTendency" array_group="activeTracerVertMixTendGroup" units="1.e-3 s^-1" name_in_code="salinityVertMixTendency"
@@ -2564,7 +2564,7 @@
 			/>
 		</var_array>
 		<var_array name="tracersSurfaceValue" type="real" dimensions="nCells Time">
-			<var name="temperatureSurfaceValue" array_group="surfaceValues" units="degrees Celsius" name_in_code="temperatureSurfaceValue"
+			<var name="temperatureSurfaceValue" array_group="surfaceValues" units="C" name_in_code="temperatureSurfaceValue"
 				description="potential temperature extrapolated to ocean surface"
 			/>
 			<var name="salinitySurfaceValue" array_group="surfaceValues" units="1.e-3" name_in_code="salinitySurfaceValue"
@@ -2572,7 +2572,7 @@
 			/>
 		</var_array>
 		<var_array name="tracersSurfaceLayerValue" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
-			<var name="temperatureSurfaceLayerValue" array_group="surfaceLayerValues" units="degrees Celsius" name_in_code="temperatureSurfaceLayerValue"
+			<var name="temperatureSurfaceLayerValue" array_group="surfaceLayerValues" units="C" name_in_code="temperatureSurfaceLayerValue"
 				description="potential temperature averaged over ocean surface layer (generally 0.1 of the ocean boundary layer)"
 			/>
 			<var name="salinitySurfaceLayerValue" array_group="surfaceLayerValues" units="1.e-3" name_in_code="salinitySurfaceLayerValue"
@@ -3299,20 +3299,20 @@
 			 description="Short wave flux at cell centers from coupler. Positive into the ocean."
 			 packages="activeTracersBulkRestoringPKG;ecosysTracersPKG"
 		/>
-		<var name="rainTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^-1"
+		<var name="rainTemperatureFlux" type="real" dimensions="nCells Time" units="C m s^-1"
 			 description="Heat flux associated with rain at cell centers sent to coupler. Positive into the ocean."
 		/>
-		<var name="evapTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^-1"
+		<var name="evapTemperatureFlux" type="real" dimensions="nCells Time" units="C m s^-1"
 			 description="Heat flux associated with Evaporation at cell centers sent to coupler. Positive into the ocean."
 		/>
-		<var name="seaIceTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^-1"
+		<var name="seaIceTemperatureFlux" type="real" dimensions="nCells Time" units="C m s^-1"
 			 description="Heat flux associated with sea ice melt water at cell centers sent to coupler. Positive into the ocean."
 		/>
-		<var name="icebergTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^-1"
+		<var name="icebergTemperatureFlux" type="real" dimensions="nCells Time" units="C m s^-1"
 			 description="Heat flux associated with iceberg melt at cell centers sent to coupler. Positive into the ocean."
 		/>
 
-		<var name="totalFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^-1"
+		<var name="totalFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="C m s^-1"
 			 description="Sum of heat fluxes associated with water fluxes cell centers sent to coupler. Positive into the ocean."
 		/>
 
@@ -3377,7 +3377,7 @@
 			 packages="forwardMode;analysisMode"
 		/>
 		<var_array name="avgTracersSurfaceValue" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
-			<var name="avgTemperatureSurfaceValue" array_group="surfaceValues" units="degrees Celsius"
+			<var name="avgTemperatureSurfaceValue" array_group="surfaceValues" units="C"
 				 description="Time averaged potential temperature extrapolated to ocean surface"
 			/>
 			<var name="avgSalinitySurfaceValue" array_group="surfaceValues" units="1.e-3"
@@ -3408,7 +3408,7 @@
 			description="Time filtered meridional gradient of SSH"
 			packages="forwardMode;analysisMode"
 		/>
-		<var name="avgTotalFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="degC m s^-1"
+		<var name="avgTotalFreshWaterTemperatureFlux" type="real" dimensions="nCells Time" units="C m s^-1"
 			 description="Sum of heat fluxes associated with water fluxes cell centers sent to coupler. Positive into the ocean."
 		/>
 

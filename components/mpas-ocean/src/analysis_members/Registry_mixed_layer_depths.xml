@@ -27,11 +27,11 @@
 			description="Logical flag that determines if MLDs are calculated using a critical density threshold"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_mixedLayerDepths_crit_temp_threshold" type="real" default_value="0.2" units="degC"
+		<nml_option name="config_AM_mixedLayerDepths_crit_temp_threshold" type="real" default_value="0.2" units="C"
 			description="temperature change relative to surface for threshold method"
 			possible_values="all real positive values, suggested range 0.2 less than or equal to thresh less than or equal to 1"
 		/>
-		<nml_option name="config_AM_mixedLayerDepths_crit_dens_threshold" type="real" default_value="0.03" units="kgm^-3"
+		<nml_option name="config_AM_mixedLayerDepths_crit_dens_threshold" type="real" default_value="0.03" units="kg m^-3"
 			description="potential density change relative to surface for threshold method"
 			possible_values="suggested range 0.01 less than or equal to thresh less than or equal to 0.5"
 		/>
@@ -47,11 +47,11 @@
 			description="Logical flag controlling whether or not to compute MLDs via the density gradient"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_mixedLayerDepths_temp_gradient_threshold" type="real" default_value="5E-7" units="degC/Pa"
+		<nml_option name="config_AM_mixedLayerDepths_temp_gradient_threshold" type="real" default_value="5E-7" units="C Pa^-1"
 			description="temp gradient crit value, if not exceeded max gradient used"
 			possible_values="all positive reals"
 		/>
-		<nml_option name="config_AM_mixedLayerDepths_den_gradient_threshold" type="real" default_value="5E-8" units="degC/Pa"
+		<nml_option name="config_AM_mixedLayerDepths_den_gradient_threshold" type="real" default_value="5E-8" units="C Pa^-1"
 			description="potential density gradient crit value.  If not exceeded max gradient used"
 			possible_values="all positive reals"
 		/>
