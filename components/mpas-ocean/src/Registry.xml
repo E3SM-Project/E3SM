@@ -2820,7 +2820,7 @@
 			description="Scaling coefficient for Redi kappa. Varies from 0 to 1."
 			packages="gm"
 		/>
-		<var name="rediLimiterCount" type="integer" dimensions="nVertLevels nCells Time" units="1"
+		<var name="rediLimiterCount" type="integer" dimensions="nVertLevels nCells Time"
 			description="count of times redi limiter is invoked on a timestep"
 			packages="gm"
 		/>
@@ -2983,7 +2983,7 @@
 		<var name="surfaceFluxAttenuationCoefficientRunoff" type="real" dimensions="nCells Time" units="m"
 			description="The spatially-dependent length scale of exponential decay of river runoff. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
 		/>
-		<var name="topographic_wave_drag" type="real" dimensions="nEdges"
+		<var name="topographic_wave_drag" type="real" dimensions="nEdges" units="1"
 			description="wave drag coefficient or 1/(rinv) where rinv is the e-folding time used in HyCOM"
 			packages="topographicWaveDragPKG"
 		/>
@@ -3017,31 +3017,31 @@
 			/>
 		</var_array>
 		<!-- diagnostic fields for Haney number (rx1) -->
-		<var name="rx1Cell" type="real" dimensions="nVertLevels nCells Time"
+		<var name="rx1Cell" type="real" dimensions="nVertLevels nCells Time" units="1"
 			 description="The Haney number (rx1), a measure of hydrostatic consistency, at cell centers."
 			 packages="initMode"
 		/>
-		<var name="rx1Edge" type="real" dimensions="nVertLevels nEdges Time"
+		<var name="rx1Edge" type="real" dimensions="nVertLevels nEdges Time" units="1"
 			 description="The Haney number (rx1), a measure of hydrostatic consistency, at edges."
 			 packages="initMode"
 		/>
-		<var name="rx1MaxCell" type="real" dimensions="nCells Time"
+		<var name="rx1MaxCell" type="real" dimensions="nCells Time" units="1"
 			 description="The Haney number (rx1) is ratio of vertical displacement to cell thickness between two neighboring horizontal cells.  It is computed at each edge.  This cell-based value is the maximum over all edges and vertical levels of each cell."
 			 packages="initMode;debugDiagnosticsAMPKG"
 		/>
-		<var name="rx1MaxEdge" type="real" dimensions="nEdges Time"
+		<var name="rx1MaxEdge" type="real" dimensions="nEdges Time" units="1"
 			 description="The maximum Haney number (rx1) in a vertical column, measured at edges."
 			 packages="initMode"
 		/>
-		<var name="globalRx1Max" type="real" dimensions="Time"
+		<var name="globalRx1Max" type="real" dimensions="Time" units="1"
 			 description="The global maximum Haney number (rx1)."
 			 packages="initMode;debugDiagnosticsAMPKG"
 		/>
-		<var name="globalVerticalStretchMax" type="real" dimensions="Time"
+		<var name="globalVerticalStretchMax" type="real" dimensions="Time" units="1"
 			 description="The global maximum stretching of the vertical grid compared with z-level."
 			 packages="initMode"
 		/>
-		<var name="globalVerticalStretchMin" type="real" dimensions="Time"
+		<var name="globalVerticalStretchMin" type="real" dimensions="Time" units="1"
 			 description="The global minimum stretching of the vertical grid compared with z-level."
 			 packages="initMode"
 		/>
@@ -3049,7 +3049,7 @@
 			description="A mask indicating where layer interface and thickness smoothing is to be performed during Haney number constrained initializaiton."
 			packages="initMode"
 		/>
-		<var name="verticalStretch" type="real" dimensions="nVertLevels nCells"
+		<var name="verticalStretch" type="real" dimensions="nVertLevels nCells" units="1"
 			description="the stretch factor of each layer compared with the default z-level coordinate"
 			packages="initMode"
 		/>
@@ -3061,111 +3061,111 @@
 			description="f * uPerp for the split-implicit time stepping"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_r0" type="real" dimensions="nCells Time"
+		<var name="SIvec_r0" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_r1" type="real" dimensions="nCells Time"
+		<var name="SIvec_r1" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_rh0" type="real" dimensions="nCells Time"
+		<var name="SIvec_rh0" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_rh1" type="real" dimensions="nCells Time"
+		<var name="SIvec_rh1" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_r00" type="real" dimensions="nCells Time"
+		<var name="SIvec_r00" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_ph0" type="real" dimensions="nCells Time"
+		<var name="SIvec_ph0" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_ph1" type="real" dimensions="nCells Time"
+		<var name="SIvec_ph1" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_v0" type="real" dimensions="nCells Time"
+		<var name="SIvec_v0" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_s0" type="real" dimensions="nCells Time"
+		<var name="SIvec_s0" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_s1" type="real" dimensions="nCells Time"
+		<var name="SIvec_s1" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_sh0" type="real" dimensions="nCells Time"
+		<var name="SIvec_sh0" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_sh1" type="real" dimensions="nCells Time"
+		<var name="SIvec_sh1" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_w0" type="real" dimensions="nCells Time"
+		<var name="SIvec_w0" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_w1" type="real" dimensions="nCells Time"
+		<var name="SIvec_w1" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_wh0" type="real" dimensions="nCells Time"
+		<var name="SIvec_wh0" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_wh1" type="real" dimensions="nCells Time"
+		<var name="SIvec_wh1" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_q0" type="real" dimensions="nCells Time"
+		<var name="SIvec_q0" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_q1" type="real" dimensions="nCells Time"
+		<var name="SIvec_q1" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_qh0" type="real" dimensions="nCells Time"
+		<var name="SIvec_qh0" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_qh1" type="real" dimensions="nCells Time"
+		<var name="SIvec_qh1" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_z0" type="real" dimensions="nCells Time"
+		<var name="SIvec_z0" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_z1" type="real" dimensions="nCells Time"
+		<var name="SIvec_z1" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_zh0" type="real" dimensions="nCells Time"
+		<var name="SIvec_zh0" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_zh1" type="real" dimensions="nCells Time"
+		<var name="SIvec_zh1" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_t0" type="real" dimensions="nCells Time"
+		<var name="SIvec_t0" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_t1" type="real" dimensions="nCells Time"
+		<var name="SIvec_t1" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
-		<var name="SIvec_y0" type="real" dimensions="nCells Time"
+		<var name="SIvec_y0" type="real" dimensions="nCells Time" units="1"
 			description="A vector used in the split-implicit barotropic mode solver"
 			packages="semiImplicitTimePKG"
 		/>
@@ -3189,7 +3189,7 @@
 			 description="concentration of chlorophyll data"
 			 packages="variableShortwave"
 		/>
-		<var name="zenithAngle" type="real" dimensions="nCells Time"
+		<var name="zenithAngle" type="real" dimensions="nCells Time" units="1"
 			description="the cos of the solar zenith angle"
 			packages="variableShortwave"
 		/>
@@ -3230,7 +3230,7 @@
 			 description="Meridional (northward) component of wind stress at cell centers from coupler. Positive northward."
 			 packages="windStressBulkPKG"
 		/>
-		<var name="bottomDrag" type="real" dimensions="nCells"
+		<var name="bottomDrag" type="real" dimensions="nCells" units="1"
 			 description="Bottom drag Cd coefficient in cells."
 			 packages="variableBottomDragPKG"
 		/>
