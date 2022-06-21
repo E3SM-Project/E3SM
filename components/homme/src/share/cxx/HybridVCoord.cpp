@@ -225,8 +225,6 @@ void HybridVCoord::compute_eta ()
   const auto p0 = PhysicalConstants::p0;
   const auto kappa = PhysicalConstants::kappa;
 
-  auto l_ps0 = ps0;
-
   Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,NUM_LEV),
                        KOKKOS_LAMBDA(const int& ilev){
     l_etam(ilev) = l_hybrid_am(ilev) + l_hybrid_bm(ilev);
