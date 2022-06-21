@@ -1134,7 +1134,7 @@
 					description="The freezing temperature at zero pressure and salinity in open ocean."
 					possible_values="Any real number"
 		/>
-		<nml_option name="config_open_ocean_freezing_temperature_coeff_S" type="real" default_value="0.0" units="C 1.e-3^-1"
+		<nml_option name="config_open_ocean_freezing_temperature_coeff_S" type="real" default_value="0.0" units="1.e3 C"
 					description="The coefficient for the term proportional to salinity in the freezing temperature in the open ocean."
 					possible_values="Any real number"
 		/>
@@ -1142,7 +1142,7 @@
 					description="The coefficient for the term proportional to the pressure in the freezing temperature in the open ocean."
 					possible_values="Any real number"
 		/>
-		<nml_option name="config_open_ocean_freezing_temperature_coeff_pS" type="real" default_value="0.0" units="C 1.e-3^-1 Pa^-1"
+		<nml_option name="config_open_ocean_freezing_temperature_coeff_pS" type="real" default_value="0.0" units="1.e3 C Pa^-1"
 					description="The coefficient for the term proportional to salinity times pressure in the freezing temperature in the open ocean."
 					possible_values="Any real number"
 		/>
@@ -1154,7 +1154,7 @@
 					description="The freezing temperature at zero pressure and salinity in land-ice cavities."
 					possible_values="Any real number"
 		/>
-		<nml_option name="config_land_ice_cavity_freezing_temperature_coeff_S" type="real" default_value="-5.63e-2" units="C 1.e-3^-1"
+		<nml_option name="config_land_ice_cavity_freezing_temperature_coeff_S" type="real" default_value="-5.63e-2" units="1.e3 C"
 					description="The coefficient for the term proportional to salinity in the freezing temperature in land-ice cavities."
 					possible_values="Any real number"
 		/>
@@ -1162,7 +1162,7 @@
 					description="The coefficient for the term proportional to the pressure in the freezing temperature in land-ice cavities."
 					possible_values="Any real number"
 		/>
-		<nml_option name="config_land_ice_cavity_freezing_temperature_coeff_pS" type="real" default_value="-1.74e-10" units="C 1.e-3^-1 Pa^-1"
+		<nml_option name="config_land_ice_cavity_freezing_temperature_coeff_pS" type="real" default_value="-1.74e-10" units="1.e3 C Pa^-1"
 					description="The coefficient for the term proportional to salinity times pressure in the freezing temperature in land-ice cavities."
 					possible_values="Any real number"
 		/>
@@ -1172,7 +1172,7 @@
 					description="Linear thermal expansion coefficient"
 					possible_values="any positive real"
 		/>
-		<nml_option name="config_eos_linear_beta" type="real" default_value="0.8" units="kg m^-3 1.e-3^-1"
+		<nml_option name="config_eos_linear_beta" type="real" default_value="0.8" units="1.e3 kg m^-3"
 					description="Linear haline contraction coefficient"
 					possible_values="any positive real"
 		/>
@@ -2626,7 +2626,7 @@
 			 description="Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign).  This is in situ, i.e. not displaced to another depth."
 		/>
 		<var name="inSituSalineContractionCoeff"
-			 type="real" dimensions="nVertLevels nCells Time" units="1.e-3^-1"
+			 type="real" dimensions="nVertLevels nCells Time" units="1.e3"
 			 description="Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$.  This is also called the haline contraction coefficient.  This is in situ, i.e. not displaced to another depth."
 		/>
 
