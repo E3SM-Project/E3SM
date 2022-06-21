@@ -2596,10 +2596,10 @@
 			description="Pressure at the sea surface due to atmosphere, sea ice, frazil and land ice"
 		/>
 		<var_array name="SSHGradient" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
-			<var name="SSHGradientZonal" array_group="ssh_zonal" units="m m^-1"
+			<var name="SSHGradientZonal" array_group="ssh_zonal" units="1"
 				 description="Zonal gradient of SSH reconstructed at cell centers"
 			/>
-			<var name="SSHGradientMeridional" array_group="ssh_meridional" units="m m^-1"
+			<var name="SSHGradientMeridional" array_group="ssh_meridional" units="1"
 				 description="Meridional gradient of SSH reconstructed at cell centers"
 			/>
 		</var_array>
@@ -3393,18 +3393,18 @@
 			/>
 		</var_array>
 		<var_array name="avgSSHGradient" type="real" dimensions="nCells Time" packages="forwardMode;analysisMode">
-			<var name="avgSSHGradientZonal" array_group="ssh_zonal" units="m m^-1"
+			<var name="avgSSHGradientZonal" array_group="ssh_zonal" units="1"
 				 description="Time averaged zonal gradient of SSH"
 			/>
-			<var name="avgSSHGradientMeridional" array_group="ssh_meridional" units="m m^-1"
+			<var name="avgSSHGradientMeridional" array_group="ssh_meridional" units="1"
 				 description="Time averaged meridional gradient of SSH"
 			/>
 		</var_array>
-		<var name="filteredSSHGradientZonal" type="real" dimensions="nCells Time" units="m m^-1"
+		<var name="filteredSSHGradientZonal" type="real" dimensions="nCells Time" units="1"
 			description="Time filtered zonal gradient of SSH"
 			packages="forwardMode;analysisMode"
 		/>
-		<var name="filteredSSHGradientMeridional" type="real" dimensions="nCells Time" units="m m^-1"
+		<var name="filteredSSHGradientMeridional" type="real" dimensions="nCells Time" units="1"
 			description="Time filtered meridional gradient of SSH"
 			packages="forwardMode;analysisMode"
 		/>
