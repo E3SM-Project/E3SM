@@ -1064,6 +1064,16 @@
       <mask>oRRS18to6v3</mask>
     </model_grid>
 
+    <model_grid alias="CAx32v1pg2_CAx32v1pg2">
+      <grid name="atm">ne0np4_CAx32v1.pg2</grid>
+      <grid name="lnd">ne0np4_CAx32v1.pg2</grid>
+      <grid name="ocnice">ne0np4_CAx32v1.pg2</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oRRS18to6v3</mask>
+    </model_grid>
+
     <model_grid alias="northamericax4v1_r0125_oRRS15to5">
       <grid name="atm">ne0np4_northamericax4v1</grid>
       <grid name="lnd">r0125</grid>
