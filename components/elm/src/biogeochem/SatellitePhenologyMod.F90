@@ -575,6 +575,7 @@ contains
     use spmdMod          , only : masterproc, mpicom, MPI_REAL8, MPI_INTEGER
     use shr_scam_mod     , only : shr_scam_getCloseLatLon
     use clm_time_manager , only : get_nstep
+    use ncdio_pio        , only : var_desc_t
     use netcdf
     !
     ! !ARGUMENTS:
@@ -597,10 +598,17 @@ contains
     real(r8):: closelat,closelon
     logical :: readvar
     real(r8), pointer :: mlai(:,:,:)        ! lai read from input files
+    real(r8), pointer :: mlai_2d(:,:)        ! lai read from input files
     real(r8), pointer :: msai(:,:,:)        ! sai read from input files
+    real(r8), pointer :: msai_2d(:,:)        ! sai read from input files
     real(r8), pointer :: mhgtt(:,:,:)       ! top vegetation height
+    real(r8), pointer :: mhgtt_2d(:,:)       ! top vegetation height
     real(r8), pointer :: mhgtb(:,:,:)       ! bottom vegetation height
+    real(r8), pointer :: mhgtb_2d(:,:)       ! bottom vegetation height
+    integer , pointer :: pft_type(:)
     character(len=32) :: subname = 'readMonthlyVegetation'
+    integer :: num_dims
+    type(Var_desc_t) :: var_desc
     !-----------------------------------------------------------------------
 
     ! Determine necessary indices
@@ -610,6 +618,11 @@ contains
          msai(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
          mhgtt(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
          mhgtb(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
+         mlai_2d(bounds%begg:bounds%endg,1:max_topounits), &
+         msai_2d(bounds%begg:bounds%endg,1:max_topounits), &
+         mhgtt_2d(bounds%begg:bounds%endg,1:max_topounits), &
+         mhgtb_2d(bounds%begg:bounds%endg,1:max_topounits), &
+         pft_type(bounds%begg:bounds%endg), &
          stat=ier)
     if (ier /= 0) then
        write(iulog,*)subname, 'allocation big error '
@@ -631,47 +644,103 @@ contains
 
     do k=1,2   !loop over months and read vegetated data
 
-       call ncd_io(ncid=ncid, varname='MONTHLY_LAI', flag='read', data=mlai, dim1name=grlnd, &
-            nt=months(k), readvar=readvar)
-       if (.not. readvar) call endrun(msg=' ERROR: MONTHLY_LAI NOT on fveg file'//errMsg(__FILE__, __LINE__))
+       call check_var(ncid, 'MONTHLY_LAI', var_desc, readvar)
+       call ncd_inqvdims(ncid, num_dims, var_desc)
 
-       call ncd_io(ncid=ncid, varname='MONTHLY_SAI', flag='read', data=msai, dim1name=grlnd, &
-            nt=months(k), readvar=readvar)
-       if (.not. readvar) call endrun(msg=' ERROR: MONTHLY_SAI NOT on fveg file'//errMsg(__FILE__, __LINE__))
+       if (num_dims == 2) then
 
-       call ncd_io(ncid=ncid, varname='MONTHLY_HEIGHT_TOP', flag='read', data=mhgtt, dim1name=grlnd, &
-            nt=months(k), readvar=readvar)
-       if (.not. readvar) call endrun(msg=' ERROR: MONTHLY_HEIGHT_TOP NOT on fveg file'//errMsg(__FILE__, __LINE__))
+          call ncd_io(ncid=ncid, varname='MONTHLY_LAI', flag='read', data=mlai_2d, dim1name=grlnd, &
+               nt=months(k), readvar=readvar)
 
-       call ncd_io(ncid=ncid, varname='MONTHLY_HEIGHT_BOT', flag='read', data=mhgtb, dim1name=grlnd, &
-            nt=months(k), readvar=readvar)
-       if (.not. readvar) call endrun(msg=' ERROR: MONTHLY_HEIGHT_TOP NOT on fveg file'//errMsg(__FILE__, __LINE__))
+          call ncd_io(ncid=ncid, varname='PFT_TYPE', flag='read', data=pft_type, dim1name=grlnd, &
+               readvar=readvar)
+          if (.not. readvar) call endrun(msg=' ERROR: PFT_TYPE NOT on fveg file'//errMsg(__FILE__, __LINE__))
 
-       ! Only vegetated patches have nonzero values
-       ! Assign lai/sai/hgtt/hgtb to the top [maxpatch_pft] patches
-       ! as determined in subroutine surfrd
+          call ncd_io(ncid=ncid, varname='MONTHLY_SAI', flag='read', data=msai_2d, dim1name=grlnd, &
+               nt=months(k), readvar=readvar)
+          if (.not. readvar) call endrun(msg=' ERROR: MONTHLY_SAI NOT on fveg file'//errMsg(__FILE__, __LINE__))
 
-       do p = bounds%begp,bounds%endp
-          g =veg_pp%gridcell(p)
-          t = veg_pp%topounit(p)
-          topi = grc_pp%topi(g)
-          ti = t - topi + 1
-          if (veg_pp%itype(p) /= noveg) then     ! vegetated pft
-             do l = 0, numpft
-                if (l == veg_pp%itype(p)) then
-                   mlai2t(p,k) = mlai(g,ti,l)
-                   msai2t(p,k) = msai(g,ti,l)
-                   mhvt2t(p,k) = mhgtt(g,ti,l)
-                   mhvb2t(p,k) = mhgtb(g,ti,l)
-                end if
-             end do
-          else                        ! non-vegetated pft
-             mlai2t(p,k) = 0._r8
-             msai2t(p,k) = 0._r8
-             mhvt2t(p,k) = 0._r8
-             mhvb2t(p,k) = 0._r8
-          end if
-       end do   ! end of loop over patches
+          call ncd_io(ncid=ncid, varname='MONTHLY_HEIGHT_TOP', flag='read', data=mhgtt_2d, dim1name=grlnd, &
+               nt=months(k), readvar=readvar)
+          if (.not. readvar) call endrun(msg=' ERROR: MONTHLY_HEIGHT_TOP NOT on fveg file'//errMsg(__FILE__, __LINE__))
+
+          call ncd_io(ncid=ncid, varname='MONTHLY_HEIGHT_BOT', flag='read', data=mhgtb_2d, dim1name=grlnd, &
+               nt=months(k), readvar=readvar)
+          if (.not. readvar) call endrun(msg=' ERROR: MONTHLY_HEIGHT_TOP NOT on fveg file'//errMsg(__FILE__, __LINE__))
+
+          ! Only vegetated patches have nonzero values
+          ! Assign lai/sai/hgtt/hgtb to the top [maxpatch_pft] patches
+          ! as determined in subroutine surfrd
+
+          mlai2t(:,:) = 0._r8
+          msai2t(:,:) = 0._r8
+          mhvt2t(:,:) = 0._r8
+          mhvb2t(:,:) = 0._r8
+
+          do p = bounds%begp,bounds%endp
+             g =veg_pp%gridcell(p)
+             t = veg_pp%topounit(p)
+             topi = grc_pp%topi(g)
+             ti = t - topi + 1
+             if (veg_pp%itype(p) /= noveg) then     ! vegetated pft
+                do l = 0, numpft ! No need for do-loop instead use `if (veg_pp%itype(p)  == pft_type(g))`
+                   if (l == veg_pp%itype(p) .and. l == pft_type(g)) then 
+                      mlai2t(p,k) = mlai_2d(g,1)
+                      msai2t(p,k) = msai_2d(g,1)
+                      mhvt2t(p,k) = mhgtt_2d(g,1)
+                      mhvb2t(p,k) = mhgtb_2d(g,1)
+                   end if
+                end do
+             else                        ! non-vegetated pft
+                mlai2t(p,k) = 0._r8
+                msai2t(p,k) = 0._r8
+                mhvt2t(p,k) = 0._r8
+                mhvb2t(p,k) = 0._r8
+             end if
+          end do   ! end of loop over patches
+       else
+          call ncd_io(ncid=ncid, varname='MONTHLY_LAI', flag='read', data=mlai, dim1name=grlnd, &
+               nt=months(k), readvar=readvar)
+          if (.not. readvar) call endrun(msg=' ERROR: MONTHLY_LAI NOT on fveg file'//errMsg(__FILE__, __LINE__))
+
+          call ncd_io(ncid=ncid, varname='MONTHLY_SAI', flag='read', data=msai, dim1name=grlnd, &
+               nt=months(k), readvar=readvar)
+          if (.not. readvar) call endrun(msg=' ERROR: MONTHLY_SAI NOT on fveg file'//errMsg(__FILE__, __LINE__))
+
+          call ncd_io(ncid=ncid, varname='MONTHLY_HEIGHT_TOP', flag='read', data=mhgtt, dim1name=grlnd, &
+               nt=months(k), readvar=readvar)
+          if (.not. readvar) call endrun(msg=' ERROR: MONTHLY_HEIGHT_TOP NOT on fveg file'//errMsg(__FILE__, __LINE__))
+
+          call ncd_io(ncid=ncid, varname='MONTHLY_HEIGHT_BOT', flag='read', data=mhgtb, dim1name=grlnd, &
+               nt=months(k), readvar=readvar)
+          if (.not. readvar) call endrun(msg=' ERROR: MONTHLY_HEIGHT_TOP NOT on fveg file'//errMsg(__FILE__, __LINE__))
+
+          ! Only vegetated patches have nonzero values
+          ! Assign lai/sai/hgtt/hgtb to the top [maxpatch_pft] patches
+          ! as determined in subroutine surfrd
+          do p = bounds%begp,bounds%endp
+             g =veg_pp%gridcell(p)
+             t = veg_pp%topounit(p)
+             topi = grc_pp%topi(g)
+             ti = t - topi + 1
+             if (veg_pp%itype(p) /= noveg) then     ! vegetated pft
+                do l = 0, numpft ! No need for do-loop instead use `if (veg_pp%itype(p)  == pft_type(g))`
+                   if (l == veg_pp%itype(p)) then 
+                      mlai2t(p,k) = mlai(g,ti,l)
+                      msai2t(p,k) = msai(g,ti,l)
+                      mhvt2t(p,k) = mhgtt(g,ti,l)
+                      mhvb2t(p,k) = mhgtb(g,ti,l)
+                   end if
+                end do
+             else                        ! non-vegetated pft
+                mlai2t(p,k) = 0._r8
+                msai2t(p,k) = 0._r8
+                mhvt2t(p,k) = 0._r8
+                mhvb2t(p,k) = 0._r8
+             end if
+          end do   ! end of loop over patches
+
+       endif
 
     end do   ! end of loop over months
 
