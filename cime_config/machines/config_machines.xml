@@ -3283,9 +3283,7 @@
     </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
-      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
-      <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
-      <!-- init_path lang="perl">/usr/share/lmod/8.3.1/init/perl</init_path -->
+      <init_path lang="perl">/usr/share/lmod/8.3.1/init/perl</init_path>
       <!-- does not exist -->
       <init_path lang="python">/usr/share/lmod/8.3.1/init/python</init_path>
       <init_path lang="sh">/usr/share/lmod/8.3.1/init/sh</init_path>
