@@ -3413,7 +3413,7 @@
 		/>
 
 		<!-- Input fields from coupler or initial condition for forcing under land ice -->
-		<var name="landIceFraction" type="real" dimensions="nCells Time"
+		<var name="landIceFraction" type="real" dimensions="nCells Time" units="1"
 			description="The fraction of each cell covered by land ice"
 			packages="landIcePressurePKG"
 		/>
@@ -3505,7 +3505,7 @@
 			 description="Mask value 1 as vegetated cell, and 0 as non-vegetated cell"
 			 packages="vegetationDragPKG"
 		/>
-		<var name="vegetationManning" type="real" dimensions="nCells"
+		<var name="vegetationManning" type="real" dimensions="nCells" units="1"
 			 description="Manning roughness coefficient induced by vegetation"
 			 packages="vegetationDragPKG"
 		/>
@@ -3552,7 +3552,7 @@
 			description="Amplitude of tidal constituents"
 			packages="tidalPotentialForcingPKG"
 		/>
-		<var name="tidalPotentialConstituentLoveNumbers" type="real" dimensions="maxTidalConstituents Time"
+		<var name="tidalPotentialConstituentLoveNumbers" type="real" dimensions="maxTidalConstituents Time" units="1"
 			description="Love number combinations for tidal constituents"
 			packages="tidalPotentialForcingPKG"
 		/>
@@ -3572,7 +3572,7 @@
 			description="Spieces code for tidal constituents: long-period = 0, diurnal = 1, semi-diurnal = 2"
 			packages="tidalPotentialForcingPKG"
 		/>
-		<var name="tidalPotentialLatitudeFunction" type="real" dimensions="nCells R3 Time"
+		<var name="tidalPotentialLatitudeFunction" type="real" dimensions="nCells R3 Time" units="1"
 			description="Latitude function for tidal constituents: long-period = 3\sin^2(\phi)-1, diurnal = \sin(2\phi), semi-diurnal = \cos^2(\phi)"
 			packages="tidalPotentialForcingPKG"
 		/>
@@ -3588,7 +3588,7 @@
 			description="SSH - tidal potential in split explicit "
 			packages="tidalPotentialForcingPKG"
 		/>
-		<var name="coastalSmoothingFactor" type="real" dimensions="nCells"
+		<var name="coastalSmoothingFactor" type="real" dimensions="nCells" units="1"
 			 description="Multiplication factors to smooth ssh at coastlines for SAL caculation"
 			 packages="tidalPotentialForcingPKG"
 		/>
@@ -3614,7 +3614,7 @@
 			description="Pressure at the sea surface due to the atmosphere."
 			packages="timeVaryingAtmosphericForcingPKG"
 		/>
-		<var name="landIceFractionForcing" type="real" dimensions="nCells Time"
+		<var name="landIceFractionForcing" type="real" dimensions="nCells Time" units="1"
 			description="The fraction of each cell covered by land ice"
 			packages="timeVaryingLandIceForcingPKG"
 		/>
@@ -3709,12 +3709,12 @@
 		/>
 		<var name="goalStretchScratch"
 			persistence="scratch"
-			type="real" dimensions="nVertLevels nCells"
+			type="real" dimensions="nVertLevels nCells" units="1"
 			description="the goal stretch field for the vertical coordinate"
 		/>
 		<var name="goalWeightScratch"
 			persistence="scratch"
-			type="real" dimensions="nVertLevels nCells"
+			type="real" dimensions="nVertLevels nCells" units="1"
 			description="the sum of weights used to determine the goal stretch field"
 		/>
 		<var name="zTopScratch"
@@ -3760,13 +3760,13 @@
 		<var name="pointsInGroup" type="integer" dimensions="maxPointsInGroup nPointGroups"
 			 description="The indices of each point in a each group."
 		/>
-		<var name="xPoint" type="real" dimensions="nPoints"
+		<var name="xPoint" type="real" dimensions="nPoints" units="m"
 			 description="X Coordinate in cartesian space of point locations."
 		/>
-		<var name="yPoint" type="real" dimensions="nPoints"
+		<var name="yPoint" type="real" dimensions="nPoints" units="m"
 			 description="Y Coordinate in cartesian space of point locations."
 		/>
-		<var name="zPoint" type="real" dimensions="nPoints"
+		<var name="zPoint" type="real" dimensions="nPoints" units="m"
 			 description="Z Coordinate in cartesian space of point locations."
 		/>
 		<var name="latPoint" type="real" dimensions="nPoints" units="radians"
