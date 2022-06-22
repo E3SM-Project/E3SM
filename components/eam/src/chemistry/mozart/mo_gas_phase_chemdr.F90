@@ -1001,7 +1001,7 @@ contains
 
       chem_loss(i,k,o3_ndx) = (reaction_rates(i,k,uci1_ndx) &
          + reaction_rates(i,k,uci2_ndx) &
-         + reaction_rates(i,k,uci3_ndx) * vmr(i,k,ch4lnz_ndx) &
+         + reaction_rates(i,k,uci3_ndx) * vmr(i,k,ch4_ndx) &
          + reaction_rates(i,k,lc2h4_o3_ndx)*vmr(i,k,c2h4_ndx) &
          + reaction_rates(i,k,lisop_o3_ndx)*vmr(i,k,isop_ndx)  &
          + reaction_rates(i,k,lo3_oh_ndx)*vmr(i,k,oh_ndx)  &
@@ -1085,7 +1085,7 @@ contains
  
       chemmp_loss(i,k,o3_ndx) = (diags_reaction_rates(i,k,uci1_ndx) &
          + diags_reaction_rates(i,k,uci2_ndx) &
-         + diags_reaction_rates(i,k,uci3_ndx) * vmr(i,k,ch4lnz_ndx) &
+         + diags_reaction_rates(i,k,uci3_ndx) * vmr(i,k,ch4_ndx) &
          + diags_reaction_rates(i,k,lc2h4_o3_ndx)*vmr(i,k,c2h4_ndx) &
          + diags_reaction_rates(i,k,lisop_o3_ndx)*vmr(i,k,isop_ndx)  &
          + diags_reaction_rates(i,k,lo3_oh_ndx)*vmr(i,k,oh_ndx)  &
@@ -1100,7 +1100,7 @@ contains
 
       chem_loss(i,k,o3_ndx) = (diags_reaction_rates(i,k,uci1_ndx) &
          + diags_reaction_rates(i,k,uci2_ndx) &
-         + diags_reaction_rates(i,k,uci3_ndx) * vmr(i,k,ch4lnz_ndx) &
+         + diags_reaction_rates(i,k,uci3_ndx) * vmr(i,k,ch4_ndx) &
          + diags_reaction_rates(i,k,lc2h4_o3_ndx)*vmr(i,k,c2h4_ndx) &
          + diags_reaction_rates(i,k,lisop_o3_ndx)*vmr(i,k,isop_ndx)  &
          + diags_reaction_rates(i,k,lo3_oh_ndx)*vmr(i,k,oh_ndx)  &
