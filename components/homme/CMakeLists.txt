@@ -278,9 +278,10 @@ MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 
 IF (${HOMME_USE_KOKKOS})
 
+#set HIP to ON in cmake machine file
   if(HIP)
     add_definitions(-DHIP_BUILD)
-    #does not seem to be needed because kokkos::default will be picked up
+    #does not seem to be needed because kokkos::default exec space will be picked up
     #SET (HOMMEXX_HIP_SPACE ON)
   endif()
 
