@@ -139,7 +139,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="elm"                         >$SRCROOT/components/elm/</value>
+      <value component="elm"                         >$SRCROOT/components/elm</value>
       <value component="dlnd"                        >$SRCROOT/components/data_comps/dlnd</value>
       <value component="slnd"                        >$SRCROOT/components/stub_comps/slnd</value>
       <value component="xlnd"                        >$SRCROOT/components/xcpl_comps/xlnd</value>
