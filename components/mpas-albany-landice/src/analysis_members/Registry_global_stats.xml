@@ -117,6 +117,9 @@
                         <var name="calvingCFLdt"/>
                         <var name="dtCalvingCFLratio"/>
                         <var name="processLimitingTimestep"/>
+                        <var name="totalRatebasedCalvedVolume"/>
+                        <var name="totalRatebasedUncalvedVolume"/>
+                        <var name="albanyVelocityError"/>
                         <var_struct name="globalStatsAM"/>
 		</stream>
 	</streams>

@@ -1495,6 +1495,10 @@ is the value of that variable from the *previous* time level!
                      units="none"  description="flag needed by external velocity solvers that indicates if the Dirichlet boundary condition mask has changed (treated as a logical)"
                         packages="higherOrderVelocity"
                 />
+                <var name="albanyVelocityError"              type="integer"  dimensions="Time"
+                        units="none"  description="0/1 flag indicating if Albany external velocity solver returned an error.  This typically means it did not converge.  0=converged. 1=unconverged"
+                        packages="higherOrderVelocity"
+                />
         </var_struct>
 
 <!-- ================ -->
