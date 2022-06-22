@@ -172,7 +172,7 @@ module seq_frac_mct
   ! for tri grid, sameg_al would be false 
   use seq_comm_mct, only : sameg_al !          same grid atm and land; used throughout, initialized in lnd_init
   use iMOAB, only : iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, &
-        iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorageWithGid
+        iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh
   
   use shr_kind_mod, only: CL => SHR_KIND_CL, CX => SHR_KIND_CX, CXX => SHR_KIND_CXX
   use iso_c_binding ! C_NULL_CHAR 
@@ -313,6 +313,7 @@ contains
     integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
     integer kgg  ! index in global number attribute, used for global id in MOAB 
+    character(30)            :: outfile, wopts
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_frac_init) '
@@ -452,6 +453,19 @@ contains
          endif
          deallocate(GlobalIds)
          deallocate(tagValues)
+
+#ifdef MOABDEBUG
+        ! debug test
+        
+        outfile = 'lndCplFr.h5m'//C_NULL_CHAR
+        wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+ !      write out the mesh file to disk
+        ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
+        if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing mesh '
+          call shr_sys_abort(subname//' ERROR in writing mesh ')
+        endif
+#endif
        endif
 
        if (atm_present) then
