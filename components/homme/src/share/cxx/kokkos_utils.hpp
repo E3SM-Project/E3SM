@@ -101,16 +101,11 @@ class TeamUtils<Kokkos::OpenMP> : public _TeamUtilsCommonBase<Kokkos::OpenMP>
 };
 #endif
 
-//////////
-
-
-
 /*
  * Specialization for Cuda execution space.
  */
 #if defined(KOKKOS_ENABLE_CUDA) || (HIP_BUILD)
 template <>
-//class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
 class TeamUtils<Hommexx_Cuda> : public _TeamUtilsCommonBase<Hommexx_Cuda>
 {
 #ifdef HOMMEXX_CUDA_SHARE_BUFFER
@@ -129,7 +124,6 @@ class TeamUtils<Hommexx_Cuda> : public _TeamUtilsCommonBase<Hommexx_Cuda>
  public:
   template <typename TeamPolicy>
   TeamUtils(const TeamPolicy& policy, const Real& overprov_factor = 1.25) :
-    //_TeamUtilsCommonBase<Kokkos::Cuda>(policy)
     _TeamUtilsCommonBase<Hommexx_Cuda>(policy)
 #ifdef HOMMEXX_CUDA_SHARE_BUFFER
     , _num_ws_slots(_league_size > _num_teams

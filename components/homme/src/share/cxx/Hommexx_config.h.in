@@ -1,9 +1,6 @@
 #ifndef HOMMEXX_CONFIG_H
 #define HOMMEXX_CONFIG_H
 
-
-///?????????????
-
 // Whether the CUDA exec space has been selected
 #cmakedefine HOMMEXX_CUDA_SPACE
 

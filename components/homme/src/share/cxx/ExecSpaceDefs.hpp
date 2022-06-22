@@ -319,8 +319,6 @@ VECTOR_SIMD_LOOP
 
 #if defined(KOKKOS_ENABLE_CUDA) || (HIP_BUILD)
 template <>
-//struct Dispatch<Kokkos::Cuda> {
-//  using ExeSpace = Kokkos::Cuda;
 struct Dispatch<Hommexx_Cuda> {
   using ExeSpace = Hommexx_Cuda;
 

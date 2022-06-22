@@ -19,7 +19,6 @@
 
 #if HIP_BUILD
 #include <hip/hip_runtime.h>
-///#include <hip/hip_runtime_api.h>
 #endif
 
 namespace Homme {
