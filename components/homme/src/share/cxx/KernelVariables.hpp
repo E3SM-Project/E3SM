@@ -28,7 +28,7 @@ private:
       return 0;
     }
 
-#if defined(KOKKOS_ENABLE_CUDA) || (HIP_BUILD)
+#if defined(KOKKOS_ENABLE_CUDA) || defined(HIP_BUILD)
 //#ifdef __CUDA_ARCH__
     template <typename ExecSpaceType>
     static KOKKOS_INLINE_FUNCTION typename std::enable_if<

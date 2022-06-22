@@ -104,7 +104,7 @@ class TeamUtils<Kokkos::OpenMP> : public _TeamUtilsCommonBase<Kokkos::OpenMP>
 /*
  * Specialization for Cuda execution space.
  */
-#if defined(KOKKOS_ENABLE_CUDA) || (HIP_BUILD)
+#if defined(KOKKOS_ENABLE_CUDA) || defined(HIP_BUILD)
 template <>
 class TeamUtils<Hommexx_Cuda> : public _TeamUtilsCommonBase<Hommexx_Cuda>
 {

@@ -31,7 +31,7 @@
 
 #include <Kokkos_Core.hpp>
 
-#if defined(KOKKOS_ENABLE_CUDA) || (HIP_BUILD)
+#if defined(KOKKOS_ENABLE_CUDA) || defined(HIP_BUILD)
 # ifndef HOMMEXX_CUDA_MIN_WARP_PER_TEAM
 #  define HOMMEXX_CUDA_MIN_WARP_PER_TEAM 8
 # endif

@@ -56,7 +56,7 @@ struct SerialLimiter<Kokkos::Cuda> {
 };
 #endif
 
-#if HIP_BUILD
+#ifdef HIP_BUILD
 template <>
 struct SerialLimiter<Kokkos::Experimental::HIP> {
   template <int limiter_option, typename ArrayGll, typename ArrayGllLvl, typename Array2Lvl,
