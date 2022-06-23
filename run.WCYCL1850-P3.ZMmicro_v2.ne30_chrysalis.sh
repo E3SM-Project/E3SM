@@ -25,7 +25,7 @@ readonly PROJECT="e3sm"
 readonly COMPSET="WCYCL1850-P3"
 readonly RESOLUTION="ne30pg2_EC30to60E2r2"
 readonly CASE_NAME="v2P31ZMmicro.LR.piControl.attempt2"
-readonly CASE_GROUP="v2.LR"
+#readonly CASE_GROUP="v2.LR"
 
 # Code and compilation
 readonly CHECKOUT="20220315"
@@ -249,7 +249,6 @@ create_newcase() {
 
     ${CODE_ROOT}/cime/scripts/create_newcase \
         --case ${CASE_NAME} \
-        --case-group ${CASE_GROUP} \
         --output-root ${CASE_ROOT} \
         --script-root ${CASE_SCRIPTS_DIR} \
         --handle-preexisting-dirs u \
