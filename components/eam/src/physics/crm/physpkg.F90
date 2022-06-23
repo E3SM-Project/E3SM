@@ -1475,7 +1475,7 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   end if 
 
   ! Validate state coming from the dynamics.
-  if (state_debug_checks) call physics_state_check(state, name="before tphysbc (dycore?)")
+  if (state_debug_checks) call physics_state_check(state, name="tphysbc1 start (dycore?)")
 
   ! Adjust chemistry for conservation issues
   call clybry_fam_adj( ncol, lchnk, map2chm, state%q, pbuf )
