@@ -2071,16 +2071,6 @@ contains
                avgflag='A', long_name='pool for seeding new Patches', &
                ptr_col=this%seedc, default='inactive')
 
-          !this%prod10c(begc:endc) = spval
-          !call hist_addfld1d (fname='PROD10C', units='gC/m^2', &
-          !     avgflag='A', long_name='10-yr wood product C', &
-          !     ptr_col=this%prod10c, default='inactive')
-
-          !this%prod100c(begc:endc) = spval
-          !call hist_addfld1d (fname='PROD100C', units='gC/m^2', &
-          !     avgflag='A', long_name='100-yr wood product C', &
-          !     ptr_col=this%prod100c, default='inactive')
-
           this%prod1c(begc:endc) = spval
           call hist_addfld1d (fname='PROD1C', units='gC/m^2', &
                avgflag='A', long_name='1-yr crop product C', &
@@ -5727,7 +5717,7 @@ contains
            call hist_addfld1d (fname='HR', units='gC/m^2/s', &
                 avgflag='A', long_name='total heterotrophic respiration', &
                  ptr_col=this%hr)
-! Shijie
+
           this%hrv_deadstemc_to_prod10c(begc:endc) = spval
           call hist_addfld1d (fname='HRV_DEADSTEMC_TO_PROD10C', units='gC/m^2/s', &
                avgflag='A', long_name='flux into 10-yr wood product C', &
@@ -5737,7 +5727,7 @@ contains
           call hist_addfld1d (fname='HRV_DEADSTEMC_TO_PROD100C', units='gC/m^2/s', &
                avgflag='A', long_name='flux into 100-yr wood product C', &
                ptr_col=this%hrv_deadstemc_to_prod100c, default='inactive')
-! Shijie
+
 
        end if
        ! end of use_fates (C12) block
