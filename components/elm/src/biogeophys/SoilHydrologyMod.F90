@@ -334,8 +334,8 @@ contains
           h2osno               =>    col_ws%h2osno               , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)
           snow_depth           =>    col_ws%snow_depth           , & ! Input:  [real(r8) (:)   ]  snow height (m)
           h2osfc               =>    col_ws%h2osfc               , & ! Output: [real(r8) (:)   ]  surface water (mm)
-          h2orof               =>    col_ws%h2orof               , & ! Output:  [real(r8) (:)   ]  floodplain inudntion volume at column level (mm)
-          frac_h2orof          =>    col_ws%frac_h2orof          , & ! Output:  [real(r8) (:)   ]  floodplain inudntion fraction at column level (-) 
+          h2orof               =>    col_ws%h2orof               , & ! Output:  [real(r8) (:)   ]  floodplain inudntion volume (mm)
+          frac_h2orof          =>    col_ws%frac_h2orof          , & ! Output:  [real(r8) (:)   ]  floodplain inudntion fraction (-)
 
           qflx_ev_soil         =>    col_wf%qflx_ev_soil         , & ! Input:  [real(r8) (:)   ]  evaporation flux from soil (W/m**2) [+ to atm]
           qflx_evap_soi        =>    col_wf%qflx_evap_soi        , & ! Input:  [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]
@@ -403,10 +403,8 @@ contains
 
              !0. partition grid-level floodplain inundation volume and fraction to each column
              if (use_lnd_rof_two_way) then
-                if (mod(get_nstep()-1,6) == 1 .or. get_nstep() <= 1) then                 
-                  h2orof(c)      = atm2lnd_vars%h2orof_grc(g) * wtgcell(c) 
-                  frac_h2orof(c) = atm2lnd_vars%frac_h2orof_grc(g) * wtgcell(c)
-                endif
+                h2orof(c)      = atm2lnd_vars%h2orof_grc(g) * wtgcell(c)
+                frac_h2orof(c) = atm2lnd_vars%frac_h2orof_grc(g) * wtgcell(c)
                 ! TODO: add inundfrac from ocean 
                 if ( frac_h2orof(c) > 1 - fsno - frac_h2osfc(c) ) then
                   frac_h2orof(c) = 1 - fsno - frac_h2osfc(c)
@@ -527,7 +525,7 @@ contains
              !8. add drainage from river inundation to qflx_infl (land river two way coupling)
              if (use_lnd_rof_two_way) then
 
-               ! estimate the available space in the first soil layer for floodplain infiltration
+               ! estimate the available volume [mm H2O] in the first soil layer for floodplain infiltration
                h2osoi_left_vol1 = max(0._r8,(pondmx+watsat(c,1)*dz(c,1)*1.e3_r8-h2osoi_ice(c,1)-watmin)) - &
                                   max(0._r8,h2osoi_liq(c,1)-watmin)
                if (h2osoi_left_vol1 < 0._r8) then
@@ -545,6 +543,7 @@ contains
 
                ! remove drainage from inundation volume
                h2orof(c) = h2orof(c) - qflx_h2orof_drain(c) * dtime
+               atm2lnd_vars%h2orof_grc(g) = h2orof(c) / wtgcell(c)
 
                qflx_infl(c) = qflx_infl(c) + qflx_h2orof_drain(c) 
                qflx_gross_infl_soil(c) = qflx_gross_infl_soil(c) + qflx_h2osfc_drain(c) + qflx_h2orof_drain(c) 
