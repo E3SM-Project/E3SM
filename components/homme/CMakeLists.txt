@@ -400,19 +400,19 @@ if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
     set(NETCDF_INCLUDE_DIR ${NetCDF_Fortran_INCLUDE_DIRS})
 
     # needed for CPRNC build system
-    set (cprnc_dummy_file "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake")
+    set (cprnc_dummy_file "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/cprnc/Macros.cmake")
     if (NOT EXISTS "${cprnc_dummy_file}")
       file(WRITE "${cprnc_dummy_file}" "#dummy Macros file for non-CIME machines")
     endif ()
 
     # cprnc's CMake system needs various nonstandard variables:
     set(FFLAGS ${CMAKE_Fortran_FLAGS})
-    set(BLDROOT ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc)
+    set(BLDROOT ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/cprnc)
     set(SFC ${CMAKE_Fortran_COMPILER})
     set(SCC ${CMAKE_C_COMPILER})
     
-    SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc)
-    SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
+    SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/cprnc)
+    SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/cprnc/cprnc)
     ADD_SUBDIRECTORY(utils/cime/CIME/non_py/cprnc)
   ENDIF ()
 ENDIF ()
