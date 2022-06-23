@@ -26,5 +26,8 @@
 #include "scalar_momentum.h"
 #include "crm_variance_transport.h"
 
+#ifdef MMF_LAGRANGIAN_RAD
+void get_sort_idx();
+#endif
 void timeloop();
 

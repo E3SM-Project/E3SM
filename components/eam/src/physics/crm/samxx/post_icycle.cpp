@@ -115,6 +115,8 @@ void post_icycle() {
     }
   });
 
+#ifndef MMF_LAGRANGIAN_RAD
+
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
@@ -141,6 +143,8 @@ void post_icycle() {
       yakl::atomicAdd(crm_clear_rh_cnt(k,icrm),1);
     }
   });
+
+#endif
 
   // Diagnose mass fluxes to drive CAM's convective transport of tracers.
   // definition of mass fluxes is taken from Xu et al., 2002, QJRMS.
