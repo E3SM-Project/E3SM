@@ -484,7 +484,7 @@ module shr_reprosum_mod
                write(s_logunit,37) real(nan_count,r8), real(inf_count,r8), mypid
 37 format("SHR_REPROSUM_CALC: Input contains ",e12.5, &
           " NaNs and ", e12.5, " INFs on process ", i7)
-               call shr_sys_abort("shr_reprosum_calc ERROR: NaNs or INFs in input")
+               !YSK call shr_sys_abort("shr_reprosum_calc ERROR: NaNs or INFs in input")
             endif
 
          endif

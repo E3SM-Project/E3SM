@@ -137,7 +137,9 @@ implicit none
            do k2=1,nlev
               write(*,'(i3,4f14.4)') k2,dphi(i,j,k2),dp3d(i,j,k2),vtheta_dp(i,j,k2)
            enddo
+           !YSK call abortmp('EOS bad state: d(phi), dp3d or vtheta_dp < 0')
            call abortmp('EOS bad state: d(phi), dp3d or vtheta_dp < 0')
+           !PRINT *, 'YSK EOS bad state: d(phi), dp3d or vtheta_dp < 0'
         endif
      enddo
      enddo
