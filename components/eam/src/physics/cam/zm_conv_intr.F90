@@ -23,13 +23,16 @@ module zm_conv_intr
 
    use ndrop_bam,        only: ndrop_bam_init
    use cam_abortutils,   only: endrun
-   use physconst,        only: pi
+
    use spmd_utils,       only: masterproc
 !>songxl---------------
    use cam_history,  only: outfld, addfld, horiz_only, add_default
    use perf_mod
    use cam_logfile,  only: iulog
-   
+!++ MCSP 
+   use zm_conv,      only: MCSP, MCSP_heat_coeff, MCSP_moisture_coeff, MCSP_uwind_coeff, MCSP_vwind_coeff
+!-- MCSP
+
    implicit none
    private
    save
@@ -241,6 +244,18 @@ subroutine zm_conv_init(pref_edge)
     call addfld ('ZMICUD',     (/ 'lev' /), 'A', 'm/s', 'ZM in-cloud U downdrafts')
     call addfld ('ZMICVU',     (/ 'lev' /), 'A', 'm/s', 'ZM in-cloud V updrafts')
     call addfld ('ZMICVD',     (/ 'lev' /), 'A', 'm/s', 'ZM in-cloud V downdrafts')
+
+!++ MCSP
+    if( MCSP ) then 
+    call addfld ('MCSP_DT',(/ 'lev' /), 'A','K/s','T tedency due to MCSP')
+    call addfld ('MCSP_freq',horiz_only, 'A','1','frequency of MCSP activated')
+    call addfld ('MCSP_DU',(/ 'lev' /), 'A','m/s/day','U tedency due to MCSP')
+    call addfld ('MCSP_DV',(/ 'lev' /), 'A','m/s/day','V tedency due to MCSP')
+    call addfld ('ZM_freq',horiz_only, 'A','1','frequency for ZM to be activated')
+    call addfld ('ZM_depth',horiz_only,'A','Pa','ZM depth')
+    call addfld ('MCSP_shear',horiz_only,'A','m/s','vertical zonal wind shear')
+    end if
+!-- MCSP
 
 !<songxl 2014-11-20---------
 
@@ -629,6 +644,12 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    use constituents,  only: pcnst, cnst_get_ind, cnst_is_convtran1
    use physconst,     only: gravit
    use phys_control,  only: cam_physpkg_is
+!++ MCSP
+   use time_manager,       only: get_curr_date
+   use interpolate_data, only: vertinterp
+   use physconst,     only: pi
+!-- MCSP
+
 
    ! Arguments
 !<songxl 2014-11-20--------
@@ -759,6 +780,25 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    integer  :: ii
 
    logical  :: lq(pcnst)
+!++ MCSP
+   real(r8) :: alpha2, alpha_moisture, alphau, alphav, top, bottom
+   real(r8) :: Q_dis(pcols), Qc_adjust, Qq_dis(pcols), Qcq_adjust
+   real(r8) :: Qm(pcols,pver), Qmq(pcols,pver), Qmu(pcols,pver), Qmv(pcols,pver)
+   real(r8) :: Qc_int_start(pcols), Qcq_int_start(pcols)
+   real(r8) :: Qm_int_end(pcols), Qmq_int_end(pcols), Pa_int_end(pcols)
+   real(r8) :: Qs_zmconv(pcols), Qv_zmconv(pcols)
+
+   real(r8) :: MCSP_freq(pcols), MCSP_DT(pcols,pver)
+   real(r8) :: ZM_depth(pcols), MCSP_shear(pcols)
+   real(r8) :: du600(pcols), dv600(pcols)
+   integer :: iyr, imon, iday, isec
+
+   logical  :: doslop
+   logical  :: doslop_heat
+   logical  :: doslop_moisture
+   logical  :: doslop_uwind
+   logical  :: doslop_vwind
+!-- MCSP
 
 !<songxl 2014-11-20-----------
    real(r8) :: sprd(pcols,pver)
@@ -843,6 +883,36 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
 !>songxl 2014-11-20-----------
 
+!++ MCSP
+   doslop_heat = .false.
+   doslop_moisture = .false.
+   doslop_uwind = .false.
+   doslop_vwind = .false.
+   if( MCSP ) then
+        if( MCSP_heat_coeff > 0._r8 ) then
+                doslop_heat = .true.
+                alpha2 = MCSP_heat_coeff
+        end if
+        if( MCSP_moisture_coeff > 0._r8 ) then
+                doslop_moisture = .true.
+                alpha_moisture = MCSP_moisture_coeff
+        end if
+        if( MCSP_uwind_coeff > 0._r8 ) then
+                doslop_uwind = .true.
+                alphau = MCSP_uwind_coeff
+        end if
+        if( MCSP_vwind_coeff > 0._r8 ) then
+                doslop_vwind = .true.
+                alphav = MCSP_vwind_coeff
+        end if
+    end if
+
+   if (doslop_heat .or. doslop_moisture .or. doslop_uwind .or. doslop_vwind) then
+     doslop = .true.
+   endif
+!-- MCSP
+
+
    !----------------------------------------------------------------------
 
    ! initialize
@@ -860,8 +930,13 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
    lq(:) = .FALSE.
    lq(1) = .TRUE.
-   call physics_ptend_init(ptend_loc, state%psetcols, 'zm_convr', ls=.true., lq=lq)! initialize local ptend type
-
+!++ MCSP 
+   if(doslop) then
+        call physics_ptend_init(ptend_loc, state%psetcols, 'zm_convr', ls=.true., lu = doslop_uwind, lv = doslop_vwind, lq=lq)! initialize local ptend type
+   else
+        call physics_ptend_init(ptend_loc, state%psetcols, 'zm_convr', ls=.true., lq=lq)! initialize local ptend type
+   end if
+!-- MCSP
 !
 ! Associate pointers with physics buffer fields
 !
@@ -962,6 +1037,147 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
    call outfld('CAPE', cape, pcols, lchnk)        ! RBN - CAPE output
    call outfld('DCAPE', dcape, pcols, lchnk)
+
+
+   if( doslop ) then
+!   
+!  Begin MCSP parameterization here 
+!
+   du600 = 0._r8
+   dv600 = 0._r8
+   ZM_depth = 0._r8
+   MCSP_shear = 0._r8
+
+   call vertinterp(ncol, pcols, pver, state%pmid, 60000._r8, state%u,du600)
+   call vertinterp(ncol, pcols, pver, state%pmid, 60000._r8, state%v,dv600)
+
+   do i=1,ncol
+      if(state%pmid(i,pver).gt.60000._r8) then
+        du600(i) = du600(i)-state%u(i,pver)
+        dv600(i) = dv600(i)-state%v(i,pver)
+      else
+        du600(i) = -999._r8
+        dv600(i) = -999._r8
+      end if
+   end do
+
+   MCSP_shear = du600
+   do i=1,ncol
+      if( jctop(i).ne.pver ) ZM_depth(i) = state%pint(i,pver+1)-state%pmid(i,jctop(i))
+   end do
+
+   if (doslop) then
+
+     ! Define parameters
+
+     Qs_zmconv(:) = 0._r8
+     Qv_zmconv(:) = 0._r8
+     Pa_int_end(:) = 0._r8
+     do i = 1,ncol
+       do k = jctop(i),pver
+
+         Qs_zmconv(i) = Qs_zmconv(i) + ptend_loc%s(i,k) * state%pdel(i,k)
+         Qv_zmconv(i) = Qv_zmconv(i) + ptend_loc%q(i,k,1) * state%pdel(i,k)
+         Pa_int_end(i) = Pa_int_end(i) + state%pdel(i,k)
+
+       enddo
+     enddo
+
+     do i = 1,ncol
+       if (jctop(i) .ne. pver) then
+         Qs_zmconv(i) = Qs_zmconv(i) / Pa_int_end(i)
+         Qv_zmconv(i) = Qv_zmconv(i) / Pa_int_end(i)
+       else
+         Qs_zmconv(i) = 0._r8
+         Qv_zmconv(i) = 0._r8
+       endif
+     enddo
+
+     Qm(:,:) = 0.0_r8
+     Qmq(:,:) = 0.0_r8
+     Qmu(:,:) = 0.0_r8
+     Qmv(:,:) = 0.0_r8
+
+     do i = 1,ncol
+
+      Qm_int_end(i) = 0._r8
+      Qmq_int_end(i) = 0._r8
+      Pa_int_end(i) = 0._r8
+
+      Q_dis(i) = 0._r8
+      Qq_dis(i) = 0._r8
+
+      if( (state%pint(i,pver+1)-state%pmid(i,jctop(i))) >= 70000._r8 ) then
+      if(abs(du600(i)).ge.3._r8.and.abs(du600(i)).lt.200.and.Qs_zmconv(i).gt.0._r8) then
+
+       do k = jctop(i),pver
+
+           top = state%pint(i,pver+1) - state%pmid(i,k)
+           bottom = state%pint(i,pver+1) - state%pmid(i,jctop(i))
+
+           Qm(i,k) = -1._r8 * Qs_zmconv(i) * alpha2 * sin(2.0_r8*pi*(top/bottom))
+           Qmq(i,k) = -1._r8 * Qv_zmconv(i) * alpha2 * sin(2.0_r8*pi*(top/bottom))
+           Qmq(i,k) = Qm(i,k)/2500000._r8/4._r8
+
+
+           !if( cos(pi*(top/bottom))>0 ) then 
+              Qmu(i,k) = alphau * (cos(pi*(top/bottom)))
+           !else 
+           !   Qmu(i,k) = alphau * (cos(pi*(top/bottom)))*.25_r8
+           !end if
+
+           Qmv(i,k) = alphav * (cos(pi*(top/bottom)))
+
+           Qm_int_end(i) = Qm_int_end(i) + Qm(i,k) * (state%pdel(i,k)/gravit)
+           Qm_int_end(i) = Qm_int_end(i) + (2._r8*Qmu(i,k)*ztodt*state%u(i,k)+ &
+                                            Qmu(i,k)*Qmu(i,k)*ztodt*ztodt)/2._r8 * (state%pdel(i,k)/gravit)/ztodt
+           Qm_int_end(i) = Qm_int_end(i) + (2._r8*Qmv(i,k)*ztodt*state%v(i,k)+ &
+                                            Qmv(i,k)*Qmv(i,k)*ztodt*ztodt)/2._r8 * (state%pdel(i,k)/gravit)/ztodt
+           Qmq_int_end(i) = Qmq_int_end(i) + Qmq(i,k) * (state%pdel(i,k)/gravit)
+           Pa_int_end(i) = Pa_int_end(i) + state%pdel(i,k)
+        end do
+
+        Q_dis(i) = Qm_int_end(i) / Pa_int_end(i)
+        Qq_dis(i) = Qmq_int_end(i) / Pa_int_end(i)
+
+       endif
+       endif
+     enddo
+
+     MCSP_DT = 0._r8
+     MCSP_freq = 0._r8
+
+     do i = 1,ncol
+       do k = jctop(i),pver
+         Qcq_adjust = ptend_loc%q(i,k,1) - Qq_dis(i) * gravit
+
+         ptend_loc%s(i,k) = ptend_loc%s(i,k) - Q_dis(i)*gravit ! energy fixer
+
+         MCSP_DT(i,k) = -Q_dis(i)*gravit+Qm(i,k)
+         if(abs(Qm(i,k)).gt.0._r8 .and. abs(Qmu(i,k)).gt.0._r8) MCSP_freq(i) = 1._r8
+
+         if (doslop_heat) ptend_loc%s(i,k) = ptend_loc%s(i,k) + Qm(i,k)
+         if (doslop_moisture) ptend_loc%q(i,k,1) = Qcq_adjust + Qmq(i,k)
+         if (doslop_uwind) ptend_loc%u(i,k) = Qmu(i,k)
+         if (doslop_vwind) ptend_loc%v(i,k) = Qmv(i,k)
+       enddo
+     enddo
+
+   endif
+!   
+! End the MCSP parameterization here 
+!   
+   
+!++ MCSP
+  MCSP_DT(:ncol,:pver) = MCSP_DT(:ncol,:pver)/cpair
+   call outfld('MCSP_DT    ',MCSP_DT           ,pcols   ,lchnk   )
+   call outfld('MCSP_freq    ',MCSP_freq           ,pcols   ,lchnk   )
+   call outfld('MCSP_DU    ',ptend_loc%u*86400._r8           ,pcols   ,lchnk   )
+   call outfld('MCSP_DV    ',ptend_loc%v*86400._r8           ,pcols   ,lchnk   )
+   call outfld('ZM_depth   ',ZM_depth                        ,pcols   ,lchnk   )
+   call outfld('MCSP_shear ',MCSP_shear                      ,pcols   ,lchnk   )
+!-- MCSP
+   end if
 !
 ! Output fractional occurance of ZM convection
 !
