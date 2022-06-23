@@ -3299,6 +3299,8 @@
         <command name="unload">cray-parallel-netcdf</command>
         <command name="unload">PrgEnv-gnu</command>
         <command name="unload">PrgEnv-nvidia</command>
+        <command name="unload">PrgEnv-cray</command>
+        <command name="unload">PrgEnv-aocc</command>
         <command name="unload">craype-accel-nvidia80</command>
         <command name="unload">craype-accel-host</command>
       </modules>
