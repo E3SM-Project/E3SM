@@ -2691,6 +2691,31 @@ Autoconversion size threshold for cloud ice to snow (m)
 Default: set by build-namelist 
 </entry>
 
+<!-- MCSP -->
+<entry id="zmconv_MCSP_heat_coeff" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Multiscale Coherent System Parameterization (MCSP), heating coefficient
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_MCSP_moisture_coeff" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Multiscale Coherent System Parameterization (MCSP), moisture coefficient
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_MCSP_uwind_coeff" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Multiscale Coherent System Parameterization (MCSP), zonal wind coefficient
+Default: set by build-namelist
+</entry>
+
+<entry id="zmconv_MCSP_vwind_coeff" type="real" category="conv"
+       group="zmconv_nl" valid_values="" >
+Multiscale Coherent System Parameterization (MCSP), meridional wind coefficient
+Default: set by build-namelist
+</entry>
+
 
 <!-- Cloud sedimentation -->
 
