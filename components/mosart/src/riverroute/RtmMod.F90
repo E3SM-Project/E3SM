@@ -2219,7 +2219,7 @@ contains
            if (use_lnd_rof_two_way) then
              TRunoff%wf_ini(nr) = TRunoff%wf_ini(nr) - rtmCTL%inundinf(nr) * coupling_period
 
-             if ( TRunoff%wf_ini(nr) < 0 ) then
+             if ( TRunoff%wf_ini(nr) < 0._r8 ) then
                TRunoff%wr(nr, 1) = TRunoff%wr(nr, 1) + TRunoff%wf_ini(nr)
                TRunoff%wf_ini(nr) = 0._r8
                TRunoff%yr(nr, 1) = TRunoff%wr(nr, 1) / TUnit%rlen(nr) / TUnit%rwidth(nr)

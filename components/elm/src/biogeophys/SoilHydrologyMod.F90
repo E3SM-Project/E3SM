@@ -406,8 +406,8 @@ contains
                 h2orof(c)      = atm2lnd_vars%h2orof_grc(g) * wtgcell(c)
                 frac_h2orof(c) = atm2lnd_vars%frac_h2orof_grc(g) * wtgcell(c)
                 ! TODO: add inundfrac from ocean 
-                if ( frac_h2orof(c) > 1 - fsno - frac_h2osfc(c) ) then
-                  frac_h2orof(c) = 1 - fsno - frac_h2osfc(c)
+                if ( frac_h2orof(c) > 1.0_r8 - fsno - frac_h2osfc(c) ) then
+                  frac_h2orof(c) = 1.0_r8 - fsno - frac_h2osfc(c)
                 endif
              endif
 
