@@ -67,6 +67,9 @@ module zm_conv
    integer  :: zmconv_cape_cin       = unset_int
    integer  :: zmconv_mx_bot_lyr_adj = unset_int
    real(r8) :: zmconv_tp_fac         = unset_r8
+   real(r8) :: zmconv_auto_fac       = unset_r8
+   real(r8) :: zmconv_accr_fac       = unset_r8
+   real(r8) :: zmconv_micro_dcs      = unset_r8
 
    real(r8) rl         ! wg latent heat of vaporization.
    real(r8) cpres      ! specific heat at constant pressure in j/kg-degk.
@@ -115,6 +118,9 @@ module zm_conv
    integer  limcnv       ! top interface level limit for convection
 
    real(r8) :: tp_fac = unset_r8  ! PMA tunes tpert
+   real(r8) :: auto_fac = unset_r8
+   real(r8) :: accr_fac = unset_r8
+   real(r8) :: micro_dcs= unset_r8
 
 contains
 
@@ -133,7 +139,8 @@ subroutine zmconv_readnl(nlfile)
    namelist /zmconv_nl/ zmconv_c0_lnd, zmconv_c0_ocn, zmconv_ke, zmconv_tau, & 
            zmconv_dmpdz, zmconv_alfa, zmconv_tiedke_add,     &
            zmconv_cape_cin, zmconv_mx_bot_lyr_adj, zmconv_tp_fac, zmconv_trigdcape_ull, &
-           zmconv_trig_dcape_only, zmconv_trig_ull_only, zmconv_microp, zmconv_clos_dyn_adj   
+           zmconv_trig_dcape_only, zmconv_trig_ull_only, zmconv_microp, zmconv_clos_dyn_adj, &   
+           zmconv_auto_fac, zmconv_accr_fac, zmconv_micro_dcs   
 
    !-----------------------------------------------------------------------------
 
@@ -168,6 +175,9 @@ subroutine zmconv_readnl(nlfile)
       mx_bot_lyr_adj = zmconv_mx_bot_lyr_adj
       dmpdz          = zmconv_dmpdz
       tp_fac         = zmconv_tp_fac
+      auto_fac       = zmconv_auto_fac
+      accr_fac       = zmconv_accr_fac
+      micro_dcs      = zmconv_micro_dcs
      
       if ( zmconv_alfa /= unset_r8 ) then
            alfa_scalar = zmconv_alfa
@@ -208,6 +218,9 @@ subroutine zmconv_readnl(nlfile)
    call mpibcast(num_cin,           1, mpiint, 0, mpicom)
    call mpibcast(mx_bot_lyr_adj,    1, mpiint, 0, mpicom)
    call mpibcast(tp_fac,       1, mpir8,  0, mpicom)
+   call mpibcast(auto_fac,          1, mpir8,  0, mpicom)
+   call mpibcast(accr_fac,          1, mpir8,  0, mpicom)
+   call mpibcast(micro_dcs,         1, mpir8,  0, mpicom)
 #endif
 
 end subroutine zmconv_readnl
@@ -3945,7 +3958,7 @@ subroutine cldprp(lchnk   , &
                     loc_microp_st%accsirn,loc_microp_st%accgln ,loc_microp_st%accgrn ,loc_microp_st%accilm , &
                     loc_microp_st%acciln ,loc_microp_st%fallrm ,loc_microp_st%fallsm ,loc_microp_st%fallgm , &
                     loc_microp_st%fallrn ,loc_microp_st%fallsn ,loc_microp_st%fallgn ,loc_microp_st%fhmrm  , &
-                    dsfm,   dsfn) 
+                    dsfm,   dsfn, auto_fac, accr_fac, micro_dcs) 
 
 
       do k = pver,msg + 2,-1
