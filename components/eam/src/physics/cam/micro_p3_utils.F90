@@ -25,8 +25,7 @@ module micro_p3_utils
        inv_rho_h2o,inv_dropmass,cp,g,rd,rv,ep_2,inv_cp,   &
        thrd,sxth,piov3,piov6,rho_rimeMin,     &
        rho_rimeMax,inv_rho_rimeMax,max_total_ni,dbrk,nmltratio,clbfact_sub,  &
-       clbfact_dep, &
-       p3_qc_autocon_expon, p3_qc_accret_expon
+       clbfact_dep
 
     logical,public  :: do_Cooper_inP3   ! Use prescribed CCN       
 
@@ -174,7 +173,7 @@ module micro_p3_utils
 
     cons1 = piov6*rho_h2o
     cons2 = 4._rtype*piov3*rho_h2o
-    cons3 = 1._rtype/(cons2*1.562500000000000d-14)  ! 1._rtype/(cons2*bfb_pow(25.e-6_rtype,3.0_rtype))
+    cons3 = 1._rtype/(cons2)  ! moved embryonic_rain_size out of cons3 into cloud_water_autoconversion
     cons4 = 1._rtype/(dbrk**3*pi*rho_h2o)
     cons5 = piov6*bimm
     cons6 = piov6**2*rho_h2o*bimm
