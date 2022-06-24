@@ -374,7 +374,7 @@
 <entry id="Nudge_SRF_Tau" type="real" category="nudging"
        group="nudging_nl" valid_values="" >
        Use user-defined relaxation time scale (unit: hour) for land surface nudging 
-       Default: -999
+       Default: 6
        </entry>
 
 <entry id="Nudge_SRF_File_Template" type="char*80" category="nudging"

@@ -1446,7 +1446,8 @@ subroutine tphysac (ztodt,   cam_in,               &
     use perf_mod
     use flux_avg,           only: flux_avg_run
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend, & 
-                                  nudging_update_srf_flux, Nudge_SRF_Flux_On 
+                                  nudging_update_srf_flux, Nudge_Land, &
+                                  Nudge_SRF_On, Nudge_SRF_Flux_On 
     use phys_control,       only: use_qqflx_fixer
     use co2_cycle,          only: co2_cycle_set_ptend
     use hycoef,             only: hycoef_init, hyam, hybm, hyai, hybi, ps0
@@ -1809,7 +1810,7 @@ end if ! l_gw_drag
     !===================================
     ! Apply nudging on surface flux etc. 
     !===================================
-    if (Nudge_Model .and. Nudge_SRF_Flux_On) then
+    if ((Nudge_Land) .and. (Nudge_SRF_On) .and. (Nudge_SRF_Flux_On)) then
        call nudging_update_srf_flux(state, cam_in, cam_out, ztodt)
     endif
 
@@ -1972,7 +1973,7 @@ subroutine tphysbc (ztodt,               &
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
     use nudging,         only: Nudge_Model,Nudge_Loc_PhysOut, & 
-                               Nudge_SRF_On, nudging_calc_tend, & 
+                               Nudge_Land, nudging_calc_tend, & 
                                nudging_update_land_surface
 
     implicit none
@@ -2818,7 +2819,7 @@ end if ! l_rad
     !===================================
     ! Apply nudging on surface flux etc. 
     !===================================
-    if (Nudge_Model .and. Nudge_SRF_On) then
+    if (Nudge_Land) then
        call nudging_update_land_surface(state, pbuf, cam_in, cam_out, ztodt)
     endif
 
