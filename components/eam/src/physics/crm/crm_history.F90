@@ -272,10 +272,13 @@ subroutine crm_history_init(species_class)
    ! MMF CRM variance transport
    call addfld('MMF_VT_T'     ,(/'lev'/), 'A',' ','CRM T Variance')
    call addfld('MMF_VT_Q'     ,(/'lev'/), 'A',' ','CRM Q Variance')
+   call addfld('MMF_VT_U'     ,(/'lev'/), 'A',' ','CRM U Variance')
    call addfld('MMF_VT_TEND_T',(/'lev'/), 'A',' ','CRM T Variance Tendency')
    call addfld('MMF_VT_TEND_Q',(/'lev'/), 'A',' ','CRM Q Variance Tendency')
-   call addfld('MMF_VT_TLS',    (/'lev'/), 'A','kg/kg/s','L.S. VT Forcing for LSE' )
-   call addfld('MMF_VT_QLS',    (/'lev'/), 'A','kg/kg/s','L.S. VT Forcing for QT' )
+   call addfld('MMF_VT_TEND_U',(/'lev'/), 'A',' ','CRM U Variance Tendency')
+   call addfld('MMF_VT_TLS',   (/'lev'/), 'A','kg/kg/s','L.S. VT Forcing for LSE' )
+   call addfld('MMF_VT_QLS',   (/'lev'/), 'A','kg/kg/s','L.S. VT Forcing for QT' )
+   call addfld('MMF_VT_ULS',   (/'lev'/), 'A','kg/kg/s','L.S. VT Forcing for U' )
 
    !----------------------------------------------------------------------------
    ! mixing diagnostics for dropmixnuc in the GCM grid
@@ -414,7 +417,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    logical :: use_ECPP
    logical :: use_MMF_VT
    character(len=16) :: MMF_microphysics_scheme
-   integer :: idx_vt_t, idx_vt_q
+   integer :: idx_vt_t, idx_vt_q, idx_vt_u
 
    !----------------------------------------------------------------------------
 
@@ -647,12 +650,16 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    if (use_MMF_VT) then
       call cnst_get_ind( 'VT_T', idx_vt_t )
       call cnst_get_ind( 'VT_Q', idx_vt_q )
+      call cnst_get_ind( 'VT_U', idx_vt_u )
       call outfld('MMF_VT_T',      state%q(:,:,idx_vt_t),                   ncol, lchnk )
       call outfld('MMF_VT_Q',      state%q(:,:,idx_vt_q),                   ncol, lchnk )
+      call outfld('MMF_VT_U',      state%q(:,:,idx_vt_u),                   ncol, lchnk )
       call outfld('MMF_VT_TEND_T', ptend%q(:,:,idx_vt_t),                   ncol, lchnk )
       call outfld('MMF_VT_TEND_Q', ptend%q(:,:,idx_vt_q),                   ncol, lchnk )
+      call outfld('MMF_VT_TEND_U', ptend%q(:,:,idx_vt_u),                   ncol, lchnk )
       call outfld('MMF_VT_TLS',    crm_output%t_vt_ls(icol_beg:icol_end,:), ncol, lchnk )
       call outfld('MMF_VT_QLS',    crm_output%q_vt_ls(icol_beg:icol_end,:), ncol, lchnk )
+      call outfld('MMF_VT_ULS',    crm_output%u_vt_ls(icol_beg:icol_end,:), ncol, lchnk )
    end if
 
    !----------------------------------------------------------------------------

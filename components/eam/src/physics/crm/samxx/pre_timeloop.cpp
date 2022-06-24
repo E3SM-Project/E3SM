@@ -151,12 +151,14 @@ void pre_timeloop() {
   YAKL_SCOPE( ncrms                    , :: ncrms );
   YAKL_SCOPE( crm_input_t_vt          , :: crm_input_t_vt );
   YAKL_SCOPE( crm_input_q_vt          , :: crm_input_q_vt );
+  YAKL_SCOPE( crm_input_u_vt          , :: crm_input_u_vt );
   YAKL_SCOPE( t_vt_tend               , :: t_vt_tend );
   YAKL_SCOPE( q_vt_tend               , :: q_vt_tend );
+  YAKL_SCOPE( u_vt_tend               , :: u_vt_tend );
   YAKL_SCOPE( t_vt                    , :: t_vt );
   YAKL_SCOPE( q_vt                    , :: q_vt );
+  YAKL_SCOPE( u_vt                    , :: u_vt );
   YAKL_SCOPE( use_VT                  , :: use_VT );
-  
 
   crm_accel_ceaseflag = false;
 
@@ -409,6 +411,7 @@ void pre_timeloop() {
       // variance transport input forcing
       t_vt_tend(k,icrm) = ( crm_input_t_vt(l,icrm) - t_vt(k,icrm) )*idt_gl ;
       q_vt_tend(k,icrm) = ( crm_input_q_vt(l,icrm) - q_vt(k,icrm) )*idt_gl ;
+      u_vt_tend(k,icrm) = ( crm_input_u_vt(l,icrm) - u_vt(k,icrm) )*idt_gl ;
     }
   });
 
