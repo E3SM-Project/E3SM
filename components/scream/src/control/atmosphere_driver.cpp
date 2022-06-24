@@ -603,13 +603,6 @@ void AtmosphereDriver::set_initial_conditions ()
 
   auto& ic_pl = m_atm_params.sublist("Initial Conditions");
 
-  // When processing groups and fields separately, we might end up processing the same
-  // field twice. E.g., say we have the required field group G=(f1,f2). If f1 is also
-
-  // listed as a required field on itself, we might process it twice. To prevent that,
-  // we store the processed fields
-  // std::set<FieldIdentifier> inited_fields;
-
   // Check which fields need to have an initial condition.
   std::map<std::string,std::vector<std::string>> ic_fields_names;
   std::vector<FieldIdentifier> ic_fields_to_copy;
@@ -618,29 +611,20 @@ void AtmosphereDriver::set_initial_conditions ()
   // Helper lambda, to reduce code duplication
   auto process_ic_field = [&](const Field& f) {
     const auto& fid = f.get_header().get_identifier();
-    const auto& grid_name = fid.get_grid_name();
     const auto& fname = fid.name();
-
-    // TODO: initially, this used
-    //
-    //   const auto& ic_pl_grid = ic_pl.sublist(grid_name);
-    //
-    // but we appear to have done away with the grid_name heading, so the above code no longer
-    // works and we need to set ic_pl_grid to ic_pl. In the future, we should either just use
-    // ic_pl directly, or re-enable support for the sublist under the grid name heading.
-    const auto& ic_pl_grid = ic_pl;
+    const auto& grid_name = fid.get_grid_name();
 
     // First, check if the input file contains constant values for some of the fields
-    if (ic_pl_grid.isParameter(fname)) {
+    if (ic_pl.isParameter(fname)) {
       // The user provided a constant value for this field. Simply use that.
-      if (ic_pl_grid.isType<double>(fname) or ic_pl_grid.isType<std::vector<double>>(fname)) {
-        initialize_constant_field(fid, ic_pl_grid);
+      if (ic_pl.isType<double>(fname) or ic_pl.isType<std::vector<double>>(fname)) {
+        initialize_constant_field(fid, ic_pl);
         fields_inited[grid_name].push_back(fname);
 
         // Note: f is const, so we can't modify the tracking. So get the same field from the fm
         auto f_nonconst = m_field_mgrs.at(grid_name)->get_field(fid.name());
         f_nonconst.get_header().get_tracking().update_time_stamp(m_current_ts);
-      } else if (ic_pl_grid.isType<std::string>(fname)) {
+      } else if (ic_pl.isType<std::string>(fname)) {
         ic_fields_to_copy.push_back(fid);
         fields_inited[grid_name].push_back(fname);
       } else {

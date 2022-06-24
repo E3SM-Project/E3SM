@@ -21,7 +21,6 @@ Grids Manager:
   Number of Vertical Levels:  128
 
 Initial Conditions:
-  Point Grid:
-    cldfrac_liq: 0.0
-    qi: 0.0 
+  cldfrac_liq: 0.0
+  qi: 0.0
 ...
