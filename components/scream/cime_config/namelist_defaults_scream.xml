@@ -245,12 +245,24 @@ tweaking their $case/namelist_scream.xml file.
     </Physics__GLL>
     <Restart__Casename>${CASE}.scream</Restart__Casename>
     <!-- Fields that we need to initialize, but are not in an initial condition file need to be inited here -->
-    <cldfrac_liq>0.0</cldfrac_liq>
-    <sgs_buoy_flux>0.0</sgs_buoy_flux>
-    <eddy_diff_mom>0.0</eddy_diff_mom>
-    <T_prev_micro_step>0.0</T_prev_micro_step>
+    <cldfrac_liq       >0.0</cldfrac_liq>
+    <sgs_buoy_flux     >0.0</sgs_buoy_flux>
+    <eddy_diff_mom     >0.0</eddy_diff_mom>
+    <T_prev_micro_step >0.0</T_prev_micro_step>
     <qv_prev_micro_step>0.0</qv_prev_micro_step>
-
+    <sfc_alb_dir_vis   >0.0</sfc_alb_dir_vis>
+    <sfc_alb_dir_nir   >0.0</sfc_alb_dir_nir>
+    <sfc_alb_dif_vis   >0.0</sfc_alb_dif_vis>
+    <sfc_alb_dif_nir   >0.0</sfc_alb_dif_nir>
+    <surf_latent_flux  >0.0</surf_latent_flux>
+    <surf_sens_flux    >0.0</surf_sens_flux>
+    <surf_lw_flux_up   >0.0</surf_lw_flux_up>
+    <qm                >0.0</qm>
+    <bm                >0.0</bm>
+    <ni_activated      >0.0</ni_activated>
+    <nc_nuceat_tend    >0.0</nc_nuceat_tend>
+    <!-- This one needs a fix; complaints about not being able to keep the same Layout -->
+    <!--surf_mom_flux  type="array(real)">0.0,0.0</surf_mom_flux-->
   </Initial__Conditions>
 
   <!-- List of yaml files containing I/O output specs -->
