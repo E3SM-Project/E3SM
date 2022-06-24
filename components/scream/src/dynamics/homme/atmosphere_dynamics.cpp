@@ -160,7 +160,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   // Note: qv is needed to transform T<->Theta
   add_field<Updated> ("horiz_winds",   FL({COL,CMP, LEV},{ncols,2,nlev_mid}),m/s,   rgn,N);
   add_field<Updated> ("T_mid",         FL({COL,     LEV},{ncols,  nlev_mid}),K,     rgn,N);
-  add_field<Updated> ("pseudo_density",FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    rgn,N);
+  add_field<Computed>("pseudo_density",FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    rgn,N);
   add_field<Updated> ("ps",            FL({COL         },{ncols           }),Pa,    rgn);
   add_field<Required>("qv",            FL({COL,     LEV},{ncols,  nlev_mid}),Q,     rgn,"tracers",N);
   add_field<Required>("phis",          FL({COL         },{ncols           }),m2/s2, rgn);
@@ -949,9 +949,11 @@ void HommeDynamics::restart_homme_state () {
   auto uv_view     = m_helper_fields.at("uv_prev").get_view<Pack***>();
   auto V_prev_view = m_helper_fields.at("FM_ref").get_view<Pack***>();
   auto T_prev_view = m_helper_fields.at("FT_ref").get_view<Pack**>();
-  auto dp_view     = get_field_in("pseudo_density",rgn).get_view<const Pack**>();
+  auto dp_view     = get_field_out("pseudo_density",rgn).get_view<const Pack**>();
   auto p_mid_view  = get_field_out("p_mid").get_view<Pack**>();
   auto qv_view     = qv_prev_ref->get_view<Pack**>();
+
+  // Compute dp?
 
   const auto policy = ESU::get_default_team_policy(ncols,npacks);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team){
@@ -997,7 +999,7 @@ void HommeDynamics::initialize_homme_state () {
   //       the helper fields (which have NTL time slices).
   m_ic_remapper->registration_begins();
   m_ic_remapper->register_field(get_field_in("horiz_winds",rgn),m_helper_fields.at("v_dyn"));
-  m_ic_remapper->register_field(get_field_in("pseudo_density",rgn),m_helper_fields.at("dp3d_dyn"));
+  //m_ic_remapper->register_field(get_field_in("pseudo_density",rgn),m_helper_fields.at("dp3d_dyn"));
   m_ic_remapper->register_field(get_field_in("ps",rgn),m_helper_fields.at("ps_dyn"));
   m_ic_remapper->register_field(get_field_in("phis",rgn),m_helper_fields.at("phis_dyn"));
   m_ic_remapper->register_field(get_field_in("T_mid",rgn),m_helper_fields.at("vtheta_dp_dyn"));
@@ -1027,7 +1029,9 @@ void HommeDynamics::initialize_homme_state () {
   const int npacks_int = ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs+1);
 
   // Homme states
+  const auto ps_view  = m_helper_fields.at("ps_dyn").get_view<const Real****>();
   const auto dp_view  = m_helper_fields.at("dp3d_dyn").get_view<Pack*****>();
+  const auto dp_view_real  = m_helper_fields.at("dp3d_dyn").get_view<Real*****>();
   const auto vth_view = m_helper_fields.at("vtheta_dp_dyn").get_view<Pack*****>();
   const auto Q_view   = m_helper_fields.at("Q_dyn").get_view<Pack*****>();
 
@@ -1039,23 +1043,39 @@ void HommeDynamics::initialize_homme_state () {
   const auto& hvcoord = c.get<Homme::HybridVCoord>();
   const auto ps0 = hvcoord.ps0 * hvcoord.hybrid_ai0;
 
-  const auto policy = ESU::get_thread_range_parallel_scan_team_policy(nelem*NGP*NGP,npacks_mid);
   const auto phis_dyn_view = m_helper_fields.at("phis_dyn").get_view<const Real***>();
   const auto phi_int_view = m_helper_fields.at("phi_int_dyn").get_view<Pack*****>();
 
+  // Initialize dp
+  {
+  const auto policy = ESU::get_default_team_policy(nelem*NGP*NGP, nlevs);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
+    const int ie  =  team.league_rank() / (NGP*NGP);
+    const int igp = (team.league_rank() / NGP) % NGP;
+    const int jgp =  team.league_rank() % NGP;
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs), [&](const int ilev) {
+       dp_view_real(ie,n0,igp,jgp,ilev) = ( hvcoord.hybrid_ai(ilev+1) - hvcoord.hybrid_ai(ilev) ) * hvcoord.ps0 +
+                                          ( hvcoord.hybrid_bi(ilev+1) - hvcoord.hybrid_bi(ilev) ) * ps_view(ie,n0,igp,jgp);
+    });
+    team.team_barrier();
+  });
+  }
+
   // Need two temporaries, for pi_mid and pi_int
+  const auto policy = ESU::get_thread_range_parallel_scan_team_policy(nelem*NGP*NGP,npacks_mid);
   WS wsm(npacks_int,2,policy);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int ie  =  team.league_rank() / (NGP*NGP);
     const int igp = (team.league_rank() / NGP) % NGP;
     const int jgp =  team.league_rank() % NGP;
 
+    // Compute dp assuming hydrostatic initial state
+    auto dp = ekat::subview(dp_view,ie,n0,igp,jgp);
+
     // Compute p_mid
     auto ws = wsm.get_workspace(team);
     ekat::Unmanaged<WS::view_1d<Pack> > p_int, p_mid;
     ws.template take_many_and_reset<2>({"p_int", "p_mid"}, {&p_int, &p_mid});
-
-    auto dp = ekat::subview(dp_view,ie,n0,igp,jgp);
 
     ColOps::column_scan<true>(team,nlevs,dp,p_int,ps0);
     team.team_barrier();
@@ -1140,6 +1160,7 @@ void HommeDynamics::initialize_homme_state () {
 
   // Can clean up the IC remapper now.
   m_ic_remapper = nullptr;
+
 }
 // =========================================================================================
 void HommeDynamics::
