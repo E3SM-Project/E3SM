@@ -119,39 +119,46 @@ if [ $skip_testing -eq 0 ]; then
       if [[ $? != 0 ]]; then fails=$fails+1; fi
     fi
 
-    if [[ $test_v0 == 1 || $test_v1 == 1 ]]; then
-      # AT CIME runs may need an upstream merge in order to ensure that any DIFFs
-      # are caused by this PR and not simply because the PR is too far behind master
-      if [ -n "$PULLREQUESTNUM" ]; then
-        ./scripts/git-merge-ref origin/master
-        if [[ $? != 0 ]]; then
-            echo "MERGE FAILED! Please resolve conflicts"
-            exit 1
+    # We do NOT want to do any of the items below if we are running
+    # scripts-tests because the merge could change the state of the
+    # repo and you never want to do that during testing. Also, CIME
+    # V1 cases do not build with SCREAM_FAKE_ONLY on.
+    if [ -z "$SCREAM_FAKE_ONLY" ]; then
+
+      if [[ $test_v0 == 1 || $test_v1 == 1 ]]; then
+        # AT CIME runs may need an upstream merge in order to ensure that any DIFFs
+        # are caused by this PR and not simply because the PR is too far behind master.
+        if [ -n "$PULLREQUESTNUM" ]; then
+          ./scripts/git-merge-ref origin/master
+          if [[ $? != 0 ]]; then
+              echo "MERGE FAILED! Please resolve conflicts"
+              exit 1
+          fi
         fi
       fi
-    fi
 
-    if [[ $test_v0 == 1 ]]; then
-      ../../cime/scripts/create_test e3sm_scream_v0 -c -b master
-      if [[ $? != 0 ]]; then fails=$fails+1; fi
-    fi
-
-    if [[ $test_v1 == 1 ]]; then
-      if [[ $is_at_run == 1 ]]; then
-        # AT runs should be fast. => run only low resolution
-        ../../cime/scripts/create_test e3sm_scream_v1_lowres --compiler=gnu9 -c -b master
-      else
-        # For nightlies, run both lowres and midres
-        ../../cime/scripts/create_test e3sm_scream_v1 --compiler=gnu9 -c -b master
+      if [[ $test_v0 == 1 ]]; then
+        ../../cime/scripts/create_test e3sm_scream_v0 -c -b master
+        if [[ $? != 0 ]]; then fails=$fails+1; fi
       fi
-      if [[ $? != 0 ]]; then fails=$fails+1; fi
-    else
-      echo "SCREAM v1 tests were skipped, since the Github label 'AT: Skip v1 Testing' was found.\n"
-    fi
-  fi
 
-  if [[ $fails > 0 ]]; then
-      exit 1
+      if [[ $test_v1 == 1 ]]; then
+        if [[ $is_at_run == 1 ]]; then
+          # AT runs should be fast. => run only low resolution
+          ../../cime/scripts/create_test e3sm_scream_v1_lowres --compiler=gnu9 -c -b master
+        else
+          # For nightlies, run both lowres and midres
+          ../../cime/scripts/create_test e3sm_scream_v1 --compiler=gnu9 -c -b master
+        fi
+        if [[ $? != 0 ]]; then fails=$fails+1; fi
+      else
+          echo "SCREAM v1 tests were skipped, since the Github label 'AT: Skip v1 Testing' was found.\n"
+      fi
+    fi
+
+    if [[ $fails > 0 ]]; then
+        exit 1
+    fi
   fi
 
 else
