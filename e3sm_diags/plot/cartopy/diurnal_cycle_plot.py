@@ -67,26 +67,32 @@ def determine_tick_step(degrees_covered):
 def plot_panel(n, fig, proj, var, amp, amp_ref, title, parameter):
 
     normalize_test_amp = parameter.normalize_test_amp
+    specified_max_amp = parameter.normalize_amp_int
+
     lat = var.getLatitude()
     var = ma.squeeze(var.asma())
-    max_amp = amp.max()
-    max_amp_ref = amp_ref.max()
+    max_amp = round(amp.max())
+    max_amp_ref = round(amp_ref.max())
     amp = ma.squeeze(amp.asma())
     amp_ref = ma.squeeze(amp_ref.asma())
 
     if normalize_test_amp:
         img = np.dstack(
-            (
-                (var / 24 - 0.5) % 1,
-                (amp / max_amp * (max_amp / max_amp_ref)) ** 0.5,
-                np.ones_like(amp),
-            )
+            ((var / 24 - 0.5) % 1, (amp / max_amp_ref) ** 0.5, np.ones_like(amp))
         )
         max_amp = max_amp_ref
+        logger.info(
+            f"Scale test diurnal cycle amplitude to max of reference ({max_amp_ref}) mm/day"
+        )
     else:
+        if specified_max_amp != 0:
+            max_amp = specified_max_amp
+
         img = np.dstack(
             ((var / 24 - 0.5) % 1, (amp / max_amp) ** 0.5, np.ones_like(amp))
         )
+        logger.info(f"Scale test diurnal cycle amplitude to specified {max_amp} mm/day")
+    # Note: hsv_to_rgb would clipping input data to the valid range for imshow with RGB data ([0..1]
     img = hsv_to_rgb(img)
 
     # imshow plot
@@ -189,8 +195,8 @@ def plot_panel(n, fig, proj, var, amp, amp_ref, title, parameter):
     bar_ax.set_theta_direction(-1)
     bar_ax.set_theta_offset(np.pi / 2)
     bar_ax.set_xticklabels(["0h", "3h", "6h", "9h", "12h", "15h", "18h", "21h"])
-    bar_ax.set_yticklabels(["", "", "{:.2f}".format(max_amp)])
-    bar_ax.set_rlabel_position(340)
+    bar_ax.set_yticklabels(["", "", f"{int(max_amp)}"])
+    bar_ax.set_rlabel_position(350)
     bar_ax.get_yticklabels()[-2].set_weight("bold")
     # We change the fontsize of minor ticks label
     bar_ax.tick_params(axis="both", labelsize=7, pad=0, length=0)

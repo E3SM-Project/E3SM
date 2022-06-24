@@ -46,12 +46,21 @@ def composite_diurnal_cycle(var, season, fft=True):
     #    tbounds = var_time.getBounds()
     #    var_time[:] = 0.5*(tbounds[:,0]+tbounds[:,1]) #time bounds for h1-h4 are problematic
     var_time_absolute = var_time.asComponentTime()
-    time_freq = int(
-        24 / (var_time_absolute[1].hour - var_time_absolute[0].hour)
-    )  # This only valid for time interval >= 1hour
-    start_time = var_time_absolute[0].hour
-    logger.info(f"start_time {var_time_absolute[0]} {var_time_absolute[0].hour}")
-    logger.info("var_time_freq={}".format(time_freq))
+    # i.e. var_time_absolute[0] = "2000-1-1 1:30:0.0"
+    time_0 = (
+        var_time_absolute[0].hour
+        + var_time_absolute[0].minute / 60
+        + var_time_absolute[0].second / 3600
+    )
+    time_1 = (
+        var_time_absolute[1].hour
+        + var_time_absolute[1].minute / 60
+        + var_time_absolute[1].second / 3600
+    )
+    time_freq = int(24 / (time_1 - time_0))
+    start_time = time_0
+    logger.info(f"start_time {var_time_absolute[0]} {start_time}")
+    logger.info(f"var_time_freq={time_freq}")
 
     # Convert to masked array
     v = var.asma()
