@@ -1044,16 +1044,6 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
-    <model_grid alias="CAx32v1pg2_r0125_oRRS18to6v3">
-      <grid name="atm">ne0np4_CAx32v1.pg2</grid>
-      <grid name="lnd">r0125</grid>
-      <grid name="ocnice">oRRS18to6v3</grid>
-      <grid name="rof">r0125</grid>
-      <grid name="glc">null</grid>
-      <grid name="wav">null</grid>
-      <mask>oRRS18to6v3</mask>
-    </model_grid>
-
     <model_grid alias="CAx32v1pg2_CAx32v1pg2">
       <grid name="atm">ne0np4_CAx32v1.pg2</grid>
       <grid name="lnd">ne0np4_CAx32v1.pg2</grid>
@@ -3571,24 +3561,6 @@
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne1024pg2/map_r0125_to_ne1024pg2_bilin.200212.nc</map>
     </gridmap>
 
-
-    <gridmap atm_grid="ne0np4_CAx32v1.pg2" ocn_grid="oRRS18to6v3">
-      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_oRRS18to6v3_mono.20220430.nc</map>
-      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_oRRS18to6v3_bilin.20220430.nc</map>
-      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_oRRS18to6v3_bilin.20220430.nc</map>
-      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_oRRS18to6v3_to_CAne32x32v1pg2_mono.20220430.nc</map>
-      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/CAx32v1pg2/map_oRRS18to6v3_to_CAne32x32v1pg2_mono.20220430.nc</map>
-    </gridmap>
-    <gridmap atm_grid="ne0np4_CAx32v1.pg2" lnd_grid="r0125">
-      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_r0125_mono.20220430.nc</map>
-      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_r0125_mono.20220430.nc</map>
-      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_r0125_to_CAne32x32v1pg2_mono.20220430.nc</map>
-      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/CAx32v1pg2/map_r0125_to_CAne32x32v1pg2_bilin.20220430.nc</map>
-    </gridmap>
-    <gridmap atm_grid="ne0np4_CAx32v1.pg2" rof_grid="r0125">
-      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_r0125_mono.20220430.nc</map>
-      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/CAx32v1pg2/map_CAne32x32v1pg2_to_r0125_mono.20220430.nc</map>
-    </gridmap>
 
     <gridmap atm_grid="ne0np4_conus_x4v1_lowcon" ocn_grid="oEC60to30v3">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/conusx4v1/map_conusx4v1_to_oEC60to30v3_mono.200514.nc</map>
