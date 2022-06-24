@@ -1963,7 +1963,7 @@ written only if do_budgets variable is .true.,
 0=none,
 1=+net summary budgets,
 default: 0
-  </entry>
+</entry>
 
 <!-- ========================================================================================  -->
 <!-- Namelist options for soil erosion model                                                   -->
@@ -1984,8 +1984,13 @@ Toggle to turn on the soil erosion and OM pools feedback.
 <!-- ========================================================================================  -->
 
 <entry id="use_lnd_rof_two_way" type="logical" category="elm_physics"
-       group="elm_inparm" valid_values="" value=".false.">
+       group="elm_mosart" valid_values="" value=".false.">
 Toggle to turn on land-river two way coupling.
+</entry>
+
+<entry id="lnd_rof_coupling_nstep" type="integer" category="elm_physics"
+       group="elm_mosart" valid_values="">
+Number of ELM time steps per ELM and MOSART coupling period
 </entry>
 
 </namelist_definition>

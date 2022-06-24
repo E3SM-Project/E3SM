@@ -310,8 +310,8 @@ contains
     namelist /elm_inparm/ &
          use_top_solar_rad
 
-    namelist /elm_inparm/ &
-         use_lnd_rof_two_way
+    namelist /elm_mosart/ &
+         use_lnd_rof_two_way, lnd_rof_coupling_nstep
     
     ! ----------------------------------------------------------------------
     ! Default values
@@ -903,7 +903,8 @@ contains
     call mpi_bcast (budget_ltend , 1, MPI_INTEGER, 0, mpicom, ier)
 
     ! land river two way coupling
-    call mpi_bcast (use_lnd_rof_two_way, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (use_lnd_rof_two_way   , 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (lnd_rof_coupling_nstep, 1, MPI_INTEGER, 0, mpicom, ier)
 
   end subroutine control_spmd
 
@@ -1156,7 +1157,8 @@ contains
     endif
 
     ! land river two way coupling
-    write(iulog,*) '    use_lnd_rof_two_way= ', use_lnd_rof_two_way
+    write(iulog,*) '    use_lnd_rof_two_way    = ', use_lnd_rof_two_way
+    write(iulog,*) '    lnd_rof_coupling_nstep = ', lnd_rof_coupling_nstep
 
   end subroutine control_print
 

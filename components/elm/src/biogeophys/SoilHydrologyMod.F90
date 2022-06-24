@@ -7,7 +7,8 @@ module SoilHydrologyMod
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
   use decompMod         , only : bounds_type
-  use elm_varctl        , only : iulog, use_vichydro, use_lnd_rof_two_way
+  use elm_varctl        , only : iulog, use_vichydro
+  use elm_varctl        , only : use_lnd_rof_two_way, lnd_rof_coupling_nstep
   use elm_varcon        , only : e_ice, denh2o, denice, rpi
   use EnergyFluxType    , only : energyflux_type
   use SoilHydrologyType , only : soilhydrology_type
@@ -403,8 +404,10 @@ contains
 
              !0. partition grid-level floodplain inundation volume and fraction to each column
              if (use_lnd_rof_two_way) then
-                h2orof(c)      = atm2lnd_vars%h2orof_grc(g) * wtgcell(c)
-                frac_h2orof(c) = atm2lnd_vars%frac_h2orof_grc(g) * wtgcell(c)
+                if (mod(get_nstep()-1,lnd_rof_coupling_nstep) == 1 .or. get_nstep() <= 1) then
+                   h2orof(c)      = atm2lnd_vars%h2orof_grc(g) * wtgcell(c)
+                   frac_h2orof(c) = atm2lnd_vars%frac_h2orof_grc(g) * wtgcell(c)
+                endif
                 ! TODO: add inundfrac from ocean 
                 if ( frac_h2orof(c) > 1.0_r8 - fsno - frac_h2osfc(c) ) then
                   frac_h2orof(c) = 1.0_r8 - fsno - frac_h2osfc(c)
@@ -543,7 +546,6 @@ contains
 
                ! remove drainage from inundation volume
                h2orof(c) = h2orof(c) - qflx_h2orof_drain(c) * dtime
-               atm2lnd_vars%h2orof_grc(g) = h2orof(c) / wtgcell(c)
 
                qflx_infl(c) = qflx_infl(c) + qflx_h2orof_drain(c) 
                qflx_gross_infl_soil(c) = qflx_gross_infl_soil(c) + qflx_h2osfc_drain(c) + qflx_h2orof_drain(c) 
