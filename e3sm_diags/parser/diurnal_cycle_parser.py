@@ -52,3 +52,11 @@ class DiurnalCycleParser(CoreParser):
             help="Normalize test data by maximum diurnal cycle amplitude from reference data",
             required=False,
         )
+
+        self.add_argument(
+            "--normalize_amp_int",
+            dest="normalize_amp_int",
+            type=int,
+            help="Normalize both test and obs by a specified integer",
+            required=False,
+        )
