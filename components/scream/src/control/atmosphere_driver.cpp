@@ -848,11 +848,33 @@ initialize_constant_field(const FieldIdentifier& fid,
         "       Field dimension: " + std::to_string(vec_dim) + "\n"
         "       Array dimenions: " + std::to_string(values.size()) + "\n");
 
-    // Extract a subfield for each component. This is not "too" expensive, expecially
-    // considering that this code is executed during initialization only.
-    for (int comp=0; comp<vec_dim; ++comp) {
-      auto f_i = f.get_component(comp);
-      f_i.deep_copy(values[comp]);
+    if (layout.rank()==2 && idim==1) {
+      // We cannot use 'get_component' for views of rank 2 with vector dimension
+      // striding fastest, since we would not get a LayoutRight view. For these views,
+      // simply do a manual loop
+      using kt = Field::kt_dev;
+      typename kt::view_1d<double> data("data",vec_dim);
+      auto data_h = Kokkos::create_mirror_view(data);
+      for (int i=0; i<vec_dim; ++i) {
+        data_h(i) = values[i];
+      }
+      Kokkos::deep_copy(data,data_h);
+
+      const int n = layout.dim(0);
+      auto v = f.get_view<double**>();
+      Kokkos::parallel_for(typename kt::RangePolicy(0,n),
+                           KOKKOS_LAMBDA(const int i) {
+        for (int j=0; j<vec_dim; ++j) {
+          v(i,j) = data(j);
+        }
+      });
+    } else {
+      // Extract a subfield for each component. This is not "too" expensive, expecially
+      // considering that this code is executed during initialization only.
+      for (int comp=0; comp<vec_dim; ++comp) {
+        auto f_i = f.get_component(comp);
+        f_i.deep_copy(values[comp]);
+      }
     }
   } else {
     const auto& value = ic_pl.get<double>(name);
