@@ -478,8 +478,10 @@ void init_elements_states_c (CF90Ptr& elem_state_v_ptr,       CF90Ptr& elem_stat
   const auto  qdp = tracers.qdp;
   const auto  q = tracers.Q;
   const auto  dp = state.m_dp3d;
-  const auto& tl = c.get<TimeLevel>();
+  auto& tl = c.get<TimeLevel>();
   const auto n0 = tl.n0;
+  const SimulationParams& params = c.get<SimulationParams>();
+  tl.update_tracers_levels(params.qsplit);
   const auto n0_qdp = tl.n0_qdp;
   const auto qsize = tracers.num_tracers();
   const auto size = tracers.num_elems()*tracers.num_tracers()*NP*NP*NUM_LEV;
