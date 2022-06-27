@@ -1608,7 +1608,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_vert_tracer_adv_flux_order" type="integer"
 	category="advection" group="advection">
-Order of polynomial used for tracer reconstruction at layer edges
+Order of polynomial used for tracer reconstruction at layer edges for flux-form method
 
 Valid values: 2, 3 and 4
 Default: Defined in namelist_defaults.xml
@@ -2212,7 +2212,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_check_tracer_monotonicity" type="logical"
 	category="debug" group="debug">
-Enables a change on tracer monotonicity at the end of the monotonic advection routine. Only used if config_monotonic is set to .true.
+Enables a change on tracer monotonicity at the end of the monotonic advection routine. Only used if config_flux_limiter is set to monotonic
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
