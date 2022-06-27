@@ -127,7 +127,7 @@ def composite_diurnal_cycle(var, season, fft=True):
 
     nt = time_freq
     lst = numpy.zeros((nt, nlat, nlon))
-    for it, itime in enumerate(numpy.arange(0, 24, int(24 / nt))):
+    for it, itime in enumerate(numpy.arange(0, 24, 24 / nt)):
         for ilon in range(nlon):
             lst[it, :, ilon] = (
                 itime + start_time + lon[ilon] / 360 * 24
