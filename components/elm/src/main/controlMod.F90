@@ -508,6 +508,13 @@ contains
                    errMsg(__FILE__, __LINE__))
        end if
 
+       if (use_lnd_rof_two_way) then
+          if (lnd_rof_coupling_nstep < 1) then
+          call endrun(msg=' ERROR: lnd_rof_coupling_nstep cannot be smaller than 1.'//&
+                   errMsg(__FILE__, __LINE__))     
+          endif
+       endif
+
     endif   ! end of if-masterproc if-block
 
     ! ----------------------------------------------------------------------
