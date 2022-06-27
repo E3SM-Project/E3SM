@@ -764,16 +764,6 @@
       <mask>tx0.1v2</mask>
     </model_grid>
 
-    <model_grid alias="peruSCx4v1_peruSCx4v1" compset="(DOCN|XOCN|SOCN|AQP1)">
-      <grid name="atm">ne0np4_peruSCx4v1</grid>
-      <grid name="lnd">ne0np4_peruSCx4v1</grid>
-      <grid name="ocnice">ne0np4_peruSCx4v1</grid>
-      <grid name="rof">null</grid>
-      <grid name="glc">null</grid>
-      <grid name="wav">null</grid>
-      <mask>oEC60to30v3</mask>
-    </model_grid>
-
     <model_grid alias="peruSCx4v1_ne30_peruSCx4v1" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne0np4_peruSCx4v1</grid>
       <grid name="lnd">ne30np4</grid>
