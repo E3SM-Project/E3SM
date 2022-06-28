@@ -26,7 +26,9 @@ program prim_main
 #if (defined MODEL_THETA_L && defined ARKODE)
   use arkode_mod,       only: calc_nonlinear_stats, finalize_nonlinear_stats
 #endif
+#ifdef HOMME_ENABLE_COMPOSE
   use compose_test_mod, only: compose_test
+#endif
   use test_mod,         only: print_test_results
 
 #ifdef PIO_INTERP
@@ -220,7 +222,9 @@ program prim_main
 #endif
   endif
 
+#ifdef HOMME_ENABLE_COMPOSE
   call compose_test(par, hvcoord, dom_mt, elem)
+#endif
 
   if(par%masterproc) print *,"Entering main timestepping loop"
   call t_startf('prim_main_loop')

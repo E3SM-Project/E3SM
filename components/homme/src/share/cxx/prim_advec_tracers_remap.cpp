@@ -15,7 +15,7 @@ namespace Homme
 {
 
 static void prim_advec_tracers_remap_RK2 (const Real dt);
-#ifdef MODEL_THETA_L
+#if defined(MODEL_THETA_L) && defined(HOMME_ENABLE_COMPOSE)
 static void prim_advec_tracers_remap_compose (const Real dt);
 #endif
 
@@ -25,7 +25,7 @@ void prim_advec_tracers_remap (const Real dt) {
   SimulationParams& params = Context::singleton().get<SimulationParams>();
 
   if (params.transport_alg > 0) {
-#ifdef MODEL_THETA_L
+#if defined(MODEL_THETA_L) && defined(HOMME_ENABLE_COMPOSE)
     prim_advec_tracers_remap_compose(dt);
 #else
     Errors::runtime_abort("prim_advec_tracers_remap: "
@@ -96,7 +96,7 @@ static void prim_advec_tracers_remap_RK2 (const Real dt)
   GPTLstop("tl-at prim_advec_tracers_remap_RK2");
 }
 
-#ifdef MODEL_THETA_L
+#if defined(MODEL_THETA_L) && defined(HOMME_ENABLE_COMPOSE)
 static void prim_advec_tracers_remap_compose (const Real dt) {
   GPTLstart("tl-at prim_advec_tracers_compose");
   const auto& params = Context::singleton().get<SimulationParams>();
