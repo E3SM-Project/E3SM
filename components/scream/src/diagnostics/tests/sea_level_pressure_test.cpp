@@ -139,7 +139,7 @@ void run(std::mt19937_64& engine)
     p_sealevel_f.deep_copy<double,Host>(0.0);
     p_sealevel_f.sync_to_dev();
     const auto& p_sealevel_v = p_sealevel_f.get_view<Real*>();
-    const int pack_surf = num_levs / Pack::n;
+    const int pack_surf = std::min(num_levs / Pack::n, num_mid_packs-1);
     const int idx_surf  = num_levs % Pack::n;
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();

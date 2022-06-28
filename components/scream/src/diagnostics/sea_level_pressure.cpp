@@ -62,7 +62,7 @@ void SeaLevelPressureDiagnostic::run_impl(const int /* dt */)
   const auto& p_mid              = get_field_in("p_mid").get_view<const Pack**>();
   const auto& phis               = get_field_in("phis").get_view<const Real*>();
 
-  const int pack_surf = m_num_levs / Pack::n;
+  const int pack_surf = std::min(m_num_levs / Pack::n, npacks-1);
   const int idx_surf  = m_num_levs % Pack::n;
   Kokkos::parallel_for("SeaLevelPressureDiagnostic",
                        default_policy,
