@@ -48,6 +48,9 @@ Fields:
       - SW_flux_up
       - sfc_flux_lw_dn
       - sfc_flux_sw_net
+      # Surface Fluxes
+      - surf_evap
+      - surf_sens_flux
       # Diagnostics
       - PotentialTemperature
 Output Control:
