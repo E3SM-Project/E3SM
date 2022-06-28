@@ -79,7 +79,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vvel_hmix_del2_tend(layerThicknessEdge, verticalVelocity, tend, err)!{{{
+   subroutine ocn_vvel_hmix_del2_tend(layerThicknessEdge, vertVelocityNonhydro, tend, err)!{{{
 
       implicit none
 
@@ -93,7 +93,7 @@ contains
          layerThicknessEdge !< Input: thickness at edges
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-        verticalVelocity !< Input: tracer quantities
+        vertVelocityNonhydro !< Input: tracer quantities
 
       !-----------------------------------------------------------------
       !
@@ -153,7 +153,7 @@ contains
 
           do k = 2, maxLevelEdgeTop(iEdge)
               ! \kappa_2 \nabla \phi on edge
-              vvel_turb_flux = verticalVelocity(k, cell2) - verticalVelocity(k, cell1)
+              vvel_turb_flux = vertVelocityNonhydro(k, cell2) - vertVelocityNonhydro(k, cell1)
 
               ! div(h \kappa_2 \nabla \phi) at cell center
               flux = 0.5_RKIND*(layerThicknessEdge(k, iEdge) + layerThicknessEdge(k-1,iEdge)) &

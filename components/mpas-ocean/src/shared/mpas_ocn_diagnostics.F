@@ -122,7 +122,7 @@ contains
         ssh,  seaIcePressure, atmosphericPressure
       real (kind=RKIND), dimension(:,:), pointer :: &
         layerThickness, layerThicknessLag, normalVelocity, & 
-        verticalVelocity, nonhydrostaticPressure
+        vertVelocityNonhydro, nonhydrostaticPressure
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
@@ -157,7 +157,7 @@ contains
       call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressure, timeLevel)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
-      call mpas_pool_get_array(statePool, 'verticalVelocity', verticalVelocity, timeLevel)
+      call mpas_pool_get_array(statePool, 'vertVelocityNonhydro', vertVelocityNonhydro, timeLevel)
       call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
 
       call mpas_pool_get_array(forcingPool, 'seaIcePressure', seaIcePressure)
@@ -239,7 +239,7 @@ contains
       ! in and out: vertVelocityTop
       call ocn_diagnostic_solve_vortVel(relativeVorticity, &
              layerThickEdgeFlux, normalVelocity, normalTransportVelocity, &
-             normalGMBolusVelocity, verticalVelocity, vertVelocityTop, vertTransportVelocityTop, &
+             normalGMBolusVelocity, vertVelocityNonhydro, vertVelocityTop, vertTransportVelocityTop, &
              vertGMBolusVelocityTop, relativeVorticityCell, divergence, &
              kineticEnergyCell, tangentialVelocity)
 
@@ -1530,7 +1530,7 @@ contains
 !-----------------------------------------------------------------------
    subroutine ocn_diagnostic_solve_vortVel(relativeVorticity, &
                 layerThicknessEdgeFlux, normalVelocity, normalTransportVelocity, &
-                normalGMBolusVelocity, verticalVelocity, vertVelocityTop, &
+                normalGMBolusVelocity, vertVelocityNonhydro, vertVelocityTop, &
                 vertTransportVelocityTop, vertGMBolusVelocityTop, &
                 relativeVorticityCell, divergence, kineticEnergyCell,&
                 tangentialVelocity)!{{{
@@ -1561,7 +1561,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         vertVelocityTop, verticalVelocity
+         vertVelocityTop, vertVelocityNonhydro
       real (kind=RKIND), dimension(:,:), intent(out) :: &
          vertTransportVelocityTop
       real (kind=RKIND), dimension(:,:), intent(out) :: &
@@ -1699,7 +1699,7 @@ contains
         !$omp private(k)
         do iCell=1,nCells
           do k=1,maxLevelCell(iCell)+1
-            verticalVelocity(k,iCell) = vertVelocityTop(k,iCell)
+            vertVelocityNonhydro(k,iCell) = vertVelocityTop(k,iCell)
           enddo
         enddo
         !$omp end do
@@ -2283,7 +2283,7 @@ contains
 !
 !-----------------------------------------------------------------------
    subroutine ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, oldLayerThickness, layerThicknessEdgeFlux, &
-     normalVelocity, verticalVelocity, oldSSH, dt, vertAleTransportTop, err, &
+     normalVelocity, vertVelocityNonhydro, oldSSH, dt, vertAleTransportTop, err, &
      newHighFreqThickness)!{{{
 
       !-----------------------------------------------------------------
@@ -2311,7 +2311,7 @@ contains
          oldSSH     !< Input: sea surface height at old time
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-        verticalVelocity !predicted velocity, ale is motion relative to grid
+        vertVelocityNonhydro !predicted velocity, ale is motion relative to grid
                          !this is needed since nonhydrostatic predicts velocity
                          ! in hydrostatic mode this is set to vertVelocityTop from diagnostic_solve
 

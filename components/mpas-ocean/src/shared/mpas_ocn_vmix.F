@@ -523,7 +523,7 @@ contains
    !-----------------------------------------------------------------------
 
    subroutine ocn_vertVel_vmix_tend_implicit(meshPool, dt, vertViscTopOfCell, layerThickness, & !{{{
-                                         verticalVelocity, err)
+                                         vertVelocityNonhydro, err)
 
       implicit none
 
@@ -552,7 +552,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         verticalVelocity             !< Input: velocity
+         vertVelocityNonhydro             !< Input: velocity
 
       !-----------------------------------------------------------------
       !
@@ -628,9 +628,9 @@ contains
             B(k) = 1.0_RKIND - A(k) - C(k)
          enddo
 
-         call tridiagonal_solve(A(2:N),B,C(1:N-1),verticalVelocity(:,iCell),velTemp,N)
+         call tridiagonal_solve(A(2:N),B,C(1:N-1),vertVelocityNonhydro(:,iCell),velTemp,N)
 
-         verticalVelocity(1:N,iCell) = velTemp(1:N)
+         vertVelocityNonhydro(1:N,iCell) = velTemp(1:N)
         end if
       end do
       !$omp end do
@@ -1227,7 +1227,7 @@ contains
 
       integer :: iCell, timeLevel, k, cell1, cell2, iEdge, iTracer, num_tracers, nCells, nEdges, N, Nsurf
       real (kind=RKIND), dimension(:), pointer :: bottomDrag, ssh
-      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThickness, verticalVelocity
+      real (kind=RKIND), dimension(:,:), pointer :: normalVelocity, layerThickness, vertVelocityNonhydro
       real (kind=RKIND), dimension(:,:), pointer :: tracerGroupSurfaceFlux
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
       real (kind=RKIND), dimension(:,:,:), allocatable :: nonLocalFluxTend
@@ -1249,7 +1249,7 @@ contains
 
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
-      call mpas_pool_get_array(statePool, 'verticalVelocity', verticalVelocity, timeLevel)
+      call mpas_pool_get_array(statePool, 'vertVelocityNonhydro', vertVelocityNonhydro, timeLevel)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
       call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
 
@@ -1368,7 +1368,7 @@ contains
       !
       if (config_enable_nonhydrostatic_mode) then
          call ocn_vertVel_vmix_tend_implicit(meshPool, dt, vertViscTopOfCell, layerThickness, &
-                                               verticalVelocity, err)
+                                               vertVelocityNonhydro, err)
       endif 
 
       nEdges = nEdgesOwned 
