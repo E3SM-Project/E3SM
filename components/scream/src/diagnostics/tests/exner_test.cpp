@@ -118,7 +118,6 @@ void run(std::mt19937_64& engine)
       ekat::genRandArray(dview_as_real(pressure),    engine, pdf_pres);
       Kokkos::deep_copy(p_sub,pressure);
     }
-    p_mid_f.sync_to_dev();
 
     // Run diagnostic and compare with manual calculation
     diag->run();

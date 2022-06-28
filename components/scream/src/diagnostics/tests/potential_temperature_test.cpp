@@ -124,8 +124,6 @@ void run(std::mt19937_64& engine)
       Kokkos::deep_copy(T_sub,temperature);
       Kokkos::deep_copy(p_sub,pressure);
     }
-    T_mid_f.sync_to_dev();
-    p_mid_f.sync_to_dev();
 
     // Run diagnostic and compare with manual calculation
     diag->run();

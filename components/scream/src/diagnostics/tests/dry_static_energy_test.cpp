@@ -143,11 +143,6 @@ void run(std::mt19937_64& engine)
       Kokkos::deep_copy(qv_sub,watervapor);
     }
     ekat::genRandArray(phis_v, engine, pdf_surface);
-    T_mid_f.sync_to_dev();
-    pseudo_dens_f.sync_to_dev();
-    p_mid_f.sync_to_dev();
-    qv_mid_f.sync_to_dev();
-    phis_f.sync_to_dev();
 
     // Run diagnostic and compare with manual calculation
     diag->run();
