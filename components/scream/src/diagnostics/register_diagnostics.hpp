@@ -12,6 +12,10 @@
 #include "diagnostics/vertical_layer_midpoint.hpp"
 #include "diagnostics/dry_static_energy.hpp"
 #include "diagnostics/sea_level_pressure.hpp"
+#include "diagnostics/liquid_water_path.hpp"
+#include "diagnostics/ice_water_path.hpp"
+#include "diagnostics/vapor_water_path.hpp"
+#include "diagnostics/rain_water_path.hpp"
 
 namespace scream {
 
@@ -26,6 +30,10 @@ inline void register_diagnostics () {
   diag_factory.register_product("VerticalLayerMidpoint",&create_atmosphere_diagnostic<VerticalLayerMidpointDiagnostic>);
   diag_factory.register_product("DryStaticEnergy",&create_atmosphere_diagnostic<DryStaticEnergyDiagnostic>);
   diag_factory.register_product("SeaLevelPressure",&create_atmosphere_diagnostic<SeaLevelPressureDiagnostic>);
+  diag_factory.register_product("LiqWaterPath",&create_atmosphere_diagnostic<LiqWaterPathDiagnostic>);
+  diag_factory.register_product("IceWaterPath",&create_atmosphere_diagnostic<IceWaterPathDiagnostic>);
+  diag_factory.register_product("VapWaterPath",&create_atmosphere_diagnostic<VapWaterPathDiagnostic>);
+  diag_factory.register_product("RainWaterPath",&create_atmosphere_diagnostic<RainWaterPathDiagnostic>);
 }
 
 } // namespace scream
