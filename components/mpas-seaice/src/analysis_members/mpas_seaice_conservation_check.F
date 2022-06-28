@@ -1732,6 +1732,7 @@ contains
            carbonConsDOC1Flux, &
            carbonConsDOC2Flux, &
            carbonConsDICFlux, &
+           carbonConsTOCFlux, &
            carbonConsDONCarbonFlux, &
            carbonConsHumicsFlux, &
            carbonConsSemiLabileDOCFlux
@@ -1954,6 +1955,7 @@ contains
       call MPAS_pool_get_array(conservationCheckCarbonAMPool, "carbonConsDOC2Flux", carbonConsDOC2Flux)
       call MPAS_pool_get_array(conservationCheckCarbonAMPool, "carbonConsDONCarbonFlux", carbonConsDONCarbonFlux)
       call MPAS_pool_get_array(conservationCheckCarbonAMPool, "carbonConsDICFlux", carbonConsDICFlux)
+      call MPAS_pool_get_array(conservationCheckCarbonAMPool, "carbonConsTOCFlux", carbonConsTOCFlux)
       call MPAS_pool_get_array(conservationCheckCarbonAMPool, "carbonConsHumicsFlux", carbonConsHumicsFlux)
       call MPAS_pool_get_array(conservationCheckCarbonAMPool, "carbonConsSemiLabileDOCFlux", carbonConsSemiLabileDOCFlux)
 
@@ -2023,6 +2025,9 @@ contains
          carbonConsSemiLabileDOCFlux(:) = carbonConsSemiLabileDOCFlux(:) * fluxScale
          carbonConsOceanCarbonFluxCheck(:) = carbonConsOceanCarbonFluxCheck(:) * fluxScale
          netCarbonFlux(:)             = netCarbonFlux(:)             * fluxScale
+         carbonConsTOCFlux(:) = carbonConsDiatomFlux(:) + carbonConsSmallAlgaeFlux(:) + &
+            carbonConsDOC1Flux(:) + carbonConsDOC2Flux(:) + carbonConsDONCarbonFlux(:) + &
+            carbonConsHumicsFlux(:)
 
          ! compute the final carbon error
          call MPAS_pool_get_array(conservationCheckCarbonAMPool, "relativeCarbonError", relativeCarbonError)
@@ -2075,6 +2080,8 @@ contains
                call mpas_log_write(' ')
 
                call mpas_log_write(' Total semilabile DOCflux(kg/m2s) = '//trim(hemisphere_format(carbonConsSemiLabileDOCFlux)))
+               call mpas_log_write(' Total inorganic C flux  (kg/m2s) = '//trim(hemisphere_format(carbonConsDICFlux)))
+               call mpas_log_write(' Total organic C flux    (kg/m2s) = '//trim(hemisphere_format(carbonConsTOCFlux)))
                call mpas_log_write(' ')
                call mpas_log_write(' Net carbon change           (kg) = '//trim(hemisphere_format((netCarbonFlux * dt) / fluxScale)))
                call mpas_log_write(' Net carbon flux         (kg/m2s) = '//trim(hemisphere_format(netCarbonFlux)))

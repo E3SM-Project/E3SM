@@ -90,14 +90,14 @@
 !tcx note cice snowpatch = 0.02
 
          ! biogeochemistry
-         R_gC2molC = SHR_CONST_MOL_MASS_C, & ! molar mass of carbon
-         sk_l = 0.03_dbl_kind                ! (m) skeletal layer thickness
+         R_gC2molC = SHR_CONST_MWC, & ! molar mass of carbon
+         sk_l = 0.03_dbl_kind         ! (m) skeletal layer thickness
 
       integer (kind=int_kind), parameter, public :: &
          nspint = 3             ,& ! number of solar spectral intervals
          nspint_5bd = 5            ! number of solar spectral intervals with config_use_snicar_ad
 
-      ! weights for albedos 
+      ! weights for albedos
       ! 4 Jan 2007 BPB  Following are appropriate for complete cloud
       ! in a summer polar atmosphere with 1.5m bare sea ice surface:
       ! .636/.364 vis/nir with only 0.5% direct for each band.
@@ -126,7 +126,7 @@
       real(kind=dbl_kind),public :: decln  ! solar declination angle in radians
       real(kind=dbl_kind),public :: eccf   ! earth orbit eccentricity factor
       logical(kind=log_kind),public :: log_print ! Flags print of status/error
-    
+
       ! snow parameters
       real (kind=dbl_kind), parameter, public :: &
          snwlvlfac =   0.3_dbl_kind, & ! 30% rule: fractional increase in snow depth
