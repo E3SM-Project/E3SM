@@ -262,9 +262,11 @@ subroutine apply_SC_forcing(elem,hvcoord,hybrid,tl,n,t_before_advance,nets,nete)
 #endif
 
     ! collect stats from dycore for analysis
+#ifdef MODEL_THETA_L
     if (dp_crm) then
       call crm_resolved_turb(elem,hvcoord,hybrid,t1,nelemd_todo,np_todo)
     endif
+#endif
 
     do ie=1,nelemd_todo
 
@@ -510,6 +512,7 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,d
 
 end subroutine iop_domain_relaxation
 
+#ifdef MODEL_THETA_L
 subroutine crm_resolved_turb(elem,hvcoord,hybrid,t1,&
                               nelemd_todo,np_todo)
 
@@ -655,5 +658,6 @@ subroutine crm_resolved_turb(elem,hvcoord,hybrid,t1,&
   enddo
 
 end subroutine crm_resolved_turb
+#endif  // MODEL_THETA_L
 
 end module se_single_column_mod
