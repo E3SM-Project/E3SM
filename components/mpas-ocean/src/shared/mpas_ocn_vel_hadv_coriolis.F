@@ -79,7 +79,7 @@ contains
    subroutine ocn_vel_hadv_coriolis_tend(normRelVortEdge, &
                                       normPlanetVortEdge, &
                                       layerThickEdgeFlux, normalVelocity, &
-                                      kineticEnergyCell, verticalVelocity, tend, err)!{{{
+                                      kineticEnergyCell, vertVelocityNonhydro, tend, err)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -93,7 +93,7 @@ contains
          kineticEnergyCell    !< [in] Kinetic Energyi
 
       real (kind=RKIND), dimension(:,:), intent(in), optional :: &
-         verticalVelocity    !< vertical velocity for non-hydrostatic mode only
+         vertVelocityNonhydro    !< vertical velocity for non-hydrostatic mode only
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -266,10 +266,10 @@ contains
 
            !k-indexing can't be right here?
            !do k=1,maxLevelEdgeTop(iEdge)
-           !   wav = 0.25_RKIND * (verticalVelocity(k,cell1) +
-           !   verticalVelocity(k,cell2) + &
-           !           verticalVelocity(k+1,cell1) +
-           !           verticalVelocity(k+1,cell2))
+           !   wav = 0.25_RKIND * (vertVelocityNonhydro(k,cell1) +
+           !   vertVelocityNonhydro(k,cell2) + &
+           !           vertVelocityNonhydro(k+1,cell1) +
+           !           vertVelocityNonhydro(k+1,cell2))
            !   tend(k, iEdge) = tend(k,iEdge) -
            !   2.0_RKIND*omega*cos(latEdge(iEdge))*wav
            !end do

@@ -51,7 +51,7 @@ module ocn_vvel_vert_advection
 !
 !-----------------------------------------------------------------------
    
-   subroutine ocn_vvel_vert_advection_tend(verticalVelocity, layerThickness, dt, &
+   subroutine ocn_vvel_vert_advection_tend(vertVelocityNonhydro, layerThickness, dt, &
       vertAleTransportTop, tend)!{{{
 
       implicit none 
@@ -59,7 +59,7 @@ module ocn_vvel_vert_advection
       !*** input parameters 
 
       real (kind=RKIND), dimension(:,:), intent(in) :: & 
-         verticalVelocity !< Input: non-hydrostatic vertical velocity
+         vertVelocityNonhydro !< Input: non-hydrostatic vertical velocity
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          layerThickness !< Input: layer thickness at cells
       real (kind=RKIND), intent(in) :: dt !< Input: time-step
@@ -85,9 +85,9 @@ module ocn_vvel_vert_advection
                0.5_RKIND * (layerThickness(k-1,iCell) + layerThickness(k,iCell))
 
             vertVelocityUp = &
-               0.5_RKIND * (verticalVelocity(k-1,iCell) + verticalVelocity(k,iCell))
+               0.5_RKIND * (vertVelocityNonhydro(k-1,iCell) + vertVelocityNonhydro(k,iCell))
             vertVelocityDn = &
-               0.5_RKIND * (verticalVelocity(k+1,iCell) + verticalVelocity(k,iCell))
+               0.5_RKIND * (vertVelocityNonhydro(k+1,iCell) + vertVelocityNonhydro(k,iCell))
 
             tend(k,iCell) = tend(k,iCell) - &
                vertAleTransportTop(k,iCell) * &

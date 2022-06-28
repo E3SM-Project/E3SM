@@ -65,7 +65,7 @@ module ocn_vvel_advection
 !
 !-------------------------------------------------------------------------------
 
-   subroutine ocn_vvel_advection_tend(meshPool, verticalVelocity, normalThicknessFlux,       &
+   subroutine ocn_vvel_advection_tend(meshPool, vertVelocityNonhydro, normalThicknessFlux,       &
                                         layerThickness, vertAleTransportTop, dt,          &
                                         tend)!{{{
 
@@ -81,7 +81,7 @@ module ocn_vvel_advection
       type (mpas_pool_type), intent(in) :: &
          meshPool                     !< [in] mesh information
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         verticalVelocity             !< [in] non-hydrostatic vertical velocity
+         vertVelocityNonhydro             !< [in] non-hydrostatic vertical velocity
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normalThicknessFlux          !< [in] thickness weighted horizontal velocity
       real (kind=RKIND), dimension(:,:), intent(in) :: &
@@ -100,10 +100,10 @@ module ocn_vvel_advection
 
       call mpas_timer_start("Vertical Velocity adv")
 
-      call ocn_vvel_horiz_advection_tend(verticalVelocity, normalThicknessFlux, &
+      call ocn_vvel_horiz_advection_tend(vertVelocityNonhydro, normalThicknessFlux, &
          layerThickness, dt, meshPool, tend)
 
-      call ocn_vvel_vert_advection_tend(verticalVelocity, layerThickness, dt, &
+      call ocn_vvel_vert_advection_tend(vertVelocityNonhydro, layerThickness, dt, &
          vertAleTransportTop, tend)
 
       call mpas_timer_stop("Vertical Velocity adv")

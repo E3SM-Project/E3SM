@@ -53,7 +53,7 @@ module ocn_vvel_horiz_advection
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vvel_horiz_advection_tend(verticalVelocity, &
+   subroutine ocn_vvel_horiz_advection_tend(vertVelocityNonhydro, &
       normalThicknessFlux, layerThickness, dt, meshPool, tend)!{{{ 
 
       implicit none
@@ -61,7 +61,7 @@ module ocn_vvel_horiz_advection
       !*** input parameters
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         verticalVelocity                   !< [in] non-hydrostatic vertical velocity
+         vertVelocityNonhydro                   !< [in] non-hydrostatic vertical velocity
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normalThicknessFlux                !< [in] normal thickness flux uh at edges
       real (kind=RKIND), dimension(:,:), intent(in) :: &
@@ -81,7 +81,7 @@ module ocn_vvel_horiz_advection
       real (kind=RKIND), dimension(:,:), allocatable :: horizFlux
 
       ! Get dimensions
-      nVertLevels = size(verticalVelocity,dim=1)
+      nVertLevels = size(vertVelocityNonhydro,dim=1)
 
       ! Initialize pointers
       nCells = nCellsHalo( 1 ) !1
@@ -109,11 +109,11 @@ module ocn_vvel_horiz_advection
                vertVelocityFlux = &
                   0.5_RKIND * (normalThicknessFlux(k-1,iEdge) + &
                                normalThicknessFlux(k-0,iEdge)) * &
-                  0.5_RKIND * (verticalVelocity(k,cell1) + verticalVelocity(k,cell2))
+                  0.5_RKIND * (vertVelocityNonhydro(k,cell1) + vertVelocityNonhydro(k,cell2))
             else
                vertVelocityFlux = & ! surface
                   1.0_RKIND * (normalThicknessFlux(k-0,iEdge)) * &
-                  0.5_RKIND * (verticalVelocity(k,cell1) + verticalVelocity(k,cell2))
+                  0.5_RKIND * (vertVelocityNonhydro(k,cell1) + vertVelocityNonhydro(k,cell2))
             end if
 
             horizFlux(k,iEdge) = &

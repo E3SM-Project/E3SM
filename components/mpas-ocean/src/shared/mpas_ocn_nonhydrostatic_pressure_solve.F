@@ -98,10 +98,10 @@ module ocn_compute_nonhydrostatic_pressure
   contains
 
     subroutine ocn_nonhydrostatic_pressure_tend(normalVelocityNew, &
-      verticalVelocityNew, layerThickness, layerThicknessEdge, &
+      vertVelocityNonhydroNew, layerThickness, layerThicknessEdge, &
       nhPressureCorrection, mpi_comm, dt)
 
-    real,dimension(:,:), intent(in) :: normalVelocityNew, verticalVelocityNew, &
+    real,dimension(:,:), intent(in) :: normalVelocityNew, vertVelocityNonhydroNew, &
       layerThickness, layerThicknessEdge
 
     real(kind=RKIND), intent(in) :: dt
@@ -116,14 +116,14 @@ module ocn_compute_nonhydrostatic_pressure
 
     !call mpas_timer_start('NH solve - matrix fill',.false.)
     !call ocn_nonhydrostatic_solver_fill_matVec(normalVelocityNew, &
-    !  verticalVelocityNew, layerThickness, layerThicknessEdge, mpi_comm, dt)
+    !  vertVelocityNonhydroNew, layerThickness, layerThicknessEdge, mpi_comm, dt)
 
     !call mpas_timer_stop('NH solve - matrix fill')
 
     !call ocn_nonhydrostatic_pressure_solve(mpi_comm, reuse_preconditioner, nhPressureCorrection)
 
     call ocn_nonhydrostatic_solver_everything(normalVelocityNew, &
-       verticalVelocityNew, layerThickness, layerThicknessEdge, mpi_comm, &
+       vertVelocityNonhydroNew, layerThickness, layerThicknessEdge, mpi_comm, &
        dt, nhPressureCorrection)
 
   end subroutine ocn_nonhydrostatic_pressure_tend
@@ -141,7 +141,7 @@ module ocn_compute_nonhydrostatic_pressure
   !--------------------------------------------------------------------
 
   subroutine ocn_nonhydrostatic_pressure_update_velocity(normalVelocityNew, &
-      verticalVelocityNew, layerThickness, layerThicknessEdge,           &
+      vertVelocityNonhydroNew, layerThickness, layerThicknessEdge,           &
       nonhydrostaticPressure, nonhydrostaticPressureOld,                 &
       nhPressureCorrection, dt)
 
@@ -149,7 +149,7 @@ module ocn_compute_nonhydrostatic_pressure
 
     real(KIND=RKIND),dimension(:,:), intent(inout) ::  &
       normalVelocityNew,    &
-      verticalVelocityNew
+      vertVelocityNonhydroNew
 
     real(KIND=RKIND),dimension(:,:),intent(in) :: &
       layerThicknessEdge, &
@@ -201,9 +201,9 @@ module ocn_compute_nonhydrostatic_pressure
           end do
        end do
 
-       verticalVelocityNew(maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
+       vertVelocityNonhydroNew(maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
        do k=maxLevelCell(iCell),1,-1
-          verticalVelocityNew(k,iCell) = verticalVelocityNew(k+1,iCell) - div_hu(k)
+          vertVelocityNonhydroNew(k,iCell) = vertVelocityNonhydroNew(k+1,iCell) - div_hu(k)
        end do
     end do
     !$omp end do
@@ -244,13 +244,13 @@ module ocn_compute_nonhydrostatic_pressure
   !--------------------------------------------------------------------
 
   subroutine ocn_nonhydrostatic_solver_everything(normalVelocityNew, &
-      verticalVelocityNew, layerThickness, layerThicknessEdge, mpi_comm, &
+      vertVelocityNonhydroNew, layerThickness, layerThicknessEdge, mpi_comm, &
       dt, nhPressureCorrection)
 
      implicit none
 
      real(kind=RKIND), dimension(:,:), intent(in) :: normalVelocityNew, &
-                                                     verticalVelocityNew
+                                                     vertVelocityNonhydroNew
      real(kind=RKIND), dimension(:,:), intent(in) :: layerThickness, &
                                                      layerThicknessEdge
      real(kind=RKIND), intent(in) :: dt
@@ -434,7 +434,7 @@ module ocn_compute_nonhydrostatic_pressure
         do k = 1, maxLevelCell(iCell)
 
            div(k) = div(k) + areaCell(iCell) * ( &
-              verticalVelocityNew(k,iCell) - verticalVelocityNew(k+1,iCell))
+              vertVelocityNonhydroNew(k,iCell) - vertVelocityNonhydroNew(k+1,iCell))
 
         end do
 
@@ -648,9 +648,9 @@ module ocn_compute_nonhydrostatic_pressure
   !--------------------------------------------------------------------
 
   subroutine ocn_nonhydrostatic_solver_fill_matVec(normalVelocityNew, &
-      verticalVelocityNew, layerThickness, layerThicknessEdge, mpi_comm, dt)
+      vertVelocityNonhydroNew, layerThickness, layerThicknessEdge, mpi_comm, dt)
 
-    real(kind=RKIND),dimension(:,:), intent(in) :: normalVelocityNew, verticalVelocityNew
+    real(kind=RKIND),dimension(:,:), intent(in) :: normalVelocityNew, vertVelocityNonhydroNew
     
     real(kind=RKIND),dimension(:,:), intent(in) :: layerThickness, layerThicknessEdge
 
@@ -753,7 +753,7 @@ module ocn_compute_nonhydrostatic_pressure
   call vecZeroEntries(b,petsc_err)
   do iCell=1,nCellsOwned
      do k=1,maxLevelCell(iCell)
-        insertVal = areaCell(iCell)*(verticalVelocityNew(k,iCell) - verticalVelocityNew(k+1,iCell))
+        insertVal = areaCell(iCell)*(vertVelocityNonhydroNew(k,iCell) - vertVelocityNonhydroNew(k+1,iCell))
         row = (indexToCellId(iCell) - 1)*nVertLevels + k - 1
         call VecSetValues(b, 1, row, insertVal, ADD_VALUES, petsc_err)
      enddo

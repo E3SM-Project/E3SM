@@ -2255,7 +2255,7 @@
 		<var name="ssh" type="real" dimensions="nCells Time" units="m"
 			 description="sea surface height"
 		/>
-                <var name="verticalVelocity" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+                <var name="vertVelocityNonhydro" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
 			 description="prognostic vertical velocity, only used when config_enable_nonhydrostatic_mode = .true."
     		/>
                 <var name="nonhydrostaticPressure" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
@@ -2612,7 +2612,7 @@
 			 missing_value="FILLVAL" missing_value_mask="edgeMask"
 			 packages="forwardMode"
 		/>
-                <var name="tendVerticalVelocity" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-2}" name_in_code="verticalVelocityTend"
+                <var name="tendVertVelocityNonhydro" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-2}" name_in_code="vertVelocityNonhydroTend"
                          description="time tendency of the vertical velocity (Only active for non hydrostatic mode)"
                 />
 		<var name="tendLayerThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^-1" name_in_code="layerThickness"
