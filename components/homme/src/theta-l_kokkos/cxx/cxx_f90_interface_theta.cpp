@@ -65,7 +65,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
 #ifndef SCREAM
   Errors::check_option("init_simulation_params_c","nsplit",nsplit,1,Errors::ComparisonOp::GE);
 #else
-  if (nsplit<1) {
+  if (nsplit<1 && Context::singleton().get<Comm>().root()) {
     printf ("Note: nsplit=%d, while nsplit must be >=1. We know SCREAM does not know nsplit until runtime, so this is fine.\n"
             "      Make sure nsplit is set to a valid value before calling prim_advance_subcycle!\n",nsplit);
   }
