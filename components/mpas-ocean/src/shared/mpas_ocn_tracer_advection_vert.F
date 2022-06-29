@@ -297,7 +297,7 @@ module ocn_tracer_advection_vert
       err = 0 ! set error code to success
 
       ! set choice of vertical advection order
-      select case (config_vert_tracer_adv_order)
+      select case (config_vert_tracer_adv_flux_order)
       case (2)
          vertOrder = vertOrder2
          coef3rdOrder = 0.0_RKIND

@@ -72,7 +72,7 @@ module elm_instMod
 
   use elm_interface_dataType     , only : elm_interface_data_type
   use ChemStateType              , only : chemstate_type     ! structure for chemical indices of the soil, such as pH and Eh
-  use BeTRSimulationALM          , only : betr_simulation_alm_type
+  use BeTRSimulationELM          , only : betr_simulation_elm_type
   use PlantMicKineticsMod        , only : PlantMicKinetics_type
   use ELMFatesInterfaceMod       , only : hlm_fates_interface_type
 
@@ -128,7 +128,7 @@ module elm_instMod
   type(elm_interface_data_type)                       :: elm_interface_data
   type(chemstate_type)                                :: chemstate_vars
   type(hlm_fates_interface_type)                      :: alm_fates
-  class(betr_simulation_alm_type), pointer            :: ep_betr
+  class(betr_simulation_elm_type), pointer            :: ep_betr
   type(PlantMicKinetics_type)                         :: PlantMicKinetics_vars
   public :: elm_inst_biogeochem
   public :: elm_inst_biogeophys
