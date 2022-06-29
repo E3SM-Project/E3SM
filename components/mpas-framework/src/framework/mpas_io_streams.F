@@ -3278,13 +3278,11 @@ module mpas_io_streams
       integer, dimension(:,:),   pointer :: maskArray
       integer, dimension(:,:,:), pointer :: int3d_temp
       real (kind=RKIND)                                :: real0d_temp
-      real (kind=RKIND), dimension(:),         pointer :: real1d_temp
-      real (kind=RKIND), dimension(:,:),       pointer :: real2d_temp
-      real (kind=RKIND), dimension(:,:),       pointer :: real2d_temp_small
-      real (kind=RKIND), dimension(:,:,:),     pointer :: real3d_temp
-      real (kind=RKIND), dimension(:,:,:),     pointer :: real3d_temp_small
-      real (kind=RKIND), dimension(:,:,:,:),   pointer :: real4d_temp
-      real (kind=RKIND), dimension(:,:,:,:,:), pointer :: real5d_temp
+      real (kind=RKIND), dimension(:),         pointer :: real1d_temp, real1d_temp_small
+      real (kind=RKIND), dimension(:,:),       pointer :: real2d_temp, real2d_temp_small
+      real (kind=RKIND), dimension(:,:,:),     pointer :: real3d_temp, real3d_temp_small
+      real (kind=RKIND), dimension(:,:,:,:),   pointer :: real4d_temp, real4d_temp_small
+      real (kind=RKIND), dimension(:,:,:,:,:), pointer :: real5d_temp, real5d_temp_small
 
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
@@ -3327,6 +3325,10 @@ module mpas_io_streams
 
       !
       ! Loop over fields in the stream
+      !
+      ! -- Masking is supported for real fields with dimensions 1-5 and
+      ! -- real arrays with dimensions 3-5 with integer mask fields with
+      ! -- dimensions less than or equal to the field dimension, up to 3.
       !
       field_cursor => stream % fieldList
       do while (associated(field_cursor))
@@ -3582,10 +3584,19 @@ module mpas_io_streams
                      end if
 
                      if (field_cursor % real1dField % isVarArray) then
-! I suspect we will never hit this code, as it doesn't make sense, really
+                        ! I suspect we will never hit this code, as it doesn't make sense, really
                         real0d_temp = field_1dreal_ptr % array(j)
                      else
-                        real1d_temp(i:i+ownedSize-1) = field_1dreal_ptr % array(1:ownedSize)
+                        if (ASSOCIATED( field_1dreal_ptr % missingValueMask1D )) then
+                           allocate(real1d_temp_small(ownedSize))
+                           real1d_temp_small = field_1dreal_ptr % array(1:ownedSize)
+                           call mpas_mask_field(field_1dreal_ptr, &
+                              field_1dreal_ptr % missingValueMask1D, real1d_temp_small)
+                           real1d_temp(i:i+ownedSize-1) = real1d_temp_small
+                           deallocate(real1d_temp_small)
+                        else
+                           real1d_temp(i:i+ownedSize-1) = field_1dreal_ptr % array(1:ownedSize)
+                        end if
                      end if
                      i = i + ownedSize
                      if ( .not. stream % blockWrite ) then
@@ -3632,7 +3643,6 @@ module mpas_io_streams
                   field_2dreal_ptr => field_cursor % real2dField
                   i = 1
                   do while (associated(field_2dreal_ptr))
-                     call mpas_log_write('field_2dreal_ptr is '//TRIM(field_2dreal_ptr % fieldName))
                      if (trim(field_2dreal_ptr % dimNames(2)) == 'nCells') then
                         call mpas_pool_get_dimension(field_2dreal_ptr % block % dimensions, trim(field_2dreal_ptr % dimNames(2)) &
                                                      // trim(dimensionSuffix), ownedSize)
@@ -3647,14 +3657,31 @@ module mpas_io_streams
                      end if
 
                      if (field_cursor % real2dField % isVarArray) then
-                        real1d_temp(i:i+ownedSize-1) = field_2dreal_ptr % array(j,1:ownedSize)
+                        if (ASSOCIATED( field_2dreal_ptr % missingValueMask1D )) then
+                           allocate(real2d_temp_small(1,ownedSize))
+                           real2d_temp_small(1,:) = field_2dreal_ptr % array(j,1:ownedSize)
+                           call mpas_mask_field(field_2dreal_ptr, &
+                              field_2dreal_ptr % missingValueMask1D, real2d_temp_small)
+                           real2d_temp(:,i:i+ownedSize-1) = real2d_temp_small
+                           deallocate(real2d_temp_small)
+                        else
+                           real1d_temp(i:i+ownedSize-1) = field_2dreal_ptr % array(j,1:ownedSize)
+                        end if
                      else
                         if (ASSOCIATED( field_2dreal_ptr % missingValueMask2D )) then
                            allocate(real2d_temp_small(field_cursor % real2dField % dimSizes(1), &
-                                                ownedSize))
+                                                      ownedSize))
                            real2d_temp_small = field_2dreal_ptr % array(:,1:ownedSize)
                            call mpas_mask_field(field_2dreal_ptr, &
-                               field_2dreal_ptr % missingValueMask2D, real2d_temp_small)
+                              field_2dreal_ptr % missingValueMask2D, real2d_temp_small)
+                           real2d_temp(:,i:i+ownedSize-1) = real2d_temp_small
+                           deallocate(real2d_temp_small)
+                        elseif (ASSOCIATED( field_2dreal_ptr % missingValueMask1D )) then
+                           allocate(real2d_temp_small(field_cursor % real2dField % dimSizes(1), &
+                                                      ownedSize))
+                           real2d_temp_small = field_2dreal_ptr % array(:,1:ownedSize)
+                           call mpas_mask_field(field_2dreal_ptr, &
+                              field_2dreal_ptr % missingValueMask1D, real2d_temp_small)
                            real2d_temp(:,i:i+ownedSize-1) = real2d_temp_small
                            deallocate(real2d_temp_small)
                         else
@@ -3706,7 +3733,6 @@ module mpas_io_streams
             end if
 
             do j=1,ncons
-               call mpas_log_write('j')
                if (field_cursor % isDecomposed) then
                   ! Gather field from across multiple blocks
                   field_3dreal_ptr => field_cursor % real3dField
@@ -3733,14 +3759,52 @@ module mpas_io_streams
                                                       ownedSize))
                            real3d_temp_small(1,:,:) = field_3dreal_ptr % array(j,:,1:ownedSize)
                            call mpas_mask_field(field_3dreal_ptr, &
-                               field_3dreal_ptr % missingValueMask2D, real3d_temp_small)
+                              field_3dreal_ptr % missingValueMask2D, real3d_temp_small)
+                           real2d_temp(:,i:i+ownedSize-1) = real3d_temp_small(1,:,:)
+                           deallocate(real3d_temp_small)
+                       elseif (ASSOCIATED( field_3dreal_ptr % missingValueMask1D )) then
+                           allocate(real3d_temp_small(1, &
+                                                      field_cursor % real3dField % dimSizes(2), &
+                                                      ownedSize))
+                           real3d_temp_small(1,:,:) = field_3dreal_ptr % array(j,:,1:ownedSize)
+                           call mpas_mask_field(field_3dreal_ptr, &
+                              field_3dreal_ptr % missingValueMask1D, real3d_temp_small)
                            real2d_temp(:,i:i+ownedSize-1) = real3d_temp_small(1,:,:)
                            deallocate(real3d_temp_small)
                         else
                            real2d_temp(:,i:i+ownedSize-1) = field_3dreal_ptr % array(j,:,1:ownedSize)
                         endif
                      else
-                        real3d_temp(:,:,i:i+ownedSize-1) = field_3dreal_ptr % array(:,:,1:ownedSize)
+                        if (ASSOCIATED( field_3dreal_ptr % missingValueMask3D )) then
+                           allocate(real3d_temp_small(field_cursor % real3dField % dimSizes(1), &
+                                                      field_cursor % real3dField % dimSizes(2), &
+                                                      ownedSize))
+                           real3d_temp_small = field_3dreal_ptr % array(:,:,1:ownedSize)
+                           call mpas_mask_field(field_3dreal_ptr, &
+                              field_3dreal_ptr % missingValueMask3D, real3d_temp_small)
+                           real3d_temp(:,:,i:i+ownedSize-1) = real3d_temp_small
+                           deallocate(real3d_temp_small)
+                        elseif (ASSOCIATED( field_3dreal_ptr % missingValueMask2D )) then
+                           allocate(real3d_temp_small(field_cursor % real3dField % dimSizes(1), &
+                                                      field_cursor % real3dField % dimSizes(2), &
+                                                      ownedSize))
+                           real3d_temp_small = field_3dreal_ptr % array(:,:,1:ownedSize)
+                           call mpas_mask_field(field_3dreal_ptr, &
+                              field_3dreal_ptr % missingValueMask2D, real3d_temp_small)
+                           real3d_temp(:,:,i:i+ownedSize-1) = real3d_temp_small
+                           deallocate(real3d_temp_small)
+                        elseif (ASSOCIATED( field_3dreal_ptr % missingValueMask1D )) then
+                           allocate(real3d_temp_small(field_cursor % real3dField % dimSizes(1), &
+                                                      field_cursor % real3dField % dimSizes(2), &
+                                                      ownedSize))
+                           real3d_temp_small = field_3dreal_ptr % array(:,:,1:ownedSize)
+                           call mpas_mask_field(field_3dreal_ptr, &
+                              field_3dreal_ptr % missingValueMask1D, real3d_temp_small)
+                           real3d_temp(:,:,i:i+ownedSize-1) = real3d_temp_small
+                           deallocate(real3d_temp_small)
+                        else
+                           real3d_temp(:,:,i:i+ownedSize-1) = field_3dreal_ptr % array(:,:,1:ownedSize)
+                        end if
                      end if
                      i = i + ownedSize
                      if ( .not. stream % blockWrite ) then
@@ -3758,9 +3822,7 @@ module mpas_io_streams
                end if
 
                if (field_cursor % real3dField % isVarArray) then
-                  call mpas_log_write('Put 3d varArray ...')
                   call MPAS_io_put_var(stream % fileHandle, field_cursor % real3dField % constituentNames(j), real2d_temp, io_err)
-                  call mpas_log_write('... Completed')
                else
                   call MPAS_io_put_var(stream % fileHandle, field_cursor % real3dField % fieldName, real3d_temp, io_err)
                end if
@@ -3809,9 +3871,73 @@ module mpas_io_streams
                      end if
 
                      if (field_cursor % real4dField % isVarArray) then
-                        real3d_temp(:,:,i:i+ownedSize-1) = field_4dreal_ptr % array(j,:,:,1:ownedSize)
+                        if (ASSOCIATED( field_4dreal_ptr % missingValueMask3D )) then
+                           allocate(real4d_temp_small(1, &
+                                                      field_cursor % real4dField % dimSizes(2), &
+                                                      field_cursor % real4dField % dimSizes(3), &
+                                                      ownedSize))
+                           real4d_temp_small(1,:,:,:) = field_4dreal_ptr % array(j,:,:,1:ownedSize)
+                           call mpas_mask_field(field_4dreal_ptr, &
+                              field_4dreal_ptr % missingValueMask3D, real4d_temp_small)
+                           real3d_temp(:,:,i:i+ownedSize-1) = real4d_temp_small(1,:,:,:)
+                           deallocate(real4d_temp_small)
+                        elseif (ASSOCIATED( field_4dreal_ptr % missingValueMask2D )) then
+                           allocate(real4d_temp_small(1, &
+                                                      field_cursor % real4dField % dimSizes(2), &
+                                                      field_cursor % real4dField % dimSizes(3), &
+                                                      ownedSize))
+                           real4d_temp_small(1,:,:,:) = field_4dreal_ptr % array(j,:,:,1:ownedSize)
+                           call mpas_mask_field(field_4dreal_ptr, &
+                              field_4dreal_ptr % missingValueMask2D, real4d_temp_small)
+                           real3d_temp(:,:,i:i+ownedSize-1) = real4d_temp_small(1,:,:,:)
+                           deallocate(real4d_temp_small)
+                        elseif (ASSOCIATED( field_4dreal_ptr % missingValueMask1D )) then
+                           allocate(real4d_temp_small(1, &
+                                                      field_cursor % real4dField % dimSizes(2), &
+                                                      field_cursor % real4dField % dimSizes(3), &
+                                                      ownedSize))
+                           real4d_temp_small(1,:,:,:) = field_4dreal_ptr % array(j,:,:,1:ownedSize)
+                           call mpas_mask_field(field_4dreal_ptr, &
+                              field_4dreal_ptr % missingValueMask1D, real4d_temp_small)
+                           real3d_temp(:,:,i:i+ownedSize-1) = real4d_temp_small(1,:,:,:)
+                           deallocate(real4d_temp_small)
+                        else
+                           real3d_temp(:,:,i:i+ownedSize-1) = field_4dreal_ptr % array(j,:,:,1:ownedSize)
+                        endif
                      else
-                        real4d_temp(:,:,:,i:i+ownedSize-1) = field_4dreal_ptr % array(:,:,:,1:ownedSize)
+                        if (ASSOCIATED( field_4dreal_ptr % missingValueMask3D )) then
+                           allocate(real4d_temp_small(field_cursor % real4dField % dimSizes(1), &
+                                                      field_cursor % real4dField % dimSizes(2), &
+                                                      field_cursor % real4dField % dimSizes(3), &
+                                                      ownedSize))
+                           real4d_temp_small = field_4dreal_ptr % array(:,:,:,1:ownedSize)
+                           call mpas_mask_field(field_4dreal_ptr, &
+                              field_4dreal_ptr % missingValueMask3D, real4d_temp_small)
+                           real4d_temp(:,:,:,i:i+ownedSize-1) = real4d_temp_small
+                           deallocate(real4d_temp_small)
+                        elseif (ASSOCIATED( field_4dreal_ptr % missingValueMask2D )) then
+                           allocate(real4d_temp_small(field_cursor % real4dField % dimSizes(1), &
+                                                      field_cursor % real4dField % dimSizes(2), &
+                                                      field_cursor % real4dField % dimSizes(3), &
+                                                      ownedSize))
+                           real4d_temp_small = field_4dreal_ptr % array(:,:,:,1:ownedSize)
+                           call mpas_mask_field(field_4dreal_ptr, &
+                              field_4dreal_ptr % missingValueMask2D, real4d_temp_small)
+                           real4d_temp(:,:,:,i:i+ownedSize-1) = real4d_temp_small
+                           deallocate(real4d_temp_small)
+                        elseif (ASSOCIATED( field_4dreal_ptr % missingValueMask1D )) then
+                           allocate(real4d_temp_small(field_cursor % real4dField % dimSizes(1), &
+                                                      field_cursor % real4dField % dimSizes(2), &
+                                                      field_cursor % real4dField % dimSizes(3), &
+                                                      ownedSize))
+                           real4d_temp_small = field_4dreal_ptr % array(:,:,:,1:ownedSize)
+                           call mpas_mask_field(field_4dreal_ptr, &
+                              field_4dreal_ptr % missingValueMask1D, real4d_temp_small)
+                           real4d_temp(:,:,:,i:i+ownedSize-1) = real4d_temp_small
+                           deallocate(real4d_temp_small)
+                        else
+                           real4d_temp(:,:,:,i:i+ownedSize-1) = field_4dreal_ptr % array(:,:,:,1:ownedSize)
+                        end if
                      end if
                      i = i + ownedSize
                      if ( .not. stream % blockWrite ) then
@@ -3880,9 +4006,79 @@ module mpas_io_streams
                      end if
 
                      if (field_cursor % real5dField % isVarArray) then
-                        real4d_temp(:,:,:,i:i+ownedSize-1) = field_5dreal_ptr % array(j,:,:,:,1:ownedSize)
+                        if (ASSOCIATED( field_5dreal_ptr % missingValueMask3D )) then
+                           allocate(real5d_temp_small(1, &
+                                                      field_cursor % real5dField % dimSizes(2), &
+                                                      field_cursor % real5dField % dimSizes(3), &
+                                                      field_cursor % real5dField % dimSizes(4), &
+                                                      ownedSize))
+                           real5d_temp_small(1,:,:,:,:) = field_5dreal_ptr % array(j,:,:,:,1:ownedSize)
+                           call mpas_mask_field(field_5dreal_ptr, &
+                              field_5dreal_ptr % missingValueMask3D, real5d_temp_small)
+                           real4d_temp(:,:,:,i:i+ownedSize-1) = real5d_temp_small(1,:,:,:,:)
+                           deallocate(real5d_temp_small)
+                        elseif (ASSOCIATED( field_5dreal_ptr % missingValueMask2D )) then
+                           allocate(real5d_temp_small(1, &
+                                                      field_cursor % real5dField % dimSizes(2), &
+                                                      field_cursor % real5dField % dimSizes(3), &
+                                                      field_cursor % real5dField % dimSizes(4), &
+                                                      ownedSize))
+                           real5d_temp_small(1,:,:,:,:) = field_5dreal_ptr % array(j,:,:,:,1:ownedSize)
+                           call mpas_mask_field(field_5dreal_ptr, &
+                              field_5dreal_ptr % missingValueMask2D, real5d_temp_small)
+                           real4d_temp(:,:,:,i:i+ownedSize-1) = real5d_temp_small(1,:,:,:,:)
+                           deallocate(real5d_temp_small)
+                        elseif (ASSOCIATED( field_5dreal_ptr % missingValueMask1D )) then
+                           allocate(real5d_temp_small(1, &
+                                                      field_cursor % real5dField % dimSizes(2), &
+                                                      field_cursor % real5dField % dimSizes(3), &
+                                                      field_cursor % real5dField % dimSizes(4), &
+                                                      ownedSize))
+                           real5d_temp_small(1,:,:,:,:) = field_5dreal_ptr % array(j,:,:,:,1:ownedSize)
+                           call mpas_mask_field(field_5dreal_ptr, &
+                              field_5dreal_ptr % missingValueMask1D, real5d_temp_small)
+                           real4d_temp(:,:,:,i:i+ownedSize-1) = real5d_temp_small(1,:,:,:,:)
+                           deallocate(real5d_temp_small)
+                        else
+                           real4d_temp(:,:,:,i:i+ownedSize-1) = field_5dreal_ptr % array(j,:,:,:,1:ownedSize)
+                        endif
                      else
-                        real5d_temp(:,:,:,:,i:i+ownedSize-1) = field_5dreal_ptr % array(:,:,:,:,1:ownedSize)
+                        if (ASSOCIATED( field_5dreal_ptr % missingValueMask3D )) then
+                           allocate(real5d_temp_small(field_cursor % real5dField % dimSizes(1), &
+                                                      field_cursor % real5dField % dimSizes(2), &
+                                                      field_cursor % real5dField % dimSizes(3), &
+                                                      field_cursor % real5dField % dimSizes(4), &
+                                                      ownedSize))
+                           real5d_temp_small = field_5dreal_ptr % array(:,:,:,:,1:ownedSize)
+                           call mpas_mask_field(field_5dreal_ptr, &
+                              field_5dreal_ptr % missingValueMask3D, real5d_temp_small)
+                           real5d_temp(:,:,:,:,i:i+ownedSize-1) = real5d_temp_small
+                           deallocate(real5d_temp_small)
+                        elseif (ASSOCIATED( field_5dreal_ptr % missingValueMask2D )) then
+                           allocate(real5d_temp_small(field_cursor % real5dField % dimSizes(1), &
+                                                      field_cursor % real5dField % dimSizes(2), &
+                                                      field_cursor % real5dField % dimSizes(3), &
+                                                      field_cursor % real5dField % dimSizes(4), &
+                                                      ownedSize))
+                           real5d_temp_small = field_5dreal_ptr % array(:,:,:,:,1:ownedSize)
+                           call mpas_mask_field(field_5dreal_ptr, &
+                              field_5dreal_ptr % missingValueMask2D, real5d_temp_small)
+                           real5d_temp(:,:,:,:,i:i+ownedSize-1) = real5d_temp_small
+                           deallocate(real5d_temp_small)
+                        elseif (ASSOCIATED( field_5dreal_ptr % missingValueMask1D )) then
+                           allocate(real5d_temp_small(field_cursor % real5dField % dimSizes(1), &
+                                                      field_cursor % real5dField % dimSizes(2), &
+                                                      field_cursor % real5dField % dimSizes(3), &
+                                                      field_cursor % real5dField % dimSizes(4), &
+                                                      ownedSize))
+                           real5d_temp_small = field_5dreal_ptr % array(:,:,:,:,1:ownedSize)
+                           call mpas_mask_field(field_5dreal_ptr, &
+                              field_5dreal_ptr % missingValueMask1D, real5d_temp_small)
+                           real5d_temp(:,:,:,:,i:i+ownedSize-1) = real5d_temp_small
+                           deallocate(real5d_temp_small)
+                        else
+                           real5d_temp(:,:,:,:,i:i+ownedSize-1) = field_5dreal_ptr % array(:,:,:,:,1:ownedSize)
+                        end if
                      end if
                      i = i + ownedSize
                      if ( .not. stream % blockWrite ) then
