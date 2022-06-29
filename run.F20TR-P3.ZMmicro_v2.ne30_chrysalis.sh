@@ -28,13 +28,13 @@ readonly PROJECT="e3sm"
 readonly COMPSET="F20TR-P3"
 readonly sstplus4K=false                     # true if to run plus4k experiment, otherwise false
 readonly RESOLUTION="ne30pg2_EC30to60E2r2"      # or ne120pg2_r0125_oRRS18to6v3
-readonly DESCRIPTOR="F20TR-P3.ZMmicro.ne30pg2"      # This will be the main part of the casename
+readonly DESCRIPTOR="F20TR-P3.Baseline4B.ne30pg2"      # This will be the main part of the casename
 
 readonly CASE_GROUP="NGD.Integration"
 
 # Code and compilation
-readonly CHECKOUT="20220315"                       # Provide a timestamp for distinction
-readonly BRANCH="crterai/atm/E3SMv2_P31_ZMmicro"   # v2 release tag + P3 with updates
+readonly CHECKOUT="20220629"                       # Provide a timestamp for distinction
+readonly BRANCH="crterai/eam/v3_convection_candidate"   # v2 release tag + P3 with updates
 readonly DEBUG_COMPILE=false
 
 # Run options
@@ -156,7 +156,14 @@ user_nl() {
 cat << EOF >> user_nl_eam
  cosp_lite = .true.
 
+ ! Turn on convective microphysics
  zmconv_microp = .true.
+ ! Run with dynamic adjustment ZM closure
+ zmconv_clos_dyn_adj=.true.
+
+ ! Tunings
+ zmconv_ke=2.5e-6
+ p3_wbf_coeff=1.0
 
  avgflag_pertape = 'A','A','A','A','I'
  nhtfrq = 0,-24,-6,-3,-3
