@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
-#include "diagnostics/potential_temperature.hpp"
+#include "diagnostics/exner.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
 #include "physics/share/physics_constants.hpp"
@@ -75,19 +75,18 @@ void run(std::mt19937_64& engine)
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf_pres(0.0,PC::P0),
-       pdf_temp(200.0,400.0);
+  RPDF pdf_pres(0.0,PC::P0);
 
   // A time stamp
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
   // Construct the Diagnostic
   ekat::ParameterList params;
-  params.set<std::string>("Diagnostic Name", "Potential Temperature");
+  params.set<std::string>("Diagnostic Name", "Exner");
   params.set<std::string>("Grid", "Point Grid");
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
-  auto diag = diag_factory.create("PotentialTemperature",comm,params);
+  auto diag = diag_factory.create("Exner",comm,params);
   diag->set_grids(gm);
 
 
@@ -112,35 +111,30 @@ void run(std::mt19937_64& engine)
   {
     // Construct random data to use for test
     // Get views of input data and set to random values
-    const auto& T_mid_f = input_fields["T_mid"];
-    const auto& T_mid_v = T_mid_f.get_view<Pack**>();
     const auto& p_mid_f = input_fields["p_mid"];
     const auto& p_mid_v = p_mid_f.get_view<Pack**>();
     for (int icol=0;icol<ncols;icol++) {
-      const auto& T_sub = ekat::subview(T_mid_v,icol);
       const auto& p_sub = ekat::subview(p_mid_v,icol);
-      ekat::genRandArray(dview_as_real(temperature), engine, pdf_temp);
       ekat::genRandArray(dview_as_real(pressure),    engine, pdf_pres);
-      Kokkos::deep_copy(T_sub,temperature);
       Kokkos::deep_copy(p_sub,pressure);
     }
 
     // Run diagnostic and compare with manual calculation
     diag->run();
     const auto& diag_out = diag->get_diagnostic();
-    Field theta_f = diag_out.clone();
-    theta_f.deep_copy<double,Host>(0.0);
-    theta_f.sync_to_dev();
-    const auto& theta_v = theta_f.get_view<Pack**>();
+    Field exner_f = diag_out.clone();
+    exner_f.deep_copy<double,Host>(0.0);
+    exner_f.sync_to_dev();
+    const auto& exner_v = exner_f.get_view<Pack**>();
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& jpack) {
-        theta_v(icol,jpack) = PF::calculate_theta_from_T(T_mid_v(icol,jpack),p_mid_v(icol,jpack));
+        exner_v(icol,jpack) = PF::exner_function(p_mid_v(icol,jpack));
       });
       team.team_barrier();
     });
     Kokkos::fence();
-    REQUIRE(views_are_equal(diag_out,theta_f));
+    REQUIRE(views_are_equal(diag_out,exner_f));
   }
  
   // Finalize the diagnostic
@@ -148,7 +142,7 @@ void run(std::mt19937_64& engine)
 
 } // run()
 
-TEST_CASE("potential_temp_test", "potential_temp_test]"){
+TEST_CASE("exner_test", "exner_test]"){
   // Run tests for both Real and Pack, and for (potentially) different pack sizes
   using scream::Real;
   using Device = scream::DefaultDevice;
