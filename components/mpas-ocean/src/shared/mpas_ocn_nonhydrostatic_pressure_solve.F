@@ -55,9 +55,7 @@ module ocn_compute_nonhydrostatic_pressure
 
   public :: ocn_nonhydrostatic_pressure_tend, &
             ocn_nonhydrostatic_solver_init,   &
-            ocn_nonhydrostatic_solver_fill_matvec, &
             ocn_nonhydrostatic_solver_finalize, &
-            ocn_nonhydrostatic_pressure_solve, &
             ocn_nonhydrostatic_pressure_update_velocity
 
   !--------------------------------------------------------------------
@@ -113,14 +111,6 @@ module ocn_compute_nonhydrostatic_pressure
     logical :: reuse_preconditioner 
 
     reuse_preconditioner = .false.
-
-    !call mpas_timer_start('NH solve - matrix fill',.false.)
-    !call ocn_nonhydrostatic_solver_fill_matVec(normalVelocityNew, &
-    !  vertVelocityNonhydroNew, layerThickness, layerThicknessEdge, mpi_comm, dt)
-
-    !call mpas_timer_stop('NH solve - matrix fill')
-
-    !call ocn_nonhydrostatic_pressure_solve(mpi_comm, reuse_preconditioner, nhPressureCorrection)
 
     call ocn_nonhydrostatic_solver_everything(normalVelocityNew, &
        vertVelocityNonhydroNew, layerThickness, layerThicknessEdge, mpi_comm, &
@@ -216,13 +206,10 @@ module ocn_compute_nonhydrostatic_pressure
     !$omp private(k)
     do iCell=1,nCells
        do k = 1,maxLevelCell(iCell)
-          !nonhydrostaticPressure(k,iCell) = 0.0_RKIND*nonhydrostaticPressureOld(k,iCell) + &
           nonhydrostaticPressure(k,iCell) = nonhydrostaticPressureOld(k,iCell) + &
                   nhPressureCorrection(k,iCell)
        end do 
     end do
-    !print*, 'nonhydrostaticPressure ', nonhydrostaticPressure(10,100)
-    !print*, 'nhPressureCorrection ', nhPressureCorrection(10,100)
     !$omp end do
     !$omp end parallel
 
@@ -236,7 +223,7 @@ module ocn_compute_nonhydrostatic_pressure
   !
   !> \brief   Create the matrix and right-hand-side and then solve the
   !>          linear system
-  !> \author  Sara Calandrini, Darren Engwirda
+  !> \author  Sara Calandrini, Darren Engwirda, Luke Van Roekel
   !> \date    November 2021
   !> \details
   !>  creates KSP solver context, gets preconditioner and solves
@@ -494,293 +481,6 @@ module ocn_compute_nonhydrostatic_pressure
 
   end subroutine ocn_nonhydrostatic_solver_everything
 
-  !--------------------------------------------------------------------
-  ! 
-  ! routine ocn_nonhydrostatic_pressure_solve_mat
-  !
-  !> \brief   
-  !> \author  Luke Van Roekel
-  !> \date    February 2021
-  !> \details
-  !>  creates KSP solver context, gets preconditioner and solves
-  !
-  !--------------------------------------------------------------------
-
-  subroutine ocn_nonhydrostatic_pressure_solve(mpi_comm, reuse_preconditioner, nhPressureCorrection)
-
-    integer, intent(in) :: mpi_comm
-    logical, intent(in) :: reuse_preconditioner
-    real(kind=RKIND),dimension(:,:), intent(out) :: nhPressureCorrection
-#ifdef USE_PETSC
-    PetscScalar :: x_array(m)
-    PetscOffset :: i_x
-    PetscInt :: itNum
-    Vec :: uu
-
-    integer :: vecSpot, iCell, k, reason
-
-    overlap=2
-#endif
-
-    call mpas_timer_start('NH solve - pressure solve total',.false.)
-
-#ifdef USE_PETSC
-    !Get version number as some function calls are dependent on that
-    call KSPCreate(mpi_comm, ksp, petsc_err)
-    if(petsc_err .ne. 0) then
-       call mpas_log_write("error: petsc create solver context failed, error code = $i", mpas_log_crit, &
-             intArgs=(/petsc_err/))
-    end if
-
-    if(reuse_preconditioner) then
-       call KSPSetReusePreconditioner(ksp, PETSC_TRUE, petsc_err)
-    else
-       call KSPSetReusePreconditioner(ksp, PETSC_FALSE, petsc_err)
-    end if
-
-    call KSPSetOperators(ksp,Amat,Amat,petsc_err)
-    if(petsc_err .ne. 0) then
-       call mpas_log_write("error: petsc set operaters failed, error code = $i", mpas_log_crit, &
-             intArgs=(/petsc_err/))
-    end if
-
-    call KSPSetType(ksp, config_nonhydrostatic_solver_type, petsc_err)
-    if(petsc_err .ne. 0) then
-       call mpas_log_write("error: petsc set type failed, error code = $i", mpas_log_crit, &
-             intArgs=(/petsc_err/))
-    end if
-
-    if(.not. reuse_preconditioner) then
-       call mpas_timer_start('NH solve - create preconditioner',.false.)
-       call KSPGetPC(ksp,pc,petsc_err)
-       if(petsc_err .ne. 0) then
-          call mpas_log_write("error: petsc getPC failed, error code = $i", mpas_log_crit, &
-             intArgs=(/petsc_err/))
-       end if
-
-       call PCSetType(pc,config_nonhydrostatic_preconditioner,petsc_err)
-       if(petsc_err .ne. 0) then
-          call mpas_log_write("error: petsc PCsetType failed, error code = $i", mpas_log_crit, &
-             intArgs=(/petsc_err/))
-       end if
-       call mpas_timer_stop('NH solve - create preconditioner')
-    end if
-
-    if(config_nonhydrostatic_preconditioner == 'asm') then
-      call mpas_timer_start('NH solve - create ASM preconditioner',.false.)
-      call PCASMSetOverlap(pc,overlap,petsc_err)
-      call KSPSetFromOptions(ksp,petsc_err)
-      call KSPSetUp(ksp,petsc_err)
-      call PCASMGetSubKSP(pc,nlocal,firstVal,PETSC_NULL_KSP,petsc_err)
-      allocate(subksp(nlocal))
-      call PCASMGetSubKSP(pc,nlocal,firstVal,subksp,petsc_err)
-
-      do i=1,nlocal
-         call KSPgetPC(subksp(i),subpc,petsc_err)
-         call PCSetType(subpc,PCILU,petsc_err)
-         call KSPSetType(subksp(i),KSPGMRES,petsc_err)
-         call KSPSetTolerances(subksp(i),config_petsc_rtol,config_petsc_atol,1.0E4,config_petsc_maxit,petsc_err)
-      end do
-      call mpas_timer_stop('NH solve - create ASM preconditioner')
-    else
-       call KSPSetTolerances(ksp,config_petsc_rtol,config_petsc_atol,1.0E4,config_petsc_maxit, petsc_err)
-    end if
-
-    call mpas_timer_start('NH solve - actual solve',.false.)
-    !now that things are set up, we solve the matrix equation
-    call KSPSolve(ksp, b, x, petsc_err)
-    if(petsc_err .ne. 0) then
-       call mpas_log_write("error: petsc solve failed, error code = $i", mpas_log_crit, &
-          intArgs=(/petsc_err/))
-    end if
-
-    !check convergence of solution
-    call KSPGetConvergedReason(ksp,reason,petsc_err)
-    if(reason < 0) then
-      print *, reason
-       call mpas_log_write("error: petsc failed to converge", mpas_log_crit)
-    end if
-
-    call KSPGetIterationNumber(ksp, itNum, petsc_err)
-    print *, 'iteration count = ',itNum
-    call mpas_timer_stop('NH solve - actual solve')
-    !Set next initial guess at solution equal to current solution
-    call KSPSetInitialGuessNonzero(ksp,PETSC_TRUE,petsc_err)
-    if(petsc_err < 0) then
-       call mpas_log_write("error: petsc set next initial guess failed, error code = $i", mpas_log_crit, &
-          intArgs=(/petsc_err/))
-    end if
-
-    call mpas_timer_start('NH solve - unpack solution',.false.)
-    !now update the nonhydrostaticPressure array unpack into k,iCell
-    call VecScatterBegin(scatter, x, local_x, INSERT_VALUES, SCATTER_FORWARD, petsc_err)
-    call VecScatterEnd(scatter, x, local_x, INSERT_VALUES, SCATTER_FORWARD, petsc_err)
-    call VecGetArrayReadF90(local_x, values, petsc_err)
-
-    !$omp parallel
-    !$omp do schedule(runtime) private(k,vecSpot)
-    do iCell=1,nCellsOwned
-       do k=1,maxLevelCell(iCell)
-         vecSpot = (iCell-1)*nVertLevels + k
-         nhPressureCorrection(k,iCell) = values(vecSpot)
-       end do
-    end do
-    !$omp end do
-    !$omp end parallel
-
-    call mpas_timer_stop('NH solve - unpack solution')
-    if(config_nonhydrostatic_preconditioner == 'asm') deallocate(subksp)
-#endif
-    call mpas_timer_stop('NH solve - pressure solve total')
-
-  end subroutine ocn_nonhydrostatic_pressure_solve
-
-  !--------------------------------------------------------------------
-  ! 
-  ! routine ocn_nonhydrostatic_pressure_fill_matvec 
-  !
-  !> \brief   fills matrix and vector for pressure solve 
-  !> \author  Luke Van Roekel
-  !> \date    February 2021
-  !> \details
-  !>  Fills matrix on LHS for pressure solve and the RHS vector
-  !
-  !--------------------------------------------------------------------
-
-  subroutine ocn_nonhydrostatic_solver_fill_matVec(normalVelocityNew, &
-      vertVelocityNonhydroNew, layerThickness, layerThicknessEdge, mpi_comm, dt)
-
-    real(kind=RKIND),dimension(:,:), intent(in) :: normalVelocityNew, vertVelocityNonhydroNew
-    
-    real(kind=RKIND),dimension(:,:), intent(in) :: layerThickness, layerThicknessEdge
-
-    real(kind=RKIND), intent(in) :: dt
-
-    integer, intent(in) :: mpi_comm
-
-  !--------------------------------------------------------------------
-  !
-  ! subroutine variables
-  !
-  !--------------------------------------------------------------------
-
-   integer :: jj,cell1, cell2, neighborInd, j, iEdge, iCell, k, matIndex
-#ifdef USE_PETSC
-   PetscScalar :: insertVal, rhsSum
-   PetscInt :: i
-#endif
-   real :: termSign, edge_tmp
-
-   !Make sure all entries are zero so there is no unintended overwrite
-#ifdef USE_PETSC
-   call MatZeroEntries(Amat, petsc_err)
-   do iCell = 1,nCellsOwned
-     !add the points with iCell and k, k+1, k-1i
-     !at the top of the domain and bottom (maxLevelCell+1, fill things in with zeros below
-     ! should only contain an icell entry to get derivatives right. better BCs now
-     ! the conversion to matrix space is i = nVertLevels*(iCell-1) + nVertLevelsi
-     do j=1,nEdgesOnCell(iCell)
-        iEdge = edgesOnCell(j, iCell)
-        cell1 = cellsOnEdge(1,iEdge)
-        cell2 = cellsOnEdge(2,iEdge)
-
-        edge_tmp = dvEdge(iEdge)*dt*edgeSignOnCell(j,iCell)/(dcEdge(iEdge))
-
-        if(cell1 == iCell) then
-          neighborInd = cell2
-        else
-          neighborInd = cell1
-        end if
-
-        do k=1,maxLevelEdgeTop(iEdge)
-          row = (indexToCellId(iCell)-1)*nVertLevels + k - 1
-          col = (indexToCellId(cell2)-1)*nVertLevels + k - 1
-          insertVal = -edge_tmp*layerThicknessEdge(k,iEdge)
-          call MatSetValues(Amat, 1, row, 1, col, insertVal, ADD_VALUES, petsc_err)
-
-          col = (indexToCellId(cell1)-1)*nVertLevels + k - 1
-          insertVal = edge_tmp*layerThicknessEdge(k,iEdge)
-          call MatSetValues(Amat, 1, row, 1, col, insertVal, ADD_VALUES, petsc_err)
-        end do
-     end do !End loop over edges
-     ! So now do the iCell, k (and k-1 k + 1)
-     k = 1
-     col = (indexToCellId(iCell) - 1)*nVertLevels + k - 1
-     row = (indexToCellId(iCell) - 1)*nVertLevels + k - 1
-     ! k value
-     insertVal = -dt*areaCell(iCell)*(1.0_RKIND / (0.5_RKIND*(layerThickness(k,iCell) + layerThickness(k+1,iCell) + 1.0E-15_RKIND)) + &
-                    surfaceBoundaryConditionTop*2.0_RKIND / (layerThickness(k,iCell) + 1.0E-15_RKIND))
-     call MatSetValues(Amat, 1, row, 1, col, insertVal, ADD_VALUES, petsc_err)
-
-     ! k + 1 value
-     col = (indexToCellId(iCell) - 1)*nVertLevels + (k+1) - 1
-     insertVal = dt*areaCell(iCell) / (0.5_RKIND*(layerThickness(k,iCell) + layerThickness(k+1,iCell) + 1.0E-15_RKIND))
-     call MatSetValues(Amat, 1, row, 1, col, insertVal, ADD_VALUES, petsc_err)
-
-     do k=2,maxLevelCell(iCell)-1
-        col = (indexToCellId(iCell) - 1)*nVertLevels + (k-1) - 1
-        row = (indexToCellId(iCell) - 1)*nVertLevels + k - 1
-        insertVal = dt*areaCell(iCell) / (0.5_RKIND*(layerThickness(k-1,iCell) + layerThickness(k,iCell)) + 1.0E-15_RKIND)
-        call MatSetValues(Amat, 1, row, 1, col, insertVal, ADD_VALUES, petsc_err)
-
-        ! k value
-        col = (indexToCellId(iCell) - 1)*nVertLevels + k - 1
-        insertVal = -dt*areaCell(iCell)*(1.0/(0.5_RKIND*(layerThickness(k-1,iCell) + layerThickness(k,iCell) + 1.0E-15_RKIND)) + &
-                         1.0/(0.5_RKIND*(layerThickness(k,iCell) + layerThickness(k+1,iCell) + 1.0E-15_RKIND)))
-        call MatSetValues(Amat, 1, row, 1, col, insertVal, ADD_VALUES, petsc_err)
-
-        ! k+1 value
-        col = (indexToCellId(iCell) - 1)*nVertLevels + (k+1) - 1
-        insertVal = dt*areaCell(iCell)/(0.5_RKIND*(layerThickness(k,iCell) + layerThickness(k+1,iCell) + 1.0E-15_RKIND))
-        call MatSetValues(Amat, 1, row, 1, col, insertVal, ADD_VALUES, petsc_err)
-     end do !k loop
-     k = maxLevelCell(iCell)
-     !k-1 value
-     col = (indexToCellId(iCell) - 1)*nVertLevels + (k-1) - 1
-     row = (indexToCellId(iCell) - 1)*nVertLevels + k - 1
-     insertVal = dt*areaCell(iCell) / (0.5_RKIND*(layerThickness(k-1,iCell) + layerThickness(k,iCell)) + 1.0E-15_RKIND)
-     call MatSetValues(Amat, 1, row, 1, col, insertVal, ADD_VALUES, petsc_err)
-
-     !k value
-     col = (indexToCellId(iCell) - 1)*nVertLevels + k - 1 
-     insertVal = -dt*areaCell(iCell)*(1.0/(0.5_RKIND*(layerThickness(k-1,iCell) + layerThickness(k,iCell) + 1.0E-15_RKIND)) + &
-                  surfaceBoundaryConditionBottom*2.0_RKIND / (layerThickness(k,iCell) + 1.0E-15_RKIND))
-     call MatSetValues(Amat, 1, row, 1, col, insertVal, ADD_VALUES, petsc_err)
-  end do !iCell loop
-  call MatAssemblyBegin(Amat,MAT_FINAL_ASSEMBLY,petsc_err)
-  call MatAssemblyEnd(Amat,MAT_FINAL_ASSEMBLY,petsc_err)
-  ! next fill RHS vector 'b'
-  call vecZeroEntries(b,petsc_err)
-  do iCell=1,nCellsOwned
-     do k=1,maxLevelCell(iCell)
-        insertVal = areaCell(iCell)*(vertVelocityNonhydroNew(k,iCell) - vertVelocityNonhydroNew(k+1,iCell))
-        row = (indexToCellId(iCell) - 1)*nVertLevels + k - 1
-        call VecSetValues(b, 1, row, insertVal, ADD_VALUES, petsc_err)
-     enddo
-  enddo
-  do iCell=1,nCellsOwned
-        do j=1,nEdgesOnCell(iCell)
-           iEdge = edgesOnCell(j,iCell)
-
-           do k=1,maxLevelEdgeTop(iEdge)
-              insertVal = -layerThicknessEdge(k,iEdge)*dvEdge(iEdge)*edgeSignOnCell(j,iCell)* &
-                          normalVelocityNew(k,iEdge)
-              row = (indexToCellId(iCell) - 1)*nVertLevels + k - 1
-              call VecSetValues(b, 1, row, insertVal, ADD_VALUES, petsc_err)
-           end do
-        end do
-  end do
-  call VecAssemblyBegin(b,petsc_err)
-  call VecAssemblyEnd(b,petsc_err)
-
-  if (config_nonhydrostatic_remove_rhs_mean) then
-     call VecSum(b, rhsSum, petsc_err)
-     rhsSum = rhsSum / globalM
-     call VecAXPY(b, rhsSum, negOneVec, petsc_err)
-  end if
-#endif
-
-  end subroutine ocn_nonhydrostatic_solver_fill_matVec
 
   !--------------------------------------------------------------------
   ! IIIIII
