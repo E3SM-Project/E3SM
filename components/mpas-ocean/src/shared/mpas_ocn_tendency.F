@@ -553,8 +553,8 @@ end subroutine ocn_tend_vvel!}}}
       call ocn_vel_hadv_coriolis_tend(normRelVortEdge, &
                                       normPlanetVortEdge, &
                                       layerThickEdgeFlux, normalVelocity, &
-                                      kineticEnergyCell, vertVelocityNonhydro, &
-                                      tendVel, err)
+                                      kineticEnergyCell, tendVel, err)
+
       do iEdge = 1,nEdgesOwned
          do k=1,nVertLevels
             velocityCoriolisTend(k,iEdge) = tendVel(k,iEdge) - velocityCoriolisTend(k,iEdge)
