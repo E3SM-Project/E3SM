@@ -988,10 +988,50 @@ void HommeDynamics::restart_homme_state () {
 }
 
 void HommeDynamics::initialize_homme_state () {
+  // Some types
+  using KT = KokkosTypes<DefaultDevice>;
+  using Pack = ekat::Pack<Real,HOMMEXX_PACK_SIZE>;
+  using ColOps = ColumnOps<DefaultDevice,Real>;
+  using PF = PhysicsFunctions<DefaultDevice>;
+  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  using EOS = Homme::EquationOfState;
+  using WS = ekat::WorkspaceManager<Pack,DefaultDevice>;
+
   const auto& rgn = m_ref_grid->name();
 
+  // Some Homme structures
   const auto& c = Homme::Context::singleton();
   auto& params = c.get<Homme::SimulationParams>();
+  const auto& hvcoord = c.get<Homme::HybridVCoord>();
+
+  // Some extents
+  const auto ncols = m_ref_grid->get_num_local_dofs();
+  const auto nlevs = m_ref_grid->get_num_vertical_levels();
+  constexpr int NGP  = HOMMEXX_NP;
+  const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
+  const int qsize = params.qsize;
+  const int npacks_mid = ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs);
+  const int npacks_int = ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs+1);
+
+  // Bootstrap dp on phys grid, and let the ic remapper transfer dp on dyn grid
+  // NOTE: HybridVCoord already stores hyai and hybi deltas as packed views,
+  //       but it used KokkosKernels packs, which are incompatible with ekat::Pack.
+  //       If Homme switched to ekat::Pack, you could do the loop below with packs.
+  const auto ps0 = hvcoord.ps0;
+  const auto dp_ref = get_field_out("pseudo_density").get_view<Real**>();
+  const auto ps_ref = get_field_in("ps",rgn).get_view<const Real*>();
+  const auto hyai = hvcoord.hybrid_ai;
+  const auto hybi = hvcoord.hybrid_bi;
+  const auto policy_dp = ESU::get_default_team_policy(ncols, nlevs);
+  Kokkos::parallel_for(policy_dp, KOKKOS_LAMBDA (const KT::MemberType& team) {
+    const int icol = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs),
+                        [&](const int ilev) {
+       dp_ref(icol,ilev) = (hyai(ilev+1)-hyai(ilev))*ps0
+                         + (hybi(ilev+1)-hybi(ilev))*ps_ref(icol);
+    });
+    team.team_barrier();
+  });
 
   // Import IC from ref grid to dyn grid
   // NOTE: if/when PD remapper supports remapping directly to/from subfields,
@@ -999,7 +1039,7 @@ void HommeDynamics::initialize_homme_state () {
   //       the helper fields (which have NTL time slices).
   m_ic_remapper->registration_begins();
   m_ic_remapper->register_field(get_field_in("horiz_winds",rgn),m_helper_fields.at("v_dyn"));
-  //m_ic_remapper->register_field(get_field_in("pseudo_density",rgn),m_helper_fields.at("dp3d_dyn"));
+  m_ic_remapper->register_field(get_field_out("pseudo_density",rgn),m_helper_fields.at("dp3d_dyn"));
   m_ic_remapper->register_field(get_field_in("ps",rgn),m_helper_fields.at("ps_dyn"));
   m_ic_remapper->register_field(get_field_in("phis",rgn),m_helper_fields.at("phis_dyn"));
   m_ic_remapper->register_field(get_field_in("T_mid",rgn),m_helper_fields.at("vtheta_dp_dyn"));
@@ -1011,27 +1051,8 @@ void HommeDynamics::initialize_homme_state () {
   // printing the state, so we need to make sure it doesn't contain NaNs
   m_helper_fields.at("w_int_dyn").deep_copy(0.0);
 
-  // Some types
-  using KT = KokkosTypes<DefaultDevice>;
-  using Pack = ekat::Pack<Real,HOMMEXX_PACK_SIZE>;
-  using ColOps = ColumnOps<DefaultDevice,Real>;
-  using PF = PhysicsFunctions<DefaultDevice>;
-  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
-  using EOS = Homme::EquationOfState;
-  using WS = ekat::WorkspaceManager<Pack,DefaultDevice>;
-
-  // Extents
-  constexpr int NGP  = HOMMEXX_NP;
-  const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
-  const int nlevs = m_dyn_grid->get_num_vertical_levels();
-  const int qsize = params.qsize;
-  const int npacks_mid = ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs);
-  const int npacks_int = ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs+1);
-
   // Homme states
-  const auto ps_view  = m_helper_fields.at("ps_dyn").get_view<const Real****>();
   const auto dp_view  = m_helper_fields.at("dp3d_dyn").get_view<Pack*****>();
-  const auto dp_view_real  = m_helper_fields.at("dp3d_dyn").get_view<Real*****>();
   const auto vth_view = m_helper_fields.at("vtheta_dp_dyn").get_view<Pack*****>();
   const auto Q_view   = m_helper_fields.at("Q_dyn").get_view<Pack*****>();
 
@@ -1039,28 +1060,9 @@ void HommeDynamics::initialize_homme_state () {
   const int n0  = c.get<Homme::TimeLevel>().n0;
   const int n0_qdp  = c.get<Homme::TimeLevel>().n0_qdp;
 
-  // ps0 is the TOM boundary condition when we compute p_int(z)=integral_top^z dp(s)ds
-  const auto& hvcoord = c.get<Homme::HybridVCoord>();
-  const auto ps0 = hvcoord.ps0 * hvcoord.hybrid_ai0;
-
   const auto phis_dyn_view = m_helper_fields.at("phis_dyn").get_view<const Real***>();
   const auto phi_int_view = m_helper_fields.at("phi_int_dyn").get_view<Pack*****>();
-
-  // Initialize dp
-  {
-  const auto policy = ESU::get_default_team_policy(nelem*NGP*NGP, nlevs);
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
-    const int ie  =  team.league_rank() / (NGP*NGP);
-    const int igp = (team.league_rank() / NGP) % NGP;
-    const int jgp =  team.league_rank() % NGP;
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs), [&](const int ilev) {
-       dp_view_real(ie,n0,igp,jgp,ilev) = ( hvcoord.hybrid_ai(ilev+1) - hvcoord.hybrid_ai(ilev) ) * hvcoord.ps0 +
-                                          ( hvcoord.hybrid_bi(ilev+1) - hvcoord.hybrid_bi(ilev) ) * ps_view(ie,n0,igp,jgp);
-    });
-    team.team_barrier();
-  });
-  }
-
+  const auto hyai0 = hvcoord.hybrid_ai0;
   // Need two temporaries, for pi_mid and pi_int
   const auto policy = ESU::get_thread_range_parallel_scan_team_policy(nelem*NGP*NGP,npacks_mid);
   WS wsm(npacks_int,2,policy);
@@ -1077,7 +1079,7 @@ void HommeDynamics::initialize_homme_state () {
     ekat::Unmanaged<WS::view_1d<Pack> > p_int, p_mid;
     ws.template take_many_and_reset<2>({"p_int", "p_mid"}, {&p_int, &p_mid});
 
-    ColOps::column_scan<true>(team,nlevs,dp,p_int,ps0);
+    ColOps::column_scan<true>(team,nlevs,dp,p_int,ps0*hyai0);
     team.team_barrier();
     ColOps::compute_midpoint_values(team,nlevs,p_int,p_mid);
     team.team_barrier();
@@ -1120,7 +1122,6 @@ void HommeDynamics::initialize_homme_state () {
   //       have different number of levels. For u,v, we could, but
   //       we cannot (11/2021) subview 2 slices of FM together, so
   //       we'd need to also subview horiz_winds. Since we
-  const auto ncols = m_ref_grid->get_num_local_dofs();
   if (params.ftype==Homme::ForcingAlg::FORCING_2) {
     m_helper_fields.at("FQ_ref").deep_copy(*get_group_out("Q",rgn).m_bundle);
   }
@@ -1233,15 +1234,7 @@ void HommeDynamics::init_homme_vcoord () {
   vcoord_reader.finalize();
   
   // Pass host views data to hvcoord init function
-  // const auto& c = Homme::Context().singleton();
-  // auto& hvcoord = c.get<Homme::HybridVCoord>();
   const auto ps0 = Homme::PhysicalConstants::p0;
-  // hvcoord.init (ps0,
-  //               host_views["hyam"].data(),
-  //               host_views["hyai"].data(),
-  //               host_views["hybm"].data(),
-  //               host_views["hybi"].data()
-  // );
 
   // Set vcoords in f90
   prim_set_hvcoords_f90 (ps0,
