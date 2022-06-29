@@ -1,4 +1,4 @@
-#!/bin/bash -fe
+#!/bin/bash
 
 # E3SM Water Cycle v2 run_e3sm script template.
 #
@@ -8,6 +8,7 @@
 # http://kfirlavi.herokuapp.com/blog/2012/11/14/defensive-bash-programming
 
 # TO DO:
+# - branch, hybrid restart
 # - custom pelayout
 
 main() {
@@ -18,43 +19,47 @@ main() {
 # --- Configuration flags ----
 
 # Machine and project
-readonly MACHINE=chrysalis
+readonly MACHINE=cori-knl
 readonly PROJECT="e3sm"
 
 # Simulation
-readonly COMPSET="WCYCL1850-P3"
-readonly RESOLUTION="ne30pg2_EC30to60E2r2"
-readonly CASE_NAME="Baseline4B.LR.piControl.attempt2"
-#readonly CASE_GROUP="v2.LR"
+# This is the first simulation of two for estimating aerorol radiative effect
+
+readonly COMPSET="F2010-P3"
+readonly sstplus4K=false                     # true if to run plus4k experiment, otherwise false
+readonly RESOLUTION="ne30pg2_EC30to60E2r2"      # or ne120pg2_r0125_oRRS18to6v3
+readonly DESCRIPTOR="F2010-P3.ZMmicro.ZMMPnml.ne30pg2"      # This will be the main part of the casename
+
+readonly CASE_GROUP="NGD.Integration"
 
 # Code and compilation
-readonly CHECKOUT="20220629"
-readonly BRANCH="crterai/eam/v3_convection_candidate" # master as of 20210702
-readonly CHERRY=( ) # PR4349
+readonly CHECKOUT="20220401"                       # Provide a timestamp for distinction
+readonly BRANCH="crterai/atm/add_zmmp_namelists"   # v2 release tag + P3 with updates
 readonly DEBUG_COMPILE=false
 
 # Run options
-readonly MODEL_START_TYPE="hybrid"  # 'initial', 'continue', 'branch', 'hybrid'
-readonly START_DATE="0001-01-01"
+readonly MODEL_START_TYPE="initial"  # initial, continue
+readonly START_DATE="2009-01-01"
 
-# Additional options for 'branch' and 'hybrid'
-readonly GET_REFCASE=TRUE
-readonly RUN_REFDIR="/lcrc/group/e3sm/ac.golaz/E3SMv2/v2.LR.piControl/init"
-readonly RUN_REFCASE="20210625.v2rc3c-GWD.piControl.ne30pg2_EC30to60E2r2.chrysalis"
-readonly RUN_REFDATE="1001-01-01"   # same as MODEL_START_DATE for 'branch', can be different for 'hybrid'
+# Case name
+#readonly CASE_NAME=${CHECKOUT}.${DESCRIPTOR}.${MACHINE}
+readonly job_name="20220401"
+readonly CASE_NAME=${job_name}.${DESCRIPTOR}
 
 # Set paths
-readonly CODE_ROOT="/home/ac.terai/E3SM/code/${CHECKOUT}"
-readonly CASE_ROOT="/lcrc/group/e3sm/ac.terai/E3SMv3integration/${CASE_NAME}"
+#readonly CODE_ROOT="/global/homes/t/terai/E3SM/master"               # where it contains 'components','cime', etc.
+readonly CASE_ROOT="/global/cscratch1/sd/terai/E3SM_simulations/${CASE_NAME}"  
+readonly CODE_ROOT="/global/cscratch1/sd/terai/E3SM_code/E3SMv2_P31_ZMmicro_ZMmicronml"               # where it contains 'components','cime', etc.
+
 
 # Sub-directories
 readonly CASE_BUILD_DIR=${CASE_ROOT}/build
 readonly CASE_ARCHIVE_DIR=${CASE_ROOT}/archive
 
 # Define type of run
-#  short tests: 'XS_2x5_ndays', 'XS_1x10_ndays', 'S_1x10_ndays', 
-#               'M_1x10_ndays', 'M2_1x10_ndays', 'M80_1x10_ndays', 'L_1x10_ndays'
+#  short tests: 'S_2x5_ndays', 'M_1x10_ndays', 'M80_1x10_ndays'
 #  or 'production' for full simulation
+#readonly run='M_1x2_nmonths'
 readonly run='production'
 if [ "${run}" != "production" ]; then
 
@@ -70,10 +75,13 @@ if [ "${run}" != "production" ]; then
   readonly PELAYOUT=${layout}
   readonly WALLTIME="2:00:00"
   readonly STOP_OPTION=${units}
+  echo STOP_OPTION=${units}
   readonly STOP_N=${length}
+  echo STOP_N=${length}
   readonly REST_OPTION=${STOP_OPTION}
   readonly REST_N=${STOP_N}
   readonly RESUBMIT=${resubmit}
+  echo RESUBMIT=${resubmit}
   readonly DO_SHORT_TERM_ARCHIVING=false
 
 else
@@ -81,29 +89,32 @@ else
   # Production simulation
   readonly CASE_SCRIPTS_DIR=${CASE_ROOT}/case_scripts
   readonly CASE_RUN_DIR=${CASE_ROOT}/run
-  readonly PELAYOUT="L"
-  readonly WALLTIME="01:00:00"
-  readonly STOP_OPTION="nyears"
-  readonly STOP_N="1"
+  readonly PELAYOUT="M"
+  readonly WALLTIME="00:30:00"
+  readonly STOP_OPTION="ndays"
+  readonly STOP_N="5"
+#  readonly WALLTIME="00:30:00"
+#  readonly STOP_OPTION="nmonths"
+#  readonly STOP_N="1"
   readonly REST_OPTION="nyears"
-  readonly REST_N="1"
+  readonly REST_N="5"
   readonly RESUBMIT="0"
   readonly DO_SHORT_TERM_ARCHIVING=false
 fi
 
 # Coupler history 
-readonly HIST_OPTION="nyears"
-readonly HIST_N="5"
+readonly HIST_OPTION="nmonths"
+readonly HIST_N="1"
 
 # Leave empty (unless you understand what it does)
 readonly OLD_EXECUTABLE=""
 
 # --- Toggle flags for what to do ----
-do_fetch_code=false
+do_fetch_code=true
 do_create_newcase=true
 do_case_setup=true
 do_case_build=true
-do_case_submit=false
+do_case_submit=true
 
 # --- Now, do the work ---
 
@@ -143,48 +154,44 @@ echo $'\n----- All done -----\n'
 user_nl() {
 
 cat << EOF >> user_nl_eam
+ cosp_lite = .true.
 
- ! Turn on convective microphysics
  zmconv_microp = .true.
- ! Run with dynamic adjustment ZM closure
- zmconv_clos_dyn_adj=.true.
 
- ! Tunings
- zmconv_ke=2.5e-6
- p3_wbf_coeff=1.0
+ avgflag_pertape = 'A','A','A','A','I'
+ nhtfrq = 0,-24,-6,-1,-3
 
+ fincl1 = 'TVQ','TUQ','U200','U850'
+ fincl2 = 'PRECC','PRECT','U200','V200','TMQ','FLUT','U850','V850' ! h1 daily
+ fincl3 = 'OMEGA500','PRECT','U200','U850','FLUT' !h2 6-hourly
+ fincl4 = 'PRECT','TMQ' ! h3 hourly
 
- nhtfrq =   0,-24,-6,-6,-3,-24,0
- mfilt  = 1,30,120,120,240,30,1
- avgflag_pertape = 'A','A','I','A','A','A','I'
- fexcl1 = 'CFAD_SR532_CAL', 'LINOZ_DO3', 'LINOZ_DO3_PSC', 'LINOZ_O3CLIM', 'LINOZ_O3COL', 'LINOZ_SSO3', 'hstobie_linoz'
- fincl1 = 'extinct_sw_inp','extinct_lw_bnd7','extinct_lw_inp','CLD_CAL', 'TREFMNAV', 'TREFMXAV'
- fincl2 = 'FLUT','PRECT','U200','V200','U850','V850','Z500','OMEGA500','UBOT','VBOT','TREFHT','TREFHTMN:M','TREFHTMX:X','QREFHT','TS','PS','TMQ','TUQ','TVQ','TOZ', 'FLDS', 'FLNS', 'FSDS', 'FSNS', 'SHFLX', 'LHFLX', 'TGCLDCWP', 'TGCLDIWP', 'TGCLDLWP', 'CLDTOT', 'T250', 'T200', 'T150', 'T100', 'T050', 'T025', 'T010', 'T005', 'T002', 'T001', 'TTOP', 'U250', 'U150', 'U100', 'U050', 'U025', 'U010', 'U005', 'U002', 'U001', 'UTOP', 'FSNT', 'FLNT'
- fincl3 = 'PSL','T200','T500','U850','V850','UBOT','VBOT','TREFHT', 'Z700', 'TBOT:M'
- fincl4 = 'FLUT','U200','U850','PRECT','OMEGA500'
- fincl5 = 'PRECT','PRECC','TUQ','TVQ','QFLX','SHFLX','U90M','V90M'
- fincl6 = 'CLDTOT_ISCCP','MEANCLDALB_ISCCP','MEANTAU_ISCCP','MEANPTOP_ISCCP','MEANTB_ISCCP','CLDTOT_CAL','CLDTOT_CAL_LIQ','CLDTOT_CAL_ICE','CLDTOT_CAL_UN','CLDHGH_CAL','CLDHGH_CAL_LIQ','CLDHGH_CAL_ICE','CLDHGH_CAL_UN','CLDMED_CAL','CLDMED_CAL_LIQ','CLDMED_CAL_ICE','CLDMED_CAL_UN','CLDLOW_CAL','CLDLOW_CAL_LIQ','CLDLOW_CAL_ICE','CLDLOW_CAL_UN'
- fincl7 = 'O3', 'PS', 'TROP_P'
-! Additional retuning
- clubb_tk1 = 268.15D0
- gw_convect_hcf = 10.0
+! Below fto save fields over ARM sites for ARM_diags.
+! When ZM scheme not in use, remove ZMFLXPRC and ZMFLXSNW
+
+ fincl5 = 'PS', 'Q', 'T', 'Z3', 'CLOUD', 'CONCLD', 'CLDICE', 'CLDLIQ', 'FREQR', 'REI', 'REL', 'PRECT', 'TMQ', 'PRECC', 'TREFHT', 'QREFHT', 'OMEGA','CLDTOT', 'LHFLX', 'SHFLX', 'FLDS', 'FSDS', 'FLNS', 'FSNS', 'FLNSC', 'FSDSC', 'FSNSC', 'AODVIS', 'AODABS', 'LS_FLXPRC', 'LS_FLXSNW', 'LS_REFFRAIN', 'ZMFLXPRC', 'ZMFLXSNW'
+
+ fincl5lonlat='262.5e_36.6n','204.6e_71.3n','147.4e_2.0s','166.9e_0.5s','130.9e_12.4s','331.97e_39.09n'
+
+ mfilt = 1,30,120,720,240
  
+ history_budget=.true.
+ history_aerosol=.true.
+
+ fexcl1='P3_mtend_NUMLIQ','P3_mtend_NUMRAIN','P3_mtend_Q','P3_mtend_TH','P3_nc2ni_immers_frz_tend',
+ 'P3_nc2nr_autoconv_tend', 'P3_nc_accret_tend','P3_nc_collect_tend','P3_nc_nuceat_tend','P3_nc_selfcollect_tend',
+ 'P3_ncautr','P3_ncshdc', 'P3_ni2nr_melt_tend','P3_ni_nucleat_tend','P3_ni_selfcollect_tend','P3_ni_sublim_tend',
+ 'P3_nr2ni_immers_frz_tend', 'P3_nr_collect_tend','P3_nr_evap_tend','P3_nr_ice_shed_tend','P3_nr_selfcollect_tend',
+ 'P3_qc2qi_hetero_frz_tend', 'P3_qc2qr_accret_tend','P3_qc2qr_autoconv_tend','P3_qc2qr_ice_shed_tend','P3_qccol','P3_qccon','P3_qcevp',
+ 'P3_qcnuc','P3_qi2qr_melt_tend','P3_qi2qv_sublim_tend','P3_qidep','P3_qinuc','P3_qr2qi_immers_frz_tend',
+ 'P3_qr2qv_evap_tend','P3_qrcol','P3_qwgrth','P3_sed_CLDICE','P3_sed_CLDLIQ','P3_sed_CLDRAIN','P3_sed_NUMICE',
+ 'P3_sed_NUMLIQ','P3_sed_NUMRAIN'
 
 EOF
 
 cat << EOF >> user_nl_elm
- hist_dov2xy = .true.,.true.
- hist_fincl2 = 'H2OSNO', 'FSNO', 'QRUNOFF', 'QSNOMELT', 'FSNO_EFF', 'SNORDSL', 'SNOW', 'FSDS', 'FSR', 'FLDS', 'FIRE', 'FIRA'
- hist_mfilt = 1,365
- hist_nhtfrq = 0,-24
- hist_avgflag_pertape = 'A','A'
-EOF
 
-cat << EOF >> user_nl_mosart
- rtmhist_fincl2 = 'RIVER_DISCHARGE_OVER_LAND_LIQ'
- rtmhist_mfilt = 1,365
- rtmhist_ndens = 2
- rtmhist_nhtfrq = 0,-24
+
 EOF
 
 }
@@ -192,6 +199,36 @@ EOF
 patch_mpas_streams() {
 
 echo
+echo 'Modifying MPAS streams files' 
+pushd ../run
+
+# change steams.ocean file
+patch streams.ocean << EOF
+--- streams.ocean.00	2021-03-24 20:48:04.236324000 -0500
++++ streams.ocean	2021-03-24 20:54:34.145396766 -0500
+@@ -533,7 +533,7 @@
+ 
+ <stream name="timeSeriesStatsMonthlyOutput"
+         type="output"
+-        precision="single"
++        precision="double"
+         io_type="pnetcdf"
+         filename_template="20210305.v2beta3.piControl.ne30pg2_EC30to60E2r2.chrysalis.mpaso.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc"
+         filename_interval="00-01-00_00:00:00"
+@@ -595,6 +595,7 @@
+     <var name="longWaveHeatFluxDown"/>
+     <var name="seaIceHeatFlux"/>
+     <var name="shortWaveHeatFlux"/>
++    <var name="frazilTemperatureTendency"/>
+     <var name="evaporationFlux"/>
+     <var name="seaIceSalinityFlux"/>
+     <var name="seaIceFreshWaterFlux"/>
+EOF
+
+# copy to SourceMods
+cp streams.ocean ../case_scripts/SourceMods/src.mpaso/
+
+popd
 
 }
 
@@ -227,22 +264,11 @@ fetch_code() {
     git clone git@github.com:E3SM-Project/E3SM-Hooks.git .git/hooks
     git config commit.template .git/hooks/commit.template
 
-    # Check out desired branch
-    git checkout ${BRANCH}
-
-    # Custom addition
-    if [ "${CHERRY}" != "" ]; then
-        echo ----- WARNING: adding git cherry-pick -----
-        for commit in "${CHERRY[@]}"
-        do
-            echo ${commit}
-            git cherry-pick ${commit}
-        done
-        echo -------------------------------------------
-    fi
-
     # Bring in all submodule components
     git submodule update --init --recursive
+
+    # Check out desired branch
+    git checkout ${BRANCH}
 
     popd
 }
@@ -267,7 +293,7 @@ create_newcase() {
         --machine ${MACHINE} \
         --project ${PROJECT} \
         --walltime ${WALLTIME} \
-        --pecount ${PELAYOUT}
+        --pecount ${PELAYOUT} 
 
     if [ $? != 0 ]; then
       echo $'\nNote: if create_newcase failed because sub-directory already exists:'
@@ -308,11 +334,41 @@ case_setup() {
     # Extracts input_data_dir in case it is needed for user edits to the namelist later
     local input_data_dir=`./xmlquery DIN_LOC_ROOT --value`
 
+    # Reset CCSM_CO2_PPMV value to the one for 2010 CMIP6
+    ./xmlchange CCSM_CO2_PPMV="388.717"
+
+    # Conditional updates based on simulation config: sstplus4K or lustre stripe size,m pe-layout
+
+    if [ "$sstplus4K" == "true" ]; then
+     ./xmlchange SSTICE_DATA_FILENAME="$input_data_dir/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213_plus4K.nc"
+    fi
+
+    if [[ $RESOLUTION =~ "ne120" ]]; then
+     # lfs setstripe -S 1m -c 64 `./xmlquery --value RUNDIR`
+       ./xmlchange MAX_MPITASKS_PER_NODE="64"
+       ./xmlchange NTASKS_WAV="32"
+       ./xmlchange NTASKS_GLC="32"
+       for comp in ATM LND ROF ICE OCN CPL; do
+           ./xmlchange NTASKS_$comp="21600"
+           ./xmlchange NTHRDS_$comp="2"
+       done
+    fi
+
     # Custom user_nl
-    user_nl()
+    user_nl
+
+    # reset pe-layout
+    #cp ~/E3SM/Cases/prod/F-16nodes-chrys.env_mach_pes.xml env_mach_pes.xml
 
     # Finally, run CIME case.setup
     ./case.setup --reset
+
+    # setstripe can only be done after case.setup (after RUNDIR is created)
+
+    if [[ $MACHINE =~ "cori" ]] && [[ $RESOLUTION =~ "ne120" ]]; then
+       lfs setstripe -S 1m -c 64 `./xmlquery --value RUNDIR`
+    fi
+
 
     popd
 }
@@ -376,6 +432,8 @@ runtime_options() {
     echo $'\n----- Starting runtime_options -----\n'
     pushd ${CASE_SCRIPTS_DIR}
 
+    ./xmlchange JOB_QUEUE='debug'
+    
     # Set simulation start date
     ./xmlchange RUN_STARTDATE=${START_DATE}
 
@@ -406,24 +464,15 @@ runtime_options() {
     elif [ "${MODEL_START_TYPE,,}" == "continue" ]; then
         ./xmlchange CONTINUE_RUN="TRUE"
 
-    elif [ "${MODEL_START_TYPE,,}" == "branch" ] || [ "${MODEL_START_TYPE,,}" == "hybrid" ]; then
-        ./xmlchange RUN_TYPE=${MODEL_START_TYPE,,}
-        ./xmlchange GET_REFCASE=${GET_REFCASE}
-	./xmlchange RUN_REFDIR=${RUN_REFDIR}
-        ./xmlchange RUN_REFCASE=${RUN_REFCASE}
-        ./xmlchange RUN_REFDATE=${RUN_REFDATE}
-        echo 'Warning: $MODEL_START_TYPE = '${MODEL_START_TYPE} 
-	echo '$RUN_REFDIR = '${RUN_REFDIR}
-	echo '$RUN_REFCASE = '${RUN_REFCASE}
-	echo '$RUN_REFDATE = '${START_DATE}
- 
+    # TO DO: implement 'branch', 'hybrid'
+
     else
         echo 'ERROR: $MODEL_START_TYPE = '${MODEL_START_TYPE}' is unrecognized. Exiting.'
         exit 380
     fi
 
-    # Patch mpas streams files
-    patch_mpas_streams
+    # Patch mpas streams files. Which code base need it? Not needed anyway for F-case
+    # patch_mpas_streams
 
     popd
 }
@@ -470,6 +519,4 @@ popd() {
 # Now, actually run the script
 #-----------------------------------------------------
 main
-EOF
-EOF
-EOF
+
