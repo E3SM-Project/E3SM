@@ -584,204 +584,253 @@ module mpas_bootstrapping
       call mpas_log_write(' ')
       call mpas_log_write(' ')
 
-      ! TODO Point missingValueMask to the requested field for each field variable
+      ! Point missingValueMask to the requested field for each field variable
       call mpas_stream_mgr_begin_iteration(domain % streamManager)
-      do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, streamID = streamName, directionProperty = streamDirection, &
+      do while ( mpas_stream_mgr_get_next_stream(domain % streamManager, &
+                                                 streamID = streamName, &
+                                                 directionProperty = streamDirection, &
                                                  activeProperty = streamActive) )
 
-         if ( streamActive .and. ( streamDirection == MPAS_STREAM_OUTPUT .or. streamDirection == MPAS_STREAM_INPUT_OUTPUT ) ) then
+         if ( streamActive .and. &
+              ( streamDirection == MPAS_STREAM_OUTPUT .or. &
+                streamDirection == MPAS_STREAM_INPUT_OUTPUT ) ) then
 
-            call mpas_stream_mgr_begin_iteration(domain % streamManager, streamID=streamName)
+            call mpas_stream_mgr_begin_iteration(domain % streamManager, &
+                                                 streamID=streamName)
 
-            do while ( mpas_stream_mgr_get_next_field(domain % streamManager, streamName, fieldName, isActive=fieldActive) )
+            do while ( mpas_stream_mgr_get_next_field(domain % streamManager, &
+                                                      streamName, fieldName, &
+                                                      isActive=fieldActive) )
 
                if (fieldActive) then
-                  call mpas_pool_get_field_info(domain % blocklist % allFields, fieldName, fieldInfo)
+                  call mpas_pool_get_field_info(domain % blocklist % allFields, &
+                                                fieldName, fieldInfo)
                   if ( fieldInfo % fieldType == MPAS_POOL_REAL ) then
 
                      if ( fieldInfo % nDims == 1 ) then
-                        call mpas_log_write('looking for mask for 1d field '//TRIM(fieldName))
-                        call mpas_pool_get_field(domain % blocklist % allFields, fieldName, real1DField)
+                        call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                 fieldName, real1DField)
                         maskName = real1DField % maskName
-                        call mpas_log_write('retrieved mask '//trim(maskName)//' for 1d field '//TRIM(fieldName))
-                        call mpas_pool_get_field_info(domain % blocklist % allFields, maskName, maskInfo)
-                        if ( maskInfo % fieldType == MPAS_POOL_INTEGER ) then
-                           if ( maskInfo % nDims == 1 ) then
-                              call mpas_pool_get_field(domain % blocklist % allFields, maskName, int1DMask)
-                              call mpas_mask_assign_pointer(real1DField, int1DMask)
+                        call mpas_pool_get_field_info(domain % blocklist % allFields, &
+                                                      maskName, maskInfo)
+                        if ( maskInfo % isActive ) then
+                           if ( maskInfo % fieldType == MPAS_POOL_INTEGER ) then
+                              if ( maskInfo % nDims == 1 ) then
+                                 call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                          maskName, int1DMask)
+                                 call mpas_mask_assign_pointer(real1DField, int1DMask)
+                              else
+                                 call mpas_log_write(TRIM(fieldName)//&
+                                    ' does not have 1d mask type '//TRIM(maskName), &
+                                    MPAS_LOG_WARN)
+                              endif
                            else
-                              call mpas_log_write(TRIM(fieldName)//' does not have 1d mask type '//TRIM(maskName))
+                              call mpas_log_write(TRIM(fieldName)//&
+                                 ' does not have an integer mask type '//TRIM(maskName), &
+                                 MPAS_LOG_WARN)
                            endif
-                        else
-                           call mpas_log_write(TRIM(fieldName)//' does not have an integer mask type '//TRIM(maskName))
                         endif
                      elseif ( fieldInfo % nDims == 2 ) then
-                        call mpas_log_write('looking for mask for 2d field '//TRIM(fieldName))
-                        call mpas_pool_get_field(domain % blocklist % allFields, fieldName, real2DField)
+                        call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                 fieldName, real2DField)
                         maskName = real2DField % maskName
-                        call mpas_log_write('retrieved mask '//trim(maskName)//' for 2d field '//TRIM(fieldName))
-                        call mpas_pool_get_field_info(domain % blocklist % allFields, maskName, maskInfo)
-                        if ( maskInfo % fieldType == MPAS_POOL_INTEGER ) then
-                           if ( maskInfo % nDims == 2 ) then
-                              call mpas_pool_get_field(domain % blocklist % allFields, maskName, int2DMask)
-                              call mpas_mask_assign_pointer(real2DField, int2DMask)
-                           elseif ( maskInfo % nDims == 1 ) then
-                              call mpas_pool_get_field(domain % blocklist % allFields, maskName, int1DMask)
-                              call mpas_mask_assign_pointer(real2DField, int1DMask)
+                        call mpas_pool_get_field_info(domain % blocklist % allFields, &
+                                                      maskName, maskInfo)
+                        if ( maskInfo % isActive ) then
+                           if ( maskInfo % fieldType == MPAS_POOL_INTEGER ) then
+                              if ( maskInfo % nDims == 2 ) then
+                                 call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                          maskName, int2DMask)
+                                 call mpas_mask_assign_pointer(real2DField, int2DMask)
+                              elseif ( maskInfo % nDims == 1 ) then
+                                 call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                          maskName, int1DMask)
+                                 call mpas_mask_assign_pointer(real2DField, int1DMask)
+                              else
+                                 call mpas_log_write(TRIM(fieldName)//&
+                                    ' does not have 1d or 2d mask type '//TRIM(maskName), &
+                                    MPAS_LOG_WARN)
+                              endif
                            else
-                              call mpas_log_write(TRIM(fieldName)//' does not have 1d or 2d mask type '//TRIM(maskName))
+                              call mpas_log_write(TRIM(fieldName)//&
+                                 ' does not have an integer mask type '//TRIM(maskName), &
+                                    MPAS_LOG_WARN)
                            endif
-                        else
-                           call mpas_log_write(TRIM(fieldName)//' does not have an integer mask type '//TRIM(maskName))
                         endif
                      else if ( fieldInfo % nDims == 3 ) then
-                        call mpas_pool_get_field(domain % blocklist % allFields, fieldName, real3DField)
-                        if (real3DField % isVarArray) then
-                           call mpas_log_write('looking for mask for 3d array '//TRIM(fieldName))
-                           maskName = real3DField % maskName
-                           call mpas_pool_get_field_info(domain % blocklist % allFields, maskName, maskInfo)
+                        call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                 fieldName, real3DField)
+                        maskName = real3DField % maskName
+                        call mpas_pool_get_field_info(domain % blocklist % allFields, &
+                                                      maskName, maskInfo)
+                        if ( maskInfo % isActive ) then
                            if ( maskInfo % fieldType == MPAS_POOL_INTEGER ) then
-                              call mpas_log_write('retrieved mask info'//trim(maskName)//' for 3d array '//TRIM(fieldName))
-                              do j = 1, size(real3DField % constituentNames)
-                                 call mpas_pool_get_field(domain % blocklist % allFields, &
-                                                          real3DField % constituentNames(j), &
-                                                          real2DField)
-                                 call mpas_log_write('retrieved field'//trim(real3DField % constituentNames(j))//' from 3d field '//TRIM(fieldName))
-                                 fieldName = real3DField % constituentNames(j)
-                                 call mpas_pool_get_field_info(domain % blocklist % allFields, fieldName, fieldInfo)
-                                 if ( maskInfo % nDims == 2 ) then
-                                    call mpas_pool_get_field(domain % blocklist % allFields, maskName, int2DMask)
-                                    call mpas_log_write('retrieved mask'//trim(maskName)//' for 2d field '//TRIM(fieldName))
-                                    call mpas_log_write('call assign_pointer')
+                              if (real3DField % isVarArray) then
+                                 do j = 1, size(real3DField % constituentNames)
+                                    call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                             real3DField % constituentNames(j), &
+                                                             real2DField)
+                                    fieldName = real3DField % constituentNames(j)
+                                    call mpas_pool_get_field_info(domain % blocklist % allFields, &
+                                                                  fieldName, fieldInfo)
+                                    if ( maskInfo % nDims == 2 ) then
+                                       call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                                maskName, int2DMask)
+                                       call mpas_mask_assign_pointer(real3DField, int2DMask)
+                                    elseif ( maskInfo % nDims == 1 ) then
+                                       call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                                maskName, int1DMask)
+                                       call mpas_mask_assign_pointer(real3DField, int1DMask)
+                                    else
+                                       call mpas_log_write(TRIM(fieldName)//&
+                                          ' does not have 1d or 2d mask type '//TRIM(maskName), &
+                                          MPAS_LOG_WARN)
+                                    endif
+                                 enddo
+                              else ! isVar
+                                 if ( maskInfo % nDims == 3 ) then
+                                    call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                             maskName, int3DMask)
+                                    call mpas_mask_assign_pointer(real3DField, int3DMask)
+                                 elseif ( maskInfo % nDims == 2 ) then
+                                    call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                             maskName, int2DMask)
                                     call mpas_mask_assign_pointer(real3DField, int2DMask)
                                  elseif ( maskInfo % nDims == 1 ) then
-                                    call mpas_pool_get_field(domain % blocklist % allFields, maskName, int1DMask)
+                                    call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                             maskName, int1DMask)
                                     call mpas_mask_assign_pointer(real3DField, int1DMask)
                                  else
-                                    call mpas_log_write(TRIM(fieldName)//' does not have 1d or 2d mask type '//TRIM(maskName))
+                                    call mpas_log_write(TRIM(fieldName)//&
+                                       ' does not have 1d, 2d or 3d mask type '//TRIM(maskName), &
+                                       MPAS_LOG_WARN)
                                  endif
-                              enddo
-                           else
-                              call mpas_log_write(TRIM(fieldName)//' does not have an integer mask type '//TRIM(maskName))
-                           endif
-                        else
-                           call mpas_log_write('looking for mask for 3d field '//TRIM(fieldName))
-                           maskName = real3DField % maskName
-                           call mpas_pool_get_field_info(domain % blocklist % allFields, maskName, maskInfo)
-                           if ( maskInfo % fieldType == MPAS_POOL_INTEGER ) then
-                              call mpas_log_write('retrieved mask '//trim(maskName)//' for 3d field '//TRIM(fieldName))
-                              if ( maskInfo % nDims == 3 ) then
-                                 call mpas_pool_get_field(domain % blocklist % allFields, maskName, int3DMask)
-                                 call mpas_mask_assign_pointer(real3DField, int3DMask)
-                              elseif ( maskInfo % nDims == 2 ) then
-                                 call mpas_pool_get_field(domain % blocklist % allFields, maskName, int2DMask)
-                                 call mpas_mask_assign_pointer(real3DField, int2DMask)
-                              elseif ( maskInfo % nDims == 1 ) then
-                                 call mpas_pool_get_field(domain % blocklist % allFields, maskName, int1DMask)
-                                 call mpas_mask_assign_pointer(real3DField, int1DMask)
-                              else
-                                 call mpas_log_write(TRIM(fieldName)//' does not have 1d, 2d or 3d mask type '//TRIM(maskName))
                               endif
                            else
-                              call mpas_log_write(TRIM(fieldName)//' does not have an integer mask type '//TRIM(maskName))
+                              call mpas_log_write(TRIM(fieldName)//&
+                                 ' does not have an integer mask type '//TRIM(maskName), &
+                                 MPAS_LOG_WARN)
                            endif
-                        endif
+                        endif ! mask is active
                      else if ( fieldInfo % nDims == 4 ) then
-                        call mpas_pool_get_field(domain % blocklist % allFields, fieldName, real4DField)
-                        if (real4DField % isVarArray) then
-                           maskName = real4DField % maskName
-                           call mpas_pool_get_field_info(domain % blocklist % allFields, maskName, maskInfo)
+                        call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                 fieldName, real4DField)
+                        maskName = real4DField % maskName
+                        call mpas_pool_get_field_info(domain % blocklist % allFields, &
+                                                      maskName, maskInfo)
+                        if ( maskInfo % isActive ) then
                            if ( maskInfo % fieldType == MPAS_POOL_INTEGER ) then
-                              do j = 1, size(real4DField % constituentNames)
-                                 call mpas_pool_get_field(domain % blocklist % allFields, &
-                                                          real4DField % constituentNames(j), &
-                                                          real3DField)
-                                 fieldName = real4DField % constituentNames(j)
-                                 call mpas_pool_get_field_info(domain % blocklist % allFields, fieldName, fieldInfo)
+                              if (real4DField % isVarArray) then
+                                 do j = 1, size(real4DField % constituentNames)
+                                    call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                             real4DField % constituentNames(j), &
+                                                             real3DField)
+                                    fieldName = real4DField % constituentNames(j)
+                                    call mpas_pool_get_field_info(domain % blocklist % allFields, &
+                                                                  fieldName, fieldInfo)
+                                    if ( maskInfo % nDims == 3 ) then
+                                       call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                                maskName, int3DMask)
+                                       call mpas_mask_assign_pointer(real4DField, int3DMask)
+                                    elseif ( maskInfo % nDims == 2 ) then
+                                       call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                                maskName, int2DMask)
+                                       call mpas_mask_assign_pointer(real4DField, int2DMask)
+                                    elseif ( maskInfo % nDims == 1 ) then
+                                       call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                                maskName, int1DMask)
+                                       call mpas_mask_assign_pointer(real4DField, int1DMask)
+                                    else
+                                       call mpas_log_write(TRIM(fieldName)//&
+                                          ' does not have 1d, 2d or 3d mask type '//TRIM(maskName), &
+                                          MPAS_LOG_WARN)
+                                    endif
+                                 enddo
+                              else ! isVar
                                  if ( maskInfo % nDims == 3 ) then
-                                    call mpas_pool_get_field(domain % blocklist % allFields, maskName, int3DMask)
+                                    call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                             maskName, int3DMask)
                                     call mpas_mask_assign_pointer(real4DField, int3DMask)
-                                 if ( maskInfo % nDims == 2 ) then
-                                    call mpas_pool_get_field(domain % blocklist % allFields, maskName, int2DMask)
+                                 elseif ( maskInfo % nDims == 2 ) then
+                                    call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                             maskName, int2DMask)
                                     call mpas_mask_assign_pointer(real4DField, int2DMask)
                                  elseif ( maskInfo % nDims == 1 ) then
-                                    call mpas_pool_get_field(domain % blocklist % allFields, maskName, int1DMask)
+                                    call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                             maskName, int1DMask)
                                     call mpas_mask_assign_pointer(real4DField, int1DMask)
                                  else
-                                    call mpas_log_write(TRIM(fieldName)//' does not have 1d, 2d or 3d mask type '//TRIM(maskName))
+                                    call mpas_log_write(TRIM(fieldName)//&
+                                       ' does not have 1d, 2d or 3d mask type '//TRIM(maskName), &
+                                       MPAS_LOG_WARN)
                                  endif
-                              enddo
-                           else
-                              call mpas_log_write(TRIM(fieldName)//' does not have an integer mask type '//TRIM(maskName))
-                           endif
-                        else
-                           maskName = real4DField % maskName
-                           call mpas_pool_get_field_info(domain % blocklist % allFields, maskName, maskInfo)
-                           if ( maskInfo % fieldType == MPAS_POOL_INTEGER ) then
-                              if ( maskInfo % nDims == 3 ) then
-                                 call mpas_pool_get_field(domain % blocklist % allFields, maskName, int3DMask)
-                                 call mpas_mask_assign_pointer(real4DField, int3DMask)
-                              elseif ( maskInfo % nDims == 2 ) then
-                                 call mpas_pool_get_field(domain % blocklist % allFields, maskName, int2DMask)
-                                 call mpas_mask_assign_pointer(real4DField, int2DMask)
-                              elseif ( maskInfo % nDims == 1 ) then
-                                 call mpas_pool_get_field(domain % blocklist % allFields, maskName, int1DMask)
-                                 call mpas_mask_assign_pointer(real4DField, int1DMask)
-                              else
-                                 call mpas_log_write(TRIM(fieldName)//' does not have 1d, 2d or 3d mask type '//TRIM(maskName))
                               endif
                            else
-                              call mpas_log_write(TRIM(fieldName)//' does not have an integer mask type '//TRIM(maskName))
+                              call mpas_log_write(TRIM(fieldName)//&
+                                 ' does not have an integer mask type '//TRIM(maskName), &
+                                 MPAS_LOG_WARN)
                            endif
                         endif
                      else if ( fieldInfo % nDims == 5 ) then
-                        call mpas_pool_get_field(domain % blocklist % allFields, fieldName, real5DField)
-                        if (real5DField % isVarArray) then
-                           maskName = real5DField % maskName
-                           call mpas_pool_get_field_info(domain % blocklist % allFields, maskName, maskInfo)
+                        call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                 fieldName, real5DField)
+                        maskName = real5DField % maskName
+                        call mpas_pool_get_field_info(domain % blocklist % allFields, &
+                                                      maskName, maskInfo)
+                        if ( maskInfo % isActive ) then
                            if ( maskInfo % fieldType == MPAS_POOL_INTEGER ) then
-                              do j = 1, size(real5DField % constituentNames)
-                                 call mpas_pool_get_field(domain % blocklist % allFields, &
-                                                          real5DField % constituentNames(j), &
-                                                          real3DField)
-                                 fieldName = real5DField % constituentNames(j)
-                                 call mpas_pool_get_field_info(domain % blocklist % allFields, fieldName, fieldInfo)
+                              if (real5DField % isVarArray) then
+                                 do j = 1, size(real5DField % constituentNames)
+                                    call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                             real5DField % constituentNames(j), &
+                                                             real3DField)
+                                    fieldName = real5DField % constituentNames(j)
+                                    call mpas_pool_get_field_info(domain % blocklist % allFields, &
+                                                                  fieldName, fieldInfo)
+                                    if ( maskInfo % nDims == 3 ) then
+                                       call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                                maskName, int3DMask)
+                                       call mpas_mask_assign_pointer(real5DField, int3DMask)
+                                    elseif ( maskInfo % nDims == 2 ) then
+                                       call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                                maskName, int2DMask)
+                                       call mpas_mask_assign_pointer(real5DField, int2DMask)
+                                    elseif ( maskInfo % nDims == 1 ) then
+                                       call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                                maskName, int1DMask)
+                                       call mpas_mask_assign_pointer(real5DField, int1DMask)
+                                    else
+                                       call mpas_log_write(TRIM(fieldName)//&
+                                          ' does not have 1d, 2d or 3d mask type '//TRIM(maskName), &
+                                          MPAS_LOG_WARN)
+                                    endif
+                                 enddo
+                              else ! isVar
                                  if ( maskInfo % nDims == 3 ) then
-                                    call mpas_pool_get_field(domain % blocklist % allFields, maskName, int3DMask)
+                                    call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                             maskName, int3DMask)
                                     call mpas_mask_assign_pointer(real5DField, int3DMask)
-                                 if ( maskInfo % nDims == 2 ) then
-                                    call mpas_pool_get_field(domain % blocklist % allFields, maskName, int2DMask)
+                                 elseif ( maskInfo % nDims == 2 ) then
+                                    call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                             maskName, int2DMask)
                                     call mpas_mask_assign_pointer(real5DField, int2DMask)
                                  elseif ( maskInfo % nDims == 1 ) then
-                                    call mpas_pool_get_field(domain % blocklist % allFields, maskName, int1DMask)
+                                    call mpas_pool_get_field(domain % blocklist % allFields, &
+                                                             maskName, int1DMask)
                                     call mpas_mask_assign_pointer(real5DField, int1DMask)
                                  else
-                                    call mpas_log_write(TRIM(fieldName)//' does not have 1d, 2d or 3d mask type '//TRIM(maskName))
+                                    call mpas_log_write(TRIM(fieldName)//&
+                                       ' does not have 1d, 2d or 3d mask type '//TRIM(maskName), &
+                                       MPAS_LOG_WARN)
                                  endif
-                              enddo
-                           else
-                              call mpas_log_write(TRIM(fieldName)//' does not have an integer mask type '//TRIM(maskName))
-                           endif
-                        else
-                           maskName = real5DField % maskName
-                           call mpas_pool_get_field_info(domain % blocklist % allFields, maskName, maskInfo)
-                           if ( maskInfo % fieldType == MPAS_POOL_INTEGER ) then
-                              if ( maskInfo % nDims == 3 ) then
-                                 call mpas_pool_get_field(domain % blocklist % allFields, maskName, int3DMask)
-                                 call mpas_mask_assign_pointer(real5DField, int3DMask)
-                              elseif ( maskInfo % nDims == 2 ) then
-                                 call mpas_pool_get_field(domain % blocklist % allFields, maskName, int2DMask)
-                                 call mpas_mask_assign_pointer(real5DField, int2DMask)
-                              elseif ( maskInfo % nDims == 1 ) then
-                                 call mpas_pool_get_field(domain % blocklist % allFields, maskName, int1DMask)
-                                 call mpas_mask_assign_pointer(real5DField, int1DMask)
-                              else
-                                 call mpas_log_write(TRIM(fieldName)//' does not have 1d, 2d or 3d mask type '//TRIM(maskName))
                               endif
                            else
-                              call mpas_log_write(TRIM(fieldName)//' does not have an integer mask type '//TRIM(maskName))
+                              call mpas_log_write(TRIM(fieldName)//&
+                                 ' does not have an integer mask type '//TRIM(maskName), &
+                                 MPAS_LOG_WARN)
                            endif
-                     end if
+                        endif
+                     endif
                   endif
                endif
             enddo
