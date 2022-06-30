@@ -16,7 +16,7 @@ CreateUnitTest(homme_standalone "homme_standalone.cpp" "${NEED_LIBS}"
 
 # Set AD configurable options
 set (ATM_TIME_STEP 1800)
-SetVarDependingOnTestProfile(NUM_STEPS 2 4 48)  # 1h 2h 24h
+SetVarDependingOnTestSize(NUM_STEPS 2 4 48)  # 1h 2h 24h
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)

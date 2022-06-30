@@ -6,7 +6,7 @@ CreateUnitTest(zm_standalone "zm_standalone.cpp" "${NEED_LIBS}" LABELS "zm;physi
   MINIMUM_TEST_LEVEL ${SCREAM_TEST_LEVEL_EXPERIMENTAL})
 
 # Set AD configurable options
-SetVarDependingOnTestProfile(NUM_STEPS 2 24 48)
+SetVarDependingOnTestSize(NUM_STEPS 2 24 48)
 set (ATM_TIME_STEP 1800)
 
 # Configure yaml input file to run directory

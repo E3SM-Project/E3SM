@@ -368,7 +368,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_cmake_cache_contents(self, "valgrind", "CMAKE_BUILD_TYPE", "Debug")
             test_cmake_cache_contents(self, "valgrind", "EKAT_ENABLE_VALGRIND", "TRUE")
-            test_cmake_cache_contents(self, "valgrind", "SCREAM_TEST_PROFILE", "SHORT")
+            test_cmake_cache_contents(self, "valgrind", "SCREAM_TEST_SIZE", "SHORT")
 
     def test_cmc_details(self):
         """
@@ -383,7 +383,7 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
             test_cmake_cache_contents(self, "cuda_mem_check", "CMAKE_BUILD_TYPE", "Debug")
             test_cmake_cache_contents(self, "cuda_mem_check", "EKAT_ENABLE_CUDA_MEMCHECK", "TRUE")
-            test_cmake_cache_contents(self, "cuda_mem_check", "SCREAM_TEST_PROFILE", "SHORT")
+            test_cmake_cache_contents(self, "cuda_mem_check", "SCREAM_TEST_SIZE", "SHORT")
 
     def test_opt_details(self):
         """

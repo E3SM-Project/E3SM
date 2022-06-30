@@ -354,8 +354,8 @@ endif()
 # This is a meta-variable, which individual tests can use to set *different* degrees
 # of testing, in terms of resolutions. E.g., for SHORT use 3 timesteps, for MEDIUM use 10,
 # for LONG use 100. It is *completely* up to the test to decide what short, medium, and long mean.
-set(SCREAM_TEST_PROFILE MEDIUM CACHE STRING "The kind of testing to perform: SHORT, MEDIUM, LONG")
-set(SCREAM_TEST_VALID_PROFILES "SHORT;MEDIUM;LONG" CACHE INTERNAL "List of valid values for SCREAM_TEST_PROFILE")
+set(SCREAM_TEST_SIZE MEDIUM CACHE STRING "The kind of testing to perform: SHORT, MEDIUM, LONG. Only applies to certain tests and is generally used to reduce test length when valgrind/cuda-memcheck are on.")
+set(SCREAM_TEST_VALID_SIZES "SHORT;MEDIUM;LONG" CACHE INTERNAL "List of valid values for SCREAM_TEST_SIZE")
 
 # Whether to use XYZ as a method to detect memory usage.
 option (SCREAM_ENABLE_GETRUSAGE "Whether getrusage can be used to get memory usage." OFF)

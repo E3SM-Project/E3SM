@@ -10,7 +10,7 @@ CreateUnitTest(p3_standalone "p3_standalone.cpp" "${NEED_LIBS}" LABELS ${TEST_LA
 
 # Set AD configurable options
 set (ATM_TIME_STEP 1800)
-SetVarDependingOnTestProfile(NUM_STEPS 2 5 48)  # 1h 2.5h 24h
+SetVarDependingOnTestSize(NUM_STEPS 2 5 48)  # 1h 2.5h 24h
 
 ## Copy (and configure) yaml files needed by tests
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml

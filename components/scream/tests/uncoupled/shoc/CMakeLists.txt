@@ -9,7 +9,7 @@ CreateUnitTest(shoc_standalone "shoc_standalone.cpp" "${NEED_LIBS}" LABELS ${TES
 )
 
 # Set AD configurable options
-SetVarDependingOnTestProfile(NUM_STEPS 2 5 48)
+SetVarDependingOnTestSize(NUM_STEPS 2 5 48)
 set (ATM_TIME_STEP 1800)
 
 # Determine num subcycles needed to keep shoc dt<=300s
