@@ -51,23 +51,23 @@ module cldera_sai_tracers
   ! Data from namelist variables; defaults set in bld/namelist_files/namelist_defaults_eam.xml
   logical  :: cldera_sai_tracers_flag      ! true => activate module, set namelist variable
   logical  :: cldera_sai_read_from_ic_file ! true => tracers initialized from IC file
-  real(r8) :: cldera_sai_lat0         ! desired lat of injection (deg)
-  real(r8) :: cldera_sai_lon0         ! desired lon of injection (deg)
-  real(r8) :: cldera_sai_MSO2         ! total SO2 mass (Mt)
-  real(r8) :: cldera_sai_Mash         ! total ash mass (Mt)
-  real(r8) :: cldera_sai_tf           ! injection duration (hours)
-  real(r8) :: cldera_sai_rkSO2         ! SO2 e-folding (1/day)
-  real(r8) :: cldera_sai_rkash         ! ash e-folding (1/day)
-  real(r8) :: cldera_sai_rksulf        ! ash e-folding (1/day)
-  real(r8) :: cldera_sai_w            ! SO2->sulfate reaction mass weighting
-  real(r8) :: cldera_sai_dTstrat      ! stratospheric heating rate (K/day)
-  real(r8) :: cldera_sai_dTsurf       ! surface cooling rate (K/day)
-  real(r8) :: cldera_sai_qstar        ! mixing ratio normalization for strat. heating
-  real(r8) :: cldera_sai_taustar      ! AOD normalizaxtion for surface cooling
-  real(r8) :: cldera_sai_zAOD         ! max height to apply surface cooling by AOD (km)
-  logical  :: cldera_sai_formSulfate  ! true => activate sulfate formation
-  logical  :: cldera_sai_stratHeating ! true => activate strat. heating
-  logical  :: cldera_sai_surfCooling  ! true => activate surface cooling
+  real(r8) :: cldera_sai_lat0              ! desired lat of injection (deg)
+  real(r8) :: cldera_sai_lon0              ! desired lon of injection (deg)
+  real(r8) :: cldera_sai_MSO2              ! total SO2 mass (Mt)
+  real(r8) :: cldera_sai_Mash              ! total ash mass (Mt)
+  real(r8) :: cldera_sai_tf                ! injection duration (hours)
+  real(r8) :: cldera_sai_rkSO2             ! SO2 e-folding (1/day)
+  real(r8) :: cldera_sai_rkash             ! ash e-folding (1/day)
+  real(r8) :: cldera_sai_rksulf            ! ash e-folding (1/day)
+  real(r8) :: cldera_sai_w                 ! SO2->sulfate reaction mass weighting
+  real(r8) :: cldera_sai_dTstrat           ! stratospheric heating rate (K/day)
+  real(r8) :: cldera_sai_dTsurf            ! surface cooling rate (K/day)
+  real(r8) :: cldera_sai_qstar             ! mixing ratio normalization for strat. heating
+  real(r8) :: cldera_sai_taustar           ! AOD normalizaxtion for surface cooling
+  real(r8) :: cldera_sai_zAOD              ! max height to apply surface cooling by AOD (km)
+  logical  :: cldera_sai_formSulfate       ! true => activate sulfate formation
+  logical  :: cldera_sai_stratHeating      ! true => activate strat. heating
+  logical  :: cldera_sai_surfCooling       ! true => activate surface cooling
     
   ! --- parameters
 
@@ -496,7 +496,7 @@ contains
     lchnk = state%lchnk
     
     call get_curr_time(day,sec)
-    t      = (day * 86400.0) + sec   ! current time in seconds
+    t = (day * 86400.0) + sec   ! current time in seconds
     
     !------------------------------------------------------------------
    
@@ -533,7 +533,7 @@ contains
     ! column at index inji will have nonzero values 
     ! For myrank /= inj_owner, V(:,:) = 0, and also the normalization 
     ! A_so2, A_ash is left as it's initialized value of 0.0
-    V(:,:) = 0.0
+    V(:,:) = 0.0_r8
     if(inject) then
         do k = 1,pver
             zz  = state%zm(inji, k)
@@ -596,10 +596,10 @@ contains
     enddo
     
     ! record air mass on grid to history files
-    call outfld('AREA', area(:), ncol, lchnk)
+    call outfld('AREA',     area(:), ncol, lchnk)
     call outfld('AIR_MASS', grid_mass(:,:), ncol, lchnk)
     call outfld('COL_MASS', col_mass(:,:), ncol, lchnk)
-    call outfld('SAI_AOD', aod_so2(:,:) + aod_sulf(:,:) + aod_ash(:,:), ncol, lchnk)
+    call outfld('SAI_AOD',  aod_so2(:,:) + aod_sulf(:,:) + aod_ash(:,:), ncol, lchnk)
 
 
     ! =============== COMPUTE TENDENCIES ===============
@@ -626,14 +626,19 @@ contains
           ! =============== SO2 ===============
           ! ---- source + decay
           ptend%q(i,k,ixso2) = 1/grid_mass(i, k) * &
-                               (-k_so2 * state%q(i, k, ixso2) + &
+                               (-k_so2 * state%q(i, k, ixso2) * grid_mass(i, k) + &
                                 A_so2 * V(i, k) * source_cutoff)
+          ! for debugging
+          !if(ptend%q(i, k, ixso2) * grid_mass(i,k) > 1) then
+          !    write(iulog,*) "CLDERA_SAI_TRACERS PTENDSUM (kg/s) ", inject, myrank, lchnk, i, &
+          !                                         ptend%q(i, k, ixso2) * grid_mass(i,k), t, tf
+          !endif
           
 
           ! =============== ASH ===============
           ! ---- source + decay
           ptend%q(i,k,ixash) = 1/grid_mass(i, k) * &
-                               (-k_ash * state%q(i, k, ixash) + &
+                               (-k_ash * state%q(i, k, ixash) * grid_mass(i, k) + &
                                 A_ash * V(i, k) * source_cutoff)
 
 
@@ -648,7 +653,7 @@ contains
 
           
           ! =============== POTENTIAL TEMP ===============
-          ! initialize within the first minute of the injection
+          ! initialize within the first minute of the run
           if (t < 60.0_r8) then
               state%q(i,k,ixpt) = state%t(i,k) * (P0 / state%pmid(i, k))**(rair/cpair)
           end if
