@@ -1479,15 +1479,12 @@ contains
           call t_startf('elm_drv_io_wrest')
           filer = restFile_filename(rdate=rdate)
 
-          call restFile_write( bounds_proc, filer,                                            &
-               atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-               carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-               ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-               nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-               soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-               waterflux_vars, waterstate_vars, sedflux_vars,                                 &
-               phosphorusstate_vars,phosphorusflux_vars,                                      &
-               ep_betr, alm_fates, crop_vars, rdate=rdate )
+          call restFile_write( bounds_proc, filer,                          &
+               atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,  &
+               ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars, &
+               photosyns_vars, soilhydrology_vars,     &
+               soilstate_vars, solarabs_vars, surfalb_vars,  &
+               sedflux_vars, ep_betr, alm_fates, crop_vars, rdate=rdate )
 
          !----------------------------------------------
          ! pflotran (off now)

@@ -753,32 +753,24 @@ contains
              write(iulog,*)'Reading initial conditions from ',trim(finidat)
           end if
           call getfil( finidat, fnamer, 0 )
-          call restFile_read(bounds_proc, fnamer,                                             &
-               atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-               carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-               ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-               nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-               soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-               waterflux_vars, waterstate_vars, sedflux_vars,                                 &
-               phosphorusstate_vars,phosphorusflux_vars,                                      &
-               ep_betr,                                                                       &
-               alm_fates, glc2lnd_vars, crop_vars)
+          call restFile_read(bounds_proc, fnamer,                           &
+               atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,  &
+               ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars, &
+               photosyns_vars, soilhydrology_vars,                          &
+               soilstate_vars, solarabs_vars, surfalb_vars,                 &
+               sedflux_vars, ep_betr, alm_fates, glc2lnd_vars, crop_vars)
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
        if (masterproc) then
           write(iulog,*)'Reading restart file ',trim(fnamer)
        end if
-       call restFile_read(bounds_proc, fnamer,                                             &
-            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-            carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-            nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-            waterflux_vars, waterstate_vars, sedflux_vars,                                 &
-            phosphorusstate_vars,phosphorusflux_vars,                                      &
-            ep_betr,                                                                       &
-            alm_fates, glc2lnd_vars, crop_vars)
+       call restFile_read(bounds_proc, fnamer,                           &
+            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,  &
+            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars ,&
+            photosyns_vars, soilhydrology_vars,                          &
+            soilstate_vars, solarabs_vars, surfalb_vars,                 &
+            sedflux_vars, ep_betr, alm_fates, glc2lnd_vars, crop_vars)
 
     end if
 
@@ -805,32 +797,24 @@ contains
          call ep_betr%set_active(bounds_proc, col_pp)
        endif
        ! Create new template file using cold start
-       call restFile_write(bounds_proc, finidat_interp_dest,                               &
-            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-            carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-            nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-            waterflux_vars, waterstate_vars, sedflux_vars,                                 &
-            phosphorusstate_vars,phosphorusflux_vars,                                      &
-            ep_betr,                                                                       &
-            alm_fates, crop_vars)
+       call restFile_write(bounds_proc, finidat_interp_dest,             &
+            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,  &
+            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars, &
+            photosyns_vars, soilhydrology_vars,          &
+            soilstate_vars, solarabs_vars, surfalb_vars, &
+            sedflux_vars, ep_betr, alm_fates, crop_vars)
 
        ! Interpolate finidat onto new template file
        call getfil( finidat_interp_source, fnamer,  0 )
        call initInterp(filei=fnamer, fileo=finidat_interp_dest, bounds=bounds_proc)
 
        ! Read new interpolated conditions file back in
-       call restFile_read(bounds_proc, finidat_interp_dest,                                &
-            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-            carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-            nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-            waterflux_vars, waterstate_vars, sedflux_vars,                                 &
-            phosphorusstate_vars,phosphorusflux_vars,                                      &
-            ep_betr,                                                                       &
-            alm_fates, glc2lnd_vars, crop_vars)
+       call restFile_read(bounds_proc, finidat_interp_dest,              &
+            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,  &
+            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars, &
+            photosyns_vars, soilhydrology_vars,            &
+            soilstate_vars, solarabs_vars, surfalb_vars,   &
+            sedflux_vars, ep_betr, alm_fates, glc2lnd_vars, crop_vars)
 
        ! Reset finidat to now be finidat_interp_dest
        ! (to be compatible with routines still using finidat)
