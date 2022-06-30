@@ -4337,22 +4337,25 @@ module mpas_io_streams
             end select 
             att_cursor => att_cursor % next
          end do
-      else
-         do while (associated(att_cursor))
-            select case (att_cursor % attType)
-               case (MPAS_ATT_INT)
-                  call MPAS_io_get_att(handle, trim(att_cursor % attName), att_cursor % attValueInt, fieldname)
-               case (MPAS_ATT_INTA)
-                  call MPAS_io_get_att(handle, trim(att_cursor % attName), att_cursor % attValueIntA, fieldname)
-               case (MPAS_ATT_REAL)
-                  call MPAS_io_get_att(handle, trim(att_cursor % attName), att_cursor % attValueReal, fieldname)
-               case (MPAS_ATT_REALA)
-                  call MPAS_io_get_att(handle, trim(att_cursor % attName), att_cursor % attValueRealA, fieldname)
-               case (MPAS_ATT_TEXT)
-                  call MPAS_io_get_att(handle, trim(att_cursor % attName), att_cursor % attValueText, fieldname)
-            end select 
-            att_cursor => att_cursor % next
-         end do
+      ! For MPAS_IO_READ the commented out code would overwrite any attributes, such as "units", defined in the
+      ! Registry with values defined in the input file. This default behaviour was undesired for CF-compliant
+      ! units defined in the Registry so this functionality was removed.
+      !else
+      !   do while (associated(att_cursor))
+      !      select case (att_cursor % attType)
+      !         case (MPAS_ATT_INT)
+      !            call MPAS_io_get_att(handle, trim(att_cursor % attName), att_cursor % attValueInt, fieldname)
+      !         case (MPAS_ATT_INTA)
+      !            call MPAS_io_get_att(handle, trim(att_cursor % attName), att_cursor % attValueIntA, fieldname)
+      !         case (MPAS_ATT_REAL)
+      !            call MPAS_io_get_att(handle, trim(att_cursor % attName), att_cursor % attValueReal, fieldname)
+      !         case (MPAS_ATT_REALA)
+      !            call MPAS_io_get_att(handle, trim(att_cursor % attName), att_cursor % attValueRealA, fieldname)
+      !         case (MPAS_ATT_TEXT)
+      !            call MPAS_io_get_att(handle, trim(att_cursor % attName), att_cursor % attValueText, fieldname)
+      !      end select
+      !      att_cursor => att_cursor % next
+      !   end do
       end if
 
    end subroutine put_get_field_atts

@@ -21,7 +21,7 @@ module elm_initializeMod
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio        , only : file_desc_t
 
-  use BeTRSimulationALM, only : create_betr_simulation_alm
+  use BeTRSimulationELM, only : create_betr_simulation_elm
   !
   !-----------------------------------------
   ! Definition of component types
@@ -481,7 +481,7 @@ contains
     use elm_interface_pflotranMod           , only : elm_pf_interface_init !, elm_pf_set_restart_stamp
     use tracer_varcon         , only : is_active_betr_bgc
     use clm_time_manager      , only : is_restart
-    use ALMbetrNLMod          , only : betr_namelist_buffer
+    use ELMbetrNLMod          , only : betr_namelist_buffer
     use ELMFatesInterfaceMod  , only: ELMFatesTimesteps
     !
     ! !ARGUMENTS
@@ -622,13 +622,13 @@ contains
 
     if(use_betr)then
       !allocate memory for betr simulator
-      allocate(ep_betr, source=create_betr_simulation_alm())
+      allocate(ep_betr, source=create_betr_simulation_elm())
       !set internal filters for betr
       call ep_betr%BeTRSetFilter(maxpft_per_col=max_patch_per_col, boffline=.false.)
-      call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, waterstate_vars, betr_namelist_buffer, masterproc)
+      call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, col_ws, betr_namelist_buffer, masterproc)
       is_active_betr_bgc = ep_betr%do_soibgc()
     else
-      allocate(ep_betr, source=create_betr_simulation_alm())
+      allocate(ep_betr, source=create_betr_simulation_elm())
     endif
 
     call SnowOptics_init( ) ! SNICAR optical parameters:
