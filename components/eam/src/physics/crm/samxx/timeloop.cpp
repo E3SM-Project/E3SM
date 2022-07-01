@@ -79,6 +79,9 @@ void timeloop() {
       //---------------------------------------------------------
       //   Ice fall-out
       if (docloud) { 
+#ifdef MMF_SEDIMENTATION
+        cloud_droplet_fall();
+#endif
         ice_fall();
       }
 

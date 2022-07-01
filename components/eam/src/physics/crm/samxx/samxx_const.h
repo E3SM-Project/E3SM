@@ -245,6 +245,14 @@ real constexpr wmin = 2.0;
 real constexpr cwp_threshold = .001;
 int  constexpr perturb_seed_scale = 1000;
 
+#ifdef MMF_SEDIMENTATION
+  // parameters to compute cloud droplet sedimentation.
+  real constexpr sigmag_fixed = 1.5; // assumed geometric standard deviation of cloud droplet size distribution
+  real constexpr Nc0 = 100.;         // assumed cloud droplet number [#/cm3]
+  // real constexpr Nc0_ocn =  70.;     // assumed cloud droplet number [#/cm3] over ocean
+  // real constexpr Nc0_lnd = 200.;     // assumed cloud droplet number [#/cm3] over land
+#endif
+
 // Enable hyperviscosity in SGS_TKE to limit grid-scale "noise" in 
 // velocity field near sharp inversions.  This was found to produce larger
 // stratocumulus liquid water paths in Wyant et al (2018, JAMES), though
