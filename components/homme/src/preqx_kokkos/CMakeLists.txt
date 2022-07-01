@@ -194,6 +194,51 @@ MACRO(PREQX_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/cxx/utilities/BfbUtils.cpp
   )
 
+#debugging which file causes issues when opt flags are used:
+
+#this works
+#set_source_files_properties(${PREQX_DEPS_CXX} PROPERTIES COMPILE_FLAGS -O1)
+
+#these work, except i prob should have done "${CMAKE_CXX_FLAGS} -O3" instead of just "-O3"
+
+#set_source_files_properties(    ${TARGET_DIR}/cxx/cxx_f90_interface_preqx.cpp  PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${TARGET_DIR}/cxx/CamForcing.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${TARGET_DIR}/cxx/Diagnostics.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${TARGET_DIR}/cxx/ElementsForcing.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${TARGET_DIR}/cxx/ElementsState.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${TARGET_DIR}/cxx/HyperviscosityFunctorImpl.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${TARGET_DIR}/cxx/prim_advance_exp.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/CaarFunctor.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/Context.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/Elements.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/ElementsDerivedState.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/ElementsGeometry.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/EulerStepFunctor.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/FunctorsBuffersManager.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/HybridVCoord.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/HyperviscosityFunctor.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/ReferenceElement.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/Tracers.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/VerticalRemapManager.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/mpi/BoundaryExchange.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/mpi/Connectivity.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/mpi/MpiBuffersManager.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/mpi/mpi_cxx_f90_interface.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/prim_advec_tracers_remap.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/prim_driver.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/prim_step.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/vertical_remap.cpp PROPERTIES COMPILE_FLAGS -O3)
+#set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/utilities/BfbUtils.cpp PROPERTIES COMPILE_FLAGS -O3)
+
+  if(${HIP})
+    #remove opt for this file. with opt >O0 asserts fail here.
+    set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/VerticalRemapManager.cpp PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -O0")
+  endif()
+
   IF (HOMME_USE_TRILINOS)
     SET (PREQX_SRCS_ZOLTAN   ${TRILINOS_ZOLTAN_DIR}/zoltan_interface.c  ${TRILINOS_ZOLTAN_DIR}/zoltan_cppinterface.cpp)
     SET_SOURCE_FILES_PROPERTIES( ${TRILINOS_ZOLTAN_DIR}/zoltan_cppinterface.cpp PROPERTIES LANGUAGE CXX )
