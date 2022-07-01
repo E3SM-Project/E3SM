@@ -149,8 +149,8 @@ def buildnml(case, caseroot, compname):
         grid_date = '171128'
         grid_prefix = 'seaice.RRS30to10v3'
         if ice_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
+            grid_date = '220517'
+            grid_prefix = 'mpassi.oRRS30to10v3.rstFromG-anvil'
 
     elif ice_grid == 'oRRS30to10v3wLI':
         decomp_date = '171109'
