@@ -787,7 +787,7 @@ subroutine microp_aero_run ( &
         call t_stopf('lnd_ocean_cdnc')
       elseif (micro_prescribed_cdnc_opt .eq. 2) then !XZ so4-cdnc
         call t_startf('so4_cdnc')
-        call so4_cdnc(state,rho,cdncst)
+        call so4_cdnc(state,pbuf,rho,cdncst)
         call t_stopf('so4_cdnc')
       end if        
 

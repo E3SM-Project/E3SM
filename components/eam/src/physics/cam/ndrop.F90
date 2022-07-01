@@ -272,7 +272,7 @@ subroutine ndrop_init
    call addfld('NDROPSRC', (/ 'lev' /), 'A', '1/kg/s', 'Droplet number source')
    call addfld('NDROPSNK', (/ 'lev' /), 'A', '1/kg/s', 'Droplet number loss by microphysics')
    call addfld('NDROPCOL', horiz_only,    'A', '1/m2', 'Column droplet number')
-   call addfld('SO4_cdncst', (/ 'lev' /),   'A', 'kg/m3','so4 mass for cdnc so4_a1+so4_a2+so4_a3')  !XZ
+   call addfld('SO4_cdncst', (/ 'lev' /),   'A', 'kg/kg','so4 mass mixing ratio for cdnc in ndrop.F90')  !XZ
 
    ! set the add_default fields  
    if (history_amwg) then
@@ -1905,37 +1905,123 @@ subroutine loadaer( &
 end subroutine loadaer
 
 !!!XZ: add the subroutine to prescribe in-cloud CDNC here for now 05/06/2022
-subroutine so4_cdnc(state,rho,cdncst)
+subroutine so4_cdnc(state,pbuf,rho,cdncst)
         type(physics_state), target, intent(in)    :: state
+        type(physics_buffer_desc),   pointer       :: pbuf(:)
         real(r8), intent(in) :: rho(pcols,pver)     ! air density (kg m-3)
 
         real(r8), intent(out) :: cdncst(pcols,pver) ! prescribed droplet number concentration 
+            ! local workspace
+        real(r8), pointer :: coarse_so4(:,:) ! mass m.r. of coarse so4 insititial
+        real(r8), pointer :: cld_coarse_so4(:,:) ! mass m.r. of coarse so4 cloudborne
+        real(r8), pointer :: accum_so4(:,:) ! mass m.r. of accum so4 insititial
+        real(r8), pointer :: cld_accum_so4(:,:) ! mass m.r. of accum so4 cloudborne
+        real(r8), pointer :: aitken_so4(:,:) ! mass m.r. of aitken so4 insititial
+        real(r8), pointer :: cld_aitken_so4(:,:) ! mass m.r. of aitken so4 cloudborne 
 
+    ! local variables for loading so4 mass
         real(r8) :: ftem(pcols,pver) ! temporary workspace for so4 mass
+      !  real(r8) :: coarse_so4(pcols,pver) ! mass m.r. of coarse so4 insititial
+      !  real(r8) :: cld_coarse_so4(pcols,pver) ! mass m.r. of coarse so4 cloudborne 
+      !  real(r8) :: accum_so4(pcols,pver) ! mass m.r. of accum so4 insititial
+      !  real(r8) :: cld_accum_so4(pcols,pver) ! mass m.r. of accum so4 cloudborne 
+      !  real(r8) :: aitken_so4(pcols,pver) ! mass m.r. of aitken so4 insititial
+      !  real(r8) :: cld_aitken_so4(pcols,pver) ! mass m.r. of aitken so4 cloudborne 
+        character(len=32) :: str32
+        integer :: m, n, nspec
+        integer :: nmodes = -1
+        integer :: mode_accum_idx  = -1  ! index of accumulation mode
+        integer :: mode_aitken_idx = -1  ! index of aitken mode
+        integer :: mode_coarse_idx = -1  ! index of coarse mode
+        integer :: coarse_so4_idx = -1  ! index of so4 in coarse mode
+        integer :: accum_so4_idx = -1  ! index of so4 in accum mode
+        integer :: aitken_so4_idx = -1  ! index of so4 in aitken mode
 
-        real(r8) :: a1,b1,coeff1 ! coefficients in log-log regression function (  Boucher & Lohmann, 1995 Eq. D)  !coeff1 is a scaling factor
-        integer i, k, m, lchnk, ncol
-          coeff1 = 0.3 
-          a1 = 2.21
-          b1 = 0.41
-          a1 = a1
-          b1 = b1
+        real(r8) :: a1 = 2.21
+        real(r8) :: b1 = 0.41
+        real(r8) :: coeff1 = 0.3 ! coefficients in log-log regression function (  Boucher & Lohmann, 1995 Eq. D)  !coeff1 is a scaling factor
+        integer :: i,k, lchnk, ncol
+
           lchnk = state%lchnk
           ncol  = state%ncol
 
-          !!get so4_a1+so4_a2+so4_a3 (kg/kg) based on cam_diagnostics.F90 
-          ftem(:ncol,:) = state%q(:ncol,:,11)+state%q(:ncol,:,18)+state%q(:ncol,:,24)
-          call outfld('SO4_cdncst',ftem , pcols, lchnk) 
-          ftem = 1.e9_r8*ftem*rho  !kg/kg -> mu-g/m3
-          cdncst = coeff1*10.**(a1+b1*log10(ftem))  !#/cc
-          !!cdncst = 1.e6_r8*cdncst/rho   !#/cc -> #/kg  
-
+        call rad_cnst_get_info(0, nmodes=nmodes)
+        !! get mode index relevent to sulfate
+        do m = 1, nmodes
+          call rad_cnst_get_info(0, m, mode_type=str32)
+          select case (trim(str32))
+          case ('accum')
+            mode_accum_idx = m
+          case ('aitken')
+            mode_aitken_idx = m
+          case ('coarse')
+            mode_coarse_idx = m
+          end select
+        end do
+        !! get coarse mode sulfate index
+        if (mode_coarse_idx > 0) then
+          call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)
+          do n = 1, nspec
+            call rad_cnst_get_info(0, mode_coarse_idx, n, spec_type=str32)
+            select case (trim(str32))
+            case ('sulfate')
+               coarse_so4_idx = n
+            end select
+          end do
+          !!write(iulog,*) 'ndrop: coarse_so4 mode_coarse_idx: ',mode_coarse_idx , ' coarse_so4_idx: ',coarse_so4_idx
+          !! get coarse mode sulfate (intersititial)
+          call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_so4_idx, 'a', state, pbuf, coarse_so4)
+          !! get coarse mode sulfate (cloudborne)
+          call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_so4_idx, 'c', state, pbuf, cld_coarse_so4)
+        end if
+        !! get accumo mode sulfate index
+        if (mode_accum_idx > 0) then
+           call rad_cnst_get_info(0, mode_accum_idx, nspec=nspec)
+           do n = 1, nspec
+              call rad_cnst_get_info(0, mode_accum_idx, n, spec_type=str32)
+              select case (trim(str32))
+              case ('sulfate')
+                 accum_so4_idx = n
+              end select
+           end do
+           !! get accum mode sulfate (intersititial)
+           !!write(iulog,*) 'ndrop: accum_so4 mode_accum_idx: ',mode_accum_idx , ' accum_so4_idx: ',accum_so4_idx
+           call rad_cnst_get_aer_mmr(0, mode_accum_idx, accum_so4_idx, 'a', state, pbuf, accum_so4)
+           !! get accum mode sulfate (cloudborne)
+           call rad_cnst_get_aer_mmr(0, mode_accum_idx, accum_so4_idx, 'c', state, pbuf, cld_accum_so4)
+        end if
+        
+        !! get aitken mode sulfate index
+        if (mode_aitken_idx > 0) then
+           call rad_cnst_get_info(0, mode_aitken_idx, nspec=nspec)
+           do n = 1, nspec
+              call rad_cnst_get_info(0, mode_aitken_idx, n, spec_type=str32)
+              select case (trim(str32))
+              case ('sulfate')
+                 aitken_so4_idx = n
+              end select
+           end do
+           call rad_cnst_get_aer_mmr(0, mode_aitken_idx, aitken_so4_idx, 'a', state, pbuf, aitken_so4)
+           call rad_cnst_get_aer_mmr(0, mode_aitken_idx, aitken_so4_idx, 'c', state, pbuf, cld_aitken_so4)
+        end if
+      ftem = 0._r8  
+        !get total so4 mass for so4-cdnc 
+      do k = top_lev, pver
+       do i = 1, ncol
+       !ftem(i,k) =  accum_so4(i,k) + coarse_so4(i,k) + aitken_so4(i,k) + cld_accum_so4(i,k) + cld_coarse_so4(i,k)+cld_aitken_so4(i,k)  
+        ftem(i,k) =  accum_so4(i,k) + coarse_so4(i,k) + cld_accum_so4(i,k) + cld_coarse_so4(i,k)  
+       end do
+      end do
+        call outfld('SO4_cdncst',ftem , pcols, lchnk) 
+        ftem = 1.e9_r8*ftem*rho  !kg/kg -> mu-g/m3
+        cdncst = coeff1*10.**(a1+b1*log10(ftem))  !#/cc
+        cdncst = 1.e6_r8*cdncst   !#/cc -> #/m3  
 end subroutine so4_cdnc
 
 subroutine lnd_ocean_cdnc(landfrac,ncnst_land,ncnst_ocean,cdncst)
         real(r8), intent(in)  :: ncnst_land,ncnst_ocean  ! prescribed CDNC XZ
         real(r8), intent(in)  :: landfrac(pcols) ! Land fraction  !XZ
-        real(r8), intent(out) :: cdncst(pcols,pver) ! prescribed droplet number concentration
+        real(r8), intent(out) :: cdncst(pcols,pver) ! prescribed droplet number concentration   #/m3 
         integer i
     
         cdncst = 0._r8
@@ -1948,7 +2034,6 @@ end subroutine lnd_ocean_cdnc
 !===============================================================================
 
 end module ndrop
-
 
 
 
