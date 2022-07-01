@@ -1945,7 +1945,6 @@ subroutine so4_cdnc(state,pbuf,rho,cdncst)
           lchnk = state%lchnk
           ncol  = state%ncol
 
-<<<<<<< HEAD
         call rad_cnst_get_info(0, nmodes=nmodes)
         !! get mode index relevent to sulfate
         do m = 1, nmodes
@@ -2017,15 +2016,6 @@ subroutine so4_cdnc(state,pbuf,rho,cdncst)
         ftem = 1.e9_r8*ftem*rho  !kg/kg -> mu-g/m3
         cdncst = coeff1*10.**(a1+b1*log10(ftem))  !#/cc
         cdncst = 1.e6_r8*cdncst   !#/cc -> #/m3  
-=======
-          !!get so4_a1+so4_a2+so4_a3 (kg/kg) based on cam_diagnostics.F90 
-          ftem(:ncol,:) = state%q(:ncol,:,11)+state%q(:ncol,:,18)+state%q(:ncol,:,24)
-          call outfld('SO4_cdncst',ftem , pcols, lchnk) 
-          ftem = 1.e9_r8*ftem*rho  !kg/kg -> mu-g/m3
-          cdncst = coeff1*10.**(a1+b1*log10(ftem))  !#/cc
-          cdncst = 1.e6_r8*cdncst   !#/cc -> #/m3  
-
->>>>>>> 2544dabafc10a746a2936f17bea3251daff9d749
 end subroutine so4_cdnc
 
 subroutine lnd_ocean_cdnc(landfrac,ncnst_land,ncnst_ocean,cdncst)
