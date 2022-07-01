@@ -11,7 +11,6 @@
 <dtime dyn="se"                    >1800</dtime>
 <dtime dyn="se"    hgrid="ne4np4"  >7200</dtime>
 <dtime dyn="se"    hgrid="ne11np4" >7200</dtime>
-<dtime dyn="se"    hgrid="ne16np4" >1800</dtime>
 <dtime dyn="se"    hgrid="ne30np4" >1800</dtime>
 <dtime dyn="se"    hgrid="ne45np4" >1200</dtime>
 <dtime dyn="se"    hgrid="ne60np4" >1800</dtime>
@@ -156,7 +155,8 @@
 <bnd_topo hgrid="ne0np4_twpx4v1" >atm/cam/topo/USGS_twpx4v1_tensor12x_consistentSGH_170629.nc</bnd_topo>
 
 <!-- ieflx_opt 0: atmonly, 3: coupled -->
-<ieflx_opt  ocn="docn" >0</ieflx_opt>
+<ieflx_opt  ocn="socn"  >0</ieflx_opt>
+<ieflx_opt  ocn="docn"  >0</ieflx_opt>
 <ieflx_opt  ocn="mpaso" >3</ieflx_opt>
 
 <!-- Bulk aerosol physical properties (includes optics) -->
@@ -367,6 +367,7 @@
 
 <radiation_scheme rad="rrtmg">rrtmg</radiation_scheme>
 <radiation_scheme rad="rrtmgp">rrtmgp</radiation_scheme>
+<radiation_scheme rad="none">none</radiation_scheme>
 
 <!-- CAM-Chem ozone (2000 climatology) -->
 <prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
@@ -1313,6 +1314,9 @@
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_enax4v1"> 75 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne0np4_twpx4v1"> 75 </se_tstep>
 
+<dt_remap_factor     dyn_target="theta-l" hgrid="ne16np4"> 3    </dt_remap_factor>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne16np4"> 3    </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne16np4"> 3    </hypervis_subcycle_q>
 
 <se_tstep            dyn_target="theta-l" hgrid="ne240np4"> 37.5 </se_tstep>
 <dt_tracer_factor    dyn_target="theta-l" hgrid="ne240np4"> 8    </dt_tracer_factor>
@@ -1641,12 +1645,13 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <!-- set default parameter values for v2, moved from use_case file -->
 
 <!-- Ice nucleation mods-->
+<use_hetfrz_classnuc               >.false.</use_hetfrz_classnuc>
+<hist_hetfrz_classnuc              >.false.</hist_hetfrz_classnuc>
 <use_hetfrz_classnuc phys="default">.true.</use_hetfrz_classnuc>
 <use_hetfrz_classnuc MMF_microphysics_scheme="sam1mom">.false.</use_hetfrz_classnuc>
-<use_preexisting_ice phys="default">.false.</use_preexisting_ice>
-<hist_hetfrz_classnuc phys="default">.false.</hist_hetfrz_classnuc>
+<use_preexisting_ice               >.false.</use_preexisting_ice>
 <micro_mg_dcs_tdep phys="default">.true.</micro_mg_dcs_tdep>
-<microp_aero_wsub_scheme phys="default">1</microp_aero_wsub_scheme>
+<microp_aero_wsub_scheme               >1</microp_aero_wsub_scheme>
 
 <!-- For Polar mods-->
 <sscav_tuning phys="default">.true.</sscav_tuning>
@@ -1694,13 +1699,13 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <zmconv_trigdcape_ull phys="default"> .true.     </zmconv_trigdcape_ull>
 <cld_sed phys="default" microphys="mg2"> 1.0D0      </cld_sed>
 <effgw_beres phys="default"> 0.35       </effgw_beres>
-<gw_convect_hcf phys="default"> 10.0       </gw_convect_hcf>
+<gw_convect_hcf               > 10.0       </gw_convect_hcf>
 <effgw_oro phys="default"> 0.375      </effgw_oro>
 <use_gw_energy_fix phys="default"> .true.      </use_gw_energy_fix>
 <clubb_C14 phys="default"> 2.5D0      </clubb_C14>
 <clubb_tk1 phys="default"> 268.15D0   </clubb_tk1>
 <dust_emis_fact phys="default"> 1.50D0     </dust_emis_fact>
-<linoz_psc_T phys="default"> 197.5      </linoz_psc_T>
+<linoz_psc_T               > 197.5      </linoz_psc_T>
 <micro_mincdnc phys="default" microphys="mg2"> 10.D6      </micro_mincdnc>
 <clubb_C1 phys="default"> 2.4        </clubb_C1>
 <clubb_C11 phys="default"> 0.70       </clubb_C11>
@@ -1730,7 +1735,7 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <zmconv_mx_bot_lyr_adj phys="default"> 1          </zmconv_mx_bot_lyr_adj>
 <prc_exp1 phys="default"  microphys="mg2"> -1.40D0    </prc_exp1>
 <micro_mg_accre_enhan_fac phys="default" microphys="mg2"> 1.75D0     </micro_mg_accre_enhan_fac>
-<microp_aero_wsubmin phys="default"> 0.001D0    </microp_aero_wsubmin>
+<microp_aero_wsubmin               > 0.001D0    </microp_aero_wsubmin>
 <so4_sz_thresh_icenuc phys="default"> 0.080e-6   </so4_sz_thresh_icenuc>
 <micro_mg_berg_eff_factor phys="default" clubb_sgs="1"> 0.7D0      </micro_mg_berg_eff_factor>
 <cldfrc_dp1  phys="default"> 0.018D0    </cldfrc_dp1>

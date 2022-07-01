@@ -3510,6 +3510,12 @@ cache file to be consistent with how CAM was built.
 Default: set by build-namelist
 </entry>
 
+<entry id="ideal_phys_option" type="char*128" group="phys_ctl_nl"
+       valid_values="held-suarez,held-suarez-williamson,held-suarez-lin-williamson">
+Type of idealized physics configuration to use if running cam_physpkg="ideal".
+Default: held-suarez
+</entry>
+
 <entry id="cam_chempkg" type="char*16" category="build"
        group="phys_ctl_nl" valid_values="waccm_mozart,waccm_ghg,trop_mozart,
                                          trop_ghg,trop_bam,trop_mam3,trop_mam4,trop_mam4_resus_soag,
