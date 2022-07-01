@@ -232,19 +232,17 @@ tweaking their $case/namelist_scream.xml file.
   <!-- List of nc files for loading inputs on specified grids -->
   <Initial__Conditions>
     <Filename>UNSET</Filename>
-    <Filename hgrid="ne4np4">/sems-data-store/ACME/bhillma/scream/data/init/screami_ne4np4L72_stripped.nc</Filename>
-    <Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220524.nc</Filename>
+    <Filename hgrid="ne4np4">/sems-data-store/ACME/bhillma/scream/data/init/screami_ne4np4L72_20220701.nc</Filename>
+    <Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220701.nc</Filename>
     <Filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220524.nc</Filename>
     <Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220525.nc</Filename> 
     <Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20220524.nc</Filename>
     <Filename hgrid="ne30np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne30np4_L128_20211202.nc</Filename> <!-- This will need to be updated to the new nccn name -->
-    <Physics__GLL>
-      <surf_evap>0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->
-      <precip_liq_surf_mass>0.0</precip_liq_surf_mass>
-      <precip_ice_surf_mass>0.0</precip_ice_surf_mass>
-    </Physics__GLL>
     <Restart__Casename>${CASE}.scream</Restart__Casename>
     <!-- Fields that we need to initialize, but are not in an initial condition file need to be inited here -->
+    <surf_evap>0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->
+    <precip_liq_surf_mass>0.0</precip_liq_surf_mass>
+    <precip_ice_surf_mass>0.0</precip_ice_surf_mass>
     <cldfrac_liq       >0.0</cldfrac_liq>
     <sgs_buoy_flux     >0.0</sgs_buoy_flux>
     <eddy_diff_mom     >0.0</eddy_diff_mom>
@@ -262,7 +260,7 @@ tweaking their $case/namelist_scream.xml file.
     <sfc_alb_dir_nir   >0.0</sfc_alb_dir_nir>
     <sfc_alb_dif_vis   >0.0</sfc_alb_dif_vis>
     <sfc_alb_dif_nir   >0.0</sfc_alb_dif_nir>
-    <surf_latent_flux  >0.0</surf_latent_flux>
+    <surf_evap         >0.0</surf_evap>
     <surf_sens_flux    >0.0</surf_sens_flux>
     <surf_lw_flux_up   >0.0</surf_lw_flux_up>
     <surf_mom_flux     >0.0,0.0</surf_mom_flux>

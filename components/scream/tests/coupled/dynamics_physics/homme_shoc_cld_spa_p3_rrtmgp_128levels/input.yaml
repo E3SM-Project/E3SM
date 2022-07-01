@@ -12,7 +12,6 @@ Time Stepping:
 Initial Conditions:
   Filename: ${SCREAM_DATA_DIR}/init/screami_ne2np4L128_20220525.nc
   surf_evap: 0.0
-  surf_latent_flux: 0.0
   surf_sens_flux: 0.0
 
 atmosphere_processes:
