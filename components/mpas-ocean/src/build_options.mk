@@ -10,6 +10,7 @@ FCINCLUDES += -I$(ROOT_DIR)/cvmix/src/shared
 FCINCLUDES += -I$(ROOT_DIR)/BGC
 FCINCLUDES += -I$(ROOT_DIR)/MARBL/include
 FCINCLUDES += -I$(ROOT_DIR)/gotm/build/modules
+FCINCLUDES += -I$(ROOT_DIR)/ppr/src
 override CPPFLAGS += -DCORE_OCEAN
 
 report_builds:

@@ -24,7 +24,7 @@ Field Names:
   - sgs_buoy_flux
   - inv_qc_relvar
   - pbl_height
-  - surf_latent_flux
+  - surf_evap
   - surf_mom_flux
   - surf_sens_flux
   - nccn

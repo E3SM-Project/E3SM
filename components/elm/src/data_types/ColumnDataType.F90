@@ -195,6 +195,9 @@ module ColumnDataType
     real(r8), pointer :: ctrunc               (:)    => null() ! (gC/m2) column-level sink for C truncation
     real(r8), pointer :: totlitc              (:)    => null() ! (gC/m2) total litter carbon
     real(r8), pointer :: totsomc              (:)    => null() ! (gC/m2) total soil organic matter carbon
+    real(r8), pointer :: som1c                (:)    => null()
+    real(r8), pointer :: som2c                (:)    => null()
+    real(r8), pointer :: som3c                (:)    => null()
     real(r8), pointer :: totlitc_1m           (:)    => null() ! (gC/m2) total litter carbon to 1 meter
     real(r8), pointer :: totsomc_1m           (:)    => null() ! (gC/m2) total soil organic matter carbon to 1 meter
     real(r8), pointer :: totecosysc           (:)    => null() ! (gC/m2) total ecosystem carbon, incl veg but excl cpool
@@ -244,6 +247,9 @@ module ColumnDataType
     real(r8), pointer :: cwdn                     (:)     => null() ! (gN/m2) Diagnostic: coarse woody debris N
     real(r8), pointer :: totlitn                  (:)     => null() ! (gN/m2) total litter nitrogen
     real(r8), pointer :: totsomn                  (:)     => null() ! (gN/m2) total soil organic matter nitrogen
+    real(r8), pointer :: som1n                    (:)     => null()
+    real(r8), pointer :: som2n                    (:)     => null()
+    real(r8), pointer :: som3n                    (:)     => null()
     real(r8), pointer :: totlitn_1m               (:)     => null() ! (gN/m2) total litter nitrogen to 1 meter
     real(r8), pointer :: totsomn_1m               (:)     => null() ! (gN/m2) total soil organic matter nitrogen to 1 meter
     real(r8), pointer :: totecosysn               (:)     => null() ! (gN/m2) total ecosystem nitrogen, incl veg
@@ -357,6 +363,9 @@ module ColumnDataType
     real(r8), pointer :: cwdp_end                 (:)      => null()
     real(r8), pointer :: totsomp_end              (:)      => null()
     real(r8), pointer :: cropseedp_deficit        (:)      => null() ! (gP/m2) negative pool tracking seed P for DWT
+    real(r8), pointer :: som1p                    (:)      => null()
+    real(r8), pointer :: som2p                    (:)      => null()
+    real(r8), pointer :: som3p                    (:)      => null()
   contains
     procedure, public :: Init      => col_ps_init
     procedure, public :: Restart   => col_ps_restart
@@ -520,6 +529,7 @@ module ColumnDataType
     real(r8), pointer :: phr_vr                                (:,:)   => null() ! potential hr (not N-limited) (gC/m3/s)
     real(r8), pointer :: fphr                                  (:,:)   => null() ! fraction of potential heterotrophic respiration
     real(r8), pointer :: som_c_leached                         (:)     => null() ! total SOM C loss from vertical transport (gC/m^2/s)
+    real(r8), pointer :: som_c_runoff                          (:)     => null() 
     ! phenology: litterfall and crop fluxes
     real(r8), pointer :: phenology_c_to_litr_met_c             (:,:)   => null() ! C fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gC/m3/s)
     real(r8), pointer :: phenology_c_to_litr_cel_c             (:,:)   => null() ! C fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gC/m3/s)
@@ -594,6 +604,7 @@ module ColumnDataType
     real(r8), pointer :: litterc_loss                          (:)     => null() ! (gC/m2/s) col-level litter C loss
     ! patch averaged to column variables - to remove need for pcf_a instance
     real(r8), pointer :: rr                                    (:)     => null() ! column (gC/m2/s) root respiration (fine root MR + total root GR) (p2c)
+    real(r8), pointer :: rr_vr                                 (:,:)   => null() ! column (gC/m2/s) root respiration (fine root MR + total root GR) (p2c)
     real(r8), pointer :: ar                                    (:)     => null() ! column (gC/m2/s) autotrophic respiration (MR + GR) (p2c)
     real(r8), pointer :: gpp                                   (:)     => null() ! column (gC/m2/s) GPP flux before downregulation  (p2c)
     real(r8), pointer :: npp                                   (:)     => null() ! column (gC/m2/s) net primary production (p2c)
@@ -667,6 +678,8 @@ module ColumnDataType
     real(r8), pointer :: wood_harvestn                         (:)     => null() ! total N losses to wood product pools (gN/m2/s) (p2c)
     ! deposition fluxes
     real(r8), pointer :: ndep_to_sminn                         (:)     => null() ! atmospheric N deposition to soil mineral N (gN/m2/s)
+    real(r8), pointer :: ndep_to_sminn_nh3                     (:)     => null() ! atmospheric N depsotion to soil mineral NH3 (gN/m2/s)
+    real(r8), pointer :: ndep_to_sminn_no3                     (:)     => null() ! atmospheric N depsotion to soil mineral NO3 (gN/m2/s)
     real(r8), pointer :: nfix_to_sminn                         (:)     => null() ! symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
     real(r8), pointer :: nfix_to_ecosysn                       (:)     => null() ! total nitrogen fixation
     real(r8), pointer :: fert_to_sminn                         (:)     => null() ! fertilizer N to soil mineral N (gN/m2/s)
@@ -732,8 +745,11 @@ module ColumnDataType
     ! leaching fluxes
     real(r8), pointer :: smin_no3_leached_vr                   (:,:)   => null() ! vertically-resolved soil mineral NO3 loss to leaching (gN/m3/s)
     real(r8), pointer :: smin_no3_leached                      (:)     => null() ! soil mineral NO3 pool loss to leaching (gN/m2/s)
+    real(r8), pointer :: smin_nh4_leached                      (:)     => null() 
     real(r8), pointer :: smin_no3_runoff_vr                    (:,:)   => null() ! vertically-resolved rate of mineral NO3 loss with runoff (gN/m3/s)
     real(r8), pointer :: smin_no3_runoff                       (:)     => null() ! soil mineral NO3 pool loss to runoff (gN/m2/s)
+    real(r8), pointer :: smin_nh4_runoff                       (:)     => null() 
+    real(r8), pointer :: nh3_soi_flx                           (:)     => null()
     ! nitrification /denitrification diagnostic quantities
     real(r8), pointer :: smin_no3_massdens_vr                  (:,:)   => null() ! (ugN / g soil) soil nitrate concentration
     real(r8), pointer :: soil_bulkdensity                      (:,:)   => null() ! (kg soil / m3) bulk density of soil
@@ -782,6 +798,7 @@ module ColumnDataType
     real(r8), pointer :: ninputs                               (:)     => null() ! column-level N inputs (gN/m2/s)
     real(r8), pointer :: noutputs                              (:)     => null() ! column-level N outputs (gN/m2/s)
     real(r8), pointer :: som_n_leached                         (:)     => null() ! total SOM N loss from vertical transport (gN/m^2/s)
+    real(r8), pointer :: som_n_runoff                          (:)     => null() !
     real(r8), pointer :: decomp_npools_leached                 (:,:)   => null() ! N loss from vertical transport from each decomposing N pool (gN/m^2/s)
     real(r8), pointer :: decomp_npools_transport_tendency      (:,:,:) => null() ! N tendency due to vertical transport in decomposing N pools (gN/m^3/s)
     ! all n pools involved in decomposition
@@ -867,7 +884,7 @@ module ColumnDataType
     real(r8), pointer :: actual_immob_p                        (:)     => null() ! vert-int (diagnostic) actual P immobilization (gP/m2/s)
     real(r8), pointer :: sminp_to_plant_vr                     (:,:)   => null() ! vertically-resolved plant uptake of soil mineral P (gP/m3/s)
     real(r8), pointer :: sminp_to_plant                        (:)     => null() ! vert-int (diagnostic) plant uptake of soil mineral P (gP/m2/s)
-
+    real(r8), pointer :: net_mineralization_p_vr               (:,:)   => null() 
     real(r8), pointer :: supplement_to_sminp_vr                (:,:)   =>null() ! vertically-resolved supplemental P supply (gP/m3/s)
     real(r8), pointer :: supplement_to_sminp                   (:)     =>null() ! vert-int (diagnostic) supplemental P supply (gP/m2/s)
     real(r8), pointer :: gross_pmin_vr                         (:,:)   =>null() ! vertically-resolved gross rate of P mineralization (gP/m3/s)
@@ -889,6 +906,8 @@ module ColumnDataType
     real(r8), pointer :: secondp_to_occlp                      (:)     =>null() ! (gP/m3/s) flux of the occlusion of secondary P to occluded P
     real(r8), pointer :: sminp_leached_vr                      (:,:)   =>null() ! vertically-resolved soil mineral P pool loss to leaching (gP/m3/s)
     real(r8), pointer :: sminp_leached                         (:)     =>null() ! soil mineral P pool loss to leaching (gP/m2/s)
+    real(r8), pointer :: sminp_runoff                          (:)     => null()
+    real(r8), pointer :: som_p_runoff                          (:)     => null()
     real(r8), pointer :: somp_erode                            (:)     =>null() ! SOM P detachment (gP/m^2/s)
     real(r8), pointer :: somp_deposit                          (:)     =>null() ! SOM P hillslope redeposition (gP/m^2/s)
     real(r8), pointer :: somp_yield                            (:)     =>null() ! SOM P loss to inland waters (gP/m^2/s)
@@ -1959,6 +1978,9 @@ contains
     allocate(this%cwdc_beg             (begc:endc))     ; this%cwdc_beg             (:)     = nan
     allocate(this%totlitc_beg          (begc:endc))     ; this%totlitc_beg          (:)     = nan
     allocate(this%totsomc_beg          (begc:endc))     ; this%totsomc_beg          (:)     = nan
+    allocate(this%som1c                (begc:endc))     ; this%som1c                (:)     = nan
+    allocate(this%som2c                (begc:endc))     ; this%som2c                (:)     = nan
+    allocate(this%som3c                (begc:endc))     ; this%som3c                (:)     = nan
     allocate(this%totpftc_end          (begc:endc))     ; this%totpftc_end          (:)     = nan
     allocate(this%cwdc_end             (begc:endc))     ; this%cwdc_end             (:)     = nan
     allocate(this%totlitc_end          (begc:endc))     ; this%totlitc_end          (:)     = nan
@@ -3126,6 +3148,9 @@ contains
     allocate(this%cwdn                  (begc:endc))                     ; this%cwdn                  (:)   = nan
     allocate(this%totlitn               (begc:endc))                     ; this%totlitn               (:)   = nan
     allocate(this%totsomn               (begc:endc))                     ; this%totsomn               (:)   = nan
+    allocate(this%som1n                 (begc:endc))                     ; this%som1n                 (:)   = nan
+    allocate(this%som2n                 (begc:endc))                     ; this%som2n                 (:)   = nan
+    allocate(this%som3n                 (begc:endc))                     ; this%som3n                 (:)   = nan
     allocate(this%totlitn_1m            (begc:endc))                     ; this%totlitn_1m            (:)   = nan
     allocate(this%totsomn_1m            (begc:endc))                     ; this%totsomn_1m            (:)   = nan
     allocate(this%totecosysn            (begc:endc))                     ; this%totecosysn            (:)   = nan
@@ -4128,6 +4153,9 @@ contains
     allocate(this%secondp_beg          (begc:endc))                   ; this%secondp_beg          (:)   = nan
     allocate(this%totlitp_beg          (begc:endc))                   ; this%totlitp_beg          (:)   = nan
     allocate(this%cwdp_beg             (begc:endc))                   ; this%cwdp_beg             (:)   = nan
+    allocate(this%som1p                (begc:endc))                   ; this%som1p                (:)   = nan
+    allocate(this%som2p                (begc:endc))                   ; this%som2p                (:)   = nan
+    allocate(this%som3p                (begc:endc))                   ; this%som3p                (:)   = nan
     allocate(this%totsomp_beg          (begc:endc))                   ; this%totsomp_beg          (:)   = nan
     allocate(this%totlitp_end          (begc:endc))                   ; this%totlitp_end          (:)   = nan
     allocate(this%totpftp_end          (begc:endc))                   ; this%totpftp_end          (:)   = nan
@@ -5587,6 +5615,7 @@ contains
     allocate(this%phr_vr                            (begc:endc,1:nlevdecomp_full)); this%phr_vr                       (:,:) = nan
     allocate(this%fphr                              (begc:endc,1:nlevgrnd))       ; this%fphr                         (:,:) = nan
     allocate(this%som_c_leached                     (begc:endc))                  ; this%som_c_leached                (:)   = nan
+    allocate(this%som_c_runoff                      (begc:endc))                  ; this%som_c_runoff                 (:)   = nan
     allocate(this%phenology_c_to_litr_met_c         (begc:endc,1:nlevdecomp_full)); this%phenology_c_to_litr_met_c    (:,:) = nan
     allocate(this%phenology_c_to_litr_cel_c         (begc:endc,1:nlevdecomp_full)); this%phenology_c_to_litr_cel_c    (:,:) = nan
     allocate(this%phenology_c_to_litr_lig_c         (begc:endc,1:nlevdecomp_full)); this%phenology_c_to_litr_lig_c    (:,:) = nan
@@ -5651,6 +5680,7 @@ contains
     allocate(this%cwdc_loss                         (begc:endc))                  ; this%cwdc_loss                    (:)   = nan
     allocate(this%litterc_loss                      (begc:endc))                  ; this%litterc_loss                 (:)   = nan
     allocate(this%rr                                (begc:endc))                  ; this%rr                           (:)   = nan
+    allocate(this%rr_vr(begc:endc,1:nlevdecomp_full));                            this%rr_vr(:,:) = spval
     allocate(this%ar                                (begc:endc))                  ; this%ar                           (:)   = nan
     allocate(this%gpp                               (begc:endc))                  ; this%gpp                          (:)   = nan
     allocate(this%npp                               (begc:endc))                  ; this%npp                          (:)   = nan
@@ -7701,6 +7731,8 @@ contains
     ! allocate for each member of col_nf
     !-----------------------------------------------------------------------
     allocate(this%ndep_to_sminn                   (begc:endc))                   ; this%ndep_to_sminn	                 (:)   = nan
+    allocate(this%ndep_to_sminn_nh3               (begc:endc))                   ; this%ndep_to_sminn_nh3                (:)   = nan
+    allocate(this%ndep_to_sminn_no3               (begc:endc))                   ; this%ndep_to_sminn_no3                (:)   = nan
     allocate(this%nfix_to_sminn                   (begc:endc))                   ; this%nfix_to_sminn	                 (:)   = nan
     allocate(this%nfix_to_ecosysn                 (begc:endc))                   ; this%nfix_to_ecosysn                (:)   = nan
 
@@ -7726,6 +7758,7 @@ contains
     allocate(this%fire_decomp_nloss               (begc:endc))                   ; this%fire_decomp_nloss              (:)   = nan
     allocate(this%fire_nloss_p2c                  (begc:endc))                   ; this%fire_nloss_p2c                 (:)   = nan
     allocate(this%som_n_leached                   (begc:endc))                   ; this%som_n_leached	                 (:)   = nan
+    allocate(this%som_n_runoff                    (begc:endc))                   ; this%som_n_runoff                   (:)  = nan
     allocate(this%somn_erode                      (begc:endc))                   ; this%somn_erode                     (:)   = nan
     allocate(this%somn_deposit                    (begc:endc))                   ; this%somn_deposit                   (:)   = nan
     allocate(this%somn_yield                      (begc:endc))                   ; this%somn_yield                     (:)   = nan
@@ -7756,8 +7789,11 @@ contains
     allocate(this%f_denit_vr                      (begc:endc,1:nlevdecomp_full)) ; this%f_denit_vr                     (:,:) = nan
     allocate(this%smin_no3_leached_vr             (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_leached_vr            (:,:) = nan
     allocate(this%smin_no3_leached                (begc:endc))                   ; this%smin_no3_leached               (:)   = nan
+    allocate(this%smin_nh4_leached                (begc:endc))                   ; this%smin_nh4_leached               (:)   = nan
     allocate(this%smin_no3_runoff_vr              (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_runoff_vr             (:,:) = nan
     allocate(this%smin_no3_runoff                 (begc:endc))                   ; this%smin_no3_runoff                (:)   = nan
+    allocate(this%nh3_soi_flx                     (begc:endc))                   ; this%nh3_soi_flx                     (:)  = nan
+    allocate(this%smin_nh4_runoff                 (begc:endc))                   ; this%smin_nh4_runoff                (:)   = nan
     allocate(this%pot_f_nit_vr                    (begc:endc,1:nlevdecomp_full)) ; this%pot_f_nit_vr                   (:,:) = nan
     allocate(this%pot_f_nit                       (begc:endc))                   ; this%pot_f_nit                      (:)   = nan
     allocate(this%pot_f_denit_vr                  (begc:endc,1:nlevdecomp_full)) ; this%pot_f_denit_vr                 (:,:) = nan
@@ -9518,6 +9554,7 @@ contains
     allocate(this%potential_immob_p_vr             (begc:endc,1:nlevdecomp_full)) ; this%potential_immob_p_vr          (:,:) = nan
     allocate(this%actual_immob_p_vr                (begc:endc,1:nlevdecomp_full)) ; this%actual_immob_p_vr             (:,:) = nan
     allocate(this%sminp_to_plant_vr                (begc:endc,1:nlevdecomp_full)) ; this%sminp_to_plant_vr             (:,:) = nan
+    allocate(this%net_mineralization_p_vr          (begc:endc,1:nlevdecomp_full)) ; this%net_mineralization_p_vr       (:,:) = nan
     allocate(this%supplement_to_sminp_vr           (begc:endc,1:nlevdecomp_full)) ; this%supplement_to_sminp_vr        (:,:) = nan
     allocate(this%gross_pmin_vr                    (begc:endc,1:nlevdecomp_full)) ; this%gross_pmin_vr                 (:,:) = nan
     allocate(this%net_pmin_vr                      (begc:endc,1:nlevdecomp_full)) ; this%net_pmin_vr                   (:,:) = nan
@@ -9566,6 +9603,8 @@ contains
     allocate(this%secondp_to_occlp                 (begc:endc))                   ; this%secondp_to_occlp              (:)   = nan
     allocate(this%sminp_leached_vr                 (begc:endc,1:nlevdecomp_full)) ; this%sminp_leached_vr              (:,:) = nan
     allocate(this%sminp_leached                    (begc:endc))                   ; this%sminp_leached                 (:)   = nan
+    allocate(this%sminp_runoff                     (begc:endc))                   ; this%sminp_runoff                  (:)   = nan
+    allocate(this%som_p_runoff                     (begc:endc))                   ; this%som_p_runoff                  (:)   = nan
     allocate(this%decomp_ppools_leached            (begc:endc,1:ndecomp_pools  )) ; this%decomp_ppools_leached         (:,:) = nan
     allocate(this%decomp_ppools_transport_tendency (begc:endc,1:nlevdecomp_full,1:ndecomp_pools           )) ; this%decomp_ppools_transport_tendency (:,:,:) = nan
     allocate(this%decomp_ppools_sourcesink         (begc:endc,1:nlevdecomp_full,1:ndecomp_pools           )) ; this%decomp_ppools_sourcesink         (:,:,:) = nan

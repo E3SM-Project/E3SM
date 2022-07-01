@@ -176,7 +176,7 @@
 <var_struct name="sedimentTransportAM" time_levs="1" packages="sedimentTransportAMPKG">
 		<var name="sedimentFallVelocity"
 			 type="real"
-			 dimensions="time"
+			 dimensions="Time"
 			 units="m s^{-1}"
 			 description="Sediment settling velocity in the water column"
 		/>

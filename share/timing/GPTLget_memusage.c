@@ -108,7 +108,7 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
 #elif (defined HAVE_SLASHPROC)
   FILE *fd;                       /* file descriptor for fopen */
   int pid;                        /* process id */
-  char file[19];                  /* full path to file in /proc */
+  char file[24];                  /* full path to file in /proc */
   int dum;                        /* placeholder for unused return arguments */
   int ret;                        /* function return value */
   static int pg_sz = -1;          /* page size */

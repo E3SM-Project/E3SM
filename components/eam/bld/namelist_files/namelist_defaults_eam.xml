@@ -1422,10 +1422,9 @@
 <dt_tracer_factor    dyn_target="theta-l" hgrid="ne512np4"> 8     </dt_tracer_factor>
 <hypervis_subcycle_q dyn_target="theta-l" hgrid="ne512np4"> 8     </hypervis_subcycle_q>
 
-<se_tstep            dyn_target="theta-l" hgrid="ne1024np4"> 9.375 </se_tstep>
-<dt_tracer_factor    dyn_target="theta-l" hgrid="ne1024np4"> 8     </dt_tracer_factor>
-<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne1024np4"> 8     </hypervis_subcycle_q>
-
+<se_tstep            dyn_target="theta-l" hgrid="ne1024np4"> 8.333333333333333d0 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne1024np4"> 6  </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne1024np4"> 6  </hypervis_subcycle_q>
 
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_northamericax4v1"> 3 </hypervis_subcycle_tom>
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"  > 3 </hypervis_subcycle_tom>
