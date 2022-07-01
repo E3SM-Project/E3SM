@@ -261,51 +261,6 @@ contains
          !$omp end parallel
 #endif
 
-         if(config_enable_nonhydrostatic_mode) then
-           allocate(dqdz(nVertLevels))
-            !$omp parallel
-            !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k, dqdz)
-            do iEdge=1,nEdgesOwned
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-               invdcEdge = 1.0_RKIND / dcEdge(iEdge)
-               dqdz(:) = 0.0_RKIND
-
-          !    if(maxLevelEdgeTop(iEdge) > 0) then
-              ! Compute dq/dz (assume q=0 at the surface)
-!               dqdz(1) = 0.25_RKIND*(-2.0_RKIND*nonhydrostaticPressure(1,cell1) / (zMid(1,cell1) - &
-!                          zMid(2,cell1)) - 2.0_RKIND*nonhydrostaticPressure(1,cell2) / &
-!                          (zMid(1,cell2) - zMid(2,cell2)) + (nonhydrostaticPressure(1,cell1) - &
-!                          nonhydrostaticPressure(2,cell1)) / (zMid(1,cell1) - zMid(2,cell1)) + &
-!                          (nonhydrostaticPressure(1,cell2) - nonhydrostaticPressure(2,cell2)) / &
-!                           (zMid(1,cell2) - zMid(2,cell2)))
-!               do k=2,maxLevelEdgeTop(iEdge)-1
-!                  dqdz(k) = 0.5_RKIND*((nonhydrostaticPressure(k-1,cell1) - nonhydrostaticPressure(k+1,cell1)) / &
-!                             (zMid(k-1,cell1) - zMid(k+1,cell1)) + (nonhydrostaticPressure(k-1,cell2) - &
-!                             nonhydrostaticPressure(k+1,cell2)) / (zMid(k-1,cell2) - zMid(k,cell2)))
-!               end do
-!
-!               k = maxLevelEdgeTop(iEdge)
-!               dqdz(k) = 0.25_RKIND*((nonhydrostaticPressure(k-1,cell1) - nonhydrostaticPressure(k,cell1)) / &
-!                          (zMid(k-1,cell1) - zMid(k,cell1)) + (nonhydrostaticPressure(k-1,cell2) - &
-!                          nonhydrostaticPressure(k,cell2)) / (zMid(k-1,cell2) - zMid(k,cell2)) + &
-!                          2.0_RKIND*nonhydrostaticPressure(k,cell1) / (zMid(k-1,cell1) - zMid(k,cell1)) + &
-!                          2.0_RKIND*nonhydrostaticPressure(k,cell2) / (zMid(k-1,cell2) - zMid(k,cell2)))
-
-               !FIXME: may need to revisit later for sloping surfaces, but okay for now
-               !only for strongly varying layer thickness
-               do k=1,maxLevelEdgeTop(iEdge)
-                  tend(k,iEdge) = tend(k,iEdge) + edgeMask(k,iEdge) * invdcEdge * ( &
-                    - ( nonhydrostaticPressure(k,cell2) -             &
-                    nonhydrostaticPressure(k,cell1) ) + 0.0_RKIND*dqdz(k)*density0Inv*        &
-                    (zMid(k,cell2) - zMid(k,cell1)))
-               enddo
-
-           end do
-           !$omp end do
-           !$omp end parallel
-           deallocate(dqdz)
-        endif
       case (pGradTypeMontPot)
 
          ! For pure isopycnal coordinates, this is just grad(M),
@@ -339,21 +294,6 @@ contains
          !$omp end do
          !$omp end parallel
 #endif
-
-         !$omp parallel
-         !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k)
-         do iEdge=1,nEdgesOwned
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-            invdcEdge = 1.0_RKIND / dcEdge(iEdge)
-
-            do k=1,maxLevelEdgeTop(iEdge)
-               tend(k,iEdge) = tend(k,iEdge) + edgeMask(k,iEdge) * invdcEdge * ( &
-                 - ( nonhydrostaticPressure(k,cell2) - nonhydrostaticPressure(k,cell1) ) )
-            end do
-         end do
-         !$omp end do
-         !$omp end parallel
 
       case (pGradTypeMontPotDens)
 
@@ -489,44 +429,6 @@ contains
          !$omp end parallel
 #endif
 
-         if(config_enable_nonhydrostatic_mode) then
-            !$omp parallel
-            !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k)
-            do iEdge=1,nEdgesOwned
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-               invdcEdge = 1.0_RKIND / dcEdge(iEdge)
-
-               k=1
-               dqdza = 0.5_RKIND*((nonhydrostaticPressure(k,cell1) - nonhydrostaticPressure(k+1,cell1)          &
-                  ) / (zMid(k,cell1) - zMid(k+1,cell1)) + (nonhydrostaticPressure(k,cell2) - &
-                  nonhydrostaticPressure(k+1,cell2)) / (zMid(k,cell2) - zMid(k+1,cell2)))
-               tend(k,iEdge) = tend(k,iEdge) + edgeMask(k,iEdge) * invdcEdge * ( &
-                  - density0Inv * ( nonhydrostaticPressure(k,cell2) - nonhydrostaticPressure(k,cell1) ) &
-                  - dqdza*( zMid(k,cell2) - zMid(k,cell1) ) )
-
-               do k=2,maxLevelEdgeTop(iEdge)-1
-                  dqdza = 0.5_RKIND*((nonhydrostaticPressure(k-1,cell1) - nonhydrostaticPressure(k+1,cell1)) &
-                    / (zMid(k-1,cell1) - zMid(k+1,cell1)) + (nonhydrostaticPressure(k-1,cell2) - &
-                    nonhydrostaticPressure(k+1,cell2)) / (zMid(k-1,cell2) - zMid(k+1,cell2)))
-
-                  tend(k,iEdge) = tend(k,iEdge) + edgeMask(k,iEdge) * invdcEdge * ( &
-                    - density0Inv * ( nonhydrostaticPressure(k,cell2) - &
-                    nonhydrostaticPressure(k,cell1) ) - dqdza * (zMid(k,cell2) - zMid(k,cell1)))
-               enddo
-               k=maxLevelEdgeTop(iEdge)
-               dqdza = 0.5_RKIND*((nonhydrostaticPressure(k-1,cell1) - nonhydrostaticPressure(k,cell1)) / &
-                 (zMid(k-1,cell1) - zMid(k,cell1)) + (nonhydrostaticPressure(k-1,cell2) - &
-                 nonhydrostaticPressure(k,cell2)) / (zMid(k-1,cell2) - zMid(k,cell1)))
-               tend(k,iEdge) = tend(k,iEdge) + edgeMask(k,iEdge) * invdcEdge * ( &
-                 -density0Inv * ( nonhydrostaticPressure(k,cell2) - nonhydrostaticPressure(k,cell1) ) - &
-                 dqdza * (zMid(k,cell2) - zMid(k,cell1)))
-
-           end do
-           !$omp end do
-           !$omp end parallel
-        endif
-
         deallocate(JacobianDxDs)
         !$acc exit data delete(JacobianDxDs)
 
@@ -655,44 +557,6 @@ contains
          !$omp end parallel
 #endif
 
-         if(config_enable_nonhydrostatic_mode) then
-            !$omp parallel
-            !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k)
-            do iEdge=1,nEdgesOwned
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-               invdcEdge = 1.0_RKIND / dcEdge(iEdge)
-
-               k=1
-               dqdza = 0.5_RKIND*((nonhydrostaticPressure(k,cell1) - nonhydrostaticPressure(k+1,cell1)          &
-                  ) / (zMid(k,cell1) - zMid(k+1,cell1)) + (nonhydrostaticPressure(k,cell2) - &
-                  nonhydrostaticPressure(k+1,cell2)) / (zMid(k,cell2) - zMid(k+1,cell2)))
-               tend(k,iEdge) = tend(k,iEdge) + edgeMask(k,iEdge) * invdcEdge * ( &
-                  - density0Inv * ( nonhydrostaticPressure(k,cell2) - nonhydrostaticPressure(k,cell1) ) &
-                  - dqdza*( zMid(k,cell2) - zMid(k,cell1) ) )
-
-               do k=2,maxLevelEdgeTop(iEdge)-1
-                  dqdza = 0.5_RKIND*((nonhydrostaticPressure(k-1,cell1) - nonhydrostaticPressure(k+1,cell1)) &
-                    / (zMid(k-1,cell1) - zMid(k+1,cell1)) + (nonhydrostaticPressure(k-1,cell2) - &
-                    nonhydrostaticPressure(k+1,cell2)) / (zMid(k-1,cell2) - zMid(k+1,cell2)))
-
-                  tend(k,iEdge) = tend(k,iEdge) + edgeMask(k,iEdge) * invdcEdge * ( &
-                    - density0Inv * ( nonhydrostaticPressure(k,cell2) - &
-                    nonhydrostaticPressure(k,cell1) ) - dqdza * (zMid(k,cell2) - zMid(k,cell1)))
-               enddo
-               k=maxLevelEdgeTop(iEdge)
-               dqdza = 0.5_RKIND*((nonhydrostaticPressure(k-1,cell1) - nonhydrostaticPressure(k,cell1)) / &
-                 (zMid(k-1,cell1) - zMid(k,cell1)) + (nonhydrostaticPressure(k-1,cell2) - &
-                 nonhydrostaticPressure(k,cell2)) / (zMid(k-1,cell2) - zMid(k,cell1)))
-               tend(k,iEdge) = tend(k,iEdge) + edgeMask(k,iEdge) * invdcEdge * ( &
-                 -density0Inv * ( nonhydrostaticPressure(k,cell2) - nonhydrostaticPressure(k,cell1) ) - &
-                 dqdza * (zMid(k,cell2) - zMid(k,cell1)))
-
-           end do
-           !$omp end do
-           !$omp end parallel
-        endif
-
          !$acc exit data delete (JacobianDxDs, JacobianTz, JacobianSz)
          deallocate(JacobianDxDs, JacobianTz, JacobianSz)
 
@@ -725,6 +589,23 @@ contains
          !*** error already trapped during init
 
       end select ! pGradType
+
+      if(config_enable_nonhydrostatic_mode) then
+         !$omp parallel
+         !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k)
+         do iEdge=1,nEdgesOwned
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            invdcEdge = 1.0_RKIND / dcEdge(iEdge)
+            
+            do k=1,maxLevelEdgeTop(iEdge)
+               tend(k,iEdge) = tend(k,iEdge) + edgeMask(k,iEdge) * invdcEdge * ( &
+                 - ( nonhydrostaticPressure(k,cell2) - nonhydrostaticPressure(k,cell1) ) )
+            end do 
+         end do
+         !$omp end do
+         !$omp end parallel
+      endif
 
       call mpas_timer_stop("pressure grad")
 
