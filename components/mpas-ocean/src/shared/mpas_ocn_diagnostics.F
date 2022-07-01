@@ -2283,8 +2283,7 @@ contains
 !
 !-----------------------------------------------------------------------
    subroutine ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, oldLayerThickness, layerThicknessEdgeFlux, &
-     normalVelocity, vertVelocityNonhydro, oldSSH, dt, vertAleTransportTop, err, &
-     newHighFreqThickness)!{{{
+     normalVelocity, oldSSH, dt, vertAleTransportTop, err, newHighFreqThickness)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -2309,11 +2308,6 @@ contains
 
       real (kind=RKIND), dimension(:), intent(in) :: &
          oldSSH     !< Input: sea surface height at old time
-
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-        vertVelocityNonhydro !predicted velocity, ale is motion relative to grid
-                         !this is needed since nonhydrostatic predicts velocity
-                         ! in hydrostatic mode this is set to vertVelocityTop from diagnostic_solve
 
       real (kind=RKIND), dimension(:,:), intent(in), optional :: &
          newHighFreqThickness   !< Input: high frequency thickness.  Alters ALE thickness.
@@ -2462,25 +2456,6 @@ contains
       !$omp end parallel
 #endif
 
-      if(config_enable_nonhydrostatic_mode) then
-        !FIXME - need to add vertGMBolusVelocity here
-        !$omp parallel
-        !$omp do schedule(runtime) private(k)
-        do iCell = 1,nCells
-           vertAleTransportTop(1,iCell) = 0.0_RKIND
-           vertAleTransportTop(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
-           do k = maxLevelCell(iCell),2,-1
-             vertAleTransportTop(k,iCell) = vertAleTransportTop(k+1,iCell) - div_hu(k,iCell) &
-                - (ALE_Thickness(k,iCell) - oldLayerThickness(k,iCell))/dt
-           end do
-           if(config_disable_ALE) then
-              k=1
-              vertAleTransportTop(k,iCell) = vertAleTransportTop(k+1,iCell) - div_hu(k,iCell)
-           end if
-        end do
-        !$omp end do
-        !$omp end parallel
-      end if
       deallocate(div_hu, &
                  projectedSSH, &
                  ALE_Thickness)

@@ -956,13 +956,12 @@ module ocn_time_integration_rk4
       if (associated(highFreqThicknessProvis)) then
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
             layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
-            vertVelocityNonhydro, sshCur, rkSubstepWeight, &
-            vertAleTransportTop, err, highFreqThicknessProvis)
+            sshCur, rkSubstepWeight, vertAleTransportTop, err, &
+            highFreqThicknessProvis)
       else
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
             layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
-            vertVelocityNonhydro, sshCur, rkSubstepWeight, &
-            vertAleTransportTop, err)
+            sshCur, rkSubstepWeight, vertAleTransportTop, err)
       endif
 
       call ocn_tend_vel(domain, tendPool, provisStatePool, forcingPool, 1, dminfo, dt)
@@ -1020,13 +1019,12 @@ module ocn_time_integration_rk4
       if (associated(highFreqThicknessProvis)) then
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
             layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
-            vertVelocityNonhydroProvis, sshCur, rkSubstepWeight, &
-            vertAleTransportTop, err, highFreqThicknessProvis)
+            sshCur, rkSubstepWeight, vertAleTransportTop, err, &
+            highFreqThicknessProvis)
       else
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
             layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
-            vertVelocityNonhydroProvis, sshCur, rkSubstepWeight, &
-            vertAleTransportTop, err)
+            sshCur, rkSubstepWeight, vertAleTransportTop, err)
       endif
 
       call ocn_tend_vvel(tendPool, provisStatePool, forcingPool, meshPool, 1, dt)
@@ -1091,13 +1089,12 @@ module ocn_time_integration_rk4
       if (associated(highFreqThicknessProvis)) then
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
             layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
-            vertVelocityNonhydro, sshCur, rkSubstepWeight, &
-            vertAleTransportTop, err, highFreqThicknessProvis)
+            sshCur, rkSubstepWeight, vertAleTransportTop, err, &
+            highFreqThicknessProvis)
       else
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
             layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
-            vertVelocityNonhydro, sshCur, rkSubstepWeight, &
-            vertAleTransportTop, err)
+            sshCur, rkSubstepWeight, vertAleTransportTop, err)
       endif
 
       call ocn_tend_thick(tendPool, forcingPool)
@@ -1163,13 +1160,12 @@ module ocn_time_integration_rk4
       if (associated(highFreqThicknessProvis)) then
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
             layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
-            vertVelocityNonhydro, sshCur, rkSubstepWeight, &
-            vertAleTransportTop, err, highFreqThicknessProvis)
+            sshCur, rkSubstepWeight, vertAleTransportTop, err, &
+            highFreqThicknessProvis)
       else
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
             layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
-            vertVelocityNonhydro, sshCur, rkSubstepWeight, &
-            vertAleTransportTop, err)
+            sshCur, rkSubstepWeight, vertAleTransportTop, err)
       endif
 
       if (config_filter_btr_mode) then
@@ -1228,13 +1224,12 @@ module ocn_time_integration_rk4
       if (associated(highFreqThicknessProvis)) then
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
             layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
-            vertVelocityNonhydro, sshCur, rkWeight, &
-            vertAleTransportTop, err, highFreqThicknessProvis)
+            sshCur, rkWeight, vertAleTransportTop, err, &
+            highFreqThicknessProvis)
       else
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
             layerThicknessCur,layerThickEdgeFlux, normalVelocityProvis, &
-            vertVelocityNonhydro, sshCur, rkWeight, &
-            vertAleTransportTop, err)
+            sshCur, rkWeight, vertAleTransportTop, err)
       endif
 
       call ocn_tend_vel(domain, tendPool, provisStatePool, forcingPool, 1, dminfo, dt)
@@ -1242,13 +1237,11 @@ module ocn_time_integration_rk4
       if (associated(highFreqThicknessProvis)) then
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
             layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
-            vertVelocityNonhydro, sshCur, rkWeight, &
-            vertAleTransportTop, err, highFreqThicknessProvis)
+            sshCur, rkWeight, vertAleTransportTop, err, highFreqThicknessProvis)
       else
          call ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, &
             layerThicknessCur, layerThickEdgeFlux, normalTransportVelocity, &
-            vertVelocityNonhydro, sshCur, rkWeight, &
-            vertAleTransportTop, err)
+            sshCur, rkWeight, vertAleTransportTop, err)
       endif
 
       call ocn_tend_thick(tendPool, forcingPool)
