@@ -70,8 +70,6 @@ module LakeBGCDynMod
       real(r8) :: Qch4
       ! CH4 oxidation Q10
       real(r8) :: OQ10
-      ! critical CH4 concentration for O2-inhibitation of methanotrophy (mol/m3)
-      real(r8) :: Och4_cr
       ! oxic CH4 production rate to photosynthesis (mol CH4/m3/s (mol O2/m3/s)-1)
       real(r8) :: Rcoxic
 
@@ -122,7 +120,7 @@ contains
       real(r8) :: temp, por, depth                    ! auxiliary variables
       real(r8) :: solu_avg, biomas_avg                ! auxiliary variables 
       real(r8) :: zsum, dzm, dzp, dzb                 ! auxiliary variables
-      real(r8) :: deficit, biomas_tot
+      real(r8) :: deficit, deficitCum, biomas_tot
       real(r8) :: blamda, bsusp, frcResusp
       real(r8) :: ztot_act, cdep, cdep_tmp
       integer  :: jtop(bounds%begc:bounds%endc)                      ! top level for each column
@@ -533,10 +531,12 @@ contains
                      sum(dz_lake(c,j0:jmix(c)))
                conc_new(c,j0:jmix(c),k) = solu_avg
 
+               deficitCum = 0._r8
                ! correct negative concentration
                do j = 1, nlevlak+nlevsoi
                   if (conc_new(c,j,k)<0._r8) then
                      deficit = -conc_new(c,j,k) * dzx(c,j)  ! mol/m2
+                     deficitCum = deficitCum + deficit
                      if (k==wch4lak) then ! for CH4
                         if (deficit > 1.e-3_r8) then
                            if (deficit > 1.e-2_r8) then
@@ -551,19 +551,36 @@ contains
                            end if
                            !write(iulog,*) 'Negative conc. in LakeBGCDynamics g,c,j,deficit (mol):',g,c,j,deficit
                         end if
-                        if (icethick(c)<1.e-8_r8) then
-                           df_surf(c,wch4lak) = df_surf(c,wch4lak) - deficit/dtime
-                        else
-                           conc_iceb(c,k) = conc_iceb(c,k) - deficit
-                        end if
-                     else if (k<=ngaslak) then  ! for other gases
-                        if (icethick(c)>=1.e-8_r8) then
-                           conc_iceb(c,k) = conc_iceb(c,k) - deficit 
-                        end if
                      end if
                      conc_new(c,j,k) = 0._r8
                   end if
                end do
+               ! add negative CH4 to bottom layer and negative conc of other
+               ! gases to surface layer
+               if (k==wch4lak .and. deficitCum>0._r8) then
+                  ! add negative CH4 to bottom layer
+                  conc_new(c,nlevlak,k) = conc_new(c,nlevlak,k) - deficitCum/dzx(c,nlevlak)
+                  if (conc_new(c,nlevlak,k)<0._r8) then
+                     deficit = -conc_new(c,nlevlak,k) * dzx(c,nlevlak)
+                     if (icethick(c)<1.e-8_r8) then
+                        df_surf(c,k) = df_surf(c,k) - deficit/dtime
+                     else
+                        conc_iceb(c,k) = conc_iceb(c,k) - deficit
+                     end if
+                     conc_new(c,nlevlak,k) = 0._r8
+                  end if
+               else if (k<=ngaslak .and. deficitCum>0._r8) then
+                  conc_new(c,j0,k) = conc_new(c,j0,k) - deficitCum/dzx(c,j0)
+                  if (conc_new(c,j0,k)<0._r8) then
+                     deficit = -conc_new(c,j0,k) * dzx(c,j0)
+                     if (icethick(c)<1.e-8_r8) then
+                        df_surf(c,k) = df_surf(c,k) - deficit/dtime
+                     else
+                        conc_iceb(c,k) = conc_iceb(c,k) - deficit
+                     end if
+                     conc_new(c,j0,k) = 0._r8
+                  end if
+               end if
 
                ! other solute corrections in water column
                do j = 1, nlevlak
@@ -2180,7 +2197,7 @@ contains
       !
       ! !LOCAL VARIABLES:
       real(r8) :: tw, ts, fch4
-      real(r8) :: Qch4, OQ10, Och4_cr
+      real(r8) :: Qch4, OQ10
       real(r8) :: c_ch4, c_o2, och4_oxic
       integer  :: j, k
       !-------------------------------------------------------------------- 
@@ -2353,11 +2370,6 @@ contains
       call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
       if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
       LakeBGCParamsInst%OQ10 = tempr
-
-      tString = 'Och4_cr'
-      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-      LakeBGCParamsInst%Och4_cr = tempr
 
       tString='Rcoxic'
       call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
