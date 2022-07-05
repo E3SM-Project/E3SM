@@ -24,6 +24,8 @@ module mo_gas_phase_chemdr
 
   integer :: synoz_ndx, so4_ndx, h2o_ndx, o2_ndx, o_ndx, hno3_ndx, dst_ndx, cldice_ndx
   integer :: o3_ndx
+! HHLEE
+  integer :: pom_a1_ndx, pom_a4_ndx, num_a1_ndx, num_a4_ndx
   integer :: het1_ndx
   integer :: ndx_cldfr, ndx_cmfdqr, ndx_nevapr, ndx_cldtop, ndx_prain, ndx_sadsulf
   integer :: ndx_h2so4
@@ -74,6 +76,12 @@ contains
     hno3_ndx = get_spc_ndx('HNO3')
     dst_ndx = get_spc_ndx( dust_names(1) )
     synoz_ndx = get_extfrc_ndx( 'SYNOZ' )
+! HHLEE
+    pom_a1_ndx = get_spc_ndx('pom_a1')
+    pom_a4_ndx = get_spc_ndx('pom_a4')
+    num_a1_ndx = get_spc_ndx('num_a1')
+    num_a4_ndx = get_spc_ndx('num_a4')
+ 
     call cnst_get_ind( 'CLDICE', cldice_ndx )
 
     do m = 1,extcnt
@@ -246,6 +254,8 @@ contains
 ! for aqueous chemistry and aerosol growth
 !
     use aero_model,        only : aero_model_gasaerexch
+! HHLEE 
+    use mo_constants,      only : avo => avogadro, boltz_cgs, rgas
 
     implicit none
 
@@ -380,6 +390,21 @@ contains
   ! for aerosol formation....  
     real(r8) :: del_h2so4_gasprod(ncol,pver)
     real(r8) :: vmr0(ncol,pver,gas_pcnst)
+
+  ! HHLEE 20210309 
+  ! O3 - POM reaction rate
+    real(r8) :: rho_air(ncol,pver)
+    real(r8) :: Daer(ncol,pver,2)
+    real(r8) :: Saer(ncol,pver,2)
+    real(r8) :: vth(ncol,pver)
+    real(r8) :: ni(ncol,pver)
+    real(r8) :: Fi(ncol,pver,2)
+    real(r8) :: dmdt(ncol,pver,2) !kg/kg/sec
+    real(r8), parameter :: Aero_density = 1.4e3_r8 ! kg/m3
+    real(r8), parameter :: MWoxid = 0.048_r8 ! kg/mol
+    real(r8), parameter :: MWpom = 0.028_r8 ! kg/mol
+    real(r8), parameter :: gamma_O3 = 1.e-5_r8 
+
 
     call t_startf('chemdr_init')
 
@@ -854,6 +879,45 @@ contains
     if ( do_lin_strat_chem ) then
        call lin_strat_chem_solve( ncol, lchnk, vmr(:,:,o3_ndx), col_dens(:,:,1), tfld, zen_angle, pmid, delt, rlats, troplev )
     end if
+!
+! HHLEE 20210309
+! <dmdt> is oxidation rate in mass space [g/s].
+!
+! NOTE: From Turco et al., 1989
+!   Eq. 1  :  S = 4 * pi * r^2 * np
+!   Eq. 6  :  vth = (8*kb*T*AVG / (pi * MWoxid)
+!   Eq. 20 :  Fi=S*ni*gamma*vth/4    (mol/s)
+!   assuming 1 Carbon lost per reaction, 
+!   dm/dt = -Fi * mc
+    do i = 1, ncol
+       do k = 1, pver
+
+          rho_air(i,k) = pmid(i,k)/(tfld(i,k)*287.04_r8) !kg/m3
+          Daer(i,k,1) = 100._r8* ((6._r8 * mmr(i,k,pom_a1_ndx)) / (pi*Aero_density*mmr(i,k,num_a1_ndx)))**(1./3.) ! m->cm
+          Saer(i,k,1) = pi*Daer(i,k,1)*Daer(i,k,1)*mmr(i,k,num_a1_ndx)*rho_air(i,k)*1.e-6_r8 !(cm2/cm3)
+          Daer(i,k,2) = 100._r8* ((6._r8 * mmr(i,k,pom_a4_ndx)) / (pi*Aero_density*mmr(i,k,num_a4_ndx)))**(1./3.) ! m->cm
+          Saer(i,k,2) = pi*Daer(i,k,2)*Daer(i,k,2)*mmr(i,k,num_a4_ndx)*rho_air(i,k)*1.e-6_r8 !(cm2/cm3)
+
+          vth(i,k) = sqrt((8._r8*boltz_cgs*1.e-7_r8*tfld(i,k)*avo) / (pi*MWoxid)) !(cm/sec)
+          ni(i,k) = vmr(i,k,o3_ndx) * invariants(i,k,indexm)  !molec/molec * molec/cm3 -> molec/cm3 
+
+          Fi(i,k,1) = Saer(i,k,1) * ni(i,k) * gamma_O3 * vth(i,k) / 4._r8 ! molec/cm3/sec
+          dmdt(i,k,1) = -Fi(i,k,1) * MWpom /avo *1.e6_r8 /rho_air(i,k)  !kg/kg/sec
+          Fi(i,k,2) = Saer(i,k,2) * ni(i,k) * gamma_O3 * vth(i,k) / 4._r8 ! molec/cm3/sec
+          dmdt(i,k,2) = -Fi(i,k,2) * MWpom /avo *1.e6_r8 /rho_air(i,k)  !kg/kg/sec
+!          if (dmdt(i,k) .ne. 0.) then
+!             print *, 'constant', avo, boltz_cgs
+!             print *, 'check0', mmr(i,k,pom_a4_ndx),mmr(i,k,num_a4_ndx)
+!             print *, 'check1', Daer(i,k), Saer(i,k)
+!             print *, 'check2', vth(i,k), ni(i,k)
+!             print *, 'check3', Fi(i,k),rho_air(i,k) 
+!             print *, 'check4', vmr(i,k,o3_ndx),invariants(i,k,indexm)
+!             print *, 'HHLEE1 ', i, k, dmdt(i,k)
+!          end if
+        end do
+     end do
+
+
 
     !-----------------------------------------------------------------------      
     !         ... Check for negative values and reset to zero
@@ -888,6 +952,28 @@ contains
        mmr_new(:ncol,:,m) = mmr_tend(:ncol,:,m)
        mmr_tend(:ncol,:,m) = (mmr_tend(:ncol,:,m) - mmr(:ncol,:,m))*delt_inverse
     enddo
+
+!    do i = 1, ncol
+!       do k = 1, pver
+!          if ((mmr_tend(i,k,pom_a4_ndx) .ne. 0.) .or. (dmdt(i,k) .ne. 0.)) then
+!              print *,'HHLEE1', i, k, mmr_tend(i,k,pom_a4_ndx),dmdt(i,k)
+!          end if
+!       end do
+!    end do
+
+       mmr_tend(:ncol,:,pom_a1_ndx) = mmr_tend(:ncol,:,pom_a1_ndx) + dmdt(:ncol,:,1)  !kg/kg/sec
+       mmr_new(:ncol,:,pom_a1_ndx) = mmr(:ncol,:,pom_a1_ndx) + mmr_tend(:ncol,:,pom_a1_ndx)*delt !kg/kg
+       mmr_tend(:ncol,:,pom_a4_ndx) = mmr_tend(:ncol,:,pom_a4_ndx) + dmdt(:ncol,:,2)  !kg/kg/sec
+       mmr_new(:ncol,:,pom_a4_ndx) = mmr(:ncol,:,pom_a4_ndx) + mmr_tend(:ncol,:,pom_a4_ndx)*delt !kg/kg
+! HHLEE pom update
+!    do i = 1, ncol
+!       do k = 1, pver
+!          if ((mmr_tend(i,k,pom_a4_ndx) .ne. 0.) .or. (dmdt(i,k,1) .ne. 0.) .or. (dmdt(i,k,2) .ne. 0.)) then
+!              print *,'HHLEE1', i, k, mmr_tend(i,k,pom_a1_ndx),dmdt(i,k,1)
+!              print *,'HHLEE2', i, k, mmr_tend(i,k,pom_a4_ndx),dmdt(i,k,2)
+!          end if
+!       end do
+!    end do
 
     do m = 1,pcnst
        n = map2chm(m)

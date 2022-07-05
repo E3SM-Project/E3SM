@@ -211,7 +211,9 @@ end subroutine prescribed_volcaero_readnl
     endif
     is_cmip6_volc = .false.
     if (trim(adjustl(file_type))== 'VOLC_CMIP6') then
-       is_cmip6_volc = .true.
+! HHLEE 20210119
+!       is_cmip6_volc = .true.
+       is_cmip6_volc = .false.
        ispf = 1
        specifier_sw(ispf) = trim(adjustl(ext_sun_name))
        ispf = ispf + 1

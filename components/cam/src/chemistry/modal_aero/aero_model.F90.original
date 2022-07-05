@@ -1096,14 +1096,7 @@ contains
              rad_aer(1:ncol,:) = 0.5_r8*dgncur_awet(1:ncol,:,m)   &
                                  *exp(1.5_r8*(alnsg_amode(m)**2))
 ! dens_aer(1:ncol,:) = wet density (kg/m3)
-! HHLEE 20210802
-! density test
-             if (m .eq. 1 .or. m .eq. 4) then
-                dens_aer(1:ncol,1:35) = 1000.0_r8
-                dens_aer(1:ncol,36:72) = wetdens(1:ncol,36:72,m)
-             else
-                dens_aer(1:ncol,:) = wetdens(1:ncol,:,m)
-             end if
+             dens_aer(1:ncol,:) = wetdens(1:ncol,:,m)
              sg_aer(1:ncol,:) = sigmag_amode(m)
 
              jvlc = 1

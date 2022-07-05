@@ -1227,17 +1227,17 @@
            <modules compiler="intel">
              <command name="load">python</command>
              <command name="load">git</command>
-             <command name="load">intel</command>
-             <command name="load">mvapich2</command>
+             <command name="load">intel/19.0.4</command>
+             <command name="load">mvapich2/2.3</command>
              <command name="load">netcdf-fortran/4.4.4</command>
              <command name="load">pnetcdf/1.9.0</command>
            </modules>
          </module_system>
          <environment_variables compiler="intel">
-           <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-18.0.1/</env>
+           <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</env>
          </environment_variables>
          <environment_variables compiler="intel" mpilib="!mpi-serial">
-           <env name="PNETCDFROOT">/usr/tce/packages/pnetcdf/pnetcdf-1.9.0-intel-18.0.1-mvapich2-2.2/</env>
+           <env name="PNETCDFROOT">/usr/tce/packages/pnetcdf/pnetcdf-1.9.0-intel-19.0.4-mvapich2-2.3/</env>
          </environment_variables>
 </machine>
 

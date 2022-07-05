@@ -1,0 +1,8 @@
+2021/03/22
+Write out a new variable (EXTINCT1020) to compare SAGE observation.  
+
+2021/03/02
+This version is to modify the heterogenous reaction (O3-OC) in chemistry/mozart/mo_usrrxt.F90.
+
+> What has been done? 
+  Turn off the radiative properties of volcano aerosols in stratosphere.  

@@ -236,25 +236,27 @@ subroutine aer_rad_props_sw(list_idx, state, pbuf,  nnite, idxnite, is_cmip6_vol
    rhuge_arr = rhuge
    ext_cmip6_sw => rhuge_arr
    trop_level = ihuge
-   if (is_cmip6_volc) then
-      !get extinction so as to supply to modal_aero_sw routine for computing EXTINCT variable
-      !converting it from 1/km to 1/m 
-
-      call pbuf_get_field(pbuf, idx_ext_sw, ext_cmip6_sw)
-      call outfld('extinct_sw_inp',ext_cmip6_sw(:,:,idx_sw_diag), pcols, lchnk)
-      ext_cmip6_sw = ext_cmip6_sw * km_inv_to_m_inv !convert from 1/km to 1/m  
-      
-      !Find tropopause as extinction should be applied only above tropopause
-      !trop_level has value for tropopause for each column
-      call tropopause_find(state, trop_level)
-      !Quit if tropopause is not found
-      if (any(trop_level(1:ncol) == -1)) then
-         do icol = 1, ncol
-            write(iulog,*)'tropopause level,state%lchnk,column:',trop_level(icol),lchnk,icol
-         enddo
-         call endrun('aer_rad_props.F90: subr aer_rad_props_sw: tropopause not found')
-      endif
-   endif
+! HHLEE 20210117
+! remove cmip6 volcano aerosol in radiation 
+!   if (is_cmip6_volc) then
+!      !get extinction so as to supply to modal_aero_sw routine for computing EXTINCT variable
+!      !converting it from 1/km to 1/m 
+!
+!      call pbuf_get_field(pbuf, idx_ext_sw, ext_cmip6_sw)
+!      call outfld('extinct_sw_inp',ext_cmip6_sw(:,:,idx_sw_diag), pcols, lchnk)
+!      ext_cmip6_sw = ext_cmip6_sw * km_inv_to_m_inv !convert from 1/km to 1/m  
+!      
+!      !Find tropopause as extinction should be applied only above tropopause
+!      !trop_level has value for tropopause for each column
+!      call tropopause_find(state, trop_level)
+!      !Quit if tropopause is not found
+!      if (any(trop_level(1:ncol) == -1)) then
+!         do icol = 1, ncol
+!            write(iulog,*)'tropopause level,state%lchnk,column:',trop_level(icol),lchnk,icol
+!         enddo
+!         call endrun('aer_rad_props.F90: subr aer_rad_props_sw: tropopause not found')
+!      endif
+!   endif
 
 
    ! get number of bulk aerosols and number of modes in current list
@@ -271,10 +273,11 @@ subroutine aer_rad_props_sw(list_idx, state, pbuf,  nnite, idxnite, is_cmip6_vol
       tau_w_f(1:ncol,:,:) = 0._r8
    end if
 
-   if (is_cmip6_volc) then
-      !update tau, tau_w, tau_w_g, and tau_w_f with the read in values of extinction, ssa and asymmetry factors
-      call volcanic_cmip_sw(state, pbuf, trop_level, ext_cmip6_sw, tau, tau_w, tau_w_g, tau_w_f)
-   endif
+! HHLEE 20210117
+!   if (is_cmip6_volc) then
+!      !update tau, tau_w, tau_w_g, and tau_w_f with the read in values of extinction, ssa and asymmetry factors
+!      call volcanic_cmip_sw(state, pbuf, trop_level, ext_cmip6_sw, tau, tau_w, tau_w_g, tau_w_f)
+!   endif
 
    ! Contributions from bulk aerosols.
    do iaerosol = 1, numaerosols
@@ -441,51 +444,52 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, state, pbuf,  odap_aer)
       wrh(1:ncol,1:pver) = rhtrunc(1:ncol,1:pver) * nrh - krh(1:ncol,1:pver)       ! (-) weighting on left side values
 
    end if
-   if(is_cmip6_volc) then
-      !Logic:
-      !Update odap_aer with the read in volcanic aerosol extinction (1/km).                                                                                    
-      !It needs to be converted to 1/m and multiplied by layer thickness first.
-      
-      !Obtain read in values for ext from the volcanic input file                                                                                              
-      call pbuf_get_field(pbuf, idx_ext_lw, ext_cmip6_lw)
-      call outfld('extinct_lw_inp',ext_cmip6_lw(:,:,idx_lw_diag), pcols, lchnk)
-      ext_cmip6_lw = ext_cmip6_lw * km_inv_to_m_inv  !convert from 1/km to 1/m
-      !Above the tropopause, the read in values from the file include both the stratospheric
-      !and volcanic aerosols. Therefore, we need to zero out odap_aer above the tropopause                                                                   
-      !and populate it exclusively from the read in values.
-      
-      !Find tropopause 
-      !trop_level has value for tropopause for each column
-      call tropopause_find(state, trop_level)
-      !Quit if tropopause is not found                                                                                                     
-      if (any(trop_level(1:ncol) == -1)) then
-         do icol = 1, ncol
-            write(iulog,*)'tropopause level,lchnk,column:',trop_level(icol),lchnk,icol
-         enddo
-         call endrun('aer_rad_props_lw: tropopause not found')
-      endif
-      
-      !If tropopause is found, update taus with 50% contributuions from the volcanic input 
-      !file and 50% from the existing model computed values
-      !First handle the case of tropopause layer itself:
-      do icol = 1, ncol
-         ilev_tropp = trop_level(icol) !tropopause level
-         lyr_thk    = state%zi(icol,ilev_tropp) - state%zi(icol,ilev_tropp+1)! in meters                                                                      
-         odap_aer(icol,ilev_tropp,:) = 0.5_r8*( odap_aer(icol,ilev_tropp,:) + (lyr_thk * ext_cmip6_lw(icol,ilev_tropp,:)) )
-      enddo
-      !As it will be more efficient for FORTRAN to loop over levels and then columns, the following loops
-      !are nested keeping that in mind
-      do ipver = 1 , pver
-         do icol = 1, ncol
-            ilev_tropp = trop_level(icol) !tropopause level
-            if (ipver < ilev_tropp) then !BALLI: see if this is right!
-               lyr_thk = state%zi(icol,ipver) - state%zi(icol,ipver+1)
-               odap_aer(icol,ipver,:) = lyr_thk * ext_cmip6_lw(icol,ipver,:)
-            endif
-         enddo
-      enddo
-      call outfld('extinct_lw_bnd7',odap_aer(:,:,idx_lw_diag), pcols, lchnk)
-   endif
+! HHLEE 20210117
+!   if(is_cmip6_volc) then
+!      !Logic:
+!      !Update odap_aer with the read in volcanic aerosol extinction (1/km).                                                                                    
+!      !It needs to be converted to 1/m and multiplied by layer thickness first.
+!      
+!      !Obtain read in values for ext from the volcanic input file                                                                                              
+!      call pbuf_get_field(pbuf, idx_ext_lw, ext_cmip6_lw)
+!      call outfld('extinct_lw_inp',ext_cmip6_lw(:,:,idx_lw_diag), pcols, lchnk)
+!      ext_cmip6_lw = ext_cmip6_lw * km_inv_to_m_inv  !convert from 1/km to 1/m
+!      !Above the tropopause, the read in values from the file include both the stratospheric
+!      !and volcanic aerosols. Therefore, we need to zero out odap_aer above the tropopause                                                                   
+!      !and populate it exclusively from the read in values.
+!      
+!      !Find tropopause 
+!      !trop_level has value for tropopause for each column
+!      call tropopause_find(state, trop_level)
+!      !Quit if tropopause is not found                                                                                                     
+!      if (any(trop_level(1:ncol) == -1)) then
+!         do icol = 1, ncol
+!            write(iulog,*)'tropopause level,lchnk,column:',trop_level(icol),lchnk,icol
+!         enddo
+!         call endrun('aer_rad_props_lw: tropopause not found')
+!      endif
+!      
+!      !If tropopause is found, update taus with 50% contributuions from the volcanic input 
+!      !file and 50% from the existing model computed values
+!      !First handle the case of tropopause layer itself:
+!      do icol = 1, ncol
+!         ilev_tropp = trop_level(icol) !tropopause level
+!         lyr_thk    = state%zi(icol,ilev_tropp) - state%zi(icol,ilev_tropp+1)! in meters                                                                      
+!         odap_aer(icol,ilev_tropp,:) = 0.5_r8*( odap_aer(icol,ilev_tropp,:) + (lyr_thk * ext_cmip6_lw(icol,ilev_tropp,:)) )
+!      enddo
+!      !As it will be more efficient for FORTRAN to loop over levels and then columns, the following loops
+!      !are nested keeping that in mind
+!      do ipver = 1 , pver
+!         do icol = 1, ncol
+!            ilev_tropp = trop_level(icol) !tropopause level
+!            if (ipver < ilev_tropp) then !BALLI: see if this is right!
+!               lyr_thk = state%zi(icol,ipver) - state%zi(icol,ipver+1)
+!               odap_aer(icol,ipver,:) = lyr_thk * ext_cmip6_lw(icol,ipver,:)
+!            endif
+!         enddo
+!      enddo
+!      call outfld('extinct_lw_bnd7',odap_aer(:,:,idx_lw_diag), pcols, lchnk)
+!   endif
    
    ! Loop over bulk aerosols in list.
    do iaerosol = 1, numaerosols
