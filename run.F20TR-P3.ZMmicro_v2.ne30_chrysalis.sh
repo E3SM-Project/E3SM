@@ -200,6 +200,7 @@ EOF
 
 cat << EOF >> user_nl_elm
 
+check_dynpft_consistency = .false.
 
 EOF
 
