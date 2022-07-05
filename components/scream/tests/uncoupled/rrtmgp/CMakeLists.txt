@@ -31,7 +31,7 @@ if (NOT SCREAM_BASELINES_ONLY)
 
   # The RRTMGP stand-alone test that runs multi-step
   # Set AD configurable options
-  SetVarDependingOnTestProfile(NUM_STEPS 2 5 48)
+  SetVarDependingOnTestSize(NUM_STEPS 2 5 48)
   set (ATM_TIME_STEP 1800)
 
   ## Copy (and configure) yaml files needed by tests

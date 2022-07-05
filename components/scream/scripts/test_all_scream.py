@@ -32,7 +32,7 @@ class TestAllScream(object):
                  integration_test=False, local=False, root_dir=None, work_dir=None,
                  quick_rerun=False,quick_rerun_failed=False,dry_run=False,
                  make_parallel_level=0, ctest_parallel_level=0, update_expired_baselines=False,
-                 extra_verbose=False, limit_test_regex=None):
+                 extra_verbose=False, limit_test_regex=None, test_level="at"):
     ###########################################################################
 
         # When using scripts-tests, we can't pass "-l" to test-all-scream,
@@ -69,6 +69,7 @@ class TestAllScream(object):
         self._update_expired_baselines= update_expired_baselines
         self._extra_verbose           = extra_verbose
         self._limit_test_regex        = limit_test_regex
+        self._test_level              = test_level
 
         self._test_full_names = OrderedDict([
             ("dbg" , "full_debug"),
@@ -104,11 +105,11 @@ class TestAllScream(object):
                      ("EKAT_DEFAULT_BFB", "True")],
             "opt" : [("CMAKE_BUILD_TYPE", "Release")],
             "valg" : [("CMAKE_BUILD_TYPE", "Debug"),
-                      ("SCREAM_TEST_PROFILE", "SHORT"),
+                      ("SCREAM_TEST_SIZE", "SHORT"),
                      ("SCREAM_ENABLE_BASELINE_TESTS", "False"),
                       ("EKAT_ENABLE_VALGRIND", "True")],
             "cmc"  : [("CMAKE_BUILD_TYPE", "Debug"),
-                      ("SCREAM_TEST_PROFILE", "SHORT"),
+                      ("SCREAM_TEST_SIZE", "SHORT"),
                      ("SCREAM_ENABLE_BASELINE_TESTS", "False"),
                       ("EKAT_ENABLE_CUDA_MEMCHECK", "True")],
             "cov" : [("CMAKE_BUILD_TYPE", "Debug"),
@@ -482,6 +483,14 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
         # unless we tell test-launcher to buffer all output
         if self._extra_verbose:
             result += " -DEKAT_TEST_LAUNCHER_BUFFER=True "
+
+        # Define test level
+        if self._test_level == "at":
+            pass # Nothing to do, this is the default in the cmake system
+        elif self._test_level == "nightly":
+            result += " -DSCREAM_TEST_LEVEL=NIGHTLY "
+        elif self._test_level == "experimental":
+            result += " -DSCREAM_TEST_LEVEL=EXPERIMENTAL "
 
         # User-requested config options
         custom_opts_keys = []

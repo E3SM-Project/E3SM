@@ -75,9 +75,6 @@ endif()
 
 set(SCREAM_DOUBLE_PRECISION TRUE CACHE BOOL "Set to double precision (default True)")
 
-# Note: experimental code might cause compilation errors and/or tests failures.
-option (SCREAM_ENABLE_EXPERIMENTAL "Whether to enable experimental code in scream." OFF)
-
 # Set the scream base and src directory, to be used across subfolders
 set(SCREAM_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(SCREAM_SRC_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -155,7 +152,6 @@ if (SCREAM_CIME_BUILD)
   set(DEFAULT_LIB_ONLY TRUE)
 endif()
 set(DEFAULT_NUM_VERTICAL_LEV 72)
-set(DEFAULT_AUTOTESTER FALSE)
 
 find_path(NF_CONFIG_SEARCH nf-config)
 if (NF_CONFIG_SEARCH)
@@ -194,7 +190,6 @@ set(SCREAM_MPIRUN_EXE ${DEFAULT_MPIRUN_EXE} CACHE STRING "The executable name fo
 set(SCREAM_MPI_EXTRA_ARGS ${DEFAULT_MPI_EXTRA_ARGS} CACHE STRING "Options for mpirun")
 set(SCREAM_MPI_NP_FLAG ${DEFAULT_MPI_NP_FLAG} CACHE STRING "The mpirun flag for designating the total number of ranks")
 set(SCREAM_LIB_ONLY ${DEFAULT_LIB_ONLY} CACHE BOOL "Only build libraries, no exes")
-set(SCREAM_AUTOTESTER ${DEFAULT_AUTOTESTER} CACHE BOOL "This is an autotester run; may disable some tests")
 set(NetCDF_Fortran_PATH ${DEFAULT_NetCDF_Fortran_PATH} CACHE FILEPATH "Path to netcdf fortran installation")
 set(NetCDF_C_PATH ${DEFAULT_NetCDF_C_PATH} CACHE FILEPATH "Path to netcdf C installation")
 set(SCREAM_MACHINE ${DEFAULT_SCREAM_MACHINE} CACHE STRING "The CIME/SCREAM name for the current machine")
@@ -249,6 +244,28 @@ else()
 endif()
 
 set (SCREAM_DATA_DIR ${SCREAM_INPUT_ROOT}/atm/scream CACHE PATH "" FORCE)
+
+#
+# Handle test level
+#
+
+# Constants
+set(SCREAM_TEST_LEVEL_AT "0")
+set(SCREAM_TEST_LEVEL_NIGHTLY "1")
+set(SCREAM_TEST_LEVEL_EXPERIMENTAL "2")
+
+set(SCREAM_TEST_LEVEL "AT" CACHE STRING "The test level to run. Default is AT. NIGHTLY will run additional tests but is not guaranteed to PASS. EXPERIMENTAL will run even more tests with failures being more likely")
+
+if (SCREAM_TEST_LEVEL STREQUAL "AT")
+  set(SCREAM_TEST_LEVEL ${SCREAM_TEST_LEVEL_AT})
+elseif (SCREAM_TEST_LEVEL STREQUAL "NIGHTLY")
+  set(SCREAM_TEST_LEVEL ${SCREAM_TEST_LEVEL_NIGHTLY})
+elseif (SCREAM_TEST_LEVEL STREQUAL "EXPERIMENTAL")
+  set(SCREAM_TEST_LEVEL ${SCREAM_TEST_LEVEL_EXPERIMENTAL})
+else()
+  message(FATAL_ERROR "Unknown SCREAM_TEST_LEVEL '${SCREAM_TEST_LEVEL}'")
+endif()
+
 
 # Assuming SCREAM_LIB_ONLY is FALSE (else, no exec is built at all), we provide the option
 # of building only baseline-related execs. By default, this option is off (menaing "build everything").
@@ -337,8 +354,8 @@ endif()
 # This is a meta-variable, which individual tests can use to set *different* degrees
 # of testing, in terms of resolutions. E.g., for SHORT use 3 timesteps, for MEDIUM use 10,
 # for LONG use 100. It is *completely* up to the test to decide what short, medium, and long mean.
-set(SCREAM_TEST_PROFILE MEDIUM CACHE STRING "The kind of testing to perform: SHORT, MEDIUM, LONG")
-set(SCREAM_TEST_VALID_PROFILES "SHORT;MEDIUM;LONG" CACHE INTERNAL "List of valid values for SCREAM_TEST_PROFILE")
+set(SCREAM_TEST_SIZE MEDIUM CACHE STRING "The kind of testing to perform: SHORT, MEDIUM, LONG. Only applies to certain tests and is generally used to reduce test length when valgrind/cuda-memcheck are on.")
+set(SCREAM_TEST_VALID_SIZES "SHORT;MEDIUM;LONG" CACHE INTERNAL "List of valid values for SCREAM_TEST_SIZE")
 
 # Whether to use XYZ as a method to detect memory usage.
 option (SCREAM_ENABLE_GETRUSAGE "Whether getrusage can be used to get memory usage." OFF)
