@@ -596,7 +596,7 @@ module ocn_time_integration_si
          end if
       end do
 
-!      if(config_enable_nonhydrostatic_mode) then
+      if(config_enable_nonhydrostatic_mode) then
          !$omp parallel
          !$omp do schedule(runtime) private(k)
          do iCell=1,nCellsAll
@@ -606,7 +606,7 @@ module ocn_time_integration_si
          end do
          !$omp end do
          !$omp end parallel
-!      end if
+      end if
 
       if (associated(highFreqThicknessNew)) then
 #ifdef MPAS_OPENACC
