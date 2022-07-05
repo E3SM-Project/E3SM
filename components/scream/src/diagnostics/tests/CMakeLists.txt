@@ -30,5 +30,7 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(vapor_water_path "vapor_water_path_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test total rain water path
   CreateUnitTest(rain_water_path "rain_water_path_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test total water path
+  CreateUnitTest(water_path "water_path_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 
 endif()
