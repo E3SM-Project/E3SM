@@ -33,7 +33,7 @@ readonly DESCRIPTOR="F20TR-P3.Baseline4B.ne30pg2"      # This will be the main p
 readonly CASE_GROUP="NGD.Integration"
 
 # Code and compilation
-readonly CHECKOUT="20220629"                       # Provide a timestamp for distinction
+readonly CHECKOUT="20220705"                       # Provide a timestamp for distinction
 readonly BRANCH="crterai/eam/v3_convection_candidate"   # v2 release tag + P3 with updates
 readonly DEBUG_COMPILE=false
 
@@ -160,6 +160,8 @@ cat << EOF >> user_nl_eam
  zmconv_microp = .true.
  ! Run with dynamic adjustment ZM closure
  zmconv_clos_dyn_adj=.true.
+ ! Run with MCSP
+ zmconv_MCSP_heat_coeff=0.3
 
  ! Tunings
  zmconv_ke=2.5e-6
