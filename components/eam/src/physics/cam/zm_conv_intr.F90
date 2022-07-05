@@ -23,6 +23,7 @@ module zm_conv_intr
 
    use ndrop_bam,        only: ndrop_bam_init
    use cam_abortutils,   only: endrun
+   use physconst,        only: pi
 
    use spmd_utils,       only: masterproc
 !>songxl---------------
@@ -647,7 +648,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 !++ MCSP
    use time_manager,       only: get_curr_date
    use interpolate_data, only: vertinterp
-   use physconst,     only: pi
 !-- MCSP
 
 
