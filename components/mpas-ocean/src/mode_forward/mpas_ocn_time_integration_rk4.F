@@ -531,9 +531,11 @@ module ocn_time_integration_rk4
         block => domain % blocklist
         do while (associated(block))
            call ocn_time_integrator_rk4_compute_vel_tends(domain, block, dt, rk_substep_weights(rk_step), domain % dminfo, err )
+
            call ocn_time_integrator_rk4_compute_thick_tends( block, dt, rk_substep_weights(rk_step), err )
            block => block % next
         end do
+
         call mpas_timer_stop("RK4 vel/thick tendency computations")
 
         if (config_enable_nonhydrostatic_mode) then
@@ -546,6 +548,7 @@ module ocn_time_integration_rk4
            call mpas_timer_stop("RK4 vvel tendency computations")
         end if
 
+        ! Update halos for prognostic variables.
         call mpas_timer_start("RK4 vel/thick prognostic halo update")
 
         call mpas_dmpar_field_halo_exch(domain, 'tendNormalVelocity')
@@ -697,21 +700,22 @@ module ocn_time_integration_rk4
 
          call mpas_pool_get_array(tracersPool, 'activeTracers',activeTracersNew, 2)
 
-      if (config_enable_nonhydrostatic_mode) then
+         if (config_enable_nonhydrostatic_mode) then
 
-         call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressure, 2)
-         call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressureOld, 1)
+            call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressure, 2)
+            call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressureOld, 1)
 
-         call mpas_timer_start('RK4 NH pressure tend halo pressure')
-         call mpas_dmpar_field_halo_exch(domain, 'nonhydrostaticPressure', timeLevel=2)
-         call mpas_dmpar_field_halo_exch(domain, 'nonhydrostaticPressure', timeLevel=1)
-         call mpas_dmpar_field_halo_exch(domain, 'nhPressureCorrection')
-         call mpas_timer_stop('RK4 NH pressure tend halo pressure')
+            call mpas_timer_start('RK4 NH pressure tend halo pressure')
+            call mpas_dmpar_field_halo_exch(domain, 'nonhydrostaticPressure', timeLevel=2)
+            call mpas_dmpar_field_halo_exch(domain, 'nonhydrostaticPressure', timeLevel=1)
+            call mpas_dmpar_field_halo_exch(domain, 'nhPressureCorrection')
+            call mpas_timer_stop('RK4 NH pressure tend halo pressure')
 
             call ocn_nonhydrostatic_pressure_update_velocity(normalVelocityNew, vertVelocityNonhydroNew, &
                  layerThicknessNew, layerThickEdgeMean, nonhydrostaticPressure, nonhydrostaticPressureOld, &
                  nhPressureCorrection, dt)
-      end if
+         end if
+
          if (config_prescribe_velocity) then
             !$omp parallel
             !$omp do schedule(runtime)
