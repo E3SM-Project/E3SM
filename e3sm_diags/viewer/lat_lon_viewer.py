@@ -72,6 +72,8 @@ VAR_DICT = [
     },
 ]
 
+CMIP6_EXP = ["historical", "amip"]
+
 
 def generate_lat_lon_metrics_table(
     lat_lon_table_info, seasons, viewer, root_dir, parameters
@@ -355,7 +357,7 @@ def read_e3sm_diags_metrics(path, variables, seasons, names=None):
                                 )
                             )
             except OSError as err:
-                logger.info(f"{err}")
+                logger.debug(f"{err}")
 
     # Dictionary to hold data
     d = {}
@@ -387,16 +389,6 @@ def generate_lat_lon_cmip6_comparison(
     nseasons = len(seasons)
 
     # Read rmse for CMIP6 models (including e3smv1 and e3smv2) for historical r1i1pif1 ensembles averaging over 1985-2014.
-
-    control_runs_path = os.path.join(
-        e3sm_diags.INSTALL_PATH,
-        "control_runs",
-        "cmip6_seasonal_rmse_*.csv",
-    )
-    cmip6_csv_path = sorted(glob.glob(control_runs_path))[-1]
-    cmip6_data_access = cmip6_csv_path.split("_")[-1][:6]
-
-    cmip6 = read_cmip6_metrics_from_csv(cmip6_csv_path, VAR_DICT, seasons)
     # example root_dir = "/Users/zhang40/Downloads/lat_lon_cmip6_test/viewer"
     test_path = root_dir + "/table-data"
     test_model = read_e3sm_diags_metrics(
@@ -408,90 +400,101 @@ def generate_lat_lon_cmip6_comparison(
         ],
     )
 
-    # Create plot: compare test model with CMIP6, E3SMv1 and v2
-    fig = plt.figure(figsize=[24, 18])
-    nsx = 4
-    nsy = 3
-    for ivariable in range(len(VAR_DICT)):
-        # CMIP6 data for box and whiskers
-        data = []
-        labels = []
-        for iseason in range(nseasons):
-            # Identify model with lowest RMSE
-            # ibest = ma.argmin(cmip6["data"][:, ivariable, iseason].compressed())
-            # print("Best model %s %s %s" % (variables[ivariable]['name'],seasons[iseason],cmip6['models'][ibest]))
-            # Remove missing data using 'compressed()' function
-            data.append(cmip6["data"][:, ivariable, iseason].compressed())
-            labels.append(seasons[iseason])
-        cmip6_stats = cbook.boxplot_stats(data, whis=[0, 100], labels=labels)
-
-        # Plot panel
-        ax = plt.subplot(nsy, nsx, ivariable + int(ivariable / 3) + 1)
-        ax.set_box_aspect(1)
-
-        # CMIP6 ensemble
-        ax.bxp(cmip6_stats)
-
-        # test model
-        x = np.arange(nseasons) + 1.0
-        ax.scatter(
-            x,
-            test_model["data"][0, ivariable, :],
-            color="k",
-            marker="o",
-            label=test_name,
-            s=60,
+    for exp in CMIP6_EXP:
+        control_runs_path = os.path.join(
+            e3sm_diags.INSTALL_PATH,
+            "control_runs",
+            f"cmip6_{exp}_seasonal_rmse_*.csv",
         )
+        cmip6_csv_path = sorted(glob.glob(control_runs_path))[-1]
+        cmip6_data_access = cmip6_csv_path.split("_")[-1][:6]
 
-        # E3SMv1
-        x = np.arange(nseasons) + 0.8
-        iE3SMv1 = cmip6["models"].index("E3SM-1-0")
-        ax.scatter(
-            x,
-            cmip6["data"][iE3SMv1, ivariable, :],
-            color="b",
-            marker=">",
-            label="E3SMv1 (0101), historical (1985-2014)",
-            s=60,
+        cmip6 = read_cmip6_metrics_from_csv(cmip6_csv_path, VAR_DICT, seasons)
+
+        # Create plot: compare test model with CMIP6, E3SMv1 and v2
+        fig = plt.figure(figsize=[24, 18])
+        nsx = 4
+        nsy = 3
+        for ivariable in range(len(VAR_DICT)):
+            # CMIP6 data for box and whiskers
+            data = []
+            labels = []
+            for iseason in range(nseasons):
+                # Identify model with lowest RMSE
+                # ibest = ma.argmin(cmip6["data"][:, ivariable, iseason].compressed())
+                # print("Best model %s %s %s" % (variables[ivariable]['name'],seasons[iseason],cmip6['models'][ibest]))
+                # Remove missing data using 'compressed()' function
+                data.append(cmip6["data"][:, ivariable, iseason].compressed())
+                labels.append(seasons[iseason])
+            cmip6_stats = cbook.boxplot_stats(data, whis=[0, 100], labels=labels)
+
+            # Plot panel
+            ax = plt.subplot(nsy, nsx, ivariable + int(ivariable / 3) + 1)
+            ax.set_box_aspect(1)
+
+            # CMIP6 ensemble
+            ax.bxp(cmip6_stats)
+
+            # test model
+            x = np.arange(nseasons) + 1.0
+            ax.scatter(
+                x,
+                test_model["data"][0, ivariable, :],
+                color="k",
+                marker="o",
+                label=test_name,
+                s=60,
+            )
+
+            # E3SMv1
+            x = np.arange(nseasons) + 0.8
+            iE3SMv1 = cmip6["models"].index("E3SM-1-0")
+            ax.scatter(
+                x,
+                cmip6["data"][iE3SMv1, ivariable, :],
+                color="b",
+                marker=">",
+                label=f"E3SMv1 (0101), {exp} (1985-2014)",
+                s=60,
+            )
+
+            # E3SMv2 (coupled)
+            x = np.arange(nseasons) + 1.2
+            iE3SMv2 = cmip6["models"].index("E3SM-2-0")
+            ax.scatter(
+                x,
+                cmip6["data"][iE3SMv2, ivariable, :],
+                color="r",
+                marker="<",
+                label=f"E3SMv2 (0101), {exp} (1985-2014)",
+                s=60,
+            )
+
+            # Customize plot
+            ax.set_title("(" + chr(97 + ivariable) + ")", loc="left")
+            ax.set_title(
+                f"{VAR_DICT[ivariable]['name']} ( {VAR_DICT[ivariable]['units']} )",
+                loc="right",
+            )
+            ax.set_xlim([0.4, nseasons + 0.9])
+
+        fig.subplots_adjust(wspace=0.3, hspace=0.3)
+
+        # Legend base on last subplot
+        handles, labels = ax.get_legend_handles_labels()
+        ax.text(
+            1.2,
+            0.1,
+            f"Comparison of RMSE (1985-2014) of an ensemble\nof CMIP6 models ({exp} r1i1p1f1 ensemble). \nBox and whiskers show 25th, 75th percentile, \nminimum and maximum RMSE of the ensemble. \nCMIP6 data access: {cmip6_data_access}",
+            ha="left",
+            va="center",
+            transform=ax.transAxes,
+            fontsize=20,
         )
+        fig.legend(handles, labels, loc=(0.65, 0.8))
 
-        # E3SMv2 (coupled)
-        x = np.arange(nseasons) + 1.2
-        iE3SMv2 = cmip6["models"].index("E3SMv2")
-        ax.scatter(
-            x,
-            cmip6["data"][iE3SMv2, ivariable, :],
-            color="r",
-            marker="<",
-            label="E3SMv2 (0101), historical (1985-2014)",
-            s=60,
-        )
-
-        # Customize plot
-        ax.set_title("(" + chr(97 + ivariable) + ")", loc="left")
-        ax.set_title(
-            f"{VAR_DICT[ivariable]['name']} ( {VAR_DICT[ivariable]['units']} )",
-            loc="right",
-        )
-        ax.set_xlim([0.4, nseasons + 0.9])
-
-    fig.subplots_adjust(wspace=0.3, hspace=0.3)
-
-    # Legend base on last subplot
-    handles, labels = ax.get_legend_handles_labels()
-    ax.text(
-        1.2,
-        0.1,
-        f"Comparison of RMSE (1985-2014) of an ensemble\nof CMIP6 models (historical r1i1p1f1 ensemble). \nBox and whiskers show 25th, 75th percentile, \nminimum and maximum RMSE of the ensemble. \nCMIP6 data access: {cmip6_data_access}",
-        ha="left",
-        va="center",
-        transform=ax.transAxes,
-        fontsize=20,
-    )
-    fig.legend(handles, labels, loc=(0.65, 0.8))
-
-    fig.savefig(cmip6_comparison_dir + "/cmip6.png", bbox_inches="tight")
-    fig.savefig(cmip6_comparison_dir + "/cmip6.pdf", bbox_inches="tight")
+        fig.savefig(cmip6_comparison_dir + f"/cmip6_{exp}.png", bbox_inches="tight")
+        fig.savefig(cmip6_comparison_dir + f"/cmip6_{exp}.pdf", bbox_inches="tight")
 
     """
     Create an index in the viewer that links the
@@ -499,13 +502,14 @@ def generate_lat_lon_cmip6_comparison(
     """
     viewer.add_page("CMIP6 Comparison")
     viewer.add_group("Summary RMSE")
-    viewer.add_row(
-        "RMSE from selected variables and all seasons, compare to CMIP6 (r1i1p1f1, 1985-2014 average)"
-    )
-    # We need to make sure we have relative paths for viewers, and not absolute ones.
-    pth = "../viewer/cmip6-comparison-data/cmip6.png"
+    for exp in CMIP6_EXP:
+        viewer.add_row(
+            f"RMSE from selected variables and all seasons, compare to CMIP6 {exp}(r1i1p1f1, 1985-2014 average) experiments"
+        )
+        # We need to make sure we have relative paths for viewers, and not absolute ones.
+        pth = f"../viewer/cmip6-comparison-data/cmip6_{exp}.png"
 
-    viewer.add_col(pth, is_file=True, title="output")
+        viewer.add_col(pth, is_file=True, title="output")
 
     url = viewer.generate_page()
     return "CMIP6 Comparison", url
@@ -524,38 +528,35 @@ def generate_lat_lon_taylor_diag(
 
     if not os.path.exists(taylor_diag_dir):
         os.mkdir(taylor_diag_dir)
+    season_to_png = {}  # type: ignore
+    for exp in CMIP6_EXP:
+        season_to_png[exp] = {}
+        for season in lat_lon_table_info:
+            test_name = parameters[0].test_name_yrs
+            if parameters[0].run_type == "model_vs_obs":
+                ref_name = "Observation and Reanalysis"
+            else:
+                ref_name = (
+                    parameters[0].short_ref_name
+                    if parameters[0].short_ref_name
+                    else parameters[0].ref_name
+                )
 
-    season_to_png = {}
-    for season in lat_lon_table_info:
-        # test_name = (
-        #    parameters[0].short_test_name
-        #    if parameters[0].short_test_name
-        #    else parameters[0].test_name
-        # )
-        test_name = parameters[0].test_name_yrs
-        if parameters[0].run_type == "model_vs_obs":
-            ref_name = "Observation and Reanalysis"
-        else:
-            ref_name = (
-                parameters[0].short_ref_name
-                if parameters[0].short_ref_name
-                else parameters[0].ref_name
+            csv_path = _create_csv_from_dict_taylor_diag(
+                lat_lon_table_info,
+                taylor_diag_dir,
+                season,
+                test_name,
+                parameters[0].run_type,
+                ref_name,
+                exp,
             )
 
-        csv_path = _create_csv_from_dict_taylor_diag(
-            lat_lon_table_info,
-            taylor_diag_dir,
-            season,
-            test_name,
-            parameters[0].run_type,
-            ref_name,
-        )
-        # Remove any reference to the results_dir when inserting the links into HTML pages.
-        # This is because that folder can be renamed.
-        csv_path = csv_path.split("viewer")[-1]
-        csv_path = "viewer" + csv_path
-
-        season_to_png[season] = csv_path.replace("csv", "png")
+            # Remove any reference to the results_dir when inserting the links into HTML pages.
+            # This is because that folder can be renamed.
+            csv_path = csv_path.split("viewer")[-1]
+            csv_path = "viewer" + csv_path
+            season_to_png[exp][season] = csv_path.replace("csv", "png")
 
     url = _create_taylor_index(seasons, viewer, root_dir, season_to_png)
     utils.add_header(root_dir, os.path.join(root_dir, url), parameters)
@@ -564,7 +565,7 @@ def generate_lat_lon_taylor_diag(
 
 
 def _create_csv_from_dict_taylor_diag(
-    lat_lon_table_info, output_dir, season, test_name, run_type, ref_name
+    lat_lon_table_info, output_dir, season, test_name, run_type, ref_name, exp
 ):
     """
     Create a csv for a season in lat_lon_table_info in
@@ -574,12 +575,13 @@ def _create_csv_from_dict_taylor_diag(
     as lat_lon_table_info, we can use that.
     """
     taylor_diag_path = os.path.join(
-        output_dir, "{}_metrics_taylor_diag.csv".format(season)
+        output_dir, f"{season}_metrics_taylor_diag_{exp}.csv"
     )
+
     control_runs_path = os.path.join(
         e3sm_diags.INSTALL_PATH,
         "control_runs",
-        "{}_metrics_table_taylor_diag_historical_1985-2014_E3SMv*.csv".format(season),
+        f"{season}_metrics_table_taylor_diag_{exp}_1985-2014_E3SMv*.csv",
     )
     base_line_csv_paths = sorted(glob.glob(control_runs_path))
 
@@ -677,7 +679,7 @@ def _create_csv_from_dict_taylor_diag(
             # Example base line csv file name: JJA_metrics_table_taylor_diag_historical_1985-2014_E3SMv1.csv
             for ibase, base_line_csv_path in enumerate(base_line_csv_paths):
                 base_name = base_line_csv_path.split(".")[-2][-6:]  # ex E3SMv2
-                long_base_name = f"{base_name} historical (1985-2014)"
+                long_base_name = f"{base_name} {exp} (1985-2014)"
                 with open(base_line_csv_path, "r") as control_runs_taylor_csv:
                     reader = csv.reader(control_runs_taylor_csv, delimiter=",")
                     control_runs_data = list(reader)
@@ -742,7 +744,9 @@ def _create_csv_from_dict_taylor_diag(
             )
 
         plt.title(season + ": Spatial Variability", y=1.08)
-        fig.savefig(os.path.join(output_dir, season + "_metrics_taylor_diag.png"))
+        fig.savefig(
+            os.path.join(output_dir, season + f"_metrics_taylor_diag_{exp}.png")
+        )
 
     return taylor_diag_path
 
@@ -754,14 +758,15 @@ def _create_taylor_index(seasons, viewer, root_dir, season_to_png):
     """
     viewer.add_page("Taylor Diagram", seasons)
     viewer.add_group("Summary Taylor Diagrams")
-    viewer.add_row("All variables")
 
-    for s in seasons:
-        if s in season_to_png:
-            pth = os.path.join("..", season_to_png[s])
-            viewer.add_col(pth, is_file=True, title=s)
-        else:
-            viewer.add_col("-----", is_file=True, title="-----")
+    for exp in CMIP6_EXP:
+        viewer.add_row(f"Selected variables for CMIP6 {exp} comparison")
+        for s in seasons:
+            if s in season_to_png[exp]:
+                pth = os.path.join("..", season_to_png[exp][s])
+                viewer.add_col(pth, is_file=True, title=s)
+            else:
+                viewer.add_col("-----", is_file=True, title="-----")
 
     url = viewer.generate_page()
     return url
