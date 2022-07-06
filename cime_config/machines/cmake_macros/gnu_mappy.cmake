@@ -1,4 +1,5 @@
 set(ALBANY_PATH "/projects/install/rhel7-x86_64/ACME/AlbanyTrilinos/Albany/build/install")
+set(CLDERA_PATH "/sems-data-store/ACME/cldera/cldera-tools/install")
 if (COMP_NAME STREQUAL gptl)
   string(APPEND CPPDEFS " -DHAVE_SLASHPROC")
 endif()
