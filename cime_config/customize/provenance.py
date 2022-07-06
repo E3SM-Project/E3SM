@@ -12,19 +12,32 @@ from CIME import utils
 
 logger = logging.getLogger(__name__)
 
+
 # BUILD
 def save_build_provenance(case, lid=None):
     with utils.SharedArea():
         lid = os.environ["LID"] if lid is None else lid
 
-        _save_build_provenance_e3sm(case, lid)
+        srcroot = case.get_value("SRCROOT")
+        exeroot = case.get_value("EXEROOT")
+        caseroot = case.get_value("CASEROOT")
+
+        _record_git_provenance(srcroot, exeroot, lid)
+
+        _record_source_mods(lid, exeroot, caseroot)
+
+        _record_build_environment(lid, exeroot, case)
+
+        _record_build_times(lid, exeroot)
+
+        _symlink_current(lid, exeroot)
 
 
-def _save_build_provenance_e3sm(case, lid):
-    srcroot = case.get_value("SRCROOT")
-    exeroot = case.get_value("EXEROOT")
-    caseroot = case.get_value("CASEROOT")
+def _record_git_provenance(srcroot, exeroot, lid):
+    """Records git provenance
 
+    Records git status, diff and logs for main repo and all submodules.
+    """
     # Save git describe
     describe_prov = os.path.join(exeroot, "GIT_DESCRIBE.{}".format(lid))
     desc = utils.get_current_commit(tag=True, repo=srcroot)
@@ -47,60 +60,27 @@ def _save_build_provenance_e3sm(case, lid):
     with open(submodule_prov, "w") as fd:
         fd.write(subm_status)
 
-    _record_git_provenance(srcroot, exeroot, lid)
+    # Git Status
+    status_prov = os.path.join(exeroot, "GIT_STATUS.{}".format(lid))
+    _run_git_cmd_recursively("status", srcroot, status_prov)
 
-    # Save SourceMods
-    sourcemods = os.path.join(caseroot, "SourceMods")
-    sourcemods_prov = os.path.join(exeroot, "SourceMods.{}.tar.gz".format(lid))
-    if os.path.exists(sourcemods_prov):
-        os.remove(sourcemods_prov)
-    if os.path.isdir(sourcemods):
-        with tarfile.open(sourcemods_prov, "w:gz") as tfd:
-            tfd.add(sourcemods, arcname="SourceMods")
+    # Git Diff
+    diff_prov = os.path.join(exeroot, "GIT_DIFF.{}".format(lid))
+    _run_git_cmd_recursively("diff", srcroot, diff_prov)
 
-    # Save build env
-    env_prov = os.path.join(exeroot, "build_environment.{}.txt".format(lid))
-    if os.path.exists(env_prov):
-        os.remove(env_prov)
-    env_module = case.get_env("mach_specific")
-    env_module.save_all_env_info(env_prov)
+    # Git Log
+    log_prov = os.path.join(exeroot, "GIT_LOG.{}".format(lid))
+    cmd = "log --first-parent --pretty=oneline -n 5"
+    _run_git_cmd_recursively(cmd, srcroot, log_prov)
 
-    # Save build times
-    build_times = os.path.join(exeroot, "build_times.{}.txt".format(lid))
-    if os.path.exists(build_times):
-        os.remove(build_times)
-    globstr = "{}/*bldlog*{}.gz".format(exeroot, lid)
-    matches = glob.glob(globstr)
-    if matches:
-        _extract_times(matches, build_times)
+    # Git remote
+    remote_prov = os.path.join(exeroot, "GIT_REMOTE.{}".format(lid))
+    _run_git_cmd_recursively("remote -v", srcroot, remote_prov)
 
-    # For all the just-created post-build provenance files, symlink a generic name
-    # to them to indicate that these are the most recent or active.
-    for item in [
-        "GIT_DESCRIBE",
-        "GIT_LOGS_HEAD",
-        "GIT_SUBMODULE_STATUS",
-        "GIT_STATUS",
-        "GIT_DIFF",
-        "GIT_LOG",
-        "GIT_CONFIG",
-        "GIT_REMOTE",
-        "SourceMods",
-        "build_environment",
-        "build_times",
-    ]:
-        globstr = "{}/{}.{}*".format(exeroot, item, lid)
-        matches = glob.glob(globstr)
-        utils.expect(
-            len(matches) < 2,
-            "Multiple matches for glob {} should not have happened".format(globstr),
-        )
-        if matches:
-            the_match = matches[0]
-            generic_name = the_match.replace(".{}".format(lid), "")
-            if os.path.exists(generic_name):
-                os.remove(generic_name)
-            os.symlink(the_match, generic_name)
+    # Git config
+    config_src = os.path.join(gitroot, "config")
+    config_prov = os.path.join(exeroot, "GIT_CONFIG.{}".format(lid))
+    utils.safe_copy(config_src, config_prov, preserve_meta=False)
 
 
 def _find_git_root(srcroot):
@@ -179,34 +159,111 @@ def _read_gitdir(gitroot):
     return m.group(1)
 
 
-def _record_git_provenance(srcroot, exeroot, lid):
-    """Records git provenance
+def _parse_dot_git_path(gitdir):
+    """Parse `.git` path.
 
-    Records git status, diff and logs for main repo and all submodules.
+    Take a path e.g. `/storage/cime/.git/worktrees/cime` and parse `.git`
+    directory e.g. `/storage/cime/.git`.
+
+    Args:
+        gitdir (str): Path containing `.git` directory.
+
+    Returns:
+        str: Path ending with `.git`
     """
-    # Git Status
-    status_prov = os.path.join(exeroot, "GIT_STATUS.{}".format(lid))
-    _run_git_cmd_recursively("status", srcroot, status_prov)
+    dot_git_pattern = r"^(.*/\.git).*"
 
-    # Git Diff
-    diff_prov = os.path.join(exeroot, "GIT_DIFF.{}".format(lid))
-    _run_git_cmd_recursively("diff", srcroot, diff_prov)
+    m = re.match(dot_git_pattern, gitdir)
 
-    # Git Log
-    log_prov = os.path.join(exeroot, "GIT_LOG.{}".format(lid))
-    cmd = "log --first-parent --pretty=oneline -n 5"
-    _run_git_cmd_recursively(cmd, srcroot, log_prov)
+    utils.expect(m is not None, f"Could not parse .git from path {gitdir!r}")
 
-    # Git remote
-    remote_prov = os.path.join(exeroot, "GIT_REMOTE.{}".format(lid))
-    _run_git_cmd_recursively("remote -v", srcroot, remote_prov)
+    return m.group(1)
 
-    gitroot = _find_git_root(srcroot)
 
-    # Git config
-    config_src = os.path.join(gitroot, "config")
-    config_prov = os.path.join(exeroot, "GIT_CONFIG.{}".format(lid))
-    utils.safe_copy(config_src, config_prov, preserve_meta=False)
+def _record_source_mods(lid, exeroot, caseroot):
+    # Save SourceMods
+    sourcemods = os.path.join(caseroot, "SourceMods")
+    sourcemods_prov = os.path.join(exeroot, "SourceMods.{}.tar.gz".format(lid))
+    if os.path.exists(sourcemods_prov):
+        os.remove(sourcemods_prov)
+    if os.path.isdir(sourcemods):
+        with tarfile.open(sourcemods_prov, "w:gz") as tfd:
+            tfd.add(sourcemods, arcname="SourceMods")
+
+
+def _record_build_environment(lid, exeroot, case):
+    # Save build env
+    env_prov = os.path.join(exeroot, "build_environment.{}.txt".format(lid))
+    if os.path.exists(env_prov):
+        os.remove(env_prov)
+    env_module = case.get_env("mach_specific")
+    env_module.save_all_env_info(env_prov)
+
+
+def _record_build_times(lid, exeroot):
+    # Save build times
+    build_times = os.path.join(exeroot, "build_times.{}.txt".format(lid))
+    if os.path.exists(build_times):
+        os.remove(build_times)
+    globstr = "{}/*bldlog*{}.gz".format(exeroot, lid)
+    matches = glob.glob(globstr)
+    if matches:
+        _extract_times(matches, build_times)
+
+
+def _extract_times(zipfiles, target_file):
+    contents = "Target Build_time\n"
+    total_build_time = 0.0
+    for zipfile in zipfiles:
+        stat, output, _ = utils.run_cmd("zgrep 'built in' {}".format(zipfile))
+        if stat == 0:
+            for line in output.splitlines():
+                line = line.strip()
+                if line:
+                    items = line.split()
+                    target, the_time = items[1], items[-2]
+                    contents += "{} {}\n".format(target, the_time)
+
+        stat, output, _ = utils.run_cmd("zgrep -E '^real [0-9.]+$' {}".format(zipfile))
+        if stat == 0:
+            for line in output.splitlines():
+                line = line.strip()
+                if line:
+                    total_build_time += float(line.split()[-1])
+
+    with open(target_file, "w") as fd:
+        fd.write(contents)
+        fd.write("Total_Elapsed_Time {}".format(str(total_build_time)))
+
+
+def _symlink_current(lid, exeroot):
+    # For all the just-created post-build provenance files, symlink a generic name
+    # to them to indicate that these are the most recent or active.
+    for item in [
+        "GIT_DESCRIBE",
+        "GIT_LOGS_HEAD",
+        "GIT_SUBMODULE_STATUS",
+        "GIT_STATUS",
+        "GIT_DIFF",
+        "GIT_LOG",
+        "GIT_CONFIG",
+        "GIT_REMOTE",
+        "SourceMods",
+        "build_environment",
+        "build_times",
+    ]:
+        globstr = "{}/{}.{}*".format(exeroot, item, lid)
+        matches = glob.glob(globstr)
+        utils.expect(
+            len(matches) < 2,
+            "Multiple matches for glob {} should not have happened".format(globstr),
+        )
+        if matches:
+            the_match = matches[0]
+            generic_name = the_match.replace(".{}".format(lid), "")
+            if os.path.exists(generic_name):
+                os.remove(generic_name)
+            os.symlink(the_match, generic_name)
 
 
 def _run_git_cmd_recursively(cmd, srcroot, output):
@@ -236,53 +293,6 @@ def _swap_cwd(new_cwd):
         yield
     finally:
         os.chdir(old_cwd)
-
-
-def _parse_dot_git_path(gitdir):
-    """Parse `.git` path.
-
-    Take a path e.g. `/storage/cime/.git/worktrees/cime` and parse `.git`
-    directory e.g. `/storage/cime/.git`.
-
-    Args:
-        gitdir (str): Path containing `.git` directory.
-
-    Returns:
-        str: Path ending with `.git`
-    """
-    dot_git_pattern = r"^(.*/\.git).*"
-
-    m = re.match(dot_git_pattern, gitdir)
-
-    utils.expect(m is not None, f"Could not parse .git from path {gitdir!r}")
-
-    return m.group(1)
-
-
-def _extract_times(zipfiles, target_file):
-
-    contents = "Target Build_time\n"
-    total_build_time = 0.0
-    for zipfile in zipfiles:
-        stat, output, _ = utils.run_cmd("zgrep 'built in' {}".format(zipfile))
-        if stat == 0:
-            for line in output.splitlines():
-                line = line.strip()
-                if line:
-                    items = line.split()
-                    target, the_time = items[1], items[-2]
-                    contents += "{} {}\n".format(target, the_time)
-
-        stat, output, _ = utils.run_cmd("zgrep -E '^real [0-9.]+$' {}".format(zipfile))
-        if stat == 0:
-            for line in output.splitlines():
-                line = line.strip()
-                if line:
-                    total_build_time += float(line.split()[-1])
-
-    with open(target_file, "w") as fd:
-        fd.write(contents)
-        fd.write("Total_Elapsed_Time {}".format(str(total_build_time)))
 
 
 # PRERUN
