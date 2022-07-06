@@ -437,8 +437,7 @@ end subroutine ocn_tend_vvel!}}}
       real (kind=RKIND), dimension(:,:), pointer, contiguous :: &
          normalVelocity,     &! normal velocity
          layerThickness, &
-         nonhydrostaticPressure, &
-         vertVelocityNonhydro
+         nonhydrostaticPressure
 
       real (kind=RKIND), dimension(:,:,:), pointer, contiguous :: &
          activeTracers
@@ -468,8 +467,6 @@ end subroutine ocn_tend_vvel!}}}
                                              activeTracers, timeLevel)
       call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', &
                                              nonhydrostaticPressure, timeLevel)
-      call mpas_pool_get_array(statePool, 'vertVelocityNonhydro', &
-                                             vertVelocityNonhydro, timeLevel)
 
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', &
                                                  indexTemperature)
@@ -491,7 +488,7 @@ end subroutine ocn_tend_vvel!}}}
       !$acc               thermExpCoeff, salineContractCoeff, tangentialVelocity, &
       !$acc               layerThickEdgeFlux, kineticEnergyCell, sfcFlxAttCoeff, potentialDensity, &
       !$acc               vertAleTransportTop, vertViscTopOfEdge, wettingVelocity, &
-      !$acc               vertVelocityNonhydro, nhPressureCorrection)
+      !$acc               nhPressureCorrection)
       !$acc enter data &
       !$acc    copyin(tendVel, sfcStress, sfcStressMag, &
       !$acc    ssh, normalVelocity, &
