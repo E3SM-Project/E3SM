@@ -12,51 +12,6 @@ from CIME import utils
 
 logger = logging.getLogger(__name__)
 
-# config
-verbose_run_phase = True
-baseline_store_teststatus = False
-common_sharedlibroot = False
-archive_drv_component = True
-archive_dart_component = False
-cesm_create_test_flags = False
-use_kokkos = True
-shared_clm_component = False
-ufs_alternative_config = False
-enable_smp = True
-enable_titan_cam_target = True
-build_model_use_cmake = True
-build_cime_component_lib = False
-default_short_term_archiving = False
-copy_e3sm_tools = True
-copy_cesm_tools = False
-copy_cism_source_mods = False
-make_case_run_batch_script = True
-case_setup_generate_namelist = True
-create_bless_log = True
-allow_unsupported = False
-check_machine_name_from_test_name = False
-sort_tests = True
-skip_print_compset = False
-calculate_mode_build_cost = True
-share_exes = True
-serialize_sharedlib_builds = False
-use_testreporter_template = True
-check_invalid_args = False
-skip_walltime_tests = False
-skip_xml_test_management_tests = True
-skip_performance_archive_tests = False
-skip_success_recording_tests = False
-skip_cdash_tests = False
-skip_checksum_tests = True
-skip_gen_domain_tests = False
-skip_jenkins_tests = False
-skip_single_submit_test = False
-xml_component_key = "CONFIG_{}_FILE"
-set_comp_root_dir_cpl = False
-use_nems_comp_root_dir = False
-gpus_use_set_device_rank = False
-test_custom_project_machine = "mappy"
-
 # BUILD
 def save_build_provenance(case, lid=None):
     with utils.SharedArea():
@@ -425,7 +380,9 @@ def _save_prerun_timing_e3sm(case, lid):
                 ("xtprocadmin", "xtprocadmin"),
             ]:
                 filename = "%s.%s" % (filename, lid)
-                utils.run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
+                utils.run_cmd_no_fail(
+                    cmd, arg_stdout=filename, from_dir=full_timing_dir
+                )
                 utils.gzip_existing_file(os.path.join(full_timing_dir, filename))
         elif mach in ["cori-haswell", "cori-knl"]:
             for cmd, filename in [
@@ -439,7 +396,9 @@ def _save_prerun_timing_e3sm(case, lid):
                 ("squeue -t R -o '%.10i %R'", "squeues"),
             ]:
                 filename = "%s.%s" % (filename, lid)
-                utils.run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
+                utils.run_cmd_no_fail(
+                    cmd, arg_stdout=filename, from_dir=full_timing_dir
+                )
                 utils.gzip_existing_file(os.path.join(full_timing_dir, filename))
         elif mach in ["anvil", "chrysalis", "compy"]:
             for cmd, filename in [
@@ -452,7 +411,9 @@ def _save_prerun_timing_e3sm(case, lid):
                 ("squeue -t R -o '%.10i %R'", "squeues"),
             ]:
                 filename = "%s.%s" % (filename, lid)
-                utils.run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
+                utils.run_cmd_no_fail(
+                    cmd, arg_stdout=filename, from_dir=full_timing_dir
+                )
                 utils.gzip_existing_file(os.path.join(full_timing_dir, filename))
         elif mach == "summit":
             for cmd, filename in [
@@ -462,7 +423,9 @@ def _save_prerun_timing_e3sm(case, lid):
             ]:
                 full_cmd = cmd + " " + filename
                 utils.run_cmd_no_fail(full_cmd + "." + lid, from_dir=full_timing_dir)
-                utils.gzip_existing_file(os.path.join(full_timing_dir, filename + "." + lid))
+                utils.gzip_existing_file(
+                    os.path.join(full_timing_dir, filename + "." + lid)
+                )
 
     # copy/tar SourceModes
     source_mods_dir = os.path.join(caseroot, "SourceMods")
@@ -667,7 +630,9 @@ def _save_postrun_timing_e3sm(case, lid):
 
     shutil.rmtree(spio_stats_job_dir)
 
-    utils.gzip_existing_file(os.path.join(caseroot, "timing", "e3sm_timing_stats.%s" % lid))
+    utils.gzip_existing_file(
+        os.path.join(caseroot, "timing", "e3sm_timing_stats.%s" % lid)
+    )
 
     # JGF: not sure why we do this
     timing_saved_file = "timing.%s.saved" % lid
@@ -705,7 +670,9 @@ def _save_postrun_timing_e3sm(case, lid):
                 os.remove(syslog_jobid_path)
 
     # copy timings
-    utils.safe_copy("%s.tar.gz" % rundir_timing_dir, full_timing_dir, preserve_meta=False)
+    utils.safe_copy(
+        "%s.tar.gz" % rundir_timing_dir, full_timing_dir, preserve_meta=False
+    )
 
     #
     # save output files and logs
