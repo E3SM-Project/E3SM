@@ -1250,7 +1250,7 @@ if ($aer_model eq 'mam' ) {
             [qw(dst_a3 ncl_a3 so4_a3)],
             [qw(pom_a4 bc_a4 mom_a4 brc_a4)],
             );
-        a@mode_spec_type = (
+        @mode_spec_type = (
             [qw(sulfate p-organic s-organic black-c dust seasalt  m-organic b-organic)],
             [qw(sulfate s-organic seasalt  m-organic)],
             [qw(dust seasalt sulfate)],
@@ -2924,7 +2924,8 @@ if ($chem eq 'linoz_mam4_brc_resus_mom_soag') {
                     'num_a1    -> ' => 'mam7_num_a1_emis_file',
                     'num_a2    -> ' => 'num_a2_emis_file',
                     'num_a4    -> ' => 'mam7_num_a3_emis_file',
-   my %verhash = ('ver'=>'mam');
+        );
+    my %verhash = ('ver'=>'mam');
     my $first = 1;
     my $pre = "";
     my $val = "";

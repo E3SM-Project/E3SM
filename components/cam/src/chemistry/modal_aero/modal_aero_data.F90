@@ -87,10 +87,10 @@
        250092.0_r8 /)
 !kzm ++
 ! set BRC at 5th, as carbon
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_BRC )
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/ 115.0_r8, 115.0_r8,  62.0_r8, &
        12.0_r8,   12.0_r8,  12.0_r8, 12.0_r8,  58.5_r8, 135.0_r8, &
-       250092.0_r8,  /)
+       250092.0_r8 /)
 !kzm --
 #elif ( defined MODAL_AERO_4MODE )
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/ 115.0_r8, 115.0_r8,  62.0_r8, &

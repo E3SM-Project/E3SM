@@ -169,7 +169,8 @@
   !    when npom > 1, iaer_pom is index of the first pom species
   integer :: iaer_bc, iaer_dst, iaer_ncl, iaer_nh4, iaer_pom, iaer_soa, iaer_so4, &
              iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc, iaer_mom, &
-             iaer_no3, iaer_cl, iaer_ca, iaer_co3
+             iaer_no3, iaer_cl, iaer_ca, iaer_co3, &
+             iaer_brc !kzm
   integer :: i_agepair_pca, i_agepair_macc, i_agepair_mait
   integer :: lmap_gas(max_gas)
   integer :: lmap_aer(max_aer,max_mode), lmapbb_aer(max_aer,max_mode), &

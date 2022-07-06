@@ -492,7 +492,7 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
       mom_pcarbon  = 19
       num_pcarbon  = 20
 !kzm ++
-#if (defined MODAL_AERO_4MODE_BRC && defined RAIN_EVAP_TO_COARSE_AERO )
+#elif (defined MODAL_AERO_4MODE_BRC && defined RAIN_EVAP_TO_COARSE_AERO )
       ncnst = 20
       so4_accum  =  1
       bc_accum   =  2
