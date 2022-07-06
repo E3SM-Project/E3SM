@@ -1,4 +1,5 @@
 use_extrasnowlayers = .true.
+finidat = '$DIN_LOC_ROOT/lnd/clm2/initdata_map/elmi.IGELM_MLI.1991-01-01_ne30pg2_r05_oECv3_gis1to10_simyr1981-1990_maxSWE30m_c211102.nc'
 check_finidat_pct_consistency = .false.
 hist_empty_htapes = .true.
 hist_fincl1='FSDS', 'FSR', 'FLDS', 'FIRE', 'FIRA', 'FSNO', 'FSNO_EFF', 'H2OSNO', 'QICE', 'QICE_FORC', 'QICE_FRZ','QICE_MELT', 'QSNOMELT', 'SNOW', 'SNOW_SOURCES', 'SNOW_SINKS', 'TSA'
