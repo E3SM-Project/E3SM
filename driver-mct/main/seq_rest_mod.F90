@@ -58,7 +58,7 @@ module seq_rest_mod
 #endif
   use prep_rof_mod,    only: prep_rof_get_l2racc_lx
   use prep_rof_mod,    only: prep_rof_get_l2racc_lx_cnt
-  use prep_rof_mod,    only: prep_rof_get_o2racc_ox      ! Dongyu
+  use prep_rof_mod,    only: prep_rof_get_o2racc_ox
   use prep_rof_mod,    only: prep_rof_get_o2racc_ox_cnt
   use prep_glc_mod,    only: prep_glc_get_l2gacc_lx
   use prep_glc_mod,    only: prep_glc_get_l2gacc_lx_cnt
