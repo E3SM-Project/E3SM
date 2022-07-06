@@ -658,7 +658,7 @@ contains
          !$acc                   edgeNormalVectors,        &
          !$acc                   localVerticalUnitVectors, &
          !$acc                   cellTangentPlane,         &
-         !$acc                   coeffs_reconstruct)       
+         !$acc                   coeffs_reconstruct)
 
 !-------------------------------------------------------------------------------
 

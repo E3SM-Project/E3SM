@@ -2616,6 +2616,7 @@
 		/>
                 <var name="tendVertVelocityNonhydro" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-2}" name_in_code="vertVelocityNonhydroTend"
                          description="time tendency of the vertical velocity (Only active for non hydrostatic mode)"
+			 packages="nonhydrostaticPKG"
                 />
 		<var name="tendLayerThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^-1" name_in_code="layerThickness"
 			 description="time tendency of layer thickness"
