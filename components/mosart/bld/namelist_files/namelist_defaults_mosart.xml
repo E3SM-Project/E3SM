@@ -31,6 +31,7 @@ for the CLM data in the CESM distribution
 <RoutingMethod>1</RoutingMethod>
 <DLevelH2R>5</DLevelH2R>
 <DLevelR>3</DLevelR>
+<use_ocn_rof_two_way>.false.</use_ocn_rof_two_way>
 
 <decomp_option>'roundrobin'</decomp_option> 
 <smat_option>'Xonly'</smat_option> 

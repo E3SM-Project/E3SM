@@ -11,7 +11,7 @@ module RtmHistFlds
   use shr_kind_mod   , only: r8 => shr_kind_r8
   use RunoffMod      , only : rtmCTL
   use RtmHistFile    , only : RtmHistAddfld, RtmHistPrintflds
-  use RtmVar         , only : wrmflag, inundflag, sediflag, heatflag, rstraflag
+  use RtmVar         , only : wrmflag, inundflag, sediflag, heatflag, rstraflag, use_ocn_rof_two_way
 
   use WRM_type_mod  , only : ctlSubwWRM, WRMUnit, StorWater
 
@@ -158,6 +158,10 @@ contains
          avgflag='A', long_name='MOSART total demand: '//trim(rtm_tracers(2)), &
          ptr_rof=rtmCTL%qdem_nt2, default='active')
 
+    call RtmHistAddfld (fname='Main_Channel_Water_Depth'//'_'//trim(rtm_tracers(1)), units='m',  &
+           avgflag='A', long_name='MOSART main channel water depth:'//trim(rtm_tracers(1)), &
+           ptr_rof=rtmCTL%yr_nt1, default='active')
+
     if (wrmflag) then
 
       call RtmHistAddfld (fname='WRM_IRR_SUPPLY', units='m3/s',  &
@@ -215,6 +219,13 @@ contains
            avgflag='A', long_name='Reservoir surface temperature', &
            ptr_rof=WRMUnit%resrv_surf)
     endif
+
+    if (use_ocn_rof_two_way) then
+      call RtmHistAddfld (fname='SSH', units='m',  &
+           avgflag='A', long_name='MOSART sea surface height ', &
+           ptr_rof=rtmCTL%ssh, default='active')
+    endif
+
     ! Print masterlist of history fields
 
     call RtmHistPrintflds()
@@ -277,6 +288,8 @@ contains
 
     rtmCTL%qdem_nt1(:)       = rtmCTL%qdem(:,1)
     rtmCTL%qdem_nt2(:)       = rtmCTL%qdem(:,2)
+  
+    rtmCTL%yr_nt1(:)         = rtmCTL%yr(:,1)  ! water depth
 
     if (wrmflag) then
        StorWater%storageG = 0._r8

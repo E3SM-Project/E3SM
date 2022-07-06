@@ -415,6 +415,7 @@ module cime_comp_mod
   logical  :: ocnrof_prognostic      ! .true.  => ocn comp expects runoff input
   logical  :: glc_prognostic         ! .true.  => glc comp expects input
   logical  :: rof_prognostic         ! .true.  => rof comp expects input
+  logical  :: rofocn_prognostic      ! .true.  => rof comp expects ssh input
   logical  :: wav_prognostic         ! .true.  => wav comp expects input
   logical  :: esp_prognostic         ! .true.  => esp comp expects input
   logical  :: iac_prognostic         ! .true.  => iac comp expects input
@@ -431,6 +432,7 @@ module cime_comp_mod
   logical  :: ocn_c2_ice             ! .true.  => ocn to ice coupling on
   logical  :: ocn_c2_glcshelf        ! .true.  => ocn to glc ice shelf coupling on
   logical  :: ocn_c2_wav             ! .true.  => ocn to wav coupling on
+  logical  :: ocn_c2_rof             ! .true.  => ocn to rof coupling on
   logical  :: ice_c2_atm             ! .true.  => ice to atm coupling on
   logical  :: ice_c2_ocn             ! .true.  => ice to ocn coupling on
   logical  :: ice_c2_wav             ! .true.  => ice to wav coupling on
@@ -1620,6 +1622,7 @@ contains
          ocn_c2_glcshelf=ocn_c2_glcshelf,       &
          glc_prognostic=glc_prognostic,         &
          rof_prognostic=rof_prognostic,         &
+         rofocn_prognostic=rofocn_prognostic,   &
          wav_prognostic=wav_prognostic,         &
          iac_prognostic=iac_prognostic,         &
          esp_prognostic=esp_prognostic,         &
@@ -1677,6 +1680,7 @@ contains
     ocn_c2_atm = .false.
     ocn_c2_ice = .false.
     ocn_c2_wav = .false.
+    ocn_c2_rof = .false.
     ice_c2_atm = .false.
     ice_c2_ocn = .false.
     ice_c2_wav = .false.
@@ -1713,6 +1717,7 @@ contains
        if (atm_present   ) ocn_c2_atm = .true. ! needed for aoflux calc if aoflux=atm
        if (ice_prognostic) ocn_c2_ice = .true.
        if (wav_prognostic) ocn_c2_wav = .true.
+       if (rofocn_prognostic) ocn_c2_rof = .true.
 
     endif
     if (ice_present) then
@@ -1794,6 +1799,7 @@ contains
        write(logunit,F0L)'iceberg   prognostic  = ',iceberg_prognostic
        write(logunit,F0L)'glc model prognostic  = ',glc_prognostic
        write(logunit,F0L)'rof model prognostic  = ',rof_prognostic
+       write(logunit,F0L)'rof ocn   prognostic  = ',rofocn_prognostic
        write(logunit,F0L)'ocn rof   prognostic  = ',ocnrof_prognostic
        write(logunit,F0L)'wav model prognostic  = ',wav_prognostic
        write(logunit,F0L)'iac model prognostic  = ',iac_prognostic
@@ -1811,6 +1817,7 @@ contains
        write(logunit,F0L)'ocn_c2_ice            = ',ocn_c2_ice
        write(logunit,F0L)'ocn_c2_glcshelf       = ',ocn_c2_glcshelf
        write(logunit,F0L)'ocn_c2_wav            = ',ocn_c2_wav
+       write(logunit,F0L)'ocn_c2_rof            = ',ocn_c2_rof
        write(logunit,F0L)'ice_c2_atm            = ',ice_c2_atm
        write(logunit,F0L)'ice_c2_ocn            = ',ice_c2_ocn
        write(logunit,F0L)'ice_c2_wav            = ',ice_c2_wav
@@ -1905,6 +1912,12 @@ contains
           call shr_sys_flush(logunit)
        endif
     endif
+    if (rofocn_prognostic .and. .not.ocn_present) then
+       if (iamroot_CPLID) then
+          write(logunit,F00) 'WARNING: rofocn_prognostic is TRUE but ocn_present is FALSE'
+          call shr_sys_flush(logunit)
+       endif
+    endif
 
     !----------------------------------------------------------
     !| Samegrid checks
@@ -1954,7 +1967,7 @@ contains
 
        call prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice )
 
-       call prep_rof_init(infodata, lnd_c2_rof, atm_c2_rof)
+       call prep_rof_init(infodata, lnd_c2_rof, atm_c2_rof, ocn_c2_rof)
 
        call prep_glc_init(infodata, lnd_c2_glc, ocn_c2_glcshelf)
 
@@ -3956,6 +3969,8 @@ contains
        call component_diag(infodata, ocn, flow='c2x', comment= 'recv ocn', &
             info_debug=info_debug, timer_diag='CPL:ocnpost_diagav')
 
+       if (ocn_c2_rof) call prep_rof_accum_ocn(timer='CPL:ocnpost_acco2r')
+
        call cime_run_ocnglc_coupling()
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -4384,6 +4399,8 @@ contains
        if (lnd_c2_rof) call prep_rof_calc_l2r_rx(fractions_lx, timer='CPL:rofprep_lnd2rof')
 
        if (atm_c2_rof) call prep_rof_calc_a2r_rx(timer='CPL:rofprep_atm2rof')
+
+       if (ocn_c2_rof) call prep_rof_calc_o2r_rx(timer='CPL:rofprep_ocn2rof')
        call prep_rof_mrg(infodata, fractions_rx, timer_mrg='CPL:rofprep_mrgx2r', cime_model=cime_model)
 
        call component_diag(infodata, rof, flow='x2c', comment= 'send rof', &
