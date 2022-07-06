@@ -2191,6 +2191,7 @@
     		/>
                 <var name="nonhydrostaticPressure" type="real" dimensions="nVertLevels nCells Time" units="N m^{-2}"
 			 description="nonhydrostatic pressure, set to zero if config_enable_nonhydrostatic_mode = .false."
+			 packages="nonhydrostaticPKG"
                 />
 
 		<!-- FIELDS FOR FREQUENCY FILTERED THICKNESS -->
