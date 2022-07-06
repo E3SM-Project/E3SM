@@ -267,8 +267,6 @@ module ocn_time_integration_rk4
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
 
-         print*, dt
-
          ! Lower k-loop limit of 1 rather than minLevel* needed in *New = *Cur
          ! assignments below are needed to maintain bit-for-bit results
 
