@@ -79,8 +79,10 @@
 
   integer, parameter :: soa_mech_type_default = 1
   integer, parameter :: soa_mech_type_vbs     = 100
-  integer, parameter :: soa_mech_type = soa_mech_type_default
-  integer, parameter :: soa_mech_optaa = 1
+  !integer, parameter :: soa_mech_type = soa_mech_type_default
+  !integer, parameter :: soa_mech_optaa = 1
+  integer, public :: soa_mech_type = soa_mech_type_default
+  integer, public :: soa_mech_optaa = 1 ! parameter to public QZR
 ! controls soa treatment
 
   integer, public :: update_qaerwat = 0
@@ -102,7 +104,7 @@
   integer, parameter :: max_gas = nsoag + 1
   ! the +3 in max_aer are dst, ncl, so4
   integer, parameter :: max_aer = nsoa + npoa + nbc + 3
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM )
   integer, parameter :: max_gas = nsoag + 1
   ! the +4 in max_aer are dst, ncl, so4, mom
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4
@@ -120,7 +122,7 @@
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4 + 5
 #endif
 
-#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ))
+#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM )|| (defined MODAL_AERO_4MODE_SOA_MOM))
   integer, parameter :: ntot_amode_extd = ntot_amode
 #else
   integer, parameter :: ntot_amode_extd = ntot_amode + 1
@@ -3032,7 +3034,7 @@ do_newnuc_if_block50: &
          uptkaer,           uptkrate_h2so4                          )
 
 ! uses
-
+       use phys_debug_util, only: phys_debug_col
       implicit none
 
 ! arguments
@@ -3084,6 +3086,8 @@ do_newnuc_if_block50: &
       integer :: ll
       integer :: n
 
+      integer :: icol ! QZR
+      
       logical, parameter :: flag_nh4_lt_2so4_each_step  = .false.
 
       real(r8), dimension( 1:max_gas ) :: &
@@ -3302,6 +3306,18 @@ do_newnuc_if_block50: &
             end if
          end do
       end if
+
+!Find out if LAT-LON column exists in this lchunk or not (if icol==0, column
+!with LAT-LON doesn’t exist in this chunk)
+      icol = phys_debug_col(lchnk)!(state%lchnk)
+
+!if icol>0; column with LAT-LON exists in this chunk
+!To print qgas_cur for 1, ntot_soaspec and qaer_cur for 1, ntot_soamode
+
+      !if (icol > 0) then !QZR commented
+        !write(iulog,*)’q:’,state%q(icol,1,1)
+      !  write(iulog,*)'igas_soag,igas_soagzz,uptkaer(igas_soag:igas_soagzz,nmode) MAM_gasaerexch_1subarea=',igas_soag,igas_soagzz, uptkaer(igas_soag:igas_soagzz,:)
+      !endif
 
 
       return
@@ -3695,6 +3711,9 @@ time_loop: &
 ! uses
       use modal_aero_data, only: lptr2_soa_a_amode
 
+      !use cam_logfile,     only:  iulog
+      !use cam_history,   only: outfld
+      use phys_debug_util, only: phys_debug_col
 
       implicit none
 
@@ -3733,6 +3752,8 @@ time_loop: &
       integer :: n, niter, niter_max
       integer :: ntot_poaspec, ntot_soaspec
       integer :: ntot_soamode
+
+      integer :: icol
 
       logical, parameter :: flag_pcarbon_opoa_frac_zero   = .true.
 
@@ -3777,7 +3798,7 @@ time_loop: &
 
       real(r8) :: tmpa, tmpb, tmpc
 
-      real(r8) :: tot_soa(maxd_soaspec)            ! g_soa + sum( a_soa(:) )
+      real(r8) :: tot_soa(maxd_soaspec),tempvar(maxd_soaspec)             ! g_soa + sum( a_soa(:) )
       real(r8) :: uptkaer_soag(maxd_soaspec,max_mode)
       real(r8) :: uptkaer_soag_tmp(maxd_soaspec,max_mode)
 
@@ -3832,9 +3853,9 @@ time_loop: &
       opoa_frac = 0.0_r8
 ! for primary carbon mode, set opoa_frac=0 for consistency with older code
 ! (this could be changed)
-      if ( flag_pcarbon_opoa_frac_zero ) then
-         if (npca > 0) opoa_frac(:,npca) = 0.0_r8
-      end if
+     ! if ( flag_pcarbon_opoa_frac_zero ) then
+      !   if (npca > 0) opoa_frac(:,npca) = 0.0_r8
+     ! end if  !QZR commented out 11March2022
 
       c0_soa_298 = 0.1_r8
       delh_vap_soa = 100.0e3
@@ -3889,6 +3910,29 @@ time_loop: &
          end do
       end do
 
+!Find out if LAT-LON column exists in this lchunk or not (if icol==0, column
+!with LAT-LON doesn’t exist in this chunk)
+      !icol = phys_debug_col(lchnk)!(state%lchnk)
+
+!if icol>0; column with LAT-LON exists in this chunk
+!To print qgas_cur for 1, ntot_soaspec and qaer_cur for 1, ntot_soamode
+
+      !if (icol > 0) then
+        !write(iulog,*)’q:’,state%q(icol,1,1)
+       ! write(iulog,*)'igas_soag,igas_soagzz,uptkaer(igas_soag:igas_soagzz,nmode) MAM_soaexch_vbs=',igas_soag,igas_soagzz, uptkaer(igas_soag:igas_soagzz,:)
+      !endif
+
+!Find out if LAT-LON column exists in this lchunk or not (if icol==0, column
+!with LAT-LON doesn’t exist in this chunk)
+      icol = phys_debug_col(lchnk)!(state%lchnk)
+
+      !if (icol > 0) then !MS !QZR commented
+       ! write(iulog,*)'Incoming qgas_cur,uptkaer_soag',qgas_cur(igas_soag:igas_soagzz),uptkaer_soag(igas_soag:igas_soagzz,1), &
+        !  uptkaer_soag(igas_soag:igas_soagzz,2),uptkaer_soag(igas_soag:igas_soagzz,3)
+      !endif
+
+
+
 ! calc oxygenated poa (which does not change during the soa uptake integration)
       do n = 1, ntot_soamode
          a_opoa(n) = 0.0_r8
@@ -3930,6 +3974,7 @@ time_loop: &
             end if
          end do
       end do
+
 
 ! load incoming soag and soaa into temporary arrays
 ! force things to be non-negative
@@ -3988,6 +4033,9 @@ time_loop: &
          end if
       end if
 
+      !if (icol > 0) then !MS !QZR commented
+       !     write(iulog,*)'within timestep',dtfull,dtcur,tcur,sat(:,:),g_star(:,:),phi(:,:),tmpb,tmpa,a_soa(:,:),tot_soa(:)
+      !endif
 
 ! step 1 - for modes where soa is condensing, estimate "new" a_soa(ll,n)
 !    using an explicit calculation with "old" g_soa
@@ -4014,6 +4062,9 @@ time_loop: &
          end do
       end do
 
+      !if (icol > 0) then !MS !QZR commented
+       !        write(iulog,*)'at the end of  step 1',beta(:,:),uptkaer_soag_tmp(:,:),a_soa_tmp(:,:),sat(:,:),g_star(:,:)
+      !endif
 
 ! step 2 - implicit in g_soa and semi-implicit in a_soa,
 !    with g_star(ll,n) calculated semi-implicitly
@@ -4035,6 +4086,9 @@ time_loop: &
          end do
       end do
 
+      !if (icol > 0) then !MS !QZR commented 
+              !  write(iulog,*)'at the end of  step 2',beta(:,:),sat(:,:),a_soa(:,:),g_soa(:)
+      !endif
 
 ! increment g_soa_avg
       do ll = 1, ntot_soaspec
@@ -4056,6 +4110,23 @@ time_loop: &
          qgas_avg(igas) = max( 0.0_r8, g_soa_avg(ll)/dtsum_g_soa_avg )
       end do
 
+      !if (icol > 0) then !MS !QZR commented
+       !  write(iulog,*)'after time loop',qgas_cur(:),qgas_avg(:),dtsum_g_soa_avg
+      !endif
+
+! Print qaer_cur but for each species and sum of all mode QZR MS
+     do ll = 1, ntot_soaspec
+      tempvar(ll)=0.0_r8
+     enddo
+
+     do ll = 1, ntot_soaspec
+        do n = 1, ntot_soamode
+          if ( skip_soamode(n) ) cycle
+          tempvar(ll)=tempvar(ll)+a_soa(ll,n)
+        enddo
+     enddo
+
+
 ! for each mode, sum up all of the newly condensed svsoa
 ! and "oligomerize" it to the single nvsoa species
       do n = 1, ntot_soamode
@@ -4068,6 +4139,53 @@ time_loop: &
          qaer_cur(iaer,n) = qaer_cur(iaer,n) + tmpa
       end do
 
+
+!Just for Check that values are attibuted to soa soag arrays,using constant qgas_cur(igas_soag:igas_soagzz) &
+! qaer_cur(iaer_soa,1), qaer_cur(iaer_soa,2), qaer_cur(iaer_soa,3)
+
+     ! qgas_cur(igas_soag) = 1.0_r8
+     ! qgas_cur(igas_soag+1) = 2.0_r8
+     ! qgas_cur(igas_soag+2) = 3.0_r8
+     ! qgas_cur(igas_soag+3) = 4.0_r8
+     ! qgas_cur(igas_soag+4) = 5.0_r8
+     ! qgas_cur(igas_soag+5) = 6.0_r8
+     ! qgas_cur(igas_soag+6) = 7.0_r8
+      
+
+     ! qaer_cur(iaer_soa,1) = 5.0_r8
+     ! qaer_cur(iaer_soa,2) = 10.0_r8  
+     ! qaer_cur(iaer_soa,3) = 15.0_r8
+
+     
+
+
+!Find out if LAT-LON column exists in this lchunk or not (if icol==0, column
+!with LAT-LON doesn’t exist in this chunk)
+      !icol = phys_debug_col(lchnk)!(state%lchnk)
+
+!if icol>0; column with LAT-LON exists in this chunk
+!To print qgas_cur for 1, ntot_soaspec and qaer_cur for 1, ntot_soamode
+
+      if (icol > 0) then
+        !write(iulog,*)’q:’,state%q(icol,1,1)
+       ! write(iulog,*)'MAM_soaexch_vbs qgas_cur, ntot_soaspec, qaer_cur=',qgas_cur,ntot_soaspec,qaer_cur
+       ! write(iulog,*)'MAM_soaexch_vbs ntot_soamode =',ntot_soamode
+       ! write(iulog,*)'MAM_soaexch_vbs max_aer, max_gas, npca, mw_gas, iaer_pom, iaer_soa, max_mode:', max_aer, max_gas, npca, mw_gas, iaer_pom, iaer_soa, max_mode
+        !write(iulog,*)'MAM_soaexch_vbs qgas_cur(igas_soag), qgas_cur(igas_soagzz) =',qgas_cur(igas_soag), qgas_cur(igas_soagzz)
+        ! write(iulog,*)'MAM_soaexch_vbs qaer_cur(iaer_soa,1) mode 1, iaer_soa=',qaer_cur(iaer_soa,1), iaer_soa
+        ! write(iulog,*)'MAM_soaexch_vbs qaer_cur(iaer_soa,2) mode 2, iaer_soa=',qaer_cur(iaer_soa,2), iaer_soa
+        !write(iulog,*)'igas_soag, igas_soagzz,uptkaer(igas_soag:igas_soagzz,nmode) MAM_soaexch_vbs=',igas_soag, igas_soagzz, uptkaer(igas_soag:igas_soagzz,:)
+        write(iulog,*)'MAM_soaexchvbs: qaer_cur_sumofallmodes or tempvar(igas_soag:igas_soagzz)',tempvar(igas_soag:igas_soagzz)
+         write(iulog,*)'MAM_saoexch_vbs: lchnk,lev,col, pmid, temp ', lchnk, k, i, pmid, temp
+        write(iulog,*)'MAM_soaexch_vbs: mw_gas(igas_soag:igas_soagzz), opoa_frac(1:1) ', mw_gas(igas_soag:igas_soagzz), opoa_frac(1,1)
+         write(iulog,*)'MAM_soaexch_vbs qgas_cur(igas_soagigas_soagzz), iaer_pom, qaer_cur(iaer_pom,1) =',qgas_cur(igas_soag:igas_soagzz), iaer_pom, qaer_cur(iaer_pom,1)
+         !write(iulog,*)'Const calue check qaer_cur(iaer_soa) mode 1, 2, 3', qaer_cur(iaer_soa,1), qaer_cur (iaer_soa,2), qaer_cur(iaer_soa,3)
+         write(iulog,*)'MAM_soaexch_vbs qaer_cur(iaer_soa,1) mode 1, iaer_soa=',qaer_cur(iaer_soa,1), iaer_soa
+         write(iulog,*)'MAM_soaexch_vbs qaer_cur(iaer_soa,2) mode 2, iaer_soa=',qaer_cur(iaer_soa,2), iaer_soa
+         write(iulog,*)'MAM_soaexch_Vbs, qaer_cur(iaer_soa,3) mode3 , iaer_soa=', qaer_cur(iaer,3), iaer_soa
+         write(iulog,*)'g0_soa(1:7)=',g0_soa(1:7)
+         write(iulog,*)'igas_soag, igas_soagzz,uptkaer(igas_soag:igas_soagzz,nmode) MAM_soaexch_vbs=',igas_soag, igas_soagzz, uptkaer(igas_soag:igas_soagzz,:)
+      endif
 
       return
       end subroutine mam_soaexch_vbs_1subarea
@@ -5693,7 +5811,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       naer = 0
 
 ! soa aerosol and condensing gas species
-#if ( defined MAM_SOA_VBS )
+#if ( defined MODAL_AERO_4MODE_SOA_MOM )
       soa_mech_type = soa_mech_type_vbs
       soa_mech_optaa = 1
       if      (nsoa == 1 .and. nsoag == 7) then
@@ -5829,6 +5947,13 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       iaer_ca = naer
       naer = naer + 1 ; name_aerpfx(naer) = 'co3'
       iaer_co3 = naer
+#endif
+
+
+#if ( defined MODAL_AERO_4MODE_MOM || MODAL_AERO_4MODE_SOA_MOM )
+      naer = naer + 1
+      name_aerpfx(naer) = 'mom'
+      iaer_mom = naer
 #endif
 
       if (ntot_amode==9) then

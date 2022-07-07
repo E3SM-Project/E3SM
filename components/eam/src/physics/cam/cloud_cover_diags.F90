@@ -17,7 +17,7 @@ module cloud_cover_diags
   public :: cloud_cover_diags_out
 
 !==========LSJ=======
-  real(r8), public :: cltot_pub(pcols) 
+  real(r8), public :: cltot_pub(40) !MS changed from pcols to 40 
 !==========LSJ=======
 
 contains

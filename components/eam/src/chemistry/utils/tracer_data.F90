@@ -211,6 +211,7 @@ contains
 
 ! does not work when compiled with pathf90
 !    select case ( to_upper(data_type) )
+!    if(masterproc)write(102,*)trim(filename),data_type
     select case ( data_type )
     case( 'FIXED' )
        file%fixed = .true.
@@ -219,6 +220,7 @@ contains
     case( 'CYCLICAL' )
        file%cyclical = .true.
        file%cyc_yr = data_cycle_yr
+!       if(masterproc)write(102,*)trim(filename),file%cyclical, file%cyc_yr
     case( 'CYCLICAL_LIST' )
        file%cyclical_list = .true.
        file%cyc_yr = data_cycle_yr
@@ -233,6 +235,7 @@ contains
        call endrun('trcdata_init: Cannot specify data_fixed_ymd or data_fixed_tod if data type is not FIXED')
     endif
     if ( (.not.file%cyclical) .and. (data_cycle_yr>0._r8) ) then
+!       if(masterproc)write(102,*)trim(filename),file%cyclical, data_cycle_yr
        call endrun('trcdata_init: Cannot specify data_cycle_yr if data type is not CYCLICAL')
     endif
 
