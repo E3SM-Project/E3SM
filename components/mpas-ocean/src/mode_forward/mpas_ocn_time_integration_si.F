@@ -457,12 +457,12 @@ module ocn_time_integration_si
                                           highFreqThicknessTend)
       call mpas_pool_get_array(tendPool, 'lowFreqDivergence', &
                                           lowFreqDivergenceTend)
-      call mpas_pool_get_array(tendPool, 'verticalVelocityTend', &
-                                          verticalVelocityTend)
-      call mpas_pool_get_array(statePool, 'verticalVelocity', &
-                                          verticalVelocityNew, 2)
-      call mpas_pool_get_array(statePool, 'verticalVelocity', &
-                                          verticalVelocityCur, 1)
+      call mpas_pool_get_array(tendPool, 'vertVelocityNonhydroTend', &
+                                          vertVelocityNonhydroTend)
+      call mpas_pool_get_array(statePool, 'vertVelocityNonhydro', &
+                                          vertVelocityNonhydroNew, 2)
+      call mpas_pool_get_array(statePool, 'vertVelocityNonhydro', &
+                                          vertVelocityNonhydroCur, 1)
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersNew, 2)
 
       if (config_transport_tests_flow_id > 0) then
@@ -1196,144 +1196,6 @@ module ocn_time_integration_si
       
                call si_matvec_mul(SIvec_wh0,SIvec_t0,sshSubcycleCur)
 
-               ! Global sum across CPUs
-               call mpas_timer_start("si reduction r0")
-               call mpas_dmpar_sum_real_array(domain % dminfo, 2,      &
-                                              SIcst_allreduce_local2,  &
-                                              SIcst_allreduce_global2)
-               call mpas_timer_stop ("si reduction r0")
-            endif 
-
-            SIcst_r00r0 = 0.0_RKIND
-            SIcst_r00w0 = 0.0_RKIND
-   
-            do iCell = 1, nCellsOwned
-               SIcst_r00r0 = SIcst_r00r0 + SIvec_r00(iCell) &
-                                         * SIvec_r0(iCell)
-               SIcst_r00w0 = SIcst_r00w0 + SIvec_r00(iCell) &
-                                         * SIvec_w0(iCell)
-            end do ! iCell
-
-            SIcst_allreduce_local2(1) = SIcst_r00r0
-            SIcst_allreduce_local2(2) = SIcst_r00w0
-   
-            ! Global sum across CPUs
-            call mpas_timer_start("si reduction r0")
-            call mpas_dmpar_sum_real_array(domain % dminfo, 2,      &
-                                           SIcst_allreduce_local2,  &
-                                           SIcst_allreduce_global2)
-            call mpas_timer_stop ("si reduction r0")
-   
-            if ( config_btr_si_partition_match_mode .and. ncpus > 1) then
-               SIcst_allreduce_temp9(:)    = 0.0_RKIND
-               SIcst_allreduce_itemp9(:)   = 0.0_RKIND
-   
-               SIcst_allreduce_itemp9(1:2) = &
-                                    exponent(SIcst_allreduce_global2(:))
-               SIcst_allreduce_temp9(1:2)  = &
-                                    fraction(SIcst_allreduce_global2(:))
-               SIcst_allreduce_temp9(1:2)  = &
-                                    anint(SIcst_allreduce_temp9(1:2) &
-                                           * 1.0e+4_RKIND  ) &
-                                           / 1.0e+4_RKIND
-   
-               SIcst_allreduce_global2(:) =          &
-                          SIcst_allreduce_temp9(1:2) &
-                        * 2.0_RKIND ** (SIcst_allreduce_itemp9(1:2))
-            endif
-   
-            SIcst_r00r0_global = SIcst_allreduce_global2(1)
-            SIcst_r00w0_global = SIcst_allreduce_global2(2)
-
-            SIcst_rho0   = SIcst_r00r0_global
-            SIcst_alpha0 = SIcst_rho0 / SIcst_r00w0_global
-            SIcst_beta0  = 0.0_RKIND
-            SIcst_omega0 = 0.0_RKIND
-   
-            call mpas_timer_stop("si btr residual")
-   
-   
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            ! Stage 2.3 : Outer iterations 
-            !             - lagged values are sufficiently up to date
-            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   
-            call mpas_timer_start("si btr iteration")
-   
-            iter = 0
-            resid = (tolerance_outer+100.0)**2.0
-   
-            !-------------------------------------------------------------!
-            do while ( dsqrt(resid) > tolerance_outer )
-            !-------------------------------------------------------------!
-   
-               iter = iter + 1
-   
-               !$omp parallel
-               !$omp do schedule(runtime)
-               do iCell = 1, nPrecVec
-                  SIvec_ph1(iCell) =  SIvec_rh0(iCell) + SIcst_beta0      &
-                                   * (SIvec_ph0(iCell) - SIcst_omega0     &
-                                                       * SIvec_sh0(iCell))
-   
-                  SIvec_s1(iCell)  =  SIvec_w0(iCell)  + SIcst_beta0      &
-                                   * (SIvec_s0(iCell)  - SIcst_omega0     &
-                                                       * SIvec_z0(iCell))
-   
-                  SIvec_sh1(iCell) =  SIvec_wh0(iCell) + SIcst_beta0      &
-                                   * (SIvec_sh0(iCell) - SIcst_omega0     &
-                                                       * SIvec_zh0(iCell))
-   
-                  SIvec_z1(iCell)  =  SIvec_t0(iCell)  + SIcst_beta0      &
-                                   * (SIvec_z0(iCell)  - SIcst_omega0     &
-                                                       * SIvec_v0(iCell))
-   
-                  SIvec_q0(iCell)  =  SIvec_r0(iCell)  - SIcst_alpha0     &
-                                                       * SIvec_s1(iCell)
-   
-                  SIvec_qh0(iCell) =  SIvec_rh0(iCell) - SIcst_alpha0     &
-                                                       * SIvec_sh1(iCell)
-   
-                  SIvec_y0(iCell)  =  SIvec_w0(iCell)  - SIcst_alpha0     &
-                                                       * SIvec_z1(iCell)
-               end do ! iCell
-               !$omp end do
-               !$omp end parallel
-   
-               ! Preconditioning -----------------------------------------!
-   
-               if ( trim(config_btr_si_preconditioner) == 'ras' ) then
-                  ! RAS preconditioning: Use BLAS 
-                  ! for the symmetric matrix-vector multiplication
-#ifdef USE_LAPACK
-                  call DSPMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, &
-                             SIvec_z1(1:nPrecVec), 1, 0.0_RKIND,   &
-                             SIvec_zh1(1:nPrecVec),1)
-#endif
-   
-               elseif ( trim(config_btr_si_preconditioner) == &
-                                                 'block_jacobi' ) then
-                  ! Block-Jacobi preconditioning: Use BLAS 
-                  ! for the symmetric matrix-vector multiplication
-#ifdef USE_LAPACK
-                  call DSPMV('U', nPrecVec, 1.0_RKIND, prec_ivmat, &
-                             SIvec_z1(1:nPrecVec), 1, 0.0_RKIND,   &
-                             SIvec_zh1(1:nPrecVec),1)
-#endif
-   
-               elseif ( trim(config_btr_si_preconditioner) == &
-                                                       'jacobi' ) then
-                  ! Jacobi preconditioning
-                  SIvec_zh1(1:nPrecVec) = SIvec_z1(1:nPrecVec) &
-                                        * prec_ivmat(1:nPrecVec)
-   
-               elseif ( trim(config_btr_si_preconditioner) == &
-                                                         'none' ) then
-                  ! No preconditioning
-                  SIvec_zh1(1:nPrecVec) = SIvec_z1(1:nPrecVec)
-               end if
->>>>>>> b5f80740... added nonhydro to v2
-   
                ! Reduction --------------------------------------------------!
    
                call mpas_timer_start("si reduction r0")
