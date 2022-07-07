@@ -74,7 +74,7 @@ if [ $skip_testing -eq 0 ]; then
   if [ -n "$PULLREQUESTNUM" ]; then
       is_at_run=1
   else
-      TAS_ARGS="${TAS_ARGS} --nightly"
+      TAS_ARGS="${TAS_ARGS} --test-level nightly"
       # We never want to submit a fake run to the dashboard
       if [ -z "$SCREAM_FAKE_ONLY" ]; then
           TAS_ARGS="${TAS_ARGS} --submit"
