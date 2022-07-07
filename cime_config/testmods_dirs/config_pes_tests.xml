@@ -29,4 +29,69 @@
       </pes>
     </mach>
   </grid>
+  <grid name="a%ne4np4.*">
+    <mach name="chrysalis">
+      <pes compset="any" pesize="any">
+        <comment>tests+chrysalis: any compset on ne4 grid, 3x32x2 NODESxMPIxOMP</comment>
+        <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>96</ntasks_atm>
+          <ntasks_ice>96</ntasks_ice>
+          <ntasks_cpl>96</ntasks_cpl>
+          <ntasks_lnd>96</ntasks_lnd>
+          <ntasks_rof>96</ntasks_rof>
+          <ntasks_ocn>96</ntasks_ocn>
+          <ntasks_glc>96</ntasks_glc>
+          <ntasks_wav>96</ntasks_wav>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>2</nthrds_atm>
+          <nthrds_ice>2</nthrds_ice>
+          <nthrds_cpl>2</nthrds_cpl>
+          <nthrds_lnd>2</nthrds_lnd>
+          <nthrds_rof>2</nthrds_rof>
+          <nthrds_ocn>2</nthrds_ocn>
+          <nthrds_glc>2</nthrds_glc>
+          <nthrds_wav>2</nthrds_wav>
+        </nthrds>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="a%ne30np4.pg.+_oi%EC30to60E2r2">
+    <mach name="chrysalis">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="any">
+        <comment>tests+chrysalis: -compset WCYCL* -res ne30pg*EC30to60E2r2 on 4 nodes pure-MPI, ~2.38 sypd </comment>
+        <ntasks>
+          <ntasks_atm>192</ntasks_atm>
+          <ntasks_lnd>192</ntasks_lnd>
+          <ntasks_rof>192</ntasks_rof>
+          <ntasks_ice>192</ntasks_ice>
+          <ntasks_ocn>64</ntasks_ocn>
+          <ntasks_cpl>192</ntasks_cpl>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>192</rootpe_ocn>
+        </rootpe>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="a%ne0np4_northamericax4v1.pg2_l%.+_oi%WC14to60E2r3">
+    <mach name="chrysalis">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="any">
+        <comment>tests+chrysalis: --compset WCYCL --res northamericax4v1pg2_WC14to60E2r3 on 4 nodes pure-MPI, ~0.55 sypd </comment>
+        <ntasks>
+          <ntasks_atm>192</ntasks_atm>
+          <ntasks_lnd>192</ntasks_lnd>
+          <ntasks_rof>192</ntasks_rof>
+          <ntasks_ice>192</ntasks_ice>
+          <ntasks_ocn>64</ntasks_ocn>
+          <ntasks_cpl>192</ntasks_cpl>
+        </ntasks>
+        <rootpe>
+          <rootpe_ocn>192</rootpe_ocn>
+        </rootpe>
+      </pes>
+    </mach>
+  </grid>
 </config_pes>

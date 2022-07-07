@@ -40,6 +40,8 @@ module ocn_time_integration_split
 
    use ocn_equation_of_state
    use ocn_vmix
+   use ocn_vertical_advection
+   use ocn_vertical_remap
    use ocn_time_average_coupled
 
    use ocn_effective_density_in_land_ice
@@ -263,6 +265,10 @@ module ocn_time_integration_split
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracersNew
 
+      ! Remap variables
+      real (kind=RKIND), dimension(:,:), pointer :: &
+         layerThicknessLagNew
+
       ! These are public variables used from the diagnostics module
       ! indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
       ! indexSSHGradientZonal, indexSSHGradientMeridional
@@ -282,6 +288,7 @@ module ocn_time_integration_split
       ! activeTracerNonLocalTendency
       ! activeTracerHorMixTendency
       ! activeTracerHorizontalAdvectionEdgeFlux
+      ! vertVelocityTop
 
       ! End preamble
       !-----------------------------------------------------------------
@@ -2430,6 +2437,23 @@ module ocn_time_integration_split
       call mpas_timer_stop('se vmix halos')
 
       call mpas_timer_stop("se implicit vert mix")
+
+      if ( configVertAdvMethod == vertAdvRemap ) then
+
+         call mpas_timer_start("vertical remap")
+
+         call mpas_pool_get_array(statePool, 'layerThicknessLag', layerThicknessLagNew, 2)
+
+         ! Store the current, Lagrangian location for computation of the
+         ! Eulerian vertical velocity induced by remapping
+         layerThicknessLagNew = layerThicknessNew
+
+         ! Perform the remapping
+         call ocn_remap_vert_state(block, err)
+
+         call mpas_timer_stop("vertical remap")
+
+      end if
 
       call mpas_timer_start('se fini')
 

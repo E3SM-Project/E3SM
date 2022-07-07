@@ -553,6 +553,13 @@ my $phys = $cfg->get('phys');
 if ($phys eq 'adiabatic') { add_default($nl, 'atm_adiabatic',  'val'=>'.true.'); }
 if ($phys eq 'ideal')     { add_default($nl, 'atm_ideal_phys', 'val'=>'.true.'); }
 
+# Ideal physics option
+# TODO: roll this into phys option so that ideal physics is identified not by phys="ideal", but
+# "held-suarez", "held-suarez-williamson", "held-suarez-lin-williamson", etc.
+if ($phys eq 'ideal') {
+    add_default($nl, 'ideal_phys_option', 'val'=>'held-suarez');
+}
+
 # Aqua planet 
 my $aqua_mode = $cfg->get('aquaplanet');
 my $nl_aqua_flag = $nl->get_value('aqua_planet');
@@ -779,11 +786,9 @@ if ($opts{'ignore_ic_date'}) {
     # Don't set any attribute for date matching.  By putting this option first it
     # will take precedence in the case that the user has set both -ignore_ic_date
     # and -ignore_ic_year
-}
-elsif ($opts{'ignore_ic_year'}) {
+} elsif ($opts{'ignore_ic_year'}) {
     $atts{'ic_md'} = $ic_date;
-}
-else {
+} else {
     # if neither option specified then match full date
     $atts{'ic_ymd'} = $ic_date;
 }
@@ -806,7 +811,6 @@ add_default($nl,'microp_aero_wsub_scheme');
 add_default($nl,'microp_aero_wsubmin');
 add_default($nl,'use_preexisting_ice');
 
-
 #BSINGH - (when .true.)calculate solar zenith angle averaged over a time step.
 #In default model, solar zenith angle is held constant over time.
 #This flag is kept to test b4b with the default code(this must be REMOVED when we decide to make it default)
@@ -817,7 +821,7 @@ add_default($nl,'use_rad_dt_cosz');
 #if 0., no rayleigh friction is applied
 add_default($nl, 'raytau0');
 
-# these options werre added for global RCE and they only work with RRTMGP
+# these options were added for global RCE and they only work with RRTMGP
 my $rad_pkg = $cfg->get('rad');
 if ($rad_pkg eq 'rrtmgp') {
   add_default($nl,'do_aerosol_rad');
@@ -866,6 +870,7 @@ if (defined $nl->get_value('solar_const') and
 
 }
 
+# TODO: should this include rrtmgp as well?
 if ($rad_pkg eq 'rrtmg' or $chem =~ /waccm_mozart/) {
 
    if (defined $nl->get_value('solar_const')) {
@@ -921,14 +926,15 @@ if ($co2_cycle) {
     # transient run ...
     if ($sim_year =~ /(\d+)-(\d+)/) {
 
-	add_default($nl, 'co2_readflux_fuel', 'val'=>'.true.');
+        add_default($nl, 'co2_readflux_fuel', 'val'=>'.true.');
 
-	# Check whether user has explicitly turned off reading the fossil fuel dataset.
-	# (user specification has higher precedence than the true value set above)
-	if ($nl->get_value('co2_readflux_fuel') =~ /$TRUE/io) {
-	    add_default($nl, 'co2flux_fuel_file', 'sim_year'=>$sim_year);
-	}
-
+        # Check whether user has explicitly turned off reading the fossil fuel dataset.
+        # (user specification has higher precedence than the true value set above)
+        if ($nl->get_value('co2_readflux_fuel') =~ /$TRUE/io) {
+            add_default($nl, 'co2flux_fuel_file', 'sim_year'=>$sim_year);
+        }
+        
+        # change the default value from '.true.' to '.false.'
         add_default($nl, 'co2_readflux_aircraft', 'val'=>'.false.');
 
         # Check whether user has explicitly turned off reading the aircraft CO2 dataset.
@@ -941,7 +947,7 @@ if ($co2_cycle) {
 
             add_default($nl, 'aircraft_datapath');
             add_default($nl, 'aircraft_type', 'val'=>'SERIAL');
-	}		   
+        }
     }
 }
 
@@ -954,12 +960,6 @@ my $co2_cycle_rad_passive = ($nl->get_value('co2_cycle_rad_passive') =~ /$TRUE/i
 # If test tracers have been requested, set tracers_flag=.true.
 if ($cfg->get('nadv_tt')) { add_default($nl, 'tracers_flag', 'val'=>'.true.'); }
 if ($cfg->get('age_of_air_trcs')) { add_default($nl, 'aoa_tracers_flag', 'val'=>'.true.'); }
-
-# If phys option is "cam3" then turn on the CAM3 prescribed ozone and aerosols
-if ($phys eq 'cam3' and !$aqua_mode) {
-    add_default($nl, 'cam3_ozone_data_on', 'val'=>'.true.');
-    add_default($nl, 'cam3_aero_data_on', 'val'=>'.true.');
-}
 
 # Defaults for radiatively active constituents
 
@@ -1067,26 +1067,26 @@ my $prescribed_aero_model = $nl->get_value('prescribed_aero_model');
 if (defined $prescribed_aero_model) {
     # Strip the quotes from namelist input
     $prescribed_aero_model =~ s/['"]//g;                 #"'
-}
-else {
+} else {
     $prescribed_aero_model = 'none';
     if ($chem eq 'none' or $chem eq 'waccm_ghg' or $chem eq 'super_fast_llnl' or $chem eq 'waccm_mozart' or $chem eq 'waccm_mozart_sulfur') {
-	# If no chemistry then there must be prescribed aerosols unless physics
-	# package is adiabatic or ideal.
-	if ($phys eq 'default') {
-	    $prescribed_aero_model = 'modal';
-	}
-	elsif ($phys eq 'cam4' or $phys eq 'cam3') {
-	    $prescribed_aero_model = 'bulk';
-	}
+        # If no chemistry then there must be prescribed aerosols unless physics
+        # package is adiabatic or ideal.
+        if ($phys eq 'default') {
+            $prescribed_aero_model = 'modal';
+        }
     }
 }
 
 
-# $aer_model is either 'bam' or 'mam'.  This token is used in the element names that
+# $aer_model is 'none', 'bam', or 'mam'.  This token is used in the element names that
 # are constructed to get the default physprops files.
-my $aer_model = 'bam';
-if ($prescribed_aero_model eq 'modal' or $chem =~ /_mam/) {$aer_model = 'mam';}
+my $aer_model = 'none';
+if ($prescribed_aero_model eq 'modal' or $chem =~ /_mam/) {
+  $aer_model = 'mam';
+} elsif($chem =~ /_bam/) {
+  $aer_model = 'bam';
+}
 
 if ($aer_model eq 'mam' ) {
 
@@ -1134,8 +1134,7 @@ if ($aer_model eq 'mam' ) {
 	    [qw(so4_c2 soa_c2 ncl_c2)],
 	    [qw(dst_c3 ncl_c3 so4_c3)],
 	    );
-    }
-    else{
+    } else {
 	 @mode_spec     = (
             [qw(so4_a1 pom_a1 soa_a1 bc_a1 dst_a1 ncl_a1)],
             [qw(so4_a2 soa_a2 ncl_a2)],
@@ -1295,8 +1294,7 @@ if ($aer_model eq 'mam' ) {
 	    [qw(A A A)],
 	    [qw(A A A)],
 	    );
-    }
-    else{
+    } else{
 	@mode_spec     = (
             [qw(so4_a1 pom_a1 soa_a1 bc_a1 dst_a1 ncl_a1 mom_a1)],
             [qw(so4_a2 soa_a2 ncl_a2 mom_a2)],
@@ -1448,7 +1446,7 @@ if ($aer_model eq 'mam' ) {
   # water refractive index properties needed for modal optics calculations
   add_default($nl, 'water_refindex_file');
 
-} else {
+} elsif($aer_model eq 'bam') {
 
   # bulk aerosol contributions
 
@@ -1533,11 +1531,11 @@ if ( $prescribed_aero_model ne 'none' ) {
   if ($moz_aero_data =~ /$TRUE/io ) {
       # If user has not set prescribed_aero_file, then use defaults
       unless (defined $nl->get_value('prescribed_aero_file')) {
-	  my @settings = ('prescribed_aero_datapath', 'prescribed_aero_file', 'prescribed_aero_type',
-			'prescribed_aero_cycle_yr');
-	  foreach my $setting (@settings) {
-	      add_default($nl, $setting, 'aer_model'=>$aer_model);
-	  }
+          my @settings = ('prescribed_aero_datapath', 'prescribed_aero_file', 'prescribed_aero_type',
+                'prescribed_aero_cycle_yr');
+          foreach my $setting (@settings) {
+              add_default($nl, $setting, 'aer_model'=>$aer_model);
+          }
       }
   }
 
@@ -1546,11 +1544,11 @@ if ( $prescribed_aero_model ne 'none' ) {
   if ( (($moz_aero_data =~ /$TRUE/io) or ($cam3_aero_data =~ /$TRUE/io)) and !$aqua_mode ) {
       # If user has not set aerodep_flx_file, then use defaults
       unless (defined $nl->get_value('aerodep_flx_file')) {
-	  my @settings = ('aerodep_flx_datapath', 'aerodep_flx_file', 'aerodep_flx_type',
-			'aerodep_flx_cycle_yr');
-	  foreach my $setting (@settings) {
-	      add_default($nl, $setting, 'aer_model'=>$aer_model);
-	  }
+          my @settings = ('aerodep_flx_datapath', 'aerodep_flx_file', 'aerodep_flx_type',
+                'aerodep_flx_cycle_yr');
+          foreach my $setting (@settings) {
+              add_default($nl, $setting, 'aer_model'=>$aer_model);
+          }
       }
   }
 }
@@ -1561,10 +1559,9 @@ foreach my $name (@aero_names) {
     my $source = shift(@aerosources);
     my $file;
     if ($source =~ 'M') {
-	$file = "${name}_file";
-    }
-    else {
-	$file = "${aer_model}_$name";
+        $file = "${name}_file";
+    } else {
+        $file = "${aer_model}_$name";
     }
     my $rel_filepath = get_default_value($file);
     my $abs_filepath = set_abs_filepath($rel_filepath, $inputdata_rootdir);
@@ -1572,10 +1569,12 @@ foreach my $name (@aero_names) {
 }
 
 # Eruptive volcanic aerosols can be run with either BAM or MAM.
-if ($rad_volcaero_mmr) {
-    my $rel_filepath = get_default_value("VOLC_MMR");
-    my $abs_filepath = set_abs_filepath($rel_filepath, $inputdata_rootdir);
-    $radval .= "," . quote_string("N:VOLC_MMR:" . $abs_filepath);
+if (($aer_model eq 'mam') or ($aer_model eq 'bam')) {
+    if ($rad_volcaero_mmr) {
+        my $rel_filepath = get_default_value("VOLC_MMR");
+        my $abs_filepath = set_abs_filepath($rel_filepath, $inputdata_rootdir);
+        $radval .= "," . quote_string("N:VOLC_MMR:" . $abs_filepath);
+    }
 }
 
 # Stratospheric sulfur aerosols 
@@ -1585,7 +1584,9 @@ if ($nl->get_value('strat_aero_feedback') =~ /$TRUE/io) {
     $radval .= "," . quote_string("N:H2SO4M:" . $abs_filepath);
 }
 
-add_default($nl, 'rad_climate', 'val'=>$radval);
+if ( !($phys eq 'ideal' or $phys eq 'adiabatic') ) {
+    add_default($nl, 'rad_climate', 'val'=>$radval);
+}
 
 # Cloud optics; for MMF be specific about which optics package to use
 if ($rad_pkg eq 'rrtmg' or $rad_pkg eq 'rrtmgp') {

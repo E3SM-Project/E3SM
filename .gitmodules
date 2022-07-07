@@ -61,3 +61,6 @@
 [submodule "components/mpas-ocean/src/FFTW"]
 	path = components/mpas-ocean/src/FFTW
 	url = https://github.com/knbarton/fftw-3.3.8.git
+[submodule "components/mpas-ocean/src/ppr"]
+	path = components/mpas-ocean/src/ppr
+	url = https://github.com/dengwirda/PPR.git

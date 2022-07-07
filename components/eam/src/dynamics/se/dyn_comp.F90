@@ -284,7 +284,7 @@ CONTAINS
 
                 elem(ie)%state%q(:,:,:,:)=0.0_r8
 
-                temperature(:,:,:)=0.0_r8
+                temperature(:,:,:)=300.0_r8
                 ps=ps0
                 call set_thermostate(elem(ie),ps,temperature,hvcoord)
 

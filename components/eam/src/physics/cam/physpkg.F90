@@ -1018,7 +1018,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     
     if ( adiabatic .or. ideal_phys )then
        call t_stopf ('physpkg_st1')
-	
+
        call t_startf ('bc_physics')
        call phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
        call t_stopf ('bc_physics')
@@ -1145,6 +1145,8 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
     integer(i8)         :: sysclock_max    ! system clock max value
     real(r8)            :: chunk_cost      ! measured cost per chunk
 
+    character(len=128)  :: ideal_phys_option
+
     ! physics buffer field for total energy
     real(r8), pointer, dimension(:) :: teout
     logical, SAVE :: first_exec_of_phys_run1_adiabatic_or_ideal  = .TRUE.
@@ -1159,6 +1161,8 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
     endif
 
     call system_clock(count=beg_proc_cnt)
+
+    call phys_getopts(ideal_phys_option_out=ideal_phys_option)
 
 !$OMP PARALLEL DO SCHEDULE(STATIC,1) &
 !$OMP PRIVATE (c, beg_chnk_cnt, flx_heat, end_chnk_cnt, sysclock_rate, sysclock_max, chunk_cost)
@@ -1182,7 +1186,7 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
 
        if ( ideal_phys )then
           call t_startf('tphysidl')
-          call tphysidl(ztodt, phys_state(c), phys_tend(c))
+          call tphysidl(ztodt, phys_state(c), phys_tend(c), trim(ideal_phys_option))
           call t_stopf('tphysidl')
        end if
 
