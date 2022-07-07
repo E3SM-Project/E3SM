@@ -13,7 +13,6 @@ from CIME import utils
 logger = logging.getLogger(__name__)
 
 
-# BUILD
 def save_build_provenance(case, lid=None):
     with utils.SharedArea():
         lid = os.environ["LID"] if lid is None else lid
@@ -132,6 +131,35 @@ def _find_git_root(srcroot):
     parsed_gitroot = _parse_dot_git_path(gitdir)
 
     return parsed_gitroot
+
+
+@contextmanager
+def _swap_cwd(new_cwd):
+    old_cwd = os.getcwd()
+
+    os.chdir(new_cwd)
+
+    try:
+        yield
+    finally:
+        os.chdir(old_cwd)
+
+
+def _run_git_cmd_recursively(cmd, srcroot, output):
+    """Runs a git command recursively
+
+    Runs the git command in srcroot then runs it on each submodule.
+    Then output from both commands is written to the output file.
+    """
+    rc1, output1, err1 = utils.run_cmd("git {}".format(cmd), from_dir=srcroot)
+
+    rc2, output2, err2 = utils.run_cmd(
+        'git submodule foreach --recursive "git {}; echo"'.format(cmd), from_dir=srcroot
+    )
+
+    with open(output, "w") as fd:
+        fd.write((output1 if rc1 == 0 else err1) + "\n\n")
+        fd.write((output2 if rc2 == 0 else err2) + "\n")
 
 
 def _read_gitdir(gitroot):
@@ -266,36 +294,6 @@ def _symlink_current(lid, exeroot):
             os.symlink(the_match, generic_name)
 
 
-def _run_git_cmd_recursively(cmd, srcroot, output):
-    """Runs a git command recursively
-
-    Runs the git command in srcroot then runs it on each submodule.
-    Then output from both commands is written to the output file.
-    """
-    rc1, output1, err1 = utils.run_cmd("git {}".format(cmd), from_dir=srcroot)
-
-    rc2, output2, err2 = utils.run_cmd(
-        'git submodule foreach --recursive "git {}; echo"'.format(cmd), from_dir=srcroot
-    )
-
-    with open(output, "w") as fd:
-        fd.write((output1 if rc1 == 0 else err1) + "\n\n")
-        fd.write((output2 if rc2 == 0 else err2) + "\n")
-
-
-@contextmanager
-def _swap_cwd(new_cwd):
-    old_cwd = os.getcwd()
-
-    os.chdir(new_cwd)
-
-    try:
-        yield
-    finally:
-        os.chdir(old_cwd)
-
-
-# PRERUN
 def save_prerun_provenance(case, lid=None):
     with utils.SharedArea():
         # Always save env
@@ -308,69 +306,72 @@ def save_prerun_provenance(case, lid=None):
             os.path.join(logdir, "run_environment.txt.{}".format(lid))
         )
 
-        _save_prerun_provenance_common(case, lid)
+        run_dir = case.get_value("RUNDIR")
 
-        _save_prerun_provenance_e3sm(case, lid)
+        base_preview_run = os.path.join(run_dir, "preview_run.log")
+        preview_run = f"{base_preview_run}.{lid}"
 
+        if os.path.exists(base_preview_run):
+            os.remove(base_preview_run)
 
-def _save_prerun_provenance_common(case, lid):
-    """Saves common prerun provenance."""
-    run_dir = case.get_value("RUNDIR")
+        with open(base_preview_run, "w") as fd:
+            case.preview_run(lambda x: fd.write("{}\n".format(x)), None)
 
-    base_preview_run = os.path.join(run_dir, "preview_run.log")
-    preview_run = f"{base_preview_run}.{lid}"
+            # Create copy rather than symlink, the log is automatically gzipped
+            utils.safe_copy(base_preview_run, preview_run)
 
-    if os.path.exists(base_preview_run):
-        os.remove(base_preview_run)
+        _cleanup_spio_stats(case)
 
-    with open(base_preview_run, "w") as fd:
-        case.preview_run(lambda x: fd.write("{}\n".format(x)), None)
-
-        # Create copy rather than symlink, the log is automatically gzipped
-        utils.safe_copy(base_preview_run, preview_run)
+        if case.get_value("SAVE_TIMING"):
+            _record_timing(case, lid)
 
 
-def _save_prerun_timing_e3sm(case, lid):
-    project = case.get_value("PROJECT", subgroup=case.get_primary_job())
-    if not case.is_save_timing_dir_project(project):
-        return
-
-    timing_dir = case.get_value("SAVE_TIMING_DIR")
+def _check_timing_dir(timing_dir, base_case, lid):
     if timing_dir is None or not os.path.isdir(timing_dir):
-        logger.warning(
-            "SAVE_TIMING_DIR {} is not valid. E3SM requires a valid SAVE_TIMING_DIR to archive timing data.".format(
-                timing_dir
-            )
+        raise RuntimeError(
+            f"SAVE_TIMING_DIR {timing_dir} is not valid. E3SM requires a valid SAVE_TIMING_DIR to archive timing data."
         )
-        return
 
     logger.info(
         "Archiving timing data and associated provenance in {}.".format(timing_dir)
     )
+
+    full_timing_dir = os.path.join(
+        timing_dir, "performance_archive", getpass.getuser(), base_case, lid
+    )
+
+    if os.path.exists(full_timing_dir):
+        raise RuntimeError(
+            f"{full_timing_dir} already exists. Skipping archive of timing data and associated provenance."
+        )
+
+    try:
+        os.makedirs(full_timing_dir)
+    except OSError:
+        raise RuntimeError(
+            f"{full_timing_dir} cannot be created. Skipping archive of timing data and associated provenance."
+        )
+
+    return full_timing_dir
+
+
+def _record_timing(case, lid):
+    project = case.get_value("PROJECT", subgroup=case.get_primary_job())
+    if not case.is_save_timing_dir_project(project):
+        return
+
     rundir = case.get_value("RUNDIR")
     blddir = case.get_value("EXEROOT")
     caseroot = case.get_value("CASEROOT")
     srcroot = case.get_value("SRCROOT")
     base_case = case.get_value("CASE")
-    full_timing_dir = os.path.join(
-        timing_dir, "performance_archive", getpass.getuser(), base_case, lid
-    )
-    if os.path.exists(full_timing_dir):
-        logger.warning(
-            "{} already exists. Skipping archive of timing data and associated provenance.".format(
-                full_timing_dir
-            )
-        )
-        return
+    timing_dir = case.get_value("SAVE_TIMING_DIR")
 
     try:
-        os.makedirs(full_timing_dir)
-    except OSError:
-        logger.warning(
-            "{} cannot be created. Skipping archive of timing data and associated provenance.".format(
-                full_timing_dir
-            )
-        )
+        full_timing_dir = _check_timing_dir(timing_dir, base_case, lid)
+    except RuntimeError as e:
+        logger.warning("{!s}", e)
+
         return
 
     mach = case.get_value("MACH")
@@ -378,64 +379,9 @@ def _save_prerun_timing_e3sm(case, lid):
 
     # For some batch machines save queue info
     job_id = _get_batch_job_id_for_syslog(case)
+
     if job_id is not None:
-        if mach == "theta":
-            for cmd, filename in [
-                (
-                    "qstat -l --header JobID:JobName:User:Project:WallTime:QueuedTime:Score:RunTime:TimeRemaining:Nodes:State:Location:Mode:Command:Args:Procs:Queue:StartTime:attrs:Geometry",
-                    "qstatf",
-                ),
-                ("qstat -lf %s" % job_id, "qstatf_jobid"),
-                ("xtnodestat", "xtnodestat"),
-                ("xtprocadmin", "xtprocadmin"),
-            ]:
-                filename = "%s.%s" % (filename, lid)
-                utils.run_cmd_no_fail(
-                    cmd, arg_stdout=filename, from_dir=full_timing_dir
-                )
-                utils.gzip_existing_file(os.path.join(full_timing_dir, filename))
-        elif mach in ["cori-haswell", "cori-knl"]:
-            for cmd, filename in [
-                ("sinfo -a -l", "sinfol"),
-                ("scontrol show jobid %s" % job_id, "sqsf_jobid"),
-                # ("sqs -f", "sqsf"),
-                (
-                    "squeue -o '%.10i %.15P %.20j %.10u %.7a %.2t %.6D %.8C %.10M %.10l %.20S %.20V'",
-                    "squeuef",
-                ),
-                ("squeue -t R -o '%.10i %R'", "squeues"),
-            ]:
-                filename = "%s.%s" % (filename, lid)
-                utils.run_cmd_no_fail(
-                    cmd, arg_stdout=filename, from_dir=full_timing_dir
-                )
-                utils.gzip_existing_file(os.path.join(full_timing_dir, filename))
-        elif mach in ["anvil", "chrysalis", "compy"]:
-            for cmd, filename in [
-                ("sinfo -l", "sinfol"),
-                ("squeue -o '%all' --job {}".format(job_id), "squeueall_jobid"),
-                (
-                    "squeue -o '%.10i %.10P %.15u %.20a %.2t %.6D %.8C %.12M %.12l %.20S %.20V %j'",
-                    "squeuef",
-                ),
-                ("squeue -t R -o '%.10i %R'", "squeues"),
-            ]:
-                filename = "%s.%s" % (filename, lid)
-                utils.run_cmd_no_fail(
-                    cmd, arg_stdout=filename, from_dir=full_timing_dir
-                )
-                utils.gzip_existing_file(os.path.join(full_timing_dir, filename))
-        elif mach == "summit":
-            for cmd, filename in [
-                ("bjobs -u all >", "bjobsu_all"),
-                ("bjobs -r -u all -o 'jobid slots exec_host' >", "bjobsru_allo"),
-                ("bjobs -l -UF %s >" % job_id, "bjobslUF_jobid"),
-            ]:
-                full_cmd = cmd + " " + filename
-                utils.run_cmd_no_fail(full_cmd + "." + lid, from_dir=full_timing_dir)
-                utils.gzip_existing_file(
-                    os.path.join(full_timing_dir, filename + "." + lid)
-                )
+        _record_queue_info(mach, job_id, lid, full_timing_dir)
 
     # copy/tar SourceModes
     source_mods_dir = os.path.join(caseroot, "SourceMods")
@@ -448,48 +394,10 @@ def _save_prerun_timing_e3sm(case, lid):
     # Save various case configuration items
     case_docs = os.path.join(full_timing_dir, "CaseDocs.{}".format(lid))
     os.mkdir(case_docs)
-    globs_to_copy = [
-        "CaseDocs/*",
-        "run_script_provenance/*",
-        "*.run",
-        ".*.run",
-        "*.xml",
-        "user_nl_*",
-        "*env_mach_specific*",
-        "Macros*",
-        "README.case",
-        "Depends.{}".format(mach),
-        "Depends.{}".format(compiler),
-        "Depends.{}.{}".format(mach, compiler),
-        "software_environment.txt",
-    ]
 
-    utils.copy_globs([os.path.join(caseroot, x) for x in globs_to_copy], case_docs, lid)
-
-    # Copy some items from build provenance
-    blddir_globs_to_copy = [
-        "GIT_LOGS_HEAD",
-        "GIT_STATUS",
-        "GIT_DIFF",
-        "GIT_LOG",
-        "GIT_REMOTE",
-        "GIT_CONFIG",
-        "GIT_SUBMODULE_STATUS",
-        "build_environment.txt",
-        "build_times.txt",
-    ]
-
-    utils.copy_globs(
-        [os.path.join(blddir, x) for x in blddir_globs_to_copy], full_timing_dir, lid
-    )
-
-    rundir_globs_to_copy = [
-        "preview_run.log",
-    ]
-
-    utils.copy_globs(
-        [os.path.join(rundir, x) for x in rundir_globs_to_copy], full_timing_dir, lid
-    )
+    _copy_caseroot_files(mach, compiler, caseroot, case_docs, lid)
+    _copy_blddir_files(blddir, full_timing_dir, lid)
+    _copy_rundir_files(rundir, full_timing_dir, lid)
 
     # Save state of repo
     from_repo = (
@@ -497,65 +405,82 @@ def _save_prerun_timing_e3sm(case, lid):
         if os.path.exists(os.path.join(srcroot, ".git"))
         else os.path.dirname(srcroot)
     )
+
     desc = utils.get_current_commit(tag=True, repo=from_repo)
     with open(os.path.join(full_timing_dir, "GIT_DESCRIBE.{}".format(lid)), "w") as fd:
         fd.write(desc)
 
     # What this block does is mysterious to me (JGF)
     if job_id is not None:
-
-        # Kill mach_syslog from previous run if one exists
-        syslog_jobid_path = os.path.join(rundir, "syslog_jobid.{}".format(job_id))
-        if os.path.exists(syslog_jobid_path):
-            try:
-                with open(syslog_jobid_path, "r") as fd:
-                    syslog_jobid = int(fd.read().strip())
-                os.kill(syslog_jobid, signal.SIGTERM)
-            except (ValueError, OSError) as e:
-                logger.warning("Failed to kill syslog: {}".format(e))
-            finally:
-                os.remove(syslog_jobid_path)
-
-        # If requested, spawn a mach_syslog process to monitor job progress
-        sample_interval = case.get_value("SYSLOG_N")
-        if sample_interval > 0:
-            archive_checkpoints = os.path.join(
-                full_timing_dir, "checkpoints.{}".format(lid)
-            )
-            os.mkdir(archive_checkpoints)
-            utils.touch("{}/e3sm.log.{}".format(rundir, lid))
-            syslog_jobid = utils.run_cmd_no_fail(
-                "./mach_syslog {si} {jobid} {lid} {rundir} {rundir}/timing/checkpoints {ac} >& /dev/null & echo $!".format(
-                    si=sample_interval,
-                    jobid=job_id,
-                    lid=lid,
-                    rundir=rundir,
-                    ac=archive_checkpoints,
-                ),
-                from_dir=os.path.join(caseroot, "Tools"),
-            )
-            with open(
-                os.path.join(rundir, "syslog_jobid.{}".format(job_id)), "w"
-            ) as fd:
-                fd.write("{}\n".format(syslog_jobid))
+        _record_syslog(case, lid, job_id, caseroot, rundir, full_timing_dir)
 
 
-def _get_batch_job_id_for_syslog(case):
-    """
-    mach_syslog only works on certain machines
-    """
-    mach = case.get_value("MACH")
-    try:
-        if mach in ["anvil", "chrysalis", "compy", "cori-haswell", "cori-knl"]:
-            return os.environ["SLURM_JOB_ID"]
-        elif mach in ["theta"]:
-            return os.environ["COBALT_JOBID"]
-        elif mach in ["summit"]:
-            return os.environ["LSB_JOBID"]
-    except KeyError:
-        pass
+def _record_queue_info(mach, job_id, lid, full_timing_dir):
+    if mach == "theta":
+        _record_anl_theta_queue(job_id, lid, full_timing_dir)
+    elif mach in ["cori-haswell", "cori-knl"]:
+        _record_nersc_queue(job_id, lid, full_timing_dir)
+    elif mach in ["anvil", "chrysalis", "compy"]:
+        _record_anl_queue(job_id, lid, full_timing_dir)
+    elif mach == "summit":
+        _record_olcf_queue(job_id, lid, full_timing_dir)
 
-    return None
+
+def _record_nersc_queue(job_id, lid, full_timing_dir):
+    for cmd, filename in [
+        ("sinfo -a -l", "sinfol"),
+        ("scontrol show jobid %s" % job_id, "sqsf_jobid"),
+        # ("sqs -f", "sqsf"),
+        (
+            "squeue -o '%.10i %.15P %.20j %.10u %.7a %.2t %.6D %.8C %.10M %.10l %.20S %.20V'",
+            "squeuef",
+        ),
+        ("squeue -t R -o '%.10i %R'", "squeues"),
+    ]:
+        filename = "%s.%s" % (filename, lid)
+        utils.run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
+        utils.gzip_existing_file(os.path.join(full_timing_dir, filename))
+
+
+def _record_anl_queue(job_id, lid, full_timing_dir):
+    for cmd, filename in [
+        ("sinfo -l", "sinfol"),
+        ("squeue -o '%all' --job {}".format(job_id), "squeueall_jobid"),
+        (
+            "squeue -o '%.10i %.10P %.15u %.20a %.2t %.6D %.8C %.12M %.12l %.20S %.20V %j'",
+            "squeuef",
+        ),
+        ("squeue -t R -o '%.10i %R'", "squeues"),
+    ]:
+        filename = "%s.%s" % (filename, lid)
+        utils.run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
+        utils.gzip_existing_file(os.path.join(full_timing_dir, filename))
+
+
+def _record_anl_theta_queue(job_id, lid, full_timing_dir):
+    for cmd, filename in [
+        (
+            "qstat -l --header JobID:JobName:User:Project:WallTime:QueuedTime:Score:RunTime:TimeRemaining:Nodes:State:Location:Mode:Command:Args:Procs:Queue:StartTime:attrs:Geometry",
+            "qstatf",
+        ),
+        ("qstat -lf %s" % job_id, "qstatf_jobid"),
+        ("xtnodestat", "xtnodestat"),
+        ("xtprocadmin", "xtprocadmin"),
+    ]:
+        filename = "%s.%s" % (filename, lid)
+        utils.run_cmd_no_fail(cmd, arg_stdout=filename, from_dir=full_timing_dir)
+        utils.gzip_existing_file(os.path.join(full_timing_dir, filename))
+
+
+def _record_olcf_queue(job_id, lid, full_timing_dir):
+    for cmd, filename in [
+        ("bjobs -u all >", "bjobsu_all"),
+        ("bjobs -r -u all -o 'jobid slots exec_host' >", "bjobsru_allo"),
+        ("bjobs -l -UF %s >" % job_id, "bjobslUF_jobid"),
+    ]:
+        full_cmd = cmd + " " + filename
+        utils.run_cmd_no_fail(full_cmd + "." + lid, from_dir=full_timing_dir)
+        utils.gzip_existing_file(os.path.join(full_timing_dir, filename + "." + lid))
 
 
 def _cleanup_spio_stats(case):
@@ -577,10 +502,88 @@ def _cleanup_spio_stats(case):
         )
 
 
-def _save_prerun_provenance_e3sm(case, lid):
-    _cleanup_spio_stats(case)
-    if case.get_value("SAVE_TIMING"):
-        _save_prerun_timing_e3sm(case, lid)
+def _copy_caseroot_files(mach, compiler, caseroot, case_docs, lid):
+    globs_to_copy = [
+        "CaseDocs/*",
+        "run_script_provenance/*",
+        "*.run",
+        ".*.run",
+        "*.xml",
+        "user_nl_*",
+        "*env_mach_specific*",
+        "Macros*",
+        "README.case",
+        "Depends.{}".format(mach),
+        "Depends.{}".format(compiler),
+        "Depends.{}.{}".format(mach, compiler),
+        "software_environment.txt",
+    ]
+
+    utils.copy_globs([os.path.join(caseroot, x) for x in globs_to_copy], case_docs, lid)
+
+
+def _copy_blddir_files(blddir, full_timing_dir, lid):
+    # Copy some items from build provenance
+    blddir_globs_to_copy = [
+        "GIT_LOGS_HEAD",
+        "GIT_STATUS",
+        "GIT_DIFF",
+        "GIT_LOG",
+        "GIT_REMOTE",
+        "GIT_CONFIG",
+        "GIT_SUBMODULE_STATUS",
+        "build_environment.txt",
+        "build_times.txt",
+    ]
+
+    utils.copy_globs(
+        [os.path.join(blddir, x) for x in blddir_globs_to_copy], full_timing_dir, lid
+    )
+
+
+def _copy_rundir_files(rundir, full_timing_dir, lid):
+    rundir_globs_to_copy = [
+        "preview_run.log",
+    ]
+
+    utils.copy_globs(
+        [os.path.join(rundir, x) for x in rundir_globs_to_copy], full_timing_dir, lid
+    )
+
+
+def _record_syslog(case, lid, job_id, caseroot, rundir, full_timing_dir):
+    # Kill mach_syslog from previous run if one exists
+    syslog_jobid_path = os.path.join(rundir, "syslog_jobid.{}".format(job_id))
+    if os.path.exists(syslog_jobid_path):
+        try:
+            with open(syslog_jobid_path, "r") as fd:
+                syslog_jobid = int(fd.read().strip())
+            os.kill(syslog_jobid, signal.SIGTERM)
+        except (ValueError, OSError) as e:
+            logger.warning("Failed to kill syslog: {}".format(e))
+        finally:
+            os.remove(syslog_jobid_path)
+
+    # If requested, spawn a mach_syslog process to monitor job progress
+    sample_interval = case.get_value("SYSLOG_N")
+    if sample_interval > 0:
+        archive_checkpoints = os.path.join(
+            full_timing_dir, "checkpoints.{}".format(lid)
+        )
+        os.mkdir(archive_checkpoints)
+        utils.touch("{}/e3sm.log.{}".format(rundir, lid))
+        syslog_jobid = utils.run_cmd_no_fail(
+            "./mach_syslog {si} {jobid} {lid} {rundir} {rundir}/timing/checkpoints {ac} >& /dev/null & echo $!".format(
+                si=sample_interval,
+                jobid=job_id,
+                lid=lid,
+                rundir=rundir,
+                ac=archive_checkpoints,
+            ),
+            from_dir=os.path.join(caseroot, "Tools"),
+        )
+        with open(os.path.join(rundir, "syslog_jobid.{}".format(job_id)), "w") as fd:
+            fd.write("{}\n".format(syslog_jobid))
 
 
 # POSTRUN
@@ -727,3 +730,21 @@ def _save_postrun_timing_e3sm(case, lid):
         for filename in files:
             if not filename.endswith(".gz"):
                 utils.gzip_existing_file(os.path.join(root, filename))
+
+
+def _get_batch_job_id_for_syslog(case):
+    """
+    mach_syslog only works on certain machines
+    """
+    mach = case.get_value("MACH")
+    try:
+        if mach in ["anvil", "chrysalis", "compy", "cori-haswell", "cori-knl"]:
+            return os.environ["SLURM_JOB_ID"]
+        elif mach in ["theta"]:
+            return os.environ["COBALT_JOBID"]
+        elif mach in ["summit"]:
+            return os.environ["LSB_JOBID"]
+    except KeyError:
+        pass
+
+    return None
