@@ -536,12 +536,12 @@ void RRTMGPRadiation::run_impl (const int dt) {
     auto name = m_gas_names[igas];
     auto fm_name = name=="h2o" ? "qv" : name;
     auto d_temp  = get_field_in(fm_name).get_view<const Real**>();
-    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
     const auto gas_mol_weights = m_gas_mol_weights;
 
+    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-      const int k = team.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ncol), [&] (const int& i) {
+      const int i = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
         tmp2d(i+1,k+1) = PF::calculate_vmr_from_mmr(gas_mol_weights[igas],d_qv(i,k),d_temp(i,k)); // Note that for YAKL arrays i and k start with index 1
       });
     });
@@ -591,13 +591,13 @@ void RRTMGPRadiation::run_impl (const int dt) {
   scream::rrtmgp::mixing_ratio_to_cloud_mass(qi, cldfrac_tot, p_del, iwp);
   // Convert to g/m2 (needed by RRTMGP)
   {
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-    const int k = team.league_rank()+1; // Note that for YAKL arrays i and k start with index 1
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ncol), [&] (const int& icol) {
-      int i = icol+1;
-      lwp(i,k) *= 1e3;
-      iwp(i,k) *= 1e3;
+    const int i = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+      // Note that for YAKL arrays i and k start with index 1
+      lwp(i+1,k+1) *= 1e3;
+      iwp(i+1,k+1) *= 1e3;
     });
   });
   }
@@ -641,11 +641,13 @@ void RRTMGPRadiation::run_impl (const int dt) {
       lw_flux_up, lw_flux_dn, p_del, lw_heating
     );
     {
-      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
+      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-        const int k = team.league_rank()+1; // Note that for YAKL arrays i and k start with index 1
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ncol), [&] (const int& icol) {
-          int i = icol+1;
+        const int icol = team.league_rank();
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& ilay) {
+          // Note that for YAKL arrays i and k start with index 1
+          int i = icol + 1;
+          int k = ilay + 1;
           // Combine SW and LW heating into a net heating tendency
           rad_heating(i,k) = sw_heating(i,k) + lw_heating(i,k);
           // Apply heating tendency to temperature
@@ -659,11 +661,13 @@ void RRTMGPRadiation::run_impl (const int dt) {
     Kokkos::fence();
   } else {
     {
-      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_nlay, m_ncol);
+      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-        const int k = team.league_rank()+1; // Note that for YAKL arrays i and k start with index 1
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ncol), [&] (const int& icol) {
-          int i = icol+1;
+        const int icol = team.league_rank();
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& ilay) {
+          // Note that for YAKL arrays i and k start with index 1
+          int i = icol + 1;
+          int k = ilay + 1;
           // Back out net heating tendency from the pdel weighted quantity we keep in the FM
           rad_heating(i,k) = d_rad_heating_pdel(icol,k-1) / d_pdel(icol,k-1);
           // Apply heating tendency to temperature
