@@ -586,23 +586,76 @@ def _record_syslog(case, lid, job_id, caseroot, rundir, full_timing_dir):
             fd.write("{}\n".format(syslog_jobid))
 
 
-# POSTRUN
 def save_postrun_provenance(case, lid=None):
     with utils.SharedArea():
         lid = os.environ["LID"] if lid is None else lid
 
-        _save_postrun_provenance_e3sm(case, lid)
+        if case.get_value("SAVE_TIMING"):
+            caseroot = case.get_value("CASEROOT")
+            rundir = case.get_value("RUNDIR")
+
+            rundir_timing_dir = _archive_timings(lid, rundir)
+
+            _archive_atm_costs(lid, rundir)
+
+            _archive_memory_profile(lid, rundir)
+
+            _archive_spio_stats(lid, rundir)
+
+            utils.gzip_existing_file(
+                os.path.join(caseroot, "timing", "e3sm_timing_stats.%s" % lid)
+            )
+
+            # JGF: not sure why we do this
+            timing_saved_file = "timing.%s.saved" % lid
+            utils.touch(os.path.join(caseroot, "timing", timing_saved_file))
+
+            project = case.get_value("PROJECT", subgroup=case.get_primary_job())
+            if not case.is_save_timing_dir_project(project):
+                return
+
+            timing_dir = case.get_value("SAVE_TIMING_DIR")
+            if timing_dir is None or not os.path.isdir(timing_dir):
+                return
+
+            mach = case.get_value("MACH")
+            base_case = case.get_value("CASE")
+            full_timing_dir = os.path.join(
+                timing_dir, "performance_archive", getpass.getuser(), base_case, lid
+            )
+
+            if not os.path.isdir(full_timing_dir):
+                return
+
+            # Kill mach_syslog
+            job_id = _get_batch_job_id_for_syslog(case)
+            if job_id is not None:
+                _kill_mach_syslog(job_id, rundir)
+
+            # copy timings
+            utils.safe_copy(
+                "%s.tar.gz" % rundir_timing_dir, full_timing_dir, preserve_meta=False
+            )
+
+            _copy_performance_archive_files(
+                case,
+                lid,
+                job_id,
+                mach,
+                rundir,
+                caseroot,
+                full_timing_dir,
+                timing_saved_file,
+            )
+
+            # zip everything
+            for root, _, files in os.walk(full_timing_dir):
+                for filename in files:
+                    if not filename.endswith(".gz"):
+                        utils.gzip_existing_file(os.path.join(root, filename))
 
 
-def _save_postrun_provenance_e3sm(case, lid):
-    if case.get_value("SAVE_TIMING"):
-        _save_postrun_timing_e3sm(case, lid)
-
-
-def _save_postrun_timing_e3sm(case, lid):
-    caseroot = case.get_value("CASEROOT")
-    rundir = case.get_value("RUNDIR")
-
+def _archive_timings(lid, rundir):
     # tar timings
     rundir_timing_dir = os.path.join(rundir, "timing." + lid)
     shutil.move(os.path.join(rundir, "timing"), rundir_timing_dir)
@@ -611,6 +664,10 @@ def _save_postrun_timing_e3sm(case, lid):
 
     shutil.rmtree(rundir_timing_dir)
 
+    return rundir_timing_dir
+
+
+def _archive_atm_costs(lid, rundir):
     atm_chunk_costs_src_path = os.path.join(rundir, "atm_chunk_costs.txt")
     if os.path.exists(atm_chunk_costs_src_path):
         atm_chunk_costs_dst_path = os.path.join(
@@ -619,6 +676,8 @@ def _save_postrun_timing_e3sm(case, lid):
         shutil.move(atm_chunk_costs_src_path, atm_chunk_costs_dst_path)
         utils.gzip_existing_file(atm_chunk_costs_dst_path)
 
+
+def _archive_memory_profile(lid, rundir):
     # gzip memory profile log
     glob_to_copy = "memory.[0-4].*.log"
     for item in glob.glob(os.path.join(rundir, glob_to_copy)):
@@ -628,6 +687,8 @@ def _save_postrun_timing_e3sm(case, lid):
         shutil.move(item, mprof_dst_path)
         utils.gzip_existing_file(mprof_dst_path)
 
+
+def _archive_spio_stats(lid, rundir):
     # Copy Scorpio I/O performance stats in "spio_stats" to "spio_stats.[LID]" + tar + compress
     spio_stats_dir = os.path.join(rundir, "spio_stats")
     if not os.path.exists(spio_stats_dir):
@@ -643,53 +704,23 @@ def _save_postrun_timing_e3sm(case, lid):
 
     shutil.rmtree(spio_stats_job_dir)
 
-    utils.gzip_existing_file(
-        os.path.join(caseroot, "timing", "e3sm_timing_stats.%s" % lid)
-    )
 
-    # JGF: not sure why we do this
-    timing_saved_file = "timing.%s.saved" % lid
-    utils.touch(os.path.join(caseroot, "timing", timing_saved_file))
+def _kill_mach_syslog(job_id, rundir):
+    syslog_jobid_path = os.path.join(rundir, "syslog_jobid.{}".format(job_id))
+    if os.path.exists(syslog_jobid_path):
+        try:
+            with open(syslog_jobid_path, "r") as fd:
+                syslog_jobid = int(fd.read().strip())
+            os.kill(syslog_jobid, signal.SIGTERM)
+        except (ValueError, OSError) as e:
+            logger.warning("Failed to kill syslog: {}".format(e))
+        finally:
+            os.remove(syslog_jobid_path)
 
-    project = case.get_value("PROJECT", subgroup=case.get_primary_job())
-    if not case.is_save_timing_dir_project(project):
-        return
 
-    timing_dir = case.get_value("SAVE_TIMING_DIR")
-    if timing_dir is None or not os.path.isdir(timing_dir):
-        return
-
-    mach = case.get_value("MACH")
-    base_case = case.get_value("CASE")
-    full_timing_dir = os.path.join(
-        timing_dir, "performance_archive", getpass.getuser(), base_case, lid
-    )
-
-    if not os.path.isdir(full_timing_dir):
-        return
-
-    # Kill mach_syslog
-    job_id = _get_batch_job_id_for_syslog(case)
-    if job_id is not None:
-        syslog_jobid_path = os.path.join(rundir, "syslog_jobid.{}".format(job_id))
-        if os.path.exists(syslog_jobid_path):
-            try:
-                with open(syslog_jobid_path, "r") as fd:
-                    syslog_jobid = int(fd.read().strip())
-                os.kill(syslog_jobid, signal.SIGTERM)
-            except (ValueError, OSError) as e:
-                logger.warning("Failed to kill syslog: {}".format(e))
-            finally:
-                os.remove(syslog_jobid_path)
-
-    # copy timings
-    utils.safe_copy(
-        "%s.tar.gz" % rundir_timing_dir, full_timing_dir, preserve_meta=False
-    )
-
-    #
-    # save output files and logs
-    #
+def _copy_performance_archive_files(
+    case, lid, job_id, mach, rundir, caseroot, full_timing_dir, timing_saved_file
+):
     globs_to_copy = []
     if job_id is not None:
         if mach in ["anvil", "chrysalis", "compy", "cori-haswell", "cori-knl"]:
@@ -724,12 +755,6 @@ def _save_postrun_timing_e3sm(case, lid):
                     )
                 else:
                     utils.safe_copy(item, full_timing_dir, preserve_meta=False)
-
-    # zip everything
-    for root, _, files in os.walk(full_timing_dir):
-        for filename in files:
-            if not filename.endswith(".gz"):
-                utils.gzip_existing_file(os.path.join(root, filename))
 
 
 def _get_batch_job_id_for_syslog(case):
