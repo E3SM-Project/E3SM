@@ -877,9 +877,8 @@ void HommeDynamics::restart_homme_state () {
   //       file, since that's qv(ref) *at the end of the timestep* in the original simulation.
   //       Therefore, we need to remap the end-of-homme-step qv from dyn to ref grid, and use that one.
   //       Another field we need is dp3d(ref), but Homme *CHECKS* that no other atm proc updates
-  //       dp3d(ref), so the value read from restart file *coincides* with the value at the end
-  //       of the last Homme run. So we can safely recompute pressure using dp(ref) as read from restart.
-  update_pressure();
+  //       dp3d(ref), so the p2d-remapped value read from restart file *coincides* with the value at the end
+  //       of the last Homme run. So we can safely recompute pressure using p2d(dp_dyn), with dp_dynread from restart.
 
   // Copy all restarted dyn states on all timelevels.
   copy_dyn_states_to_all_timelevels ();
@@ -914,6 +913,7 @@ void HommeDynamics::restart_homme_state () {
   m_ic_remapper->registration_begins();
   m_ic_remapper->register_field(m_helper_fields.at("FT_ref"),m_helper_fields.at("vtheta_dp_dyn"));
   m_ic_remapper->register_field(m_helper_fields.at("uv_prev"),m_helper_fields.at("v_dyn"));
+  m_ic_remapper->register_field(get_internal_field("dp3d_dyn"),get_field_out("pseudo_density",rgn));
   auto qv_prev_ref = std::make_shared<Field>();
   auto Q_dyn = m_helper_fields.at("Q_dyn");
   if (params.ftype==Homme::ForcingAlg::FORCING_2) {
@@ -943,6 +943,9 @@ void HommeDynamics::restart_homme_state () {
   m_ic_remapper->registration_ends();
   m_ic_remapper->remap(/*forward = */false);
   m_ic_remapper = nullptr; // Can clean up the IC remapper now.
+
+  // Now that we have dp_ref, we can recompute pressure
+  update_pressure();
 
   // Copy uv_prev into FM_ref. Also, FT_ref contains vtheta_dp,
   // so convert it to actual temperature
