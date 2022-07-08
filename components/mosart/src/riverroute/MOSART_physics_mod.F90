@@ -30,7 +30,7 @@ MODULE MOSART_physics_mod
                              estimate_returnflow_deficit
   use WRM_subw_io_mod, only : WRM_readDemand, WRM_computeRelease
   use MOSARTinund_Core_MOD, only: ChnlFPexchg
-  use rof_cpl_indices, only : nt_rtm, rtm_tracers, nt_nliq, nt_nice
+  use rof_cpl_indices, only : nt_rtm, rtm_tracers, nt_nliq, nt_nice, KW, DW
   use perf_mod, only: t_startf, t_stopf
   use mct_mod
 
@@ -279,7 +279,7 @@ MODULE MOSART_physics_mod
           end if
        enddo
        
-       if (Tctl%RoutingMethod == 2 ) then
+       if (Tctl%RoutingMethod == DW ) then
           ! retrieve water depth in downstream channels
           call mct_aVect_zero(avsrc_dnstrm)
           cnt = 0
@@ -356,7 +356,7 @@ MODULE MOSART_physics_mod
              temp_erout = 0._r8
              temp_haout = 0._r8
              temp_Tr = 0._r8
-             if(Tctl%RoutingMethod==1) then  ! local stepping method only applicable for kinamatic wave routing method
+             if(Tctl%RoutingMethod == KW) then  ! local stepping method only applicable for kinamatic wave routing method
                  numSubSteps = TUnit%numDT_r(iunit)
                  localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R/numSubSteps
                  do k=1,numSubSteps
@@ -370,7 +370,7 @@ MODULE MOSART_physics_mod
                     call UpdateState_mainchannel(iunit,nt)
                     temp_erout = temp_erout + TRunoff%erout(iunit,nt) ! erout here might be inflow to some downstream subbasin, so treat it differently than erlateral
                  end do
-             elseif(Tctl%RoutingMethod==2) then ! diffusion wave routing method
+             elseif(Tctl%RoutingMethod == DW) then ! diffusion wave routing method
                  numSubSteps = 20 ! now set as 20, could be adjusted as needed.
                  localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R/numSubSteps
                  TRunoff%rslp_energy(iunit) = CRRSLP(iunit)
@@ -623,13 +623,12 @@ MODULE MOSART_physics_mod
     real(r8), intent(in) :: theDeltaT    
     character(len=*),parameter :: subname = '(mainchannelRouting)'
 
-    if(Tctl%RoutingMethod == 1) then
+    if(Tctl%RoutingMethod == KW) then
        call Routing_KW(iunit, nt, theDeltaT)
-    else if(Tctl%RoutingMethod == 2) then
+    else if(Tctl%RoutingMethod == DW) then
        call Routing_DW(iunit, nt, theDeltaT)
     else
-       print*, "Please check the routing method! There are only 2 methods available. 1==KW, 2==DW."
-	   call shr_sys_abort('Error in selecting routing method!')
+	   call shr_sys_abort('Wrong routing method! There are only 2 methods available. 1==KW, 2==DW.')
     end if
 
   end subroutine mainchannelRouting

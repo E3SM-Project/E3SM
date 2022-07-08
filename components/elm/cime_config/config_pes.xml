@@ -74,6 +74,31 @@
         </ntasks>
       </pes>
     </mach>
+    <mach name="alvarez">
+      <pes compset="any" pesize="any">
+        <comment>elm: default, 1 node x MAX_MPITASKS_PER_NODE mpi x 2 omp @ root 0</comment>
+        <ntasks>
+          <ntasks_atm>-1</ntasks_atm>
+          <ntasks_lnd>-1</ntasks_lnd>
+          <ntasks_rof>-1</ntasks_rof>
+          <ntasks_ice>-1</ntasks_ice>
+          <ntasks_ocn>-1</ntasks_ocn>
+          <ntasks_glc>-1</ntasks_glc>
+          <ntasks_wav>-1</ntasks_wav>
+          <ntasks_cpl>-1</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>2</nthrds_atm>
+          <nthrds_lnd>2</nthrds_lnd>
+          <nthrds_rof>2</nthrds_rof>
+          <nthrds_ice>2</nthrds_ice>
+          <nthrds_ocn>2</nthrds_ocn>
+          <nthrds_glc>2</nthrds_glc>
+          <nthrds_wav>2</nthrds_wav>
+          <nthrds_cpl>2</nthrds_cpl>
+        </nthrds>
+      </pes>
+    </mach>
     <mach name="cori-knl|cori-haswell">
       <pes compset="any" pesize="any">
         <comment>elm: default, 1 node x MAX_MPITASKS_PER_NODE mpi x 1 omp @ root 0</comment>
@@ -283,6 +308,21 @@
           <ntasks_glc>8</ntasks_glc>
           <ntasks_wav>8</ntasks_wav>
           <ntasks_cpl>8</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+    <mach name="alvarez">
+      <pes compset="any" pesize="any">
+        <comment>elm: grid l%4x5 on 1 full node</comment>
+        <ntasks>
+          <ntasks_atm>-1</ntasks_atm>
+          <ntasks_lnd>-1</ntasks_lnd>
+          <ntasks_rof>-1</ntasks_rof>
+          <ntasks_ice>-1</ntasks_ice>
+          <ntasks_ocn>-1</ntasks_ocn>
+          <ntasks_glc>-1</ntasks_glc>
+          <ntasks_wav>-1</ntasks_wav>
+          <ntasks_cpl>-1</ntasks_cpl>
         </ntasks>
       </pes>
     </mach>

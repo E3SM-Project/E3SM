@@ -47,7 +47,8 @@ module seaice_velocity_solver
 
   integer, parameter :: &
        WEAK_STRESS_DIVERGENCE_SCHEME = 1, &
-       VARIATIONAL_STRESS_DIVERGENCE_SCHEME = 2
+       VARIATIONAL_STRESS_DIVERGENCE_SCHEME = 2, &
+       NONE_STRESS_DIVERGENCE_SCHEME = 3
 
   ! ocean stress type
   integer :: &
@@ -179,6 +180,8 @@ contains
           stressDivergenceSchemeType = WEAK_STRESS_DIVERGENCE_SCHEME
        else if (trim(config_stress_divergence_scheme) == "variational") then
           stressDivergenceSchemeType = VARIATIONAL_STRESS_DIVERGENCE_SCHEME
+       else if (trim(config_stress_divergence_scheme) == "none") then
+          stressDivergenceSchemeType = NONE_STRESS_DIVERGENCE_SCHEME
        else
           call MPAS_log_write("config_stress_divergence_scheme unknown: "//trim(config_stress_divergence_scheme), MPAS_LOG_CRIT)
        endif

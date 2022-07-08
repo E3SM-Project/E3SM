@@ -406,6 +406,16 @@
     </queues>
   </batch_system>
 
+  <batch_system MACH="alvarez" type="nersc_slurm">
+    <directives>
+      <directive> --constraint=cpu</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" nodemax="256" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="4" strict="true">debug</queue>
+    </queues>
+  </batch_system>
+
   <batch_system MACH="stampede2" type="slurm">
     <directives>
       <directive>-n {{ total_tasks }}</directive>

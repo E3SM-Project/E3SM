@@ -2,5 +2,6 @@
 if [ `./xmlquery --value MACH` == bebop ]; then ./xmlchange --id LND_PIO_TYPENAME --val netcdf; fi
 ./xmlchange --append ELM_BLDNML_OPTS="-nutrient cnp -nutrient_comp_pathway eca -soil_decomp century"
 ./xmlchange NTHRDS=1
-# increase memory leak tolerance to 15% for FATES tests on Cori
+# increase memory leak tolerance to 15% for FATES tests on cori-knl/cori-haswell/alvarez
 if [[ `./xmlquery --value MACH` =~ ^cori-(knl|haswell)$ ]]; then ./xmlchange TEST_MEMLEAK_TOLERANCE=0.15; fi
+if [[ `./xmlquery --value MACH` =~ ^alvarez$ ]]; then ./xmlchange TEST_MEMLEAK_TOLERANCE=0.15; fi

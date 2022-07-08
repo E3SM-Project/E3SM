@@ -51,6 +51,10 @@ module rof_cpl_indices
   integer, parameter, public :: nt_nliq = 1    ! number of tracers
   integer, parameter, public :: nt_nice = 2    ! number of tracers
 
+  !Routing methods used for the main-channel
+  integer, parameter, public :: KW = 1         ! kinematic wave routing method
+  integer, parameter, public :: DW = 2         ! diffusion wave routing method
+
   ! roff to driver (part of land for now) (optional if ROF is off)
 
   integer, public :: index_r2x_Forr_rofl  = 0   ! rof->ocn liquid runoff to ocean

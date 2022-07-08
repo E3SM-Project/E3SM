@@ -71,7 +71,7 @@ PBL package: uw (University of Washington), hb (Holtslag and Boville), hbr
  For the MMF a "none" is set by default, but a separate version of 
  the HB scheme is used for stability.
 </entry>
-<entry id="rad" valid_values="rrtmg,rrtmgp" value="">
+<entry id="rad" valid_values="rrtmg,rrtmgp,none" value="">
 Radiative transfer calculation: 
 rrtmg (RRTMG; http://rtweb.aer.com/rrtm_frame.html), rrtmgp (RRTMGP; https://github.com/earth-system-radiation/rte-rrtmgp).
 </entry>

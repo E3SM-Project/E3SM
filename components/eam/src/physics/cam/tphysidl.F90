@@ -1,5 +1,5 @@
 #define MODHS 1
-subroutine tphysidl(ztodt, state, tend)
+subroutine tphysidl(ztodt, state, tend, ideal_phys_option)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -37,6 +37,12 @@ subroutine tphysidl(ztodt, state, tend)
 ! Output arguments
 !
    type(physics_tend ), intent(inout) :: tend
+
+   ! Flag to choose which idealized physics
+   !   1: Held-Suarez
+   !   2: Held-Suarez with Williamson modification for stratosphere
+   !   3: Held-Suarez with Lin-Williamson modification for stratosphere/mesosphere
+   character(len=*), intent(in) :: ideal_phys_option
 !
 !---------------------------Local workspace-----------------------------
 !
@@ -89,13 +95,10 @@ subroutine tphysidl(ztodt, state, tend)
    real(r8) sigmab                             ! threshold sigma level
    real(r8) pressmb                            ! model pressure in mb
    real(r8) t00                                ! minimum reference temperature
-   integer  idlflag                            ! Flag to choose which idealized physics
    real(r8) :: zero(pcols)
 !
 !-----------------------------------------------------------------------
 !
-   idlflag = 1
-
    lchnk = state%lchnk
    ncol  = state%ncol
 
@@ -118,7 +121,7 @@ subroutine tphysidl(ztodt, state, tend)
    ! initialize individual parameterization tendencies
    call physics_ptend_init(ptend, state%psetcols, 'tphysidl', ls=.true., lu=.true., lv=.true.)
 
-   if (idlflag == 1) then
+   if (trim(ideal_phys_option) == 'held-suarez') then
 !
 !-----------------------------------------------------------------------
 !
@@ -151,7 +154,7 @@ subroutine tphysidl(ztodt, state, tend)
 #ifdef MODHS
                tmp   = kt/(1._r8+ ztodt*kt)
 #else
-	       tmp = kt
+               tmp = kt
 #endif
                trefc   = 315._r8 - 60._r8*sinsq(i)
                trefa = (trefc - 10._r8*cossq(i)*log((pmid(i,k)/psurf_ref)))*(pmid(i,k)/psurf_ref)**cappa
@@ -162,7 +165,7 @@ subroutine tphysidl(ztodt, state, tend)
 #ifdef MODHS
             tmp   = ka/(1._r8+ ztodt*ka)
 #else
-	    tmp = ka
+            tmp = ka
 #endif
             do i=1,ncol
                trefc   = 315._r8 - 60._r8*sinsq(i)
@@ -199,7 +202,7 @@ subroutine tphysidl(ztodt, state, tend)
          endif
       end do
 
-   elseif (idlflag == 2) then
+   elseif (trim(ideal_phys_option) == 'held-suarez-williamson') then
 !
 !-----------------------------------------------------------------------
 !
@@ -302,7 +305,7 @@ subroutine tphysidl(ztodt, state, tend)
          endif
       end do
 
-   elseif (idlflag == 3) then
+   elseif (trim(ideal_phys_option) == 'held-suarez-lin-williamson') then
 !
 !-----------------------------------------------------------------------
 !
@@ -409,11 +412,11 @@ subroutine tphysidl(ztodt, state, tend)
       end do
 
    else
-      write(iulog,*) 'TPHYSIDL: flag for choosing desired type of idealized ', &
-                 'physics ("idlflag") is set incorrectly.'
-      write(iulog,*) 'The valid options are 1, 2, or 3.'
-      write(iulog,*) 'idlflag is currently set to: ',idlflag
-      call endrun('tphysidl: invalid option')
+      write(iulog,*) 'ideal_phys_option: string for choosing desired type of idealized ', &
+                     'physics is set incorrectly.'
+      write(iulog,*) 'The valid options are held-suarez, held-suarez-williamson, or held-suarez-lin-williamson.'
+      write(iulog,*) 'idlflag is currently set to: ', trim(ideal_phys_option)
+      call endrun('ideal_phys_option: invalid option')
    endif
 
    ! update the state and total physics tendency
