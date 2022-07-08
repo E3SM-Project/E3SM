@@ -161,8 +161,8 @@ namespace scream {
             // Threshold between visible and infrared is 0.7 micron, or 14286 cm^-1.
             const real visible_wavenumber_threshold = 14286;
             auto wavenumber_limits = k_dist_sw.get_band_lims_wavenumber();
-            parallel_for(Bounds<2>(nswbands, ncol), YAKL_DEVICE_LAMBDA(const int ibnd, const int icol) {
-
+            parallel_for(Bounds<1>(ncol), YAKL_DEVICE_LAMBDA(const int icol) {
+              for (int ibnd = 1; ibnd <= nswbands; ++ibnd) {
                 // Wavenumber is in the visible if it is above the visible wavenumber
                 // threshold, and in the infrared if it is below the threshold
                 const bool is_visible_wave1 = (wavenumber_limits(1, ibnd) > visible_wavenumber_threshold ? true : false);
@@ -171,24 +171,25 @@ namespace scream {
                 if (is_visible_wave1 && is_visible_wave2) {
 
                     // Entire band is in the visible
-                    yakl::atomicAdd(sfc_flux_dir_vis(icol), sw_bnd_flux_dir(icol,ktop,ibnd));
-                    yakl::atomicAdd(sfc_flux_dif_vis(icol), sw_bnd_flux_dif(icol,ktop,ibnd));
+                    sfc_flux_dir_vis(icol) += sw_bnd_flux_dir(icol,ktop,ibnd);
+                    sfc_flux_dif_vis(icol) += sw_bnd_flux_dif(icol,ktop,ibnd);
 
                 } else if (!is_visible_wave1 && !is_visible_wave2) {
 
                     // Entire band is in the longwave (near-infrared)
-                    yakl::atomicAdd(sfc_flux_dir_nir(icol), sw_bnd_flux_dir(icol,ktop,ibnd));
-                    yakl::atomicAdd(sfc_flux_dif_nir(icol), sw_bnd_flux_dif(icol,ktop,ibnd));
+                    sfc_flux_dir_nir(icol) += sw_bnd_flux_dir(icol,ktop,ibnd);
+                    sfc_flux_dif_nir(icol) += sw_bnd_flux_dif(icol,ktop,ibnd);
 
                 } else {
 
                     // Band straddles the visible to near-infrared transition, so put half 
                     // the flux in visible and half in near-infrared fluxes
-                    yakl::atomicAdd(sfc_flux_dir_vis(icol), 0.5 * sw_bnd_flux_dir(icol,ktop,ibnd));
-                    yakl::atomicAdd(sfc_flux_dif_vis(icol), 0.5 * sw_bnd_flux_dif(icol,ktop,ibnd));
-                    yakl::atomicAdd(sfc_flux_dir_nir(icol), 0.5 * sw_bnd_flux_dir(icol,ktop,ibnd));
-                    yakl::atomicAdd(sfc_flux_dif_nir(icol), 0.5 * sw_bnd_flux_dif(icol,ktop,ibnd));
+                    sfc_flux_dir_vis(icol) += 0.5 * sw_bnd_flux_dir(icol,ktop,ibnd);
+                    sfc_flux_dif_vis(icol) += 0.5 * sw_bnd_flux_dif(icol,ktop,ibnd);
+                    sfc_flux_dir_nir(icol) += 0.5 * sw_bnd_flux_dir(icol,ktop,ibnd);
+                    sfc_flux_dif_nir(icol) += 0.5 * sw_bnd_flux_dif(icol,ktop,ibnd);
                 }
+              }
             });
         }
 
