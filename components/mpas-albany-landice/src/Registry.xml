@@ -1,0 +1,1563 @@
+<?xml version="1.0"?>
+<registry model="mpas" core="landice" core_abbrev="li" version="7.0">
+
+
+<!-- ======================================================================= -->
+<!-- MODEL DIMENSIONS -->
+
+	<dims>
+		<dim name="nCells" units="unitless"
+		     description="The number of polygons in the primary grid."
+		/>
+		<dim name="nEdges" units="unitless"
+		     description="The number of edge midpoints in either the primary or dual grid."
+		/>
+		<dim name="maxEdges" units="unitless"
+		     description="The largest number of edges any polygon within the grid has."
+		/>
+		<dim name="maxEdges2" units="unitless"
+		     description="Two times the largest number of edges any polygon within the grid has."
+		/>
+		<dim name="nVertices" units="unitless"
+		     description="The total number of cells in the dual grid. Also the number of corners in the primary grid."
+		/>
+		<dim name="ONE" definition="1" units="unitless"
+		     description="The number one as a dimension."
+		/>
+		<dim name="TWO" definition="2" units="unitless"
+		     description="The number two as a dimension."
+		/>
+		<dim name="R3" definition="3" units="unitless"
+		     description="The number three as a dimension."
+		/>
+		<dim name="vertexDegree" units="unitless"
+		     description="The number of cells or edges touching each vertex."
+		/>
+		<dim name="nVertLevels" units="unitless"
+		     description="The number of levels in the vertical direction. All vertical levels share the same horizontal locations."
+		/>
+		<dim name="nVertInterfaces" definition="nVertLevels+1" units="unitless"
+		     description="The number of interfaces in the vertical direction."
+		/>
+		<dim name="nISMIP6OceanLayers" units="unitless"
+		     description="The number of layers in the ISMIP6 ocean temperature dataset."
+		/>
+		<dim name="maxTracersAdvect" definition="1" units="unitless"
+		     description="The maximum number of tracers to be advected."
+		/>
+		<dim name="nRegions" definition="1" units="unitless"
+		     description="The number of regions used for AM_regionalStats"
+		/>
+		<dim name="nRegionGroups" definition="1" units="unitless"
+		     description="The number of region groups used for AM_regionalStats"
+		/>
+		<dim name="maxRegionsInGroup" definition="1" units="unitless"
+		     description="The maximum number of regions in a region group used for AM_regionalStats"
+		/>
+	</dims>
+
+
+<!-- ======================================================================= -->
+<!-- NAMELIST RECORDS -->
+
+	<nml_record name="velocity_solver" in_defaults="true">
+		<nml_option name="config_velocity_solver" type="character" default_value="sia" units="unitless"
+		            description="Selection of the method for solving ice velocity. 'L1L2', 'FO', and 'Stokes' require compiling with external dycores. 'none' skips the calculation of velocity so the velocity field will be 0 or set to a field read from an input file.  'simple' gives a simple prescribed velocity field computed at initialization."
+		            possible_values="'sia', 'L1L2', 'FO', 'Stokes', 'simple', 'none'"
+		/>
+		<nml_option name="config_sia_tangent_slope_calculation" type="character" default_value="from_vertex_barycentric" units="unitless"
+		            description="Selection of the method for calculating the tangent component of surface slope at edges needed by the SIA velocity solver.
+'from_vertex_barycentric' interpolates upperSurface values from cell centers to vertices using the barycentric interpolation routine in operators (mpas_cells_to_points_using_baryweights) and then calculates the slope between vertices.  It works for obtuse triangles, but will not work correctly across the edges of periodic meshes.
+'from_vertex_barycentric_kiteareas' interpolates upperSurface values from cell centers to vertices using barycentric interpolation based on kiterea values and then calculates the slope between vertices.  It will work across the edges of periodic meshes, but will not work correctly for obtuse triangles.
+'from_normal_slope' uses the vector operator mpas_tangential_vector_1d to calculate the tangent slopes from the normal slopes on the edges of the adjacent cells.  It will work for any mesh configuration, but is the least accurate method."
+		            possible_values="'from_vertex_barycentric', 'from_vertex_barycentric_kiteareas', 'from_normal_slope'"
+		/>
+		<nml_option name="config_flowParamA_calculation" type="character" default_value="constant" units="unitless"
+			description="Selection of the method for calculating the flow law parameter A.  If 'constant' is selected, the value is set to config_default_flowParamA.  The other options are calculated from the temperature field.  This calculation only applies if config_velocity_solver is set to 'sia'.  For the 'FO' velocity solver, this is set in the albany_input.yaml file."
+			possible_values="'constant', 'PB1982', 'CP2010'"
+		/>
+		<nml_option name="config_do_velocity_reconstruction_for_external_dycore" type="logical" default_value=".false." units="unitless"
+		            description="By default, external, higher-order dycores return the uReconstructX and uReconstructY fields (which are the native locations of their FEM solution).  If this option is set to .true., uReconstructX and uReconstructY will be calculated by MPAS using framework's vector reconstruction routines based on the values of normalVelocity supplied by the external dycore.  This provides a way to test the calculation of normalVelocity in the interface."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_simple_velocity_type" type="character" default_value="uniform" units="unitless"
+                        description="Selection of the type of simple velocity field computed at initialization when config_velocity_solver = 'simple'.  See mode_forward/mpas_li_velocity_simple.F for details of what the options do."
+		            possible_values="'uniform', 'radial'"
+		/>
+		<nml_option name="config_use_glp" type="logical" default_value=".true." units="unitless"
+		            description="If true, then apply Albany's grounding line parameterization"
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_beta_thawed_only" type="logical" default_value=".false." units="unitless"
+		            description="If true, then beta is zeroed wherever the basal temperature is below the pressure-melting temperature"
+		            possible_values=".true. or .false."
+		/>
+        <nml_option name="config_unrealistic_velocity" type="real" default_value="0.01592356685" units="m s^{-1}"
+		            description="Ice is removed at any locations with surface speed faster than this value and sent to the calving flux. The presence of icebergs can lead to unrealistically large velocities.  A simple method to remove icebergs is to remove ice where the velocity is faster than an arbitrarily large value."
+		            possible_values="Any positive, real number."
+		/>
+		<nml_option name="config_nonconvergence_error" type="logical" default_value=".true." units="unitless"
+		            description="If true, nonconvergence of the velocity solver results in a fatal error.  If false, it is a warning."
+		            possible_values=".true. or .false."
+		/>
+                <nml_option name="config_effective_pressure_max" type="real" default_value="1.0e36" units="Pa"
+		            description="An optional maximum limit on effective pressure passed to the velocity solver."
+		            possible_values="Any positive, real number."
+		/>
+	</nml_record>
+
+
+	<nml_record name="advection" in_defaults="true">
+		<nml_option name="config_thickness_advection" type="character" default_value="fo" units="unitless"
+		            description="Selection of the method for advecting thickness ('fo' = first-order upwinding)."
+		            possible_values="'fo', 'none'"
+		/>
+		<nml_option name="config_tracer_advection" type="character" default_value="none" units="unitless"
+		            description="Selection of the method for advecting tracers."
+		            possible_values="'fo', 'none'"
+		/>
+<!-- This option to be implemented in the future.
+		<nml_option name="config_allow_additional_advance" type="logical" default_value=".true." units="none"
+		            description="Determines whether ice can advance beyond its initial extent"
+		            possible_values=".true. or .false."
+		/>
+-->
+        </nml_record>
+
+	<nml_record name="solidearth" in_defaults="true">
+		<nml_option name="config_uplift_method" type="character" default_value="none" units="unitless"
+		            description="Selection of the method for bedrock uplift calculation."
+		            possible_values="'none', 'data'"
+		/>
+	</nml_record>
+
+	<nml_record name="calving" in_defaults="true">
+		<nml_option name="config_calving" type="character" default_value="none" units="unitless"
+		            description="Selection of the method for calving ice (as defined below)."
+		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'mask', 'eigencalving', 'specified_calving_velocity', 'von_Mises_stress', 'damagecalving'"
+		/>
+                <nml_option name="config_use_Albany_flowA_eqn_for_vM" type="logical" default_value=".false." units="unitless"
+			    description="Not yet supported. Determine whether to use MPAS or Albany calculation for flowParamA used in von Mises stress calving"
+			    possible_values="'.true.', '.false.'"
+		/>
+		<nml_option name="config_calving_topography" type="real" default_value="-500.0" units="m"
+		            description="Defines the topographic height below which ice calves (for topographic_threshold option)."
+		            possible_values="Any non-positive real value"
+		/>
+		<nml_option name="config_calving_thickness" type="real" default_value="0.0" units="m of ice"
+		            description="Defines the ice thickness below which ice calves (for thickness_threshold option)."
+		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_calving_eigencalving_parameter_source" type="character" default_value="scalar" units="none"
+		            description="Source of the eigencalving parameter value"
+		            possible_values="'data' ('eigencalvingParameter' field read from input file), 'scalar' (specified by config_calving_eigencalving_parameter_scalar_value)"
+		/>
+                <nml_option name="config_calving_eigencalving_parameter_scalar_value" type="real" default_value="3.14e16" units="m s"
+		            description="Value of eigencalving parameter if taken as a scalar by option config_calving_eigencalving_parameter_source. (Default value is 1.0e9 m a converted to units used here.)"
+		            possible_values="any positive real number"
+		/>
+		<nml_option name="config_calving_specified_source" type="character" default_value="const" units="none"
+		            description="method of specified calving velocity"
+		            possible_values="'const' (constant calving velocity), 'data' (calving velocity given by data input)"
+		/>
+                    <nml_option name="config_calving_velocity_const" type="real" default_value="0.0" units="m s^{-1}"
+		            description="constant calving velocity specified in the namelist"
+		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_data_calving" type="logical" default_value=".false." units="unitless"
+		            description="Select whether or not to configure calving in a 'data' model mode (calc. calving flux but do not update ice geometry)"
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_calving_timescale" type="real" default_value="0.0" units="s"
+		            description="Defines the timescale for calving. The fraction of eligible ice that calves is min(dt/calving_timescale, 1.0). A value of 0 means that all eligible ice calves."
+		            possible_values="Any non-negative real value"
+		/>
+		<nml_option name="config_restore_calving_front" type="logical" default_value=".false." units="unitless"
+                        description="If true, then restore the calving front to its initial position.  If ice grows beyond the initial extent, it is removed.  If ice shrinks to an extent behind the initial extent, those locations are filled with thin ice (defined as 1/10th the value of config_dynamic_thickness).  Note that this violates conservation of mass and energy."
+		            possible_values=".true. or .false."
+                />
+                <nml_option name="config_remove_icebergs" type="logical" default_value=".false." units="unitless"
+                        description="If true, then a flood fill will be applied to remove icebergs.  The ice removed is added to the calvingThickness field."
+	                possible_values=".true. or .false."
+		/>
+                <nml_option name="config_remove_small_islands" type="logical" default_value=".false." units="unitless"
+                        description="If true, then ice from small grounded islands is removed.  Specifically, this finds one- and two-cell masses of ice that are surrounded by open ocean and eliminates them by sending them to the calving flux.  Grounded such ice masses would be islands, floating would be icebergs.  The ice removed is added to the calvingThickness field."
+	                possible_values=".true. or .false."
+		/>
+		<nml_option name="config_grounded_von_Mises_threshold_stress" type="real" default_value="1.0e6" units="Pa"
+			    description="Threshold von Mises stress value required for calving velocity to exceed ice velocity on grounded ice. sigma_max in Morlighem et al. (2016) eq. 4. 1 MPa default value is from Morlighem et al.'s calibration for Store Glacier."
+			    possible_values="Any positive real value"
+		/>
+                <nml_option name="config_floating_von_Mises_threshold_stress" type="real" default_value="1.0e6" units="Pa"
+                            description="Threshold von Mises stress value required for calving velocity to exceed ice velocity on floating ice. Generally seems to need to be low (1e5 to 2e5 for Humboldt Glacier) to allow floating ice to retreat. If set to 0.0, floating ice will be removed from dynamic cells each timestep; calvingThickness will be correct, but calvingVelocity will not be correct for those cells. sigma_max in Morlighem et al. (2016) eq. 4. 1 MPa default value is from Morlighem et al.'s calibration for Store Glacier."
+                            possible_values="Any positive real value"
+                />
+		<nml_option name="config_finalize_damage_after_advection" type="logical" default_value=".true." units="unitless"
+                        description="If true, then the 'li_finalize_damage_after_advection' subroutine is applied, doing the following: 1) set the value of damage at the grounding line based on the choice of 'config_damage_gl_setting', 2) reset the value of damage to its initial value (to avoid healing), based on choice of 'config_preserve_damage', 3) couple the updated damage value to the rheology if 'config_damage_rheology_coupling' is true."
+		            possible_values=".true. or .false."
+                />
+		<nml_option name="config_preserve_damage" type="logical" default_value=".false." units="unitless"
+                        description="If true, then preserve the value of damage before advection (i.e., do not allow healing of damage to occur)."
+		            possible_values=".true. or .false."
+                />
+		<nml_option name="config_calculate_damage" type="logical" default_value=".false." units="unitless"
+                        description="If .true., then turn on the 'calculate_damage' subroutine. Note that setting this to .true. will evolve damage even if damage-based calving is not being used, which is why it is .false. by default (and thus it should explicitly be set to .true. to use damage based calving)."
+		            possible_values=".true. or .false."
+                />
+                <nml_option name="config_damage_preserve_threshold" type="real" default_value="0.0" units="unitless"
+                        description="It is a value above which the old damage number would be kept from the impact of advection (the damage would not heal). For example, if the damage at some location is 0.83, and we set config_damage_preserve_threshold to 0.8, then the damage number there will not fall below 0.83. Otherwise, if the damage is 0.7, then it could be decreased to a smaller number if non-damaged ice is transported from upstream. If we set config_damage_preserve_threshold to 0 (default), then it will just not play a role in pratical."
+	                possible_values="real value between 0 and 1"
+		/>
+                <nml_option name="config_damage_calving_threshold" type="real" default_value="1.0" units="unitless"
+                        description="When config_damage_calving_method==threshold, this is the value of damage above which the cell would be calved away.  When config_damage_calving_method==calving_rate, this is the value above which calving becomes proportional to damage."
+	                possible_values="real value between 0 and 1"
+		/>
+                <nml_option name="config_damage_stiffness_min" type="real" default_value="0.1" units="unitless"
+                        description="The minimum value the 'stiffnessFactor' can take due to evolving damage when 'stiffnessFactor' is calculated from damage (i.e., when 'config_damage_rheology_coupling'=.true.). This is used to prevent unrealistic and/or numerically challenging stiffness values. For example, if damage = 0.9, then 'stiffnessFactor' becomes 1 - damage = 0.1 (a small value that could be challenging for the solver). But if we set 'config_damage_stiffness_min' = 0.5, then 'stiffnessFactor' can only fall as low as 0.5."
+	                possible_values="real value between 0 and 1"
+		/>
+                <nml_option name="config_damage_rheology_coupling" type="logical" default_value=".false." units="unitless"
+                        description="If true, then the value of 'stiffnessFactor' is coupled to damage evolution, i.e. 'stiffnessFactor' = 1-damage."
+	                possible_values=".true. or .false."
+		/>
+		        <nml_option name="config_damage_gl_setting" type="character" default_value="nye" units="unitless"
+		                description="Selection of the method for initializing damage in the first floating grid cells past the grounding line: 'nye' uses Nye's zero stress criteria (Nye, 1957, Proc. R. Soc. A, 239) for defining the damage value, 'extrapolate' extrapolates values from the floating ice downstream back to the first floating cells."
+		            possible_values="'nye', 'extrapolate'"
+		/>
+		        <nml_option name="config_damage_calving_method" type="character" default_value="threshold" units="unitless"
+		                description="Selection of the method for damage calving. For 'threshold', ice with damage above the value specified by 'config_damage_calving_threshold' will be removed (currently, only if this ice is also AT a marine margin, but eventually this will be expanded to also include any ice at the threshold adjacent to cells at the marine margin). For 'calving_rate', a rate of calving is specified as proportional to the damage value above some threshold, with the constant of proportionality specified by 'config_damagecalvingParameter' and the threshold defined by config_damage_calving_threshold."
+		            possible_values="'calving_rate', 'threshold'"
+		/>
+    <nml_option name="config_damagecalvingParameter" type="real" default_value="1.0e-4" units="m/s"
+                        description="A scalar parameter that specifies a calving rate as proportional to the value of damage above some threshold value when using the 'calving_rate' method for the 'config_damage_calving_method' option (with the threshold damage value specified by 'config_damage_calving_threshold')."
+	                possible_values="any positive real value"
+		/>
+	</nml_record>
+
+	<nml_record name="thermal_solver" in_defaults="true">
+		<nml_option name="config_thermal_solver" type="character" default_value="none" units="unitless"
+		            description="Selection of the method for the vertical thermal solver (possible values are described further below)."
+		            possible_values="'none', 'temperature', 'enthalpy'"
+                />
+                <nml_option name="config_thermal_calculate_bmb" type="logical" default_value=".true." units="unitless"
+			description="Determines if basal and internal melting calculated by the thermal solver should contribute to basal mass balance or be ignored."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_temperature_init" type="character" default_value="file" units="unitless"
+		            description="Selection of the method for initializing the ice temperature (as described further below)."
+		            possible_values="'sfc_air_temperature', 'linear', 'file'"
+		/>
+		<nml_option name="config_thermal_thickness" type="real" default_value="0.0" units="m of ice"
+		            description="Defines the minimum ice thickness for conducting thermal calculations. Ice thinner than this value is ignored by the thermal solver.  Default set to 0 to ensure reasonable values everywhere there is ice, which is needed for realistic behavior when using Albany due to the way temperature is handled in extended cells."
+		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_surface_air_temperature_source" type="character" default_value="file" units="unitless"
+		            description="Selection of the method for setting the surface air temperature. 'constant' uses the value set by config_surface_air_temperature_value.  'file' reads the field from an input or forcing file or ESM coupler. 'lapse' uses the value of config_surface_air_temperature_value at elevation 0 with a lapse rate applied from config_surface_air_temperature_lapse_rate."
+		            possible_values="'constant', 'file', 'lapse'"
+		/>
+		<nml_option name="config_surface_air_temperature_value" type="real" default_value="273.15" units="Kelvin"
+		            description="Constant value of the surface air temperature."
+		            possible_values="Any positive real value"
+                />
+                <nml_option name="config_surface_air_temperature_lapse_rate" type="real" default_value="0.01" units="K m^{-1}"
+		            description="Lapse rate to apply to surface air temperature when config_surface_air_temperature_source='lapse'. Positive values lead to colder temperatures at higher elevations."
+		            possible_values="Any real value"
+		/>
+		<nml_option name="config_basal_heat_flux_source" type="character" default_value="file" units="unitless"
+		            description="Selection of the method for setting the basal heat flux."
+		            possible_values="'constant', 'file'  'constant' uses the value set by config_basal_heat_flux_value.  'file' reads the field from an input or forcing file or ESM coupler."
+		/>
+		<nml_option name="config_basal_heat_flux_value" type="real" default_value="0.0" units="W m^{-2}"
+		            description="Constant value of the basal heat flux (positive upward)."
+		            possible_values="Any positive real value"
+                />
+                <nml_option name="config_temp_diffusive_factor" type="real" default_value="1.0e-5" units="unitless"
+		            description="the factor to estimate diffusivity (kt) in temperate ice from that in cold ice (kc), kt = f * kc"
+		            possible_values="any positive number within a likely range of [1e-6, 1e-2]"
+		/>
+		<nml_option name="config_max_water_fraction" type="real" default_value="1.0e-2" units="unitless"
+		            description="the maximum water fraction allowed"
+		            possible_values="theoretically the range is (0, 1), but more realistically about 0.01"
+		/>
+	</nml_record>
+
+
+        <nml_record name="iceshelf_melt" in_defaults="true">
+                <nml_option name="config_basal_mass_bal_float" type="character" default_value="none" units="unitless"
+                            description="Selection of the method for computing the basal mass balance of floating ice.  'none' sets the basalMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant', 'mismip', 'seroussi' use hardcoded fields defined in the code applicable to Thwaites Glacier. 'temperature_profile' generates a depth-melt relation based on an ocean temperature profile and sill depth. ISMIP6 is the method prescribed by ISMIP6."
+                            possible_values="'none', 'file', 'constant', 'mismip', 'seroussi', 'temperature_profile', 'ismip6'"
+                />
+                <nml_option name="config_bmlt_float_flux" type="real" default_value="0.0" units="W m^{-2}"
+		            description="Value of the constant heat flux applied to the base of floating ice (positive upward)."
+		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_bmlt_float_xlimit" type="real" default_value="0.0" units="m"
+		            description="x value defining region where bmlt_float_flux is applied; melt only where abs(x) is greater than xlimit."
+		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_basal_mass_bal_seroussi_amplitude" type="real" default_value="0.0" units="m"
+		            description="amplitude on the depth adjustment applied to the Seroussi subglacial melt parameterization"
+		            possible_values="any positive real value"
+		/>
+                <nml_option name="config_basal_mass_bal_seroussi_period" type="real" default_value="1.0" units="a"
+		            description="period of the periodic depth adjustment applied to the Seroussi subglacial melt parameterization"
+		            possible_values="any positive real value"
+		/>
+                <nml_option name="config_basal_mass_bal_seroussi_phase" type="real" default_value="0.0" units="cycles"
+		            description="phase of the periodic depth adjustment applied to the Seroussi subglacial melt parameterization. Units are cycles, i.e., 0-1"
+		            possible_values="any positive real value"
+                            />
+                <!-- Options related to temperature profile ice shelf basal melt param. -->
+                <nml_option name="config_temperature_profile_melt_scale_factor" type="real" default_value="6.0" units="m yr^-1 (deg C)^-2"
+		            description="The scale factor in the 'temperature_profile' melt parameterization that converts a product of two ocean temperatures to a melt rate.  Called kappa in code."
+		            possible_values="any positive real value"
+		/>
+                <nml_option name="config_temperature_profile_sill_elevation" type="real" default_value="-700.0" units="m above datum"
+		            description="The sill elevation used by the 'temperature_profile' melt parameterization.  Positive is above sea level."
+		            possible_values="any real value, but only negative values make sense"
+		/>
+                <nml_option name="config_temperature_profile_plume_thickness" type="real" default_value="30.0" units="m"
+		            description="The plume thickness parameter used by the 'temperature_profile' melt parameterization."
+		            possible_values="any positive real value"
+		/>
+                <nml_option name="config_temperature_profile_draft_slope" type="real" default_value="1.0e-2" units="unitless"
+		            description="The parameter defining the slope of the ice sheld draft that is used by the 'temperature_profile' melt parameterization."
+		            possible_values="any positive real value"
+		/>
+                <nml_option name="config_temperature_profile_thermocline_upper_depth" type="real" default_value="-200.0" units="m"
+		            description="The parameter defining depth of the top of the ocean thermocline used by the 'temperature_profile' melt parameterization."
+		            possible_values="any real value, but only negative values makes sense"
+		/>
+                <nml_option name="config_temperature_profile_thermocline_upper_temp" type="real" default_value="-1.0" units="degrees Celsius"
+		            description="The parameter defining the ocean temperature at the top of the thermocline used by the 'temperature_profile' melt parameterization."
+		            possible_values="any real value"
+		/>
+                <nml_option name="config_temperature_profile_thermocline_lower_depth" type="real" default_value="-600.0" units="m"
+		            description="The parameter defining depth of the bottom of the ocean thermocline used by the 'temperature_profile' melt parameterization."
+		            possible_values="any real value, but only negative values makes sense"
+		/>
+                <nml_option name="config_temperature_profile_thermocline_lower_temp" type="real" default_value="1.2" units="degrees Celsius"
+		            description="The parameter defining the ocean temperature at the bottom of the thermocline used by the 'temperature_profile' melt parameterization."
+		            possible_values="any real value"
+                />
+                <nml_option name="config_temperature_profile_variability_amplitude" type="real" default_value="0.0" units="m"
+		            description="amplitude on the depth adjustment applied to the 'temperature_profile' melt parameterization"
+		            possible_values="any positive real value"
+		/>
+                <nml_option name="config_temperature_profile_variability_period" type="real" default_value="1.0" units="a"
+		            description="period of the periodic depth adjustment applied to the 'temperature_profile' melt parameterization"
+		            possible_values="any positive real value"
+		/>
+                <nml_option name="config_temperature_profile_variability_phase" type="real" default_value="0.0" units="cycles"
+		            description="phase of the periodic depth adjustment applied to the 'temperature_profile' melt parameterization. Units are cycles, i.e., 0-1"
+		            possible_values="any positive real value"
+		/>
+                <nml_option name="config_temperature_profile_GL_depth_fraction" type="real" default_value="0.25" units="unitless"
+		            description="The fraction of the deepest grounding line depths over which the grounding line depth is averaged to obtain a reference grounding line depth for the 'temperature_profile' melt parameterization."
+		            possible_values="any positive real value"
+		/>
+                <!-- Options related to grounded glacier front submarine melt param. -->
+                <nml_option name="config_front_mass_bal_grounded" type="character" default_value="none" units="unitless"
+                            description="Selection of the method for computing the frontal mass balance of submarine grounded ice.  'none' sets the front mass balance field to 0 everywhere. 'uniform' sets faceMeltSpeed to the value given by config_uniform_face_melt_rate. 'ismip6' uses the parameterization provided by ISMIP6 and requires an ocean thermal forcing field and subglacial hydrology."
+                            possible_values="'none', 'uniform', 'ismip6'"
+                />
+                <nml_option name="config_beta_ocean_thermal_forcing" type="real" default_value="1.18" units="unitless"
+			    description="Exponent of the ocean thermal forcing in ISMIP6 grounded ice front melting parameterization"
+                            possible_values="any real value"
+                />
+		<nml_option name="config_add_ocean_thermal_forcing" type="real" default_value="0.0" units="deg. C"
+			    description="Adjust ismip6_2dThermalForcing by a scalar value"
+			    possible_values="any real value"
+		/>
+                <nml_option name="config_alpha_subglacial_discharge" type="real" default_value="0.39" units="unitless"
+                            description="Exponent of the subglacial discharge term in ISMIP6 grounded ice front melting parameterization"
+                            possible_values="any real value"
+                />
+                <nml_option name="config_subglacial_discharge_coefficient" type="real" default_value="3.0e-4" units="m^{-alpha} day^{alpha-1} deg. C^{-beta}"
+                            description="Coefficient of the subglacial discharge term in ISMIP6 grounded ice front melting parameterization"
+                            possible_values="any real value"
+                />
+                <nml_option name="config_subglacial_discharge_intercept" type="real" default_value="0.15" units="m day^{-1} deg. C^{-beta}"
+                            description="Added value B in ISMIP6 grounded ice front melting parameterization"
+                            possible_values="any real value"
+                />
+		<nml_option name="config_uniform_face_melt_rate" type="real" default_value="0.0" units="m s^{-1}"
+			    descrption="Apply a uniform linear submarine melt rate at all grounded marine margins. config_mass_bal_grounded must be set to 'uniform'."
+			    possible_values="any non-negative value"
+		/>
+        </nml_record>
+
+	<nml_record name="physical_parameters" in_defaults="true">
+		<nml_option name="config_ice_density" type="real" default_value="910.0" units="kg m^{-3}"
+		            description="ice density to use (assumed constant and uniform)"
+		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_ocean_density" type="real" default_value="1028.0" units="kg m^{-3}"
+		            description="ocean density to use for calculating floatation (assumed constant and uniform)"
+		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_sea_level" type="real" default_value="0.0" units="m above datum"
+		            description="sea level to use for calculating floatation (assumed constant and uniform)"
+		            possible_values="Any real value"
+		/>
+		<nml_option name="config_default_flowParamA" type="real" default_value="3.1709792e-24" units="s^{-1} Pa^{-n}"
+		            description="Defines the default value of the flow law parameter A to be used if it is not being calculated from ice temperature.  This value will be used by either the sia or FO velocity solver if they are respectively configured to use a scalar A value.  Defaults to the SI representation of 1.0e-16 yr$^{-1}$ Pa$^{-3}$."
+		            possible_values="Any positive real value"
+		/>
+		<nml_option name="config_flowLawExponent" type="real" default_value="3.0" units="none"
+		            description="Defines the value of the Glen flow law exponent, n. This value will be used by either the sia or FO velocity solver.  A value other than 3.0 is untested."
+		            possible_values="Any real value"
+		/>
+		<nml_option name="config_dynamic_thickness" type="real" default_value="10.0" units="m of ice"
+		            description="Defines the ice thickness below which dynamics are not calculated (and hence ice velocity is set to 0)."
+		            possible_values="Any positive real value"
+		/>
+	</nml_record>
+
+
+	<nml_record name="time_integration" in_defaults="true">
+		<nml_option name="config_dt" type="character" default_value="0001-00-00_00:00:00" units="unitless"
+		            description="Length of model time step defined as a time interval."
+		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS', but limited by CFL condition."
+		/>
+		<nml_option name="config_time_integration" type="character" default_value="forward_euler" units="unitless"
+		            description="Time integration method (currently, only forward Euler is supported)."
+		            possible_values="'forward_euler'"
+		/>
+		<nml_option name="config_adaptive_timestep" type="logical" default_value=".false." units="unitless"
+			description="Determines if the time step should be adjusted based on the CFL condition or should be steady in time. If true, the config_dt_* options are ignored."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_min_adaptive_timestep" type="real" default_value="0.0" units="s"
+			description="The minimum allowable time step in seconds.  If the CFL condition dictates the time step should be shorter than this, then the model aborts."
+			possible_values="Any non-negative real value."
+		/>
+		<nml_option name="config_max_adaptive_timestep" type="real" default_value="3.15e9" units="s"
+			description="The maximum allowable time step in seconds. If the allowable time step determined by the adaptive CFL calculation is longer than this, then the model will specify config_max_adaptive_timestep as the time step instead. Defaults to 100 years (in seconds)."
+			possible_values="Any non-negative real value."
+		/>
+		<nml_option name="config_adaptive_timestep_CFL_fraction" type="real" default_value="0.25" units="none"
+			description="A multiplier on the minimum allowable time step calculated from the CFL condition. (Setting to 1.0 may be unstable, so smaller values are recommended.)"
+			possible_values="Any positive real value less than 1.0."
+		/>
+		<nml_option name="config_adaptive_timestep_include_DCFL" type="logical" default_value=".false." units="none"
+			description="Option of whether to include the diffusive CFL condition in the determination of the maximum allowable timestep. The diffusive CFL condition at any location is estimated based on the local ice flux and surface slope."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_adaptive_timestep_force_interval" type="character" default_value="1000-00-00_00:00:00" units="unitless"
+		            description="If adaptive timestep is enabled, the model will ensure a timestep ends at multiples of this interval.  This is useful for ensuring that model output is written at a specific desired interval (rather than the closest time after) or when running coupled to an earth system model that expects a certain interval."
+		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'. (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
+		/>
+	</nml_record>
+
+
+	<nml_record name="time_management" in_defaults="true">
+		<nml_option name="config_do_restart" type="logical" default_value=".false." units="unitless"
+		            description="Determines if the initial conditions should be read from a restart file, or an input file.  To perform a restart, set this to true in the namelist.input file.  The restart time will be read from config_start_time (which can be set to 'file' to have the restart time read automatically from the file defined by config_restart_timestamp_name). A restart will read everything from the restart file - no information is read from the 'input' stream.  It will perform a run normally, except velocity will not be solved on a restart."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_restart_timestamp_name" type="character" default_value="restart_timestamp" units="unitless"
+		description="Path to the filename for restart timestamps to be read and written from."
+		possible_values="Path to a file."
+		/>
+		<nml_option name="config_start_time" type="character" default_value="0000-01-01_00:00:00" units="unitless"
+		            description="Timestamp describing the initial time of the simulation.  If it is set to 'file', the initial time is read from the filename specified by config_restart_timestamp_name (defaults to 'restart_timestamp')."
+		            possible_values="'YYYY-MM-DD_HH:MM:SS' (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
+		/>
+		<nml_option name="config_stop_time" type="character" default_value="0000-01-01_00:00:00" units="unitless"
+		            description="Timestamp describing the final time of the simulation. If it is set to 'none' the final time is determined from config_start_time and config_run_duration.  If config_run_duration is also specified, it takes precedence over config_stop_time.  Set config_stop_time to be equal to config_start_time (and config_run_duration to 'none') to perform a diagnostic solve only."
+		            possible_values="'YYYY-MM-DD_HH:MM:SS' or 'none' (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
+		/>
+		<nml_option name="config_run_duration" type="character" default_value="none" units="unitless"
+		            description="Timestamp describing the length of the simulation. If it is set to 'none' the duration is determined from config_start_time and config_stop_time. config_run_duration overrides inconsistent values of config_stop_time. If a time value is specified for config_run_duration, it must be greater than 0."
+		            possible_values="'YYYY-MM-DD_HH:MM:SS' or 'none' (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
+		/>
+		<nml_option name="config_calendar_type" type="character" default_value="gregorian_noleap" units="unitless"
+		            description="Selection of the type of calendar that should be used in the simulation."
+		            possible_values="'gregorian', 'gregorian_noleap'"
+		/>
+	</nml_record>
+
+
+	<nml_record name="io" in_defaults="true">
+                <nml_option name="config_stats_interval" type="integer" default_value="0" units="unitless"
+		            description="Integer specifying interval (number of timesteps) for writing global/local statistics. If set to 0, then statistics are not written (except perhaps at startup, as determined by 'config_write_stats_on_startup'). Applies to statistics written to log file and not analysis member output written to netCDF files."
+		            possible_values="Any positive integer value greater than or equal to 0."
+		/>
+		<nml_option name="config_write_stats_on_startup" type="logical" default_value=".false." units="unitless"
+		            description="Logical flag determining if statistics should be written prior to the first time step. Applies to statistics written to log file and not analysis member output written to netCDF files."
+		            possible_values=".true. or .false."
+                />
+		<nml_option name="config_stats_cell_ID" type="integer" default_value="1" units="unitless"
+		            description="global ID for the cell selected for local statistics/diagnostics. Applies to statistics written to log file and not analysis member output written to netCDF files."
+		            possible_values="Any positive integer value greater than or equal to 0."
+                />
+		<nml_option name="config_write_output_on_startup" type="logical" default_value=".true." units="unitless"
+		            description="Logical flag determining if an output file should be written prior to the first time step."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_pio_num_iotasks" type="integer" default_value="0" units="unitless"
+                        description="Integer specifying how many IO tasks should be used within the PIO library. A value of 0 causes all MPI tasks to also be IO tasks. IO tasks are required to write contiguous blocks of data to a file.  Optimal performance is typically found by having 1-2 tasks per node performing I/O.  To do so, config_pio_num_iotasks must be manually set in conjunction with config_pio_stride as appropriate for the processor layout used. For example, running on 240 processors on a machine with 24 processors per node, setting config_pio_num_iotasks=20 and config_pio_stride=12 would configure two I/O tasks per node."
+		            possible_values="Any positive integer value greater than or equal to 0."
+		/>
+		<nml_option name="config_pio_stride" type="integer" default_value="1" units="unitless"
+		            description="Integer specifying the stride of each IO task. See config_pio_num_iotasks for details."
+		            possible_values="Any positive integer value greater than 0."
+		/>
+		<nml_option name="config_year_digits" type="integer" default_value="4" units="unitless"
+		            description="Integer specifying the number of digits used to represent the year in time strings."
+		            possible_values="Any positive integer value greater than 0."
+		/>
+		<nml_option name="config_output_external_velocity_solver_data" type="logical" default_value=".false." units="unitless"
+		            description="If .true., external velocity solvers (if enabled) will write their own output data in addition to any MPAS output that is configured."
+		            possible_values=".true. or .false."
+                />
+                <nml_option name="config_write_albany_ascii_mesh" type="logical" default_value=".false." units="unitless"
+		            description="Logical flag determining if ascii mesh files will be created.  These files are written in a format that can be used by the standalone Albany velocity solver for optimization.  If .true., the model initializes, writes the mesh files, and then terminates."
+		            possible_values=".true. or .false."
+                />
+
+	</nml_record>
+
+
+	<nml_record name="decomposition" in_defaults="true">
+		<nml_option name="config_num_halos" type="integer" default_value="3" units="unitless"
+		            description="Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The extension of the mesh for Albany requires 3 to cover all geometric possibilities.  The default first-order upwinding advection requires a minimum of 2.  Note that a minimum of 3 is required for incremental remapping advection on a quad mesh or for FCT advection (neither of which is currently supported for land ice)."
+		            possible_values="Any positive interger value."
+		/>
+		<nml_option name="config_block_decomp_file_prefix" type="character" default_value="graph.info.part." units="unitless"
+		            description="Defines the prefix for the block decomposition file. Can include a path. The number of blocks is appended to the end of the prefix at run-time."
+					possible_values="Any path/prefix to a block decomposition file."
+		/>
+		<nml_option name="config_number_of_blocks" type="integer" default_value="0" units="unitless"
+		            description="Determines the number of blocks a simulation should be run with. If it is set to 0, the number of blocks is the same as the number of MPI tasks at run-time."
+					possible_values="Any integer $>=$ 0."
+		/>
+		<nml_option name="config_explicit_proc_decomp" type="logical" default_value=".false." units="unitless"
+		            description="Determines if an explicit processor decomposition should be used. This is only useful if multiple blocks per processor are used."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_proc_decomp_file_prefix" type="character" default_value="graph.info.part." units="unitless"
+		            description="Defines the prefix for the processor decomposition file. This file is only read if config_explicit_proc_decomp is .true. The number of processors is appended to the end of the prefix at run-time."
+					possible_values="Any path/prefix to a processor decomposition file."
+		/>
+	</nml_record>
+
+
+	<nml_record name="debug" in_defaults="true">
+		<nml_option name="config_print_thickness_advection_info" type="logical" default_value=".false." units="unitless"
+		            description="Prints additional information about thickness advection."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_print_calving_info" type="logical" default_value=".false." units="unitless"
+		            description="Prints additional information about calving physics (if enabled)."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_print_thermal_info" type="logical" default_value=".false." units="unitless"
+		            description="Prints additional information about thermal calculations (if enabled)."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_always_compute_fem_grid" type="logical" default_value=".true." units="unitless"
+		            description="Always compute finite-element grid information for external dycores rather than only doing so when the ice extent changes.  As of June 2019 (and earlier) there is a bug which requires this to be set to true if there are ice shelves in the model domain."
+		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_print_velocity_cleanup_details" type="logical" default_value=".false." units="unitless"
+		            description="After velocity is calculated there are a few checks for appropriate values in certain geometric configurations.  Setting this option to .true. will cause detailed information about those adjustments to be printed."
+		            possible_values=".true. or .false."
+		/>
+	</nml_record>
+
+
+<!-- ======================================================================= -->
+<!-- PACKAGE DEFINITIONS -->
+
+	<packages>
+		<package name="SIAvelocity" description="Variables only needed by the SIA velocity solver"/>
+
+		<package name="higherOrderVelocity" description="This package includes variables required for higher order velocity solvers."/>
+
+                <package name="observations" description="This package includes variables required for observations in Albany."/>
+
+                <package name="ismip6ShelfMelt" description="This package includes variables required for the ISMIP6 ice-shelf melt parameterization developed for Antarctica."/>
+
+		<package name="ismip6GroundedFaceMelt" description="This package includes variables required for the ISMIP6 grounded glacier front melt parameterization developed for Greenland." />	
+
+                <package name="thermal" description="This package includes variables required for the thermal solver."/>
+
+	</packages>
+
+
+<!-- ======================================================================= -->
+<!-- I/O STREAM DEFINITIONS -->
+
+	<streams>
+
+		<!-- basicmesh contains all the required MPAS mesh fields - attach this to other streams as needed -->
+		<stream name="basicmesh"
+				type="none"
+				immutable="true"
+				filename_template="not-to-be-used.nc">
+			<var name="latCell"/>
+			<var name="lonCell"/>
+			<var name="xCell"/>
+			<var name="yCell"/>
+			<var name="zCell"/>
+			<var name="indexToCellID"/>
+			<var name="latEdge"/>
+			<var name="lonEdge"/>
+			<var name="xEdge"/>
+			<var name="yEdge"/>
+			<var name="zEdge"/>
+			<var name="indexToEdgeID"/>
+			<var name="latVertex"/>
+			<var name="lonVertex"/>
+			<var name="xVertex"/>
+			<var name="yVertex"/>
+			<var name="zVertex"/>
+			<var name="indexToVertexID"/>
+			<var name="cellsOnEdge"/>
+			<var name="nEdgesOnCell"/>
+			<var name="nEdgesOnEdge"/>
+			<var name="edgesOnCell"/>
+			<var name="edgesOnEdge"/>
+			<var name="weightsOnEdge"/>
+			<var name="dvEdge"/>
+			<var name="dcEdge"/>
+			<var name="angleEdge"/>
+			<var name="areaCell"/>
+			<var name="areaTriangle"/>
+			<var name="cellsOnCell"/>
+			<var name="verticesOnCell"/>
+			<var name="verticesOnEdge"/>
+			<var name="edgesOnVertex"/>
+			<var name="cellsOnVertex"/>
+			<var name="kiteAreasOnVertex"/>
+			<var name="layerThicknessFractions"/>
+			<var name="meshDensity"/>
+		</stream>
+
+<!-- WHL: When using the enthalpy heat-balance solver, will need to add waterFrac to the streams with temperature. -->
+		<stream name="input"
+				type="input"
+				immutable="true"
+				filename_template="landice_grid.nc"
+				input_interval="initial_only">
+
+			<stream name="basicmesh"/>
+			<var name="thickness"/>
+			<var name="basalWaterThickness"/>
+			<var name="bedTopography"/>
+			<var name="temperature"/>
+			<var name="waterFrac"/>
+			<var name="sfcMassBal"/>
+                        <var name="floatingBasalMassBal"/>
+                        <var name="surfaceAirTemperature"/>
+                        <var name="basalHeatFlux"/>
+                        <var name="eigencalvingParameter"/>
+                        <var name="stiffnessFactor"/>
+                        <var name="calvingMask"/>
+                        <var name="upliftRate"/>
+<!-- The following variables are used by HO only, and only enabled by the higherOrderVelocity package. -->
+<!-- They do not need to be in the input file for the SIA dycore, and will be ignored if they are. -->
+			<var name="beta" packages="higherOrderVelocity"/>
+			<var name="muFriction" packages="higherOrderVelocity"/>
+			<var name="effectivePressure" packages="higherOrderVelocity"/>
+			<var name="dirichletVelocityMask" packages="higherOrderVelocity"/>
+                        <var name="uReconstructX" packages="higherOrderVelocity"/>
+			<var name="uReconstructY" packages="higherOrderVelocity"/>
+                        <var name="basalFrictionFlux"/>
+			<var name="damage"/>
+			<var name="calvingVelocityData"/>
+			<var name="basalMeltInput" packages="hydro"/>
+			<var name="externalWaterInput" packages="hydro"/>
+			<var name="waterThickness" packages="hydro"/>
+			<var name="waterPressure" packages="hydro"/>
+			<var name="channelArea" packages="hydro"/>
+                        <var name="waterFluxMask" packages="hydro"/>
+<!-- The following variables are only used for the Albany mesh converter. -->
+                        <var name="observedSurfaceVelocityX" packages="observations"/>
+                        <var name="observedSurfaceVelocityY" packages="observations"/>
+                        <var name="observedSurfaceVelocityUncertainty" packages="observations"/>
+                        <var name="observedThicknessTendency" packages="observations"/>
+                        <var name="observedThicknessTendencyUncertainty" packages="observations"/>
+                        <var name="sfcMassBalUncertainty" packages="observations"/>
+                        <var name="thicknessUncertainty" packages="observations"/>
+                        <var name="floatingBasalMassBalUncertainty" packages="observations"/>
+                        <!-- these variables just for ISMIP6 ice shelf forcing -->
+                        <var name="ismip6shelfMelt_basin" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_gamma0" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_3dThermalForcing" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_deltaT" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_zOcean" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_offset" packages="ismip6ShelfMelt"/>
+			<!-- these variables just for ISMIP6 grounded glacier forcing -->
+			<var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
+			<var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
+		</stream>
+
+<!-- An alternate way to allow the HO variables to exist in a separate file.
+		<stream name="inputHigherOrderVelocity"
+				type="input"
+				immutable="true"
+				packages="higherOrderVelocity"
+				filename_template="landice_grid.nc2"
+				input_interval="initial_only">
+			<var name="beta"/>
+			<var name="dirichletVelocityMask"/>
+			<var name="dirichletVelocityXValue"/>
+			<var name="dirichletVelocityYValue"/>
+		</stream>
+-->
+
+
+		<stream name="restart"
+				type="input;output"
+				immutable="true"
+				filename_template="restart.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="output_interval"
+				input_interval="initial_only"
+				output_interval="0010-00-00_00:00:00"
+				reference_time="0000-01-01_00:00:00"
+				precision="double"
+				clobber_mode="replace_files">
+
+                        <!-- Note: Restart fields are currently configured to include
+                             *all* fields necessary to restart a run, i.e., the input stream
+                             is *not* read on a restart! -->
+			<stream name="basicmesh"/>
+                        <var name="xtime"/>
+                        <var name="simulationStartTime"/>
+			<var name="thickness"/>
+			<var name="basalWaterThickness" packages="thermal"/>
+			<var name="temperature"/>
+			<var name="waterFrac" packages="thermal"/>
+                        <var name="surfaceAirTemperature" packages="thermal"/>
+                        <var name="basalTemperature" packages="thermal"/>
+                        <var name="basalHeatFlux" packages="thermal;hydro"/>
+                        <var name="basalFrictionFlux" packages="thermal;hydro"/>
+                        <var name="heatDissipation" packages="thermal"/>
+                        <var name="betaSolve" packages="thermal"/>
+			<var name="cellMask"/>
+			<var name="bedTopography"/>
+			<var name="sfcMassBal"/>
+                        <var name="floatingBasalMassBal"/>
+                        <var name="eigencalvingParameter"/>
+                        <var name="stiffnessFactor"/>
+                        <var name="calvingMask"/>
+                        <var name="upliftRate"/>
+			<!-- normalVelocity is needed for advection on the next timestep -->
+			<var name="normalVelocity"/>
+			<!-- uReconstructX/Y are only needed for exact restarts of HO iterative solvers -->
+			<var name="uReconstructX" packages="higherOrderVelocity"/>
+			<var name="uReconstructY" packages="higherOrderVelocity"/>
+                        <!-- beta and efffectivePressure are only used for HO solvers -->
+			<var name="beta" packages="higherOrderVelocity"/>
+			<var name="effectivePressure" packages="higherOrderVelocity"/>
+                        <!-- dirichletVelocityMask is only used for HO solvers -->
+                        <var name="dirichletVelocityMask" packages="higherOrderVelocity"/>
+                        <!-- fields only needed by SGH -->
+                        <!-- SGH forcing: -->
+                        <var name="groundedBasalMassBal" packages="hydro"/>  <!-- This is only needed if config_SGH_basal_melt='thermal', but adding it always-->
+			<var name="basalMeltInput" packages="hydro"/>  <!-- This is NOT needed if config_SGH_basal_melt='thermal', but adding it always-->
+                        <var name="externalWaterInput" packages="hydro"/>
+                        <!-- SGH state variables: -->
+			<var name="waterThickness" packages="hydro"/>
+			<var name="tillWaterThickness" packages="hydro"/>
+			<var name="waterPressure" packages="hydro"/>
+                        <var name="channelArea" packages="hydro"/>  <!-- this is only needed if running with channels - could be package-controlled -->
+			<var name="waterFluxMask" packages="hydro"/>
+			<var name="damage"/>
+			<var name="calvingVelocityData"/>
+			<var name="damageMax"/>
+                        <!-- these variables just for ISMIP6 forcing -->
+                        <var name="ismip6shelfMelt_basin" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_gamma0" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_3dThermalForcing" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_deltaT" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_zOcean" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_offset" packages="ismip6ShelfMelt"/>
+                        <!-- these variables just for ISMIP6 grounded glacier forcing -->
+                        <var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
+                        <var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
+		</stream>
+
+
+		<stream name="output"
+				type="output"
+				filename_template="output.nc"
+				filename_interval="none"
+				output_interval="0001-00-00_00:00:00"
+				runtime_format="single_file"
+				reference_time="0000-01-01_00:00:00"
+				precision="double"
+				clobber_mode="replace_files">
+				<!-- Note: I had set the default precision to 'single', but MpasDraw currently only supports double precision files -->
+
+	        <stream name="basicmesh"/>
+			<var name="layerCenterSigma"/>
+			<var name="layerInterfaceSigma"/>
+                        <var name="xtime"/>
+                        <var name="simulationStartTime"/>
+                        <var name="daysSinceStart"/>
+                        <var name="deltat"/>
+                        <var name="allowableDtACFL"/>
+                        <var name="allowableDtDCFL"/>
+			<var name="thickness"/>
+			<var name="lowerSurface"/>
+			<var name="upperSurface"/>
+			<var name="temperature"/>
+			<var name="cellMask"/>
+			<var name="edgeMask"/>
+			<var name="normalVelocity"/>
+			<var name="uReconstructX"/>
+			<var name="uReconstructY"/>
+		</stream>
+                <!-- input stream for regions masks files (currently only used by regional stats AM, and 
+                     the only field used is the regionCellMasks field -->
+                <stream name="regionsInput" type="input"
+                                mode="forward;analysis"
+                                filename_template="regionMasks.nc"
+                                input_interval="initial_only"
+                                runtime_format="single_file">
+                        <var name="regionCellMasks"/> 
+                        <!--var name="nCellsInRegion"/>  
+                        <var name="regionVertexMasks"/>  
+                        <var name="nVerticesInRegion"/> 
+                        <var name="nRegionsInGroup"/> 
+                        <var name="regionsInGroup"/>
+                        <var name="regionMaskNames"/>
+                        <var name="regionGroupNames"/-->
+		</stream>
+
+	</streams>
+
+
+<!-- ======================================================================= -->
+<!-- INTERNAL MODEL VARIABLES -->
+
+<!-- Note: by default, all MPAS-LI variables have only one time level.  There
+are/will be some variables that require a second time level, and they are/can be
+individually specified to have a second time level.  Within the code, all routines
+assume there is only one time level, except where explicitly needed otherwise.
+Therefore, to minimize confusion, the convention is that the current time to be
+computed on is always time level 1.  And time level 2, if it exists for a variable,
+is the value of that variable from the *previous* time level!
+ -->
+
+
+	<!-- Mesh Variables required by MPAS framework -->
+	<var_struct name="mesh" time_levs="1">
+		<!-- The following fields are part of the MPAS mesh spec. -->
+		<var name="latCell" type="real" dimensions="nCells" units="radians"
+			 description="Latitude location of cell centers in radians."
+		/>
+		<var name="lonCell" type="real" dimensions="nCells" units="radians"
+		     description="Longitude location of cell centers in radians."
+		/>
+		<var name="xCell" type="real" dimensions="nCells" units="unitless"
+		     description="X Coordinate in cartesian space of cell centers."
+		/>
+		<var name="yCell" type="real" dimensions="nCells" units="unitless"
+		     description="Y Coordinate in cartesian space of cell centers."
+		/>
+		<var name="zCell" type="real" dimensions="nCells" units="unitless"
+		     description="Z Coordinate in cartesian space of cell centers."
+		/>
+		<var name="indexToCellID" type="integer" dimensions="nCells" units="unitless"
+		     description="List of global cell IDs."
+		/>
+		<var name="latEdge" type="real" dimensions="nEdges" units="radians"
+		     description="Latitude location of edge midpoints in radians."
+		/>
+		<var name="lonEdge" type="real" dimensions="nEdges" units="radians"
+		     description="Longitude location of edge midpoints in radians."
+		/>
+		<var name="xEdge" type="real" dimensions="nEdges" units="unitless"
+		     description="X Coordinate in cartesian space of edge midpoints."
+		/>
+		<var name="yEdge" type="real" dimensions="nEdges" units="unitless"
+		     description="Y Coordinate in cartesian space of edge midpoints."
+		/>
+		<var name="zEdge" type="real" dimensions="nEdges" units="unitless"
+		     description="Z Coordinate in cartesian space of edge midpoints."
+		/>
+		<var name="indexToEdgeID" type="integer" dimensions="nEdges" units="unitless"
+		     description="List of global edge IDs."
+		/>
+		<var name="latVertex" type="real" dimensions="nVertices" units="radians"
+		     description="Latitude location of vertices in radians."
+		/>
+		<var name="lonVertex" type="real" dimensions="nVertices" units="radians"
+		     description="Longitude location of vertices in radians."
+		/>
+		<var name="xVertex" type="real" dimensions="nVertices" units="unitless"
+		     description="X Coordinate in cartesian space of vertices."
+		/>
+		<var name="yVertex" type="real" dimensions="nVertices" units="unitless"
+		     description="Y Coordinate in cartesian space of vertices."
+		/>
+		<var name="zVertex" type="real" dimensions="nVertices" units="unitless"
+		     description="Z Coordinate in cartesian space of vertices."
+		/>
+		<var name="indexToVertexID" type="integer" dimensions="nVertices" units="unitless"
+		     description="List of global vertex IDs."
+		/>
+		<var name="nEdgesOnCell" type="integer" dimensions="nCells" units="unitless"
+		     description="Number of edges that border each cell."
+		/>
+		<var name="nEdgesOnEdge" type="integer" dimensions="nEdges" units="unitless"
+		     description="Number of edges that surround each of the cells that straddle each edge. These edges are used to reconstruct the tangential velocities."
+		/>
+		<var name="cellsOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
+		     description="List of cells that straddle each edge."
+		/>
+		<var name="edgesOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+		     description="List of edges that border each cell."
+		/>
+		<var name="edgesOnEdge" type="integer" dimensions="maxEdges2 nEdges" units="unitless"
+		     description="List of edges that border each of the cells that straddle each edge."
+		/>
+		<var name="cellsOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+		     description="List of cells that neighbor each cell."
+		/>
+		<var name="verticesOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+		     description="List of vertices that border each cell."
+		/>
+		<var name="verticesOnEdge" type="integer" dimensions="TWO nEdges" units="unitless"
+		     description="List of vertices that straddle each edge."
+		/>
+		<var name="edgesOnVertex" type="integer" dimensions="vertexDegree nVertices" units="unitless"
+		     description="List of edges that share a vertex as an endpoint."
+		/>
+		<var name="cellsOnVertex" type="integer" dimensions="vertexDegree nVertices" units="unitless"
+		     description="List of cells that share a vertex."
+		/>
+		<var name="weightsOnEdge" type="real" dimensions="maxEdges2 nEdges" units="unitless"
+		     description="Reconstruction weights associated with each of the edgesOnEdge."
+		/>
+		<var name="dvEdge" type="real" dimensions="nEdges" units="m"
+		     description="Length of each edge, computed as the distance between verticesOnEdge."
+		/>
+		<var name="dcEdge" type="real" dimensions="nEdges" units="m"
+		     description="Length of each edge, computed as the distance between cellsOnEdge."
+		/>
+		<var name="angleEdge" type="real" dimensions="nEdges" units="radians"
+		     description="Angle the edge normal makes with local eastward direction."
+		/>
+		<var name="areaCell" type="real" dimensions="nCells" units="m^2"
+		     description="Area of each cell in the primary grid."
+		/>
+		<var name="areaTriangle" type="real" dimensions="nVertices" units="m^2"
+		     description="Area of each cell (triangle) in the dual grid."
+		/>
+		<var name="kiteAreasOnVertex" type="real" dimensions="vertexDegree nVertices" units="m^2"
+		     description="Area of the portions of each dual cell that are part of each cellsOnVertex."
+		/>
+		<var name="meshDensity" type="real" dimensions="nCells" units="unitless"
+		     description="The value of the generating density function at each cell center."
+		/>
+		<!-- The following fields are expected by some operators but not formally part of the MPAS mesh spec. -->
+		<!-- They are not input by the model but calculated internally. -->
+		<var name="localVerticalUnitVectors" type="real" dimensions="R3 nCells" units="unitless"
+		     description="Unit surface normal vectors defined at cell centers."
+		/>
+		<var name="edgeNormalVectors" type="real" dimensions="R3 nEdges" units="unitless"
+		     description="Normal vector defined at an edge."
+		/>
+		<var name="cellTangentPlane" type="real" dimensions="R3 TWO nCells" units="unitless"
+		     description="The two vectors that define a tangent plane at a cell center."
+		/>
+		<var name="coeffs_reconstruct" type="real" dimensions="R3 maxEdges nCells" units="unitless"
+		     description="Coefficients to reconstruct velocity vectors at cell centers."
+		/>
+		<!-- The following field is required as input by MPAS-LI -->
+		<var name="layerThicknessFractions" type="real" dimensions="nVertLevels" units="none"
+		     description="Fractional thickness of each sigma layer"
+		/>
+		<!-- The following fields are required by MPAS-LI but are calculated internally -->
+		<var name="layerCenterSigma" type="real" dimensions="nVertLevels" units="none"
+		     description="Sigma (fractional) level at center of each layer"
+		/>
+		<var name="layerInterfaceSigma" type="real" dimensions="nVertInterfaces" units="none"
+		     description="Sigma (fractional) level at interface between each layer (including top and bottom)"
+		/>
+		<var name="layerInterfaceFractions" type="real" dimensions="nVertInterfaces" units="none"
+		     description="fraction of total thickness associated with the interface between each layer (including top and bottom)"
+		/>
+		<var name="edgeSignOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
+		     description="Sign of edge contributions to a cell for each edge on cell. Used for bit-reproducible loops. Represents directionality of vector connecting cells."
+		/>
+		<var name="edgeSignOnVertex" type="integer" dimensions="maxEdges nVertices" units="unitless"
+		     description="Sign of edge contributions to a vertex for each edge on vertex. Used for bit-reproducible loops. Represents directionality of vector connecting vertices."
+                     />
+                <!-- Useful Variables -->
+                <var name="cellProcID" type="integer" dimensions="nCells" units="unitless"
+                     description="processor number for each cell"
+                />
+		<!-- Variables only needed by SIA solver -->
+		<var name="baryCellsOnVertex" type="integer" dimensions="R3 nVertices" units="unitless"
+			 description="Cell center indices to use for interpolating from cell centers to vertex locations.  Note these are local indices!" packages="SIAvelocity"
+		/>
+		<var name="baryWeightsOnVertex" type="real" dimensions="R3 nVertices" units="unitless"
+			 description="Weights to interpolate from cell centers to vertex locations.  Each weight is used with the corresponding cell center index indentified by baryCellsOnVertex." packages="SIAvelocity"
+		/>
+		<!-- Variables only needed by HO solver -->
+		<var name="wachspressWeightVertex" type="real" dimensions="maxEdges nCells" units="unitless"
+			 description="Wachspress weights used to interpolate from vertices to cell centers." packages="higherOrderVelocity"
+		/>
+		<!-- time-related fields have to go somewhere.  "mesh" is a more general place than the other pools -->
+		<var name="xtime" type="text" time_levs="1" dimensions="Time" units="unitless"
+		     description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
+		/>
+		<var name="deltat" type="real" time_levs="1" dimensions="Time" units="s"
+		     description="time step length, in seconds.  Value on a given time is the value used between the previous time level and the current time level."
+		/>
+		<var name="allowableDtACFL" type="real" time_levs="1" dimensions="Time" units="s"
+		     description="The maximum allowable time step based on the advective CFL condition.  Value on a given time is the value appropriate for  between the previous time level and the current time level."
+		/>
+		<var name="allowableDtDCFL" type="real" time_levs="1" dimensions="Time" units="s"
+		     description="The maximum allowable time step based on the diffusive CFL condition.  Value on a given time is the value appropriate for  between the previous time level and the current time level."
+                />
+                <var name="simulationStartTime" type="text" dimensions="" units="unitless" default_value="'no_date_available'"
+                     description="start time of first simulation, with format 'YYYY-MM-DD_HH:MM:SS'"
+                />
+                <var name="daysSinceStart" type="real" dimensions="Time" units="days"
+                     description="Time since simulationStartTime in days, for plotting"
+                />
+                <var name="timestepNumber" type="integer" dimensions="Time" units="none"
+                     description="time step number.  initial time is 0."
+                />
+	</var_struct>
+
+<!-- ================ -->
+
+	<!--  Variables related to ice sheet geometry -->
+        <var_struct name="geometry" time_levs="1">
+                <var name="bedTopography" type="real" dimensions="nCells Time" units="m above datum"
+                     description="Elevation of ice sheet bed.  Once isostasy is added to the model, this should become a state variable."
+                />
+                <var name="thickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
+                     description="ice thickness"
+                />
+                <var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m" time_levs="1"
+                     description="layer thickness"
+                />
+                <var name="lowerSurface" type="real" dimensions="nCells Time" units="m above datum"
+                     description="elevation at bottom of ice"
+                />
+                <var name="upperSurface" type="real" dimensions="nCells Time" units="m above datum"
+                     description="elevation at top of ice"
+                />
+                <var name="layerThicknessEdge" type="real" dimensions="nVertLevels nEdges Time" units="m"
+                     description="layer thickness on cell edges"
+                />
+                <var name="dHdt" type="real" dimensions="nCells Time" units="m a^{-1}"
+                     description="diagnostic field of rate of thickness change with time (dH/dt). This includes all processes (flux divergence, SMB, BMB, calving, etc.) because it is calculated as the new thickness minus the old thickness divided by the time step."
+                />
+                <var name="thicknessOld" type="real" dimensions="nCells Time" units="m" time_levs="1"
+                     description="ice thickness from previous time level (only used to calculate thicknessTendency)"
+                />
+                <var name="dynamicThickening" type="real" dimensions="nCells Time" units="m a^{-1}"
+                     description="diagnostic field of dynamic thickening rate (calculated as negative of flux divergence)"
+                />
+                <var name="cellMask" type="integer" dimensions="nCells Time" units="none"
+                     description="bitmask indicating various properties about the ice sheet on cells.  cellMask only needs to be a restart field if config_allow_additional_advance = false (to keep the mask of initial ice extent)"
+                />
+                <var name="edgeMask" type="integer" dimensions="nEdges Time" units="none"
+                     description="bitmask indicating various properties about the ice sheet on edges."
+                />
+                <var name="vertexMask" type="integer" dimensions="nVertices Time" units="none" time_levs="2"
+                     description="bitmask indicating various properties about the ice sheet on vertices."
+                />
+                <!-- Note vertexMask has two time level to easily check if it changes - this is only used by the HO dycores -->
+
+                <var name="sfcMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="potential surface mass balance"
+                />
+                <var name="sfcMassBalApplied" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="applied surface mass balance"
+                />
+                <var name="groundedSfcMassBalApplied" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="applied surface mass balance on grounded ice"
+                />
+                <var name="basalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="applied basal mass balance"
+                />
+                <var name="groundedBasalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="Basal mass balance on grounded regions"
+                />
+                <var name="floatingBasalMassBal" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="Basal mass balance on floating regions"
+                />
+                <var name="calvingMask" type="integer" dimensions="nCells Time" units="m" time_levs="1"
+                        description="mask of grid cells that should be calved.  0=no calving, 1=should be calved"
+                />
+                <var name="calvingFrontMask" type="integer" dimensions="nCells Time" units="none" time_levs="1"
+                        description="mask of the calving front position on cells"
+                />
+                <var name="calvingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
+                        description="thickness of ice that calves on a given timestep (less than or equal to ice thickness)"
+                />
+                <var name="eigencalvingParameter" type="real" dimensions="nCells Time" units="m s" time_levs="1"
+                     description="proportionality constant K2+- used in eigencalving formulation"
+                />
+                <var name="calvingVelocity" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
+                     description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane)."
+                />
+                <var name="unablatedVolumeNonDynCell" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
+                     description="volume of ice that was left uncalved or unmelted from required calving or melting flux at non-dynamic cells"
+                />
+                <var name="unablatedVolumeDynCell" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
+                     description="volume of ice that was left uncalved or unmelted from required calving or melting flux at dynamic cells"
+                />
+                <var name="ablatedVolumeNonDynCell" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
+                     description="volume of ice that was ablated from non-dynamic cells"
+                />
+                <var name="ablatedVolumeDynCell" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
+                     description="volume of ice that was ablated from dynamic cells"
+                />
+                <var name="requiredAblationVolumeNonDynCell" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
+                     description="bookkeeping field for how much volume should be removed from a non-dynamic cell"
+                />
+                <var name="requiredAblationVolumeNonDynEdge" type="real" dimensions="nEdges Time" units="m^3" time_levs="1"
+                     description="bookkeeping field for how much volume should be removed from a non-dynamic edge"
+                />
+                <var name="requiredAblationVolumeDynEdge" type="real" dimensions="nEdges Time" units="m^3" time_levs="1"
+                     description="bookkeeping field for how much volume should be removed from a dynamic edge"
+                />
+                <var name="requiredAblationVolumeDynCell" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
+                     description="bookkeeping field for how much volume should be removed from a dynamic edge"
+                />
+                <var name="calvingVelocityData" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
+                     description="rate of calving front retreat due to calving, represented as a velocity normal to the calving front (in the x-y plane), given by the input netCDF file."
+                />
+                <var name="damage" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                     description="Damage is parameterized as the local ice thickness divided by the fracture depth, such that unfractured ice has damage=0 and ice fractured through its full thickness has damage=1"
+                />
+                <var name="ddamagedt" type="real" dimensions="nCells Time" units="s^{-1}" time_levs="1"
+                     description="damage change rate"
+                />
+                <var name="damageNye" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                     description="Nye zero-stress (Nye, 1957, Proc. R. Soc. A, 239) damage value"
+                />
+                <var name="damageMax" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                     description="maximum damage number kept constant"
+                />
+                <var name="s0" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                     description="a ratio between hydrostatic pressure and the largest principal tensile stress within ice shelf, rho_i * (rho_w - rho_i) * g * h / ( 2 * Tau_xx * rho_w ), where h is the ice thickness."
+                />
+                <var name="nstar" type="real" dimensions="nCells Time" units="none" time_levs="1"
+                     description="n∗ denotes the usual parameter n from Glen’s flow law, adjusted by including the ratio of the principal horizontal strain rates:  epsilon Dot_yy / epsilon Dot_xx"
+                />
+            <var name="effectiveViscosity" type="real" dimensions="nCells Time" units="Pa s" time_levs="1"
+                     description="effective viscosity"
+                     persistence="persistent"
+                />
+                <var name="epsmax" type="real" dimensions="nCells Time" units="s^{-1}" time_levs="1"
+                     description="strain rate along the direction of maximum deviatoric principal stress"
+                />
+                <var name="damageSource" type="real" dimensions="nCells Time" units="s^{-1}" time_levs="1"
+                     description="damage source term"
+                />
+                />
+                <var name="basalWaterThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
+                     description="thickness of basal water"
+                />
+                <var name="restoreThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
+                     description="thickness of ice added when the config_restore_calving_front option is set to .true. (in order to maintain the calving front at its initial position)"
+                />
+                <var name="contiguousDynamicIce" type="integer" dimensions="nCells Time" units="none" time_levs="1"
+                        description="mask of contiguous dynamic ice determined from flood fill.  Used for finding icebergs."
+                        persistence="persistent"
+                />
+                <var name="contiguousDynamicIceOld" type="integer" dimensions="nCells Time" units="none" time_levs="1"
+                        description="mask from the previous iteration of contiguous dynamic ice as the algorithm advances"
+                        persistence="persistent"
+                />
+                <!-- Variables only needed for calculating diffusivity at cell centers - this is always done now so no package is attached here -->
+                <var name="normalSlopeEdge"            type="real"     dimensions="nEdges Time"
+                     units="m m^{-1}"  description="normal surface slope on edges"
+                />
+                <var name="apparentDiffusivity" type="real" dimensions="nCells Time"
+                        units="m^2 s^{-1}"  description="apparent diffusivity at cell centers (estimated based on the local ice flux and surface slope)"
+                />
+                <var name="groundedToFloatingThickness" type="real" dimensions="nCells Time"
+                        units="m"  description="ice thickness that changed from grounded to floating due to grounding line movement during this time step.  Negative values indicate floating to grounded transition."
+                />
+		<!-- Variables only needed by SIA solver -->
+                <var name="upperSurfaceVertex" type="real" dimensions="nVertices Time" units="m above datum"
+                     description="elevation at top of ice on vertices" packages="SIAvelocity"
+                />
+                <var name="tangentSlopeEdge"            type="real"     dimensions="nEdges Time"
+                     units="m m^{-1}"  description="tangent surface slope on edges" packages="SIAvelocity"
+                />
+                <var name="slopeEdge"            type="real"     dimensions="nEdges Time"
+                     units="m m^{-1}"  description="surface slope magnitude on edges" packages="SIAvelocity"
+               />
+                <!-- Variables only needed by ISMIP6 ice-shelf melt method -->
+                <var name="ismip6shelfMelt_basin" type="integer" dimensions="nCells" units="" default_value="1" 
+                     packages="ismip6ShelfMelt" description="basin number mask for ISMIP6 melt forcing, input to model"
+                />
+                <var name="ismip6shelfMelt_gamma0" type="real" dimensions="" units="m yr^{-1}" default_value="0.0"
+                     packages="ismip6ShelfMelt"
+                     description="gamma0 value prescribed for ISMIP6 ice-shelf melting method, input to model.  Defaults to 0 so that missing input value will zero melt field."
+                />
+                <var name="ismip6shelfMelt_deltaT" type="real" dimensions="nCells" units="K" default_value="0.0"
+                     packages="ismip6ShelfMelt"
+                     description="basin-by-basin temperature bias correction for ISMIP6 ice-shelf melting method, input to model"
+                />
+                <var name="ismip6shelfMelt_TFdraft" type="real" dimensions="nCells Time" units="deg. C" packages="ismip6ShelfMelt"
+                     description="thermal forcing at ice shelf draft used for ISMIP6 ice-shelf melting method, calculated by param."
+                />
+                <var name="ismip6shelfMelt_3dThermalForcing" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C" 
+                     default_value="2.0" packages="ismip6ShelfMelt"
+                     description="thermal forcing for ISMIP6 ice-shelf melting method, input to model"
+                />
+                <var name="ismip6shelfMelt_zOcean" type="real" dimensions="nISMIP6OceanLayers" units="m" packages="ismip6ShelfMelt"
+                     description="depth coordinate associated with ismip6shelfMelt_3dThermalForcing field, input to model"
+                />
+                <var name="ismip6shelfMelt_offset" type="real" dimensions="nCells" units="kg m^{-2} s^{-1}" packages="ismip6ShelfMelt" default_value="0.0"
+                     description="Optional field of offset that should be applied to the melt field calculated by the ISMIP6 melt method.  Can be used to run in anomaly mode, but this is not the anomaly.  See Registry.xml for details."
+                />
+                <!-- Variables needed for ISMIP6 grounded face melt parameterization -->
+                <var name="frontAblationMask" type="integer" dimensions="nCells Time" units="none" time_levs="1" 
+                     description="mask of grid cells at which front ablation will be applied. Determined by settings of applyToGrounded, applyToFloating, and applyToGroundingLine in routines that call li_apply_front_ablation_velocity."
+                />
+                />
+		<var name="faceMeltSpeed" type="real" dimensions="nCells Time" units="m s^{-1}" time_levs="1"
+		     description="linear speed of submarine melting at grounded glacier front"
+  		/>
+                <var name="ismip6Runoff" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" packages="ismip6GroundedFaceMelt" default_value="0.0"
+                     description="Runoff forcing for ISMIP6 grounded ice melting method, input to model" 
+                />
+		<var name="ismip6_2dThermalForcing" type="real" dimensions="nCells Time" units="deg. C" packages="ismip6GroundedFaceMelt" default_value="2.0"
+	 	     description="thermal forcing for ISMIP6 grounded marine melt method, input to model"
+		/>
+		<var name="faceMeltingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
+                     description="Equivalent plan-view averaged thickness of ice that melts on a given timestep from front ablation (less than or equal to ice thickness)"
+		/>
+               <var name="unmeltedVolume" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
+                     description="volume of ice that was left unmelted from required facemelt flux due to only applying flux over immediate neighbors (diagnostic field to assess if this limitation is a problem)"
+		/>
+                <!--  description="Optional field of offset that should be appliped to the melt field calculated by the ISMIP6 melt method.  This field is added directly to the melt field calculated by the method and can be used to use the method in anomaly mode.  Note this field is NOT the anomaly.  Let m be the final melt field generated, m_t be the ISMIP6 melt calculation at any time, m_t0 the ISMIP6 melt at time 0, and m_0 a reference melt field (e.g. observed melt field used for initialization).  The melt anomaly would be defined as (delta m)=m_t-m_t0. Then, m=(delta m) + m_0.  Rearranging, m=m_t+(m_0-m_t0).  ismip6shelfMelt_offset is the term in parentheses.  Note that the general usage requires that the first time step be run with ismip6shelfMelt_offset=0 in order to determine m_t0, and then NCO or similar tool used to generate the (m_0-m_t0) field to be input as ismip6shelfMelt_offset in the forward run." -->
+                />
+                <var name="upliftRate"            type="real"     dimensions="nCells Time"
+                     units="m s^{-1}"  description="time rate of change in bedTopography.  This field is prescribed as input and not currently calculated in the model."
+                />
+               <!-- Scratch variables related to geometry -->
+	       <var name="cellMaskTemporary" type="integer" dimensions="nCells" units="none"
+	       description="temporary copy of cellMask"
+	       persistence="scratch"
+	       />
+        </var_struct>
+
+<!-- ================ -->
+
+	<!-- Variables related to velocity -->
+        <var_struct name="velocity" time_levs="1">
+                <var name="flowParamA" type="real" dimensions="nVertLevels nCells Time" units="s^{-1} Pa^{-n}"
+                     description="flow law parameter, A, used by shallow-ice velocity solver"
+                />
+                <var name="normalVelocity" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
+                     description="horizonal velocity, normal component to an edge, layer interface"
+                />
+                <var name="layerNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+                     description="horizonal velocity, normal component to an edge, layer midpoint"
+                />
+                <var name="normalVelocityInitial" type="real" dimensions="nVertInterfaces nEdges Time" units="m s^{-1}"
+                     description="horizonal velocity, normal component to an edge, computed at initialization"
+                />
+                <var name="uReconstructX"                     type="real"     dimensions="nVertInterfaces nCells Time"
+                     units="m s^{-1}"  description="x-component of velocity reconstructed on cell centers.  Also, for higher-order dycores, on input: value of the x-component of velocity that should be applied where dirichletVelocityMask==1."
+                />
+                <var name="uReconstructY"                     type="real"     dimensions="nVertInterfaces nCells Time"
+                     units="m s^{-1}"  description="y-component of velocity reconstructed on cell centers.    Also, for higher-order dycores, on input: value of the y-component of velocity that should be applied where dirichletVelocityMask==1."
+                />
+                <var name="uReconstructZ"                     type="real"     dimensions="nVertInterfaces nCells Time"
+                     units="m s^{-1}"  description="z-component of velocity reconstructed on cell centers"
+                />
+                <var name="uReconstructZonal"                 type="real"     dimensions="nVertInterfaces nCells Time"
+                     units="m s^{-1}"  description="zonal velocity reconstructed on cell centers"
+                />
+                <var name="uReconstructMeridional"            type="real"     dimensions="nVertInterfaces nCells Time"
+                     units="m s^{-1}"  description="meridional velocity reconstructed on cell centers"
+                />
+                <var name="surfaceSpeed"                     type="real"     dimensions="nCells Time"
+                     units="m s^{-1}"  description="ice surface speed reconstructed at cell centers"
+                />
+                <var name="basalSpeed"                     type="real"     dimensions="nCells Time"
+                     units="m s^{-1}"  description="ice basal speed reconstructed at cell centers"
+                />
+                <var name="xvelmean"                     type="real"     dimensions="nCells Time"
+                     units="m s^{-1}"  description="x-component of vertical mean ice velocity at cell centers"
+                />
+                <var name="yvelmean"                     type="real"     dimensions="nCells Time"
+                     units="m s^{-1}"  description="y-component of vertical mean ice velocity at cell centers"
+                />
+                <var name="beta" type="real" dimensions="nCells Time" units="Pa yr m^{-1}" default_value="1.0e8"
+                     description="input value of basal traction parameter for sliding law used with first-order momentum balance solver (NOTE non-SI units)"
+                />
+                <var name="betaSolve" type="real" dimensions="nCells Time" units="Pa yr m^{-1}"
+                     description="value of basal traction parameter for sliding law used with first-order momentum balance solver (NOTE non-SI units); differs from beta due to any necessary adjustments made for internal consistency (e.g., zeroed out where the ice is found to be floating)"
+                />
+                <var name="effectivePressureLimited" type="real" dimensions="nCells Time" units="Pa" packages="higherOrderVelocity"
+                     description="effective ice pressure in subglacial hydrology system, limited with min/max for velocity solver" />
+                <var name="drivingStressVert" type="real" dimensions="nVertices Time" units="Pa" default_value="0.0"
+                     description="driving stress calculated by Albany, on vertices"
+                />
+                <var name="drivingStress" type="real" dimensions="nCells Time" units="Pa" default_value="0.0"
+                     description="driving stress calculated by Albany, interpolated to cells"
+                />
+                <var name="muFriction" type="real" dimensions="nCells Time" units="(m yr^{-1})^(1-1/n) for Weertman, unitless for Schoof" default_value="1.0"
+                     description="input value of basal traction parameter for sliding law used with first-order momentum balance solver (NOTE non-SI units)"
+                />
+		<var name="stiffnessFactor" type="real" dimensions="nCells Time" units="none" default_value="1.0"
+		     description="stiffness factor applied to effective viscosity in higher-order velocity solve"
+		/>
+                <var name="exx" type="real" dimensions="nCells Time" units="s^{-1}"
+                     description="x-component of depth-integrated strain rate"
+                />
+                <var name="eyy" type="real" dimensions="nCells Time" units="s^{-1}"
+                     description="y-component of depth-integrated strain rate"
+                />
+                <var name="exy" type="real" dimensions="nCells Time" units="s^{-1}"
+                     description="shear component of depth-integrated strain rate"
+                />
+                <var name="dudy" type="real" dimensions="nCells Time" units="s^{-1}"
+                     description="y-derivative of x-component of depth-integrated velocity"
+                />
+                <var name="dvdx" type="real" dimensions="nCells Time" units="s^{-1}"
+                     description="x-derivative of y-component of depth-integrated velocity"
+                />
+                <var name="eTheta" type="real" dimensions="nCells Time" units="radians"
+                     description="orientation of principal depth-integrated strain rate"
+                />
+                <var name="eMax" type="real" dimensions="nCells Time" units="s^{-1}"
+                     description="magnitude of first principal depth-integrated strain rate"
+                />
+                <var name="eMin" type="real" dimensions="nCells Time" units="s^{-1}"
+                     description="magnitude of second principal depth-integrated strain rate"
+                />
+                <var name="tauxx" type="real" dimensions="nCells Time" units="Pa"
+                     description="deviatoric stress xx"
+                />
+                <var name="tauyy" type="real" dimensions="nCells Time" units="Pa"
+                     description="deviatoric stress yy"
+                />
+                <var name="tauxy" type="real" dimensions="nCells Time" units="Pa"
+                     description="deviatoric stress xy=yx"
+                />
+                <var name="tauMax" type="real" dimensions="nCells Time" units="Pa"
+                     description="maximum deviatoric principal stress"
+                />
+                <var name="tauMin" type="real" dimensions="nCells Time" units="Pa"
+                     description="minimum deviatoric principal stress"
+                />
+	        <var name="principalStrainRateRatio" type="real" dimensions="nCells" units="none"
+	             description="the ratio of the minimum and maximum principal horizontal strain rates"
+	        />
+                <var name="fluxAcrossGroundingLine" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
+                     description="flux across grounding line per unit width.  Positive means flux goes from grounded to floating ice."
+                />
+		<var name="vonMisesStress" type="real" dimensions="nCells Time" units="Pa"
+		     description="von Mises stress used for calving law"
+		/>
+
+		<!-- Variables only needed by HO solver -->
+                <var name="anyDynamicVertexMaskChanged"              type="integer"  dimensions="Time"
+                     units="none"  description="flag needed by external velocity solvers that indicates if the region to solve on the block's domain has changed (treated as a logical)"
+                        packages="higherOrderVelocity"
+                />
+                <var name="dirichletVelocityMask"            type="integer"     dimensions="nVertInterfaces nCells Time"
+                        units="none"  time_levs="2"
+                        description="mask of where Dirichlet boundary conditions should be applied to the velocity solution.  1 means apply a Dirichlet boundary condition, 0 means do not. (higher-order dycores only)"
+                        packages="higherOrderVelocity"
+                />
+                <var name="dirichletMaskChanged"              type="integer"  dimensions="Time"
+                     units="none"  description="flag needed by external velocity solvers that indicates if the Dirichlet boundary condition mask has changed (treated as a logical)"
+                        packages="higherOrderVelocity"
+                />
+        </var_struct>
+
+<!-- ================ -->
+
+	<!-- Variables related to observations -->
+        <var_struct name="observations" time_levs="1" package="observations">
+                <var name="observedSurfaceVelocityX" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="X-component of observed surface velocity" />
+                <var name="observedSurfaceVelocityY" type="real" dimensions="nCells Time" units="m s^{-1}"
+                     description="Y-component of observed surface velocity" />
+                <var name="observedSurfaceVelocityUncertainty" type="real" dimensions="nCells Time" units="m s^{-1}" default_value="1.0e20"
+                     description="uncertainty in observed surface velocity magnitude" />
+                <var name="observedThicknessTendency" type="real" dimensions="nCells Time" units="m s^{-1}"
+                        description="observed tendency in thickness (dH/dt)" />
+                <var name="observedThicknessTendencyUncertainty" type="real" dimensions="nCells Time" units="m s^{-1}" default_value="1.0e20"
+                        description="uncertainty in observed tendency in thickness (dH/dt)" />
+                <var name="sfcMassBalUncertainty" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" default_value="1.0e20"
+                        description="uncertainty in observed surface mass balance" />
+                <var name="thicknessUncertainty" type="real" dimensions="nCells Time" units="m" default_value="0.0"
+                        description="uncertainty in observed thickness" />
+                <var name="floatingBasalMassBalUncertainty" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" default_value="1.0e20"
+                        description="uncertainty in observed floating basal mass balance" />
+        </var_struct>
+
+<!-- ================ -->
+
+	<!-- Variables related to thermal state -->
+        <var_struct name="thermal" time_levs="1">
+                <var name="temperature" type="real" dimensions="nVertLevels nCells Time" units="K" default_value="273.15"
+                     description="interior ice temperature"
+                />
+                <var name="waterFrac" type="real" dimensions="nVertLevels nCells Time" units="unitless"
+                     description="interior ice water fraction"
+                />
+                <var name="enthalpy" type="real" dimensions="nVertLevels nCells Time" units="J m^{-3}"
+                     description="interior ice enthalpy"
+                />
+                <var name="surfaceAirTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
+                     description="air temperature at the ice sheet surface"
+                />
+                <var name="surfaceTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
+                     description="temperature at upper ice service"
+                />
+                <var name="basalTemperature" type="real" dimensions="nCells Time" units="K" default_value="273.15"
+                     description="temperature at lower ice surface"
+                />
+                <var name="pmpTemperature" type="real" dimensions="nVertLevels nCells Time" units="K"
+                     description="pressure melt temperature"
+                />
+                <var name="basalPmpTemperature" type="real" dimensions="nCells Time" units="K"
+                     description="pressure melt temperature at lower ice surface"
+                />
+                <var name="surfaceConductiveFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+                     description="conductive heat flux at the upper ice surface (positive downward)"
+                />
+                <var name="basalConductiveFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+                     description="conductive heat flux at the lower ice surface (positive downward)"
+                />
+                <var name="basalHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}" default_value="0.06"
+                     description="basal heat flux into the ice (positive upward)"
+                />
+                <var name="basalFrictionFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+                     description="basal frictional heat flux into the ice (positive upward)"
+                />
+                <var name="heatDissipation" type="real" dimensions="nVertLevels nCells Time" units="deg s^{-1}"
+                     description="interior heat dissipation rate, divided by rhoi*cp_ice"
+                />
+        </var_struct>
+
+<!-- ================ -->
+
+	<!-- Scratch Variables -->
+	<var_struct name="scratch" time_levs="1">
+	  <var name="iceCellMask" type="integer" dimensions="nCells" units="none"
+	       description="mask set to 1 in cells where some criterion is satisfied and 0 otherwise"
+	       persistence="scratch"
+	       />
+	  <var name="iceCellMask2" type="integer" dimensions="nCells" units="none"
+	       description="mask set to 1 in cells where some criterion is satisfied and 0 otherwise"
+	       persistence="scratch"
+	       />
+	  <var name="iceCellMask3" type="integer" dimensions="nCells" units="none"
+	       description="mask set to 1 in cells where some criterion is satisfied and 0 otherwise"
+	       persistence="scratch"
+	       />
+	  <var name="iceEdgeMask" type="integer" dimensions="nEdges" units="none"
+	       description="mask set to 1 for edges adjacent to ice-covered cells and 0 otherwise"
+	       persistence="scratch"
+	       />
+	  <var name="workLevelCell" type="real" dimensions="nVertLevels nCells" units="none"
+	       description="generic work array with dimensions of (nVertLevels nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="workLevelEdge" type="real" dimensions="nVertLevels nEdges" units="none"
+	       description="generic work array with dimensions of (nVertLevels nEdges)"
+	       persistence="scratch"
+	       />
+          <var name="workLevelVertex" type="real" dimensions="nVertLevels nVertices" units="none"
+	       description="generic work array with dimensions of (nVertLevels nVertices)"
+	       persistence="persistent"
+	       />
+	  <var name="workCell" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="workCell2" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="workCell3" type="real" dimensions="nCells" units="none"
+	       description="generic work array with dimensions of (nCells)"
+	       persistence="scratch"
+	       />
+      <var name="meanFlowParamA" type="real" dimensions="nCells" units="Pa^{-3} s^{-1}"
+	       description="depth averaged flow parameter A"
+	       persistence="scratch"
+	       />
+	  <var name="workTracerCell" type="real" dimensions="maxTracersAdvect nCells" units="none"
+	       description="generic work array with dimensions of (maxTracersAdvect nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="workTracerCell2" type="real" dimensions="maxTracersAdvect nCells" units="none"
+	       description="generic work array with dimensions of (maxTracersAdvect nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="workTracerLevelCell" type="real" dimensions="maxTracersAdvect nVertLevels nCells" units="none"
+	       description="generic work array with dimensions of (maxTracersAdvect nVertLevels nCells)"
+	       persistence="scratch"
+	       />
+	  <var name="workTracerLevelCell2" type="real" dimensions="maxTracersAdvect nVertLevels nCells" units="none"
+	       description="generic work array with dimensions of (maxTracersAdvect nVertLevels nCells)"
+	       persistence="scratch"
+               />
+	  <var name="slopeCellX" type="real" dimensions="nCells" units="none"
+	       description="x-component of slope on cell centers"
+	       persistence="scratch"
+	       />
+	  <var name="slopeCellY" type="real" dimensions="nCells" units="none"
+	       description="y-component of slope on cell centers"
+	       persistence="scratch"
+	       />
+	  <var name="vertexIndices" type="integer" dimensions="nVertices" units="none"
+	       description="local indices of each vertex"
+	       persistence="scratch"
+               />
+	</var_struct>
+
+<!-- ================ -->
+
+	<!-- Region Masks (currently only the regionCellMasks field is used by the regional stats AM) -->
+        <var_struct name="regions" time_levs="1">
+	  <var name="regionCellMasks" type="integer" dimensions="nRegions nCells" units="unitless" default_value="1"
+	       description="masks set to 1 in cells that fall within a given region and 0 otherwise"
+	       />
+	  <!--var name="nCellsInRegion" type="integer" dimensions="nRegions" units="unitless"
+	       description="number of cells that fall within a given region"
+	       />
+	  <var name="regionVertexMasks" type="integer" dimensions="nRegions nVertices" units="unitless"
+	       description="masks set to 1 for vertices that fall within a given region and 0 otherwise"
+	       />
+	  <var name="nVerticesInRegion" type="integer" dimensions="nRegions" units="unitless"
+	       description="number of vertices that fall within a given region"
+	       />
+	  <var name="nRegionsInGroup" type="integer" dimensions="nRegionGroups" units="unitless"
+	       description="number of regions within a given group"
+	       />
+	  <var name="regionsInGroup" type="integer" dimensions="maxRegionsInGroup nRegionGroups" units="unitless"
+	       description="list of region indices in each group"
+	       />
+	  <var name="regionMaskNames" type="text" dimensions="nRegions" units="unitless"
+	       description="name of region masks"
+	       />
+	  <var name="regionGroupNames" type="text" dimensions="nRegionGroups" units="unitless"
+	       description="name of region groups"
+	       /-->
+	</var_struct>
+
+<!-- ======================================================================= -->
+
+#include "Registry_subglacial_hydro.xml"
+
+#include "analysis_members/Registry_analysis_members.xml"
+
+</registry>

@@ -13,20 +13,6 @@
     <desc>MPAS sea-ice component</desc>
   </entry>
 
-  <entry id="MPASSI_IC_MODE">
-        <type>char</type>
-        <valid_values>cold_start,spunup</valid_values>
-        <default_value>cold_start</default_value>
-        <values>
-           <value compset="MPASSI_">cold_start</value>
-           <value compset="_MPASSI%SPUNUP">spunup</value>
-           <value compset="_MPASSI%BGC">spunup</value>
-        </values>
-        <group>case_comp</group>
-        <file>env_case.xml</file>
-        <desc>Option to describe the MPASSI initial condition mode</desc>
- </entry>
-
   <entry id="MPASSI_SURFACE_MODE">
         <type>char</type>
         <valid_values>free,non-free</valid_values>

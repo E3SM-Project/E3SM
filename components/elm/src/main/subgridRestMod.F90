@@ -444,7 +444,7 @@ contains
 
     call restartvar(ncid=ncid, flag=flag, varname='SNLSNO', xtype=ncd_int,  & 
          dim1name='column', &
-         long_name='number of snow layers', units='unitless', &
+         long_name='number of snow layers', units='1', &
          interpinic_flag='interp', readvar=readvar, data=col_pp%snl)
 
     allocate(temp2d(bounds%begc:bounds%endc,-nlevsno+1:0))

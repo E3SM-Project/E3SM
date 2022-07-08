@@ -9,7 +9,7 @@ module CNNitrogenStateType
   use elm_varpar             , only : nlevdecomp_full, nlevdecomp, crop_prog
   use elm_varcon             , only : spval, ispval, dzsoi_decomp, zisoi
   use landunit_varcon        , only : istcrop, istsoil 
-  use elm_varctl             , only : use_nitrif_denitrif, use_vertsoilc, use_century_decomp
+  use elm_varctl             , only : use_vertsoilc, use_century_decomp
   use elm_varctl             , only : iulog, override_bgc_restart_mismatch_dump, spinup_state
   use decompMod              , only : bounds_type
   use pftvarcon              , only : npcropmin, nstor
@@ -604,20 +604,20 @@ contains
              this%decomp_npools_col(c,k)    = decomp_cpools_col(c,k)    / decomp_cascade_con%initial_cn_ratio(k)
              this%decomp_npools_1m_col(c,k) = decomp_cpools_1m_col(c,k) / decomp_cascade_con%initial_cn_ratio(k)
           end do
-          if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
-             do j = 1, nlevdecomp_full
-                this%smin_nh4_vr_col(c,j) = 0._r8
-                this%smin_no3_vr_col(c,j) = 0._r8
-                if(use_pflotran .and. pf_cmode) then
-                    this%smin_nh4sorb_vr_col(c,j) = 0._r8
-                end if
-             end do
-             this%smin_nh4_col(c) = 0._r8
-             this%smin_no3_col(c) = 0._r8
+
+          do j = 1, nlevdecomp_full
+             this%smin_nh4_vr_col(c,j) = 0._r8
+             this%smin_no3_vr_col(c,j) = 0._r8
              if(use_pflotran .and. pf_cmode) then
-                this%smin_nh4sorb_col(c) = 0._r8
+                this%smin_nh4sorb_vr_col(c,j) = 0._r8
              end if
+          end do
+          this%smin_nh4_col(c) = 0._r8
+          this%smin_no3_col(c) = 0._r8
+          if(use_pflotran .and. pf_cmode) then
+             this%smin_nh4sorb_col(c) = 0._r8
           end if
+
           this%totlitn_col(c)    = 0._r8
           this%totsomn_col(c)    = 0._r8
           this%totlitn_1m_col(c) = 0._r8
@@ -796,13 +796,13 @@ contains
        this%sminn_col(i)       = value_column
        this%ntrunc_col(i)      = value_column
        this%cwdn_col(i)        = value_column
-       if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
-          this%smin_no3_col(i) = value_column
-          this%smin_nh4_col(i) = value_column
-          if(use_pflotran .and. pf_cmode) then
-             this%smin_nh4sorb_col(i) = value_column
-          end if
+
+       this%smin_no3_col(i) = value_column
+       this%smin_nh4_col(i) = value_column
+       if(use_pflotran .and. pf_cmode) then
+          this%smin_nh4sorb_col(i) = value_column
        end if
+
        this%totlitn_col(i)     = value_column
        this%totsomn_col(i)     = value_column
        this%totecosysn_col(i)  = value_column
@@ -816,12 +816,10 @@ contains
           i = filter_column(fi)
           this%sminn_vr_col(i,j)       = value_column
           this%ntrunc_vr_col(i,j)      = value_column
-          if (use_nitrif_denitrif  .or. (use_pflotran .and. pf_cmode)) then
-             this%smin_no3_vr_col(i,j) = value_column
-             this%smin_nh4_vr_col(i,j) = value_column
-             if(use_pflotran .and. pf_cmode) then
-               this%smin_nh4sorb_vr_col(i,j) = value_column
-             end if
+          this%smin_no3_vr_col(i,j) = value_column
+          this%smin_nh4_vr_col(i,j) = value_column
+          if(use_pflotran .and. pf_cmode) then
+             this%smin_nh4sorb_vr_col(i,j) = value_column
           end if
        end do
     end do
@@ -875,7 +873,6 @@ contains
     !
     ! !USES:
     use elm_varpar    , only: nlevdecomp,ndecomp_cascade_transitions,ndecomp_pools
-    use elm_varctl    , only: use_nitrif_denitrif
     use subgridAveMod , only: p2c
     use elm_varpar    , only: nlevdecomp_full
     !
@@ -967,34 +964,31 @@ contains
    nlev = nlevdecomp
    if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
 
-   if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
+   do fc = 1,num_soilc
+      c = filter_soilc(fc)
+      this%smin_no3_col(c) = 0._r8
+      this%smin_nh4_col(c) = 0._r8
+      if(use_pflotran .and. pf_cmode) then
+         this%smin_nh4sorb_col(c) = 0._r8
+      end if
+   end do
+   do j = 1, nlev
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         this%smin_no3_col(c) = 0._r8
-         this%smin_nh4_col(c) = 0._r8
+         this%smin_no3_col(c) = &
+              this%smin_no3_col(c) + &
+              this%smin_no3_vr_col(c,j) * dzsoi_decomp(j)
+         
+         this%smin_nh4_col(c) = &
+              this%smin_nh4_col(c) + &
+              this%smin_nh4_vr_col(c,j) * dzsoi_decomp(j)
          if(use_pflotran .and. pf_cmode) then
-            this%smin_nh4sorb_col(c) = 0._r8
-         end if
-      end do
-      do j = 1, nlev
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%smin_no3_col(c) = &
-                 this%smin_no3_col(c) + &
-                 this%smin_no3_vr_col(c,j) * dzsoi_decomp(j)
-            
-            this%smin_nh4_col(c) = &
-                 this%smin_nh4_col(c) + &
-                 this%smin_nh4_vr_col(c,j) * dzsoi_decomp(j)
-            if(use_pflotran .and. pf_cmode) then
-               this%smin_nh4sorb_col(c) = &
+            this%smin_nh4sorb_col(c) = &
                  this%smin_nh4sorb_col(c) + &
                  this%smin_nh4sorb_vr_col(c,j) * dzsoi_decomp(j)
-            end if
-          end do 
-       end do
-
-    end if
+         end if
+      end do
+   end do
 
    ! vertically integrate each of the decomposing N pools
    do l = 1, ndecomp_pools

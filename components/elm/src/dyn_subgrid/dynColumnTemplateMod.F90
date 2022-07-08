@@ -45,6 +45,7 @@ module dynColumnTemplateMod
 
   ! if no template column was found, this value is returned
   integer, parameter, public :: TEMPLATE_NONE_FOUND = ispval
+  !$acc declare copyin(TEMPLATE_NONE_FOUND)
 
   character(len=*), parameter, private :: sourcefile = &
        __FILE__
@@ -72,7 +73,7 @@ contains
     ! first time in this time step.
     !
     ! !USES:
-    !
+    !$acc routine seq
     ! !ARGUMENTS:
     integer :: c_template  ! function return value
 
@@ -84,11 +85,11 @@ contains
     ! !LOCAL VARIABLES:
     logical :: found  ! whether a suitable template column has been found
     integer :: g,l,c  ! indices of grid cell, landunit, column
-    
-    character(len=*), parameter :: subname = 'template_col_from_landunit'
+
+    !character(len=*), parameter :: subname = 'template_col_from_landunit'
     !-----------------------------------------------------------------------
-    
-    SHR_ASSERT_ALL((ubound(cactive) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
+
+    !SHR_ASSERT_ALL((ubound(cactive) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
 
     found = .false.
     g = col_pp%gridcell(c_target)
@@ -138,7 +139,7 @@ contains
     ! should not be used.
     !
     ! See also the notes about cactive under 'template_col_from_landunit'.
-    !
+    !$acc routine seq
     ! !USES:
     use landunit_varcon, only : istsoil
     !
@@ -150,11 +151,11 @@ contains
     ! !LOCAL VARIABLES:
     integer :: c
 
-    character(len=*), parameter :: subname = 'template_col_from_natveg_array'
+    !character(len=*), parameter :: subname = 'template_col_from_natveg_array'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT_ALL((ubound(cactive) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
-    SHR_ASSERT_ALL((ubound(c_templates) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
+    !SHR_ASSERT_ALL((ubound(cactive) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
+    !SHR_ASSERT_ALL((ubound(c_templates) == (/bounds%endc/)), errMsg(sourcefile, __LINE__))
 
     do c = bounds%begc, bounds%endc
        c_templates(c) = template_col_from_landunit(bounds, c, istsoil, &
@@ -163,6 +164,6 @@ contains
 
   end subroutine template_col_from_natveg_array
 
-  
+
 
 end module dynColumnTemplateMod

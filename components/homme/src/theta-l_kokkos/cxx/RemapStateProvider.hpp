@@ -85,13 +85,10 @@ struct RemapStateProvider {
       return;
     }
 
-    using temp_type = decltype(m_temp);
-    const int temp_size = temp_type::shmem_size(num_teams)/sizeof(Real);
-
     Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
 
     m_temp = decltype(m_temp)(mem,num_teams);
-    mem += temp_size;
+    mem += m_temp.size();
 
     m_phi_ref = decltype(m_phi_ref)(mem,num_teams);
   }

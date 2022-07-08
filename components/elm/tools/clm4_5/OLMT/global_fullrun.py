@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import getpass, os, sys, csv, math
 from optparse import OptionParser

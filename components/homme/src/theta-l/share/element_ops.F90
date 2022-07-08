@@ -73,7 +73,9 @@ module element_ops
   public set_forcing_rayleigh_friction, set_theta_ref
   public copy_state, tests_finalize
   public state0
-  
+
+  ! promote this to _real_kind after V2 code freeze
+  real (kind=real_kind), public :: tref_lapse_rate=0.0065e0
 contains
 
 
@@ -156,6 +158,8 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
       field = elem%state%phinh_i(:,:,1:nlevp,nt)
     case('mu_i');
       call get_dpnh_dp_i(elem,field,hvcoord,nt)
+    case('pnh_i');
+      call get_nonhydro_pressure_i(elem,field,hvcoord,nt)
     case default
       print *,'name = ',trim(name)
       call abortmp('ERROR: get_field_i name not supported in this model')
@@ -308,7 +312,25 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
     call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
          elem%state%dp3d(:,:,:,nt),elem%state%phinh_i(:,:,:,nt),&
-         pnh,exner,dpnh_dp_i)
+         pnh,exner,dpnh_dp_i,caller="get_nonhydro_pressire")
+
+  end subroutine
+
+
+  subroutine get_nonhydro_pressure_i(elem,pnh_i,hvcoord,nt)
+    implicit none
+    
+    type (element_t),       intent(in)  :: elem
+    real (kind=real_kind),  intent(out) :: pnh_i(np,np,nlevp)
+    type (hvcoord_t),       intent(in)  :: hvcoord
+    integer,                intent(in)  :: nt
+    
+    real (kind=real_kind), dimension(np,np,nlevp) :: dpnh_dp_i
+    real (kind=real_kind), dimension(np,np,nlev) :: pnh,exner
+
+    call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
+         elem%state%dp3d(:,:,:,nt),elem%state%phinh_i(:,:,:,nt),&
+         pnh,exner,dpnh_dp_i,pnh_i,"get_nonhydro_pressure_i")
 
   end subroutine
 
@@ -735,8 +757,8 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   ! reference T = 288K.  reference lapse rate = 6.5K/km   = .0065 K/m
   ! Tref = T0+T1*exner
   ! Thetaref = T0/exner + T1
-  T1 = .0065*TREF*Cp/g ! = 191
-  T0 = TREF-T1         ! = 97
+  T1 = tref_lapse_rate*TREF*Cp/g ! = 191
+  T0 = TREF-T1           ! = 97
 
   p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0   
   do k=1,nlev

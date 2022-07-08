@@ -34,7 +34,6 @@ module convect_shallow
    ! The following namelist variable controls which shallow convection package is used.
    !        'Hack'   = Hack shallow convection (default)
    !        'UW'     = UW shallow convection by Sungsu Park and Christopher S. Bretherton
-   !        'UNICON' = General Convection Model by Sungsu Park 
    !        'off'    = No shallow convection
 
    character(len=16) :: shallow_scheme      ! Default set in phys_control.F90, use namelist to change
@@ -82,7 +81,6 @@ module convect_shallow
   !-------------------------------------------------- !
 
   use physics_buffer, only : pbuf_add_field, dtype_r8, dyn_time_lvls
-  use unicon_cam,     only : unicon_cam_register
   
   implicit none
 
@@ -102,7 +100,7 @@ module convect_shallow
   ! Updraft mass flux by shallow convection [ kg/s/m2 ]
   call pbuf_add_field('CMFMC_SH',   'physpkg' ,dtype_r8,(/pcols,pverp/),      cmfmc_sh_idx )
 
-  if (shallow_scheme .eq. 'UW' .or. shallow_scheme .eq. 'UNICON') then
+  if (shallow_scheme .eq. 'UW') then
      call pbuf_add_field('shfrc', 'physpkg', dtype_r8, (/pcols,pver/), shfrc_idx)
   end if
   if( shallow_scheme .eq. 'UW' ) then
@@ -121,10 +119,6 @@ module convect_shallow
 ! shallow gbm cloud ice water (kg/kg)
   call pbuf_add_field('SH_CLDICE','physpkg',dtype_r8,(/pcols,pver/),sh_cldice_idx)  
 
-  if (shallow_scheme .eq. 'UNICON') then
-     call unicon_cam_register()
-  end if
-
   end subroutine convect_shallow_register
 
   !=============================================================================== !
@@ -142,7 +136,6 @@ module convect_shallow
   use ppgrid,            only : pcols, pver
   use hk_conv,           only : mfinti
   use uwshcu,            only : init_uwshcu
-  use unicon_cam,        only : unicon_cam_init
   use physconst,         only : rair, gravit, latvap, rhoh2o, zvir, &
                                 cappa, latice, mwdry, mwh2o
   use pmgrid,            only : plev, plevp
@@ -323,16 +316,6 @@ module convect_shallow
 
      tke_idx = pbuf_get_index('tke')
 
-  case('UNICON') ! Sungsu Park's General Convection Model
-
-     if ( masterproc ) write(iulog,*) 'convect_shallow_init: General Convection Model by Sungsu Park'
-     if ( eddy_scheme .ne. 'diag_TKE' ) then
-          write(iulog,*)  eddy_scheme
-          write(iulog,*) 'ERROR: shallow convection scheme ',shallow_scheme,' is incompatible with eddy scheme ', eddy_scheme
-          call endrun( 'convect_shallow_init: shallow_scheme and eddy_scheme are incompatible' )
-     endif
-     call unicon_cam_init(pbuf2d)
-
   end select
 
   cld_idx      = pbuf_get_index('CLD')
@@ -349,8 +332,6 @@ function convect_shallow_implements_cnst(name)
 
    ! Return true if specified constituent is implemented by a shallow convetion package
 
-   use unicon_cam, only: unicon_implements_cnst
-
    character(len=*), intent(in) :: name          ! constituent name
    logical :: convect_shallow_implements_cnst    ! return value
 
@@ -358,9 +339,6 @@ function convect_shallow_implements_cnst(name)
    !-----------------------------------------------------------------------
 
    select case (shallow_scheme)
-
-   case('UNICON')
-      convect_shallow_implements_cnst = unicon_implements_cnst(name)
 
    case default
       convect_shallow_implements_cnst = .false.
@@ -375,17 +353,12 @@ subroutine convect_shallow_init_cnst(name, q, gcid)
 
   ! Initialize constituents if they are not read from the initial file
 
-   use unicon_cam, only: unicon_init_cnst
-
    character(len=*), intent(in)  :: name     ! constituent name
    real(r8),         intent(out) :: q(:,:)   ! mass mixing ratio (gcol, plev)
    integer,          intent(in)  :: gcid(:)  ! global column id
    !-----------------------------------------------------------------------
 
    select case (shallow_scheme)
-
-   case('UNICON')
-      call unicon_init_cnst(name, q, gcid)
 
    case default
 
@@ -411,10 +384,10 @@ end subroutine convect_shallow_init_cnst
      implicit none
      logical :: convect_shallow_use_shfrc     ! Return value
 
-     if (shallow_scheme .eq. 'UW' .or. shallow_scheme .eq. 'UNICON') then
-          convect_shallow_use_shfrc = .true.
+     if (shallow_scheme .eq. 'UW') then
+        convect_shallow_use_shfrc = .true.
      else
-	  convect_shallow_use_shfrc = .false.
+        convect_shallow_use_shfrc = .false.
      endif
 
      return
@@ -442,7 +415,6 @@ end subroutine convect_shallow_init_cnst
    use constituents,    only : pcnst, cnst_get_ind, cnst_get_type_byind
    use hk_conv,         only : cmfmca
    use uwshcu,          only : compute_uwshcu_inv
-   use unicon_cam,      only : unicon_out_t, unicon_cam_tend, unicon_cam_tend_free
 
    use time_manager,    only : get_nstep, is_first_step
    use wv_saturation,   only : qsat
@@ -550,8 +522,6 @@ end subroutine convect_shallow_init_cnst
    real(r8), pointer, dimension(:,:) :: cmfmc2_sh            ! (pcols,pverp) Updraft mass flux by shallow convection [ kg/s/m2 ]
 
    logical                           :: lq(pcnst)
-
-   type(unicon_out_t) :: unicon_out
 
    ! ----------------------- !
    ! Main Computation Begins ! 
@@ -741,30 +711,6 @@ end subroutine convect_shallow_init_cnst
       cmflq(:ncol,:) = qtflx(:ncol,:) * latvap
 
       call outfld( 'PRECSH' , precc  , pcols, lchnk )
-
-   case('UNICON')
-
-      icwmr = 0.0_r8
-
-      call unicon_cam_tend(ztodt, state, cam_in, sgh30, &
-                           pbuf, ptend_loc, unicon_out)
-
-      cmfmc2(:ncol,:) = unicon_out%cmfmc(:ncol,:)
-      qc2(:ncol,:)    = unicon_out%rqc(:ncol,:)
-      rliq2(:ncol)    = unicon_out%rliq(:ncol)
-      cnt2(:ncol)     = unicon_out%cnt(:ncol)
-      cnb2(:ncol)     = unicon_out%cnb(:ncol)
-
-      ! ------------------------------------------------- !
-      ! Convective fluxes of 'sl' and 'qt' in energy unit !
-      ! ------------------------------------------------- !
-
-      cmfsl(:ncol,:) = unicon_out%slflx(:ncol,:)
-      cmflq(:ncol,:) = unicon_out%qtflx(:ncol,:) * latvap
-
-      call outfld( 'PRECSH' , precc  , pcols, lchnk )
-
-      call unicon_cam_tend_free(unicon_out)
 
    end select
 

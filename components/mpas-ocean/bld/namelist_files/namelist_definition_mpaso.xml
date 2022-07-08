@@ -956,6 +956,49 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- gotm -->
+
+<entry id="config_use_gotm" type="logical"
+	category="gotm" group="gotm">
+If true, use the General Ocean Turbulence Model routines to compute vertical diffusivity and viscosity
+
+Valid values: True or False
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_gotm_namelist_file" type="char*1024"
+	category="gotm" group="gotm">
+File name of GOTM turbulence namelist
+
+Valid values: gotmturb.nml
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_gotm_constant_surface_roughness_length" type="real"
+	category="gotm" group="gotm">
+The constant surface roughness length scale.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_gotm_constant_bottom_roughness_length" type="real"
+	category="gotm" group="gotm">
+The constant bottom roughness length scale.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_gotm_constant_bottom_drag_coeff" type="real"
+	category="gotm" group="gotm">
+The constant bottom drag coefficient.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- forcing -->
 
 <entry id="config_use_variable_drag" type="logical"
@@ -1041,6 +1084,14 @@ Default: Defined in namelist_defaults.xml
 Depth over which to apply penetrating SW to sfcBuoyancyFlux
 
 Valid values: Real Values greater than zero less than bottomDepth
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_enable_shortwave_energy_fixer" type="logical"
+	category="shortwaveRadiation" group="shortwaveRadiation">
+Flag to enable the shortwave energy fixer for shallow ocean cells
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1411,6 +1462,14 @@ Valid values: any positive real, typically 1.0e-3
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_implicit_bottom_roughness" type="logical"
+	category="bottom_drag" group="bottom_drag">
+If true, depends on bottom roughness z0
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_use_implicit_bottom_drag_variable" type="logical"
 	category="bottom_drag" group="bottom_drag">
 If true, spatially-variable implicit bottom drag is used on the momentum equation.
@@ -1443,6 +1502,22 @@ Valid values: any positive real, typically 1.0e-3
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_topographic_wave_drag" type="logical"
+	category="bottom_drag" group="bottom_drag">
+If true, topographic wave drag is used on the momentum equation.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_topographic_wave_drag_coeff" type="real"
+	category="bottom_drag" group="bottom_drag">
+Dimensionless topographic wave drag coefficient, $c_{topo}$.
+
+Valid values: any positive real, typically 5.0e-4
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- ocean_constants -->
 
@@ -1461,7 +1536,7 @@ Default: Defined in namelist_defaults.xml
 	category="pressure_gradient" group="pressure_gradient">
 Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential.  The sea surface height gradient (ssh_gradient) option is for barotropic, depth-averaged pressure.
 
-Valid values: 'ssh_gradient', 'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential'
+Valid values: 'ssh_gradient', 'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential' or 'constant_forced'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1473,6 +1548,22 @@ Valid values: any real between 0 and 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_zonal_ssh_grad" type="real"
+	category="pressure_gradient" group="pressure_gradient">
+The zonal (x) ssh gradient to be applied.
+
+Valid values: any real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_meridional_ssh_grad" type="real"
+	category="pressure_gradient" group="pressure_gradient">
+The meridional (y) ssh gradient to be applied.
+
+Valid values: any real
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- eos -->
 
@@ -1480,7 +1571,7 @@ Default: Defined in namelist_defaults.xml
 	category="eos" group="eos">
 Character string to choose EOS formulation
 
-Valid values: Jackett McDougall EOS = 'jm' and Linear EOS = 'linear'
+Valid values: Jackett McDougall EOS = 'jm', Wright = 'wright', and Linear EOS = 'linear'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1594,6 +1685,17 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_eos_linear_densityref" type="real"
 	category="eos_linear" group="eos_linear">
 Reference density, i.e. density when T=Tref and S=Sref
+
+Valid values: any positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- eos_wright -->
+
+<entry id="config_eos_wright_ref_pressure" type="real"
+	category="eos_wright" group="eos_wright">
+Reference pressure for potential density
 
 Valid values: any positive real
 Default: Defined in namelist_defaults.xml
@@ -1993,6 +2095,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_disable_vel_topographic_wave_drag" type="logical"
+	category="debug" group="debug">
+Disables tendencies on the velocity field from topographic wave drag
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_disable_vel_explicit_bottom_drag" type="logical"
 	category="debug" group="debug">
 Disables tendencies on the velocity field from explicit bottom drag
@@ -2105,6 +2215,17 @@ Default: Defined in namelist_defaults.xml
 Character string to choose tensor test fuction
 
 Valid values: 'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- init_mode_vert_levels -->
+
+<entry id="config_vert_levels" type="integer"
+	category="init_mode_vert_levels" group="init_mode_vert_levels">
+Number of vertical levels to create within the configuration.
+
+Valid values: Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations vertical level definition.
 Default: Defined in namelist_defaults.xml
 </entry>
 

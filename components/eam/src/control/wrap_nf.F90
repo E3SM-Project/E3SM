@@ -253,7 +253,7 @@ contains
 
 !===============================================================================
 
-   subroutine wrap_inq_varid (nfid, varname, varid, abort)
+   subroutine wrap_inq_varid (nfid, varname, varid, abrtf)
 !-------------------------------------------------------------------------------
 !
 ! Purpose:
@@ -266,7 +266,7 @@ contains
    integer, intent(in):: nfid
    integer, intent(out):: varid
    character*(*), intent(in):: varname
-   logical, optional :: abort
+   logical, optional :: abrtf
  
    integer ret      ! NetCDF return code
    logical :: call_endrun
@@ -274,8 +274,8 @@ contains
    ret = nf90_inq_varid (nfid, varname, varid)
    if (ret/=NF90_NOERR ) then
       call_endrun = .true.
-      if ( present(abort) ) then
-         call_endrun = abort
+      if ( present(abrtf) ) then
+         call_endrun = abrtf
       endif
 
       if ( call_endrun ) then

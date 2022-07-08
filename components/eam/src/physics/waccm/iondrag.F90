@@ -297,7 +297,7 @@ contains
        write(iulog,*) ' '
     end if
 
-    call cnst_get_ind( 'e', id_elec, abort=.false. )
+    call cnst_get_ind( 'e', id_elec, abrtf=.false. )
     if (id_elec < 0) then
        id_elec = slvd_index( 'e' )
        if (id_elec > 0) then
@@ -306,7 +306,7 @@ contains
     else
        elec_slvd = .false.
     endif
-    call cnst_get_ind( 'Op', id_op, abort=.false. )
+    call cnst_get_ind( 'Op', id_op, abrtf=.false. )
     if (id_op < 0) then
        id_op = slvd_index( 'Op' )
        if (id_op > 0) then
@@ -315,7 +315,7 @@ contains
     else
        op_slvd = .false.
     endif
-    call cnst_get_ind( 'O2p', id_o2p, abort=.false. )
+    call cnst_get_ind( 'O2p', id_o2p, abrtf=.false. )
     if (id_o2p < 0) then
        id_o2p = slvd_index( 'O2p' )
        if (id_o2p > 0) then
@@ -324,7 +324,7 @@ contains
     else
        o2p_slvd = .false.
     endif
-    call cnst_get_ind( 'NOp', id_nop, abort=.false. )
+    call cnst_get_ind( 'NOp', id_nop, abrtf=.false. )
     if (id_nop < 0) then
        id_nop = slvd_index( 'NOp' )
        if (id_nop > 0) then
@@ -333,7 +333,7 @@ contains
     else
        nop_slvd = .false.
     endif
-    call cnst_get_ind( 'O', id_xo1, abort=.false. )
+    call cnst_get_ind( 'O', id_xo1, abrtf=.false. )
     if (id_xo1 < 0) then
        id_xo1 = slvd_index( 'O' )
        if (id_xo1 > 0) then
@@ -342,7 +342,7 @@ contains
     else
        xo1_slvd = .false.
     endif
-    call cnst_get_ind( 'O2', id_xo2, abort=.false. )
+    call cnst_get_ind( 'O2', id_xo2, abrtf=.false. )
     if (id_xo2 < 0) then
        id_xo2 = slvd_index( 'O2' )
        if (id_xo2 > 0) then
@@ -351,7 +351,7 @@ contains
     else
        xo2_slvd = .false.
     endif
-    call cnst_get_ind( 'N', id_n, abort=.false. )
+    call cnst_get_ind( 'N', id_n, abrtf=.false. )
     if (id_n < 0) then
        id_n = slvd_index( 'N' )
        if (id_n > 0) then

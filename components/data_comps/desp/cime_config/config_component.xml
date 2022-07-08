@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="definitions_components.xsl" ?>
+
+<entry_id version="3.0">
+
+  <!-- modifier_mode allowed values are
+       '*' 0 or more modifiers (default)
+       '1' exactly 1 modifier
+       '?' 0 or 1 modifiers
+       '+' 1 or more modifiers
+
+       This file may have esp desc entries.
+  -->
+
+  <description modifier_mode="1">
+    <desc esp="DESP[%NOOP][%TEST]">Data External System Processor (DESP) </desc>
+    <desc option="NOOP">no modification of any model data</desc>
+    <desc option="TEST">test modification of any model data</desc>
+  </description>
+
+  <entry id="COMP_ESP">
+    <type>char</type>
+    <valid_values>desp</valid_values>
+    <default_value>desp</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of external system processing component</desc>
+  </entry>
+
+  <entry id="DESP_MODE">
+    <type>char</type>
+    <valid_values>NOCHANGE,DATATEST</valid_values>
+    <default_value>NOCHANGE</default_value>
+    <group>run_component_desp</group>
+    <file>env_run.xml</file>
+    <desc>Mode for external system processing component.
+      The default is NOOP, do not modify any model data.</desc>
+    <values match="last">
+      <value compset="%NOOP"  >NOCHANGE</value>
+      <value compset="%TEST"  >DATATEST</value>
+    </values>
+  </entry>
+
+  <help>
+    =========================================
+    DESP naming conventions in compset name
+    =========================================
+  </help>
+
+</entry_id>

@@ -1856,7 +1856,7 @@ contains
 
 
     subroutine smooth_topo_datasets(elem,hybrid,nets,nete)
-    use control_mod, only : smooth_phis_numcycle, smooth_phis_nudt
+    use control_mod, only : smooth_phis_numcycle, smooth_phis_nudt, smooth_phis_p2filt
     use hybrid_mod, only : hybrid_t
     use bndry_mod, only : bndry_exchangev
     use derivative_mod, only : derivative_t , laplace_sphere_wk
@@ -1867,22 +1867,28 @@ contains
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
     ! local
-    integer :: ie
+    integer :: ie, p2filt
     real (kind=real_kind) :: minf
-    real (kind=real_kind) :: phis(np,np,nets:nete)
+    real (kind=real_kind) :: phis(np,np,nets:nete),phis4(4),xgll(np)
+    type (quadrature_t)    :: gp
+    gp=gausslobatto(np)
+    xgll = gp%points(1:np)
+    deallocate(gp%points)
+    deallocate(gp%weights)
 
     do ie=nets,nete
        phis(:,:,ie)=elem(ie)%state%phis(:,:)
     enddo
-    
+
     minf=-9e9
     if (hybrid%masterthread) then
        write(iulog,*) "Applying hyperviscosity smoother to PHIS"
        write(iulog,'(a,i10)')  " smooth_phis_numcycle =",smooth_phis_numcycle
+       write(iulog,'(a,i10)')  " smooth_phis_p2filt =",smooth_phis_p2filt
        write(iulog,'(a,e13.5)')" smooth_phis_nudt =",smooth_phis_nudt
     endif
-    call smooth_phis(phis,elem,hybrid,deriv1,nets,nete,minf,smooth_phis_numcycle)
-
+    call smooth_phis(phis,elem,hybrid,deriv1,nets,nete,minf,smooth_phis_numcycle,&
+         smooth_phis_p2filt,xgll)
 
     do ie=nets,nete
        elem(ie)%state%phis(:,:)=phis(:,:,ie)

@@ -54,11 +54,6 @@ module macrop_driver
 
   logical :: micro_do_icesupersat
 
-  ! Parameters used for selecting generalized critical RH for liquid and ice stratus
-  integer :: rhminl_opt = 0
-  integer :: rhmini_opt = 0
-
-
   character(len=16) :: shallow_scheme
   logical           :: use_shfrc                       ! Local copy of flag from convect_shallow_use_shfrc
 
@@ -93,18 +88,6 @@ module macrop_driver
     naai_idx 
 
   logical :: liqcf_fix
-
-  integer :: &
-    tke_idx = -1,       &! tke defined at the model interfaces
-    qtl_flx_idx = -1,   &! overbar(w'qtl' where qtl = qv + ql) from the PBL scheme
-    qti_flx_idx = -1,   &! overbar(w'qti' where qti = qv + qi) from the PBL scheme
-    cmfr_det_idx = -1,  &! detrained convective mass flux from UNICON
-    qlr_det_idx = -1,   &! detrained convective ql from UNICON  
-    qir_det_idx = -1     ! detrained convective qi from UNICON  
-    integer :: rqcr_l_idx = -1    ! mass tendency by detrained convective liquid condensate [ kg/kg/s ] >= 0.
-    integer :: rqcr_i_idx = -1    ! mass tendency by detrained convective ice    condensate [ kg/kg/s ] >= 0.
-    integer :: rncr_l_idx = -1    ! number tendency by detrained convective liquid condensate [ #/kg/s ] >= 0.
-    integer :: rncr_i_idx = -1    ! number tendency by detrained convective ice    condensate [ #/kg/s ] >= 0.
 
   contains
 
@@ -196,19 +179,6 @@ end subroutine macrop_driver_readnl
 
     call pbuf_add_field('CMELIQ',   'physpkg', dtype_r8, (/pcols,pver/), cmeliq_idx)
 
-! JHYoon
-! These are created in unicon_cam.F90. I'm adding this to make CAM5 default run
-    if( shallow_scheme .ne. 'UNICON' ) then
-       call pbuf_add_field('cmfr_det',      'global', dtype_r8, (/pcols,pver/), cmfr_det_idx)
-       call pbuf_add_field('qlr_det',      'global', dtype_r8, (/pcols,pver/), qlr_det_idx)
-       call pbuf_add_field('qir_det',      'global', dtype_r8, (/pcols,pver/), qir_det_idx)
-       call pbuf_add_field('rqcr_l',      'global', dtype_r8, (/pcols,pver/), rqcr_l_idx)
-       call pbuf_add_field('rqcr_i',      'global', dtype_r8, (/pcols,pver/), rqcr_i_idx)
-       call pbuf_add_field('rncr_l',      'global', dtype_r8, (/pcols,pver/), rncr_l_idx)
-       call pbuf_add_field('rncr_i',      'global', dtype_r8, (/pcols,pver/), rncr_i_idx)
-    end if
-! JHYoon
-
   end subroutine macrop_driver_register
 
   !============================================================================ !
@@ -238,8 +208,7 @@ end subroutine macrop_driver_readnl
     !-----------------------------------------------------------------------
 
     ! Initialization routine for cloud macrophysics
-    if (shallow_scheme .eq. 'UNICON') rhminl_opt = 1
-    call ini_macro(rhminl_opt, rhmini_opt)
+    call ini_macro()
 
     call phys_getopts(history_aerosol_out              = history_aerosol      , &
                       history_budget_out               = history_budget       , &
@@ -254,21 +223,6 @@ end subroutine macrop_driver_readnl
         shfrc_idx = pbuf_get_index('shfrc')
     else 
         use_shfrc = .false.
-    endif
-
-  ! Sungsu added for use in the macrophysics
-
-    if( shallow_scheme .eq. 'UNICON' ) then
-        tke_idx      = pbuf_get_index('tke')
-        qtl_flx_idx  = pbuf_get_index('qtl_flx')
-        qti_flx_idx  = pbuf_get_index('qti_flx')
-        cmfr_det_idx = pbuf_get_index('cmfr_det')
-        qlr_det_idx  = pbuf_get_index('qlr_det')
-        qir_det_idx  = pbuf_get_index('qir_det')
-        rqcr_l_idx   = pbuf_get_index('rqcr_l')
-        rqcr_i_idx   = pbuf_get_index('rqcr_i')
-        rncr_l_idx   = pbuf_get_index('rncr_l')
-        rncr_i_idx   = pbuf_get_index('rncr_i')
     endif
 
   ! Sungsu added for use in the macrophysics
@@ -370,31 +324,6 @@ end subroutine macrop_driver_readnl
     if (micro_do_icesupersat) then 
        naai_idx      = pbuf_get_index('NAAI')
     endif
-
-    if (rhminl_opt > 0 .or. rhmini_opt > 0) then
-       cmfr_det_idx = pbuf_get_index('cmfr_det', istat)
-       if (istat < 0) call endrun(subname//': macrop option requires cmfr_det in pbuf')
-       if (rhminl_opt > 0) then
-          qlr_det_idx  = pbuf_get_index('qlr_det', istat)
-          if (istat < 0) call endrun(subname//': macrop option requires qlr_det in pbuf')
-       end if
-       if (rhmini_opt > 0) then
-          qir_det_idx  = pbuf_get_index('qir_det', istat)
-          if (istat < 0) call endrun(subname//': macrop option requires qir_det in pbuf')
-       end if
-    end if
-
-    if (rhminl_opt == 2 .or. rhmini_opt == 2) then
-       tke_idx = pbuf_get_index('tke')
-       if (rhminl_opt == 2) then
-          qtl_flx_idx = pbuf_get_index('qtl_flx', istat)
-          if (istat < 0) call endrun(subname//': macrop option requires qtl_flx in pbuf')
-       end if
-       if (rhmini_opt == 2) then
-          qti_flx_idx = pbuf_get_index('qti_flx', istat)
-          if (istat < 0) call endrun(subname//': macrop option requires qti_flx in pbuf')
-       end if
-    end if
 
     ! Init pbuf fields.  Note that the fields CLD, CONCLD, QCWAT, LCWAT, 
     ! ICCWAT, and TCWAT are initialized in phys_inidat.
@@ -518,12 +447,6 @@ end subroutine macrop_driver_readnl
 
   real(r8), pointer, dimension(:,:) :: cmeliq
 
-  real(r8), pointer, dimension(:,:) :: tke
-  real(r8), pointer, dimension(:,:) :: qtl_flx
-  real(r8), pointer, dimension(:,:) :: qti_flx
-  real(r8), pointer, dimension(:,:) :: cmfr_det
-  real(r8), pointer, dimension(:,:) :: qlr_det
-  real(r8), pointer, dimension(:,:) :: qir_det
   real(r8), pointer, dimension(:,:) :: rqcr_l
   real(r8), pointer, dimension(:,:) :: rqcr_i
   real(r8), pointer, dimension(:,:) :: rncr_l
@@ -742,54 +665,7 @@ end subroutine macrop_driver_readnl
    shdlft   = 0._r8
 
    ! --------------------------------------------------------------------------------------------- !
-   ! Mar.06.2015. In case of UNICON, the liquid and ice phases of detrained convective condensates !
-   !              are separately treated, without converting into liquid.                          !
-   !              Note that UNICON should always be used with 'cu_det_st = .true.'.                !
    ! --------------------------------------------------------------------------------------------- !
-
-   ! ----------- !
-   ! UNICON case !
-   ! ----------- !
-
-   if( shallow_scheme .eq. 'UNICON' ) then
-
-       call pbuf_get_field(pbuf, rqcr_l_idx, rqcr_l)
-       call pbuf_get_field(pbuf, rqcr_i_idx, rqcr_i)
-       call pbuf_get_field(pbuf, rncr_l_idx, rncr_l)
-       call pbuf_get_field(pbuf, rncr_i_idx, rncr_i)
-       do k = top_lev, pver
-       do i = 1, state_loc%ncol
-          ptend_loc%q(i,k,ixcldliq) = rqcr_l(i,k)
-          ptend_loc%q(i,k,ixcldice) = rqcr_i(i,k)
-          ptend_loc%q(i,k,ixnumliq) = rncr_l(i,k)
-          ptend_loc%q(i,k,ixnumice) = rncr_i(i,k)
-          ptend_loc%s(i,k)          = 0._r8
-          det_ice(i)  = det_ice(i) - ptend_loc%q(i,k,ixcldice)*state_loc%pdel(i,k)/gravit
-          dlf_T(i,k)  = ptend_loc%s(i,k)/cpair
-          dlf_qv(i,k) = 0._r8
-          dlf_ql(i,k) = ptend_loc%q(i,k,ixcldliq)
-          dlf_qi(i,k) = ptend_loc%q(i,k,ixcldice)
-          dlf_nl(i,k) = ptend_loc%q(i,k,ixnumliq)
-          dlf_ni(i,k) = ptend_loc%q(i,k,ixnumice)
-          ptend_loc%q(i,k,ixcldliq) = 0._r8
-          ptend_loc%q(i,k,ixcldice) = 0._r8
-          ptend_loc%q(i,k,ixnumliq) = 0._r8
-          ptend_loc%q(i,k,ixnumice) = 0._r8
-          ptend_loc%s(i,k)          = 0._r8
-          dpdlfliq(i,k)             = 0._r8
-          dpdlfice(i,k)             = 0._r8
-          shdlfliq(i,k)             = 0._r8
-          shdlfice(i,k)             = 0._r8
-          dpdlft  (i,k)             = 0._r8
-          shdlft  (i,k)             = 0._r8
-       end do
-       end do
-
-   else
-
-   ! -------------------------- !
-   ! THE OTHER CONVECTION CASES !
-   ! -------------------------- !
 
    do k = top_lev, pver
    do i = 1, state_loc%ncol
@@ -864,10 +740,7 @@ end subroutine macrop_driver_readnl
    end do
    end do
 
-   endif
-
    ! ------------------------ !
-   ! END OF CONVECTION CHOICE !
    ! ------------------------ !
 
    call outfld( 'DPDLFLIQ ', dpdlfliq, pcols, lchnk )
@@ -957,17 +830,6 @@ end subroutine macrop_driver_readnl
    ! ----------------------------------------------------------------------------- ! 
 
    concld_old(:ncol,top_lev:pver) = concld(:ncol,top_lev:pver)
-
-! JHYoon:  Sungsu added below for use in the cloud macrophysics
-! May.06.2015. Ideally, this should be used only for UNICON block.
-
-   nullify(tke, qtl_flx, qti_flx, cmfr_det, qlr_det, qir_det)
-   if (tke_idx      > 0) call pbuf_get_field(pbuf, tke_idx, tke)
-   if (qtl_flx_idx  > 0) call pbuf_get_field(pbuf, qtl_flx_idx,  qtl_flx)
-   if (qti_flx_idx  > 0) call pbuf_get_field(pbuf, qti_flx_idx,  qti_flx)
-   if (cmfr_det_idx > 0) call pbuf_get_field(pbuf, cmfr_det_idx, cmfr_det)
-   if (qlr_det_idx  > 0) call pbuf_get_field(pbuf, qlr_det_idx,  qlr_det)
-   if (qir_det_idx  > 0) call pbuf_get_field(pbuf, qir_det_idx,  qir_det)
 
    clrw_old(:ncol,:top_lev-1) = 0._r8
    clri_old(:ncol,:top_lev-1) = 0._r8
@@ -1109,8 +971,7 @@ end subroutine macrop_driver_readnl
                       ttend, qtend, lmitend, itend, nltend, nitend,              &
                       CC_T, CC_qv, CC_ql, CC_qi, CC_nl, CC_ni, CC_qlst,          & 
                       dlf_T, dlf_qv, dlf_ql, dlf_qi, dlf_nl, dlf_ni,             &
-                      concld_old, concld, clrw_old, clri_old, landfrac, snowh,   &
-                      tke, qtl_flx, qti_flx, cmfr_det, qlr_det, qir_det,         &
+                      concld_old, concld, landfrac, snowh,                       &
                       tlat, qvlat, qcten, qiten, ncten, niten,                   &
                       cmeliq, qvadj, qladj, qiadj, qllim, qilim,                 &
                       cld, alst, aist, qlst, qist, adet, do_cldice ) 
@@ -1130,17 +991,6 @@ end subroutine macrop_driver_readnl
  ! Compute net stratus fraction using maximum over-lapping assumption
    ast(:ncol,:top_lev-1) = 0._r8
    ast(:ncol,top_lev:pver) = max( alst(:ncol,top_lev:pver), aist(:ncol,top_lev:pver) )
-
-   if (shallow_scheme .eq. 'UNICON') then
-       if( i_adet .eq. 0 ) then
-         ! Below is maximum overlap.
-           ast(:ncol,top_lev:pver) = max( ast(:ncol,top_lev:pver), adet(:ncol,top_lev:pver) )
-       else
-         ! Below is separately added.
-           ast(:ncol,top_lev:pver) = ast(:ncol,top_lev:pver) + adet(:ncol,top_lev:pver)
-           ast(:ncol,top_lev:pver) = max( 0._r8, min( ast(:ncol,top_lev:pver), 1._r8 - concld(:ncol,top_lev:pver) ) )
-       endif
-   endif
 
    call t_stopf('mmacro_pcond')
 

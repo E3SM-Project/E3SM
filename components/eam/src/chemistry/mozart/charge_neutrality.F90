@@ -122,34 +122,34 @@
 ! assume that mbar = mwdry
       mbar(:,:) = mwdry
 
-      call cnst_get_ind( 'e', elec_ndx, abort=.false. )
+      call cnst_get_ind( 'e', elec_ndx, abrtf=.false. )
       if( elec_ndx > 0 ) then
 	 wrk(:,:) = 0._r8
-         call cnst_get_ind( 'Np', n, abort=.false. )
+         call cnst_get_ind( 'Np', n, abrtf=.false. )
          if( n > 0 ) then
 	    do k = 1,pver
 	      wrk(:,k) = wrk(:,k) + mbar(:ncol,k) * q(:ncol,k,n) / cnst_mw(n)
 	    end do
          end if
-         call cnst_get_ind( 'N2p', n, abort=.false. )
+         call cnst_get_ind( 'N2p', n, abrtf=.false. )
          if( n > 0 ) then
 	    do k = 1,pver
 	      wrk(:,k) = wrk(:,k) + mbar(:ncol,k) * q(:ncol,k,n) / cnst_mw(n)
 	    end do
          end if
-         call cnst_get_ind( 'Op', n, abort=.false. )
+         call cnst_get_ind( 'Op', n, abrtf=.false. )
          if( n > 0 ) then
 	    do k = 1,pver
               wrk(:,k) = wrk(:,k) + mbar(:ncol,k) * q(:ncol,k,n) / cnst_mw(n)
 	    end do
          end if
-         call cnst_get_ind( 'O2p', n, abort=.false. )
+         call cnst_get_ind( 'O2p', n, abrtf=.false. )
          if( n > 0 ) then
 	    do k = 1,pver
               wrk(:,k) = wrk(:,k) + mbar(:ncol,k) * q(:ncol,k,n) / cnst_mw(n)
 	    end do
          end if
-         call cnst_get_ind( 'NOp', n, abort=.false. )
+         call cnst_get_ind( 'NOp', n, abrtf=.false. )
          if( n > 0 ) then
 	    do k = 1,pver
               wrk(:,k) = wrk(:,k) + mbar(:ncol,k) * q(:ncol,k,n) / cnst_mw(n)

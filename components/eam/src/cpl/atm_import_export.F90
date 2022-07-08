@@ -67,6 +67,11 @@ contains
              cam_in(c)%cflx(i,1) = -x2a(index_x2a_Faxx_evap,ig)                
              cam_in(c)%lhf(i)    = -x2a(index_x2a_Faxx_lat, ig)     
           endif
+
+          if (index_x2a_Faoo_h2otemp /= 0) then
+             cam_in(c)%h2otemp(i) = -x2a(index_x2a_Faoo_h2otemp,ig)
+          end if
+           
           cam_in(c)%wsx(i)    = -x2a(index_x2a_Faxx_taux,ig)     
           cam_in(c)%wsy(i)    = -x2a(index_x2a_Faxx_tauy,ig)     
           cam_in(c)%lwup(i)      = -x2a(index_x2a_Faxx_lwup,ig)    
@@ -83,7 +88,7 @@ contains
           cam_in(c)%u10(i)       =  x2a(index_x2a_Sx_u10,   ig)
           cam_in(c)%icefrac(i)   =  x2a(index_x2a_Sf_ifrac, ig)  
           cam_in(c)%ocnfrac(i)   =  x2a(index_x2a_Sf_ofrac, ig)
-	  cam_in(c)%landfrac(i)  =  x2a(index_x2a_Sf_lfrac, ig)
+          cam_in(c)%landfrac(i)  =  x2a(index_x2a_Sf_lfrac, ig)
           if ( associated(cam_in(c)%ram1) ) &
                cam_in(c)%ram1(i) =  x2a(index_x2a_Sl_ram1 , ig)
           if ( associated(cam_in(c)%fv) ) &
@@ -155,16 +160,31 @@ contains
                 cam_in(c)%cflx(i,c_i(1)) = cam_in(c)%fco2_ocn(i)
              else if (co2_readFlux_ocn) then 
                 ! convert from molesCO2/m2/s to kgCO2/m2/s
+! The below section involves a temporary workaround for fluxes from data (read in from a file)
+! There is an issue with infld that does not allow time-varying 2D files to be read correctly.
+! The work around involves adding a singleton 3rd dimension offline and reading the files as 
+! 3D fields.  Once this issue is corrected, the old implementation can be reinstated.
+! This is the case for both data_flux_ocn and data_flux_fuel
+!++BEH  vvv old implementation vvv
+!                cam_in(c)%cflx(i,c_i(1)) = &
+!                     -data_flux_ocn%co2flx(i,c)*(1._r8- cam_in(c)%landfrac(i)) &
+!                     *mwco2*1.0e-3_r8
+!       ^^^ old implementation ^^^   ///    vvv new implementation vvv
                 cam_in(c)%cflx(i,c_i(1)) = &
-                     -data_flux_ocn%co2flx(i,c)*(1._r8- cam_in(c)%landfrac(i)) &
+                     -data_flux_ocn%co2flx(i,1,c)*(1._r8- cam_in(c)%landfrac(i)) &
                      *mwco2*1.0e-3_r8
+!--BEH  ^^^ new implementation ^^^
              else
                 cam_in(c)%cflx(i,c_i(1)) = 0._r8
              end if
              
              ! co2 flux from fossil fuel
              if (co2_readFlux_fuel) then
-                cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,c)
+!++BEH  vvv old implementation vvv
+!                cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,c)
+!       ^^^ old implementation ^^^   ///    vvv new implementation vvv
+                cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,1,c)
+!--BEH  ^^^ new implementation ^^^
              else
                 cam_in(c)%cflx(i,c_i(2)) = 0._r8
              end if
@@ -209,6 +229,7 @@ contains
     use phys_grid , only: get_ncols_p
     use ppgrid    , only: begchunk, endchunk       
     use cam_cpl_indices
+    use phys_control, only: phys_getopts
     !
     ! Arguments
     !
@@ -220,7 +241,11 @@ contains
     integer :: avsize, avnat
     integer :: i,m,c,n,ig       ! indices
     integer :: ncols            ! Number of columns
+    logical :: linearize_pbl_winds, export_gustiness
     !-----------------------------------------------------------------------
+
+    call phys_getopts(linearize_pbl_winds_out=linearize_pbl_winds, &
+                      export_gustiness_out=export_gustiness)
 
     ! Copy from component arrays into chunk array data structure
     ! Rearrange data from chunk structure into lat-lon buffer and subsequently
@@ -233,7 +258,14 @@ contains
           a2x(index_a2x_Sa_pslv   ,ig) = cam_out(c)%psl(i)
           a2x(index_a2x_Sa_z      ,ig) = cam_out(c)%zbot(i)   
           a2x(index_a2x_Sa_u      ,ig) = cam_out(c)%ubot(i)   
-          a2x(index_a2x_Sa_v      ,ig) = cam_out(c)%vbot(i)   
+          a2x(index_a2x_Sa_v      ,ig) = cam_out(c)%vbot(i)
+          if (linearize_pbl_winds) then
+             a2x(index_a2x_Sa_wsresp ,ig) = cam_out(c)%wsresp(i)
+             a2x(index_a2x_Sa_tau_est,ig) = cam_out(c)%tau_est(i)
+          end if
+          if (export_gustiness) then
+             a2x(index_a2x_Sa_ugust  ,ig) = cam_out(c)%ugust(i)
+          end if
           a2x(index_a2x_Sa_tbot   ,ig) = cam_out(c)%tbot(i)   
           a2x(index_a2x_Sa_ptem   ,ig) = cam_out(c)%thbot(i)  
           a2x(index_a2x_Sa_pbot   ,ig) = cam_out(c)%pbot(i)   

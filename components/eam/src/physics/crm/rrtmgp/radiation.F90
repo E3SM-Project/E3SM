@@ -371,9 +371,6 @@ contains
             radiation_do = nstep == 0 .or. iradlw == 1                     &
                           .or. (mod(nstep-1,iradlw) == 0 .and. nstep /= 1) &
                           .or. nstep <= irad_always
-         case ('aeres') ! write absorptivity/emissivity to restart file this timestep?
-            ! for RRTMG there is no abs/ems restart file
-            radiation_do = .false.
          case default
             call endrun('radiation_do: unknown operation:'//op)
       end select
@@ -1507,16 +1504,10 @@ contains
                if (do_aerosol_rad) then
                   if (radiation_do('sw')) then
                      call t_startf('rad_aerosol_optics_sw')
-                     if(present(clear_rh)) then
-                        call set_aerosol_optics_sw( &
-                             icall, dt, state, pbuf, night_indices(1:nnight), is_cmip6_volc, &
-                             aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw,  &
-                             clear_rh=clear_rh)
-                     else
-                        call set_aerosol_optics_sw( &
-                             icall, dt, state, pbuf, night_indices(1:nnight), is_cmip6_volc, &
-                             aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw)
-                     endif
+                     call set_aerosol_optics_sw( &
+                          icall, dt, state, pbuf, night_indices(1:nnight), is_cmip6_volc, &
+                          aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw,  &
+                          clear_rh=clear_rh)
                      ! Now reorder bands to be consistent with RRTMGP
                      ! TODO: fix the input files themselves!
                      do icol = 1,size(aer_tau_bnd_sw,1)
@@ -1538,6 +1529,14 @@ contains
                      call t_stopf('rad_aerosol_optics_lw')
                   end if ! radiation_do('lw')
                end if ! do_aerosol_rad
+
+               ! make sure water path variables are zeroed out
+               do ilay = 1, pver
+                  do ic = 1,ncol
+                     iclwp(ic,ilay) = 0_r8
+                     iciwp(ic,ilay) = 0_r8
+                  end do
+               end do
 
                ! Loop over CRM columns; call routines designed to work with
                ! pbuf/state over ncol columns for each CRM column index, and pack

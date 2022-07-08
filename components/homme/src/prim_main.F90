@@ -145,7 +145,13 @@ program prim_main
 
   ! this should really be called from test_mod.F90, but it has be be called outside
   ! the threaded region
-  if (infilenames(1)/='') call pio_read_phis(elem,hybrid%par)
+  if (infilenames(1)/='') then
+     if (index(infilenames(1),"np4pg")==0) then
+        call pio_read_phis(elem,hybrid%par,"PHIS")
+     else
+        call pio_read_phis(elem,hybrid%par,"PHIS_d")
+     endif
+  endif
 
   if(par%masterproc) print *,"Primitive Equation Initialization..."
 #if (defined HORIZ_OPENMP)

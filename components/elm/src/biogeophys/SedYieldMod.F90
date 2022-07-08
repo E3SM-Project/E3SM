@@ -2,8 +2,8 @@ module SedYieldMod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
-  ! Calculate the sediment flux caused by soil erosion based on the 
-  ! improved Morgan model (Tan et al., 2017 & 2018) 
+  ! Calculate the sediment flux caused by soil erosion based on the
+  ! improved Morgan model (Tan et al., 2017 & 2018)
   !
   use shr_const_mod     , only : T0 => SHR_CONST_TKFRZ
   use shr_kind_mod      , only : r8 => shr_kind_r8
@@ -18,16 +18,15 @@ module SedYieldMod
   use EnergyFluxType    , only : energyflux_type
   use SoilHydrologyType , only : soilhydrology_type
   use SoilStateType     , only : soilstate_type
-  use WaterfluxType     , only : waterflux_type
-  use WaterStateType    , only : waterstate_type
-  use TemperatureType   , only : temperature_type
   use ColumnType        , only : col_pp
   use LandunitType      , only : lun_pp
   use VegetationType    , only : veg_pp
-  use SedFluxType       , only : sedflux_type 
+  use SedFluxType       , only : sedflux_type
   use TopounitDataType  , only : top_as, top_af ! Atmospheric state and flux variables
   use ColumnDataType    , only : col_ws, col_wf
   use VegetationDataType, only : veg_wf
+
+  use timeinfoMod
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -43,19 +42,16 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine SoilErosion (bounds, num_soilc, filter_soilc, &
-    atm2lnd_vars, canopystate_vars, soilstate_vars, waterstate_vars, &
-    waterflux_vars, sedflux_vars)
+    atm2lnd_vars, canopystate_vars, soilstate_vars, sedflux_vars)
     !
     ! !DESCRIPTION:
-    ! Calculate rainfall and runoff driven erosion 
+    ! Calculate rainfall and runoff driven erosion
     !
     ! !USES:
-    use clm_time_manager, only : get_step_size
     use elm_varctl      , only : iulog
     use landunit_varcon , only : istcrop, istsoil
     use pftvarcon       , only : gcpsi, pftcc
     use pftvarcon       , only : nc4_grass
-    use spmdMod         , only : masterproc
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -64,8 +60,6 @@ contains
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
     type(CanopyState_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
-    type(waterstate_type)    , intent(in)    :: waterstate_vars
-    type(waterflux_type)     , intent(in)    :: waterflux_vars
     type(sedflux_type)       , intent(inout) :: sedflux_vars
     !
     ! !LOCAL VARIABLES:
@@ -77,7 +71,7 @@ contains
     real(r8) :: fungrvl                                    ! ground uncovered by gravel
     real(r8) :: K, COH                                     ! soil erodibility
     real(r8) :: Qs, Ptot, Ie, Dl                           ! water fluxes
-    real(r8) :: Tc, Es_Q, Es_P, KE_DT, KE_LD               ! temporaries 
+    real(r8) :: Tc, Es_Q, Es_P, KE_DT, KE_LD               ! temporaries
     real(r8) :: Es_Qcrp, Es_Pcrp                           ! cropland temporaries
     real(r8) :: stxt(4)                                    ! soil texture including gravel
     character(len=32) :: subname = 'SoilErosion'           ! subroutine name
@@ -85,14 +79,14 @@ contains
 
     associate(                                                        &
          forc_rain        =>    top_af%rain                         , & ! Input: [real(r8) (:) ] rain rate [mm/s]
-         forc_t           =>    top_as%tbot                         , & ! Input: [real(r8) (:) ] atmospheric temperature (Kelvin) 
+         forc_t           =>    top_as%tbot                         , & ! Input: [real(r8) (:) ] atmospheric temperature (Kelvin)
 
          tlai             =>    canopystate_vars%tlai_patch         , & ! Input: [real(r8) (:) ] LAI
          hbot             =>    canopystate_vars%hbot_patch         , & ! Input: [real(r8) (:) ] canopy bottom (m)
-         htop             =>    canopystate_vars%htop_patch         , & ! Input: [real(r8) (:) ] canopy top (m) 
+         htop             =>    canopystate_vars%htop_patch         , & ! Input: [real(r8) (:) ] canopy top (m)
 
          hslp_p10         =>    col_pp%hslp_p10                     , & ! Input: [real(r8) (:,:) ] hillslope gradient percentiles
-    
+
          bd               =>    soilstate_vars%bd_col               , & ! Input: [real(r8) (:,:) ] soil bulk density (kg/m3)
          fsand            =>    soilstate_vars%cellsand_col         , & ! Input: [real(r8) (:,:) ] sand percentage
          fclay            =>    soilstate_vars%cellclay_col         , & ! Input: [real(r8) (:,:) ] clay percentage
@@ -102,7 +96,7 @@ contains
 
          pfactor          =>    sedflux_vars%pfactor_col            , & ! Input: [real(r8) (:) ] rainfall-driven erosion scaling factor
          qfactor          =>    sedflux_vars%qfactor_col            , & ! Input: [real(r8) (:) ] runoff-driven erosion scaling factor
-         tfactor          =>    sedflux_vars%tfactor_col            , & ! Input: [real(r8) (:) ] transport capacity scaling factor 
+         tfactor          =>    sedflux_vars%tfactor_col            , & ! Input: [real(r8) (:) ] transport capacity scaling factor
 
          qflx_surf        =>    col_wf%qflx_surf                    , & ! Input: [real(r8) (:) ] surface runoff (mm/s)
          qflx_dirct_rain  =>    veg_wf%qflx_dirct_rain              , & ! Input: [real(r8) (:) ] direct throughfall rain (mm/s)
@@ -116,7 +110,7 @@ contains
          )
 
          ! Get time step
-         dtime = get_step_size()
+         dtime = dtime_mod
 
          ! nolakec or other col filters
          do fc = 1, num_soilc
@@ -140,7 +134,7 @@ contains
 
             ! soil detachment by rainfall
             stxt = (/fclay(c,1), 100._r8-fclay(c,1)-fsand(c,1), fsand(c,1), &
-                fgrvl(c,1)/)  
+                fgrvl(c,1)/)
             K = SoilDetachability(stxt)
             COH = SoilCohesion(stxt)
             Es_P = 0._r8    ! detachment by throughfall + leap drip
@@ -161,7 +155,7 @@ contains
                      ! For crop veg types
                      if( veg_pp%itype(p) > nc4_grass )then
                         Es_Pcrp = Es_Pcrp + pfactor(c) * veg_pp%wtcol(p) * K * (KE_DT+KE_LD)
-                     end if 
+                     end if
                   end if
                end do
             end if
@@ -182,7 +176,7 @@ contains
                   vegcc = vegcc + veg_pp%wtcol(p) * pftcc(veg_pp%itype(p))
                end if
             end do
-            
+
             Es_Q = 0._r8
             Es_Qcrp = 0._r8
             Tc = 0._r8
@@ -207,11 +201,11 @@ contains
             ! assign flux values
             flx_p_ero(c) = flx_p_ero(c) + Es_P
             flx_q_ero(c) = flx_q_ero(c) + Es_Q
-            flx_sed_ero(c) = flx_sed_ero(c) + Es_P + Es_Q 
+            flx_sed_ero(c) = flx_sed_ero(c) + Es_P + Es_Q
             flx_sed_crop_ero(c) = flx_sed_crop_ero(c) + Es_Pcrp + Es_Qcrp
             flx_sed_yld(c) = flx_sed_yld(c) + min(Es_P+Es_Q, Tc)
          end do
-    
+
     end associate
 
   end subroutine SoilErosion
@@ -220,18 +214,18 @@ contains
   character(len=32) function SoilTextureType(stxt)
     !
     ! !DESCRIPTION:
-    ! soil texture 
+    ! soil texture
     !
     ! !ARGUMENTS:
     implicit none
     real(r8), intent(in) :: stxt(4)  ! [clay, silt, sand, gravel] in percentage
     !
     ! !LOCAL VARIABLES:
-    real(r8) :: clay, silt, sand, tsum 
+    real(r8) :: clay, silt, sand, tsum
     !------------------------------------------------------------------------------
 
     tsum = sum(stxt(1:3))
-    clay = stxt(1) / tsum 
+    clay = stxt(1) / tsum
     silt = stxt(2) / tsum
     sand = stxt(3) / tsum
     if ( silt + 1.5_r8*clay < 15._r8 ) then
@@ -241,7 +235,7 @@ contains
     else if ( ((clay>=7._r8 .and. clay<20._r8) .and. sand>52._r8) .or. &
             (clay<7._r8 .and. silt<50._r8) ) then
        SoilTextureType = 'sandy loam'
-    else if ( (clay>=7._r8 .and. clay<27._r8) .and. & 
+    else if ( (clay>=7._r8 .and. clay<27._r8) .and. &
             (silt>=28._r8 .and. silt<50._r8) .and. sand<=52._r8 ) then
        SoilTextureType = 'loam'
     else if ( (silt>=50._r8 .and. (clay>=12._r8 .and. clay<27._r8)) .or. &
@@ -280,13 +274,13 @@ contains
     !
     ! !ARGUMENTS:
     implicit none
-    real(r8), intent(in) :: stxt(4)  ! [clay, silt, sand, gravel] in fraction 
+    real(r8), intent(in) :: stxt(4)  ! [clay, silt, sand, gravel] in fraction
     !
     ! !LOCAL VARIABLES:
     character(len=32) :: txttype
     !------------------------------------------------------------------------------
 
-    txttype = SoilTextureType(stxt) 
+    txttype = SoilTextureType(stxt)
     if (trim(txttype)=='clay') then
        SoilDetachability = 0.05_r8
     else if (trim(txttype)=='silty clay') then
@@ -313,7 +307,7 @@ contains
        SoilDetachability = 1.9_r8
     else
        call endrun(msg=' ERROR: no soil texture type is found.'//&
-            errMsg(__FILE__, __LINE__)) 
+            errMsg(__FILE__, __LINE__))
     end if
 
   end function SoilDetachability
@@ -328,7 +322,7 @@ contains
     !
     ! !ARGUMENTS:
     implicit none
-    real(r8), intent(in) :: stxt(4)  ! [clay, silt, sand, gravel] in fraction 
+    real(r8), intent(in) :: stxt(4)  ! [clay, silt, sand, gravel] in fraction
     !
     ! !LOCAL VARIABLES:
     character(len=32) :: txttype

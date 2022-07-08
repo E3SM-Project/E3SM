@@ -28,6 +28,7 @@ module mo_neu_wetdep
   integer                     :: index_cldice,index_cldliq,nh3_ndx,co2_ndx
   logical                     :: debug   = .false.
   integer                     :: hno3_ndx = 0
+  integer                     :: uci1_ndx
 !
 ! diagnostics
 !
@@ -51,6 +52,7 @@ subroutine neu_wetdep_init
   use constituents, only : cnst_get_ind,cnst_mw
   use cam_history,  only : addfld, add_default, horiz_only
   use ppgrid,       only : pver
+  use mo_chem_utls, only : get_rxt_ndx
 !
   integer :: m,l
   character*20 :: test_name
@@ -58,6 +60,8 @@ subroutine neu_wetdep_init
   do_neu_wetdep = gas_wetdep_method == 'NEU' .and. gas_wetdep_cnt>0
 
   if (.not.do_neu_wetdep) return
+
+  uci1_ndx = get_rxt_ndx('uci1')
 
   allocate( mapping_to_heff(gas_wetdep_cnt) )
   allocate( mapping_to_mmr(gas_wetdep_cnt) )
@@ -145,7 +149,7 @@ subroutine neu_wetdep_init
   mapping_to_mmr = -99
   do m=1,gas_wetdep_cnt
     if ( debug .and. masterproc ) write(iulog, '(i4,a)') m,trim(gas_wetdep_list(m))
-    call cnst_get_ind(gas_wetdep_list(m), mapping_to_mmr(m), abort=.false. )
+    call cnst_get_ind(gas_wetdep_list(m), mapping_to_mmr(m), abrtf=.false. )
     if ( debug .and. masterproc ) write(iulog, '(a,i4)') 'mapping_to_mmr ',mapping_to_mmr(m)
     if ( mapping_to_mmr(m) <= 0 ) then
       if (masterproc) write(iulog,*) 'problem with mapping_to_mmr of ',gas_wetdep_list(m)
@@ -176,9 +180,17 @@ subroutine neu_wetdep_init
   do m=1,gas_wetdep_cnt
     call addfld     ('DTWR_'//trim(gas_wetdep_list(m)),(/ 'lev' /), 'A','kg/kg/s','wet removal Neu scheme tendency')
     call addfld     ('WD_'//trim(gas_wetdep_list(m)),horiz_only, 'A','kg/m2/s','vertical integrated wet deposition flux')
+    call addfld     ('WD_L1_'//trim(gas_wetdep_list(m)),horiz_only, 'A','kg/m2/s','vertical integrated wet deposition flux for L1')
+    call addfld     ('WD_L2_'//trim(gas_wetdep_list(m)),horiz_only, 'A','kg/m2/s','vertical integrated wet deposition flux for L2')
+    call addfld     ('WD_L3_'//trim(gas_wetdep_list(m)),horiz_only, 'A','kg/m2/s','vertical integrated wet deposition flux for L3')
+    call addfld     ('WD_L4_'//trim(gas_wetdep_list(m)),horiz_only, 'A','kg/m2/s','vertical integrated wet deposition flux for L4')
     call addfld     ('HEFF_'//trim(gas_wetdep_list(m)),(/ 'lev' /), 'A','M/atm','Effective Henrys Law coeff.')
     call add_default('DTWR_'//trim(gas_wetdep_list(m)), 1, ' ')
     call add_default('WD_'//trim(gas_wetdep_list(m)), 1, ' ')
+    call add_default('WD_L1_'//trim(gas_wetdep_list(m)), 1, ' ')
+    call add_default('WD_L2_'//trim(gas_wetdep_list(m)), 1, ' ')
+    call add_default('WD_L3_'//trim(gas_wetdep_list(m)), 1, ' ')
+    call add_default('WD_L4_'//trim(gas_wetdep_list(m)), 1, ' ')
   end do
 !
   if ( do_diag ) then
@@ -196,8 +208,10 @@ subroutine neu_wetdep_init
 !
 end subroutine neu_wetdep_init
 !
-subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdel,zint,tfld,delt, &
-     prain, nevapr, cld, cmfdqr, wd_tend)
+subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdeldry,zint,tfld,delt, &
+     prain, nevapr, cld, cmfdqr, wd_tend, history_gaschmbudget_2D_levels, &
+     gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e, gaschmbudget_2D_L2_s, gaschmbudget_2D_L2_e, &
+     gaschmbudget_2D_L3_s, gaschmbudget_2D_L3_e, gaschmbudget_2D_L4_s, gaschmbudget_2D_L4_e )
 !
   use ppgrid,           only : pcols, pver
 
@@ -208,9 +222,9 @@ subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdel,zint,tfld,delt, &
   implicit none
 !
   integer,        intent(in)    :: lchnk,ncol
-  real(r8),       intent(in)    :: mmr(pcols,pver,pcnst)    ! mass mixing ratio (kg/kg)
+  real(r8),       intent(inout) :: mmr(pcols,pver,pcnst)    ! mass mixing ratio (kg/kg)
   real(r8),       intent(in)    :: pmid(pcols,pver)         ! midpoint pressures (Pa)
-  real(r8),       intent(in)    :: pdel(pcols,pver)         ! pressure delta about midpoints (Pa)
+  real(r8),       intent(in)    :: pdeldry(pcols,pver)      ! dry air pressure delta about midpoints (Pa)
   real(r8),       intent(in)    :: zint(pcols,pver+1)       ! interface geopotential height above the surface (m)
   real(r8),       intent(in)    :: tfld(pcols,pver)         ! midpoint temperature (K)
   real(r8),       intent(in)    :: delt                     ! timestep (s)
@@ -220,6 +234,16 @@ subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdel,zint,tfld,delt, &
   real(r8),       intent(in)    :: cld(ncol, pver)
   real(r8),       intent(in)    :: cmfdqr(ncol, pver)
   real(r8),       intent(inout) :: wd_tend(pcols,pver,pcnst)
+
+  logical, optional, intent(in) :: history_gaschmbudget_2D_levels
+  integer, optional, intent(in) :: gaschmbudget_2D_L1_s
+  integer, optional, intent(in) :: gaschmbudget_2D_L1_e
+  integer, optional, intent(in) :: gaschmbudget_2D_L2_s
+  integer, optional, intent(in) :: gaschmbudget_2D_L2_e
+  integer, optional, intent(in) :: gaschmbudget_2D_L3_s
+  integer, optional, intent(in) :: gaschmbudget_2D_L3_e
+  integer, optional, intent(in) :: gaschmbudget_2D_L4_s
+  integer, optional, intent(in) :: gaschmbudget_2D_L4_e 
 !
 ! local arrays and variables
 !
@@ -271,7 +295,7 @@ subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdel,zint,tfld,delt, &
     kk = pver - k + 1
     do i=1,ncol
 !
-      mass_in_layer(i,k) = area(i) * pdel(i,kk)/gravit          ! kg
+      mass_in_layer(i,k) = area(i) * pdeldry(i,kk)/gravit       ! kg
 !
       cldice (i,k) = mmr(i,kk,index_cldice)                     ! kg/kg
       cldliq (i,k) = mmr(i,kk,index_cldliq)                     ! kg/kg
@@ -419,6 +443,43 @@ subroutine neu_wetdep_tend(lchnk,ncol,mmr,pmid,pdel,zint,tfld,delt, &
       wk_out(1:ncol) = wk_out(1:ncol) + (dtwr(1:ncol,k,m) * mass_in_layer(1:ncol,kk)/area(1:ncol))
     end do
     call outfld( 'WD_'//trim(gas_wetdep_list(m)),wk_out,ncol,lchnk )
+
+    if (history_gaschmbudget_2D_levels) then 
+      wk_out = 0._r8
+      do k = gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e
+        kk = pver - k + 1
+        wk_out(1:ncol) = wk_out(1:ncol) + (dtwr(1:ncol,k,m) * mass_in_layer(1:ncol,kk)/area(1:ncol))
+      end do
+      call outfld( 'WD_L1_'//trim(gas_wetdep_list(m)),wk_out,ncol,lchnk )
+
+      wk_out = 0._r8
+      do k = gaschmbudget_2D_L2_s, gaschmbudget_2D_L2_e
+        kk = pver - k + 1
+        wk_out(1:ncol) = wk_out(1:ncol) + (dtwr(1:ncol,k,m) * mass_in_layer(1:ncol,kk)/area(1:ncol))
+      end do
+      call outfld( 'WD_L2_'//trim(gas_wetdep_list(m)),wk_out,ncol,lchnk )
+
+      wk_out = 0._r8
+      do k = gaschmbudget_2D_L3_s, gaschmbudget_2D_L3_e
+        kk = pver - k + 1
+        wk_out(1:ncol) = wk_out(1:ncol) + (dtwr(1:ncol,k,m) * mass_in_layer(1:ncol,kk)/area(1:ncol))
+      end do
+      call outfld( 'WD_L3_'//trim(gas_wetdep_list(m)),wk_out,ncol,lchnk )
+
+      wk_out = 0._r8
+      do k = gaschmbudget_2D_L4_s, gaschmbudget_2D_L4_e
+        kk = pver - k + 1
+        wk_out(1:ncol) = wk_out(1:ncol) + (dtwr(1:ncol,k,m) * mass_in_layer(1:ncol,kk)/area(1:ncol))
+      end do
+      call outfld( 'WD_L4_'//trim(gas_wetdep_list(m)),wk_out,ncol,lchnk )
+    end if !history_gaschmbudget_2D_levels
+    
+    ! if chemUCI is used, apply wet deposition flux here
+    if (uci1_ndx <= 0) then
+      wd_tend(1:ncol,:,mapping_to_mmr(m)) = wd_tend(1:ncol,:,mapping_to_mmr(m)) + dtwr(1:ncol,:,m)
+    else
+      mmr(1:ncol,:,mapping_to_mmr(m)) = mmr(1:ncol,:,mapping_to_mmr(m)) + dtwr(1:ncol,:,m)*delt
+    end if
   end do
 !
   if ( do_diag ) then

@@ -65,6 +65,10 @@ void periodic(int flag) {
         bound_exchange(micro_field,i,nzm,3,3,3,3, 4);
       }
     }
+#ifdef MMF_ESMT
+    bound_exchange(u_esmt, nzm, 3, 3, 3, 3, 4);
+    bound_exchange(v_esmt, nzm, 3, 3, 3, 3, 4);
+#endif
   }
 
   if (flag == 3) {
@@ -80,6 +84,10 @@ void periodic(int flag) {
           bound_exchange(micro_field,i,nzm,1,1,1,1, 4);
       }
     }
+#ifdef MMF_ESMT
+    bound_exchange(u_esmt, nzm, 1, 1, 1, 1, 4);
+    bound_exchange(v_esmt, nzm, 1, 1, 1, 1, 4);
+#endif
   }
 
   if (flag == 4) {

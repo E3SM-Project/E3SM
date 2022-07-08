@@ -59,7 +59,9 @@ logical,            public :: oldcldoptics = .false.
 ! Private module data
 
 ! max number of strings in mode definitions
-integer, parameter :: n_mode_str = 100    ! max number of strings in mode definitions
+! ++MW
+integer, parameter :: n_mode_str = 400    ! max number of strings in mode definitions
+! --MW
 
 ! max number of externally mixed entities in the climate/diag lists
 integer, parameter :: n_rad_cnst = N_RAD_CNST
@@ -217,7 +219,17 @@ character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
    'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
    's-organic', 'black-c  ', 'seasalt  ', 'dust     ', &
    'm-poly   ', 'm-prot   ', 'm-lip    ' /)
-#elif ( defined MODAL_AERO_4MODE_MOM || (defined MODAL_AERO_4MODE_SOA_MOM ))
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM) && ( defined MOSAIC_SPECIES ) )
+integer, parameter :: num_mode_types = 8
+integer, parameter :: num_spec_types = 12
+character(len=14), parameter :: mode_type_names(num_mode_types) = (/ &
+   'accum         ', 'aitken        ', 'primary_carbon', 'fine_seasalt  ', &
+   'fine_dust     ', 'coarse        ', 'coarse_seasalt', 'coarse_dust   '  /)
+character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
+   'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
+   's-organic', 'black-c  ', 'seasalt  ', 'dust     ', &
+   'm-organic', 'calcium  ', 'carbonate', 'chloride '/)
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM)
 integer, parameter :: num_mode_types = 8
 integer, parameter :: num_spec_types = 9
 character(len=14), parameter :: mode_type_names(num_mode_types) = (/ &
@@ -360,9 +372,6 @@ subroutine rad_cnst_readnl(nlfile)
    do i = 0, N_DIAG
       if (active_calls(i)) then
          if (i > 0) then
-            !Temporarily block radiation diagnostic calls until we place a fix for these calls
-            call endrun('Radiation diagnostic calls are temporarily not supported,' // &
-                 ' please remove rad_diag_* specifier(s) from the namelist '//errmsg(__FILE__,__LINE__))
             write(suffix, fmt = '(i2.2)') i
          else
             suffix='  '
@@ -1060,7 +1069,7 @@ integer function get_cam_idx(source, name, routine)
 
    else if (source(1:1) == 'A') then
 
-      call cnst_get_ind(trim(name), idx, abort=.false.)
+      call cnst_get_ind(trim(name), idx, abrtf=.false.)
       if (idx < 0) then
          call endrun(routine//' ERROR: cannot find constituent field '//trim(name))
       end if

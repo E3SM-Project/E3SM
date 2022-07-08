@@ -300,10 +300,10 @@ contains
                 end if
              end do
              if( map(i) == 0 ) then
-                write(iulog,*) 'fstrat_inti: ubc table species ',trim(ub_species_names(i)), ' not used'
+                if (masterproc) write(iulog,*) 'fstrat_inti: ubc table species ',trim(ub_species_names(i)), ' not used'
              end if
           else if( (trim(ub_species_names(i)) /= 'NOX') .and. (trim(ub_species_names(i)) /= 'H2O') ) then
-             write(iulog,*) 'fstrat_inti: ubc table species ',trim(ub_species_names(i)), ' not used'
+             if (masterproc) write(iulog,*) 'fstrat_inti: ubc table species ',trim(ub_species_names(i)), ' not used'
           end if
        end if
     end do table_loop
@@ -312,14 +312,14 @@ contains
        if ( any(fstrat_list(:) == 'NO') .or. any(fstrat_list(:) == 'NO2') ) then
           map(table_nox_ndx) = gas_pcnst + 1
        else
-          write(iulog,*) 'fstrat_inti: ubc table species ',trim(ub_species_names(table_nox_ndx)), ' not used'
+          if (masterproc) write(iulog,*) 'fstrat_inti: ubc table species ',trim(ub_species_names(table_nox_ndx)), ' not used'
        endif
     end if
     if( table_h2o_ndx > 0 ) then
        if ( h2o_ndx > 0 ) then
           map(table_h2o_ndx) = gas_pcnst + 2
        else
-          write(iulog,*) 'fstrat_inti: ubc table species ',trim(ub_species_names(table_h2o_ndx)), ' not used'
+          if (masterproc) write(iulog,*) 'fstrat_inti: ubc table species ',trim(ub_species_names(table_h2o_ndx)), ' not used'
        endif
     end if
 

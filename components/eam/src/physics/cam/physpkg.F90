@@ -29,7 +29,7 @@ module physpkg
 
   use cam_control_mod,  only: ideal_phys, adiabatic
   use phys_control,     only: phys_do_flux_avg, phys_getopts, waccmx_is
-  use zm_conv,          only: trigmem, do_zmconv_dcape_ull => trigdcape_ull, &
+  use zm_conv,          only: do_zmconv_dcape_ull => trigdcape_ull, &
                               do_zmconv_dcape_only => trig_dcape_only
   use scamMod,          only: single_column, scm_crm_mode
   use flux_avg,         only: flux_avg_init
@@ -44,6 +44,10 @@ module physpkg
                                     modal_aero_calcsize_reg
   use modal_aero_wateruptake, only: modal_aero_wateruptake_init, &
                                     modal_aero_wateruptake_reg
+  use chem_mods,    only : gas_pcnst
+  use mo_tracname,  only : solsym
+  use mo_chm_diags, only : aer_species
+  use mo_gas_phase_chemdr, only : gas_ac_name, gas_ac_name_2D
 
   implicit none
   private
@@ -69,6 +73,7 @@ module physpkg
   integer ::  prec_sh_idx        = 0
   integer ::  snow_sh_idx        = 0
   integer ::  rice2_idx          = 0
+  integer ::  gas_ac_idx         = 0
   integer :: species_class(pcnst)  = -1 !BSINGH: Moved from modal_aero_data.F90 as it is being used in second call to zm deep convection scheme (convect_deep_tend_2)
 
   save
@@ -96,6 +101,9 @@ module physpkg
   logical           :: pergro_test_active= .false.
   logical           :: pergro_mods = .false.
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
+  logical :: history_gaschmbudget ! output gas chemistry tracer concentrations and tendencies
+  logical :: history_gaschmbudget_2D ! output 2D gas chemistry tracer concentrations and tendencies
+  logical :: history_gaschmbudget_2D_levels ! output 2D gas chemistry tracer concentrations and tendencies within certain layers
 
   !======================================================================= 
 contains
@@ -154,6 +162,7 @@ subroutine phys_register
     use subcol,             only: subcol_register
     use subcol_utils,       only: is_subcol_on
     use output_aerocom_aie, only: output_aerocom_aie_register, do_aerocom_ind3
+    use mo_chm_diags,       only: chm_diags_inti_ac
 
     !---------------------------Local variables-----------------------------
     !
@@ -162,6 +171,7 @@ subroutine phys_register
     !-----------------------------------------------------------------------
 
     integer :: nmodes
+    character(len=16) :: spc_name
 
     call phys_getopts(shallow_scheme_out       = shallow_scheme, &
                       macrop_scheme_out        = macrop_scheme,   &
@@ -173,7 +183,11 @@ subroutine phys_register
                       state_debug_checks_out   = state_debug_checks, &
                       micro_do_icesupersat_out = micro_do_icesupersat, &
                       pergro_test_active_out   = pergro_test_active, &
-                      pergro_mods_out          = pergro_mods)
+                      pergro_mods_out          = pergro_mods, &
+                      history_gaschmbudget_out = history_gaschmbudget, &
+                   history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
+            history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels)
+
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
 
@@ -258,6 +272,26 @@ subroutine phys_register
 
        ! register chemical constituents including aerosols ...
        call chem_register(species_class)
+
+       ! NB: has to be after chem_register to use tracer names
+       ! Fields for gas chemistry tracers
+       if (history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
+         call chm_diags_inti_ac() ! to get aer_species
+         do m = 1,gas_pcnst
+            if (.not. any( aer_species == m )) then
+              spc_name = trim(solsym(m))
+              if (history_gaschmbudget .or. history_gaschmbudget_2D_levels) then
+                gas_ac_name(m) = 'ac_'//spc_name
+                call pbuf_add_field(gas_ac_name(m), 'global', dtype_r8, (/pcols,pver/), gas_ac_idx)
+              end if
+
+              if (history_gaschmbudget_2D) then
+                gas_ac_name_2D(m) = 'ac_2D_'//spc_name
+                call pbuf_add_field(gas_ac_name_2D(m), 'global', dtype_r8, (/pcols/), gas_ac_idx)
+              end if
+            end if
+         enddo
+       end if
 
        ! co2 constituents
        call co2_register()
@@ -804,7 +838,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call prescribed_ghg_init()
     call prescribed_aero_init()
     call aerodep_flx_init()
-    call aircraft_emit_init()
+    call aircraft_emit_init(phys_state,pbuf2d)
     !when is_cmip6_volc is true ,cmip6 style volcanic file is read
     !Initialized to .false. here but it gets its values from prescribed_volcaero_init
     is_cmip6_volc = .false. 
@@ -817,7 +851,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     ! co2 cycle            
     if (co2_transport()) then
-       call co2_init(phys_state, pbuf2d)
+       call co2_init()
     end if
 
     ! CAM3 prescribed ozone
@@ -883,10 +917,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     snow_dp_idx  = pbuf_get_index('SNOW_DP')
     prec_sh_idx  = pbuf_get_index('PREC_SH')
     snow_sh_idx  = pbuf_get_index('SNOW_SH')
-
-    if (shallow_scheme .eq. 'UNICON') then
-        rice2_idx    = pbuf_get_index('rice2')
-    endif
 
     call phys_getopts(prog_modal_aero_out=prog_modal_aero)
 
@@ -1416,9 +1446,9 @@ subroutine tphysac (ztodt,   cam_in,  &
     use clubb_intr,         only: clubb_surface
     use perf_mod
     use flux_avg,           only: flux_avg_run
-    use unicon_cam,         only: unicon_cam_org_diags
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
+    use co2_cycle,          only: co2_cycle_set_ptend
 
     implicit none
 
@@ -1483,6 +1513,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     real(r8), pointer, dimension(:,:) :: t_star   ! temperature
     real(r8), pointer, dimension(:,:) :: q_star   ! moisture
 
+    character(len=16)  :: deep_scheme             ! Default set in phys_control.F90
+
     ! Debug physics_state.
     logical :: state_debug_checks
 
@@ -1502,6 +1534,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     
     call phys_getopts( do_clubb_sgs_out       = do_clubb_sgs, &
                        state_debug_checks_out = state_debug_checks &
+                      ,deep_scheme_out        = deep_scheme        &
                       ,l_tracer_aero_out      = l_tracer_aero      &
                       ,l_vdiff_out            = l_vdiff            &
                       ,l_rayleigh_out         = l_rayleigh         &
@@ -1596,6 +1629,10 @@ if (l_tracer_aero) then
     call physics_update(state, ptend, ztodt, tend)
     call check_tracers_chng(state, tracerint, "aoa_tracers_timestep_tend", nstep, ztodt,   &
          cam_in%cflx)
+    
+    ! add tendency from aircraft emissions
+    call co2_cycle_set_ptend(state, pbuf, ptend)
+    call physics_update(state, ptend, ztodt, tend)
 
     ! Chemistry calculation
     if (chem_is_active()) then
@@ -1738,23 +1775,6 @@ if (l_ac_energy_chk) then
 
     call pbuf_set_field(pbuf, teout_idx, state%te_cur, (/1,itim_old/),(/pcols,1/))       
 
-    if (shallow_scheme .eq. 'UNICON') then
-
-       ! ------------------------------------------------------------------------
-       ! Insert the organization-related heterogeneities computed inside the
-       ! UNICON into the tracer arrays here before performing advection.
-       ! This is necessary to prevent any modifications of organization-related
-       ! heterogeneities by non convection-advection process, such as
-       ! dry and wet deposition of aerosols, MAM, etc.
-       ! Again, note that only UNICON and advection schemes are allowed to
-       ! changes to organization at this stage, although we can include the
-       ! effects of other physical processes in future.
-       ! ------------------------------------------------------------------------
-
-       call unicon_cam_org_diags(state, pbuf)
-
-    end if
-
     tmp_t(:ncol,:pver) = state%t(:ncol,:pver)
 
     ! store dse after tphysac in buffer
@@ -1799,7 +1819,7 @@ end if ! l_ac_energy_chk
 
     ! DCAPE-ULL: record current state of T and q for computing dynamical tendencies
     !            the calculation follows the same format as in diag_phys_tend_writeout
-    if (do_zmconv_dcape_ull .or. do_zmconv_dcape_only) then
+    if (deep_scheme .eq. 'ZM' .and. (do_zmconv_dcape_ull .or. do_zmconv_dcape_only)) then
       ifld = pbuf_get_index('T_STAR')
       call pbuf_get_field(pbuf, ifld, t_star, (/1,1/),(/pcols,pver/))
       ifld = pbuf_get_index('Q_STAR')
@@ -1897,7 +1917,7 @@ subroutine tphysbc (ztodt,               &
     use clybry_fam,         only: clybry_fam_adj
     use clubb_intr,      only: clubb_tend_cam
     use sslt_rebin,      only: sslt_rebin_adv
-    use tropopause,      only: tropopause_output
+    use tropopause,      only: tropopause_output, tropopause_e90_3d_output
     use output_aerocom_aie, only: do_aerocom_ind3, cloud_top_aerocom
     use cam_abortutils,      only: endrun
     use subcol,          only: subcol_gen, subcol_ptend_avg
@@ -1967,11 +1987,6 @@ subroutine tphysbc (ztodt,               &
     integer itim_old, ifld
     real(r8), pointer, dimension(:,:) :: cld        ! cloud fraction
 
-!<songxl 2011-09-20----------------------------
-! physics buffer fields to compute tendencies for deep convection scheme
-    real(r8), pointer, dimension(:,:) :: tm1   ! intermediate T between n and n-1 time step
-    real(r8), pointer, dimension(:,:) :: qm1   ! intermediate q between n and n-1 time step
-!>songxl 2011-09-20----------------------------
     character(len=16)  :: deep_scheme      ! Default set in phys_control.F90
 
     ! physics buffer fields for total energy and mass adjustment
@@ -1989,8 +2004,6 @@ subroutine tphysbc (ztodt,               &
     real(r8),pointer :: snow_dp(:)                ! snow from ZM convection
     real(r8),pointer :: prec_sh(:)                ! total precipitation from Hack convection
     real(r8),pointer :: snow_sh(:)                ! snow from Hack convection
-
-    real(r8),pointer :: rice2(:)                  ! reserved ice from UNICON [m/s]
 
     ! stratiform precipitation variables
     real(r8),pointer :: prec_str(:)    ! sfc flux of precip from stratiform (m/s)
@@ -2137,20 +2150,6 @@ subroutine tphysbc (ztodt,               &
     itim_old = pbuf_old_tim_idx()
     ifld = pbuf_get_index('CLD')
     call pbuf_get_field(pbuf, ifld, cld, (/1,1,itim_old/),(/pcols,pver,1/))
-
-!<songxl 2011-09-20---------------------------
-!   if(trigmem)then
-#ifdef USE_UNICON
-#else
-    if (deep_scheme.eq.'ZM') then
-      ifld = pbuf_get_index('TM1')
-      call pbuf_get_field(pbuf, ifld, tm1, (/1,1/),(/pcols,pver/))
-      ifld = pbuf_get_index('QM1')
-      call pbuf_get_field(pbuf, ifld, qm1, (/1,1/),(/pcols,pver/))
-    end if
-#endif
-!   endif
-!>songxl 2011-09-20---------------------------
 
     call pbuf_get_field(pbuf, teout_idx, teout, (/1,itim_old/), (/pcols,1/))
 
@@ -2659,15 +2658,6 @@ end if
       end if
    end if ! l_tracer_aero
 
-!<songxl 2011-9-20---------------------------------
-   if(deep_scheme.eq.'ZM' .and. trigmem)then
-      do k=1,pver
-        qm1(:ncol,k) = state%q(:ncol,k,1)
-        tm1(:ncol,k) = state%t(:ncol,k)
-      enddo
-   endif
-!>songxl 2011-09-20---------------------------------
-
     !===================================================
     ! Moist physical parameteriztions complete: 
     ! send dynamical variables, and derived variables to history file
@@ -2727,6 +2717,7 @@ end if ! l_rad
     ! Diagnose the location of the tropopause and its location to the history file(s).
     call t_startf('tropopause')
     call tropopause_output(state)
+    call tropopause_e90_3d_output(state)
     call t_stopf('tropopause')
 
     ! Save atmospheric fields to force surface models

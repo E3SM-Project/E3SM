@@ -174,7 +174,8 @@ contains
     character(len=*), intent(inout) :: varnames(:)
     type(file_t), intent(out) :: infile
     type(io_desc_t), pointer :: iodesc
-
+    character(len=80), allocatable :: varnames_list(:)
+    
     integer :: ndims, nvars,  varcnt
     integer :: ret, i, ncid, n
     integer :: varid, ncols, lev
@@ -222,10 +223,21 @@ contains
        varcnt=nvars
     else
        varcnt=0
+       allocate(varnames_list(size(varnames)))
        do i=1,size(varnames)
           if(varnames(i) == '') exit
-	  varcnt=varcnt+1
+          ret = PIO_inq_varid(InFile%FileID, varnames(i), varid)
+          if (ret==PIO_NOERR) then
+             varcnt=varcnt+1
+             varnames_list(varcnt)=varnames(i)
+          else
+             if (par%masterproc) print *,'skipping requested variable=',trim(varnames(i))
+          endif
        end do
+       do i=1,varcnt
+          varnames(i)=varnames_list(i)
+       enddo
+       deallocate(varnames_list)
     end if
 
     if(is_ncolfile(infile%dims)) then
@@ -783,11 +795,16 @@ contains
              ! copy non-decomposed data
              len =1
              if( outfile%varlist(i)%vtype .eq. PIO_Char) then
-                do n=2,infile%vars%ndims(i)
-                   len = len*infile%dims(infile%vars%dimids(n,i))%len
-                end do
-                call copy_pio_var(infile%FileID, Outfile%fileid, infile%vars%vardesc(i), &
-                     outfile%varlist(i)%vardesc, infile%dims(infile%vars%dimids(1,i))%len, len)
+                if (infile%vars%ndims(i)>=2) then
+                   ! SCORPIO chokes on these.
+                   if(par%masterproc) print *,"SKIPPING. cant copy 2D char array"
+                else   
+                   do n=2,infile%vars%ndims(i)
+                      len = len*infile%dims(infile%vars%dimids(n,i))%len
+                   end do
+                   call copy_pio_var(infile%FileID, Outfile%fileid, infile%vars%vardesc(i), &
+                        outfile%varlist(i)%vardesc, infile%dims(infile%vars%dimids(1,i))%len, len)
+                endif
              else
                 if(infile%vars%ndims(i)<=1) then
                    do n=1,infile%vars%ndims(i)
@@ -815,7 +832,7 @@ contains
                       call copy_pio_var(infile%FileID, Outfile%fileid, infile%vars%vardesc(i), &
                            outfile%varlist(i)%vardesc, counti(1:infile%vars%ndims(i)))
                    else
-                      ! PIO1's copy_pio_var only copies variables with up to 2 dimensions
+                      ! copy_pio_var only copies variables with up to 2 dimensions
                       if(par%masterproc) print *,"SKIPPING copy. ndims>2.  ndims=",ndims
                    endif
                 end if
@@ -1179,7 +1196,8 @@ contains
   subroutine getCompdof(Compdof, elem, lev)
     use dimensions_mod, only : nelemd, Gcols=>GlobalUniqueCols
     use element_mod, only : element_t
-
+    use kinds, only: long_kind
+    
     type(element_t), intent(in) :: elem(:)
     integer*8, pointer :: Compdof(:)
     integer, intent(in) :: lev
@@ -1197,7 +1215,12 @@ contains
        do ie=1,nelemd
           do i=1,elem(ie)%idxp%NumUniquePts
              icnt=icnt+1
-             compDOF(icnt)=elem(ie)%idxp%UniquePtOffset+i-1+(k-1)*GCols
+             ! force calculation to be done integer*8
+             compDOF(icnt)=elem(ie)%idxp%UniquePtOffset+i-1+(k-1)*int(GCols,kind=long_kind)
+             if (compDOF(icnt)<0) then
+                print *,lev,nxyp,GCols
+                call abortmp('getCompdof(): compDOF intetger overflow')
+             endif
           end do
        end do
     end do

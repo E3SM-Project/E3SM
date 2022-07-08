@@ -177,7 +177,7 @@ contains
     integer :: idx
 
     !see if the hist_var exists in constituent array
-    call cnst_get_ind(trim(adjustl(hist_var)), idx, abort=.false.)
+    call cnst_get_ind(trim(adjustl(hist_var)), idx, abrtf=.false.)
     
     if (idx .ne. -1 ) then ! idx == -1  means, variable doesn't exists in the constituent array
 

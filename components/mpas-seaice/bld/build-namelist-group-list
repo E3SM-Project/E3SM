@@ -6,7 +6,7 @@ my @groups = qw(seaice_model
                 initialize
                 use_sections
                 forcing
-                unit_test
+                testing
                 velocity_solver
                 advection
                 column_package

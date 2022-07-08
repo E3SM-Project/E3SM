@@ -1,0 +1,30 @@
+	<nml_record name="cosine_bell" mode="init" configuration="cosine_bell">
+		<nml_option name="config_cosine_bell_temperature" type="real" default_value="15.0" units="deg C"
+			description="Temperature of the ocean."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_cosine_bell_salinity" type="real" default_value="35.0" units="PSU"
+			description="Salinity of the ocean."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_cosine_bell_lat_center" type="real" default_value="0.0" units="radians"
+			description="latitude center of cosine bell"
+			possible_values="Any real number between -pi/2 and pi/2"
+		/>
+		<nml_option name="config_cosine_bell_lon_center" type="real" default_value="3.141592" units="radians"
+			description="longitude center of cosine bell"
+			possible_values="Any non-negative real number between 0 and 2pi"
+		/>
+		<nml_option name="config_cosine_bell_psi0" type="real" default_value="1.0" units="unitless"
+			description="hill max of tracer"
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_cosine_bell_radius" type="real" default_value="2123666.667" units="m"
+			description="radius of cosine bell"
+			possible_values="Any non-negative real number between 0 and 2pi"
+		/>
+		<nml_option name="config_cosine_bell_vel_pd" type="real" default_value="24.0" units="days"
+			description="time for bell to transit equator once"
+			possible_values="Any non-negative real number"
+		/>
+	</nml_record>

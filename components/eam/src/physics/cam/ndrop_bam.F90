@@ -126,12 +126,12 @@ subroutine ndrop_bam_init
       end if
    end if
 
-   call addfld ('CCN1',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.02%')
-   call addfld ('CCN2',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.05%')
-   call addfld ('CCN3',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.1%')
-   call addfld ('CCN4',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.2%')
-   call addfld ('CCN5',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=0.5%')
-   call addfld ('CCN6',(/ 'lev' /), 'A','#/cm3','CCN concentration at S=1.0%')
+   call addfld ('CCN1',(/ 'lev' /), 'A','1/cm3','CCN concentration at S=0.02%')
+   call addfld ('CCN2',(/ 'lev' /), 'A','1/cm3','CCN concentration at S=0.05%')
+   call addfld ('CCN3',(/ 'lev' /), 'A','1/cm3','CCN concentration at S=0.1%')
+   call addfld ('CCN4',(/ 'lev' /), 'A','1/cm3','CCN concentration at S=0.2%')
+   call addfld ('CCN5',(/ 'lev' /), 'A','1/cm3','CCN concentration at S=0.5%')
+   call addfld ('CCN6',(/ 'lev' /), 'A','1/cm3','CCN concentration at S=1.0%')
 
    call add_default('CCN3', 1, ' ')
 

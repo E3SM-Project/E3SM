@@ -1,1 +1,2 @@
 ./xmlchange ELM_BLDNML_OPTS="-irrig .true." -append
+if [ `./xmlquery --value MACH` == chrysalis ]; then ./xmlchange FORCE_BUILD_SMP=TRUE; fi

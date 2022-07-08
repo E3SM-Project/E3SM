@@ -32,6 +32,7 @@ contains
        , rsf_file &
        , fstrat_file &
        , fstrat_list &
+       , fstrat_efold_list &
        , srf_emis_specifier &
        , srf_emis_type &
        , srf_emis_cycle_yr &
@@ -66,8 +67,9 @@ contains
     use mo_exp_sol,        only : exp_sol_inti
     use spmd_utils,        only : iam
     use mo_fstrat,         only : fstrat_inti
+    use lin_strat_chem,    only : fstrat_efold_inti
     use m_types,           only : time_ramp
-    use cam_abortutils,        only : endrun
+    use cam_abortutils,    only : endrun
     use pmgrid,            only : plev           
     use mo_sethet,         only : sethet_inti
     use mo_usrrxt,         only : usrrxt_inti
@@ -119,6 +121,7 @@ contains
     character(len=*), intent(in) :: rsf_file
     character(len=*), intent(in) :: fstrat_file
     character(len=*), intent(in) :: fstrat_list(:)
+    character(len=*), intent(in) :: fstrat_efold_list(:)
     character(len=*), dimension(:), intent(in) :: srf_emis_specifier
     character(len=*), dimension(:), intent(in) :: ext_frc_specifier
     logical, intent(in)          :: xactive_prates
@@ -222,6 +225,8 @@ contains
     call fstrat_inti( fstrat_file, fstrat_list )
     if (masterproc) write(iulog,*) 'chemini: after fstrat_inti on node ',iam
 
+    call fstrat_efold_inti(fstrat_efold_list)
+    if (masterproc) write(iulog,*) 'chemini: after fstrat_efold_inti on node ',iam
     !-----------------------------------------------------------------------
     ! 	... initialize the co2 nir heating module
     !-----------------------------------------------------------------------

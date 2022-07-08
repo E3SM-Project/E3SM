@@ -142,7 +142,8 @@ module WaterstateType
   end type waterstate_type
   ! minimum allowed snow effective radius (also "fresh snow" value) [microns]
   real(r8), public, parameter :: snw_rds_min = 54.526_r8    
-
+  
+  type(waterstate_type) ,public        :: waterstate_vars
   !------------------------------------------------------------------------
 
 contains
@@ -335,7 +336,7 @@ contains
     ! snow layer existed by running the snow averaging routine on a field whose value is 1
     ! everywhere
     data2dptr => this%snow_layer_unity_col(:,-nlevsno+1:0)
-    call hist_addfld2d (fname='SNO_EXISTENCE', units='unitless', type2d='levsno', &
+    call hist_addfld2d (fname='SNO_EXISTENCE', units='1', type2d='levsno', &
          avgflag='A', long_name='Fraction of averaging period for which each snow layer existed', &
          ptr_col=data2dptr, no_snow_behavior=no_snow_zero, default='inactive')
 

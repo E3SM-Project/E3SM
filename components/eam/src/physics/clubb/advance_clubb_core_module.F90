@@ -106,6 +106,8 @@ module advance_clubb_core_module
     ipdf_pre_post_advance_fields = 3   ! Call both before and after advancing
                                        ! predictive fields
 
+  public :: ipdf_post_advance_fields
+
   private ! Default Scope
 
   contains
@@ -160,7 +162,9 @@ module advance_clubb_core_module
                qclvar, thlprcp_out, &                               ! intent(out)
 #endif
                wprcp, ice_supersat_frac, &                          ! intent(out)
-               rcm_in_layer, cloud_cover )                          ! intent(out)
+               rcm_in_layer, cloud_cover, &                         ! intent(out)
+               upwp_sfc_pert, vpwp_sfc_pert, &                      ! intent(in)
+               um_pert, vm_pert, upwp_pert, vpwp_pert )             ! intent(inout)
 
     ! Description:
     !   Subroutine to advance CLUBB one timestep
@@ -631,6 +635,16 @@ module advance_clubb_core_module
     logical, intent(in)                 ::  do_liquid_only_in_clubb
 ! <--- h1g, 2012-06-14
 #endif
+
+    real( kind = core_rknd ), intent(in), pointer ::  &
+      upwp_sfc_pert,     & ! pertubed u'w' at surface          [m^2/s^2]
+      vpwp_sfc_pert        ! pertubed v'w' at surface          [m^2/s^2]
+    real( kind = core_rknd ), intent(inout), dimension(:), pointer ::  &
+      um_pert,      & ! pertubed eastward grid-mean wind component (thermodynamic levels)   [m/s]
+      vm_pert,      & ! pertubed northward grid-mean wind component (thermodynamic levels)   [m/s]
+      upwp_pert,    & ! pertubed u'w' (momentum levels)                         [m^2/s^2]
+      vpwp_pert       ! pertubed v'w' (momentum levels)                         [m^2/s^2]
+
     ! Local Variables
     integer :: i, k
 
@@ -888,6 +902,11 @@ module advance_clubb_core_module
       wprtp(1)  = wprtp_sfc
       upwp(1)   = upwp_sfc
       vpwp(1)   = vpwp_sfc
+      if (associated(upwp_sfc_pert) .and. associated(vpwp_sfc_pert) .and. &
+           associated(upwp_pert) .and. associated(vpwp_pert)) then
+         upwp_pert(1) = upwp_sfc_pert
+         vpwp_pert(1) = vpwp_sfc_pert
+      end if
 
       ! Set fluxes for passive scalars (if enabled)
       if ( sclr_dim > 0 ) then
@@ -1517,7 +1536,8 @@ module advance_clubb_core_module
                             fcor, um_ref, vm_ref, up2, vp2,                  & ! intent(in)
                             uprcp, vprcp, rc_coef,                           & ! intent(in)
                             rtm, wprtp, thlm, wpthlp,                        & ! intent(inout)
-                            sclrm, wpsclrp, um, upwp, vm, vpwp )               ! intent(inout)
+                            sclrm, wpsclrp, um, upwp, vm, vpwp,              & ! intent(inout)
+                            um_pert, vm_pert, upwp_pert, vpwp_pert)            ! intent(inout)
 
       if ( clubb_at_least_debug_level( 0 ) ) then
           if ( err_code == clubb_fatal_error ) then
@@ -1596,7 +1616,8 @@ module advance_clubb_core_module
       call clip_covars_denom( dt, rtp2, thlp2, up2, vp2, wp2,           & ! intent(in)
                               sclrp2, wprtp_cl_num, wpthlp_cl_num,      & ! intent(in)
                               wpsclrp_cl_num, upwp_cl_num, vpwp_cl_num, & ! intent(in)
-                              wprtp, wpthlp, upwp, vpwp, wpsclrp )        ! intent(inout)
+                              wprtp, wpthlp, upwp, vpwp, wpsclrp,       & ! intent(inout)
+                              upwp_pert, vpwp_pert )                      ! intent(inout)
 
 
       !----------------------------------------------------------------
@@ -1645,7 +1666,8 @@ module advance_clubb_core_module
       call clip_covars_denom( dt, rtp2, thlp2, up2, vp2, wp2,           & ! intent(in)
                               sclrp2, wprtp_cl_num, wpthlp_cl_num,      & ! intent(in)
                               wpsclrp_cl_num, upwp_cl_num, vpwp_cl_num, & ! intent(in)
-                              wprtp, wpthlp, upwp, vpwp, wpsclrp )        ! intent(inout)
+                              wprtp, wpthlp, upwp, vpwp, wpsclrp,       & ! intent(inout)
+                              upwp_pert, vpwp_pert )                      ! intent(inout)
 
       !----------------------------------------------------------------
       ! Advance or otherwise calculate <thl'^3>, <rt'^3>, and
@@ -1735,7 +1757,8 @@ module advance_clubb_core_module
                                   rho_ds_zm, invrs_rho_ds_zt,                   & ! intent(in)
                                   fcor, l_implemented,                          & ! intent(in)
                                   um, vm, edsclrm,                              & ! intent(inout)
-                                  upwp, vpwp, wpedsclrp )                         ! intent(inout)
+                                  upwp, vpwp, wpedsclrp, &                        ! intent(inout)
+                                  um_pert, vm_pert, upwp_pert, vpwp_pert)         ! intent(inout)
 
       if ( l_do_expldiff_rtm_thlm ) then
         call pvertinterp(gr%nz, p_in_Pa, 70000.0_core_rknd, thlm, thlm700)

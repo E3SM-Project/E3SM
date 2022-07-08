@@ -356,7 +356,7 @@ subroutine timemgr_restart(ncid, flag)
   varname = 'timemgr_rst_type'
   if (flag == 'define') then
      call ncd_defvar(ncid=ncid, varname=varname, xtype=ncd_int,  &
-          long_name='calendar type', units='unitless', flag_meanings=(/ "NO_LEAP_C", "GREGORIAN" /), &
+          long_name='calendar type', units='1', flag_meanings=(/ "NO_LEAP_C", "GREGORIAN" /), &
           flag_values=(/ noleap, gregorian /), ifill_value=uninit_int )
   else if (flag == 'read' .or. flag == 'write') then
      if (flag== 'write') then

@@ -60,25 +60,25 @@
 !------------------------------------------------------------------
 !	... check for msis species in simuation
 !------------------------------------------------------------------
-      call cnst_get_ind( 'H', ndx_h, abort=.false. )
+      call cnst_get_ind( 'H', ndx_h, abrtf=.false. )
       if( ndx_h > 0 ) then
          if( cnst_fixed_ubc(ndx_h) ) then
             ndx(ndx_h) = ndx_h
          end if
       end if
-      call cnst_get_ind( 'N', ndx_n, abort=.false. )
+      call cnst_get_ind( 'N', ndx_n, abrtf=.false. )
       if( ndx_n > 0 ) then
          if( cnst_fixed_ubc(ndx_n) ) then
             ndx(ndx_n) = ndx_n
          end if
       end if
-      call cnst_get_ind( 'O', ndx_o, abort=.false. )
+      call cnst_get_ind( 'O', ndx_o, abrtf=.false. )
       if( ndx_o > 0 ) then
          if( cnst_fixed_ubc(ndx_o) ) then
             ndx(ndx_o) = ndx_o
          end if
       end if
-      call cnst_get_ind( 'O2', ndx_o2, abort=.false. )
+      call cnst_get_ind( 'O2', ndx_o2, abrtf=.false. )
       if( ndx_o2 > 0 ) then
          if( cnst_fixed_ubc(ndx_o2) ) then
             ndx(ndx_o2) = ndx_o2

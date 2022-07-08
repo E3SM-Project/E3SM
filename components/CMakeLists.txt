@@ -21,8 +21,8 @@ cmake_policy(SET CMP0057 NEW)
 set (CASEROOT "" CACHE STRING "The case root directory.")
 
 # Turn on wrapper
-set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "python ${CASEROOT}/Tools/e3sm_compile_wrap.py ")
-set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "python ${CASEROOT}/Tools/e3sm_compile_wrap.py ")
+set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "python3 ${CASEROOT}/Tools/e3sm_compile_wrap.py ")
+set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "python3 ${CASEROOT}/Tools/e3sm_compile_wrap.py ")
 
 # We need to set the compilers *before* calling `project`.
 # The only way to get the compiler name, is to load Macros.cmake

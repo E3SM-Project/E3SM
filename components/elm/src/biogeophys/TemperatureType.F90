@@ -119,6 +119,7 @@ module TemperatureType
 
   end type temperature_type
   !------------------------------------------------------------------------
+  type(temperature_type),public            :: temperature_vars
 
 contains
 

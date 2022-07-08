@@ -35,6 +35,8 @@ the topography used by HOMME's various build in test cases.
 This is useful for generating topo files as par of tool
 regression testing.
 
+The newer topo_pgn_to_smoothed tool
+should be used instead, as it will produce both GLL and pg2 data.
 
 
 ================================================================

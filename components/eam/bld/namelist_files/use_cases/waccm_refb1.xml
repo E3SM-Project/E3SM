@@ -30,8 +30,6 @@
 <gw_drag_file>atm/waccm/gw/newmfspectra40_dc25.nc</gw_drag_file>
 
 <!-- Misc Inputs -->
-<!-- cam3_5_48 DEFAULTS okay for: absems_data,aeroptics,bnd_topo,bndtvaer,bndtvo -->
-
 <qbo_forcing_file>atm/waccm/qbo/qboseries_1953-2007_c081015.nc</qbo_forcing_file>
 
 <!--Species IC -->

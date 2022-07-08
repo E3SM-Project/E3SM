@@ -705,6 +705,7 @@ my $prog_ghg1    = ($chem =~ "trop_mozart" or $chem =~ "trop_strat" or $chem =~ 
 my $prog_ghg2    = ($chem =~ "ghg" or $prog_species =~ "GHG");
 my $ghg_chem     = ($chem =~ "ghg");
 my $aero_chem    = ($chem =~ "aero" or $chem eq 'trop_mozart' or $chem eq 'trop_mozart_soa'  or $chem =~ 'trop_strat' or $chem eq 'trop_bam');
+my $mosaic_spec  = $cfg->get('mosaic');
 
 my $chem_rad_passive = ($nl->get_value('chem_rad_passive') =~ /$TRUE/io);
 my $ipcc_aircraft_emis = ($nl->get_value('ipcc_aircraft_emis') =~ /$TRUE/io);
@@ -717,8 +718,7 @@ my $rad_prog_sslt  = (($prog_species =~ "SSLT" or $aero_chem) and !($chem_rad_pa
 my $rad_prog_ozone = (($chem =~ "mozart" or $chem =~ "trop_strat" or $chem =~ "super_fast_llnl" or $chem =~ "superfast" or $chem =~ "linoz") and !($chem_rad_passive));
 
 # Check for eruptive volcano emissions.  These will be radiatively active by default, but
-# only if using BAM and the camrt radiation package (cam4 physics)
-# or if using MAM and the rrtmg package  (cam5 physics)
+# only if using MAM and the rrtmg package  (cam5 physics)
 # They will only be added to mode_defs for radiation if the prescribed emission file has 
 # MMR (mass mixing ratio) for the volcanic aerosols. 
 # For CMIP6 style volcanic input file, where input file has extinction, ssa and asymmetry 
@@ -803,10 +803,25 @@ add_default($nl, 'ncdata', %atts);
 # 0: uncoupled, 2: coupled, distinguished by ocn comp name as seen by atm's configure command
 add_default($nl,'ieflx_opt');
 
+# Add other variables that are previously set in use_case but not previously set
+add_default($nl,'use_hetfrz_classnuc');
+add_default($nl,'hist_hetfrz_classnuc');
+add_default($nl,'gw_convect_hcf');
+add_default($nl,'linoz_psc_T');
+if ($cfg->get('microphys') =~ /^mg2/) {
+    add_default($nl,'micro_mg_dcs_tdep');
+    add_default($nl,'micro_mincdnc');
+}
+add_default($nl,'microp_aero_wsub_scheme');
+add_default($nl,'microp_aero_wsubmin');
+add_default($nl,'use_preexisting_ice');
+
+
 #BSINGH - (when .true.)calculate solar zenith angle averaged over a time step.
 #In default model, solar zenith angle is held constant over time.
 #This flag is kept to test b4b with the default code(this must be REMOVED when we decide to make it default)
-add_default($nl,'use_rad_dt_cosz','val'=>'.false.');
+#Default value set by namelist_defaults_eam.xml, avoid setting a  default value false here.
+add_default($nl,'use_rad_dt_cosz');
 
 #Approximate value of decay time at model top (days);
 #if 0., no rayleigh friction is applied
@@ -845,13 +860,6 @@ add_default($nl, 'bnd_topo', 'nofail'=>1);
 
 # Tropopause climatology
 add_default($nl, 'tropopause_climo_file');
-
-# Radiation
-if ($rad_pkg eq 'camrt') {
-    # Only needed for CAM3/4 RT code
-    # Absorptivity and emissivity data
-    add_default($nl, 'absems_data');
-}
 
 # Solar irradiance
 
@@ -924,7 +932,26 @@ if ($co2_cycle) {
 	# (user specification has higher precedence than the true value set above)
 	if ($nl->get_value('co2_readflux_fuel') =~ /$TRUE/io) {
 	    add_default($nl, 'co2flux_fuel_file', 'sim_year'=>$sim_year);
+	    add_default($nl, 'co2flux_fuel_vrt_emis_file', 'sim_year'=>$sim_year);
 	}
+
+        add_default($nl, 'co2_readflux_aircraft', 'val'=>'.true.');
+
+        # Check whether user has explicitly turned off reading the aircraft CO2 dataset.
+        # (user specification has higher precedence than the true value set above)
+        if ($nl->get_value('co2_readflux_aircraft') =~ /$TRUE/io) {
+
+            my $rel_filepath = get_default_value('ac_CO2_emis');
+            my $emisval = quote_string('ac_CO2 -> ' . $rel_filepath);
+            add_default($nl, 'aircraft_specifier', 'val'=>$emisval);
+
+            add_default($nl, 'aircraft_datapath');
+            add_default($nl, 'aircraft_type');
+            # This should be the same file as the one in the aircraft_specifier file.
+            # This is a workaround to get this filepath into the cam.input_data_list file
+            # to allow the CESM scripts to obtain all required data for a run.
+            add_default($nl, 'aircraft_co2_file');
+	}		   
     }
 }
 
@@ -1056,7 +1083,7 @@ else {
     if ($chem eq 'none' or $chem eq 'waccm_ghg' or $chem eq 'super_fast_llnl' or $chem eq 'waccm_mozart' or $chem eq 'waccm_mozart_sulfur') {
 	# If no chemistry then there must be prescribed aerosols unless physics
 	# package is adiabatic or ideal.
-	if ($phys eq 'cam5') {
+	if ($phys eq 'default') {
 	    $prescribed_aero_model = 'modal';
 	}
 	elsif ($phys eq 'cam4' or $phys eq 'cam3') {
@@ -1281,6 +1308,35 @@ if ($aer_model eq 'mam' ) {
 	    );
     }
     else{
+	if ($mosaic_spec == 1) {
+	@mode_spec     = (
+            [qw(so4_a1 pom_a1 soa_a1 bc_a1 dst_a1 ncl_a1 mom_a1 nh4_a1 no3_a1 ca_a1 co3_a1 cl_a1)],
+            [qw(so4_a2 soa_a2 ncl_a2 mom_a2 nh4_a2 no3_a2 cl_a2)],
+            [qw(dst_a3 ncl_a3 so4_a3 bc_a3 pom_a3 soa_a3 mom_a3 nh4_a3 no3_a3 ca_a3 co3_a3 cl_a3)],
+            [qw(pom_a4 bc_a4 mom_a4)],
+            );
+        @mode_spec_type = (
+            [qw(sulfate p-organic s-organic black-c dust seasalt m-organic ammonium nitrate calcium carbonate chloride)],
+            [qw(sulfate s-organic seasalt m-organic ammonium nitrate chloride)],
+            [qw(dust seasalt sulfate black-c p-organic s-organic m-organic ammonium nitrate calcium carbonate chloride)],
+            [qw(p-organic black-c m-organic)],
+            );
+        @mode_spec_cw  = (
+            [qw(so4_c1 pom_c1 soa_c1 bc_c1 dst_c1 ncl_c1 mom_c1 nh4_c1 no3_c1 ca_c1 co3_c1 cl_c1)],
+            [qw(so4_c2 soa_c2 ncl_c2 mom_c2 nh4_c2 no3_c2 cl_c2)],
+            [qw(dst_c3 ncl_c3 so4_c3 bc_c3 pom_c3 soa_c3 mom_c3 nh4_c3 no3_c3 ca_c3 co3_c3 cl_c3)],
+            [qw(pom_c4 bc_c4 mom_c4)],
+            );
+
+	@mode_num_src  = qw(A A A A);
+        @mode_spec_src = (
+            [qw(A A A A A A A A A A A A)],
+            [qw(A A A A A A A)],
+            [qw(A A A A A A A A A A A A)],
+            [qw(A A A)],
+            );
+        }
+	else {
 	@mode_spec     = (
             [qw(so4_a1 pom_a1 soa_a1 bc_a1 dst_a1 ncl_a1 mom_a1)],
             [qw(so4_a2 soa_a2 ncl_a2 mom_a2)],
@@ -1307,6 +1363,7 @@ if ($aer_model eq 'mam' ) {
             [qw(A A A A A A A)],
             [qw(A A A)],
             );
+	}
     }
   } elsif($aero_modes eq '7mode') { 
 
@@ -1807,6 +1864,17 @@ if ($chem =~ /trop_mozart/ or $chem =~ /trop_strat/ ) {
                    'num_a2   -> ' => 'num_a2_emis_file',
 		   );
         %verhash = ('ver'=>'mam');
+    } elsif ($chem =~ /mam4/) {
+        %species = (%species,
+                   'bc_a4     -> ' => 'bc_a4_emis_file',
+                   'pom_a4    -> ' => 'pom_a4_emis_file',
+                   'so4_a1    -> ' => 'so4_a1_emis_file',
+                   'so4_a2    -> ' => 'so4_a2_emis_file',
+                   'num_a1    -> ' => 'mam7_num_a1_emis_file',
+                   'num_a2    -> ' => 'num_a2_emis_file',
+                   'num_a4    -> ' => 'mam7_num_a3_emis_file',
+                   );
+        %verhash = ('ver'=>'mam');
     } elsif ($chem =~ /mam7/) {
         %species = (%species,
                    'SOAG     -> ' => 'soag_emis_file',
@@ -1870,6 +1938,18 @@ if ($chem =~ /trop_mozart/ or $chem =~ /trop_strat/ ) {
                    'bc_a1  -> ' => 'bc_a1_ext_file', 
                    'num_a1 -> ' => 'num_a1_ext_file', 
                    'num_a2 -> ' => 'num_a2_ext_file', );
+      $cyc_yr = '2000';
+    } elsif ($chem =~ /mam4/) {
+      %species = ( 'NO2    -> ' => 'no2_aircraft_emis_file',
+                   'SO2    -> ' => 'so2_ext_file',
+                   'SOAG   -> ' => 'soag_ext_file',
+                   'so4_a1 -> ' => 'so4_a1_ext_file',
+                   'so4_a2 -> ' => 'so4_a2_ext_file',
+                   'pom_a4 -> ' => 'pom_a4_ext_file',
+                   'bc_a4  -> ' => 'bc_a4_ext_file',
+                   'num_a1 -> ' => 'mam7_num_a1_ext_file',
+                   'num_a2 -> ' => 'num_a2_ext_file',
+                   'num_a4 -> ' => 'mam7_num_a3_ext_file', );
       $cyc_yr = '2000';
     } elsif ($chem =~ /mam7/) {
       %species = ( 'NO2    -> ' => 'no2_aircraft_emis_file',
@@ -3010,6 +3090,17 @@ if ($chem eq 'superfast_mam4_resus_mom_soag') {
       %species = ( %species,
 		'ISOP   -> ' => 'isop_emis_file',  );
     }
+    # tentatively add chemUCI-Linozv2|3 additional species here with superfast_mam4_resus_soag
+    # May later add a block to use a new chem package name in parallel with superfast_mam4_resus_soag 
+    if ($opts{'use_case'} =~ /chemUCI-Linoz/) {
+        %species = ( %species,
+                'C2H4      -> ' => 'c2h4_emis_file',
+                'C2H6      -> ' => 'c2h6_emis_file',
+                'C3H8      -> ' => 'c3h8_emis_file',
+                'CH3CHO    -> ' => 'ch3cho_emis_file',
+                'CH3COCH3  -> ' => 'ch3coch3_emis_file',
+                'E90       -> ' => 'e90_emis_file', );
+    }
     my %verhash = ('ver'=>'mam');
     my $first = 1;
     my $pre = "";
@@ -3040,6 +3131,11 @@ if ($chem eq 'superfast_mam4_resus_mom_soag') {
 		'num_a1      -> ' => 'mam7_num_a1_ext_file',
 		'num_a2      -> ' => 'num_a2_ext_file',
 		'num_a4      -> ' => 'mam7_num_a3_ext_file', );
+    # tentatively add chemUCI-Linozv2|3 additional species here with superfast_mam4_resus_soag
+    if ($opts{'use_case'} =~ /chemUCI-Linoz/) {
+        %species = ( %species,
+                'NO2         -> ' => 'no2_ext_file' );
+    }
     $first = 1; $pre = ""; $val = "";
     foreach my $id (sort keys %species) {
         my $rel_filepath = get_default_value($species{$id}, \%verhash );
@@ -3509,7 +3605,8 @@ $nl->set_variable_value('phys_ctl_nl', 'cam_chempkg', $cam_chempkg);
 
 #BSINGH - ndrop.F90 "repeated g1 equation" bug fix flag 
 #This flag is kept to test b4b with the default code(this must be REMOVED when we decide to make it default)
-add_default($nl,'fix_g1_err_ndrop','val'=>'.false.');
+#The value set to be  determined by namelist_defaults_eam.xml, not preset a value to false here.
+add_default($nl,'fix_g1_err_ndrop');
 
 # Deep convection scheme
 add_default($nl, 'deep_scheme');
@@ -3526,7 +3623,9 @@ my $eddy_scheme = $nl->get_value('eddy_scheme');
 # Need to strip the quotes to use as a value for attribute matching.
 $eddy_scheme =~ s/['"]//g;                                           #"'
 add_default($nl, 'shallow_scheme', 'eddy_scheme'=>$eddy_scheme);
-add_default($nl, 'srf_flux_avg', 'eddy_scheme'=>$eddy_scheme);
+
+# Surface flux smoothing to reduce instability
+add_default($nl, 'srf_flux_avg');
 
 #BSINGH - Flag splitting for code modifications by PNNL under polar project
 add_default($nl, 'resus_fix');
@@ -3651,12 +3750,39 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_wpxp_L_thresh');
    add_default($nl, 'relvar_fix');
    add_default($nl, 'clubb_use_sgv');
+
+  # additional clubb parameters for EAMv2 as default
+   add_default($nl, 'clubb_C1');
+   add_default($nl, 'clubb_C11');
+   add_default($nl, 'clubb_C11b');
+   add_default($nl, 'clubb_C11c');
+   add_default($nl, 'clubb_C14');
+   add_default($nl, 'clubb_C1b');
+   add_default($nl, 'clubb_C1c');
+   add_default($nl, 'clubb_C2rt');
+   add_default($nl, 'clubb_C6rtb');
+   add_default($nl, 'clubb_C6rtc');
+   add_default($nl, 'clubb_C6thlb');
+   add_default($nl, 'clubb_C6thlc');
+   add_default($nl, 'clubb_C8');
+   add_default($nl, 'clubb_c_K10');
+   add_default($nl, 'clubb_c_K10h');
+   add_default($nl, 'clubb_gamma_coef');
+   add_default($nl, 'clubb_gamma_coefb');
+   add_default($nl, 'clubb_gamma_coefc');
+   add_default($nl, 'clubb_mu');
+   add_default($nl, 'clubb_ipdf_call_placement');
+
 }
 
 # MMF Microphysics scheme
 add_default($nl, 'MMF_microphysics_scheme');
 add_default($nl, 'use_MMF');
 add_default($nl, 'use_ECPP');
+
+# MMF Variance Transport
+add_default($nl, 'use_MMF_VT');
+add_default($nl, 'MMF_VT_wn_max');
 
 # MMF CRM mean-state acceleration
 add_default($nl, 'use_crm_accel');
@@ -3697,6 +3823,18 @@ if ( $do_tms =~ /$TRUE/io ) {
 # Implicit Turbulent Surface Stress
 add_default($nl, 'do_iss');
 
+# PBL linearization
+add_default($nl, 'linearize_pbl_winds');
+my $linearize_pbl_winds = $nl->get_value('linearize_pbl_winds');
+if ( $linearize_pbl_winds =~ /$TRUE/io ) {
+    if (!($eddy_scheme =~ /clubb_sgs/i)) {
+        die "$ProgName - ERROR: linearize_pbl_winds = .true. but linearization is not implemented for eddy_scheme=$eddy_scheme.\n";
+    }
+}
+
+# Export gustiness to surface components.
+add_default($nl, 'export_gustiness');
+
 # Use Convective water in radiation
 add_default($nl, 'conv_water_in_rad');
 
@@ -3732,11 +3870,15 @@ add_default($nl, 'zmconv_cape_cin');
 add_default($nl, 'zmconv_mx_bot_lyr_adj');
 add_default($nl, 'zmconv_dmpdz');
 add_default($nl, 'zmconv_tp_fac');
+add_default($nl, 'zmconv_alfa');
+add_default($nl, 'zmconv_trigdcape_ull');
 
 # moist convection rainwater coefficients
-add_default($nl, 'hkconv_cmftau');
-add_default($nl, 'hkconv_c0');
-if ($phys eq 'cam5') {
+# These no more needed for EAM, including uwshcu_rpen. No need to reset for 'cam5'
+#add_default($nl, 'hkconv_cmftau');
+#add_default($nl, 'hkconv_c0');
+#MMF still uses UW scheme in the background and check for this parameter during runtime
+if ($phys eq 'cam5' || $phys eq 'default') {
   add_default($nl, 'uwshcu_rpen');
 }
 
@@ -3808,6 +3950,9 @@ if ($nl->get_value('use_gw_convect') =~ /$TRUE/io) {
     add_default($nl, 'effgw_beres');
     add_default($nl, 'gw_drag_file');
 }
+
+add_default($nl, 'use_gw_energy_fix'    , 'val'=>'.true.');
+
 
 # Some complexity to unpack.
 # 1. In WACCM, we want tau_0_ubc = .false., because it hasn't been tuned
@@ -4168,7 +4313,7 @@ if ($ice_comp eq 'cice' and $cam_build and $ice_active) {
     }
 
     # For CAM5 need to send the variable "cam5=.true." to get correct defaults for several
-    # cice parameters.
+    # cice parameters. only used for active cice. not used in e3sm, no need to change for new phys name
     if ($phys eq 'cam5') {
 	$cice_nl .= "cam5=.true. \n";
     }
@@ -4602,7 +4747,7 @@ sub add_default {
                     print "key=$key  val=$opts{$key}\n";
                 }
             }
-            die;
+            die "$ProgName - ERROR: No default value found for $var\n";;
         } else {
             return;
         }
@@ -4615,7 +4760,8 @@ sub add_default {
     # variable is defined to be an absolute pathname, then prepend
     # the CCSM inputdata root directory.
     if ($is_input_pathname eq 'abs') {
-	$val = set_abs_filepath($val, $inputdata_rootdir);
+        # if-logic to add the path only when $val is not empty. allowing specifying a null file in use_case file
+	$val = set_abs_filepath($val, $inputdata_rootdir) if ($val =~ /[^\s]+/); 
     }
 
     # Some complex namelist variables set in use cases may have "$INPUTDATA_ROOT"
@@ -4750,6 +4896,9 @@ sub check_input_files {
 		my $pathname = $nl->get_variable_value($group, $var);
 		# Need to strip the quotes
 		$pathname =~ s/['"]//g;
+                if ($pathname eq '') {
+                    $pathname = "/dev/null"
+                }
 
 		if ($input_pathname_type eq 'abs') {
                     if ($inputdata_rootdir) {

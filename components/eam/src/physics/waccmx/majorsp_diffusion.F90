@@ -86,9 +86,9 @@ contains
     !-----------------------------------------------------------
     ! Get required molecular weights
     !-----------------------------------------------------------
-    call cnst_get_ind('O2', indx_O2, abort=.false.)
-    call cnst_get_ind('O',  indx_O, abort=.false.)
-    call cnst_get_ind('H',  indx_H, abort=.false.)
+    call cnst_get_ind('O2', indx_O2, abrtf=.false.)
+    call cnst_get_ind('O',  indx_O, abrtf=.false.)
+    call cnst_get_ind('H',  indx_H, abrtf=.false.)
 
     rmass_o2 = cnst_mw(indx_O2)
     rmass_o1 = cnst_mw(indx_O)

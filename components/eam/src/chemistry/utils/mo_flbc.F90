@@ -157,7 +157,7 @@ contains
 
        flbc_cnt = flbc_cnt + 1
 
-       call cnst_get_ind (flbc_list(m), n, abort=.false.)
+       call cnst_get_ind (flbc_list(m), n, abrtf=.false.)
 
        if (n > 0) then
           has_flbc(n) = .true.

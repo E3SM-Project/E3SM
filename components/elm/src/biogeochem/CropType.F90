@@ -191,17 +191,17 @@ contains
          ptr_patch=this%dmyield_patch)
 
     this%cvt_patch(begp:endp) = spval
-    call hist_addfld1d (fname='CVT', units='none', &
+    call hist_addfld1d (fname='CVT', units='1', &
          avgflag='X', long_name='Temperature Coefficient of Variance', &
          ptr_patch=this%cvt_patch, default = 'inactive')
 
     this%cvp_patch(begp:endp) = spval
-    call hist_addfld1d (fname='CVP', units='none', &
+    call hist_addfld1d (fname='CVP', units='1', &
          avgflag='X', long_name='Precipitation Coefficient of Variance', &
          ptr_patch=this%cvp_patch, default = 'inactive')
 
     this%plantmonth_patch(begp:endp) = spval
-    call hist_addfld1d (fname='PLANTMONTH', units='none', &
+    call hist_addfld1d (fname='PLANTMONTH', units='1', &
          avgflag='X', long_name='Month of planting', &
          ptr_patch=this%plantmonth_patch)
 
@@ -482,17 +482,17 @@ contains
        end if
        call restartvar(ncid=ncid, flag=flag, varname='cvt', xtype=ncd_double,  &
             dim1name='pft', &
-            long_name='temperature coefficient of variance', units='unitless', &
+            long_name='temperature coefficient of variance', units='1', &
             interpinic_flag='interp', readvar=readvar, data=this%cvt_patch)
 
        call restartvar(ncid=ncid, flag=flag, varname='cvp', xtype=ncd_double,  &
             dim1name='pft', &
-            long_name='precipitation coefficient of variance', units='unitless', &
+            long_name='precipitation coefficient of variance', units='1', &
             interpinic_flag='interp', readvar=readvar, data=this%cvp_patch)
 
        call restartvar(ncid=ncid, flag=flag, varname='plantmonth', xtype=ncd_double,  &
             dim1name='pft', &
-            long_name='Month of planting', units='unitless', &
+            long_name='Month of planting', units='1', &
             interpinic_flag='interp', readvar=readvar, data=this%plantmonth_patch)
 
        ptr2d => this%xt_patch(:,:)
@@ -540,13 +540,13 @@ contains
        ptr2d => this%p2ETo_bar_patch(:,:)
        call restartvar(ncid=ncid, flag=flag, varname='p2ETo_bar', xtype=ncd_double, &
             dim1name='pft',dim2name='month', switchdim=.true., &
-            long_name='ewma P:PET', units='none', &
+            long_name='ewma P:PET', units='1', &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
 
        ptr2d => this%prev_p2ETo_bar_patch(:,:)
        call restartvar(ncid=ncid, flag=flag, varname='prev_p2ETo_bar', xtype=ncd_double, &
             dim1name='pft',dim2name='month', switchdim=.true., &
-            long_name='previous ewma P:PET', units='none', &
+            long_name='previous ewma P:PET', units='1', &
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
 
        ptr2d => this%P2E_rm_patch(:,:)

@@ -677,6 +677,8 @@ contains
     ! data set as a whole, as opposed to a single variable
 
     call ncd_putatt(lnfid, ncd_global, 'source'  , trim(source))
+    call ncd_putatt(lnfid, ncd_global, 'source_id'  , trim(version))
+    call ncd_putatt(lnfid, ncd_global, 'product'  , 'model-output')
     call ncd_putatt(lnfid, ncd_global, 'case', trim(caseid))
     call ncd_putatt(lnfid, ncd_global, 'username', trim(username))
     call ncd_putatt(lnfid, ncd_global, 'hostname', trim(hostname))
@@ -685,6 +687,17 @@ contains
     str = 'created on ' // curdate // ' ' // curtime
     call ncd_putatt(lnfid, ncd_global, 'history' , trim(str))
     call ncd_putatt(lnfid, ncd_global, 'institution_id' , 'E3SM-Project')
+    call ncd_putatt(lnfid, ncd_global, 'institution', &
+    'LLNL (Lawrence Livermore National Laboratory, Livermore, CA 94550, USA); &
+    &ANL (Argonne National Laboratory, Argonne, IL 60439, USA); &
+    &BNL (Brookhaven National Laboratory, Upton, NY 11973, USA); &
+    &LANL (Los Alamos National Laboratory, Los Alamos, NM 87545, USA); &
+    &LBNL (Lawrence Berkeley National Laboratory, Berkeley, CA 94720, USA); &
+    &ORNL (Oak Ridge National Laboratory, Oak Ridge, TN 37831, USA); &
+    &PNNL (Pacific Northwest National Laboratory, Richland, WA 99352, USA); &
+    &SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA). &
+    &Mailing address: LLNL Climate Program, c/o David C. Bader, &
+    &Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
     call ncd_putatt(lnfid, ncd_global, 'contact' ,  &
              'e3sm-data-support@listserv.llnl.gov')
     call ncd_putatt(lnfid, ncd_global, 'Conventions', trim(conventions))
@@ -812,7 +825,7 @@ contains
          call ncd_defvar(varname='lat', xtype=tape(t)%ncprec, dim1name='lat', &
               long_name='runoff coordinate latitude', units='degrees_north', ncid=nfid(t))
          call ncd_defvar(varname='mask', xtype=ncd_int, dim1name='lon', dim2name='lat', &
-              long_name='runoff mask', units='unitless', ncid=nfid(t))
+              long_name='runoff mask', units='1', ncid=nfid(t))
          call ncd_defvar(varname='area', xtype=tape(t)%ncprec, dim1name='lon', dim2name='lat', &
               long_name='runoff grid area', units='m2', ncid=nfid(t))
          call ncd_defvar(varname='areatotal', xtype=tape(t)%ncprec, dim1name='lon', dim2name='lat', &
@@ -825,7 +838,7 @@ contains
          call ncd_defvar(varname='lat', xtype=tape(t)%ncprec, dim1name='gridcell',       &
               long_name='runoff coordinate latitude', units='degrees_north', ncid=nfid(t))
          call ncd_defvar(varname='mask', xtype=ncd_int, dim1name='gridcell',             &
-              long_name='runoff mask', units='unitless', ncid=nfid(t))
+              long_name='runoff mask', units='1', ncid=nfid(t))
          call ncd_defvar(varname='area', xtype=tape(t)%ncprec, dim1name='gridcell',      &
               long_name='runoff grid area', units='m2', ncid=nfid(t))
          call ncd_defvar(varname='areatotal', xtype=tape(t)%ncprec, dim1name='gridcell', &
@@ -1011,7 +1024,7 @@ contains
                 case ('A')
                    avgstr = 'mean'
                 case ('I')
-                   avgstr = 'instantaneous'
+                   avgstr = 'point'
                 case ('X')
                    avgstr = 'maximum'
                 case ('M')
@@ -1268,7 +1281,7 @@ contains
                units="absolute value of negative is in hours, 0=monthly, positive is time-steps",     &
                dim1name='scalar')
           call ncd_defvar(ncid=ncid_hist(t), varname='mfilt', xtype=ncd_int, &
-               long_name="Number of history time samples on a file", units="unitless",     &
+               long_name="Number of history time samples on a file", units="1",     &
                comment="Namelist item", &
                dim1name='scalar')
           call ncd_defvar(ncid=ncid_hist(t), varname='ncprec', xtype=ncd_int, &
@@ -1287,7 +1300,7 @@ contains
                dim1name='fname_lenp2', dim2name='max_flds' )
 
           call ncd_defvar(ncid=ncid_hist(t), varname='nflds', xtype=ncd_int, &
-               long_name="Number of fields on file", units="unitless",        &
+               long_name="Number of fields on file", units="1",        &
                dim1name='scalar')
           call ncd_defvar(ncid=ncid_hist(t), varname='ntimes', xtype=ncd_int, &
                long_name="Number of time steps on file", units="time-step",     &
@@ -1299,7 +1312,7 @@ contains
                dim1name='scalar')
    
           call ncd_defvar(ncid=ncid_hist(t), varname='hpindex', xtype=ncd_int, &
-               long_name="History pointer index", units="unitless",     &
+               long_name="History pointer index", units="1",     &
                dim1name='max_nflds' )
 
           call ncd_defvar(ncid=ncid_hist(t), varname='avgflag', xtype=ncd_char, &

@@ -17,6 +17,9 @@
   rsplit            = 6                         ! unstable with desired rsplit=6 - why?
   integration       = 'explicit'                ! explicit time integration
   tstep_type        = 7                         ! 
+  hv_ref_profiles   = 0
+  hv_theta_correction=0
+  pgrad_correction   =0
   nu                = 1e15                      ! hyperviscosity
   nu_s              = 1e15
   nu_p              = 1e15

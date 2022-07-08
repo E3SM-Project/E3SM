@@ -22,7 +22,6 @@ subroutine initial_conds(dyn_in)
    ! routine read_inidat.
 
    use comsrf,        only: initialize_comsrf
-   use radae,         only: initialize_radbuffer
 #if (defined E3SM_SCM_REPLAY )
    use history_defaults, only: initialize_iop_history
 #endif
@@ -42,7 +41,6 @@ subroutine initial_conds(dyn_in)
    ! Initialize buffer, comsrf, and radbuffer variables 
    ! (which must occur after the call to phys_grid_init)
    call initialize_comsrf
-   call initialize_radbuffer
 
 #if (defined E3SM_SCM_REPLAY )
    call initialize_iop_history

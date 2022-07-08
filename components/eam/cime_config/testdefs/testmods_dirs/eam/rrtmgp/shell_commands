@@ -1,6 +1,2 @@
 #!/bin/bash
 ./xmlchange --append CAM_CONFIG_OPTS='-rad rrtmgp'
-if [ `./xmlquery --value MACH` == summit ]&&
-   [ `./xmlquery --value COMPILER` == ibm ]; then
-  ./xmlchange --append CAM_CONFIG_OPTS='-cppdefs -DUSE_CBOOL'
-fi

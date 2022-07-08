@@ -100,8 +100,6 @@ subroutine crmclouds_mixnuc_tend (state, ptend, dtime, cflx, pblht, pbuf,   &
 
   real(r8) :: qcld, qsmall
 
-  logical :: dommf=.true.                 ! value insignificant, if present, means that dropmixnuc is called the mmf part. 
-
   !!! Variables in the physics buffer:
   real(r8), pointer, dimension(:,:) :: cldn       ! cloud fractin at the current time step
   real(r8), pointer, dimension(:,:) :: cldo       ! cloud fraction at the previous time step
@@ -204,8 +202,6 @@ subroutine crmclouds_mixnuc_tend (state, ptend, dtime, cflx, pblht, pbuf,   &
     enddo 
   end do
 
-  call outfld('LENGC', lc, pcols, lchnk)
-
   kkvh_crm = 0._r8
   do i=1, ncol
     do k=1, pver
@@ -288,7 +284,7 @@ subroutine crmclouds_mixnuc_tend (state, ptend, dtime, cflx, pblht, pbuf,   &
 ! should we set omega to be zero ??
   omega(:ncol, :) = state%omega(:ncol, :)
 
-  call dropmixnuc(state, ptend, dtime, pbuf, wsub, lcldn, lcldo, tendnd,factnum, species_class,dommf )
+  call dropmixnuc(state, ptend, dtime, pbuf, wsub, lcldn, lcldo, tendnd,factnum, species_class, .true. )
   deallocate(factnum)
 
 

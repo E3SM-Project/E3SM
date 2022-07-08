@@ -507,15 +507,9 @@ contains
       tau_w = 0._r8
       tau_w_g = 0._r8
       tau_w_f = 0._r8
-      if(present(clear_rh)) then
-         call aer_rad_props_sw(icall, dt, state, pbuf, &
-              count(night_indices > 0), night_indices, is_cmip6_volc, &
-              tau, tau_w, tau_w_g, tau_w_f, clear_rh=clear_rh)
-      else
-         call aer_rad_props_sw(icall, dt, state, pbuf, &
-              count(night_indices > 0), night_indices, is_cmip6_volc, &
-              tau, tau_w, tau_w_g, tau_w_f)
-      endif
+      call aer_rad_props_sw(icall, dt, state, pbuf, &
+           count(night_indices > 0), night_indices, is_cmip6_volc, &
+           tau, tau_w, tau_w_g, tau_w_f, clear_rh=clear_rh)
 
       ! Extract quantities from products
       do icol = 1,ncol

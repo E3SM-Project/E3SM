@@ -5,16 +5,13 @@ module setperturb_mod
 contains
 
    subroutine setperturb(ncrms,icrm,iseed)
-
       ! Add random noise near the surface to help turbulence develop
+      ! The random generator is seeded based on the global column id, 
+      ! which avoids a problematic sensitivity to pcols.
 
-      ! This surboutine has been updated for SPCAM5 (Minghuai.Wang@pnnl.gov, April, 2012).
-      ! Now the random generator is seeded based on the global column id, which gets rid
-      ! of the dependence of the SPCAM results on pcols.
-
-      ! This module was updated to use a Mersenne Twister algorithm, because compiler deependent
-      ! issues were identified with the intrinisic random number routines (e.g. random_number())
-      ! Walter Hannah - LLNL - Mar 2018
+      ! This module was updated to use a Mersenne Twister algorithm, 
+      ! because compiler deependent issues were identified with the 
+      ! intrinisic random number routines (e.g. random_number())
 
       use vars
       use sgs,    only: setperturb_sgs

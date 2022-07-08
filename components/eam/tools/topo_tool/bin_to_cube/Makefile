@@ -10,8 +10,12 @@ RM = rm
 # setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/usr/local/netcdf-4.1.3-gcc-4.4.4-13-lf9581/lib
 #
 
-FC = lf95
+FC = gfortran
 #DEBUG=TRUE
+
+FFLAGS := $(shell nf-config --flibs)
+LDFLAGS := $(shell nf-config --flibs)
+
 
 # Check for the NetCDF library and include directories 
 ifeq ($(LIB_NETCDF),$(null))
@@ -65,7 +69,7 @@ endif
 
 
 .F90.o:
-	$(FC) $(FFLAGS) $<
+	$(FC) -c $(FFLAGS) $<
 
 #------------------------------------------------------------------------
 # Default rules and macros

@@ -101,32 +101,32 @@ subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_nd
    if (present(dst1_ndx)) then
       idx_dst1 = dst1_ndx
    else
-      call cnst_get_ind('dst_a1', idx_dst1,abort=.false.)
+      call cnst_get_ind('dst_a1', idx_dst1,abrtf=.false.)
    endif
    if (present(dst3_ndx)) then
       idx_dst3 = dst3_ndx
    else
-      call cnst_get_ind('dst_a3', idx_dst3,abort=.false.)
+      call cnst_get_ind('dst_a3', idx_dst3,abrtf=.false.)
    endif
    if (present(ncl3_ndx)) then
       idx_ncl3 = ncl3_ndx
    else
-      call cnst_get_ind('ncl_a3', idx_ncl3,abort=.false.)
+      call cnst_get_ind('ncl_a3', idx_ncl3,abrtf=.false.)
    endif
    if (present(so43_ndx)) then
       idx_so43 = so43_ndx
    else
-      call cnst_get_ind('so4_a3', idx_so43,abort=.false.)
+      call cnst_get_ind('so4_a3', idx_so43,abrtf=.false.)
    endif
    if (present(bc4_ndx)) then
       idx_bc4 = bc4_ndx
    else
-      call cnst_get_ind('bc_a4', idx_bc4,abort=.false.)
+      call cnst_get_ind('bc_a4', idx_bc4,abrtf=.false.)
    endif
    if (present(pom4_ndx)) then
       idx_pom4 = pom4_ndx
    else
-      call cnst_get_ind('pom_a4', idx_pom4,abort=.false.)   
+      call cnst_get_ind('pom_a4', idx_pom4,abrtf=.false.)   
    endif
 
 #ifdef MODAL_AER

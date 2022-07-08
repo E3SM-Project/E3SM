@@ -466,7 +466,7 @@ contains
        end if
     end if
     call restartvar(ncid=ncid, flag=flag, varname='timemgr_rst_type', xtype=ncd_int,  &
-         long_name='calendar type', units='unitless', flag_meanings=(/ "NO_LEAP_C", "GREGORIAN" /), &
+         long_name='calendar type', units='1', flag_meanings=(/ "NO_LEAP_C", "GREGORIAN" /), &
          flag_values=(/ noleap, gregorian /), ifill_value=uninit_int, &
          interpinic_flag='skip', readvar=readvar, data=rst_caltype)
     if (flag == 'read') then

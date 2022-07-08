@@ -78,6 +78,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     hypervis_subcycle_tom,&
     hypervis_subcycle_q,  &
     smooth_phis_numcycle, &
+    smooth_phis_p2filt, &
     smooth_phis_nudt,     &
     initial_total_mass,   & ! set > 0 to set the initial_total_mass
     u_perturb,     &        ! J&W baroclinic test perturbation size
@@ -93,6 +94,11 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     tol,           &
     debug_level,   &
     theta_advect_form,   &
+    vtheta_thresh,   &
+    pgrad_correction,    &
+    hv_ref_profiles,     &
+    hv_theta_correction, &
+    hv_theta_thresh, &
     vert_remap_q_alg, &
     se_fv_phys_remap_alg, &
     timestep_make_subcycle_parameters_consistent
@@ -270,12 +276,18 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       hypervis_subcycle_q, &
       hypervis_scaling, &
       smooth_phis_numcycle, &
+      smooth_phis_p2filt, &
       smooth_phis_nudt, &
       initial_total_mass, &
       u_perturb,     &
       rotate_grid,   &
       mesh_file,     &               ! Name of mesh file
-      theta_advect_form,     & 
+      theta_advect_form,     &
+      vtheta_thresh,         &
+      pgrad_correction,      &
+      hv_ref_profiles,       &
+      hv_theta_correction,   &
+      hv_theta_thresh,   &
       vert_remap_q_alg, &
       se_fv_phys_remap_alg
 
@@ -713,6 +725,11 @@ end if
     call MPI_bcast(limiter_option,  1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(se_ftype,        1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(theta_advect_form,1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(vtheta_thresh,    1, MPIreal_t, par%root,par%comm,ierr)
+    call MPI_bcast(pgrad_correction,   1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(hv_ref_profiles,    1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(hv_theta_correction,1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(hv_theta_thresh,1, MPIreal_t, par%root,par%comm,ierr)
     call MPI_bcast(vert_remap_q_alg,1, MPIinteger_t, par%root,par%comm,ierr)
 
     call MPI_bcast(fine_ne,         1, MPIinteger_t, par%root,par%comm,ierr)
@@ -740,6 +757,7 @@ end if
     call MPI_bcast(hypervis_subcycle_tom,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle_q,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(smooth_phis_numcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(smooth_phis_p2filt,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(smooth_phis_nudt,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(initial_total_mass ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(u_perturb     ,1,MPIreal_t   ,par%root,par%comm,ierr)
@@ -1134,6 +1152,15 @@ end if
        write(iulog,*)"readnl: semi_lagrange_nearest_point_lev   = ",semi_lagrange_nearest_point_lev
        write(iulog,*)"readnl: tstep_type    = ",tstep_type
        write(iulog,*)"readnl: theta_advect_form = ",theta_advect_form
+       write(iulog,*)"readnl: vtheta_thresh     = ",vtheta_thresh
+       write(iulog,*)"readnl: pgrad_correction  = ",pgrad_correction
+       write(iulog,*)"readnl: hv_ref_profiles   = ",hv_ref_profiles
+       write(iulog,*)"readnl: hv_theta_correction= ",hv_theta_correction
+       write(iulog,*)"readnl: hv_theta_thresh   = ",hv_theta_thresh
+       if (hv_ref_profiles==0 .and. hv_theta_correction==1) then
+          call abortmp("hv_theta_correction=1 requires hv_ref_profiles=1 or 2")
+       endif
+
        write(iulog,*)"readnl: vert_remap_q_alg  = ",vert_remap_q_alg
 #ifdef CAM
        write(iulog,*)"readnl: se_nsplit         = ", NSPLIT
