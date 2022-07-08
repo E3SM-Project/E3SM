@@ -1326,13 +1326,6 @@ contains
       !$acc update host(vertViscTopOfEdge)
 #endif
 
-      nEdges = nEdgesOwned
-      do iEdge=1,nEdges
-         do k=1,nVertLevels
-            velocityVmixTend(k,iEdge) = normalVelocity(k,iEdge)
-         end do
-      end do
-
       !
       !  Implicit vertical solve for momentum
       !
@@ -1370,13 +1363,6 @@ contains
          call ocn_vertVel_vmix_tend_implicit(meshPool, dt, vertViscTopOfCell, layerThickness, &
                                                vertVelocityNonhydro, err)
       endif 
-
-      nEdges = nEdgesOwned 
-      do iEdge=1,nEdges
-         do k=1,nVertLevels
-            velocityVmixTend(k,iEdge) = (normalVelocity(k,iEdge) - velocityVmixTend(k,iEdge)) / dt
-         end do
-      end do
 
       !
       !  Implicit vertical solve for all tracers
