@@ -2681,24 +2681,6 @@
 				 description="potential temperature tendency due to penetrating shortwave"
 				 missing_value="FILLVAL" missing_value_mask="cellMask"
 		/>
-                <var name="velocityHmixTend" dimensions="nVertLevels nEdges Time" units="m/s^2" type="real"
-                  description="tendency of normal velocitydue to horizontal mixing"
-                />
-                <var name="velocityVmixTend" dimensions="nVertLevels nEdges Time" units="m/s^2" type="real"
-                  description="tendency of normal velocity due to vertical mixing"
-                />
-                <var name="velocityCoriolisTend" dimensions="nVertLevels nEdges Time" units="m/s^2" type="real"
-                  description="tendency of normal velocity due to Coriolis"
-                />
-                <var name="velocityPGFtend" dimensions="nVertLevels nEdges Time" units="m/s^2" type="real"
-                  description="tendency of normal velocity due to PGF"
-                />
-                <var name="velocityVadvTend" dimensions="nVertLevels nEdges Time" units="m/s^2" type="real"
-                  description="tendency of normal velocity due to vertical advection"
-                />
-                <var name="velocityForcingTend" dimensions="nVertLevels nEdges Time" units="m/s^2" type="real"
-                  description="tendency of normal velocity due to top and bottom forcing"
-                />
 		<var_array name="activeTracerHorMixTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
 			<var name="temperatureHorMixTendency" array_group="activeTracerHmixTendGroup" units="C s^-1" name_in_code="temperatureHorMixTendency"
 				description="potential temperature tendency due to horizontal mixing (including Redi)"
