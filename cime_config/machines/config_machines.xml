@@ -2388,7 +2388,7 @@
     <DESC>ANL experimental/evaluation cluster, batch system is cobalt</DESC>
     <NODENAME_REGEX>jlse.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>oneapi-ifx,oneapi-ifort,gnu</COMPILERS>
+    <COMPILERS>oneapi-ifx,oneapi-ifxgpu,oneapi-ifort,gnu</COMPILERS>
     <MPILIBS>mpich,impi,openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/gpfs/jlse-fs0/projects/climate/$USER/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/gpfs/jlse-fs0/projects/climate/inputdata</DIN_LOC_ROOT>
@@ -2431,7 +2431,7 @@
         <command name="use">/soft/restricted/CNDA/modules</command>
       </modules>
       <modules compiler="!gnu">
-	<command name="load">oneapi/release/2021.10.30.001</command>
+	<command name="load">oneapi/eng-compiler/2022.01.30.008</command>
         <command name="load">cmake/3.22.1</command>
       </modules>
       <modules compiler="gnu">
@@ -2473,6 +2473,13 @@
       <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/gcc8.2.0-openmpi2.1.6</env>
       <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/gcc8.2.0-openmpi2.1.6</env>
     </environment_variables>
+    <environment_variables compiler="oneapi-ifxgpu">
+      <env name="SYCL_DEVICE_FILTER">opencl</env>
+      <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
+      <env name="SYCL_CACHE_PERSISTENT">0</env>
+      <env name="GATOR_INITIAL_MB">4000MB</env>
+      <env name="GATOR_DISABLE">0</env>
+    </environment_variables>    
     <environment_variables compiler="oneapi-ifx">
       <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
       <!--env name="OMP_TARGET_OFFLOAD">DISABLED</env--><!--set this for CPU-only runs-->
