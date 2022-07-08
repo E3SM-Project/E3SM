@@ -73,6 +73,7 @@ program driver
   rank = 0
 #endif
   call distr_indices(NCRMS,nranks,rank,myTasks_beg,myTasks_end)
+
   ncrms = myTasks_end - myTasks_beg + 1
   masterTask = rank == 0
 
@@ -234,7 +235,7 @@ program driver
 #ifdef MMF_ESMT
            crm_input%ul_esmt, crm_input%vl_esmt,                                        &
 #endif
-           crm_input%t_vt, crm_input%q_vt, &
+           crm_input%t_vt, crm_input%q_vt, crm_input%u_vt, &
            crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, crm_state%temperature, &
            crm_state%qt, crm_state%qp, crm_state%qn, crm_rad%qrad, crm_rad%temperature, &
            crm_rad%qv, crm_rad%qc, crm_rad%qi, crm_rad%cld, crm_output%subcycle_factor, &
@@ -248,7 +249,8 @@ program driver
            crm_output%qp_src, crm_output%qt_ls, crm_output%t_ls, crm_output%jt_crm, crm_output%mx_crm, crm_output%cltot, &
            crm_output%clhgh, crm_output%clmed, crm_output%cllow, &
            crm_output%sltend, crm_output%qltend, crm_output%qcltend, crm_output%qiltend, &
-           crm_output%t_vt_tend, crm_output%q_vt_tend, crm_output%t_vt_ls, crm_output%q_vt_ls, &
+           crm_output%t_vt_tend, crm_output%q_vt_tend, crm_output%u_vt_tend, &
+           crm_output%t_vt_ls, crm_output%q_vt_ls, crm_output%u_vt_ls, &
 #if defined(MMF_MOMENTUM_FEEDBACK)
            crm_output%ultend, crm_output%vltend, &
 #endif /* MMF_MOMENTUM_FEEDBACK */
