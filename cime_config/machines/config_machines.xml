@@ -262,6 +262,7 @@
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
+      <env name="FI_CXI_RX_MATCH_MODE">software</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>

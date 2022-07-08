@@ -12,7 +12,7 @@ module RtmMod
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_sys_mod     , only : shr_sys_flush
   use shr_const_mod   , only : SHR_CONST_PI, SHR_CONST_CDAY
-  use rof_cpl_indices , only : nt_rtm, rtm_tracers 
+  use rof_cpl_indices , only : nt_rtm, rtm_tracers, KW, DW 
   use RtmSpmd         , only : masterproc, npes, iam, mpicom_rof, ROFID, mastertask, &
                                MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
   use RtmVar          , only : re, spval, rtmlon, rtmlat, iulog, ice_runoff, &
@@ -294,7 +294,7 @@ contains
     delt_mosart = 3600
     decomp_option = 'basin'
     smat_option = 'opt'
-    RoutingMethod = 1
+    RoutingMethod = KW
     DLevelH2R = 5
     DLevelR = 3
     data_bgc_fluxes_to_ocean_flag = .false.
@@ -415,6 +415,9 @@ contains
     Tctl%RoutingMethod = RoutingMethod
     Tctl%DLevelH2R     = DLevelH2R
     Tctl%DLevelR       = DLevelR
+    if(.not.(Tctl%RoutingMethod==KW .or. Tctl%RoutingMethod==DW)) then 
+	   call shr_sys_abort('Error in routing method setup! There are only 2 options available: 1==KW, 2==DW')
+    end if
 
     if (inundflag) then
        Tctl%OPT_inund = OPT_inund     !
@@ -3724,7 +3727,7 @@ contains
      end if
 
      if (inundflag) then
-       if ( Tctl%RoutingMethod == 2 ) then       ! Use diffusion wave method in channel routing computation.
+       if ( Tctl%RoutingMethod == DW ) then       ! Use diffusion wave method in channel routing computation.
           allocate (TUnit%rlen_dstrm(begr:endr))
           allocate (TUnit%rslp_dstrm(begr:endr))
 
@@ -3943,7 +3946,7 @@ contains
      allocate (TPara%c_twid(begr:endr))
      TPara%c_twid = 1.0_r8
 
-     if ( Tctl%RoutingMethod == 2 ) then       ! Use diffusion wave method in channel routing computation.
+     if ( Tctl%RoutingMethod == DW ) then       ! Use diffusion wave method in channel routing computation.
         allocate (TRunoff%rslp_energy(begr:endr))
         TRunoff%rslp_energy = 0.0_r8
         
@@ -3980,7 +3983,7 @@ contains
         allocate (TRunoff%yr_exchg(begr:endr))
         TRunoff%yr_exchg = 0.0_r8
 
-        if ( Tctl%RoutingMethod == 2 ) then       ! Use diffusion wave method in channel routing computation.
+        if ( Tctl%RoutingMethod == DW ) then       ! Use diffusion wave method in channel routing computation.
            allocate (TRunoff%wr_exchg_dstrm(begr:endr))
            TRunoff%wr_exchg_dstrm = 0.0_r8
 
@@ -4212,7 +4215,7 @@ contains
   end if  ! endr >= begr
 
   ! retrieve the downstream channel attributes after some post-processing above
-  if (Tctl%RoutingMethod == 2 ) then       ! Use diffusion wave method in channel routing computation.
+  if (Tctl%RoutingMethod == DW ) then       ! Use diffusion wave method in channel routing computation.
      allocate (TUnit%rlen_dstrm(begr:endr))
      allocate (TUnit%rslp_dstrm(begr:endr))
 
