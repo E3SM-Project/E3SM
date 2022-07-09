@@ -3717,6 +3717,7 @@
       <modules>
         <command name="purge"/>
         <command name="load">DefApps</command>
+        <command name="load">python/3.8-anaconda3</command>
         <command name="load">git/2.31.1</command>
         <command name="load">subversion</command>
         <command name="load">cmake/3.22.2</command>
