@@ -1183,7 +1183,7 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="alvarez">
+    <mach name="pm-cpu|alvarez">
       <!--Pes setting: grid          is a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_z%null_m%oEC60to30v3
           Pes setting: compset       is 2010_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP -->
       <pes compset=".*EAM.+ELM.+DOCN" pesize="any">
