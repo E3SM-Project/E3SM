@@ -3719,6 +3719,7 @@
         <command name="load">DefApps</command>
         <command name="load">python/3.8-anaconda3</command>
         <command name="load">git/2.31.1</command>
+        <command name="load">subversion</command>
         <command name="load">cmake/3.22.2</command>
         <command name="load">essl/6.3.0</command>
         <command name="load">netlib-lapack/3.9.1</command>
