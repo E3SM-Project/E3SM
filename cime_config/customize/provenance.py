@@ -23,11 +23,11 @@ def save_build_provenance(case, lid=None):
 
         _record_git_provenance(srcroot, exeroot, lid)
 
-        _record_source_mods(lid, exeroot, caseroot)
+        _archive_source_mods(lid, exeroot, caseroot)
 
-        _record_build_environment(lid, exeroot, case)
+        _archive_build_environment(lid, exeroot, case)
 
-        _record_build_times(lid, exeroot)
+        _archive_build_times(lid, exeroot)
 
         _symlink_current(lid, exeroot)
 
@@ -208,7 +208,7 @@ def _parse_dot_git_path(gitdir):
     return m.group(1)
 
 
-def _record_source_mods(lid, exeroot, caseroot):
+def _archive_source_mods(lid, exeroot, caseroot):
     # Save SourceMods
     sourcemods = os.path.join(caseroot, "SourceMods")
     sourcemods_prov = os.path.join(exeroot, "SourceMods.{}.tar.gz".format(lid))
@@ -219,7 +219,7 @@ def _record_source_mods(lid, exeroot, caseroot):
             tfd.add(sourcemods, arcname="SourceMods")
 
 
-def _record_build_environment(lid, exeroot, case):
+def _archive_build_environment(lid, exeroot, case):
     # Save build env
     env_prov = os.path.join(exeroot, "build_environment.{}.txt".format(lid))
     if os.path.exists(env_prov):
@@ -228,7 +228,7 @@ def _record_build_environment(lid, exeroot, case):
     env_module.save_all_env_info(env_prov)
 
 
-def _record_build_times(lid, exeroot):
+def _archive_build_times(lid, exeroot):
     # Save build times
     build_times = os.path.join(exeroot, "build_times.{}.txt".format(lid))
     if os.path.exists(build_times):
