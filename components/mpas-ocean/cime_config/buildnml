@@ -147,7 +147,7 @@ def buildnml(case, caseroot, compname):
         decomp_date = '171128'
         decomp_prefix = 'mpas-o.graph.info.'
         restoring_file = 'sss.monthlyClimatology.PHC2_salx_040803.oRRS30to10v3.nc'
-        analysis_mask_file = 'masks_SingleRegionAtlanticWTransportTransects_RRS30to10v3.nc'
+        analysis_mask_file = 'oRRS30to10v3_mocBasinsAndTransects20210623.nc'
         ic_date = '171128'
         ic_prefix = 'oRRS30to10v3'
         if ocn_ic_mode == 'spunup':
@@ -169,7 +169,7 @@ def buildnml(case, caseroot, compname):
         decomp_date = '170111'
         decomp_prefix = 'mpas-o.graph.info.'
         restoring_file = 'sss.monthlyClimatology.PHC2_salx_040803.oRRS18to6v3.nc'
-        analysis_mask_file = 'oRRS18to6v3.170111.SingleRegionAtlanticWTransportTransects_masks.nc'
+        analysis_mask_file = 'oRRS18to6v3_mocBasinsAndTransects20210623.nc'
         ic_date = '171116'
         ic_prefix = 'oRRS18to6v3'
         if ocn_ic_mode == 'spunup':
