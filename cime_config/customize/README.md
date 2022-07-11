@@ -1,17 +1,28 @@
 # CIME customization
-This module contains the code for customizing CIME's runtime.
+This directory contains the code for customizing CIME's runtime and provenance collection.
 
 ## flags.py
-This file contains the flags that alter CIME's behavior.
+Contains the flags that alter CIME's runtime behavior.
 
 ## provenance.py
 Contains the code for capturing build and pre/post run provenance.
 
+Implements three provenance hooks.
+- `save_build_provenance`
+- `save_prerun_provenance`
+- `save_postrun_provenance`
+
 ## Testing
-Tests for the provenance code are contained in the `tests/` directory.
+The `tests/` directory contains unit tests for provenance code.
 
-To run the tests install the `pytest` package and run the following command.
+Requirements:
+- `pytest`
 
+### Example
 ```bash
-pytest -vvv --machine <machine_name> tests
+pip install pytest
+# or
+# conda install -c conda-forge pytest
+
+pytest -vvv --machine docker tests/
 ```
