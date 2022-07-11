@@ -94,8 +94,11 @@ subroutine cloud_diagnostics_init()
   call addfld('SETLWP',  (/'lev'/), 'A','gram/m2','Prescribed liquid water path' , sampling_seq=sampling_seq)
   call addfld('LWSH',    horiz_only,'A','m','Liquid water scale height'          , sampling_seq=sampling_seq)
 
+  call addfld ('CLOUD',(/ 'lev' /), 'A','fraction','Cloud fraction' , sampling_seq=sampling_seq)
+
   call cloud_cover_diags_init(sampling_seq)
 
+  call add_default ('CLOUD'   , 1, ' ')
   call add_default ('TGCLDLWP', 1, ' ')
   call add_default ('TGCLDIWP', 1, ' ')
   call add_default ('TGCLDCWP', 1, ' ')
