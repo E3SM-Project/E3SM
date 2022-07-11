@@ -20,8 +20,8 @@ Bumping the Version
 
         # Prepend "v" to <version>
         # For release candidates, append "rc" to <version>
-        git checkout -b v<version>
-        git push --set-upstream origin v<version>
+        git checkout -b bump/v<version>
+        git push --set-upstream origin bump/v<version>
 
 3. Bump version using tbump.
 
@@ -44,7 +44,7 @@ Bumping the Version
         => Would run these git commands
         $ git add --update
         $ git commit --message Bump to 2.6.0
-        $ git push origin v2.6.0
+        $ git push origin bump/v2.6.0
         :: Looking good? (y/N)
         >
 
