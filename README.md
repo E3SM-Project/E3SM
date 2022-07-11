@@ -41,11 +41,11 @@ This diagnostics package is constructed for supporting the diagnostics task of D
 - fully integrates the functionality of NCAR's AMWG diagnostics package.
 - utilizes most updated observational datasets, including remote sensing, reanalysis and in-situ datasets.
 - interfaces with diagnostics developed from different E3SM science groups
-- is flexible for user specified diagnostics and being configured for use by other climate models.
+- is flexible for user specified diagnostics and being configured for use by other climate models (i.e. in CMIP format).
 
 ## Current State <a name="current-state"></a>
 
-Algorithm and visualization codes for the AMWG Set 5, 7, 4, 3, 13, 1, 14 diagnostics, namely lat-lon contour plots (Figure 1), polar contour plots (Figure 2), zonal mean 2d plots (Figure 3), zonal mean line plots (Figure 4), 2d joint histogram for COSP cloud simulator output (Figure 5), tables (Figure 6) and Taylor Diagrams (Figure 7) summarizing metrics, for climatology seasonal means, are implemented as core sets of this diagnostics package. More diagnostics harvested from E3SM v1 and v2 development are also supported.
+Algorithm and visualization codes for lat-lon contour plots (Figure 1), polar contour plots (Figure 2), zonal mean 2d plots (Figure 3), zonal mean line plots (Figure 4), 2d joint histogram for COSP cloud simulator output (Figure 5), tables (Figure 6) and Taylor Diagrams (Figure 7) summarizing metrics, for climatology seasonal means, are implemented as core sets of this diagnostics package. More diagnostics harvested from E3SM v1 and v2 development are also supported. Example of a complete set of diagnostics can be found [here](https://web.lcrc.anl.gov/public/e3sm/e3sm_diags_test_data/unit_test_complete_run/expected/all_sets/viewer/)
 
 The package features built-in user diagnostics, by specifying user desired diagnostics regions and pressure levels for variables with the vertical dimension.
 
@@ -71,6 +71,15 @@ In addition to default model versus observation comparison, the package also pro
 
 <img src="misc/example_fig7.png" alt="Figure7" style="width: 280px;"/>
 <h5 align="center">Figure 7: An example of Taylor diagram summarizing metrics calculated based on lat-lon contour plots diagnostics of several key variables</h5>
+
+## Reference
+
+Zhang, Chengzhu, Jean-Christophe Golaz, Ryan Forsyth, Tom Vo, Shaocheng Xie, Zeshawn Shaheen, Gerald L. Potter et al. "The E3SM Diagnostics Package (E3SM Diags v2): A Python-based Diagnostics Package for Earth System Models Evaluation." Geoscientific Model Development Discussions (2022): 1-35.
+
+
+## Acknowledgement
+
+The work is performed for the [E3SM](https://e3sm.org/) project, which is sponsored by Earth System Model Development ([ESMD](https://climatemodeling.science.energy.gov/program/earth-system-model-development)) program.  ESMD is a program area for the Earth and Environmental Systems Sciences Division ([EESSD](https://science.osti.gov/ber/Research/eessd)) in the Office of Biological and Environmental Research ([BER](https://science.osti.gov/ber)) within the [Department of Energy](https://www.energy.gov/)'s [Office of Science](https://science.osti.gov).
 
 ## License
 

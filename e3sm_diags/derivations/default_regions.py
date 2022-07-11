@@ -15,6 +15,7 @@ regions_specs = {
     "50N90N": {"domain": cdutil.region.domain(latitude=(50.0, 90, "ccb"))},
     "60S90N": {"domain": cdutil.region.domain(latitude=(-60.0, 90, "ccb"))},
     "60S60N": {"domain": cdutil.region.domain(latitude=(-60.0, 60, "ccb"))},
+    "75S75N": {"domain": cdutil.region.domain(latitude=(-75.0, 75, "ccb"))},
     "ocean": {
         "value": 0.65,
     },

@@ -62,7 +62,9 @@ def determine_tick_step(degrees_covered):
         return 1
 
 
-def plot_panel(n, fig, proj, var, clevels, cmap, title, parameters, stats=None):
+def plot_panel(  # noqa: C901
+    n, fig, proj, var, clevels, cmap, title, parameters, stats=None
+):
 
     var = add_cyclic(var)
     lon = var.getLongitude()
@@ -170,7 +172,7 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, parameters, stats=None):
 
     else:
         maxval = np.amax(np.absolute(levels[1:-1]))
-        if maxval < 0.5:
+        if maxval < 0.2:
             fmt = "%5.3f"
             pad = 28
         elif maxval < 10.0:
@@ -179,6 +181,9 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, parameters, stats=None):
         elif maxval < 100.0:
             fmt = "%5.1f"
             pad = 25
+        elif maxval > 9999.0:
+            fmt = "%.0f"
+            pad = 40
         else:
             fmt = "%6.1f"
             pad = 30
@@ -196,10 +201,19 @@ def plot_panel(n, fig, proj, var, clevels, cmap, title, parameters, stats=None):
         ha="left",
         fontdict=plotSideTitle,
     )
+
+    fmt_m = []
+    # printing in scientific notation if value greater than 10^5
+    for i in range(len(stats[0:3])):
+        fs = "1e" if stats[i] > 100000.0 else "2f"
+        fmt_m.append(fs)
+    fmt_metrics = f"%.{fmt_m[0]}\n%.{fmt_m[1]}\n%.{fmt_m[2]}"
+
     fig.text(
         panel[n][0] + 0.7635,
         panel[n][1] + 0.2107,
-        "%.2f\n%.2f\n%.2f" % stats[0:3],
+        # "%.2f\n%.2f\n%.2f" % stats[0:3],
+        fmt_metrics % stats[0:3],
         ha="right",
         fontdict=plotSideTitle,
     )

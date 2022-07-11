@@ -29,7 +29,7 @@ def aplusb(var1, var2, target_units=None):
     return var1 + var2
 
 
-def convert_units(var, target_units):
+def convert_units(var, target_units):  # noqa: C901
     """Converts units of var to target_units.
     var is a cdms.TransientVariable."""
 
@@ -39,6 +39,17 @@ def convert_units(var, target_units):
         var.units = target_units
         var = 100.0 * var
     elif not hasattr(var, "units") and var.id == "AODVIS":
+        var.units = target_units
+    elif not hasattr(var, "units") and var.id == "AODDUST":
+        var.units = target_units
+    elif var.id == "FAREA_BURNED":
+        var = var * 1e9
+        var.units = target_units
+    elif var.units == "gC/m^2":
+        var = var / 1000.0
+        var.units = target_units
+    elif var.id == "FLOODPLAIN_VOLUME" and target_units == "km3":
+        var = var / 1.0e9
         var.units = target_units
     elif var.id == "AOD_550_ann":
         var.units = target_units
@@ -67,9 +78,12 @@ def convert_units(var, target_units):
     elif var.id == "prw" and var.units == "cm":
         var = var * 10.0  # convert from 'cm' to 'kg/m2' or 'mm'
         var.units = target_units
-    elif var.units in ["gN/m^2/s", "gP/m^2/s", "gC/m^2/s"] and target_units == "*/day":
+    elif var.units in ["gC/m^2/s"] and target_units == "g*/m^2/day":
         var = var * 24 * 3600
         var.units = var.units[0:7] + "day"
+    elif var.units in ["gN/m^2/s", "gP/m^2/s"] and target_units == "mg*/m^2/day":
+        var = var * 24 * 3600 * 1000.0
+        var.units = "m" + var.units[0:7] + "day"
     elif var.units in ["gN/m^2/day", "gP/m^2/day", "gC/m^2/day"]:
         pass
     else:
@@ -177,6 +191,14 @@ def tauxy(taux, tauy):
     var = (taux**2 + tauy**2) ** 0.5
     var = convert_units(var, "N/m^2")
     var.long_name = "Total surface wind stress"
+    return var
+
+
+def fp_uptake(a, b):
+    """plant uptake of soil mineral N"""
+    var = a / b
+    var.units = "dimensionless"
+    var.long_name = "Plant uptake of soil mineral N"
     return var
 
 
@@ -1344,6 +1366,14 @@ derived_variables = {
         ]
     ),
     "AODABS": OrderedDict([(("abs550aer",), rename)]),
+    "AODDUST": OrderedDict(
+        [
+            (
+                ("AODDUST",),
+                lambda aod: convert_units(rename(aod), target_units="dimensionless"),
+            )
+        ]
+    ),
     # Surface temperature: Degrees C
     # (Temperature of the surface (land/water) itself, not the air)
     "TS": OrderedDict([(("ts",), rename)]),
@@ -1405,18 +1435,17 @@ derived_variables = {
     "SOILWATER_10CM": OrderedDict([(("mrsos",), rename)]),
     "SOILWATER_SUM": OrderedDict([(("mrso",), rename)]),
     "SOILICE_SUM": OrderedDict([(("mrfso",), rename)]),
-    "QOVER": OrderedDict([(("mrros",), rename)]),
     "QRUNOFF": OrderedDict(
         [
             (("QRUNOFF",), lambda qrunoff: qflxconvert_units(qrunoff)),
-            (("mrro",), rename),
+            (("mrro",), lambda qrunoff: qflxconvert_units(qrunoff)),
         ]
     ),
     "QINTR": OrderedDict([(("prveg",), rename)]),
     "QVEGE": OrderedDict(
         [
             (("QVEGE",), lambda qevge: qflxconvert_units(rename(qevge))),
-            (("evspsblveg",), rename),
+            (("evspsblveg",), lambda qevge: qflxconvert_units(rename(qevge))),
         ]
     ),
     "QVEGT": OrderedDict(
@@ -1427,7 +1456,53 @@ derived_variables = {
     "QSOIL": OrderedDict(
         [
             (("QSOIL",), lambda qsoil: qflxconvert_units(rename(qsoil))),
-            (("evspsblsoi",), rename),
+            (("evspsblsoi",), lambda qsoil: qflxconvert_units(rename(qsoil))),
+        ]
+    ),
+    "QDRAI": OrderedDict(
+        [
+            (("QDRAI",), lambda q: qflxconvert_units(rename(q))),
+        ]
+    ),
+    "QINFL": OrderedDict(
+        [
+            (("QINFL",), lambda q: qflxconvert_units(rename(q))),
+        ]
+    ),
+    "QIRRIG_GRND": OrderedDict(
+        [
+            (("QIRRIG_GRND",), lambda q: qflxconvert_units(rename(q))),
+        ]
+    ),
+    "QIRRIG_ORIG": OrderedDict(
+        [
+            (("QIRRIG_ORIG",), lambda q: qflxconvert_units(rename(q))),
+        ]
+    ),
+    "QIRRIG_REAL": OrderedDict(
+        [
+            (("QIRRIG_REAL",), lambda q: qflxconvert_units(rename(q))),
+        ]
+    ),
+    "QIRRIG_SURF": OrderedDict(
+        [
+            (("QIRRIG_SURF",), lambda q: qflxconvert_units(rename(q))),
+        ]
+    ),
+    "QIRRIG_WM": OrderedDict(
+        [
+            (("QIRRIG_WM",), lambda q: qflxconvert_units(rename(q))),
+        ]
+    ),
+    "QOVER": OrderedDict(
+        [
+            (("QOVER",), lambda q: qflxconvert_units(rename(q))),
+            (("mrros",), lambda q: qflxconvert_units(rename(q))),
+        ]
+    ),
+    "QRGWL": OrderedDict(
+        [
+            (("QRGWL",), lambda q: qflxconvert_units(rename(q))),
         ]
     ),
     "RAIN": OrderedDict(
@@ -1435,25 +1510,113 @@ derived_variables = {
             (("RAIN",), lambda rain: qflxconvert_units(rename(rain))),
         ]
     ),
+    "SNOW": OrderedDict(
+        [
+            (("SNOW",), lambda snow: qflxconvert_units(rename(snow))),
+        ]
+    ),
     "TRAN": OrderedDict([(("tran",), rename)]),
     "TSOI": OrderedDict([(("tsl",), rename)]),
     "LAI": OrderedDict([(("lai",), rename)]),
     # Additional land variables requested by BGC evaluation
+    "FAREA_BURNED": OrderedDict(
+        [
+            (
+                ("FAREA_BURNED",),
+                lambda v: convert_units(v, target_units="proportionx10^9"),
+            )
+        ]
+    ),
+    "FLOODPLAIN_VOLUME": OrderedDict(
+        [(("FLOODPLAIN_VOLUME",), lambda v: convert_units(v, target_units="km3"))]
+    ),
     "TLAI": OrderedDict([(("TLAI",), rename)]),
     "EFLX_LH_TOT": OrderedDict([(("EFLX_LH_TOT",), rename)]),
-    "GPP": OrderedDict([(("GPP",), lambda v: convert_units(v, target_units="*/day"))]),
-    "NBP": OrderedDict([(("NBP",), lambda v: convert_units(v, target_units="*/day"))]),
-    "NPP": OrderedDict([(("NPP",), lambda v: convert_units(v, target_units="*/day"))]),
-    "TOTVEGC": OrderedDict([(("TOTVEGC",), rename)]),
-    "TOTSOMC": OrderedDict([(("TOTSOMC",), rename)]),
+    "GPP": OrderedDict(
+        [(("GPP",), lambda v: convert_units(v, target_units="g*/m^2/day"))]
+    ),
+    "HR": OrderedDict(
+        [(("HR",), lambda v: convert_units(v, target_units="g*/m^2/day"))]
+    ),
+    "NBP": OrderedDict(
+        [(("NBP",), lambda v: convert_units(v, target_units="g*/m^2/day"))]
+    ),
+    "NPP": OrderedDict(
+        [(("NPP",), lambda v: convert_units(v, target_units="g*/m^2/day"))]
+    ),
+    "TOTVEGC": OrderedDict(
+        [(("TOTVEGC",), lambda v: convert_units(v, target_units="kgC/m^2"))]
+    ),
+    "TOTSOMC": OrderedDict(
+        [(("TOTSOMC",), lambda v: convert_units(v, target_units="kgC/m^2"))]
+    ),
     "TOTSOMN": OrderedDict([(("TOTSOMN",), rename)]),
     "TOTSOMP": OrderedDict([(("TOTSOMP",), rename)]),
     "FPG": OrderedDict([(("FPG",), rename)]),
     "FPG_P": OrderedDict([(("FPG_P",), rename)]),
     "TBOT": OrderedDict([(("TBOT",), rename)]),
-    "CPOOL": OrderedDict([(("CPOOL",), rename)]),
-    "SR": OrderedDict([(("SR",), rename)]),
+    "CPOOL": OrderedDict(
+        [(("CPOOL",), lambda v: convert_units(v, target_units="kgC/m^2"))]
+    ),
+    "LEAFC": OrderedDict(
+        [(("LEAFC",), lambda v: convert_units(v, target_units="kgC/m^2"))]
+    ),
+    "SR": OrderedDict([(("SR",), lambda v: convert_units(v, target_units="kgC/m^2"))]),
     "RH2M": OrderedDict([(("RH2M",), rename)]),
+    "DENIT": OrderedDict(
+        [(("DENIT",), lambda v: convert_units(v, target_units="mg*/m^2/day"))]
+    ),
+    "GROSS_NMIN": OrderedDict(
+        [(("GROSS_NMIN",), lambda v: convert_units(v, target_units="mg*/m^2/day"))]
+    ),
+    "GROSS_PMIN": OrderedDict(
+        [(("GROSS_PMIN",), lambda v: convert_units(v, target_units="mg*/m^2/day"))]
+    ),
+    "NDEP_TO_SMINN": OrderedDict(
+        [(("NDEP_TO_SMINN",), lambda v: convert_units(v, target_units="mg*/m^2/day"))]
+    ),
+    "NFIX_TO_SMINN": OrderedDict(
+        [(("NFIX_TO_SMINN",), lambda v: convert_units(v, target_units="mg*/m^2/day"))]
+    ),
+    "PLANT_NDEMAND_COL": OrderedDict(
+        [
+            (
+                ("PLANT_NDEMAND_COL",),
+                lambda v: convert_units(v, target_units="mg*/m^2/day"),
+            )
+        ]
+    ),
+    "PLANT_PDEMAND_COL": OrderedDict(
+        [
+            (
+                ("PLANT_PDEMAND_COL",),
+                lambda v: convert_units(v, target_units="mg*/m^2/day"),
+            )
+        ]
+    ),
+    "SMINN_TO_PLANT": OrderedDict(
+        [(("SMINN_TO_PLANT",), lambda v: convert_units(v, target_units="mg*/m^2/day"))]
+    ),
+    "SMINP_TO_PLANT": OrderedDict(
+        [(("SMINP_TO_PLANT",), lambda v: convert_units(v, target_units="mg*/m^2/day"))]
+    ),
+    "SMIN_NO3_LEACHED": OrderedDict(
+        [
+            (
+                ("SMIN_NO3_LEACHED",),
+                lambda v: convert_units(v, target_units="mg*/m^2/day"),
+            )
+        ]
+    ),
+    "FP_UPTAKE": OrderedDict(
+        [
+            (("FP_UPTAKE",), rename),
+            (
+                ("SMINN_TO_PLANT", "PLANT_NDEMAND_COL"),
+                lambda a, b: fp_uptake(a, b),
+            ),
+        ]
+    ),
     # Ocean variables
     "tauuo": OrderedDict([(("tauuo",), rename)]),
     "tos": OrderedDict([(("tos",), rename)]),
