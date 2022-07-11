@@ -1331,23 +1331,9 @@ module li_thermal
          end select   ! config_thermal_solver
 
          ! It is possible that internal melting was computed above for floating ice and assigned
-         !  to the groundedBasalMassBal array.  If so, then add it to floatingBasalMassBal.
+         ! to the groundedBasalMassBal array.  If so, then this is added to basalMassBal for floating cells in
+         ! mpas_li_advection.F. floatingBasalMassBal should never be altered because it is an input variable.
          ! Note: Subroutine basal_melt_floating_ice should be called earlier in the time step, before adding this term.
-
-         do iCell = 1, nCellsSolve
-
-            if (thermalCellMask(iCell) == 1 .and. li_mask_is_floating_ice(cellMask(iCell)) .and. &
-                 groundedBasalMassBal(iCell) /= 0.0_RKIND) then
-               floatingBasalMassBal(iCell) = floatingBasalMassBal(iCell) + groundedBasalMassBal(iCell)
-               groundedBasalMassBal(iCell) = 0.0_RKIND
-            endif
-
-            if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
-               call mpas_log_write('indexToCellID=$i, basal mass balance (m/yr): grounded=$r, floating=$r', &
-                    intArgs=(/indexToCellID(iCell)/), realArgs=(/groundedBasalMassBal(iCell)*scyr/rhoi, floatingBasalMassBal(iCell)*scyr/rhoi/) )
-            endif
-
-         enddo
 
          ! clean up
          call mpas_deallocate_scratch_field(thermalCellMaskField, .true.)

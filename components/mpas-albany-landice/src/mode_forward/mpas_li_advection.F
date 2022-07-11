@@ -182,11 +182,13 @@ module li_advection
            basalTracersField        ! scratch field containing values of basal tracers
 
       type (field1DInteger), pointer :: &
-           cellMaskTemporaryField ! scratch field containing old values of cellMask
+           cellMaskTemporaryField, & ! scratch field containing old values of cellMask
+           thermalCellMaskField
 
       integer, dimension(:), pointer :: &
            cellMask,              & ! integer bitmask for cells
-           edgeMask                 ! integer bitmask for edges
+           edgeMask,              & ! integer bitmask for edges
+           thermalCellMask
 
       integer, dimension(:,:), pointer :: cellsOnEdge
 
@@ -196,7 +198,8 @@ module li_advection
            config_thickness_advection   ! method for advecting thickness and tracers
 
       logical, pointer :: &
-           config_print_thickness_advection_info   !TODO - change to config_print_advection_info?
+           config_print_thickness_advection_info, &  !TODO - change to config_print_advection_info?
+           config_print_thermal_info
 
       real (kind=RKIND), pointer :: &
            config_ice_density,    & ! rhoi
@@ -280,6 +283,7 @@ module li_advection
       ! get config variables
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
+      call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
@@ -322,6 +326,9 @@ module li_advection
       call mpas_pool_get_field(geometryPool, 'cellMaskTemporary', cellMaskTemporaryField)
       call mpas_allocate_scratch_field(cellMaskTemporaryField, .true.)
 
+      call mpas_pool_get_field(scratchPool, 'iceCellMask', thermalCellMaskField)
+      call mpas_allocate_scratch_field(thermalCellMaskField, .true.)
+      thermalCellMask => thermalCellMaskField % array
 
       ! given the old thickness, compute the thickness in each layer
       call li_calculate_layerThickness(meshPool, thickness, layerThickness)
@@ -462,6 +469,24 @@ module li_advection
             basalMassBal = 0.0_RKIND
 
          end where
+
+         ! It is possible that internal melting was computed for floating ice and assigned
+         ! to the groundedBasalMassBal array in mpas_li_thermal.F.  If so, then add it to basalMassBal.
+         ! floatingBasalMassBal should never be altered because it is an input variable.
+         ! Note: Subroutine basal_melt_floating_ice should be called earlier in the time step, before adding this term.
+         do iCell = 1, nCells
+            if (thermalCellMask(iCell) == 1 .and. li_mask_is_floating_ice(cellMask(iCell)) .and. &
+                 groundedBasalMassBal(iCell) /= 0.0_RKIND) then
+               basalMassBal(iCell) = basalMassBal(iCell) + groundedBasalMassBal(iCell)
+               groundedBasalMassBal(iCell) = 0.0_RKIND
+            endif
+
+            if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
+               call mpas_log_write('indexToCellID=$i, basal mass balance (m/yr): $r', &
+                    intArgs=(/indexToCellID(iCell)/), realArgs=(/basalMassBal(iCell)*scyr/config_ice_density/) ) 
+            endif
+
+         enddo
 
          call apply_mass_balance(&
               dt,                  &
