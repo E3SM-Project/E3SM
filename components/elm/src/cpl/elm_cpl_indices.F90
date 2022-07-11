@@ -140,7 +140,8 @@ contains
     ! interface.
     !
     ! !USES:
-    use seq_flds_mod   , only: seq_flds_x2l_fields, seq_flds_l2x_fields
+    use seq_flds_mod   , only: seq_flds_x2l_fields, seq_flds_l2x_fields,       &
+                               lnd_rof_two_way
     use mct_mod        , only: mct_aVect, mct_aVect_init, mct_avect_indexra
     use mct_mod        , only: mct_aVect_clean, mct_avect_nRattr
     use seq_drydep_mod , only: drydep_fields_token, lnd_drydep
@@ -184,7 +185,9 @@ contains
     index_l2x_Flrl_Tqsur    = mct_avect_indexra(l2x,'Flrl_Tqsur')
     index_l2x_Flrl_Tqsub    = mct_avect_indexra(l2x,'Flrl_Tqsub')
     index_l2x_coszen_str    = mct_avect_indexra(l2x,'coszen_str')
-    index_l2x_Flrl_inundinf = mct_avect_indexra(l2x,'Flrl_inundinf')
+    if (lnd_rof_two_way) then
+      index_l2x_Flrl_inundinf = mct_avect_indexra(l2x,'Flrl_inundinf')
+    endif
     index_l2x_Sl_t          = mct_avect_indexra(l2x,'Sl_t')
     index_l2x_Sl_snowh      = mct_avect_indexra(l2x,'Sl_snowh')
     index_l2x_Sl_avsdr      = mct_avect_indexra(l2x,'Sl_avsdr')
@@ -279,8 +282,10 @@ contains
     index_x2l_Faxa_dstwet4  = mct_avect_indexra(x2l,'Faxa_dstwet4')
 
     index_x2l_Flrr_flood    = mct_avect_indexra(x2l,'Flrr_flood')
-    index_x2l_Sr_h2orof     = mct_avect_indexra(x2l,'Sr_h2orof')
-    index_x2l_Sr_frac_h2orof= mct_avect_indexra(x2l,'Sr_frac_h2orof')
+    if (lnd_rof_two_way) then
+       index_x2l_Sr_h2orof     = mct_avect_indexra(x2l,'Sr_h2orof')
+       index_x2l_Sr_frac_h2orof= mct_avect_indexra(x2l,'Sr_frac_h2orof')
+    endif
 
     !-------------------------------------------------------------
     ! glc coupling

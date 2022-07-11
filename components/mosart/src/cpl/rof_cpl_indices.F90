@@ -92,7 +92,7 @@ contains
     !
     ! !USES:
     use seq_flds_mod  , only: seq_flds_r2x_fields, seq_flds_x2r_fields, rof_heat, &
-                              rof2ocn_nutrients
+                              rof2ocn_nutrients, lnd_rof_two_way
     use mct_mod       , only: mct_aVect, mct_aVect_init, mct_avect_indexra, &
                               mct_aVect_clean, mct_avect_nRattr
     !
@@ -134,7 +134,9 @@ contains
 
     index_x2r_coszen_str  = mct_avect_indexra(avtmp,'coszen_str')
 
-    index_x2r_Flrl_inundinf =  mct_avect_indexra(avtmp,'Flrl_inundinf')
+    if (lnd_rof_two_way) then
+      index_x2r_Flrl_inundinf =  mct_avect_indexra(avtmp,'Flrl_inundinf')
+    endif
 
     nflds_x2r = mct_avect_nRattr(avtmp)
 
@@ -164,8 +166,12 @@ contains
     index_r2x_Flrr_volrmch = mct_avect_indexra(avtmp,'Flrr_volrmch')
     index_r2x_Flrr_supply = mct_avect_indexra(avtmp,'Flrr_supply')
     index_r2x_Flrr_deficit = mct_avect_indexra(avtmp,'Flrr_deficit')
-    index_r2x_Sr_h2orof       = mct_avect_indexra(avtmp,'Sr_h2orof')
-    index_r2x_Sr_frac_h2orof  = mct_avect_indexra(avtmp,'Sr_frac_h2orof')
+
+    if (lnd_rof_two_way) then
+      index_r2x_Sr_h2orof       = mct_avect_indexra(avtmp,'Sr_h2orof')
+      index_r2x_Sr_frac_h2orof  = mct_avect_indexra(avtmp,'Sr_frac_h2orof')
+    endif
+    
     nflds_r2x = mct_avect_nRattr(avtmp)
 
     call mct_aVect_clean(avtmp)

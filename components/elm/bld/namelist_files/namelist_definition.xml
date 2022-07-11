@@ -1982,12 +1982,6 @@ Toggle to turn on the soil erosion and OM pools feedback.
 <!-- ========================================================================================  -->
 <!-- Namelist options for land river coulping                                                  -->
 <!-- ========================================================================================  -->
-
-<entry id="use_lnd_rof_two_way" type="logical" category="elm_physics"
-       group="elm_mosart" valid_values="" value=".false.">
-Toggle to turn on land-river two way coupling.
-</entry>
-
 <entry id="lnd_rof_coupling_nstep" type="integer" category="elm_physics"
        group="elm_mosart" valid_values="">
 Number of ELM time steps per ELM and MOSART coupling period

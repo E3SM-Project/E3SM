@@ -285,7 +285,7 @@ contains
 
     namelist /elm_inparm/ use_var_soil_thick, use_lake_wat_storage
 
-    namelist /elm_inparm / &
+    namelist /elm_inparm/ &
          use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch, &
          vsfm_lateral_model_type, vsfm_include_seepage_bc
 
@@ -311,7 +311,7 @@ contains
          use_top_solar_rad
 
     namelist /elm_mosart/ &
-         use_lnd_rof_two_way, lnd_rof_coupling_nstep
+         lnd_rof_coupling_nstep
     
     ! ----------------------------------------------------------------------
     ! Default values
@@ -357,6 +357,20 @@ contains
        end if
 
        call relavu( unitn )
+
+       unitn = getavu()
+       write(iulog,*) 'Read in elm_mosart namelist from: ', trim(NLFilename)
+       open( unitn, file=trim(NLFilename), status='old' )
+       call shr_nl_find_group_name(unitn, 'elm_mosart', status=ierr)
+       if (ierr == 0) then
+          read(unitn, elm_mosart, iostat=ierr)
+          if (ierr /= 0) then
+             call endrun(msg='ERROR reading elm_mosart namelist'//errMsg(__FILE__, __LINE__))
+          end if
+       end if
+
+       call relavu( unitn )
+
 
        ! ----------------------------------------------------------------------
        ! Consistency checks on input namelist.

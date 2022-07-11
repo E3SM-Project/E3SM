@@ -266,7 +266,7 @@ contains
          rtmhist_fincl1,  rtmhist_fincl2, rtmhist_fincl3, &
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
          rtmhist_avgflag_pertape, decomp_option, wrmflag,rstraflag,ngeom,nlayers,rinittemp, &
-         inundflag, use_lnd_rof_two_way, smat_option, delt_mosart, barrier_timers,          &
+         inundflag, smat_option, delt_mosart, barrier_timers,          &
          RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag, data_bgc_fluxes_to_ocean_flag
 
     namelist /inund_inparm / opt_inund, &
@@ -285,7 +285,6 @@ contains
     ngeom       = 50  
     nlayers     = 30                  
     inundflag   = .false.
-    use_lnd_rof_two_way = .false.
     sediflag    = .false.
     heatflag    = .false.
     barrier_timers = .false.

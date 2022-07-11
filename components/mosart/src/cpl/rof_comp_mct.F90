@@ -247,6 +247,8 @@ contains
                    nsrest_in=nsrest, version_in=version,           &
                    hostname_in=hostname, username_in=username)
 
+    use_lnd_rof_two_way = lnd_rof_two_way
+    
     ! Read namelist, grid and surface data
     call Rtmini(rtm_active=rof_prognostic,flood_active=flood_present)
 
@@ -636,7 +638,7 @@ contains
           THeat%coszen(n)    = x2r_r%rAttr(index_x2r_coszen_str,n2)
        end if
 
-       if (use_lnd_rof_two_way) then
+       if (index_x2r_Flrl_inundinf > 0) then
           rtmCTL%inundinf(n) = x2r_r%rAttr(index_x2r_Flrl_inundinf,n2) * (rtmCTL%area(n)*0.001_r8)
        endif
 
@@ -775,7 +777,7 @@ contains
        endif
     end do
 
-    if ( use_lnd_rof_two_way ) then
+    if ( index_r2x_Sr_h2orof > 0 ) then
       ni = 0
       do n = rtmCTL%begr, rtmCTL%endr
         ni = ni + 1
