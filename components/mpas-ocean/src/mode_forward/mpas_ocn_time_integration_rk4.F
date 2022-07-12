@@ -141,7 +141,6 @@ module ocn_time_integration_rk4
       logical, pointer :: config_prevent_drying
       logical, pointer :: config_zero_drying_velocity
       logical, pointer :: config_enable_nonhydrostatic_mode
-      logical, pointer :: config_enable_vertMomentum_disable_nonHydro
       character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
       ! State indices
@@ -226,7 +225,6 @@ module ocn_time_integration_rk4
       call mpas_pool_get_config(domain % configs, 'config_use_tidal_forcing', config_use_tidal_forcing)
       call mpas_pool_get_config(domain % configs, 'config_tidal_forcing_type', config_tidal_forcing_type)
       call mpas_pool_get_config(domain % configs, 'config_enable_nonhydrostatic_mode', config_enable_nonhydrostatic_mode)
-      call mpas_pool_get_config(domain % configs, 'config_enable_vertMomentum_disable_nonHydro', config_enable_vertMomentum_disable_nonHydro)
 
       !
       ! Initialize time_levs(2) with state at current time
@@ -1877,7 +1875,7 @@ module ocn_time_integration_rk4
 
       call ocn_vmix_implicit(dt, meshPool, statePool, forcingPool, scratchPool, err, 2)
 
-      if (config_enable_nonhydrostatic_mode .and. .not. config_enable_vertMomentum_disable_nonHydro) then
+      if (config_enable_nonhydrostatic_mode) then
          call ocn_nonhydrostatic_pressure_tend(normalVelocityNew, vertVelocityNonhydroNew, layerThicknessNew, &
               layerThickEdgeMean, nhPressureCorrection, dminfo % comm, dt)
       end if

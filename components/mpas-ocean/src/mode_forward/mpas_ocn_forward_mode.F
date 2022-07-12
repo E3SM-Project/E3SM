@@ -884,7 +884,7 @@ module ocn_forward_mode
 
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
 
-      if(config_enable_nonhydrostatic_mode .and. .not. config_enable_vertMomentum_disable_nonHydro) then
+      if(config_enable_nonhydrostatic_mode) then
          call ocn_nonhydrostatic_solver_finalize()
       end if
 

@@ -835,14 +835,12 @@ add_default($nl, 'config_density0');
 
 add_default($nl, 'config_enable_nonhydrostatic_mode');
 add_default($nl, 'config_nonhydrostatic_solve_surface_boundary_condition');
-add_default($nl, 'config_enable_vertMomentum_disable_nonHydro');
 add_default($nl, 'config_nonhydrostatic_remove_rhs_mean');
 add_default($nl, 'config_nonhydrostatic_preconditioner');
 add_default($nl, 'config_nonhydrostatic_solver_type');
 add_default($nl, 'config_petsc_rtol');
 add_default($nl, 'config_petsc_atol');
 add_default($nl, 'config_petsc_maxit');
-add_default($nl, 'config_use_constant_forced_pgf');
 
 #####################################
 # Namelist group: pressure_gradient #

@@ -1172,10 +1172,6 @@
 					description="setting for surface boundary condition for the pressure correction solve"
 					possible_values="noGradient or no pressure"
 		/>
-		<nml_option name="config_enable_vertMomentum_disable_nonHydro" type="logical" default_value=".false." units="unitless"
-					description="flag to enable hydrostatic pressure with vertical momentum tendencies"
-					possible_values=".true. or .false."
-		/>
 		<nml_option name="config_nonhydrostatic_remove_rhs_mean" type="logical" default_value=".true." units="unitless"
 					description="flag to enabling mean from the right hand side of the nonhydro solve"
 					possible_values=".true. or .false."
@@ -1199,10 +1195,6 @@
 		<nml_option name="config_petsc_maxit" type="integer" default_value="10000" units="unitless"
 					description="maximum number of iterations in petsc solve"
 					possible_values="positive integers"
-		/>
-		<nml_option name="config_use_constant_forced_pgf" type="logical" default_value=".false." units="unitless"
-				description="logical to enable a constant pressure gradient that is added to rest of PGF NOTE: need to remove after rebasing on to master..."
-				possible_values=".true. or .false."
 		/>
 	</nml_record>
 	<nml_record name="pressure_gradient" mode="forward">
@@ -1402,10 +1394,6 @@
 					description="If true, $h^{hf}$ is included in the desired ALE thickness, and the prognostic equations for $D^{lf}$ and $h^{hf}$ are integrated in the code."
 					possible_values=".true. or .false."
 		/>
-                <nml_option name="config_disable_ALE" type="logical" default_value=".false." units="unitless"
-                                        description="flag to disable the ALE coordinate and revert to eulerian mode NOTE: only works for RK4 at present"
-                                        possible_values=".true. or .false."
-                />
 		<nml_option name="config_thickness_filter_timescale" type="real" default_value="5.0" units="days"
 					description="Filter time scale for the low-frequency baroclinic divergence, $\tau_{Dlf}$."
 					possible_values="any positive real value, but typically 5 days."

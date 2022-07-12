@@ -1820,14 +1820,6 @@ Valid values: noGradient or no pressure
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_enable_vertMomentum_disable_nonHydro" type="logical"
-        category="nonhydrostatic_pressure" group="nonhydrostatic_pressure">
-flag to enable hydrostatic pressure with vertical momentum tendencies
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_nonhydrostatic_remove_rhs_mean" type="logical"
         category="nonhydrostatic_pressure" group="nonhydrostatic_pressure">
 flag to enabling mean from the right hand side of the nonhydro solve
@@ -1875,15 +1867,6 @@ maximum number of iterations in petsc solve
 Valid values: positive integers
 Default: Defined in namelist_defaults.xml
 </entry>
-
-<entry id="config_use_constant_forced_pgf" type="logical"
-        category="nonhydrostatic_pressure" group="nonhydrostatic_pressure">
-logical to enable a constant pressure gradient that is added to rest of PGF NOTE: need to remove after rebasing on to master...
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 
 <!-- pressure_gradient -->
 

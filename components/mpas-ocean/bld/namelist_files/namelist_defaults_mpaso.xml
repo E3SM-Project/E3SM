@@ -391,14 +391,12 @@
 <!-- nonhydrostatic_pressure -->
 <config_enable_nonhydrostatic_mode>.false.</config_enable_nonhydrostatic_mode>
 <config_nonhydrostatic_solve_surface_boundary_condition>'noGradient'</config_nonhydrostatic_solve_surface_boundary_condition>
-<config_enable_vertMomentum_disable_nonHydro>.false.</config_enable_vertMomentum_disable_nonHydro>
 <config_nonhydrostatic_remove_rhs_mean>.true.</config_nonhydrostatic_remove_rhs_mean>
 <config_nonhydrostatic_preconditioner>'jacobi'</config_nonhydrostatic_preconditioner>
 <config_nonhydrostatic_solver_type>'pipecgrr'</config_nonhydrostatic_solver_type>
 <config_petsc_rtol>1.0e-10</config_petsc_rtol>
 <config_petsc_atol>1.0E-20</config_petsc_atol>
 <config_petsc_maxit>10000</config_petsc_maxit>
-<config_use_constant_forced_pgf>.false.</config_use_constant_forced_pgf>
 
 <!-- pressure_gradient -->
 <config_pressure_gradient_type>'Jacobian_from_TS'</config_pressure_gradient_type>
