@@ -275,8 +275,8 @@ module ocn_time_integration_si
          tracerGroupIdealAgeMask,     &! mask for resetting surface ideal age
          vertVelocityNonhydroNew,         &! Vertical Velocity at new time
          vertVelocityNonhydroCur,         &! Vertical Velocity at current time
-         nonhydrostaticPressure,      &! nhpressure at new time
-         nonhydrostaticPressureOld     ! nh pressure at current time
+         nonhydrostaticPressureNew,      &! nhpressure at new time
+         nonhydrostaticPressureCur     ! nh pressure at current time
 
       type (field1DReal), pointer :: &
          effectiveDensityField         ! field pointer for halo update
@@ -2463,8 +2463,8 @@ module ocn_time_integration_si
       if(config_enable_nonhydrostatic_mode) then
             call mpas_pool_get_array(statePool, 'vertVelocityNonhydro', vertVelocityNonhydroNew, 2)
             call mpas_pool_get_array(statePool, 'vertVelocityNonhydro', vertVelocityNonhydroCur, 1)
-            call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressure,2)
-            call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressureOld,1)
+            call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressureNew, 2)
+            call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressureCur, 1)
 
             dminfo = domain % dminfo
             call ocn_nonhydrostatic_pressure_tend(normalVelocityNew, vertVelocityNonhydroNew, &
@@ -2477,7 +2477,7 @@ module ocn_time_integration_si
             call mpas_timer_stop('se NHpressure tend halo pressure')
 
             call ocn_nonhydrostatic_pressure_update_velocity(normalVelocityNew, vertVelocityNonhydroNew, &
-              layerThicknessNew, layerThickEdgeMean, nonhydrostaticPressure, nonhydrostaticPressureOld, &
+              layerThicknessNew, layerThickEdgeMean, nonhydrostaticPressureNew, nonhydrostaticPressureCur, &
               nhPressureCorrection, dt)
       end if
 
