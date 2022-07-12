@@ -222,8 +222,8 @@ module ocn_time_integration_split
          tracerGroupIdealAgeMask,     & ! mask for resetting surface ideal age
          vertVelocityNonhydroCur,         &! vertical velocity at current time
          vertVelocityNonhydroNew,         &! vertical velocity at new time
-         nonhydrostaticPressure,      &! nonhydro pressure at new time
-         nonhydrostaticPressureOld     ! nonhdyro pressure at current time
+         nonhydrostaticPressureNew,      &! nonhydro pressure at new time
+         nonhydrostaticPressureCur     ! nonhdyro pressure at current time
 
       type (field1DReal), pointer :: &
          effectiveDensityField         ! field pointer for halo update
@@ -337,8 +337,8 @@ module ocn_time_integration_split
       if(config_enable_nonhydrostatic_mode) then
          call mpas_pool_get_array(statePool, 'vertVelocityNonhydro', vertVelocityNonhydroCur, 1)
          call mpas_pool_get_array(statePool, 'vertVelocityNonhydro', vertVelocityNonhydroNew, 2)
-         call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressure, 2)
-         call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressureOld, 1)
+         call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressureNew, 2)
+         call mpas_pool_get_array(statePool, 'nonhydrostaticPressure', nonhydrostaticPressureCur, 1)
       end if
 
       call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', &
@@ -2483,10 +2483,6 @@ module ocn_time_integration_split
               vertVelocityNonhydroNew, layerThicknessNew, layerThickEdgeFlux, &
               nhPressureCorrection, dminfo % comm, dt)
 
-         !call mpas_timer_start('se NHpressure tend halo pressure')
-         !call mpas_dmpar_field_halo_exch(domain, 'nonhydrostaticPressure', timeLevel=2)
-         !call mpas_timer_stop('se NHpressure tend halo pressure')
-
          call mpas_timer_start('se NH pressure tend halo pressure')
          call mpas_dmpar_field_halo_exch(domain, 'nonhydrostaticPressure', timeLevel=2)
          call mpas_dmpar_field_halo_exch(domain, 'nonhydrostaticPressure', timeLevel=1)
@@ -2495,7 +2491,7 @@ module ocn_time_integration_split
 
          call ocn_nonhydrostatic_pressure_update_velocity(normalVelocityNew, &
               vertVelocityNonhydroNew, layerThicknessNew, layerThickEdgeFlux, &
-              nonhydrostaticPressure, nonhydrostaticPressureOld, &
+              nonhydrostaticPressureNew, nonhydrostaticPressureCur, &
               nhPressureCorrection, dt)
       end if
 
