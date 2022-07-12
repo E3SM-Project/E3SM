@@ -128,8 +128,8 @@ tweaking their $case/namelist_scream.xml file.
       so it must be of the form (a,b,...).
       NOTE: *CANNOT* be changed.
     -->
-    <!-- <atm_procs_list>(homme,((shoc,cldFraction,spa,p3),rrtmgp))</atm_procs_list> -->
-    <atm_procs_list locked="true">(homme,physics)</atm_procs_list>
+    <!-- <atm_procs_list>(sc_import,homme,((shoc,cldFraction,spa,p3),rrtmgp,sc_export))</atm_procs_list> -->
+    <atm_procs_list locked="true">(sc_import,homme,physics,sc_export)</atm_procs_list>
 
     <!-- Basic options for each atm process -->
     <atm_proc_base>
@@ -150,6 +150,17 @@ tweaking their $case/namelist_scream.xml file.
       <Grid>Physics GLL</Grid>
       <Grid hgrid=".*pg2">Physics PG2</Grid>
     </physics_proc_base>
+
+    <!-- SC Import -->
+    <sc_import>
+      <Grid>Physics GLL</Grid>
+      <Enable__Postcondition__Checks type="logical">true</Enable__Postcondition__Checks>
+    </sc_import>
+
+    <!-- SC Export -->
+    <sc_export>
+      <Grid>Physics GLL</Grid>
+    </sc_export>
 
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">

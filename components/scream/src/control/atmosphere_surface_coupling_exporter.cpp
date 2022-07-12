@@ -25,14 +25,15 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
   m_num_cols = m_grid->get_num_local_dofs();       // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
 
+  const auto m2 = m*m;
+  const auto s2 = s*s;
+  auto Wm2 = W/m2;
+  Wm2.set_string("W/m2");
+
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto Qunit = kg/kg;
   Qunit.set_string("kg/kg");
-  auto Wm2 = W / m / m;
-  Wm2.set_string("W/m2)");
-  auto m2s2 = (m*m)/(s*s);
-  m2s2.set_string("m2s2");
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
@@ -42,15 +43,17 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
   FieldLayout scalar3d_layout_mid { {COL,LEV},     {m_num_cols,    m_num_levs  } };
   FieldLayout scalar3d_layout_int { {COL,ILEV},    {m_num_cols,    m_num_levs+1} };
 
+  constexpr int ps = Spack::n;
+
   add_field<Required>("p_int",                scalar3d_layout_int,  Pa,    grid_name);
-  add_field<Required>("pseudo_density",       scalar3d_layout_mid,  Pa,    grid_name);
-  add_field<Required>("phis",                 scalar2d_layout,      m2s2, grid_name);
-  add_field<Required>("p_mid",                scalar3d_layout_mid,  Pa,    grid_name);
-  add_field<Required>("qv",                   scalar3d_layout_mid,  Qunit, grid_name, "tracers");
-  add_field<Required>("T_mid",                scalar3d_layout_mid,  K,     grid_name);
+  add_field<Required>("pseudo_density",       scalar3d_layout_mid,  Pa,    grid_name, ps);
+  add_field<Required>("phis",                 scalar2d_layout,      m2/s2, grid_name);
+  add_field<Required>("p_mid",                scalar3d_layout_mid,  Pa,    grid_name, ps);
+  add_field<Required>("qv",                   scalar3d_layout_mid,  Qunit, grid_name, "tracers", ps);
+  add_field<Required>("T_mid",                scalar3d_layout_mid,  K,     grid_name, ps);
   add_field<Required>("horiz_winds",          vector3d_layout,      m/s,   grid_name);
-  add_field<Required>("precip_liq_surf_mass", scalar2d_layout,      m/s,   grid_name);
-  add_field<Required>("precip_ice_surf_mass", scalar2d_layout,      m/s,   grid_name);
+  add_field<Required>("precip_liq_surf_mass", scalar2d_layout,      kg,    grid_name);
+  add_field<Required>("precip_ice_surf_mass", scalar2d_layout,      kg,    grid_name);
   add_field<Required>("sfc_flux_dir_nir",     scalar2d_layout,      Wm2,   grid_name);
   add_field<Required>("sfc_flux_dir_vis",     scalar2d_layout,      Wm2,   grid_name);
   add_field<Required>("sfc_flux_dif_nir",     scalar2d_layout,      Wm2,   grid_name);
@@ -208,10 +211,10 @@ void SurfaceCouplingExporter::do_export(const Int dt, const bool called_during_i
   using PF = PhysicsFunctions<DefaultDevice>;
 
   const auto& p_int                = get_field_in("p_int").get_view<const Real**>();
-  const auto& pseudo_density       = get_field_in("pseudo_density").get_view<const Real**>();
-  const auto& qv                   = get_field_in("qv").get_view<const Real**>();
-  const auto& T_mid                = get_field_in("T_mid").get_view<const Real**>();
-  const auto& p_mid                = get_field_in("p_mid").get_view<const Real**>();
+  const auto& pseudo_density       = get_field_in("pseudo_density").get_view<const Spack**>();
+  const auto& qv                   = get_field_in("qv").get_view<const Spack**>();
+  const auto& T_mid                = get_field_in("T_mid").get_view<const Spack**>();
+  const auto& p_mid                = get_field_in("p_mid").get_view<const Spack**>();
   const auto& phis                 = get_field_in("phis").get_view<const Real*>();
   const auto& precip_liq_surf_mass = get_field_in("precip_liq_surf_mass").get_view<const Real*>();
   const auto& precip_ice_surf_mass = get_field_in("precip_ice_surf_mass").get_view<const Real*>();
@@ -266,14 +269,16 @@ void SurfaceCouplingExporter::do_export(const Int dt, const bool called_during_i
 
     const auto s_dz_i = ekat::scalarize(dz_i);
     const auto s_z_mid_i = ekat::scalarize(z_mid_i);
+    const auto s_pseudo_density_i = ekat::scalarize(pseudo_density_i);
+    const auto s_p_mid_i = ekat::scalarize(p_mid_i);
+    const auto s_T_mid_i = ekat::scalarize(T_mid_i);
 
     // Calculate air temperature at bottom of cell closest to the ground for PSL
-    const Real T_int_bot = PF::calculate_surface_air_T(T_mid_i(num_levs-1),s_z_mid_i(num_levs-1));
-
-    Sa_z(i)       = s_z_mid_i(num_levs-1);
-    Sa_ptem(i)    = PF::calculate_theta_from_T(T_mid_i(num_levs-1), p_mid_i(num_levs-1));
-    Sa_dens(i)    = PF::calculate_density(pseudo_density_i(num_levs-1), s_dz_i(num_levs-1));
-    Sa_pslv(i)    = PF::calculate_psl(T_int_bot, p_int_i(num_levs), phis(i));
+    const Real T_int_bot = PF::calculate_surface_air_T(s_T_mid_i(num_levs-1),s_z_mid_i(num_levs-1));
+    Sa_z(i)    = s_z_mid_i(num_levs-1);
+    Sa_ptem(i) = PF::calculate_theta_from_T(s_T_mid_i(num_levs-1), s_p_mid_i(num_levs-1));
+    Sa_dens(i) = PF::calculate_density(s_pseudo_density_i(num_levs-1), s_dz_i(num_levs-1));
+    Sa_pslv(i) = PF::calculate_psl(T_int_bot, p_int_i(num_levs), phis(i));
 
     if (not called_during_initialization) {
       // Precipitation has units of kg, so we need to convert to a flux with units of kg/s

@@ -66,12 +66,24 @@ struct SCDataManager {
     return m_field_data.data();
   }
 
+  Real get_field_data_view_entry(const int i, const int f) {
+    return m_field_data(i, f);
+  }
+
   int* get_field_cpl_indices_ptr() const {
     return m_field_cpl_indices.data();
   }
 
+  int get_cpl_index(const int f) {
+    return m_field_cpl_indices(f);
+  }
+
   char* get_field_name_ptr () const {
     return m_field_names[0];
+  }
+
+  std::string get_field_name(const int f) {
+    return m_field_names[f];
   }
 
   int* get_field_vector_components_ptr () const {

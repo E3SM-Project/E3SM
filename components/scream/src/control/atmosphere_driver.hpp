@@ -1,7 +1,6 @@
 #ifndef SCREAM_ATMOSPHERE_DRIVER_HPP
 #define SCREAM_ATMOSPHERE_DRIVER_HPP
 
-#include "control/surface_coupling.hpp"
 #include "control/surface_coupling_utils.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/grid/grids_manager.hpp"
@@ -75,9 +74,6 @@ public:
   // Create fields as requested by all processes
   void create_fields ();
 
-  // Sets a pre-built SurfaceCoupling object in the driver (for CIME runs only)
-  void set_surface_coupling (const std::shared_ptr<SurfaceCoupling>& sc) { m_surface_coupling = sc; }
-
   // Adds cpl import/export information to SCDataManager.
   void setup_surface_coupling_data_manager(SurfaceCouplingTransferType transfer_type,
                                            const int num_cpl_fields, const int num_scream_fields,
@@ -126,8 +122,6 @@ public:
   field_mgr_ptr get_ref_grid_field_mgr () const;
   field_mgr_ptr get_field_mgr (const std::string& grid_name) const;
 
-  const std::shared_ptr<SurfaceCoupling>& get_surface_coupling () const { return m_surface_coupling; }
-
   // Get atmosphere time stamp
   const util::TimeStamp& get_atm_time_stamp () const { return m_current_ts; }
 
@@ -168,9 +162,6 @@ protected:
   std::shared_ptr<ATMBufferManager>         m_memory_buffer;
   std::shared_ptr<SCDataManager>            m_surface_coupling_import_data_manager;
   std::shared_ptr<SCDataManager>            m_surface_coupling_export_data_manager;
-
-  // Surface coupling stuff
-  std::shared_ptr<SurfaceCoupling>          m_surface_coupling;
 
   // This is the time stamp at the beginning of the time step.
   util::TimeStamp                           m_current_ts;

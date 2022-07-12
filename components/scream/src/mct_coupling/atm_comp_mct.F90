@@ -49,10 +49,15 @@ CONTAINS
     use iso_c_binding,      only: c_ptr, c_loc, c_int, c_char, c_bool
     use scream_f2c_mod,     only: scream_create_atm_instance, scream_setup_surface_coupling, &
                                   scream_init_atm
-    use scream_cpl_indices, only: scream_set_cpl_indices, num_cpl_exports, &
-                                  num_cpl_imports, num_scream_imports, &
-                                  scr_names_x2a, scr_names_a2x, index_x2a, index_a2x, vec_comp_x2a, vec_comp_a2x, &
-                                  can_be_exported_during_init
+    use scream_cpl_indices, only: scream_set_cpl_indices, &
+                                  num_cpl_imports,          num_scream_imports, &
+                                  num_cpl_exports,          num_scream_exports, &
+                                  import_field_size,        export_field_size, &
+                                  import_field_names,       export_field_names, &
+                                  import_cpl_indices,       export_cpl_indices, &
+                                  import_vector_components, export_vector_components, &
+                                  import_constant_multiple, export_constant_multiple, &
+                                  do_import_during_init,    do_export_during_init
     use ekat_string_utils,  only: string_f2c
     use kinds,              only: homme_iulog=>iulog
     use mct_mod,            only: mct_aVect_init, mct_gsMap_lsize
@@ -170,15 +175,21 @@ CONTAINS
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)
     endif
     call seq_timemgr_EClockGetData(EClock, curr_ymd=cur_ymd, curr_tod=cur_tod, start_ymd=case_start_ymd, start_tod=case_start_tod)
-    call scream_init_atm (INT(cur_ymd,kind=C_INT),  INT(cur_tod,kind=C_INT), &
-                          INT(case_start_ymd,kind=C_INT), INT(case_start_tod,kind=C_INT))
 
     ! Init surface coupling stuff in the AD
     call scream_set_cpl_indices (x2a, a2x)
-    call scream_setup_surface_coupling (c_loc(scr_names_x2a), c_loc(index_x2a), c_loc(x2a%rAttr), c_loc(vec_comp_x2a), &
-                                        num_cpl_imports, num_scream_imports, &
-                                        c_loc(scr_names_a2x), c_loc(index_a2x), c_loc(a2x%rAttr), c_loc(vec_comp_a2x), &
-                                        c_loc(can_be_exported_during_init), num_cpl_exports)
+
+    call scream_setup_surface_coupling (c_loc(import_field_names), c_loc(import_cpl_indices), &
+                                        c_loc(x2a%rAttr), c_loc(import_vector_components), &
+                                        c_loc(import_constant_multiple), c_loc(do_import_during_init), &
+                                        num_cpl_imports, num_scream_imports, import_field_size, &
+                                        c_loc(export_field_names), c_loc(export_cpl_indices), &
+                                        c_loc(a2x%rAttr), c_loc(export_vector_components), &
+                                        c_loc(export_constant_multiple), c_loc(do_export_during_init), &
+                                        num_cpl_exports, num_scream_exports, export_field_size)
+
+    call scream_init_atm (INT(cur_ymd,kind=C_INT),  INT(cur_tod,kind=C_INT), &
+                          INT(case_start_ymd,kind=C_INT), INT(case_start_tod,kind=C_INT))
 
   end subroutine atm_init_mct
 

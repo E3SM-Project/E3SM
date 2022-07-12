@@ -151,6 +151,13 @@ public:
     return reinterpret_cast<ST*>(get_view_impl<HD>().data());
   }
 
+  // WARNING: this is a power-user method. Its implementation, including assumptions
+  //          on pre/post conditions, may change in the future. Use at your own risk!
+  //          Read carefully the instructions below.
+  // Same as above, but does allows the field to be read-only. This is unsafe as one
+  // could alter data that should not be changed. An example of where this is needed
+  // is in SurfaceCoupling where exports need to access read-only fields via their
+  // view.data ptr.
   template<typename ST, HostOrDevice HD = Device>
   ST* get_internal_view_data_unsafe () const {
     // Check that the scalar type is correct                                                                                                   
@@ -161,7 +168,6 @@ public:
     
     return reinterpret_cast<ST*>(get_view_impl<HD>().data());
   }
-
 
   // If someone needs the host view, some sync routines might be needed.
   // Note: this class takes no responsibility in keeping track of whether

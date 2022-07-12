@@ -174,8 +174,8 @@ void test_exports(const FieldManager& fm,
   const auto precip_liq_surf_mass = fm.get_field("precip_liq_surf_mass").get_view<const Real*>();
   const auto precip_ice_surf_mass = fm.get_field("precip_ice_surf_mass").get_view<const Real*>();
 
-  const int ncols = T_mid.extent(0);
-  const int nlevs = T_mid.extent(1);
+  const int ncols = fm.get_grid()->get_num_local_dofs();
+  const int nlevs = fm.get_grid()->get_num_vertical_levels();
 
   KokkosTypes<DefaultDevice>::view_2d<Real> dz   ("dz   ", ncols, nlevs);
   KokkosTypes<DefaultDevice>::view_2d<Real> z_mid("z_mid", ncols, nlevs);

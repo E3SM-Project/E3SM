@@ -532,12 +532,6 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
     // First, add all atm processes
     dag.create_dag(*m_atm_process_group);
 
-    // Then, add all surface coupling dependencies, if any
-    if (m_surface_coupling) {
-      dag.add_surface_coupling(m_surface_coupling->get_import_fids(),
-                               m_surface_coupling->get_export_fids());
-    }
-
     // Write a dot file for visualization
     dag.write_dag("scream_atm_dag.dot",std::max(verb_lvl,0));
   }
@@ -1056,11 +1050,6 @@ void AtmosphereDriver::run (const int dt) {
     "Atmosphere step = " + std::to_string(m_current_ts.get_num_steps()) + "\n" +
     "  model time = " + m_current_ts.get_date_string() + " " + m_current_ts.get_time_string() + "\n");
 
-  if (m_surface_coupling) {
-    // Import fluxes from the component coupler (if any)
-    m_surface_coupling->do_import();
-  }
-
   // The class AtmosphereProcessGroup will take care of dispatching arguments to
   // the individual processes, which will be called in the correct order.
   m_atm_process_group->run(dt);
@@ -1071,11 +1060,6 @@ void AtmosphereDriver::run (const int dt) {
   // Update output streams
   for (auto& out_mgr : m_output_managers) {
     out_mgr.run(m_current_ts);
-  }
-
-  if (m_surface_coupling) {
-    // Export fluxes from the component coupler (if any)
-    m_surface_coupling->do_export(dt);
   }
 
 #ifdef SCREAM_HAS_MEMORY_USAGE
@@ -1115,9 +1099,6 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   // Destroy the surface coupling data managers
   m_surface_coupling_import_data_manager = nullptr;
   m_surface_coupling_export_data_manager = nullptr;
-
-  // Destroy the surface coupling (if any)
-  m_surface_coupling = nullptr;
 
   // Destroy the grids manager
   m_grids_manager = nullptr;

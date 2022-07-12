@@ -524,7 +524,7 @@ setup_surface_coupling_processes(const SurfaceCouplingTransferType transfer_type
         ||
         (transfer_type==SurfaceCouplingTransferType::Export &&
          atm_proc->type() == AtmosphereProcessType::SurfaceCouplingExporter)) {
-        
+
        atm_proc->setup_surface_coupling_data(sc_data_manager);
        surface_coupling_process_found = true;
     }

@@ -40,14 +40,14 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
   FieldLayout scalar2d_layout { {COL     }, {m_num_cols   } };
   FieldLayout vector2d_layout { {COL, CMP}, {m_num_cols, 2} };
 
-  add_field<Computed>("sfc_alb_dir_vis", scalar2d_layout, nondim, grid_name);
-  add_field<Computed>("sfc_alb_dir_nir", scalar2d_layout, nondim, grid_name);
-  add_field<Computed>("sfc_alb_dif_vis", scalar2d_layout, nondim, grid_name);
-  add_field<Computed>("sfc_alb_dif_nir", scalar2d_layout, nondim, grid_name);
-  add_field<Computed>("surf_lw_flux_up", scalar2d_layout, W/m2,   grid_name);
-  add_field<Computed>("surf_sens_flux",  scalar2d_layout, W/m2,   grid_name);
-  add_field<Computed>("surf_evap",       scalar2d_layout, W/m2,   grid_name);
-  add_field<Computed>("surf_mom_flux",   vector2d_layout, N/m2,   grid_name);
+  add_field<Computed>("sfc_alb_dir_vis", scalar2d_layout, nondim,  grid_name);
+  add_field<Computed>("sfc_alb_dir_nir", scalar2d_layout, nondim,  grid_name);
+  add_field<Computed>("sfc_alb_dif_vis", scalar2d_layout, nondim,  grid_name);
+  add_field<Computed>("sfc_alb_dif_nir", scalar2d_layout, nondim,  grid_name);
+  add_field<Computed>("surf_lw_flux_up", scalar2d_layout, W/m2,    grid_name);
+  add_field<Computed>("surf_sens_flux",  scalar2d_layout, W/m2,    grid_name);
+  add_field<Computed>("surf_evap",       scalar2d_layout, kg/m2/s, grid_name);
+  add_field<Computed>("surf_mom_flux",   vector2d_layout, N/m2,    grid_name);
 }
 // =========================================================================================
   void SurfaceCouplingImporter::setup_surface_coupling_data(const SCDataManager &sc_data_manager)
@@ -118,10 +118,10 @@ void SurfaceCouplingImporter::initialize_impl (const RunType /* run_type */)
   Kokkos::deep_copy(m_column_info_d, m_column_info_h);
 
   // Set property checks for fields in this proces
-  add_precondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dir_vis"),m_grid,0.0,1.0,true);
-  add_precondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dir_nir"),m_grid,0.0,1.0,true);
-  add_precondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_vis"),m_grid,0.0,1.0,true);
-  add_precondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_nir"),m_grid,0.0,1.0,true);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dir_vis"),m_grid,0.0,1.0,true);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dir_nir"),m_grid,0.0,1.0,true);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_vis"),m_grid,0.0,1.0,true);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("sfc_alb_dif_nir"),m_grid,0.0,1.0,true);
 
   // Perform initial import (if any are marked for import during initialization) 
   if (any_initial_imports) do_import(true);
