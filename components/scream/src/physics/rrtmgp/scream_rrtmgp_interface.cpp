@@ -204,6 +204,8 @@ namespace scream {
                 real3d &aer_tau_lw,
                 real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
                 real2d &lw_flux_up, real2d &lw_flux_dn,
+                real2d &sw_clrsky_flux_up, real2d &sw_clrsky_flux_dn, real2d &sw_clrsky_flux_dn_dir,
+                real2d &lw_clrsky_flux_up, real2d &lw_clrsky_flux_dn,
                 real3d &sw_bnd_flux_up, real3d &sw_bnd_flux_dn, real3d &sw_bnd_flux_dn_dir,
                 real3d &lw_bnd_flux_up, real3d &lw_bnd_flux_dn,
                 const Real tsi_scaling,
@@ -232,6 +234,11 @@ namespace scream {
             fluxes_sw.bnd_flux_up = sw_bnd_flux_up;
             fluxes_sw.bnd_flux_dn = sw_bnd_flux_dn;
             fluxes_sw.bnd_flux_dn_dir = sw_bnd_flux_dn_dir;
+            // Clear-sky
+            FluxesByband clrsky_fluxes_sw;
+            clrsky_fluxes_sw.flux_up = sw_clrsky_flux_up;
+            clrsky_fluxes_sw.flux_dn = sw_clrsky_flux_dn;
+            clrsky_fluxes_sw.flux_dn_dir = sw_clrsky_flux_dn_dir;
 
             // Setup pointers to RRTMGP LW fluxes
             FluxesByband fluxes_lw;
@@ -239,6 +246,10 @@ namespace scream {
             fluxes_lw.flux_dn = lw_flux_dn;
             fluxes_lw.bnd_flux_up = lw_bnd_flux_up;
             fluxes_lw.bnd_flux_dn = lw_bnd_flux_dn;
+            // Clear-sky
+            FluxesByband clrsky_fluxes_lw;
+            clrsky_fluxes_lw.flux_up = lw_clrsky_flux_up;
+            clrsky_fluxes_lw.flux_dn = lw_clrsky_flux_dn;
 
             auto nswbands = k_dist_sw.get_nband();
             auto nlwbands = k_dist_lw.get_nband();
@@ -290,7 +301,8 @@ namespace scream {
             rrtmgp_sw(
                 ncol, nlay,
                 k_dist_sw, p_lay, t_lay, p_lev, t_lev, gas_concs, 
-                sfc_alb_dir, sfc_alb_dif, mu0, aerosol_sw, clouds_sw, fluxes_sw,
+                sfc_alb_dir, sfc_alb_dif, mu0, aerosol_sw, clouds_sw,
+                fluxes_sw, clrsky_fluxes_sw,
                 tsi_scaling, logger
             );
 
@@ -298,7 +310,8 @@ namespace scream {
             rrtmgp_lw(
                 ncol, nlay,
                 k_dist_lw, p_lay, t_lay, p_lev, t_lev, gas_concs,
-                aerosol_lw, clouds_lw, fluxes_lw
+                aerosol_lw, clouds_lw,
+                fluxes_lw, clrsky_fluxes_lw
             );
             
             // Calculate heating rates
@@ -365,7 +378,7 @@ namespace scream {
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, 
                 OpticalProps2str &aerosol, OpticalProps2str &clouds,
-                FluxesByband &fluxes,
+                FluxesByband &fluxes, FluxesByband &clrsky_fluxes,
                 const Real tsi_scaling,
                 const std::shared_ptr<spdlog::logger>& logger) {
 
@@ -381,12 +394,18 @@ namespace scream {
             auto &bnd_flux_up = fluxes.bnd_flux_up;
             auto &bnd_flux_dn = fluxes.bnd_flux_dn;
             auto &bnd_flux_dn_dir = fluxes.bnd_flux_dn_dir;
+            auto &clrsky_flux_up = clrsky_fluxes.flux_up;
+            auto &clrsky_flux_dn = clrsky_fluxes.flux_dn;
+            auto &clrsky_flux_dn_dir = clrsky_fluxes.flux_dn_dir;
 
             // Reset fluxes to zero
             parallel_for(Bounds<2>(nlay+1,ncol), YAKL_LAMBDA(int ilev, int icol) {
                 flux_up    (icol,ilev) = 0;
                 flux_dn    (icol,ilev) = 0;
                 flux_dn_dir(icol,ilev) = 0;
+                clrsky_flux_up    (icol,ilev) = 0;
+                clrsky_flux_dn    (icol,ilev) = 0;
+                clrsky_flux_dn_dir(icol,ilev) = 0;
             });
             parallel_for(Bounds<3>(nbnd,nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilev, int icol) {
                 bnd_flux_up    (icol,ilev,ibnd) = 0;
@@ -480,6 +499,21 @@ namespace scream {
                 sfc_alb_dif_T(ibnd,icol) = sfc_alb_dif(dayIndices(icol),ibnd);
             });
 
+            // Temporaries we need for daytime-only fluxes
+            auto flux_up_day = real2d("flux_up_day", nday, nlay+1);
+            auto flux_dn_day = real2d("flux_dn_day", nday, nlay+1);
+            auto flux_dn_dir_day = real2d("flux_dn_dir_day", nday, nlay+1);
+            auto bnd_flux_up_day = real3d("bnd_flux_up_day", nday, nlay+1, nbnd);
+            auto bnd_flux_dn_day = real3d("bnd_flux_dn_day", nday, nlay+1, nbnd);
+            auto bnd_flux_dn_dir_day = real3d("bnd_flux_dn_dir_day", nday, nlay+1, nbnd);
+            FluxesByband fluxes_day;
+            fluxes_day.flux_up         = flux_up_day;
+            fluxes_day.flux_dn         = flux_dn_day;
+            fluxes_day.flux_dn_dir     = flux_dn_dir_day;
+            fluxes_day.bnd_flux_up     = bnd_flux_up_day;
+            fluxes_day.bnd_flux_dn     = bnd_flux_dn_day;
+            fluxes_day.bnd_flux_dn_dir = bnd_flux_dn_dir_day;
+
             // Allocate space for optical properties
             OpticalProps2str optics;
             optics.alloc_2str(nday, nlay, k_dist);
@@ -507,26 +541,23 @@ namespace scream {
             aerosol_day.delta_scale();
             aerosol_day.increment(optics);
 
+            // Compute clearsky (gas + aerosol) fluxes on daytime columns
+            rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
+            // Expand daytime fluxes to all columns
+            parallel_for(Bounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
+                int icol = dayIndices(iday);
+                clrsky_flux_up    (icol,ilev) = flux_up_day    (iday,ilev);
+                clrsky_flux_dn    (icol,ilev) = flux_dn_day    (iday,ilev);
+                clrsky_flux_dn_dir(icol,ilev) = flux_dn_dir_day(iday,ilev);
+            });
+
+            // Now merge in cloud optics and do allsky calculations
+
             // Combine gas and cloud optics
             clouds_day.delta_scale();
             clouds_day.increment(optics);
-
             // Compute fluxes on daytime columns
-            auto flux_up_day = real2d("flux_up_day", nday, nlay+1);
-            auto flux_dn_day = real2d("flux_dn_day", nday, nlay+1);
-            auto flux_dn_dir_day = real2d("flux_dn_dir_day", nday, nlay+1);
-            auto bnd_flux_up_day = real3d("bnd_flux_up_day", nday, nlay+1, nbnd);
-            auto bnd_flux_dn_day = real3d("bnd_flux_dn_day", nday, nlay+1, nbnd);
-            auto bnd_flux_dn_dir_day = real3d("bnd_flux_dn_dir_day", nday, nlay+1, nbnd);
-            FluxesByband fluxes_day;
-            fluxes_day.flux_up         = flux_up_day;
-            fluxes_day.flux_dn         = flux_dn_day;
-            fluxes_day.flux_dn_dir     = flux_dn_dir_day;
-            fluxes_day.bnd_flux_up     = bnd_flux_up_day;
-            fluxes_day.bnd_flux_dn     = bnd_flux_dn_day;
-            fluxes_day.bnd_flux_dn_dir = bnd_flux_dn_dir_day;
             rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
-
             // Expand daytime fluxes to all columns
             parallel_for(Bounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
                 int icol = dayIndices(iday);
@@ -549,7 +580,7 @@ namespace scream {
                 GasConcs &gas_concs,
                 OpticalProps1scl &aerosol,
                 OpticalProps1scl &clouds,
-                FluxesByband &fluxes) {
+                FluxesByband &fluxes, FluxesByband &clrsky_fluxes) {
 
             // Problem size
             int nbnd = k_dist.get_nband();
@@ -570,21 +601,7 @@ namespace scream {
             parallel_for(Bounds<1>(ncol), YAKL_LAMBDA(int icol) {
                 t_sfc(icol) = t_lev(icol, merge(nlay+1, 1, top_at_1));
             });
-            memset( emis_sfc , 0.98_wp                                   );
-
-            // Do gas optics
-            k_dist.gas_optics(ncol, nlay, top_at_1, p_lay, p_lev, t_lay, t_sfc, gas_concs, optics, lw_sources, real2d(), t_lev);
-
-#ifdef SCREAM_RRTMGP_DEBUG
-            // Check gas optics
-            check_range(optics.tau,  0, std::numeric_limits<Real>::max(), "rrtmgp_lw:optics.tau");
-#endif
-
-            // Combine gas and aerosol optics
-            aerosol.increment(optics);
-
-            // Combine gas and cloud optics
-            clouds.increment(optics);
+            memset(emis_sfc , 0.98_wp);
 
             // Get Gaussian quadrature weights
             // TODO: move this crap out of userland!
@@ -609,7 +626,25 @@ namespace scream {
             gauss_Ds_host .deep_copy_to(gauss_Ds );
             gauss_wts_host.deep_copy_to(gauss_wts);
 
-            // Compute fluxes
+
+            // Do gas optics
+            k_dist.gas_optics(ncol, nlay, top_at_1, p_lay, p_lev, t_lay, t_sfc, gas_concs, optics, lw_sources, real2d(), t_lev);
+
+#ifdef SCREAM_RRTMGP_DEBUG
+            // Check gas optics
+            check_range(optics.tau,  0, std::numeric_limits<Real>::max(), "rrtmgp_lw:optics.tau");
+#endif
+
+            // Combine gas and aerosol optics
+            aerosol.increment(optics);
+
+            // Compute clear-sky fluxes before we add in clouds
+            rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, optics, top_at_1, lw_sources, emis_sfc, clrsky_fluxes);
+
+            // Combine gas and cloud optics
+            clouds.increment(optics);
+
+            // Compute allsky fluxes
             rte_lw(max_gauss_pts, gauss_Ds, gauss_wts, optics, top_at_1, lw_sources, emis_sfc, fluxes);
 
         }
