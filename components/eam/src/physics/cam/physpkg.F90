@@ -2504,10 +2504,10 @@ end if
              !    CLUBB call (PBL, shallow convection, macrophysics)
              ! =====================================================  
    
-             icol = phys_debug_col(state%lchnk)
-             if (icol > 0) then
-                write (iulog,*) 'PJR:physpkg, tphysbc, calling clubb_tend_cam, macmic=',macmic_it
-             endif
+!             icol = phys_debug_col(state%lchnk)
+!             if (icol > 0) then
+!                write (iulog,*) 'PJR:physpkg, tphysbc, calling clubb_tend_cam, macmic=',macmic_it
+!             endif
              call clubb_tend_cam(state,ptend,pbuf,cld_macmic_ztodt,&
                 cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 
                 dlf, det_s, det_ice, lcldo)
@@ -2587,10 +2587,10 @@ end if
              call physics_tend_dealloc(tend_sc)
              call physics_ptend_dealloc(ptend_sc)
           else
-             icol = phys_debug_col(state%lchnk)
-             if (icol > 0) then
-                write (iulog,*) 'PJR:physpkg, tphysbc, calling microp_driver_tend',macmic_it
-             endif
+             !icol = phys_debug_col(state%lchnk)
+             !if (icol > 0) then
+             !   write (iulog,*) 'PJR:physpkg, tphysbc, calling microp_driver_tend',macmic_it
+             !endif
              call microp_driver_tend(state, ptend, cld_macmic_ztodt, pbuf)
           end if
           ! combine aero and micro tendencies for the grid

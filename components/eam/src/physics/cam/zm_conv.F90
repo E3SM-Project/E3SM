@@ -2294,7 +2294,7 @@ use physconst,      only: gravit, rair, rhoh2o, pi
 
    real(r8) small
    real(r8) mdt
-   real(r8) pjrswitch, pjr_re, rhoa, ccnbl(pcols)
+   real(r8) pjrswitch, pjr_re, rhoa, ccnbl(pcols), recrit
 
    integer khighest
    integer klowest
@@ -2719,7 +2719,7 @@ use physconst,      only: gravit, rair, rhoh2o, pi
    end do
 
 ! compute condensation in updraft
-   ccnbl(:) = ccn_pjrg(:,pver)
+   ccnbl(:) = ccn_pjrg(:,pver)*1.e6 ! boundary layer ccn (per m3)
    do k = pver,msg + 2,-1
       do i = 1,il2g
          if (k >= jt(i) .and. k < jb(i) .and. eps0(i) > 0._r8) then
@@ -2743,7 +2743,8 @@ use physconst,      only: gravit, rair, rhoh2o, pi
 !    mu, ql are interface quantities
 !    cu, du, eu, rprd are midpoint quantites
    if (idebg > 0) then
-      write (iulog,*) ' cldprp: idebg, ccnbl, ps, jt, jb, rhoh2o ', idebg, ccnbl(idebg), p(idebg,pver), jt(idebg), jb(idebg), rhoh2o
+      write (iulog,*) ' cldprp: idebg, ccnbl, ps, jt, jb, jlcl ', &
+           idebg, ccnbl(idebg)*1.e-6, p(idebg,pver), jt(idebg), jb(idebg), jlcl(idebg)
    endif
    do k = pver,msg + 2,-1
       do i = 1,il2g
@@ -2752,14 +2753,19 @@ use physconst,      only: gravit, rair, rhoh2o, pi
             if (mu(i,k) > 0._r8) then
                ql1 = 1._r8/mu(i,k)* (mu(i,k+1)*ql(i,k+1)- &
                      dz(i,k)*du(i,k)*ql(i,k+1)+dz(i,k)*cu(i,k))
-               pjrswitch = 1._r8
                ! estimate volume drop radius from ccn below cloud base
                rhoa = (p(i,k)*100.)/(rgas*t(i,k))
                pjr_re = ((ql1*rhoa/ &
                     (4./3.*pi*ccnbl(i)*rhoh2o))**(1./3.))*1.e6
+               pjrswitch = 0.
+               recrit = 13.
+               if (pjr_re > recrit) then
+                  pjrswitch = min(max((pjr_re-recrit)/2.,0.),1.)
+               endif
                if (i == idebg) then
-                  write (iulog,*) 'k, pjr_re ', k, pjr_re
-                  write (iulog,*) 'p, t, ql, rhoa, ccnbl ', ql1, p(i,k), t(i,k), rhoa
+                  write (iulog,'(a,i4,3f10.3)') 'k, pjr_re, pjrswitch,cdepth ', k, pjr_re, pjrswitch, &
+                       (zf(i,k)-zf(i,jb(i)))
+                  !write (iulog,*) 'ql1, p, t, rhoa, ', ql1, p(i,k), t(i,k), rhoa
                endif
                ql(i,k) = ql1/ (1._r8+dz(i,k)*c0mask(i)*pjrswitch)
             else

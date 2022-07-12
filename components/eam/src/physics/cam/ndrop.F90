@@ -1108,13 +1108,13 @@ subroutine dropmixnuc( &
    enddo
 
    ccn_pjr(:ncol,:) = ccn(:ncol,:,3)
-   icol = phys_debug_col(state%lchnk)
-   if (icol > 0) then
-      write (iulog,*) 'PJR: ndrop.F90, dropmixnuc: ccncalc '
-      do k =50, pver
-         write(iulog,*) k, ccn_pjr(icol,k)
-      end do
-   end if
+   !icol = phys_debug_col(state%lchnk)
+   !if (icol > 0) then
+   !   write (iulog,*) 'PJR: ndrop.F90, dropmixnuc: ccncalc '
+   !   do k =50, pver
+   !      write(iulog,*) k, ccn_pjr(icol,k)
+   !   end do
+   !end if
    
    if(do_aerocom_ind3) then 
       ccn3d(:ncol, :) = ccn(:ncol, :, 4)

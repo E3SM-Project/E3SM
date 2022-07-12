@@ -2434,13 +2434,13 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       end do
    end do
 
-   icol = phys_debug_col(state%lchnk)
-   if (icol > 0) then
-      write (iulog,*) 'PJR: ast, cldliq '
-      do k = top_lev, pver
-         write (iulog,*) k, ast(icol,k), state%q(icol,k,ixcldliq)
-      end do
-   end if
+   !icol = phys_debug_col(state%lchnk)
+   !if (icol > 0) then
+   !   write (iulog,*) 'PJR: micro_mg_cam.F90: ast, cldliq '
+   !   do k = top_lev, pver
+   !      write (iulog,*) k, ast(icol,k), state%q(icol,k,ixcldliq)
+   !   end do
+   !end if
 
    ! Calculate cloud fraction for prognostic precip sizes.
    if (micro_mg_version > 1) then
@@ -2666,6 +2666,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    end where
 
    icol = phys_debug_col(state%lchnk)
+   icol = 0
    if (icol > 0) then
       write (iulog,*) 'PJR: microp_mg_cam_tend: micro_mg_cam, '
       do k = top_lev, pver
@@ -2674,8 +2675,8 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
                  k, liqcldf_grid(icol,k), rho_grid(icol,k), rhoh2o, state%pmid(icol,k)/100.
             pjr_re = ((icwmrst_grid(icol,k)*rho_grid(icol,k)/ &
                      (4./3.*3.14159*ncic_grid(icol,k)*rhoh2o))**(1./3.))*1.e6
-            write (iulog,*) 'k, rel_fn_grid, rel_grid, pjr_re, ', &
-                 k, rel_fn_grid(icol,k), rel_grid(icol,k), pjr_re
+            write (iulog,*) 'k, rel_fn_grid, rel_grid, pjr_re, ncic ', &
+                 k, rel_fn_grid(icol,k), rel_grid(icol,k), pjr_re, ncic_grid(icol,k)
          !endif
       end do
    end if

@@ -2862,13 +2862,13 @@ end subroutine clubb_init_cnst
          qist(i,k) = state1%q(i,k,ixcldice)/max(0.01_r8,aist(i,k))
       enddo
    enddo
-   icol = phys_debug_col(state%lchnk)
-   if (icol > 0) then
-      write (iulog,*) 'PJR:clubb_intr:clubb_tend_cam'
-      do k = 1, pver
-         write (iulog,*) 'alst, ast ', k, ast(icol,k), alst(icol,k)
-      enddo
-   endif
+   !icol = phys_debug_col(state%lchnk)
+   !if (icol > 0) then
+   !   write (iulog,*) 'PJR:clubb_intr:clubb_tend_cam'
+   !   do k = 1, pver
+   !      write (iulog,*) 'alst, ast ', k, ast(icol,k), alst(icol,k)
+   !   enddo
+   !endif
 
    !  Probably need to add deepcu cloud fraction to the cloud fraction array, else would just
    !  be outputting the shallow convective cloud fraction
