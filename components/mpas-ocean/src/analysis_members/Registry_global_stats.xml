@@ -52,7 +52,7 @@
 			 description="sum of the volumeEdge variable over the full domain, used to normalize global statistics"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="CFLNumberGlobal" type="real" dimensions="Time"units="1"
+		<var name="CFLNumberGlobal" type="real" dimensions="Time" units="1"
 			 description="maximum CFL number over the full domain"
 			 packages="forwardMode;analysisMode"
 		/>
