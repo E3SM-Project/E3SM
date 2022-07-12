@@ -204,7 +204,8 @@ module li_advection
       real (kind=RKIND), pointer :: &
            config_ice_density,    & ! rhoi
            config_ocean_density,  & ! rhoo
-           config_sea_level         ! sea level relative to z = 0
+           config_sea_level,      & ! sea level relative to z = 0
+           config_thermal_thickness
 
       logical :: advectTracers     ! if true, then advect tracers as well as thickness
 
@@ -284,6 +285,7 @@ module li_advection
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
       call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
+      call mpas_pool_get_config(liConfigs, 'config_thermal_thickness', config_thermal_thickness)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
@@ -474,6 +476,15 @@ module li_advection
          ! to the groundedBasalMassBal array in mpas_li_thermal.F.  If so, then add it to basalMassBal.
          ! floatingBasalMassBal should never be altered because it is an input variable.
          ! Note: Subroutine basal_melt_floating_ice should be called earlier in the time step, before adding this term.
+                  ! calculate a mask to identify ice that is thick enough to be thermally active
+         do iCell = 1, nCells
+            if (thickness(iCell) > config_thermal_thickness) then
+               thermalCellMask(iCell) = 1
+            else
+               thermalCellMask(iCell) = 0
+            endif
+         enddo
+
          do iCell = 1, nCells
             if (thermalCellMask(iCell) == 1 .and. li_mask_is_floating_ice(cellMask(iCell)) .and. &
                  groundedBasalMassBal(iCell) /= 0.0_RKIND) then
@@ -609,6 +620,7 @@ module li_advection
       call mpas_deallocate_scratch_field(basalTracersField, .true.)
       call mpas_deallocate_scratch_field(surfaceTracersField, .true.)
       call mpas_deallocate_scratch_field(cellMaskTemporaryField, .true.)
+      call mpas_deallocate_scratch_field(thermalCellMaskField, .true.)
 
       ! === error check
       if (err > 0) then
