@@ -35,10 +35,34 @@ private:
     ExecViewUnmanaged<Scalar *[NP][NP][NUM_LEV_P]>  dpnh_dp_i;
   };
 
+
+  template <typename FunctorTag>
+  typename std::enable_if<OnGpu<ExecSpace>::value == false,
+                          Kokkos::TeamPolicy<ExecSpace, FunctorTag> >::type
+  d_team_policy(const int num_exec) {
+    return Homme::get_default_team_policy<ExecSpace, FunctorTag>(num_exec);
+  }
+
+  template <typename FunctorTag>
+  typename std::enable_if<OnGpu<ExecSpace>::value == true,
+                          Kokkos::TeamPolicy<ExecSpace, FunctorTag> >::type
+  d_team_policy(const int num_exec) {
+    ThreadPreferences tp;
+    tp.max_threads_usable = 8;  //16
+    tp.max_vectors_usable = 32; //32
+    tp.prefer_larger_team = true;
+    return Homme::get_default_team_policy<ExecSpace, FunctorTag>(num_exec, tp);
+  }
+
+
+
+
 public:
 
+
   Diagnostics (const int num_elems, const bool theta_hydrostatic_mode) :
-    m_policy(Homme::get_default_team_policy<ExecSpace,EnergyHalfTimesTag>(num_elems)),
+    //m_policy(Homme::get_default_team_policy<ExecSpace,EnergyHalfTimesTag>(num_elems)),
+    m_policy(d_team_policy<EnergyHalfTimesTag>(num_elems)),
     m_tu(m_policy),
     m_num_elems(num_elems),
     m_theta_hydrostatic_mode(theta_hydrostatic_mode)
