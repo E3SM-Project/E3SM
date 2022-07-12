@@ -354,10 +354,8 @@ subroutine ocn_tend_vvel(tendPool, statePool, forcingPool, meshPool, &
         tend_vertVelocityNonhydro, err)
 
    !
-   ! velocity tendency: del2 dissipation, CALL STRAIGHT to hmix_del2 FOR NOW!!!
-   ! \nu_2 \nabla^2 u
-   !   computed as \nu( \nabla divergence + k \times \nabla relativeVorticity )
-   !   strictly only valid for config_mom_del2 == constant
+   ! at present, only del2 mixing is implemented for horizontal mixing of
+   ! vertical velocity
    !
    call ocn_vvel_hmix_del2_tend(layerThickEdgeFlux, vertVelocityNonhydro, &
         tend_vertVelocityNonhydro, err)
@@ -578,7 +576,7 @@ end subroutine ocn_tend_vvel!}}}
       endif
 
       ! Add horizontal mixing
-      call ocn_vel_hmix_tend(divergence, relativeVorticity, viscosity, tendVel,err)
+      call ocn_vel_hmix_tend(divergence, relativeVorticity, tendVel,err)
 
       ! Add forcing and bottom drag
       call ocn_vel_forcing_tend(normalVelocity, sfcFlxAttCoeff, &

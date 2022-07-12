@@ -1822,10 +1822,6 @@ module ocn_time_integration_split
                                                 tracersGroupCur, 1)
          call mpas_pool_get_array(tracersPool, 'activeTracers', &
                                                 tracersGroupNew, 2)
-         call mpas_pool_get_array(statePool,   'normalVelocity', &
-                                                normalVelocityCur, 1)
-         call mpas_pool_get_array(tracersTendPool,'activeTracersTend', &
-                                                   activeTracersTend)
          if(config_enable_nonhydrostatic_mode) then
             call mpas_pool_get_array(statePool, 'vertVelocityNonhydro', &
                                                 vertVelocityNonhydroCur, 1)

@@ -80,7 +80,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_hmix_tend(div, relVort, viscosity, tend, err)!{{{
+   subroutine ocn_vel_hmix_tend(div, relVort, tend, err)!{{{
 
       !-----------------------------------------------------------------
       ! input variables
@@ -95,8 +95,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         tend,        &!< [inout] accumulated velocity tendency
-         viscosity
+         tend            !< [inout] accumulated velocity tendency
 
       !-----------------------------------------------------------------
       ! output variables
@@ -126,7 +125,7 @@ contains
       ! note that the user can choose multiple options and the
       !   tendencies will be added together
 
-      call ocn_vel_hmix_del2_tend(div, relVort, viscosity, tend, err1)
+      call ocn_vel_hmix_del2_tend(div, relVort, tend, err1)
       err = ior(err1, err)
 
       call ocn_vel_hmix_leith_tend(div, relVort, tend, err1)
