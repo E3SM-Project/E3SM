@@ -90,7 +90,7 @@ contains
          normPlanetVortEdge, &!< [in] planetary vorticity/thickness at edge
          layerThickEdgeFlux,     &!< [in] layer thickness on edge
          normalVelocity,     &!< [in] Horizontal velocity
-         kineticEnergyCell    !< [in] Kinetic Energyi
+         kineticEnergyCell    !< [in] Kinetic Energy
 
       !-----------------------------------------------------------------
       ! input/output variables
