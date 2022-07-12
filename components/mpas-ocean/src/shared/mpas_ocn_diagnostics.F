@@ -1691,21 +1691,6 @@ contains
       !$omp end parallel
 #endif
 
-      !LVR: 20201204 -- add in new vertical velocity prognostic variable
-!      if(.not. config_enable_nonhydrostatic_mode .or. config_enable_vertMomentum_disable_nonHydro) then
-!      !if (config_enable_nonhydrostatic_mode) then
-!        !$omp parallel
-!        !$omp do schedule(runtime) &
-!        !$omp private(k)
-!        do iCell=1,nCells
-!          do k=1,maxLevelCell(iCell)+1
-!            vertVelocityNonhydro(k,iCell) = vertVelocityTop(k,iCell)
-!          enddo
-!        enddo
-!        !$omp end do
-!        !$omp end parallel
-!      endif
-
       deallocate(div_hu,div_huTransport,div_huGMBolus)
 
       nEdges = nEdgesHalo( 2 )
