@@ -710,54 +710,24 @@ void AtmosphereDriver::set_initial_conditions ()
   m_atm_logger->debug("    [EAMXX] Processing fields to copy ...");
   for (const auto& tgt_fid : ic_fields_to_copy) {
     const auto& tgt_fname = tgt_fid.name();
-    const auto& tgt_gname = tgt_fid.get_grid_name();
+    const auto& gname = tgt_fid.get_grid_name();
 
-    auto tgt_fm = get_field_mgr(tgt_gname);
+    const auto& src_fname = ic_pl.get<std::string>(tgt_fname);
 
-    // The user can request to init a field from its copy on another grid
-    std::string src_fname, src_gname;
-
-    const auto& param_value = ic_pl.sublist(tgt_gname).get<std::string>(tgt_fname);
-    const auto tokens = ekat::split(param_value,'@');
-    EKAT_REQUIRE_MSG (tokens.size()==1 || tokens.size()==2,
-        "Error! To copy an initial condition for a field from another, use one of the following ways:\n"
-        "    - field_1: field_2\n"
-        "    - field_1: field_2 @ grid_2\n"
-        "The first assumes field_2 is on the same grid as field_1, while the second allows\n"
-        "cross-grid imports.\n\n"
-        "Parameter list entry:\n"
-        "   " + tgt_fname + ": " + param_value + "\n");
-
-    src_fname = ekat::trim(tokens[0]);
-    if (tokens.size()==2) {
-      src_gname = ekat::trim(tokens[1]);
-    } else {
-      src_gname = tgt_gname;
-    }
-
-    auto src_fm = get_field_mgr(src_gname);
+    auto fm = get_field_mgr(gname);
 
     // The field must exist in the fm on the input field's grid
-    EKAT_REQUIRE_MSG (src_fm->has_field(src_fname),
+    EKAT_REQUIRE_MSG (fm->has_field(src_fname),
         "Error! Source field for initial condition not found in the field manager.\n"
-        "       Grid name:     " + tgt_gname + "\n"
+        "       Grid name:     " + gname + "\n"
         "       Field to init: " + tgt_fname + "\n"
         "       Source field:  " + src_fname + " (NOT FOUND)\n");
 
     // Get the two fields, and copy src to tgt
-    auto f_tgt = tgt_fm->get_field(tgt_fname);
-    auto f_src = src_fm->get_field(src_fname);
-    if (src_gname==tgt_gname) {
-      // Same grid: simply copy the field
-      f_tgt.deep_copy(f_src);
-    } else {
-      // Different grid: create a remapper on the fly
-      auto r = m_grids_manager->create_remapper(src_gname,tgt_gname);
-      r->registration_begins();
-      r->register_field(f_src,f_tgt);
-      r->registration_ends();
-      r->remap(true);
-    }
+    auto f_tgt = fm->get_field(tgt_fname);
+    auto f_src = fm->get_field(src_fname);
+    f_tgt.deep_copy(f_src);
+
     // Set the initial time stamp
     f_tgt.get_header().get_tracking().update_time_stamp(m_current_ts);
   }
