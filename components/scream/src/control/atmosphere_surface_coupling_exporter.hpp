@@ -115,8 +115,11 @@ protected:
   // Struct which contains local variables
   Buffer m_buffer;
 
-  // Number of exports
-  Int m_num_exports;
+  // Number of fields in cpl data
+  Int m_num_cpl_exports;
+
+  // Number of exports from SCREAM
+  Int m_num_scream_exports;
 
   // Views storing a 2d array with dims (num_cols,num_fields) for cpl export data.
   // The field idx strides faster, since that's what mct does (so we can "view" the

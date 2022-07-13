@@ -66,7 +66,6 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
   create_helper_field("Sa_pslv",    scalar2d_layout, grid_name);
   create_helper_field("Faxa_rainl", scalar2d_layout, grid_name);
   create_helper_field("Faxa_snowl", scalar2d_layout, grid_name);
-  create_helper_field("set_zero",   scalar2d_layout, grid_name);
 }
 // =========================================================================================
 void SurfaceCouplingExporter::create_helper_field (const std::string& name,
@@ -118,34 +117,36 @@ void SurfaceCouplingExporter::init_buffers(const ATMBufferManager &buffer_manage
 // =========================================================================================
 void SurfaceCouplingExporter::setup_surface_coupling_data(const SCDataManager &sc_data_manager)
 {
-  m_num_exports = sc_data_manager.get_num_cpl_fields();
+  m_num_cpl_exports    = sc_data_manager.get_num_cpl_fields();
+  m_num_scream_exports = sc_data_manager.get_num_scream_fields();
 
-  EKAT_ASSERT_MSG(sc_data_manager.get_num_cpl_fields()==sc_data_manager.get_num_scream_fields(),
-                  "Error! For export, num_cpl_fields should be same as num_scream_fields.\n");
+  EKAT_ASSERT_MSG(m_num_scream_exports <= m_num_cpl_exports,
+                  "Error! More SCREAM exports than actual cpl exports.\n");
   EKAT_ASSERT_MSG(m_num_cols == sc_data_manager.get_field_size(), "Error! Surface Coupling exports need to have size ncols.");
 
+  // The export data is of size ncols,num_cpl_exports. All other data is of size num_scream_exports
   m_cpl_exports_view_h = decltype(m_cpl_exports_view_h) (sc_data_manager.get_field_data_ptr(),
-                                                         m_num_cols, m_num_exports);
+                                                         m_num_cols, m_num_cpl_exports);
   m_cpl_exports_view_d = Kokkos::create_mirror_view(DefaultDevice(), m_cpl_exports_view_h);
 
-  m_export_field_names = new name_t[m_num_exports];
-  std::memcpy(m_export_field_names, sc_data_manager.get_field_name_ptr(), m_num_exports*32*sizeof(char));
+  m_export_field_names = new name_t[m_num_scream_exports];
+  std::memcpy(m_export_field_names, sc_data_manager.get_field_name_ptr(), m_num_scream_exports*32*sizeof(char));
 
   m_cpl_indices_view =
     decltype(m_cpl_indices_view)          (sc_data_manager.get_field_cpl_indices_ptr(),
-           m_num_exports);
+                                           m_num_scream_exports);
 
   m_vector_components_view =
       decltype(m_vector_components_view)  (sc_data_manager.get_field_vector_components_ptr(),
-                                           m_num_exports);
+                                           m_num_scream_exports);
   m_constant_multiple_view =
       decltype(m_constant_multiple_view)  (sc_data_manager.get_field_constant_multiple_ptr(),
-                                           m_num_exports);
+                                           m_num_scream_exports);
   m_do_export_during_init_view = 
     decltype(m_do_export_during_init_view)(sc_data_manager.get_field_transfer_during_init_ptr(),
-					   m_num_exports);
+                                           m_num_scream_exports);
 
-  m_column_info_d = decltype(m_column_info_d) ("m_info", m_num_exports);
+  m_column_info_d = decltype(m_column_info_d) ("m_info", m_num_scream_exports);
   m_column_info_h = Kokkos::create_mirror_view(m_column_info_d);
 }
 // =========================================================================================
@@ -153,7 +154,7 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
 {
   bool any_initial_exports = false;
 
-  for (int i=0; i<m_num_exports; ++i) {
+  for (int i=0; i<m_num_scream_exports; ++i) {
 
     // There are 2 cases for the export:
     //  1. The export comes directly from a field in the field manager.
@@ -177,7 +178,8 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
     // Get column info from field utility function
     get_col_info_for_surface_values(field.get_header_ptr(),
                                     m_vector_components_view(i),
-                                    m_column_info_h(i).col_offset, m_column_info_h(i).col_stride);
+                                    m_column_info_h(i).col_offset,
+                                    m_column_info_h(i).col_stride);
 
     // Set constant multiple
     m_column_info_h(i).constant_multiple = m_constant_multiple_view(i);
@@ -224,18 +226,21 @@ void SurfaceCouplingExporter::do_export(const bool called_during_initialization)
   const auto Sa_pslv    = m_helper_fields.at("Sa_pslv").get_view<Real*>();
   const auto Faxa_rainl = m_helper_fields.at("Faxa_rainl").get_view<Real*>();
   const auto Faxa_snowl = m_helper_fields.at("Faxa_snowl").get_view<Real*>();
-  const auto set_zero   = m_helper_fields.at("set_zero").get_view<Real*>();
 
   const auto dz    = m_buffer.dz;
   const auto z_int = m_buffer.z_int;
   const auto z_mid = m_buffer.z_mid;
+
+  // Any field not exported by scream, or not exported
+  // during initialization, is set to 0.0
+  Kokkos::deep_copy(m_cpl_exports_view_d, 0.0);
 
   // Local copies, to deal with CUDA's handling of *this.
   const int  num_levs           = m_num_levs;
   const auto col_info           = m_column_info_d;
   const auto cpl_exports_view_d = m_cpl_exports_view_d;
   const int  num_cols           = m_num_cols;
-  const int  num_exports        = m_num_exports;
+  const int  num_exports        = m_num_scream_exports;
 
   // Preprocess exports
   const auto setup_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(num_cols, num_levs);
@@ -275,7 +280,6 @@ void SurfaceCouplingExporter::do_export(const bool called_during_initialization)
     Sa_pslv(i)    = PF::calculate_psl(T_int_bot, p_int_i(num_levs), phis(i));
     Faxa_rainl(i) = precip_liq_surf(i)*C::RHO_H2O;
     Faxa_snowl(i) = precip_ice_surf(i)*C::RHO_H2O;
-    set_zero(i)   = 0.0;
   });
 
   // Export to cpl data
@@ -290,8 +294,6 @@ void SurfaceCouplingExporter::do_export(const bool called_during_initialization)
     bool do_export = (not called_during_initialization || info.transfer_during_initialization);
     if (do_export) {
       cpl_exports_view_d(icol,info.cpl_indx) = info.constant_multiple*info.data[offset];
-    } else {
-      cpl_exports_view_d(icol,info.cpl_indx) = 0.0;
     }
   });
 

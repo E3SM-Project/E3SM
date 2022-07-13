@@ -17,13 +17,13 @@ namespace scream {
 
 void setup_import_and_export_data(
   // Imports
-  const int num_scream_imports, const int num_cpl_imports,
+  const int num_cpl_imports, const int num_scream_imports,
   const KokkosTypes<HostDevice>::view_1d<int >& import_cpl_indices_view,
   const KokkosTypes<HostDevice>::view_1d<int >& import_vec_comps_view,
   const KokkosTypes<HostDevice>::view_1d<Real>& import_constant_multiple_view,
   const KokkosTypes<HostDevice>::view_1d<bool>& do_import_during_init_view,
   // Export data
-  const int num_cpl_exports,
+  const int num_cpl_exports, const int num_scream_exports,
   const KokkosTypes<HostDevice>::view_1d<int >& export_cpl_indices_view,
   const KokkosTypes<HostDevice>::view_1d<int >& export_vec_comps_view,
   const KokkosTypes<HostDevice>::view_1d<Real>& export_constant_multiple_view,
@@ -75,12 +75,12 @@ void setup_import_and_export_data(
 
   // Set cpl indices. We do a random shuffle of [0, num_cpl_exports),
   // then assign the scream exports to the first num_scream_exports
-  // in the shuffled indices. The rest of the indices correspond to set_zero.
+  // in the shuffled indices.
   {
     std::vector<int> export_order(num_cpl_exports);
     for (int f=0; f<num_cpl_exports; ++f) { export_order[f] = f; }
     std::random_shuffle(export_order.begin(), export_order.end());
-    for (int f=0; f<num_cpl_exports; ++f) {
+    for (int f=0; f<num_scream_exports; ++f) {
       export_cpl_indices_view(f) = export_order[f];
     }
   }
@@ -268,10 +268,6 @@ void test_exports(const FieldManager& fm,
     EKAT_REQUIRE(export_constant_multiple_view(7)*Sa_dens_h(i)               == export_data_view(i, export_cpl_indices_view(7)));
     EKAT_REQUIRE(export_constant_multiple_view(8)*Sa_pslv_h(i)               == export_data_view(i, export_cpl_indices_view(8)));
 
-    for (int f=17; f<17+num_set_zero_fields; ++f) {
-      EKAT_REQUIRE(0.0 == export_constant_multiple_view(f)*export_data_view(i, export_cpl_indices_view(f)));
-    }
-
     // The following are only exported during run phase. If this test is called
     // during initialization, all values should have been set to 0.
     if (called_directly_after_init) {
@@ -377,23 +373,23 @@ TEST_CASE("surface-coupling", "") {
   std::strcpy(import_names[7], "surf_sens_flux");
   std::strcpy(import_names[8], "surf_evap");
 
-  // Export data and all views are of size num_cpl_exports
+  // Export data is of size num_cpl_exports, the rest of the views are size num_scream_exports.
   KokkosTypes<HostDevice>::view_2d<Real> export_data_view             ("export_data",
                                                                        ncols, num_cpl_exports);
   KokkosTypes<HostDevice>::view_1d<int>  export_cpl_indices_view      ("export_vec_comps",
-                                                                       num_cpl_exports);
+                                                                       num_scream_exports);
   KokkosTypes<HostDevice>::view_1d<int>  export_vec_comps_view        ("export_vec_comps", 
-                                                                       num_cpl_exports);
+                                                                       num_scream_exports);
   KokkosTypes<HostDevice>::view_1d<Real> export_constant_multiple_view("export_constant_multiple_view", 
-                                                                       num_cpl_exports);
+                                                                       num_scream_exports);
   KokkosTypes<HostDevice>::view_1d<bool> do_export_during_init_view   ("do_export_during_init_view",
-                                                                       num_cpl_exports);
+                                                                       num_scream_exports);
 
   // Set export data to -1. All values should be overwritten after the run phase.
   Kokkos::deep_copy(export_data_view, -1.0);
 
   // Set names. For all non-scream exports, set to 0.
-  char export_names[num_cpl_exports][32];
+  char export_names[num_scream_exports][32];
   std::strcpy(export_names[0],  "Sa_z");
   std::strcpy(export_names[1],  "horiz_winds");
   std::strcpy(export_names[2],  "horiz_winds");
@@ -411,14 +407,13 @@ TEST_CASE("surface-coupling", "") {
   std::strcpy(export_names[14], "sfc_flux_dif_vis");
   std::strcpy(export_names[15], "sfc_flux_sw_net");
   std::strcpy(export_names[16], "sfc_flux_lw_dn");
-  for (int i=17; i<num_cpl_exports; ++i) std::strcpy(export_names[i], "set_zero");
 
   // Setup the import/export data. This is meant to replicate the structures coming
   // from mct_coupling/scream_cpl_indices.F90
-  setup_import_and_export_data(num_scream_imports, num_cpl_imports,
+  setup_import_and_export_data(num_cpl_imports, num_scream_imports,
                                import_cpl_indices_view, import_vec_comps_view,
                                import_constant_multiple_view, do_import_during_init_view,
-                               num_cpl_exports,
+                               num_cpl_exports, num_scream_exports,
                                export_cpl_indices_view, export_vec_comps_view,
                                export_constant_multiple_view, do_export_during_init_view);
 
@@ -428,7 +423,7 @@ TEST_CASE("surface-coupling", "") {
                                          import_names[0], import_cpl_indices_view.data(), import_vec_comps_view.data(),
                                          import_constant_multiple_view.data(), do_import_during_init_view.data());
   ad.setup_surface_coupling_data_manager(SurfaceCouplingTransferType::Export,
-                                         num_cpl_exports, num_cpl_exports, ncols, export_data_view.data(),
+                                         num_cpl_exports, num_scream_exports, ncols, export_data_view.data(),
                                          export_names[0], export_cpl_indices_view.data(), export_vec_comps_view.data(),
                                          export_constant_multiple_view.data(), do_export_during_init_view.data());
 
