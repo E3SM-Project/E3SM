@@ -743,22 +743,6 @@ contains
        this%forc_flood_grc = 0._r8
     endif
 
-    call restartvar(ncid=ncid, flag=flag, varname='H2OROF', xtype=ncd_double, &
-         dim1name='gridcell', &
-         long_name='floodplain inundation volume', units='mm', &
-         interpinic_flag='interp', readvar=readvar, data=this%h2orof_grc)
-    if (flag == 'read' .and. .not. readvar) then
-       this%h2orof_grc = 0._r8
-    endif
-
-    call restartvar(ncid=ncid, flag=flag, varname='FRAC_H2OROF', xtype=ncd_double, &
-         dim1name='gridcell', &
-         long_name='floodplain inundation fraction', units='', &
-         interpinic_flag='interp', readvar=readvar, data=this%frac_h2orof_grc)
-    if (flag == 'read' .and. .not. readvar) then
-       this%frac_h2orof_grc  = 0._r8
-    endif
-
   end subroutine Restart
 
 end module atm2lndType
