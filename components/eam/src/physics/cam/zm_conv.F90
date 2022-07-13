@@ -1694,52 +1694,54 @@ subroutine zm_convr(lchnk   ,ncol    , &
    end do
 
 !<songxl 2014-11-20------------
-   do k = msg + 1,pver
-      do i = 1,ncol
+   if (zm_microp) then
+      do k = msg + 1,pver
+         do i = 1,ncol
 
-         !Interpolate variable from interface to mid-layer and convert it from units of "kg/kg" to "g/m3"
+            !Interpolate variable from interface to mid-layer and convert it from units of "kg/kg" to "g/m3"
 
-         if(k.lt.pver) then
-            microp_st%qice (i,k) = 0.5_r8*(microp_st%qice(i,k)+microp_st%qice(i,k+1))
-            microp_st%qliq (i,k) = 0.5_r8*(microp_st%qliq(i,k)+microp_st%qliq(i,k+1))
-            microp_st%qrain (i,k) = 0.5_r8*(microp_st%qrain(i,k)+microp_st%qrain(i,k+1))
-            microp_st%qsnow (i,k) = 0.5_r8*(microp_st%qsnow(i,k)+microp_st%qsnow(i,k+1))
-            microp_st%qgraupel(i,k) = 0.5_r8*(microp_st%qgraupel(i,k)+microp_st%qgraupel(i,k+1))
-            microp_st%qni (i,k) = 0.5_r8*(microp_st%qni(i,k)+microp_st%qni(i,k+1))
-            microp_st%qnl (i,k) = 0.5_r8*(microp_st%qnl(i,k)+microp_st%qnl(i,k+1))
-            microp_st%qnr (i,k) = 0.5_r8*(microp_st%qnr(i,k)+microp_st%qnr(i,k+1))
-            microp_st%qns (i,k) = 0.5_r8*(microp_st%qns(i,k)+microp_st%qns(i,k+1))
-            microp_st%qng (i,k) = 0.5_r8*(microp_st%qng(i,k)+microp_st%qng(i,k+1))
-            microp_st%wu(i,k)   = 0.5_r8*(microp_st%wu(i,k)+microp_st%wu(i,k+1))
-         end if
+            if(k.lt.pver) then
+               microp_st%qice (i,k) = 0.5_r8*(microp_st%qice(i,k)+microp_st%qice(i,k+1))
+               microp_st%qliq (i,k) = 0.5_r8*(microp_st%qliq(i,k)+microp_st%qliq(i,k+1))
+               microp_st%qrain (i,k) = 0.5_r8*(microp_st%qrain(i,k)+microp_st%qrain(i,k+1))
+               microp_st%qsnow (i,k) = 0.5_r8*(microp_st%qsnow(i,k)+microp_st%qsnow(i,k+1))
+               microp_st%qgraupel(i,k) = 0.5_r8*(microp_st%qgraupel(i,k)+microp_st%qgraupel(i,k+1))
+               microp_st%qni (i,k) = 0.5_r8*(microp_st%qni(i,k)+microp_st%qni(i,k+1))
+               microp_st%qnl (i,k) = 0.5_r8*(microp_st%qnl(i,k)+microp_st%qnl(i,k+1))
+               microp_st%qnr (i,k) = 0.5_r8*(microp_st%qnr(i,k)+microp_st%qnr(i,k+1))
+               microp_st%qns (i,k) = 0.5_r8*(microp_st%qns(i,k)+microp_st%qns(i,k+1))
+               microp_st%qng (i,k) = 0.5_r8*(microp_st%qng(i,k)+microp_st%qng(i,k+1))
+               microp_st%wu(i,k)   = 0.5_r8*(microp_st%wu(i,k)+microp_st%wu(i,k+1))
+            end if
 
-         if (t(i,k).gt. 273.15_r8 .and. t(i,k-1).le.273.15_r8) then
-             microp_st%qice (i,k-1) = microp_st%qice (i,k-1) + microp_st%qice (i,k)
-             microp_st%qice (i,k) = 0._r8
-             microp_st%qni (i,k-1) = microp_st%qni (i,k-1) + microp_st%qni (i,k)
-             microp_st%qni (i,k) = 0._r8
-             microp_st%qsnow (i,k-1) = microp_st%qsnow (i,k-1) + microp_st%qsnow (i,k)
-             microp_st%qsnow (i,k) = 0._r8
-             microp_st%qns (i,k-1) = microp_st%qns (i,k-1) + microp_st%qns (i,k)
-             microp_st%qns (i,k) = 0._r8
-             microp_st%qgraupel (i,k-1) = microp_st%qgraupel (i,k-1) + microp_st%qgraupel (i,k)
-             microp_st%qgraupel (i,k) = 0._r8
-             microp_st%qng (i,k-1) = microp_st%qng (i,k-1) + microp_st%qng (i,k)
-             microp_st%qng (i,k) = 0._r8
-         end if
+            if (t(i,k).gt. 273.15_r8 .and. t(i,k-1).le.273.15_r8) then
+                microp_st%qice (i,k-1) = microp_st%qice (i,k-1) + microp_st%qice (i,k)
+                microp_st%qice (i,k) = 0._r8
+                microp_st%qni (i,k-1) = microp_st%qni (i,k-1) + microp_st%qni (i,k)
+                microp_st%qni (i,k) = 0._r8
+                microp_st%qsnow (i,k-1) = microp_st%qsnow (i,k-1) + microp_st%qsnow (i,k)
+                microp_st%qsnow (i,k) = 0._r8
+                microp_st%qns (i,k-1) = microp_st%qns (i,k-1) + microp_st%qns (i,k)
+                microp_st%qns (i,k) = 0._r8
+                microp_st%qgraupel (i,k-1) = microp_st%qgraupel (i,k-1) + microp_st%qgraupel (i,k)
+                microp_st%qgraupel (i,k) = 0._r8
+                microp_st%qng (i,k-1) = microp_st%qng (i,k-1) + microp_st%qng (i,k)
+                microp_st%qng (i,k) = 0._r8
+            end if
 
-         microp_st%qice (i,k) = microp_st%qice(i,k) * pap(i,k)/t(i,k)/rgas *1000._r8
-         microp_st%qliq (i,k) = microp_st%qliq(i,k) * pap(i,k)/t(i,k)/rgas *1000._r8
-         microp_st%qrain (i,k) = microp_st%qrain(i,k) * pap(i,k)/t(i,k)/rgas *1000._r8
-         microp_st%qsnow (i,k) = microp_st%qsnow(i,k) * pap(i,k)/t(i,k)/rgas *1000._r8
-         microp_st%qgraupel (i,k) = microp_st%qgraupel(i,k) * pap(i,k)/t(i,k)/rgas *1000._r8
-         microp_st%qni (i,k) = microp_st%qni(i,k) * pap(i,k)/t(i,k)/rgas
-         microp_st%qnl (i,k) = microp_st%qnl(i,k) * pap(i,k)/t(i,k)/rgas
-         microp_st%qnr (i,k) = microp_st%qnr(i,k) * pap(i,k)/t(i,k)/rgas
-         microp_st%qns (i,k) = microp_st%qns(i,k) * pap(i,k)/t(i,k)/rgas
-         microp_st%qng (i,k) = microp_st%qng(i,k) * pap(i,k)/t(i,k)/rgas 
+            microp_st%qice (i,k) = microp_st%qice(i,k) * pap(i,k)/t(i,k)/rgas *1000._r8
+            microp_st%qliq (i,k) = microp_st%qliq(i,k) * pap(i,k)/t(i,k)/rgas *1000._r8
+            microp_st%qrain (i,k) = microp_st%qrain(i,k) * pap(i,k)/t(i,k)/rgas *1000._r8
+            microp_st%qsnow (i,k) = microp_st%qsnow(i,k) * pap(i,k)/t(i,k)/rgas *1000._r8
+            microp_st%qgraupel (i,k) = microp_st%qgraupel(i,k) * pap(i,k)/t(i,k)/rgas *1000._r8
+            microp_st%qni (i,k) = microp_st%qni(i,k) * pap(i,k)/t(i,k)/rgas
+            microp_st%qnl (i,k) = microp_st%qnl(i,k) * pap(i,k)/t(i,k)/rgas
+            microp_st%qnr (i,k) = microp_st%qnr(i,k) * pap(i,k)/t(i,k)/rgas
+            microp_st%qns (i,k) = microp_st%qns(i,k) * pap(i,k)/t(i,k)/rgas
+            microp_st%qng (i,k) = microp_st%qng(i,k) * pap(i,k)/t(i,k)/rgas 
+         end do
       end do
-   end do
+   end if
 
 !>songxl 2014-11-20------------
 
