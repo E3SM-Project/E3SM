@@ -2742,7 +2742,7 @@
 			 missing_value="FILLVAL" missing_value_mask="edgeMask"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="wettingVelocityFactor" type="real" dimensions="nVertLevels nEdges Time" units="unitless"
+		<var name="wettingVelocityFactor" type="real" dimensions="nVertLevels nEdges Time"
 			 description="Scaling factor for normalVelocity and its tendency to prevent drying of cell between 0 (no scaling) and 1 (normalVelocity and tendency set to 0)."
 			 packages="forwardMode"
 		/>
