@@ -1401,7 +1401,7 @@
         </rootpe>
       </pes>
     </mach>
-    <mach name="alvarez">
+    <mach name="pm-cpu|alvarez">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="any">
         <comment> -compset A_WCYCL* -res ne30pg2_oECv3 with MPASO on 7 nodes </comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
