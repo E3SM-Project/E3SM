@@ -160,9 +160,7 @@ contains
          zStar, zC, zGamma,&! z coordinate combination for Jacobian
          rhoL, rhoR,       &! density neighbors for Jacobian
          TL, TR,           &! temperature neighbors for Jacobian
-         SL, SR, dqdza      ! salinity neighbors for Jacobian
-
-      real (kind=RKIND), dimension(:), allocatable :: dqdz
+         SL, SR             ! salinity neighbors for Jacobian
 
       real (kind=RKIND), dimension(:,:), allocatable :: &
          JacobianDxDs,     &! Jacobian in density * Dx * DS
