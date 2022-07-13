@@ -57,7 +57,7 @@ CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
 #    Examples:
 #      - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
 #      - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
-METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints")
+METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit")
 
 ###############################################################################
 def do_cime_vars(entry, case, refine=False):
@@ -323,6 +323,7 @@ def _create_raw_xml_file_impl(case, xml):
     On output, it contains the input parameters for this case.
 
     >>> from eamxx_buildnml_impl import MockCase
+    >>> ############## BASIC TEST #####################
     >>> case = MockCase({'foo':1, 'bar':2, 'baz_bar':'blah', 'baz2_bar2':4})
     >>> xml = '''
     ... <namelist_defaults>
@@ -358,6 +359,102 @@ def _create_raw_xml_file_impl(case, xml):
                     ('prop1', 'zero'),
                     ('P1', OrderedDict([('prop1', 'two')])),
                     ('P2', OrderedDict([('prop1', 'zero')]))])
+    >>> ############## INHERIT+CHILD SELECTOR #####################
+    >>> case = MockCase({'ATM_GRID':'ne4ne4'})
+    >>> xml = '''
+    ... <namelist_defaults>
+    ...     <selectors>
+    ...       <selector name="grid" case_env="ATM_GRID"/>
+    ...     </selectors>
+    ...     <input_files/>
+    ...     <generated_files/>
+    ...     <atmosphere_processes_defaults>
+    ...         <atm_procs_list>(P1,P2)</atm_procs_list>
+    ...         <atm_proc_base>
+    ...             <prop1>zero</prop1>
+    ...         </atm_proc_base>
+    ...         <atm_proc_group inherit="atm_proc_base">
+    ...             <atm_procs_list>NONE</atm_procs_list>
+    ...             <prop2>one</prop2>
+    ...         </atm_proc_group>
+    ...         <P1 inherit="atm_proc_base">
+    ...             <prop1>two</prop1>
+    ...             <prop1 grid='ne4ne4'>two_selected</prop1>
+    ...         </P1>
+    ...         <P2 inherit="atm_proc_base">
+    ...         </P2>
+    ...     </atmosphere_processes_defaults>
+    ... </namelist_defaults>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> defaults = ET.fromstring(xml)
+    >>> generated = _create_raw_xml_file_impl(case,defaults)
+    >>> d = convert_to_dict(get_child(generated,'atmosphere_processes'))
+    >>> import pprint
+    >>> pp = pprint.PrettyPrinter(indent=4)
+    >>> pp.pprint(d)
+    OrderedDict([   ('atm_procs_list', '(P1,P2)'),
+                    ('prop2', 'one'),
+                    ('prop1', 'zero'),
+                    ('P1', OrderedDict([('prop1', 'two_selected')])),
+                    ('P2', OrderedDict([('prop1', 'zero')]))])
+    >>> ############## INHERIT+PARENT SELECTOR #####################
+    >>> case = MockCase({'ATM_GRID':'ne4ne4'})
+    >>> xml = '''
+    ... <namelist_defaults>
+    ...     <selectors>
+    ...       <selector name='grid' case_env='ATM_GRID'/>
+    ...     </selectors>
+    ...     <input_files/>
+    ...     <generated_files/>
+    ...     <atmosphere_processes_defaults>
+    ...       <atm_procs_list locked="true">(P1,P2)</atm_procs_list>
+    ...       <atm_proc_base>
+    ...         <Number__of__Subcycles constraints='gt 0'>1</Number__of__Subcycles>
+    ...         <Enable__Precondition__Checks type='logical'>true</Enable__Precondition__Checks>
+    ...         <Enable__Postcondition__Checks type='logical'>true</Enable__Postcondition__Checks>
+    ...       </atm_proc_base>
+    ...       <physics_proc_base inherit='atm_proc_base'>
+    ...         <Grid>Physics GLL</Grid>
+    ...         <Grid grid='ne4ne4'>Physics PG2</Grid>
+    ...       </physics_proc_base>
+    ...       <atm_proc_group inherit="atm_proc_base">
+    ...         <atm_procs_list>NONE</atm_procs_list>
+    ...         <prop2>one</prop2>
+    ...       </atm_proc_group>
+    ...       <P1 inherit='physics_proc_base'>
+    ...         <prop1>hi</prop1>
+    ...       </P1>
+    ...       <P2 inherit='atm_proc_base'>
+    ...         <prop1>there</prop1>
+    ...       </P2>
+    ...     </atmosphere_processes_defaults>
+    ... </namelist_defaults>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> defaults = ET.fromstring(xml)
+    >>> generated = _create_raw_xml_file_impl(case,defaults)
+    >>> d = convert_to_dict(get_child(generated,'atmosphere_processes'))
+    >>> import pprint
+    >>> pp = pprint.PrettyPrinter(indent=4)
+    >>> pp.pprint(d)
+    OrderedDict([   ('atm_procs_list', '(P1,P2)'),
+                    ('prop2', 'one'),
+                    ('Number of Subcycles', 1),
+                    ('Enable Precondition Checks', True),
+                    ('Enable Postcondition Checks', True),
+                    (   'P1',
+                        OrderedDict([   ('prop1', 'hi'),
+                                        ('Grid', 'Physics PG2'),
+                                        ('Number of Subcycles', 1),
+                                        ('Enable Precondition Checks', True),
+                                        ('Enable Postcondition Checks', True)])),
+                    (   'P2',
+                        OrderedDict([   ('prop1', 'there'),
+                                        ('Number of Subcycles', 1),
+                                        ('Enable Precondition Checks', True),
+                                        ('Enable Postcondition Checks', True)]))])
+
     """
 
     # 0. Remove internal sections, that are not to appear in the
@@ -368,8 +465,8 @@ def _create_raw_xml_file_impl(case, xml):
     selectors = get_valid_selectors(xml)
 
     # 1. Resolve all inheritances, and evaluate all selectors
-    resolve_all_inheritances(xml)
     evaluate_selectors(xml, case, selectors)
+    resolve_all_inheritances(xml)
 
     # 2. Grab the atmosphere_processes macro list, with all the defaults
     atm_procs_defaults = get_child(xml,"atmosphere_processes_defaults",remove=True)
@@ -563,7 +660,7 @@ def create_input_files(caseroot, screamroot, rundir):
         expect("format" in file.attrib, "file element missing required 'format' attribute")
         filename    = os.path.join(rundir, file.attrib["name"])
         file_format = file.attrib["format"]
-        
+
         xml_sections = get_child(file,"sections").text.split(",")
 
         dict_contents = {}
