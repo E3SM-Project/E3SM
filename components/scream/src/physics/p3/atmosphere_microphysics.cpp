@@ -1,5 +1,6 @@
 #include "physics/p3/atmosphere_microphysics.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
+#include "share/property_checks/field_lower_bound_check.hpp"
 // Needed for p3_init, the only F90 code still used.
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_f90.hpp"
@@ -96,12 +97,15 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Updated> ("T_prev_micro_step",  scalar3d_layout_mid, K,        grid_name, ps);
 
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
-  add_field<Computed>("precip_liq_surf",    scalar2d_layout,     m/s,    grid_name);
-  add_field<Computed>("precip_ice_surf",    scalar2d_layout,     m/s,    grid_name);
-  add_field<Computed>("eff_radius_qc",      scalar3d_layout_mid, micron, grid_name, ps);
-  add_field<Computed>("eff_radius_qi",      scalar3d_layout_mid, micron, grid_name, ps);
+  add_field<Updated>("precip_liq_surf_mass", scalar2d_layout,     kg,     grid_name);
+  add_field<Updated>("precip_ice_surf_mass", scalar2d_layout,     kg,     grid_name);
+  add_field<Computed>("eff_radius_qc",       scalar3d_layout_mid, micron, grid_name, ps);
+  add_field<Computed>("eff_radius_qi",       scalar3d_layout_mid, micron, grid_name, ps);
 
   // History Only: (all fields are just outputs and are really only meant for I/O purposes)
+  // TODO: These should be averaged over subcycle as well.  But there is no simple mechanism
+  //       yet to reset these values at the beginning of the atmosphere timestep.  When this
+  //       mechanism is developed we should add these variables to the accumulated variables.
   add_field<Computed>("micro_liq_ice_exchange", scalar3d_layout_mid, Q, grid_name, ps);
   add_field<Computed>("micro_vap_liq_exchange", scalar3d_layout_mid, Q, grid_name, ps);
   add_field<Computed>("micro_vap_ice_exchange", scalar3d_layout_mid, Q, grid_name, ps);
@@ -137,6 +141,12 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(), "Error! Buffers size not sufficient.\n");
 
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
+
+  // 1d scalar views
+  m_buffer.precip_liq_surf_flux = decltype(m_buffer.precip_liq_surf_flux)(mem, m_num_cols);
+  mem += m_buffer.precip_liq_surf_flux.size();
+  m_buffer.precip_ice_surf_flux = decltype(m_buffer.precip_ice_surf_flux)(mem, m_num_cols);
+  mem += m_buffer.precip_ice_surf_flux.size();
 
   // 2d scalar views
   m_buffer.col_location = decltype(m_buffer.col_location)(mem, m_num_cols, 3);
@@ -198,8 +208,11 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nr"),m_grid,0.0,1.e9,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("ni"),m_grid,0.0,1.e9,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("bm"),m_grid,0.0,1.0,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("precip_liq_surf"),m_grid,0.0,0.001,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("precip_ice_surf"),m_grid,0.0,0.001,false);
+  // The following checks on precip have been changed to lower bound checks, from an interval check.
+  // TODO: Change back to interval check when it is possible to pass dt_atm for the check.  Because
+  //       precip is now an accumulated mass, the upper bound is dependent on the timestep.
+  add_postcondition_check<FieldLowerBoundCheck>(get_field_out("precip_liq_surf_mass"),m_grid,0.0,false);
+  add_postcondition_check<FieldLowerBoundCheck>(get_field_out("precip_ice_surf_mass"),m_grid,0.0,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qc"),m_grid,0.0,1.0e2,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qi"),m_grid,0.0,5.0e3,false);
 
@@ -225,6 +238,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   const  auto& ni             = get_field_out("ni").get_view<Pack**>();
   const  auto& bm             = get_field_out("bm").get_view<Pack**>();
   auto qv_prev                = get_field_out("qv_prev_micro_step").get_view<Pack**>();
+  const auto& precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real*>();
+  const auto& precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real*>();
 
   // Alias local variables from temporary buffer
   auto inv_exner  = m_buffer.inv_exner;
@@ -272,8 +287,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   diag_outputs.diag_eff_radius_qc = get_field_out("eff_radius_qc").get_view<Pack**>();
   diag_outputs.diag_eff_radius_qi = get_field_out("eff_radius_qi").get_view<Pack**>();
 
-  diag_outputs.precip_liq_surf  = get_field_out("precip_liq_surf").get_view<Real*>();
-  diag_outputs.precip_ice_surf  = get_field_out("precip_ice_surf").get_view<Real*>();
+  diag_outputs.precip_liq_surf  = m_buffer.precip_liq_surf_flux;
+  diag_outputs.precip_ice_surf  = m_buffer.precip_ice_surf_flux;
   diag_outputs.qv2qi_depos_tend = m_buffer.qv2qi_depos_tend;
   diag_outputs.rho_qi           = m_buffer.rho_qi;
   diag_outputs.precip_liq_flux  = m_buffer.precip_liq_flux;
@@ -288,7 +303,9 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   p3_postproc.set_variables(m_num_cols,nk_pack,prog_state.th,pmid,T_atm,t_prev,
       prog_state.qv, prog_state.qc, prog_state.nc, prog_state.qr,prog_state.nr,
       prog_state.qi, prog_state.qm, prog_state.ni,prog_state.bm,qv_prev,
-      diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi);
+      diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi,
+      diag_outputs.precip_liq_surf,diag_outputs.precip_ice_surf,
+      precip_liq_surf_mass,precip_ice_surf_mass);
 
   // Load tables
   P3F::init_kokkos_ice_lookup_tables(lookup_tables.ice_table_vals, lookup_tables.collect_table_vals);

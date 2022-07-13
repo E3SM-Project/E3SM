@@ -949,7 +949,7 @@ void AtmosphereDriver::run (const int dt) {
 
   if (m_surface_coupling) {
     // Export fluxes from the component coupler (if any)
-    m_surface_coupling->do_export();
+    m_surface_coupling->do_export(dt);
   }
 
 #ifdef SCREAM_HAS_MEMORY_USAGE

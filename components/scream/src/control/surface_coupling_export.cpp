@@ -5,7 +5,7 @@
 namespace scream {
 namespace control {
 
-void SurfaceCoupling::do_export (const bool init_phase)
+void SurfaceCoupling::do_export (const int dt, const bool init_phase)
 {
   if (m_num_scream_exports==0) {
     return;
@@ -22,27 +22,27 @@ void SurfaceCoupling::do_export (const bool init_phase)
   const bool scream_ad_run =
       (m_field_mgr->has_field("qv") && m_field_mgr->has_field("T_mid") &&
        m_field_mgr->has_field("p_mid") && m_field_mgr->has_field("pseudo_density") &&
-       m_field_mgr->has_field("precip_liq_surf") && m_field_mgr->has_field("precip_ice_surf") &&
+       m_field_mgr->has_field("precip_liq_surf_mass") && m_field_mgr->has_field("precip_ice_surf_mass") &&
        m_field_mgr->has_field("p_int") && m_field_mgr->has_field("phis") );
   if (scream_ad_run) {
     const int last_entry = m_num_levs-1;
-    const auto& qv              = m_field_mgr->get_field("qv").get_view<const Real**>();
-    const auto& T_mid           = m_field_mgr->get_field("T_mid").get_view<const Real**>();
-    const auto& p_mid           = m_field_mgr->get_field("p_mid").get_view<const Real**>();
-    const auto& p_int           = m_field_mgr->get_field("p_int").get_view<const Real**>();
-    const auto& pseudo_density  = m_field_mgr->get_field("pseudo_density").get_view<const Real**>();
-    const auto& precip_liq_surf = m_field_mgr->get_field("precip_liq_surf").get_view<const Real*>();
-    const auto& precip_ice_surf = m_field_mgr->get_field("precip_ice_surf").get_view<const Real*>();
-    const auto& phis            = m_field_mgr->get_field("phis").get_view<const Real*>();
-    const auto l_dz             = dz;
-    const auto l_z_int          = z_int;
-    const auto l_z_mid          = z_mid;
-    const auto l_Sa_z           = Sa_z;
-    const auto l_Sa_ptem        = Sa_ptem;
-    const auto l_Sa_dens        = Sa_dens;
-    const auto l_Sa_pslv        = Sa_pslv;
-    const auto l_Faxa_rainl     = Faxa_rainl;
-    const auto l_Faxa_snowl     = Faxa_snowl;
+    const auto& qv                   = m_field_mgr->get_field("qv").get_view<const Real**>();
+    const auto& T_mid                = m_field_mgr->get_field("T_mid").get_view<const Real**>();
+    const auto& p_mid                = m_field_mgr->get_field("p_mid").get_view<const Real**>();
+    const auto& p_int                = m_field_mgr->get_field("p_int").get_view<const Real**>();
+    const auto& pseudo_density       = m_field_mgr->get_field("pseudo_density").get_view<const Real**>();
+    const auto& precip_liq_surf_mass = m_field_mgr->get_field("precip_liq_surf_mass").get_view<Real*>(); // TODO: go back to const when AD takes care of zeroing out precip fluxes.
+    const auto& precip_ice_surf_mass = m_field_mgr->get_field("precip_ice_surf_mass").get_view<Real*>();
+    const auto& phis                 = m_field_mgr->get_field("phis").get_view<const Real*>();
+    const auto l_dz                  = dz;
+    const auto l_z_int               = z_int;
+    const auto l_z_mid               = z_mid;
+    const auto l_Sa_z                = Sa_z;
+    const auto l_Sa_ptem             = Sa_ptem;
+    const auto l_Sa_dens             = Sa_dens;
+    const auto l_Sa_pslv             = Sa_pslv;
+    const auto l_Faxa_rainl          = Faxa_rainl;
+    const auto l_Faxa_snowl          = Faxa_snowl;
 
     // Local copy, to deal with CUDA's handling of *this.
     const int num_levs = m_num_levs;
@@ -79,9 +79,16 @@ void SurfaceCoupling::do_export (const bool init_phase)
       l_Sa_ptem(i)    = PF::calculate_theta_from_T(T_mid_i(last_entry), p_mid_i(last_entry));
       l_Sa_dens(i)    = PF::calculate_density(pseudo_density_i(last_entry), dz_i(last_entry));
       l_Sa_pslv(i)    = PF::calculate_psl(T_int_bot, p_int_i(num_levs), phis(i) );
-      l_Faxa_rainl(i) = precip_liq_surf(i)*C::RHO_H2O;
-      l_Faxa_snowl(i) = precip_ice_surf(i)*C::RHO_H2O; //p3_ice_sed_impl.hpp uses INV_RHO_H2O
+      // Precipitation has units of kg, so we need to convert to a flux with units of kg/s
+      l_Faxa_rainl(i) = precip_liq_surf_mass(i) / dt;
+      l_Faxa_snowl(i) = precip_ice_surf_mass(i) / dt;
     });
+    Kokkos::fence();
+    // It is the responsibility of the surface coupling to zero out the precipitation flux
+    // now that it has been assigned to the coupling variable.  TODO: Have the atmosphere
+    // driver actually do this in a consistent way - see Issue #1767
+    Kokkos::deep_copy(precip_liq_surf_mass,0.0);
+    Kokkos::deep_copy(precip_ice_surf_mass,0.0);
   }
 
   // Local copies, to deal with CUDA's handling of *this.

@@ -240,6 +240,8 @@ tweaking their $case/namelist_scream.xml file.
     <Filename hgrid="ne30np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne30np4_L128_20211202.nc</Filename> <!-- This will need to be updated to the new nccn name -->
     <Physics__GLL>
       <surf_evap>0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->
+      <precip_liq_surf_mass>0.0</precip_liq_surf_mass>
+      <precip_ice_surf_mass>0.0</precip_ice_surf_mass>
     </Physics__GLL>
     <Restart__Casename>${CASE}.scream</Restart__Casename>
   </Initial__Conditions>

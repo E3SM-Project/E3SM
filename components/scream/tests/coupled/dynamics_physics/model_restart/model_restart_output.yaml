@@ -39,8 +39,8 @@ Fields:
       - micro_liq_ice_exchange
       - micro_vap_ice_exchange
       - micro_vap_liq_exchange
-      - precip_ice_surf
-      - precip_liq_surf
+      - precip_ice_surf_mass
+      - precip_liq_surf_mass
       # SHOC + P3
       - qc
       - qv

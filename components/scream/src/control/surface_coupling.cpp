@@ -164,7 +164,7 @@ register_export (const std::string& fname,
   //      a. fname == set_zero, which indicates that this field is not used in SCREAM.
   //      c. fname corresponeds to a field which is a combination of SCREAM fields.
   //      For these special cases, we have member variable 1d views which we will store the correct
-  //      values at the surface for each field during do_export(). Here, just set the data
+  //      values at the surface for each field during do_export(dt). Here, just set the data
   //      to point to these views, and fill in stride/offset info using a field setup in
   //      the constructor of the class
   if (m_field_mgr->has_field(fname)) {

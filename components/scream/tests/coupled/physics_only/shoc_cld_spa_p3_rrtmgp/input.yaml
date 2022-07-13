@@ -45,6 +45,8 @@ Initial Conditions:
     Load Longitude: true
     surf_evap: 0.0
     surf_sens_flux: 0.0
+    precip_liq_surf_mass: 0.0
+    precip_ice_surf_mass: 0.0
 
 # The parameters for I/O control
 Scorpio:
