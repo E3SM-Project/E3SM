@@ -2951,9 +2951,6 @@
 	    <var name="dThreshMLD" type="real" dimensions="nCells Time" units="m"
              description="mixed layer depth based on density threshold"
         />
-	    <var name="bGradMLD" type="real" dimensions="nEdges Time" units="m"
-		     description="mixed layer depth based on max buoyancy gradient"
-		/>
 		<var name="slopeTriadUp" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional" default_value="0.0"
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
 			 packages="forwardMode;analysisMode"

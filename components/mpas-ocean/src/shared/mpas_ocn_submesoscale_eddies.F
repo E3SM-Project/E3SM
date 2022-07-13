@@ -51,8 +51,21 @@ module ocn_submesoscale_eddies
   !
   !> \brief   Computes velocity from submesoscale eddies
   !> \details
-  !>  implements the FK2011 parameterization
-  !>  fill in more details later
+  !>  This routine implements the Fox-Kemper et al 2011 submesoscale 
+  !>  parameterization (https://doi.org/10.1016/j.ocemod.2010.09.002).
+  !>  The transport velocity from the submesoscales is given by a 
+  !>  stream function which is given as
+  !>
+  !>  Psi = C_e*Delta_S/L_f*H^2 int(bGrad_H)/sqrt(f^2+tau^-2)*mu(z)
+  !>
+  !>  here C_e is a specified efficiency, Delta_s is taken as 
+  !>  min(dcEdge,dsMax), H is the mixed layer depth, L_f is the subgrid
+  !>  frontal width that is scaled to the coarse grid, f is the 
+  !>  coriolis parameter, and tau is a time scale specified to prevent 
+  !>  the singularity near the equator.  the horizontal buoyancy gradient
+  !>  is integrated over the mixed layer depth and mu(z) is a non-dimensional
+  !>  shape function that is zero below the mixed layer depth
+  !>
   !***********************************************************************
 
   subroutine ocn_submesoscale_compute_velocity()
@@ -77,6 +90,10 @@ module ocn_submesoscale_eddies
      allocate(streamFunction(nVertLevels+1))
      allocate(zEdge(nVertLevels+1))
 
+     !$omp parallel
+     !$omp do schedule(runtime) &
+     !$omp private(cell1,cell2,bvfML,zEdge,streamFunction,gradBuoyML,hML,bvfAv)
+     !$omp private(bvfML,zMLD,Lf,ds,mu,k)
      do iEdge=1,nEdges
         cell1 = cellsOnEdge(1,iEdge)
         cell2 = cellsOnEdge(2,iEdge)
@@ -113,7 +130,7 @@ module ocn_submesoscale_eddies
            zEdge(k) = zedge(k-1) - layerThickEdgeMean(k-1,iEdge)
          end do
 
-        zMLD = bGradMLD(iEdge) 
+        zMLD = dThreshMLD(iEdge) 
         Lf = max(Lfmin, abs(gradBuoyML)*zMLD / (1.0E-20_RKIND + fEdge(iEdge)**2), &
                   bvfML*zMLD / abs(fEdge(iEdge)))
 
@@ -131,6 +148,8 @@ module ocn_submesoscale_eddies
         end do
 
     end do!iEdge loop
+    !$omp end do
+    !$omp end parallel
 
     deallocate(streamFunction)
     deallocate(zEdge)
@@ -141,10 +160,10 @@ module ocn_submesoscale_eddies
   !
   !  routine ocn_submesoscale_init
   !
-  !> \brief   Computes velocity from submesoscale eddies
+  !> \brief   Submesoscale parameterization init
   !> \details
-  !>  implements the FK2011 parameterization
-  !>  fill in more details later
+  !>  Initializes parameters related to the submesoscale eddy parameterization 
+  !>  
   !***********************************************************************
 
   subroutine ocn_submesoscale_init(err)

@@ -974,7 +974,6 @@ contains
             call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
 
             call ocn_eddy_compute_mixed_layer_depth(statePool)
-            call ocn_eddy_compute_mixed_layer_depth_bg(statePool)
             if (config_use_GM.or.config_submesoscale_enable) then
                 call ocn_eddy_compute_buoyancy_gradient()
             end if
