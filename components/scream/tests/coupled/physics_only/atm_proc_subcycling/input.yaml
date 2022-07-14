@@ -30,9 +30,8 @@ Initial Conditions:
   surf_sens_flux: 0.0
   precip_ice_surf_mass: 0.0
   precip_liq_surf_mass: 0.0
-  Point Grid:
-    Load Latitude:  true
-    Load Longitude: true
+  Load Latitude:  true
+  Load Longitude: true
 
 # The parameters for I/O control
 Scorpio:
