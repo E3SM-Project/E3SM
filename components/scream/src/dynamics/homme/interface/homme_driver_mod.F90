@@ -237,7 +237,7 @@ contains
   end subroutine prim_run_f90
 
   subroutine prim_finalize_f90 () bind(c)
-    use homme_context_mod,    only: is_model_inited, elem, dom_mt, par
+    use homme_context_mod,    only: is_model_inited, elem, dom_mt
     use prim_cxx_driver_base, only: prim_finalize
 
     if (.not. is_model_inited) then
