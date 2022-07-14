@@ -61,7 +61,8 @@ module shoc_intr
              radf_idx, &
              tpert_idx, &
              fice_idx, &
-	     vmag_gust_idx 	     	     
+	     vmag_gust_idx, &
+             ixq                 ! water vapor index in state%q array
   
   integer, public :: &
     ixtke = 0
@@ -328,6 +329,7 @@ end function shoc_implements_cnst
     
     !----- Begin Code -----
 
+    call cnst_get_ind('Q',ixq) ! get water vapor index from the state%q array
     ! ----------------------------------------------------------------- !
     ! Determine how many constituents SHOC will transport.  Note that  
     ! SHOC does not transport aerosol consituents.  Therefore, need to 
@@ -409,20 +411,6 @@ end function shoc_implements_cnst
           endif
        enddo
     enddo
-
-    !Ensure that we have captured all the scalars which needs to participate in
-    !dry<->wet mmr conversion
-    if(count(lq_dry_wet_cnvr) .ne. size(dry_wet_scalars)) then
-       write(iulog,*)'One or more scalars which have to participate in the', &
-            ' dry<->wet mmr conversion are missing in the state q array'
-       write(iulog,*)'Scalars which have to participate are in dry<->wet', &
-            ' converiosn are:'
-       do idw = 1, size(dry_wet_scalars)
-          write(iulog,*)trim(dry_wet_scalars(idw))
-       enddo
-       call endrun()
-    endif
-
 
     ! Add SHOC fields
     call addfld('SHOC_TKE', (/'lev'/), 'A', 'm2/s2', 'TKE')
@@ -540,7 +528,7 @@ end function shoc_implements_cnst
     use shoc,           only: shoc_main
     use cam_history,    only: outfld
     use scamMod,        only: single_column, dp_crm
-    use physics_utils,  only: calculate_drymmr_from_wetmmr_1gridcell, calculate_wetmmr_from_drymmr_1gridcell
+    use physics_utils,  only: calculate_drymmr_from_wetmmr, calculate_wetmmr_from_drymmr
  
     implicit none
     
@@ -587,7 +575,7 @@ end function shoc_implements_cnst
    type(physics_ptend) :: ptend_loc             ! Local tendency from processes, added up to return as ptend_all
 
    integer :: i, j, k, t, ixind, nadv
-   integer :: ixcldice, ixcldliq, ixnumliq, ixnumice, ixq
+   integer :: ixcldice, ixcldliq, ixnumliq, ixnumice
    integer :: itim_old
    integer :: ncol, lchnk                       ! # of columns, and chunk identifier
    integer :: err_code                          ! Diagnostic, for if some calculation goes amiss.
@@ -703,7 +691,6 @@ end function shoc_implements_cnst
    ic_limit   = 1.e-12_r8
    frac_limit = 0.01_r8
    
-   call cnst_get_ind('Q',ixq)
    call cnst_get_ind('CLDLIQ',ixcldliq)
    call cnst_get_ind('CLDICE',ixcldice)
    call cnst_get_ind('NUMLIQ',ixnumliq)
@@ -716,6 +703,33 @@ end function shoc_implements_cnst
    !  Determine number of columns and which chunk computation is to be performed on
    ncol = state%ncol
    lchnk = state%lchnk    
+
+   !obtain wet mmr from the state vector
+   qv_wet = state1%q(:,:,ixq)
+
+   icnt = 0
+   do ixind = 1, pcnst
+      if (lq(ixind))  then
+         icnt = icnt + 1
+
+         !Track which scalars need a conversion to wetmmr after SHOC main call
+         convert_back_to_wet(icnt) = .false.
+
+         if(lq_dry_wet_cnvr(ixind)) then !convert from wet to dry mmr if true
+            convert_back_to_wet(icnt) = .true.
+            !---------------------------------------------------------------------------------------
+            !Wet to dry mixing ratios:
+            !-------------------------
+            !Since state constituents from the host model are  wet mixing ratios and SHOC needs these
+            !constituents in dry mixing ratios, we convert the wet mixing ratios to dry mixing ratio
+            !if lq_dry_wet_cnvr is .true. for that constituent
+            !NOTE:Function calculate_drymmr_from_wetmmr takes 2 arguments: (wet mmr and "wet" water
+            !vapor mixing ratio)
+            !---------------------------------------------------------------------------------------
+            state1%q(:,:,ixind) = calculate_drymmr_from_wetmmr(ncol, pver,state1%q(:,:,ixind), qv_wet)
+         endif
+      endif
+   enddo
    
    !  Determine time step of physics buffer 
    itim_old = pbuf_old_tim_idx()     
@@ -871,35 +885,15 @@ end function shoc_implements_cnst
       vpwp_sfc(i)   = cam_in%wsy(i)/rrho_i(i,pverp)               ! Surface zonal momentum flux  
       wtracer_sfc(i,:) = 0._r8  ! in E3SM tracer fluxes are done elsewhere
    enddo               
-
-   !obtain wet mmr from the state vector
-   qv_wet(:,:) = state%q(:,:,1)
    
    !  Do the same for tracers 
-   !Track which scalars need a conversion to wetmmr after SHOC main call
-   convert_back_to_wet(:) = .false.
    icnt=0
    do ixind=1,pcnst
      if (lq(ixind))  then 
        icnt=icnt+1
        do k=1,pver
          do i=1,ncol
-           !---------------------------------------------------------------------------------------
-           !Wet to dry mixing ratios:
-           !-------------------------
-           !Since state constituents from the host model are  wet mixing ratios and SHOC needs these
-           !constituents in dry mixing ratios, we convert the wet mixing ratios to dry mixing ratio
-           !if lq_dry_wet_cnvr is .true. for that constituent
-           !NOTE:Function calculate_drymmr_from_wetmmr takes 2 arguments: (wet mmr and "wet" water
-           !vapor mixing ratio)
-           !---------------------------------------------------------------------------------------
-           if(lq_dry_wet_cnvr(ixind)) then !convert from wet to dry mmr if true
-              convert_back_to_wet(icnt) = .true.
-              edsclr_in(i,k,icnt) = calculate_drymmr_from_wetmmr_1gridcell(state1%q(i,k,ixind), qv_wet(i,k))
-           else
-              convert_back_to_wet(icnt) = .false.
            edsclr_in(i,k,icnt) = state1%q(i,k,ixind)
-           endif
          enddo
        enddo
      end if
@@ -928,16 +922,18 @@ end function shoc_implements_cnst
         wqls_out(:ncol,:),brunt_out(:ncol,:),rcm2(:ncol,:)) ! Output (diagnostic)
    
    ! Transfer back to pbuf variables
-   
-   !obtain water vapor mmr which is a "dry" mmr at this point from the SHOC output
-   qv_dry(:,:) = edsclr_in(:,:,1)
 
    do k=1,pver
      do i=1,ncol 
      
        cloud_frac(i,k) = min(cloud_frac(i,k),1._r8)
+      enddo
+   enddo
        
-       do ixind=1,edsclr_dim
+   !obtain water vapor mmr which is a "dry" mmr at this point from the SHOC output
+   qv_dry(:,:) = edsclr_in(:,:,ixq)
+
+
           !----------------
           !DRY-TO-WET MMRs:
           !----------------
@@ -945,15 +941,27 @@ end function shoc_implements_cnst
           !we need to convert dry mixing ratios from SHOC to wet mixing ratios before extracting tendencies
           !NOTE:Function calculate_wetmmr_from_drymmr takes 2 arguments: (wet mmr and "dry" water vapor
           !mixing ratio)
+   do ixind=1,edsclr_dim
           if(convert_back_to_wet(ixind)) then
-             edsclr_out(i,k,ixind) = calculate_wetmmr_from_drymmr_1gridcell(edsclr_in(i,k,ixind),qv_dry(i,k))
+         edsclr_out(:,:,ixind) = calculate_wetmmr_from_drymmr(ncol, pver, edsclr_in(:,:,ixind),qv_dry)
           else
-         edsclr_out(i,k,ixind) = edsclr_in(i,k,ixind)
+         edsclr_out(:,:,ixind) = edsclr_in(:,:,ixind)
           endif
        enddo      
+   !convert state1%q to wet mixing ratios
  
+   qv_dry(:,:) = state1%q(:,:,ixq)
+   icnt = 0
+   do ixind = 1, pcnst
+      if (lq(ixind))  then
+         icnt = icnt + 1
+         if(convert_back_to_wet(icnt)) then !convert from wet to dry mmr if true
+            state1%q(:,:,ixind) = calculate_wetmmr_from_drymmr(ncol, pver, state1%q(:,:,ixind), qv_dry)
+         endif
+      endif
      enddo
-   enddo
+   rcm(:,:) = calculate_wetmmr_from_drymmr_1gridcell(ncol, pver, rcm,qv_dry)
+   rtm(:,:) = calculate_wetmmr_from_drymmr_1gridcell(ncol, pver, rtm,qv_dry)
 
    ! Eddy diffusivities and TKE are needed for aerosol activation code.
    !   Linearly interpolate from midpoint grid and onto the interface grid.

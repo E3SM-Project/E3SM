@@ -9,8 +9,7 @@ module physics_utils
 
   implicit none
   private
-  public:: calculate_drymmr_from_wetmmr, calculate_wetmmr_from_drymmr, &
-       calculate_drymmr_from_wetmmr_1gridcell, calculate_wetmmr_from_drymmr_1gridcell
+  public:: calculate_drymmr_from_wetmmr, calculate_wetmmr_from_drymmr
   save
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -52,40 +51,14 @@ contains
     !return variable
     real(rtype) :: drymmr(ncols,pver) !dry mmr of a constituent
 
-    integer :: klev, icol
-
     !Assign uninitialized columns using "huge"
     drymmr(:,:) = huge(1.0_rtype)
 
     !Compute drymmr
-    do klev = 1, pver
-       do icol = 1, ncols
-          drymmr(icol,klev) = calculate_drymmr_from_wetmmr_1gridcell(wetmmr(icol,klev), qv_wet(icol,klev))
-       enddo
-    enddo
+    drymmr(:ncols,:) = wetmmr(:ncols,:)/(1.0_rtype - qv_wet(:ncols,:))
 
   end function calculate_drymmr_from_wetmmr
 
-  !------------------------------------------------------------------------------------------------------------------
-  !------------------------------------------------------------------------------------------------------------------
-
-  pure function calculate_drymmr_from_wetmmr_1gridcell(wetmmr,qv_wet) result(drymmr)
-    !Computes drymmr from wetmmr for a grid cell
-    implicit none
-
-    !intent-ins
-    real(rtype), intent(in) :: wetmmr !wet mmr of a constituent
-    real(rtype), intent(in) :: qv_wet !water vapor wet mass mixing ratio
-
-    !return variable
-    real(rtype) :: drymmr !dry mmr of a constituent
-
-    drymmr = wetmmr/(1.0_rtype - qv_wet)
-
-  end function calculate_drymmr_from_wetmmr_1gridcell
-
-  !------------------------------------------------------------------------------------------------------------------
-  !------------------------------------------------------------------------------------------------------------------
 
   pure function calculate_wetmmr_from_drymmr(ncols, pver, drymmr, qv_dry) result (wetmmr)
 
@@ -104,38 +77,12 @@ contains
     !return variable
     real(rtype) :: wetmmr(ncols,pver) !wet mmr of a constituent
 
-    integer :: klev, icol
-
     !Assign uninitialized columns using "huge"
     wetmmr(:,:) = huge(1.0_rtype)
-
-    !Compute drymmr
-    do klev = 1, pver
-       do icol = 1, ncols
+5A
           !Compute wetmmr
-          wetmmr(icol,klev) = calculate_wetmmr_from_drymmr_1gridcell(drymmr(icol,klev), qv_dry(icol,klev))
-       enddo
-    enddo
+    wetmmr(:ncols,:) = drymmr(:ncols,:)/(1.0_rtype + qv_dry(:ncols,:))
 
   end function calculate_wetmmr_from_drymmr
-
-  !------------------------------------------------------------------------------------------------------------------
-  !------------------------------------------------------------------------------------------------------------------
-
-  pure function calculate_wetmmr_from_drymmr_1gridcell(drymmr, qv_dry) result (wetmmr)
-    !Computes wetmmr from drymmr for a grid cell
-    implicit none
-
-    !intent-ins
-    real(rtype), intent(in) :: drymmr !dry mmr of a constituent
-    real(rtype), intent(in) :: qv_dry !water vapor dry mass mixing ratio
-
-    !return variable
-    real(rtype) :: wetmmr !wet mmr of a constituent
-
-    !Compute wetmmr
-    wetmmr = drymmr/(1.0_rtype + qv_dry)
-
-  end function calculate_wetmmr_from_drymmr_1gridcell
 
 end module physics_utils
