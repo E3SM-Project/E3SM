@@ -7,14 +7,14 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_tracer_hmix_del2
+!  ocn_vvel_hmix_del2
 !
-!> \brief MPAS ocean horizontal tracer mixing driver
-!> \author Doug Jacobsen, Mark Petersen, Todd Ringler
-!> \date   September 2011
+!> \brief MPAS ocean horizontal mixing driver for vertical momentum
+!> \author Luke VanRoekel, Sara Calandrini
+!> \date   July 2022
 !> \details
 !>  This module contains the main driver routine for computing
-!>  horizontal mixing tendencies.
+!>  horizontal mixing tendencies in the vertical momentum.
 !>
 !>  It provides an init and a tend function. Each are described below.
 !
@@ -178,8 +178,8 @@ contains
 !  routine ocn_vvel_hmix_del2_init
 !
 !> \brief   Initializes ocean vertical velocity horizontal mixing quantities
-!> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
-!> \date    September 2011
+!> \author  Luke VanRoekel
+!> \date    December 2020
 !> \details
 !>  This routine initializes a variety of quantities related to
 !>  Laplacian horizontal velocity mixing in the ocean.

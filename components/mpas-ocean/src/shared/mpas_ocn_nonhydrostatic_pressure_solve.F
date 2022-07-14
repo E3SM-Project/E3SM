@@ -56,6 +56,7 @@ module ocn_compute_nonhydrostatic_pressure
   public :: ocn_nonhydrostatic_pressure_tend, &
             ocn_nonhydrostatic_solver_init,   &
             ocn_nonhydrostatic_solver_finalize, &
+            ocn_nonhydrostatic_solver_everything, &
             ocn_nonhydrostatic_pressure_update_velocity
 
   !--------------------------------------------------------------------

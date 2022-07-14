@@ -64,7 +64,7 @@ contains
 !  routine ocn_vvel_coriolis_tend
 !
 !> \brief   Computes tendency term for coriolis force for vertical momentum equation
-!> \author  Luke Van Roekel
+!> \author  Luke Van Roekel, Darren Engwirda, Sara Calandrini
 !> \date    January 2021
 !> \details
 !>  This routine computes the coriolis tendencies for vertical momentum based 
