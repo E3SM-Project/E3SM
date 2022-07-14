@@ -447,58 +447,46 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
   }
 
   // Check if lat/lon needs to be loaded
+  // Check whether we need to load latitude/longitude of reference grid dofs.
+  // This option allows the user to set lat or lon in their own
+  // test or run setup code rather than by file.
   auto& ic_pl = m_atm_params.sublist("Initial Conditions");
-  for (const auto& it : m_field_mgrs) {
-    const auto& grid_name = it.first;
-    const auto& ic_pl_grid = ic_pl.sublist(grid_name);
+  bool load_latitude  = ic_pl.get<bool>("Load Latitude",false);
+  bool load_longitude = ic_pl.get<bool>("Load Longitude",false);
 
-    // Check whether we need to load latitude/longitude of reference grid dofs.
-    // This option allows the user to set lat or lon in their own
-    // test or run setup code rather than by file.
-    bool load_latitude  = false;
-    bool load_longitude = false;
-    if (ic_pl_grid.isParameter("Load Latitude")) {
-      load_latitude = ic_pl_grid.get<bool>("Load Latitude");
+  if (load_longitude || load_latitude) {
+    using namespace ShortFieldTagsNames;
+    using view_d = AbstractGrid::geo_view_type;
+    using view_h = view_d::HostMirror;
+    auto grid = m_grids_manager->get_reference_grid();
+    auto layout = grid->get_2d_scalar_layout();
+
+    std::vector<std::string> fnames;
+    std::map<std::string,FieldLayout> layouts;
+    std::map<std::string,view_h> host_views;
+    std::map<std::string,view_d> dev_views;
+    if (load_latitude) {
+      dev_views["lat"] = grid->get_geometry_data("lat");
+      host_views["lat"] = Kokkos::create_mirror_view(dev_views["lat"]);
+      layouts.emplace("lat",layout);
+      fnames.push_back("lat");
     }
-    if (ic_pl_grid.isParameter("Load Longitude")) {
-      load_longitude = ic_pl_grid.get<bool>("Load Longitude");
+    if (load_longitude) {
+      dev_views["lon"] = grid->get_geometry_data("lon");
+      host_views["lon"] = Kokkos::create_mirror_view(dev_views["lon"]);
+      layouts.emplace("lon",layout);
+      fnames.push_back("lon");
     }
 
-    if (load_longitude || load_latitude) {
-      using namespace ShortFieldTagsNames;
-      using view_d = AbstractGrid::geo_view_type;
-      using view_h = view_d::HostMirror;
-      auto grid = m_grids_manager->get_grid(grid_name);
-      int ncol  = grid->get_num_local_dofs();
-      FieldLayout layout ({COL},{ncol});
+    ekat::ParameterList lat_lon_params;
+    lat_lon_params.set("Field Names",fnames);
+    lat_lon_params.set("Filename",ic_pl.get<std::string>("Filename"));
 
-      std::vector<std::string> fnames;
-      std::map<std::string,FieldLayout> layouts;
-      std::map<std::string,view_h> host_views;
-      std::map<std::string,view_d> dev_views;
-      if (load_latitude) {
-        dev_views["lat"] = grid->get_geometry_data("lat");
-        host_views["lat"] = Kokkos::create_mirror_view(dev_views["lat"]);
-        layouts.emplace("lat",layout);
-        fnames.push_back("lat");
-      }
-      if (load_longitude) {
-        dev_views["lon"] = grid->get_geometry_data("lon");
-        host_views["lon"] = Kokkos::create_mirror_view(dev_views["lon"]);
-        layouts.emplace("lon",layout);
-        fnames.push_back("lon");
-      }
-
-      ekat::ParameterList lat_lon_params;
-      lat_lon_params.set("Field Names",fnames);
-      lat_lon_params.set("Filename",ic_pl.get<std::string>("Filename"));
-
-      AtmosphereInput lat_lon_reader(lat_lon_params,grid,host_views,layouts);
-      lat_lon_reader.read_variables();
-      lat_lon_reader.finalize();
-      for (auto& fname : fnames) {
-        Kokkos::deep_copy(dev_views[fname],host_views[fname]);
-      }
+    AtmosphereInput lat_lon_reader(lat_lon_params,grid,host_views,layouts);
+    lat_lon_reader.read_variables();
+    lat_lon_reader.finalize();
+    for (auto& fname : fnames) {
+      Kokkos::deep_copy(dev_views[fname],host_views[fname]);
     }
   }
 
