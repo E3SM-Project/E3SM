@@ -261,7 +261,6 @@ tweaking their $case/namelist_scream.xml file.
     <sfc_alb_dir_nir   >0.0</sfc_alb_dir_nir>
     <sfc_alb_dif_vis   >0.0</sfc_alb_dif_vis>
     <sfc_alb_dif_nir   >0.0</sfc_alb_dif_nir>
-    <surf_evap         >0.0</surf_evap>
     <surf_sens_flux    >0.0</surf_sens_flux>
     <surf_lw_flux_up   >0.0</surf_lw_flux_up>
     <surf_mom_flux     >0.0,0.0</surf_mom_flux>
