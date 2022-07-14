@@ -369,6 +369,7 @@ void AtmosphereDriver::initialize_output_managers () {
     m_output_managers.emplace_back();
     auto& om = m_output_managers.back();
     om.setup(m_atm_comm,restart_pl,m_field_mgrs,m_grids_manager,m_run_t0,m_case_t0,true);
+    om.setup_globals_map(m_atm_process_group->get_restart_extra_data());
   }
 
   // Build one manager per output yaml file
@@ -545,6 +546,20 @@ void AtmosphereDriver::restart_model ()
   m_current_ts.set_num_steps(nsteps);
   m_case_t0.set_num_steps(nsteps);
   m_run_t0.set_num_steps(nsteps);
+
+  for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
+    const auto& name = it.first;
+    const auto& type = it.second.first;
+          auto  any  = it.second.second;
+
+    if (type=="int") {
+      ekat::any_cast<int>(any) = model_restart.read_int_scalar(name);
+    } else {
+      EKAT_ERROR_MSG ("Error! Unsupported type for restart extra data.\n"
+          " - data name: " + name + "'\n"
+          " - data type: " + type + "'\n");
+    }
+  }
 
   // Close files and finalize all pio data structs
   model_restart.finalize();

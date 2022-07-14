@@ -16,6 +16,7 @@
 #include "ekat/util/ekat_factory.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
+#include "ekat/std_meta/ekat_std_any.hpp"
 #include "ekat/logging/ekat_logger.hpp"
 
 #include <memory>
@@ -75,6 +76,9 @@ public:
   using ci_string   = ekat::CaseInsensitiveString;
   using logger_t    = spdlog::logger;
   using LogLevel    = ekat::logger::LogLevel;
+  using str_any_pair_t = std::pair<std::string,ekat::any>;
+  template<typename T>
+  using strmap_t = std::map<std::string,T>;
 
   template<typename T>
   using str_map = std::map<std::string,T>;
@@ -230,6 +234,14 @@ public:
   void add_postcondition_check (const Args... args);
   template<typename FPC, CheckFailHandling CFH = CheckFailHandling::Fatal, typename... Args>
   void add_invariant_check (const Args... args);
+
+  // For restarts, it is possible that some atm proc need to write/read some ad-hoc data.
+  // E.g., some atm proc might need to read/write certain scalar values.
+  // Assumptions:
+  //  - these maps are: data_name -> (data_type, data_value)
+  //  - the data_name is unique across the whole atm
+  // The AD will take care of ensuring these are written/read to/from restart files.
+  const strmap_t<str_any_pair_t>& get_restart_extra_data () const { return m_restart_extra_data; }
 
 protected:
 
@@ -411,6 +423,9 @@ protected:
   //       is a non-const op on the logger, so since we need a non-const
   //       logger, we might as well expose the member to all derived classes.
   std::shared_ptr<logger_t>  m_atm_logger;
+
+  // Extra data needed for restart
+  strmap_t<str_any_pair_t>  m_restart_extra_data;
 
 private:
   // Called from initialize, this method creates the m_[fields|groups]_[in|out]_pointers
