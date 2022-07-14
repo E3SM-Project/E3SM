@@ -51,8 +51,6 @@ module ocn_vmix
    !
    !--------------------------------------------------------------------
 
-   private :: tridiagonal_solve
-
    public :: ocn_vmix_coefs, &
              ocn_vel_vmix_tend_implicit, &
              ocn_vertVel_vmix_tend_implicit, &
@@ -533,7 +531,7 @@ contains
    !
    !> \brief   Computes tendencies for implicit vertical momentum vertical
    !mixing
-   !> \author  Luke Van Roekel
+   !> \author  Luke Van Roekel, Sara Calandrini
    !> \date    December 2020
    !> \details
    !>  This routine computes the tendencies for implicit vertical mixing for
@@ -587,15 +585,16 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, k, N, nCells
+      integer :: iCell, i, k, N, nCells
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray
 
       integer, dimension(:), pointer :: maxLevelCell
-      real(kind=RKIND) :: viscAv
+      real(kind=RKIND) :: viscAv, m
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       real (kind=RKIND), dimension(:), allocatable :: A, B, C, velTemp
+      real (kind=RKIND), dimension(:), allocatable :: bTemp, rTemp
 
       err = 0
 
@@ -609,6 +608,7 @@ contains
 
       nCells = nCellsArray( 1 )
 
+      allocate(bTemp(nVertLevels+1), rTemp(nVertLevels+1))
       allocate(A(nVertLevels+1),B(nVertLevels+1),C(nVertLevels+1),velTemp(nVertLevels+1))
       A(1) = 0.0_RKIND
       B(1) = 0.0_RKIND
@@ -627,19 +627,12 @@ contains
             viscAv = 0.5_RKIND*(vertViscTopOfCell(k-1,iCell) + vertViscTopOfCell(k,iCell))
             A(k) = dt*viscAv / layerThickness(k-1,iCell) / (0.5_RKIND* &
                     (layerThickness(k-1,iCell) + layerThickness(k,iCell)))
-!            A(k) = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
-!               / (layerThicknessEdge(k-1,iEdge) + layerThicknessEdge(k,iEdge)) &
-!               / layerThicknessEdge(k,iEdge)
          enddo
          ! C is upper diagonal term
          do k = 2, N-1
            viscAv = 0.5_RKIND*(vertViscTopOfCell(k,iCell) + vertViscTopOfCell(k+1,iCell))
            C(k) = dt*viscAv / layerThickness(k,iCell) / (0.5_RKIND* &
                    (layerThickness(k,iCell) + layerThickness(k-1,iCell)))
-!            A(k) = -2.0_RKIND*dt*vertViscTopOfEdge(k,iEdge) &
-!            C(k) = -2.0_RKIND*dt*vertViscTopOfEdge(k+1,iEdge) &
-!               / (layerThicknessEdge(k,iEdge) + layerThicknessEdge(k+1,iEdge)) &
-!               / layerThicknessEdge(k,iEdge)
          enddo
 
          ! B is diagonal term
@@ -647,7 +640,22 @@ contains
             B(k) = 1.0_RKIND - A(k) - C(k)
          enddo
 
-         call tridiagonal_solve(A(2:N),B,C(1:N-1),vertVelocityNonhydro(:,iCell),velTemp,N)
+         ! Use work variables for b and r
+         bTemp(1) = B(1)
+         rTemp(1) = vertVelocityNonhydro(1,iCell)
+
+         ! First pass: set the coefficients
+         do i = 2,N
+            m = A(i-1)/bTemp(i-1)
+            bTemp(i) = B(i) - m*C(i-1)
+            rTemp(i) = vertVelocityNonhydro(i,iCell) - m*rTemp(i-1)
+         end do
+
+         velTemp(N) = rTemp(N)/bTemp(N)
+         ! Second pass: back-substition
+         do i = N-1, 1, -1
+            velTemp(i) = (rTemp(i) - C(i)*velTemp(i+1))/bTemp(i)
+         end do
 
          vertVelocityNonhydro(1:N,iCell) = velTemp(1:N)
         end if
@@ -656,6 +664,7 @@ contains
       !$omp end parallel
 
       deallocate(A,B,C,velTemp)
+      deallocate(bTemp, rTemp)
 
    !--------------------------------------------------------------------
 
@@ -1566,69 +1575,6 @@ contains
    !--------------------------------------------------------------------
 
    end subroutine ocn_vmix_init!}}}
-
-!***********************************************************************
-!
-!  routine tridiagonal_solve
-!
-!> \brief   Solve the matrix equation Ax=r for x, where A is tridiagonal.
-!> \author  Mark Petersen
-!> \date    September 2011
-!> \details
-!>  Solve the matrix equation Ax=r for x, where A is tridiagonal.
-!>  A is an nxn matrix, with:
-!>  a sub-diagonal, filled from 1:n-1 (a(1) appears on row 2)
-!>  b diagonal, filled from 1:n
-!>  c sup-diagonal, filled from 1:n-1  (c(1) apears on row 1)
-!
-!-----------------------------------------------------------------------
-   subroutine tridiagonal_solve(a,b,c,r,x,n) !{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      integer,intent(in) :: n
-      real (KIND=RKIND), dimension(n), intent(in) :: a,b,c,r
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      real (KIND=RKIND), dimension(n), intent(out) :: x
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      real (KIND=RKIND), dimension(n) :: bTemp,rTemp
-      real (KIND=RKIND) :: m
-      integer i
-
-      ! Use work variables for b and r
-      bTemp(1) = b(1)
-      rTemp(1) = r(1)
-
-      ! First pass: set the coefficients
-      do i = 2,n
-         m = a(i-1)/bTemp(i-1)
-         bTemp(i) = b(i) - m*c(i-1)
-         rTemp(i) = r(i) - m*rTemp(i-1)
-      end do
-
-      x(n) = rTemp(n)/bTemp(n)
-       ! Second pass: back-substition
-      do i = n-1, 1, -1
-         x(i) = (rTemp(i) - c(i)*x(i+1))/bTemp(i)
-      end do
-
-   end subroutine tridiagonal_solve !}}}
 
 !***********************************************************************
 
