@@ -133,7 +133,7 @@ init_scorpio(const int atm_id)
 
 void AtmosphereDriver::create_atm_processes()
 {
-  m_atm_logger->info("[EAMXX] create_atm_processes  ...");
+  m_atm_logger->info("[EAMxx] create_atm_processes  ...");
   start_timer("EAMxx::init");
   start_timer("EAMxx::create_atm_processes");
 
@@ -151,12 +151,12 @@ void AtmosphereDriver::create_atm_processes()
   m_ad_status |= s_procs_created;
   stop_timer("EAMxx::create_atm_processes");
   stop_timer("EAMxx::init");
-  m_atm_logger->info("[EAMXX] create_atm_processes  ... done!");
+  m_atm_logger->info("[EAMxx] create_atm_processes  ... done!");
 }
 
 void AtmosphereDriver::create_grids()
 {
-  m_atm_logger->info("[EAMXX] create_grids ...");
+  m_atm_logger->info("[EAMxx] create_grids ...");
   start_timer("EAMxx::init");
   start_timer("EAMxx::create_grids");
 
@@ -166,16 +166,16 @@ void AtmosphereDriver::create_grids()
   // Create the grids manager
   auto& gm_params = m_atm_params.sublist("Grids Manager");
   const std::string& gm_type = gm_params.get<std::string>("Type");
-  m_atm_logger->debug("  [EAMXX] Creating grid manager '" + gm_type + "' ...");
+  m_atm_logger->debug("  [EAMxx] Creating grid manager '" + gm_type + "' ...");
   m_grids_manager = GridsManagerFactory::instance().create(gm_type,m_atm_comm,gm_params);
 
-  m_atm_logger->debug("  [EAMXX] Creating grid manager '" + gm_type + "' ... done!");
+  m_atm_logger->debug("  [EAMxx] Creating grid manager '" + gm_type + "' ... done!");
 
   // Tell the grid manager to build all the grids required
   // by the atm processes, as well as the reference grid
   m_grids_manager->build_grids(m_atm_process_group->get_required_grids());
 
-  m_atm_logger->debug("  [EAMXX] Grids created.");
+  m_atm_logger->debug("  [EAMxx] Grids created.");
 
   // Set the grids in the processes. Do this by passing the grids manager.
   // Each process will grab what they need
@@ -185,12 +185,12 @@ void AtmosphereDriver::create_grids()
 
   stop_timer("EAMxx::create_grids");
   stop_timer("EAMxx::init");
-  m_atm_logger->info("[EAMXX] create_grids ... done!");
+  m_atm_logger->info("[EAMxx] create_grids ... done!");
 }
 
 void AtmosphereDriver::create_fields()
 {
-  m_atm_logger->info("[EAMXX] create_fields ...");
+  m_atm_logger->info("[EAMxx] create_fields ...");
   start_timer("EAMxx::init");
   start_timer("EAMxx::create_fields");
 
@@ -346,11 +346,11 @@ void AtmosphereDriver::create_fields()
 
   stop_timer("EAMxx::create_fields");
   stop_timer("EAMxx::init");
-  m_atm_logger->info("[EAMXX] create_fields ... done!");
+  m_atm_logger->info("[EAMxx] create_fields ... done!");
 }
 
 void AtmosphereDriver::initialize_output_managers () {
-  m_atm_logger->info("[EAMXX] initialize_output_managers ...");
+  m_atm_logger->info("[EAMxx] initialize_output_managers ...");
   start_timer("EAMxx::init");
   start_timer("EAMxx::initialize_output_managers");
 
@@ -393,18 +393,18 @@ void AtmosphereDriver::initialize_output_managers () {
 
   stop_timer("EAMxx::initialize_output_managers");
   stop_timer("EAMxx::init");
-  m_atm_logger->info("[EAMXX] initialize_output_managers ... done!");
+  m_atm_logger->info("[EAMxx] initialize_output_managers ... done!");
 }
 
 void AtmosphereDriver::
 initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0)
 {
-  m_atm_logger->info("[EAMXX] initialize_fields ...");
+  m_atm_logger->info("[EAMxx] initialize_fields ...");
   start_timer("EAMxx::init");
   start_timer("EAMxx::initialize_fields");
 
-  m_atm_logger->info("  [EAMXX] Run  start time stamp: " + run_t0.to_string());
-  m_atm_logger->info("  [EAMXX] Case start time stamp: " + case_t0.to_string());
+  m_atm_logger->info("  [EAMxx] Run  start time stamp: " + run_t0.to_string());
+  m_atm_logger->info("  [EAMxx] Case start time stamp: " + case_t0.to_string());
 
 
   // See if we need to print a DAG. We do this first, cause if any input
@@ -511,12 +511,12 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
   stop_timer("EAMxx::initialize_fields");
   stop_timer("EAMxx::init");
   m_ad_status |= s_fields_inited;
-  m_atm_logger->info("[EAMXX] initialize_fields ... done!");
+  m_atm_logger->info("[EAMxx] initialize_fields ... done!");
 }
 
 void AtmosphereDriver::restart_model ()
 {
-  m_atm_logger->info("  [EAMXX] restart_model ...");
+  m_atm_logger->info("  [EAMxx] restart_model ...");
 
   // First, figure out the name of the netcdf file containing the restart data
   const auto& casename = m_atm_params.sublist("Initial Conditions").get<std::string>("Restart Casename");
@@ -549,7 +549,7 @@ void AtmosphereDriver::restart_model ()
   // Close files and finalize all pio data structs
   model_restart.finalize();
 
-  m_atm_logger->info("  [EAMXX] restart_model ... done!");
+  m_atm_logger->info("  [EAMxx] restart_model ... done!");
 }
 
 void AtmosphereDriver::create_logger () {
@@ -599,7 +599,7 @@ void AtmosphereDriver::create_logger () {
 
 void AtmosphereDriver::set_initial_conditions ()
 {
-  m_atm_logger->info("  [EAMXX] set_initial_conditions ...");
+  m_atm_logger->info("  [EAMxx] set_initial_conditions ...");
 
   auto& ic_pl = m_atm_params.sublist("Initial Conditions");
 
@@ -652,14 +652,14 @@ void AtmosphereDriver::set_initial_conditions ()
   };
 
   // First the individual input fields...
-  m_atm_logger->debug("    [EAMXX] Processing input fields ...");
+  m_atm_logger->debug("    [EAMxx] Processing input fields ...");
   for (const auto& f : m_atm_process_group->get_fields_in()) {
     process_ic_field (f);
   }
-  m_atm_logger->debug("    [EAMXX] Processing input fields ... done!");
+  m_atm_logger->debug("    [EAMxx] Processing input fields ... done!");
 
   // ...then the input groups
-  m_atm_logger->debug("    [EAMXX] Processing input groups ...");
+  m_atm_logger->debug("    [EAMxx] Processing input groups ...");
   for (const auto& g : m_atm_process_group->get_groups_in()) {
     if (g.m_bundle) {
       process_ic_field(*g.m_bundle);
@@ -668,7 +668,7 @@ void AtmosphereDriver::set_initial_conditions ()
       process_ic_field(*it.second);
     }
   }
-  m_atm_logger->debug("    [EAMXX] Processing input groups ... done!");
+  m_atm_logger->debug("    [EAMxx] Processing input groups ... done!");
 
   // Some fields might be the subfield of a group's bundled field. In that case,
   // we only need to init one: either the bundled field, or all the individual subfields.
@@ -706,17 +706,17 @@ void AtmosphereDriver::set_initial_conditions ()
   // If a filename is specified, use it to load inputs on all grids
   if (ic_pl.isParameter("Filename")) {
     // Now loop over all grids, and load from file the needed fields on each grid (if any).
-    m_atm_logger->debug("    [EAMXX] Reading fields from file ...");
+    m_atm_logger->debug("    [EAMxx] Reading fields from file ...");
     const auto& file_name = ic_pl.get<std::string>("Filename");
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
       read_fields_from_file (ic_fields_names[grid_name],it.first,file_name,m_current_ts);
     }
-    m_atm_logger->debug("    [EAMXX] Reading fields from file ... done!");
+    m_atm_logger->debug("    [EAMxx] Reading fields from file ... done!");
   }
 
   // If there were any fields that needed to be copied per the input yaml file, now we copy them.
-  m_atm_logger->debug("    [EAMXX] Processing fields to copy ...");
+  m_atm_logger->debug("    [EAMxx] Processing fields to copy ...");
   for (const auto& tgt_fid : ic_fields_to_copy) {
     const auto& tgt_fname = tgt_fid.name();
     const auto& tgt_gname = tgt_fid.get_grid_name();
@@ -770,13 +770,13 @@ void AtmosphereDriver::set_initial_conditions ()
     // Set the initial time stamp
     f_tgt.get_header().get_tracking().update_time_stamp(m_current_ts);
   }
-  m_atm_logger->debug("    [EAMXX] Processing fields to copy ... done!");
+  m_atm_logger->debug("    [EAMxx] Processing fields to copy ... done!");
 
   // Final step: it is possible to have a bundled group G1=(f1,f2,f3),
   // where the IC are read from file for f1, f2, and f3. In that case,
   // the time stamp for the bundled G1 has not be inited, but the data
   // is valid (all entries have been inited). Let's fix that.
-  m_atm_logger->debug("    [EAMXX] Processing subfields ...");
+  m_atm_logger->debug("    [EAMxx] Processing subfields ...");
   for (const auto& g : m_atm_process_group->get_groups_in()) {
     if (g.m_bundle) {
       auto& track = g.m_bundle->get_header().get_tracking();
@@ -798,9 +798,9 @@ void AtmosphereDriver::set_initial_conditions ()
       }
     }
   }
-  m_atm_logger->debug("    [EAMXX] Processing subfields ... done!");
+  m_atm_logger->debug("    [EAMxx] Processing subfields ... done!");
 
-  m_atm_logger->info("  [EAMXX] set_initial_conditions ... done!");
+  m_atm_logger->info("  [EAMxx] set_initial_conditions ... done!");
 }
 
 void AtmosphereDriver::
@@ -871,7 +871,7 @@ initialize_constant_field(const FieldIdentifier& fid,
 
 void AtmosphereDriver::initialize_atm_procs ()
 {
-  m_atm_logger->info("[EAMXX] initialize_atm_procs ...");
+  m_atm_logger->info("[EAMxx] initialize_atm_procs ...");
   start_timer("EAMxx::init");
   start_timer("EAMxx::initialize_atm_procs");
 
@@ -890,7 +890,7 @@ void AtmosphereDriver::initialize_atm_procs ()
 
   stop_timer("EAMxx::initialize_atm_procs");
   stop_timer("EAMxx::init");
-  m_atm_logger->info("[EAMXX] initialize_atm_procs ... done!");
+  m_atm_logger->info("[EAMxx] initialize_atm_procs ... done!");
 
   report_res_dep_memory_footprint ();
 }
@@ -971,7 +971,7 @@ void AtmosphereDriver::run (const int dt) {
 void AtmosphereDriver::finalize ( /* inputs? */ ) {
   start_timer("EAMxx::finalize");
 
-  m_atm_logger->info("[EAMXX] Finalize ...");
+  m_atm_logger->info("[EAMxx] Finalize ...");
 
   // Finalize and destroy output streams, make sure files are closed
   for (auto& out_mgr : m_output_managers) {
@@ -1008,7 +1008,7 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
     scorpio::eam_pio_finalize();
   }
 
-  m_atm_logger->info("[EAMXX] Finalize ... done!");
+  m_atm_logger->info("[EAMxx] Finalize ... done!");
 
 #ifdef SCREAM_HAS_MEMORY_USAGE
   long long my_mem_usage = get_mem_usage(MB);
