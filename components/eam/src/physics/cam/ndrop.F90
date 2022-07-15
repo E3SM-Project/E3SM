@@ -1938,7 +1938,7 @@ subroutine so4_cdnc(state,pbuf,rho,so4_cdnc_a1,so4_cdnc_b1,cdncst)
         integer :: coarse_so4_idx = -1  ! index of so4 in coarse mode
         integer :: accum_so4_idx = -1  ! index of so4 in accum mode
         integer :: aitken_so4_idx = -1  ! index of so4 in aitken mode
-        real(r8) :: coeff1 = 0.3 ! coeff1 is a scaling factor
+        !real(r8) :: coeff1 = 0.3 ! coeff1 is a scaling factor
         integer :: i,k, lchnk, ncol
 
           lchnk = state%lchnk
@@ -2013,7 +2013,7 @@ subroutine so4_cdnc(state,pbuf,rho,so4_cdnc_a1,so4_cdnc_b1,cdncst)
       end do
         call outfld('SO4_cdncst',ftem , pcols, lchnk) 
         ftem = 1.e9_r8*ftem*rho  !kg/kg -> mu-g/m3
-        cdncst = coeff1*10.**(so4_cdnc_a1+so4_cdnc_b1*log10(ftem))  !#/cc
+        cdncst = 10.**(so4_cdnc_a1+so4_cdnc_b1*log10(ftem))  !#/cc
         cdncst = 1.e6_r8*cdncst   !#/cc -> #/m3  
 end subroutine so4_cdnc
 
