@@ -706,7 +706,6 @@ end function shoc_implements_cnst
 
    !obtain wet mmr from the state vector
    qv_wet = state1%q(:,:,ixq)
-
    icnt = 0
    do ixind = 1, pcnst
       if (lq(ixind))  then
@@ -922,34 +921,30 @@ end function shoc_implements_cnst
         wqls_out(:ncol,:),brunt_out(:ncol,:),rcm2(:ncol,:)) ! Output (diagnostic)
    
    ! Transfer back to pbuf variables
-
+   
    do k=1,pver
-     do i=1,ncol 
-     
+     do i=1,ncol      
        cloud_frac(i,k) = min(cloud_frac(i,k),1._r8)
       enddo
    enddo
        
    !obtain water vapor mmr which is a "dry" mmr at this point from the SHOC output
    qv_dry(:,:) = edsclr_in(:,:,ixq)
-
-
-          !----------------
-          !DRY-TO-WET MMRs:
-          !----------------
-          !Since the host model needs wet mixing ratio tendencies(state vector has wet mixing ratios),
-          !we need to convert dry mixing ratios from SHOC to wet mixing ratios before extracting tendencies
-          !NOTE:Function calculate_wetmmr_from_drymmr takes 2 arguments: (wet mmr and "dry" water vapor
-          !mixing ratio)
+   !----------------
+   !DRY-TO-WET MMRs:
+   !----------------
+   !Since the host model needs wet mixing ratio tendencies(state vector has wet mixing ratios),
+   !we need to convert dry mixing ratios from SHOC to wet mixing ratios before extracting tendencies
+   !NOTE:Function calculate_wetmmr_from_drymmr takes 2 arguments: (wet mmr and "dry" water vapor
+   !mixing ratio)
    do ixind=1,edsclr_dim
-          if(convert_back_to_wet(ixind)) then
-         edsclr_out(:,:,ixind) = calculate_wetmmr_from_drymmr(ncol, pver, edsclr_in(:,:,ixind),qv_dry)
-          else
-         edsclr_out(:,:,ixind) = edsclr_in(:,:,ixind)
-          endif
-       enddo      
+       if(convert_back_to_wet(ixind)) then
+          edsclr_out(:,:,ixind) = calculate_wetmmr_from_drymmr(ncol, pver, edsclr_in(:,:,ixind), qv_dry)
+      else
+          edsclr_out(:,:,ixind) = edsclr_in(:,:,ixind)
+      endif
+   enddo
    !convert state1%q to wet mixing ratios
- 
    qv_dry(:,:) = state1%q(:,:,ixq)
    icnt = 0
    do ixind = 1, pcnst
@@ -959,9 +954,9 @@ end function shoc_implements_cnst
             state1%q(:,:,ixind) = calculate_wetmmr_from_drymmr(ncol, pver, state1%q(:,:,ixind), qv_dry)
          endif
       endif
-     enddo
-   rcm(:,:) = calculate_wetmmr_from_drymmr_1gridcell(ncol, pver, rcm,qv_dry)
-   rtm(:,:) = calculate_wetmmr_from_drymmr_1gridcell(ncol, pver, rtm,qv_dry)
+   enddo
+   rcm(:,:) = calculate_wetmmr_from_drymmr(ncol, pver, rcm, qv_dry)
+   rtm(:,:) = calculate_wetmmr_from_drymmr(ncol, pver, rtm, qv_dry)
 
    ! Eddy diffusivities and TKE are needed for aerosol activation code.
    !   Linearly interpolate from midpoint grid and onto the interface grid.
