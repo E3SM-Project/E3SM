@@ -3,9 +3,11 @@ module prep_aoflux_mod
   use shr_kind_mod,     only: r8 => SHR_KIND_R8
   use shr_kind_mod,     only: cs => SHR_KIND_CS
   use shr_kind_mod,     only: cl => SHR_KIND_CL
+  use shr_kind_mod,     only: CXX => SHR_KIND_CXX
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct,     only: num_inst_xao, num_inst_frc, num_inst_ocn
   use seq_comm_mct,     only: CPLID, logunit
+  use seq_comm_mct,     only : mboxid ! iMOAB app id for ocn on cpl pes
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
   use seq_infodata_mod, only: seq_infodata_getdata, seq_infodata_type
   use seq_map_type_mod
@@ -16,6 +18,9 @@ module prep_aoflux_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: atm, ocn
+
+  use iso_c_binding
+
 
   implicit none
   private ! except
@@ -52,22 +57,24 @@ contains
 
   !================================================================================================
 
-  subroutine prep_aoflux_init (infodata, fractions_ox, fractions_ax)
+  subroutine prep_aoflux_init (infodata)
 
     !---------------------------------------------------------------
     ! Description
     ! Initialize atm/ocn flux component and compute ocean albedos
     ! module variables
     !
+    use iMOAB, only : iMOAB_DefineTagStorage
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
-    type(mct_aVect)          , intent(in)    :: fractions_ox(:)
-    type(mct_aVect)          , intent(in)    :: fractions_ax(:)
     !
     ! Local Variables
-    integer                     :: exi
+    integer                     :: exi,ierr
     integer                     :: lsize_o
     integer                     :: lsize_a
+    integer                     :: tagtype, numco, tagindex
+    character(CXX)              :: tagname
+
     character(CS)      :: aoflux_grid ! grid for atm ocn flux calc
     type(mct_avect) , pointer   :: a2x_ax
     type(mct_avect) , pointer   :: o2x_ox
@@ -104,6 +111,19 @@ contains
        call mct_aVect_init(xao_ox(exi), rList=seq_flds_xao_fields, lsize=lsize_o)
        call mct_aVect_zero(xao_ox(exi))
     enddo
+
+! define flux tags on the moab ocean mesh
+    if (mboxid .ge. 0 ) then ! //
+       tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
+       tagtype = 1 ! dense, double
+       numco = 1
+       ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco, tagindex )
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in defining tags on ocn phys mesh on cpl '
+          call shr_sys_abort(subname//' ERROR in defining tags on ocn phys mesh on cpl')
+       endif
+    endif
+
 
   end subroutine prep_aoflux_init
 
