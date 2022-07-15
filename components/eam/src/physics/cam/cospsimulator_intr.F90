@@ -2116,41 +2116,55 @@ CONTAINS
       integer, intent(in) :: nc, nx, ny
       real(r8), intent(in) :: d_in(:)
       real(r8), intent(out) :: d_out(:)
-      real(r8) :: xyfact
+      integer :: num_valid
       integer :: ip, ic, ix, iy
       call assert(size(d_in , 1) == nc * nx * ny, 'np /= nc * nx * ny')
-      xyfact  = 1._r8 / nx * ny
       d_out = 0._r8
-      do iy = 1,ny
-        do ix = 1,nx
-          do ic = 1,nc
+      do ic = 1,nc
+        num_valid = 0
+        do iy = 1,ny
+          do ix = 1,nx
             ip = _IDX321(ic,ix,iy,nc,nx,ny)
             if (d_in(ip) /= R_UNDEF) then
-              d_out(ic) = d_out(ic) + xyfact * d_in(ip)
+              d_out(ic) = d_out(ic) + d_in(ip)
+              num_valid = num_valid + 1
             end if
           end do
         end do
+        ! If no valid values found, we need to set this column to fill value
+        if (num_valid > 0) then
+           d_out(ic) = d_out(ic) / num_valid
+        else
+           d_out(ic) = R_UNDEF
+        end if
       end do
     end subroutine
     subroutine packed_average2d(nc, nx, ny, d_in, d_out)
       integer, intent(in) :: nc, nx, ny
       real(r8), intent(in) :: d_in(:,:)
       real(r8), intent(out) :: d_out(:,:)
-      real(r8) :: xyfact
+      integer :: num_valid
       integer :: ip, ic, ix, iy, i2, i3
       call assert(size(d_in , 1) == nc * nx * ny, 'np /= nc * nx * ny')
-      xyfact  = 1._r8 / nx * ny
       d_out = 0._r8
       do i2 = 1,size(d_in,2)
-        do iy = 1,ny
-          do ix = 1,nx
-            do ic = 1,nc
+        do ic = 1,nc
+          num_valid = 0
+          do iy = 1,ny
+            do ix = 1,nx
               ip = _IDX321(ic,ix,iy,nc,nx,ny)
               if (d_in(ip,i2) /= R_UNDEF) then
-                d_out(ic,i2) = d_out(ic,i2) + xyfact * d_in(ip,i2)
+                d_out(ic,i2) = d_out(ic,i2) + d_in(ip,i2)
+                num_valid = num_valid + 1
               end if
             end do
           end do
+          ! If no valid values found, need to set to fill value
+          if (num_valid > 0) then
+            d_out(ic,i2) = d_out(ic,i2) / num_valid
+          else
+            d_out(ic,i2) = R_UNDEF
+          end if
         end do
       end do
     end subroutine
@@ -2158,22 +2172,29 @@ CONTAINS
       integer, intent(in) :: nc, nx, ny
       real(r8), intent(in) :: d_in(:,:,:)
       real(r8), intent(out) :: d_out(:,:,:)
-      real(r8) :: xyfact
+      integer :: num_valid
       integer :: ip, ic, ix, iy, i2, i3
       call assert(size(d_in , 1) == nc * nx * ny, 'np /= nc * nx * ny')
-      xyfact  = 1._r8 / nx * ny
       d_out = 0._r8
       do i3 = 1,size(d_in,3)
         do i2 = 1,size(d_in,2)
-          do iy = 1,ny
-            do ix = 1,nx
-              do ic = 1,nc
+          do ic = 1,nc
+            num_valid = 0
+            do iy = 1,ny
+              do ix = 1,nx
                 ip = _IDX321(ic,ix,iy,nc,nx,ny)
                 if (d_in(ip,i2,i3) /= R_UNDEF) then
-                  d_out(ic,i2,i3) = d_out(ic,i2,i3) + xyfact * d_in(ip,i2,i3)
+                  d_out(ic,i2,i3) = d_out(ic,i2,i3) + d_in(ip,i2,i3)
+                  num_valid = num_valid + 1
                 end if
               end do
             end do
+            ! If no valid values found, need to set to fill value
+            if (num_valid > 0) then
+              d_out(ic,i2,i3) = d_out(ic,i2,i3) / num_valid
+            else
+              d_out(ic,i2,i3) = R_UNDEF
+            end if
           end do
         end do
       end do
