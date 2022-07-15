@@ -25,12 +25,6 @@ module scream_trcmix
   real(rtype), public, parameter :: mwch4       =  16._rtype   ! molecular weight ch4
   real(rtype), public, parameter :: mwf11       = 136._rtype   ! molecular weight cfc11
   real(rtype), public, parameter :: mwf12       = 120._rtype   ! molecular weight cfc12
-  real(rtype), public, parameter :: mwo3        =  48._rtype   ! molecular weight O3
-  real(rtype), public, parameter :: mwso2       =  64._rtype
-  real(rtype), public, parameter :: mwso4       =  96._rtype
-  real(rtype), public, parameter :: mwh2o2      =  34._rtype
-  real(rtype), public, parameter :: mwdms       =  62._rtype
-  real(rtype), public, parameter :: mwnh4       =  18._rtype
 
   real(rtype), public, parameter :: rmwn2o = mwn2o/mwdry ! ratio of molecular weight n2o   to dry air
   real(rtype), public, parameter :: rmwch4 = mwch4/mwdry ! ratio of molecular weight ch4   to dry air
