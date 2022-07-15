@@ -118,6 +118,8 @@ logical           :: micro_do_nccons                      !XZ
 integer           :: micro_prescribed_cdnc_opt         !XZ
 real(r8)          :: micro_nccons_land                 !XZ
 real(r8)          :: micro_nccons_ocean                 !XZ
+real(r8)          :: micro_so4_cdnc_a1                 !XZ
+real(r8)          :: micro_so4_cdnc_b1                 !XZ
 
 logical           :: state_debug_checks   = .false.    ! Extra checks for validity of physics_state objects
                                                        ! in physics_update.
@@ -216,7 +218,8 @@ subroutine phys_ctl_readnl(nlfile)
       l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
       l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad, prc_coef1,prc_exp,prc_exp1,cld_sed,mg_prc_coeff_fix, &
       rrtmg_temp_fix, &
-      micro_do_nccons,micro_nccons_ocean,micro_nccons_land,micro_prescribed_cdnc_opt !XZ
+      micro_do_nccons,micro_nccons_ocean,micro_nccons_land,micro_prescribed_cdnc_opt,& !XZ
+      micro_so4_cdnc_a1, micro_so4_cdnc_b1    !XZ
    !-----------------------------------------------------------------------------
 
    if (masterproc) then
@@ -318,6 +321,8 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(micro_nccons_land,               1 , mpir8,   0, mpicom) !XZ
    call mpibcast(micro_nccons_ocean,              1 , mpir8,   0, mpicom) !XZ
    call mpibcast(micro_prescribed_cdnc_opt,       1 , mpiint,  0, mpicom) !XZ
+   call mpibcast(micro_so4_cdnc_a1,               1 , mpir8,   0, mpicom) !XZ
+   call mpibcast(micro_so4_cdnc_b1,               1 , mpir8,   0, mpicom) !XZ
 #endif
 
    call cam_ctrl_set_physics_type(cam_physpkg)
@@ -484,7 +489,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                        ,l_tracer_aero_out, l_vdiff_out, l_rayleigh_out, l_gw_drag_out, l_ac_energy_chk_out  &
                        ,l_bc_energy_fix_out, l_dry_adj_out, l_st_mac_out, l_st_mic_out, l_rad_out  &
                        ,prc_coef1_out,prc_exp_out,prc_exp1_out, cld_sed_out,mg_prc_coeff_fix_out,rrtmg_temp_fix_out &
-                       ,micro_do_nccons_out,micro_prescribed_cdnc_opt_out,micro_nccons_land_out, micro_nccons_ocean_out)  !!Added by XZ
+                       ,micro_do_nccons_out,micro_prescribed_cdnc_opt_out,micro_nccons_land_out, micro_nccons_ocean_out &!!Added by XZ
+                       ,micro_so4_cdnc_a1_out,micro_so4_cdnc_b1_out)  !!Added by XZ
 
 !-----------------------------------------------------------------------
 ! Purpose: Return runtime settings
@@ -573,6 +579,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    integer,           intent(out), optional :: micro_prescribed_cdnc_opt_out !! XZ for prescribed CDNC 
    real(r8),          intent(out), optional :: micro_nccons_land_out !! XZ for prescribed CDNC 
    real(r8),          intent(out), optional :: micro_nccons_ocean_out !! XZ for prescribed CDNC 
+   real(r8),          intent(out), optional :: micro_so4_cdnc_a1_out !! XZ for SO4-CDNC 
+   real(r8),          intent(out), optional :: micro_so4_cdnc_b1_out !! XZ for SO4-CDNC 
 
    if ( present(deep_scheme_out         ) ) deep_scheme_out          = deep_scheme
    if ( present(shallow_scheme_out      ) ) shallow_scheme_out       = shallow_scheme
@@ -654,6 +662,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(micro_prescribed_cdnc_opt_out      ) ) micro_prescribed_cdnc_opt_out       = micro_prescribed_cdnc_opt  !XZ
    if ( present(micro_nccons_land_out   ) ) micro_nccons_land_out    = micro_nccons_land  !XZ
    if ( present(micro_nccons_ocean_out   ) ) micro_nccons_ocean_out    = micro_nccons_ocean  !XZ
+   if ( present(micro_so4_cdnc_a1_out   ) ) micro_so4_cdnc_a1_out    = micro_so4_cdnc_a1   !XZ
+   if ( present(micro_so4_cdnc_b1_out   ) ) micro_so4_cdnc_b1_out    = micro_so4_cdnc_b1   !XZ
 
 end subroutine phys_getopts
 

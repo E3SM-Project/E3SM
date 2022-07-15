@@ -1905,10 +1905,12 @@ subroutine loadaer( &
 end subroutine loadaer
 
 !!!XZ: add the subroutine to prescribe in-cloud CDNC here for now 05/06/2022
-subroutine so4_cdnc(state,pbuf,rho,cdncst)
+subroutine so4_cdnc(state,pbuf,rho,so4_cdnc_a1,so4_cdnc_b1,cdncst)
         type(physics_state), target, intent(in)    :: state
         type(physics_buffer_desc),   pointer       :: pbuf(:)
         real(r8), intent(in) :: rho(pcols,pver)     ! air density (kg m-3)
+        real(r8), intent(in) :: so4_cdnc_a1 
+        real(r8), intent(in) :: so4_cdnc_b1    !a1, b1: coefficients in log-log regression function (  Boucher & Lohmann, 1995 Eq. D)
 
         real(r8), intent(out) :: cdncst(pcols,pver) ! prescribed droplet number concentration 
             ! local workspace
@@ -1936,10 +1938,7 @@ subroutine so4_cdnc(state,pbuf,rho,cdncst)
         integer :: coarse_so4_idx = -1  ! index of so4 in coarse mode
         integer :: accum_so4_idx = -1  ! index of so4 in accum mode
         integer :: aitken_so4_idx = -1  ! index of so4 in aitken mode
-
-        real(r8) :: a1 = 2.21
-        real(r8) :: b1 = 0.41
-        real(r8) :: coeff1 = 0.3 ! coefficients in log-log regression function (  Boucher & Lohmann, 1995 Eq. D)  !coeff1 is a scaling factor
+        real(r8) :: coeff1 = 0.3 ! coeff1 is a scaling factor
         integer :: i,k, lchnk, ncol
 
           lchnk = state%lchnk
@@ -2014,7 +2013,7 @@ subroutine so4_cdnc(state,pbuf,rho,cdncst)
       end do
         call outfld('SO4_cdncst',ftem , pcols, lchnk) 
         ftem = 1.e9_r8*ftem*rho  !kg/kg -> mu-g/m3
-        cdncst = coeff1*10.**(a1+b1*log10(ftem))  !#/cc
+        cdncst = coeff1*10.**(so4_cdnc_a1+so4_cdnc_b1*log10(ftem))  !#/cc
         cdncst = 1.e6_r8*cdncst   !#/cc -> #/m3  
 end subroutine so4_cdnc
 

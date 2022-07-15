@@ -127,6 +127,7 @@ logical  :: separate_dust = .false.
 logical  :: liqcf_fix
 logical  :: micro_do_nccons  !XZ
 real(r8) :: micro_nccons_land, micro_nccons_ocean  !XZ 
+real(r8) :: micro_so4_cdnc_a1, micro_so4_cdnc_b1  !XZ 
 real(r8), parameter :: unset_r8   = huge(1.0_r8)
 real(r8) :: wsubmin = unset_r8 !PMA sets a much lower lower bound
 
@@ -188,7 +189,9 @@ subroutine microp_aero_init
         micro_do_nccons_out = micro_do_nccons, &   !XZ
         micro_prescribed_cdnc_opt_out = micro_prescribed_cdnc_opt, &   !XZ
         micro_nccons_land_out = micro_nccons_land, &  !XZ
-        micro_nccons_ocean_out = micro_nccons_ocean )  !XZ
+        micro_nccons_ocean_out = micro_nccons_ocean, &  !XZ
+        micro_so4_cdnc_a1_out = micro_so4_cdnc_a1, &  !XZ
+        micro_so4_cdnc_b1_out = micro_so4_cdnc_b1 )  !XZ
         !!!check namelist for the prescribed CDNC XZ
         if(micro_do_nccons) then
             if(micro_prescribed_cdnc_opt .le. 0) then
@@ -206,6 +209,8 @@ subroutine microp_aero_init
                  call endrun('double check micro_mg_nl')
         endif         
    if(masterproc)write(iulog,*)'!XZ micro_prescribed_cdnc_opt is:', micro_prescribed_cdnc_opt 
+   if(masterproc .and. micro_prescribed_cdnc_opt .eq. 2)write(iulog,*)'!XZ micro_so4_cdnc_a1, micro_so4_cdnc_b1:', micro_so4_cdnc_a1, micro_so4_cdnc_b1
+   if(masterproc .and. micro_prescribed_cdnc_opt .eq. 1)write(iulog,*)'!XZ micro_nccons_land, micro_nccons_ocean:', micro_nccons_land, micro_nccons_ocean
    if(masterproc)write(iulog,*)'DEMOTT is:', dem_in 
 
    ! Access the physical properties of the aerosols that are affecting the climate
@@ -787,7 +792,7 @@ subroutine microp_aero_run ( &
         call t_stopf('lnd_ocean_cdnc')
       elseif (micro_prescribed_cdnc_opt .eq. 2) then !XZ so4-cdnc
         call t_startf('so4_cdnc')
-        call so4_cdnc(state,pbuf,rho,cdncst)
+        call so4_cdnc(state,pbuf,rho,micro_so4_cdnc_a1, micro_so4_cdnc_b1,cdncst)
         call t_stopf('so4_cdnc')
       end if        
 

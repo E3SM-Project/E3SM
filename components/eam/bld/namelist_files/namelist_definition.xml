@@ -2156,6 +2156,18 @@ Default: set by build-namelist
 Default: 0
 </entry>
 
+<entry id="micro_so4_cdnc_a1" type="real" category="microphys"
+       group="phys_ctl_nl" valid_values="" >
+       a1 coefficient in the so4-cdnc relationship (Boucher & Lohmann, 1995 Eq. D) for micro_prescribed_cdnc_opt = 2 
+Default: set by build-namelist
+</entry>
+
+<entry id="micro_so4_cdnc_b1" type="real" category="microphys"
+       group="phys_ctl_nl" valid_values="" >
+       b1 coefficient in the so4-cdnc relationship (Boucher & Lohmann, 1995 Eq. D) for micro_prescribed_cdnc_opt = 2 
+Default: set by build-namelist
+</entry>
+
 <entry id="micro_nicons" type="real" category="microphys"
        group="micro_mg_nl" valid_values="" >
 Ice crystal concentration (in #/cc) when micro_do_nicons=.true.

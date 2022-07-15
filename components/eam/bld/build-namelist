@@ -801,6 +801,10 @@ add_default($nl,'linoz_psc_T');
 if ($cfg->get('microphys') =~ /^mg2/) {
     add_default($nl,'micro_mg_dcs_tdep');
     add_default($nl,'micro_mincdnc');
+    add_default($nl,'micro_nccons_land');
+    add_default($nl,'micro_nccons_ocean');
+    add_default($nl,'micro_so4_cdnc_a1');
+    add_default($nl,'micro_so4_cdnc_b1');
 }
 add_default($nl,'microp_aero_wsub_scheme');
 add_default($nl,'microp_aero_wsubmin');
