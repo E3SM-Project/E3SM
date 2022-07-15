@@ -24,13 +24,13 @@ contains
     ! Arguments
     type(c_ptr),                intent(in)                          :: name  ! constituent name
     integer(kind=c_int), value, intent(in)                          :: ncol  ! number of columns
-    integer(kind=c_int), value, intent(in)                          :: pcols
-    integer(kind=c_int), value, intent(in)                          :: pver
+    integer(kind=c_int), value, intent(in)                          :: pcols ! Maximum number of columns in a chunk (physics data structure)
+    integer(kind=c_int), value, intent(in)                          :: pver  ! PLEV
     real(kind=c_real),          intent(in),  dimension(pcols)       :: clat  ! latitude in radians for columns
     real(kind=c_real),          intent(in),  dimension(pcols,pver)  :: pmid  ! model pressures
     real(kind=c_real),          intent(out), dimension(pcols,pver)  :: q     ! constituent mass mixing ratio
 
-    character(len=256) :: name_f
+    character(len=256), pointer :: name_f
     integer :: len
 
     call c_f_pointer(name, name_f)

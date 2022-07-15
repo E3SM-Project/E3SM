@@ -19,12 +19,13 @@ module scream_trcmix
   save
 
   ! Copied from physconst
-  real(rtype), public, parameter :: mwco2       =  44._rtype             ! molecular weight co2
-  real(rtype), public, parameter :: mwn2o       =  44._rtype             ! molecular weight n2o
-  real(rtype), public, parameter :: mwch4       =  16._rtype             ! molecular weight ch4
-  real(rtype), public, parameter :: mwf11       = 136._rtype             ! molecular weight cfc11
-  real(rtype), public, parameter :: mwf12       = 120._rtype             ! molecular weight cfc12
-  real(rtype), public, parameter :: mwo3        =  48._rtype             ! molecular weight O3
+  real(rtype), public, parameter :: mwdry       = 28.966_rtype ! molecular weight dry air ~ kg/kmole
+  real(rtype), public, parameter :: mwco2       =  44._rtype   ! molecular weight co2
+  real(rtype), public, parameter :: mwn2o       =  44._rtype   ! molecular weight n2o
+  real(rtype), public, parameter :: mwch4       =  16._rtype   ! molecular weight ch4
+  real(rtype), public, parameter :: mwf11       = 136._rtype   ! molecular weight cfc11
+  real(rtype), public, parameter :: mwf12       = 120._rtype   ! molecular weight cfc12
+  real(rtype), public, parameter :: mwo3        =  48._rtype   ! molecular weight O3
   real(rtype), public, parameter :: mwso2       =  64._rtype
   real(rtype), public, parameter :: mwso4       =  96._rtype
   real(rtype), public, parameter :: mwh2o2      =  34._rtype
