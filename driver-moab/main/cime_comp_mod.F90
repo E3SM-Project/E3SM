@@ -2166,7 +2166,7 @@ contains
     !----------------------------------------------------------
 
     if (iamin_CPLID) then
-       call prep_aoflux_init(infodata, fractions_ox, fractions_ax)
+       call prep_aoflux_init(infodata)
     endif
 
     !----------------------------------------------------------

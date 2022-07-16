@@ -1256,6 +1256,7 @@
         <command name="load">subversion/1.14.0-e4smcy3</command>
         <command name="load">perl/5.32.0-bsnc6lt</command>
         <command name="load">cmake/3.19.1-yisciec</command>
+        <command name="load">python/3.8.6-cip7oix</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/20.0.4-kodw73g</command>
