@@ -5,8 +5,6 @@ if (compile_threaded)
   string(APPEND LDFLAGS " -fopenmp")
 endif()
 
-string(APPEND FFLAGS " -O1 -hfp0")
-
 string(APPEND SLIBS " -L$ENV{PNETCDF_PATH}/lib -lpnetcdf")
 set(NETCDF_PATH "$ENV{NETCDF_DIR}")
 set(PNETCDF_PATH "$ENV{PNETCDF_DIR}")
