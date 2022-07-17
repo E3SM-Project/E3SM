@@ -384,6 +384,9 @@ module nudging
 #ifdef SPMD
   use mpishorthand
 #endif
+  !Jinbo Xie
+  use hycoef      ,only: hyam, hybm,ps0,psr
+  !Jinbo Xie
 
   ! Set all Global values and routines to private by default
   ! and then explicitly set their exposure.
@@ -501,7 +504,6 @@ module nudging
   real(r8), allocatable, dimension(:,:,:,:) :: INTP_T       ! (pcols,pver,begchunk:endchunk,:)
   real(r8), allocatable, dimension(:,:,:,:) :: INTP_Q       ! (pcols,pver,begchunk:endchunk,:)
   real(r8), allocatable, dimension(:,:,:)   :: INTP_PS      ! (pcols,begchunk:endchunk,:)
-
 contains
   !================================================================
   subroutine nudging_readnl(nlfile)
@@ -634,10 +636,14 @@ contains
      write(iulog,*) 'NUDGING:  Nudge_Hwin_lon0=',Nudge_Hwin_lon0
      call endrun('nudging_readnl:: ERROR in namelist')
    endif
-
-   if((Nudge_Vwin_Lindex.gt.Nudge_Vwin_Hindex)                         .or. &
-      (Nudge_Vwin_Hindex.gt.float(pver+1)).or.(Nudge_Vwin_Hindex.lt.0.).or. &
-      (Nudge_Vwin_Lindex.gt.float(pver+1)).or.(Nudge_Vwin_Lindex.lt.0.)   ) then
+      
+!Jinbo Xie
+   !if((Nudge_Vwin_Lindex.gt.Nudge_Vwin_Hindex)                         .or. &
+   !  (Nudge_Vwin_Hindex.gt.float(pver+1)).or.(Nudge_Vwin_Hindex.lt.0.).or. &
+   !  (Nudge_Vwin_Lindex.gt.float(pver+1)).or.(Nudge_Vwin_Lindex.lt.0.)   ) then
+   if((Nudge_Vwin_Lindex.gt.Nudge_Vwin_Hindex)   .or. &
+      (Nudge_Vwin_Hindex.lt.0.).or. &
+      (Nudge_Vwin_Lindex.lt.0.)   ) then
      write(iulog,*) 'NUDGING: Window Lindex must be in [0,pver+1]'
      write(iulog,*) 'NUDGING: Window Hindex must be in [0,pver+1]'
      write(iulog,*) 'NUDGING: Lindex must be LE than Hindex'
@@ -2993,6 +2999,9 @@ contains
    integer  ilev
    real(r8) Hcoef,latx,lonx,Vmax,Vmin
    real(r8) lon_lo,lon_hi,lat_lo,lat_hi,lev_lo,lev_hi
+   !Jinbo Xie
+   real(r8) Nudge_hy_vert(nlev)
+   !Jinbo Xie
 
    !---------------
    ! set coeffcient
@@ -3038,11 +3047,32 @@ contains
 
      ! Load the RAW vertical window
      !------------------------------
+!Jinbo Xie set
+if (1.eq.1) then
+     !get the hybrid vertical coordinates
+     do ilev=1,nlev
+     Nudge_hy_vert(ilev) = hyam(ilev)*ps0 + hybm(ilev)*psr
+     enddo
+     Nudge_hy_vert=Nudge_hy_vert/100.
+     !
+     do ilev=12,24!1,10!nlev
+       lev_lo=(Nudge_hy_vert(ilev)-Nudge_Vwin_Lindex)/Nudge_Vwin_Ldelta
+       lev_hi=(Nudge_Vwin_Hindex-Nudge_hy_vert(ilev))/Nudge_Vwin_Hdelta
+       Wprof(ilev)=((1.+tanh(lev_lo))/2.)*((1.+tanh(lev_hi))/2.)
+     end do
+     !write(iulog,*) "Jinbo Xie",Nudge_hy_vert
+     !write(iulog,*) "Jinbo Xie Wprof",Wprof
+     !write(iulog,*) "Jinbo Xie Wprof(12:24)",Wprof(12:24)
+else
+!Jinbo Xie set
      do ilev=1,nlev
        lev_lo=(float(ilev)-Nudge_Vwin_Lindex)/Nudge_Vwin_Ldelta
        lev_hi=(Nudge_Vwin_Hindex-float(ilev))/Nudge_Vwin_Hdelta
        Wprof(ilev)=((1.+tanh(lev_lo))/2.)*((1.+tanh(lev_hi))/2.)
      end do
+end if
+     !Jinbo Xie set
+
 
      ! Scale the Window function to span the values between Vlo and Vhi:
      !-----------------------------------------------------------------
