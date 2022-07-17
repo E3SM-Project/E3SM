@@ -115,8 +115,8 @@ contains
          fclay            =>    soilstate_vars%cellclay_col         , & ! Input: [real(r8) (:,:) ] clay percentage
          fgrvl            =>    soilstate_vars%cellgrvl_col         , & ! Input: [real(r8) (:,:) ] gravel percentage
 
-         tillage          =>    soilstate_vars%tillage_col          , & ! Input: [integer  (:)   ] tillage index
-         litho            =>    soilstate_vars%litho_col            , & ! Input: [integer  (:)   ] lithology index
+         tillage          =>    soilstate_vars%tillage_col          , & ! Input: [real(r8) (:) ] conserved tillage fraction 
+         litho            =>    soilstate_vars%litho_col            , & ! Input: [real(r8) (:) ] lithology erodiblity index
 
          decomp_cpools_vr =>    col_cs%decomp_cpools_vr             , & ! Input: [real(r8) (:,:,:) ] soil carbon pools [gC/m3]
 
