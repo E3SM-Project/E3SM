@@ -8,7 +8,7 @@ use physconst,        only: pi, gravit
 
 use ppgrid,           only: pcols, pver
 use physics_types,    only: physics_state, physics_ptend
-use physics_buffer,   only: physics_buffer_desc, pbuf_get_field
+use physics_buffer,   only: physics_buffer_desc, pbuf_get_field, pbuf_get_index
 
 use phys_control,     only: phys_getopts
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_mmr, rad_cnst_get_aer_props, &
@@ -44,13 +44,15 @@ save
 
 public :: modal_aero_calcsize_init, modal_aero_calcsize_sub, modal_aero_calcsize_diag
 public :: modal_aero_calcsize_reg
-
-
+!kzm ++
+public :: modal_strat_sulfate_aod
+!kzm --
 !Mimic enumerators for aerosol types
 integer, parameter:: inter_aero   = 1 !interstitial aerosols
 integer, parameter:: cld_brn_aero = 2 !cloud borne species
 
 integer :: dgnum_idx = -1 !pbuf id for dgnum
+integer :: so4dryvol_idx = -1 !pbuf id for so4dryvol !kzm++
 
 integer, parameter :: maxpair_csizxf = N_DIAG
 #ifdef MODAL_AERO
@@ -73,7 +75,7 @@ real(r8), parameter :: r8_huge = huge(1.0_r8)
 integer, parameter :: npair_csizxf = N_DIAG           !total number of possible diagnostic calls
 
 logical :: do_adjust_allowed                          !flag to turn on/off  aerosol size adjustment process
-
+logical :: modal_strat_sulfate_aod = .true.           !kzm !flag to turn on/off stratospheric H2SO4 AOD treatment
 !flag to turn on/off  aerosol aitken<->accumulation transfer process
 logical :: do_aitacc_transfer_allowed(0:npair_csizxf) ! This is an array as it can be different for each radiatio diagnostic call
 
@@ -131,7 +133,12 @@ subroutine modal_aero_calcsize_reg()
 
   !register dgnum field
   call pbuf_add_field('DGNUM', 'global',  dtype_r8, (/pcols, pver, nmodes/), dgnum_idx)
-
+  !kzm ++
+   !if (modal_strat_sulfate_aod) then
+      !write(iulog,*)'kzm_wateruptake_reg_1'
+      call pbuf_add_field('SO4DRYVOL', 'global',  dtype_r8, (/pcols, pver, nmodes/), so4dryvol_idx)
+      ! write(iulog,*)'kzm_wateruptake_reg_2'
+   !end if
 end subroutine modal_aero_calcsize_reg
 
 !===============================================================================
@@ -185,6 +192,7 @@ subroutine modal_aero_calcsize_init( pbuf2d, species_class)
    if (is_first_step()) then ! bsingh- Do we need this conditional in a init routine?
       ! initialize fields in physics buffer
       call pbuf_set_field(pbuf2d, dgnum_idx, 0.0_r8)
+      call pbuf_set_field(pbuf2d, so4dryvol_idx, 0.0_r8) !kzm
    endif
 
    !initialize
@@ -837,7 +845,11 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
 
    endif!if(update_mmr)
 #endif
-
+   !kzm++
+   if (modal_strat_sulfate_aod) then
+      call modal_aero_calcdry(state, pbuf)  !kzm
+   endif
+   !kzm --
 return
 end subroutine modal_aero_calcsize_sub
 
@@ -2217,8 +2229,204 @@ subroutine modal_aero_calcsize_diag(state, pbuf, list_idx_in, dgnum_m)
 
    end do ! nmodes
 
+  !kzm ++
+   if (modal_strat_sulfate_aod) then
+      call modal_aero_calcdry(state, pbuf, list_idx_in)!kzm: to calculate so4dryvol
+   end if
+!kzm -- 
 end subroutine modal_aero_calcsize_diag
 
 !----------------------------------------------------------------------
+!----------------------------------------------------------------------
+!kzm ++
+subroutine modal_aero_calcdry(state, pbuf, list_idx_in)
+!kzm notes:
+!dgnumdry from modal_aero_calcsize_diag
+!hygro calculated in this sub
+!dryvol,dryrad, drymass calculated in this sub
+!so4dryvol calculated in this sub and passed to pbuf
+
+   type(physics_state), target, intent(in)    :: state       ! Physics state variables
+   type(physics_buffer_desc),   pointer       :: pbuf(:)     ! physics buffer
+   integer,  optional, intent(in)             :: list_idx_in ! diagnostic list index
+   !real(r8), optional,          pointer       :: dgnumdry_m(:,:,:)
+   !real(r8), optional,          pointer       :: hygro_m(:,:,:)
+   !real(r8), optional,          pointer       :: dryvol_m(:,:,:)
+   !real(r8), optional,          pointer       :: dryrad_m(:,:,:)
+   !real(r8), optional,          pointer       :: drymass_m(:,:,:)
+   !real(r8), optional, target, allocatable, intent(inout)  :: dgnum_m(:,:,:) ! interstital aerosol dry number mode radius (m)
+   !real(r8), pointer       :: so4dryvol(:,:,:)
+   !real(r8), optional,          pointer       :: naer_m(:,:,:)
+
+   real(r8), parameter :: third = 1._r8/3._r8
+   real(r8), parameter :: pi43  = pi*4.0_r8/3.0_r8
+
+   !real(r8), pointer :: hygro(:,:,:)     ! volume-weighted mean hygroscopicity (--)
+   !real(r8), pointer :: dryvol(:,:,:)    ! single-particle-mean dry volume (m3)
+   !real(r8), pointer :: dryrad(:,:,:)    ! dry volume mean radius of aerosol (m)
+   !real(r8), pointer :: drymass(:,:,:)   ! single-particle-mean dry mass  (kg)
+   real(r8), pointer :: so4dryvol(:,:,:) ! single-particle-mean so4 dry volume (m3)
+   !real(r8), pointer :: naer(:,:,:)      ! aerosol number MR (bounded!) (#/kg-air)
+   real(r8), allocatable :: hygro_local(:,:,:)     ! volume-weighted mean hygroscopicity (--)
+   !real(r8), allocatable :: so4dryvol(:,:,:) ! single-particle-mean so4 dry volume (m3)
+   real(r8), allocatable :: dryvol_local(:,:,:)    ! single-particle-mean dry volume (m3)
+   real(r8), allocatable :: dryrad_local(:,:,:)    ! dry volume mean radius of aerosol (m)
+   real(r8), allocatable :: drymass_local(:,:,:)   ! single-particle-mean dry mass  (kg)
+   real(r8), allocatable :: maer_local(:,:)   !
+
+
+
+   real(r8), pointer :: dgncur_a(:,:,:)
+   real(r8), pointer :: raer(:,:)   ! aerosol species MRs (kg/kg and #/kg)
+
+   !real(r8), pointer :: sulfeq(:,:,:) ! H2SO4 equilibrium mixing ratios over particles (mol/mol)
+
+   real(r8) :: dryvolmr(pcols,pver)          ! volume MR for aerosol mode (m3/kg)
+   real(r8) :: so4dryvolmr(pcols,pver)       ! volume MR for sulfate aerosol in mode (m3/kg)
+
+   real(r8) :: specdens
+   real(r8) :: spechygro, spechygro_1
+   real(r8) :: sigmag
+   real(r8) :: duma, dumb
+   real(r8) :: alnsg
+
+   real(r8) :: v2ncur_a
+   real(r8) :: drydens               ! dry particle density  (kg/m^3)
+
+   character(len=fieldname_len+3) :: fieldname
+   character(len=32) :: spectype
+
+   integer :: nmodes, lchnk, ncol, list_idx, i, k, l, m
+   integer :: nspec
+   !integer :: so4dryvol_idx !kzm++
+   lchnk = state%lchnk
+   ncol = state%ncol
+   list_idx = 0
+   if (present(list_idx_in)) then
+      list_idx = list_idx_in
+
+     ! ! check that all optional args are present
+     ! if (.not. present(dgnumd_m)) then
+     !    call endrun('modal_aero_calcdry called for'// &
+     !                'diagnostic list but required args not present')
+     ! end if
+
+     ! ! arrays for diagnostic calculations must be associated
+     !if (.not. associated(dgnum_m)) then
+     !    call endrun('modal_aero_calcdry called for'// &
+     !                'diagnostic list but required args not associated')
+     ! end if
+   end if
+
+   ! loop over all aerosol modes
+   so4dryvol_idx = pbuf_get_index('SO4DRYVOL') !kzm++
+   call pbuf_get_field(pbuf, dgnum_idx,     dgncur_a ) !kzm++
+   call pbuf_get_field(pbuf, so4dryvol_idx, so4dryvol) !kzm++
+
+   call rad_cnst_get_info(list_idx, nmodes=nmodes)
+!kzm notes: avoid conflict with OMP parallel
+!maer(pcols,pver,nmodes), hygro(pcols,pver,nmodes), naer(pcols,pver,nmodes), dryvol(pcols,pver,nmodes),
+!drymass(pcols,pver,nmodes), dryrad(pcols,pver,nmodes)
+!kzm ++
+   allocate( maer_local(pcols,pver))
+   allocate( hygro_local(pcols,pver,nmodes))
+   allocate( dryvol_local(pcols,pver,nmodes))
+   allocate( dryrad_local(pcols,pver,nmodes))
+   allocate( drymass_local(pcols,pver,nmodes))
+   hygro_local(:,:,:)     = 0._r8
+   !so4dryvol(:,:,:) = 0._r8
+   dryvol_local(:,:,:)    = 0._r8 !kzm++
+   dryrad_local(:,:,:)    = 0._r8 !kzm++
+   drymass_local(:,:,:)    = 0._r8 !kzm++
+   
+      do m = 1, nmodes
+
+      maer_local(:,:)      = 0._r8
+      dryvolmr(:,:) = 0._r8
+      so4dryvolmr(:,:) = 0._r8
+
+      ! get mode properties
+      call rad_cnst_get_mode_props(list_idx, m, sigmag=sigmag)
+
+      ! get mode info
+      call rad_cnst_get_info(list_idx, m, nspec=nspec)
+
+      do l = 1, nspec
+
+         ! get species interstitial mixing ratio ('a')
+         call rad_cnst_get_aer_mmr(list_idx, m, l, 'a', state, pbuf, raer)
+         call rad_cnst_get_aer_props(list_idx, m, l, density_aer=specdens, &
+                                     hygro_aer=spechygro, spectype=spectype)
+
+         if (l == 1) then
+            ! save off these values to be used as defaults
+            spechygro_1    = spechygro
+         end if
+
+         do k = top_lev, pver
+            do i = 1, ncol
+               duma          = raer(i,k)     ! kg/kg air
+               maer_local(i,k)     = maer_local(i,k) + duma
+               dumb          = duma/specdens ! m3/kg air
+               dryvolmr(i,k) = dryvolmr(i,k) + dumb
+               !if (modal_strat_sulfate .and. (trim(spectype).eq.'sulfate')) then
+                  so4dryvolmr(i,k) = so4dryvolmr(i,k) + dumb
+               !end if
+               hygro_local(i,k,m)  = hygro_local(i,k,m) + dumb*spechygro
+            end do
+         end do
+      end do
+
+
+      alnsg = log(sigmag)
+      do k = top_lev, pver
+         do i = 1, ncol
+
+            if (dryvolmr(i,k) > 1.0e-30_r8) then
+               hygro_local(i,k,m) = hygro_local(i,k,m)/dryvolmr(i,k)
+            else
+               hygro_local(i,k,m) = spechygro_1
+            end if
+
+            ! dry aerosol properties
+
+            v2ncur_a = 1._r8 / ( (pi/6._r8)*(dgncur_a(i,k,m)**3._r8)*exp(4.5_r8*alnsg**2._r8) )
+            ! naer = aerosol number (#/kg)
+            ! naer(i,k,m) = dryvolmr(i,k)*v2ncur_a
+
+            ! compute mean (1 particle) dry volume and mass for each mode
+            ! old coding is replaced because the new (1/v2ncur_a) is equal to
+            ! the mean particle volume
+            ! also moletomass forces maer >= 1.0e-30, so (maer/dryvolmr)
+            ! should never cause problems (but check for maer < 1.0e-31 anyway)
+            if (maer_local(i,k) .gt. 1.0e-31_r8) then
+               drydens = maer_local(i,k)/dryvolmr(i,k)        ! kg/m3 aerosol
+            else
+               drydens = 1.0_r8
+            end if
+            dryvol_local(i,k,m)   = 1.0_r8/v2ncur_a             ! m3/particle
+            drymass_local(i,k,m)  = drydens*dryvol_local(i,k,m)       ! kg/particle
+            dryrad_local(i,k,m)   = (dryvol_local(i,k,m)/pi43)**third ! m
+         end do    ! i = 1, ncol
+      end do    ! k = top_lev, pver
+
+         do k = top_lev, pver
+            do i = 1, ncol
+               if (so4dryvolmr(i,k) .gt. 1.0e-31_r8) then
+                  so4dryvol(i,k,m) = dryvol_local(i,k,m)*so4dryvolmr(i,k)/dryvolmr(i,k)
+               else
+                  so4dryvol(i,k,m) = 0.0_r8
+               end if
+
+            end do    ! i = 1, ncol
+         end do    ! k = top_lev, pver
+
+
+   end do    ! m = 1, nmodes
+ 
+
+
+   end subroutine modal_aero_calcdry
+!kzm --
 
 end module modal_aero_calcsize
