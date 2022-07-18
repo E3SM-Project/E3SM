@@ -27,15 +27,12 @@
 
 ! !PUBLIC MEMBER FUNCTIONS:
   public modal_aero_amicphys_intr, modal_aero_amicphys_init
-#if ( defined MOSAIC_SPECIES )
-  public mam_amicphys_check_mosaic_mw
-#endif
 
 ! !PUBLIC DATA MEMBERS:
   type :: misc_vars_aa_type
 ! using this derived type reduces the number of changes needed to add more mosaic diagnostics to history
      real(r8) :: ncluster_tend_nnuc_1grid
-#if ( defined MOSAIC_SPECIES )
+#if ( defined( MOSAIC_SPECIES ) )
      real(r8) :: cnvrg_fail_1grid
      real(r8) :: max_kelvin_iter_1grid
      real(r8), dimension(5,4) :: xnerr_astem_negative_1grid
@@ -55,14 +52,6 @@
 !    --> 1 mol so4(+nh4)  = 65 cm^3 --> 1 molecule = (4.76e-10 m)^3
 ! aging criterion is approximate so do not try to distinguish
 !    sulfuric acid, bisulfate, ammonium sulfate
-
-#if ( defined MOSAIC_SPECIES )
-  real(r8), public :: hygro_bc  = 0.0_r8
-  real(r8), public :: hygro_pom = 0.0_r8
-  real(r8), public :: hygro_mom = 0.0_r8
-  real(r8), public :: hygro_soa = 0.0_r8
-  real(r8), public :: hygro_dst = 0.0_r8
-#endif
 
 #if ( defined( CAMBOX_ACTIVATE_THIS ) )
   integer, public :: cldy_rh_sameas_clear = 0
@@ -107,14 +96,16 @@
   integer, parameter :: max_gas = nsoa + 1
   ! the +3 in max_aer are dst, ncl, so4
   integer, parameter :: max_aer = nsoa + npoa + nbc + 3
-#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
-  integer, parameter :: max_gas = nsoa + 4
-  ! the +9 in max_aer are dst, ncl, so4, mom, nh4, no3, cl, ca, co3
-  integer, parameter :: max_aer = nsoa + npoa + nbc + 9  
-#elif ( defined MODAL_AERO_4MODE_MOM )
+!kzm++  
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE)
   integer, parameter :: max_gas = nsoa + 1
   ! the +4 in max_aer are dst, ncl, so4, mom
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4
+  logical, parameter :: kzm_nucleation_switch = .true.
+  logical, parameter :: kzm_coag_switch = .true.
+  logical, parameter :: kzm_renaming_switch = .true.
+
+!kzm--  
 #elif ( ( defined MODAL_AERO_7MODE ) && ( defined MOSAIC_SPECIES ) )
   integer, parameter :: max_gas = nsoa + 4
   ! the +8 in max_aer are dst, ncl(=na), so4, no3, cl, nh4, ca, co3 
@@ -135,6 +126,10 @@
 
 #if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ))
   integer, parameter :: ntot_amode_extd = ntot_amode
+!kzm ++
+#elif (defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE)
+  integer, parameter :: ntot_amode_extd = ntot_amode
+!kzm --  
 #else
   integer, parameter :: ntot_amode_extd = ntot_amode + 1
 ! integer, parameter :: ntot_amode_extd = ntot_amode
@@ -236,14 +231,14 @@
   logical :: do_q_coltendaa(gas_pcnst,nqtendaa) = .false.
   logical :: do_qqcw_coltendaa(gas_pcnst,nqqcwtendaa) = .false.
 
-! ++MW
-  integer, parameter :: bigint = huge(1)
-! --MW
-
 ! *** following 3 variables should eventually be in modal_aero_data
   real(r8) :: specmw2_amode(ntot_aspectype,ntot_amode)
   real(r8) :: specdens2_amode(ntot_aspectype,ntot_amode)
   real(r8) :: spechygro2(ntot_aspectype,ntot_amode)
+
+  !kzm ++
+  integer :: nslt1, nslt2, nslt3, ncrsf
+  !kzm --
 
 
 ! !DESCRIPTION: This module implements ...
@@ -285,24 +280,23 @@ subroutine modal_aero_amicphys_intr(                             &
 #endif
                         dgncur_a,           dgncur_awet,         &
                         wetdens_host,                            &
+                        troplev,                                 & !kzm++
                         qaerwat                                  )
 
 
 ! !USES:
 use cam_history,       only:  outfld, fieldname_len
 use chem_mods,         only:  adv_mass
-use constituents,      only:  pcnst, cnst_name
+use constituents,      only:  cnst_name
 use physconst,         only:  gravit, mwdry, r_universal
 use wv_saturation,     only:  qsat
 use phys_control,      only:  phys_getopts
 
-use modal_aero_data,   only:  cnst_name_cw, &
-                              lmassptr_amode, lmassptrcw_amode, lptr2_soa_g_amode, &
-#if ( defined MOSAIC_SPECIES )
-                              mosaic_gaex_prodloss3d, mosaic_gaex_prodloss3d_ga, &
-#endif
-                              nspec_amode, &
-                              numptr_amode, numptrcw_amode
+use modal_aero_data,   only:  &
+    cnst_name_cw, &
+    lmassptr_amode, lmassptrcw_amode, lptr2_soa_g_amode, &
+    nspec_amode, &
+    numptr_amode, numptrcw_amode
 use modal_aero_newnuc, only:  adjust_factor_pbl_ratenucl
 
 
@@ -315,6 +309,7 @@ implicit none
    integer,  intent(in)    :: nstep                ! model time-step number
    integer,  intent(in)    :: loffset              ! offset applied to modal aero "ptrs"
    integer,  intent(in)    :: latndx(pcols), lonndx(pcols)
+   integer,  intent(in)    :: troplev(pcols)   !kzm ++ tropopause level
 #if ( defined( CAMBOX_ACTIVATE_THIS ) )
    integer,  intent(in)    :: nqtendbb             ! dimension for q_tendbb
    integer,  intent(in)    :: nqqcwtendbb          ! dimension for qqcw_tendbb
@@ -430,15 +425,6 @@ implicit none
       real(r8) :: tmp_q1, tmp_q2, tmp_q3, tmp_q4, tmp_q5, tmp_qdot4
       real(r8) :: wetdens(max_mode)
 
-! ++MW
-      real(r8) :: pH_valid(pcols,pver,ntot_amode)        ! pH_output
-      real(r8) :: fhplus(pcols,pver,ntot_amode)          ! fhplus
-      real(r8) :: hplus_valid(pcols,pver,ntot_amode)     ! mhplus
-      real(r8) :: awater_valid(pcols,pver,ntot_amode)    !
-
-      real(r8) :: Hconc_sav(max_mode)
-      real(r8) :: awater(max_mode)
-! --MW
 
 ! qgcmN and qqcwgcmN (N=1:4) are grid-cell mean tracer mixing ratios (TMRs, mol/mol or #/kmol)
 !    N=1 - before gas-phase chemistry
@@ -477,12 +463,10 @@ implicit none
       real(r8), dimension( 1:pcols, 1:gas_pcnst, 1:nqqcwtendaa ) :: &
          qqcw_coltendaa
 
-#if ( defined MOSAIC_SPECIES )
+#if ( defined( MOSAIC_SPECIES ) )
       real(r8) :: cnvrg_fail(pcols,pver) !BSINGH -  For tracking MOSAIC convergence failures
       real(r8) :: max_kelvin_iter(pcols,pver)  !BSINGH -  For tracking when max is hit for kelvin iterations
       real(r8) :: xnerr_astem_negative(pcols,pver,5,4)
-      real(r8), dimension( 1:ncol, 1:pver, 1:gas_pcnst ) :: q_condtend_ikl
-      real(r8), dimension( 1:ncol, 1:pver ) :: tmpa_ik
 #endif
 
       type ( misc_vars_aa_type ) :: misc_vars_aa
@@ -524,20 +508,11 @@ implicit none
       q_tendbb = 0.0_r8 ; qqcw_tendbb = 0.0_r8
 #endif
 
-#if ( defined MOSAIC_SPECIES )
+#if ( defined( MOSAIC_SPECIES ) )
       cnvrg_fail(1:pcols,1:pver) = 0.0_r8
       max_kelvin_iter(1:pcols,1:pver)  = 0.0_r8
       xnerr_astem_negative(1:pcols,1:pver,1:5,1:4) = 0.0_r8
-      if (mosaic_gaex_prodloss3d > 0) q_condtend_ikl(1:ncol,1:pver,1:gas_pcnst) = 0.0_r8
 #endif
-
-! ++MW
-      ! dsj+zlu initialize pH calculation
-      pH_valid = 0.0_r8
-      fhplus = 0.0_r8
-      hplus_valid = 0.0_r8
-      awater_valid = 0.0_r8
-! --MW
 
 ! turn off history selectively for comparison with dd06f
       if ( (.not. do_cond) .and. (.not. do_rename) ) then
@@ -908,7 +883,7 @@ main_i_loop: &
       end do
 
       misc_vars_aa%ncluster_tend_nnuc_1grid = ncluster_3dtend_nnuc(i,k)
-#if ( defined  MOSAIC_SPECIES )
+#if ( defined ( MOSAIC_SPECIES ) )
       misc_vars_aa%cnvrg_fail_1grid = cnvrg_fail(i,k)
       misc_vars_aa%max_kelvin_iter_1grid = max_kelvin_iter(i,k)
       misc_vars_aa%xnerr_astem_negative_1grid(1:5,1:4) = xnerr_astem_negative(pcols,pver,1:5,1:4)
@@ -934,7 +909,6 @@ main_i_loop: &
 !        qsub4, qqcwsub4,                         &
 !        qsub_tendaa, qqcwsub_tendaa              )
 
-! ++MW
       call mam_amicphys_1gridcell(                &
          do_cond,             do_rename,          &
          do_newnuc,           do_coag,            &
@@ -951,8 +925,9 @@ main_i_loop: &
          qsub3, qqcwsub3, qaerwatsub3,            &
          qsub4, qqcwsub4, qaerwatsub4,            &
          qsub_tendaa, qqcwsub_tendaa,             &
-         misc_vars_aa, Hconc_sav, awater         ) ! to save aerosol pH (dsj+zlu)
-! --MW
+         misc_vars_aa,                            &
+          troplev(i)                             )    !kzm ++ 
+
 
 !
 ! form new grid-mean mix-ratios
@@ -1077,33 +1052,10 @@ main_i_loop: &
 
 
       ncluster_3dtend_nnuc(i,k) = misc_vars_aa%ncluster_tend_nnuc_1grid
-#if ( defined MOSAIC_SPECIES )
+#if ( defined ( MOSAIC_SPECIES ) )
       cnvrg_fail(i,k) = misc_vars_aa%cnvrg_fail_1grid 
       max_kelvin_iter(i,k) = misc_vars_aa%max_kelvin_iter_1grid 
       xnerr_astem_negative(pcols,pver,1:5,1:4) = misc_vars_aa%xnerr_astem_negative_1grid(1:5,1:4)
-
-      if (mosaic_gaex_prodloss3d > 0) then
-         do l = 1, pcnst-loffset   ! skip any species for which l > pcnst-loffset
-            if (mosaic_gaex_prodloss3d_ga(l+loffset) > 0) then
-               q_condtend_ikl(i,k,l) = qgcm_tendaa(l,iqtend_cond)
-            end if
-         end do ! l
-      end if
-
-      ! to save aerosol pH (dsj+zlu)
-      do n = 1, ntot_amode
-         if ( Hconc_sav(n) .gt. 0.0_r8 ) then
-           fhplus(i,k,n) = 1.0_r8
-           hplus_valid(i,k,n) = Hconc_sav(n)
-           pH_valid(i,k,n) = MIN(14.0_r8, MAX(-3.0_r8, -log10(Hconc_sav(n)) ))
-           awater_valid(i,k,n) = awater(n)
-         else if ( Hconc_sav(n) .eq. 0.0_r8 ) then
-           fhplus(i,k,n) = 0.0_r8
-           hplus_valid(i,k,n) = 0.0_r8
-           pH_valid(i,k,n) = 0.0_r8
-           awater_valid(i,k,n) = 0.0_r8
-         end if
-     end do
 #endif
 
       end do main_i_loop
@@ -1161,7 +1113,7 @@ main_i_loop: &
 
       end do ! ipass
 
-#if ( defined MOSAIC_SPECIES )
+#if ( defined( MOSAIC_SPECIES ) )
       if ( mosaic ) then
          !BSINGH - output MOSAIC convergence fail tracking:
          call outfld( 'convergence_fail', cnvrg_fail(1:ncol,:), ncol, lchnk )
@@ -1174,39 +1126,7 @@ main_i_loop: &
             call outfld( fieldname, xnerr_astem_negative(1:ncol,1:pver,m,n), ncol, lchnk )
          end do
          end do
-
-         ! to save aerosol pH (dsj+zlu)
-         do n = 1, ntot_amode
-            fieldname = ' '
-            write( fieldname(1:14), '(a,i1)') 'pH_valid_bin_', n
-            call outfld( fieldname, pH_valid(1:ncol,:,n), ncol, lchnk )
-
-            fieldname = ' '
-            write( fieldname(1:12), '(a,i1)') 'fhplus_bin_', n
-            call outfld( fieldname, fhplus(1:ncol,:,n), ncol, lchnk )
-
-            fieldname = ' '
-            write( fieldname(1:17), '(a,i1)') 'Hplus_valid_bin_', n
-            call outfld( fieldname, hplus_valid(1:ncol,:,n), ncol, lchnk )
-
-            fieldname = ' '
-            write( fieldname(1:21), '(a,i1)') 'Aer_water_valid_bin_', n
-            call outfld( fieldname, awater_valid(1:ncol,:,n), ncol, lchnk )
-         end do
       end if
-      
-      if (mosaic_gaex_prodloss3d > 0) then
-         do l = 1, pcnst-loffset   ! skip any species for which l > pcnst-loffset
-            if (mosaic_gaex_prodloss3d_ga(l+loffset) > 0) then
-               tmpa_ik(1:ncol,1:pver) = max( q_condtend_ikl(1:ncol,1:pver,l), 0.0 ) * (adv_mass(l)/mwdry)
-               fieldname = trim(cnst_name(l+loffset)) // '_gaex_prod3d'
-               call outfld( fieldname, tmpa_ik, ncol, lchnk )
-               tmpa_ik(1:ncol,1:pver) = min( q_condtend_ikl(1:ncol,1:pver,l), 0.0 ) * (adv_mass(l)/mwdry)
-               fieldname = trim(cnst_name(l+loffset)) // '_gaex_loss3d'
-               call outfld( fieldname, tmpa_ik, ncol, lchnk )
-            end if
-         end do ! l
-       end if
 #endif
 
       return
@@ -1216,7 +1136,6 @@ main_i_loop: &
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
-! ++MW
       subroutine mam_amicphys_1gridcell(          &
          do_cond,            do_rename,           &
          do_newnuc,          do_coag,             &
@@ -1233,9 +1152,8 @@ main_i_loop: &
          qsub3, qqcwsub3, qaerwatsub3,            &
          qsub4, qqcwsub4, qaerwatsub4,            &
          qsub_tendaa, qqcwsub_tendaa,             &
-         misc_vars_aa, Hconc_sav, awater         ) ! to save aerosol pH (dsj+zlu)
-! --MW
-
+         misc_vars_aa,                            &
+         troplev_i)                               !kzm++
 !
 ! calculates changes to gas and aerosol sub-area TMRs (tracer mixing ratios)
 !    for the current grid cell (with indices = lchnk,i,k)
@@ -1252,6 +1170,7 @@ main_i_loop: &
       integer,  intent(in)    :: lund                  ! logical unit for diagnostic output
       integer,  intent(in)    :: loffset
       integer,  intent(in)    :: nsubarea, ncldy_subarea
+      integer,  intent(in)    ::  troplev_i   !kzm ++ tropopause level
 
       real(r8), intent(in)    :: deltat                ! time step (s)
       real(r8), intent(in)    :: afracsub(maxsubarea)   ! sub-area fractional area (0-1)
@@ -1268,7 +1187,6 @@ main_i_loop: &
       real(r8), intent(inout) :: wetdens(max_mode)
                                     ! interstitial aerosol wet density (kg/m3)
                                     ! dry & wet geo. mean dia. (m) of number distrib.
-
 ! qsubN and qqcwsubN (N=1:4) are tracer mixing ratios (TMRs, mol/mol or #/kmol) in sub-areas
 !    currently there are just clear and cloudy sub-areas
 !    the N=1:4 have same meanings as for qgcmN
@@ -1291,11 +1209,6 @@ main_i_loop: &
       real(r8), intent(inout), dimension( 1:gas_pcnst, 1:nqqcwtendaa, 1:maxsubarea ) :: &
          qqcwsub_tendaa
       type ( misc_vars_aa_type ), intent(inout) :: misc_vars_aa
-! ++MW
-      ! to save aerosol pH (dsj+zlu)
-      real(r8), intent(inout) :: Hconc_sav(1:max_mode)
-      real(r8), intent(inout) :: awater(1:max_mode)
-! --MW
 
 ! local
       integer :: iaer, igas
@@ -1431,7 +1344,7 @@ main_jsub_loop: &
 
 
       if ( iscldy_subarea(jsub) .eqv. .true. ) then
-! ++MW
+
       call mam_amicphys_1subarea_cloudy(             &
          do_cond_sub,            do_rename_sub,      &
          do_newnuc_sub,          do_coag_sub,        &
@@ -1454,12 +1367,11 @@ main_jsub_loop: &
          qnumcw_delaa,                               &
          qaercw2,    qaercw3,    qaercw4,            &
          qaercw_delaa,                               &
-         misc_vars_aa_sub(jsub), Hconc_sav , awater  ) ! to save aerosol pH (dsj+zlu)
-! --MW
+         misc_vars_aa_sub(jsub),                     &
+         troplev_i         )                       !kzm++
 
       else
 
-! ++MW
       call mam_amicphys_1subarea_clear(              &
          do_cond_sub,            do_rename_sub,      &
          do_newnuc_sub,          do_coag_sub,        &
@@ -1476,15 +1388,15 @@ main_jsub_loop: &
          qnum3,      qnum4,      qnum_delaa,         &
          qaer3,      qaer4,      qaer_delaa,         &
          qwtr3,      qwtr4,                          &
-         misc_vars_aa_sub(jsub), Hconc_sav , awater  ) ! to save aerosol pH (dsj+zlu)
-! --MW
+         misc_vars_aa_sub(jsub),                     &
+         troplev_i )       !kzm++
 
       end if
 
       if ((nsubarea == 1) .or. (iscldy_subarea(jsub) .eqv. .false.)) then
          misc_vars_aa%ncluster_tend_nnuc_1grid = misc_vars_aa%ncluster_tend_nnuc_1grid &
                                                + misc_vars_aa_sub(jsub)%ncluster_tend_nnuc_1grid*afracsub(jsub)
-#if ( defined MOSAIC_SPECIES )
+#if ( defined ( MOSAIC_SPECIES ) )
          misc_vars_aa%cnvrg_fail_1grid      = misc_vars_aa_sub(jsub)%cnvrg_fail_1grid 
          misc_vars_aa%max_kelvin_iter_1grid = misc_vars_aa_sub(jsub)%max_kelvin_iter_1grid 
          misc_vars_aa%xnerr_astem_negative_1grid(1:5,1:4) = misc_vars_aa_sub(jsub)%xnerr_astem_negative_1grid(1:5,1:4)
@@ -1541,7 +1453,6 @@ main_jsub_loop: &
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
-! ++MW
       subroutine mam_amicphys_1subarea_cloudy(       &
          do_cond,                do_rename,          &
          do_newnuc,              do_coag,            &
@@ -1564,9 +1475,8 @@ main_jsub_loop: &
          qnumcw_delaa,                               &
          qaercw2,    qaercw3,    qaercw4,            &
          qaercw_delaa,                               &
-         misc_vars_aa_sub, Hconc_sav, awater        ) ! to save aerosol pH (dsj+zlu)
-! --MW
-
+         misc_vars_aa_sub,                           &
+         troplev_i)                                  !kzm
 !
 ! calculates changes to gas and aerosol sub-area TMRs (tracer mixing ratios)
 !    for a single cloudy sub-area (with indices = lchnk,i,k,jsub)
@@ -1584,10 +1494,10 @@ main_jsub_loop: &
 !    new particle nucleation - because h2so4 gas conc. should be very low in cloudy air
 !    coagulation - because cloud-borne aerosol would need to be included
 !
-! ++MW
-      use physconst, only:  r_universal, mwh2o !dsj+zlu
-! --MW
-
+      use physconst, only:  r_universal
+      !kzm ++
+      use time_manager,  only: is_first_step
+      !kzm --
       logical,  intent(in)    :: do_cond, do_rename, do_newnuc, do_coag
       logical,  intent(in)    :: iscldy_subarea        ! true if sub-area is cloudy
       integer,  intent(in)    :: lchnk                 ! chunk identifier
@@ -1597,6 +1507,7 @@ main_jsub_loop: &
       integer,  intent(in)    :: lund                  ! logical unit for diagnostic output
       integer,  intent(in)    :: loffset
       integer,  intent(in)    :: jsub, nsubarea        ! sub-area index, number of sub-areas
+      integer,  intent(in)    :: troplev_i !kzm++
 
       real(r8), intent(in)    :: afracsub              ! fractional area of sub-area (0-1)
       real(r8), intent(in)    :: deltat                ! time step (s)
@@ -1670,12 +1581,6 @@ main_jsub_loop: &
          qaercw_delaa
 
       type ( misc_vars_aa_type ), intent(inout) :: misc_vars_aa_sub
-
-! ++MW
-      ! to save aerosol pH (dsj+zlu)
-      real(r8), intent(inout) :: Hconc_sav(1:max_mode)
-      real(r8), intent(inout) :: awater(1:max_mode)
-! --MW
 
 ! local
       integer, parameter :: ntot_poaspec = npoa
@@ -1751,7 +1656,10 @@ main_jsub_loop: &
       real(r8) :: tmp_relhum
       real(r8) :: uptkaer(max_gas,max_mode)
       real(r8) :: uptkrate_h2so4
-
+!kzm ++
+      logical:: strat_sulfate_xfer
+      strat_sulfate_xfer = .false.
+!kzm --
 
 
 ! air molar density (kmol/m3)
@@ -1840,7 +1748,7 @@ do_cond_if_block10: &
       qnum_sv1 = qnum_cur
       qaer_sv1 = qaer_cur
 
-#if ( defined MOSAIC_SPECIES )
+#if ( defined( MOSAIC_SPECIES ) )
       if ( mosaic ) then
          tmp_relhum = min( relhum, 0.98_r8 )
          call mosaic_gasaerexch_1subarea_intr(     nstep,                &!Intent(ins)
@@ -1850,12 +1758,7 @@ do_cond_if_block10: &
               dgn_a,             dgn_awet,         qaer_cur,             &!Intent(inouts)
               qgas_cur,          qnum_cur,         qwtr_cur,             &
               qgas_avg,          qgas_netprod_otrproc,                   &
-              uptkrate_h2so4,    misc_vars_aa_sub, Hconc_sav             ) ! to save aerosol pH (dsj+zlu)
-
-! pH dsj+zlu
-! output water_a here before rename and aging
-         awater(:)=qwtr_cur(:)*  mwh2o * aircon
-
+              uptkrate_h2so4,    misc_vars_aa_sub                        )
       else
 #endif
          call mam_gasaerexch_1subarea(                                &
@@ -1873,7 +1776,7 @@ do_cond_if_block10: &
            qwtr_cur,                                                  &
            dgn_a,             dgn_awet,         wetdens,              &
            uptkaer,           uptkrate_h2so4                          )
-#if ( defined MOSAIC_SPECIES )
+#if ( defined( MOSAIC_SPECIES ) )
       end if
 #endif
 
@@ -1912,6 +1815,32 @@ do_rename_if_block30: &
 
       mtoo_renamexf(:) = 0
       mtoo_renamexf(nait) = nacc
+!kzm ++
+
+       strat_sulfate_xfer = .false.
+      if (kzm_renaming_switch .and. (k <= troplev_i ) .and. (ntot_amode==7) .and. (nslt1 > 0)) then !kzm kzm_renaming_switch 2
+          mtoo_renamexf(nslt1) = nslt2  !kzm rename mark nslt1 --> nslt2
+          mtoo_renamexf(nslt2) = nslt3  !kzm rename mark nslt2 --> nslt3
+          mtoo_renamexf(nacc) = nslt3  !kzm rename mark nacc --> nslt3
+          !mtoo_renamexf(nslt3) = nslt2  !kzm rename shrink nslt3 --> nslt2
+          strat_sulfate_xfer = .true.
+          !write(iulog,*)'kzm_strat_sulfate_xfer_mam7 ', strat_sulfate_xfer
+          if (is_first_step()) then
+             write(iulog,*)'kzm_strat_sulfate_renaming_mam7S_activated'
+          end if
+      endif
+      if (kzm_renaming_switch .and. (k <= troplev_i ) .and. (ntot_amode==5) .and. (ncrsf > 0)) then
+          mtoo_renamexf(nacc) = ncrsf !kzm reanme acc --> strat coarse
+          !mtoo_renamexf(ncrsf) = nacc !kzm reanme shrink ncrsf --> acc
+          strat_sulfate_xfer = .true.
+          !write(iulog,*)'kzm_strat_sulfate_xfer_mam5 ', strat_sulfate_xfer
+          if (is_first_step()) then
+             write(iulog,*)'kzm_strat_sulfate_renaming_mam5_activated'
+          end if
+
+      endif
+
+!kzm --      
 
 ! qaer_delsub_grow4rnam   = change in qaer from cloud chemistry and gas condensation
 ! qaercw_delsub_grow4rnam = change in qaercw from cloud chemistry
@@ -1923,8 +1852,11 @@ do_rename_if_block30: &
       qnumcw_sv1 = qnumcw_cur
       qaercw_sv1 = qaercw_cur
 
-      call mam_rename_1subarea(                                      &
-         nstep,             lchnk,                                   &
+!kzm ++
+      if ( strat_sulfate_xfer ) then
+!      call mam_rename_1subarea(                                      &  !kzm switch to new rename scheme
+       call mam_rename_1subarea_strat(                                      &
+              nstep,             lchnk,                              &
          i,                 k,                jsub,                  &
          latndx,            lonndx,           lund,                  &
          iscldy_subarea,                                             &
@@ -1934,7 +1866,23 @@ do_rename_if_block30: &
          qaer_cur,          qaer_delsub_grow4rnam,                   &
          qwtr_cur,                                                   &
          qnumcw_cur,                                                 &
-         qaercw_cur,        qaercw_delsub_grow4rnam                  )
+         qaercw_cur,        qaercw_delsub_grow4rnam               )
+      else
+       call mam_rename_1subarea(                                     &
+            nstep,             lchnk,                              &
+         i,                 k,                jsub,                  &
+         latndx,            lonndx,           lund,                  &
+         iscldy_subarea,                                             &
+         mtoo_renamexf,                                              &
+         n_mode,                                                     &
+         qnum_cur,                                                   &
+         qaer_cur,          qaer_delsub_grow4rnam,                   &
+         qwtr_cur,                                                   &
+         qnumcw_cur,                                                 &
+         qaercw_cur,        qaercw_delsub_grow4rnam)
+      end if
+!kzm --      
+
 
       qnum_del_rnam = qnum_del_rnam + (qnum_cur - qnum_sv1)
       qaer_del_rnam = qaer_del_rnam + (qaer_cur - qaer_sv1)
@@ -2020,7 +1968,6 @@ do_rename_if_block30: &
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
-! ++MW
       subroutine mam_amicphys_1subarea_clear(        &
          do_cond,                do_rename,          &
          do_newnuc,              do_coag,            &
@@ -2037,9 +1984,8 @@ do_rename_if_block30: &
          qnum3,      qnum4,      qnum_delaa,         &
          qaer3,      qaer4,      qaer_delaa,         &
          qwtr3,      qwtr4,                          &
-         misc_vars_aa_sub, Hconc_sav, awater         ) ! to save aerosol pH (dsj+zlu) 
-! --MW
-
+         misc_vars_aa_sub,                           &
+         troplev_i )                                 !kzm++
 !
 ! calculates changes to gas and aerosol sub-area TMRs (tracer mixing ratios)
 !    for a single clear sub-area (with indices = lchnk,i,k,jsub)
@@ -2054,9 +2000,7 @@ do_rename_if_block30: &
 !    transfer of particles from hydrophobic modes to hydrophilic modes (aging)
 !       due to condensation and coagulation
 !
-! ++MW
-      use physconst, only:  r_universal, mwh2o !dsj+zlu
-! --MW
+      use physconst, only:  r_universal
 
       logical,  intent(in)    :: do_cond, do_rename, do_newnuc, do_coag
       logical,  intent(in)    :: iscldy_subarea        ! true if sub-area is cloudy
@@ -2077,6 +2021,7 @@ do_rename_if_block30: &
       real(r8), intent(in)    :: zmid                  ! altitude (above ground) at layer center (m)
       real(r8), intent(in)    :: pblh                  ! planetary boundary layer depth (m)
       real(r8), intent(in)    :: relhum                ! relative humidity (0-1)
+      integer,  intent(in)    :: troplev_i   !kzm ++ tropopause level
 
       real(r8), intent(inout) :: dgn_a(max_mode)
       real(r8), intent(inout) :: dgn_awet(max_mode)
@@ -2126,11 +2071,6 @@ do_rename_if_block30: &
          qwtr4
 
       type ( misc_vars_aa_type ), intent(inout) :: misc_vars_aa_sub
-! ++MW
-      ! to save aerosol pH (dsj+zlu)
-      real(r8), intent(inout) :: Hconc_sav(1:max_mode)
-      real(r8), intent(inout) :: awater(1:max_mode)
-! --MW
 
 ! local
       integer, parameter :: ntot_poaspec = npoa
@@ -2194,7 +2134,9 @@ do_rename_if_block30: &
       real(r8) :: tmpa, tmpb, tmpc, tmpd, tmpe, tmpf
       real(r8) :: uptkaer(max_gas,max_mode)
       real(r8) :: uptkrate_h2so4
-
+!kzm ++
+      logical :: strat_sulfate_xfer = .false.
+!kzm --    
 
 
 ! air molar density (kmol/m3)
@@ -2278,7 +2220,7 @@ do_cond_if_block10: &
       qnum_sv1 = qnum_cur
       qaer_sv1 = qaer_cur
 
-#if ( defined MOSAIC_SPECIES )
+#if ( defined( MOSAIC_SPECIES ) )
       if ( mosaic ) then
          call mosaic_gasaerexch_1subarea_intr(     nstep,                &!Intent(ins)
               lchnk,             i,                k,           jsub,    &
@@ -2287,12 +2229,7 @@ do_cond_if_block10: &
               dgn_a,             dgn_awet,         qaer_cur,             &!Intent(inouts)
               qgas_cur,          qnum_cur,         qwtr_cur,             &
               qgas_avg,          qgas_netprod_otrproc,                   &
-              uptkrate_h2so4,    misc_vars_aa_sub, Hconc_sav ) ! to save aerosol pH (dsj+zlu)
-
-! pH dsj+zlu
-! output water_a here before rename and aging
-      awater(:)=qwtr_cur(:)*  mwh2o * aircon
-
+              uptkrate_h2so4,    misc_vars_aa_sub                        )
       else
 #endif
          call mam_gasaerexch_1subarea(                                &
@@ -2352,17 +2289,50 @@ do_rename_if_block30: &
 
       qnum_sv1 = qnum_cur
       qaer_sv1 = qaer_cur
+      !kzm ++
+      strat_sulfate_xfer = .false.
+      if (kzm_renaming_switch .and. (troplev_i >= k) .and. (ntot_amode==7) .and. (nslt1 > 0)) then !kzm kzm_renaming_switch 2
+          mtoo_renamexf(nslt1) = nslt2  !kzm rename mark nslt1 --> nslt2
+          mtoo_renamexf(nslt2) = nslt3  !kzm rename mark nslt2 --> nslt3
+          mtoo_renamexf(nacc) = nslt3  !kzm rename mark nacc --> nslt3
+          !mtoo_renamexf(nslt3) = nslt2  !kzm rename shrink nslt3 --> nslt2
+          strat_sulfate_xfer = .true.
+      endif
+      if (kzm_renaming_switch .and. (troplev_i >= k) .and. (ntot_amode==5) .and. (ncrsf > 0)) then
+          mtoo_renamexf(nacc) = ncrsf !kzm reanme acc --> strat coarse
+          !mtoo_renamexf(ncrsf) = nacc !kzm reanme shrink ncrsf --> acc
+          strat_sulfate_xfer = .true.
+      endif
+      !kzm --
 
-      call mam_rename_1subarea(                                    &
-         nstep,             lchnk,                                 &
-         i,                 k,                jsub,                &
-         latndx,            lonndx,           lund,                &
-         iscldy_subarea,                                           &
-         mtoo_renamexf,                                            &
-         n_mode,                                                   &
-         qnum_cur,                                                 &
-         qaer_cur,          qaer_delsub_grow4rnam,                 &
-         qwtr_cur                                                  )
+!kzm ++
+      if (strat_sulfate_xfer) then
+
+      !call mam_rename_1subarea
+         call mam_rename_1subarea_strat(                                &
+              nstep,             lchnk,                                 &
+               i,                 k,                jsub,               &
+              latndx,            lonndx,           lund,                &
+              iscldy_subarea,                                           &
+              mtoo_renamexf,                                            &
+              n_mode,                                                   &
+              qnum_cur,                                                 &
+              qaer_cur,          qaer_delsub_grow4rnam,                 &
+              qwtr_cur)
+      else
+           call mam_rename_1subarea(                                    &
+                              nstep,             lchnk,                 &
+               i,                 k,                jsub,               &
+              latndx,            lonndx,           lund,                &
+              iscldy_subarea,                                           &
+              mtoo_renamexf,                                            &
+              n_mode,                                                   &
+              qnum_cur,                                                 &
+              qaer_cur,          qaer_delsub_grow4rnam,                 &
+              qwtr_cur)
+      end if!kzm++
+!kzm
+
 
       qnum_del_rnam = qnum_del_rnam + (qnum_cur - qnum_sv1)
       qaer_del_rnam = qaer_del_rnam + (qaer_cur - qaer_sv1)
@@ -2395,7 +2365,8 @@ do_newnuc_if_block50: &
          qnum_cur,                                                  &
          qaer_cur,                                                  &
          qwtr_cur,                                                  &
-         dnclusterdt_substep                                        )
+         dnclusterdt_substep,                                        &
+         troplev_i                                        )!kzm++
 
       qgas_del_nnuc = qgas_del_nnuc + (qgas_cur - qgas_sv1)
       qnum_del_nnuc = qnum_del_nnuc + (qnum_cur - qnum_sv1)
@@ -2502,8 +2473,7 @@ do_newnuc_if_block50: &
 
 !---------------------------------------------------------------------
 !---------------------------------------------------------------------
-#if ( defined MOSAIC_SPECIES )
-! ++MW
+#if ( defined( MOSAIC_SPECIES ) )
       subroutine mosaic_gasaerexch_1subarea_intr(  nstep,                &!Intent(ins)
               lchnk,             i_in,             k_in,        jsub_in, &
               temp,              relhum,           pmid,                 &
@@ -2511,8 +2481,7 @@ do_newnuc_if_block50: &
               dgn_a,             dgn_awet,         qaer_cur,             &!Intent(inouts)
               qgas_cur,          qnum_cur,         qwtr_cur,             &
               qgas_avg,          qgas_netprod_otrproc,                   &
-              uptkrate_h2so4,    misc_vars_aa_sub, Hconc_sav     ) ! to save aerosol pH dsj+zlu
-! --MW
+              uptkrate_h2so4,    misc_vars_aa_sub                        )
         !------------------------------------------------------------------------------!
         !Purpose: This routine acts as an interface between Mosaic and CAM
         !Future work:
@@ -2533,19 +2502,17 @@ do_newnuc_if_block50: &
         !------------------------------------------------------------------------------!
         !Use statements
         use module_mosaic_box_aerchem, only: mosaic_box_aerchemistry
-! ++MW
-        use infnan,                    only: nan, assignment(=)
-! --MW
+        use infnan,                    only: nan, bigint
         use physconst,                 only: mwh2o
         use module_data_mosaic_aero,   only: naer_mosaic => naer, &
-             inh4_a, ilim2_a, iso4_a, ina_a, icl_a, ibc_a, imom_a, ioin_a, ioc_a, &
+             inh4_a, ilim2_a, iso4_a, ina_a, icl_a, ibc_a, ioin_a, ioc_a, &
              ino3_a, icl_a,   ica_a,  ico3_a, &
              ilim2_g, ih2so4_g, inh3_g, ihno3_g, ihcl_g, &
              jhyst_up, jtotal, &
              nbin_a, nbin_a_max, ngas_volatile, nmax_astem, nmax_mesa, nsalt, &
              mosaic_vars_aa_type
 #ifdef SPMD
-        use spmd_utils,                only: iam
+        use spmd_dyn,                  only: mpicom_xy, iam
         use units,                     only: getunit, freeunit
 #endif
 
@@ -2581,10 +2548,6 @@ do_newnuc_if_block50: &
                   ! NOTE - currently only the values for h2so4 and nh3 should be non-zero
         real(r8), intent(inout) :: uptkrate_h2so4  ! rate of h2so4 uptake by aerosols (1/s)
         type ( misc_vars_aa_type ), intent(inout) :: misc_vars_aa_sub
-! ++MW
-! to save aerosol pH (dsj+zlu)
-        real(r8), intent(inout) :: Hconc_sav(max_mode)        
-! --MW
 
         !Local Variables - [To be sent as args to Mosaic code]
         integer  :: ierr
@@ -2771,8 +2734,7 @@ do_newnuc_if_block50: &
            aer(ibc_a,  jtotal, imode)  = qaer_cur(iaer_bc,  imode) * mw_aer(iaer_bc)  * nano_mult_cair 
            aer(ioin_a, jtotal, imode)  = qaer_cur(iaer_dst, imode) * mw_aer(iaer_dst) * nano_mult_cair !BSINGH - "Other inorganic(oin)" in Mosaic is DST in CAM
            aer(ioc_a,  jtotal, imode)  = qaer_cur(iaer_pom, imode) * mw_aer(iaer_pom) * nano_mult_cair
-           aer(imom_a, jtotal, imode)  = qaer_cur(iaer_mom, imode) * mw_aer(iaer_mom) * nano_mult_cair           
-
+           
            !Populate aerosol number and water species
            num_a(imode)   = qnum_cur(imode) * num_cam_to_mos_units
            water_a(imode) = qwtr_cur(imode) * wtr_cam_to_mos_units
@@ -2902,7 +2864,7 @@ do_newnuc_if_block50: &
         
 
         !BSINGH - zero_water_flag becomes .true. if water is zero in liquid phase
-!       zero_water_flag = .false.
+!       zero_water_flag = .false. 
         mosaic_vars_aa%zero_water_flag = .false.
         !BSINGH - flag_itr_kel becomes true when kelvin iteration in mdofule_mosaic_ext.F90 are greater then 100
 !       flag_itr_kel    = .false.        
@@ -2941,11 +2903,10 @@ do_newnuc_if_block50: &
         !    then the dust hygroscopicity may vary spatially and temporally,
         !    and the kappa values cannot be constants
         kappa_nonelectro(:) = 0.0_r8
-        kappa_nonelectro(ibc_a  ) = hygro_bc     ! previously kappa_poa = 0.0001
-        kappa_nonelectro(ioc_a  ) = hygro_pom    ! previously kappa_bc  = 0.0001
-        kappa_nonelectro(imom_a ) = hygro_mom    ! previously kappa_mom = 0.1
-        kappa_nonelectro(ilim2_a) = hygro_soa    ! previously kappa_soa = 0.1
-        kappa_nonelectro(ioin_a ) = hygro_dst    ! previously kappa_oin = 0.06
+        kappa_nonelectro(ibc_a  ) = 0.0001  ! previously kappa_poa = 0.0001
+        kappa_nonelectro(ioc_a  ) = 0.0001  ! previously kappa_bc  = 0.0001
+        kappa_nonelectro(ilim2_a) = 0.1     ! previously kappa_soa = 0.1
+        kappa_nonelectro(ioin_a ) = 0.06    ! previously kappa_oin = 0.06
 
 
         !Call MOSAIC parameterization
@@ -2971,7 +2932,6 @@ do_newnuc_if_block50: &
 !            iter_MESA,               f_neg_vol_tmp                                     )
 
 ! *** ff04a version ***
-! ++MW
         call mosaic_box_aerchemistry(               aH2O,               T_K,            &!Intent-ins
              P_atm,                   RH_pc,        dtchem,                             &
              mcall_load_mosaic_parameters,          mcall_print_aer_in, sigmag_a,       &
@@ -2983,8 +2943,7 @@ do_newnuc_if_block50: &
              mosaic_vars_aa,                                                            &
              mass_dry_a_bgn,          mass_dry_a,                                       &!Intent-outs
              dens_dry_a_bgn,          dens_dry_a,   water_a_hyst,       aH2O_a,         &
-             uptkrate_h2so4,          gam_ratio,    jaerosolstate_bgn,  Hconc_sav       ) ! to save aerosol pH (dsj+zlu)
-! --MW
+             uptkrate_h2so4,          gam_ratio,    jaerosolstate_bgn                   )
 
 ! *** ff04a version ***
 !  subr       mosaic_box_aerchemistry(        aH2O,               T_K,            &!Intent-ins
@@ -3118,7 +3077,6 @@ do_newnuc_if_block50: &
            qaer_cur(iaer_bc,  imode) = (aer(ibc_a,  jtotal , imode)/mw_aer(iaer_bc))  * nano_mult_cair_inv
            qaer_cur(iaer_dst, imode) = (aer(ioin_a, jtotal , imode)/mw_aer(iaer_dst)) * nano_mult_cair_inv !BSINGH - "Other inorganic" in Mosaic is DST in CAM
            qaer_cur(iaer_pom, imode) = (aer(ioc_a,  jtotal , imode)/mw_aer(iaer_pom)) * nano_mult_cair_inv
-           qaer_cur(iaer_mom, imode) = (aer(imom_a, jtotal , imode)/mw_aer(iaer_mom)) * nano_mult_cair_inv
 
            !Populate aerosol number and water species
            qnum_cur(imode) = num_a(imode)   * num_mos_to_cam_units
@@ -4060,7 +4018,434 @@ mainloop1_ipair:  do n = 1, ntot_amode
 
       return
       end subroutine mam_rename_1subarea
+!--------------------------------------------------------------------------------
+      subroutine mam_rename_1subarea_strat(                               &
+         nstep,             lchnk,                                  &
+         i,                 k,                jsub,                 &
+         latndx,            lonndx,           lund,                 &
+         iscldy_subarea,                                            &
+         mtoo_renamexf,                                             &
+         n_mode,                                                    &
+         qnum_cur,                                                  &
+         qaer_cur,          qaer_del_grow4rnam,                     &
+         qwtr_cur,                                                  &
+         qnumcw_cur,                                                &
+         qaercw_cur,        qaercw_del_grow4rnam)                   !kzm ++
 
+#if ( defined CAM_VERSION_IS_ACME )
+      use shr_spfn_mod, only: erfc => shr_spfn_erfc  ! acme version of cam
+#else
+      use error_function,  only: erfc                ! mozart-mosaic version of cam
+#endif
+
+      logical,  intent(in)    :: iscldy_subarea        ! true if sub-area is cloudy
+      integer,  intent(in)    :: nstep                 ! model time-step number
+      integer,  intent(in)    :: lchnk                 ! chunk identifier
+      integer,  intent(in)    :: i, k                  ! column and level indices
+      integer,  intent(in)    :: jsub                  ! sub-area index
+      integer,  intent(in)    :: latndx, lonndx        ! lat and lon indices
+      integer,  intent(in)    :: lund                  ! logical unit for diagnostic output
+      integer,  intent(in)    :: mtoo_renamexf(max_mode)
+      integer,  intent(in)    :: n_mode                ! current number of modes (including temporary)
+      real(r8), intent(inout), dimension( 1:max_mode ) :: &
+         qnum_cur
+      real(r8), intent(inout), dimension( 1:max_aer, 1:max_mode ) :: &
+         qaer_cur
+      real(r8), intent(in   ), dimension( 1:max_aer, 1:max_mode ) :: &
+         qaer_del_grow4rnam
+      real(r8), intent(inout), dimension( 1:max_mode ) :: &
+         qwtr_cur    !unused in this subroutine
+
+      real(r8), intent(inout), optional, dimension( 1:max_mode ) :: &
+         qnumcw_cur
+      real(r8), intent(inout), optional, dimension( 1:max_aer, 1:max_mode ) :: &
+         qaercw_cur
+      real(r8), intent(in   ), optional, dimension( 1:max_aer, 1:max_mode ) :: &
+         qaercw_del_grow4rnam
+
+
+! !DESCRIPTION:
+! computes TMR (tracer mixing ratio) tendencies for "mode renaming"
+!    during a continuous growth process
+! currently this transfers number and mass (and surface) from the aitken
+!    to accumulation mode after gas condensation or stratiform-cloud
+!    aqueous chemistry
+! (convective cloud aqueous chemistry not yet implemented)
+!
+! !REVISION HISTORY:
+!
+
+! local variables
+      integer :: iaer
+      integer :: mfrm, mtoo
+      integer :: n, npair
+
+      integer, parameter :: ldiag1 = 0
+      real(r8), parameter :: frelax = 27.0_r8
+      real(r8), parameter :: onethird = 1.0_r8/3.0_r8
+
+      real(r8) :: deldryvol_a(ntot_amode)
+      real(r8) :: deldryvol_c(ntot_amode)
+      real(r8) :: dp_belowcut(max_mode)
+      real(r8) :: dp_cut(max_mode)
+      real(r8) :: dgn_aftr, dgn_xfer
+      real(r8) :: dgn_t_new, dgn_t_old, dgn_t_oldaa
+      real(r8) :: dryvol_t_del, dryvol_t_new
+      real(r8) :: dryvol_t_old, dryvol_t_oldaa, dryvol_t_oldbnd
+      real(r8) :: dryvol_a(ntot_amode)
+      real(r8) :: dryvol_c(ntot_amode)
+      real(r8) :: dryvol_smallest(ntot_amode)
+      real(r8) :: factoraa(ntot_amode)
+      real(r8) :: factoryy(ntot_amode)
+      real(r8) :: lndp_cut(max_mode)
+      real(r8) :: lndgn_new, lndgn_old
+      real(r8) :: lndgv_new, lndgv_old
+      real(r8) :: num_t_old, num_t_oldbnd
+      real(r8) :: tailfr_volnew, tailfr_volold
+      real(r8) :: tailfr_numnew, tailfr_numold
+      real(r8) :: tmpa, tmpb, tmpd
+      real(r8) :: tmp_alnsg2(max_mode)
+      real(r8) :: v2nhirlx(ntot_amode), v2nlorlx(ntot_amode)
+      real(r8) :: xfercoef, xfertend
+      real(r8) :: xferfrac_vol, xferfrac_num, xferfrac_max
+      real(r8) :: yn_tail, yv_tail
+      !kzm ++
+      real(r8) :: dp_xfernone_thresh(max_mode)
+      real(r8) :: dp_xferall_thresh(max_mode)
+      logical  :: shrinkaa(max_mode), shrinkbb
+
+      !kzm --
+
+
+      xferfrac_max = 1.0_r8 - 10.0_r8*epsilon(1.0_r8)   ! 1-eps
+
+! calculate variable used in the renamingm mode" of each renaming pair
+! also compute dry-volume change during the continuous growth process
+      npair = 0
+      do n = 1, ntot_amode
+         shrinkaa(n) = .false. !kzm ++
+         mtoo = mtoo_renamexf(n)
+         if (mtoo <= 0) cycle
+
+         npair = npair + 1
+         mfrm = n
+         factoraa(mfrm) = (pi/6.)*exp(4.5*(alnsg_aer(mfrm)**2))
+         factoraa(mtoo) = (pi/6.)*exp(4.5*(alnsg_aer(mtoo)**2))
+         factoryy(mfrm) = sqrt( 0.5 )/alnsg_aer(mfrm)
+! dryvol_smallest is a very small volume mixing ratio (m3-AP/kmol-air)
+! used for avoiding overflow.  it corresponds to dp = 1 nm
+! and number = 1e-5 #/mg-air ~= 1e-5 #/cm3-air
+         dryvol_smallest(mfrm) = 1.0e-25 !kzm this value may too big for strat.
+         !dryvol_smallest(mfrm) = 1.0e-35 !kzm turn it to smaller value
+!        v2nlorlx(mfrm) = voltonumblo_amode(mfrm)*frelax
+!        v2nhirlx(mfrm) = voltonumbhi_amode(mfrm)/frelax
+         v2nlorlx(mfrm) = ( 1._r8 / ( (pi/6._r8)* &
+            (dgnumlo_aer(mfrm)**3._r8)*exp(4.5_r8*alnsg_aer(mfrm)**2._r8) ) ) * frelax
+         v2nhirlx(mfrm) = ( 1._r8 / ( (pi/6._r8)* &
+            (dgnumhi_aer(mfrm)**3._r8)*exp(4.5_r8*alnsg_aer(mfrm)**2._r8) ) ) / frelax
+
+         tmp_alnsg2(mfrm) = 3.0 * (alnsg_aer(mfrm)**2)
+         dp_cut(mfrm) = sqrt(   &
+            dgnum_aer(mfrm)*exp(1.5*(alnsg_aer(mfrm)**2)) *   &
+            dgnum_aer(mtoo)*exp(1.5*(alnsg_aer(mtoo)**2)) )
+
+         lndp_cut(mfrm) = log( dp_cut(mfrm) )
+         dp_belowcut(mfrm) = 0.99*dp_cut(mfrm)
+!kzm ++ set dp_cut as fixed in stratosphere renaming
+      !   write(iulog,*) 'kzm_rename_dpcut_mtoo_', nslt3, mtoo
+      !if (1 > 2) then !kzm turn off fixed dp_cut
+
+         dp_xfernone_thresh(mfrm) = dgnum_aer(mfrm)
+         dp_xferall_thresh(mfrm) = dgnum_aer(mtoo)
+         shrinkaa(n) = .false. !kzm ++
+         shrinkbb = .false. !kzm set initial value shrink switch: if calculate shrink fraction
+         if (mtoo == nslt3 .or. mtoo == ncrsf ) then ! stratosphere renaming
+           !   write(iulog,*) 'kzm_rename_dpcut_', dp_cut(mfrm), dgnum_aer(mfrm), dgnum_aer(mtoo)
+              dp_cut(mfrm) = 4.4e-7_r8
+              lndp_cut(mfrm) = log( dp_cut(mfrm) )
+              dp_belowcut(mfrm) = 0.99*dp_cut(mfrm)
+              dp_xfernone_thresh(mfrm) = 1.6e-7_r8
+              dp_xferall_thresh(mfrm)    = 3.7e-7_r8
+              !write(iulog,*)'kzm_renaming_growth'
+              !strat_sulfate_xfer = .true.
+              !dryvol_smallest(mfrm) = 1.0e-35 !kzm turn it to smaller value
+         end if
+         if ((mfrm == nslt3 .and. nslt3 > 0).or. (mfrm == ncrsf .and. ncrsf > 0)) then
+              shrinkaa(n) = .true. !find shrink may occur
+              dp_xfernone_thresh(mfrm) = dgnum_aer(mfrm)
+              dp_xferall_thresh(mfrm) = dgnum_aer(mtoo)
+              !write(iulog,*)'kzm_shrink'
+         end if
+         !kzm
+!kzm --
+
+      end do
+      if (npair <= 0) return
+
+! compute aerosol dry-volume for the "from mode" of each renaming pair
+! also compute dry-volume change during the continuous growth process
+      do n = 1, ntot_amode
+         mtoo = mtoo_renamexf(n)
+         if (mtoo <= 0) cycle
+
+         tmpa = 0.0_r8 ; tmpb = 0.0_r8
+         do iaer = 1, naer
+!   fac_m2v_aer converts (kmol-AP/kmol-air) to (m3-AP/kmol-air)
+            tmpa = tmpa + qaer_cur(iaer,n)*fac_m2v_aer(iaer)
+            tmpb = tmpb + qaer_del_grow4rnam(iaer,n)*fac_m2v_aer(iaer)
+         end do
+         dryvol_a(n) = tmpa-tmpb ! dry volume before growth
+         deldryvol_a(n) = tmpb   ! change to dry volume due to growth
+
+         if ( iscldy_subarea ) then
+         tmpa = 0.0_r8 ; tmpb = 0.0_r8
+         do iaer = 1, naer
+!   fac_m2v_aer converts (kmol-AP/kmol-air) to (m3-AP/kmol-air)
+            tmpa = tmpa + qaercw_cur(iaer,n)*fac_m2v_aer(iaer)
+            tmpb = tmpb + qaercw_del_grow4rnam(iaer,n)*fac_m2v_aer(iaer)
+         end do
+         dryvol_c(n) = tmpa-tmpb
+         deldryvol_c(n) = tmpb
+         end if ! ( iscldy_subarea ) then
+
+      end do
+
+
+!
+!   loop over renaming pairs
+!
+mainloop1_ipair:  do n = 1, ntot_amode
+
+      mfrm = n
+      mtoo = mtoo_renamexf(n)
+      if (mtoo <= 0) cycle mainloop1_ipair
+
+!   dryvol_t_old is the old total (a+c) dry-volume for the "from" mode
+!      in m^3-AP/kmol-air
+!   dryvol_t_new is the new total dry-volume
+!      (old/new = before/after the continuous growth)
+!   num_t_old is total number in particles/kmol-air
+      if ( iscldy_subarea ) then
+         dryvol_t_old = dryvol_a(mfrm) + dryvol_c(mfrm)
+         dryvol_t_del = deldryvol_a(mfrm) + deldryvol_c(mfrm)
+         num_t_old = (qnum_cur(mfrm) + qnumcw_cur(mfrm))
+      else
+         dryvol_t_old = dryvol_a(mfrm)
+         dryvol_t_del = deldryvol_a(mfrm)
+         num_t_old = qnum_cur(mfrm)
+      end if
+      dryvol_t_new = dryvol_t_old + dryvol_t_del
+
+!   no renaming if dryvol_t_new ~ 0 or dryvol_t_del ~ 0
+      if (dryvol_t_new .le. dryvol_smallest(mfrm)) cycle mainloop1_ipair
+      dryvol_t_oldbnd = max( dryvol_t_old, dryvol_smallest(mfrm) )
+      if (rename_method_optaa .ne. 40) then
+         if (dryvol_t_del .le. 1.0e-6*dryvol_t_oldbnd) cycle mainloop1_ipair
+      end if
+
+      num_t_old = max( 0.0_r8, num_t_old )
+      dryvol_t_oldbnd = max( dryvol_t_old, dryvol_smallest(mfrm) )
+      num_t_oldbnd = min( dryvol_t_oldbnd*v2nlorlx(mfrm), num_t_old )
+      num_t_oldbnd = max( dryvol_t_oldbnd*v2nhirlx(mfrm), num_t_oldbnd )
+
+!   no renaming if dgnum < "base" dgnum,
+      dgn_t_new = (dryvol_t_new/(num_t_oldbnd*factoraa(mfrm)))**onethird
+      if (dgn_t_new .le. dgnum_aer(mfrm)) cycle mainloop1_ipair
+!   compute new fraction of number and mass in the tail (dp > dp_cut)
+      !if ((dgn_t_new .le. dp_cut(mfrm) .and. (mtoo_renamexf(n) .eq. nslt3) cycle mainloop1_ipair !kzm
+      lndgn_new = log( dgn_t_new )
+      lndgv_new = lndgn_new + tmp_alnsg2(mfrm)
+      yn_tail = (lndp_cut(mfrm) - lndgn_new)*factoryy(mfrm)
+      yv_tail = (lndp_cut(mfrm) - lndgv_new)*factoryy(mfrm)
+      tailfr_numnew = 0.5_r8*erfc( yn_tail )
+      tailfr_volnew = 0.5_r8*erfc( yv_tail )
+!   compute old fraction of number and mass in the tail (dp > dp_cut)
+      dgn_t_old =   &
+            (dryvol_t_oldbnd/(num_t_oldbnd*factoraa(mfrm)))**onethird
+      dgn_t_oldaa = dgn_t_old
+      dryvol_t_oldaa = dryvol_t_old
+
+      !if ((dgn_t_old .le. dp_cut(mfrm) .and. (mtoo_renamexf(n) .eq. nslt3) cycle mainloop1_ipair !kzm
+      if (rename_method_optaa .eq. 40) then
+         if (dgn_t_old .gt. dp_belowcut(mfrm)) then
+            ! this revised volume corresponds to dgn_t_old == dp_belowcut, and same number conc
+            dryvol_t_old = dryvol_t_old * (dp_belowcut(mfrm)/dgn_t_old)**3
+            dgn_t_old = dp_belowcut(mfrm)
+         end if
+         if ((dryvol_t_new-dryvol_t_old) .le. 1.0e-6_r8*dryvol_t_oldbnd) cycle mainloop1_ipair
+      else if (dgn_t_new .ge. dp_cut(mfrm)) then
+!         if dgn_t_new exceeds dp_cut, use the minimum of dgn_t_old and
+!         dp_belowcut to guarantee some transfer
+          dgn_t_old = min( dgn_t_old, dp_belowcut(mfrm) )
+      end if
+      lndgn_old = log( dgn_t_old )
+      lndgv_old = lndgn_old + tmp_alnsg2(mfrm)
+      yn_tail = (lndp_cut(mfrm) - lndgn_old)*factoryy(mfrm)
+      yv_tail = (lndp_cut(mfrm) - lndgv_old)*factoryy(mfrm)
+      tailfr_numold = 0.5_r8*erfc( yn_tail )
+      tailfr_volold = 0.5_r8*erfc( yv_tail )
+!kzm ++
+      if (shrinkaa(n)) then
+         shrinkbb = .false.
+         if (dryvol_t_old .le. dryvol_smallest(mfrm)) cycle mainloop1_ipair
+         if (dgn_t_new .ge. dp_xfernone_thresh(mfrm)) cycle mainloop1_ipair !increased
+         if ((dryvol_t_del .le. 0.0_r8) .and. (dryvol_t_del .ge. -1.0e-6_r8*dryvol_t_oldaa)) then
+                 shrinkbb = .true.
+         else
+                 cycle mainloop1_ipair
+         end if
+      else
+         shrinkbb = .false.
+      end if
+      if (shrinkbb) then
+         if  ( dgn_t_new .le. dp_xferall_thresh(mfrm) ) then
+                !   special case of (dgn_t_new <= xferall threshold value)
+             tailfr_numnew = 1.0_r8
+             tailfr_volnew = 1.0_r8
+         else
+             !   compute new fraction of number and mass in the tail (dp < dp_cut)
+             tailfr_numnew = 1.0_r8 - 0.5_r8*erfc( yn_tail )
+             tailfr_volnew = 1.0_r8 - 0.5_r8*erfc( yv_tail )
+         endif
+             tmpa = tailfr_volnew*dryvol_t_new
+             xferfrac_vol = min( tmpa, dryvol_t_new )/dryvol_t_new
+             xferfrac_vol = min( xferfrac_vol, xferfrac_max )
+             xferfrac_num = tailfr_numnew
+             xferfrac_num = max( 0.0_r8, min( xferfrac_num, xferfrac_vol ) )
+             xferfrac_num = min( xferfrac_max, xferfrac_num )
+      endif ! if there is no shrink
+!kzm --
+
+      !if (tailfr_volnew .le. 1.0e-6_r8 )  cycle mainloop1_ipair
+      !if (tailfr_volold .le. 1.0e-6_r8 )  cycle mainloop1_ipair
+     !kzm --
+!   transfer fraction is difference between new and old tail-fractions
+!   transfer fraction for number cannot exceed that of mass
+       !write(iulog,*)'kzm_dgn_t_new ', dgn_t_new
+     if (.not. shrinkbb) then!kzm !for the mode has no shrink (growth) transfer
+        if (shrinkaa(n)) cycle mainloop1_ipair ! leave the loop if coarse mode has no shrink
+       tmpa = tailfr_volnew*dryvol_t_new - tailfr_volold*dryvol_t_old
+       if (mtoo == ncrsf) then
+       !write(iulog,*)'kzm_ncrsf_dgn_t_new_noshrink ', dgn_t_new
+       !write(iulog,*)'kzm_ncrsf_dgn_t_old_noshrink ', dgn_t_old
+       !write(iulog,*)'kzm_dp_xferall_thresh_noshrink ', dp_xferall_thresh(mfrm)
+       !write(iulog,*)'kzm_dp_xfernone_thresh_noshrink ', dp_xfernone_thresh(mfrm)
+       end if
+       if (tmpa .le. 0.0_r8) cycle mainloop1_ipair
+      !kzm ++
+       ! no transfer if dgn is not big enough
+       if (dgn_t_new .le. dp_xfernone_thresh(mfrm)) cycle mainloop1_ipair ! kzm note:this threshold 1.6e-7
+         ! transfer all if dgn is too big
+       if ((dgn_t_new .ge. dp_xferall_thresh(mfrm)) .or. &
+            (dgn_t_old .ge. dp_xferall_thresh(mfrm)))    then
+            xferfrac_vol = 1.0_r8  ! transfer all part over threshold
+            xferfrac_num = 1.0_r8
+            xferfrac_vol = min( xferfrac_vol, xferfrac_max )
+            xferfrac_num = max( 0.0_r8, min( xferfrac_num, xferfrac_vol ) )
+            !write(iulog,*)'kzm_xferall'
+       else
+            xferfrac_vol = min( tmpa, dryvol_t_new )/dryvol_t_new
+            xferfrac_vol = min( xferfrac_vol, xferfrac_max )
+            xferfrac_num = tailfr_numnew - tailfr_numold
+            xferfrac_num = max( 0.0_r8, min( xferfrac_num, xferfrac_vol ) )
+            !write(iulog,*)'kzm_xfersome'
+       end if
+       !if (mtoo == ncrsf) then
+       !write(iulog,*)'kzm_ncrsf_dgn_t_new_noshrink ', dgn_t_new
+       !write(iulog,*)'kzm_ncrsf_dgn_t_old_noshrink ', dgn_t_old
+       !write(iulog,*)'kzm_dp_xferall_thresh_noshrink ', dp_xferall_thresh(mfrm)
+       !write(iulog,*)'kzm_dp_xfernone_thresh_noshrink ', dp_xfernone_thresh(mfrm)
+       !write(iulog,*)'kzm_xferfrac_vol ', xferfrac_vol
+       !write(iulog,*)'kzm_xferfrac_num ', xferfrac_num
+       !end if
+    end if ! (.not. shrinkbb) !kzm
+#if ( defined( CAMBOX_ACTIVATE_THIS ) )
+      if ( ldiag98 ) write(lun98,'(/a,2i3,1p,10e11.3)') &
+         'rename i,k, xf n/v', i, k, xferfrac_num, xferfrac_vol
+#endif
+
+#if ( defined( CAMBOX_NEVER_ACTIVATE_THIS ) )
+!   diagnostic output start ----------------------------------------
+       if (ldiag1 > 0) then
+       icol_diag = -1
+       if ((lonndx(i) == 37) .and. (latndx(i) == 23)) icol_diag = i
+       if ((i == icol_diag) .and. (mod(k-1,5) == 0)) then
+ !      write(lund,97010) fromwhere, nstep, lchnk, i, k, ipair
+       write(lund,97010) fromwhere, nstep, latndx(i), lonndx(i), k, ipair
+       write(lund,97020) 'drv olda/oldbnd/old/new/del',   &
+             dryvol_t_oldaa, dryvol_t_oldbnd, dryvol_t_old, dryvol_t_new, dryvol_t_del
+       write(lund,97020) 'num old/oldbnd, dgnold/new ',   &
+             num_t_old, num_t_oldbnd, dgn_t_old, dgn_t_new
+       write(lund,97020) 'tailfr v_old/new, n_old/new',   &
+             tailfr_volold, tailfr_volnew, tailfr_numold, tailfr_numnew
+       tmpa = max(1.0d-10,xferfrac_vol) / max(1.0d-10,xferfrac_num)
+       dgn_xfer = dgn_t_new * tmpa**onethird
+       tmpa = max(1.0d-10,(1.0d0-xferfrac_vol)) /   &
+               max(1.0d-10,(1.0d0-xferfrac_num))
+       dgn_aftr = dgn_t_new * tmpa**onethird
+       write(lund,97020) 'xferfrac_v/n; dgn_xfer/aftr',   &
+             xferfrac_vol, xferfrac_num, dgn_xfer, dgn_aftr
+ !97010      format( / 'RENAME ', a, '  nx,lc,i,k,ip', i8, 4i4 )
+ 97010      format( / 'RENAME ', a, '  nx,lat,lon,k,ip', i8, 4i4 )
+ 97020      format( a, 6(1pe15.7) )
+       end if
+       end if ! (ldiag1 > 0)
+!   diagnostic output end   ------------------------------------------
+#endif
+!
+!   compute changes to number and species masses
+!
+      tmpd = qnum_cur(mfrm)*xferfrac_num
+      qnum_cur(mfrm) = qnum_cur(mfrm) - tmpd
+      qnum_cur(mtoo) = qnum_cur(mtoo) + tmpd
+      ! kzm note: need to confirm if same specie in both mode
+      do iaer = 1, naer
+         if (lmap_aer(iaer,mfrm)>0 .and. lmap_aer(iaer,mtoo)>0) then  !kzm
+            tmpd = qaer_cur(iaer,mfrm)*xferfrac_vol
+         qaer_cur(iaer,mfrm) = qaer_cur(iaer,mfrm) - tmpd
+         qaer_cur(iaer,mtoo) = qaer_cur(iaer,mtoo) + tmpd
+         end if
+      end do ! iaer
+
+      if ( iscldy_subarea ) then
+      tmpd = qnumcw_cur(mfrm)*xferfrac_num
+      qnumcw_cur(mfrm) = qnumcw_cur(mfrm) - tmpd
+      qnumcw_cur(mtoo) = qnumcw_cur(mtoo) + tmpd
+      do iaer = 1, naer
+         if (lmap_aercw(iaer,mfrm)>0 .and. lmap_aercw(iaer,mtoo)>0) then !kzm
+         tmpd = qaercw_cur(iaer,mfrm)*xferfrac_vol
+         qaercw_cur(iaer,mfrm) = qaercw_cur(iaer,mfrm) - tmpd
+         qaercw_cur(iaer,mtoo) = qaercw_cur(iaer,mtoo) + tmpd
+         end if
+      end do ! iaer
+      end if ! ( iscldy_subarea ) then
+
+#if ( defined( CAMBOX_NEVER_ACTIVATE_THIS ) )
+!   diagnostic output start ----------------------------------------
+                if (ldiag1 > 0) then
+                if ((i == icol_diag) .and. (mod(k-1,5) == 0)) then
+                  if (lstooa .gt. 0) then
+                    write(lund,'(a,i4,2(2x,a),1p,10e14.6)') 'RENAME qdels', iq,   &
+                        cnst_name(lsfrma+loffset), cnst_name(lstooa+loffset),   &
+                        deltat*dqdt(i,k,lsfrma), deltat*(dqdt(i,k,lsfrma) - xfertend),   &
+                        deltat*dqdt(i,k,lstooa), deltat*(dqdt(i,k,lstooa) + xfertend)
+                  else
+                    write(lund,'(a,i4,2(2x,a),1p,10e14.6)') 'RENAME qdels', iq,   &
+                        cnst_name(lsfrma+loffset), cnst_name(lstooa+loffset),   &
+                        deltat*dqdt(i,k,lsfrma), deltat*(dqdt(i,k,lsfrma) - xfertend)
+                  end if
+                end if
+                end if
+!   diagnostic output end   ------------------------------------------
+#endif
+
+
+      end do mainloop1_ipair
+
+
+      return
+      end subroutine mam_rename_1subarea_strat
+    
 
 !----------------------------------------------------------------------
 !----------------------------------------------------------------------
@@ -4077,7 +4462,8 @@ mainloop1_ipair:  do n = 1, ntot_amode
          qnum_cur,                                                  &
          qaer_cur,                                                  &
          qwtr_cur,                                                  &
-         dnclusterdt                                                )
+         dnclusterdt,                                               &
+         troplev_i ) !kzm++
 
 ! uses
       use chem_mods,     only: adv_mass
@@ -4095,6 +4481,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
       integer,  intent(in) :: latndx, lonndx        ! lat and lon indices
       integer,  intent(in) :: lund                  ! logical unit for diagnostic output
       integer,  intent(in) :: n_mode                ! current number of modes (including temporary)
+      integer,  intent(in) :: troplev_i   !kzm ++ tropopause level
 
       real(r8), intent(in) :: deltat           ! model timestep (s)
       real(r8), intent(in) :: temp             ! temperature (K)
@@ -4391,7 +4778,20 @@ mainloop1_ipair:  do n = 1, ntot_amode
 
       if (dso4dt_ait > 0.0_r8) then
          tmp_q_del = dso4dt_ait*deltat
+         !kzm ++ nucleation occured
+         ! stop the nucleation above stratopshere
+        if ((kzm_nucleation_switch .and. ntot_amode == 7)) then !kzm_nucleation_switch 1
+           ! no nucleation change form MAM5
+           !write(iulog,*) "kzm_nucleation_nslt1_work ", kzm_nucleation_switch
+         if (k < troplev_i  ) then ! stratosphere
+             qaer_cur(     iaer_so4,nslt1) = qaer_cur(     iaer_so4,nait) + tmp_q_del
+         else
+             qaer_cur(     iaer_so4,nait) = qaer_cur(     iaer_so4,nait) + tmp_q_del
+         endif
+       else
          qaer_cur(     iaer_so4,nait) = qaer_cur(     iaer_so4,nait) + tmp_q_del
+       endif
+         !kzm --
 
          tmp_q_del = min( tmp_q_del, qgas_cur(igas_h2so4) )
          qgas_cur(     igas_h2so4) = qgas_cur(     igas_h2so4) - tmp_q_del
@@ -4640,6 +5040,20 @@ mainloop1_ipair:  do n = 1, ntot_amode
          ( 1.0_r8 + ybetajj0(1)*deltat*qnum_tmpa(nacc) ) 
       qnum_tmpc(nacc) = (qnum_tmpa(nacc) + qnum_tmpb(nacc))*0.5_r8
 
+!kzm++
+! kzm slt2 mode  number loss, similar to accum mode
+! slt2 number loss depends on slt2 number
+     if (kzm_coag_switch .and. ntot_amode ==7) then !kzm_coag_switch 1
+      !   write(iulog,*) "kzm_coag_work_", kzm_coag_switch
+      if (nslt2 > 0  ) then
+         tmpa = max( 0.0_r8, deltat*ybetajj0(1) )
+         qnum_tmpb(nslt2) = qnum_tmpa(nslt2) / &
+         ( 1.0_r8 + ybetajj0(1)*deltat*qnum_tmpa(nslt2) )
+         qnum_tmpc(nslt2) = (qnum_tmpa(nslt2) + qnum_tmpb(nslt2))*0.5_r8
+      end if
+     endif
+!kzm--
+
 ! pcarbon mode number loss - approximate analytical solution
 !    using average number conc. for accum mode
       if (npca > 0) then
@@ -4693,6 +5107,27 @@ mainloop1_ipair:  do n = 1, ntot_amode
             ( 1.0_r8 + (tmpb*tmpn/tmpa)*(1.0_r8-tmpc) )
       end if
       qnum_tmpc(nait) = (qnum_tmpa(nait) + qnum_tmpb(nait))*0.5_r8
+
+!kzm++      
+! kzm slt1 mode number loss depends on slt1 and slt2
+    if ( kzm_coag_switch .and. ntot_amode ==7) then !kzm_coag_switch 2
+     if (nslt1>0) then
+        tmpa = ybetaij0(1)*qnum_tmpc(nslt2)
+        tmpa = max( 0.0_r8, deltat*tmpa )
+        tmpb = max( 0.0_r8, deltat*ybetaii0(1) )
+        tmpn = qnum_tmpa(nslt1)
+      if (tmpa < 1.0e-5_r8) then
+         qnum_tmpb(nslt1) = tmpn / &
+            ( 1.0_r8 + (tmpa+tmpb*tmpn)*(1.0_r8 + 0.5_r8*tmpa) )
+      else
+         tmpc = exp(-tmpa)
+         qnum_tmpb(nslt1) = tmpn*tmpc / &
+            ( 1.0_r8 + (tmpb*tmpn/tmpa)*(1.0_r8-tmpc) )
+      end if
+      qnum_tmpc(nslt1) = (qnum_tmpa(nslt1) + qnum_tmpb(nslt1))*0.5_r8
+    endif
+   endif
+!kzm--
 
 ! marine-organics aitken mode number loss - approximate analytical solution
 !    using average number conc. for accum, pcarbon, aitken, and marine-org accum modes
@@ -4819,6 +5254,30 @@ mainloop1_ipair:  do n = 1, ntot_amode
             end do
          end if
       end if
+
+!kzm++      
+!kzm mass transfer out of slt1 mode
+!    uses average number conc. for nslt2  modes
+    if (kzm_coag_switch .and. ntot_amode ==7) then !kzm_coag_switch 3
+     if (nslt1 >0 .and. nslt2>0) then
+      tmp1 = max( 0.0_r8, ybetaij3(1)*qnum_tmpc(nslt2) )
+         tmp2 = 0.0_r8
+         tmp3 = 0.0_r8
+      tmpa = tmp1 + tmp2 + tmp3
+      tmpc = deltat*tmpa
+      if (tmpc > epsilonx2) then
+         ! calc coag change only when it is not ~= zero
+         tmp_xf = 1.0_r8 - exp(-tmpc)
+         do iaer = 1, naer
+               tmp_dq = tmp_xf*qaer_tmpa(iaer,nslt1)
+               qaer_tmpb(iaer,nslt1) = qaer_tmpb(iaer,nslt1) - tmp_dq
+               qaer_tmpb(iaer,nslt2) = qaer_tmpb(iaer,nslt2) + tmp_dq
+         end do
+      end if
+    endif
+    endif
+!kzm --
+
 
 !! old version for 3 and 7 mode only
 !! mass transfer out of aitken mode mass
@@ -5270,7 +5729,9 @@ use modal_aero_data, only : &
     modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine, &
     modeptr_maccum, modeptr_maitken, &
     nspec_amode, &
-    numptr_amode, numptrcw_amode, sigmag_amode
+    numptr_amode, numptrcw_amode, sigmag_amode, &
+    modeptr_coarsulf,                          & !kzm++
+    modeptr_sulfate1, modeptr_sulfate2, modeptr_sulfate3 !kzm++
 
 implicit none
 
@@ -5375,7 +5836,9 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       name_aerpfx(naer) = 'so4'
       igas_h2so4 = ngas
       iaer_so4 = naer
-
+!kzm ++
+#if ( ( defined MODAL_AERO_7MODE_S ))
+#else
       if ( (ntot_amode==7) .or. &
            (ntot_amode==8) .or. &
            (ntot_amode==9) ) then
@@ -5386,17 +5849,10 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
          igas_nh3 = ngas
          iaer_nh4 = naer
       end if
-
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
-      ngas = ngas + 1
-      name_gas(ngas) = 'NH3'
-      naer = naer + 1
-      name_aerpfx(naer) = 'nh4'
-      igas_nh3 = ngas
-      iaer_nh4 = naer
 #endif
+!kzm --
 
-#if ( ( defined MODAL_AERO_7MODE || defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+#if ( ( defined MODAL_AERO_7MODE ) && ( defined MOSAIC_SPECIES ) )
       ngas = ngas + 1
       name_gas(ngas) = 'HNO3'
       naer = naer + 1
@@ -5445,7 +5901,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       name_aerpfx(naer) = 'dst'
       iaer_dst = naer
 
-#if ( ( defined MODAL_AERO_7MODE || defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+#if ( ( defined MODAL_AERO_7MODE ) && ( defined MOSAIC_SPECIES ) )
       naer = naer + 1
       name_aerpfx(naer) = 'ca'
       iaer_ca = naer
@@ -5453,8 +5909,8 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       name_aerpfx(naer) = 'co3'
       iaer_co3 = naer
 #endif
-
-#if ( defined MODAL_AERO_4MODE_MOM )
+!kzm++
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE)
       naer = naer + 1
       name_aerpfx(naer) = 'mom'
       iaer_mom = naer
@@ -5659,6 +6115,36 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       nait = modeptr_aitken
       npca = modeptr_pcarbon
       nufi = modeptr_ufine
+
+!kzm ++
+#if (defined MODAL_AERO_5MODE)
+      ncrsf = modeptr_coarsulf
+      write(iulog,*) 'kzm_ncrsf ', ncrsf
+      write(iulog,*) 'kzm MAM5 for aerosol microphysics'
+#else
+      ncrsf = big_neg_int
+      write(iulog,*) 'kzm_ncrsf ', ncrsf
+      write(iulog,*) 'kzm MAM5 is NOT for aerosol microphysics'
+#endif
+#if (defined MODAL_AERO_7MODE_S)
+      nslt1 = modeptr_sulfate1
+      nslt2 = modeptr_sulfate2
+      nslt3 = modeptr_sulfate3
+      write(iulog,*) 'kzm_nslt ', nslt1, nslt2, nslt3
+      write(iulog,*) 'kzm_nacc',nacc
+      write(iulog,*) 'kzm_nait',nait
+#else
+     nslt1 = big_neg_int
+     nslt2 = big_neg_int
+     nslt3 = big_neg_int
+     write(iulog,*) 'kzm_nslt ', nslt1, nslt2, nslt3
+     write(iulog,*) 'kzm_nacc',nacc
+     write(iulog,*) 'kzm_nait',nait
+     write(iulog,*) 'kzm MAM7S is NOT for aerosol microphysics'
+#endif
+
+!kzm --
+
 #if ( defined MODAL_AERO_9MODE )
       nmacc = modeptr_maccum
       nmait = modeptr_maitken
@@ -5668,10 +6154,6 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
 #endif
       if ( nufi <= 0 .and. &
            ntot_amode_extd > ntot_amode ) nufi = ntot_amode_extd
-
-#if ( defined MOSAIC_SPECIES )
-      call mam_amicphys_set_mosaic_hygro
-#endif
 
 ! aging pairs
       ipair = 0
@@ -5758,6 +6240,12 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
             na = nmacc ; nb = nacc
          else if (ip == 10) then
             na = nmacc ; nb = npca
+         !kzm ++
+         if ( kzm_coag_switch ) then !kzm_coag_switch 4
+         else if (ip == 11 .and. ntot_amode == 7) then
+            na = nslt1 ; nb = nslt2
+         endif
+        !kzm --   
          end if
          if (nc == big_pos_int) nc = nb
 
@@ -5849,11 +6337,6 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
                lmz+loffset, lmz, lmapcc_all(lmz), j, solsym(lmz)
          end do
 
-#if ( defined MOSAIC_SPECIES )
-         write(iulog,'(/a,1p,5e14.6/)') 'hygro for mosaic:  bc, pom, mom, soa, dst =', &
-            hygro_bc, hygro_pom, hygro_mom, hygro_soa, hygro_dst
-#endif
-
       end if ! ( masterproc )
 
 
@@ -5865,152 +6348,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       return
       end subroutine modal_aero_amicphys_init
 
-
-#if ( defined MOSAIC_SPECIES )
-!--------------------------------------------------------------------------------
-!--------------------------------------------------------------------------------
-      subroutine mam_amicphys_set_mosaic_hygro
-
-      use modal_aero_data,  only:  nspec_amode
-      use rad_constituents, only:  rad_cnst_get_info, rad_cnst_get_aer_props
-
-      integer :: l, m
-      real(r8) :: tmp_hygro
-      character(len=32) :: spec_type
-
-      do m = 1, ntot_amode
-         do l = 1, nspec_amode(m)
-            call rad_cnst_get_aer_props(0, m, l, hygro_aer=tmp_hygro )
-            call rad_cnst_get_info( 0, m, l, spec_type=spec_type )
-            if      (spec_type == 'black-c') then
-               if (hygro_bc  == 0.0_r8) hygro_bc  = tmp_hygro
-            else if (spec_type == 'p-organic') then
-               if (hygro_pom == 0.0_r8) hygro_pom = tmp_hygro
-            else if (spec_type == 'm-organic') then
-               if (hygro_mom == 0.0_r8) hygro_mom = tmp_hygro    
-            else if (spec_type == 's-organic') then
-               if (hygro_soa == 0.0_r8) hygro_soa = tmp_hygro
-            else if (spec_type == 'dust') then
-               if (hygro_dst == 0.0_r8) hygro_dst = tmp_hygro
-            end if
-         enddo ! l
-      enddo ! m
-
-      return
-      end subroutine mam_amicphys_set_mosaic_hygro
-
-
-!--------------------------------------------------------------------------------
-!--------------------------------------------------------------------------------
-      subroutine mam_amicphys_check_mosaic_mw
-
-      use spmd_utils,  only:  masterproc
-      use cam_logfile, only:  iulog
-      use module_data_mosaic_aero, only: &
-         ih2so4_g, ihno3_g, ihcl_g, inh3_g, ilim2_g, &
-         iso4_a, ino3_a, icl_a, inh4_a, ina_a, ioin_a, ica_a, ico3_a, &
-         ilim2_a, ioc_a, ibc_a, imom_a, &
-         mw_aer_mac, mw_gas_mosaic => mw_gas
-
-      integer :: i, iaer, igas, n, n2, nerr
-      real(r8) :: tmpa
-      character(len=5) :: tmpcha
-
-      if ( .not. masterproc ) return
-
-      nerr = 0
-      write(iulog,'(/2a)') 'mam_amicphys_check_mosaic_mw - ', &
-         'amicphys and mosaic mw for gases'
-      do igas = 1, ngas
-         if      (igas == igas_h2so4) then
-            i = ih2so4_g
-         else if (igas == igas_hno3) then
-            i = ihno3_g
-         else if (igas == igas_hcl) then
-            i = ihcl_g
-         else if (igas == igas_nh3) then
-            i = inh3_g
-         else if (igas == igas_soa) then
-            i = ilim2_g
-         else
-            i = 0
-         end if
-         tmpa = -99.0
-         tmpcha = ' '
-         if (i > 0) then
-            tmpa = mw_gas_mosaic(i)
-            if (abs(mw_gas(igas)-tmpa) > 0.15_r8) then
-               tmpcha = '*****'
-               nerr = nerr + 1
-            end if
-         end if
-         write(iulog,'(a,2f12.4,2x,a)')  name_gas(igas), mw_gas(igas), tmpa, tmpcha
-      end do
-      
-      write(iulog,'(/2a)') 'mam_amicphys_check_mosaic_mw - ', &
-         'amicphys and mosaic mw for aerosol species'
-      do iaer = 1, naer
-         if      (iaer == iaer_so4) then
-            i = iso4_a
-         else if (iaer == iaer_no3) then
-            i = ino3_a
-         else if (iaer == iaer_cl) then
-            i = icl_a
-         else if (iaer == iaer_nh4) then
-            i = inh4_a
-         else if (iaer == iaer_ncl) then
-            i = ina_a
-         else if (iaer == iaer_dst) then
-            i = ioin_a
-         else if (iaer == iaer_ca) then
-            i = ica_a
-         else if (iaer == iaer_co3) then
-            i = ico3_a
-         else if (iaer == iaer_soa) then
-            i = ilim2_a
-         else if (iaer == iaer_pom) then
-            i = ioc_a
-         else if (iaer == iaer_bc) then
-            i = ibc_a
-         else if (iaer == iaer_mom) then
-            i = imom_a
-         else
-            i = 0
-         end if
-         tmpa = -99.0
-         tmpcha = ' '
-         if (i > 0) then
-            tmpa = mw_aer_mac(i)
-            if (abs(mw_aer(iaer)-tmpa) > 0.15_r8) then
-               if ( iaer==iaer_dst .or. iaer==iaer_pom .or. iaer==iaer_bc .or. iaer==iaer_mom ) then
-                  tmpcha = '-----'
-               else
-                  tmpcha = '*****'
-                  nerr = nerr + 1
-               end if
-            end if
-         end if
-         n2 = 1
-         do n = 1, ntot_amode
-            if (lmap_aer(iaer,n) > 0) then
-               n2 = n
-               exit
-            end if
-         end do
-         write(iulog,'(a,2f12.4,2x,a)')  name_aer(iaer,n2), mw_aer(iaer), tmpa, tmpcha
-      end do
-
-      write(iulog,'(a)')
-      if (nerr > 0) then
-         write(iulog,'(a,i5/)') '*** amicphys - mosaic molec weight mismatch nerr =', nerr
-!        call endrun( '*** amicphys - mosaic molec weight mismatch error' )
-      end if
-
-      return
-      end subroutine mam_amicphys_check_mosaic_mw      
-#endif 
-
-
+ 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
       subroutine mam_set_lptr2_and_specxxx2
@@ -6087,9 +6425,8 @@ use phys_control,only  :  phys_getopts
 
 use modal_aero_data, only : &
     cnst_name_cw, &
-! ++MW
-    modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine, ntot_amode !dsj+zlu
-! --MW
+    modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine, &
+    modeptr_coarsulf, modeptr_sulfate1, modeptr_sulfate2, modeptr_sulfate3  !kzm++
 !use modal_aero_rename
 
 implicit none
@@ -6147,16 +6484,6 @@ implicit none
             do_q_coltendaa(lmz,iqtend_cond) = .true.
          end do ! n
       end do ! igas
-
-#if ( defined MOSAIC_SPECIES )
-      if (iaer_co3 > 0) then
-         do n = 1, ntot_amode
-            lmz = lmap_aer(iaer_co3,n)
-            if (lmz <= 0) cycle
-            do_q_coltendaa(lmz,iqtend_cond) = .true.
-         end do ! n
-      end if
-#endif
 
       do ipair = 1, n_agepair
          na = modefrm_agepair(ipair)
@@ -6235,6 +6562,89 @@ implicit none
             end if
          end do ! iaer
       end if ! (na > 0 .and. nb > 0)
+     !kzm ++  MAM5
+      na = modeptr_accum
+      nb = modeptr_coarsulf
+      if (na > 0 .and. nb > 0) then
+         lmza = lmap_num(na)
+         lmzb = lmap_num(nb)
+         do_q_coltendaa(lmza,iqtend_rnam) = .true.
+         do_q_coltendaa(lmzb,iqtend_rnam) = .true.
+         lmza = lmap_numcw(na)
+         lmzb = lmap_numcw(nb)
+         do_qqcw_coltendaa(lmza,iqqcwtend_rnam) = .true.
+         do_qqcw_coltendaa(lmzb,iqqcwtend_rnam) = .true.
+         do iaer = 1, naer
+            lmza = lmap_aer(iaer,na)
+            lmzb = lmap_aer(iaer,nb)
+            if (lmza > 0) then
+               do_q_coltendaa(lmza,iqtend_rnam) = .true.
+               if (lmzb > 0) do_q_coltendaa(lmzb,iqtend_rnam) = .true.
+            end if
+            lmza = lmap_aercw(iaer,na)
+            lmzb = lmap_aercw(iaer,nb)
+            if (lmza > 0) then
+               do_qqcw_coltendaa(lmza,iqqcwtend_rnam) = .true.
+               if (lmzb > 0) do_qqcw_coltendaa(lmzb,iqqcwtend_rnam) = .true.
+            end if
+         end do ! iaer
+      end if ! (na > 0 .and. nb > 0)
+
+      !MAM7S
+      na = modeptr_sulfate1
+      nb = modeptr_sulfate2
+      if (na > 0 .and. nb > 0) then
+         lmza = lmap_num(na)
+         lmzb = lmap_num(nb)
+         do_q_coltendaa(lmza,iqtend_rnam) = .true.
+         do_q_coltendaa(lmzb,iqtend_rnam) = .true.
+         lmza = lmap_numcw(na)
+         lmzb = lmap_numcw(nb)
+         do_qqcw_coltendaa(lmza,iqqcwtend_rnam) = .true.
+         do_qqcw_coltendaa(lmzb,iqqcwtend_rnam) = .true.
+         do iaer = 1, naer
+            lmza = lmap_aer(iaer,na)
+            lmzb = lmap_aer(iaer,nb)
+            if (lmza > 0) then
+               do_q_coltendaa(lmza,iqtend_rnam) = .true.
+               if (lmzb > 0) do_q_coltendaa(lmzb,iqtend_rnam) = .true.
+            end if
+            lmza = lmap_aercw(iaer,na)
+            lmzb = lmap_aercw(iaer,nb)
+            if (lmza > 0) then
+               do_qqcw_coltendaa(lmza,iqqcwtend_rnam) = .true.
+               if (lmzb > 0) do_qqcw_coltendaa(lmzb,iqqcwtend_rnam) = .true.
+            end if
+         end do ! iaer
+      end if ! (na > 0 .and. nb > 0)
+
+      na = modeptr_sulfate2
+      nb = modeptr_sulfate3
+      if (na > 0 .and. nb > 0) then
+         lmza = lmap_num(na)
+         lmzb = lmap_num(nb)
+         do_q_coltendaa(lmza,iqtend_rnam) = .true.
+         do_q_coltendaa(lmzb,iqtend_rnam) = .true.
+         lmza = lmap_numcw(na)
+         lmzb = lmap_numcw(nb)
+         do_qqcw_coltendaa(lmza,iqqcwtend_rnam) = .true.
+         do_qqcw_coltendaa(lmzb,iqqcwtend_rnam) = .true.
+         do iaer = 1, naer
+            lmza = lmap_aer(iaer,na)
+            lmzb = lmap_aer(iaer,nb)
+            if (lmza > 0) then
+               do_q_coltendaa(lmza,iqtend_rnam) = .true.
+               if (lmzb > 0) do_q_coltendaa(lmzb,iqtend_rnam) = .true.
+            end if
+            lmza = lmap_aercw(iaer,na)
+            lmzb = lmap_aercw(iaer,nb)
+            if (lmza > 0) then
+               do_qqcw_coltendaa(lmza,iqqcwtend_rnam) = .true.
+               if (lmzb > 0) do_qqcw_coltendaa(lmzb,iqqcwtend_rnam) = .true.
+            end if
+         end do ! iaer
+      end if ! (na > 0 .and. nb > 0)
+   !kzm --
 
 !  define history fields for renaming during gas-->aer condensation or cloud chemistry
       do lmz = 1, gas_pcnst
@@ -6358,7 +6768,7 @@ implicit none
       endif
 
 
-#if ( defined MOSAIC_SPECIES )
+#if ( defined( MOSAIC_SPECIES ) )
       if ( mosaic ) then
          !BSINGH - Adding addfld and add_default call for tracking convergence failures
          call addfld('convergence_fail', (/ 'lev' /), 'A', 'no units', 'For tracking MOSAIC convergence failure' )
@@ -6373,41 +6783,6 @@ implicit none
             call addfld( fieldname, (/ 'lev' /), 'A', 'no units', 'For tracking ASTEM negative values' )
             call add_default( fieldname, 1, ' ' )
          end do
-         end do
-
-         !dsj+zlu: add ph field here?
-         do n = 1, ntot_amode
-            fieldname = ' '
-            write( fieldname(1:14), '(a,i1)') 'pH_valid_bin_', n
-            long_name = ' '
-            write( long_name(1:24), '(a,i1)') 'Aerosol pH valid in bin', n
-            unit = 'pH'
-            call addfld( fieldname, (/ 'lev' /), 'A', unit, long_name )
-            call add_default( fieldname, 1, ' ' )
-
-            fieldname = ' '
-            write( fieldname(1:12), '(a,i1)') 'fhplus_bin_', n
-            long_name = ' '
-            write( long_name(1:26), '(a,i1)') 'Aerosol Hplus flag in bin', n
-            unit = ' '
-            call addfld( fieldname, (/ 'lev' /), 'A', unit, long_name )
-            call add_default( fieldname, 1, ' ' )
-
-            fieldname = ' '
-            write( fieldname(1:17), '(a,i1)') 'Hplus_valid_bin_', n
-            long_name = ' '
-            write( long_name(1:33), '(a,i1)') 'Hplus concentration valid in bin', n
-            unit = 'mol/kg-h20'
-            call addfld( fieldname, (/ 'lev' /), 'A', unit, long_name )
-            call add_default( fieldname, 1, ' ' )
-
-            fieldname = ' '
-            write( fieldname(1:21), '(a,i1)') 'Aer_water_valid_bin_', n
-            long_name = ' '
-            write( long_name(1:27), '(a,i1)') 'Aerosol water valid in bin', n
-            unit = 'kg-h20/m3-air'
-            call addfld( fieldname, (/ 'lev' /), 'A', unit, long_name )
-            call add_default( fieldname, 1, ' ' )
          end do
       end if
 #endif
