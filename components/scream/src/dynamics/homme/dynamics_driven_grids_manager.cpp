@@ -35,6 +35,13 @@ DynamicsDrivenGridsManager (const ekat::Comm& comm,
     init_params_f90 (nlname);
   }
 
+  // Check that the global number of 2d elements is no less than the number of MPI ranks
+  EKAT_REQUIRE_MSG (get_homme_param<int>("nelem")>=comm.size(),
+      "Error! We do not yet support running EAMxx with a number of MPI ranks\n"
+      "       larger than the number of 2d elements in Homme.\n"
+      "  - num MPI ranks: " + std::to_string(comm.size()) + "\n"
+      "  - num 2d elems : " + std::to_string(get_homme_param<int>("nelem")) + "\n");
+
   // Valid names for the dyn grid
   auto& gn = m_valid_grid_names;
 

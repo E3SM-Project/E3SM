@@ -447,58 +447,46 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
   }
 
   // Check if lat/lon needs to be loaded
+  // Check whether we need to load latitude/longitude of reference grid dofs.
+  // This option allows the user to set lat or lon in their own
+  // test or run setup code rather than by file.
   auto& ic_pl = m_atm_params.sublist("Initial Conditions");
-  for (const auto& it : m_field_mgrs) {
-    const auto& grid_name = it.first;
-    const auto& ic_pl_grid = ic_pl.sublist(grid_name);
+  bool load_latitude  = ic_pl.get<bool>("Load Latitude",false);
+  bool load_longitude = ic_pl.get<bool>("Load Longitude",false);
 
-    // Check whether we need to load latitude/longitude of reference grid dofs.
-    // This option allows the user to set lat or lon in their own
-    // test or run setup code rather than by file.
-    bool load_latitude  = false;
-    bool load_longitude = false;
-    if (ic_pl_grid.isParameter("Load Latitude")) {
-      load_latitude = ic_pl_grid.get<bool>("Load Latitude");
+  if (load_longitude || load_latitude) {
+    using namespace ShortFieldTagsNames;
+    using view_d = AbstractGrid::geo_view_type;
+    using view_h = view_d::HostMirror;
+    auto grid = m_grids_manager->get_reference_grid();
+    auto layout = grid->get_2d_scalar_layout();
+
+    std::vector<std::string> fnames;
+    std::map<std::string,FieldLayout> layouts;
+    std::map<std::string,view_h> host_views;
+    std::map<std::string,view_d> dev_views;
+    if (load_latitude) {
+      dev_views["lat"] = grid->get_geometry_data("lat");
+      host_views["lat"] = Kokkos::create_mirror_view(dev_views["lat"]);
+      layouts.emplace("lat",layout);
+      fnames.push_back("lat");
     }
-    if (ic_pl_grid.isParameter("Load Longitude")) {
-      load_longitude = ic_pl_grid.get<bool>("Load Longitude");
+    if (load_longitude) {
+      dev_views["lon"] = grid->get_geometry_data("lon");
+      host_views["lon"] = Kokkos::create_mirror_view(dev_views["lon"]);
+      layouts.emplace("lon",layout);
+      fnames.push_back("lon");
     }
 
-    if (load_longitude || load_latitude) {
-      using namespace ShortFieldTagsNames;
-      using view_d = AbstractGrid::geo_view_type;
-      using view_h = view_d::HostMirror;
-      auto grid = m_grids_manager->get_grid(grid_name);
-      int ncol  = grid->get_num_local_dofs();
-      FieldLayout layout ({COL},{ncol});
+    ekat::ParameterList lat_lon_params;
+    lat_lon_params.set("Field Names",fnames);
+    lat_lon_params.set("Filename",ic_pl.get<std::string>("Filename"));
 
-      std::vector<std::string> fnames;
-      std::map<std::string,FieldLayout> layouts;
-      std::map<std::string,view_h> host_views;
-      std::map<std::string,view_d> dev_views;
-      if (load_latitude) {
-        dev_views["lat"] = grid->get_geometry_data("lat");
-        host_views["lat"] = Kokkos::create_mirror_view(dev_views["lat"]);
-        layouts.emplace("lat",layout);
-        fnames.push_back("lat");
-      }
-      if (load_longitude) {
-        dev_views["lon"] = grid->get_geometry_data("lon");
-        host_views["lon"] = Kokkos::create_mirror_view(dev_views["lon"]);
-        layouts.emplace("lon",layout);
-        fnames.push_back("lon");
-      }
-
-      ekat::ParameterList lat_lon_params;
-      lat_lon_params.set("Field Names",fnames);
-      lat_lon_params.set("Filename",ic_pl.get<std::string>("Filename"));
-
-      AtmosphereInput lat_lon_reader(lat_lon_params,grid,host_views,layouts);
-      lat_lon_reader.read_variables();
-      lat_lon_reader.finalize();
-      for (auto& fname : fnames) {
-        Kokkos::deep_copy(dev_views[fname],host_views[fname]);
-      }
+    AtmosphereInput lat_lon_reader(lat_lon_params,grid,host_views,layouts);
+    lat_lon_reader.read_variables();
+    lat_lon_reader.finalize();
+    for (auto& fname : fnames) {
+      Kokkos::deep_copy(dev_views[fname],host_views[fname]);
     }
   }
 
@@ -603,13 +591,6 @@ void AtmosphereDriver::set_initial_conditions ()
 
   auto& ic_pl = m_atm_params.sublist("Initial Conditions");
 
-  // When processing groups and fields separately, we might end up processing the same
-  // field twice. E.g., say we have the required field group G=(f1,f2). If f1 is also
-
-  // listed as a required field on itself, we might process it twice. To prevent that,
-  // we store the processed fields
-  // std::set<FieldIdentifier> inited_fields;
-
   // Check which fields need to have an initial condition.
   std::map<std::string,std::vector<std::string>> ic_fields_names;
   std::vector<FieldIdentifier> ic_fields_to_copy;
@@ -618,22 +599,20 @@ void AtmosphereDriver::set_initial_conditions ()
   // Helper lambda, to reduce code duplication
   auto process_ic_field = [&](const Field& f) {
     const auto& fid = f.get_header().get_identifier();
-    const auto& grid_name = fid.get_grid_name();
     const auto& fname = fid.name();
-
-    const auto& ic_pl_grid = ic_pl.sublist(grid_name);
+    const auto& grid_name = fid.get_grid_name();
 
     // First, check if the input file contains constant values for some of the fields
-    if (ic_pl_grid.isParameter(fname)) {
+    if (ic_pl.isParameter(fname)) {
       // The user provided a constant value for this field. Simply use that.
-      if (ic_pl_grid.isType<double>(fname) or ic_pl_grid.isType<std::vector<double>>(fname)) {
-        initialize_constant_field(fid, ic_pl_grid);
+      if (ic_pl.isType<double>(fname) or ic_pl.isType<std::vector<double>>(fname)) {
+        initialize_constant_field(fid, ic_pl);
         fields_inited[grid_name].push_back(fname);
 
         // Note: f is const, so we can't modify the tracking. So get the same field from the fm
         auto f_nonconst = m_field_mgrs.at(grid_name)->get_field(fid.name());
         f_nonconst.get_header().get_tracking().update_time_stamp(m_current_ts);
-      } else if (ic_pl_grid.isType<std::string>(fname)) {
+      } else if (ic_pl.isType<std::string>(fname)) {
         ic_fields_to_copy.push_back(fid);
         fields_inited[grid_name].push_back(fname);
       } else {
@@ -719,54 +698,24 @@ void AtmosphereDriver::set_initial_conditions ()
   m_atm_logger->debug("    [EAMXX] Processing fields to copy ...");
   for (const auto& tgt_fid : ic_fields_to_copy) {
     const auto& tgt_fname = tgt_fid.name();
-    const auto& tgt_gname = tgt_fid.get_grid_name();
+    const auto& gname = tgt_fid.get_grid_name();
 
-    auto tgt_fm = get_field_mgr(tgt_gname);
+    const auto& src_fname = ic_pl.get<std::string>(tgt_fname);
 
-    // The user can request to init a field from its copy on another grid
-    std::string src_fname, src_gname;
-
-    const auto& param_value = ic_pl.sublist(tgt_gname).get<std::string>(tgt_fname);
-    const auto tokens = ekat::split(param_value,'@');
-    EKAT_REQUIRE_MSG (tokens.size()==1 || tokens.size()==2,
-        "Error! To copy an initial condition for a field from another, use one of the following ways:\n"
-        "    - field_1: field_2\n"
-        "    - field_1: field_2 @ grid_2\n"
-        "The first assumes field_2 is on the same grid as field_1, while the second allows\n"
-        "cross-grid imports.\n\n"
-        "Parameter list entry:\n"
-        "   " + tgt_fname + ": " + param_value + "\n");
-
-    src_fname = ekat::trim(tokens[0]);
-    if (tokens.size()==2) {
-      src_gname = ekat::trim(tokens[1]);
-    } else {
-      src_gname = tgt_gname;
-    }
-
-    auto src_fm = get_field_mgr(src_gname);
+    auto fm = get_field_mgr(gname);
 
     // The field must exist in the fm on the input field's grid
-    EKAT_REQUIRE_MSG (src_fm->has_field(src_fname),
+    EKAT_REQUIRE_MSG (fm->has_field(src_fname),
         "Error! Source field for initial condition not found in the field manager.\n"
-        "       Grid name:     " + tgt_gname + "\n"
+        "       Grid name:     " + gname + "\n"
         "       Field to init: " + tgt_fname + "\n"
         "       Source field:  " + src_fname + " (NOT FOUND)\n");
 
     // Get the two fields, and copy src to tgt
-    auto f_tgt = tgt_fm->get_field(tgt_fname);
-    auto f_src = src_fm->get_field(src_fname);
-    if (src_gname==tgt_gname) {
-      // Same grid: simply copy the field
-      f_tgt.deep_copy(f_src);
-    } else {
-      // Different grid: create a remapper on the fly
-      auto r = m_grids_manager->create_remapper(src_gname,tgt_gname);
-      r->registration_begins();
-      r->register_field(f_src,f_tgt);
-      r->registration_ends();
-      r->remap(true);
-    }
+    auto f_tgt = fm->get_field(tgt_fname);
+    auto f_src = fm->get_field(src_fname);
+    f_tgt.deep_copy(f_src);
+
     // Set the initial time stamp
     f_tgt.get_header().get_tracking().update_time_stamp(m_current_ts);
   }
@@ -857,11 +806,33 @@ initialize_constant_field(const FieldIdentifier& fid,
         "       Field dimension: " + std::to_string(vec_dim) + "\n"
         "       Array dimenions: " + std::to_string(values.size()) + "\n");
 
-    // Extract a subfield for each component. This is not "too" expensive, expecially
-    // considering that this code is executed during initialization only.
-    for (int comp=0; comp<vec_dim; ++comp) {
-      auto f_i = f.get_component(comp);
-      f_i.deep_copy(values[comp]);
+    if (layout.rank()==2 && idim==1) {
+      // We cannot use 'get_component' for views of rank 2 with vector dimension
+      // striding fastest, since we would not get a LayoutRight view. For these views,
+      // simply do a manual loop
+      using kt = Field::kt_dev;
+      typename kt::view_1d<double> data("data",vec_dim);
+      auto data_h = Kokkos::create_mirror_view(data);
+      for (int i=0; i<vec_dim; ++i) {
+        data_h(i) = values[i];
+      }
+      Kokkos::deep_copy(data,data_h);
+
+      const int n = layout.dim(0);
+      auto v = f.get_view<double**>();
+      Kokkos::parallel_for(typename kt::RangePolicy(0,n),
+                           KOKKOS_LAMBDA(const int i) {
+        for (int j=0; j<vec_dim; ++j) {
+          v(i,j) = data(j);
+        }
+      });
+    } else {
+      // Extract a subfield for each component. This is not "too" expensive, expecially
+      // considering that this code is executed during initialization only.
+      for (int comp=0; comp<vec_dim; ++comp) {
+        auto f_i = f.get_component(comp);
+        f_i.deep_copy(values[comp]);
+      }
     }
   } else {
     const auto& value = ic_pl.get<double>(name);

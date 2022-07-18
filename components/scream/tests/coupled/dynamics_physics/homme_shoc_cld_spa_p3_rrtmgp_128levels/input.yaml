@@ -11,9 +11,10 @@ Time Stepping:
 
 Initial Conditions:
   Filename: ${SCREAM_DATA_DIR}/init/screami_ne2np4L128_20220525.nc
-  Physics GLL:
-    surf_evap: 0.0
-    surf_sens_flux: 0.0
+  surf_evap: 0.0
+  surf_sens_flux: 0.0
+  precip_ice_surf_mass: 0.0
+  precip_liq_surf_mass: 0.0
 
 atmosphere_processes:
   atm_procs_list: (homme,physics)

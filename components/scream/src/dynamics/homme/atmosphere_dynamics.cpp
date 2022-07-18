@@ -160,7 +160,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   // Note: qv is needed to transform T<->Theta
   add_field<Updated> ("horiz_winds",   FL({COL,CMP, LEV},{ncols,2,nlev_mid}),m/s,   rgn,N);
   add_field<Updated> ("T_mid",         FL({COL,     LEV},{ncols,  nlev_mid}),K,     rgn,N);
-  add_field<Updated> ("pseudo_density",FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    rgn,N);
+  add_field<Computed>("pseudo_density",FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    rgn,N);
   add_field<Updated> ("ps",            FL({COL         },{ncols           }),Pa,    rgn);
   add_field<Required>("qv",            FL({COL,     LEV},{ncols,  nlev_mid}),Q,     rgn,"tracers",N);
   add_field<Required>("phis",          FL({COL         },{ncols           }),m2/s2, rgn);
@@ -877,9 +877,8 @@ void HommeDynamics::restart_homme_state () {
   //       file, since that's qv(ref) *at the end of the timestep* in the original simulation.
   //       Therefore, we need to remap the end-of-homme-step qv from dyn to ref grid, and use that one.
   //       Another field we need is dp3d(ref), but Homme *CHECKS* that no other atm proc updates
-  //       dp3d(ref), so the value read from restart file *coincides* with the value at the end
-  //       of the last Homme run. So we can safely recompute pressure using dp(ref) as read from restart.
-  update_pressure();
+  //       dp3d(ref), so the p2d-remapped value read from restart file *coincides* with the value at the end
+  //       of the last Homme run. So we can safely recompute pressure using p2d(dp_dyn), with dp_dynread from restart.
 
   // Copy all restarted dyn states on all timelevels.
   copy_dyn_states_to_all_timelevels ();
@@ -914,6 +913,7 @@ void HommeDynamics::restart_homme_state () {
   m_ic_remapper->registration_begins();
   m_ic_remapper->register_field(m_helper_fields.at("FT_ref"),m_helper_fields.at("vtheta_dp_dyn"));
   m_ic_remapper->register_field(m_helper_fields.at("uv_prev"),m_helper_fields.at("v_dyn"));
+  m_ic_remapper->register_field(get_field_out("pseudo_density",rgn),m_helper_fields.at("dp3d_dyn"));
   auto qv_prev_ref = std::make_shared<Field>();
   auto Q_dyn = m_helper_fields.at("Q_dyn");
   if (params.ftype==Homme::ForcingAlg::FORCING_2) {
@@ -944,14 +944,19 @@ void HommeDynamics::restart_homme_state () {
   m_ic_remapper->remap(/*forward = */false);
   m_ic_remapper = nullptr; // Can clean up the IC remapper now.
 
+  // Now that we have dp_ref, we can recompute pressure
+  update_pressure();
+
   // Copy uv_prev into FM_ref. Also, FT_ref contains vtheta_dp,
   // so convert it to actual temperature
   auto uv_view     = m_helper_fields.at("uv_prev").get_view<Pack***>();
   auto V_prev_view = m_helper_fields.at("FM_ref").get_view<Pack***>();
   auto T_prev_view = m_helper_fields.at("FT_ref").get_view<Pack**>();
-  auto dp_view     = get_field_in("pseudo_density",rgn).get_view<const Pack**>();
+  auto dp_view     = get_field_out("pseudo_density",rgn).get_view<const Pack**>();
   auto p_mid_view  = get_field_out("p_mid").get_view<Pack**>();
   auto qv_view     = qv_prev_ref->get_view<Pack**>();
+
+  // Compute dp?
 
   const auto policy = ESU::get_default_team_policy(ncols,npacks);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team){
@@ -986,10 +991,50 @@ void HommeDynamics::restart_homme_state () {
 }
 
 void HommeDynamics::initialize_homme_state () {
+  // Some types
+  using KT = KokkosTypes<DefaultDevice>;
+  using Pack = ekat::Pack<Real,HOMMEXX_PACK_SIZE>;
+  using ColOps = ColumnOps<DefaultDevice,Real>;
+  using PF = PhysicsFunctions<DefaultDevice>;
+  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
+  using EOS = Homme::EquationOfState;
+  using WS = ekat::WorkspaceManager<Pack,DefaultDevice>;
+
   const auto& rgn = m_ref_grid->name();
 
+  // Some Homme structures
   const auto& c = Homme::Context::singleton();
   auto& params = c.get<Homme::SimulationParams>();
+  const auto& hvcoord = c.get<Homme::HybridVCoord>();
+
+  // Some extents
+  const auto ncols = m_ref_grid->get_num_local_dofs();
+  const auto nlevs = m_ref_grid->get_num_vertical_levels();
+  constexpr int NGP  = HOMMEXX_NP;
+  const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
+  const int qsize = params.qsize;
+  const int npacks_mid = ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs);
+  const int npacks_int = ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs+1);
+
+  // Bootstrap dp on phys grid, and let the ic remapper transfer dp on dyn grid
+  // NOTE: HybridVCoord already stores hyai and hybi deltas as packed views,
+  //       but it used KokkosKernels packs, which are incompatible with ekat::Pack.
+  //       If Homme switched to ekat::Pack, you could do the loop below with packs.
+  const auto ps0 = hvcoord.ps0;
+  const auto dp_ref = get_field_out("pseudo_density").get_view<Real**>();
+  const auto ps_ref = get_field_in("ps",rgn).get_view<const Real*>();
+  const auto hyai = hvcoord.hybrid_ai;
+  const auto hybi = hvcoord.hybrid_bi;
+  const auto policy_dp = ESU::get_default_team_policy(ncols, nlevs);
+  Kokkos::parallel_for(policy_dp, KOKKOS_LAMBDA (const KT::MemberType& team) {
+    const int icol = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs),
+                        [&](const int ilev) {
+       dp_ref(icol,ilev) = (hyai(ilev+1)-hyai(ilev))*ps0
+                         + (hybi(ilev+1)-hybi(ilev))*ps_ref(icol);
+    });
+    team.team_barrier();
+  });
 
   // Import IC from ref grid to dyn grid
   // NOTE: if/when PD remapper supports remapping directly to/from subfields,
@@ -997,7 +1042,7 @@ void HommeDynamics::initialize_homme_state () {
   //       the helper fields (which have NTL time slices).
   m_ic_remapper->registration_begins();
   m_ic_remapper->register_field(get_field_in("horiz_winds",rgn),m_helper_fields.at("v_dyn"));
-  m_ic_remapper->register_field(get_field_in("pseudo_density",rgn),m_helper_fields.at("dp3d_dyn"));
+  m_ic_remapper->register_field(get_field_out("pseudo_density",rgn),m_helper_fields.at("dp3d_dyn"));
   m_ic_remapper->register_field(get_field_in("ps",rgn),m_helper_fields.at("ps_dyn"));
   m_ic_remapper->register_field(get_field_in("phis",rgn),m_helper_fields.at("phis_dyn"));
   m_ic_remapper->register_field(get_field_in("T_mid",rgn),m_helper_fields.at("vtheta_dp_dyn"));
@@ -1009,23 +1054,6 @@ void HommeDynamics::initialize_homme_state () {
   // printing the state, so we need to make sure it doesn't contain NaNs
   m_helper_fields.at("w_int_dyn").deep_copy(0.0);
 
-  // Some types
-  using KT = KokkosTypes<DefaultDevice>;
-  using Pack = ekat::Pack<Real,HOMMEXX_PACK_SIZE>;
-  using ColOps = ColumnOps<DefaultDevice,Real>;
-  using PF = PhysicsFunctions<DefaultDevice>;
-  using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
-  using EOS = Homme::EquationOfState;
-  using WS = ekat::WorkspaceManager<Pack,DefaultDevice>;
-
-  // Extents
-  constexpr int NGP  = HOMMEXX_NP;
-  const int nelem = m_dyn_grid->get_num_local_dofs()/(NGP*NGP);
-  const int nlevs = m_dyn_grid->get_num_vertical_levels();
-  const int qsize = params.qsize;
-  const int npacks_mid = ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs);
-  const int npacks_int = ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs+1);
-
   // Homme states
   const auto dp_view  = m_helper_fields.at("dp3d_dyn").get_view<Pack*****>();
   const auto vth_view = m_helper_fields.at("vtheta_dp_dyn").get_view<Pack*****>();
@@ -1035,29 +1063,26 @@ void HommeDynamics::initialize_homme_state () {
   const int n0  = c.get<Homme::TimeLevel>().n0;
   const int n0_qdp  = c.get<Homme::TimeLevel>().n0_qdp;
 
-  // ps0 is the TOM boundary condition when we compute p_int(z)=integral_top^z dp(s)ds
-  const auto& hvcoord = c.get<Homme::HybridVCoord>();
-  const auto ps0 = hvcoord.ps0 * hvcoord.hybrid_ai0;
-
-  const auto policy = ESU::get_thread_range_parallel_scan_team_policy(nelem*NGP*NGP,npacks_mid);
   const auto phis_dyn_view = m_helper_fields.at("phis_dyn").get_view<const Real***>();
   const auto phi_int_view = m_helper_fields.at("phi_int_dyn").get_view<Pack*****>();
-
+  const auto hyai0 = hvcoord.hybrid_ai0;
   // Need two temporaries, for pi_mid and pi_int
+  const auto policy = ESU::get_thread_range_parallel_scan_team_policy(nelem*NGP*NGP,npacks_mid);
   WS wsm(npacks_int,2,policy);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int ie  =  team.league_rank() / (NGP*NGP);
     const int igp = (team.league_rank() / NGP) % NGP;
     const int jgp =  team.league_rank() % NGP;
 
+    // Compute dp assuming hydrostatic initial state
+    auto dp = ekat::subview(dp_view,ie,n0,igp,jgp);
+
     // Compute p_mid
     auto ws = wsm.get_workspace(team);
     ekat::Unmanaged<WS::view_1d<Pack> > p_int, p_mid;
     ws.template take_many_and_reset<2>({"p_int", "p_mid"}, {&p_int, &p_mid});
 
-    auto dp = ekat::subview(dp_view,ie,n0,igp,jgp);
-
-    ColOps::column_scan<true>(team,nlevs,dp,p_int,ps0);
+    ColOps::column_scan<true>(team,nlevs,dp,p_int,ps0*hyai0);
     team.team_barrier();
     ColOps::compute_midpoint_values(team,nlevs,p_int,p_mid);
     team.team_barrier();
@@ -1100,7 +1125,6 @@ void HommeDynamics::initialize_homme_state () {
   //       have different number of levels. For u,v, we could, but
   //       we cannot (11/2021) subview 2 slices of FM together, so
   //       we'd need to also subview horiz_winds. Since we
-  const auto ncols = m_ref_grid->get_num_local_dofs();
   if (params.ftype==Homme::ForcingAlg::FORCING_2) {
     m_helper_fields.at("FQ_ref").deep_copy(*get_group_out("Q",rgn).m_bundle);
   }
@@ -1140,6 +1164,7 @@ void HommeDynamics::initialize_homme_state () {
 
   // Can clean up the IC remapper now.
   m_ic_remapper = nullptr;
+
 }
 // =========================================================================================
 void HommeDynamics::
@@ -1212,15 +1237,7 @@ void HommeDynamics::init_homme_vcoord () {
   vcoord_reader.finalize();
   
   // Pass host views data to hvcoord init function
-  // const auto& c = Homme::Context().singleton();
-  // auto& hvcoord = c.get<Homme::HybridVCoord>();
   const auto ps0 = Homme::PhysicalConstants::p0;
-  // hvcoord.init (ps0,
-  //               host_views["hyam"].data(),
-  //               host_views["hyai"].data(),
-  //               host_views["hybm"].data(),
-  //               host_views["hybi"].data()
-  // );
 
   // Set vcoords in f90
   prim_set_hvcoords_f90 (ps0,
