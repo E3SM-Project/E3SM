@@ -197,7 +197,7 @@ module ocn_eddy_parameterization_helpers
 
      type (mpas_pool_type), pointer, intent(in) :: statePool
 
-     integer :: refIndex, nCells, k, iCell
+     integer :: iEdge, nEdges, refIndex, cell1, cell2, nCells, k, iCell
      real(kind=RKIND) :: dDenThres, den_ref_lev
      real(kind=RKIND),dimension(:), allocatable :: depth
      integer, dimension(:), pointer :: landIceMask
@@ -265,6 +265,17 @@ module ocn_eddy_parameterization_helpers
     !$omp end do
     !$omp end parallel
 
+    nEdges = nEdgesHalo(1)
+    !$omp parallel
+    !$omp do schedule(runtime) &
+    !$omp private(cell1,cell2)
+    do iEdge=1,nEdgesAll
+       cell1 = cellsOnEdge(1,iEdge)
+       cell2 = cellsOnEdge(2,iEdge)
+       indMLDedge(iEdge) = min(indMLD(cell1),indMLD(cell2))
+    enddo
+    !$omp end do
+    !$omp end parallel
     deallocate(depth)
   end subroutine ocn_eddy_compute_mixed_layer_depth
 

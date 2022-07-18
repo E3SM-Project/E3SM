@@ -130,7 +130,7 @@ module ocn_submesoscale_eddies
            zEdge(k) = zedge(k-1) - layerThickEdgeMean(k-1,iEdge)
          end do
 
-        zMLD = dThreshMLD(iEdge) 
+        zMLD = 0.5_RKIND*(dThreshMLD(cell1)+dThreshMLD(cell2))
         Lf = max(Lfmin, abs(gradBuoyML)*zMLD / (1.0E-20_RKIND + fEdge(iEdge)**2), &
                   bvfML*zMLD / abs(fEdge(iEdge)))
 
