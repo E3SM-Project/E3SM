@@ -217,7 +217,6 @@ end subroutine prescribed_volcaero_readnl
      write(iulog,*)'kzm_rescribed_volcaero_mam5 '
      is_cmip6_volc = .false.
 #endif
-
        ispf = 1
        specifier_sw(ispf) = trim(adjustl(ext_sun_name))
        ispf = ispf + 1
