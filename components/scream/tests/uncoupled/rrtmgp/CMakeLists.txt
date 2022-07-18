@@ -27,7 +27,7 @@ if (NOT SCREAM_BASELINES_ONLY)
                  ${CMAKE_CURRENT_BINARY_DIR}/input_unit.yaml COPYONLY)
 
   # Ensure test input files are present in the data dir
-  GetInputFile(init/screami_ne2np4L72_20220524.nc)
+  GetInputFile(init/${EAMxx_tests_IC_FILE_72lev})
 
   # The RRTMGP stand-alone test that runs multi-step
   # Set AD configurable options

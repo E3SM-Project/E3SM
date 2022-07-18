@@ -64,7 +64,7 @@ set (TEST_INPUT_FILES
   init/spa_init_ne2np4.nc
   init/map_ne4np4_to_ne2np4_mono.nc
   init/spa_file_unified_and_complete_ne4_20220428.nc
-  init/screami_ne2np4L72_20220524.nc
+  init/${EAMxx_tests_IC_FILE_72lev}
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
   GetInputFile(${file})
