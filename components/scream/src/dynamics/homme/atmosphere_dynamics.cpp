@@ -161,11 +161,14 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   add_field<Updated> ("horiz_winds",   FL({COL,CMP, LEV},{ncols,2,nlev_mid}),m/s,   rgn,N);
   add_field<Updated> ("T_mid",         FL({COL,     LEV},{ncols,  nlev_mid}),K,     rgn,N);
   add_field<Computed>("pseudo_density",FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    rgn,N);
+  add_field<Computed>("pseudo_density_dry",FL({COL, LEV},{ncols,  nlev_mid}),Pa,    rgn,N);
   add_field<Updated> ("ps",            FL({COL         },{ncols           }),Pa,    rgn);
   add_field<Required>("qv",            FL({COL,     LEV},{ncols,  nlev_mid}),Q,     rgn,"tracers",N);
   add_field<Required>("phis",          FL({COL         },{ncols           }),m2/s2, rgn);
   add_field<Computed>("p_int",         FL({COL,    ILEV},{ncols,  nlev_int}),Pa,    rgn,N);
   add_field<Computed>("p_mid",         FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    rgn,N);
+  add_field<Computed>("p_dry_int",     FL({COL,    ILEV},{ncols,  nlev_int}),Pa,    rgn,N);
+  add_field<Computed>("p_dry_mid",     FL({COL,     LEV},{ncols,  nlev_mid}),Pa,    rgn,N);
   add_field<Computed>("omega",         FL({COL,     LEV},{ncols,  nlev_mid}),Pa/s,  rgn,N);
   add_group<Updated>("tracers",rgn,N, Bundling::Required);
 
@@ -1265,6 +1268,11 @@ void HommeDynamics::update_pressure() {
   const auto p_int_view = get_field_out("p_int").get_view<Pack**>();
   const auto p_mid_view = get_field_out("p_mid").get_view<Pack**>();
 
+  const auto qv_view        = get_field_in("qv").get_view<const Pack**>();
+  const auto dp_dry_view    = get_field_out("pseudo_density_dry").get_view<Pack**>();
+  const auto p_dry_int_view = get_field_out("p_dry_int").get_view<Pack**>();
+  const auto p_dry_mid_view = get_field_out("p_dry_mid").get_view<Pack**>();
+
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
   const auto policy = ESU::get_thread_range_parallel_scan_team_policy(ncols,npacks);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
@@ -1274,9 +1282,22 @@ void HommeDynamics::update_pressure() {
     auto p_mid = ekat::subview(p_mid_view,icol);
     auto p_int = ekat::subview(p_int_view,icol);
 
+    auto qv        = ekat::subview(qv_view,icol);
+    auto dp_dry    = ekat::subview(dp_dry_view,icol);
+    auto p_dry_mid = ekat::subview(p_dry_mid_view,icol);
+    auto p_dry_int = ekat::subview(p_dry_int_view,icol);
+
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks), KOKKOS_LAMBDA(const int& jpack) {
+      dp_dry(jpack) = dp(jpack) * (1.0 - qv(jpack));
+    });
+
     ColOps::column_scan<true>(team,nlevs,dp,p_int,ps0);
     team.team_barrier();
     ColOps::compute_midpoint_values(team,nlevs,p_int,p_mid);
+
+    ColOps::column_scan<true>(team,nlevs,dp_dry,p_dry_int,ps0);
+    team.team_barrier();
+    ColOps::compute_midpoint_values(team,nlevs,p_dry_int,p_dry_mid);
   });
 }
 // =========================================================================================
