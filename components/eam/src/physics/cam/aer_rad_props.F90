@@ -236,7 +236,9 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
    !This is done to avoid having optional arguments in modal_aero_sw call
    ext_cmip6_sw => null()
    trop_level(:) = ihuge
+   !write(iulog,*)'kzm_is_cmip6_volc ', is_cmip6_volc
    if (is_cmip6_volc) then
+     ! write(iulog,*)'kzm_prescribed_aero_opt_on'
       !get extinction so as to supply to modal_aero_sw routine for computing EXTINCT variable
       !converting it from 1/km to 1/m
 
@@ -255,6 +257,7 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
          call endrun('aer_rad_props.F90: subr aer_rad_props_sw: tropopause not found')
       endif
    endif
+   !endif!kzm--
 
 
    ! get number of bulk aerosols and number of modes in current list
@@ -271,11 +274,13 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
       tau_w_f(1:ncol,:,:) = 0._r8
    end if
 
+   !if (1>2)then !kzm++
    if (is_cmip6_volc) then
       !update tau, tau_w, tau_w_g, and tau_w_f with the read in values of extinction, ssa and asymmetry factors
       call volcanic_cmip_sw(state, pbuf, trop_level, ext_cmip6_sw_inv_m, tau, tau_w, tau_w_g, tau_w_f)
    endif
-
+   !endif 
+   !kzm--
    ! Contributions from bulk aerosols.
    do iaerosol = 1, numaerosols
 
@@ -446,6 +451,7 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, dt, state, pbuf,  odap_aer,
 
    end if
    ext_cmip6_lw => null()
+   !if (1>2) then!kzm 
    if(is_cmip6_volc) then
       !Logic:
       !Update odap_aer with the read in volcanic aerosol extinction (1/km).
@@ -491,7 +497,8 @@ subroutine aer_rad_props_lw(is_cmip6_volc, list_idx, dt, state, pbuf,  odap_aer,
       enddo
       call outfld('extinct_lw_bnd7',odap_aer(:,:,idx_lw_diag), pcols, lchnk)
    endif
-
+  ! endif
+   !kzm--
    ! Loop over bulk aerosols in list.
    do iaerosol = 1, numaerosols
 
