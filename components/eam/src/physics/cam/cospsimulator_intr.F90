@@ -17,7 +17,7 @@ module cospsimulator_intr
   use ppgrid,               only: pcols, pver, pverp, begchunk, endchunk
   use perf_mod,             only: t_startf, t_stopf
   use cam_abortutils,       only: endrun
-  use phys_control,         only: cam_physpkg_is
+  use phys_control,         only: cam_physpkg_is, phys_getopts
   use cam_logfile,          only: iulog
 #ifdef USE_COSP
   use quickbeam,            only: radar_cfg
@@ -254,7 +254,9 @@ module cospsimulator_intr
 #ifndef MMF_PACK
   integer, parameter :: crm_nx_rad = 1
   integer, parameter :: crm_ny_rad = 1
+  integer, parameter :: crm_nz     = 1
 #endif
+  logical :: use_MMF
 
 CONTAINS
 
@@ -301,7 +303,7 @@ CONTAINS
     if (cloudsat_micro_scheme == 'MMF_v3.5_two_moment')  then
        ldouble = .true. 
        lsingle = .false.
-    endif
+    end if
     call hydro_class_init(lsingle,ldouble,sd)
     call quickbeam_optics_init()
 
@@ -324,8 +326,8 @@ CONTAINS
           nht_cosp = 40
        else
           nht_cosp = Nlr_in
-       endif
-    endif
+       end if
+    end if
     
     ! Set COSP call frequency, from namelist.
     cosp_nradsteps = cosp_nradsteps_in
@@ -608,6 +610,9 @@ CONTAINS
     
     integer :: errcode
     integer :: i
+
+    ! Are we using MMF?
+    call phys_getopts(use_MMF_out=use_MMF)
     
     ! ISCCP OUTPUTS
     if (lisccp_sim) then
@@ -1114,13 +1119,12 @@ CONTAINS
     ! Number of columns in this physics chunk
     ncol = state%ncol
 
-    ! Number of points to use in COSP call; could be packed GCM/CRM if using
-    ! MMF_PACK option
-#ifdef MMF_PACK
-    npoints = ncol * crm_nx_rad * crm_ny_rad
-#else
-    npoints = ncol
-#endif
+    ! Number of points to use in COSP call; could be packed GCM/CRM if using MMF
+    if (use_MMF) then
+       npoints = ncol * crm_nx_rad * crm_ny_rad
+    else
+       npoints = ncol
+    end if
 
     ! Construct COSP output derived type.
     call t_startf('cosp_construct_cosp_outputs')
@@ -1174,25 +1178,25 @@ CONTAINS
     call cosp_remask_passive(cospstateIN, cospOUT)
     call t_stopf('cosp_remask_passive')
 
-#ifdef MMF_PACK
-    call t_startf('cosp_write_outputs')
-    ! Allocate space for unpacked outputs
-    call construct_cospIN(ncol,nscol_cosp,pver,cospINave)
-    call construct_cosp_outputs(ncol,nscol_cosp,pver,Nlvgrid,0,cospOUTave)
-    ! Average packed COSP outputs
-    call cosp_unpack_outputs(ncol, crm_nx_rad, crm_ny_rad, cospIN, cospOUT, cospINave, cospOUTave)
-    ! Write COSP outputs to history files
-    call cosp_write_outputs(state, cospINave, cospOUTave)
-    ! Free space for unpacked outputs
-    call destroy_cospIN(cospINave)
-    call destroy_cosp_outputs(cospOUTave)
-    call t_stopf('cosp_write_outputs')
-#else
-    ! Write COSP outputs to history files
-    call t_startf('cosp_write_outputs')
-    call cosp_write_outputs(state, cospIN, cospOUT)
-    call t_stopf('cosp_write_outputs')
-#endif
+    if (use_MMF) then
+       call t_startf('cosp_write_outputs')
+       ! Allocate space for unpacked outputs
+       call construct_cospIN(ncol,nscol_cosp,pver,cospINave)
+       call construct_cosp_outputs(ncol,nscol_cosp,pver,Nlvgrid,0,cospOUTave)
+       ! Average packed COSP outputs
+       call cosp_unpack_outputs(ncol, crm_nx_rad, crm_ny_rad, cospIN, cospOUT, cospINave, cospOUTave)
+       ! Write COSP outputs to history files
+       call cosp_write_outputs(state, cospINave, cospOUTave)
+       ! Free space for unpacked outputs
+       call destroy_cospIN(cospINave)
+       call destroy_cosp_outputs(cospOUTave)
+       call t_stopf('cosp_write_outputs')
+    else
+       ! Write COSP outputs to history files
+       call t_startf('cosp_write_outputs')
+       call cosp_write_outputs(state, cospIN, cospOUT)
+       call t_stopf('cosp_write_outputs')
+    end if
 
     ! Clean up
     call t_startf('cosp_finalize')
@@ -1237,11 +1241,7 @@ CONTAINS
     do iy = 1,crm_ny_rad
       do ix = 1,crm_nx_rad
         do i = 1,ncol
-#ifdef MMF_PACK
           j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
-#else
-          j = i
-#endif
           ! Coordinate variables
           cospstateIN%lat(j)                      = state%lat(i)*180._r8/ pi
           cospstateIN%lon(j)                      = state%lon(i)*180._r8 / pi
@@ -1268,11 +1268,7 @@ CONTAINS
       do iy = 1,crm_ny_rad
         do ix = 1,crm_nx_rad
           do i = 1,ncol
-#ifdef MMF_PACK
             j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
-#else
-            j = i
-#endif
             cospstateIN%at(j,k)                        = state%t(i,k) 
             cospstateIN%qv(j,k)                        = q(i,k)
             cospstateIN%o3(j,k)                        = o3(i,k)  
@@ -1412,7 +1408,6 @@ CONTAINS
     cospIN%emsfc_lw      = emsfc_lw
 
     ! State variables
-#ifdef MMF_PACK
     psfc = 0
     do iy = 1,crm_ny_rad
       do ix = 1,crm_nx_rad
@@ -1422,439 +1417,275 @@ CONTAINS
         end do
       end do
     end do
-#else
-    do i = 1,ncol
-      psfc(i) = state%ps(i)
-    end do
-#endif
 
     ! Cloud fractions
-#ifdef MMF_PACK
-    call pbuf_get_field(pbuf, pbuf_get_index('CRM_CLD_RAD'), crm_cld)
-    cld_s = 0
-    cld_c = 0
-    do iz = 1,crm_nz
-      do iy = 1,crm_ny_rad
-        do ix = 1,crm_nx_rad
-          do i = 1,ncol
-            j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
-            k = pver - iz + 1
-            cld_s(j,k) = crm_cld(i,ix,iy,iz)
-          end do
-        end do
-      end do
-    end do
-#else
-    itim_old = pbuf_old_tim_idx()
-    call pbuf_get_field(pbuf, cld_idx,    cld,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
-    call pbuf_get_field(pbuf, concld_idx, concld, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
-    do k = 1,pver
-      do i = 1,ncol
-        cld_s(i,k) = cld(i,k)
-        cld_c(i,k) = concld(i,k)
-      end do
-    end do
-#endif    
+    if (use_MMF) then
+       call pbuf_get_field(pbuf, pbuf_get_index('CRM_CLD_RAD'), crm_cld)
+       cld_s = 0
+       cld_c = 0
+       do iz = 1,crm_nz
+         do iy = 1,crm_ny_rad
+           do ix = 1,crm_nx_rad
+             do i = 1,ncol
+               j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
+               k = pver - iz + 1
+               cld_s(j,k) = crm_cld(i,ix,iy,iz)
+             end do
+           end do
+         end do
+       end do
+    else
+       itim_old = pbuf_old_tim_idx()
+       call pbuf_get_field(pbuf, cld_idx,    cld,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+       call pbuf_get_field(pbuf, concld_idx, concld, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+       do k = 1,pver
+         do i = 1,ncol
+           cld_s(i,k) = cld(i,k)
+           cld_c(i,k) = concld(i,k)
+         end do
+       end do
+    end if  ! use_MMF   
 
     ! precipitation fluxes (use for both cam4 and cam5 for now....)
-#ifdef MMF_PACK
-    use_precipitation_fluxes = .false.
-    snow_ls_interp = 0
-    grpl_ls_interp = 0
-    rain_cv_interp = 0
-    snow_cv_interp = 0
-    do iz = 1,crm_nz
-      do iy = 1,crm_ny_rad
-        do ix = 1,crm_nx_rad
-          do i = 1,ncol
-            j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
-            k = pver - iz + 1
-            rain_ls_interp(j,k) = 0._r8  ! TODO: fix this
-            snow_ls_interp(j,k) = 0._r8  ! TODO: fix this
-            grpl_ls_interp(j,k) = 0._r8  ! TODO: fix this
-          end do
-        end do
-      end do
-    end do
-#else
-    call pbuf_get_field(pbuf, dpflxprc_idx, dp_flxprc  )
-    call pbuf_get_field(pbuf, dpflxsnw_idx, dp_flxsnw  )
-    call pbuf_get_field(pbuf, shflxprc_idx, sh_flxprc  )
-    call pbuf_get_field(pbuf, shflxsnw_idx, sh_flxsnw  )
-    call pbuf_get_field(pbuf, lsflxprc_idx, ls_flxprc  )
-    call pbuf_get_field(pbuf, lsflxsnw_idx, ls_flxsnw  )
-   
-    ! add together deep and shallow convection precipitation fluxes, recall *_flxprc variables are rain+snow
-    rain_cv(1:ncol,1:pverp) = (sh_flxprc(1:ncol,1:pverp)-sh_flxsnw(1:ncol,1:pverp)) + &
-         (dp_flxprc(1:ncol,1:pverp)-dp_flxsnw(1:ncol,1:pverp))
-    snow_cv(1:ncol,1:pverp) = sh_flxsnw(1:ncol,1:pverp) + dp_flxsnw(1:ncol,1:pverp)
-    
-    ! All precip fluxes in COSP should be mid points, all values are grid-box mean ("gbm") (Yuying)
-    ! Interpolate interface precip fluxes to mid points
-    grpl_ls_interp(1:ncol,1:pver) = 0._r8  ! NOTE: graupel remains zero
-    rain_ls_interp(1:ncol,1:pver) = 0._r8 
-    snow_ls_interp(1:ncol,1:pver) = 0._r8
-    do i = 1,ncol
-       ! Find intepolation weights
-       call lininterp_init(state%zi(i,1:pverp),pverp,state%zm(i,1:pver),pver,extrap_method,interp_wgts)
-       ! Do interpolation
-       call lininterp(rain_cv(i,1:pverp),pverp,rain_cv_interp(i,1:pver),pver,interp_wgts)
-       call lininterp(snow_cv(i,1:pverp),pverp,snow_cv_interp(i,1:pver),pver,interp_wgts)
-       call lininterp(ls_flxprc(i,1:pverp),pverp,rain_ls_interp(i,1:pver),pver,interp_wgts)
-       call lininterp(ls_flxsnw(i,1:pverp),pverp,snow_ls_interp(i,1:pver),pver,interp_wgts)
-       call lininterp_finish(interp_wgts)
-       ! ls_flxprc is for rain+snow, find rain_ls_interp by subtracting off snow_ls_interp
-       rain_ls_interp(i,1:pver)=rain_ls_interp(i,1:pver)-snow_ls_interp(i,1:pver)
-    end do
-    ! Make sure interpolated values are not less than 0 - COSP was complaining and resetting small 
-    ! negative values to zero.
-    ! ----- WARNING: COSP_CHECK_INPUT_2D: minimum value of rain_ls set to:      0.000000000000000 
-    ! So I set negative values to zero here... 
-    do k=1,pver
-       do i=1,ncol
-          if (rain_ls_interp(i,k) .lt. 0._r8) then
-             rain_ls_interp(i,k)=0._r8
-          end if
-          if (snow_ls_interp(i,k) .lt. 0._r8) then
-             snow_ls_interp(i,k)=0._r8
-          end if
-          if (rain_cv_interp(i,k) .lt. 0._r8) then
-             rain_cv_interp(i,k)=0._r8
-          end if
-          if (snow_cv_interp(i,k) .lt. 0._r8) then
-             snow_cv_interp(i,k)=0._r8
-          end if
+    if (use_MMF) then
+       use_precipitation_fluxes = .false.
+       snow_ls_interp = 0
+       grpl_ls_interp = 0
+       rain_cv_interp = 0
+       snow_cv_interp = 0
+       do iz = 1,crm_nz
+         do iy = 1,crm_ny_rad
+           do ix = 1,crm_nx_rad
+             do i = 1,ncol
+               j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
+               k = pver - iz + 1
+               rain_ls_interp(j,k) = 0._r8  ! TODO: fix this
+               snow_ls_interp(j,k) = 0._r8  ! TODO: fix this
+               grpl_ls_interp(j,k) = 0._r8  ! TODO: fix this
+             end do
+           end do
+         end do
        end do
-    end do
-#endif    
+    else
+       call pbuf_get_field(pbuf, dpflxprc_idx, dp_flxprc  )
+       call pbuf_get_field(pbuf, dpflxsnw_idx, dp_flxsnw  )
+       call pbuf_get_field(pbuf, shflxprc_idx, sh_flxprc  )
+       call pbuf_get_field(pbuf, shflxsnw_idx, sh_flxsnw  )
+       call pbuf_get_field(pbuf, lsflxprc_idx, ls_flxprc  )
+       call pbuf_get_field(pbuf, lsflxsnw_idx, ls_flxsnw  )
+      
+       ! add together deep and shallow convection precipitation fluxes, recall *_flxprc variables are rain+snow
+       rain_cv(1:ncol,1:pverp) = (sh_flxprc(1:ncol,1:pverp)-sh_flxsnw(1:ncol,1:pverp)) + &
+            (dp_flxprc(1:ncol,1:pverp)-dp_flxsnw(1:ncol,1:pverp))
+       snow_cv(1:ncol,1:pverp) = sh_flxsnw(1:ncol,1:pverp) + dp_flxsnw(1:ncol,1:pverp)
+       
+       ! All precip fluxes in COSP should be mid points, all values are grid-box mean ("gbm") (Yuying)
+       ! Interpolate interface precip fluxes to mid points
+       grpl_ls_interp(1:ncol,1:pver) = 0._r8  ! NOTE: graupel remains zero
+       rain_ls_interp(1:ncol,1:pver) = 0._r8 
+       snow_ls_interp(1:ncol,1:pver) = 0._r8
+       do i = 1,ncol
+          ! Find intepolation weights
+          call lininterp_init(state%zi(i,1:pverp),pverp,state%zm(i,1:pver),pver,extrap_method,interp_wgts)
+          ! Do interpolation
+          call lininterp(rain_cv(i,1:pverp),pverp,rain_cv_interp(i,1:pver),pver,interp_wgts)
+          call lininterp(snow_cv(i,1:pverp),pverp,snow_cv_interp(i,1:pver),pver,interp_wgts)
+          call lininterp(ls_flxprc(i,1:pverp),pverp,rain_ls_interp(i,1:pver),pver,interp_wgts)
+          call lininterp(ls_flxsnw(i,1:pverp),pverp,snow_ls_interp(i,1:pver),pver,interp_wgts)
+          call lininterp_finish(interp_wgts)
+          ! ls_flxprc is for rain+snow, find rain_ls_interp by subtracting off snow_ls_interp
+          rain_ls_interp(i,1:pver)=rain_ls_interp(i,1:pver)-snow_ls_interp(i,1:pver)
+       end do
+       ! Make sure interpolated values are not less than 0 - COSP was complaining and resetting small 
+       ! negative values to zero.
+       ! ----- WARNING: COSP_CHECK_INPUT_2D: minimum value of rain_ls set to:      0.000000000000000 
+       ! So I set negative values to zero here... 
+       do k=1,pver
+          do i=1,ncol
+             if (rain_ls_interp(i,k) .lt. 0._r8) then
+                rain_ls_interp(i,k)=0._r8
+             end if
+             if (snow_ls_interp(i,k) .lt. 0._r8) then
+                snow_ls_interp(i,k)=0._r8
+             end if
+             if (rain_cv_interp(i,k) .lt. 0._r8) then
+                rain_cv_interp(i,k)=0._r8
+             end if
+             if (snow_cv_interp(i,k) .lt. 0._r8) then
+                snow_cv_interp(i,k)=0._r8
+             end if
+          end do
+       end do
+    end if  ! use_MMF
 
     ! Hydrometeor mixing ratios
-#ifdef MMF_PACK
-    ! TODO: convert mr_lsliq+mr_lsice to array like mrhydro with enum-like
-    ! indices; handle preciptation mixing ratios here
-    call pbuf_get_field(pbuf, pbuf_get_index('CRM_QC_RAD'), crm_qc)
-    call pbuf_get_field(pbuf, pbuf_get_index('CRM_QI_RAD'), crm_qi)
-    mr_lsliq = 0
-    mr_lsice = 0
-    mr_ccliq = 0
-    mr_ccice = 0
-    do iz = 1,crm_nz
-      do iy = 1,crm_ny_rad
-        do ix = 1,crm_nx_rad
-          do i = 1,ncol
-            j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
-            k = pver - iz + 1
-            ! Mixing ratios
-            mr_lsliq(j,k) = crm_qc(i,ix,iy,iz)
-            mr_lsice(j,k) = crm_qi(i,ix,iy,iz)
-            mr_ccliq(j,k) = 0._r8
-            mr_ccice(j,k) = 0._r8
-          end do
-        end do
-      end do
-    end do
-#else
-    ! CAM5 cloud mixing ratio calculations
-    ! Note: Although CAM5 has non-zero convective cloud mixing ratios that affect the model state, 
-    ! Convective cloud water is NOT part of radiation calculations.
-    ! Get indices to radiative constituents
-    call cnst_get_ind('CLDLIQ',ixcldliq)
-    call cnst_get_ind('CLDICE',ixcldice)
-    ! convective cloud mixing ratios (use for cam4 and cam5)
-    call pbuf_get_field(pbuf, dpcldliq_idx, dp_cldliq  )
-    call pbuf_get_field(pbuf, dpcldice_idx, dp_cldice  )
-    ! get from pbuf in stratiform.F90
-    call pbuf_get_field(pbuf, shcldliq1_idx, sh_cldliq  )
-    call pbuf_get_field(pbuf, shcldice1_idx, sh_cldice  )
-    mr_ccliq(1:ncol,1:pver)           = 0._r8
-    mr_ccice(1:ncol,1:pver)           = 0._r8
-    mr_lsliq(1:ncol,1:pver)           = 0._r8
-    mr_lsice(1:ncol,1:pver)           = 0._r8
-    do k=1,pver
-       do i=1,ncol
-          if (cld(i,k) .gt. 0._r8) then
-             ! note: convective mixing ratio is the sum of shallow and deep convective clouds in CAM5
-             mr_ccliq(i,k) = sh_cldliq(i,k) + dp_cldliq(i,k)
-             mr_ccice(i,k) = sh_cldice(i,k) + dp_cldice(i,k)
-             mr_lsliq(i,k) = state%q(i,k,ixcldliq)   ! state only includes stratiform (kg/kg)  
-             mr_lsice(i,k) = state%q(i,k,ixcldice)   ! state only includes stratiform (kg/kg)
-          else
-             mr_ccliq(i,k) = 0._r8
-             mr_ccice(i,k) = 0._r8
-             mr_lsliq(i,k) = 0._r8
-             mr_lsice(i,k) = 0._r8
-          end if
+    if (use_MMF) then
+       ! TODO: convert mr_lsliq+mr_lsice to array like mrhydro with enum-like
+       ! indices; handle preciptation mixing ratios here
+       call pbuf_get_field(pbuf, pbuf_get_index('CRM_QC_RAD'), crm_qc)
+       call pbuf_get_field(pbuf, pbuf_get_index('CRM_QI_RAD'), crm_qi)
+       mr_lsliq = 0
+       mr_lsice = 0
+       mr_ccliq = 0
+       mr_ccice = 0
+       do iz = 1,crm_nz
+         do iy = 1,crm_ny_rad
+           do ix = 1,crm_nx_rad
+             do i = 1,ncol
+               j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
+               k = pver - iz + 1
+               ! Mixing ratios
+               mr_lsliq(j,k) = crm_qc(i,ix,iy,iz)
+               mr_lsice(j,k) = crm_qi(i,ix,iy,iz)
+               mr_ccliq(j,k) = 0._r8
+               mr_ccice(j,k) = 0._r8
+             end do
+           end do
+         end do
        end do
-    end do
-#endif
+    else
+       ! CAM5 cloud mixing ratio calculations
+       ! Note: Although CAM5 has non-zero convective cloud mixing ratios that affect the model state, 
+       ! Convective cloud water is NOT part of radiation calculations.
+       ! Get indices to radiative constituents
+       call cnst_get_ind('CLDLIQ',ixcldliq)
+       call cnst_get_ind('CLDICE',ixcldice)
+       ! convective cloud mixing ratios (use for cam4 and cam5)
+       call pbuf_get_field(pbuf, dpcldliq_idx, dp_cldliq  )
+       call pbuf_get_field(pbuf, dpcldice_idx, dp_cldice  )
+       ! get from pbuf in stratiform.F90
+       call pbuf_get_field(pbuf, shcldliq1_idx, sh_cldliq  )
+       call pbuf_get_field(pbuf, shcldice1_idx, sh_cldice  )
+       mr_ccliq(1:ncol,1:pver)           = 0._r8
+       mr_ccice(1:ncol,1:pver)           = 0._r8
+       mr_lsliq(1:ncol,1:pver)           = 0._r8
+       mr_lsice(1:ncol,1:pver)           = 0._r8
+       do k=1,pver
+          do i=1,ncol
+             if (cld(i,k) .gt. 0._r8) then
+                ! note: convective mixing ratio is the sum of shallow and deep convective clouds in CAM5
+                mr_ccliq(i,k) = sh_cldliq(i,k) + dp_cldliq(i,k)
+                mr_ccice(i,k) = sh_cldice(i,k) + dp_cldice(i,k)
+                mr_lsliq(i,k) = state%q(i,k,ixcldliq)   ! state only includes stratiform (kg/kg)  
+                mr_lsice(i,k) = state%q(i,k,ixcldice)   ! state only includes stratiform (kg/kg)
+             else
+                mr_ccliq(i,k) = 0._r8
+                mr_ccice(i,k) = 0._r8
+                mr_lsliq(i,k) = 0._r8
+                mr_lsice(i,k) = 0._r8
+             end if
+          end do
+       end do
+    end if  ! use_MMF
 
     ! Effective radii
-#ifdef MMF_PACK
-    call pbuf_get_field(pbuf, pbuf_get_index('CRM_REL'), crm_rel)
-    call pbuf_get_field(pbuf, pbuf_get_index('CRM_REI'), crm_rei)
-    do iz = 1,crm_nz
-      do iy = 1,crm_ny_rad
-        do ix = 1,crm_nx_rad
-          do i = 1,ncol
-            j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
-            k = pver - iz + 1
-            reff_cosp(j,k,I_LSCLIQ) = crm_rel(i,ix,iy,iz) * 1e-6_r8  ! microns to meters
-            reff_cosp(j,k,I_LSCICE) = crm_rei(i,ix,iy,iz) * 1e-6_r8  ! microns to meters
-            reff_cosp(j,k,I_LSRAIN) = 0._r8
-            reff_cosp(j,k,I_LSSNOW) = 0._r8
-            reff_cosp(j,k,I_CVCLIQ) = 0._r8
-            reff_cosp(j,k,I_CVCICE) = 0._r8
-            reff_cosp(j,k,I_CVRAIN) = 0._r8
-            reff_cosp(j,k,I_CVSNOW) = 0._r8
-            reff_cosp(j,k,I_LSGRPL) = 0._r8
-          end do
-        end do
-      end do
-    end do
-#else
-    ! Previously, I had set use_reff=.false.
-    ! use_reff = .false.  !! if you use this,all sizes use DEFAULT_LIDAR_REFF = 30.0e-6 meters
-    ! The specification of reff_cosp now follows e-mail discussion with Yuying in January 2011. (see above)
-    ! All of the values that I have assembled in the code are in microns...convert to meters since that is what COSP wants.
-    call pbuf_get_field(pbuf, rel_idx, rel  )
-    call pbuf_get_field(pbuf, rei_idx, rei)
-    ! added some more sizes to physics buffer in stratiform.F90 for COSP inputs
-    call pbuf_get_field(pbuf, lsreffrain_idx, ls_reffrain  )
-    call pbuf_get_field(pbuf, lsreffsnow_idx, ls_reffsnow  )
-    call pbuf_get_field(pbuf, cvreffliq_idx,  cv_reffliq   )
-    call pbuf_get_field(pbuf, cvreffice_idx,  cv_reffice   )
-    reff_cosp(1:ncol,1:pver,1:nhydro) = 0._r8
-    reff_cosp(1:ncol,1:pver,I_LSCLIQ) = rel(1:ncol,1:pver)*1.e-6_r8          ! (same as effc and effliq in stratiform.F90)
-    reff_cosp(1:ncol,1:pver,I_LSCICE) = rei(1:ncol,1:pver)*1.e-6_r8          ! (same as effi and effice in stratiform.F90)
-    reff_cosp(1:ncol,1:pver,I_LSRAIN) = ls_reffrain(1:ncol,1:pver)*1.e-6_r8  ! (calculated in cldwat2m_micro.F90, passed to stratiform.F90)
-    reff_cosp(1:ncol,1:pver,I_LSSNOW) = ls_reffsnow(1:ncol,1:pver)*1.e-6_r8  ! (calculated in cldwat2m_micro.F90, passed to stratiform.F90)
-    reff_cosp(1:ncol,1:pver,I_CVCLIQ) = cv_reffliq(1:ncol,1:pver)*1.e-6_r8   ! (calculated in stratiform.F90, not actually used in radiation)
-    reff_cosp(1:ncol,1:pver,I_CVCICE) = cv_reffice(1:ncol,1:pver)*1.e-6_r8   ! (calculated in stratiform.F90, not actually used in radiation)
-    reff_cosp(1:ncol,1:pver,I_CVRAIN) = ls_reffrain(1:ncol,1:pver)*1.e-6_r8  ! (same as stratiform per Andrew)
-    reff_cosp(1:ncol,1:pver,I_CVSNOW) = ls_reffsnow(1:ncol,1:pver)*1.e-6_r8  ! (same as stratiform per Andrew)
-    reff_cosp(1:ncol,1:pver,I_LSGRPL) = 0._r8                                ! (using radar default reff)
-#endif
-
-#ifdef MMF_PACK
-    call pbuf_get_field(pbuf, pbuf_get_index('CRM_EMIS'), crm_emis)
-    call pbuf_get_field(pbuf, pbuf_get_index('CRM_DTAU'), crm_dtau)
-    dtau_s = 0
-    dtau_c = 0
-    dem_s = 0
-    dem_c = 0
-    do iz = 1,crm_nz
-      do iy = 1,crm_ny_rad
-        do ix = 1,crm_nx_rad
-          do i = 1,ncol
-            j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
-            k = pver - iz + 1
-            dtau_s(j,k) = crm_dtau(i,ix,iy,iz)
-            dtau_c(j,k) = crm_dtau(i,ix,iy,iz)
-            dem_s (j,k) = crm_emis(i,ix,iy,iz)
-            dem_c (j,k) = crm_emis(i,ix,iy,iz)
-          end do
-        end do
-      end do
-    end do
-#else
-    ! NOTES:
-    ! 1) EAM assumes same radiative properties for stratiform and convective clouds, 
-    ! 2) COSP wants in-cloud values. EAM values of cld_swtau are in-cloud means.
-    ! 3) snow_tau and snow_emis are passed without modification to COSP
-    dtau_s(1:ncol,1:pver)      = cld_swtau(1:ncol,1:pver)     ! 0.67 micron optical depth of stratiform (in-cloud)
-    dtau_c(1:ncol,1:pver)      = cld_swtau(1:ncol,1:pver)     ! 0.67 micron optical depth of convective (in-cloud)
-    dem_s(1:ncol,1:pver)       = emis(1:ncol,1:pver)          ! 10.5 micron longwave emissivity of stratiform (in-cloud)
-    dem_c(1:ncol,1:pver)       = emis(1:ncol,1:pver)          ! 10.5 micron longwave emissivity of convective (in-cloud)
-    if (present(snow_tau) .and. present(snow_emis)) then
-       dem_s_snow(1:ncol,1:pver)  = snow_emis(1:ncol,1:pver)  ! 10.5 micron grid-box mean optical depth of stratiform snow
-       dtau_s_snow(1:ncol,1:pver) = snow_tau(1:ncol,1:pver)   ! 0.67 micron grid-box mean optical depth of stratiform snow
+    if (use_MMF) then
+       call pbuf_get_field(pbuf, pbuf_get_index('CRM_REL'), crm_rel)
+       call pbuf_get_field(pbuf, pbuf_get_index('CRM_REI'), crm_rei)
+       do iz = 1,crm_nz
+         do iy = 1,crm_ny_rad
+           do ix = 1,crm_nx_rad
+             do i = 1,ncol
+               j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
+               k = pver - iz + 1
+               reff_cosp(j,k,I_LSCLIQ) = crm_rel(i,ix,iy,iz) * 1e-6_r8  ! microns to meters
+               reff_cosp(j,k,I_LSCICE) = crm_rei(i,ix,iy,iz) * 1e-6_r8  ! microns to meters
+               reff_cosp(j,k,I_LSRAIN) = 0._r8
+               reff_cosp(j,k,I_LSSNOW) = 0._r8
+               reff_cosp(j,k,I_CVCLIQ) = 0._r8
+               reff_cosp(j,k,I_CVCICE) = 0._r8
+               reff_cosp(j,k,I_CVRAIN) = 0._r8
+               reff_cosp(j,k,I_CVSNOW) = 0._r8
+               reff_cosp(j,k,I_LSGRPL) = 0._r8
+             end do
+           end do
+         end do
+       end do
     else
-       dem_s_snow(1:ncol,1:pver) = 0._r8
-       dtau_s_snow(1:ncol,1:pver) = 0._r8
-    end if
-#endif
+       ! Previously, I had set use_reff=.false.
+       ! use_reff = .false.  !! if you use this,all sizes use DEFAULT_LIDAR_REFF = 30.0e-6 meters
+       ! The specification of reff_cosp now follows e-mail discussion with Yuying in January 2011. (see above)
+       ! All of the values that I have assembled in the code are in microns...convert to meters since that is what COSP wants.
+       call pbuf_get_field(pbuf, rel_idx, rel  )
+       call pbuf_get_field(pbuf, rei_idx, rei)
+       ! added some more sizes to physics buffer in stratiform.F90 for COSP inputs
+       call pbuf_get_field(pbuf, lsreffrain_idx, ls_reffrain  )
+       call pbuf_get_field(pbuf, lsreffsnow_idx, ls_reffsnow  )
+       call pbuf_get_field(pbuf, cvreffliq_idx,  cv_reffliq   )
+       call pbuf_get_field(pbuf, cvreffice_idx,  cv_reffice   )
+       reff_cosp(1:ncol,1:pver,1:nhydro) = 0._r8
+       reff_cosp(1:ncol,1:pver,I_LSCLIQ) = rel(1:ncol,1:pver)*1.e-6_r8          ! (same as effc and effliq in stratiform.F90)
+       reff_cosp(1:ncol,1:pver,I_LSCICE) = rei(1:ncol,1:pver)*1.e-6_r8          ! (same as effi and effice in stratiform.F90)
+       reff_cosp(1:ncol,1:pver,I_LSRAIN) = ls_reffrain(1:ncol,1:pver)*1.e-6_r8  ! (calculated in cldwat2m_micro.F90, passed to stratiform.F90)
+       reff_cosp(1:ncol,1:pver,I_LSSNOW) = ls_reffsnow(1:ncol,1:pver)*1.e-6_r8  ! (calculated in cldwat2m_micro.F90, passed to stratiform.F90)
+       reff_cosp(1:ncol,1:pver,I_CVCLIQ) = cv_reffliq(1:ncol,1:pver)*1.e-6_r8   ! (calculated in stratiform.F90, not actually used in radiation)
+       reff_cosp(1:ncol,1:pver,I_CVCICE) = cv_reffice(1:ncol,1:pver)*1.e-6_r8   ! (calculated in stratiform.F90, not actually used in radiation)
+       reff_cosp(1:ncol,1:pver,I_CVRAIN) = ls_reffrain(1:ncol,1:pver)*1.e-6_r8  ! (same as stratiform per Andrew)
+       reff_cosp(1:ncol,1:pver,I_CVSNOW) = ls_reffsnow(1:ncol,1:pver)*1.e-6_r8  ! (same as stratiform per Andrew)
+       reff_cosp(1:ncol,1:pver,I_LSGRPL) = 0._r8                                ! (using radar default reff)
+    end if  ! use_MMF
+
+    ! Set optical depth and emissivity
+    if (use_MMF) then
+       call pbuf_get_field(pbuf, pbuf_get_index('CRM_EMIS'), crm_emis)
+       call pbuf_get_field(pbuf, pbuf_get_index('CRM_DTAU'), crm_dtau)
+       dtau_s = 0
+       dtau_c = 0
+       dem_s = 0
+       dem_c = 0
+       do iz = 1,crm_nz
+         do iy = 1,crm_ny_rad
+           do ix = 1,crm_nx_rad
+             do i = 1,ncol
+               j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
+               k = pver - iz + 1
+               dtau_s(j,k) = crm_dtau(i,ix,iy,iz)
+               dtau_c(j,k) = crm_dtau(i,ix,iy,iz)
+               dem_s (j,k) = crm_emis(i,ix,iy,iz)
+               dem_c (j,k) = crm_emis(i,ix,iy,iz)
+             end do
+           end do
+         end do
+       end do
+    else
+       ! NOTES:
+       ! 1) EAM assumes same radiative properties for stratiform and convective clouds, 
+       ! 2) COSP wants in-cloud values. EAM values of cld_swtau are in-cloud means.
+       ! 3) snow_tau and snow_emis are passed without modification to COSP
+       dtau_s(1:ncol,1:pver)      = cld_swtau(1:ncol,1:pver)     ! 0.67 micron optical depth of stratiform (in-cloud)
+       dtau_c(1:ncol,1:pver)      = cld_swtau(1:ncol,1:pver)     ! 0.67 micron optical depth of convective (in-cloud)
+       dem_s(1:ncol,1:pver)       = emis(1:ncol,1:pver)          ! 10.5 micron longwave emissivity of stratiform (in-cloud)
+       dem_c(1:ncol,1:pver)       = emis(1:ncol,1:pver)          ! 10.5 micron longwave emissivity of convective (in-cloud)
+       if (present(snow_tau) .and. present(snow_emis)) then
+          dem_s_snow(1:ncol,1:pver)  = snow_emis(1:ncol,1:pver)  ! 10.5 micron grid-box mean optical depth of stratiform snow
+          dtau_s_snow(1:ncol,1:pver) = snow_tau(1:ncol,1:pver)   ! 0.67 micron grid-box mean optical depth of stratiform snow
+       else
+          dem_s_snow(1:ncol,1:pver) = 0._r8
+          dtau_s_snow(1:ncol,1:pver) = 0._r8
+       end if
+    end if  ! use_MMF
 
     if (lradar_sim) then 
        cospIN%rcfg_cloudsat = rcfg_cs(lchnk)
        sd_wk = sd_cs(lchnk)
     end if
 
-    call subsample_and_optics(npoints,pver,nscol_cosp,nhydro,overlap,             &
-         use_precipitation_fluxes,lidar_ice_type,sd_wk,cld_s(1:npoints,1:pver),     &
-         cld_c(1:npoints,1:pver),rain_ls_interp(1:npoints,1:pver),                  &
-         snow_ls_interp(1:npoints,1:pver),grpl_ls_interp(1:npoints,1:pver),          &
-         rain_cv_interp(1:npoints,1:pver),snow_cv_interp(1:npoints,1:pver),          &
-         mr_lsliq(1:npoints,1:pver),mr_lsice(1:npoints,1:pver),                      &
-         mr_ccliq(1:npoints,1:pver),mr_ccice(1:npoints,1:pver),                      &
-         reff_cosp(1:npoints,1:pver,:),dtau_c(1:npoints,1:pver),                     &
-         dtau_s(1:npoints,1:pver),dem_c(1:npoints,1:pver),                           &
-         dem_s(1:npoints,1:pver),dtau_s_snow(1:npoints,1:pver),                      &
+    call subsample_and_optics(npoints,pver,nscol_cosp,nhydro,overlap,           &
+         use_precipitation_fluxes,lidar_ice_type,sd_wk,cld_s(1:npoints,1:pver), &
+         cld_c(1:npoints,1:pver),rain_ls_interp(1:npoints,1:pver),              &
+         snow_ls_interp(1:npoints,1:pver),grpl_ls_interp(1:npoints,1:pver),     &
+         rain_cv_interp(1:npoints,1:pver),snow_cv_interp(1:npoints,1:pver),     &
+         mr_lsliq(1:npoints,1:pver),mr_lsice(1:npoints,1:pver),                 &
+         mr_ccliq(1:npoints,1:pver),mr_ccice(1:npoints,1:pver),                 &
+         reff_cosp(1:npoints,1:pver,:),dtau_c(1:npoints,1:pver),                &
+         dtau_s(1:npoints,1:pver),dem_c(1:npoints,1:pver),                      &
+         dem_s(1:npoints,1:pver),dtau_s_snow(1:npoints,1:pver),                 &
          dem_s_snow(1:npoints,1:pver),psfc(1:npoints),cospstateIN,cospIN)
     if (lradar_sim) sd_cs(lchnk) = sd_wk
 
    end subroutine populate_cosp_subcol
 #endif /* USE_COSP */
  
-#if defined(MMF) && defined(USE_COSP)
-  subroutine populate_cosp_subcol_mmf(state, pbuf, cospstateIN, cospIN)
-    use physics_types,        only: physics_state
-    use physics_buffer,       only: physics_buffer_desc, pbuf_get_field, pbuf_old_tim_idx
-    type(physics_state)      , intent(in),target :: state
-    type(physics_buffer_desc), pointer           :: pbuf(:)
-    type(cosp_optical_inputs), intent(inout)     :: cospIN       ! COSP optical (or derived?) fields needed by simulators
-    type(cosp_column_inputs) , intent(inout)     :: cospstateIN  ! COSP model fields needed by simulators
-    integer :: ix, iy, iz, ik
-
-    ! Get hydros for Cloudsat and CALIPSO optics
-    do iz = 1,crm_nz
-      do iy = 1,crm_ny_rad
-        do ix = 1,crm_nx_rad
-          do ic = 1,ncol
-            ik = pver - iz + 1
-            is = (ix * nx) + iy - 1
-            ! Mixing ratios
-            mr_hydro(ic,is,ik,I_LSCLIQ) = crm_qc (ic,ix,iy,iz)
-            mr_hydro(ic,is,ik,I_LSCICE) = crm_qi (ic,ix,iy,iz)
-            mr_hydro(ic,is,ik,I_LSRAIN) = crm_qpc(ic,ix,iy,iz)
-            mr_hydro(ic,is,ik,I_LSSNOW) = crm_qpi(ic,ix,iy,iz)
-            ! Effective radii
-            reff(ic,is,iz,I_LSCLIQ) = crm_rel(ic,ix,iy,iz)
-            reff(ic,is,iz,I_LSCICE) = crm_rei(ic,ix,iy,iz)
-            ! Number concentrations
-            ! (not set for 1mom)
-            !np(ic,is,ik,I_LSCLIQ) = crm_nc (ic,ix,iy,iz)
-            !np(ic,is,ik,I_LSCICE) = crm_ni (ic,ix,iy,iz)
-            !np(ic,is,ik,I_LSRAIN) = crm_npc(ic,ix,iy,iz)
-            !np(ic,is,ik,I_LSSNOW) = crm_npi(ic,ix,iy,iz)
-          end do
-        end do
-      end do
-    end do
-
-    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    ! Compute optical fields for passive simulators (i.e. only sunlit points)
-    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    do iz = 1,crm_nz
-      do iy = 1,crm_ny_rad
-        do ix = 1,crm_nx_rad
-          do ic = 1,ncol
-            ik = pver - iz + 1
-            is = (ix * nx) + iy - 1
-#ifdef COMBINE_SNOW
-            cospIN%emiss_11(ic,is,ik) = 1._wp - (1 - crm_emis(ic,ix,iy,iz)) * (1 - crm_emis_snow(ic,ix,iy,iz))
-#else
-            cospIN%emiss_11(ic,is,ik) = crm_emis(ic,ix,iy,iz)
-#endif
-            cospIN%tau_067 (ic,is,ik) = crm_tau (ic,ix,iy,iz)
-          end do
-        end do
-      end do
-    end do
-
-    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    ! CLOUDSAT RADAR OPTICS
-    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    call t_startf("cloudsat_optics")
-    if (lradar_sim) then
-      call cloudsat_optics( &
-        Npoints, Ncolumns, Nlevels, Nlvgrid, Nhydro, &
-        mr_hydro, Reff, Np, &
-        sd, cospstateIN, cospIN &
-      )
-    end if
-    call t_stopf("cloudsat_optics")
-    
-    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    ! CALIPSO Polarized optics
-    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    call t_startf("calipso_optics")
-    if (Llidar_sim) then
-       ReffTemp = ReffIN
-       call lidar_optics(nPoints,nColumns,nLevels,5,lidar_ice_type,                      &
-                         mr_hydro(1:nPoints,1:nColumns,1:nLevels,I_LSCLIQ),              &
-                         mr_hydro(1:nPoints,1:nColumns,1:nLevels,I_LSCICE),              &
-                         mr_hydro(1:nPoints,1:nColumns,1:nLevels,I_CVCLIQ),              &
-                         mr_hydro(1:nPoints,1:nColumns,1:nLevels,I_CVCICE),              &
-                         mr_hydro(1:nPoints,1:nColumns,1:nLevels,I_LSSNOW),              &
-                         ReffTemp(1:nPoints,1:nLevels,I_LSCLIQ),                         &
-                         ReffTemp(1:nPoints,1:nLevels,I_LSCICE),                         &
-                         ReffTemp(1:nPoints,1:nLevels,I_CVCLIQ),                         &
-                         ReffTemp(1:nPoints,1:nLevels,I_CVCICE),                         & 
-                         ReffTemp(1:nPoints,1:nLevels,I_LSSNOW),                         &
-                         cospstateIN%pfull(1:nPoints,1:nLevels),                         &
-                         cospstateIN%phalf(1:nPoints,1:nLevels+1),                       &
-                         cospstateIN%at(1:nPoints,1:nLevels),                            &
-                         cospIN%beta_mol_calipso(1:nPoints,1:nLevels),                   &
-                         cospIN%betatot_calipso(1:nPoints,1:nColumns,1:nLevels),         &
-                         cospIN%tau_mol_calipso(1:nPoints,1:nLevels),                    &
-                         cospIN%tautot_calipso(1:nPoints,1:nColumns,1:nLevels),          &
-                         cospIN%tautot_S_liq(1:nPoints,1:nColumns),                      &
-                         cospIN%tautot_S_ice(1:nPoints,1:nColumns),                      &
-                         cospIN%betatot_ice_calipso(1:nPoints,1:nColumns,1:nLevels),     &
-                         cospIN%betatot_liq_calipso(1:nPoints,1:nColumns,1:nLevels),     &
-                         cospIN%tautot_ice_calipso(1:nPoints,1:nColumns,1:nLevels),      &
-                         cospIN%tautot_liq_calipso(1:nPoints,1:nColumns,1:nLevels)) 
-    endif
-    call t_stopf("calipso_optics")
-
-    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    ! MODIS optics
-    !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    call t_startf("modis_optics")
-    if (lmodis_sim) then
-       allocate(MODIS_cloudWater(nPoints,nColumns,nLevels),                              &
-                MODIS_cloudIce(nPoints,nColumns,nLevels),                                &
-                MODIS_cloudSnow(nPoints,nColumns,nLevels),                               &
-                MODIS_waterSize(nPoints,nColumns,nLevels),                               &
-                MODIS_iceSize(nPoints,nColumns,nLevels),                                 &
-                MODIS_snowSize(nPoints,nColumns,nLevels),                                &
-                MODIS_opticalThicknessLiq(nPoints,nColumns,nLevels),                     &
-                MODIS_opticalThicknessIce(nPoints,nColumns,nLevels),                     &
-                MODIS_opticalThicknessSnow(nPoints,nColumns,nLevels))
-
-       ! Cloud water
-       call cosp_simulator_optics(nPoints,nColumns,nLevels,cospIN%frac_out,              &
-            mr_hydro(:,:,:,I_CVCLIQ),mr_hydro(:,:,:,I_LSCLIQ),MODIS_cloudWater)
-       ! Cloud ice
-       call cosp_simulator_optics(nPoints,nColumns,nLevels,cospIN%frac_out,              &
-            mr_hydro(:,:,:,I_CVCICE),mr_hydro(:,:,:,I_LSCICE),MODIS_cloudIce)  
-       ! Cloud water droplet size
-       call cosp_simulator_optics(nPoints,nColumns,nLevels,cospIN%frac_out,              &
-            Reff(:,:,:,I_CVCLIQ),Reff(:,:,:,I_LSCLIQ),MODIS_waterSize)
-       ! Cloud ice crystal size
-       call cosp_simulator_optics(nPoints,nColumns,nLevels,cospIN%frac_out,              &
-            Reff(:,:,:,I_CVCICE),Reff(:,:,:,I_LSCICE),MODIS_iceSize)
-       
-       ! Cloud snow and size  
-       MODIS_snowSize(:,:,:)  = Reff(:,:,:,I_LSSNOW)
-       do j=1,nColumns
-          where((frac_prec(:,j,:) .eq. 1 .or. frac_prec(:,j,:) .eq. 3) .and. &
-               Reff(:,j,:,I_LSSNOW) .gt. 0._r8 .and. dtau_s_snow .gt. 0._r8)
-             MODIS_cloudSnow(:,j,:) = mr_hydro(:,j,:,I_LSSNOW)
-             MODIS_snowSize(:,j,:)  = Reff(:,j,:,I_LSSNOW)
-          elsewhere
-             MODIS_snowSize(:,j,:)  = 0._wp
-             MODIS_cloudSnow(:,j,:) = 0._wp
-          endwhere
-       enddo
-       
-       ! Partition optical thickness into liquid and ice parts
-       call modis_optics_partition(nPoints, nLevels, nColumns, MODIS_cloudWater,     &
-            MODIS_cloudIce, MODIS_cloudSnow, MODIS_waterSize, MODIS_iceSize,         &
-            MODIS_snowSize, cospIN%tau_067, MODIS_opticalThicknessLiq,               &
-            MODIS_opticalThicknessIce, MODIS_opticalThicknessSnow)                            
-       
-       ! Compute assymetry parameter and single scattering albedo 
-       call modis_optics(nPoints, nLevels, nColumns, MODIS_opticalThicknessLiq,      &
-            MODIS_waterSize*1.0e6_wp, MODIS_opticalThicknessIce,                     &
-            MODIS_iceSize*1.0e6_wp, MODIS_opticalThicknessSnow,                      &
-            MODIS_snowSize*1.0e6_wp, cospIN%fracLiq, cospIN%asym, cospIN%ss_alb)
-
-    endif ! MODIS simulator optics
-    call t_stopf("modis_optics")
-
-  end subroutine populate_cosp_subcol_mmf
-#endif
 
 #ifdef USE_COSP
    ! Remask passive simulator output after call to COSP. This should NOT be necessary, and if it is
@@ -2461,7 +2292,7 @@ CONTAINS
        else
           ls_p_rate(:,1:nLevels) = 0 ! mixing_ratio(rain) + mixing_ratio(snow) + mixing_ratio (groupel)
           cv_p_rate(:,1:nLevels) = 0 ! mixing_ratio(rain) + mixing_ratio(snow)
-       endif
+       end if
        
        ! Call PREC_SCOPS
        allocate(frac_prec(nPoints,nColumns,nLevels))
@@ -2563,11 +2394,11 @@ CONTAINS
              if (frac_ls(j,k) .ne. 0._r8) then
                 mr_hydro(j,:,k,I_LSCLIQ) = mr_hydro(j,:,k,I_LSCLIQ)/frac_ls(j,k)
                 mr_hydro(j,:,k,I_LSCICE) = mr_hydro(j,:,k,I_LSCICE)/frac_ls(j,k)
-             endif
+             end if
              if (frac_cv(j,k) .ne. 0._r8) then
                 mr_hydro(j,:,k,I_CVCLIQ) = mr_hydro(j,:,k,I_CVCLIQ)/frac_cv(j,k)
                 mr_hydro(j,:,k,I_CVCICE) = mr_hydro(j,:,k,I_CVCICE)/frac_cv(j,k)
-             endif
+             end if
              
              ! Precipitation
              if (use_precipitation_fluxes) then
@@ -2575,22 +2406,22 @@ CONTAINS
                    fl_lsrain(j,k) = fl_lsrainIN(j,k)/prec_ls(j,k)
                    fl_lssnow(j,k) = fl_lssnowIN(j,k)/prec_ls(j,k)
                    fl_lsgrpl(j,k) = fl_lsgrplIN(j,k)/prec_ls(j,k)
-                endif
+                end if
                 if (prec_cv(j,k) .ne. 0._r8) then
                    fl_ccrain(j,k) = fl_ccrainIN(j,k)/prec_cv(j,k)
                    fl_ccsnow(j,k) = fl_ccsnowIN(j,k)/prec_cv(j,k)
-                endif
+                end if
              else
                 if (prec_ls(j,k) .ne. 0._r8) then
                    mr_hydro(j,:,k,I_LSRAIN) = mr_hydro(j,:,k,I_LSRAIN)/prec_ls(j,k)
                    mr_hydro(j,:,k,I_LSSNOW) = mr_hydro(j,:,k,I_LSSNOW)/prec_ls(j,k)
                    mr_hydro(j,:,k,I_LSGRPL) = mr_hydro(j,:,k,I_LSGRPL)/prec_ls(j,k)
-                endif
+                end if
                 if (prec_cv(j,k) .ne. 0._r8) then
                    mr_hydro(j,:,k,I_CVRAIN) = mr_hydro(j,:,k,I_CVRAIN)/prec_cv(j,k)
                    mr_hydro(j,:,k,I_CVSNOW) = mr_hydro(j,:,k,I_CVSNOW)/prec_cv(j,k)
-                endif
-             endif
+                end if
+             end if
           enddo
        enddo
              
@@ -2633,7 +2464,7 @@ CONTAINS
                a_x(I_LSGRPL),   b_x(I_LSGRPL),   gamma_1(I_LSGRPL),  gamma_2(I_LSGRPL),  &
                gamma_3(I_LSGRPL), gamma_4(I_LSGRPL), fl_lsgrpl,                          &
                mr_hydro(:,:,:,I_LSGRPL), Reff(:,:,:,I_LSGRPL))              
-       endif
+       end if
 
     else
        cospIN%frac_out(:,:,:) = 1  
@@ -2644,7 +2475,7 @@ CONTAINS
        mr_hydro(:,1,:,I_CVCLIQ) = mr_ccliq
        mr_hydro(:,1,:,I_CVCICE) = mr_ccice
        Reff(:,1,:,:)            = ReffIN
-    endif
+    end if
     call t_stopf("scops")
 
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2690,7 +2521,7 @@ CONTAINS
                          cospIN%betatot_liq_calipso(1:nPoints,1:nColumns,1:nLevels),     &
                          cospIN%tautot_ice_calipso(1:nPoints,1:nColumns,1:nLevels),      &
                          cospIN%tautot_liq_calipso(1:nPoints,1:nColumns,1:nLevels)) 
-    endif
+    end if
     call t_stopf("calipso_optics")
 
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2710,7 +2541,7 @@ CONTAINS
              cospIN%emiss_11(:,j,:) = 1._wp - (1- cospIN%emiss_11(:,j,:))*(1-dem_s_snow)
           endwhere
        enddo
-    endif
+    end if
     call t_stopf("11micron_emissivity")
     
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2728,7 +2559,7 @@ CONTAINS
              cospIN%tau_067(:,j,:)  = cospIN%tau_067(:,j,:)+dtau_s_snow
           endwhere
        enddo
-    endif
+    end if
     call t_stopf("067tau")
 
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2784,7 +2615,7 @@ CONTAINS
             MODIS_iceSize*1.0e6_wp, MODIS_opticalThicknessSnow,                      &
             MODIS_snowSize*1.0e6_wp, cospIN%fracLiq, cospIN%asym, cospIN%ss_alb)
 
-    endif ! MODIS simulator optics
+    end if ! MODIS simulator optics
     call t_stopf("modis_optics")
 
   end subroutine subsample_and_optics
@@ -2817,7 +2648,7 @@ CONTAINS
                 (cospIN%rcfg_cloudsat%use_gas_abs == 2 .and. j == 1)) then
                 g_vol(i,j) = gases(cospstateIN%pfull(i,j), cospstateIN%at(i,j),    &
                                    cospstateIN%qv(i,j), cospIN%rcfg_cloudsat%freq)
-             endif
+             end if
              cospIN%g_vol_cloudsat(i,:,j) = g_vol(i,j)
           end do
        end do
@@ -2951,7 +2782,7 @@ CONTAINS
        allocate(x%isccp_meantb(Npoints))
        allocate(x%isccp_meantbclr(Npoints))
        allocate(x%isccp_meanalbedocld(Npoints))
-    endif
+    end if
 
     ! MISR simulator
     if (lmisr_sim) then 
@@ -2962,7 +2793,7 @@ CONTAINS
        allocate(x%misr_dist_model_layertops(Npoints,numMISRHgtBins))
        allocate(x%misr_meanztop(Npoints))
        allocate(x%misr_cldarea(Npoints))    
-    endif
+    end if
     
     ! MODIS simulator
     if (lmodis_sim) then
@@ -2986,7 +2817,7 @@ CONTAINS
        allocate(x%modis_Optical_Thickness_vs_Cloud_Top_Pressure(nPoints,numModisTauBins,numMODISPresBins))
        allocate(x%modis_Optical_thickness_vs_ReffLIQ(nPoints,numMODISTauBins,numMODISReffLiqBins))   
        allocate(x%modis_Optical_Thickness_vs_ReffICE(nPoints,numMODISTauBins,numMODISReffIceBins))
-    endif
+    end if
     
     ! CALIPSO simulator
     if (llidar_sim) then
@@ -3011,13 +2842,13 @@ CONTAINS
 !       allocate(x%calipso_cldtypemeanzse(Npoints,3)) 
 !       allocate(x%calipso_cldthinemis(Npoints))
 !       allocate(x%calipso_lidarcldtype(Npoints,Nlvgrid,LIDAR_NTYPE+1))
-    endif 
+    end if 
       
     ! PARASOL
     if (lparasol_sim) then
        allocate(x%parasolPix_refl(Npoints,Ncolumns,PARASOL_NREFL))
        allocate(x%parasolGrid_refl(Npoints,PARASOL_NREFL))
-    endif
+    end if
 
     ! Cloudsat simulator
     if (lradar_sim) then
@@ -3027,7 +2858,7 @@ CONTAINS
        allocate(x%radar_lidar_tcc(Npoints))
        allocate(x%cloudsat_precip_cover(Npoints,nCloudsatPrecipClass))
        allocate(x%cloudsat_pia(Npoints))
-    endif
+    end if
 
   end subroutine construct_cosp_outputs
 
@@ -3101,243 +2932,243 @@ CONTAINS
      if (associated(y%calipso_beta_mol))          then
         deallocate(y%calipso_beta_mol)
         nullify(y%calipso_beta_mol)
-     endif
+     end if
      if (associated(y%calipso_temp_tot))          then
         deallocate(y%calipso_temp_tot)
         nullify(y%calipso_temp_tot)     
-     endif
+     end if
      if (associated(y%calipso_betaperp_tot))      then
         deallocate(y%calipso_betaperp_tot)
         nullify(y%calipso_betaperp_tot)     
-     endif
+     end if
      if (associated(y%calipso_beta_tot))          then
         deallocate(y%calipso_beta_tot)    
         nullify(y%calipso_beta_tot)     
-     endif
+     end if
      if (associated(y%calipso_tau_tot))           then
         deallocate(y%calipso_tau_tot) 
         nullify(y%calipso_tau_tot)     
-     endif
+     end if
      if (associated(y%calipso_lidarcldphase))     then
         deallocate(y%calipso_lidarcldphase)
         nullify(y%calipso_lidarcldphase)     
-     endif
+     end if
      if (associated(y%calipso_cldlayerphase))     then
         deallocate(y%calipso_cldlayerphase)
         nullify(y%calipso_cldlayerphase)     
-     endif
+     end if
      if (associated(y%calipso_lidarcldtmp))       then
         deallocate(y%calipso_lidarcldtmp)
         nullify(y%calipso_lidarcldtmp)     
-     endif
+     end if
      if (associated(y%calipso_cldlayer))          then
         deallocate(y%calipso_cldlayer)
         nullify(y%calipso_cldlayer)     
-     endif
+     end if
      if (associated(y%calipso_lidarcld))         then
         deallocate(y%calipso_lidarcld)
         nullify(y%calipso_lidarcld)     
-     endif
+     end if
      if (associated(y%calipso_srbval))            then
         deallocate(y%calipso_srbval)
         nullify(y%calipso_srbval)     
-     endif
+     end if
      if (associated(y%calipso_cfad_sr))          then
         deallocate(y%calipso_cfad_sr)
         nullify(y%calipso_cfad_sr)     
-     endif
+     end if
      if (associated(y%parasolPix_refl))           then
         deallocate(y%parasolPix_refl)
         nullify(y%parasolPix_refl)     
-     endif
+     end if
      if (associated(y%parasolGrid_refl))          then
         deallocate(y%parasolGrid_refl) 
         nullify(y%parasolGrid_refl)     
-     endif
+     end if
      if (associated(y%cloudsat_Ze_tot))           then
         deallocate(y%cloudsat_Ze_tot) 
         nullify(y%cloudsat_Ze_tot)  
-     endif
+     end if
      if (associated(y%cloudsat_precip_cover)) then
         deallocate(y%cloudsat_precip_cover)
         nullify(y%cloudsat_precip_cover)
-     endif
+     end if
      if (associated(y%cloudsat_pia)) then
         deallocate(y%cloudsat_pia)
         nullify(y%cloudsat_pia)
-     endif
+     end if
      if (associated(y%cloudsat_cfad_ze))          then
         deallocate(y%cloudsat_cfad_ze)
         nullify(y%cloudsat_cfad_ze)     
-     endif
+     end if
      if (associated(y%radar_lidar_tcc))           then
         deallocate(y%radar_lidar_tcc) 
         nullify(y%radar_lidar_tcc)  
-     endif
+     end if
      if (associated(y%lidar_only_freq_cloud))     then
         deallocate(y%lidar_only_freq_cloud)
         nullify(y%lidar_only_freq_cloud)     
-     endif
+     end if
      if (associated(y%isccp_totalcldarea))        then
         deallocate(y%isccp_totalcldarea) 
         nullify(y%isccp_totalcldarea)  
-     endif
+     end if
      if (associated(y%isccp_meantb))              then
         deallocate(y%isccp_meantb) 
         nullify(y%isccp_meantb)     
-     endif
+     end if
      if (associated(y%isccp_meantbclr))           then
         deallocate(y%isccp_meantbclr)
         nullify(y%isccp_meantbclr)  
-     endif
+     end if
      if (associated(y%isccp_meanptop))            then
         deallocate(y%isccp_meanptop)
         nullify(y%isccp_meanptop)     
-     endif
+     end if
      if (associated(y%isccp_meantaucld))          then
         deallocate(y%isccp_meantaucld) 
         nullify(y%isccp_meantaucld)       
-     endif
+     end if
      if (associated(y%isccp_meanalbedocld))       then
         deallocate(y%isccp_meanalbedocld)
         nullify(y%isccp_meanalbedocld)     
-     endif
+     end if
      if (associated(y%isccp_boxtau))              then
         deallocate(y%isccp_boxtau)
         nullify(y%isccp_boxtau)       
-     endif
+     end if
      if (associated(y%isccp_boxptop))             then
         deallocate(y%isccp_boxptop)
         nullify(y%isccp_boxptop)     
-     endif
+     end if
      if (associated(y%isccp_fq))                  then
         deallocate(y%isccp_fq)
         nullify(y%isccp_fq)       
-     endif
+     end if
      if (associated(y%misr_fq))                   then
         deallocate(y%misr_fq) 
         nullify(y%misr_fq)     
-     endif
+     end if
      if (associated(y%misr_dist_model_layertops)) then
         deallocate(y%misr_dist_model_layertops)
         nullify(y%misr_dist_model_layertops)       
-     endif
+     end if
      if (associated(y%misr_meanztop))             then
         deallocate(y%misr_meanztop)
         nullify(y%misr_meanztop)     
-     endif
+     end if
      if (associated(y%misr_cldarea))              then
         deallocate(y%misr_cldarea)
         nullify(y%misr_cldarea)      
-     endif
+     end if
      if (associated(y%rttov_tbs))                 then
         deallocate(y%rttov_tbs)
         nullify(y%rttov_tbs)     
-     endif
+     end if
      if (associated(y%modis_Cloud_Fraction_Total_Mean))                      then
         deallocate(y%modis_Cloud_Fraction_Total_Mean)       
         nullify(y%modis_Cloud_Fraction_Total_Mean)       
-     endif
+     end if
      if (associated(y%modis_Cloud_Fraction_Ice_Mean))                        then
         deallocate(y%modis_Cloud_Fraction_Ice_Mean)     
         nullify(y%modis_Cloud_Fraction_Ice_Mean)     
-     endif
+     end if
      if (associated(y%modis_Cloud_Fraction_Water_Mean))                      then
         deallocate(y%modis_Cloud_Fraction_Water_Mean)           
         nullify(y%modis_Cloud_Fraction_Water_Mean)           
-     endif
+     end if
      if (associated(y%modis_Cloud_Fraction_High_Mean))                       then
         deallocate(y%modis_Cloud_Fraction_High_Mean)     
         nullify(y%modis_Cloud_Fraction_High_Mean)     
-     endif
+     end if
      if (associated(y%modis_Cloud_Fraction_Mid_Mean))                        then
         deallocate(y%modis_Cloud_Fraction_Mid_Mean)       
         nullify(y%modis_Cloud_Fraction_Mid_Mean)       
-     endif
+     end if
      if (associated(y%modis_Cloud_Fraction_Low_Mean))                        then
         deallocate(y%modis_Cloud_Fraction_Low_Mean)     
         nullify(y%modis_Cloud_Fraction_Low_Mean)     
-     endif
+     end if
      if (associated(y%modis_Optical_Thickness_Total_Mean))                   then
         deallocate(y%modis_Optical_Thickness_Total_Mean)  
         nullify(y%modis_Optical_Thickness_Total_Mean)  
-     endif
+     end if
      if (associated(y%modis_Optical_Thickness_Water_Mean))                   then
         deallocate(y%modis_Optical_Thickness_Water_Mean)     
         nullify(y%modis_Optical_Thickness_Water_Mean)     
-     endif
+     end if
      if (associated(y%modis_Optical_Thickness_Ice_Mean))                     then
         deallocate(y%modis_Optical_Thickness_Ice_Mean)       
         nullify(y%modis_Optical_Thickness_Ice_Mean)       
-     endif
+     end if
      if (associated(y%modis_Optical_Thickness_Total_LogMean))                then
         deallocate(y%modis_Optical_Thickness_Total_LogMean)    
         nullify(y%modis_Optical_Thickness_Total_LogMean)    
-     endif
+     end if
      if (associated(y%modis_Optical_Thickness_Water_LogMean))                then
         deallocate(y%modis_Optical_Thickness_Water_LogMean)     
         nullify(y%modis_Optical_Thickness_Water_LogMean)     
-     endif
+     end if
      if (associated(y%modis_Optical_Thickness_Ice_LogMean))                  then
         deallocate(y%modis_Optical_Thickness_Ice_LogMean)     
         nullify(y%modis_Optical_Thickness_Ice_LogMean)     
-     endif
+     end if
      if (associated(y%modis_Cloud_Particle_Size_Water_Mean))                 then
         deallocate(y%modis_Cloud_Particle_Size_Water_Mean)       
         nullify(y%modis_Cloud_Particle_Size_Water_Mean)       
-     endif
+     end if
      if (associated(y%modis_Cloud_Particle_Size_Ice_Mean))                   then
         deallocate(y%modis_Cloud_Particle_Size_Ice_Mean)     
         nullify(y%modis_Cloud_Particle_Size_Ice_Mean)     
-     endif
+     end if
      if (associated(y%modis_Cloud_Top_Pressure_Total_Mean))                  then
         deallocate(y%modis_Cloud_Top_Pressure_Total_Mean)           
         nullify(y%modis_Cloud_Top_Pressure_Total_Mean)           
-     endif
+     end if
      if (associated(y%modis_Liquid_Water_Path_Mean))                         then
         deallocate(y%modis_Liquid_Water_Path_Mean)     
         nullify(y%modis_Liquid_Water_Path_Mean)     
-     endif
+     end if
      if (associated(y%modis_Ice_Water_Path_Mean))                            then
         deallocate(y%modis_Ice_Water_Path_Mean)       
         nullify(y%modis_Ice_Water_Path_Mean)       
-     endif
+     end if
      if (associated(y%modis_Optical_Thickness_vs_Cloud_Top_Pressure))        then
         deallocate(y%modis_Optical_Thickness_vs_Cloud_Top_Pressure)     
         nullify(y%modis_Optical_Thickness_vs_Cloud_Top_Pressure)     
-     endif
+     end if
      if (associated(y%modis_Optical_thickness_vs_ReffLIQ))                   then
         deallocate(y%modis_Optical_thickness_vs_ReffLIQ)
         nullify(y%modis_Optical_thickness_vs_ReffLIQ)
-     endif
+     end if
      if (associated(y%modis_Optical_thickness_vs_ReffICE))                   then
         deallocate(y%modis_Optical_thickness_vs_ReffICE)
         nullify(y%modis_Optical_thickness_vs_ReffICE)
-     endif
+     end if
      if (associated(y%calipso_cldtype)) then
         deallocate(y%calipso_cldtype)
         nullify(y%calipso_cldtype)
-     endif
+     end if
      if (associated(y%calipso_cldtypetemp)) then
         deallocate(y%calipso_cldtypetemp) 
         nullify(y%calipso_cldtypetemp) 
-     endif
+     end if
      if (associated(y%calipso_cldtypemeanz)) then
         deallocate(y%calipso_cldtypemeanz) 
         nullify(y%calipso_cldtypemeanz) 
-     endif
+     end if
      if (associated(y%calipso_cldtypemeanzse)) then
         deallocate(y%calipso_cldtypemeanzse) 
         nullify(y%calipso_cldtypemeanzse) 
-     endif
+     end if
      if (associated(y%calipso_cldthinemis)) then
         deallocate(y%calipso_cldthinemis)
         nullify(y%calipso_cldthinemis)
-     endif
+     end if
      if (associated(y%calipso_lidarcldtype)) then
         deallocate(y%calipso_lidarcldtype)
         nullify(y%calipso_lidarcldtype)
-     endif
+     end if
         
    end subroutine destroy_cosp_outputs
 #endif
