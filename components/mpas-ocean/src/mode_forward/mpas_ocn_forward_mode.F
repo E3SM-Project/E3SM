@@ -59,6 +59,7 @@ module ocn_forward_mode
    use ocn_frazil_forcing
    use ocn_tidal_forcing
    use ocn_vel_tidal_potential
+   use ocn_vel_self_attraction_loading
 
    use ocn_tracer_hmix
    use ocn_tracer_hmix_redi
@@ -81,6 +82,9 @@ module ocn_forward_mode
 
    use ocn_vmix
    use ocn_vmix_gotm, only: ocn_vmix_gotm_finalize
+
+   use ocn_vertical_advection
+   use ocn_vertical_remap, only: ocn_vertical_remap_init
 
    use ocn_forcing
    use ocn_time_varying_forcing
@@ -351,6 +355,10 @@ module ocn_forward_mode
 
       endif
 
+      ! Initialize self-attraction and loading
+      call ocn_vel_self_attraction_loading_init(domain,err_tmp)
+      ierr = ior(ierr, err_tmp)
+
       !-----------------------------------------------------------------
       ! Complete all remaining module initializations.
       !-----------------------------------------------------------------
@@ -456,6 +464,10 @@ module ocn_forward_mode
       call ocn_vmix_init(domain, err_tmp)
       ierr = ior(ierr, err_tmp)
       call ocn_tendency_init(err_tmp)
+      ierr = ior(ierr,err_tmp)
+      call ocn_vertical_advection_init(err_tmp)
+      if ( configVertAdvMethod == vertAdvRemap ) &
+         call ocn_vertical_remap_init(err_tmp)
       ierr = ior(ierr,err_tmp)
 
       if (ierr /= 0) then

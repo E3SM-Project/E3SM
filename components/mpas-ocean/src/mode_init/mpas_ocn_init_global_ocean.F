@@ -174,13 +174,17 @@ contains
 
       call mpas_log_write( 'Reading depth levels.')
       call ocn_init_setup_global_ocean_read_depth_levels(domain, iErr)
-
-      call mpas_log_write( 'Reading topography data.')
-      call ocn_init_setup_global_ocean_read_topo(domain, iErr)
-      call mpas_log_write( 'Interpolating topography data.')
+      
+      if (config_global_ocean_topography_source .eq. 'latlon_file') then
+        call mpas_log_write( 'Reading topography data from latitude-longitude file.')
+        call ocn_init_setup_global_ocean_read_topo(domain, iErr)
+      endif
+      call mpas_log_write( 'Creating model topography data.')
       call ocn_init_setup_global_ocean_create_model_topo(domain, iErr)
-      call mpas_log_write( 'Cleaning up topography IC fields')
-      call ocn_init_global_ocean_destroy_topo_fields()
+      if (config_global_ocean_topography_source .eq. 'latlon_file') then
+        call mpas_log_write( 'Cleaning up topography IC fields')
+        call ocn_init_global_ocean_destroy_topo_fields()
+      endif
 
       !***********************************************************************
       !
@@ -769,7 +773,7 @@ contains
        type (mpas_pool_type), pointer :: meshPool, verticalMeshPool, criticalPassagesPool
 
        real (kind=RKIND), dimension(:), pointer :: latCell, lonCell, bottomDepth, bottomDepthObserved, &
-            refBottomDepth, refLayerThickness, refZMid, oceanFracObserved
+            refBottomDepth, refLayerThickness, refZMid, oceanFracObserved, bed_elevation
 
        integer, pointer :: nCells, nCellsSolve, nVertLevels
 
@@ -794,6 +798,7 @@ contains
 
           call mpas_pool_get_array(meshPool, 'latCell', latCell)
           call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+          call mpas_pool_get_array(meshPool, 'bed_elevation', bed_elevation)
           call mpas_pool_get_array(meshPool, 'bottomDepthObserved', bottomDepthObserved)
           call mpas_pool_get_array(meshPool, 'oceanFracObserved', oceanFracObserved)
           call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
@@ -807,37 +812,42 @@ contains
           end do
 
           ! Record depth of the bottom of the ocean, before any alterations for modeling purposes.
-          if (config_global_ocean_topography_method .eq. "nearest_neighbor") then
-
-             call ocn_init_interpolation_nearest_horiz(topoLon % array, topoLat % array, &
-                                                       topoIC % array, nLonTopo, nLatTopo, &
-                                                       lonCell, latCell, bottomDepthObserved, nCells, &
-                                                       inXPeriod = 2.0_RKIND * pii)
-
-             if (config_global_ocean_topography_has_ocean_frac) then
-                call ocn_init_interpolation_nearest_horiz(topoLon % array, topoLat % array, &
-                                                          oceanFracIC % array, nLonTopo, nLatTopo, &
-                                                          lonCell, latCell, oceanFracObserved, nCells, &
-                                                          inXPeriod = 2.0_RKIND * pii)
-             end if
-
-          elseif (config_global_ocean_topography_method .eq. "bilinear_interpolation") then
-             call ocn_init_interpolation_bilinear_horiz(topoLon % array, topoLat % array, &
-                                                        topoIC % array, nLonTopo, nLatTopo, &
-                                                        lonCell, latCell, bottomDepthObserved, nCells, &
-                                                        inXPeriod = 2.0_RKIND * pii)
-
-             if (config_global_ocean_topography_has_ocean_frac) then
-                call ocn_init_interpolation_bilinear_horiz(topoLon % array, topoLat % array, &
-                                                           oceanFracIC % array, nLonTopo, nLatTopo, &
-                                                           lonCell, latCell, oceanFracObserved, nCells, &
+          if (config_global_ocean_topography_source .eq. "latlon_file") then 
+              if (config_global_ocean_topography_method .eq. "nearest_neighbor") then
+    
+                 call ocn_init_interpolation_nearest_horiz(topoLon % array, topoLat % array, &
+                                                           topoIC % array, nLonTopo, nLatTopo, &
+                                                           lonCell, latCell, bottomDepthObserved, nCells, &
                                                            inXPeriod = 2.0_RKIND * pii)
-             end if
-
-          else
-             call mpas_log_write( 'Invalid choice of config_global_ocean_topography_method.', MPAS_LOG_CRIT)
-             iErr = 1
-             call mpas_dmpar_finalize(domain % dminfo)
+    
+                 if (config_global_ocean_topography_has_ocean_frac) then
+                    call ocn_init_interpolation_nearest_horiz(topoLon % array, topoLat % array, &
+                                                              oceanFracIC % array, nLonTopo, nLatTopo, &
+                                                              lonCell, latCell, oceanFracObserved, nCells, &
+                                                              inXPeriod = 2.0_RKIND * pii)
+                 end if
+    
+              elseif (config_global_ocean_topography_method .eq. "bilinear_interpolation") then
+                 call ocn_init_interpolation_bilinear_horiz(topoLon % array, topoLat % array, &
+                                                            topoIC % array, nLonTopo, nLatTopo, &
+                                                            lonCell, latCell, bottomDepthObserved, nCells, &
+                                                            inXPeriod = 2.0_RKIND * pii)
+    
+                 if (config_global_ocean_topography_has_ocean_frac) then
+                    call ocn_init_interpolation_bilinear_horiz(topoLon % array, topoLat % array, &
+                                                               oceanFracIC % array, nLonTopo, nLatTopo, &
+                                                               lonCell, latCell, oceanFracObserved, nCells, &
+                                                               inXPeriod = 2.0_RKIND * pii)
+                 end if
+    
+              else
+                 call mpas_log_write( 'Invalid choice of config_global_ocean_topography_method.', MPAS_LOG_CRIT)
+                 iErr = 1
+                 call mpas_dmpar_finalize(domain % dminfo)
+              endif
+          else 
+              ! Get bottomDepthObserved from bed_elevation variable
+              bottomDepthObserved = bed_elevation
           endif
           block_ptr => block_ptr % next
        end do

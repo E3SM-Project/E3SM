@@ -130,33 +130,31 @@ module li_core
 
       if (config_do_restart) then
          call mpas_log_write("This is a restart: read stream 'restart'.")
+         call mpas_timer_start('io_read', .false.)
          call mpas_stream_mgr_read(domain % streamManager, streamID='restart', ierr=err_tmp)
+         call mpas_timer_stop('io_read')
          err = ior(err, err_tmp)
+         call mpas_timer_start('reset_io_alarms', .false.)
+         call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', ierr=err_tmp)
+         err = ior(err, err_tmp)
+         call mpas_timer_stop('reset_io_alarms')
       else
-         call mpas_log_write("This is not a restart: read stream 'input'.")
-         call mpas_stream_mgr_read(domain % streamManager, streamID='input', ierr=err_tmp)
+         call mpas_log_write("This is not a restart: read input streams with alarm ringing at initial time.")
+         call mpas_log_write("  (Streams with input_interval='initial_only', " // &
+                             "plus streams whose input_interval matches the start time.)")
+         call mpas_timer_start('io_read', .false.)
+         call mpas_stream_mgr_read(domain % streamManager, readInputOutputStreams=.false., ierr=err_tmp)
+         call mpas_timer_stop('io_read')
          err = ior(err, err_tmp)
+         call mpas_timer_start('reset_io_alarms', .false.)
+         call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
+         err = ior(err, err_tmp)
+         call mpas_timer_stop('reset_io_alarms')
       end if
-      call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='restart', ierr=err_tmp)
-      err = ior(err, err_tmp)
-      call MPAS_stream_mgr_reset_alarms(domain % streamManager, streamID='input', ierr=err_tmp)
-      err = ior(err, err_tmp)
+      call mpas_timer_start('reset_io_alarms', .false.)
       call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
       err = ior(err, err_tmp)
-
-      !
-      ! Read the remaining input streams
-      !
-      call mpas_log_write("Looking for other input streams set for 'initial_only'.")
-      call mpas_timer_start('io_read', .false.)
-      call mpas_stream_mgr_read(domain % streamManager, ierr=err_tmp)
-      err = ior(err, err_tmp)
-      call mpas_timer_stop('io_read')
-      call mpas_timer_start('reset_io_alarms', .false.)
-      call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_INPUT, ierr=err_tmp)
-      err = ior(err, err_tmp)
       call mpas_timer_stop('reset_io_alarms')
-      call mpas_log_write("Finished reading 'initial_only' input streams.")
 
       !
       ! Read time-varying inputs, if present (i.e., forcing)
@@ -170,10 +168,10 @@ module li_core
       do while (associated(stream_cursor))
          if (stream_cursor % direction == MPAS_STREAM_INPUT) then
             ! Only consider streams of direction input (don't consider input/output streams)
-            if ((trim(stream_cursor % name) == 'input') .or. &
-                (trim(stream_cursor % name) == 'restart')) then
-               ! Don't attempt to interact with these two special streams
-               ! (even though restart is not type input, including to be safe)
+            if (trim(stream_cursor % name) == 'restart') then
+               ! Don't want to read the special 'restart' stream here
+               ! Note could also use the readInputOutputStreams optional argument to mpas_stream_mgr_read below instead.
+               ! That would provide more general behavior of ignoring any INPUT_OUTPUT stream, not just 'restart'.
                stream_cursor => stream_cursor % next
                cycle
             endif

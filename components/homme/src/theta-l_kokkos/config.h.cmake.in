@@ -72,3 +72,6 @@
 
 /* Detect whether this is a kokkos target */
 #cmakedefine01 KOKKOS_TARGET
+
+/* Detect whether COMPOSE passive tracer transport is enabled */
+#cmakedefine HOMME_ENABLE_COMPOSE

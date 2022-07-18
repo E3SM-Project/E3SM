@@ -316,7 +316,7 @@ contains
       ! zBot is location we apply boundary conditions on the ODE for stream function.
       zBot = zMax
 
-      L = config_GM_constant_gravWaveSpeed * sqrt(rho_sw * zMax / gravity / config_eos_linear_alpha / config_gm_analytic_temperature3)
+      L = config_GM_constant_bclModeSpeed * sqrt(rho_sw * zMax / gravity / config_eos_linear_alpha / config_gm_analytic_temperature3)
       R = - config_GM_constant_kappa * config_gm_analytic_temperature2 * zMax / config_gm_analytic_temperature3 &
         / config_gm_analytic_ymax
       c1 = R*(1-exp(-zBot/L))/(exp(zBot/L) - exp(-zBot/L))

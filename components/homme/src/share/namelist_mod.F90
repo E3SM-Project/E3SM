@@ -1,6 +1,9 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#if !defined(CAM) && !defined(SCREAM)
+#include "homme_git_sha.h"
+#endif
 
 module namelist_mod
 
@@ -1257,9 +1260,7 @@ end if
 ! ^ ifndef CAM
 
 #if !defined(CAM) && !defined(SCREAM)
-#ifdef HOMME_SHA1
       write(iulog,*)"HOMME SHA = ", HOMME_SHA1
-#endif
 #endif
 
       call print_clear_message()

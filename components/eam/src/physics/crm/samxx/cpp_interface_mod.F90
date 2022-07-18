@@ -15,7 +15,7 @@ module cpp_interface_mod
 #ifdef MMF_ESMT
                    crm_input_ul_esmt, crm_input_vl_esmt, &
 #endif
-                   crm_input_t_vt, crm_input_q_vt, &
+                   crm_input_t_vt, crm_input_q_vt, crm_input_u_vt, &
                    crm_state_u_wind, crm_state_v_wind, crm_state_w_wind, crm_state_temperature, &
                    crm_state_qt, crm_state_qp, crm_state_qn, crm_rad_qrad, crm_rad_temperature, &
                    crm_rad_qv, crm_rad_qc, crm_rad_qi, crm_rad_cld, crm_output_subcycle_factor, &
@@ -29,7 +29,8 @@ module cpp_interface_mod
                    crm_output_qp_src, crm_output_qt_ls, crm_output_t_ls, crm_output_jt_crm, crm_output_mx_crm, crm_output_cltot, &
                    crm_output_clhgh, crm_output_clmed, crm_output_cllow, &
                    crm_output_sltend, crm_output_qltend, crm_output_qcltend, crm_output_qiltend, &
-                   crm_output_t_vt_tend, crm_output_q_vt_tend, crm_output_t_vt_ls, crm_output_q_vt_ls, &
+                   crm_output_t_vt_tend, crm_output_q_vt_tend, crm_output_u_vt_tend, &
+                   crm_output_t_vt_ls, crm_output_q_vt_ls, crm_output_u_vt_ls, &
 #ifdef MMF_MOMENTUM_FEEDBACK
                    crm_output_ultend, crm_output_vltend, &
 #endif 
@@ -73,6 +74,7 @@ module cpp_interface_mod
                                       crm_output_clhgh, crm_output_clmed, crm_output_cllow, &
                                       crm_output_sltend, crm_output_qltend, crm_output_qcltend, &
                                       crm_output_t_vt_tend, crm_output_q_vt_tend, crm_output_t_vt_ls, crm_output_q_vt_ls, &
+                                      crm_input_u_vt, crm_output_u_vt_tend, crm_output_u_vt_ls, &
 #ifdef MMF_MOMENTUM_FEEDBACK
                                       crm_output_ultend, crm_output_vltend, &
 #endif

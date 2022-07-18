@@ -2,15 +2,15 @@
 #include "pressure.h"
 
 void pressure() {
-  auto &p             = :: p;
-  auto &rhow          = :: rhow;
-  auto &adz           = :: adz;
-  auto &adzw          = :: adzw;
-  auto &dz            = :: dz;
-  auto &dx            = :: dx;
-  auto &dy            = :: dy;
-  auto &rho           = :: rho;
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( p             , :: p );
+  YAKL_SCOPE( rhow          , :: rhow );
+  YAKL_SCOPE( adz           , :: adz );
+  YAKL_SCOPE( adzw          , :: adzw );
+  YAKL_SCOPE( dz            , :: dz );
+  YAKL_SCOPE( dx            , :: dx );
+  YAKL_SCOPE( dy            , :: dy );
+  YAKL_SCOPE( rho           , :: rho );
+  YAKL_SCOPE( ncrms         , :: ncrms );
 
   int npressureslabs = nsubdomains;
   int nzslab = max(1,nzm/npressureslabs); 

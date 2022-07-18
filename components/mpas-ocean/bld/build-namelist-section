@@ -93,14 +93,6 @@ add_default($nl, 'config_Leith_parameter');
 add_default($nl, 'config_Leith_dx');
 add_default($nl, 'config_Leith_visc2_max');
 
-####################################################
-# Namelist group: mesoscale_eddy_parameterizations #
-####################################################
-
-add_default($nl, 'config_eddying_resolution_taper');
-add_default($nl, 'config_eddying_resolution_ramp_min');
-add_default($nl, 'config_eddying_resolution_ramp_max');
-
 #########################################
 # Namelist group: Redi_isopycnal_mixing #
 #########################################
@@ -115,6 +107,9 @@ add_default($nl, 'config_Redi_N2_based_taper_enable');
 add_default($nl, 'config_Redi_N2_based_taper_min');
 add_default($nl, 'config_Redi_N2_based_taper_limit_term1');
 add_default($nl, 'config_Redi_min_layers_diag_terms');
+add_default($nl, 'config_Redi_horizontal_taper');
+add_default($nl, 'config_Redi_horizontal_ramp_min');
+add_default($nl, 'config_Redi_horizontal_ramp_max');
 
 ############################################
 # Namelist group: GM_eddy_parameterization #
@@ -123,7 +118,8 @@ add_default($nl, 'config_Redi_min_layers_diag_terms');
 add_default($nl, 'config_use_GM');
 add_default($nl, 'config_GM_closure');
 add_default($nl, 'config_GM_constant_kappa');
-add_default($nl, 'config_GM_constant_gravWaveSpeed');
+add_default($nl, 'config_GM_constant_bclModeSpeed');
+add_default($nl, 'config_GM_minBclModeSpeed_method');
 add_default($nl, 'config_GM_spatially_variable_min_kappa');
 add_default($nl, 'config_GM_spatially_variable_max_kappa');
 add_default($nl, 'config_GM_spatially_variable_baroclinic_mode');
@@ -133,6 +129,11 @@ add_default($nl, 'config_GM_EG_riMin');
 add_default($nl, 'config_GM_EG_kappa_factor');
 add_default($nl, 'config_GM_EG_Rossby_factor');
 add_default($nl, 'config_GM_EG_Rhines_factor');
+add_default($nl, 'config_GM_horizontal_taper');
+add_default($nl, 'config_GM_horizontal_ramp_min');
+add_default($nl, 'config_GM_horizontal_ramp_max');
+add_default($nl, 'config_GMRedi_Rossby_ramp_min');
+add_default($nl, 'config_GMRedi_Rossby_ramp_max');
 
 ####################################
 # Namelist group: Rayleigh_damping #
@@ -229,6 +230,22 @@ add_default($nl, 'config_surface_buoyancy_depth');
 add_default($nl, 'config_enable_shortwave_energy_fixer');
 
 ###########################################
+# Namelist group: self_attraction_loading #
+###########################################
+
+add_default($nl, 'config_use_self_attraction_loading');
+add_default($nl, 'config_self_attraction_loading_smoothing_width');
+add_default($nl, 'config_mpas_to_grid_weights_file');
+add_default($nl, 'config_grid_to_mpas_weights_file');
+add_default($nl, 'config_self_attraction_loading_compute_interval');
+add_default($nl, 'config_nLatitude');
+add_default($nl, 'config_nLongitude');
+add_default($nl, 'config_use_parallel_self_attraction_loading');
+add_default($nl, 'config_parallel_self_attraction_loading_order');
+add_default($nl, 'config_parallel_self_attraction_loading_n_cells_per_block');
+add_default($nl, 'config_parallel_self_attraction_loading_bfb');
+
+###########################################
 # Namelist group: tidal_potential_forcing #
 ###########################################
 
@@ -284,11 +301,14 @@ add_default($nl, 'config_land_ice_flux_jenkins_salt_transfer_coefficient');
 # Namelist group: advection #
 #############################
 
-add_default($nl, 'config_vert_tracer_adv');
-add_default($nl, 'config_vert_tracer_adv_order');
+add_default($nl, 'config_vert_advection_method');
+add_default($nl, 'config_vert_remap_order');
+add_default($nl, 'config_vert_remap_interval');
+add_default($nl, 'config_vert_tracer_adv_flux_order');
 add_default($nl, 'config_horiz_tracer_adv_order');
 add_default($nl, 'config_coef_3rd_order');
-add_default($nl, 'config_monotonic');
+add_default($nl, 'config_flux_limiter');
+add_default($nl, 'config_remap_limiter');
 
 ###############################
 # Namelist group: bottom_drag #

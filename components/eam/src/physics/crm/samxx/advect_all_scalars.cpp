@@ -5,8 +5,8 @@ void advect_all_scalars() {
   real2d dummy("dummy",nz,ncrms);
   real1d esmt_offset("esmt_offset", ncrms);
 #ifdef MMF_ESMT
-  auto &u_esmt = :: u_esmt;
-  auto &v_esmt = :: v_esmt;
+  YAKL_SCOPE( u_esmt  , :: u_esmt);
+  YAKL_SCOPE( v_esmt  , :: v_esmt);
   real1d esmt_min("esmt_min",ncrms);
   yakl::memset(esmt_min,1.0e20);
 #endif

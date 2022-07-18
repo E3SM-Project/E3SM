@@ -24,7 +24,7 @@ module physpkg
   use phys_grid,               only: get_ncols_p, print_cost_p, update_cost_p
   use phys_gmean,              only: gmean_mass
   use ppgrid,                  only: begchunk, endchunk, pcols, pver, pverp
-  use constituents,            only: pcnst, cnst_name, cnst_get_ind
+  use constituents,            only: pcnst, cnst_name, cnst_get_ind, setup_moist_indices
   use camsrfexch,              only: cam_out_t, cam_in_t
   use phys_control,            only: phys_do_flux_avg, phys_getopts
   use scamMod,                 only: single_column, scm_crm_mode
@@ -583,6 +583,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
   ! diag_init makes addfld calls for dyn fields that are output from the physics decomp
   call diag_init()
+
+  call setup_moist_indices()
 
   call check_energy_init()
 

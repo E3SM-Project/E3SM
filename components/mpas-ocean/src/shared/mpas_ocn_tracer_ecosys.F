@@ -152,31 +152,31 @@ module ocn_tracer_ecosys
          ecosys_diag_photoC_NO3_TOT_zint_indexInMARBL,  &
          ecosys_diag_O2_ZMIN_indexInMARBL,  &
          ecosys_diag_O2_ZMIN_DEPTH_indexInMARBL,  &
+         ecosys_diag_calcToSed_indexInMARBL,      &
+         ecosys_diag_calcToSed_ALT_CO2_indexInMARBL,      &
+         ecosys_diag_pocToSed_indexInMARBL,       &
+         ecosys_diag_pfeToSed_indexInMARBL,       &
+         ecosys_diag_SedDenitrif_indexInMARBL,    &
          ecosys_diag_Jint_Ctot_indexInMARBL,  &
-         ecosys_diag_Jint_100m_Ctot_indexInMARBL,  &
          ecosys_diag_Jint_Ntot_indexInMARBL,  &
-         ecosys_diag_Jint_100m_Ntot_indexInMARBL,  &
          ecosys_diag_Jint_Ptot_indexInMARBL,  &
-         ecosys_diag_Jint_100m_Ptot_indexInMARBL,  &
          ecosys_diag_Jint_Sitot_indexInMARBL,  &
-         ecosys_diag_Jint_100m_Sitot_indexInMARBL, &
-         ecosys_diag_Jint_Fetot_indexInMARBL,  &
-         ecosys_diag_Jint_100m_Fetot_indexInMARBL
+         ecosys_diag_Jint_Fetot_indexInMARBL
       logical :: &
          ecosys_diag_photoC_TOT_zint_allocatedInMARBL = .false.,  &
          ecosys_diag_photoC_NO3_TOT_zint_allocatedInMARBL = .false.,  &
          ecosys_diag_O2_ZMIN_allocatedInMARBL = .false.,  &
          ecosys_diag_O2_ZMIN_DEPTH_allocatedInMARBL = .false.,  &
+         ecosys_diag_calcToSed_allocatedInMARBL = .false.,      &
+         ecosys_diag_calcToSed_ALT_CO2_allocatedInMARBL = .false.,      &
+         ecosys_diag_pocToSed_allocatedInMARBL = .false.,       &
+         ecosys_diag_pfeToSed_allocatedInMARBL = .false.,       &
+         ecosys_diag_SedDenitrif_allocatedInMARBL = .false.,    &
          ecosys_diag_Jint_Ctot_allocatedInMARBL = .false.,  &
-         ecosys_diag_Jint_100m_Ctot_allocatedInMARBL = .false.,  &
          ecosys_diag_Jint_Ntot_allocatedInMARBL = .false.,  &
-         ecosys_diag_Jint_100m_Ntot_allocatedInMARBL = .false.,  &
          ecosys_diag_Jint_Ptot_allocatedInMARBL = .false.,  &
-         ecosys_diag_Jint_100m_Ptot_allocatedInMARBL = .false.,  &
          ecosys_diag_Jint_Sitot_allocatedInMARBL = .false.,  &
-         ecosys_diag_Jint_100m_Sitot_allocatedInMARBL = .false., &
-         ecosys_diag_Jint_Fetot_allocatedInMARBL = .false.,  &
-         ecosys_diag_Jint_100m_Fetot_allocatedInMARBL = .false.
+         ecosys_diag_Jint_Fetot_allocatedInMARBL = .false.
 
       ! indices for level 1 diagnostics, each autotroph, no depth dependence (nx,autotroph_cnt)
       integer, dimension(autotroph_cnt) :: &
@@ -205,11 +205,6 @@ module ocn_tracer_ecosys
          ecosys_diag_photoC_NO3_TOT_indexInMARBL,  &
          ecosys_diag_NITRIF_indexInMARBL,  &
          ecosys_diag_DENITRIF_indexInMARBL,  &
-         ecosys_diag_calcToSed_indexInMARBL,      &
-         ecosys_diag_calcToSed_ALT_CO2_indexInMARBL,      &
-         ecosys_diag_pocToSed_indexInMARBL,       &
-         ecosys_diag_pfeToSed_indexInMARBL,       &
-         ecosys_diag_SedDenitrif_indexInMARBL,    &
          ecosys_diag_tot_Nfix_indexInMARBL
       logical :: &
          ecosys_diag_PAR_avg_allocatedInMARBL = .false.,  &
@@ -229,11 +224,6 @@ module ocn_tracer_ecosys
          ecosys_diag_photoC_NO3_TOT_allocatedInMARBL = .false.,  &
          ecosys_diag_NITRIF_allocatedInMARBL = .false.,  &
          ecosys_diag_DENITRIF_allocatedInMARBL = .false.,  &
-         ecosys_diag_calcToSed_allocatedInMARBL = .false.,      &
-         ecosys_diag_calcToSed_ALT_CO2_allocatedInMARBL = .false.,      &
-         ecosys_diag_pocToSed_allocatedInMARBL = .false.,       &
-         ecosys_diag_pfeToSed_allocatedInMARBL = .false.,       &
-         ecosys_diag_SedDenitrif_allocatedInMARBL = .false.,    &
          ecosys_diag_tot_Nfix_allocatedInMARBL = .false.
 
       ! indices for level 2 diagnostics, surface fields (nx)
@@ -274,6 +264,20 @@ module ocn_tracer_ecosys
          ecosys_diag_pCO2surface_ALT_CO2_allocatedInMARBL = .false.,  &
          ecosys_diag_dpCO2_ALT_CO2_allocatedInMARBL = .false.
 
+      ! indices for level 2 diagnostics, each autotroph, no depth dependence (nx,autotroph_cnt)
+      integer, dimension(autotroph_cnt) :: &
+         ecosys_diag_N_lim_surf_indexInMARBL,          &
+         ecosys_diag_P_lim_surf_indexInMARBL,          &
+         ecosys_diag_Fe_lim_surf_indexInMARBL,         &
+         ecosys_diag_SiO3_lim_surf_indexInMARBL,       &
+         ecosys_diag_light_lim_surf_indexInMARBL
+      logical, dimension(autotroph_cnt) :: &
+         ecosys_diag_N_lim_surf_allocatedInMARBL = .false.,          &
+         ecosys_diag_P_lim_surf_allocatedInMARBL = .false.,          &
+         ecosys_diag_Fe_lim_surf_allocatedInMARBL = .false.,         &
+         ecosys_diag_SiO3_lim_surf_allocatedInMARBL = .false.,       &
+         ecosys_diag_light_lim_surf_allocatedInMARBL = .false.
+
       ! indices for level 2 diagnostics, full depth dependence (nx,nz)
       integer :: &
          ecosys_diag_O2_PRODUCTION_indexInMARBL,  &
@@ -281,12 +285,13 @@ module ocn_tracer_ecosys
          ecosys_diag_AOU_indexInMARBL,          &
          ecosys_diag_pH_3D_indexInMARBL,     &
          ecosys_diag_POC_PROD_indexInMARBL,  &
-         ecosys_diag_POC_REMIN_indexInMARBL,  &
+         ecosys_diag_POC_REMIN_DOCr_indexInMARBL,  &
          ecosys_diag_POC_REMIN_DIC_indexInMARBL,  &
          ecosys_diag_POP_FLUX_IN_indexInMARBL,  &
          ecosys_diag_POP_PROD_indexInMARBL,  &
-         ecosys_diag_POP_REMIN_indexInMARBL,  &
+         ecosys_diag_POP_REMIN_DOPr_indexInMARBL,  &
          ecosys_diag_POP_REMIN_PO4_indexInMARBL,  &
+         ecosys_diag_PON_REMIN_DONr_indexInMARBL, &
          ecosys_diag_PON_REMIN_NH4_indexInMARBL
       logical :: &
          ecosys_diag_O2_PRODUCTION_allocatedInMARBL = .false.,  &
@@ -294,22 +299,18 @@ module ocn_tracer_ecosys
          ecosys_diag_AOU_allocatedInMARBL = .false.,          &
          ecosys_diag_pH_3D_allocatedInMARBL = .false.,     &
          ecosys_diag_POC_PROD_allocatedInMARBL = .false.,  &
-         ecosys_diag_POC_REMIN_allocatedInMARBL = .false.,  &
+         ecosys_diag_POC_REMIN_DOCr_allocatedInMARBL = .false.,  &
          ecosys_diag_POC_REMIN_DIC_allocatedInMARBL = .false.,  &
          ecosys_diag_POP_FLUX_IN_allocatedInMARBL = .false.,  &
          ecosys_diag_POP_PROD_allocatedInMARBL = .false.,  &
-         ecosys_diag_POP_REMIN_allocatedInMARBL = .false.,  &
+         ecosys_diag_POP_REMIN_DOPr_allocatedInMARBL = .false.,  &
          ecosys_diag_POP_REMIN_PO4_allocatedInMARBL = .false.,  &
+         ecosys_diag_PON_REMIN_DONr_allocatedInMARBL = .false., &
          ecosys_diag_PON_REMIN_NH4_allocatedInMARBL = .false.
 
       ! indices for level 2 diagnostics, each autotroph, full depth dependence (nx,nz,autotroph_cnt)
       integer, dimension(autotroph_cnt) :: &
          ecosys_diag_Qp_indexInMARBL,             &
-         ecosys_diag_N_lim_indexInMARBL,          &
-         ecosys_diag_P_lim_indexInMARBL,          &
-         ecosys_diag_Fe_lim_indexInMARBL,         &
-         ecosys_diag_SiO3_lim_indexInMARBL,       &
-         ecosys_diag_light_lim_indexInMARBL,      &
          ecosys_diag_photoC_indexInMARBL,         &
          ecosys_diag_photoC_NO3_indexInMARBL,     &
          ecosys_diag_photoFe_indexInMARBL,        &
@@ -328,11 +329,6 @@ module ocn_tracer_ecosys
          ecosys_diag_Nfix_indexInMARBL
       logical, dimension(autotroph_cnt) :: &
          ecosys_diag_Qp_allocatedInMARBL = .false.,             &
-         ecosys_diag_N_lim_allocatedInMARBL = .false.,          &
-         ecosys_diag_P_lim_allocatedInMARBL = .false.,          &
-         ecosys_diag_Fe_lim_allocatedInMARBL = .false.,         &
-         ecosys_diag_SiO3_lim_allocatedInMARBL = .false.,       &
-         ecosys_diag_light_lim_allocatedInMARBL = .false.,      &
          ecosys_diag_photoC_allocatedInMARBL = .false.,         &
          ecosys_diag_photoC_NO3_allocatedInMARBL = .false.,     &
          ecosys_diag_photoFe_allocatedInMARBL = .false.,        &
@@ -352,9 +348,17 @@ module ocn_tracer_ecosys
 
       ! indices for level 3 diagnostics, no depth dependence (nx)
       integer :: &
-         ecosys_diag_tot_bSi_form_indexInMARBL
+         ecosys_diag_ponToSed_indexInMARBL,       &
+         ecosys_diag_popToSed_indexInMARBL,       &
+         ecosys_diag_bsiToSed_indexInMARBL,       &
+         ecosys_diag_dustToSed_indexInMARBL,      &
+         ecosys_diag_OtherRemin_indexInMARBL
       logical :: &
-         ecosys_diag_tot_bSi_form_allocatedInMARBL = .false.
+         ecosys_diag_ponToSed_allocatedInMARBL = .false.,       &
+         ecosys_diag_popToSed_allocatedInMARBL = .false.,       &
+         ecosys_diag_bsiToSed_allocatedInMARBL = .false.,       &
+         ecosys_diag_dustToSed_allocatedInMARBL = .false.,      &
+         ecosys_diag_OtherRemin_allocatedInMARBL = .false.
 
       ! indices for level 3 diagnostics, full depth dependence (nx,nz)
       integer :: &
@@ -383,11 +387,7 @@ module ocn_tracer_ecosys
          ecosys_diag_Lig_deg_indexInMARBL,  &
          ecosys_diag_DONr_remin_indexInMARBL,     &
          ecosys_diag_DOPr_remin_indexInMARBL,     &
-         ecosys_diag_ponToSed_indexInMARBL,       &
-         ecosys_diag_popToSed_indexInMARBL,       &
-         ecosys_diag_bsiToSed_indexInMARBL,       &
-         ecosys_diag_dustToSed_indexInMARBL,      &
-         ecosys_diag_OtherRemin_indexInMARBL
+         ecosys_diag_tot_bSi_form_indexInMARBL
       logical :: &
          ecosys_diag_SiO2_FLUX_IN_allocatedInMARBL = .false.,  &
          ecosys_diag_SiO2_PROD_allocatedInMARBL = .false.,  &
@@ -414,11 +414,7 @@ module ocn_tracer_ecosys
          ecosys_diag_Lig_deg_allocatedInMARBL = .false.,  &
          ecosys_diag_DONr_remin_allocatedInMARBL = .false.,     &
          ecosys_diag_DOPr_remin_allocatedInMARBL = .false.,     &
-         ecosys_diag_ponToSed_allocatedInMARBL = .false.,       &
-         ecosys_diag_popToSed_allocatedInMARBL = .false.,       &
-         ecosys_diag_bsiToSed_allocatedInMARBL = .false.,       &
-         ecosys_diag_dustToSed_allocatedInMARBL = .false.,      &
-         ecosys_diag_OtherRemin_allocatedInMARBL = .false.
+         ecosys_diag_tot_bSi_form_allocatedInMARBL = .false.
 
       ! indices for level 3 diagnostics, each autotroph, full depth dependence (nx,nz,autotroph_cnt)
       integer, dimension(autotroph_cnt) :: &
@@ -602,16 +598,16 @@ contains
          ecosys_diag_O2_ZMIN,  &
          ecosys_diag_O2_ZMIN_DEPTH,  &
          ecosys_diag_Chl_TOT_zint_100m,  &
+         ecosys_diag_calcToSed,      &
+         ecosys_diag_calcToSed_ALT_CO2,      &
+         ecosys_diag_pocToSed,       &
+         ecosys_diag_pfeToSed,       &
+         ecosys_diag_SedDenitrif,    &
          ecosys_diag_Jint_Ctot,  &
-         ecosys_diag_Jint_100m_Ctot,  &
          ecosys_diag_Jint_Ntot,  &
-         ecosys_diag_Jint_100m_Ntot,  &
          ecosys_diag_Jint_Ptot,  &
-         ecosys_diag_Jint_100m_Ptot,  &
          ecosys_diag_Jint_Sitot,  &
-         ecosys_diag_Jint_100m_Sitot, &
-         ecosys_diag_Jint_Fetot,  &
-         ecosys_diag_Jint_100m_Fetot
+         ecosys_diag_Jint_Fetot
 
       ! one dimensional arrays for each autotroph (nx,autotroph_cnt)
       real (kind=RKIND), dimension(:,:), pointer :: &
@@ -637,11 +633,6 @@ contains
          ecosys_diag_photoC_NO3_TOT,  &
          ecosys_diag_NITRIF,  &
          ecosys_diag_DENITRIF,  &
-         ecosys_diag_calcToSed,      &
-         ecosys_diag_calcToSed_ALT_CO2,      &
-         ecosys_diag_pocToSed,       &
-         ecosys_diag_pfeToSed,       &
-         ecosys_diag_SedDenitrif,    &
          ecosys_diag_tot_Nfix
 
       !
@@ -655,22 +646,26 @@ contains
          ecosys_diag_AOU,          &
          ecosys_diag_pH_3D,     &
          ecosys_diag_POC_PROD,  &
-         ecosys_diag_POC_REMIN,  &
+         ecosys_diag_POC_REMIN_DOCr,  &
          ecosys_diag_POC_REMIN_DIC,  &
          ecosys_diag_POP_FLUX_IN,  &
          ecosys_diag_POP_PROD,  &
-         ecosys_diag_POP_REMIN,  &
+         ecosys_diag_POP_REMIN_DOPr,  &
          ecosys_diag_POP_REMIN_PO4,  &
+         ecosys_diag_PON_REMIN_DONr, &
          ecosys_diag_PON_REMIN_NH4
+
+      ! one dimensional arrays for each autotroph (nx,autotroph_cnt)
+      real (kind=RKIND), dimension(:,:), pointer :: &
+         ecosys_diag_N_lim_surf,          &
+         ecosys_diag_P_lim_surf,          &
+         ecosys_diag_Fe_lim_surf,         &
+         ecosys_diag_SiO3_lim_surf,       &
+         ecosys_diag_light_lim_surf
 
       ! two dimensional arrays for each autotroph (nx,nz,autotroph_cnt)
       real (kind=RKIND), dimension(:,:,:), pointer :: &
          ecosys_diag_Qp,             &
-         ecosys_diag_N_lim,          &
-         ecosys_diag_P_lim,          &
-         ecosys_diag_Fe_lim,         &
-         ecosys_diag_SiO3_lim,       &
-         ecosys_diag_light_lim,      &
          ecosys_diag_photoC,         &
          ecosys_diag_photoC_NO3,     &
          ecosys_diag_photoFe,        &
@@ -694,7 +689,11 @@ contains
 
       ! one dimensional arrays (nx)
       real (kind=RKIND), dimension(:), pointer :: &
-         ecosys_diag_tot_bSi_form
+         ecosys_diag_ponToSed,       &
+         ecosys_diag_popToSed,       &
+         ecosys_diag_bsiToSed,       &
+         ecosys_diag_dustToSed,      &
+         ecosys_diag_OtherRemin
 
       ! two dimensional arrays (nx,nz)
       real (kind=RKIND), dimension(:,:), pointer :: &
@@ -723,11 +722,7 @@ contains
          ecosys_diag_Lig_deg,        &
          ecosys_diag_DONr_remin,     &
          ecosys_diag_DOPr_remin,     &
-         ecosys_diag_ponToSed,       &
-         ecosys_diag_popToSed,       &
-         ecosys_diag_bsiToSed,       &
-         ecosys_diag_dustToSed,      &
-         ecosys_diag_OtherRemin
+         ecosys_diag_tot_bSi_form
 
       ! two dimensional arrays for each autotroph (nx,nz,autotroph_cnt)
       real (kind=RKIND), dimension(:,:,:), pointer :: &
@@ -804,15 +799,10 @@ contains
          call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_O2_ZMIN', ecosys_diag_O2_ZMIN)
          call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_O2_ZMIN_DEPTH', ecosys_diag_O2_ZMIN_DEPTH)
          call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_Ctot', ecosys_diag_Jint_Ctot)
-         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_100m_Ctot', ecosys_diag_Jint_100m_Ctot)
          call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_Ntot', ecosys_diag_Jint_Ntot)
-         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_100m_Ntot', ecosys_diag_Jint_100m_Ntot)
          call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_Ptot', ecosys_diag_Jint_Ptot)
-         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_100m_Ptot', ecosys_diag_Jint_100m_Ptot)
          call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_Sitot', ecosys_diag_Jint_Sitot)
-         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_100m_Sitot', ecosys_diag_Jint_100m_Sitot)
          call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_Fetot', ecosys_diag_Jint_Fetot)
-         call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_Jint_100m_Fetot', ecosys_diag_Jint_100m_Fetot)
 
          call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_photoC_zint', ecosys_diag_photoC_zint)
          call mpas_pool_get_array(ecosysDiagFieldsLevel1, 'ecosys_diag_photoC_NO3_zint', ecosys_diag_photoC_NO3_zint)
@@ -853,20 +843,22 @@ contains
          call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_pH_3D', ecosys_diag_pH_3D)
 
          call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_POC_PROD', ecosys_diag_POC_PROD)
-         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_POC_REMIN', ecosys_diag_POC_REMIN)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_POC_REMIN_DOCr', ecosys_diag_POC_REMIN_DOCr)
          call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_POC_REMIN_DIC', ecosys_diag_POC_REMIN_DIC)
          call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_POP_FLUX_IN', ecosys_diag_POP_FLUX_IN)
          call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_POP_PROD', ecosys_diag_POP_PROD)
-         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_POP_REMIN', ecosys_diag_POP_REMIN)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_POP_REMIN_DOPr', ecosys_diag_POP_REMIN_DOPr)
          call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_POP_REMIN_PO4', ecosys_diag_POP_REMIN_PO4)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_PON_REMIN_DONr', ecosys_diag_PON_REMIN_DONr)
          call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_PON_REMIN_NH4', ecosys_diag_PON_REMIN_NH4)
 
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_N_lim_surf', ecosys_diag_N_lim_surf)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_P_lim_surf', ecosys_diag_P_lim_surf)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_Fe_lim_surf', ecosys_diag_Fe_lim_surf)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_SiO3_lim_surf', ecosys_diag_SiO3_lim_surf)
+         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_light_lim_surf', ecosys_diag_light_lim_surf)
+
          call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_Qp', ecosys_diag_Qp)
-         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_N_lim', ecosys_diag_N_lim)
-         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_P_lim', ecosys_diag_P_lim)
-         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_Fe_lim', ecosys_diag_Fe_lim)
-         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_SiO3_lim', ecosys_diag_SiO3_lim)
-         call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_light_lim', ecosys_diag_light_lim)
          call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_photoC', ecosys_diag_photoC)
          call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_photoC_NO3', ecosys_diag_photoC_NO3)
          call mpas_pool_get_array(ecosysDiagFieldsLevel2, 'ecosys_diag_photoFe', ecosys_diag_photoFe)
@@ -1113,26 +1105,6 @@ contains
                 diags(ecosys_diag_DENITRIF_indexInMARBL)%field_3d(iLevel,column),  &
                 ecosysMissingValue, ecosys_diag_DENITRIF_allocatedInMARBL)
 
-              ecosys_diag_calcToSed(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                diags(ecosys_diag_calcToSed_indexInMARBL)%field_3d(iLevel,column),  &
-                ecosysMissingValue, ecosys_diag_calcToSed_allocatedInMARBL)
-
-              ecosys_diag_calcToSed_ALT_CO2(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                diags(ecosys_diag_calcToSed_ALT_CO2_indexInMARBL)%field_3d(iLevel,column),  &
-                ecosysMissingValue, ecosys_diag_calcToSed_ALT_CO2_allocatedInMARBL)
-
-              ecosys_diag_pocToSed(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                diags(ecosys_diag_pocToSed_indexInMARBL)%field_3d(iLevel,column),  &
-                ecosysMissingValue, ecosys_diag_pocToSed_allocatedInMARBL)
-
-              ecosys_diag_pfeToSed(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                diags(ecosys_diag_pfeToSed_indexInMARBL)%field_3d(iLevel,column),  &
-                ecosysMissingValue, ecosys_diag_pfeToSed_allocatedInMARBL)
-
-              ecosys_diag_SedDenitrif(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                diags(ecosys_diag_SedDenitrif_indexInMARBL)%field_3d(iLevel,column),  &
-                ecosysMissingValue, ecosys_diag_SedDenitrif_allocatedInMARBL)
-
               ecosys_diag_tot_Nfix(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
                 diags(ecosys_diag_tot_Nfix_indexInMARBL)%field_3d(iLevel,column),  &
                 ecosysMissingValue, ecosys_diag_tot_Nfix_allocatedInMARBL)
@@ -1164,9 +1136,9 @@ contains
                 diags(ecosys_diag_POC_PROD_indexInMARBL)%field_3d(iLevel,column),  &
                 ecosysMissingValue, ecosys_diag_POC_PROD_allocatedInMARBL)
 
-              ecosys_diag_POC_REMIN(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                diags(ecosys_diag_POC_REMIN_indexInMARBL)%field_3d(iLevel,column),  &
-                ecosysMissingValue, ecosys_diag_POC_REMIN_allocatedInMARBL)
+              ecosys_diag_POC_REMIN_DOCr(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                diags(ecosys_diag_POC_REMIN_DOCr_indexInMARBL)%field_3d(iLevel,column),  &
+                ecosysMissingValue, ecosys_diag_POC_REMIN_DOCr_allocatedInMARBL)
 
               ecosys_diag_POC_REMIN_DIC(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
                 diags(ecosys_diag_POC_REMIN_DIC_indexInMARBL)%field_3d(iLevel,column),  &
@@ -1180,13 +1152,17 @@ contains
                 diags(ecosys_diag_POP_PROD_indexInMARBL)%field_3d(iLevel,column),  &
                 ecosysMissingValue, ecosys_diag_POP_PROD_allocatedInMARBL)
 
-              ecosys_diag_POP_REMIN(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                diags(ecosys_diag_POP_REMIN_indexInMARBL)%field_3d(iLevel,column),  &
-                ecosysMissingValue, ecosys_diag_POP_REMIN_allocatedInMARBL)
+              ecosys_diag_POP_REMIN_DOPr(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                diags(ecosys_diag_POP_REMIN_DOPr_indexInMARBL)%field_3d(iLevel,column),  &
+                ecosysMissingValue, ecosys_diag_POP_REMIN_DOPr_allocatedInMARBL)
 
               ecosys_diag_POP_REMIN_PO4(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
                 diags(ecosys_diag_POP_REMIN_PO4_indexInMARBL)%field_3d(iLevel,column),  &
                 ecosysMissingValue, ecosys_diag_POP_REMIN_PO4_allocatedInMARBL)
+
+              ecosys_diag_PON_REMIN_DONr(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                diags(ecosys_diag_PON_REMIN_DONr_indexInMARBL)%field_3d(iLevel,column),  &
+                ecosysMissingValue, ecosys_diag_PON_REMIN_DONr_allocatedInMARBL)
 
               ecosys_diag_PON_REMIN_NH4(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
                 diags(ecosys_diag_PON_REMIN_NH4_indexInMARBL)%field_3d(iLevel,column),  &
@@ -1197,26 +1173,6 @@ contains
                 ecosys_diag_Qp(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
                   diags(ecosys_diag_Qp_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
                   ecosysMissingValue, ecosys_diag_Qp_allocatedInMARBL(autotroph))
-
-                ecosys_diag_N_lim(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                  diags(ecosys_diag_N_lim_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                  ecosysMissingValue, ecosys_diag_N_lim_allocatedInMARBL(autotroph))
-
-                ecosys_diag_P_lim(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                  diags(ecosys_diag_P_lim_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                  ecosysMissingValue, ecosys_diag_P_lim_allocatedInMARBL(autotroph))
-
-                ecosys_diag_Fe_lim(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                  diags(ecosys_diag_Fe_lim_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                  ecosysMissingValue, ecosys_diag_Fe_lim_allocatedInMARBL(autotroph))
-
-                ecosys_diag_SiO3_lim(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                  diags(ecosys_diag_SiO3_lim_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                  ecosysMissingValue, ecosys_diag_SiO3_lim_allocatedInMARBL(autotroph))
-
-                ecosys_diag_light_lim(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                  diags(ecosys_diag_light_lim_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
-                  ecosysMissingValue, ecosys_diag_light_lim_allocatedInMARBL(autotroph))
 
                 ecosys_diag_photoC(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
                   diags(ecosys_diag_photoC_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
@@ -1279,9 +1235,11 @@ contains
                   ecosysMissingValue, ecosys_diag_auto_agg_allocatedInMARBL(autotroph))
 
 ! Nfix only defined for N-fixers
+                if (ecosys_diag_Nfix_indexInMARBL(autotroph) > 0) then
                 ecosys_diag_Nfix(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
                   diags(ecosys_diag_Nfix_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
                   ecosysMissingValue, ecosys_diag_Nfix_allocatedInMARBL(autotroph))
+                endif
 
               end do  !  autotroph
 
@@ -1369,26 +1327,6 @@ contains
                 diags(ecosys_diag_Fe_scavenge_rate_indexInMARBL)%field_3d(iLevel,column),  &
                 ecosysMissingValue, ecosys_diag_Fe_scavenge_rate_allocatedInMARBL)
 
-              ecosys_diag_ponToSed(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                diags(ecosys_diag_ponToSed_indexInMARBL)%field_3d(iLevel,column),  &
-                ecosysMissingValue, ecosys_diag_ponToSed_allocatedInMARBL)
-
-              ecosys_diag_popToSed(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                diags(ecosys_diag_popToSed_indexInMARBL)%field_3d(iLevel,column),  &
-                ecosysMissingValue, ecosys_diag_popToSed_allocatedInMARBL)
-
-              ecosys_diag_bsiToSed(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                diags(ecosys_diag_bsiToSed_indexInMARBL)%field_3d(iLevel,column),  &
-                ecosysMissingValue, ecosys_diag_bsiToSed_allocatedInMARBL)
-
-              ecosys_diag_dustToSed(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                diags(ecosys_diag_dustToSed_indexInMARBL)%field_3d(iLevel,column),  &
-                ecosysMissingValue, ecosys_diag_dustToSed_allocatedInMARBL)
-
-              ecosys_diag_OtherRemin(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                diags(ecosys_diag_OtherRemin_indexInMARBL)%field_3d(iLevel,column),  &
-                ecosysMissingValue, ecosys_diag_OtherRemin_allocatedInMARBL)
-
               ecosys_diag_Lig_prod(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
                 diags(ecosys_diag_Lig_prod_indexInMARBL)%field_3d(iLevel,column),  &
                 ecosysMissingValue, ecosys_diag_Lig_prod_allocatedInMARBL)
@@ -1413,11 +1351,17 @@ contains
                 diags(ecosys_diag_Lig_deg_indexInMARBL)%field_3d(iLevel,column),  &
                 ecosysMissingValue, ecosys_diag_Lig_deg_allocatedInMARBL)
 
+              ecosys_diag_tot_bSi_form(iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+                diags(ecosys_diag_tot_bSi_form_indexInMARBL)%field_3d(iLevel,column),  &
+                ecosysMissingValue, ecosys_diag_tot_bSi_form_allocatedInMARBL)
+
               do autotroph = 1, autotroph_cnt
 ! bSi_form only defined for silicifiers
+                if (ecosys_diag_bSi_form_indexInMARBL(autotroph) > 0) then
                 ecosys_diag_bSi_form(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
                   diags(ecosys_diag_bSi_form_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
                   ecosysMissingValue, ecosys_diag_bSi_form_allocatedInMARBL(autotroph))
+                endif
               enddo  !  autotroph loop
 
             endif  !  config_ecosysTracers_diagnostic_fields_level3
@@ -1485,9 +1429,11 @@ contains
 
               do autotroph = 1, autotroph_cnt
 ! CaCO3_form only defined for calcifiers
+                if (ecosys_diag_CaCO3_form_indexInMARBL(autotroph) > 0) then
                 ecosys_diag_CaCO3_form(autotroph,iLevel,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
                   diags(ecosys_diag_CaCO3_form_indexInMARBL(autotroph))%field_3d(iLevel,column),  &
                   ecosysMissingValue, ecosys_diag_CaCO3_form_allocatedInMARBL(autotroph))
+                endif
               enddo  !  autotroph
 
             endif  !  config_ecosysTracers_diagnostic_fields_level4
@@ -1537,45 +1483,41 @@ contains
              diags(ecosys_diag_O2_ZMIN_DEPTH_indexInMARBL)%field_2d(column),  &
              ecosysMissingValue, ecosys_diag_O2_ZMIN_DEPTH_allocatedInMARBL)
 
+           ecosys_diag_calcToSed(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_calcToSed_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_calcToSed_allocatedInMARBL)
+
+           ecosys_diag_calcToSed_ALT_CO2(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_calcToSed_ALT_CO2_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_calcToSed_ALT_CO2_allocatedInMARBL)
+
+           ecosys_diag_pocToSed(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_pocToSed_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_pocToSed_allocatedInMARBL)
+
+           ecosys_diag_pfeToSed(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_pfeToSed_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_pfeToSed_allocatedInMARBL)
+
+           ecosys_diag_SedDenitrif(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_SedDenitrif_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_SedDenitrif_allocatedInMARBL)
+
            ecosys_diag_Jint_Ctot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
              diags(ecosys_diag_Jint_Ctot_indexInMARBL)%field_2d(column),  &
              ecosysMissingValue, ecosys_diag_Jint_Ctot_allocatedInMARBL)
-
-           ecosys_diag_Jint_100m_Ctot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-             diags(ecosys_diag_Jint_100m_Ctot_indexInMARBL)%field_2d(column),  &
-             ecosysMissingValue, ecosys_diag_Jint_100m_Ctot_allocatedInMARBL)
-
-           ecosys_diag_Jint_100m_Ctot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-             diags(ecosys_diag_Jint_100m_Ctot_indexInMARBL)%field_2d(column),  &
-             ecosysMissingValue, ecosys_diag_Jint_100m_Ctot_allocatedInMARBL)
-
-           ecosys_diag_Jint_100m_Ntot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-             diags(ecosys_diag_Jint_100m_Ntot_indexInMARBL)%field_2d(column),  &
-             ecosysMissingValue, ecosys_diag_Jint_100m_Ntot_allocatedInMARBL)
 
            ecosys_diag_Jint_Ptot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
              diags(ecosys_diag_Jint_Ptot_indexInMARBL)%field_2d(column),  &
              ecosysMissingValue, ecosys_diag_Jint_Ptot_allocatedInMARBL)
 
-           ecosys_diag_Jint_100m_Ptot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-             diags(ecosys_diag_Jint_100m_Ptot_indexInMARBL)%field_2d(column),  &
-             ecosysMissingValue, ecosys_diag_Jint_100m_Ptot_allocatedInMARBL)
-
            ecosys_diag_Jint_Sitot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
              diags(ecosys_diag_Jint_Sitot_indexInMARBL)%field_2d(column),  &
              ecosysMissingValue, ecosys_diag_Jint_Sitot_allocatedInMARBL)
 
-           ecosys_diag_Jint_100m_Sitot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-             diags(ecosys_diag_Jint_100m_Sitot_indexInMARBL)%field_2d(column),  &
-             ecosysMissingValue, ecosys_diag_Jint_100m_Sitot_allocatedInMARBL)
-
            ecosys_diag_Jint_Fetot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
              diags(ecosys_diag_Jint_Fetot_indexInMARBL)%field_2d(column),  &
              ecosysMissingValue, ecosys_diag_Jint_Fetot_allocatedInMARBL)
-
-           ecosys_diag_Jint_100m_Fetot(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-             diags(ecosys_diag_Jint_100m_Fetot_indexInMARBL)%field_2d(column),  &
-             ecosysMissingValue, ecosys_diag_Jint_100m_Fetot_allocatedInMARBL)
 
            do autotroph = 1, autotroph_cnt
 
@@ -1592,14 +1534,61 @@ contains
          endif  !  config_ecosysTracers_diagnostic_fields_level1
 
          !
+         ! level 2 diagnostics with no depth dependence
+         !
+         if (config_ecosysTracers_diagnostic_fields_level2) then
+
+           do autotroph = 1, autotroph_cnt
+
+             ecosys_diag_N_lim_surf(autotroph,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+               diags(ecosys_diag_N_lim_surf_indexInMARBL(autotroph))%field_2d(column),  &
+               ecosysMissingValue, ecosys_diag_N_lim_surf_allocatedInMARBL(autotroph))
+
+             ecosys_diag_P_lim_surf(autotroph,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+               diags(ecosys_diag_P_lim_surf_indexInMARBL(autotroph))%field_2d(column),  &
+               ecosysMissingValue, ecosys_diag_P_lim_surf_allocatedInMARBL(autotroph))
+
+             ecosys_diag_Fe_lim_surf(autotroph,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+               diags(ecosys_diag_Fe_lim_surf_indexInMARBL(autotroph))%field_2d(column),  &
+               ecosysMissingValue, ecosys_diag_Fe_lim_surf_allocatedInMARBL(autotroph))
+
+             if(ecosys_diag_SiO3_lim_surf_indexInMARBL(autotroph) > 0)  &
+               ecosys_diag_SiO3_lim_surf(autotroph,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+               diags(ecosys_diag_SiO3_lim_surf_indexInMARBL(autotroph))%field_2d(column),  &
+               ecosysMissingValue, ecosys_diag_SiO3_lim_surf_allocatedInMARBL(autotroph))
+
+             ecosys_diag_light_lim_surf(autotroph,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+               diags(ecosys_diag_light_lim_surf_indexInMARBL(autotroph))%field_2d(column),  &
+               ecosysMissingValue, ecosys_diag_light_lim_surf_allocatedInMARBL(autotroph))
+
+           enddo  ! autotroph
+
+         endif  !  config_ecosysTracers_diagnostic_fields_level2
+
+         !
          ! level 3 diagnostics with no depth dependence
          !
          if (config_ecosysTracers_diagnostic_fields_level3) then
-              ecosys_diag_tot_bSi_form(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
-                diags(ecosys_diag_tot_bSi_form_indexInMARBL)%field_2d(column),  &
-                ecosysMissingValue, ecosys_diag_tot_bSi_form_allocatedInMARBL)
-         endif  !  config_ecosysTracers_diagnostic_fields_level3
+           ecosys_diag_ponToSed(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_ponToSed_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_ponToSed_allocatedInMARBL)
 
+           ecosys_diag_popToSed(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_popToSed_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_popToSed_allocatedInMARBL)
+
+           ecosys_diag_bsiToSed(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_bsiToSed_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_bsiToSed_allocatedInMARBL)
+
+           ecosys_diag_dustToSed(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_dustToSed_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_dustToSed_allocatedInMARBL)
+
+           ecosys_diag_OtherRemin(iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
+             diags(ecosys_diag_OtherRemin_indexInMARBL)%field_2d(column),  &
+             ecosysMissingValue, ecosys_diag_OtherRemin_allocatedInMARBL)
+         endif  !  config_ecosysTracers_diagnostic_fields_level3
 
          !
          ! level 4 diagnostics with no depth dependence
@@ -1620,9 +1609,11 @@ contains
 
             do autotroph = 1, autotroph_cnt
 ! CaCO3_form_zint only defined for calcifiers
+                if (ecosys_diag_CaCO3_form_zint_indexInMARBL(autotroph) > 0) then
               ecosys_diag_CaCO3_form_zint(autotroph,iCell) = merge(marbl_instances(1)%interior_tendency_diags%  &
                 diags(ecosys_diag_CaCO3_form_zint_indexInMARBL(autotroph))%field_2d(column)*convertLengthCGStoMKS,  &
                 ecosysMissingValue, ecosys_diag_CaCO3_form_zint_allocatedInMARBL(autotroph))
+                endif
             enddo  !  autotroph
 
          endif  !  config_ecosysTracers_diagnostic_fields_level4
@@ -2873,16 +2864,40 @@ contains
             ecosys_diag_O2_ZMIN_DEPTH_allocatedInMARBL = .true.
          found = .true.
       endif
+      if (trim(field_name) == 'calcToSed') then
+         ecosys_diag_calcToSed_indexInMARBL = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_calcToSed_allocatedInMARBL = .true.
+         found = .true.
+      endif
+      if (trim(field_name) == 'calcToSed_ALT_CO2') then
+         ecosys_diag_calcToSed_ALT_CO2_indexInMARBL = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_calcToSed_ALT_CO2_allocatedInMARBL = .true.
+         found = .true.
+      endif
+      if (trim(field_name) == 'pocToSed') then
+         ecosys_diag_pocToSed_indexInMARBL = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_pocToSed_allocatedInMARBL = .true.
+         found = .true.
+      endif
+      if (trim(field_name) == 'pfeToSed') then
+         ecosys_diag_pfeToSed_indexInMARBL = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_pfeToSed_allocatedInMARBL = .true.
+         found = .true.
+      endif
+      if (trim(field_name) == 'SedDenitrif') then
+         ecosys_diag_SedDenitrif_indexInMARBL = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_SedDenitrif_allocatedInMARBL = .true.
+         found = .true.
+      endif
       if (trim(field_name) == 'Jint_Ctot') then
          ecosys_diag_Jint_Ctot_indexInMARBL = indexInMARBL
          if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
             ecosys_diag_Jint_Ctot_allocatedInMARBL = .true.
-         found = .true.
-      endif
-      if (trim(field_name) == 'Jint_100m_Ctot') then
-         ecosys_diag_Jint_100m_Ctot_indexInMARBL = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
-            ecosys_diag_Jint_100m_Ctot_allocatedInMARBL = .true.
          found = .true.
       endif
       if (trim(field_name) == 'Jint_Ntot') then
@@ -2891,22 +2906,10 @@ contains
             ecosys_diag_Jint_Ntot_allocatedInMARBL = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'Jint_100m_Ntot') then
-         ecosys_diag_Jint_100m_Ntot_indexInMARBL = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
-            ecosys_diag_Jint_100m_Ntot_allocatedInMARBL = .true.
-         found = .true.
-      endif
       if (trim(field_name) == 'Jint_Ptot') then
          ecosys_diag_Jint_Ptot_indexInMARBL = indexInMARBL
          if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
             ecosys_diag_Jint_Ptot_allocatedInMARBL = .true.
-         found = .true.
-      endif
-      if (trim(field_name) == 'Jint_100m_Ptot') then
-         ecosys_diag_Jint_100m_Ptot_indexInMARBL = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
-            ecosys_diag_Jint_100m_Ptot_allocatedInMARBL = .true.
          found = .true.
       endif
       if (trim(field_name) == 'Jint_Sitot') then
@@ -2915,22 +2918,10 @@ contains
             ecosys_diag_Jint_Sitot_allocatedInMARBL = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'Jint_100m_Sitot') then
-         ecosys_diag_Jint_100m_Sitot_indexInMARBL = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
-            ecosys_diag_Jint_100m_Sitot_allocatedInMARBL = .true.
-         found = .true.
-      endif
       if (trim(field_name) == 'Jint_Fetot') then
          ecosys_diag_Jint_Fetot_indexInMARBL = indexInMARBL
          if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
             ecosys_diag_Jint_Fetot_allocatedInMARBL = .true.
-         found = .true.
-      endif
-      if (trim(field_name) == 'Jint_100m_Fetot') then
-         ecosys_diag_Jint_100m_Fetot_indexInMARBL = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
-            ecosys_diag_Jint_100m_Fetot_allocatedInMARBL = .true.
          found = .true.
       endif
 
@@ -3078,36 +3069,6 @@ contains
             ecosys_diag_DENITRIF_allocatedInMARBL = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'calcToSed') then
-         ecosys_diag_calcToSed_indexInMARBL = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_calcToSed_allocatedInMARBL = .true.
-         found = .true.
-      endif
-      if (trim(field_name) == 'calcToSed_ALT_CO2') then
-         ecosys_diag_calcToSed_ALT_CO2_indexInMARBL = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_calcToSed_ALT_CO2_allocatedInMARBL = .true.
-         found = .true.
-      endif
-      if (trim(field_name) == 'pocToSed') then
-         ecosys_diag_pocToSed_indexInMARBL = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_pocToSed_allocatedInMARBL = .true.
-         found = .true.
-      endif
-      if (trim(field_name) == 'pfeToSed') then
-         ecosys_diag_pfeToSed_indexInMARBL = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_pfeToSed_allocatedInMARBL = .true.
-         found = .true.
-      endif
-      if (trim(field_name) == 'SedDenitrif') then
-         ecosys_diag_SedDenitrif_indexInMARBL = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_SedDenitrif_allocatedInMARBL = .true.
-         found = .true.
-      endif
       if (trim(field_name) == 'Nfix') then
          ecosys_diag_tot_Nfix_indexInMARBL = indexInMARBL
          if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
@@ -3247,10 +3208,10 @@ contains
             ecosys_diag_POC_PROD_allocatedInMARBL = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'POC_REMIN') then
-         ecosys_diag_POC_REMIN_indexInMARBL = indexInMARBL
+      if (trim(field_name) == 'POC_REMIN_DOCr') then
+         ecosys_diag_POC_REMIN_DOCr_indexInMARBL = indexInMARBL
          if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_POC_REMIN_allocatedInMARBL = .true.
+            ecosys_diag_POC_REMIN_DOCr_allocatedInMARBL = .true.
          found = .true.
       endif
       if (trim(field_name) == 'POC_REMIN_DIC') then
@@ -3271,16 +3232,22 @@ contains
             ecosys_diag_POP_PROD_allocatedInMARBL = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'POP_REMIN') then
-         ecosys_diag_POP_REMIN_indexInMARBL = indexInMARBL
+      if (trim(field_name) == 'POP_REMIN_DOPr') then
+         ecosys_diag_POP_REMIN_DOPr_indexInMARBL = indexInMARBL
          if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_POP_REMIN_allocatedInMARBL = .true.
+            ecosys_diag_POP_REMIN_DOPr_allocatedInMARBL = .true.
          found = .true.
       endif
       if (trim(field_name) == 'POP_REMIN_PO4') then
          ecosys_diag_POP_REMIN_PO4_indexInMARBL = indexInMARBL
          if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
             ecosys_diag_POP_REMIN_PO4_allocatedInMARBL = .true.
+         found = .true.
+      endif
+      if (trim(field_name) == 'PON_REMIN_DONr') then
+         ecosys_diag_PON_REMIN_DONr_indexInMARBL = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
+            ecosys_diag_PON_REMIN_DONr_allocatedInMARBL = .true.
          found = .true.
       endif
       if (trim(field_name) == 'PON_REMIN_NH4') then
@@ -3297,34 +3264,34 @@ contains
             ecosys_diag_Qp_allocatedInMARBL(1) = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'sp_N_lim') then
-         ecosys_diag_N_lim_indexInMARBL(1) = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_N_lim_allocatedInMARBL(1) = .true.
+      if (trim(field_name) == 'sp_N_lim_surf') then
+         ecosys_diag_N_lim_surf_indexInMARBL(1) = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_N_lim_surf_allocatedInMARBL(1) = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'sp_P_lim') then
-         ecosys_diag_P_lim_indexInMARBL(1) = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_P_lim_allocatedInMARBL(1) = .true.
+      if (trim(field_name) == 'sp_P_lim_surf') then
+         ecosys_diag_P_lim_surf_indexInMARBL(1) = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_P_lim_surf_allocatedInMARBL(1) = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'sp_Fe_lim') then
-         ecosys_diag_Fe_lim_indexInMARBL(1) = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_Fe_lim_allocatedInMARBL(1) = .true.
+      if (trim(field_name) == 'sp_Fe_lim_surf') then
+         ecosys_diag_Fe_lim_surf_indexInMARBL(1) = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_Fe_lim_surf_allocatedInMARBL(1) = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'sp_SiO3_lim') then
-         ecosys_diag_SiO3_lim_indexInMARBL(1) = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_SiO3_lim_allocatedInMARBL(1) = .true.
+      if (trim(field_name) == 'sp_SiO3_lim_surf') then
+         ecosys_diag_SiO3_lim_surf_indexInMARBL(1) = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_SiO3_lim_surf_allocatedInMARBL(1) = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'sp_light_lim') then
-         ecosys_diag_light_lim_indexInMARBL(1) = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_light_lim_allocatedInMARBL(1) = .true.
+      if (trim(field_name) == 'sp_light_lim_surf') then
+         ecosys_diag_light_lim_surf_indexInMARBL(1) = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_light_lim_surf_allocatedInMARBL(1) = .true.
          found = .true.
       endif
       if (trim(field_name) == 'photoC_sp') then
@@ -3430,34 +3397,34 @@ contains
             ecosys_diag_Qp_allocatedInMARBL(2) = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'diat_N_lim') then
-         ecosys_diag_N_lim_indexInMARBL(2) = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_N_lim_allocatedInMARBL(2) = .true.
+      if (trim(field_name) == 'diat_N_lim_surf') then
+         ecosys_diag_N_lim_surf_indexInMARBL(2) = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_N_lim_surf_allocatedInMARBL(2) = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'diat_P_lim') then
-         ecosys_diag_P_lim_indexInMARBL(2) = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_P_lim_allocatedInMARBL(2) = .true.
+      if (trim(field_name) == 'diat_P_lim_surf') then
+         ecosys_diag_P_lim_surf_indexInMARBL(2) = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_P_lim_surf_allocatedInMARBL(2) = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'diat_Fe_lim') then
-         ecosys_diag_Fe_lim_indexInMARBL(2) = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_Fe_lim_allocatedInMARBL(2) = .true.
+      if (trim(field_name) == 'diat_Fe_lim_surf') then
+         ecosys_diag_Fe_lim_surf_indexInMARBL(2) = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_Fe_lim_surf_allocatedInMARBL(2) = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'diat_SiO3_lim') then
-         ecosys_diag_SiO3_lim_indexInMARBL(2) = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_SiO3_lim_allocatedInMARBL(2) = .true.
+      if (trim(field_name) == 'diat_SiO3_lim_surf') then
+         ecosys_diag_SiO3_lim_surf_indexInMARBL(2) = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_SiO3_lim_surf_allocatedInMARBL(2) = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'diat_light_lim') then
-         ecosys_diag_light_lim_indexInMARBL(2) = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_light_lim_allocatedInMARBL(2) = .true.
+      if (trim(field_name) == 'diat_light_lim_surf') then
+         ecosys_diag_light_lim_surf_indexInMARBL(2) = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_light_lim_surf_allocatedInMARBL(2) = .true.
          found = .true.
       endif
       if (trim(field_name) == 'photoC_diat') then
@@ -3563,34 +3530,34 @@ contains
             ecosys_diag_Qp_allocatedInMARBL(3) = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'diaz_N_lim') then
-         ecosys_diag_N_lim_indexInMARBL(3) = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_N_lim_allocatedInMARBL(3) = .true.
+      if (trim(field_name) == 'diaz_N_lim_surf') then
+         ecosys_diag_N_lim_surf_indexInMARBL(3) = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_N_lim_surf_allocatedInMARBL(3) = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'diaz_P_lim') then
-         ecosys_diag_P_lim_indexInMARBL(3) = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_P_lim_allocatedInMARBL(3) = .true.
+      if (trim(field_name) == 'diaz_P_lim_surf') then
+         ecosys_diag_P_lim_surf_indexInMARBL(3) = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_P_lim_surf_allocatedInMARBL(3) = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'diaz_Fe_lim') then
-         ecosys_diag_Fe_lim_indexInMARBL(3) = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_Fe_lim_allocatedInMARBL(3) = .true.
+      if (trim(field_name) == 'diaz_Fe_lim_surf') then
+         ecosys_diag_Fe_lim_surf_indexInMARBL(3) = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_Fe_lim_surf_allocatedInMARBL(3) = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'diaz_SiO3_lim') then
-         ecosys_diag_SiO3_lim_indexInMARBL(3) = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_SiO3_lim_allocatedInMARBL(3) = .true.
+      if (trim(field_name) == 'diaz_SiO3_lim_surf') then
+         ecosys_diag_SiO3_lim_surf_indexInMARBL(3) = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_SiO3_lim_surf_allocatedInMARBL(3) = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'diaz_light_lim') then
-         ecosys_diag_light_lim_indexInMARBL(3) = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_light_lim_allocatedInMARBL(3) = .true.
+      if (trim(field_name) == 'diaz_light_lim_surf') then
+         ecosys_diag_light_lim_surf_indexInMARBL(3) = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_light_lim_surf_allocatedInMARBL(3) = .true.
          found = .true.
       endif
       if (trim(field_name) == 'photoC_diaz') then
@@ -3692,10 +3659,34 @@ contains
 
 ! level 3 diagnostics, no depth dependence
 
-      if (trim(field_name) == 'bSi_form') then
-         ecosys_diag_tot_bSi_form_indexInMARBL = indexInMARBL
+      if (trim(field_name) == 'ponToSed') then
+         ecosys_diag_ponToSed_indexInMARBL = indexInMARBL
          if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
-            ecosys_diag_tot_bSi_form_allocatedInMARBL = .true.
+            ecosys_diag_ponToSed_allocatedInMARBL = .true.
+         found = .true.
+      endif
+      if (trim(field_name) == 'popToSed') then
+         ecosys_diag_popToSed_indexInMARBL = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_popToSed_allocatedInMARBL = .true.
+         found = .true.
+      endif
+      if (trim(field_name) == 'bsiToSed') then
+         ecosys_diag_bsiToSed_indexInMARBL = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_bsiToSed_allocatedInMARBL = .true.
+         found = .true.
+      endif
+      if (trim(field_name) == 'dustToSed') then
+         ecosys_diag_dustToSed_indexInMARBL = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_dustToSed_allocatedInMARBL = .true.
+         found = .true.
+      endif
+      if (trim(field_name) == 'OtherRemin') then
+         ecosys_diag_OtherRemin_indexInMARBL = indexInMARBL
+         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_2d) ) &
+            ecosys_diag_OtherRemin_allocatedInMARBL = .true.
          found = .true.
       endif
 
@@ -3851,34 +3842,11 @@ contains
             ecosys_diag_DOPr_remin_allocatedInMARBL = .true.
          found = .true.
       endif
-      if (trim(field_name) == 'ponToSed') then
-         ecosys_diag_ponToSed_indexInMARBL = indexInMARBL
+
+      if (trim(field_name) == 'bSi_form') then
+         ecosys_diag_tot_bSi_form_indexInMARBL = indexInMARBL
          if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_ponToSed_allocatedInMARBL = .true.
-         found = .true.
-      endif
-      if (trim(field_name) == 'popToSed') then
-         ecosys_diag_popToSed_indexInMARBL = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_popToSed_allocatedInMARBL = .true.
-         found = .true.
-      endif
-      if (trim(field_name) == 'bsiToSed') then
-         ecosys_diag_bsiToSed_indexInMARBL = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_bsiToSed_allocatedInMARBL = .true.
-         found = .true.
-      endif
-      if (trim(field_name) == 'dustToSed') then
-         ecosys_diag_dustToSed_indexInMARBL = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_dustToSed_allocatedInMARBL = .true.
-         found = .true.
-      endif
-      if (trim(field_name) == 'OtherRemin') then
-         ecosys_diag_OtherRemin_indexInMARBL = indexInMARBL
-         if ( allocated( marbl_instances(1)%interior_tendency_diags%diags(indexInMARBL)%field_3d) ) &
-            ecosys_diag_OtherRemin_allocatedInMARBL = .true.
+            ecosys_diag_tot_bSi_form_allocatedInMARBL = .true.
          found = .true.
       endif
 
@@ -4099,16 +4067,16 @@ contains
    ecosys_diag_photoC_NO3_TOT_zint_indexInMARBL = -999
    ecosys_diag_O2_ZMIN_indexInMARBL = -999
    ecosys_diag_O2_ZMIN_DEPTH_indexInMARBL = -999
+   ecosys_diag_calcToSed_indexInMARBL = -999
+   ecosys_diag_calcToSed_ALT_CO2_indexInMARBL = -999
+   ecosys_diag_pocToSed_indexInMARBL = -999
+   ecosys_diag_pfeToSed_indexInMARBL = -999
+   ecosys_diag_SedDenitrif_indexInMARBL = -999
    ecosys_diag_Jint_Ctot_indexInMARBL = -999
-   ecosys_diag_Jint_100m_Ctot_indexInMARBL = -999
    ecosys_diag_Jint_Ntot_indexInMARBL = -999
-   ecosys_diag_Jint_100m_Ntot_indexInMARBL = -999
    ecosys_diag_Jint_Ptot_indexInMARBL = -999
-   ecosys_diag_Jint_100m_Ptot_indexInMARBL = -999
    ecosys_diag_Jint_Sitot_indexInMARBL = -999
-   ecosys_diag_Jint_100m_Sitot_indexInMARBL = -999
    ecosys_diag_Jint_Fetot_indexInMARBL = -999
-   ecosys_diag_Jint_100m_Fetot_indexInMARBL = -999
 
    ecosys_diag_photoC_zint_indexInMARBL(1) = -999
    ecosys_diag_photoC_NO3_zint_indexInMARBL(1) = -999
@@ -4134,11 +4102,6 @@ contains
    ecosys_diag_photoC_NO3_TOT_indexInMARBL = -999
    ecosys_diag_NITRIF_indexInMARBL = -999
    ecosys_diag_DENITRIF_indexInMARBL = -999
-   ecosys_diag_calcToSed_indexInMARBL = -999
-   ecosys_diag_calcToSed_ALT_CO2_indexInMARBL = -999
-   ecosys_diag_pocToSed_indexInMARBL = -999
-   ecosys_diag_pfeToSed_indexInMARBL = -999
-   ecosys_diag_SedDenitrif_indexInMARBL = -999
    ecosys_diag_tot_Nfix_indexInMARBL = -999
 
    ecosys_diag_pistonVel_O2_indexInMARBL = -999
@@ -4164,20 +4127,21 @@ contains
    ecosys_diag_AOU_indexInMARBL = -999
    ecosys_diag_pH_3D_indexInMARBL = -999
    ecosys_diag_POC_PROD_indexInMARBL = -999
-   ecosys_diag_POC_REMIN_indexInMARBL = -999
+   ecosys_diag_POC_REMIN_DOCr_indexInMARBL = -999
    ecosys_diag_POC_REMIN_DIC_indexInMARBL = -999
    ecosys_diag_POP_FLUX_IN_indexInMARBL = -999
    ecosys_diag_POP_PROD_indexInMARBL = -999
-   ecosys_diag_POP_REMIN_indexInMARBL = -999
+   ecosys_diag_POP_REMIN_DOPr_indexInMARBL = -999
    ecosys_diag_POP_REMIN_PO4_indexInMARBL = -999
+   ecosys_diag_PON_REMIN_DONr_indexInMARBL = -999
    ecosys_diag_PON_REMIN_NH4_indexInMARBL = -999
 
    ecosys_diag_Qp_indexInMARBL(1) = -999
-   ecosys_diag_N_lim_indexInMARBL(1) = -999
-   ecosys_diag_P_lim_indexInMARBL(1) = -999
-   ecosys_diag_Fe_lim_indexInMARBL(1) = -999
-   ecosys_diag_SiO3_lim_indexInMARBL(1) = -999
-   ecosys_diag_light_lim_indexInMARBL(1) = -999
+   ecosys_diag_N_lim_surf_indexInMARBL(1) = -999
+   ecosys_diag_P_lim_surf_indexInMARBL(1) = -999
+   ecosys_diag_Fe_lim_surf_indexInMARBL(1) = -999
+   ecosys_diag_SiO3_lim_surf_indexInMARBL(1) = -999
+   ecosys_diag_light_lim_surf_indexInMARBL(1) = -999
    ecosys_diag_photoC_indexInMARBL(1) = -999
    ecosys_diag_photoC_NO3_indexInMARBL(1) = -999
    ecosys_diag_photoFe_indexInMARBL(1) = -999
@@ -4195,11 +4159,11 @@ contains
    ecosys_diag_auto_agg_indexInMARBL(1) = -999
    ecosys_diag_Nfix_indexInMARBL(2) = -999
    ecosys_diag_Qp_indexInMARBL(2) = -999
-   ecosys_diag_N_lim_indexInMARBL(2) = -999
-   ecosys_diag_P_lim_indexInMARBL(2) = -999
-   ecosys_diag_Fe_lim_indexInMARBL(2) = -999
-   ecosys_diag_SiO3_lim_indexInMARBL(2) = -999
-   ecosys_diag_light_lim_indexInMARBL(2) = -999
+   ecosys_diag_N_lim_surf_indexInMARBL(2) = -999
+   ecosys_diag_P_lim_surf_indexInMARBL(2) = -999
+   ecosys_diag_Fe_lim_surf_indexInMARBL(2) = -999
+   ecosys_diag_SiO3_lim_surf_indexInMARBL(2) = -999
+   ecosys_diag_light_lim_surf_indexInMARBL(2) = -999
    ecosys_diag_photoC_indexInMARBL(2) = -999
    ecosys_diag_photoC_NO3_indexInMARBL(2) = -999
    ecosys_diag_photoFe_indexInMARBL(2) = -999
@@ -4217,11 +4181,11 @@ contains
    ecosys_diag_auto_agg_indexInMARBL(2) = -999
    ecosys_diag_Nfix_indexInMARBL(2) = -999
    ecosys_diag_Qp_indexInMARBL(3) = -999
-   ecosys_diag_N_lim_indexInMARBL(3) = -999
-   ecosys_diag_P_lim_indexInMARBL(3) = -999
-   ecosys_diag_Fe_lim_indexInMARBL(3) = -999
-   ecosys_diag_SiO3_lim_indexInMARBL(3) = -999
-   ecosys_diag_light_lim_indexInMARBL(3) = -999
+   ecosys_diag_N_lim_surf_indexInMARBL(3) = -999
+   ecosys_diag_P_lim_surf_indexInMARBL(3) = -999
+   ecosys_diag_Fe_lim_surf_indexInMARBL(3) = -999
+   ecosys_diag_SiO3_lim_surf_indexInMARBL(3) = -999
+   ecosys_diag_light_lim_surf_indexInMARBL(3) = -999
    ecosys_diag_photoC_indexInMARBL(3) = -999
    ecosys_diag_photoC_NO3_indexInMARBL(3) = -999
    ecosys_diag_photoFe_indexInMARBL(3) = -999
@@ -4239,6 +4203,11 @@ contains
    ecosys_diag_auto_agg_indexInMARBL(3) = -999
    ecosys_diag_Nfix_indexInMARBL(3) = -999
 
+   ecosys_diag_ponToSed_indexInMARBL = -999
+   ecosys_diag_popToSed_indexInMARBL = -999
+   ecosys_diag_bsiToSed_indexInMARBL = -999
+   ecosys_diag_dustToSed_indexInMARBL = -999
+   ecosys_diag_OtherRemin_indexInMARBL = -999
    ecosys_diag_tot_bSi_form_indexInMARBL = -999
 
    ecosys_diag_SiO2_FLUX_IN_indexInMARBL = -999
@@ -4266,11 +4235,6 @@ contains
    ecosys_diag_Lig_deg_indexInMARBL = -999
    ecosys_diag_DONr_remin_indexInMARBL = -999
    ecosys_diag_DOPr_remin_indexInMARBL = -999
-   ecosys_diag_ponToSed_indexInMARBL = -999
-   ecosys_diag_popToSed_indexInMARBL = -999
-   ecosys_diag_bsiToSed_indexInMARBL = -999
-   ecosys_diag_dustToSed_indexInMARBL = -999
-   ecosys_diag_OtherRemin_indexInMARBL = -999
 
    ecosys_diag_bSi_form_indexInMARBL(1) = -999
    ecosys_diag_bSi_form_indexInMARBL(2) = -999
@@ -4321,15 +4285,10 @@ contains
  write(*,*) 'ecosys_diag_O2_ZMIN_indexInMARBL = ', 	ecosys_diag_O2_ZMIN_indexInMARBL
  write(*,*) 'ecosys_diag_O2_ZMIN_DEPTH_indexInMARBL = ', 	ecosys_diag_O2_ZMIN_DEPTH_indexInMARBL
  write(*,*) 'ecosys_diag_Jint_Ctot_indexInMARBL = ', 	ecosys_diag_Jint_Ctot_indexInMARBL
- write(*,*) 'ecosys_diag_Jint_100m_Ctot_indexInMARBL = ', 	ecosys_diag_Jint_100m_Ctot_indexInMARBL
  write(*,*) 'ecosys_diag_Jint_Ntot_indexInMARBL = ', 	ecosys_diag_Jint_Ntot_indexInMARBL
- write(*,*) 'ecosys_diag_Jint_100m_Ntot_indexInMARBL = ', 	ecosys_diag_Jint_100m_Ntot_indexInMARBL
  write(*,*) 'ecosys_diag_Jint_Ptot_indexInMARBL = ', 	ecosys_diag_Jint_Ptot_indexInMARBL
- write(*,*) 'ecosys_diag_Jint_100m_Ptot_indexInMARBL = ', 	ecosys_diag_Jint_100m_Ptot_indexInMARBL
  write(*,*) 'ecosys_diag_Jint_Sitot_indexInMARBL = ', 	ecosys_diag_Jint_Sitot_indexInMARBL
- write(*,*) 'ecosys_diag_Jint_100m_Sitot_indexInMARBL = ', 	ecosys_diag_Jint_100m_Sitot_indexInMARBL
  write(*,*) 'ecosys_diag_Jint_Fetot_indexInMARBL = ', 	ecosys_diag_Jint_Fetot_indexInMARBL
- write(*,*) 'ecosys_diag_Jint_100m_Fetot_indexInMARBL = ', 	ecosys_diag_Jint_100m_Fetot_indexInMARBL
 	
  write(*,*) 'ecosys_diag_photoC_zint_indexInMARBL(1) = ', 	ecosys_diag_photoC_zint_indexInMARBL(1)
  write(*,*) 'ecosys_diag_photoC_NO3_zint_indexInMARBL(1) = ', 	ecosys_diag_photoC_NO3_zint_indexInMARBL(1)
@@ -4385,20 +4344,21 @@ contains
  write(*,*) 'ecosys_diag_AOU_indexInMARBL = ', 	ecosys_diag_AOU_indexInMARBL
  write(*,*) 'ecosys_diag_pH_3D_indexInMARBL = ', 	ecosys_diag_pH_3D_indexInMARBL
  write(*,*) 'ecosys_diag_POC_PROD_indexInMARBL = ', 	ecosys_diag_POC_PROD_indexInMARBL
- write(*,*) 'ecosys_diag_POC_REMIN_indexInMARBL = ', 	ecosys_diag_POC_REMIN_indexInMARBL
+ write(*,*) 'ecosys_diag_POC_REMIN_DOCr_indexInMARBL = ', 	ecosys_diag_POC_REMIN_DOCr_indexInMARBL
  write(*,*) 'ecosys_diag_POC_REMIN_DIC_indexInMARBL = ', 	ecosys_diag_POC_REMIN_DIC_indexInMARBL
  write(*,*) 'ecosys_diag_POP_FLUX_IN_indexInMARBL = ', 	ecosys_diag_POP_FLUX_IN_indexInMARBL
  write(*,*) 'ecosys_diag_POP_PROD_indexInMARBL = ', 	ecosys_diag_POP_PROD_indexInMARBL
- write(*,*) 'ecosys_diag_POP_REMIN_indexInMARBL = ', 	ecosys_diag_POP_REMIN_indexInMARBL
+ write(*,*) 'ecosys_diag_POP_REMIN_DOPr_indexInMARBL = ', 	ecosys_diag_POP_REMIN_DOPr_indexInMARBL
  write(*,*) 'ecosys_diag_POP_REMIN_PO4_indexInMARBL = ', 	ecosys_diag_POP_REMIN_PO4_indexInMARBL
+ write(*,*) 'ecosys_diag_PON_REMIN_DONr_indexInMARBL = ', 	ecosys_diag_PON_REMIN_DONr_indexInMARBL
  write(*,*) 'ecosys_diag_PON_REMIN_NH4_indexInMARBL = ', 	ecosys_diag_PON_REMIN_NH4_indexInMARBL
 	
  write(*,*) 'ecosys_diag_Qp_indexInMARBL(1) = ', 	ecosys_diag_Qp_indexInMARBL(1)
- write(*,*) 'ecosys_diag_N_lim_indexInMARBL(1) = ', 	ecosys_diag_N_lim_indexInMARBL(1)
- write(*,*) 'ecosys_diag_P_lim_indexInMARBL(1) = ', 	ecosys_diag_P_lim_indexInMARBL(1)
- write(*,*) 'ecosys_diag_Fe_lim_indexInMARBL(1) = ', 	ecosys_diag_Fe_lim_indexInMARBL(1)
- write(*,*) 'ecosys_diag_SiO3_lim_indexInMARBL(1) = ', 	ecosys_diag_SiO3_lim_indexInMARBL(1)
- write(*,*) 'ecosys_diag_light_lim_indexInMARBL(1) = ', 	ecosys_diag_light_lim_indexInMARBL(1)
+ write(*,*) 'ecosys_diag_N_lim_surf_indexInMARBL(1) = ', 	ecosys_diag_N_lim_surf_indexInMARBL(1)
+ write(*,*) 'ecosys_diag_P_lim_surf_indexInMARBL(1) = ', 	ecosys_diag_P_lim_surf_indexInMARBL(1)
+ write(*,*) 'ecosys_diag_Fe_lim_surf_indexInMARBL(1) = ', 	ecosys_diag_Fe_lim_surf_indexInMARBL(1)
+ write(*,*) 'ecosys_diag_SiO3_lim_surf_indexInMARBL(1) = ', 	ecosys_diag_SiO3_lim_surf_indexInMARBL(1)
+ write(*,*) 'ecosys_diag_light_lim_surf_indexInMARBL(1) = ', 	ecosys_diag_light_lim_surf_indexInMARBL(1)
  write(*,*) 'ecosys_diag_photoC_indexInMARBL(1) = ', 	ecosys_diag_photoC_indexInMARBL(1)
  write(*,*) 'ecosys_diag_photoC_NO3_indexInMARBL(1) = ', 	ecosys_diag_photoC_NO3_indexInMARBL(1)
  write(*,*) 'ecosys_diag_photoFe_indexInMARBL(1) = ', 	ecosys_diag_photoFe_indexInMARBL(1)
@@ -4416,11 +4376,11 @@ contains
  write(*,*) 'ecosys_diag_auto_agg_indexInMARBL(1) = ', 	ecosys_diag_auto_agg_indexInMARBL(1)
  write(*,*) 'ecosys_diag_Nfix_indexInMARBL(2) = ', 	ecosys_diag_Nfix_indexInMARBL(2)
  write(*,*) 'ecosys_diag_Qp_indexInMARBL(2) = ', 	ecosys_diag_Qp_indexInMARBL(2)
- write(*,*) 'ecosys_diag_N_lim_indexInMARBL(2) = ', 	ecosys_diag_N_lim_indexInMARBL(2)
- write(*,*) 'ecosys_diag_P_lim_indexInMARBL(2) = ', 	ecosys_diag_P_lim_indexInMARBL(2)
- write(*,*) 'ecosys_diag_Fe_lim_indexInMARBL(2) = ', 	ecosys_diag_Fe_lim_indexInMARBL(2)
- write(*,*) 'ecosys_diag_SiO3_lim_indexInMARBL(2) = ', 	ecosys_diag_SiO3_lim_indexInMARBL(2)
- write(*,*) 'ecosys_diag_light_lim_indexInMARBL(2) = ', 	ecosys_diag_light_lim_indexInMARBL(2)
+ write(*,*) 'ecosys_diag_N_lim_surf_indexInMARBL(2) = ', 	ecosys_diag_N_lim_surf_indexInMARBL(2)
+ write(*,*) 'ecosys_diag_P_lim_surf_indexInMARBL(2) = ', 	ecosys_diag_P_lim_surf_indexInMARBL(2)
+ write(*,*) 'ecosys_diag_Fe_lim_surf_indexInMARBL(2) = ', 	ecosys_diag_Fe_lim_surf_indexInMARBL(2)
+ write(*,*) 'ecosys_diag_SiO3_lim_surf_indexInMARBL(2) = ', 	ecosys_diag_SiO3_lim_surf_indexInMARBL(2)
+ write(*,*) 'ecosys_diag_light_lim_surf_indexInMARBL(2) = ', 	ecosys_diag_light_lim_surf_indexInMARBL(2)
  write(*,*) 'ecosys_diag_photoC_indexInMARBL(2) = ', 	ecosys_diag_photoC_indexInMARBL(2)
  write(*,*) 'ecosys_diag_photoC_NO3_indexInMARBL(2) = ', 	ecosys_diag_photoC_NO3_indexInMARBL(2)
  write(*,*) 'ecosys_diag_photoFe_indexInMARBL(2) = ', 	ecosys_diag_photoFe_indexInMARBL(2)
@@ -4438,11 +4398,11 @@ contains
  write(*,*) 'ecosys_diag_auto_agg_indexInMARBL(2) = ', 	ecosys_diag_auto_agg_indexInMARBL(2)
  write(*,*) 'ecosys_diag_Nfix_indexInMARBL(2) = ', 	ecosys_diag_Nfix_indexInMARBL(2)
  write(*,*) 'ecosys_diag_Qp_indexInMARBL(3) = ', 	ecosys_diag_Qp_indexInMARBL(3)
- write(*,*) 'ecosys_diag_N_lim_indexInMARBL(3) = ', 	ecosys_diag_N_lim_indexInMARBL(3)
- write(*,*) 'ecosys_diag_P_lim_indexInMARBL(3) = ', 	ecosys_diag_P_lim_indexInMARBL(3)
- write(*,*) 'ecosys_diag_Fe_lim_indexInMARBL(3) = ', 	ecosys_diag_Fe_lim_indexInMARBL(3)
- write(*,*) 'ecosys_diag_SiO3_lim_indexInMARBL(3) = ', 	ecosys_diag_SiO3_lim_indexInMARBL(3)
- write(*,*) 'ecosys_diag_light_lim_indexInMARBL(3) = ', 	ecosys_diag_light_lim_indexInMARBL(3)
+ write(*,*) 'ecosys_diag_N_lim_surf_indexInMARBL(3) = ', 	ecosys_diag_N_lim_surf_indexInMARBL(3)
+ write(*,*) 'ecosys_diag_P_lim_surf_indexInMARBL(3) = ', 	ecosys_diag_P_lim_surf_indexInMARBL(3)
+ write(*,*) 'ecosys_diag_Fe_lim_surf_indexInMARBL(3) = ', 	ecosys_diag_Fe_lim_surf_indexInMARBL(3)
+ write(*,*) 'ecosys_diag_SiO3_lim_surf_indexInMARBL(3) = ', 	ecosys_diag_SiO3_lim_surf_indexInMARBL(3)
+ write(*,*) 'ecosys_diag_light_lim_surf_indexInMARBL(3) = ', 	ecosys_diag_light_lim_surf_indexInMARBL(3)
  write(*,*) 'ecosys_diag_photoC_indexInMARBL(3) = ', 	ecosys_diag_photoC_indexInMARBL(3)
  write(*,*) 'ecosys_diag_photoC_NO3_indexInMARBL(3) = ', 	ecosys_diag_photoC_NO3_indexInMARBL(3)
  write(*,*) 'ecosys_diag_photoFe_indexInMARBL(3) = ', 	ecosys_diag_photoFe_indexInMARBL(3)

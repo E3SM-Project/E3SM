@@ -156,6 +156,8 @@ module ocn_analysis_mode
       ! Initialize submodules before initializing blocks.
       call ocn_equation_of_state_init(domain, err_tmp)
       ierr = ior(ierr, err_tmp)
+      call ocn_diagnostics_init(domain, err_tmp)
+      ierr = ior(ierr,err_tmp)
 
       call ocn_analysis_init(domain, err_tmp)
       ierr = ior(ierr, err_tmp)
@@ -348,7 +350,7 @@ module ocn_analysis_mode
 #endif
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, 1)
 #ifdef MPAS_OPENACC
-         !$acc update host(layerThickEdge)
+         !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
          !$acc update host(relativeVorticity, circulation)
          !$acc update host(vertTransportVelocityTop, &
          !$acc             vertGMBolusVelocityTop, &

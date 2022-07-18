@@ -65,7 +65,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
 #ifndef SCREAM
   Errors::check_option("init_simulation_params_c","nsplit",nsplit,1,Errors::ComparisonOp::GE);
 #else
-  if (nsplit<1) {
+  if (nsplit<1 && Context::singleton().get<Comm>().root()) {
     printf ("Note: nsplit=%d, while nsplit must be >=1. We know SCREAM does not know nsplit until runtime, so this is fine.\n"
             "      Make sure nsplit is set to a valid value before calling prim_advance_subcycle!\n",nsplit);
   }
@@ -478,8 +478,10 @@ void init_elements_states_c (CF90Ptr& elem_state_v_ptr,       CF90Ptr& elem_stat
   const auto  qdp = tracers.qdp;
   const auto  q = tracers.Q;
   const auto  dp = state.m_dp3d;
-  const auto& tl = c.get<TimeLevel>();
+  auto& tl = c.get<TimeLevel>();
   const auto n0 = tl.n0;
+  const SimulationParams& params = c.get<SimulationParams>();
+  tl.update_tracers_levels(params.qsplit);
   const auto n0_qdp = tl.n0_qdp;
   const auto qsize = tracers.num_tracers();
   const auto size = tracers.num_elems()*tracers.num_tracers()*NP*NP*NUM_LEV;

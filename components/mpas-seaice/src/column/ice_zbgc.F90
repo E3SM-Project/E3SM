@@ -564,10 +564,10 @@
 !
       subroutine merge_bgc_fluxes (dt,       nblyr,      &
                                bio_index,    n_algae,    &
-                               nbtrcr,       aicen,      &    
+                               nbtrcr,       aicen,      &
                                vicen,        vsnon,      &
                                ntrcr,        iphin,      &
-                               trcrn,      &
+                               trcrn,        aice_init,  &
                                flux_bion,    flux_bio,   &
                                upNOn,        upNHn,      &
                                upNO,         upNH,       &
@@ -576,14 +576,18 @@
                                PP_net,       ice_bio_net,&
                                snow_bio_net, grow_alg,   &
                                grow_net,     totalChla,  &
-                               nslyr)
- 
+                               nslyr,        iTin,       &
+                               iSin,                     &
+                               bioPorosityIceCell,       &
+                               bioSalinityIceCell,       &
+                               bioTemperatureIceCell)
+
       use ice_constants_colpkg, only: c1, c0, p5, secday, puny
       use ice_colpkg_shared, only: solve_zbgc, max_nbtrcr, hs_ssl, R_C2N, &
                              fr_resp, R_chl2N
       use ice_colpkg_tracers, only: nt_bgc_N, nt_fbri, nlt_bgc_N
 
-      real (kind=dbl_kind), intent(in) :: &          
+      real (kind=dbl_kind), intent(in) :: &
          dt             ! timestep (s)
 
       integer (kind=int_kind), intent(in) :: &
@@ -594,42 +598,48 @@
          nbtrcr         ! number of biology tracer tracers
 
       integer (kind=int_kind), dimension(:), intent(in) :: &
-         bio_index      ! relates bio indices, ie.  nlt_bgc_N to nt_bgc_N 
+         bio_index      ! relates bio indices, ie.  nlt_bgc_N to nt_bgc_N
 
       real (kind=dbl_kind), dimension (:), intent(in) :: &
          trcrn     , &  ! input tracer fields
-         iphin          ! porosity
+         iphin     , &  ! porosity
+         iTin      , &  ! temperature per cat on vertical bio interface points (oC)
+         iSin           ! salinity per cat on vertical bio interface points (ppt)
 
-      real (kind=dbl_kind), intent(in):: &          
+      real (kind=dbl_kind), intent(in):: &
          aicen      , & ! concentration of ice
          vicen      , & ! volume of ice (m)
-         vsnon          ! volume of snow(m)
+         vsnon      , & ! volume of snow(m)
+         aice_init      ! initial concentration of ice
 
       ! single category rates
       real (kind=dbl_kind), dimension(:), intent(in):: &
-         zbgc_snown , & ! bio flux from snow to ice per cat (mmol/m^3*m) 
+         zbgc_snown , & ! bio flux from snow to ice per cat (mmol/m^3*m)
          zbgc_atmn  , & ! bio flux from atm to ice per cat (mmol/m^3*m)
          flux_bion
 
       ! single category rates
       real (kind=dbl_kind), dimension(:,:), intent(in):: &
          upNOn      , & ! nitrate uptake rate per cat (mmol/m^3/s)
-         upNHn      , & ! ammonium uptake rate per cat (mmol/m^3/s)   
+         upNHn      , & ! ammonium uptake rate per cat (mmol/m^3/s)
          grow_alg       ! algal growth rate per cat (mmolN/m^3/s)
 
       ! cumulative fluxes
-      real (kind=dbl_kind), dimension(:), intent(inout):: &     
-         flux_bio   , & ! 
-         zbgc_snow  , & ! bio flux from snow to ice per cat (mmol/m^2/s) 
+      real (kind=dbl_kind), dimension(:), intent(inout):: &
+         flux_bio   , & !
+         zbgc_snow  , & ! bio flux from snow to ice per cat (mmol/m^2/s)
          zbgc_atm   , & ! bio flux from atm to ice per cat (mmol/m^2/s)
          ice_bio_net, & ! integrated ice tracers mmol or mg/m^2)
-         snow_bio_net   ! integrated snow tracers mmol or mg/m^2)
+         snow_bio_net, &! integrated snow tracers mmol or mg/m^2)
+         bioPorosityIceCell, & ! average cell porosity on interface points
+         bioSalinityIceCell, & ! average cell salinity on interface points (ppt)
+         bioTemperatureIceCell ! average cell temperature on interface points (oC)
 
       ! cumulative variables and rates
-      real (kind=dbl_kind), intent(inout):: & 
+      real (kind=dbl_kind), intent(inout):: &
          PP_net     , & ! net PP (mg C/m^2/d)  times aice
          grow_net   , & ! net specific growth (m/d) times vice
-         upNO       , & ! tot nitrate uptake rate (mmol/m^2/d) times aice 
+         upNO       , & ! tot nitrate uptake rate (mmol/m^2/d) times aice
          upNH       , & ! tot ammonium uptake rate (mmol/m^2/d) times aice
          totalChla      ! total Chla (mg chla/m^2)
 
@@ -643,7 +653,7 @@
       integer (kind=int_kind) :: &
          k, mm         ! tracer indice
 
-      real (kind=dbl_kind), dimension (nblyr+1) :: & 
+      real (kind=dbl_kind), dimension (nblyr+1) :: &
          zspace
 
       !-----------------------------------------------------------------
@@ -660,7 +670,7 @@
                             * trcrn(nt_fbri) &
                             * vicen*zspace(k)
          enddo    ! k
-      
+
       !-----------------------------------------------------------------
       ! Merge fluxes
       !-----------------------------------------------------------------
@@ -669,21 +679,27 @@
          snow_bio_net(mm) = snow_bio_net(mm) &
                           + trcrn(bio_index(mm)+nblyr+1)*dvssl &
                           + trcrn(bio_index(mm)+nblyr+2)*dvint
-         flux_bio    (mm) = flux_bio (mm) + flux_bion (mm)*aicen
-         zbgc_snow   (mm) = zbgc_snow(mm) + zbgc_snown(mm)*aicen/dt
-         zbgc_atm    (mm) = zbgc_atm (mm) + zbgc_atmn (mm)*aicen/dt
-      enddo     ! mm
+         flux_bio    (mm) = flux_bio (mm) + flux_bion (mm)*aice_init
+         zbgc_snow   (mm) = zbgc_snow(mm) + zbgc_snown(mm)*aice_init/dt
+         zbgc_atm    (mm) = zbgc_atm (mm) + zbgc_atmn (mm)*aice_init/dt
 
+      enddo     ! mm
+      ! diagnostics : mean cell bio interface grid profiles
+      do k = 1, nblyr+1
+         bioPorosityIceCell(k) = bioPorosityIceCell(k) + iphin(k)*vicen
+         bioSalinityIceCell(k) = bioSalinityIceCell(k) + iSin(k)*vicen
+         bioTemperatureIceCell(k) = bioTemperatureIceCell(k) + iTin(k)*vicen
+      end do
       if (solve_zbgc) then
          do mm = 1, n_algae
             totalChla   = totalChla + ice_bio_net(nlt_bgc_N(mm))*R_chl2N(mm)
             do k = 1, nblyr+1
-               tmp      = iphin(k)*trcrn(nt_fbri)*vicen*zspace(k)*secday 
+               tmp      = iphin(k)*trcrn(nt_fbri)*vicen*zspace(k)*secday
                PP_net   = PP_net   + grow_alg(k,mm)*tmp &
-                        * (c1-fr_resp)* R_C2N(mm)*R_gC2molC 
+                        * (c1-fr_resp)* R_C2N(mm)*R_gC2molC
                grow_net = grow_net + grow_alg(k,mm)*tmp &
                         / (trcrn(nt_bgc_N(mm)+k-1)+puny)
-               upNO     = upNO     + upNOn   (k,mm)*tmp 
+               upNO     = upNO     + upNOn   (k,mm)*tmp
                upNH     = upNH     + upNHn   (k,mm)*tmp
             enddo   ! k
          enddo      ! mm

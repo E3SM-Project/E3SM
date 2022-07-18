@@ -530,8 +530,9 @@ contains
     push_to_f = .false.
 
 #elif defined(SCREAM)
-!SCREAM run, do nothing
-
+!SCREAM run, only compute_diagnostics
+    push_to_f = compute_diagnostics
+    
 #elif defined(CAM)
 !CAM run, push at the end of nsplit loop
     if (nsplit_iter == nsplit) then

@@ -36,6 +36,7 @@ module seaice_column
        seaice_column_postdynamics_time_integration, &
        seaice_init_column_shortwave, &
        seaice_column_aggregate, &
+       seaice_column_aggregate_simple, &
        seaice_column_initial_air_drag_coefficient, &
        seaice_column_reinitialize_fluxes, &
        seaice_column_reinitialize_diagnostics_thermodynamics, &
@@ -1188,6 +1189,12 @@ contains
        call mpas_timer_start("Column update state")
        call seaice_column_update_state(domain, "transport", dynamicsTimeStep, 0.0_RKIND)
        call mpas_timer_stop("Column update state")
+
+    else
+
+       call mpas_timer_start("Column aggregate")
+       call seaice_column_aggregate_simple(domain)
+       call mpas_timer_stop("Column aggregate")
 
     endif
 
@@ -3584,6 +3591,7 @@ contains
     type(MPAS_pool_type), pointer :: &
          mesh, &
          biogeochemistry, &
+         diagnostics_biogeochemistry, &
          icestate, &
          tracers, &
          shortwave, &
@@ -3708,6 +3716,11 @@ contains
          oceanBioFluxesCategory, &
          brineFraction
 
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         bgridTemperatureIceCell, &
+         bgridSalinityIceCell, &
+         bgridPorosityIceCell
+
     integer, dimension(:,:), pointer :: &
          newlyFormedIce
 
@@ -3775,6 +3788,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
        call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
        call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
+       call MPAS_pool_get_subpool(block % structs, "diagnostics_biogeochemistry", diagnostics_biogeochemistry)
        call MPAS_pool_get_subpool(block % structs, "shortwave", shortwave)
        call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmos_coupling)
        call MPAS_pool_get_subpool(block % structs, "melt_growth_rates", melt_growth_rates)
@@ -3863,6 +3877,10 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanDMSPConc",oceanDMSPConc)
        call MPAS_pool_get_array(biogeochemistry, "oceanHumicsConc",oceanHumicsConc)
        call MPAS_pool_get_array(biogeochemistry, "oceanZAerosolConc",oceanZAerosolConc)
+
+       call MPAS_pool_get_array(diagnostics_biogeochemistry, "bgridPorosityIceCell",bgridPorosityIceCell)
+       call MPAS_pool_get_array(diagnostics_biogeochemistry, "bgridSalinityIceCell",bgridSalinityIceCell)
+       call MPAS_pool_get_array(diagnostics_biogeochemistry, "bgridTemperatureIceCell",bgridTemperatureIceCell)
 
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTemperature", seaSurfaceTemperature)
        call MPAS_pool_get_array(ocean_coupling, "seaSurfaceSalinity", seaSurfaceSalinity)
@@ -4052,6 +4070,9 @@ contains
                maxAlgaeType, &
                nZBGCTracers, &
                oceanBioFluxesCategory(:,:,iCell), &
+               bgridPorosityIceCell(:,iCell), &
+               bgridSalinityIceCell(:,iCell), &
+               bgridTemperatureIceCell(:,iCell), &
                abortFlag, &
                abortMessage)
           call column_write_warnings(abortFlag)
@@ -4492,6 +4513,91 @@ contains
     end do
 
   end subroutine seaice_column_aggregate
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_column_aggregate_simple
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 29th August 2021
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_column_aggregate_simple(domain)
+
+    type(domain_type), intent(inout) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         mesh, &
+         tracers, &
+         tracers_aggregate, &
+         icestate
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         iceAreaCell, &
+         iceVolumeCell, &
+         snowVolumeCell, &
+         openWaterArea
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory
+
+    integer :: &
+         iCell, &
+         iCategory
+
+    integer, pointer :: &
+         nCellsSolve, &
+         nCategories
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+       call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+       call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
+       call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
+
+       call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+       call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+
+       call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+       call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+       call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+
+       call MPAS_pool_get_array(tracers_aggregate, "iceAreaCell", iceAreaCell)
+       call MPAS_pool_get_array(tracers_aggregate, "iceVolumeCell", iceVolumeCell)
+       call MPAS_pool_get_array(tracers_aggregate, "snowVolumeCell", snowVolumeCell)
+
+       call MPAS_pool_get_array(icestate, "openWaterArea", openWaterArea)
+
+       do iCell = 1, nCellsSolve
+
+          iceAreaCell(iCell)   = 0.0_RKIND
+          iceVolumeCell(iCell) = 0.0_RKIND
+
+          do iCategory = 1, nCategories
+
+             iceAreaCell(iCell)   = iceAreaCell(iCell)   + iceAreaCategory(1,iCategory,iCell)
+             iceVolumeCell(iCell) = iceVolumeCell(iCell) + iceVolumeCategory(1,iCategory,iCell)
+
+          enddo ! iCategory
+
+          openWaterArea(iCell) = 1.0_RKIND - iceAreaCell(iCell)
+
+       enddo ! iCell
+
+       block => block % next
+    end do
+
+  end subroutine seaice_column_aggregate_simple
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -13023,6 +13129,7 @@ contains
 
     type(MPAS_pool_type), pointer :: &
          biogeochemistry, &
+         diagnostics_biogeochemistry, &
          ocean_coupling, &
          tracers
 
@@ -13129,6 +13236,7 @@ contains
     do while (associated(block))
 
        call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
+       call MPAS_pool_get_subpool(block % structs, "diagnostics_biogeochemistry", diagnostics_biogeochemistry)
 
        call MPAS_pool_get_array(biogeochemistry, "bioPorosity", bioPorosity)
        call MPAS_pool_get_array(biogeochemistry, "bioDiffusivity", bioDiffusivity)
@@ -13138,6 +13246,7 @@ contains
        call MPAS_pool_get_array(biogeochemistry, "oceanBioConcentrations", oceanBioConcentrations)
        call MPAS_pool_get_array(biogeochemistry, "totalVerticalBiologyIce", totalVerticalBiologyIce)
        call MPAS_pool_get_array(biogeochemistry, "totalVerticalBiologySnow", totalVerticalBiologySnow)
+
        call MPAS_pool_get_array(biogeochemistry, "bioTracerShortwave", bioTracerShortwave)
        call MPAS_pool_get_array(biogeochemistry, "interfaceBiologyGrid", interfaceBiologyGrid)
        call MPAS_pool_get_array(biogeochemistry, "interfaceGrid", interfaceGrid)
@@ -13194,7 +13303,6 @@ contains
             config_snow_porosity_at_ice_surface)
 
        do iCell = 1, nCellsSolve
-
           if (.not. config_do_restart_hbrine) then
              ! initialize newly formed ice
              newlyFormedIce(:,iCell) = 1
@@ -13747,7 +13855,8 @@ contains
     type(block_type), pointer :: block
 
     type(MPAS_pool_type), pointer :: &
-         biogeochemistryPool
+         biogeochemistryPool, &
+         diagnostics_biogeochemistryPool
 
     ! biogeochemistry
     real(kind=RKIND), dimension(:), pointer :: &
@@ -13764,7 +13873,10 @@ contains
          atmosIceBioFluxes, &
          snowIceBioFluxes, &
          totalVerticalBiologyIce, &
-         totalVerticalBiologySnow
+         totalVerticalBiologySnow, &
+         bgridPorosityIceCell, &
+         bgridSalinityIceCell, &
+         bgridTemperatureIceCell
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          bioTracerShortwave
@@ -13791,15 +13903,22 @@ contains
           if (config_use_column_biogeochemistry) then
 
              call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistryPool)
+             call MPAS_pool_get_subpool(block % structs, "diagnostics_biogeochemistry", diagnostics_biogeochemistryPool)
 
              if (config_use_vertical_biochemistry) then
                 call MPAS_pool_get_array(biogeochemistryPool, "primaryProduction", primaryProduction)
                 call MPAS_pool_get_array(biogeochemistryPool, "totalChlorophyll", totalChlorophyll)
                 call MPAS_pool_get_array(biogeochemistryPool, "netSpecificAlgalGrowthRate", netSpecificAlgalGrowthRate)
+                call MPAS_pool_get_array(diagnostics_biogeochemistryPool, "bgridSalinityIceCell", bgridSalinityIceCell)
+                call MPAS_pool_get_array(diagnostics_biogeochemistryPool, "bgridPorosityIceCell", bgridPorosityIceCell)
+                call MPAS_pool_get_array(diagnostics_biogeochemistryPool, "bgridTemperatureIceCell", bgridTemperatureIceCell)
 
                 primaryProduction          = 0.0_RKIND
                 totalChlorophyll           = 0.0_RKIND
                 netSpecificAlgalGrowthRate = 0.0_RKIND
+                bgridSalinityIceCell       = 0.0_RKIND
+                bgridPorosityIceCell       = 0.0_RKIND
+                bgridTemperatureIceCell    = 0.0_RKIND
 
              end if
 
@@ -13819,6 +13938,7 @@ contains
              call MPAS_pool_get_array(biogeochemistryPool, "totalVerticalBiologyIce", totalVerticalBiologyIce)
              call MPAS_pool_get_array(biogeochemistryPool, "totalVerticalBiologySnow", totalVerticalBiologySnow)
              call MPAS_pool_get_array(biogeochemistryPool, "totalCarbonContentCell", totalCarbonContentCell)
+
 
              netBrineHeight             = 0.0_RKIND
              oceanBioFluxes             = 0.0_RKIND

@@ -7,7 +7,7 @@ SET(UTILS_SHARE_DIR   ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR     ${HOMME_SOURCE_DIR}/src/share)
 SET(TEST_SRC_DIR      ${HOMME_SOURCE_DIR}/src/test_src)
-SET(UTILS_TIMING_DIR  ${HOMME_BINARY_DIR}/utils/cime/src/share/timing)
+SET(UTILS_TIMING_DIR  ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
 # Use theta-l to define the dycore-specific data structures.
 SET(DYCORE_DIR        ${HOMME_SOURCE_DIR}/src/theta-l)
 SET(DYCORE_SHARE_DIR  ${HOMME_SOURCE_DIR}/src/theta-l/share)

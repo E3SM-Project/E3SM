@@ -21,7 +21,7 @@ module elm_initializeMod
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio        , only : file_desc_t
 
-  use BeTRSimulationALM, only : create_betr_simulation_alm
+  use BeTRSimulationELM, only : create_betr_simulation_elm
   !
   !-----------------------------------------
   ! Definition of component types
@@ -440,7 +440,7 @@ contains
     use elm_varcon            , only : h2osno_max, bdsno, spval
     use landunit_varcon       , only : istice, istice_mec, istsoil
     use elm_varctl            , only : finidat, finidat_interp_source, finidat_interp_dest, fsurdat
-    use elm_varctl            , only : use_century_decomp, single_column, scmlat, scmlon, use_cn, use_fates
+    use elm_varctl            , only : use_century_decomp, single_column, scmlat, scmlon, use_cn
     use elm_varorb            , only : eccen, mvelpp, lambm0, obliqr
     use clm_time_manager      , only : get_step_size, get_curr_calday
     use clm_time_manager      , only : get_curr_date, get_nstep, advance_timestep
@@ -481,7 +481,7 @@ contains
     use elm_interface_pflotranMod           , only : elm_pf_interface_init !, elm_pf_set_restart_stamp
     use tracer_varcon         , only : is_active_betr_bgc
     use clm_time_manager      , only : is_restart
-    use ALMbetrNLMod          , only : betr_namelist_buffer
+    use ELMbetrNLMod          , only : betr_namelist_buffer
     use ELMFatesInterfaceMod  , only: ELMFatesTimesteps
     !
     ! !ARGUMENTS
@@ -554,7 +554,9 @@ contains
     ! ------------------------------------------------------------------------
     ! Pass model timestep info to FATES
     ! ------------------------------------------------------------------------
-    call ELMFatesTimesteps()
+    if(use_fates) then
+       call ELMFatesTimesteps()
+    end if
     
     ! ------------------------------------------------------------------------
     ! Initialize daylength from the previous time step (needed so prev_dayl can be set correctly)
@@ -620,13 +622,13 @@ contains
 
     if(use_betr)then
       !allocate memory for betr simulator
-      allocate(ep_betr, source=create_betr_simulation_alm())
+      allocate(ep_betr, source=create_betr_simulation_elm())
       !set internal filters for betr
       call ep_betr%BeTRSetFilter(maxpft_per_col=max_patch_per_col, boffline=.false.)
-      call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, waterstate_vars, betr_namelist_buffer, masterproc)
+      call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, col_ws, betr_namelist_buffer, masterproc)
       is_active_betr_bgc = ep_betr%do_soibgc()
     else
-      allocate(ep_betr, source=create_betr_simulation_alm())
+      allocate(ep_betr, source=create_betr_simulation_elm())
     endif
 
     call SnowOptics_init( ) ! SNICAR optical parameters:
@@ -751,32 +753,24 @@ contains
              write(iulog,*)'Reading initial conditions from ',trim(finidat)
           end if
           call getfil( finidat, fnamer, 0 )
-          call restFile_read(bounds_proc, fnamer,                                             &
-               atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-               carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-               ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-               nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-               soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-               waterflux_vars, waterstate_vars, sedflux_vars,                                 &
-               phosphorusstate_vars,phosphorusflux_vars,                                      &
-               ep_betr,                                                                       &
-               alm_fates, glc2lnd_vars, crop_vars)
+          call restFile_read(bounds_proc, fnamer,                           &
+               atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,  &
+               ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars, &
+               photosyns_vars, soilhydrology_vars,                          &
+               soilstate_vars, solarabs_vars, surfalb_vars,                 &
+               sedflux_vars, ep_betr, alm_fates, glc2lnd_vars, crop_vars)
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
        if (masterproc) then
           write(iulog,*)'Reading restart file ',trim(fnamer)
        end if
-       call restFile_read(bounds_proc, fnamer,                                             &
-            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-            carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-            nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-            waterflux_vars, waterstate_vars, sedflux_vars,                                 &
-            phosphorusstate_vars,phosphorusflux_vars,                                      &
-            ep_betr,                                                                       &
-            alm_fates, glc2lnd_vars, crop_vars)
+       call restFile_read(bounds_proc, fnamer,                           &
+            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,  &
+            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars ,&
+            photosyns_vars, soilhydrology_vars,                          &
+            soilstate_vars, solarabs_vars, surfalb_vars,                 &
+            sedflux_vars, ep_betr, alm_fates, glc2lnd_vars, crop_vars)
 
     end if
 
@@ -803,32 +797,24 @@ contains
          call ep_betr%set_active(bounds_proc, col_pp)
        endif
        ! Create new template file using cold start
-       call restFile_write(bounds_proc, finidat_interp_dest,                               &
-            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-            carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-            nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-            waterflux_vars, waterstate_vars, sedflux_vars,                                 &
-            phosphorusstate_vars,phosphorusflux_vars,                                      &
-            ep_betr,                                                                       &
-            alm_fates, crop_vars)
+       call restFile_write(bounds_proc, finidat_interp_dest,             &
+            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,  &
+            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars, &
+            photosyns_vars, soilhydrology_vars,          &
+            soilstate_vars, solarabs_vars, surfalb_vars, &
+            sedflux_vars, ep_betr, alm_fates, crop_vars)
 
        ! Interpolate finidat onto new template file
        call getfil( finidat_interp_source, fnamer,  0 )
        call initInterp(filei=fnamer, fileo=finidat_interp_dest, bounds=bounds_proc)
 
        ! Read new interpolated conditions file back in
-       call restFile_read(bounds_proc, finidat_interp_dest,                                &
-            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,                    &
-            carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, carbonflux_vars, &
-            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
-            nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
-            soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-            waterflux_vars, waterstate_vars, sedflux_vars,                                 &
-            phosphorusstate_vars,phosphorusflux_vars,                                      &
-            ep_betr,                                                                       &
-            alm_fates, glc2lnd_vars, crop_vars)
+       call restFile_read(bounds_proc, finidat_interp_dest,              &
+            atm2lnd_vars, aerosol_vars, canopystate_vars, cnstate_vars,  &
+            ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars, &
+            photosyns_vars, soilhydrology_vars,            &
+            soilstate_vars, solarabs_vars, surfalb_vars,   &
+            sedflux_vars, ep_betr, alm_fates, glc2lnd_vars, crop_vars)
 
        ! Reset finidat to now be finidat_interp_dest
        ! (to be compatible with routines still using finidat)

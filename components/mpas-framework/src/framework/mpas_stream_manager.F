@@ -3438,9 +3438,13 @@ module mpas_stream_manager
     !>  that require saving of the actualWhen time.  Attempts to use i/o error
     !>  codes to ignore streams without xtime were found to be unreliable due to
     !>  pervasive occurrence of the generic MPAS_IO_ERR_PIO error.
+    !>  The optional output argument "readInputOutputStreams" provides the ability
+    !>  to include or exclude streams with the INPUT_OUTPUT direction.  There may
+    !>  be situations where it is desired to only read strictly direction INPUT
+    !>  streams.  The default value is .true. for backwards compatibility.
     !
     !-----------------------------------------------------------------------
-    subroutine MPAS_stream_mgr_read(manager, streamID, timeLevel, mgLevel, rightNow, when, whence, saveActualWhen, ierr) !{{{
+    subroutine MPAS_stream_mgr_read(manager, streamID, timeLevel, mgLevel, rightNow, when, whence, saveActualWhen, readInputOutputStreams, ierr) !{{{
 
         implicit none
 
@@ -3452,6 +3456,7 @@ module mpas_stream_manager
         character (len=*), intent(in), optional :: when
         integer, intent(in), optional :: whence
         logical, intent(in), optional :: saveActualWhen
+        logical, intent(in), optional :: readInputOutputStreams
         integer, intent(out), optional :: ierr
 
         type (MPAS_stream_list_type), pointer :: stream_cursor
@@ -3465,6 +3470,7 @@ module mpas_stream_manager
         type (MPAS_Time_type) :: now_time 
         character (len=StrKIND) :: actualWhen_local
         logical :: local_saveActualWhen
+        logical :: local_readInputOutputStreams
         type (MPAS_Time_type) :: actualWhen_time
         integer :: threadNum
         logical :: readStreams
@@ -3516,6 +3522,12 @@ module mpas_stream_manager
             local_saveActualWhen = .false.
         end if
 
+        if (present(readInputOutputStreams)) then
+            local_readInputOutputStreams = readInputOutputStreams
+        else
+            local_readInputOutputStreams = .true.
+        end if
+
         if ( threadNum == 0 ) then
            !
            ! If a stream is specified, we process just that stream; otherwise,
@@ -3528,8 +3540,17 @@ module mpas_stream_manager
                    STREAM_DEBUG_WRITE('-- Handling read of stream '//trim(stream_cursor % name))
    
                    ! Verify that the stream is an input stream
-                   if (stream_cursor % direction == MPAS_STREAM_INPUT .or. stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
-                      readStreams = .true.
+                   if (local_readInputOutputStreams) then
+                      if (stream_cursor % direction == MPAS_STREAM_INPUT .or. stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
+                         readStreams = .true.
+                      endif
+                   else
+                      if (stream_cursor % direction == MPAS_STREAM_INPUT) then
+                         readStreams = .true.
+                      endif
+                   endif
+
+                   if (readStreams) then
                       if (local_saveActualWhen) then
                          call read_stream(manager, stream_cursor, local_timeLevel, local_mgLevel, local_rightNow, local_when, &
                                        local_whence, actualWhen_local, local_ierr)
@@ -3547,19 +3568,33 @@ module mpas_stream_manager
 
                if ( .not. readStreams ) then
                    STREAM_ERROR_WRITE('No input stream matching '//trim(streamID)//' exists in call to MPAS_stream_mgr_read().')
+                   if (.not. local_readInputOutputStreams) then
+                      STREAM_ERROR_WRITE('This may be because requested stream is direction INPUT/OUTPUT but only streams with')
+                      STREAM_ERROR_WRITE(' strictly INPUT direction were requested by this call.')
+                   endif
                    if (present(ierr)) ierr = MPAS_STREAM_MGR_ERROR
                    return 
                end if
-           else
+           else  ! try to read any stream of input direction
                nullify(stream_cursor)
                stream_cursor => manager % streams % head
                do while (associated(stream_cursor))
                    STREAM_DEBUG_WRITE('-- Handling read of stream '//trim(stream_cursor % name))
-   
+
+                   ! Determine if we should attempt this stream
+                   readStreams = .false.
+                   if (local_readInputOutputStreams) then
+                      if (stream_cursor % direction == MPAS_STREAM_INPUT .or. stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
+                         readStreams = .true.
+                      endif
+                   else
+                      if (stream_cursor % direction == MPAS_STREAM_INPUT) then
+                         readStreams = .true.
+                      endif
+                   endif
+
                    ! Verify that the stream is an input stream
-                   if (stream_cursor % direction == MPAS_STREAM_INPUT .or. &
-                       stream_cursor % direction == MPAS_STREAM_INPUT_OUTPUT) then
-   
+                   if (readStreams) then
                        !
                        ! What should be the meaning of actualWhen if we read multiple streams in this call?
                        !

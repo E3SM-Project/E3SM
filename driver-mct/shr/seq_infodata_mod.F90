@@ -134,6 +134,7 @@ MODULE seq_infodata_mod
      character(SHR_KIND_CL)  :: cpl_seq_option  ! coupler sequencing option
 
      logical                 :: do_budgets      ! do heat/water budgets diagnostics
+     logical                 :: do_bgc_budgets  ! do BGC budgets diagnostics
      logical                 :: do_histinit     ! write out initial history file
      integer                 :: budget_inst     ! instantaneous budget level
      integer                 :: budget_daily    ! daily budget level
@@ -385,6 +386,7 @@ CONTAINS
     character(SHR_KIND_CL) :: cpl_seq_option     ! coupler sequencing option
 
     logical                :: do_budgets         ! do heat/water budgets diagnostics
+    logical                :: do_bgc_budgets     ! do BGC budgets diagnostics
     logical                :: do_histinit        ! write out initial history file
     integer                :: budget_inst        ! instantaneous budget level
     integer                :: budget_daily       ! daily budget level
@@ -451,7 +453,7 @@ CONTAINS
          ice_gnam, rof_gnam, glc_gnam, wav_gnam,           &
          atm_gnam, lnd_gnam, ocn_gnam, iac_gnam, cpl_decomp,         &
          shr_map_dopole, vect_map, aoflux_grid, do_histinit,  &
-         do_budgets, drv_threading,                        &
+         do_budgets, do_bgc_budgets, drv_threading,        &
          budget_inst, budget_daily, budget_month,          &
          budget_ann, budget_ltann, budget_ltend,           &
          histaux_a2x,histaux_a2x1hri,histaux_a2x1hr,       &
@@ -545,6 +547,7 @@ CONTAINS
        cpl_decomp            = 0
        cpl_seq_option        = 'CESM1_MOD'
        do_budgets            = .false.
+       do_bgc_budgets        = .false.
        do_histinit           = .false.
        budget_inst           = 0
        budget_daily          = 0
@@ -680,6 +683,7 @@ CONTAINS
        infodata%cpl_decomp            = cpl_decomp
        infodata%cpl_seq_option        = cpl_seq_option
        infodata%do_budgets            = do_budgets
+       infodata%do_bgc_budgets        = do_bgc_budgets
        infodata%do_histinit           = do_histinit
        infodata%budget_inst           = budget_inst
        infodata%budget_daily          = budget_daily
@@ -999,8 +1003,8 @@ CONTAINS
        shr_map_dopole, vect_map, aoflux_grid, flux_epbalfact,             &
        nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
        glc_g2lupdate, atm_aero, run_barriers, esmf_map_flag,              &
-       do_budgets, do_histinit, drv_threading, flux_diurnal,              &
-       ocn_surface_flux_scheme, &
+       do_budgets, do_bgc_budgets, do_histinit, drv_threading,            &
+       flux_diurnal, ocn_surface_flux_scheme,                             &
        coldair_outbreak_mod, &
        flux_convergence, flux_max_iteration,                              &
        budget_inst, budget_daily, budget_month, wall_time_limit,          &
@@ -1098,6 +1102,7 @@ CONTAINS
     integer,                optional, intent(OUT) :: cpl_decomp              ! coupler decomp
     character(len=*),       optional, intent(OUT) :: cpl_seq_option          ! coupler sequencing option
     logical,                optional, intent(OUT) :: do_budgets              ! heat/water budgets
+    logical,                optional, intent(OUT) :: do_bgc_budgets          ! BGC budgets
     logical,                optional, intent(OUT) :: do_histinit             ! initial history file
     integer,                optional, intent(OUT) :: budget_inst             ! inst budget
     integer,                optional, intent(OUT) :: budget_daily            ! daily budget
@@ -1280,6 +1285,7 @@ CONTAINS
     if ( present(cpl_decomp)     ) cpl_decomp     = infodata%cpl_decomp
     if ( present(cpl_seq_option) ) cpl_seq_option = infodata%cpl_seq_option
     if ( present(do_budgets)     ) do_budgets     = infodata%do_budgets
+    if ( present(do_bgc_budgets) ) do_bgc_budgets = infodata%do_bgc_budgets
     if ( present(do_histinit)    ) do_histinit    = infodata%do_histinit
     if ( present(budget_inst)    ) budget_inst    = infodata%budget_inst
     if ( present(budget_daily)   ) budget_daily   = infodata%budget_daily
@@ -1544,8 +1550,8 @@ CONTAINS
        shr_map_dopole, vect_map, aoflux_grid, run_barriers,               &
        nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
        glc_g2lupdate, atm_aero, esmf_map_flag, wall_time_limit,           &
-       do_budgets, do_histinit, drv_threading, flux_diurnal,              &
-       precip_downscaling_method,                                         &
+       do_budgets, do_bgc_budgets, do_histinit, drv_threading,            &
+       flux_diurnal, precip_downscaling_method,                           &
        ocn_surface_flux_scheme,                                           &
        coldair_outbreak_mod,                                              &
        flux_convergence, flux_max_iteration,                              &
@@ -1642,6 +1648,7 @@ CONTAINS
     integer,                optional, intent(IN)    :: cpl_decomp              ! coupler decomp
     character(len=*),       optional, intent(IN)    :: cpl_seq_option          ! coupler sequencing option
     logical,                optional, intent(IN)    :: do_budgets              ! heat/water budgets
+    logical,                optional, intent(IN)    :: do_bgc_budgets          ! BGC budgets
     logical,                optional, intent(IN)    :: do_histinit             ! initial history file
     integer,                optional, intent(IN)    :: budget_inst             ! inst budget
     integer,                optional, intent(IN)    :: budget_daily            ! daily budget
@@ -1823,6 +1830,7 @@ CONTAINS
     if ( present(cpl_decomp)     ) infodata%cpl_decomp     = cpl_decomp
     if ( present(cpl_seq_option) ) infodata%cpl_seq_option = cpl_seq_option
     if ( present(do_budgets)     ) infodata%do_budgets     = do_budgets
+    if ( present(do_bgc_budgets) ) infodata%do_bgc_budgets = do_bgc_budgets
     if ( present(do_histinit)    ) infodata%do_histinit    = do_histinit
     if ( present(budget_inst)    ) infodata%budget_inst    = budget_inst
     if ( present(budget_daily)   ) infodata%budget_daily   = budget_daily
@@ -2127,6 +2135,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%cpl_decomp,              mpicom)
     call shr_mpi_bcast(infodata%cpl_seq_option,          mpicom)
     call shr_mpi_bcast(infodata%do_budgets,              mpicom)
+    call shr_mpi_bcast(infodata%do_bgc_budgets,          mpicom)
     call shr_mpi_bcast(infodata%do_histinit,             mpicom)
     call shr_mpi_bcast(infodata%budget_inst,             mpicom)
     call shr_mpi_bcast(infodata%budget_daily,            mpicom)
@@ -2829,6 +2838,7 @@ CONTAINS
     write(logunit,F0A) subname,'cpl_seq_option           = ', trim(infodata%cpl_seq_option)
     write(logunit,F0S) subname,'cpl_decomp               = ', infodata%cpl_decomp
     write(logunit,F0L) subname,'do_budgets               = ', infodata%do_budgets
+    write(logunit,F0L) subname,'do_bgc_budgets           = ', infodata%do_bgc_budgets
     write(logunit,F0L) subname,'do_histinit              = ', infodata%do_histinit
     write(logunit,F0S) subname,'budget_inst              = ', infodata%budget_inst
     write(logunit,F0S) subname,'budget_daily             = ', infodata%budget_daily

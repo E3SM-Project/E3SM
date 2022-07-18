@@ -1256,6 +1256,40 @@ flags should be captured within MPAS CMake files.
   </CXX_LIBS>
 </compiler>
 
+
+<compiler MACH="miller" COMPILER="gnu">
+  <CONFIG_ARGS>
+    <base> --host=cray </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <SLIBS>
+    <append> -L$ENV{CRAY_HDF5_PARALLEL_PREFIX}/lib -lhdf5_hl -lhdf5 -L$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX} -L$ENV{CRAY_PARALLEL_NETCDF_PREFIX}/lib -lpnetcdf -lnetcdf -lnetcdff </append>
+  </SLIBS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <NETCDF_PATH>$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</NETCDF_PATH>
+  <NETCDF_C_PATH>$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{CRAY_NETCDF_HDF5PARALLEL_PREFIX}</NETCDF_FORTRAN_PATH>
+  <HDF5_PATH>$ENV{CRAY_HDF5_PARALLEL_PREFIX}</HDF5_PATH>
+  <PNETCDF_PATH>$ENV{CRAY_PARALLEL_NETCDF_PREFIX}</PNETCDF_PATH>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O3 </append>
+  </FFLAGS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <MPICC> cc </MPICC>
+  <MPICXX> CC </MPICXX>
+  <MPIFC> ftn </MPIFC>
+  <SCC> gcc </SCC>
+  <SCXX> g++ </SCXX>
+  <SFC> gfortran </SFC>
+</compiler>
+
+
+
+
 <compiler MACH="perlmutter" COMPILER="gnu">
   <CONFIG_ARGS>
     <base> --host=cray </base>

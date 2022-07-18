@@ -874,7 +874,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_use_special_boundaries_tracers" type="logical"
 	category="column_tracers" group="column_tracers">
-Zero out tracers in given boundary cells.
+Modify tracers in given boundary cells.
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -2877,6 +2877,14 @@ Default: Defined in namelist_defaults.xml
 Name of the restart stream the analysis member will use to initialize itself if restart is enabled.
 
 Valid values: A restart stream with state of the conservation check.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_carbon_failure_abort" type="logical"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+If true, abort if carbon conservation fails bounds check.
+
+Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 

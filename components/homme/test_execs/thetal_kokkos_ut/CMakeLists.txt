@@ -4,8 +4,8 @@ SET(SRC_THETA_DIR    ${HOMME_SOURCE_DIR}/src/theta-l_kokkos)
 SET(SHARE_UT_DIR     ${CMAKE_CURRENT_SOURCE_DIR}/../share_kokkos_ut)
 SET(THETA_UT_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 SET(UTILS_SHARE_DIR  ${HOMME_SOURCE_DIR}/utils/csm_share)
-SET(UTILS_TIMING_SRC_DIR ${HOMME_SOURCE_DIR}/utils/cime/src/share/timing)
-SET(UTILS_TIMING_BIN_DIR ${HOMME_BINARY_DIR}/utils/cime/src/share/timing)
+SET(UTILS_TIMING_SRC_DIR ${HOMME_SOURCE_DIR}/utils/cime/CIME/non_py/src/timing)
+SET(UTILS_TIMING_BIN_DIR ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
 
 ### Build a 'theta-l_kokkos' library ###
 # We do this once, and link against it for all unit tests. This reduces compilation times

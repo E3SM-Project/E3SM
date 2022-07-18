@@ -147,7 +147,7 @@ def buildnml(case, caseroot, compname):
         decomp_date = '171128'
         decomp_prefix = 'mpas-o.graph.info.'
         restoring_file = 'sss.monthlyClimatology.PHC2_salx_040803.oRRS30to10v3.nc'
-        analysis_mask_file = 'masks_SingleRegionAtlanticWTransportTransects_RRS30to10v3.nc'
+        analysis_mask_file = 'oRRS30to10v3_mocBasinsAndTransects20210623.nc'
         ic_date = '171128'
         ic_prefix = 'oRRS30to10v3'
         if ocn_ic_mode == 'spunup':
@@ -169,7 +169,7 @@ def buildnml(case, caseroot, compname):
         decomp_date = '170111'
         decomp_prefix = 'mpas-o.graph.info.'
         restoring_file = 'sss.monthlyClimatology.PHC2_salx_040803.oRRS18to6v3.nc'
-        analysis_mask_file = 'oRRS18to6v3.170111.SingleRegionAtlanticWTransportTransects_masks.nc'
+        analysis_mask_file = 'oRRS18to6v3_mocBasinsAndTransects20210623.nc'
         ic_date = '171116'
         ic_prefix = 'oRRS18to6v3'
         if ocn_ic_mode == 'spunup':
@@ -1166,6 +1166,9 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="landIceFreshwaterFlux"/>')
         lines.append('    <var name="landIceHeatFlux"/>')
         lines.append('    <var name="heatFluxToLandIce"/>')
+        lines.append('    <var name="landIceFrictionVelocity"/>')
+        lines.append('    <var_array name="landIceBoundaryLayerTracers"/>')
+        lines.append('    <var_array name="landIceInterfaceTracers"/>')
         lines.append('    <var name="mocStreamvalLatAndDepth"/>')
         lines.append('    <var name="mocStreamvalLatAndDepthRegion"/>')
         lines.append('    <var name="binBoundaryMocStreamfunction"/>')
@@ -1221,13 +1224,9 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="ecosys_diag_O2_ZMIN"/>')
             lines.append('    <var name="ecosys_diag_O2_ZMIN_DEPTH"/>')
             lines.append('    <var name="ecosys_diag_Jint_Ctot"/>')
-            lines.append('    <var name="ecosys_diag_Jint_100m_Ctot"/>')
             lines.append('    <var name="ecosys_diag_Jint_Ntot"/>')
-            lines.append('    <var name="ecosys_diag_Jint_100m_Ntot"/>')
             lines.append('    <var name="ecosys_diag_Jint_Ptot"/>')
-            lines.append('    <var name="ecosys_diag_Jint_100m_Ptot"/>')
             lines.append('    <var name="ecosys_diag_Jint_Sitot"/>')
-            lines.append('    <var name="ecosys_diag_Jint_100m_Sitot"/>')
             lines.append('    <var name="ecosys_diag_photoC_zint"/>')
             lines.append('    <var name="ecosys_diag_photoC_NO3_zint"/>')
             lines.append('    <var name="ecosys_diag_PAR_avg"/>')
@@ -1246,13 +1245,13 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="ecosys_diag_O2_CONSUMPTION"/>')
             lines.append('    <var name="ecosys_diag_pH_3D"/>')
             lines.append('    <var name="ecosys_diag_POC_PROD"/>')
-            lines.append('    <var name="ecosys_diag_POC_REMIN"/>')
+            lines.append('    <var name="ecosys_diag_POC_REMIN_DOCr"/>')
             lines.append('    <var name="ecosys_diag_POC_ACCUM"/>')
-            lines.append('    <var name="ecosys_diag_N_lim"/>')
-            lines.append('    <var name="ecosys_diag_P_lim"/>')
-            lines.append('    <var name="ecosys_diag_Fe_lim"/>')
-            lines.append('    <var name="ecosys_diag_SiO3_lim"/>')
-            lines.append('    <var name="ecosys_diag_light_lim"/>')
+            lines.append('    <var name="ecosys_diag_N_lim_surf"/>')
+            lines.append('    <var name="ecosys_diag_P_lim_surf"/>')
+            lines.append('    <var name="ecosys_diag_Fe_lim_surf"/>')
+            lines.append('    <var name="ecosys_diag_SiO3_lim_surf"/>')
+            lines.append('    <var name="ecosys_diag_light_lim_surf"/>')
             lines.append('    <var name="ecosys_diag_photoC"/>')
             lines.append('    <var name="ecosys_diag_photoC_NO3"/>')
             lines.append('    <var name="ecosys_diag_photoFe"/>')
