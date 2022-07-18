@@ -1175,6 +1175,7 @@ CONTAINS
     call t_stopf('cosp_remask_passive')
 
 #ifdef MMF_PACK
+    call t_startf('cosp_write_outputs')
     ! Allocate space for unpacked outputs
     call construct_cospIN(ncol,nscol_cosp,pver,cospINave)
     call construct_cosp_outputs(ncol,nscol_cosp,pver,Nlvgrid,0,cospOUTave)
@@ -1185,6 +1186,7 @@ CONTAINS
     ! Free space for unpacked outputs
     call destroy_cospIN(cospINave)
     call destroy_cosp_outputs(cospOUTave)
+    call t_stopf('cosp_write_outputs')
 #else
     ! Write COSP outputs to history files
     call t_startf('cosp_write_outputs')
