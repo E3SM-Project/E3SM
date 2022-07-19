@@ -1853,7 +1853,7 @@ Runtime flag to turn on/off lake water storage.
 </entry>
 
 <!-- ========================================================================================  -->
-<!-- Namelist options for downscaling from grid to topounit                                              -->
+<!-- Namelist options for downscaling from grid to topounit                                    -->
 <!-- ========================================================================================  -->
 
 <entry id="use_atm_downscaling_to_topunit" 

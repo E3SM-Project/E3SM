@@ -128,6 +128,7 @@ module elm_driver
   use elm_instMod            , only : chemstate_vars
   use elm_instMod            , only : alm_fates
   use elm_instMod            , only : PlantMicKinetics_vars
+  use elm_instMod            , only : sedflux_vars
   use tracer_varcon          , only : is_active_betr_bgc
   use CNEcosystemDynBetrMod  , only : CNEcosystemDynBetr, CNFluxStateBetrSummary
   use UrbanParamsType        , only : urbanparams_vars
@@ -1367,10 +1368,11 @@ contains
     endif
 
     call t_startf('lnd2atm')
-    call lnd2atm(bounds_proc,       &
-         atm2lnd_vars, surfalb_vars, frictionvel_vars,    &
-         energyflux_vars, solarabs_vars, drydepvel_vars,  &
-         vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars)
+    call lnd2atm(bounds_proc,                                   &
+         atm2lnd_vars, surfalb_vars, frictionvel_vars,          &
+         energyflux_vars, solarabs_vars, drydepvel_vars,        &
+         vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, &
+         sedflux_vars, lnd2atm_vars)
     call t_stopf('lnd2atm')
 
     ! ============================================================================
