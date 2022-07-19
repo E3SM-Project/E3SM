@@ -17,6 +17,7 @@ _TESTS = {
             "ERS.r05_r05.RMOSGPCC.mosart-gpcc_1972",
             "ERS.MOS_USRDAT.RMOSGPCC.mosart-mos_usrdat",
             "SMS.MOS_USRDAT.RMOSGPCC.mosart-unstructure",
+            "ERS.MOS_USRDAT.RMOSNLDAS.mosart-sediment",
             )
         },
 
