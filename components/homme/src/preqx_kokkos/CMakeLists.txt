@@ -236,7 +236,7 @@ MACRO(PREQX_KOKKOS_SETUP)
 
   if(${HIP})
     #remove opt for this file. with opt >O0 asserts fail here.
-    set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/VerticalRemapManager.cpp PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -O0")
+    set_source_files_properties(    ${SRC_SHARE_DIR}/cxx/VerticalRemapManager.cpp PROPERTIES COMPILE_FLAGS "${CMAKE_CXX_FLAGS} -O3")
   endif()
 
   IF (HOMME_USE_TRILINOS)
