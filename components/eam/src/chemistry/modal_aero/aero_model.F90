@@ -113,7 +113,7 @@ module aero_model
   integer,allocatable :: wetdep_indices(:)
   logical :: drydep_lq(pcnst)
   logical :: wetdep_lq(pcnst)
-
+  logical :: modal_mosaic_nitrates = .false.
 
 contains
   
@@ -135,9 +135,11 @@ contains
     ! Namelist variables
     character(len=16) :: aer_wetdep_list(pcnst) = ' '
     character(len=16) :: aer_drydep_list(pcnst) = ' '
-
-    namelist /aerosol_nl/ aer_wetdep_list, aer_drydep_list, sol_facti_cloud_borne, seasalt_emis_scale, sscav_tuning, &
-       sol_factb_interstitial, sol_factic_interstitial
+    ! ++MW
+    namelist /aerosol_nl/ aer_wetdep_list, aer_drydep_list,
+             sol_facti_cloud_borne, seasalt_emis_scale, sscav_tuning, &
+       sol_factb_interstitial, sol_factic_interstitial, modal_mosaic_nitrates
+! --MW
 
     !-----------------------------------------------------------------------------
 
@@ -194,6 +196,14 @@ contains
     use phys_control,    only: phys_getopts
     use mo_chem_utls,    only: get_rxt_ndx, get_spc_ndx
     use modal_aero_data, only: cnst_name_cw, rain_evap_to_coarse_aero, mam_prevap_resusp_optaa
+    #if ( defined MOSAIC_SPECIES )
+    use modal_aero_data, only: mosaic_gaex_prodloss3d, mosaic_gaex_prodloss3d_ga, &
+                               mosaic_aqch_prodloss3d, mosaic_aqch_prodloss3d_ga, mosaic_aqch_prodloss3d_cw, &
+                               lptr_h2so4_g_amode, lptr_hno3_g_amode, lptr_hcl_g_amode, lptr_nh3_g_amode, &
+                               lptr_so4_a_amode,   lptr_no3_a_amode, lptr_cl_a_amode,  lptr_nh4_a_amode, &
+                               lptr_co3_a_amode,   lptr_so4_cw_amode,lptr_no3_cw_amode,lptr_cl_cw_amode, &
+                               lptr_nh4_cw_amode,  lptr_co3_cw_amode
+    #endif
     use modal_aero_initialize_data, only: modal_aero_initialize
     use modal_aero_convproc, only: deepconv_wetdep_history
     use rad_constituents,           only: rad_cnst_get_info
@@ -210,13 +220,14 @@ contains
     integer, intent(in) :: iflagaa
 
     ! local vars
-    integer :: id, l, m, n, nspc
+    integer :: id, j,l, m, n, nspc
 
     logical  :: history_aerosol ! Output MAM or SECT aerosol tendencies
     logical  :: history_verbose ! produce verbose history output
 
     character(len=*), parameter :: subrname = 'aero_model_init'
     character(len=20) :: dummy
+    
     character(len=fieldname_len) :: wetdep_name, depflx_name
     character(len=6) :: test_name
     character(len=100) :: errmes
