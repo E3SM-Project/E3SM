@@ -384,6 +384,7 @@ if (SCREAM_DOUBLE_PRECISION)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
     set(SCREAM_Fortran_FLAGS -real-size 64)
   else()
+	  #find what is crayclang id in cmake
     set(SCREAM_Fortran_FLAGS -s default32 -eZ)
 	  #set(SCREAM_Fortran_FLAGS -fdefault-real-8 -fdefault-double-8)
   endif()
