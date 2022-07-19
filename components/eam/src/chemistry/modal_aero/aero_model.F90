@@ -84,9 +84,13 @@ module aero_model
   ! for aero_model_surfarea called from mo_usrrxt
   integer :: aitken_idx = -1
   integer, dimension(ntot_amode) :: num_idx = -1
+  #if ( defined MOSAIC_SPECIES )
+  integer :: index_tot_mass(ntot_amode,15) = -1
+  integer :: index_chm_mass(ntot_amode,15) = -1
+  #else
   integer :: index_tot_mass(ntot_amode,10) = -1
   integer :: index_chm_mass(ntot_amode,10) = -1
-
+  #endif
   integer :: ndx_h2so4
   character(len=fieldname_len) :: dgnum_name(ntot_amode)
 
