@@ -628,6 +628,9 @@ void HommeDynamics::homme_post_process () {
   const auto dp_view = get_field_out("pseudo_density").get_view<Pack**>();
   const auto p_mid_view = get_field_out("p_mid").get_view<Pack**>();
   const auto p_int_view = get_field_out("p_int").get_view<Pack**>();
+  const auto dp_dry_view    = get_field_out("pseudo_density_dry").get_view<Pack**>();
+  const auto p_dry_int_view = get_field_out("p_dry_int").get_view<Pack**>();
+  const auto p_dry_mid_view = get_field_out("p_dry_mid").get_view<Pack**>();
   const auto Q_view   = get_group_out("Q",rgn).m_bundle->get_view<Pack***>();
 
   const auto T_view  = get_field_out("T_mid").get_view<Pack**>();
@@ -649,6 +652,11 @@ void HommeDynamics::homme_post_process () {
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int& icol = team.league_rank();
 
+    auto qv  = ekat::subview(Q_view,icol,0);
+    // TODO: Here we update the wet and dry pressure coordinates which is the same set of code used
+    //       in the update_pressure() subroutine.  A low-priority todo item would clean-up the
+    //       interface to call update_pressure here or change that routine so that it can be
+    //       called within the top-level Kokkos parallel_for loop.
     // Compute p_int and p_mid
     auto dp = ekat::subview(dp_view,icol);
     auto p_mid = ekat::subview(p_mid_view,icol);
@@ -658,11 +666,22 @@ void HommeDynamics::homme_post_process () {
     team.team_barrier();
     ColOps::compute_midpoint_values(team,nlevs,p_int,p_mid);
     team.team_barrier();
+    // Compute p_dry_int and p_dry_mid
+    auto dp_dry = ekat::subview(dp_dry_view,icol);
+    auto p_dry_mid = ekat::subview(p_dry_mid_view,icol);
+    auto p_dry_int = ekat::subview(p_dry_int_view,icol);
+
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks), KOKKOS_LAMBDA(const int& jpack) {
+      dp_dry(jpack) = dp(jpack) * (1.0 - qv(jpack));
+    });
+    ColOps::column_scan<true>(team,nlevs,dp_dry,p_dry_int,ps0);
+    team.team_barrier();
+    ColOps::compute_midpoint_values(team,nlevs,p_dry_int,p_dry_mid);
+    team.team_barrier();
 
     // Convert VTheta_dp->VTheta->Theta->T
     auto T   = ekat::subview(T_view,icol);
     auto v   = ekat::subview(v_view,icol);
-    auto qv  = ekat::subview(Q_view,icol,0);
 
     auto T_prev = ekat::subview(T_prev_view,icol);
     auto V_prev = ekat::subview(V_prev_view,icol);
@@ -1251,6 +1270,10 @@ void HommeDynamics::init_homme_vcoord () {
 }
 
 // =========================================================================================
+// Note: Any update to this routine will also need to be made within the homme_post_process
+//       routine, which is responsible for updating the pressure every timestep.  There is a
+//       TODO item to consolidate how we update the pressure during initialization and run, but
+//       for now we have two locations where we do this.
 void HommeDynamics::update_pressure() {
   using KT = KokkosTypes<DefaultDevice>;
   using Pack = ekat::Pack<Real,HOMMEXX_PACK_SIZE>;
