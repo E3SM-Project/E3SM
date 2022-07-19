@@ -245,6 +245,12 @@ tweaking their $case/namelist_scream.xml file.
     <Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20220524.nc</Filename>
     <Filename hgrid="ne30np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne30np4_L128_20211202.nc</Filename> <!-- This will need to be updated to the new nccn name -->
     <restart_casename>${CASE}.scream</restart_casename>
+    <ch4vmr>-1.0</ch4vmr>
+    <co2vmr>-1.0</co2vmr>
+    <co2vmr_rad>-1.0</co2vmr_rad>
+    <n2ovmr>-1.0</n2ovmr>
+    <f11vmr>-1.0</f11vmr>
+    <f12vmr>-1.0</f12vmr>
     <!-- Fields that we need to initialize, but are not in an initial condition file need to be inited here -->
     <surf_evap>0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->
     <precip_liq_surf_mass>0.0</precip_liq_surf_mass>

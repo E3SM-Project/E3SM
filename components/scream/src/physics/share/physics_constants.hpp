@@ -32,6 +32,7 @@ struct Constants
   static constexpr Scalar RhoIce        = 917.0;        // Ice density at 0 C from Wallace+Hobbes 1977
   static constexpr Scalar MWH2O         = 18.016;
   static constexpr Scalar MWdry         = 28.966;
+  static constexpr Scalar o2mmr         = 0.23143;      // o2 mass mixing ratio
   static constexpr Scalar ep_2          = MWH2O/MWdry;  // ratio of molecular mass of water to the molecular mass of dry air !0.622
   static constexpr Scalar gravit        = 9.80616;
   static constexpr Scalar LatVap        = 2501000.0;

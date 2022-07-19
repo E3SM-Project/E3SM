@@ -17,7 +17,10 @@ module scream_trcmix_c2f
 
 contains
 
-  subroutine trcmix_c2f(name, ncol, pcols, pver, clat, pmid, q, mwdry, mwco2, mwn2o, mwch4, mwf11, mwf12) bind(c)
+  subroutine trcmix_c2f( &
+    name, ncol, pcols, pver, clat, pmid, q, &
+    mwdry, mwco2, mwn2o, mwch4, mwf11, mwf12, &
+    o2mmr, co2vmr_rad, co2vmr, n2ovmr, ch4vmr, f11vmr, f12vmr) bind(c)
 
     use scream_trcmix, only : trcmix
 
@@ -30,12 +33,9 @@ contains
     real(kind=c_real),          intent(in),  dimension(pcols,pver)  :: pmid  ! model pressures
     real(kind=c_real),          intent(out), dimension(pcols,pver)  :: q     ! constituent mass mixing ratio
 
-    real(kind=c_real), value, intent(in) :: mwdry
-    real(kind=c_real), value, intent(in) :: mwco2
-    real(kind=c_real), value, intent(in) :: mwn2o
-    real(kind=c_real), value, intent(in) :: mwch4
-    real(kind=c_real), value, intent(in) :: mwf11
-    real(kind=c_real), value, intent(in) :: mwf12
+    real(kind=c_real), value, intent(in) :: mwdry, mwco2, mwn2o, mwch4, mwf11, mwf12
+
+    real(kind=c_real), value, intent(in) :: o2mmr, co2vmr_rad, co2vmr, n2ovmr, ch4vmr, f11vmr, f12vmr
 
     character(len=256), pointer :: name_f
     integer :: len
@@ -43,7 +43,9 @@ contains
     call c_f_pointer(name, name_f)
     len = index(name_f, C_NULL_CHAR) - 1
 
-    call trcmix(name_f(1:len), ncol, pcols, pver, clat, pmid, q, mwdry, mwco2, mwn2o, mwch4, mwf11, mwf12)
+    call trcmix(name_f(1:len), ncol, pcols, pver, clat, pmid, q, &
+         mwdry, mwco2, mwn2o, mwch4, mwf11, mwf12, &
+         o2mmr, co2vmr_rad, co2vmr, n2ovmr, ch4vmr, f11vmr, f12vmr)
 
   end subroutine trcmix_c2f
 
