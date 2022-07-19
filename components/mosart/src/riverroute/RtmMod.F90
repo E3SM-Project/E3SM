@@ -1940,6 +1940,16 @@ contains
       rtmCTL%wt(:, 2) = 0._r8
       rtmCTL%wr(:, 2) = 0._r8
       rtmCTL%erout(:, 2) = 0._r8
+      ! For tracer 3 :
+      rtmCTL%wh(:, 3) = 0._r8
+      rtmCTL%wt(:, 3) = 0._r8
+      rtmCTL%wr(:, 3) = 0._r8
+      rtmCTL%erout(:, 3) = 0._r8
+      ! For tracer 4 :
+      rtmCTL%wh(:, 4) = 0._r8
+      rtmCTL%wt(:, 4) = 0._r8
+      rtmCTL%wr(:, 4) = 0._r8
+      rtmCTL%erout(:, 4) = 0._r8
 
       TRunoff%wh   = rtmCTL%wh
       TRunoff%wt   = rtmCTL%wt
