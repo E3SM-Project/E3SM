@@ -1159,12 +1159,14 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30.+_oi%oEC60to30v3">
+  <grid name="a%ne30.+_oi%.*EC.*to">
     <mach name="gcp">
       <!--Pes setting: grid          is a%ne30np4_l%ne30np4_oi%oEC60to30v3_r%r05_g%null_w%null_z%null_m%oEC60to30v3 
-          Pes setting: compset       is 2010_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP -->
+          Pes setting: compset       is 2010_EAM%CMIP6_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP
+                               or       a%ne30np4.pg2_l%r05_oi%EC30to60E2r2_r%null_g%null_w%null_z%null_m%EC30to60E2r2
+                                        1850_EAM%CMIP6_ELM%CNPRDCTCBC_MPASSI%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP_BGC%LNDATM  -->
       <pes compset=".*EAM.+ELM.+DOCN" pesize="any">
-        <comment> -compset A_WCYCL* -res ne30pg2_oECv3 without MPASO on 8 nodes </comment>
+        <comment> -compset A_WCYCL* -res ne30pg2_oECv3 or ne30pg2_r05_EC30to60E2r2 without MPASO on 8 nodes </comment>
         <ntasks>
           <ntasks_atm>240</ntasks_atm>
           <ntasks_lnd>240</ntasks_lnd>
