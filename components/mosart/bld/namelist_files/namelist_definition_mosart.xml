@@ -313,14 +313,6 @@ Per tape series history write frequency.
 <default>Default: 0,-24,-24</default>
 </entry>
 
-<entry id="use_ocn_rof_two_way"
-       type="logical" 
-       category="mosart"
-       group="mosart_inparm">
-Default: .false.
-If .true., ocean-river two way coupling will be turned on.
-</entry>
-
 <!-- ========================================================================================  -->
 <!-- WRM Namelist -->
 <!-- ========================================================================================  -->

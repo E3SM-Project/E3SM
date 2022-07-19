@@ -287,7 +287,6 @@ contains
     inundflag   = .false.
     sediflag    = .false.
     heatflag    = .false.
-    use_ocn_rof_two_way = .false.
     barrier_timers = .false.
     finidat_rtm = ' '
     nrevsn_rtm  = ' '

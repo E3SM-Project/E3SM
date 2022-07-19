@@ -1,3 +1,2 @@
 frivinp_rtm = '$DIN_LOC_ROOT/rof/mosart/MOSART_2way_LLR3_c220615_coupling_test.nc'
 rtmhist_nhtfrq = -24
-use_ocn_rof_two_way = .true.

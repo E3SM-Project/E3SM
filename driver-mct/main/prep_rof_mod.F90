@@ -466,20 +466,16 @@ contains
     !
     ! Local Variables
     integer                  :: eri, efi, eoi
-    logical                  :: ocn_present   ! .true.  => ocn is present
     type(mct_aVect), pointer :: x2r_rx
     character(*), parameter  :: subname = '(prep_rof_mrg)'
     !---------------------------------------------------------------
-    
-    call seq_infodata_getData(infodata , &
-         ocn_present=ocn_present)
 
     call t_drvstartf (trim(timer_mrg), barrier=mpicom_CPLID)
     do eri = 1,num_inst_rof
        efi = mod((eri-1),num_inst_frc) + 1
 
        x2r_rx => component_get_x2c_cx(rof(eri))  ! This is actually modifying x2r_rx
-       call prep_rof_merge(l2r_rx(eri), a2r_rx(eri), o2r_rx(eri), fractions_rx(efi), x2r_rx, cime_model, ocn_present)
+       call prep_rof_merge(l2r_rx(eri), a2r_rx(eri), o2r_rx(eri), fractions_rx(efi), x2r_rx, cime_model)
     end do
     call t_drvstopf (trim(timer_mrg))
 
@@ -487,7 +483,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_rof_merge(l2x_r, a2x_r, o2x_r, fractions_r, x2r_r, cime_model, ocn_present)
+  subroutine prep_rof_merge(l2x_r, a2x_r, o2x_r, fractions_r, x2r_r, cime_model)
 
     !-----------------------------------------------------------------------
     ! Description
@@ -500,7 +496,6 @@ contains
     type(mct_aVect),intent(in)    :: fractions_r
     type(mct_aVect),intent(inout) :: x2r_r
     character(len=*)        , intent(in)    :: cime_model
-    logical                 , intent(in)    :: ocn_present   ! .true.  => ocn is present
     !
     ! Local variables
     integer       :: i
@@ -721,7 +716,7 @@ contains
 
        endif 
 
-       if (ocn_present) then
+       if (ocn_rof_two_way) then
           index_o2x_So_ssh = mct_aVect_indexRA(o2x_r,'So_ssh')
           index_x2r_So_ssh = mct_aVect_indexRA(x2r_r,'So_ssh')
           mrgstr(index_x2r_So_ssh)       = trim(mrgstr(index_x2r_So_ssh))//' = '//'o2x%So_ssh'
@@ -774,7 +769,7 @@ contains
 
     end do
 
-    if ( ocn_present ) then
+    if (ocn_rof_two_way) then
        do i =1,lsize
           x2r_r%rAttr(index_x2r_So_ssh,i)        = o2x_r%rAttr(index_o2x_So_ssh,i)
        enddo

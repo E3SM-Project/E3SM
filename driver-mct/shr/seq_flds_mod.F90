@@ -156,6 +156,7 @@ module seq_flds_mod
   logical            :: atm_gustiness       ! .true. if the atmosphere model produces gustiness
   logical            :: rof2ocn_nutrients   ! .true. if the runoff model passes nutrient fields to the ocn
   logical            :: lnd_rof_two_way     ! .true. if land-river two-way coupling turned on
+  logical            :: ocn_rof_two_way     ! .true. if river-ocean two-way coupling turned on
 
   !----------------------------------------------------------------------------
   ! metadata
@@ -380,7 +381,7 @@ contains
          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, glc_nec, &
          ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, &
          nan_check_component_fields, rof_heat, atm_flux_method, atm_gustiness, &
-         rof2ocn_nutrients, lnd_rof_two_way
+         rof2ocn_nutrients, lnd_rof_two_way, ocn_rof_two_way
 
     ! user specified new fields
     integer,  parameter :: nfldmax = 200
@@ -420,6 +421,7 @@ contains
        atm_gustiness = .false.
        rof2ocn_nutrients = .false.
        lnd_rof_two_way   = .false.
+       ocn_rof_two_way   = .false.
 
        unitn = shr_file_getUnit()
        write(logunit,"(A)") subname//': read seq_cplflds_inparm namelist from: '&
@@ -451,6 +453,7 @@ contains
     call shr_mpi_bcast(atm_gustiness, mpicom)
     call shr_mpi_bcast(rof2ocn_nutrients, mpicom)
     call shr_mpi_bcast(lnd_rof_two_way,   mpicom)
+    call shr_mpi_bcast(ocn_rof_two_way,   mpicom)
 
     call glc_elevclass_init(glc_nec)
 
@@ -1641,15 +1644,17 @@ contains
     attname  = 'So_dhdx'
     call metadata_set(attname, longname, stdname, units)
 
-    ! sea surface height
-    call seq_flds_add(o2x_states,"So_ssh")
-    call seq_flds_add(x2r_states,"So_ssh")
-    call seq_flds_add(o2x_states_to_rof,"So_ssh")
-    longname = 'Sea surface height'
-    stdname  = 'sea_surface_height'
-    units    = 'm'
-    attname  = 'So_ssh'
-    call metadata_set(attname, longname, stdname, units)
+    if (ocn_rof_two_way) then
+      ! sea surface height
+      call seq_flds_add(o2x_states,"So_ssh")
+      call seq_flds_add(x2r_states,"So_ssh")
+      call seq_flds_add(o2x_states_to_rof,"So_ssh")
+      longname = 'Sea surface height'
+      stdname  = 'sea_surface_height'
+      units    = 'm'
+      attname  = 'So_ssh'
+      call metadata_set(attname, longname, stdname, units)
+    endif
 
     ! Meridional sea surface slope
     call seq_flds_add(o2x_states,"So_dhdy")

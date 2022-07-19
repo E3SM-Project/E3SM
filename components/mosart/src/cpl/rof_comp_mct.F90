@@ -250,7 +250,9 @@ contains
                    hostname_in=hostname, username_in=username)
 
     use_lnd_rof_two_way = lnd_rof_two_way
-    
+    use_ocn_rof_two_way = ocn_rof_two_way
+
+>>>>>>> use drv_in to toggle river-ocean two-way coupling
     ! Read namelist, grid and surface data
     call Rtmini(rtm_active=rof_prognostic,flood_active=flood_present)
 
@@ -621,7 +623,7 @@ contains
        rtmCTL%qdto(n,nfrz) = 0.0_r8
        rtmCTL%qdem(n,nfrz) = 0.0_r8
 
-       if (use_ocn_rof_two_way) then
+       if (index_x2r_So_ssh>0) then
           rtmCTL%ssh(n)       = x2r_r%rAttr(index_x2r_So_ssh,n2)
        end if
 

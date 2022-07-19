@@ -328,7 +328,6 @@ else {
     add_default($nl, 'RoutingMethod');
     add_default($nl, 'DLevelH2R');
     add_default($nl, 'DLevelR');
-    add_default($nl, 'use_ocn_rof_two_way');
 #    add_default($nl, 'finidat_rtm' , 'rof_grid'=>$ROF_GRID, 'simyr'=>$opts{'simyr'}, 'nofail'=>1 );
     my $val = 0;
     if ($NCPL_BASE_PERIOD eq "year") {
