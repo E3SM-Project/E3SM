@@ -18,21 +18,6 @@ module scream_trcmix
   implicit none
   save
 
-  ! Copied from physconst
-  real(rtype), public, parameter :: mwdry       = 28.966_rtype ! molecular weight dry air ~ kg/kmole
-  real(rtype), public, parameter :: mwco2       =  44._rtype   ! molecular weight co2
-  real(rtype), public, parameter :: mwn2o       =  44._rtype   ! molecular weight n2o
-  real(rtype), public, parameter :: mwch4       =  16._rtype   ! molecular weight ch4
-  real(rtype), public, parameter :: mwf11       = 136._rtype   ! molecular weight cfc11
-  real(rtype), public, parameter :: mwf12       = 120._rtype   ! molecular weight cfc12
-
-  real(rtype), public, parameter :: rmwn2o = mwn2o/mwdry ! ratio of molecular weight n2o   to dry air
-  real(rtype), public, parameter :: rmwch4 = mwch4/mwdry ! ratio of molecular weight ch4   to dry air
-  real(rtype), public, parameter :: rmwf11 = mwf11/mwdry ! ratio of molecular weight cfc11 to dry air
-  real(rtype), public, parameter :: rmwf12 = mwf12/mwdry ! ratio of molecular weight cfc12 to dry air
-  real(rtype), public, parameter :: rmwco2 = mwco2/mwdry ! ratio of molecular weights of co2 to dry air
-
-
   ! Default values for namelist variables -- now set by build-namelist
   real(rtype) :: o2mmr = .23143_rtype               ! o2 mass mixing ratio
   real(rtype) :: co2vmr_rad = -1.0_rtype            ! co2 vmr override for radiation
@@ -46,15 +31,14 @@ module scream_trcmix
 contains
   !================================================================================================
 
-  function chem_surfvals_get(name)
+  function chem_surfvals_get(name, rmwco2)
     ! Copied from components/eam/src/physics/chem_surfvals.F90
 
     character(len=*), intent(in) :: name
+    real(rtype),      intent(in) :: rmwco2
 
-    real(rtype) :: rmwco2
     real(rtype) :: chem_surfvals_get
 
-    rmwco2 = mwco2/mwdry    ! ratio of molecular weights of co2 to dry air
     select case (name)
     case ('CO2VMR')
        chem_surfvals_get = co2vmr
@@ -76,7 +60,7 @@ contains
 
   end function chem_surfvals_get
 
-  function chem_surfvals_co2_rad()
+  function chem_surfvals_co2_rad(rmwco2)
     ! Copied from components/eam/src/physics/chem_surfvals.F90
 
     ! Return the value of CO2 (as mmr) that is radiatively active.
@@ -91,6 +75,8 @@ contains
     ! CO2 to the history file.  The optional argument allows returning the
     ! value as vmr.
 
+    real(rtype), intent(in) :: rmwco2
+
     ! Return value
     real(rtype) :: chem_surfvals_co2_rad
 
@@ -98,18 +84,15 @@ contains
     real(rtype) :: convert_vmr      ! convert vmr to desired output
     !-----------------------------------------------------------------------
 
-    ! by default convert vmr to mmr
-    convert_vmr = mwco2/mwdry    ! ratio of molecular weights of co2 to dry air
-
     if (co2vmr_rad > 0._rtype) then
-       chem_surfvals_co2_rad = convert_vmr * co2vmr_rad
+       chem_surfvals_co2_rad = rmwco2 * co2vmr_rad
     else
-       chem_surfvals_co2_rad = convert_vmr * co2vmr
+       chem_surfvals_co2_rad = rmwco2 * co2vmr
     end if
 
   end function chem_surfvals_co2_rad
 
-  subroutine trcmix(name, ncol, pcols, pver, clat, pmid, q)
+  subroutine trcmix(name, ncol, pcols, pver, clat, pmid, q, mwdry, mwco2, mwn2o, mwch4, mwf11, mwf12)
     !-----------------------------------------------------------------------
     !
     ! Purpose:
@@ -136,6 +119,13 @@ contains
     real(rtype),      intent(in)  :: pmid(pcols,pver)  ! model pressures
     real(rtype),      intent(out) :: q(pcols,pver)     ! constituent mass mixing ratio
 
+    real(rtype), intent(in) :: mwdry
+    real(rtype), intent(in) :: mwco2
+    real(rtype), intent(in) :: mwn2o
+    real(rtype), intent(in) :: mwch4
+    real(rtype), intent(in) :: mwf11
+    real(rtype), intent(in) :: mwf12
+
     integer i                ! longitude loop index
     integer k                ! level index
 
@@ -146,6 +136,18 @@ contains
     real(rtype) trop_mmr        ! tropospheric mass mixing ratio
     real(rtype) scale           ! pressure scale height
 
+    real(rtype) :: rmwn2o
+    real(rtype) :: rmwch4
+    real(rtype) :: rmwf11
+    real(rtype) :: rmwf12
+    real(rtype) :: rmwco2
+
+    rmwn2o = mwn2o/mwdry
+    rmwch4 = mwch4/mwdry
+    rmwf11 = mwf11/mwdry
+    rmwf12 = mwf12/mwdry
+    rmwco2 = mwco2/mwdry
+
     !-----------------------------------------------------------------------
 
     do i = 1, ncol
@@ -154,16 +156,16 @@ contains
 
     if (name == 'O2') then
 
-       q = chem_surfvals_get('O2MMR')
+       q = chem_surfvals_get('O2MMR', rmwco2)
 
     else if (name == 'CO2') then
 
-       q = chem_surfvals_co2_rad()
+       q = chem_surfvals_co2_rad(rmwco2)
 
     else if (name == 'CH4') then
 
        ! set tropospheric mass mixing ratios
-       trop_mmr = rmwch4 * chem_surfvals_get('CH4VMR')
+       trop_mmr = rmwch4 * chem_surfvals_get('CH4VMR', rmwco2)
 
        do k = 1,pver
           do i = 1,ncol
@@ -191,7 +193,7 @@ contains
     else if (name == 'N2O') then
 
        ! set tropospheric mass mixing ratios
-       trop_mmr = rmwn2o * chem_surfvals_get('N2OVMR')
+       trop_mmr = rmwn2o * chem_surfvals_get('N2OVMR', rmwco2)
 
        do k = 1,pver
           do i = 1,ncol
@@ -219,7 +221,7 @@ contains
     else if (name == 'CFC11') then
 
        ! set tropospheric mass mixing ratios
-       trop_mmr = rmwf11 * chem_surfvals_get('F11VMR')
+       trop_mmr = rmwf11 * chem_surfvals_get('F11VMR', rmwco2)
 
        do k = 1,pver
           do i = 1,ncol
@@ -247,7 +249,7 @@ contains
     else if (name == 'CFC12') then
 
        ! set tropospheric mass mixing ratios
-       trop_mmr = rmwf12 * chem_surfvals_get('F12VMR')
+       trop_mmr = rmwf12 * chem_surfvals_get('F12VMR', rmwco2)
 
        do k = 1,pver
           do i = 1,ncol

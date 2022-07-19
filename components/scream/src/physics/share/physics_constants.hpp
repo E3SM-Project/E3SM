@@ -146,6 +146,10 @@ Scalar Constants<Scalar>::get_gas_mol_weight(ci_string gas_name) {
     return 31.998;
   } else if (gas_name == "n2" ) {
     return 28.0134;
+  } else if (gas_name == "cfc11" ) {
+    return 136.;
+  } else if (gas_name == "cfc12" ) {
+    return 120.;
   }
   return ekat::ScalarTraits<Scalar>::invalid();
 }
