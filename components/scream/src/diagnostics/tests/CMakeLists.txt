@@ -22,5 +22,7 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(dry_static_energy "dry_static_energy_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test sea level pressure 
   CreateUnitTest(sea_level_pressure "sea_level_pressure_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test total water path
+  CreateUnitTest(water_path "water_path_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 
 endif()

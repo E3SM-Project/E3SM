@@ -8,6 +8,10 @@ set(DIAGNOSTIC_SRCS
   vertical_layer_midpoint.cpp
   dry_static_energy.cpp
   sea_level_pressure.cpp
+  liquid_water_path.cpp
+  ice_water_path.cpp
+  vapor_water_path.cpp
+  rain_water_path.cpp
 )
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})
