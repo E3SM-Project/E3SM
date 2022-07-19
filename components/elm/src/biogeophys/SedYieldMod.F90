@@ -91,7 +91,7 @@ contains
     real(r8) :: nh                                         ! Manning's coefficient 
     real(r8) :: K, COH                                     ! soil erodibility
     real(r8) :: Qs, Qss, Qg, Ptot, Ie, Dl                  ! water fluxes
-    real(r8) :: Tc, Es_Q, Es_P, KE_DT, KE_LD               ! temporaries 
+    real(r8) :: Tc, Es_Q, Es_P, KE_DT, KE_LD, cheight      ! temporaries 
     real(r8) :: Es_Qcrp, Es_Pcrp                           ! cropland temporaries
     real(r8) :: stxt(4)                                    ! soil texture including gravel
     character(len=32) :: subname = 'SoilErosion'           ! subroutine name
@@ -209,8 +209,8 @@ contains
                      KE_DT = Ptot * fungrvl * max(8.95_r8+8.44_r8*log10(Ie), 0._r8)
                      ! leaf drip power
                      Dl = max(qflx_leafdrip(p)*dtime, 0._r8)      ! mm
-                     KE_LD = max(15.8_r8*sqrt(0.5_r8*min(htop(p)+hbot(p),40._r8))-5.87_r8, &
-                           0._r8) * fungrvl * Dl
+                     cheight = 0.5_r8*min(htop(p)+hbot(p),40._r8) ! m
+                     KE_LD = max(15.8_r8*sqrt(cheight)-5.87_r8, 0._r8) * fungrvl * Dl
                      ! LAI and root biomass (kgC/m3): OM/OC = 1.72 
                      Clai = 1._r8 - exp(-tlai(p))
                      PCT_gnd = 100._r8 * max(Crsd,Clai) ! ground cover in percentage
