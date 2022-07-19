@@ -76,7 +76,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: c, fc, p, t, l, g, j                       ! indices
-    integer  :: lg, cg, lt                                     ! indices of glaciers
+    integer  :: lg, cg, lt                                 ! indices of glaciers
     integer  :: lp                                         ! indices of soil pools
     integer  :: dtime                                      ! timestep size [seconds]
     logical  :: found                                      ! flags
@@ -209,8 +209,8 @@ contains
                      KE_DT = Ptot * fungrvl * max(8.95_r8+8.44_r8*log10(Ie), 0._r8)
                      ! leaf drip power
                      Dl = max(qflx_leafdrip(p)*dtime, 0._r8)      ! mm
-                     KE_LD = max(15.8_r8*sqrt(0.5_r8*(htop(p)+hbot(p)))-5.87_r8, 0._r8) * &
-                        fungrvl * Dl
+                     KE_LD = max(15.8_r8*sqrt(0.5_r8*min(htop(p)+hbot(p),40._r8))-5.87_r8, &
+                           0._r8) * fungrvl * Dl
                      ! LAI and root biomass (kgC/m3): OM/OC = 1.72 
                      Clai = 1._r8 - exp(-tlai(p))
                      PCT_gnd = 100._r8 * max(Crsd,Clai) ! ground cover in percentage
