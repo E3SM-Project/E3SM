@@ -13,6 +13,7 @@ _TESTS = {
     "e3sm_mosart_developer" : {
         "share" : True,
         "time"  : "0:45:00",
+        "inherit" : ("e3sm_mosart_sediment"),
         "tests" : (
             "ERS.r05_r05.RMOSGPCC.mosart-gpcc_1972",
             "ERS.MOS_USRDAT.RMOSGPCC.mosart-mos_usrdat",
@@ -25,6 +26,13 @@ _TESTS = {
         "time"  : "0:45:00",
         "tests" : (
             "ERS.ne30pg2_r05_EC30to60E2r2.GPMPAS-JRA.mosart-rof_ocn_2way",
+            )
+        },
+
+    "e3sm_mosart_sediment" : {
+        "time"  : "0:45:00",
+        "tests" : (
+            "ERS.MOS_USRDAT.RMOSNLDAS.mosart-sediment",
             )
         },
 

@@ -32,6 +32,7 @@ module elm_cpl_indices
   integer, public ::index_l2x_Flrl_Tqsur      ! lnd->rtm input surface runoff temperature
   integer, public ::index_l2x_Flrl_Tqsub      ! lnd->rtm input subsurface runoff temperature
   integer, public ::index_l2x_coszen_str      ! lnd->rtm cosine of zenith  
+  integer, public ::index_l2x_Flrl_rofmud     ! lnd->rtm input sediment yield fluxes
   integer, public ::index_l2x_Flrl_inundinf   ! lnd->rtm infiltration from floodplain inundation
   integer, public ::index_l2x_Sl_t            ! temperature
   integer, public ::index_l2x_Sl_tref         ! 2m reference temperature
@@ -141,7 +142,7 @@ contains
     !
     ! !USES:
     use seq_flds_mod   , only: seq_flds_x2l_fields, seq_flds_l2x_fields,       &
-                               lnd_rof_two_way
+                               lnd_rof_two_way, rof_sed
     use mct_mod        , only: mct_aVect, mct_aVect_init, mct_avect_indexra
     use mct_mod        , only: mct_aVect_clean, mct_avect_nRattr
     use seq_drydep_mod , only: drydep_fields_token, lnd_drydep
@@ -185,6 +186,9 @@ contains
     index_l2x_Flrl_Tqsur    = mct_avect_indexra(l2x,'Flrl_Tqsur')
     index_l2x_Flrl_Tqsub    = mct_avect_indexra(l2x,'Flrl_Tqsub')
     index_l2x_coszen_str    = mct_avect_indexra(l2x,'coszen_str')
+	if(rof_sed) then
+      index_l2x_Flrl_rofmud   = mct_avect_indexra(l2x,'Flrl_rofmud')
+	end if
     if (lnd_rof_two_way) then
       index_l2x_Flrl_inundinf = mct_avect_indexra(l2x,'Flrl_inundinf')
     endif

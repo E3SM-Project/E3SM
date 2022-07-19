@@ -268,6 +268,18 @@
     </values>
   </entry>
 
+  <entry id="rof_sed">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If set to .true., adds fields needed to calculate sediment in the river model
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
   <!-- =========================== -->
   <!-- -group seq_cplflds_custom   -->
   <!-- =========================== -->
