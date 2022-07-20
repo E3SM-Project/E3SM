@@ -153,10 +153,10 @@ if [ $skip_testing -eq 0 ]; then
           echo "SCREAM v1 tests were skipped, since the Github label 'AT: Skip v1 Testing' was found.\n"
       fi
     fi
+  fi
 
-    if [[ $fails > 0 ]]; then
-        exit 1
-    fi
+  if [[ $fails > 0 ]]; then
+      exit 1
   fi
 
 else
