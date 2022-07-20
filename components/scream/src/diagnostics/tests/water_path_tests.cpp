@@ -38,6 +38,14 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
   return gm;
 }
 
+template<typename VT>
+typename VT::HostMirror
+cmvdc (const VT& v) {
+  auto vh = Kokkos::create_mirror_view(v);
+  Kokkos::deep_copy(vh,v);
+  return vh;
+}
+
 //-----------------------------------------------------------------------------------------------//
 template<typename DeviceT>
 void run(std::mt19937_64& engine)
@@ -178,16 +186,20 @@ void run(std::mt19937_64& engine)
       Kokkos::deep_copy(qc_sub,qc);
       Kokkos::deep_copy(qi_sub,qi);
       Kokkos::deep_copy(qr_sub,qr);
-      for (int idx=0;idx<num_levs;idx++) {
-        const int jpack = idx / Pack::n;
-        const int klev  = idx % Pack::n;
-      }
     }
     // Grab views for each of the water path diagnostics
-    const auto& vwp_v = diags["vwp"]->get_diagnostic().get_view<const Real*>();
-    const auto& lwp_v = diags["lwp"]->get_diagnostic().get_view<const Real*>();
-    const auto& iwp_v = diags["iwp"]->get_diagnostic().get_view<const Real*>();
-    const auto& rwp_v = diags["rwp"]->get_diagnostic().get_view<const Real*>();
+    const auto& vwp = diags["vwp"]->get_diagnostic();
+    const auto& lwp = diags["lwp"]->get_diagnostic();
+    const auto& iwp = diags["iwp"]->get_diagnostic();
+    const auto& rwp = diags["rwp"]->get_diagnostic();
+    const auto& vwp_v = vwp.get_view<const Real*>();
+    const auto& lwp_v = lwp.get_view<const Real*>();
+    const auto& iwp_v = iwp.get_view<const Real*>();
+    const auto& rwp_v = rwp.get_view<const Real*>();
+    const auto& vwp_h = vwp.get_view<const Real*,Host>();
+    const auto& lwp_h = lwp.get_view<const Real*,Host>();
+    const auto& iwp_h = iwp.get_view<const Real*,Host>();
+    const auto& rwp_h = rwp.get_view<const Real*,Host>();
 
     for (const auto& dd : diags) {
       dd.second->run();
@@ -227,7 +239,7 @@ void run(std::mt19937_64& engine)
               lmax = qi_s(idx)*dp_s(idx)/gravit;
             }
           }, Kokkos::Max<Real>(qi_mass_max));
-        EKAT_KERNEL_REQUIRE(rwp_v(icol)>qi_mass_max);
+        EKAT_KERNEL_REQUIRE(iwp_v(icol)>qi_mass_max);
         // Test qr mass
         Real qr_mass_max=0.0;
         auto qr_s = ekat::scalarize(ekat::subview(qr_v, icol));
@@ -252,10 +264,6 @@ void run(std::mt19937_64& engine)
       const auto& lwp_copy_v = lwp_copy_f.get_view<Real*>();
       const auto& iwp_copy_v = iwp_copy_f.get_view<Real*>();
       const auto& rwp_copy_v = rwp_copy_f.get_view<Real*>();
-      Kokkos::deep_copy(vwp_copy_v,vwp_v);
-      Kokkos::deep_copy(lwp_copy_v,lwp_v);
-      Kokkos::deep_copy(iwp_copy_v,iwp_v);
-      Kokkos::deep_copy(rwp_copy_v,rwp_v);
 
       const auto alpha_qv = pdf_alpha(engine);
       const auto alpha_qc = pdf_alpha(engine);
@@ -263,33 +271,43 @@ void run(std::mt19937_64& engine)
       const auto alpha_qr = pdf_alpha(engine);
       REQUIRE(alpha_qv*alpha_qc*alpha_qi*alpha_qr != 1.0);
 
-      Kokkos::parallel_for("",ncols,KOKKOS_LAMBDA(const int& icol) {
-        const auto& qv_sub      = ekat::subview(qv_v,icol);
-        const auto& qc_sub      = ekat::subview(qc_v,icol);
-        const auto& qi_sub      = ekat::subview(qi_v,icol);
-        const auto& qr_sub      = ekat::subview(qr_v,icol);
+      Kokkos::parallel_for("",ncols*num_mid_packs,KOKKOS_LAMBDA(const int& idx) {
+        const int icol  = idx / num_mid_packs;
+        const int jpack = idx % num_mid_packs;
 
-        Kokkos::parallel_for("",num_mid_packs, [&] (const Int& jpack) {
-          qv_sub(jpack) *= alpha_qv;
-          qc_sub(jpack) *= alpha_qc;
-          qi_sub(jpack) *= alpha_qi;
-          qr_sub(jpack) *= alpha_qr;
-        });
+        qv_v(icol,jpack) *= alpha_qv;
+        qc_v(icol,jpack) *= alpha_qc;
+        qi_v(icol,jpack) *= alpha_qi;
+        qr_v(icol,jpack) *= alpha_qr;
 
-        vwp_copy_v(icol) *= alpha_qv;
-        lwp_copy_v(icol) *= alpha_qc;
-        iwp_copy_v(icol) *= alpha_qi;
-        rwp_copy_v(icol) *= alpha_qr;
+        if (jpack==0) {
+          vwp_copy_v(icol) *= alpha_qv;
+          lwp_copy_v(icol) *= alpha_qc;
+          iwp_copy_v(icol) *= alpha_qi;
+          rwp_copy_v(icol) *= alpha_qr;
+        }
       });
       Kokkos::fence();
       for (const auto& dd : diags) {
         dd.second->run();
       }
+      vwp_copy_f.sync_to_host();
+      lwp_copy_f.sync_to_host();
+      iwp_copy_f.sync_to_host();
+      rwp_copy_f.sync_to_host();
+      const auto& vwp_copy_h = vwp_copy_f.get_view<Real*,Host>();
+      const auto& lwp_copy_h = lwp_copy_f.get_view<Real*,Host>();
+      const auto& iwp_copy_h = iwp_copy_f.get_view<Real*,Host>();
+      const auto& rwp_copy_h = rwp_copy_f.get_view<Real*,Host>();
+      vwp.sync_to_host();
+      lwp.sync_to_host();
+      iwp.sync_to_host();
+      rwp.sync_to_host();
       for (int icol=0;icol<ncols;icol++) {
-        REQUIRE(std::abs(vwp_copy_v(icol)-vwp_v(icol))<macheps);
-        REQUIRE(std::abs(lwp_copy_v(icol)-lwp_v(icol))<macheps);
-        REQUIRE(std::abs(iwp_copy_v(icol)-iwp_v(icol))<macheps);
-        REQUIRE(std::abs(rwp_copy_v(icol)-rwp_v(icol))<macheps);
+        REQUIRE(std::abs(vwp_copy_h(icol)-vwp_h(icol))<macheps);
+        REQUIRE(std::abs(lwp_copy_h(icol)-lwp_h(icol))<macheps);
+        REQUIRE(std::abs(iwp_copy_h(icol)-iwp_h(icol))<macheps);
+        REQUIRE(std::abs(rwp_copy_h(icol)-rwp_h(icol))<macheps);
       }
     }
     // Test 3: If mass moves from one phase to another than the total water path
@@ -300,36 +318,39 @@ void run(std::mt19937_64& engine)
       const auto alpha_qc_to_qi = pdf_alpha(engine);
       const auto alpha_qi_to_qr = pdf_alpha(engine);
       const auto alpha_qr_to_qv = pdf_alpha(engine);
-      Kokkos::parallel_for("",ncols,KOKKOS_LAMBDA(const int& icol) {
+      Kokkos::parallel_for("",ncols*num_mid_packs,KOKKOS_LAMBDA(const int& idx) {
+        const int icol  = idx / num_mid_packs;
+        const int jpack = idx % num_mid_packs;
 
         total_mass(icol) = vwp_v(icol) + lwp_v(icol) + iwp_v(icol) + rwp_v(icol);
-        const auto& qv_sub      = ekat::subview(qv_v,icol);
-        const auto& qc_sub      = ekat::subview(qc_v,icol);
-        const auto& qi_sub      = ekat::subview(qi_v,icol);
-        const auto& qr_sub      = ekat::subview(qr_v,icol);
-        Kokkos::parallel_for("",num_mid_packs, [&] (const Int& jpack) {
-          auto qv_to_qc = alpha_qv_to_qc*qv_sub(jpack);
-          auto qc_to_qi = alpha_qc_to_qi*qc_sub(jpack);
-          auto qi_to_qr = alpha_qi_to_qr*qi_sub(jpack);
-          auto qr_to_qv = alpha_qr_to_qv*qr_sub(jpack);
-          qv_sub(jpack) -= qv_to_qc;
-          qc_sub(jpack) -= qc_to_qi;
-          qi_sub(jpack) -= qi_to_qr;
-          qr_sub(jpack) -= qr_to_qv;
 
-          qc_sub(jpack) += qv_to_qc;
-          qi_sub(jpack) += qc_to_qi;
-          qr_sub(jpack) += qi_to_qr;
-          qv_sub(jpack) += qr_to_qv;
-        });
+        auto qv_to_qc = alpha_qv_to_qc*qv_v(icol,jpack);
+        auto qc_to_qi = alpha_qc_to_qi*qc_v(icol,jpack);
+        auto qi_to_qr = alpha_qi_to_qr*qi_v(icol,jpack);
+        auto qr_to_qv = alpha_qr_to_qv*qr_v(icol,jpack);
+
+        qv_v(icol,jpack) -= qv_to_qc;
+        qc_v(icol,jpack) -= qc_to_qi;
+        qi_v(icol,jpack) -= qi_to_qr;
+        qr_v(icol,jpack) -= qr_to_qv;
+
+        qv_v(icol,jpack) += qr_to_qv;
+        qc_v(icol,jpack) += qv_to_qc;
+        qi_v(icol,jpack) += qc_to_qi;
+        qr_v(icol,jpack) += qi_to_qr;
       });
       Kokkos::fence();
       for (const auto& dd : diags) {
         dd.second->run();
       }
+      auto total_mass_h = cmvdc(total_mass);
+      vwp.sync_to_host();
+      lwp.sync_to_host();
+      iwp.sync_to_host();
+      rwp.sync_to_host();
       for (int icol=0;icol<ncols;icol++) {
-        const auto new_total_mass = vwp_v(icol) + lwp_v(icol) + iwp_v(icol) + rwp_v(icol);
-        REQUIRE(std::abs(total_mass(icol)-new_total_mass)<macheps);
+        const auto new_total_mass = vwp_h(icol) + lwp_h(icol) + iwp_h(icol) + rwp_h(icol);
+        REQUIRE(std::abs(total_mass_h(icol)-new_total_mass)<macheps);
       }
     }
     // Test 4: Delta_TWP = Delta_LWP + Delta_IWP + Delta_RWP
@@ -367,41 +388,46 @@ void run(std::mt19937_64& engine)
       for (const auto& dd : diags) {
         dd.second->run();
       }
+      auto total_mass_h = cmvdc(total_mass);
+      auto delta_mass_h = cmvdc(delta_mass);
+      vwp.sync_to_host();
+      lwp.sync_to_host();
+      iwp.sync_to_host();
+      rwp.sync_to_host();
       for (int icol=0;icol<ncols;icol++) {
-        const auto new_total_mass = vwp_v(icol) + lwp_v(icol) + iwp_v(icol) + rwp_v(icol);
-        const auto new_delta_mass = new_total_mass - total_mass(icol);
-        REQUIRE(std::abs(delta_mass(icol)-new_delta_mass)<macheps);
+        const auto new_total_mass = vwp_h(icol) + lwp_h(icol) + iwp_h(icol) + rwp_h(icol);
+        const auto new_delta_mass = new_total_mass - total_mass_h(icol);
+        REQUIRE(std::abs(delta_mass_h(icol)-new_delta_mass)<macheps);
       }
     }
     // Test 5: Verify water path calculation with pseudo_density=g and qx(k)=k+1
     //         X*sum(k=0,k=N-1)[k+1] = X*(N-1)*N/2
     {
-      Kokkos::parallel_for("",ncols,KOKKOS_LAMBDA(const int& icol) {
-        const auto& qv_sub      = ekat::subview(qv_v,icol);
-        const auto& qc_sub      = ekat::subview(qc_v,icol);
-        const auto& qi_sub      = ekat::subview(qi_v,icol);
-        const auto& qr_sub      = ekat::subview(qr_v,icol);
-        const auto& dp_sub      = ekat::subview(pseudo_dens_v,icol);
-        Kokkos::deep_copy(dp_sub,gravit);
+      Kokkos::deep_copy(pseudo_dens_v,gravit);
+      Kokkos::parallel_for("",ncols*num_levs,KOKKOS_LAMBDA(const int& idx) {
+        const int icol  = idx / num_levs;
+        const int ilev  = idx % num_levs;
+        const int kpack = ilev / Pack::n;
+        const int klev  = ilev % Pack::n;
 
-        Kokkos::parallel_for("",num_levs, KOKKOS_LAMBDA(const int& idx) {
-          const int kpack = idx / Pack::n;
-          const int klev  = idx % Pack::n;
-          qv_sub(kpack)[klev] = (icol+1) * (idx+1);
-          qc_sub(kpack)[klev] = (icol+1) * (idx+1);
-          qi_sub(kpack)[klev] = (icol+1) * (idx+1);
-          qr_sub(kpack)[klev] = (icol+1) * (idx+1);
-        });
+        qv_v(icol,kpack)[klev] = (icol+1) * (idx+1);
+        qc_v(icol,kpack)[klev] = (icol+1) * (idx+1);
+        qi_v(icol,kpack)[klev] = (icol+1) * (idx+1);
+        qr_v(icol,kpack)[klev] = (icol+1) * (idx+1);
       });
       Kokkos::fence();
       for (const auto& dd : diags) {
         dd.second->run();
       }
+      vwp.sync_to_host();
+      lwp.sync_to_host();
+      iwp.sync_to_host();
+      rwp.sync_to_host();
       for (int icol=0;icol<ncols;icol++) {
-        REQUIRE(vwp_v(icol) == (icol+1)*num_levs*(num_levs+1)/2);
-        REQUIRE(lwp_v(icol) == (icol+1)*num_levs*(num_levs+1)/2);
-        REQUIRE(iwp_v(icol) == (icol+1)*num_levs*(num_levs+1)/2);
-        REQUIRE(rwp_v(icol) == (icol+1)*num_levs*(num_levs+1)/2);
+        REQUIRE(vwp_h(icol) == (icol+1)*num_levs*(num_levs+1)/2);
+        REQUIRE(lwp_h(icol) == (icol+1)*num_levs*(num_levs+1)/2);
+        REQUIRE(iwp_h(icol) == (icol+1)*num_levs*(num_levs+1)/2);
+        REQUIRE(rwp_h(icol) == (icol+1)*num_levs*(num_levs+1)/2);
       }
     }
 

@@ -57,11 +57,12 @@ void RainWaterPathDiagnostic::run_impl(const int /* dt */)
   const auto& qr_mid             = get_field_in("qr").get_view<const Pack**>();
   const auto& pseudo_density_mid = get_field_in("pseudo_density").get_view<const Pack**>();
 
+  const auto num_levs = m_num_levs;
   Kokkos::parallel_for("RainWaterPathDiagnostic",
                        default_policy,
                        KOKKOS_LAMBDA(const MemberType& team) {
     const int icol = team.league_rank();
-    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, m_num_levs), [&] (const Int& idx, Real& lsum) {
+    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, num_levs), [&] (const Int& idx, Real& lsum) {
       const int jpack = idx / Pack::n;
       const int klev  = idx % Pack::n;
       lsum += qr_mid(icol,jpack)[klev] * pseudo_density_mid(icol,jpack)[klev]/gravit;
