@@ -887,6 +887,11 @@ contains
      call ncd_io(ncid=ncid, varname='FGRD', flag='read', data=f_grd, &
           dim1name=grlnd, readvar=readvar)
      if (.not. readvar) call endrun( trim(subname)//' ERROR: FGRD NOT on surfdata file' )
+    
+    else
+      firrig(:,:) = 0.7_r8
+      f_surf(:,:) = 1.0_r8
+      f_grd(:,:) = 0.0_r8
     end if
     
     call CheckUrban(begg, endg, pcturb(begg:endg,:,:), subname,ntpu)

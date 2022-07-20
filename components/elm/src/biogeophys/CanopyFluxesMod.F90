@@ -100,7 +100,6 @@ contains
     use elm_varcon         , only : c14ratio
 
     !NEW
-    !use domainMod          , only : ldomain
     use elm_varsur         , only : firrig
     use TopounitType       , only : top_pp
     use QSatMod            , only : QSat
