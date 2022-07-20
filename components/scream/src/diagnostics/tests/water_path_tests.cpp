@@ -264,10 +264,6 @@ void run(std::mt19937_64& engine)
       const auto& lwp_copy_v = lwp_copy_f.get_view<Real*>();
       const auto& iwp_copy_v = iwp_copy_f.get_view<Real*>();
       const auto& rwp_copy_v = rwp_copy_f.get_view<Real*>();
-      Kokkos::deep_copy(vwp_copy_v,vwp_v);
-      Kokkos::deep_copy(lwp_copy_v,lwp_v);
-      Kokkos::deep_copy(iwp_copy_v,iwp_v);
-      Kokkos::deep_copy(rwp_copy_v,rwp_v);
 
       const auto alpha_qv = pdf_alpha(engine);
       const auto alpha_qc = pdf_alpha(engine);
@@ -284,10 +280,12 @@ void run(std::mt19937_64& engine)
         qi_v(icol,jpack) *= alpha_qi;
         qr_v(icol,jpack) *= alpha_qr;
 
-        vwp_copy_v(icol) *= alpha_qv;
-        lwp_copy_v(icol) *= alpha_qc;
-        iwp_copy_v(icol) *= alpha_qi;
-        rwp_copy_v(icol) *= alpha_qr;
+        if (jpack==0) {
+          vwp_copy_v(icol) *= alpha_qv;
+          lwp_copy_v(icol) *= alpha_qc;
+          iwp_copy_v(icol) *= alpha_qi;
+          rwp_copy_v(icol) *= alpha_qr;
+        }
       });
       Kokkos::fence();
       for (const auto& dd : diags) {
