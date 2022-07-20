@@ -108,6 +108,17 @@ use physical_constants, only: g0=>g,kappa0=>kappa,Rgas,Cp0=>Cp,Rwater_vapor,rear
        moistT0    = 273.16d0,         & ! Reference temperature (K)
        moistE0Ast = 610.78d0            ! Saturation vapor pressure at T0 (Pa) 
 
+  real(8), parameter, private ::  &
+       mountain_height = 2000,                &  ! Peak height of mountain (m)
+       mountain_lon_0 = 7.d0/9.d0 * pi,       &  ! Longitudinal center of mountain 1(rad) 
+       mountain_lon_1 = 0.4d0 * pi,   &          ! Longitudinal center of mountain 2 (rad)
+       mountain_lon_width =  7.0d0 * deg2rad, &  ! Distance between 10th percentile of mountain in longitude
+       mountain_lat_0 = pi / 4.0d0,           &  ! Position of center of mountain (rad) 
+       mountain_lat_width = 40.0d0 * deg2rad,   &  ! Distance between 10th percentile of mountain in latitude
+       mountain_lat_scale = mountain_lat_width / (2.0d0*(-log(0.1d0))**(1.0d0/6.0d0) ),  & 
+       mountain_lon_scale = mountain_lon_width / (2.0d0*(-log(0.1d0))**(1.0d0/2.0d0) )
+ 
+
 CONTAINS
 
 !=======================================================================
@@ -264,6 +275,171 @@ CONTAINS
     thetav = t * (1.d0 + Mvap * q) * (p0 / p)**(Rd / cp)
 
   END SUBROUTINE baroclinic_wave_test
+!=======================================================================
+!    Generate the baroclinic instability initial conditions
+!=======================================================================
+  SUBROUTINE baroclinic_topo_test(deep,moist,pertt,X,lon,lat,p,z,zcoords,u,v,t,thetav,phis,ps,rho,q, hyba, hybb) &
+    BIND(c, name = "baroclinic_topo_test")
+    use parallel_mod,         only: abortmp  
+    IMPLICIT NONE
+
+!-----------------------------------------------------------------------
+!     input/output params parameters at given location
+!-----------------------------------------------------------------------
+    INTEGER, INTENT(IN)  :: &
+                deep,       & ! Deep (1) or Shallow (0) test case
+                moist,      & ! Moist (1) or Dry (0) test case
+                pertt         ! Perturbation type
+
+    REAL(8), INTENT(IN)  :: &
+                lon,        & ! Longitude (radians)
+                lat,        & ! Latitude (radians)
+                X             ! Earth scaling parameter
+
+    REAL(8), INTENT(INOUT) :: &
+                p,            & ! Pressure (Pa)
+                z               ! Altitude (m)
+
+    INTEGER, INTENT(IN) :: zcoords     ! 1 if z coordinates are specified
+                                       ! 0 if p coordinates are specified
+
+    REAL(8), INTENT(OUT) :: &
+                u,          & ! Zonal wind (m s^-1)
+                v,          & ! Meridional wind (m s^-1)
+                t,          & ! Temperature (K)
+                thetav,     & ! Virtual potential temperature (K)
+                phis,       & ! Surface Geopotential (m^2 s^-2)
+                ps,         & ! Surface Pressure (Pa)
+                rho,        & ! density (kg m^-3)
+                q             ! water vapor mixing ratio (kg/kg)
+    REAL(8), INTENT(IN), OPTIONAL :: &
+                hyba,       & ! hybrid a coefficient
+                hybb ! hybrid b coefficient
+
+    !------------------------------------------------
+    !   Local variables
+    !------------------------------------------------
+    REAL(8) :: aref, omegaref
+    REAL(8) :: T0, constH, constC, scaledZ, inttau2, rratio
+    REAL(8) :: inttermU, bigU, rcoslat, omegarcoslat
+    REAL(8) :: eta, qratio, qnum, qden
+
+    !------------------------------------------------
+    !   Pressure and temperature
+    !------------------------------------------------
+    if (zcoords .eq. 1) then
+        call abortmp('ERROR: baroclinic topo case is not implemented for z coordinates')
+    else
+      if ( (present(hyba) .and. present(hybb))) then
+          call evaluate_phis_ps(deep,X,lon,lat,ps,phis)
+          p = p0 * hyba + ps * hybb
+          CALL evaluate_z_temperature(deep, X, lon, lat, p, z, t)
+      else
+        call abortmp('ERROR: hybrid coordinates necessary to initialize baroclinic topo case in pressure coordinates')
+      end if
+    end if
+
+    !------------------------------------------------
+    !   Compute test case constants
+    !------------------------------------------------
+    aref = a / X
+    omegaref = omega * X
+
+    T0 = 0.5d0 * (T0E + T0P)
+
+    constH = Rd * T0 / g
+
+    constC = 0.5d0 * (K + 2.d0) * (T0E - T0P) / (T0E * T0P)
+
+    scaledZ = z / (B * constH)
+
+    inttau2 = constC * z * exp(- scaledZ**2)
+
+    ! radius ratio
+    if (deep .eq. 0) then
+      rratio = 1.d0
+    else
+      rratio = (z + aref) / aref;
+    end if
+
+    !-----------------------------------------------------
+    !   Initialize surface pressure
+    !-----------------------------------------------------
+    !ps = p0
+
+    !-----------------------------------------------------
+    !   Initialize velocity field
+    !-----------------------------------------------------
+    inttermU = (rratio * cos(lat))**(K - 1.d0) - (rratio * cos(lat))**(K + 1.d0)
+    bigU = g / aref * K * inttau2 * inttermU * t
+    if (deep .eq. 0) then
+      rcoslat = aref * cos(lat)
+    else
+      rcoslat = (z + aref) * cos(lat)
+    end if
+
+    omegarcoslat = omegaref * rcoslat
+    
+    u = - omegarcoslat + sqrt(omegarcoslat**2 + rcoslat * bigU)
+    v = 0.d0
+
+    !-----------------------------------------------------
+    !   Add perturbation to the velocity field
+    !-----------------------------------------------------
+
+    !! Exponential type
+    !if (pertt .eq. 0) then
+    !  u = u + evaluate_exponential(lon, lat, z)
+
+    ! Stream function type
+    !elseif (pertt .eq. 1) then
+    !  u = u - 1.d0 / (2.d0 * dxepsilon) *                       &
+    !      ( evaluate_streamfunction(lon, lat + dxepsilon, z)    &
+    !      - evaluate_streamfunction(lon, lat - dxepsilon, z))
+
+    !  v = v + 1.d0 / (2.d0 * dxepsilon * cos(lat)) *            &
+    !      ( evaluate_streamfunction(lon + dxepsilon, lat, z)    &
+    !      - evaluate_streamfunction(lon - dxepsilon, lat, z))
+    !end if
+
+    !-----------------------------------------------------
+    !   Initialize surface geopotential
+    !-----------------------------------------------------
+    !phis = 0.d0
+
+    !-----------------------------------------------------
+    !   Initialize density
+    !-----------------------------------------------------
+    rho = p / (Rd * t)
+
+    !-----------------------------------------------------
+    !   Initialize specific humidity
+    !-----------------------------------------------------
+    if (moist .eq. 1) then
+      eta = p/p0
+
+      if (eta .gt. moisttr) then
+        q = moistq0 * exp(- (lat/moistqlat)**4)          &
+                    * exp(- ((eta-1.d0)*p0/moistqp)**2)
+      else
+        q = moistqs
+      end if
+
+      ! Convert virtual temperature to temperature
+      t = t / (1.d0 + Mvap * q)
+
+    else
+      q = 0.d0
+    end if
+
+    !-----------------------------------------------------
+    !   Initialize virtual potential temperature
+    !-----------------------------------------------------
+    thetav = t * (1.d0 + Mvap * q) * (p0 / p)**(Rd / cp)
+
+  END SUBROUTINE baroclinic_topo_test
+
+
 
 !-----------------------------------------------------------------------
 !    Calculate pointwise pressure and temperature
@@ -338,6 +514,34 @@ CONTAINS
     p = p0 * exp(- g / Rd * (inttau1 - inttau2 * inttermT))
 
   END SUBROUTINE evaluate_pressure_temperature
+
+  SUBROUTINE evaluate_phis_ps(deep,X,lon,lat,ps,phis)
+    integer, intent(in) :: deep ! ignored
+
+    real(8), intent(in) :: &
+                 X,        & ! earth reduction factor
+                 lon,      & ! longitude in radians
+                 lat         ! latitude in radians
+    real(8), intent(inout), optional :: &
+                 ps,       & ! surface pressure
+                 phis          ! geometric surface height
+    
+    ! local variables
+
+    real(8)            :: ztmp, ttmp
+    if (present(ps) .or. present(phis)) then
+        ztmp = exp(-1.0d0 * (((lat - mountain_lat_0)/ mountain_lat_scale)**6 + ((lon - mountain_lon_0)/ mountain_lon_scale)**2))
+        ztmp = ztmp + exp(-1.0d0 * (((lat - mountain_lat_0)/ mountain_lat_scale)**6 + ((lon - (mountain_lon_1))/mountain_lon_scale)**2))
+        ztmp = ztmp *  mountain_height/X
+    end if
+    if (present(phis)) then
+        phis = g * ztmp
+    end if
+    if (present(ps)) then
+        call evaluate_pressure_temperature(deep, X, lon, lat, ztmp, ps, ttmp)
+    end if
+  END SUBROUTINE evaluate_phis_ps
+
 
 !-----------------------------------------------------------------------
 !    Calculate pointwise z and temperature given pressure
