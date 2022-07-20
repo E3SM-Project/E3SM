@@ -171,7 +171,9 @@ contains
     index_o2x_Faoo_h2otemp  = mct_avect_indexra(o2x,'Faoo_h2otemp',perrWith='quiet')
     index_o2x_Faoo_fco2_ocn = mct_avect_indexra(o2x,'Faoo_fco2_ocn',perrWith='quiet')
     index_o2x_Faoo_fdms_ocn = mct_avect_indexra(o2x,'Faoo_fdms_ocn',perrWith='quiet')
-    index_o2x_So_ssh        = mct_avect_indexra(o2x,'So_ssh')
+    if (ocn_rof_two_way) then
+      index_o2x_So_ssh        = mct_avect_indexra(o2x,'So_ssh')
+    endif
 
     index_o2x_So_blt        = mct_avect_indexra(o2x,'So_blt')
     index_o2x_So_bls        = mct_avect_indexra(o2x,'So_bls')
