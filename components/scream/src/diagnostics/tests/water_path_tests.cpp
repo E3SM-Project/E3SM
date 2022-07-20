@@ -38,6 +38,14 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
   return gm;
 }
 
+template<typename VT>
+typename VT::HostMirror
+cmvdc (const VT& v) {
+  auto vh = Kokkos::create_mirror_view(v);
+  Kokkos::deep_copy(vh,v);
+  return vh;
+}
+
 //-----------------------------------------------------------------------------------------------//
 template<typename DeviceT>
 void run(std::mt19937_64& engine)
@@ -180,10 +188,18 @@ void run(std::mt19937_64& engine)
       Kokkos::deep_copy(qr_sub,qr);
     }
     // Grab views for each of the water path diagnostics
-    const auto& vwp_v = diags["vwp"]->get_diagnostic().get_view<const Real*>();
-    const auto& lwp_v = diags["lwp"]->get_diagnostic().get_view<const Real*>();
-    const auto& iwp_v = diags["iwp"]->get_diagnostic().get_view<const Real*>();
-    const auto& rwp_v = diags["rwp"]->get_diagnostic().get_view<const Real*>();
+    const auto& vwp = diags["vwp"]->get_diagnostic();
+    const auto& lwp = diags["lwp"]->get_diagnostic();
+    const auto& iwp = diags["iwp"]->get_diagnostic();
+    const auto& rwp = diags["rwp"]->get_diagnostic();
+    const auto& vwp_v = vwp.get_view<const Real*>();
+    const auto& lwp_v = lwp.get_view<const Real*>();
+    const auto& iwp_v = iwp.get_view<const Real*>();
+    const auto& rwp_v = rwp.get_view<const Real*>();
+    const auto& vwp_h = vwp.get_view<const Real*,Host>();
+    const auto& lwp_h = lwp.get_view<const Real*,Host>();
+    const auto& iwp_h = iwp.get_view<const Real*,Host>();
+    const auto& rwp_h = rwp.get_view<const Real*,Host>();
 
     for (const auto& dd : diags) {
       dd.second->run();
@@ -277,11 +293,19 @@ void run(std::mt19937_64& engine)
       for (const auto& dd : diags) {
         dd.second->run();
       }
+      vwp_copy_f.sync_to_host();
+      lwp_copy_f.sync_to_host();
+      iwp_copy_f.sync_to_host();
+      rwp_copy_f.sync_to_host();
+      const auto& vwp_copy_h = vwp_copy_f.get_view<Real*,Host>();
+      const auto& lwp_copy_h = lwp_copy_f.get_view<Real*,Host>();
+      const auto& iwp_copy_h = iwp_copy_f.get_view<Real*,Host>();
+      const auto& rwp_copy_h = rwp_copy_f.get_view<Real*,Host>();
       for (int icol=0;icol<ncols;icol++) {
-        REQUIRE(std::abs(vwp_copy_v(icol)-vwp_v(icol))<macheps);
-        REQUIRE(std::abs(lwp_copy_v(icol)-lwp_v(icol))<macheps);
-        REQUIRE(std::abs(iwp_copy_v(icol)-iwp_v(icol))<macheps);
-        REQUIRE(std::abs(rwp_copy_v(icol)-rwp_v(icol))<macheps);
+        REQUIRE(std::abs(vwp_copy_h(icol)-vwp_v(icol))<macheps);
+        REQUIRE(std::abs(lwp_copy_h(icol)-lwp_v(icol))<macheps);
+        REQUIRE(std::abs(iwp_copy_h(icol)-iwp_v(icol))<macheps);
+        REQUIRE(std::abs(rwp_copy_h(icol)-rwp_v(icol))<macheps);
       }
     }
     // Test 3: If mass moves from one phase to another than the total water path
@@ -317,9 +341,14 @@ void run(std::mt19937_64& engine)
       for (const auto& dd : diags) {
         dd.second->run();
       }
+      auto total_mass_h = cmvdc(total_mass);
+      vwp.sync_to_host();
+      lwp.sync_to_host();
+      iwp.sync_to_host();
+      rwp.sync_to_host();
       for (int icol=0;icol<ncols;icol++) {
-        const auto new_total_mass = vwp_v(icol) + lwp_v(icol) + iwp_v(icol) + rwp_v(icol);
-        REQUIRE(std::abs(total_mass(icol)-new_total_mass)<macheps);
+        const auto new_total_mass = vwp_h(icol) + lwp_h(icol) + iwp_h(icol) + rwp_h(icol);
+        REQUIRE(std::abs(total_mass_h(icol)-new_total_mass)<macheps);
       }
     }
     // Test 4: Delta_TWP = Delta_LWP + Delta_IWP + Delta_RWP
@@ -357,10 +386,12 @@ void run(std::mt19937_64& engine)
       for (const auto& dd : diags) {
         dd.second->run();
       }
+      auto total_mass_h = cmvdc(total_mass);
+      auto delta_mass_h = cmvdc(delta_mass);
       for (int icol=0;icol<ncols;icol++) {
         const auto new_total_mass = vwp_v(icol) + lwp_v(icol) + iwp_v(icol) + rwp_v(icol);
-        const auto new_delta_mass = new_total_mass - total_mass(icol);
-        REQUIRE(std::abs(delta_mass(icol)-new_delta_mass)<macheps);
+        const auto new_delta_mass = new_total_mass - total_mass_h(icol);
+        REQUIRE(std::abs(delta_mass_h(icol)-new_delta_mass)<macheps);
       }
     }
     // Test 5: Verify water path calculation with pseudo_density=g and qx(k)=k+1
@@ -382,11 +413,15 @@ void run(std::mt19937_64& engine)
       for (const auto& dd : diags) {
         dd.second->run();
       }
+      vwp.sync_to_host();
+      lwp.sync_to_host();
+      iwp.sync_to_host();
+      rwp.sync_to_host();
       for (int icol=0;icol<ncols;icol++) {
-        REQUIRE(vwp_v(icol) == (icol+1)*num_levs*(num_levs+1)/2);
-        REQUIRE(lwp_v(icol) == (icol+1)*num_levs*(num_levs+1)/2);
-        REQUIRE(iwp_v(icol) == (icol+1)*num_levs*(num_levs+1)/2);
-        REQUIRE(rwp_v(icol) == (icol+1)*num_levs*(num_levs+1)/2);
+        REQUIRE(vwp_h(icol) == (icol+1)*num_levs*(num_levs+1)/2);
+        REQUIRE(lwp_h(icol) == (icol+1)*num_levs*(num_levs+1)/2);
+        REQUIRE(iwp_h(icol) == (icol+1)*num_levs*(num_levs+1)/2);
+        REQUIRE(rwp_h(icol) == (icol+1)*num_levs*(num_levs+1)/2);
       }
     }
 
