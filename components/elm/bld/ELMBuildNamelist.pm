@@ -3017,9 +3017,9 @@ sub setup_logic_dry_deposition {
 
   if ($opts->{'drydep'} ) {
       if ( &value_is_true( $nl_flags->{'use_fates'}) && not &value_is_true( $nl_flags->{'use_fates_sp'}) ) {
-	  $log->warning("DryDeposition can NOT be on when FATES is also on, unless FATES-SP mode is on.\n" .
-			"   Use the '--no-drydep' option when '-bgc fates' is activated");
-    }
+	  warning("DryDeposition can NOT be on when FATES is also on, unless FATES-SP mode is on.\n" .
+		  "   Use the '--no-drydep' option when '-bgc fates' is activated");
+      }
     add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'drydep_list');
     add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'drydep_method');
   } else {

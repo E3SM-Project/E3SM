@@ -261,27 +261,37 @@ contains
     ! Specified phenology
     ! ============================================================================
 
-    if (.not.use_fates) then
-       if (use_cn) then
-          ! For dry-deposition need to call CLMSP so that mlaidiff is obtained
-          if ( n_drydep > 0 .and. drydep_method == DD_XLND ) then
-             call t_startf('interpMonthlyVeg')
-             call interpMonthlyVeg(bounds_proc, canopystate_vars)
-             call t_stopf('interpMonthlyVeg')
-          endif
+    if (use_cn) then
+       ! For dry-deposition need to call CLMSP so that mlaidiff is obtained
+       if ( n_drydep > 0 .and. drydep_method == DD_XLND ) then
+          call t_startf('interpMonthlyVeg')
+          call interpMonthlyVeg(bounds_proc, canopystate_vars)
+          call t_stopf('interpMonthlyVeg')
+       endif
 
-       else
-          ! Determine weights for time interpolation of monthly vegetation data.
-          ! This also determines whether it is time to read new monthly vegetation and
-          ! obtain updated leaf area index [mlai1,mlai2], stem area index [msai1,msai2],
-          ! vegetation top [mhvt1,mhvt2] and vegetation bottom [mhvb1,mhvb2]. The
-          ! weights obtained here are used in subroutine SatellitePhenology to obtain time
-          ! interpolated values.
-          if (doalb .or. ( n_drydep > 0 .and. drydep_method == DD_XLND ) .or. use_fates_sp) then
-             call t_startf('interpMonthlyVeg')
-             call interpMonthlyVeg(bounds_proc, canopystate_vars)
-             call t_stopf('interpMonthlyVeg')
-          end if
+    elseif(use_fates_sp) then
+       
+       ! For FATES satellite phenology mode interpolate the weights for
+       ! time-interpolation of monthly vegetation data (as in SP mode below)
+       ! Also for FATES with dry-deposition as above need to call CLMSP so that mlaidiff is obtained
+       !if ( use_fates_sp .or. (n_drydep > 0 .and. drydep_method == DD_XLND ) ) then
+       ! Replace with this when we have dry-deposition working
+       ! For now don't allow for dry-deposition because of issues in #1044 EBK Jun/17/2022
+       call t_startf('interpMonthlyVeg')
+       call interpMonthlyVeg(bounds_proc, canopystate_vars)
+       call t_stopf('interpMonthlyVeg')
+       
+    else
+       ! Determine weights for time interpolation of monthly vegetation data.
+       ! This also determines whether it is time to read new monthly vegetation and
+       ! obtain updated leaf area index [mlai1,mlai2], stem area index [msai1,msai2],
+       ! vegetation top [mhvt1,mhvt2] and vegetation bottom [mhvb1,mhvb2]. The
+       ! weights obtained here are used in subroutine SatellitePhenology to obtain time
+       ! interpolated values.
+       if (doalb .or. ( n_drydep > 0 .and. drydep_method == DD_XLND )) then
+          call t_startf('interpMonthlyVeg')
+          call interpMonthlyVeg(bounds_proc, canopystate_vars)
+          call t_stopf('interpMonthlyVeg')
        end if
     end if
 
