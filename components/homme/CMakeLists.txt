@@ -196,7 +196,10 @@ IF (${HOMME_USE_KOKKOS})
 
   SET (HOMMEXX_EXEC_SPACE "Default" CACHE STRING "Select the kokkos exec space")
 
+  #is HOMMEXX_EXEC_SPACE set anywhere? in scream?
+
   STRING (TOUPPER ${HOMMEXX_EXEC_SPACE} HOMMEXX_EXEC_SPACE_UPPER)
+
   IF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "HIP")
     SET (HOMMEXX_HIP_SPACE ON)
   ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "CUDA")
@@ -276,17 +279,13 @@ MESSAGE(STATUS "C Flags = ${CMAKE_C_FLAGS}")
 MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
 MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 
+SET (HOMMEXX_ENABLE_GPU FALSE) 
+
 IF (${HOMME_USE_KOKKOS})
 
-#set HIP to ON in cmake machine file
-  if(HIP)
-    add_definitions(-DHIP_BUILD)
-    #does not seem to be needed because kokkos::default exec space will be picked up
-    #SET (HOMMEXX_HIP_SPACE ON)
-  endif()
-
-  IF (CUDA_BUILD OR HIP)
+  IF (CUDA_BUILD OR HIP_BUILD)
     SET (DEFAULT_VECTOR_SIZE 1)
+    SET (HOMMEXX_ENABLE_GPU TRUE) 
   ELSE ()
     SET (DEFAULT_VECTOR_SIZE 8)
   ENDIF()

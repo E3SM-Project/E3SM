@@ -28,7 +28,7 @@ private:
       return 0;
     }
 
-#if defined(KOKKOS_ENABLE_CUDA) || defined(HIP_BUILD)
+#ifdef HOMMEXX_ENABLE_GPU
 //#ifdef __CUDA_ARCH__
     template <typename ExecSpaceType>
     static KOKKOS_INLINE_FUNCTION typename std::enable_if<
@@ -44,7 +44,7 @@ private:
       assert(false); // should never happen
       return -1;
     }
-#endif // KOKKOS_ENABLE_CUDA or HIP
+#endif // HOMMEXX_ENABLE_GPU
 
 #ifdef KOKKOS_ENABLE_OPENMP
     template<typename ExecSpaceType>

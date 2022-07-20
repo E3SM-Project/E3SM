@@ -14,7 +14,7 @@
 # endif
 #else
 // Establish a good candidate vector size for eam builds
-# ifdef CUDA_BUILD
+# ifdef HOMMEXX_ENABLE_GPU
 #  define HOMMEXX_VECTOR_SIZE 1
 # else
 #  define HOMMEXX_VECTOR_SIZE 8
@@ -31,7 +31,7 @@
 
 #include <Kokkos_Core.hpp>
 
-#if defined(KOKKOS_ENABLE_CUDA) || defined(HIP_BUILD)
+#ifdef HOMMEXX_ENABLE_GPU 
 # ifndef HOMMEXX_CUDA_MIN_WARP_PER_TEAM
 #  define HOMMEXX_CUDA_MIN_WARP_PER_TEAM 8
 # endif

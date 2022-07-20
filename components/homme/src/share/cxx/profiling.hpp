@@ -13,8 +13,9 @@
 #include "gptl.h"
 
 //OG not sure about timers and HIP, probably the same as with CUDA
-#if defined(HIP_BUILD) || defined(HOMMEXX_CUDA_SPACE) || \
-  (defined(HOMMEXX_DEFAULT_SPACE) && defined(KOKKOS_ENABLE_CUDA)) // Can't use GPTL timers on CUDA
+#if defined(HOMMEXX_HIP_SPACE) || defined(HOMMEXX_CUDA_SPACE) || \
+  (defined(HOMMEXX_DEFAULT_SPACE) && defined(KOKKOS_ENABLE_CUDA)) || \
+  (defined(HOMMEXX_DEFAULT_SPACE) && defined(KOKKOS_ENABLE_HIP))
 #define start_timer(name) {}
 #define stop_timer(name) {}
 #else

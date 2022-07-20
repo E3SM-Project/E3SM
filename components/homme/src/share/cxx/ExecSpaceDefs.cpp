@@ -17,7 +17,7 @@
 # include <cuda.h>
 #endif
 
-#ifdef HIP_BUILD
+#ifdef KOKKOS_ENABLE_HIP
 #include <hip/hip_runtime.h>
 #endif
 
@@ -53,7 +53,7 @@ void initialize_kokkos () {
   str.back() = 0;
   args.push_back(const_cast<char*>(str.data()));
 #endif
-#ifdef HIP_BUILD
+#ifdef KOKKOS_ENABLE_HIP
   int nd;
   const auto ret = hipGetDeviceCount(&nd);
   if (ret != hipSuccess) {
@@ -123,7 +123,7 @@ team_num_threads_vectors_for_gpu (
   assert(num_warps_total >= max_num_warps);
   assert(tp.max_threads_usable >= 1 && tp.max_vectors_usable >= 1);
 
-#if !defined(HIP_BUILD)
+#if !defined(KOKKOS_ENABLE_HIP)
   int num_warps;
   if (tp.prefer_larger_team) {
     const int num_warps_usable =
@@ -206,7 +206,7 @@ team_num_threads_vectors (const int num_parallel_iterations,
   const int max_num_warps = HOMMEXX_CUDA_MAX_WARP_PER_TEAM; //Kokkos::Impl::cuda_internal_maximum_grid_count();
 # endif
 
-#elif defined(HIP_BUILD)
+#elif defined(KOKKOS_ENABLE_HIP)
 
   //use 64 wavefronts per CU and 120 CUs
   const int num_warps_device = 120*64; // no such thing Kokkos::Impl::hip_internal_maximum_warp_count();

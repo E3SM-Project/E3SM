@@ -21,13 +21,13 @@ namespace Homme
 // Some in-house names for Kokkos exec spaces, which are
 // always defined, possibly as alias of void
 
-#if defined(KOKKOS_ENABLE_CUDA) || defined(HIP_BUILD)
+#ifdef HOMMEXX_ENABLE_GPU
 
 #ifdef KOKKOS_ENABLE_CUDA
 using Hommexx_Cuda = Kokkos::Cuda;
 #endif
 
-#ifdef HIP_BUILD
+#ifdef KOKKOS_ENABLE_HIP
 using Hommexx_Cuda = Kokkos::Experimental::HIP;
 #endif
 
@@ -55,7 +55,7 @@ using Hommexx_Serial = Kokkos::Serial;
 using Hommexx_Serial = void;
 #endif
 
-#if defined(KOKKOS_ENABLE_CUDA) || defined(HIP_BUILD)
+#ifdef HOMMEXX_ENABLE_GPU
 # define HOMMEXX_STATIC
 #else
 # define HOMMEXX_STATIC static
@@ -63,7 +63,7 @@ using Hommexx_Serial = void;
 
 // Selecting the execution space. If no specific request, use Kokkos default
 // exec space
-#if defined(HOMMEXX_CUDA_SPACE) || defined(HOMMEXX_HIP_SPACE)
+#ifdef defined(HOMMEXX_CUDA_SPACE) || defined(HOMMEXX_HIP_SPACE)
 using ExecSpace = Hommexx_Cuda;
 #elif defined(HOMMEXX_OPENMP_SPACE)
 using ExecSpace = Hommexx_OpenMP;
@@ -317,7 +317,7 @@ VECTOR_SIMD_LOOP
   }
 };
 
-#if defined(KOKKOS_ENABLE_CUDA) || defined(HIP_BUILD)
+#ifdef HOMMEXX_ENABLE_GPU
 template <>
 struct Dispatch<Hommexx_Cuda> {
   using ExeSpace = Hommexx_Cuda;

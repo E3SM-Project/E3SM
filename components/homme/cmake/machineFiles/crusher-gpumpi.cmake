@@ -26,18 +26,26 @@ SET(HOMME_ENABLE_COMPOSE FALSE CACHE BOOL "")
 
 SET(USE_TRILINOS OFF CACHE BOOL "")
 
-SET(HIP TRUE CACHE BOOL "")
+#CUDA_BUILD is set in SetCompilersFlags, after findPackage(Cuda)
+#i haven't extend it to hip, set it here instead
+SET(HIP_BUILD TRUE CACHE BOOL "")
+
+#set this to true if using external kokkos build
+SET(E3SM_KOKKOS_PATH "/ccs/home/onguba/kokkos-crusher-june2022/bld-hipcc" CACHE STRING "")
+
+#uncomment this if using internal kokkos build
+#SET(Kokkos_ENABLE_SERIAL ON CACHE BOOL "")
+####SET(CMAKE_CXX_STANDARD "14" CACHE STRING "")
+#SET(Kokkos_ENABLE_DEBUG OFF CACHE BOOL "")
+#SET(Kokkos_ARCH_VEGA90A ON CACHE BOOL "")
 #SET(Kokkos_ENABLE_OPENMP OFF CACHE BOOL "")
-#SET(Kokkos_ENABLE_CUDA OFF CACHE BOOL "")
-#SET(Kokkos_ENABLE_CUDA_LAMBDA OFF CACHE BOOL "")
-#SET(Kokkos_ARCH_VEGA908 ON CACHE BOOL "")
+#SET(Kokkos_ENABLE_HIP ON CACHE BOOL "")
+####SET(Kokkos_ENABLE_CUDA_LAMBDA OFF CACHE BOOL "")
 #SET(Kokkos_ENABLE_EXPLICIT_INSTANTIATION OFF CACHE BOOL "")
 
 SET(CMAKE_C_COMPILER "cc" CACHE STRING "")
 SET(CMAKE_Fortran_COMPILER "ftn" CACHE STRING "")
 SET(CMAKE_CXX_COMPILER "hipcc" CACHE STRING "")
-#SET(CMAKE_CXX_COMPILER "/ccs/home/onguba/kokkos/bin/nvcc_wrapper" CACHE STRING "")
-SET(E3SM_KOKKOS_PATH "/ccs/home/onguba/kokkos-crusher-june2022/bld-hipcc" CACHE STRING "")
 
 #not the proper way!!!
 SET(MPICH_DIR "/opt/cray/pe/mpich/8.1.12/ofi/crayclang/10.0" CACHE STRING "")
