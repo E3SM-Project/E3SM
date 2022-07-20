@@ -44,7 +44,7 @@ struct SerialLimiter {
 // GPU doesn't have a serial impl.
 #ifdef HOMMEXX_ENABLE_GPU
 template <>
-struct SerialLimiter<Hommexx_Cuda> {
+struct SerialLimiter<HommexxGPU> {
   template <int limiter_option, typename ArrayGll, typename ArrayGllLvl, typename Array2Lvl,
             typename Array2GllLvl>
   KOKKOS_INLINE_FUNCTION static void

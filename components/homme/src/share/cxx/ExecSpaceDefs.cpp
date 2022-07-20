@@ -183,7 +183,7 @@ return std::make_pair( 16,4 );
 } // namespace Parallel
 
 std::pair<int, int>
-DefaultThreadsDistribution<Hommexx_Cuda>::
+DefaultThreadsDistribution<HommexxGPU>::
 team_num_threads_vectors (const int num_parallel_iterations,
                           const ThreadPreferences tp) {
   // It appears we can't use Kokkos to tell us this. On current devices, using

@@ -106,7 +106,7 @@ class TeamUtils<Kokkos::OpenMP> : public _TeamUtilsCommonBase<Kokkos::OpenMP>
  */
 #ifdef HOMMEXX_ENABLE_GPU
 template <>
-class TeamUtils<Hommexx_Cuda> : public _TeamUtilsCommonBase<Hommexx_Cuda>
+class TeamUtils<HommexxGPU> : public _TeamUtilsCommonBase<HommexxGPU>
 {
 #ifdef HOMMEXX_CUDA_SHARE_BUFFER
   using Device = Kokkos::Device<Kokkos::Cuda, typename Kokkos::Cuda::memory_space>;
@@ -124,7 +124,7 @@ class TeamUtils<Hommexx_Cuda> : public _TeamUtilsCommonBase<Hommexx_Cuda>
  public:
   template <typename TeamPolicy>
   TeamUtils(const TeamPolicy& policy, const Real& overprov_factor = 1.25) :
-    _TeamUtilsCommonBase<Hommexx_Cuda>(policy)
+    _TeamUtilsCommonBase<HommexxGPU>(policy)
 #ifdef HOMMEXX_CUDA_SHARE_BUFFER
     , _num_ws_slots(_league_size > _num_teams
                     ? (overprov_factor * _num_teams > _league_size ? _league_size : overprov_factor * _num_teams)

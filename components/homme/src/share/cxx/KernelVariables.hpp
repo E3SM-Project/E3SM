@@ -19,7 +19,7 @@ private:
     template<typename ExecSpaceType>
     static
     KOKKOS_INLINE_FUNCTION
-    typename std::enable_if<!std::is_same<ExecSpaceType,Hommexx_Cuda>::value &&
+    typename std::enable_if<!std::is_same<ExecSpaceType,HommexxGPU>::value &&
                             !std::is_same<ExecSpaceType,Hommexx_OpenMP>::value,
                             int
                            >::type
