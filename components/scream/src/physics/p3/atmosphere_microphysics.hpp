@@ -79,19 +79,6 @@ public:
         const Spack& pmid_pack(pmid(icol,ipack));
         const Spack& T_atm_pack(T_atm(icol,ipack));
         const Spack& cld_frac_t_pack(cld_frac_t(icol,ipack));
-        // Exner
-        const auto& exner = PF::exner_function(pmid_pack);
-        inv_exner(icol,ipack) = 1.0/exner;
-        // Potential temperature
-        th_atm(icol,ipack) = PF::calculate_theta_from_T(T_atm_pack,pmid_pack);
-        // DZ
-        dz(icol,ipack) = PF::calculate_dz(pseudo_density(icol,ipack), pmid_pack, T_atm_pack, qv(icol,ipack));
-        // Cloud fraction
-        // Set minimum cloud fraction - avoids division by zero
-        cld_frac_l(icol,ipack) = ekat::max(cld_frac_t_pack,mincld);
-        cld_frac_i(icol,ipack) = ekat::max(cld_frac_t_pack,mincld);
-        cld_frac_r(icol,ipack) = ekat::max(cld_frac_t_pack,mincld);
-
         /*----------------------------------------------------------------------------------------------------------------------
          *Wet to dry mixing ratios:
          *-------------------------
@@ -122,6 +109,19 @@ public:
         // ^^ Ensure that qv is "wet mmr" till this point ^^
         //NOTE: Convert "qv" to dry mmr in the end after converting all other constituents to dry mmr
         qv(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qv(icol,ipack),qv(icol,ipack));
+
+        // Exner
+        const auto& exner = PF::exner_function(pmid_pack);
+        inv_exner(icol,ipack) = 1.0/exner;
+        // Potential temperature
+        th_atm(icol,ipack) = PF::calculate_theta_from_T(T_atm_pack,pmid_pack);
+        // DZ
+        dz(icol,ipack) = PF::calculate_dz(pseudo_density(icol,ipack), pmid_pack, T_atm_pack, qv(icol,ipack));
+        // Cloud fraction
+        // Set minimum cloud fraction - avoids division by zero
+        cld_frac_l(icol,ipack) = ekat::max(cld_frac_t_pack,mincld);
+        cld_frac_i(icol,ipack) = ekat::max(cld_frac_t_pack,mincld);
+        cld_frac_r(icol,ipack) = ekat::max(cld_frac_t_pack,mincld);
 
         // update rain cloud fraction given neighboring levels using max-overlap approach.
         for (int ivec=0;ivec<Spack::n;ivec++)
