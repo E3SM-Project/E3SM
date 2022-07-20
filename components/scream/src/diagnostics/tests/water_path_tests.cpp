@@ -301,11 +301,15 @@ void run(std::mt19937_64& engine)
       const auto& lwp_copy_h = lwp_copy_f.get_view<Real*,Host>();
       const auto& iwp_copy_h = iwp_copy_f.get_view<Real*,Host>();
       const auto& rwp_copy_h = rwp_copy_f.get_view<Real*,Host>();
+      vwp.sync_to_host();
+      lwp.sync_to_host();
+      iwp.sync_to_host();
+      rwp.sync_to_host();
       for (int icol=0;icol<ncols;icol++) {
-        REQUIRE(std::abs(vwp_copy_h(icol)-vwp_v(icol))<macheps);
-        REQUIRE(std::abs(lwp_copy_h(icol)-lwp_v(icol))<macheps);
-        REQUIRE(std::abs(iwp_copy_h(icol)-iwp_v(icol))<macheps);
-        REQUIRE(std::abs(rwp_copy_h(icol)-rwp_v(icol))<macheps);
+        REQUIRE(std::abs(vwp_copy_h(icol)-vwp_h(icol))<macheps);
+        REQUIRE(std::abs(lwp_copy_h(icol)-lwp_h(icol))<macheps);
+        REQUIRE(std::abs(iwp_copy_h(icol)-iwp_h(icol))<macheps);
+        REQUIRE(std::abs(rwp_copy_h(icol)-rwp_h(icol))<macheps);
       }
     }
     // Test 3: If mass moves from one phase to another than the total water path
@@ -388,8 +392,12 @@ void run(std::mt19937_64& engine)
       }
       auto total_mass_h = cmvdc(total_mass);
       auto delta_mass_h = cmvdc(delta_mass);
+      vwp.sync_to_host();
+      lwp.sync_to_host();
+      iwp.sync_to_host();
+      rwp.sync_to_host();
       for (int icol=0;icol<ncols;icol++) {
-        const auto new_total_mass = vwp_v(icol) + lwp_v(icol) + iwp_v(icol) + rwp_v(icol);
+        const auto new_total_mass = vwp_h(icol) + lwp_h(icol) + iwp_h(icol) + rwp_h(icol);
         const auto new_delta_mass = new_total_mass - total_mass_h(icol);
         REQUIRE(std::abs(delta_mass_h(icol)-new_delta_mass)<macheps);
       }
