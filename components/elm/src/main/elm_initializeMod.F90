@@ -73,7 +73,6 @@ contains
     use initGridCellsMod          , only: initGridCells, initGhostGridCells
     use CH4varcon                 , only: CH4conrd
     use UrbanParamsType           , only: UrbanInput
-    use CLMFatesParamInterfaceMod , only: FatesReadPFTs
     use surfrdMod                 , only: surfrd_get_grid_conn, surfrd_topounit_data
     use elm_varctl                , only: lateral_connectivity, domain_decomp_type
     use decompInitMod             , only: decompInit_lnd_using_gp, decompInit_ghosts
@@ -127,24 +126,26 @@ contains
     call control_init()
     call elm_varpar_init()
     
-    ! Allow FATES to dictate the number of patches per column.
-    ! We still use numcft as dictated by
-    ! the host model.  The input value of numpft needs to include
-    ! the bare patch, and the return (num_fates_patches) also
-    ! includes the bare-ground patch
-    ! In either case, with crop or witout crop, FATES is only
-    ! responsible for what happens on the nat LU. So FATES will
-    ! only override what happens there.
-    
-    if(use_fates) then
-       call ELMFatesGlobals1()  ! This will overwrite natpft_size
-       call update_pft_array_bounds()
-    end if
-    
+ 
     
     call elm_varcon_init()
     call landunit_varcon_init()
     call ncd_pio_init()
+
+    if(use_fates) then
+       ! Allow FATES to dictate the number of patches per column.
+       ! We still use numcft as dictated by
+       ! the host model.  The input value of numpft needs to include
+       ! the bare patch, and the return (num_fates_patches) also
+       ! includes the bare-ground patch
+       ! In either case, with crop or witout crop, FATES is only
+       ! responsible for what happens on the nat LU. So FATES will
+       ! only override what happens there.
+       
+       call ELMFatesGlobals1()  ! This will overwrite natpft_size
+       call update_pft_array_bounds()
+    end if
+    
     call elm_petsc_init()
     call init_soil_temperature()
 
