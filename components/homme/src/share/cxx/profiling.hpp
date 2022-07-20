@@ -13,9 +13,11 @@
 #include "gptl.h"
 
 //OG not sure about timers and HIP, probably the same as with CUDA
-#if defined(HOMMEXX_HIP_SPACE) || defined(HOMMEXX_CUDA_SPACE) || \
-  (defined(HOMMEXX_DEFAULT_SPACE) && defined(KOKKOS_ENABLE_CUDA)) || \
-  (defined(HOMMEXX_DEFAULT_SPACE) && defined(KOKKOS_ENABLE_HIP))
+//#if defined(HOMMEXX_HIP_SPACE) || defined(HOMMEXX_CUDA_SPACE) || \
+//  (defined(HOMMEXX_DEFAULT_SPACE) && defined(KOKKOS_ENABLE_CUDA)) || \
+//  (defined(HOMMEXX_DEFAULT_SPACE) && defined(KOKKOS_ENABLE_HIP))
+
+#ifdef HOMMEXX_ENABLE_GPU
 #define start_timer(name) {}
 #define stop_timer(name) {}
 #else

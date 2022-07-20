@@ -29,20 +29,11 @@ private:
     }
 
 #ifdef HOMMEXX_ENABLE_GPU
-//#ifdef __CUDA_ARCH__
     template <typename ExecSpaceType>
     static KOKKOS_INLINE_FUNCTION typename std::enable_if<
         OnGpu<ExecSpaceType>::value, int>::type
     get_team_idx(const int /*team_size*/, const int league_rank) {
       return league_rank;
-    }
-#else
-    template <typename ExecSpaceType>
-    static KOKKOS_INLINE_FUNCTION typename std::enable_if<
-        OnGpu<ExecSpaceType>::value, int>::type
-    get_team_idx(const int /*team_size*/, const int /*league_rank*/) {
-      assert(false); // should never happen
-      return -1;
     }
 #endif // HOMMEXX_ENABLE_GPU
 

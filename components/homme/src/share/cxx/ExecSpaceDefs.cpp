@@ -45,21 +45,15 @@ void initialize_kokkos () {
     // It isn't a big deal if we can't get the device count.
     nd = 1;
   }
-  std::stringstream ss;
-  ss << "--kokkos-num-devices=" << nd;
-  const auto key = ss.str();
-  std::vector<char> str(key.size()+1);
-  std::copy(key.begin(), key.end(), str.begin());
-  str.back() = 0;
-  args.push_back(const_cast<char*>(str.data()));
-#endif
-#ifdef KOKKOS_ENABLE_HIP
+#elif defined(KOKKOS_ENABLE_HIP)
   int nd;
   const auto ret = hipGetDeviceCount(&nd);
   if (ret != hipSuccess) {
     // It isn't a big deal if we can't get the device count.
     nd = 1;
   }
+#endif
+#if defined(KOKKOS_ENABLE_HIP) || defined(KOKKOS_ENABLE_HIP)  
   std::stringstream ss;
   ss << "--kokkos-num-devices=" << nd;
   const auto key = ss.str();

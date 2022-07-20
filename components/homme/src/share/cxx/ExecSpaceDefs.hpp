@@ -362,7 +362,6 @@ struct Dispatch<HommexxGPU> {
   template<class Lambda>
   static KOKKOS_FORCEINLINE_FUNCTION
   void parallel_for_NP2 (
-    //const Kokkos::TeamPolicy<Kokkos::Cuda>::member_type& team,
     const Kokkos::TeamPolicy<HommexxGPU>::member_type& team,
     const Lambda& lambda)
   {
@@ -373,7 +372,6 @@ struct Dispatch<HommexxGPU> {
   static KOKKOS_FORCEINLINE_FUNCTION
   void parallel_reduce_NP2 (
     const Kokkos::TeamPolicy<HommexxGPU>::member_type& team,
-    //const Kokkos::TeamPolicy<Kokkos::Cuda>::member_type& team,
     const Lambda& lambda, ValueType& result)
   {
     parallel_reduce(team, Kokkos::ThreadVectorRange(team, NP*NP),

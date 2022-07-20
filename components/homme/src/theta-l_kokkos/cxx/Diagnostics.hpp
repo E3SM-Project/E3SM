@@ -13,6 +13,10 @@
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/ViewUtils.hpp"
 
+#if ! defined(NDEBUG)
+#define RESOLVE_ISSUE_WITH_ASSERTS
+#endif
+
 namespace Homme
 {
 
@@ -35,7 +39,7 @@ private:
     ExecViewUnmanaged<Scalar *[NP][NP][NUM_LEV_P]>  dpnh_dp_i;
   };
 
-
+#if defined RESOLVE_ISSUE_WITH_ASSERTS
   template <typename FunctorTag>
   typename std::enable_if<OnGpu<ExecSpace>::value == false,
                           Kokkos::TeamPolicy<ExecSpace, FunctorTag> >::type
@@ -53,7 +57,7 @@ private:
     tp.prefer_larger_team = true;
     return Homme::get_default_team_policy<ExecSpace, FunctorTag>(num_exec, tp);
   }
-
+#endif
 
 
 
@@ -61,8 +65,11 @@ public:
 
 
   Diagnostics (const int num_elems, const bool theta_hydrostatic_mode) :
-    //m_policy(Homme::get_default_team_policy<ExecSpace,EnergyHalfTimesTag>(num_elems)),
+#if ! defined(RESOLVE_ISSUE_WITH_ASSERTS)
+    m_policy(Homme::get_default_team_policy<ExecSpace,EnergyHalfTimesTag>(num_elems)),
+#else
     m_policy(d_team_policy<EnergyHalfTimesTag>(num_elems)),
+#endif
     m_tu(m_policy),
     m_num_elems(num_elems),
     m_theta_hydrostatic_mode(theta_hydrostatic_mode)
