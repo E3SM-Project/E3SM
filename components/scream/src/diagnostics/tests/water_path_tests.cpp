@@ -239,7 +239,7 @@ void run(std::mt19937_64& engine)
               lmax = qi_s(idx)*dp_s(idx)/gravit;
             }
           }, Kokkos::Max<Real>(qi_mass_max));
-        EKAT_KERNEL_REQUIRE(rwp_v(icol)>qi_mass_max);
+        EKAT_KERNEL_REQUIRE(iwp_v(icol)>qi_mass_max);
         // Test qr mass
         Real qr_mass_max=0.0;
         auto qr_s = ekat::scalarize(ekat::subview(qr_v, icol));
