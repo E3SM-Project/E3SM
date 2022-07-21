@@ -94,7 +94,7 @@ contains
     real (kind=real_kind), intent(in)  :: a
 
     real (kind=real_kind) :: y
-#ifdef CUDA_BUILD
+#ifdef HOMMEXX_ENABLE_GPU
     real (kind=real_kind) :: x,tmp,factor,e
     integer :: i,n,k
     integer, parameter :: order = 5
