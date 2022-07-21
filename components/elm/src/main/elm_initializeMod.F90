@@ -21,6 +21,7 @@ module elm_initializeMod
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio        , only : file_desc_t
   use ELMFatesInterfaceMod  , only : ELMFatesGlobals1,ELMFatesGlobals2
+  use CLMFatesParamInterfaceMod, only: FatesReadPFTs
   use BeTRSimulationELM, only : create_betr_simulation_elm
   !
   !-----------------------------------------
@@ -124,14 +125,8 @@ contains
     endif
 
     call control_init()
-    call elm_varpar_init()
-    
- 
-    
-    call elm_varcon_init()
-    call landunit_varcon_init()
     call ncd_pio_init()
-
+    call elm_varpar_init()
     if(use_fates) then
        ! Allow FATES to dictate the number of patches per column.
        ! We still use numcft as dictated by
@@ -145,6 +140,11 @@ contains
        call ELMFatesGlobals1()  ! This will overwrite natpft_size
        call update_pft_array_bounds()
     end if
+    call elm_varcon_init()
+    call landunit_varcon_init()
+    
+
+    
     
     call elm_petsc_init()
     call init_soil_temperature()
@@ -293,6 +293,14 @@ contains
     call pftconrd()
     call soilorder_conrd()
 
+    ! Read in FATES parameter values early in the call sequence as well
+    ! The PFT file, specifically, will dictate how many pfts are used
+    ! in fates, and this will influence the amount of memory we
+    ! request from the model, which is relevant in set_fates_global_elements()
+    if (use_fates) then
+       call FatesReadPFTs()
+    end if
+    
     ! Read surface dataset and set up subgrid weight arrays
     call surfrd_get_data(begg, endg, ldomain, fsurdat)
 
