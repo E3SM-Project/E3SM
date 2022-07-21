@@ -671,7 +671,7 @@ void HommeDynamics::homme_post_process () {
     auto p_dry_mid = ekat::subview(p_dry_mid_view,icol);
     auto p_dry_int = ekat::subview(p_dry_int_view,icol);
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks), KOKKOS_LAMBDA(const int& jpack) {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks), [&](const int& jpack) {
       dp_dry(jpack) = dp(jpack) * (1.0 - qv(jpack));
     });
     ColOps::column_scan<true>(team,nlevs,dp_dry,p_dry_int,ps0);
@@ -1310,7 +1310,7 @@ void HommeDynamics::update_pressure() {
     auto p_dry_mid = ekat::subview(p_dry_mid_view,icol);
     auto p_dry_int = ekat::subview(p_dry_int_view,icol);
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks), KOKKOS_LAMBDA(const int& jpack) {
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks), [&](const int& jpack) {
       dp_dry(jpack) = dp(jpack) * (1.0 - qv(jpack));
     });
 
