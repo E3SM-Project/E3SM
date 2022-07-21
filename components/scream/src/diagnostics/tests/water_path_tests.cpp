@@ -50,7 +50,6 @@ cmvdc (const VT& v) {
 template<typename DeviceT>
 void run(std::mt19937_64& engine)
 {
-  using PF         = scream::PhysicsFunctions<DeviceT>;
   using PC         = scream::physics::Constants<Real>;
   using Pack       = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using KT         = ekat::KokkosTypes<DeviceT>;
