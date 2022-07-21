@@ -12,10 +12,11 @@ module dcmip16_wrapper
 use dcmip12_wrapper,      only: pressure_thickness, set_tracers, get_evenly_spaced_z, set_hybrid_coefficients
 use control_mod,          only: test_case, dcmip16_pbl_type, dcmip16_prec_type, use_moisture, theta_hydrostatic_mode,&
      sub_case, case_planar_bubble, bubble_prec_type
-use baroclinic_wave,      only: baroclinic_wave_test
+use baroclinic_wave,      only: baroclinic_wave_test, baroclinic_topo_test
 use supercell,            only: supercell_init, supercell_test, supercell_z
 use tropical_cyclone,     only: tropical_cyclone_test
-use derivative_mod,       only: derivative_t, gradient_sphere
+use derivative_mod,       only: derivative_t, gradient_sphere, get_deriv
+use viscosity_mod,        only: make_c0
 use dimensions_mod,       only: np, nlev, nlevp , qsize, qsize_d, nelemd
 use element_mod,          only: element_t
 use element_state,        only: nt=>timelevels
@@ -94,6 +95,12 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
   real(rl), dimension(np,np,nlev,6):: q
 
   real(rl) :: min_thetav, max_thetav
+  if (sub_case==2) then
+     ! call the Hughes and Jablonowski version with topography
+     call bw_topo_test(elem,hybrid,hvcoord,nets,nete)
+     return
+  endif
+  
   min_thetav = +huge(rl)
   max_thetav = -huge(rl)
 
@@ -151,7 +158,8 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
   sample_period = 1800.0 ! sec
   !print *,"min thetav = ",min_thetav, "max thetav=",max_thetav
 
-
+  end subroutine dcmip2016_test1
+  
 !_____________________________________________________________________subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
 subroutine bw_topo_test(elem,hybrid,hvcoord,nets,nete)
 
@@ -172,15 +180,12 @@ subroutine bw_topo_test(elem,hybrid,hvcoord,nets,nete)
 
   real(rl), dimension(np,np,nlev):: p,z,u,v,w,T,thetav,rho,dp           ! field values
   real(rl), dimension(np,np,nlevp):: p_i,w_i,z_i
+  real(rl), dimension(np,np,nlev,nets:nete):: w_i_dss                   ! needs ie dimension for DSS
   real(rl), dimension(np,np):: ps, phis
   real(rl), dimension(np,np,nlev,6):: q
 
-  real(rl) :: min_thetav, max_thetav
-  real(rl), dimension(np,np) :: lattmp
   type (derivative_t) :: deriv
   
-  min_thetav = +huge(rl)
-  max_thetav = -huge(rl)
   call get_deriv(deriv)
   moist = 0
   if (use_moisture) moist=1
@@ -191,79 +196,102 @@ subroutine bw_topo_test(elem,hybrid,hvcoord,nets,nete)
 
   ! set initial conditions
   do ie = nets,nete
-    do k=1,nlevp
+     do j=1,np; do i=1,np
+        ! use the test case to initialize ps (and phi), so we can compute pressure
+        lon = elem(ie)%spherep(i,j)%lon
+        lat = elem(ie)%spherep(i,j)%lat
+        k=1
+        p_i(i,j,k)  = p0*hvcoord%hyai(k)
+        call baroclinic_topo_test(is_deep,moist,pertt,dcmip_X,lon,lat,p_i(i,j,k),&
+             z_i(i,j,k),use_zcoords,u(i,j,1),v(i,j,1),T(i,j,1),thetav(i,j,1),phis(i,j),ps(i,j),rho(i,j,1),q(i,j,k,1))
+     enddo; enddo
+     
+     if (hybrid%masterthread) print *,'z_i loop'
+     do k=1,nlevp
         do j=1,np; do i=1,np
-            if (k.eq. 1) then
-                lattmp(i,j) = elem(ie)%spherep(i,j)%lat
-            end if
-
-            lon = elem(ie)%spherep(i,j)%lon
-            lat = elem(ie)%spherep(i,j)%lat
-
-            !w_i(i,j,k)   = 0.0d0
-            ! call this only to compute z_i, will ignore all other output
-            call baroclinic_topo_test(is_deep,moist,pertt,dcmip_X,lon,lat,p_i(i,j,k),&
-                z_i(i,j,k),use_zcoords,u(i,j,k),v(i,j,k),T(i,j,k),thetav(i,j,k),phis(i,j),ps(i,j),rho(i,j,k),q(i,j,k,1),hyba=hvcoord%hyai(k), hybb=hvcoord%hybi(k))
-        enddo; enddo
-        call w_bw_topo_test(z_i(:, :, k), u(:, :, k), lattmp, w_i(:, :, k), deriv, elem(ie)%Dinv)
-    enddo
-    do k=1,nlev
-        do j=1,np; do i=1,np
-
-            ! no surface topography
-            !p(i,j,k)  = p0*hvcoord%etam(k)
-            !dp(i,j,k) = (hvcoord%etai(k+1)-hvcoord%etai(k))*p0
-            dp(i,j,k) = p_i(i,j,k+1)-p_i(i,j,k)
+           lon = elem(ie)%spherep(i,j)%lon
+           lat = elem(ie)%spherep(i,j)%lat
+           p_i(i,j,k)  = p0*hvcoord%hyai(k) + ps(i,j)*hvcoord%hybi(k)
             
-
-            lon = elem(ie)%spherep(i,j)%lon
-            lat = elem(ie)%spherep(i,j)%lat
-
-            q(i,j,k,1:5) = 0.0d0
-            q(i,j,k,6) = 1
-            !w(i,j,k)   = 0.0d0
-
-            call baroclinic_topo_test(is_deep,moist,pertt,dcmip_X,lon,lat,p(i,j,k),&
-                z(i,j,k),use_zcoords,u(i,j,k),v(i,j,k),T(i,j,k),thetav(i,j,k),phis(i,j),ps(i,j),rho(i,j,k),q(i,j,k,1),hyba=hvcoord%hyam(k), hybb=hvcoord%hybi(k))
-
-            ! initialize tracer chemistry
-            call initial_value_terminator( lat*rad2dg, lon*rad2dg, q(i,j,k,4), q(i,j,k,5) )
-            call set_tracers(q(i,j,k,1:6),6,dp(i,j,k),i,j,k,lat,lon,elem(ie))
-
-            min_thetav =  min( min_thetav,   thetav(i,j,k) )
-            max_thetav =  max( max_thetav,   thetav(i,j,k) )
-
+           ! compute z_i
+           call baroclinic_topo_test(is_deep,moist,pertt,dcmip_X,lon,lat,p_i(i,j,k),&
+                z_i(i,j,k),use_zcoords,u(i,j,1),v(i,j,1),T(i,j,1),thetav(i,j,1),phis(i,j),ps(i,j),rho(i,j,1),q(i,j,1,1))
         enddo; enddo
-        call w_bw_topo_test(z(:, :, k), u(:, :, k), lattmp, w(:, :, k), deriv, elem(ie)%Dinv) 
-    enddo
-
-    call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,z,z_i,g,elem(ie),1,nt,ntQ=1)
-    call tests_finalize(elem(ie),hvcoord)
-
+        call w_bw_topo_test(z_i(:, :, k), u(:, :, 1), w_i(:, :, k), deriv, elem(ie))
+     enddo
+     ! save a copy of w to apply DSS later
+     w_i_dss(:,:,1:nlev,ie)=w_i(:,:,2:nlevp)
   enddo
+
+  ! make w_i continious at element edges since it is initialized by grad(z)
+  ! make_C0 only works on nlev fields (not nlevp), but w(:,:,1)=0 
+  call make_C0(w_i_dss(:,:,:,nets:nete),elem,hybrid,nets,nete) ! no make_C0 for 1:nlevp arrays
+  
+  
+  do ie = nets,nete
+     ! recompute ps and z_i (since we didn't save it for each ie above)
+     ps=0  
+     do k=1,nlevp
+     do j=1,np; do i=1,np
+        lon = elem(ie)%spherep(i,j)%lon
+        lat = elem(ie)%spherep(i,j)%lat
+        ! for k=1, hybi(1)=0, so ok to use ps() before it has been computed 
+        p_i(i,j,k)  = p0*hvcoord%hyai(k) + ps(i,j)*hvcoord%hybi(k)
+        call baroclinic_topo_test(is_deep,moist,pertt,dcmip_X,lon,lat,p_i(i,j,k),&
+             z_i(i,j,k),use_zcoords,u(i,j,1),v(i,j,1),T(i,j,1),thetav(i,j,1),phis(i,j),ps(i,j),rho(i,j,1),q(i,j,k,1))
+     enddo; enddo
+     enddo
+
+     w=0 ! dont bother to init w, only w_i is needed
+     w_i(:,:,1)=0  
+     w_i(:,:,2:nlevp)=w_i_dss(:,:,1:nlev,ie)
+     do k=1,nlev
+        do j=1,np; do i=1,np
+           !p(i,j,k)  = p0*hvcoord%hyam(k) + ps(i,j)*hvcoord%hybi(k)
+           p(i,j,k)  = p0*hvcoord%hyam(k) + ps(i,j)*hvcoord%hybm(k)
+           dp(i,j,k) = p_i(i,j,k+1)-p_i(i,j,k)
+
+           lon = elem(ie)%spherep(i,j)%lon
+           lat = elem(ie)%spherep(i,j)%lat
+           
+           q(i,j,k,1:5) = 0.0d0
+           q(i,j,k,6) = 1
+           
+           call baroclinic_topo_test(is_deep,moist,pertt,dcmip_X,lon,lat,p(i,j,k),&
+                z(i,j,k),use_zcoords,u(i,j,k),v(i,j,k),T(i,j,k),thetav(i,j,k),phis(i,j),ps(i,j),rho(i,j,k),q(i,j,k,1))
+           
+           ! initialize tracer chemistry
+           call initial_value_terminator( lat*rad2dg, lon*rad2dg, q(i,j,k,4), q(i,j,k,5) )
+           call set_tracers(q(i,j,k,1:6),6,dp(i,j,k),i,j,k,lat,lon,elem(ie))
+           
+        enddo; enddo
+     enddo
+     call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,z,z_i,g,elem(ie),1,nt,ntQ=1)
+     call tests_finalize(elem(ie),hvcoord)
+  enddo
+  
   sample_period = 1800.0 ! sec
-  !print *,"min thetav = ",min_thetav, "max thetav=",max_thetav
+
 
 
 end subroutine
 
-subroutine w_bw_topo_test(z_eta, u, lat, w, deriv, Dinv)
-   use physical_constants,   only: p0, rearth0
+subroutine w_bw_topo_test(z_eta, u, w, deriv, elem)
+   use physical_constants,   only: p0, rearth
    use derivative_mod, only: gradient_sphere
    
    real(kind=rl), intent(in) :: z_eta(np,np)
    real(kind=rl), intent(in) :: u(np,np)
-   real(kind=rl), intent(in) :: lat(np,np)
    real(kind=rl), intent(out) :: w(np,np)
-   real(kind=rl), intent(in), dimension(np,np,2,2) :: Dinv
+   type(element_t), intent(in) :: elem
    type (derivative_t), intent(in) :: deriv
    
 
    ! local
    real(rl),  dimension(np, np, 2) :: grad_z
    
-   grad_z = gradient_sphere(z_eta, deriv, Dinv)
-   w = -u / (rearth0 * cos(lat)) * grad_z(:,:,2)
+   grad_z = gradient_sphere(z_eta, deriv, elem%Dinv)
+   w = -u / (rearth * cos(elem%spherep(:,:)%lat)) * grad_z(:,:,2)
     
 end subroutine w_bw_topo_test
 

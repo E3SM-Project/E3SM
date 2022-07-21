@@ -110,8 +110,9 @@ use physical_constants, only: g0=>g,kappa0=>kappa,Rgas,Cp0=>Cp,Rwater_vapor,rear
 
   real(8), parameter, private ::  &
        mountain_height = 2000,                &  ! Peak height of mountain (m)
-       mountain_lon_0 = 7.d0/9.d0 * pi,       &  ! Longitudinal center of mountain 1(rad) 
-       mountain_lon_1 = 0.4d0 * pi,   &          ! Longitudinal center of mountain 2 (rad)
+       ! HOMME shift mountains by pi*4/5 to put them over CONUS
+       mountain_lon_0 = (7.d0/9.d0 + 4d0/5d0) * pi,&  ! Longitudinal center of mountain 1(rad) 
+       mountain_lon_1 = (0.4d0     + 4d0/5d0) * pi,&  ! Longitudinal center of mountain 2 (rad)
        mountain_lon_width =  7.0d0 * deg2rad, &  ! Distance between 10th percentile of mountain in longitude
        mountain_lat_0 = pi / 4.0d0,           &  ! Position of center of mountain (rad) 
        mountain_lat_width = 40.0d0 * deg2rad,   &  ! Distance between 10th percentile of mountain in latitude
@@ -278,7 +279,7 @@ CONTAINS
 !=======================================================================
 !    Generate the baroclinic instability initial conditions
 !=======================================================================
-  SUBROUTINE baroclinic_topo_test(deep,moist,pertt,X,lon,lat,p,z,zcoords,u,v,t,thetav,phis,ps,rho,q, hyba, hybb) &
+  SUBROUTINE baroclinic_topo_test(deep,moist,pertt,X,lon,lat,p,z,zcoords,u,v,t,thetav,phis,ps,rho,q) &
     BIND(c, name = "baroclinic_topo_test")
     use parallel_mod,         only: abortmp  
     IMPLICIT NONE
@@ -312,9 +313,6 @@ CONTAINS
                 ps,         & ! Surface Pressure (Pa)
                 rho,        & ! density (kg m^-3)
                 q             ! water vapor mixing ratio (kg/kg)
-    REAL(8), INTENT(IN), OPTIONAL :: &
-                hyba,       & ! hybrid a coefficient
-                hybb ! hybrid b coefficient
 
     !------------------------------------------------
     !   Local variables
@@ -330,13 +328,8 @@ CONTAINS
     if (zcoords .eq. 1) then
         call abortmp('ERROR: baroclinic topo case is not implemented for z coordinates')
     else
-      if ( (present(hyba) .and. present(hybb))) then
-          call evaluate_phis_ps(deep,X,lon,lat,ps,phis)
-          p = p0 * hyba + ps * hybb
-          CALL evaluate_z_temperature(deep, X, lon, lat, p, z, t)
-      else
-        call abortmp('ERROR: hybrid coordinates necessary to initialize baroclinic topo case in pressure coordinates')
-      end if
+       call evaluate_phis_ps(deep,X,lon,lat,ps,phis)
+       CALL evaluate_z_temperature(deep, X, lon, lat, p, z, t)
     end if
 
     !------------------------------------------------
@@ -528,10 +521,17 @@ CONTAINS
     
     ! local variables
 
-    real(8)            :: ztmp, ttmp
+    real(8)            :: ztmp, ttmp,d0,d1
     if (present(ps) .or. present(phis)) then
-        ztmp = exp(-1.0d0 * (((lat - mountain_lat_0)/ mountain_lat_scale)**6 + ((lon - mountain_lon_0)/ mountain_lon_scale)**2))
-        ztmp = ztmp + exp(-1.0d0 * (((lat - mountain_lat_0)/ mountain_lat_scale)**6 + ((lon - (mountain_lon_1))/mountain_lon_scale)**2))
+       d0=mod(lon - mountain_lon_0,2*pi)
+       d0=min(d0,2*pi-d0)
+       d1=mod(lon - mountain_lon_1,2*pi)
+       d1=min(d1,2*pi-d0)
+       
+       ztmp = exp(-1.0d0 * (((lat - mountain_lat_0)/ mountain_lat_scale)**6 +&
+            (d0/ mountain_lon_scale)**2))
+       ztmp = ztmp + exp(-1.0d0 * (((lat - mountain_lat_0)/ mountain_lat_scale)**6 +&
+            (d1/mountain_lon_scale)**2))
         ztmp = ztmp *  mountain_height/X
     end if
     if (present(phis)) then
