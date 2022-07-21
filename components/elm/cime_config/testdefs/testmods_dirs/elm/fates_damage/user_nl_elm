@@ -1,0 +1,9 @@
+use_cn            = .false. 
+finidat           = ''
+hist_mfilt        = 365
+hist_nhtfrq       = -24
+hist_empty_htapes = .false.
+fates_spitfire_mode = 1
+use_fates_fixed_biogeog = .false.
+use_fates_nocomp = .false.
+use_fates_tree_damage = .true.
