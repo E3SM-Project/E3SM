@@ -38,7 +38,7 @@ contains
   !
   ! ================================
   ! --------------------------
-  function global_integral(elem, h,hybrid,npts,nets,nete) result(I_sphere)
+  function global_integral(elem, h,hybrid,npts,nets,nete,which) result(I_sphere)
     use kinds,       only : real_kind
     use hybrid_mod,  only : hybrid_t
     use element_mod, only : element_t
@@ -56,6 +56,8 @@ contains
     real (kind=real_kind) :: I_priv
     real (kind=real_kind) :: I_shared
     common /gblintcom/I_shared
+
+    character(len=*)     , intent(in) ,optional :: which
 
     ! Local variables
 
@@ -83,8 +85,13 @@ contains
       global_shared_buf(ie,1) = J_tmp(ie)
     enddo
 !JMD    print *,'global_integral: before wrap_repro_sum'
-    call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
+
+    if (present(which))then
+      call wrap_repro_sum(nvars=1, comm=hybrid%par%comm, which=which)
+    else
+      call wrap_repro_sum(nvars=1, comm=hybrid%par%comm)
 !JMD    print *,'global_integral: after wrap_repro_sum'
+    endif
     I_tmp = global_shared_sum(1)
 !JMD    print *,'global_integral: after global_shared_sum'
 
@@ -819,7 +826,7 @@ contains
   end function linf_vnorm
 
 
-  subroutine wrap_repro_sum (nvars, comm, nsize)
+  subroutine wrap_repro_sum (nvars, comm, nsize, which)
     use dimensions_mod, only: nelemd
 #ifdef CAM
     use shr_reprosum_mod, only: repro_sum => shr_reprosum_calc
@@ -833,6 +840,8 @@ contains
     integer :: nvars            !  number of variables to be summed (cannot exceed nrepro_vars)
     integer :: comm             !  mpi communicator
     integer, optional :: nsize  !  local buffer size (defaults to nelemd - number of elements in mpi task)
+
+    character(len=*), optional :: which 
 
     integer nsize_use,n,i
 
@@ -853,8 +862,19 @@ contains
     do n=1,nvars
        do i=1,nsize_use
           if (global_shared_buf(i,n) /= global_shared_buf(i,n) ) then
-               print *, "var,nvars:",n,nvars
+
+             print *, "var,nvars:",n,nvars
+             print *, 'failed for',n,' out of ',nvars
+             print *, 'which is ', which
+             if (present(which)) then 
+               write(iulog,'(a26,i5,a8,i5)') 'wrap_repro_sum failed for nvar=',n,' out of ',nvars
+               call abortmp('NaNs detected in repro sum input and marker is '//which)
+             else  
+               write(iulog,'(a26,i5,a8,i5)') 'wrap_repro_sum failed for nvar=',n,' out of ',nvars 
                call abortmp('NaNs detected in repro sum input')
+             endif
+
+             !call abortmp('NaNs detected in repro sum input')
           endif
        enddo
     enddo

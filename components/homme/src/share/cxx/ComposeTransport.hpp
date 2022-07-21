@@ -4,6 +4,8 @@
  * See the file 'COPYRIGHT' in the HOMMEXX/src/share/cxx directory
  *******************************************************************************/
 
+#ifdef HOMME_ENABLE_COMPOSE
+
 #ifndef HOMMEXX_COMPOSE_TRANSPORT_HPP
 #define HOMMEXX_COMPOSE_TRANSPORT_HPP
 
@@ -53,3 +55,6 @@ private:
 } // Namespace Homme
 
 #endif // HOMMEXX_COMPOSE_TRANSPORT_HPP
+
+//ifdef compose
+#endif

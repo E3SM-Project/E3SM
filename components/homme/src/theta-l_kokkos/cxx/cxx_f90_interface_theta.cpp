@@ -342,7 +342,9 @@ void init_functors_c (const bool& allocate_buffer)
   // use the create_if_not_there() function.
   auto& caar = c.create_if_not_there<CaarFunctor>(elems,tracers,ref_FE,hvcoord,sph_op,params);
   if (params.transport_alg == 0) c.create_if_not_there<EulerStepFunctor>();
+#ifdef HOMME_ENABLE_COMPOSE
   else                           c.create_if_not_there<ComposeTransport>();
+#endif
   auto& hvf  = c.create_if_not_there<HyperviscosityFunctor>();
   auto& ff   = c.create_if_not_there<ForcingFunctor>();
   auto& diag = c.create_if_not_there<Diagnostics> (elems.num_elems(),params.theta_hydrostatic_mode);
@@ -360,8 +362,10 @@ void init_functors_c (const bool& allocate_buffer)
     auto& esf = c.get<EulerStepFunctor>();
     if (esf.setup_needed()) esf.setup();
   } else {
+#ifdef HOMME_ENABLE_COMPOSE	  
     auto& ct = c.get<ComposeTransport>();
     if (ct.setup_needed()) ct.setup();
+#endif    
   }
   if (hvf.setup_needed()) {
     hvf.setup(geometry, state, derived);
@@ -389,8 +393,10 @@ void init_functors_c (const bool& allocate_buffer)
     fbm.request_size(caar.requested_buffer_size());
     if (params.transport_alg == 0)
       fbm.request_size(c.get<EulerStepFunctor>().requested_buffer_size());
-    else
+#ifdef HOMME_ENABLE_COMPOSE
+    else	    
       fbm.request_size(c.get<ComposeTransport>().requested_buffer_size());
+#endif
     fbm.request_size(hvf.requested_buffer_size());
     fbm.request_size(diag.requested_buffer_size());
     fbm.request_size(ff.requested_buffer_size());
@@ -407,8 +413,10 @@ void init_functors_c (const bool& allocate_buffer)
   caar.init_buffers(fbm);
   if (params.transport_alg == 0)
     Context::singleton().get<EulerStepFunctor>().init_buffers(fbm);
+#ifdef HOMME_ENABLE_COMPOSE
   else
     Context::singleton().get<ComposeTransport>().init_buffers(fbm);
+#endif
   hvf.init_buffers(fbm);
   diag.init_buffers(fbm);
   ff.init_buffers(fbm);
@@ -554,9 +562,11 @@ void init_boundary_exchanges_c ()
     esf.reset(params);
     esf.init_boundary_exchanges();
   } else {
+#ifdef HOMME_ENABLE_COMPOSE	  
     auto& ct = c.get<ComposeTransport>();
     ct.reset(params);
     ct.init_boundary_exchanges();
+#endif    
   }
 
   // RK stages BE's

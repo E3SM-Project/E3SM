@@ -112,8 +112,9 @@ struct CaarFunctorImpl {
 #endif
 
   TeamPolicyType<TagPreExchange>   m_policy_pre;
-  Kokkos::RangePolicy<ExecSpace, TagPostExchange> m_policy_post;
   TeamPolicyType<TagDp3dLimiter>   m_policy_dp3d_lim;
+
+  Kokkos::RangePolicy<ExecSpace, TagPostExchange> m_policy_post;
 
   TeamUtils<ExecSpace> m_tu;
 

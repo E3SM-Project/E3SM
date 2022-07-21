@@ -4,6 +4,8 @@
  * See the file 'COPYRIGHT' in the HOMMEXX/src/share/cxx directory
  *******************************************************************************/
 
+#ifdef HOMME_ENABLE_COMPOSE
+
 #include "ComposeTransportImpl.hpp"
 #include "compose_hommexx.hpp"
 
@@ -250,3 +252,7 @@ void ComposeTransportImpl::run (const TimeLevel& tl, const Real dt) {
 }
 
 } // namespace Homme
+
+//ifdef compose
+#endif
+

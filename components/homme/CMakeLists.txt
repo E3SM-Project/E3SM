@@ -50,7 +50,6 @@ IF (HOMME_BUILD_EXECS OR BUILD_HOMME_TOOL)
 ELSE ()
   SET(BUILD_HOMME_WITHOUT_PIOLIBRARY ON CACHE BOOL "")
 ENDIF ()
-
 IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
   MESSAGE(STATUS "This configuration builds without PIO library and NetCDF calls")
 ENDIF()
@@ -197,8 +196,13 @@ IF (${HOMME_USE_KOKKOS})
 
   SET (HOMMEXX_EXEC_SPACE "Default" CACHE STRING "Select the kokkos exec space")
 
+  #is HOMMEXX_EXEC_SPACE set anywhere? in scream?
+
   STRING (TOUPPER ${HOMMEXX_EXEC_SPACE} HOMMEXX_EXEC_SPACE_UPPER)
-  IF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "CUDA")
+
+  IF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "HIP")
+    SET (HOMMEXX_HIP_SPACE ON)
+  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "CUDA")
     SET (HOMMEXX_CUDA_SPACE ON)
   ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "OPENMP")
     SET (HOMMEXX_OPENMP_SPACE ON)
@@ -275,16 +279,19 @@ MESSAGE(STATUS "C Flags = ${CMAKE_C_FLAGS}")
 MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
 MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 
+SET (HOMMEXX_ENABLE_GPU FALSE) 
+
 IF (${HOMME_USE_KOKKOS})
 
-  IF (CUDA_BUILD)
+  IF (CUDA_BUILD OR HIP_BUILD)
     SET (DEFAULT_VECTOR_SIZE 1)
+    SET (HOMMEXX_ENABLE_GPU TRUE) 
   ELSE ()
     SET (DEFAULT_VECTOR_SIZE 8)
   ENDIF()
 
   SET (HOMMEXX_VECTOR_SIZE ${DEFAULT_VECTOR_SIZE} CACHE STRING
-    "If AVX or Cuda don't take priority, use this software vector size.")
+	  "If AVX or Cuda or HIP don't take priority, use this software vector size.")
 
   IF (CMAKE_BUILD_TYPE_UPPER MATCHES "DEBUG" OR CMAKE_BUILD_TYPE_UPPER MATCHES "RELWITHDEBINFO")
     SET (HOMMEXX_DEBUG ON)
@@ -401,19 +408,19 @@ if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
     set(NETCDF_INCLUDE_DIR ${NetCDF_Fortran_INCLUDE_DIRS})
 
     # needed for CPRNC build system
-    set (cprnc_dummy_file "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake")
+    set (cprnc_dummy_file "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/cprnc/Macros.cmake")
     if (NOT EXISTS "${cprnc_dummy_file}")
       file(WRITE "${cprnc_dummy_file}" "#dummy Macros file for non-CIME machines")
     endif ()
 
     # cprnc's CMake system needs various nonstandard variables:
     set(FFLAGS ${CMAKE_Fortran_FLAGS})
-    set(BLDROOT ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc)
+    set(BLDROOT ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/cprnc)
     set(SFC ${CMAKE_Fortran_COMPILER})
     set(SCC ${CMAKE_C_COMPILER})
     
-    SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc)
-    SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
+    SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/cprnc)
+    SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/cprnc/cprnc)
     ADD_SUBDIRECTORY(utils/cime/CIME/non_py/cprnc)
   ENDIF ()
 ENDIF ()

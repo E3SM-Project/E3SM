@@ -17,6 +17,10 @@
 # include <cuda.h>
 #endif
 
+#ifdef KOKKOS_ENABLE_HIP
+#include <hip/hip_runtime.h>
+#endif
+
 namespace Homme {
 
 // Since we're initializing from inside a Fortran code and don't have access to
@@ -41,6 +45,15 @@ void initialize_kokkos () {
     // It isn't a big deal if we can't get the device count.
     nd = 1;
   }
+#elif defined(KOKKOS_ENABLE_HIP)
+  int nd;
+  const auto ret = hipGetDeviceCount(&nd);
+  if (ret != hipSuccess) {
+    // It isn't a big deal if we can't get the device count.
+    nd = 1;
+  }
+#endif
+#if defined(KOKKOS_ENABLE_HIP) || defined(KOKKOS_ENABLE_HIP)  
   std::stringstream ss;
   ss << "--kokkos-num-devices=" << nd;
   const auto key = ss.str();
@@ -49,6 +62,7 @@ void initialize_kokkos () {
   str.back() = 0;
   args.push_back(const_cast<char*>(str.data()));
 #endif
+
 
   const char* silence = "--kokkos-disable-warnings";
   args.push_back(const_cast<char*>(silence));
@@ -103,6 +117,7 @@ team_num_threads_vectors_for_gpu (
   assert(num_warps_total >= max_num_warps);
   assert(tp.max_threads_usable >= 1 && tp.max_vectors_usable >= 1);
 
+#if !defined(KOKKOS_ENABLE_HIP)
   int num_warps;
   if (tp.prefer_larger_team) {
     const int num_warps_usable =
@@ -136,21 +151,33 @@ team_num_threads_vectors_for_gpu (
     const int num_threads = ( (tp.max_threads_usable > num_device_threads) ?
                               num_device_threads :
                               tp.max_threads_usable );
+
+//printf("tp.prefer_threads: %4d %4d \n",num_threads,  prevpow2(num_device_threads / num_threads));
+
     return std::make_pair( num_threads,
                            prevpow2(num_device_threads / num_threads) );
   } else {
     const int num_vectors = prevpow2( (tp.max_vectors_usable > num_device_threads) ?
                                       num_device_threads :
                                       tp.max_vectors_usable );
+
+//printf("NOT tp. prefer_threads: %4d %4d \n",num_device_threads / num_vectors,
+//                           num_vectors);
+
     return std::make_pair( num_device_threads / num_vectors,
                            num_vectors );
   }
+#else  
+//manual override for HIP  
+return std::make_pair( 16,4 );
+#endif
+
 }
 
 } // namespace Parallel
 
 std::pair<int, int>
-DefaultThreadsDistribution<Hommexx_Cuda>::
+DefaultThreadsDistribution<HommexxGPU>::
 team_num_threads_vectors (const int num_parallel_iterations,
                           const ThreadPreferences tp) {
   // It appears we can't use Kokkos to tell us this. On current devices, using
@@ -172,12 +199,22 @@ team_num_threads_vectors (const int num_parallel_iterations,
 # else
   const int max_num_warps = HOMMEXX_CUDA_MAX_WARP_PER_TEAM; //Kokkos::Impl::cuda_internal_maximum_grid_count();
 # endif
+
+#elif defined(KOKKOS_ENABLE_HIP)
+
+  //use 64 wavefronts per CU and 120 CUs
+  const int num_warps_device = 120*64; // no such thing Kokkos::Impl::hip_internal_maximum_warp_count();
+  const int max_num_warps = 40;   //cores per CU, SM  ///HOMMEXX_CUDA_MAX_WARP_PER_TEAM;
+  const int num_threads_warp = Kokkos::Experimental::Impl::HIPTraits::WarpSize;
+
 #else
+
   // I want thread-distribution rules to be unit-testable even when Cuda is
   // off. Thus, make up a P100-like machine:
   const int num_warps_device = 1792;
   const int num_threads_warp = 32;
   const int max_num_warps = 16;
+
 #endif
 
   return Parallel::team_num_threads_vectors_for_gpu(
