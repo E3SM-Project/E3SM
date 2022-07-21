@@ -37,6 +37,7 @@ module elm_initializeMod
 
   use elm_instMod
   use WaterBudgetMod         , only : WaterBudget_Reset
+  use CNPBudgetMod           , only : CNPBudget_Reset
   use elm_varctl             , only : do_budgets
   !
   implicit none
@@ -523,7 +524,12 @@ contains
 
     call t_startf('elm_init2')
 
-    if (do_budgets) call WaterBudget_Reset('all')
+    if (do_budgets) then
+       call WaterBudget_Reset('all')
+       if (use_cn) then
+          call CNPBudget_Reset('all')
+       endif
+    endif
 
     ! ------------------------------------------------------------------------
     ! Determine processor bounds and clumps for this processor
@@ -759,6 +765,12 @@ contains
                photosyns_vars, soilhydrology_vars,                          &
                soilstate_vars, solarabs_vars, surfalb_vars,                 &
                sedflux_vars, ep_betr, alm_fates, glc2lnd_vars, crop_vars)
+
+         call WaterBudget_Reset('all')
+         if (use_cn) then
+            call CNPBudget_Reset('all')
+         endif
+
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then
