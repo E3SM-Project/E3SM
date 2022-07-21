@@ -51,6 +51,11 @@ void trcmix(
     {1, pver, pver},
     {clat, pmid, q}, true);
 
+  // Convert to hclat to radians
+  for (auto& item : hclat) {
+    item *= C::Pi/180.0;
+  }
+
   trcmix_cf2(
     name, ncol, pcols, pver, hclat.data(), hpmid.data(), hq.data(),
     C::MWdry,
@@ -63,10 +68,10 @@ void trcmix(
     co2vmr_rad, co2vmr, n2ovmr, ch4vmr, f11vmr, f12vmr);
 
   ekat::host_to_device(
-    {hclat.data(), hpmid.data(), hq.data()},
-    {pcols, pcols, pcols},
-    {1, pver, pver},
-    {clat, pmid, q}, true);
+    {hq.data()},
+    {pcols},
+    {pver},
+    {q}, true);
 }
 
 #undef CHECK_TRCMIX_VIEW

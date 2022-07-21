@@ -16,7 +16,7 @@ void trcmix(
   Int ncol,              // number of columns
   Int pcols,             // Maximum number of columns in a chunk
   Int pver,              // Num vertical levels
-  const ClatView& clat,  // latitude in radians for columns
+  const ClatView& clat,  // latitude for columns in degrees
   const PmidView& pmid,  // model pressures
   QView& q,              // constituent mass mixing ratio (output)
   // items below likely come from namelists/yaml

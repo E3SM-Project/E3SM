@@ -2,6 +2,7 @@
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 #include "physics/rrtmgp/rrtmgp_utils.hpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
+#include "physics/share/scream_trcmix.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/util/scream_column_ops.hpp"
@@ -11,9 +12,9 @@
 
 namespace scream {
 
-  using KT = KokkosTypes<DefaultDevice>;
-  using ExeSpace = KT::ExeSpace;
-  using MemberType = KT::MemberType;
+using KT = KokkosTypes<DefaultDevice>;
+using ExeSpace = KT::ExeSpace;
+using MemberType = KT::MemberType;
 
 RRTMGPRadiation::
 RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params)
@@ -95,7 +96,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
     if (it == "h2o") { /* Special case where water vapor is called h2o in radiation */
       // do nothing, qv has already been added.
     } else {
-      add_field<Required>(it,scalar3d_layout_mid,kgkg,grid_name, ps);
+      add_field<Computed>(it,scalar3d_layout_mid,kgkg,grid_name, ps);
     }
   }
   // Required aerosol optical properties from SPA
@@ -301,10 +302,21 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   m_gas_mol_weights          = view_1d_real("gas_mol_weights",m_ngas);
   /* the lookup function for getting the gas mol weights doesn't work on device. */
   auto gas_mol_w_host = Kokkos::create_mirror_view(m_gas_mol_weights);
-  for (int igas = 0; igas < m_ngas; igas++) {  
+  auto pmid = get_field_in("p_mid").get_view<const Real**>();
+  for (int igas = 0; igas < m_ngas; igas++) {
+    const auto& gas_name = m_gas_names[igas];
+
     /* Note: YAKL starts the index from 1 */
-    gas_names_yakl_offset(igas+1)   = m_gas_names[igas];
-    gas_mol_w_host[igas]            = PC::get_gas_mol_weight(m_gas_names[igas]);
+    gas_names_yakl_offset(igas+1)   = gas_name;
+    gas_mol_w_host[igas]            = PC::get_gas_mol_weight(gas_name);
+
+    // Init GHG
+    if (gas_name != "h2o") {
+      auto gas_view = get_field_out(gas_name).get_view<Real**>();
+      Real co2vmr_rad, co2vmr, n2ovmr, ch4vmr, f11vmr, f12vmr;
+      scream::physics::trcmix(gas_name.c_str(), m_ncol, m_ncol, m_nlay, m_lat, pmid, gas_view,
+                              co2vmr_rad, co2vmr, n2ovmr, ch4vmr, f11vmr, f12vmr);
+    }
   }
   Kokkos::deep_copy(m_gas_mol_weights,gas_mol_w_host);
 
@@ -324,7 +336,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
   using PC = scream::physics::Constants<Real>;
   using CO = scream::ColumnOps<DefaultDevice,Real>;
 
-  // get a host copy of lat/lon 
+  // get a host copy of lat/lon
   auto h_lat  = Kokkos::create_mirror_view(m_lat);
   auto h_lon  = Kokkos::create_mirror_view(m_lon);
   Kokkos::deep_copy(h_lat,m_lat);
@@ -363,8 +375,8 @@ void RRTMGPRadiation::run_impl (const int dt) {
     Kokkos::deep_copy(d_aero_ssa_sw,0.0);
     Kokkos::deep_copy(d_aero_g_sw  ,0.0);
     Kokkos::deep_copy(d_aero_tau_lw,0.0);
-    
-  } 
+
+  }
   auto d_sw_flux_up = get_field_out("SW_flux_up").get_view<Real**>();
   auto d_sw_flux_dn = get_field_out("SW_flux_dn").get_view<Real**>();
   auto d_sw_flux_dn_dir = get_field_out("SW_flux_dn_dir").get_view<Real**>();
@@ -406,7 +418,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
     // compute orbital parameters based on current year
     orbital_year = ts.get_year();
   }
-  shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp, 
+  shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp,
                      &obliqr, &lambm0, &mvelpp);
   // Use the orbital parameters to calculate the solar declination and eccentricity factor
   double delta, eccf;
@@ -811,6 +823,5 @@ void RRTMGPRadiation::finalize_impl  () {
   yakl::finalize();
 }
 // =========================================================================================
-
 
 }  // namespace scream
