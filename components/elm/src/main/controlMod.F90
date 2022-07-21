@@ -255,7 +255,8 @@ contains
           use_fates_fixed_biogeog,                      &
           use_fates_nocomp,                             &
           use_fates_sp,                                 &
-          fates_parteh_mode
+          fates_parteh_mode,                            &
+          use_fates_tree_damage
 
     namelist /elm_inparm / use_betr
 

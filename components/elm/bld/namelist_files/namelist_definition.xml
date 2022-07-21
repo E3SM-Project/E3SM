@@ -333,7 +333,7 @@ Toggle to turn on plant hydraulics (only relevant if FATES is on).
 </entry>
 
 <entry id="use_fates_tree_damage" type="logical" category="physics"
-        group="clm_inparm" valid_values="" value=".false."> 
+        group="elm_inparm" valid_values="" value=".false."> 
 Toggle to turn on the tree damage module in FATES
 (Only relevant if FATES is on)
 </entry>
