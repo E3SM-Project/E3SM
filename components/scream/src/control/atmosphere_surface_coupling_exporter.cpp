@@ -33,8 +33,6 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
   Wm2.set_string("W/m2)");
   auto m2s2 = (m*m)/(s*s);
   m2s2.set_string("m2s2");
-  auto nondim = Units::nondimensional();
-
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
@@ -44,21 +42,21 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
   FieldLayout scalar3d_layout_mid { {COL,LEV},     {m_num_cols,    m_num_levs  } };
   FieldLayout scalar3d_layout_int { {COL,ILEV},    {m_num_cols,    m_num_levs+1} };
 
-  add_field<Required>("p_int",            scalar3d_layout_int,  Pa,    grid_name);
-  add_field<Required>("pseudo_density",   scalar3d_layout_mid,  Pa,    grid_name);
-  add_field<Required>("phis",             scalar2d_layout,      m2s2,  grid_name);
-  add_field<Required>("p_mid",            scalar3d_layout_mid,  Pa,    grid_name);
-  add_field<Required>("qv",               scalar3d_layout_mid,  Qunit, grid_name, "tracers");
-  add_field<Required>("T_mid",            scalar3d_layout_mid,  K,     grid_name);
-  add_field<Required>("horiz_winds",      vector3d_layout,    m/s,   grid_name);
-  add_field<Required>("precip_liq_surf",  scalar2d_layout,      m/s,   grid_name);
-  add_field<Required>("precip_ice_surf",  scalar2d_layout,      m/s,   grid_name);
-  add_field<Required>("sfc_flux_dir_nir", scalar2d_layout,      Wm2,   grid_name);
-  add_field<Required>("sfc_flux_dir_vis", scalar2d_layout,      Wm2,   grid_name);
-  add_field<Required>("sfc_flux_dif_nir", scalar2d_layout,      Wm2,   grid_name);
-  add_field<Required>("sfc_flux_dif_vis", scalar2d_layout,      Wm2,   grid_name);
-  add_field<Required>("sfc_flux_sw_net" , scalar2d_layout,      Wm2,   grid_name);
-  add_field<Required>("sfc_flux_lw_dn"  , scalar2d_layout,      Wm2,   grid_name);
+  add_field<Required>("p_int",                scalar3d_layout_int,  Pa,    grid_name);
+  add_field<Required>("pseudo_density",       scalar3d_layout_mid,  Pa,    grid_name);
+  add_field<Required>("phis",                 scalar2d_layout,      m2s2, grid_name);
+  add_field<Required>("p_mid",                scalar3d_layout_mid,  Pa,    grid_name);
+  add_field<Required>("qv",                   scalar3d_layout_mid,  Qunit, grid_name, "tracers");
+  add_field<Required>("T_mid",                scalar3d_layout_mid,  K,     grid_name);
+  add_field<Required>("horiz_winds",          vector3d_layout,      m/s,   grid_name);
+  add_field<Required>("precip_liq_surf_mass", scalar2d_layout,      m/s,   grid_name);
+  add_field<Required>("precip_ice_surf_mass", scalar2d_layout,      m/s,   grid_name);
+  add_field<Required>("sfc_flux_dir_nir",     scalar2d_layout,      Wm2,   grid_name);
+  add_field<Required>("sfc_flux_dir_vis",     scalar2d_layout,      Wm2,   grid_name);
+  add_field<Required>("sfc_flux_dif_nir",     scalar2d_layout,      Wm2,   grid_name);
+  add_field<Required>("sfc_flux_dif_vis",     scalar2d_layout,      Wm2,   grid_name);
+  add_field<Required>("sfc_flux_sw_net" ,     scalar2d_layout,      Wm2,   grid_name);
+  add_field<Required>("sfc_flux_lw_dn"  ,     scalar2d_layout,      Wm2,   grid_name);
 
   create_helper_field("Sa_z",       scalar2d_layout, grid_name);
   create_helper_field("Sa_ptem",    scalar2d_layout, grid_name);
@@ -159,8 +157,6 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
     // There are 2 cases for the export:
     //  1. The export comes directly from a field in the field manager.
     //  2. The export comes from a computed value which will be stored in m_helper_fields
-    // For case 1., the field needs to be an "Updated" or "Computed" field, as we cannot access
-    // the raw data of a read only field.
     Field field;
     std::string fname = m_export_field_names[i];
     if      (has_computed_field(fname, m_grid->name())) field = get_field_out(fname);
@@ -172,7 +168,8 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
     // Check that is valid
     EKAT_REQUIRE_MSG (field.is_allocated(), "Error! Export field view has not been allocated yet.\n");
 
-    // Set view data ptr
+    // Set view data ptr. Since the field could be only "Required", we
+    // must use the unsafe version of the get_internal_view_data().
     m_column_info_h(i).data = field.get_internal_view_data_unsafe<Real>();
 
     // Get column info from field utility function
@@ -196,29 +193,28 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
   Kokkos::deep_copy(m_column_info_d, m_column_info_h);
 
   // Perform initial export (if any are marked for export during initialization)
-  if (any_initial_exports) do_export(true);
+  if (any_initial_exports) do_export(0, true);
 }
 // =========================================================================================
-void SurfaceCouplingExporter::run_impl (const int /* dt */)
+void SurfaceCouplingExporter::run_impl (const int dt)
 {
-  do_export();
+  do_export(dt);
 }
 // =========================================================================================
-void SurfaceCouplingExporter::do_export(const bool called_during_initialization)
+void SurfaceCouplingExporter::do_export(const Int dt, const bool called_during_initialization)
 {
   using KT = KokkosTypes<DefaultDevice>;
   using policy_type = KT::RangePolicy;
   using PF = PhysicsFunctions<DefaultDevice>;
-  using C = scream::physics::Constants<Real>;
 
-  const auto& p_int           = get_field_in("p_int").get_view<const Real**>();
-  const auto& pseudo_density  = get_field_in("pseudo_density").get_view<const Real**>();
-  const auto& qv              = get_field_in("qv").get_view<const Real**>();
-  const auto& T_mid           = get_field_in("T_mid").get_view<const Real**>();
-  const auto& p_mid           = get_field_in("p_mid").get_view<const Real**>();
-  const auto& phis            = get_field_in("phis").get_view<const Real*>();
-  const auto& precip_liq_surf = get_field_in("precip_liq_surf").get_view<const Real*>();
-  const auto& precip_ice_surf = get_field_in("precip_ice_surf").get_view<const Real*>();
+  const auto& p_int                = get_field_in("p_int").get_view<const Real**>();
+  const auto& pseudo_density       = get_field_in("pseudo_density").get_view<const Real**>();
+  const auto& qv                   = get_field_in("qv").get_view<const Real**>();
+  const auto& T_mid                = get_field_in("T_mid").get_view<const Real**>();
+  const auto& p_mid                = get_field_in("p_mid").get_view<const Real**>();
+  const auto& phis                 = get_field_in("phis").get_view<const Real*>();
+  const auto& precip_liq_surf_mass = get_field_in("precip_liq_surf_mass").get_view<const Real*>();
+  const auto& precip_ice_surf_mass = get_field_in("precip_ice_surf_mass").get_view<const Real*>();
 
   const auto Sa_z       = m_helper_fields.at("Sa_z").get_view<Real*>();
   const auto Sa_ptem    = m_helper_fields.at("Sa_ptem").get_view<Real*>();
@@ -278,8 +274,12 @@ void SurfaceCouplingExporter::do_export(const bool called_during_initialization)
     Sa_ptem(i)    = PF::calculate_theta_from_T(T_mid_i(num_levs-1), p_mid_i(num_levs-1));
     Sa_dens(i)    = PF::calculate_density(pseudo_density_i(num_levs-1), s_dz_i(num_levs-1));
     Sa_pslv(i)    = PF::calculate_psl(T_int_bot, p_int_i(num_levs), phis(i));
-    Faxa_rainl(i) = precip_liq_surf(i)*C::RHO_H2O;
-    Faxa_snowl(i) = precip_ice_surf(i)*C::RHO_H2O;
+
+    if (not called_during_initialization) {
+      // Precipitation has units of kg, so we need to convert to a flux with units of kg/s
+      Faxa_rainl(i) = precip_liq_surf_mass(i)/dt;
+      Faxa_snowl(i) = precip_ice_surf_mass(i)/dt;
+    }
   });
 
   // Export to cpl data

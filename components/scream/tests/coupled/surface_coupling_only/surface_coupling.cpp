@@ -158,22 +158,21 @@ void test_exports(const FieldManager& fm,
                   const KokkosTypes<HostDevice>::view_2d<Real> export_data_view,
                   const KokkosTypes<HostDevice>::view_1d<int>  export_cpl_indices_view,
                   const KokkosTypes<HostDevice>::view_1d<Real> export_constant_multiple_view,
-                  const int num_set_zero_fields,
+                  const int dt,
                   const bool called_directly_after_init = false)
 {
   using PF = PhysicsFunctions<DefaultDevice>;
-  using C  = scream::physics::Constants<Real>;
 
   // Some computed fields rely on calculations that are done in the AD.
   // Recompute here and verify that they were exported correctly.
-  const auto pseudo_density  = fm.get_field("pseudo_density").get_view<const Real**>();
-  const auto p_mid           = fm.get_field("p_mid").get_view<const Real**>();
-  const auto p_int           = fm.get_field("p_int").get_view<const Real**>();
-  const auto T_mid           = fm.get_field("T_mid").get_view<const Real**>();
-  const auto qv              = fm.get_field("qv").get_view<const Real**>();
-  const auto phis            = fm.get_field("phis").get_view<const Real*>();
-  const auto precip_liq_surf = fm.get_field("precip_liq_surf").get_view<const Real*>();
-  const auto precip_ice_surf = fm.get_field("precip_ice_surf").get_view<const Real*>();
+  const auto pseudo_density       = fm.get_field("pseudo_density").get_view<const Real**>();
+  const auto p_mid                = fm.get_field("p_mid").get_view<const Real**>();
+  const auto p_int                = fm.get_field("p_int").get_view<const Real**>();
+  const auto T_mid                = fm.get_field("T_mid").get_view<const Real**>();
+  const auto qv                   = fm.get_field("qv").get_view<const Real**>();
+  const auto phis                 = fm.get_field("phis").get_view<const Real*>();
+  const auto precip_liq_surf_mass = fm.get_field("precip_liq_surf_mass").get_view<const Real*>();
+  const auto precip_ice_surf_mass = fm.get_field("precip_ice_surf_mass").get_view<const Real*>();
 
   const int ncols = T_mid.extent(0);
   const int nlevs = T_mid.extent(1);
@@ -222,8 +221,11 @@ void test_exports(const FieldManager& fm,
     Sa_ptem(i)    = PF::calculate_theta_from_T(T_mid_i(nlevs-1), p_mid_i(nlevs-1));
     Sa_dens(i)    = PF::calculate_density(pseudo_density_i(nlevs-1), dz_i(nlevs-1));
     Sa_pslv(i)    = PF::calculate_psl(T_int_bot, p_int_i(nlevs), phis(i));
-    Faxa_rainl(i) = precip_liq_surf(i)*C::RHO_H2O;
-    Faxa_snowl(i) = precip_ice_surf(i)*C::RHO_H2O;
+
+    if (not called_directly_after_init) {
+      Faxa_rainl(i) = precip_liq_surf_mass(i)/dt;
+      Faxa_snowl(i) = precip_ice_surf_mass(i)/dt;
+    }
   });
 
   // Sync to host for comparing to export data
@@ -306,15 +308,12 @@ TEST_CASE("surface-coupling", "") {
 
   // Parameters
   auto& ts              = ad_params.sublist("Time Stepping");
-  const auto dt         = ts.get<int>("Time Step");
   const auto start_date = ts.get<std::vector<int>>("Start Date");
   const auto start_time = ts.get<std::vector<int>>("Start Time");
   const int ncols       = ad_params.sublist("Grids Manager").get<int>("Number of Global Columns");
   const auto grid_name  = ad_params.sublist("atmosphere_processes")
                                    .sublist("SurfaceCouplingExporter")
                                    .get<std::string>("Grid");
-
-  EKAT_ASSERT_MSG (dt>0, "Error! Time step must be positive.\n");
 
   util::TimeStamp t0 (start_date, start_time);
   EKAT_ASSERT_MSG (t0.is_valid(), "Error! Invalid start date.\n");
@@ -329,17 +328,22 @@ TEST_CASE("surface-coupling", "") {
   // Create the driver
   AtmosphereDriver ad;
 
+  // Create engine and pdfs for random test data
+  auto engine = setup_random_test(&atm_comm);
+  std::uniform_int_distribution<int> pdf_int_additional_fields(0,10);
+  std::uniform_int_distribution<int> pdf_int_dt(1,1800);
+  std::uniform_real_distribution<Real> pdf_real_import_data(0.0,1.0);
+
+  // Set up random value for dt
+  const int dt = pdf_int_dt(engine);
+
   // Setup views to test import/export. For this test we consider a random number of non-imported/exported
-  // cpl fields (in addition to the required scream imports/exports), then assign a random, non-repeating 
+  // cpl fields (in addition to the required scream imports/exports), then assign a random, non-repeating
   // cpl index for each field in [0, num_cpl_fields).
   const int num_scream_imports = 9;
   const int num_scream_exports = 17;
-
-  KokkosTypes<HostDevice>::view_1d<int> additional_import_exports("", 2);
-  auto engine = setup_random_test(&atm_comm);
-  std::uniform_int_distribution<int> pdf_int(0,10);
-  ekat::genRandArray(additional_import_exports, engine, pdf_int);
-
+  KokkosTypes<HostDevice>::view_1d<int> additional_import_exports("additional_import_exports", 2);
+  ekat::genRandArray(additional_import_exports, engine, pdf_int_additional_fields);
   const int num_additional_imports = additional_import_exports(0);
   const int num_additional_exports = additional_import_exports(1);
   const int num_cpl_imports = num_scream_imports + num_additional_imports;
@@ -358,8 +362,7 @@ TEST_CASE("surface-coupling", "") {
                                                                        num_scream_imports);
 
   // Set import data to random (0,1) values
-  std::uniform_real_distribution<Real> pdf_real(0.0,1.0);
-  ekat::genRandArray(import_data_view, engine, pdf_real);
+  ekat::genRandArray(import_data_view, engine, pdf_real_import_data);
 
   // Set import names
   char import_names[num_scream_imports][32];
@@ -436,7 +439,7 @@ TEST_CASE("surface-coupling", "") {
   test_imports(*fm, import_data_view, import_cpl_indices_view,
                import_constant_multiple_view, true);
   test_exports(*fm, export_data_view, export_cpl_indices_view,
-               export_constant_multiple_view, num_additional_exports, true);
+               export_constant_multiple_view, dt, true);
 
   // Run AD
   ad.run(dt);
@@ -445,7 +448,7 @@ TEST_CASE("surface-coupling", "") {
   test_imports(*fm, import_data_view, import_cpl_indices_view,
                import_constant_multiple_view);
   test_exports(*fm, export_data_view, export_cpl_indices_view,
-               export_constant_multiple_view, num_additional_exports);
+               export_constant_multiple_view, dt);
 
   // Finalize 
   ad.finalize();

@@ -8,9 +8,6 @@ CreateUnitTest(surface_coupling surface_coupling.cpp "${NEED_LIBS}" LABELS ${TES
   PROPERTIES FIXTURES_SETUP surface_coupling_generate_output_nc_files
 )
 
-# Set AD configurable options
-set (ATM_TIME_STEP 1800)
-
 # Ensure test input files are present in the data dir
 # GetInputFile(init/screami_ne2np4L72_20220524.nc)
 

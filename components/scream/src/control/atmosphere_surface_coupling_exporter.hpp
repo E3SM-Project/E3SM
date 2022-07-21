@@ -76,7 +76,7 @@ public:
   // If calling in initialize_impl(), set
   // called_during_initialization=true to avoid exporting fields
   // which do not have valid entries.
-  void do_export(const bool called_during_initialization=false);
+  void do_export(const Int dt, const bool called_during_initialization=false);
 
 protected:
 
