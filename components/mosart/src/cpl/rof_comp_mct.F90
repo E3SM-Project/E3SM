@@ -252,7 +252,6 @@ contains
     use_lnd_rof_two_way = lnd_rof_two_way
     use_ocn_rof_two_way = ocn_rof_two_way
 
->>>>>>> use drv_in to toggle river-ocean two-way coupling
     ! Read namelist, grid and surface data
     call Rtmini(rtm_active=rof_prognostic,flood_active=flood_present)
 
