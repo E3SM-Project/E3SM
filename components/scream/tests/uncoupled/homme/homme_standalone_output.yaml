@@ -13,6 +13,9 @@ Fields:
       - p_mid
       - pseudo_density
       - horiz_winds
+      - pseudo_density_dry
+      - p_dry_int
+      - p_dry_mid
  
 Output Control:
   Frequency: ${NUM_STEPS}

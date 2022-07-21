@@ -28,7 +28,7 @@ Grids Manager:
 
 # Specifications for setting initial conditions
 Initial Conditions:
-  Filename: ${SCREAM_DATA_DIR}/init/screami_ne2np4L72_20220524.nc
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   aero_g_sw: 0.0
   aero_ssa_sw: 0.0
   aero_tau_sw: 0.0
