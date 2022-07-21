@@ -519,6 +519,8 @@ TEST_CASE ("recreate_mct_coupling")
     // Copy precip_liq/ice_surf to the copy we need for comparison
     Kokkos::deep_copy(precip_liq_surf_copy_d,precip_liq_surf_d);
     Kokkos::deep_copy(precip_ice_surf_copy_d,precip_ice_surf_d);
+    precip_liq_surf_copy_f.sync_to_host();
+    precip_ice_surf_copy_f.sync_to_host();
     // TODO: These deep copies won't be needed when the AD handles resetting precip
     ekat::genRandArray(sfc_flux_lw_dn_d,engine,pdf);
     ekat::genRandArray(sfc_flux_dir_nir_d,engine,pdf);
