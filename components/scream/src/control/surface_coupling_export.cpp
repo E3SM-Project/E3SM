@@ -11,6 +11,8 @@ void SurfaceCoupling::do_export (const int dt, const bool init_phase)
     return;
   }
 
+  if (not init_phase) EKAT_ASSERT_MSG(dt>0, "Error! dt must be larger than 0 if not init_phase\n");
+
   using KT = KokkosTypes<device_type>;
   using policy_type = KT::RangePolicy;
   using PF = PhysicsFunctions<device_type>;
@@ -79,9 +81,12 @@ void SurfaceCoupling::do_export (const int dt, const bool init_phase)
       l_Sa_ptem(i)    = PF::calculate_theta_from_T(T_mid_i(last_entry), p_mid_i(last_entry));
       l_Sa_dens(i)    = PF::calculate_density(pseudo_density_i(last_entry), dz_i(last_entry));
       l_Sa_pslv(i)    = PF::calculate_psl(T_int_bot, p_int_i(num_levs), phis(i) );
-      // Precipitation has units of kg, so we need to convert to a flux with units of kg/s
-      l_Faxa_rainl(i) = precip_liq_surf_mass(i) / dt;
-      l_Faxa_snowl(i) = precip_ice_surf_mass(i) / dt;
+
+      if (not init_phase) {
+        // Precipitation has units of kg, so we need to convert to a flux with units of kg/s
+        l_Faxa_rainl(i) = precip_liq_surf_mass(i) / dt;
+        l_Faxa_snowl(i) = precip_ice_surf_mass(i) / dt;
+      }
     });
     Kokkos::fence();
     // It is the responsibility of the surface coupling to zero out the precipitation flux
