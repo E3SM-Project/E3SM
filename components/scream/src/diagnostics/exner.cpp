@@ -43,7 +43,7 @@ void ExnerDiagnostic::initialize_impl(const RunType /* run_type */)
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
-void ExnerDiagnostic::run_impl(const int /* dt */)
+void ExnerDiagnostic::compute_diagnostic_impl()
 {
 
   const auto npacks  = ekat::npack<Pack>(m_num_levs);

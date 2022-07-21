@@ -622,7 +622,7 @@ Field AtmosphereOutput::get_field(const std::string& name, const bool eval_diagn
   } else if (m_diagnostics.find(name) != m_diagnostics.end()) {
     const auto& diag = m_diagnostics[name];
     if (eval_diagnostic) {
-      diag->run();
+      diag->compute_diagnostic();
     }
     return diag->get_diagnostic();
   } else {
@@ -648,20 +648,16 @@ void AtmosphereOutput::set_diagnostics()
   // Set required fields for all diagnostics
   for (const auto& dd : m_diagnostics) {
     const auto& diag = dd.second;
-    // TimeStamp control
-    util::TimeStamp t0;
-    bool t0_set = false;
     for (const auto& req : diag->get_required_field_requests()) {
       // Any required fields should be in the field manager, so we can gather
       // the TimeStamp for initialization from the first of these.
       const auto& req_field = get_field(req.fid.name());
-      if (!t0_set) {
-        t0 = req_field.get_header().get_tracking().get_time_stamp();
-        t0_set = true;
-      }
       diag->set_required_field(req_field.get_const());
     }
-    diag->initialize(t0,RunType::Initial);
+
+    // Note: this inits with an invalid timestamp. If by any chance we try to
+    //       output the diagnostic without computing it, we'll get an error.
+    diag->initialize(util::TimeStamp(),RunType::Initial);
   }
 }
 

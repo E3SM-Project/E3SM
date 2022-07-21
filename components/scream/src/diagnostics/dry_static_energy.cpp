@@ -53,7 +53,7 @@ void DryStaticEnergyDiagnostic::initialize_impl(const RunType /* run_type */)
 
 }
 // =========================================================================================
-void DryStaticEnergyDiagnostic::run_impl(const int /* dt */)
+void DryStaticEnergyDiagnostic::compute_diagnostic_impl()
 {
 
   const auto npacks     = ekat::npack<Pack>(m_num_levs);

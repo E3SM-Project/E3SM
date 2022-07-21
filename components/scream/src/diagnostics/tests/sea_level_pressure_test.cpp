@@ -130,7 +130,7 @@ void run(std::mt19937_64& engine)
     ekat::genRandArray(phis_v, engine, pdf_surface);
 
     // Run diagnostic and compare with manual calculation
-    diag->run();
+    diag->compute_diagnostic();
     const auto& diag_out = diag->get_diagnostic();
     Field p_sealevel_f = diag_out.clone();
     p_sealevel_f.deep_copy<double,Host>(0.0);

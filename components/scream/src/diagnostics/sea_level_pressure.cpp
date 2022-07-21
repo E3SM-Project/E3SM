@@ -51,7 +51,7 @@ void SeaLevelPressureDiagnostic::initialize_impl(const RunType /* run_type */)
 
 }
 // =========================================================================================
-void SeaLevelPressureDiagnostic::run_impl(const int /* dt */)
+void SeaLevelPressureDiagnostic::compute_diagnostic_impl()
 {
 
   const auto npacks     = ekat::npack<Pack>(m_num_levs);

@@ -48,7 +48,7 @@ void VerticalLayerInterfaceDiagnostic::initialize_impl(const RunType /* run_type
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
-void VerticalLayerInterfaceDiagnostic::run_impl(const int /* dt */)
+void VerticalLayerInterfaceDiagnostic::compute_diagnostic_impl()
 {
   const auto npacks     = ekat::npack<Pack>(m_num_levs);
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, npacks);
