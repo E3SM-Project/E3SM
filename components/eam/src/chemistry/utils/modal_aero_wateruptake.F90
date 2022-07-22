@@ -272,20 +272,20 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    call rad_cnst_get_info(list_idx, nmodes=nmodes)
 
    !initialize to an invalid value
-   naer(:,:,:)    = huge(1.0_r8)
-   dryvol(:,:,:)  = huge(1.0_r8)
-   drymass(:,:,:) = huge(1.0_r8)
-   dryrad(:,:,:)  = huge(1.0_r8)
-   wetrad(:,:,:)  = huge(1.0_r8)
-   wetvol(:,:,:)  = huge(1.0_r8)
-   wtrvol(:,:,:)  = huge(1.0_r8)
+   naer   (1:pcols,1:pver,1:nmodes) = huge(1.0_r8)
+   dryvol (1:pcols,1:pver,1:nmodes) = huge(1.0_r8)
+   drymass(1:pcols,1:pver,1:nmodes) = huge(1.0_r8)
+   dryrad (1:pcols,1:pver,1:nmodes) = huge(1.0_r8)
+   wetrad (1:pcols,1:pver,1:nmodes) = huge(1.0_r8)
+   wetvol (1:pcols,1:pver,1:nmodes) = huge(1.0_r8)
+   wtrvol (1:pcols,1:pver,1:nmodes) = huge(1.0_r8)
 
-   rhcrystal(:)   = huge(1.0_r8)
-   rhdeliques(:)  = huge(1.0_r8)
-   specdens_1(:)  = huge(1.0_r8)
+   rhcrystal (1:nmodes)  = huge(1.0_r8)
+   rhdeliques(1:nmodes)  = huge(1.0_r8)
+   specdens_1(1:nmodes)  = huge(1.0_r8)
 
-   maer(:,:,:)     = 0._r8
-   hygro(:,:,:)    = 0._r8
+   maer (1:pcols,1:pver,1:nmodes)   = 0._r8
+   hygro(1:pcols,1:pver,1:nmodes)   = 0._r8
 
    !by default set compute_wetdens to be true
    compute_wetdens = .true.
@@ -315,7 +315,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
    do m = 1, nmodes
 
-      dryvolmr(:,:) = 0._r8
+      dryvolmr(1:pcols,1:pver) = 0._r8
 
       ! get mode properties
       call rad_cnst_get_mode_props(list_idx, m, sigmag=sigmag,  &
