@@ -125,8 +125,10 @@ contains
     endif
 
     call control_init()
-    call ncd_pio_init()
     call elm_varpar_init()
+    call elm_varcon_init()
+    call landunit_varcon_init()
+    call ncd_pio_init()
     if(use_fates) then
        ! Allow FATES to dictate the number of patches per column.
        ! We still use numcft as dictated by
@@ -135,16 +137,10 @@ contains
        ! includes the bare-ground patch
        ! In either case, with crop or witout crop, FATES is only
        ! responsible for what happens on the nat LU. So FATES will
-       ! only override what happens there.
-       
+       ! only override what happens there.                  
        call ELMFatesGlobals1()  ! This will overwrite natpft_size
        call update_pft_array_bounds()
-    end if
-    call elm_varcon_init()
-    call landunit_varcon_init()
-    
-
-    
+    end if    
     
     call elm_petsc_init()
     call init_soil_temperature()
