@@ -23,7 +23,7 @@ module ColumnDataType
   use elm_varctl      , only : use_fates, use_fates_planthydro, create_glacier_mec_landunit
   use elm_varctl      , only : use_hydrstress
   use elm_varctl      , only : bound_h2osoi, use_cn, iulog, use_vertsoilc, spinup_state
-  use elm_varctl      , only : use_erosion
+  use elm_varctl      , only : ero_ccycle
   use elm_varctl      , only : use_elm_interface, use_pflotran, pf_cmode
   use elm_varctl      , only : hist_wrtch4diag, use_century_decomp
   use elm_varctl      , only : get_carbontag, override_bgc_restart_mismatch_dump
@@ -6968,7 +6968,7 @@ contains
     end do
 
     ! vertically integrate column-level carbon erosion flux
-    if (use_erosion) then
+    if (ero_ccycle) then
        do l = 1, ndecomp_pools
           do j = 1, nlev
              do fc = 1, num_soilc
@@ -7029,7 +7029,7 @@ contains
     end do
 
     ! column-level carbon losses due to soil erosion
-    if ( use_erosion ) then
+    if ( ero_ccycle ) then
        do l = 1, ndecomp_pools
           if ( is_soil(l) ) then
              do fc = 1, num_soilc
@@ -9135,7 +9135,7 @@ contains
     end do
 
     ! vertically integrate column-level N erosion flux
-    if ( use_erosion ) then
+    if ( ero_ccycle ) then
        do l = 1, ndecomp_pools
           do j = 1, nlev
              do fc = 1, num_soilc
@@ -9163,7 +9163,7 @@ contains
     end do
 
     ! total column-level soil erosion N losses
-    if ( use_erosion ) then
+    if ( ero_ccycle ) then
        do k = 1, ndecomp_pools
           if ( decomp_cascade_con%is_soil(k) ) then
              do fc = 1, num_soilc
@@ -10660,7 +10660,7 @@ contains
     end do
 
     ! vertically integrate erosional flux
-    if (use_erosion) then
+    if (ero_ccycle) then
        do j = 1, nlevdecomp
           do fc = 1,num_soilc
              c = filter_soilc(fc)
@@ -10693,7 +10693,7 @@ contains
     end do
 
     ! vertically integrate column-level P erosion flux
-    if (use_erosion) then
+    if (ero_ccycle) then
        do l = 1, ndecomp_pools
           do j = 1, nlevdecomp
              do fc = 1, num_soilc
@@ -10721,7 +10721,7 @@ contains
     end do
 
     ! total column-level soil erosion P losses
-    if ( use_erosion ) then
+    if ( ero_ccycle ) then
        do k = 1, ndecomp_pools
           if ( decomp_cascade_con%is_soil(k) ) then
              do fc = 1, num_soilc

@@ -425,8 +425,8 @@ module elm_varctl
 
   ! Soil erosion
   !-----------------------------------------------------------------------
-  logical, public :: use_erosion    = .false.
-  logical, public :: ero_ccycle     = .false.
+  logical, public :: use_erosion    = .false.   ! switch for turning on the soil erosion model
+  logical, public :: ero_ccycle     = .false.   ! switch for turning on soil C, N and P loss by erosion (only valid when user_erosion = .true.)
 
   !$acc declare copyin(use_pheno_flux_limiter)
   !$acc declare copyin(use_erosion)
