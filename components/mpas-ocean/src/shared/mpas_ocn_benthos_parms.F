@@ -74,7 +74,7 @@ module ocn_benthos_parms
        bottom_water_density = 1027.0_benthos_r8, & ! kg/m3
        sediment_density = 2650.0_benthos_r8, & ! (kg/m3)
        mass_to_vol   = 1.0e3_benthos_r8 * bottom_water_density, & ! mol/kg -> mmol/m3
-!       mass_to_vol   = 1.0e6_benthos_68 * sediment_density, &
+!       mass_to_vol   = 1.0e6_benthos_r8 * sediment_density, &
        vol_to_mass   = c1_benthos / mass_to_vol, &   ! mmol/m3 -> mol/kg
        mmol_per_kg_water = 5.55556e4_benthos_r8, &     ! mmol of water/ kg of water
        degreeC_to_K = 273.15_benthos_r8  , &
