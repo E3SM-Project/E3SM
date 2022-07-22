@@ -452,6 +452,8 @@ subroutine phys_ctl_readnl(nlfile)
                       .or. cam_chempkg_is('trop_strat_mam4_resus_mom_soag') &
 ! --MW
                       .or. cam_chempkg_is('trop_strat_mam7') &
+                      .or. cam_chempkg_is('linoz_mam5_resus_mom_soag') & !kzm
+                      .or. cam_chempkg_is('trop_strat_mam5_resus_mom_soag') &!kzm
                       .or. cam_chempkg_is('waccm_mozart_mam3'))
 end subroutine phys_ctl_readnl
 

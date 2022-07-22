@@ -27,7 +27,7 @@ module mo_gas_phase_chemdr
 
   integer :: o3_ndx, synoz_ndx, so4_ndx, h2o_ndx, o2_ndx, o_ndx, hno3_ndx, dst_ndx, cldice_ndx, e90_ndx
   !integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx
-  integer :: o3lnz_ndx, ch4lnz_ndx
+  integer :: o3lnz_ndx
   integer :: uci1_ndx
   integer :: het1_ndx
   integer :: ndx_cldfr, ndx_cmfdqr, ndx_nevapr, ndx_cldtop, ndx_prain, ndx_sadsulf
@@ -637,6 +637,8 @@ contains
           endif
        end do
     end do
+    !kzm add the prognostic strato_sad
+  call aero_model_strat_surfarea( ncol, mmr, pmid, tfld, troplev, pbuf, strato_sad)
 
     if ( has_strato_chem ) then
        !-----------------------------------------------------------------------      
@@ -926,8 +928,13 @@ contains
 
     if ( has_linoz_data .and. .not. &
        (chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
-       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' ) ) then
+       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' .or. &
+        chem_name == 'linoz_mam5_resus_mom_soag'  ) then
        ltrop_sol(:ncol) = troplev(:ncol)
+ !kzm note: this is a strange setting  
+     elseif (chem_name == 'trop_strat_mam5_resus_mom_soag') then !kzm
+       ltrop_sol(:ncol) = 0 ! apply solver to all levels
+
     else
        ltrop_sol(:ncol) = 0 ! apply solver to all levels
     endif
@@ -1264,7 +1271,8 @@ contains
                                 tfld, pmid, pdel, mbar, relhum, &
                                 zm,  qh2o, cwat, cldfr, ncldwtr, &
                                 invariants(:,:,indexm), invariants, del_h2so4_gasprod,  &
-                                vmr0, vmr, pbuf )
+                                vmr0, vmr, pbuf, &
+                                troplev ) !kzm ++
     call t_stopf('aero_model_gasaerexch')
 !
 ! Remove the impact of aerosol processes on gas chemistry tracers ...
