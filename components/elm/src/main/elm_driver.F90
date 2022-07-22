@@ -458,7 +458,7 @@ contains
        energyflux_vars, canopystate_vars, photosyns_vars, cnstate_vars,                       &
        veg_cs, c13_veg_cs, c14_veg_cs,         &
        col_cs, c13_col_cs, c14_col_cs, col_cf,  &
-       grc_cs, grc_cf , glc2lnd_vars,  crop_vars)
+       grc_cs, grc_cf , glc2lnd_vars,  crop_vars, sedflux_vars)
     call t_stopf('dyn_subgrid')
 
     if (use_cn  .or. use_fates) then

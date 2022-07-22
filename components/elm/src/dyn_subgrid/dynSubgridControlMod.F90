@@ -26,6 +26,7 @@ module dynSubgridControlMod
   public :: get_do_transient_crops  ! return the value of the do_transient_crops control flag
   public :: run_has_transient_landcover ! returns true if any aspects of prescribed transient landcover are enabled
   public :: get_do_harvest          ! return the value of the do_harvest control flag
+  public :: get_do_transient_erosion    ! return the value of the do_transient_erosion control flag
   public :: get_for_testing_allow_non_annual_changes ! return true if user has requested to allow area changes at times other than the year boundary, for testing purposes
   public :: get_for_testing_zero_dynbal_fluxes ! return true if user has requested to set the dynbal water and energy fluxes to zero, for testing purposes
   !
@@ -40,6 +41,7 @@ module dynSubgridControlMod
      logical :: do_transient_pfts  = .false. ! whether to apply transient natural PFTs from dataset
      logical :: do_transient_crops = .false. ! whether to apply transient crops from dataset
      logical :: do_harvest         = .false. ! whether to apply harvest from dataset
+     logical :: do_transient_erosion = .false. ! whether to apply transient ELM-Erosion parameters from dataset 
 
      ! The following is only meant for testing: Whether area changes are allowed at times
      ! other than the year boundary. This should only arise in some test configurations
@@ -114,6 +116,7 @@ contains
     logical :: do_transient_pfts
     logical :: do_transient_crops
     logical :: do_harvest
+    logical :: do_transient_erosion
     logical :: for_testing_allow_non_annual_changes
     logical :: for_testing_zero_dynbal_fluxes
     ! other local variables:
@@ -128,6 +131,7 @@ contains
          do_transient_pfts, &
          do_transient_crops, &
          do_harvest, &
+         do_transient_erosion, &
          for_testing_allow_non_annual_changes, &
          for_testing_zero_dynbal_fluxes
 
@@ -136,6 +140,7 @@ contains
     do_transient_pfts  = .false.
     do_transient_crops = .false.
     do_harvest         = .false.
+    do_transient_erosion = .false.
     for_testing_allow_non_annual_changes = .false.
     for_testing_zero_dynbal_fluxes = .false.
 
@@ -159,6 +164,7 @@ contains
     call shr_mpi_bcast (do_transient_pfts, mpicom)
     call shr_mpi_bcast (do_transient_crops, mpicom)
     call shr_mpi_bcast (do_harvest, mpicom)
+    call shr_mpi_bcast (do_transient_erosion, mpicom)
     call shr_mpi_bcast (for_testing_allow_non_annual_changes, mpicom)
     call shr_mpi_bcast (for_testing_zero_dynbal_fluxes, mpicom)
 
@@ -167,6 +173,7 @@ contains
          do_transient_pfts = do_transient_pfts, &
          do_transient_crops = do_transient_crops, &
          do_harvest = do_harvest, &
+         do_transient_erosion = do_transient_erosion, &
          for_testing_allow_non_annual_changes = for_testing_allow_non_annual_changes, &
          for_testing_zero_dynbal_fluxes = for_testing_zero_dynbal_fluxes)
 
@@ -187,6 +194,7 @@ contains
     !
     ! !USES:
     use elm_varctl     , only : iulog, use_fates, use_cn, use_crop
+    use elm_varctl     , only : use_erosion
     !
     ! !ARGUMENTS:
     !
@@ -208,6 +216,11 @@ contains
        end if
        if (dyn_subgrid_control_inst%do_harvest) then
           write(iulog,*) 'ERROR: do_harvest can only be true if you are running with'
+          write(iulog,*) 'a flanduse_timeseries file (currently flanduse_timeseries is blank)'
+          call endrun(msg=errMsg(sourcefile, __LINE__))
+       end if
+       if (dyn_subgrid_control_inst%do_transient_erosion) then
+          write(iulog,*) 'ERROR: do_transient_erosion can only be true if you are running with'
           write(iulog,*) 'a flanduse_timeseries file (currently flanduse_timeseries is blank)'
           call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
@@ -233,6 +246,13 @@ contains
     if (dyn_subgrid_control_inst%do_harvest) then
        if (.not. (use_cn .or. use_fates)) then
           write(iulog,*) 'ERROR: do_harvest can be true only if use_cn is true or use_fates is true'
+          call endrun(msg=errMsg(sourcefile, __LINE__))
+       end if
+    end if
+
+    if (dyn_subgrid_control_inst%do_transient_erosion) then
+       if (.not. use_erosion) then
+          write(iulog,*) 'ERROR: do_transient_erosion can be true only if use_erosion is true'
           call endrun(msg=errMsg(sourcefile, __LINE__))
        end if
     end if
@@ -299,6 +319,17 @@ contains
     get_do_harvest = dyn_subgrid_control_inst%do_harvest
 
   end function get_do_harvest
+
+  logical function get_do_transient_erosion()
+    ! !DESCRIPTION:
+    ! Return the value of the do_transient_erosion control flag
+    !-----------------------------------------------------------------------
+
+    SHR_ASSERT(dyn_subgrid_control_inst%initialized, errMsg(sourcefile, __LINE__))
+
+    get_do_transient_erosion = dyn_subgrid_control_inst%do_transient_erosion
+
+  end function get_do_transient_erosion
 
   !-----------------------------------------------------------------------
   logical function get_for_testing_allow_non_annual_changes()

@@ -742,7 +742,8 @@ contains
 
     call t_startf('init_dyn_subgrid')
     call init_subgrid_weights_mod(bounds_proc)
-    call dynSubgrid_init(bounds_proc, glc2lnd_vars, crop_vars)
+    call dynSubgrid_init(bounds_proc, glc2lnd_vars, crop_vars, &
+            soilstate_vars, sedflux_vars)
     call t_stopf('init_dyn_subgrid')
 
     ! Initialize fates LUH2 usage
