@@ -8,8 +8,8 @@ set(P3_SRCS
   atmosphere_microphysics_run.cpp
 )
 
-# Add ETI source files if not on CUDA
-if (NOT CUDA_BUILD OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
+# Add ETI source files if not on CUDA/HIP
+if (NOT HOMMEXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
   list(APPEND P3_SRCS
     p3_upwind.cpp
     p3_cloud_sed.cpp

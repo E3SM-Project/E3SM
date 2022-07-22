@@ -9,8 +9,8 @@ set(PHYSICS_SHARE_SRCS
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/debug_info.F90
 )
 
-# Add ETI source files if not on CUDA
-if (NOT CUDA_BUILD)
+# Add ETI source files if not on CUDA/HIP
+if (NOT HOMMEXX_ENABLE_GPU)
   list(APPEND PHYSICS_SHARE_SRCS
   physics_saturation.cpp)
 endif()

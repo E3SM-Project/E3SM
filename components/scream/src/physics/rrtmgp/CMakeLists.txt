@@ -8,6 +8,12 @@ if (CUDA_BUILD)
   set(YAKL_ARCH "CUDA")
   list(APPEND YAKL_CXX_FLAGS -DYAKL_ARCH_CUDA --expt-extended-lambda --expt-relaxed-constexpr)
 endif()
+if (HIP_BUILD)
+  set(YAKL_ARCH "HIP")
+  list(APPEND YAKL_CXX_FLAGS -DYAKL_ARCH_HIP --expt-extended-lambda --expt-relaxed-constexpr)
+endif()
+
+
 
 # RRTMGP++ requires YAKL
 add_subdirectory(${SCREAM_BASE_DIR}/../../externals/YAKL ${CMAKE_BINARY_DIR}/externals/YAKL)
