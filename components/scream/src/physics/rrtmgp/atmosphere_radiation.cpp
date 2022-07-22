@@ -313,9 +313,14 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
     // Init GHG
     if (gas_name != "h2o") {
       auto gas_view = get_field_out(gas_name).get_view<Real**>();
-      Real co2vmr_rad, co2vmr, n2ovmr, ch4vmr, f11vmr, f12vmr;
-      scream::physics::trcmix(gas_name.c_str(), m_ncol, m_ncol, m_nlay, m_lat, pmid, gas_view,
-                              co2vmr_rad, co2vmr, n2ovmr, ch4vmr, f11vmr, f12vmr);
+      scream::physics::trcmix(
+        gas_name.c_str(), m_ncol, m_ncol, m_nlay, m_lat, pmid, gas_view,
+        m_params.get<Real>("co2vmr_rad"),
+        m_params.get<Real>("co2vmr"),
+        m_params.get<Real>("n2ovmr"),
+        m_params.get<Real>("ch4vmr"),
+        m_params.get<Real>("f11vmr"),
+        m_params.get<Real>("f12vmr"));
     }
   }
   Kokkos::deep_copy(m_gas_mol_weights,gas_mol_w_host);
