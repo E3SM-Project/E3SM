@@ -339,6 +339,13 @@ module RunoffMod
      real(r8), pointer :: p3(:,:)        ! Coefficient (m).
      real(r8), pointer :: q3(:,:)        ! Coefficient (m^2).
 
+     ! --------------------------------- 
+     ! slope and interception for linear inundation scheme
+     ! --------------------------------- 
+     real(r8), pointer :: linear_a(:)    ! slope for the linear inundation model 
+     real(r8), pointer :: linear_b(:)    ! interception for the linear inundation model 
+     real(r8), pointer :: linear_vcri(:) ! critical volume for the linear inundation model [m^3]
+
   end type Tspatialunit
 
   ! status and flux variables

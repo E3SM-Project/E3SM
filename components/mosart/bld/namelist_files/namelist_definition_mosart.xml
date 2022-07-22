@@ -94,6 +94,14 @@ Default: .false.
 If .true., inundation model will be turned on.
 </entry>
 
+<entry id="use_linear_inund" 
+       type="logical" 
+       category="mosart"
+       group="mosart_inparm">
+Default: .false.
+If .true., use linear model to predict inundation fraction.
+</entry>
+
 <entry id="sediflag" 
        type="logical" 
        category="mosart"

@@ -13,7 +13,8 @@ MODULE MOSART_physics_mod
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
   use shr_const_mod , only : SHR_CONST_REARTH, SHR_CONST_PI
   use shr_sys_mod   , only : shr_sys_abort
-  use RtmVar        , only : iulog, barrier_timers, wrmflag, inundflag, sediflag, heatflag, rstraflag, use_ocn_rof_two_way
+  use RtmVar        , only : iulog, barrier_timers, wrmflag, inundflag, sediflag, heatflag, rstraflag
+  use RtmVar        , only : use_ocn_rof_two_way, use_linear_inund
   use RunoffMod     , only : Tctl, TUnit, TRunoff, Theat, TPara, rtmCTL, &
                              SMatP_upstrm, avsrc_upstrm, avdst_upstrm, SMatP_dnstrm, avsrc_dnstrm, avdst_dnstrm
   use MOSART_heat_mod
@@ -31,6 +32,7 @@ MODULE MOSART_physics_mod
   use WRM_subw_io_mod, only : WRM_readDemand, WRM_computeRelease
   use MOSARTinund_Core_MOD, only: ChnlFPexchg
   use rof_cpl_indices, only : nt_rtm, rtm_tracers, nt_nliq, nt_nice, nt_nmud, nt_nsan, KW, DW
+  use MOSARTinund_data_driven_MOD, only: inundation_run
   use perf_mod, only: t_startf, t_stopf
   use mct_mod
   use MOSART_BGC_type, only : TSedi
@@ -657,6 +659,13 @@ MODULE MOSART_physics_mod
        endif  ! euler_calc     
 
        if (inundflag) then
+          if (use_linear_inund) then
+
+             do iunit = rtmCTL%begr,rtmCTL%endr
+                call inundation_run(iunit)
+             enddo
+             
+          else
             ! Channel -- floodplain exchange computation :      
               call ChnlFPexchg ( )
             ! update variables after channel-floodplain exchanges
@@ -674,6 +683,7 @@ MODULE MOSART_physics_mod
               TRunoff%wr(:,1) = TRunoff%wr_exchg
             ! Aggregate net floodplain storage change from subcycle to timestep 
               TRunoff%se_rf = TRunoff%se_rf + TRunoff%netchange
+          end if
         end if                   
        negchan = min(negchan, minval(TRunoff%wr(:,:)))
        call t_stopf('mosartr_chanroute') 

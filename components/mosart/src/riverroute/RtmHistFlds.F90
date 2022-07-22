@@ -11,7 +11,8 @@ module RtmHistFlds
   use shr_kind_mod   , only: r8 => shr_kind_r8
   use RunoffMod      , only : rtmCTL
   use RtmHistFile    , only : RtmHistAddfld, RtmHistPrintflds
-  use RtmVar         , only : wrmflag, inundflag, sediflag, heatflag, rstraflag, use_ocn_rof_two_way
+  use RtmVar         , only : wrmflag, inundflag, sediflag, heatflag, rstraflag, &
+                              use_linear_inund, use_ocn_rof_two_way
 
   use WRM_type_mod  , only : ctlSubwWRM, WRMUnit, StorWater
 
@@ -211,7 +212,7 @@ contains
          ptr_rof=StorWater%storageG, default='active')
     endif
 
-    if (inundflag) then
+    if (inundflag .or. use_linear_inund) then
       call RtmHistAddfld (fname='FLOODPLAIN_VOLUME', units='m3',  &
          avgflag='A', long_name='MOSART floodplain water volume', &
          ptr_rof=rtmCTL%inundwf, default='active')
