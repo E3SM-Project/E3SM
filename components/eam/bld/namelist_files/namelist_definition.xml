@@ -3492,6 +3492,12 @@ Type of idealized physics configuration to use if running cam_physpkg="ideal".
 Default: held-suarez
 </entry>
 
+<entry id="ideal_phys_analytic_ic" type="logical" group="phys_ctl_nl"
+       valid_values="">
+Whether or not to use analytic initial conditions if running cam_physpkg="ideal".
+Default: true
+</entry>
+
 <entry id="cam_chempkg" type="char*16" category="build"
        group="phys_ctl_nl" valid_values="waccm_mozart,waccm_ghg,trop_mozart,
                                          trop_ghg,trop_bam,trop_mam3,trop_mam4,trop_mam4_resus_soag,

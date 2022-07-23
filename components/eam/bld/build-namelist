@@ -560,6 +560,11 @@ if ($phys eq 'ideal') {
     add_default($nl, 'ideal_phys_option', 'val'=>'held-suarez');
 }
 
+# JH: Ideal physics ics
+if ($phys eq 'ideal') {
+    add_default($nl, 'ideal_phys_analytic_ic', 'val'=>'.true.');
+}
+
 # Aqua planet 
 my $aqua_mode = $cfg->get('aquaplanet');
 my $nl_aqua_flag = $nl->get_value('aqua_planet');
