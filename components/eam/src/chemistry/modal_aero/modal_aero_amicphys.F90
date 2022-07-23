@@ -4306,11 +4306,11 @@ mainloop1_ipair:  do n = 1, ntot_amode
          shrinkbb = .false. !kzm set initial value shrink switch: if calculate shrink fraction
          if (mtoo == nslt3 .or. mtoo == ncrsf ) then ! stratosphere renaming
            !   write(iulog,*) 'kzm_rename_dpcut_', dp_cut(mfrm), dgnum_aer(mfrm), dgnum_aer(mtoo)
-              dp_cut(mfrm) = 3.0e-7_r8
+              dp_cut(mfrm) = 2.5e-7_r8
               lndp_cut(mfrm) = log( dp_cut(mfrm) )
               dp_belowcut(mfrm) = 0.99*dp_cut(mfrm)
               dp_xfernone_thresh(mfrm) = 1.6e-7_r8
-              dp_xferall_thresh(mfrm)    = 2.5e-7_r8
+              dp_xferall_thresh(mfrm)    = 2.0e-7_r8
               !write(iulog,*)'kzm_renaming_growth'
               !strat_sulfate_xfer = .true.
               !dryvol_smallest(mfrm) = 1.0e-35 !kzm turn it to smaller value
