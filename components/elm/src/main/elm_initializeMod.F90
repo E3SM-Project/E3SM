@@ -132,13 +132,10 @@ contains
     if(use_fates) then
        ! Allow FATES to dictate the number of patches per column.
        ! We still use numcft as dictated by
-       ! the host model.  The input value of numpft needs to include
-       ! the bare patch, and the return (num_fates_patches) also
-       ! includes the bare-ground patch
-       ! In either case, with crop or witout crop, FATES is only
-       ! responsible for what happens on the nat LU. So FATES will
-       ! only override what happens there.                  
-       call ELMFatesGlobals1()  ! This will overwrite natpft_size
+       ! the host model.
+       ! This call will override natpft_size (and its bounds
+       ! in the following call) for FATES runs
+       call ELMFatesGlobals1()
        call update_pft_array_bounds()
     end if    
     
