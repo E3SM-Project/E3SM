@@ -136,7 +136,7 @@ contains
     character(len=16) :: aer_wetdep_list(pcnst) = ' '
     character(len=16) :: aer_drydep_list(pcnst) = ' '
     ! ++MW
-    namelist /aerosol_nl/ aer_wetdep_list, aer_drydep_list,
+    namelist /aerosol_nl/ aer_wetdep_list, aer_drydep_list,          &
              sol_facti_cloud_borne, seasalt_emis_scale, sscav_tuning, &
        sol_factb_interstitial, sol_factic_interstitial, modal_mosaic_nitrates
 ! --MW
