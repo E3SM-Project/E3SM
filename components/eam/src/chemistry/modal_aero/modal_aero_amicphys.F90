@@ -241,8 +241,10 @@
 
   !kzm ++
   integer :: nslt1, nslt2, nslt3, ncrsf
+  logical, parameter :: kzm_nucleation_switch = .true.
+  logical, parameter :: kzm_coag_switch = .true.
+  logical, parameter :: kzm_renaming_switch = .true.
   !kzm --
-
 
 ! !DESCRIPTION: This module implements ...
 !
@@ -1221,6 +1223,7 @@ main_i_loop: &
          qqcwsub_tendaa
       type ( misc_vars_aa_type ), intent(inout) :: misc_vars_aa
 
+      integer,  intent(in)    ::  troplev_i   !kzm ++ tropopause level 
 ! local
       integer :: iaer, igas
       integer :: jsub
@@ -1593,6 +1596,7 @@ main_jsub_loop: &
 
       type ( misc_vars_aa_type ), intent(inout) :: misc_vars_aa_sub
 
+      integer,  intent(in)    :: troplev_i !kzm++  
 ! local
       integer, parameter :: ntot_poaspec = npoa
       integer, parameter :: ntot_soaspec = nsoa
@@ -1829,17 +1833,6 @@ do_rename_if_block30: &
 !kzm ++
 
        strat_sulfate_xfer = .false.
-      if (kzm_renaming_switch .and. (k <= troplev_i ) .and. (ntot_amode==7) .and. (nslt1 > 0)) then !kzm kzm_renaming_switch 2
-          mtoo_renamexf(nslt1) = nslt2  !kzm rename mark nslt1 --> nslt2
-          mtoo_renamexf(nslt2) = nslt3  !kzm rename mark nslt2 --> nslt3
-          mtoo_renamexf(nacc) = nslt3  !kzm rename mark nacc --> nslt3
-          !mtoo_renamexf(nslt3) = nslt2  !kzm rename shrink nslt3 --> nslt2
-          strat_sulfate_xfer = .true.
-          !write(iulog,*)'kzm_strat_sulfate_xfer_mam7 ', strat_sulfate_xfer
-          if (is_first_step()) then
-             write(iulog,*)'kzm_strat_sulfate_renaming_mam7S_activated'
-          end if
-      endif
       if (kzm_renaming_switch .and. (k <= troplev_i ) .and. (ntot_amode==5) .and. (ncrsf > 0)) then
           mtoo_renamexf(nacc) = ncrsf !kzm reanme acc --> strat coarse
           !mtoo_renamexf(ncrsf) = nacc !kzm reanme shrink ncrsf --> acc
@@ -4622,7 +4615,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
          dp_xferall_thresh(mfrm) = dgnum_aer(mtoo)
          shrinkaa(n) = .false. !kzm ++
          shrinkbb = .false. !kzm set initial value shrink switch: if calculate shrink fraction
-         if (mtoo == nslt3 .or. mtoo == ncrsf ) then ! stratosphere renaming
+         if ( mtoo == ncrsf ) then ! stratosphere renaming
            !   write(iulog,*) 'kzm_rename_dpcut_', dp_cut(mfrm), dgnum_aer(mfrm), dgnum_aer(mtoo)
               dp_cut(mfrm) = 4.4e-7_r8
               lndp_cut(mfrm) = log( dp_cut(mfrm) )
@@ -4633,7 +4626,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
               !strat_sulfate_xfer = .true.
               !dryvol_smallest(mfrm) = 1.0e-35 !kzm turn it to smaller value
          end if
-         if ((mfrm == nslt3 .and. nslt3 > 0).or. (mfrm == ncrsf .and. ncrsf > 0)) then
+         if ( (mfrm == ncrsf .and. ncrsf > 0)) then
               shrinkaa(n) = .true. !find shrink may occur
               dp_xfernone_thresh(mfrm) = dgnum_aer(mfrm)
               dp_xferall_thresh(mfrm) = dgnum_aer(mtoo)
@@ -5241,21 +5234,9 @@ mainloop1_ipair:  do n = 1, ntot_amode
 
       if (dso4dt_ait > 0.0_r8) then
          tmp_q_del = dso4dt_ait*deltat
-         !kzm ++ nucleation occured
+         ! ++ nucleation occured
          ! stop the nucleation above stratopshere
-       ! if ((kzm_nucleation_switch .and. ntot_amode == 7)) then !kzm_nucleation_switch 1
-           ! no nucleation change form MAM5
-           !write(iulog,*) "kzm_nucleation_nslt1_work ", kzm_nucleation_switch
-       !  if (k < troplev_i  ) then ! stratosphere
-       !      qaer_cur(     iaer_so4,nslt1) = qaer_cur(     iaer_so4,nait) + tmp_q_del
-       !  else
-       !      qaer_cur(     iaer_so4,nait) = qaer_cur(     iaer_so4,nait) + tmp_q_del
-       !  endif
-       !else
          qaer_cur(     iaer_so4,nait) = qaer_cur(     iaer_so4,nait) + tmp_q_del
-       !endif
-         !kzm --
-
          tmp_q_del = min( tmp_q_del, qgas_cur(igas_h2so4) )
          qgas_cur(     igas_h2so4) = qgas_cur(     igas_h2so4) - tmp_q_del
       end if
@@ -5503,19 +5484,6 @@ mainloop1_ipair:  do n = 1, ntot_amode
          ( 1.0_r8 + ybetajj0(1)*deltat*qnum_tmpa(nacc) ) 
       qnum_tmpc(nacc) = (qnum_tmpa(nacc) + qnum_tmpb(nacc))*0.5_r8
 
-!kzm++
-! kzm slt2 mode  number loss, similar to accum mode
-! slt2 number loss depends on slt2 number
-     if (kzm_coag_switch .and. ntot_amode ==7) then !kzm_coag_switch 1
-      !   write(iulog,*) "kzm_coag_work_", kzm_coag_switch
-      if (nslt2 > 0  ) then
-         tmpa = max( 0.0_r8, deltat*ybetajj0(1) )
-         qnum_tmpb(nslt2) = qnum_tmpa(nslt2) / &
-         ( 1.0_r8 + ybetajj0(1)*deltat*qnum_tmpa(nslt2) )
-         qnum_tmpc(nslt2) = (qnum_tmpa(nslt2) + qnum_tmpb(nslt2))*0.5_r8
-      end if
-     endif
-!kzm--
 
 ! pcarbon mode number loss - approximate analytical solution
 !    using average number conc. for accum mode
@@ -6193,8 +6161,7 @@ use modal_aero_data, only : &
     modeptr_maccum, modeptr_maitken, &
     nspec_amode, &
     numptr_amode, numptrcw_amode, sigmag_amode, &
-    modeptr_coarsulf,                          & !kzm++
-    modeptr_sulfate1, modeptr_sulfate2, modeptr_sulfate3 !kzm++
+    modeptr_coarsulf                           !kzm++
 
 implicit none
 
@@ -6741,10 +6708,10 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
          else if (ip == 10) then
             na = nmacc ; nb = npca
          !kzm ++
-         if ( kzm_coag_switch ) then !kzm_coag_switch 4
-         else if (ip == 11 .and. ntot_amode == 7) then
-            na = nslt1 ; nb = nslt2
-         endif
+         !if ( kzm_coag_switch ) then !kzm_coag_switch 4
+         !else if (ip == 11 .and. ntot_amode == 7) then
+         !   na = nslt1 ; nb = nslt2
+         !endif
         !kzm --   
          end if
          if (nc == big_pos_int) nc = nb
