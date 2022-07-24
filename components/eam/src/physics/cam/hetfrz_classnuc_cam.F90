@@ -712,7 +712,7 @@ else if (nmodes == MAM5_nmodes) then
       spec_idx(so4_coarse) = rad_cnst_get_spec_idx(0, mode_coarse_idx, 'sulfate')
       mode_idx(so4_coarse) = mode_coarse_idx
 !kzm++
-#if (defined MODAL_AERO_4MODE_MOM ||  defined MODAL_AERO_5MODE))
+#if (defined MODAL_AERO_4MODE_MOM ||  defined MODAL_AERO_5MODE)
       spec_idx(mom_coarse) = rad_cnst_get_spec_idx(0, mode_coarse_idx, 'm-organic')
       mode_idx(mom_coarse) = mode_coarse_idx
 #endif

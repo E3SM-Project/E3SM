@@ -27,7 +27,7 @@ module mo_gas_phase_chemdr
 
   integer :: o3_ndx, synoz_ndx, so4_ndx, h2o_ndx, o2_ndx, o_ndx, hno3_ndx, dst_ndx, cldice_ndx, e90_ndx
   !integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx
-  integer :: o3lnz_ndx
+  integer :: o3lnz_ndx,ch4lnz_ndx
   integer :: uci1_ndx
   integer :: het1_ndx
   integer :: ndx_cldfr, ndx_cmfdqr, ndx_nevapr, ndx_cldtop, ndx_prain, ndx_sadsulf
@@ -322,7 +322,7 @@ contains
 ! for aqueous chemistry and aerosol growth
 !
     use aero_model,        only : aero_model_gasaerexch
-
+     use aero_model,        only : aero_model_strat_surfarea!kzm
     implicit none
 
     !-----------------------------------------------------------------------
@@ -929,7 +929,7 @@ contains
     if ( has_linoz_data .and. .not. &
        (chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
        .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' .or. &
-        chem_name == 'linoz_mam5_resus_mom_soag'  ) then
+        chem_name == 'linoz_mam5_resus_mom_soag'  )) then
        ltrop_sol(:ncol) = troplev(:ncol)
  !kzm note: this is a strange setting  
      elseif (chem_name == 'trop_strat_mam5_resus_mom_soag') then !kzm
