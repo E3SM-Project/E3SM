@@ -53,22 +53,22 @@ struct IOControl {
     // Mini-routine to determine if it is time to write output to file.
     // The current allowable options are nsteps, nsecs, nmins, nhours, ndays, nmonths, nyears
     // We query the frequency_units string value to determine which option it is.
-    auto ts_diff = (Real)(ts-timestamp_since_last_write);
+    auto ts_diff = (ts-timestamp_since_last_write);
+    bool ret = false;
     if (frequency>0) {
       if (frequency_units == "nsteps") {
         // Just use the nsteps_since_last_write information
-        //return (nsteps_since_last_write % frequency == 0);
         return ((ts.get_num_steps()-timestamp_since_last_write.get_num_steps()) % frequency == 0);
       } else { 
         // We will need to use timestamp information
         if (frequency_units == "nsecs") {
-          return (ts_diff > 0) && (ts_diff % frequency == 0);
+          ret = ((ts_diff > 0) && (ts_diff % frequency == 0));
         } else if (frequency_units == "nmin") {
-          return (ts_diff > 0) && ((ts_diff/60.0) % frequency == 0);
+          ret = (ts_diff > 60) && ((ts_diff/60) % frequency == 0);
         } else if (frequency_units == "nhours") {
-          return (ts_diff > 0) && ((ts_diff/3600.0) % frequency == 0);
+          ret = (ts_diff > 3600) && ((ts_diff/3600) % frequency == 0);
         } else if (frequency_units == "ndays") {
-          return (ts_diff > 0) && ((ts_diff/86400.0) % frequency == 0);
+          ret = (ts_diff > 86400) && ((ts_diff/86400) % frequency == 0);
         } else if (frequency_units == "nmonths" || frequency_units == "nyears") {
           // For months and years we need to be careful, can't just divide ts_diff by a set value.
           // First we make sure that if we are the same day of the month and at the same time of day.
@@ -78,26 +78,25 @@ struct IOControl {
             // Determine how many years have passed
             diff += (ts.get_year()  - timestamp_since_last_write.get_year());
             if  (frequency_units == "nyears") {
-              return (diff>0) && (diff % frequency == 0);
+              ret = (diff>0) && (diff % frequency == 0);
             }
             // Determine number of months that have passed
             diff *= 12;
             diff += (ts.get_month() - timestamp_since_last_write.get_month());
             if  (frequency_units == "nmonths") {
-              return (diff>0) && (diff % frequency == 0);
+              ret = (diff>0) && (diff % frequency == 0);
             }
           } else {
-            return false;
+            ret = false;
           }
         } else {
           EKAT_REQUIRE_MSG(false,"Invalid frequency unit for output stream.  Please check that all outputs have Frequency Units of\n"
-                                 "nsteps, nsecs, nmins, nhours, ndays, nmonths, nyears")
+                                 "nsteps, nsecs, nmins, nhours, ndays, nmonths, nyears");
         }
       }
-    } else {
-      return false
     }
-  }
+    return ret;
+  } // End function is_write_step
 };
 
 // Mini struct to hold some specs of an IO file
