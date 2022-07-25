@@ -42,14 +42,14 @@ public:
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
 protected:
-
   // The three main overrides for the subcomponent
   void initialize_impl (const RunType run_type);
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  void run_impl        (const int dt);
+  void compute_diagnostic_impl ();
 protected:
+
   void finalize_impl   () { /* Nothing to do */ }
 
   // Keep track of field dimensions

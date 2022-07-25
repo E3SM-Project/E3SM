@@ -46,7 +46,7 @@ void RainWaterPathDiagnostic::initialize_impl(const RunType /* run_type */)
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
-void RainWaterPathDiagnostic::run_impl(const int /* dt */)
+void RainWaterPathDiagnostic::compute_diagnostic_impl()
 {
 
   using PC         = scream::physics::Constants<Real>;

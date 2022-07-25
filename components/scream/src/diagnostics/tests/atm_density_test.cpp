@@ -140,7 +140,7 @@ void run(std::mt19937_64& engine)
     } 
 
     // Run diagnostic and compare with manual calculation
-    diag->run();
+    diag->compute_diagnostic();
     const auto& diag_out = diag->get_diagnostic();
     Field atm_density_f = diag_out.clone();
     atm_density_f.deep_copy<double,Host>(0.0);

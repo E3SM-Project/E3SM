@@ -46,7 +46,7 @@ void LiqWaterPathDiagnostic::initialize_impl(const RunType /* run_type */)
   m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
-void LiqWaterPathDiagnostic::run_impl(const int /* dt */)
+void LiqWaterPathDiagnostic::compute_diagnostic_impl()
 {
 
   using PC         = scream::physics::Constants<Real>;

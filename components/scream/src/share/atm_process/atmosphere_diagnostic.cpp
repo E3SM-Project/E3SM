@@ -18,6 +18,32 @@ Field AtmosphereDiagnostic::get_diagnostic () const {
   return m_diagnostic_output.get_const();
 }
 
+void AtmosphereDiagnostic::compute_diagnostic () {
+  compute_diagnostic_impl ();
+
+  // Set the timestamp of the diagnostic to the most
+  // recent timestamp among the inputs
+  const auto& inputs = get_fields_in();
+  util::TimeStamp ts;
+  for (const auto& f : inputs) {
+    const auto& fts = f.get_header().get_tracking().get_time_stamp();
+    if (not ts.is_valid() || ts<fts) {
+      ts = fts;
+    }
+  }
+
+  // If all inputs have invalid timestamps, we have a problem.
+  EKAT_REQUIRE_MSG (ts.is_valid(),
+      "Error! All inputs to diagnostic have invalid timestamp.\n"
+      "  - Diag name: " + name() + "\n");
+
+  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
+}
+
+
+void AtmosphereDiagnostic::run_impl (const int /* dt */) {
+  compute_diagnostic();
+}
 void AtmosphereDiagnostic::set_computed_field (const Field& /* f */) {
   EKAT_ERROR_MSG("Error! Diagnostics are not allowed to compute fields. See " + name() + ".\n");
 }

@@ -50,7 +50,6 @@ cmvdc (const VT& v) {
 template<typename DeviceT>
 void run(std::mt19937_64& engine)
 {
-  using PF         = scream::PhysicsFunctions<DeviceT>;
   using PC         = scream::physics::Constants<Real>;
   using Pack       = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using KT         = ekat::KokkosTypes<DeviceT>;
@@ -202,7 +201,7 @@ void run(std::mt19937_64& engine)
     const auto& rwp_h = rwp.get_view<const Real*,Host>();
 
     for (const auto& dd : diags) {
-      dd.second->run();
+      dd.second->compute_diagnostic();
     }
     // Test 1: The water path should be >= the maximum cell level mass per column
     {
@@ -289,7 +288,7 @@ void run(std::mt19937_64& engine)
       });
       Kokkos::fence();
       for (const auto& dd : diags) {
-        dd.second->run();
+        dd.second->compute_diagnostic();
       }
       vwp_copy_f.sync_to_host();
       lwp_copy_f.sync_to_host();
@@ -341,7 +340,7 @@ void run(std::mt19937_64& engine)
       });
       Kokkos::fence();
       for (const auto& dd : diags) {
-        dd.second->run();
+        dd.second->compute_diagnostic();
       }
       auto total_mass_h = cmvdc(total_mass);
       vwp.sync_to_host();
@@ -386,7 +385,7 @@ void run(std::mt19937_64& engine)
       });
       Kokkos::fence();
       for (const auto& dd : diags) {
-        dd.second->run();
+        dd.second->compute_diagnostic();
       }
       auto total_mass_h = cmvdc(total_mass);
       auto delta_mass_h = cmvdc(delta_mass);
@@ -417,7 +416,7 @@ void run(std::mt19937_64& engine)
       });
       Kokkos::fence();
       for (const auto& dd : diags) {
-        dd.second->run();
+        dd.second->compute_diagnostic();
       }
       vwp.sync_to_host();
       lwp.sync_to_host();

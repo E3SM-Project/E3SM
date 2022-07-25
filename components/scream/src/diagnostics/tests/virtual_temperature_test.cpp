@@ -43,7 +43,6 @@ template<typename DeviceT>
 void run(std::mt19937_64& engine)
 {
   using PF         = scream::PhysicsFunctions<DeviceT>;
-  using PC         = scream::physics::Constants<Real>;
   using Pack       = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using KT         = ekat::KokkosTypes<DeviceT>;
   using ExecSpace  = typename KT::ExeSpace;
@@ -126,7 +125,7 @@ void run(std::mt19937_64& engine)
     }
 
     // Run diagnostic and compare with manual calculation
-    diag->run();
+    diag->compute_diagnostic();
     const auto& diag_out = diag->get_diagnostic();
     Field virtualT_f = diag_out.clone();
     virtualT_f.deep_copy<double,Host>(0.0);
