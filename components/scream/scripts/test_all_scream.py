@@ -24,7 +24,7 @@ from pathlib import Path
 class TestProperty(object):
 ###############################################################################
 
-    def __init__(self, longname, description, uses_baselines, cmake_args, on_by_default):
+    def __init__(self, longname, description, cmake_args, uses_baselines=True, on_by_default=True):
         # What the user uses to select tests via test-all-scream CLI.
         # Should also match the class name when converted to caps
         self.shortname      = type(self).__name__.lower()
@@ -36,11 +36,11 @@ class TestProperty(object):
         # A longer decription of the test
         self.description    = description
 
-        # Does the test do baseline testing
-        self.uses_baselines = uses_baselines
-
         # Cmake config args for this test
         self.cmake_args     = cmake_args
+
+        # Does the test do baseline testing
+        self.uses_baselines = uses_baselines
 
         # Should this test be run if the user did not specify tests at all?
         self.on_by_default  = on_by_default
@@ -78,9 +78,7 @@ class DBG(TestProperty):
             self,
             "full_debug",
             "debug",
-            True,
             self.CMAKE_ARGS,
-            True
         )
 
 ###############################################################################
@@ -92,9 +90,7 @@ class SP(TestProperty):
             self,
             "full_sp_debug",
             "debug single precision",
-            True,
             DBG.CMAKE_ARGS + [("SCREAM_DOUBLE_PRECISION", "False")],
-            True
         )
 
 ###############################################################################
@@ -106,9 +102,7 @@ class FPE(TestProperty):
             self,
             "debug_nopack_fpe",
             "debug pksize=1 floating point exceptions on",
-            False,
             DBG.CMAKE_ARGS + [("SCREAM_PACK_SIZE", "1")],
-            True
         )
 
 ###############################################################################
@@ -120,9 +114,7 @@ class OPT(TestProperty):
             self,
             "release",
             "release",
-            False,
             [("CMAKE_BUILD_TYPE", "Release")],
-            True
         )
 
 ###############################################################################
@@ -134,9 +126,9 @@ class COV(TestProperty):
             self,
             "coverage",
             "debug coverage",
-            False,
             [("CMAKE_BUILD_TYPE", "Debug"), ("EKAT_ENABLE_COVERAGE", "True")],
-            False
+            uses_baselines=False,
+            on_by_default=False
         )
 
 ###############################################################################
@@ -178,7 +170,7 @@ class TestAllScream(object):
                  quick_rerun=False,quick_rerun_failed=False,dry_run=False,
                  make_parallel_level=0, ctest_parallel_level=0, update_expired_baselines=False,
                  extra_verbose=False, limit_test_regex=None, test_level="at",
-                 valgrind=False, cuda_mem_check=False):
+                 mem_check=False):
     ###########################################################################
 
         # When using scripts-tests, we can't pass "-l" to test-all-scream,
@@ -214,8 +206,7 @@ class TestAllScream(object):
         self._extra_verbose           = extra_verbose
         self._limit_test_regex        = limit_test_regex
         self._test_level              = test_level
-        self._valgrind                = valgrind
-        self._cuda_mem_check          = cuda_mem_check
+        self._mem_check               = mem_check
 
         # Not all builds are ment to perform comparisons against pre-built baselines
 
@@ -229,10 +220,6 @@ class TestAllScream(object):
         # Quick rerun skips config phase, and config-only runs only config. You can't ask for both...
         expect (not (self._quick_rerun and self._config_only),
                 "Makes no sense to ask for --quick-rerun and --config-only at the same time")
-
-        #
-        expect(not (self._valgrind and self._cuda_mem_check),
-               "Makes no sense to ask for both valgrind and cuda-mem-check")
 
         # Probe machine if none was specified
         if self._machine is None:
@@ -412,7 +399,7 @@ class TestAllScream(object):
 
         # Do not do baseline operations if mem checking is on
         print (f"Checking baselines directory: {self._baseline_dir}")
-        if self._valgrind or self._cuda_mem_check:
+        if self._mem_check:
             for test in self._tests:
                 test.uses_baselines = False
         else:
@@ -593,10 +580,10 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
             result += " -DSCREAM_TEST_LEVEL=EXPERIMENTAL"
 
         # Add configs for mem checking
-        if self._valgrind or self._cuda_mem_check:
+        if self._mem_check:
             # valgrind/cmc slow down things a lot, we need to run tests in short mode
             result += " -DSCREAM_TEST_SIZE=SHORT"
-            result += f" -DEKAT_ENABLE_{'VALGRIND' if self._valgrind else 'CUDA_MEMCHECK'}=True"
+            result += f" -DEKAT_ENABLE_{'CUDA_MEMCHECK' if is_cuda_machine(self._machine) else 'VALGRIND'}=True"
 
         # User-requested config options
         custom_opts_keys = []

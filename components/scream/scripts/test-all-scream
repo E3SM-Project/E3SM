@@ -134,9 +134,10 @@ OR
     parser.add_argument("--test-level", action="store", choices=("at", "nightly", "experimental"), default="at",
                         help="Set the testing level.")
 
-    parser.add_argument("--valgrind", action="store_true", help="Run the tests you've selected with valgrind")
-
-    parser.add_argument("--cuda-mem-check", action="store_true", help="Run the tests you've selected with cuda memcheck")
+    parser.add_argument("--mem-check", action="store_true",
+                        help="Run the tests you've selected with memory checking on. "
+                        "This will use valgrind for CPU, cuda-mem-check for GPU etc."
+                        "This will dramatically slow down tests and also disables baseline checking.")
 
     return parser.parse_args(args[1:])
 
