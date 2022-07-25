@@ -2488,7 +2488,7 @@
     <DESC>ANL experimental/evaluation cluster, batch system is cobalt</DESC>
     <NODENAME_REGEX>jlse.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>oneapi-ifx,oneapi-ifort,gnu</COMPILERS>
+    <COMPILERS>oneapi-ifx,oneapi-ifxgpu,oneapi-ifort,gnu</COMPILERS>
     <MPILIBS>mpich,impi,openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/gpfs/jlse-fs0/projects/climate/$USER/scratch</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/gpfs/jlse-fs0/projects/climate/inputdata</DIN_LOC_ROOT>
@@ -2503,13 +2503,15 @@
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>112</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="oneapi-ifx">96</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="oneapi-ifxgpu">96</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>112</MAX_MPITASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifx">24</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifx">48</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="oneapi-ifxgpu">48</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks">-l -n {{ total_tasks }}</arg>
+        <arg name="num_tasks">-l -n {{ total_tasks }} -bind-to core</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="openmpi">
@@ -2528,11 +2530,12 @@
       <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
       <modules>
 	<command name="purge"/>
+        <command name="use">/soft/modulefiles</command>
+        <command name="load">cmake/3.22.1</command>
         <command name="use">/soft/restricted/CNDA/modules</command>
       </modules>
       <modules compiler="!gnu">
-	<command name="load">oneapi/release/2021.10.30.001</command>
-        <command name="load">cmake/3.22.1</command>
+	<command name="load">oneapi/eng-compiler/2022.01.30.008</command>
       </modules>
       <modules compiler="gnu">
         <command name="unload">cmake</command>
@@ -2545,6 +2548,9 @@
       <env name="PATH">/home/azamat/soft/perl/5.32.0/bin:$ENV{PATH}</env>
       <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
       <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/oneapi-2020.12.15.004-intel_mpi-2019.4.243</env>
+    </environment_variables>
+    <environment_variables mpilib="mpich" DEBUG="TRUE">
+      <env name="HYDRA_TOPO_DEBUG">1</env>
     </environment_variables>
     <environment_variables mpilib="impi">
       <env name="I_MPI_DEBUG">10</env>
@@ -2573,15 +2579,22 @@
       <env name="NETCDF_PATH">/home/azamat/soft/netcdf/4.4.1c-4.2cxx-4.4.4f/gcc8.2.0-openmpi2.1.6</env>
       <env name="PNETCDF_PATH">/home/azamat/soft/pnetcdf/1.12.1/gcc8.2.0-openmpi2.1.6</env>
     </environment_variables>
+    <environment_variables compiler="oneapi-ifxgpu">
+      <env name="SYCL_DEVICE_FILTER">opencl</env>
+      <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
+      <env name="SYCL_CACHE_PERSISTENT">0</env>
+      <env name="GATOR_INITIAL_MB">4000MB</env>
+      <env name="GATOR_DISABLE">0</env>
+    </environment_variables>    
     <environment_variables compiler="oneapi-ifx">
       <env name="LIBOMPTARGET_DEBUG">0</env><!--default 0, max 5 -->
-      <!--env name="OMP_TARGET_OFFLOAD">DISABLED</env--><!--set this for CPU-only runs-->
+      <env name="OMP_TARGET_OFFLOAD">DISABLED</env><!--default OMP_TARGET_OFFLOAD=MANDATORY-->
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="intel">
+    <environment_variables SMP_PRESENT="TRUE" compiler="!gnu">
       <env name="KMP_AFFINITY">verbose,granularity=thread,balanced</env>
       <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="!intel">
+    <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
       <env name="OMP_PLACES">threads</env>
       <env name="OMP_STACKSIZE">128M</env>
     </environment_variables>
