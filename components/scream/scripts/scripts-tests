@@ -355,35 +355,20 @@ class TestTestAllScream(TestBaseOuter.TestBase):
             test_cmake_cache_contents(self, "debug_nopack_fpe", "SCREAM_FPE", "TRUE")
             test_cmake_cache_contents(self, "debug_nopack_fpe", "SCREAM_PACK_SIZE", "1")
 
-    def test_valg_details(self):
+    def test_mem_check_details(self):
         """
-        Test the 'valg' test in test-all-scream. It should set certain CMake values
+        Test the --mem-check flag in test-all-scream. It should set certain CMake values
         """
+        options = "-b HEAD -k -t dbg --mem-check --config-only"
+        cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
+                            self._machine, dry_run=False)
+        run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+        test_cmake_cache_contents(self, "full_debug", "CMAKE_BUILD_TYPE", "Debug")
+        test_cmake_cache_contents(self, "full_debug", "SCREAM_TEST_SIZE", "SHORT")
         if is_cuda_machine(self._machine):
-            self.skipTest("Skipping Valg check on cuda")
+            test_cmake_cache_contents(self, "full_debug", "EKAT_ENABLE_CUDA_MEMCHECK", "TRUE")
         else:
-            options = "-b HEAD -k -t valg --config-only"
-            cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
-                                self._machine, dry_run=False)
-            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
-            test_cmake_cache_contents(self, "valgrind", "CMAKE_BUILD_TYPE", "Debug")
-            test_cmake_cache_contents(self, "valgrind", "EKAT_ENABLE_VALGRIND", "TRUE")
-            test_cmake_cache_contents(self, "valgrind", "SCREAM_TEST_SIZE", "SHORT")
-
-    def test_cmc_details(self):
-        """
-        Test the 'cmc' test in test-all-scream. It should set certain CMake values
-        """
-        if not is_cuda_machine(self._machine):
-            self.skipTest("Skipping Cuda MemCheck check on CPU machines")
-        else:
-            options = "-b HEAD -k -t cmc --config-only"
-            cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
-                                self._machine, dry_run=False)
-            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
-            test_cmake_cache_contents(self, "cuda_mem_check", "CMAKE_BUILD_TYPE", "Debug")
-            test_cmake_cache_contents(self, "cuda_mem_check", "EKAT_ENABLE_CUDA_MEMCHECK", "TRUE")
-            test_cmake_cache_contents(self, "cuda_mem_check", "SCREAM_TEST_SIZE", "SHORT")
+            test_cmake_cache_contents(self, "full_debug", "EKAT_ENABLE_VALGRIND", "TRUE")
 
     def test_opt_details(self):
         """

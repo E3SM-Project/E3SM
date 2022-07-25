@@ -88,13 +88,16 @@ if [ $skip_testing -eq 0 ]; then
 
     # Add a valgrind and coverage tests for mappy for nightlies
     if [[ $is_at_run == 0 && "$SCREAM_MACHINE" == "mappy" ]]; then
-      ./scripts/gather-all-data "./scripts/test-all-scream -t valg -t cov ${TAS_ARGS}" -l -m $SCREAM_MACHINE
+      ./scripts/gather-all-data "./scripts/test-all-scream -t dbg --mem-check ${TAS_ARGS}" -l -m $SCREAM_MACHINE
+      if [[ $? != 0 ]]; then fails=$fails+1; fi
+
+      ./scripts/gather-all-data "./scripts/test-all-scream -t cov ${TAS_ARGS}" -l -m $SCREAM_MACHINE
       if [[ $? != 0 ]]; then fails=$fails+1; fi
     fi
 
     # Add a cuda-memcheck test for weaver for nightlies
     if [[ $is_at_run == 0 && "$SCREAM_MACHINE" == "weaver" ]]; then
-      ./scripts/gather-all-data "./scripts/test-all-scream -t cmc ${TAS_ARGS}" -l -m $SCREAM_MACHINE
+      ./scripts/gather-all-data "./scripts/test-all-scream -t dbg --mem-check ${TAS_ARGS}" -l -m $SCREAM_MACHINE
       if [[ $? != 0 ]]; then fails=$fails+1; fi
     fi
   else

@@ -93,8 +93,9 @@ OR
     parser.add_argument("--preserve-env", action="store_true",
                         help="Whether to skip machine env setup, and preserve the current user env (useful to manually test new modules)")
 
+    choices_doc = ", ".join(["'{}' ({})".format(k, v) for k, v in TestAllScream.get_test_name_desc().items()])
     parser.add_argument("-t", "--test", dest="tests", action="append", default=[],
-        help="Only run specific test configurations, choices='dbg' (debug), 'sp' (single-prec), 'fpe' (floating-point exceptions), 'opt' (release), 'valg' (valgrind), 'cov' (coverage)")
+                        help=f"Only run specific test configurations, choices={choices_doc}")
 
     parser.add_argument("-i", "--integration-test", action="store_true",
                         help="Merge origin/master into this branch before testing.")
@@ -132,6 +133,11 @@ OR
 
     parser.add_argument("--test-level", action="store", choices=("at", "nightly", "experimental"), default="at",
                         help="Set the testing level.")
+
+    parser.add_argument("--mem-check", action="store_true",
+                        help="Run the tests you've selected with memory checking on. "
+                        "This will use valgrind for CPU, cuda-mem-check for GPU etc."
+                        "This will dramatically slow down tests and also disables baseline checking.")
 
     return parser.parse_args(args[1:])
 
