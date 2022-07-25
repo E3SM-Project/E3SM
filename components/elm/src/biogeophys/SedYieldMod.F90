@@ -174,7 +174,7 @@ contains
                      cg = cg + 1
                   end if
                end do
-               if (found .and. qflx_qrgwl(cg)<1.e10_r8) then
+               if (found) then
                   fglacier = 1._r8 + 9._r8 * lun_pp%wttopounit(lt)
                end if
             end if
