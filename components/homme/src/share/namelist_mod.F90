@@ -218,9 +218,11 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     character(len=80) :: errstr, arg
     real(kind=real_kind) :: dt_max, se_tstep
 #if defined(CAM) || defined(SCREAM)
-    character(len=MAX_STRING_LEN) :: se_topology
+    character(len=MAX_STRING_LEN) :: se_topology, se_geometry
     integer :: se_partmethod
     integer :: se_ne
+    integer :: se_ne_x, se_ne_y
+    real(kind=real_kind) :: se_lx, se_ly
     integer :: unitn
     character(len=*), parameter ::  subname = "homme:namelist_mod"
 #endif
@@ -236,7 +238,12 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 #if defined(CAM) || defined(SCREAM)
       se_partmethod,     &
       se_topology,       &
+      se_geometry,       &
       se_ne,             &
+      se_ne_x,           &
+      se_ne_y,           &
+      se_lx,             &
+      se_ly,             &
       se_limiter_option, &
 #else
       qsize,             &         ! number of SE tracers
@@ -696,7 +703,12 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
        limiter_option=se_limiter_option
        partmethod = se_partmethod
        ne         = se_ne
+       ne_x       = se_ne_x
+       ne_y       = se_ne_y
+       Lx         = se_lx
+       Ly         = se_ly
        topology   = se_topology
+       geometry   = se_geometry
        qsize      = qsize_d
        nsplit     = se_nsplit
        tstep      = se_tstep
@@ -732,6 +744,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(statefreq,       1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(restartfreq,     1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(runtype,         1,MPIinteger_t,par%root,par%comm,ierr)
+    call MPI_bcast(Lx,              1, MPIreal_t,par%root,par%comm,ierr)
+    call MPI_bcast(Ly,              1, MPIreal_t,par%root,par%comm,ierr)
 
 #if !defined(CAM) && !defined(SCREAM)
     if(test_case == "dcmip2012_test4") then
@@ -948,7 +962,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     if(par%masterproc) write(iulog,*)'-DCOLUMN_OPENMP disabled'
 #endif
 
-if (topology == "plane" .and. mesh_file /= "none") then
+if (topology == "plane" .and. (mesh_file /= "/dev/null" .and. mesh_file /= "none")) then
   call abortmp("RRM grids not yet supported for plane")
 end if
 
@@ -989,6 +1003,9 @@ end if
       scale_factor_inv = 1.0D0
       laplacian_rigid_factor = 0.0D0 !this eliminates the correction to ensure the Laplacian doesn't damp rigid motion
 
+      Sx = 0.0D0
+      Sy = 0.0D0
+
 ! makes the y-direction cells identical in size to the x-dir cells
 ! this is important for hyperviscosity, etc.
 ! Also adjusts Sy so y-dir domain is centered at 0
@@ -1003,7 +1020,12 @@ end if
       dx_ref = 1.0D0/ne_x
       dy_ref = 1.0D0/ne_y
 
-    else if (geometry == "sphere") then
+      if (Lx==0.0 .or. Ly==0.0) then
+         print *, 'For planar homme Lx and Ly cannot be zero'
+         call abortmp("Error Lx or Ly = 0")
+      endif
+
+   else if (geometry == "sphere") then
       scale_factor = rearth
       scale_factor_inv = rrearth
       domain_size = 4.0D0*DD_PI

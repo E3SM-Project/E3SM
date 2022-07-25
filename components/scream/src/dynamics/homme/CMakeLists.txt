@@ -23,7 +23,8 @@ set(BUILD_HOMME_PREQX_KOKKOS OFF CACHE BOOL "")
 set(BUILD_HOMME_PESE         OFF CACHE BOOL "")
 set(BUILD_HOMME_SWIM         OFF CACHE BOOL "")
 set(BUILD_HOMME_PRIM         OFF CACHE BOOL "")
-set(HOMME_ENABLE_COMPOSE     ON  CACHE BOOL "")
+#set(HOMME_ENABLE_COMPOSE     ON  CACHE BOOL "")
+set(HOMME_ENABLE_COMPOSE     OFF  CACHE BOOL "")
 set(BUILD_HOMME_TOOL         OFF CACHE BOOL "")
 
 if (NOT Kokkos_ENABLE_SERIAL)
@@ -162,7 +163,11 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
       # Link to cime's csm_share lib
       target_link_libraries (${hommeLibName} csm_share)
     endif ()
+
+    if (HOMME_ENABLE_COMPOSE)
     target_link_libraries (${hommeLibName} composec++)
+    endif ()
+
     SetCudaFlags(${hommeLibName})
     SetOmpFlags(${hommeLibName})
 

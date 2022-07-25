@@ -62,15 +62,22 @@ contains
   end subroutine prim_init_data_structures_f90
 
   subroutine prim_complete_init1_phase_f90 () bind(c)
-    use prim_driver_base,  only: prim_init1_buffers, prim_init1_compose, prim_init1_cleanup
+    use prim_driver_base,  only: prim_init1_buffers, prim_init1_cleanup
+#ifdef HOMME_ENABLE_COMPOSE    
+    use prim_driver_base,  only: prim_init1_compose
+#endif
     use homme_context_mod, only: par, elem
+#ifdef HOMME_ENABLE_COMPOSE    
     use compose_mod,       only: compose_control_kokkos_init_and_fin
+#endif
 
+#ifdef HOMME_ENABLE_COMPOSE    
     ! Compose is not in charge of init/finalize kokkos
     call compose_control_kokkos_init_and_fin(.false.)
 
     ! Init compose
     call prim_init1_compose(par,elem)
+#endif
 
     ! ==================================
     ! Initialize the buffers for exchanges
