@@ -66,10 +66,16 @@ module LakeBGCDynMod
       ! sediment OC decomposition Q10 through methanogenesis
       real(r8) :: PQ10pas
       real(r8) :: PQ10act
+      ! O2 suppression coefficient for mathanogenesis (m3 water mol^-1)
+      real(r8) :: etaO2
       ! CH4 oxidation potential (mol/m3/s)
       real(r8) :: Qch4
       ! CH4 oxidation Q10
       real(r8) :: OQ10
+      ! CH4 concentration exponent coefficient of CH4 oxidation (unitless)
+      real(r8) :: betaCH4
+      ! O2 inhibition coefficient of CH4 oxidation (unitless)
+      real(r8) :: lamdaO2
       ! oxic CH4 production rate to photosynthesis (mol CH4/m3/s (mol O2/m3/s)-1)
       real(r8) :: Rcoxic
 
@@ -470,6 +476,9 @@ contains
                         sx(c,j,k) = csrc(c,j,k) - csnk(c,j,k)
                      end if
                   end if
+                  if (j==jwat(c) .and. k<=ngaslak) then
+                     sx(c,j,k) = sx(c,j,k) + ex_iceb(c,k)/dz_lake(c,j)
+                  end if
                end do
             end do
          end do
@@ -607,8 +616,7 @@ contains
                c = filter_lakec(fc)
             
                if (j==1) then
-                  errch4(c) = conc_iceb(c,wch4lak) - conc_iceb_old(c,wch4lak) + &
-                        ex_iceb(c,wch4lak)*dtime
+                  errch4(c) = conc_iceb(c,wch4lak) - conc_iceb_old(c,wch4lak)
                   delta_iceb(c) = errch4(c) 
                   delta_ch4(c) = 0._r8
                end if
@@ -2014,14 +2022,13 @@ contains
       real(r8)               , intent(out)   :: pch4_vr(1:nlevlak+nlevsoi)                ! mol/m3/s
       !
       ! !CONSTANTS
-      real(r8), parameter :: etaO2 = 4.e2_r8 ! O2 suppression coefficient (m3 water mol-1) 
       real(r8), parameter :: Tpr(nsoilclak) = (/273.15_r8,276.65_r8/)   ! CH4 production reference temperature (K)
       real(r8), parameter :: pHmin = 2.2_r8  ! minimum allowable pH for CH4 production
       real(r8), parameter :: pHmax = 9.0_r8  ! maximum allowable pH for CH4 production
       !
       ! !LOCAL VARIABLES:
       real(r8) :: tw, ts
-      real(r8) :: Rc, PQ10
+      real(r8) :: Rc, PQ10, etaO2
       real(r8) :: c_o2, fo2, ftemp, fph
       real(r8) :: pch4_soilc, pch4_soilc_yedoma
       integer  :: j, k
@@ -2065,6 +2072,7 @@ contains
          ts = t_soisno(c,j)
          
          ! O2 suppression (Tang et al., 2010; Biogeosciences)
+         etaO2 = LakeBGCParamsInst%etaO2
          c_o2 = conc_solu(j+nlevlak,wo2lak)
          fo2 = 1._r8 / (1._r8 + etaO2*c_o2)
          
@@ -2196,8 +2204,8 @@ contains
       real(r8), parameter :: Och4_cr = 1.7e-3_r8 ! critical CH4 concentration for O2-inhibitation (mol/m3)
       !
       ! !LOCAL VARIABLES:
-      real(r8) :: tw, ts, fch4
-      real(r8) :: Qch4, OQ10
+      real(r8) :: tw, ts
+      real(r8) :: Qch4, OQ10, betaCH4, lamdaO2
       real(r8) :: c_ch4, c_o2, och4_oxic
       integer  :: j, k
       !-------------------------------------------------------------------- 
@@ -2224,11 +2232,12 @@ contains
 
          Qch4 = LakeBGCParamsInst%Qch4
          OQ10 = LakeBGCParamsInst%OQ10
+         betaCH4 = LakeBGCParamsInst%betaCH4
 
-         fch4 = 1._r8 / (1._r8 + c_ch4/Och4_cr)
+         lamdaO2 = LakeBGCParamsInst%lamdaO2 / (1._r8 + c_ch4/Och4_cr)
 
          och4_oxic = (1._r8-icefrac(c,j)) * Qch4 * (OQ10**(0.1_r8*(tw-Tor))) * &
-            (c_ch4**0.79_r8) * exp(-10._r8*fch4*c_o2) * (1._r8 - exp(-180._r8*c_o2))
+            (c_ch4**betaCH4) * exp(-lamdaO2*c_o2) * (1._r8 - exp(-180._r8*c_o2))
          och4_vr(j) = och4_oxic
 
          csnk(j,wch4lak) = csnk(j,wch4lak) + och4_oxic
@@ -2361,6 +2370,11 @@ contains
       if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
       LakeBGCParamsInst%PQ10act = tempr
 
+      tString='etaO2'
+      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+      LakeBGCParamsInst%etaO2 = tempr
+
       tString='Qch4'
       call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
       if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
@@ -2370,6 +2384,16 @@ contains
       call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
       if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
       LakeBGCParamsInst%OQ10 = tempr
+
+      tString='betaCH4'
+      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+      LakeBGCParamsInst%betaCH4 = tempr
+
+      tString='lamdaO2'
+      call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+      if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+      LakeBGCParamsInst%lamdaO2 = tempr
 
       tString='Rcoxic'
       call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
