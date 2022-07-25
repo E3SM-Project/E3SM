@@ -61,6 +61,7 @@ void VerticalLayerInterfaceDiagnostic::compute_diagnostic_impl()
   // Set surface geopotential for this diagnostic
   const Real surf_geopotential = 0.0;
 
+  const int num_levs = m_num_levs;
   view_1d dz("",npacks);
   Kokkos::parallel_for("VerticalLayerInterfaceDiagnostic",
                        default_policy,
@@ -71,7 +72,7 @@ void VerticalLayerInterfaceDiagnostic::compute_diagnostic_impl()
     });
     team.team_barrier();
     const auto& z_int_s = ekat::subview(z_int, icol);
-    PF::calculate_z_int(team,m_num_levs,dz,surf_geopotential,z_int_s);
+    PF::calculate_z_int(team,num_levs,dz,surf_geopotential,z_int_s);
   });
 
 }

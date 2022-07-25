@@ -62,6 +62,7 @@ void VerticalLayerMidpointDiagnostic::compute_diagnostic_impl()
   // Set surface geopotential for this diagnostic
   const Real surf_geopotential = 0.0;
 
+  const int num_levs = m_num_levs;
   view_1d dz("",npacks);
   view_1d z_int("",npacks_p1);
   Kokkos::parallel_for("VerticalLayerMidpointDiagnostic",
@@ -73,8 +74,8 @@ void VerticalLayerMidpointDiagnostic::compute_diagnostic_impl()
     });
     team.team_barrier();
     const auto& z_mid_s = ekat::subview(z_mid, icol);
-    PF::calculate_z_int(team,m_num_levs,dz,surf_geopotential,z_int);
-    PF::calculate_z_mid(team,m_num_levs,z_int,z_mid_s);
+    PF::calculate_z_int(team,num_levs,dz,surf_geopotential,z_int);
+    PF::calculate_z_mid(team,num_levs,z_int,z_mid_s);
   });
 
 }
