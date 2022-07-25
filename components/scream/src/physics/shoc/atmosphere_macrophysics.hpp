@@ -284,7 +284,6 @@ public:
     void operator()(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) const {
       const int i = team.league_rank();
 
-      const Real cpair = C::Cpair;
       const Real inv_qc_relvar_max = 10;
       const Real inv_qc_relvar_min = 0.001;
 

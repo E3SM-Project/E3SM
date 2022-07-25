@@ -237,7 +237,6 @@ TEST_CASE ("recreate_mct_coupling")
   using GR     = GroupRequest;
   using RPDF   = std::uniform_real_distribution<Real>;
   using IPDF = std::uniform_int_distribution<int>;
-  using C = scream::physics::Constants<Real>;
 
   // Some constants
   constexpr int ncols = 4;

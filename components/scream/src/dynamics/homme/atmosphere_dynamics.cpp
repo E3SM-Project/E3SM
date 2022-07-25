@@ -53,6 +53,10 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
 {
   // This class needs Homme's context, so register as a user
   HommeContextUser::singleton().add_user();
+
+  ekat::any homme_nsteps;
+  homme_nsteps.reset<int>(-1);
+  m_restart_extra_data["homme_nsteps"] = std::make_pair(std::string("int"),homme_nsteps);
 }
 
 HommeDynamics::~HommeDynamics ()
@@ -372,11 +376,6 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     restart_homme_state ();
   }
 
-  // For BFB restarts, set nstep counter in Homme's TimeLevel to match
-  // what's in the timestamp (which, for restarted runs, is read from restart file)
-  set_homme_param("num_steps",timestamp().get_num_steps());
-  Homme::Context::singleton().get<Homme::TimeLevel>().nstep = timestamp().get_num_steps();
-
   // Complete homme model initialization
   prim_init_model_f90 ();
 
@@ -413,7 +412,8 @@ void HommeDynamics::run_impl (const int dt)
     //       Now we can compute the actual nsplit, and need to update its value
     //       in Hommexx's data structures
     const int nsplit = get_homme_nsplit_f90(dt);
-    auto& params = Homme::Context::singleton().get<Homme::SimulationParams>();
+    const auto& c = Homme::Context::singleton();
+    auto& params = c.get<Homme::SimulationParams>();
     params.nsplit = nsplit;
 
     Kokkos::fence();
@@ -423,6 +423,11 @@ void HommeDynamics::run_impl (const int dt)
       Kokkos::fence();
       prim_run_f90 ();
     }
+
+    // Update nstep in the restart extra data, so it can be written to restart if needed.
+    const auto& tl = c.get<Homme::TimeLevel>();
+    auto& nstep = ekat::any_cast<int>(m_restart_extra_data["homme_nsteps"].second);
+    nstep = tl.nstep;
 
     // Post process Homme's output, to produce what the rest of Atm expects
     Kokkos::fence();
@@ -881,7 +886,13 @@ void HommeDynamics::restart_homme_state () {
   // TODO: p2d remapper does not support subfields, so we need to create temps
   //       to remap v_dyn and w_dyn separately, then copy into v3d_prev.
   const auto& c = Homme::Context::singleton();
-  auto& params = c.get<Homme::SimulationParams>();
+        auto& params = c.get<Homme::SimulationParams>();
+        auto& tl = c.get<Homme::TimeLevel>();
+
+  // For BFB restarts, set nstep counter in Homme's TimeLevel to match the restarted value.
+  const auto& nstep = ekat::any_cast<int>(m_restart_extra_data["homme_nsteps"].second);
+  tl.nstep = nstep;
+  set_homme_param("num_steps",nstep);
 
   constexpr int NGP = HOMMEXX_NP;
   const int nlevs = m_ref_grid->get_num_vertical_levels();
@@ -1082,8 +1093,11 @@ void HommeDynamics::initialize_homme_state () {
   const auto Q_view   = m_helper_fields.at("Q_dyn").get_view<Pack*****>();
 
   // State time slices
-  const int n0  = c.get<Homme::TimeLevel>().n0;
-  const int n0_qdp  = c.get<Homme::TimeLevel>().n0_qdp;
+  const auto& tl = c.get<Homme::TimeLevel>();
+  const int n0  = tl.n0;
+  const int n0_qdp  = tl.n0_qdp;
+
+  ekat::any_cast<int>(m_restart_extra_data["homme_nsteps"].second) = tl.nstep;
 
   const auto phis_dyn_view = m_helper_fields.at("phis_dyn").get_view<const Real***>();
   const auto phi_int_view = m_helper_fields.at("phi_int_dyn").get_view<Pack*****>();
