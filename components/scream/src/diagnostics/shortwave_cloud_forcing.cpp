@@ -54,7 +54,7 @@ void ShortwaveCloudForcingDiagnostic::initialize_impl(const RunType /* run_type 
 
 }
 // =========================================================================================
-void ShortwaveCloudForcingDiagnostic::compute_diagnostic(const int /* dt */)
+void ShortwaveCloudForcingDiagnostic::compute_diagnostic_impl()
 {
 
   const auto npacks     = ekat::npack<Pack>(m_num_levs);

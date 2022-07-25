@@ -48,7 +48,7 @@ protected:
 #ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
-  void run_impl        (const int dt);
+  void compute_diagnostic_impl ();
 protected:
   void finalize_impl   () { /* Nothing to do */ }
 
