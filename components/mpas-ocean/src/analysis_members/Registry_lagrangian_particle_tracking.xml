@@ -367,8 +367,8 @@
 		<var name="particleTemperature" type="real" dimensions="nParticles Time" units="C"
 			 description="sampled temperature for particle"
 		/>
-		<var name="particleSalinity" type="real" dimensions="nParticles Time" units="grams salt per kilogram seawater"
-			 description="sampled salinity for particle"
+		<var name="particleSalinity" type="real" dimensions="nParticles Time" units="1.e-3"
+			 description="sampled salinity for particle in grams salt per kilogram seawater"
 		/>
 		<var name="particleDIC" type="real" dimensions="nParticles Time" units="mmol m^-3"
 			 description="sampled dissolved inorganic carbon for particle"
