@@ -250,6 +250,7 @@ tweaking their $case/namelist_scream.xml file.
     <T_prev_micro_step >0.0</T_prev_micro_step>
     <qv_prev_micro_step>0.0</qv_prev_micro_step>
     <!-- Initialize microphysics fields not on IC to zero; note that this is consistent with EAM init -->
+    <tke               >0.0</tke>
     <qr                >0.0</qr>
     <nr                >0.0</nr>
     <qm                >0.0</qm>
