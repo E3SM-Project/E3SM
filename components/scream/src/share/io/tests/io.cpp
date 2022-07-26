@@ -456,7 +456,7 @@ ekat::ParameterList get_in_params(const std::string& type,
   std::string filename =
         "io_" + std::string(multisnap ? "multisnap_test" : "output_test")
       + "." + (multisnap ? ekat::upper_case("Instant") : ekat::upper_case(type))
-      + ".Steps_x1" + std::string(multisnap ? "" : "0")
+      + ".nsteps_x1" + std::string(multisnap ? "" : "0")
       + ".np" + std::to_string(comm.size())
       + "." + t_first_write.to_string() + ".nc";
 
