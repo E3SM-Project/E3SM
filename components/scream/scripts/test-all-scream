@@ -139,6 +139,9 @@ OR
                         "This will use valgrind for CPU, cuda-mem-check for GPU etc."
                         "This will dramatically slow down tests and also disables baseline checking.")
 
+    parser.add_argument("--force-baseline-regen", action="store_true",
+                        help="Existing baseline will always be considered expired even if they do not appear to be.")
+
     return parser.parse_args(args[1:])
 
 ###############################################################################

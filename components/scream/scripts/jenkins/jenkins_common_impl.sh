@@ -72,7 +72,7 @@ if [ $skip_testing -eq 0 ]; then
   # IF such dir is not found, then the default (ctest-build/baselines) is used
   BASELINES_DIR=AUTO
 
-  TAS_ARGS="--baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON ${TAS_ARGS} -p -i -m \$machine"
+  TAS_ARGS="--baseline-dir $BASELINES_DIR \$compiler -c EKAT_DISABLE_TPL_WARNINGS=ON -p -i -m \$machine"
   # Now that we are starting to run things that we expect could fail, we
   # do not want the script to exit on any fail since this will prevent
   # later tests from running.
@@ -97,7 +97,7 @@ if [ $skip_testing -eq 0 ]; then
 
     # Add a valgrind and coverage tests for mappy for nightlies
     if [[ $is_at_run == 0 ]]; then
-      if [["$SCREAM_MACHINE" == "mappy" ]]; then
+      if [[ "$SCREAM_MACHINE" == "mappy" ]]; then
         ./scripts/gather-all-data "./scripts/test-all-scream -t cov ${TAS_ARGS}" -l -m $SCREAM_MACHINE
         if [[ $? != 0 ]]; then
           fails=$fails+1;
