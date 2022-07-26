@@ -217,7 +217,7 @@
 			description="relative vorticity at cell vertices at a depth of approximately 250 m"
 		/>
 		<var_array name="activeTracersAtSurface" type="real" dimensions="nCells Time">
-				<var name="temperatureAtSurface" array_group="activeTracersAtSurface" units="^\circ C" name_in_code="temperatureAtSurface"
+				<var name="temperatureAtSurface" array_group="activeTracersAtSurface" units="C" name_in_code="temperatureAtSurface"
 						description="ocean temperature at top layer"
 				/>
 				<var name="salinityAtSurface" array_group="activeTracersAtSurface" units="1.e-3" name_in_code="salinityAtSurface"
@@ -225,7 +225,7 @@
 				/>
 		</var_array>
 		<var_array name="activeTracersAt250m" type="real" dimensions="nCells Time">
-				<var name="temperatureAt250m" array_group="activeTracersAt250m" units="^\circ C" name_in_code="temperatureAt250m"
+				<var name="temperatureAt250m" array_group="activeTracersAt250m" units="C" name_in_code="temperatureAt250m"
 						description="ocean temperature at 250 m"
 				/>
 				<var name="salinityAt250m" array_group="activeTracersAt250m" units="1.e-3" name_in_code="salinityAt250m"
@@ -233,7 +233,7 @@
 				/>
 		</var_array>
 		<var_array name="activeTracersAtBottom" type="real" dimensions="nCells Time">
-			<var name="temperatureAtBottom" array_group="activeTracersAtBottom" units="^\circ C" name_in_code="temperatureAtBottom"
+			<var name="temperatureAtBottom" array_group="activeTracersAtBottom" units="C" name_in_code="temperatureAtBottom"
 				description="ocean temperature at bottom"
 			/>
 			<var name="salinityAtBottom" array_group="activeTracersAtBottom" units="1.e-3" name_in_code="salinityAtBottom"
@@ -250,7 +250,7 @@
 					description="divergence at cell centers at bottom"
 		/>
 		<var_array name="activeTracersAvgTopto0100" type="real" dimensions="nCells Time">
-				<var name="temperatureAvgTopto0100" array_group="activeTracersAvgTopto0100" units="^\circ C" name_in_code="temperatureAvgTopto0100"
+				<var name="temperatureAvgTopto0100" array_group="activeTracersAvgTopto0100" units="C" name_in_code="temperatureAvgTopto0100"
 						description="ocean temperature averaged between surface and 100 m"
 				/>
 				<var name="salinityAvgTopto0100" array_group="activeTracersAvgTopto0100" units="1.e-3" name_in_code="salinityAvgTopto0100"
@@ -258,7 +258,7 @@
 				/>
 		</var_array>
 		<var_array name="activeTracersAvg0100to0250" type="real" dimensions="nCells Time">
-				<var name="temperatureAvg0100to0250" array_group="activeTracersAvg0100to0250" units="^\circ C" name_in_code="temperatureAvg0100to0250"
+				<var name="temperatureAvg0100to0250" array_group="activeTracersAvg0100to0250" units="C" name_in_code="temperatureAvg0100to0250"
 						description="ocean temperature averaged between surface and 100 m"
 				/>
 				<var name="salinityAvg0100to0250" array_group="activeTracersAvg0100to0250" units="1.e-3" name_in_code="salinityAvg0100to0250"
@@ -266,7 +266,7 @@
 				/>
 		</var_array>
 		<var_array name="activeTracersAvg0250to0700" type="real" dimensions="nCells Time">
-				<var name="temperatureAvg0250to0700" array_group="activeTracersAvg0250to0700" units="^\circ C" name_in_code="temperatureAvg0250to0700"
+				<var name="temperatureAvg0250to0700" array_group="activeTracersAvg0250to0700" units="C" name_in_code="temperatureAvg0250to0700"
 						description="ocean temperature averaged between surface and 100 m"
 				/>
 				<var name="salinityAvg0250to0700" array_group="activeTracersAvg0250to0700" units="1.e-3" name_in_code="salinityAvg0250to0700"
@@ -274,7 +274,7 @@
 				/>
 		</var_array>
 		<var_array name="activeTracersAvg0700to2000" type="real" dimensions="nCells Time">
-				<var name="temperatureAvg0700to2000" array_group="activeTracersAvg0700to2000" units="^\circ C" name_in_code="temperatureAvg0700to2000"
+				<var name="temperatureAvg0700to2000" array_group="activeTracersAvg0700to2000" units="C" name_in_code="temperatureAvg0700to2000"
 						description="ocean temperature averaged between surface and 100 m"
 				/>
 				<var name="salinityAvg0700to2000" array_group="activeTracersAvg0700to2000" units="1.e-3" name_in_code="salinityAvg0700to2000"
@@ -282,7 +282,7 @@
 				/>
 		</var_array>
 		<var_array name="activeTracersAvg2000toBottom" type="real" dimensions="nCells Time">
-				<var name="temperatureAvg2000toBottom" array_group="activeTracersAvg2000toBottom" units="^\circ C" name_in_code="temperatureAvg2000toBottom"
+				<var name="temperatureAvg2000toBottom" array_group="activeTracersAvg2000toBottom" units="C" name_in_code="temperatureAvg2000toBottom"
 						description="ocean temperature averaged between surface and 100 m"
 				/>
 				<var name="salinityAvg2000toBottom" array_group="activeTracersAvg2000toBottom" units="1.e-3" name_in_code="salinityAvg2000toBottom"

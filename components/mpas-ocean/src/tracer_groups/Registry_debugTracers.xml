@@ -128,13 +128,13 @@
 				/>
 			</var_array>
 			<var_array name="debugTracersSurfaceRestoringValue" type="real" dimensions="nCells Time" packages="debugTracersSurfaceRestoringPKG">
-				<var name="tracer1SurfaceRestoringValue" array_group="debugGRP" units="^\circ C"
+				<var name="tracer1SurfaceRestoringValue" array_group="debugGRP" units="C"
 			 description="tracer1 is restored toward this field at a rate controlled by tracer1PistonVelocity."
 				/>
-				<var name="tracer2SurfaceRestoringValue" array_group="debugGRP" units="^\circ C"
+				<var name="tracer2SurfaceRestoringValue" array_group="debugGRP" units="C"
 			 description="tracer2 is restored toward this field at a rate controlled by tracer2PistonVelocity."
 				/>
-				<var name="tracer3SurfaceRestoringValue" array_group="debugGRP" units="^\circ C"
+				<var name="tracer3SurfaceRestoringValue" array_group="debugGRP" units="C"
 			 description="tracer3 is restored toward this field at a rate controlled by tracer3PistonVelocity."
 				/>
 			</var_array>
@@ -152,13 +152,13 @@
 				/>
 			</var_array>
 			<var_array name="debugTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="debugTracersInteriorRestoringPKG">
-				<var name="tracer1InteriorRestoringValue" array_group="debugGRP" units="^\circ C"
+				<var name="tracer1InteriorRestoringValue" array_group="debugGRP" units="C"
 				 description="tracer1 is restored toward this field at a rate controlled by tracer1InteriorRestoringRate."
 				/>
-				<var name="tracer2InteriorRestoringValue" array_group="debugGRP" units="^\circ C"
+				<var name="tracer2InteriorRestoringValue" array_group="debugGRP" units="C"
 				 description="tracer2 is restored toward this field at a rate controlled by tracer2InteriorRestoringRate."
 				/>
-				<var name="tracer3InteriorRestoringValue" array_group="debugGRP" units="^\circ C"
+				<var name="tracer3InteriorRestoringValue" array_group="debugGRP" units="C"
 				 description="tracer3 is restored toward this field at a rate controlled by tracer3InteriorRestoringRate."
 				/>
 			</var_array>
