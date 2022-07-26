@@ -63,11 +63,11 @@ struct IOControl {
       } else if (frequency_units == "nsecs") {
         ret = ((ts_diff > 0) && (ts_diff % frequency == 0));
       } else if (frequency_units == "nmin") {
-        ret = (ts_diff > 60) && ((ts_diff/60) % frequency == 0);
+        ret = (ts_diff >= 60) && (ts_diff % frequency*60 == 0);
       } else if (frequency_units == "nhours") {
-        ret = (ts_diff > 3600) && ((ts_diff/3600) % frequency == 0);
+        ret = (ts_diff >= 3600) && (ts_diff % frequency*3600 == 0);
       } else if (frequency_units == "ndays") {
-        ret = (ts_diff > 86400) && ((ts_diff/86400) % frequency == 0);
+        ret = (ts_diff >= 86400) && (ts_diff % frequency*86400 == 0);
       } else if (frequency_units == "nmonths" || frequency_units == "nyears") {
         // For months and years we need to be careful, can't just divide ts_diff by a set value.
         // First we make sure that if we are the same day of the month and at the same time of day.
