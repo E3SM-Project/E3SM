@@ -64,7 +64,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_output_control.frequency  = out_control_pl.get<int>("Frequency");
   m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");
   m_output_control.nsteps_since_last_write = 0;
-  m_output_control.timestamp_since_last_write = case_t0;
+  m_output_control.timestamp_since_last_write = m_case_t0;
 
   // File specs
   m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File");
@@ -94,23 +94,28 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   }
 
   const auto has_restart_data = (m_avg_type!=OutputAvgType::Instant && m_output_control.frequency>1);
-  if (has_restart_data) {
-    if (m_params.isSublist("Checkpoint Control")) {
-      // Output control
-      auto& pl = m_params.sublist("Checkpoint Control");
-      m_checkpoint_control.frequency  = pl.get<int>("Frequency");
-      m_checkpoint_control.frequency_units = pl.get<std::string>("frequency_units");
-      m_checkpoint_control.nsteps_since_last_write = 0;
-      m_checkpoint_control.timestamp_since_last_write = case_t0;
+  if (has_restart_data && m_params.isSublist("Checkpoint Control")) {
+    // Output control
+    auto& pl = m_params.sublist("Checkpoint Control");
+    m_checkpoint_control.frequency  = pl.get<int>("Frequency");
+    m_checkpoint_control.frequency_units = pl.get<std::string>("Frequency Units");
+    m_checkpoint_control.nsteps_since_last_write = 0;
+    m_checkpoint_control.timestamp_since_last_write = case_t0;
 
-      // File specs
-      m_checkpoint_file_specs.max_snapshots_in_file = 1;
-      m_checkpoint_file_specs.num_snapshots_in_file = 0;
-      m_checkpoint_file_specs.filename_with_time_string = pl.get("Timestamp in Filename",true);
-      m_checkpoint_file_specs.filename_with_mpiranks    = pl.get("MPI Ranks in Filename",false);
-      m_checkpoint_file_specs.filename_with_avg_type    = pl.get("avg_type_in_filename",true);
-      m_checkpoint_file_specs.filename_with_frequency   = pl.get("frequency_in_filename",true);
-    }
+    // File specs
+    m_checkpoint_file_specs.max_snapshots_in_file = 1;
+    m_checkpoint_file_specs.num_snapshots_in_file = 0;
+    m_checkpoint_file_specs.filename_with_time_string = pl.get("Timestamp in Filename",true);
+    m_checkpoint_file_specs.filename_with_mpiranks    = pl.get("MPI Ranks in Filename",false);
+    m_checkpoint_file_specs.filename_with_avg_type    = pl.get("avg_type_in_filename",true);
+    m_checkpoint_file_specs.filename_with_frequency   = pl.get("frequency_in_filename",true);
+  } else {
+    // If there is no restart data or there is but no checkpoint control sublist then we initialize
+    // the checkpoint control so that it never writes checkpoints.
+    m_checkpoint_control.frequency  = 0;
+    m_checkpoint_control.frequency_units = "never";
+    m_checkpoint_control.nsteps_since_last_write = 0;
+    m_checkpoint_control.timestamp_since_last_write = case_t0;
   }
 
   // If this is normal output (not the model restart output) and the output specs

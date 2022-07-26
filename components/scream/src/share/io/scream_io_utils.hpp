@@ -46,16 +46,16 @@ struct IOControl {
   // A non-positive frequency can be used to signal IO disabled
   int frequency = -1;
   int nsteps_since_last_write;  // Needed when updating output data, such as with the OAT::Average flag
-  util::TimeStamp& timestamp_since_last_write;
+  util::TimeStamp timestamp_since_last_write;
   std::string frequency_units;
 
   bool is_write_step (const util::TimeStamp& ts) {
     // Mini-routine to determine if it is time to write output to file.
     // The current allowable options are nsteps, nsecs, nmins, nhours, ndays, nmonths, nyears
     // We query the frequency_units string value to determine which option it is.
-    auto ts_diff = (ts-timestamp_since_last_write);
     bool ret = false;
-    if (frequency>0) {
+    if (frequency > 0 && frequency_units != "never") {
+      auto ts_diff = (ts-timestamp_since_last_write);
       if (frequency_units == "nsteps") {
         // Just use the nsteps_since_last_write information
         return ((ts.get_num_steps()-timestamp_since_last_write.get_num_steps()) % frequency == 0);
@@ -91,7 +91,7 @@ struct IOControl {
           }
         } else {
           EKAT_REQUIRE_MSG(false,"Invalid frequency unit for output stream.  Please check that all outputs have Frequency Units of\n"
-                                 "nsteps, nsecs, nmins, nhours, ndays, nmonths, nyears");
+                                 "never, nsteps, nsecs, nmins, nhours, ndays, nmonths, nyears");
         }
       }
     }
