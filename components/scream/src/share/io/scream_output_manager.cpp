@@ -64,7 +64,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_output_control.frequency  = out_control_pl.get<int>("Frequency");
   m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");
   m_output_control.nsteps_since_last_write = 0;
-  m_output_control.timestamp_since_last_write = m_case_t0;
+  m_output_control.timestamp_of_last_write = m_case_t0;
 
   // File specs
   m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File");
@@ -100,7 +100,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     m_checkpoint_control.frequency  = pl.get<int>("Frequency");
     m_checkpoint_control.frequency_units = pl.get<std::string>("Frequency Units");
     m_checkpoint_control.nsteps_since_last_write = 0;
-    m_checkpoint_control.timestamp_since_last_write = case_t0;
+    m_checkpoint_control.timestamp_of_last_write = case_t0;
 
     // File specs
     m_checkpoint_file_specs.max_snapshots_in_file = 1;
@@ -115,7 +115,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     m_checkpoint_control.frequency  = 0;
     m_checkpoint_control.frequency_units = "never";
     m_checkpoint_control.nsteps_since_last_write = 0;
-    m_checkpoint_control.timestamp_since_last_write = case_t0;
+    m_checkpoint_control.timestamp_of_last_write = case_t0;
   }
 
   // If this is normal output (not the model restart output) and the output specs
@@ -291,7 +291,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
     // Since we wrote to file we need to reset the nsteps_since_last_write and the timestamp
     control.nsteps_since_last_write = 0;
-    control.timestamp_since_last_write = timestamp;
+    control.timestamp_of_last_write = timestamp;
 
     // Check if we need to close the output file
     if (filespecs.file_is_full()) {
@@ -302,7 +302,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
     // Whether we wrote an output or a checkpoint, the checkpoint counter needs to be reset
     m_checkpoint_control.nsteps_since_last_write = 0;
-    m_checkpoint_control.timestamp_since_last_write = timestamp;
+    m_checkpoint_control.timestamp_of_last_write = timestamp;
   }
 }
 /*===============================================================================================*/

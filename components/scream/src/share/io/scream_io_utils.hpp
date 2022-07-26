@@ -46,7 +46,7 @@ struct IOControl {
   // A non-positive frequency can be used to signal IO disabled
   int frequency = -1;
   int nsteps_since_last_write;  // Needed when updating output data, such as with the OAT::Average flag
-  util::TimeStamp timestamp_since_last_write;
+  util::TimeStamp timestamp_of_last_write;
   std::string frequency_units;
 
   bool is_write_step (const util::TimeStamp& ts) {
@@ -55,44 +55,40 @@ struct IOControl {
     // We query the frequency_units string value to determine which option it is.
     bool ret = false;
     if (frequency > 0 && frequency_units != "never") {
-      auto ts_diff = (ts-timestamp_since_last_write);
+      auto ts_diff = (ts-timestamp_of_last_write);
       if (frequency_units == "nsteps") {
         // Just use the nsteps_since_last_write information
-        return ((ts.get_num_steps()-timestamp_since_last_write.get_num_steps()) % frequency == 0);
-      } else { 
-        // We will need to use timestamp information
-        if (frequency_units == "nsecs") {
-          ret = ((ts_diff > 0) && (ts_diff % frequency == 0));
-        } else if (frequency_units == "nmin") {
-          ret = (ts_diff > 60) && ((ts_diff/60) % frequency == 0);
-        } else if (frequency_units == "nhours") {
-          ret = (ts_diff > 3600) && ((ts_diff/3600) % frequency == 0);
-        } else if (frequency_units == "ndays") {
-          ret = (ts_diff > 86400) && ((ts_diff/86400) % frequency == 0);
-        } else if (frequency_units == "nmonths" || frequency_units == "nyears") {
-          // For months and years we need to be careful, can't just divide ts_diff by a set value.
-          // First we make sure that if we are the same day of the month and at the same time of day.
-          if (ts.get_day() == timestamp_since_last_write.get_day() &&
-              ts.sec_of_day() == timestamp_since_last_write.sec_of_day()) {
-            auto diff = 0;
-            // Determine how many years have passed
-            diff += (ts.get_year()  - timestamp_since_last_write.get_year());
-            if  (frequency_units == "nyears") {
-              ret = (diff>0) && (diff % frequency == 0);
-            }
-            // Determine number of months that have passed
-            diff *= 12;
-            diff += (ts.get_month() - timestamp_since_last_write.get_month());
-            if  (frequency_units == "nmonths") {
-              ret = (diff>0) && (diff % frequency == 0);
-            }
-          } else {
-            ret = false;
+        return ((ts.get_num_steps()-timestamp_of_last_write.get_num_steps()) % frequency == 0);
+      // We will need to use timestamp information
+      } else if (frequency_units == "nsecs") {
+        ret = ((ts_diff > 0) && (ts_diff % frequency == 0));
+      } else if (frequency_units == "nmin") {
+        ret = (ts_diff > 60) && ((ts_diff/60) % frequency == 0);
+      } else if (frequency_units == "nhours") {
+        ret = (ts_diff > 3600) && ((ts_diff/3600) % frequency == 0);
+      } else if (frequency_units == "ndays") {
+        ret = (ts_diff > 86400) && ((ts_diff/86400) % frequency == 0);
+      } else if (frequency_units == "nmonths" || frequency_units == "nyears") {
+        // For months and years we need to be careful, can't just divide ts_diff by a set value.
+        // First we make sure that if we are the same day of the month and at the same time of day.
+        if (ts.get_day() == timestamp_of_last_write.get_day() &&
+            ts.sec_of_day() == timestamp_of_last_write.sec_of_day()) {
+          auto diff = 0;
+          // Determine how many years have passed
+          diff += (ts.get_year()  - timestamp_of_last_write.get_year());
+          if  (frequency_units == "nyears") {
+            ret = (diff>0) && (diff % frequency == 0);
           }
-        } else {
-          EKAT_REQUIRE_MSG(false,"Invalid frequency unit for output stream.  Please check that all outputs have Frequency Units of\n"
-                                 "never, nsteps, nsecs, nmins, nhours, ndays, nmonths, nyears");
-        }
+          // Determine number of months that have passed
+          diff *= 12;
+          diff += (ts.get_month() - timestamp_of_last_write.get_month());
+          if  (frequency_units == "nmonths") {
+            ret = (diff>0) && (diff % frequency == 0);
+          }
+        } 
+      } else {
+        EKAT_REQUIRE_MSG(false,"Invalid frequency unit for output stream.  Please check that all outputs have Frequency Units of\n"
+                               "never, nsteps, nsecs, nmins, nhours, ndays, nmonths, nyears");
       }
     }
     return ret;
