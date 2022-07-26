@@ -792,14 +792,23 @@ test_dyn_to_fv_phys (Session& s, const int nf, const bool theta_hydrostatic_mode
   CA3d fT("fT", s.nelemd, s.nlev, nf2), fomega("fomega", s.nelemd, s.nlev, nf2);
   CA4d fuv("fuv", s.nelemd, s.nlev, 2, nf2), fq("fq", s.nelemd, s.qsize, s.nlev, nf2);
 
+  const int nq = s.qsize > 1 ? s.qsize-1 : s.qsize;
+
   const ExecView<Real**> dps("dps", s.nelemd, nf2), dphis("dphis", s.nelemd, nf2);
   const ExecView<Real***> dT("dT", s.nelemd, nf2, g::num_lev_aligned),
     domega("domega", s.nelemd, nf2, g::num_lev_aligned);
   const ExecView<Real****> duv("duv", s.nelemd, nf2, 2, g::num_lev_aligned),
-    dq("dq", s.nelemd, nf2, s.qsize, g::num_lev_aligned);
+    dq("dq", s.nelemd, nf2, s.qsize, g::num_lev_aligned),
+    dq1("dq", s.nelemd, nf2, nq, g::num_lev_aligned);
 
   const auto& c = Context::singleton();
   auto& gfr = c.get<GllFvRemap>();
+  const auto tracers = c.get<Tracers>();
+  const auto& q = tracers.Q;
+
+  const g::EVU<const Real****>
+    dq1_dyn(g::cpack2real(q), q.extent_int(0), q.extent_int(1),
+            q.extent_int(2)*q.extent_int(3), g::num_lev_aligned);
 
   for (int nt = 0; nt < NUM_TIME_LEVELS; ++nt) {
     gfr_dyn_to_fv_phys_f90(nf, nt+1, fps.data(), fphis.data(), fT.data(), fuv.data(),
@@ -807,12 +816,15 @@ test_dyn_to_fv_phys (Session& s, const int nf, const bool theta_hydrostatic_mode
 
     gfr.run_dyn_to_fv_phys(nt, dps, dphis, dT, domega, duv, dq);
 
+    gfr.remap_tracer_dyn_to_fv_phys(nt, nq, dq1_dyn, dq1);
+
     const auto ps = cmvdc(dps);
     const auto phis = cmvdc(dphis);
     const auto T = cmvdc(dT);
     const auto omega = cmvdc(domega);
     const auto uv = cmvdc(duv);
     const auto q = cmvdc(dq);
+    const auto q1 = cmvdc(dq1);
 
     for (int ie = 0; ie < s.nelemd; ++ie)
       for (int i = 0; i < nf2; ++i) {
@@ -822,7 +834,9 @@ test_dyn_to_fv_phys (Session& s, const int nf, const bool theta_hydrostatic_mode
           REQUIRE(equal(omega(ie,i,k), fomega(ie,k,i)));
           REQUIRE(equal(T(ie,i,k), fT(ie,k,i)));
           for (int iq = 0; iq < s.qsize; ++iq)
-            REQUIRE(equal(q(ie,i,iq,k), fq(ie,iq,k,i)));
+            REQUIRE(equal(q (ie,i,iq,k), fq(ie,iq,k,i)));
+          for (int iq = 0; iq < nq; ++iq)
+            REQUIRE(equal(q1(ie,i,iq,k), fq(ie,iq,k,i)));
           for (int d = 0; d < 2; ++d)
             REQUIRE(equal(uv(ie,i,d,k), fuv(ie,k,d,i)));
         }
