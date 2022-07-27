@@ -675,7 +675,9 @@ module ocn_forward_mode
 
            call ocn_eddy_compute_mixed_layer_depth(statePool)
            if (config_use_GM.or.config_submesoscale_enable) then
+               call mpas_timer_start("submesoscale eddy velocity compute", .false.)
                call ocn_eddy_compute_buoyancy_gradient()
+               call mpas_timer_stop("submesoscale eddy velocity compute")
            end if
 
            if (config_use_Redi.or.config_use_GM) then
