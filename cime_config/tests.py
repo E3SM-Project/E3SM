@@ -17,6 +17,13 @@ _TESTS = {
             "ERS.r05_r05.RMOSGPCC.mosart-gpcc_1972",
             "ERS.MOS_USRDAT.RMOSGPCC.mosart-mos_usrdat",
             "SMS.MOS_USRDAT.RMOSGPCC.mosart-unstructure",
+            )
+        },
+
+    "e3sm_mosart_sediment" : {
+        "share" : True,
+        "time"  : "0:45:00",
+        "tests" : (
             "ERS.MOS_USRDAT.RMOSNLDAS.mosart-sediment",
             )
         },
