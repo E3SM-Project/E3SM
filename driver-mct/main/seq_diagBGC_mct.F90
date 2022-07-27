@@ -874,14 +874,14 @@ contains
           index_x2o_Faxa_ocphidry = mct_aVect_indexRA(x2o_o,'Faxa_ocphidry')
           index_x2o_Faxa_ocphodry = mct_aVect_indexRA(x2o_o,'Faxa_ocphodry')
           index_x2o_Faxa_ocphiwet = mct_aVect_indexRA(x2o_o,'Faxa_ocphiwet')
-          index_x2o_Fioi_algae1   = mct_aVect_indexRA(x2o_o,'Fioi_algae1')
-          index_x2o_Fioi_algae2   = mct_aVect_indexRA(x2o_o,'Fioi_algae2')
-          index_x2o_Fioi_algae3   = mct_aVect_indexRA(x2o_o,'Fioi_algae3')
-          index_x2o_Fioi_dic1     = mct_aVect_indexRA(x2o_o,'Fioi_dic1')
-          index_x2o_Fioi_docr     = mct_aVect_indexRA(x2o_o,'Fioi_docr')
-          index_x2o_Fioi_doc1     = mct_aVect_indexRA(x2o_o,'Fioi_doc1')
-          index_x2o_Fioi_doc2     = mct_aVect_indexRA(x2o_o,'Fioi_doc2')
-          index_x2o_Fioi_doc3     = mct_aVect_indexRA(x2o_o,'Fioi_doc3')
+          index_x2o_Fioi_algae1   = mct_aVect_indexRA(x2o_o,'Fioi_algae1',perrWith='quiet')
+          index_x2o_Fioi_algae2   = mct_aVect_indexRA(x2o_o,'Fioi_algae2',perrWith='quiet')
+          index_x2o_Fioi_algae3   = mct_aVect_indexRA(x2o_o,'Fioi_algae3',perrWith='quiet')
+          index_x2o_Fioi_dic1     = mct_aVect_indexRA(x2o_o,'Fioi_dic1',perrWith='quiet')
+          index_x2o_Fioi_docr     = mct_aVect_indexRA(x2o_o,'Fioi_docr',perrWith='quiet')
+          index_x2o_Fioi_doc1     = mct_aVect_indexRA(x2o_o,'Fioi_doc1',perrWith='quiet')
+          index_x2o_Fioi_doc2     = mct_aVect_indexRA(x2o_o,'Fioi_doc2',perrWith='quiet')
+          index_x2o_Fioi_doc3     = mct_aVect_indexRA(x2o_o,'Fioi_doc3',perrWith='quiet')
        end if
 
        lSize = mct_avect_lSize(x2o_o)
@@ -971,14 +971,14 @@ contains
 
     if (present(do_i2x)) then
        if (first_time) then
-          index_i2x_Fioi_algae1   = mct_aVect_indexRA(i2x_i,'Fioi_algae1')
-          index_i2x_Fioi_algae2   = mct_aVect_indexRA(i2x_i,'Fioi_algae2')
-          index_i2x_Fioi_algae3   = mct_aVect_indexRA(i2x_i,'Fioi_algae3')
-          index_i2x_Fioi_dic1     = mct_aVect_indexRA(i2x_i,'Fioi_dic1')
-          index_i2x_Fioi_docr     = mct_aVect_indexRA(i2x_i,'Fioi_docr')
-          index_i2x_Fioi_doc1     = mct_aVect_indexRA(i2x_i,'Fioi_doc1')
-          index_i2x_Fioi_doc2     = mct_aVect_indexRA(i2x_i,'Fioi_doc2')
-          index_i2x_Fioi_doc3     = mct_aVect_indexRA(i2x_i,'Fioi_doc3')
+          index_i2x_Fioi_algae1   = mct_aVect_indexRA(i2x_i,'Fioi_algae1',perrWith='quiet')
+          index_i2x_Fioi_algae2   = mct_aVect_indexRA(i2x_i,'Fioi_algae2',perrWith='quiet')
+          index_i2x_Fioi_algae3   = mct_aVect_indexRA(i2x_i,'Fioi_algae3',perrWith='quiet')
+          index_i2x_Fioi_dic1     = mct_aVect_indexRA(i2x_i,'Fioi_dic1',perrWith='quiet')
+          index_i2x_Fioi_docr     = mct_aVect_indexRA(i2x_i,'Fioi_docr',perrWith='quiet')
+          index_i2x_Fioi_doc1     = mct_aVect_indexRA(i2x_i,'Fioi_doc1',perrWith='quiet')
+          index_i2x_Fioi_doc2     = mct_aVect_indexRA(i2x_i,'Fioi_doc2',perrWith='quiet')
+          index_i2x_Fioi_doc3     = mct_aVect_indexRA(i2x_i,'Fioi_doc3',perrWith='quiet')
        endif
 
        lSize = mct_avect_lSize(i2x_i)
