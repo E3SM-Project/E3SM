@@ -114,9 +114,7 @@ protected:
 
 };
 
-TEST_CASE("input_output_basic","io")
-{
-
+void run(const std::string output_type) {
   ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
   Int num_gcols = 2*io_comm.size();
   Int num_levs = 2 + SCREAM_SMALL_PACK_SIZE;
@@ -142,14 +140,15 @@ TEST_CASE("input_output_basic","io")
 
   const Int max_steps = 10;
   const Int dt = 1;
-  for (const auto& type : output_types) {
+//ASD  for (const auto& type : output_types) {
+  {
     util::TimeStamp time = t0;
 
     // Re-create the fm anew, so the fields are re-inited for each output type
     auto field_manager = get_test_fm(grid);
     field_manager->init_fields_time_stamp(t0);
     ekat::ParameterList params;
-    ekat::parse_yaml_file("io_test_" + type + ".yaml",params);
+    ekat::parse_yaml_file("io_test_" + output_type + ".yaml",params);
     OutputManager om;
     om.setup(io_comm,params,field_manager,gm,t0,t0,false);
     io_comm.barrier();
@@ -196,6 +195,7 @@ TEST_CASE("input_output_basic","io")
     // Finalize the output manager (close files)
     om.finalize();
   }
+//ASD  }
 
   // Get a fresh new field manager
   auto field_manager = get_test_fm(grid);
@@ -218,16 +218,13 @@ TEST_CASE("input_output_basic","io")
   // ability to read input.
   // NOTE: single-snap file start outputing at the final time only,
   //       while multi-snap starts to output at the first time step
-  auto ins_params = get_in_params("instant",io_comm,t0,dt,max_steps);
-  auto avg_params = get_in_params("average",io_comm,t0,dt,max_steps);
-  auto min_params = get_in_params("min",io_comm,t0,dt,max_steps);
-  auto max_params = get_in_params("max",io_comm,t0,dt,max_steps);
-  auto multi_params = get_in_params("multisnap",io_comm,t0,dt,max_steps);
+  auto input_params = get_in_params(output_type,io_comm,t0,dt,max_steps);
   const Real tol = 100*std::numeric_limits<Real>::epsilon();
+
   // TODO: Create a small nc dummy file and a separate unit test which tests all input functions.
   // Test that pio_inq_dimlen is correct, using a file from one of the above parameter lists.
   {
-    auto test_filename = ins_params.get<std::string>("Filename");
+    auto test_filename = input_params.get<std::string>("Filename");
     scorpio::register_file(test_filename,scorpio::Read);
     Int test_gcols_len = scorpio::get_dimlen_c2f(test_filename.c_str(),"ncol");
     REQUIRE(test_gcols_len==num_gcols);
@@ -244,116 +241,120 @@ TEST_CASE("input_output_basic","io")
   auto f4_host = f4.get_view<Real**,Host>();
 
 
-  // Check instant output
-  AtmosphereInput ins_input(ins_params,field_manager);
-  ins_input.read_variables();
-  f1.sync_to_host();
-  f2.sync_to_host();
-  f3.sync_to_host();
-  f4.sync_to_host();
-
-  // The diagnostic is not present in the field manager.  So we can't use the scorpio_input class
-  // to read in the data.  Here we use raw IO routines to gather the data for testing.
-  auto f_diag_ins_h = get_diagnostic_input(io_comm, gm, 0, ins_params.get<std::string>("Filename"));
-
-  for (int ii=0;ii<num_lcols;++ii) {
-    REQUIRE(std::abs(f1_host(ii)-(max_steps*dt+ii))<tol);
-    for (int jj=0;jj<num_levs;++jj) {
-      REQUIRE(std::abs(f3_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
-      REQUIRE(std::abs(f4_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
-      REQUIRE(std::abs(f_diag_ins_h(ii,jj)-(3.0*f4_host(ii,jj)+2.0))<tol);
-    }
-  }
-  for (int jj=0;jj<num_levs;++jj) {
-    REQUIRE(std::abs(f2_host(jj)-(max_steps*dt + (jj+1)/10.))<tol);
-  }
-  ins_input.finalize();
-  reset_fields();
-
-  // Check average output
-  AtmosphereInput avg_input(avg_params,field_manager);
-  avg_input.read_variables();
-  f1.sync_to_host();
-  f2.sync_to_host();
-  f3.sync_to_host();
-  Real avg_val;
-  for (int ii=0;ii<num_lcols;++ii) {
-    avg_val = (max_steps+1)/2.0*dt + ii; // Sum(x0+i*dt,i=1...N) = N*x0 + dt*N*(N+1)/2, AVG = Sum/N, note x0=ii in this case
-    REQUIRE(std::abs(f1_host(ii)-avg_val)<tol);
-    for (int jj=0;jj<num_levs;++jj) {
-      avg_val = (max_steps+1)/2.0*dt + (jj+1)/10.+ii;  //note x0=(jj+1)/10+ii in this case.
-      REQUIRE(std::abs(f3_host(ii,jj)-avg_val)<tol);
-    }
-  }
-  for (int jj=0;jj<num_levs;++jj) {
-    avg_val = (max_steps+1)/2.0*dt + (jj+1)/10.;  //note x0=(jj+1)/10 in this case.
-    REQUIRE(std::abs(f2_host(jj)-avg_val)<tol);
-  }
-  avg_input.finalize();
-  reset_fields();
-
-  // Check max output
-  // The max should be equivalent to the instantaneous because this function is monotonically increasing.
-  AtmosphereInput max_input(max_params,field_manager);
-  max_input.read_variables();
-  f1.sync_to_host();
-  f2.sync_to_host();
-  f3.sync_to_host();
-  for (int ii=0;ii<num_lcols;++ii) {
-    REQUIRE(std::abs(f1_host(ii)-(max_steps*dt+ii))<tol);
-    for (int jj=0;jj<num_levs;++jj) {
-      REQUIRE(std::abs(f3_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
-    }
-  }
-  for (int jj=0;jj<num_levs;++jj) {
-    REQUIRE(std::abs(f2_host(jj)-(max_steps*dt + (jj+1)/10.))<tol);
-  }
-  max_input.finalize();
-  // Check min output
-  // The min should be equivalent to the first step because this function is monotonically increasing.
-  AtmosphereInput min_input(min_params,field_manager);
-  min_input.read_variables();
-  f1.sync_to_host();
-  f2.sync_to_host();
-  f3.sync_to_host();
-  for (int ii=0;ii<num_lcols;++ii) {
-    REQUIRE(std::abs(f1_host(ii)-(dt+ii))<tol);
-    for (int jj=0;jj<num_levs;++jj) {
-      REQUIRE(std::abs(f3_host(ii,jj)-(dt+ii + (jj+1)/10.))<tol);
-    }
-  }
-  for (int jj=0;jj<num_levs;++jj) {
-    REQUIRE(std::abs(f2_host(jj)-(dt+(jj+1)/10.))<tol);
-  }
-  min_input.finalize();
-  reset_fields();
-
-  // Check multisnap output
-  AtmosphereInput multi_input(multi_params,field_manager);
-  for (int tt = 0; tt<std::min(max_steps,10); tt++) {
-    multi_input.read_variables(tt);
+  if (output_type == "instant") {
+    // Check instant output
+    AtmosphereInput ins_input(input_params,field_manager);
+    ins_input.read_variables();
     f1.sync_to_host();
     f2.sync_to_host();
     f3.sync_to_host();
     f4.sync_to_host();
-
-    int tt1 = tt + 1;
+  
+    // The diagnostic is not present in the field manager.  So we can't use the scorpio_input class
+    // to read in the data.  Here we use raw IO routines to gather the data for testing.
+    auto f_diag_ins_h = get_diagnostic_input(io_comm, gm, 0, input_params.get<std::string>("Filename"));
+  
     for (int ii=0;ii<num_lcols;++ii) {
-      REQUIRE(std::abs(f1_host(ii)-(tt1*dt+ii))<tol);
+      REQUIRE(std::abs(f1_host(ii)-(max_steps*dt+ii))<tol);
       for (int jj=0;jj<num_levs;++jj) {
-        REQUIRE(std::abs(f3_host(ii,jj)-(ii+tt1*dt + (jj+1)/10.))<tol);
-        REQUIRE(std::abs(f4_host(ii,jj)-(ii+tt1*dt + (jj+1)/10.))<tol);
+        REQUIRE(std::abs(f3_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
+        REQUIRE(std::abs(f4_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
+        REQUIRE(std::abs(f_diag_ins_h(ii,jj)-(3.0*f4_host(ii,jj)+2.0))<tol);
       }
     }
     for (int jj=0;jj<num_levs;++jj) {
-      REQUIRE(std::abs(f2_host(jj)-(tt1*dt + (jj+1)/10.))<tol);
+      REQUIRE(std::abs(f2_host(jj)-(max_steps*dt + (jj+1)/10.))<tol);
     }
-  }
-  multi_input.finalize();
+    ins_input.finalize();
+    reset_fields();
+  } else if (output_type == "average") {
+    // Check average output
+    AtmosphereInput avg_input(input_params,field_manager);
+    avg_input.read_variables();
+    f1.sync_to_host();
+    f2.sync_to_host();
+    f3.sync_to_host();
+    Real avg_val;
+    for (int ii=0;ii<num_lcols;++ii) {
+      avg_val = (max_steps+1)/2.0*dt + ii; // Sum(x0+i*dt,i=1...N) = N*x0 + dt*N*(N+1)/2, AVG = Sum/N, note x0=ii in this case
+      REQUIRE(std::abs(f1_host(ii)-avg_val)<tol);
+      for (int jj=0;jj<num_levs;++jj) {
+        avg_val = (max_steps+1)/2.0*dt + (jj+1)/10.+ii;  //note x0=(jj+1)/10+ii in this case.
+        REQUIRE(std::abs(f3_host(ii,jj)-avg_val)<tol);
+      }
+    }
+    for (int jj=0;jj<num_levs;++jj) {
+      avg_val = (max_steps+1)/2.0*dt + (jj+1)/10.;  //note x0=(jj+1)/10 in this case.
+      REQUIRE(std::abs(f2_host(jj)-avg_val)<tol);
+    }
+    avg_input.finalize();
+    reset_fields();
+  } else if (output_type == "max") {
+    // Check max output
+    // The max should be equivalent to the instantaneous because this function is monotonically increasing.
+    AtmosphereInput max_input(input_params,field_manager);
+    max_input.read_variables();
+    f1.sync_to_host();
+    f2.sync_to_host();
+    f3.sync_to_host();
+    for (int ii=0;ii<num_lcols;++ii) {
+      REQUIRE(std::abs(f1_host(ii)-(max_steps*dt+ii))<tol);
+      for (int jj=0;jj<num_levs;++jj) {
+        REQUIRE(std::abs(f3_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
+      }
+    }
+    for (int jj=0;jj<num_levs;++jj) {
+      REQUIRE(std::abs(f2_host(jj)-(max_steps*dt + (jj+1)/10.))<tol);
+    }
+    max_input.finalize();
+  } else if (output_type == "min") {
+    // Check min output
+    // The min should be equivalent to the first step because this function is monotonically increasing.
+    AtmosphereInput min_input(input_params,field_manager);
+    min_input.read_variables();
+    f1.sync_to_host();
+    f2.sync_to_host();
+    f3.sync_to_host();
+    for (int ii=0;ii<num_lcols;++ii) {
+      REQUIRE(std::abs(f1_host(ii)-(dt+ii))<tol);
+      for (int jj=0;jj<num_levs;++jj) {
+        REQUIRE(std::abs(f3_host(ii,jj)-(dt+ii + (jj+1)/10.))<tol);
+      }
+    }
+    for (int jj=0;jj<num_levs;++jj) {
+      REQUIRE(std::abs(f2_host(jj)-(dt+(jj+1)/10.))<tol);
+    }
+    min_input.finalize();
+    reset_fields();
+  } else if (output_type == "multisnap") {
+    // Check multisnap output; note, tt starts at 1 instead of 0 to follow netcdf time dimension indexing.
+    AtmosphereInput multi_input(input_params,field_manager);
+    for (int tt = 0; tt<=std::min(max_steps,10); tt++) {
+      multi_input.read_variables(tt);
+      f1.sync_to_host();
+      f2.sync_to_host();
+      f3.sync_to_host();
+      f4.sync_to_host();
 
-  // All Done
+      int tt1 = tt + 1;
+      for (int ii=0;ii<num_lcols;++ii) {
+        REQUIRE(std::abs(f1_host(ii)-(tt1*dt+ii))<tol);
+        for (int jj=0;jj<num_levs;++jj) {
+          REQUIRE(std::abs(f3_host(ii,jj)-(ii+tt1*dt + (jj+1)/10.))<tol);
+          REQUIRE(std::abs(f4_host(ii,jj)-(ii+tt1*dt + (jj+1)/10.))<tol);
+        }
+      }
+      for (int jj=0;jj<num_levs;++jj) {
+        REQUIRE(std::abs(f2_host(jj)-(tt1*dt + (jj+1)/10.))<tol);
+      }
+    }
+    multi_input.finalize();
+  } else {
+    EKAT_REQUIRE_MSG(false,"Error! Incorrect type for io test: " + output_type);
+  }
+  // All Done 
   scorpio::eam_pio_finalize();
-}
+} // end function run()
 
 /*===================================================================================================*/
 std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> grid)
@@ -495,5 +496,15 @@ get_diagnostic_input(const ekat::Comm& comm, const std::shared_ptr<GridsManager>
 
   return f_diag_h;
 }
-
+/*========================================================================================================*/
+TEST_CASE("input_output_basic","io")
+{
+  std::vector<std::string> output_types =
+    { "instant","average", "max", "min", "multisnap" };
+  for (const auto& ot : output_types) {
+    printf("Testing output type %s...",ot.c_str());
+    run(ot);
+    printf("Done!\n");
+  } 
+}
 } // anonymous namespace
