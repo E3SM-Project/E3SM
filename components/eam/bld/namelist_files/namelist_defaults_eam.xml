@@ -76,6 +76,11 @@
 <ncdata dyn="se" hgrid="ne0np4_cubeface_grad_ne4x5"   nlev="60"  aquaplanet="1" ic_ymd="101" >DUMMY</ncdata>
 
 
+<ncdata dyn="se" hgrid="ne0np4_cubeface_grad_ne30x3"  nlev="60"  aquaplanet="1" ic_ymd="101" >DUMMY</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_cubeface_grad_ne4x6"   nlev="60"  aquaplanet="1" ic_ymd="101" >DUMMY</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_cubeface_grad_ne4x5"   nlev="60"  aquaplanet="1" ic_ymd="101" >DUMMY</ncdata>
+
+
 <!-- E3SM L72 Aquaplanet -->
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne4np4_L72_c190218.nc</ncdata>
 <ncdata dyn="se" hgrid="ne16np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne16np4_L72_c190311.nc</ncdata>

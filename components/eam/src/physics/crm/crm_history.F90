@@ -433,6 +433,8 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    call phys_getopts(use_MMF_VT_out = use_MMF_VT)
    call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
+   
+
    ! Subtract radiative heating for MMF_DT output
    MMF_DT_out(1:ncol,:pver) = ( ptend%s(1:ncol,:pver) - qrs(1:ncol,:pver) - qrl(1:ncol,:pver) )/cpair
 
