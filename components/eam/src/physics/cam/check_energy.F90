@@ -1235,12 +1235,14 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
        end do
     end if
 
-    if (irain > 1 .and. isnow > 1) then
+    if (microp_scheme == 'P3' .and. irain > 1) then
        do k = 1, pver
           wr = wr + q(k,irain)*pdel(k)/gravit
-          if (.not.microp_scheme == 'P3') then
-             ws = ws + q(k,isnow)*pdel(k)/gravit
-          end if
+       end do
+    else if (irain > 1 .and. isnow > 1) then
+       do k = 1, pver
+          wr = wr + q(k,irain)*pdel(k)/gravit
+          ws = ws + q(k,isnow)*pdel(k)/gravit
        end do
     end if
 
