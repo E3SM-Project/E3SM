@@ -16,6 +16,8 @@
 #include "diagnostics/ice_water_path.hpp"
 #include "diagnostics/vapor_water_path.hpp"
 #include "diagnostics/rain_water_path.hpp"
+#include "diagnostics/shortwave_cloud_forcing.hpp"
+
 
 namespace scream {
 
@@ -34,6 +36,8 @@ inline void register_diagnostics () {
   diag_factory.register_product("IceWaterPath",&create_atmosphere_diagnostic<IceWaterPathDiagnostic>);
   diag_factory.register_product("VapWaterPath",&create_atmosphere_diagnostic<VapWaterPathDiagnostic>);
   diag_factory.register_product("RainWaterPath",&create_atmosphere_diagnostic<RainWaterPathDiagnostic>);
+  diag_factory.register_product("ShortwaveCloudForcing",&create_atmosphere_diagnostic<ShortwaveCloudForcingDiagnostic>);
+
 }
 
 } // namespace scream
