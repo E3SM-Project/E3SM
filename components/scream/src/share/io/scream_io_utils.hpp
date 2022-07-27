@@ -62,7 +62,7 @@ struct IOControl {
       // We will need to use timestamp information
       } else if (frequency_units == "nsecs") {
         ret = ((ts_diff > 0) && (ts_diff % frequency == 0));
-      } else if (frequency_units == "nmin") {
+      } else if (frequency_units == "nmins") {
         ret = (ts_diff >= 60) && (ts_diff % (frequency*60) == 0);
       } else if (frequency_units == "nhours") {
         ret = (ts_diff >= 3600) && (ts_diff % (frequency*3600) == 0);

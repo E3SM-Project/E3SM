@@ -44,6 +44,7 @@ std::shared_ptr<GridsManager>
 get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs);
 
 ekat::ParameterList get_in_params(const std::string& type,
+                                  const std::string& freq,
                                   const ekat::Comm& comm,
                                   const util::TimeStamp& t0,
                                   const int dt, const int max_steps);
@@ -114,7 +115,9 @@ protected:
 
 };
 
-void run(const std::string output_type) {
+/*===================================================================================================*/
+void run_multisnap(const std::string& output_freq_units) {
+  const std::string output_type = "multisnap";
   ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
   Int num_gcols = 2*io_comm.size();
   Int num_levs = 2 + SCREAM_SMALL_PACK_SIZE;
@@ -135,20 +138,25 @@ void run(const std::string output_type) {
   // Construct a timestamp
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
 
-  std::vector<std::string> output_types =
-    { "instant","average", "max", "min", "multisnap" };
-
-  const Int max_steps = 10;
-  const Int dt = 1;
-//ASD  for (const auto& type : output_types) {
+  // Gather testing data based on the output frequency units
+  ekat::ParameterList control_params;
+  ekat::parse_yaml_file("io_test_control.yaml",control_params);
+  EKAT_REQUIRE_MSG(control_params.isSublist(output_freq_units),"ERROR! output frequency units " + output_freq_units + " does not have an entry in io_test_control.yaml");
+  const auto& freq_params = control_params.sublist(output_freq_units);
+  const Int max_steps = freq_params.get<int>("Max Steps");
+  const Int dt        = freq_params.get<int>("dt");
   {
     util::TimeStamp time = t0;
 
     // Re-create the fm anew, so the fields are re-inited for each output type
     auto field_manager = get_test_fm(grid);
     field_manager->init_fields_time_stamp(t0);
+    // Set up parameter list control for output
     ekat::ParameterList params;
     ekat::parse_yaml_file("io_test_" + output_type + ".yaml",params);
+    auto& params_sub = params.sublist("Output Control");
+    params_sub.set<std::string>("Frequency Units",output_freq_units);
+    // Set up output manager.
     OutputManager om;
     om.setup(io_comm,params,field_manager,gm,t0,t0,false);
     io_comm.barrier();
@@ -195,7 +203,6 @@ void run(const std::string output_type) {
     // Finalize the output manager (close files)
     om.finalize();
   }
-//ASD  }
 
   // Get a fresh new field manager
   auto field_manager = get_test_fm(grid);
@@ -210,15 +217,166 @@ void run(const std::string output_type) {
   };
   reset_fields();
 
-  // At this point we should have 5 files output:
-  // 1 file each for averaged, instantaneous, min and max data.
-  // And 1 file with multiple time snaps of instantaneous data.
-  // Cycle through each output and make sure it is correct.
   // We can use the produced output files to simultaneously check output quality and the
   // ability to read input.
   // NOTE: single-snap file start outputing at the final time only,
   //       while multi-snap starts to output at the first time step
-  auto input_params = get_in_params(output_type,io_comm,t0,dt,max_steps);
+  auto input_params = get_in_params(output_type,output_freq_units, io_comm,t0,dt,max_steps);
+  const Real tol = 1000*std::numeric_limits<Real>::epsilon();
+
+  // TODO: Create a small nc dummy file and a separate unit test which tests all input functions.
+  // Test that pio_inq_dimlen is correct, using a file from one of the above parameter lists.
+  {
+    auto test_filename = input_params.get<std::string>("Filename");
+    scorpio::register_file(test_filename,scorpio::Read);
+    Int test_gcols_len = scorpio::get_dimlen_c2f(test_filename.c_str(),"ncol");
+    REQUIRE(test_gcols_len==num_gcols);
+    scorpio::eam_pio_closefile(test_filename);
+  }
+
+  auto f1 = field_manager->get_field("field_1");
+  auto f2 = field_manager->get_field("field_2");
+  auto f3 = field_manager->get_field("field_3");
+  auto f4 = field_manager->get_field("field_packed");
+  auto f1_host = f1.get_view<Real*,Host>();
+  auto f2_host = f2.get_view<Real*,Host>();
+  auto f3_host = f3.get_view<Real**,Host>();
+  auto f4_host = f4.get_view<Real**,Host>();
+
+
+  // Check multisnap output; note, tt starts at 1 instead of 0 to follow netcdf time dimension indexing.
+  AtmosphereInput multi_input(input_params,field_manager);
+  for (int tt = 0; tt<=std::min(max_steps,10); tt++) {
+    multi_input.read_variables(tt);
+    f1.sync_to_host();
+    f2.sync_to_host();
+    f3.sync_to_host();
+    f4.sync_to_host();
+
+    int tt1 = tt + 1;
+    for (int ii=0;ii<num_lcols;++ii) {
+      REQUIRE(std::abs(f1_host(ii)-(tt1*dt+ii))<tol);
+      for (int jj=0;jj<num_levs;++jj) {
+        REQUIRE(std::abs(f3_host(ii,jj)-(ii+tt1*dt + (jj+1)/10.))<tol);
+        REQUIRE(std::abs(f4_host(ii,jj)-(ii+tt1*dt + (jj+1)/10.))<tol);
+      }
+    }
+    for (int jj=0;jj<num_levs;++jj) {
+      REQUIRE(std::abs(f2_host(jj)-(tt1*dt + (jj+1)/10.))<tol);
+    }
+  }
+  multi_input.finalize();
+  // All Done 
+  scorpio::eam_pio_finalize();
+} // end function run()
+/*===================================================================================================*/
+void run(const std::string& output_type,const std::string& output_freq_units) {
+  ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
+  Int num_gcols = 2*io_comm.size();
+  Int num_levs = 2 + SCREAM_SMALL_PACK_SIZE;
+
+  // Initialize the pio_subsystem for this test:
+  MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
+  scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
+
+  // First set up a field manager and grids manager to interact with the output functions
+  auto gm = get_test_gm(io_comm,num_gcols,num_levs);
+  auto grid = gm->get_grid("Point Grid");
+  int num_lcols = grid->get_num_local_dofs();
+
+  // Need to register the Test Diagnostic so that IO can access it
+  auto& diag_factory = AtmosphereDiagnosticFactory::instance();
+  diag_factory.register_product("DummyDiagnostic",&create_atmosphere_diagnostic<DiagTest>);
+
+  // Construct a timestamp
+  util::TimeStamp t0 ({2000,1,1},{0,0,0});
+
+  // Gather testing data based on the output frequency units
+  ekat::ParameterList control_params;
+  ekat::parse_yaml_file("io_test_control.yaml",control_params);
+  EKAT_REQUIRE_MSG(control_params.isSublist(output_freq_units),"ERROR! output frequency units " + output_freq_units + " does not have an entry in io_test_control.yaml");
+  const auto& freq_params = control_params.sublist(output_freq_units);
+  const Int max_steps = freq_params.get<int>("Max Steps");
+  const Int dt        = freq_params.get<int>("dt");
+
+  {
+    util::TimeStamp time = t0;
+
+    // Re-create the fm anew, so the fields are re-inited for each output type
+    auto field_manager = get_test_fm(grid);
+    field_manager->init_fields_time_stamp(t0);
+    // Set up parameter list control for output
+    ekat::ParameterList params;
+    ekat::parse_yaml_file("io_test_template.yaml",params);
+    params.set<std::string>("Averaging Type",output_type);
+    auto& params_sub = params.sublist("Output Control");
+    params_sub.set<std::string>("Frequency Units",output_freq_units);
+    // Set up output manager.
+    OutputManager om;
+    om.setup(io_comm,params,field_manager,gm,t0,t0,false);
+    io_comm.barrier();
+
+    const auto& out_fields = field_manager->get_groups_info().at("output");
+    // Time loop
+    for (Int ii=0;ii<max_steps;++ii) {
+
+      // Update the fields
+      for (const auto& fname : out_fields->m_fields_names) {
+        auto f  = field_manager->get_field(fname);
+        f.sync_to_host();
+        auto fl = f.get_header().get_identifier().get_layout();
+        switch (fl.rank()) {
+          case 1:
+            {
+              auto v = f.get_view<Real*,Host>();
+              for (int i=0; i<fl.dim(0); ++i) {
+                v(i) += dt;
+              }
+            }
+            break;
+          case 2:
+            {
+              auto v = f.get_view<Real**,Host>();
+              for (int i=0; i<fl.dim(0); ++i) {
+                for (int j=0; j<fl.dim(1); ++j) {
+                  v(i,j) += dt;
+                }
+              }
+            }
+            break;
+          default:
+            EKAT_ERROR_MSG ("Error! Unexpected field rank.\n");
+        }
+        f.sync_to_dev();
+      }
+
+      // Run the output manager for this time step
+      time += dt;
+      om.run(time);
+    }
+
+    // Finalize the output manager (close files)
+    om.finalize();
+  }
+
+  // Get a fresh new field manager
+  auto field_manager = get_test_fm(grid);
+  const auto& out_fields = field_manager->get_groups_info().at("output");
+  auto reset_fields = [&] () {
+    // Because the next test for input in this sequence relies on the same fields.  We set all field values
+    // to nan to ensure no false-positive tests if a field is simply not read in as input.
+    for (const auto& fname : out_fields->m_fields_names) {
+      auto f = field_manager->get_field(fname);
+      f.deep_copy(ekat::ScalarTraits<Real>::invalid());
+    }
+  };
+  reset_fields();
+
+  // We can use the produced output files to simultaneously check output quality and the
+  // ability to read input.
+  // NOTE: single-snap file start outputing at the final time only,
+  //       while multi-snap starts to output at the first time step
+  auto input_params = get_in_params(output_type,output_freq_units, io_comm,t0,dt,max_steps);
   const Real tol = 100*std::numeric_limits<Real>::epsilon();
 
   // TODO: Create a small nc dummy file and a separate unit test which tests all input functions.
@@ -326,36 +484,12 @@ void run(const std::string output_type) {
     }
     min_input.finalize();
     reset_fields();
-  } else if (output_type == "multisnap") {
-    // Check multisnap output; note, tt starts at 1 instead of 0 to follow netcdf time dimension indexing.
-    AtmosphereInput multi_input(input_params,field_manager);
-    for (int tt = 0; tt<=std::min(max_steps,10); tt++) {
-      multi_input.read_variables(tt);
-      f1.sync_to_host();
-      f2.sync_to_host();
-      f3.sync_to_host();
-      f4.sync_to_host();
-
-      int tt1 = tt + 1;
-      for (int ii=0;ii<num_lcols;++ii) {
-        REQUIRE(std::abs(f1_host(ii)-(tt1*dt+ii))<tol);
-        for (int jj=0;jj<num_levs;++jj) {
-          REQUIRE(std::abs(f3_host(ii,jj)-(ii+tt1*dt + (jj+1)/10.))<tol);
-          REQUIRE(std::abs(f4_host(ii,jj)-(ii+tt1*dt + (jj+1)/10.))<tol);
-        }
-      }
-      for (int jj=0;jj<num_levs;++jj) {
-        REQUIRE(std::abs(f2_host(jj)-(tt1*dt + (jj+1)/10.))<tol);
-      }
-    }
-    multi_input.finalize();
   } else {
     EKAT_REQUIRE_MSG(false,"Error! Incorrect type for io test: " + output_type);
   }
   // All Done 
   scorpio::eam_pio_finalize();
 } // end function run()
-
 /*===================================================================================================*/
 std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> grid)
 {
@@ -444,6 +578,7 @@ std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm& io_comm, const Int n
 }
 /*==================================================================================================*/
 ekat::ParameterList get_in_params(const std::string& type,
+                                  const std::string& freq,
                                   const ekat::Comm& comm,
                                   const util::TimeStamp& t0,
                                   const int dt, const int max_steps)
@@ -457,7 +592,7 @@ ekat::ParameterList get_in_params(const std::string& type,
   std::string filename =
         "io_" + std::string(multisnap ? "multisnap_test" : "output_test")
       + "." + (multisnap ? ekat::upper_case("Instant") : ekat::upper_case(type))
-      + ".nsteps_x1" + std::string(multisnap ? "" : "0")
+      + "." + freq + "_x1" + std::string(multisnap ? "" : "0")
       + ".np" + std::to_string(comm.size())
       + "." + t_first_write.to_string() + ".nc";
 
@@ -500,11 +635,20 @@ get_diagnostic_input(const ekat::Comm& comm, const std::shared_ptr<GridsManager>
 TEST_CASE("input_output_basic","io")
 {
   std::vector<std::string> output_types =
-    { "instant","average", "max", "min", "multisnap" };
-  for (const auto& ot : output_types) {
-    printf("Testing output type %s...",ot.c_str());
-    run(ot);
+    { "instant","average", "max", "min"};
+  std::vector<std::string> output_freq =
+    { "nsteps", "nsecs", "nmins", "nhours", "ndays"};
+  for (const auto& of : output_freq) {
+    printf("Testing output freq %s\n",of.c_str());
+    for (const auto& ot : output_types) {
+      printf("  Testing output type %s...",ot.c_str());
+      run(ot,of);
+      printf("Done!\n");
+    } 
+    printf("  Testing output type multisnap...");
+    run_multisnap(of);
     printf("Done!\n");
-  } 
+  }
+  printf("DONE\n");
 }
 } // anonymous namespace

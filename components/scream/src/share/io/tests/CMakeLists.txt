@@ -7,11 +7,9 @@ BuildCprnc()
 
 ## Test output
 
-configure_file(io_test_instant.yaml io_test_instant.yaml)
-configure_file(io_test_average.yaml io_test_average.yaml)
-configure_file(io_test_max.yaml io_test_max.yaml)
-configure_file(io_test_min.yaml io_test_min.yaml)
 configure_file(io_test_multisnap.yaml io_test_multisnap.yaml)
+configure_file(io_test_template.yaml io_test_template.yaml)
+configure_file(io_test_control.yaml io_test_control.yaml)
 
 CreateUnitTest(io_test "io.cpp" scream_io LABELS "io"
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
