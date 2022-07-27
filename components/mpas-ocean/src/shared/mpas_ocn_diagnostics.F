@@ -232,13 +232,13 @@ contains
       ! inputs: relativeVorticity, layerThickEdgeFlux, normalVelocity, normalTransportVelocity, 
       !         normalGMBolusVelocity
       ! outputs: vertTransportVelocityTop, vertGMBolusVelocityTop, relativeVorticityCell, 
-      !          divergence, kineticEnergyCell, tangentialVelocity
+      !          divergence, kineticEnergyCell, tangentialVelocity, vertMLEBolusVelocityTop
       ! in and out: vertVelocityTop
       call ocn_diagnostic_solve_vortVel(relativeVorticity, &
              layerThickEdgeFlux, normalVelocity, normalTransportVelocity, &
-             normalGMBolusVelocity, vertVelocityTop, vertTransportVelocityTop, &
-             vertGMBolusVelocityTop, relativeVorticityCell, divergence, &
-             kineticEnergyCell, tangentialVelocity)
+             normalGMBolusVelocity, normalMLEvelocity, vertVelocityTop, vertTransportVelocityTop, &
+             vertGMBolusVelocityTop, vertMLEBolusVelocityTop, relativeVorticityCell, &
+             divergence, kineticEnergyCell, tangentialVelocity)
 
       if ( configVertAdvMethod == vertAdvRemap ) then
 
@@ -1563,9 +1563,9 @@ contains
 !-----------------------------------------------------------------------
    subroutine ocn_diagnostic_solve_vortVel(relativeVorticity, &
                 layerThicknessEdgeFlux, normalVelocity, normalTransportVelocity, &
-                normalGMBolusVelocity, vertVelocityTop, vertTransportVelocityTop, &
-                vertGMBolusVelocityTop, relativeVorticityCell, divergence, &
-                kineticEnergyCell, tangentialVelocity)!{{{
+                normalGMBolusVelocity, normalMLEVelocity, vertVelocityTop, vertTransportVelocityTop, &
+                vertGMBolusVelocityTop, vertMLEBolusVelocityTop, relativeVorticityCell, &
+                divergence, kineticEnergyCell, tangentialVelocity)!{{{
 
       implicit none
 
@@ -1585,6 +1585,8 @@ contains
          normalTransportVelocity
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normalGMBolusVelocity
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         normalMLEVelocity
 
       !-----------------------------------------------------------------
       !
@@ -1598,6 +1600,8 @@ contains
          vertTransportVelocityTop
       real (kind=RKIND), dimension(:,:), intent(out) :: &
          vertGMBolusVelocityTop
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         vertMLEBolusVelocityTop
       real (kind=RKIND), dimension(:,:), intent(out) :: &
          relativeVorticityCell
       real (kind=RKIND), dimension(:,:), intent(out) :: &
@@ -1621,8 +1625,10 @@ contains
       real(kind=RKIND) :: dcEdge_temp, dvEdge_temp, r_tmp, weightsOnEdge_temp
 
       real (kind=RKIND), dimension(:), allocatable:: div_hu,div_huTransport,div_huGMBolus
+      real (kind=RKIND), dimension(:), allocatable:: div_huMLEBolus
+
 #ifdef MPAS_OPENACC
-      !$acc declare device_resident(div_hu, div_huTransport, div_huGMBolus)
+      !$acc declare device_resident(div_hu, div_huTransport, div_huGMBolus, div_huMLEBolus)
 #endif
 
       ! Need owned cells for relativeVorticityCell
@@ -1664,6 +1670,7 @@ contains
       ! Compute divergence, kinetic energy, and vertical velocity
       !
       allocate(div_hu(nVertLevels),div_huTransport(nVertLevels),div_huGMBolus(nVertLevels))
+      allocate(div_huMLEBolus(nVertLevels))
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop gang vector &
@@ -1672,7 +1679,7 @@ contains
       !$acc                  maxLevelCell, normalVelocity, divergence, layerThicknessEdgeFlux, &
       !$acc                  normalTransportVelocity, normalGMBolusVelocity, vertVelocityTop, &
       !$acc                  vertTransportVelocityTop, vertGMBolusVelocityTop, invAreaCell, &
-      !$acc                  minLevelCell) &
+      !$acc                  minLevelCell,vertMLEBolusVelocityTop, normalMLEVelocity) &
       !$acc          private(invAreaCell1, i, iEdge, edgeSignOnCell_temp, dcEdge_temp, &
       !$acc                  dvEdge_temp, k, r_tmp)
 #else
@@ -1687,6 +1694,7 @@ contains
          div_hu(:) = 0.0_RKIND
          div_huTransport(:) = 0.0_RKIND
          div_huGMBolus(:) = 0.0_RKIND
+         div_huMLEBolus(:) = 0.0_RKIND
          invAreaCell1 = invAreaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
@@ -1708,6 +1716,9 @@ contains
                div_huGMBolus(k) = div_huGMBolus(k) &
                                   - layerThicknessEdgeFlux(k, iEdge) * edgeSignOnCell_temp * dvEdge_temp &
                                   * normalGMBolusVelocity(k, iEdge) * invAreaCell1
+               div_huMLEBolus(k) = div_huMLEBolus(k) &
+                                  - layerThicknessEdgeFlux(k, iEdge) * edgeSignOnCell_temp * dvEdge_temp &
+                                  * normalMLEVelocity(k, iEdge) * invAreaCell1
             end do
          end do
          ! Vertical velocity at bottom (maxLevelCell(iCell)+1) is zero, initialized above.
@@ -1717,6 +1728,7 @@ contains
             vertVelocityTop(k,iCell) = vertVelocityTop(k+1,iCell) - div_hu(k)
             vertTransportVelocityTop(k,iCell) = vertTransportVelocityTop(k+1,iCell) - div_huTransport(k)
             vertGMBolusVelocityTop(k,iCell) = vertGMBolusVelocityTop(k+1,iCell) - div_huGMBolus(k)
+            vertMLEBolusVelocityTop(k,iCell) = vertMLEBolusVelocityTop(k+1,iCell) - div_huMLEBolus(k)
          end do
       end do
 #ifndef MPAS_OPENACC
@@ -3113,6 +3125,14 @@ contains
                        GMBolusVelocityZ,            &
                        GMBolusVelocityZonal,        &
                        GMBolusVelocityMeridional    &
+                      )
+
+      call mpas_reconstruct(meshPool, normalMLEvelocity,          &
+                       mleVelocityX,            &
+                       mleVelocityY,            &
+                       mleVelocityZ,            &
+                       mleVelocityZonal,        &
+                       mleVelocityMeridional    &
                       )
 
       call mpas_reconstruct(meshPool, gmStreamFuncTopOfEdge,          &

@@ -340,7 +340,7 @@ module ocn_time_integration_si
       ! barotropicForcing, barotropicThicknessFlux
       ! layerThickEdgeFlux, layerThickEdgeMean,
       ! normalTransportVelocity, normalGMBolusVelocity
-      ! vertAleTransportTop
+      ! vertAleTransportTop, normalMLEvelocity
       ! velocityX, velocityY, velocityZ
       ! velocityZonal, velocityMeridional
       ! gradSSH, gradSSHX, gradSSHY, gradSSHZ
@@ -1677,7 +1677,8 @@ module ocn_time_integration_si
             ! normalBaroclinicVelocity + uBolus
             uTemp(:) = normalBarotropicVelocityNew(iEdge) &
                    + normalBaroclinicVelocityNew(:,iEdge) &
-                   +       normalGMBolusVelocity(:,iEdge)
+                   +       normalGMBolusVelocity(:,iEdge) &
+                   +           normalMLEvelocity(:,iEdge)
 
             ! thicknessSum is initialized outside the loop because
             ! on land boundaries maxLevelEdgeTop=0, but I want to
@@ -1717,6 +1718,7 @@ module ocn_time_integration_si
                         *(normalBarotropicVelocityNew(iEdge)   + &
                           normalBaroclinicVelocityNew(k,iEdge) + &
                           normalGMBolusVelocity(k,iEdge) + &
+                          normalMLEvelocity(k,iEdge) + &
                           normalVelocityCorrection )
             enddo
 
@@ -1875,7 +1877,7 @@ module ocn_time_integration_si
 #ifdef MPAS_OPENACC
             !$acc enter data copyin(layerThicknessNew, normalVelocityNew)
             !$acc update device (normalTransportVelocity, &
-            !$acc                normalGMBolusVelocity)
+            !$acc                normalGMBolusVelocity, normalMLEvelocity)
             !$acc enter data copyin(atmosphericPressure, seaIcePressure)
             !$acc enter data copyin(sshNew)
             !$acc enter data copyin(activeTracersNew)
@@ -2276,7 +2278,7 @@ module ocn_time_integration_si
 #ifdef MPAS_OPENACC
       !$acc enter data copyin(layerThicknessNew, normalVelocityNew)
       !$acc update device (normalTransportVelocity, &
-      !$acc                normalGMBolusVelocity)
+      !$acc                normalGMBolusVelocity,normalMLEvelocity)
       !$acc enter data copyin(atmosphericPressure, seaIcePressure)
       !$acc enter data copyin(sshNew)
       !$acc enter data copyin(activeTracersNew)
@@ -2402,7 +2404,7 @@ module ocn_time_integration_si
          !$acc enter data copyin(layerThicknessCur)
       endif
       !$acc update device (normalTransportVelocity, &
-      !$acc                normalGMBolusVelocity)
+      !$acc                normalGMBolusVelocity,normalMLEvelocity)
       !$acc enter data copyin(atmosphericPressure, seaIcePressure)
       !$acc enter data copyin(sshNew)
       !$acc enter data copyin(tracersGroupNew)
