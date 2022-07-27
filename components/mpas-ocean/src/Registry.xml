@@ -344,7 +344,7 @@
 		/>
 	</nml_record>
 	<nml_record name="submesoscale_eddy_parameterization" mode="forward">
-	    <nml_option name="config_submesoscale_enable" type="logical" default_value=".false." units="NA"
+	    <nml_option name="config_submesoscale_enable" type="logical" default_value=".false." 
 		            description="flag to enable the FK2011 parameterization for submesoscale eddies"
 					possible_values=".true. or .false."
 					/>
@@ -352,7 +352,7 @@
 		            description="timescale for frictional slumping of front (in seconds)"
 					possible_values="positive reals, between 1-10 days"
 					/>
-        <nml_option name="config_submesoscale_Ce" type="real" default_value="0.06" units="NA"
+        <nml_option name="config_submesoscale_Ce" type="real" default_value="0.06"
 		            description="efficiency of submesoscale eddies"
 					possible_values="0.06 - 0.08"
 					/>
@@ -2703,7 +2703,7 @@
 			 description="vertical tracer-transport velocity defined at center (horizontally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal GM Bolus velocity."
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="vertMLEBolusVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
+		<var name="vertMLEBolusVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^-1"
 			 description="vertical tracer-transport velocity defined at center (horizontally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal MLE (submesoscale) Bolus velocity."
 			 packages="forwardMode;analysisMode"
 
@@ -2838,7 +2838,7 @@
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization"
 			 packages="forwardMode;analysisMode"
 		/>
-	    <var name="normalMLEvelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+	    <var name="normalMLEvelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 		     description="Velocity from mixed layer eddies (fox kemper 2011 submesoscale parameterization)"
 			 packages="forwardMode;analysisMode"
 		/>
@@ -2865,27 +2865,27 @@
 			description="count of times redi limiter is invoked on a timestep"
 			packages="gm"
 		/>
-	    <var name="gradBuoyEddy" type="real" dimensions="nVertLevelsP1 nEdges Time" units="s^{-2}"
+	    <var name="gradBuoyEddy" type="real" dimensions="nVertLevelsP1 nEdges Time" units="s^-2"
 		    description="horizontal gradient of buoyancy at cell edge and interfaces in vertical.  this is used for the GM parameterization and the submesoscale eddy parameterization"
 			packages="forwardMode"
 		/>
-		<var name="mleVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="mleVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			description="Bolus velocity in fox-kemper mle parameterization, x-direction"
 			packages="forwardMode;analysisMode"
 		/>
-		<var name="mleVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="mleVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			description="Bolus velocity in fox-kemper mle parameterization, y-direction"
 			packages="forwardMode;analysisMode"
 		/>
-		<var name="mleVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="mleVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			description="Bolus velocity in fox-kemper mle parameterization, z-direction"
 			packages="forwardMode;analysisMode"
 		/>
-		<var name="mleVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="mleVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			description="Bolus velocity in fox-kemper mle parameterization, zonal-direction"
 			packages="forwardMode;analysisMode"
 		/>
-		<var name="mleVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="mleVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			description="Bolus velocity in fox-kemper mle parameterization, meridional-direction"
 			packages="forwardMode;analysisMode"
 		/>
@@ -2986,7 +2986,7 @@
 		<var name="indMLD" type="integer" dimensions="nCells Time"
 			description="index of model where mixed layer depth occurs (always one past)"
 		/>
-	     <var name="indMLDedge" type="integer" dimensions="nEdges Time" units="unitless"
+	     <var name="indMLDedge" type="integer" dimensions="nEdges Time"
 			description="index of model where mixed layer depth occurs on edges"
 		/>
 	    <var name="dThreshMLD" type="real" dimensions="nCells Time" units="m"
