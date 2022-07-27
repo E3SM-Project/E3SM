@@ -261,7 +261,7 @@ TEST_CASE("input_output_basic","io")
 
   // The diagnostic is not present in the field manager.  So we can't use the scorpio_input class
   // to read in the data.  Here we use raw IO routines to gather the data for testing.
-  auto f_diag_ins_h = get_diagnostic_input(io_comm, gm, 1, ins_params.get<std::string>("Filename"));
+  auto f_diag_ins_h = get_diagnostic_input(io_comm, gm, 0, ins_params.get<std::string>("Filename"));
 
   for (int ii=0;ii<num_lcols;++ii) {
     REQUIRE(std::abs(f1_host(ii)-(max_steps*dt+ii))<tol);
@@ -337,7 +337,7 @@ TEST_CASE("input_output_basic","io")
 
   // Check multisnap output; note, tt starts at 1 instead of 0 to follow netcdf time dimension indexing.
   AtmosphereInput multi_input(multi_params,field_manager);
-  for (int tt = 1; tt<=std::min(max_steps,10); tt++) {
+  for (int tt = 0; tt<std::min(max_steps,10); tt++) {
     multi_input.read_variables(tt);
     f1.sync_to_host();
     f2.sync_to_host();
