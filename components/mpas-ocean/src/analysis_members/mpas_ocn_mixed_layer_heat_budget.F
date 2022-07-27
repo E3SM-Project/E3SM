@@ -103,17 +103,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      logical, pointer :: dThresholdFlag, mldON
       err = 0
-
-      call mpas_pool_get_config(domain%configs, 'config_AM_mixedLayerDepths_Dthreshold', dThresholdFlag)
-      call mpas_pool_get_config(domain%configs, 'config_AM_mixedLayerDepths_enable', mldON)
-
-      if (.not. mldON .and. .not. dThresholdFlag) THEN
-         call mpas_log_write("ML Heat Budget AM requires config_AM_mixedLayerDepths_enable and " &
-                             //"config_AM_mixedLayerDepths_Dthreshold to both be true", MPAS_LOG_CRIT)
-         err = 1
-      endif
 
    end subroutine ocn_init_mixed_layer_heat_budget !}}}
 
@@ -184,7 +174,7 @@ contains
           activeTracerNonLocalMLTend, activeTracerHorMixMLTend, activeTracerVertMixMLTend, &
           activeTracerHorAdvectionMLTend, activeTracerVertAdvectionMLTend, activeTracersML, &
           layerThickness, activeTracersTendML
-      real(kind=RKIND), dimension(:), pointer ::  dThreshMLD, bruntVaisalaFreqML
+      real(kind=RKIND), dimension(:), pointer :: bruntVaisalaFreqML
       real(kind=RKIND) :: depth, difference
       err = 0
 
@@ -222,7 +212,6 @@ contains
          call mpas_pool_get_array(mixedLayerHeatBudgetAMPool, 'activeTracersML', activeTracersML)
          call mpas_pool_get_array(mixedLayerHeatBudgetAMPool, 'activeTracersTendML', activeTracersTendML)
          call mpas_pool_get_array(mixedLayerHeatBudgetAMPool, 'bruntVaisalaFreqML', bruntVaisalaFreqML)
-         call mpas_pool_get_array(mixedLayerDepthsAMPool, 'dThreshMLD', dThreshMLD)
          call mpas_pool_get_dimension(tracersPool, 'index_temperature', index_temperature)
          call mpas_pool_get_array(tracersPool, 'activeTracers', tracers, timeLevel)
          call mpas_pool_get_array(tracerTendPool, 'activeTracersTend', tracerTend)
