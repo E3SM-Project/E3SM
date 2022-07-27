@@ -4296,16 +4296,17 @@ contains
               TUnit%hlen(iunit) = hlen_max   ! allievate the outlier in drainage density estimation. TO DO
            end if
            rlen_min = sqrt(TUnit%area(iunit))
-           if(TUnit%rlen(iunit) < rlen_min .and. TUnit%mask(iunit)==1) then
-              TUnit%rlen(iunit) = rlen_min  ! the channel length should not be small if its has downstream grids
-           else
-              if(TUnit%rlen(iunit) < rlen_min) then
-                  TUnit%rlen(iunit) = 0.5_r8*rlen_min
-              end if
-           end if
-           if(TUnit%rlen(iunit) < rlen_min .and. TUnit%mask(iunit)==1) then
-              TUnit%rlen(iunit) = rlen_min  ! the channel length should not be small if its has downstream grids
-           end if
+           ! TODO: refine min channel length for numerical stability
+           !if(TUnit%rlen(iunit) < rlen_min .and. TUnit%mask(iunit)==1) then
+           !   TUnit%rlen(iunit) = rlen_min  ! the channel length should not be small if its has downstream grids
+           !else
+           !   if(TUnit%rlen(iunit) < rlen_min) then
+           !       TUnit%rlen(iunit) = 0.5_r8*rlen_min
+           !   end if
+           !end if
+           !if(TUnit%rlen(iunit) < rlen_min .and. TUnit%mask(iunit)==1) then
+           !   TUnit%rlen(iunit) = rlen_min  ! the channel length should not be small if its has downstream grids
+           !end if
 
            if(TUnit%rlen(iunit) < rlen_min) then
               TUnit%tlen(iunit) = TUnit%area(iunit) / rlen_min / 2._r8 - TUnit%hlen(iunit)
