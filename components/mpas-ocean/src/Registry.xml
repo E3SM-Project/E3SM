@@ -344,24 +344,24 @@
 		/>
 	</nml_record>
 	<nml_record name="submesoscale_eddy_parameterization" mode="forward">
-	    <nml_option name="config_submesoscale_enable" type="logical" default_value=".false." 
-		            description="flag to enable the FK2011 parameterization for submesoscale eddies"
+		<nml_option name="config_submesoscale_enable" type="logical" default_value=".false." 
+					description="flag to enable the FK2011 parameterization for submesoscale eddies"
 					possible_values=".true. or .false."
 					/>
-	    <nml_option name="config_submesoscale_tau" type="real" default_value="172800" units="s"
-		            description="timescale for frictional slumping of front (in seconds)"
+		<nml_option name="config_submesoscale_tau" type="real" default_value="172800" units="s"
+					description="timescale for frictional slumping of front (in seconds)"
 					possible_values="positive reals, between 1-10 days"
 					/>
-        <nml_option name="config_submesoscale_Ce" type="real" default_value="0.06"
-		            description="efficiency of submesoscale eddies"
+		<nml_option name="config_submesoscale_Ce" type="real" default_value="0.06"
+					description="efficiency of submesoscale eddies"
 					possible_values="0.06 - 0.08"
 					/>
-        <nml_option name="config_submesoscale_Lfmin" type="real" default_value="1000" units="m"
-		            description="minimum frontal width (meters)"
+		<nml_option name="config_submesoscale_Lfmin" type="real" default_value="1000" units="m"
+					description="minimum frontal width (meters)"
 					possible_values="between 500 and 2000m"
- 					/>
-        <nml_option name="config_submesoscale_ds_max" type="real" default_value="100000" units="m"
-		            description="maximum grid scale to scale up buoyancy gradient"
+					/>
+		<nml_option name="config_submesoscale_ds_max" type="real" default_value="100000" units="m"
+					description="maximum grid scale to scale up buoyancy gradient"
 					possible_values="around 1 degree"
 					/>
 	</nml_record>
@@ -2838,8 +2838,8 @@
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization"
 			 packages="forwardMode;analysisMode"
 		/>
-	    <var name="normalMLEvelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
-		     description="Velocity from mixed layer eddies (fox kemper 2011 submesoscale parameterization)"
+		<var name="normalMLEvelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
+			description="Velocity from mixed layer eddies (fox kemper 2011 submesoscale parameterization)"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="cGMphaseSpeed" type="real" dimensions="nEdges Time" units="m s^-1"
@@ -2986,12 +2986,12 @@
 		<var name="indMLD" type="integer" dimensions="nCells Time"
 			description="index of model where mixed layer depth occurs (always one past)"
 		/>
-	     <var name="indMLDedge" type="integer" dimensions="nEdges Time"
+		<var name="indMLDedge" type="integer" dimensions="nEdges Time"
 			description="index of model where mixed layer depth occurs on edges"
 		/>
-	    <var name="dThreshMLD" type="real" dimensions="nCells Time" units="m"
-             description="mixed layer depth based on density threshold"
-        />
+		<var name="dThreshMLD" type="real" dimensions="nCells Time" units="m"
+			description="mixed layer depth based on density threshold"
+		/>
 		<var name="slopeTriadUp" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional" default_value="0.0"
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
 			 packages="forwardMode;analysisMode"
