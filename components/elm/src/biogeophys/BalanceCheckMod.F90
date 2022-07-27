@@ -169,8 +169,7 @@ contains
      use column_varcon     , only : icol_road_perv, icol_road_imperv
      use landunit_varcon   , only : istice_mec, istdlak, istsoil,istcrop,istwet
      use elm_varctl        , only : create_glacier_mec_landunit
-     use elm_initializeMod , only : surfalb_vars
-     use domainMod         , only : ldomain
+     use elm_initializeMod , only : surfalb_vars  
      use CanopyStateType   , only : canopystate_type
      use subgridAveMod
      !
@@ -384,7 +383,6 @@ contains
              write(iulog,*)'qflx_evap_tot              = ',qflx_evap_tot(indexc)
              write(iulog,*)'qflx_irrig                 = ',qflx_irrig(indexc)
              write(iulog,*)'qflx_supply                = ',atm2lnd_vars%supply_grc(g)
-             write(iulog,*)'f_grd                      = ',ldomain%f_grd(g)
              write(iulog,*)'qflx_surf                  = ',qflx_surf(indexc)
              write(iulog,*)'qflx_qrgwl                 = ',qflx_qrgwl(indexc)
              write(iulog,*)'qflx_drain                 = ',qflx_drain(indexc)
@@ -410,7 +408,6 @@ contains
              write(iulog,*)'qflx_surf_irrig_col        = ',qflx_surf_irrig_col(indexc)
              write(iulog,*)'qflx_over_supply_col       = ',qflx_over_supply_col(indexc)
              write(iulog,*)'qflx_supply                = ',atm2lnd_vars%supply_grc(g)
-             write(iulog,*)'f_grd                      = ',ldomain%f_grd(g)
              write(iulog,*)'qflx_surf                  = ',qflx_surf(indexc)
              write(iulog,*)'qflx_h2osfc_surf           = ',qflx_h2osfc_surf(indexc)
              write(iulog,*)'qflx_qrgwl                 = ',qflx_qrgwl(indexc)
