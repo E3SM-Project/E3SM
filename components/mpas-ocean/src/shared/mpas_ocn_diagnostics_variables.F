@@ -62,6 +62,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: vertVelocityTop
    real (kind=RKIND), dimension(:,:), pointer :: vertTransportVelocityTop
    real (kind=RKIND), dimension(:,:), pointer :: vertGMBolusVelocityTop
+   real (kind=RKIND), dimension(:,:), pointer :: vertMLEBolusVelocityTop
    real (kind=RKIND), dimension(:,:), pointer :: normalGMBolusVelocity
    real (kind=RKIND), dimension(:,:), pointer :: normalMLEvelocity
    real (kind=RKIND), dimension(:,:), pointer :: normalTransportVelocity
@@ -452,6 +453,8 @@ contains
                    normalMLEvelocity)
          call mpas_pool_get_array(diagnosticsPool, 'vertGMBolusVelocityTop', &
                    vertGMBolusVelocityTop)
+         call mpas_pool_get_array(diagnosticsPool, 'vertMLEBolusVelocityTop', &
+                   vertMLEBolusVelocityTop)
 
          call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdgeFlux', &
                    layerThickEdgeFlux)
@@ -754,6 +757,7 @@ contains
          !$acc                   normalGMBolusVelocity,           &
          !$acc                   normalMLEvelocity,               &
          !$acc                   vertGMBolusVelocityTop,          &
+         !$acc                   vertMLEBolusVelocityTop,         &
          !$acc                   transportVelocityZonal,          &
          !$acc                   GMStreamFuncMeridional,          &
          !$acc                   indexSurfaceLayerDepth,          &
@@ -1005,6 +1009,7 @@ contains
          !$acc                   normalGMBolusVelocity,           &
          !$acc                   normalMLEvelocity,               &
          !$acc                   vertGMBolusVelocityTop,          &
+         !$acc                   vertMLEBolusVelocityTop,         &
          !$acc                   transportVelocityZonal,          &
          !$acc                   GMStreamFuncMeridional,          &
          !$acc                   indexSurfaceLayerDepth,          &
@@ -1214,6 +1219,7 @@ contains
                  normalGMBolusVelocity,           &
                  normalMLEvelocity,               &
                  vertGMBolusVelocityTop,          &
+                 vertMLEBolusVelocityTop,         &
                  transportVelocityZonal,          &
                  GMStreamFuncMeridional,          &
                  indexSurfaceLayerDepth,          &
