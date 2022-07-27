@@ -417,19 +417,19 @@ contains
     !EOP
 
     !----- local -----
-    type(mct_aVect), pointer :: a2x_a         ! model to drv bundle
-    type(mct_aVect), pointer :: x2a_a         ! drv to model bundle
+    type(mct_aVect), pointer :: a2x_a             ! model to drv bundle
+    type(mct_aVect), pointer :: x2a_a             ! drv to model bundle
     type(mct_ggrid), pointer :: dom_a
-    character(CL)            :: atm_gnam      ! atm grid
-    character(CL)            :: lnd_gnam      ! lnd grid
-    integer(in)              :: k,n,ic,nf,ip  ! generic index
-    integer(in)              :: kArea         ! index of area field in aVect
-    integer(in)              :: kLat          ! index of lat field in aVect
-    integer(in)              :: kl,ka,ko,ki   ! fraction indices
-    integer(in)              :: lSize         ! size of aVect
-    real(r8)                 :: ca_a          ! area of a grid cell
-    logical,save             :: first_time    = .true.
-    logical,save             :: samegrid_al   ! samegrid atm and lnd
+    character(CL)            :: atm_gnam          ! atm grid
+    character(CL)            :: lnd_gnam          ! lnd grid
+    integer(in)              :: k,n,ic,nf,ip      ! generic index
+    integer(in)              :: kArea             ! index of area field in aVect
+    integer(in)              :: kLat              ! index of lat field in aVect
+    integer(in)              :: kl,ka,ko,ki       ! fraction indices
+    integer(in)              :: lSize             ! size of aVect
+    real(r8)                 :: ca_a              ! area of a grid cell
+    logical,save             :: first_time=.true. ! initialization flag
+    logical,save             :: samegrid_al       ! samegrid atm and lnd
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diagBGC_atm_mct) '
@@ -578,15 +578,15 @@ contains
     !EOP
 
     !----- local -----
-    type(mct_aVect), pointer :: l2x_l        ! model to drv bundle
-    type(mct_aVect), pointer :: x2l_l        ! drv to model bundle
+    type(mct_aVect), pointer :: l2x_l             ! model to drv bundle
+    type(mct_aVect), pointer :: x2l_l             ! drv to model bundle
     type(mct_ggrid), pointer :: dom_l
-    integer(in)              :: n,ic,nf,ip ! generic index
-    integer(in)              :: kArea        ! index of area field in aVect
-    integer(in)              :: kl           ! fraction indices
-    integer(in)              :: lSize        ! size of aVect
-    real(r8)                 :: ca_l         ! area of a grid cell
-    logical,save             :: first_time    = .true.
+    integer(in)              :: n,ic,nf,ip        ! generic index
+    integer(in)              :: kArea             ! index of area field in aVect
+    integer(in)              :: kl                ! fraction indices
+    integer(in)              :: lSize             ! size of aVect
+    real(r8)                 :: ca_l              ! area of a grid cell
+    logical,save             :: first_time=.true. ! initialization flag
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diagBGC_lnd_mct) '
@@ -678,11 +678,11 @@ contains
     type(mct_aVect), pointer :: r2x_r
     type(mct_aVect), pointer :: x2r_r
     type(mct_ggrid), pointer :: dom_r
-    integer(in)              :: n,ic,nf,ip      ! generic index
+    integer(in)              :: n,ic,nf,ip        ! generic index
     integer(in)              :: kArea             ! index of area field in aVect
     integer(in)              :: lSize             ! size of aVect
-    real(r8)                 :: ca_r    ! area of a grid cell
-    logical,save             :: first_time    = .true.
+    real(r8)                 :: ca_r              ! area of a grid cell
+    logical,save             :: first_time=.true. ! initialization flag
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diagBGC_rof_mct) '
@@ -750,11 +750,11 @@ contains
     type(mct_aVect), pointer :: g2x_g
     type(mct_aVect), pointer :: x2g_g
     type(mct_ggrid), pointer :: dom_g
-    integer(in)              :: n,ic,nf,ip      ! generic index
+    integer(in)              :: n,ic,nf,ip        ! generic index
     integer(in)              :: kArea             ! index of area field in aVect
     integer(in)              :: lSize             ! size of aVect
-    real(r8)                 :: ca_g ! area of a grid cell
-    logical,save             :: first_time = .true.
+    real(r8)                 :: ca_g              ! area of a grid cell
+    logical,save             :: first_time=.true. ! initialization flag
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diagBGC_glc_mct) '
@@ -811,15 +811,15 @@ contains
     !EOP
 
     !----- local -----
-    type(mct_aVect), pointer :: o2x_o        ! model to drv bundle
-    type(mct_aVect), pointer :: x2o_o        ! drv to model bundle
+    type(mct_aVect), pointer :: o2x_o             ! model to drv bundle
+    type(mct_aVect), pointer :: x2o_o             ! drv to model bundle
     type(mct_ggrid), pointer :: dom_o
-    integer(in)              :: n,nf,ic,ip ! generic index
-    integer(in)              :: kArea        ! index of area field in aVect
-    integer(in)              :: ko,ki  ! fraction indices
-    integer(in)              :: lSize        ! size of aVect
-    real(r8)                 :: ca_i,ca_o  ! area of a grid cell
-    logical,save             :: first_time    = .true.
+    integer(in)              :: n,nf,ic,ip        ! generic index
+    integer(in)              :: kArea             ! index of area field in aVect
+    integer(in)              :: ko,ki             ! fraction indices
+    integer(in)              :: lSize             ! size of aVect
+    real(r8)                 :: ca_i,ca_o         ! area of a grid cell
+    logical,save             :: first_time=.true. ! initialization flag
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diagBGC_ocn_mct) '
@@ -938,16 +938,16 @@ contains
     !EOP
 
     !----- local -----
-    type(mct_aVect), pointer :: i2x_i        ! model to drv bundle
-    type(mct_aVect), pointer :: x2i_i        ! drv to model bundle
+    type(mct_aVect), pointer :: i2x_i             ! model to drv bundle
+    type(mct_aVect), pointer :: x2i_i             ! drv to model bundle
     type(mct_ggrid), pointer :: dom_i
-    integer(in)              :: n,ic,nf,ip   ! generic index
-    integer(in)              :: kArea        ! index of area field in aVect
-    integer(in)              :: kLat         ! index of lat field in aVect
-    integer(in)              :: ko,ki        ! fraction indices
-    integer(in)              :: lSize        ! size of aVect
-    real(r8)                 :: ca_i,ca_o    ! area of a grid cell
-    logical,save             :: first_time        = .true.
+    integer(in)              :: n,ic,nf,ip        ! generic index
+    integer(in)              :: kArea             ! index of area field in aVect
+    integer(in)              :: kLat              ! index of lat field in aVect
+    integer(in)              :: ko,ki             ! fraction indices
+    integer(in)              :: lSize             ! size of aVect
+    real(r8)                 :: ca_i,ca_o         ! area of a grid cell
+    logical,save             :: first_time=.true. ! initialization flag
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diagBGC_ice_mct) '
