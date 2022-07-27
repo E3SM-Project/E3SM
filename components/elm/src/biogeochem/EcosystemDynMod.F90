@@ -716,7 +716,7 @@ contains
        event = 'CNGapMortality'
        call t_start_lnd(event)
        call GapMortality( num_soilc, filter_soilc, num_soilp, filter_soilp,&
-                              cnstate_vars )
+                              cnstate_vars, crop_vars)
        call t_stop_lnd(event)
 
        !--------------------------------------------
