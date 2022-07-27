@@ -132,7 +132,7 @@ class COV(TestProperty):
         )
 
 ###############################################################################
-def test_factory(user_req_tests, machine):
+def test_factory(user_req_tests, machine, mem_check):
 ###############################################################################
     testclasses = TestProperty.__subclasses__()
     if not user_req_tests:
@@ -144,6 +144,11 @@ def test_factory(user_req_tests, machine):
             expect(user_req_test in valid_names, f"'{user_req_test}' is not a known test")
 
         result = [testclass() for testclass in testclasses if testclass().shortname in user_req_tests]
+
+    # Mangle test full name if mem_check is on
+    if mem_check:
+        for test in result:
+            test.longname += "_cuda_mem_check" if is_cuda_machine(machine) else "_valgrind"
 
     return result
 
@@ -237,7 +242,7 @@ class TestAllScream(object):
             expect (not self._local, "Specifying a machine while passing '-l,--local' is ambiguous.")
 
         # Make our test objects!
-        self._tests = test_factory(tests, self._machine)
+        self._tests = test_factory(tests, self._machine, self._mem_check)
 
         # Compute root dir (where repo is) and work dir (where build/test will happen)
         if not self._root_dir:
@@ -709,8 +714,6 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
                 # Need backwards compatible build name for db submission
                 expect(len(self._tests) == 1, "Expected only one mem-check test being submitted")
                 build_name_mod = "cuda_mem_check" if is_cuda_machine(self._machine) else "valgrind"
-            else:
-                build_name_mod += "_cuda_mem_check" if is_cuda_machine(self._machine) else "_valgrind"
 
         result += f"-DBUILD_NAME_MOD={build_name_mod} "
 

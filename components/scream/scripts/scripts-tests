@@ -363,12 +363,14 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
                             self._machine, dry_run=False)
         run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
-        test_cmake_cache_contents(self, "full_debug", "CMAKE_BUILD_TYPE", "Debug")
-        test_cmake_cache_contents(self, "full_debug", "SCREAM_TEST_SIZE", "SHORT")
+        extension = "cuda_mem_check" if is_cuda_machine(self._machine) else "valgrind"
+        builddir = f"full_debug_{extension}"
+        test_cmake_cache_contents(self, builddir, "CMAKE_BUILD_TYPE", "Debug")
+        test_cmake_cache_contents(self, builddir, "SCREAM_TEST_SIZE", "SHORT")
         if is_cuda_machine(self._machine):
-            test_cmake_cache_contents(self, "full_debug", "EKAT_ENABLE_CUDA_MEMCHECK", "TRUE")
+            test_cmake_cache_contents(self, builddir, "EKAT_ENABLE_CUDA_MEMCHECK", "TRUE")
         else:
-            test_cmake_cache_contents(self, "full_debug", "EKAT_ENABLE_VALGRIND", "TRUE")
+            test_cmake_cache_contents(self, builddir, "EKAT_ENABLE_VALGRIND", "TRUE")
 
     def test_opt_details(self):
         """
