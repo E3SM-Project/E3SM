@@ -3253,11 +3253,10 @@
 
   <machine MACH="chicoma-cpu">
     <DESC>Chicoma CPU-only nodes at LANL IC. Each node has 2 AMD EPYC 7H12 64-Core (Milan) 512GB</DESC>
-    <NODENAME_REGEX>ch-fe.*.lanl.gov</NODENAME_REGEX>
+    <NODENAME_REGEX>ch-fe*</NODENAME_REGEX>
     <OS>Linux</OS>
     <COMPILERS>gnu,nvidia,aocc,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <PROJECT>t22_e3sm-gpu</PROJECT>
     <CIME_OUTPUT_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/scratch/chicoma-cpu</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
@@ -3277,7 +3276,7 @@
       <arguments>
         <arg name="label"> --label</arg>
         <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
-        <arg name="thread_count">-c $SHELL{echo 256/`./xmlquery --value MAX_MPITASKS_PER_NODE`|bc}</arg>
+        <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
         <arg name="binding"> $SHELL{if [ 128 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
         <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
     </arguments>
