@@ -1,5 +1,5 @@
 ./xmlchange LND_DOMAIN_FILE=domain.lnd.nldas2_0224x0464_c110415.nc
-./xmlchange LND_DOMAIN_PATH=/compyfs/inputdata/share/domains/domain.clm
+./xmlchange LND_DOMAIN_PATH=${DIN_LOC_ROOT}/share/domains/domain.clm
 
 ./xmlchange DLND_MODE=CLMNLDAS
 ./xmlchange DLND_CPLHIST_CASE=NLDAS
