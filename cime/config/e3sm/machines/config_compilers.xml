@@ -1038,20 +1038,23 @@ for mct, etc.
 </compiler>
 
 <compiler COMPILER="ibm" MACH="summit">
-  <SFC> xlf_r </SFC>
+  <SFC> xlf90_r </SFC>
   <SCC> xlc_r </SCC>
-  <MPIFC> mpixlf </MPIFC>
-  <MPICC> mpixlc </MPICC>
-  <MPICXX> mpixlC </MPICXX>
+  <SCXX> xlc++_r </SCXX>
+  <MPIFC> mpif90 </MPIFC>
+  <MPICC> mpicc </MPICC>
+  <MPICXX> mpiCC </MPICXX>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <ADD_FFLAGS> -qzerosize -qfree=f90 -qxlf2003=polymorphic</ADD_FFLAGS>
+  <ADD_FFLAGS> -qzerosize -qfree=f90 -qxlf2003=polymorphic -qspillsize=2500 -qextname=flush </ADD_FFLAGS>
+  <ADD_FFLAGS MODEL="cice" compile_threaded="true"> -qsmp=omp:noopt </ADD_FFLAGS>
   <ADD_FFLAGS_NOOPT> -O0 -g -qfree=f90  </ADD_FFLAGS_NOOPT>
-  <ADD_LDFLAGS>-lxlfmath -lxlf90_r -lxlopt -lxl -lxlsmp -L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(ESSL_PATH)/lib64 -lessl -L$(NETLIB_LAPACK_PATH)/lib -llapack</ADD_LDFLAGS>
+  <ADD_LDFLAGS>-lxlopt -lxl -lxlsmp -L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(ESSL_PATH)/lib64 -lessl -L$(OLCF_NETLIB_LAPACK_ROOT)/lib -llapack</ADD_LDFLAGS>
   <ADD_LDFLAGS MPILIB="!mpi-serial"> -L$(PNETCDF_PATH)/lib -lpnetcdf -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 </ADD_LDFLAGS>
-  <ADD_FFLAGS> -qspillsize=2500 -qextname=flush </ADD_FFLAGS>
-  <ADD_CPPDEFS> -DLINUX  </ADD_CPPDEFS>
+  <ADD_CPPDEFS> -DLINUX -DHAVE_SLASHPROC -Uvector </ADD_CPPDEFS>
   <ADD_LDFLAGS>  -Wl,--relax -Wl,--allow-multiple-definition </ADD_LDFLAGS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <CXX_LIBS>-lstdc++ -L$(OLCF_XLC_ROOT)/lib -libmc++</CXX_LIBS>
 </compiler>
 
 <compiler COMPILER="pgi" MACH="summit">
@@ -1062,10 +1065,16 @@ for mct, etc.
   <MPICXX> mpiCC </MPICXX>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 -Mvect=nosimd </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 -DSUMMITDEV_PGI </ADD_FFLAGS>
+  <ADD_FFLAGS MODEL="cam"> -Mnovect </ADD_FFLAGS>
+  <ADD_FFLAGS MODEL="cice"> -Mnovect </ADD_FFLAGS>
   <ADD_LDFLAGS>-L$(NETCDF_C_PATH)/lib -lnetcdf -L$(NETCDF_FORTRAN_PATH)/lib -lnetcdff -L$(ESSL_PATH)/lib64 -lessl -L$(NETLIB_LAPACK_PATH)/lib -llapack</ADD_LDFLAGS>
   <ADD_LDFLAGS MPILIB="!mpi-serial"> -L$(PNETCDF_PATH)/lib -lpnetcdf -L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 </ADD_LDFLAGS>
+  <ADD_CPPDEFS> -DLINUX -Uvector </ADD_CPPDEFS>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CXX_LIBS>-lstdc++ </CXX_LIBS>
 </compiler>
 
 <compiler COMPILER="pgiacc" MACH="summit">
