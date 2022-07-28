@@ -48,6 +48,7 @@
       <value compset=""                >-mach $MACH</value>
       <value compset="_EAM"            >-phys default</value>
       <value compset="_EAM%CMIP6_"     >&eam_phys_defaults; &eam_chem_defaults;</value>
+      <value compset="_EAM%CMIP6-PAERO_">&eam_phys_defaults; -chem none</value>
       <value compset="_EAM%AR5sf"      >&eam_phys_defaults; -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero</value>
       <value compset="_ELM%[^_]*BC"    >-bc_dep_to_snow_updates</value>
       <value compset="_EAM.*_BGC%*"    >-co2_cycle</value>
@@ -120,6 +121,12 @@
       <value compset="ARM97_EAM%SCM.*MMF"               >scam_arm97_MMF-1mom</value>
       <value compset="RICO_EAM%SCM.*MMF"                >scam_rico_MMF-1mom</value>
       <value compset="20TR_EAM%CMIP6.*MMF"              >20TR_MMF-1mom_CMIP6</value>
+
+      <value compset="1950SOI_EAM%CMIP6-PAERO"          >1950_eam_CMIP6_PAERO</value>
+      <value compset="1950SOI_EAM%CMIP6-MMF1"           >1950_MMF-1mom_CMIP6</value>
+
+      <value compset="20TRSOI_EAM%CMIP6-PAERO"          >20TR_eam_CMIP6_PAERO</value>
+      <value compset="20TRSOI_EAM%CMIP6-MMF1"           >20TR_MMF-1mom_CMIP6</value>
     </values>
 
     <group>run_component_cam</group>
