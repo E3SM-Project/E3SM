@@ -600,11 +600,15 @@
       <executable>srun</executable>
       <arguments>
         <arg name="num_tasks"> -l -K -n {{ total_tasks }} -N {{ num_nodes }} </arg>
-        <arg name="binding">--cpu_bind=cores</arg>
+        <!-- <arg name="binding">cpu_bind=cores</arg>  -->
+        <!-- <arg name="binding">threads-per-core=1 -c 2</arg> -->
+        <arg name="binding">--threads-per-core=1</arg>
         <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
-        <arg name="placement">-m plane={{ tasks_per_node }}</arg>
+        <arg name="placement">-m *:block</arg>
+        <!--<arg name="placement">-m plane={{ tasks_per_node }}</arg>-->
       </arguments>
     </mpirun>
+
 
     <module_system type="module" allow_error="true">
       <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
@@ -616,21 +620,21 @@
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
 
-      <modules compiler="amdclang">
-        <command name="reset"></command>
-        <command name="switch">PrgEnv-cray PrgEnv-amd/8.2.0</command>
-      </modules>
-
-
       <modules compiler="crayclang">
         <command name="reset"></command>
-        <command name="switch">PrgEnv-cray PrgEnv-cray/8.2.0</command>
-        <command name="switch">cce cce/13.0.1</command>
+        <command name="switch">PrgEnv-cray PrgEnv-cray/8.3.3</command>
+        <command name="switch">cce cce/14.0.0</command>
+      </modules>
+
+      <modules compiler="amdclang">
+        <command name="reset"></command>
+        <command name="switch">PrgEnv-cray PrgEnv-amd/8.3.3</command>
+        <command name="switch">amd amd/5.1.0</command>
       </modules>
 
       <modules compiler="gnu">
         <command name="reset"></command>
-        <command name="switch">PrgEnv-cray PrgEnv-gnu/8.2.0</command>
+        <command name="switch">PrgEnv-cray PrgEnv-gnu/8.3.3</command>
       </modules>
       <modules>
         <command name="load">cray-mpich/8.1.12</command>
