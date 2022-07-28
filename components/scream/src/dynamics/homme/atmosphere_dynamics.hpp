@@ -40,14 +40,14 @@ public:
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
-#ifndef KOKKOS_ENABLE_CUDA
+#ifndef HOMMEXX_ENABLE_GPU
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
 #endif
   void homme_pre_process (const int dt);
   void homme_post_process ();
 
-#ifndef KOKKOS_ENABLE_CUDA
+#ifndef HOMMEXX_ENABLE_GPU
   // Cuda requires methods enclosing __device__ lambda's to be public
 protected:
 #endif

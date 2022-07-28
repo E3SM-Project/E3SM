@@ -10,7 +10,7 @@ if (CUDA_BUILD)
 endif()
 if (HIP_BUILD)
   set(YAKL_ARCH "HIP")
-  list(APPEND YAKL_CXX_FLAGS -DYAKL_ARCH_HIP --expt-extended-lambda --expt-relaxed-constexpr)
+  list(APPEND YAKL_CXX_FLAGS "-DYAKL_ARCH_HIP -O3 -D__HIP_ROCclr__ -D__HIP_ARCH_GFX90A__=1 --rocm-path=${ROCM_PATH} --offload-arch=gfx90a -x hip ")
 endif()
 
 

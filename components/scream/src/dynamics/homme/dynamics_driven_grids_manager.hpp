@@ -26,7 +26,7 @@ public:
 
   const grid_repo_type& get_repo () const { return m_grids; }
 
-#ifndef KOKKOS_ENABLE_CUDA
+#ifndef HOMMEXX_ENABLE_GPU
 protected:
 #endif
 

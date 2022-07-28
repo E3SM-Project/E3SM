@@ -105,7 +105,7 @@ protected:
     return ::Homme::ExecViewUnmanaged<DataType>(scream_view.data(),scream_view.layout());
   }
 
-#ifdef KOKKOS_ENABLE_CUDA
+#ifdef HOMMEXX_ENABLE_GPU
 public:
   // These structs and function should be morally private, but CUDA complains that
   // they cannot be private/protected

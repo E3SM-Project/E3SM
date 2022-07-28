@@ -78,7 +78,7 @@ public:
   const std::set<FieldIdentifier>& get_import_fids () const { return m_imports_fids; }
   const std::set<FieldIdentifier>& get_export_fids () const { return m_exports_fids; }
 
-#ifndef KOKKOS_ENABLE_CUDA
+#ifndef HOMMEXX_ENABLE_GPU
 protected:
 #endif
 
@@ -117,7 +117,7 @@ protected:
     Real*  data;
   };
 
-#ifdef KOKKOS_ENABLE_CUDA
+#ifdef HOMMEXX_ENABLE_GPU
 protected:
 #endif
 

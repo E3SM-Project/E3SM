@@ -22,7 +22,7 @@ public:
   CheckResult check() const override;
 
 // CUDA requires the parent fcn of a KOKKOS_LAMBDA to have public access
-#ifndef KOKKOS_ENABLE_CUDA
+#ifndef HOMMEXX_ENABLE_GPU
 protected:
 #endif
   template<typename ST>

@@ -116,26 +116,25 @@ include(CTest)
 set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
 
 #this is now a bad name as this macro will be needed in scream as well
-set (HOMMEXX_ENABLE_GPU FALSE)
-set (CUDA_BUILD FALSE) #needed for yakl if kokkos vars are not visible there?
-set (HIP_BUILD FALSE) #needed for yakl if kokkos vars are not visible there?
+set (HOMMEXX_ENABLE_GPU FALSE CACHE BOOL "")
+set (CUDA_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?
+set (HIP_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?
 
 # Determine if this is a Cuda build.
 if (Kokkos_ENABLE_CUDA)
   # Add CUDA as a language for CUDA builds
   enable_language(CUDA)
-  set (HOMMEXX_ENABLE_GPU TRUE)
-  set (CUDA_BUILD TRUE) #needed for yakl if kokkos vars are not visible there?
+  set (HOMMEXX_ENABLE_GPU TRUE  CACHE BOOL "" FORCE)
+  set (CUDA_BUILD TRUE CACHE BOOL "" FORCE) #needed for yakl if kokkos vars are not visible there?
 endif ()
 
 # Determine if this is a Cuda build.
 if (Kokkos_ENABLE_HIP)
   # Add CUDA as a language for CUDA builds
   enable_language(HIP)
-  set (HOMMEXX_ENABLE_GPU TRUE)
-  set (HIP_BUILD TRUE) #needed for yakl if kokkos vars are not visible there?
+  set (HOMMEXX_ENABLE_GPU TRUE CACHE BOOL "" FORCE)
+  set (HIP_BUILD TRUE CACHE BOOL "" FORCE) #needed for yakl if kokkos vars are not visible there?
 endif ()
-
 
 ### Scream default configuration options
 set(DEFAULT_MAX_RANKS 4)
@@ -403,6 +402,8 @@ if (SCREAM_DOUBLE_PRECISION)
 endif()
 
 print_var(HOMMEXX_ENABLE_GPU)
+print_var(CUDA_BUILD)
+print_var(HIP_BUILD)
 print_var(SCREAM_DOUBLE_PRECISION)
 print_var(SCREAM_MIMIC_GPU)
 print_var(SCREAM_FPE)

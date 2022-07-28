@@ -15,7 +15,7 @@ set(SHOC_HEADERS
 )
 
 # Add ETI source files if not on CUDA/HIP
-if (NOT HOMMEXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
+if (NOT HOMMEXX_ENABLE_GPU)
   list(APPEND SHOC_SRCS
     shoc_adv_sgs_tke.cpp
     shoc_assumed_pdf.cpp

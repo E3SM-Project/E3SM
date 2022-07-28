@@ -45,7 +45,7 @@ protected:
 
   // The three main overrides for the subcomponent
   void initialize_impl (const RunType run_type);
-#ifdef KOKKOS_ENABLE_CUDA
+#ifdef HOMMEXX_ENABLE_GPU
 public:
 #endif
   void run_impl        (const int dt);
