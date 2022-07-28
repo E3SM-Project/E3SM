@@ -27,13 +27,12 @@ module mo_gas_phase_chemdr
 
   integer :: o3_ndx, synoz_ndx, so4_ndx, h2o_ndx, o2_ndx, o_ndx, hno3_ndx, dst_ndx, cldice_ndx, e90_ndx
   !integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx
-  integer :: o3lnz_ndx, ch4lnz_ndx
+  integer :: o3lnz_ndx,ch4lnz_ndx
   integer :: uci1_ndx
   integer :: het1_ndx
   integer :: ndx_cldfr, ndx_cmfdqr, ndx_nevapr, ndx_cldtop, ndx_prain, ndx_sadsulf
   integer :: ndx_h2so4
   integer :: inv_ndx_cnst_o3, inv_ndx_m
-  integer :: inv_ndx_cnst_oh, inv_ndx_cnst_no3, inv_ndx_cnst_ch4 !kzm ++
 ! for ozone budget 
   integer :: jo2_b_ndx, lch3o2_no_ndx, lno_ho2_ndx, lc2h5o2_no_ndx, lch3co3_no_ndx, lroho2_no_ndx, lisopo2_no_ndx, lmvko2_no_ndx
   integer :: jo1dU_ndx, jno2_ndx, jno3_a_ndx, jn2o5_b_ndx, po3_oh_ndx
@@ -49,8 +48,8 @@ module mo_gas_phase_chemdr
   character(len=fieldname_len),dimension(extcnt)        :: extfrc_name
   logical :: convproc_do_aer 
 
-  real(r8), parameter :: low_limit = 0.1_r8  ! lower limit factor for dry deposition
-  integer,  parameter :: srf_emit_nlayer = 3 ! number of layers adding surface emission
+  real(r8), parameter :: low_limit = 0.1_r8 ! lower limit factor for dry deposition
+  real(r8), parameter :: up_limit  = 2.0_r8 ! upper limit factor for surface emission
 
 contains
 
@@ -229,17 +228,7 @@ contains
    
      inv_ndx_cnst_o3 = get_inv_ndx( 'cnst_O3' ) ! prescribed O3 oxidant field
      inv_ndx_m       = get_inv_ndx( 'M' )        ! airmass.  Elsewhere this variable is known as m_ndx
-     !kzm++  test
-     inv_ndx_cnst_no3       = get_inv_ndx( 'cnst_NO3' )
-     inv_ndx_cnst_oh       = get_inv_ndx( 'cnst_OH' )
-     inv_ndx_cnst_ch4      = get_inv_ndx( 'CH4' )
-     write(iulog,*), 'kzm_inv_ndx_no3 ', inv_ndx_cnst_no3
-     write(iulog,*), 'kzm_inv_ndx_oh', inv_ndx_cnst_oh
-     write(iulog,*), 'kzm_inv_ndx_ch4', inv_ndx_cnst_ch4
-     if ((inv_ndx_cnst_oh .gt. 0.0_r8) .and. (inv_ndx_cnst_no3 .gt. 0.0_r8)) then
-        write(iulog,*) 'kzm_prescribed_NO3_OH '
-     endif
-     !kzm--
+
      
      if ( chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
          .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag') then
@@ -333,7 +322,7 @@ contains
 ! for aqueous chemistry and aerosol growth
 !
     use aero_model,        only : aero_model_gasaerexch
-    use aero_model,        only : aero_model_strat_surfarea!kzm
+     use aero_model,        only : aero_model_strat_surfarea!kzm
     implicit none
 
     !-----------------------------------------------------------------------
@@ -488,7 +477,7 @@ contains
     real(r8) :: vmr0(ncol,pver,gas_pcnst)
     real(r8) :: vmr_old(ncol,pver,gas_pcnst)
     real(r8) :: vmr_old2(ncol,pver,gas_pcnst)
-    real(r8) :: tmp(ncol)
+    real(r8) :: tmp
     
     ! for explicit chem prodcution and loss
     real(r8)     ::  chem_prod(ncol,pver,gas_pcnst)         ! xported species (vmr/delt)
@@ -506,7 +495,6 @@ contains
     logical :: history_gaschmbudget_2D_levels
     logical :: history_UCIgaschmbudget_2D
     logical :: history_UCIgaschmbudget_2D_levels
-    logical :: history_chemdyg_summary
 
     integer ::  gas_ac_idx
     real(r8), pointer, dimension(:) :: gas_ac_2D
@@ -519,8 +507,7 @@ contains
                     history_gaschmbudget_2D_out = history_gaschmbudget_2D, &
              history_gaschmbudget_2D_levels_out = history_gaschmbudget_2D_levels,&
                  history_UCIgaschmbudget_2D_out = history_UCIgaschmbudget_2D, &
-          history_UCIgaschmbudget_2D_levels_out = history_UCIgaschmbudget_2D_levels, &
-                    history_chemdyg_summary_out = history_chemdyg_summary)
+          history_UCIgaschmbudget_2D_levels_out = history_UCIgaschmbudget_2D_levels)
 
     call t_startf('chemdr_init')
 
@@ -651,8 +638,8 @@ contains
        end do
     end do
     !kzm add the prognostic strato_sad
-  call aero_model_strat_surfarea( ncol, mmr, pmid, tfld, troplev, pbuf,strato_sad)
-  !kzm--
+  call aero_model_strat_surfarea( ncol, mmr, pmid, tfld, troplev, pbuf, strato_sad)
+
     if ( has_strato_chem ) then
        !-----------------------------------------------------------------------      
        !        ... initialize condensed and gas phases; all hno3 to gas
@@ -941,14 +928,13 @@ contains
 
     if ( has_linoz_data .and. .not. &
        (chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
-       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' )) then
+       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' .or. &
+        chem_name == 'linoz_mam5_resus_mom_soag'  )) then
        ltrop_sol(:ncol) = troplev(:ncol)
-    !kzm note: this is a strange setting
-    elseif (chem_name == 'trop_strat_mam7_resus_mom_soag_s') then !kzm
-       ltrop_sol(:ncol) = 0 ! apply solver to all levels
+ !kzm note: this is a strange setting  
      elseif (chem_name == 'trop_strat_mam5_resus_mom_soag') then !kzm
        ltrop_sol(:ncol) = 0 ! apply solver to all levels
-    !kzm --
+
     else
        ltrop_sol(:ncol) = 0 ! apply solver to all levels
     endif
@@ -986,6 +972,26 @@ contains
                   invariants(1,1,indexm), ncol, lchnk, ltrop_sol(:ncol) ) 
     call t_stopf('imp_sol')
 
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
+       if ( history_gaschmbudget ) then
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, 'TDI' )
+       endif
+       if ( history_gaschmbudget_2D ) then
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDI' )
+          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DMSI' )
+       endif
+       if ( history_gaschmbudget_2D_levels ) then
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDI_LL' )
+         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
+                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDI_trop', tropFlagInt )
+       endif
+       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
+    endif
+
     ! ozone production 
     if (uci1_ndx > 0) then
       chem_prod(:,:,:) = 0._r8
@@ -1014,43 +1020,14 @@ contains
 
       end do column0_loop
       end do level0_loop
-    end if
-    
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
-            .or. history_chemdyg_summary) then
-       if ( history_gaschmbudget ) then
-          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                 pdeldry(:ncol,:), mbar, delt_inverse, 'TDI' )
-       endif
-       if ( history_gaschmbudget_2D ) then
-          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDI' )
-       endif
-       if ( history_gaschmbudget_2D) then
-          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DMSI' )
-       endif
-       if ( history_gaschmbudget_2D_levels ) then
-         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDI_LL' )
-         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDI_trop', tropFlagInt )
-       endif
-       if ( history_chemdyg_summary ) then
-         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old2(:ncol,:,:), &
-                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDI_trop', tropFlagInt )
-       endif
-       vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
 
     if ( history_UCIgaschmbudget_2D .or. history_UCIgaschmbudget_2D_levels) then
-       if ( history_UCIgaschmbudget_2D) then
-       if ( uci1_ndx > 0) then
-          call gaschmmass_diags( lchnk, ncol, chem_prod(:ncol,:,:), vmr_old2(ncol,:,:), &
+       if ( history_UCIgaschmbudget_2D .and. uci1_ndx > 0) then
+          call gaschmmass_diags( lchnk, ncol, chem_prod(:ncol,:,:), vmr_old(ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DTIP' )
-          call gaschmmass_diags( lchnk, ncol, chem_loss(:ncol,:,:), vmr_old2(:ncol,:,:), &
+          call gaschmmass_diags( lchnk, ncol, chem_loss(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DTIL' )
-       endif
        endif
        if ( history_UCIgaschmbudget_2D_levels .and. uci1_ndx > 0) then
          call gaschmmass_diags( lchnk, ncol, chem_prod(:ncol,:,:), vmr_old(:ncol,:,:), &
@@ -1071,9 +1048,6 @@ contains
           do k = 1,pver
              if ( .not. tropFlag(i,k) ) then
                 vmr(i,k,:) = vmr_old2(i,k,:)
-                ! Zero out the reaction rates (only for diagnostic purpose) in the stratosphere
-                ! Only need to do this one time and diags_reaction_rates will be used below
-                ! in the exp_sol to diagnose the chemistry prod/loss rates.
                 diags_reaction_rates(i,k,:) = 0._r8
              endif
           enddo
@@ -1085,11 +1059,9 @@ contains
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'TRI' )
        endif
-       if ( history_gaschmbudget_2D) then
-       if ( uci1_ndx > 0) then
+       if ( history_gaschmbudget_2D .and. uci1_ndx > 0) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DTRI' )
-       endif
        endif
        if ( history_gaschmbudget_2D_levels .and. uci1_ndx > 0) then
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
@@ -1149,7 +1121,7 @@ contains
       end do level_loop
     endif !uci1_ndx
 
-    if ( history_UCIgaschmbudget_2D .or. history_UCIgaschmbudget_2D_levels .or. history_chemdyg_summary) then
+    if ( history_UCIgaschmbudget_2D .or. history_UCIgaschmbudget_2D_levels) then
        if ( history_UCIgaschmbudget_2D .and. uci1_ndx > 0) then
           call gaschmmass_diags( lchnk, ncol, chem_prod(:ncol,:,:), vmr_old(ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DCIP' )
@@ -1159,12 +1131,6 @@ contains
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DMPP' )
           call gaschmmass_diags( lchnk, ncol, chemmp_loss(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DMPL' )
-       endif
-       if ( history_chemdyg_summary .and. uci1_ndx > 0) then
-          call gaschmmass_diags( lchnk, ncol, chem_prod(:ncol,:,:), vmr_old(ncol,:,:), &
-                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DCIP' )
-          call gaschmmass_diags( lchnk, ncol, chem_loss(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DCIL' )
        endif
        if ( history_UCIgaschmbudget_2D_levels .and. uci1_ndx > 0) then
          call gaschmmass_diags( lchnk, ncol, chem_prod(:ncol,:,:), vmr_old(:ncol,:,:), &
@@ -1197,7 +1163,7 @@ contains
     call t_stopf('exp_sol')
 
     if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels .or.&
-         history_UCIgaschmbudget_2D .or. history_UCIgaschmbudget_2D_levels .or. history_chemdyg_summary) then
+         history_UCIgaschmbudget_2D .or. history_UCIgaschmbudget_2D_levels ) then
        if ( history_gaschmbudget ) then
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, 'TDE' )
@@ -1205,8 +1171,6 @@ contains
        if ( history_gaschmbudget_2D ) then
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDE' )
-       endif
-       if ( history_gaschmbudget_2D ) then
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DMSE' )
        endif
@@ -1219,10 +1183,6 @@ contains
        if ( history_gaschmbudget_2D_levels ) then
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDE_LL' )
-         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDE_trop', tropFlagInt )
-       endif
-       if ( history_chemdyg_summary .and. uci1_ndx > 0) then
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDE_trop', tropFlagInt )
        endif
@@ -1252,8 +1212,7 @@ contains
        enddo
     endif
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
-            .or. history_chemdyg_summary) then
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        if ( history_gaschmbudget  .and. uci1_ndx > 0) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'TRE' )
@@ -1262,13 +1221,11 @@ contains
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DTRE' )
        endif
-       if ( history_UCIgaschmbudget_2D .or. history_chemdyg_summary) then
-       if ( uci1_ndx > 0) then
+       if ( history_UCIgaschmbudget_2D .and. uci1_ndx > 0) then
          call gaschmmass_diags( lchnk, ncol, chemmp_prod(:ncol,:,:), vmr_old(ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DCEP' )
          call gaschmmass_diags( lchnk, ncol, chemmp_loss(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DCEL' )
-       endif
        endif
        if ( history_gaschmbudget_2D_levels .and. uci1_ndx > 0) then
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
@@ -1305,11 +1262,7 @@ contains
 !
 ! Aerosol processes ...
 !
-    !kzm ++
-#if (defined MODAL_AERO_5MODE)
-    call strat_sulfate_cal_gridbox(ncol, vmr, invariants, tfld, troplev, delt)
-#endif
-    !kzm --
+
     if (uci1_ndx > 0) then
        vmr_old2(:ncol,:,:) = vmr(:ncol,:,:)
     endif
@@ -1386,8 +1339,7 @@ contains
 
     endif
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
-            .or. history_chemdyg_summary) then
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        if ( history_gaschmbudget ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'TDA' )
@@ -1395,8 +1347,6 @@ contains
        if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DTDA' )
-       endif
-       if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DMSA' )
        endif
@@ -1405,10 +1355,6 @@ contains
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDA_LL' )
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDA_trop', tropFlagInt)
-       endif
-       if ( history_chemdyg_summary ) then
-         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDA_trop', tropFlagInt )
        endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
@@ -1447,8 +1393,7 @@ contains
        call lin_strat_sfcsink(ncol, lchnk, vmr, xsfc, delt,   pdel(:ncol,:) )
     end if
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
-            .or. history_chemdyg_summary) then
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        if ( history_gaschmbudget ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'TDL' )
@@ -1458,8 +1403,6 @@ contains
        if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DTDL' )
-       endif
-       if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DMSL' )
        endif
@@ -1473,10 +1416,6 @@ contains
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DMSL_trop', tropFlagInt )
        endif
-       if ( history_chemdyg_summary ) then
-         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDL_trop', tropFlagInt )
-       endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
 
@@ -1485,8 +1424,7 @@ contains
     !-----------------------------------------------------------------------      
     call negtrc( 'After chemistry ', vmr, ncol )
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
-            .or. history_chemdyg_summary) then
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        if ( history_gaschmbudget ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'TDN' )
@@ -1494,18 +1432,12 @@ contains
        if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DTDN' )
-       endif
-       if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DMSN' )
        endif
        if ( history_gaschmbudget_2D_levels ) then
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDN_LL' )
-         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDN_trop', tropFlagInt )
-       endif
-       if ( history_chemdyg_summary ) then
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDN_trop', tropFlagInt )
        endif
@@ -1517,8 +1449,7 @@ contains
     !-----------------------------------------------------------------------      
     if(.not. do_lin_strat_chem) call set_fstrat_vals( vmr, pmid, pint, troplev, calday, ncol,lchnk )
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
-            .or. history_chemdyg_summary) then
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        if ( history_gaschmbudget ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'TDU' )
@@ -1526,18 +1457,12 @@ contains
        if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DTDU' )
-       endif
-       if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DMSU' )
        endif
        if ( history_gaschmbudget_2D_levels ) then
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDU_LL' )
-         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDU_trop', tropFlagInt )
-       endif
-       if ( history_chemdyg_summary ) then
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDU_trop', tropFlagInt )
        endif
@@ -1553,8 +1478,7 @@ contains
        call ghg_chem_set_flbc( vmr, ncol )
     endif
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
-            .or. history_chemdyg_summary) then
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        if ( history_gaschmbudget ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'TDB' )
@@ -1562,8 +1486,6 @@ contains
        if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DTDB' )
-       endif
-       if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DMSC' )
        endif
@@ -1573,50 +1495,59 @@ contains
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DTDB_trop', tropFlagInt )
        endif
-       if ( history_chemdyg_summary ) then
-         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDB_trop', tropFlagInt )
-       endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
 
     !-----------------------------------------------------------------------      
     !         ... Surface emissions
     !----------------------------------------------------------------------- 
-    ! if chemUCI is used, apply surface emissions to the bottom (srf_emit_nlayer) layers here
+    ! if chemUCI is used, apply surface emissions here
     if (uci1_ndx > 0) then 
        do m = 1,pcnst
           n = map2chm( m )
           if ( n > 0 ) then
             if ( any( cflx(:ncol,m) /= 0._r8 ) ) then
               if ( .not. any( aer_species == n ) .and. adv_mass(n) /= 0._r8 ) then
-                do k = pver, pver-srf_emit_nlayer+1, -1 ! loop from bottom to top
+                do k = pver, 1, -1 ! loop from bottom to top
                   ! kg/m2, tracer mass
                   wrk(:ncol,k) = adv_mass(n)*vmr(:ncol,k,n)/mbar(:ncol,k) &
                                     *pdeldry(:ncol,k)*rga
-                  tmp(:ncol) = wrk(:ncol,k) + cflx(:ncol,m)*delt/dble(srf_emit_nlayer)
-                  vmr(:ncol,k,n) = tmp(:ncol)*mbar(:ncol,k)/adv_mass(n)/pdeldry(:ncol,k)/rga
+                  j = 0 ! number of columns will double concentration after adding surf. emission
+                  do i = 1,ncol
+                    if ( cflx(i,m) /= 0._r8 ) then
+                      if ( wrk(i,k)*(up_limit-1._r8) >= cflx(i,m)*delt ) then
+                        tmp = wrk(i,k) + cflx(i,m)*delt
+                        cflx(i,m) = 0._r8
+                      else
+                        tmp = wrk(i,k)*up_limit
+                        cflx(i,m) = cflx(i,m) - wrk(i,k)*(up_limit-1._r8)*delt_inverse
+                        j = j + 1
+                      endif
+                      vmr(i,k,n) = tmp*mbar(i,k)/adv_mass(n)/pdeldry(i,k)/rga
+                    endif
+                  end do
+
+                  if ( j == 0 ) then
+                    exit
+                  endif
+
                 end do
-                cflx(:ncol,m) = 0._r8
               endif
             endif
           endif
        end do
     endif
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
-            .or. history_chemdyg_summary) then
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        if ( history_gaschmbudget ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'TDS' )
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'MSS' )
        endif
-       if ( history_gaschmbudget_2D .or. history_chemdyg_summary) then
+       if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DTDS' )
-       endif
-       if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DMSS' )
        endif
@@ -1629,10 +1560,6 @@ contains
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DMSS_LL' )
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DMSS_trop', tropFlagInt )
-       endif
-       if ( history_chemdyg_summary ) then
-         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDS_trop', tropFlagInt )
        endif
        vmr_old(:ncol,:,:) = vmr(:ncol,:,:)
     endif
@@ -1703,14 +1630,14 @@ contains
                   do i = 1,ncol
                     if ( sflx2(i,n) /= 0._r8 ) then
                       if ( wrk(i,k)*(1._r8-low_limit) >= sflx2(i,n)*delt ) then
-                        tmp(1) = wrk(i,k) - sflx2(i,n)*delt
+                        tmp = wrk(i,k) - sflx2(i,n)*delt
                         sflx2(i,n) = 0._r8
                       else
-                        tmp(1) = wrk(i,k)*low_limit
+                        tmp = wrk(i,k)*low_limit
                         sflx2(i,n) = sflx2(i,n) - wrk(i,k)*(1._r8-low_limit)*delt_inverse
                         j = j + 1
                       endif
-                      vmr(i,k,n) = tmp(1)*mbar(i,k)/adv_mass(n)/pdeldry(i,k)/rga
+                      vmr(i,k,n) = tmp*mbar(i,k)/adv_mass(n)/pdeldry(i,k)/rga
                     endif
                   end do
 
@@ -1726,15 +1653,14 @@ contains
     endif
     call t_stopf('drydep')
 
-    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels &
-            .or. history_chemdyg_summary) then
+    if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels) then
        if ( history_gaschmbudget ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'TDD' )
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, 'MSD' )
        endif
-       if ( history_gaschmbudget_2D .or. history_chemdyg_summary) then
+       if ( history_gaschmbudget_2D ) then
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                  pdeldry(:ncol,:), mbar, delt_inverse, '2DTDD' )
           call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
@@ -1750,25 +1676,19 @@ contains
          call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
                                 pdeldry(:ncol,:), mbar, delt_inverse, '2DMSD_trop',tropFlagInt )
        endif
-       if ( history_chemdyg_summary ) then
-         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                pdeldry(:ncol,:), mbar, delt_inverse, '2DTDD_trop', tropFlagInt )
-         call gaschmmass_diags( lchnk, ncol, vmr(:ncol,:,:), vmr_old(:ncol,:,:), &
-                                pdeldry(:ncol,:), mbar, delt_inverse, '2DMSD_trop',tropFlagInt )
-       endif
        do m = 1,pcnst
           n = map2chm(m)
           if (n > 0 .and. (.not. any( aer_species == n ))) then
             ! store gas chemistry tracer concentration in pbuf for tendency
             ! calculation
-            if (history_gaschmbudget .or. history_gaschmbudget_2D_levels .or. history_chemdyg_summary) then
+            if (history_gaschmbudget .or. history_gaschmbudget_2D_levels) then
                gas_ac_idx = pbuf_get_index(gas_ac_name(n))
                call pbuf_get_field(pbuf, gas_ac_idx, gas_ac )
                ftem(:ncol,:) = adv_mass(n)*vmr(:ncol,:,n)/mbar(:ncol,:) &
                                *pdeldry(:ncol,:)*rga
                gas_ac(:ncol,:) = ftem(:ncol,:)
             endif
-            if (history_gaschmbudget_2D .or. history_chemdyg_summary) then
+            if (history_gaschmbudget_2D) then
                gas_ac_idx = pbuf_get_index(gas_ac_name_2D(n))
                call pbuf_get_field(pbuf, gas_ac_idx, gas_ac_2D )
                ftem(:ncol,:) = adv_mass(n)*vmr(:ncol,:,n)/mbar(:ncol,:) &
@@ -1808,7 +1728,7 @@ contains
     call t_startf('chemdr_diags')
     call chm_diags( lchnk, ncol, vmr(:ncol,:,:), mmr_new(:ncol,:,:), &
                     reaction_rates(:ncol,:,:), invariants(:ncol,:,:), depvel(:ncol,:),  sflx(:ncol,:), &
-                    mmr_tend(:ncol,:,:), pmid(:ncol,:), pdel(:ncol,:), pdeldry(:ncol,:), pbuf, troplev(:ncol), tropFlag=tropFlag )
+                    mmr_tend(:ncol,:,:), pdel(:ncol,:), pdeldry(:ncol,:), pbuf, troplev(:ncol), tropFlag=tropFlag )
 
     call rate_diags_calc( reaction_rates(:,:,:), vmr(:,:,:), invariants(:,:,indexm), ncol, lchnk, &
                           pver, pdeldry(:ncol,:), mbar)
@@ -1817,131 +1737,97 @@ contains
 
   end subroutine gas_phase_chemdr
 !-----------------------------------------------
-!-----------------------------------------------
-  subroutine strat_sulfate_cal_gridbox(ncol, vmr, invariants, temp, ltrop, delta_t)
+  subroutine strat_sulfate_cal_gridbox(vmr,)
 ! Code written by Ziming Ke (ke2@llnl.gov) in 2022.07
 ! This code is to solve three equations to calcuate the tendency of DMS, SO2 and
-! H2SO4.
-! five reaction rates are needed for this calculation:
+! H2SO4. 
+! five reaction rates are needed for this calculation: 
 ! usr_SO2_OH(r4), DMS_OH(r5), usr_DMS_OH(r6), DMS_NO3(r7), the order refer to
 ! MAM4 simple chemistry
 ! gas species used in this calculation:
 ! invariant: OH, NO3
-! tendency calculated: H2SO4, DMS, SO2
+! tendency calculated: H2SO4, DMS, SO2 
 
-    use mo_chem_utls,      only : get_spc_ndx, get_extfrc_ndx, get_inv_ndx
+
+    use mo_chem_utls,      only : get_spc_ndx, get_extfrc_ndx, get_inv_ndx,
 
 
     implicit none
-    real(r8), intent(inout)     ::  vmr(ncol,pver,gas_pcnst), invariants(ncol,pver,gas_pcnst) ! xported species (vmr)
-    real(r8), intent(in)     :: temp(ncol,pver)           ! temperature (K); neutral temperature
-    integer, intent(in) :: ncol, ltrop(ncol)
-    real(r8), intent(in) :: delta_t
-    !logical           ::       ! Output the MAM aerosol
-    real(r8) ::    tinv(ncol), exp_fac(ncol)                     ! 1/t
-    real(r8) ::  ko(ncol), fc(ncol), m(ncol,pver)
-    real(r8) :: OH_y0, NO3_y0, dms_y0, c0_dms,a_dms,dms_y1
-    real(r8) :: so2_y0, a_so2, b_so2, c0_so2, so2_y1, h2so4_y0,a_h2so4
-    real(r8) :: c0_h2so4, h2so4_y1
-    real(r8) :: NO3_0(ncol,pver), OH_0(ncol,pver)
-    integer :: ndx_dms, ndx_h2so4, ndx_so2, k, i
-    real(r8) :: h2so4_0(ncol,pver), dms_0(ncol,pver), so2_0(ncol,pver)
-    real(r8) :: r5(ncol,pver),r6(ncol,pver),r7(ncol,pver),r4(ncol,pver)
+    real(r8)     ::  vmr(ncol,pver,gas_pcnst)         ! xported species (vmr)
     
-    ! oxidations
-     !kzm++  test
-     inv_ndx_cnst_no3       = get_inv_ndx( 'cnst_NO3' )
-     inv_ndx_cnst_oh       = get_inv_ndx( 'cnst_OH' )
-     inv_ndx_m       = get_inv_ndx( 'M' ) ! airmass.Elsewhere this variable is known as m_ndx
-     NO3_0(1:ncol,:) = invariants(1:ncol,:,inv_ndx_cnst_no3)/invariants(1:ncol,:,inv_ndx_m) !convert to mol/mol
-     OH_0(1:ncol,:) = invariants(1:ncol,:,inv_ndx_cnst_oh)/invariants(1:ncol,:,inv_ndx_m)!convert to mol/mol 
-     m(1:ncol,:) = invariants(1:ncol,:,inv_ndx_m)!! total atm density (/cm^3)
+    character(len=*), intent(in) :: chem_name
 
-    ! itemp(:ncol,:) = 1._r8 / temp(:ncol,:)
-     !rate(:,:,5) = 9.6e-12_r8 * exp( -234._r8 * itemp(:,:) )
-      !<F6>inv_ndx_m       = get_inv_ndx( 'M' )        ! airmass.  Elsewhere this variable is known as m_ndx
-      !invariants(i,k,inv_ndx_m)
-      ndx_h2so4 = get_spc_ndx('H2SO4')
-      h2so4_0(1:ncol,:) = vmr(1:ncol,:,ndx_h2so4) !mol/mol
-      ndx_dms = get_spc_ndx('DMS')
-      dms_0(1:ncol,:) = vmr(1:ncol,:,ndx_dms)
-      ndx_so2 = get_spc_ndx('SO2')
-      so2_0(1:ncol,:) = vmr(1:ncol,:,ndx_so2)
-   ! reaction rate
-   !r4 =    !usr_SO2_OH
-     !r5(:ncol,:) = 9.6e-12_r8*exp(-234.0_r8/temp(:ncol,:))
-   !r6 =    !usr_DMS_OH
-     !r7(:ncol,:) = 1.9e-13_r8*exp( 520.0_r8/temp(:ncol,:))
+    character(len=3)  :: string
+    integer           :: n, m
+    logical           ::       ! Output the MAM aerosol 
+   
+! reaction rate
+   !itemp(:ncol,:) = 1._r8 / temp(:ncol,:)
+   !rate(:,:,5) = 9.6e-12_r8 * exp( -234._r8 * itemp(:,:) )
+   inv_ndx_m       = get_inv_ndx( 'M' )        ! airmass.  Elsewhere this variable is known as m_ndx 
+   !invariants(i,k,inv_ndx_m)  
 
+  
+   ndx_h2so4 = get_spc_ndx('H2SO4')
+   h2so4_0(1:ncol,:) = vmr(1:ncol,:,ndx_h2so4)
+   ndx_dms = get_spc_ndx('DMS') 
+   dms_0(1:ncol,:) = vmr(1:ncol,:,ndx_dms)
+   ndx_so2 = get_spc_ndx('SO2')
+   so2_0(1:ncol,:) = vmr(1:ncol,:,ndx_so2)
+   
+   r4 =    !usr_SO2_OH
+   r5 = 9.6*e-12_r8*exp(-234.0_r8/temp)
+   r6 =    !usr_DMS_OH
+   r7 = 1.9_r8*1.e-13*exp( 520.0_r8/temp) 
+    
+   tinv = 1.0_r8/temp
    !m(ncol,pver)               ! total atm density (/cm^3)
-   do k = 1, pver
-      tinv(:)           = 1.0_r8 / temp(:ncol,k)
-      r5(:ncol,k) = 9.6e-12_r8*exp(-234.0_r8 * tinv(:))
-      r7(:ncol,k) = 1.9e-13_r8*exp( 520.0_r8 * tinv(:))
-   !if( usr_SO2_OH_ndx > 0 ) then
-      fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
-      ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
-      r4(:,k) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
-      !tinv(:)           = 1._r8 / temp(:ncol,k)
-   !if( usr_DMS_OH_ndx > 0 ) then
-      call comp_exp( exp_fac, 7460._r8*tinv, ncol )
-      ko(:) = 1._r8 + 5.5e-31_r8 * exp_fac * m(:,k) * 0.21_r8
-      call comp_exp( exp_fac, 7810._r8*tinv, ncol )
-      r6(:,k) = 1.7e-42_r8 * exp_fac * m(:,k) * 0.21_r8 /ko(:)
-   !end if
-   end do
-   ! finish reaction rate calculation
-   ! real: OH_y0, NO3_y0, dms_y0, c0_dms,a_dms,dms_y1,delta_t,
-   ! real: so2_y0, a_so2, b_so2, c0_so2, so2_y1, h2so4_y0,a_h2so4
-   ! real: c0_h2so4, h2so4_y1
-   do i = 1,ncol
-      do k = 1, ltrop(i) ! only above tropopause
-      OH_y0 = OH_0(i,k)
-      NO3_y0 = NO3_0(i,k) 
-      ! tendency for DMS
-      ! dms_y0 is dms concenration at the beginning of the time step
-      ! dms_y1 is dms concenration at the end of the time step
-      dms_y0 = dms_0(i,k)
-      dms_y0 = max(1.e-30_r8,dms_y0) !avoid negative value
-      c0_dms = log(dms_y0)
-      a_dms = r5(i,k)*OH_y0 + r6(i,k)*OH_y0 + r7(i,k)*NO3_y0
-      dms_y1 = exp(-a_dms*delta_t + c0_dms)
-      dms_y1 = max(0.0_r8,dms_y1)
-      !dms_1(i,k) = dms_y1
-      ! tendency for SO2
-      so2_y0 = so2_0(i,k)
-      so2_y0 = max(1.e-30_r8,so2_y0) !avoid negative value
-      a_so2 = r4(i,k)*OH_y0
-      b_so2 = (r5(i,k)*OH_y0 + 0.5_r8*r6(i,k)*OH_y0 + r7(i,k)*NO3_y0)*dms_y0
-      if ((b_so2 - a_so2*so2_y0) .gt. 0.0_r8) then
-         c0_so2 = -(1.0_r8/a_so2)*log(b_so2 - a_so2*so2_y0)
-         so2_y1 = -(1.0_r8/a_so2)*(exp(-a_so2*(delta_t - c0_so2)) + b_so2 )
-      else
-         so2_y1 = delta_t*(b_so2 - 0.5_r8*a_so2*so2_y0)/(1 + 0.5_r8*a_so2*delta_t)
-      end if
-      so2_y1 = max(0.0_r8,so2_y1)
-      !so2_1(i,k) = so2_y1
-      ! tendency for H2SO4
-      h2so4_y0 = h2so4_0(i,k)
-      h2so4_y0 = max(1.e-30_r8,h2so4_y0)
-      c0_h2so4 = h2so4_y0
-      a_h2so4 = r4(i,k)*OH_y0*0.5_r8*(so2_y0 + so2_y1)
-      h2so4_y1 = a_h2so4*delta_t + c0_h2so4
-      h2so4_y1 = max(0.0_r8,h2so4_y1)
-      !h2so4_1(i,k) = h2so4_y1
-      ! put it in vmr
-      vmr(i,k,ndx_h2so4) = h2so4_y1    
-      vmr(i,k,ndx_so2) = so2_y1    
-      vmr(i,k,ndx_dms) = dms_y1    
-      end do
-   end do
+    
+   if( usr_SO2_OH_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          r4 = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+   end if
+   if( usr_DMS_OH_ndx > 0 ) then
+          call comp_exp( exp_fac, 7460._r8*tinv, ncol )
+          ko(:) = 1._r8 + 5.5e-31_r8 * exp_fac * m(:,k) * 0.21_r8
+          call comp_exp( exp_fac, 7810._r8*tinv, ncol )
+          r6 = 1.7e-42_r8 * exp_fac * m(:,k) * 0.21_r8 /ko(:)
+   end if
+
+
+! tendency for DMS
+! dms_y0 is dms concenration at the beginning of the time step
+! dms_y1 is dms concenration at the end of the time step
+    dms_y0 = min(1.e-30_r8,dms_y0) !avoid negative value
+    c0_dms = log(dms_y0)
+    a_dms = r5*OH_y0 + r6*OH_y0 + r7*NO3_y0
+    dms_y1 = exp(-a_dms*delta_t + c0_dms)
+    dms_y1 = min(1.e-30_r8,dms_y1)
+! tendency for SO2
+    so2_y0 = min(1.e-30_r8,so2_y0) !avoid negative value
+    a_so2 = r4*OH_y0
+    b_so2 = (r5*OH_y0 + 0.5_r8*r6*OH_y0 + r7*NO3_y0)*dms_y0
+    if ((b_so2 - a_so2*so2_y0) .gt. 0.0_r8) then
+       c0_so2 = -(1.0_r8/a_so2)*log(b_so2 - a_so2*so2_y0)
+       so2_y1 = -(1.0_r8/a_so2)*(exp(-a_so2*(delta_t - c0_so2)) + b_so2 )
+    else
+       so2_y1 = delta_t*(b_so2 - 0.5_r8*a_so2*so2_y0)/(1 + 0.5_r8*a_so2*delta_t)
+    endif
+
+! tendency for H2SO4  
+    h2so4_y0 = min(1.e-30_r8,h2so4_y0)
+    c0_h2so4 = h2so4_y0
+    a_h2so4 = r4*OH_y0*0.5_r8*(so2_y0 + so2_y1)
+    h2so4_y1 = a_h2so4*delta_t + c0_h2so4
+! 
 
 
 
 
 
 
-   end subroutine strat_sulfate_cal_gridbox
+   end subroutine strat_sulfate_cal
    !-------------------------------------------------------------------------
   subroutine comp_exp( x, y, n )
 
