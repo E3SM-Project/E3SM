@@ -2211,11 +2211,9 @@ contains
     erowm_regf = 0._r8
     eroutup_avg = 0._r8
     erlat_avg = 0._r8
-    if (sediflag) then
-      ehexch_avg = 0._r8
-      etexch_avg = 0._r8
-      erexch_avg = 0._r8
-    endif
+    ehexch_avg = 0._r8
+    etexch_avg = 0._r8
+    erexch_avg = 0._r8
     rtmCTL%runoff = 0._r8              ! coupler return mosart basin derived flow [m3/s]
     rtmCTL%direct = 0._r8              ! coupler return direct flow [m3/s]
     rtmCTL%flood = 0._r8               ! coupler return flood water sent back to clm [m3/s]
@@ -2608,11 +2606,9 @@ contains
           erowm_regf(nr,nt) = erowm_regf(nr,nt) + TRunoff%erowm_regf(nr,nt)
           eroutup_avg(nr,nt) = eroutup_avg(nr,nt) + TRunoff%eroutup_avg(nr,nt)
           erlat_avg(nr,nt) = erlat_avg(nr,nt) + TRunoff%erlat_avg(nr,nt)
-          if (sediflag) then
-            ehexch_avg(nr,nt) = ehexch_avg(nr,nt) + TRunoff%ehexch_avg(nr,nt)
-            etexch_avg(nr,nt) = etexch_avg(nr,nt) + TRunoff%etexch_avg(nr,nt)
-            erexch_avg(nr,nt) = erexch_avg(nr,nt) + TRunoff%erexch_avg(nr,nt)
-          endif
+          ehexch_avg(nr,nt) = ehexch_avg(nr,nt) + TRunoff%ehexch_avg(nr,nt)
+          etexch_avg(nr,nt) = etexch_avg(nr,nt) + TRunoff%etexch_avg(nr,nt)
+          erexch_avg(nr,nt) = erexch_avg(nr,nt) + TRunoff%erexch_avg(nr,nt)
        enddo
        enddo
 
@@ -2693,11 +2689,9 @@ contains
     erowm_regf  = erowm_regf  / float(nsub)
     eroutup_avg = eroutup_avg / float(nsub)
     erlat_avg   = erlat_avg   / float(nsub)
-    if (sediflag) then
-      ehexch_avg  = ehexch_avg  / float(nsub)
-      etexch_avg  = etexch_avg  / float(nsub)
-      erexch_avg  = erexch_avg  / float(nsub)
-    endif
+    ehexch_avg  = ehexch_avg  / float(nsub)
+    etexch_avg  = etexch_avg  / float(nsub)
+    erexch_avg  = erexch_avg  / float(nsub)
 
     if (inundflag) then
        ! Mean inundated floodplain area for all sub-steps of coupling period (for each land grid cell):
@@ -4197,10 +4191,8 @@ contains
         allocate (TRunoff%yr_dstrm(begr:endr))
         TRunoff%yr_dstrm = 0.0_r8
 
-        if (sediflag) then
-          allocate (TRunoff%conc_r_dstrm(begr:endr,nt_rtm))
-          TRunoff%conc_r_dstrm = 0.0_r8
-        endif
+        allocate (TRunoff%conc_r_dstrm(begr:endr,nt_rtm))
+        TRunoff%conc_r_dstrm = 0.0_r8
 
         allocate (TRunoff%erin_dstrm(begr:endr,nt_rtm))
         TRunoff%erin_dstrm = 0.0_r8
