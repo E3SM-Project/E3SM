@@ -2873,10 +2873,10 @@ end subroutine wrap_update_hifrq_hist
    fates%fuel_end = nfsc_fates
 
    fates%cdpf_begin = 1
-   fates%cdpf_end = nlevdamage_fates * numpft_fates * nlevsclass
+   fates%cdpf_end = nlevdamage_fates * numpft_fates * nlevsclass_fates
 
    fates%cdsc_begin = 1
-   fates%cdsc_end = nlevdamage_fates * nlevsclass
+   fates%cdsc_end = nlevdamage_fates * nlevsclass_fates
    
    fates%cdam_begin = 1
    fates%cdam_end = nlevdamage_fates
