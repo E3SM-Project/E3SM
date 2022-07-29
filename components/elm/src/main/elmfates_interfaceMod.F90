@@ -2473,6 +2473,7 @@ end subroutine wrap_update_hifrq_hist
    use FatesIOVariableKindMod, only : site_elcwd_r8, site_elage_r8
    use FatesIOVariableKindMod, only : site_coage_r8, site_coage_pft_r8
    use FatesIOVariableKindMod, only : site_can_r8, site_cnlf_r8, site_cnlfpft_r8
+   use FatesIOVariableKindMod, only : site_cdpf_r8, site_cdsc_r8
    use FatesIODimensionsMod, only : fates_bounds_type
 
 
@@ -2571,7 +2572,7 @@ end subroutine wrap_update_hifrq_hist
              site_can_r8,site_cnlf_r8, site_cnlfpft_r8, site_scag_r8, &
              site_scagpft_r8, site_agepft_r8, site_elem_r8, site_elpft_r8, &
              site_elcwd_r8, site_elage_r8, site_coage_r8, site_coage_pft_r8, &
-             site_agefuel_r8)
+             site_agefuel_r8,site_cdsc_r8, site_cdpf_r8)
 
            d_index = fates_hist%dim_kinds(dk_index)%dim2_index
            dim2name = fates_hist%dim_bounds(d_index)%name
@@ -2831,6 +2832,7 @@ end subroutine wrap_update_hifrq_hist
    use FatesInterfaceTypesMod, only : nlevsclass_fates => nlevsclass
    use FatesInterfaceTypesMod, only : nlevage_fates    => nlevage
    use FatesInterfaceTypesMod, only : nlevheight_fates => nlevheight
+   use FatesInterfaceTypesMod, only : nlevdamage_fates => nlevdamage
    use EDtypesMod,        only : nfsc_fates       => nfsc
    use FatesLitterMod,    only : ncwd_fates       => ncwd
    use EDtypesMod,        only : nlevleaf_fates   => nlevleaf
@@ -2870,6 +2872,15 @@ end subroutine wrap_update_hifrq_hist
    fates%fuel_begin = 1
    fates%fuel_end = nfsc_fates
 
+   fates%cdpf_begin = 1
+   fates%cdpf_end = nlevdamage * numpft_fates * nlevsclass
+
+   fates%cdsc_begin = 1
+   fates%cdsc_end = nlevdamage * nlevsclass
+   
+   fates%cdam_begin = 1
+   fates%cdam_end = nlevdamage
+   
    fates%cwdsc_begin = 1
    fates%cwdsc_end = ncwd_fates
 
