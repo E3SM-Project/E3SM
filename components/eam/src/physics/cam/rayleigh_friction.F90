@@ -23,6 +23,9 @@ module rayleigh_friction
   use ppgrid,           only: pver
   use spmd_utils,       only: masterproc
   use cam_logfile,      only: iulog
+  !Jinbo Xie
+  use cam_history,  only: outfld, addfld
+  !Jinbo Xie
 
   implicit none
   private          ! Make default type private to the module
@@ -115,7 +118,9 @@ contains
     ! interface routine for rayleigh friction
     !-----------------------------------------------------------------------
     use physics_types, only: physics_state, physics_ptend, physics_ptend_init
-
+    !Jinbo Xie
+    use physconst,    only: cpair
+    !Jinbo Xie
 
     !------------------------------Arguments--------------------------------
     real(r8), intent(in) :: ztodt                  ! physics timestep
