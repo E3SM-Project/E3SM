@@ -77,6 +77,16 @@ contains
     otau0 = 0._r8
     if (tau0 .ne. 0._r8) otau0 = 1._r8/tau0
 
+    !Jinbo Xie
+    if (otau0.ne. 0._r8) then
+        call addfld ('uten_RF', (/ 'lev' /), 'I', 'm/s2','U tendency by rayleigh friction')
+        call addfld ('vten_RF', (/ 'lev' /), 'I', 'm/s2','V tendency by rayleigh friction')
+        call addfld ('tten_RF', (/ 'lev' /), 'I', 'm/s2','T tendency by rayleigh friction')
+
+
+    endif
+    !Jinbo Xie
+
     do k = 1, pver
        x = (rayk0 - k) / krange
        otau(k) = otau0 * (1 + tanh(x)) / (2._r8)
@@ -137,6 +147,13 @@ contains
        ptend%v(:ncol,k) = c1 * state%v(:ncol,k)
        ptend%s(:ncol,k) = c3 * (state%u(:ncol,k)**2 + state%v(:ncol,k)**2)
     enddo
+
+
+    !Jinbo Xie add rayleigh tendency
+    call outfld('uten_RF', ptend%u(:ncol,:pver)      , pcols, lchnk)
+    call outfld('vten_RF', ptend%v(:ncol,:pver)      , pcols, lchnk)
+    call outfld('tten_RF', ptend%t(:ncol,:pver)/cpair, pcols, lchnk)
+    !Jinbo Xie add rayleigh tendency
 
     return
   end subroutine rayleigh_friction_tend
