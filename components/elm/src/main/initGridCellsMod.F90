@@ -346,12 +346,12 @@ contains
        
        ! Assume one column on the landunit
        call add_column(ci=ci, li=li, ctype=1, wtlunit=1.0_r8)
-       if(use_fates .and. .not.use_fates_sp)then
-          p_wt = 1.0_r8/real(natpft_size,r8)
-       else
-          p_wt = wt_nat_patch(gi,topo_ind,m)
-       end if
        do m = natpft_lb,natpft_ub
+          if(use_fates .and. .not.use_fates_sp)then
+             p_wt = 1.0_r8/real(natpft_size,r8)
+          else
+             p_wt = wt_nat_patch(gi,topo_ind,m)
+          end if
           call add_patch(pi=pi, ci=ci, ptype=m, wtcol=p_wt)
        end do
     end if
