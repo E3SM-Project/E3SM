@@ -25,7 +25,7 @@ subroutine crm_history_register()
    !----------------------------------------------------------------------------
    ! local variables
 
-   logical :: use_ECPP
+   logical :: use_ECPP                 ! explicit cloud parameterized pollutants
 
    !----------------------------------------------------------------------------
 
@@ -74,7 +74,7 @@ subroutine crm_history_init(species_class)
    !----------------------------------------------------------------------------
    ! local variables
    integer :: m
-   logical :: use_ECPP
+   logical :: use_ECPP                 ! explicit cloud parameterized pollutants
    character(len=16) :: MMF_microphysics_scheme
 
 #ifdef MODAL_AERO
@@ -257,14 +257,8 @@ subroutine crm_history_init(species_class)
    call addfld('MMF_QRL',    (/'lev'/), 'A','K/s',    'long-wave heating rate')
    call addfld('MMF_QRS',    (/'lev'/), 'A','K/s',    'short-wave heating rate')
    call addfld('MMF_CLDTOP', (/'lev'/), 'A',' ',      'Cloud Top PDF' )
-#if defined(MMF_MOMENTUM_FEEDBACK) || defined(MMF_ESMT)
    call addfld('MMF_DU',     (/'lev'/), 'A', 'm/s2 ','U tendency due to CRM' )
    call addfld('MMF_DV',     (/'lev'/), 'A', 'm/s2 ','V tendency due to CRM' )
-#endif
-#if defined(MMF_ESMT)
-   call addfld('U_TEND_ESMT',(/'lev'/), 'A', 'm/s2 ','U tendency due to CRM (ESMT)' )
-   call addfld('V_TEND_ESMT',(/'lev'/), 'A', 'm/s2 ','V tendency due to CRM (ESMT)' )
-#endif
 
    call addfld('MMF_SUBCYCLE_FAC', horiz_only,'A',' ', 'CRM subcycle ratio: 1.0 = no subcycling' )
 
@@ -361,11 +355,6 @@ subroutine crm_history_init(species_class)
       call add_default('MMF_NR    ', 1, ' ')
    end if
 
-#if defined(MMF_MOMENTUM_FEEDBACK) || defined(MMF_ESMT)
-   call add_default ('MMF_DU', 1, ' ')
-   call add_default ('MMF_DV', 1, ' ')
-#endif
-
    !----------------------------------------------------------------------------
 
 end subroutine crm_history_init
@@ -414,8 +403,8 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    integer :: ncol                     ! number of atmospheric columns
    integer :: ixcldliq, ixcldice       ! liquid and ice constituent indices
    integer :: i, k, icol               ! loop iterators
-   logical :: use_ECPP
-   logical :: use_MMF_VT
+   logical :: use_ECPP                 ! explicit cloud parameterized pollutants
+   logical :: use_MMF_VT               ! CRM variance transport
    character(len=16) :: MMF_microphysics_scheme
    integer :: idx_vt_t, idx_vt_q, idx_vt_u
 
@@ -635,15 +624,8 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
 
    !----------------------------------------------------------------------------
    ! CRM momentum tendencies
-#if defined( MMF_ESMT )
-   call outfld('U_TEND_ESMT',crm_output%u_tend_esmt(icol_beg:icol_end,:), ncol, lchnk )
-   call outfld('V_TEND_ESMT',crm_output%v_tend_esmt(icol_beg:icol_end,:), ncol, lchnk )
-#endif /* MMF_ESMT */
-
-#if defined(MMF_MOMENTUM_FEEDBACK) || defined(MMF_ESMT)
    call outfld('MMF_DU',ptend%u(1:ncol,:), ncol, lchnk )
    call outfld('MMF_DV',ptend%v(1:ncol,:), ncol, lchnk )
-#endif /* MMF_MOMENTUM_FEEDBACK or MMF_ESMT */
 
    !----------------------------------------------------------------------------
    ! CRM variance transport tracer values and tendencies

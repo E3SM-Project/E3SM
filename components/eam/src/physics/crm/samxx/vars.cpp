@@ -1360,7 +1360,7 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
   ::crm_output_precl          = real1d();
   ::crm_output_precsc         = real1d();
   ::crm_output_precsl         = real1d();
-  ::crm_output_prec_crm       = real3d();=
+  ::crm_output_prec_crm       = real3d();
   ::crm_clear_rh              = real2d();
   ::lat0                      = real1d();
   ::long0                     = real1d();
