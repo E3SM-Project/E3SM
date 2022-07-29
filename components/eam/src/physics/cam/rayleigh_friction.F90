@@ -20,7 +20,7 @@ module rayleigh_friction
   !---------------------------------------------------------------------------------
 
   use shr_kind_mod,     only: r8 => shr_kind_r8
-  use ppgrid,           only: pver
+  use ppgrid,           only: pver,             pcols!Jinbo Xie
   use spmd_utils,       only: masterproc
   use cam_logfile,      only: iulog
   !Jinbo Xie
@@ -134,13 +134,23 @@ contains
     real(r8) :: rztodt                             ! 1./ztodt
     real(r8) :: c1, c2, c3                         ! temporary variables
     !-----------------------------------------------------------------------
+    !Jinbo Xie
+    integer :: lchnk
+    !Jinbo Xie
 
     call physics_ptend_init(ptend, state%psetcols, 'rayleigh_friction', ls=.true., lu=.true., lv=.true.)
 
     if (otau0 .eq. 0._r8) return
 
+
     rztodt = 1._r8/ztodt
     ncol  = state%ncol
+
+    !Jinbo Xie
+    ptend%name="rayleigh friction"
+    lchnk=state%lchnk
+    !Jinbo Xie
+
 
     ! u, v and s are modified by rayleigh friction
 
@@ -157,7 +167,7 @@ contains
     !Jinbo Xie add rayleigh tendency
     call outfld('uten_RF', ptend%u(:ncol,:pver)      , pcols, lchnk)
     call outfld('vten_RF', ptend%v(:ncol,:pver)      , pcols, lchnk)
-    call outfld('tten_RF', ptend%t(:ncol,:pver)/cpair, pcols, lchnk)
+    call outfld('tten_RF', ptend%s(:ncol,:pver)/cpair, pcols, lchnk)
     !Jinbo Xie add rayleigh tendency
 
     return
