@@ -115,7 +115,7 @@ void post_icycle() {
     }
   });
 
-#ifndef MMF_LAGRANGIAN_RAD
+#ifndef MMF_RAD_SORT
 
   // for (int k=0; k<nzm; k++) {
   //   for (int j=0; j<ny; j++) {

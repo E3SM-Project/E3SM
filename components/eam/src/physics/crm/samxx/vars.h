@@ -536,7 +536,7 @@ extern real1d lat0;
 extern real1d long0;
 extern int1d  gcolp;
 
-#ifdef MMF_LAGRANGIAN_RAD
+#ifdef MMF_RAD_SORT
 extern real2d sort_q; // quantity used for sorting columns
 extern int2d  sort_i; // index used for sorting columns
 extern int2d  sort_j; // index used for sorting columns

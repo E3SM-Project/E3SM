@@ -184,7 +184,7 @@ void allocate() {
   cloudtoptemp     = real3d( "cloudtoptemp    "           , ny         , nx     , ncrms ); 
   crm_clear_rh_cnt = int2d(  "crm_clear_rh_cnt"                        , nzm    , ncrms );
 
-#ifdef MMF_LAGRANGIAN_RAD
+#ifdef MMF_RAD_SORT
   int num_idx = ny*nx;
   sort_q  = real2d("sort_q", num_idx, ncrms); // quantity used for sorting columns
   sort_i  = int2d ("sort_i", num_idx, ncrms); // index used for sorting columns
@@ -372,7 +372,7 @@ void allocate() {
   yakl::memset(cloudtoptemp      ,0.);
   yakl::memset(crm_clear_rh_cnt  ,0);
 
-#ifdef MMF_LAGRANGIAN_RAD
+#ifdef MMF_RAD_SORT
   yakl::memset(sort_q ,0.);
   yakl::memset(sort_i ,0.);
   yakl::memset(sort_j ,0.);
@@ -663,7 +663,7 @@ void finalize() {
   cloudtoptemp     = real3d();
   crm_clear_rh_cnt = int2d();
 
-#ifdef MMF_LAGRANGIAN_RAD
+#ifdef MMF_RAD_SORT
   sort_q  = real2d();
   sort_i  = int2d();
   sort_j  = int2d();
@@ -1842,7 +1842,7 @@ real1d lat0;
 real1d long0;
 int1d  gcolp;
 
-#ifdef MMF_LAGRANGIAN_RAD
+#ifdef MMF_RAD_SORT
 real2d sort_q;
 int2d  sort_i;
 int2d  sort_j;
