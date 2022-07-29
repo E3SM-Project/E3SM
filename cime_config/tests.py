@@ -16,6 +16,12 @@ _TESTS = {
         "tests" : (
             "ERS.r05_r05.RMOSGPCC.mosart-gpcc_1972",
             "ERS.MOS_USRDAT.RMOSGPCC.mosart-mos_usrdat",
+            )
+        },
+
+    "e3sm_mosart_exenoshare" : {
+        "time"  : "0:45:00",
+        "tests" : (
             "SMS.MOS_USRDAT.RMOSGPCC.mosart-unstructure",
             )
         },

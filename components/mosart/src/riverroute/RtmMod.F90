@@ -1978,7 +1978,6 @@ contains
 
             !rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + TRunoff%wh(nr,nt)*rtmCTL%area(nr)*TUnit%frac(nr))  ! times "TUnit%frac( nr )" or not ?
             ! TODO: check if it is consistent when inundflag and sediflag turned on together
-
             if(sediflag) then
                call UpdateState_mainchannel(nr,nt)
                rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
@@ -2212,9 +2211,11 @@ contains
     erowm_regf = 0._r8
     eroutup_avg = 0._r8
     erlat_avg = 0._r8
-    ehexch_avg = 0._r8
-    etexch_avg = 0._r8
-    erexch_avg = 0._r8
+    if (sediflag) then
+      ehexch_avg = 0._r8
+      etexch_avg = 0._r8
+      erexch_avg = 0._r8
+    endif
     rtmCTL%runoff = 0._r8              ! coupler return mosart basin derived flow [m3/s]
     rtmCTL%direct = 0._r8              ! coupler return direct flow [m3/s]
     rtmCTL%flood = 0._r8               ! coupler return flood water sent back to clm [m3/s]
@@ -2607,9 +2608,11 @@ contains
           erowm_regf(nr,nt) = erowm_regf(nr,nt) + TRunoff%erowm_regf(nr,nt)
           eroutup_avg(nr,nt) = eroutup_avg(nr,nt) + TRunoff%eroutup_avg(nr,nt)
           erlat_avg(nr,nt) = erlat_avg(nr,nt) + TRunoff%erlat_avg(nr,nt)
-          ehexch_avg(nr,nt) = ehexch_avg(nr,nt) + TRunoff%ehexch_avg(nr,nt)
-          etexch_avg(nr,nt) = etexch_avg(nr,nt) + TRunoff%etexch_avg(nr,nt)
-          erexch_avg(nr,nt) = erexch_avg(nr,nt) + TRunoff%erexch_avg(nr,nt)
+          if (sediflag) then
+            ehexch_avg(nr,nt) = ehexch_avg(nr,nt) + TRunoff%ehexch_avg(nr,nt)
+            etexch_avg(nr,nt) = etexch_avg(nr,nt) + TRunoff%etexch_avg(nr,nt)
+            erexch_avg(nr,nt) = erexch_avg(nr,nt) + TRunoff%erexch_avg(nr,nt)
+          endif
        enddo
        enddo
 
@@ -2690,9 +2693,11 @@ contains
     erowm_regf  = erowm_regf  / float(nsub)
     eroutup_avg = eroutup_avg / float(nsub)
     erlat_avg   = erlat_avg   / float(nsub)
-    ehexch_avg  = ehexch_avg  / float(nsub)
-    etexch_avg  = etexch_avg  / float(nsub)
-    erexch_avg  = erexch_avg  / float(nsub)
+    if (sediflag) then
+      ehexch_avg  = ehexch_avg  / float(nsub)
+      etexch_avg  = etexch_avg  / float(nsub)
+      erexch_avg  = erexch_avg  / float(nsub)
+    endif
 
     if (inundflag) then
        ! Mean inundated floodplain area for all sub-steps of coupling period (for each land grid cell):
@@ -2752,7 +2757,7 @@ contains
                                 TRunoff%wt_al(nr,nt) + TRunoff%wr_al(nr,nt))
        else
           rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
-                                TRunoff%wh(nr,nt)*rtmCTL%area(nr) * TUnit%frac(nr))
+                                TRunoff%wh(nr,nt)*rtmCTL%area(nr)) * TUnit%frac(nr)
        end if  
 
        if (inundflag .and. Tctl%OPT_inund == 1 .and. nt == 1) then
@@ -4192,8 +4197,10 @@ contains
         allocate (TRunoff%yr_dstrm(begr:endr))
         TRunoff%yr_dstrm = 0.0_r8
 
-        allocate (TRunoff%conc_r_dstrm(begr:endr,nt_rtm))
-        TRunoff%conc_r_dstrm = 0.0_r8
+        if (sediflag) then
+          allocate (TRunoff%conc_r_dstrm(begr:endr,nt_rtm))
+          TRunoff%conc_r_dstrm = 0.0_r8
+        endif
 
         allocate (TRunoff%erin_dstrm(begr:endr,nt_rtm))
         TRunoff%erin_dstrm = 0.0_r8
@@ -4460,8 +4467,7 @@ contains
         TUnit%rslpsqrt(iunit) = sqrt(Tunit%rslp(iunit))
         TUnit%tslpsqrt(iunit) = sqrt(Tunit%tslp(iunit))
         TUnit%hslpsqrt(iunit) = sqrt(Tunit%hslp(iunit))
-     end do
-     
+     end do 
   end if  ! endr >= begr
 
   ! retrieve the downstream channel attributes after some post-processing above
