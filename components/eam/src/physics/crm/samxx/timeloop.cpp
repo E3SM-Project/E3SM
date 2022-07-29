@@ -113,9 +113,11 @@ void timeloop() {
         sgs_mom();
       }
 
-#ifdef MMF_ESMT
-      scalar_momentum_tend();
-#endif
+      //----------------------------------------------------------
+      //  Explicit scalar momentum transport scheme (ESMT)
+      if (use_ESMT) {
+        scalar_momentum_tend();
+      }
 
       //-----------------------------------------------------------
       //       Coriolis force:

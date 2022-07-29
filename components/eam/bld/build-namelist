@@ -3680,6 +3680,9 @@ add_default($nl, 'use_ECPP');
 add_default($nl, 'use_MMF_VT');
 add_default($nl, 'MMF_VT_wn_max');
 
+# MMF Explicit Scalar Momentum Transport (ESMT)
+add_default($nl, 'use_MMF_ESMT');
+
 # MMF CRM mean-state acceleration
 add_default($nl, 'use_crm_accel');
 add_default($nl, 'crm_accel_uv');

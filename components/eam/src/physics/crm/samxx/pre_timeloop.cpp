@@ -74,12 +74,10 @@ void pre_timeloop() {
   YAKL_SCOPE( sgs_field                , :: sgs_field );
   YAKL_SCOPE( uln                      , :: uln );
   YAKL_SCOPE( vln                      , :: vln );
-#ifdef MMF_ESMT
   YAKL_SCOPE( u_esmt                   , :: u_esmt );
   YAKL_SCOPE( v_esmt                   , :: v_esmt );
   YAKL_SCOPE( uln_esmt                 , :: uln_esmt );
   YAKL_SCOPE( vln_esmt                 , :: vln_esmt );
-#endif
   YAKL_SCOPE( ttend                    , :: ttend );
   YAKL_SCOPE( qtend                    , :: qtend );
   YAKL_SCOPE( crm_input_qccl           , :: crm_input_qccl );
@@ -103,10 +101,8 @@ void pre_timeloop() {
   YAKL_SCOPE( crm_output_precstend     , :: crm_output_precstend );
   YAKL_SCOPE( crm_input_ul             , :: crm_input_ul );
   YAKL_SCOPE( crm_input_vl             , :: crm_input_vl );
-#ifdef MMF_ESMT
   YAKL_SCOPE( crm_input_ul_esmt        , :: crm_input_ul_esmt );
   YAKL_SCOPE( crm_input_vl_esmt        , :: crm_input_vl_esmt );
-#endif
   YAKL_SCOPE( crm_output_cld           , :: crm_output_cld ); 
   YAKL_SCOPE( crm_output_cldtop        , :: crm_output_cldtop ); 
   YAKL_SCOPE( crm_output_gicewp        , :: crm_output_gicewp ); 
@@ -295,10 +291,10 @@ void pre_timeloop() {
     v(k,j+offy_v,i+offx_v,icrm) = crm_state_v_wind(k,j,i,icrm)*YES3D;
     w(k,j+offy_w,i+offx_w,icrm) = crm_state_w_wind(k,j,i,icrm);
     tabs(k,j,i,icrm) = crm_state_temperature(k,j,i,icrm);
-#if defined(MMF_ESMT)
-    u_esmt(k,j+offy_s,i+offx_s,icrm) = crm_input_ul_esmt(plev-k-1,icrm);
-    v_esmt(k,j+offy_s,i+offx_s,icrm) = crm_input_vl_esmt(plev-k-1,icrm);
-#endif /* MMF_ESMT */
+    if (use_ESMT) {
+      u_esmt(k,j+offy_s,i+offx_s,icrm) = crm_input_ul_esmt(plev-k-1,icrm);
+      v_esmt(k,j+offy_s,i+offx_s,icrm) = crm_input_vl_esmt(plev-k-1,icrm);
+    }
   });
 
   // limit the velocity at the very first step:
