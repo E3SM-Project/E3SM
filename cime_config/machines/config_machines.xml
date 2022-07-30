@@ -620,7 +620,7 @@
       </modules>
 
       <modules>
-        <command name="load">cray-mpich/8.1.12</command>
+        <command name="load">cray-mpich/8.1.16</command>
         <command name="load">cray-python/3.9.4.2</command>
         <command name="load">subversion/1.14.0</command>
         <command name="load">git/2.31.1</command>

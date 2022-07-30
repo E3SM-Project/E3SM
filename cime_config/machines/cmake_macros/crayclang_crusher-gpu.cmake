@@ -15,7 +15,7 @@ SET(CMAKE_C_COMPILER "cc" CACHE STRING "")
 SET(CMAKE_Fortran_COMPILER "ftn" CACHE STRING "")
 SET(CMAKE_CXX_COMPILER "hipcc" CACHE STRING "")
 
-string(APPEND CXXFLAGS " -I${MPICH_DIR}/include -L${MPICH_DIR}/lib -lmpi -L/opt/cray/pe/mpich/8.1.12/gtl/lib -lmpi_gtl_hsa")
-string(APPEND CFLAGS " -I${MPICH_DIR}/include -L${MPICH_DIR}/lib -lmpi -L/opt/cray/pe/mpich/8.1.12/gtl/lib -lmpi_gtl_hsa")
-string(APPEND FFLAGS " -hnoacc -I${MPICH_DIR}/include -L${MPICH_DIR}/lib -lmpi -L/opt/cray/pe/mpich/8.1.12/gtl/lib -lmpi_gtl_hsa")
+string(APPEND CXXFLAGS " -I${MPICH_DIR}/include -L${MPICH_DIR}/lib -lmpi -L/opt/cray/pe/mpich/8.1.16/gtl/lib -lmpi_gtl_hsa")
+string(APPEND CFLAGS " -I${MPICH_DIR}/include -L${MPICH_DIR}/lib -lmpi -L/opt/cray/pe/mpich/8.1.16/gtl/lib -lmpi_gtl_hsa")
+string(APPEND FFLAGS " -hnoacc -I${MPICH_DIR}/include -L${MPICH_DIR}/lib -lmpi -L/opt/cray/pe/mpich/8.1.16/gtl/lib -lmpi_gtl_hsa")
 

@@ -291,5 +291,15 @@ function(build_model COMP_CLASS COMP_NAME)
 
   # Set flags for target
   target_include_directories(${TARGET_NAME} PRIVATE ${INCLDIR})
+  
+  #does not work
+  #if (COMP_NAME STREQUAL "elm")
+  #e3sm_add_flags("elm/src/main/elm_varctl.F90" "-hnoacc")
+  #endif()
+
+  #if (COMP_NAME STREQUAL "scream")
+  #e3sm_add_flags("scream/src/physics/p3/p3_functions_f90.cpp" "-O0")
+  #endif()
+
 
 endfunction(build_model)

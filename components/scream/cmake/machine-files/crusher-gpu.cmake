@@ -13,10 +13,12 @@ set(SCREAM_MACHINE "crusher-gpu" CACHE STRING "")
 #set(CMAKE_CXX_FLAGS "-I${MPICH_DIR}/include -L${MPICH_DIR}/lib -lmpi -L/opt/cray/pe/mpich/8.1.12/gtl/lib -lmpi_gtl_hsa" CACHE STRING "" FORCE)
 #set(CMAKE_EXE_LINKER_FLAGS "-I${MPICH_DIR}/include -L${MPICH_DIR}/lib" CACHE STRING "" FORCE)
 
-SET(MPICH_DIR "/opt/cray/pe/mpich/8.1.12/ofi/crayclang/10.0" CACHE STRING "")
+SET(MPICH_DIR "/opt/cray/pe/mpich/8.1.16/ofi/crayclang/10.0" CACHE STRING "")
 
-set(CMAKE_CXX_FLAGS "-I${MPICH_DIR}/include" CACHE STRING "" FORCE)
-set(CMAKE_EXE_LINKER_FLAGS "-L${MPICH_DIR}/lib -lmpi -L/opt/cray/pe/mpich/8.1.12/gtl/lib -lmpi_gtl_hsa" CACHE STRING "" FORCE)
+set(CMAKE_CXX_FLAGS "--amdgpu-target=gfx90a -fno-gpu-rdc  -I${MPICH_DIR}/include" CACHE STRING "" FORCE)
+set(CMAKE_Fortran_FLAGS "-I${MPICH_DIR}/include" CACHE STRING "" FORCE)
+set(CMAKE_C_FLAGS "-I${MPICH_DIR}/include" CACHE STRING "" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS "-L${MPICH_DIR}/lib -lmpi -L/opt/cray/pe/mpich/8.1.16/gtl/lib -lmpi_gtl_hsa" CACHE STRING "" FORCE)
 
 
 

@@ -85,6 +85,8 @@ endforeach()
 add_executable(p3_tables_setup EXCLUDE_FROM_ALL p3_tables_setup.cpp)
 target_link_libraries(p3_tables_setup p3)
 
+set_source_files_properties(p3_functions_f90.cpp  PROPERTIES COMPILE_FLAGS -O0)
+
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
 endif()
