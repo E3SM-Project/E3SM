@@ -243,23 +243,8 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="anvil">
-      <pes compset=".*ELM%CNPRDCTCBC.+" pesize="any">
-        <comment>elm: anvil PEs for grid l%1.9x2.5|l%0.9x1.25|l%360x720cru</comment>
-        <ntasks>
-          <ntasks_atm>-8</ntasks_atm>
-          <ntasks_lnd>-8</ntasks_lnd>
-          <ntasks_rof>-8</ntasks_rof>
-          <ntasks_ice>-8</ntasks_ice>
-          <ntasks_ocn>-8</ntasks_ocn>
-          <ntasks_glc>-8</ntasks_glc>
-          <ntasks_wav>-8</ntasks_wav>
-          <ntasks_cpl>-8</ntasks_cpl>
-        </ntasks>
-      </pes>
-    </mach>
     <mach name="ascent|summit">
-      <pes compset=".*ELM%CNPRDCTCBC.+" pesize="any">
+      <pes compset="any" pesize="any">
         <comment>elm: ascent|summit PEs for grid l%1.9x2.5|l%0.9x1.25|l%360x720cru</comment>
         <ntasks>
           <ntasks_atm>-2</ntasks_atm>
@@ -270,6 +255,23 @@
           <ntasks_glc>-2</ntasks_glc>
           <ntasks_wav>-2</ntasks_wav>
           <ntasks_cpl>-2</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="l%360x720cru">
+    <mach name="anvil">
+      <pes compset="any" pesize="any">
+        <comment>elm: anvil PEs for grid l%360x720cru</comment>
+        <ntasks>
+          <ntasks_atm>-8</ntasks_atm>
+          <ntasks_lnd>-8</ntasks_lnd>
+          <ntasks_rof>-8</ntasks_rof>
+          <ntasks_ice>-8</ntasks_ice>
+          <ntasks_ocn>-8</ntasks_ocn>
+          <ntasks_glc>-8</ntasks_glc>
+          <ntasks_wav>-8</ntasks_wav>
+          <ntasks_cpl>-8</ntasks_cpl>
         </ntasks>
       </pes>
     </mach>
