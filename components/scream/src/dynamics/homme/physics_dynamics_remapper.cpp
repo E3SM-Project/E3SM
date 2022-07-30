@@ -462,7 +462,8 @@ do_remap_fwd() const
   const int team_size = std::min(1024, std::min(128*m_num_phys_cols,32*(concurrency/this->m_num_fields+31)/32));
 #endif
 #else
-  const int team_size = (concurrency<this->m_num_fields ? 1 : concurrency/this->m_num_fields);
+  //const int team_size = (concurrency<this->m_num_fields ? 1 : concurrency/this->m_num_fields);
+  const int team_size = std::min(256, std::min(128*m_num_phys_cols,32*(concurrency/this->m_num_fields+31)/32));
 #endif
 
   // TeamPolicy over this->m_num_fields
