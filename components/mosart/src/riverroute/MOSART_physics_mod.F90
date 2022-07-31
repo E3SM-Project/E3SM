@@ -45,6 +45,7 @@ MODULE MOSART_physics_mod
   integer  :: nt               ! loop indices
   real(r8), parameter :: SLOPE1def = 0.1_r8        ! here give it a small value in order to avoid the abrupt change of hydraulic radidus etc.
   real(r8) :: sinatanSLOPE1defr   ! 1.0/sin(atan(slope1))
+  real(r8), parameter :: MaxStorageDepleted = 0.95_r8        ! maximum storage allowed to deplete in a single step -- a trick to keep water balance and numerical stability
   public Euler
   public updatestate_hillslope
   public updatestate_subnetwork
@@ -863,7 +864,7 @@ MODULE MOSART_physics_mod
               if(-TRunoff%erout(iunit,nt) > TINYVALUE .and. TRunoff%wr(iunit,nt) + &
                  (TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt)) * theDeltaT < TINYVALUE) then
                  if (sediflag) then
-                  TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt)*0.95_r8/ theDeltaT)
+                  TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt)*MaxStorageDepleted/ theDeltaT)
                  else
                   TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt)/ theDeltaT)
                  end if
@@ -875,7 +876,7 @@ MODULE MOSART_physics_mod
               TRunoff%erout(iunit,nt) = TRunoff%conc_r(iunit,nt) * TRunoff%erout(iunit,nt_nliq)
               if(-TRunoff%erout(iunit,nt) > TINYVALUE .and. TRunoff%wr(iunit,nt) + &
                  (TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt)) * theDeltaT < TINYVALUE) then
-                 TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt)*0.95_r8/ theDeltaT)
+                 TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt)*MaxStorageDepleted/ theDeltaT)
               end if
           end if
        end if
@@ -994,7 +995,7 @@ MODULE MOSART_physics_mod
                    TRunoff%erout(iunit,nt) = 0._r8
                 elseif(TRunoff%erout(iunit,nt) <= -TINYVALUE .and. TRunoff%wr(iunit,nt) + &
                    (TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt)) * theDeltaT < TINYVALUE) then
-                   TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt)*0.95_r8 / theDeltaT)
+                   TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt)*MaxStorageDepleted / theDeltaT)
                    if(TRunoff%mr(iunit,nt) > TINYVALUE) then
                       TRunoff%vr(iunit,nt) = -TRunoff%erout(iunit,nt) / TRunoff%mr(iunit,nt)
                    end if
@@ -1007,7 +1008,7 @@ MODULE MOSART_physics_mod
                          TRunoff%vr(iunit,nt) = 0._r8
                          TRunoff%erout(iunit,nt) = 0._r8
                      elseif(TRunoff%erout(iunit,nt) >= TINYVALUE .and. TRunoff%wr_dstrm(iunit,nt)/rtmCTL%nUp_dstrm(iunit)- TRunoff%erout(iunit,nt) * theDeltaT < TINYVALUE) then
-                        TRunoff%erout(iunit,nt) = TRunoff%wr_dstrm(iunit,nt)*0.95_r8 / theDeltaT / rtmCTL%nUp_dstrm(iunit)
+                        TRunoff%erout(iunit,nt) = TRunoff%wr_dstrm(iunit,nt)*MaxStorageDepleted / theDeltaT / rtmCTL%nUp_dstrm(iunit)
                        if(TRunoff%mr(iunit,nt) > TINYVALUE) then
                            TRunoff%vr(iunit,nt) = -TRunoff%erout(iunit,nt) / TRunoff%mr(iunit,nt)
                         end if
@@ -1018,7 +1019,7 @@ MODULE MOSART_physics_mod
                          TRunoff%erout(iunit,nt) = 0._r8
                      elseif(TRunoff%erout(iunit,nt) >= TINYVALUE .and. TRunoff%wr_dstrm(iunit,nt) &
                        - TRunoff%erout(iunit,nt) * theDeltaT < TINYVALUE) then
-                        TRunoff%erout(iunit,nt) = TRunoff%wr_dstrm(iunit,nt)*0.95_r8 / theDeltaT
+                        TRunoff%erout(iunit,nt) = TRunoff%wr_dstrm(iunit,nt)*MaxStorageDepleted / theDeltaT
                        if(TRunoff%mr(iunit,nt) > TINYVALUE) then
                            TRunoff%vr(iunit,nt) = -TRunoff%erout(iunit,nt) / TRunoff%mr(iunit,nt)
                         end if
@@ -1037,7 +1038,7 @@ MODULE MOSART_physics_mod
                  TRunoff%erout(iunit,nt) = 0._r8
               elseif(TRunoff%erout(iunit,nt) <= -TINYVALUE .and. TRunoff%wr(iunit,nt) + &
                  (TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt)) * theDeltaT < TINYVALUE) then
-                 TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt)*0.95_r8 / theDeltaT)
+                 TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt)*MaxStorageDepleted / theDeltaT)
               end if
 
             elseif(TRunoff%erout(iunit,nt_nliq) >= TINYVALUE) then ! flow is from downstream to current channel

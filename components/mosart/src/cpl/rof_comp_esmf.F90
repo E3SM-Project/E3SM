@@ -690,7 +690,7 @@ contains
           nmud = nt
        endif
        if (trim(rtm_tracers(nt)) == 'SAN') then
-          nmud = nt
+          nsan = nt
        endif
     enddo
     if (nliq == 0 .or. nfrz == 0 .or. nmud == 0 .or. nsan == 0) then
