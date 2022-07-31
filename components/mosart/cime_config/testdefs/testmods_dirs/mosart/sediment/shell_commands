@@ -1,5 +1,7 @@
+input_data_dir=`./xmlquery DIN_LOC_ROOT --value`
+
 ./xmlchange LND_DOMAIN_FILE=domain.lnd.nldas2_0224x0464_c110415.nc
-./xmlchange LND_DOMAIN_PATH=${DIN_LOC_ROOT}/share/domains/domain.clm
+./xmlchange LND_DOMAIN_PATH=${input_data_dir}/share/domains/domain.clm
 
 ./xmlchange DLND_MODE=CLMNLDAS
 ./xmlchange DLND_CPLHIST_CASE=NLDAS
@@ -7,8 +9,6 @@
 ./xmlchange -file env_run.xml -id DLND_CPLHIST_YR_END -val 1979
 ./xmlchange -file env_run.xml -id DLND_CPLHIST_YR_START -val 1979
 ./xmlchange -file env_run.xml -id DLND_CPLHIST_YR_ALIGN -val 1
-
-input_data_dir=`./xmlquery DIN_LOC_ROOT --value`
 
 cat >> user_dlnd.streams.txt.clm.nldas << EOF
 <?xml version="1.0"?>
