@@ -599,8 +599,20 @@ contains
           nsan = nt
        endif
     enddo
-    if (nliq == 0 .or. nfrz == 0 .or. nmud == 0 .or. nsan == 0) then
-       write(iulog,*) trim(sub),': ERROR in rtm_tracers LIQ ICE MUD SAN',nliq,nfrz,nmud,nsan, rtm_tracers
+    if (nliq == 0) then
+       write(iulog,*) trim(sub),': ERROR in rtm_tracers LIQ',nliq,rtm_tracers
+       call shr_sys_abort()
+    endif
+    if (nfrz == 0) then
+       write(iulog,*) trim(sub),': ERROR in rtm_tracers ICE',nfrz,rtm_tracers
+       call shr_sys_abort()
+    endif
+    if (nmud == 0) then
+       write(iulog,*) trim(sub),': ERROR in rtm_tracers MUD',nmud,rtm_tracers
+       call shr_sys_abort()
+    endif
+    if (nsan == 0) then
+       write(iulog,*) trim(sub),': ERROR in rtm_tracers SAN',nsan,rtm_tracers
        call shr_sys_abort()
     endif
 
