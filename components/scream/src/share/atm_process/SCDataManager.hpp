@@ -17,7 +17,7 @@ struct SCDataManager {
 
   using name_t = char[32];
 
-  SCDataManager() {}
+  SCDataManager() = default;
 
   ~SCDataManager() = default;
 

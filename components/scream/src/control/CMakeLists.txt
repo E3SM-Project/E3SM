@@ -3,6 +3,7 @@ set(SCREAM_CONTROL_SOURCES
   fvphyshack.cpp
   atmosphere_surface_coupling_importer.cpp
   atmosphere_surface_coupling_exporter.cpp
+  surface_coupling_utils.cpp
 )
 
 set(SCREAM_CONTROL_HEADERS
