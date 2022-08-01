@@ -19,6 +19,9 @@ module prep_aoflux_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: atm, ocn
 
+  ! use m_List               ,only: mct_list_nitem         => nitem
+  ! use mct_mod ! for mct_list_nitem 
+
   use iso_c_binding
 
 
@@ -64,7 +67,7 @@ contains
     ! Initialize atm/ocn flux component and compute ocean albedos
     ! module variables
     !
-    use iMOAB, only : iMOAB_DefineTagStorage
+    use iMOAB, only : iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
     !
@@ -72,8 +75,12 @@ contains
     integer                     :: exi,ierr
     integer                     :: lsize_o
     integer                     :: lsize_a
-    integer                     :: tagtype, numco, tagindex
+    integer                     :: tagtype, numco, tagindex, ent_type
     character(CXX)              :: tagname
+    integer                     :: size_list ! for number of tags 
+    real(r8),    allocatable    :: tagValues(:) ! used for setting some default tags
+    integer                     :: arrSize ! for the size of tagValues
+    type(mct_list)              :: temp_list  ! used to count the number of strings / fields 
 
     character(CS)      :: aoflux_grid ! grid for atm ocn flux calc
     type(mct_avect) , pointer   :: a2x_ax
@@ -122,6 +129,25 @@ contains
           write(logunit,*) subname,' error in defining tags on ocn phys mesh on cpl '
           call shr_sys_abort(subname//' ERROR in defining tags on ocn phys mesh on cpl')
        endif
+       ! make it zero
+       ! first form a list 
+       call mct_list_init(temp_list ,seq_flds_xao_fields)
+       size_list=mct_list_nitem (temp_list)
+       call mct_list_clean(temp_list)
+       ! find out the number of local elements in moab mesh
+       ! ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC ); should be lsize_o
+         
+       ! we should set to 1 the 'afrac' tag
+       arrSize = lsize_o * size_list ! there are size_list tags that need to be zeroed out
+       allocate(tagValues(arrSize) )
+       ent_type = 0 ! vertex type
+       tagValues = 0 
+       ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrSize , ent_type, tagValues)
+       if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in zeroing out xao_fields  '
+         call shr_sys_abort(subname//' ERROR in zeroing out xao_fields in init ')
+       endif
+
     endif
 
 
