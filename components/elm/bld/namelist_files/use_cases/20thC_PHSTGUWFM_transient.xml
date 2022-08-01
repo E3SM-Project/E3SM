@@ -25,7 +25,7 @@
 <!-- BGCv2 compsets -->
 
 <fsurdat>lnd/clm2/surfdata_map/topounit_based_half_degree_merge_surfdata_0.5x0.5_simyr1850_c211019.20211108_ed20220204.nc</fsurdat>
-<flanduse_timeseries>lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_HIST_simyr1850-2015_c211019.nc</flanduse_timeseries>
+<flanduse_timeseries>lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_HIST_simyr1850-2015_c211019_TGU_with_surf_mask.20220312.nc</flanduse_timeseries>
 <use_hydrstress>.true.</use_hydrstress>
 <use_atm_downscaling_to_topunit>.true.</use_atm_downscaling_to_topunit>
 <tw_irr>.true.</tw_irr>
