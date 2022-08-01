@@ -67,7 +67,7 @@ contains
     ! Initialize atm/ocn flux component and compute ocean albedos
     ! module variables
     !
-    use iMOAB, only : iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage
+    use iMOAB, only : iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_GetMeshInfo
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
     !
@@ -81,6 +81,7 @@ contains
     real(r8),    allocatable    :: tagValues(:) ! used for setting some default tags
     integer                     :: arrSize ! for the size of tagValues
     type(mct_list)              :: temp_list  ! used to count the number of strings / fields 
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! used to find out the size of local mesh, in moab
 
     character(CS)      :: aoflux_grid ! grid for atm ocn flux calc
     type(mct_avect) , pointer   :: a2x_ax
@@ -135,10 +136,9 @@ contains
        size_list=mct_list_nitem (temp_list)
        call mct_list_clean(temp_list)
        ! find out the number of local elements in moab mesh
-       ! ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC ); should be lsize_o
-         
-       ! we should set to 1 the 'afrac' tag
-       arrSize = lsize_o * size_list ! there are size_list tags that need to be zeroed out
+       ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC ); ! could be different of lsize_o
+      ! local size of vertices is different from lsize_o
+       arrSize = nvert(1) * size_list ! there are size_list tags that need to be zeroed out
        allocate(tagValues(arrSize) )
        ent_type = 0 ! vertex type
        tagValues = 0 
