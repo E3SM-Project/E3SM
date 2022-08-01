@@ -2171,7 +2171,6 @@ contains
 	 write(iulog,*) "snow_shape = ", snow_shape
          call endrun( "snow_shape is unknown" )
        endif
-       endif
 	  	    
        ! Define atmospheric type
        if (trim(snicar_atm_type) == 'default') then
@@ -2329,7 +2328,7 @@ contains
              elseif(numrad_snw==5) then
                 ! Direct:
                 if (flg_slr_in == 1) then
-                  if (atm_type_index == 0) then
+                  if (atm_type_index == atm_type_default) then
                      flx_wgt(1) = 1._r8
                      flx_wgt(2) = 0.49352158521175_r8
                      flx_wgt(3) = 0.18099494230665_r8
@@ -2349,7 +2348,7 @@ contains
 				  
                    ! Diffuse:
                 elseif (flg_slr_in == 2) then
-                   if  (atm_type_index == 0) then
+                   if  (atm_type_index == atm_type_default) then
                      flx_wgt(1) = 1._r8
                      flx_wgt(2) = 0.58581507618433_r8
                      flx_wgt(3) = 0.20156903770812_r8
