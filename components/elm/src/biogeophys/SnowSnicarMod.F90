@@ -1920,7 +1920,7 @@ contains
 	
      integer :: atm_type_index  ! index for atmospheric type
      integer :: slr_zen         ! integer value of solar zenith angle
-
+     real(r8), parameter :: pi = 3.14159265358979323846_r8 ! pi
 
      ! SNICAR_AD new variables, follow sea-ice shortwave conventions
      real(r8):: &
@@ -2311,7 +2311,7 @@ contains
                      flx_wgt(4) = 0.12094898498813_r8
                      flx_wgt(5) = 0.20453448749347_r8
                   else                 
-                     slr_zen = nint(acosd(coszen(c_idx)))
+                     slr_zen = nint(acos(coszen(c_idx)) * 180 / pi)
                      if (slr_zen>89) then
                         slr_zen = 89
                      endif
