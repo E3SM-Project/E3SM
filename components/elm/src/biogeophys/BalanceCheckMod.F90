@@ -192,6 +192,7 @@ contains
      integer  :: indexp,indexc,indexl,indext,indexg     ! index of first found in search loop
      real(r8) :: forc_rain_col(bounds%begc:bounds%endc) ! column level rain rate [mm/s]
      real(r8) :: forc_snow_col(bounds%begc:bounds%endc) ! column level snow rate [mm/s]
+     real(r8) :: errtol = 1.e-7_r8                      ! solar radiation balance error tolerance
      !-----------------------------------------------------------------------
 
      associate(                                                                         &
@@ -619,10 +620,8 @@ contains
        found = .false.
        do p = bounds%begp, bounds%endp
           if (veg_pp%active(p)) then
-             !if ( (errsol(p) /= spval) .and. (abs(errsol(p)) > 1.e-7_r8) ) then
-             ! solar radiation balance error is high when running FATES
-             ! adjust the threshold to 5.e-7
-             if ( (errsol(p) /= spval) .and. (abs(errsol(p)) > 5.e-7_r8) ) then
+             if (veg_pp%is_fates(p)) errtol = 5.e-7_r8  ! Increase threshold for fates
+             if ( (errsol(p) /= spval) .and. (abs(errsol(p)) > errtol) ) then
                 found = .true.
                 indexp = p
                 indext = veg_pp%topounit(indexp)
