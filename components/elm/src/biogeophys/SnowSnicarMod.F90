@@ -122,9 +122,25 @@ module SnowSnicarMod
   real(r8) :: asm_prm_snw_dfs    (idx_Mie_snw_mx,numrad_snw);
   real(r8) :: ext_cff_mss_snw_dfs(idx_Mie_snw_mx,numrad_snw);
 
-  !!! direct & diffuse
-  real(r8) :: flx_wgt_dir    (6, 90,numrad_snw) ! six atmospheric types, 0-89 SZA
-  real(r8) :: flx_wgt_dif    (6, numrad_snw)    ! six atmospheric types
+  ! direct & diffuse flux
+  real(r8) :: flx_wgt_dir    (6, 90,numrad_snw) ! direct flux, six atmospheric types, 0-89 SZA
+  real(r8) :: flx_wgt_dif    (6, numrad_snw)    ! diffuse flux, six atmospheric types
+  
+  ! snow grain shape
+  integer, parameter :: snow_shape_sphere          = 1
+  integer, parameter :: snow_shape_spheroid        = 2
+  integer, parameter :: snow_shape_hexagonal_plate = 3
+  integer, parameter :: snow_shape_koch_snowflake  = 4
+  
+  ! atmospheric condition for SNICAR-AD
+  integer, parameter :: atm_type_default             = 0
+  integer, parameter :: atm_type_mid_latitude_winter = 1
+  integer, parameter :: atm_type_mid_latitude_summer = 2
+  integer, parameter :: atm_type_sub_Arctic_winter   = 3
+  integer, parameter :: atm_type_sub_Arctic_summer   = 4
+  integer, parameter :: atm_type_summit_Greenland    = 5
+  integer, parameter :: atm_type_high_mountain       = 6
+  
   !$acc declare create(ss_alb_snw_drc     )
   !$acc declare create(asm_prm_snw_drc    )
   !$acc declare create(ext_cff_mss_snw_drc)
@@ -1503,22 +1519,25 @@ contains
      logical :: readvar      ! determine if variable was read from NetCDF file
      !mgf--
 
-      atm_type_index = 0
+      atm_type_index = atm_type_default
       ! Define atmospheric type
       if (trim(snicar_atm_type) == 'default') then
-        atm_type_index = 0
+        atm_type_index = atm_type_default
       elseif (trim(snicar_atm_type) == 'mid-latitude_winter') then
-        atm_type_index = 1
+        atm_type_index = atm_type_mid_latitude_winter
       elseif (trim(snicar_atm_type) == 'mid-latitude_summer') then
-        atm_type_index = 2
+        atm_type_index = atm_type_mid_latitude_summer
       elseif (trim(snicar_atm_type) == 'sub-Arctic_winter') then
-        atm_type_index = 3
+        atm_type_index = atm_type_sub_Arctic_winter
       elseif (trim(snicar_atm_type) == 'sub-Arctic_summer') then
-        atm_type_index = 4
+        atm_type_index = atm_type_sub_Arctic_summer
       elseif (trim(snicar_atm_type) == 'summit_Greenland') then
-        atm_type_index = 5
+        atm_type_index = atm_type_summit_Greenland
       elseif (trim(snicar_atm_type) == 'high_mountain') then
-        atm_type_index = 6
+        atm_type_index = atm_type_high_mountain
+      else
+	write(iulog,*) "snicar_atm_type = ", snicar_atm_type
+        call endrun( "snicar_atm_type is unknown" )
       endif
 	  
       !
@@ -2134,37 +2153,44 @@ contains
               0.1495960_r8,  0.1691565_r8, &
               0.1826034_r8,  0.1894506_r8/)
        
-       snw_shp_lcl(:) = 1
+       snw_shp_lcl(:) = snow_shape_sphere
        snw_fs_lcl(:)  = 0._r8 
        snw_ar_lcl(:)  = 0._r8
-       atm_type_index = 0
+       atm_type_index = atm_type_default
        
        ! Define snow grain shape
        if (trim(snow_shape) == 'sphere') then
-         snw_shp_lcl(:) = 1
+         snw_shp_lcl(:) = snow_shape_sphere
        elseif (trim(snow_shape) == 'spheroid') then
-         snw_shp_lcl(:) = 2
+         snw_shp_lcl(:) = snow_shape_spheroid
        elseif (trim(snow_shape) == 'hexagonal_plate') then
-	 snw_shp_lcl(:) = 3
+	 snw_shp_lcl(:) = snow_shape_hexagonal_plate
        elseif (trim(snow_shape) == 'koch_snowflake') then
-         snw_shp_lcl(:) = 4
+         snw_shp_lcl(:) = snow_shape_koch_snowflake
+       else
+	 write(iulog,*) "snow_shape = ", snow_shape
+         call endrun( "snow_shape is unknown" )
+       endif
        endif
 	  	    
        ! Define atmospheric type
        if (trim(snicar_atm_type) == 'default') then
-         atm_type_index = 0
+         atm_type_index = atm_type_default
        elseif (trim(snicar_atm_type) == 'mid-latitude_winter') then
-         atm_type_index = 1
+         atm_type_index = atm_type_mid_latitude_winter
        elseif (trim(snicar_atm_type) == 'mid-latitude_summer') then
-         atm_type_index = 2
+         atm_type_index = atm_type_mid_latitude_summer
        elseif (trim(snicar_atm_type) == 'sub-Arctic_winter') then
-         atm_type_index = 3
+         atm_type_index = atm_type_sub_Arctic_winter
        elseif (trim(snicar_atm_type) == 'sub-Arctic_summer') then
-         atm_type_index = 4
+         atm_type_index = atm_type_sub_Arctic_summer
        elseif (trim(snicar_atm_type) == 'summit_Greenland') then
-         atm_type_index = 5
+         atm_type_index = atm_type_summit_Greenland
        elseif (trim(snicar_atm_type) == 'high_mountain') then
-         atm_type_index = 6
+         atm_type_index = atm_type_high_mountain
+       else
+	 write(iulog,*) "snicar_atm_type = ", snicar_atm_type
+         call endrun( "snicar_atm_type is unknown" )
        endif
 	  
       ! Loop over all non-urban columns
@@ -2396,45 +2422,45 @@ contains
 				   
                   ! Calculate the asymetry factors under different snow grain shapes
                    do i=snl_top,snl_btm,1
-                      if(snw_shp_lcl(i) == 2) then ! spheroid
+                      if(snw_shp_lcl(i) == snow_shape_spheroid) then ! spheroid
                          diam_ice = 2._r8*snw_rds_lcl(i)
-                         if(snw_fs_lcl(i) == 0) then
+                         if(snw_fs_lcl(i) == 0._r8) then
                             fs_sphd = 0.929_r8
                          else
                             fs_sphd = snw_fs_lcl(i)               
                          endif
                          fs_hex = 0.788_r8 
-                         if(snw_ar_lcl(i) == 0) then
+                         if(snw_ar_lcl(i) == 0._r8) then
                             AR_tmp = 0.5_r8
                          else
                             AR_tmp = snw_ar_lcl(i)              
                          endif
                          g_ice_Cg_tmp = g_b0 * ((fs_sphd/fs_hex)**g_b1) * (diam_ice**g_b2)
                          gg_ice_F07_tmp = g_F07_c0 + g_F07_c1 * AR_tmp + g_F07_c2 * (AR_tmp**2)			 
-                      elseif(snw_shp_lcl(i) == 3) then ! hexagonal plate
+                      elseif(snw_shp_lcl(i) == snow_shape_hexagonal_plate) then ! hexagonal plate
                          diam_ice = 2._r8*snw_rds_lcl(i)
-                         if(snw_fs_lcl(i) == 0) then
+                         if(snw_fs_lcl(i) == 0._r8) then
                             fs_hex0 = 0.788_r8
                          else
                             fs_hex0 = snw_fs_lcl(i)               
                          endif
                          fs_hex = 0.788_r8 
-                         if(snw_ar_lcl(i) == 0) then
+                         if(snw_ar_lcl(i) == 0._r8) then
                            AR_tmp = 2.5_r8
                          else
                            AR_tmp = snw_ar_lcl(i)              
                          endif
                          g_ice_Cg_tmp = g_b0 * ((fs_hex0/fs_hex)**g_b1) * (diam_ice**g_b2)
                          gg_ice_F07_tmp = g_F07_p0 + g_F07_p1 * log(AR_tmp) + g_F07_p2 * ((log(AR_tmp))**2)
-                      elseif(snw_shp_lcl(i) == 4) then ! Koch snowflake
+                      elseif(snw_shp_lcl(i) == snow_shape_koch_snowflake) then ! Koch snowflake
                          diam_ice = 2._r8 * snw_rds_lcl(i) /0.544_r8
-                         if(snw_fs_lcl(i) == 0) then
+                         if(snw_fs_lcl(i) == 0._r8) then
                             fs_koch = 0.712_r8
                          else
                             fs_koch = snw_fs_lcl(i)               
                          endif
                          fs_hex = 0.788_r8 
-                         if(snw_ar_lcl(i) == 0) then
+                         if(snw_ar_lcl(i) == 0._r8) then
                             AR_tmp = 2.5_r8
                          else
                             AR_tmp = snw_ar_lcl(i)              
