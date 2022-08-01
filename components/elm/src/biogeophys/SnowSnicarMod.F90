@@ -2311,7 +2311,7 @@ contains
                      flx_wgt(4) = 0.12094898498813_r8
                      flx_wgt(5) = 0.20453448749347_r8
                   else                 
-                     slr_zen = nint(acos(coszen(c_idx)) * 180 / pi)
+                     slr_zen = nint(acos(coszen(c_idx)) * 180._r8 / pi)
                      if (slr_zen>89) then
                         slr_zen = 89
                      endif
