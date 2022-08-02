@@ -1,1 +1,0 @@
-./xmlchange --append -id CAM_CONFIG_OPTS -val " -use_MMF_VT "
