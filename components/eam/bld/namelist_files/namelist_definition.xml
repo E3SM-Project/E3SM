@@ -2016,6 +2016,15 @@ This default logical is set in cospsimulator_intr.F90.
 1236: Default: FALSE
 </entry>
 
+<entry id="cosp_runall" type="logical"  category="cosp"
+       group="cospsimulator_nl" valid_values="">
+If true, run all simulators using the default values cosp_ncolumns=50 and
+cosp_nradsteps=1.  This option is mainly intended for testing, but it also
+must be used in order to output the input fields needed to run the
+simulator in an offline mode (via setting cosp_histfile_aux=.true.).
+Default: FALSE
+</entry>
+
 <entry id="cosp_lradar_sim" type="logical"  category="cosp"
        group="cospsimulator_nl" valid_values="">
 If true, COSP radar simulator will be run and all non-subcolumn output 
@@ -2054,6 +2063,40 @@ will be saved.
 Default: FALSE
 </entry>
 
+<!-- COSP CFMIP Cloud Simulator LOGICALS -->
+
+<entry id="cosp_cfmip_3hr" type="logical"  category="cosp"
+       group="cospsimulator_nl" valid_values="">
+If true, the COSP cloud simulator is run for CFMIP 3-hourly 
+experiments.
+This default logical is set in cospsimulator_intr.F90
+Default: FALSE
+</entry>
+
+<entry id="cosp_cfmip_da" type="logical"  category="cosp"
+       group="cospsimulator_nl" valid_values="">
+If true, the COSP cloud simulator is run for CFMIP daily 
+experiments.
+This default logical is set in cospsimulator_intr.F90
+Default: FALSE
+</entry>
+
+<entry id="cosp_cfmip_off" type="logical"  category="cosp"
+       group="cospsimulator_nl" valid_values="">
+If true, the COSP cloud simulator is run for CFMIP off-line  
+monthly experiments.
+This default logical is set in cospsimulator_intr.F90
+Default: FALSE
+</entry>
+
+<entry id="cosp_cfmip_mon" type="logical"  category="cosp"
+       group="cospsimulator_nl" valid_values="">
+If true, the COSP cloud simulator is run for CFMIP monthly
+experiments.
+This default logical is set in cospsimulator_intr.F90
+Default: FALSE
+</entry>
+
 <!-- COSP input control parameters -->
 
 <entry id="cosp_ncolumns" type="integer"  category="cosp"
@@ -2061,6 +2104,24 @@ Default: FALSE
 Number of subcolumns in SCOPS
 This default logical is set in cospsimulator_intr.F90
 Default: 50
+</entry>
+
+<!-- COSP sampling parameters -->
+
+<entry id="cosp_sample_atrain" type="logical"  category="cosp"
+       group="cospsimulator_nl" valid_values="">
+Turns on sampling along a-train orbit for radar and lidar simulators.
+This default logical is set in cospsimulator_intr.F90
+Default: FALSE
+</entry>
+
+<entry id="cosp_atrainorbitdata" type="char*256"  category="cosp"
+       group="cospsimulator_nl" valid_values="">
+Path for the Atrain orbit data file provided by CFMIP.
+There is no default for this, but sample_atrain = .true. will not work 
+if this namelist variable is undefined.
+currently /project/cms/jenkay/SCAM/repository/cloudsat_orbit_08921_14250.nc
+Default: no default set now, need to specify in namelist
 </entry>
 
 <!-- COSP output parameters -->
