@@ -274,7 +274,7 @@ size_t HommeDynamics::requested_buffer_size_in_bytes() const
   fbm.request_size(diag.requested_buffer_size());
   fbm.request_size(ff.requested_buffer_size());
   fbm.request_size(vrm.requested_buffer_size());
-  // Functors that whose creation depends on the Homme namelist.
+  // Functors whose creation depends on the Homme namelist.
   if (params.transport_alg == 0) {
     auto& esf = c.create_if_not_there<EulerStepFunctor>(num_elems);
     fbm.request_size(esf.requested_buffer_size());
