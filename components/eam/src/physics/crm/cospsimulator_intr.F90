@@ -42,9 +42,8 @@ module cospsimulator_intr
        cloudsat_preclvl
     use mod_cosp_stats,       only: cosp_change_vertical_grid
 #endif
-#ifdef MMF_PACK
-    use crmdims, only: crm_nx_rad, crm_ny_rad, crm_nz
-#endif
+  use crmdims, only: crm_nx_rad, crm_ny_rad, crm_nz
+
   implicit none
   private
   save
@@ -251,11 +250,7 @@ module cospsimulator_intr
        gamma_3 = (/-1._r8, -1._r8,      2.0_r8,      2.0_r8, -1._r8, -1._r8,      2.0_r8,      2.0_r8,      2.0_r8/),&
        gamma_4 = (/-1._r8, -1._r8,      6.0_r8,      6.0_r8, -1._r8, -1._r8,      6.0_r8,      6.0_r8,      6.0_r8/)       
 #endif
-#ifndef MMF_PACK
-  integer, parameter :: crm_nx_rad = 1
-  integer, parameter :: crm_ny_rad = 1
-  integer, parameter :: crm_nz     = 1
-#endif
+
   logical :: use_MMF
 
 CONTAINS
