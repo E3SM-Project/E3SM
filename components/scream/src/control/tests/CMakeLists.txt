@@ -9,6 +9,4 @@ if (NOT ${SCREAM_BASELINES_ONLY})
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ad_tests.yaml
                  ${CMAKE_CURRENT_BINARY_DIR}/ad_tests.yaml COPYONLY)
 
-  # Unit test the surface coupling
-  CreateUnitTest(sc_ut "sc_tests.cpp" "scream_control" LABELS "driver")
 endif()
