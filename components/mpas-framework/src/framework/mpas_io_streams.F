@@ -394,6 +394,7 @@ module mpas_io_streams
       integer :: totalDimSize, globalDimSize
       integer :: ndims
       type (field0dInteger), pointer :: field_ptr
+      character (len=StrKIND), pointer :: fieldName
       character (len=StrKIND), dimension(:), pointer :: dimNames
       integer, dimension(:), pointer :: indices
       integer, dimension(:), pointer :: dimSizes
@@ -410,7 +411,13 @@ module mpas_io_streams
          return
       end if
 
-!call mpas_log_write('... Adding field '//trim(field % fieldName)//' to stream')
+      if (stream % ioDirection == MPAS_IO_WRITE) then
+         fieldName => field % outputFieldName
+      else
+         fieldName => field % fieldName
+      end if
+
+!call mpas_log_write('... Adding field '//trim(fieldName)//' to stream')
 
       ndims = 0
 
@@ -427,7 +434,7 @@ module mpas_io_streams
       globalDimSize = 0
       totalDimSize = 0
 
-      call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_INT, dimNames, dimSizes, &
+      call MPAS_streamAddField_generic(stream, trim(fieldName), MPAS_IO_INT, dimNames, dimSizes, &
                                        field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
 
       deallocate(indices)
@@ -438,7 +445,7 @@ module mpas_io_streams
           return
       end if
 
-      call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attLists(1) % attList)
+      call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(1) % attList)
 
 
       !
@@ -470,6 +477,7 @@ module mpas_io_streams
       integer :: totalDimSize, globalDimSize
       integer :: ndims
       type (field1dInteger), pointer :: field_ptr
+      character (len=StrKIND), pointer :: fieldName
       character (len=StrKIND), dimension(5) :: dimNames
       character (len=StrKIND), dimension(:), pointer :: dimNamesInq
       character (len=StrKIND), dimension(0) :: dimNames0
@@ -500,7 +508,13 @@ module mpas_io_streams
         return
       end if
 
-!call mpas_log_write('... Adding field '//trim(field % fieldName)//' to stream')
+      if (stream % ioDirection == MPAS_IO_WRITE) then
+         fieldName => field % outputFieldName
+      else
+         fieldName => field % fieldName
+      end if
+
+!call mpas_log_write('... Adding field '//trim(fieldName)//' to stream')
 
       ndims = size(field % dimSizes)
 
@@ -518,7 +532,12 @@ module mpas_io_streams
          allocate(isAvailable(size(field % constituentNames)))
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
-            call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_INT, dimNames0, &
+            if (stream % ioDirection == MPAS_IO_WRITE) then
+               fieldName => field % outputConstituentNames(i)
+            else
+               fieldName => field % constituentNames(i)
+            end if
+            call MPAS_streamAddField_generic(stream, trim(fieldName), MPAS_IO_INT, dimNames0, &
                                              dimSizes0, field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, &
                                              indices, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
@@ -528,7 +547,7 @@ module mpas_io_streams
          end do
       else
          nullify(isAvailable)
-         call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_INT, field % dimNames, field % dimSizes, &
+         call MPAS_streamAddField_generic(stream, trim(fieldName), MPAS_IO_INT, field % dimNames, field % dimSizes, &
                                           field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
@@ -543,10 +562,15 @@ module mpas_io_streams
 
       if (field % isVarArray) then
          do i=1,size(field % constituentNames)
-            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attLists(i) % attList)
+            if (stream % ioDirection == MPAS_IO_WRITE) then
+               fieldName => field % outputConstituentNames(i)
+            else
+               fieldName => field % constituentNames(i)
+            end if
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(i) % attList)
          end do
       else
-         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attLists(1) % attList)
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(1) % attList)
       end if
 
 
@@ -580,6 +604,7 @@ module mpas_io_streams
       integer :: totalDimSize, globalDimSize
       integer :: ndims
       type (field2dInteger), pointer :: field_ptr
+      character (len=StrKIND), pointer :: fieldName
       character (len=StrKIND), dimension(5) :: dimNames
       character (len=StrKIND), dimension(:), pointer :: dimNamesInq
       integer, dimension(:), pointer :: indices
@@ -609,7 +634,13 @@ module mpas_io_streams
         return
       end if
 
-!call mpas_log_write('... Adding field '//trim(field % fieldName)//' to stream')
+      if (stream % ioDirection == MPAS_IO_WRITE) then
+         fieldName => field % outputFieldName
+      else
+         fieldName => field % fieldName
+      end if
+
+!call mpas_log_write('... Adding field '//trim(fieldName)//' to stream')
 
       ndims = size(field % dimSizes)
 
@@ -627,7 +658,12 @@ module mpas_io_streams
          allocate(isAvailable(size(field % constituentNames)))
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
-            call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_INT, field % dimNames(2:ndims), &
+            if (stream % ioDirection == MPAS_IO_WRITE) then
+               fieldName => field % outputConstituentNames(i)
+            else
+               fieldName => field % constituentNames(i)
+            end if
+            call MPAS_streamAddField_generic(stream, trim(fieldName), MPAS_IO_INT, field % dimNames(2:ndims), &
                                              field % dimSizes(2:ndims), field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, &
                                              indices, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
@@ -637,7 +673,7 @@ module mpas_io_streams
          end do
       else
          nullify(isAvailable)
-         call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_INT, field % dimNames, field % dimSizes, &
+         call MPAS_streamAddField_generic(stream, trim(fieldName), MPAS_IO_INT, field % dimNames, field % dimSizes, &
                                           field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
@@ -652,10 +688,15 @@ module mpas_io_streams
 
       if (field % isVarArray) then
          do i=1,size(field % constituentNames)
-            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attLists(i) % attList)
+            if (stream % ioDirection == MPAS_IO_WRITE) then
+               fieldName => field % outputConstituentNames(i)
+            else
+               fieldName => field % constituentNames(i)
+            end if
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(i) % attList)
          end do
       else
-         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attLists(1) % attList)
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(1) % attList)
       end if
 
 
@@ -689,6 +730,7 @@ module mpas_io_streams
       integer :: totalDimSize, globalDimSize
       integer :: ndims
       type (field3dInteger), pointer :: field_ptr
+      character (len=StrKIND), pointer :: fieldName
       character (len=StrKIND), dimension(5) :: dimNames
       character (len=StrKIND), dimension(:), pointer :: dimNamesInq
       integer, dimension(:), pointer :: indices
@@ -718,7 +760,13 @@ module mpas_io_streams
         return
       end if
 
-!call mpas_log_write('... Adding field '//trim(field % fieldName)//' to stream')
+      if (stream % ioDirection == MPAS_IO_WRITE) then
+         fieldName => field % outputFieldName
+      else
+         fieldName => field % fieldName
+      end if
+
+!call mpas_log_write('... Adding field '//trim(fieldName)//' to stream')
 
       ndims = size(field % dimSizes)
 
@@ -735,7 +783,12 @@ module mpas_io_streams
          allocate(isAvailable(size(field % constituentNames)))
          isAvailable(:) = .false.
          do i=1,size(field % constituentNames)
-            call MPAS_streamAddField_generic(stream, trim(field % constituentNames(i)), MPAS_IO_INT, field % dimNames(2:ndims), &
+            if (stream % ioDirection == MPAS_IO_WRITE) then
+               fieldName => field % outputConstituentNames(i)
+            else
+               fieldName => field % constituentNames(i)
+            end if
+            call MPAS_streamAddField_generic(stream, trim(fieldName), MPAS_IO_INT, field % dimNames(2:ndims), &
                                              field % dimSizes(2:ndims), field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, &
                                              indices, ierr=io_err)
             if (io_err == MPAS_STREAM_NOERR) then
@@ -745,7 +798,7 @@ module mpas_io_streams
          end do
       else
          nullify(isAvailable)
-         call MPAS_streamAddField_generic(stream, trim(field % fieldName), MPAS_IO_INT, field % dimNames, field % dimSizes, &
+         call MPAS_streamAddField_generic(stream, trim(fieldName), MPAS_IO_INT, field % dimNames, field % dimSizes, &
                                           field % hasTimeDimension, field % isDecomposed, totalDimSize, globalDimSize, indices, ierr=io_err)
          if (io_err == MPAS_STREAM_NOERR) then
             any_success = .true.
@@ -760,10 +813,15 @@ module mpas_io_streams
 
       if (field % isVarArray) then
          do i=1,size(field % constituentNames)
-            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % constituentNames(i)), field % attLists(i) % attList)
+            if (stream % ioDirection == MPAS_IO_WRITE) then
+               fieldName => field % outputConstituentNames(i)
+            else
+               fieldName => field % constituentNames(i)
+            end if
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(i) % attList)
          end do
       else
-         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(field % fieldname), field % attLists(1) % attList)
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(1) % attList)
       end if
 
 
@@ -3422,7 +3480,7 @@ module mpas_io_streams
 
          if (field_cursor % field_type == FIELD_0D_INT) then
 
-!call mpas_log_write('Writing out field '//trim(field_cursor % int0dField % fieldName))
+!call mpas_log_write('Writing out field '//trim(field_cursor % int0dField % outputFieldName))
 !call mpas_log_write('   > is the field decomposed? $l', logicArgs=(/field_cursor % isDecomposed/))
 !call mpas_log_write('   > outer dimension size $i', intArgs=(/field_cursor % totalDimSize/))
 
@@ -3430,7 +3488,7 @@ module mpas_io_streams
             int0d_temp = field_cursor % int0dField % scalar
 
 !call mpas_log_write('MGD calling MPAS_io_put_var now...')
-            call MPAS_io_put_var(stream % fileHandle, field_cursor % int0dField % fieldName, int0d_temp, io_err)
+            call MPAS_io_put_var(stream % fileHandle, field_cursor % int0dField % outputFieldName, int0d_temp, io_err)
             call MPAS_io_err_mesg(io_err, .false.)
             if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
 
@@ -3484,9 +3542,9 @@ module mpas_io_streams
                end if
 
                if (field_cursor % int1dField % isVarArray) then
-                  call MPAS_io_put_var(stream % fileHandle, field_cursor % int1dField % constituentNames(j), int0d_temp, io_err)
+                  call MPAS_io_put_var(stream % fileHandle, field_cursor % int1dField % outputConstituentNames(j), int0d_temp, io_err)
                else
-                  call MPAS_io_put_var(stream % fileHandle, field_cursor % int1dField % fieldName, int1d_temp, io_err)
+                  call MPAS_io_put_var(stream % fileHandle, field_cursor % int1dField % outputFieldName, int1d_temp, io_err)
                end if
                call MPAS_io_err_mesg(io_err, .false.)
                if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
@@ -3547,9 +3605,9 @@ module mpas_io_streams
                end if
 
                if (field_cursor % int2dField % isVarArray) then
-                  call MPAS_io_put_var(stream % fileHandle, field_cursor % int2dField % constituentNames(j), int1d_temp, io_err)
+                  call MPAS_io_put_var(stream % fileHandle, field_cursor % int2dField % outputConstituentNames(j), int1d_temp, io_err)
                else
-                  call MPAS_io_put_var(stream % fileHandle, field_cursor % int2dField % fieldName, int2d_temp, io_err)
+                  call MPAS_io_put_var(stream % fileHandle, field_cursor % int2dField % outputFieldName, int2d_temp, io_err)
                end if
                call MPAS_io_err_mesg(io_err, .false.)
                if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
@@ -3614,9 +3672,9 @@ module mpas_io_streams
                end if
 
                if (field_cursor % int3dField % isVarArray) then
-                  call MPAS_io_put_var(stream % fileHandle, field_cursor % int3dField % constituentNames(j), int2d_temp, io_err)
+                  call MPAS_io_put_var(stream % fileHandle, field_cursor % int3dField % outputConstituentNames(j), int2d_temp, io_err)
                else
-                  call MPAS_io_put_var(stream % fileHandle, field_cursor % int3dField % fieldName, int3d_temp, io_err)
+                  call MPAS_io_put_var(stream % fileHandle, field_cursor % int3dField % outputFieldName, int3d_temp, io_err)
                end if
                call MPAS_io_err_mesg(io_err, .false.)
                if (io_err /= MPAS_IO_NOERR .and. present(ierr)) ierr = MPAS_IO_ERR
