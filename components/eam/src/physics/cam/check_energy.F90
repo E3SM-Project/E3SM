@@ -1233,7 +1233,7 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
        ! lead to conflicts with upstream E3SM any time check_energy is
        ! changed...  The most important thing is to avoid any SNOW calculations
        ! when P3 is the microphysics scheme.
-       ws(i) = 0.0_r8
+       ws = 0.0_r8
 
        if (irain > 1) then
           do k = 1, pver
