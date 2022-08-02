@@ -44,7 +44,6 @@ module RtmMod
                                  updatestate_mainchannel
   use MOSART_BGC_type,  only : TSedi, TSedi_para, MOSART_sediment_init
   use MOSART_RES_type,  only : Tres, MOSART_reservoir_sed_init, Tres_para
-  use MOSART_sediment_IO_mod
 !#ifdef INCLUDE_WRM
   use WRM_type_mod    , only : ctlSubwWRM, WRMUnit, StorWater
   use WRM_subw_IO_mod , only : WRM_init, WRM_computeRelease
