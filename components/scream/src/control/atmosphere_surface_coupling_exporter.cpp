@@ -45,6 +45,7 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
 
   constexpr int ps = Spack::n;
 
+  // These fields are required for computation/exports
   add_field<Required>("p_int",                scalar3d_layout_int,  Pa,    grid_name);
   add_field<Required>("pseudo_density",       scalar3d_layout_mid,  Pa,    grid_name, ps);
   add_field<Required>("phis",                 scalar2d_layout,      m2/s2, grid_name);
@@ -52,14 +53,16 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Required>("qv",                   scalar3d_layout_mid,  Qunit, grid_name, "tracers", ps);
   add_field<Required>("T_mid",                scalar3d_layout_mid,  K,     grid_name, ps);
   add_field<Required>("horiz_winds",          vector3d_layout,      m/s,   grid_name);
-  add_field<Required>("precip_liq_surf_mass", scalar2d_layout,      kg,    grid_name);
-  add_field<Required>("precip_ice_surf_mass", scalar2d_layout,      kg,    grid_name);
   add_field<Required>("sfc_flux_dir_nir",     scalar2d_layout,      Wm2,   grid_name);
   add_field<Required>("sfc_flux_dir_vis",     scalar2d_layout,      Wm2,   grid_name);
   add_field<Required>("sfc_flux_dif_nir",     scalar2d_layout,      Wm2,   grid_name);
   add_field<Required>("sfc_flux_dif_vis",     scalar2d_layout,      Wm2,   grid_name);
   add_field<Required>("sfc_flux_sw_net" ,     scalar2d_layout,      Wm2,   grid_name);
   add_field<Required>("sfc_flux_lw_dn"  ,     scalar2d_layout,      Wm2,   grid_name);
+
+  // These fields are required for computations, and are set to zero after the export
+  add_field<Updated>("precip_liq_surf_mass", scalar2d_layout,      kg,    grid_name);
+  add_field<Updated>("precip_ice_surf_mass", scalar2d_layout,      kg,    grid_name);
 
   create_helper_field("Sa_z",       scalar2d_layout, grid_name);
   create_helper_field("Sa_ptem",    scalar2d_layout, grid_name);
@@ -216,8 +219,9 @@ void SurfaceCouplingExporter::do_export(const Int dt, const bool called_during_i
   const auto& T_mid                = get_field_in("T_mid").get_view<const Spack**>();
   const auto& p_mid                = get_field_in("p_mid").get_view<const Spack**>();
   const auto& phis                 = get_field_in("phis").get_view<const Real*>();
-  const auto& precip_liq_surf_mass = get_field_in("precip_liq_surf_mass").get_view<const Real*>();
-  const auto& precip_ice_surf_mass = get_field_in("precip_ice_surf_mass").get_view<const Real*>();
+
+  const auto& precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real*>();
+  const auto& precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real*>();
 
   const auto Sa_z       = m_helper_fields.at("Sa_z").get_view<Real*>();
   const auto Sa_ptem    = m_helper_fields.at("Sa_ptem").get_view<Real*>();
@@ -284,6 +288,12 @@ void SurfaceCouplingExporter::do_export(const Int dt, const bool called_during_i
       // Precipitation has units of kg, so we need to convert to a flux with units of kg/s
       Faxa_rainl(i) = precip_liq_surf_mass(i)/dt;
       Faxa_snowl(i) = precip_ice_surf_mass(i)/dt;
+
+      // It is the responsibility of the surface coupling to zero out the precipitation flux
+      // now that it has been assigned to the coupling variable.
+      // TODO: Have the atmosphere driver actually do this in a consistent way - see Issue #1767
+      precip_liq_surf_mass(i) = 0.0;
+      precip_ice_surf_mass(i) = 0.0;
     }
   });
 
