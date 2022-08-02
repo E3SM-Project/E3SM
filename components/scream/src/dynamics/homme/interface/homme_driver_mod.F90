@@ -65,7 +65,8 @@ contains
     use prim_driver_base,  only: prim_init1_buffers, prim_init1_compose, prim_init1_cleanup
     use homme_context_mod, only: par, elem
     use compose_mod,       only: compose_control_kokkos_init_and_fin
-
+    use prim_driver_mod,   only: prim_init_grid_views
+    
     ! Compose is not in charge of init/finalize kokkos
     call compose_control_kokkos_init_and_fin(.false.)
 
@@ -79,6 +80,8 @@ contains
 
     ! Cleanup the tmp stuff used in prim_init1_geometry
     call prim_init1_cleanup()
+
+    call prim_init_grid_views (elem)
 
   end subroutine prim_complete_init1_phase_f90
 
@@ -123,6 +126,7 @@ contains
                                    elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v, &
                                    elem_state_Qdp, elem_state_Q, elem_derived_omega_p,   &
                                    elem_state_phis
+    
     !
     ! Inputs
     !
@@ -172,7 +176,7 @@ contains
   end subroutine prim_copy_cxx_to_f90
 
   subroutine prim_init_model_f90 () bind(c)
-    use prim_driver_mod,   only: prim_init_grid_views, prim_init_ref_states_views, &
+    use prim_driver_mod,   only: prim_init_ref_states_views, &
                                  prim_init_diags_views, prim_init_kokkos_functors, &
                                  prim_init_state_views
     use prim_state_mod,    only: prim_printstate
@@ -203,8 +207,7 @@ contains
     ! single buffer.
     call prim_init_kokkos_functors (allocate_buffer)
 
-    ! Init grid views, ref_states views, and diags views
-    call prim_init_grid_views (elem)
+    ! Init ref_states views, and diags views
     call prim_init_ref_states_views (elem)
     call prim_init_diags_views (elem)
 
