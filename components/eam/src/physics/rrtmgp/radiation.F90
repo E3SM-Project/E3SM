@@ -1484,8 +1484,8 @@ contains
                call t_startf('cospsimulator_intr_run')
                call cospsimulator_intr_run( &
                   state, pbuf, cam_in, cld_emis_lw, coszrs, &
-                  cld_tau_bnd_sw(:,:,cosp_swband), &
-                  snow_tau=gb_snow_tau_sw, snow_emis=gb_snow_tau_lw &
+                  cld_swtau_in=cld_tau_bnd_sw(:,:,cosp_swband), &
+                  snow_tau_in=gb_snow_tau_sw, snow_emis_in=gb_snow_tau_lw &
                )
                call t_stopf('cospsimulator_intr_run')
 
