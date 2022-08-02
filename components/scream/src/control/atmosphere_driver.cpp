@@ -14,6 +14,7 @@
 #include "ekat/ekat_parse_yaml_file.hpp"
 #include "ekat/std_meta/ekat_std_utils.hpp"
 
+#include "scream_config.h" // for SCREAM_CIME_BUILD
 #include "control/fvphyshack.hpp"
 
 #include <fstream>
@@ -113,10 +114,12 @@ set_params(const ekat::ParameterList& atm_params)
 
   const auto hgn = "Physics PG2";
   fvphyshack = m_atm_params.sublist("Grids Manager").get<std::string>("Reference Grid") == hgn;
+#ifdef SCREAM_CIME_BUILD
   if (fvphyshack) {
     // See the [rrtmgp active gases] note in dynamics/homme/atmosphere_dynamics_fv_phys.cpp.
     fv_phys_rrtmgp_active_gases_init(m_atm_params);
   }
+#endif
 }
 
 void AtmosphereDriver::
@@ -446,8 +449,10 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
   m_atm_logger->info("  [EAMxx] Run  start time stamp: " + run_t0.to_string());
   m_atm_logger->info("  [EAMxx] Case start time stamp: " + case_t0.to_string());
 
+#ifdef SCREAM_CIME_BUILD
   // See the [rrtmgp active gases] note in dynamics/homme/atmosphere_dynamics_fv_phys.cpp.
   if (fvphyshack) fv_phys_rrtmgp_active_gases_set_restart(case_t0 < run_t0);
+#endif
 
   // See if we need to print a DAG. We do this first, cause if any input
   // field is missing from the initial condition file, an error will be thrown.
