@@ -2252,6 +2252,8 @@ contains
    integer                                        :: nc
 
    associate(&
+         gpp     => col_cf%gpp    , &
+         ar     => col_cf%ar    , &
          hrv_deadstemc_to_prod10c     => col_cf%hrv_deadstemc_to_prod10c    , &
          hrv_deadstemc_to_prod100c    => col_cf%hrv_deadstemc_to_prod100c)
  
@@ -2264,6 +2266,11 @@ contains
        ! Shijie: Pass harvested wood products to ELM variable
        hrv_deadstemc_to_prod10c(c)  = this%fates(nc)%bc_out(s)%hrv_deadstemc_to_prod10c
        hrv_deadstemc_to_prod100c(c) = this%fates(nc)%bc_out(s)%hrv_deadstemc_to_prod100c
+
+       ! Pass LUC related C fluxes which are calculated in FATES [gC m-2 s-1]
+       gpp(c) = this%fates(nc)%bc_out(s)%gpp_site*1e3
+       ar(c) = this%fates(nc)%bc_out(s)%ar_site*1e3
+
     end do
 
     end associate
