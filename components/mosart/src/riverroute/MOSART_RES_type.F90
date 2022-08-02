@@ -84,13 +84,13 @@ module MOSART_RES_type
     type (Tpara_reservoir),   public :: Tres_para
     type (TstatusFlux_reservoir),   public :: Tres
 
-  public :: MOSART_reservoir_init
+  public :: MOSART_reservoir_sed_init
 
 !-----------------------------------------------------------------------
   contains
 !-----------------------------------------------------------------------
 
-  subroutine MOSART_reservoir_init
+  subroutine MOSART_reservoir_sed_init
 ! !DESCRIPTION:
 ! initialize MOSART-reservoir variables
 ! 
@@ -101,13 +101,13 @@ module MOSART_RES_type
 ! Author: Hongyi Li
 !
 
-     ! !DESCRIPTION: initilization of reservoir module
+     ! !DESCRIPTION: initilization of reservoir_sed module
      implicit none
 
     integer :: ier                  ! error code
     integer :: begr, endr, iunit, nn, n, cnt, nr, nt
     integer  :: damID
-    character(len=*),parameter :: subname = '(MOSART_reservoir_init)'
+    character(len=*),parameter :: subname = '(MOSART_reservoir_sed_init)'
     character(len=*),parameter :: FORMI = '(2A,2i10)'
     character(len=*),parameter :: FORMR = '(2A,2g15.7)'
     type(file_desc_t):: ncid       ! netcdf file
@@ -146,27 +146,26 @@ module MOSART_RES_type
         allocate (Tres%eres_out(begr:endr,nt_rtm))
         Tres%eres_out = 0._r8    
 
-if(0>1) then ! comment out temporily, please do not delete
-        allocate(Tres_para%Eff_trapping_t(begr:endr))
-        Tres_para%Eff_trapping_t = 0._r8
-        do iunit=begr,endr
-		    if(Tres_para%Tres_t(iunit)>0._r8) then
-                Tres_para%Eff_trapping_t(iunit) = CREff_trapping(Tres_para%Tres_t(iunit))
-			else
-                Tres_para%Eff_trapping_t(iunit) = 0._r8
-			end if
-		end do
-
-        allocate(Tres_para%Eff_trapping_r(begr:endr))
-        Tres_para%Eff_trapping_r = 0._r8
-        do iunit=begr,endr
-		    if(Tres_para%Tres_r(iunit)>0._r8) then
-               Tres_para%Eff_trapping_r(iunit) = CREff_trapping(Tres_para%Tres_r(iunit))
-			else
-                Tres_para%Eff_trapping_r(iunit) = 0._r8
-			end if
-		end do
-end if
+        if(0>1) then ! comment out temporily, please do not delete. We may need to use this block in future refinement
+            Tres_para%Eff_trapping_t = 0._r8
+            do iunit=begr,endr
+			    if(Tres_para%Tres_t(iunit)>0._r8) then
+                    Tres_para%Eff_trapping_t(iunit) = CREff_trapping(Tres_para%Tres_t(iunit))
+				else
+                    Tres_para%Eff_trapping_t(iunit) = 0._r8
+				end if
+			end do
+        
+            allocate(Tres_para%Eff_trapping_r(begr:endr))
+            Tres_para%Eff_trapping_r = 0._r8
+            do iunit=begr,endr
+			    if(Tres_para%Tres_r(iunit)>0._r8) then
+                   Tres_para%Eff_trapping_r(iunit) = CREff_trapping(Tres_para%Tres_r(iunit))
+				else
+                    Tres_para%Eff_trapping_r(iunit) = 0._r8
+				end if
+			end do
+        end if
 
         allocate (Tres%wres_t(begr:endr,nt_rtm))
         Tres%wres_t = 0._r8
@@ -182,98 +181,7 @@ end if
 
     end if  
 
-  end subroutine MOSART_reservoir_init  
-
-
-    subroutine MOSART_reservoir_init_old
-! !DESCRIPTION:
-! initialize MOSART-reservoir variables
-! 
-! !USES:
-! !ARGUMENTS:
-!
-! !REVISION HISTORY:
-! Author: Hongyi Li
-!
-
-     ! !DESCRIPTION: initilization of reservoir module
-     implicit none
-
-  type(file_desc_t)  :: ncid       ! pio file desc
-  type(var_desc_t)   :: vardesc    ! pio variable desc 
-  type(io_desc_t)    :: iodesc_dbl ! pio io desc
-  type(io_desc_t)    :: iodesc_int ! pio io desc
-  integer, pointer   :: compdof(:) ! computational degrees of freedom for pio 
-  integer :: dids(2)               ! variable dimension ids 
-  integer :: dsizes(2)             ! variable dimension lengths
-  integer :: ier                  ! error code
-  integer :: begr, endr, iunit, nn, n, cnt, nr, nt
-  integer :: numDT_r, numDT_t
-  integer :: lsize, gsize
-  integer :: igrow, igcol, iwgt
-  !type(mct_avect) :: avtmp, avtmpG ! temporary avects
-  !type(mct_sMat)  :: sMat          ! temporary sparse matrix, needed for sMatP
-  !real(r8):: areatot_prev, areatot_tmp, areatot_new
-  !real(r8):: hlen_max, rlen_min
-  integer :: tcnt
-  character(len=16384) :: rList             ! list of fields for SM multiply
-  character(len=1000) :: fname
-  character(len=*),parameter :: subname = '(MOSART_reservoir_init)'
-  character(len=*),parameter :: FORMI = '(2A,2i10)'
-  character(len=*),parameter :: FORMR = '(2A,2g15.7)'
-
-    Tres_ctl%RESFlag = 1 !0
-    Tres_ctl%paraPath = '/pic/projects/acme_l/liho745/Datasets/Sediment/Reservoir/'
-    Tres_ctl%paraFile = 'Global_reservoir_data4sediment.nc'
-
-    begr = rtmCTL%begr
-    endr = rtmCTL%endr
-    if(endr >= begr) then
-        ! reservoir parameters
-        call ncd_pio_openfile (ncid, trim(Tres_ctl%paraPath)//trim(Tres_ctl%paraFile), 0)
-        call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
-        allocate(compdof(rtmCTL%lnumr))
-        cnt = 0
-        do n = rtmCTL%begr,rtmCTL%endr
-           cnt = cnt + 1
-           compDOF(cnt) = rtmCTL%gindex(n)
-        enddo
-
-        ! setup iodesc based on Tres dids
-        ier = pio_inq_varid(ncid, name='Tres', vardesc=vardesc)
-        ier = pio_inq_vardimid(ncid, vardesc, dids)
-        ier = pio_inq_dimlen(ncid, dids(1),dsizes(1))
-        ier = pio_inq_dimlen(ncid, dids(2),dsizes(2))
-        call pio_initdecomp(pio_subsystem, pio_double, dsizes, compDOF, iodesc_dbl)
-        call pio_initdecomp(pio_subsystem, pio_int   , dsizes, compDOF, iodesc_int)
-        deallocate(compdof)
-        call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
-
-        allocate(TUnit%euler_calc(nt_rtm))
-        Tunit%euler_calc = .true.
-
-        allocate(Tres_para%Tres(begr:endr))
-        ier = pio_inq_varid(ncid, name='Tres', vardesc=vardesc)
-        call pio_read_darray(ncid, vardesc, iodesc_dbl, Tres_para%Tres, ier)
-        if (masterproc) write(iulog,FORMR) trim(subname),' read Tres ',minval(Tres_para%Tres),maxval(Tres_para%Tres)
-        call shr_sys_flush(iulog)
-
-    end if  
-
-    allocate (Tres%wres(begr:endr,nt_rtm))
-    Tres%wres = 0._r8
-
-    allocate (Tres%dwres(begr:endr,nt_rtm))
-    Tres%dwres = 0._r8
-
-    allocate (Tres%eres_in(begr:endr,nt_rtm))
-    Tres%eres_in = 0._r8
-
-    allocate (Tres%eres_out(begr:endr,nt_rtm))
-    Tres%eres_out = 0._r8
-
-  end subroutine MOSART_reservoir_init_old
-
+  end subroutine MOSART_reservoir_sed_init  
 
     function CRTres(V_, Q_) result(Tres_)
       ! !DESCRIPTION: calculate large reservoir trapping efficiency based on Eqn (1) and Fig. 2 in Vorosmarty et al. (2003)

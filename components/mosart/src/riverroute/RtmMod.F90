@@ -42,8 +42,8 @@ module RtmMod
   use MOSART_physics_mod, only : Euler
   use MOSART_physics_mod, only : updatestate_hillslope, updatestate_subnetwork, &
                                  updatestate_mainchannel
-    use MOSART_BGC_type,  only : TSedi, TSedi_para, MOSART_sediment_init
-  use MOSART_RES_type,  only : Tres, MOSART_reservoir_init, Tres_para
+  use MOSART_BGC_type,  only : TSedi, TSedi_para, MOSART_sediment_init
+  use MOSART_RES_type,  only : Tres, MOSART_reservoir_sed_init, Tres_para
   use MOSART_sediment_IO_mod
 !#ifdef INCLUDE_WRM
   use WRM_type_mod    , only : ctlSubwWRM, WRMUnit, StorWater
@@ -1801,31 +1801,33 @@ contains
 !    if (masterproc) call shr_sys_flush(iulog)
     call MOSART_init()
 
-    call t_stopf('mosarti_mosart_init')
 
-    call t_startf('mosarti_sediment_init')
     if(sediflag) then
+        call t_startf('mosarti_sediment_init')
         call MOSART_sediment_init(rtmCTL%begr, rtmCTL%endr, rtmCTL%numr)
+        call t_stopf('mosarti_sediment_init')
     end if
-    call t_stopf('mosarti_sediment_init')
 
     if (wrmflag) then
        call t_startf('mosarti_wrm_init')
        if (wrmflag) then
           call WRM_init()
        endif
-       call t_startf('mosarti_wrm_init')
+       call t_stopf('mosarti_wrm_init')
 
-       call t_startf('mosarti_reservoir_init')
-       if (wrmflag) then
-          call MOSART_reservoir_init()
-       endif
-       call t_stopf('mosarti_reservoir_init')
     end if
     if (wrmflag .and. heatflag .and. rstraflag) then
        call regeom                    
     end if  
 
+    if (sediflag .and. wrmflag) then
+       call t_startf('mosarti_reservoir_sed_init')
+       if (sediflag) then
+          call MOSART_reservoir_sed_init()
+       endif
+       call t_stopf('mosarti_reservoir_sed_init')
+    end if
+	
     !-------------------------------------------------------
     ! Read restart/initial info
     !-------------------------------------------------------
@@ -1969,33 +1971,38 @@ contains
     end if
 !#endif
 
-
-    do nt = 1,nt_rtm
+    do nt = nt_nliq,nt_nice
         do nr = rtmCTL%begr,rtmCTL%endr
         
            call UpdateState_hillslope(nr,nt)
            call UpdateState_subnetwork(nr,nt)   
 
-            !rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + TRunoff%wh(nr,nt)*rtmCTL%area(nr)*TUnit%frac(nr))  ! times "TUnit%frac( nr )" or not ?
-            ! TODO: check if it is consistent when inundflag and sediflag turned on together
-            if(sediflag) then
-               call UpdateState_mainchannel(nr,nt)
-               rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
-                                     TRunoff%wh(nr,nt)*rtmCTL%area(nr)*TUnit%frac(nr) + &
-                                     TRunoff%wt_al(nr,nt) + TRunoff%wr_al(nr,nt))
-            else
-               rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
+           rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
                                      TRunoff%wh(nr,nt)*rtmCTL%area(nr)*TUnit%frac(nr))
-            end if
 
-            if (inundflag .and. nt == 1) then  
-               rtmCTL%volr(nr,nt) = rtmCTL%volr(nr,nt) + TRunoff%wf_ini( nr )
-            else
-               call UpdateState_mainchannel(nr,nt)
-            endif
+           if (inundflag .and. nt == nt_nliq) then  
+              rtmCTL%volr(nr,nt) = rtmCTL%volr(nr,nt) + TRunoff%wf_ini( nr )
+           else
+              call UpdateState_mainchannel(nr,nt)
+           endif
 
         enddo
     enddo
+
+    if(sediflag) then
+    do nt=nt_nmud,nt_nsan
+        do nr = rtmCTL%begr,rtmCTL%endr        
+           call UpdateState_hillslope(nr,nt)
+           call UpdateState_subnetwork(nr,nt)   
+           !rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + TRunoff%wh(nr,nt)*rtmCTL%area(nr)*TUnit%frac(nr))  ! times "TUnit%frac( nr )" or not ?
+           ! TODO: check if it is consistent when inundflag and sediflag turned on together
+           call UpdateState_mainchannel(nr,nt)
+           rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
+                                 TRunoff%wh(nr,nt)*rtmCTL%area(nr)*TUnit%frac(nr) + &
+                                 TRunoff%wt_al(nr,nt) + TRunoff%wr_al(nr,nt))
+        enddo
+    enddo
+	end if
 
     call t_stopf('mosarti_restart')
 
@@ -2141,9 +2148,9 @@ contains
     integer,parameter :: bVelo_upChnlNo   = 58 ! Total number of channels with upward flow velocities (dimensionless).
 
     ! Sediment TERMS (rates kg/s or storage kg)
-    integer,parameter :: br_ehexch = 70 ! exchanging fluxes between channel and enviroments
-    integer,parameter :: br_etexch = 71 ! exchanging fluxes between channel and enviroments
-    integer,parameter :: br_erexch = 72 ! exchanging fluxes between channel and enviroments
+    integer,parameter :: br_ehexch = 70 ! exchanging fluxes between channel and environments
+    integer,parameter :: br_etexch = 71 ! exchanging fluxes between channel and environments
+    integer,parameter :: br_erexch = 72 ! exchanging fluxes between channel and environments
     integer,parameter :: bv_t_al_i = 73 ! initial sediment storge in the active layer of sub-network channel
     integer,parameter :: bv_t_al_f = 74 ! final sediment storge in the active layer of sub-network channel
     integer,parameter :: bv_r_al_i = 75 ! initial sediment storge in the active layer of main channel

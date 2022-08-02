@@ -40,17 +40,7 @@ module MOSART_BGC_type
      character(len=100) :: inputPath            ! the path of the input files
 
      real(r8), pointer :: d50(:)                ! median bed-material sediment particle size [m]
-
-     real(r8), pointer :: clay_content(:)       ! clay content in top soil (-)
-     real(r8), pointer :: silt_content(:)       ! silt content in top soil (-)
-     real(r8), pointer :: rock_frac(:)          ! rock fragment fraction in top soil (-)
-     real(r8), pointer :: crop_frac(:)          ! cropland fraction in landcover (-)
-     real(r8), pointer :: annual_Qsur(:)        ! annual runoff (mm), for soil erosion estimation with an empirical formula
-     real(r8), pointer :: annual_Qtot(:)        ! annual runoff (mm), for soil erosion estimation with an empirical formula
-     real(r8), pointer :: peak_Qtot(:)          ! peak daily runoff (mm), for soil erosion estimation with an empirical formula
-     real(r8), pointer :: peak_Qsur(:)          ! peak daily runoff (mm), for soil erosion estimation with an empirical formula
      real(r8), pointer :: u_f(:)                ! formative shear bed shear velocity [m/s]
-     logical           :: first_call = .true.
   end type Tparameter_sedi 
 
     ! sediment storage and flux variables
@@ -58,10 +48,6 @@ module MOSART_BGC_type
     ! here we just add some unique items for sediment such as shear stress etc.
     !public :: TstatusFlux_sedi
     type TstatusFlux_sedi
-
-        ! hillsloope
-        real(r8), pointer :: Tau_h(:)       ! shear stress for hillslope erosion, [N/m2]
-        real(r8), pointer :: Tau_ch(:)      ! critical shear stress for hillslope erosion, [N/m2], dependent on soil properties and landuse
 
         ! subnetwork channel
         real(r8), pointer :: Ssal_t(:)      ! sand-sediment storage in active layer, [kg]
@@ -136,8 +122,7 @@ module MOSART_BGC_type
     character(len=*),parameter :: FORMR = '(2A,2g15.7)'
     character(len=*),parameter :: subname='(MOSART_sediment_para)'
 
-    allocate(TSedi%Tau_ch(begr:endr),       &
-             TSedi%Ssal_t(begr:endr),       &
+    allocate(TSedi%Ssal_t(begr:endr),       &
              TSedi%Smal_t(begr:endr),       &
              TSedi%ers_t(begr:endr),       &
              TSedi%ersal_t(begr:endr),     &
@@ -162,10 +147,9 @@ module MOSART_BGC_type
              stat=ier)
     if (ier /= 0) then
        write(iulog,*)'Rtmini ERROR allocation of sediment local flux/status arrays'
-       call shr_sys_abort
+       call shr_sys_abort()
     end if
 
-    TSedi%Tau_ch = 0.0003_r8
     TSedi%Ssal_t = 0._r8
     TSedi%Smal_t = 0._r8
     TSedi%ers_t = 0._r8

@@ -71,47 +71,47 @@ MODULE MOSART_sediment_IO_mod
   character(len=*),parameter :: FORMI = '(2A,2i10)'
   character(len=*),parameter :: FORMR = '(2A,2g15.7)'
     character(len=*),parameter :: subname='(MOSART_sediment_annual_inputs)'
-     write(strYear,'(I4.4)') iYear
-     fname = trim(TSedi_para%inputPath) // 'Soil_erosion_para_annual_' //strYear//'.nc'
-     write(iulog,*) subname, ' reading ',trim(fname)
-
+    ! write(strYear,'(I4.4)') iYear
+    ! fname = trim(TSedi_para%inputPath) // 'Soil_erosion_para_annual_' //strYear//'.nc'
+    ! write(iulog,*) subname, ' reading ',trim(fname)
+    !
     begr = rtmCTL%begr
     endr = rtmCTL%endr
     if(endr >= begr) then
-        ! reservoir parameters
-        call ncd_pio_openfile (ncid, fname, 0)
-        call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
-        allocate(compdof(rtmCTL%lnumr))
-        cnt = 0
-        do n = rtmCTL%begr,rtmCTL%endr
-           cnt = cnt + 1
-           compDOF(cnt) = rtmCTL%gindex(n)
-        enddo
-
+      !  ! reservoir parameters
+      !  call ncd_pio_openfile (ncid, fname, 0)
+      !  call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
+      !  allocate(compdof(rtmCTL%lnumr))
+      !  cnt = 0
+      !  do n = rtmCTL%begr,rtmCTL%endr
+      !     cnt = cnt + 1
+      !     compDOF(cnt) = rtmCTL%gindex(n)
+      !  enddo
+      !
         ! setup iodesc based on annualQsur dids
-        ier = pio_inq_varid(ncid, name='peakQtot', vardesc=vardesc)
-        ier = pio_inq_vardimid(ncid, vardesc, dids)
-        ier = pio_inq_dimlen(ncid, dids(1),dsizes(1))
-        ier = pio_inq_dimlen(ncid, dids(2),dsizes(2))
-        call pio_initdecomp(pio_subsystem, pio_double, dsizes, compDOF, iodesc_dbl)
-        call pio_initdecomp(pio_subsystem, pio_int   , dsizes, compDOF, iodesc_int)
-        deallocate(compdof)
-        call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
-
-        call ncd_pio_openfile(ncid, trim(fname), 0)
-        ier = pio_inq_varid (ncid, name='peakQtot', vardesc=vardesc)
-        call pio_read_darray(ncid, vardesc, iodesc_dbl, TSedi_para%peak_Qtot, ier)
-        call ncd_pio_closefile(ncid)
-
-        do nr=rtmCTL%begr,rtmCTL%endr
-           if (TSedi_para%peak_Qtot(nr).lt.0._r8) then
-              TSedi_para%peak_Qtot(nr) = 0._r8
-           end if
-        end do
-
+      !  ier = pio_inq_varid(ncid, name='peakQtot', vardesc=vardesc)
+      !  ier = pio_inq_vardimid(ncid, vardesc, dids)
+      !  ier = pio_inq_dimlen(ncid, dids(1),dsizes(1))
+      !  ier = pio_inq_dimlen(ncid, dids(2),dsizes(2))
+      !  call pio_initdecomp(pio_subsystem, pio_double, dsizes, compDOF, iodesc_dbl)
+      !  call pio_initdecomp(pio_subsystem, pio_int   , dsizes, compDOF, iodesc_int)
+      !  deallocate(compdof)
+      !  call pio_seterrorhandling(ncid, PIO_BCAST_ERROR)
+      !
+      !  call ncd_pio_openfile(ncid, trim(fname), 0)
+      !  ier = pio_inq_varid (ncid, name='peakQtot', vardesc=vardesc)
+      !  call pio_read_darray(ncid, vardesc, iodesc_dbl, TSedi_para%peak_Qtot, ier)
+      !  call ncd_pio_closefile(ncid)
+      !
+      !  do nr=rtmCTL%begr,rtmCTL%endr
+      !     if (TSedi_para%peak_Qtot(nr).lt.0._r8) then
+      !        TSedi_para%peak_Qtot(nr) = 0._r8
+      !     end if
+      !  end do
+      !
     end if 
-     write(iulog,FORMR) trim(subname),' read annualQtot', minval(TSedi_para%peak_Qtot),maxval(TSedi_para%peak_Qtot)
-     call shr_sys_flush(iulog)
+    ! write(iulog,FORMR) trim(subname),' read annualQtot', minval(TSedi_para%peak_Qtot),maxval(TSedi_para%peak_Qtot)
+    ! call shr_sys_flush(iulog)
 
   end subroutine SediInput_annual
 

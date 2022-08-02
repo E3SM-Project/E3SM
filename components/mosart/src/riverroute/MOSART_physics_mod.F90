@@ -1106,7 +1106,11 @@ MODULE MOSART_physics_mod
     integer, intent(in) :: iunit, nt
     character(len=*),parameter :: subname = '(updateState_hillslope)'
 
-    TRunoff%yh(iunit,nt) = TRunoff%wh(iunit,nt) !/ TUnit%area(iunit) / TUnit%frac(iunit) 
+    if(nt==nt_nliq) then
+        TRunoff%yh(iunit,nt) = TRunoff%wh(iunit,nt) !/ TUnit%area(iunit) / TUnit%frac(iunit) 
+	else
+	    TRunoff%yh(iunit,nt) = 0._r8
+	end if
 
   end subroutine updateState_hillslope
 
