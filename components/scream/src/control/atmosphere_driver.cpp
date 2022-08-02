@@ -424,7 +424,7 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
     AtmProcDAG dag;
 
     // First, add all atm processes
-    dag.create_dag(*m_atm_process_group,m_field_mgrs);
+    dag.create_dag(*m_atm_process_group);
 
     // Then, add all surface coupling dependencies, if any
     if (m_surface_coupling) {

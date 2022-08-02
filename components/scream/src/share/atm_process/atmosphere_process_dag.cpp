@@ -6,13 +6,12 @@
 namespace scream {
 
 void AtmProcDAG::
-create_dag(const group_type& atm_procs,
-           const std::map<std::string,std::shared_ptr<FieldManager>>& field_mgrs) {
-
+create_dag(const group_type& atm_procs)
+{
   cleanup ();
 
   // Create the nodes
-  add_nodes(atm_procs,field_mgrs);
+  add_nodes(atm_procs);
 
   // Add a 'begin' and 'end' placeholders. While they are not actual
   // nodes of the graph, they come handy when representing inputs
@@ -229,12 +228,15 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
           ofile << "</font></td></tr>\n";
           if (verbosity>2) {
             ofile << "      <tr><td align=\"left\">  Members:";
-            const auto& members = m_gr_fid_to_group.at(m_fids[gr_fid]).m_fields;
+            const auto& group = m_gr_fid_to_group.at(m_fids[gr_fid]);
+            const auto& members = group.m_fields;
+            const auto& members_names = group.m_info->m_fields_names;
             const size_t max_len = 40;
             size_t len = 0;
             size_t i = 0;
-            for (auto it : members) {
-              const auto& mfid = it.second->get_header().get_identifier();
+            for (const auto& fn : members_names) {
+              const auto f = members.at(fn);
+              const auto& mfid = f->get_header().get_identifier();
               const auto mfid_id = get_fid_index(mfid);
               std::string mfc = "<font color=\"";
               mfc += (ekat::contains(unmet,mfid_id) ? "red" : "black");
@@ -243,8 +245,8 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
                 ofile << ",";
                 ++len;
               }
-              ofile << " " << mfc << it.first << "</font>";
-              len += it.first.size()+1;
+              ofile << " " << mfc << fn << "</font>";
+              len += fn.size()+1;
               if (len>max_len) {
                 if (i<members.size()-1) {
                   ofile << ",";
@@ -278,12 +280,15 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
           ofile << "</font></td></tr>\n";
           if (verbosity>2) {
             ofile << "      <tr><td align=\"left\">  Members:";
-            const auto& members = m_gr_fid_to_group.at(m_fids[gr_fid]).m_fields;
+            const auto& group = m_gr_fid_to_group.at(m_fids[gr_fid]);
+            const auto& members = group.m_fields;
+            const auto& members_names = group.m_info->m_fields_names;
             const size_t max_len = 40;
             size_t len = 0;
             size_t i = 0;
-            for (auto it : members) {
-              const auto& mfid = it.second->get_header().get_identifier();
+            for (const auto& fn : members_names) {
+              const auto f = members.at(fn);
+              const auto& mfid = f->get_header().get_identifier();
               const auto mfid_id = get_fid_index(mfid);
               std::string mfc = "<font color=\"";
               mfc += (ekat::contains(unmet,mfid_id) ? "red" : "black");
@@ -292,8 +297,8 @@ void AtmProcDAG::write_dag (const std::string& fname, const int verbosity) const
                 ofile << ",";
                 ++len;
               }
-              ofile << " " << mfc << it.first << "</font>";
-              len += it.first.size()+1;
+              ofile << " " << mfc << fn << "</font>";
+              len += fn.size()+1;
               if (len>max_len) {
                 if (i<members.size()-1) {
                   ofile << ",";
@@ -333,9 +338,8 @@ void AtmProcDAG::cleanup () {
 }
 
 void AtmProcDAG::
-add_nodes (const group_type& atm_procs,
-           const std::map<std::string,std::shared_ptr<FieldManager>>& field_mgrs) {
-  
+add_nodes (const group_type& atm_procs)
+{
   const int num_procs = atm_procs.get_num_processes();
   const bool sequential = (atm_procs.get_schedule_type()==ScheduleType::Sequential);
 
@@ -352,7 +356,7 @@ add_nodes (const group_type& atm_procs,
       // Add all the stuff in the group.
       // Note: no need to add remappers for this process, because
       //       the sub-group will have its remappers taken care of
-      add_nodes(*group,field_mgrs);
+      add_nodes(*group);
     } else {
       // Create a node for the process
       // Node& node = m_nodes[proc->name()];
@@ -363,8 +367,8 @@ add_nodes (const group_type& atm_procs,
       m_unmet_deps[id].clear();
 
       // Input fields
-      for (const auto& req : proc->get_required_field_requests()) {
-        const auto& fid = req.fid;
+      for (const auto& f : proc->get_fields_in()) {
+        const auto& fid = f.get_header().get_identifier();
         const int fid_id = add_fid(fid);
         node.required.insert(fid_id);
         auto it = m_fid_to_last_provider.find(fid_id);
@@ -378,20 +382,15 @@ add_nodes (const group_type& atm_procs,
       }
 
       // Output fields
-      for (const auto& req : proc->get_computed_field_requests()) {
-        const auto& fid = req.fid;
+      for (const auto& f : proc->get_fields_out()) {
+        const auto& fid = f.get_header().get_identifier();
         const int fid_id = add_fid(fid);
         node.computed.insert(fid_id);
         m_fid_to_last_provider[fid_id] = id;
       }
 
       // Input groups
-      for (const auto& itg : proc->get_required_group_requests()) {
-        EKAT_REQUIRE_MSG (field_mgrs.find(itg.grid)!=field_mgrs.end(),
-            "Error! Field manager not found for this group request.\n"
-            "       Group name: " + itg.name + "\n"
-            "       Group grid: " + itg.grid + "\n");
-        auto group = field_mgrs.at(itg.grid)->get_field_group(itg.name);
+      for (const auto& group : proc->get_groups_in()) {
         if (!group.m_info->m_bundled) {
           // Group is not bundled: process fields individually
           for (const auto& it_f : group.m_fields) {
@@ -434,12 +433,7 @@ add_nodes (const group_type& atm_procs,
       }
 
       // Output groups
-      for (const auto& itg : proc->get_computed_group_requests()) {
-        EKAT_REQUIRE_MSG (field_mgrs.find(itg.grid)!=field_mgrs.end(),
-            "Error! Field manager not found for this group request.\n"
-            "       Group name: " + itg.name + "\n"
-            "       Group grid: " + itg.grid + "\n");
-        auto group = field_mgrs.at(itg.grid)->get_field_group(itg.name);
+      for (const auto& group : proc->get_groups_out()) {
         if (!group.m_info->m_bundled) {
           // Group is not bundled: process fields in the group individually
           for (const auto& it_f : group.m_fields) {
