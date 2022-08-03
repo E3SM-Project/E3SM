@@ -275,6 +275,19 @@
         </ntasks>
       </pes>
     </mach>
+    <mach name="ascent|summit">
+      <pes compset=".*ELM%CN.*" pesize="any">
+        <comment>elm: ascent|summit PEs for grid l%360x720cru</comment>
+        <ntasks>
+          <ntasks_atm>-1</ntasks_atm>
+          <ntasks_lnd>-1</ntasks_lnd>
+          <ntasks_rof>-1</ntasks_rof>
+          <ntasks_ice>-1</ntasks_ice>
+          <ntasks_ocn>-1</ntasks_ocn>
+          <ntasks_cpl>-1</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
   </grid>
   <grid name="l%0.47x0.63" >
     <mach name="any">
