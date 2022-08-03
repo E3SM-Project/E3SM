@@ -2,6 +2,7 @@ set(SCREAM_CONTROL_SOURCES
   atmosphere_driver.cpp
   surface_coupling.cpp
   surface_coupling_export.cpp
+  fvphyshack.cpp
 )
 
 set(SCREAM_CONTROL_HEADERS

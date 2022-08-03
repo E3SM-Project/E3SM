@@ -3,6 +3,12 @@
 
 #include "share/property_checks/field_positivity_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
+
+#include "scream_config.h" // for SCREAM_CIME_BUILD
+#ifdef SCREAM_CIME_BUILD
+# include "control/fvphyshack.hpp"
+#endif
+
 namespace scream
 {
 
@@ -64,8 +70,20 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   const auto s2 = s*s;
 
   // These variables are needed by the interface, but not actually passed to shoc_main.
-  // TODO: Replace pref_mid in the FM with pref_mid read in from the grid data.
-  add_field<Required>("pref_mid",         pref_mid_layout,      Pa,      grid_name, ps);
+  
+  // TODO: Replace pref_mid in the FM with pref_mid read in from the grid data
+  // or, better, an analog to EAM's dyn_grid_get_pref.
+  add_field<Required>("pref_mid",         pref_mid_layout,      Pa,
+#ifdef SCREAM_CIME_BUILD
+                      // If pg2, read from the "Dynamics" grid b/c "Physics GLL"
+                      // fields are temporary and not written to the restart
+                      // file and reading "Physics PG2" data from the IC is not
+                      // and should not be supported.
+                      fvphyshack ? "Dynamics" :
+#endif
+                      grid_name,
+                      ps);
+
   add_field<Required>("omega",            scalar3d_layout_mid,  Pa/s,    grid_name, ps);
   add_field<Required>("surf_sens_flux",   scalar2d_layout_col,  W/m2,    grid_name);
   add_field<Required>("surf_evap",        scalar2d_layout_col,  kg/m2/s, grid_name);

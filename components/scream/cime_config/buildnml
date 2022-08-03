@@ -60,7 +60,7 @@ CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
 METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit")
 
 ###############################################################################
-def do_cime_vars(entry, case, refine=False):
+def do_cime_vars(entry, case, refine=False, extra=None):
 ###############################################################################
     """
     For a parameter value, process any references to case values ("${CASEVAR}")
@@ -87,13 +87,26 @@ def do_cime_vars(entry, case, refine=False):
     {'foo': '1', 'subdict': {'bar': 'foo', 'baz': '1'}}
     """
     if type(entry) is dict:
+        changed_keys = []
         for k,v in entry.items():
-            entry[k] = do_cime_vars(v,case,refine)
+            # Apply replacement to the key.
+            k1 = do_cime_vars(k,case,refine,extra)
+            if (k1 != k): changed_keys.append((k,k1))
+            # Apply replacement to the value.
+            entry[k] = do_cime_vars(v,case,refine,extra)
+        # Handle changed keys outside the original loop since keys can't change
+        # in an items loop.
+        for e in changed_keys:
+            entry[e[1]] = entry[e[0]]
+            del entry[e[0]]
     elif type(entry) is str:
         m = CIME_VAR_RE.search(entry)
         while m:
             cime_var = m.groups()[0]
-            value = case.get_value(cime_var)
+            if type(extra) is dict and cime_var in extra:
+                value = extra[cime_var]
+            else:
+                value = case.get_value(cime_var)
             expect(value is not None,
                    "Cannot resolve XML entry '{}', CIME has no value for '{}'".format(entry, cime_var))
             entry = entry.replace("${{{}}}".format(cime_var), str(value))
@@ -752,6 +765,12 @@ def do_cime_vars_on_yaml_output_files(case,caseroot):
             if not os.path.exists(dst_yaml):
                 safe_copy(src_yaml,dst_yaml)
 
+    # Determine the physics grid type for use in CIME-var substitution.
+    pgt = 'GLL'
+    atm_grid = case.get_value('ATM_GRID')
+    if '.pg' in atm_grid:
+        pgt = 'PG' + atm_grid[-1]
+
     # Now loop over all output yaml files, and process any CIME var present (if any)
     for fn in out_files:
         # Get full name
@@ -759,9 +778,10 @@ def do_cime_vars_on_yaml_output_files(case,caseroot):
 
         # Load yaml file
         content = yaml.safe_load(open(fn_full,"r"))
-
+            
         # Replace possible CIME vars
-        do_cime_vars(content,case,refine=True)
+        do_cime_vars(content,case,refine=True,
+                     extra={'PHYSICS_GRID_TYPE': pgt})
 
         # Save YAML file
         ordered_dump(content, open(fn_full, "w"))

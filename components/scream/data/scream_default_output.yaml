@@ -4,7 +4,7 @@ Casename: ${CASE}.scream.hi
 Averaging Type: Instant
 Max Snapshots Per File: 744 # One output every 31 days
 Fields:
-  Physics GLL:
+  Physics ${PHYSICS_GRID_TYPE}:
     Field Names:
       # HOMME
       - ps
