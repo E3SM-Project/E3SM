@@ -310,7 +310,6 @@ TEST_CASE("surface-coupling", "") {
   auto& ts              = ad_params.sublist("Time Stepping");
   const auto start_date = ts.get<std::vector<int>>("Start Date");
   const auto start_time = ts.get<std::vector<int>>("Start Time");
-  const int ncols       = ad_params.sublist("Grids Manager").get<int>("Number of Global Columns");
   const auto grid_name  = ad_params.sublist("atmosphere_processes")
                                    .sublist("SurfaceCouplingExporter")
                                    .get<std::string>("Grid");
@@ -325,18 +324,26 @@ TEST_CASE("surface-coupling", "") {
   proc_factory.register_product("SurfaceCouplingExporter",&create_atmosphere_process<SurfaceCouplingExporter>);
   gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
 
-  // Create the driver
+  // Create the AD
   AtmosphereDriver ad;
+  ad.set_comm(atm_comm);
+  ad.set_params(ad_params);
+  ad.init_scorpio ();
+  ad.create_atm_processes ();
+  ad.create_grids ();
+  ad.create_fields ();
+
+  const int ncols = ad.get_grids_manager()->get_reference_grid()->get_num_local_dofs();
+
+  // Create test data for SurfaceCouplingDataManager
 
   // Create engine and pdfs for random test data
   auto engine = setup_random_test(&atm_comm);
   std::uniform_int_distribution<int> pdf_int_additional_fields(0,10);
   std::uniform_int_distribution<int> pdf_int_dt(1,1800);
   std::uniform_real_distribution<Real> pdf_real_import_data(0.0,1.0);
-
   // Set up random value for dt
   const int dt = pdf_int_dt(engine);
-
   // Setup views to test import/export. For this test we consider a random number of non-imported/exported
   // cpl fields (in addition to the required scream imports/exports), then assign a random, non-repeating
   // cpl index for each field in [0, num_cpl_fields).
@@ -348,7 +355,6 @@ TEST_CASE("surface-coupling", "") {
   const int num_additional_exports = additional_import_exports(1);
   const int num_cpl_imports = num_scream_imports + num_additional_imports;
   const int num_cpl_exports = num_scream_exports + num_additional_exports;
-
   // Import data is of size num_cpl_imports, the rest of the views are size num_scream_imports.
   KokkosTypes<HostDevice>::view_2d<Real> import_data_view             ("import_data",
                                                                        ncols, num_cpl_imports);
@@ -360,10 +366,8 @@ TEST_CASE("surface-coupling", "") {
                                                                        num_scream_imports);
   KokkosTypes<HostDevice>::view_1d<bool> do_import_during_init_view   ("do_import_during_init_view",
                                                                        num_scream_imports);
-
   // Set import data to random (0,1) values
   ekat::genRandArray(import_data_view, engine, pdf_real_import_data);
-
   // Set import names
   char import_names[num_scream_imports][32];
   std::strcpy(import_names[0], "sfc_alb_dir_vis");
@@ -375,7 +379,6 @@ TEST_CASE("surface-coupling", "") {
   std::strcpy(import_names[6], "surf_mom_flux");
   std::strcpy(import_names[7], "surf_sens_flux");
   std::strcpy(import_names[8], "surf_evap");
-
   // Export data is of size num_cpl_exports, the rest of the views are size num_scream_exports.
   KokkosTypes<HostDevice>::view_2d<Real> export_data_view             ("export_data",
                                                                        ncols, num_cpl_exports);
@@ -387,10 +390,8 @@ TEST_CASE("surface-coupling", "") {
                                                                        num_scream_exports);
   KokkosTypes<HostDevice>::view_1d<bool> do_export_during_init_view   ("do_export_during_init_view",
                                                                        num_scream_exports);
-
   // Set export data to -1. All values should be overwritten after the run phase.
   Kokkos::deep_copy(export_data_view, -1.0);
-
   // Set names. For all non-scream exports, set to 0.
   char export_names[num_scream_exports][32];
   std::strcpy(export_names[0],  "Sa_z");
@@ -410,7 +411,6 @@ TEST_CASE("surface-coupling", "") {
   std::strcpy(export_names[14], "sfc_flux_dif_vis");
   std::strcpy(export_names[15], "sfc_flux_sw_net");
   std::strcpy(export_names[16], "sfc_flux_lw_dn");
-
   // Setup the import/export data. This is meant to replicate the structures coming
   // from mct_coupling/scream_cpl_indices.F90
   setup_import_and_export_data(num_cpl_imports, num_scream_imports,
@@ -420,7 +420,7 @@ TEST_CASE("surface-coupling", "") {
                                export_cpl_indices_view, export_vec_comps_view,
                                export_constant_multiple_view, do_export_during_init_view);
 
-  // Have the AD setup the import/export
+  // Have the AD setup surface coupling data
   ad.setup_surface_coupling_data_manager(SurfaceCouplingTransferType::Import,
                                          num_cpl_imports, num_scream_imports, ncols, import_data_view.data(),
                                          import_names[0], import_cpl_indices_view.data(), import_vec_comps_view.data(),
@@ -430,8 +430,10 @@ TEST_CASE("surface-coupling", "") {
                                          export_names[0], export_cpl_indices_view.data(), export_vec_comps_view.data(),
                                          export_constant_multiple_view.data(), do_export_during_init_view.data());
 
-  // Initialize AD
-  ad.initialize(atm_comm,ad_params,t0);
+  // Initialize the AD
+  ad.initialize_fields (t0, t0);
+  ad.initialize_output_managers ();
+  ad.initialize_atm_procs ();
 
   const auto fm = ad.get_field_mgr(grid_name);
 
@@ -441,7 +443,7 @@ TEST_CASE("surface-coupling", "") {
   test_exports(*fm, export_data_view, export_cpl_indices_view,
                export_constant_multiple_view, dt, true);
 
-  // Run AD
+  // Run the AD
   ad.run(dt);
 
   // Verify all imports/exports were done as expected
@@ -450,7 +452,7 @@ TEST_CASE("surface-coupling", "") {
   test_exports(*fm, export_data_view, export_cpl_indices_view,
                export_constant_multiple_view, dt);
 
-  // Finalize 
+  // Finalize  the AD
   ad.finalize();
 
   // If we got here, we were able to run surface_coupling
