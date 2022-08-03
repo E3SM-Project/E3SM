@@ -1355,8 +1355,8 @@ void HommeDynamics::init_homme_vcoord () {
                          host_views["hybm"].data());
 
   // Store hybrid coords in phys grid
-  Kokkos::deep_copy(m_ref_grid->get_geometry_data("hyam"), host_views["hyam"]);
-  Kokkos::deep_copy(m_ref_grid->get_geometry_data("hybm"), host_views["hybm"]);
+  Kokkos::deep_copy(m_phys_grid->get_geometry_data("hyam"), host_views["hyam"]);
+  Kokkos::deep_copy(m_phys_grid->get_geometry_data("hybm"), host_views["hybm"]);
 }
 
 // =========================================================================================
