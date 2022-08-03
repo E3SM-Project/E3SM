@@ -1222,8 +1222,7 @@ contains
          mu, lambdac, dei, des, rei, rel
       real(r8), dimension(pcols,pver), target :: zeros
       real(r8), pointer, dimension(:,:,:,:) :: crm_t, crm_qv, crm_qc, crm_qi, crm_cld, crm_qrad
-      real(r8), pointer, dimension(:,:,:,:) :: &
-         crm_rel, crm_rei, crm_dtau, crm_emis
+      real(r8), pointer, dimension(:,:,:,:) :: crm_rel, crm_rei, crm_dtau, crm_emis
       real(r8), dimension(pcols,pver) :: iclwp_save, iciwp_save, cld_save
       integer :: ixwatvap, ixcldliq, ixcldice
 
