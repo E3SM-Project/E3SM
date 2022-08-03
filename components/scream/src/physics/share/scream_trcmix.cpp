@@ -10,7 +10,7 @@ using scream::Int;
 
 extern "C" {
 
-void trcmix_c2f(const char* name, Int ncol, Int pcols, Int pver, Real* clat, Real* pmid, Real* q,
+void trcmix_c2f(const char** name, Int ncol, Int pcols, Int pver, Real* clat, Real* pmid, Real* q,
                 const Real mwdry, const Real mwco2, const Real mwn2o, const Real mwch4, const Real mwf11, const Real mwf12,
                 const Real o2mmr, const Real co2vmr_rad, const Real co2vmr, const Real n2ovmr, const Real ch4vmr, const Real f11vmr, const Real f12vmr);
 
@@ -62,7 +62,7 @@ void trcmix(
   }
 
   trcmix_c2f(
-    name, ncol, pcols, pver, hclat.data(), hpmid.data(), hq.data(),
+    &name, ncol, pcols, pver, hclat.data(), hpmid.data(), hq.data(),
     C::MWdry,
     C::get_gas_mol_weight("co2"),
     C::get_gas_mol_weight("n2o"),
