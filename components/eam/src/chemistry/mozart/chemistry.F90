@@ -410,7 +410,9 @@ end function chem_is
     use tracer_srcs,      only: tracer_srcs_defaultopts, tracer_srcs_setopts
     use aero_model,       only: aero_model_readnl
     use dust_model,       only: dust_readnl
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
+
+! kzm+    
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S ||  defined MODAL_AERO_5MODE)
     use seasalt_model,    only: ocean_data_readnl
 #endif
     use gas_wetdep_opts,  only: gas_wetdep_readnl
@@ -809,7 +811,8 @@ end function chem_is
 
    call aero_model_readnl(nlfile)
    call dust_readnl(nlfile)     
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
+!kzm+    
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S ||  defined MODAL_AERO_5MODE)
    call ocean_data_readnl(nlfile)
 #endif
 !

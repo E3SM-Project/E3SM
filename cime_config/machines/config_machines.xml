@@ -495,7 +495,7 @@
       <modules compiler="intel">
         <command name="load">PrgEnv-intel/6.0.10</command>
         <command name="rm">intel</command>
-        <command name="load">intel/19.0.3.199</command>
+        <command name="load">intel/19.1.2.254</command>
       </modules>
 
       <modules compiler="gnu">
