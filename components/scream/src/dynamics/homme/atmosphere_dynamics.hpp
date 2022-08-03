@@ -10,8 +10,6 @@
 namespace scream
 {
 
-class FieldManager;
-
 /*
  *  The class responsible to handle the atmosphere dynamics
  *

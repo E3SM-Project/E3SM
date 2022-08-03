@@ -349,17 +349,12 @@ void AtmosphereDriver::create_fields()
   for (const auto& f : m_atm_process_group->get_fields_in()) {
     const auto& fid = f.get_header().get_identifier();
     const auto& gn = fid.get_grid_name();
-    if (fvphyshack and gn == "Physics CGLL") {
-      // CGLL is used only in the IC field for Homme.
-      continue;
-    }
     auto fm = get_field_mgr(gn);
     fm->add_to_group(fid.name(),"RESTART");
   }
   for (const auto& g : m_atm_process_group->get_groups_in()) {
     const auto& gn = g.grid_name();
     auto fm = get_field_mgr(gn);
-    if (fvphyshack and gn == "Physics CGLL") continue; // see above
     if (g.m_bundle) {
       fm->add_to_group(g.m_bundle->get_header().get_identifier().name(),"RESTART");
     } else {
@@ -371,7 +366,6 @@ void AtmosphereDriver::create_fields()
   for (const auto& f : m_atm_process_group->get_internal_fields()) {
     const auto& fid = f.get_header().get_identifier();
     const auto& gn = fid.get_grid_name();
-    if (fvphyshack and gn == "Physics CGLL") continue; // see above
     auto fm = get_field_mgr(gn);
     fm->add_to_group(fid.name(),"RESTART");
   }
