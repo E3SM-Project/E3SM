@@ -216,9 +216,9 @@ void HommeDynamics::remap_fv_phys_to_dyn () const {
   Kokkos::fence();
 }
 
-// [rrtmgp active gases] This is to address issue #1782. It supports option 1 in
-// that issue. These fv_phys_rrtmgp_active_gases_* routines can be removed once
-// rrtmgp active_gases initialization is treated properly.
+// TODO [rrtmgp active gases] This is to address issue #1782. It supports option
+// 1 in that issue. These fv_phys_rrtmgp_active_gases_* routines can be removed
+// once rrtmgp active_gases initialization is treated properly.
 
 struct TraceGasesWorkaround {
   bool restart{false};
@@ -255,7 +255,8 @@ void HommeDynamics
   constexpr int ps = SCREAM_SMALL_PACK_SIZE;
   for (const auto& e : s_tgw.active_gases) {
     add_field<Required>(e, FieldLayout({COL,LEV},{rnc,nlev}), kgkg, rgn, ps);
-    // 'Updated' so that it gets written to the restart file.
+    // 'Updated' rather than just 'Computed' so that it gets written to the
+    // restart file.
     add_field<Updated >(e, FieldLayout({COL,LEV},{pnc,nlev}), kgkg, pgn, ps);
   }
   s_tgw.remapper = gm->create_remapper(m_cgll_grid, m_dyn_grid);
