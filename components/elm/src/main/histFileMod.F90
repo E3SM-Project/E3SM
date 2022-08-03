@@ -1950,6 +1950,7 @@ contains
        call ncd_defdim(lnfid, 'fates_levelcwd', nelements_fates * ncwd_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levelage', nelements_fates * nlevage_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levagefuel', nlevage_fates * nfsc_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levclscpf', nclmax_fates*nlevsclass_fates*numpft_fates, dimid)
     end if
 
     if ( .not. lhistrest )then
@@ -4789,6 +4790,8 @@ contains
        num2d = nelements_fates*nlevage_fates
     case ('fates_levagefuel')
        num2d = nlevage_fates*nfsc_fates
+    case ('fates_levclscpf')
+       num2d =  nlevsclass_fates*numpft_fates*nclmax_fates
     case('cft')
        if (cft_size > 0) then
           num2d = cft_size
