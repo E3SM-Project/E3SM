@@ -227,10 +227,17 @@ build_physics_grid (const std::string& name) {
     AbstractGrid::geo_view_type  lat("lat",nlcols);
     AbstractGrid::geo_view_type  lon("lon",nlcols);
     AbstractGrid::geo_view_type  area("area",nlcols);
+    AbstractGrid::geo_view_type  hyam("hyam",nlev);
+    AbstractGrid::geo_view_type  hybm("hybm",nlev);
     auto h_dofs = Kokkos::create_mirror_view(dofs);
     auto h_lat  = Kokkos::create_mirror_view(lat);
     auto h_lon  = Kokkos::create_mirror_view(lon);
     auto h_area = Kokkos::create_mirror_view(area);
+
+    // For the following, set to NaN. They will need to be grabbed
+    // from input files later.
+    Kokkos::deep_copy(hyam, std::nan(""));
+    Kokkos::deep_copy(hybm, std::nan(""));
 
     // Get all specs of phys grid cols (gids, coords, area)
     get_phys_grid_data_f90 (pg_type, h_dofs.data(), h_lat.data(), h_lon.data(), h_area.data());
@@ -258,6 +265,8 @@ build_physics_grid (const std::string& name) {
     phys_grid->set_geometry_data("lat",lat);
     phys_grid->set_geometry_data("lon",lon);
     phys_grid->set_geometry_data("area",area);
+    phys_grid->set_geometry_data("hyam",hyam);
+    phys_grid->set_geometry_data("hybm",hybm);
 
     m_grids[name] = phys_grid;
   }

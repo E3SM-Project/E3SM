@@ -160,7 +160,7 @@ AbstractGrid::get_lid_to_idx_map () const {
 void AbstractGrid::
 set_geometry_data (const std::string& name, const geo_view_type& data) {
   // Sanity checks
-  EKAT_REQUIRE_MSG (data.extent_int(0)==m_num_local_dofs,
+  EKAT_REQUIRE_MSG (data.extent_int(0)==m_num_local_dofs || data.extent_int(0)==m_num_vert_levs,
                     "Error! Input geometry data has wrong dimensions.\n");
 
 #ifndef NDEBUG

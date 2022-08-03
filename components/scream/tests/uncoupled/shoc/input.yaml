@@ -27,6 +27,7 @@ Initial Conditions:
   surf_sens_flux: 0.0
   surf_evap: 0.0
   Load Latitude: true
+  Load Hybrid Coefficients: true
 
 # The parameters for I/O control
 Scorpio:
