@@ -446,6 +446,32 @@ TEST_CASE("atm_proc_dag", "") {
   // Create a grids manager
   auto gm = create_gm(comm);
 
+  auto create_fields = [](const AtmosphereProcess& ap)
+    -> std::map<std::string,Field>
+  {
+    std::map<std::string,Field> fields;
+    for (auto r : ap.get_required_field_requests()) {
+      fields[r.fid.name()] = Field(r.fid);
+      fields[r.fid.name()].allocate_view();
+    }
+    for (auto r : ap.get_computed_field_requests()) {
+      fields[r.fid.name()] = Field(r.fid);
+      fields[r.fid.name()].allocate_view();
+    }
+    return fields;
+  };
+
+  auto create_and_set_fields = [&] (AtmosphereProcess& ap)
+  {
+    auto fields = create_fields(ap);
+    for (auto r : ap.get_required_field_requests()) {
+      ap.set_required_field(fields.at(r.fid.name()));
+    }
+    for (auto r : ap.get_computed_field_requests()) {
+      ap.set_computed_field(fields.at(r.fid.name()));
+    }
+  };
+
   // Test a case where the dag has no unmet deps
   SECTION ("working") {
     auto params = create_test_params ();
@@ -455,6 +481,8 @@ TEST_CASE("atm_proc_dag", "") {
 
     // Set the grids, so the remappers in the group are not empty
     atm_process->set_grids(gm);
+
+    create_and_set_fields (*atm_process);
 
     // Create the dag
     AtmProcDAG dag;
@@ -473,6 +501,8 @@ TEST_CASE("atm_proc_dag", "") {
     p1.set<std::string>("atm_procs_list","(Bar)");
     std::shared_ptr<AtmosphereProcess> broken_atm_group (factory.create("group",comm,params));
     broken_atm_group->set_grids(gm);
+
+    create_and_set_fields (*broken_atm_group);
 
     // Create the dag
     AtmProcDAG dag;
