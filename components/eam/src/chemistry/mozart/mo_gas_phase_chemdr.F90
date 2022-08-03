@@ -157,7 +157,13 @@ contains
      inv_ndx_m       = get_inv_ndx( 'M' )        ! airmass.  Elsewhere this variable is known as m_ndx
      
      if ( chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
-         .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag') then
+!         .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag') then
+        ! kzm ++
+          .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' &
+          .or.chem_name == 'linoz_mam7_resus_mom_soag_s' &
+           .or.chem_name == 'linoz_mam5_resus_mom_soag' ) then
+        ! kzm --
+
        if ( inv_ndx_cnst_o3 < 1 ) then
           call endrun('ERROR: chem_name = '//trim(chem_name)//&
           ' requies cnst_O3 fixed oxidant field. Use cnst_O3:O3 in namelist tracer_cnst_specifier')
@@ -243,7 +249,7 @@ contains
 ! for aqueous chemistry and aerosol growth
 !
     use aero_model,        only : aero_model_gasaerexch
-
+    use aero_model,        only : aero_model_strat_surfarea!kzm
     implicit none
 
     !-----------------------------------------------------------------------
@@ -512,7 +518,8 @@ contains
           endif
        end do
     end do
-
+     !kzm add the prognostic strato_sad
+  call aero_model_strat_surfarea( ncol, mmr, pmid, tfld, troplev, pbuf, strato_sad)
     if ( has_strato_chem ) then
        !-----------------------------------------------------------------------      
        !        ... initialize condensed and gas phases; all hno3 to gas
@@ -736,8 +743,15 @@ contains
 
     if ( has_linoz_data .and. .not. &
        (chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
-       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' ) ) then
+       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' .or. &
+        chem_name == 'linoz_mam7_resus_mom_soag_s' .or. chem_name == 'linoz_mam5_resus_mom_soag'  ) ) then !kzm++
        ltrop_sol(:ncol) = troplev(:ncol)
+     !kzm note: this is a strange setting  
+    elseif (chem_name == 'trop_strat_mam7_resus_mom_s') then !kzm
+       ltrop_sol(:ncol) = 0 ! apply solver to all levels
+     elseif (chem_name == 'trop_strat_mam5_resus_mom_soag') then !kzm
+       ltrop_sol(:ncol) = 0 ! apply solver to all levels
+   
     else
        ltrop_sol(:ncol) = 0 ! apply solver to all levels
     endif
@@ -795,7 +809,8 @@ contains
                                 tfld, pmid, pdel, mbar, relhum, &
                                 zm,  qh2o, cwat, cldfr, ncldwtr, &
                                 invariants(:,:,indexm), invariants, del_h2so4_gasprod,  &
-                                vmr0, vmr, pbuf )
+                                vmr0, vmr, pbuf, &
+                                troplev) !kzm ++
     call t_stopf('aero_model_gasaerexch')
 
     if ( has_strato_chem ) then 

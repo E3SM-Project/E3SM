@@ -227,6 +227,32 @@ character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
    'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
    's-organic', 'black-c  ', 'seasalt  ', 'dust     ', &
    'm-organic' /)
+
+!kzm ++
+#elif ( defined MODAL_AERO_5MODE)
+integer, parameter :: num_mode_types = 9
+integer, parameter :: num_spec_types = 9
+character(len=14), parameter :: mode_type_names(num_mode_types) = (/ &
+   'accum         ', 'aitken        ', 'primary_carbon', 'fine_seasalt  ', &
+   'fine_dust     ', 'coarse        ', 'coarse_seasalt', 'coarse_dust   ', &
+   'strat_coarse  '  /)
+character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
+   'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
+   's-organic', 'black-c  ', 'seasalt  ', 'dust     ', &
+   'm-organic' /)
+
+#elif ( defined MODAL_AERO_7MODE_S )
+integer, parameter :: num_mode_types = 11
+integer, parameter :: num_spec_types = 9
+character(len=14), parameter :: mode_type_names(num_mode_types) = (/ &
+   'accum         ', 'aitken        ', 'primary_carbon', 'fine_seasalt  ', &
+   'fine_dust     ', 'coarse        ', 'coarse_seasalt', 'coarse_dust   ', &
+   'strat_sulfate1', 'strat_sulfate2', 'strat_sulfate3'  /)
+character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
+   'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
+   's-organic', 'black-c  ', 'seasalt  ', 'dust     ', &
+   'm-organic' /)
+!kzm --
 #else
 integer, parameter :: num_mode_types = 8
 integer, parameter :: num_spec_types = 8
@@ -1681,6 +1707,7 @@ subroutine parse_mode_defs(nl_in, modes)
       integer :: i
 
       do i = 1, num_mode_types
+         write(iulog,*) 'kzm_', trim(mode_type_names(i)) !kzm
          if (str(ib:ie) == trim(mode_type_names(i))) return
       end do
 
