@@ -71,5 +71,5 @@ Fields:
 output_control:
   MPI Ranks in Filename: true
   Frequency: 2
-  frequency_units: Steps
+  frequency_units: nsteps
 ...

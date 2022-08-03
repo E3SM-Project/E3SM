@@ -11,7 +11,6 @@ Field Names:
   - nccn
 output_control:
   Frequency: ${NUM_STEPS}
-  frequency_units: Steps
   Timestamp in Filename: false
   MPI Ranks in Filename: true
 ...
