@@ -70,8 +70,8 @@ if (NOT SCREAM_BASELINES_ONLY)
   # This test requires CPRNC
   if (SCREAM_TEST_MAX_RANKS GREATER 1)
     foreach (MPI_RANKS RANGE 2 ${SCREAM_TEST_MAX_RANKS})
-      set (SRC_FILE "rrtmgp_standalone_output.INSTANT.Steps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
-      set (TGT_FILE "rrtmgp_standalone_output.INSTANT.Steps_x${NUM_STEPS}.np1.nc")
+      set (SRC_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
+      set (TGT_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np1.nc")
       set (TEST_NAME "rrtmgp_np1_vs_np${MPI_RANKS}_bfb")
       add_test (NAME ${TEST_NAME}
                 COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
