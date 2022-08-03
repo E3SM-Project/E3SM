@@ -476,7 +476,7 @@ TEST_CASE("atm_proc_dag", "") {
 
     // Create the dag
     AtmProcDAG dag;
-    dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(broken_atm_group),{});
+    dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(broken_atm_group));
     dag.write_dag("broken_atm_proc_dag.dot",4);
 
     REQUIRE (dag.has_unmet_dependencies());
