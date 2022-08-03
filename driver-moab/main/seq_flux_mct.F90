@@ -6,12 +6,22 @@ module seq_flux_mct
   use shr_orb_mod,       only: shr_orb_params, shr_orb_cosz, shr_orb_decl
   use shr_mct_mod,       only: shr_mct_queryConfigFile, shr_mct_sMatReaddnc
 
+  use seq_comm_mct,     only : mboxid ! iMOAB app id for ocn on cpl pes
+  use seq_comm_mct,     only : mphaxid ! iMOAB app id for atm phys grid on cpl pes
+
+  use prep_aoflux_mod,   only: prep_aoflux_get_xao_omct, prep_aoflux_get_xao_amct
+
+  use iMOAB, only :  iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh
+  use seq_comm_mct, only :  num_moab_exports ! for debugging
+
   use mct_mod
   use seq_flds_mod
   use seq_comm_mct
   use seq_infodata_mod
 
   use component_type_mod
+  
+  use iso_c_binding
 
   implicit none
   private
@@ -28,6 +38,8 @@ module seq_flux_mct
   public seq_flux_ocnalb_mct
 
   public seq_flux_atmocn_mct
+  public seq_flux_atmocn_moab
+  
   public seq_flux_atmocnexch_mct
 
   !--------------------------------------------------------------------------
@@ -1587,8 +1599,78 @@ contains
        end if
     enddo
 
+    ! transpose xao to xao_omct, to 
   end subroutine seq_flux_atmocn_mct
 
+  subroutine seq_flux_atmocn_moab(comp, xao)
+     type(component_type), intent(inout) :: comp
+     type(mct_aVect)       , intent(inout)      :: xao
+
+     real(r8) , pointer :: local_xao_mct(:,:) ! atm-ocn fluxes, transpose, mct local sizes
+     integer  appId ! moab app id
+     integer i,j
+     integer nloc, listSize, kgg
+
+     type(mct_ggrid), pointer    :: dom
+
+     ! moab
+     integer                  :: tagtype, numco,  tagindex, ent_type, ierr, arrSize
+     character(CXX)           :: tagname
+     integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
+     character*100 outfile, wopts, lnum
+     
+
+     character(*),parameter   :: subName =   '(seq_flux_atmocn_moab) '
+
+
+     if (comp%oneletterid == 'a' ) then
+        appId = mphaxid ! ocn on coupler
+        local_xao_mct => prep_aoflux_get_xao_amct()
+     else if (comp%oneletterid == 'o') then
+        appId = mboxid  ! atm phys
+        local_xao_mct => prep_aoflux_get_xao_omct()
+     else
+        call mct_die(subName,'call for either ocean or atm',1)
+     endif
+     ! transpose into moab double array, then set with global id 
+     nloc = mct_avect_lsize(xao)
+     listSize = mct_aVect_nRAttr(xao)
+     dom => component_get_dom_cx(comp)
+     kgg = mct_aVect_indexIA(dom%data ,"GlobGridNum" ,perrWith=subName)
+
+     allocate(GlobalIds(nloc))
+     GlobalIds = dom%data%iAttr(kgg,:)
+
+     do i = 1, nloc
+        do j = 1, listSize
+           local_xao_mct(i, j) = xao%rAttr(j, i)
+        enddo
+     enddo
+     tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
+     arrSize = nloc * listSize
+     ent_type = 1 ! cells
+     ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname, arrSize , ent_type, local_xao_mct, GlobalIds )
+     if (ierr .ne. 0) then
+       write(logunit,*) subname,' error in setting atm-ocn fluxes  '
+       call shr_sys_abort(subname//' ERROR in setting atm-ocn fluxes')
+     endif
+     deallocate(GlobalIds)
+
+#ifdef MOABDEBUG
+        ! debug out file
+    write(lnum,"(I0.2)")num_moab_exports
+    outfile = comp%oneletterid//'_flux_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+    ierr = iMOAB_WriteMesh(appId, outfile, wopts)
+ 
+      if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in writing mesh '
+         call shr_sys_abort(subname//' ERROR in writing mesh ')
+      endif
+#endif
+     
+
+  end subroutine seq_flux_atmocn_moab
   !===============================================================================
 
 end module seq_flux_mct

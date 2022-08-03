@@ -8,6 +8,7 @@ module prep_aoflux_mod
   use seq_comm_mct,     only: num_inst_xao, num_inst_frc, num_inst_ocn
   use seq_comm_mct,     only: CPLID, logunit
   use seq_comm_mct,     only : mboxid ! iMOAB app id for ocn on cpl pes
+  use seq_comm_mct,     only : mphaxid ! iMOAB app id for atm phys grid on cpl pes
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
   use seq_infodata_mod, only: seq_infodata_getdata, seq_infodata_type
   use seq_map_type_mod
@@ -41,6 +42,9 @@ module prep_aoflux_mod
   public :: prep_aoflux_get_xao_ox
   public :: prep_aoflux_get_xao_ax
 
+  public :: prep_aoflux_get_xao_omct
+  public :: prep_aoflux_get_xao_amct
+
   !--------------------------------------------------------------------------
   ! Private data
   !--------------------------------------------------------------------------
@@ -48,6 +52,12 @@ module prep_aoflux_mod
   ! attribute vectors
   type(mct_aVect), pointer :: xao_ox(:)   ! Atm-ocn fluxes, ocn grid, cpl pes
   type(mct_aVect), pointer :: xao_ax(:)   ! Atm-ocn fluxes, atm grid, cpl pes
+
+  ! allocate xao_omct, but use lsize_o, size of the local mct ocn gsmap (and AVs)
+  real(r8) ,  private, pointer :: xao_omct(:,:) ! atm-ocn fluxes, ocn grid, mct local sizes 
+  real(r8) ,  private, pointer :: xao_omoab(:,:) ! atm-ocn fluxes, ocn grid, moab local sizes 
+
+  real(r8) ,  private, pointer :: xao_amct(:,:) ! atm-ocn fluxes, atm grid, mct local sizes 
 
   ! seq_comm_getData variables
   logical :: iamroot_CPLID                ! .true. => CPLID masterproc
@@ -140,16 +150,46 @@ contains
       ! local size of vertices is different from lsize_o
        arrSize = nvert(1) * size_list ! there are size_list tags that need to be zeroed out
        allocate(tagValues(arrSize) )
-       ent_type = 0 ! vertex type
+       ent_type = 1 ! cell type
        tagValues = 0 
        ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrSize , ent_type, tagValues)
        if (ierr .ne. 0) then
          write(logunit,*) subname,' error in zeroing out xao_fields  '
          call shr_sys_abort(subname//' ERROR in zeroing out xao_fields in init ')
        endif
-
+       allocate(xao_omct(lsize_o, size_list)) ! the transpose of xao_ox(size_list, lsize_o) 
+       deallocate(tagValues)
     endif
 
+! define atm-ocn flux tags on the moab atm mesh
+    if (mphaxid .ge. 0 ) then ! //
+       tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
+       tagtype = 1 ! dense, double
+       numco = 1
+       ierr = iMOAB_DefineTagStorage(mphaxid, tagname, tagtype, numco, tagindex )
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in defining tags on atm phys mesh on cpl '
+          call shr_sys_abort(subname//' ERROR in defining tags on atm phys mesh on cpl')
+       endif
+       ! make it zero
+       ! first form a list 
+       call mct_list_init(temp_list ,seq_flds_xao_fields)
+       size_list=mct_list_nitem (temp_list)
+       call mct_list_clean(temp_list)
+       ! find out the number of local elements in moab mesh
+       ierr  = iMOAB_GetMeshInfo ( mphaxid, nvert, nvise, nbl, nsurf, nvisBC ); ! could be different of lsize_o
+      ! local size of vertices is different from lsize_o
+       arrSize = nvert(1) * size_list ! there are size_list tags that need to be zeroed out
+       allocate(tagValues(arrSize) )
+       ent_type = 0 ! vertex type
+       tagValues = 0 
+       ierr = iMOAB_SetDoubleTagStorage ( mphaxid, tagname, arrSize , ent_type, tagValues)
+       if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in zeroing out xao_fields  '
+         call shr_sys_abort(subname//' ERROR in zeroing out xao_fields in init ')
+       endif
+       allocate(xao_amct(lsize_a, size_list)) ! the transpose of xao_ax(size_list, lsize_a) 
+    endif
 
   end subroutine prep_aoflux_init
 
@@ -255,5 +295,15 @@ contains
     type(mct_aVect), pointer :: prep_aoflux_get_xao_ax(:)
     prep_aoflux_get_xao_ax => xao_ax(:)
   end function prep_aoflux_get_xao_ax
+
+  function prep_aoflux_get_xao_omct()
+    real(r8), pointer :: prep_aoflux_get_xao_omct(:,:)
+    prep_aoflux_get_xao_omct => xao_omct
+  end function prep_aoflux_get_xao_omct
+
+  function prep_aoflux_get_xao_amct()
+    real(r8), pointer :: prep_aoflux_get_xao_amct(:,:)
+    prep_aoflux_get_xao_amct => xao_amct
+  end function prep_aoflux_get_xao_amct
 
 end module prep_aoflux_mod
