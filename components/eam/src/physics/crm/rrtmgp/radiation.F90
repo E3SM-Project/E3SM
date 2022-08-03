@@ -1403,9 +1403,16 @@ contains
             ! shortwave and longwave.
             if (radiation_do('sw') .or. radiation_do('lw')) then
 
-               ! Calculate effective radius for optics used with single-moment microphysics
-               if (use_MMF .and. (trim(MMF_microphysics_scheme) .eq. 'sam1mom')) then 
+               ! Calculate effective radius for optics used with single-moment microphysics and for COSP
+               if (use_MMF) then 
                   call cldefr(state%lchnk, ncol, state%t, rel, rei, state%ps, state%pmid, landfrac, icefrac, snowh)
+                  do iz = 1,crm_nz
+                     do ic = 1,ncol
+                        ilay = pver - iz + 1
+                        crm_rel(ic,ix,iy,iz) = rel(ic,ilay)
+                        crm_rei(ic,ix,iy,iz) = rei(ic,ilay)
+                     end do
+                  end do
                end if
 
                ! Get albedo. This uses CAM routines internally and just provides a
