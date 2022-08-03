@@ -33,8 +33,8 @@ void trcmix(
   // View bounds checking
   //
   EKAT_REQUIRE(clat.extent(0) == static_cast<size_t>(pcols));
-  EKAT_REQUIRE(pmid.extent(0) == static_cast<size_t>(pcols) && pmid.extent(1) == static_cast<size_t>(pver));
-  EKAT_REQUIRE(q.extent(0) == static_cast<size_t>(pcols) && q.extent(1) == static_cast<size_t>(pver));
+  EKAT_REQUIRE(pmid.extent(0) == static_cast<size_t>(pcols) && pmid.extent(1) >= static_cast<size_t>(pver));
+  EKAT_REQUIRE(q.extent(0) == static_cast<size_t>(pcols) && q.extent(1) >= static_cast<size_t>(pver));
 
   // Transpose and copy to host. We reinterpret views as views of Pack<Real, 1> so
   // that we can use the ekat::device_to_host, host_to_device API
