@@ -3570,6 +3570,22 @@
         <arg name="thread_vars">$ENV{JSRUN_THREAD_VARS}</arg>
       </arguments>
     </mpirun>
+    <mpirun mpilib="spectrum-mpi" compiler="gnugpu">
+      <executable>jsrun</executable>
+      <arguments>
+        <arg name="exit_on_error">-X 1</arg>
+        <arg name="num_rs">$SHELL{if [ {{ total_tasks }} -eq 1 ];then echo --nrs 1 --rs_per_host 1;else echo --nrs $NUM_RS --rs_per_host $RS_PER_NODE;fi}</arg>
+        <arg name="tasks_per_rs">--tasks_per_rs $SHELL{echo "({{ tasks_per_node }} + $RS_PER_NODE - 1)/$RS_PER_NODE"|bc}</arg>
+        <arg name="distribute">-d plane:$SHELL{echo "({{ tasks_per_node }} + $RS_PER_NODE - 1)/$RS_PER_NODE"|bc}</arg>
+        <arg name="cpu_per_rs">--cpu_per_rs $ENV{CPU_PER_RS}</arg>
+        <arg name="gpu_per_rs">--gpu_per_rs $ENV{GPU_PER_RS}</arg>
+        <arg name="task_bind">--bind packed:smt:$ENV{OMP_NUM_THREADS}</arg>
+        <arg name="latency_priority">--latency_priority $ENV{LTC_PRT}</arg>
+        <arg name="stdio_mode">--stdio_mode prepended</arg>
+        <arg name="thread_vars">$ENV{JSRUN_THREAD_VARS}</arg>
+        <arg name="smpiargs">--smpiargs="-gpu"</arg>
+      </arguments>
+    </mpirun>
     <module_system type="module" allow_error="true">
       <init_path lang="sh">/sw/summit/lmod/8.4/init/sh</init_path>
       <init_path lang="csh">/sw/summit/lmod/8.4/init/csh</init_path>
@@ -3722,6 +3738,22 @@
         <arg name="latency_priority">--latency_priority $ENV{LTC_PRT}</arg>
         <arg name="stdio_mode">--stdio_mode prepended</arg>
         <arg name="thread_vars">$ENV{JSRUN_THREAD_VARS}</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="spectrum-mpi" compiler="gnugpu">
+      <executable>jsrun</executable>
+      <arguments>
+        <arg name="exit_on_error">-X 1</arg>
+        <arg name="num_rs">$SHELL{if [ {{ total_tasks }} -eq 1 ];then echo --nrs 1 --rs_per_host 1;else echo --nrs $NUM_RS --rs_per_host $RS_PER_NODE;fi}</arg>
+        <arg name="tasks_per_rs">--tasks_per_rs $SHELL{echo "({{ tasks_per_node }} + $RS_PER_NODE - 1)/$RS_PER_NODE"|bc}</arg>
+        <arg name="distribute">-d plane:$SHELL{echo "({{ tasks_per_node }} + $RS_PER_NODE - 1)/$RS_PER_NODE"|bc}</arg>
+        <arg name="cpu_per_rs">--cpu_per_rs $ENV{CPU_PER_RS}</arg>
+        <arg name="gpu_per_rs">--gpu_per_rs $ENV{GPU_PER_RS}</arg>
+        <arg name="task_bind">--bind packed:smt:$ENV{OMP_NUM_THREADS}</arg>
+        <arg name="latency_priority">--latency_priority $ENV{LTC_PRT}</arg>
+        <arg name="stdio_mode">--stdio_mode prepended</arg>
+        <arg name="thread_vars">$ENV{JSRUN_THREAD_VARS}</arg>o
+        <arg name="smpiargs">--smpiargs="-gpu"</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
