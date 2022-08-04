@@ -195,15 +195,15 @@ tweaking their $case/namelist_scream.xml file.
       <!-- Note that h2o concentrations are just taken from qv, o3 is prescribed for now, -->
       <!-- o2 is hard-coded as a constant, CFCs are ignored                               -->
       <active_gases>h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
-      <ch4vmr      > 1807.851e-9    </ch4vmr>
-      <co2vmr      >  388.717000e-6 </co2vmr>
+      <ch4vmr      > 1807.851e-9  </ch4vmr>
+      <co2vmr      > 388.717e-6   </co2vmr>
       <!-- If co2vmr_rad is set and greater than 0, it will override any values of co2vmr for rad calcs -->
-      <co2vmr_rad  >   -1.0         </co2vmr_rad>
-      <n2ovmr      >  323.141e-9    </n2ovmr>
-      <f11vmr      >  768.7644e-12  </f11vmr>
-      <f12vmr      >  531.2820e-12  </f12vmr>
-      <n2vmr       >    0.7906      </n2vmr>
-      <covmr       >    1.0e-7   </covmr>
+      <co2vmr_rad  > -1.0         </co2vmr_rad>
+      <n2ovmr      > 323.141e-9   </n2ovmr>
+      <f11vmr      > 768.7644e-12 </f11vmr>
+      <f12vmr      > 531.2820e-12 </f12vmr>
+      <n2vmr       > 0.7906       </n2vmr>
+      <covmr       > 1.0e-7       </covmr>
       <orbital_year>-9999</orbital_year>
       <orbital_eccentricity>-9999</orbital_eccentricity>
       <orbital_eccentricity COMPSET=".*SCREAM%AQUA.*">0</orbital_eccentricity>
