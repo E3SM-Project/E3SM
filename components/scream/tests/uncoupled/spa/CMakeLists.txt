@@ -11,7 +11,7 @@ CreateUnitTest(spa_stand_alone "spa_stand_alone.cpp" "${NEED_LIBS}" LABELS ${TES
 )
 
 # Set AD configurable options
-SetVarDependingOnTestProfile(NUM_STEPS 2 4 48)
+SetVarDependingOnTestSize(NUM_STEPS 2 4 48)
 set (ATM_TIME_STEP 864000)
 
 ## Copy (and configure) yaml files needed by tests
@@ -22,7 +22,7 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/spa_standalone_output.yaml
 
 # Ensure test input files are present in the data dir
 set (TEST_INPUT_FILES
-  screami_ne2np4L72_20220524.nc
+  ${EAMxx_tests_IC_FILE_72lev}
   map_ne4np4_to_ne2np4_mono.nc
   spa_file_unified_and_complete_ne4_20220428.nc
 )

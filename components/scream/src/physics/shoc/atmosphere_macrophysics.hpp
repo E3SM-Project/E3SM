@@ -194,7 +194,7 @@ public:
 
       wpthlp_sfc(i) = surf_sens_flux(i)/(cpair*rrho_i(i,nlevi_v)[nlevi_p]);
       wpthlp_sfc(i) = wpthlp_sfc(i)*inv_exner_int_surf;
-      wprtp_sfc(i)  = surf_latent_flux(i)/rrho_i(i,nlevi_v)[nlevi_p];
+      wprtp_sfc(i)  = surf_evap(i)/rrho_i(i,nlevi_v)[nlevi_p];
       upwp_sfc(i)   = surf_mom_flux(i,0)/rrho_i(i,nlevi_v)[nlevi_p];
       vpwp_sfc(i)   = surf_mom_flux(i,1)/rrho_i(i,nlevi_v)[nlevi_p];
 
@@ -217,7 +217,7 @@ public:
     view_2d_const        omega;
     view_1d_const        phis;
     view_1d_const        surf_sens_flux;
-    view_1d_const        surf_latent_flux;
+    view_1d_const        surf_evap;
     sview_2d_const       surf_mom_flux;
     view_3d              qtracers;
     view_2d_const        qv;
@@ -253,7 +253,7 @@ public:
                        const view_1d_const& area_, const view_1d_const& lat_,
                        const view_2d_const& T_mid_, const view_2d_const& p_mid_, const view_2d_const& p_int_, const view_2d_const& pseudo_density_,
                        const view_2d_const& omega_,
-                       const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_latent_flux_,
+                       const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_evap_,
                        const sview_2d_const& surf_mom_flux_,
                        const view_3d& qtracers_,
                        const view_2d_const& qv_, const view_2d_const& qc_, const view_2d& qc_copy_,
@@ -280,7 +280,7 @@ public:
       omega = omega_;
       phis = phis_;
       surf_sens_flux = surf_sens_flux_;
-      surf_latent_flux = surf_latent_flux_;
+      surf_evap = surf_evap_;
       surf_mom_flux = surf_mom_flux_;
       qv = qv_;
       // OUT
@@ -322,7 +322,6 @@ public:
     void operator()(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) const {
       const int i = team.league_rank();
 
-      const Real cpair = C::Cpair;
       const Real inv_qc_relvar_max = 10;
       const Real inv_qc_relvar_min = 0.001;
 

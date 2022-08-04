@@ -154,6 +154,14 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     this->run(m_run_t0);
   }
 }
+
+void OutputManager::setup_globals_map (const globals_map_t& globals) {
+  EKAT_REQUIRE_MSG (m_globals.size()==0,
+      "Error! Globals already set in this output manager.\n");
+
+  m_globals = globals;
+}
+
 /*===============================================================================================*/
 void OutputManager::run(const util::TimeStamp& timestamp)
 {
@@ -242,6 +250,24 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     //       in case is_write_step=true, in which case it will *for sure* contain
     //       a valid file name.
     it->run(filename,is_write_step,m_output_control.nsteps_since_last_write);
+  }
+
+  if (is_write_step) {
+    for (const auto& it : m_globals) {
+      const auto& name = it.first;
+      const auto& type_any = it.second;
+      const auto& type = type_any.first;
+      const auto& any = type_any.second;
+      if (type=="int") {
+        const int& value = ekat::any_cast<int>(any);
+        set_int_attribute_c2f(filename.c_str(),name.c_str(),value);
+      } else {
+        EKAT_ERROR_MSG ("Error! Unsupported global attribute type.\n"
+            " - file name  : " + filename + "\n"
+            " - global name: " + name + "'\n"
+            " - global type: " + type + "'\n");
+      }
+    }
   }
 
   if (is_write_step) {

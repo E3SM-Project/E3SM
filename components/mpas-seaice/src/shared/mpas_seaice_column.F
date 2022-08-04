@@ -36,6 +36,7 @@ module seaice_column
        seaice_column_postdynamics_time_integration, &
        seaice_init_column_shortwave, &
        seaice_column_aggregate, &
+       seaice_column_aggregate_simple, &
        seaice_column_initial_air_drag_coefficient, &
        seaice_column_reinitialize_fluxes, &
        seaice_column_reinitialize_diagnostics_thermodynamics, &
@@ -1188,6 +1189,12 @@ contains
        call mpas_timer_start("Column update state")
        call seaice_column_update_state(domain, "transport", dynamicsTimeStep, 0.0_RKIND)
        call mpas_timer_stop("Column update state")
+
+    else
+
+       call mpas_timer_start("Column aggregate")
+       call seaice_column_aggregate_simple(domain)
+       call mpas_timer_stop("Column aggregate")
 
     endif
 
@@ -4506,6 +4513,91 @@ contains
     end do
 
   end subroutine seaice_column_aggregate
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_column_aggregate_simple
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 29th August 2021
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_column_aggregate_simple(domain)
+
+    type(domain_type), intent(inout) :: domain
+
+    type(block_type), pointer :: block
+
+    type(MPAS_pool_type), pointer :: &
+         mesh, &
+         tracers, &
+         tracers_aggregate, &
+         icestate
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         iceAreaCell, &
+         iceVolumeCell, &
+         snowVolumeCell, &
+         openWaterArea
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory
+
+    integer :: &
+         iCell, &
+         iCategory
+
+    integer, pointer :: &
+         nCellsSolve, &
+         nCategories
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+       call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+       call MPAS_pool_get_subpool(block % structs, "icestate", icestate)
+       call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
+
+       call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
+       call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
+
+       call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+       call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+       call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+
+       call MPAS_pool_get_array(tracers_aggregate, "iceAreaCell", iceAreaCell)
+       call MPAS_pool_get_array(tracers_aggregate, "iceVolumeCell", iceVolumeCell)
+       call MPAS_pool_get_array(tracers_aggregate, "snowVolumeCell", snowVolumeCell)
+
+       call MPAS_pool_get_array(icestate, "openWaterArea", openWaterArea)
+
+       do iCell = 1, nCellsSolve
+
+          iceAreaCell(iCell)   = 0.0_RKIND
+          iceVolumeCell(iCell) = 0.0_RKIND
+
+          do iCategory = 1, nCategories
+
+             iceAreaCell(iCell)   = iceAreaCell(iCell)   + iceAreaCategory(1,iCategory,iCell)
+             iceVolumeCell(iCell) = iceVolumeCell(iCell) + iceVolumeCategory(1,iCategory,iCell)
+
+          enddo ! iCategory
+
+          openWaterArea(iCell) = 1.0_RKIND - iceAreaCell(iCell)
+
+       enddo ! iCell
+
+       block => block % next
+    end do
+
+  end subroutine seaice_column_aggregate_simple
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

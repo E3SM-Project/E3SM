@@ -3,6 +3,12 @@
 
 #include "share/property_checks/field_positivity_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
+
+#include "scream_config.h" // for SCREAM_CIME_BUILD
+#ifdef SCREAM_CIME_BUILD
+# include "control/fvphyshack.hpp"
+#endif
+
 namespace scream
 {
 
@@ -64,11 +70,23 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   const auto s2 = s*s;
 
   // These variables are needed by the interface, but not actually passed to shoc_main.
-  // TODO: Replace pref_mid in the FM with pref_mid read in from the grid data.
-  add_field<Required>("pref_mid",         pref_mid_layout,      Pa,   grid_name, ps);
+  
+  // TODO: Replace pref_mid in the FM with pref_mid read in from the grid data
+  // or, better, an analog to EAM's dyn_grid_get_pref.
+  add_field<Required>("pref_mid",         pref_mid_layout,      Pa,
+#ifdef SCREAM_CIME_BUILD
+                      // If pg2, read from the "Dynamics" grid b/c "Physics GLL"
+                      // fields are temporary and not written to the restart
+                      // file and reading "Physics PG2" data from the IC is not
+                      // and should not be supported.
+                      fvphyshack ? "Dynamics" :
+#endif
+                      grid_name,
+                      ps);
+
   add_field<Required>("omega",            scalar3d_layout_mid,  Pa/s, grid_name, ps);
   add_field<Required>("surf_sens_flux",   scalar2d_layout_col,  W/m2, grid_name);
-  add_field<Required>("surf_latent_flux", scalar2d_layout_col,kg/m2/s, grid_name);
+  add_field<Required>("surf_evap",        scalar2d_layout_col,  kg/m2/s, grid_name);
   add_field<Required>("surf_mom_flux",    surf_mom_flux_layout, N/m2, grid_name);
 
   add_field<Updated> ("T_mid",            scalar3d_layout_mid, K,       grid_name, ps);
@@ -253,7 +271,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto& pseudo_density   = get_field_in("pseudo_density").get_view<const Spack**>();
   const auto& omega            = get_field_in("omega").get_view<const Spack**>();
   const auto& surf_sens_flux   = get_field_in("surf_sens_flux").get_view<const Real*>();
-  const auto& surf_latent_flux = get_field_in("surf_latent_flux").get_view<const Real*>();
+  const auto& surf_evap        = get_field_in("surf_evap").get_view<const Real*>();
   const auto& surf_mom_flux    = get_field_in("surf_mom_flux").get_view<const Real**>();
   const auto& qtracers         = get_group_out("tracers").m_bundle->get_view<Spack***>();
   const auto& qc               = get_field_out("qc").get_view<Spack**>();
@@ -299,6 +317,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
     Kokkos::deep_copy(tk,0.0);
     Kokkos::deep_copy(tke,0.0004);
     Kokkos::deep_copy(tke_copy,0.0004);
+    Kokkos::deep_copy(cldfrac_liq,0.0);
   }
   // Find index of qv (water vapor, kg/kg(wet-air) and tke (J/kg(wet-air)) in the qtracer 3d view
   // These indices are later used for converting tracers from wet mmr to dry mmr and vice-versa

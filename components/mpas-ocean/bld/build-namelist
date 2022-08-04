@@ -768,11 +768,14 @@ add_default($nl, 'config_land_ice_flux_jenkins_salt_transfer_coefficient');
 # Namelist group: advection #
 #############################
 
-add_default($nl, 'config_vert_tracer_adv');
-add_default($nl, 'config_vert_tracer_adv_order');
+add_default($nl, 'config_vert_advection_method');
+add_default($nl, 'config_vert_remap_order');
+add_default($nl, 'config_vert_remap_interval');
+add_default($nl, 'config_vert_tracer_adv_flux_order');
 add_default($nl, 'config_horiz_tracer_adv_order');
 add_default($nl, 'config_coef_3rd_order');
-add_default($nl, 'config_monotonic');
+add_default($nl, 'config_flux_limiter');
+add_default($nl, 'config_remap_limiter');
 
 ###############################
 # Namelist group: bottom_drag #

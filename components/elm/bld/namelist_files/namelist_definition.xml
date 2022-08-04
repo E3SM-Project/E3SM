@@ -1283,7 +1283,7 @@ CLM run type.
 <entry id="res" type="char*30" category="default_settings"
        group="default_settings"
        valid_values=
-"512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,ne4np4,ne4np4.pg2,ne11np4,ne16np4,ne30np4,ne30np4.pg2,ne60np4,ne120np4,ne240np4,ne256np4,ne1024np4.pg2,1km-merge-10min,ne0np4_arm_x8v3_lowcon,ne0np4_conus_x4v1_lowcon,ne0np4_enax4v1,ne0np4_twpx4v1,r2,r05,r0125,NLDAS,ne0np4_northamericax4v1.pg2,ne0np4_arcticx4v1.pg2">
+"512x1024,360x720cru,128x256,64x128,48x96,32x64,8x16,94x192,0.23x0.31,0.9x1.25,1.9x2.5,2.5x3.33,4x5,10x15,5x5_amazon,1x1_tropicAtl,1x1_camdenNJ,1x1_vancouverCAN,1x1_mexicocityMEX,1x1_asphaltjungleNJ,1x1_brazil,1x1_urbanc_alpha,1x1_numaIA,1x1_smallvilleIA,0.1x0.1,0.5x0.5,3x3min,5x5min,10x10min,0.33x0.33,ne4np4,ne4np4.pg2,ne11np4,ne16np4,ne30np4,ne30np4.pg2,ne60np4,ne120np4,ne240np4,ne256np4,ne1024np4,ne1024np4.pg2,1km-merge-10min,ne0np4_arm_x8v3_lowcon,ne0np4_conus_x4v1_lowcon,ne0np4_enax4v1,ne0np4_twpx4v1,r2,r05,r0125,NLDAS,ne0np4_northamericax4v1.pg2,ne0np4_arcticx4v1.pg2">
 Horizontal resolutions
 Note: 0.1x0.1, 0.5x0.5, 5x5min, 10x10min, 3x3min and 0.33x0.33 are only used for CLM tools
 </entry>
@@ -1746,8 +1746,8 @@ If TRUE (which is the default), check consistency between pct_nat_pft on the fla
 and pct_nat_pft read from the surface dataset.
 </entry>
 
-<!-- =========================================================================================  -->
-<!-- Namelist options related to lateral grid connectivity
+<!-- ========================================================================================  -->
+<!-- Namelist options related to lateral grid connectivity                                     -->
 <!-- ========================================================================================  -->
 <entry id="lateral_connectivity" type="logical" category="elm_initialization"
        group="elm_inparm" valid_values="" >
@@ -1759,8 +1759,8 @@ If TRUE setup up lateral grid connectivity in CLM.
 Specifies the method for decomposing CLM grids across processors.
 </entry>
 
-<!-- =========================================================================================  -->
-<!-- Namelist options related to the bgc & pflotran interface
+<!-- ========================================================================================  -->
+<!-- Namelist options related to the bgc & pflotran interface                                  -->
 <!-- ========================================================================================  -->
 
 <entry id="use_elm_interface" type="logical" category="default_settings"
@@ -1963,7 +1963,7 @@ written only if do_budgets variable is .true.,
 0=none,
 1=+net summary budgets,
 default: 0
-  </entry>
+</entry>
 
 <!-- ========================================================================================  -->
 <!-- Namelist options for soil erosion model                                                   -->
@@ -1977,6 +1977,14 @@ Toggle to turn on the soil erosion model.
 <entry id="ero_ccycle" type="logical" category="physics"
        group="elm_inparm" valid_values="" value=".false.">
 Toggle to turn on the soil erosion and OM pools feedback.
+</entry>
+
+<!-- ========================================================================================  -->
+<!-- Namelist options for land river coulping                                                  -->
+<!-- ========================================================================================  -->
+<entry id="lnd_rof_coupling_nstep" type="integer" category="elm_physics"
+       group="elm_mosart" valid_values="">
+Number of ELM time steps per ELM and MOSART coupling period
 </entry>
 
 </namelist_definition>

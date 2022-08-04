@@ -47,7 +47,7 @@ tweaking their $case/namelist_scream.xml file.
       <sections>ctl_nl</sections>
     </file>
     <file name="data/scream_input.yaml" format="yaml">
-      <sections>Debug,atmosphere_processes,Grids__Manager,Initial__Conditions,Scorpio</sections>
+      <sections>Debug,atmosphere_processes,Grids__Manager,Initial__Conditions,Scorpio,E3SM__Parameters</sections>
     </file>
   </generated_files>
 
@@ -148,6 +148,7 @@ tweaking their $case/namelist_scream.xml file.
     <!-- Basic options for each "physics" atm process -->
     <physics_proc_base inherit="atm_proc_base">
       <Grid>Physics GLL</Grid>
+      <Grid hgrid=".*pg2">Physics PG2</Grid>
     </physics_proc_base>
 
     <!-- Homme dynamics -->
@@ -158,6 +159,7 @@ tweaking their $case/namelist_scream.xml file.
       <Vertical__Coordinate__Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220524.nc</Vertical__Coordinate__Filename>
       <Vertical__Coordinate__Filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220524.nc</Vertical__Coordinate__Filename>
       <Vertical__Coordinate__Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220525.nc</Vertical__Coordinate__Filename>
+      <Vertical__Coordinate__Filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_20220713.nc</Vertical__Coordinate__Filename>
       <Vertical__Coordinate__Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20220524.nc</Vertical__Coordinate__Filename>
       <Moisture>moist</Moisture>
     </homme>
@@ -180,7 +182,9 @@ tweaking their $case/namelist_scream.xml file.
     <spa inherit="physics_proc_base">
       <SPA__Remap__File>UNSET</SPA__Remap__File>
       <SPA__Remap__File hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/map_ne30_to_ne4_mono_20220502.nc</SPA__Remap__File>
+      <SPA__Remap__File hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne4pg2_mono.20220714.nc</SPA__Remap__File>
       <SPA__Remap__File hgrid="ne30np4">none</SPA__Remap__File>
+      <SPA__Remap__File hgrid="ne30np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne30pg2_mono.20220714.nc</SPA__Remap__File>
       <SPA__Remap__File hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne120np4_mono_20220502.nc</SPA__Remap__File>
       <SPA__Remap__File hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne512np4_mono_20220506.nc</SPA__Remap__File>
       <SPA__Data__File>${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_20220428.nc</SPA__Data__File>
@@ -226,19 +230,47 @@ tweaking their $case/namelist_scream.xml file.
   <Grids__Manager>
     <Type>Dynamics Driven</Type>
     <Reference__Grid>Physics GLL</Reference__Grid>
+    <Reference__Grid hgrid=".*pg2">Physics PG2</Reference__Grid>
     <Dynamics__Namelist__File__Name>./data/namelist.nl</Dynamics__Namelist__File__Name>
   </Grids__Manager>
 
   <!-- List of nc files for loading inputs on specified grids -->
   <Initial__Conditions>
     <Filename>UNSET</Filename>
-    <Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220524.nc</Filename>
-    <Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220524.nc</Filename>
+    <Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220701.nc</Filename>
+    <Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220701.nc</Filename>
     <Filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220524.nc</Filename>
     <Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220525.nc</Filename> 
+    <Filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_20220713.nc</Filename> 
     <Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20220524.nc</Filename>
     <Filename hgrid="ne30np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne30np4_L128_20211202.nc</Filename> <!-- This will need to be updated to the new nccn name -->
     <Restart__Casename>${CASE}.scream</Restart__Casename>
+    <!-- Fields that we need to initialize, but are not in an initial condition file need to be inited here -->
+    <surf_evap>0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->
+    <precip_liq_surf_mass>0.0</precip_liq_surf_mass>
+    <precip_ice_surf_mass>0.0</precip_ice_surf_mass>
+    <cldfrac_liq       >0.0</cldfrac_liq>
+    <sgs_buoy_flux     >0.0</sgs_buoy_flux>
+    <eddy_diff_mom     >0.0</eddy_diff_mom>
+    <T_prev_micro_step >0.0</T_prev_micro_step>
+    <qv_prev_micro_step>0.0</qv_prev_micro_step>
+    <!-- Initialize microphysics fields not on IC to zero; note that this is consistent with EAM init -->
+    <qr                >0.0</qr>
+    <nr                >0.0</nr>
+    <qm                >0.0</qm>
+    <bm                >0.0</bm>
+    <ni_activated      >0.0</ni_activated>
+    <nc_nuceat_tend    >0.0</nc_nuceat_tend>
+    <!-- SHOC internally inits TKE; just set to 0 here to signal it's not in the IC file -->
+    <tke               >0.0</tke>
+    <!-- Note: these should be provided by surface models, but we init here to keep AD from reading from file -->
+    <sfc_alb_dir_vis   >0.0</sfc_alb_dir_vis>
+    <sfc_alb_dir_nir   >0.0</sfc_alb_dir_nir>
+    <sfc_alb_dif_vis   >0.0</sfc_alb_dif_vis>
+    <sfc_alb_dif_nir   >0.0</sfc_alb_dif_nir>
+    <surf_sens_flux    >0.0</surf_sens_flux>
+    <surf_lw_flux_up   >0.0</surf_lw_flux_up>
+    <surf_mom_flux     >0.0,0.0</surf_mom_flux>
   </Initial__Conditions>
 
   <!-- List of yaml files containing I/O output specs -->
@@ -263,6 +295,11 @@ tweaking their $case/namelist_scream.xml file.
     <Atm__Log__Level valid_values="trace,debug,info,warn,error">info</Atm__Log__Level>
   </Debug>
 
+  <!-- E3SM Simulation Settings -->
+  <E3SM__Parameters>
+    <E3SM__Casename>${CASE}</E3SM__Casename>
+  </E3SM__Parameters>
+
   <!--
     List of input files that CIME needs to ensure to be present. If not present,
     CIME will automatically download them from the E3SM data server.
@@ -285,7 +322,9 @@ tweaking their $case/namelist_scream.xml file.
     ${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220524.nc,
     <!-- ${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220524.nc, -->
     <!-- ${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220525.nc, -->
-    ${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20220524.nc
+    ${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20220524.nc,
+    ${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne4pg2_mono.20220714.nc,
+    ${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne30pg2_mono.20220714.nc
   </input_files>
 
   <!-- Homme control namelist -->
@@ -333,6 +372,12 @@ tweaking their $case/namelist_scream.xml file.
     <tstep_type>9</tstep_type>
     <vert_remap_q_alg>10</vert_remap_q_alg>
     <transport_alg>0</transport_alg>
+    <!-- pg2 settings -->
+    <cubed_sphere_map hgrid=".*pg2">2</cubed_sphere_map>
+    <!-- SL transport settings. SL defaults to on for pg2 configs. -->
+    <dt_tracer_factor constraints="ge 1" hgrid=".*pg2">6</dt_tracer_factor>
+    <hypervis_subcycle_q hgrid=".*pg2">6</hypervis_subcycle_q>
+    <transport_alg hgrid=".*pg2">12</transport_alg>  
   </ctl_nl>
 
 </namelist_defaults>

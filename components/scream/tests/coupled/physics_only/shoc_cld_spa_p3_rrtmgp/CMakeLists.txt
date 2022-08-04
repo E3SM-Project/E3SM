@@ -10,7 +10,7 @@ CreateUnitTest(shoc_cld_spa_p3_rrtmgp shoc_cld_spa_p3_rrtmgp.cpp "${NEED_LIBS}" 
 
 # Set AD configurable options
 set (ATM_TIME_STEP 1800)
-SetVarDependingOnTestProfile(NUM_STEPS 2 5 48)  # 1h 4h 24h
+SetVarDependingOnTestSize(NUM_STEPS 2 5 48)  # 1h 4h 24h
 
 # Determine num subcycles needed to keep shoc dt<=300s
 set (SHOC_MAX_DT 300)
@@ -18,7 +18,7 @@ math (EXPR MAC_MIC_SUBCYCLES "(${ATM_TIME_STEP} + ${SHOC_MAX_DT} - 1) / ${SHOC_M
 
 # Ensure test input files are present in the data dir
 set (TEST_INPUT_FILES
-  init/screami_ne2np4L72_20220524.nc
+  init/${EAMxx_tests_IC_FILE_72lev}
   init/spa_init_ne2np4.nc
   init/map_ne4np4_to_ne2np4_mono.nc
   init/spa_file_unified_and_complete_ne4_20220428.nc

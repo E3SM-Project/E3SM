@@ -1,12 +1,17 @@
 #include "share/util/scream_timing.hpp"
+#include "scream_config.h"
 
 #include <gptl.h>
 
 namespace scream {
 
 void init_gptl (bool& was_already_inited) {
+#ifdef SCREAM_CIME_BUILD
+  was_already_inited = true;
+#else
   auto ierr = GPTLinitialize();
   was_already_inited = (ierr!=0);
+#endif
 }
 void finalize_gptl () {
   GPTLfinalize();

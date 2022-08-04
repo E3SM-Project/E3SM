@@ -32,7 +32,7 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 # Cime imports
 from standard_script_setup import *
 from CIME.case import Case
-from CIME.utils import expect, safe_copy, SharedArea
+from CIME.utils import expect, safe_copy, SharedArea, run_cmd_no_fail
 from CIME.buildnml import parse_input
 
 # SCREAM imports
@@ -57,10 +57,10 @@ CIME_VAR_RE = re.compile(r'[$][{](\w+)[}]')
 #    Examples:
 #      - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
 #      - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
-METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints")
+METADATA_ATTRIBS = ("type", "valid_values", "locked", "constraints", "inherit")
 
 ###############################################################################
-def do_cime_vars(entry, case, refine=False):
+def do_cime_vars(entry, case, refine=False, extra=None):
 ###############################################################################
     """
     For a parameter value, process any references to case values ("${CASEVAR}")
@@ -87,13 +87,26 @@ def do_cime_vars(entry, case, refine=False):
     {'foo': '1', 'subdict': {'bar': 'foo', 'baz': '1'}}
     """
     if type(entry) is dict:
+        changed_keys = []
         for k,v in entry.items():
-            entry[k] = do_cime_vars(v,case,refine)
+            # Apply replacement to the key.
+            k1 = do_cime_vars(k,case,refine,extra)
+            if (k1 != k): changed_keys.append((k,k1))
+            # Apply replacement to the value.
+            entry[k] = do_cime_vars(v,case,refine,extra)
+        # Handle changed keys outside the original loop since keys can't change
+        # in an items loop.
+        for e in changed_keys:
+            entry[e[1]] = entry[e[0]]
+            del entry[e[0]]
     elif type(entry) is str:
         m = CIME_VAR_RE.search(entry)
         while m:
             cime_var = m.groups()[0]
-            value = case.get_value(cime_var)
+            if type(extra) is dict and cime_var in extra:
+                value = extra[cime_var]
+            else:
+                value = case.get_value(cime_var)
             expect(value is not None,
                    "Cannot resolve XML entry '{}', CIME has no value for '{}'".format(entry, cime_var))
             entry = entry.replace("${{{}}}".format(cime_var), str(value))
@@ -323,6 +336,7 @@ def _create_raw_xml_file_impl(case, xml):
     On output, it contains the input parameters for this case.
 
     >>> from eamxx_buildnml_impl import MockCase
+    >>> ############## BASIC TEST #####################
     >>> case = MockCase({'foo':1, 'bar':2, 'baz_bar':'blah', 'baz2_bar2':4})
     >>> xml = '''
     ... <namelist_defaults>
@@ -358,6 +372,102 @@ def _create_raw_xml_file_impl(case, xml):
                     ('prop1', 'zero'),
                     ('P1', OrderedDict([('prop1', 'two')])),
                     ('P2', OrderedDict([('prop1', 'zero')]))])
+    >>> ############## INHERIT+CHILD SELECTOR #####################
+    >>> case = MockCase({'ATM_GRID':'ne4ne4'})
+    >>> xml = '''
+    ... <namelist_defaults>
+    ...     <selectors>
+    ...       <selector name="grid" case_env="ATM_GRID"/>
+    ...     </selectors>
+    ...     <input_files/>
+    ...     <generated_files/>
+    ...     <atmosphere_processes_defaults>
+    ...         <atm_procs_list>(P1,P2)</atm_procs_list>
+    ...         <atm_proc_base>
+    ...             <prop1>zero</prop1>
+    ...         </atm_proc_base>
+    ...         <atm_proc_group inherit="atm_proc_base">
+    ...             <atm_procs_list>NONE</atm_procs_list>
+    ...             <prop2>one</prop2>
+    ...         </atm_proc_group>
+    ...         <P1 inherit="atm_proc_base">
+    ...             <prop1>two</prop1>
+    ...             <prop1 grid='ne4ne4'>two_selected</prop1>
+    ...         </P1>
+    ...         <P2 inherit="atm_proc_base">
+    ...         </P2>
+    ...     </atmosphere_processes_defaults>
+    ... </namelist_defaults>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> defaults = ET.fromstring(xml)
+    >>> generated = _create_raw_xml_file_impl(case,defaults)
+    >>> d = convert_to_dict(get_child(generated,'atmosphere_processes'))
+    >>> import pprint
+    >>> pp = pprint.PrettyPrinter(indent=4)
+    >>> pp.pprint(d)
+    OrderedDict([   ('atm_procs_list', '(P1,P2)'),
+                    ('prop2', 'one'),
+                    ('prop1', 'zero'),
+                    ('P1', OrderedDict([('prop1', 'two_selected')])),
+                    ('P2', OrderedDict([('prop1', 'zero')]))])
+    >>> ############## INHERIT+PARENT SELECTOR #####################
+    >>> case = MockCase({'ATM_GRID':'ne4ne4'})
+    >>> xml = '''
+    ... <namelist_defaults>
+    ...     <selectors>
+    ...       <selector name='grid' case_env='ATM_GRID'/>
+    ...     </selectors>
+    ...     <input_files/>
+    ...     <generated_files/>
+    ...     <atmosphere_processes_defaults>
+    ...       <atm_procs_list locked="true">(P1,P2)</atm_procs_list>
+    ...       <atm_proc_base>
+    ...         <Number__of__Subcycles constraints='gt 0'>1</Number__of__Subcycles>
+    ...         <Enable__Precondition__Checks type='logical'>true</Enable__Precondition__Checks>
+    ...         <Enable__Postcondition__Checks type='logical'>true</Enable__Postcondition__Checks>
+    ...       </atm_proc_base>
+    ...       <physics_proc_base inherit='atm_proc_base'>
+    ...         <Grid>Physics GLL</Grid>
+    ...         <Grid grid='ne4ne4'>Physics PG2</Grid>
+    ...       </physics_proc_base>
+    ...       <atm_proc_group inherit="atm_proc_base">
+    ...         <atm_procs_list>NONE</atm_procs_list>
+    ...         <prop2>one</prop2>
+    ...       </atm_proc_group>
+    ...       <P1 inherit='physics_proc_base'>
+    ...         <prop1>hi</prop1>
+    ...       </P1>
+    ...       <P2 inherit='atm_proc_base'>
+    ...         <prop1>there</prop1>
+    ...       </P2>
+    ...     </atmosphere_processes_defaults>
+    ... </namelist_defaults>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> defaults = ET.fromstring(xml)
+    >>> generated = _create_raw_xml_file_impl(case,defaults)
+    >>> d = convert_to_dict(get_child(generated,'atmosphere_processes'))
+    >>> import pprint
+    >>> pp = pprint.PrettyPrinter(indent=4)
+    >>> pp.pprint(d)
+    OrderedDict([   ('atm_procs_list', '(P1,P2)'),
+                    ('prop2', 'one'),
+                    ('Number of Subcycles', 1),
+                    ('Enable Precondition Checks', True),
+                    ('Enable Postcondition Checks', True),
+                    (   'P1',
+                        OrderedDict([   ('prop1', 'hi'),
+                                        ('Grid', 'Physics PG2'),
+                                        ('Number of Subcycles', 1),
+                                        ('Enable Precondition Checks', True),
+                                        ('Enable Postcondition Checks', True)])),
+                    (   'P2',
+                        OrderedDict([   ('prop1', 'there'),
+                                        ('Number of Subcycles', 1),
+                                        ('Enable Precondition Checks', True),
+                                        ('Enable Postcondition Checks', True)]))])
+
     """
 
     # 0. Remove internal sections, that are not to appear in the
@@ -368,8 +478,8 @@ def _create_raw_xml_file_impl(case, xml):
     selectors = get_valid_selectors(xml)
 
     # 1. Resolve all inheritances, and evaluate all selectors
-    resolve_all_inheritances(xml)
     evaluate_selectors(xml, case, selectors)
+    resolve_all_inheritances(xml)
 
     # 2. Grab the atmosphere_processes macro list, with all the defaults
     atm_procs_defaults = get_child(xml,"atmosphere_processes_defaults",remove=True)
@@ -407,6 +517,13 @@ def create_raw_xml_file(case, caseroot):
 
         with open(raw_xml_file, "w") as fd:
             ET.ElementTree(raw_xml).write(fd, method='xml', encoding="unicode")
+
+    # Now that we have our namelist_scream.xml file, we can apply buffered
+    # atmchange requests.
+    atmchg_buffer = case.get_value("SCREAM_ATMCHANGE_BUFFER")
+    if atmchg_buffer:
+        run_cmd_no_fail("{}/atmchange {}".format(caseroot, atmchg_buffer))
+        case.set_value("SCREAM_ATMCHANGE_BUFFER", "")
 
 ###############################################################################
 def convert_to_dict(element):
@@ -563,7 +680,7 @@ def create_input_files(caseroot, screamroot, rundir):
         expect("format" in file.attrib, "file element missing required 'format' attribute")
         filename    = os.path.join(rundir, file.attrib["name"])
         file_format = file.attrib["format"]
-        
+
         xml_sections = get_child(file,"sections").text.split(",")
 
         dict_contents = {}
@@ -592,47 +709,6 @@ def create_input_files(caseroot, screamroot, rundir):
         result[file.attrib["name"]] = dict_contents
 
     return result
-
-###############################################################################
-def buildnml(case, caseroot, compname):
-###############################################################################
-    expect(compname == "scream", compname)
-
-    rundir     = case.get_value("RUNDIR")
-    screamroot = os.path.join(case.get_value("SRCROOT"), "components/scream")
-    rundata    = os.path.join(rundir, "data")
-
-    #
-    # Copy default output YAML file, and atmchange/query scripts to rundir
-    #
-    with SharedArea():
-        if not os.path.isdir(rundata):
-            os.mkdir(rundata)
-
-        # Create link to atmchange and atmquery scripts
-        for script in ['atmchange', 'atmquery']:
-            tgt_file = os.path.join(caseroot,script)
-            if not os.path.exists(tgt_file):
-                src_file = os.path.join(screamroot,'scripts',script)
-                os.symlink(src_file, tgt_file)
-
-    #
-    # Create the raw/processed XML input file and create input files
-    # from it.
-    #
-    create_raw_xml_file(case, caseroot)
-    files_as_dicts = create_input_files(caseroot, screamroot, rundir)
-
-    #
-    # Create input data list. This is the list of files that CIME needs
-    # to ensure are present on the machine (possibly downloading them)
-    #
-    scream_input = files_as_dicts["data/scream_input.yaml"]
-    ic_section = scream_input["Initial Conditions"]
-    create_input_data_list_file(case,caseroot,screamroot,ic_section)
-
-    # For all YAML files listed in the XML for model output, expand CIME vars (if any)
-    do_cime_vars_on_yaml_output_files(case,caseroot)
 
 ###############################################################################
 def create_input_data_list_file(case,caseroot,screamroot,ic_section):
@@ -689,6 +765,12 @@ def do_cime_vars_on_yaml_output_files(case,caseroot):
             if not os.path.exists(dst_yaml):
                 safe_copy(src_yaml,dst_yaml)
 
+    # Determine the physics grid type for use in CIME-var substitution.
+    pgt = 'GLL'
+    atm_grid = case.get_value('ATM_GRID')
+    if '.pg' in atm_grid:
+        pgt = 'PG' + atm_grid[-1]
+
     # Now loop over all output yaml files, and process any CIME var present (if any)
     for fn in out_files:
         # Get full name
@@ -696,12 +778,54 @@ def do_cime_vars_on_yaml_output_files(case,caseroot):
 
         # Load yaml file
         content = yaml.safe_load(open(fn_full,"r"))
-
+            
         # Replace possible CIME vars
-        do_cime_vars(content,case,refine=True)
+        do_cime_vars(content,case,refine=True,
+                     extra={'PHYSICS_GRID_TYPE': pgt})
 
         # Save YAML file
         ordered_dump(content, open(fn_full, "w"))
+
+###############################################################################
+def buildnml(case, caseroot, compname):
+###############################################################################
+    expect(compname == "scream", compname)
+
+    rundir     = case.get_value("RUNDIR")
+    screamroot = os.path.join(case.get_value("SRCROOT"), "components/scream")
+    rundata    = os.path.join(rundir, "data")
+
+    #
+    # Copy default output YAML file, and atmchange/query scripts to rundir
+    #
+    with SharedArea():
+        if not os.path.isdir(rundata):
+            os.mkdir(rundata)
+
+        # Create link to atmchange and atmquery scripts
+        for script in ['atmchange', 'atmquery']:
+            tgt_file = os.path.join(caseroot,script)
+            if not os.path.exists(tgt_file):
+                src_file = os.path.join(screamroot,'scripts',script)
+                os.symlink(src_file, tgt_file)
+
+    #
+    # Create the raw/processed XML input file and create input files
+    # from it.
+    #
+    create_raw_xml_file(case, caseroot)
+    files_as_dicts = create_input_files(caseroot, screamroot, rundir)
+
+    #
+    # Create input data list. This is the list of files that CIME needs
+    # to ensure are present on the machine (possibly downloading them)
+    #
+    scream_input = files_as_dicts["data/scream_input.yaml"]
+    ic_section = scream_input["Initial Conditions"]
+    create_input_data_list_file(case,caseroot,screamroot,ic_section)
+
+    # For all YAML files listed in the XML for model output, expand CIME vars (if any)
+    do_cime_vars_on_yaml_output_files(case,caseroot)
 
 ###############################################################################
 def _main_func():

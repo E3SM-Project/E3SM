@@ -129,6 +129,11 @@ public:
 
   const std::shared_ptr<AtmosphereProcessGroup>& get_atm_processes () const { return m_atm_process_group; }
 
+#ifndef KOKKOS_ENABLE_CUDA
+  // Cuda requires methods enclosing __device__ lambda's to be public
+protected:
+#endif
+  void initialize_constant_field(const FieldIdentifier& fid, const ekat::ParameterList& ic_pl);
 protected:
 
   void report_res_dep_memory_footprint () const;
@@ -136,7 +141,6 @@ protected:
   void create_logger ();
   void set_initial_conditions ();
   void restart_model ();
-  void initialize_constant_field(const FieldIdentifier& fid, const ekat::ParameterList& ic_pl);
   void read_fields_from_file (const std::vector<std::string>& field_names,
                               const std::string& grid_name,
                               const std::string& file_name,
@@ -197,6 +201,9 @@ protected:
 
   // Current ad initialization status
   int m_ad_status = 0;
+
+  // Current simulation casename
+  std::string m_casename;
 };
 
 }  // namespace control

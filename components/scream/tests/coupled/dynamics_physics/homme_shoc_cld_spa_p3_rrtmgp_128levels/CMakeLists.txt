@@ -15,7 +15,7 @@ CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp_128levels "homme_shoc_cld_spa_p3_rrt
 
 # Set AD configurable options
 set (ATM_TIME_STEP 1800)
-SetVarDependingOnTestProfile(NUM_STEPS 2 4 48)  # 1h 2h 24h
+SetVarDependingOnTestSize(NUM_STEPS 2 4 48)  # 1h 2h 24h
 
 # Determine num subcycles needed to keep shoc dt<=300s
 set (SHOC_MAX_DT 300)
@@ -62,7 +62,7 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
 # Ensure test input files are present in the data dir
 set (TEST_INPUT_FILES
   init/spa_file_unified_and_complete_ne4_20220428.nc
-  init/screami_ne2np4L128_20220525.nc
+  init/${EAMxx_tests_IC_FILE_128lev}
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
   GetInputFile(${file})

@@ -40,6 +40,7 @@ _TESTS = {
         "time"  : "0:45:00",
         "tests" : (
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
+            "ERS.hcru_hcru.I20TRGSWCNPRDCTCBC.elm-erosion",
             )
         },
 
@@ -67,7 +68,8 @@ _TESTS = {
             "SMS.r05_r05.IELM.elm-topounit",
             "ERS.ELM_USRDAT.I1850ELM.elm-usrdat",
             "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features",
-            "ERS.f09_f09.IELM.elm-solar_rad"
+            "ERS.f09_f09.IELM.elm-solar_rad",
+            "ERS.f09_f09.IELM.elm-lnd_rof_2way"
             )
         },
 
@@ -101,6 +103,7 @@ _TESTS = {
             "ERS_Ld5.ne4_oQU240.F2010.eam-rrtmgpxx",
             "REP_Ln5.ne4_oQU240.F2010",
             "SMS_Ld9.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2_mass",
+            "ERP_Ld9.ne4_ne4.FIDEAL",
             )
         },
 
@@ -183,6 +186,7 @@ _TESTS = {
         "tests"   : (
             "ERS.ne11_oQU240.WCYCL1850NS",
             "SMS_D_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-wcprod",
+            "SMS_D_Ld1.ne30pg2_EC30to60E2r2.WCYCLSSP370.allactive-wcprodssp",
             "ERS_Ld3.ne4_oQU240.F2010",
             #"ERT_Ld31.ne16_g37.B1850C5",#add this line back in with the new correct compset
             "NCK.ne11_oQU240.WCYCL1850NS",
@@ -244,6 +248,8 @@ _TESTS = {
         "tests"   : (
             "SMS_Ld1.ne30pg2_r05_EC30to60E2r2.WCYCL1850.allactive-wcprod",
             "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-wcprod",
+            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCLSSP370.allactive-wcprodssp",
+            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCLSSP585.allactive-wcprodssp",
             "SMS_PS.northamericax4v1pg2_WC14to60E2r3.WCYCL1850.allactive-wcprodrrm",
             )
         },
@@ -458,6 +464,8 @@ _TESTS = {
             "ERP_D_Ln9.ne4_ne4.F2010-SCREAMv1",
             "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1",
             "SMS_D_Ln9.ne4_ne4.F2010-SCREAMv1-noAero",
+            "ERP_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "ERS_D_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1",
             )
     },
 
@@ -466,7 +474,8 @@ _TESTS = {
         "tests" : (
             #  "SMS_D_Ln2.ne30_ne30.F2000-SCREAMv1-AQP1", # Uncomment once IC file for ne30 is ready
             "ERS_Ln22.ne30_ne30.F2010-SCREAMv1",
-            "PEM_Ln9.ne30_ne30.F2010-SCREAMv1"
+            "PEM_Ln9.ne30_ne30.F2010-SCREAMv1",
+            "ERS_Ln22.ne30pg2_ne30pg2.F2010-SCREAMv1",
             )
     },
 

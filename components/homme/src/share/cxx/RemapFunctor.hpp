@@ -544,10 +544,11 @@ private:
   typename std::enable_if<OnGpu<ExecSpace>::value == true,
                           Kokkos::TeamPolicy<ExecSpace, FunctorTag> >::type
   remap_team_policy(int num_exec) {
-    constexpr int num_threads = 16;
-    constexpr int num_vectors = 32;
-    return Kokkos::TeamPolicy<ExecSpace, FunctorTag>(num_exec, num_threads,
-                                                     num_vectors);
+    ThreadPreferences tp;
+    tp.max_threads_usable = 16;
+    tp.max_vectors_usable = 32;
+    tp.prefer_larger_team = true;
+    return Homme::get_default_team_policy<ExecSpace, FunctorTag>(num_exec, tp);
   }
 
   template <typename FunctorTag>

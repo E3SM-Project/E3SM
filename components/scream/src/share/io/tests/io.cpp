@@ -97,11 +97,7 @@ public:
 
 protected:
 
-  void initialize_impl (const RunType /* run_type */ ) {
-    m_diagnostic_output.get_header().get_tracking().update_time_stamp(timestamp());
-  }
-
-  void run_impl (const int /* dt */) {
+  void compute_diagnostic_impl () {
     const auto& v_A  = get_field_in("field_packed").get_view<const Real**,Host>();
     auto v_me = m_diagnostic_output.get_view<Real**,Host>();
     // Have the dummy diagnostic just manipulate the field_packed data arithmetically.  In this case (x*3 + 2)
@@ -111,6 +107,10 @@ protected:
       }
     }
     m_diagnostic_output.sync_to_dev();
+  }
+
+  void initialize_impl (const RunType /* run_type */ ) {
+    m_diagnostic_output.get_header().get_tracking().update_time_stamp(timestamp());
   }
 
   // Clean up
@@ -154,6 +154,7 @@ TEST_CASE("input_output_basic","io")
 
     // Re-create the fm anew, so the fields are re-inited for each output type
     auto field_manager = get_test_fm(grid);
+    field_manager->init_fields_time_stamp(t0);
     ekat::ParameterList params;
     ekat::parse_yaml_file("io_test_" + type + ".yaml",params);
     OutputManager om;

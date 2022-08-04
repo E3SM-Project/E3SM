@@ -4,7 +4,7 @@ Casename: ${CASE}.scream.hi
 Averaging Type: Instant
 Max Snapshots Per File: 744 # One output every 31 days
 Fields:
-  Physics GLL:
+  Physics ${PHYSICS_GRID_TYPE}:
     Field Names:
       # HOMME
       - ps
@@ -33,8 +33,8 @@ Fields:
       - qr
       - eff_radius_qc
       - eff_radius_qi
-      - precip_ice_surf
-      - precip_liq_surf
+      - precip_ice_surf_mass
+      - precip_liq_surf_mass
       # SHOC + P3
       - qc
       - qv
@@ -48,6 +48,9 @@ Fields:
       - SW_flux_up
       - sfc_flux_lw_dn
       - sfc_flux_sw_net
+      # Surface Fluxes
+      - surf_evap
+      - surf_sens_flux
       # Diagnostics
       - PotentialTemperature
 Output Control:

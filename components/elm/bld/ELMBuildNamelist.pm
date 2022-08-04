@@ -198,6 +198,7 @@ OPTIONS
                               (requires use_crop to be true in the clm configuration)
                               Default: .false.
      -l_ncpl "LND_NCPL"       Number of ELM coupling time-steps in a NCPL_BASE_PERIOD.
+     -r_ncpl "ROF_NCPL"       Number of MOSART coupling time-steps in a NCPL_BASE_PERIOD.
      -ncpl_base_period        Length of base period for ELM coupling (hour, day, year)
      -mask "landmask"         Type of land-mask (default, navy, gx3v5, gx1v5 etc.)
                               "-mask list" to list valid land masks.
@@ -277,6 +278,7 @@ sub process_commandline {
                glc_present           => 0,
                glc_smb               => "default",
                l_ncpl                => undef,
+               r_ncpl                => undef,
                ncpl_base_period      => "null",
                lnd_frac              => undef,
                dir                   => "$cwd",
@@ -329,6 +331,7 @@ sub process_commandline {
              "infile=s"                  => \$opts{'infile'},
              "lnd_frac=s"                => \$opts{'lnd_frac'},
              "l_ncpl=i"                  => \$opts{'l_ncpl'},
+             "r_ncpl=i"                  => \$opts{'r_ncpl'},
              "ncpl_base_period=s"        => \$opts{'ncpl_base_period'},
              "inputdata=s"               => \$opts{'inputdata'},
              "mask=s"                    => \$opts{'mask'},
@@ -1909,6 +1912,10 @@ sub process_namelist_inline_logic {
   #########################################
   setup_logic_pflotran($opts, $nl_flags, $definition, $defaults, $nl, $physv);
 
+  #########################################
+  # namelist group: elm_mosart_coupling   #
+  #########################################
+  setup_elm_mosart_coupling($opts, $nl_flags, $definition, $defaults, $nl);
 }
 
 #-------------------------------------------------------------------------------
@@ -2321,7 +2328,7 @@ sub setup_logic_demand {
   $settings{'use_snicar_ad'}       = $nl_flags->{'use_snicar_ad'};
   $settings{'use_century_decomp'}  = $nl_flags->{'use_century_decomp'};
   $settings{'use_crop'}            = $nl_flags->{'use_crop'};
-
+  
   my $demand = $nl->get_value('clm_demand');
   if (defined($demand)) {
     $demand =~ s/\'//g;   # Remove quotes
@@ -3112,6 +3119,27 @@ sub setup_logic_pflotran {
 } # end setup_logic_pflotran
 
 #-------------------------------------------------------------------------------
+sub setup_elm_mosart_coupling {
+  my ($opts, $nl_flags, $definition, $defaults, $nl) = @_;
+
+  my $r_ncpl = $opts->{'r_ncpl'};
+  if ( $r_ncpl <= 0 ) {
+     fatal_error("bad value for -r_ncpl option.\n");
+  }
+  my $l_ncpl = $opts->{'l_ncpl'};
+  if ( $l_ncpl <= 0 ) {
+     fatal_error("bad value for -l_ncpl option.\n");
+  }
+  my $val = $l_ncpl / $r_ncpl;
+  my $lnd_rof_coupling_nstep = $nl->get_value('lnd_rof_coupling_nstep');
+  if ( ! defined($lnd_rof_coupling_nstep)  ) {
+   add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'lnd_rof_coupling_nstep', 'val'=>$val);
+  } elsif ( $lnd_rof_coupling_nstep ne $val ) {
+   fatal_error("can NOT set both -l_ncpl or -r_ncpl option (via LND_NCPL/ROF_NCPL env variable) AND lnd_rof_coupling_nstep namelist variable.\n");
+  }
+}
+
+#-------------------------------------------------------------------------------
 
 sub setup_logic_fates {
     #
@@ -3159,7 +3187,7 @@ sub write_output_files {
   {
     @groups = qw(elm_inparm ndepdyn_nml pdepdyn_nml popd_streams light_streams lai_streams elm_canopyhydrology_inparm
                  elm_soilhydrology_inparm dynamic_subgrid finidat_consistency_checks dynpft_consistency_checks
-                 elmu_inparm elm_soilstate_inparm elm_pflotran_inparm betr_inparm);
+                 elmu_inparm elm_soilstate_inparm elm_pflotran_inparm betr_inparm elm_mosart);
     #@groups = qw(elm_inparm elm_canopyhydrology_inparm elm_soilhydrology_inparm
     #             finidat_consistency_checks dynpft_consistency_checks);
     # Eventually only list namelists that are actually used when CN on

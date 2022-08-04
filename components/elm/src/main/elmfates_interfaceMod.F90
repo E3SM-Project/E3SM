@@ -59,6 +59,7 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : nsrest, nsrBranch
    use elm_varctl        , only : fates_inventory_ctrl_filename
    use elm_varctl        , only : use_lch4
+   use elm_varctl        , only : use_century_decomp
    use elm_varcon        , only : tfrz
    use elm_varcon        , only : spval
    use elm_varcon        , only : denice
@@ -298,7 +299,7 @@ contains
 
      if (use_fates) then
 
-verbose_output = .false.
+        verbose_output = .false.
         call FatesInterfaceInit(iulog, verbose_output)
 
         ! Force FATES parameters that are recieve type, to the unset value
@@ -322,6 +323,13 @@ verbose_output = .false.
            call set_fates_ctrlparms('nu_com',cval='ECA')
         else
            call set_fates_ctrlparms('nu_com',cval='RD')
+        end if
+        
+        ! Tell fates which decomposition method is being used by the host land model
+        if (use_century_decomp) then 
+           call set_fates_ctrlparms('decomp_method',cval='CENTURY')
+        else
+           call set_fates_ctrlparms('decomp_method',cval='CTC')
         end if
 
         ! ELM ALWAYS has nitrogen and phosphorus "on"

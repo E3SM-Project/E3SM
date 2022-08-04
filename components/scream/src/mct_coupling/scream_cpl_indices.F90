@@ -78,7 +78,7 @@ module scream_cpl_indices
     scr_names_x2a(mct_avect_indexra(x2a,'Faxx_taux')) = 'surf_mom_flux'
     scr_names_x2a(mct_avect_indexra(x2a,'Faxx_tauy')) = 'surf_mom_flux'
     scr_names_x2a(mct_avect_indexra(x2a,'Faxx_sen'))  = 'surf_sens_flux'
-    scr_names_x2a(mct_avect_indexra(x2a,'Faxx_evap')) = 'surf_latent_flux'
+    scr_names_x2a(mct_avect_indexra(x2a,'Faxx_evap')) = 'surf_evap'
     scr_names_x2a(mct_avect_indexra(x2a,'Faxx_lwup')) = 'surf_lw_flux_up'
 
     vec_comp_x2a(mct_avect_indexra(x2a,'Faxx_taux')) = 0

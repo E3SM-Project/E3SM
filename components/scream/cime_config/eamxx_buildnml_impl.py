@@ -256,7 +256,9 @@ def refine_type(entry, force_type=None):
                     elem = bool(int(entry))
 
             elif elem_type == "integer":
-                elem = int(entry)
+                tmp  = float(entry)
+                expect (float(int(tmp))==tmp, "Cannot interpret {} as int".format(entry))
+                elem = int(tmp)
             elif elem_type == "real":
                 elem = float(entry)
             elif elem_type == "string":
@@ -531,7 +533,7 @@ def resolve_inheritance (root,elem):
         parent_name = elem.attrib["inherit"]
 
         parent = find_node(root,parent_name)
-        expect (elem is not None,
+        expect (parent is not None,
                 "Error! Parent {} of {} not found within root {}"
                 .format(parent_name,elem.tag,root.tag))
 
@@ -613,7 +615,7 @@ def get_valid_selectors(xml_root):
 
         selectors[selector_name] = (selector_env, selector_regex)
 
-    return selectors 
+    return selectors
 
 ###############################################################################
 def gen_group_processes (ap_names_str, atm_procs_defaults):
@@ -708,5 +710,5 @@ def gen_atm_proc_group(atm_procs_list, atm_procs_defaults):
         names.append(c.tag)
         group.append(c)
     group.tag = "group." + '_'.join(names) + '.'
-    
+
     return group
