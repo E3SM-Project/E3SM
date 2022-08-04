@@ -16,9 +16,7 @@ public:
   FieldPositivityCheck (const Field& f,
                         const std::shared_ptr<const AbstractGrid>& grid,
                         const bool can_repair = false)
-   : FieldLowerBoundCheck (f,grid,
-                           std::numeric_limits<double>::epsilon(),
-                           can_repair)
+   : FieldLowerBoundCheck (f,grid,0,can_repair)
   {
     // Nothing to do here
   }
