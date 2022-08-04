@@ -335,7 +335,7 @@ TEST_CASE("input_output_basic","io")
   min_input.finalize();
   reset_fields();
 
-  // Check multisnap output; note, tt starts at 1 instead of 0 to follow netcdf time dimension indexing.
+  // Check multisnap output
   AtmosphereInput multi_input(multi_params,field_manager);
   for (int tt = 0; tt<std::min(max_steps,10); tt++) {
     multi_input.read_variables(tt);
