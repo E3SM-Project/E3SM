@@ -1435,7 +1435,7 @@
   <grid name="a%ne30np4">
     <mach name="summit|ascent">
       <pes compset="any" pesize="any">
-        <comment>summit|ascent: any compset on ne30np4.pg2 grid</comment>
+        <comment>summit|ascent: any compset on ne30np4 grid</comment>
         <ntasks>
           <ntasks_atm>-2</ntasks_atm>
           <ntasks_lnd>-2</ntasks_lnd>
@@ -1458,7 +1458,7 @@
         </nthrds>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+SGLC.+SWAV.+BGC.*" pesize="any">
-        <comment>summit|ascent: BGC compset on ne30np4.pg2 grid</comment>
+        <comment>summit|ascent: BGC compset on ne30np4 grid</comment>
         <MAX_TASKS_PER_NODE>42</MAX_TASKS_PER_NODE>
         <MAX_MPITASKS_PER_NODE>42</MAX_MPITASKS_PER_NODE>
         <ntasks>
@@ -1483,7 +1483,7 @@
         </nthrds>
       </pes>
       <pes compset=".*SCREAM.*" pesize="any">
-        <comment>summit|ascent: BGC compset on ne30np4.pg2 grid</comment>
+        <comment>summit|ascent: SCREAM atm compset on ne30np4 grid</comment>
         <MAX_TASKS_PER_NODE>42</MAX_TASKS_PER_NODE>
         <MAX_MPITASKS_PER_NODE>42</MAX_MPITASKS_PER_NODE>
         <ntasks>
