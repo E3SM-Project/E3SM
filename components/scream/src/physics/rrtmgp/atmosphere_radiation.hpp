@@ -19,6 +19,7 @@ public:
   using view_1d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_1d<Real>;
   using view_2d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_2d<Real>;
   using view_3d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_3d<Real>;
+  using view_2d_real_const = typename ekat::KokkosTypes<DefaultDevice>::template view_2d<const Real>;
   using ci_string        = ekat::CaseInsensitiveString;
 
   using KT               = ekat::KokkosTypes<DefaultDevice>;

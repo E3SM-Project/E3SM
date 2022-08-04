@@ -610,8 +610,12 @@ void RRTMGPRadiation::run_impl (const int dt) {
     real2d tmp2d = subview_2d(m_buffer.tmp2d);
     for (int igas = 0; igas < m_ngas; igas++) {
       auto name = m_gas_names[igas];
-      auto fm_name = name=="h2o" ? "qv" : name;
-      auto d_temp  = get_field_in(fm_name).get_view<const Real**>();
+      view_2d_real_const d_temp; 
+      if (name == "h2o") {
+        d_temp  = get_field_in("qv").get_view<const Real**>();
+      } else {
+        d_temp  = get_field_out(name).get_view<const Real**>();
+      }
       const auto gas_mol_weights = m_gas_mol_weights;
 
       const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
