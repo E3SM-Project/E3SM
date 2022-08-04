@@ -63,7 +63,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   auto& out_control_pl = m_params.sublist("output_control");
   m_output_control.frequency  = out_control_pl.get<int>("Frequency");
   m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");
-  m_output_control.nsteps_since_last_write = 0;
+  m_output_control.nsamples_since_last_write = 0;
   m_output_control.timestamp_of_last_write = m_case_t0;
 
   // File specs
@@ -96,10 +96,12 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   const auto has_restart_data = (m_avg_type!=OutputAvgType::Instant && m_output_control.frequency>1);
   if (has_restart_data && m_params.isSublist("Checkpoint Control")) {
     // Output control
+    // TODO: It would be great if there was an option where, if Checkpoint Control was not a sublist, we
+    //       could query the restart control information and just use that. 
     auto& pl = m_params.sublist("Checkpoint Control");
     m_checkpoint_control.frequency  = pl.get<int>("Frequency");
     m_checkpoint_control.frequency_units = pl.get<std::string>("Frequency Units");
-    m_checkpoint_control.nsteps_since_last_write = 0;
+    m_checkpoint_control.nsamples_since_last_write = 0;
     m_checkpoint_control.timestamp_of_last_write = case_t0;
 
     // File specs
@@ -114,7 +116,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     // the checkpoint control so that it never writes checkpoints.
     m_checkpoint_control.frequency  = 0;
     m_checkpoint_control.frequency_units = "never";
-    m_checkpoint_control.nsteps_since_last_write = 0;
+    m_checkpoint_control.nsamples_since_last_write = 0;
     m_checkpoint_control.timestamp_of_last_write = case_t0;
   }
 
@@ -137,10 +139,10 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       // We can use the step counter in run_t0 to check at what point within an output interval
       // the previous simulation was stopped at.
       // NOTE: if you change the output frequency when you restart, this could lead to wonky behavior
-      m_output_control.nsteps_since_last_write = m_run_t0.get_num_steps() % m_output_control.frequency;
+      m_output_control.nsamples_since_last_write = m_run_t0.get_num_steps() % m_output_control.frequency;
 
       // If the type/freq of output needs restart data, we need to read in an output.
-      if (has_restart_data && m_output_control.nsteps_since_last_write>0) {
+      if (has_restart_data && m_output_control.nsamples_since_last_write>0) {
         auto output_restart_filename = find_filename_in_rpointer(hist_restart_casename,false,m_io_comm,m_run_t0);
 
         ekat::ParameterList res_params("Input Parameters");
@@ -175,8 +177,8 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   using namespace scorpio;
 
   // Check if we need to open a new file
-  ++m_output_control.nsteps_since_last_write;
-  ++m_checkpoint_control.nsteps_since_last_write;
+  ++m_output_control.nsamples_since_last_write;
+  ++m_checkpoint_control.nsamples_since_last_write;
 
   // Check if this is a write step (and what kind)
   const bool is_output_step     = m_output_control.is_write_step(timestamp);
@@ -261,7 +263,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     // Note: filename might reference an invalid string, but it's only used
     //       in case is_write_step=true, in which case it will *for sure* contain
     //       a valid file name.
-    it->run(filename,is_write_step,m_output_control.nsteps_since_last_write);
+    it->run(filename,is_write_step,m_output_control.nsamples_since_last_write);
   }
 
   if (is_write_step) {
@@ -287,10 +289,10 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     ++filespecs.num_snapshots_in_file;
 
     // Now that we've written output to this file we need reset the nsteps.
-    control.nsteps_since_last_write = 0;
+    control.nsamples_since_last_write = 0;
 
-    // Since we wrote to file we need to reset the nsteps_since_last_write and the timestamp
-    control.nsteps_since_last_write = 0;
+    // Since we wrote to file we need to reset the nsamples_since_last_write and the timestamp
+    control.nsamples_since_last_write = 0;
     control.timestamp_of_last_write = timestamp;
 
     // Check if we need to close the output file
@@ -301,7 +303,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     }
 
     // Whether we wrote an output or a checkpoint, the checkpoint counter needs to be reset
-    m_checkpoint_control.nsteps_since_last_write = 0;
+    m_checkpoint_control.nsamples_since_last_write = 0;
     m_checkpoint_control.timestamp_of_last_write = timestamp;
   }
 }

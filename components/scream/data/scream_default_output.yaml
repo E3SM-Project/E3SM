@@ -60,4 +60,7 @@ output_control:
   Timestamp in Filename: true
   avg_type_in_filename: false
   frequency_in_filename: false
+Checkpoint Control:
+  Frequency: ${REST_N}
+  frequency_units: ${REST_OPTION}
 ...

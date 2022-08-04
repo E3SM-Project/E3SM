@@ -140,7 +140,7 @@ void run_multisnap(const std::string& output_freq_units) {
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
   IOControl io_control; // Needed for testing input.
   io_control.timestamp_of_last_write = t0;
-  io_control.nsteps_since_last_write = 0;
+  io_control.nsamples_since_last_write = 0;
   io_control.frequency_units         = output_freq_units;
   std::vector<std::string> output_stamps; 
 
@@ -207,7 +207,7 @@ void run_multisnap(const std::string& output_freq_units) {
       om.run(time);
       if (io_control.is_write_step(time)) {
         output_stamps.push_back(time.to_string());
-        io_control.nsteps_since_last_write = 0;
+        io_control.nsamples_since_last_write = 0;
         io_control.timestamp_of_last_write = time;
       }
     }
@@ -298,7 +298,7 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
   IOControl io_control; // Needed for testing input.
   io_control.timestamp_of_last_write = t0;
-  io_control.nsteps_since_last_write = 0;
+  io_control.nsamples_since_last_write = 0;
   io_control.frequency_units         = output_freq_units;
   std::vector<std::string> output_stamps; 
 
@@ -366,7 +366,7 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
       om.run(time);
       if (io_control.is_write_step(time)) {
         output_stamps.push_back(time.to_string());
-        io_control.nsteps_since_last_write = 0;
+        io_control.nsamples_since_last_write = 0;
         io_control.timestamp_of_last_write = time;
       }
     }
@@ -619,7 +619,7 @@ get_diagnostic_input(const ekat::Comm& comm, const std::shared_ptr<GridsManager>
 /*========================================================================================================*/
 int get_current_t(const int tt, const int dt, const int freq, const std::string& frequency_units) {
       if (frequency_units == "nsteps") {
-        // Just use the nsteps_since_last_write information
+        // Just use dt 
         return tt*dt;
       // We will need to use timestamp information
       } else if (frequency_units == "nsecs") {

@@ -45,7 +45,7 @@ inline OutputAvgType str2avg (const std::string& s) {
 struct IOControl {
   // A non-positive frequency can be used to signal IO disabled
   int frequency = -1;
-  int nsteps_since_last_write;  // Needed when updating output data, such as with the OAT::Average flag
+  int nsamples_since_last_write;  // Needed when updating output data, such as with the OAT::Average flag
   util::TimeStamp timestamp_of_last_write;
   std::string frequency_units;
 
@@ -57,7 +57,7 @@ struct IOControl {
     if (frequency > 0 && frequency_units != "never") {
       auto ts_diff = (ts-timestamp_of_last_write);
       if (frequency_units == "nsteps") {
-        // Just use the nsteps_since_last_write information
+        // Just use the num_steps from timestamps
         return ((ts.get_num_steps()-timestamp_of_last_write.get_num_steps()) % frequency == 0);
       // We will need to use timestamp information
       } else if (frequency_units == "nsecs") {
@@ -87,7 +87,7 @@ struct IOControl {
           }
         } 
       } else {
-        EKAT_REQUIRE_MSG(false,"Invalid frequency unit for output stream.  Please check that all outputs have Frequency Units of\n"
+        EKAT_REQUIRE_MSG(false,"Invalid frequency unit of [" + frequency_units + "] for output stream.  Please check that all outputs have Frequency Units of\n"
                                "never, nsteps, nsecs, nmins, nhours, ndays, nmonths, nyears");
       }
     }
