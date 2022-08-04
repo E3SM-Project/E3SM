@@ -8,8 +8,8 @@
 namespace scream
 {
 
-// Convenience implementation of check for interval [U,-\infty). The class
-// inherits from FieldWithinIntervalCheck, and sets lower bound to -infinity
+// Convenience implementation of check for interval [L,-\infty). The class
+// inherits from FieldWithinIntervalCheck, and sets upper bound to DBL_MAX
 class FieldLowerBoundCheck: public FieldWithinIntervalCheck {
 public:
   // Constructor with lower bound. By default, this property check
@@ -19,13 +19,13 @@ public:
                         const std::shared_ptr<const AbstractGrid>& grid,
                         const double lower_bound,
                         const bool can_repair = false,
-                        const double lb_repairable =  limits::max())
+                        const double lb_repairable = -s_max)
    : FieldWithinIntervalCheck(field, grid,
                               lower_bound,
-                              std::numeric_limits<double>::max(),
+                              s_max,
                               can_repair,
                               lb_repairable,
-                              std::numeric_limits<double>::max())
+                              s_max)
   {
     // Do Nothing
   }

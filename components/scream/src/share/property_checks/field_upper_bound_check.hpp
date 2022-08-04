@@ -9,11 +9,9 @@ namespace scream
 {
 
 // Convenience implementation of check for interval (-\infty,U]. The class
-// inherits from FieldWithinIntervalCheck, and sets lower bound to -infinity
+// inherits from FieldWithinIntervalCheck, and sets lower bound to -DBL_MAX
 class FieldUpperBoundCheck: public FieldWithinIntervalCheck {
 public:
-  using limits = std::numeric_limits<double>;
-
   // Constructor with lower bound. By default, this property check
   // can *NOT* repair fields that fail the check. If can_repair is true,
   // this class will overwrite values out of bounds with the stored upper bound
@@ -21,12 +19,12 @@ public:
                         const std::shared_ptr<const AbstractGrid>& grid,
                         const double upper_bound,
                         const bool can_repair = false,
-                        const double ub_repairable = -limits::max())
+                        const double ub_repairable = s_max)
    : FieldWithinIntervalCheck (field, grid,
-                              -limits::max(),
+                              -s_max,
                                upper_bound,
                                can_repair,
-                              -limits::max(),
+                              -s_max,
                                ub_repairable)
   {
     // Do Nothing

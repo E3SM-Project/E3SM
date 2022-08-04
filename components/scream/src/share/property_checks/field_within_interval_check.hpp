@@ -17,7 +17,7 @@ namespace scream
 
 class FieldWithinIntervalCheck: public PropertyCheck {
 public:
-  using limits = std::numeric_limits<double>;
+  static constexpr double s_max = std::numeric_limits<double>::max();
 
   // Constructor with lower and upper bounds. By default, this property check
   // can *NOT* repair fields that fail the check. If can_repair is true,
@@ -31,8 +31,8 @@ public:
                             const double lower_bound,
                             const double upper_bound,
                             const bool can_repair = false,
-                            const double lb_repairable = -limits::max(),
-                            const double ub_repairable =  limits::max());
+                            const double lb_repairable = -s_max,
+                            const double ub_repairable =  s_max);
 
   // The name of the property check
   std::string name () const override;
