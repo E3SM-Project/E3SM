@@ -12,17 +12,22 @@ namespace scream
 // inherits from FieldWithinIntervalCheck, and sets lower bound to -infinity
 class FieldUpperBoundCheck: public FieldWithinIntervalCheck {
 public:
+  using limits = std::numeric_limits<double>;
+
   // Constructor with lower bound. By default, this property check
   // can *NOT* repair fields that fail the check. If can_repair is true,
   // this class will overwrite values out of bounds with the stored upper bound
   FieldUpperBoundCheck (const Field& field,
                         const std::shared_ptr<const AbstractGrid>& grid,
                         const double upper_bound,
-                        const bool can_repair = false)
-   : FieldWithinIntervalCheck(field, grid,
-                              -std::numeric_limits<double>::max(),
-                              upper_bound,
-                              can_repair)
+                        const bool can_repair = false,
+                        const double ub_repairable = -limits::max())
+   : FieldWithinIntervalCheck (field, grid,
+                              -limits::max(),
+                               upper_bound,
+                               can_repair,
+                              -limits::max(),
+                               ub_repairable)
   {
     // Do Nothing
   }
@@ -31,7 +36,7 @@ public:
   std::string name () const override {
     // NOTE: std::to_string does not do a good job with small numbers (like 1e-9).
     std::stringstream ss;
-    ss << fields().front().name() << " upper bound check: " << this->m_upper_bound;
+    ss << fields().front().name() << " upper bound check: " << this->m_ub;
     return ss.str();
   }
 };

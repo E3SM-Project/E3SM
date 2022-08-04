@@ -18,11 +18,14 @@ public:
   FieldLowerBoundCheck (const Field& field,
                         const std::shared_ptr<const AbstractGrid>& grid,
                         const double lower_bound,
-                        const bool can_repair = false)
+                        const bool can_repair = false,
+                        const double lb_repairable =  limits::max())
    : FieldWithinIntervalCheck(field, grid,
                               lower_bound,
                               std::numeric_limits<double>::max(),
-                              can_repair)
+                              can_repair,
+                              lb_repairable,
+                              std::numeric_limits<double>::max())
   {
     // Do Nothing
   }
@@ -31,7 +34,7 @@ public:
   std::string name () const override {
     // NOTE: std::to_string does not do a good job with small numbers (like 1e-9).
     std::stringstream ss;
-    ss << fields().front().name() << " lower bound check: " << this->m_lower_bound;
+    ss << fields().front().name() << " lower bound check: " << this->m_lb;
     return ss.str();
   }
 };

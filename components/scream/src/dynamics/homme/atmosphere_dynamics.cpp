@@ -33,7 +33,6 @@
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/util//scream_column_ops.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
-#include "share/property_checks/check_and_repair_wrapper.hpp"
 
 // Ekat includes
 #include "ekat/ekat_assert.hpp"
@@ -434,21 +433,15 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   }
 
   // Set up field property checks
-  // Note: We are seeing near epsilon negative values in a handful of places,
-  // The strategy is to
-  // 1. First check that no values are sufficiently negative as to require an error.
-  //    i.e. below some tolerance.
-  // 2. Clip all negative values to zero.
-  // TODO: Construct a more robust check that compares the value of Q against an
-  // average value or maximum value over each column.  That way we can use a relative
-  // error as our threshold, rather than an arbitrary tolerance.
+  // Note: We are seeing near epsilon negative values in a handful of places.
+  //       We figured out the source of those values in Homme (see #1842),
+  //       but they should be "benign" neg values (due to roundoffs), which we
+  //       can safely clip to 0..
+
   using FWIC = FieldWithinIntervalCheck;
   using FLBC = FieldLowerBoundCheck;
-  const Real tol = -1e-17;
-  const auto& Q = *get_group_out("Q",pgn).m_bundle;
-  auto lb_check = std::make_shared<FLBC>(Q,m_phys_grid,tol,false);
-  auto lb_repair = std::make_shared<FLBC>(Q,m_phys_grid,0,true);
-  add_postcondition_check<CheckAndRepairWrapper>(lb_check,lb_repair);
+
+  add_postcondition_check<FLBC>(*get_group_out("Q",pgn).m_bundle,m_phys_grid,0,true);
   add_postcondition_check<FWIC>(get_field_out("T_mid",pgn),m_phys_grid,140.0, 500.0,false);
   add_postcondition_check<FWIC>(get_field_out("horiz_winds",pgn),m_phys_grid,-400.0, 400.0,false);
   add_postcondition_check<FWIC>(get_field_out("ps"),m_phys_grid,40000.0, 110000.0,false);

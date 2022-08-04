@@ -33,7 +33,7 @@ FieldNaNCheck (const Field& f,
 }
 
 template<typename ST>
-PropertyCheck::CheckResult FieldNaNCheck::check_impl() const {
+PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
   using const_ST    = typename std::add_const<ST>::type;
 
   const auto& f = fields().front();
@@ -121,13 +121,13 @@ PropertyCheck::CheckResult FieldNaNCheck::check_impl() const {
           "You should not have reached this line. Please, contact developers.\n");
   }
 
-  PropertyCheck::CheckResult check_result;
-  check_result.pass = (invalid_idx < 0);
-  check_result.msg = "";
-  if (not check_result.pass) {
+  PropertyCheck::ResultAndMsg res_and_msg;
+  res_and_msg.result = invalid_idx<0 ? CheckResult::Pass : CheckResult::Fail;
+  res_and_msg.msg = "";
+  if (res_and_msg.result==CheckResult::Fail) {
     auto indices = unflatten_idx(layout.dims(),invalid_idx);
-    check_result.msg  = "FieldNaNCheck failed.\n";
-    check_result.msg += "  - field id: " + f.get_header().get_identifier().get_id_string() + "\n";
+    res_and_msg.msg  = "FieldNaNCheck failed.\n";
+    res_and_msg.msg += "  - field id: " + f.get_header().get_identifier().get_id_string() + "\n";
     using namespace ShortFieldTagsNames;
 
     int col_lid;
@@ -146,22 +146,22 @@ PropertyCheck::CheckResult FieldNaNCheck::check_impl() const {
         lon = m_grid->get_geometry_data_host("lon");
       }
 
-      check_result.msg += "  - entry (" + std::to_string(gids(col_lid));;
+      res_and_msg.msg += "  - entry (" + std::to_string(gids(col_lid));;
       for (size_t i=1; i<indices.size(); ++i) {
-        check_result.msg += "," + std::to_string(i);
+        res_and_msg.msg += "," + std::to_string(i);
       }
-      check_result.msg += ")\n";
+      res_and_msg.msg += ")\n";
       if (has_latlon) {
-        check_result.msg += "  - lat/lon: (" + std::to_string(lat(col_lid)) + ", " + std::to_string(lon(col_lid)) + ")\n";
+        res_and_msg.msg += "  - lat/lon: (" + std::to_string(lat(col_lid)) + ", " + std::to_string(lon(col_lid)) + ")\n";
       }
     }
   } else {
-    check_result.msg = "FieldNaNCheck passed.\n";
+    res_and_msg.msg = "FieldNaNCheck passed.\n";
   }
-  return check_result;
+  return res_and_msg;
 }
 
-PropertyCheck::CheckResult FieldNaNCheck::check() const {
+PropertyCheck::ResultAndMsg FieldNaNCheck::check() const {
   const auto& f = fields().front();
 
   switch (f.data_type()) {

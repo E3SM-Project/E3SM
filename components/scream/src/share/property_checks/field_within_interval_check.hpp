@@ -17,21 +17,27 @@ namespace scream
 
 class FieldWithinIntervalCheck: public PropertyCheck {
 public:
+  using limits = std::numeric_limits<double>;
 
   // Constructor with lower and upper bounds. By default, this property check
   // can *NOT* repair fields that fail the check. If can_repair is true,
   // this class will overwrite values out of bounds with the proper bound
   // (upper if v>upper_bound and lower if v<lower_bound).
+  // The [lb|ub]_repairable bounds are no tighter than [lb,ub] (if not set,
+  // they are set equal to lb/ub). If field is outside [lb,ub], but inside
+  // [lb_rep,ub_rep], we return a "Repairable" check result, rather than a Fail.
   FieldWithinIntervalCheck (const Field& field,
                             const std::shared_ptr<const AbstractGrid>& grid,
                             const double lower_bound,
                             const double upper_bound,
-                            const bool can_repair = false);
+                            const bool can_repair = false,
+                            const double lb_repairable = -limits::max(),
+                            const double ub_repairable =  limits::max());
 
   // The name of the property check
   std::string name () const override;
 
-  CheckResult check() const override;
+  ResultAndMsg check() const override;
 
 // CUDA requires the parent fcn of a KOKKOS_LAMBDA to have public access
 #ifndef KOKKOS_ENABLE_CUDA
@@ -39,7 +45,7 @@ protected:
 #endif
 
   template<typename ST>
-  CheckResult check_impl () const;
+  ResultAndMsg check_impl () const;
 
   template<typename ST>
   void repair_impl() const;
@@ -49,7 +55,10 @@ protected:
   void repair_impl() const override;
 
   // Lower and upper bounds.
-  double m_lower_bound, m_upper_bound;
+  double m_lb, m_ub;
+
+  // (Potentially) Less tight bounds
+  double m_lb_repairable, m_ub_repairable;
 
   std::shared_ptr<const AbstractGrid>   m_grid;
 };
