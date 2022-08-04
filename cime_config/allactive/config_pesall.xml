@@ -159,7 +159,7 @@
           <ntasks_cpl>30</ntasks_cpl>
         </ntasks>
       </pes>
-    </mach>    
+    </mach>
     <mach name="lawrencium-lr3">
       <pes compset="any" pesize="any">
         <comment>allactive+lawrencium-lr3: default, 2 nodes</comment>
@@ -1431,11 +1431,11 @@
         </rootpe>
       </pes>
     </mach>
-  </grid>  
-  <grid name="a%ne30np4.pg2">
+  </grid>
+  <grid name="a%ne30np4">
     <mach name="summit|ascent">
       <pes compset="any" pesize="any">
-        <comment>summit|ascent: any compset on ne30np4.pg2 grid</comment>
+        <comment>summit|ascent: any compset on ne30np4 grid</comment>
         <ntasks>
           <ntasks_atm>-2</ntasks_atm>
           <ntasks_lnd>-2</ntasks_lnd>
@@ -1458,7 +1458,32 @@
         </nthrds>
       </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+SGLC.+SWAV.+BGC.*" pesize="any">
-        <comment>summit|ascent: BGC compset on ne30np4.pg2 grid</comment>
+        <comment>summit|ascent: BGC compset on ne30np4 grid</comment>
+        <MAX_TASKS_PER_NODE>42</MAX_TASKS_PER_NODE>
+        <MAX_MPITASKS_PER_NODE>42</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>-4</ntasks_atm>
+          <ntasks_lnd>-4</ntasks_lnd>
+          <ntasks_rof>-4</ntasks_rof>
+          <ntasks_ice>-4</ntasks_ice>
+          <ntasks_ocn>-4</ntasks_ocn>
+          <ntasks_cpl>-4</ntasks_cpl>
+          <ntasks_glc>-4</ntasks_glc>
+          <ntasks_wav>-4</ntasks_wav>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>1</nthrds_atm>
+          <nthrds_lnd>1</nthrds_lnd>
+          <nthrds_rof>1</nthrds_rof>
+          <nthrds_ice>1</nthrds_ice>
+          <nthrds_ocn>1</nthrds_ocn>
+          <nthrds_glc>1</nthrds_glc>
+          <nthrds_wav>1</nthrds_wav>
+          <nthrds_cpl>1</nthrds_cpl>
+        </nthrds>
+      </pes>
+      <pes compset=".*SCREAM.*" pesize="any">
+        <comment>summit|ascent: SCREAM atm compset on ne30np4 grid</comment>
         <MAX_TASKS_PER_NODE>42</MAX_TASKS_PER_NODE>
         <MAX_MPITASKS_PER_NODE>42</MAX_MPITASKS_PER_NODE>
         <ntasks>
@@ -2186,7 +2211,7 @@
           <rootpe_ocn>1856</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
-      </pes>      
+      </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="M">
         <comment> mmod077k64x2 s=2.19 </comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
@@ -2215,7 +2240,7 @@
           <rootpe_ocn>3648</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
-      </pes>      
+      </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="L">
         <comment> 160 nodes 32x8 s=2.2 - 2.8 </comment>
         <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
@@ -2244,7 +2269,7 @@
           <rootpe_ocn>3680</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
-      </pes>      
+      </pes>
     </mach>
     <mach name="chrysalis">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="T">
@@ -2267,7 +2292,7 @@
           <rootpe_ocn>768</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
-      </pes>      
+      </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="XS">
         <comment> cmod040c64x1 s=5.6 </comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
@@ -2288,7 +2313,7 @@
           <rootpe_ocn>1920</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
-      </pes>      
+      </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="S">
         <comment> cmod060d64x1 s=8.0 </comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
@@ -2309,7 +2334,7 @@
           <rootpe_ocn>2944</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
-      </pes>      
+      </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="M">
         <comment> cmod080c64x1 s=10.1 </comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
@@ -2330,7 +2355,7 @@
           <rootpe_ocn>3840</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
-      </pes>      
+      </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="L">
         <comment> cmod100b64x1 s=12.3 </comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
@@ -2351,7 +2376,7 @@
           <rootpe_ocn>4864</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
-      </pes>      
+      </pes>
     </mach>
   </grid>
 </config_pes>

@@ -3568,6 +3568,7 @@
         <arg name="latency_priority">--latency_priority $ENV{LTC_PRT}</arg>
         <arg name="stdio_mode">--stdio_mode prepended</arg>
         <arg name="thread_vars">$ENV{JSRUN_THREAD_VARS}</arg>
+        <arg name="smpiargs">$ENV{SMPIARGS}</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
@@ -3625,12 +3626,16 @@
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
       <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
       <env name="PGI_ACC_POOL_ALLOC">0</env>
+      <env name="SMPIARGS"> </env>
     </environment_variables>
     <environment_variables SMP_PRESENT="FALSE">
       <env name="JSRUN_THREAD_VARS"> </env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="JSRUN_THREAD_VARS">-E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -E OMP_PROC_BIND=spread -E OMP_PLACES=threads -E OMP_STACKSIZE=256M</env>
+    </environment_variables>
+    <environment_variables compiler=".*gpu.*">
+      <env name="SMPIARGS">--smpiargs="-gpu"</env>
     </environment_variables>
     <environment_variables compiler="ibm">
       <env name="RS_PER_NODE">2</env>
@@ -3722,6 +3727,7 @@
         <arg name="latency_priority">--latency_priority $ENV{LTC_PRT}</arg>
         <arg name="stdio_mode">--stdio_mode prepended</arg>
         <arg name="thread_vars">$ENV{JSRUN_THREAD_VARS}</arg>
+        <arg name="smpiargs">$ENV{SMPIARGS}</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
@@ -3776,12 +3782,16 @@
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
       <env name="PGI_ACC_POOL_ALLOC">0</env>
+      <env name="SMPIARGS"> </env>
     </environment_variables>
     <environment_variables SMP_PRESENT="FALSE">
       <env name="JSRUN_THREAD_VARS"> </env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="JSRUN_THREAD_VARS">-E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -E OMP_PROC_BIND=spread -E OMP_PLACES=threads -E OMP_STACKSIZE=256M</env>
+    </environment_variables>
+    <environment_variables compiler=".*gpu.*">
+      <env name="SMPIARGS">--smpiargs="-gpu"</env>
     </environment_variables>
     <environment_variables>
       <env name="RS_PER_NODE">2</env>
