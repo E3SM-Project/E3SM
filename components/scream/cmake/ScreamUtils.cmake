@@ -15,17 +15,17 @@ include(EkatUtils)
 #  - One test will be created per combination of valid mpi-rank and thread value
 #  - compiler defs/flags can also be providedd on a per-language basis via COMPILER_[C|CXX|F]_[FLAGS|DEFS]
 
-macro(SetVarDependingOnTestProfile var_name val_short val_medium val_long)
-  string (TOUPPER ${SCREAM_TEST_PROFILE} profile)
-  if (profile STREQUAL "SHORT")
+macro(SetVarDependingOnTestSize var_name val_short val_medium val_long)
+  string (TOUPPER ${SCREAM_TEST_SIZE} size)
+  if (size STREQUAL "SHORT")
     set(${var_name} ${val_short})
-  elseif(profile STREQUAL "MEDIUM")
+  elseif(size STREQUAL "MEDIUM")
     set(${var_name} ${val_medium})
-  elseif(profile STREQUAL "LONG")
+  elseif(size STREQUAL "LONG")
     set(${var_name} ${val_long})
   else()
-    message("Error! Unrecognized testing profile '${profile}'.")
-    message("  Valid test profile options: ${SCREAM_TEST_VALID_PROFILES}")
+    message("Error! Unrecognized testing size '${size}'.")
+    message("  Valid test size options: ${SCREAM_TEST_VALID_SIZES}")
     message(FATAL_ERROR "Aborting.")
   endif()
 endmacro()
@@ -35,7 +35,7 @@ set(SCREAM_CUT_EXEC_1V_ARGS ${CUT_EXEC_1V_ARGS})
 set(SCREAM_CUT_EXEC_MV_ARGS ${CUT_EXEC_MV_ARGS})
 
 set(SCREAM_CUT_TEST_OPTIONS ${CUT_TEST_OPTIONS})
-set(SCREAM_CUT_TEST_1V_ARGS ${CUT_TEST_1V_ARGS})
+set(SCREAM_CUT_TEST_1V_ARGS ${CUT_TEST_1V_ARGS};MINIMUM_TEST_LEVEL)
 set(SCREAM_CUT_TEST_MV_ARGS ${CUT_TEST_MV_ARGS})
 
 #
@@ -85,12 +85,6 @@ function(CreateUnitTestFromExec test_name test_exec)
   cmake_parse_arguments(cutfe "${SCREAM_CUT_TEST_OPTIONS}" "${SCREAM_CUT_TEST_1V_ARGS}" "${SCREAM_CUT_TEST_MV_ARGS}" ${ARGN})
   CheckMacroArgs(CreateUnitTestExec cutfe "${SCREAM_CUT_TEST_OPTIONS}" "${SCREAM_CUT_TEST_1V_ARGS}" "${SCREAM_CUT_TEST_MV_ARGS}")
 
-  separate_cut_arguments(cutfe "${SCREAM_CUT_TEST_OPTIONS}" "${SCREAM_CUT_TEST_1V_ARGS}" "${SCREAM_CUT_TEST_MV_ARGS}" options)
-
-  if (SCREAM_MPI_EXTRA_ARGS)
-    list(APPEND options MPI_EXTRA_ARGS ${SCREAM_MPI_EXTRA_ARGS})
-  endif ()
-
   #
   # If asking for mpi/omp ranks/threads, verify we stay below the max number of threads
   #
@@ -127,6 +121,20 @@ function(CreateUnitTestFromExec test_name test_exec)
       message(FATAL_ERROR "Aborting")
     endif()
   endif()
+
+  if (cutfe_MINIMUM_TEST_LEVEL)
+    if (cutfe_MINIMUM_TEST_LEVEL GREATER SCREAM_TEST_LEVEL)
+      message("Test ${test_name} skipped due to insufficient test level")
+      return()
+    endif()
+    unset(cutfe_MINIMUM_TEST_LEVEL) # Ekat does not take this option
+  endif()
+
+  separate_cut_arguments(cutfe "${SCREAM_CUT_TEST_OPTIONS}" "${SCREAM_CUT_TEST_1V_ARGS}" "${SCREAM_CUT_TEST_MV_ARGS}" options)
+
+  if (SCREAM_MPI_EXTRA_ARGS)
+    list(APPEND options MPI_EXTRA_ARGS ${SCREAM_MPI_EXTRA_ARGS})
+  endif ()
 
   EkatCreateUnitTestFromExec("${test_name}" "${test_exec}" ${options}
     MPI_EXEC_NAME ${SCREAM_MPIRUN_EXE} MPI_NP_FLAG ${SCREAM_MPI_NP_FLAG})

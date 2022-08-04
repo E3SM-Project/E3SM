@@ -342,11 +342,14 @@
 <config_land_ice_flux_jenkins_salt_transfer_coefficient ocn_grid="ECwISC30to60E2r1">8.42e-5</config_land_ice_flux_jenkins_salt_transfer_coefficient>
 
 <!-- advection -->
-<config_vert_tracer_adv>'stencil'</config_vert_tracer_adv>
-<config_vert_tracer_adv_order>3</config_vert_tracer_adv_order>
+<config_vert_advection_method>'flux-form'</config_vert_advection_method>
+<config_vert_remap_order>3</config_vert_remap_order>
+<config_vert_remap_interval>0</config_vert_remap_interval>
+<config_vert_tracer_adv_flux_order>3</config_vert_tracer_adv_flux_order>
 <config_horiz_tracer_adv_order>3</config_horiz_tracer_adv_order>
 <config_coef_3rd_order>0.25</config_coef_3rd_order>
-<config_monotonic>.true.</config_monotonic>
+<config_flux_limiter>'monotonic'</config_flux_limiter>
+<config_remap_limiter>'monotonic'</config_remap_limiter>
 
 <!-- bottom_drag -->
 <config_use_implicit_bottom_drag>.true.</config_use_implicit_bottom_drag>

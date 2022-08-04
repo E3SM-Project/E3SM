@@ -133,6 +133,7 @@ module ocn_core_interface
       logical, pointer :: timeVaryingAtmosphericForcingPKGActive
       logical, pointer :: timeVaryingLandIceForcingPKGActive
       logical, pointer :: gotmPKGActive
+      logical, pointer :: verticalRemapPKGActive
 
       type (mpas_pool_iterator_type) :: pkgItr
       logical, pointer :: packageActive
@@ -170,6 +171,7 @@ module ocn_core_interface
       character (len=StrKIND), pointer :: config_ocean_run_mode
       character (len=StrKIND), pointer :: config_pressure_gradient_type
       character (len=StrKIND), pointer :: config_sw_absorption_type
+      character (len=StrKIND), pointer :: config_vert_advection_method
 
       logical, pointer :: config_use_variable_drag
       logical, pointer :: config_use_bulk_wind_stress
@@ -376,6 +378,15 @@ module ocn_core_interface
       call mpas_pool_get_config(configPool, 'config_use_gotm', config_use_gotm)
       if (config_use_gotm) then
          gotmPKGActive = .true.
+      end if
+
+      !
+      ! test for use of vertical remapping
+      !
+      call mpas_pool_get_package(packagePool, 'verticalRemapPKGActive', verticalRemapPKGActive)
+      call mpas_pool_get_config(configPool, 'config_vert_advection_method', config_vert_advection_method)
+      if (config_vert_advection_method == 'remap') then
+         verticalRemapPKGActive = .true.
       end if
 
       !

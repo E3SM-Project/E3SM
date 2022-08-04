@@ -26,6 +26,7 @@ TEST_CASE ("surface_coupling")
   using FR = FieldRequest;
   using GR = GroupRequest;
   using RPDF = std::uniform_real_distribution<Real>;
+  using IPDF = std::uniform_int_distribution<int>;
 
   // Some constants
   constexpr int ncols = 4;
@@ -38,6 +39,10 @@ TEST_CASE ("surface_coupling")
   // The random numbers generator
   auto engine = setup_random_test(&comm);
   RPDF pdf(0.0,1.0);
+  IPDF dt_pdf(1,1800);
+
+  // Set dt for test
+  const int dt = dt_pdf(engine);
 
   // Create a grid
   auto grid = create_point_grid("my grid",ncols*comm.size(), nlevs, comm);
@@ -180,7 +185,7 @@ TEST_CASE ("surface_coupling")
     std::fill_n(raw_data,ncols*num_fields,-1);
 
     // Perform export
-    exporter.do_export();
+    exporter.do_export(dt);
 
     // Perform import
     importer.do_import();
@@ -221,7 +226,7 @@ TEST_CASE ("recreate_mct_coupling")
    * This test aims to recreate the import/export of fields inside the mct-coupling
    * for CIME runs. Much of the code inside surface coupling is hard-coded for these runs.
    */
-
+  
   // Some namespaces/aliases
   using namespace scream;
   using namespace ShortFieldTagsNames;
@@ -231,7 +236,7 @@ TEST_CASE ("recreate_mct_coupling")
   using FR     = FieldRequest;
   using GR     = GroupRequest;
   using RPDF   = std::uniform_real_distribution<Real>;
-  using C = scream::physics::Constants<Real>;
+  using IPDF = std::uniform_int_distribution<int>;
 
   // Some constants
   constexpr int ncols = 4;
@@ -244,6 +249,10 @@ TEST_CASE ("recreate_mct_coupling")
   // The random numbers generator
   auto engine = setup_random_test(&comm);
   RPDF pdf(0.0,1.0);
+  IPDF dt_pdf(1,1800);
+
+  // Set dt for test
+  const int dt = dt_pdf(engine);
 
   // Create a grid
   auto grid = create_point_grid("my_grid",ncols*comm.size(), nlevs, comm);
@@ -258,14 +267,14 @@ TEST_CASE ("recreate_mct_coupling")
 
   // Create import fields
   const auto nondim = Units::nondimensional();
-  FID surf_latent_flux_id ("surf_latent_flux",   scalar2d_layout, kg/(m*m*s), grid_name);
-  FID surf_sens_flux_id   ("surf_sens_flux",     scalar2d_layout, W/(m*m), grid_name);
-  FID surf_mom_flux_id    ("surf_mom_flux",      vector2d_layout, W/(m*m), grid_name);
-  FID sfc_alb_dir_vis_id  ("sfc_alb_dir_vis",    scalar2d_layout, nondim,  grid_name);
-  FID sfc_alb_dir_nir_id  ("sfc_alb_dir_nir",    scalar2d_layout, nondim,  grid_name);
-  FID sfc_alb_dif_vis_id  ("sfc_alb_dif_vis",    scalar2d_layout, nondim,  grid_name);
-  FID sfc_alb_dif_nir_id  ("sfc_alb_dif_nir",    scalar2d_layout, nondim,  grid_name);
-  FID surf_lw_flux_up_id  ("surf_lw_flux_up",    scalar2d_layout, nondim,  grid_name);
+  FID surf_evap_id        ("surf_evap",          scalar2d_layout, kg/(m*m*s), grid_name);
+  FID surf_sens_flux_id   ("surf_sens_flux",     scalar2d_layout, W/(m*m),    grid_name);
+  FID surf_mom_flux_id    ("surf_mom_flux",      vector2d_layout, W/(m*m),    grid_name);
+  FID sfc_alb_dir_vis_id  ("sfc_alb_dir_vis",    scalar2d_layout, nondim,     grid_name);
+  FID sfc_alb_dir_nir_id  ("sfc_alb_dir_nir",    scalar2d_layout, nondim,     grid_name);
+  FID sfc_alb_dif_vis_id  ("sfc_alb_dif_vis",    scalar2d_layout, nondim,     grid_name);
+  FID sfc_alb_dif_nir_id  ("sfc_alb_dif_nir",    scalar2d_layout, nondim,     grid_name);
+  FID surf_lw_flux_up_id  ("surf_lw_flux_up",    scalar2d_layout, nondim,     grid_name);
 
   // Create necessary fields for export. Tracers qc and qr are unnecessary, but
   // are included to verify that subviewed fields (qv) are correctly handled
@@ -274,8 +283,8 @@ TEST_CASE ("recreate_mct_coupling")
   FID horiz_winds_id     ("horiz_winds",     vector3d_layout, m/s,    grid_name);
   FID pseudo_density_id  ("pseudo_density",  scalar3d_layout, Pa,     grid_name);
   FID qv_id              ("qv",              scalar3d_layout, nondim, grid_name);
-  FID precip_liq_surf_id ("precip_liq_surf", scalar2d_layout, m/s,    grid_name);
-  FID precip_ice_surf_id ("precip_ice_surf", scalar2d_layout, m/s,    grid_name);
+  FID precip_liq_surf_id ("precip_liq_surf_mass", scalar2d_layout, kg,    grid_name);
+  FID precip_ice_surf_id ("precip_ice_surf_mass", scalar2d_layout, kg,    grid_name);
   FID sfc_flux_dir_nir_id("sfc_flux_dir_nir", scalar2d_layout, W/(m*m), grid_name);
   FID sfc_flux_dir_vis_id("sfc_flux_dir_vis", scalar2d_layout, W/(m*m), grid_name);
   FID sfc_flux_dif_nir_id("sfc_flux_dif_nir", scalar2d_layout, W/(m*m), grid_name);
@@ -293,7 +302,7 @@ TEST_CASE ("recreate_mct_coupling")
   // Register fields and tracer group in a FieldManager
   auto fm = std::make_shared<FieldManager> (grid);
   fm->registration_begins();
-  fm->register_field(FR{surf_latent_flux_id});
+  fm->register_field(FR{surf_evap_id});
   fm->register_field(FR{surf_sens_flux_id});
   fm->register_field(FR{surf_mom_flux_id});
   fm->register_field(FR{sfc_alb_dir_vis_id});
@@ -321,7 +330,7 @@ TEST_CASE ("recreate_mct_coupling")
   fm->registration_ends();
 
   // Create alias to field views
-  auto surf_latent_flux_f = fm->get_field(surf_latent_flux_id);
+  auto surf_evap_f        = fm->get_field(surf_evap_id);
   auto surf_sens_flux_f   = fm->get_field(surf_sens_flux_id);
   auto surf_mom_flux_f    = fm->get_field(surf_mom_flux_id);
   auto sfc_alb_dir_vis_f  = fm->get_field(sfc_alb_dir_vis_id);
@@ -349,7 +358,7 @@ TEST_CASE ("recreate_mct_coupling")
   const auto& Q_name = group.m_bundle->get_header().get_identifier().name();
   auto Q = fm->get_field(Q_name);
 
-  auto surf_latent_flux_d = surf_latent_flux_f.get_view<Real*>();
+  auto surf_evap_d        = surf_evap_f.get_view<Real*>();
   auto surf_sens_flux_d   = surf_sens_flux_f.get_view<Real*>();
   auto surf_mom_flux_d    = surf_mom_flux_f.get_view<Real**>();
   auto sfc_alb_dir_vis_d  = sfc_alb_dir_vis_f.get_view<Real*>();
@@ -373,7 +382,7 @@ TEST_CASE ("recreate_mct_coupling")
   auto p_int_d            = p_int_f.get_view<Real**>();
   auto phis_d             = phis_f.get_view<Real*>();
 
-  auto surf_latent_flux_h = surf_latent_flux_f.get_view<Real*,Host>();
+  auto surf_evap_h        = surf_evap_f.get_view<Real*,Host>();
   auto surf_sens_flux_h   = surf_sens_flux_f.get_view<Real*,Host>();
   auto surf_mom_flux_h    = surf_mom_flux_f.get_view<Real**,Host>();
   auto sfc_alb_dir_vis_h  = sfc_alb_dir_vis_f.get_view<Real*,Host>();
@@ -396,6 +405,15 @@ TEST_CASE ("recreate_mct_coupling")
   auto sfc_flux_lw_dn_h   = sfc_flux_lw_dn_f.get_view<Real*,Host>();
   auto p_int_h            = p_int_f.get_view<Real**,Host>();
   auto phis_h             = phis_f.get_view<Real*,Host>();
+
+  // We need a copy of precip to check export is correct, since precip will be zeroed out after do_export is called.
+  // TODO: This step can be undone once we have the AD take care of resetting precip fluxes.
+  auto precip_liq_surf_copy_f = precip_liq_surf_f.clone(); 
+  auto precip_ice_surf_copy_f = precip_ice_surf_f.clone(); 
+  auto precip_liq_surf_copy_d = precip_liq_surf_copy_f.get_view<Real*>();
+  auto precip_ice_surf_copy_d = precip_ice_surf_copy_f.get_view<Real*>();
+  auto precip_liq_surf_copy_h = precip_liq_surf_copy_f.get_view<Real*,Host>();
+  auto precip_ice_surf_copy_h = precip_ice_surf_copy_f.get_view<Real*,Host>();
 
   // Create SC object and set number of import/export fields
   control::SurfaceCoupling coupler(fm);
@@ -428,7 +446,7 @@ TEST_CASE ("recreate_mct_coupling")
   coupler.register_import("unused",           21);
   coupler.register_import("surf_sens_flux",   22);
   coupler.register_import("surf_lw_flux_up",  23);
-  coupler.register_import("surf_latent_flux", 24);
+  coupler.register_import("surf_evap",        24);
   coupler.register_import("unused",           25);
   coupler.register_import("unused",           26);
   coupler.register_import("unused",           27);
@@ -481,7 +499,7 @@ TEST_CASE ("recreate_mct_coupling")
   for (int i=0; i<nruns; ++i) {
 
     // Set import field views to 0
-    surf_latent_flux_f.deep_copy(0.0);
+    surf_evap_f.deep_copy(0.0);
     surf_sens_flux_f.deep_copy(0.0);
     surf_mom_flux_f.deep_copy(0.0);
     sfc_alb_dir_vis_f.deep_copy(0.0);
@@ -497,6 +515,12 @@ TEST_CASE ("recreate_mct_coupling")
     ekat::genRandArray(pseudo_density_d,engine,pdf);
     ekat::genRandArray(precip_liq_surf_d,engine,pdf);
     ekat::genRandArray(precip_ice_surf_d,engine,pdf);
+    // Copy precip_liq/ice_surf to the copy we need for comparison
+    Kokkos::deep_copy(precip_liq_surf_copy_d,precip_liq_surf_d);
+    Kokkos::deep_copy(precip_ice_surf_copy_d,precip_ice_surf_d);
+    precip_liq_surf_copy_f.sync_to_host();
+    precip_ice_surf_copy_f.sync_to_host();
+    // TODO: These deep copies won't be needed when the AD handles resetting precip
     ekat::genRandArray(sfc_flux_lw_dn_d,engine,pdf);
     ekat::genRandArray(sfc_flux_dir_nir_d,engine,pdf);
     ekat::genRandArray(sfc_flux_dir_vis_d,engine,pdf);
@@ -520,10 +544,10 @@ TEST_CASE ("recreate_mct_coupling")
     coupler.do_import();
 
     // Perform export
-    coupler.do_export();
+    coupler.do_export(dt);
 
     // Sync host to device
-    surf_latent_flux_f.sync_to_host();
+    surf_evap_f.sync_to_host();
     surf_sens_flux_f.sync_to_host();
     surf_mom_flux_f.sync_to_host();
     sfc_alb_dir_vis_f.sync_to_host();
@@ -559,7 +583,7 @@ TEST_CASE ("recreate_mct_coupling")
       REQUIRE (surf_mom_flux_h   (icol, 1) == -import_raw_data[20 + icol*num_cpl_imports]); // 6th scream import (21st cpl import)
       REQUIRE (surf_sens_flux_h  (icol)    == -import_raw_data[22 + icol*num_cpl_imports]); // 7th scream import (23rd cpl import)
       REQUIRE (surf_lw_flux_up_h (icol)    == -import_raw_data[23 + icol*num_cpl_imports]); // 8th scream import (24th cpl import)
-      REQUIRE (surf_latent_flux_h(icol)    == -import_raw_data[24 + icol*num_cpl_imports]); // 9th scream import (24th cpl import)
+      REQUIRE (surf_evap_h(icol)           == -import_raw_data[24 + icol*num_cpl_imports]); // 9th scream import (24th cpl import)
 
       // Exports
 
@@ -569,8 +593,8 @@ TEST_CASE ("recreate_mct_coupling")
       REQUIRE (export_raw_data[4 + icol*num_cpl_exports]  == T_mid_h          (icol,    nlevs-1)); // 5th export
       REQUIRE (export_raw_data[6 + icol*num_cpl_exports]  == qv_h             (icol,    nlevs-1)); // 7th export
       REQUIRE (export_raw_data[7 + icol*num_cpl_exports]  == p_mid_h          (icol,    nlevs-1)); // 8th export
-      REQUIRE (export_raw_data[15 + icol*num_cpl_exports] == C::RHO_H2O*precip_liq_surf_h(icol));  // 16th export
-      REQUIRE (export_raw_data[16 + icol*num_cpl_exports] == C::RHO_H2O*precip_ice_surf_h(icol));  // 17th export
+      REQUIRE (export_raw_data[15 + icol*num_cpl_exports] == precip_liq_surf_copy_h(icol) / dt  ); // 16th export
+      REQUIRE (export_raw_data[16 + icol*num_cpl_exports] == precip_ice_surf_copy_h(icol) / dt  ); // 17th export
       REQUIRE (export_raw_data[17 + icol*num_cpl_exports] == sfc_flux_lw_dn_h(icol));              // 18th export
       REQUIRE (export_raw_data[18 + icol*num_cpl_exports] == sfc_flux_dir_nir_h(icol));            // 19th export
       REQUIRE (export_raw_data[19 + icol*num_cpl_exports] == sfc_flux_dir_vis_h(icol));            // 20th export
@@ -598,6 +622,10 @@ TEST_CASE ("recreate_mct_coupling")
       REQUIRE (export_raw_data[33 + icol*num_cpl_exports] == 0);
       REQUIRE (export_raw_data[34 + icol*num_cpl_exports] == 0);
       REQUIRE (export_raw_data[35 + icol*num_cpl_exports] == 0); // 35th export
+
+      // precipitation should be set to zero.  TODO: Won't be needed when AD handles resetting precipitation.
+      REQUIRE (precip_liq_surf_h(icol) == 0 ); 
+      REQUIRE (precip_ice_surf_h(icol) == 0 ); 
     }
   }
 
@@ -621,6 +649,7 @@ TEST_CASE ("do_initial_export")
   using FL = FieldLayout;
   using FID = FieldIdentifier;
   using RPDF = std::uniform_real_distribution<Real>;
+  using IPDF = std::uniform_int_distribution<int>;
 
   // Some constants
   constexpr int ncols = 4;
@@ -633,6 +662,10 @@ TEST_CASE ("do_initial_export")
   // The random numbers generator
   auto engine = setup_random_test(&comm);
   RPDF pdf(0.0,1.0);
+  IPDF dt_pdf(1,1800);
+
+  // Set dt for test
+  const int dt = dt_pdf(engine);
 
   // Create a grid
   auto grid = create_point_grid("my grid",ncols*comm.size(), nlevs, comm);
@@ -683,7 +716,7 @@ TEST_CASE ("do_initial_export")
     ekat::genRandArray(f2_exp_d,engine,pdf);
 
     // Perform export with init_phase=true
-    exporter.do_export(true);
+    exporter.do_export(dt,true);
 
     // Check f1 was exported, but f2 was set to 0
     f1_exp.sync_to_host();
@@ -697,7 +730,7 @@ TEST_CASE ("do_initial_export")
     std::fill_n(raw_data,ncols*num_fields,-1);
 
     // Perform export with init_phase=false (default)
-    exporter.do_export();
+    exporter.do_export(dt);
 
     // Check that both f1 and f2 were exported
     f1_exp.sync_to_host();

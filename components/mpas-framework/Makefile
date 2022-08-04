@@ -609,11 +609,11 @@ ifeq "$(USE_LAPACK)" "true"
 ifndef LAPACK
 $(error LAPACK is not set.  Please set LAPACK to the LAPACK install directory when USE_LAPACK=true)
 endif
-ifneq (, $(shell ls $(LAPACK)/liblapack.*))
+ifneq ($(wildcard $(LAPACK)/liblapack.*), )
 	LIBS += -L$(LAPACK)
-else ifneq (, $(shell ls $(LAPACK)/lib/liblapack.*))
+else ifneq ($(wildcard $(LAPACK)/lib/liblapack.*), )
 	LIBS += -L$(LAPACK)/lib
-else ifneq (, $(shell ls $(LAPACK)/lib64/liblapack.*))
+else ifneq ($(wildcard $(LAPACK)/lib64/liblapack.*), )
 	LIBS += -L$(LAPACK)/lib64
 else
 $(error liblapack.* does NOT exist in $(LAPACK) or $(LAPACK)/lib)

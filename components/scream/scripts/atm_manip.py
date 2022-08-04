@@ -135,7 +135,7 @@ def get_xml_node(xml_root,name):
 
     # Regardless of whether we have namespaces or not, the first selector must be unique through the whole XML tree
     s = selectors[0]
-    if s is '':
+    if s == '':
         # User started with ::
         node = xml_root
     else:

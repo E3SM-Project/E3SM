@@ -70,7 +70,7 @@ public:
   // Export device fields from the AD to host fields in the component coupler.
   // If this export is called during the init phase, set init_phase=true
   // so that fields which are computed inside SCREAM during the run phase are skipped.
-  void do_export (const bool init_phase = false);
+  void do_export (const int dt, const bool init_phase = false);
 
   // Getters
   RepoState get_repo_state () const { return m_state; }

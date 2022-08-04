@@ -93,13 +93,11 @@ public:
 
 protected:
 
+  void compute_diagnostic_impl () {}
+
   // The initialization method should prepare all stuff needed to import/export from/to
   // f90 structures.
   void initialize_impl (const RunType /* run_type */ ) {}
-
-  // The run method is responsible for exporting atm states to the e3sm coupler, and
-  // import surface states from the e3sm coupler.
-  void run_impl (const int /* dt */) {}
 
   // Clean up
   void finalize_impl ( /* inputs */ ) {}
@@ -135,9 +133,9 @@ public:
     m_diagnostic_output.allocate_view();
   }
 protected:
-    void run_impl (const int /* dt */) {
-      // Do nothing, this diagnostic should fail.
-    }
+  void compute_diagnostic_impl () {
+    // Do nothing, this diagnostic should fail.
+  }
 };
 
 class DiagIdentity : public DummyDiag
@@ -165,14 +163,14 @@ public:
     m_diagnostic_output.allocate_view();
   }
 protected:
-    void run_impl (const int /* dt */) {
-      auto f = get_field_in("Field A", m_grid_name);
-      auto v_A = f.get_view<const Real*,Host>();
-      auto v_me = m_diagnostic_output.get_view<Real*,Host>();
-      for (size_t i=0; i<v_me.size(); ++i) {
-        v_me[i] = v_A[i];
-      }
+  void compute_diagnostic_impl () {
+    auto f = get_field_in("Field A", m_grid_name);
+    auto v_A = f.get_view<const Real*,Host>();
+    auto v_me = m_diagnostic_output.get_view<Real*,Host>();
+    for (size_t i=0; i<v_me.size(); ++i) {
+      v_me[i] = v_A[i];
     }
+  }
 };
 
 class DiagSum : public DummyDiag
@@ -202,16 +200,16 @@ public:
   }
 
 protected:
-    void run_impl (const int /* dt */) {
-      auto f_A = get_field_in("Field A", m_grid_name);
-      auto f_B = get_field_in("Field B", m_grid_name);
-      auto v_A = f_A.get_view<const Real*,Host>();
-      auto v_B = f_B.get_view<const Real*,Host>();
-      auto v_me = m_diagnostic_output.get_view<Real*,Host>();
-      for (size_t i=0; i<v_me.size(); ++i) {
-        v_me[i] = v_A[i]+v_B[i];
-      }
+  void compute_diagnostic_impl () {
+    auto f_A = get_field_in("Field A", m_grid_name);
+    auto f_B = get_field_in("Field B", m_grid_name);
+    auto v_A = f_A.get_view<const Real*,Host>();
+    auto v_B = f_B.get_view<const Real*,Host>();
+    auto v_me = m_diagnostic_output.get_view<Real*,Host>();
+    for (size_t i=0; i<v_me.size(); ++i) {
+      v_me[i] = v_A[i]+v_B[i];
     }
+  }
 };
 // =============================== Processes ========================== //
 // A dummy atm proc
@@ -666,8 +664,8 @@ TEST_CASE ("diagnostics") {
   diag_sum->initialize(t0,RunType::Initial);
 
   // Run the diagnostics
-  diag_identity->run();
-  diag_sum->run();
+  diag_identity->compute_diagnostic();
+  diag_sum->compute_diagnostic();
 
   // Get diagnostics outputs
   const auto& f_identity = diag_identity->get_diagnostic();

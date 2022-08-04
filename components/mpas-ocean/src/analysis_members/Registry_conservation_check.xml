@@ -270,7 +270,6 @@
 				packages="conservationCheckAMPKG"
 				input_interval="initial_only"
 				output_interval="stream:restart:output_interval"
-				runtime_format="single_file"
 				immutable="true">
 			<var name="performConservationPrecompute"/>
 			<var name="initialEnergy"/>

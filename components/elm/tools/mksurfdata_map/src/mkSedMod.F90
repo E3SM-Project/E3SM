@@ -303,7 +303,8 @@ end subroutine mkslp10
 !
 ! !INTERFACE:
 subroutine mkEROparams(ldomain, mapfname, datfname, ndiag, &
-                       ero_c1_o, ero_c2_o, ero_c3_o)
+                       ero_c1_o, ero_c2_o, ero_c3_o, tillage_o, &
+                       litho_o)
 !
 ! !DESCRIPTION:
 ! make VIC parameters
@@ -325,6 +326,8 @@ subroutine mkEROparams(ldomain, mapfname, datfname, ndiag, &
   real(r8)          , intent(out):: ero_c1_o(:)       ! output grid: ELM-Erosion a scalar parameter for rainfall-driven hillslope erosion 
   real(r8)          , intent(out):: ero_c2_o(:)       ! output grid: ELM-Erosion a scalar parameter for runoff-driven hillslope erosion
   real(r8)          , intent(out):: ero_c3_o(:)       ! output grid: ELM-Erosion a scalar parameter for transport capacity of hillslope overland flow
+  real(r8)          , intent(out):: tillage_o(:)      ! output grid: ELM-Erosion conserved tillage fraction
+  real(r8)          , intent(out):: litho_o(:)        ! output grid: ELM-Erosion lithology erodibility index 
 !
 ! !CALLED FROM:
 ! subroutine mksrfdat in module mksrfdatMod
@@ -412,6 +415,36 @@ subroutine mkEROparams(ldomain, mapfname, datfname, ndiag, &
   end if
 
   call output_diagnostics_continuous(data_i, ero_c3_o, tgridmap, "ELM-Erosion c3 parameter", "unitless", ndiag)
+
+  ! -----------------------------------------------------------------
+  ! Regrid Tillage
+  ! -----------------------------------------------------------------
+
+  call check_ret(nf_inq_varid (ncid, 'Tillage', varid), subname)
+  call check_ret(nf_get_var_double (ncid, varid, data_i), subname)
+  call gridmap_areaave(tgridmap, data_i, tillage_o, nodata=0.0_r8)
+
+  ! Check validity of output data
+  if (min_bad(tillage_o, 0.0_r8, 'Tillage')) then
+     stop
+  end if
+
+  call output_diagnostics_continuous(data_i, tillage_o, tgridmap, "ELM-Erosion CA fraction", "fraction", ndiag)
+
+  ! -----------------------------------------------------------------
+  ! Regrid Litho
+  ! -----------------------------------------------------------------
+
+  call check_ret(nf_inq_varid (ncid, 'Litho', varid), subname)
+  call check_ret(nf_get_var_double (ncid, varid, data_i), subname)
+  call gridmap_areaave(tgridmap, data_i, litho_o, nodata=0.0_r8)
+
+  ! Check validity of output data
+  if (min_bad(litho_o, 0.0_r8, 'Litho')) then
+     stop
+  end if
+
+  call output_diagnostics_continuous(data_i, litho_o, tgridmap, "ELM-Erosion lithology erodibility", "unitless", ndiag)
 
   ! -----------------------------------------------------------------
   ! Close files and deallocate dynamic memory
@@ -544,6 +577,30 @@ subroutine mksedAtt( ncid, dynlanduse, xtype )
         call ncd_defvar(ncid=ncid, varname='parEro_c3', xtype=xtype, &
              dim1name='lsmlon', dim2name='lsmlat', &
              long_name='a scalar parameter for transport capacity of hillslope overland flow', &
+             units='unitless')
+     end if
+
+     if (outnc_1d) then
+        call ncd_defvar(ncid=ncid, varname='Tillage', xtype=xtype, &
+             dim1name='gridcell', &
+             long_name='conserved tillage fraction', &
+             units='fraction')
+     else
+        call ncd_defvar(ncid=ncid, varname='Tillage', xtype=xtype, &
+             dim1name='lsmlon', dim2name='lsmlat', &
+             long_name='conserved tillage fraction', &
+             units='fraction')
+     end if
+
+     if (outnc_1d) then
+        call ncd_defvar(ncid=ncid, varname='Litho', xtype=xtype, &
+             dim1name='gridcell', &
+             long_name='lithology erodibility index', &
+             units='unitless')
+     else
+        call ncd_defvar(ncid=ncid, varname='Litho', xtype=xtype, &
+             dim1name='lsmlon', dim2name='lsmlat', &
+             long_name='lithology erodibility index', &
              units='unitless')
      end if
 

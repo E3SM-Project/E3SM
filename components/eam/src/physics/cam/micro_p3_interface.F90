@@ -865,6 +865,7 @@ end subroutine micro_p3_readnl
     integer :: icol, ncol, k
     integer :: psetcols, lchnk
     integer :: itim_old
+    real(rtype) :: T_virtual
 
     ! For rrtmg optics. specified distribution.
     real(rtype), parameter :: dcon   = 25.e-6_rtype         ! Convective size distribution effective radius (um)
@@ -944,22 +945,6 @@ end subroutine micro_p3_readnl
     !==============
     do_predict_nc = micro_aerosolactivation
 
-    ! COMPUTE GEOMETRIC THICKNESS OF GRID & CONVERT T TO POTENTIAL TEMPERATURE
-    !==============
-    ! TODO: Create a general function to calculate Exner's formula that can be
-    ! used by all parameterizations, such as P3 and SHOC.
-    ! This would take a bit more work, so we have decided to delay this task
-    ! until a later stage of code cleanup.
-    inv_exner(:ncol,:pver) = 1._rtype/((state%pmid(:ncol,:pver)*1.e-5_rtype)**(rair*inv_cp))
-    do icol = 1,ncol
-       do k = 1,pver
-! Note: dz is calculated in the opposite direction that pdel is calculated,
-! thus when considering any dp/dz calculation we must also change the sign.
-          dz(icol,k) = state%zi(icol,k) - state%zi(icol,k+1)
-          th(icol,k)  = state%t(icol,k)*inv_exner(icol,k) !/(state%pmid(icol,k)*1.e-5)**(rd*inv_cp)
-       end do
-    end do
-
     ! ASSIGN TOP AND BOTTOM INDICES FOR GRID
     !==============
     !kts is closest level to top of model. Instead of 1 (top-of-model),
@@ -1016,11 +1001,30 @@ end subroutine micro_p3_readnl
     numice(:ncol,:pver)      = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixnumice),  qv_wet_in)
     rimvol(:ncol,:pver)      = calculate_drymmr_from_wetmmr(ncol, pver, state%q(:,:,ixrimvol),  qv_wet_in)
 
+    ! COMPUTE GEOMETRIC THICKNESS OF GRID & CONVERT T TO POTENTIAL TEMPERATURE
+    !==============
+    ! TODO: Create a general function to calculate Exner's formula that can be
+    ! used by all parameterizations, such as P3 and SHOC.
+    ! This would take a bit more work, so we have decided to delay this task
+    ! until a later stage of code cleanup.
+    inv_exner(:ncol,:pver) = 1._rtype/((state%pmiddry(:ncol,:pver)*1.e-5_rtype)**(rair*inv_cp))
+    do icol = 1,ncol
+       do k = 1,pver
+          ! Note, there is a state%zi variable that could be used to calculate
+          ! dz, but that is in a wet coordinate frame rather than dry.  Now that
+          ! P3 is using dry MMR we instead calculated dz using virtual
+          ! temperature and pressure.
+          T_virtual  = state%t(icol,k) * (1.0 + qv_dry(icol,k)*(1.0*mwdry/mwh2o - 1.0))
+          dz(icol,k) = (rair/gravit) * state%pdeldry(icol,k) * T_virtual / state%pmiddry(icol,k) 
+          th(icol,k) = state%t(icol,k)*inv_exner(icol,k) 
+       end do
+    end do
+
     its     = 1
     ite     = state%ncol
     kts     = 1
     kte     = pver
-    pres    = state%pmid(:,:)
+    pres    = state%pmiddry(:,:)
     ! Initialize the raidation dependent variables.
     mu      = 0.0_rtype !mucon
     lambdac = 0.0_rtype !(mucon + 1._rtype)/dcon
@@ -1041,7 +1045,7 @@ end subroutine micro_p3_readnl
       p3_main_inputs(1,k,1)  = ast(1,k)
       p3_main_inputs(1,k,2)  = ni_activated(1,k)
       p3_main_inputs(1,k,3)  = npccn(1,k)
-      p3_main_inputs(1,k,4)  = state%pmid(1,k)
+      p3_main_inputs(1,k,4)  = pres(1,k)
       p3_main_inputs(1,k,5)  = state%zi(1,k)
       p3_main_inputs(1,k,6)  = state%T(1,k)
       p3_main_inputs(1,k,7)  = qv_dry(1,k)
@@ -1053,7 +1057,7 @@ end subroutine micro_p3_readnl
       p3_main_inputs(1,k,13) = numrain(1,k)
       p3_main_inputs(1,k,14) = qm(1,k)
       p3_main_inputs(1,k,15) = rimvol(1,k)
-      p3_main_inputs(1,k,16) = state%pdel(1,k)
+      p3_main_inputs(1,k,16) = state%pdeldry(1,k)
       p3_main_inputs(1,k,17) = relvar(1,k)
     end do
     p3_main_inputs(1,pver+1,5) = state%zi(1,pver+1)
@@ -1082,14 +1086,14 @@ end subroutine micro_p3_readnl
          rain(its:ite,kts:kte),       & ! INOUT  rain, mass mixing ratio          kg kg-1
          numrain(its:ite,kts:kte),    & ! INOUT  rain, number mixing ratio        #  kg-1
          th(its:ite,kts:kte),         & ! INOUT  potential temperature            K
-         qv_dry(its:ite,kts:kte),         & ! INOUT  water vapor mixing ratio         kg kg-1
+         qv_dry(its:ite,kts:kte),     & ! INOUT  water vapor mixing ratio         kg kg-1
          dtime,                       & ! IN     model time step                  s
          ice(its:ite,kts:kte),        & ! INOUT  ice, total mass mixing ratio     kg kg-1
-         qm(its:ite,kts:kte),      & ! INOUT  ice, rime mass mixing ratio      kg kg-1
+         qm(its:ite,kts:kte),         & ! INOUT  ice, rime mass mixing ratio      kg kg-1
          numice(its:ite,kts:kte),     & ! INOUT  ice, total number mixing ratio   #  kg-1
          rimvol(its:ite,kts:kte),     & ! INOUT  ice, rime volume mixing ratio    m3 kg-1
          pres(its:ite,kts:kte),       & ! IN     pressure at cell midpoints       Pa
-         dz(its:ite,kts:kte),        & ! IN     vertical grid spacing            m
+         dz(its:ite,kts:kte),         & ! IN     vertical grid spacing            m
          npccn(its:ite,kts:kte),      & ! IN ccn activation number tendency kg-1 s-1
          nccn_prescribed(its:ite,kts:kte), & ! IN ccn prescribed concentration
          ni_activated(its:ite,kts:kte),    & ! IN activated ice nuclei concentration kg-1
@@ -1107,7 +1111,7 @@ end subroutine micro_p3_readnl
          do_predict_nc,               & ! IN     .true.=prognostic Nc, .false.=specified Nc
          do_prescribed_CCN,           & ! IN
          ! AaronDonahue new stuff
-         state%pdel(its:ite,kts:kte), & ! IN pressure level thickness for computing total mass
+         state%pdeldry(its:ite,kts:kte),  & ! IN pressure level thickness for computing total mass
          inv_exner(its:ite,kts:kte),      & ! IN exner values
          qv2qi_depos_tend(its:ite,kts:kte),    & ! OUT Deposition/sublimation rate of cloud ice
          precip_total_tend(its:ite,kts:kte),      & ! OUT Total precipitation (rain + snow)
@@ -1213,6 +1217,7 @@ end subroutine micro_p3_readnl
    ! Following MG interface as a template:
 
     ! Net micro_p3 condensation rate
+    ! NOTE: These are probably in dry coordinate, not wet.
     qme(:ncol,top_lev:pver) = cmeliq(:ncol,top_lev:pver) + qv2qi_depos_tend(:ncol,top_lev:pver)  ! qv2qi_depos_tend is output from p3 micro
     ! Add cmeliq to  vap_liq_exchange
     vap_liq_exchange(:ncol,top_lev:pver) = vap_liq_exchange(:ncol,top_lev:pver) + cmeliq(:ncol,top_lev:pver)

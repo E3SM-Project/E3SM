@@ -127,6 +127,20 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
     for (const auto& name : m_atm_processes.back()->get_required_grids()) {
       m_required_grids.insert(name);
     }
+
+    // Store a copy of all the restart extra data of the atm proc.
+    // NOTE: any uses std::shared_ptr internally, so if the atm proc updates
+    //       the extra data, it will be updated in this class too.
+    for (const auto& it : m_atm_processes.back()->get_restart_extra_data()) {
+      // We don't want to risk having two processes overwriting restart data, in case
+      // of a "common name" var (e.g., "num_steps"). Each process should try its best
+      // to provide names that are likely to be unique. Even if two procs *actyally need*
+      // the same var, we can write it twice to file.
+      EKAT_REQUIRE_MSG (m_restart_extra_data.find(it.first)==m_restart_extra_data.end(),
+          "Error! Cannot add restart extra data, since it was already added by another process.\n"
+          "  - extra data name: " + it.first + "\n");
+      m_restart_extra_data.emplace(it);
+    }
   }
 }
 

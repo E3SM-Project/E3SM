@@ -3,6 +3,8 @@
 #include "share/util/scream_time_stamp.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
+#include "share/property_checks/field_lower_bound_check.hpp"
+#include "share/property_checks/check_and_repair_wrapper.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -52,8 +54,6 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   // Set of fields used strictly as input
   constexpr int ps = Pack::n;
   add_field<Required>("p_mid"      , scalar3d_layout_mid, Pa,     grid_name, ps);
-  add_field<Required>("hyam"       , scalar1d_layout_mid, nondim, grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("hybm"       , scalar1d_layout_mid, nondim, grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
 
   // Set of fields used strictly as output
   add_field<Computed>("nccn",   scalar3d_layout_mid,    1/kg,   grid_name,ps);
@@ -188,15 +188,13 @@ void SPA::initialize_impl (const RunType /* run_type */)
   SPATimeState.current_month = ts.get_month();
   SPAFunc::update_spa_timestate(m_spa_data_file,m_nswbands,m_nlwbands,ts,SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
 
-  // NOTE: we *assume* hybrid v coordinates don't change with time.
-  //       IF this ever ceases to be the case, you need to remove these
-  //       lines, and have spa_main interpolate those during the call
-  //       to performe_time_interpolation.
-  m_buffer.spa_temp.hyam = SPAData_start.hyam;
-  m_buffer.spa_temp.hybm = SPAData_start.hybm;
-
   // Set property checks for fields in this process
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nccn"),m_grid,0.0,1.0e11,false);
+  {
+    const auto& f = get_field_out("nccn");
+    const auto check = std::make_shared<FieldWithinIntervalCheck>(f, m_grid, -1e-16, 1.0e11, false);
+    const auto repair = std::make_shared<FieldLowerBoundCheck>(f, m_grid, 0.0, true);
+    add_postcondition_check<CheckAndRepairWrapper>(check, repair);
+  }
   // upper bound set to 1.01 as max(g_sw)=1.00757 in current ne4 data assumingly due to remapping
   // add an epslon to max possible upper bound of aero_ssa_sw
 

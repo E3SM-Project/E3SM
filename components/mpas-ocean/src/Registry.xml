@@ -1000,12 +1000,20 @@
 	</nml_record>
 
 	<nml_record name="advection" mode="forward">
-		<nml_option name="config_vert_tracer_adv" type="character" default_value="stencil" units="unitless"
-					description="Method for interpolating tracer values from layer centers to layer edges"
-					possible_values="'spline' and 'stencil'"
+		<nml_option name="config_vert_advection_method" type="character" default_value="flux-form" units="unitless"
+					description="Method for advecting tracers, momentum, and thickness vertically."
+					possible_values="'flux-form' and 'remap'"
 		/>
-		<nml_option name="config_vert_tracer_adv_order" type="integer" default_value="3" units="unitless"
-					description="Order of polynomial used for tracer reconstruction at layer edges"
+		<nml_option name="config_vert_remap_order" type="integer" default_value="3" units="unitless"
+					description="Order of remapping method used for momentum and tracer advection"
+					possible_values="1, 2, 3 and 5"
+		/>
+		<nml_option name="config_vert_remap_interval" type="integer" default_value="0" units="unitless"
+					description="Number of timesteps between each remapping. If 0, remapping occurs every timestep"
+					possible_values="Any integer greater than or equal to 0"
+		/>
+		<nml_option name="config_vert_tracer_adv_flux_order" type="integer" default_value="3" units="unitless"
+					description="Order of polynomial used for tracer reconstruction at layer edges for flux-form method"
 					possible_values="2, 3 and 4"
 		/>
 		<nml_option name="config_horiz_tracer_adv_order" type="integer" default_value="3" units="unitless"
@@ -1016,9 +1024,13 @@
 					description="Reconstruction of 3rd-order reconstruction to blend with 4th-order reconstuction"
 					possible_values="any real between 0 and 1"
 		/>
-		<nml_option name="config_monotonic" type="logical" default_value=".true." units="unitless"
-					description="If .true. then fluxes are limited to produce a monotonic advection scheme"
-					possible_values=".true. and .false."
+		<nml_option name="config_flux_limiter" type="character" default_value="monotonic" units="unitless"
+					description="Slope limiter for the flux-form advection scheme."
+					possible_values="'none','monotonic'"
+		/>
+		<nml_option name="config_remap_limiter" type="character" default_value="monotonic" units="unitless"
+					description="Slope limiter for the vertical remap advection scheme."
+					possible_values="'none','monotonic','weno'"
 		/>
 	</nml_record>
 	<nml_record name="bottom_drag" mode="forward">
@@ -1340,7 +1352,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_check_tracer_monotonicity" type="logical" default_value=".false." units="unitless"
-					description="Enables a change on tracer monotonicity at the end of the monotonic advection routine. Only used if config_monotonic is set to .true."
+					description="Enables a change on tracer monotonicity at the end of the monotonic advection routine. Only used if config_flux_limiter is set to monotonic"
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_compute_active_tracer_budgets" type="logical" default_value=".true." units="unitless"
@@ -1478,6 +1490,7 @@
 		<package name="tidalPotentialForcingPKG" description="This package controls variables required for tidal potential forcing"/>
 		<package name="topographicWaveDragPKG" description="This package controls variables required for topographic wave drag"/>
 		<package name="gotmPKG" description="This package is for GOTM variables, which are only needed when using GOTM for the vertical turbulence closure."/>
+		<package name="verticalRemapPKG" description="This package is for variables required for vertical Lagrangian remapping."/>
 	</packages>
 
 	<streams>
@@ -1686,6 +1699,25 @@
 			<var name="normalVelocity"/>
 			<var name="layerThickness"/>
 			<var name="ssh"/>
+		</stream>
+		<stream name="remap_testing"
+				type="output"
+				filename_template="output/remap_test.$Y-$M-$D_$h.$m.$s.nc"
+				filename_interval="00-01-00_00:00:00"
+				reference_time="0001-01-01_00:00:00"
+				clobber_mode="truncate"
+				output_interval="0000_01:00:00"
+				runtime_format="single_file"
+				mode="forward">
+
+			<stream name="mesh"/>
+			<var name="xtime"/>
+			<var_struct name="tracers"/>
+			<var name="normalVelocity"/>
+			<var name="layerThickness"/>
+			<var name="layerThicknessLag"/>
+			<var name="ssh"/>
+			<var name="vertVelocityTop"/>
 		</stream>
 		<stream name="KPP_testing"
 				type="output"
@@ -2176,6 +2208,11 @@
 		<var name="gotmLengthTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m"
 			 description="GOTM: turbulent length scale defined at the cell center (horizontally) and top (vertically)"
 			 packages="gotmPKG"
+		/>
+                <!-- FIELDS FOR VERTICAL REMAPPING -->
+		<var name="layerThicknessLag" type="real" dimensions="nVertLevels nCells Time" units="m"
+			 description="The layerThickness after the Lagrangian step, prior to remapping."
+			 packages="verticalRemapPKG"
 		/>
 	</var_struct>
 	<var_struct name="mesh" time_levs="1">

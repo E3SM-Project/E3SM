@@ -15,7 +15,7 @@ CreateUnitTest(homme_shoc_cld_p3_rrtmgp "homme_shoc_cld_p3_rrtmgp.cpp" "${NEED_L
 
 # Set AD configurable options
 set (ATM_TIME_STEP 1800)
-SetVarDependingOnTestProfile(NUM_STEPS 2 4 48)  # 1h 2h 24h
+SetVarDependingOnTestSize(NUM_STEPS 2 4 48)  # 1h 2h 24h
 
 # Determine num subcycles needed to keep shoc dt<=300s
 set (SHOC_MAX_DT 300)
@@ -60,7 +60,7 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
 # Ensure test input files are present in the data dir
-GetInputFile(init/screami_ne2np4L72_20220524.nc)
+GetInputFile(init/${EAMxx_tests_IC_FILE_72lev})
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if max mpi ranks is >1

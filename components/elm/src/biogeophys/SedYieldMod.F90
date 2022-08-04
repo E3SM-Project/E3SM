@@ -76,7 +76,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer  :: c, fc, p, t, l, g, j                       ! indices
-    integer  :: lg, cg, lt                                     ! indices of glaciers
+    integer  :: lg, cg, lt                                 ! indices of glaciers
     integer  :: lp                                         ! indices of soil pools
     integer  :: dtime                                      ! timestep size [seconds]
     logical  :: found                                      ! flags
@@ -91,7 +91,7 @@ contains
     real(r8) :: nh                                         ! Manning's coefficient 
     real(r8) :: K, COH                                     ! soil erodibility
     real(r8) :: Qs, Qss, Qg, Ptot, Ie, Dl                  ! water fluxes
-    real(r8) :: Tc, Es_Q, Es_P, KE_DT, KE_LD               ! temporaries 
+    real(r8) :: Tc, Es_Q, Es_P, KE_DT, KE_LD, cheight      ! temporaries 
     real(r8) :: Es_Qcrp, Es_Pcrp                           ! cropland temporaries
     real(r8) :: stxt(4)                                    ! soil texture including gravel
     character(len=32) :: subname = 'SoilErosion'           ! subroutine name
@@ -115,8 +115,8 @@ contains
          fclay            =>    soilstate_vars%cellclay_col         , & ! Input: [real(r8) (:,:) ] clay percentage
          fgrvl            =>    soilstate_vars%cellgrvl_col         , & ! Input: [real(r8) (:,:) ] gravel percentage
 
-         tillage          =>    soilstate_vars%tillage_col          , & ! Input: [integer  (:)   ] tillage index
-         litho            =>    soilstate_vars%litho_col            , & ! Input: [integer  (:)   ] lithology index
+         tillage          =>    soilstate_vars%tillage_col          , & ! Input: [real(r8) (:) ] conserved tillage fraction 
+         litho            =>    soilstate_vars%litho_col            , & ! Input: [real(r8) (:) ] lithology erodiblity index
 
          decomp_cpools_vr =>    col_cs%decomp_cpools_vr             , & ! Input: [real(r8) (:,:,:) ] soil carbon pools [gC/m3]
 
@@ -209,8 +209,8 @@ contains
                      KE_DT = Ptot * fungrvl * max(8.95_r8+8.44_r8*log10(Ie), 0._r8)
                      ! leaf drip power
                      Dl = max(qflx_leafdrip(p)*dtime, 0._r8)      ! mm
-                     KE_LD = max(15.8_r8*sqrt(0.5_r8*(htop(p)+hbot(p)))-5.87_r8, 0._r8) * &
-                        fungrvl * Dl
+                     cheight = 0.5_r8*min(htop(p)+hbot(p),40._r8) ! m
+                     KE_LD = max(15.8_r8*sqrt(cheight)-5.87_r8, 0._r8) * fungrvl * Dl
                      ! LAI and root biomass (kgC/m3): OM/OC = 1.72 
                      Clai = 1._r8 - exp(-tlai(p))
                      PCT_gnd = 100._r8 * max(Crsd,Clai) ! ground cover in percentage

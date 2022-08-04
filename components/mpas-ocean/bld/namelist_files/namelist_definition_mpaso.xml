@@ -1582,17 +1582,33 @@ Default: Defined in namelist_defaults.xml
 
 <!-- advection -->
 
-<entry id="config_vert_tracer_adv" type="char*1024"
+<entry id="config_vert_advection_method" type="char*1024"
 	category="advection" group="advection">
-Method for interpolating tracer values from layer centers to layer edges
+Method for advecting tracers, momentum, and thickness vertically.
 
-Valid values: 'spline' and 'stencil'
+Valid values: 'flux-form' and 'remap'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_vert_tracer_adv_order" type="integer"
+<entry id="config_vert_remap_order" type="integer"
 	category="advection" group="advection">
-Order of polynomial used for tracer reconstruction at layer edges
+Order of remapping method used for momentum and tracer advection
+
+Valid values: 1, 2, 3 and 5
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vert_remap_interval" type="integer"
+	category="advection" group="advection">
+Number of timesteps between each remapping. If 0, remapping occurs every timestep
+
+Valid values: Any integer greater than or equal to 0
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vert_tracer_adv_flux_order" type="integer"
+	category="advection" group="advection">
+Order of polynomial used for tracer reconstruction at layer edges for flux-form method
 
 Valid values: 2, 3 and 4
 Default: Defined in namelist_defaults.xml
@@ -1614,11 +1630,19 @@ Valid values: any real between 0 and 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_monotonic" type="logical"
+<entry id="config_flux_limiter" type="char*1024"
 	category="advection" group="advection">
-If .true. then fluxes are limited to produce a monotonic advection scheme
+Slope limiter for the flux-form advection scheme.
 
-Valid values: .true. and .false.
+Valid values: 'none','monotonic'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_remap_limiter" type="char*1024"
+	category="advection" group="advection">
+Slope limiter for the vertical remap advection scheme.
+
+Valid values: 'none','monotonic','weno'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2188,7 +2212,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_check_tracer_monotonicity" type="logical"
 	category="debug" group="debug">
-Enables a change on tracer monotonicity at the end of the monotonic advection routine. Only used if config_monotonic is set to .true.
+Enables a change on tracer monotonicity at the end of the monotonic advection routine. Only used if config_flux_limiter is set to monotonic
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml

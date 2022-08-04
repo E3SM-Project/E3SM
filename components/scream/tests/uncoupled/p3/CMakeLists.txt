@@ -10,7 +10,7 @@ CreateUnitTest(p3_standalone "p3_standalone.cpp" "${NEED_LIBS}" LABELS ${TEST_LA
 
 # Set AD configurable options
 set (ATM_TIME_STEP 1800)
-SetVarDependingOnTestProfile(NUM_STEPS 2 5 48)  # 1h 2.5h 24h
+SetVarDependingOnTestSize(NUM_STEPS 2 5 48)  # 1h 2.5h 24h
 
 ## Copy (and configure) yaml files needed by tests
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
@@ -18,7 +18,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
 configure_file(p3_standalone_output.yaml p3_standalone_output.yaml)
 
 # Ensure test input files are present in the data dir
-GetInputFile(init/screami_ne2np4L72_20220524.nc)
+GetInputFile(init/${EAMxx_tests_IC_FILE_72lev})
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if max mpi ranks is >1

@@ -113,8 +113,8 @@ register_import(const std::string& fname,
     info.cpl_idx = cpl_idx;
 
     // For import fluxes, we must change the sign as cpl and atm interprete the direction differently.
-    if (fname == "surf_mom_flux"    || fname == "surf_sens_flux" ||
-        fname == "surf_latent_flux" || fname == "surf_lw_flux_up") {
+    if (fname == "surf_mom_flux" || fname == "surf_sens_flux" ||
+        fname == "surf_evap"     || fname == "surf_lw_flux_up") {
       m_cpl_scream_sign_change_host(m_num_scream_imports) = -1;
     } else {
       m_cpl_scream_sign_change_host(m_num_scream_imports) = 1;
@@ -164,7 +164,7 @@ register_export (const std::string& fname,
   //      a. fname == set_zero, which indicates that this field is not used in SCREAM.
   //      c. fname corresponeds to a field which is a combination of SCREAM fields.
   //      For these special cases, we have member variable 1d views which we will store the correct
-  //      values at the surface for each field during do_export(). Here, just set the data
+  //      values at the surface for each field during do_export(dt). Here, just set the data
   //      to point to these views, and fill in stride/offset info using a field setup in
   //      the constructor of the class
   if (m_field_mgr->has_field(fname)) {

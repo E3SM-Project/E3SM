@@ -1067,6 +1067,7 @@ my $rad_pkg = 'rrtmg';
 if (defined $opts{'rad'}) {
     $rad_pkg = lc($opts{'rad'});
 }
+if ($phys_pkg =~ /ideal|adiabatic/) { $rad_pkg = 'none'; }
 $cfg_ref->set('rad', $rad_pkg);
 
 if ($print>=2) { print "Radiation package: $rad_pkg$eol"; }
@@ -1517,8 +1518,8 @@ else {
 
         # MMF variance transport tracers
         if (defined $opts{'use_MMF_VT'}) {
-            $nadv += 2; # add tracers for CRM t and q variance transport
-            if ($print>=2) { print "Advected variance constituent added for MMF: 2$eol"; }
+            $nadv += 3; # add tracers for CRM variance transport if t, q, and u
+            if ($print>=2) { print "Advected variance constituent added for MMF: 3$eol"; }
         }
 
     }
@@ -2677,7 +2678,13 @@ sub write_filepath
     print $fh "$camsrcdir/eam/src/chemistry/utils\n";
 
     # Add source code directories for selected radiation package
-    if ($rad eq 'rrtmg') {
+    # Note: need to add rad code even for rad none because source code in CAM
+    # physics folder needs constants defined in radconstants.F90. A better
+    # approach would be to separate components/eam/src/physics/cam into
+    # something like physics/share, physics/eam, and physics/ideal, and then
+    # only include the modules actually needed by the code. This would remove
+    # the need to build a rad package when no rad package is used.
+    if ($rad eq 'rrtmg' or $rad eq 'none') {
         print $fh "$camsrcdir/eam/src/physics/rrtmg\n";
         print $fh "$camsrcdir/eam/src/physics/rrtmg/ext/rrtmg_mcica\n";
         print $fh "$camsrcdir/eam/src/physics/rrtmg/ext/rrtmg_lw\n";

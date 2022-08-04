@@ -501,7 +501,6 @@ end function shoc_implements_cnst
     use wv_saturation,  only: qsat
     use micro_mg_cam,   only: micro_mg_version  
     use cldfrc2m,                  only: aist_vector 
-    use hb_diff,                   only: pblintd
     use trb_mtn_stress,            only: compute_tms
     use shoc,           only: shoc_main
     use cam_history,    only: outfld

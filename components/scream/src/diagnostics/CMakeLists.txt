@@ -1,5 +1,17 @@
 set(DIAGNOSTIC_SRCS
   potential_temperature.cpp
+  atm_density.cpp
+  exner.cpp
+  virtual_temperature.cpp
+  vertical_layer_interface.cpp
+  vertical_layer_thickness.cpp
+  vertical_layer_midpoint.cpp
+  dry_static_energy.cpp
+  sea_level_pressure.cpp
+  liquid_water_path.cpp
+  ice_water_path.cpp
+  vapor_water_path.cpp
+  rain_water_path.cpp
 )
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})
