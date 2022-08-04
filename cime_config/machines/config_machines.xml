@@ -3059,13 +3059,9 @@
         <command name="load">cmake/3.20.2</command>
         <command name="load">essl/6.3.0</command>
         <command name="load">netlib-lapack/3.8.0</command>
-        <command name="list"/>
       </modules>
       <modules compiler="pgi.*">
-        <command name="load">nvhpc/21.3</command>
-      </modules>
-      <modules compiler="pgigpu">
-        <command name="load">cuda/10.1.243</command>
+        <command name="load">nvhpc/21.11</command>
       </modules>
       <modules compiler="gnugpu">
         <command name="load">cuda/11.0.3</command>
@@ -3104,7 +3100,23 @@
     <environment_variables SMP_PRESENT="TRUE">
       <env name="JSRUN_THREAD_VARS">-E OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -E OMP_PROC_BIND=spread -E OMP_PLACES=threads -E OMP_STACKSIZE=256M</env>
     </environment_variables>
-    <environment_variables>
+    <environment_variables compiler="ibm">
+      <env name="RS_PER_NODE">2</env>
+      <env name="CPU_PER_RS">21</env>
+      <env name="GPU_PER_RS">0</env>
+      <env name="LTC_PRT">cpu-cpu</env>
+      <env name="NUM_RS">$SHELL{echo "2*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
+      <env name="SMT_MODE">$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</env>
+    </environment_variables>
+    <environment_variables compiler="gnu">
+      <env name="RS_PER_NODE">2</env>
+      <env name="CPU_PER_RS">21</env>
+      <env name="GPU_PER_RS">0</env>
+      <env name="LTC_PRT">cpu-cpu</env>
+      <env name="NUM_RS">$SHELL{echo "2*((`./xmlquery --value TOTAL_TASKS` + `./xmlquery --value TASKS_PER_NODE` - 1)/`./xmlquery --value TASKS_PER_NODE`)"|bc}</env>
+      <env name="SMT_MODE">$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</env>
+    </environment_variables>
+    <environment_variables compiler="pgi">
       <env name="RS_PER_NODE">2</env>
       <env name="CPU_PER_RS">21</env>
       <env name="GPU_PER_RS">0</env>
@@ -3197,7 +3209,7 @@
         <command name="load">netlib-lapack/3.9.1</command>
       </modules>
       <modules compiler="pgi.*">
-        <command name="load">nvhpc/20.9</command>
+        <command name="load">nvhpc/21.11</command>
       </modules>
       <modules compiler="ibmgpu">
         <command name="load">cuda/10.1.243</command>
@@ -3222,6 +3234,7 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+    <MAX_GB_OLD_TEST_DATA>9000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
       <env name="PATH">/gpfs/wolf/cli115/world-shared/e3sm/soft/perl/5.26.0/bin:$ENV{PATH}</env>
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
