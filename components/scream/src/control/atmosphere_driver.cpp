@@ -694,7 +694,6 @@ void AtmosphereDriver::restart_model ()
   // Read number of steps from restart file
   int nsteps = model_restart.read_int_scalar("nsteps");
   m_current_ts.set_num_steps(nsteps);
-  m_case_t0.set_num_steps(nsteps);
   m_run_t0.set_num_steps(nsteps);
 
   for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
