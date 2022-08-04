@@ -1,4 +1,5 @@
-# Copied from summit-gpu.cmake, only change is to SCREAM_MACHINE.
+# Copied from summit.cmake, only change is to SCREAM_MACHINE
+# and remove support for CPU builds.
 #
 # Load all kokkos settings from Ekat's mach file
 set (EKAT_MACH_FILES_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../../externals/ekat/cmake/machine-files)
