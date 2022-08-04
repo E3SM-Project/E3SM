@@ -437,14 +437,13 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   //       We figured out the source of those values in Homme (see #1842),
   //       but they should be "benign" neg values (due to roundoffs), which we
   //       can safely clip to 0..
+  using Interval = FieldWithinIntervalCheck;
+  using LowerBound = FieldLowerBoundCheck;
 
-  using FWIC = FieldWithinIntervalCheck;
-  using FLBC = FieldLowerBoundCheck;
-
-  add_postcondition_check<FLBC>(*get_group_out("Q",pgn).m_bundle,m_phys_grid,0,true);
-  add_postcondition_check<FWIC>(get_field_out("T_mid",pgn),m_phys_grid,140.0, 500.0,false);
-  add_postcondition_check<FWIC>(get_field_out("horiz_winds",pgn),m_phys_grid,-400.0, 400.0,false);
-  add_postcondition_check<FWIC>(get_field_out("ps"),m_phys_grid,40000.0, 110000.0,false);
+  add_postcondition_check<LowerBound>(*get_group_out("Q",pgn).m_bundle,m_phys_grid,0,true);
+  add_postcondition_check<Interval>(get_field_out("T_mid",pgn),m_phys_grid,140.0, 500.0,false);
+  add_postcondition_check<Interval>(get_field_out("horiz_winds",pgn),m_phys_grid,-400.0, 400.0,false);
+  add_postcondition_check<Interval>(get_field_out("ps"),m_phys_grid,40000.0, 110000.0,false);
 }
 
 void HommeDynamics::run_impl (const int dt)

@@ -188,15 +188,15 @@ void SPA::initialize_impl (const RunType /* run_type */)
   SPAFunc::update_spa_timestate(m_spa_data_file,m_nswbands,m_nlwbands,ts,SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
 
   // Set property checks for fields in this process
-  using FWIC = FieldWithinIntervalCheck;
+  using Interval = FieldWithinIntervalCheck;
   const auto eps = std::numeric_limits<double>::epsilon();
 
-  add_postcondition_check<FWIC>(get_field_out("nccn"),m_grid,0,1e11,true,1e11*eps);
+  add_postcondition_check<Interval>(get_field_out("nccn"),m_grid,0,1e11,true,1e11*eps);
   // TODO: add an epslon to max possible upper bound of aero_ssa_sw?
-  add_postcondition_check<FWIC>(get_field_out("aero_g_sw"),m_grid,0.0,1.0,true);
-  add_postcondition_check<FWIC>(get_field_out("aero_ssa_sw"),m_grid,0.0,1.0,true);
-  add_postcondition_check<FWIC>(get_field_out("aero_tau_sw"),m_grid,0.0,1.0,true);
-  add_postcondition_check<FWIC>(get_field_out("aero_tau_lw"),m_grid,0.0,1.0,true);
+  add_postcondition_check<Interval>(get_field_out("aero_g_sw"),m_grid,0.0,1.0,true);
+  add_postcondition_check<Interval>(get_field_out("aero_ssa_sw"),m_grid,0.0,1.0,true);
+  add_postcondition_check<Interval>(get_field_out("aero_tau_sw"),m_grid,0.0,1.0,true);
+  add_postcondition_check<Interval>(get_field_out("aero_tau_lw"),m_grid,0.0,1.0,true);
 }
 
 // =========================================================================================

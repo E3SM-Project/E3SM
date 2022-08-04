@@ -381,17 +381,17 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
 
   // Set field property checks for the fields in this process
   auto eps = std::numeric_limits<Real>::epsilon();
-  using FWIC = FieldWithinIntervalCheck;
-  using FLBC = FieldLowerBoundCheck;
-  add_postcondition_check<FWIC>(get_field_out("T_mid"),m_grid,140.0,500.0,false);
-  add_postcondition_check<FWIC>(get_field_out("qc"),m_grid,0.0,0.1,false);
-  add_postcondition_check<FWIC>(get_field_out("horiz_winds"),m_grid,-400.0,400.0,false);
-  add_postcondition_check<FLBC>(get_field_out("pbl_height"),m_grid,0);
-  add_postcondition_check<FWIC>(get_field_out("cldfrac_liq"),m_grid,0.0,1.0,false);
-  add_postcondition_check<FLBC>(get_field_out("tke"),m_grid,0);
+  using Interval = FieldWithinIntervalCheck;
+  using LowerBound = FieldLowerBoundCheck;
+  add_postcondition_check<Interval>(get_field_out("T_mid"),m_grid,140.0,500.0,false);
+  add_postcondition_check<Interval>(get_field_out("qc"),m_grid,0.0,0.1,false);
+  add_postcondition_check<Interval>(get_field_out("horiz_winds"),m_grid,-400.0,400.0,false);
+  add_postcondition_check<LowerBound>(get_field_out("pbl_height"),m_grid,0);
+  add_postcondition_check<Interval>(get_field_out("cldfrac_liq"),m_grid,0.0,1.0,false);
+  add_postcondition_check<LowerBound>(get_field_out("tke"),m_grid,0);
   // For qv, ensure it doesn't get negative, by allowing repair of any neg value.
   // TODO: use a repairable lb that clips only "small" negative values
-  add_postcondition_check<FWIC>(get_field_out("qv"),m_grid,0,0.2,true);
+  add_postcondition_check<Interval>(get_field_out("qv"),m_grid,0,0.2,true);
 
   // Setup WSM for internal local variables
   const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);
