@@ -255,7 +255,6 @@ tweaking their $case/namelist_scream.xml file.
     <T_prev_micro_step >0.0</T_prev_micro_step>
     <qv_prev_micro_step>0.0</qv_prev_micro_step>
     <!-- Initialize microphysics fields not on IC to zero; note that this is consistent with EAM init -->
-    <tke               >0.0</tke>
     <qr                >0.0</qr>
     <nr                >0.0</nr>
     <qm                >0.0</qm>
@@ -378,7 +377,7 @@ tweaking their $case/namelist_scream.xml file.
     <!-- SL transport settings. SL defaults to on for pg2 configs. -->
     <dt_tracer_factor constraints="ge 1" hgrid=".*pg2">6</dt_tracer_factor>
     <hypervis_subcycle_q hgrid=".*pg2">6</hypervis_subcycle_q>
-    <transport_alg hgrid=".*pg2">12</transport_alg>  
+    <transport_alg hgrid=".*pg2">12</transport_alg>
   </ctl_nl>
 
 </namelist_defaults>
