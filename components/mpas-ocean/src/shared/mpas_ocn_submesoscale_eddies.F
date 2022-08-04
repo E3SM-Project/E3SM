@@ -92,8 +92,8 @@ module ocn_submesoscale_eddies
 
      !$omp parallel
      !$omp do schedule(runtime) &
-     !$omp private(cell1,cell2,bvfML,zEdge,streamFunction,gradBuoyML,hML,bvfAv)
-     !$omp private(bvfML,zMLD,Lf,ds,mu,k)
+     !$omp private(cell1,cell2,bvfML,zEdge,streamFunction,gradBuoyML,hML,bvfAv, &
+     !$omp         zMLD,Lf,ds,mu,k)
      do iEdge=1,nEdges
         cell1 = cellsOnEdge(1,iEdge)
         cell2 = cellsOnEdge(2,iEdge)
