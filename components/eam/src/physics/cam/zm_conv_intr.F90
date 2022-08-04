@@ -79,7 +79,7 @@ subroutine zm_conv_register
    if (trigdcape_ull .or. trig_dcape_only) then
       ! temperature from physics in n-1 time step
       call pbuf_add_field('T_STAR','global',dtype_r8,(/pcols,pver/), t_star_idx)
-      ! moisturetendency from physics in n-1 time step 
+      ! specific humidity from physics in n-1 time step 
       call pbuf_add_field('Q_STAR','global',dtype_r8,(/pcols,pver/), q_star_idx)
    endif
 
