@@ -41,6 +41,7 @@ module rof_cpl_indices
   integer, public :: index_x2r_Faxa_swvdf = 0   ! atm->rof shorwave visible diffus flux
   integer, public :: index_x2r_Faxa_swndr = 0   ! atm->rof shorwave near-ir direct flux
   integer, public :: index_x2r_Faxa_swndf = 0   ! atm->rof shorwave near-ir diffus flux
+  integer, public :: index_x2r_Flrl_inundinf = 0! lnd->rof infiltration from floodplain inundation
   integer, public :: nflds_x2r = 0
 
   integer, public :: index_x2r_coszen_str  = 0   ! lnd->rof Cosine of Zenith
@@ -75,6 +76,8 @@ module rof_cpl_indices
   integer, public :: index_r2x_Flrr_volrmch = 0 ! rof->lnd volr main channel back to land
   integer, public :: index_r2x_Flrr_supply = 0  ! rof->lnd supply flux for land use
   integer, public :: index_r2x_Flrr_deficit = 0 ! rof->lnd supply deficit
+  integer, public :: index_r2x_Sr_h2orof      = 0  ! rof->lnd floodplain inundation volume
+  integer, public :: index_r2x_Sr_frac_h2orof = 0  ! rof->lnd floodplain inundation fraction
   integer, public :: nflds_r2x = 0
 
 !=======================================================================
@@ -93,7 +96,7 @@ contains
     !
     ! !USES:
     use seq_flds_mod  , only: seq_flds_r2x_fields, seq_flds_x2r_fields, rof_heat, &
-                              rof2ocn_nutrients
+                              rof2ocn_nutrients, lnd_rof_two_way
     use mct_mod       , only: mct_aVect, mct_aVect_init, mct_avect_indexra, &
                               mct_aVect_clean, mct_avect_nRattr
     !
@@ -135,6 +138,10 @@ contains
 
     index_x2r_coszen_str  = mct_avect_indexra(avtmp,'coszen_str')
 
+    if (lnd_rof_two_way) then
+      index_x2r_Flrl_inundinf =  mct_avect_indexra(avtmp,'Flrl_inundinf')
+    endif
+
     nflds_x2r = mct_avect_nRattr(avtmp)
 
     call mct_aVect_clean(avtmp)
@@ -163,6 +170,12 @@ contains
     index_r2x_Flrr_volrmch = mct_avect_indexra(avtmp,'Flrr_volrmch')
     index_r2x_Flrr_supply = mct_avect_indexra(avtmp,'Flrr_supply')
     index_r2x_Flrr_deficit = mct_avect_indexra(avtmp,'Flrr_deficit')
+
+    if (lnd_rof_two_way) then
+      index_r2x_Sr_h2orof       = mct_avect_indexra(avtmp,'Sr_h2orof')
+      index_r2x_Sr_frac_h2orof  = mct_avect_indexra(avtmp,'Sr_frac_h2orof')
+    endif
+    
     nflds_r2x = mct_avect_nRattr(avtmp)
 
     call mct_aVect_clean(avtmp)

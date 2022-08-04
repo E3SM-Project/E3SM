@@ -864,7 +864,7 @@ contains
             filter(nc)%num_urbanc, filter(nc)%urbanc,                        &
             filter(nc)%num_snowc, filter(nc)%snowc,                          &
             filter(nc)%num_nosnowc, filter(nc)%nosnowc,canopystate_vars,     &
-            atm2lnd_vars, soilstate_vars, energyflux_vars,  &
+            atm2lnd_vars, lnd2atm_vars, soilstate_vars, energyflux_vars,     &
             soilhydrology_vars, aerosol_vars )
 
        !  Calculate column-integrated aerosol masses, and
@@ -946,7 +946,7 @@ contains
        ! Update sediment fluxes from land unit
        ! ============================================================================
 
-       if (use_erosion) then
+       if (use_cn .and. use_erosion) then
           call t_startf('erosion')
           call SoilErosion(bounds_clump, filter(nc)%num_soilc, filter(nc)%soilc, &
                canopystate_vars, cnstate_vars, soilstate_vars, sedflux_vars)

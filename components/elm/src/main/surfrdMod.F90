@@ -669,20 +669,7 @@ contains
     ! Obtain special landunit info
 
     call surfrd_special(begg, endg, ncid, ldomain%ns,ldomain%num_tunits_per_grd)
-    ! Obtain firrig and surface/grnd irrigation fraction
-    if (firrig_data) then
-     call ncd_io(ncid=ncid, varname='FIRRIG', flag='read', data=ldomain%firrig, &
-          dim1name=grlnd, readvar=readvar)
-     if (.not. readvar) call endrun( trim(subname)//' ERROR: FIRRIG NOT on surfdata file' )!
-
-     call ncd_io(ncid=ncid, varname='FSURF', flag='read', data=ldomain%f_surf, &
-          dim1name=grlnd, readvar=readvar)
-     if (.not. readvar) call endrun( trim(subname)//' ERROR: FSURF NOT on surfdata file' )!
-
-     call ncd_io(ncid=ncid, varname='FGRD', flag='read', data=ldomain%f_grd, &
-          dim1name=grlnd, readvar=readvar)
-     if (.not. readvar) call endrun( trim(subname)//' ERROR: FGRD NOT on surfdata file' )
-    end if
+    
     ! Obtain vegetated landunit info
 
     call surfrd_veg_all(begg, endg, ncid, ldomain%ns,ldomain%num_tunits_per_grd)
@@ -709,7 +696,7 @@ contains
     ! !USES:
     use elm_varpar      , only : maxpatch_glcmec, nlevurb
     use landunit_varcon , only : isturb_MIN, isturb_MAX, istdlak, istwet, istice, istice_mec
-    use elm_varsur      , only : wt_lunit, urban_valid, wt_glc_mec, topo_glc_mec
+    use elm_varsur      , only : wt_lunit, urban_valid, wt_glc_mec, topo_glc_mec, firrig, f_surf, f_grd
     use UrbanParamsType , only : CheckUrban
     use topounit_varcon , only : max_topounits, has_topounit
     !
@@ -727,7 +714,7 @@ contains
     integer  :: nindx                      ! temporary for error check
     integer  :: ier                        ! error status
     logical  :: readvar
-    
+  
     real(r8),pointer :: pctgla_old(:)      ! percent of grid cell is glacier
     real(r8),pointer :: pctlak_old(:)      ! percent of grid cell is lake
     real(r8),pointer :: pctwet_old(:)      ! percent of grid cell is wetland
@@ -886,7 +873,27 @@ contains
          end do
       
     end do
+    
+    ! Obtain firrig and surface/grnd irrigation fraction
+    if (firrig_data) then
+     call ncd_io(ncid=ncid, varname='FIRRIG', flag='read', data=firrig, &
+          dim1name=grlnd, readvar=readvar)
+     if (.not. readvar) call endrun( trim(subname)//' ERROR: FIRRIG NOT on surfdata file' )!
 
+     call ncd_io(ncid=ncid, varname='FSURF', flag='read', data=f_surf, &
+          dim1name=grlnd, readvar=readvar)
+     if (.not. readvar) call endrun( trim(subname)//' ERROR: FSURF NOT on surfdata file' )!
+
+     call ncd_io(ncid=ncid, varname='FGRD', flag='read', data=f_grd, &
+          dim1name=grlnd, readvar=readvar)
+     if (.not. readvar) call endrun( trim(subname)//' ERROR: FGRD NOT on surfdata file' )
+    
+    else
+      firrig(:,:) = 0.7_r8
+      f_surf(:,:) = 1.0_r8
+      f_grd(:,:) = 0.0_r8
+    end if
+    
     call CheckUrban(begg, endg, pcturb(begg:endg,:,:), subname,ntpu)
 
     deallocate(pctgla,pctlak,pctwet,pcturb,pcturb_tot,urban_region_id,pctglc_mec_tot,pctspec)
