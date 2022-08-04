@@ -289,7 +289,6 @@ CONTAINS
     use seq_flds_mod,   only: seq_flds_dom_coord, seq_flds_dom_other
     use shr_const_mod,  only: SHR_CONST_PI
     use scream_f2c_mod, only: scream_get_cols_latlon, scream_get_cols_area
-
     !-------------------------------------------------------------------
     !
     ! Arguments
@@ -303,8 +302,6 @@ CONTAINS
     real(r8), pointer :: data1(:)
     real(r8), pointer :: data2(:)     ! temporary
     integer , pointer :: idata(:)     ! temporary
-
-    real(r8), parameter:: rad2deg = 180.0_r8 / SHR_CONST_PI
     !-------------------------------------------------------------------
 
     allocate(data1(lsize))
@@ -322,8 +319,6 @@ CONTAINS
     call scream_get_cols_latlon(c_loc(data1),c_loc(data2))
     call mct_gGrid_importRAttr(dom_atm,"lat",data1,lsize) 
     call mct_gGrid_importRAttr(dom_atm,"lon",data2,lsize) 
-    data1(:) = data1(:) * rad2deg
-    data2(:) = data2(:) * rad2deg
 
     call scream_get_cols_area(c_loc(data1))
     call mct_gGrid_importRAttr(dom_atm,"area",data1,lsize) 
