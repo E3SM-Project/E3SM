@@ -19,7 +19,7 @@ ScalarT PhysicsFunctions<DeviceT>::calculate_dx_from_area(const ScalarT& area, c
   static constexpr auto pi      = C::Pi; 
 
   // Compute latitude in radians
-  auto lat_in_rad = (pi/180.0)*lat;
+  auto lat_in_rad = lat*(pi/180.0);
 
   // Now find meters per degree latitude
   // Below equation finds distance between two points on an ellipsoid, derived from expansion
