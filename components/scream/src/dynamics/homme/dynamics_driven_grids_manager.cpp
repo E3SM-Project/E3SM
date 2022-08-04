@@ -125,10 +125,11 @@ build_grids (const std::set<std::string>& grid_names)
       pg_codes.push_back(code);
     }
   }
+
   pg_codes.push_back(m_grid_codes.at(m_ref_grid_name));
   const int* codes_ptr = pg_codes.data();
   init_grids_f90 (codes_ptr,pg_codes.size());
-
+  
   // We know we need the dyn grid, so build it
   build_dynamics_grid ();
 
@@ -142,12 +143,15 @@ build_grids (const std::set<std::string>& grid_names)
     build_physics_grid(m_ref_grid_name);
   }
 
+  if (m_grids.find("Physics GLL")==m_grids.end()) {
+    build_physics_grid("Physics GLL");
+  }
+
   // Clean up temporaries used during grid initialization
   cleanup_grid_init_data_f90 ();
 }
 
 void DynamicsDrivenGridsManager::build_dynamics_grid () {
-
   const std::string name = "Dynamics";
   if (m_grids.find(name)==m_grids.end()) {
     // Get dimensions and create "empty" grid
@@ -205,7 +209,6 @@ void DynamicsDrivenGridsManager::build_dynamics_grid () {
 
 void DynamicsDrivenGridsManager::
 build_physics_grid (const std::string& name) {
-
   // Build only if not built yet
   if (m_grids.find(name)==m_grids.end()) {
 
@@ -236,7 +239,7 @@ build_physics_grid (const std::string& name) {
     Kokkos::deep_copy(lat, h_lat);
     Kokkos::deep_copy(lon, h_lon);
     Kokkos::deep_copy(area,h_area);
-
+    
 #ifndef NDEBUG
     // Check that latitude, longitude, and area are valid
     using KT = KokkosTypes<DefaultDevice>;

@@ -481,6 +481,7 @@ add_default($nl, 'config_pio_stride');
 add_default($nl, 'config_write_output_on_startup');
 add_default($nl, 'config_test_case_diag');
 add_default($nl, 'config_test_case_diag_type');
+add_default($nl, 'config_full_abort_write');
 
 #################################
 # Namelist group: decomposition #

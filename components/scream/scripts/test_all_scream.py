@@ -132,7 +132,7 @@ class COV(TestProperty):
         )
 
 ###############################################################################
-def test_factory(user_req_tests, machine):
+def test_factory(user_req_tests, machine, mem_check):
 ###############################################################################
     testclasses = TestProperty.__subclasses__()
     if not user_req_tests:
@@ -144,6 +144,11 @@ def test_factory(user_req_tests, machine):
             expect(user_req_test in valid_names, f"'{user_req_test}' is not a known test")
 
         result = [testclass() for testclass in testclasses if testclass().shortname in user_req_tests]
+
+    # Mangle test full name if mem_check is on
+    if mem_check:
+        for test in result:
+            test.longname += "_cuda_mem_check" if is_cuda_machine(machine) else "_valgrind"
 
     return result
 
@@ -170,7 +175,7 @@ class TestAllScream(object):
                  quick_rerun=False,quick_rerun_failed=False,dry_run=False,
                  make_parallel_level=0, ctest_parallel_level=0, update_expired_baselines=False,
                  extra_verbose=False, limit_test_regex=None, test_level="at",
-                 mem_check=False):
+                 mem_check=False, force_baseline_regen=False):
     ###########################################################################
 
         # When using scripts-tests, we can't pass "-l" to test-all-scream,
@@ -207,6 +212,7 @@ class TestAllScream(object):
         self._limit_test_regex        = limit_test_regex
         self._test_level              = test_level
         self._mem_check               = mem_check
+        self._force_baseline_regen    = force_baseline_regen
 
         # Not all builds are ment to perform comparisons against pre-built baselines
 
@@ -236,7 +242,7 @@ class TestAllScream(object):
             expect (not self._local, "Specifying a machine while passing '-l,--local' is ambiguous.")
 
         # Make our test objects!
-        self._tests = test_factory(tests, self._machine)
+        self._tests = test_factory(tests, self._machine, self._mem_check)
 
         # Compute root dir (where repo is) and work dir (where build/test will happen)
         if not self._root_dir:
@@ -531,9 +537,11 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
  - last used baseline sha: {baseline_file_sha}""")
 
                     # If the copy in our repo is not ahead, then baselines are not expired
-                    if num_ref_is_ahead_file > 0:
+                    if num_ref_is_ahead_file > 0 or self._force_baseline_regen:
                         test.missing_baselines = True
-                        print(f" -> Test {test} baselines are expired because they were generated with an earlier commit")
+                        reason = "forcing baseline regen" if self._force_baseline_regen \
+                                 else "f{self._baseline_ref} is ahead of the baseline commit by {num_ref_is_ahead_file}"
+                        print(f" -> Test {test} baselines are expired because {reason}")
                     else:
                         print(f" -> Test {test} baselines are valid and do not need to be regenerated")
 
@@ -699,7 +707,16 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         work_dir = self._work_dir/str(test)
         result += f"-DBUILD_WORK_DIR={work_dir} "
-        result += f"-DBUILD_NAME_MOD={test} "
+
+        build_name_mod = str(test)
+        if self._mem_check:
+            if self._submit:
+                # Need backwards compatible build name for db submission
+                expect(len(self._tests) == 1, "Expected only one mem-check test being submitted")
+                build_name_mod = "cuda_mem_check" if is_cuda_machine(self._machine) else "valgrind"
+
+        result += f"-DBUILD_NAME_MOD={build_name_mod} "
+
         if self._limit_test_regex:
             result += f"-DINCLUDE_REGEX={self._limit_test_regex} "
         result += f'-S {self._root_dir}/cmake/ctest_script.cmake -DCMAKE_COMMAND="{cmake_config}" '

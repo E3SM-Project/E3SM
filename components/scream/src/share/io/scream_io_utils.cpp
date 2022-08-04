@@ -52,7 +52,9 @@ std::string find_filename_in_rpointer (
       }
     }
   }
-  comm.broadcast(&found,1,0);
+  int ifound = int(found);
+  comm.broadcast(&ifound,1,0);
+  found = bool(ifound);
   broadcast_string(content,comm,comm.root_rank());
 
   // If the history restart file is not found, it must be because the last

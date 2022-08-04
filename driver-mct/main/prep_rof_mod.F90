@@ -426,7 +426,7 @@ contains
     integer, save :: index_l2x_Flrl_rofi_HDO
     integer, save :: index_x2r_Flrl_rofl_HDO
     integer, save :: index_x2r_Flrl_rofi_HDO
-	
+
     integer, save :: index_l2x_Flrl_Tqsur
     integer, save :: index_l2x_Flrl_Tqsub
     integer, save :: index_a2x_Sa_tbot
@@ -451,6 +451,9 @@ contains
     integer, save :: index_x2r_Faxa_swvdr
     integer, save :: index_x2r_Faxa_swvdf
     integer, save :: index_x2r_Faxa_lwdn
+
+    integer, save :: index_l2x_Flrl_inundinf
+    integer, save :: index_x2r_Flrl_inundinf
     
     integer, save :: index_l2x_coszen_str
     integer, save :: index_x2r_coszen_str
@@ -569,7 +572,7 @@ contains
           mrgstr(index_x2r_Flrl_rofi_HDO) = trim(mrgstr(index_x2r_Flrl_rofi_HDO))//' = '// &
                trim(fracstr)//'*l2x%Flrl_rofi_HDO'
        end if
-	   
+   
        if ( rof_heat ) then
           index_a2x_Sa_tbot    = mct_aVect_indexRA(a2x_r,'Sa_tbot')
           index_a2x_Sa_pbot    = mct_aVect_indexRA(a2x_r,'Sa_pbot')
@@ -603,6 +606,13 @@ contains
           mrgstr(index_x2r_Faxa_swvdr) = trim(mrgstr(index_x2r_Faxa_swvdr))//' = '//'a2x%Faxa_swvdr'
           mrgstr(index_x2r_Faxa_swvdf) = trim(mrgstr(index_x2r_Faxa_swvdf))//' = '//'a2x%Faxa_swvdf'
           mrgstr(index_x2r_Faxa_lwdn)  = trim(mrgstr(index_x2r_Faxa_lwdn))//' = '//'a2x%Faxa_lwdn'
+
+          if (lnd_rof_two_way) then
+             index_l2x_Flrl_inundinf = mct_aVect_indexRA(l2x_r,'Flrl_inundinf')
+             index_x2r_Flrl_inundinf = mct_aVect_indexRA(x2r_r,'Flrl_inundinf')
+             mrgstr(index_x2r_Flrl_inundinf) = trim(mrgstr(index_x2r_Flrl_inundinf))//' = '//'l2x%Flrl_inundinf'
+          endif
+
        endif 
 
     end if
@@ -644,6 +654,10 @@ contains
           x2r_r%rAttr(index_x2r_Faxa_swvdr,i) = a2x_r%rAttr(index_a2x_Faxa_swvdr,i)
           x2r_r%rAttr(index_x2r_Faxa_swvdf,i) = a2x_r%rAttr(index_a2x_Faxa_swvdf,i)
           x2r_r%rAttr(index_x2r_Faxa_lwdn,i)  = a2x_r%rAttr(index_a2x_Faxa_lwdn,i)
+       endif
+
+       if (lnd_rof_two_way) then
+         x2r_r%rAttr(index_x2r_Flrl_inundinf,i) = l2x_r%rAttr(index_l2x_Flrl_inundinf,i)
        endif
 
     end do
