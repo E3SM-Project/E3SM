@@ -1,7 +1,7 @@
 #include "ekat/ekat_assert.hpp"
 #include "physics/shoc/atmosphere_macrophysics.hpp"
 
-#include "share/property_checks/field_positivity_check.hpp"
+#include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
 #include "scream_config.h" // for SCREAM_CIME_BUILD
@@ -380,13 +380,16 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
                                  T_mid, dse, z_mid, phis);
 
   // Set field property checks for the fields in this process
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,140.0,500.0,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qv"),m_grid,1e-13,0.2,true);  // This is a quick fix to make sure qv doesn't go negative.  TODO item is to take care of this in a more clever way.
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qc"),m_grid,0.0,0.1,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("horiz_winds"),m_grid,-400.0,400.0,false);
-  add_postcondition_check<FieldPositivityCheck>(get_field_out("pbl_height"),m_grid);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("cldfrac_liq"),m_grid,0.0,1.0,false);
-  add_postcondition_check<FieldPositivityCheck>(get_field_out("tke"),m_grid);
+  using FWIC = FieldWithinIntervalCheck;
+  using FLBC = FieldLowerBoundCheck;
+  add_postcondition_check<FWIC>(get_field_out("T_mid"),m_grid,140.0,500.0,false);
+  add_postcondition_check<FWIC>(get_field_out("qc"),m_grid,0.0,0.1,false);
+  add_postcondition_check<FWIC>(get_field_out("horiz_winds"),m_grid,-400.0,400.0,false);
+  add_postcondition_check<FLBC>(get_field_out("pbl_height"),m_grid,0);
+  add_postcondition_check<FWIC>(get_field_out("cldfrac_liq"),m_grid,0.0,1.0,false);
+  add_postcondition_check<FLBC>(get_field_out("tke"),m_grid,0);
+  // For qv, ensure it doesn't get negative
+  add_postcondition_check<FWIC>(get_field_out("qv"),m_grid,0,0.2,true);
 
   // Setup WSM for internal local variables
   const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);

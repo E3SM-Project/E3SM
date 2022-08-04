@@ -33,7 +33,6 @@
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/util//scream_column_ops.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
-#include "share/property_checks/field_positivity_check.hpp"
 #include "share/property_checks/check_and_repair_wrapper.hpp"
 
 // Ekat includes
@@ -443,17 +442,16 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   // TODO: Construct a more robust check that compares the value of Q against an
   // average value or maximum value over each column.  That way we can use a relative
   // error as our threshold, rather than an arbitrary tolerance.
-  // TODO: this *relies* on the two added checks to be run in the same order as they
-  //       are added here. To avoid this assumption, we need a more flexible lower bound
-  //       check, which has one LB for check and one LB for repair.
+  using FWIC = FieldWithinIntervalCheck;
+  using FLBC = FieldLowerBoundCheck;
   const Real tol = -1e-17;
   const auto& Q = *get_group_out("Q",pgn).m_bundle;
-  auto lb_check = std::make_shared<FieldLowerBoundCheck>(Q,m_phys_grid,tol,false);
-  auto lb_repair = std::make_shared<FieldPositivityCheck>(Q,m_phys_grid,true);
+  auto lb_check = std::make_shared<FLBC>(Q,m_phys_grid,tol,false);
+  auto lb_repair = std::make_shared<FLBC>(Q,m_phys_grid,0,true);
   add_postcondition_check<CheckAndRepairWrapper>(lb_check,lb_repair);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("T_mid",pgn),m_phys_grid,140.0, 500.0,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("horiz_winds",pgn),m_phys_grid,-400.0, 400.0,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("ps"),m_phys_grid,40000.0, 110000.0,false);
+  add_postcondition_check<FWIC>(get_field_out("T_mid",pgn),m_phys_grid,140.0, 500.0,false);
+  add_postcondition_check<FWIC>(get_field_out("horiz_winds",pgn),m_phys_grid,-400.0, 400.0,false);
+  add_postcondition_check<FWIC>(get_field_out("ps"),m_phys_grid,40000.0, 110000.0,false);
 }
 
 void HommeDynamics::run_impl (const int dt)

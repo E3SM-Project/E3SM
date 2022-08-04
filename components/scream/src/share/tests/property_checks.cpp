@@ -1,7 +1,6 @@
 #include <catch2/catch.hpp>
 #include <numeric>
 
-#include "share/property_checks/field_positivity_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_upper_bound_check.hpp"
@@ -41,10 +40,10 @@ TEST_CASE("property_check_base", "") {
     auto cf = f.get_const();
 
     // Field must not be read-only if repair is needed
-    REQUIRE_THROWS (std::make_shared<FieldPositivityCheck>(cf,grid,true));
+    REQUIRE_THROWS (std::make_shared<FieldLowerBoundCheck>(cf,grid,0,true));
 
     // But ok if no repair is needed
-    REQUIRE_NOTHROW (std::make_shared<FieldPositivityCheck>(cf,grid,false));
+    REQUIRE_NOTHROW (std::make_shared<FieldLowerBoundCheck>(cf,grid,0,false));
   }
 }
 
@@ -90,47 +89,6 @@ TEST_CASE("property_checks", "") {
   FieldIdentifier fid ("field_1",{tags,dims}, m/s,"some_grid");
   Field f(fid);
   f.allocate_view();
-
-  // Check positivity.
-  SECTION ("field_positivity_check") {
-    const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
-
-    // Assign positive values to the field and make sure it passes our test for
-    // positivity.
-    auto f_data = reinterpret_cast<Real*>(f.get_internal_view_data<Real,Host>());
-    ekat::genRandArray(f_data,num_reals,engine,pos_pdf);
-    f.sync_to_dev();
-
-    auto positivity_check = std::make_shared<FieldPositivityCheck>(f,grid,false);
-    REQUIRE(not positivity_check->can_repair());
-    auto checkResult = positivity_check->check();
-    REQUIRE(checkResult.pass);
-
-    // Assign non-positive values to the field and make sure it fails the check.
-    ekat::genRandArray(f_data,num_reals,engine,neg_pdf);
-    f.sync_to_dev();
-    checkResult = positivity_check->check();
-    REQUIRE(not checkResult.pass);
-  }
-
-  // Check positivity with repairs.
-  SECTION ("field_positivity_check_with_repairs") {
-    const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
-
-    // Assign non-positive values to the field, make sure it fails the check,
-    // and then repair the field so it passes.
-    auto f_data = reinterpret_cast<Real*>(f.get_internal_view_data<Real,Host>());
-    ekat::genRandArray(f_data,num_reals,engine,neg_pdf);
-    f.sync_to_dev();
-
-    auto positivity_check = std::make_shared<FieldPositivityCheck>(f,grid,true);
-    REQUIRE(positivity_check->can_repair());
-    auto checkResult = positivity_check->check();
-    REQUIRE(not checkResult.pass);
-    positivity_check->repair();
-    checkResult = positivity_check->check();
-    REQUIRE(checkResult.pass);
-  }
 
   // Check that values are not NaN
   SECTION("field_not_nan_check") {
