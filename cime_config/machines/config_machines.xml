@@ -3626,7 +3626,7 @@
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
       <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
       <env name="PGI_ACC_POOL_ALLOC">0</env>
-      <env name="SMPIARGS"></env>
+      <env name="SMPIARGS"> </env>
     </environment_variables>
     <environment_variables SMP_PRESENT="FALSE">
       <env name="JSRUN_THREAD_VARS"> </env>
@@ -3782,7 +3782,7 @@
       <env name="ESSL_PATH">$ENV{OLCF_ESSL_ROOT}</env>
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
       <env name="PGI_ACC_POOL_ALLOC">0</env>
-      <env name="SMPIARGS"></env>
+      <env name="SMPIARGS"> </env>
     </environment_variables>
     <environment_variables SMP_PRESENT="FALSE">
       <env name="JSRUN_THREAD_VARS"> </env>
