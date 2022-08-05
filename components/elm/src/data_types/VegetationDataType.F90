@@ -1844,9 +1844,9 @@ module VegetationDataType
     ! set cold-start initial values for select members of veg_ws
     !-----------------------------------------------------------------------
     do p = begp,endp
-       this%h2ocan(begp:endp) = 0._r8
-       this%fwet(begp:endp)   = 0._r8
-       this%fdry(begp:endp)   = 0._r8
+       this%h2ocan(p) = 0._r8
+       this%fwet(p)   = 0._r8
+       this%fdry(p)   = 0._r8
     end do
 
   end subroutine veg_ws_init
