@@ -115,15 +115,18 @@ module seq_diagBGC_mct
   integer(in),parameter :: f_csurf     = 2     ! carbon : surface
   integer(in),parameter :: f_cblack    = 3     ! carbon : black carbon
   integer(in),parameter :: f_corgnc    = 4     ! carbon : organic
+  integer(in),parameter :: f_ioinor    = 5     ! carbon : ice-ocn inorganic
+  integer(in),parameter :: f_ioorgn    = 6     ! carbon : ice-ocn organic
 
-  integer(in),parameter :: f_size     = f_corgnc      ! Total array size of all elements
+  integer(in),parameter :: f_size     = f_ioorgn      ! Total array size of all elements
   integer(in),parameter :: f_a        = f_area        ! 1st index for area
   integer(in),parameter :: f_a_end    = f_area        ! last index for area
   integer(in),parameter :: f_c        = f_csurf       ! 1st index for carbon
-  integer(in),parameter :: f_c_end    = f_corgnc      ! Last index for carbon
+  integer(in),parameter :: f_c_end    = f_ioorgn      ! Last index for carbon
 
   character(len=12),parameter :: fname(f_size) = &
-       (/'        area',' surface co2','black carbon','orgnc carbon' /)
+       (/'        area',' surface co2','black carbon','orgnc carbon' ,&
+         ' i-o inorgnc',' i-o   orgnc'/)
 
   !--- P for period ---
 
@@ -190,6 +193,23 @@ module seq_diagBGC_mct
   integer :: index_x2o_Faxa_ocphidry
   integer :: index_x2o_Faxa_ocphodry
   integer :: index_x2o_Faxa_ocphiwet
+  integer :: index_x2o_Fioi_algae1
+  integer :: index_x2o_Fioi_algae2
+  integer :: index_x2o_Fioi_algae3
+  integer :: index_x2o_Fioi_dic1
+  integer :: index_x2o_Fioi_docr
+  integer :: index_x2o_Fioi_doc1
+  integer :: index_x2o_Fioi_doc2
+  integer :: index_x2o_Fioi_doc3
+
+  integer :: index_i2x_Fioi_algae1
+  integer :: index_i2x_Fioi_algae2
+  integer :: index_i2x_Fioi_algae3
+  integer :: index_i2x_Fioi_dic1
+  integer :: index_i2x_Fioi_docr
+  integer :: index_i2x_Fioi_doc1
+  integer :: index_i2x_Fioi_doc2
+  integer :: index_i2x_Fioi_doc3
 
   integer :: index_x2i_Faxa_bcphidry
   integer :: index_x2i_Faxa_bcphodry
@@ -397,19 +417,19 @@ contains
     !EOP
 
     !----- local -----
-    type(mct_aVect), pointer :: a2x_a         ! model to drv bundle
-    type(mct_aVect), pointer :: x2a_a         ! drv to model bundle
+    type(mct_aVect), pointer :: a2x_a             ! model to drv bundle
+    type(mct_aVect), pointer :: x2a_a             ! drv to model bundle
     type(mct_ggrid), pointer :: dom_a
-    character(CL)            :: atm_gnam      ! atm grid
-    character(CL)            :: lnd_gnam      ! lnd grid
-    integer(in)              :: k,n,ic,nf,ip  ! generic index
-    integer(in)              :: kArea         ! index of area field in aVect
-    integer(in)              :: kLat          ! index of lat field in aVect
-    integer(in)              :: kl,ka,ko,ki   ! fraction indices
-    integer(in)              :: lSize         ! size of aVect
-    real(r8)                 :: ca_a          ! area of a grid cell
-    logical,save             :: first_time    = .true.
-    logical,save             :: samegrid_al   ! samegrid atm and lnd
+    character(CL)            :: atm_gnam          ! atm grid
+    character(CL)            :: lnd_gnam          ! lnd grid
+    integer(in)              :: k,n,ic,nf,ip      ! generic index
+    integer(in)              :: kArea             ! index of area field in aVect
+    integer(in)              :: kLat              ! index of lat field in aVect
+    integer(in)              :: kl,ka,ko,ki       ! fraction indices
+    integer(in)              :: lSize             ! size of aVect
+    real(r8)                 :: ca_a              ! area of a grid cell
+    logical,save             :: first_time=.true. ! initialization flag
+    logical,save             :: samegrid_al       ! samegrid atm and lnd
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diagBGC_atm_mct) '
@@ -558,15 +578,15 @@ contains
     !EOP
 
     !----- local -----
-    type(mct_aVect), pointer :: l2x_l        ! model to drv bundle
-    type(mct_aVect), pointer :: x2l_l        ! drv to model bundle
+    type(mct_aVect), pointer :: l2x_l             ! model to drv bundle
+    type(mct_aVect), pointer :: x2l_l             ! drv to model bundle
     type(mct_ggrid), pointer :: dom_l
-    integer(in)              :: n,ic,nf,ip ! generic index
-    integer(in)              :: kArea        ! index of area field in aVect
-    integer(in)              :: kl           ! fraction indices
-    integer(in)              :: lSize        ! size of aVect
-    real(r8)                 :: ca_l         ! area of a grid cell
-    logical,save             :: first_time    = .true.
+    integer(in)              :: n,ic,nf,ip        ! generic index
+    integer(in)              :: kArea             ! index of area field in aVect
+    integer(in)              :: kl                ! fraction indices
+    integer(in)              :: lSize             ! size of aVect
+    real(r8)                 :: ca_l              ! area of a grid cell
+    logical,save             :: first_time=.true. ! initialization flag
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diagBGC_lnd_mct) '
@@ -658,11 +678,11 @@ contains
     type(mct_aVect), pointer :: r2x_r
     type(mct_aVect), pointer :: x2r_r
     type(mct_ggrid), pointer :: dom_r
-    integer(in)              :: n,ic,nf,ip      ! generic index
+    integer(in)              :: n,ic,nf,ip        ! generic index
     integer(in)              :: kArea             ! index of area field in aVect
     integer(in)              :: lSize             ! size of aVect
-    real(r8)                 :: ca_r    ! area of a grid cell
-    logical,save             :: first_time    = .true.
+    real(r8)                 :: ca_r              ! area of a grid cell
+    logical,save             :: first_time=.true. ! initialization flag
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diagBGC_rof_mct) '
@@ -730,11 +750,11 @@ contains
     type(mct_aVect), pointer :: g2x_g
     type(mct_aVect), pointer :: x2g_g
     type(mct_ggrid), pointer :: dom_g
-    integer(in)              :: n,ic,nf,ip      ! generic index
+    integer(in)              :: n,ic,nf,ip        ! generic index
     integer(in)              :: kArea             ! index of area field in aVect
     integer(in)              :: lSize             ! size of aVect
-    real(r8)                 :: ca_g ! area of a grid cell
-    logical,save             :: first_time = .true.
+    real(r8)                 :: ca_g              ! area of a grid cell
+    logical,save             :: first_time=.true. ! initialization flag
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diagBGC_glc_mct) '
@@ -791,15 +811,15 @@ contains
     !EOP
 
     !----- local -----
-    type(mct_aVect), pointer :: o2x_o        ! model to drv bundle
-    type(mct_aVect), pointer :: x2o_o        ! drv to model bundle
+    type(mct_aVect), pointer :: o2x_o             ! model to drv bundle
+    type(mct_aVect), pointer :: x2o_o             ! drv to model bundle
     type(mct_ggrid), pointer :: dom_o
-    integer(in)              :: n,nf,ic,ip ! generic index
-    integer(in)              :: kArea        ! index of area field in aVect
-    integer(in)              :: ko,ki  ! fraction indices
-    integer(in)              :: lSize        ! size of aVect
-    real(r8)                 :: ca_i,ca_o  ! area of a grid cell
-    logical,save             :: first_time    = .true.
+    integer(in)              :: n,nf,ic,ip        ! generic index
+    integer(in)              :: kArea             ! index of area field in aVect
+    integer(in)              :: ko,ki             ! fraction indices
+    integer(in)              :: lSize             ! size of aVect
+    real(r8)                 :: ca_i,ca_o         ! area of a grid cell
+    logical,save             :: first_time=.true. ! initialization flag
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diagBGC_ocn_mct) '
@@ -854,6 +874,14 @@ contains
           index_x2o_Faxa_ocphidry = mct_aVect_indexRA(x2o_o,'Faxa_ocphidry')
           index_x2o_Faxa_ocphodry = mct_aVect_indexRA(x2o_o,'Faxa_ocphodry')
           index_x2o_Faxa_ocphiwet = mct_aVect_indexRA(x2o_o,'Faxa_ocphiwet')
+          index_x2o_Fioi_algae1   = mct_aVect_indexRA(x2o_o,'Fioi_algae1',perrWith='quiet')
+          index_x2o_Fioi_algae2   = mct_aVect_indexRA(x2o_o,'Fioi_algae2',perrWith='quiet')
+          index_x2o_Fioi_algae3   = mct_aVect_indexRA(x2o_o,'Fioi_algae3',perrWith='quiet')
+          index_x2o_Fioi_dic1     = mct_aVect_indexRA(x2o_o,'Fioi_dic1',perrWith='quiet')
+          index_x2o_Fioi_docr     = mct_aVect_indexRA(x2o_o,'Fioi_docr',perrWith='quiet')
+          index_x2o_Fioi_doc1     = mct_aVect_indexRA(x2o_o,'Fioi_doc1',perrWith='quiet')
+          index_x2o_Fioi_doc2     = mct_aVect_indexRA(x2o_o,'Fioi_doc2',perrWith='quiet')
+          index_x2o_Fioi_doc3     = mct_aVect_indexRA(x2o_o,'Fioi_doc3',perrWith='quiet')
        end if
 
        lSize = mct_avect_lSize(x2o_o)
@@ -869,6 +897,16 @@ contains
           nf = f_corgnc; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_ocphidry,n) &
                                                                      + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_ocphodry,n) &
                                                                      + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_ocphiwet,n)
+          nf = f_ioinor; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_dic1,n) &
+                                                                     *  shr_const_mwc * 1.0e-06_R8
+          nf = f_ioorgn; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ((ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_algae1,n) &
+                                                                     +  (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_algae2,n) &
+                                                                     +  (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_algae3,n) &
+                                                                     +  (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_docr,n) &
+                                                                     +  (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_doc1,n) &
+                                                                     +  (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_doc2,n) &
+                                                                     +  (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_doc3,n)) &
+                                                                     *   shr_const_mwc * 1.0e-06_R8
        end do
     end if
 
@@ -900,16 +938,16 @@ contains
     !EOP
 
     !----- local -----
-    type(mct_aVect), pointer :: i2x_i        ! model to drv bundle
-    type(mct_aVect), pointer :: x2i_i        ! drv to model bundle
+    type(mct_aVect), pointer :: i2x_i             ! model to drv bundle
+    type(mct_aVect), pointer :: x2i_i             ! drv to model bundle
     type(mct_ggrid), pointer :: dom_i
-    integer(in)              :: n,ic,nf,ip ! generic index
-    integer(in)              :: kArea        ! index of area field in aVect
-    integer(in)              :: kLat         ! index of lat field in aVect
-    integer(in)              :: ko,ki  ! fraction indices
-    integer(in)              :: lSize        ! size of aVect
-    real(r8)                 :: ca_i,ca_o ! area of a grid cell
-    logical,save             :: first_time        = .true.
+    integer(in)              :: n,ic,nf,ip        ! generic index
+    integer(in)              :: kArea             ! index of area field in aVect
+    integer(in)              :: kLat              ! index of lat field in aVect
+    integer(in)              :: ko,ki             ! fraction indices
+    integer(in)              :: lSize             ! size of aVect
+    real(r8)                 :: ca_i,ca_o         ! area of a grid cell
+    logical,save             :: first_time=.true. ! initialization flag
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diagBGC_ice_mct) '
@@ -932,8 +970,16 @@ contains
     ko    = mct_aVect_indexRA(frac_i,ofracname)
 
     if (present(do_i2x)) then
-!       if (first_time) then
-!       endif
+       if (first_time) then
+          index_i2x_Fioi_algae1   = mct_aVect_indexRA(i2x_i,'Fioi_algae1',perrWith='quiet')
+          index_i2x_Fioi_algae2   = mct_aVect_indexRA(i2x_i,'Fioi_algae2',perrWith='quiet')
+          index_i2x_Fioi_algae3   = mct_aVect_indexRA(i2x_i,'Fioi_algae3',perrWith='quiet')
+          index_i2x_Fioi_dic1     = mct_aVect_indexRA(i2x_i,'Fioi_dic1',perrWith='quiet')
+          index_i2x_Fioi_docr     = mct_aVect_indexRA(i2x_i,'Fioi_docr',perrWith='quiet')
+          index_i2x_Fioi_doc1     = mct_aVect_indexRA(i2x_i,'Fioi_doc1',perrWith='quiet')
+          index_i2x_Fioi_doc2     = mct_aVect_indexRA(i2x_i,'Fioi_doc2',perrWith='quiet')
+          index_i2x_Fioi_doc3     = mct_aVect_indexRA(i2x_i,'Fioi_doc3',perrWith='quiet')
+       endif
 
        lSize = mct_avect_lSize(i2x_i)
        do n=1,lSize
@@ -945,6 +991,16 @@ contains
           ca_o =  dom_i%data%rAttr(kArea,n) * frac_i%rAttr(ko,n)
           ca_i =  dom_i%data%rAttr(kArea,n) * frac_i%rAttr(ki,n)
           nf = f_area  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i
+          nf = f_ioinor; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*i2x_i%rAttr(index_i2x_Fioi_dic1,n) &
+                                                                     * shr_const_mwc * 1.0e-06_R8
+          nf = f_ioorgn; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_i*i2x_i%rAttr(index_i2x_Fioi_algae1,n) &
+                                                                     +  ca_i*i2x_i%rAttr(index_i2x_Fioi_algae2,n) &
+                                                                     +  ca_i*i2x_i%rAttr(index_i2x_Fioi_algae3,n) &
+                                                                     +  ca_i*i2x_i%rAttr(index_i2x_Fioi_docr,n) &
+                                                                     +  ca_i*i2x_i%rAttr(index_i2x_Fioi_doc1,n) &
+                                                                     +  ca_i*i2x_i%rAttr(index_i2x_Fioi_doc2,n) &
+                                                                     +  ca_i*i2x_i%rAttr(index_i2x_Fioi_doc3,n)) &
+                                                                     *  shr_const_mwc * 1.0e-06_R8
        end do
     end if
 
