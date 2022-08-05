@@ -238,6 +238,7 @@ CONTAINS
     use comsrf,           only: sgh, sgh30
     use cam_instance,     only: inst_index
     use element_ops,      only: set_thermostate
+    use phys_control,     only: phys_getopts
 
     type (dyn_import_t), intent(inout) :: dyn_in
 
