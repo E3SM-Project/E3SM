@@ -1161,6 +1161,11 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
     integer(i8)         :: sysclock_max    ! system clock max value
     real(r8)            :: chunk_cost      ! measured cost per chunk
 
+    ! --JH--: adding to allow custom tracer module tendencies
+    type(check_tracers_data):: tracerint    ! tracer mass integrals and cummulative boundary fluxes
+    real(r8) :: dummy_cflx(pcols, pcnst)    ! array of zeros
+    real(r8) :: dummy_landfrac(pcols)       ! array of zeros
+
     character(len=128)  :: ideal_phys_option
 
     ! physics buffer field for total energy
