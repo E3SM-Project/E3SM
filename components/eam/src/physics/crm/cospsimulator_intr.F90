@@ -1940,6 +1940,7 @@ CONTAINS
    end subroutine cosp_write_outputs
 #endif
 
+#ifdef USE_COSP
     subroutine packed_average1d(nc, nx, ny, d_in, d_out)
       integer, intent(in) :: nc, nx, ny
       real(r8), intent(in) :: d_in(:)
@@ -2027,6 +2028,8 @@ CONTAINS
         end do
       end do
     end subroutine
+#endif
+
 #ifdef USE_COSP
    subroutine cosp_unpack_outputs(nc, nx, ny, cospINpacked, cospOUTpacked, cospIN, cospOUT)
       use mod_cosp, only: cosp_optical_inputs, cosp_outputs
