@@ -344,20 +344,21 @@ TEST_CASE("input_output_basic","io")
     f3.sync_to_host();
     f4.sync_to_host();
 
+    int tt1 = tt + 1;
     for (int ii=0;ii<num_lcols;++ii) {
-      REQUIRE(std::abs(f1_host(ii)-(tt*dt+ii))<tol);
+      REQUIRE(std::abs(f1_host(ii)-(tt1*dt+ii))<tol);
       for (int jj=0;jj<num_levs;++jj) {
-        REQUIRE(std::abs(f3_host(ii,jj)-(ii+tt*dt + (jj+1)/10.))<tol);
-        REQUIRE(std::abs(f4_host(ii,jj)-(ii+tt*dt + (jj+1)/10.))<tol);
+        REQUIRE(std::abs(f3_host(ii,jj)-(ii+tt1*dt + (jj+1)/10.))<tol);
+        REQUIRE(std::abs(f4_host(ii,jj)-(ii+tt1*dt + (jj+1)/10.))<tol);
       }
     }
     for (int jj=0;jj<num_levs;++jj) {
-      REQUIRE(std::abs(f2_host(jj)-(tt*dt + (jj+1)/10.))<tol);
+      REQUIRE(std::abs(f2_host(jj)-(tt1*dt + (jj+1)/10.))<tol);
     }
   }
   multi_input.finalize();
 
-  // All Done 
+  // All Done
   scorpio::eam_pio_finalize();
 }
 
@@ -411,10 +412,10 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
   auto f2 = fm->get_field(fid2);
   auto f3 = fm->get_field(fid3);
   auto f4 = fm->get_field(fid4);
-  auto f1_host = f1.get_view<Real*,Host>(); 
-  auto f2_host = f2.get_view<Real*,Host>(); 
+  auto f1_host = f1.get_view<Real*,Host>();
+  auto f2_host = f2.get_view<Real*,Host>();
   auto f3_host = f3.get_view<Real**,Host>();
-  auto f4_host = f4.get_view<Pack**,Host>(); 
+  auto f4_host = f4.get_view<Pack**,Host>();
 
   for (int ii=0;ii<num_lcols;++ii) {
     f1_host(ii) = ii;
