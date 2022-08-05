@@ -78,6 +78,9 @@ public:
   // which do not have valid entries.
   void do_export(const Int dt, const bool called_during_initialization=false);
 
+  // Take and store data from SCDataManager
+  void setup_surface_coupling_data(const SCDataManager &sc_data_manager);
+
 protected:
 
   // The three main overrides for the subcomponent
@@ -99,9 +102,6 @@ protected:
   // Set local variables using memory provided by
   // the ATMBufferManager
   void init_buffers(const ATMBufferManager &buffer_manager);
-
-  // Take and store data from SCDataManager
-  void setup_surface_coupling_data(const SCDataManager &sc_data_manager);
 
   std::shared_ptr<const AbstractGrid> m_grid;
 

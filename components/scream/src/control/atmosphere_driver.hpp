@@ -81,6 +81,10 @@ public:
                                            char* names_ptr, int* cpl_indices_ptr, int* vec_comps_ptr,
                                            Real* constant_multiple_ptr, bool* do_transfer_during_init_ptr);
 
+  // Find surface coupling processes and have
+  // them setup internal SurfaceCoupling data.
+  void setup_surface_coupling_processes() const;
+
   // Load initial conditions for atm inputs
   void initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0);
 

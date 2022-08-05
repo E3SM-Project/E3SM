@@ -194,16 +194,6 @@ public:
         "   - Atm proc name: " + this->name() + "\n");
   }
 
-  virtual void setup_surface_coupling_data(const SCDataManager &/*sc_data_manager*/) {
-    EKAT_REQUIRE_MSG(this->type() != AtmosphereProcessType::SurfaceCouplingImporter
-                     &&
-                     this->type() != AtmosphereProcessType::SurfaceCouplingExporter,
-                     "Error! This Atm Process is either of type "
-                     "AtmosphereProcessType::SurfaceCouplingImporter or  SurfaceCouplingExporter "
-                     "but does not override 'setup_surface_coupling' function. Please, fix this.\n"
-                     "   - Atm proc name: " + this->name() + "\n");
-  }
-
   // Convenience function to retrieve input/output fields from the field/group (and grid) name.
   // Note: the version without grid name only works if there is only one copy of the field/group.
   //       In that case, the single copy is returned, regardless of the associated grid name.

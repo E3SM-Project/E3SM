@@ -54,6 +54,10 @@ public:
     return m_atm_processes.at(i);
   }
 
+  std::shared_ptr<atm_proc_type> get_process_nonconst (const int i) const {
+    return m_atm_processes.at(i);
+  }
+
   ScheduleType get_schedule_type () const { return m_group_schedule_type; }
 
   // Computes total number of bytes needed for local variables
@@ -62,10 +66,6 @@ public:
   // Set local variables using memory provided by
   // the ATMBufferManager
   void init_buffers(const ATMBufferManager& buffer_manager);
-
-  // Setup import and export processes
-  void setup_surface_coupling_processes(const SurfaceCouplingTransferType transfer_type,
-                                        const SCDataManager& sc_data_manager);
 
   // The APG class needs to perform special checks before establishing whether
   // a required group/field is indeed a required group for this APG

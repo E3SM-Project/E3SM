@@ -1,4 +1,6 @@
 #include "control/atmosphere_driver.hpp"
+#include "control/atmosphere_surface_coupling_importer.hpp"
+#include "control/atmosphere_surface_coupling_exporter.hpp"
 
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
@@ -264,6 +266,52 @@ void AtmosphereDriver::create_grids()
   sc_data_mgr->setup_internals(num_cpl_fields, num_scream_fields, field_size, data_ptr,
                                names_ptr, cpl_indices_ptr, vec_comps_ptr,
                                constant_multiple_ptr, do_transfer_during_init_ptr);
+}
+
+void AtmosphereDriver::setup_surface_coupling_processes () const
+{
+  // Loop through atmosphere processes and look for importer/exporter. If one is
+  // found, cast to derived class type and call setup_surface_coupling_data()
+  bool importer_found = false;
+  bool exporter_found = false;
+
+  for (int proc=0; proc<m_atm_process_group->get_num_processes(); ++proc) {
+
+    const auto atm_proc = m_atm_process_group->get_process_nonconst(proc);
+    if (atm_proc->type() == AtmosphereProcessType::SurfaceCouplingImporter) {
+      importer_found = true;
+
+      EKAT_ASSERT_MSG(m_surface_coupling_import_data_manager != nullptr,
+                      "Error! SurfaceCouplingImporter atm process found, "
+                      "but m_surface_coupling_import_data_manager was not "
+                      "setup.\n");
+
+      std::shared_ptr<SurfaceCouplingImporter> importer = std::dynamic_pointer_cast<SurfaceCouplingImporter>(atm_proc);
+      importer->setup_surface_coupling_data(*m_surface_coupling_import_data_manager);
+    }
+    if (atm_proc->type() == AtmosphereProcessType::SurfaceCouplingExporter) {
+      exporter_found = true;
+
+      EKAT_ASSERT_MSG(m_surface_coupling_export_data_manager != nullptr,
+                      "Error! SurfaceCouplingExporter atm process found, "
+                      "but m_surface_coupling_export_data_manager was not "
+                      "setup.\n");
+
+      std::shared_ptr<SurfaceCouplingExporter> exporter = std::dynamic_pointer_cast<SurfaceCouplingExporter>(atm_proc);
+      exporter->setup_surface_coupling_data(*m_surface_coupling_export_data_manager);
+    }
+  }
+
+  // If import or export data manager is defined,
+  // ensure corresponding atm process was found.
+  if (m_surface_coupling_import_data_manager) {
+    EKAT_ASSERT_MSG(importer_found, "Error! SurfaceCoupling importer data was setup, but no atm process "
+                                    "of type AtmosphereProcessType::SurfaceCouplingImporter exists.\n");
+  }
+  if (m_surface_coupling_export_data_manager) {
+    EKAT_ASSERT_MSG(exporter_found, "Error! SurfaceCoupling exporter data was setup, but no atm process "
+                                    "of type AtmosphereProcessType::SurfaceCouplingExporter exists.\n");
+  }
 }
 
 void AtmosphereDriver::create_fields()
@@ -987,13 +1035,9 @@ void AtmosphereDriver::initialize_atm_procs ()
 
   const bool restarted_run = m_case_t0 < m_run_t0;
 
-  if (m_surface_coupling_import_data_manager) {
-    m_atm_process_group->setup_surface_coupling_processes(SurfaceCouplingTransferType::Import,
-                                                          *m_surface_coupling_import_data_manager);
-  }
-  if (m_surface_coupling_export_data_manager) {
-    m_atm_process_group->setup_surface_coupling_processes(SurfaceCouplingTransferType::Export,
-                                                          *m_surface_coupling_export_data_manager);
+  // Setup SurfaceCoupling import and export (if they exist)
+  if (m_surface_coupling_import_data_manager || m_surface_coupling_export_data_manager) {
+    setup_surface_coupling_processes();
   }
 
   // Initialize the processes

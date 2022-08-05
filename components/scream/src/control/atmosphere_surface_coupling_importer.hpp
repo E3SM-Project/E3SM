@@ -62,15 +62,15 @@ public:
   // which are not needed during initialization.
   void do_import(const bool called_during_initialization=false);
 
+  // Take and store data from SCDataManager
+  void setup_surface_coupling_data(const SCDataManager &sc_data_manager);
+
 protected:
 
   // The three main overrides for the subcomponent
   void initialize_impl (const RunType run_type);
   void run_impl        (const int dt);
   void finalize_impl   ();
-
-  // Take and store data from SCDataManager
-  void setup_surface_coupling_data(const SCDataManager &sc_data_manager);
 
   // Keep track of field dimensions
   Int m_num_cols; 
