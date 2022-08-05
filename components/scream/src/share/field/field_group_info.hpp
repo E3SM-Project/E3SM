@@ -63,6 +63,16 @@ struct FieldGroupInfo
   std::map<ci_string,int>  m_subview_idx;
 };
 
+inline bool operator== (const FieldGroupInfo& lhs,
+                        const FieldGroupInfo& rhs)
+{
+  return lhs.m_group_name==rhs.m_group_name &&
+         lhs.m_fields_names==rhs.m_fields_names &&
+         lhs.m_bundled==rhs.m_bundled &&
+         lhs.m_subview_dim==rhs.m_subview_dim &&
+         lhs.m_subview_idx==rhs.m_subview_idx;
+}
+
 } // namespace scream
 
 #endif // SCREAM_FIELD_GROUP_INFO_HPP

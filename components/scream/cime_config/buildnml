@@ -235,7 +235,7 @@ def evaluate_selectors(element, case, ez_selectors):
     >>> bad2 = ET.fromstring(xml_bad2)
     >>> evaluate_selectors(bad2,case,selectors_good)
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: child 'var1' element without selectors occured after other parameter elements for this parameter
+    CIME.utils.CIMEError: ERROR: child 'var1' element without selectors occurred after other parameter elements for this parameter
     >>> ############## MULTIPLE MATCHES #####################
     >>> xml_bad3 = '''
     ... <namelist_defaults>
@@ -246,7 +246,7 @@ def evaluate_selectors(element, case, ez_selectors):
     >>> bad3 = ET.fromstring(xml_bad3)
     >>> evaluate_selectors(bad3,case,selectors_good)
     Traceback (most recent call last):
-    CIME.utils.CIMEError: ERROR: child 'var1' element without selectors occured after other parameter elements for this parameter
+    CIME.utils.CIMEError: ERROR: child 'var1' element without selectors occurred after other parameter elements for this parameter
     """
 
     child_values = {} # elem_name -> evaluated XML element
@@ -321,7 +321,7 @@ def evaluate_selectors(element, case, ez_selectors):
 
             else:
                 expect(child_name not in child_values,
-                       "child '{}' element without selectors occured after other parameter elements for this parameter".format(child_name))
+                       "child '{}' element without selectors occurred after other parameter elements for this parameter".format(child_name))
                 child_values[child_name] = child
                 child.text = do_cime_vars(child_val, case)
 
@@ -778,7 +778,7 @@ def do_cime_vars_on_yaml_output_files(case,caseroot):
 
         # Load yaml file
         content = yaml.safe_load(open(fn_full,"r"))
-            
+
         # Replace possible CIME vars
         do_cime_vars(content,case,refine=True,
                      extra={'PHYSICS_GRID_TYPE': pgt})
