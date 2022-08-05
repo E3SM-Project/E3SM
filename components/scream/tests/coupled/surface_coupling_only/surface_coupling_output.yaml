@@ -17,7 +17,7 @@ Field Names:
   - precip_liq_surf_mass
   - precip_ice_surf_mass
 Output Control:
-  Frequency: ${NUM_STEPS}
+  Frequency: 1
   Frequency Units: Steps
   Timestamp in Filename: false
   MPI Ranks in Filename: true

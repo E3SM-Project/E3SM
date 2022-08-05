@@ -37,5 +37,5 @@ Initial Conditions:
 
 # The parameters for I/O control
 Scorpio:
-  Output YAML Files: ["output.yaml"]
+  Output YAML Files: ["surface_coupling_output.yaml"]
 ...
