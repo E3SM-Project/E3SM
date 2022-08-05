@@ -48,9 +48,9 @@ subroutine tphysidl(ztodt, state, tend, ideal_phys_option)
 !
    type(physics_ptend) :: ptend
 
-   integer :: lchnk                                ! chunk identifier
-   integer :: ncol                                 ! number of atmospheric columns
-   integer :: nstep                                ! timestep number
+   integer :: lchnk                            ! chunk identifier
+   integer :: ncol                             ! number of atmospheric columns
+   integer :: nstep                            ! timestep number
 
    real(r8) clat(pcols)                        ! latitudes(radians) for columns
    real(r8) pmid(pcols,pver)                   ! mid-point pressure
@@ -65,37 +65,38 @@ subroutine tphysidl(ztodt, state, tend, ideal_phys_option)
    real(r8) coslat(pcols)                      ! cosine(latitude)
    real(r8) teq(pcols, pver)                   ! for writing out eq temp.
 
-   real(r8) tmp                                ! temporary
+   ! JH
+   ! ---------- Forcing parameters for original Held-Suarez ----------
+   !
+   real(r8) efoldf                             ! efolding time for wind dissipation
+   real(r8) efolda                             ! efolding time for T dissipation
+   real(r8) efolds                             ! efolding time for T dissipation
+   real(r8) sigmab                             ! threshold sigma level
+   real(r8) t00                                ! minimum reference temperature
    real(r8) kf                                 ! 1./efolding_time for wind dissipation
    real(r8) ka                                 ! 1./efolding_time for temperature diss.
-   real(r8) kaa                                ! 1./efolding_time for temperature diss.
-   real(r8) ks                                 ! 1./efolding_time for temperature diss.
+   real(r8) ks                                 ! 1./efolding_time for temperature diss. 
    real(r8) kv                                 ! 1./efolding_time (normalized) for wind
    real(r8) kt                                 ! 1./efolding_time for temperature diss.
    real(r8) trefa                              ! "radiative equilibrium" T
    real(r8) trefc                              ! used in calc of "radiative equilibrium" T
-   real(r8) cossq(pcols)                       ! coslat**2
-   real(r8) cossqsq(pcols)                     ! coslat**4
-   real(r8) sinsq(pcols)                       ! sinlat**2
-   real(r8) onemsig                            ! 1. - sigma_reference
-   real(r8) efoldf                             ! efolding time for wind dissipation
-   real(r8) efolda                             ! efolding time for T dissipation
+   
+   ! JH
+   ! ---------- Forcing parameters for Williamson modification ----------
+   !
+   real(r8) pi                                 ! 3.14159...
    real(r8) efoldaa                            ! efolding time for T dissipation
-   real(r8) efolds                             ! efolding time for T dissipation
-   real(r8) efold_strat                        ! efolding time for T dissipation in Strat
-   real(r8) efold_meso                         ! efolding time for T dissipation in Meso
-   real(r8) efoldv                             ! efolding time for wind dissipation
-   real(r8) p_infint                           ! effective top of model
-   real(r8) constw                             ! constant
-   real(r8) lapsew                             ! lapse rate
+   real(r8) kaa                                ! 1./efolding_time for temperature diss.
    real(r8) p0strat                            ! threshold pressure
    real(r8) phi0                               ! threshold latitude
    real(r8) dphi0                              ! del-latitude
    real(r8) a0                                 ! coefficient
    real(r8) aeq                                ! 100 mb
    real(r8) apole                              ! 2   mb
-   real(r8) pi                                 ! 3.14159...
-   real(r8) coslat(pcols)                      ! cosine(latitude)
+   real(r8) lapsew                             ! lapse rate
+   real(r8) constw                             ! constant
+   real(r8) lapsec                             ! lapse rate
+   real(r8) constc                             ! constant
    real(r8) acoslat                            ! abs(acos(coslat))
    real(r8) pmax                               ! pressure given by max(pmid, apole)
    
@@ -109,10 +110,18 @@ subroutine tphysidl(ztodt, state, tend, ideal_phys_option)
    real(r8) p_infint                           ! effective top of model
    real(r8) lapse                              ! lapse rate
    real(r8) h0                                 ! scale height (7 km)
-   real(r8) sigmab                             ! threshold sigma level
    real(r8) pressmb                            ! model pressure in mb
-   real(r8) t00                                ! minimum reference temperature
-   real(r8) :: zero(pcols)
+   
+   ! JH
+   ! ---------- Parameters for FV3-type sponge Rayleigh friction ----------
+   ! 
+   real(r8)   :: pih                                        ! 0.5*pi
+   real(r8)   :: kr                                         ! RF friction coefficient
+   real(r8)   :: num                                        ! kr definition numerator
+   real(r8)   :: den                                        ! kr definition denominator
+   real(r8)   :: fv3_rf_cutoff = 0.001_r8                   ! 100 Pa in sigma coordinate
+   real(r8)   :: fv3_tau_rev   = 1.0_r8/(86400.0_r8*3.0_r8) ! 1/(3 days)
+
 !
 !-----------------------------------------------------------------------
 !
