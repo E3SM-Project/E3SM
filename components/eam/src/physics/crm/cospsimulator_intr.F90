@@ -173,7 +173,7 @@ module cospsimulator_intr
                                                  ! (0=ice-spheres ; 1=ice-non-spherical) (0)
   integer, parameter :: overlap = 3              ! overlap type: 1=max, 2=rand, 3=max/rand (3)
 
-  !! namelist variables for COSP input related to ISCCP simulator
+  ! namelist variables for COSP input related to ISCCP simulator
   integer :: isccp_topheight = 1                 ! 1 = adjust top height using both a computed infrared
                                                  ! brightness temperature and the visible
                                                  ! optical depth to adjust cloud top pressure.
@@ -316,7 +316,7 @@ CONTAINS
     ! Set number of sub-columns, from namelist
     nscol_cosp = Ncolumns_in
     
-    if (use_vgrid_in) then    !! using fixed vertical grid
+    if (use_vgrid_in) then  ! using fixed vertical grid
        if (csat_vgrid_in)       then
           nht_cosp = 40
        else
@@ -376,8 +376,7 @@ CONTAINS
     ! read in the namelist
     if (masterproc) then
        unitn = getunit()
-       open( unitn, file=trim(nlfile), status='old' )  !! presumably opens the namelist file "nlfile"
-       !! position the file to write to the cospsimulator portion of the cam_in namelist
+       open( unitn, file=trim(nlfile), status='old' )
        call find_group_name(unitn, 'cospsimulator_nl', status=ierr)   
        if (ierr == 0) then
           read(unitn, cospsimulator_nl, iostat=ierr)
@@ -466,7 +465,7 @@ CONTAINS
        cosp_nradsteps = 3
     end if
     
-    !! if no simulators are turned on at all and docosp is, set cosp_amwg = .true.
+    ! if no simulators are turned on at all and docosp is, set cosp_amwg = .true.
     if((docosp) .and. (.not.lradar_sim) .and. (.not.llidar_sim) .and. (.not.lisccp_sim) .and. &
          (.not.lmisr_sim) .and. (.not.lmodis_sim)) then
        cosp_amwg = .true.
@@ -611,7 +610,7 @@ CONTAINS
     
     ! ISCCP OUTPUTS
     if (lisccp_sim) then
-       !! addfld calls for all
+       ! addfld calls for all
        call addfld('FISCCP1_COSP',(/'cosp_tau','cosp_prs'/),'A','percent', &
             'Grid-box fraction covered by each ISCCP D level cloud type',&
             flag_xyfill=.true., fill_value=R_UNDEF)
@@ -642,7 +641,7 @@ CONTAINS
        call addfld ('CLDPTOP_ISCCP',(/'cosp_scol'/),'I','Pa','Cloud Top Pressure in each Subcolumn',  &
             flag_xyfill=.true., fill_value=R_UNDEF)
 
-       !! add all isccp outputs to the history file specified by the CAM namelist variable cosp_histfile_num
+       ! add all isccp outputs to the history file specified by the CAM namelist variable cosp_histfile_num
        call add_default ('FISCCP1_COSP',cosp_histfile_num,' ')
        call add_default ('CLDTOT_ISCCP',cosp_histfile_num,' ')
        call add_default ('MEANCLDALB_ISCCP',cosp_histfile_num,' ')
@@ -655,7 +654,7 @@ CONTAINS
 
     ! CALIPSO SIMULATOR OUTPUTS
     if (llidar_sim) then
-       !! addfld calls for all
+       ! addfld calls for all
        !*cfMon,cfOff,cfDa,cf3hr* cllcalipso (time,profile)
        call addfld('CLDLOW_CAL',horiz_only,'A','percent','Calipso Low-level Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
        !*cfMon,cfOff,cfDa,cf3hr* clmcalipso (time,profile)
@@ -678,7 +677,7 @@ CONTAINS
        call addfld ('ATB532_CAL',(/'cosp_scol','lev      '/),'I','no_unit_log10(x)',                           &
             'Calipso Attenuated Total Backscatter (532 nm) in each Subcolumn',                        &
             flag_xyfill=.true., fill_value=R_UNDEF)
-       ! lclcalipsoliq (time,alt40,loc) !!+cosp1.4
+       ! lclcalipsoliq (time,alt40,loc)
        call addfld('CLD_CAL_LIQ', (/'cosp_ht'/), 'A','percent', 'Calipso Liquid Cloud Fraction',                 &
             flag_xyfill=.true., fill_value=R_UNDEF)
        ! lclcalipsoice (time,alt40,loc)
@@ -736,43 +735,9 @@ CONTAINS
        call addfld('CLDLOW_CAL_UN',horiz_only,'A','percent','Calipso Low-level Undefined-Phase Cloud Fraction',  &
             flag_xyfill=.true., fill_value=R_UNDEF)
     
-!       ! Calipso Opaque/thin cloud diagnostics
-!       call addfld('CLDOPQ_CAL',      horiz_only,    'A', 'percent', 'CALIPSO Opaque Cloud Cover',       &
-!            flag_xyfill=.true., fill_value=R_UNDEF)
-!       call addfld('CLDTHN_CAL',      horiz_only,    'A', 'percent', 'CALIPSO Thin Cloud Cover',         &
-!            flag_xyfill=.true., fill_value=R_UNDEF)
-!       call addfld('CLDZOPQ_CAL',     horiz_only,    'A', 'm',       'CALIPSO z_opaque Altitude',        &
-!            flag_xyfill=.true., fill_value=R_UNDEF)
-!       call addfld('CLDOPQ_CAL_2D',   (/'cosp_ht'/), 'A', 'percent', 'CALIPSO Opaque Cloud Fraction',    & 
-!            flag_xyfill=.true., fill_value=R_UNDEF)
-!       call addfld('CLDTHN_CAL_2D',   (/'cosp_ht'/), 'A', 'percent', 'CALIPSO Thin Cloud Fraction',      & 
-!            flag_xyfill=.true., fill_value=R_UNDEF)
-!       call addfld('CLDZOPQ_CAL_2D',  (/'cosp_ht'/), 'A', 'percent', 'CALIPSO z_opaque Fraction',        & 
-!            flag_xyfill=.true., fill_value=R_UNDEF)
-!       call addfld('OPACITY_CAL_2D',  (/'cosp_ht'/), 'A', 'percent', 'CALIPSO opacity Fraction',         &  
-!            flag_xyfill=.true., fill_value=R_UNDEF)
-!       call addfld('CLDOPQ_CAL_TMP',  horiz_only,    'A', 'K',       'CALIPSO Opaque Cloud Temperature', & 
-!            flag_xyfill=.true., fill_value=R_UNDEF)
-!       call addfld('CLDTHN_CAL_TMP',  horiz_only,    'A', 'K',       'CALIPSO Thin Cloud Temperature',   & 
-!            flag_xyfill=.true., fill_value=R_UNDEF)
-!       call addfld('CLDZOPQ_CAL_TMP', horiz_only,    'A', 'K',       'CALIPSO z_opaque Temperature',     & 
-!            flag_xyfill=.true., fill_value=R_UNDEF)
-!       call addfld('CLDOPQ_CAL_Z',    horiz_only,    'A', 'm',       'CALIPSO Opaque Cloud Altitude',    & 
-!            flag_xyfill=.true., fill_value=R_UNDEF)
-!       call addfld('CLDTHN_CAL_Z',    horiz_only,    'A', 'm',       'CALIPSO Thin Cloud Altitude',      & 
-!            flag_xyfill=.true., fill_value=R_UNDEF)
-!       call addfld('CLDTHN_CAL_EMIS', horiz_only,    'A', '1',       'CALIPSO Thin Cloud Emissivity',    & 
-!            flag_xyfill=.true., fill_value=R_UNDEF)
-!       call addfld('CLDOPQ_CAL_SE',   horiz_only,    'A', 'm',       'CALIPSO Opaque Cloud Altitude with respect to surface-elevation', &
-!            flag_xyfill=.true., fill_value=R_UNDEF)
-!       call addfld('CLDTHN_CAL_SE',   horiz_only,    'A', 'm',       'CALIPSO Thin Cloud Altitude with respect to surface-elevation', &
-!            flag_xyfill=.true., fill_value=R_UNDEF)
-!       call addfld('CLDZOPQ_CAL_SE',  horiz_only,    'A', 'm',       'CALIPSO z_opaque Altitude with respect to surface-elevation', &
-!            flag_xyfill=.true., fill_value=R_UNDEF)
-
        ! add_default calls for CFMIP experiments or else all fields are added to history file
        !     except those with sub-column dimension/experimental variables
-       !! add all calipso outputs to the history file specified by the CAM namelist variable cosp_histfile_num
+       ! add all calipso outputs to the history file specified by the CAM namelist variable cosp_histfile_num
        call add_default ('CLDLOW_CAL',cosp_histfile_num,' ')
        call add_default ('CLDMED_CAL',cosp_histfile_num,' ')
        call add_default ('CLDHGH_CAL',cosp_histfile_num,' ')
@@ -795,23 +760,6 @@ CONTAINS
        call add_default ('CLDLOW_CAL_ICE',cosp_histfile_num,' ')
        call add_default ('CLDLOW_CAL_LIQ',cosp_histfile_num,' ')
        call add_default ('CLDLOW_CAL_UN',cosp_histfile_num,' ')
-!          call add_default ('CLDOPQ_CAL',cosp_histfile_num,' ')
-!          call add_default ('CLDTHN_CAL',cosp_histfile_num,' ')
-!          call add_default ('CLDZOPQ_CAL',cosp_histfile_num,' ')
-!          call add_default ('CLDOPQ_CAL_2D',cosp_histfile_num,' ')
-!          call add_default ('CLDTHN_CAL_2D',cosp_histfile_num,' ')
-!          call add_default ('CLDZOPQ_CAL_2D',cosp_histfile_num,' ')
-!          call add_default ('OPACITY_CAL_2D',cosp_histfile_num,' ')
-!          call add_default ('CLDOPQ_CAL_TMP',cosp_histfile_num,' ')
-!          call add_default ('CLDTHN_CAL_TMP',cosp_histfile_num,' ')
-!          call add_default ('CLDZOPQ_CAL_TMP',cosp_histfile_num,' ')
-!          call add_default ('CLDOPQ_CAL_Z',cosp_histfile_num,' ')
-!          call add_default ('CLDTHN_CAL_Z',cosp_histfile_num,' ')
-!          call add_default ('CLDTHN_CAL_EMIS',cosp_histfile_num,' ')
-!          call add_default ('CLDOPQ_CAL_SE',cosp_histfile_num,' ')
-!          call add_default ('CLDTHN_CAL_SE',cosp_histfile_num,' ')
-!          call add_default ('CLDZOPQ_CAL_SE',cosp_histfile_num,' ')
-
        if ((.not.cosp_amwg) .and. (.not.cosp_lite) .and. (.not.cosp_passive) .and. (.not.cosp_active) &
             .and. (.not.cosp_isccp)) then
           call add_default ('MOL532_CAL',cosp_histfile_num,' ')
@@ -1598,7 +1546,7 @@ CONTAINS
        end do
     else
        ! Previously, I had set use_reff=.false.
-       ! use_reff = .false.  !! if you use this,all sizes use DEFAULT_LIDAR_REFF = 30.0e-6 meters
+       ! use_reff = .false.  ! if you use this,all sizes use DEFAULT_LIDAR_REFF = 30.0e-6 meters
        ! The specification of reff_cosp now follows e-mail discussion with Yuying in January 2011. (see above)
        ! All of the values that I have assembled in the code are in microns...convert to meters since that is what COSP wants.
        call pbuf_get_field(pbuf, rel_idx, rel  )
@@ -1925,16 +1873,16 @@ CONTAINS
       
       ! SUB-COLUMN OUTPUT
       if (lfrac_out) then
-         call outfld('SCOPS_OUT',cospIN%frac_out(1:ncol,1:nscol_cosp,1:nhtml_cosp),ncol,lchnk)!!!-1.00000E+30 !! fails check_accum if 'A'
+         call outfld('SCOPS_OUT',cospIN%frac_out(1:ncol,1:nscol_cosp,1:nhtml_cosp),ncol,lchnk)
          if (lisccp_sim) then
-            call outfld('TAU_ISCCP', cospOUT%isccp_boxtau(1:ncol,1:nscol_cosp), ncol, lchnk) !! fails check_accum if 'A'
-            call outfld('CLDPTOP_ISCCP', cospOUT%isccp_boxptop(1:ncol,1:nscol_cosp), ncol, lchnk) !! fails check_accum if 'A'
+            call outfld('TAU_ISCCP', cospOUT%isccp_boxtau(1:ncol,1:nscol_cosp), ncol, lchnk)
+            call outfld('CLDPTOP_ISCCP', cospOUT%isccp_boxptop(1:ncol,1:nscol_cosp), ncol, lchnk)
          end if
          if (llidar_sim) then
-            call outfld('ATB532_CAL',cospOUT%calipso_beta_tot(1:ncol,1:nscol_cosp,1:nhtml_cosp),ncol,lchnk) !! fails check_accum if 'A'
+            call outfld('ATB532_CAL',cospOUT%calipso_beta_tot(1:ncol,1:nscol_cosp,1:nhtml_cosp),ncol,lchnk)
          end if
          if (lradar_sim) then
-            call outfld('DBZE_CS',cospOUT%cloudsat_Ze_tot(1:ncol,:,:), ncol, lchnk) !! fails check_accum if 'A'
+            call outfld('DBZE_CS',cospOUT%cloudsat_Ze_tot(1:ncol,:,:), ncol, lchnk)
          end if
       end if
    end subroutine cosp_write_outputs
@@ -2332,7 +2280,7 @@ CONTAINS
              if (prec_ls(j,k) .ne. 0._r8 .and. dem_s_snow(j,k) .gt. 0._r8) then
                 dem_s_snow(j,k) = dem_s_snow(j,k)/prec_ls(j,k)
                 dem_s_snow(j,k) = 1._r8 - exp ( -1._r8*dem_s_snow(j,k))
-             end if !!+JEK
+             end if
           enddo
        enddo
              
