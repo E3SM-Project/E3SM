@@ -1407,10 +1407,14 @@ contains
                if (use_MMF) then 
                   call cldefr(state%lchnk, ncol, state%t, rel, rei, state%ps, state%pmid, landfrac, icefrac, snowh)
                   do iz = 1,crm_nz
-                     do ic = 1,ncol
-                        ilay = pver - iz + 1
-                        crm_rel(ic,ix,iy,iz) = rel(ic,ilay)
-                        crm_rei(ic,ix,iy,iz) = rei(ic,ilay)
+                     do iy = 1,crm_ny_rad
+                        do ix = 1,crm_nx_rad
+                           do ic = 1,ncol
+                              ilay = pver - iz + 1
+                              crm_rel(ic,ix,iy,iz) = rel(ic,ilay)
+                              crm_rei(ic,ix,iy,iz) = rei(ic,ilay)
+                           end do
+                        end do
                      end do
                   end do
                end if
