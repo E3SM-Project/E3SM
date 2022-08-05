@@ -105,6 +105,7 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
 
     // Set logger in this ap params
     params_i.set("Logger",this->m_atm_logger);
+    params_i.set("Log File Name",this->m_params.get<std::string>("Log File Name"));
 
     // Create the atm proc
     m_atm_processes.emplace_back(apf.create(ap_type,proc_comm,params_i));
