@@ -77,6 +77,7 @@ bool get_homme_bool_param_f90(const char** name);
 void set_homme_int_param_f90(const char** name, const int& value);
 void set_homme_real_param_f90 (const char** name, const double& value);
 void set_homme_bool_param_f90(const char** name, const bool& value);
+void set_homme_log_file_name_f90(const char** fname);
 
 } // extern "C"
 

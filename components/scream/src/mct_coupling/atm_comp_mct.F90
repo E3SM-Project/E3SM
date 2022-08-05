@@ -59,7 +59,6 @@ CONTAINS
                                   import_constant_multiple, export_constant_multiple, &
                                   do_import_during_init,    do_export_during_init
     use ekat_string_utils,  only: string_f2c
-    use kinds,              only: homme_iulog=>iulog
     use mct_mod,            only: mct_aVect_init, mct_gsMap_lsize
     use seq_flds_mod,       only: seq_flds_a2x_fields, seq_flds_x2a_fields
     use seq_infodata_mod,   only: seq_infodata_start_type_start, seq_infodata_start_type_cont
@@ -143,11 +142,6 @@ CONTAINS
     !----------------------------------------------------------------------------
     ! Initialize atm
     !----------------------------------------------------------------------------
-
-    ! Set Homme Output to ${diro}/${logfile}.dyn
-    dyn_log_fname = trim(diro)//"/homme_"//trim(logfile)
-    open (unit=homme_iulog,file=trim(dyn_log_fname),status='REPLACE', &
-          action='WRITE', access='SEQUENTIAL')
 
     ! Init the AD
     call string_f2c(yaml_fname,yaml_fname_c)
@@ -233,24 +227,18 @@ CONTAINS
   !===============================================================================
   subroutine atm_final_mct(EClock, cdata, x2a, a2x)
     use scream_f2c_mod, only: scream_finalize
-    use kinds,          only: homme_iulog=>iulog
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock)            ,intent(inout) :: EClock     ! clock
+    type(ESMF_Clock)            ,intent(inout) :: EClock  ! clock
     type(seq_cdata)             ,intent(inout) :: cdata
-    type(mct_aVect)             ,intent(inout) :: x2a        ! driver     -> atmosphere 
-    type(mct_aVect)             ,intent(inout) :: a2x        ! atmosphere -> driver
-
-    !-------------------------------------------------------------------------------
+    type(mct_aVect)             ,intent(inout) :: x2a     ! driver     -> atmosphere 
+    type(mct_aVect)             ,intent(inout) :: a2x     ! atmosphere -> driver
 
     !----------------------------------------------------------------------------
     ! Finish the rest of ATM model
     !----------------------------------------------------------------------------
 
     call scream_finalize()
-
-    ! Close homme's log file
-    close (homme_iulog)
 
   end subroutine atm_final_mct
   !===============================================================================

@@ -31,6 +31,7 @@ module homme_context_mod
   integer, public :: npes        = 1
   integer, public :: iam         = 0
   logical, public :: masterproc  = .false.
+  character(len=256), public :: homme_log_fname = ""
 
   logical, public :: is_parallel_inited          = .false.
   logical, public :: is_params_inited            = .false.
@@ -49,6 +50,21 @@ module homme_context_mod
   public :: is_hommexx_functors_inited_f90
 
 contains
+  
+  subroutine set_homme_log_file_name_f90(cname) bind(c)
+    use iso_c_binding, only: C_NULL_CHAR, c_ptr, c_f_pointer
+    type (c_ptr), intent(in) :: cname
+    !
+    ! Local(s)
+    !
+    character(len=256), pointer :: fname
+    integer :: len
+
+    call c_f_pointer(cname,fname)
+    len = index(fname, C_NULL_CHAR) -1
+
+    homme_log_fname = "homme."//fname(1:len)
+  end subroutine set_homme_log_file_name_f90
 
   subroutine init_parallel_f90 (f_comm) bind(c)
     use parallel_mod,   only: initmp_from_par, abortmp
