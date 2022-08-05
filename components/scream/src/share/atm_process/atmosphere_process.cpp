@@ -188,7 +188,7 @@ void AtmosphereProcess::run_precondition_checks () const {
     auto res_and_msg = pc->check();
     if (res_and_msg.result==CheckResult::Pass) {
       continue;
-    } else if (res_and_msg.result==CheckResult::Repairable && pc->can_repair()) {
+    } else if (res_and_msg.result==CheckResult::Repairable) {
       // Ok, we can fix this
       pc->repair();
       std::cout << "WARNING: Pre-condition property check failed and repaired.\n"
@@ -226,7 +226,7 @@ void AtmosphereProcess::run_postcondition_checks () const {
     auto res_and_msg = pc->check();
     if (res_and_msg.result==CheckResult::Pass) {
       continue;
-    } else if (res_and_msg.result==CheckResult::Repairable && pc->can_repair()) {
+    } else if (res_and_msg.result==CheckResult::Repairable) {
       // Ok, we can fix this
       pc->repair();
       std::cout << "WARNING: Post-condition property check failed and repaired.\n"
