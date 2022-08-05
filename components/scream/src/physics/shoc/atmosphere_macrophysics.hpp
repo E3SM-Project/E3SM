@@ -32,6 +32,7 @@ class SHOCMacrophysics : public scream::AtmosphereProcess
   using Spack                = typename SHF::Spack;
   using IntSmallPack         = typename SHF::IntSmallPack;
   using Smask                = typename SHF::Smask;
+  using view_1d_int          = typename KT::template view_1d<Int>;
   using view_1d_int_const    = typename KT::template view_1d<const Int>;
   using view_1d              = typename SHF::view_1d<Real>;
   using view_1d_const        = typename SHF::view_1d<const Real>;

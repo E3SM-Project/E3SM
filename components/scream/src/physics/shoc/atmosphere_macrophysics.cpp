@@ -324,13 +324,11 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   auto qv_index  = tracer_info->m_subview_idx.at("qv");
   auto tke_index = tracer_info->m_subview_idx.at("tke");
 
-  //view to store indices of tracers which will participate in wet<->dry conversion; we are excluding
+  //Device view to store indices of tracers which will participate in wet<->dry conversion; we are excluding
   //"tke" [as it is not "water based" tracer] and "qv"[as "qv" (before conversion) is needed for
   //computing conversion for all other tracers] from qtracers view
-  using view_1d    = typename KT::template view_1d<Int>;
 
-  //device view containing indices of tracers participating in wet<->dry conversion (2 tracers, qv and tke, are excluded)
-  view_1d convert_wet_dry_idx_d("convert_wet_dry_idx_d",m_num_tracers-2);
+  view_1d_int convert_wet_dry_idx_d("convert_wet_dry_idx_d",m_num_tracers-2);  //2 tracers, qv and tke, are excluded
 
   //mirror view on host
   auto convert_wet_dry_idx_h = Kokkos::create_mirror_view(convert_wet_dry_idx_d);
@@ -347,7 +345,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
 
 
   shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,convert_wet_dry_idx_d,z_surf,m_cell_area,m_cell_lat,
-                                T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_latent_flux,
+                                T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_evap,
                                 surf_mom_flux,qtracers,qv,qc,qc_copy,tke,tke_copy,z_mid,z_int,cell_length,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
                                 wtracer_sfc,wm_zt,inv_exner,thlm,qw);
