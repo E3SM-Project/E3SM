@@ -144,15 +144,15 @@ contains
        coslat(i) = cos(clat(i))
     end do
 
-    if (name == 'O2') then
+    if (name == 'o2') then
 
        q = chem_surfvals_get('O2MMR', rmwco2, co2vmr, n2ovmr, ch4vmr, f11vmr, f12vmr, o2mmr)
 
-    else if (name == 'CO2') then
+    else if (name == 'co2') then
 
        q = chem_surfvals_co2_rad(rmwco2, co2vmr, co2vmr_rad)
 
-    else if (name == 'CH4') then
+    else if (name == 'ch4') then
 
        ! set tropospheric mass mixing ratios
        trop_mmr = rmwch4 * chem_surfvals_get('CH4VMR', rmwco2, co2vmr, n2ovmr, ch4vmr, f11vmr, f12vmr, o2mmr)
@@ -180,7 +180,7 @@ contains
           end do
        end do
 
-    else if (name == 'N2O') then
+    else if (name == 'n2o') then
 
        ! set tropospheric mass mixing ratios
        trop_mmr = rmwn2o * chem_surfvals_get('N2OVMR', rmwco2, co2vmr, n2ovmr, ch4vmr, f11vmr, f12vmr, o2mmr)
@@ -208,7 +208,7 @@ contains
           end do
        end do
 
-    else if (name == 'CFC11') then
+    else if (name == 'cfc11') then
 
        ! set tropospheric mass mixing ratios
        trop_mmr = rmwf11 * chem_surfvals_get('F11VMR', rmwco2, co2vmr, n2ovmr, ch4vmr, f11vmr, f12vmr, o2mmr)
@@ -236,7 +236,7 @@ contains
           end do
        end do
 
-    else if (name == 'CFC12') then
+    else if (name == 'cfc12') then
 
        ! set tropospheric mass mixing ratios
        trop_mmr = rmwf12 * chem_surfvals_get('F12VMR', rmwco2, co2vmr, n2ovmr, ch4vmr, f11vmr, f12vmr, o2mmr)
@@ -263,6 +263,9 @@ contains
              end if
           end do
        end do
+
+    else
+       print*, "WARNING unhandled trcmix gas name: ", name
 
     end if
 
