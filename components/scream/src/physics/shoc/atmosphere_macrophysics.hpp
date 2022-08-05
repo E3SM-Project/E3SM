@@ -405,11 +405,15 @@ public:
     Spack* wsm_data;
   };
 
+#ifndef KOKKOS_ENABLE_CUDA
+  // Cuda requires methods enclosing __device__ lambda's to be public
+protected:
+#endif
+
+  void initialize_impl (const RunType run_type);
 
 protected:
 
-  // The three main interfaces for the subcomponent
-  void initialize_impl (const RunType run_type);
   void run_impl        (const int dt);
   void finalize_impl   ();
 
