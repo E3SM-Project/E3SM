@@ -199,8 +199,8 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'ARRM10to60E2r1':
-        decomp_date = '220730'
-        decomp_prefix = 'mpas-o.graph.info.'
+        decomp_date = '220802'
+        decomp_prefix = 'mpas-seaice.v2.'
         grid_date = '220730'
         grid_prefix = 'mpassi.ARRM10to60E2r1'
         if ice_ic_mode == 'spunup':
