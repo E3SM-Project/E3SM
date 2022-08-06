@@ -55,7 +55,8 @@ module cldera_sai_tracers
   real(r8) :: cldera_sai_lon0              ! desired lon of injection (deg)
   real(r8) :: cldera_sai_MSO2              ! total SO2 mass (Mt)
   real(r8) :: cldera_sai_Mash              ! total ash mass (Mt)
-  real(r8) :: cldera_sai_tf                ! injection duration (hours)
+  real(r8) :: cldera_sai_t0                ! desired time of injection after simulation start (hours)
+  real(r8) :: cldera_sai_duration                ! injection duration (hours)
   real(r8) :: cldera_sai_rkSO2             ! SO2 e-folding (1/day)
   real(r8) :: cldera_sai_rkash             ! ash e-folding (1/day)
   real(r8) :: cldera_sai_rksulf            ! ash e-folding (1/day)
@@ -77,6 +78,7 @@ module cldera_sai_tracers
   real(r8), parameter :: day2s   = 86400._r8
   real(r8), parameter :: s2day   = 1.0_r8/day2s
   real(r8), parameter :: hr2s    = 3600._r8
+  real(r8), parameter :: s2hr    = 1.0_r8/hr2s
   real(r8), parameter :: Mt2kg   = 1.0e9_r8
   real(r8), parameter :: km2m    = 1000._r8
   real(r8), parameter :: hPa2Pa  = 100._r8
@@ -85,7 +87,9 @@ module cldera_sai_tracers
   ! for injection source localization
   real(r8) :: lat0                      ! lat of injection (rad)
   real(r8) :: lon0                      ! lon of injection (rad)           
-  real(r8) :: tf                        ! injection duration (s)
+  real(r8) :: dur                       ! injection duration (s)
+  real(r8) :: t0                        ! initial time of injection (s)
+  real(r8) :: tf                        ! final time of injection (s)
   real(r8) :: ttol  = 60.0_r8           ! time tolerance (s)
   real(r8) :: alpha = -2.0_r8           ! vertical skewness of plume 
   real(r8) :: mu    = 22.59_r8 * km2m   ! peak injection altitude (m)
@@ -150,7 +154,7 @@ contains
     ! https://docs.oracle.com/cd/E19957-01/805-4939/6j4m0vnc6/index.html
     ! The default values must be constants, and cannot contain arithemtic operators
     namelist /cldera_sai_tracers_nl/ cldera_sai_tracers_flag, cldera_sai_read_from_ic_file, &
-                                     cldera_sai_lat0, cldera_sai_lon0, cldera_sai_tf, &
+                                     cldera_sai_lat0, cldera_sai_lon0, cldera_sai_t0, cldera_sai_duration, &
                                      cldera_sai_MSO2, cldera_sai_Mash, &
                                      cldera_sai_rkSO2, cldera_sai_rkash, cldera_sai_rksulf, &
                                      cldera_sai_dTsurf, cldera_sai_dTstrat, &
@@ -175,14 +179,16 @@ contains
        call freeunit(unitn)
     
        ! set local values, scale to SI units
-       lat0    = cldera_sai_lat0    * deg2rad     
-       lon0    = cldera_sai_lon0    * deg2rad     
-       tf      = cldera_sai_tf      * hr2s          
-       M_so2   = cldera_sai_MSO2    * Mt2kg      
-       M_ash   = cldera_sai_Mash    * Mt2kg      
-       dTstrat = cldera_sai_dTstrat / day2s  
-       dTsurf  = cldera_sai_dTsurf  / day2s   
-       zAOD    = cldera_sai_zAOD    * km2m
+       lat0    = cldera_sai_lat0     * deg2rad     
+       lon0    = cldera_sai_lon0     * deg2rad     
+       M_so2   = cldera_sai_MSO2     * Mt2kg      
+       M_ash   = cldera_sai_Mash     * Mt2kg      
+       dTstrat = cldera_sai_dTstrat  / day2s  
+       dTsurf  = cldera_sai_dTsurf   / day2s   
+       zAOD    = cldera_sai_zAOD     * km2m
+       dur     = cldera_sai_duration * hr2s
+       t0      = cldera_sai_t0       * hr2s          
+       tf      = t0 + dur
        k_so2   = 1.0_r8 / (cldera_sai_rkSO2  * day2s)
        k_ash   = 1.0_r8 / (cldera_sai_rkash  * day2s)     
        k_sulf  = 1.0_r8 / (cldera_sai_rksulf * day2s)     
@@ -206,6 +212,8 @@ contains
     call mpibcast(k_so2,         1, mpir8, 0, mpicom)
     call mpibcast(k_ash,         1, mpir8, 0, mpicom)
     call mpibcast(k_sulf,        1, mpir8, 0, mpicom)
+    call mpibcast(dur,           1, mpir8, 0, mpicom)
+    call mpibcast(t0,            1, mpir8, 0, mpicom)
     call mpibcast(tf,            1, mpir8, 0, mpicom)
     call mpibcast(w,             1, mpir8, 0, mpicom)
     call mpibcast(dTstrat,       1, mpir8, 0, mpicom)
@@ -431,7 +439,7 @@ contains
     real(r8),            intent(in)    :: dt                 ! timestep
     integer,             intent(in)    :: ncol               ! no. of column in chunk
 
-    !----------------- Local workspace-------------------------------
+    !----------------- Local workspace -------------------------------
 
     integer  :: i, k
     integer  :: lchnk             ! chunk identifier
@@ -522,6 +530,8 @@ contains
         write(iulog,*) "CLDERA_SAI_TRACERS injection owner lat0", state%lat(inji) * rad2deg 
         write(iulog,*) "CLDERA_SAI_TRACERS injection owner lon0", state%lon(inji) * rad2deg
         write(iulog,*) "CLDERA_SAI_TRACERS injection owner dist (km)", inj_dist / 1000.0
+        write(iulog,*) "CLDERA_SAI_TRACERS injection duration (hr)", dur * s2hr
+        write(iulog,*) "CLDERA_SAI_TRACERS injection delay (hr)", t0 * s2hr
     endif
    
 
@@ -544,8 +554,8 @@ contains
             endif
         enddo
         sVk = SUM(V(inji, :))
-        A_so2 = M_so2 / (tf * sVk) 
-        A_ash = M_ash / (tf * sVk)
+        A_so2 = M_so2 / (dur * sVk) 
+        A_ash = M_ash / (dur * sVk)
         write(iulog,*) "CLDERA_SAI_TRACERS normalization A (kg m / s)", A_so2
         write(iulog,*) "CLDERA_SAI_TRACERS normalization sVk (1/m)", sVk
     endif
@@ -610,11 +620,11 @@ contains
           lon = state%lon(i)
           
           ! ---- constrain injection to duration tf, bound AOD to zmax
-          ! tf expected to be divisible by timestep, so compare with tolerance ttol << dt
-          if(ABS(t - tf) > ttol) then
-              source_cutoff = 0.0
-          else
+          ! t0 and tf expected to be divisible by timestep, so compare with tolerance ttol << dt
+          if( t > (t0-ttol) .and. t < (tf-ttol) ) then
               source_cutoff = 1.0
+          else
+              source_cutoff = 0.0
           end if
           if(state%zm(i,k) > zAOD) then
               AOD_cutoff = 0.0
@@ -654,9 +664,9 @@ contains
           
           ! =============== POTENTIAL TEMP ===============
           ! initialize within the first minute of the run
-          if (t < 60.0_r8) then
-              state%q(i,k,ixpt) = state%t(i,k) * (P0 / state%pmid(i, k))**(rair/cpair)
-          end if
+          !if (t < 60.0_r8) then
+          !    state%q(i,k,ixpt) = state%t(i,k) * (P0 / state%pmid(i, k))**(rair/cpair)
+          !end if
           ptend%q(i,k,ixpt) = 0.0_r8
                    
 

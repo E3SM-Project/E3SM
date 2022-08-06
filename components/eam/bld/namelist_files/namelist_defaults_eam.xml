@@ -1190,6 +1190,8 @@
 <!-- Defaults for CLDERA SAI                                            -->
 <!-- ================================================================== -->
 <cldera_sai_read_from_ic_file> .false. </cldera_sai_read_from_ic_file>
+<cldera_sai_t0> 0.0 </cldera_sai_t0>
+<cldera_sai_duration> 9.0 </cldera_sai_duration>
 <cldera_sai_lat0> 15.15 </cldera_sai_lat0>
 <cldera_sai_lon0> 120.35 </cldera_sai_lon0>
 <cldera_sai_MSO2> 17.0 </cldera_sai_MSO2>
@@ -1206,7 +1208,6 @@
 <cldera_sai_formSulfate> .true. </cldera_sai_formSulfate>
 <cldera_sai_stratHeating> .true. </cldera_sai_stratHeating>
 <cldera_sai_surfCooling> .true. </cldera_sai_surfCooling>
-<cldera_sai_tf> 9.0 </cldera_sai_tf>
 
 
 

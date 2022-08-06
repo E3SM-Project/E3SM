@@ -4237,6 +4237,19 @@ conditions file. If this is not specified then they are not read from IC file.
 Default: FALSE
 </entry>
 
+<entry id="cldera_sai_t0" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+Desired time of injection from simulation start, in hours.
+Default: 0 (injection occurs at first timestep)
+</entry>
+
+<entry id="cldera_sai_duration" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+Injection duration in hours. After the time cldera_sai_t0 + cldera_sai_duration, the injection 
+amplitude is set to zero.
+Default: 9
+</entry>
+
 <entry id="cldera_sai_lat0" type="real" category="test_tracers"
        group="cldera_sai_tracers_nl" valid_values="" >
 Desired latitude of injection in degrees. The injection will occur at the grid point
@@ -4321,12 +4334,6 @@ Default: 3.0e10
        group="cldera_sai_tracers_nl" valid_values="" >
 Maximum height above the surface at which to apply cooling by AOD in km
 Default: 5
-</entry>
-
-<entry id="cldera_sai_tf" type="real" category="test_tracers"
-       group="cldera_sai_tracers_nl" valid_values="" >
-Injection duratiomn in hours. After this time, the injection amplitude is set to zero.
-Default: 9
 </entry>
 
 <entry id="cldera_sai_formSulfate" type="logical" category="test_tracers"
