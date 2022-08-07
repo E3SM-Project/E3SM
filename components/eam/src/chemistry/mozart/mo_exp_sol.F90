@@ -28,7 +28,7 @@ contains
   end subroutine exp_sol_inti
 
 
-  subroutine exp_sol( base_sol, reaction_rates, het_rates, extfrc, delt, xhnm, ncol, lchnk, ltrop, diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss )
+  subroutine exp_sol( base_sol, reaction_rates, het_rates, extfrc, delt, xhnm, ncol, lchnk, ltrop, diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss, invariants )
     !-----------------------------------------------------------------------
     !      	... Exp_sol advances the volumetric mixing ratio
     !           forward one time step via the fully explicit
@@ -42,7 +42,11 @@ contains
     use shr_kind_mod,  only : r8 => shr_kind_r8
     use cam_history,   only : outfld
     use mo_tracname,   only : solsym
-
+    !kzm ++
+    use mo_chem_utls,      only :  get_inv_ndx
+    use cam_logfile,      only : iulog
+    use chem_mods,     only : nfs 
+    !kzm --
     implicit none
     !-----------------------------------------------------------------------
     !     	... Dummy arguments
@@ -54,6 +58,7 @@ contains
     real(r8), intent(in)    ::  reaction_rates(ncol,pver,rxntot)    ! rxt rates (1/cm^3/s)
     real(r8), intent(in)    ::  extfrc(ncol,pver,extcnt)            ! "external insitu forcing" (1/cm^3/s)
     real(r8), intent(in)    ::  xhnm(ncol,pver)
+    real(r8), intent(in)     :: invariants(ncol,pver,nfs) !kzm
     integer,  intent(in)    ::  ltrop(pcols)                        ! chemistry troposphere boundary (index)
     real(r8), intent(inout) ::  base_sol(ncol,pver,gas_pcnst)       ! working mixing ratios (vmr)
     real(r8), intent(in)    ::  diags_reaction_rates(ncol,pver,rxntot)    ! rxt rates (1/cm^3/s)
@@ -73,6 +78,10 @@ contains
 
     real(r8), dimension(ncol,pver) :: wrk
     real(r8), dimension(ncol,pver,gas_pcnst) :: base_sol_reset
+    !kzm ++
+    integer :: inv_ndx_cnst_no3, inv_ndx_m, inv_ndx_cnst_oh 
+  !  real(r8), intent(in)     :: invariants
+     !kzm --
 
     chem_prod(:,:,:) = 0._r8
     chem_loss(:,:,:) = 0._r8
@@ -82,6 +91,32 @@ contains
     !        ... Put "independent" production in the forcing
     !-----------------------------------------------------------------------      
     base_sol_reset = base_sol
+    !kzm 
+    inv_ndx_cnst_no3       = get_inv_ndx( 'cnst_NO3' )
+    inv_ndx_m       = get_inv_ndx( 'M' )
+    inv_ndx_cnst_oh       = get_inv_ndx( 'cnst_OH' )
+    do m=1,clscnt1
+       l = clsmap(m,1)
+       if (trim(solsym(l)) == 'NO3' ) then 
+          do i = 1,ncol
+             do k = 1,ltrop(i)
+                 write(iulog,*)'kzm_NO3 ',  base_sol(i,k,l)
+                 base_sol(i,k,l) = invariants(i,k,inv_ndx_cnst_no3)/invariants(i,k,inv_ndx_m)
+                 write(iulog,*)'kzm_NO3_inv ',  base_sol(i,k,l)
+             enddo
+          enddo
+       endif
+       if (trim(solsym(l)) == 'OH' ) then
+          do i = 1,ncol
+             do k = 1,ltrop(i)
+                 write(iulog,*)'kzm_OH ',  base_sol(i,k,l)
+                 base_sol(i,k,l) = invariants(i,k,inv_ndx_cnst_oh)/invariants(i,k,inv_ndx_m)
+                 write(iulog,*)'kzm_OH_inv ',  base_sol(i,k,l)
+             enddo
+          enddo
+       endif
+    enddo
+
     call indprd( 1, ind_prd, clscnt1, base_sol, extfrc, &
          reaction_rates, ncol )
 
@@ -94,10 +129,12 @@ contains
     !    	... Solve for the mixing ratio at t(n+1)
     !-----------------------------------------------------------------------      
 
+    
+
     do m = 1,clscnt1
        l = clsmap(m,1)
        ! apply E90 loss in all levels, including stratosphere
-       if (trim(solsym(l)) == 'E90') then
+       if (trim(solsym(l)) == 'E90' ) then
           do i = 1,ncol
              do k = 1,pver
                 ! change the old equation
@@ -111,9 +148,9 @@ contains
           end do
        ! SO2 and H2SO4 can be dead zeros due to aerosol processes
        ! use a different equation for them to avoid debug built issues
-       elseif (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2') then
+       elseif (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2' .or. trim(solsym(l)) == 'DMS') then
           do i = 1,ncol
-              do k = ltrop(i)+1,pver
+              do k = 1,pver
                  chem_loss(i,k,l) = -loss(i,k,m)
                  chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m) 
                  base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))

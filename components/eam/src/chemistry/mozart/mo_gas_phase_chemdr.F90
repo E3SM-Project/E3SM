@@ -34,6 +34,7 @@ module mo_gas_phase_chemdr
   integer :: ndx_h2so4
   integer :: inv_ndx_cnst_o3, inv_ndx_m
   integer :: inv_ndx_cnst_oh, inv_ndx_cnst_no3, inv_ndx_cnst_ch4 !kzm ++
+  integer :: so2_ndx,dms_ndx !kzm to include stratosphere SO2
 ! for ozone budget 
   integer :: jo2_b_ndx, lch3o2_no_ndx, lno_ho2_ndx, lc2h5o2_no_ndx, lch3co3_no_ndx, lroho2_no_ndx, lisopo2_no_ndx, lmvko2_no_ndx
   integer :: jo1dU_ndx, jno2_ndx, jno3_a_ndx, jn2o5_b_ndx, po3_oh_ndx
@@ -78,6 +79,9 @@ contains
 
     call phys_getopts( history_aerosol_out = history_aerosol, &
          convproc_do_aer_out = convproc_do_aer ) 
+
+    so2_ndx = get_spc_ndx('SO2')!kzm
+    dms_ndx = get_spc_ndx('DMS')!kzm
    
     ndx_h2so4 = get_spc_ndx('H2SO4')
     uci1_ndx= get_rxt_ndx('uci1')
@@ -946,7 +950,7 @@ contains
     !kzm note: this is a strange setting
     elseif (chem_name == 'trop_strat_mam7_resus_mom_soag_s') then !kzm
        ltrop_sol(:ncol) = 0 ! apply solver to all levels
-     elseif (chem_name == 'trop_strat_mam5_resus_mom_soag') then !kzm
+    elseif (chem_name == 'trop_strat_mam5_resus_mom_soag') then !kzm
        ltrop_sol(:ncol) = 0 ! apply solver to all levels
     !kzm --
     else
@@ -1067,6 +1071,7 @@ contains
     ! reset vmr to pre-imp_sol values for stratospheric boxes
     if (uci1_ndx > 0) then
        diags_reaction_rates(:,:,:) = reaction_rates(:,:,:)
+       !vmr_old2(:,:,so2_ndx) = vmr(:,:,so2_ndx) !kzm ++
        do i = 1,ncol
           do k = 1,pver
              if ( .not. tropFlag(i,k) ) then
@@ -1193,7 +1198,7 @@ contains
     endif
     call t_startf('exp_sol')
     call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol, &
-                  diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss)
+                  diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss, invariants)
     call t_stopf('exp_sol')
 
     if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels .or.&
@@ -1243,6 +1248,12 @@ contains
     if (uci1_ndx > 0) then
        ! exclude E90 from resetting
        vmr_old2(:,:,e90_ndx) = vmr(:,:,e90_ndx)
+       ! kzm ++ 
+       ! exclude SO2
+       vmr_old2(:,:,so2_ndx) = vmr(:,:,so2_ndx) 
+       vmr_old2(:,:,ndx_h2so4) = vmr(:,:,ndx_h2so4) 
+       vmr_old2(:,:,dms_ndx) = vmr(:,:,dms_ndx) 
+       ! kzm --
        do i = 1,ncol
           do k = 1,pver
              if ( .not. tropFlag(i,k) ) then
@@ -1306,13 +1317,14 @@ contains
 ! Aerosol processes ...
 !
     !kzm ++
-#if (defined MODAL_AERO_5MODE)
-    call strat_sulfate_cal_gridbox(ncol, vmr, invariants, tfld, troplev, delt)
-#endif
+!#if (defined MODAL_AERO_5MODE)
+    !call strat_sulfate_cal_gridbox(ncol, vmr, invariants, tfld, troplev, delt)
+!#endif
     !kzm --
     if (uci1_ndx > 0) then
        vmr_old2(:ncol,:,:) = vmr(:ncol,:,:)
     endif
+
     call t_startf('aero_model_gasaerexch')
     call aero_model_gasaerexch( imozart-1, ncol, lchnk, delt, latndx, lonndx, reaction_rates, &
                                 tfld, pmid, pdel, mbar, relhum, &
@@ -1930,8 +1942,8 @@ contains
       h2so4_y1 = max(0.0_r8,h2so4_y1)
       !h2so4_1(i,k) = h2so4_y1
       ! put it in vmr
-      vmr(i,k,ndx_h2so4) = h2so4_y1    
-      vmr(i,k,ndx_so2) = so2_y1    
+      vmr(i,k,ndx_h2so4) = h2so4_y1   
+      vmr(i,k,ndx_so2) = so2_y1     
       vmr(i,k,ndx_dms) = dms_y1    
       end do
    end do
