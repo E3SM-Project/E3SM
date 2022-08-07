@@ -91,11 +91,6 @@ contains
     !        ... Put "independent" production in the forcing
     !-----------------------------------------------------------------------      
     base_sol_reset = base_sol
-    !kzm 
-    !inv_ndx_cnst_no3       = get_inv_ndx( 'cnst_NO3' )
-    !inv_ndx_m       = get_inv_ndx( 'M' )
-    !inv_ndx_cnst_oh       = get_inv_ndx( 'cnst_OH' )
-
     call indprd( 1, ind_prd, clscnt1, base_sol, extfrc, &
          reaction_rates, ncol )
 
@@ -107,7 +102,6 @@ contains
     !-----------------------------------------------------------------------      
     !    	... Solve for the mixing ratio at t(n+1)
     !-----------------------------------------------------------------------      
-
 
     do m = 1,clscnt1
        l = clsmap(m,1)
@@ -126,14 +120,36 @@ contains
           end do
        ! SO2 and H2SO4 can be dead zeros due to aerosol processes
        ! use a different equation for them to avoid debug built issues
-       elseif (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2' .or. trim(solsym(l)) == 'DMS') then
+#if (defined MODAL_AERO_5MODE)  
+       ! for MAM5, H2SO4, SO2, and DMS needs to be solved in the stratosphere     
+       elseif (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2') then
+         ! V2-like explicit equation is used to solve H2SO4 and SO2 due to dead zero values
+         do i = 1,ncol
+             do k = 1,pver
+                chem_loss(i,k,l) = -loss(i,k,m)
+                chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
+                base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
+             end do
+         end do
+       elseif (trim(solsym(l)) == 'DMS') then
+         ! DMS doesn't have dead zero value issue
+         do i = 1,ncol
+             do k = 1,pver
+                chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m)
+                chem_loss(i,k,l) = (base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) - base_sol(i,k,l))/delt
+                base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
+             end do
+          end do
+#else
+       elseif (trim(solsym(l)) == 'H2SO4' .or. trim(solsym(l)) == 'SO2') then
           do i = 1,ncol
-              do k = 1,pver
+              do k = ltrop(i)+1,pver
                  chem_loss(i,k,l) = -loss(i,k,m)
                  chem_prod(i,k,l) = prod(i,k,m)+ind_prd(i,k,m) 
                  base_sol(i,k,l) = base_sol(i,k,l) + delt * (prod(i,k,m) + ind_prd(i,k,m) - loss(i,k,m))
               end do
           end do
+#endif         
        else
           do i = 1,ncol
              do k = ltrop(i)+1,pver

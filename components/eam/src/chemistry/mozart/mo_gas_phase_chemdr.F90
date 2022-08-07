@@ -952,7 +952,7 @@ contains
     !kzm note: this is a strange setting
     elseif (chem_name == 'trop_strat_mam7_resus_mom_soag_s') then !kzm
        ltrop_sol(:ncol) = 0 ! apply solver to all levels
-     elseif (chem_name == 'trop_strat_mam5_resus_mom_soag') then !kzm
+    elseif (chem_name == 'trop_strat_mam5_resus_mom_soag') then !kzm
        ltrop_sol(:ncol) = 0 ! apply solver to all levels
     !kzm --
     else
@@ -1073,6 +1073,7 @@ contains
     ! reset vmr to pre-imp_sol values for stratospheric boxes
     if (uci1_ndx > 0) then
        diags_reaction_rates(:,:,:) = reaction_rates(:,:,:)
+       !vmr_old2(:,:,so2_ndx) = vmr(:,:,so2_ndx) !kzm ++
        do i = 1,ncol
           do k = 1,pver
              if ( .not. tropFlag(i,k) ) then
@@ -1213,7 +1214,7 @@ contains
 
     call t_startf('exp_sol')
     call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol, &
-                  diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss)
+                  diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss, invariants)
     call t_stopf('exp_sol')
 
     if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels .or.&
