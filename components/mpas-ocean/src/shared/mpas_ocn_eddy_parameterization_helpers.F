@@ -62,7 +62,7 @@ module ocn_eddy_parameterization_helpers
      !
      !-----------------------------------------------------------------
 
-     integer :: k, nEdges, nCells, iCell, iEdge, cell1, cell2, indMLDedge
+     integer :: k, nEdges, nCells, iCell, iEdge, cell1, cell2
      ! gradDensityEdge: Normal gradient of density
      !           units: none
      real(kind=RKIND), dimension(:, :), allocatable :: gradDensityEdge, gradDensityTopOfEdge, &
@@ -265,17 +265,6 @@ module ocn_eddy_parameterization_helpers
     !$omp end do
     !$omp end parallel
 
-    nEdges = nEdgesHalo(1)
-    !$omp parallel
-    !$omp do schedule(runtime) &
-    !$omp private(cell1,cell2)
-    do iEdge=1,nEdgesAll
-       cell1 = cellsOnEdge(1,iEdge)
-       cell2 = cellsOnEdge(2,iEdge)
-       indMLDedge(iEdge) = min(indMLD(cell1),indMLD(cell2))
-    enddo
-    !$omp end do
-    !$omp end parallel
     deallocate(depth)
   end subroutine ocn_eddy_compute_mixed_layer_depth
 

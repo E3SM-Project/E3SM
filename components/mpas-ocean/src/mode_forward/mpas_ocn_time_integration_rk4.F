@@ -819,8 +819,8 @@ module ocn_time_integration_rk4
 
          call ocn_time_average_coupled_accumulate(statePool, forcingPool, 2)
 
-         if (config_use_GM) then
-            call ocn_reconstruct_gm_vectors(meshPool)
+         if (config_use_GM .or. config_submesoscale_enable) then
+            call ocn_reconstruct_eddy_vectors(meshPool)
          end if
 
          block => block % next

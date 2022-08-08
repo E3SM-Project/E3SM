@@ -99,10 +99,10 @@ module ocn_diagnostics_variables
 
    real (kind=RKIND), dimension(:,:), pointer :: &
       transportVelocityX, transportVelocityY, transportVelocityZ, transportVelocityZonal, &
-      transportVelocityMeridional, GMBolusVelocityX, GMBolusVelocityY, &
-      GMBolusVelocityZ, GMBolusVelocityZonal, GMBolusVelocityMeridional, gmStreamFuncTopOfEdge, &
+      transportVelocityMeridional, eddyVelocityX, eddyVelocityY, &
+      eddyVelocityZ, GMBolusVelocityZonal, GMBolusVelocityMeridional, gmStreamFuncTopOfEdge, &
       GMStreamFuncX, GMStreamFuncY, GMStreamFuncZ, GMStreamFuncZonal, GMStreamFuncMeridional, &
-      mleVelocityX, mleVelocityY, mleVelocityZ, mleVelocityZonal, mleVelocityMeridional
+      mleVelocityZonal, mleVelocityMeridional
 
    real (kind=RKIND), dimension(:,:), pointer :: rx1Edge
    real (kind=RKIND), dimension(:,:), pointer :: rx1Cell
@@ -127,7 +127,7 @@ module ocn_diagnostics_variables
    real(kind=RKIND), dimension(:), pointer   :: cGMphaseSpeed
    real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown
 
-   integer, dimension(:), pointer :: indMLD, indMLDedge
+   integer, dimension(:), pointer :: indMLD
    real(kind=RKIND), dimension(:), pointer :: dThreshMLD
    real (kind=RKIND), dimension(:,:), pointer :: velocityX, velocityY, velocityZ
 
@@ -417,12 +417,6 @@ contains
                    GMStreamFuncZonal)
          call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncMeridional', &
                    GMStreamFuncMeridional)
-         call mpas_pool_get_array(diagnosticsPool, 'mleVelocityX', &
-                   mleVelocityX)
-         call mpas_pool_get_array(diagnosticsPool, 'mleVelocityY', &
-                   mleVelocityY)
-         call mpas_pool_get_array(diagnosticsPool, 'mleVelocityZ', &
-                   mleVelocityZ)
          call mpas_pool_get_array(diagnosticsPool, 'mleVelocityZonal', &
                    mleVelocityZonal)
          call mpas_pool_get_array(diagnosticsPool, 'mleVelocityMeridional', &
@@ -437,12 +431,12 @@ contains
                    mleVelocityZonal)
          call mpas_pool_get_array(diagnosticsPool, 'mleVelocityMeridional', &
                    mleVelocityMeridional)
-       call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityX', &
-                   GMBolusVelocityX)
-         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityY', &
-                   GMBolusVelocityY)
-         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZ', &
-                   GMBolusVelocityZ)
+       call mpas_pool_get_array(diagnosticsPool, 'eddyVelocityX', &
+                   eddyVelocityX)
+         call mpas_pool_get_array(diagnosticsPool, 'eddyVelocityY', &
+                   eddyVelocityY)
+         call mpas_pool_get_array(diagnosticsPool, 'eddyVelocityZ', &
+                   eddyVelocityZ)
          call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZonal', &
                    GMBolusVelocityZonal)
          call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityMeridional', &
@@ -623,7 +617,6 @@ contains
                'modifyLandIcePressureMask', &
                 modifyLandIcePressureMask)
       call mpas_pool_get_array(diagnosticsPool, 'indMLD', indMLD)
-      call mpas_pool_get_array(diagnosticsPool, 'indMLDedge', indMLDedge)
       call mpas_pool_get_array(diagnosticsPool, 'dThreshMLD', dThreshMLD)
       call mpas_pool_get_array(diagnosticsPool, 'surfacePressure', &
                 surfacePressure)
@@ -724,12 +717,9 @@ contains
          !$acc                   normRelVortEdge,                 &
          !$acc                   surfaceVelocity,                 &
          !$acc                   vertVelocityTop,                 &
-         !$acc                   mleVelocityX,                &
-         !$acc                   mleVelocityY,                &
-         !$acc                   mleVelocityZ,                &
-         !$acc                   GMBolusVelocityX,                &
-         !$acc                   GMBolusVelocityY,                &
-         !$acc                   GMBolusVelocityZ,                &
+         !$acc                   eddyVelocityX,                &
+         !$acc                   eddyVelocityY,                &
+         !$acc                   eddyVelocityZ,                &
          !$acc                   vertNonLocalFlux,                &
          !$acc                   vertViscTopOfEdge,               &
          !$acc                   gradSSHMeridional,               &
@@ -859,7 +849,6 @@ contains
       !$acc                   zTop,                                    &
       !$acc                   xtime,                                   &
       !$acc                   indMLD,                                  &
-      !$acc                   indMLDedge,                              &
       !$acc                   dThreshMLD,                              &
       !$acc                   density,                                 &
       !$acc                   betaEdge,                                &
@@ -976,12 +965,9 @@ contains
          !$acc                   normRelVortEdge,                 &
          !$acc                   surfaceVelocity,                 &
          !$acc                   vertVelocityTop,                 &
-         !$acc                   mleVelocityX,                &
-         !$acc                   mleVelocityY,                &
-         !$acc                   mleVelocityZ,                &
-         !$acc                   GMBolusVelocityX,                &
-         !$acc                   GMBolusVelocityY,                &
-         !$acc                   GMBolusVelocityZ,                &
+         !$acc                   eddyVelocityX,                &
+         !$acc                   eddyVelocityY,                &
+         !$acc                   eddyVelocityZ,                &
          !$acc                   vertNonLocalFlux,                &
          !$acc                   vertViscTopOfEdge,               &
          !$acc                   gradSSHMeridional,               &
@@ -1111,7 +1097,6 @@ contains
       !$acc                   zTop,                                    &
       !$acc                   xtime,                                   &
       !$acc                   indMLD,                                  &
-      !$acc                   indMLDedge,                              &
       !$acc                   dThreshMLD,                              &
       !$acc                   density,                                 &
       !$acc                   betaEdge,                                &
@@ -1186,12 +1171,9 @@ contains
                  normRelVortEdge,                 &
                  surfaceVelocity,                 &
                  vertVelocityTop,                 &
-                 GMBolusVelocityX,                &
-                 GMBolusVelocityY,                &
-                 GMBolusVelocityZ,                &
-                 mleVelocityX,                &
-                 mleVelocityY,                &
-                 mleVelocityZ,                &
+                 eddyVelocityX,                &
+                 eddyVelocityY,                &
+                 eddyVelocityZ,                &
                  vertNonLocalFlux,                &
                  vertViscTopOfEdge,               &
                  gradSSHMeridional,               &
@@ -1312,7 +1294,6 @@ contains
               zTop,                                    &
               xtime,                                   &
               indMLD,                                  &
-              indMLDedge,                              &
               dThreshMLD,                              &
               density,                                 &
               betaEdge,                                &
