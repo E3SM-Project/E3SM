@@ -42,7 +42,6 @@ public:
 protected:
   bool valid_dofs_list (const dofs_list_type& dofs_gids)      const override;
   bool valid_lid_to_idx_map (const lid_to_idx_map_type& lid_to_idx) const override;
-  bool valid_geo_data (const std::string& name, const geo_view_type& data) const override;
 
   // SE dims
   int       m_num_local_elem;

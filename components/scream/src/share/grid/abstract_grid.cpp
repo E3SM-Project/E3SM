@@ -159,14 +159,6 @@ AbstractGrid::get_lid_to_idx_map () const {
 
 void AbstractGrid::
 set_geometry_data (const std::string& name, const geo_view_type& data) {
-  // Sanity checks
-  EKAT_REQUIRE_MSG (data.extent_int(0)==m_num_local_dofs || data.extent_int(0)==m_num_vert_levs,
-                    "Error! Input geometry data has wrong dimensions.\n");
-
-#ifndef NDEBUG
-  EKAT_REQUIRE_MSG(this->valid_geo_data(name,data), "Error! Invalid geo data.\n");
-#endif
-
   m_geo_views[name] = data;
   m_geo_views_host[name] = Kokkos::create_mirror_view(data);
   Kokkos::deep_copy(m_geo_views_host[name],data);

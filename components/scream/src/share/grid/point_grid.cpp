@@ -63,12 +63,6 @@ PointGrid::get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag
   return FieldLayout({COL,vector_tag,VL},{get_num_local_dofs(),vector_dim,nvl});
 }
 
-bool PointGrid::
-valid_geo_data (const std::string& name, const geo_view_type& /* data */) const {
-  // Sanity checks
-  return name=="lat" || name=="lon" || name=="area" || name=="hyam" || name=="hybm";
-}
-
 std::shared_ptr<const PointGrid>
 create_point_grid (const std::string& grid_name,
                    const int num_global_cols,

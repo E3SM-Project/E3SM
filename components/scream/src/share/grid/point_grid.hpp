@@ -51,9 +51,6 @@ public:
   int get_partitioned_dim_global_size () const override {
     return get_num_global_dofs();
   }
-
-protected:
-  bool valid_geo_data (const std::string& name, const geo_view_type& data) const override;
 };
 
 // Create a point grid, with linear range of gids, evenly partitioned
