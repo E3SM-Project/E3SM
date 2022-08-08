@@ -1519,6 +1519,7 @@
 		<package name="cullCells" description="This package controls variables that provide information on what cells should be culled."/>
 		<package name="tracerBudget" description="This package controls variables that record the tracer budget."/>
 		<package name="gm" description="This package is for GM variables, which are only needed at lower resolutions."/>
+		<package name="submeso" description="This package is for submesoscale eddy (MLE) variables, needed at resolutions greater than O(1km)"/>
 		<package name="tidalPotentialForcingPKG" description="This package controls variables required for tidal potential forcing"/>
 		<package name="topographicWaveDragPKG" description="This package controls variables required for topographic wave drag"/>
 		<package name="gotmPKG" description="This package is for GOTM variables, which are only needed when using GOTM for the vertical turbulence closure."/>
@@ -2867,35 +2868,35 @@
 		/>
 	    <var name="gradBuoyEddy" type="real" dimensions="nVertLevelsP1 nEdges Time" units="s^-2"
 		    description="horizontal gradient of buoyancy at cell edge and interfaces in vertical.  this is used for the GM parameterization and the submesoscale eddy parameterization"
-			packages="forwardMode"
+			packages="gm;submeso"
 		/>
 		<var name="mleVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			description="Bolus velocity in fox-kemper mle parameterization, zonal-direction"
-			packages="forwardMode;analysisMode"
+			packages="gm;submeso"
 		/>
 		<var name="mleVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			description="Bolus velocity in fox-kemper mle parameterization, meridional-direction"
-			packages="forwardMode;analysisMode"
+			packages="gm;submeso"
 		/>
 	    <var name="eddyVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy or submesoscale parameterization, x-direction"
-			 packages="forwardMode;analysisMode"
+			 packages="gm;submeso"
 		/>
 		<var name="eddyVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams or submesoscale eddy parameterization, y-direction"
-			 packages="forwardMode;analysisMode"
+			 packages="gm;submeso"
 		/>
 		<var name="eddyVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="eddy Bolus velocity in Gent-McWilliams or submesoscale eddy parameterization, z-direction"
-			 packages="forwardMode;analysisMode"
+			 packages="gm;submeso"
 		/>
 		<var name="GMBolusVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, zonal-direction"
-			 packages="forwardMode;analysisMode"
+			 packages="gm;submeso"
 		/>
 		<var name="GMBolusVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, meridional-direction"
-			 packages="forwardMode;analysisMode"
+			 packages="gm;submeso"
 		/>
 		<var name="RiTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="1"
 			 description="gradient Richardson number defined at the center (horizontally) and top (vertically)"
