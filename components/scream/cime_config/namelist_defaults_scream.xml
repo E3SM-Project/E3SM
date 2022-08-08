@@ -154,12 +154,14 @@ tweaking their $case/namelist_scream.xml file.
     <!-- SC Import -->
     <sc_import>
       <Grid>Physics GLL</Grid>
+      <Grid hgrid=".*pg2">Physics PG2</Grid>
       <Enable__Postcondition__Checks type="logical">true</Enable__Postcondition__Checks>
     </sc_import>
 
     <!-- SC Export -->
     <sc_export>
       <Grid>Physics GLL</Grid>
+      <Grid hgrid=".*pg2">Physics PG2</Grid>
     </sc_export>
 
     <!-- Homme dynamics -->
