@@ -50,9 +50,9 @@ private
   ! Currently, EAM does not use quad precision, while tandalone Homme/SCREAM can.
   integer (kind=4), public, parameter::  &
 #ifdef HOMME_QUAD_PREC
-  longdouble_kind    = 2*real_kind
+  longdouble_kind    = 16
 #else 
-  longdouble_kind    = real_kind
+  longdouble_kind    = 8
 #endif
 
 end module kinds
