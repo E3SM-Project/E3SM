@@ -29,11 +29,18 @@ private
   long_kind    = 8,                      &
   log_kind     = 4,                      &
   real_kind    = 8,                      &
-  iulog        = 6,                      & ! stderr file handle
 #if HOMME_QUAD_PREC
   longdouble_kind    = 16
 #else 
   longdouble_kind    = 8
+#endif
+
+#ifdef SCREAM
+  ! Allow SCREAM to set log unit
+  integer (kind=4), public :: iulog
+#else
+  integer (kind=4), public, parameter::  &
+    iulog        = 6  ! stderr file handle
 #endif
 #endif
 
