@@ -18,15 +18,13 @@ namespace Homme
  */
 struct SimulationParams
 {
-  SimulationParams() : ftype(ForcingAlg::FORCING_OFF), params_set(false), nsplit(0) {}
-
   void print();
 
   TimeStepType  time_step_type;
   MoistDry      moisture;
   RemapAlg      remap_alg;
   TestCase      test_case;
-  ForcingAlg    ftype;
+  ForcingAlg    ftype = ForcingAlg::FORCING_OFF;
   AdvectionForm theta_adv_form; // Only for theta model
 
   int           rsplit, dt_remap_factor;
@@ -56,12 +54,12 @@ struct SimulationParams
   int       hypervis_subcycle_tom;
   double    hypervis_scaling;
   double    nu_ratio1, nu_ratio2; //control balance between div and vort components in vector laplace
-  int       nsplit;
+  int       nsplit = 0;
   int       nsplit_iteration;
   double    rearth; //propagated then to Geometry and SphereOps
 
   // Use this member to check whether the struct has been initialized
-  bool      params_set;
+  bool      params_set = false;
 };
 
 inline void SimulationParams::print () {
