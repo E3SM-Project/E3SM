@@ -507,12 +507,10 @@ contains
                      * 0.5_RKIND*(layerThickness(k,c1) + layerThickness(k,c2))
                end do
             end do
-            mocStreamValLatAndDepthRegionLocal(1, nVertLevels, iTransect) = &
-                  - sumTransport(nVertLevels, iTransect)
-            do k = nVertLevels-1,1,-1
+            do k = 2, nVertLevels
                mocStreamValLatAndDepthRegionLocal(1, k, iTransect) = &
                   mocStreamValLatAndDepthRegionLocal(1, k + 1, iTransect) &
-                  - sumTransport(k + 1, iTransect)
+                  + sumTransport(k + 1, iTransect)
             end do
          end do
 

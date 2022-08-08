@@ -153,7 +153,7 @@
 <config_Redi_horizontal_ramp_max ocn_grid="WCAtl12to45E2r4">40e3</config_Redi_horizontal_ramp_max>
 
 <!-- submesoscale_eddy_parameterization -->
-<config_submesoscale_enable>.true.</config_submesoscale_enable>
+<config_submesoscale_enable>.false.</config_submesoscale_enable>
 <config_submesoscale_tau>172800</config_submesoscale_tau>
 <config_submesoscale_Ce>0.06</config_submesoscale_Ce>
 <config_submesoscale_Lfmin>1000.0</config_submesoscale_Lfmin>
