@@ -2,6 +2,55 @@
 
 <namelist_defaults>
 
+<!-- CMZ -->
+
+<dtime dyn_target="theta-l"    hgrid="ne0np4_conus30x8"  >900</dtime>
+<hypervis_subcycle_q dyn_target="theta-l"    hgrid="ne0np4_conus30x8"  >1</hypervis_subcycle_q>
+<hypervis_subcycle_tom dyn_target="theta-l"    hgrid="ne0np4_conus30x8">0</hypervis_subcycle_tom>
+<se_ftype dyn_target="theta-l"    hgrid="ne0np4_conus30x8"  >2</se_ftype>
+<se_limiter_option dyn_target="theta-l"    hgrid="ne0np4_conus30x8"  >8</se_limiter_option>
+<dt_remap_factor dyn_target="theta-l"    hgrid="ne0np4_conus30x8"  >-1</dt_remap_factor>
+<dt_tracer_factor dyn_target="theta-l"    hgrid="ne0np4_conus30x8"  >-1</dt_tracer_factor>
+<qsplit dyn_target="theta-l"    hgrid="ne0np4_conus30x8"  >1</qsplit>
+<rsplit dyn_target="theta-l"    hgrid="ne0np4_conus30x8"  >2</rsplit>
+<se_tstep dyn_target="theta-l"    hgrid="ne0np4_conus30x8"  >-1</se_tstep>
+
+<dtime dyn_target="preqx"    hgrid="ne0np4_conus30x8"  >900</dtime>
+<hypervis_subcycle_q dyn_target="preqx"    hgrid="ne0np4_conus30x8"  >1</hypervis_subcycle_q>
+<hypervis_subcycle_tom dyn_target="preqx"    hgrid="ne0np4_conus30x8">0</hypervis_subcycle_tom>
+<se_ftype dyn_target="preqx"    hgrid="ne0np4_conus30x8"  >2</se_ftype>
+<se_limiter_option dyn_target="preqx"    hgrid="ne0np4_conus30x8"  >8</se_limiter_option>
+<dt_remap_factor dyn_target="preqx"    hgrid="ne0np4_conus30x8"  >-1</dt_remap_factor>
+<dt_tracer_factor dyn_target="preqx"    hgrid="ne0np4_conus30x8"  >-1</dt_tracer_factor>
+<qsplit dyn_target="preqx"    hgrid="ne0np4_conus30x8"  >1</qsplit>
+<rsplit dyn_target="preqx"    hgrid="ne0np4_conus30x8"  >2</rsplit>
+<se_tstep dyn_target="preqx"    hgrid="ne0np4_conus30x8"  >-1</se_tstep>
+
+
+<dtime dyn_target="theta-l"    hgrid="ne0np4_vr28natlref"  >900</dtime>
+<hypervis_subcycle_q dyn_target="theta-l"    hgrid="ne0np4_vr28natlref"  >1</hypervis_subcycle_q>
+<hypervis_subcycle_tom dyn_target="theta-l"    hgrid="ne0np4_vr28natlref">0</hypervis_subcycle_tom>
+<se_ftype dyn_target="theta-l"    hgrid="ne0np4_vr28natlref"  >2</se_ftype>
+<se_limiter_option dyn_target="theta-l"    hgrid="ne0np4_vr28natlref"  >8</se_limiter_option>
+<dt_remap_factor dyn_target="theta-l"    hgrid="ne0np4_vr28natlref"  >-1</dt_remap_factor>
+<dt_tracer_factor dyn_target="theta-l"    hgrid="ne0np4_vr28natlref"  >-1</dt_tracer_factor>
+<qsplit dyn_target="theta-l"    hgrid="ne0np4_vr28natlref"  >1</qsplit>
+<rsplit dyn_target="theta-l"    hgrid="ne0np4_vr28natlref"  >2</rsplit>
+<se_tstep dyn_target="theta-l"    hgrid="ne0np4_vr28natlref"  >-1</se_tstep>
+
+<dtime dyn_target="preqx"    hgrid="ne0np4_vr28natlref"  >900</dtime>
+<hypervis_subcycle_q dyn_target="preqx"    hgrid="ne0np4_vr28natlref"  >1</hypervis_subcycle_q>
+<hypervis_subcycle_tom dyn_target="preqx"    hgrid="ne0np4_vr28natlref">0</hypervis_subcycle_tom>
+<se_ftype dyn_target="preqx"    hgrid="ne0np4_vr28natlref"  >2</se_ftype>
+<se_limiter_option dyn_target="preqx"    hgrid="ne0np4_vr28natlref"  >8</se_limiter_option>
+<dt_remap_factor dyn_target="preqx"    hgrid="ne0np4_vr28natlref"  >-1</dt_remap_factor>
+<dt_tracer_factor dyn_target="preqx"    hgrid="ne0np4_vr28natlref"  >-1</dt_tracer_factor>
+<qsplit dyn_target="preqx"    hgrid="ne0np4_vr28natlref"  >1</qsplit>
+<rsplit dyn_target="preqx"    hgrid="ne0np4_vr28natlref"  >2</rsplit>
+<se_tstep dyn_target="preqx"    hgrid="ne0np4_vr28natlref"  >-1</se_tstep>
+
+
+
 <!-- Timestep size (this is the dynamics/physics coupling interval) -->
 <dtime dyn="eul"                   >1200</dtime>
 
