@@ -1,9 +1,7 @@
 #include "scream_trcmix.hpp"
 #include "physics_constants.hpp"
 
-#include "ekat/ekat_pack_kokkos.hpp"
-
-#include <vector>
+#include "ekat/util/ekat_math_utils.hpp"
 
 using scream::Real;
 using scream::Int;
@@ -27,7 +25,6 @@ void trcmix(
   const Real co2vmr_rad, const Real co2vmr, const Real n2ovmr, const Real ch4vmr, const Real f11vmr, const Real f12vmr)
 {
   using C = Constants<Real>;
-  using P = ekat::Pack<Real, 1>;
 
   //
   // View bounds checking
@@ -38,31 +35,25 @@ void trcmix(
 
   // Transpose and copy to host. We reinterpret views as views of Pack<Real, 1> so
   // that we can use the ekat::device_to_host, host_to_device API
-  std::vector<Real> hclat(pcols), hpmid(pcols*pver), hq(pcols*pver);
+  auto hclat   = Kokkos::create_mirror_view(clat);
+  auto hpmid   = Kokkos::create_mirror_view(pmid);
+  auto hpmid_t = Kokkos::create_mirror_view(pmid);
+  auto hq      = Kokkos::create_mirror_view(q);
+  auto hq_t    = Kokkos::create_mirror_view(q);
 
-  {
-    std::vector<trcmix_view1d<const Real>> stuff = {clat};
-    ekat::device_to_host(
-      {hclat.data()},
-      pcols,
-      reinterpret_cast<std::vector<trcmix_view1d<const P>>&>(stuff));
-  }
-  {
-    std::vector<trcmix_view2d<const Real>> stuff = {pmid};
-    ekat::device_to_host(
-      {hpmid.data()},
-      pcols, pver,
-      reinterpret_cast<std::vector<trcmix_view2d<const P>>&>(stuff), true);
-  }
-
+  Kokkos::deep_copy(hclat, clat);
+  Kokkos::deep_copy(hpmid,   pmid);
+  Kokkos::deep_copy(hpmid_t, pmid);
 
   // Convert to hclat to radians
-  for (auto& item : hclat) {
-    item *= C::Pi/180.0;
+  for (Int i = 0; i < pcols; ++i) {
+    hclat[i] *= C::Pi/180.0;
   }
 
+  ekat::transpose<ekat::TransposeDirection::c2f>(hpmid.data(), hpmid_t.data(), pcols, pver);
+
   trcmix_c2f(
-    &name, ncol, pcols, pver, hclat.data(), hpmid.data(), hq.data(),
+    &name, ncol, pcols, pver, hclat.data(), hpmid_t.data(), hq_t.data(),
     C::MWdry,
     C::get_gas_mol_weight("co2"),
     C::get_gas_mol_weight("n2o"),
@@ -72,13 +63,9 @@ void trcmix(
     C::o2mmr,
     co2vmr_rad, co2vmr, n2ovmr, ch4vmr, f11vmr, f12vmr);
 
-  {
-    std::vector<trcmix_view2d<Real>> stuff = {q};
-    ekat::host_to_device(
-      {hq.data()},
-      pcols, pver,
-      reinterpret_cast<std::vector<trcmix_view2d<P>>&>(stuff), true);
-  }
+  ekat::transpose<ekat::TransposeDirection::f2c>(hq_t.data(), hq.data(), pcols, pver);
+
+  Kokkos::deep_copy(q, hq);
 }
 
 #undef CHECK_TRCMIX_VIEW
