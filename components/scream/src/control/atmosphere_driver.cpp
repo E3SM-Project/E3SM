@@ -753,9 +753,10 @@ void AtmosphereDriver::create_logger () {
   using logger_t = Logger<LogBasicFile,LogRootRank>;
   auto logger = std::make_shared<logger_t>(log_fname,log_level,m_atm_comm,"");
   logger->set_no_format();
-  if (not m_atm_params.get<bool>("Standalone",true)) {
-    logger->set_console_level(LogLevel::off);
-  }
+#ifdef SCREAM_CIME_BUILD
+  // Disable console output, to avoid polluting e3sm.log
+  logger->set_console_level(LogLevel::off);
+#endif
   m_atm_logger = logger;
 
   // Record the CASENAME for this run, set default to EAMxx
