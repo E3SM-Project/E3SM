@@ -820,6 +820,7 @@ contains
     integer(in)              :: lSize             ! size of aVect
     real(r8)                 :: ca_i,ca_o         ! area of a grid cell
     logical,save             :: first_time=.true. ! initialization flag
+    logical,save             :: flds_c_oi=.false.
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diagBGC_ocn_mct) '
@@ -874,14 +875,17 @@ contains
           index_x2o_Faxa_ocphidry = mct_aVect_indexRA(x2o_o,'Faxa_ocphidry')
           index_x2o_Faxa_ocphodry = mct_aVect_indexRA(x2o_o,'Faxa_ocphodry')
           index_x2o_Faxa_ocphiwet = mct_aVect_indexRA(x2o_o,'Faxa_ocphiwet')
-          index_x2o_Fioi_algae1   = mct_aVect_indexRA(x2o_o,'Fioi_algae1',perrWith='quiet')
-          index_x2o_Fioi_algae2   = mct_aVect_indexRA(x2o_o,'Fioi_algae2',perrWith='quiet')
-          index_x2o_Fioi_algae3   = mct_aVect_indexRA(x2o_o,'Fioi_algae3',perrWith='quiet')
-          index_x2o_Fioi_dic1     = mct_aVect_indexRA(x2o_o,'Fioi_dic1',perrWith='quiet')
-          index_x2o_Fioi_docr     = mct_aVect_indexRA(x2o_o,'Fioi_docr',perrWith='quiet')
-          index_x2o_Fioi_doc1     = mct_aVect_indexRA(x2o_o,'Fioi_doc1',perrWith='quiet')
-          index_x2o_Fioi_doc2     = mct_aVect_indexRA(x2o_o,'Fioi_doc2',perrWith='quiet')
-          index_x2o_Fioi_doc3     = mct_aVect_indexRA(x2o_o,'Fioi_doc3',perrWith='quiet')
+          if ( index_x2o_Fioi_algae1 /= 0 ) flds_c_oi = .true.
+          if ( flds_c_oi ) then
+             index_x2o_Fioi_algae1   = mct_aVect_indexRA(x2o_o,'Fioi_algae1')
+             index_x2o_Fioi_algae2   = mct_aVect_indexRA(x2o_o,'Fioi_algae2')
+             index_x2o_Fioi_algae3   = mct_aVect_indexRA(x2o_o,'Fioi_algae3')
+             index_x2o_Fioi_dic1     = mct_aVect_indexRA(x2o_o,'Fioi_dic1')
+             index_x2o_Fioi_docr     = mct_aVect_indexRA(x2o_o,'Fioi_docr')
+             index_x2o_Fioi_doc1     = mct_aVect_indexRA(x2o_o,'Fioi_doc1')
+             index_x2o_Fioi_doc2     = mct_aVect_indexRA(x2o_o,'Fioi_doc2')
+             index_x2o_Fioi_doc3     = mct_aVect_indexRA(x2o_o,'Fioi_doc3')
+          end if
        end if
 
        lSize = mct_avect_lSize(x2o_o)
@@ -891,22 +895,28 @@ contains
           ca_i =  dom_o%data%rAttr(kArea,n) * frac_o%rAttr(ki,n)
           nf = f_area  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_o
 
-          nf = f_cblack; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_bcphidry,n) &
-                                                                     + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_bcphodry,n) &
-                                                                     + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_bcphiwet,n)
-          nf = f_corgnc; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_ocphidry,n) &
-                                                                     + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_ocphodry,n) &
-                                                                     + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_ocphiwet,n)
-          nf = f_ioinor; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_dic1,n) &
-                                                                     *  shr_const_mwc * 1.0e-06_R8
-          nf = f_ioorgn; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ((ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_algae1,n) &
-                                                                     +  (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_algae2,n) &
-                                                                     +  (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_algae3,n) &
-                                                                     +  (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_docr,n) &
-                                                                     +  (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_doc1,n) &
-                                                                     +  (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_doc2,n) &
-                                                                     +  (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_doc3,n)) &
-                                                                     *   shr_const_mwc * 1.0e-06_R8
+          nf = f_cblack;
+          budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_bcphidry,n) &
+                                                      + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_bcphodry,n) &
+                                                      + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_bcphiwet,n)
+          nf = f_corgnc;
+          budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_ocphidry,n) &
+                                                      + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_ocphodry,n) &
+                                                      + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Faxa_ocphiwet,n)
+          if ( flds_c_oi ) then
+             nf = f_ioinor;
+             budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_dic1,n) &
+                                                         *  shr_const_mwc * 1.0e-06_R8
+             nf = f_ioorgn;
+             budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ((ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_algae1,n) &
+                                                         +  (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_algae2,n) &
+                                                         +  (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_algae3,n) &
+                                                         +  (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_docr,n) &
+                                                         +  (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_doc1,n) &
+                                                         +  (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_doc2,n) &
+                                                         +  (ca_o+ca_i)*x2o_o%rAttr(index_x2o_Fioi_doc3,n)) &
+                                                         *   shr_const_mwc * 1.0e-06_R8
+          end if
        end do
     end if
 
@@ -948,6 +958,7 @@ contains
     integer(in)              :: lSize             ! size of aVect
     real(r8)                 :: ca_i,ca_o         ! area of a grid cell
     logical,save             :: first_time=.true. ! initialization flag
+    logical,save             :: flds_c_oi=.false.
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_diagBGC_ice_mct) '
@@ -971,14 +982,17 @@ contains
 
     if (present(do_i2x)) then
        if (first_time) then
-          index_i2x_Fioi_algae1   = mct_aVect_indexRA(i2x_i,'Fioi_algae1',perrWith='quiet')
-          index_i2x_Fioi_algae2   = mct_aVect_indexRA(i2x_i,'Fioi_algae2',perrWith='quiet')
-          index_i2x_Fioi_algae3   = mct_aVect_indexRA(i2x_i,'Fioi_algae3',perrWith='quiet')
-          index_i2x_Fioi_dic1     = mct_aVect_indexRA(i2x_i,'Fioi_dic1',perrWith='quiet')
-          index_i2x_Fioi_docr     = mct_aVect_indexRA(i2x_i,'Fioi_docr',perrWith='quiet')
-          index_i2x_Fioi_doc1     = mct_aVect_indexRA(i2x_i,'Fioi_doc1',perrWith='quiet')
-          index_i2x_Fioi_doc2     = mct_aVect_indexRA(i2x_i,'Fioi_doc2',perrWith='quiet')
-          index_i2x_Fioi_doc3     = mct_aVect_indexRA(i2x_i,'Fioi_doc3',perrWith='quiet')
+          if ( index_i2x_Fioi_algae1 /= 0 ) flds_c_oi = .true.
+          if ( flds_c_oi ) then
+             index_i2x_Fioi_algae1   = mct_aVect_indexRA(i2x_i,'Fioi_algae1')
+             index_i2x_Fioi_algae2   = mct_aVect_indexRA(i2x_i,'Fioi_algae2')
+             index_i2x_Fioi_algae3   = mct_aVect_indexRA(i2x_i,'Fioi_algae3')
+             index_i2x_Fioi_dic1     = mct_aVect_indexRA(i2x_i,'Fioi_dic1')
+             index_i2x_Fioi_docr     = mct_aVect_indexRA(i2x_i,'Fioi_docr')
+             index_i2x_Fioi_doc1     = mct_aVect_indexRA(i2x_i,'Fioi_doc1')
+             index_i2x_Fioi_doc2     = mct_aVect_indexRA(i2x_i,'Fioi_doc2')
+             index_i2x_Fioi_doc3     = mct_aVect_indexRA(i2x_i,'Fioi_doc3')
+          end if
        endif
 
        lSize = mct_avect_lSize(i2x_i)
@@ -991,16 +1005,20 @@ contains
           ca_o =  dom_i%data%rAttr(kArea,n) * frac_i%rAttr(ko,n)
           ca_i =  dom_i%data%rAttr(kArea,n) * frac_i%rAttr(ki,n)
           nf = f_area  ; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) + ca_i
-          nf = f_ioinor; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*i2x_i%rAttr(index_i2x_Fioi_dic1,n) &
-                                                                     * shr_const_mwc * 1.0e-06_R8
-          nf = f_ioorgn; budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_i*i2x_i%rAttr(index_i2x_Fioi_algae1,n) &
-                                                                     +  ca_i*i2x_i%rAttr(index_i2x_Fioi_algae2,n) &
-                                                                     +  ca_i*i2x_i%rAttr(index_i2x_Fioi_algae3,n) &
-                                                                     +  ca_i*i2x_i%rAttr(index_i2x_Fioi_docr,n) &
-                                                                     +  ca_i*i2x_i%rAttr(index_i2x_Fioi_doc1,n) &
-                                                                     +  ca_i*i2x_i%rAttr(index_i2x_Fioi_doc2,n) &
-                                                                     +  ca_i*i2x_i%rAttr(index_i2x_Fioi_doc3,n)) &
-                                                                     *  shr_const_mwc * 1.0e-06_R8
+          if ( flds_c_oi ) then
+             nf = f_ioinor;
+             budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - ca_i*i2x_i%rAttr(index_i2x_Fioi_dic1,n) &
+                                                         * shr_const_mwc * 1.0e-06_R8
+             nf = f_ioorgn;
+             budg_dataL(nf,ic,ip) = budg_dataL(nf,ic,ip) - (ca_i*i2x_i%rAttr(index_i2x_Fioi_algae1,n) &
+                                                         +  ca_i*i2x_i%rAttr(index_i2x_Fioi_algae2,n) &
+                                                         +  ca_i*i2x_i%rAttr(index_i2x_Fioi_algae3,n) &
+                                                         +  ca_i*i2x_i%rAttr(index_i2x_Fioi_docr,n) &
+                                                         +  ca_i*i2x_i%rAttr(index_i2x_Fioi_doc1,n) &
+                                                         +  ca_i*i2x_i%rAttr(index_i2x_Fioi_doc2,n) &
+                                                         +  ca_i*i2x_i%rAttr(index_i2x_Fioi_doc3,n)) &
+                                                         *  shr_const_mwc * 1.0e-06_R8
+          end if
        end do
     end if
 
