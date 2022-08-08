@@ -20,7 +20,6 @@ SET(USE_QUEUING FALSE CACHE BOOL "")
 
 SET(BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")
 SET(BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")
-SET(HOMME_ENABLE_COMPOSE FALSE CACHE BOOL "")
 
 #SET (HOMMEXX_BFB_TESTING TRUE CACHE BOOL "")
 
@@ -29,9 +28,6 @@ SET(USE_TRILINOS OFF CACHE BOOL "")
 #CUDA_BUILD is set in SetCompilersFlags, after findPackage(Cuda)
 #i haven't extend it to hip, set it here instead
 SET(HIP_BUILD TRUE CACHE BOOL "")
-
-#set this to true if using external kokkos build
-SET(E3SM_KOKKOS_PATH "/ccs/home/onguba/kokkos-crusher-june2022/bld-hipcc" CACHE STRING "")
 
 #uncomment this if using internal kokkos build
 #SET(Kokkos_ENABLE_SERIAL ON CACHE BOOL "")
@@ -52,10 +48,10 @@ SET(MPICH_DIR "/opt/cray/pe/mpich/8.1.12/ofi/crayclang/10.0" CACHE STRING "")
 
 SET(Extrae_LIBRARY "-I${MPICH_DIR}/include -L${MPICH_DIR}/lib -lmpi -L/opt/cray/pe/mpich/8.1.12/gtl/lib -lmpi_gtl_hsa" CACHE STRING "")
 
-SET(ADD_Fortran_FLAGS "-O3 -DNDEBUG ${Extrae_LIBRARY} -I${E3SM_KOKKOS_PATH}/include -L${E3SM_KOKKOS_PATH}/lib64" CACHE STRING "")
-SET(ADD_C_FLAGS "-O3 -DNDEBUG ${Extrae_LIBRARY} -I${E3SM_KOKKOS_PATH}/include -L${E3SM_KOKKOS_PATH}/lib64" CACHE STRING "")
-SET(ADD_CXX_FLAGS "-std=c++14 -O3 -DNDEBUG --amdgpu-target=gfx90a -fno-gpu-rdc ${Extrae_LIBRARY} -I${E3SM_KOKKOS_PATH}/include -L${E3SM_KOKKOS_PATH}/lib64" CACHE STRING "")
-SET(ADD_LINKER_FLAGS "-O3 -DNDEBUG ${Extrae_LIBRARY} -I${E3SM_KOKKOS_PATH}/include -L${E3SM_KOKKOS_PATH}/lib64" CACHE STRING "")
+SET(ADD_Fortran_FLAGS "-O3 -DNDEBUG ${Extrae_LIBRARY}" CACHE STRING "")
+SET(ADD_C_FLAGS "-O3 -DNDEBUG ${Extrae_LIBRARY}" CACHE STRING "")
+SET(ADD_CXX_FLAGS "-std=c++14 -O3 -DNDEBUG --amdgpu-target=gfx90a -fno-gpu-rdc ${Extrae_LIBRARY}" CACHE STRING "")
+SET(ADD_LINKER_FLAGS "-O3 -DNDEBUG ${Extrae_LIBRARY}" CACHE STRING "")
 
 
 set (ENABLE_OPENMP OFF CACHE BOOL "")
