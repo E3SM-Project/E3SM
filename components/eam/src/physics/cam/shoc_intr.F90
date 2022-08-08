@@ -1183,7 +1183,7 @@ end function shoc_implements_cnst
   real(r8), parameter :: earth_ellipsoid2 = 559.82_r8 ! second expansion coefficient for WGS84 ellipsoid
   real(r8), parameter :: earth_ellipsoid3 = 1.175_r8 ! third expansion coefficient for WGS84 ellipsoid
 
-  real(r8) :: mpdeglat, column_area, degree
+  real(r8) :: mpdeglat, column_area, degree, lat_in_rad
   integer  :: i
 
   do i=1,state%ncol
@@ -1191,11 +1191,14 @@ end function shoc_implements_cnst
       column_area = get_area_p(state%lchnk,i)
       ! convert to degrees
       degree = sqrt(column_area)*(180._r8/shr_const_pi)
-       
+
+      ! convert latitude to radians
+      lat_in_rad = state%lat(i)*(shr_const_pi/180._r8)
+
       ! Now find meters per degree latitude
       ! Below equation finds distance between two points on an ellipsoid, derived from expansion
       !  taking into account ellipsoid using World Geodetic System (WGS84) reference 
-      mpdeglat = earth_ellipsoid1 - earth_ellipsoid2 * cos(2._r8*state%lat(i)) + earth_ellipsoid3 * cos(4._r8*state%lat(i))
+      mpdeglat = earth_ellipsoid1 - earth_ellipsoid2 * cos(2._r8*lat_in_rad) + earth_ellipsoid3 * cos(4._r8*lat_in_rad)
       grid_dx(i) = mpdeglat * degree
       grid_dy(i) = grid_dx(i) ! Assume these are the same
   enddo   
