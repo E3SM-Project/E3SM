@@ -2869,18 +2869,6 @@
 		    description="horizontal gradient of buoyancy at cell edge and interfaces in vertical.  this is used for the GM parameterization and the submesoscale eddy parameterization"
 			packages="forwardMode"
 		/>
-		<var name="mleVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
-			description="Bolus velocity in fox-kemper mle parameterization, x-direction"
-			packages="forwardMode;analysisMode"
-		/>
-		<var name="mleVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
-			description="Bolus velocity in fox-kemper mle parameterization, y-direction"
-			packages="forwardMode;analysisMode"
-		/>
-		<var name="mleVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
-			description="Bolus velocity in fox-kemper mle parameterization, z-direction"
-			packages="forwardMode;analysisMode"
-		/>
 		<var name="mleVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			description="Bolus velocity in fox-kemper mle parameterization, zonal-direction"
 			packages="forwardMode;analysisMode"
@@ -2889,16 +2877,16 @@
 			description="Bolus velocity in fox-kemper mle parameterization, meridional-direction"
 			packages="forwardMode;analysisMode"
 		/>
-	    <var name="GMBolusVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-			 description="Bolus velocity in Gent-McWilliams eddy parameterization, x-direction"
+	    <var name="eddyVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="Bolus velocity in Gent-McWilliams eddy or submesoscale parameterization, x-direction"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="GMBolusVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
-			 description="Bolus velocity in Gent-McWilliams eddy parameterization, y-direction"
+		<var name="eddyVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="Bolus velocity in Gent-McWilliams or submesoscale eddy parameterization, y-direction"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="GMBolusVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
-			 description="Bolus velocity in Gent-McWilliams eddy parameterization, z-direction"
+		<var name="eddyVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="eddy Bolus velocity in Gent-McWilliams or submesoscale eddy parameterization, z-direction"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="GMBolusVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
@@ -2985,9 +2973,6 @@
 		/>
 		<var name="indMLD" type="integer" dimensions="nCells Time"
 			description="index of model where mixed layer depth occurs (always one past)"
-		/>
-		<var name="indMLDedge" type="integer" dimensions="nEdges Time"
-			description="index of model where mixed layer depth occurs on edges"
 		/>
 		<var name="dThreshMLD" type="real" dimensions="nCells Time" units="m"
 			description="mixed layer depth based on density threshold"

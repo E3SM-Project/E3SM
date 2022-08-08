@@ -76,7 +76,7 @@ module ocn_submesoscale_eddies
      !
      !-----------------------------------------------------------------
 
-     integer :: k, nEdges, nCells, iCell, iEdge, cell1, cell2
+     integer :: k, nEdges, nCells, iCell, iEdge, cell1, cell2, indMLDedge
 
      real(kind=RKIND),dimension(:),allocatable :: &
         streamFunction, &
@@ -113,7 +113,8 @@ module ocn_submesoscale_eddies
            cycle
         end if
 
-        do k = minLevelEdgeBot(iEdge)+2,indMLDedge(iEdge)
+        indMLDedge = min(indMLD(cell1),indMLD(cell2))
+        do k = minLevelEdgeBot(iEdge)+2,indMLDedge
            hAv = 0.5_RKIND*(layerThickEdgeMean(k,iEdge) + layerThickEdgeMean(k-1,iEdge))
            bvfML = bvfML + hAv*bvfAv
            hML = hML + hAv

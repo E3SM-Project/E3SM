@@ -61,7 +61,7 @@ module ocn_diagnostics
              ocn_vert_transport_velocity_top, &
              ocn_fuperp, &
              ocn_filter_btr_mode_tend_vel, &
-             ocn_reconstruct_gm_vectors, &
+             ocn_reconstruct_eddy_vectors, &
              ocn_compute_kpp_input_fields, &
              ocn_validate_state, &
              ocn_build_log_filename, &
@@ -3095,7 +3095,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_reconstruct_gm_vectors
+!  routine ocn_reconstruct_eddy_vectors
 !
 !> \brief   Computes cell-centered vector diagnostics
 !> \author  Mark Petersen
@@ -3105,11 +3105,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_reconstruct_gm_vectors(meshPool) !{{{
+   subroutine ocn_reconstruct_eddy_vectors(meshPool) !{{{
 
       type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
 
-      call mpas_timer_start('reconstruct gm vecs')
+      call mpas_timer_start('reconstruct eddy vecs')
 
       call mpas_reconstruct(meshPool, normalTransportVelocity,          &
                        transportVelocityX,            &
@@ -3120,17 +3120,17 @@ contains
                       )
 
       call mpas_reconstruct(meshPool, normalGMBolusVelocity,          &
-                       GMBolusVelocityX,            &
-                       GMBolusVelocityY,            &
-                       GMBolusVelocityZ,            &
+                       eddyVelocityX,            &
+                       eddyVelocityY,            &
+                       eddyVelocityZ,            &
                        GMBolusVelocityZonal,        &
                        GMBolusVelocityMeridional    &
                       )
 
       call mpas_reconstruct(meshPool, normalMLEvelocity,          &
-                       mleVelocityX,            &
-                       mleVelocityY,            &
-                       mleVelocityZ,            &
+                       eddyVelocityX,            &
+                       eddyVelocityY,            &
+                       eddyVelocityZ,            &
                        mleVelocityZonal,        &
                        mleVelocityMeridional    &
                       )
@@ -3143,9 +3143,9 @@ contains
                       GMStreamFuncMeridional    &
                      )
 
-      call mpas_timer_stop('reconstruct gm vecs')
+      call mpas_timer_stop('reconstruct eddy vecs')
 
-   end subroutine ocn_reconstruct_gm_vectors!}}}
+   end subroutine ocn_reconstruct_eddy_vectors!}}}
 
 
 !***********************************************************************
