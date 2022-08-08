@@ -9,6 +9,8 @@
 
 #include "HommexxEnums.hpp"
 
+#include <iostream>
+
 namespace Homme
 {
 
@@ -18,7 +20,7 @@ namespace Homme
  */
 struct SimulationParams
 {
-  void print();
+  void print(std::ostream& out = std::cout);
 
   TimeStepType  time_step_type;
   MoistDry      moisture;
@@ -62,41 +64,41 @@ struct SimulationParams
   bool      params_set = false;
 };
 
-inline void SimulationParams::print () {
+inline void SimulationParams::print (std::ostream& out) {
 
-  printf ("\n************** CXX SimulationParams **********************\n\n");
-  printf ("   time_step_type: %d\n", etoi(time_step_type));
-  printf ("   moisture: %s\n", moisture==MoistDry::DRY ? "dry" : "moist");
-  printf ("   remap_alg: %d\n", etoi(remap_alg));
-  printf ("   test case: %d\n", etoi(test_case));
-  printf ("   ftype: %d\n", etoi(ftype));
-  printf ("   theta_adv_form: %d\n", etoi(theta_adv_form));
-  printf ("   rsplit: %d\n", rsplit);
-  printf ("   qsplit: %d\n", qsplit);
-  printf ("   qsize: %d\n", qsize);
-  printf ("   limiter_option: %d\n", limiter_option);
-  printf ("   state_frequency: %d\n", state_frequency);
-  printf ("   dcmip16_mu: %f\n", dcmip16_mu);
-  printf ("   nu: %f\n", nu);
-  printf ("   nu_p: %f\n", nu_p);
-  printf ("   nu_q: %f\n", nu_q);
-  printf ("   nu_s: %f\n", nu_s);
-  printf ("   nu_top: %f\n", nu_top);
-  printf ("   nu_div: %f\n", nu_div);
-  printf ("   hypervis_order: %d\n", hypervis_order);
-  printf ("   hypervis_subcycle: %d\n", hypervis_subcycle);
-  printf ("   hypervis_subcycle_tom: %d\n", hypervis_subcycle_tom);
-  printf ("   hypervis_scaling: %f\n", hypervis_scaling);
-  printf ("   nu_ratio1: %f\n", nu_ratio1);
-  printf ("   nu_ratio2: %f\n", nu_ratio2);
-  printf ("   use_cpstar: %s\n", (use_cpstar ? "yes" : "no"));
-  printf ("   transport_alg: %d\n", transport_alg);
-  printf ("   disable_diagnostics: %s\n", (disable_diagnostics ? "yes" : "no"));
-  printf ("   theta_hydrostatic_mode: %s\n", (theta_hydrostatic_mode ? "yes" : "no"));
-  printf ("   prescribed_wind: %s\n", (prescribed_wind ? "yes" : "no"));
-  printf ("   nsplit: %d\n", nsplit);
-  printf ("   rearth: %f\n", rearth);
-  printf ("\n**********************************************************\n");
+  out << "\n************** CXX SimulationParams **********************\n\n";
+  out << "   time_step_type: %d\n", etoi(time_step_type);
+  out << "   moisture: %s\n", moisture==MoistDry::DRY ? "dry" : "moist";
+  out << "   remap_alg: %d\n", etoi(remap_alg);
+  out << "   test case: %d\n", etoi(test_case);
+  out << "   ftype: %d\n", etoi(ftype);
+  out << "   theta_adv_form: %d\n", etoi(theta_adv_form);
+  out << "   rsplit: %d\n", rsplit;
+  out << "   qsplit: %d\n", qsplit;
+  out << "   qsize: %d\n", qsize;
+  out << "   limiter_option: %d\n", limiter_option;
+  out << "   state_frequency: %d\n", state_frequency;
+  out << "   dcmip16_mu: %f\n", dcmip16_mu;
+  out << "   nu: %f\n", nu;
+  out << "   nu_p: %f\n", nu_p;
+  out << "   nu_q: %f\n", nu_q;
+  out << "   nu_s: %f\n", nu_s;
+  out << "   nu_top: %f\n", nu_top;
+  out << "   nu_div: %f\n", nu_div;
+  out << "   hypervis_order: %d\n", hypervis_order;
+  out << "   hypervis_subcycle: %d\n", hypervis_subcycle;
+  out << "   hypervis_subcycle_tom: %d\n", hypervis_subcycle_tom;
+  out << "   hypervis_scaling: %f\n", hypervis_scaling;
+  out << "   nu_ratio1: %f\n", nu_ratio1;
+  out << "   nu_ratio2: %f\n", nu_ratio2;
+  out << "   use_cpstar: %s\n", (use_cpstar ? "yes" : "no");
+  out << "   transport_alg: %d\n", transport_alg;
+  out << "   disable_diagnostics: %s\n", (disable_diagnostics ? "yes" : "no");
+  out << "   theta_hydrostatic_mode: %s\n", (theta_hydrostatic_mode ? "yes" : "no");
+  out << "   prescribed_wind: %s\n", (prescribed_wind ? "yes" : "no");
+  out << "   nsplit: %d\n", nsplit;
+  out << "   rearth: %f\n", rearth;
+  out << "\n**********************************************************\n";
 }
 
 } // namespace Homme
