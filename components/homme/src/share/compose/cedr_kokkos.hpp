@@ -6,6 +6,22 @@
 
 #include <Kokkos_Core.hpp>
 
+#if defined KOKKOS_ENABLE_CUDA || defined KOKKOS_ENABLE_HIP || defined KOKKOS_ENABLE_SYCL
+# define CEDR_ENABLE_GPU
+# if defined KOKKOS_ENABLE_CUDA
+typedef Kokkos::Cuda CedrGpuExeSpace;
+typedef Kokkos::CudaSpace CedrGpuSpace;
+# endif
+# if defined KOKKOS_ENABLE_HIP
+typedef Kokkos::Experimental::HIP CedrGpuExeSpace;
+typedef Kokkos::Experimental::HIPSpace CedrGpuSpace;
+# endif
+# if defined KOKKOS_ENABLE_SYCL
+typedef Kokkos::Experimental::SYCL CedrGpuExeSpace;
+typedef Kokkos::Experimental::SYCL> CedrGpuSpace;
+# endif
+#endif
+
 #define KIF KOKKOS_INLINE_FUNCTION
 
 // Clarify that a class member type is meant to be private but is
@@ -74,11 +90,11 @@ struct DeviceType {
                          typename ExeSpace::memory_space> type;
 };
 
-#ifdef KOKKOS_ENABLE_CUDA
-typedef Kokkos::Device<Kokkos::CudaSpace::execution_space,
-                       Kokkos::CudaSpace::memory_space> DefaultDeviceType;
+#ifdef CEDR_ENABLE_GPU
+typedef Kokkos::Device<CedrGpuSpace::execution_space,
+                       CedrGpuSpace::memory_space> DefaultDeviceType;
 
-template <> struct DeviceType<Kokkos::Cuda> {
+template <> struct DeviceType<CedrGpuExeSpace> {
   typedef DefaultDeviceType type;
 };
 #else
@@ -95,8 +111,8 @@ template <typename ES> struct OnGpu {
 #endif
   };
 };
-#ifdef KOKKOS_ENABLE_CUDA
-template <> struct OnGpu<Kokkos::Cuda> { enum : bool { value = true }; };
+#ifdef CEDR_ENABLE_GPU
+template <> struct OnGpu<CedrGpuExeSpace> { enum : bool { value = true }; };
 #endif
 
 template <typename ExeSpace = Kokkos::DefaultExecutionSpace>
@@ -120,10 +136,10 @@ struct ExeSpaceUtils {
 }
 };
 
-#ifdef KOKKOS_ENABLE_CUDA
+#ifdef CEDR_ENABLE_GPU
 template <>
-struct ExeSpaceUtils<Kokkos::Cuda> {
-  using TeamPolicy = Kokkos::TeamPolicy<Kokkos::Cuda>;
+struct ExeSpaceUtils<CedrGpuExeSpace> {
+  using TeamPolicy = Kokkos::TeamPolicy<CedrGpuExeSpace>;
   using Member = typename TeamPolicy::member_type;
   static TeamPolicy get_default_team_policy (int outer, int inner) {
     return TeamPolicy(outer, std::min(128, 32*((inner + 31)/32)), 1);
