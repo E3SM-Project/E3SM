@@ -1359,6 +1359,7 @@ contains
   !               If PIO MPI ranks > 1, var_data_ptr should be the subset of the global array
   !               which includes only those degrees of freedom that have been
   !               assigned to this rank.  See set_dof above.
+  ! time_index:   The 1-based time index for this variable (0 is ignored).
   !---------------------------------------------------------------------------
   !
   !  grid_read_darray_1d: Read a variable defined on this grid

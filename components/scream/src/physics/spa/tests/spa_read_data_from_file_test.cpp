@@ -83,7 +83,7 @@ TEST_CASE("spa_read_data","spa")
   auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
   Kokkos::deep_copy(dofs_gids_h,dofs_gids);
   for (int time_index = 0;time_index<max_time; time_index++) {
-    SPAFunc::update_spa_data_from_file(spa_data_file, time_index+1, nswbands, nlwbands,
+    SPAFunc::update_spa_data_from_file(spa_data_file, time_index, nswbands, nlwbands,
                                        spa_horiz_interp, spa_data);
     Kokkos::deep_copy(ps_h,spa_data.PS);
     Kokkos::deep_copy(ccn3_h,spa_data.data.CCN3);

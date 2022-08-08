@@ -77,7 +77,7 @@ TEST_CASE("spa_one_to_one_remap","spa")
   });
 
   // Verify that the interpolated values match the algorithm for the data and the weights.
-  //       weights(i) = 1.0 
+  //       weights(i) = 1.0
   //       FOR t=1,2,3; i=0,1,2; b=1,2 or 1,2,3 and k=0,1,2,3
   //       p(t,i) = (t+1) * (i+1)*100
   //       ccn3(t,i,k) = (i+1)*100 + t*10 + k
@@ -92,7 +92,7 @@ TEST_CASE("spa_one_to_one_remap","spa")
   auto aer_tau_sw_h = Kokkos::create_mirror_view(spa_data.data.AER_TAU_SW);
   auto aer_tau_lw_h = Kokkos::create_mirror_view(spa_data.data.AER_TAU_LW);
   for (int time_index = 0;time_index<max_time; time_index++) {
-    SPAFunc::update_spa_data_from_file(spa_data_file, time_index+1, nswbands, nlwbands,
+    SPAFunc::update_spa_data_from_file(spa_data_file, time_index, nswbands, nlwbands,
                                        spa_horiz_interp, spa_data);
     Kokkos::deep_copy(ps_h,spa_data.PS);
     Kokkos::deep_copy(ccn3_h,spa_data.data.CCN3);
@@ -119,8 +119,8 @@ TEST_CASE("spa_one_to_one_remap","spa")
       }
     }
   }
-  
-  // All Done 
+
+  // All Done
   scorpio::eam_pio_finalize();
 } // run_property
 
