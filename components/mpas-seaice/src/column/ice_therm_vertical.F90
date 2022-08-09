@@ -80,7 +80,8 @@
                                   yday,        dsnow,     &
                                   tr_rsnw,                &
                                   l_stop,      stop_label,&
-                                  prescribed_ice)
+                                  prescribed_ice,         &
+                                  congelation_basal_melt_active)
 
       use ice_therm_mushy, only: temperature_changes_salinity
 
@@ -190,6 +191,9 @@
       character (len=*), intent(out) :: &
          stop_label   ! abort error message
 
+      logical, intent(in) :: &
+         congelation_basal_melt_active ! if true congelation and basal melt is active
+
       ! local variables
 
       integer (kind=int_kind) :: &
@@ -208,7 +212,8 @@
          hsn         , & ! snow thickness (m)
          hsn_new     , & ! thickness of new snow (m)
          worki       , & ! local work array
-         works           ! local work array
+         works       , & ! local work array
+         fbotUse
 
       real (kind=dbl_kind), dimension (nilyr) :: &
          zTin            ! internal ice layer temperatures
@@ -382,7 +387,12 @@
       ! Compute growth and/or melting at the top and bottom surfaces.
       ! Add new snowfall.
       ! Repartition ice into equal-thickness layers, conserving energy.
-      !----------------------------------------------------------------- 
+      !-----------------------------------------------------------------
+
+      fbotUse = fbot
+      if (.not. congelation_basal_melt_active) then
+         fbotUse = fcondbot
+      endif
 
       call thickness_changes(nilyr,       nslyr,     &
                              dt,          yday,      &
@@ -391,7 +401,7 @@
                              hsn,         hslyr,     &
                              zqin,        zqsn,      &
                              smice,       smliq,     &
-                             fbot,        Tbot,      &
+                             fbotUse,     Tbot,      &
                              flatn,       fsurfn,    &
                              fcondtopn,   fcondbot,  &
                              fsnow,       hsn_new,   &
@@ -416,7 +426,7 @@
                                       fsnow,     einit,    &
                                       einter,    efinal,   &
                                       fcondtopn, fcondbot, &
-                                      fadvocn,   fbot,     &
+                                      fadvocn,   fbotUse,  &
                                       l_stop,    stop_label)
       
       if (l_stop) return
@@ -489,7 +499,8 @@
                                         fbot_xfer_type,     &
                                         strocnxT, strocnyT, &
                                         Tbot,     fbot,     &
-                                        rside,    Cdn_ocn)
+                                        rside,    Cdn_ocn, &
+                                        lateral_melt_active)
 
       integer (kind=int_kind), intent(in) :: &
          ncat  , & ! number of thickness categories
@@ -524,6 +535,9 @@
          Tbot    , & ! ice bottom surface temperature (deg C)
          fbot    , & ! heat flux to ice bottom  (W/m^2)
          rside       ! fraction of ice that melts laterally
+
+      logical, intent(in) :: &
+         lateral_melt_active
 
       ! local variables
 
@@ -603,6 +617,9 @@
          wlat = m1 * deltaT**m2 ! Maykut & Perovich
          rside = wlat*dt*pi/(floeshape*floediam) ! Steele
          rside = max(c0,min(rside,c1))
+         if (.not. lateral_melt_active) then
+            rside = c0
+         endif
 
       !-----------------------------------------------------------------
       ! Compute heat flux associated with this value of rside.

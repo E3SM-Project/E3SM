@@ -57,7 +57,8 @@
                                       Cdn_atm,            &
                                       Cdn_atm_ratio_n,    &
                                       uvel,     vvel,     &
-                                      Uref                )     
+                                      Uref,               &
+                                      latent_processes_active)
 
       character (len=3), intent(in) :: &
          sfctype      ! ice or ocean
@@ -105,6 +106,9 @@
 
       real (kind=dbl_kind), intent(out) :: &
          Uref         ! reference height wind speed (m/s)
+
+      logical (kind=log_kind), intent(in) :: &
+         latent_processes_active ! if true latent heat processes are active
 
       ! local variables
 
@@ -346,7 +350,9 @@
       !------------------------------------------------------------
 
       shcoef = rhoa * ustar * cp * rh + c1
-      lhcoef = rhoa * ustar * Lheat  * re
+      if (latent_processes_active) then
+         lhcoef = rhoa * ustar * Lheat  * re
+      endif
 
       !------------------------------------------------------------
       ! Compute diagnostics: 2m ref T, Q, U
@@ -387,7 +393,8 @@
                                       Qa,                 &
                                       delt,     delq,     &
                                       lhcoef,   shcoef,   &
-                                      Cdn_atm)  
+                                      Cdn_atm,            &
+                                      latent_processes_active)
 
       character (len=3), intent(in) :: &
          sfctype      ! ice or ocean
@@ -417,7 +424,10 @@
          shcoef   , & ! transfer coefficient for sensible heat
          lhcoef       ! transfer coefficient for latent heat
 
-       ! local variables
+      logical (kind=log_kind), intent(in) :: &
+         latent_processes_active ! if true latent heat processes are active
+
+      ! local variables
 
       real (kind=dbl_kind) :: &
          TsfK, & ! surface temperature in Kelvin (K)
@@ -477,7 +487,9 @@
       !------------------------------------------------------------
 
       shcoef = (1.20e-3_dbl_kind)*cp_air*rhoa*wind
-      lhcoef = (1.50e-3_dbl_kind)*Lheat *rhoa*wind
+      if (latent_processes_active) then
+         lhcoef = (1.50e-3_dbl_kind)*Lheat *rhoa*wind
+      endif
 
       end subroutine atmo_boundary_const
 

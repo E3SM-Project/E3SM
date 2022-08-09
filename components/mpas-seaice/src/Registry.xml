@@ -562,6 +562,22 @@
 			description="If true initialize variables that will fail the testing system tests."
 			possible_values="true or false"
 		/>
+		<nml_option name="config_use_congelation_basal_melt" type="logical" default_value="true" units="unitless"
+			description="If true congelation and basal melt processes are active."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_use_lateral_melt" type="logical" default_value="true" units="unitless"
+			description="If true lateral melt process is active."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_use_latent_processes" type="logical" default_value="true" units="unitless"
+			description="If true latent heat processes are active."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_limit_air_temperatures" type="logical" default_value="true" units="unitless"
+			description="If true limit air temperatures above"
+			possible_values="true or false"
+		/>
 	</nml_record>
 	<nml_record name="velocity_solver" in_defaults="true">
 		<nml_option name="config_dynamics_subcycle_number" type="integer" default_value="1" units="unitless"
@@ -1753,6 +1769,10 @@
 			possible_values="true or false"
 			icepack_name="oceanmixed_ice"
 		/>
+		<nml_option name="config_ocean_mixed_layer_type" type="character" default_value="cice" units="unitless"
+			description="Type of mixed layer slab ocean model to use"
+			possible_values="'cice', or 'e3sm'"
+		/>
 		<nml_option name="config_min_friction_velocity" type="real" default_value="0.0005" units=""
 			description="Minimum friction velocity for ice-ocean heat flux."
 			possible_values=""
@@ -2092,6 +2112,28 @@
 				immutable="true">
 			<var name="uOceanVelocity"/>
 			<var name="vOceanVelocity"/>
+		</stream>
+		<stream name="NCARFreeSurfaceMonthlyInitForcing"
+				type="input"
+				filename_template="forcing/ocean_forcing_monthly.nc"
+				filename_interval="none"
+				input_interval="none"
+				immutable="true">
+		        <var name="seaSurfaceTemperature"/>
+                        <var name="seaSurfaceSalinity"/>
+                        <var name="oceanMixedLayerDepth"/>
+		</stream>
+		<stream name="NCARFreeSurfaceMonthlyForcing"
+				type="input"
+				filename_template="forcing/ocean_forcing_monthly.nc"
+				filename_interval="none"
+				input_interval="none"
+				immutable="true">
+			<var name="uOceanVelocity"/>
+			<var name="vOceanVelocity"/>
+			<var name="seaSurfaceTiltU"/>
+			<var name="seaSurfaceTiltV"/>
+			<var name="oceanHeatFluxConvergence"/>
 		</stream>
 		<stream name="dataIcebergForcing"
 				type="input"

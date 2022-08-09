@@ -1867,7 +1867,10 @@
                                     lmask_n     , lmask_s     , &
                                     mlt_onset   , frz_onset   , &
                                     yday        , l_stop      , &
-                                    stop_label  , prescribed_ice)
+                                    stop_label  , prescribed_ice, &
+                                    congelation_basal_melt_active, &
+                                    lateral_melt_active, &
+                                    latent_processes_active)
 
       use ice_aerosol, only: update_aerosol
       use ice_atmo, only: neutral_drag_coeffs
@@ -2037,6 +2040,11 @@
       character (len=*), intent(out) :: &
          stop_label      ! abort error message
 
+      logical, intent(in) :: &
+         congelation_basal_melt_active, & ! if true congelation and basal melt is active
+         lateral_melt_active          , & ! if true lateral melt is active
+         latent_processes_active          ! if true latent heat processes are active
+
       ! local variables
 
       integer (kind=int_kind) :: &
@@ -2104,7 +2112,8 @@
                                   fbot_xfer_type,       &
                                   strocnxT,  strocnyT,  &
                                   Tbot,      fbot,      &
-                                  rside,     Cdn_ocn)
+                                  rside,     Cdn_ocn, &
+                                  lateral_melt_active)
       
       !-----------------------------------------------------------------
       ! Update the neutral drag coefficients to account for form drag
@@ -2172,7 +2181,8 @@
                                         Cdn_atm,                 &
                                         Cdn_atm_ratio_n,         &
                                         uvel,     vvel,          &
-                                        Uref=Urefn)
+                                        Uref=Urefn,              &
+                                        latent_processes_active=latent_processes_active)
 
             endif   ! calc_Tsfc or calc_strair
 
@@ -2250,7 +2260,8 @@
                                  yday,         dsnown   (n), &
                                  tr_rsnw,                    &
                                  l_stop,       stop_label,   &
-                                 prescribed_ice)
+                                 prescribed_ice, &
+                                 congelation_basal_melt_active)
                
             if (l_stop) then
                stop_label = 'ice: Vertical thermo error: '//trim(stop_label)
@@ -3636,7 +3647,8 @@
                                      Cdn_atm,                    &
                                      Cdn_atm_ratio_n,            &
                                      uvel,        vvel,          &
-                                     Uref)
+                                     Uref,                       &
+                                     latent_processes_active)
 
       use ice_atmo, only: atmo_boundary_const, atmo_boundary_layer
       use ice_constants_colpkg, only: c0
@@ -3678,6 +3690,9 @@
       real (kind=dbl_kind), optional, intent(out) :: &
          Uref         ! reference height wind speed (m/s)
 
+      logical (kind=log_kind), intent(in) :: &
+         latent_processes_active ! if true latent heat processes are active
+
       real (kind=dbl_kind) :: &
          worku, workv, workr
 
@@ -3701,7 +3716,8 @@
                                             Qa,                 &
                                             delt,     delq,     &
                                             lhcoef,   shcoef,   &
-                                            Cdn_atm)
+                                            Cdn_atm,            &
+                                            latent_processes_active)
                else ! default
                   call atmo_boundary_layer (sfctype,                 &
                                             calc_strair, formdrag,   &
@@ -3717,7 +3733,8 @@
                                             Cdn_atm,                 &
                                             Cdn_atm_ratio_n,         &
                                             worku,    workv,         &
-                                            workr)
+                                            workr,                   &
+                                            latent_processes_active)
                endif ! atmbndy
 
       if (present(Uref)) then
