@@ -3170,8 +3170,8 @@ subroutine ice_supersat_conservation(qidep,qinuc,qi2qv_sublim_tend,qr2qv_evap_te
   return
 end subroutine ice_supersat_conservation
 
-subroutine nc_conservation(nc, nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend, ncheti_cnt, nicnt, &
-     nc_accret_tend, nc2nr_autoconv_tend)
+subroutine nc_conservation(nc, nc_selfcollect_tend, dt, nc_collect_tend, nc2ni_immers_freeze_tend, &
+     nc_accret_tend, nc2nr_autoconv_tend, ncheti_cnt, nicnt)
   !Make sure sinks of nc don't force end-of-step nc below 0. Rescale them if they do.
 
   implicit none
