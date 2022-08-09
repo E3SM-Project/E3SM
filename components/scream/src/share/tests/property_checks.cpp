@@ -138,7 +138,7 @@ TEST_CASE("property_checks", "") {
     f_view(0,1,2) = 0.0;
     f.sync_to_dev();
     res_and_msg = interval_check->check();
-    REQUIRE(res_and_msg.result==CheckResult::Fail);
+    REQUIRE(res_and_msg.result==CheckResult::Repairable);
     std::string expected_msg =
       "Check failed.\n"
       "  - check name: field_1 within interval [0, 1]\n"
@@ -192,11 +192,11 @@ TEST_CASE("property_checks", "") {
       "  - check name: field_1 within interval [0, 1]\n"
       "  - field id: " + fid.get_id_string() + "\n"
       "  - minimum:\n"
-      "    - value: 0\n"
+      "    - value: -2\n"
       "    - entry: (0,1,2)\n"
       "    - lat/lon: (0, 0)\n"
       "  - maximum:\n"
-      "    - value: 2\n"
+      "    - value: 3\n"
       "    - entry: (1,1,2)\n"
       "    - lat/lon: (1, -1)\n";
 
@@ -230,7 +230,7 @@ TEST_CASE("property_checks", "") {
     }
     f.sync_to_dev();
     res_and_msg = lower_bound_check->check();
-    REQUIRE(res_and_msg.result==CheckResult::Fail);
+    REQUIRE(res_and_msg.result==CheckResult::Repairable);
     lower_bound_check->repair();
     res_and_msg = lower_bound_check->check();
     REQUIRE(res_and_msg.result==CheckResult::Pass);
@@ -263,7 +263,7 @@ TEST_CASE("property_checks", "") {
     }
     f.sync_to_dev();
     res_and_msg = upper_bound_check->check();
-    REQUIRE(res_and_msg.result==CheckResult::Fail);
+    REQUIRE(res_and_msg.result==CheckResult::Repairable);
     upper_bound_check->repair();
     res_and_msg = upper_bound_check->check();
     REQUIRE(res_and_msg.result==CheckResult::Pass);
