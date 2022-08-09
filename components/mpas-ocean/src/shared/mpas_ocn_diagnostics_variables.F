@@ -421,17 +421,7 @@ contains
                    mleVelocityZonal)
          call mpas_pool_get_array(diagnosticsPool, 'mleVelocityMeridional', &
                    mleVelocityMeridional)
-         call mpas_pool_get_array(diagnosticsPool, 'mleVelocityX', &
-                   mleVelocityX)
-         call mpas_pool_get_array(diagnosticsPool, 'mleVelocityY', &
-                   mleVelocityY)
-         call mpas_pool_get_array(diagnosticsPool, 'mleVelocityZ', &
-                   mleVelocityZ)
-         call mpas_pool_get_array(diagnosticsPool, 'mleVelocityZonal', &
-                   mleVelocityZonal)
-         call mpas_pool_get_array(diagnosticsPool, 'mleVelocityMeridional', &
-                   mleVelocityMeridional)
-       call mpas_pool_get_array(diagnosticsPool, 'eddyVelocityX', &
+         call mpas_pool_get_array(diagnosticsPool, 'eddyVelocityX', &
                    eddyVelocityX)
          call mpas_pool_get_array(diagnosticsPool, 'eddyVelocityY', &
                    eddyVelocityY)
@@ -717,9 +707,9 @@ contains
          !$acc                   normRelVortEdge,                 &
          !$acc                   surfaceVelocity,                 &
          !$acc                   vertVelocityTop,                 &
-         !$acc                   eddyVelocityX,                &
-         !$acc                   eddyVelocityY,                &
-         !$acc                   eddyVelocityZ,                &
+         !$acc                   eddyVelocityX,                   &
+         !$acc                   eddyVelocityY,                   &
+         !$acc                   eddyVelocityZ,                   &
          !$acc                   vertNonLocalFlux,                &
          !$acc                   vertViscTopOfEdge,               &
          !$acc                   gradSSHMeridional,               &
@@ -739,7 +729,7 @@ contains
          !$acc                   BruntVaisalaFreqTop,             &
          !$acc                   vertAleTransportTop,             &
          !$acc                   GMBolusVelocityZonal,            &
-         !$acc                   mleVelocityZonal,            &
+         !$acc                   mleVelocityZonal,                &
          !$acc                   bulkRichardsonNumber,            &
          !$acc                   gmStreamFuncTopOfEdge,           &
          !$acc                   indexSSHGradientZonal,           &
@@ -760,7 +750,7 @@ contains
          !$acc                   bulkRichardsonNumberBuoy,        &
          !$acc                   tracersSurfaceLayerValue,        &
          !$acc                   GMBolusVelocityMeridional,       &
-         !$acc                   mleVelocityMeridional,       &
+         !$acc                   mleVelocityMeridional,           &
          !$acc                   bulkRichardsonNumberShear,       &
          !$acc                   indexSurfaceVelocityZonal,       &
          !$acc                   normalVelocitySurfaceLayer,      &
@@ -965,9 +955,9 @@ contains
          !$acc                   normRelVortEdge,                 &
          !$acc                   surfaceVelocity,                 &
          !$acc                   vertVelocityTop,                 &
-         !$acc                   eddyVelocityX,                &
-         !$acc                   eddyVelocityY,                &
-         !$acc                   eddyVelocityZ,                &
+         !$acc                   eddyVelocityX,                   &
+         !$acc                   eddyVelocityY,                   &
+         !$acc                   eddyVelocityZ,                   &
          !$acc                   vertNonLocalFlux,                &
          !$acc                   vertViscTopOfEdge,               &
          !$acc                   gradSSHMeridional,               &
@@ -987,7 +977,7 @@ contains
          !$acc                   BruntVaisalaFreqTop,             &
          !$acc                   vertAleTransportTop,             &
          !$acc                   GMBolusVelocityZonal,            &
-         !$acc                   mleVelocityZonal,            &
+         !$acc                   mleVelocityZonal,                &
          !$acc                   bulkRichardsonNumber,            &
          !$acc                   gmStreamFuncTopOfEdge,           &
          !$acc                   indexSSHGradientZonal,           &
@@ -1007,7 +997,7 @@ contains
          !$acc                   vertTransportVelocityTop,        &
          !$acc                   bulkRichardsonNumberBuoy,        &
          !$acc                   tracersSurfaceLayerValue,        &
-         !$acc                   mleVelocityMeridional,       &
+         !$acc                   mleVelocityMeridional,           &
          !$acc                   GMBolusVelocityMeridional,       &
          !$acc                   bulkRichardsonNumberShear,       &
          !$acc                   indexSurfaceVelocityZonal,       &
@@ -1171,9 +1161,9 @@ contains
                  normRelVortEdge,                 &
                  surfaceVelocity,                 &
                  vertVelocityTop,                 &
-                 eddyVelocityX,                &
-                 eddyVelocityY,                &
-                 eddyVelocityZ,                &
+                 eddyVelocityX,                   &
+                 eddyVelocityY,                   &
+                 eddyVelocityZ,                   &
                  vertNonLocalFlux,                &
                  vertViscTopOfEdge,               &
                  gradSSHMeridional,               &
@@ -1193,7 +1183,7 @@ contains
                  BruntVaisalaFreqTop,             &
                  vertAleTransportTop,             &
                  GMBolusVelocityZonal,            &
-                 mleVelocityZonal,            &
+                 mleVelocityZonal,                &
                  bulkRichardsonNumber,            &
                  gmStreamFuncTopOfEdge,           &
                  indexSSHGradientZonal,           &
@@ -1213,7 +1203,7 @@ contains
                  vertTransportVelocityTop,        &
                  bulkRichardsonNumberBuoy,        &
                  tracersSurfaceLayerValue,        &
-                 mleVelocityMeridional,       &
+                 mleVelocityMeridional,           &
                  GMBolusVelocityMeridional,       &
                  bulkRichardsonNumberShear,       &
                  indexSurfaceVelocityZonal,       &
