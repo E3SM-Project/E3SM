@@ -6,7 +6,7 @@ extern "C" void shr_orb_params_c2f(
         double *obliqr, double *delta, double *eccf
         );
 extern "C" void shr_orb_decl_c2f(
-        double calday, double eccen, double mvelpp, double lambm0, 
+        double calday, double eccen, double mvelpp, double lambm0,
         double obliqr, double *delta, double *eccf
         );
 extern "C" double shr_orb_cosz_c2f(
