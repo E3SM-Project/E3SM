@@ -24,6 +24,7 @@ subroutine tphysidl(ztodt, state, tend, ideal_phys_option)
    use cam_logfile,        only: iulog
    use time_manager,       only: get_nstep
    use check_energy,       only: check_energy_chng
+   use ref_pres,           only: ptop_ref  !--JH--
 
    implicit none
 
@@ -261,11 +262,11 @@ subroutine tphysidl(ztodt, state, tend, ideal_phys_option)
      
       ! JH
       ! --- inherited from standard HS --- 
-      efoldf  =  1._r8              ! e-folding time for wind dissipation
-      efolda  = 40._r8              ! e-folding time for temp
-      efolds  =  4._r8              ! e-folding time for temp
-      sigmab  =  0.7_r8             ! threshold for surface wind damping, latitudinal temp damping
-      t00     = 200._r8             ! min temp eq
+      efoldf  =  1._r8               ! e-folding time for wind dissipation
+      efolda  = 40._r8               ! e-folding time for temp
+      efolds  =  4._r8               ! e-folding time for temp
+      sigmab  =  0.7_r8              ! threshold for surface wind damping, latitudinal temp damping
+      t00     = 200._r8              ! min temp eq
       onemsig = 1._r8 - sigmab        
       ka  = 1._r8/(86400._r8*efolda) 
       ks  = 1._r8/(86400._r8*efolds)  
@@ -329,9 +330,10 @@ subroutine tphysidl(ztodt, state, tend, ideal_phys_option)
             end do
          endif
       end do
-!
-! Add diffusion near the surface for the wind fields
-!
+      
+      !
+      ! Add diffusion
+      !
       do k=1,pver
          do i=1,pcols
             ptend%u(i,k) = 0._r8
@@ -340,8 +342,10 @@ subroutine tphysidl(ztodt, state, tend, ideal_phys_option)
       end do
 
       kf = 1._r8/(86400._r8*efoldf)
-!
+      
       do k=1,pver
+      
+         ! add rayleigh friction near the surface for the wind fields
          if (pref_mid_norm(k) > sigmab) then
             kv  = kf*(pref_mid_norm(k) - sigmab)/onemsig
             tmp = -kv/(1._r8+ ztodt*kv)
@@ -349,6 +353,21 @@ subroutine tphysidl(ztodt, state, tend, ideal_phys_option)
                ptend%u(i,k) = tmp*state%u(i,k)
                ptend%v(i,k) = tmp*state%v(i,k)
             end do
+         endif
+
+         ! JH
+         ! add rayleigh friction in sponge layer
+         ! pref_mid_norm(1) serves as the position of the model top
+         ! (full level, actual half level has lower pressure)
+         ! apply RF at the cutoff sigma level
+         if(pref_mid_norm(k) < fv3_rf_cutoff) then
+             num = pih*log(fv3_rf_cutoff/pref_mid_norm(k))
+             den = log(fv3_rf_cutoff/pref_mid_norm(1))
+                kr = fv3_tau_rev * (sin(num/den))**2._r8    ! FV3 RF coefficient
+             do i = 1, ncol
+                 ptend%u(i,k) = -kr*state%u(i,k)   ! tendency via explicit time stepping
+                 ptend%v(i,k) = -kr*state%v(i,k)   ! tendency via explicit time stepping
+             end do
          endif
       end do
 
