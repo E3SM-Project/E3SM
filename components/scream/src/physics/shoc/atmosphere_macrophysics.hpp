@@ -356,16 +356,19 @@ public:
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
-    static constexpr int num_1d_scalar     = 5;
-    static constexpr int num_2d_vector_mid = 18;
-    static constexpr int num_2d_vector_int = 12;
-    static constexpr int num_2d_vector_tr  = 1;
+    static constexpr int num_1d_scalar_ncol = 5;
+    static constexpr int num_1d_scalar_nlev = 1;
+    static constexpr int num_2d_vector_mid  = 18;
+    static constexpr int num_2d_vector_int  = 12;
+    static constexpr int num_2d_vector_tr   = 1;
 
     uview_1d<Real> cell_length;
     uview_1d<Real> wpthlp_sfc;
     uview_1d<Real> wprtp_sfc;
     uview_1d<Real> upwp_sfc;
     uview_1d<Real> vpwp_sfc;
+
+    uview_1d<Spack> pref_mid;
 
     uview_2d<Spack> z_mid;
     uview_2d<Spack> z_int;
@@ -402,11 +405,15 @@ public:
     Spack* wsm_data;
   };
 
+#ifndef KOKKOS_ENABLE_CUDA
+  // Cuda requires methods enclosing __device__ lambda's to be public
+protected:
+#endif
+
+  void initialize_impl (const RunType run_type);
 
 protected:
 
-  // The three main interfaces for the subcomponent
-  void initialize_impl (const RunType run_type);
   void run_impl        (const int dt);
   void finalize_impl   ();
 

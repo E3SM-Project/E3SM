@@ -96,12 +96,4 @@ bool SEGrid::valid_lid_to_idx_map (const lid_to_idx_map_type& /*lid_to_idx*/) co
   return true;
 }
 
-bool SEGrid::
-valid_geo_data (const std::string& name, const geo_view_type& /* data */) const {
-  // Sanity checks
-  return name=="lat" || name=="lon" || name=="area";
-
-  // TODO: check actual values?
-}
-
 } // namespace scream
