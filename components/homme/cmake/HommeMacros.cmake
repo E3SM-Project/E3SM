@@ -120,6 +120,10 @@ macro(createTestExec execName execType macroNP macroNC
     TARGET_COMPILE_DEFINITIONS(${execName} PUBLIC HOMMEXX_BENCHMARK_NOFORCING)
   ENDIF()
 
+  # Create CsmShare target (if not already created) and link to executable
+  include (BuildCsmShare)
+  BuildCsmShare()
+  target_link_libraries(${execName} PUBLIC csm_share)
 
   IF (CXXLIB_SUPPORTED_CACHE)
     MESSAGE(STATUS "   Linking Fortran with -cxxlib")

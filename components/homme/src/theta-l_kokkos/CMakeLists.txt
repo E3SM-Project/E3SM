@@ -6,7 +6,6 @@ MACRO(THETAL_KOKKOS_SETUP)
 
   SET(THETA_SHARE_DIR   ${HOMME_SOURCE_DIR}/src/theta-l/share)
   SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/theta-l_kokkos)
-  SET(UTILS_SHARE_DIR   ${HOMME_SOURCE_DIR}/utils/csm_share)
   SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
   SET(SRC_SHARE_DIR     ${HOMME_SOURCE_DIR}/src/share)
   SET(TEST_SRC_DIR      ${HOMME_SOURCE_DIR}/src/test_src)
@@ -143,13 +142,6 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_DIR}/restart_io_mod.F90
     ${SRC_DIR}/surfaces_mod.F90
     ${SRC_DIR}/test_mod.F90
-    ${UTILS_SHARE_DIR}/shr_kind_mod.F90
-    ${UTILS_SHARE_DIR}/shr_mpi_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_sys_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_file_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_vmath_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_const_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
   )
 
   SET(THETAL_DEPS_CXX

@@ -2,7 +2,6 @@ SET(SRC_DIR          ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR    ${HOMME_SOURCE_DIR}/src/share)
 SET(SRC_PREQX_DIR    ${HOMME_SOURCE_DIR}/src/preqx_kokkos)
 SET(PREQX_UT_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
-SET(UTILS_SHARE_DIR  ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(UTILS_TIMING_DIR ${HOMME_SOURCE_DIR}/utils/cime/CIME/non_py/src/timing)
 
 ### Build a 'preqx_kokkos' library ###
