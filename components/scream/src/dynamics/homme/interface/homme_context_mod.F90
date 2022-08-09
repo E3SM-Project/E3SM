@@ -9,7 +9,7 @@ module homme_context_mod
   use domain_mod,          only: domain1d_t
   use derivative_mod_base, only: derivative_t
   use element_mod,         only: element_t
-  use parallel_mod,        only: parallel_t
+  use parallel_mod,        only: parallel_t, abortmp
   use time_mod,            only: timelevel_t
   use hybvcoord_mod,       only: hvcoord_t
   use hybrid_mod,          only: hybrid_t
@@ -32,6 +32,7 @@ module homme_context_mod
   integer, public :: iam         = 0
   logical, public :: masterproc  = .false.
   character(len=256), public :: homme_log_fname = ""
+  logical :: homme_log_set = .false.
 
   logical, public :: is_parallel_inited          = .false.
   logical, public :: is_params_inited            = .false.
@@ -48,23 +49,48 @@ module homme_context_mod
   public :: is_data_structures_inited_f90
   public :: is_model_inited_f90
   public :: is_hommexx_functors_inited_f90
+  public :: close_homme_log
 
 contains
   
-  subroutine set_homme_log_file_name_f90(cname) bind(c)
+  subroutine set_homme_log_file_name_f90(c_str) bind(c)
+    use shr_file_mod, only: shr_file_getUnit
     use iso_c_binding, only: C_NULL_CHAR, c_ptr, c_f_pointer
-    type (c_ptr), intent(in) :: cname
+    use kinds, only: iulog
+    type (c_ptr), intent(in) :: c_str
     !
     ! Local(s)
     !
-    character(len=256), pointer :: fname
-    integer :: len
+    character(len=256), pointer :: full_name
+    character(len=256) :: path, fname
+    integer :: len, slash
 
-    call c_f_pointer(cname,fname)
-    len = index(fname, C_NULL_CHAR) -1
+    call c_f_pointer(c_str,full_name)
+    len = index(full_name, C_NULL_CHAR) -1
+    slash = index(full_name,'/',back=.true.)
 
-    homme_log_fname = "homme."//fname(1:len)
+    path = full_name(1:slash-1)
+    fname = full_name(slash+1:len)
+
+    homme_log_fname = trim(path)//"/homme_"//fname
+
+    ! Create the log file
+    iulog = shr_file_getunit()
+    open (unit=iulog,file=trim(homme_log_fname),status='REPLACE', &
+          action='WRITE', access='SEQUENTIAL', position="append")
+
+    homme_log_set = .true.
   end subroutine set_homme_log_file_name_f90
+
+  subroutine close_homme_log ()
+    use shr_file_mod, only: shr_file_freeUnit
+    use kinds, only: iulog
+
+    close (iulog)
+    call shr_file_freeUnit(iulog)
+    homme_log_fname = ""
+    homme_log_set = .false.
+  end subroutine close_homme_log
 
   subroutine init_parallel_f90 (f_comm) bind(c)
     use parallel_mod,   only: initmp_from_par, abortmp
