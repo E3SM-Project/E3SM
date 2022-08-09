@@ -1669,32 +1669,116 @@ contains
       !
       ! Compute divergence, kinetic energy, and vertical velocity
       !
-      allocate(div_hu(nVertLevels),div_huTransport(nVertLevels),div_huGMBolus(nVertLevels))
-      allocate(div_huMLEBolus(nVertLevels))
+      allocate(div_hu(nVertLevels),div_huTransport(nVertLevels))
+
+      if (config_submesoscale_enable) then
+         allocate(div_huMLEBolus(nVertLevels))
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector &
+         !$acc          present(nEdgesOnCell, edgesOnCell, edgeSignonCell, dcEdge, dvEdge, &
+         !$acc                  areaCell, layerThicknessEdgeFlux, normalMLEBolusVelocity, &
+         !$acc                  vertMLEBolusVelocityTop, invAreaCell, minLevelCell) &
+         !$acc          private(invAreaCell1, i, iEdge, edgeSignOnCell_temp, dcEdge_temp, &
+         !$acc                  dvEdge_temp, k)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime) &
+         !$omp private(i, iEdge, invAreaCell1, edgeSignOnCell_temp, dcEdge_temp, dvEdge_temp, &
+         !$omp         k, div_huMLEBolus)
+#endif
+         do iCell = 1, nCells
+            div_huGMBolus(:) = 0.0_RKIND
+            invAreaCell1 = invAreaCell(iCell)
+            do i = 1, nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(i, iCell)
+               edgeSignOnCell_temp = edgeSignOnCell(i, iCell)
+               dcEdge_temp = dcEdge(iEdge)
+               dvEdge_temp = dvEdge(iEdge)
+               do k = minLevelCell(iCell), maxLevelCell(iCell)
+                  ! Compute vertical velocity from the horizontal GM Bolus velocity
+                  div_huMLEBolus(k) = div_huMLEBolus(k) &
+                                     - layerThicknessEdgeFlux(k, iEdge) * edgeSignOnCell_temp * dvEdge_temp &
+                                     * normalMLEBolusVelocity(k, iEdge) * invAreaCell1
+               end do
+            end do
+            ! Vertical velocity at bottom (maxLevelCell(iCell)+1) is zero, initialized above.
+            vertMLEBolusVelocityTop(1:minLevelCell(iCell)-1, iCell) = 0.0_RKIND
+            vertMLEBolusVelocityTop(maxLevelCell(iCell)+1, iCell) = 0.0_RKIND
+            do k = maxLevelCell(iCell), 1, -1
+               vertMLEBolusVelocityTop(k,iCell) = vertMLEBolusVelocityTop(k+1,iCell) - div_huGMBolus(k)
+            end do
+         end do
+#ifndef MPAS_OPENACC
+         !$omp end do
+         !$omp end parallel
+#endif
+         deallocate(div_huMLEBolus)
+      end if !config_submesoscale_enable
+
+      if (config_use_gm) then
+         allocate(div_huGMBolus(nVertLevels))
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector &
+         !$acc          present(nEdgesOnCell, edgesOnCell, edgeSignonCell, dcEdge, dvEdge, &
+         !$acc                  areaCell, layerThicknessEdgeFlux, normalGMBolusVelocity, &
+         !$acc                  vertGMBolusVelocityTop, invAreaCell, minLevelCell) &
+         !$acc          private(invAreaCell1, i, iEdge, edgeSignOnCell_temp, dcEdge_temp, &
+         !$acc                  dvEdge_temp, k)
+#else
+         !$omp parallel
+         !$omp do schedule(runtime) &
+         !$omp private(i, iEdge, invAreaCell1, edgeSignOnCell_temp, dcEdge_temp, dvEdge_temp, &
+         !$omp         k, div_huGMBolus)
+#endif
+         do iCell = 1, nCells
+            div_huGMBolus(:) = 0.0_RKIND
+            invAreaCell1 = invAreaCell(iCell)
+            do i = 1, nEdgesOnCell(iCell)
+               iEdge = edgesOnCell(i, iCell)
+               edgeSignOnCell_temp = edgeSignOnCell(i, iCell)
+               dcEdge_temp = dcEdge(iEdge)
+               dvEdge_temp = dvEdge(iEdge)
+               do k = minLevelCell(iCell), maxLevelCell(iCell)
+                  ! Compute vertical velocity from the horizontal GM Bolus velocity
+                  div_huGMBolus(k) = div_huGMBolus(k) &
+                                     - layerThicknessEdgeFlux(k, iEdge) * edgeSignOnCell_temp * dvEdge_temp &
+                                     * normalGMBolusVelocity(k, iEdge) * invAreaCell1
+               end do
+            end do
+            ! Vertical velocity at bottom (maxLevelCell(iCell)+1) is zero, initialized above.
+            vertGMBolusVelocityTop(1:minLevelCell(iCell)-1, iCell) = 0.0_RKIND
+            vertGMBolusVelocityTop(maxLevelCell(iCell)+1, iCell) = 0.0_RKIND
+            do k = maxLevelCell(iCell), 1, -1
+               vertGMBolusVelocityTop(k,iCell) = vertGMBolusVelocityTop(k+1,iCell) - div_huGMBolus(k)
+            end do
+         end do
+#ifndef MPAS_OPENACC
+         !$omp end do
+         !$omp end parallel
+#endif
+         deallocate(div_huGMBolus)
+      end if !config_use_gm
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop gang vector &
       !$acc          present(divergence, kineticEnergyCell, &
       !$acc                  areaCell, nEdgesOnCell, edgesOnCell, edgeSignOnCell, dcEdge, dvEdge, &
       !$acc                  maxLevelCell, normalVelocity, divergence, layerThicknessEdgeFlux, &
-      !$acc                  normalTransportVelocity, normalGMBolusVelocity, vertVelocityTop, &
-      !$acc                  vertTransportVelocityTop, vertGMBolusVelocityTop, invAreaCell, &
-      !$acc                  minLevelCell,vertMLEBolusVelocityTop, normalMLEVelocity) &
+      !$acc                  normalTransportVelocity, vertVelocityTop, vertTransportVelocityTop, &
+      !$acc                  invAreaCell, minLevelCell) &
       !$acc          private(invAreaCell1, i, iEdge, edgeSignOnCell_temp, dcEdge_temp, &
       !$acc                  dvEdge_temp, k, r_tmp)
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp private(i, iEdge, invAreaCell1, edgeSignOnCell_temp, dcEdge_temp, dvEdge_temp, &
-      !$omp         k, r_tmp, div_hu, div_huTransport, div_huGMBolus)
+      !$omp         k, r_tmp, div_hu, div_huTransport)
 #endif
       do iCell = 1, nCells
          divergence(:, iCell) = 0.0_RKIND
          kineticEnergyCell(:, iCell) = 0.0_RKIND
          div_hu(:) = 0.0_RKIND
          div_huTransport(:) = 0.0_RKIND
-         div_huGMBolus(:) = 0.0_RKIND
-         div_huMLEBolus(:) = 0.0_RKIND
          invAreaCell1 = invAreaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
@@ -1712,13 +1796,6 @@ contains
                div_huTransport(k) = div_huTransport(k) &
                                     - layerThicknessEdgeFlux(k, iEdge) * edgeSignOnCell_temp &
                                     * dvEdge_temp * normalTransportVelocity(k, iEdge) * invAreaCell1
-               ! Compute vertical velocity from the horizontal GM Bolus velocity
-               div_huGMBolus(k) = div_huGMBolus(k) &
-                                  - layerThicknessEdgeFlux(k, iEdge) * edgeSignOnCell_temp * dvEdge_temp &
-                                  * normalGMBolusVelocity(k, iEdge) * invAreaCell1
-               div_huMLEBolus(k) = div_huMLEBolus(k) &
-                                  - layerThicknessEdgeFlux(k, iEdge) * edgeSignOnCell_temp * dvEdge_temp &
-                                  * normalMLEVelocity(k, iEdge) * invAreaCell1
             end do
          end do
          ! Vertical velocity at bottom (maxLevelCell(iCell)+1) is zero, initialized above.
@@ -1727,8 +1804,6 @@ contains
          do k = maxLevelCell(iCell), 1, -1
             vertVelocityTop(k,iCell) = vertVelocityTop(k+1,iCell) - div_hu(k)
             vertTransportVelocityTop(k,iCell) = vertTransportVelocityTop(k+1,iCell) - div_huTransport(k)
-            vertGMBolusVelocityTop(k,iCell) = vertGMBolusVelocityTop(k+1,iCell) - div_huGMBolus(k)
-            vertMLEBolusVelocityTop(k,iCell) = vertMLEBolusVelocityTop(k+1,iCell) - div_huMLEBolus(k)
          end do
       end do
 #ifndef MPAS_OPENACC
@@ -1736,7 +1811,7 @@ contains
       !$omp end parallel
 #endif
 
-      deallocate(div_hu,div_huTransport,div_huGMBolus)
+      deallocate(div_hu,div_huTransport)
 
       nEdges = nEdgesHalo( 2 )
 #ifdef MPAS_OPENACC

@@ -2702,12 +2702,11 @@
 		/>
 		<var name="vertGMBolusVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^-1"
 			 description="vertical tracer-transport velocity defined at center (horizontally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal GM Bolus velocity."
-			 packages="forwardMode;analysisMode"
+			 packages="gm"
 		/>
 		<var name="vertMLEBolusVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^-1"
 			 description="vertical tracer-transport velocity defined at center (horizontally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal MLE (submesoscale) Bolus velocity."
-			 packages="forwardMode;analysisMode"
-
+			 packages="submeso"
 		/>
 		<var name="tangentialVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			 description="horizontal velocity, tangential to an edge"
@@ -2837,15 +2836,15 @@
 		/>
 		<var name="normalGMBolusVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization"
-			 packages="forwardMode;analysisMode"
+			 packages="gm"
 		/>
 		<var name="normalMLEvelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			description="Velocity from mixed layer eddies (fox kemper 2011 submesoscale parameterization)"
-			 packages="forwardMode;analysisMode"
+			 packages="submeso"
 		/>
 		<var name="cGMphaseSpeed" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="phase speed for the bolus velocity calculation"
-			packages="forwardMode;analysisMode"
+			packages="gm"
 		/>
 		<var name="betaEdge" type="real" dimensions="nEdges Time" units="m^-1 s^-1"
 			description="meridional gradient of the coriolis parameter, used in the mesoscale eddy parameterization schemes"
