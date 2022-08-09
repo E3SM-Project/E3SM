@@ -202,6 +202,8 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
     res_and_msg.result = CheckResult::Pass;
   } else if  (minmaxloc.min_val<m_lb_repairable || minmaxloc.max_val>m_ub_repairable) {
     res_and_msg.result = CheckResult::Fail;
+  } else {
+    res_and_msg.result = CheckResult::Repairable;
   }
 
   if (res_and_msg.result == CheckResult::Pass) {
