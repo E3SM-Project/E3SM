@@ -288,12 +288,6 @@ void SurfaceCouplingExporter::do_export(const Int dt, const bool called_during_i
       // Precipitation has units of kg, so we need to convert to a flux with units of kg/s
       Faxa_rainl(i) = precip_liq_surf_mass(i)/dt;
       Faxa_snowl(i) = precip_ice_surf_mass(i)/dt;
-
-      // It is the responsibility of the surface coupling to zero out the precipitation flux
-      // now that it has been assigned to the coupling variable.
-      // TODO: Have the atmosphere driver actually do this in a consistent way - see Issue #1767
-      precip_liq_surf_mass(i) = 0.0;
-      precip_ice_surf_mass(i) = 0.0;
     }
   });
 

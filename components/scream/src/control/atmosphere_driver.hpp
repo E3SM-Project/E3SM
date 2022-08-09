@@ -85,6 +85,9 @@ public:
   // them setup internal SurfaceCoupling data.
   void setup_surface_coupling_processes() const;
 
+  // Zero out precipitation flux
+  void set_precipitation_fields_to_zero();
+
   // Load initial conditions for atm inputs
   void initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0);
 

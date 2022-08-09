@@ -314,6 +314,13 @@ void AtmosphereDriver::setup_surface_coupling_processes () const
   }
 }
 
+void AtmosphereDriver::set_precipitation_fields_to_zero () 
+{
+  auto ref_grid_name = m_grids_manager->get_reference_grid()->name();
+  get_field_mgr(ref_grid_name)->get_field("precip_ice_surf_mass").deep_copy(0.0);
+  get_field_mgr(ref_grid_name)->get_field("precip_liq_surf_mass").deep_copy(0.0);
+}
+
 void AtmosphereDriver::create_fields()
 {
   m_atm_logger->info("[EAMxx] create_fields ...");
@@ -1105,6 +1112,11 @@ void AtmosphereDriver::run (const int dt) {
   for (auto& out_mgr : m_output_managers) {
     out_mgr.run(m_current_ts);
   }
+
+  // We must zero out the precipitation flux after the output managers have run.
+  // TODO: This should be a generic functions which sets "one-step" fields to
+  //       an identity value. See Issue #1767.
+  set_precipitation_fields_to_zero();
 
 #ifdef SCREAM_HAS_MEMORY_USAGE
   long long my_mem_usage = get_mem_usage(MB);
