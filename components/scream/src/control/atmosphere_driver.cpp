@@ -316,9 +316,13 @@ void AtmosphereDriver::setup_surface_coupling_processes () const
 
 void AtmosphereDriver::set_precipitation_fields_to_zero () 
 {
-  auto ref_grid_name = m_grids_manager->get_reference_grid()->name();
-  get_field_mgr(ref_grid_name)->get_field("precip_ice_surf_mass").deep_copy(0.0);
-  get_field_mgr(ref_grid_name)->get_field("precip_liq_surf_mass").deep_copy(0.0);
+  const auto field_mgr = get_ref_grid_field_mgr();
+  if (field_mgr->has_field("precip_ice_surf_mass")) {
+    field_mgr->get_field("precip_ice_surf_mass").deep_copy(0.0);
+  }
+  if (field_mgr->has_field("precip_liq_surf_mass")) {
+    field_mgr->get_field("precip_liq_surf_mass").deep_copy(0.0);
+  }
 }
 
 void AtmosphereDriver::create_fields()
