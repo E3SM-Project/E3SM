@@ -47,7 +47,7 @@ private
 #endif
 
   ! QUAD precision can be enabled via CMake var (or compiler macro for EAM).
-  ! Currently, EAM does not use quad precision, while tandalone Homme/SCREAM can.
+  ! Currently, EAM does not use quad precision, while HommeStandalone/SCREAM can.
   integer (kind=4), public, parameter::  &
 #ifdef HOMME_QUAD_PREC
   longdouble_kind    = 16
