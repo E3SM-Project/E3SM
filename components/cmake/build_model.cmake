@@ -73,6 +73,10 @@ function(build_model COMP_CLASS COMP_NAME)
         set(YAKL_ARCH "CUDA")
         # CUDA_FLAGS is set through Macros.cmake / config_compilers.xml
         set(YAKL_CUDA_FLAGS "${CPPDEFS} ${CUDA_FLAGS}")
+      elseif (USE_HIP)
+        set(YAKL_ARCH "HIP")
+        # HIP_FLAGS is set through Macros.cmake / config_compilers.xml
+        set(YAKL_HIP_FLAGS "${CPPDEFS} ${HIP_FLAGS}")
       else()
         # For CPU C++ compilers duplicate flags are fine, the last ones win typically
         set(YAKL_CXX_FLAGS "${CPPDEFS} ${CXXFLAGS}")
