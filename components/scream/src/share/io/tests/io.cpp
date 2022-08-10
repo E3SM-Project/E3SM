@@ -250,7 +250,7 @@ void run_multisnap(const std::string& output_freq_units) {
 
   // Check multisnap output; note, tt starts at 1 instead of 0 to follow netcdf time dimension indexing.
   AtmosphereInput multi_input(input_params,field_manager);
-  for (int tt = 0; tt<=std::min(max_steps,10); tt++) {
+  for (int tt = 0; tt<std::min(max_steps,10); tt++) {
     multi_input.read_variables(tt);
     f1.sync_to_host();
     f2.sync_to_host();
