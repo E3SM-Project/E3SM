@@ -627,10 +627,10 @@
       <modules compiler="crayclanggpu">
         <command name="purge"></command>
         <command name="load">PrgEnv-cray/8.3.3</command>
-        <command name="load">cce/14.0.0</command>
+        <command name="load">cce/14.0.2</command>
         <command name="load">craype-network-ofi</command>
         <command name="load">craype-accel-amd-gfx90a</command>
-        <command name="load">rocm/5.1.0</command>
+        <command name="load">rocm/5.2.0</command>
       </modules>
 
       <modules compiler="crayclang">
@@ -667,7 +667,7 @@
       </modules>
 
       <modules>
-        <command name="load">cray-mpich/8.1.12</command>
+        <command name="load">cray-mpich/8.1.18</command>
         <command name="load">cray-python/3.9.4.2</command>
         <command name="load">subversion/1.14.0</command>
         <command name="load">git/2.31.1</command>
