@@ -1,9 +1,10 @@
-set (SCREAM_TPLS_MODULE_DIR ${CMAKE_CURRENT_LIST_DIR} CACHE INTERNAL "")
-
 macro (CreateCsmShareTarget)
+  if (TARGET csm_share)
+    message (FATAL_ERROR "Error! The target csm_share already exists!")
+  endif()
 
-  # Some sanity checks
   if (SCREAM_CIME_BUILD)
+    # Some sanity checks
     if (NOT DEFINED INSTALL_SHAREDPATH)
       message (FATAL_ERROR "Error! The cmake variable 'INSTALL_SHAREDPATH' is not defined.")
     endif ()
@@ -33,10 +34,7 @@ macro (CreateCsmShareTarget)
       target_link_libraries (csm_share INTERFACE ${CSM_SHARE_LIB})
       target_include_directories(csm_share INTERFACE ${CSM_SHARE})
 
-      # Create the piof interface target, and link it to csm_share, so that cmake will correctly
-      # attach it to any downstream target linking against csm_share
-      include(${SCREAM_TPLS_MODULE_DIR}/Scorpio.cmake)
-      CreateScorpioTargets()
+      # Link against piof
       target_link_libraries(csm_share INTERFACE piof)
     endif ()
   else()
@@ -89,5 +87,11 @@ macro (CreateCsmShareTarget)
       $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:GNU>>:CPRGNU>
       $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:Intel>>:CPRINTEL>)
 
+    if (${CMAKE_SYSTEM} MATCHES "Linux")
+      target_compile_definitions(csm_share PUBLIC LINUX)
+    endif()
+    set_target_properties(csm_share PROPERTIES
+      Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules)
+    target_include_directories(csm_share PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/modules)
   endif ()
 endmacro()
