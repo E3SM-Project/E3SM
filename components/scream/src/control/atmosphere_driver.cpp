@@ -755,10 +755,13 @@ void AtmosphereDriver::create_logger () {
   using logger_t = Logger<LogBasicFile,LogRootRank>;
   auto logger = std::make_shared<logger_t>(log_fname,log_level,m_atm_comm,"");
   logger->set_no_format();
-#ifdef SCREAM_CIME_BUILD
-  // Disable console output, to avoid polluting e3sm.log
-  logger->set_console_level(LogLevel::off);
-#endif
+
+  // In CIME runs, this is already set to false, so atm log does not pollute e3sm.loc.
+  // In standalone, we default to true, so we see output to screen.
+  if (not deb_pl.get<bool>("output_to_screen",true)) {
+     logger->set_console_level(LogLevel::off);
+  }
+
   m_atm_logger = logger;
 
   // Record the CASENAME for this run, set default to EAMxx
