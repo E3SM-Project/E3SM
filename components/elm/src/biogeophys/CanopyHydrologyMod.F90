@@ -306,7 +306,7 @@ contains
 
                    ! Coefficient of interception
                    ! set fraction of potential interception to max 0.25
-                   fpi = 0.25_r8*(1._r8 - exp(-0.5_r8*(elai(p) + esai(p))))
+                   fpi = 0.5_r8*(1._r8 - exp(-0.5_r8*(elai(p) + esai(p))))
 
                    ! Direct throughfall
                    qflx_through_snow(p) = forc_snow(t) * (1._r8-fpi)
