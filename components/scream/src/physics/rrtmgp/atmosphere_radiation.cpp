@@ -1,7 +1,7 @@
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 #include "physics/rrtmgp/rrtmgp_utils.hpp"
-#include "physics/rrtmgp/share/shr_orb_mod_c2f.hpp"
+#include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/util/scream_column_ops.hpp"

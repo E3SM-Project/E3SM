@@ -20,9 +20,6 @@ if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
   target_compile_definitions(yakl PUBLIC YAKL_DEBUG)                                                                   
 endif()                                                                                                             
 
-# We will need the shr_orb_mod source too; this builds library share_util
-add_subdirectory(share ${CMAKE_CURRENT_BINARY_DIR}/share_util)
-
 set(EAM_RRTMGP_DIR ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp)
 # Build RRTMGP library; this builds the core RRTMGP external source as a library named "rrtmgp"
 # NOTE: The external RRTMGP build needs some fixes to work with CUDA in a library build, so for now we will build these ourselves
@@ -67,10 +64,11 @@ set(INTERFACE_SRC
   mo_load_coefficients.cpp
   mo_load_cloud_coefficients.cpp
   rrtmgp_test_utils.cpp
+  shr_orb_mod_c2f.F90
 )
 add_library(scream_rrtmgp ${INTERFACE_SRC})
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
-target_link_libraries(scream_rrtmgp PUBLIC ${NETCDF_C} rrtmgp yakl scream_share physics_share share_util)
+target_link_libraries(scream_rrtmgp PUBLIC ${NETCDF_C} rrtmgp yakl scream_share physics_share csm_share)
 target_include_directories(scream_rrtmgp SYSTEM PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${NetCDF_C_PATH}/include

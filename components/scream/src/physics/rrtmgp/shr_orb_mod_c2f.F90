@@ -22,7 +22,7 @@ contains
       logical :: print_flag = .false.
       call shr_orb_params(orb_year, eccen, mvelpp, lambm0, obliqr, delta, eccf, print_flag)
    end subroutine shr_orb_params_c2f
-        
+
    subroutine shr_orb_decl_c2f(     &
          calday, eccen, mvelpp, lambm0, &
          obliqr, delta, eccf            &
