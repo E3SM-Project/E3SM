@@ -12,11 +12,15 @@ set(DIAGNOSTIC_SRCS
   ice_water_path.cpp
   vapor_water_path.cpp
   rain_water_path.cpp
+  rime_water_path.cpp
+  shortwave_cloud_forcing.cpp
+  longwave_cloud_forcing.cpp
+  relative_humidity.cpp
 )
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})
 target_include_directories(diagnostics PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../share)
-target_link_libraries(diagnostics PUBLIC scream_share)
+target_link_libraries(diagnostics PUBLIC scream_share physics_share)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

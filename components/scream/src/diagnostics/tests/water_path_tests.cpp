@@ -79,7 +79,8 @@ void run(std::mt19937_64& engine)
     qv("qv",num_mid_packs),
     qc("qc",num_mid_packs),
     qr("qr",num_mid_packs),
-    qi("qi",num_mid_packs);
+    qi("qi",num_mid_packs),
+    qm("qm",num_mid_packs);
 
   auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
     return rview_1d(reinterpret_cast<Real*>(v.data()),v.size()*packsize);
@@ -116,6 +117,11 @@ void run(std::mt19937_64& engine)
   auto diag_ice = diag_factory.create("IceWaterPath",comm,params);
   diag_ice->set_grids(gm);
   diags.emplace("iwp",diag_ice);
+  // Rime
+  params.set<std::string>("Diagnostic Name", "Rime Water Path");
+  auto diag_rime = diag_factory.create("RimeWaterPath",comm,params);
+  diag_rime->set_grids(gm);
+  diags.emplace("mwp",diag_rime);
   // Rain
   params.set<std::string>("Diagnostic Name", "Rain Water Path");
   auto diag_rain = diag_factory.create("RainWaterPath",comm,params);
@@ -162,6 +168,8 @@ void run(std::mt19937_64& engine)
     const auto& qc_v          = qc_f.get_view<Pack**>();
     const auto& qi_f          = input_fields["qi"];
     const auto& qi_v          = qi_f.get_view<Pack**>();
+    const auto& qm_f          = input_fields["qm"];
+    const auto& qm_v          = qm_f.get_view<Pack**>();
     const auto& qr_f          = input_fields["qr"];
     const auto& qr_v          = qr_f.get_view<Pack**>();
     const auto& pseudo_dens_f = input_fields["pseudo_density"];
@@ -169,7 +177,8 @@ void run(std::mt19937_64& engine)
     for (int icol=0;icol<ncols;icol++) {
       const auto& qv_sub      = ekat::subview(qv_v,icol);
       const auto& qc_sub      = ekat::subview(qc_v,icol);
-      const auto& qi_sub      = ekat::subview(qi_v,icol);
+      const auto& qi_sub      = ekat::subview(qi_v,icol); 
+      const auto& qm_sub      = ekat::subview(qm_v,icol);
       const auto& qr_sub      = ekat::subview(qr_v,icol);
       const auto& dp_sub      = ekat::subview(pseudo_dens_v,icol);
       ekat::genRandArray(dview_as_real(pseudo_density),  engine, pdf_pseudodens);
@@ -178,24 +187,29 @@ void run(std::mt19937_64& engine)
       ekat::genRandArray(dview_as_real(qv),              engine, pdf_qv);
       ekat::genRandArray(dview_as_real(qc),              engine, pdf_qx);
       ekat::genRandArray(dview_as_real(qi),              engine, pdf_qx);
+      ekat::genRandArray(dview_as_real(qm),              engine, pdf_qx);
       ekat::genRandArray(dview_as_real(qr),              engine, pdf_qx);
       Kokkos::deep_copy(qv_sub,qv);
       Kokkos::deep_copy(qc_sub,qc);
       Kokkos::deep_copy(qi_sub,qi);
+      Kokkos::deep_copy(qm_sub,qm);
       Kokkos::deep_copy(qr_sub,qr);
     }
     // Grab views for each of the water path diagnostics
     const auto& vwp = diags["vwp"]->get_diagnostic();
     const auto& lwp = diags["lwp"]->get_diagnostic();
     const auto& iwp = diags["iwp"]->get_diagnostic();
+    const auto& mwp = diags["mwp"]->get_diagnostic();
     const auto& rwp = diags["rwp"]->get_diagnostic();
     const auto& vwp_v = vwp.get_view<const Real*>();
     const auto& lwp_v = lwp.get_view<const Real*>();
     const auto& iwp_v = iwp.get_view<const Real*>();
+    const auto& mwp_v = mwp.get_view<const Real*>();
     const auto& rwp_v = rwp.get_view<const Real*>();
     const auto& vwp_h = vwp.get_view<const Real*,Host>();
     const auto& lwp_h = lwp.get_view<const Real*,Host>();
     const auto& iwp_h = iwp.get_view<const Real*,Host>();
+    const auto& mwp_h = mwp.get_view<const Real*,Host>();
     const auto& rwp_h = rwp.get_view<const Real*,Host>();
 
     for (const auto& dd : diags) {
@@ -237,6 +251,17 @@ void run(std::mt19937_64& engine)
             }
           }, Kokkos::Max<Real>(qi_mass_max));
         EKAT_KERNEL_REQUIRE(iwp_v(icol)>qi_mass_max);
+        // Test qm mass
+        Real qm_mass_max=0.0;
+        auto qm_s = ekat::scalarize(ekat::subview(qm_v, icol));
+        Kokkos::parallel_reduce(
+          Kokkos::TeamThreadRange(team,num_levs), [&] (Int idx, Real& lmax) {
+            if (qm_s(idx)*dp_s(idx)/gravit > lmax) {
+              lmax = qm_s(idx)*dp_s(idx)/gravit;
+            }
+          }, Kokkos::Max<Real>(qm_mass_max));
+        EKAT_KERNEL_REQUIRE(mwp_v(icol)>qm_mass_max);
+
         // Test qr mass
         Real qr_mass_max=0.0;
         auto qr_s = ekat::scalarize(ekat::subview(qr_v, icol));
@@ -256,15 +281,18 @@ void run(std::mt19937_64& engine)
       Field vwp_copy_f = diags["vwp"]->get_diagnostic().clone();
       Field lwp_copy_f = diags["lwp"]->get_diagnostic().clone();
       Field iwp_copy_f = diags["iwp"]->get_diagnostic().clone();
+      Field mwp_copy_f = diags["mwp"]->get_diagnostic().clone();
       Field rwp_copy_f = diags["rwp"]->get_diagnostic().clone();
       const auto& vwp_copy_v = vwp_copy_f.get_view<Real*>();
       const auto& lwp_copy_v = lwp_copy_f.get_view<Real*>();
       const auto& iwp_copy_v = iwp_copy_f.get_view<Real*>();
+      const auto& mwp_copy_v = mwp_copy_f.get_view<Real*>();
       const auto& rwp_copy_v = rwp_copy_f.get_view<Real*>();
 
       const auto alpha_qv = pdf_alpha(engine);
       const auto alpha_qc = pdf_alpha(engine);
       const auto alpha_qi = pdf_alpha(engine);
+      const auto alpha_qm = pdf_alpha(engine);
       const auto alpha_qr = pdf_alpha(engine);
       REQUIRE(alpha_qv*alpha_qc*alpha_qi*alpha_qr != 1.0);
 
@@ -275,12 +303,14 @@ void run(std::mt19937_64& engine)
         qv_v(icol,jpack) *= alpha_qv;
         qc_v(icol,jpack) *= alpha_qc;
         qi_v(icol,jpack) *= alpha_qi;
+        qm_v(icol,jpack) *= alpha_qm;
         qr_v(icol,jpack) *= alpha_qr;
 
         if (jpack==0) {
           vwp_copy_v(icol) *= alpha_qv;
           lwp_copy_v(icol) *= alpha_qc;
           iwp_copy_v(icol) *= alpha_qi;
+          mwp_copy_v(icol) *= alpha_qm;
           rwp_copy_v(icol) *= alpha_qr;
         }
       });
@@ -291,19 +321,23 @@ void run(std::mt19937_64& engine)
       vwp_copy_f.sync_to_host();
       lwp_copy_f.sync_to_host();
       iwp_copy_f.sync_to_host();
+      mwp_copy_f.sync_to_host();
       rwp_copy_f.sync_to_host();
       const auto& vwp_copy_h = vwp_copy_f.get_view<Real*,Host>();
       const auto& lwp_copy_h = lwp_copy_f.get_view<Real*,Host>();
       const auto& iwp_copy_h = iwp_copy_f.get_view<Real*,Host>();
+      const auto& mwp_copy_h = mwp_copy_f.get_view<Real*,Host>();
       const auto& rwp_copy_h = rwp_copy_f.get_view<Real*,Host>();
       vwp.sync_to_host();
       lwp.sync_to_host();
       iwp.sync_to_host();
+      mwp.sync_to_host();
       rwp.sync_to_host();
       for (int icol=0;icol<ncols;icol++) {
         REQUIRE(std::abs(vwp_copy_h(icol)-vwp_h(icol))<macheps);
         REQUIRE(std::abs(lwp_copy_h(icol)-lwp_h(icol))<macheps);
         REQUIRE(std::abs(iwp_copy_h(icol)-iwp_h(icol))<macheps);
+        REQUIRE(std::abs(mwp_copy_h(icol)-mwp_h(icol))<macheps);
         REQUIRE(std::abs(rwp_copy_h(icol)-rwp_h(icol))<macheps);
       }
     }
@@ -410,6 +444,7 @@ void run(std::mt19937_64& engine)
         qv_v(icol,kpack)[klev] = (icol+1) * (idx+1);
         qc_v(icol,kpack)[klev] = (icol+1) * (idx+1);
         qi_v(icol,kpack)[klev] = (icol+1) * (idx+1);
+        qm_v(icol,kpack)[klev] = (icol+1) * (idx+1);
         qr_v(icol,kpack)[klev] = (icol+1) * (idx+1);
       });
       Kokkos::fence();
