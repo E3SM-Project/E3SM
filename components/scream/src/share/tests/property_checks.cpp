@@ -1,12 +1,10 @@
 #include <catch2/catch.hpp>
 #include <numeric>
 
-#include "share/property_checks/field_positivity_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_upper_bound_check.hpp"
 #include "share/property_checks/field_nan_check.hpp"
-#include "share/property_checks/check_and_repair_wrapper.hpp"
 #include "share/util/scream_setup_random_test.hpp"
 #include "share/grid/point_grid.hpp"
 
@@ -41,10 +39,10 @@ TEST_CASE("property_check_base", "") {
     auto cf = f.get_const();
 
     // Field must not be read-only if repair is needed
-    REQUIRE_THROWS (std::make_shared<FieldPositivityCheck>(cf,grid,true));
+    REQUIRE_THROWS (std::make_shared<FieldLowerBoundCheck>(cf,grid,0,true));
 
     // But ok if no repair is needed
-    REQUIRE_NOTHROW (std::make_shared<FieldPositivityCheck>(cf,grid,false));
+    REQUIRE_NOTHROW (std::make_shared<FieldLowerBoundCheck>(cf,grid,0,false));
   }
 }
 
@@ -91,47 +89,6 @@ TEST_CASE("property_checks", "") {
   Field f(fid);
   f.allocate_view();
 
-  // Check positivity.
-  SECTION ("field_positivity_check") {
-    const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
-
-    // Assign positive values to the field and make sure it passes our test for
-    // positivity.
-    auto f_data = reinterpret_cast<Real*>(f.get_internal_view_data<Real,Host>());
-    ekat::genRandArray(f_data,num_reals,engine,pos_pdf);
-    f.sync_to_dev();
-
-    auto positivity_check = std::make_shared<FieldPositivityCheck>(f,grid,false);
-    REQUIRE(not positivity_check->can_repair());
-    auto checkResult = positivity_check->check();
-    REQUIRE(checkResult.pass);
-
-    // Assign non-positive values to the field and make sure it fails the check.
-    ekat::genRandArray(f_data,num_reals,engine,neg_pdf);
-    f.sync_to_dev();
-    checkResult = positivity_check->check();
-    REQUIRE(not checkResult.pass);
-  }
-
-  // Check positivity with repairs.
-  SECTION ("field_positivity_check_with_repairs") {
-    const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
-
-    // Assign non-positive values to the field, make sure it fails the check,
-    // and then repair the field so it passes.
-    auto f_data = reinterpret_cast<Real*>(f.get_internal_view_data<Real,Host>());
-    ekat::genRandArray(f_data,num_reals,engine,neg_pdf);
-    f.sync_to_dev();
-
-    auto positivity_check = std::make_shared<FieldPositivityCheck>(f,grid,true);
-    REQUIRE(positivity_check->can_repair());
-    auto checkResult = positivity_check->check();
-    REQUIRE(not checkResult.pass);
-    positivity_check->repair();
-    checkResult = positivity_check->check();
-    REQUIRE(checkResult.pass);
-  }
-
   // Check that values are not NaN
   SECTION("field_not_nan_check") {
     const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
@@ -142,21 +99,21 @@ TEST_CASE("property_checks", "") {
     auto f_data = reinterpret_cast<Real*>(f.get_internal_view_data<Real,Host>());
     ekat::genRandArray(f_data,num_reals,engine,neg_pdf);
     f.sync_to_dev();
-    auto checkResult = nan_check->check();
-    REQUIRE(checkResult.pass);
+    auto res_and_msg = nan_check->check();
+    REQUIRE(res_and_msg.result==CheckResult::Pass);
 
     // Assign a NaN value to the field, make sure it fails the check,
     auto f_view = f.get_view<Real***,Host>();
     f_view(1,2,3) = std::numeric_limits<Real>::quiet_NaN();
     f.sync_to_dev();
-    checkResult = nan_check->check();
-    REQUIRE(not checkResult.pass);
+    res_and_msg = nan_check->check();
+    REQUIRE(res_and_msg.result==CheckResult::Fail);
     std::string expected_msg =
       "FieldNaNCheck failed.\n"
       "  - field id: " + fid.get_id_string() + "\n"
       "  - entry (1,1,2)\n"
       "  - lat/lon: (1.000000, -1.000000)\n";
-    REQUIRE( checkResult.msg == expected_msg );
+    REQUIRE( res_and_msg.msg == expected_msg );
   }
 
   // Check that the values of a field lie within an interval.
@@ -170,8 +127,8 @@ TEST_CASE("property_checks", "") {
     auto f_data = reinterpret_cast<Real*>(f.get_internal_view_data<Real,Host>());
     ekat::genRandArray(f_data,num_reals,engine,pos_pdf);
     f.sync_to_dev();
-    auto checkResult = interval_check->check();
-    REQUIRE(checkResult.pass);
+    auto res_and_msg = interval_check->check();
+    REQUIRE(res_and_msg.result==CheckResult::Pass);
 
     // Assign out-of-bounds values to the field, make sure it fails the check,
     // and then repair the field so it passes.
@@ -180,8 +137,8 @@ TEST_CASE("property_checks", "") {
     f_view(1,2,3) = 2.0;
     f_view(0,1,2) = 0.0;
     f.sync_to_dev();
-    checkResult = interval_check->check();
-    REQUIRE(not checkResult.pass);
+    res_and_msg = interval_check->check();
+    REQUIRE(res_and_msg.result==CheckResult::Repairable);
     std::string expected_msg =
       "Check failed.\n"
       "  - check name: field_1 within interval [0, 1]\n"
@@ -195,11 +152,59 @@ TEST_CASE("property_checks", "") {
       "    - entry: (1,1,2)\n"
       "    - lat/lon: (1, -1)\n";
 
-    REQUIRE(checkResult.msg == expected_msg);
+    REQUIRE(res_and_msg.msg == expected_msg);
 
     interval_check->repair();
-    checkResult = interval_check->check();
-    REQUIRE(checkResult.pass);
+    res_and_msg = interval_check->check();
+    REQUIRE(res_and_msg.result==CheckResult::Pass);
+  }
+
+  SECTION ("field_within_interval_check_repairable_bounds") {
+    using FWIC = FieldWithinIntervalCheck;
+
+    const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
+
+    // Repairable bounds must be less tight than bounds
+    REQUIRE_THROWS (FWIC(f,grid,0,1,true,1,2));
+    REQUIRE_THROWS (FWIC(f,grid,0,1,true,-1,0));
+
+    auto interval_check = std::make_shared<FWIC>(f, grid, 0, 1, true,-1,2);
+    REQUIRE(interval_check->can_repair());
+
+    // Assign slightly out-of-bound values to the field
+    auto f_data = reinterpret_cast<Real*>(f.get_internal_view_data<Real,Host>());
+    ekat::genRandArray(f_data,num_reals,engine,pos_pdf);
+    f_data[0] = -0.5;
+    f_data[num_reals-1] = 1.5;
+    f.sync_to_dev();
+    auto res_and_msg = interval_check->check();
+    REQUIRE(res_and_msg.result==CheckResult::Repairable);
+
+    // Assign completely out-of-bounds values to the field, make sure it fails the check,
+    // and then repair the field so it passes.
+    f_data[0] = -2;
+    f_data[num_reals-1] = 3;
+    f.sync_to_dev();
+    res_and_msg = interval_check->check();
+    REQUIRE(res_and_msg.result==CheckResult::Fail);
+    std::string expected_msg =
+      "Check failed.\n"
+      "  - check name: field_1 within interval [0, 1]\n"
+      "  - field id: " + fid.get_id_string() + "\n"
+      "  - minimum:\n"
+      "    - value: -2\n"
+      "    - entry: (0,1,2)\n"
+      "    - lat/lon: (0, 0)\n"
+      "  - maximum:\n"
+      "    - value: 3\n"
+      "    - entry: (1,1,2)\n"
+      "    - lat/lon: (1, -1)\n";
+
+    REQUIRE(res_and_msg.msg == expected_msg);
+
+    interval_check->repair();
+    res_and_msg = interval_check->check();
+    REQUIRE(res_and_msg.result==CheckResult::Pass);
   }
 
   // Check that the values of a field are above a lower bound
@@ -215,8 +220,8 @@ TEST_CASE("property_checks", "") {
       f_data[i] = std::numeric_limits<Real>::max() - i*1.0;
     }
     f.sync_to_dev();
-    auto checkResult = lower_bound_check->check();
-    REQUIRE(checkResult.pass);
+    auto res_and_msg = lower_bound_check->check();
+    REQUIRE(res_and_msg.result==CheckResult::Pass);
 
     // Assign out-of-bounds values to the field, make sure it fails the check,
     // and then repair the field so it passes.
@@ -224,11 +229,11 @@ TEST_CASE("property_checks", "") {
       f_data[i] = -2.0*(i+1);
     }
     f.sync_to_dev();
-    checkResult = lower_bound_check->check();
-    REQUIRE(not checkResult.pass);
+    res_and_msg = lower_bound_check->check();
+    REQUIRE(res_and_msg.result==CheckResult::Repairable);
     lower_bound_check->repair();
-    checkResult = lower_bound_check->check();
-    REQUIRE(checkResult.pass);
+    res_and_msg = lower_bound_check->check();
+    REQUIRE(res_and_msg.result==CheckResult::Pass);
     // Should have repaired to the lower bound:
     f.sync_to_host();
     for (int i=0; i<num_reals; ++i) {
@@ -248,8 +253,8 @@ TEST_CASE("property_checks", "") {
       f_data[i] = -std::numeric_limits<Real>::max() + i*1.0;
     }
     f.sync_to_dev();
-    auto checkResult = upper_bound_check->check();
-    REQUIRE(checkResult.pass);
+    auto res_and_msg = upper_bound_check->check();
+    REQUIRE(res_and_msg.result==CheckResult::Pass);
 
     // Assign out-of-bounds values to the field, make sure it fails the check,
     // and then repair the field so it passes.
@@ -257,43 +262,15 @@ TEST_CASE("property_checks", "") {
       f_data[i] = 2.0*(i+1);
     }
     f.sync_to_dev();
-    checkResult = upper_bound_check->check();
-    REQUIRE(not checkResult.pass);
+    res_and_msg = upper_bound_check->check();
+    REQUIRE(res_and_msg.result==CheckResult::Repairable);
     upper_bound_check->repair();
-    checkResult = upper_bound_check->check();
-    REQUIRE(checkResult.pass);
+    res_and_msg = upper_bound_check->check();
+    REQUIRE(res_and_msg.result==CheckResult::Pass);
     // Should have repaired to the upper bound:
     f.sync_to_host();
     for (int i=0; i<num_reals; ++i) {
       REQUIRE(f_data[i] == 1.0);
-    }
-  }
-
-  SECTION ("check_and_repair_wrapper") {
-    const auto num_reals = f.get_header().get_alloc_properties().get_num_scalars();
-
-    // Two separate FPC for check and for repair
-    constexpr Real ub_check  = 1.0;
-    constexpr Real ub_repair = 0.0;
-    auto check  = std::make_shared<FieldUpperBoundCheck>(f,grid,ub_check);
-    auto repair = std::make_shared<FieldUpperBoundCheck>(f,grid,ub_repair,true);
-
-    auto check_and_repair = std::make_shared<CheckAndRepairWrapper>(check, repair);
-    REQUIRE(check_and_repair->can_repair());
-
-    // Assign out-of-bound values to the field, and ensure check fails
-    auto f_data = reinterpret_cast<Real*>(f.get_internal_view_data<Real,Host>());
-    for (int i = 0; i<num_reals; ++i) {
-      f_data[i] = 2.0;
-    }
-    f.sync_to_dev();
-    auto checkResult = check_and_repair->check();
-    REQUIRE(not checkResult.pass);
-    // Repair the field, and make sure the field values match ub_repair
-    check_and_repair->repair();
-    f.sync_to_host();
-    for (int i=0; i<num_reals; ++i) {
-      REQUIRE(f_data[i] == ub_repair);
     }
   }
 }

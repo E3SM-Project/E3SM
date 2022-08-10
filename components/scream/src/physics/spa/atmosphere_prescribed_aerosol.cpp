@@ -4,7 +4,6 @@
 #include "share/io/scream_scorpio_interface.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
-#include "share/property_checks/check_and_repair_wrapper.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -189,19 +188,15 @@ void SPA::initialize_impl (const RunType /* run_type */)
   SPAFunc::update_spa_timestate(m_spa_data_file,m_nswbands,m_nlwbands,ts,SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
 
   // Set property checks for fields in this process
-  {
-    const auto& f = get_field_out("nccn");
-    const auto check = std::make_shared<FieldWithinIntervalCheck>(f, m_grid, -1e-16, 1.0e11, false);
-    const auto repair = std::make_shared<FieldLowerBoundCheck>(f, m_grid, 0.0, true);
-    add_postcondition_check<CheckAndRepairWrapper>(check, repair);
-  }
-  // upper bound set to 1.01 as max(g_sw)=1.00757 in current ne4 data assumingly due to remapping
-  // add an epslon to max possible upper bound of aero_ssa_sw
+  using Interval = FieldWithinIntervalCheck;
+  const auto eps = std::numeric_limits<double>::epsilon();
 
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_g_sw"),m_grid,0.0,1.0,true);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_ssa_sw"),m_grid,0.0,1.0,true);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_tau_sw"),m_grid,0.0,1.0,true);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_tau_lw"),m_grid,0.0,1.0,true);
+  add_postcondition_check<Interval>(get_field_out("nccn"),m_grid,0,1e11,true,-1e11*eps);
+  // TODO: add an epslon to max possible upper bound of aero_ssa_sw?
+  add_postcondition_check<Interval>(get_field_out("aero_g_sw"),m_grid,0.0,1.0,true);
+  add_postcondition_check<Interval>(get_field_out("aero_ssa_sw"),m_grid,0.0,1.0,true);
+  add_postcondition_check<Interval>(get_field_out("aero_tau_sw"),m_grid,0.0,1.0,true);
+  add_postcondition_check<Interval>(get_field_out("aero_tau_lw"),m_grid,0.0,1.0,true);
 }
 
 // =========================================================================================

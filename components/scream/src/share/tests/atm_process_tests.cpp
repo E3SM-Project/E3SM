@@ -5,7 +5,8 @@
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
-#include "share/property_checks/field_positivity_check.hpp"
+#include "share/property_checks/field_lower_bound_check.hpp"
+
 #include "share/grid/se_grid.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
@@ -540,8 +541,8 @@ TEST_CASE("field_checks", "") {
 
   constexpr auto Warning = CheckFailHandling::Warning;
   constexpr auto Fatal   = CheckFailHandling::Fatal;
-  auto pos_check_pre = std::make_shared<FieldPositivityCheck>(T_tend,grid,false);
-  auto pos_check_post = std::make_shared<FieldPositivityCheck>(T,grid,false);
+  auto pos_check_pre = std::make_shared<FieldLowerBoundCheck>(T_tend,grid,0,false);
+  auto pos_check_post = std::make_shared<FieldLowerBoundCheck>(T,grid,0,false);
   for (bool allow_failure : {true,false}) {
     for (bool check_pre : {true, false}) {
       for (bool check_post : {true, false}) {

@@ -19,14 +19,14 @@ public:
     return "NaN check for field " + fields().front().name();
   }
 
-  CheckResult check() const override;
+  ResultAndMsg check() const override;
 
 // CUDA requires the parent fcn of a KOKKOS_LAMBDA to have public access
 #ifndef KOKKOS_ENABLE_CUDA
 protected:
 #endif
   template<typename ST>
-  CheckResult check_impl() const;
+  ResultAndMsg check_impl() const;
 
 private:
 
