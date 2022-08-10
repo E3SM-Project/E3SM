@@ -21,9 +21,7 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
     TARGET_LINK_LIBRARIES (${target_name} -mkl)
   ENDIF()
 
-  # Create CsmShare target (if not already created) and link to executable
-  include (BuildCsmShare)
-  BuildCsmShare()
+  # Link csm_share lib
   target_link_libraries(${target_name} csm_share)
 
   STRING(TOUPPER "${PERFORMANCE_PROFILE}" PERF_PROF_UPPER)

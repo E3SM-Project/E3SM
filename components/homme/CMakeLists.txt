@@ -229,6 +229,13 @@ IF (HOMME_STANDALONE)
   INCLUDE(${HOMME_SOURCE_DIR}/cmake/SetCompilerFlags.cmake)
 ENDIF()
 
+# Create CsmShare target needed for test execs. If Homme is built
+# inside another project which also tries to build homme executables
+# (not advised), then the host project is in charge of ensure that
+# a csm_share target exists at this point
+if (HOMME_STANDALONE)
+  add_subdirectory(utils/csm_share)
+endif()
 
 OPTION(HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" FALSE)
 IF(HOMME_USE_MKL)
