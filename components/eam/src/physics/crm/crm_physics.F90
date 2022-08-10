@@ -490,8 +490,13 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
    use iso_c_binding,         only: c_bool
    use phys_grid,             only: get_rlon_p, get_rlat_p, get_gcol_p  
-   use spmd_utils,            only: masterproc
+   use spmd_utils,            only: masterproc, iam
    use openacc_utils,         only: prefetch
+#if defined(DMDF_SNAPSHOT)
+   use dmdf
+   character(len=64) :: fprefix = 'dmdf_snapshot'
+   integer ierr
+#endif
 
    real(r8),                                        intent(in   ) :: ztodt            ! global model time increment and CRM run length
    type(physics_state),dimension(begchunk:endchunk),intent(in   ) :: state            ! Global model state 
@@ -1147,6 +1152,60 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
       call t_stopf('crm_call')
       
+#endif
+
+#if defined(DMDF_SNAPSHOT)
+      if (nstep == 100) then
+      print *,"99_crm_module, dmdf output data, rank= ",iam, " ;ncrms=",ncrms
+      do icrm = 1 , ncrms
+        call dmdf_write( ztodt                                 , iam, fprefix, trim('dt_gl            ')                                             , .true., .false. )
+        call dmdf_write( latitude0                (icrm)       , iam, fprefix, trim('latitude0        ')                                             , .false., .false. )
+        call dmdf_write( longitude0               (icrm)       , iam, fprefix, trim('longitude0       ')                                             , .false., .false. )
+        call dmdf_write( nstep                                 , iam, fprefix, trim('nstep            ')                                             , .false., .false. )
+        call dmdf_write( crm_input%zmid           (icrm,:)     , iam, fprefix, trim('in_zmid          '), (/'nlev'/)                                 , .false., .false. )
+        call dmdf_write( crm_input%zint           (icrm,:)     , iam, fprefix, trim('in_zint          '), (/'nlevp1'/)                               , .false., .false. )
+        call dmdf_write( crm_input%ul             (icrm,:)     , iam, fprefix, trim('in_ul            '), (/'nlev'/)                                 , .false., .false. )
+        call dmdf_write( crm_input%vl             (icrm,:)     , iam, fprefix, trim('in_vl            '), (/'nlev'/)                                 , .false., .false. )
+        call dmdf_write( crm_input%tl             (icrm,:)     , iam, fprefix, trim('in_tl            '), (/'nlev'/)                                 , .false., .false. )
+        call dmdf_write( crm_input%ql             (icrm,:)     , iam, fprefix, trim('in_ql            '), (/'nlev'/)                                 , .false., .false. )
+        call dmdf_write( crm_input%qccl           (icrm,:)     , iam, fprefix, trim('in_qccl          '), (/'nlev'/)                                 , .false., .false. )
+        call dmdf_write( crm_input%qiil           (icrm,:)     , iam, fprefix, trim('in_qiil          '), (/'nlev'/)                                 , .false., .false. )
+#ifdef MMF_ESMT
+        call dmdf_write( crm_input%ul_esmt        (icrm,:)     , iam, fprefix, trim('in_ul_esmt       '), (/'nlev'/)                                 , .false., .false. )
+        call dmdf_write( crm_input%vl_esmt        (icrm,:)     , iam, fprefix, trim('in_vl_esmt       '), (/'nlev'/)                                 , .false., .false. )
+#endif
+        call dmdf_write( crm_input%ps             (icrm)       , iam, fprefix, trim('in_ps            ')                                             , .false., .false. )
+        call dmdf_write( crm_input%pmid           (icrm,:)     , iam, fprefix, trim('in_pmid          '), (/'nlev'/)                                 , .false., .false. )
+        call dmdf_write( crm_input%pint           (icrm,:)     , iam, fprefix, trim('in_pint          '), (/'nlevp1'/)                               , .false., .false. )
+        call dmdf_write( crm_input%pdel           (icrm,:)     , iam, fprefix, trim('in_pdel          '), (/'nlev'/)                                 , .false., .false. )
+        call dmdf_write( crm_input%phis           (icrm)       , iam, fprefix, trim('in_phis          ')                                             , .false., .false. )
+        call dmdf_write( crm_input%ocnfrac        (icrm)       , iam, fprefix, trim('in_ocnfrac       ')                                             , .false., .false. )
+        call dmdf_write( crm_input%tau00          (icrm)       , iam, fprefix, trim('in_tau00         ')                                             , .false., .false. )
+        call dmdf_write( crm_input%wndls          (icrm)       , iam, fprefix, trim('in_wndls         ')                                             , .false., .false. )
+        call dmdf_write( crm_input%bflxls         (icrm)       , iam, fprefix, trim('in_bflxls        ')                                             , .false., .false. )
+        call dmdf_write( crm_input%fluxu00        (icrm)       , iam, fprefix, trim('in_fluxu00       ')                                             , .false., .false. )
+        call dmdf_write( crm_input%fluxv00        (icrm)       , iam, fprefix, trim('in_fluxv00       ')                                             , .false., .false. )
+        call dmdf_write( crm_input%fluxt00        (icrm)       , iam, fprefix, trim('in_fluxt00       ')                                             , .false., .false. )
+        call dmdf_write( crm_input%fluxq00        (icrm)       , iam, fprefix, trim('in_fluxq00       ')                                             , .false., .false. )
+        call dmdf_write( crm_input%t_vt           (icrm,:)     , iam, fprefix, trim('in_t_vt          '), (/'nlev'/)                                 , .false., .false. )
+        call dmdf_write( crm_input%q_vt           (icrm,:)     , iam, fprefix, trim('in_q_vt          '), (/'nlev'/)                                 , .false., .false. )
+        call dmdf_write( crm_input%u_vt           (icrm,:)     , iam, fprefix, trim('in_u_vt          '), (/'nlev'/)                                 , .false., .false. )
+
+        call dmdf_write( crm_state%u_wind         (icrm,:,:,:) , iam, fprefix, trim('state_u_wind     '), (/'crm_nx','crm_ny','crm_nz'/)             , .false., .false. )
+        call dmdf_write( crm_state%v_wind         (icrm,:,:,:) , iam, fprefix, trim('state_v_wind     '), (/'crm_nx','crm_ny','crm_nz'/)             , .false., .false. )
+        call dmdf_write( crm_state%w_wind         (icrm,:,:,:) , iam, fprefix, trim('state_w_wind     '), (/'crm_nx','crm_ny','crm_nz'/)             , .false., .false. )
+        call dmdf_write( crm_state%temperature    (icrm,:,:,:) , iam, fprefix, trim('state_temperature'), (/'crm_nx','crm_ny','crm_nz'/)             , .false., .false. )
+        call dmdf_write( crm_state%qt             (icrm,:,:,:) , iam, fprefix, trim('state_qt         '), (/'crm_nx','crm_ny','crm_nz'/)             , .false., .false. )
+        call dmdf_write( crm_state%qp             (icrm,:,:,:) , iam, fprefix, trim('state_qp         '), (/'crm_nx','crm_ny','crm_nz'/)             , .false., .false. )
+        call dmdf_write( crm_state%qn             (icrm,:,:,:) , iam, fprefix, trim('state_qn         '), (/'crm_nx','crm_ny','crm_nz'/)             , .false., .false. )
+        call dmdf_write( crm_rad%qrad             (icrm,:,:,:) , iam, fprefix, trim('rad_qrad         '), (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
+        call dmdf_write( crm_rad%temperature      (icrm,:,:,:) , iam, fprefix, trim('rad_temperature  '), (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
+        call dmdf_write( crm_rad%qv               (icrm,:,:,:) , iam, fprefix, trim('rad_qv           '), (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
+        call dmdf_write( crm_rad%qc               (icrm,:,:,:) , iam, fprefix, trim('rad_qc           '), (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
+        call dmdf_write( crm_rad%qi               (icrm,:,:,:) , iam, fprefix, trim('rad_qi           '), (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .false. )
+        call dmdf_write( crm_rad%cld              (icrm,:,:,:) , iam, fprefix, trim('rad_cld          '), (/'crm_nx_rad','crm_ny_rad','crm_nz    '/) , .false. , .true.  )
+      enddo
+      endif
 #endif
 
       deallocate(longitude0)
