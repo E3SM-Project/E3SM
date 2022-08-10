@@ -712,6 +712,11 @@ void AtmosphereDriver::restart_model ()
   // Close files and finalize all pio data structs
   model_restart.finalize();
 
+  // Zero out precipitation fluxes for model restart.
+  // TODO: This should be a generic functions which sets "one-step" fields to
+  //       an identity value. See Issue #1767.
+  set_precipitation_fields_to_zero();
+
   m_atm_logger->info("  [EAMxx] restart_model ... done!");
 }
 
