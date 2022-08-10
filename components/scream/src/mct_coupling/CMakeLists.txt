@@ -39,9 +39,6 @@ set (SCREAM_LIBS
      spa
 )
 
-include (tpls/Mct)
-CreateMctTarget()
-
 # Create atm lib
 add_library(atm ${ATM_SRC})
 
