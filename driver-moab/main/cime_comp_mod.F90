@@ -170,6 +170,9 @@ module cime_comp_mod
   use component_mod,      only: component_init_areacor, component_init_aream
   use component_mod,      only: component_exch, component_diag
 
+! used to send from components to coupler instances
+  use component_mod,      only: ocn_cpl_moab
+
   ! prep routines (includes mapping routines between components and merging routines)
   use prep_lnd_mod
   use prep_ice_mod
@@ -4143,6 +4146,8 @@ contains
             mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
             timer_barrier='CPL:O2CT_BARRIER', timer_comp_exch='CPL:O2CT', &
             timer_map_exch='CPL:o2c_ocno2ocnx', timer_infodata_exch='CPL:o2c_infoexch')
+       ! send from ocn pes to coupler
+       call ocn_cpl_moab(ocn)
     endif
 
     !----------------------------------------------------------

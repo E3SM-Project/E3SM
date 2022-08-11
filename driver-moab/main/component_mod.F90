@@ -53,6 +53,8 @@ module component_mod
   public :: component_exch
   public :: component_diag
 
+  public :: ocn_cpl_moab
+
 
   !--------------------------------------------------------------------------
   ! Private data
@@ -964,4 +966,67 @@ contains
 
   end subroutine component_diag
 
+  subroutine ocn_cpl_moab(ocn)
+
+   use seq_comm_mct , only : mboxid, mpoid ! 
+   use seq_flds_mod , only : seq_flds_o2x_fields
+   use iMOAB ,  only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_WriteMesh, iMOAB_FreeSenderBuffers
+   use seq_comm_mct, only :  num_moab_exports ! for debugging 
+   use ISO_C_BINDING, only : C_NULL_CHAR
+   !---------------------------------------------------------------
+    ! Description
+    ! send tags from ocean component to coupler instance
+    !
+    !  it involves initial ocn app; mpoid; also migrated ocn mesh mesh on coupler pes, mboxid
+    !   the sending of tags from  ocn pes to coupler pes will use initial graph/migrate 
+
+    type(component_type)     , intent(in)           :: ocn(:)
+
+    integer :: id_join, ocnid1, context_id , ierr
+    integer :: mpicom_join
+    character(400)              :: tagname
+    character*100 outfile, wopts, lnum
+
+  ! how to get mpicomm for joint ocn + coupler
+    id_join = ocn(1)%cplcompid
+    ocnid1   = ocn(1)%compid
+    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
+    context_id = -1
+!    
+    tagName = trim(seq_flds_o2x_fields)//C_NULL_CHAR
+
+    if (mpoid .ge. 0) then !  send because we are on ocn pes
+
+       ! basically, use the initial partitioning
+       context_id = id_join
+       ierr = iMOAB_SendElementTag(mpoid, tagName, mpicom_join, context_id)
+
+    endif
+    if ( mboxid .ge. 0 ) then !  we are on coupler pes, for sure
+!     receive on couper pes,
+      context_id = ocnid1
+      ierr = iMOAB_ReceiveElementTag(mboxid, tagName, mpicom_join, context_id)
+!     !CHECKRC(ierr, "cannot receive tag values")
+    endif
+
+!     ! we can now free the sender buffers
+    if (mpoid .ge. 0) then
+      context_id = id_join
+      ierr = iMOAB_FreeSenderBuffers(mpoid, context_id)
+!        ! CHECKRC(ierr, "cannot free buffers used to send projected tag towards the ocean mesh")
+    endif
+
+#ifdef MOABDEBUG
+    if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
+      ! number_proj = number_proj+1 ! count the number of projections
+      write(lnum,"(I0.2)") num_moab_exports
+      outfile = 'ocnCpl_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+      ierr = iMOAB_WriteMesh(mpoid, trim(outfile), trim(wopts))
+
+    !CHECKRC(ierr, "cannot receive tag values")
+    endif
+#endif
+
+  end subroutine ocn_cpl_moab
 end module component_mod
