@@ -167,8 +167,6 @@ void AtmosphereDriver::create_atm_processes()
   auto& atm_proc_params = m_atm_params.sublist("atmosphere_processes");
   atm_proc_params.rename("EAMxx");
   atm_proc_params.set("Logger",m_atm_logger);
-  const auto& deb_pl = m_atm_params.sublist("Debug");
-  atm_proc_params.set("Log File Name",deb_pl.get<std::string>("Atm Log File"));
   m_atm_process_group = std::make_shared<AtmosphereProcessGroup>(m_atm_comm,atm_proc_params);
 
   m_ad_status |= s_procs_created;
@@ -753,16 +751,14 @@ void AtmosphereDriver::create_logger () {
   }
 
   using logger_t = Logger<LogBasicFile,LogRootRank>;
-  auto logger = std::make_shared<logger_t>(log_fname,log_level,m_atm_comm,"");
-  logger->set_no_format();
+  m_atm_logger = std::make_shared<logger_t>(log_fname,log_level,m_atm_comm,"");
+  m_atm_logger->set_no_format();
 
   // In CIME runs, this is already set to false, so atm log does not pollute e3sm.loc.
   // In standalone, we default to true, so we see output to screen.
   if (not deb_pl.get<bool>("output_to_screen",true)) {
-     logger->set_console_level(LogLevel::off);
+     m_atm_logger->set_console_level(LogLevel::off);
   }
-
-  m_atm_logger = logger;
 
   // Record the CASENAME for this run, set default to EAMxx
   if (m_atm_params.isSublist("e3sm_parameters")) {

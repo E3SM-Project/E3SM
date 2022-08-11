@@ -75,7 +75,7 @@ class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess
 public:
   using TimeStamp   = util::TimeStamp;
   using ci_string   = ekat::CaseInsensitiveString;
-  using logger_t    = spdlog::logger;
+  using logger_t    = ekat::logger::LoggerBase;
   using LogLevel    = ekat::logger::LogLevel;
   using str_any_pair_t = std::pair<std::string,ekat::any>;
   template<typename T>

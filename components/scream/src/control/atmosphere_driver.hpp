@@ -183,7 +183,7 @@ protected:
   ekat::Comm                                m_atm_comm;
 
   // The logger to be used throughout the ATM to log message
-  std::shared_ptr<spdlog::logger>           m_atm_logger;
+  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
 
   // Some status flags, used to make sure we call the init functions in the right order
   static constexpr int s_comm_set       =   1;

@@ -58,7 +58,7 @@ HommeDynamics::HommeDynamics (const ekat::Comm& comm, const ekat::ParameterList&
   m_restart_extra_data["homme_nsteps"] = std::make_pair(std::string("int"),homme_nsteps);
 
   // Set the log filename in the F90 interface
-  const char* logname = m_params.get<std::string>("Log File Name").c_str();
+  const char* logname = m_atm_logger->get_logfile_name().c_str();
   set_homme_log_file_name_f90 (&logname);
 }
 
