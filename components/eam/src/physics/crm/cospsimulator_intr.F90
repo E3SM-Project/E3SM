@@ -2696,7 +2696,7 @@ CONTAINS
              y%v_sfc(npoints),y%lat(npoints),y%lon(nPoints),y%emis_sfc(nchan),           &
              y%cloudIce(nPoints,nLevels),y%cloudLiq(nPoints,nLevels),y%surfelev(nPoints),&
              y%fl_snow(nPoints,nLevels),y%fl_rain(nPoints,nLevels),y%seaice(npoints),    &
-             y%tca(nPoints,nLevels),y%hgt_matrix_half(npoints,nlevels+1))
+             y%tca(nPoints,nLevels),y%hgt_matrix_half(npoints,nlevels))
 
   end subroutine construct_cospstateIN
   ! ######################################################################################
