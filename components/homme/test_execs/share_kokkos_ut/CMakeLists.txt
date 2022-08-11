@@ -91,6 +91,7 @@ SET (BOUNDARY_EXCHANGE_UT_CXX_SRCS
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/mpi_cxx_f90_interface.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/BoundaryExchange.cpp
+  ${SRC_SHARE_DIR}/cxx/mpi/BoundaryExchange_build_buffer_views_and_requests.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Connectivity.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/MpiBuffersManager.cpp
