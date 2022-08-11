@@ -1531,22 +1531,6 @@ flags should be captured within MPAS CMake files.
   </SLIBS>
 </compiler>
 
-<compiler COMPILER="gnu" MACH="lobata">
-  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
-  <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append DEBUG="FALSE">-fno-unsafe-math-optimizations</append>
-    <append DEBUG="TRUE"> -g -fbacktrace -fbounds-check -ffpe-trap=invalid,zero,overflow</append>
-  </FFLAGS>
-  <SLIBS>
-    <append> -L$ENV{NETCDF_FORTRAN_PATH}/lib/ -lnetcdff -L$ENV{NETCDF_C_PATH}/lib/ -lnetcdf -lcurl -llapack -lblas </append>
-  </SLIBS>
-  <SCC MPILIB="mpi-serial">gcc</SCC>
-  <SFC MPILIB="mpi-serial">gfortran</SFC>
-</compiler>
-
 <compiler MACH="linux-generic" COMPILER="gnu">
   <NETCDF_C_PATH> $ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH> $ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
