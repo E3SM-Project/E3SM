@@ -113,7 +113,9 @@ option (SCREAM_RRTMGP_DEBUG "Turn on extra debug checks in RRTMGP" ${SCREAM_DEBU
 enable_testing()
 include(CTest)
 
-set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
+if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
+endif()
 
 #this is now a bad name as this macro will be needed in scream as well
 set (HOMMEXX_ENABLE_GPU FALSE CACHE BOOL "")
