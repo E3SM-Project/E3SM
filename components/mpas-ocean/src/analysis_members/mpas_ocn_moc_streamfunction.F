@@ -327,7 +327,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: latCell
       real (kind=RKIND), dimension(:), pointer ::  areaCell, binBoundaryMocStreamfunction
       real (kind=RKIND), dimension(:,:), pointer :: mocStreamvalLatAndDepth, mocStreamValLatAndDepthTotal
-      real (kind=RKIND), dimension(:,:), pointer :: mocStreamvalLatAndDepthGM
+      real (kind=RKIND), dimension(:,:), pointer :: mocStreamvalLatAndDepthGM, mocStreamvalLatAndDepthMLE
       real (kind=RKIND), dimension(:,:), pointer :: sumVertBinVelocity
 
       !!!! TRANSECT VARIABLES !!!!
@@ -352,7 +352,8 @@ contains
       integer :: currentRegion, i
       real (kind=RKIND), dimension(:,:,:), pointer :: mocStreamValLatAndDepthRegionLocal, &
                          mocStreamvalLatAndDepthRegion, mocStreamValLatAndDepthRegionTotal, &
-                         sumVertBinVelocityRegion, mocStreamvalLatAndDepthRegionGM
+                         sumVertBinVelocityRegion, mocStreamvalLatAndDepthRegionGM, &
+                         mocStreamvalLatAndDepthRegionMLE
       integer, dimension(:, :), pointer :: regionCellMasks, regionVertexMasks, regionsInGroup
       character (len=STRKIND), dimension(:), pointer :: regionNames, regionGroupNames
       integer, dimension(:), pointer ::  nRegionsInGroup

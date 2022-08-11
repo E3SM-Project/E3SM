@@ -2111,8 +2111,8 @@
 
 			<stream name="mesh"/>
 			<var name="k33"/>
-			<var name="GMBolusVelocityX"/>
-			<var name="GMBolusVelocityY"/>
+			<var name="eddyVelocityX"/>
+			<var name="eddyVelocityY"/>
 			<var name="normalGMBolusVelocity"/>
 			<var name="vertGMBolusVelocityTop"/>
 			<var name="gmStreamFuncTopOfEdge"/>

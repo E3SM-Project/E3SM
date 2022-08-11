@@ -144,7 +144,7 @@ contains
       real(kind=RKIND) :: c_mode1, resolution, dc_Lr
       ! Dimensions
       integer :: nCells, nEdges
-      integer, pointer :: nVertLevels
+      integer, pointer :: nVertLevels, indMLDedge
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
       type(mpas_pool_type), pointer :: tracersPool
@@ -350,7 +350,8 @@ contains
                   slopeTaperDown = 1.0_RKIND + slopeTaperFactor*(slopeTaperDown - 1.0_RKIND)
 
                   sfcTaper = min(RediKappaSfcTaper(k, cell1), RediKappaSfcTaper(k, cell2))
-                  if(k < indMLDedge(iEdge)) then
+                  indMLDedge = max(indMLD(cell1),indMLD(cell2))
+                  if(k < indMLDedge) then
                     sfcTaper = 0.0_RKIND
                   else
                     sfcTaper = 1.0_RKIND
