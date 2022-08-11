@@ -1676,7 +1676,7 @@ contains
 #ifdef MPAS_OPENACC
          !$acc parallel loop gang vector &
          !$acc          present(nEdgesOnCell, edgesOnCell, edgeSignonCell, dcEdge, dvEdge, &
-         !$acc                  areaCell, layerThicknessEdgeFlux, normalMLEBolusVelocity, &
+         !$acc                  areaCell, layerThicknessEdgeFlux, normalMLEVelocity, &
          !$acc                  vertMLEBolusVelocityTop, invAreaCell, minLevelCell) &
          !$acc          private(invAreaCell1, i, iEdge, edgeSignOnCell_temp, dcEdge_temp, &
          !$acc                  dvEdge_temp, k)
@@ -1698,7 +1698,7 @@ contains
                   ! Compute vertical velocity from the horizontal GM Bolus velocity
                   div_huMLEBolus(k) = div_huMLEBolus(k) &
                                      - layerThicknessEdgeFlux(k, iEdge) * edgeSignOnCell_temp * dvEdge_temp &
-                                     * normalMLEBolusVelocity(k, iEdge) * invAreaCell1
+                                     * normalMLEVelocity(k, iEdge) * invAreaCell1
                end do
             end do
             ! Vertical velocity at bottom (maxLevelCell(iCell)+1) is zero, initialized above.
