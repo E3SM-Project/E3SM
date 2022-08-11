@@ -1560,10 +1560,10 @@ contains
       !!! Direct and diffuse flux under different atmospheric conditions
       ! Direct-beam incident spectral flux: 
       call ncd_io( 'flx_wgt_dir', flx_wgt_dir,           'read', ncid, readvar=readvar, posNOTonfile=.true.)
-      if ((atm_type_index > 0) .and. (.not. readvar)) call endrun()
+      if ((atm_type_index > 0) .and. (.not. readvar)) call endrun( "ERROR: error in reading in flx_wgt_dir data" )
       ! Diffuse incident spectral flux:
       call ncd_io( 'flx_wgt_dif', flx_wgt_dif,           'read', ncid, readvar=readvar, posNOTonfile=.true.)
-      if ((atm_type_index > 0) .and. (.not. readvar)) call endrun()
+      if ((atm_type_index > 0) .and. (.not. readvar)) call endrun( "ERROR: error in reading in flx_wgt_dif data" )
 
       !$acc update device( &
       !$acc ss_alb_snw_drc     ,&
