@@ -322,7 +322,7 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
         Kokkos::deep_copy(gas_view, m_params.get<Real>("covmr"));
       } else {
         scream::physics::trcmix(
-          gas_name.c_str(), m_ncol, m_ncol, m_nlay, m_lat, pmid, gas_view,
+          gas_name, m_lat, pmid, gas_view,
           m_params.get<Real>("co2vmr_rad"),
           m_params.get<Real>("co2vmr"),
           m_params.get<Real>("n2ovmr"),

@@ -17,10 +17,7 @@ template<typename Scalar>
 using trcmix_view2d = typename ekat::KokkosTypes<DefaultDevice>::template view_2d<Scalar>;
 
 void trcmix(
-  const char* name,      // constituent name
-  Int ncol,              // number of columns
-  Int pcols,             // Maximum number of columns in a chunk
-  Int pver,              // Num vertical levels
+  const std::string& name,      // constituent name
   trcmix_view1d<const Real> const& clat,  // latitude for columns in degrees
   trcmix_view2d<const Real> const& pmid,  // model pressures
   trcmix_view2d<Real>            & q,     // constituent mass mixing ratio (output)

@@ -2,8 +2,6 @@ set(PHYSICS_SHARE_SRCS
   physics_share_f2c.F90
   physics_share.cpp
   physics_test_data.cpp
-  scream_trcmix_c2f.F90
-  scream_trcmix.F90
   scream_trcmix.cpp
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/physics_utils.F90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/scream_abortutils.F90
