@@ -480,11 +480,10 @@ void AtmosphereInput::set_degrees_of_freedom()
 } // set_degrees_of_freedom
 
 /* ---------------------------------------------------------- */
-auto AtmosphereInput::
-get_var_dof_offsets(const FieldLayout& layout)
- -> std::vector<offset_t>
+std::vector<scorpio::offset_t>
+AtmosphereInput::get_var_dof_offsets(const FieldLayout& layout)
 {
-  std::vector<offset_t> var_dof(layout.size());
+  std::vector<scorpio::offset_t> var_dof(layout.size());
 
   // Gather the offsets of the dofs of this variable w.r.t. the *global* array.
   // Since we order the global array based on dof gid, and we *assume* (we actually
@@ -502,7 +501,7 @@ get_var_dof_offsets(const FieldLayout& layout)
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
-    offset_t col_size = layout.size() / num_cols;
+    scorpio::offset_t col_size = layout.size() / num_cols;
 
     auto dofs = m_io_grid->get_dofs_gids();
     auto dofs_h = Kokkos::create_mirror_view(dofs);
@@ -519,7 +518,7 @@ get_var_dof_offsets(const FieldLayout& layout)
 
       // Compute start of the column offset, then fill column adding 1 to each entry
       auto gid = dofs_h(icol);
-      offset_t offset = (gid-min_gid)*col_size;
+      scorpio::offset_t offset = (gid-min_gid)*col_size;
       std::iota(start,end,offset);
     }
   } else if (layout.has_tag(ShortFieldTagsNames::EL)) {
@@ -530,7 +529,7 @@ get_var_dof_offsets(const FieldLayout& layout)
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
-    offset_t col_size = layout.size() / num_cols;
+    scorpio::offset_t col_size = layout.size() / num_cols;
 
     auto dofs = m_io_grid->get_dofs_gids();
     auto dofs_h = Kokkos::create_mirror_view(dofs);

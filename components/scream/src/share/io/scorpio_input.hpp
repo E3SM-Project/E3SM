@@ -135,7 +135,6 @@ public:
   void finalize();
 
 protected:
-  using offset_t = std::int64_t;
 
   void set_fields_and_grid_names (const std::string& grid_name);
   void build_remapper (const std::shared_ptr<const gm_type>& grids_mgr);
@@ -153,7 +152,7 @@ protected:
 
   std::vector<std::string> get_vec_of_dims (const FieldLayout& layout);
   std::string get_io_decomp (const FieldLayout& layout);
-  std::vector<offset_t> get_var_dof_offsets (const FieldLayout& layout);
+  std::vector<scorpio::offset_t> get_var_dof_offsets (const FieldLayout& layout);
 
   // Internal variables
   ekat::Comm            m_comm;
