@@ -213,7 +213,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       }
 
       // Set degree of freedom for "time"
-      int time_dof[1] = {0};
+      std::int64_t time_dof[1] = {0};
       set_dof(filename,"time",0,time_dof);
 
       // Finish the definition phase for this file.

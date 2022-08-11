@@ -14,7 +14,7 @@ extern "C" {
 // Fortran routines to be called from C++
   void register_file_c2f(const char*&& filename, const int& mode);
   void set_decomp_c2f(const char*&& filename);
-  void set_dof_c2f(const char*&& filename,const char*&& varname,const Int dof_len,const Int *x_dof);
+  void set_dof_c2f(const char*&& filename,const char*&& varname,const Int dof_len,const std::int64_t *x_dof);
   void grid_read_data_array_c2f(const char*&& filename, const char*&& varname, const Int time_index, void *&hbuf);
 
   void grid_write_data_array_c2f_real(const char*&& filename, const char*&& varname, const Real*& hbuf);
@@ -59,7 +59,7 @@ void set_decomp(const std::string& filename) {
   set_decomp_c2f(filename.c_str());
 }
 /* ----------------------------------------------------------------- */
-void set_dof(const std::string& filename, const std::string& varname, const Int dof_len, const Int* x_dof) {
+void set_dof(const std::string& filename, const std::string& varname, const Int dof_len, const std::int64_t* x_dof) {
 
   set_dof_c2f(filename.c_str(),varname.c_str(),dof_len,x_dof);
 }

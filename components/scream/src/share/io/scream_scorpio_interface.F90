@@ -120,7 +120,7 @@ module scream_scorpio_interface
     integer          :: numdims               ! Number of dimensions in out field
     type(io_desc_t), pointer  :: iodesc       ! PIO decomp associated with this variable
     type(iodesc_list_t), pointer  :: iodesc_list ! PIO decomp list with metadata about PIO decomp
-    integer, allocatable :: compdof(:)        ! Global locations in output array for this process
+    integer(kind=pio_offset_kind), allocatable :: compdof(:)        ! Global locations in output array for this process
     integer, allocatable :: dimid(:)          ! array of PIO dimension id's for this variable
     integer, allocatable :: dimlen(:)         ! array of PIO dimension lengths for this variable
     logical              :: has_t_dim         ! true, if variable has a time dimension
@@ -791,7 +791,7 @@ contains
 !=====================================================================!
   ! Helper function to debug list of decomps 
   subroutine print_decomp()
-    type(iodesc_list_t),   pointer :: iodesc_ptr, next, prev
+    type(iodesc_list_t),   pointer :: iodesc_ptr
 
     integer :: total
     integer :: cnt 
@@ -840,7 +840,7 @@ contains
   ! taken whenever a file is closed.
   subroutine free_decomp()
     use piolib_mod, only: PIO_freedecomp
-    type(iodesc_list_t),   pointer :: iodesc_ptr, next, prev
+    type(iodesc_list_t),   pointer :: iodesc_ptr, next
 
     ! Free all decompositions from PIO
     iodesc_ptr => iodesc_list_top
@@ -946,7 +946,7 @@ contains
     character(len=*)          :: tag              ! Unique tag string describing this output grid
     integer, intent(in)       :: dtype            ! Datatype associated with the output
     integer, intent(in)       :: dimension_len(:) ! Array of the dimension lengths for this decomp
-    integer, intent(in)       :: compdof(:)       ! The degrees of freedom this rank is responsible for
+    integer(kind=pio_offset_kind), intent(in) :: compdof(:)       ! The degrees of freedom this rank is responsible for
     type(iodesc_list_t), pointer :: iodesc_list   ! The pio decomposition list that holds this iodesc 
 
     logical                     :: found            ! Whether a decomp has been found among the previously defined decompositions
@@ -1023,15 +1023,15 @@ contains
   ! Rank 2: (4,5,6)
   ! Rank 3: (7,8,9,10)
   subroutine set_dof(filename,varname,dof_len,dof_vec)
-    character(len=*), intent(in)            :: filename
-    character(len=*), intent(in)            :: varname
-    integer, intent(in)                     :: dof_len
-    integer, intent(in), dimension(dof_len) :: dof_vec
+    character(len=*), intent(in)              :: filename
+    character(len=*), intent(in)              :: varname
+    integer, intent(in)                       :: dof_len
+    integer(kind=pio_offset_kind), intent(in) :: dof_vec(dof_len)
 
-    type(pio_atm_file_t),pointer            :: pio_atm_file
-    type(hist_var_t), pointer               :: var
-    logical                                 :: found
-    integer                                 :: ii
+    type(pio_atm_file_t),pointer              :: pio_atm_file
+    type(hist_var_t), pointer                 :: var
+    logical                                   :: found
+    integer                                   :: ii
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)

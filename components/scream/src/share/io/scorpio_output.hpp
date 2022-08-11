@@ -147,6 +147,7 @@ public:
 
   long long res_dep_memory_footprint () const;
 protected:
+  using offset_t = std::int64_t;
 
   // Internal functions
   void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr);
@@ -155,7 +156,7 @@ protected:
   void register_dimensions(const std::string& name);
   void register_variables(const std::string& filename);
   void set_degrees_of_freedom(const std::string& filename);
-  std::vector<int> get_var_dof_offsets (const FieldLayout& layout);
+  std::vector<offset_t> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
   Field get_field(const std::string& name, const bool eval_diagnostic = false);
   void set_diagnostics();
