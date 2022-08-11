@@ -238,10 +238,10 @@ contains
 
             k = minLevelEdgeBot(iEdge)
             kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
-                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))!* &
+                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))
             k = 1
             kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
-                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))!* &
+                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))
 
             do iTr = 1, nTracers
                tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)

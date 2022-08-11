@@ -766,7 +766,7 @@ contains
        mocStreamvalLatAndDepthRegion = mocStreamvalLatAndDepthRegion + mocStreamvalLatAndDepthRegionMLE
        mocStreamvalLatAndDepth = mocStreamvalLatAndDepth + mocStreamvalLatAndDepthMLE
 
-     endif !config_use_GM
+     endif !config_submesoscale_enable
 
      deallocate(mocStreamvalLatAndDepthTotal)
      deallocate(mocStreamvalLatAndDepthLocal)
