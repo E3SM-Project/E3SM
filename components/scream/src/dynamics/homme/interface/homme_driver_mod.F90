@@ -36,7 +36,7 @@ contains
       call abortmp ("Error! 'homme_init_grids_f90 was not called yet.\n")
     endif
 
-    if (par%masterproc) write(iulog, *), "Initing prim data structures..."
+    if (par%masterproc) write(iulog, *) "Initing prim data structures..."
 
     ! ==================================
     ! Initialize derivative structure
