@@ -138,6 +138,7 @@ printf "NetCDF Flags: $NCFLAGS\n\n"
 ############################################################################
 unset CXXFLAGS
 unset CUDAFLAGS
+unset HIPFLAGS
 
 printf "FFLAGS: $FFLAGS\n\n"
 
@@ -149,6 +150,7 @@ cmake                                      \
   -DYAKL_HOME=${YAKL_HOME}                 \
   -DYAKL_CXX_FLAGS="${YAKL_CXX_FLAGS}"     \
   -DYAKL_CUDA_FLAGS="${YAKL_CUDA_FLAGS}"   \
+  -DYAKL_HIP_FLAGS="${YAKL_HIP_FLAGS}"     \
   -DYAKL_C_FLAGS="${YAKL_C_FLAGS}"         \
   -DYAKL_F90_FLAGS="${YAKL_F90_FLAGS}"     \
   -DYAKL_ARCH="${YAKL_ARCH}"               \

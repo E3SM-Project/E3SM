@@ -58,7 +58,8 @@ program driver
   character(len=64) :: fprefix = 'cpp_output'
   integer(8) :: t1, t2, tr
 
-  logical(c_bool):: use_MMF_VT      ! flag for MMF variance transport
+  logical(c_bool) :: use_MMF_VT      ! flag for MMF variance transport
+  logical(c_bool) :: use_ESMT        ! flag for ESMT
   integer        :: MMF_VT_wn_max   ! wavenumber cutoff for filtered variance transport
   character(len=7) :: microphysics_scheme = 'sam1mom'
 
@@ -164,7 +165,6 @@ program driver
   call dmdf_read( crm_input%ps               , fname_in , trim("in_ps            ") , myTasks_beg , myTasks_end , .false. , .false. )
   call dmdf_read( crm_input%phis             , fname_in , trim("in_phis          ") , myTasks_beg , myTasks_end , .false. , .false. )
   call dmdf_read( crm_input%ocnfrac          , fname_in , trim("in_ocnfrac       ") , myTasks_beg , myTasks_end , .false. , .false. )
-  call dmdf_read( crm_input%tau00            , fname_in , trim("in_tau00         ") , myTasks_beg , myTasks_end , .false. , .false. )
   call dmdf_read( crm_input%wndls            , fname_in , trim("in_wndls         ") , myTasks_beg , myTasks_end , .false. , .false. )
   call dmdf_read( crm_input%bflxls           , fname_in , trim("in_bflxls        ") , myTasks_beg , myTasks_end , .false. , .false. )
   call dmdf_read( crm_input%fluxu00          , fname_in , trim("in_fluxu00       ") , myTasks_beg , myTasks_end , .false. , .false. )
@@ -213,8 +213,9 @@ program driver
     call system_clock(t1)
   endif
 
-  use_MMF_VT = .false.
+  use_MMF_VT = .true.
   MMF_VT_wn_max = 0
+  use_ESMT = .true.
 
   ! NOTE - the crm_output%tkew variable is a diagnostic quantity that was 
   ! recently added for the 2020 INCITE simulations, so if you get a build error
@@ -247,9 +248,8 @@ program driver
            crm_output%precsl, crm_output%prec_crm,  &
            crm_clear_rh, &
            lat0, long0, gcolp, 2, &
-           use_MMF_VT, MMF_VT_wn_max, &
+           use_MMF_VT, MMF_VT_wn_max, use_MMF_ESMT,&
            logical(.true.,c_bool) , 2._c_double , logical(.true.,c_bool) )
-
 
 #if HAVE_MPI
   call mpi_barrier(mpi_comm_world,ierr)
