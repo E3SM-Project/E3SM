@@ -116,8 +116,6 @@ public:
   const lid_to_idx_map_type& get_lid_to_idx_map () const;
 
   // Set/get geometric views.
-  // NOTE: this method calls valid_geo_data, which may contain collective
-  //       operations over the stored communicator.
   void set_geometry_data (const std::string& name, const geo_view_type& data);
   const geo_view_type& get_geometry_data (const std::string& name) const;
   const geo_view_h_type& get_geometry_data_host (const std::string& name) const;
@@ -137,7 +135,6 @@ protected:
   // some extra consistency check.
   virtual bool valid_dofs_list (const dofs_list_type& /*dofs_gids*/)      const { return true; }
   virtual bool valid_lid_to_idx_map (const lid_to_idx_map_type& /*lid_to_idx*/) const { return true; }
-  virtual bool valid_geo_data (const std::string& /*name*/, const geo_view_type& /*data*/) const { return true; }
 
 private:
 

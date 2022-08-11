@@ -390,9 +390,9 @@ void SPAFunctions<S,D>
   scorpio::set_decomp(remap_file_name);
   
   // Now read all of the input
-  scorpio::grid_read_data_array(remap_file_name,"S",0,S_global_h.data()); 
-  scorpio::grid_read_data_array(remap_file_name,"row",0,row_global_h.data()); 
-  scorpio::grid_read_data_array(remap_file_name,"col",0,col_global_h.data()); 
+  scorpio::grid_read_data_array(remap_file_name,"S",-1,S_global_h.data()); 
+  scorpio::grid_read_data_array(remap_file_name,"row",-1,row_global_h.data()); 
+  scorpio::grid_read_data_array(remap_file_name,"col",-1,col_global_h.data()); 
 
   // Finished, close the file
   scorpio::eam_pio_closefile(remap_file_name);
@@ -484,7 +484,7 @@ template<typename S, typename D>
 void SPAFunctions<S,D>
 ::update_spa_data_from_file(
     const std::string&          spa_data_file_name,
-    const Int                   time_index,
+    const Int                   time_index, // zero-based
     const Int                   nswbands,
     const Int                   nlwbands,
           SPAHorizInterp&       spa_horiz_interp,
@@ -701,9 +701,10 @@ void SPAFunctions<S,D>
     // NOTE: If the timestep is bigger than monthly this could cause the wrong values
     //       to be assigned.  A timestep greater than a month is very unlikely so we
     //       will proceed.
-    update_spa_data_from_file(spa_data_file_name,time_state.current_month,nswbands,nlwbands,spa_horiz_interp,spa_beg);
+    // NOTE: we use zero-based time indexing here.
+    update_spa_data_from_file(spa_data_file_name,time_state.current_month-1,nswbands,nlwbands,spa_horiz_interp,spa_beg);
     Int next_month = time_state.current_month==12 ? 1 : time_state.current_month+1;
-    update_spa_data_from_file(spa_data_file_name,next_month,nswbands,nlwbands,spa_horiz_interp,spa_end);
+    update_spa_data_from_file(spa_data_file_name,next_month-1,nswbands,nlwbands,spa_horiz_interp,spa_end);
     // If time state was not initialized it is now:
     time_state.inited = true;
   }

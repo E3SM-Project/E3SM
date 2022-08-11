@@ -5,7 +5,8 @@
 #include "share/atm_process/atmosphere_process_dag.hpp"
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 
-#include "share/property_checks/field_positivity_check.hpp"
+#include "share/property_checks/field_lower_bound_check.hpp"
+
 #include "share/grid/se_grid.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
@@ -446,6 +447,32 @@ TEST_CASE("atm_proc_dag", "") {
   // Create a grids manager
   auto gm = create_gm(comm);
 
+  auto create_fields = [](const AtmosphereProcess& ap)
+    -> std::map<std::string,Field>
+  {
+    std::map<std::string,Field> fields;
+    for (auto r : ap.get_required_field_requests()) {
+      fields[r.fid.name()] = Field(r.fid);
+      fields[r.fid.name()].allocate_view();
+    }
+    for (auto r : ap.get_computed_field_requests()) {
+      fields[r.fid.name()] = Field(r.fid);
+      fields[r.fid.name()].allocate_view();
+    }
+    return fields;
+  };
+
+  auto create_and_set_fields = [&] (AtmosphereProcess& ap)
+  {
+    auto fields = create_fields(ap);
+    for (auto r : ap.get_required_field_requests()) {
+      ap.set_required_field(fields.at(r.fid.name()));
+    }
+    for (auto r : ap.get_computed_field_requests()) {
+      ap.set_computed_field(fields.at(r.fid.name()));
+    }
+  };
+
   // Test a case where the dag has no unmet deps
   SECTION ("working") {
     auto params = create_test_params ();
@@ -456,9 +483,11 @@ TEST_CASE("atm_proc_dag", "") {
     // Set the grids, so the remappers in the group are not empty
     atm_process->set_grids(gm);
 
+    create_and_set_fields (*atm_process);
+
     // Create the dag
     AtmProcDAG dag;
-    dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process),{});
+    dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process));
     dag.write_dag("working_atm_proc_dag.dot",4);
 
     REQUIRE (not dag.has_unmet_dependencies());
@@ -474,9 +503,11 @@ TEST_CASE("atm_proc_dag", "") {
     std::shared_ptr<AtmosphereProcess> broken_atm_group (factory.create("group",comm,params));
     broken_atm_group->set_grids(gm);
 
+    create_and_set_fields (*broken_atm_group);
+
     // Create the dag
     AtmProcDAG dag;
-    dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(broken_atm_group),{});
+    dag.create_dag(*std::dynamic_pointer_cast<AtmosphereProcessGroup>(broken_atm_group));
     dag.write_dag("broken_atm_proc_dag.dot",4);
 
     REQUIRE (dag.has_unmet_dependencies());
@@ -510,8 +541,8 @@ TEST_CASE("field_checks", "") {
 
   constexpr auto Warning = CheckFailHandling::Warning;
   constexpr auto Fatal   = CheckFailHandling::Fatal;
-  auto pos_check_pre = std::make_shared<FieldPositivityCheck>(T_tend,grid,false);
-  auto pos_check_post = std::make_shared<FieldPositivityCheck>(T,grid,false);
+  auto pos_check_pre = std::make_shared<FieldLowerBoundCheck>(T_tend,grid,0,false);
+  auto pos_check_post = std::make_shared<FieldLowerBoundCheck>(T,grid,0,false);
   for (bool allow_failure : {true,false}) {
     for (bool check_pre : {true, false}) {
       for (bool check_post : {true, false}) {

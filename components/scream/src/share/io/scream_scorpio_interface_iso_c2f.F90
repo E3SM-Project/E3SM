@@ -280,7 +280,7 @@ contains
 
     type(c_ptr), intent(in) :: filename_in
     type(c_ptr), intent(in) :: varname_in
-    integer(kind=c_int), value, intent(in) :: time_index
+    integer(kind=c_int), value, intent(in) :: time_index ! zero-based
     type(c_ptr), intent(in) :: var_data_ptr
 
     character(len=256) :: filename
@@ -288,7 +288,7 @@ contains
 
     call convert_c_string(filename_in,filename)
     call convert_c_string(varname_in,varname)
-    call grid_read_data_array(filename,varname,var_data_ptr,time_index)
+    call grid_read_data_array(filename,varname,var_data_ptr,time_index+1)
 
   end subroutine grid_read_data_array_c2f
 !=====================================================================!

@@ -112,7 +112,8 @@ void eam_pio_enddef(const std::string &filename) {
   eam_pio_enddef_c2f(filename.c_str());
 }
 /* ----------------------------------------------------------------- */
-void grid_read_data_array(const std::string &filename, const std::string &varname, const int time_index, void *hbuf) {
+void grid_read_data_array(const std::string &filename, const std::string &varname,
+                          const int time_index, void *hbuf) {
   grid_read_data_array_c2f(filename.c_str(),varname.c_str(),time_index,hbuf);
 }
 /* ----------------------------------------------------------------- */

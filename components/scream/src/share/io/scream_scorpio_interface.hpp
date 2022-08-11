@@ -55,10 +55,14 @@ namespace scorpio {
   /* Called each timestep to update the timesnap for the last written output. */
   void pio_update_time(const std::string &filename, const Real time);
 
-  /* Read data for a specific variable from a specific file. */
-  void grid_read_data_array (const std::string &filename, const std::string &varname, const int time_index, void* hbuf);
+  // Read data for a specific variable from a specific file. To read data that
+  // isn't associated with a time index, or to read data at the most recent
+  // time, set time_index to -1. Otherwise use the proper zero-based time index.
+  void grid_read_data_array (const std::string &filename, const std::string &varname,
+                             const int time_index, void* hbuf);
   /* Write data for a specific variable to a specific file. */
-  void grid_write_data_array(const std::string &filename, const std::string &varname, const Real* hbuf);
+  void grid_write_data_array(const std::string &filename, const std::string &varname,
+                             const Real* hbuf);
 
 extern "C" {
   /* Query whether the pio subsystem is inited or not */

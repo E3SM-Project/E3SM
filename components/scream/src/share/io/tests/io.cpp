@@ -261,7 +261,7 @@ TEST_CASE("input_output_basic","io")
 
   // The diagnostic is not present in the field manager.  So we can't use the scorpio_input class
   // to read in the data.  Here we use raw IO routines to gather the data for testing.
-  auto f_diag_ins_h = get_diagnostic_input(io_comm, gm, 1, ins_params.get<std::string>("Filename"));
+  auto f_diag_ins_h = get_diagnostic_input(io_comm, gm, 0, ins_params.get<std::string>("Filename"));
 
   for (int ii=0;ii<num_lcols;++ii) {
     REQUIRE(std::abs(f1_host(ii)-(max_steps*dt+ii))<tol);
@@ -335,29 +335,30 @@ TEST_CASE("input_output_basic","io")
   min_input.finalize();
   reset_fields();
 
-  // Check multisnap output; note, tt starts at 1 instead of 0 to follow netcdf time dimension indexing.
+  // Check multisnap output
   AtmosphereInput multi_input(multi_params,field_manager);
-  for (int tt = 1; tt<=std::min(max_steps,10); tt++) {
+  for (int tt = 0; tt<std::min(max_steps,10); tt++) {
     multi_input.read_variables(tt);
     f1.sync_to_host();
     f2.sync_to_host();
     f3.sync_to_host();
     f4.sync_to_host();
 
+    int tt1 = tt + 1;
     for (int ii=0;ii<num_lcols;++ii) {
-      REQUIRE(std::abs(f1_host(ii)-(tt*dt+ii))<tol);
+      REQUIRE(std::abs(f1_host(ii)-(tt1*dt+ii))<tol);
       for (int jj=0;jj<num_levs;++jj) {
-        REQUIRE(std::abs(f3_host(ii,jj)-(ii+tt*dt + (jj+1)/10.))<tol);
-        REQUIRE(std::abs(f4_host(ii,jj)-(ii+tt*dt + (jj+1)/10.))<tol);
+        REQUIRE(std::abs(f3_host(ii,jj)-(ii+tt1*dt + (jj+1)/10.))<tol);
+        REQUIRE(std::abs(f4_host(ii,jj)-(ii+tt1*dt + (jj+1)/10.))<tol);
       }
     }
     for (int jj=0;jj<num_levs;++jj) {
-      REQUIRE(std::abs(f2_host(jj)-(tt*dt + (jj+1)/10.))<tol);
+      REQUIRE(std::abs(f2_host(jj)-(tt1*dt + (jj+1)/10.))<tol);
     }
   }
   multi_input.finalize();
 
-  // All Done 
+  // All Done
   scorpio::eam_pio_finalize();
 }
 
@@ -411,10 +412,10 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
   auto f2 = fm->get_field(fid2);
   auto f3 = fm->get_field(fid3);
   auto f4 = fm->get_field(fid4);
-  auto f1_host = f1.get_view<Real*,Host>(); 
-  auto f2_host = f2.get_view<Real*,Host>(); 
+  auto f1_host = f1.get_view<Real*,Host>();
+  auto f2_host = f2.get_view<Real*,Host>();
   auto f3_host = f3.get_view<Real**,Host>();
-  auto f4_host = f4.get_view<Pack**,Host>(); 
+  auto f4_host = f4.get_view<Pack**,Host>();
 
   for (int ii=0;ii<num_lcols;++ii) {
     f1_host(ii) = ii;

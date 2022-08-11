@@ -55,9 +55,9 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
 void CldFraction::initialize_impl (const RunType /* run_type */)
 {
   // Set property checks for fields in this process
-  using FWIC = FieldWithinIntervalCheck;
-  add_postcondition_check<FWIC>(get_field_out("cldfrac_ice"),m_grid,0.0,1.0,false);
-  add_postcondition_check<FWIC>(get_field_out("cldfrac_tot"),m_grid,0.0,1.0,false);
+  using Interval = FieldWithinIntervalCheck;
+  add_postcondition_check<Interval>(get_field_out("cldfrac_ice"),m_grid,0.0,1.0,false);
+  add_postcondition_check<Interval>(get_field_out("cldfrac_tot"),m_grid,0.0,1.0,false);
 }
 
 // =========================================================================================

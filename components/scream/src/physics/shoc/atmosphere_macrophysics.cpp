@@ -1,13 +1,10 @@
 #include "ekat/ekat_assert.hpp"
 #include "physics/shoc/atmosphere_macrophysics.hpp"
 
-#include "share/property_checks/field_positivity_check.hpp"
+#include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 
 #include "scream_config.h" // for SCREAM_CIME_BUILD
-#ifdef SCREAM_CIME_BUILD
-# include "control/fvphyshack.hpp"
-#endif
 
 namespace scream
 {
@@ -44,9 +41,6 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
 
-  // Layout for pref_mid_field
-  FieldLayout pref_mid_layout{ {LEV}, {m_num_levs} };
-
   // Layout for 2D (1d horiz X 1d vertical) variable
   FieldLayout scalar2d_layout_col{ {COL}, {m_num_cols} };
 
@@ -70,24 +64,10 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   const auto s2 = s*s;
 
   // These variables are needed by the interface, but not actually passed to shoc_main.
-  
-  // TODO: Replace pref_mid in the FM with pref_mid read in from the grid data
-  // or, better, an analog to EAM's dyn_grid_get_pref.
-  add_field<Required>("pref_mid",         pref_mid_layout,      Pa,
-#ifdef SCREAM_CIME_BUILD
-                      // If pg2, read from the "Dynamics" grid b/c "Physics GLL"
-                      // fields are temporary and not written to the restart
-                      // file and reading "Physics PG2" data from the IC is not
-                      // and should not be supported.
-                      fvphyshack ? "Dynamics" :
-#endif
-                      grid_name,
-                      ps);
-
-  add_field<Required>("omega",            scalar3d_layout_mid,  Pa/s, grid_name, ps);
-  add_field<Required>("surf_sens_flux",   scalar2d_layout_col,  W/m2, grid_name);
+  add_field<Required>("omega",            scalar3d_layout_mid,  Pa/s,    grid_name, ps);
+  add_field<Required>("surf_sens_flux",   scalar2d_layout_col,  W/m2,    grid_name);
   add_field<Required>("surf_evap",        scalar2d_layout_col,  kg/m2/s, grid_name);
-  add_field<Required>("surf_mom_flux",    surf_mom_flux_layout, N/m2, grid_name);
+  add_field<Required>("surf_mom_flux",    surf_mom_flux_layout, N/m2,    grid_name);
 
   add_field<Updated> ("T_mid",            scalar3d_layout_mid, K,       grid_name, ps);
   add_field<Updated> ("qv",               scalar3d_layout_mid, Qunit,   grid_name, "tracers", ps);
@@ -141,7 +121,8 @@ size_t SHOCMacrophysics::requested_buffer_size_in_bytes() const
   const int num_tracer_packs = ekat::npack<Spack>(m_num_tracers);
 
   // Number of Reals needed by local views in the interface
-  const size_t interface_request = Buffer::num_1d_scalar*m_num_cols*sizeof(Real) +
+  const size_t interface_request = Buffer::num_1d_scalar_ncol*m_num_cols*sizeof(Real) +
+                                   Buffer::num_1d_scalar_nlev*nlev_packs*sizeof(Spack) +
                                    Buffer::num_2d_vector_mid*m_num_cols*nlev_packs*sizeof(Spack) +
                                    Buffer::num_2d_vector_int*m_num_cols*nlevi_packs*sizeof(Spack) +
                                    Buffer::num_2d_vector_tr*m_num_cols*num_tracer_packs*sizeof(Spack);
@@ -180,6 +161,9 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   const int nlev_packs       = ekat::npack<Spack>(m_num_levs);
   const int nlevi_packs      = ekat::npack<Spack>(m_num_levs+1);
   const int num_tracer_packs = ekat::npack<Spack>(m_num_tracers);
+
+  m_buffer.pref_mid = decltype(m_buffer.pref_mid)(s_mem, nlev_packs);
+  s_mem += m_buffer.pref_mid.size();
 
   m_buffer.z_mid = decltype(m_buffer.z_mid)(s_mem, m_num_cols, nlev_packs);
   s_mem += m_buffer.z_mid.size();
@@ -406,13 +390,18 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
                                  T_mid, dse, z_mid, phis);
 
   // Set field property checks for the fields in this process
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,140.0,500.0,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qv"),m_grid,1e-13,0.2,true);  // This is a quick fix to make sure qv doesn't go negative.  TODO item is to take care of this in a more clever way.
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qc"),m_grid,0.0,0.1,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("horiz_winds"),m_grid,-400.0,400.0,false);
-  add_postcondition_check<FieldPositivityCheck>(get_field_out("pbl_height"),m_grid);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("cldfrac_liq"),m_grid,0.0,1.0,false);
-  add_postcondition_check<FieldPositivityCheck>(get_field_out("tke"),m_grid);
+  auto eps = std::numeric_limits<Real>::epsilon();
+  using Interval = FieldWithinIntervalCheck;
+  using LowerBound = FieldLowerBoundCheck;
+  add_postcondition_check<Interval>(get_field_out("T_mid"),m_grid,140.0,500.0,false);
+  add_postcondition_check<Interval>(get_field_out("qc"),m_grid,0.0,0.1,false);
+  add_postcondition_check<Interval>(get_field_out("horiz_winds"),m_grid,-400.0,400.0,false);
+  add_postcondition_check<LowerBound>(get_field_out("pbl_height"),m_grid,0);
+  add_postcondition_check<Interval>(get_field_out("cldfrac_liq"),m_grid,0.0,1.0,false);
+  add_postcondition_check<LowerBound>(get_field_out("tke"),m_grid,0);
+  // For qv, ensure it doesn't get negative, by allowing repair of any neg value.
+  // TODO: use a repairable lb that clips only "small" negative values
+  add_postcondition_check<Interval>(get_field_out("qv"),m_grid,0,0.2,true);
 
   // Setup WSM for internal local variables
   const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);
@@ -422,8 +411,19 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
   workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 13+(n_wind_slots+n_trac_slots), default_policy);
 
-  // Calculate maximum number of levels in pbl from surface
-  const auto pref_mid = get_field_in("pref_mid").get_view<const Spack*>();
+  // Calculate pref_mid, and use that to calculate
+  // maximum number of levels in pbl from surface
+  const auto pref_mid = m_buffer.pref_mid;
+  const auto s_pref_mid = ekat::scalarize(pref_mid);
+  const auto hyam = m_grid->get_geometry_data("hyam");
+  const auto hybm = m_grid->get_geometry_data("hybm");
+  const auto ps0 = C::P0;
+  const auto psref = ps0;
+  Kokkos::parallel_for(Kokkos::RangePolicy<>(0, m_num_levs), KOKKOS_LAMBDA (const int lev) {
+    s_pref_mid(lev) = ps0*hyam(lev) + psref*hybm(lev);
+  });
+  Kokkos::fence();
+
   const int ntop_shoc = 0;
   const int nbot_shoc = m_num_levs;
   m_npbl = SHF::shoc_init(nbot_shoc,ntop_shoc,pref_mid);

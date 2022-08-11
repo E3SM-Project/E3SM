@@ -14,8 +14,7 @@ public:
   using group_type = AtmosphereProcessGroup;
   static constexpr int VERB_MAX = 4;
 
-  void create_dag (const group_type& atm_procs,
-                   const std::map<std::string,std::shared_ptr<FieldManager>>& field_mgrs);
+  void create_dag (const group_type& atm_procs);
 
   void add_surface_coupling (const std::set<FieldIdentifier>& imports,
                              const std::set<FieldIdentifier>& exports);
@@ -31,8 +30,7 @@ protected:
 
   void cleanup ();
 
-  void add_nodes (const group_type& atm_procs,
-                  const std::map<std::string,std::shared_ptr<FieldManager>>& field_mgrs);
+  void add_nodes (const group_type& atm_procs);
 
   // Add fid to list of fields in the dag, and return its position.
   // If already stored, simply return its position

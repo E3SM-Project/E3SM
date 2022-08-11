@@ -3,7 +3,7 @@
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "YAKL.h"
 #include "physics/share/physics_constants.hpp"
-#include "physics/rrtmgp/share/shr_orb_mod_c2f.hpp"
+#include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 
 TEST_CASE("rrtmgp_test_heating") {
     // Initialize YAKL

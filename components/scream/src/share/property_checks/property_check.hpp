@@ -34,6 +34,15 @@ namespace scream
  * mass check).
  */
 
+// A 'Fail' result means the property cannot be fixed,
+// while 'Repairable' means the property is "not too far off",
+// and can be fixed.
+enum class CheckResult {
+  Pass,
+  Fail,
+  Repairable
+};
+
 class PropertyCheck {
 public:
 
@@ -42,13 +51,13 @@ public:
   // Name of the property being checked
   virtual std::string name () const = 0;
 
-  struct CheckResult {
-    bool pass;
-    std::string msg;
+  struct ResultAndMsg {
+    CheckResult   result;
+    std::string   msg;
   };
 
   // Check if the property is satisfied, and return true if it is
-  virtual CheckResult check () const = 0;
+  virtual ResultAndMsg check () const = 0;
 
   // Set fields, and whether they can be repaired.
   void set_fields (const std::list<Field>& fields,

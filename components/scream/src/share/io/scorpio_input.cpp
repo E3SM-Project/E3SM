@@ -223,10 +223,10 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
 }
 
 /* ---------------------------------------------------------- */
-// Note: The time_index argument provides a way to control which
-//       time snap to read input from in the file.  If a negative
-//       number is provided the routine will read input at the
-//       last time level set by running eam_update_timesnap.
+// Note: The (zero-based) time_index argument provides a way to control which
+//       time step to read input from in the file.  If a negative number is
+//       provided the routine will read input at the last time level set by
+//       running eam_update_timesnap.
 void AtmosphereInput::read_variables (const int time_index)
 {
   EKAT_REQUIRE_MSG (m_inited_with_views || m_inited_with_fields,

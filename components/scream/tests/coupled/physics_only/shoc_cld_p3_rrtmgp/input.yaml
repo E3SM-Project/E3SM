@@ -48,6 +48,7 @@ Initial Conditions:
   aero_tau_lw: 0.0
   Load Latitude:  true
   Load Longitude: true
+  Load Hybrid Coefficients: true
 
 # The parameters for I/O control
 Scorpio:

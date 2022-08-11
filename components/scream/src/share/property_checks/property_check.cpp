@@ -67,10 +67,10 @@ void PropertyCheck::repair () const {
 // override this method.
 void PropertyCheck::check_and_repair () const {
   EKAT_REQUIRE_MSG(can_repair(),
-      "Error! This property check cannot repair.\n"
+      "Error! This property check cannot repair.\n"
       "  - PropertyCheck name: " + name() + "\n");
   auto check_result = check();
-  if (not check_result.pass) {
+  if (check_result.result != CheckResult::Fail) {
     repair();
   }
 }
