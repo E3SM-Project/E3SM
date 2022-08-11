@@ -2840,7 +2840,7 @@
 		/>
 		<var name="normalMLEvelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			description="Velocity from mixed layer eddies (fox kemper 2011 submesoscale parameterization)"
-			 packages="submeso"
+			packages="submeso"
 		/>
 		<var name="cGMphaseSpeed" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="phase speed for the bolus velocity calculation"
@@ -2866,8 +2866,8 @@
 			packages="gm"
 		/>
 		<var name="gradBuoyEddy" type="real" dimensions="nVertLevelsP1 nEdges Time" units="s^-2"
-		    description="horizontal gradient of buoyancy at cell edge and interfaces in vertical.  this is used for the GM parameterization and the submesoscale eddy parameterization"
-			packages="gm;submeso"
+			description="horizontal gradient of buoyancy at cell edge and interfaces in vertical.  this is used for the GM parameterization and the submesoscale eddy parameterization"
+			 packages="gm;submeso"
 		/>
 		<var name="mleVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			description="Bolus velocity in fox-kemper mle parameterization, zonal-direction"
@@ -2877,17 +2877,17 @@
 			description="Bolus velocity in fox-kemper mle parameterization, meridional-direction"
 			packages="gm;submeso"
 		/>
-	    <var name="eddyVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-			 description="Bolus velocity in Gent-McWilliams eddy or submesoscale parameterization, x-direction"
-			 packages="gm;submeso"
+		<var name="eddyVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			description="Bolus velocity in Gent-McWilliams eddy or submesoscale parameterization, x-direction"
+			packages="gm;submeso"
 		/>
 		<var name="eddyVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-			 description="Bolus velocity in Gent-McWilliams or submesoscale eddy parameterization, y-direction"
-			 packages="gm;submeso"
+			description="Bolus velocity in Gent-McWilliams or submesoscale eddy parameterization, y-direction"
+			packages="gm;submeso"
 		/>
 		<var name="eddyVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-			 description="eddy Bolus velocity in Gent-McWilliams or submesoscale eddy parameterization, z-direction"
-			 packages="gm;submeso"
+			description="eddy Bolus velocity in Gent-McWilliams or submesoscale eddy parameterization, z-direction"
+			packages="gm;submeso"
 		/>
 		<var name="GMBolusVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, zonal-direction"
