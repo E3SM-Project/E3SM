@@ -67,7 +67,7 @@
 		<var name="mocStreamvalLatAndDepthRegionGM" type="real" dimensions="nMocStreamfunctionBinsP1 nVertLevels nRegions Time" units="sverdrups"
 			description="The value of the MOC streamfunction for each latitude-bin (first dimension) and depth (second dimension) based on the Gent McWilliams Bolus Velocity"
 		/>
-	<var name="mocStreamvalLatAndDepthRegionMLE" type="real" dimensions="nMocStreamfunctionBinsP1 nVertLevels nRegions Time" units="sverdrups"
+		<var name="mocStreamvalLatAndDepthRegionMLE" type="real" dimensions="nMocStreamfunctionBinsP1 nVertLevels nRegions Time" units="sverdrups"
 			description="The value of the MOC streamfunction for each latitude-bin (first dimension) and depth (second dimension) based on the Submesoscale eddy Bolus Velocity"
 		/>
 		<var name="binBoundaryMocStreamfunction" type="real" dimensions="nMocStreamfunctionBinsP1" units="varies"
