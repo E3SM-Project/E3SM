@@ -12,7 +12,9 @@ add_executable(cpp2d ../dmdf.F90 ../cpp_driver.F90
                ${CPP_SRC})
 target_link_libraries(cpp2d yakl ${NCFLAGS})
 set_property(TARGET cpp2d APPEND PROPERTY COMPILE_FLAGS ${DEFS2D} )
-set_property(TARGET cpp2d PROPERTY LINK_FLAGS "-Wl,--defsym,main=MAIN__  -lifcore")
+if ("${YAKL_ARCH}" STREQUAL "SYCL")
+  set_property(TARGET cpp2d PROPERTY LINK_FLAGS "-Wl,--defsym,main=MAIN__  -lifcore")
+endif()
 set_property(TARGET cpp2d PROPERTY LINKER_LANGUAGE CXX)
 
 include(${YAKL_HOME}/yakl_utils.cmake)
