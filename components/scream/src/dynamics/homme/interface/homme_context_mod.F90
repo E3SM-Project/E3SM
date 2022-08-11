@@ -67,29 +67,33 @@ contains
 
     call c_f_pointer(c_str,full_name)
     len = index(full_name, C_NULL_CHAR) -1
-    slash = index(full_name,'/',back=.true.)
+    if (len>0) then
+      slash = index(full_name,'/',back=.true.)
 
-    path = full_name(1:slash-1)
-    fname = full_name(slash+1:len)
+      path = full_name(1:slash-1)
+      fname = full_name(slash+1:len)
 
-    homme_log_fname = trim(path)//"/homme_"//fname
+      homme_log_fname = trim(path)//"/homme_"//fname
 
-    ! Create the log file
-    iulog = shr_file_getunit()
-    open (unit=iulog,file=trim(homme_log_fname),status='REPLACE', &
-          action='WRITE', access='SEQUENTIAL', position="append")
+      ! Create the log file
+      iulog = shr_file_getunit()
+      open (unit=iulog,file=trim(homme_log_fname),status='REPLACE', &
+            action='WRITE', access='SEQUENTIAL', position="append")
 
-    homme_log_set = .true.
+      homme_log_set = .true.
+    endif
   end subroutine set_homme_log_file_name_f90
 
   subroutine close_homme_log ()
     use shr_file_mod, only: shr_file_freeUnit
     use kinds, only: iulog
 
-    close (iulog)
-    call shr_file_freeUnit(iulog)
-    homme_log_fname = ""
-    homme_log_set = .false.
+    if (homme_log_set) then
+      close (iulog)
+      call shr_file_freeUnit(iulog)
+      homme_log_fname = ""
+      homme_log_set = .false.
+    endif
   end subroutine close_homme_log
 
   subroutine init_parallel_f90 (f_comm) bind(c)
