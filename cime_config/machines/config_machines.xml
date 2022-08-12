@@ -587,7 +587,7 @@
     <DIN_LOC_ROOT>/gpfs/alpine/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/gpfs/alpine/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-       <CCSM_CPRNC>/gpfs/alpine/cli133/world-shared/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/gpfs/alpine/cli133/world-shared/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <NTEST_PARALLEL_JOBS>1</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
@@ -595,7 +595,6 @@
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
@@ -608,8 +607,6 @@
         <!--<arg name="placement">-m plane={{ tasks_per_node }}</arg>-->
       </arguments>
     </mpirun>
-
-
     <module_system type="module" allow_error="true">
       <init_path lang="sh">/usr/share/lmod/lmod/init/sh</init_path>
       <init_path lang="csh">/usr/share/lmod/lmod/init/csh</init_path>
@@ -619,36 +616,29 @@
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
-
       <modules compiler="crayclang">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-cray/8.3.3</command>
         <command name="switch">cce cce/14.0.0</command>
       </modules>
-
       <modules compiler="amdclang">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-amd/8.3.3</command>
         <command name="switch">amd amd/5.1.0</command>
       </modules>
-
       <modules compiler="gnu">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-gnu/8.3.3</command>
       </modules>
       <modules>
-        <command name="load">cray-mpich/8.1.12</command>
-        <command name="load">cray-python/3.9.4.2</command>
-        <command name="load">subversion/1.14.0</command>
-        <command name="load">git/2.31.1</command>
-        <command name="load">cmake/3.21.3</command>
-        <command name="load">zlib/1.2.11</command>
-        <command name="load">cray-libsci/21.08.1.2</command>
-        <command name="load">cray-hdf5-parallel/1.12.0.7</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.7.4.7</command>
+        <command name="load">cray-python/3.9.12.1</command>
+        <command name="load">subversion/1.14.1</command>
+        <command name="load">git/2.36.1</command>
+        <command name="load">cmake/3.23.2</command>
+        <command name="load">cray-hdf5-parallel/1.12.1.1</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.8.1.1</command>
         <command name="load">cray-parallel-netcdf/1.12.1.7</command>
       </modules>
-
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
@@ -657,11 +647,9 @@
       <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
     </environment_variables>
-
     <environment_variables compiler="amdclang">
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LIBSCI_DIR}/amd/4.0/x86_64/lib:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
-
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
