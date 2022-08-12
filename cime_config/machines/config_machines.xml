@@ -3251,6 +3251,113 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="chicoma-cpu">
+    <DESC>Chicoma CPU-only nodes at LANL IC. Each node has 2 AMD EPYC 7H12 64-Core (Milan) 512GB</DESC>
+    <NODENAME_REGEX>ch-fe*</NODENAME_REGEX>
+    <OS>Linux</OS>
+    <COMPILERS>gnu,nvidia,aocc,amdclang</COMPILERS>
+    <MPILIBS>mpich</MPILIBS>
+    <CIME_OUTPUT_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/scratch/chicoma-cpu</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
+    <GMAKE_J>10</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>e3sm</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>256</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="label"> --label</arg>
+        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ num_nodes }}</arg>
+        <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
+        <arg name="binding"> $SHELL{if [ 128 -ge `./xmlquery --value MAX_MPITASKS_PER_NODE` ]; then echo "--cpu_bind=cores"; else echo "--cpu_bind=threads";fi;} </arg>
+        <arg name="placement"> -m plane=$SHELL{echo `./xmlquery --value MAX_MPITASKS_PER_NODE`}</arg>
+    </arguments>
+    </mpirun>
+    <module_system type="module" allow_error="true">
+      <init_path lang="perl">/usr/share/lmod/8.3.1/init/perl</init_path>
+      <!-- does not exist -->
+      <init_path lang="python">/usr/share/lmod/8.3.1/init/python</init_path>
+      <init_path lang="sh">/usr/share/lmod/8.3.1/init/sh</init_path>
+      <init_path lang="csh">/usr/share/lmod/8.3.1/init/csh</init_path>
+      <cmd_path lang="perl">/usr/share/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+
+      <modules>
+        <command name="unload">cray-hdf5-parallel</command>
+        <command name="unload">cray-netcdf-hdf5parallel</command>
+        <command name="unload">cray-parallel-netcdf</command>
+        <command name="unload">PrgEnv-gnu</command>
+        <command name="unload">PrgEnv-nvidia</command>
+        <command name="unload">PrgEnv-cray</command>
+        <command name="unload">PrgEnv-aocc</command>
+        <command name="unload">craype-accel-nvidia80</command>
+        <command name="unload">craype-accel-host</command>
+      </modules>
+
+      <modules compiler="gnu">
+        <command name="load">PrgEnv-gnu/8.3.2</command>
+        <command name="load">gcc/11.2.0</command>
+      </modules>
+
+      <modules compiler="nvidia">
+        <command name="load">PrgEnv-nvidia</command>
+        <command name="load">nvidia/22.3</command>
+      </modules>
+
+      <modules compiler="aocc">
+        <command name="load">PrgEnv-aocc</command>
+        <command name="load">aocc/3.2.0</command>
+      </modules>
+
+      <modules compiler="amdclang">
+        <command name="load">PrgEnv-aocc</command>
+        <command name="load">aocc/3.2.0</command>
+      </modules>
+
+      <modules>
+        <command name="load">craype-accel-host</command>
+        <command name="load">cray-libsci</command>
+        <command name="load">craype</command>
+        <command name="load">cray-mpich/8.1.14</command>
+        <command name="load">cray-hdf5-parallel/1.12.1.1</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.8.1.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.2.1</command>
+        <command name="load">cmake/3.20.3</command>
+      </modules>
+    </module_system>
+
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
+
+    <environment_variables>
+      <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
+      <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
+      <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
+      <env name="MPICH_ENV_DISPLAY">1</env>
+      <env name="MPICH_VERSION_DISPLAY">1</env>
+      <env name="OMP_STACKSIZE">128M</env>
+      <env name="OMP_PROC_BIND">spread</env>
+      <env name="OMP_PLACES">threads</env>
+      <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
+      <env name="PERL5LIB">/usr/projects/climate/SHARED_CLIMATE/software/chicoma-cpu/perl5/lib/perl5</env>
+      <env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable;romio_cb_write=enable;romio_cb_read=enable</env>
+    </environment_variables>
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
+  </machine>
+
   <machine MACH="mesabi">
     <DESC>Mesabi batch queue</DESC>
     <OS>LINUX</OS>

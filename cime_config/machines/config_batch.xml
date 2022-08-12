@@ -524,6 +524,16 @@
 	</queues>
     </batch_system>
 
+   <batch_system MACH="chicoma-cpu" type="slurm">
+    <directives>
+     <directive>--partition=standard </directive>
+     <directive>--qos=standard </directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" nodemax="560" default="true">standard</queue>
+    </queues>
+   </batch_system>
+
     <batch_system MACH="mesabi" type="pbs">
       <queues>
         <queue walltimemax="24:00" default="true">mesabi</queue>
@@ -635,7 +645,7 @@
        <queue walltimemax="01:30:00" default="true">compute</queue>
      </queues>
    </batch_system>
-   
+
   <!-- modex is PBS -->
   <batch_system MACH="modex" type="pbs">
     <directives>
