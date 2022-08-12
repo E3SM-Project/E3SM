@@ -54,6 +54,9 @@ get_diagnostic_input(const ekat::Comm& comm, const std::shared_ptr<GridsManager>
 
 int get_current_t(const int tt, const int dt, const int freq,  const std::string& frequency_units);
 
+Real generate_data_xy(const Int time, const Int i, const Int j);
+Real check_data_xy   (const Int time, const Int dt, const Int i, const Int j, const std::string& avg_Type);
+
 class DiagTest : public AtmosphereDiagnostic
 {
 public:
@@ -152,7 +155,8 @@ void run_multisnap(const std::string& output_freq_units) {
   const Int max_steps = freq_params.get<int>("Max Steps");
   const Int dt        = freq_params.get<int>("dt");
   {
-    util::TimeStamp time = t0;
+    util::TimeStamp time  = t0;
+    util::TimeStamp time0(t0);
 
     // Re-create the fm anew, so the fields are re-inited for each output type
     auto field_manager = get_test_fm(grid);
@@ -169,9 +173,11 @@ void run_multisnap(const std::string& output_freq_units) {
     io_comm.barrier();
 
     const auto& out_fields = field_manager->get_groups_info().at("output");
+    using namespace ShortFieldTagsNames;
     // Time loop
     for (Int ii=0;ii<max_steps;++ii) {
-
+      time += dt;
+      Int time_in_sec = time.seconds_from(time0);
       // Update the fields
       for (const auto& fname : out_fields->m_fields_names) {
         auto f  = field_manager->get_field(fname);
@@ -181,8 +187,13 @@ void run_multisnap(const std::string& output_freq_units) {
           case 1:
             {
               auto v = f.get_view<Real*,Host>();
+              // If field tag is columns use generate_x, levels use generate_y
               for (int i=0; i<fl.dim(0); ++i) {
-                v(i) += dt;
+                if (fl.has_tag(COL)) {
+                  v(i) = generate_data_xy(time_in_sec,i,0);
+                } else {
+                  v(i) = generate_data_xy(time_in_sec,0,i);
+                }
               }
             }
             break;
@@ -191,7 +202,7 @@ void run_multisnap(const std::string& output_freq_units) {
               auto v = f.get_view<Real**,Host>();
               for (int i=0; i<fl.dim(0); ++i) {
                 for (int j=0; j<fl.dim(1); ++j) {
-                  v(i,j) += dt;
+                  v(i,j) = generate_data_xy(time_in_sec,i,j);
                 }
               }
             }
@@ -203,7 +214,6 @@ void run_multisnap(const std::string& output_freq_units) {
       }
 
       // Run the output manager for this time step
-      time += dt;
       om.run(time);
       if (io_control.is_write_step(time)) {
         output_stamps.push_back(time.to_string());
@@ -261,14 +271,14 @@ void run_multisnap(const std::string& output_freq_units) {
     // Here tt1 is the snap, we need to figure out what time that is in seconds given the frequency units
     const int current_t = get_current_t(tt1,dt,io_control.frequency,output_freq_units);
     for (int ii=0;ii<num_lcols;++ii) {
-      REQUIRE(std::abs(f1_host(ii)-(current_t+ii))<tol);
+      REQUIRE(std::abs(f1_host(ii)-check_data_xy(current_t,dt,ii,0,"instant"))<tol);
       for (int jj=0;jj<num_levs;++jj) {
-        REQUIRE(std::abs(f3_host(ii,jj)-(ii+current_t + (jj+1)/10.))<tol);
-        REQUIRE(std::abs(f4_host(ii,jj)-(ii+current_t + (jj+1)/10.))<tol);
+        REQUIRE(std::abs(f3_host(ii,jj)-check_data_xy(current_t,dt,ii,jj,"instant"))<tol);
+        REQUIRE(std::abs(f4_host(ii,jj)-check_data_xy(current_t,dt,ii,jj,"instant"))<tol);
       }
     }
     for (int jj=0;jj<num_levs;++jj) {
-      REQUIRE(std::abs(f2_host(jj)-(current_t + (jj+1)/10.))<tol);
+      REQUIRE(std::abs(f2_host(jj)-check_data_xy(current_t,dt,0,jj,"instant"))<tol);
     }
   }
   multi_input.finalize();
@@ -312,6 +322,7 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
 
   {
     util::TimeStamp time = t0;
+    util::TimeStamp time0(t0);
 
     // Re-create the fm anew, so the fields are re-inited for each output type
     auto field_manager = get_test_fm(grid);
@@ -329,8 +340,11 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
     io_comm.barrier();
 
     const auto& out_fields = field_manager->get_groups_info().at("output");
+    using namespace ShortFieldTagsNames;
     // Time loop
     for (Int ii=0;ii<max_steps;++ii) {
+      time += dt;
+      Int time_in_sec = time.seconds_from(time0);
       // Update the fields
       for (const auto& fname : out_fields->m_fields_names) {
         auto f  = field_manager->get_field(fname);
@@ -341,7 +355,11 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
             {
               auto v = f.get_view<Real*,Host>();
               for (int i=0; i<fl.dim(0); ++i) {
-                v(i) += dt;
+                if (fl.has_tag(COL)) {
+                  v(i) = generate_data_xy(time_in_sec,i,0);
+                } else {
+                  v(i) = generate_data_xy(time_in_sec,0,i);
+                }
               }
             }
             break;
@@ -350,7 +368,7 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
               auto v = f.get_view<Real**,Host>();
               for (int i=0; i<fl.dim(0); ++i) {
                 for (int j=0; j<fl.dim(1); ++j) {
-                  v(i,j) += dt;
+                  v(i,j) = generate_data_xy(time_in_sec,i,j);
                 }
               }
             }
@@ -362,7 +380,6 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
       }
 
       // Run the output manager for this time step
-      time += dt;
       om.run(time);
       if (io_control.is_write_step(time)) {
         output_stamps.push_back(time.to_string());
@@ -421,59 +438,22 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
     // The diagnostic is not present in the field manager.  So we can't use the scorpio_input class
     // to read in the data.  Here we use raw IO routines to gather the data for testing.
     auto f_diag_ins_h = get_diagnostic_input(io_comm, gm, 0, input_params.get<std::string>("Filename"));
-  
     for (int ii=0;ii<num_lcols;++ii) {
-      REQUIRE(std::abs(f1_host(ii)-(max_steps*dt+ii))<tol);
       for (int jj=0;jj<num_levs;++jj) {
-        REQUIRE(std::abs(f3_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
-        REQUIRE(std::abs(f4_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
         REQUIRE(std::abs(f_diag_ins_h(ii,jj)-(3.0*f4_host(ii,jj)+2.0))<tol);
       }
     }
+  }
+  Int current_t = max_steps*dt;
+  for (int ii=0;ii<num_lcols;++ii) {
+    REQUIRE(std::abs(f1_host(ii)-check_data_xy(current_t,dt,ii,0,output_type))<tol);
     for (int jj=0;jj<num_levs;++jj) {
-      REQUIRE(std::abs(f2_host(jj)-(max_steps*dt + (jj+1)/10.))<tol);
+      REQUIRE(std::abs(f3_host(ii,jj)-check_data_xy(current_t,dt,ii,jj,output_type))<tol);
+      REQUIRE(std::abs(f4_host(ii,jj)-check_data_xy(current_t,dt,ii,jj,output_type))<tol);
     }
-  } else if (output_type == "average") {
-    Real avg_val;
-    for (int ii=0;ii<num_lcols;++ii) {
-      avg_val = (max_steps+1)/2.0*dt + ii; // Sum(x0+i*dt,i=1...N) = N*x0 + dt*N*(N+1)/2, AVG = Sum/N, note x0=ii in this case
-      REQUIRE(std::abs(f1_host(ii)-avg_val)<tol);
-      for (int jj=0;jj<num_levs;++jj) {
-        avg_val = (max_steps+1)/2.0*dt + (jj+1)/10.+ii;  //note x0=(jj+1)/10+ii in this case.
-        REQUIRE(std::abs(f3_host(ii,jj)-avg_val)<tol*10000); //TODO, this is way to big!`
-        REQUIRE(std::abs(f4_host(ii,jj)-avg_val)<tol*10000); //TODO, this is way to big!`
-      }
-    }
-    for (int jj=0;jj<num_levs;++jj) {
-      avg_val = (max_steps+1)/2.0*dt + (jj+1)/10.;  //note x0=(jj+1)/10 in this case.
-      REQUIRE(std::abs(f2_host(jj)-avg_val)<tol*10000); //TODO, this is too big
-    }
-  } else if (output_type == "max") {
-    // The max should be equivalent to the instantaneous because this function is monotonically increasing.
-    for (int ii=0;ii<num_lcols;++ii) {
-      REQUIRE(std::abs(f1_host(ii)-(max_steps*dt+ii))<tol);
-      for (int jj=0;jj<num_levs;++jj) {
-        REQUIRE(std::abs(f3_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
-        REQUIRE(std::abs(f4_host(ii,jj)-(ii+max_steps*dt + (jj+1)/10.))<tol);
-      }
-    }
-    for (int jj=0;jj<num_levs;++jj) {
-      REQUIRE(std::abs(f2_host(jj)-(max_steps*dt + (jj+1)/10.))<tol);
-    }
-  } else if (output_type == "min") {
-    // The min should be equivalent to the first step because this function is monotonically increasing.
-    for (int ii=0;ii<num_lcols;++ii) {
-      REQUIRE(std::abs(f1_host(ii)-(dt+ii))<tol);
-      for (int jj=0;jj<num_levs;++jj) {
-        REQUIRE(std::abs(f3_host(ii,jj)-(dt+ii + (jj+1)/10.))<tol);
-        REQUIRE(std::abs(f4_host(ii,jj)-(dt+ii + (jj+1)/10.))<tol);
-      }
-    }
-    for (int jj=0;jj<num_levs;++jj) {
-      REQUIRE(std::abs(f2_host(jj)-(dt+(jj+1)/10.))<tol);
-    }
-  } else {
-    EKAT_REQUIRE_MSG(false,"Error! Incorrect type for io test: " + output_type);
+  }
+  for (int jj=0;jj<num_levs;++jj) {
+    REQUIRE(std::abs(f2_host(jj)-check_data_xy(current_t,dt,0,jj,output_type))<tol);
   }
   // All Done 
   scorpio::eam_pio_finalize();
@@ -534,13 +514,13 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
   auto f4_host = f4.get_view<Pack**,Host>();
 
   for (int ii=0;ii<num_lcols;++ii) {
-    f1_host(ii) = ii;
+    f1_host(ii) = generate_data_xy(0,ii,0);
     for (int jj=0;jj<num_levs;++jj) {
-      f2_host(jj) = (jj+1)/10.0;
-      f3_host(ii,jj) = (ii) + (jj+1)/10.0;
+      f2_host(jj) = generate_data_xy(0,0,jj);
+      f3_host(ii,jj) = generate_data_xy(0,ii,jj);
       int ipack = jj / packsize;
       int ivec  = jj % packsize;
-      f4_host(ii,ipack)[ivec] = (ii) + (jj+1)/10.0;
+      f4_host(ii,ipack)[ivec] = generate_data_xy(0,ii,jj);
     }
   }
   // Update timestamp
@@ -554,6 +534,47 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
 
   return fm;
 }
+/*==========================================================================================================*/
+  Real generate_data_xy(const Int time, const Int i, const Int j) {
+    return i + (j+1)/10.0 + time;
+  }
+
+  Real check_data_xy(const Int time, const Int dt, const Int i, const Int j, const std::string& avg_type)
+  {
+    Real avg_val;
+    if (avg_type=="instant") {
+      avg_val = generate_data_xy(time,i,j);
+    } else if (avg_type=="average") {
+      Int curr_time = dt;
+      Int N = 0;
+      avg_val = 0;
+      while (curr_time<=time) {
+        avg_val += generate_data_xy(curr_time,i,j);
+        curr_time += dt;
+        N += 1;
+      }
+      avg_val /= N;
+    } else if (avg_type=="min") {
+      avg_val = generate_data_xy(dt,i,j);
+      Int curr_time = 2*dt;
+      while (curr_time<=time) {
+        Real tmp_data = generate_data_xy(curr_time,i,j);
+        avg_val = std::min(avg_val,tmp_data);
+        curr_time += dt;
+      }
+    } else if (avg_type=="max") {
+      avg_val = generate_data_xy(0,i,j);
+      Int curr_time = 2*dt;
+      while (curr_time<=time) {
+        Real tmp_data = generate_data_xy(curr_time,i,j);
+        avg_val = std::max(avg_val,tmp_data);
+        curr_time += dt;
+      }
+    } else {
+      EKAT_REQUIRE_MSG(false,"Error! Incorrect type for check_data in io_test: " + avg_type);
+    }
+    return avg_val;
+  }
 /*==========================================================================================================*/
 std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
 {
