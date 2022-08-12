@@ -97,7 +97,7 @@ CONTAINS
 
     if ( (.not. use_fates_sp) .and. use_fates .and. &
          (n_drydep > 0 .and. drydep_method == DD_XLND) )then
-       call endrun('ERROR: Dry-deposition currently does NOT work with FATES outside of FATES-SP mode (see github issue #1044)'//&
+       call endrun('ERROR: Dry-deposition currently does NOT work with FATES outside of FATES-SP mode'//&
             errMsg(__FILE__, __LINE__))
     end if
     

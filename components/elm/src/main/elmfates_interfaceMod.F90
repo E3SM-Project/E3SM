@@ -254,7 +254,7 @@ contains
     ! This is the first call to fates
     ! We open the fates parameter file. And use that and some info on
     ! namelist variables to determine how many patches need to be allocated
-    ! in CTSM
+    ! in ELM
     ! --------------------------------------------------------------------------------
     integer                                        :: pass_biogeog
     integer                                        :: pass_nocomp

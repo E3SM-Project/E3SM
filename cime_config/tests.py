@@ -57,7 +57,6 @@ _TESTS = {
             "SMS_Ld20.f45_f45.IELMFATES.elm-fates_rd",
             "SMS_Ld20.f45_f45.IELMFATES.elm-fates_eca",
             "SMS_Ld30.f45_f45.IELMFATES.elm-fates_satphen",
-            #"SMS_Ld30.f45_f45.IELMFATES.elm-fates_damage", # tree-damage coming soon
             "ERS.f19_g16.I1850ELM.elm-betr",
             "ERS.f19_g16.I1850ELM.elm-vst",
             "ERS.f09_g16.I1850ELMCN.elm-bgcinterface",
