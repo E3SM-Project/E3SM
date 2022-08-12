@@ -64,6 +64,12 @@ class TestProperty(object):
             self.cmake_args += [("SCREAM_ENABLE_BASELINE_TESTS", "False")]
 
     # Tests will generally be referred to via their longname
+    def disable_baselines(self):
+        if self.uses_baselines:
+            self.uses_baselines = False
+            self.cmake_args += [("SCREAM_ENABLE_BASELINE_TESTS", "False")]
+
+    # Tests will generally be referred to via their longname
     def __str__(self):
         return self.longname
 
@@ -407,7 +413,7 @@ class TestAllScream(object):
         print (f"Checking baselines directory: {self._baseline_dir}")
         if self._mem_check:
             for test in self._tests:
-                test.uses_baselines = False
+                test.disable_baselines()
         else:
             self.baselines_are_present()
             if self._update_expired_baselines:
