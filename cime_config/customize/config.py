@@ -34,3 +34,4 @@ test_custom_project_machine = "mappy"
 driver_default = "mct"
 driver_choices = ("mct", "moab")
 mct_path = "{srcroot}/externals/mct"
+additional_archive_components = ("drv",)
