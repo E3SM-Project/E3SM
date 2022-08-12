@@ -236,7 +236,7 @@ void run_multisnap(const std::string& output_freq_units) {
   //       while multi-snap starts to output at the first time step
   REQUIRE(output_stamps.size()>0);
   auto input_params = get_in_params(output_type,output_freq_units, io_comm,output_stamps.front());
-  const Real tol = 1000*std::numeric_limits<Real>::epsilon();
+  const Real tol = std::numeric_limits<Real>::epsilon();
 
   // TODO: Create a small nc dummy file and a separate unit test which tests all input functions.
   // Test that pio_inq_dimlen is correct, using a file from one of the above parameter lists.
@@ -536,7 +536,7 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
 }
 /*==========================================================================================================*/
   Real generate_data_xy(const Int time, const Int i, const Int j) {
-    return i + (j+1)/10.0 + time;
+    return i + (j+1)*10.0 + time;
   }
 
   Real check_data_xy(const Int time, const Int dt, const Int i, const Int j, const std::string& avg_type)
