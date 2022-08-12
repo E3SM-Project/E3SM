@@ -65,10 +65,11 @@
    </batch_system>
 
    <batch_system MACH="crusher" type="slurm">
+     <batch_submit>/gpfs/alpine/cli133/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
      <queues>
-       <queue strict="true" nodemin="1" nodemax="8" walltimemax="08:00:00" default="true">batch</queue>
-       <queue strict="true" nodemin="9" nodemax="64" walltimemax="04:00:00">batch</queue>
-       <queue strict="true" nodemin="65" nodemax="160" walltimemax="02:00:00">batch</queue>
+       <queue strict="true" nodemin="1" nodemax="8" walltimemax="01:00:00" default="true">batch</queue>
+       <queue strict="true" nodemin="9" nodemax="64" walltimemax="01:00:00">batch</queue>
+       <queue strict="true" nodemin="65" nodemax="160" walltimemax="01:00:00">batch</queue>
      </queues>
    </batch_system>
 
