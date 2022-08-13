@@ -1022,7 +1022,7 @@ contains
       write(lnum,"(I0.2)") num_moab_exports
       outfile = 'ocnCpl_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-      ierr = iMOAB_WriteMesh(mpoid, trim(outfile), trim(wopts))
+      ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
 
     !CHECKRC(ierr, "cannot receive tag values")
     endif
