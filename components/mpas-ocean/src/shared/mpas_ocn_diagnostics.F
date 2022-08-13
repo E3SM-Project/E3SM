@@ -1651,7 +1651,7 @@ contains
          !$omp         k, div_huMLEBolus)
 #endif
          do iCell = 1, nCells
-            div_huGMBolus(:) = 0.0_RKIND
+            div_huMLEBolus(:) = 0.0_RKIND
             invAreaCell1 = invAreaCell(iCell)
             do i = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i, iCell)
@@ -1669,7 +1669,7 @@ contains
             vertMLEBolusVelocityTop(1:minLevelCell(iCell)-1, iCell) = 0.0_RKIND
             vertMLEBolusVelocityTop(maxLevelCell(iCell)+1, iCell) = 0.0_RKIND
             do k = maxLevelCell(iCell), 1, -1
-               vertMLEBolusVelocityTop(k,iCell) = vertMLEBolusVelocityTop(k+1,iCell) - div_huGMBolus(k)
+               vertMLEBolusVelocityTop(k,iCell) = vertMLEBolusVelocityTop(k+1,iCell) - div_huMLEBolus(k)
             end do
          end do
 #ifndef MPAS_OPENACC
