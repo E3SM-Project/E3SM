@@ -461,11 +461,11 @@ _TESTS = {
     "e3sm_scream_v1_lowres" : {
         "time"  : "01:00:00",
         "tests" : (
-            "ERP_D_Ln9.ne4_ne4.F2010-SCREAMv1",
+            "ERP_D_Ln9.ne4_oQU240.F2010-SCREAMv1.atmlndactive-rtm_off",
             "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1",
-            "SMS_D_Ln9.ne4_ne4.F2010-SCREAMv1-noAero",
-            "ERP_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1",
-            "ERS_D_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "SMS_D_Ln9.ne4_oQU240.F2010-SCREAMv1-noAero",
+            "ERP_Ln22.ne4pg2_oQU480.F2010-SCREAMv1.atmlndactive-rtm_off",
+            "ERS_D_Ln22.ne4pg2_oQU480.F2010-SCREAMv1.atmlndactive-rtm_off",
             )
     },
 
@@ -473,9 +473,9 @@ _TESTS = {
         "time"  : "02:00:00",
         "tests" : (
             #  "SMS_D_Ln2.ne30_ne30.F2000-SCREAMv1-AQP1", # Uncomment once IC file for ne30 is ready
-            "ERS_Ln22.ne30_ne30.F2010-SCREAMv1",
-            "PEM_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1",
-            "ERS_Ln22.ne30pg2_ne30pg2.F2010-SCREAMv1",
+            "ERS_Ln22.ne30_oECv3.F2010-SCREAMv1.atmlndactive-rtm_off",
+            "PEM_Ln90.ne30pg2_EC30to60E2r2.F2010-SCREAMv1",
+            "ERS_Ln22.ne30pg2_EC30to60E2r2.F2010-SCREAMv1.atmlndactive-rtm_off",
             )
     },
 
