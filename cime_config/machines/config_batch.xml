@@ -590,6 +590,7 @@
    </batch_system>
 
    <batch_system MACH="ascent" type="lsf" >
+     <batch_submit>/gpfs/wolf/cli115/world-shared/e3sm/tools/bsub/throttle</batch_submit>
      <directives>
        <directive>-P {{ project }}</directive>
      </directives>

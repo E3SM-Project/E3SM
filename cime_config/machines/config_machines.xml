@@ -587,6 +587,7 @@
     <DIN_LOC_ROOT>/gpfs/alpine/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/gpfs/alpine/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/gpfs/alpine/cli133/world-shared/e3sm/baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/gpfs/alpine/cli133/world-shared/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <NTEST_PARALLEL_JOBS>1</NTEST_PARALLEL_JOBS>
@@ -634,7 +635,7 @@
         <command name="load">cray-python/3.9.12.1</command>
         <command name="load">subversion/1.14.1</command>
         <command name="load">git/2.36.1</command>
-        <command name="load">cmake/3.23.2</command>
+        <command name="load">cmake/3.21.3</command>
         <command name="load">cray-hdf5-parallel/1.12.1.1</command>
         <command name="load">cray-netcdf-hdf5parallel/4.8.1.1</command>
         <command name="load">cray-parallel-netcdf/1.12.1.7</command>
