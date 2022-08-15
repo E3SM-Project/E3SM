@@ -221,6 +221,7 @@ module seq_comm_mct
   integer, public :: mphaxid   ! iMOAB id for atm phys grid, on cpl pes; for atm_pg_active it will be the same as mbaxid
   integer, public :: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   integer, public :: mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
+  integer, public :: mbofxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
   integer, public :: mbintxao ! iMOAB id for intx mesh between ocean and atmosphere
   integer, public :: mblxid   ! iMOAB id for land mesh migrated to coupler pes
   integer, public :: mblx2id   ! iMOAB id for land mesh instanced from MCT on coupler pes
@@ -630,6 +631,7 @@ contains
     mphaxid = -1  ! iMOAB id for phys grid on cpl pes
     mbaxid = -1 ! iMOAB id for atm migrated mesh to coupler pes
     mboxid = -1  ! iMOAB id for mpas ocean migrated mesh to coupler pes
+    mbofxid = -1 ! iMOAB id for second mpas ocean migrated mesh to coupler pes, for flux calculations
     mbintxao = -1 ! iMOAB id for atm intx with mpas ocean
     mblxid = -1   ! iMOAB id for land on coupler pes
     mbintxla = -1 ! iMOAB id for land intx with atm on coupler pes

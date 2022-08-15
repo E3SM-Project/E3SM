@@ -7,7 +7,7 @@ module prep_aoflux_mod
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct,     only: num_inst_xao, num_inst_frc, num_inst_ocn
   use seq_comm_mct,     only: CPLID, logunit
-  use seq_comm_mct,     only : mboxid ! iMOAB app id for ocn on cpl pes
+  use seq_comm_mct,     only : mbofxid ! iMOAB app id for ocn on cpl pes, the second copy of mboxid
   use seq_comm_mct,     only : mphaxid ! iMOAB app id for atm phys grid on cpl pes
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
   use seq_infodata_mod, only: seq_infodata_getdata, seq_infodata_type
@@ -130,12 +130,12 @@ contains
        call mct_aVect_zero(xao_ox(exi))
     enddo
 
-! define flux tags on the moab ocean mesh
-    if (mboxid .ge. 0 ) then ! //
+! define flux tags on the moab ocean mesh, second copy of ocean mesh on coupler
+    if (mbofxid .ge. 0 ) then ! //
        tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
        tagtype = 1 ! dense, double
        numco = 1
-       ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco, tagindex )
+       ierr = iMOAB_DefineTagStorage(mbofxid, tagname, tagtype, numco, tagindex )
        if (ierr .ne. 0) then
           write(logunit,*) subname,' error in defining tags on ocn phys mesh on cpl '
           call shr_sys_abort(subname//' ERROR in defining tags on ocn phys mesh on cpl')
@@ -146,13 +146,13 @@ contains
        size_list=mct_list_nitem (temp_list)
        call mct_list_clean(temp_list)
        ! find out the number of local elements in moab mesh
-       ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC ); ! could be different of lsize_o
+       ierr  = iMOAB_GetMeshInfo ( mbofxid, nvert, nvise, nbl, nsurf, nvisBC ); ! could be different of lsize_o
       ! local size of vertices is different from lsize_o
        arrSize = nvert(1) * size_list ! there are size_list tags that need to be zeroed out
        allocate(tagValues(arrSize) )
        ent_type = 1 ! cell type
        tagValues = 0 
-       ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrSize , ent_type, tagValues)
+       ierr = iMOAB_SetDoubleTagStorage ( mbofxid, tagname, arrSize , ent_type, tagValues)
        if (ierr .ne. 0) then
          write(logunit,*) subname,' error in zeroing out xao_fields  '
          call shr_sys_abort(subname//' ERROR in zeroing out xao_fields in init ')

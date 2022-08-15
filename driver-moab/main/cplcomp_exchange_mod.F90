@@ -15,7 +15,7 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs, seq_comm_iamin
   use seq_diag_mct
 
-  use seq_comm_mct, only : mhid, mpoid, mbaxid, mboxid  ! iMOAB app ids, for atm, ocean, ax mesh, ox mesh
+  use seq_comm_mct, only : mhid, mpoid, mbaxid, mboxid, mbofxid ! iMOAB app ids, for atm, ocean, ax mesh, ox mesh
   use seq_comm_mct, only : mhpgid         !    iMOAB app id for atm pgx grid, on atm pes
   use seq_comm_mct, only : atm_pg_active  ! flag if PG mesh instanced
   use seq_comm_mct, only : mlnid , mblxid !    iMOAB app id for land , on land pes and coupler pes
@@ -1292,6 +1292,34 @@ contains
            call shr_sys_abort(subname//' ERROR in freeing buffers ')
          endif
       endif
+      ! start copy
+      ! do another ocean copy of the mesh on the coupler, just because So_fswpen field 
+      ! would appear twice on original mboxid, once from xao states, once from o2x states
+      id_join = id_join + 1000! kind of random 
+      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (ocean)
+        !  send mesh to coupler, the second time! a copy would be cheaper
+        ierr = iMOAB_SendMesh(mpoid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+        if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in sending ocean mesh to coupler the second time'
+          call shr_sys_abort(subname//' ERROR in sending ocean mesh to coupler the second time ')
+        endif
+      endif
+      if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+        appname = "COUPLE_MPASOF"//C_NULL_CHAR
+        ! migrated mesh gets another app id, moab ocean to coupler (mbox)
+        ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbofxid)
+        ierr = iMOAB_ReceiveMesh(mbofxid, mpicom_join, mpigrp_old, id_old)
+        
+      endif
+      if (mpoid .ge. 0) then  ! we are on component ocn pes again, release buffers 
+         context_id = id_join
+         ierr = iMOAB_FreeSenderBuffers(mpoid, context_id)
+         if (ierr .ne. 0) then
+           write(logunit,*) subname,' error in freeing buffers '
+           call shr_sys_abort(subname//' ERROR in freeing buffers ')
+         endif
+      endif
+      ! end copy 
     endif
 
 !   land

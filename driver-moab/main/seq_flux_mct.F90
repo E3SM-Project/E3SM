@@ -1627,7 +1627,7 @@ contains
         appId = mphaxid ! ocn on coupler
         local_xao_mct => prep_aoflux_get_xao_amct()
      else if (comp%oneletterid == 'o') then
-        appId = mboxid  ! atm phys
+        appId = mbofxid  ! atm phys
         local_xao_mct => prep_aoflux_get_xao_omct()
      else
         call mct_die(subName,'call for either ocean or atm',1)
