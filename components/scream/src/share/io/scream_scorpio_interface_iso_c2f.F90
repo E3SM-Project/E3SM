@@ -1,5 +1,5 @@
 module scream_scorpio_interface_iso_c2f
-  use iso_c_binding
+  use iso_c_binding, only: c_int, c_double, c_float, c_bool, c_ptr
   implicit none
      
 #include "scream_config.f"
@@ -69,16 +69,17 @@ contains
   end subroutine set_decomp_c2f
 !=====================================================================!
   subroutine set_dof_c2f(filename_in,varname_in,dof_len,dof_vec) bind(c)
-    use scream_scorpio_interface, only : set_dof
+    use scream_scorpio_interface, only : set_dof, pio_offset_kind
+    use iso_c_binding, only: c_int64_t
     type(c_ptr), intent(in)                             :: filename_in
     type(c_ptr), intent(in)                             :: varname_in
     integer(kind=c_int), value, intent(in)              :: dof_len
-    integer(kind=c_int), intent(in), dimension(dof_len) :: dof_vec
+    integer(kind=c_int64_t), intent(in), dimension(dof_len) :: dof_vec
 
-    character(len=256)          :: filename
-    character(len=256)          :: varname
-    integer, dimension(dof_len) :: dof_vec_f90
-    integer                     :: ii
+    character(len=256)            :: filename
+    character(len=256)            :: varname
+    integer(kind=pio_offset_kind) :: dof_vec_f90(dof_len)
+    integer                       :: ii
 
     call convert_c_string(filename_in,filename)
     call convert_c_string(varname_in,varname)
@@ -246,6 +247,7 @@ contains
   end subroutine eam_pio_enddef_c2f
 !=====================================================================!
   subroutine convert_c_string(c_string_ptr,f_string)
+    use iso_c_binding, only: c_f_pointer, C_NULL_CHAR
   ! Purpose: To convert a c_string pointer to the proper fortran string format.
     type(c_ptr), intent(in) :: c_string_ptr
     character(len=256), intent(out) :: f_string
@@ -256,7 +258,6 @@ contains
     str_len = index(temp_string, C_NULL_CHAR) - 1
     f_string = trim(temp_string(1:str_len))
     
-    return
   end subroutine convert_c_string
 !=====================================================================!
   subroutine grid_write_data_array_c2f_real(filename_in,varname_in,var_data_ptr) bind(c)

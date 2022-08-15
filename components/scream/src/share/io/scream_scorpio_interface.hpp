@@ -23,6 +23,8 @@ static constexpr int PIO_INT = 4;
 namespace scream {
 namespace scorpio {
 
+  using offset_t = std::int64_t;
+
   // WARNING: these values must match the ones of file_purpose_in and file_purpose_out
   // in the scream_scorpio_interface F90 module
   enum FileMode {
@@ -40,7 +42,7 @@ namespace scorpio {
   /* Sets the IO decompostion for all variables in a particular filename.  Required after all variables have been registered.  Called once per file. */
   void set_decomp(const std::string& filename);
   /* Sets the degrees-of-freedom for a particular variable in a particular file.  Called once for each variable, for each file. */
-  void set_dof(const std::string &filename, const std::string &varname, const Int dof_len, const Int* x_dof);
+  void set_dof(const std::string &filename, const std::string &varname, const Int dof_len, const offset_t* x_dof);
   /* Register a dimension coordinate with a file. Called during the file setup. */
   void register_dimension(const std::string& filename,const std::string& shortname, const std::string& longname, const int length);
   /* Register a variable with a file.  Called during the file setup, for an output stream. */
