@@ -205,8 +205,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qr"),m_grid,0.0,0.1,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qm"),m_grid,0.0,0.1,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nc"),m_grid,0.0,1.e11,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nr"),m_grid,0.0,1.e9,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("ni"),m_grid,0.0,1.e9,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nr"),m_grid,0.0,1.e10,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("ni"),m_grid,0.0,1.e10,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("bm"),m_grid,0.0,1.0,false);
   // The following checks on precip have been changed to lower bound checks, from an interval check.
   // TODO: Change back to interval check when it is possible to pass dt_atm for the check.  Because
