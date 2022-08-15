@@ -724,6 +724,7 @@ module li_thermal
            temperature,              & ! interior ice temperature (K)
            waterFrac,                & ! interior water fraction (unitless)
            enthalpy,                 & ! interior ice enthalpy (J m^{-3})
+           internalMeltRate,         & ! excess internal melt drained to the bed
            heatDissipation             ! interior heat dissipation (deg/s)
 
       real(kind=RKIND), dimension(:), allocatable :: &
@@ -829,6 +830,7 @@ module li_thermal
          call mpas_pool_get_array(thermalPool, 'temperature', temperature)
          call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
          call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
+         call mpas_pool_get_array(thermalPool, 'internalMeltRate', internalMeltRate)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
          call mpas_pool_get_array(thermalPool, 'basalTemperature',   basalTemperature)
          call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
@@ -1285,6 +1287,7 @@ module li_thermal
                  basalHeatFlux,                &
                  basalConductiveFlux,          &
                  basalWaterThickness,          &
+                 internalMeltRate,             &
                  groundedBasalMassBal)
 
             ! Convert temperatures from Celsius back to Kelvin
@@ -2702,6 +2705,7 @@ module li_thermal
          basalHeatFlux,               &
          basalConductiveFlux,         &
          basalWaterThickness,         &
+         internalMeltRate,            &
          groundedBasalMassBal)
 
       !-----------------------------------------------------------------
@@ -2766,8 +2770,9 @@ module li_thermal
       !-----------------------------------------------------------------
 
       real(kind=RKIND), dimension(:), intent(out):: &
-           groundedBasalMassBal     !< Output: basal mass balance for grounded ice (kg/m^2/s): < 0 for melting, > 0 for freeze-on
-
+           groundedBasalMassBal  !< Output: basal mass balance for grounded ice (kg/m^2/s): < 0 for melting, > 0 for freeze-on
+      real(kind=RKIND), dimension(:,:), intent(out):: &
+           internalMeltRate         !< Output: excess internal melt drained to the bed
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
@@ -2782,7 +2787,6 @@ module li_thermal
       real(kind=RKIND) :: netBasalFlux          ! heat flux available for basal melting (W/m^2)
       real(kind=RKIND) :: layerThickness        ! layer thickness (m)
       real(kind=RKIND) :: meltEnergy            ! energy available for internal melting (J/m^2)
-      real(kind=RKIND) :: internalMeltRate      ! internal melt rate, transferred to bed (m/s)
       real(kind=RKIND) :: excessWater           ! thickness of excess meltwater (m)
 
       real(kind=RKIND) :: maxwaterFrac          ! maximum allowed water fraction; excess drains to bed
@@ -2798,6 +2802,7 @@ module li_thermal
       ! Compute melt rate for grounded ice
 
       groundedBasalMassBal(:) = 0.0_RKIND
+      internalMeltRate(:,:) = 0.0_RKIND
 
       do iCell = 1, nCellsSolve
 
@@ -2864,12 +2869,8 @@ module li_thermal
                      ! compute melt rate associated with excess water
                      excessWater = (waterFrac(k,iCell) - maxwaterFrac) * thickness(iCell) * (layerInterfaceSigma(k+1) &
                         - layerInterfaceSigma(k))  ! m
-                     internalMeltRate = excessWater / deltat
-
-                     ! transfer meltwater to the bed
-                     ! Note: It is possible to have internal melting for floating ice.
-                     !       If so, then this melting will later be switched from groundedBasalMassBall to floatingBasalMassBal.
-                     groundedBasalMassBal(iCell) = groundedBasalMassBal(iCell) - internalMeltRate      ! m/s
+                     internalMeltRate(k, iCell) = excessWater / deltat
+                     ! transfer meltwater to the bed in mpas_li_advection.F
 
                      ! reset waterFrac to max value
                      waterFrac(k,iCell) = maxwaterFrac
@@ -2892,12 +2893,9 @@ module li_thermal
                      ! compute excess energy available for melting
                      layerThickness = thickness(iCell) * (layerInterfaceSigma(k+1) - layerInterfaceSigma(k))     ! m
                      meltEnergy = rhoi*cp_ice * (temperature(k,iCell) - pmpTemperature(k)) * layerThickness    ! J/m^2
-                     internalMeltRate = meltEnergy / (rhoi * latent_heat_ice * deltat)  ! m/s
+                     internalMeltRate(k, iCell) = meltEnergy / (rhoi * latent_heat_ice * deltat)  ! m/s
 
-                     ! transfer meltwater to the bed
-                     ! Note: It is possible to have internal melting for floating ice.
-                     !       If so, then this melting will later be switched from groundedBasalMassBall to floatingBasalMassBal.
-                     groundedBasalMassBal(iCell) = groundedBasalMassBal(iCell) - internalMeltRate      ! m/s
+                     ! transfer meltwater to the bed in mpas_li_advection.F
 
                      ! reset T to Tpmp
                      temperature(k,iCell) = pmpTemperature(k)

@@ -154,6 +154,7 @@ module li_advection
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,           & ! interior ice temperature
            waterFrac,             & ! interior water fraction
+           internalMeltRate,      & ! excess internal melt drained to the bed
            enthalpy                 ! interior ice enthalpy
 
       real (kind=RKIND), dimension(:,:), pointer :: &
@@ -280,6 +281,7 @@ module li_advection
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
       call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
       call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
+      call mpas_pool_get_array(thermalPool, 'internalMeltRate', internalMeltRate)
 
       ! get config variables
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
@@ -293,6 +295,7 @@ module li_advection
       !WHL - debug
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
@@ -480,23 +483,12 @@ module li_advection
          do iCell = 1, nCells
             if (thickness(iCell) > config_thermal_thickness) then
                thermalCellMask(iCell) = 1
+               do k = 1, nVertLevels
+                  basalMassBal(iCell) = basalMassBal(iCell) - internalMeltRate(k, iCell)
+               enddo
             else
                thermalCellMask(iCell) = 0
             endif
-         enddo
-
-         do iCell = 1, nCells
-            if (thermalCellMask(iCell) == 1 .and. li_mask_is_floating_ice(cellMask(iCell)) .and. &
-                 groundedBasalMassBal(iCell) /= 0.0_RKIND) then
-               basalMassBal(iCell) = basalMassBal(iCell) + groundedBasalMassBal(iCell)
-               groundedBasalMassBal(iCell) = 0.0_RKIND
-            endif
-
-            if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
-               call mpas_log_write('indexToCellID=$i, basal mass balance (m/yr): $r', &
-                    intArgs=(/indexToCellID(iCell)/), realArgs=(/basalMassBal(iCell)*scyr/config_ice_density/) ) 
-            endif
-
          enddo
 
          call apply_mass_balance(&
