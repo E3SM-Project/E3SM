@@ -313,6 +313,21 @@
         </nthrds>
       </pes>
     </mach>
+    <mach name="cori-haswell">
+      <pes compset="any" pesize="any">
+        <comment>elm: cori-haswell PEs for grid l%360x720cru, 6 nodes</comment>
+        <ntasks>
+          <ntasks_atm>-6</ntasks_atm>
+          <ntasks_lnd>-6</ntasks_lnd>
+          <ntasks_rof>-6</ntasks_rof>
+          <ntasks_ice>-6</ntasks_ice>
+          <ntasks_ocn>-6</ntasks_ocn>
+          <ntasks_glc>-6</ntasks_glc>
+          <ntasks_wav>-6</ntasks_wav>
+          <ntasks_cpl>-6</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
     <mach name="gcp">
       <pes compset="any" pesize="any">
         <comment>elm: gcp PEs for grid l%360x720cru, 4 nodes, 2 threads</comment>
