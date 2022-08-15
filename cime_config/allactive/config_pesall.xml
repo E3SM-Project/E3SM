@@ -2016,6 +2016,77 @@
       </pes>
     </mach>
   </grid>
+  <grid name="a%ne30np4">
+    <mach name="pm-gpu">
+      <pes compset="any" pesize="any">
+        <comment>"pm-gpu ne30np4 and ne30np4.pg2  2 nodes, 4x16"</comment>
+        <ntasks>
+          <ntasks_atm>-2</ntasks_atm>
+          <ntasks_lnd>-2</ntasks_lnd>
+          <ntasks_rof>-2</ntasks_rof>
+          <ntasks_ice>-2</ntasks_ice>
+          <ntasks_ocn>-2</ntasks_ocn>
+          <ntasks_glc>-2</ntasks_glc>
+          <ntasks_wav>-2</ntasks_wav>
+          <ntasks_cpl>-2</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>16</nthrds_atm>
+          <nthrds_lnd>16</nthrds_lnd>
+          <nthrds_rof>8</nthrds_rof>
+          <nthrds_ice>8</nthrds_ice>
+          <nthrds_ocn>8</nthrds_ocn>
+          <nthrds_cpl>8</nthrds_cpl>
+        </nthrds>
+      </pes>
+    </mach>
+    <mach name="pm-cpu">
+      <pes compset="any" pesize="any">
+        <comment>"pm-cpu ne30np4 and ne30np4.pg2 2 nodes 2 threads"</comment>
+        <ntasks>
+          <ntasks_atm>-2</ntasks_atm>
+          <ntasks_lnd>-2</ntasks_lnd>
+          <ntasks_rof>-2</ntasks_rof>
+          <ntasks_ice>-2</ntasks_ice>
+          <ntasks_ocn>-2</ntasks_ocn>
+          <ntasks_glc>-2</ntasks_glc>
+          <ntasks_wav>-2</ntasks_wav>
+          <ntasks_cpl>-2</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>2</nthrds_atm>
+          <nthrds_lnd>2</nthrds_lnd>
+          <nthrds_rof>2</nthrds_rof>
+          <nthrds_ice>2</nthrds_ice>
+          <nthrds_ocn>2</nthrds_ocn>
+          <nthrds_cpl>2</nthrds_cpl>
+        </nthrds>
+      </pes>
+    </mach>
+    <mach name="cori-knl">
+      <pes compset="any" pesize="any">
+        <comment>"cori-knl ne30np4* 8 nodes 2 threads"</comment>
+        <ntasks>
+          <ntasks_atm>-8</ntasks_atm>
+          <ntasks_lnd>-8</ntasks_lnd>
+          <ntasks_rof>-8</ntasks_rof>
+          <ntasks_ice>-8</ntasks_ice>
+          <ntasks_ocn>-8</ntasks_ocn>
+          <ntasks_glc>-8</ntasks_glc>
+          <ntasks_wav>-8</ntasks_wav>
+          <ntasks_cpl>-8</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>2</nthrds_atm>
+          <nthrds_lnd>2</nthrds_lnd>
+          <nthrds_rof>2</nthrds_rof>
+          <nthrds_ice>2</nthrds_ice>
+          <nthrds_ocn>2</nthrds_ocn>
+          <nthrds_cpl>2</nthrds_cpl>
+        </nthrds>
+      </pes>
+    </mach>
+  </grid>
   <grid name="a%ne0np4_northamericax4v1.pg2_l%.+_oi%WC14to60E2r3">
     <mach name="compy">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="S">
