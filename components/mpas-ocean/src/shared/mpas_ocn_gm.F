@@ -143,8 +143,8 @@ contains
       real(kind=RKIND) :: c_Visbeck   ! baroclinic wave speed from Visbeck parameterization
       real(kind=RKIND) :: c_mode1, resolution, dc_Lr
       ! Dimensions
-      integer :: nCells, nEdges
-      integer, pointer :: nVertLevels, indMLDedge
+      integer :: nCells, nEdges, indMLDedge
+      integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
       type(mpas_pool_type), pointer :: tracersPool
