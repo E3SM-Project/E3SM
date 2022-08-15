@@ -240,6 +240,8 @@ contains
      write(iulog,*), 'kzm_inv_ndx_no3 ', inv_ndx_cnst_no3
      write(iulog,*), 'kzm_inv_ndx_oh', inv_ndx_cnst_oh
      write(iulog,*), 'kzm_inv_ndx_ch4', inv_ndx_cnst_ch4
+     write(iulog,*), 'kzm_oh_ndx', oh_ndx
+     write(iulog,*), 'kzm_no3_ndx', no3_ndx
      if ((inv_ndx_cnst_oh .gt. 0.0_r8) .and. (inv_ndx_cnst_no3 .gt. 0.0_r8)) then
         write(iulog,*) 'kzm_prescribed_NO3_OH '
      endif
@@ -1196,6 +1198,20 @@ contains
     if (uci1_ndx > 0) then
        vmr_old2(:ncol,:,:) = vmr(:ncol,:,:)
     endif
+!kzm ++
+    ! attribute constant OH and NO3 above troppopause
+    ! will be set by after exp_sol
+    do i = 1,ncol
+        do k = 1,ltrop_sol(i) !above tropppause
+             if (k < ltrop_sol(i)) then !skip troppaupause
+                !write(iulog,*) 'kzm_prescribed_OH_NO3'     
+                vmr(i,k,oh_ndx) = invariants(i,k,inv_ndx_cnst_oh)/invariants(i,k,inv_ndx_m)
+                vmr(i,k,no3_ndx) = invariants(i,k,inv_ndx_cnst_no3)/invariants(i,k,inv_ndx_m)
+             endif
+        end do
+   end do     
+!kzm --
+
     call t_startf('exp_sol')
     call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol, &
                   diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss, invariants)

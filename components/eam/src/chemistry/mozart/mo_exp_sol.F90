@@ -92,30 +92,9 @@ contains
     !-----------------------------------------------------------------------      
     base_sol_reset = base_sol
     !kzm 
-    inv_ndx_cnst_no3       = get_inv_ndx( 'cnst_NO3' )
-    inv_ndx_m       = get_inv_ndx( 'M' )
-    inv_ndx_cnst_oh       = get_inv_ndx( 'cnst_OH' )
-    do m=1,clscnt1
-       l = clsmap(m,1)
-       if (trim(solsym(l)) == 'NO3' ) then 
-          do i = 1,ncol
-             do k = 1,ltrop(i)
-                 write(iulog,*)'kzm_NO3 ',  base_sol(i,k,l)
-                 base_sol(i,k,l) = invariants(i,k,inv_ndx_cnst_no3)/invariants(i,k,inv_ndx_m)
-                 write(iulog,*)'kzm_NO3_inv ',  base_sol(i,k,l)
-             enddo
-          enddo
-       endif
-       if (trim(solsym(l)) == 'OH' ) then
-          do i = 1,ncol
-             do k = 1,ltrop(i)
-                 write(iulog,*)'kzm_OH ',  base_sol(i,k,l)
-                 base_sol(i,k,l) = invariants(i,k,inv_ndx_cnst_oh)/invariants(i,k,inv_ndx_m)
-                 write(iulog,*)'kzm_OH_inv ',  base_sol(i,k,l)
-             enddo
-          enddo
-       endif
-    enddo
+    !inv_ndx_cnst_no3       = get_inv_ndx( 'cnst_NO3' )
+    !inv_ndx_m       = get_inv_ndx( 'M' )
+    !inv_ndx_cnst_oh       = get_inv_ndx( 'cnst_OH' )
 
     call indprd( 1, ind_prd, clscnt1, base_sol, extfrc, &
          reaction_rates, ncol )
@@ -129,7 +108,6 @@ contains
     !    	... Solve for the mixing ratio at t(n+1)
     !-----------------------------------------------------------------------      
 
-    
 
     do m = 1,clscnt1
        l = clsmap(m,1)
