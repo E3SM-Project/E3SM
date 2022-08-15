@@ -351,11 +351,12 @@ contains
 
                   sfcTaper = min(RediKappaSfcTaper(k, cell1), RediKappaSfcTaper(k, cell2))
                   indMLDedge = max(indMLD(cell1),indMLD(cell2))
-                  if(k < indMLDedge) then
-                    sfcTaper = 0.0_RKIND
-                  else
-                    sfcTaper = 1.0_RKIND
-                  end if
+! mrp temp - comment out for bfb
+!                  if(k < indMLDedge) then
+!                    sfcTaper = 0.0_RKIND
+!                  else
+!                    sfcTaper = 1.0_RKIND
+!                  end if
 
                   sfcTaperUp = 1.0_RKIND + sfcTaperFactor*(sfcTaper - 1.0_RKIND)
                   sfcTaperDown = 1.0_RKIND + sfcTaperFactor*(sfcTaper - 1.0_RKIND)
