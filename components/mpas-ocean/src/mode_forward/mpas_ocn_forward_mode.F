@@ -680,7 +680,9 @@ module ocn_forward_mode
 
            ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
 
-           call ocn_eddy_compute_mixed_layer_depth(statePool)
+           ! mrp temporary: comment out next line, call from
+           ! analysis_members/mpas_ocn_mixed_layer_depths.F right now.
+           ! call ocn_eddy_compute_mixed_layer_depth(statePool)
            if (config_use_GM.or.config_submesoscale_enable) then
                call mpas_timer_start("submesoscale eddy velocity compute", .false.)
                call ocn_eddy_compute_buoyancy_gradient()
