@@ -84,6 +84,7 @@ subroutine phys_register
   use ghg_data,                 only: ghg_data_register
   use radiation,                only: radiation_register
   use co2_cycle,                only: co2_register
+  use co2_diagnostics,          only: co2_diags_register
   use flux_avg,                 only: flux_avg_register
   use ionosphere,               only: ionos_register
   use prescribed_ozone,         only: prescribed_ozone_register
@@ -156,6 +157,7 @@ subroutine phys_register
 
   ! co2 constituents
   call co2_register()
+  call co2_diags_register()
 
   call prescribed_volcaero_register()
   call prescribed_ozone_register()
@@ -517,6 +519,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   use aircraft_emit,      only: aircraft_emit_init
   use prescribed_volcaero,only: prescribed_volcaero_init
   use co2_cycle,          only: co2_init, co2_transport
+  use co2_diagnostics,    only: co2_diags_init
   use cam_diagnostics,    only: diag_init
   use gw_drag,            only: gw_init
   use radheat,            only: radheat_init
@@ -628,6 +631,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
   ! co2 cycle            
   if (co2_transport()) call co2_init()
+  call co2_diags_init(phys_state)
 
   call gw_init()
 

@@ -1704,7 +1704,7 @@ contains
 !    o  bcphiwet -- Black Carbon hydrophilic wet deposition flux
 !    o  ocphidry -- Organic Carbon hydrophilic dry deposition flux
 !    o  ocphodry -- Organic Carbon hydrophobic dry deposition flux
-!    o  ocphiwet -- Organic Carbon hydrophilic dry deposition flux
+!    o  ocphiwet -- Organic Carbon hydrophilic wet deposition flux
 !    o  dstwet1  -- Size 1 dust -- wet deposition flux
 !    o  dstwet2  -- Size 2 dust -- wet deposition flux
 !    o  dstwet3  -- Size 3 dust -- wet deposition flux

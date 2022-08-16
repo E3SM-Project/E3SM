@@ -1,21 +1,21 @@
 		<nml_record name="AM_mixedLayerHeatBudget" mode="forward;analysis">
-		<nml_option name="config_AM_mixedLayerHeatBudget_enable" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_mixedLayerHeatBudget_enable" type="logical" default_value=".false."
 			description="If true, ocean analysis member mixedLayerHeatBudget is called."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_mixedLayerHeatBudget_compute_interval" type="character" default_value="output_interval" units="unitless"
+		<nml_option name="config_AM_mixedLayerHeatBudget_compute_interval" type="character" default_value="output_interval"
 			description="Timestamp determining how often analysis member computation should be performed."
 			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
 		/>
-		<nml_option name="config_AM_mixedLayerHeatBudget_output_stream" type="character" default_value="mixedLayerHeatBudgetOutput" units="unitless"
+		<nml_option name="config_AM_mixedLayerHeatBudget_output_stream" type="character" default_value="mixedLayerHeatBudgetOutput"
 			description="Name of the stream that the mixedLayerHeatBudget analysis member should be tied to."
 			possible_values="Any existing stream name or 'none'"
 		/>
-		<nml_option name="config_AM_mixedLayerHeatBudget_compute_on_startup" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_mixedLayerHeatBudget_compute_on_startup" type="logical" default_value=".true."
 			description="Logical flag determining if an analysis member computation occurs on start-up."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_mixedLayerHeatBudget_write_on_startup" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_mixedLayerHeatBudget_write_on_startup" type="logical" default_value=".true."
 			description="Logical flag determining if an analysis member write occurs on start-up."
 			possible_values=".true. or .false."
 		/>
@@ -25,70 +25,70 @@
 	</packages>
 	<var_struct name="mixedLayerHeatBudgetAM" time_levs="1" packages="mixedLayerHeatBudgetAMPKG">
 		<var_array name="activeTracerHorAdvectionMLTend" type="real" dimensions="nCells Time">
-			<var name="temperatureHorAdvectionMLTend" array_group="activeTracerHAdvTendGroup" units="degrees Celsius per second"
+			<var name="temperatureHorAdvectionMLTend" array_group="activeTracerHAdvTendGroup" units="C s^-1"
 				description="ML average horizontal advection tendency for temperature"
 			/>
-			<var name="salinityHorAdvectionMLTend" array_group="activeTracerHAdvTendGroup" units="PSU per second"
+			<var name="salinityHorAdvectionMLTend" array_group="activeTracerHAdvTendGroup" units="1.e-3 s^-1"
 				description="ML average horizontal advection tendency for salinity"
 			/>
 		</var_array>
 		<var_array name="activeTracerVertAdvectionMLTend" type="real" dimensions="nCells Time">
-			<var name="temperatureVertAdvectionMLTend" array_group="activeTracerVAdvTendGroup" units="degrees Celsius per second"
+			<var name="temperatureVertAdvectionMLTend" array_group="activeTracerVAdvTendGroup" units="C s^-1"
 				description="ML average vertical advection tendency for temperature"
 			/>
-			<var name="salinityVertAdvectionMLTend" array_group="activeTracerVAdvTendGroup" units="PSU per second"
+			<var name="salinityVertAdvectionMLTend" array_group="activeTracerVAdvTendGroup" units="1.e-3 s^-1"
 				description="ML average vertical advection tendency for salinity"
 			/>
 		</var_array>
 		<var_array name="activeTracerVertMixMLTend" type="real" dimensions="nCells Time">
-			<var name="temperatureVertMixMLTend" array_group="activeTracerVMixTendGroup" units="degrees Celsius per second"
+			<var name="temperatureVertMixMLTend" array_group="activeTracerVMixTendGroup" units="C s^-1"
 				description="ML average vertical mixing tendency for temperature"
 			/>
-			<var name="salinityVertMixMLTend" array_group="activeTracerVMixTendGroup" units="PSU per second"
+			<var name="salinityVertMixMLTend" array_group="activeTracerVMixTendGroup" units="1.e-3 s^-1"
 				description="ML average vertical mxiing tendency for salinity"
 			/>
 		</var_array>
 		<var_array name="activeTracerHorMixMLTend" type="real" dimensions="nCells Time">
-			<var name="temperatureHorMixMLTend" array_group="activeTracerHMixTendGroup" units="degrees Celsius per second"
+			<var name="temperatureHorMixMLTend" array_group="activeTracerHMixTendGroup" units="C s^-1"
 				description="ML average horizontal mixing tendency for temperature"
 			/>
-			<var name="salinityHorMixMLTend" array_group="activeTracerHMixTendGroup" units="PSU per second"
+			<var name="salinityHorMixMLTend" array_group="activeTracerHMixTendGroup" units="1.e-3 s^-1"
 				description="ML average horizontal mxiing tendency for salinity"
 			/>
 		</var_array>
 		<var_array name="activeTracerNonLocalMLTend" type="real" dimensions="nCells Time">
-			<var name="temperatureNonLocalMLTend" array_group="activeTracerNLTendGroup" units="degrees Celsius per second"
+			<var name="temperatureNonLocalMLTend" array_group="activeTracerNLTendGroup" units="C s^-1"
 				description="ML average non local kpp tendency for temperature"
 			/>
-			<var name="salinityNonLocalMLTend" array_group="activeTracerNLTendGroup" units="PSU per second"
+			<var name="salinityNonLocalMLTend" array_group="activeTracerNLTendGroup" units="1.e-3 s^-1"
 				description="ML average nonlocal KPP tendency for salinity"
 			/>
 		</var_array>
 		<var_array name="activeTracerForcingMLTend" type="real" dimensions="nCells Time">
-			<var name="temperatureForcingMLTend" array_group="activeTracerFTendGroup" units="degrees Celsius per second"
+			<var name="temperatureForcingMLTend" array_group="activeTracerFTendGroup" units="C s^-1"
 				description="ML average forcing tendency (including shortwave) for temperature"
 			/>
-			<var name="salinityForcingMLTend" array_group="activeTracerFTendGroup" units="PSU per second"
+			<var name="salinityForcingMLTend" array_group="activeTracerFTendGroup" units="1.e-3 s^-1"
 				description="ML average forcing tendency (non thickness flux changes) for salinity"
 			/>
 		</var_array>
 		<var_array name="activeTracersML" type="real" dimensions="nCells Time">
-    <var name="temperatureML" array_group="activeTracerMLGroup" units="degrees Celsius"
+    <var name="temperatureML" array_group="activeTracerMLGroup" units="C"
       description="ML average temperature"
     />
-    <var name="salinityML" array_group="activeTracerMLGroup" units="PSU"
+    <var name="salinityML" array_group="activeTracerMLGroup" units="1.e-3"
       description="ML average salinity"
     />
     </var_array>
     <var_array name="activeTracersTendML" type="real" dimensions="nCells Time">
-      <var name="temperatureTendML" array_group="activeTracerMLTendGroup" units="degrees Celsius s^{-1}"
+      <var name="temperatureTendML" array_group="activeTracerMLTendGroup" units="C s^-1"
 				description="ML average temperature"
 			/>
-    <var name="salinityTendML" array_group="activeTracerMLTendGroup" units="PSU s^{-1}"
+    <var name="salinityTendML" array_group="activeTracerMLTendGroup" units="1.e-3 s^-1"
 				description="ML average salinity"
 			/>
 		</var_array>
-    <var name="bruntVaisalaFreqML" type="real" dimensions="nCells Time" units="s^{-2}"
+    <var name="bruntVaisalaFreqML" type="real" dimensions="nCells Time" units="s^-2"
 			description="ML average BVF"
 		/>
 	</var_struct>
