@@ -28,7 +28,7 @@ void Functions<S,D>
   ni_sublim_tend=0;
 
   //CAN'T HAVE DEPOSITION/SUBLIMATION IF NO ICE MASS
-  const auto qi_incld_not_small = qi_incld >= QSMALL && context;
+  const auto qi_incld_not_small = qi_incld > QSMALL && context;
 
   if (qi_incld_not_small.any()) {
   

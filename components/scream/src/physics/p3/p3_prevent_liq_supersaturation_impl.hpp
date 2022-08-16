@@ -27,7 +27,7 @@ void Functions<S,D>::prevent_liq_supersaturation(const Spack& pres, const Spack&
   Spack qv_sinks, qv_sources, qv_endstep, T_endstep, A, frac;
 
   qv_sources.set(context, qi2qv_sublim_tend + qr2qv_evap_tend);
-  const auto has_sources = (qv_sources>qsmall && context); //if nothing to rescale, no point in calculations.
+  const auto has_sources = (qv_sources>=qsmall && context); //if nothing to rescale, no point in calculations.
 
   if (not has_sources.any()) {
     return;

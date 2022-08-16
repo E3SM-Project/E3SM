@@ -240,27 +240,27 @@ void Functions<S,D>
     const auto range_pack    = ekat::range<IntSmallPack>(pk*Spack::n);
     const auto range_mask    = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
     const auto t_lt_homogf   = T_atm(pk) < T_homogfrz;
-    const auto qc_gt_small   = range_mask && t_lt_homogf && qc(pk) > qsmall;
-    const auto qr_gt_small   = range_mask && t_lt_homogf && qr(pk) > qsmall;
+    const auto qc_ge_small   = range_mask && t_lt_homogf && qc(pk) >= qsmall;
+    const auto qr_ge_small   = range_mask && t_lt_homogf && qr(pk) >= qsmall;
 
     Spack Qc_nuc(qc(pk)), Qr_nuc(qr(pk)), Nc_nuc(max(nc(pk), nsmall)), Nr_nuc(max(nr(pk), nsmall));
 
-    qm(pk).set(qc_gt_small, qm(pk) + Qc_nuc);
-    qi(pk).set(qc_gt_small, qi(pk) + Qc_nuc);
-    bm(pk).set(qc_gt_small, bm(pk) + Qc_nuc*inv_rho_rimeMax);
-    ni(pk).set(qc_gt_small, ni(pk) + Nc_nuc);
-    th_atm(pk).set   (qc_gt_small, th_atm(pk) + inv_exner(pk)*Qc_nuc*latent_heat_fusion(pk)*inv_cp);
+    qm(pk).set(qc_ge_small, qm(pk) + Qc_nuc);
+    qi(pk).set(qc_ge_small, qi(pk) + Qc_nuc);
+    bm(pk).set(qc_ge_small, bm(pk) + Qc_nuc*inv_rho_rimeMax);
+    ni(pk).set(qc_ge_small, ni(pk) + Nc_nuc);
+    th_atm(pk).set   (qc_ge_small, th_atm(pk) + inv_exner(pk)*Qc_nuc*latent_heat_fusion(pk)*inv_cp);
 
-    qm(pk).set(qr_gt_small, qm(pk) + Qr_nuc);
-    qi(pk).set(qr_gt_small, qi(pk) + Qr_nuc);
-    bm(pk).set(qr_gt_small, bm(pk) + Qr_nuc*inv_rho_rimeMax);
-    ni(pk).set(qr_gt_small, ni(pk) + Nr_nuc);
-    th_atm(pk).set   (qr_gt_small, th_atm(pk) + inv_exner(pk)*Qr_nuc*latent_heat_fusion(pk)*inv_cp);
+    qm(pk).set(qr_ge_small, qm(pk) + Qr_nuc);
+    qi(pk).set(qr_ge_small, qi(pk) + Qr_nuc);
+    bm(pk).set(qr_ge_small, bm(pk) + Qr_nuc*inv_rho_rimeMax);
+    ni(pk).set(qr_ge_small, ni(pk) + Nr_nuc);
+    th_atm(pk).set   (qr_ge_small, th_atm(pk) + inv_exner(pk)*Qr_nuc*latent_heat_fusion(pk)*inv_cp);
 
-    qc(pk).set(qc_gt_small, 0);
-    nc(pk).set(qc_gt_small, 0);
-    qr(pk).set(qr_gt_small, 0);
-    nr(pk).set(qr_gt_small, 0);
+    qc(pk).set(qc_ge_small, 0);
+    nc(pk).set(qc_ge_small, 0);
+    qr(pk).set(qr_ge_small, 0);
+    nr(pk).set(qr_ge_small, 0);
   });
 }
 
