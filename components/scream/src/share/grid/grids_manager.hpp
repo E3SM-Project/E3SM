@@ -38,20 +38,13 @@ public:
     return get_grid(get_reference_grid_name());
   }
 
-  // The list of grids that this GM can build
-  virtual std::set<std::string> supported_grids () const = 0;
-
   // Check if the given grid has been built
   bool has_grid (const std::string& grid_name) const {
     const auto& grids = get_repo ();
     return grids.find(grid_name)!=grids.end();
   }
 
-  void build_all_grids () {
-    build_grids (supported_grids());
-  }
-
-  virtual void build_grids (const std::set<std::string>& grid_names) = 0;
+  virtual void build_grids () = 0;
 
   remapper_ptr_type
   create_remapper (const grid_ptr_type& from_grid,
@@ -113,22 +106,11 @@ protected:
       return str;
     }
     for (const auto& g : grids) {
-      str += g.second->name() + ", ";
-    }
-    str.erase(str.size()-2,2); // Erase trailing ', '
-    return str;
-  }
-
-  // This mini-function simply prints the names of the supported grids (not necessarily built), as "name1, name2, name3"
-  std::string print_supported_grids () const {
-    const auto& grids = supported_grids ();
-
-    std::string str;
-    if (grids.size()==0) {
-      return str;
-    }
-    for (const auto& gn : grids) {
-      str += gn + ", ";
+      if (g.first!=g.second->name()) {
+        str += g.first + " (alias of " + g.second->name() + "), ";
+      } else {
+        str += g.first + ", ";
+      }
     }
     str.erase(str.size()-2,2); // Erase trailing ', '
     return str;
@@ -140,8 +122,7 @@ GridsManager::get_grid(const std::string& name) const
 {
   EKAT_REQUIRE_MSG (has_grid(name),
                       "Error! Grids manager '" + this->name() + "' does not provide grid '" + name + "'.\n"
-                      "       Avaialble grids (built only) are: " + print_available_grids()  + "\n"
-                      "       Supported grids (inculdes non built ones) are: " + print_supported_grids()  + "\n");
+                      "       Avaialble grids are: " + print_available_grids()  + "\n");
 
   return get_repo().at(name);
 }

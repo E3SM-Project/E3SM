@@ -56,7 +56,7 @@ TEST_CASE("se_grid", "") {
   const int num_levels = 72;
 
   auto gm = create_mesh_free_grids_manager(comm,num_local_elems,num_gp,num_levels,0);
-  gm->build_grids(std::set<std::string>{"SE Grid"});
+  gm->build_grids();
 
   // SE grid
   auto se_grid = gm->get_grid("SE Grid");

@@ -233,7 +233,7 @@ get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
   gm_params.set("Number of Global Columns",num_gcols);
   gm_params.set("Number of Vertical Levels",num_levs);
   auto gm = create_mesh_free_grids_manager(io_comm,gm_params);
-  gm->build_grids(std::set<std::string>{"Point Grid"});
+  gm->build_grids();
   return gm;
 }
 /*===================================================================================================*/

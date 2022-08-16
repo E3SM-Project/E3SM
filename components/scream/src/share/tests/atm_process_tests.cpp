@@ -65,7 +65,7 @@ create_gm (const ekat::Comm& comm) {
   gm_params.set<int>("Number of Gauss Points", np);
 
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
-  gm->build_all_grids();
+  gm->build_grids();
 
   return gm;
 }

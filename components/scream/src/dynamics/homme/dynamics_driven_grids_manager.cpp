@@ -19,6 +19,7 @@ DynamicsDrivenGridsManager::
 DynamicsDrivenGridsManager (const ekat::Comm& comm,
                             const ekat::ParameterList& p)
  : m_comm (comm)
+ , m_params(p)
 {
   if (!is_parallel_inited_f90()) {
     // While we're here, we can init homme's parallel session
@@ -31,7 +32,7 @@ DynamicsDrivenGridsManager (const ekat::Comm& comm,
 
   if (!is_params_inited_f90()) {
     // While we're here, we can init homme's parameters
-    auto nlname = p.get<std::string>("Dynamics Namelist File Name").c_str();
+    auto nlname = m_params.get<std::string>("Dynamics Namelist File Name").c_str();
     init_params_f90 (nlname);
   }
 
@@ -42,33 +43,13 @@ DynamicsDrivenGridsManager (const ekat::Comm& comm,
       "  - num MPI ranks: " + std::to_string(comm.size()) + "\n"
       "  - num 2d elems : " + std::to_string(get_homme_param<int>("nelem")) + "\n");
 
-  // Valid names for the dyn grid
-  auto& gn = m_valid_grid_names;
-
-  // Dynamics
-  gn.insert("Dynamics");
-
-  // Physics on same element-partition as dynamics
-  gn.insert("Physics GLL"); // Phys columns are SE gll points
-  gn.insert("Physics PG2"); // Phys columns are FV points in 2x2 subcells of SE cell
-  gn.insert("Physics PG3"); // Phys columns are FV points in 3x3 subcells of SE cell
-  gn.insert("Physics PG4"); // Phys columns are FV points in 4x4 subcells of SE cell
-
-  // Physics with columns partitioned so that each rank owns "twin" columns
-  gn.insert("Physics GLL Twin"); // Phys columns are SE gll points
-  gn.insert("Physics PG2 Twin"); // Phys columns are FV points in 2x2 subcells of SE cell
-  gn.insert("Physics PG3 Twin"); // Phys columns are FV points in 3x3 subcells of SE cell
-  gn.insert("Physics PG4 Twin"); // Phys columns are FV points in 4x4 subcells of SE cell
-
-  // TODO: add other rebalancing?
-
-  // Get the ref grid name
-  m_ref_grid_name = p.get<std::string>("Reference Grid");
-  EKAT_REQUIRE_MSG (ekat::contains(gn,m_ref_grid_name),
-      "Error! Invalid reference grid name: " + m_ref_grid_name + "\n");
+  // Get the physics grid specs
+  const auto& pg_type      = m_params.get<std::string>("Physics Grid Type");
+  const auto& pg_rebalance = m_params.get<std::string>("Physics Grid Rebalance","None");
+  m_ref_grid_name = pg_type + (pg_rebalance!="" ? "_" + pg_rebalance : "");
 
   // Create the grid integer codes map (i.e., int->string
-  build_grid_codes ();
+  build_pg_codes ();
 }
 
 DynamicsDrivenGridsManager::
@@ -109,43 +90,30 @@ DynamicsDrivenGridsManager::do_create_remapper (const grid_ptr_type from_grid,
 }
 
 void DynamicsDrivenGridsManager::
-build_grids (const std::set<std::string>& grid_names)
+build_grids ()
 {
-  // Retrieve all physics grids codes
-  std::vector<int> pg_codes;
-  for (const auto& gn : grid_names) {
-    // Sanity check first
-    EKAT_REQUIRE_MSG (supported_grids().count(gn)==1,
-                      "Error! Grid '" + gn + "' is not supported by this grid manager.\n");
+  // Get the physics grid specs
+  const auto& pg_type      = m_params.get<std::string>("Physics Grid Type");
+  const auto& pg_rebalance = m_params.get<std::string>("Physics Grid Rebalance","None");
 
-    auto code = m_grid_codes.at(gn);
-    // Dyn grid has a negative code, while phys grids codes are >=0.
-    // We only need to store the phys grids codes.
-    if (code>=0) {
-      pg_codes.push_back(code);
-    }
-  }
-
-  pg_codes.push_back(m_grid_codes.at(m_ref_grid_name));
+  // Get the physics grid code
+  std::vector<int> pg_codes {
+    pg_codes["GLL"]["None"]  // We always need this to read/write dyn grid stuff
+    pg_codes[pg_type][rebalance]
+  };
+  // In case the two pg codes are the same...
+  auto it = std::unique(pg_codes.begin(),pg_codes.end());
   const int* codes_ptr = pg_codes.data();
-  init_grids_f90 (codes_ptr,pg_codes.size());
+  init_grids_f90 (codes_ptr,std::distance(pg_codes.begin(),it));
   
   // We know we need the dyn grid, so build it
   build_dynamics_grid ();
 
-  for (const auto& gn : grid_names) {
-    if (gn!="Dynamics") {
-      build_physics_grid(gn);
-    }
-  }
+  // Also the GLL grid with no rebalance is needed for sure
+  build_physics_grid("GLL","None");
 
-  if (m_grids.find(m_ref_grid_name)==m_grids.end()) {
-    build_physics_grid(m_ref_grid_name);
-  }
-
-  if (m_grids.find("Physics GLL")==m_grids.end()) {
-    build_physics_grid("Physics GLL");
-  }
+  // If (pg type,rebalance) is (GLL,None), this will be a no op
+  build_physics_grid(pg_type,rebalance);
 
   // Clean up temporaries used during grid initialization
   cleanup_grid_init_data_f90 ();
@@ -208,16 +176,21 @@ void DynamicsDrivenGridsManager::build_dynamics_grid () {
 }
 
 void DynamicsDrivenGridsManager::
-build_physics_grid (const std::string& name) {
+build_physics_grid (const ci_string& type, const ci_string& rebalance) {
+  std::string name = type;
+  if (rebalance != "None") {
+    name += "_" + rebalance;
+  }
+
   // Build only if not built yet
   if (m_grids.find(name)==m_grids.end()) {
 
     // Get the grid pg_type
-    const int pg_type = m_grid_codes.at(name);
+    const int pg_code = m_grid_codes.at(type).at(rebalance);
 
     // Get dimensions and create "empty" grid
     const int nlev  = get_nlev_f90();
-    const int nlcols = get_num_local_columns_f90 (pg_type % 10);
+    const int nlcols = get_num_local_columns_f90 (pg_code % 10);
 
     auto phys_grid = std::make_shared<PointGrid>(name,nlcols,nlev,m_comm);
     phys_grid->setSelfPointer(phys_grid);
@@ -240,7 +213,7 @@ build_physics_grid (const std::string& name) {
     Kokkos::deep_copy(hybm, std::nan(""));
 
     // Get all specs of phys grid cols (gids, coords, area)
-    get_phys_grid_data_f90 (pg_type, h_dofs.data(), h_lat.data(), h_lon.data(), h_area.data());
+    get_phys_grid_data_f90 (pg_code, h_dofs.data(), h_lat.data(), h_lon.data(), h_area.data());
 
     Kokkos::deep_copy(dofs,h_dofs);
     Kokkos::deep_copy(lat, h_lat);
@@ -273,49 +246,21 @@ build_physics_grid (const std::string& name) {
 }
 
 void DynamicsDrivenGridsManager::
-build_grid_codes () {
+build_pg_codes () {
 
   // Codes for the physics grids supported
-  // Rules:
-  //  -  -1 is dynamics
-  //  -  XY is physics, with X=1 denoting twin columns partition,
-  //     X=0 denoting no rebalance, and Y being the value of N
-  //     in the FV phys grid (N=2,3,4), with N=0 denoting GLL grid.
-  constexpr int dyn   = -1;  // Dyanamics grid (not a phys grid)
-  constexpr int gll   =  0;  // Physics GLL
-  constexpr int pg2   =  2;  // Physics PG2
-  constexpr int pg3   =  3;  // Physics PG3
-  constexpr int pg4   =  3;  // Physics PG4
-  constexpr int gll_t = 10;  // Physics GLL Twin
-  constexpr int pg2_t = 12;  // Physics PG2 Twin
-  constexpr int pg3_t = 13;  // Physics PG3 Twin
-  constexpr int pg4_t = 14;  // Physics PG4 Twin
+  // Rules: a code has two digits, X and Y
+  //  - X denotes the column rebalance choice:
+  //    - 0: no rebalance
+  //    - 1: twin columns rebalance
+  //  - Y denotes the type of physics grid:
+  //    - 0: GLL grid
+  //    - N: FV phys grid, with NxN points
 
-  for (const auto& name : m_valid_grid_names) {
-    int code;
-
-    if (name=="Physics GLL") {
-      code = gll;
-    } else if (name=="Physics GLL Twin") {
-      code = gll_t;
-    } else if (name=="Physics PG2") {
-      code = pg2;
-    } else if (name=="Physics PG2 Twin") {
-      code = pg2_t;
-    } else if (name=="Physics PG3") {
-      code = pg3;
-    } else if (name=="Physics PG3 Twin") {
-      code = pg3_t;
-    } else if (name=="Physics PG4") {
-      code = pg4;
-    } else if (name=="Physics PG4 Twin") {
-      code = pg4_t;
-    } else {
-      code = dyn;
-    }
-
-    m_grid_codes[name] = code;
-  } 
+  m_pg_codes["GLL"]["None"] =  0;
+  m_pg_codes["GLL"]["Twin"] = 10;
+  m_pg_codes["PG2"]["None"] =  2;
+  m_pg_codes["PG2"]["Twin"] = 12;
 } 
 
 } // namespace scream

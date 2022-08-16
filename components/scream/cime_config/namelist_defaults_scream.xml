@@ -243,8 +243,9 @@ tweaking their $case/namelist_scream.xml file.
   <!-- Grids manager specs -->
   <Grids__Manager>
     <Type>Dynamics Driven</Type>
-    <Reference__Grid>Physics GLL</Reference__Grid>
-    <Reference__Grid hgrid=".*pg2">Physics PG2</Reference__Grid>
+    <Physics__Grid__Type>GLL</Physics__Grid__Type>
+    <Physics__Grid__Type hgrid=".*pg2">PG2</Physics__Grid__Type>
+    <Physics__Grid__Rebalance>None</Physics__Grid__Rebalance>
     <Dynamics__Namelist__File__Name>./data/namelist.nl</Dynamics__Namelist__File__Name>
   </Grids__Manager>
 

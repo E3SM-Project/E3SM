@@ -26,30 +26,16 @@ do_create_remapper (const grid_ptr_type from_grid,
 }
 
 void MeshFreeGridsManager::
-build_grids (const std::set<std::string>& grid_names)
+build_grids ()
 {
-  if (grid_names.size()==0) {
-    return;
-  }
+  std::string ref_grid = m_params.get<std::string>("Reference Grid","Point Grid");
 
-  for (const auto& gn : grid_names) {
-    EKAT_REQUIRE_MSG (ekat::contains(supported_grids(),gn),
-        "Error! MeshFreeGridsManager only supports 'Point Grid' and 'SE Grid' grids.\n"
-        "       Requested grid: " + gn + "\n");
-  }
-
-  if (not m_params.isParameter("Reference Grid")) {
-    // Set a reference grid.
-    if (ekat::contains(grid_names,"Point Grid")) {
-      m_params.set<std::string>("Reference Grid","Point Grid");
-    } else {
-      m_params.set<std::string>("Reference Grid","SE Grid");
-    }
-  }
-  std::string ref_grid = m_params.get<std::string>("Reference Grid");
-
-  const bool build_pt = ekat::contains(grid_names,"Point Grid") || ref_grid=="Point Grid";
-  const bool build_se = ekat::contains(grid_names,"SE Grid") || ref_grid=="SE Grid";
+  auto has_positive_int = [&](const std::string& n) -> bool {
+    return m_params.isParameter(n) && (m_params.get<int>(n)>0);
+  };
+  const bool build_pt = has_positive_int("Number of Global Columns");
+  const bool build_se = has_positive_int("Number of Local Elements") &&
+                        has_positive_int("Number of Gauss Points");
 
   const int num_vertical_levels = m_params.get<int>("Number of Vertical Levels");
 

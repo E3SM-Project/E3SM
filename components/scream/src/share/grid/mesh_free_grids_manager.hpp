@@ -27,16 +27,7 @@ public:
 
   std::string name () const { return "Mesh-Free Grids Manager"; }
 
-  std::set<std::string> supported_grids () const {
-    std::set<std::string> gnames;
-
-    gnames.insert("Point Grid");
-    gnames.insert("SE Grid");
-
-    return gnames;
-  }
-
-  void build_grids (const std::set<std::string>& grid_names);
+  void build_grids ();
 
   const grid_repo_type& get_repo () const { return m_grids; }
 

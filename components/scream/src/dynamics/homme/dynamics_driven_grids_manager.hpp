@@ -20,9 +20,7 @@ public:
 
   std::string name () const { return "Dynamics Driven Grids Manager"; }
 
-  void build_grids (const std::set<std::string>& grid_names);
-
-  std::set<std::string> supported_grids () const { return m_valid_grid_names; }
+  void build_grids ();
 
   const grid_repo_type& get_repo () const { return m_grids; }
 
@@ -31,7 +29,8 @@ protected:
 #endif
 
   void build_dynamics_grid ();
-  void build_physics_grid  (const std::string& name);
+  void build_physics_grid  (const ci_string& type,
+                            const ci_string& rebalance);
 
 protected:
 
@@ -43,19 +42,21 @@ protected:
   do_create_remapper (const grid_ptr_type from_grid,
                       const grid_ptr_type to_grid) const;
 
-  void build_grid_codes ();
+  void build_pg_codes ();
 
-  ekat::Comm      m_comm;
+  ekat::Comm            m_comm;
 
-  grid_repo_type  m_grids;
+  ekat::ParameterList   m_params;
 
-  std::string     m_ref_grid_name;
+  grid_repo_type        m_grids;
 
-  // Admissible grid names
-  std::set<std::string> m_valid_grid_names;
+  std::string           m_ref_grid_name;
 
-  // For each admissible grid name, store an integer code
-  std::map<std::string, int> m_grid_codes;
+  // For each admissible physics grid type/rebalance, store an integer code
+  // We pass these codes to f90, rather than a bunch of strings
+  template<typename T>
+  using strmap_t = std::map<ekat::CaseInsensitiveString,T>;
+  strmap_t<strmap_t<int>>   m_pg_codes;
 };
 
 inline std::shared_ptr<GridsManager>
