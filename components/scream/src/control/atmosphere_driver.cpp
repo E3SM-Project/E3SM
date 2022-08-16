@@ -1,4 +1,6 @@
 #include "control/atmosphere_driver.hpp"
+#include "control/atmosphere_surface_coupling_importer.hpp"
+#include "control/atmosphere_surface_coupling_exporter.hpp"
 
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/atm_process/atmosphere_process_dag.hpp"
@@ -239,6 +241,88 @@ void AtmosphereDriver::create_grids()
   stop_timer("EAMxx::create_grids");
   stop_timer("EAMxx::init");
   m_atm_logger->info("[EAMxx] create_grids ... done!");
+}
+
+  void AtmosphereDriver::setup_surface_coupling_data_manager(SurfaceCouplingTransferType transfer_type,
+                                                             const int num_cpl_fields, const int num_scream_fields,
+                                                             const int field_size, Real* data_ptr,
+                                                             char* names_ptr, int* cpl_indices_ptr, int* vec_comps_ptr,
+                                                             Real* constant_multiple_ptr, bool* do_transfer_during_init_ptr)
+{
+  std::shared_ptr<SCDataManager> sc_data_mgr;
+
+  if (transfer_type==SurfaceCouplingTransferType::Import) {
+
+    m_surface_coupling_import_data_manager = std::make_shared<SCDataManager>();
+    sc_data_mgr = m_surface_coupling_import_data_manager;
+
+  } else if (transfer_type==SurfaceCouplingTransferType::Export) {
+
+    m_surface_coupling_export_data_manager = std::make_shared<SCDataManager>();
+    sc_data_mgr= m_surface_coupling_export_data_manager;
+
+  } else EKAT_ERROR_MSG("Error! Unexpected SurfaceCouplingTransferType.");
+
+  sc_data_mgr->setup_internals(num_cpl_fields, num_scream_fields, field_size, data_ptr,
+                               names_ptr, cpl_indices_ptr, vec_comps_ptr,
+                               constant_multiple_ptr, do_transfer_during_init_ptr);
+}
+
+void AtmosphereDriver::setup_surface_coupling_processes () const
+{
+  // Loop through atmosphere processes and look for importer/exporter. If one is
+  // found, cast to derived class type and call setup_surface_coupling_data()
+  bool importer_found = false;
+  bool exporter_found = false;
+
+  for (int proc=0; proc<m_atm_process_group->get_num_processes(); ++proc) {
+
+    const auto atm_proc = m_atm_process_group->get_process_nonconst(proc);
+    if (atm_proc->type() == AtmosphereProcessType::SurfaceCouplingImporter) {
+      importer_found = true;
+
+      EKAT_ASSERT_MSG(m_surface_coupling_import_data_manager != nullptr,
+                      "Error! SurfaceCouplingImporter atm process found, "
+                      "but m_surface_coupling_import_data_manager was not "
+                      "setup.\n");
+
+      std::shared_ptr<SurfaceCouplingImporter> importer = std::dynamic_pointer_cast<SurfaceCouplingImporter>(atm_proc);
+      importer->setup_surface_coupling_data(*m_surface_coupling_import_data_manager);
+    }
+    if (atm_proc->type() == AtmosphereProcessType::SurfaceCouplingExporter) {
+      exporter_found = true;
+
+      EKAT_ASSERT_MSG(m_surface_coupling_export_data_manager != nullptr,
+                      "Error! SurfaceCouplingExporter atm process found, "
+                      "but m_surface_coupling_export_data_manager was not "
+                      "setup.\n");
+
+      std::shared_ptr<SurfaceCouplingExporter> exporter = std::dynamic_pointer_cast<SurfaceCouplingExporter>(atm_proc);
+      exporter->setup_surface_coupling_data(*m_surface_coupling_export_data_manager);
+    }
+  }
+
+  // If import or export data manager is defined,
+  // ensure corresponding atm process was found.
+  if (m_surface_coupling_import_data_manager) {
+    EKAT_ASSERT_MSG(importer_found, "Error! SurfaceCoupling importer data was setup, but no atm process "
+                                    "of type AtmosphereProcessType::SurfaceCouplingImporter exists.\n");
+  }
+  if (m_surface_coupling_export_data_manager) {
+    EKAT_ASSERT_MSG(exporter_found, "Error! SurfaceCoupling exporter data was setup, but no atm process "
+                                    "of type AtmosphereProcessType::SurfaceCouplingExporter exists.\n");
+  }
+}
+
+void AtmosphereDriver::set_precipitation_fields_to_zero () 
+{
+  const auto field_mgr = get_ref_grid_field_mgr();
+  if (field_mgr->has_field("precip_ice_surf_mass")) {
+    field_mgr->get_field("precip_ice_surf_mass").deep_copy(0.0);
+  }
+  if (field_mgr->has_field("precip_liq_surf_mass")) {
+    field_mgr->get_field("precip_liq_surf_mass").deep_copy(0.0);
+  }
 }
 
 void AtmosphereDriver::create_fields()
@@ -507,12 +591,6 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
     // First, add all atm processes
     dag.create_dag(*m_atm_process_group);
 
-    // Then, add all surface coupling dependencies, if any
-    if (m_surface_coupling) {
-      dag.add_surface_coupling(m_surface_coupling->get_import_fids(),
-                               m_surface_coupling->get_export_fids());
-    }
-
     // Write a dot file for visualization
     dag.write_dag("scream_atm_dag.dot",std::max(verb_lvl,0));
   }
@@ -633,6 +711,11 @@ void AtmosphereDriver::restart_model ()
 
   // Close files and finalize all pio data structs
   model_restart.finalize();
+
+  // Zero out precipitation fluxes for model restart.
+  // TODO: This should be a generic functions which sets "one-step" fields to
+  //       an identity value. See Issue #1767.
+  set_precipitation_fields_to_zero();
 
   m_atm_logger->info("  [EAMxx] restart_model ... done!");
 }
@@ -968,6 +1051,11 @@ void AtmosphereDriver::initialize_atm_procs ()
 
   const bool restarted_run = m_case_t0 < m_run_t0;
 
+  // Setup SurfaceCoupling import and export (if they exist)
+  if (m_surface_coupling_import_data_manager || m_surface_coupling_export_data_manager) {
+    setup_surface_coupling_processes();
+  }
+
   // Initialize the processes
   m_atm_process_group->initialize(m_current_ts, restarted_run ? RunType::Restarted : RunType::Initial);
 
@@ -1022,11 +1110,6 @@ void AtmosphereDriver::run (const int dt) {
     "Atmosphere step = " + std::to_string(m_current_ts.get_num_steps()) + "\n" +
     "  model time = " + m_current_ts.get_date_string() + " " + m_current_ts.get_time_string() + "\n");
 
-  if (m_surface_coupling) {
-    // Import fluxes from the component coupler (if any)
-    m_surface_coupling->do_import();
-  }
-
   // The class AtmosphereProcessGroup will take care of dispatching arguments to
   // the individual processes, which will be called in the correct order.
   m_atm_process_group->run(dt);
@@ -1039,10 +1122,10 @@ void AtmosphereDriver::run (const int dt) {
     out_mgr.run(m_current_ts);
   }
 
-  if (m_surface_coupling) {
-    // Export fluxes from the component coupler (if any)
-    m_surface_coupling->do_export(dt);
-  }
+  // We must zero out the precipitation flux after the output managers have run.
+  // TODO: This should be a generic functions which sets "one-step" fields to
+  //       an identity value. See Issue #1767.
+  set_precipitation_fields_to_zero();
 
 #ifdef SCREAM_HAS_MEMORY_USAGE
   long long my_mem_usage = get_mem_usage(MB);
@@ -1078,8 +1161,9 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
   // Destroy the buffer manager
   m_memory_buffer = nullptr;
 
-  // Destroy the surface coupling (if any)
-  m_surface_coupling = nullptr;
+  // Destroy the surface coupling data managers
+  m_surface_coupling_import_data_manager = nullptr;
+  m_surface_coupling_export_data_manager = nullptr;
 
   // Destroy the grids manager
   m_grids_manager = nullptr;

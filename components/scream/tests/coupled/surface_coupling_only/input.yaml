@@ -1,0 +1,41 @@
+%YAML 1.1
+---
+Debug:
+  Atmosphere DAG Verbosity Level: 5
+
+Time Stepping:
+  Start Time: [12, 30, 00]      # Hours, Minutes, Seconds
+  Start Date: [2021, 10, 12]    # Year, Month, Day
+
+atmosphere_processes:
+  atm_procs_list: (SurfaceCouplingImporter,SurfaceCouplingExporter)
+  Schedule Type: Sequential
+  SurfaceCouplingImporter:
+    Grid: Point Grid
+  SurfaceCouplingExporter:
+    Grid: Point Grid
+
+Grids Manager:
+  Type: Mesh Free
+  Number of Global Columns:   218
+  Number of Vertical Levels:  72  # Will want to change to 128 when a valid unit test is available.
+
+Initial Conditions:
+  # The name of the file containing the initial conditions for this test.
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  # Some fields needed for the exports (not in ic file)
+  precip_ice_surf_mass: 1.0
+  precip_liq_surf_mass: 2.0
+  sfc_flux_sw_net:      3.0
+  # These fields are needed for the export,
+  # but will be computed for the import
+  sfc_flux_dif_nir:     0.0
+  sfc_flux_dif_vis:     0.0
+  sfc_flux_dir_nir:     0.0
+  sfc_flux_dir_vis:     0.0
+  sfc_flux_lw_dn:       0.0
+
+# The parameters for I/O control
+Scorpio:
+  Output YAML Files: ["surface_coupling_output.yaml"]
+...

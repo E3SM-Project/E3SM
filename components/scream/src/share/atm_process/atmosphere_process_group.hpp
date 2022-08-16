@@ -2,6 +2,7 @@
 #define SCREAM_ATMOSPHERE_PROCESS_GROUP_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
+#include "control/surface_coupling_utils.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
 
@@ -50,6 +51,10 @@ public:
   int get_num_processes () const { return m_atm_processes.size(); }
 
   std::shared_ptr<const atm_proc_type> get_process (const int i) const {
+    return m_atm_processes.at(i);
+  }
+
+  std::shared_ptr<atm_proc_type> get_process_nonconst (const int i) const {
     return m_atm_processes.at(i);
   }
 

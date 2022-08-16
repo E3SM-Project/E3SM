@@ -265,9 +265,27 @@ bool AtmosphereProcess::has_required_field (const FieldIdentifier& id) const {
   return false;
 }
 
+bool AtmosphereProcess::has_required_field (const std::string& name, const std::string& grid_name) const {
+  for (const auto& it : m_required_field_requests) {
+    if (it.fid.name()==name && it.fid.get_grid_name()==grid_name) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool AtmosphereProcess::has_computed_field (const FieldIdentifier& id) const {
   for (const auto& it : m_computed_field_requests) {
     if (it.fid==id) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool AtmosphereProcess::has_computed_field (const std::string& name, const std::string& grid_name) const {
+  for (const auto& it : m_computed_field_requests) {
+    if (it.fid.name()==name && it.fid.get_grid_name()==grid_name) {
       return true;
     }
   }
