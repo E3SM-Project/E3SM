@@ -29,12 +29,11 @@ source summit_gpu.sh  # or any of summit_*.sh
 source activate crm_test_env
 
 # clean an old build
-./cmakeclean.sh
+./cmakeclean_2D.sh
 
 # configure
 # ./cmakescript.sh crmdata_nx32_ny1_nz28_nxrad2_nyrad1.nc crmdata_nx8_ny8_nz28_nxrad2_nyrad2.nc
-# ./cmakescript_2D.sh crmdata_nx32_ny1_nz28_nxrad2_nyrad1.nc
-./cmakescript_2D.sh /gpfs/alpine/scratch/hannah6/cli115/CRM_standalone_data/KPP_dmdf_snapshot_all.nc
+./cmakescript_2D.sh /gpfs/alpine/cli115/proj-shared/CRM_standalone_data/KPP_ne120pg2_crm2d_nx64_nxrad4.nc
 
 # build the executables (this is also done at the top of ./runtest.sh)
 make -j

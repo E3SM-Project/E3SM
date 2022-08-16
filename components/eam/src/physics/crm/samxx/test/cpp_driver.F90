@@ -65,14 +65,16 @@ program driver
   character(len=64) :: fprefix = 'cpp_output'
   integer(8) :: t1, t2, tr
 
-  logical(c_bool) :: use_MMF_VT      ! flag for MMF variance transport
-  logical(c_bool) :: use_ESMT        ! flag for ESMT
-  integer        :: MMF_VT_wn_max   ! wavenumber cutoff for filtered variance transport
   character(len=7) :: microphysics_scheme = 'sam1mom'
+
+  integer(4) :: use_MMF_VT_int
+  integer(4) :: use_MMF_ESMT_int
+  integer(4) :: use_crm_accel_int
+  integer(4) :: crm_accel_uv_int
 
   logical(c_bool):: use_MMF_VT        ! flag for MMF variance transport        (for C++ CRM)
   logical        :: use_MMF_VT_tmp    ! flag for MMF variance transport        (for Fortran CRM)
-  integer        :: MMF_VT_wn_max     ! wavenumber cutoff for filtered variance transport
+  integer(4)     :: MMF_VT_wn_max     ! wavenumber cutoff for filtered variance transport
 
   logical(c_bool):: use_MMF_ESMT      ! flag for MMF scalar momentum transport (for C++ CRM)
   logical        :: use_MMF_ESMT_tmp  ! flag for MMF scalar momentum transport (for Fortran CRM)
@@ -82,6 +84,13 @@ program driver
   logical        :: crm_accel_uv_tmp  ! flag for CRM mean-state acceleration of momentum (for Fortran CRM)
   logical(c_bool):: use_crm_accel     ! flag for CRM mean-state acceleration             (for C++ CRM)
   logical(c_bool):: crm_accel_uv      ! flag for CRM mean-state acceleration of momentum (for C++ CRM)
+
+  integer(4)    , allocatable :: read_use_MMF_VT_int    (:)
+  integer(4)    , allocatable :: read_MMF_VT_wn_max     (:)
+  integer(4)    , allocatable :: read_use_MMF_ESMT_int  (:)
+  integer(4)    , allocatable :: read_use_crm_accel_int (:)
+  integer(4)    , allocatable :: read_crm_accel_uv_int  (:)
+  real(crm_rknd), allocatable :: read_crm_accel_factor  (:)
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
 
@@ -160,6 +169,13 @@ program driver
   allocate( read_crm_rad_qi           (crm_nx_rad,crm_ny_rad,crm_nz,ncrms) )
   allocate( read_crm_rad_cld          (crm_nx_rad,crm_ny_rad,crm_nz,ncrms) )
 
+  allocate( read_use_MMF_VT_int       (ncrms) )
+  allocate( read_MMF_VT_wn_max        (ncrms) )
+  allocate( read_use_MMF_ESMT_int     (ncrms) )
+  allocate( read_use_crm_accel_int    (ncrms) )
+  allocate( read_crm_accel_uv_int     (ncrms) )
+  allocate( read_crm_accel_factor     (ncrms) )
+
   !-----------------------------------------------------------------------------
   ! Read in the samples to drive the code
   !-----------------------------------------------------------------------------
@@ -214,15 +230,28 @@ program driver
   call dmdf_read( lat0                       , fname_in , trim("latitude0        ") , myTasks_beg , myTasks_end , .false. , .false. )
   call dmdf_read( long0                      , fname_in , trim("longitude0       ") , myTasks_beg , myTasks_end , .false. , .false. )
 
-  call dmdf_read( use_MMF_VT_tmp             , fname_in , trim("use_MMF_VT       ") , myTasks_beg , myTasks_end , .false.  , .false. )
-  call dmdf_read( MMF_VT_wn_max              , fname_in , trim("MMF_VT_wn_max    ") , myTasks_beg , myTasks_end , .false.  , .false. )
-  call dmdf_read( use_MMF_ESMT_tmp           , fname_in , trim("use_MMF_ESMT     ") , myTasks_beg , myTasks_end , .false.  , .false. )
-  call dmdf_read( use_crm_accel_tmp          , fname_in , trim("use_crm_accel    ") , myTasks_beg , myTasks_end , .false.  , .false. )
-  call dmdf_read( crm_accel_factor           , fname_in , trim("crm_accel_factor ") , myTasks_beg , myTasks_end , .false.  , .false. )
-  call dmdf_read( crm_accel_uv_tmp           , fname_in , trim("crm_accel_uv     ") , myTasks_beg , myTasks_end , .false.  , .true. )
+  call dmdf_read( read_use_MMF_VT_int             , fname_in , trim("use_MMF_VT       ") , myTasks_beg , myTasks_end , .false.  , .false. )
+  call dmdf_read( read_MMF_VT_wn_max              , fname_in , trim("MMF_VT_wn_max    ") , myTasks_beg , myTasks_end , .false.  , .false. )
+  call dmdf_read( read_use_MMF_ESMT_int           , fname_in , trim("use_MMF_ESMT     ") , myTasks_beg , myTasks_end , .false.  , .false. )
+  call dmdf_read( read_use_crm_accel_int          , fname_in , trim("use_crm_accel    ") , myTasks_beg , myTasks_end , .false.  , .false. )
+  call dmdf_read( read_crm_accel_factor           , fname_in , trim("crm_accel_factor ") , myTasks_beg , myTasks_end , .false.  , .false. )
+  call dmdf_read( read_crm_accel_uv_int           , fname_in , trim("crm_accel_uv     ") , myTasks_beg , myTasks_end , .false.  , .true. )
 
   !-----------------------------------------------------------------------------
   !-----------------------------------------------------------------------------
+
+  ! We have to read these as an array, but use them as a single scalar for all CRMs
+  use_MMF_VT_int    = read_use_MMF_VT_int   (1)
+  MMF_VT_wn_max     = read_MMF_VT_wn_max    (1)
+  use_MMF_ESMT_int  = read_use_MMF_ESMT_int (1)
+  use_crm_accel_int = read_use_crm_accel_int(1)
+  crm_accel_factor  = read_crm_accel_factor (1)
+  crm_accel_uv_int  = read_crm_accel_uv_int (1)
+
+  use_MMF_VT_tmp = use_MMF_VT_int
+  use_MMF_ESMT_tmp = use_MMF_ESMT_int
+  use_crm_accel_tmp = use_crm_accel_int
+  crm_accel_uv_tmp = crm_accel_uv_int
 
   use_MMF_VT    = use_MMF_VT_tmp
   use_MMF_ESMT  = use_MMF_ESMT_tmp
@@ -290,10 +319,6 @@ program driver
     call system_clock(t1)
   endif
 
-  use_MMF_VT = .true.
-  MMF_VT_wn_max = 0
-  use_ESMT = .true.
-
   ! NOTE - the crm_output%tkew variable is a diagnostic quantity that was 
   ! recently added for the 2020 INCITE simulations, so if you get a build error
   ! here you might need to remove this argument
@@ -325,7 +350,7 @@ program driver
            crm_output%precsl, crm_output%prec_crm,  &
            crm_clear_rh, &
            lat0, long0, gcolp, 2, &
-           use_MMF_VT, MMF_VT_wn_max, use_ESMT,&
+           use_MMF_VT, MMF_VT_wn_max, use_MMF_ESMT,&
            use_crm_accel, crm_accel_factor, crm_accel_uv)
            ! logical(.true.,c_bool) , 2._c_double , logical(.true.,c_bool) )
 

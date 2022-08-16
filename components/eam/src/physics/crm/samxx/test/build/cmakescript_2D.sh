@@ -153,15 +153,26 @@ cmake -Wno-dev                                \
   -DNCFLAGS="$NCFLAGS"                        \
   -DDEFS2D="$DEFS2D"                          \
   -DYAKL_HOME=${YAKL_HOME}                    \
-  -DYAKL_CXX_FLAGS="${YAKL_CXX_FLAGS}"        \
   -DYAKL_CUDA_FLAGS="${YAKL_CUDA_FLAGS}"      \
-  -DYAKL_HIP_FLAGS="${YAKL_HIP_FLAGS}"        \
-  -DYAKL_C_FLAGS="${YAKL_C_FLAGS}"            \
   -DYAKL_F90_FLAGS="${YAKL_F90_FLAGS}"        \
   -DYAKL_ARCH="${YAKL_ARCH}"                  \
-  -DCMAKE_CUDA_CREATE_STATIC_LIBRARY=FALSE    \
-  -DCMAKE_CUDA_COMPILE_WHOLE_COMPILATION=TRUE \
   -G"Unix Makefiles" \
   ..
+
+# cmake -Wno-dev                                \
+#   -DCMAKE_Fortran_FLAGS="$FFLAGS"             \
+#   -DNCFLAGS="$NCFLAGS"                        \
+#   -DDEFS2D="$DEFS2D"                          \
+#   -DYAKL_HOME=${YAKL_HOME}                    \
+#   -DYAKL_CXX_FLAGS="${YAKL_CXX_FLAGS}"        \
+#   -DYAKL_CUDA_FLAGS="${YAKL_CUDA_FLAGS}"      \
+#   -DYAKL_HIP_FLAGS="${YAKL_HIP_FLAGS}"        \
+#   -DYAKL_C_FLAGS="${YAKL_C_FLAGS}"            \
+#   -DYAKL_F90_FLAGS="${YAKL_F90_FLAGS}"        \
+#   -DYAKL_ARCH="${YAKL_ARCH}"                  \
+#   -DCMAKE_CUDA_CREATE_STATIC_LIBRARY=FALSE    \
+#   -DCMAKE_CUDA_COMPILE_WHOLE_COMPILATION=FALSE \
+#   -G"Unix Makefiles" \
+#   ..
 
 
