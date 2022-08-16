@@ -1122,6 +1122,21 @@
         </rootpe>
       </pes>
     </mach>
+    <mach name="crusher">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+SGLC_SWAV_SIAC_SESP_BGC.*" pesize="any">
+        <comment>crusher: --compset BGC* --res ne30pg2_r05_EC30to60E2r2 on 2 nodes pure-MPI</comment>
+        <ntasks>
+          <ntasks_atm>-2</ntasks_atm>
+          <ntasks_lnd>-2</ntasks_lnd>
+          <ntasks_rof>-2</ntasks_rof>
+          <ntasks_ice>-2</ntasks_ice>
+          <ntasks_ocn>-2</ntasks_ocn>
+          <ntasks_cpl>-2</ntasks_cpl>
+          <ntasks_glc>-2</ntasks_glc>
+          <ntasks_wav>-2</ntasks_wav>
+        </ntasks>
+      </pes>
+    </mach>
     <mach name="miller">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="M">
         <comment> -compset A_WCYCL* -res ne30pg2_EC30to60* on 27 nodes pure-MPI, ~15.5 sypd </comment>
