@@ -16,9 +16,12 @@ file(GLOB CUDA_SRC    ../*.cpp)
 set(YAKL_BIN ${CMAKE_CURRENT_BINARY_DIR}/yakl)
 add_subdirectory(${YAKL_HOME} ./yakl)
 
-add_subdirectory(fortran2d)
-add_subdirectory(fortran3d)
+#add_subdirectory(fortran2d)
+#add_subdirectory(fortran3d)
 add_subdirectory(cpp2d)
-add_subdirectory(cpp3d)
+#add_subdirectory(cpp3d)
+
+
+#add_subdirectory(build/cpp2d)
 
 

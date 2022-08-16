@@ -2,7 +2,8 @@
 
 source $MODULESHOME/init/bash
 module purge
-module load DefApps gcc cuda/11.4.0 netcdf-c netcdf-fortran cmake python/3.7.0-anaconda3-5.3.0
+# module load DefApps gcc cuda/11.4.0 netcdf-c netcdf-fortran cmake python/3.7.0-anaconda3-5.3.0
+module load DefApps gcc/9.1.0 cuda/11.0.3 netcdf-c netcdf-fortran cmake/3.22.2
 
 unset YAKL_ARCH
 unset NCRMS
