@@ -53,6 +53,9 @@ public:
 
   // Keep track of number of columns and levels
   int m_ncol;
+  int m_num_col_chunks;
+  int m_col_chunk_size;
+  std::vector<int> m_col_chunk_beg;
   int m_nlay;
   view_1d_real m_lat;
   view_1d_real m_lon;
@@ -84,7 +87,7 @@ public:
   int m_ngas;
   std::vector<ci_string>   m_gas_names;
   view_1d_real             m_gas_mol_weights;
-  GasConcs gas_concs;
+  std::vector<GasConcs> gas_concs;
 
   // Rad frequency in number of steps
   int m_rad_freq_in_steps;
