@@ -657,8 +657,9 @@ contains
        end do
     end do
     !kzm add the prognostic strato_sad
-  call aero_model_strat_surfarea( ncol, mmr, pmid, tfld, troplev, pbuf,strato_sad)
-  !kzm--
+#if (defined MODAL_AERO_5MODE)    
+  call aero_model_strat_surfarea( ncol, mmr, pmid, tfld, troplev, pbuf, strato_sad)
+#endif
     if ( has_strato_chem ) then
        !-----------------------------------------------------------------------      
        !        ... initialize condensed and gas phases; all hno3 to gas
@@ -1199,6 +1200,7 @@ contains
        vmr_old2(:ncol,:,:) = vmr(:ncol,:,:)
     endif
 !kzm ++
+#if (defined MODAL_AERO_5MODE)
     ! attribute constant OH and NO3 above troppopause
     ! will be set by after exp_sol
     do i = 1,ncol
@@ -1210,6 +1212,7 @@ contains
              endif
         end do
    end do     
+#endif   
 !kzm --
 
     call t_startf('exp_sol')
@@ -1266,10 +1269,12 @@ contains
        vmr_old2(:,:,e90_ndx) = vmr(:,:,e90_ndx)
 #if (defined MODAL_AERO_5MODE)
        ! kzm ++ 
+#if (defined MODAL_AERO_5MODE)       
        ! exclude SO2
        vmr_old2(:,:,so2_ndx) = vmr(:,:,so2_ndx) 
        vmr_old2(:,:,ndx_h2so4) = vmr(:,:,ndx_h2so4) 
        vmr_old2(:,:,dms_ndx) = vmr(:,:,dms_ndx) 
+#endif       
        ! kzm --
 #endif 
        do i = 1,ncol
@@ -1843,130 +1848,6 @@ contains
   end subroutine gas_phase_chemdr
 !-----------------------------------------------
 !-----------------------------------------------
-  subroutine strat_sulfate_cal_gridbox(ncol, vmr, invariants, temp, ltrop, delta_t)
-! Code written by Ziming Ke (ke2@llnl.gov) in 2022.07
-! This code is to solve three equations to calcuate the tendency of DMS, SO2 and
-! H2SO4.
-! five reaction rates are needed for this calculation:
-! usr_SO2_OH(r4), DMS_OH(r5), usr_DMS_OH(r6), DMS_NO3(r7), the order refer to
-! MAM4 simple chemistry
-! gas species used in this calculation:
-! invariant: OH, NO3
-! tendency calculated: H2SO4, DMS, SO2
-
-    use mo_chem_utls,      only : get_spc_ndx, get_extfrc_ndx, get_inv_ndx
-
-
-    implicit none
-    real(r8), intent(inout)     ::  vmr(ncol,pver,gas_pcnst), invariants(ncol,pver,gas_pcnst) ! xported species (vmr)
-    real(r8), intent(in)     :: temp(ncol,pver)           ! temperature (K); neutral temperature
-    integer, intent(in) :: ncol, ltrop(ncol)
-    real(r8), intent(in) :: delta_t
-    !logical           ::       ! Output the MAM aerosol
-    real(r8) ::    tinv(ncol), exp_fac(ncol)                     ! 1/t
-    real(r8) ::  ko(ncol), fc(ncol), m(ncol,pver)
-    real(r8) :: OH_y0, NO3_y0, dms_y0, c0_dms,a_dms,dms_y1
-    real(r8) :: so2_y0, a_so2, b_so2, c0_so2, so2_y1, h2so4_y0,a_h2so4
-    real(r8) :: c0_h2so4, h2so4_y1
-    real(r8) :: NO3_0(ncol,pver), OH_0(ncol,pver)
-    integer :: ndx_dms, ndx_h2so4, ndx_so2, k, i
-    real(r8) :: h2so4_0(ncol,pver), dms_0(ncol,pver), so2_0(ncol,pver)
-    real(r8) :: r5(ncol,pver),r6(ncol,pver),r7(ncol,pver),r4(ncol,pver)
-    
-    ! oxidations
-     !kzm++  test
-     inv_ndx_cnst_no3       = get_inv_ndx( 'cnst_NO3' )
-     inv_ndx_cnst_oh       = get_inv_ndx( 'cnst_OH' )
-     inv_ndx_m       = get_inv_ndx( 'M' ) ! airmass.Elsewhere this variable is known as m_ndx
-     NO3_0(1:ncol,:) = invariants(1:ncol,:,inv_ndx_cnst_no3)/invariants(1:ncol,:,inv_ndx_m) !convert to mol/mol
-     OH_0(1:ncol,:) = invariants(1:ncol,:,inv_ndx_cnst_oh)/invariants(1:ncol,:,inv_ndx_m)!convert to mol/mol 
-     m(1:ncol,:) = invariants(1:ncol,:,inv_ndx_m)!! total atm density (/cm^3)
-
-    ! itemp(:ncol,:) = 1._r8 / temp(:ncol,:)
-     !rate(:,:,5) = 9.6e-12_r8 * exp( -234._r8 * itemp(:,:) )
-      !<F6>inv_ndx_m       = get_inv_ndx( 'M' )        ! airmass.  Elsewhere this variable is known as m_ndx
-      !invariants(i,k,inv_ndx_m)
-      ndx_h2so4 = get_spc_ndx('H2SO4')
-      h2so4_0(1:ncol,:) = vmr(1:ncol,:,ndx_h2so4) !mol/mol
-      ndx_dms = get_spc_ndx('DMS')
-      dms_0(1:ncol,:) = vmr(1:ncol,:,ndx_dms)
-      ndx_so2 = get_spc_ndx('SO2')
-      so2_0(1:ncol,:) = vmr(1:ncol,:,ndx_so2)
-   ! reaction rate
-   !r4 =    !usr_SO2_OH
-     !r5(:ncol,:) = 9.6e-12_r8*exp(-234.0_r8/temp(:ncol,:))
-   !r6 =    !usr_DMS_OH
-     !r7(:ncol,:) = 1.9e-13_r8*exp( 520.0_r8/temp(:ncol,:))
-
-   !m(ncol,pver)               ! total atm density (/cm^3)
-   do k = 1, pver
-      tinv(:)           = 1.0_r8 / temp(:ncol,k)
-      r5(:ncol,k) = 9.6e-12_r8*exp(-234.0_r8 * tinv(:))
-      r7(:ncol,k) = 1.9e-13_r8*exp( 520.0_r8 * tinv(:))
-   !if( usr_SO2_OH_ndx > 0 ) then
-      fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
-      ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
-      r4(:,k) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
-      !tinv(:)           = 1._r8 / temp(:ncol,k)
-   !if( usr_DMS_OH_ndx > 0 ) then
-      call comp_exp( exp_fac, 7460._r8*tinv, ncol )
-      ko(:) = 1._r8 + 5.5e-31_r8 * exp_fac * m(:,k) * 0.21_r8
-      call comp_exp( exp_fac, 7810._r8*tinv, ncol )
-      r6(:,k) = 1.7e-42_r8 * exp_fac * m(:,k) * 0.21_r8 /ko(:)
-   !end if
-   end do
-   ! finish reaction rate calculation
-   ! real: OH_y0, NO3_y0, dms_y0, c0_dms,a_dms,dms_y1,delta_t,
-   ! real: so2_y0, a_so2, b_so2, c0_so2, so2_y1, h2so4_y0,a_h2so4
-   ! real: c0_h2so4, h2so4_y1
-   do i = 1,ncol
-      do k = 1, ltrop(i) ! only above tropopause
-      OH_y0 = OH_0(i,k)
-      NO3_y0 = NO3_0(i,k) 
-      ! tendency for DMS
-      ! dms_y0 is dms concenration at the beginning of the time step
-      ! dms_y1 is dms concenration at the end of the time step
-      dms_y0 = dms_0(i,k)
-      dms_y0 = max(1.e-30_r8,dms_y0) !avoid negative value
-      c0_dms = log(dms_y0)
-      a_dms = r5(i,k)*OH_y0 + r6(i,k)*OH_y0 + r7(i,k)*NO3_y0
-      dms_y1 = exp(-a_dms*delta_t + c0_dms)
-      dms_y1 = max(0.0_r8,dms_y1)
-      !dms_1(i,k) = dms_y1
-      ! tendency for SO2
-      so2_y0 = so2_0(i,k)
-      so2_y0 = max(1.e-30_r8,so2_y0) !avoid negative value
-      a_so2 = r4(i,k)*OH_y0
-      b_so2 = (r5(i,k)*OH_y0 + 0.5_r8*r6(i,k)*OH_y0 + r7(i,k)*NO3_y0)*dms_y0
-      if ((b_so2 - a_so2*so2_y0) .gt. 0.0_r8) then
-         c0_so2 = -(1.0_r8/a_so2)*log(b_so2 - a_so2*so2_y0)
-         so2_y1 = -(1.0_r8/a_so2)*(exp(-a_so2*(delta_t - c0_so2)) + b_so2 )
-      else
-         so2_y1 = delta_t*(b_so2 - 0.5_r8*a_so2*so2_y0)/(1 + 0.5_r8*a_so2*delta_t)
-      end if
-      so2_y1 = max(0.0_r8,so2_y1)
-      !so2_1(i,k) = so2_y1
-      ! tendency for H2SO4
-      h2so4_y0 = h2so4_0(i,k)
-      h2so4_y0 = max(1.e-30_r8,h2so4_y0)
-      c0_h2so4 = h2so4_y0
-      a_h2so4 = r4(i,k)*OH_y0*0.5_r8*(so2_y0 + so2_y1)
-      h2so4_y1 = a_h2so4*delta_t + c0_h2so4
-      h2so4_y1 = max(0.0_r8,h2so4_y1)
-      !h2so4_1(i,k) = h2so4_y1
-      ! put it in vmr
-      vmr(i,k,ndx_h2so4) = h2so4_y1   
-      vmr(i,k,ndx_so2) = so2_y1     
-      vmr(i,k,ndx_dms) = dms_y1    
-      end do
-   end do
-
-
-
-
-
-
-   end subroutine strat_sulfate_cal_gridbox
    !-------------------------------------------------------------------------
   subroutine comp_exp( x, y, n )
 
