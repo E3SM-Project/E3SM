@@ -63,13 +63,6 @@ public:
 
   std::string name() const { return "DiagnosticTest"; }
 
-  // Get the required grid for the diagnostic
-  std::set<std::string> get_required_grids () const {
-    static std::set<std::string> s;
-    s.insert(m_params.get<std::string>("Grid"));
-    return s;
-  }
-
   void set_grids (const std::shared_ptr<const GridsManager> gm) {
     using namespace ekat::units;
     using namespace ShortFieldTagsNames;

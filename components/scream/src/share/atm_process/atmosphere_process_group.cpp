@@ -123,11 +123,6 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
         "       If so, don't. Instead, use the instantiation of create_atmosphere_process<T>,\n"
         "       with T = YourAtmProcessClassName.\n");
 
-    // Update the grid types of the group, given the needs of the newly created process
-    for (const auto& name : m_atm_processes.back()->get_required_grids()) {
-      m_required_grids.insert(name);
-    }
-
     // Store a copy of all the restart extra data of the atm proc.
     // NOTE: any uses std::shared_ptr internally, so if the atm proc updates
     //       the extra data, it will be updated in this class too.

@@ -82,13 +82,6 @@ public:
     m_grid_name = params.get<std::string> ("Grid Name");
   }
 
-  // The type of grids on which the diagnostic is defined
-  std::set<std::string> get_required_grids () const {
-    static std::set<std::string> s;
-    s.insert(m_grid_name);
-    return s;
-  }
-
   // Return some sort of name, linked to PType
   std::string name () const { return m_name; }
 
@@ -222,13 +215,6 @@ public:
   {
     m_name = params.name();
     m_grid_name = params.get<std::string> ("Grid Name");
-  }
-
-  // The type of grids on which the process is defined
-  std::set<std::string> get_required_grids () const {
-    static std::set<std::string> s;
-    s.insert(m_grid_name);
-    return s;
   }
 
   // Return some sort of name, linked to PType

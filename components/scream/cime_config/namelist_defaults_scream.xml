@@ -145,24 +145,9 @@ tweaking their $case/namelist_scream.xml file.
       <Schedule__Type>Sequential</Schedule__Type>
     </atm_proc_group>
 
-    <!-- Basic options for each "physics" atm process -->
-    <physics_proc_base inherit="atm_proc_base">
-      <Grid>Physics GLL</Grid>
-      <Grid hgrid=".*pg2">Physics PG2</Grid>
-    </physics_proc_base>
-
-    <!-- SC Import -->
-    <sc_import>
-      <Grid>Physics GLL</Grid>
-      <Grid hgrid=".*pg2">Physics PG2</Grid>
-      <Enable__Postcondition__Checks type="logical">true</Enable__Postcondition__Checks>
-    </sc_import>
-
-    <!-- SC Export -->
-    <sc_export>
-      <Grid>Physics GLL</Grid>
-      <Grid hgrid=".*pg2">Physics PG2</Grid>
-    </sc_export>
+    <!-- Surface coupling (import and export) -->
+    <sc_import inherit="atm_proc_base"/>
+    <sc_export inherit="atm_proc_base"/>
 
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
@@ -178,7 +163,7 @@ tweaking their $case/namelist_scream.xml file.
     </homme>
 
     <!-- P3 microphysics -->
-    <p3 inherit="physics_proc_base">
+    <p3 inherit="atm_proc_base">
       <do_prescribed_ccn>true</do_prescribed_ccn>
       <do_prescribed_ccn COMPSET=".*SCREAM.*noAero">false</do_prescribed_ccn>
       <do_predict_nc>true</do_predict_nc>
@@ -186,13 +171,13 @@ tweaking their $case/namelist_scream.xml file.
     </p3>
 
     <!-- SHOC macrophysics -->
-    <shoc inherit="physics_proc_base"/>
+    <shoc inherit="atm_proc_base"/>
 
     <!-- CLD fraction -->
-    <cldFraction inherit="physics_proc_base"/>
+    <cldFraction inherit="atm_proc_base"/>
 
     <!-- Simple Prescribed Aerosols (SPA) -->
-    <spa inherit="physics_proc_base">
+    <spa inherit="atm_proc_base">
       <SPA__Remap__File>UNSET</SPA__Remap__File>
       <SPA__Remap__File hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/map_ne30_to_ne4_mono_20220502.nc</SPA__Remap__File>
       <SPA__Remap__File hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne4pg2_mono.20220714.nc</SPA__Remap__File>
@@ -204,7 +189,7 @@ tweaking their $case/namelist_scream.xml file.
     </spa>
 
     <!-- Radiation -->
-    <rrtmgp inherit="physics_proc_base">
+    <rrtmgp inherit="atm_proc_base">
       <active_gases>h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
       <Column__Chunk__Size>1280</Column__Chunk__Size>
       <Orbital__Year>-9999</Orbital__Year>
