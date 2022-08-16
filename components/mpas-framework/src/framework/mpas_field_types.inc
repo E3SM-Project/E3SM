@@ -18,6 +18,9 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      ! outputFieldName and outputConstituentNames are alternative names for the field or its constituents for use in
+      ! output files.  These should only be given names different from fieldName or constituentNames for pure output
+      ! variables such as diagnostic output and never for variables present in initial conditions or restart files.
       character (len=StrKIND) :: outputFieldName
       character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(5) :: dimNames
