@@ -34,7 +34,7 @@ source activate crm_test_env
 # configure
 # ./cmakescript.sh crmdata_nx32_ny1_nz28_nxrad2_nyrad1.nc crmdata_nx8_ny8_nz28_nxrad2_nyrad2.nc
 # ./cmakescript_2D.sh crmdata_nx32_ny1_nz28_nxrad2_nyrad1.nc
-./cmakescript_2D.sh ${HOME}/E3SM/scratch/E3SM.2022-KPP-DMDF.ne120pg2.F2010-MMF1.NXY_64x1.RXY_4.NO-OUTPUT/run/dmdf_snapshot_all.nc
+./cmakescript_2D.sh /gpfs/alpine/scratch/hannah6/cli115/CRM_standalone_data/KPP_dmdf_snapshot_all.nc
 
 # build the executables (this is also done at the top of ./runtest.sh)
 make -j
