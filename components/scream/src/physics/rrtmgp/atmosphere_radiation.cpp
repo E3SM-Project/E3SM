@@ -46,6 +46,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   Wm2.set_string("W/m2");
   auto nondim = m/m;  // dummy unit for non-dimensional fields
   auto micron = m / 1000000;
+  auto kgm3 = kg/m3;
 
   using namespace ShortFieldTagsNames;
 
@@ -93,11 +94,14 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("surf_lw_flux_up",scalar2d_layout,W/(m*m),grid_name);
   // Set of required gas concentration fields
   for (auto& it : m_gas_names) {
+    // Add gas MASS mixing ratios
     if (it == "h2o") { /* Special case where water vapor is called h2o in radiation */
       // do nothing, qv has already been added.
     } else {
       add_field<Computed>(it,scalar3d_layout_mid,kgkg,grid_name, ps);
     }
+    // Add gas VOLUME mixing ratios (what actually gets input to RRTMGP)
+    add_field<Computed>(it + "_vmr", scalar3d_layout_mid, kgm3, grid_name, ps);
   }
   // Required aerosol optical properties from SPA
   m_do_aerosol_rad = m_params.get<bool>("do_aerosol_rad",true);
@@ -622,20 +626,24 @@ void RRTMGPRadiation::run_impl (const int dt) {
     real2d tmp2d = subview_2d(m_buffer.tmp2d);
     for (int igas = 0; igas < m_ngas; igas++) {
       auto name = m_gas_names[igas];
-      view_2d_real_const d_temp; 
+      view_2d_real_const d_mmr; 
+      view_2d_real       d_vmr;
       if (name == "h2o") {
-        d_temp  = get_field_in("qv").get_view<const Real**>();
+        d_mmr = get_field_in("qv").get_view<const Real**>();
       } else {
-        d_temp  = get_field_out(name).get_view<const Real**>();
+        d_mmr = get_field_out(name).get_view<const Real**>();
       }
+      d_vmr = get_field_out(name + "_vmr").get_view<Real**>();
       const auto gas_mol_weights = m_gas_mol_weights;
+      const auto air_mol_weight = 28.97;
 
       const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
         const int i = team.league_rank();
         const int icol = i + beg;
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
-          tmp2d(i+1,k+1) = PF::calculate_vmr_from_mmr(gas_mol_weights[igas],d_qv(icol,k),d_temp(icol,k)); // Note that for YAKL arrays i and k start with index 1
+          d_vmr(i,k) = d_mmr(i,k) * air_mol_weight / gas_mol_weights[igas];
+          tmp2d(i+1,k+1) = d_vmr(i,k); // Note that for YAKL arrays i and k start with index 1
         });
       });
       Kokkos::fence();
