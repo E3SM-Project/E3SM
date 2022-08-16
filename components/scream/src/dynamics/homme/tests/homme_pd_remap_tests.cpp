@@ -10,7 +10,7 @@
 #include "mpi/BoundaryExchange.hpp"
 
 #include "dynamics/homme/homme_dimensions.hpp"
-#include "dynamics/homme/dynamics_driven_grids_manager.hpp"
+#include "dynamics/homme/homme_grids_manager.hpp"
 
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/ekat_pack.hpp"
@@ -68,7 +68,7 @@ TEST_CASE("remap", "") {
   // Create the grids
   ekat::ParameterList params;
   params.set<std::string>("Reference Grid","Physics GLL");
-  DynamicsDrivenGridsManager gm(comm,params);
+  HommeGridsManager gm(comm,params);
   std::set<std::string> grids_names = {"Physics GLL","Dynamics"};
   gm.build_grids(grids_names);
 
@@ -613,7 +613,7 @@ TEST_CASE("combo_remap", "") {
   // Create the grids
   ekat::ParameterList params;
   params.set<std::string>("Reference Grid","Physics GLL");
-  DynamicsDrivenGridsManager gm(comm,params);
+  HommeGridsManager gm(comm,params);
   std::set<std::string> grids_names = {"Physics GLL","Dynamics"};
   gm.build_grids(grids_names);
 

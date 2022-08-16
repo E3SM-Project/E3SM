@@ -2,7 +2,7 @@
 
 #include "TimeLevel.hpp"
 
-#include "dynamics/homme/dynamics_driven_grids_manager.hpp"
+#include "dynamics/homme/homme_grids_manager.hpp"
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
 
@@ -65,7 +65,7 @@ TEST_CASE("dyn_grid_io")
   // Create the grids
   ekat::ParameterList params;
   params.set<std::string>("Reference Grid","Physics GLL");
-  auto gm = std::make_shared<DynamicsDrivenGridsManager>(comm,params);
+  auto gm = std::make_shared<HommeGridsManager>(comm,params);
   std::set<std::string> grids_names = {"Physics GLL","Dynamics"};
   gm->build_grids(grids_names);
 

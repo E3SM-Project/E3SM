@@ -20,7 +20,7 @@ atmosphere_processes:
     Moisture: moist
 
 Grids Manager:
-  Type: Dynamics Driven
+  Type: Homme
   Reference Grid: Physics GLL
   Dynamics Namelist File Name: namelist.nl
 

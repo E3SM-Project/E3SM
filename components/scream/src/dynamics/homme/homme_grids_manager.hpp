@@ -1,5 +1,5 @@
-#ifndef SCREAM_DYNAMICS_DRIVEN_GRIDS_MANAGER_HPP
-#define SCREAM_DYNAMICS_DRIVEN_GRIDS_MANAGER_HPP
+#ifndef SCREAM_HOMME_GRIDS_MANAGER_HPP
+#define SCREAM_HOMME_GRIDS_MANAGER_HPP
 
 #include "share/grid/grids_manager.hpp"
 
@@ -10,15 +10,16 @@ namespace scream
 // test the Atmosphere Driver (AD) capabilities, without bothering too much
 // about grids-related features. This manager lets you set pre-built grids
 // in it rather than building them inside the manager.
-class DynamicsDrivenGridsManager : public GridsManager
+class HommeGridsManager : public GridsManager
 {
 public:
+  using ci_string = ekat::CaseInsensitiveString;
 
-  DynamicsDrivenGridsManager (const ekat::Comm& comm, const ekat::ParameterList& p);
+  HommeGridsManager (const ekat::Comm& comm, const ekat::ParameterList& p);
 
-  ~DynamicsDrivenGridsManager ();
+  ~HommeGridsManager ();
 
-  std::string name () const { return "Dynamics Driven Grids Manager"; }
+  std::string name () const { return "Homme Grids Manager"; }
 
   void build_grids ();
 
@@ -60,10 +61,10 @@ protected:
 };
 
 inline std::shared_ptr<GridsManager>
-create_dynamics_driven_grids_manager (const ekat::Comm& comm, const ekat::ParameterList& p) {
-  return std::make_shared<DynamicsDrivenGridsManager>(comm,p);
+create_homme_grids_manager (const ekat::Comm& comm, const ekat::ParameterList& p) {
+  return std::make_shared<HommeGridsManager>(comm,p);
 }
 
 } // namespace scream
 
-#endif // SCREAM_DYNAMICS_DRIVEN_GRIDS_MANAGER_HPP
+#endif // SCREAM_HOMME_GRIDS_MANAGER_HPP

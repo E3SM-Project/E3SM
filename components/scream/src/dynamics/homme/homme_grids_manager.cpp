@@ -1,4 +1,4 @@
-#include "dynamics/homme/dynamics_driven_grids_manager.hpp"
+#include "dynamics/homme/homme_grids_manager.hpp"
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
@@ -15,9 +15,9 @@
 namespace scream
 {
 
-DynamicsDrivenGridsManager::
-DynamicsDrivenGridsManager (const ekat::Comm& comm,
-                            const ekat::ParameterList& p)
+HommeGridsManager::
+HommeGridsManager (const ekat::Comm& comm,
+                   const ekat::ParameterList& p)
  : m_comm (comm)
  , m_params(p)
 {
@@ -52,8 +52,8 @@ DynamicsDrivenGridsManager (const ekat::Comm& comm,
   build_pg_codes ();
 }
 
-DynamicsDrivenGridsManager::
-~DynamicsDrivenGridsManager () {
+HommeGridsManager::
+~HommeGridsManager () {
   // Cleanup the grids stuff
   finalize_geometry_f90 ();
 
@@ -61,8 +61,8 @@ DynamicsDrivenGridsManager::
   HommeContextUser::singleton().remove_user();
 }
 
-DynamicsDrivenGridsManager::remapper_ptr_type
-DynamicsDrivenGridsManager::do_create_remapper (const grid_ptr_type from_grid,
+HommeGridsManager::remapper_ptr_type
+HommeGridsManager::do_create_remapper (const grid_ptr_type from_grid,
                                                 const grid_ptr_type to_grid) const {
   const auto from = from_grid->name();
   const auto to   = to_grid->name();
@@ -89,7 +89,7 @@ DynamicsDrivenGridsManager::do_create_remapper (const grid_ptr_type from_grid,
   return nullptr;
 }
 
-void DynamicsDrivenGridsManager::
+void HommeGridsManager::
 build_grids ()
 {
   // Get the physics grid specs
@@ -119,7 +119,7 @@ build_grids ()
   cleanup_grid_init_data_f90 ();
 }
 
-void DynamicsDrivenGridsManager::build_dynamics_grid () {
+void HommeGridsManager::build_dynamics_grid () {
   const std::string name = "Dynamics";
   if (m_grids.find(name)==m_grids.end()) {
     // Get dimensions and create "empty" grid
@@ -175,7 +175,7 @@ void DynamicsDrivenGridsManager::build_dynamics_grid () {
   }
 }
 
-void DynamicsDrivenGridsManager::
+void HommeGridsManager::
 build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   std::string name = type;
   if (rebalance != "None") {
@@ -245,7 +245,7 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   }
 }
 
-void DynamicsDrivenGridsManager::
+void HommeGridsManager::
 build_pg_codes () {
 
   // Codes for the physics grids supported

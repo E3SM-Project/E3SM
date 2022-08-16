@@ -188,7 +188,7 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
       ${SCREAM_DYNAMICS_SRC_DIR}/atmosphere_dynamics.cpp
       ${SCREAM_DYNAMICS_SRC_DIR}/atmosphere_dynamics_fv_phys.cpp
       ${SCREAM_DYNAMICS_SRC_DIR}/physics_dynamics_remapper.cpp
-      ${SCREAM_DYNAMICS_SRC_DIR}/dynamics_driven_grids_manager.cpp
+      ${SCREAM_DYNAMICS_SRC_DIR}/homme_grids_manager.cpp
       ${SCREAM_DYNAMICS_SRC_DIR}/interface/homme_context_mod.F90
       ${SCREAM_DYNAMICS_SRC_DIR}/interface/homme_driver_mod.F90
       ${SCREAM_DYNAMICS_SRC_DIR}/interface/homme_grid_mod.F90

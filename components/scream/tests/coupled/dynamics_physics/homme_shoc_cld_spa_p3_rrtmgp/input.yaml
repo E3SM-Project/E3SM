@@ -49,7 +49,7 @@ atmosphere_processes:
       active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
 
 Grids Manager:
-  Type: Dynamics Driven
+  Type: Homme
   Reference Grid: Physics GLL
   Dynamics Namelist File Name: namelist.nl
 

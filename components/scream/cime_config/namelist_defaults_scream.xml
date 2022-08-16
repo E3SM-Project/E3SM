@@ -227,7 +227,7 @@ tweaking their $case/namelist_scream.xml file.
 
   <!-- Grids manager specs -->
   <Grids__Manager>
-    <Type>Dynamics Driven</Type>
+    <Type>Homme</Type>
     <Physics__Grid__Type>GLL</Physics__Grid__Type>
     <Physics__Grid__Type hgrid=".*pg2">PG2</Physics__Grid__Type>
     <Physics__Grid__Rebalance>None</Physics__Grid__Rebalance>
