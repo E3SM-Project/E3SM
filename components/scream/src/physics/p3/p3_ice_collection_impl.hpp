@@ -21,9 +21,9 @@ void Functions<S,D>
   constexpr Scalar tmelt  = C::Tmelt;
 
   // set up masks
-  const auto t_is_negative        = temp < tmelt;
-  const auto qi_incld_gt_small = qi_incld > qsmall;
-  const auto qc_incld_gt_small    = qc_incld > qsmall;
+  const auto t_is_negative        = temp <= tmelt;
+  const auto qi_incld_gt_small    = qi_incld >= qsmall;
+  const auto qc_incld_gt_small    = qc_incld >= qsmall;
   const auto both_gt_small        = qi_incld_gt_small && qc_incld_gt_small && context;
   const auto both_gt_small_pos_t  = both_gt_small && !t_is_negative;
 
