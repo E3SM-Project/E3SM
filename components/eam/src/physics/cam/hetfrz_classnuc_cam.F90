@@ -405,6 +405,7 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
             mode_coardust_idx, mode_finedust_idx, mode_pcarbon_idx
          call endrun(routine//': ERROR required mode type not found')
       end if
+!kzm++      
    else if (nmodes == MAM5_nmodes ) then
       if (mode_accum_idx == -1 .or. mode_coarse_idx == -1 .or. mode_pcarbon_idx == -1) then
          write(iulog,*) routine//': ERROR required mode type not found - mode idx:', &

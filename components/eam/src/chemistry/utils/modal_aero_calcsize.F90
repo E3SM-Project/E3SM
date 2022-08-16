@@ -75,7 +75,11 @@ real(r8), parameter :: r8_huge = huge(1.0_r8)
 integer, parameter :: npair_csizxf = N_DIAG           !total number of possible diagnostic calls
 
 logical :: do_adjust_allowed                          !flag to turn on/off  aerosol size adjustment process
+#if ( defined MODAL_AERO_5MODE )
 logical :: modal_strat_sulfate_aod = .true.           !kzm !flag to turn on/off stratospheric H2SO4 AOD treatment
+#else
+logical :: modal_strat_sulfate_aod = .false.          !no this setting in MAM4
+#endif
 !flag to turn on/off  aerosol aitken<->accumulation transfer process
 logical :: do_aitacc_transfer_allowed(0:npair_csizxf) ! This is an array as it can be different for each radiatio diagnostic call
 
