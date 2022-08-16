@@ -683,16 +683,21 @@ module ocn_forward_mode
            ! mrp temporary: comment out next line, call from
            ! analysis_members/mpas_ocn_mixed_layer_depths.F right now.
            ! call ocn_eddy_compute_mixed_layer_depth(statePool)
-           if (config_use_GM.or.config_submesoscale_enable) then
-               call mpas_timer_start("submesoscale eddy velocity compute", .false.)
+           if (config_use_GM .or. config_submesoscale_enable) then
+               call mpas_timer_start("eddy: compute buoyancy gradient", .false.)
                call ocn_eddy_compute_buoyancy_gradient()
-               call mpas_timer_stop("submesoscale eddy velocity compute")
+               call mpas_timer_stop("eddy: compute buoyancy gradient")
            end if
 
            if (config_use_Redi.or.config_use_GM) then
                call ocn_gm_compute_Bolus_velocity(statePool, meshPool, scratchPool, timeLevelIn=1)
            end if
 
+           if (config_submesoscale_enable) then
+               call mpas_timer_start("compute submesoscale velocity", .false.)
+               call ocn_submesoscale_compute_velocity()
+               call mpas_timer_stop("compute submesoscale velocity")
+           end if
            block_ptr => block_ptr % next
          end do
 
