@@ -9,7 +9,6 @@
 #include "control/register_surface_coupling.hpp"
 
 #include "mct_coupling/ScreamContext.hpp"
-#include "share/grid/user_provided_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/scream_session.hpp"
 #include "share/scream_types.hpp"
