@@ -125,6 +125,7 @@ contains
              end do
           end do
        !kzm ++
+#if (defined MODAL_AERO_5MODE)       
        elseif ( trim(solsym(l)) == 'SO2') then !kzm
          do i = 1,ncol
              do k = 1,pver
@@ -144,6 +145,7 @@ contains
                 base_sol(i,k,l) = base_sol(i,k,l)*exp(-delt*loss(i,k,m)/base_sol(i,k,l)) + delt*(prod(i,k,m)+ind_prd(i,k,m))
              end do
          end do 
+#endif         
        !kzm --
        else
           do i = 1,ncol
