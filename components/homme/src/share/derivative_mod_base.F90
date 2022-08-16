@@ -81,6 +81,7 @@ private
   public  :: vlaplace_sphere_wk
   public  :: vlaplace_sphere_wk_contra
   public  :: vlaplace_sphere_wk_cartesian
+  public  :: partial_eta
 !  public  :: laplace_eta
   public  :: laplace_z
   public  :: element_boundary_integral
@@ -1240,6 +1241,54 @@ contains
        enddo
     enddo
   end function vlaplace_sphere_wk_contra
+
+!DIR$ ATTRIBUTES FORCEINLINE :: second_order_findiff
+  function second_order_findiff(u1, u2, u3, zeta1, zeta3) result(du_dzeta)
+        real(kind=real_kind), intent(in) :: u1, u2, u3, zeta1, zeta3
+        real(kind=real_kind) :: du_dzeta
+        du_dzeta = (u2-u1) * zeta3**2.0_real_kind + (u3-u2) * zeta1**2.0_real_kind
+        du_dzeta = du_dzeta / (zeta1**2.0_real_kind * zeta3 - zeta1 * zeta3**2.0_real_kind)
+
+  end function second_order_findiff
+!DIR$ ATTRIBUTES FORCEINLINE :: partial_eta
+  function partial_eta(u,etam) result(du_deta)
+!
+!   input:  u = scalar
+!   ouput:  du_deta = vertical derivative of u
+!
+
+
+    real(kind=real_kind), intent(in) :: u(nlev)  ! in lat-lon coordinates
+    real(kind=real_kind), intent(in) :: etam(nlev)
+    real(kind=real_kind) :: du_deta(nlev)
+
+    ! Local
+
+
+    real(kind=real_kind) :: u1(nlev), u2(nlev), u3(nlev)
+
+    real(kind=real_kind) :: eta1(nlev), eta2(nlev), eta3(nlev)
+
+    real(kind=real_kind) :: num(nlev), den(nlev)
+
+
+    eta1(2:nlev) = etam(1:nlev-1)
+    eta2 = etam(:)
+    eta3(1:nlev-1) = etam(2:nlev)
+    eta1(1) = etam(3)
+    eta3(nlev) = etam(nlev-2)
+
+    u1(2:nlev) = u(1:nlev-1)
+    u2 = u
+    u3(1:nlev-1) = u(2:nlev)
+    u1(1) = u( 3)
+    u3(nlev) = u(nlev-2)
+
+    num = (u2-u1)*(eta3-eta2)**2.0_real_kind + (u3-u2)*(eta1-eta2)**2.0_real_kind
+    den = (eta1-eta2)**2.0_real_kind * (eta3-eta2) - (eta1-eta2)*(eta3-eta2)**2.0_real_kind
+    du_deta  = num/den
+
+  end function partial_eta
 
 
 

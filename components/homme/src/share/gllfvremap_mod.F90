@@ -518,6 +518,37 @@ contains
     end do
   end subroutine gfr_dyn_to_fv_phys_topo_hybrid
 
+  subroutine gfr_potvort_dyn_to_phys(hybrid, nt, hvcoord, elem, nets, nete, &
+       potvort)
+    ! Remap ps, phis, T, uv, omega_p, q from GLL to FV grids.
+
+    use dimensions_mod, only: nlev
+    use hybvcoord_mod, only: hvcoord_t
+    use element_ops, only:  get_field
+    use physical_constants, only: p0, kappa
+
+    type (hybrid_t), intent(in) :: hybrid
+    integer, intent(in) :: nt
+    type (hvcoord_t), intent(in) :: hvcoord
+    type (element_t), intent(in) :: elem(:)
+    integer, intent(in) :: nets, nete
+    real(kind=real_kind), intent(out) :: potvort(:,:,:)
+    real(kind=real_kind), dimension(np,np,nlev) :: potvort_gll
+    real(kind=real_kind), dimension(np*np,nlev) ::  potvort_fv
+    integer :: ie, nf, nf2
+
+    nf = gfr%nphys
+    nf2 = nf*nf
+
+
+    do ie = nets,nete
+       call get_field(elem(ie), 'potvort', potvort_gll, hvcoord, nt, -1)
+       call gfr_g2f_scalar(ie, elem(ie)%metdet, potvort_gll, potvort_fv)
+       potvort(:nf2, :, ie) = potvort_fv(:nf2, :)
+    end do
+
+  end subroutine gfr_potvort_dyn_to_phys
+
   subroutine gfr_dyn_to_fv_phys_topo_data(par, elem, nets, nete, g, gsz, p, psz, square, augment)
     ! Remap SGH, SGH30, phis, landm_coslat, landfrac from GLL to FV grids. For
     ! SGH* fields, square should be true. Then variance is remapped and so

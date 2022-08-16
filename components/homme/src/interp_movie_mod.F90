@@ -51,7 +51,7 @@ module interp_movie_mod
 #undef V_IS_LATLON
 #if defined(_PRIM)
 #define V_IS_LATLON
-  integer, parameter :: varcnt = 45
+  integer, parameter :: varcnt = 46
   integer, parameter :: maxdims =  5
   character*(*), parameter :: varnames(varcnt)=(/'ps       ', &
                                                  'geos     ', &
@@ -64,6 +64,7 @@ module interp_movie_mod
                                                  'div      ', &
                                                  'T        ', &
                                                  'Th       ', &
+                                                 'PV       ', &
                                                  'u        ', &
                                                  'v        ', &
                                                  'w        ', &
@@ -99,7 +100,7 @@ module interp_movie_mod
                                                  'hybi     ', &
                                                  'time     '/)
   integer, parameter :: vartype(varcnt)=(/PIO_double,PIO_double,PIO_double,PIO_double,PIO_double,&
-                                          PIO_double,PIO_double,PIO_double,PIO_double, &
+                                          PIO_double,PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double, PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
@@ -113,7 +114,7 @@ module interp_movie_mod
                                           PIO_double,PIO_double,&
                                           PIO_double/)
   logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,&
-                                              .false.,.false.,.false.,.false.,.false.,&
+                                              .false.,.false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
@@ -136,6 +137,7 @@ module interp_movie_mod
        1,2,3,5,0,  &   ! div
        1,2,3,5,0,  &   ! T
        1,2,3,5,0,  &   ! Th
+       1,2,3,5,0,  &   ! PV
        1,2,3,5,0,  &   ! u
        1,2,3,5,0,  &   ! v
        1,2,3,5,0,  &   ! w
@@ -375,6 +377,7 @@ contains
     call nf_variable_attributes(ncdf, 'hyai', 'hybrid A coefficiet at layer interfaces' ,'dimensionless')
     call nf_variable_attributes(ncdf, 'hybi', 'hybrid B coefficiet at layer interfaces' ,'dimensionless')
     call nf_variable_attributes(ncdf, 'Th',   'potential temperature \theta','degrees kelvin')
+    call nf_variable_attributes(ncdf, 'PV',   'Ertel Potential Vorticity','K \cdot m^2 / (kg \cdot s)')
     call nf_variable_attributes(ncdf, 'w_i',  'vertical wind component on interfaces','meters/second')
     call nf_variable_attributes(ncdf, 'mu_i', 'mu=dp/d\pi on interfaces','dimensionless')
     call nf_variable_attributes(ncdf, 'geo_i','geopotential on interfaces','meters')
@@ -930,6 +933,20 @@ contains
                 call nf_put_var(ncdf(ios),datall,start3d, count3d, name='Th')
                 deallocate(datall,var3d)
              end if
+             if(nf_selectedvar('PV', output_varnames)) then
+                 if (par%masterproc) print *,'writing PV...'
+                 st=1
+                 allocate(datall(ncnt,nlev),var3d(np,np,nlev,1))
+                 do ie=1,nelemd
+                    call get_field(elem(ie),'PV',temp3d,hvcoord,n0,n0_Q)
+                    en=st+interpdata(ie)%n_interp-1
+                    call interpolate_scalar(interpdata(ie), temp3d, &
+                         np, nlev, datall(st:en,:))
+                    st=st+interpdata(ie)%n_interp
+                 end do
+                 call nf_put_var(ncdf(ios),datall,start3d, count3d, name='PV')
+                 deallocate(datall,var3d)
+              end if
 
 
              do qindex=1,min(qsize,5)

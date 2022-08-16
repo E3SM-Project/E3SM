@@ -233,6 +233,7 @@ contains
 
     call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
     call nf_variable_attributes(ncdf, 'Th','potential temperature \theta','degrees kelvin')
+    call nf_variable_attributes(ncdf, 'PV','Ertel potential vorticity','K\cdot m^2 / (kg \cdot s)')
     call nf_variable_attributes(ncdf, 'w', 'vertical wind component','meters/second')
     call nf_variable_attributes(ncdf, 'w_i',  'vertical wind component on interfaces','meters/second')
     call nf_variable_attributes(ncdf, 'mu_i', 'mu=dp/d\pi on interfaces','dimensionless')
@@ -606,6 +607,16 @@ contains
                 end do
                 call nf_put_var(ncdf(ios),var3d,start, count, name='Th')
              end if
+             if(nf_selectedvar('PV', output_varnames)) then
+                st=1
+                do ie=1,nelemd
+                   call get_field(elem(ie),'potvort',vartmp,hvcoord,n0,n0_Q)
+                   en=st+elem(ie)%idxp%NumUniquePts-1
+                   call UniquePoints(elem(ie)%idxP,nlev,vartmp,var3d(st:en,:))
+                   st=en+1
+                end do
+                call nf_put_var(ncdf(ios),var3d,start, count, name='PV')
+             end if
 
             if(nf_selectedvar('rho', output_varnames)) then
                 if (par%masterproc) print *,'writing rho...'
@@ -711,6 +722,17 @@ contains
                 enddo
                 call nf_put_var(ncdf(ios),var3d,start, count, name='w')
              end if
+             if(nf_selectedvar('w', output_varnames)) then
+                 if (par%masterproc) print *,'writing w...'
+                 st=1
+                 do ie=1,nelemd
+                    en=st+elem(ie)%idxp%NumUniquePts-1
+                    call get_field(elem(ie),'w',vartmp,hvcoord,n0,n0_Q)
+                    call UniquePoints(elem(ie)%idxP,nlev,vartmp,var3d(st:en,:))
+                    st=en+1
+                 enddo
+                 call nf_put_var(ncdf(ios),var3d,start, count, name='w')
+              end if
 
              if(nf_selectedvar('w_i', output_varnames)) then
                 if (par%masterproc) print *,'writing w_i...'
