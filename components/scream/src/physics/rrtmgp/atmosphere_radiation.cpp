@@ -62,6 +62,10 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   for (int i=0; i<m_num_col_chunks; ++i) {
     m_col_chunk_beg[i+1] = std::min(m_ncol,m_col_chunk_beg[i] + m_col_chunk_size);
   }
+  this->log(LogLevel::debug,
+            "[RRTMGP::set_grids] Col chunking stats:\n"
+            "  - Chunk size: " + std::to_string(m_col_chunk_size) + "\n"
+            "  - Number of chunks: " + std::to_string(m_num_col_chunks) + "\n");
 
   // Set up dimension layouts
   FieldLayout scalar2d_layout     { {COL   }, {m_ncol    } };
@@ -432,6 +436,9 @@ void RRTMGPRadiation::run_impl (const int dt) {
   for (int ic=0; ic<m_num_col_chunks; ++ic) {
     const int beg  = m_col_chunk_beg[ic];
     const int ncol = m_col_chunk_beg[ic+1] - beg;
+    this->log(LogLevel::debug,
+              "[RRTMGP::run_impl] Col chunk beg,end: " + std::to_string(beg) + ", " + std::to_string(beg+ncol) + "\n");
+
 
     // Create YAKL arrays. RRTMGP expects YAKL arrays with styleFortran, i.e., data has ncol
     // as the fastest index. For this reason we must copy the data.
