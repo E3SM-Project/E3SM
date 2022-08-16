@@ -207,7 +207,7 @@ contains
        endif
     enddo
     if(iam == 1) then 
-       print *,'getMetaSchedule: tmpP: ',tmpP
+       write(iulog, *),'getMetaSchedule: tmpP: ',tmpP
     endif
 
     deallocate(tmpP)

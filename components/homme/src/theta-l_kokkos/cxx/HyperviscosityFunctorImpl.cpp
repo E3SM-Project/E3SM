@@ -22,10 +22,10 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
                            const ElementsGeometry&     geometry,
                            const ElementsState&        state,
                            const ElementsDerivedState& derived)
- : m_data (      params.hypervis_subcycle,params.hypervis_subcycle_tom,
-		 params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
-		 params.nu_p,params.nu_s,params.hypervis_scaling)
- , m_num_elems(state.num_elems())
+ : m_num_elems(state.num_elems())
+ , m_data (params.hypervis_subcycle,params.hypervis_subcycle_tom,
+		       params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
+		       params.nu_p,params.nu_s,params.hypervis_scaling)
  , m_state   (state)
  , m_derived (derived)
  , m_geometry (geometry)
@@ -46,10 +46,10 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
 
 HyperviscosityFunctorImpl::
 HyperviscosityFunctorImpl (const int num_elems, const SimulationParams &params)
-  : m_data (      params.hypervis_subcycle,params.hypervis_subcycle_tom,
-		  params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
-		  params.nu_p,params.nu_s,params.hypervis_scaling)
-  , m_num_elems(num_elems)
+  : m_num_elems(num_elems)
+  , m_data (params.hypervis_subcycle,params.hypervis_subcycle_tom,
+		        params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,
+		        params.nu_p,params.nu_s,params.hypervis_scaling)
   , m_hvcoord (Context::singleton().get<HybridVCoord>())
   , m_policy_update_states (Homme::get_default_team_policy<ExecSpace,TagUpdateStates>(m_num_elems))
   , m_policy_update_states2 (Homme::get_default_team_policy<ExecSpace,TagUpdateStates2>(m_num_elems))
@@ -60,7 +60,6 @@ HyperviscosityFunctorImpl (const int num_elems, const SimulationParams &params)
 {
   init_params(params);
 }
-
 
 void HyperviscosityFunctorImpl::init_params(const SimulationParams& params)
 {
@@ -142,9 +141,7 @@ int HyperviscosityFunctorImpl::requested_buffer_size () const {
   constexpr int size_mid_vector = 2*NP*NP*NUM_LEV*VECTOR_SIZE;
   constexpr int size_int_scalar =   NP*NP*NUM_LEV_P*VECTOR_SIZE;
 
-  const int nteams = m_tu.get_num_ws_slots();
-
-  // Number of scalar/vector int/mid buffers needed, with size nteams/nelems
+  // Number of scalar/vector int/mid buffers needed, with size nelems
   const int mid_vectors_nelems = 1;
   const int int_scalars_nelems = 0;
   const int mid_scalars_nelems = 2 + (m_process_nh_vars ? 2 : 0);
@@ -165,7 +162,6 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   auto mem_in = fbm.get_memory();
   Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
   const int nelems = m_geometry.num_elems();
-  const int nteams = m_tu.get_num_ws_slots();
 
   // Tens quantities (persistent views => nelems)
   m_buffers.dptens = decltype(m_buffers.dptens)(mem,nelems);

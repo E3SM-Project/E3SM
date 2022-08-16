@@ -511,7 +511,7 @@ contains
 
     gp=gausslobatto(np)  ! GLL points
 
-        if(par%masterproc) write(6,*)"initializing elements..."
+        if(par%masterproc) write(iulog,*)"initializing elements..."
     
          if (MeshUseMeshFile) then
           if (geometry=="sphere") then

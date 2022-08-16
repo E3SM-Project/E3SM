@@ -122,7 +122,7 @@
         </ntasks>
       </pes>
     </mach>
-    <mach name="pm-cpu|alvarez">
+    <mach name="pm-cpu|alvarez|chicoma-cpu">
       <pes compset="any" pesize="any">
         <comment>allactive: default, 1 node x MAX_MPITASKS_PER_NODE mpi x 2 omp @ root 0</comment>
         <ntasks>
@@ -2016,10 +2016,10 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4_">
+  <grid name="a%ne30np4">
     <mach name="pm-gpu">
       <pes compset="any" pesize="any">
-        <comment>"pm-gpu ne30np4 2 nodes"</comment>
+        <comment>"pm-gpu ne30np4 and ne30np4.pg2  2 nodes, 4x16"</comment>
         <ntasks>
           <ntasks_atm>-2</ntasks_atm>
           <ntasks_lnd>-2</ntasks_lnd>
@@ -2030,11 +2030,19 @@
           <ntasks_wav>-2</ntasks_wav>
           <ntasks_cpl>-2</ntasks_cpl>
         </ntasks>
+        <nthrds>
+          <nthrds_atm>16</nthrds_atm>
+          <nthrds_lnd>16</nthrds_lnd>
+          <nthrds_rof>8</nthrds_rof>
+          <nthrds_ice>8</nthrds_ice>
+          <nthrds_ocn>8</nthrds_ocn>
+          <nthrds_cpl>8</nthrds_cpl>
+        </nthrds>
       </pes>
     </mach>
     <mach name="pm-cpu">
       <pes compset="any" pesize="any">
-        <comment>"pm-gpu ne30np4 2 nodes 2 threads"</comment>
+        <comment>"pm-cpu ne30np4 and ne30np4.pg2 2 nodes 2 threads"</comment>
         <ntasks>
           <ntasks_atm>-2</ntasks_atm>
           <ntasks_lnd>-2</ntasks_lnd>
@@ -2052,12 +2060,12 @@
           <nthrds_ice>2</nthrds_ice>
           <nthrds_ocn>2</nthrds_ocn>
           <nthrds_cpl>2</nthrds_cpl>
-        </nthrds>        
+        </nthrds>
       </pes>
     </mach>
     <mach name="cori-knl">
       <pes compset="any" pesize="any">
-        <comment>"cori-knl ne30np4 8 nodes 2 threads"</comment>
+        <comment>"cori-knl ne30np4* 8 nodes 2 threads"</comment>
         <ntasks>
           <ntasks_atm>-8</ntasks_atm>
           <ntasks_lnd>-8</ntasks_lnd>
@@ -2075,10 +2083,10 @@
           <nthrds_ice>2</nthrds_ice>
           <nthrds_ocn>2</nthrds_ocn>
           <nthrds_cpl>2</nthrds_cpl>
-        </nthrds>        
+        </nthrds>
       </pes>
     </mach>
-  </grid>  
+  </grid>
   <grid name="a%ne0np4_northamericax4v1.pg2_l%.+_oi%WC14to60E2r3">
     <mach name="compy">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+" pesize="S">
