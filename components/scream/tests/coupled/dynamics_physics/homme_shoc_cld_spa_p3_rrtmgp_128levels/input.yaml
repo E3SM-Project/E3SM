@@ -50,7 +50,7 @@ atmosphere_processes:
 
 Grids Manager:
   Type: Homme
-  Reference Grid: Physics GLL
+  Physics Grid Type: GLL
   Dynamics Namelist File Name: namelist.nl
 
 # The parameters for I/O control

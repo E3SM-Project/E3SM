@@ -67,10 +67,9 @@ TEST_CASE("remap", "") {
 
   // Create the grids
   ekat::ParameterList params;
-  params.set<std::string>("Reference Grid","Physics GLL");
+  params.set<std::string>("Physics Grid Type","GLL");
   HommeGridsManager gm(comm,params);
-  std::set<std::string> grids_names = {"Physics GLL","Dynamics"};
-  gm.build_grids(grids_names);
+  gm.build_grids();
 
   // Local counters
   const int num_local_elems = get_num_local_elems_f90();
@@ -612,10 +611,9 @@ TEST_CASE("combo_remap", "") {
 
   // Create the grids
   ekat::ParameterList params;
-  params.set<std::string>("Reference Grid","Physics GLL");
+  params.set<std::string>("Physics Grid Type","GLL");
   HommeGridsManager gm(comm,params);
-  std::set<std::string> grids_names = {"Physics GLL","Dynamics"};
-  gm.build_grids(grids_names);
+  gm.build_grids();
 
   // Local counters
   const int num_local_elems = get_num_local_elems_f90();
