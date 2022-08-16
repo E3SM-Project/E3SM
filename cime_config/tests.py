@@ -461,6 +461,7 @@ _TESTS = {
     "e3sm_scream_v1_lowres" : {
         "time"  : "01:00:00",
         "tests" : (
+            "ERP_D_Ln9.ne4_ne4.F2010-SCREAMv1-CICE",
             "ERP_D_Ln9.ne4_oQU240.F2010-SCREAMv1.atmlndactive-rtm_off",
             "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1",
             "SMS_D_Ln9.ne4_oQU240.F2010-SCREAMv1-noAero",
