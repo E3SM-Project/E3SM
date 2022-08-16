@@ -338,10 +338,10 @@ struct UnitWrap::UnitTest<D>::TestUpdatePrognosticsImplicit {
     auto engine = setup_random_test();
 
     UpdatePrognosticsImplicitData f90_data[] = {
-      UpdatePrognosticsImplicitData(10, 71, 72, 19, 5),
-      UpdatePrognosticsImplicitData(10, 12, 13, 7, 2.5),
-      UpdatePrognosticsImplicitData(7, 16, 17, 2, 1),
-      UpdatePrognosticsImplicitData(2, 7, 8, 1, 1)
+      UpdatePrognosticsImplicitData(10, 71, 72, 19, .5),
+      UpdatePrognosticsImplicitData(10, 12, 13, 7, .25),
+      UpdatePrognosticsImplicitData(7, 16, 17, 2, .1),
+      UpdatePrognosticsImplicitData(2, 7, 8, 1, .1)
     };
 
     // Generate random input data
