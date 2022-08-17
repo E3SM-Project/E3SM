@@ -7,6 +7,7 @@ atmosphere_processes:
   atm_procs_list: (rrtmgp)
   rrtmgp:
     Grid: Point Grid
+    Max Column Chunk Size: 123
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
     Orbital Year: 1990
     # Set orbital parameters to constants for consistency with RRTMGP test problem

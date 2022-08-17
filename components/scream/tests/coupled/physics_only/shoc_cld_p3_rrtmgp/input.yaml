@@ -26,6 +26,7 @@ atmosphere_processes:
       do_prescribed_ccn: false
   rrtmgp:
     Grid: Point Grid
+    Column Chunk Size: 123
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
     Orbital Year: 1990
     do_aerosol_rad: false

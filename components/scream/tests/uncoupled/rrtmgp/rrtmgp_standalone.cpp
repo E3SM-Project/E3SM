@@ -9,6 +9,7 @@
 #include "share/field/field_utils.hpp"
 
 #include "ekat/ekat_parse_yaml_file.hpp"
+#include "ekat/util/ekat_test_utils.hpp"
 
 #include <iomanip>
 
@@ -22,9 +23,9 @@ TEST_CASE("rrtmgp-stand-alone", "") {
   ekat::Comm atm_comm (MPI_COMM_WORLD);
 
   // Load ad parameter list
-  std::string fname = "input.yaml";
+  std::string inputfile = ekat::TestSession::get().params.at("inputfile");
   ekat::ParameterList ad_params("Atmosphere Driver");
-  REQUIRE_NOTHROW ( parse_yaml_file(fname,ad_params) );
+  REQUIRE_NOTHROW ( parse_yaml_file(inputfile,ad_params) );
 
   // Time stepping parameters
   auto& ts = ad_params.sublist("Time Stepping");
