@@ -171,6 +171,7 @@ MODULE MOSART_physics_mod
     TRunoff%erexch_avg = 0._r8
     negchan = 9999.0_r8
 
+    ! subcycling within MOSART begins
     do m=1,Tctl%DLevelH2R
 
        !------------------
@@ -563,7 +564,7 @@ MODULE MOSART_physics_mod
           if(TUnit%mask(iunit) > 0) then
              mud_erout = 0._r8
              san_erout = 0._r8
-             if(Tctl%RoutingMethod==1) then  ! local stepping method only applies for the kinematic wave routing method
+             if(Tctl%RoutingMethod==KW) then  ! local stepping method only applies for the kinematic wave routing method
                  numSubSteps = TUnit%numDT_r(iunit)
                  localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R/numSubSteps
                  do k=1,numSubSteps
@@ -579,7 +580,7 @@ MODULE MOSART_physics_mod
                     TRunoff%erexchange(iunit,nt_nmud) = TRunoff%erexchange(iunit,nt_nmud) + TSedi%ermb_r(iunit)
                     TRunoff%erexchange(iunit,nt_nsan) = TRunoff%erexchange(iunit,nt_nsan) + TSedi%ersb_r(iunit)
                  end do
-             elseif(Tctl%RoutingMethod==2) then
+             elseif(Tctl%RoutingMethod==DW) then
                  numSubSteps = 20
                  localDeltaT = Tctl%DeltaT/Tctl%DLevelH2R/numSubSteps
                  do k=1,numSubSteps
@@ -666,6 +667,7 @@ MODULE MOSART_physics_mod
        negchan = min(negchan, minval(TRunoff%wr(:,:)))
        call t_stopf('mosartr_chanroute') 
     end do  ! DLevelH2R
+    ! subcycling within MOSART ends
 
 ! check for negative channel storage
     if (negchan < -1.e-10) then

@@ -14,7 +14,7 @@ MODULE MOSART_sediment_mod
     !use clm_varcon , only : denh2o, grav !!density of liquid water [kg/m3], gravity constant [m/s2]
     use RunoffMod, only : Tctl, TUnit, TRunoff, TPara
     use RunoffMod, only : rtmCTL
-    use rof_cpl_indices, only : nt_rtm, rtm_tracers, nt_nliq, nt_nice, nt_nmud, nt_nsan
+    use rof_cpl_indices, only : nt_rtm, rtm_tracers, nt_nliq, nt_nice, nt_nmud, nt_nsan, KW, DW
     use MOSART_BGC_type, only : TSedi, TSedi_para
     implicit none
     real(r8), parameter :: TINYVALUE_s = 1.0e-12_r8  ! double precision variable has a significance of about 16 decimal digits
@@ -111,10 +111,10 @@ MODULE MOSART_sediment_mod
             !TRunoff%etexchange(iunit,nt_nsan) = TSedi%ersb_t(iunit)
             !TRunoff%etexchange(iunit,nt_nmud) = TSedi%ermb_t(iunit)
 
-                if(TRunoff%wt(iunit,nt_nmud) < -1.e-10) then
-                   write(iulog,*) 'Negative mud storage in t-zone! ', iunit, TRunoff%wt(iunit, nt_nmud) , TRunoff%etin(iunit,nt_nmud), TRunoff%etout(iunit,nt_nmud), TSedi%ermal_t(iunit), TSedi%sem_t(iunit), TSedi%ermb_t(iunit)
-                   call shr_sys_abort('mosart: negative mud t-zone storage')
-                end if
+            if(TRunoff%wt(iunit,nt_nmud) < -1.e-10) then
+               write(iulog,*) 'Negative mud storage in t-zone! ', iunit, TRunoff%wt(iunit, nt_nmud) , TRunoff%etin(iunit,nt_nmud), TRunoff%etout(iunit,nt_nmud), TSedi%ermal_t(iunit), TSedi%sem_t(iunit), TSedi%ermb_t(iunit)
+               call shr_sys_abort('mosart: negative mud t-zone storage')
+            end if
     end subroutine subnetworkSediment
 
     subroutine mainchannelSediment(iunit, theDeltaT)
@@ -209,7 +209,7 @@ MODULE MOSART_sediment_mod
         !== Please don't remove the block
 
         !==TODO: in current MOSART, the upstream/downstream relationship and mass balance are too difficult to track, hence assuming there is no sediment flux from downstream to upstream channel when backwater occurs
-        if(Tctl%RoutingMethod == 2) then
+        if(Tctl%RoutingMethod == DW) then
         do nt=nt_nmud,nt_nsan
 
             if(abs(TRunoff%rslp_energy(iunit)) < TINYVALUE_s) then ! no flow between current channel and downstream
