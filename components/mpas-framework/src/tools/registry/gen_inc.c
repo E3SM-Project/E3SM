@@ -1020,6 +1020,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	const char *structname, *structlevs, *structpackages;
 	const char *substructname;
 	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrdefaultval, *vararrpackages, *vararrmissingval;
+	const char *vararrbounds, *vararrcellmeasures, *vararrcellmethod, *vararrcoords, *vararrstdname;
 	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *vardefaultval, *varpackages;
 	const char *varbounds, *varcellmeasures, *varcellmethod, *varcoords, *varstdname;
 	const char *varname2, *vararrgroup2, *vararrname_in_code;
@@ -1061,6 +1062,11 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	vararrpackages = ezxml_attr(var_arr_xml, "packages");
 	vararrtimelevs = ezxml_attr(var_arr_xml, "time_levs");
 	vararrname_in_code = ezxml_attr(var_arr_xml, "name_in_code");
+	vararrbounds = ezxml_attr(var_arr_xml, "bounds");
+	vararrcellmeasures = ezxml_attr(var_arr_xml, "cell_measures");
+	vararrcellmethod = ezxml_attr(var_arr_xml, "cell_method");
+	vararrcoords = ezxml_attr(var_arr_xml, "coordinates");
+	vararrstdname = ezxml_attr(var_arr_xml, "standard_name");
 
 	package_list[0] = '\0';
 	no_packages = build_struct_package_lists(varArray, package_list);
@@ -1433,10 +1439,38 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 				free(tofree);
 
 				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'bounds', '%s')\n", pointer_name_arr, temp_str);
+			} else if ( vararrbounds != NULL ) {
+				string = strdup(vararrbounds);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'bounds', '%s')\n", pointer_name_arr, temp_str);
 			}
 
 			if ( varcellmeasures != NULL ) {
 				string = strdup(varcellmeasures);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'cell_measures', '%s')\n", pointer_name_arr, temp_str);
+			} else if ( vararrcellmeasures != NULL ) {
+				string = strdup(vararrcellmeasures);
 				tofree = string;
 
 				token = strsep(&string, "'");
@@ -1465,6 +1499,20 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 				free(tofree);
 
 				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'cell_method', '%s')\n", pointer_name_arr, temp_str);
+			} else if ( vararrcellmethod != NULL ) {
+				string = strdup(vararrcellmethod);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'cell_method', '%s')\n", pointer_name_arr, temp_str);
 			}
 
 			if ( varcoords != NULL ) {
@@ -1481,10 +1529,38 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 				free(tofree);
 
 				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'coordinates', '%s')\n", pointer_name_arr, temp_str);
+			} else if ( vararrcoords != NULL ) {
+				string = strdup(vararrcoords);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'coordinates', '%s')\n", pointer_name_arr, temp_str);
 			}
 
 			if ( varstdname != NULL ) {
 				string = strdup(varstdname);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'standard_name', '%s')\n", pointer_name_arr, temp_str);
+			} else if ( vararrstdname != NULL ) {
+				string = strdup(vararrstdname);
 				tofree = string;
 
 				token = strsep(&string, "'");

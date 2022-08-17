@@ -83,6 +83,7 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 	const char *nmloptbounds, *nmloptcellmeasures, *nmloptcellmethod, *nmloptcoords, *nmloptstdname;
 	const char *structname, *structpackages, *structstreams;
 	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrpackages, *vararrstreams;
+	const char *vararrbounds, *vararrcellmeasures, *vararrcellmethod, *vararrcoords, *vararrstdname;
 	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *varpackages;
 	const char *varbounds, *varcellmeasures, *varcellmethod, *varcoords, *varstdname;
 	const char *varname_in_code, *varname_in_stream;
@@ -257,6 +258,11 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			vararrtype = ezxml_attr(var_arr_xml, "type");
 			vararrdims = ezxml_attr(var_arr_xml, "dimensions");
 			vararrpersistence = ezxml_attr(var_arr_xml, "persistence");
+                        vararrbounds = ezxml_attr(var_arr_xml, "bounds");
+                        vararrcellmeasures = ezxml_attr(var_arr_xml, "cell_measures");
+                        vararrcellmethod = ezxml_attr(var_arr_xml, "cell_method");
+                        vararrcoords = ezxml_attr(var_arr_xml, "coordinates");
+                        vararrstdname = ezxml_attr(var_arr_xml, "standard_name");
 			vararrpackages = ezxml_attr(var_arr_xml, "packages");
 			vararrstreams = ezxml_attr(var_arr_xml, "streams");
 			time_levs = ezxml_attr(var_arr_xml, "time_levs");
