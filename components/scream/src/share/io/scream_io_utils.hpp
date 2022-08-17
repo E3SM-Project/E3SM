@@ -47,14 +47,14 @@ struct IOControl {
   int frequency = -1;
   int nsamples_since_last_write;  // Needed when updating output data, such as with the OAT::Average flag
   util::TimeStamp timestamp_of_last_write;
-  std::string frequency_units;
+  std::string frequency_units = "none";
 
   bool is_write_step (const util::TimeStamp& ts) {
     // Mini-routine to determine if it is time to write output to file.
     // The current allowable options are nsteps, nsecs, nmins, nhours, ndays, nmonths, nyears
     // We query the frequency_units string value to determine which option it is.
     bool ret = false;
-    if (frequency > 0 && frequency_units != "never") {
+    if (frequency > 0 && frequency_units != "never" && frequency_units != "none") {
       auto ts_diff = (ts-timestamp_of_last_write);
       if (frequency_units == "nsteps") {
         // Just use the num_steps from timestamps
@@ -88,7 +88,7 @@ struct IOControl {
         } 
       } else {
         EKAT_REQUIRE_MSG(false,"Invalid frequency unit of [" + frequency_units + "] for output stream.  Please check that all outputs have Frequency Units of\n"
-                               "never, nsteps, nsecs, nmins, nhours, ndays, nmonths, nyears");
+                               "none, never, nsteps, nsecs, nmins, nhours, ndays, nmonths, nyears");
       }
     }
     return ret;

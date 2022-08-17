@@ -64,7 +64,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_output_control.frequency  = out_control_pl.get<int>("Frequency");
   m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");
   m_output_control.nsamples_since_last_write = 0;
-  m_output_control.timestamp_of_last_write = m_case_t0;
+  m_output_control.timestamp_of_last_write   = m_case_t0;
 
   // File specs
   m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File");
@@ -99,10 +99,10 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     // TODO: It would be great if there was an option where, if Checkpoint Control was not a sublist, we
     //       could query the restart control information and just use that. 
     auto& pl = m_params.sublist("Checkpoint Control");
-    m_checkpoint_control.frequency  = pl.get<int>("Frequency");
-    m_checkpoint_control.frequency_units = pl.get<std::string>("Frequency Units");
+    m_checkpoint_control.frequency                 = pl.get<int>("Frequency");
+    m_checkpoint_control.frequency_units           = pl.get<std::string>("Frequency Units");
     m_checkpoint_control.nsamples_since_last_write = 0;
-    m_checkpoint_control.timestamp_of_last_write = case_t0;
+    m_checkpoint_control.timestamp_of_last_write    = case_t0;
 
     // File specs
     m_checkpoint_file_specs.max_snapshots_in_file = 1;
@@ -115,7 +115,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     // If there is no restart data or there is but no checkpoint control sublist then we initialize
     // the checkpoint control so that it never writes checkpoints.
     m_checkpoint_control.frequency  = 0;
-    m_checkpoint_control.frequency_units = "never";
+    m_checkpoint_control.frequency_units = "none";
     m_checkpoint_control.nsamples_since_last_write = 0;
     m_checkpoint_control.timestamp_of_last_write = case_t0;
   }
