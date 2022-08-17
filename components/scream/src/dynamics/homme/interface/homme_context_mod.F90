@@ -70,10 +70,13 @@ contains
     if (len>0) then
       slash = index(full_name,'/',back=.true.)
 
-      path = full_name(1:slash-1)
+      ! Note: if there's no slash (relative filename),
+      ! then slash=0, and path is the empty string.
+      ! Otherwise, path ends with the slash
+      path = full_name(1:slash)
       fname = full_name(slash+1:len)
 
-      homme_log_fname = trim(path)//"/homme_"//fname
+      homme_log_fname = trim(path)//"homme_"//fname
 
       ! Create the log file
       iulog = shr_file_getunit()
