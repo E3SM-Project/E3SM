@@ -314,14 +314,8 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   Kokkos::deep_copy(m_gas_mol_weights,gas_mol_w_host);
 
   // Initialize GasConcs object to pass to RRTMGP initializer;
-  gas_concs.resize(m_num_col_chunks);
-  for (int ic=0; ic<m_num_col_chunks; ++ic) {
-    const int chunk_size = m_col_chunk_beg[ic+1] - m_col_chunk_beg[ic];
-    gas_concs[ic].init(gas_names_yakl_offset,chunk_size,m_nlay);
-  }
-
-  // This really doesn't need gas_concs, only the gas names, so pass the 1st entry
-  rrtmgp::rrtmgp_initialize(gas_concs[0], m_atm_logger);
+  m_gas_concs.init(gas_names_yakl_offset,m_col_chunk_size,m_nlay);
+  rrtmgp::rrtmgp_initialize(m_gas_concs, m_atm_logger);
 
   // Set property checks for fields in this process
 
@@ -432,6 +426,11 @@ void RRTMGPRadiation::run_impl (const int dt) {
   // Are we going to update fluxes and heating this step?
   auto update_rad = scream::rrtmgp::radiation_do(m_rad_freq_in_steps, ts.get_num_steps());
 
+  // On each chunk, we internally "reset" the GasConcs object to subview the concs 3d array
+  // with the correct ncol dimension. So let's keep a copy of the original (ref-counted)
+  // array, to restore at the end inside the m_gast_concs object.
+
+  auto gas_concs = m_gas_concs.concs;
   // Loop over each chunk of columns
   for (int ic=0; ic<m_num_col_chunks; ++ic) {
     const int beg  = m_col_chunk_beg[ic];
@@ -493,6 +492,11 @@ void RRTMGPRadiation::run_impl (const int dt) {
     auto aero_ssa_sw     = subview_3d(m_buffer.aero_ssa_sw);
     auto aero_g_sw       = subview_3d(m_buffer.aero_g_sw);
     auto aero_tau_lw     = subview_3d(m_buffer.aero_tau_lw);
+
+    // Set gas concs to "view" only the first ncol columns
+    m_gas_concs.ncol = ncol;
+    m_gas_concs.concs = subview_3d(gas_concs);
+
     // Copy data from the FieldManager to the YAKL arrays
     {
       // Determine the cosine zenith angle
@@ -612,7 +616,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
       });
       Kokkos::fence();
 
-      gas_concs[ic].set_vmr(name, tmp2d);
+      m_gas_concs.set_vmr(name, tmp2d);
     }
 
     // Set layer cloud fraction.
@@ -683,7 +687,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
       rrtmgp::rrtmgp_main(
         ncol, m_nlay,
         p_lay, t_lay, p_lev, t_lev,
-        gas_concs[ic],
+        m_gas_concs,
         sfc_alb_dir, sfc_alb_dif, mu0,
         lwp, iwp, rel, rei,
         aero_tau_sw, aero_ssa_sw, aero_g_sw, aero_tau_lw,
@@ -800,12 +804,16 @@ void RRTMGPRadiation::run_impl (const int dt) {
         });
       });
     }
-  }  
+  } // loop over chunk
+
+  // Restore the refCounted array.
+  m_gas_concs.concs = gas_concs;
+
 }
 // =========================================================================================
 
 void RRTMGPRadiation::finalize_impl  () {
-  gas_concs.clear();
+  m_gas_concs.reset();
   rrtmgp::rrtmgp_finalize();
 
   // Finalize YAKL
