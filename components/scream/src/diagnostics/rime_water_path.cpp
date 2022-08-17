@@ -53,7 +53,7 @@ void RimeWaterPathDiagnostic::compute_diagnostic_impl()
   constexpr Real gravit = PC::gravit;
   const auto npacks         = ekat::npack<Pack>(m_num_levs);
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, npacks);
-  const auto& lwp                = m_diagnostic_output.get_view<Real*>();
+  const auto& mwp                = m_diagnostic_output.get_view<Real*>();
   const auto& qm_mid             = get_field_in("qm").get_view<const Pack**>();
   const auto& pseudo_density_mid = get_field_in("pseudo_density").get_view<const Pack**>();
 
@@ -66,7 +66,7 @@ void RimeWaterPathDiagnostic::compute_diagnostic_impl()
       const int jpack = idx / Pack::n;
       const int klev  = idx % Pack::n;
       lsum += qm_mid(icol,jpack)[klev] * pseudo_density_mid(icol,jpack)[klev]/gravit;
-    },lwp(icol));
+    },mwp(icol));
     team.team_barrier();
   });
 

@@ -16,10 +16,7 @@ void LongwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const Grids
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  auto Q = kg/kg;
-  Q.set_string("kg/kg");
   const auto m2 = m*m;
-  const auto s2 = s*s;
 
   const auto& grid_name = m_params.get<std::string>("Grid");
   auto grid  = grids_manager->get_grid(grid_name);

@@ -11,7 +11,7 @@ namespace scream
 {
 
 /*
- * This diagnostic will produce the potential temperature.
+ * This diagnostic will produce relative humidity.
  */
 
 class RelativeHumidityDiagnostic : public AtmosphereDiagnostic
@@ -24,11 +24,6 @@ public:
   using MemberType    = typename KT::MemberType;
   using view_1d       = typename KT::template view_1d<Pack>;
 
-  //using SmallPack = ekat::Pack<Real,SCREAM_SMALL_PACK_SIZE>;
-
-  //using IntSmallPack = SmallPack<Int>;
-
-  //using Spack = SmallPack<Real>;
 
   // Constructors
   RelativeHumidityDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);

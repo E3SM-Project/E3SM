@@ -16,10 +16,7 @@ void ShortwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const Grid
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  auto Q = kg/kg;
-  Q.set_string("kg/kg");
   const auto m2 = m*m;
-  const auto s2 = s*s;
 
   const auto& grid_name = m_params.get<std::string>("Grid");
   auto grid  = grids_manager->get_grid(grid_name);
@@ -35,8 +32,6 @@ void ShortwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const Grid
   add_field<Required>("SW_flux_up",          scalar3d_layout_mid, W/m2,  grid_name, ps);
   add_field<Required>("SW_clrsky_flux_dn",          scalar3d_layout_mid, W/m2,  grid_name, ps);
   add_field<Required>("SW_clrsky_flux_up",          scalar3d_layout_mid, W/m2,  grid_name, ps);
-  //add_field<Required>("p_mid",          scalar3d_layout_mid, Pa, grid_name, ps);
-  //add_field<Required>("phis",           scalar2d_layout_col, m2/s2, grid_name, ps);
 
   // Construct and allocate the diagnostic field
   FieldIdentifier fid (name(), scalar2d_layout_col, W/m2, grid_name);

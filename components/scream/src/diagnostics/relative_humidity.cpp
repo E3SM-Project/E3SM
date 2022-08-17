@@ -5,7 +5,6 @@
 namespace scream
 {
 
-//using physics = scream::physics::Functions<Real, DefaultDevice>;
 
 // =========================================================================================
 RelativeHumidityDiagnostic::RelativeHumidityDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
@@ -20,7 +19,6 @@ void RelativeHumidityDiagnostic::set_grids(const std::shared_ptr<const GridsMana
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
 
-  //using physics = scream::physics::Functions<Real, DefaultDevice>;  
 
   auto Q = kg/kg;
   Q.set_string("kg/kg");
@@ -62,7 +60,6 @@ void RelativeHumidityDiagnostic::compute_diagnostic_impl()
   auto p_mid = get_field_in("p_mid").get_view<const Pack**>();
   auto qv_mid   = get_field_in("qv").get_view<const Pack**>();
   const auto& RH         = m_diagnostic_output.get_view<Pack**>();
-//  auto qv_sat_l;
 
   using physics = scream::physics::Functions<Real, DefaultDevice>;
 
@@ -71,13 +68,10 @@ void RelativeHumidityDiagnostic::compute_diagnostic_impl()
                        KOKKOS_LAMBDA (const int& idx) {
       const int icol  = idx / npacks;
       const int jpack = idx % npacks;
-//      int nk;
-//      const auto range_pack = ekat::range<IntPack>(k*Pack::n);
-//      const auto range_mask = range_pack < nk;
-      using Smask = ekat::Mask<Pack::n>;
-      Smask range_mask(true);
-      //const bool range_mask = true;
-      //theta(icol,jpack) = PF::calculate_theta_from_T(T_mid(icol,jpack),p_mid(icol,jpack));
+      const auto range_pack = ekat::range<Pack>(jpack*Pack::n);
+      const auto range_mask = range_pack < m_num_levs;
+//      using Smask = ekat::Mask<Pack::n>;
+//      Smask range_mask(true);
       auto qv_sat_l = physics::qv_sat(T_mid(icol,jpack), p_mid(icol,jpack), false, range_mask);
       RH(icol,jpack) = qv_mid(icol,jpack)/qv_sat_l;
 

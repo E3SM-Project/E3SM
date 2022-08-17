@@ -9,7 +9,7 @@ namespace scream
 {
 
 /*
- * This diagnostic will produce the potential temperature.
+ * This diagnostic will produce the shortwave cloud forcing.
  */
 
 class ShortwaveCloudForcingDiagnostic : public AtmosphereDiagnostic
