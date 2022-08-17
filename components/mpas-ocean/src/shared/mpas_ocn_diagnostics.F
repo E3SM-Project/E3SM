@@ -1334,184 +1334,220 @@ contains
 !>    values at surface layer
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_diagnostic_solve_surfaceLayer(layerThickness, activeTracers, &
-                layerThicknessEdgeFlux, normalVelocity, tracersSurfaceLayerValue,  &
-                indexSurfaceLayerDepth, normalVelocitySurfaceLayer, &
-                surfaceFluxAttenuationCoefficient, surfaceFluxAttenuationCoefficientRunoff)!{{{
 
-      implicit none
+   subroutine ocn_diagnostic_solve_surfaceLayer(layerThickness, &
+                activeTracers, layerThicknessEdgeFlux, normalVelocity, &
+                tracersSurfaceLayerValue, indexSurfaceLayerDepth, &
+                normalVelocitySurfaceLayer, &
+                surfaceFluxAttenuationCoefficient, &
+                surfaceFluxAttenuationCoefficientRunoff)!{{{
 
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-        layerThickness      !< Input: layer thickness
+         layerThickness,         &!< [in] layer thickness
+         layerThicknessEdgeFlux, &!< [in] layer thick at edge (flx form)
+         normalVelocity           !< [in] velocity
+
       real (kind=RKIND), dimension(:,:,:), intent(in) :: &
-        activeTracers
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-        layerThicknessEdgeFlux
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-        normalVelocity
+         activeTracers            !< [in] tracers to be averaged
 
       !-----------------------------------------------------------------
-      !
       ! output variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(out) :: &
-         tracersSurfaceLayerValue
+         tracersSurfaceLayerValue     !< [out] tracer avg over sfc lyr
+
       real (kind=RKIND), dimension(:), intent(out) :: &
-         indexSurfaceLayerDepth
-      real (kind=RKIND), dimension(:), intent(out) :: &
-         normalVelocitySurfaceLayer
-      real (kind=RKIND), dimension(:), intent(out) :: &
-         surfaceFluxAttenuationCoefficient
-      real (kind=RKIND), dimension(:), intent(out) :: &
-         surfaceFluxAttenuationCoefficientRunoff
+         indexSurfaceLayerDepth,     &!< [out] layer index at sfc lyr depth
+         normalVelocitySurfaceLayer, &!< [out] avg velocity over sfc layer
+         surfaceFluxAttenuationCoefficient, &!< [out] sfc flx attenuation
+         surfaceFluxAttenuationCoefficientRunoff !< [out] sfc flx attenuation
 
       !-----------------------------------------------------------------
-      !
       ! local variables
-      !
       !-----------------------------------------------------------------
 
-      integer :: nCells, nEdges
-      integer :: iCell, iEdge
-      integer :: k
-      real(kind=RKIND) :: rSurfaceLayer
-      integer :: cell1, cell2
-      real(kind=RKIND) :: surfaceLayerDepth
-      real(kind=RKIND) :: sumSurfaceLayer
+      integer :: &
+         nCells, nEdges,  &! num of cells, edges
+         n, nTracers,     &! num of tracers, tracer index
+         iCell, iEdge, k, &! loop indices for cell, edge vertical
+         kmin, kmax, ksfc,&! vertical indices for active, sfc layers
+         cell1, cell2      ! neighbor cell indices across edge
 
-      !
+      real(kind=RKIND) :: &
+         sfcLayerDepth,   &! surface layer depth
+         sumSfcLayer,     &! running sum of depth for sfc lyr calc
+         fracSfcLayer,    &! fraction of layer in which sfc layer exists
+         rSfcLayer         ! real vertical layer index for sfc lyr
+
+      ! End preamble
+      !-----------------------------------------------------------------
+      ! Begin code
+
       ! average tracer values over the ocean surface layer
-      ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
-      if(config_use_cvmix_kpp) then
+      ! the ocean surface layer is generally assumed to be about 0.1 of
+      !    the boundary layer depth
 
-        nCells = nCellsOwned
-        surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging
+      ! sfc layer averages currently only used when KPP on
+      if (config_use_cvmix_kpp) then
+
+         sfcLayerDepth = config_cvmix_kpp_surface_layer_averaging
+         nTracers = size(activeTracers, dim=1)
 #ifdef MPAS_OPENACC
-        !$acc parallel loop gang vector &
-        !$acc          present(tracersSurfaceLayerValue, indexSurfaceLayerDepth, maxLevelCell, &
-        !$acc                  layerThickness, activeTracers, minLevelCell) &
-        !$acc          private(k, rSurfaceLayer)
+         !$acc parallel loop gang vector &
+         !$acc    present(tracersSurfaceLayerValue, activeTracers, &
+         !$acc            layerThickness, minLevelCell, maxLevelCell, &
+         !$acc            indexSurfaceLayerDepth) &
+         !$acc    private(k, kmin, kmax, ksfc, &
+         !$acc            rSfcLayer, sumSfcLayer, fracSfcLayer)
 #else
-        !$omp parallel
-        !$omp do schedule(runtime) private(sumSurfaceLayer, k, rSurfaceLayer)
+         !$omp parallel
+         !$omp do schedule(runtime) &
+         !$omp    private(k, kmin, kmax, ksfc, &
+         !$omp            rSfcLayer, sumSfcLayer, fracSfcLayer)
 #endif
-        do iCell=1,nCells
-          sumSurfaceLayer=0.0_RKIND
-          tracersSurfaceLayerValue(:,iCell) = 0.0_RKIND
-          indexSurfaceLayerDepth(iCell) = -9.e30
+         do iCell=1,nCellsOwned
+            kmin = minLevelCell(iCell)
+            kmax = maxLevelCell(iCell)
+            sumSfcLayer = 0.0_RKIND
+            rSfcLayer = kmax
 #ifdef MPAS_OPENACC
-          !$acc loop seq
+            !$acc loop seq
 #endif
-          do k = minLevelCell(iCell), maxLevelCell(iCell)
-           sumSurfaceLayer = sumSurfaceLayer + layerThickness(k,iCell)
-           rSurfaceLayer = maxLevelCell(iCell)
-           if(sumSurfaceLayer.gt.surfaceLayerDepth) then
-             sumSurfaceLayer = sumSurfaceLayer - layerThickness(k,iCell)
-             rSurfaceLayer = int(k-1) + (surfaceLayerDepth-sumSurfaceLayer)/layerThickness(k,iCell)
-             indexSurfaceLayerDepth(iCell) = rSurfaceLayer
-             exit
-           endif
-          end do
-          tracersSurfaceLayerValue(:, iCell) = 0.0_RKIND
+            do k = kmin,kmax
+               sumSfcLayer = sumSfcLayer + layerThickness(k,iCell)
+               if (sumSfcLayer > sfcLayerDepth) then
+                  sumSfcLayer = sumSfcLayer - layerThickness(k,iCell)
+                  rSfcLayer = (k-1) + (sfcLayerDepth - sumSfcLayer)/ &
+                                       layerThickness(k,iCell)
+                  exit
+               endif
+            end do ! k
+            indexSurfaceLayerDepth(iCell) = rSfcLayer
+            ksfc = int(rSfcLayer)
+            fracSfcLayer = rSfcLayer - real(ksfc,RKIND)
+
+            tracersSurfaceLayerValue(:,iCell) = 0.0_RKIND
 #ifdef MPAS_OPENACC
-          !$acc loop seq
+            !$acc loop seq
 #endif
-          do k=1,int(rSurfaceLayer)
-            tracersSurfaceLayerValue(:,iCell) = tracersSurfaceLayerValue(:,iCell) + activeTracers(:,k,iCell) &
-                                              * layerThickness(k,iCell)
-          enddo
-          k=min( int(rSurfaceLayer)+1, maxLevelCell(iCell) )
-          tracersSurfaceLayerValue(:,iCell) = (tracersSurfaceLayerValue(:,iCell) + fraction(rSurfaceLayer) &
-                                            * activeTracers(:,k,iCell) * layerThickness(k,iCell)) / surfaceLayerDepth
-        enddo
+            do k=kmin,ksfc
+            do n=1,nTracers
+               tracersSurfaceLayerValue(n,iCell) = &
+               tracersSurfaceLayerValue(n,iCell) + &
+                        activeTracers(n,k,iCell)*layerThickness(k,iCell)
+            enddo
+            enddo
+
+            k = min(ksfc+1, kmax)
+            do n=1,nTracers
+               tracersSurfaceLayerValue(n,iCell) = &
+              (tracersSurfaceLayerValue(n,iCell) + &
+                         fracSfcLayer*activeTracers(n,k,iCell)* &
+                         layerThickness(k,iCell)) / sfcLayerDepth
+            enddo
+         enddo ! cell loop
 #ifndef MPAS_OPENACC
-        !$omp end do
-        !$omp end parallel
+         !$omp end do
+         !$omp end parallel
 #endif
 
-        nEdges = nEdgesOwned
+         ! average normal velocity values over the ocean surface layer
+         ! the ocean surface layer is generally assumed to be about 0.1
+         !    of the boundary layer depth
 
-        !
-        ! average normal velocity values over the ocean surface layer
-        ! the ocean surface layer is generally assumed to be about 0.1 of the boundary layer depth
-        !
-
-        surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging
 #ifdef MPAS_OPENACC
-        !$acc parallel loop gang vector &
-        !$acc          present(normalVelocitySurfaceLayer, cellsOnEdge, maxLevelEdgeTop, &
-        !$acc                  layerThicknessEdgeFlux, normalVelocity, minLevelEdgeBot) &
-        !$acc          private(cell1, cell2, rSurfaceLayer, sumSurfaceLayer, k)
+         !$acc parallel loop gang vector &
+         !$acc    present(normalVelocitySurfaceLayer, normalVelocity, &
+         !$acc            minLevelEdgeBot, maxLevelEdgeTop, &
+         !$acc            cellsOnEdge, layerThicknessEdgeFlux) &
+         !$acc    private(k, kmin, kmax, ksfc, cell1, cell2, &
+         !$acc            rSfcLayer, sumSfcLayer, fracSfcLayer)
 #else
-        !$omp parallel
-        !$omp do schedule(runtime) private(cell1, cell2, sumSurfaceLayer, k, rSurfaceLayer)
+         !$omp parallel
+         !$omp do schedule(runtime) &
+         !$omp    private(k, kmin, kmax, ksfc, cell1, cell2, &
+         !$omp            rSfcLayer, sumSfcLayer, fracSfcLayer)
 #endif
-        do iEdge=1,nEdges
-          normalVelocitySurfaceLayer(iEdge) = 0.0_RKIND
-          cell1=cellsOnEdge(1,iEdge)
-          cell2=cellsOnEdge(2,iEdge)
-          sumSurfaceLayer=0.0_RKIND
-          rSurfaceLayer = min(minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge))
+         do iEdge=1,nEdgesOwned
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            kmin  = minLevelEdgeBot(iEdge)
+            kmax  = maxLevelEdgeTop(iEdge)
+            sumSfcLayer = 0.0_RKIND
+            rSfcLayer   = min(kmin,kmax)
+
 #ifdef MPAS_OPENACC
-          !$acc loop seq
+            !$acc loop seq
 #endif
-          do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-           rSurfaceLayer = k
-           sumSurfaceLayer = sumSurfaceLayer + layerThicknessEdgeFlux(k,iEdge)
-           if(sumSurfaceLayer.gt.surfaceLayerDepth) then
-             sumSurfaceLayer = sumSurfaceLayer - layerThicknessEdgeFlux(k,iEdge)
-             rSurfaceLayer = int(k-1) + (surfaceLayerDepth-sumSurfaceLayer)/layerThicknessEdgeFlux(k,iEdge)
-             exit
-           endif
-          end do
-          normalVelocitySurfaceLayer(iEdge) = 0.0_RKIND
+            do k = kmin,kmax
+               sumSfcLayer = sumSfcLayer + layerThicknessEdgeFlux(k,iEdge)
+               if (sumSfcLayer > sfcLayerDepth) then
+                  sumSfcLayer = sumSfcLayer &
+                              - layerThicknessEdgeFlux(k,iEdge)
+                  rSfcLayer = (k-1) + (sfcLayerDepth - sumSfcLayer)/ &
+                                       layerThicknessEdgeFlux(k,iEdge)
+                  exit
+               endif
+            end do ! k
+            ksfc = int(rSfcLayer)
+            fracSfcLayer = rSfcLayer - real(ksfc,RKIND)
+
+            normalVelocitySurfaceLayer(iEdge) = 0.0_RKIND
 #ifdef MPAS_OPENACC
-          !$acc loop seq
+            !$acc loop seq
 #endif
-          do k = minLevelEdgeBot(iEdge),int(rSurfaceLayer)
-            normalVelocitySurfaceLayer(iEdge) = normalVelocitySurfaceLayer(iEdge) + normalVelocity(k,iEdge) &
-                                              * layerThicknessEdgeFlux(k,iEdge)
-          end do
-          k=int(rSurfaceLayer)+1
-          if(k.le.maxLevelEdgeTop(iEdge)) then
-            normalVelocitySurfaceLayer(iEdge) = (normalVelocitySurfaceLayer(iEdge) + fraction(rSurfaceLayer) &
-                                              * normalVelocity(k,iEdge) * layerThicknessEdgeFlux(k,iEdge)) / surfaceLayerDepth
-          end if
-        enddo
+            do k = kmin,ksfc
+               normalVelocitySurfaceLayer(iEdge) = &
+               normalVelocitySurfaceLayer(iEdge) + &
+                                       normalVelocity(k,iEdge)* &
+                                       layerThicknessEdgeFlux(k,iEdge)
+            end do
+            k = ksfc+1
+            if (k <= kmax) then
+               normalVelocitySurfaceLayer(iEdge) = &
+              (normalVelocitySurfaceLayer(iEdge) + &
+                        fracSfcLayer*normalVelocity(k,iEdge)* &
+                        layerThicknessEdgeFlux(k,iEdge)) / sfcLayerDepth
+            end if
+         enddo ! edge loop
 #ifndef MPAS_OPENACC
-        !$omp end do
-        !$omp end parallel
+         !$omp end do
+         !$omp end parallel
 #endif
 
-      endif
+      endif ! KPP on
+
+      ! compute the attenuation coefficient for surface fluxes
 
       nCells = nCellsHalo( 1 )
 
-      ! compute the attenuation coefficient for surface fluxes
 #ifdef MPAS_OPENACC
-      !$acc parallel loop present(surfaceFluxAttenuationCoefficient, surfaceFluxAttenuationCoefficientRunoff)
+      !$acc parallel loop &
+      !$acc    present(surfaceFluxAttenuationCoefficient, &
+      !$acc            surfaceFluxAttenuationCoefficientRunoff)
 #else
       !$omp parallel
       !$omp do schedule(runtime)
 #endif
       do iCell = 1, nCells
-         surfaceFluxAttenuationCoefficient(iCell) = config_flux_attenuation_coefficient
-         surfaceFluxAttenuationCoefficientRunoff(iCell) = config_flux_attenuation_coefficient_runoff
+         surfaceFluxAttenuationCoefficient(iCell) = &
+                      config_flux_attenuation_coefficient
+         surfaceFluxAttenuationCoefficientRunoff(iCell) = &
+                      config_flux_attenuation_coefficient_runoff
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
 #endif
 
-   end subroutine ocn_diagnostic_solve_surfaceLayer!}}}
+   !--------------------------------------------------------------------
+
+   end subroutine ocn_diagnostic_solve_surfaceLayer !}}}
 
 !***********************************************************************
 !
