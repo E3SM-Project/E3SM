@@ -218,6 +218,7 @@ _TESTS = {
         "tests"   : (
             "SMS_D_Ln5.enax4v1_enax4v1.F2010-CICE",
             "SMS_D_Ln5.twpx4v1_twpx4v1.F2010-CICE",
+            "SMS.T62_oEC60to30v3_wQU225EC60to30.GMPAS-IAF-WW3",
             )
         },
 
@@ -501,11 +502,7 @@ _TESTS = {
     "e3sm_wav_developer" : {
         "time"    : "0:45:00",
         "tests"   : (
-            #"ERS.CFSR_wQU225EC60to30.UWAV-CFSR",
-            #"ERP.CFSR_wQU225EC60to30.UWAV-CFSR",
-            #"ERS.T62_oEC60to30v3_wQU225EC60to30.GWAV-IAF",
-            "ERS.T62_oEC60to30v3.GMPAS-IAF",
-            #"ERP.T62_oEC60to30v3_wQU225EC60to30.GWAV-IAF",
+            "ERS.T62_oEC60to30v3_wQU225EC60to30.GMPAS-IAF-WW3",
             )
     },
 }
