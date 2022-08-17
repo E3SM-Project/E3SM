@@ -240,6 +240,7 @@ macro(createExecLib libName execType libSrcs inclDirs macroNP
     TARGET_COMPILE_DEFINITIONS(${libName} PUBLIC HOMME_WITHOUT_PIOLIBRARY)
   ENDIF()
 
+  target_link_libraries(${execName} csm_share)
 
   IF (CXXLIB_SUPPORTED_CACHE)
     MESSAGE(STATUS "   Linking Fortran with -cxxlib")
