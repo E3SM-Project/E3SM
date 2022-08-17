@@ -23,8 +23,6 @@ public:
 
   void build_grids ();
 
-  const grid_repo_type& get_repo () const { return m_grids; }
-
 #ifndef KOKKOS_ENABLE_CUDA
 protected:
 #endif
@@ -48,8 +46,6 @@ protected:
   ekat::Comm            m_comm;
 
   ekat::ParameterList   m_params;
-
-  grid_repo_type        m_grids;
 
   std::string           m_ref_grid_name;
 

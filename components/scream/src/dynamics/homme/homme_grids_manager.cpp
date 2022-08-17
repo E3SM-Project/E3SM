@@ -72,12 +72,13 @@ HommeGridsManager::do_create_remapper (const grid_ptr_type from_grid,
 
   const bool p2d = to=="Dynamics";
 
-  auto dyn_grid = m_grids.at("Dynamics");
-
   if (from=="Physics GLL" || to=="Physics GLL") {
     using PDR = PhysicsDynamicsRemapper;
 
-    auto pd_remapper = std::make_shared<PDR>(m_grids.at("Physics GLL"),dyn_grid);
+    auto dyn_grid = get_grid("Dynamics");
+    auto phys_grid = get_grid("Physics GLL");
+
+    auto pd_remapper = std::make_shared<PDR>(phys_grid,dyn_grid);
     if (p2d) {
       return pd_remapper;
     } else {
@@ -128,7 +129,7 @@ build_grids ()
 
 void HommeGridsManager::build_dynamics_grid () {
   const std::string name = "Dynamics";
-  if (m_grids.find(name)!=m_grids.end()) {
+  if (has_grid(name)) {
     return;
   }
 
@@ -192,7 +193,7 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   }
 
   // Build only if not built yet
-  if (m_grids.find(name)!=m_grids.end()) {
+  if (has_grid(name)) {
     return;
   }
 

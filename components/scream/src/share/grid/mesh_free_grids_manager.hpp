@@ -29,8 +29,6 @@ public:
 
   void build_grids ();
 
-  const grid_repo_type& get_repo () const { return m_grids; }
-
 protected:
 
   std::string get_reference_grid_name () const {
@@ -40,8 +38,6 @@ protected:
   remapper_ptr_type
   do_create_remapper (const grid_ptr_type from_grid,
                       const grid_ptr_type to_grid) const;
-
-  grid_repo_type      m_grids;
 
   remap_repo_type     m_remappers;
 
