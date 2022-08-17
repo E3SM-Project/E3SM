@@ -18,7 +18,7 @@ Field Names:
   - precip_ice_surf_mass
 output_control:
   Frequency: 1
-  frequency_units: Steps
+  frequency_units: nsteps
   Timestamp in Filename: false
   MPI Ranks in Filename: true
 ...
