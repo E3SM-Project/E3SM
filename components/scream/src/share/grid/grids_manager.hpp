@@ -66,8 +66,15 @@ public:
   const grid_repo_type& get_repo () const { return m_grids; }
 
 protected:
+  using nonconstgrid_ptr_type     = std::shared_ptr<grid_type>;
+  using nonconstgrid_repo_type    = std::map<std::string, nonconstgrid_ptr_type>;
 
-  virtual std::string get_reference_grid_name  () const = 0;
+  void add_grid (nonconstgrid_ptr_type grid);
+  nonconstgrid_ptr_type get_grid_nonconst (const std::string& name) const;
+
+  void alias_grid (const std::string& grid_name, const std::string& grid_alias);
+
+  virtual std::string get_reference_grid_name () const = 0;
 
   virtual remapper_ptr_type
   do_create_remapper (const grid_ptr_type from_grid,
@@ -75,8 +82,10 @@ protected:
 
   std::string print_available_grids () const;
 
+private:
 
   grid_repo_type            m_grids;
+  nonconstgrid_repo_type    m_nonconst_grids;
 };
 
 // A short name for the factory for grid managers

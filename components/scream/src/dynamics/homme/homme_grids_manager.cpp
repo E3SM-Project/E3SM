@@ -121,7 +121,8 @@ build_grids ()
   if (pg_rebalance!="None") {
     pg_name += " " + pg_rebalance;
   }
-  m_grids["Physics"] = get_grid(pg_name);
+
+  this->alias_grid(pg_name,"Physics");
 
   // Clean up temporaries used during grid initialization
   cleanup_grid_init_data_f90 ();
@@ -182,7 +183,7 @@ void HommeGridsManager::build_dynamics_grid () {
   dyn_grid->set_geometry_data ("lat", lat);
   dyn_grid->set_geometry_data ("lon", lon);
 
-  m_grids["Dynamics"] = dyn_grid;
+  add_grid(dyn_grid);
 }
 
 void HommeGridsManager::
@@ -253,7 +254,7 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   phys_grid->set_geometry_data("hyam",hyam);
   phys_grid->set_geometry_data("hybm",hybm);
 
-  m_grids[name] = phys_grid;
+  add_grid(phys_grid);
 }
 
 void HommeGridsManager::

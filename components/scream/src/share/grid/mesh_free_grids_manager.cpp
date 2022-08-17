@@ -81,12 +81,12 @@ build_grids ()
     se_grid->set_dofs(dofs);
     se_grid->set_lid_to_idx_map(dofs_map);
 
-    m_grids["SE Grid"]    = se_grid;
+    add_grid(se_grid);
   }
   if (build_pt) {
     const int num_global_cols  = m_params.get<int>("Number of Global Columns");
     auto pt_grid = create_point_grid("Point Grid",num_global_cols,num_vertical_levels,m_comm);
-    m_grids["Point Grid"] = pt_grid;
+    add_grid(pt_grid);
   }
 }
 
