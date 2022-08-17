@@ -46,7 +46,8 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   Wm2.set_string("W/m2");
   auto nondim = m/m;  // dummy unit for non-dimensional fields
   auto micron = m / 1000000;
-  auto kgm3 = kg/m3;
+  auto molmol = m/m;
+  molmol.set_string("mol/mol");
 
   using namespace ShortFieldTagsNames;
 
@@ -101,7 +102,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
       add_field<Computed>(it,scalar3d_layout_mid,kgkg,grid_name, ps);
     }
     // Add gas VOLUME mixing ratios (what actually gets input to RRTMGP)
-    add_field<Computed>(it + "_vmr", scalar3d_layout_mid, kgm3, grid_name, ps);
+    add_field<Computed>(it + "_vmr", scalar3d_layout_mid, molmol, grid_name, ps);
   }
   // Required aerosol optical properties from SPA
   m_do_aerosol_rad = m_params.get<bool>("do_aerosol_rad",true);
