@@ -481,7 +481,7 @@ void HommeDynamics::run_impl (const int dt)
 
     // Post process Homme's output, to produce what the rest of Atm expects
     Kokkos::fence();
-    homme_post_process ();
+    homme_post_process (dt);
   } catch (std::exception& e) {
     EKAT_ERROR_MSG(e.what());
   } catch (...) {
@@ -656,7 +656,7 @@ void HommeDynamics::homme_pre_process (const int dt) {
   }
 }
 
-void HommeDynamics::homme_post_process () {
+void HommeDynamics::homme_post_process (const int dt) {
   const auto& pgn = m_phys_grid->name();
   const auto& c = Homme::Context::singleton();
   const auto& params = c.get<Homme::SimulationParams>();
@@ -686,6 +686,7 @@ void HommeDynamics::homme_post_process () {
   using Pack = ekat::Pack<Real,N>;
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;
+  using WS = ekat::WorkspaceManager<Pack,DefaultDevice>;
 
   if (fv_phys_active()) return;
   
@@ -715,6 +716,17 @@ void HommeDynamics::homme_post_process () {
   const auto& hvcoord = c.get<Homme::HybridVCoord>();
   const auto ps0 = hvcoord.ps0 * hvcoord.hybrid_ai0;
 
+  // Rayleigh friction paramaters
+
+  // Vertical level at which rayleigh friction term is centered.
+  const int rayk0 = m_params.get<int>("Rayleigh Friction Vertical Level", 2);
+  // Range of rayleigh friction profile.
+  const Real raykrange = m_params.get<Real>("Rayleigh Friction Range", 0.0);
+  // Approximate value of decay time at model top (days)
+  // if set to 0, no rayleigh friction is applied
+  const Real raytau0 = m_params.get<Real>("Rayleigh Friction Decay Time", 5.0);
+
+  WS wsm(npacks,1,policy);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int& icol = team.league_rank();
 
@@ -760,6 +772,39 @@ void HommeDynamics::homme_post_process () {
       // Store T at end of the dyn timestep (to back out tendencies later)
       T_prev(ilev) = T_val;
     });
+
+    // Calculate decay rate profile, otau,
+    // and apply Rayleigh friction
+    Real krange; // range of rayleigh friction profile
+    Real tau0;   // approximate value of decay time at model top
+    Real otau0;  // inverse of tau0
+
+    krange = raykrange;
+    if (raykrange == 0) krange = (rayk0 - 1.0)/2.0;
+
+    tau0 = 86400.0*raytau0; // convert to seconds
+    otau0 = 0;
+    if (tau0 != 0) otau0 = 1/tau0;
+
+    if (otau0 != 0) {
+      auto ws = wsm.get_workspace(team);
+      ekat::Unmanaged<WS::view_1d<Pack> > otau = ws.take("otau");
+
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npacks),
+                           [&](const int ilev) {
+        const auto range_pack = ekat::range<Pack>(ilev*Pack::n);
+        const Pack x = (rayk0 - range_pack)/krange;
+        otau(ilev) = otau0*(1 + ekat::tanh(x))/2;
+      });
+
+      // Apply Rayleigh friction.
+      auto u_wind = ekat::subview(v_view, icol, 0);
+      auto v_wind = ekat::subview(v_view, icol, 1);
+      auto T_mid = ekat::subview(T_view, icol);
+      PF::apply_rayleigh_friction(team, npacks, dt, otau, u_wind, v_wind, T_mid);
+
+      ws.release(otau);
+    }
   });
 
   // If ftype==FORCING_2, also set FQ_phys=Q_phys. Next step's Q_dyn will be set

@@ -41,7 +41,7 @@ public:
 protected:
 #endif
   void homme_pre_process (const int dt);
-  void homme_post_process ();
+  void homme_post_process (const int dt);
 
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
