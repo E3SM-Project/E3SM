@@ -166,8 +166,8 @@ module ocn_eddy_parameterization_helpers
      do iEdge = 1, nEdges
         if (maxLevelEdgeTop(iEdge) .GE. minLevelEdgeBot(iEdge)) then
            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)+1
-              gradBuoyEddy(k,iEdge) = gravity*(gradDensityTopOfEdge(k,iEdge) - dDensityDzTopOfEdge(k,iEdge) &
-                                             * gradZMidTopOfEdge(k,iEdge))/rho_sw
+              gradBuoyEddy(k,iEdge) = (gradDensityTopOfEdge(k,iEdge) - dDensityDzTopOfEdge(k,iEdge) &
+                                             * gradZMidTopOfEdge(k,iEdge))
            end do
         end if
      end do
@@ -193,79 +193,218 @@ module ocn_eddy_parameterization_helpers
   !>   The calculation is moved out of analysis members for this reason
   !***********************************************************************
 
-  subroutine ocn_eddy_compute_mixed_layer_depth(statePool)
+  subroutine ocn_eddy_compute_mixed_layer_depth(statePool, forcingPool)
 
-     type (mpas_pool_type), pointer, intent(in) :: statePool
+     type (mpas_pool_type), pointer, intent(in) :: statePool, forcingPool
 
      integer :: iEdge, nEdges, refIndex, cell1, cell2, nCells, k, iCell
      real(kind=RKIND) :: dDenThres, den_ref_lev
      real(kind=RKIND),dimension(:), allocatable :: depth
      integer, dimension(:), pointer :: landIceMask
      real (kind=RKIND), dimension(:,:), pointer :: layerThickness
+     real (kind=RKIND), dimension(:), pointer :: landIceDraft, landIcePressure
      logical :: found_den_mld
-     real (kind=RKIND) :: dV, dVp1, refDepth, coeffs(2), mldTemp
+     real (kind=RKIND) :: dV, dVp1, refDepth, coeffs(2), mldTemp, dz
+     real (kind=RKIND), dimension(:,:), allocatable :: pressureAdjustedForLandIce
 
-     call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
      nCells = nCellsAll
 
-     allocate(depth(nVertLevels))
-     refDepth = config_mld_reference_depth
+     if ( config_eddyMLD_use_old ) then
+       call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
+       call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
+       call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
 
-    !$omp parallel
-    !$omp do schedule(runtime) &
-    !$omp private(depth, refIndex, coeffs, found_den_mld, k, den_ref_lev, dVp1, dV, mldTemp)
-    do iCell = 1,nCells
+       allocate(pressureAdjustedForLandIce(nVertLevels, size(pressure,2)))
 
-       found_den_mld = .false.
-
-       depth(1) = 0.5_RKIND*layerThickness(1,iCell)
-       do k=2,maxLevelCell(iCell)
-          depth(k) = depth(k-1) + 0.5_RKIND*(layerThickness(k-1,iCell) + &
-                                             layerThickness(k  ,iCell))
-       end do
-
-       do k=1, maxLevelCell(iCell)-1
-          if(depth(k+1) >= refDepth) then
-             coeffs(2) = (potentialDensity(k+1,iCell) - potentialDensity(k,iCell)) &
-                          / (depth(k+1) - depth(k))
-             coeffs(1) = potentialDensity(k,iCell) - coeffs(2)*depth(k)
-
-             den_ref_lev = coeffs(2)*refDepth + coeffs(1)
-
-             refIndex=k
-             exit
-          end if
-       end do
-
-       do k=refIndex,maxLevelCell(iCell)-1
-
-          if(.not. found_den_mld .and. (potentialDensity(k+1,iCell) - den_ref_lev) .ge. &
-                   config_mixedLayerDepths_crit_dens_threshold) then
-             dVp1 = (potentialDensity(k+1,iCell) - den_ref_lev)
-             dV   = (potentialDensity(k  ,iCell) - den_ref_lev)
-
-             coeffs(2) = (depth(k+1) - depth(k)) / (dVp1 - dV)
-             coeffs(1) = depth(k) - coeffs(2)*dV
-
-             mldTemp = coeffs(2)*config_mixedLayerDepths_crit_dens_threshold + coeffs(1)
-             mldTemp=min(mldTemp,depth(k+1)) !make sure MLD isn't deeper than zMid(k+1)
-             dThreshMLD(iCell)=abs(max(mldTemp,depth(k))) !MLD should be deeper than zMid(k)
-             indMLD(iCell) = k+1
-             found_den_mld = .true.
-             exit
-          end if
-       end do
-
-       ! if the mixed layer depth is not found, it is set to the depth of the bottom most level
-       if(.not. found_den_mld) then
-          dThreshMLD(iCell) = depth(maxLevelCell(iCell))
-          indMLD(iCell) = maxLevelCell(iCell)
+       pressureAdjustedForLandIce(:,:) = pressure(:,:)
+       !If landice cavity remove land ice pressure to search for ML depth
+       if ( associated(landIcePressure) ) then
+         !$omp parallel
+         !$omp do schedule(runtime) private(k)
+         do iCell = 1,nCells
+           do k = 1,maxLevelCell(iCell)
+              pressureAdjustedForLandIce(k,iCell) = pressureAdjustedForLandIce(k,iCell)   &
+                                                          - landIcePressure(iCell)
+           end do
+         end do
+         !$omp end do
+         !$omp end parallel
        end if
-    end do !iCell
-    !$omp end do
-    !$omp end parallel
 
-    deallocate(depth)
-  end subroutine ocn_eddy_compute_mixed_layer_depth
+       !$omp parallel
+       !$omp do schedule(runtime) &
+       !$omp private(refIndex, found_den_mld, k, localvals, den_ref_lev, dVp1, dV, mldTemp)
+       do iCell = 1,nCells
+
+          !Initialize RefIndex for cases of very shallow columns
+          refIndex = maxLevelCell(iCell)
+          found_den_mld = .false.
+
+          do k=1, maxLevelCell(iCell)-1
+             if(pressureAdjustedForLandIce(k+1,iCell) > config_eddyMLD_reference_pressure) then
+
+                coeffs(2) = (potentialDensity(k+1,iCell) - potentialDensity(k,iCell)) /  &
+                            (pressureAdjustedForLandIce(k+1,iCell) - pressureAdjustedForLandIce(k,iCell))
+                coeffs(1) = potentialDensity(k,iCell) - coeffs(2)*pressureAdjustedForLandIce(k,iCell)
+
+                den_ref_lev = coeffs(2)*config_eddyMLD_reference_pressure + coeffs(1)
+
+                refIndex=k
+                exit
+             end if
+          end do
+
+          do k=refIndex,maxLevelCell(iCell)-1
+
+            if(.not. found_den_mld .and. abs(potentialDensity(k+1,iCell) - den_ref_lev) .ge. &
+                     config_eddyMLD_dens_threshold) then
+                dVp1 = abs(potentialDensity(k+1,iCell) - den_ref_lev)
+                dV   = abs(potentialDensity(k  ,iCell) - den_ref_lev)
+
+                coeffs(2) = (zMid(k+1,iCell) - zMid(k,iCell)) / (dVp1 - dV)
+                coeffs(1) = zMid(k,iCell) - coeffs(2)*dV
+
+                mldTemp = coeffs(2)*config_eddyMLD_dens_threshold + coeffs(1)
+
+                mldTemp=max(mldTemp,zMid(k+1,iCell)) !make sure MLD isn't deeper than zMid(k+1)
+                dThreshMLD(iCell)=abs(min(mldTemp,zMid(k,iCell))) !MLD should be deeper than zMid(k)
+                indMLD(iCell) = k+1
+                found_den_mld = .true.
+                exit
+             end if
+          end do
+
+          ! if the mixed layer depth is not found, it is set to the depth of the bottom most level
+
+          if(.not. found_den_mld) then
+             dThreshMLD(iCell) = abs(zMid(maxLevelCell(iCell),iCell))
+             indMLD(iCell) = maxLevelCell(iCell)
+          end if
+        end do !iCell
+        !$omp end do
+        !$omp end parallel
+
+        if (associated(landIceMask) ) then
+          !$omp parallel
+          !$omp do schedule(runtime)
+          do iCell = 1, nCells
+             dThreshMLD(iCell) = dThreshMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
+          end do
+          !$omp end do
+          !$omp end parallel
+        end if
+
+        deallocate(pressureAdjustedForLandIce)
+
+    else ! fixed mixed layer depth code
+       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+       allocate(depth(nVertLevels))
+       refDepth = config_eddyMLD_reference_depth
+
+       !$omp parallel
+       !$omp do schedule(runtime) &
+       !$omp private(depth, refIndex, coeffs, found_den_mld, k, den_ref_lev, dVp1, dV, mldTemp)
+       do iCell = 1,nCells
+
+          found_den_mld = .false.
+
+          depth(1) = 0.5_RKIND*layerThickness(1,iCell)
+          do k=2,maxLevelCell(iCell)
+             depth(k) = depth(k-1) + 0.5_RKIND*(layerThickness(k-1,iCell) + &
+                                                layerThickness(k  ,iCell))
+          end do
+
+          do k=1, maxLevelCell(iCell)-1
+             if(depth(k+1) >= refDepth) then
+                coeffs(2) = (potentialDensity(k+1,iCell) - potentialDensity(k,iCell)) &
+                             / (depth(k+1) - depth(k))
+                coeffs(1) = potentialDensity(k,iCell) - coeffs(2)*depth(k)
+
+                den_ref_lev = coeffs(2)*refDepth + coeffs(1)
+
+                refIndex=k
+                exit
+             end if
+          end do
+
+          do k=refIndex,maxLevelCell(iCell)-1
+
+             if(.not. found_den_mld .and. (potentialDensity(k+1,iCell) - den_ref_lev) .ge. &
+                      config_eddyMLD_dens_threshold) then
+                dVp1 = (potentialDensity(k+1,iCell) - den_ref_lev)
+                dV   = (potentialDensity(k  ,iCell) - den_ref_lev)
+
+                coeffs(2) = (depth(k+1) - depth(k)) / (dVp1 - dV)
+                coeffs(1) = depth(k) - coeffs(2)*dV
+
+                mldTemp = coeffs(2)*config_eddyMLD_dens_threshold + coeffs(1)
+                mldTemp=min(mldTemp,depth(k+1)) !make sure MLD isn't deeper than zMid(k+1)
+                dThreshMLD(iCell)=abs(max(mldTemp,depth(k))) !MLD should be deeper than zMid(k)
+                indMLD(iCell) = k+1
+                found_den_mld = .true.
+                exit
+             end if
+          end do
+
+          ! if the mixed layer depth is not found, it is set to the depth of the bottom most level
+          if(.not. found_den_mld) then
+             dThreshMLD(iCell) = depth(maxLevelCell(iCell))
+             indMLD(iCell) = maxLevelCell(iCell)
+          end if
+       end do !iCell
+       !$omp end do
+       !$omp end parallel
+
+       deallocate(depth)
+
+    end if !end mld calculation choice
+
+end subroutine ocn_eddy_compute_mixed_layer_depth
+
+!***********************************************************************
+!
+!  routine interp_mld
+!
+!> \brief   Interpolates between model layers
+!> \author  Luke Van Roekel
+!> \date    September 2015
+!> \details
+!>  This routine conducts computations to compute various field values
+!>     between model levels (in pressure or depth) or could interpolate
+!>      between temperature/salinity/density values.  Interpolations are
+!>      of the form
+!>       y = coeffs(1)*x^3 + coeffs(2)*x^2 + coeffs(3)*x + coeffs(4)
+!
+!-----------------------------------------------------------------------
+
+   subroutine interp_mld(y0,y1,x0,x1,xT,interp_f,yT,xm1,ym1)
+
+   integer,intent(in) :: interp_f  ! linear, quadratic, or spline
+   real(kind=RKIND),intent(in)  :: y0,y1,x0,x1,xT
+   real(kind=RKIND),intent(inout) :: yT
+   real(kind=RKIND),optional,intent(in) :: xm1,ym1
+                ! these values are to match the slope at a given point
+
+!------------------------------------------------------------------------
+!
+!  Local variables for the interpolations
+!
+!------------------------------------------------------------------------
+
+   real(kind=RKIND) :: coeffs(4)   ! stores the coefficients for the interp
+   real(kind=RKIND) :: Minv(4,4)   ! holds values for computing quad and spline
+   real(kind=RKIND) :: det
+   real(kind=RKIND) :: rhs(4)
+   integer :: k,k2
+
+   coeffs(:) = 0.0_RKIND
+   Minv(:,:) = 0.0_RKIND
+   rhs(:)    = 0.0_RKIND
+
+          coeffs(2) = (y1-y0)/(x1-x0)
+          coeffs(1) = y0 - coeffs(2)*x0
+
+     yT = coeffs(4)*xT**3 + coeffs(3)*xT**2 + coeffs(2)*xT + coeffs(1)
+   end subroutine interp_mld
 
 end module ocn_eddy_parameterization_helpers

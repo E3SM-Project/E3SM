@@ -238,10 +238,14 @@ contains
 
             k = minLevelEdgeBot(iEdge)
             kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
-                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))
+                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))* &
+                               0.25_RKIND*(RediKappaSfcTaper(k, cell1) + RediKappaSfcTaper(k, cell2) + &
+                                           RediKappaSfcTaper(k + 1, cell1) + RediKappaSfcTaper(k + 1, cell2))
             k = 1
             kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
-                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))
+                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))* &
+                               0.25_RKIND*(RediKappaSfcTaper(k, cell1) + RediKappaSfcTaper(k, cell2) + &
+                                           RediKappaSfcTaper(k + 1, cell1) + RediKappaSfcTaper(k + 1, cell2))
 
             do iTr = 1, nTracers
                tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
@@ -276,7 +280,9 @@ contains
             do k = minLevelEdgeBot(iEdge) + 1, maxLevelEdgeTop(iEdge) - 1
 
                kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
-                                              RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))
+                                              RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))*0.25_RKIND* &
+                                  (RediKappaSfcTaper(k, cell1) + RediKappaSfcTaper(k, cell2) + &
+                                   RediKappaSfcTaper(k + 1, cell1) + RediKappaSfcTaper(k + 1, cell2))
 
                do iTr = 1, nTracers
                   ! \kappa_2 \nabla \phi on edge
@@ -313,7 +319,9 @@ contains
 
             k = maxLevelEdgeTop(iEdge)
             kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
-                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))
+                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))* &
+                               0.25_RKIND*(RediKappaSfcTaper(k, cell1) + RediKappaSfcTaper(k, cell2) + &
+                                           RediKappaSfcTaper(k + 1, cell1) + RediKappaSfcTaper(k + 1, cell2))
 
             do iTr = 1, nTracers
                tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
@@ -368,8 +376,8 @@ contains
                   ! 2.0 in next line is because a dot product on a C-grid
                   ! requires a factor of 1/2 to average to the cell center.
                   flux_term3 = rediKappaCell(iCell)*2.0_RKIND* &
-                               (RediKappaScaling(k, iCell)*fluxRediZTop(iTr, k)  &
-                               * invAreaCell - RediKappaScaling(k + 1, iCell) &
+                               (RediKappaSfcTaper(k, iCell)*RediKappaScaling(k, iCell)*fluxRediZTop(iTr, k)  &
+                               * invAreaCell - RediKappaSfcTaper(k + 1, iCell)*RediKappaScaling(k + 1, iCell) &
                                *fluxRediZTop(iTr, k + 1) * invAreaCell)
 
                   redi_term3(iTr, k, iCell) = redi_term3(iTr, k, iCell) + flux_term3
@@ -438,9 +446,9 @@ contains
             do k = minLevelCell(iCell), maxLevelCell(iCell)
                do iTr = 1, ntracers
                   tend(iTr, k, iCell) = tend(iTr, k, iCell) + rediKappaCell(iCell)*2.0_RKIND* &
-                                        (RediKappaScaling(k, iCell)* &
-                                         redi_term3_topOfCell(iTr, k, iCell) - &
-                                         RediKappaScaling(k + 1, iCell)*redi_term3_topOfCell(iTr, k + 1, iCell))
+                                        (RediKappaSfcTaper(k, iCell)*RediKappaScaling(k, iCell)* &
+                                         redi_term3_topOfCell(iTr, k, iCell) - RediKappaSfcTaper(k + 1, iCell) &
+                                         *RediKappaScaling(k + 1, iCell)*redi_term3_topOfCell(iTr, k + 1, iCell))
                end do
             end do
 

@@ -36,10 +36,12 @@ module ocn_submesoscale_eddies
    !--------------------------------------------------------------------
 
    public :: ocn_submesoscale_compute_velocity, &
-             ocn_submesoscale_init
+             ocn_submesoscale_init,             &
+             ocn_submesoscale_finalize,         &
+             ocn_MLE_add_to_transport_vel
 
    real(kind=RKIND) :: tau, LfMin, Ce, dsMax
-
+   real(kind=RKIND),dimension(:),allocatable :: time_scale
 
   !***********************************************************************
 
@@ -90,6 +92,10 @@ module ocn_submesoscale_eddies
      allocate(streamFunction(nVertLevels+1))
      allocate(zEdge(nVertLevels+1))
 
+     !compute the mixed layer average buoyancy gradient and bvf**2
+     !This is thickness weighted to allow for non uniform grid spacing
+     !NOTE, it is assumed that the value of bvf**2 at the bottom of cell 1 
+     !   applies to the entire first cell
      !$omp parallel
      !$omp do schedule(runtime) &
      !$omp private(cell1,cell2,bvfML,zEdge,streamFunction,gradBuoyML,hML,bvfAv, &
@@ -102,6 +108,7 @@ module ocn_submesoscale_eddies
         streamFunction(:) = 0.0_RKIND
         bvfML = 0.0_RKIND
         gradBuoyML = 0.0_RKIND
+        !the BFV is defined at cell interfaces in the vertical so there is an offset in index
         bvfAv = sqrt(0.5_RKIND*(max(BruntVaisalaFreqTop(minLevelCell(cell1)+1,cell1),1.0E-20_RKIND) + &
                        max(BruntVaisalaFreqTop(minLevelCell(cell2)+1,cell2),1.0E-20_RKIND)))
         hML = 0.5_RKIND*layerThickEdgeMean(minLevelEdgeBot(iEdge),iEdge)
@@ -114,10 +121,11 @@ module ocn_submesoscale_eddies
         end if
 
         indMLDedge = min(indMLD(cell1),indMLD(cell2))
-        do k = minLevelEdgeBot(iEdge)+2,indMLDedge
+        do k = minLevelEdgeBot(iEdge)+1,indMLDedge
            hAv = 0.5_RKIND*(layerThickEdgeMean(k,iEdge) + layerThickEdgeMean(k-1,iEdge))
            bvfML = bvfML + hAv*bvfAv
            hML = hML + hAv
+           !the bvfAV is updated after bvfML due to the offset in index from cell center versus cell top
            bvfAv = sqrt(0.5_RKIND*(max(BruntVaisalaFreqTop(k,cell1),1.0E-20_RKIND) + &
                               max(BruntVaisalaFreqTop(k,cell2),1.0E-20_RKIND)))
            gradBuoyML = gradBuoyML + hAv*gradBuoyEddy(k,iEdge)
@@ -132,15 +140,15 @@ module ocn_submesoscale_eddies
          end do
 
         zMLD = 0.5_RKIND*(dThreshMLD(cell1)+dThreshMLD(cell2))
-        Lf = max(Lfmin, abs(gradBuoyML)*zMLD / (1.0E-20_RKIND + fEdge(iEdge)**2), &
-                  bvfML*zMLD / abs(fEdge(iEdge)))
+        Lf = max(Lfmin, abs(gradBuoyML)*zMLD / time_scale(iEdge)**2.0, &
+                 bvfML*zMLD / time_scale(iEdge))
 
         ds = min(dcEdge(iEdge),dsMax)
 
         do k = minLevelEdgeTop(iEdge)+1,maxLevelEdgeTop(iEdge)
            mu = max(0.0_RKIND,(1.0_RKIND - (2.0_RKIND*zEdge(k) / zMLD + 1.0_RKIND)**2.0)* &
                     (1.0_RKIND + 5.0_RKIND/21.0_RKIND*(2.0_RKIND*zEdge(k)/zMLD + 1.0_RKIND)**2.0))
-           streamFunction(k) = Ce*ds/Lf*zMLD**2.0*gradBuoyML/sqrt(fEdge(iEdge)**2.0 + tau**(-2.0))*mu
+           streamFunction(k) = Ce*ds/Lf*zMLD**2.0*gradBuoyML/time_scale(iEdge)*mu
         end do
 
         ! integrate in vertical to get the velocity
@@ -159,6 +167,41 @@ module ocn_submesoscale_eddies
 
   !***********************************************************************
   !
+  !  routine ocn_add_MLE_to_transport_vel
+  !
+  !> \brief   Submesoscale parameterization add to transport Vel
+  !> \details
+  !>  adds the MLE induced velocity to the transport velocity 
+  !>  
+  !***********************************************************************
+
+  subroutine ocn_MLE_add_to_transport_vel(normalTransportVelocity, nEdges)
+
+     real(kind=RKIND), dimension(:,:), intent(inout) :: &
+         normalTransportVelocity
+
+     integer, intent(in) :: nEdges
+
+     integer :: iEdge, k
+
+     if (.not. config_submesoscale_enable) return
+
+     !$omp parallel
+     !$omp do schedule(runtime) &
+     !$omp private(k)
+     do iEdge = 1, nEdges
+        do k = 1, nVertLevels
+           normalTransportVelocity(k,iEdge) = normalTransportVelocity(k,iEdge) + &
+               normalMLEvelocity(k,iEdge)
+        end do
+     end do
+     !$omp end do
+     !$omp end parallel
+
+  end subroutine ocn_MLE_add_to_transport_vel
+
+  !***********************************************************************
+  !
   !  routine ocn_submesoscale_init
   !
   !> \brief   Submesoscale parameterization init
@@ -171,12 +214,30 @@ module ocn_submesoscale_eddies
 
      integer, intent(out) :: err !< Output: error flag
 
+     integer :: iEdge
+
      err = 0
      Ce = config_submesoscale_ce
      Lfmin = config_submesoscale_lfmin
      dsmax = config_submesoscale_ds_max
      tau = config_submesoscale_tau
 
+     allocate(time_scale(nEdgesAll))
+
+     !$omp parallel
+     !$omp do schedule(runtime)
+     do iEdge=1,nEdgesAll
+        time_scale(iEdge) = sqrt(fEdge(iEdge)**2 + tau**(-2.0))
+     end do
+     !$omp end do
+     !$omp end parallel
+
    end subroutine ocn_submesoscale_init
+
+   subroutine ocn_submesoscale_finalize()
+
+     deallocate(time_scale)
+
+   end subroutine ocn_submesoscale_finalize
 
 end module ocn_submesoscale_eddies

@@ -443,14 +443,22 @@
 		/>
 	</nml_record>
 	<nml_record name="eddy_parameterization" mode="forward">
-	    <nml_option name="config_mixedLayerDepths_crit_dens_threshold" type="real" default_value="0.03" units="kgm^-3"
+	    <nml_option name="config_eddyMLD_dens_threshold" type="real" default_value="0.03" units="kgm^-3"
        			    description="potential density change relative to surface for mixed layer depth threshold method.  This calculation is used for the Redi tapering, GM N2_dependent bolus kappa, and the submesoscale eddy parameterization"
               		possible_values="suggested range 0.01 less than or equal to thresh less than or equal to 0.5"
         />
-        <nml_option name="config_mld_reference_depth" type="real" default_value="10" units="m"
+        <nml_option name="config_eddyMLD_reference_depth" type="real" default_value="10" units="m"
                     description="reference depth for threshold computation"
                     possible_values="any positive real, near 10" 
-        />
+		/>
+		<nml_option name="config_eddyMLD_reference_pressure" type="real" default_value="1.0e5" units="Pa"
+					description="reference pressure for original mixed layer depth calculation"
+					possible_values="positive reals around 1.0e5"
+		/>
+		<nml_option name="config_eddyMLD_use_old" type="logical" default_value=".true."
+					description="switches from old dThreshMLD calculation to new (fixed one)"
+					possible_values=".true. or .false."
+		/>
     </nml_record>
 	<nml_record name="Rayleigh_damping" mode="forward">
 		<nml_option name="config_Rayleigh_friction" type="logical" default_value=".false."

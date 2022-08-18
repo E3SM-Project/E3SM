@@ -35,7 +35,8 @@ module ocn_gm
    !--------------------------------------------------------------------
 
    public :: ocn_GM_compute_Bolus_velocity, &
-             ocn_GM_init
+             ocn_GM_init,                   &
+             ocn_GM_add_to_transport_vel
 
    !--------------------------------------------------------------------
    !
@@ -144,7 +145,7 @@ contains
       real(kind=RKIND) :: c_mode1, resolution, dc_Lr
       ! Dimensions
       integer :: nCells, nEdges
-      integer, pointer :: nVertLevels, indMLDedge
+      integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
 
       type(mpas_pool_type), pointer :: tracersPool
@@ -350,12 +351,6 @@ contains
                   slopeTaperDown = 1.0_RKIND + slopeTaperFactor*(slopeTaperDown - 1.0_RKIND)
 
                   sfcTaper = min(RediKappaSfcTaper(k, cell1), RediKappaSfcTaper(k, cell2))
-                  indMLDedge = max(indMLD(cell1),indMLD(cell2))
-                  if(k < indMLDedge) then
-                    sfcTaper = 0.0_RKIND
-                  else
-                    sfcTaper = 1.0_RKIND
-                  end if
 
                   sfcTaperUp = 1.0_RKIND + sfcTaperFactor*(sfcTaper - 1.0_RKIND)
                   sfcTaperDown = 1.0_RKIND + sfcTaperFactor*(sfcTaper - 1.0_RKIND)
@@ -715,7 +710,8 @@ contains
                                                                      *layerThickEdgeMean(k, iEdge)) - BruntVaisalaFreqTopEdge
                tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdgeMean(k, iEdge) &
                                  /(layerThickEdgeMean(k - 1, iEdge) + layerThickEdgeMean(k, iEdge))
-               rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gradBuoyEddy(k,iEdge) 
+               rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity/rho_sw* &
+                                            gradBuoyEddy(k,iEdge) 
 
                ! Second to next to the last rows
                do k = minLevelEdgeBot(iEdge) + 2, maxLevelEdgeTop(iEdge) - 1
@@ -727,7 +723,8 @@ contains
                                                                         *layerThickEdgeMean(k, iEdge)) - BruntVaisalaFreqTopEdge
                   tridiagC(k - 1) = 2.0_RKIND*cGMphaseSpeed(iEdge)**2/layerThickEdgeMean(k, iEdge) &
                                     /(layerThickEdgeMean(k - 1, iEdge) + layerThickEdgeMean(k, iEdge))
-                  rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gradBuoyEddy(k,iEdge)
+                  rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity/rho_sw* &
+                                             gradBuoyEddy(k,iEdge)
                end do
 
                ! Last row
@@ -738,7 +735,8 @@ contains
                                  /(layerThickEdgeMean(k - 1, iEdge) + layerThickEdgeMean(k, iEdge))
                tridiagB(k - 1) = -2.0_RKIND*cGMphaseSpeed(iEdge)**2/(layerThickEdgeMean(k - 1, iEdge) &
                                                                      *layerThickEdgeMean(k, iEdge)) - BruntVaisalaFreqTopEdge
-               rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gradBuoyEddy(k,iEdge)
+               rightHandSide(k - 1) = gmBolusKappa(iEdge)*gmKappaScaling(k,iEdge)*gravity/rho_sw* &
+                                            gradBuoyEddy(k,iEdge)
                ! Total number of rows
                N = maxLevelEdgeTop(iEdge) - minLevelEdgeBot(iEdge)
 
@@ -837,6 +835,42 @@ contains
       end do
 
    end subroutine tridiagonal_solve !}}}
+
+!***********************************************************************
+!
+!  routine ocn_GM_add_to_transport_velocity
+!
+!> \brief   Adds GM to transportVel 
+!> \details
+!>  Adds the GM bolus velocity to the normal transport velocity if enabled  
+!
+!-----------------------------------------------------------------------
+
+    subroutine ocn_GM_add_to_transport_vel(normalTransportVelocity, &
+                                           nEdges, nVertLevels)!{{{
+
+       real (kind=RKIND), dimension(:,:), intent(inout) :: &
+            normalTransportVelocity
+
+       integer, intent(in) :: nEdges, nVertLevels
+
+       integer :: iEdge, k
+
+       if (.not. config_use_gm) return
+
+       !$omp parallel 
+       !$omp do schedule(runtime) &
+       !$omp private(k)
+       do iEdge = 1, nEdges
+          do k = 1, nVertLevels
+             normalTransportVelocity(k,iEdge) = normalTransportVelocity(k,iEdge) + &
+                                    normalGMBolusVelocity(k,iEdge)
+          end do
+       end do
+       !$omp end do
+       !$omp end parallel
+
+    end subroutine ocn_GM_add_to_transport_vel!}}}
 
 !***********************************************************************
 !

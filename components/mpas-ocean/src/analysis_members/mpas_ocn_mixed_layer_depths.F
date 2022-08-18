@@ -30,6 +30,7 @@ module ocn_mixed_layer_depths
    use ocn_constants
    use ocn_config
    use ocn_diagnostics_variables
+   use ocn_eddy_parameterization_helpers
 
    implicit none
    private
@@ -216,6 +217,9 @@ contains
          call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
          call mpas_pool_get_array(meshPool, 'latCell', latCell)
          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+
+         !need to call the mixed layer depth computation for compute on startup 
+         call ocn_eddy_compute_mixed_layer_depth(statePool, forcingPool)
 
          nCells = nCellsArray( size(nCellsArray) )
          allocate(pressureAdjustedForLandIce(nVertLevels, size(pressure,2)))
