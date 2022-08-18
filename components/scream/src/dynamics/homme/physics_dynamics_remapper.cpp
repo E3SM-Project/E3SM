@@ -390,15 +390,18 @@ void PhysicsDynamicsRemapper::
 do_remap_fwd() const
 {
   // When remapping from phys to dyn, we need to perform a BEX
-  // on the dyn fields. The BEX class cannot be updated,
-  // to point to a different slice of the dyn field. Therefore,
-  // if m_update_subfield_dyn is non-empty, we cannot perform
-  // a forward remap.
+  // on the dyn fields. The BEX is 'static', meaning that the stored
+  // views cannot be changed after it's been setup. Therefore,
+  // if subfield info has changed for some dyn fields, we're toast.
   EKAT_REQUIRE_MSG (
       not subfields_info_has_changed(m_subfield_info_dyn,m_dyn_fields),
       "Error! P->D remapping is not supported if the some of the dyn fields\n"
-      "       are 'dynamic' subfields (see Field::subfield in field.hpp for\n"
-      "       an explanation of what a 'dynamic' subfield is).\n");
+      "       are subfields whose subview info has changed since setup.\n"
+      "       Note: see field.hpp and field_alloc_prop.hpp for an explanation\n"
+      "       of what a subfield and subview info).\n");
+
+  // Check if we need to update the views for subfields on phys grid
+  update_subfields_views(m_subfield_info_phys,m_phys_repo,m_phys_fields);
 
   using TeamPolicy = typename KT::TeamTagPolicy<RemapFwdTag>;
 
@@ -425,7 +428,7 @@ do_remap_fwd() const
 void PhysicsDynamicsRemapper::
 do_remap_bwd() const
 {
-  // Check if we need to update the subfields info
+  // Check if we need to update the views for subfields
   update_subfields_views(m_subfield_info_dyn,m_dyn_repo,m_dyn_fields);
   update_subfields_views(m_subfield_info_phys,m_phys_repo,m_phys_fields);
 
