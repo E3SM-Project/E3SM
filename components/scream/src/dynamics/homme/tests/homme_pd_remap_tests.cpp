@@ -8,6 +8,7 @@
 #include "share/util/scream_setup_random_test.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
+#include "SimulationParams.hpp"
 
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/dynamics_driven_grids_manager.hpp"

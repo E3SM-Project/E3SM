@@ -3,26 +3,13 @@
 
 #include "share/scream_config.hpp"
 
-#include "dynamics/homme/homme_dimensions.hpp"
-#include "dynamics/homme/homme_dynamics_helpers.hpp"
-
 #include "share/grid/remap/abstract_remapper.hpp"
-#include "share/grid/se_grid.hpp"
-#include "share/util/scream_utils.hpp"
 
-#include "ekat/ekat_pack_utils.hpp"
 #include "ekat/ekat_pack.hpp"
-#include "ekat/ekat_assert.hpp"
 
-// Homme includes
-#include "Context.hpp"
-#include "HommexxEnums.hpp"
-#include "SimulationParams.hpp"
-#include "TimeLevel.hpp"
-#include "Types.hpp"
-#include "mpi/Connectivity.hpp"
-#include "mpi/BoundaryExchange.hpp"
-#include "mpi/MpiBuffersManager.hpp"
+namespace Homme {
+class BoundaryExchange;
+}
 
 namespace scream
 {
@@ -95,27 +82,9 @@ protected:
   int m_num_phys_cols;
   typename grid_type::lid_to_idx_map_type    m_lid2elgp;
 
-  // std::shared_ptr<Homme::BoundaryExchange>  m_be[HOMMEXX_NUM_TIME_LEVELS];
   std::shared_ptr<Homme::BoundaryExchange>  m_be;
 
   view_1d<int>  m_p2d;
-
-  template<typename DataType>
-  ::Homme::ExecViewUnmanaged<DataType>
-  getHommeView(const Field& f) {
-    auto p = f.get_header().get_parent().lock();
-    auto scream_view = f.template get_view<DataType>();
-    using homme_view_t = ::Homme::ExecViewUnmanaged<DataType>;
-    if (p!=nullptr) {
-      // Need to fix the mapping stride, so that it can correctly map the subfield.
-      homme_view_t tmp(scream_view.data(),scream_view.layout());
-      auto vm = tmp.impl_map();
-      vm.m_impl_offset.m_stride = scream_view.impl_map().stride_0();
-      return homme_view_t(scream_view.impl_track(),vm);
-    } else {
-      return homme_view_t(scream_view.data(),scream_view.layout());
-    }
-  }
 
 #ifdef KOKKOS_ENABLE_CUDA
 public:
@@ -146,6 +115,8 @@ protected:
     view_Nd<T,5>   v5d;
   };
 
+  // A views repo contains a view of ViewsContainer (one per field)
+  // We have both const and non const, as well as device and host copies.
   struct ViewsRepo {
     using views_t  = view_1d<ViewsContainer<Real>>;
     using cviews_t = view_1d<ViewsContainer<const Real>>;

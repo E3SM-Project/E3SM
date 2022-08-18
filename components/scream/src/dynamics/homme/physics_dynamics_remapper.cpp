@@ -1,5 +1,43 @@
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
 
+// Homme includes
+#include "Types.hpp"
+#include "Context.hpp"
+#include "HommexxEnums.hpp"
+#include "mpi/Connectivity.hpp"
+#include "mpi/MpiBuffersManager.hpp"
+#include "mpi/BoundaryExchange.hpp"
+
+#include "dynamics/homme/homme_dynamics_helpers.hpp"
+#include "dynamics/homme/homme_dimensions.hpp"
+#include "share/grid/se_grid.hpp"
+#include "share/util/scream_utils.hpp"
+
+#include "ekat/ekat_pack_utils.hpp"
+#include "ekat/ekat_assert.hpp"
+
+namespace {
+
+// Utility function to convert a view from a Field into a Homme-compatible view
+template<typename DataType>
+::Homme::ExecViewUnmanaged<DataType>
+getHommeView(const scream::Field& f) {
+  auto p = f.get_header().get_parent().lock();
+  auto scream_view = f.template get_view<DataType>();
+  using homme_view_t = ::Homme::ExecViewUnmanaged<DataType>;
+  if (p!=nullptr) {
+    // Need to fix the mapping stride, so that it can correctly map the subfield.
+    homme_view_t tmp(scream_view.data(),scream_view.layout());
+    auto vm = tmp.impl_map();
+    vm.m_impl_offset.m_stride = scream_view.impl_map().stride_0();
+    return homme_view_t(scream_view.impl_track(),vm);
+  } else {
+    return homme_view_t(scream_view.data(),scream_view.layout());
+  }
+}
+
+} // anonymous namespace
+
 namespace scream
 {
 
