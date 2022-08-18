@@ -5,6 +5,8 @@
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 
+#include "homme_dimensions.hpp"
+
 #include <string>
 
 namespace scream
@@ -91,6 +93,19 @@ public:
   struct GllFvRemapTmp;
   void remap_dyn_to_fv_phys(GllFvRemapTmp* t = nullptr) const;
   void remap_fv_phys_to_dyn() const;
+
+  // Structure for storing local variables initialized using the ATMBufferManager
+  struct Buffer {
+    using Pack = ekat::Pack<Real,HOMMEXX_PACK_SIZE>;
+    using KT = KokkosTypes<DefaultDevice>;
+    template<typename ScalarT>
+    using uview_1d = Unmanaged<typename KT::template view_1d<ScalarT>>;
+
+    static constexpr int num_1d_scalar_nlev = 1;
+
+    uview_1d<Pack> otau;
+  };
+
   
 protected:
   void run_impl        (const int dt);
@@ -130,6 +145,15 @@ protected:
   std::shared_ptr<const AbstractGrid> m_dyn_grid;  // Dynamics DGLL
   std::shared_ptr<const AbstractGrid> m_phys_grid; // Column parameterizations grid
   std::shared_ptr<const AbstractGrid> m_cgll_grid; // Unique CGLL
+
+  // Struct which contains local variables
+  Buffer m_buffer;
+
+  // Rayleigh friction paramaters
+  int m_rayk0;      // Vertical level at which rayleigh friction term is centered.
+  Real m_raykrange; // Range of rayleigh friction profile.
+  Real m_raytau0;   // Approximate value of decay time at model top (days)
+                    // if set to 0, no rayleigh friction is applied
 };
 
 } // namespace scream

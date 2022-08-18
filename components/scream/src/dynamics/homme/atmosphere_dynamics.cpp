@@ -247,6 +247,11 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
 
 size_t HommeDynamics::requested_buffer_size_in_bytes() const
 {
+  using Pack = ekat::Pack<Real,HOMMEXX_PACK_SIZE>;
+  const int nlevs = m_dyn_grid->get_num_vertical_levels();
+  const int npacks = ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs);
+  const size_t interface_request = Buffer::num_1d_scalar_nlev*npacks*sizeof(Pack);
+
   using namespace Homme;
 
   auto& c       = Context::singleton();
@@ -287,7 +292,9 @@ size_t HommeDynamics::requested_buffer_size_in_bytes() const
   }
   fv_phys_requested_buffer_size_in_bytes();
 
-  return fbm.allocated_size()*sizeof(Real);
+  const size_t homme_request = fbm.allocated_size()*sizeof(Real);
+
+  return homme_request + interface_request;
 }
 
 void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
@@ -295,6 +302,19 @@ void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
                    "Error! Buffers size not sufficient.\n");
 
+  // Local memory used by interface
+  using Pack = ekat::Pack<Real,HOMMEXX_PACK_SIZE>;
+  const int nlevs = m_dyn_grid->get_num_vertical_levels();
+  const int npacks = ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs);
+  Pack* packed_mem = reinterpret_cast<Pack*>(buffer_manager.get_memory());
+
+  m_buffer.otau = decltype(m_buffer.otau)(packed_mem, npacks);
+  packed_mem += m_buffer.otau.size();
+  std::cout << "OTAU SIZE: " << m_buffer.otau.size() << std::endl;
+
+  Real* mem = reinterpret_cast<Real*>(packed_mem);
+
+  // Memory used by homme buffer
   using namespace Homme;
   auto& c = Context::singleton();
   auto& fbm  = c.get<FunctorsBuffersManager>();
@@ -302,7 +322,12 @@ void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
   // Reset Homme buffer to use AD buffer memory.
   // Internally, homme will actually initialize its own buffers.
   EKAT_REQUIRE(buffer_manager.allocated_bytes()%sizeof(Real)==0); // Sanity check
-  fbm.allocate(buffer_manager.get_memory(), buffer_manager.allocated_bytes()/sizeof(Real));
+  fbm.allocate(mem, buffer_manager.allocated_bytes()/sizeof(Real));
+  mem += fbm.allocated_size();
+
+  size_t used_mem = (mem - buffer_manager.get_memory())*sizeof(Real);
+  EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(),
+                   "Error! Used memory != requested memory for HommeDynamics.");
 }
 
 void HommeDynamics::initialize_impl (const RunType run_type)
@@ -449,6 +474,39 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   add_postcondition_check<Interval>(get_field_out("T_mid",pgn),m_phys_grid,140.0, 500.0,false);
   add_postcondition_check<Interval>(get_field_out("horiz_winds",pgn),m_phys_grid,-400.0, 400.0,false);
   add_postcondition_check<Interval>(get_field_out("ps"),m_phys_grid,40000.0, 120000.0,false);
+
+  constexpr int N = HOMMEXX_PACK_SIZE;
+  using KT = KokkosTypes<DefaultDevice>;
+  using Pack = ekat::Pack<Real,N>;
+
+  // Rayleigh friction paramaters
+  m_rayk0     = m_params.get<int>("Rayleigh Friction Vertical Level", 2);
+  m_raykrange = m_params.get<Real>("Rayleigh Friction Range", 0.0);
+  m_raytau0   = m_params.get<Real>("Rayleigh Friction Decay Time", 5.0);
+
+  // Calculate decay rate profile, otau.
+  // If m_raytau0 == 0 no Rayleigh friction is applied.
+  if (m_raytau0 != 0) {
+    Real krange; // range of rayleigh friction profile
+    Real tau0;   // approximate value of decay time at model top
+    Real otau0;  // inverse of tau0
+
+    krange = m_raykrange;
+    if (m_raykrange == 0) krange = (m_rayk0 - 1.0)/2.0;
+
+    tau0 = 86400.0*m_raytau0; // convert to seconds
+    otau0 = 0;
+    if (tau0 != 0) otau0 = 1.0/tau0;
+
+    auto otau = m_buffer.otau;
+    const int npacks = ekat::PackInfo<N>::num_packs(nlevs);
+    Kokkos::parallel_for(KT::RangePolicy(0, npacks),
+                         KOKKOS_LAMBDA (const int ilev) {
+      const auto range_pack = ekat::range<Pack>(ilev*Pack::n+1);
+      const Pack x = (m_rayk0 - range_pack)/krange;
+      otau(ilev) = otau0*(1.0 + ekat::tanh(x))/2.0;
+    });
+  }
 }
 
 void HommeDynamics::run_impl (const int dt)
@@ -686,7 +744,6 @@ void HommeDynamics::homme_post_process (const int dt) {
   using Pack = ekat::Pack<Real,N>;
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;
-  using WS = ekat::WorkspaceManager<Pack,DefaultDevice>;
 
   if (fv_phys_active()) return;
   
@@ -716,17 +773,6 @@ void HommeDynamics::homme_post_process (const int dt) {
   const auto& hvcoord = c.get<Homme::HybridVCoord>();
   const auto ps0 = hvcoord.ps0 * hvcoord.hybrid_ai0;
 
-  // Rayleigh friction paramaters
-
-  // Vertical level at which rayleigh friction term is centered.
-  const int rayk0 = m_params.get<int>("Rayleigh Friction Vertical Level", 2);
-  // Range of rayleigh friction profile.
-  const Real raykrange = m_params.get<Real>("Rayleigh Friction Range", 0.0);
-  // Approximate value of decay time at model top (days)
-  // if set to 0, no rayleigh friction is applied
-  const Real raytau0 = m_params.get<Real>("Rayleigh Friction Decay Time", 5.0);
-
-  WS wsm(npacks,1,policy);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int& icol = team.league_rank();
 
@@ -773,37 +819,14 @@ void HommeDynamics::homme_post_process (const int dt) {
       T_prev(ilev) = T_val;
     });
 
-    // Calculate decay rate profile, otau,
-    // and apply Rayleigh friction
-    Real krange; // range of rayleigh friction profile
-    Real tau0;   // approximate value of decay time at model top
-    Real otau0;  // inverse of tau0
-
-    krange = raykrange;
-    if (raykrange == 0) krange = (rayk0 - 1.0)/2.0;
-
-    tau0 = 86400.0*raytau0; // convert to seconds
-    otau0 = 0;
-    if (tau0 != 0) otau0 = 1/tau0;
-
-    if (otau0 != 0) {
-      auto ws = wsm.get_workspace(team);
-      ekat::Unmanaged<WS::view_1d<Pack> > otau = ws.take("otau");
-
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npacks),
-                           [&](const int ilev) {
-        const auto range_pack = ekat::range<Pack>(ilev*Pack::n);
-        const Pack x = (rayk0 - range_pack)/krange;
-        otau(ilev) = otau0*(1 + ekat::tanh(x))/2;
-      });
-
-      // Apply Rayleigh friction.
+    // Apply Rayleigh friction
+    // If m_raytau0 == 0 no Rayleigh friction is applied.
+    if (m_raytau0 != 0) {
+      const auto otau = m_buffer.otau;
       auto u_wind = ekat::subview(v_view, icol, 0);
       auto v_wind = ekat::subview(v_view, icol, 1);
       auto T_mid = ekat::subview(T_view, icol);
       PF::apply_rayleigh_friction(team, npacks, dt, otau, u_wind, v_wind, T_mid);
-
-      ws.release(otau);
     }
   });
 
