@@ -427,7 +427,6 @@ struct PhysicsFunctions
   template<typename ScalarT, typename InputProviderOtau, typename MT = Kokkos::MemoryManaged>
   KOKKOS_INLINE_FUNCTION
   static void apply_rayleigh_friction (const MemberType& team,
-                                       const int num_levs,
                                        const Real dt,
                                        const InputProviderOtau& otau,
                                        const view_1d<ScalarT, MT>& u_wind,

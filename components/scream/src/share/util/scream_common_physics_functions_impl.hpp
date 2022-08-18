@@ -503,6 +503,7 @@ void PhysicsFunctions<DeviceT>::apply_rayleigh_friction(const Real dt, const Sca
                                                         ScalarT& u_wind, ScalarT& v_wind, ScalarT& T_mid)
 {
   using C = scream::physics::Constants<Real>;
+  constexpr Real cp = C::CP;
 
   const Real dt_inv = 1.0/dt;
 
@@ -515,21 +516,20 @@ void PhysicsFunctions<DeviceT>::apply_rayleigh_friction(const Real dt, const Sca
 
   u_wind += c1*u_wind;
   v_wind += c1*v_wind;
-  T_mid  += c3*(u2 + v2)/C::CP;
+  T_mid  += c3*(u2 + v2)/cp;
 }
 
 template<typename DeviceT>
 template<typename ScalarT, typename InputProviderOtau, typename MT>
 KOKKOS_INLINE_FUNCTION
 void PhysicsFunctions<DeviceT>::apply_rayleigh_friction (const MemberType& team,
-                                                         const int num_levs,
                                                          const Real dt,
                                                          const InputProviderOtau& otau,
                                                          const view_1d<ScalarT, MT>& u_wind,
                                                          const view_1d<ScalarT, MT>& v_wind,
                                                          const view_1d<ScalarT, MT>& T_mid)
 {
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_levs),
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, T_mid.extent(0)),
                        [&] (const int k) {
     apply_rayleigh_friction(dt, otau(k), u_wind(k), v_wind(k), T_mid(k));
   });

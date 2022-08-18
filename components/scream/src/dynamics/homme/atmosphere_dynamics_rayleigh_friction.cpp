@@ -68,7 +68,7 @@ void HommeDynamics::rayleigh_friction_apply(const Real dt) const
       auto u_wind = ekat::subview(horiz_winds_view, icol, 0);
       auto v_wind = ekat::subview(horiz_winds_view, icol, 1);
       auto T_mid  = ekat::subview(T_mid_view, icol);
-      PF::apply_rayleigh_friction(team, npacks, dt, otau, u_wind, v_wind, T_mid);
+      PF::apply_rayleigh_friction(team, dt, otau, u_wind, v_wind, T_mid);
     }
   });
 }
