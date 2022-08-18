@@ -95,13 +95,17 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("surf_lw_flux_up",scalar2d_layout,W/(m*m),grid_name);
   // Set of required gas concentration fields
   for (auto& it : m_gas_names) {
-    // Add gas MASS mixing ratios
+    // Add gas MASS mixing ratios (kg/kg)
     if (it == "h2o") { /* Special case where water vapor is called h2o in radiation */
       // do nothing, qv has already been added.
+    } else if (it == "o3") {
+      // o3 is read from file, or computed by chemistry
+      add_field<Required>(it, scalar3d_layout_mid, kgkg, grid_name, ps);
     } else {
-      add_field<Computed>(it,scalar3d_layout_mid,kgkg,grid_name, ps);
+      // the rest are computed from prescribed surface values
+      add_field<Computed>(it, scalar3d_layout_mid, kgkg, grid_name, ps);
     }
-    // Add gas VOLUME mixing ratios (what actually gets input to RRTMGP)
+    // Add gas VOLUME mixing ratios (moles of gas / moles of air; what actually gets input to RRTMGP)
     add_field<Computed>(it + "_vmr", scalar3d_layout_mid, molmol, grid_name, ps);
   }
   // Required aerosol optical properties from SPA
@@ -317,16 +321,15 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
 
     // Init GHG
     // h2o is taken from qv and requies no initialization here;
+    // o3 is computed elsewhere (either read from file or computed by chemistry);
     // n2 and co are set to constants and are not handled by trcmix;
     // the rest are handled by trcmix
-    if (gas_name != "h2o") {
+    if (gas_name != "h2o" && gas_name != "o3") {
       auto gas_view = get_field_out(gas_name).get_view<Real**>();
       if (gas_name == "n2") {
         Kokkos::deep_copy(gas_view, m_params.get<Real>("n2vmr"));
       } else if (gas_name == "co") {
         Kokkos::deep_copy(gas_view, m_params.get<Real>("covmr"));
-      } else if (gas_name == "o3") {
-        // ?
       } else {
         scream::physics::trcmix(
           gas_name, m_lat, pmid, gas_view,
@@ -626,18 +629,22 @@ void RRTMGPRadiation::run_impl (const int dt) {
     // correct size that uses m_buffer.tmp2d's pointer
     real2d tmp2d = subview_2d(m_buffer.tmp2d);
     for (int igas = 0; igas < m_ngas; igas++) {
+      // Get gas mass mixing ratios (kg/kg) from field manager
       auto name = m_gas_names[igas];
       view_2d_real_const d_mmr; 
       view_2d_real       d_vmr;
       if (name == "h2o") {
         d_mmr = get_field_in("qv").get_view<const Real**>();
+      } else if (name == "o3") {
+        d_mmr = get_field_in("o3").get_view<const Real**>();
       } else {
         d_mmr = get_field_out(name).get_view<const Real**>();
       }
+
+      // Compute gas volume mixing ratios (moles / moles)
       d_vmr = get_field_out(name + "_vmr").get_view<Real**>();
       const auto gas_mol_weights = m_gas_mol_weights;
       const auto air_mol_weight = 28.97;
-
       const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
         const int i = team.league_rank();
@@ -649,6 +656,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
       });
       Kokkos::fence();
 
+      // Populate GasConcs object
       m_gas_concs.set_vmr(name, tmp2d);
     }
 
