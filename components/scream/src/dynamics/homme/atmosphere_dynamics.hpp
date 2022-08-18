@@ -87,6 +87,11 @@ protected:
   // See [rrtmgp active gases] in atmosphere_dynamics_fv_phys.cpp.
   void fv_phys_rrtmgp_active_gases_init(const std::shared_ptr<const GridsManager>& gm);
   void fv_phys_rrtmgp_active_gases_remap();
+
+  // Rayleigh friction functions
+  void rayleigh_friction_init ();
+  void rayleigh_friction_apply (const Real dt) const;
+
 public:
   // Fast boolean function returning whether Physics PGN is being used.
   bool fv_phys_active() const;

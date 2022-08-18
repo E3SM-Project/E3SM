@@ -475,38 +475,8 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   add_postcondition_check<Interval>(get_field_out("horiz_winds",pgn),m_phys_grid,-400.0, 400.0,false);
   add_postcondition_check<Interval>(get_field_out("ps"),m_phys_grid,40000.0, 120000.0,false);
 
-  constexpr int N = HOMMEXX_PACK_SIZE;
-  using KT = KokkosTypes<DefaultDevice>;
-  using Pack = ekat::Pack<Real,N>;
-
-  // Rayleigh friction paramaters
-  m_rayk0     = m_params.get<int>("Rayleigh Friction Vertical Level", 2);
-  m_raykrange = m_params.get<Real>("Rayleigh Friction Range", 0.0);
-  m_raytau0   = m_params.get<Real>("Rayleigh Friction Decay Time", 5.0);
-
-  // Calculate decay rate profile, otau.
-  // If m_raytau0 == 0 no Rayleigh friction is applied.
-  if (m_raytau0 != 0) {
-    Real krange; // range of rayleigh friction profile
-    Real tau0;   // approximate value of decay time at model top
-    Real otau0;  // inverse of tau0
-
-    krange = m_raykrange;
-    if (m_raykrange == 0) krange = (m_rayk0 - 1.0)/2.0;
-
-    tau0 = 86400.0*m_raytau0; // convert to seconds
-    otau0 = 0;
-    if (tau0 != 0) otau0 = 1.0/tau0;
-
-    auto otau = m_buffer.otau;
-    const int npacks = ekat::PackInfo<N>::num_packs(nlevs);
-    Kokkos::parallel_for(KT::RangePolicy(0, npacks),
-                         KOKKOS_LAMBDA (const int ilev) {
-      const auto range_pack = ekat::range<Pack>(ilev*Pack::n+1);
-      const Pack x = (m_rayk0 - range_pack)/krange;
-      otau(ilev) = otau0*(1.0 + ekat::tanh(x))/2.0;
-    });
-  }
+  // Initialize Rayleigh friction variables
+  rayleigh_friction_init();
 }
 
 void HommeDynamics::run_impl (const int dt)
@@ -819,15 +789,8 @@ void HommeDynamics::homme_post_process (const int dt) {
       T_prev(ilev) = T_val;
     });
 
-    // Apply Rayleigh friction
-    // If m_raytau0 == 0 no Rayleigh friction is applied.
-    if (m_raytau0 != 0) {
-      const auto otau = m_buffer.otau;
-      auto u_wind = ekat::subview(v_view, icol, 0);
-      auto v_wind = ekat::subview(v_view, icol, 1);
-      auto T_mid = ekat::subview(T_view, icol);
-      PF::apply_rayleigh_friction(team, npacks, dt, otau, u_wind, v_wind, T_mid);
-    }
+    // Apply Rayleigh friction to update temperature and horiz_winds
+    rayleigh_friction_apply(dt);
   });
 
   // If ftype==FORCING_2, also set FQ_phys=Q_phys. Next step's Q_dyn will be set
