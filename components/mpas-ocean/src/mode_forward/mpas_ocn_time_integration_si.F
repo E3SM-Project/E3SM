@@ -1684,7 +1684,7 @@ module ocn_time_integration_si
 
          !add GM and submesoscale contributions if requested
          call ocn_GM_add_to_transport_vel(uTemp, nEdges, nVertLevels)
-         call ocn_MLE_add_to_transport_vel(uTemp)
+         call ocn_MLE_add_to_transport_vel(uTemp, nEdges)
 
          !$omp parallel
          !$omp do schedule(runtime) &
@@ -1701,7 +1701,7 @@ module ocn_time_integration_si
 
          ! add GM and submesoscale contributions if requested
          call ocn_GM_add_to_transport_vel(normalTransportVelocity, nEdges, nVertLevels)
-         call ocn_MLE_add_to_transport_vel(normalTransportVelocity)
+         call ocn_MLE_add_to_transport_vel(normalTransportVelocity, nEdges)
 
          !$omp parallel
          !$omp do schedule(runtime) &

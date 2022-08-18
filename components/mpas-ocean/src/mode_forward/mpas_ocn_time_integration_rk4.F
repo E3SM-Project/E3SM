@@ -794,7 +794,7 @@ module ocn_time_integration_rk4
 
          ! add submesoscale aend gm components if requested
          call ocn_GM_add_to_transport_vel(normalTransportVelocity, nEdges, nVertLevels)
-         call ocn_MLE_add_to_transport_vel(normalTransportVelocity)
+         call ocn_MLE_add_to_transport_vel(normalTransportVelocity, nEdges)
 
          ! ------------------------------------------------------------------
          ! End: Accumulating various parameterizations of the transport velocity
@@ -964,7 +964,7 @@ module ocn_time_integration_rk4
 
       ! add submesoscale and GM contributions if requested
       call ocn_GM_add_to_transport_vel(normalTransportVelocity, nEdges, nVertLevels)
-      call ocn_MLE_add_to_transport_vel(normalTransportVelocity)
+      call ocn_MLE_add_to_transport_vel(normalTransportVelocity, nEdges)
 
       ! advection of u uses u, while advection of layerThickness and tracers use normalTransportVelocity.
       if (associated(highFreqThicknessProvis)) then
@@ -1036,7 +1036,7 @@ module ocn_time_integration_rk4
       !$omp end parallel
 
       call ocn_GM_add_to_transport_vel(normalTransportVelocity, nEdges, nVertLevels)
-      call ocn_MLE_add_to_transport_vel(normalTransportVelocity)
+      call ocn_MLE_add_to_transport_vel(normalTransportVelocity, nEdges)
 
       ! advection of u uses u, while advection of layerThickness and tracers use normalTransportVelocity.
       if (associated(highFreqThicknessProvis)) then
@@ -1387,7 +1387,7 @@ module ocn_time_integration_rk4
 
       ! add submesoscale and GM contributions if requested
       call ocn_GM_add_to_transport_vel(normalTransportVelocity, nEdges, nVertLevels)
-      call ocn_MLE_add_to_transport_vel(normalTransportVelocity)
+      call ocn_MLE_add_to_transport_vel(normalTransportVelocity, nEdges)
 
       ! ------------------------------------------------------------------
       ! End: Accumulating various parametrizations of the transport velocity

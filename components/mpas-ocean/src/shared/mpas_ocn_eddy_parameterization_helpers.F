@@ -233,7 +233,7 @@ module ocn_eddy_parameterization_helpers
 
        !$omp parallel
        !$omp do schedule(runtime) &
-       !$omp private(refIndex, found_den_mld, k, localvals, den_ref_lev, dVp1, dV, mldTemp)
+       !$omp private(refIndex, found_den_mld, k, coeffs, den_ref_lev, dVp1, dV, mldTemp)
        do iCell = 1,nCells
 
           !Initialize RefIndex for cases of very shallow columns
