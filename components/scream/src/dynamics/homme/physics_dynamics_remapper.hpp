@@ -157,7 +157,6 @@ protected:
     auto vm = tmp.impl_map();
     vm.m_impl_offset.m_stride = v.impl_map().stride_0() / pack_size;
     return view_Nd<NewValueT,N> (tmp.impl_track(),vm);
-
   }
 
   view_1d<Int> m_layout;
@@ -166,13 +165,20 @@ protected:
   // Only meaningful for 3d fields. Set to -1 for 2d fields, in case wrongfully used
   view_1d<Int> m_num_levels;
 
+  // List of phys/dyn fields that are subfields of other fields.
+  // For each field, we store the last value of subview info, to check if
+  // anything changed (only matters for 'dynamic' subfields).
   // Note: here "dynamic" is in the sense explained in Field::subfield
-  std::vector<int> m_update_subfield_dyn;
-  std::vector<int> m_update_subfield_phys;
+  std::map<int,SubviewInfo> m_subfield_info_dyn;
+  std::map<int,SubviewInfo> m_subfield_info_phys;
 
   void initialize_device_variables();
 
-  void update_subfields_views () const;
+  bool subfields_info_has_changed (const std::map<int,SubviewInfo>& subfield_info,
+                                   const std::vector<field_type>& fields) const;
+  void update_subfields_views (const std::map<int,SubviewInfo>& subfield_info,
+                               const ViewsRepo& repo,
+                               const std::vector<field_type>& fields) const;
 
   // Remap methods
   void do_remap_fwd () const override;

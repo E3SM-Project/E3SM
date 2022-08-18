@@ -239,11 +239,15 @@ initialize_device_variables()
     // A dynamic subfield will need some special treatment at runtime
     // Namely, we'll need to re-extract the view every time,
     // since the subview info may have changed
-    if (ph.get_parent().lock() && ph.get_alloc_properties().get_subview_info().dynamic) {
-      m_update_subfield_phys.push_back(i);
+    if (ph.get_parent().lock()) {
+      EKAT_REQUIRE_MSG (ph.get_parent().lock()->get_parent().lock()==nullptr,
+          "Error! We do not support remapping of subfields of other subfields.\n");
+      m_subfield_info_phys[i] = ph.get_alloc_properties().get_subview_info();
     }
-    if (dh.get_parent().lock() && dh.get_alloc_properties().get_subview_info().dynamic) {
-      m_update_subfield_dyn.push_back(i);
+    if (dh.get_parent().lock()) {
+      EKAT_REQUIRE_MSG (dh.get_parent().lock()->get_parent().lock()==nullptr,
+          "Error! We do not support remapping of subfields of other subfields.\n");
+      m_subfield_info_dyn[i] = dh.get_alloc_properties().get_subview_info();
     }
 
     const auto& pl = ph.get_identifier().get_layout();
@@ -273,40 +277,54 @@ initialize_device_variables()
   Kokkos::deep_copy(m_num_levels,          h_num_levels         );
 }
 
-void PhysicsDynamicsRemapper::
-update_subfields_views () const
+bool PhysicsDynamicsRemapper::
+subfields_info_has_changed (const std::map<int,SubviewInfo>& subfield_info,
+                            const std::vector<field_type>& fields) const
 {
-  auto update = [&](const std::vector<int>& field_idx,
-                    const ViewsRepo& repo,
-                    const std::vector<field_type>& fields) {
-
-    auto get_view = [&] (const int i, const Field& f) {
-      const auto rank = f.get_header().get_identifier().get_layout().rank();
-      switch (rank) {
-        case 1: repo.h_cviews[i].v1d = f.get_view<const Real*>();      break;
-        case 2: repo.h_cviews[i].v2d = f.get_view<const Real**>();     break;
-        case 3: repo.h_cviews[i].v3d = f.get_view<const Real***>();    break;
-        case 4: repo.h_cviews[i].v4d = f.get_view<const Real****>();   break;
-        case 5: repo.h_cviews[i].v5d = f.get_view<const Real*****>();  break;
-      }
-      if (not f.is_read_only()) {
-        switch (rank) {
-          case 1: repo.h_views[i].v1d = f.get_view<Real*>();      break;
-          case 2: repo.h_views[i].v2d = f.get_view<Real**>();     break;
-          case 3: repo.h_views[i].v3d = f.get_view<Real***>();    break;
-          case 4: repo.h_views[i].v4d = f.get_view<Real****>();   break;
-          case 5: repo.h_views[i].v5d = f.get_view<Real*****>();  break;
-        }
-      }
-    };
-    for (auto i : field_idx) {
-      get_view(i,fields[i]);
+  for (const auto& it : subfield_info) {
+    const auto& f = fields[it.first];
+    const auto& info_old = it.second;
+    const auto& info_new = f.get_header().get_alloc_properties().get_subview_info();
+    if ( not(info_old==info_new) ) {
+      return true;
     }
-    Kokkos::deep_copy(repo.views,  repo.h_views);
-    Kokkos::deep_copy(repo.cviews, repo.h_cviews);
+  }
+  return false;
+}
+
+void PhysicsDynamicsRemapper::
+update_subfields_views (const std::map<int,SubviewInfo>& subfield_info,
+                        const ViewsRepo& repo,
+                        const std::vector<field_type>& fields) const
+{
+  auto get_view = [&] (const int i, const Field& f) {
+    const auto rank = f.get_header().get_identifier().get_layout().rank();
+    switch (rank) {
+      case 1: repo.h_cviews[i].v1d = f.get_view<const Real*>();      break;
+      case 2: repo.h_cviews[i].v2d = f.get_view<const Real**>();     break;
+      case 3: repo.h_cviews[i].v3d = f.get_view<const Real***>();    break;
+      case 4: repo.h_cviews[i].v4d = f.get_view<const Real****>();   break;
+      case 5: repo.h_cviews[i].v5d = f.get_view<const Real*****>();  break;
+    }
+    if (not f.is_read_only()) {
+      switch (rank) {
+        case 1: repo.h_views[i].v1d = f.get_view<Real*>();      break;
+        case 2: repo.h_views[i].v2d = f.get_view<Real**>();     break;
+        case 3: repo.h_views[i].v3d = f.get_view<Real***>();    break;
+        case 4: repo.h_views[i].v4d = f.get_view<Real****>();   break;
+        case 5: repo.h_views[i].v5d = f.get_view<Real*****>();  break;
+      }
+    }
   };
-  update(m_update_subfield_dyn,m_dyn_repo,m_dyn_fields);
-  update(m_update_subfield_dyn,m_phys_repo,m_phys_fields);
+
+  for (const auto& it : subfield_info) {
+    const auto& f = fields[it.first];
+    if ( not(it.second==f.get_header().get_alloc_properties().get_subview_info()) ){
+      get_view(it.first,fields[it.first]);
+    }
+  }
+  Kokkos::deep_copy(repo.views,  repo.h_views);
+  Kokkos::deep_copy(repo.cviews, repo.h_cviews);
 }
 
 template <typename ScalarT, typename MT>
@@ -376,7 +394,8 @@ do_remap_fwd() const
   // to point to a different slice of the dyn field. Therefore,
   // if m_update_subfield_dyn is non-empty, we cannot perform
   // a forward remap.
-  EKAT_REQUIRE_MSG (m_update_subfield_dyn.size()==0,
+  EKAT_REQUIRE_MSG (
+      not subfields_info_has_changed(m_subfield_info_dyn,m_dyn_fields),
       "Error! P->D remapping is not supported if the some of the dyn fields\n"
       "       are 'dynamic' subfields (see Field::subfield in field.hpp for\n"
       "       an explanation of what a 'dynamic' subfield is).\n");
@@ -407,7 +426,8 @@ void PhysicsDynamicsRemapper::
 do_remap_bwd() const
 {
   // Check if we need to update the subfields info
-  update_subfields_views ();
+  update_subfields_views(m_subfield_info_dyn,m_dyn_repo,m_dyn_fields);
+  update_subfields_views(m_subfield_info_phys,m_phys_repo,m_phys_fields);
 
   using TeamPolicy = typename KT::TeamTagPolicy<RemapBwdTag>;
 
