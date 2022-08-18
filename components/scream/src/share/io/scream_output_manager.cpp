@@ -206,6 +206,11 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       // Register time as a variable.
       auto time_units="days since " + m_case_t0.get_date_string() + " " + m_case_t0.get_time_string();
       register_variable(filename,"time","time",time_units,1,{"time"},  PIO_REAL,"time");
+#ifdef SCREAM_HAS_LEAP_YEAR
+      set_variable_metadata (filename,"time","calendar","gregorian");
+#else
+      set_variable_metadata (filename,"time","calendar","noleap");
+#endif
 
       // Make all output streams register their dims/vars
       for (auto& it : m_output_streams) {
