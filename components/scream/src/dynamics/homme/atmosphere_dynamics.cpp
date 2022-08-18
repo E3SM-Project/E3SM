@@ -788,10 +788,10 @@ void HommeDynamics::homme_post_process (const int dt) {
       // Store T at end of the dyn timestep (to back out tendencies later)
       T_prev(ilev) = T_val;
     });
-
-    // Apply Rayleigh friction to update temperature and horiz_winds
-    rayleigh_friction_apply(dt);
   });
+
+  // Apply Rayleigh friction to update temperature and horiz_winds
+  rayleigh_friction_apply(dt);
 
   // If ftype==FORCING_2, also set FQ_phys=Q_phys. Next step's Q_dyn will be set
   // as Q_dyn = Q_dyn_old + PD_remap(Q_phys-Q_phys_old)
