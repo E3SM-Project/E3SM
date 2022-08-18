@@ -2543,7 +2543,7 @@ end if
              ! =====================================================  
  !++cmz 
              if (macmic_it > 0 .and. nstep > 1) then
-               print *,'nstep: ',nstep,' macmic: ',macmic_it,' .. WSX: ',cam_in%wsx(1),'  PMID: ',state%pmid(1,pver),'  U: ',state%u(1,pver),'  T: ',state%t(1,pver),'  RAM: ',cam_in%ram1(1)
+               !print *,'nstep: ',nstep,' macmic: ',macmic_it,' .. WSX: ',cam_in%wsx(1),'  PMID: ',state%pmid(1,pver),'  U: ',state%u(1,pver),'  T: ',state%t(1,pver),'  RAM: ',cam_in%ram1(1)
                where (cam_in%ram1(:ncol) > 0.0001_r8)  ! only update when RAM is not zero
                  !print *,'BEFORE: ',cam_in%wsx
                  cam_in%wsx(:ncol) = -state%pmid(:ncol,pver) * state%u(:ncol,pver) / cam_in%ram1(:ncol) / rair / state%t(:ncol,pver)

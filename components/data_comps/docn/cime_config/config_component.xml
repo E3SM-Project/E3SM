@@ -185,6 +185,7 @@
       <value compset="1850_" grid="a%0.23x0.31.*_oi%0.23x0.31"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_clim_pi_c101028.nc</value>
       <value compset="1950_" grid=".+"								>$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_1950_clim_c20180910.nc</value>
       <value compset="2010.*_" grid=".+"					        >$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_2010_clim_c20190821.nc</value>
+      <value compset="2010_EAM%CMIP6-HR" grid=".+"					        >$DIN_LOC_ROOT/atm/cam/sst/sst_v1.2-NATL-F2010C5-v2_1x1.nc</value>
       <value compset="20TR_CAM5%CMIP6" grid=".+"					>$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc</value>
       <value compset="20TR_EAM%CMIP6" grid=".+"					>$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc</value>
       <value compset="20TR_EAM%MMF.*CMIP6" grid=".+" >$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc</value>
@@ -273,6 +274,7 @@
       <value compset="20TR_CAM5%CMIP6">1869</value>
       <value compset="20TR_EAM%CMIP6">1869</value>
       <value compset="20TR_EAM%MMF.*CMIP6">1869</value>
+      <value compset="2010_EAM%CMIP6-HR">1</value>
     </values>
     <group>run_component_cam_sstice</group>
     <file>env_run.xml</file>
@@ -293,6 +295,7 @@
       <value compset="20TR_CAM5%CMIP6">2016</value>
       <value compset="20TR_EAM%CMIP6">2016</value>
       <value compset="20TR_EAM%MMF.*CMIP6">2016</value>
+      <value compset="2010_EAM%CMIP6-HR">1</value>
     </values>
     <group>run_component_cam_sstice</group>
     <file>env_run.xml</file>
