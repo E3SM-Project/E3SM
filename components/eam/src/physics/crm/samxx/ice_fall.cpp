@@ -79,7 +79,7 @@ void ice_fall() {
 
       // Ice sedimentation velocity depends on ice content. The fiting is
       // based on the data by Heymsfield (JAS,2003). -Marat
-      real vt_ice = min( 0.4 , 8.66 * pow( (max(0.,qic)+1.e-10) , 0.24) );   // Heymsfield (JAS, 2003, p.2607)
+      real vt_ice = min( vtice_min , 8.66 * pow( (max(0.,qic)+1.e-10) , 0.24) );   // Heymsfield (JAS, 2003, p.2607)
 
       // Use MC flux limiter in computation of flux correction.
       // (MC = monotonized centered difference).
