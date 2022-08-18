@@ -1737,7 +1737,7 @@ contains
             dcEdge_temp = dcEdge(iEdge)
             dvEdge_temp = dvEdge(iEdge)
             do k = minLevelCell(iCell), maxLevelCell(iCell)
-               ! Compute vertical velocity from the horizontal GM Bolus velocity
+               ! Compute vertical velocity from the horizontal MLE (submesoscale eddy)  Bolus velocity
                div_huMLEBolus(k) = div_huMLEBolus(k) &
                                    - layerThickEdgeFlux(k, iEdge) * edgeSignOnCell_temp * dvEdge_temp &
                                    * normalMLEVelocity(k, iEdge) * invAreaCell1

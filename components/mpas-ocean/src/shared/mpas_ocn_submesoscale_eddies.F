@@ -123,11 +123,10 @@ module ocn_submesoscale_eddies
         indMLDedge = min(indMLD(cell1),indMLD(cell2))
         do k = minLevelEdgeBot(iEdge)+1,indMLDedge
            hAv = 0.5_RKIND*(layerThickEdgeMean(k,iEdge) + layerThickEdgeMean(k-1,iEdge))
-           bvfML = bvfML + hAv*bvfAv
-           hML = hML + hAv
-           !the bvfAV is updated after bvfML due to the offset in index from cell center versus cell top
            bvfAv = sqrt(0.5_RKIND*(max(BruntVaisalaFreqTop(k,cell1),1.0E-20_RKIND) + &
                               max(BruntVaisalaFreqTop(k,cell2),1.0E-20_RKIND)))
+           bvfML = bvfML + hAv*bvfAv
+           hML = hML + hAv
            gradBuoyML = gradBuoyML + hAv*gradBuoyEddy(k,iEdge)
         end do
         bvfML = bvfML / (1.0E-20_RKIND + hML)
@@ -136,7 +135,7 @@ module ocn_submesoscale_eddies
         !compute depths and shape function
 
         do k = minLevelEdgeTop(iEdge)+1,maxLevelEdgeTop(iEdge)+1
-           zEdge(k) = zedge(k-1) - layerThickEdgeMean(k-1,iEdge)
+           zEdge(k) = zEdge(k-1) - layerThickEdgeMean(k-1,iEdge)
          end do
 
         zMLD = 0.5_RKIND*(dThreshMLD(cell1)+dThreshMLD(cell2))
@@ -219,7 +218,7 @@ module ocn_submesoscale_eddies
      err = 0
      Ce = config_submesoscale_ce
      Lfmin = config_submesoscale_lfmin
-     dsmax = config_submesoscale_ds_max
+     dsMax = config_submesoscale_ds_max
      tau = config_submesoscale_tau
 
      allocate(time_scale(nEdgesAll))

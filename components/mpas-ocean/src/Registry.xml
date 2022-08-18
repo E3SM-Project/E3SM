@@ -358,7 +358,7 @@
 					/>
 		<nml_option name="config_submesoscale_Lfmin" type="real" default_value="1000" units="m"
 					description="minimum frontal width (meters)"
-					possible_values="between 500 and 2000m"
+					possible_values="between 200 and 5000m"
 					/>
 		<nml_option name="config_submesoscale_ds_max" type="real" default_value="100000" units="m"
 					description="maximum grid scale to scale up buoyancy gradient"
