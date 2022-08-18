@@ -1,0 +1,5 @@
+This test mod can be used to disable river model mosart during runtime
+for compsets that use mosart as river model. In practice, this is used 
+for ERS and ERP tests with F2010-SCREAMv1 after it was changed to use 
+mosart in place of srof. 
+
