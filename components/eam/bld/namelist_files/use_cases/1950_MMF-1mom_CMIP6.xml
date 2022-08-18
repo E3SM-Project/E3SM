@@ -42,9 +42,10 @@
 
 <!-- Prescribed Ozone -->
 <prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
-<prescribed_ozone_file    >ozone_1.9x2.5_L26_1850-2015_rcp45_c101108.nc</prescribed_ozone_file>
+<prescribed_ozone_file    >ozone_1.9x2.5_L26_2000clim_c091112.nc</prescribed_ozone_file>
 <prescribed_ozone_name    >O3</prescribed_ozone_name>
-<prescribed_ozone_type    >INTERP_MISSING_MONTHS</prescribed_ozone_type>
+<prescribed_ozone_type    >CYCLICAL</prescribed_ozone_type>
+<prescribed_ozone_cycle_yr>2000</prescribed_ozone_cycle_yr>>
 
 <!-- Turn off ozone dry deposition, as Linoz O3v2 and ozone are not separated for now. Need to turn on ozone dry deposition when interactive tropospheric chemistry is implemented -->
 <drydep_list            >'H2O2', 'H2SO4', 'SO2'</drydep_list>
