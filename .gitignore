@@ -26,9 +26,3 @@ buildlib_cmakec
 
 # Ignore emacs backup files
 *~
-
-# JJB: ignore ALL files in ANY directory named cases
-cases/
-
-# JJB: ignore single files
-cime_config/machines/config_machines_ORIG.xml
