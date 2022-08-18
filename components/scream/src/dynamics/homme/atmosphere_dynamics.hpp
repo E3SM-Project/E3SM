@@ -99,13 +99,14 @@ public:
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
+    using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
     using KT = KokkosTypes<DefaultDevice>;
     template<typename ScalarT>
     using uview_1d = Unmanaged<typename KT::template view_1d<ScalarT>>;
 
     static constexpr int num_1d_scalar_nlev = 1;
 
-    uview_1d<Real> otau;
+    uview_1d<Pack> otau;
   };
 
   
