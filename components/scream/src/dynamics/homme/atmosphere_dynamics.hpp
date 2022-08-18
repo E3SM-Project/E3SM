@@ -5,8 +5,6 @@
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 
-#include "homme_dimensions.hpp"
-
 #include <string>
 
 namespace scream
@@ -101,14 +99,13 @@ public:
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
-    using Pack = ekat::Pack<Real,HOMMEXX_PACK_SIZE>;
     using KT = KokkosTypes<DefaultDevice>;
     template<typename ScalarT>
     using uview_1d = Unmanaged<typename KT::template view_1d<ScalarT>>;
 
     static constexpr int num_1d_scalar_nlev = 1;
 
-    uview_1d<Pack> otau;
+    uview_1d<Real> otau;
   };
 
   

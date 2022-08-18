@@ -3,13 +3,14 @@
 // Scream includes
 #include "share/util/scream_common_physics_functions.hpp"
 
+// Homme includes
+#include "dynamics/homme/homme_dimensions.hpp"
+
 namespace scream {
 
 void HommeDynamics::rayleigh_friction_init()
 {
-  constexpr int N = HOMMEXX_PACK_SIZE;
   using KT = KokkosTypes<DefaultDevice>;
-  using Pack = ekat::Pack<Real,N>;
 
   // Rayleigh friction paramaters
   m_rayk0     = m_params.get<int>("Rayleigh Friction Vertical Level", 2);
@@ -32,33 +33,28 @@ void HommeDynamics::rayleigh_friction_init()
 
     auto otau = m_buffer.otau;
     const auto nlevs = m_phys_grid->get_num_vertical_levels();
-    const int npacks = ekat::PackInfo<Pack::n>::num_packs(nlevs);
 
-    Kokkos::parallel_for(KT::RangePolicy(0, npacks),
+    Kokkos::parallel_for(KT::RangePolicy(0, nlevs),
                          KOKKOS_LAMBDA (const int ilev) {
-      const auto range_pack = ekat::range<Pack>(ilev*Pack::n+1);
-      const Pack x = (m_rayk0 - range_pack)/krange;
-      otau(ilev) = otau0*(1.0 + ekat::tanh(x))/2.0;
+      const Real x = (m_rayk0 - (ilev+1))/krange;
+      otau(ilev) = otau0*(1.0 + tanh(x))/2.0;
     });
   }
 }
 
 void HommeDynamics::rayleigh_friction_apply(const Real dt) const
 {
-  constexpr int N = HOMMEXX_PACK_SIZE;
   using PF = PhysicsFunctions<DefaultDevice>;
   using KT = KokkosTypes<DefaultDevice>;
-  using Pack = ekat::Pack<Real,N>;
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
 
   const auto ncols = m_phys_grid->get_num_local_dofs();
   const auto nlevs = m_phys_grid->get_num_vertical_levels();
-  const auto npacks= ekat::PackInfo<N>::num_packs(nlevs);
 
-  const auto horiz_winds_view = get_field_out("horiz_winds").get_view<Pack***>();
-  const auto T_mid_view       = get_field_out("T_mid").get_view<Pack**>();
+  const auto horiz_winds_view = get_field_out("horiz_winds").get_view<Real***>();
+  const auto T_mid_view       = get_field_out("T_mid").get_view<Real**>();
 
-  const auto policy = ESU::get_default_team_policy(ncols, npacks);
+  const auto policy = ESU::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int& icol = team.league_rank();
 

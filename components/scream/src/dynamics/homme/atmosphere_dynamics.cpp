@@ -247,10 +247,8 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
 
 size_t HommeDynamics::requested_buffer_size_in_bytes() const
 {
-  using Pack = ekat::Pack<Real,HOMMEXX_PACK_SIZE>;
   const int nlevs = m_dyn_grid->get_num_vertical_levels();
-  const int npacks = ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs);
-  const size_t interface_request = Buffer::num_1d_scalar_nlev*npacks*sizeof(Pack);
+  const size_t interface_request = Buffer::num_1d_scalar_nlev*nlevs*sizeof(Real);
 
   using namespace Homme;
 
@@ -303,16 +301,10 @@ void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
                    "Error! Buffers size not sufficient.\n");
 
   // Local memory used by interface
-  using Pack = ekat::Pack<Real,HOMMEXX_PACK_SIZE>;
   const int nlevs = m_dyn_grid->get_num_vertical_levels();
-  const int npacks = ekat::PackInfo<HOMMEXX_PACK_SIZE>::num_packs(nlevs);
-  Pack* packed_mem = reinterpret_cast<Pack*>(buffer_manager.get_memory());
-
-  m_buffer.otau = decltype(m_buffer.otau)(packed_mem, npacks);
-  packed_mem += m_buffer.otau.size();
-  std::cout << "OTAU SIZE: " << m_buffer.otau.size() << std::endl;
-
-  Real* mem = reinterpret_cast<Real*>(packed_mem);
+  Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
+  m_buffer.otau = decltype(m_buffer.otau)(mem, nlevs);
+  mem += m_buffer.otau.size();
 
   // Memory used by homme buffer
   using namespace Homme;
