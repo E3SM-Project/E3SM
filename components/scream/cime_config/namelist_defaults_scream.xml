@@ -134,7 +134,7 @@ tweaking their $case/namelist_scream.xml file.
     <!-- Basic options for each atm process -->
     <atm_proc_base>
       <number_of_subcycles constraints="gt 0">1</number_of_subcycles>
-      <Enable__Precondition__Checks type="logical">true</Enable__Precondition__Checks>
+      <enable_precondition_checks type="logical">true</enable_precondition_checks>
       <Enable__Postcondition__Checks type="logical">true</Enable__Postcondition__Checks>
     </atm_proc_base>
 

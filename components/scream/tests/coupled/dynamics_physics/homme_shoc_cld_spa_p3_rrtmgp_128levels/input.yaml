@@ -21,7 +21,7 @@ atmosphere_processes:
   Schedule Type: Sequential
   homme:
     Process Name: Homme
-    Enable Precondition Checks: false
+    enable_precondition_checks: false
     Vertical Coordinate Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_128lev}
     Moisture: moist
   physics:

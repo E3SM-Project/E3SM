@@ -547,7 +547,7 @@ TEST_CASE("field_checks", "") {
     for (bool check_pre : {true, false}) {
       for (bool check_post : {true, false}) {
 
-        params.set("Enable Precondition Checks",check_pre);
+        params.set("enable_precondition_checks",check_pre);
         params.set("Enable Postcondition Checks",check_post);
 
         // Create the process

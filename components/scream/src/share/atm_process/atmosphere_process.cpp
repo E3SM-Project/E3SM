@@ -48,7 +48,7 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
 
 void AtmosphereProcess::run (const int dt) {
   start_timer (m_timer_prefix + this->name() + "::run");
-  if (m_params.get("Enable Precondition Checks", true)) {
+  if (m_params.get("enable_precondition_checks", true)) {
     // Run 'pre-condition' property checks stored in this AP
     run_precondition_checks();
   }
