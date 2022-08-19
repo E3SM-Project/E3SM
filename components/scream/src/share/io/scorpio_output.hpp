@@ -162,6 +162,8 @@ protected:
   // --- Internal variables --- //
   ekat::Comm                          m_comm;
 
+  std::string                         m_fp_precision;
+
   std::shared_ptr<const fm_type>      m_field_mgr;
   std::shared_ptr<const grid_type>    m_io_grid;
   std::shared_ptr<remapper_type>      m_remapper;

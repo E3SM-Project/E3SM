@@ -5,7 +5,10 @@
 #include "ekat/ekat_assert.hpp"
 #include "share/scream_types.hpp"
 
+#include <pio.h>
+
 #include <string>
+
 
 using scream::Real;
 using scream::Int;
@@ -21,7 +24,7 @@ extern "C" {
   void eam_init_pio_subsystem_c2f(const int mpicom, const int atm_id);
   void eam_pio_finalize_c2f();
   void eam_pio_closefile_c2f(const char*&& filename);
-  void pio_update_time_c2f(const char*&& filename,const Real time);
+  void pio_update_time_c2f(const char*&& filename,const double time);
   void register_dimension_c2f(const char*&& filename, const char*&& shortname, const char*&& longname, const int length);
   void register_variable_c2f(const char*&& filename,const char*&& shortname, const char*&& longname, const char*&& units, const int numdims, const char** var_dimensions, const int dtype, const char*&& pio_decomp_tag);
   void set_variable_metadata_c2f (const char*&& filename, const char*&& varname, const char*&& meta_name, const char*&& meta_val);
@@ -31,6 +34,24 @@ extern "C" {
 
 namespace scream {
 namespace scorpio {
+
+int nctype (const std::string& type) {
+  if (type=="int") {
+    return PIO_INT;
+  } else if (type=="float" || type=="single") {
+    return PIO_FLOAT;
+  } else if (type=="double") {
+    return PIO_DOUBLE;
+  } else if (type=="real") {
+#if defined(SCREAM_DOUBLE_PRECISION)
+    return PIO_DOUBLE;
+#else
+    return PIO_FLOAT;
+#endif
+  } else {
+    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported data type '" + type + "'.\n");
+  }
+}
 /* ----------------------------------------------------------------- */
 
 void eam_init_pio_subsystem(const int mpicom, const int atm_id) {
@@ -65,7 +86,7 @@ void set_dof(const std::string& filename, const std::string& varname, const Int 
   set_dof_c2f(filename.c_str(),varname.c_str(),dof_len,x_dof);
 }
 /* ----------------------------------------------------------------- */
-void pio_update_time(const std::string& filename, const Real time) {
+void pio_update_time(const std::string& filename, const double time) {
 
   pio_update_time_c2f(filename.c_str(),time);
 }

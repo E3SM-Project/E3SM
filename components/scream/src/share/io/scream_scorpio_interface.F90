@@ -45,25 +45,16 @@ module scream_scorpio_interface
   !------------
   use pio_types,    only: iosystem_desc_t, file_desc_t, var_desc_t, io_desc_t, &
                           pio_noerr, pio_global, &
-                          PIO_int, PIO_real, PIO_double
+                          PIO_int, PIO_real, PIO_double, PIO_float=>PIO_real
   use pio_kinds,    only: PIO_OFFSET_KIND
   use pio_nf,       only: PIO_enddef, PIO_inq_dimid, PIO_inq_dimlen, PIO_inq_varid
   use pionfatt_mod, only: PIO_put_att   => put_att
 
   use mpi
 
-  use iso_c_binding
+  use iso_c_binding, only: c_float, c_double, c_int
   implicit none
   save
-
-#include "scream_config.f"
-#ifdef SCREAM_DOUBLE_PRECISION
-# define pio_rtype PIO_double
-# define rtype c_double
-#else
-# define pio_rtype PIO_real
-# define rtype c_float
-#endif
 
   public :: &
             lookup_pio_atm_file,         & ! Checks if a pio file is present
@@ -627,7 +618,7 @@ contains
     use pionfput_mod, only: PIO_put_var   => put_var
 
     character(len=*), intent(in) :: filename       ! PIO filename
-    real(rtype), intent(in)      :: time
+    real(c_double), intent(in)      :: time
 
     type(hist_var_t), pointer    :: var
     type(pio_atm_file_t),pointer   :: pio_atm_file
@@ -725,6 +716,7 @@ contains
   ! Query whether the pio subsystem is inited already
   ! This can be useful to avoid double-init or double-finalize calls.
   function is_eam_pio_subsystem_inited() result(is_it) bind(c)
+    use iso_c_binding, only: c_bool
 
     logical(kind=c_bool) :: is_it
 
@@ -1362,6 +1354,7 @@ contains
   subroutine grid_write_darray_1d(filename, varname, var_data_ptr)
     use piolib_mod, only: PIO_setframe
     use piodarray,  only: PIO_write_darray
+    use iso_c_binding, only: c_ptr, c_f_pointer
 
     ! Dummy arguments
     character(len=*),   intent(in) :: filename       ! PIO filename
@@ -1369,12 +1362,14 @@ contains
     type (c_ptr),       intent(in) :: var_data_ptr
 
     ! Local variables
-    real(rtype), dimension(:), pointer         :: var_data_real
+    real(c_float),       dimension(:), pointer :: var_data_float
+    real(c_double),      dimension(:), pointer :: var_data_double
     integer(kind=c_int), dimension(:), pointer :: var_data_int
-    type(pio_atm_file_t), pointer      :: pio_atm_file
-    type(hist_var_t), pointer          :: var
-    integer                            :: ierr,var_size
-    logical                            :: found
+
+    type(pio_atm_file_t), pointer :: pio_atm_file
+    type(hist_var_t), pointer     :: var
+    integer                       :: ierr,var_size
+    logical                       :: found
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)
@@ -1386,9 +1381,13 @@ contains
     var_size = SIZE(var%compdof)
 
     ! Now we know the exact size of the array, and can shape the f90 pointer
-    if (var%dtype .eq. pio_rtype) then
-      call c_f_pointer (var_data_ptr, var_data_real, [var_size])
-      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_real, ierr)
+    if (var%dtype .eq. PIO_FLOAT) then
+      call c_f_pointer (var_data_ptr, var_data_float, [var_size])
+      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_float, ierr)
+      call errorHandle( 'eam_grid_write_darray_1d: Error writing variable '//trim(varname),ierr)
+    else if (var%dtype .eq. PIO_DOUBLE) then
+      call c_f_pointer (var_data_ptr, var_data_double, [var_size])
+      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_double, ierr)
       call errorHandle( 'eam_grid_write_darray_1d: Error writing variable '//trim(varname),ierr)
     else if (var%dtype .eq. PIO_INT) then
       call c_f_pointer (var_data_ptr, var_data_int, [var_size])
@@ -1418,6 +1417,7 @@ contains
   subroutine grid_read_darray_1d(filename, varname, var_data_ptr, time_index)
     use piolib_mod, only: PIO_setframe
     use piodarray,  only: PIO_read_darray
+    use iso_c_binding, only: c_ptr, c_f_pointer
 
     ! Dummy arguments
     character(len=*), intent(in) :: filename       ! PIO filename
@@ -1430,7 +1430,8 @@ contains
     type(hist_var_t), pointer          :: var
     integer                            :: ierr, var_size
     logical                            :: found
-    real(rtype), dimension(:), pointer         :: var_data_real
+    real(c_float),       dimension(:), pointer :: var_data_float
+    real(c_double),      dimension(:), pointer :: var_data_double
     integer(kind=c_int), dimension(:), pointer :: var_data_int
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
@@ -1449,9 +1450,13 @@ contains
     var_size = SIZE(var%compdof)
 
     ! Now we know the exact size of the array, and can shape the f90 pointer
-    if (var%dtype .eq. pio_rtype) then
-      call c_f_pointer (var_data_ptr, var_data_real, [var_size])
-      call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_real, ierr)
+    if (var%dtype .eq. PIO_DOUBLE) then
+      call c_f_pointer (var_data_ptr, var_data_double, [var_size])
+      call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_double, ierr)
+      call errorHandle( 'eam_grid_read_darray_1d: Error reading variable '//trim(varname),ierr)
+    else if (var%dtype .eq. PIO_FLOAT) then
+      call c_f_pointer (var_data_ptr, var_data_float, [var_size])
+      call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_float, ierr)
       call errorHandle( 'eam_grid_read_darray_1d: Error reading variable '//trim(varname),ierr)
     else if (var%dtype .eq. PIO_INT) then
       call c_f_pointer (var_data_ptr, var_data_int, [var_size])

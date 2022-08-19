@@ -415,6 +415,7 @@ void AtmosphereInput::register_variables()
   // dof decomposition across different ranks.
 
   // Cycle through all fields
+  const auto& fp_precision = m_params.get<std::string>("Floating Point Precision");;
   for (auto const& name : m_fields_names) {
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     auto vec_of_dims   = get_vec_of_dims(m_layouts.at(name));
@@ -430,7 +431,7 @@ void AtmosphereInput::register_variables()
     //  but in the future if non-Real variables are added we will want to accomodate that.
     //TODO: Should be able to simply inquire from the netCDF the dimensions for each variable.
     scorpio::get_variable(m_filename, name, name, vec_of_dims.size(),
-                          vec_of_dims, PIO_REAL, io_decomp_tag);
+                          vec_of_dims, scorpio::nctype(fp_precision), io_decomp_tag);
   }
 }
 

@@ -4,26 +4,18 @@
 #include "ekat/util/ekat_string_utils.hpp"
 #include "share/field/field_tag.hpp"
 #include "share/scream_types.hpp"
+
 #include <vector>
 
 /* C++/F90 bridge to F90 SCORPIO routines */
-
-// TODO, figure out a better way to define netCDF output type for fields
-#ifdef SCREAM_CONFIG_IS_CMAKE
-#  ifdef SCREAM_DOUBLE_PRECISION
-  static constexpr int PIO_REAL = 6;
-#  else
-  static constexpr int PIO_REAL = 5;
-#  endif // SCREAM_DOUBLE_PRECISION
-#else // SCREAM_CONFIG_IS_CMAKE
-  static constexpr int PIO_REAL = 6;
-#endif // SCREAM_CONFIG_IS_CMAKE
-static constexpr int PIO_INT = 4;
 
 namespace scream {
 namespace scorpio {
 
   using offset_t = std::int64_t;
+
+  // Retrieve the int codes PIO uses to specify data types
+  int nctype (const std::string& type);
 
   // WARNING: these values must match the ones of file_purpose_in and file_purpose_out
   // in the scream_scorpio_interface F90 module
@@ -56,7 +48,7 @@ namespace scorpio {
    * Mandatory before writing or reading can happend on file. */
   void eam_pio_enddef(const std::string &filename);
   /* Called each timestep to update the timesnap for the last written output. */
-  void pio_update_time(const std::string &filename, const Real time);
+  void pio_update_time(const std::string &filename, const double time);
 
   // Read data for a specific variable from a specific file. To read data that
   // isn't associated with a time index, or to read data at the most recent

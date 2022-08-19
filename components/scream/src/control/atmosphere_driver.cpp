@@ -219,6 +219,7 @@ void AtmosphereDriver::create_grids()
     ekat::ParameterList vcoord_reader_pl;
     vcoord_reader_pl.set("Filename",ic_pl.get<std::string>("Filename"));
     vcoord_reader_pl.set<vos_t>("Field Names",{"hyam","hybm"});
+    vcoord_reader_pl.set<std::string>("Floating Point Precision","real");
     std::map<std::string,view_1d_host> host_views = {
       { "hyam", view_1d_host("hyam",nlev) },
       { "hybm", view_1d_host("hybm",nlev) }
@@ -641,6 +642,7 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
     ekat::ParameterList lat_lon_params;
     lat_lon_params.set("Field Names",fnames);
     lat_lon_params.set("Filename",ic_pl.get<std::string>("Filename"));
+    lat_lon_params.set<std::string>("Floating Point Precision","real");
 
     AtmosphereInput lat_lon_reader(lat_lon_params,grid,host_views,layouts);
     lat_lon_reader.read_variables();
@@ -673,6 +675,7 @@ void AtmosphereDriver::restart_model ()
   // Restart the num steps counter in the atm time stamp
   ekat::ParameterList rest_pl;
   rest_pl.set<std::string>("Filename",filename);
+  rest_pl.set<std::string>("Floating Point Precision","real");
   AtmosphereInput model_restart(m_atm_comm,rest_pl);
 
   for (auto& it : m_field_mgrs) {
@@ -969,6 +972,7 @@ read_fields_from_file (const std::vector<std::string>& field_names,
   ekat::ParameterList ic_reader_params;
   ic_reader_params.set("Field Names",field_names);
   ic_reader_params.set("Filename",file_name);
+  ic_reader_params.set<std::string>("Floating Point Precision","real");
 
   AtmosphereInput ic_reader(ic_reader_params,field_mgr,m_grids_manager);
   ic_reader.read_variables();

@@ -205,7 +205,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
       // Register time as a variable.
       auto time_units="days since " + m_case_t0.get_date_string() + " " + m_case_t0.get_time_string();
-      register_variable(filename,"time","time",time_units,1,{"time"},  PIO_REAL,"time");
+      register_variable(filename,"time","time",time_units,1,{"time"}, scorpio::nctype("double"),"time");
 #ifdef SCREAM_HAS_LEAP_YEAR
       set_variable_metadata (filename,"time","calendar","gregorian");
 #else
@@ -368,6 +368,8 @@ set_params (const ekat::ParameterList& params,
       fields_pl.sublist(it.first).set("Field Names",fnames);
     }
     m_casename = m_params.get<std::string>("Casename");
+    // Match precision of Fields
+    m_params.set<std::string>("Floating Point Precision","real");
   } else {
     auto avg_type = m_params.get<std::string>("Averaging Type");
     m_avg_type = str2avg(avg_type);
@@ -377,6 +379,12 @@ set_params (const ekat::ParameterList& params,
 
     m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File");
     m_casename = m_params.get<std::string>("Casename");
+
+    // Allow user to ask for higher precision for normal model output,
+    // but default to single to save on storage
+    const auto& prec = m_params.get<std::string>("Floating Point Precision", "single");
+    EKAT_REQUIRE_MSG (prec=="single" || prec=="double" || prec=="real",
+        "Error! Invalid floating point precision '" + prec + "'.\n");
   }
 }
 /*===============================================================================================*/

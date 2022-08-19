@@ -103,7 +103,7 @@ contains
   subroutine pio_update_time_c2f(filename_in,time) bind(c)
     use scream_scorpio_interface, only : eam_update_time
     type(c_ptr), intent(in) :: filename_in
-    real(kind=c_real), value, intent(in) :: time
+    real(kind=c_double), value, intent(in) :: time
 
     character(len=256)       :: filename
 

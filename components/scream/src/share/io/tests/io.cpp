@@ -157,6 +157,7 @@ TEST_CASE("input_output_basic","io")
     field_manager->init_fields_time_stamp(t0);
     ekat::ParameterList params;
     ekat::parse_yaml_file("io_test_" + type + ".yaml",params);
+    params.set<std::string>("Floating Point Precision","real");
     OutputManager om;
     om.setup(io_comm,params,field_manager,gm,t0,t0,false);
     io_comm.barrier();
@@ -469,6 +470,8 @@ ekat::ParameterList get_in_params(const std::string& type,
 
   in_params.set<std::string>("Filename",filename);
   in_params.set<vos_type>("Field Names",{"field_1", "field_2", "field_3", "field_packed"});
+  in_params.set<std::string>("Floating Point Precision","real");
+
   return in_params;
 }
 /*========================================================================================================*/
@@ -495,6 +498,7 @@ get_diagnostic_input(const ekat::Comm& comm, const std::shared_ptr<GridsManager>
   ekat::ParameterList in_params;
   in_params.set("Field Names",fnames);
   in_params.set("Filename",filename);
+  in_params.set<std::string>("Floating Point Precision","real");
   AtmosphereInput input(comm,in_params);
   input.init(grid,host_views,layouts);
   input.read_variables(time_index);
