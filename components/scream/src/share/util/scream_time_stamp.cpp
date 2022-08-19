@@ -92,7 +92,7 @@ bool TimeStamp::is_valid () const {
   return !(*this==TimeStamp());
 }
 
-int TimeStamp::seconds_from (const TimeStamp& ts) const {
+std::int64_t TimeStamp::seconds_from (const TimeStamp& ts) const {
   return *this-ts;
 }
 
@@ -224,12 +224,12 @@ TimeStamp operator+ (const TimeStamp& ts, const int dt) {
   return sum;
 }
 
-long long operator- (const TimeStamp& ts1, const TimeStamp& ts2) {
+std::int64_t operator- (const TimeStamp& ts1, const TimeStamp& ts2) {
   if (ts1<ts2) {
     return -(ts2-ts1);
   }
 
-  long long diff = 0;
+  std::int64_t diff = 0;
   const auto y1 = ts1.get_year();
   const auto y2 = ts2.get_year();
   const auto m1 = ts1.get_month();
