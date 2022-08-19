@@ -1635,13 +1635,15 @@
          call adjust_enthalpy (nilyr,              &
                                zi1,      zi2,      &
                                hilyr,    hin,      &
-                               zqin)   
+                               zqin,     fhocnn,   &
+                               dt)
 
          if (ktherm == 2) &
               call adjust_enthalpy (nilyr,              &
                                     zi1,      zi2,      &
                                     hilyr,    hin,      &
-                                    zSin)   
+                                    zSin,     fhocnn,   &
+                                    dt)
 
       else ! zero layer (nilyr=1)
 
@@ -1675,23 +1677,27 @@
          call adjust_enthalpy (nslyr,              &
                                zs1,      zs2,      &
                                hslyr,    hsn,      &
-                               zqsn)   
+                               zqsn,     fhocnn,   &
+                               dt)
 
          if (tr_rsnw) &
                call adjust_enthalpy (nslyr,              &
                                      zs1(:),   zs2(:),   &
                                      hslyr,    hsn,      &
-                                     rsnw(:))
+                                     rsnw(:),  fhocnn,   &
+                                     dt)
 
         if (tr_snow) then
               call adjust_enthalpy (nslyr,              &
                                     zs1(:),   zs2(:),   &
                                     hslyr,    hsn,      &
-                                    smice(:))
+                                    smice(:), fhocnn,   &
+                                    dt)
               call adjust_enthalpy (nslyr,              &
                                     zs1(:),   zs2(:),   &
                                     hslyr,    hsn,      &
-                                    smliq(:))
+                                    smliq(:), fhocnn,   &
+                                    dt)
         endif
 
       endif   ! nslyr > 1
@@ -1867,7 +1873,8 @@
       subroutine adjust_enthalpy (nlyr,               &
                                   z1,       z2,       &
                                   hlyr,     hn,       &
-                                  qn)
+                                  qn,       fhocnn,   &
+                                  dt)
 
       integer (kind=int_kind), intent(in) :: &
          nlyr            ! number of layers (nilyr or nslyr)
@@ -1884,6 +1891,12 @@
 
       real (kind=dbl_kind), dimension (:), intent(inout) :: &
          qn              ! layer quantity (enthalpy, salinity...)
+
+      real (kind=dbl_kind), intent(inout):: &
+         fhocnn          ! net heat flux to ocean (W/m^2)
+
+      real (kind=dbl_kind), intent(in) :: &
+         dt              ! time step (s)
 
       ! local variables
 
@@ -1903,8 +1916,14 @@
       ! Compute reciprocal layer thickness.
       !-----------------------------------------------------------------
 
-      rhlyr = c0
-      if (hn > puny) rhlyr = c1 / hlyr
+      if (hn > puny) then
+         rhlyr = c1 / hlyr
+      else
+         rhlyr = c0
+         do k = 1, nlyr
+            fhocnn = fhocnn + qn(k)*hn/(real(nlyr,kind=dbl_kind)*dt)
+         enddo ! ilyr
+      endif
 
       !-----------------------------------------------------------------
       ! Compute h*q for new layers (k2) given overlap with old layers (k1)

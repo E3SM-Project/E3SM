@@ -418,10 +418,11 @@
                      zs2(k+1) = zs2(k) + hslyr  ! new layer depths (equal thickness)
                   enddo
 
-                  call adjust_enthalpy (nslyr,                &
-                                        zs1(:),   zs2(:),     &
-                                        hslyr,    hsn_new(n), &
-                                        zqsn(:,n))
+                  call adjust_enthalpy (nslyr,                 &
+                                        zs1(:),    zs2(:),     &
+                                        hslyr,     hsn_new(n), &
+                                        zqsn(:,n), fhocn,      &
+                                        dt)
                endif   ! nslyr > 1
             endif      ! |dhsn| > puny
          endif         ! ain > puny
