@@ -206,7 +206,7 @@ tweaking their $case/namelist_scream.xml file.
     <!-- Radiation -->
     <rrtmgp inherit="physics_proc_base">
       <active_gases>h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
-      <Column__Chunk__Size>1280</Column__Chunk__Size>
+      <column_chunk_size>1280</column_chunk_size>
       <Orbital__Year>-9999</Orbital__Year>
       <Orbital__Eccentricity>-9999</Orbital__Eccentricity>
       <Orbital__Eccentricity COMPSET=".*SCREAM%AQUA.*">0</Orbital__Eccentricity>

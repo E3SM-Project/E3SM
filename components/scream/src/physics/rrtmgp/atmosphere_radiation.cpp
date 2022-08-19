@@ -56,7 +56,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   m_lon  = m_grid->get_geometry_data("lon");
 
   // Figure out radiation column chunks stats
-  m_col_chunk_size = std::min(m_params.get("Column Chunk Size", m_ncol),m_ncol);
+  m_col_chunk_size = std::min(m_params.get("column_chunk_size", m_ncol),m_ncol);
   m_num_col_chunks = (m_ncol+m_col_chunk_size-1) / m_col_chunk_size;
   m_col_chunk_beg.resize(m_num_col_chunks+1,0);
   for (int i=0; i<m_num_col_chunks; ++i) {
