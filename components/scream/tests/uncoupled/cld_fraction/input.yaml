@@ -14,7 +14,7 @@ atmosphere_processes:
   CldFraction:
     Grid: Point Grid
 
-Grids Manager:
+grids_manager:
   Type: Mesh Free
   Reference Grid: Point Grid
   Number of Global Columns:   3

@@ -33,7 +33,7 @@ atmosphere_processes:
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
     Orbital Year: 1990
 
-Grids Manager:
+grids_manager:
   Type: Mesh Free
   Number of Global Columns:   218
   Number of Vertical Levels:  72  # Will want to change to 128 when a valid unit test is available.

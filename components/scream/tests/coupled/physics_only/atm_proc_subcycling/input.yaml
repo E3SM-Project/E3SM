@@ -18,7 +18,7 @@ atmosphere_processes:
   p3:
     Grid: Point Grid
 
-Grids Manager:
+grids_manager:
   Type: Mesh Free
   Number of Global Columns:   218
   Number of Vertical Levels:  72  # Will want to change to 128 when a valid unit test is available.

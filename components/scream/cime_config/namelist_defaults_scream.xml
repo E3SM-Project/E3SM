@@ -47,7 +47,7 @@ tweaking their $case/namelist_scream.xml file.
       <sections>ctl_nl</sections>
     </file>
     <file name="data/scream_input.yaml" format="yaml">
-      <sections>Debug,atmosphere_processes,Grids__Manager,Initial__Conditions,Scorpio,E3SM__Parameters</sections>
+      <sections>Debug,atmosphere_processes,grids_manager,Initial__Conditions,Scorpio,E3SM__Parameters</sections>
     </file>
   </generated_files>
 
@@ -241,12 +241,12 @@ tweaking their $case/namelist_scream.xml file.
   </atmosphere_processes_defaults>
 
   <!-- Grids manager specs -->
-  <Grids__Manager>
+  <grids_manager>
     <Type>Dynamics Driven</Type>
     <Reference__Grid>Physics GLL</Reference__Grid>
     <Reference__Grid hgrid=".*pg2">Physics PG2</Reference__Grid>
     <Dynamics__Namelist__File__Name>./data/namelist.nl</Dynamics__Namelist__File__Name>
-  </Grids__Manager>
+  </grids_manager>
 
   <!-- List of nc files for loading inputs on specified grids -->
   <Initial__Conditions>

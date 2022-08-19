@@ -15,7 +15,7 @@ atmosphere_processes:
     Number of Subcycles: ${NUM_SUBCYCLES}
     Grid: Point Grid
 
-Grids Manager:
+grids_manager:
   Type: Mesh Free
   Reference Grid: Point Grid
   Number of Global Columns:   218

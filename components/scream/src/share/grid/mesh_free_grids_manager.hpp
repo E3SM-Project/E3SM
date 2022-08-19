@@ -25,7 +25,7 @@ public:
 
   virtual ~MeshFreeGridsManager () = default;
 
-  std::string name () const { return "Mesh-Free Grids Manager"; }
+  std::string name () const { return "Mesh-Free grids_manager"; }
 
   std::set<std::string> supported_grids () const {
     std::set<std::string> gnames;

@@ -22,7 +22,7 @@ atmosphere_processes:
     rad_frequency: 3
     do_aerosol_rad: false
 
-Grids Manager:
+grids_manager:
   Type: Mesh Free
   Reference Grid: Point Grid
   Number of Global Columns: 218

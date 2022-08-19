@@ -121,7 +121,7 @@ set_params(const ekat::ParameterList& atm_params)
 
 #ifdef SCREAM_CIME_BUILD
   const auto hgn = "Physics PG2";
-  fvphyshack = m_atm_params.sublist("Grids Manager").get<std::string>("Reference Grid") == hgn;
+  fvphyshack = m_atm_params.sublist("grids_manager").get<std::string>("Reference Grid") == hgn;
   if (fvphyshack) {
     // See the [rrtmgp active gases] note in dynamics/homme/atmosphere_dynamics_fv_phys.cpp.
     fv_phys_rrtmgp_active_gases_init(m_atm_params);
@@ -185,7 +185,7 @@ void AtmosphereDriver::create_grids()
   check_ad_status (s_procs_created | s_comm_set | s_params_set);
 
   // Create the grids manager
-  auto& gm_params = m_atm_params.sublist("Grids Manager");
+  auto& gm_params = m_atm_params.sublist("grids_manager");
   const std::string& gm_type = gm_params.get<std::string>("Type");
   m_atm_logger->debug("  [EAMxx] Creating grid manager '" + gm_type + "' ...");
   m_grids_manager = GridsManagerFactory::instance().create(gm_type,m_atm_comm,gm_params);

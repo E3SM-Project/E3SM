@@ -48,7 +48,7 @@ atmosphere_processes:
       Column Chunk Size: 123
       active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
 
-Grids Manager:
+grids_manager:
   Type: Dynamics Driven
   Reference Grid: Physics GLL
   Dynamics Namelist File Name: namelist.nl

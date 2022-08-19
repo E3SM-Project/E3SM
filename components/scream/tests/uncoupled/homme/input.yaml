@@ -19,7 +19,7 @@ atmosphere_processes:
     Vertical Coordinate Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
     Moisture: moist
 
-Grids Manager:
+grids_manager:
   Type: Dynamics Driven
   Reference Grid: Physics GLL
   Dynamics Namelist File Name: namelist.nl

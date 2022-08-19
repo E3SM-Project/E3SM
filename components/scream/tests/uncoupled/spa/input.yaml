@@ -16,7 +16,7 @@ atmosphere_processes:
     SPA Remap File: ${SCREAM_DATA_DIR}/init/map_ne4np4_to_ne2np4_mono.nc
     SPA Data File: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_20220428.nc
 
-Grids Manager:
+grids_manager:
   Type: Mesh Free
   Reference Grid: Point Grid
   Number of Global Columns:   218

@@ -17,7 +17,7 @@ atmosphere_processes:
     Fixed Solar Zenith Angle: 0.86
     do_aerosol_rad: false
 
-Grids Manager:
+grids_manager:
   Type: Mesh Free
   Reference Grid: Point Grid
   Number of Global Columns: 128
