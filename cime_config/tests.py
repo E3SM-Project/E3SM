@@ -76,7 +76,8 @@ _TESTS = {
             "ERS.ELM_USRDAT.I1850ELM.elm-usrdat",
             "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features",
             "ERS.f09_f09.IELM.elm-solar_rad",
-            "ERS.f09_f09.IELM.elm-lnd_rof_2way"
+            "ERS.f09_f09.IELM.elm-lnd_rof_2way",
+            "ERS.f09_f09.IELM.elm-koch_snowflake"
             )
         },
 

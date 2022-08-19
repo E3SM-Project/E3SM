@@ -53,6 +53,8 @@ module controlMod
   use elm_varctl              , only: add_temperature, add_co2
   use elm_varctl              , only: const_climate_hist
   use elm_varctl              , only: use_top_solar_rad
+  use elm_varctl              , only: snow_shape, snicar_atm_type, use_dust_snow_internal_mixing
+
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -312,6 +314,9 @@ contains
 
     namelist /elm_mosart/ &
          lnd_rof_coupling_nstep
+		 
+    namelist /elm_inparm/ &
+         snow_shape, snicar_atm_type, use_dust_snow_internal_mixing 
     
     ! ----------------------------------------------------------------------
     ! Default values
@@ -927,6 +932,11 @@ contains
     call mpi_bcast (use_lnd_rof_two_way   , 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (lnd_rof_coupling_nstep, 1, MPI_INTEGER, 0, mpicom, ier)
 
+    !SNICAR-AD
+    call mpi_bcast (snow_shape, len(snow_shape), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (snicar_atm_type, len(snicar_atm_type), MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (use_dust_snow_internal_mixing, 1, MPI_LOGICAL, 0, mpicom, ier)
+	
   end subroutine control_spmd
 
   !------------------------------------------------------------------------
@@ -971,6 +981,9 @@ contains
     write(iulog,*) '    two-way irrigation = ', tw_irr
     write(iulog,*) '    use_snicar_frc = ', use_snicar_frc
     write(iulog,*) '    use_snicar_ad = ', use_snicar_ad
+    write(iulog,*) '    snow_shape = ', snow_shape
+    write(iulog,*) '    snicar_atm_type = ', snicar_atm_type
+    write(iulog,*) '    use_dust_snow_internal_mixing = ', use_dust_snow_internal_mixing
     write(iulog,*) '    use_vancouver = ', use_vancouver
     write(iulog,*) '    use_mexicocity = ', use_mexicocity
     write(iulog,*) '    use_noio = ', use_noio
