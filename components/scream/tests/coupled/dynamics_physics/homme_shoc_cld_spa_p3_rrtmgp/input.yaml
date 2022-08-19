@@ -32,7 +32,7 @@ atmosphere_processes:
       atm_procs_list: (shoc,CldFraction,spa,p3)
       Type: Group
       Schedule Type: Sequential
-      Number of Subcycles: ${MAC_MIC_SUBCYCLES}
+      number_of_subcycles: ${MAC_MIC_SUBCYCLES}
       shoc:
         Grid: Physics GLL
       CldFraction:

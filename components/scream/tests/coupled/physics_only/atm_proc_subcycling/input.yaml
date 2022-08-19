@@ -12,7 +12,7 @@ Time Stepping:
 atmosphere_processes:
   Schedule Type: Sequential
   atm_procs_list: (shoc,p3)
-  Number of Subcycles: ${NUM_SUBCYCLES}
+  number_of_subcycles: ${NUM_SUBCYCLES}
   shoc:
     Grid: Point Grid
   p3:

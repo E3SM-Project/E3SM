@@ -24,8 +24,8 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
     m_atm_logger = std::make_shared<logger_impl_t>("",LogLevel::trace,m_comm);
   }
 
-  if (m_params.isParameter("Number of Subcycles")) {
-    m_num_subcycles = m_params.get<int>("Number of Subcycles");
+  if (m_params.isParameter("number_of_subcycles")) {
+    m_num_subcycles = m_params.get<int>("number_of_subcycles");
   }
   EKAT_REQUIRE_MSG (m_num_subcycles>0,
       "Error! Invalid number of subcycles in param list " + m_params.name() + ".\n"

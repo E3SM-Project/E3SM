@@ -593,7 +593,7 @@ TEST_CASE ("subcycling") {
   params.set<std::string>("Grid Name", "Point Grid");
   params_sub.set<std::string>("Process Name", "AddOne");
   params_sub.set<std::string>("Grid Name", "Point Grid");
-  params_sub.set<int>("Number of Subcycles", 5);
+  params_sub.set<int>("number_of_subcycles", 5);
 
   // Create and init two atm procs, one subcycled and one not subcycled
   auto ap     = std::make_shared<AddOne>(comm,params);
