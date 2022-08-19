@@ -655,7 +655,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
           const int icol = i + beg;
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
             d_vmr(icol,k) = PF::calculate_vmr_from_mmr(gas_mol_weights[igas],d_qv(icol,k),d_qv(icol,k));
-            tmp2d(i+1,k+1) = d_vmr(i,k); // Note that for YAKL arrays i and k start with index 1
+            tmp2d(i+1,k+1) = d_vmr(icol,k); // Note that for YAKL arrays i and k start with index 1
           });
         });
         Kokkos::fence();
@@ -666,7 +666,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
           const int i = team.league_rank();
           const int icol = i + beg;
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
-            tmp2d(i+1,k+1) = d_vmr(i,k); // Note that for YAKL arrays i and k start with index 1
+            tmp2d(i+1,k+1) = d_vmr(icol,k); // Note that for YAKL arrays i and k start with index 1
           });
         });
         Kokkos::fence();
