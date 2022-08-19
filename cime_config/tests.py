@@ -20,6 +20,13 @@ _TESTS = {
             )
         },
 
+    "e3sm_mosart_exenoshare": {
+        "time"  : "0:45:00",
+        "tests" : (
+            "ERS.ne30pg2_r05_EC30to60E2r2.GPMPAS-JRA.mosart-rof_ocn_2way",
+            )
+        },
+
     "e3sm_land_exeshare" : {
         "share" : True,
         "time"  : "0:45:00",
@@ -47,7 +54,7 @@ _TESTS = {
     "e3sm_land_developer" : {
         "share" : True,
         "time"  : "0:45:00",
-        "inherit" : ("e3sm_mosart_developer", "e3sm_land_exeshare", "e3sm_land_exenoshare"),
+        "inherit" : ("e3sm_mosart_developer", "e3sm_mosart_exenoshare", "e3sm_land_exeshare", "e3sm_land_exenoshare"),
         "tests" : (
             "ERS.f19_f19.IELM",
             "ERS.f19_f19.I1850ELMCN",
