@@ -26,7 +26,7 @@ atmosphere_processes:
     spa:
       Grid: Point Grid
       spa_remap_file: ${SCREAM_DATA_DIR}/init/map_ne4np4_to_ne2np4_mono.nc
-      SPA Data File: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_20220428.nc
+      spa_data_file: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_20220428.nc
   rrtmgp:
     Grid: Point Grid
     Column Chunk Size: 123

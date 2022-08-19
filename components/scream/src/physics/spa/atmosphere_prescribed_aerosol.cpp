@@ -66,7 +66,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   // Note: only the number of levels associated with this data haven't been set.  We can
   //       take this information directly from the spa data file.
-  m_spa_data_file = m_params.get<std::string>("SPA Data File");
+  m_spa_data_file = m_params.get<std::string>("spa_data_file");
   scorpio::register_file(m_spa_data_file,scorpio::Read);
   m_num_src_levs = scorpio::get_dimlen_c2f(m_spa_data_file.c_str(),"lev");
   scorpio::eam_pio_closefile(m_spa_data_file);
@@ -161,7 +161,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
 
   // Retrieve the remap and data file locations from the parameter list:
   EKAT_REQUIRE_MSG(m_params.isParameter("spa_remap_file"),"ERROR: spa_remap_file is missing from SPA parameter list.");
-  EKAT_REQUIRE_MSG(m_params.isParameter("SPA Data File"),"ERROR: SPA Data File is missing from SPA parameter list.");
+  EKAT_REQUIRE_MSG(m_params.isParameter("spa_data_file"),"ERROR: spa_data_file is missing from SPA parameter list.");
   m_spa_remap_file = m_params.get<std::string>("spa_remap_file");
 
   // Set the SPA remap weights.  
