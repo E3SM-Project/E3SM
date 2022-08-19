@@ -135,7 +135,7 @@ tweaking their $case/namelist_scream.xml file.
     <atm_proc_base>
       <number_of_subcycles constraints="gt 0">1</number_of_subcycles>
       <enable_precondition_checks type="logical">true</enable_precondition_checks>
-      <Enable__Postcondition__Checks type="logical">true</Enable__Postcondition__Checks>
+      <enable_postcondition_checks type="logical">true</enable_postcondition_checks>
     </atm_proc_base>
 
     <!-- Basic options for each atm process group -->
@@ -155,7 +155,7 @@ tweaking their $case/namelist_scream.xml file.
     <sc_import>
       <Grid>Physics GLL</Grid>
       <Grid hgrid=".*pg2">Physics PG2</Grid>
-      <Enable__Postcondition__Checks type="logical">true</Enable__Postcondition__Checks>
+      <enable_postcondition_checks type="logical">true</enable_postcondition_checks>
     </sc_import>
 
     <!-- SC Export -->

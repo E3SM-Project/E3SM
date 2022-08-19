@@ -548,7 +548,7 @@ TEST_CASE("field_checks", "") {
       for (bool check_post : {true, false}) {
 
         params.set("enable_precondition_checks",check_pre);
-        params.set("Enable Postcondition Checks",check_post);
+        params.set("enable_postcondition_checks",check_post);
 
         // Create the process
         auto foo = create_atmosphere_process<Foo>(comm,params);

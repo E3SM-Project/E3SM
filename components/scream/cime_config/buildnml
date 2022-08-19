@@ -455,18 +455,18 @@ def _create_raw_xml_file_impl(case, xml):
                     ('prop2', 'one'),
                     ('number_of_subcycles', 1),
                     ('enable_precondition_checks', True),
-                    ('Enable Postcondition Checks', True),
+                    ('enable_postcondition_checks', True),
                     (   'P1',
                         OrderedDict([   ('prop1', 'hi'),
                                         ('Grid', 'Physics PG2'),
                                         ('number_of_subcycles', 1),
                                         ('enable_precondition_checks', True),
-                                        ('Enable Postcondition Checks', True)])),
+                                        ('enable_postcondition_checks', True)])),
                     (   'P2',
                         OrderedDict([   ('prop1', 'there'),
                                         ('number_of_subcycles', 1),
                                         ('enable_precondition_checks', True),
-                                        ('Enable Postcondition Checks', True)]))])
+                                        ('enable_postcondition_checks', True)]))])
 
     """
 

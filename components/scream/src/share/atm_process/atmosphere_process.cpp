@@ -65,7 +65,7 @@ void AtmosphereProcess::run (const int dt) {
     run_impl(dt_sub);
   }
 
-  if (m_params.get("Enable Postcondition Checks", true)) {
+  if (m_params.get("enable_postcondition_checks", true)) {
     // Run 'post-condition' property checks stored in this AP
     run_postcondition_checks();
   }
