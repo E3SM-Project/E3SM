@@ -25,7 +25,7 @@ atmosphere_processes:
   schedule_type: Sequential
   homme:
     enable_precondition_checks: false
-    Vertical Coordinate Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+    vertical_coordinate_filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
     Moisture: moist
   physics:
     atm_procs_list: (mac_mic,rrtmgp)
